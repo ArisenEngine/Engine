@@ -1,0 +1,95 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:LoudnessMeter.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1048" d:DesignHeight="630"
+			 Width="1048" Height="630"
+             x:Class="LoudnessMeter.Views.MainView"
+             x:DataType="vm:MainViewModel">
+	<Design.DataContext>
+		<!-- This only sets the DataContext for the previewer in an IDE,
+         to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+		<vm:MainViewModel />
+	</Design.DataContext>
+
+
+	<Grid RowDefinitions="Auto, *, Auto">
+		<!-- Title Bar -->
+		<Grid Grid.Row="0" ColumnDefinitions="Auto, Auto, * , Auto, Auto" Background="Orange" Height="40">
+
+			<Rectangle Grid.Column="0" Fill="Red" Width="40"> </Rectangle>
+			<Rectangle Grid.Column="1" Fill="Blue" Width="40"> </Rectangle>
+
+			<StackPanel Grid.Column="2" Orientation="Horizontal" Background="White" VerticalAlignment="Center" HorizontalAlignment="Center">
+				<Label FontWeight="Black">NEBULA</Label>
+				<Label>LOUDNESS METER</Label>
+			</StackPanel>
+
+			<Rectangle Grid.Column="3" Fill="Green" Width="40"> </Rectangle>
+			<Rectangle Grid.Column="4" Fill="Red" Width="40"> </Rectangle>
+
+		</Grid>
+
+		<!-- Main Area -->
+		<Grid Grid.Row="1" ColumnDefinitions="Auto, Auto, *" Background="#1a1c20">
+
+			<!-- Volume Bar -->
+			<Grid Grid.Column="0" Width="150" RowDefinitions="*, Auto, Auto" Margin="0,0,0,20">
+
+				
+				<Grid Grid.Row="0"></Grid>
+
+				<!-- Volume Meter Gauge -->
+				<Grid Grid.Row="0">
+					
+				</Grid>
+				
+				<!-- LUFS label -->
+				<Label Grid.Row="1" Foreground="White" FontSize="20" HorizontalAlignment="Center" Margin="0, 5"> LUFS </Label>
+				
+				<!-- Volume bar Buttons -->
+				<StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
+					<StackPanel.Styles>
+						<Style Selector="Button">
+							<Setter Property="Foreground" Value="White"></Setter>
+							<Setter Property="Background" Value="#7f98c7"></Setter>
+							<Setter Property="FontSize" Value="12"></Setter>
+							<Setter Property="CornerRadius" Value="20"></Setter>
+						</Style>
+					</StackPanel.Styles>
+					
+					<Button Margin="0,0,10, 0">A</Button>
+					<Button >INT-LRA</Button>
+				</StackPanel>
+
+			</Grid>
+
+			<!-- Details Panel -->
+			<Rectangle Grid.Column="1" Width="170" Fill="#ccc"></Rectangle>
+
+			<!--Graph -->
+			<Rectangle Grid.Column="2" Fill="Black"></Rectangle>
+		</Grid>
+
+
+		<!-- Bottom Bar -->
+		<Grid Grid.Row="2" Margin="8" ColumnDefinitions="Auto, Auto, * , Auto, Auto, Auto, Auto, Auto">
+
+			<Button Grid.Column="0" Margin="0,0,8,0"> Stereo</Button>
+
+			<Button Grid.Column="1"> Youtube</Button>
+
+			<Button Grid.Column="3" Margin="0,0,8,0"> 10 SEC</Button>
+
+			<Button Grid.Column="4" Margin="0,0,8,0" > CONTINUOUS</Button>
+
+			<Rectangle Grid.Column="5" Fill="Green" Width="30" Margin="0,0,8,0"> </Rectangle>
+			<Rectangle Grid.Column="6" Fill="Red" Width="30"> </Rectangle>
+
+		</Grid>
+
+
+	</Grid>
+
+</UserControl>
