@@ -20,14 +20,30 @@ protected:
 private:
 	void CreateVkInstance();
 	bool CheckValidationLayerSupport();
-	VkInstance instance;
+	void InitDebugMessenger();
+	VkInstance m_Instance;
+	VkDebugUtilsMessengerEXT m_DebugMessenger;
 	
 	static std::vector<const char*> ExtensionNames;
 	static std::vector<const char*> ValidationLayers;
+
 	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
 		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 		void* pUserData);
+	
+	static void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+
+	static VkResult CreateDebugUtilsMessengerEXT(
+		VkInstance instance,
+		const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+		const VkAllocationCallbacks* pAllocator,
+		VkDebugUtilsMessengerEXT* pDebugMessenger);
+
+	static void DestroyDebugUtilsMessengerEXT(
+		VkInstance instance,
+		VkDebugUtilsMessengerEXT debugMessenger,
+		const VkAllocationCallbacks* pAllocator);
 };
 

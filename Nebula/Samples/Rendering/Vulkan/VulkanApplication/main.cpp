@@ -42,10 +42,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 
     auto vkApp = VulkanApplication(1920, 1080);
 
-    glm::mat4x4 matrix;
-    glm::vec4 vec;
-    auto result = matrix * vec;
+    auto resultCode = vkApp.Run(hInstance, nCmdShow);
 
+    std::cout << "App exit : " << resultCode << std::endl;
 
-	return vkApp.Run(hInstance, nCmdShow);
+    system("pause");
+
+	return resultCode;
 }

@@ -126,6 +126,7 @@ LRESULT CALLBACK IContext::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LP
 
 	case WM_DESTROY:
 		PostQuitMessage(0);
+
 		return 0;
 
 	}
