@@ -6,6 +6,12 @@
 
 ## Content
 
+### Setup
+
+#### Environment Setup
+- value environment variable "NEBULA_SOLUTION_ROOT" path to Nebula.sln like: "D:/Project/Engine/Nebula"
+- value environment variable "VK_SDK_PATH" path to Vulkan SDK location, if vk sdk installing program doesn't set it automaticlly 
+
 ## Roadmap
 
 ### Editor
