@@ -4,8 +4,7 @@
 #include <iostream>
 
 
-
-IContext::IContext(int width, int height):m_Width(width),m_Height(height)
+IContext::IContext(int width, int height):m_Width(width),m_Height(height), m_HWND(nullptr)
 {
 
 
@@ -35,7 +34,7 @@ int IContext::Run(HINSTANCE hInstance, int nCmdShow)
 	AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, FALSE);
 
 	// Create the window and store a handle to it.
-	auto hwnd = CreateWindow(
+	m_HWND = CreateWindow(
 		windowClass.lpszClassName,
 		L"Application",
 		WS_OVERLAPPEDWINDOW,
@@ -50,7 +49,7 @@ int IContext::Run(HINSTANCE hInstance, int nCmdShow)
 
 	this->OnInit();
 
-	ShowWindow(hwnd, nCmdShow);
+	ShowWindow(m_HWND, nCmdShow);
 
 
 	// Main sample loop.
@@ -125,6 +124,7 @@ LRESULT CALLBACK IContext::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LP
 		return 0;
 
 	case WM_DESTROY:
+
 		PostQuitMessage(0);
 
 		return 0;

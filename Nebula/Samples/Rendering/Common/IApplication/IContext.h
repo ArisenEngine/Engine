@@ -4,7 +4,7 @@
 #include <windows.h>
 
 #include "Common.h"
-
+#include "CommonFunctions.h"
 
  class DLL IContext
 {
@@ -31,6 +31,7 @@ protected:
 	
 	int m_Width;
 	int m_Height;
+	HWND m_HWND;
 
 private:
 

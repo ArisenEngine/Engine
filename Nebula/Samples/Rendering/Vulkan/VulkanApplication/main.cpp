@@ -41,8 +41,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
     RedirectIOToConsole();
 
     auto vkApp = VulkanApplication(1920, 1080);
+    auto resultCode = -1;
 
-    auto resultCode = vkApp.Run(hInstance, nCmdShow);
+    try
+    {
+        resultCode = vkApp.Run(hInstance, nCmdShow);
+    }
+    catch (const std::exception& e)
+    {
+        std::cout << "App run error:" << e.what() << std::endl;
+    }
 
     std::cout << "App exit : " << resultCode << std::endl;
 
