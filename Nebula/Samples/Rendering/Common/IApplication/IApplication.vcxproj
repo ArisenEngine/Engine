@@ -145,6 +145,8 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CommonFcuntions.cpp" />
+    <ClCompile Include="CommonFunctions.h" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="IContext.cpp" />
     <ClCompile Include="pch.cpp">

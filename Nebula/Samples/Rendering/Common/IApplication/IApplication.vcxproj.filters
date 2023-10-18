@@ -38,5 +38,11 @@
     <ClCompile Include="IContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CommonFunctions.h">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommonFcuntions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
