@@ -959,6 +959,7 @@ void VulkanApplication::OnRender()
 	{
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
+	
 
 	VkSubpassDependency dependency{};
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
