@@ -38,6 +38,26 @@
 
 			<StackPanel Spacing="100" HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal">
 
+				<!-- Project Create info -->
+				<StackPanel Orientation="Vertical">
+					<!-- Project Name -->
+					<StackPanel Orientation="Horizontal" Spacing="5">
+						<Label>Name </Label>
+						<TextBox Background="AliceBlue" Foreground="Black" Width="200" Height="20" Text="{Binding NewProjectName}"></TextBox>
+					</StackPanel>
+					<!-- Project Desc -->
+					<StackPanel Orientation="Horizontal" Spacing="5">
+						<Label>Desc </Label>
+						<TextBox Background="AliceBlue" Foreground="Black" Width="200" Height="20" Text="{Binding NewProjectDesc}"></TextBox>
+					</StackPanel>
+					<!-- Path -->
+					<StackPanel Orientation="Horizontal" Spacing="5">
+						<Label>Path</Label>
+						<TextBox Background="AliceBlue"  Foreground="Black"  Width="200" Height="20" Text="{Binding NewProjectPath}"></TextBox>
+						<Button Command="{Binding BroweProjectLocationCommand}">Browse</Button>
+					</StackPanel>
+				</StackPanel>
+
 				<Button  Width="120" Height="40"
 			HorizontalAlignment="Center" VerticalAlignment="Center">
 
@@ -45,7 +65,7 @@
 				</Button>
 
 				<Button  Width="120" Height="40"
-			HorizontalAlignment="Center" VerticalAlignment="Center">
+			HorizontalAlignment="Center" VerticalAlignment="Center" Command="{Binding CreateProjectCommand}">
 
 					Create Project
 				</Button>

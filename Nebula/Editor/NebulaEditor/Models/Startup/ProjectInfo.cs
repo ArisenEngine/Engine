@@ -1,5 +1,8 @@
-﻿using System;
+﻿using Avalonia;
+using Avalonia.Controls.Shapes;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,32 +14,44 @@ namespace NebulaEditor.Models.Startup
     /// </summary>
     public class ProjectInfo
     {
+        public static readonly string DefaultProjectPath = $@"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\NebulaProjects\";
         /// <summary>
         /// the project location
         /// </summary>
-        public string Path { get; set; } = string.Empty;
+        public string ProjectPath { get; set; } = DefaultProjectPath;
         /// <summary>
         /// project name
         /// </summary>
-        public string ProjectName { get; set; } = string.Empty;
+        public string ProjectName { get; set; } = "NewProject";
         /// <summary>
         /// project description
         /// </summary>
-        public string Desc { get; set; } = string.Empty;
+        public string Desc { get; set; } = "New nebula project";
         /// <summary>
         /// preview image url
         /// </summary>
-        public string PreviewImageURL { get; set; } = string.Empty;
+        public string PreviewImageURL { get; set; } = @"/Assets/default_project_preview.jpg";
 
-        public string IconURL { get; set; } = string.Empty;
+        public string IconURL { get; set; } = @"/Assets/default_project_icon.jpg";
         /// <summary>
         /// engine version project currently used
         /// </summary>
-        public string EngineVersion { get; set; } = string.Empty;
+        public string EngineVersion { get; set; } = "1.0.0";
+
+        public string LastEditTime { get; set; } = "just now";
+
+        public static List<string> Folders = new List<string>()
+        {
+            ".nebula",
+            "Assets",
+            "Packages",
+            "ProjectSettings",
+            "UserSettings"
+        };
 
         public ProjectInfo()
         {
-
+            //ProjectName = "New Project";
         }
 
     }

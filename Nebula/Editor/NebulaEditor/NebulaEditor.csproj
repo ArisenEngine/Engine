@@ -40,22 +40,32 @@
 
   <ItemGroup>
     <Folder Include="Resources\" />
+    <Folder Include="Templates\1st-Person Project\.nebula\" />
+    <Folder Include="Templates\1st-Person Project\Assets\" />
+    <Folder Include="Templates\1st-Person Project\UserSettings\" />
+    <Folder Include="Templates\1st-Person Project\ProjectSettings\" />
+    <Folder Include="Templates\1st-Person Project\Packages\" />
+    <Folder Include="Templates\Empty Project\.nebula\" />
+    <Folder Include="Templates\Empty Project\Assets\" />
+    <Folder Include="Templates\Empty Project\UserSettings\" />
+    <Folder Include="Templates\Empty Project\ProjectSettings\" />
+    <Folder Include="Templates\Empty Project\Packages\" />
+    <Folder Include="Templates\Top-Down Project\.nebula\" />
+    <Folder Include="Templates\Top-Down Project\Assets\" />
+    <Folder Include="Templates\Top-Down Project\UserSettings\" />
+    <Folder Include="Templates\Top-Down Project\ProjectSettings\" />
+    <Folder Include="Templates\Top-Down Project\Packages\" />
+    <Folder Include="Templates\3rd-Person Project\.nebula\" />
+    <Folder Include="Templates\3rd-Person Project\Assets\" />
+    <Folder Include="Templates\3rd-Person Project\UserSettings\" />
+    <Folder Include="Templates\3rd-Person Project\ProjectSettings\" />
+    <Folder Include="Templates\3rd-Person Project\Packages\" />
     <Folder Include="Views\DataTemplates\" />
   </ItemGroup>
 
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Core\Core.Rendering\Core.Rendering.vcxproj" />
+    <ProjectReference Include="..\..\Engine\NebulaEngine\NebulaEngine.csproj" />
     <ProjectReference Include="..\..\Serialization\Serialization\Serialization.csproj" />
-  </ItemGroup>
-
-	
-  <ItemGroup>
-    <None Update="Templates\Simple3D\Assets\kitty.jpg">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Templates\Simple3D\kitties.jpg">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 </Project>

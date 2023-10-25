@@ -1,5 +1,6 @@
 using NebulaEditor.Models.Startup;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace NebulaEditor.ViewModels.Startup
 {
@@ -9,7 +10,12 @@ namespace NebulaEditor.ViewModels.Startup
 
         public void SetProjectsList(List<ProjectInfo> projectInfos)
         {
-            ProjectListViewModel.ProjectsList = projectInfos;
+            var observerProjectList = new ObservableCollection<ProjectInfo>();
+            for(var i = 0;i < projectInfos.Count; ++i) 
+            {
+                observerProjectList.Add(projectInfos[i]);
+            }
+            ProjectListViewModel.ProjectsList = observerProjectList;
         }
 
     }
