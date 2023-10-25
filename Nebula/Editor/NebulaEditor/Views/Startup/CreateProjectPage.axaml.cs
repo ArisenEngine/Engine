@@ -7,6 +7,7 @@ namespace NebulaEditor.Views
         public CreateProjectPage()
         {
             InitializeComponent();
+            
         }
     }
 }

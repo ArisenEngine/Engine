@@ -24,6 +24,7 @@ namespace Serialization
             streamWriter.Close();
         }
 
+        // TODO: private member will not be serialize
         public static T Deserialize<T>(string fullPath, bool serializeIfNotExist = true) where T : new()
         {
             if (!File.Exists(fullPath))

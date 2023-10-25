@@ -8,6 +8,7 @@ namespace NebulaEditor.ViewModels.Startup
 {
     public class MainWindowViewModel : ViewModelBase
     {
+        // TODO: get the installation location
         private readonly static string EDITOR_CONFIG_PATH = "configs/editor_config.yaml";
 
         private OpeningProjectViewModel m_OpeningProjectViewModel;
@@ -43,6 +44,10 @@ namespace NebulaEditor.ViewModels.Startup
                 OpeningProjectViewModel.SetProjectsList(EditorConfig.Instance.Projects);
 
                 var templates = SerializationUtil.Deserialize<Templates>(EditorConfig.Instance.TemplatesPath);
+                if (templates.IsDirty)
+                {
+                    SerializationUtil.Serialize(templates, EditorConfig.Instance.TemplatesPath);
+                }
                 CreateProjectViewModel.SetProjectsList(templates.Projects);
 
                 return 0;
