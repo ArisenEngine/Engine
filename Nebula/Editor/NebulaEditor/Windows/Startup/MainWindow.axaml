@@ -26,7 +26,8 @@
 
 		<Grid Grid.Column="1" RowDefinitions="0.75*">
 
-			<TabControl Grid.Row="0">
+			<TabControl Grid.Row="0" SelectionChanged="TabControl_SelectionChanged">
+                
 				<!-- Open Project Tab -->
 				<TabItem Header="Open Project" >
 					<v:OpeningProjectPage DataContext="{Binding OpeningProjectViewModel}" />

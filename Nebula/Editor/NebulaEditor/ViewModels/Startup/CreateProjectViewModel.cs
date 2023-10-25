@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using System.IO;
 using NebulaEditor.Windows.MainEditor;
 using System.Linq;
+using Serialization;
 
 namespace NebulaEditor.ViewModels.Startup
 {
@@ -139,20 +140,8 @@ namespace NebulaEditor.ViewModels.Startup
             {
                 try 
                 {
-                    Directory.CreateDirectory(m_ProjectPath);
-
-                    for(int i = 0; i < ProjectInfo.Folders.Count; ++i)
-                    {
-                        var folderName = ProjectInfo.Folders[i];
-                        var folderPath = m_ProjectPath + Path.DirectorySeparatorChar + folderName;
-                        var folderInfo = Directory.CreateDirectory(folderPath);
-
-                        if (folderInfo != null && folderName.StartsWith('.'))
-                        {
-                            folderInfo.Attributes |= FileAttributes.Hidden;
-                        }
-                    }
-
+                    
+                    DoCreateProject();
 
                 } catch (Exception e)
                 {
@@ -165,6 +154,33 @@ namespace NebulaEditor.ViewModels.Startup
             }
         }
         
+
+        private void DoCreateProject()
+        {
+            Directory.CreateDirectory(m_ProjectPath);
+
+            for (int i = 0; i < ProjectInfo.Folders.Count; ++i)
+            {
+                var folderName = ProjectInfo.Folders[i];
+                var folderPath = m_ProjectPath + Path.DirectorySeparatorChar + folderName;
+                var folderInfo = Directory.CreateDirectory(folderPath);
+
+                if (folderInfo != null && folderName.StartsWith('.'))
+                {
+                    folderInfo.Attributes |= FileAttributes.Hidden;
+                }
+            }
+
+            // save to project list
+            EditorConfig.Instance.Projects.Add(new ProjectInfo()
+            {
+                ProjectName = NewProjectName,
+                ProjectPath= NewProjectPath,
+                Desc = NewProjectDesc,
+            });
+
+            SerializationUtil.Serialize<EditorConfig>(EditorConfig.Instance, EditorConfig.EDITOR_CONFIG_PATH);
+        }
 
     }
 }
