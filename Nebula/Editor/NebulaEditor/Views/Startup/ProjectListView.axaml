@@ -12,7 +12,7 @@
 		<vm:ProjectListViewModel/>
 	</Design.DataContext>
 
-	<ListBox SelectionMode="Single,Toggle" ItemsSource="{Binding ProjectsList}" SelectedIndex="0">
+	<ListBox SelectionMode="Single,Toggle" ItemsSource="{Binding ProjectsList}" SelectedIndex="{Binding SelectedIndex}">
 		<!--Items template -->
 		<ListBox.ItemTemplate>
 			<DataTemplate>

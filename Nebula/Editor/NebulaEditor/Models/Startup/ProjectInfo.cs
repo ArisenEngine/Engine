@@ -15,14 +15,15 @@ namespace NebulaEditor.Models.Startup
     public class ProjectInfo
     {
         public static readonly string DefaultProjectPath = $@"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\NebulaProjects\";
-        /// <summary>
-        /// the project location
-        /// </summary>
-        public string ProjectPath { get; set; } = DefaultProjectPath;
+       
         /// <summary>
         /// project name
         /// </summary>
         public string ProjectName { get; set; } = "NewProject";
+        /// <summary>
+        /// the project location
+        /// </summary>
+        public string ProjectPath { get; set; } = DefaultProjectPath;
         /// <summary>
         /// project description
         /// </summary>
@@ -53,6 +54,28 @@ namespace NebulaEditor.Models.Startup
         {
             //ProjectName = "New Project";
         }
+
+        
+    }
+
+    public class ProjectValidation
+    {
+        public bool IsValid = true;
+        public string ErrorMsg = string.Empty;
+
+        public static ProjectValidation Validate(ProjectInfo project)
+        {
+            var validation = new ProjectValidation()
+            {
+                IsValid = true,
+                ErrorMsg = string.Empty
+            };
+
+
+
+            return validation;
+        }
+
 
     }
 }

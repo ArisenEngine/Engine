@@ -61,6 +61,7 @@
     <Folder Include="Templates\3rd-Person Project\ProjectSettings\" />
     <Folder Include="Templates\3rd-Person Project\Packages\" />
     <Folder Include="Views\DataTemplates\" />
+    <Folder Include="Windows\Common\" />
   </ItemGroup>
 
 
