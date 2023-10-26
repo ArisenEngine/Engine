@@ -171,15 +171,32 @@ namespace NebulaEditor.ViewModels.Startup
                 }
             }
 
-            // save to project list
-            EditorConfig.Instance.Projects.Add(new ProjectInfo()
+            var currentProject = new ProjectInfo()
             {
                 ProjectName = NewProjectName,
-                ProjectPath= NewProjectPath,
+                ProjectPath = NewProjectPath,
                 Desc = NewProjectDesc,
-            });
+            };
 
-            SerializationUtil.Serialize<EditorConfig>(EditorConfig.Instance, EditorConfig.EDITOR_CONFIG_PATH);
+            // save to project list
+            bool needUpdate = true;
+            for(int i = 0;i < EditorConfig.Instance.Projects.Count; ++i)
+            {
+                if (EditorConfig.Instance.Projects[i].ProjectPath == currentProject.ProjectPath)
+                {
+                    needUpdate = false;
+                    break;
+                }
+            }
+
+            if (needUpdate)
+            {
+                EditorConfig.Instance.Projects.Add(currentProject);
+                SerializationUtil.Serialize<EditorConfig>(EditorConfig.Instance, EditorConfig.EDITOR_CONFIG_PATH);
+            }
+            
+
+            OpeningProjectViewModel.OpenProject(currentProject);
         }
 
     }

@@ -34,7 +34,7 @@
 		<Border Grid.Row="1" BorderThickness="0,1,0,0" BorderBrush="Gray">
 			<StackPanel Spacing="100" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Row="1" Orientation="Horizontal">
 				<Button Width="120" Height="40">Add Project</Button>
-				<Button Width="120" Height="40">Open Project</Button>
+				<Button Width="120" Height="40" Command="{Binding OpenProjectCommand}">Open Project</Button>
 			</StackPanel>
 		</Border>
 	</Grid>

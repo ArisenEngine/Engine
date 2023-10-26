@@ -13,7 +13,6 @@
 
   <ItemGroup>
     <Folder Include="Data\MetaData\" />
-    <Folder Include="Data\ProjectData\" />
   </ItemGroup>
 
 </Project>

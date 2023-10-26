@@ -2,8 +2,106 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d" d:DesignWidth="1920" d:DesignHeight="1080"
         x:Class="NebulaEditor.Windows.MainEditor.MainEditorWindow"
+		SystemDecorations="Full"
+		WindowStartupLocation="CenterScreen"
+		CanResize="True"
+		WindowState="Maximized"
+		Icon="/Assets/nebula-logo.ico"
         Title="MainEditorWindow">
-  Welcome to Avalonia!
+	<DockPanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+
+		<Grid ColumnDefinitions="*" RowDefinitions="Auto, 100*">
+
+			<!-- Menu Bar TODO: dynamic add item for easily to expend -->
+			<DockPanel Grid.Row="0" VerticalAlignment="Top" Background="Black" Height="30">
+				<Menu DockPanel.Dock="Top" Foreground="AliceBlue" VerticalAlignment="Center" >
+					<MenuItem Header="File">
+						<MenuItem Header="Open"/>
+						<Separator/>
+						<MenuItem Header="Exit"/>
+					</MenuItem>
+					<MenuItem Header="Edit">
+						<MenuItem Header="Copy"/>
+						<Separator/>
+						<MenuItem Header="Paste"/>
+					</MenuItem>
+				</Menu>
+			</DockPanel>
+			<!-- Body Content of Main Editor -->
+			<Grid Grid.Row="1" ColumnDefinitions="5*,0.001*,1*" RowDefinitions="*">
+
+				<!-- Hierarchy | Scene/Game View-->
+				<!-- **************************** -->
+				<!-- Project | Console -->
+				<Grid Grid.Column="0"  ColumnDefinitions="*" RowDefinitions="2*,0.001*,1*">
+
+					<!-- Hierarchy | Scene/Game View-->
+					<Grid Grid.Row="0" ColumnDefinitions="1*,0.001*,4*">
+
+						<!-- Hierarchy -->
+						<Grid Grid.Column="0">
+							<Label FontSize="50">Hierarchy</Label>
+						</Grid>
+
+						<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
+
+						<!-- Scene View / Game View -->
+						<Grid Grid.Column="2" ColumnDefinitions="0.5*, 0.001*,0.5*">
+							<Label Grid.Column="0" FontSize="60"> Scene view </Label>
+							<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
+							<Label Grid.Column="2" FontSize="60"> Game view </Label>
+						</Grid>
+
+					</Grid>
+
+					<GridSplitter Grid.Row="1" ResizeDirection="Rows" Background="Gray" ></GridSplitter>
+
+					<!-- Project | Console -->
+					<Grid Grid.Row="2" ColumnDefinitions="0.5*, 0.001*, 0.5*">
+
+						<!-- Project -->
+						<Grid Grid.Column="0" RowDefinitions="0.1*, 0.9*" ColumnDefinitions="*">
+							<!-- Search bar -->
+							<Grid Grid.Row="0" Background="Black">
+
+							</Grid>
+
+							<!-- Project & Asset -->
+							<Grid Grid.Row="1" ColumnDefinitions="0.5*,0.001*, 0.5*">
+								<Grid Grid.Column="0">
+									<Label FontSize="30"> Project View </Label>
+								</Grid>
+
+								<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
+
+								<Grid Grid.Column="2">
+									<Label FontSize="30"> Assets View </Label>
+								</Grid>
+
+							</Grid>
+						</Grid>
+
+						<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
+
+						<!-- Console -->
+						<Grid Grid.Column="2">
+							<Label FontSize="100"> Console </Label>
+						</Grid>
+
+					</Grid>
+
+				</Grid>
+
+				<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
+
+				<!-- Inspector area -->
+				<Grid Grid.Column="2">
+					<Label FontSize="70"> Inspertor </Label>
+				</Grid>
+			</Grid>
+		</Grid>
+
+	</DockPanel>
 </Window>
