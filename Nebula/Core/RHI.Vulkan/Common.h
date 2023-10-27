@@ -1,7 +1,7 @@
 #pragma once
 
 
-#ifdef IAPPLICATION_EXPORTS
+#ifdef RHIVULKAN_EXPORTS
 
 #define DLL   __declspec( dllexport )
 
@@ -9,4 +9,4 @@
 
 #define DLL   __declspec( dllimport )
 
-#endif // IAPPLICATION_EXPORTS
+#endif 
