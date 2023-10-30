@@ -1,7 +1,8 @@
 #pragma once
-namespace RHI
+
+namespace NebulaEngine::RHI
 {
-	enum class GraphsicsAPI
+	 enum class GraphsicsAPI
 	{
 		Vulkan							 = 0,
 		DirectX12						 = 1,

@@ -1,17 +1,13 @@
 
 #include<iostream>
 #include<windows.h>
-#include "RHICommon/CommandHeaders.h"
-//#include "./Devices/VkDevice.h"
-//
-//#pragma comment(lib, "RHI.Vulkan.lib")
+#include "Common/CommandHeaders.h"
+
+using namespace NebulaEngine;
 
 int main()
 {
-	//RHI::VkDevice dev;
-
-	//std::cout << dev.GetPlatformName() << std::endl;
-
+	
 	char* input = new char;
 	RHI::GraphsicsAPI api;
 	RHI::Device* device = nullptr;
@@ -28,47 +24,71 @@ int main()
 		api = RHI::GraphsicsAPI(*input - '0');
 
 		typedef RHI::Device* (__fastcall* DeviceCreate)(void);
-		HMODULE rhiDll;
+		HMODULE rhiDll = NULL;
 		DeviceCreate createDevice;
+
 
 		switch (api)
 		{
 		case RHI::GraphsicsAPI::DirectX12:
-			std::cout << "Unimplemented platform." << std::endl;
-			break;
+		{
+			rhiDll = LoadLibraryA("RHI.DX12.dll");
+		}
+		break;
 		case RHI::GraphsicsAPI::Vulkan:
 		{
 			rhiDll = LoadLibraryA("RHI.Vulkan.dll");
-			
-			if (rhiDll != NULL)
-			{
-				createDevice = (DeviceCreate)GetProcAddress(rhiDll, "CreateDevice");
-				device = createDevice();
-				std::cout << "API platform:" << device->GetPlatformName() << std::endl;
-			
-			}
-			else 
-			{
-				DWORD error = GetLastError();
-				std::cout << "Dll load failed:" << error << std::endl;
-			}
-				
 		}
-			break;
+		break;
 		case RHI::GraphsicsAPI::OpenGL:
-			std::cout << "Unimplemented platform." << std::endl;
-			break;
+		{
+			rhiDll = LoadLibraryA("RHI.OpenGL.dll");
+		}
+		break;
 		case RHI::GraphsicsAPI::Metal:
-			std::cout << "Unimplemented platform." << std::endl;
-			break;
+		{
+			rhiDll = LoadLibraryA("RHI.Metal.dll");
+		}
+		break;
 		default:
 			std::cout << "Unknow platform." << std::endl;
 			break;
 		}
+
+
+		if (rhiDll != NULL)
+		{
+			createDevice = (DeviceCreate)GetProcAddress(rhiDll, "CreateDevice");
+			device = createDevice();
+			
+			if (device != nullptr)
+			{
+				std::cout << "API platform:" << device->GetPlatformName() << std::endl;
+			}
+			else
+			{
+				DWORD error = GetLastError();
+				std::cout << "Device create failed:" << error << std::endl;
+			}
+
+		}
+		else
+		{
+			DWORD error = GetLastError();
+			std::cout << "Dll load failed:" << error << std::endl;
+		}
+
+
+		if (device != nullptr)
+		{
+			delete device;
+			device = nullptr;
+		}
+
 	}
 
 	delete input;
-	delete device;
+
 
 	return 0;
 }
