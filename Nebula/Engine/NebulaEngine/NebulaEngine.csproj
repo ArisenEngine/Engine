@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Core\Core.RHI\Core.RHI.vcxproj" />
     <ProjectReference Include="..\..\Serialization\Serialization\Serialization.csproj" />
   </ItemGroup>
 

@@ -18,6 +18,9 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Platforms\Windows.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -71,7 +74,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(NEBULA_SOLUTION_ROOT)\Core\Core.RHI\;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Core\Core.Infra\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -120,6 +123,7 @@
       <EnableParallelCodeGeneration>false</EnableParallelCodeGeneration>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <CallingConvention>FastCall</CallingConvention>
+      <AdditionalIncludeDirectories>$(SolutionDir)Core\Core.Infra\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>

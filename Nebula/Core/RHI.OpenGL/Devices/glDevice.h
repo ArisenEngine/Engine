@@ -5,13 +5,13 @@
 
 namespace NebulaEngine::RHI
 {
-	 class DLL VkDevice final : public Device
+	 class DLL glDevice final : public Device
 	{
 	public:
 
 		int GetOSVersion() const noexcept final override;
-		std::string GetPlatformName() const noexcept final override { return "Vulkan"; }
-	     ~VkDevice() noexcept final override;
+		std::string GetPlatformName() const noexcept final override { return "OpenGL"; }
+	     ~glDevice() noexcept final override;
 	};
 
 }
