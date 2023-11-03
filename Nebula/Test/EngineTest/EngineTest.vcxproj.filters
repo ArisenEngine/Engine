@@ -3,4 +3,8 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Test.h" />
+    <ClInclude Include="TestWindows.h" />
+  </ItemGroup>
 </Project>

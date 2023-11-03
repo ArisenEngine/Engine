@@ -103,6 +103,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RHIDLLLoadingTest", "Test\R
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EngineTest", "Test\EngineTest\EngineTest.vcxproj", "{E4CF8C2E-833C-481B-BA2C-E8FAA3FEEBB9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2559850E-93EB-4095-AC4B-6E94F1DD40C0} = {2559850E-93EB-4095-AC4B-6E94F1DD40C0}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
