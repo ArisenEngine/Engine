@@ -11,6 +11,7 @@ int main()
 	char* input = new char;
 	RHI::GraphsicsAPI api;
 	RHI::Device* device = nullptr;
+	HMODULE rhiDll = NULL;
 
 	while (true)
 	{
@@ -24,9 +25,14 @@ int main()
 		api = RHI::GraphsicsAPI(*input - '0');
 
 		typedef RHI::Device* (__fastcall* DeviceCreate)(void);
-		HMODULE rhiDll = NULL;
+		
 		DeviceCreate createDevice;
 
+		if (rhiDll != NULL)
+		{
+			FreeLibrary(rhiDll);
+			rhiDll = NULL;
+		}
 
 		switch (api)
 		{
@@ -83,6 +89,12 @@ int main()
 		{
 			delete device;
 			device = nullptr;
+		}
+
+		if (rhiDll != NULL)
+		{
+			FreeLibrary(rhiDll);
+			rhiDll = NULL;
 		}
 
 	}
