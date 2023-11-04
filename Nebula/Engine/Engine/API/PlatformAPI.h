@@ -38,6 +38,12 @@ namespace NebulaEngine::Platforms {
 		RemoveWindow(surfaces[id].window.ID());
 	}
 
+	extern "C" DLL void ResizeRenderSurface(u32 id)
+	{
+		assert(id < surfaces.size());
+		surfaces[id].window.Resize(0, 0);
+	}
+
 	extern "C" DLL WindowHandle GetWindowHandle(u32 id)
 	{
 		assert(id < surfaces.size());

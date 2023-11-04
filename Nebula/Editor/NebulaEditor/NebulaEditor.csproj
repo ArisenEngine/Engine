@@ -8,12 +8,18 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <BaseOutputPath>..\..\x64\</BaseOutputPath>
     <PlatformTarget>x64</PlatformTarget>
+    <IncludeSymbols>False</IncludeSymbols>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DefineConstants>NEBULA_EDITOR</DefineConstants>
+    <DebugType>embedded</DebugType>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DefineConstants>NEBULA_EDITOR</DefineConstants>
+    <DebugType>embedded</DebugType>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
   </PropertyGroup>
 
 
@@ -45,6 +51,7 @@
 
 
   <ItemGroup>
+    <Folder Include="Assets\Icons\" />
     <Folder Include="Interface\" />
     <Folder Include="Resources\" />
     <Folder Include="Templates\1st-Person Project\.nebula\" />

@@ -129,12 +129,20 @@ namespace NebulaEngine::Platforms
 		{
 			WindowInfo& info{ GetInfoFromId(id) };
 
-			RECT& area{ info.isFullScreen ? info.fullScreenArea : info.clientArea };
+			if (info.style & WS_CHILD)
+			{
+				GetClientRect(info.hwnd, &info.clientArea);
+			} 
+			else 
+			{
+				RECT& area{ info.isFullScreen ? info.fullScreenArea : info.clientArea };
 
-			area.bottom = area.top + height;
-			area.right = area.left + width;
+				area.bottom = area.top + height;
+				area.right = area.left + width;
 
-			ResizeWindow(info, area);
+				ResizeWindow(info, area);
+
+			}
 
 		}
 
