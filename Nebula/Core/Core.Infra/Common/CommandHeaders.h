@@ -9,6 +9,7 @@
 
 #if _WIN64
 #include<DirectXMath.h>
+#include<Windows.h>
 #endif
 
 // common headers
@@ -19,5 +20,15 @@
 
 // RHI
 #include "../RHI/Devices/Device.h"
+#include "../RHI/Surfaces/Surface.h"
 #include "../Platforms/GraphsicsAPI.h"
 
+#ifdef _DEBUG
+
+#define DEBUG_OP(x) x
+
+#else
+
+#define DEBUG_OP(x) ((void)0)
+
+#endif

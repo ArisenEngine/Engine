@@ -1,15 +1,16 @@
 #pragma once
-#include "../Common.h"
 #include "Windows.h"
 
 namespace NebulaEngine::Platforms {
 
+#ifndef WINDOES_TEST
+
 	struct WindowInitInfo;
-
-	extern "C" DLL Window CreateNewWindow(const WindowInitInfo* const initInfo = nullptr);
 	
+	Window CreateNewWindow(const WindowInitInfo* const initInfo = nullptr);
 
-	extern "C" DLL void RemoveWindow(WindowID id);
+	void RemoveWindow(WindowID id);
 
+#endif
 
 }

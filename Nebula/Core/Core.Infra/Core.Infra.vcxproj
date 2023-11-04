@@ -26,6 +26,7 @@
     <ClInclude Include="RHI\Devices\Device.h" />
     <ClInclude Include="Platforms\GraphsicsAPI.h" />
     <ClInclude Include="Common\PrimitiveTypes.h" />
+    <ClInclude Include="RHI\Surfaces\Surface.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp" />

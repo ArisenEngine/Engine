@@ -1,8 +1,9 @@
 
 
-#define TEST_WINDOWS 1
+#define TEST_WINDOWS 0
+#define TEST_ENGINE 1
 
-#ifdef TEST_WINDOWS
+#if define(TEST_WINDOWS)
 
 #ifdef _WIN64
 
@@ -12,18 +13,20 @@
 #endif
 
 #include "TestWindows.h"
+
+#elif(TEST_ENGINE)
+
+#include "TestEngine.h"
+
+
+
 #endif
 
 #pragma comment(lib,"Engine.lib")
 
-#if TEST_WINDOWS
+#if define(TEST_WINDOWS)
 
 #ifdef _WIN64
-
-LRESULT WinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
-{
-
-}
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 

@@ -4,6 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="1920" d:DesignHeight="1080"
         x:Class="NebulaEditor.Windows.MainEditor.MainEditorWindow"
+        xmlns:rendering ="using:AvaloniaLib.Views.Rendering"
 		SystemDecorations="Full"
 		WindowStartupLocation="CenterScreen"
 		CanResize="True"
@@ -30,7 +31,7 @@
 				</Menu>
 			</DockPanel>
 			<!-- Body Content of Main Editor -->
-			<Grid Grid.Row="1" ColumnDefinitions="5*,0.001*,1*" RowDefinitions="*">
+			<Grid Grid.Row="1" ColumnDefinitions="5*,0.005*,1*" RowDefinitions="*">
 
 				<!-- Hierarchy | Scene/Game View-->
 				<!-- **************************** -->
@@ -38,7 +39,7 @@
 				<Grid Grid.Column="0"  ColumnDefinitions="*" RowDefinitions="2*,0.001*,1*">
 
 					<!-- Hierarchy | Scene/Game View-->
-					<Grid Grid.Row="0" ColumnDefinitions="1*,0.001*,4*">
+					<Grid Grid.Row="0" ColumnDefinitions="1*,0.005*,4*">
 
 						<!-- Hierarchy -->
 						<Grid Grid.Column="0">
@@ -49,9 +50,14 @@
 
 						<!-- Scene View / Game View -->
 						<Grid Grid.Column="2" ColumnDefinitions="0.5*, 0.001*,0.5*">
-							<Label Grid.Column="0" FontSize="60"> Scene view </Label>
+                            <rendering:RenderSurfaceView Grid.Column="0"> 
+                                
+                            </rendering:RenderSurfaceView>
+                            
 							<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
-							<Label Grid.Column="2" FontSize="60"> Game view </Label>
+                            <rendering:RenderSurfaceView Grid.Column="2">
+
+                            </rendering:RenderSurfaceView>
 						</Grid>
 
 					</Grid>

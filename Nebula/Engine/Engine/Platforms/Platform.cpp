@@ -1,8 +1,9 @@
+#include "../API/PlatformAPI.h"
 #include "Platform.h"
 #include "PlatformTypes.h"
 #include "Common/CommandHeaders.h"
-
-
+#include "../Graphics/Renderer.h"
+#include "Windows.h"
 
 namespace NebulaEngine::Platforms
 {
@@ -26,7 +27,7 @@ namespace NebulaEngine::Platforms
 
 		vector<WindowInfo> windows;
 		vector<u32> availableSlots;
-
+		
 		u32 AddToWindows(WindowInfo info)
 		{
 			u32 id{ ID::InvalidID };
@@ -140,7 +141,7 @@ namespace NebulaEngine::Platforms
 		Math::u32v4 GetWindowSize(WindowID id)
 		{
 			WindowInfo& info{ GetInfoFromId(id) };
-			RECT area{ info.isFullScreen ? info.fullScreenArea : info.clientArea };
+			RECT& area{ info.isFullScreen ? info.fullScreenArea : info.clientArea };
 			return { (u32)area.left, (u32)area.top, (u32)area.right, (u32)area.bottom };
 		}
 
@@ -223,17 +224,20 @@ namespace NebulaEngine::Platforms
 		// create an instance of window class
 
 		WindowInfo info{ };
-		RECT rc{ info.clientArea };
 
-		AdjustWindowRect(&rc, info.style, FALSE);
+		info.clientArea.right = (initInfo && initInfo->width) ? info.clientArea.left + initInfo->width : info.clientArea.right;
+		info.clientArea.bottom = (initInfo && initInfo->height) ? info.clientArea.top + initInfo->height : info.clientArea.bottom;
+		info.style |= parent ? WS_CHILD : WS_OVERLAPPEDWINDOW;
+
+		RECT rect{ info.clientArea };
+
+		AdjustWindowRect(&rect, info.style, FALSE);
 
 		const wchar_t* caption{ (initInfo && initInfo->callback) ? initInfo->caption : L"Nebula" };
-		const s32 left{ (initInfo && initInfo->left) ? initInfo->left : info.clientArea.left };
-		const s32 top{ (initInfo && initInfo->top) ? initInfo->top : info.clientArea.top };
-		const s32 width{ (initInfo && initInfo->width) ? initInfo->width : rc.right - rc.left };
-		const s32 height{ (initInfo && initInfo->height) ? initInfo->height : rc.bottom - rc.top };
-
-		info.style |= parent ? WS_CHILD : WS_OVERLAPPEDWINDOW;
+		const s32 left{ (initInfo) ? initInfo->left : info.topLeft.x };
+		const s32 top{ (initInfo) ? initInfo->top : info.topLeft.y };
+		const s32 width{ rect.right - rect.left };
+		const s32 height{ rect.bottom - rect.top };
 
 		info.hwnd = CreateWindowEx(
 			/* DWORD dwExStyle */        0,
@@ -252,7 +256,7 @@ namespace NebulaEngine::Platforms
 
 		if (info.hwnd)
 		{
-			SetLastError(0);
+			DEBUG_OP(SetLastError(0));
 
 			const WindowID id{ AddToWindows(info) };
 
@@ -277,7 +281,6 @@ namespace NebulaEngine::Platforms
 		DestroyWindow(info.hwnd);
 		RemoveFromWindows(id);
 	}
-
 #else
 
 #error "platform not be implement"
@@ -309,7 +312,7 @@ namespace NebulaEngine::Platforms
 		SetWindowCaption(m_ID, caption);
 	}
 
-	const Math::u32v4 Window::Size() const
+	 Math::u32v4 Window::Size() const
 	{
 		assert(IsValid());
 		return GetWindowSize(m_ID);
@@ -321,14 +324,14 @@ namespace NebulaEngine::Platforms
 		ResizeWindow(m_ID, width, height);
 	}
 
-	const u32 Window::Width() const
+	 u32 Window::Width() const
 	{
 		assert(IsValid());
 		Math::u32v4 s{ Size() };
 		return s.z - s.x;
 	}
 
-	const u32 Window::Height() const
+	 u32 Window::Height() const
 	{
 		assert(IsValid());
 		Math::u32v4 s{ Size() };
@@ -343,4 +346,4 @@ namespace NebulaEngine::Platforms
 
 
 
-	}
+}
