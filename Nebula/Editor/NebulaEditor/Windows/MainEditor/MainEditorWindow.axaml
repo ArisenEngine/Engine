@@ -13,24 +13,42 @@
         Title="MainEditorWindow">
 	<DockPanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 
-		<Grid ColumnDefinitions="*" RowDefinitions="Auto, 100*">
+		<Grid ColumnDefinitions="*" RowDefinitions="Auto, 110*">
 
 			<!-- Menu Bar TODO: dynamic add item for easily to expend -->
-			<DockPanel Grid.Row="0" VerticalAlignment="Top" Background="Black" Height="30">
-				<Menu DockPanel.Dock="Top" Foreground="AliceBlue" VerticalAlignment="Center" >
-					<MenuItem Header="File">
-						<MenuItem Header="Open"/>
+			<Grid Grid.Row="0" RowDefinitions="Auto, Auto" VerticalAlignment="Center" Background="Black">
+				<Menu Grid.Row="0"  Foreground="AliceBlue" Height="25" Background="#383838">
+					<MenuItem Header="File" Margin="0,0,0,0" Height="25">
+						<MenuItem Header="Open"  Margin="0,0,0,0" Height="25" />
 						<Separator/>
-						<MenuItem Header="Exit"/>
+                        <MenuItem Header="Build"  Margin="0,0,0,0" Height="25" />
+                        <Separator/>
+						<MenuItem Header="Exit"  Margin="0,0,0,0" Height="25" />
 					</MenuItem>
-					<MenuItem Header="Edit">
-						<MenuItem Header="Copy"/>
+					<MenuItem Header="Edit" Margin="0,0,0,0" Height="25">
+						<MenuItem Header="Copy"  Margin="0,0,0,0" Height="25" />
 						<Separator/>
-						<MenuItem Header="Paste"/>
+						<MenuItem Header="Paste"  Margin="0,0,0,0" Height="25" />
 					</MenuItem>
 				</Menu>
-			</DockPanel>
-			<!-- Body Content of Main Editor -->
+                <!-- Play Button -->
+                <Grid Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="30">
+                    <StackPanel Orientation="Horizontal" Spacing="5" Height="25">
+                        <Button >
+                            <Image Height="15" Width="15" Source="/Assets/Icons/icons8-play-96.png"></Image> 
+                        </Button>
+                        <Button>
+                            <Image Height="15" Width="15" Source="/Assets/Icons/icons8-pause-96.png"></Image>
+                        </Button>
+                        <Button>
+                            <Image Height="15" Width="15" Source="/Assets/Icons/icons8-resume-button-96.png"></Image>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+                
+			</Grid>
+            
+                <!-- Body Content of Main Editor -->
 			<Grid Grid.Row="1" ColumnDefinitions="5*,0.005*,1*" RowDefinitions="*">
 
 				<!-- Hierarchy | Scene/Game View-->

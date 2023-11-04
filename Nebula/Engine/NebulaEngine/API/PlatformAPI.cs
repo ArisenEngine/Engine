@@ -17,6 +17,9 @@ namespace NebulaEngine.API
         [DllImport(ENGINE_DLL, EntryPoint = "RemoveRenderSurface")]
         public static extern void RemoveRenderSurface(int surfaceId);
 
+        [DllImport(ENGINE_DLL, EntryPoint = "ResizeRenderSurface")]
+        public static extern void ResizeRenderSurface(int surfaceId);
+
         [DllImport(ENGINE_DLL, EntryPoint = "GetWindowHandle")]
         public static extern IntPtr GetWindowHandle(int surfaceId);
 

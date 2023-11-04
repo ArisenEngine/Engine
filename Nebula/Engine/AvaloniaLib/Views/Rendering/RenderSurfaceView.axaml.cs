@@ -51,12 +51,17 @@ namespace AvaloniaLib.Views.Rendering
             SizeChanged -= OnSizeChanged;
 #endif
             Content = null;
+
+            m_Host.Dispose();
             m_Host = null;
         }
 
         private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
         {
-            m_Host.Resize();
+            if (!Design.IsDesignMode)
+            {
+                m_Host.Resize();
+            }
         }
 
         //private IntPtr HostMsgFilter(IntPtr hwnd, int msg, IntPtr wparam, IntPtr lparam/*, ref bool handled*/)

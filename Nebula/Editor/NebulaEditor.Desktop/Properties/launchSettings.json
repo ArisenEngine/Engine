@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "NebulaEditor.Desktop": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

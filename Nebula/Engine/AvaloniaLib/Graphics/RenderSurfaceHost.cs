@@ -8,10 +8,11 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using AvaloniaLib;
 using static AvaloniaLib.Native.NativeAPI;
+using NebulaEngine.API;
 
 namespace NebulaEngine.Graphics
 {
-     public class RenderSurfaceHost : NativeControlHost
+     public class RenderSurfaceHost : NativeControlHost, IDisposable
     {
         private readonly int m_Width = 800;
         private readonly int m_Height = 600;
@@ -35,6 +36,7 @@ namespace NebulaEngine.Graphics
         public void Resize()
         {
             Debug.WriteLine("Resized");
+            PlatformAPI.ResizeRenderSurface(SurfaceId);
         }
 
         protected override IPlatformHandle CreateNativeControlCore(IPlatformHandle parent)
@@ -55,9 +57,16 @@ namespace NebulaEngine.Graphics
         protected override void DestroyNativeControlCore(IPlatformHandle control)
         {
             Debug.WriteLine("############ DestroyNativeControlCore ##############");
-            API.PlatformAPI.RemoveRenderSurface(SurfaceId);
+           
             base.DestroyNativeControlCore(control);
         }
+
+        public void Dispose()
+        {
+            API.PlatformAPI.RemoveRenderSurface(SurfaceId);
+        }
+
+
 
         //private IntPtr InternalWindowProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam)
         //{
