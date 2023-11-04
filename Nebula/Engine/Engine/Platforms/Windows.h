@@ -1,11 +1,12 @@
 #pragma once
 #include"Common/CommandHeaders.h"
+#include "../Common.h"
 
 namespace NebulaEngine::Platforms
 {
 	DEFINE_TYPED_ID(WindowID)
 
-	class DLL Window
+	class Window
 	{
 	public:
 
@@ -18,10 +19,10 @@ namespace NebulaEngine::Platforms
 		bool IsFullScreen() const;
 		void* Handle() const;
 		void SetCaption(const wchar_t* caption) const;
-		const Math::u32v4 Size() const;
+		Math::u32v4 Size() const;
 		void Resize(u32 width, u32 height) const;
-		const u32 Width() const;
-		const u32 Height() const;
+		u32 Width() const;
+		u32 Height() const;
 		bool IsClosed() const;
 
 	private:

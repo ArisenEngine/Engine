@@ -6,5 +6,6 @@
   <ItemGroup>
     <ClInclude Include="Test.h" />
     <ClInclude Include="TestWindows.h" />
+    <ClInclude Include="TestEngine.h" />
   </ItemGroup>
 </Project>

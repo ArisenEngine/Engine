@@ -11,7 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Data\MetaData\" />
+    <Folder Include="Serialization\Meta\" />
+    <Folder Include="Hook\" />
   </ItemGroup>
 
 </Project>

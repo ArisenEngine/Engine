@@ -8,6 +8,7 @@
     <ClInclude Include="Containers\Containers.h" />
     <ClInclude Include="Common\Id.h" />
     <ClInclude Include="Common\MathTypes.h" />
+    <ClInclude Include="RHI\Surfaces\Surface.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp" />

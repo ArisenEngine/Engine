@@ -19,7 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="API\PlatformAPI.h" />
     <ClInclude Include="Common.h" />
+    <ClInclude Include="Graphics\Renderer.h" />
     <ClInclude Include="Platforms\Platform.h" />
     <ClInclude Include="Platforms\PlatformTypes.h" />
     <ClInclude Include="Platforms\Windows.h" />
