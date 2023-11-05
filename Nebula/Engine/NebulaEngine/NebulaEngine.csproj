@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="ECS\Systems\" />
     <Folder Include="Serialization\Meta\" />
     <Folder Include="Hook\" />
   </ItemGroup>
