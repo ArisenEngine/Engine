@@ -54,7 +54,7 @@
 				<!-- Hierarchy | Scene/Game View-->
 				<!-- **************************** -->
 				<!-- Project | Console -->
-				<Grid Grid.Column="0"  ColumnDefinitions="*" RowDefinitions="2*,0.001*,1*">
+				<Grid Grid.Column="0"  ColumnDefinitions="*" RowDefinitions="2*,0.005*,1*">
 
 					<!-- Hierarchy | Scene/Game View-->
 					<Grid Grid.Row="0" ColumnDefinitions="1*,0.005*,4*">
@@ -86,9 +86,9 @@
 					<Grid Grid.Row="2" ColumnDefinitions="0.5*, 0.001*, 0.5*">
 
 						<!-- Project -->
-						<Grid Grid.Column="0" RowDefinitions="0.1*, 0.9*" ColumnDefinitions="*">
+						<Grid Grid.Column="0" RowDefinitions="Auto, *" ColumnDefinitions="*">
 							<!-- Search bar -->
-							<Grid Grid.Row="0" Background="Black">
+							<Grid Grid.Row="0" Background="Black" Height="50" VerticalAlignment="Top">
 
 							</Grid>
 
