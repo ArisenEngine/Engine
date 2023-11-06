@@ -163,24 +163,6 @@ namespace NebulaEditor.ViewModels.Startup
 
         private void DoCreateProject()
         {
-           
-
-            // 1. Create Folders
-            //for (int i = 0; i < ProjectInfo.Folders.Count; ++i)
-            //{
-            //    var folderName = ProjectInfo.Folders[i];
-            //    var folderPath = m_ProjectPath + Path.DirectorySeparatorChar + folderName;
-            //    var folderInfo = Directory.CreateDirectory(folderPath);
-
-            //    if (folderInfo != null && folderName.StartsWith('.'))
-            //    {
-            //        folderInfo.Attributes |= FileAttributes.Hidden;
-            //    }
-            //}
-
-            //// 2. Create Solution
-            //ProjectSolution.CreateProjectSolution(m_ProjectPath);
-
             // copy from template and handle sln file
             if (ProjectListViewModel.SelectedIndex < 0)
             {
@@ -208,7 +190,9 @@ namespace NebulaEditor.ViewModels.Startup
             bool needUpdate = true;
             for(int i = 0;i < EditorConfig.Instance.Projects.Count; ++i)
             {
-                if (EditorConfig.Instance.Projects[i].ProjectPath == currentProject.ProjectPath)
+                if (
+                    Path.Combine(EditorConfig.Instance.Projects[i].ProjectPath, EditorConfig.Instance.Projects[i].ProjectName)
+                    == Path.Combine(currentProject.ProjectPath, currentProject.ProjectName))
                 {
                     needUpdate = false;
                     break;

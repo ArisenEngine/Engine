@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using NebulaEditor.Models.Startup;
 using EngineLib.FileSystem;
+using Avalonia;
 
 namespace NebulaEditor.GameDev
 {
@@ -67,6 +68,8 @@ namespace NebulaEditor.GameDev
 
                 return true;
             }
+
+            // todo: apend the dll reference path according to editor installation path
 
 
 

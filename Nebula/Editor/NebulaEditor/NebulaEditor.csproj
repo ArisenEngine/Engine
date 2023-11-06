@@ -37,6 +37,10 @@
 	<ItemGroup>
 		<AvaloniaResource Include="Assets\**" />
 		<AvaloniaResource Include="Resources\**" />
+		<AvaloniaXaml Remove="Templates\**" />
+		<Compile Remove="Templates\**" />
+		<EmbeddedResource Remove="Templates\**" />
+		<None Remove="Templates\**" />
 		<None Remove=".gitignore" />
 		<None Remove="Assets\default_project_preview.jpg" />
 		<None Remove="Assets\LOGO.png" />
@@ -54,26 +58,6 @@
     <Folder Include="Assets\Icons\" />
     <Folder Include="Interface\" />
     <Folder Include="Resources\" />
-    <Folder Include="Templates\1st-Person Project\.nebula\" />
-    <Folder Include="Templates\1st-Person Project\Assets\" />
-    <Folder Include="Templates\1st-Person Project\UserSettings\" />
-    <Folder Include="Templates\1st-Person Project\ProjectSettings\" />
-    <Folder Include="Templates\1st-Person Project\Packages\" />
-    <Folder Include="Templates\Empty Project\.nebula\" />
-    <Folder Include="Templates\Empty Project\Assets\" />
-    <Folder Include="Templates\Empty Project\UserSettings\" />
-    <Folder Include="Templates\Empty Project\ProjectSettings\" />
-    <Folder Include="Templates\Empty Project\Packages\" />
-    <Folder Include="Templates\Top-Down Project\.nebula\" />
-    <Folder Include="Templates\Top-Down Project\Assets\" />
-    <Folder Include="Templates\Top-Down Project\UserSettings\" />
-    <Folder Include="Templates\Top-Down Project\ProjectSettings\" />
-    <Folder Include="Templates\Top-Down Project\Packages\" />
-    <Folder Include="Templates\3rd-Person Project\.nebula\" />
-    <Folder Include="Templates\3rd-Person Project\Assets\" />
-    <Folder Include="Templates\3rd-Person Project\UserSettings\" />
-    <Folder Include="Templates\3rd-Person Project\ProjectSettings\" />
-    <Folder Include="Templates\3rd-Person Project\Packages\" />
     <Folder Include="Views\DataTemplates\" />
     <Folder Include="Windows\Common\" />
   </ItemGroup>
