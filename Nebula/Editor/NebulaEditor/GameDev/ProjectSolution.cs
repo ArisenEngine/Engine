@@ -2,6 +2,9 @@
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Diagnostics;
+using System.IO;
+using NebulaEditor.Models.Startup;
+using EngineLib.FileSystem;
 
 namespace NebulaEditor.GameDev
 {
@@ -43,9 +46,38 @@ namespace NebulaEditor.GameDev
             }
         }
 
-        public static void CreateProjectSolution(string fullPath)
+        public static bool HandleFiles(FileInfo file, DirectoryInfo sourceDir, DirectoryInfo destinationDir)
         {
+       
+            if (file.Extension == ".sln")
+            {
+                var fileName = destinationDir.Name + ".sln";
 
+                string sourceFilePath = Path.Combine(sourceDir.FullName, file.Name);
+                string targetFilePath = Path.Combine(destinationDir.FullName, fileName);
+
+                string sln = File.ReadAllText(sourceFilePath);
+                var runtimeGuid = "{" + Guid.NewGuid().ToString().ToUpper() + "}";
+                var editorGuid = "{" + Guid.NewGuid().ToString().ToUpper() + "}";
+                var solutionGuid = "{" + Guid.NewGuid().ToString().ToUpper() + "}";
+
+                sln = string.Format(sln, runtimeGuid, editorGuid, solutionGuid);
+
+                File.WriteAllText(targetFilePath, sln);
+
+                return true;
+            }
+
+
+
+            return false;
+        }
+
+        public static void CreateProjectSolution(ProjectInfo template, string newProjectPath, string newProjectName)
+        {
+            var sourcePath = Path.Combine (template.ProjectPath, template.ProjectName);
+            var fullPath = Path.Combine(newProjectPath, newProjectName);
+            DirectoryUtilities.CopyDirectoryRecursively(sourcePath, fullPath, HandleFiles);
         }
     }
 }
