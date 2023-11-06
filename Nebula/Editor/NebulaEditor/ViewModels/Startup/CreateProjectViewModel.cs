@@ -15,6 +15,9 @@ using System.IO;
 using NebulaEditor.Windows.MainEditor;
 using System.Linq;
 using Serialization;
+using NebulaEditor.GameDev;
+using EngineLib.FileSystem;
+using System.Diagnostics;
 
 namespace NebulaEditor.ViewModels.Startup
 {
@@ -80,6 +83,9 @@ namespace NebulaEditor.ViewModels.Startup
             CreateProjectCommand = ReactiveCommand.Create(this.CreateProject);
         }
 
+        /// <summary>
+        /// path to project inside
+        /// </summary>
         private string m_ProjectPath;
         private string m_ErrorMsg = "Unknow error.";
 
@@ -157,20 +163,40 @@ namespace NebulaEditor.ViewModels.Startup
 
         private void DoCreateProject()
         {
-            Directory.CreateDirectory(m_ProjectPath);
+           
 
-            for (int i = 0; i < ProjectInfo.Folders.Count; ++i)
+            // 1. Create Folders
+            //for (int i = 0; i < ProjectInfo.Folders.Count; ++i)
+            //{
+            //    var folderName = ProjectInfo.Folders[i];
+            //    var folderPath = m_ProjectPath + Path.DirectorySeparatorChar + folderName;
+            //    var folderInfo = Directory.CreateDirectory(folderPath);
+
+            //    if (folderInfo != null && folderName.StartsWith('.'))
+            //    {
+            //        folderInfo.Attributes |= FileAttributes.Hidden;
+            //    }
+            //}
+
+            //// 2. Create Solution
+            //ProjectSolution.CreateProjectSolution(m_ProjectPath);
+
+            // copy from template and handle sln file
+            if (ProjectListViewModel.SelectedIndex < 0)
             {
-                var folderName = ProjectInfo.Folders[i];
-                var folderPath = m_ProjectPath + Path.DirectorySeparatorChar + folderName;
-                var folderInfo = Directory.CreateDirectory(folderPath);
-
-                if (folderInfo != null && folderName.StartsWith('.'))
-                {
-                    folderInfo.Attributes |= FileAttributes.Hidden;
-                }
+                _ = MessageBoxUtility.ShowMessageBoxStandard("Project creation error", "Please select a template first!");
+                
+                return;
             }
 
+
+            var selectedTemplate = this.ProjectListViewModel.ProjectsList[this.ProjectListViewModel.SelectedIndex];
+
+            Debug.Assert(selectedTemplate != null);
+
+            ProjectSolution.CreateProjectSolution(selectedTemplate, NewProjectPath, NewProjectName);
+
+            // TODO: complete the icon, previewImage infos 
             var currentProject = new ProjectInfo()
             {
                 ProjectName = NewProjectName,

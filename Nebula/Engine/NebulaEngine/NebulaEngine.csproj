@@ -1,12 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+	 <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <BaseOutputPath>..\..\x64\</BaseOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Core\Core.Infra\Core.Infra.vcxproj" />
+    <ProjectReference Include="..\..\Core\RHI.DX12\RHI.DX12.vcxproj" />
     <ProjectReference Include="..\..\Serialization\Serialization\Serialization.csproj" />
   </ItemGroup>
 
