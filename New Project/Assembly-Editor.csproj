@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <Reference Include="EditorLib">
-      <HintPath>..\..\..\x64\Debug\EditorLib.dll</HintPath>
+      <HintPath>E:\TechCenter\NebulaEngine\Nebula\x64\Debug\EditorLib.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>

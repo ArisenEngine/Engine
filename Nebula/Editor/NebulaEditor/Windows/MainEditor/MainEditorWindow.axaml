@@ -29,6 +29,8 @@
 						<MenuItem Header="Copy"  Margin="0,0,0,0" Height="25" />
 						<Separator/>
 						<MenuItem Header="Paste"  Margin="0,0,0,0" Height="25" />
+						<Separator/>
+						<MenuItem Header="Open C# Project"  Margin="0,0,0,0" Height="25" Click="OpenProjectClick"/>
 					</MenuItem>
 				</Menu>
                 <!-- Play Button -->
@@ -88,7 +90,7 @@
 						<!-- Project -->
 						<Grid Grid.Column="0" RowDefinitions="Auto, *" ColumnDefinitions="*">
 							<!-- Search bar -->
-							<Grid Grid.Row="0" Background="Black" Height="50" VerticalAlignment="Top">
+							<Grid Grid.Row="0" Background="Black" Height="35" VerticalAlignment="Top">
 
 							</Grid>
 
@@ -121,8 +123,11 @@
 				<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
 
 				<!-- Inspector area -->
-				<Grid Grid.Column="2">
-					<Label FontSize="70"> Inspertor </Label>
+				<Grid Grid.Column="2" ColumnDefinitions="*" RowDefinitions="*,0.005*,*">
+					<Label Grid.Row="0" FontSize="70"> Inspertor </Label>
+					<GridSplitter Grid.Row="1" ResizeDirection="Rows" Background="Gray" ></GridSplitter>
+					<rendering:RenderSurfaceView Grid.Row="2">
+					</rendering:RenderSurfaceView>
 				</Grid>
 			</Grid>
 		</Grid>

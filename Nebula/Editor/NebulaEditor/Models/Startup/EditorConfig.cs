@@ -22,7 +22,9 @@ namespace NebulaEditor.Models.Startup
            if (Projects == null)
             {
                 Projects = new List<ProjectInfo>();
+
             }
+
         }
 
         public void OnBeforeSerialize()
