@@ -24,6 +24,8 @@ namespace NebulaEditor.Models.Startup
         /// the project location
         /// </summary>
         public string ProjectPath { get; set; } = DefaultProjectPath;
+
+        public string ProjectFullPath => System.IO.Path.Combine(ProjectPath, ProjectName);
         /// <summary>
         /// project description
         /// </summary>

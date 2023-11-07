@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -29,7 +29,7 @@
 
   <ItemGroup>
     <Reference Include="NebulaEngine">
-      <HintPath>..\..\..\x64\Debug\NebulaEngine.dll</HintPath>
+      <HintPath>E:\TechCenter\NebulaEngine\Nebula\x64\Debug\NebulaEngine.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>

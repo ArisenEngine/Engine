@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows.Input;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls.Shapes;
 using NebulaEditor.Models.Startup;
 using NebulaEditor.Utility;
 using NebulaEditor.Windows.MainEditor;
 using NebulaEditor.Windows.Startup;
+using NebulaEngine;
 using ReactiveUI;
 
 namespace NebulaEditor.ViewModels.Startup
@@ -46,6 +48,11 @@ namespace NebulaEditor.ViewModels.Startup
         public static async void OpenProject(ProjectInfo currenrProject, string copyFromPath = "")
         {
             Debug.WriteLine("Open Project:" + currenrProject.ProjectName);
+
+            GameApplication.dataPath = System.IO.Path.Combine(currenrProject.ProjectFullPath, "Assets");
+            GameApplication.projectRoot = currenrProject.ProjectFullPath;
+            GameApplication.projectName = currenrProject.ProjectName;
+
             if (App.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 var openingWindowViewModel = new OpeningWindowViewModel();

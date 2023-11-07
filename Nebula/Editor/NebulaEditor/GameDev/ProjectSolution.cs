@@ -6,33 +6,71 @@ using System.IO;
 using NebulaEditor.Models.Startup;
 using EngineLib.FileSystem;
 using Avalonia;
+using System.Reflection;
 
 namespace NebulaEditor.GameDev
 {
     public static class ProjectSolution
     {
+        public static string INSTALLATION_ENV_VARIABLE = "NEBULA_INSTALL_ROOT";
+        public static string InstallationRoot = string.Empty;
+
         private static object m_VisualStudioInstance = null;
-        
-        
+     
         // use visual studio 2022
-        private static readonly string m_ProgID = "VisualStudio.DTE.17.4";
+        private static readonly string m_ProgID = "VisualStudio.DTE.17.0";
 
         // TODO: find a probably way to handle IDE in cross-platform
         [DllImport("ole32.dll")]
         private static extern int GetRunningObjectTable(uint reserved, out IRunningObjectTable pprot);
 
-        public static void OpenVisualStudio(string solutionPath)
+        [DllImport("ole32.dll")]
+        private static extern int CreateBindCtx(uint reserved, out IBindCtx ppbc);
+
+        public static void OpenVisualStudio(string solutionFullPath)
         {
             IRunningObjectTable rot = null;
             IEnumMoniker monikerTable = null;
+            IBindCtx bindCtx = null;    
+
             try
             {
                 if (m_VisualStudioInstance == null)
                 {
+                    // find and open visual studio
+                    var hResult = GetRunningObjectTable(0, out rot);
+                    if (hResult < 0 || rot == null) throw new COMException($"GetRunningObjectTable() returned HRESULT: {hResult:X8}");
+
+                    rot.EnumRunning(out monikerTable);
+
+                    hResult = CreateBindCtx(0, out bindCtx);
+                    if (hResult < 0 || rot == null) throw new COMException($"CreateBindCtx() returned HRESULT: {hResult:X8}");
+
+                    IMoniker[] currentMoniker = new IMoniker[1];
+
+                    while (monikerTable.Next(1, currentMoniker, IntPtr.Zero) == 0)
+                    {
+                        string name = string.Empty;
+                        currentMoniker[0]?.GetDisplayName(bindCtx, null, out name);
+                        if (name.Contains(m_ProgID))
+                        {
+                            hResult = rot.GetObject(currentMoniker[0], out object obj);
+                            if (hResult < 0 || obj == null) throw new COMException($"Running object table's GetObject() returned HRESULT: {hResult:X8}");
+
+                            var visualStudioType = obj.GetType();
+
+                            var solutionName = visualStudioType.GetRuntimeProperty("Solution").GetType().GetRuntimeProperty("FullName");
+                            if (solutionName.ToString() == solutionFullPath)
+                            {
+                                m_VisualStudioInstance = obj;
+                                break;
+                            }
+                        }
+                    }
 
                     if (m_VisualStudioInstance == null)
                     {
-                        Type visualStudioType = Type.GetType(m_ProgID, true);
+                        Type visualStudioType = Type.GetTypeFromProgID(m_ProgID, true);
                         m_VisualStudioInstance = Activator.CreateInstance(visualStudioType);
 
                     }
@@ -50,17 +88,17 @@ namespace NebulaEditor.GameDev
         public static bool HandleFiles(FileInfo file, DirectoryInfo sourceDir, DirectoryInfo destinationDir)
         {
        
-            if (file.Extension == ".sln")
+            if (file.Extension == @".sln")
             {
-                var fileName = destinationDir.Name + ".sln";
+                var fileName = destinationDir.Name + @".sln";
 
                 string sourceFilePath = Path.Combine(sourceDir.FullName, file.Name);
                 string targetFilePath = Path.Combine(destinationDir.FullName, fileName);
 
                 string sln = File.ReadAllText(sourceFilePath);
-                var runtimeGuid = "{" + Guid.NewGuid().ToString().ToUpper() + "}";
-                var editorGuid = "{" + Guid.NewGuid().ToString().ToUpper() + "}";
-                var solutionGuid = "{" + Guid.NewGuid().ToString().ToUpper() + "}";
+                var runtimeGuid = @"{" + Guid.NewGuid().ToString().ToUpper() + @"}";
+                var editorGuid = @"{" + Guid.NewGuid().ToString().ToUpper() + @"}";
+                var solutionGuid = @"{" + Guid.NewGuid().ToString().ToUpper() + @"}";
 
                 sln = string.Format(sln, runtimeGuid, editorGuid, solutionGuid);
 
@@ -69,7 +107,31 @@ namespace NebulaEditor.GameDev
                 return true;
             }
 
-            // todo: apend the dll reference path according to editor installation path
+            
+            if (file.Extension == @".csproj")
+            {
+                if (file.Name == @"Assembly-Editor.csproj")
+                {
+                    string sourceFilePath = Path.Combine(sourceDir.FullName, file.Name);
+                    string targetFilePath = Path.Combine(destinationDir.FullName, file.Name);
+                    string proj = File.ReadAllText(sourceFilePath);
+                    proj = string.Format(proj, InstallationRoot + @"EditorLib.dll");
+                    File.WriteAllText(targetFilePath, proj);
+
+                    return true;
+                }
+
+                if (file.Name == @"Assembly-Runtime.csproj")
+                {
+                    string sourceFilePath = Path.Combine(sourceDir.FullName, file.Name);
+                    string targetFilePath = Path.Combine(destinationDir.FullName, file.Name);
+                    string proj = File.ReadAllText(sourceFilePath);
+                    proj = string.Format(proj, InstallationRoot + @"NebulaEngine.dll");
+                    File.WriteAllText(targetFilePath, proj);
+
+                    return true;
+                }
+            }
 
 
 
@@ -81,6 +143,49 @@ namespace NebulaEditor.GameDev
             var sourcePath = Path.Combine (template.ProjectPath, template.ProjectName);
             var fullPath = Path.Combine(newProjectPath, newProjectName);
             DirectoryUtilities.CopyDirectoryRecursively(sourcePath, fullPath, HandleFiles);
+        }
+
+        public static void BuildProject(GameBuilder.TargetPlatform target)
+        {
+
+        }
+
+        /// <summary>
+        /// Validation a project
+        /// </summary>
+        /// <returns></returns>
+        public static bool ProjectValidation(ProjectInfo project)
+        {
+            if (!Directory.Exists(project.ProjectPath))
+            {
+                return false;
+            }
+
+            var projectRoot = Path.Combine(project.ProjectPath, project.ProjectName);
+            if (!Directory.Exists(projectRoot))
+            {
+                return false;
+            }
+
+            var slnFile = new FileInfo(Path.Combine(projectRoot, project.ProjectName + @".sln"));
+            if (!slnFile.Exists)
+            {
+                return false;
+            }
+
+            var runtimeProj = new FileInfo(Path.Combine(projectRoot, @"Assembly-Runtime.csproj"));
+            if (!runtimeProj.Exists)
+            {
+                return false;
+            }
+
+            var editorProj = new FileInfo(Path.Combine(projectRoot, @"Assembly-Editor.csproj"));
+            if (!editorProj.Exists)
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }
