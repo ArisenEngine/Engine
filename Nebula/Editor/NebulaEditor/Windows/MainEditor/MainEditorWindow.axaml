@@ -4,13 +4,21 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="1920" d:DesignHeight="1080"
         x:Class="NebulaEditor.Windows.MainEditor.MainEditorWindow"
-        xmlns:rendering ="using:AvaloniaLib.Views.Rendering"
+        xmlns:rendering ="using:NebulaEngine.Views.Rendering"
+		xmlns:views ="using:NebulaEditor.Views"
+		xmlns:vm="using:NebulaEditor.ViewModels"
 		SystemDecorations="Full"
 		WindowStartupLocation="CenterScreen"
 		CanResize="True"
 		WindowState="Maximized"
 		Icon="/Assets/nebula-logo.ico"
         Title="MainEditorWindow">
+	<Design.DataContext>
+
+		<vm:MainEditorWindowViewModel />
+			
+	</Design.DataContext>
+	
 	<DockPanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 
 		<Grid ColumnDefinitions="*" RowDefinitions="Auto, 110*">
@@ -30,6 +38,10 @@
 						<Separator/>
 						<MenuItem Header="Paste"  Margin="0,0,0,0" Height="25" />
 						<Separator/>
+						
+					</MenuItem>
+					<MenuItem Header="Assets" Margin="0,0,0,0" Height="25">
+					
 						<MenuItem Header="Open C# Project"  Margin="0,0,0,0" Height="25" Click="OpenProjectClick"/>
 					</MenuItem>
 				</Menu>
@@ -62,8 +74,8 @@
 					<Grid Grid.Row="0" ColumnDefinitions="1*,0.005*,4*">
 
 						<!-- Hierarchy -->
-						<Grid Grid.Column="0">
-							<Label FontSize="50">Hierarchy</Label>
+						<Grid Grid.Column="0" x:Name="SceneHierarchy">
+							
 						</Grid>
 
 						<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
@@ -96,8 +108,8 @@
 
 							<!-- Project & Asset -->
 							<Grid Grid.Row="1" ColumnDefinitions="0.5*,0.001*, 0.5*">
-								<Grid Grid.Column="0">
-									<Label FontSize="30"> Project View </Label>
+								<Grid Grid.Column="0" x:Name="AssetsHierarchy">
+									
 								</Grid>
 
 								<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>

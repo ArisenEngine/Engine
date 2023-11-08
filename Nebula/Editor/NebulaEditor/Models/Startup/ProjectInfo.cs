@@ -25,7 +25,6 @@ namespace NebulaEditor.Models.Startup
         /// </summary>
         public string ProjectPath { get; set; } = DefaultProjectPath;
 
-        public string ProjectFullPath => System.IO.Path.Combine(ProjectPath, ProjectName);
         /// <summary>
         /// project description
         /// </summary>
@@ -57,7 +56,7 @@ namespace NebulaEditor.Models.Startup
             //ProjectName = "New Project";
         }
 
-        
+        public string ProjectFullPath() => System.IO.Path.Combine(ProjectPath, ProjectName);
     }
 
     public class ProjectValidation

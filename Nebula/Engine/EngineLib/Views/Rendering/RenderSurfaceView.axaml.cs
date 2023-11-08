@@ -8,7 +8,7 @@ using System.Drawing;
 using System.Reflection.Metadata;
 using static AvaloniaLib.Native.NativeAPI;
 
-namespace AvaloniaLib.Views.Rendering
+namespace NebulaEngine.Views.Rendering
 {
     public partial class RenderSurfaceView : UserControl
     {

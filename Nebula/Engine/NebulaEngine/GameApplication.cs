@@ -19,18 +19,17 @@ namespace NebulaEngine
         PS5
     }
 
+
     public static class GameApplication
     {
-        public static string startupPath = string.Empty;
-        public static string dataPath = string.Empty;
-        public static string projectRoot = string.Empty;
-        public static string projectName = string.Empty;
-        public static bool isRunning = false;
-        public static bool isInEditor = false;
-        public static RuntimePlatform platform = RuntimePlatform.Unknow;
-
-        // test 
-        public static Action OnStartup;
+        // TODO: constraint the gamecode.dll only has read access
+        public static  string startupPath = string.Empty;
+        public static  string dataPath = string.Empty;
+        public static  string projectRoot = string.Empty;
+        public static  string projectName = string.Empty;
+        public static  bool isRunning = false;
+        public static  bool isInEditor = false;
+        public static  RuntimePlatform platform = RuntimePlatform.Unknow;
 
     }
 }
