@@ -4,9 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NebulaEngine.ECS
+namespace Core.ECS.Entity
 {
-    public class Component : Entity
+    public class Entity
     {
+        
     }
 }

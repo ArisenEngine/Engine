@@ -16,7 +16,8 @@ namespace NebulaEditor.GameDev
         public static string InstallationRoot = string.Empty;
 
         private static object m_VisualStudioInstance = null;
-     
+        private static EnvDTE80.DTE2 DTE => (m_VisualStudioInstance as EnvDTE80.DTE2);
+
         // use visual studio 2022
         private static readonly string m_ProgID = "VisualStudio.DTE.17.0";
 
@@ -57,9 +58,9 @@ namespace NebulaEditor.GameDev
                             hResult = rot.GetObject(currentMoniker[0], out object obj);
                             if (hResult < 0 || obj == null) throw new COMException($"Running object table's GetObject() returned HRESULT: {hResult:X8}");
 
-                            var visualStudioType = obj.GetType();
+                            EnvDTE80.DTE2 dte = obj as EnvDTE80.DTE2;
 
-                            var solutionName = visualStudioType.GetRuntimeProperty("Solution").GetType().GetRuntimeProperty("FullName");
+                            var solutionName = dte.Solution.FullName;
                             if (solutionName.ToString() == solutionFullPath)
                             {
                                 m_VisualStudioInstance = obj;
@@ -72,16 +73,45 @@ namespace NebulaEditor.GameDev
                     {
                         Type visualStudioType = Type.GetTypeFromProgID(m_ProgID, true);
                         m_VisualStudioInstance = Activator.CreateInstance(visualStudioType);
-
+                        DTE.Solution.Open(solutionFullPath);
                     }
 
+                } else
+                {
+                    if (DTE.Solution.FullName != solutionFullPath)
+                    {
+                        DTE.Solution.Open(solutionFullPath);
+                    } 
                 }
 
+                DTE.MainWindow.Activate();
+                DTE.MainWindow.Visible = true;
 
             } 
             catch(Exception e)
             {
                 Debug.WriteLine(e.Message);
+            }
+            finally
+            {
+                if (monikerTable != null) Marshal.ReleaseComObject(monikerTable);
+                if (rot != null) Marshal.ReleaseComObject(rot);
+                if (bindCtx != null) Marshal.ReleaseComObject(bindCtx);
+            }
+        }
+
+        public static void CloseVisualStudio()
+        {
+            if (DTE != null)
+            {
+                if (DTE.Solution.IsOpen)
+                {
+                    DTE.ExecuteCommand("File.SaveAll");
+                    DTE.Solution.Close(true);
+                }
+
+                m_VisualStudioInstance = null;
+                DTE.Quit();
             }
         }
 
@@ -145,10 +175,10 @@ namespace NebulaEditor.GameDev
             DirectoryUtilities.CopyDirectoryRecursively(sourcePath, fullPath, HandleFiles);
         }
 
-        public static void BuildProject(GameBuilder.TargetPlatform target)
-        {
+        //public static void BuildProject(GameBuilder.TargetPlatform target)
+        //{
 
-        }
+        //}
 
         /// <summary>
         /// Validation a project

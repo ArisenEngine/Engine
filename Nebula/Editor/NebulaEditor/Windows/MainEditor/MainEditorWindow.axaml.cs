@@ -1,19 +1,48 @@
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using NebulaEditor.GameDev;
+using NebulaEditor.ViewModels;
+using NebulaEditor.Views;
 using NebulaEngine;
+using System.Threading.Tasks;
 
 namespace NebulaEditor.Windows.MainEditor
 {
     public partial class MainEditorWindow : Window
     {
+        public MainEditorWindowViewModel viewModel
+        {
+            get
+            {
+                return DataContext as MainEditorWindowViewModel;
+            }
+        }
+
         public MainEditorWindow()
         {
             InitializeComponent();
-        }
 
+        }
+/// <inheritdoc/>
+
+        protected override void OnLoaded(RoutedEventArgs e)
+        {
+            base.OnLoaded(e);
+
+            //SceneHierarchy.Children.Clear();
+            SceneHierarchy.Children.Add(new SceneHierarchyView()
+            {
+                DataContext= new SceneHierarchyViewModel()
+            });
+        }
+       
         private void OpenProjectClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            ProjectSolution.OpenVisualStudio(System.IO.Path.Combine(GameApplication.projectRoot, GameApplication.projectName + @".sln"));
+            Task.Run(()=> {
+
+                ProjectSolution.OpenVisualStudio(System.IO.Path.Combine(GameApplication.projectRoot, GameApplication.projectName + @".sln"));
+
+            });
         }
     }
 }

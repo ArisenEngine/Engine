@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NebulaEngine.ECS
+namespace Assembly_Runtime.Assets
 {
-    public class Entity
+    internal class Class1
     {
     }
 }

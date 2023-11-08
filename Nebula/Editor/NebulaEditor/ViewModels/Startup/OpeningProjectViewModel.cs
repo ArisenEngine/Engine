@@ -49,8 +49,8 @@ namespace NebulaEditor.ViewModels.Startup
         {
             Debug.WriteLine("Open Project:" + currenrProject.ProjectName);
 
-            GameApplication.dataPath = System.IO.Path.Combine(currenrProject.ProjectFullPath, "Assets");
-            GameApplication.projectRoot = currenrProject.ProjectFullPath;
+            GameApplication.dataPath = System.IO.Path.Combine(currenrProject.ProjectFullPath(), "Assets");
+            GameApplication.projectRoot = currenrProject.ProjectFullPath();
             GameApplication.projectName = currenrProject.ProjectName;
 
             if (App.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
