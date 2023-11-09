@@ -14,9 +14,9 @@
 		Icon="/Assets/nebula-logo.ico"
         Title="NebulaEditor">
 
-	<Design.DataContext>
+	<Window.DataContext>
 		<vm:MainWindowViewModel/>
-	</Design.DataContext>
+	</Window.DataContext>
 
 	<Grid ColumnDefinitions="0.2*, 0.75*" Margin="4">
 

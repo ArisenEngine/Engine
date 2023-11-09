@@ -1,4 +1,5 @@
-﻿using DynamicData;
+﻿using Core.ECS.Entity;
+using DynamicData;
 using NebulaEditor.Models;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,9 @@ namespace NebulaEditor.ViewModels
         public ObservableCollection<TreeNode> Nodes { get; } = new ObservableCollection<TreeNode>();
         public ObservableCollection<TreeNode> SelectedNodes { get; } = new ObservableCollection<TreeNode>();
 
-
+        public HierarchyViewModel()
+        {
+            
+        }
     }
 }

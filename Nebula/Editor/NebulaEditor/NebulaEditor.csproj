@@ -70,8 +70,8 @@
 
 
   <ItemGroup>
-    <Compile Update="Views\SceneHierarchyView.axaml.cs">
-      <DependentUpon>SceneHierarchyView.axaml</DependentUpon>
+    <Compile Update="Views\HierarchyView.axaml.cs">
+      <DependentUpon>HierarchyView.axaml</DependentUpon>
     </Compile>
     <Compile Update="Windows\Startup\Splash.axaml.cs">
       <DependentUpon>Splash.axaml</DependentUpon>
@@ -88,8 +88,10 @@
 
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Core\Core.ECS\Core.ECS.csproj" />
     <ProjectReference Include="..\..\Engine\EngineLib\EngineLib.csproj" />
     <ProjectReference Include="..\..\Engine\NebulaEngine\NebulaEngine.csproj" />
     <ProjectReference Include="..\..\Serialization\Serialization\Serialization.csproj" />
+    <ProjectReference Include="..\EditorLib\EditorLib.csproj" />
   </ItemGroup>
 </Project>

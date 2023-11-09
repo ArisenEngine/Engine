@@ -10,6 +10,9 @@
              x:Class="NebulaEditor.Views.OpeningProjectPage"
              >
 
+	<UserControl.DataContext>
+		<vm:OpeningProjectViewModel></vm:OpeningProjectViewModel>
+	</UserControl.DataContext>
 	<Grid RowDefinitions="0.75*, 0.25*" >
 
 		<!-- Project List View -->
