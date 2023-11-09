@@ -10,9 +10,9 @@
              x:DataType="vm:CreateProjectViewModel"
              >
 
-	<Design.DataContext>
+	<UserControl.DataContext>
 		<vm:CreateProjectViewModel/>
-	</Design.DataContext>
+	</UserControl.DataContext>
 	<Grid RowDefinitions="0.75*, 0.25*" >
 
 		<!-- Project List -->

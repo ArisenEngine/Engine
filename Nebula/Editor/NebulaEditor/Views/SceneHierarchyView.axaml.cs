@@ -19,15 +19,7 @@ namespace NebulaEditor.Views
 
         public SceneHierarchyView()
         {
-            try
-            {
-                InitializeComponent();
-
-            } catch(Exception e)
-            {
-                Debug.WriteLine(e.Message);
-
-            }
+            InitializeComponent();
         }
 
         protected override void OnLoaded(RoutedEventArgs e)

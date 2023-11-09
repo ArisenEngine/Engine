@@ -7,11 +7,11 @@
 			 x:DataType="vm:SceneHierarchyViewModel"
              x:Class="NebulaEditor.Views.SceneHierarchyView">
 
-	<Design.DataContext>
-	<vm:SceneHierarchyViewModel />	
-	</Design.DataContext>
+	<UserControl.DataContext>
+		<vm:SceneHierarchyViewModel />
+	</UserControl.DataContext>
 	
-	<TreeView ItemsSource="{Binding Nodes}" SelectionMode="Multiple" Background="Black">
+	<TreeView ItemsSource="{Binding Nodes}" SelectionMode="Multiple" Background="#333333">
 
 		<TreeView.ItemTemplate>
 			<TreeDataTemplate ItemsSource="{Binding  SubNodes}" >

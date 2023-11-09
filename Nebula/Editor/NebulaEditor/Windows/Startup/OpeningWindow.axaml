@@ -12,9 +12,9 @@
 		Icon="/Assets/nebula-logo.ico"
         Title="OpeningWindow">
 
-	<Design.DataContext>
+	<Window.DataContext>
 		<vm:OpeningWindowViewModel/>
-	</Design.DataContext>
+	</Window.DataContext>
 	
 	<Grid RowDefinitions="1.6*, 0.1*,Auto" ColumnDefinitions="Auto" Width="800" Height="450">
 

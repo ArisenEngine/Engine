@@ -29,11 +29,6 @@ namespace NebulaEditor.Windows.MainEditor
         {
             base.OnLoaded(e);
 
-            //SceneHierarchy.Children.Clear();
-            SceneHierarchy.Children.Add(new SceneHierarchyView()
-            {
-                DataContext= new SceneHierarchyViewModel()
-            });
         }
        
         private void OpenProjectClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

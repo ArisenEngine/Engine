@@ -74,8 +74,8 @@
 					<Grid Grid.Row="0" ColumnDefinitions="1*,0.005*,4*">
 
 						<!-- Hierarchy -->
-						<Grid Grid.Column="0" x:Name="SceneHierarchy">
-							
+						<Grid Grid.Column="0">
+							<views:SceneHierarchyView></views:SceneHierarchyView>
 						</Grid>
 
 						<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
@@ -108,7 +108,7 @@
 
 							<!-- Project & Asset -->
 							<Grid Grid.Row="1" ColumnDefinitions="0.5*,0.001*, 0.5*">
-								<Grid Grid.Column="0" x:Name="AssetsHierarchy">
+								<Grid Grid.Column="0">
 									
 								</Grid>
 
