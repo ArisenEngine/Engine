@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <Nullable>enable</Nullable>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
@@ -45,6 +45,10 @@
 		<None Remove="Assets\default_project_preview.jpg" />
 		<None Remove="Assets\Icons\entity-icon.png" />
 		<None Remove="Assets\LOGO.png" />
+		<Compile Update="Views\AssetsHierarchyView.axaml.cs">
+		  <DependentUpon>AssetsHierarchyView.axaml</DependentUpon>
+		  <SubType>Code</SubType>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>

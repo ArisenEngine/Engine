@@ -18,6 +18,7 @@ using Serialization;
 using NebulaEditor.GameDev;
 using EngineLib.FileSystem;
 using System.Diagnostics;
+using Avalonia.Media.Imaging;
 
 namespace NebulaEditor.ViewModels.Startup
 {
@@ -64,7 +65,7 @@ namespace NebulaEditor.ViewModels.Startup
         public ICommand? BroweProjectLocationCommand { get; }
         public ICommand? CreateProjectCommand { get; }
 
-        public CreateProjectViewModel()
+        public CreateProjectViewModel(): base()
         {
             BroweProjectLocationCommand = ReactiveCommand.Create(async () =>
             {
@@ -183,6 +184,8 @@ namespace NebulaEditor.ViewModels.Startup
             {
                 ProjectName = NewProjectName,
                 ProjectPath = NewProjectPath,
+                IconURL = selectedTemplate.IconURL,
+                PreviewImageURL = selectedTemplate.PreviewImageURL,
                 Desc = NewProjectDesc,
             };
 

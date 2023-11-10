@@ -58,12 +58,14 @@ namespace NebulaEngine.Graphics
         {
             Debug.WriteLine("############ DestroyNativeControlCore ##############");
            
-            base.DestroyNativeControlCore(control);
+            API.PlatformAPI.RemoveRenderSurface(SurfaceId);  
+            
         }
 
         public void Dispose()
         {
-            API.PlatformAPI.RemoveRenderSurface(SurfaceId);
+            Debug.WriteLine("############# RenderSurfaceHost Dispose #################");
+            // API.PlatformAPI.RemoveRenderSurface(SurfaceId);  
         }
 
 

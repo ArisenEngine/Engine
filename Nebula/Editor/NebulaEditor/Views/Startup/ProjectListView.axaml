@@ -3,7 +3,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:NebulaEditor.ViewModels.Startup"
-			 mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="450"
+             xmlns:startup="clr-namespace:NebulaEditor.Models.Startup"
+             mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="450"
              x:CompileBindings="True"
 			 x:DataType="vm:ProjectListViewModel"
              x:Class="NebulaEditor.Views.ProjectListView">
@@ -12,12 +13,12 @@
 		<vm:ProjectListViewModel/>
 	</Design.DataContext>
 
-	<ListBox SelectionMode="Single,Toggle" ItemsSource="{Binding ProjectsList}" SelectedIndex="{Binding SelectedIndex}">
+	<ListBox x:Name="ProjectList" SelectionMode="Single,Toggle" ItemsSource="{Binding ProjectsList}" SelectedIndex="{Binding SelectedIndex}" SelectionChanged="SelectingItemsControl_OnSelectionChanged">
 		<!--Items template -->
 		<ListBox.ItemTemplate>
-			<DataTemplate>
+			<DataTemplate x:DataType="startup:ProjectInfo">
 				<Grid RowDefinitions="0.5*,0.5*" ColumnDefinitions="0.1*, 0.9*">
-					<Image Grid.Column="0" Grid.RowSpan="2" Source="/Assets/default_project_icon.jpg"></Image>
+					<Image Grid.Column="0" Grid.RowSpan="2" Source="/Assets/Icons/game-console.png"></Image>
 					<Grid VerticalAlignment="Top" Grid.Column="1" Grid.Row="0"
 						  ColumnDefinitions="0.33*, 0.33* , 0.33*">
 						<Label Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="20" Content="{Binding ProjectName}"></Label>

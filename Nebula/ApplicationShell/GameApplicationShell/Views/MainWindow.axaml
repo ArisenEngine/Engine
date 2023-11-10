@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="clr-namespace:GameApplicationShell.Views"
-		xmlns:rendering ="using:AvaloniaLib.Views.Rendering"
+		xmlns:rendering ="using:NebulaEngine.Views.Rendering"
         mc:Ignorable="d" d:DesignWidth="1920" d:DesignHeight="1080"
         x:Class="GameApplicationShell.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"

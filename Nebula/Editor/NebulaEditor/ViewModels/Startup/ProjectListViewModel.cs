@@ -20,15 +20,11 @@ namespace NebulaEditor.ViewModels.Startup
 
         public ObservableCollection<ProjectInfo> ProjectsList { get; set; } = new ObservableCollection<ProjectInfo>()
         {
+            new ProjectInfo(),
             new ProjectInfo()
-            {
-                    ProjectName = "Test 1"
-            },
-            new ProjectInfo()
-            {
-                ProjectName = "Test 2"
-            }
         };
+
+        public Action<int> OnSelectionChanged;
 
     }
 }
