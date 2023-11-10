@@ -10,23 +10,17 @@
              x:Class="NebulaEditor.Views.OpeningProjectPage"
              >
 
-	<UserControl.DataContext>
+	<Design.DataContext>
 		<vm:OpeningProjectViewModel></vm:OpeningProjectViewModel>
-	</UserControl.DataContext>
+	</Design.DataContext>
 	<Grid RowDefinitions="0.75*, 0.25*" >
 
 		<!-- Project List View -->
 		<Grid ColumnDefinitions="0.5*, 0.5*" Grid.Row="0" >
 
-			<ContentControl Content="{Binding ProjectListViewModel}">
-				<ContentControl.DataTemplates>
-					<DataTemplate DataType="vm:ProjectListViewModel">
-						<v:ProjectListView />
-					</DataTemplate>
-				</ContentControl.DataTemplates>
-			</ContentControl>
+			<v:ProjectListView DataContext="{Binding ProjectListViewModel}"/>
 
-			<Image Grid.Column="1" Source="/Assets/default_project_preview.jpg">
+			<Image Grid.Column="1" Source="{Binding PreivewImage}">
 
 			</Image>
 

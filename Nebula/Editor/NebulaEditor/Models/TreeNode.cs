@@ -1,5 +1,7 @@
 ﻿
 using System.Collections.ObjectModel;
+using Avalonia.Media.Imaging;
+using NebulaEditor.Utilities;
 
 namespace NebulaEditor.Models
 {
@@ -18,22 +20,54 @@ namespace NebulaEditor.Models
 
         public NodeType NodeType { get; set; } = NodeType.Unknow;
 
-        public object Value { get; set; }
+        private object value;
 
-        public string Icon { get; set; } = string.Empty;
+        private string m_IconPath;
+        public string IconPath
+        {
+            get => m_IconPath;
+            
+            set
+            {
+                if (!string.IsNullOrEmpty(value) && value != m_IconPath)
+                {
+                    m_IconPath = value;
+                    m_Icon = ImageHelper.LoadFromResource(m_IconPath);
+                }
+            }
+        }
+
+        private Bitmap m_Icon;
+        public Bitmap Icon
+        {
+            get
+            {
+                return m_Icon;
+            }
+        }
 
         public TreeNode(string title, string icon, ObservableCollection<TreeNode> subNodes)
         {
             Title = title;
-            Icon = icon;
+            IconPath = icon;
             SubNodes = subNodes;
         }
 
         public TreeNode(string title, string icon)
         {
             Title = title;
-            Icon = icon;
+            IconPath = icon;
             SubNodes= new ObservableCollection<TreeNode>();
+        }
+
+        public T GetUserData<T>()
+        {
+            return (T)value;
+        }
+
+        public void SetUserData(object userData)
+        {
+            value = userData;
         }
 
     }

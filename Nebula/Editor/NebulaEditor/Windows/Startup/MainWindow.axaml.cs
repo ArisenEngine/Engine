@@ -5,6 +5,8 @@ using NebulaEditor.Models.Startup;
 using NebulaEditor.ViewModels;
 using NebulaEditor.ViewModels.Startup;
 using System.Diagnostics;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Interactivity;
 
 namespace NebulaEditor.Windows
 {
@@ -25,6 +27,20 @@ namespace NebulaEditor.Windows
             }
             
             e.Handled= true;
+        }
+
+        protected override void OnUnloaded(RoutedEventArgs e)
+        {
+            base.OnUnloaded(e);
+
+            if (App.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                if (desktop.MainWindow is MainWindow)
+                {
+                   desktop.Shutdown();
+                }
+                
+            }
         }
     }
 }

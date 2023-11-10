@@ -18,7 +18,7 @@ namespace NebulaEditor.ViewModels.Startup
             set { this.RaiseAndSetIfChanged(ref m_ProgressVaule, value); }
         }
 
-        public OpeningWindowViewModel()
+        public OpeningWindowViewModel(): base()
         {
             ProgressValue = 0;
         }

@@ -5,6 +5,7 @@ using MsBox.Avalonia.Enums;
 using MsBox.Avalonia;
 using NebulaEditor.ViewModels.Startup;
 using System.Threading.Tasks;
+using Avalonia.Controls;
 
 namespace NebulaEditor
 {
@@ -19,12 +20,14 @@ namespace NebulaEditor
         {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
+                desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+                
                 var mainWindowViewModel = new MainWindowViewModel();
                 var splashWindow = new Splash();
                 desktop.MainWindow = splashWindow;
                 splashWindow.Show();
 
-                int resultCode = await mainWindowViewModel.LoadEditorConfigAsync(splashWindow);
+                int resultCode = await mainWindowViewModel.LoadEditorConfigAsync();
                 if ( resultCode != 0 ) {
 
                     splashWindow.Close();
@@ -45,7 +48,6 @@ namespace NebulaEditor
 
                 desktop.MainWindow = mainWindow;
                 
-
                 mainWindow.Show();
 
                 splashWindow.Close();

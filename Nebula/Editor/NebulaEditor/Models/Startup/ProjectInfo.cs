@@ -32,9 +32,9 @@ namespace NebulaEditor.Models.Startup
         /// <summary>
         /// preview image url
         /// </summary>
-        public string PreviewImageURL { get; set; } = @"/Assets/default_project_preview.jpg";
+        public string PreviewImageURL { get; set; } = @"/Assets/LOGO.png";
 
-        public string IconURL { get; set; } = @"/Assets/default_project_icon.jpg";
+        public string IconURL { get; set; } = @"/Assets/Icons/game-console.png";
         /// <summary>
         /// engine version project currently used
         /// </summary>

@@ -4,11 +4,11 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="1000"
 			 xmlns:vm ="using:NebulaEditor.ViewModels"
-			 x:DataType="vm:SceneHierarchyViewModel"
-             x:Class="NebulaEditor.Views.SceneHierarchyView">
+			 x:DataType="vm:AssetsHierarchyViewModel"
+             x:Class="NebulaEditor.Views.AssetsHierarchyView">
 
 	<UserControl.DataContext>
-		<vm:SceneHierarchyViewModel />
+		<vm:AssetsHierarchyViewModel />
 	</UserControl.DataContext>
 	
 	<TreeView ItemsSource="{Binding Nodes}" SelectionMode="Multiple" Background="#333333">

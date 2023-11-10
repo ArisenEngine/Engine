@@ -49,13 +49,13 @@
                 <Grid Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="30">
                     <StackPanel Orientation="Horizontal" Spacing="5" Height="25">
                         <Button >
-                            <Image Height="15" Width="15" Source="/Assets/Icons/icons8-play-96.png"></Image> 
+                            <Image Height="15" Width="15" Source="avares://NebulaEditor/Assets/Icons/icons8-play-96.png"></Image> 
                         </Button>
                         <Button>
-                            <Image Height="15" Width="15" Source="/Assets/Icons/icons8-pause-96.png"></Image>
+                            <Image Height="15" Width="15" Source="avares://NebulaEditor/Assets/Icons/icons8-pause-96.png"></Image>
                         </Button>
                         <Button>
-                            <Image Height="15" Width="15" Source="/Assets/Icons/icons8-resume-button-96.png"></Image>
+                            <Image Height="15" Width="15" Source="avares://NebulaEditor/Assets/Icons/icons8-resume-button-96.png"></Image>
                         </Button>
                     </StackPanel>
                 </Grid>
@@ -109,7 +109,7 @@
 							<!-- Project & Asset -->
 							<Grid Grid.Row="1" ColumnDefinitions="0.5*,0.001*, 0.5*">
 								<Grid Grid.Column="0">
-									
+									<views:AssetsHierarchyView/>
 								</Grid>
 
 								<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>

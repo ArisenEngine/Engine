@@ -72,8 +72,22 @@ namespace NebulaEditor.ViewModels.Startup
             }
         }
 
-        public async Task<int> LoadEditorConfigAsync(Splash splash)
+        public async Task<int> LoadEditorConfigAsync()
         {
+            if (EditorConfig.Instance != null)
+            {
+                OpeningProjectViewModel.SetProjectsList(EditorConfig.Instance.Projects);
+                var templates = SerializationUtil.Deserialize<Templates>(EditorConfig.Instance.TemplatesPath);
+
+                if (templates.IsDirty)
+                {
+                    SerializationUtil.Serialize(templates, EditorConfig.Instance.TemplatesPath);
+                }
+
+                CreateProjectViewModel.SetProjectsList(templates.Projects);
+                return 0;
+            }
+            
             try
             {
                 EditorConfig.Instance = SerializationUtil.Deserialize<EditorConfig>(EditorConfig.EDITOR_CONFIG_PATH);
@@ -95,7 +109,7 @@ namespace NebulaEditor.ViewModels.Startup
             }
             catch(Exception ex)
             {
-                splash.Hide();
+                
                 await MessageBoxUtility.ShowMessageBoxStandard("Exception", $"{ex.Message}");
 
                 return -1;

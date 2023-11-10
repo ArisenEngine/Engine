@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Windows.Input;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Shapes;
+using Avalonia.Media.Imaging;
 using NebulaEditor.Models.Startup;
 using NebulaEditor.Utility;
 using NebulaEditor.Windows.MainEditor;
@@ -15,9 +16,8 @@ namespace NebulaEditor.ViewModels.Startup
 {
 	public class OpeningProjectViewModel : StartupSubViewBaseViewModel
     {
-
         public ICommand OpenProjectCommand { get; }
-        public OpeningProjectViewModel()
+        public OpeningProjectViewModel(): base()
         {
             OpenProjectCommand = ReactiveCommand.Create(() =>
             {
@@ -41,6 +41,8 @@ namespace NebulaEditor.ViewModels.Startup
                 }
 
             });
+            
+            
         }
 
 
