@@ -1,0 +1,44 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33213.308
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Assembly-Runtime", "Assembly-Runtime.csproj", "{D90C69C7-E364-4368-8228-BA46536ACE76}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Assembly-Editor", "Assembly-Editor.csproj", "{BBD4DC25-E8D8-4798-9338-AB20B80BC54F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D90C69C7-E364-4368-8228-BA46536ACE76} = {D90C69C7-E364-4368-8228-BA46536ACE76}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		EditorDebug|Any CPU = EditorDebug|Any CPU
+		EditorRelease|Any CPU = EditorRelease|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D90C69C7-E364-4368-8228-BA46536ACE76}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D90C69C7-E364-4368-8228-BA46536ACE76}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D90C69C7-E364-4368-8228-BA46536ACE76}.EditorDebug|Any CPU.ActiveCfg = EditorDebug|Any CPU
+		{D90C69C7-E364-4368-8228-BA46536ACE76}.EditorDebug|Any CPU.Build.0 = EditorDebug|Any CPU
+		{D90C69C7-E364-4368-8228-BA46536ACE76}.EditorRelease|Any CPU.ActiveCfg = EditorDebug|Any CPU
+		{D90C69C7-E364-4368-8228-BA46536ACE76}.EditorRelease|Any CPU.Build.0 = EditorDebug|Any CPU
+		{D90C69C7-E364-4368-8228-BA46536ACE76}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D90C69C7-E364-4368-8228-BA46536ACE76}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D90C69C7-E364-4368-8228-BA46536ACE76}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D90C69C7-E364-4368-8228-BA46536ACE76}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D90C69C7-E364-4368-8228-BA46536ACE76}.EditorDebug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D90C69C7-E364-4368-8228-BA46536ACE76}.EditorDebug|Any CPU.Build.0 = Debug|Any CPU
+		{D90C69C7-E364-4368-8228-BA46536ACE76}.EditorRelease|Any CPU.ActiveCfg = Release|Any CPU
+		{D90C69C7-E364-4368-8228-BA46536ACE76}.EditorRelease|Any CPU.Build.0 = Release|Any CPU
+		{D90C69C7-E364-4368-8228-BA46536ACE76}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D90C69C7-E364-4368-8228-BA46536ACE76}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F362E347-DBCF-48F3-90F9-643759A9676F}
+	EndGlobalSection
+EndGlobal

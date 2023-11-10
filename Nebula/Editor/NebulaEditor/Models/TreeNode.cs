@@ -1,7 +1,10 @@
 ﻿
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using NebulaEditor.Utilities;
+using NebulaEditor.ViewModels;
 using ReactiveUI;
 
 namespace NebulaEditor.Models
@@ -14,7 +17,7 @@ namespace NebulaEditor.Models
         File
     }
 
-    public class TreeNode : ReactiveObject
+    public class TreeNode : NTreeItemViewModel
     {
         public ObservableCollection<TreeNode> SubNodes { get; }
         public string Title { get; set; } = string.Empty;
@@ -38,18 +41,9 @@ namespace NebulaEditor.Models
             }
         }
 
-        private bool m_IsExpanded = false;
-        public bool IsExpanded
+        public void OnExpandRequested(bool isExpanded)
         {
-            get
-            {
-                return m_IsExpanded;
-            }
-
-            set
-            {
-                this.RaiseAndSetIfChanged(ref m_IsExpanded, value);
-            }
+            Debug.WriteLine(isExpanded);
         }
 
         private Bitmap m_Icon;
