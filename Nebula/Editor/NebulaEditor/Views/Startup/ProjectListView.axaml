@@ -13,7 +13,7 @@
 		<vm:ProjectListViewModel/>
 	</Design.DataContext>
 
-	<ListBox x:Name="ProjectList" SelectionMode="Single,Toggle" ItemsSource="{Binding ProjectsList}" SelectedIndex="{Binding SelectedIndex}" SelectionChanged="SelectingItemsControl_OnSelectionChanged">
+	<ListBox Name="CurrProjectList" SelectionMode="Single,Toggle" ItemsSource="{Binding ProjectsList}" SelectedIndex="{Binding SelectedIndex}" SelectionChanged="SelectingItemsControl_OnSelectionChanged">
 		<!--Items template -->
 		<ListBox.ItemTemplate>
 			<DataTemplate x:DataType="startup:ProjectInfo">

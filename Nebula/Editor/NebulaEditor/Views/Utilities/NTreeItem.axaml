@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="25"
+             xmlns:convert="using:NebulaEditor.Converters"
+             xmlns:vm="using:NebulaEditor.ViewModels"
+             x:Class="NebulaEditor.Views.Utilities.NTreeItem"
+             x:DataType="vm:NTreeItemViewModel">
+    
+    <UserControl.Resources>
+        <convert:FolderIconConverter x:Key="IconConverter"/>
+    </UserControl.Resources>
+    
+    <UserControl.DataContext>
+        <vm:NTreeItemViewModel />
+    </UserControl.DataContext>
+    
+    <TreeViewItem Name="TreeViewItemControl" DataContext="vm:NTreeItemViewModel" Background="Red">
+        <Image Source="{Binding $parent.IsExpanded,
+						Converter={StaticResource IconConverter}}" Height="20" Width="20"/>
+        <Label Content="{Binding Title}" VerticalAlignment="Center" FontSize="15" Background="White"/>
+    </TreeViewItem>
+</UserControl>
