@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using Avalonia.Media.Imaging;
 using NebulaEditor.Utilities;
+using ReactiveUI;
 
 namespace NebulaEditor.Models
 {
@@ -13,7 +14,7 @@ namespace NebulaEditor.Models
         File
     }
 
-    public class TreeNode
+    public class TreeNode : ReactiveObject
     {
         public ObservableCollection<TreeNode> SubNodes { get; }
         public string Title { get; set; } = string.Empty;
@@ -34,6 +35,20 @@ namespace NebulaEditor.Models
                     m_IconPath = value;
                     m_Icon = ImageHelper.LoadFromResource(m_IconPath);
                 }
+            }
+        }
+
+        private bool m_IsExpanded = false;
+        public bool IsExpanded
+        {
+            get
+            {
+                return m_IsExpanded;
+            }
+
+            set
+            {
+                this.RaiseAndSetIfChanged(ref m_IsExpanded, value);
             }
         }
 
