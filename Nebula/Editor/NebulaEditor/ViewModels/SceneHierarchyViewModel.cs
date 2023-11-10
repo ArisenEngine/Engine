@@ -30,15 +30,15 @@ namespace NebulaEditor.ViewModels
                                 new TreeNode("Sub-AAA-2", EntityIconPath),
                                 new TreeNode("Sub-AAA-3", EntityIconPath),
                                 new TreeNode("Sub-AAA-4", EntityIconPath)
-
+            
                          }),
                         new TreeNode("Sub-AAA-1", EntityIconPath),
                         new TreeNode("Sub-AAA-2", EntityIconPath),
                         new TreeNode("Sub-AAA-3", EntityIconPath),
                         new TreeNode("Sub-AAA-4", EntityIconPath)
-
+            
                     }),
-
+            
             });
         }
     }

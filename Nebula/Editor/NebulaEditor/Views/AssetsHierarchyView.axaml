@@ -3,7 +3,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="1000"
-			 xmlns:vm ="using:NebulaEditor.ViewModels"
+             xmlns:vm ="using:NebulaEditor.ViewModels"
+             xmlns:utl="using:NebulaEditor.Views.Utilities"
+             xmlns:convert="using:NebulaEditor.Converters"
 			 x:DataType="vm:AssetsHierarchyViewModel"
              x:Class="NebulaEditor.Views.AssetsHierarchyView">
 
@@ -11,17 +13,29 @@
 		<vm:AssetsHierarchyViewModel />
 	</UserControl.DataContext>
 	
-	<TreeView ItemsSource="{Binding Nodes}" SelectionMode="Multiple" Background="#333333">
-
-		<TreeView.ItemTemplate>
-			<TreeDataTemplate ItemsSource="{Binding  SubNodes}" >
-				<StackPanel Orientation="Horizontal" Spacing="2" Margin="-10, 0, 0, 0" Height="25" VerticalAlignment="Center">
-					<Image Source="{Binding Icon}" Height="20" Width="20"/>
-					<Label Content="{Binding Title}" VerticalAlignment="Center" FontSize="15"/>
-				</StackPanel>
-			</TreeDataTemplate>
-		</TreeView.ItemTemplate>
+	<UserControl.Resources>
+		<convert:FolderIconConverter x:Key="IconConverter"/>
+	</UserControl.Resources>
+	<TreeView Name= "HierarchyTreeView" SelectionChanged="HierarchyTreeView_OnSelectionChanged" ItemsSource="{Binding Nodes}" SelectionMode="Multiple" Background="#333333">
 		
-	</TreeView>
+		<TreeView.ItemContainerTheme>
+			<ControlTheme TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
+				<Setter Property="IsExpanded" Value="True" />
+			</ControlTheme>
+		</TreeView.ItemContainerTheme>
+		
+		<TreeView.ItemTemplate>
+				<TreeDataTemplate ItemsSource="{Binding  SubNodes}" >
+					<StackPanel Orientation="Horizontal" Spacing="2" Margin="-10, 0, 0, 0" Height="25" VerticalAlignment="Center">
+						<Image Source="{Binding Icon, 
+						Converter={StaticResource IconConverter}}" Height="20" Width="20"/>
+						<Label Content="{Binding Title}" VerticalAlignment="Center" FontSize="15"/>
+					</StackPanel>
+				</TreeDataTemplate>
+			</TreeView.ItemTemplate>
+		
+		</TreeView>
+		
+	
 	
 </UserControl>

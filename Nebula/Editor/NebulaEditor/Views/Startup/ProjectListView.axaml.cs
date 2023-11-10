@@ -19,7 +19,7 @@ namespace NebulaEditor.Views
 
         private void SelectingItemsControl_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
         {
-            ViewModel?.OnSelectionChanged?.Invoke(ProjectList.SelectedIndex);
+            ViewModel?.OnSelectionChanged?.Invoke(CurrProjectList.SelectedIndex);
         }
     }
 }

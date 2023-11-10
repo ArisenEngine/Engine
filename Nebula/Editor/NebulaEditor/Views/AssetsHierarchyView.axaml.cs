@@ -18,8 +18,12 @@ namespace NebulaEditor.Views
         {
             base.OnLoaded(e);
 
-           
+            
         }
 
+        private void HierarchyTreeView_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+        {
+            var source = e.Source;
+        }
     }
 }
