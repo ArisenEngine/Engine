@@ -6,8 +6,6 @@ namespace NebulaEditor.Views.Utilities;
 
 public partial class NTreeItem : UserControl
 {
-    public bool HasExpanded => TreeViewItemControl.IsExpanded;
-
     public NTreeItem()
     {
         InitializeComponent();

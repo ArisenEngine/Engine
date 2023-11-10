@@ -16,9 +16,8 @@
         <vm:NTreeItemViewModel />
     </UserControl.DataContext>
     
-    <TreeViewItem Name="TreeViewItemControl" DataContext="vm:NTreeItemViewModel" Background="Red">
-        <Image Source="{Binding $parent.IsExpanded,
-						Converter={StaticResource IconConverter}}" Height="20" Width="20"/>
-        <Label Content="{Binding Title}" VerticalAlignment="Center" FontSize="15" Background="White"/>
-    </TreeViewItem>
+    <StackPanel>
+        <Image Source="{Binding .IsExpanded, Converter={StaticResource IconConverter}}" Height="20" Width="20"/>
+        <Label Content="{Binding .Title}" VerticalAlignment="Center" FontSize="15" Background="White"/>
+    </StackPanel>
 </UserControl>
