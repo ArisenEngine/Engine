@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Data.Converters;
 using Avalonia.Interactivity;
 using NebulaEditor.Models;
@@ -34,7 +35,7 @@ public class FolderIconConverter : IValueConverter
             TreeViewItem item = value as TreeViewItem;
             item.ContainerPrepared += OnContainerPrepared;
             item.ContainerClearing += OnContainerClearing;
-            
+            var toggleArray = item.FindNameScope()?.Find<ToggleButton>("PART_ExpanderButton");
             if (item.IsExpanded)
             {
                 return ImageHelper.LoadFromResource(AssetsHierarchyViewModel.FolderOpenIconPath);

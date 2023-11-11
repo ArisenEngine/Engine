@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using ReactiveUI;
 
 namespace NebulaEditor.ViewModels
@@ -13,7 +15,7 @@ namespace NebulaEditor.ViewModels
         {
             get
             {
-                return m_Expanded;
+                return this.m_TreeViewItem.IsExpanded;
             }
 
             set
@@ -22,5 +24,20 @@ namespace NebulaEditor.ViewModels
                 Debug.WriteLine($"TreeItem:{IsExpanded}");
             }
         }
+
+        private TreeViewItem m_TreeViewItem;
+        
+
+        public NTreeItemViewModel()
+        {
+            
+        }
+
+        public void BindTreeViewItem(TreeViewItem viewItem)
+        {
+            this.m_TreeViewItem = viewItem;
+           
+        }
+        
     }
 }
