@@ -17,7 +17,7 @@ public class TreeViewItemInteraction : AvaloniaObject
     
     static TreeViewItemInteraction()
     {
-        ListenToExpandedProperty.Changed.Subscribe(x => OnListenToExpandedChanged(x.Sender, x.NewValue.GetValueOrDefault<bool>()));
+        // ListenToExpandedProperty.Changed.Subscribe(x => OnListenToExpandedChanged(x.Sender, x.NewValue.GetValueOrDefault<bool>()));
     }
     
     private static void OnListenToExpandedChanged(AvaloniaObject  sender, bool value)

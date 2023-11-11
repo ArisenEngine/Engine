@@ -6,9 +6,19 @@ namespace NebulaEditor.Views.Utilities;
 
 public partial class NTreeItem : UserControl
 {
+    public TreeViewItem treeItemView
+    {
+        get
+        {
+            return this.Parent as TreeViewItem;
+        }
+    }
+    
     public NTreeItem()
     {
         InitializeComponent();
+        
+        
     }
 
     private void InitializeComponent()
