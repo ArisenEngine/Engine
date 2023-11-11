@@ -7,6 +7,8 @@
         xmlns:rendering ="using:NebulaEngine.Views.Rendering"
 		xmlns:views ="using:NebulaEditor.Views"
 		xmlns:vm="using:NebulaEditor.ViewModels"
+        xmlns:utl="using:NebulaEditor.Views.Utilities"
+        xmlns:utlvm="using:NebulaEditor.ViewModels.Utilities"
 		SystemDecorations="Full"
 		WindowStartupLocation="CenterScreen"
 		CanResize="True"
@@ -109,7 +111,12 @@
 							<!-- Project & Asset -->
 							<Grid Grid.Row="1" ColumnDefinitions="0.5*,0.001*, 0.5*">
 								<Grid Grid.Column="0">
-									<views:AssetsHierarchyView/>
+									<!-- <views:AssetsHierarchyView/> -->
+									<utl:HierarchyView>
+										<utl:HierarchyView.DataContext>
+											<utlvm:HierarchyViewModel />
+										</utl:HierarchyView.DataContext>
+									</utl:HierarchyView>
 								</Grid>
 
 								<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>

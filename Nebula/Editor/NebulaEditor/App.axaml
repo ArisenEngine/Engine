@@ -16,9 +16,12 @@
                 <!-- Palette for Light theme variant -->
                 <ColorPaletteResources x:Key="Light" Accent="Green" RegionColor="White" ErrorText="Red" />
                 <!-- Palette for Dark theme variant -->
-                <ColorPaletteResources x:Key="Dark" Accent="DarkGreen" RegionColor="Black" ErrorText="Yellow" />
+                <ColorPaletteResources x:Key="Dark" Accent="DarkGreen" RegionColor="#333333" ErrorText="Yellow" />
             </FluentTheme.Palettes>
             
         </FluentTheme>
+        
+        <StyleInclude Source="avares://Avalonia.Controls.TreeDataGrid/Themes/Fluent.axaml"/>
+        
     </Application.Styles>
 </Application>

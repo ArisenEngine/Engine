@@ -20,7 +20,7 @@
 
 	<Grid ColumnDefinitions="0.2*, 0.75*" Margin="4">
 
-		<StackPanel  Grid.Column="0" Background="Gray">
+		<StackPanel Grid.Column="0">
 			<!-- left tab menu -->
 		</StackPanel>
 
