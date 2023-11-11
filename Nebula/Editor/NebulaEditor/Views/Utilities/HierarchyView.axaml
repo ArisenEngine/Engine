@@ -1,0 +1,67 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="800"
+             xmlns:utlVM="using:NebulaEditor.ViewModels.Utilities"
+             xmlns:utlM="using:NebulaEditor.Models.Utilities"
+             x:DataType="utlVM:HierarchyViewModel"
+             x:Class="NebulaEditor.Views.Utilities.HierarchyView">
+   
+    <Design.DataContext>
+        <utlVM:HierarchyViewModel>
+            
+        </utlVM:HierarchyViewModel>
+    </Design.DataContext>
+    
+    
+    <TreeDataGrid Name="TreeGridViewer" Source="{Binding Source}">
+        
+        <TreeDataGrid.Resources>
+            
+            <!-- Template for Name column cells -->
+            <DataTemplate x:Key="NameCell" DataType="utlM:TreeNodeBase">
+                
+                <StackPanel Orientation="Horizontal">
+                    <Image Margin="0 0 4 0"
+                           VerticalAlignment="Center" Width="30" Height="30">
+                        <Image.Source>
+                            <MultiBinding Converter="{x:Static utlVM:HierarchyViewModel.IconConverter}">
+                                <Binding Path="IsBranch"/>
+                                <Binding Path="IsExpanded"/>
+                            </MultiBinding>
+                        </Image.Source>
+                    </Image>
+                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                </StackPanel>
+                
+            </DataTemplate>
+            
+            
+            <!-- Edit template for Name column cells -->
+            <DataTemplate x:Key="NameEditCell" DataType="utlM:TreeNodeBase">
+                <StackPanel Orientation="Horizontal">
+                    <Image Margin="0 0 4 0"
+                           VerticalAlignment="Center" Width="20" Height="20">
+                        <Image.Source>
+                            <MultiBinding Converter="{x:Static utlVM:HierarchyViewModel.IconConverter}">
+                                <Binding Path="IsBranch"/>
+                                <Binding Path="IsExpanded"/>
+                            </MultiBinding>
+                        </Image.Source>
+                    </Image>
+                    <TextBox Text="{Binding Name}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </DataTemplate>
+            
+        </TreeDataGrid.Resources>
+        
+        <TreeDataGrid.Styles>
+            <Style Selector="TreeDataGrid TreeDataGridRow:nth-child(2n)">
+                <Setter Property="Background"  Value="#20808080"/>
+            </Style>
+        </TreeDataGrid.Styles>
+        
+    </TreeDataGrid>
+    
+</UserControl>
