@@ -1,0 +1,155 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1920" d:DesignHeight="1080"
+        x:Class="NebulaEditor.Windows.MainEditor.MainEditorWindow"
+        xmlns:rendering ="using:NebulaEngine.Views.Rendering"
+		xmlns:views ="using:NebulaEditor.Views"
+		xmlns:vm="using:NebulaEditor.ViewModels"
+        xmlns:utl="using:NebulaEditor.Views.Utilities"
+        xmlns:utlvm="using:NebulaEditor.ViewModels.Utilities"
+		SystemDecorations="Full"
+		WindowStartupLocation="CenterScreen"
+		CanResize="True"
+		WindowState="Maximized"
+		Icon="/Assets/nebula-logo.ico"
+        Title="MainEditorWindow">
+	<Design.DataContext>
+
+		<vm:MainEditorWindowViewModel />
+			
+	</Design.DataContext>
+	
+	<DockPanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+
+		<Grid ColumnDefinitions="*" RowDefinitions="Auto, 110*">
+
+			<!-- Menu Bar TODO: dynamic add item for easily to expend -->
+			<Grid Grid.Row="0" RowDefinitions="Auto, Auto" VerticalAlignment="Center" Background="Black">
+				<Menu Grid.Row="0"  Foreground="AliceBlue" Height="25" Background="#383838">
+					<MenuItem Header="File" Margin="0,0,0,0" Height="25">
+						<MenuItem Header="Open"  Margin="0,0,0,0" Height="25" />
+						<Separator/>
+                        <MenuItem Header="Build"  Margin="0,0,0,0" Height="25" />
+                        <Separator/>
+						<MenuItem Header="Exit"  Margin="0,0,0,0" Height="25" />
+					</MenuItem>
+					<MenuItem Header="Edit" Margin="0,0,0,0" Height="25">
+						<MenuItem Header="Copy"  Margin="0,0,0,0" Height="25" />
+						<Separator/>
+						<MenuItem Header="Paste"  Margin="0,0,0,0" Height="25" />
+						<Separator/>
+						
+					</MenuItem>
+					<MenuItem Header="Assets" Margin="0,0,0,0" Height="25">
+					
+						<MenuItem Header="Open C# Project"  Margin="0,0,0,0" Height="25" Click="OpenProjectClick"/>
+					</MenuItem>
+				</Menu>
+                <!-- Play Button -->
+                <Grid Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="30">
+                    <StackPanel Orientation="Horizontal" Spacing="5" Height="25">
+                        <Button >
+                            <Image Height="15" Width="15" Source="avares://NebulaEditor/Assets/Icons/icons8-play-96.png"></Image> 
+                        </Button>
+                        <Button>
+                            <Image Height="15" Width="15" Source="avares://NebulaEditor/Assets/Icons/icons8-pause-96.png"></Image>
+                        </Button>
+                        <Button>
+                            <Image Height="15" Width="15" Source="avares://NebulaEditor/Assets/Icons/icons8-resume-button-96.png"></Image>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+                
+			</Grid>
+            
+                <!-- Body Content of Main Editor -->
+			<Grid Grid.Row="1" ColumnDefinitions="5*,0.005*,1*" RowDefinitions="*">
+
+				<!-- Hierarchy | Scene/Game View-->
+				<!-- **************************** -->
+				<!-- Project | Console -->
+				<Grid Grid.Column="0"  ColumnDefinitions="*" RowDefinitions="2*,0.005*,1*">
+
+					<!-- Hierarchy | Scene/Game View-->
+					<Grid Grid.Row="0" ColumnDefinitions="Auto,0.01,4*">
+
+						<!-- Hierarchy -->
+						<Grid Grid.Column="0">
+							<views:SceneHierarchyView></views:SceneHierarchyView>
+						</Grid>
+
+						<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
+
+						<!-- Scene View / Game View -->
+						<Grid Grid.Column="2" ColumnDefinitions="0.5*, 0.001*,0.5*">
+                            <rendering:RenderSurfaceView Grid.Column="0"> 
+                                
+                            </rendering:RenderSurfaceView>
+                            
+							<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
+                            <rendering:RenderSurfaceView Grid.Column="2">
+
+                            </rendering:RenderSurfaceView>
+						</Grid>
+
+					</Grid>
+
+					<GridSplitter Grid.Row="1" ResizeDirection="Rows" Background="Gray" ></GridSplitter>
+
+					<!-- Project | Console -->
+					<Grid Grid.Row="2" ColumnDefinitions="0.5*, 0.001*, 0.5*">
+
+						<!-- Project -->
+						<Grid Grid.Column="0" RowDefinitions="Auto, *" ColumnDefinitions="*">
+							<!-- Search bar -->
+							<Grid Grid.Row="0" Background="Black" Height="35" VerticalAlignment="Top">
+
+							</Grid>
+
+							<!-- Project & Asset -->
+							<Grid Grid.Row="1" ColumnDefinitions="0.5*,0.001*, 0.5*">
+								<Grid Grid.Column="0">
+									<!-- <views:AssetsHierarchyView/> -->
+									<utl:HierarchyView>
+										<utl:HierarchyView.DataContext>
+											<utlvm:HierarchyViewModel />
+										</utl:HierarchyView.DataContext>
+									</utl:HierarchyView>
+								</Grid>
+
+								<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
+
+								<Grid Grid.Column="2">
+									<Label FontSize="30"> Assets View </Label>
+								</Grid>
+
+							</Grid>
+						</Grid>
+
+						<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
+
+						<!-- Console -->
+						<Grid Grid.Column="2">
+							<Label FontSize="100"> Console </Label>
+						</Grid>
+
+					</Grid>
+
+				</Grid>
+
+				<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
+
+				<!-- Inspector area -->
+				<Grid Grid.Column="2" ColumnDefinitions="*" RowDefinitions="*,0.005*,*">
+					<Label Grid.Row="0" FontSize="70"> Inspertor </Label>
+					<GridSplitter Grid.Row="1" ResizeDirection="Rows" Background="Gray" ></GridSplitter>
+					<rendering:RenderSurfaceView Grid.Row="2">
+					</rendering:RenderSurfaceView>
+				</Grid>
+			</Grid>
+		</Grid>
+
+	</DockPanel>
+</Window>
