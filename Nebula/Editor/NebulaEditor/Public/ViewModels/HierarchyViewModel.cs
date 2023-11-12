@@ -18,7 +18,7 @@ public class HierarchyViewModel : ViewModelBase
 {
     private static IconConverter? s_iconConverter;
 
-    private HierarchicalTreeDataGridSource<TreeNodeBase> m_Source;
+    protected HierarchicalTreeDataGridSource<TreeNodeBase> m_Source;
 
     public HierarchicalTreeDataGridSource<TreeNodeBase> Source
     {
@@ -27,23 +27,38 @@ public class HierarchyViewModel : ViewModelBase
             if (m_Source == null)
             {
                 InitializeSource();
+                
+                Source.RowSelection.SelectionChanged += SelectionChanged;
+                
             }
             
             return m_Source;
         }
     }
-
-    private string m_LeafIconPath = "avares://NebulaEditor/Assets/Icons/file.png";
-    private string m_BranchIconPath = "avares://NebulaEditor/Assets/Icons/folder.png";
-    private string m_BranchOpenPath = "avares://NebulaEditor/Assets/Icons/open-folder.png";
-
-    protected virtual string Header => "Project";
     
-    protected TreeNodeBase[] m_Roots = new TreeNodeBase[2]
+    protected TreeNodeBase[] m_Roots = null;
+    public TreeNodeBase[] Roots
     {
-        new TreeNodeBase("Assets",  Path.Combine(GameApplication.projectRoot, "Assets"), true, isRoot: true),
-        new TreeNodeBase("Packages", Path.Combine(GameApplication.projectRoot, "Packages"), true, isRoot: true),
-    };
+        get
+        {
+            if (m_Roots == null)
+            {
+                InitializeRoots();
+            }
+
+            return m_Roots;
+        }
+    }
+    protected virtual string Header => "Project";
+
+    protected virtual void InitializeRoots()
+    {
+        m_Roots = new TreeNodeBase[2]
+        {
+            new TreeNodeBase("Assets", Path.Combine(GameApplication.projectRoot, "Assets"), true, isRoot: true),
+            new TreeNodeBase("Packages", Path.Combine(GameApplication.projectRoot, "Packages"), true, isRoot: true),
+        };
+    }
     
     protected virtual void InitializeSource()
     {
@@ -100,11 +115,11 @@ public class HierarchyViewModel : ViewModelBase
         };
         
         Source.RowSelection!.SingleSelect = false;
-        Source.RowSelection.SelectionChanged += SelectionChanged;
-        Source.Items = m_Roots;
+        
+        Source.Items = Roots;
     }
     
-    private void SelectionChanged(object? sender, TreeSelectionModelSelectionChangedEventArgs<TreeNodeBase> e)
+    protected virtual void SelectionChanged(object? sender, TreeSelectionModelSelectionChangedEventArgs<TreeNodeBase> e)
     {
         
     }
@@ -116,17 +131,7 @@ public class HierarchyViewModel : ViewModelBase
         {
             if (s_iconConverter is null)
             {
-                using (var fileStream = AssetLoader.Open(new Uri("avares://NebulaEditor/Assets/Icons/file.png")))
-                using (var folderStream = AssetLoader.Open(new Uri("avares://NebulaEditor/Assets/Icons/folder.png")))
-                using (var folderOpenStream =
-                       AssetLoader.Open(new Uri("avares://NebulaEditor/Assets/Icons/open-folder.png")))
-                {
-                    var fileIcon = new Bitmap(fileStream);
-                    var folderIcon = new Bitmap(folderStream);
-                    var folderOpenIcon = new Bitmap(folderOpenStream);
-
-                    s_iconConverter = new IconConverter(fileIcon, folderOpenIcon, folderIcon);
-                }
+                s_iconConverter = new IconConverter();
             }
 
             return s_iconConverter;
@@ -136,30 +141,47 @@ public class HierarchyViewModel : ViewModelBase
 
 class IconConverter : IMultiValueConverter
 {
-    private readonly Bitmap _file;
-    private readonly Bitmap _folderExpanded;
-    private readonly Bitmap _folderCollapsed;
-
-    public IconConverter(Bitmap file, Bitmap folderExpanded, Bitmap folderCollapsed)
-    {
-        _file = file;
-        _folderExpanded = folderExpanded;
-        _folderCollapsed = folderCollapsed;
-    }
-    
+    /// <summary>
+     /**
+      * &lt;Binding Path="IsBranch"/&gt
+      * &lt;Binding Path="IsExpanded"/&gt;
+      * &lt;Binding Path="IsRoot"/&gt;
+      */
+    /// </summary>
+    /// <param name="values"></param>
+    /// <param name="targetType"></param>
+    /// <param name="parameter"></param>
+    /// <param name="culture"></param>
+    /// <returns></returns>
     public object? Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
     {
-
-        if (values.Count == 2 &&
-            values[0] is bool isBranch &&
-            values[1] is bool isExpanded)
+        if (values != null && values.Count >= 4 
+                           && values[0] is bool isBranch 
+                           && values[1] is bool IsExpanded
+                           && values[2] is bool isRoot
+                           && values[3] is TreeNodeBase treeNodeBase
+                           )
         {
-            if (!isBranch)
-                return _file;
-            else
-                return isExpanded ? _folderExpanded : _folderCollapsed;
+            if (isRoot)
+            {
+                return treeNodeBase.RootIcon;
+            }
+            
+            if (isBranch)
+            {
+                if (IsExpanded)
+                {
+                    return treeNodeBase.BranchOpenIcon;
+                }
+                else
+                {
+                    return treeNodeBase.BranchIcon;
+                }
+            }
+            
+            return treeNodeBase.LeafIcon;
         }
-        
+
         return null;
     }
 }

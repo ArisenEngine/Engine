@@ -10,11 +10,8 @@ using System.Reflection;
 
 namespace NebulaEditor.GameDev
 {
-    public static class ProjectSolution
+    public static partial class ProjectSolution
     {
-        public static string INSTALLATION_ENV_VARIABLE = "NEBULA_INSTALL_ROOT";
-        public static string InstallationRoot = string.Empty;
-
         private static object m_VisualStudioInstance = null;
         private static EnvDTE80.DTE2 DTE => (m_VisualStudioInstance as EnvDTE80.DTE2);
 
@@ -28,7 +25,7 @@ namespace NebulaEditor.GameDev
         [DllImport("ole32.dll")]
         private static extern int CreateBindCtx(uint reserved, out IBindCtx ppbc);
 
-        public static void OpenVisualStudio(string solutionFullPath)
+        internal static void OpenVisualStudio(string solutionFullPath)
         {
             IRunningObjectTable rot = null;
             IEnumMoniker monikerTable = null;
@@ -100,7 +97,7 @@ namespace NebulaEditor.GameDev
             }
         }
 
-        public static void CloseVisualStudio()
+        internal static void CloseVisualStudio()
         {
             if (DTE != null)
             {
@@ -115,7 +112,7 @@ namespace NebulaEditor.GameDev
             }
         }
 
-        public static bool HandleFiles(FileInfo file, DirectoryInfo sourceDir, DirectoryInfo destinationDir)
+        internal static bool HandleFiles(FileInfo file, DirectoryInfo sourceDir, DirectoryInfo destinationDir)
         {
        
             if (file.Extension == @".sln")
@@ -145,7 +142,7 @@ namespace NebulaEditor.GameDev
                     string sourceFilePath = Path.Combine(sourceDir.FullName, file.Name);
                     string targetFilePath = Path.Combine(destinationDir.FullName, file.Name);
                     string proj = File.ReadAllText(sourceFilePath);
-                    proj = string.Format(proj, InstallationRoot + @"EditorLib.dll");
+                    proj = string.Format(proj, InstallationRoot + @"ProjectBuilderDll.dll");
                     File.WriteAllText(targetFilePath, proj);
 
                     return true;
@@ -168,7 +165,7 @@ namespace NebulaEditor.GameDev
             return false;
         }
 
-        public static void CreateProjectSolution(ProjectInfo template, string newProjectPath, string newProjectName)
+        internal static void CreateProjectSolution(ProjectInfo template, string newProjectPath, string newProjectName)
         {
             var sourcePath = Path.Combine (template.ProjectPath, template.ProjectName);
             var fullPath = Path.Combine(newProjectPath, newProjectName);
@@ -184,7 +181,7 @@ namespace NebulaEditor.GameDev
         /// Validation a project
         /// </summary>
         /// <returns></returns>
-        public static bool ProjectValidation(ProjectInfo project)
+        internal static bool ProjectValidation(ProjectInfo project)
         {
             if (!Directory.Exists(project.ProjectPath))
             {

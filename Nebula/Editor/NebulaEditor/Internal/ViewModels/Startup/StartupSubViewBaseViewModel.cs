@@ -8,10 +8,10 @@ using ReactiveUI;
 
 namespace NebulaEditor.ViewModels.Startup
 {
-	public abstract class StartupSubViewBaseViewModel : NebulaEditor.ViewModels.ViewModelBase
+    internal abstract class StartupSubViewBaseViewModel : NebulaEditor.ViewModels.ViewModelBase
     {
         protected Bitmap m_PreviewImage;
-        public Bitmap PreivewImage
+        internal Bitmap PreivewImage
         {
             get
             {
@@ -24,7 +24,7 @@ namespace NebulaEditor.ViewModels.Startup
         }
 
         private string m_PreviewPath = String.Empty;
-        public void UpdatePreviewImage(string path)
+        internal void UpdatePreviewImage(string path)
         {
             if (string.IsNullOrEmpty(path) || path == m_PreviewPath)
             {
@@ -35,9 +35,9 @@ namespace NebulaEditor.ViewModels.Startup
             PreivewImage = ImageHelper.LoadFromResource(path);
         }
         
-        public ProjectListViewModel ProjectListViewModel { get; set; } = new ProjectListViewModel();
+        internal ProjectListViewModel ProjectListViewModel { get; set; } = new ProjectListViewModel();
 
-        public StartupSubViewBaseViewModel() : base()
+        internal StartupSubViewBaseViewModel() : base()
         {
             PreivewImage = ImageHelper.LoadFromResource("/Assets/LOGO.png");
             ProjectListViewModel.OnSelectionChanged += (int selectedIndex) =>
@@ -52,7 +52,7 @@ namespace NebulaEditor.ViewModels.Startup
             };
         }
         
-        public void SetProjectsList(List<ProjectInfo> projectInfos)
+        internal void SetProjectsList(List<ProjectInfo> projectInfos)
         {
             var observerProjectList = new ObservableCollection<ProjectInfo>();
             for(var i = 0;i < projectInfos.Count; ++i) 

@@ -7,8 +7,6 @@
         xmlns:rendering ="using:NebulaEngine.Views.Rendering"
 		xmlns:views ="using:NebulaEditor.Views"
 		xmlns:vm="using:NebulaEditor.ViewModels"
-        xmlns:utl="using:NebulaEditor.Views.Utilities"
-        xmlns:utlvm="using:NebulaEditor.ViewModels.Utilities"
 		SystemDecorations="Full"
 		WindowStartupLocation="CenterScreen"
 		CanResize="True"
@@ -26,8 +24,8 @@
 		<Grid ColumnDefinitions="*" RowDefinitions="Auto, 110*">
 
 			<!-- Menu Bar TODO: dynamic add item for easily to expend -->
-			<Grid Grid.Row="0" RowDefinitions="Auto, Auto" VerticalAlignment="Center" Background="Black">
-				<Menu Grid.Row="0"  Foreground="AliceBlue" Height="25" Background="#383838">
+			<Grid Grid.Row="0" RowDefinitions="Auto, Auto" VerticalAlignment="Center">
+				<Menu Grid.Row="0"  Foreground="AliceBlue" Height="25">
 					<MenuItem Header="File" Margin="0,0,0,0" Height="25">
 						<MenuItem Header="Open"  Margin="0,0,0,0" Height="25" />
 						<Separator/>
@@ -65,7 +63,7 @@
 			</Grid>
             
                 <!-- Body Content of Main Editor -->
-			<Grid Grid.Row="1" ColumnDefinitions="5*,0.005*,1*" RowDefinitions="*">
+			<Grid Grid.Row="1" ColumnDefinitions="5*,0.0001*,1*" RowDefinitions="*">
 
 				<!-- Hierarchy | Scene/Game View-->
 				<!-- **************************** -->
@@ -73,11 +71,15 @@
 				<Grid Grid.Column="0"  ColumnDefinitions="*" RowDefinitions="2*,0.005*,1*">
 
 					<!-- Hierarchy | Scene/Game View-->
-					<Grid Grid.Row="0" ColumnDefinitions="Auto,0.01,4*">
+					<Grid Grid.Row="0" ColumnDefinitions="1*,0.0001*,4*">
 
 						<!-- Hierarchy -->
 						<Grid Grid.Column="0">
-							<views:SceneHierarchyView></views:SceneHierarchyView>
+							<views:HierarchyView>
+								<views:HierarchyView.DataContext>
+									<vm:SceneHierarchyViewModel />
+								</views:HierarchyView.DataContext>
+							</views:HierarchyView>
 						</Grid>
 
 						<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
@@ -99,24 +101,24 @@
 					<GridSplitter Grid.Row="1" ResizeDirection="Rows" Background="Gray" ></GridSplitter>
 
 					<!-- Project | Console -->
-					<Grid Grid.Row="2" ColumnDefinitions="0.5*, 0.001*, 0.5*">
+					<Grid Grid.Row="2" ColumnDefinitions="0.5*, 0.0001*, 0.5*">
 
 						<!-- Project -->
 						<Grid Grid.Column="0" RowDefinitions="Auto, *" ColumnDefinitions="*">
 							<!-- Search bar -->
-							<Grid Grid.Row="0" Background="Black" Height="35" VerticalAlignment="Top">
+							<Grid Grid.Row="0" Height="35" VerticalAlignment="Top">
 
 							</Grid>
 
 							<!-- Project & Asset -->
-							<Grid Grid.Row="1" ColumnDefinitions="0.5*,0.001*, 0.5*">
+							<Grid Grid.Row="1" ColumnDefinitions="0.5*,0.0001*, 0.5*">
 								<Grid Grid.Column="0">
 									<!-- <views:AssetsHierarchyView/> -->
-									<utl:HierarchyView>
-										<utl:HierarchyView.DataContext>
-											<utlvm:HierarchyViewModel />
-										</utl:HierarchyView.DataContext>
-									</utl:HierarchyView>
+									<views:HierarchyView>
+										<views:HierarchyView.DataContext>
+											<vm:HierarchyViewModel />
+										</views:HierarchyView.DataContext>
+									</views:HierarchyView>
 								</Grid>
 
 								<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
@@ -142,7 +144,7 @@
 				<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
 
 				<!-- Inspector area -->
-				<Grid Grid.Column="2" ColumnDefinitions="*" RowDefinitions="*,0.005*,*">
+				<Grid Grid.Column="2" ColumnDefinitions="*" RowDefinitions="*,0.0001*,*">
 					<Label Grid.Row="0" FontSize="70"> Inspertor </Label>
 					<GridSplitter Grid.Row="1" ResizeDirection="Rows" Background="Gray" ></GridSplitter>
 					<rendering:RenderSurfaceView Grid.Row="2">

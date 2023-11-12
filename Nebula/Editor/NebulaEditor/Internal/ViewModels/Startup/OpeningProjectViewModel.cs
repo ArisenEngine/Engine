@@ -6,7 +6,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Shapes;
 using Avalonia.Media.Imaging;
 using NebulaEditor.Models.Startup;
-using NebulaEditor.Utility;
+using NebulaEditor.Utilities;
 using NebulaEditor.Windows.MainEditor;
 using NebulaEditor.Windows.Startup;
 using NebulaEngine;
@@ -14,10 +14,10 @@ using ReactiveUI;
 
 namespace NebulaEditor.ViewModels.Startup
 {
-	public class OpeningProjectViewModel : StartupSubViewBaseViewModel
+    internal class OpeningProjectViewModel : StartupSubViewBaseViewModel
     {
-        public ICommand OpenProjectCommand { get; }
-        public OpeningProjectViewModel(): base()
+        internal ICommand OpenProjectCommand { get; }
+        internal OpeningProjectViewModel(): base()
         {
             OpenProjectCommand = ReactiveCommand.Create(() =>
             {
@@ -47,7 +47,7 @@ namespace NebulaEditor.ViewModels.Startup
 
 
 
-        public static async void OpenProject(ProjectInfo currenrProject, string copyFromPath = "")
+        internal static async void OpenProject(ProjectInfo currenrProject, string copyFromPath = "")
         {
             Debug.WriteLine("Open Project:" + currenrProject.ProjectName);
 

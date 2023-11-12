@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace NebulaEditor.Models
 {
-    public static class EditorContext
+    internal static class EditorContext
     {
-        public enum SelectedType
+        internal enum SelectedType
         {
             Entity,
             

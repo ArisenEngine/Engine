@@ -7,19 +7,19 @@ using Avalonia.Platform;
 
 namespace NebulaEditor.Utilities
 {
-    public static class ImageHelper
+    internal static class ImageHelper
     {
-        public static Bitmap LoadFromResource(string path)
+        internal static Bitmap LoadFromResource(string path)
         {
             return LoadFromResource(new Uri($"avares://NebulaEditor{path}"));
         }
         
-        public static Bitmap LoadFromResource(Uri resourceUri)
+        internal static Bitmap LoadFromResource(Uri resourceUri)
         {
             return new Bitmap(AssetLoader.Open(resourceUri));
         }
 
-        public static async Task<Bitmap?> LoadFromWeb(Uri url)
+        internal static async Task<Bitmap?> LoadFromWeb(Uri url)
         {
             using var httpClient = new HttpClient();
             try

@@ -2,9 +2,9 @@ using Avalonia.Controls;
 
 namespace NebulaEditor.Windows.Startup
 {
-    public partial class OpeningWindow : Window
+    internal partial class OpeningWindow : Window
     {
-        public OpeningWindow()
+        internal OpeningWindow()
         {
             InitializeComponent();
         }

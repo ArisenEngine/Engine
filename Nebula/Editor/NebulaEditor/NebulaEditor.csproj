@@ -49,6 +49,10 @@
 		  <DependentUpon>AssetsHierarchyView.axaml</DependentUpon>
 		  <SubType>Code</SubType>
 		</Compile>
+		<Compile Update="Public\Views\HierarchyView.axaml.cs">
+		  <DependentUpon>HierarchyView.axaml</DependentUpon>
+		  <SubType>Code</SubType>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -77,17 +81,12 @@
     <Compile Update="Views\HierarchyView.axaml.cs">
       <DependentUpon>HierarchyView.axaml</DependentUpon>
     </Compile>
-    <Compile Update="Windows\Startup\Splash.axaml.cs">
-      <DependentUpon>Splash.axaml</DependentUpon>
-    </Compile>
   </ItemGroup>
 
 
   <ItemGroup>
-    <Folder Include="Interface\" />
+    <Folder Include="Internal\Interface\" />
     <Folder Include="Resources\" />
-    <Folder Include="Views\DataTemplates\" />
-    <Folder Include="Windows\Common\" />
   </ItemGroup>
 
 
@@ -96,6 +95,17 @@
     <ProjectReference Include="..\..\Engine\EngineLib\EngineLib.csproj" />
     <ProjectReference Include="..\..\Engine\NebulaEngine\NebulaEngine.csproj" />
     <ProjectReference Include="..\..\Serialization\Serialization\Serialization.csproj" />
-    <ProjectReference Include="..\EditorLib\EditorLib.csproj" />
+    <ProjectReference Include="..\ProjectBuilderDll\ProjectBuilderDll.csproj" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <AdditionalFiles Include="Internal\Views\Startup\CreateProjectPage.axaml" />
+    <AdditionalFiles Include="Internal\Views\Startup\OpeningProjectPage.axaml" />
+    <AdditionalFiles Include="Internal\Views\Startup\ProjectListView.axaml" />
+    <AdditionalFiles Include="Internal\Windows\MainEditor\MainEditorWindow.axaml" />
+    <AdditionalFiles Include="Internal\Windows\Startup\MainWindow.axaml" />
+    <AdditionalFiles Include="Internal\Windows\Startup\OpeningWindow.axaml" />
+    <AdditionalFiles Include="Internal\Windows\Startup\Splash.axaml" />
   </ItemGroup>
 </Project>

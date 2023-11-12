@@ -29,7 +29,10 @@
                             <MultiBinding Converter="{x:Static vm:HierarchyViewModel.IconConverter}">
                                 <Binding Path="IsBranch"/>
                                 <Binding Path="IsExpanded"/>
+                                <Binding Path="IsRoot"/>
+                                <Binding Path="."/>
                             </MultiBinding>
+                            <!-- <Binding Path="." Converter="{x:Static vm:HierarchyViewModel.IconConverter}"></Binding> -->
                         </Image.Source>
                     </Image>
                     <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
@@ -42,12 +45,15 @@
             <DataTemplate x:Key="NameEditCell" DataType="m:TreeNodeBase">
                 <StackPanel Orientation="Horizontal">
                     <Image Margin="0 0 4 0"
-                           VerticalAlignment="Center" Width="20" Height="20">
+                           VerticalAlignment="Center" Width="15" Height="15">
                         <Image.Source>
                             <MultiBinding Converter="{x:Static vm:HierarchyViewModel.IconConverter}">
                                 <Binding Path="IsBranch"/>
                                 <Binding Path="IsExpanded"/>
+                                <Binding Path="IsRoot"/>
+                                <Binding Path="."/>
                             </MultiBinding>
+                            <!-- <Binding Path="." Converter="{x:Static vm:HierarchyViewModel.IconConverter}"></Binding> -->
                         </Image.Source>
                     </Image>
                     <TextBox Text="{Binding Name}" VerticalAlignment="Center"/>

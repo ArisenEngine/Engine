@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using ReactiveUI;
 
-namespace NebulaEditor.Models.Utilities;
+namespace NebulaEditor.Models;
 
 public class TreeNodeBase : ReactiveObject, IEditableObject
 {
@@ -17,7 +19,9 @@ public class TreeNodeBase : ReactiveObject, IEditableObject
     }
     
     public bool IsBranch { get; }
-    
+
+    public bool IsRoot { get; private set; }
+
     public bool IsChecked { get; set; }
 
     private string m_Name = "TreeNode";
@@ -58,6 +62,84 @@ public class TreeNodeBase : ReactiveObject, IEditableObject
         private set => this.RaiseAndSetIfChanged(ref m_HasChildren, value);
     }
 
+    private Bitmap m_LeafIcon;
+
+    public Bitmap LeafIcon
+    {
+        get
+        {
+            if (m_LeafIcon == null)
+            {
+                using (var fileStream = AssetLoader.Open(new Uri(LeafIconPath)))
+                {
+                    m_LeafIcon = new Bitmap(fileStream);
+                }
+            }
+
+            return m_LeafIcon;
+        }
+    }
+    
+    private Bitmap m_BranchIcon;
+    
+    public Bitmap BranchIcon
+    {
+        get
+        {
+            if (m_BranchIcon == null)
+            {
+                using (var fileStream = AssetLoader.Open(new Uri(BranchIconPath)))
+                {
+                    m_BranchIcon = new Bitmap(fileStream);
+                }
+            }
+
+            return m_BranchIcon;
+        }
+    }
+    
+    private Bitmap m_BranchOpenIcon;
+    
+    public Bitmap BranchOpenIcon
+    {
+        get
+        {
+            if (m_BranchOpenIcon == null)
+            {
+                using (var fileStream = AssetLoader.Open(new Uri(BranchOpenIconPath)))
+                {
+                    m_BranchOpenIcon = new Bitmap(fileStream);
+                }
+            }
+
+            return m_BranchOpenIcon;
+        }
+    }
+    
+    private Bitmap m_RootIcon;
+    
+    public Bitmap RootIcon
+    {
+        get
+        {
+            if (m_RootIcon == null)
+            {
+                using (var fileStream = AssetLoader.Open(new Uri(RootIconPath)))
+                {
+                    m_RootIcon = new Bitmap(fileStream);
+                }
+            }
+
+            return m_RootIcon;
+        }
+    }
+    
+    protected virtual string LeafIconPath => "avares://NebulaEditor/Assets/Icons/file.png";
+    protected virtual string BranchIconPath => "avares://NebulaEditor/Assets/Icons/folder.png";
+    protected virtual string BranchOpenIconPath => "avares://NebulaEditor/Assets/Icons/folder-open.png";
+
+    protected virtual string RootIconPath => "avares://NebulaEditor/Assets/Icons/AssetsRoot.png";
+    
     public TreeNodeBase(
         string name,
         string path,
@@ -67,6 +149,7 @@ public class TreeNodeBase : ReactiveObject, IEditableObject
         m_Path = path;
         m_Name = name;
         IsExpanded = isRoot;
+        IsRoot = isRoot;
         IsBranch = isBranch;
         HasChildren = IsBranch;
         
