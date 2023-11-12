@@ -7,7 +7,7 @@ using System;
 using Avalonia.Controls;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using NebulaEditor.Utility;
+using NebulaEditor.Utilities;
 using Avalonia.Platform.Storage;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -22,7 +22,7 @@ using Avalonia.Media.Imaging;
 
 namespace NebulaEditor.ViewModels.Startup
 {
-    public class CreateProjectViewModel : StartupSubViewBaseViewModel
+    internal class CreateProjectViewModel : StartupSubViewBaseViewModel
     {
         #region Project Info
 

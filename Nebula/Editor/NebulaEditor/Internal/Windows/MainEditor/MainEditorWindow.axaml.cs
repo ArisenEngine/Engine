@@ -10,9 +10,9 @@ using NebulaEditor.ViewModels.Startup;
 
 namespace NebulaEditor.Windows.MainEditor
 {
-    public partial class MainEditorWindow : Window
+    internal partial class MainEditorWindow : Window
     {
-        public MainEditorWindowViewModel viewModel
+        internal MainEditorWindowViewModel viewModel
         {
             get
             {
@@ -20,7 +20,7 @@ namespace NebulaEditor.Windows.MainEditor
             }
         }
 
-        public MainEditorWindow()
+        internal MainEditorWindow()
         {
             InitializeComponent();
 
@@ -30,7 +30,7 @@ namespace NebulaEditor.Windows.MainEditor
         protected override void OnLoaded(RoutedEventArgs e)
         {
             base.OnLoaded(e);
-
+            this.Title = GameApplication.projectName;
         }
        
         private void OpenProjectClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

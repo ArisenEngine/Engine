@@ -6,15 +6,15 @@ using System.Threading.Tasks;
 
 namespace NebulaEditor.Models
 {
-    public enum AssetType
+    internal enum AssetType
     {
         Unknow,
         Folder,
         File
     }
 
-    public class AssetInfo
+    internal class AssetInfo
     {
-        public AssetType type = AssetType.Unknow;
+        internal AssetType type = AssetType.Unknow;
     }
 }

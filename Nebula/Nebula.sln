@@ -109,7 +109,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EngineTest", "Test\EngineTe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EngineLib", "Engine\EngineLib\EngineLib.csproj", "{5DECB59F-FEF1-4928-A2C0-BC7FD799F85E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EditorLib", "Editor\EditorLib\EditorLib.csproj", "{CAC0D4C2-D102-4A86-9EDC-6F8844129E76}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectBuilderDll", "Editor\ProjectBuilderDll\ProjectBuilderDll.csproj", "{CAC0D4C2-D102-4A86-9EDC-6F8844129E76}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SolutionManager", "Editor\SolutionManager\SolutionManager.vcxproj", "{E495BF49-D4E8-4C17-9528-BF724A4064C7}"
 EndProject

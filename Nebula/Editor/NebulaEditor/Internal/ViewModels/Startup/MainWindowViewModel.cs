@@ -6,18 +6,18 @@ using Avalonia.Controls;
 using MsBox.Avalonia.ViewModels.Commands;
 using NebulaEditor.GameDev;
 using NebulaEditor.Models.Startup;
-using NebulaEditor.Utility;
+using NebulaEditor.Utilities;
 using ReactiveUI;
 using Serialization;
 
 namespace NebulaEditor.ViewModels.Startup
 {
-    public class MainWindowViewModel : ViewModelBase
+    internal class MainWindowViewModel : ViewModelBase
     {
         
 
         private OpeningProjectViewModel m_OpeningProjectViewModel;
-        public OpeningProjectViewModel OpeningProjectViewModel
+        internal OpeningProjectViewModel OpeningProjectViewModel
         {
             get
             {
@@ -26,7 +26,7 @@ namespace NebulaEditor.ViewModels.Startup
         }
 
         private CreateProjectViewModel m_CreateProjectViewModel;
-        public CreateProjectViewModel CreateProjectViewModel
+        internal CreateProjectViewModel CreateProjectViewModel
         {
             get
             {
@@ -34,9 +34,9 @@ namespace NebulaEditor.ViewModels.Startup
             }
         }
 
-        public ICommand SelectionChangedCommand { get; }
+        internal ICommand SelectionChangedCommand { get; }
 
-        public MainWindowViewModel()
+        internal MainWindowViewModel()
         {
             m_OpeningProjectViewModel = new OpeningProjectViewModel();
             m_CreateProjectViewModel = new CreateProjectViewModel();
@@ -72,7 +72,7 @@ namespace NebulaEditor.ViewModels.Startup
             }
         }
 
-        public async Task<int> LoadEditorConfigAsync()
+        internal async Task<int> LoadEditorConfigAsync()
         {
             if (EditorConfig.Instance != null)
             {

@@ -9,10 +9,10 @@ using System.Threading.Tasks;
 
 namespace NebulaEditor.ViewModels.Startup
 {
-    public class OpeningWindowViewModel : ViewModelBase
+    internal class OpeningWindowViewModel : ViewModelBase
     {
         private double m_ProgressVaule = 0;
-        public double ProgressValue 
+        internal double ProgressValue 
         {
             get { return m_ProgressVaule; }
             set { this.RaiseAndSetIfChanged(ref m_ProgressVaule, value); }
@@ -23,7 +23,7 @@ namespace NebulaEditor.ViewModels.Startup
             ProgressValue = 0;
         }
 
-        public Task UpdateProgress()
+        internal Task UpdateProgress()
         {
             ProgressValue = 0;
 

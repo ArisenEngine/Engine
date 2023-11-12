@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace NebulaEditor.ViewModels
 {
-    public class MainEditorWindowViewModel : ViewModelBase
+    internal class MainEditorWindowViewModel : ViewModelBase
     {
        
 

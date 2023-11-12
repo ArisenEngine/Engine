@@ -27,7 +27,7 @@ class Program
         NebulaEngine.GameApplication.isInEditor = true;
 
         BuildAvaloniaApp()
-       .StartWithClassicDesktopLifetime(args);
+            .StartWithClassicDesktopLifetime(args);
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
