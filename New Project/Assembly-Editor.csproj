@@ -13,8 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="EditorLib">
-      <HintPath>E:\TechCenter\NebulaEngine\Nebula\x64\Debug\EditorLib.dll</HintPath>
+    <Reference Include="NebulaEditor">
+      <HintPath>E:\Work\NebulaEngine\Nebula\x64\Debug\NebulaEditor.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>

@@ -142,7 +142,7 @@ namespace NebulaEditor.GameDev
                     string sourceFilePath = Path.Combine(sourceDir.FullName, file.Name);
                     string targetFilePath = Path.Combine(destinationDir.FullName, file.Name);
                     string proj = File.ReadAllText(sourceFilePath);
-                    proj = string.Format(proj, InstallationRoot + @"ProjectBuilderDll.dll");
+                    proj = string.Format(proj, "\"NebulaEditor\"", InstallationRoot + @"NebulaEditor.dll");
                     File.WriteAllText(targetFilePath, proj);
 
                     return true;

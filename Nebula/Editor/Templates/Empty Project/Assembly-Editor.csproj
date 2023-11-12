@@ -13,8 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="EditorLib">
-      <HintPath>{0}</HintPath>
+    <Reference Include={0}>
+      <HintPath>{1}</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>
