@@ -137,9 +137,9 @@ public abstract class TreeNodeBase : ReactiveObject, IEditableObject
 
     protected virtual string RootIconPath => "";
 
-    private bool m_Isimmutable;
+    private bool m_IsImmutable;
 
-    public bool Immutable => m_Isimmutable;
+    public bool Immutable => m_IsImmutable;
     
     public TreeNodeBase(
         string name, string path, bool isBranch, bool isRoot = false, bool isImmutable = false)
@@ -149,7 +149,7 @@ public abstract class TreeNodeBase : ReactiveObject, IEditableObject
         IsRoot = isRoot;
         m_IsExpanded = isRoot;
         IsBranch = isBranch;
-        m_Isimmutable = isImmutable;
+        m_IsImmutable = isImmutable;
     }
     
     #region Sort
