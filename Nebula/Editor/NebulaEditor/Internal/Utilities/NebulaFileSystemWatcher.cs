@@ -72,7 +72,7 @@ public partial class NebulaFileSystemWatcher : IDisposable
             {
                 // TODO: reimport
             }
-            
+
             Renamed?.Invoke(sender, e);
             
         });

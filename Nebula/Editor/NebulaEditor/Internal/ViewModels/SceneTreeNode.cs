@@ -34,12 +34,7 @@ public class SceneTreeNode : TreeNodeBase
             var name = d.Split(System.IO.Path.DirectorySeparatorChar)[^1];
             result.Add(new SceneTreeNode(name, d, true, false));
         }
-        
-        if (result.Count == 0)
-        {
-            HasChildren = false;
-        }
-
+      
         return result;
     }
     
@@ -52,6 +47,10 @@ public class SceneTreeNode : TreeNodeBase
 
         return (IReadOnlyList<SceneTreeNode>) m_Children;
     }
+
+    public override bool HasChildren => true;
+    
+    public override bool ShowExpander => true;
 
     protected override string LeafIconPath => "avares://NebulaEditor/Assets/Icons/entity-icon.png";
     protected override string BranchIconPath => "avares://NebulaEditor/Assets/Icons/entity-icon.png";

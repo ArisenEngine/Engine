@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Reactive.Linq;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using NebulaEditor.Utilities;
@@ -13,6 +14,7 @@ public class FolderTreeNode : TreeNodeBase
     private string? m_UndoName;
     public FolderTreeNode(string name, string path, bool isBranch, bool isRoot = false, bool isImmutable = false) : base(name, path, isBranch, isRoot, isImmutable)
     {
+       
     }
 
     private ObservableCollection<FolderTreeNode>? m_Children;
@@ -42,14 +44,11 @@ public class FolderTreeNode : TreeNodeBase
         NebulaFileSystemWatcher.Deleted += OnDeleted;
         NebulaFileSystemWatcher.Renamed += OnRenamed;
 
-        if (result.Count == 0)
-        {
-            HasChildren = false;
-        }
-
         return result;
     }
-    
+
+    public override bool ShowExpander => true;
+
     public override IReadOnlyList<FolderTreeNode> Children<FolderTreeNode>()
     {
         if (m_Children == null)
@@ -58,6 +57,8 @@ public class FolderTreeNode : TreeNodeBase
         }
         return (IReadOnlyList<FolderTreeNode>)m_Children;
     }
+
+    public override bool HasChildren => Children<FolderTreeNode>().Count > 0;
 
     protected override string LeafIconPath => "avares://NebulaEditor/Assets/Icons/file.png";
     protected override string BranchIconPath => "avares://NebulaEditor/Assets/Icons/folder.png";
@@ -93,13 +94,25 @@ public class FolderTreeNode : TreeNodeBase
         {
             return;
         }
-            
+        
         var name = e.FullPath.Split(System.IO.Path.DirectorySeparatorChar)[^1];
-        var node = new FolderTreeNode(
-            name,
-            e.FullPath,
-            true);
-        m_Children!.Add(node);
+        var parentPath = e.FullPath.Substring(0, e.FullPath.Length - name.Length - 1);
+        if (string.Equals(parentPath, this.Path))
+        {
+            var node = new FolderTreeNode(
+                name,
+                e.FullPath,
+                true,
+                false);
+            m_Children.Add(node);
+            if (m_Children.Count == 1)
+            {
+                // first add child, force refresh the expander
+                // TODO: this is a bug
+                this.IsExpanded = true;
+                this.IsExpanded = false;
+            }
+        }
     }
 
     private void OnDeleted(object sender, FileSystemEventArgs e)
@@ -109,7 +122,11 @@ public class FolderTreeNode : TreeNodeBase
             if (m_Children[i].Path == e.FullPath)
             {
                 m_Children.RemoveAt(i);
-                System.Diagnostics.Debug.WriteLine($"Removed {e.FullPath}");
+                if (m_Children.Count <= 0)
+                { 
+                    this.IsExpanded = true;
+                    this.IsExpanded = false;
+                }
                 break;
             }
         }
@@ -122,7 +139,7 @@ public class FolderTreeNode : TreeNodeBase
             if (child.Path == e.OldFullPath)
             {
                 child.Path = e.FullPath;
-                child.Name = e.Name ?? string.Empty;
+                child.Name = e.Name.Split(System.IO.Path.DirectorySeparatorChar)[^1] ?? child.Name;
                 break;
             }
         }
@@ -143,6 +160,22 @@ public class FolderTreeNode : TreeNodeBase
         if (Immutable)
         {
             Name = m_UndoName;
+        }
+        else
+        {
+            var oldPath = Path;
+            try
+            {
+                var dir = new DirectoryInfo(Path);
+                Path = Path.Replace(m_UndoName, Name);
+                dir.MoveTo(Path);
+            }
+            catch (Exception e)
+            {
+                Name = m_UndoName;
+                Path = oldPath;
+                var _ = MessageBoxUtility.ShowMessageBoxStandard("Rename folder failed", $"{e.Message}");
+            }
         }
 
         m_UndoName = null;

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace NebulaEngine.Data.ProjectData
 {
-    public class ProjectSettings : ISerializationCallbackReceiver
+    public sealed class ProjectSettings : ISerializationCallbackReceiver
     {
         public string ProjectName = "New Project";
         public string PackageName = "Com.Nebula.Default";

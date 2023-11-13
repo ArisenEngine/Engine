@@ -10,7 +10,6 @@
 
     </Application.Resources>
     <Application.Styles>
-      
         <FluentTheme>
             <FluentTheme.Palettes>
                 <!-- Palette for Light theme variant -->
@@ -18,10 +17,7 @@
                 <!-- Palette for Dark theme variant -->
                 <ColorPaletteResources x:Key="Dark" Accent="DarkGreen" RegionColor="#333333" ErrorText="Yellow" />
             </FluentTheme.Palettes>
-            
         </FluentTheme>
-        
-        <StyleInclude Source="avares://Avalonia.Controls.TreeDataGrid/Themes/Fluent.axaml"/>
-        
+        <StyleInclude Source="avares://NebulaEditor/Themes/Fluent.axaml"/>
     </Application.Styles>
 </Application>

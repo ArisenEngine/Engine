@@ -37,9 +37,9 @@ namespace NebulaEditor.Windows.MainEditor
             base.OnLoaded(e);
             this.Title = GameApplication.projectName;
 
-            var worldViewModel = new WorldHierarchyViewModel();
-            this.WorldHierarchyView.TreeGridViewer.DataContext = worldViewModel;
-            this.WorldHierarchyView.TreeGridViewer.Bind(TreeDataGrid.SourceProperty, new Binding("Source"));
+            // var worldViewModel = new WorldHierarchyViewModel();
+            // this.WorldHierarchyView.TreeGridViewer.DataContext = worldViewModel;
+            // this.WorldHierarchyView.TreeGridViewer.Bind(TreeDataGrid.SourceProperty, new Binding("Source"));
             
             var projectViewModel = new ProjectHierarchyViewModel();
             this.ProjectHierarchyView.TreeGridViewer.DataContext = projectViewModel;

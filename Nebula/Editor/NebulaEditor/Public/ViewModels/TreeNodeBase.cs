@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using Avalonia.Media.Imaging;
@@ -15,8 +14,13 @@ public abstract class TreeNodeBase : ReactiveObject, IEditableObject
     public bool IsExpanded
     {
         get => m_IsExpanded;
-        set => this.RaiseAndSetIfChanged(ref m_IsExpanded, value);
+        set 
+        {
+            this.RaiseAndSetIfChanged(ref m_IsExpanded, value && HasChildren);
+        }
     }
+    
+    public abstract bool ShowExpander { get; }
     
     public bool IsBranch { get; }
 
@@ -53,12 +57,7 @@ public abstract class TreeNodeBase : ReactiveObject, IEditableObject
     }
     public abstract IReadOnlyList<T> Children<T>() where T : TreeNodeBase;
     
-    private bool m_HasChildren = true;
-    public bool HasChildren
-    {
-        get => m_HasChildren;
-        set => this.RaiseAndSetIfChanged(ref m_HasChildren, value);
-    }
+    public abstract bool HasChildren { get; }
 
     private Bitmap m_LeafIcon;
 
@@ -143,19 +142,14 @@ public abstract class TreeNodeBase : ReactiveObject, IEditableObject
     public bool Immutable => m_Isimmutable;
     
     public TreeNodeBase(
-        string name,
-        string path,
-        bool isBranch,
-        bool isRoot,
-        bool immutable = false)
+        string name, string path, bool isBranch, bool isRoot = false, bool isImmutable = false)
     {
         m_Path = path;
         m_Name = name;
-        IsExpanded = isRoot;
         IsRoot = isRoot;
+        m_IsExpanded = isRoot;
         IsBranch = isBranch;
-        HasChildren = IsBranch;
-        m_Isimmutable = immutable;
+        m_Isimmutable = isImmutable;
     }
     
     #region Sort
