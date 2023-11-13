@@ -5,8 +5,11 @@ using NebulaEditor.ViewModels;
 using NebulaEditor.Views;
 using NebulaEngine;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Data;
 using NebulaEditor.ViewModels.Startup;
+using ReactiveUI;
 
 namespace NebulaEditor.Windows.MainEditor
 {
@@ -31,6 +34,14 @@ namespace NebulaEditor.Windows.MainEditor
         {
             base.OnLoaded(e);
             this.Title = GameApplication.projectName;
+
+            var worldViewModel = new WorldHierarchyViewModel();
+            this.WorldHierarchyView.TreeGridViewer.DataContext = worldViewModel;
+            this.WorldHierarchyView.TreeGridViewer.Bind(TreeDataGrid.SourceProperty, new Binding("Source"));
+            
+            var projectViewModel = new ProjectHierarchyViewModel();
+            this.ProjectHierarchyView.TreeGridViewer.DataContext = projectViewModel;
+            this.ProjectHierarchyView.TreeGridViewer.Bind(TreeDataGrid.SourceProperty, new Binding("Source"));
         }
        
         private void OpenProjectClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

@@ -7,9 +7,9 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using ReactiveUI;
 
-namespace NebulaEditor.Models;
+namespace NebulaEditor.ViewModels;
 
-public class TreeNodeBase : ReactiveObject, IEditableObject
+public abstract class TreeNodeBase : ReactiveObject, IEditableObject
 {
     private bool m_IsExpanded;
     public bool IsExpanded
@@ -28,38 +28,36 @@ public class TreeNodeBase : ReactiveObject, IEditableObject
     public string Name 
     {
         get => m_Name;
-        private set => this.RaiseAndSetIfChanged(ref m_Name, value);
+        set => this.RaiseAndSetIfChanged(ref m_Name, value);
     }
     
     private long? m_Size;
     public long? Size 
     {
         get => m_Size;
-        private set => this.RaiseAndSetIfChanged(ref m_Size, value);
+        set => this.RaiseAndSetIfChanged(ref m_Size, value);
     }
     
     private string m_Path;
     public string Path 
     {
         get => m_Path;
-        private set => this.RaiseAndSetIfChanged(ref m_Path, value);
+        set => this.RaiseAndSetIfChanged(ref m_Path, value);
     }
     
     private DateTimeOffset? m_Modified;
     public DateTimeOffset? Modified 
     {
         get => m_Modified;
-        private set => this.RaiseAndSetIfChanged(ref m_Modified, value);
+        set => this.RaiseAndSetIfChanged(ref m_Modified, value);
     }
-
-    private ObservableCollection<TreeNodeBase>? m_Children;
-    public IReadOnlyList<TreeNodeBase> Children => m_Children ??= LoadChildren();
+    public abstract IReadOnlyList<T> Children<T>() where T : TreeNodeBase;
     
     private bool m_HasChildren = true;
     public bool HasChildren
     {
         get => m_HasChildren;
-        private set => this.RaiseAndSetIfChanged(ref m_HasChildren, value);
+        set => this.RaiseAndSetIfChanged(ref m_HasChildren, value);
     }
 
     private Bitmap m_LeafIcon;
@@ -134,17 +132,22 @@ public class TreeNodeBase : ReactiveObject, IEditableObject
         }
     }
     
-    protected virtual string LeafIconPath => "avares://NebulaEditor/Assets/Icons/file.png";
-    protected virtual string BranchIconPath => "avares://NebulaEditor/Assets/Icons/folder.png";
-    protected virtual string BranchOpenIconPath => "avares://NebulaEditor/Assets/Icons/folder-open.png";
+    protected virtual string LeafIconPath => "";
+    protected virtual string BranchIconPath => "";
+    protected virtual string BranchOpenIconPath => "";
 
-    protected virtual string RootIconPath => "avares://NebulaEditor/Assets/Icons/AssetsRoot.png";
+    protected virtual string RootIconPath => "";
+
+    private bool m_Isimmutable;
+
+    public bool Immutable => m_Isimmutable;
     
     public TreeNodeBase(
         string name,
         string path,
         bool isBranch,
-        bool isRoot = false)
+        bool isRoot,
+        bool immutable = false)
     {
         m_Path = path;
         m_Name = name;
@@ -152,54 +155,9 @@ public class TreeNodeBase : ReactiveObject, IEditableObject
         IsRoot = isRoot;
         IsBranch = isBranch;
         HasChildren = IsBranch;
-        
-        // TOOD: get file info ?
+        m_Isimmutable = immutable;
     }
-
-
-    protected virtual ObservableCollection<TreeNodeBase> LoadChildren()
-    {
-        if (!IsBranch)
-        {
-            throw new NotSupportedException();
-        }
-        
-        var options = new EnumerationOptions
-        {
-            IgnoreInaccessible = true ,
-            AttributesToSkip = FileAttributes.Hidden | FileAttributes.System
-        };
-        var result = new ObservableCollection<TreeNodeBase>();
-
-        foreach (var d in Directory.EnumerateDirectories(Path, "*", options))
-        {
-            var name = d.Split(System.IO.Path.DirectorySeparatorChar)[^1];
-            result.Add(new TreeNodeBase(name, d, true));
-        }
-
-        // foreach (var f in Directory.EnumerateFiles(Path, "*", options))
-        // {
-        //     result.Add(new TreeNodeBase(f, f,false));
-        // }
-
-        var _watcher = new FileSystemWatcher
-        {
-            Path = Path,
-            NotifyFilter = NotifyFilters.FileName | NotifyFilters.Size | NotifyFilters.LastWrite,
-        };
-
-        // _watcher.Changed += OnChanged;
-        // _watcher.Created += OnCreated;
-        // _watcher.Deleted += OnDeleted;
-        // _watcher.Renamed += OnRenamed;
-        _watcher.EnableRaisingEvents = true;
-
-        if (result.Count == 0)
-            HasChildren = false;
-
-        return result;
-    }
-
+    
     #region Sort
 
     public static Comparison<TreeNodeBase?> SortAscending<T>(Func<TreeNodeBase, T> selector)
@@ -247,18 +205,34 @@ public class TreeNodeBase : ReactiveObject, IEditableObject
 
     public void BeginEdit()
     {
-        throw new NotImplementedException();
+        OnBeginEdit();
+    }
+
+    protected virtual void OnBeginEdit()
+    {
+        
     }
 
     public void CancelEdit()
     {
-        throw new NotImplementedException();
+        OnCancelEdit();
+    }
+
+    protected virtual void OnCancelEdit()
+    {
+        
     }
 
     public void EndEdit()
     {
-        throw new NotImplementedException();
+        OnEndEdit();
     }
 
+    protected virtual void OnEndEdit()
+    {
+        
+    }
+    
     #endregion
+    
 }

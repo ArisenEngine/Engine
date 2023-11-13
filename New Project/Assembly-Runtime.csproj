@@ -29,7 +29,7 @@
 
   <ItemGroup>
     <Reference Include="NebulaEngine">
-      <HintPath>E:\Work\NebulaEngine\Nebula\x64\Debug\NebulaEngine.dll</HintPath>
+      <HintPath>E:\TechCenter\NebulaEngine\Nebula\x64\Debug\NebulaEngine.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>

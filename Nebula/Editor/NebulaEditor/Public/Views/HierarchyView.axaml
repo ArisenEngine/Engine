@@ -4,29 +4,25 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="800"
              xmlns:vm="using:NebulaEditor.ViewModels"
-             xmlns:m="using:NebulaEditor.Models"
-             x:DataType="vm:HierarchyViewModel"
+             xmlns:converts="using:NebulaEditor.Converters"
              x:Class="NebulaEditor.Views.HierarchyView">
-   
-    <Design.DataContext>
-        <vm:HierarchyViewModel>
-            
-        </vm:HierarchyViewModel>
-    </Design.DataContext>
+
+    <UserControl.Resources>
+        <converts:TreeViewIconConverter x:Key="IconConverter"></converts:TreeViewIconConverter>
+    </UserControl.Resources>
     
-    
-    <TreeDataGrid Name="TreeGridViewer" Source="{Binding Source}">
+    <TreeDataGrid Name="TreeGridViewer">
         
         <TreeDataGrid.Resources>
             
             <!-- Template for Name column cells -->
-            <DataTemplate x:Key="NameCell" DataType="m:TreeNodeBase">
+            <DataTemplate x:Key="NameCell" DataType="vm:TreeNodeBase">
                 
                 <StackPanel Orientation="Horizontal">
                     <Image Margin="0 0 4 0"
                            VerticalAlignment="Center" Width="30" Height="30">
                         <Image.Source>
-                            <MultiBinding Converter="{x:Static vm:HierarchyViewModel.IconConverter}">
+                            <MultiBinding Converter="{StaticResource IconConverter}">
                                 <Binding Path="IsBranch"/>
                                 <Binding Path="IsExpanded"/>
                                 <Binding Path="IsRoot"/>
@@ -42,12 +38,12 @@
             
             
             <!-- Edit template for Name column cells -->
-            <DataTemplate x:Key="NameEditCell" DataType="m:TreeNodeBase">
+            <DataTemplate x:Key="NameEditCell" DataType="vm:TreeNodeBase">
                 <StackPanel Orientation="Horizontal">
                     <Image Margin="0 0 4 0"
                            VerticalAlignment="Center" Width="15" Height="15">
                         <Image.Source>
-                            <MultiBinding Converter="{x:Static vm:HierarchyViewModel.IconConverter}">
+                            <MultiBinding Converter="{StaticResource IconConverter}">
                                 <Binding Path="IsBranch"/>
                                 <Binding Path="IsExpanded"/>
                                 <Binding Path="IsRoot"/>
