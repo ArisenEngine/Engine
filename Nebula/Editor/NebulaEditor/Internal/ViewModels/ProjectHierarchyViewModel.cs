@@ -1,7 +1,9 @@
 using System;
 using System.IO;
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Controls.Models.TreeDataGrid;
+using Avalonia.Controls.Selection;
 using NebulaEngine;
 
 namespace NebulaEditor.ViewModels;
@@ -21,6 +23,8 @@ public class ProjectHierarchyViewModel : ViewModelBase, IHierarchyVM<FolderTreeN
             new FolderTreeNode("Packages", Path.Combine(GameApplication.projectRoot, "Packages"), true, isRoot: true, true),
         };
     }
+    
+    private string? m_SelectedPath;
     
     private FolderTreeNode[] m_Roots = null;
     
@@ -81,5 +85,27 @@ public class ProjectHierarchyViewModel : ViewModelBase, IHierarchyVM<FolderTreeN
         m_Source.RowSelection!.SingleSelect = false;
         
         m_Source.Items = Roots;
+        
+        m_Source.RowSelection.SelectionChanged += SelectionChanged;
+        
+    }
+
+    private FolderTreeNode[] m_Selections;
+
+    public FolderTreeNode[] Selections
+    {
+        get
+        {
+            if (m_Selections == null)
+            {
+                m_Selections = new FolderTreeNode[] { };
+            }
+
+            return m_Selections;
+        }
+    }
+    private void SelectionChanged(object? sender, TreeSelectionModelSelectionChangedEventArgs<FolderTreeNode> e)
+    {
+        m_Selections = e.SelectedItems.ToArray();
     }
 }

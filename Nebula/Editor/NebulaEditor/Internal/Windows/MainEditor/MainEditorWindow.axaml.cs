@@ -43,6 +43,7 @@ namespace NebulaEditor.Windows.MainEditor
             
             var projectViewModel = new ProjectHierarchyViewModel();
             this.ProjectHierarchyView.TreeGridViewer.DataContext = projectViewModel;
+            ProjectHierarchyView.TreeGridViewer.ContextMenu = ContextMenuFactory.CreateContextMenu(ContextMenuFactory.MenuType.Folder);
             this.ProjectHierarchyView.TreeGridViewer.Bind(TreeDataGrid.SourceProperty, new Binding("Source"));
 
             m_FileSystemWatcher = new NebulaFileSystemWatcher();
