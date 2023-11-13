@@ -4,14 +4,13 @@ using System.Collections.ObjectModel;
 using System.IO;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using NebulaEditor.Utilities;
 
 namespace NebulaEditor.ViewModels;
 
 public class FolderTreeNode : TreeNodeBase
 {
-    private FileSystemWatcher? m_Watcher;
     private string? m_UndoName;
-    
     public FolderTreeNode(string name, string path, bool isBranch, bool isRoot = false, bool isImmutable = false) : base(name, path, isBranch, isRoot, isImmutable)
     {
     }
@@ -38,18 +37,10 @@ public class FolderTreeNode : TreeNodeBase
             result.Add(new FolderTreeNode(name, d, true, false));
         }
         
-        
-        m_Watcher= new FileSystemWatcher
-        {
-            Path = Path,
-            NotifyFilter = NotifyFilters.DirectoryName,
-        };
-
-        m_Watcher.Changed += OnChanged;
-        m_Watcher.Created += OnCreated;
-        m_Watcher.Deleted += OnDeleted;
-        m_Watcher.Renamed += OnRenamed;
-        m_Watcher.EnableRaisingEvents = true;
+        NebulaFileSystemWatcher.Changed += OnChanged;
+        NebulaFileSystemWatcher.Created += OnCreated;
+        NebulaFileSystemWatcher.Deleted += OnDeleted;
+        NebulaFileSystemWatcher.Renamed += OnRenamed;
 
         if (result.Count == 0)
         {
@@ -79,22 +70,19 @@ public class FolderTreeNode : TreeNodeBase
     {
         if (e.ChangeType == WatcherChangeTypes.Changed && File.Exists(e.FullPath))
         {
-            Dispatcher.UIThread.Post(() =>
+            foreach (var child in m_Children!)
             {
-                foreach (var child in m_Children!)
+                if (child.Path == e.FullPath)
                 {
-                    if (child.Path == e.FullPath)
+                    if (!child.IsBranch)
                     {
-                        if (!child.IsBranch)
-                        {
-                            var info = new FileInfo(e.FullPath);
-                            child.Size = info.Length;
-                            child.Modified = info.LastWriteTimeUtc;
-                        }
-                        break;
+                        var info = new FileInfo(e.FullPath);
+                        child.Size = info.Length;
+                        child.Modified = info.LastWriteTimeUtc;
                     }
+                    break;
                 }
-            });
+            }
         }
     }
 
@@ -105,50 +93,41 @@ public class FolderTreeNode : TreeNodeBase
         {
             return;
         }
-        
-        Dispatcher.UIThread.Post(() =>
-        {
-            var name = e.FullPath.Split(System.IO.Path.DirectorySeparatorChar)[^1];
-            var node = new FolderTreeNode(
-                name,
-                e.FullPath,
-                true);
-            m_Children!.Add(node);
-        });
+            
+        var name = e.FullPath.Split(System.IO.Path.DirectorySeparatorChar)[^1];
+        var node = new FolderTreeNode(
+            name,
+            e.FullPath,
+            true);
+        m_Children!.Add(node);
     }
 
     private void OnDeleted(object sender, FileSystemEventArgs e)
     {
-        Dispatcher.UIThread.Post(() =>
+        for (var i = 0; i < m_Children!.Count; ++i)
         {
-            for (var i = 0; i < m_Children!.Count; ++i)
+            if (m_Children[i].Path == e.FullPath)
             {
-                if (m_Children[i].Path == e.FullPath)
-                {
-                    m_Children.RemoveAt(i);
-                    System.Diagnostics.Debug.WriteLine($"Removed {e.FullPath}");
-                    break;
-                }
+                m_Children.RemoveAt(i);
+                System.Diagnostics.Debug.WriteLine($"Removed {e.FullPath}");
+                break;
             }
-        });
+        }
     }
 
     private void OnRenamed(object sender, RenamedEventArgs e)
     {
-        Dispatcher.UIThread.Post(() =>
+        foreach (var child in m_Children!)
         {
-            foreach (var child in m_Children!)
+            if (child.Path == e.OldFullPath)
             {
-                if (child.Path == e.OldFullPath)
-                {
-                    child.Path = e.FullPath;
-                    child.Name = e.Name ?? string.Empty;
-                    break;
-                }
+                child.Path = e.FullPath;
+                child.Name = e.Name ?? string.Empty;
+                break;
             }
-        });
+        }
     }
-
+    
     protected override void OnBeginEdit()
     {
         m_UndoName = Name;

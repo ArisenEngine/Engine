@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data;
+using NebulaEditor.Utilities;
 using NebulaEditor.ViewModels.Startup;
 using ReactiveUI;
 
@@ -15,6 +16,7 @@ namespace NebulaEditor.Windows.MainEditor
 {
     internal partial class MainEditorWindow : Window
     {
+        private NebulaFileSystemWatcher m_FileSystemWatcher;
         internal MainEditorWindowViewModel viewModel
         {
             get
@@ -42,6 +44,8 @@ namespace NebulaEditor.Windows.MainEditor
             var projectViewModel = new ProjectHierarchyViewModel();
             this.ProjectHierarchyView.TreeGridViewer.DataContext = projectViewModel;
             this.ProjectHierarchyView.TreeGridViewer.Bind(TreeDataGrid.SourceProperty, new Binding("Source"));
+
+            m_FileSystemWatcher = new NebulaFileSystemWatcher();
         }
        
         private void OpenProjectClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -62,6 +66,9 @@ namespace NebulaEditor.Windows.MainEditor
         {
             base.OnUnloaded(e);
 
+            m_FileSystemWatcher.Dispose();
+            m_FileSystemWatcher = null;
+            
             if (App.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 var mainWindowViewModel = new MainWindowViewModel();
