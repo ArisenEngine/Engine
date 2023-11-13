@@ -7,7 +7,7 @@ using NebulaEngine;
 
 namespace NebulaEditor.ViewModels;
 
-public class SceneHierarchyViewModel : HierarchyViewModel
+public class WorldHierarchyViewModel : HierarchyViewModel
 {
     protected override string Header => null;
 
