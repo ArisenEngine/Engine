@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
@@ -10,9 +11,9 @@ using MenuItem = NebulaEditor.Attributes.MenuItem;
 
 namespace NebulaEditor.Utilities;
 
-internal static class ControlFactory
+internal static class ControlsFactory
 {
-    internal static string CustomHeaderMenu = Guid.NewGuid().ToString();
+    internal static string CustomMenuItem = Guid.NewGuid().ToString();
     internal static string[] InternalHeaderMenus = new string[]
     {
         "File",
@@ -20,14 +21,35 @@ internal static class ControlFactory
         "Assets",
         "Entity",
         "Component",
-        CustomHeaderMenu,
+        CustomMenuItem,
         "Window",
         "Help"
+    };
+
+    internal static string[] InternalProjectMenus = new string[]
+    {
+        "Create",
+        "Show in Explorer",
+        "Open",
+        "Delete",
+        "Copy Path",
+        CustomMenuItem,
+    };
+    
+    internal static string[] InternalHierarchyMenus = new string[]
+    {
+        "Cut",
+        "Create Empty(with Transform)",
+        "3D Object",
+        "Light",
+        "Camera",
+        "UI",
+        CustomMenuItem,
     };
     
     internal enum MenuType
     {
-        Assets,
+        Project,
         Header,
         Hierarchy
     }
@@ -38,9 +60,10 @@ internal static class ControlFactory
         public List<string> children;
         public string Header;
         public string key;
+        public int level;
     }
 
-    private static void ParseItems(MenuType menuType, out Dictionary<string, MenuItemNode> itemNodes)
+    private static void ParseItems(string[] internalMenus, MenuType menuType, out Dictionary<string, MenuItemNode> itemNodes)
     {
         itemNodes = new Dictionary<string, MenuItemNode>();
         
@@ -69,15 +92,13 @@ internal static class ControlFactory
                         // Undefined menu type
                         continue;
                     }
-
-                    bool isUserDefinedMenu = InternalHeaderMenus.IndexOf(menuHierarchies[1]) < 0;
+                    
                     
                     MenuItemNode parent = null;
                     string parentKey = "";
                     for (int i = 1; i < menuHierarchies.Length; ++i)
                     {
-                        var childHeader = menuHierarchies[i];
-                        var childKey = i == 1 && isUserDefinedMenu ? CustomHeaderMenu : childHeader;
+                        var childKey = menuHierarchies[i];
                         var key =  string.IsNullOrEmpty(parentKey) ? childKey : parentKey + MenuItem.kMenuItemSeparators + childKey;
                         parentKey = key;
                         if (itemNodes.TryGetValue(key, out var node))
@@ -93,10 +114,11 @@ internal static class ControlFactory
 
                             parent = new MenuItemNode()
                             {
-                                Header = childHeader,
+                                Header = childKey,
                                 children = new List<string>(),
                                 MethodInfo = methodInfo,
-                                key = key
+                                key = key,
+                                level = i
                             };
                             itemNodes.Add(key, parent);
                         }
@@ -105,41 +127,157 @@ internal static class ControlFactory
             }
         }
     }
+
+    private static void SetContextMenuChildren(string[] internalMenus, ContextMenu contextMenu, Dictionary<string, MenuItemNode> itemNodes, List<MenuItemNode> userDefinedItems)
+    {
+        for (int i = 0; i < internalMenus.Length; ++i)
+        {
+            var header = internalMenus[i];
+            if (itemNodes.TryGetValue(header, out var node))
+            {
+                // internal menus 
+                
+                var menuItem = new Avalonia.Controls.MenuItem()
+                {
+                    Header = node.Header
+                };
+                
+                contextMenu.Items.Add(menuItem);
+
+                if (node.children.Count > 0)
+                {
+                    CreateMenuItem(itemNodes, menuItem, node.children);
+                }
+                else
+                {
+                    SetMenuItemCallback(node, menuItem);
+                }
+                
+            }
+            else if (header == CustomMenuItem)
+            {
+                // user defined menus 
+                for (int j = 0; j < userDefinedItems.Count; ++j)
+                {
+                    var userNode = userDefinedItems[j];
+                    var userMenuItem = new Avalonia.Controls.MenuItem()
+                    {
+                        Header = userNode.Header
+                    };
+                
+                    contextMenu.Items.Add(userMenuItem);
+
+                    if (userNode.children.Count > 0)
+                    {
+                        CreateMenuItem(itemNodes, userMenuItem, userNode.children);
+                    }
+                    else
+                    {
+                        SetMenuItemCallback(userNode, userMenuItem);
+                    }
+                }
+            }
+           
+        }
+    }
     
     internal static ContextMenu CreateContextMenu(MenuType menuType)
     {
         var menu = new ContextMenu();
-        
+       
+
+        if (menuType == MenuType.Hierarchy)
+        {
+            ParseItems(InternalHierarchyMenus, menuType, out var itemNodes);
+            ParseUserMenuItems(InternalHierarchyMenus, itemNodes, out var userDefinedItems);
+            SetContextMenuChildren(InternalHierarchyMenus, menu, itemNodes, userDefinedItems);
+        }
+        else
+        {
+            ParseItems(InternalProjectMenus, menuType, out var itemNodes);
+            ParseUserMenuItems(InternalProjectMenus, itemNodes, out var userDefinedItems);
+            SetContextMenuChildren(InternalProjectMenus, menu, itemNodes, userDefinedItems);
+        }
         return menu;
     }
 
+    private static void ParseUserMenuItems(string[] internalMenus, Dictionary<string, MenuItemNode> itemNodes, out List<MenuItemNode> userDefinedItems)
+    {
+        var values = itemNodes.Values.ToArray();
+        userDefinedItems = new List<MenuItemNode>();
+        foreach (var menuItemNode in values)
+        {
+            if (menuItemNode.level == 1 && internalMenus.IndexOf(menuItemNode.Header) < 0)
+            {
+                userDefinedItems.Add(menuItemNode);
+            }
+        }
+        
+        userDefinedItems.Sort((a, b) =>
+        {
+            return string.Compare(a.Header, b.Header);
+            
+        });
+    }
     internal static Menu CreateMenu(MenuType menuType)
     {
         var menu = new Menu();
-        ParseItems(menuType, out var itemNodes);
+        ParseItems(InternalHeaderMenus, menuType, out var itemNodes);
+
+        ParseUserMenuItems(InternalHeaderMenus, itemNodes, out var userDefinedItems);
         
         for (int i = 0; i < InternalHeaderMenus.Length; ++i)
         {
             var header = InternalHeaderMenus[i];
             if (itemNodes.TryGetValue(header, out var node))
             {
-                // NOTE: root menu are consider to be always has children node
-                Debug.Assert(node.children.Count > 0);
-                var parentNode = new Avalonia.Controls.MenuItem()
+                // internal menus
+              
+                var menuItem = new Avalonia.Controls.MenuItem()
                 {
                     Header = node.Header
                 };
                 
-                menu.Items.Add(parentNode);
+                menu.Items.Add(menuItem);
 
-                CreateMenuItem(itemNodes, parentNode, node.children);
+                if (node.children.Count > 0)
+                {
+                    CreateMenuItem(itemNodes, menuItem, node.children);
+                }
+                else
+                {
+                    SetMenuItemCallback(node, menuItem);
+                }
                 
+            }
+            else if (header == CustomMenuItem)
+            {
+                // user defined menus 
+                for (int j = 0; j < userDefinedItems.Count; ++j)
+                {
+                    var userNode = userDefinedItems[j];
+                    var userMenuItem = new Avalonia.Controls.MenuItem()
+                    {
+                        Header = userNode.Header
+                    };
+                
+                    menu.Items.Add(userMenuItem);
+
+                    if (userNode.children.Count > 0)
+                    {
+                        CreateMenuItem(itemNodes, userMenuItem, userNode.children);
+                    }
+                    else
+                    {
+                        SetMenuItemCallback(userNode, userMenuItem);
+                    }
+                }
             }
            
         }
         return menu;
     }
-
+    
     private static void CreateMenuItem(Dictionary<string, MenuItemNode> itemNodes, Avalonia.Controls.MenuItem parentItem, List<string> children)
     {
         for (int i = 0; i < children.Count; ++i)
@@ -161,37 +299,42 @@ internal static class ControlFactory
                 else
                 {
                     // leaf node. binding a callback function
-                    var methodInfo = childNode.MethodInfo;
-                    childItem.Click += (object? sender, RoutedEventArgs? e) =>
-                    {
-                        var parameters = methodInfo.GetParameters();
-                        if (parameters.Length <= 0)
-                        {
-                            methodInfo?.Invoke(null, new object?[]
-                            {
-                                
-                            });
-                        }
-                        else if (parameters.Length == 2 
-                                 && parameters[0].ParameterType == typeof(object) 
-                                 && parameters[1].ParameterType == typeof(RoutedEventArgs))
-                        {
-                            methodInfo.Invoke(null, new object?[]
-                            {
-                                sender,
-                                e
-                            });
-                        }
-                        else
-                        {
-                            // TODO: replace with warning message
-                            var _ = MessageBoxUtility.ShowMessageBoxStandard("Error",
-                                "MenuItem callback only support zero parameter or two parameters (object sender, RoutedEventArgs e)");
-                        }
-                    };
+                    SetMenuItemCallback(childNode, childItem);
                 }
             }
         }
+    }
+
+    private static void SetMenuItemCallback(MenuItemNode childNode, Avalonia.Controls.MenuItem childItem)
+    {
+        var methodInfo = childNode.MethodInfo;
+        childItem.Click += (object? sender, RoutedEventArgs? e) =>
+        {
+            var parameters = methodInfo.GetParameters();
+            if (parameters.Length <= 0)
+            {
+                methodInfo?.Invoke(null, new object?[]
+                {
+                                
+                });
+            }
+            else if (parameters.Length == 2 
+                     && parameters[0].ParameterType == typeof(object) 
+                     && parameters[1].ParameterType == typeof(RoutedEventArgs))
+            {
+                methodInfo.Invoke(null, new object?[]
+                {
+                    sender,
+                    e
+                });
+            }
+            else
+            {
+                // TODO: replace with warning message
+                var _ = MessageBoxUtility.ShowMessageBoxStandard("Error",
+                    "MenuItem callback only support zero parameter or two parameters (object sender, RoutedEventArgs e)");
+            }
+        };
     }
 
 }

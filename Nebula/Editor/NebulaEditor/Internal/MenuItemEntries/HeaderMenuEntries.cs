@@ -6,7 +6,7 @@ using NebulaEngine;
 
 namespace NebulaEditor.Internal.MenuItemEntries;
 
-public static class HeaderMenuEntries
+internal static class HeaderMenuEntries
 {
     [MenuItem("Header/Assets/Open C# project")]
     public static void OpenProjectSolution()
@@ -20,7 +20,7 @@ public static class HeaderMenuEntries
         });
     }
     
-    [MenuItem("Header/Assets/2")]
+    [MenuItem("Project/Cut/Cut2")]
     public static void OpenProjectSolution2()
     {
         var _ = MessageBoxUtility.ShowMessageBoxStandard("Test", "Assets/2");
@@ -32,7 +32,31 @@ public static class HeaderMenuEntries
         });
     }
     
-    [MenuItem("Header/Assets/232/333")]
+    [MenuItem("Project/Custom/Custom22")]
+    public static void OpenProj22ectSolution2()
+    {
+        var _ = MessageBoxUtility.ShowMessageBoxStandard("Test", "Custom/22");
+        return;
+        Task.Run(()=> {
+
+            ProjectSolution.OpenVisualStudio(System.IO.Path.Combine(GameApplication.projectRoot, GameApplication.projectName + @".sln"));
+
+        });
+    }
+    
+    [MenuItem("Project/Custom/Custom22")]
+    public static void OpenProj22ectSoluddtion2()
+    {
+        var _ = MessageBoxUtility.ShowMessageBoxStandard("Test", "Help/22");
+        return;
+        Task.Run(()=> {
+
+            ProjectSolution.OpenVisualStudio(System.IO.Path.Combine(GameApplication.projectRoot, GameApplication.projectName + @".sln"));
+
+        });
+    }
+    
+    [MenuItem("Project/Delete/Delete232/Delete333")]
     public static void OpenProjectSolution24()
     {
         var _ = MessageBoxUtility.ShowMessageBoxStandard("Test", "Assets/232/333");
@@ -44,7 +68,7 @@ public static class HeaderMenuEntries
         });
     }
     
-    [MenuItem("Header/File/2")]
+    [MenuItem("Project/Custom/Custom2")]
     public static void OpenProjectSolution3(object? sender, object?[] objects)
     {
         var _ = MessageBoxUtility.ShowMessageBoxStandard("Test", "File/2");
@@ -56,7 +80,7 @@ public static class HeaderMenuEntries
         });
     }
     
-    [MenuItem("Header/File/1")]
+    [MenuItem("Project/Custom/Custom1")]
     public static void OpenProjectSolution33()
     {
         var _ = MessageBoxUtility.ShowMessageBoxStandard("Test", "File/1");
@@ -68,7 +92,7 @@ public static class HeaderMenuEntries
         });
     }
     
-    [MenuItem("Header/Assets/1")]
+    [MenuItem("Project/Custom/Custom666")]
     public static void OpenProjectSolution4()
     {
         var _ = MessageBoxUtility.ShowMessageBoxStandard("Test", "Assets/1");
