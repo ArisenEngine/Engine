@@ -9,8 +9,10 @@ public sealed class MenuItem : System.Attribute
     public static readonly string kMenuItemSeparators = "/";
 
     public string menuItem;
-    public MenuItem(string itemName)
+    public bool seperator;
+    public MenuItem(string itemName, bool seperator = false)
     {
         this.menuItem = itemName;
+        this.seperator = seperator;
     }
 }

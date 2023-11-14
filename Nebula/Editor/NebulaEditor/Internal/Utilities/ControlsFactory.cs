@@ -59,8 +59,8 @@ internal static class ControlsFactory
         public MethodInfo MethodInfo;
         public List<string> children;
         public string Header;
-        public string key;
         public int level;
+        public bool seperator;
     }
 
     private static void ParseItems(string[] internalMenus, MenuType menuType, out Dictionary<string, MenuItemNode> itemNodes)
@@ -117,8 +117,8 @@ internal static class ControlsFactory
                                 Header = childKey,
                                 children = new List<string>(),
                                 MethodInfo = methodInfo,
-                                key = key,
-                                level = i
+                                level = i,
+                                seperator = attribute.seperator
                             };
                             itemNodes.Add(key, parent);
                         }
@@ -166,6 +166,10 @@ internal static class ControlsFactory
                     };
                 
                     contextMenu.Items.Add(userMenuItem);
+                    if (userNode.seperator && j < userDefinedItems.Count - 1)
+                    {
+                        contextMenu.Items.Add(new Avalonia.Controls.Separator());
+                    }
 
                     if (userNode.children.Count > 0)
                     {
@@ -239,6 +243,10 @@ internal static class ControlsFactory
                 };
                 
                 menu.Items.Add(menuItem);
+                if (node.seperator && i < InternalHeaderMenus.Length - 1 && itemNodes.ContainsKey(InternalHeaderMenus[i + 1]))
+                {
+                    menu.Items.Add(new Avalonia.Controls.Separator());
+                }
 
                 if (node.children.Count > 0)
                 {
@@ -262,6 +270,10 @@ internal static class ControlsFactory
                     };
                 
                     menu.Items.Add(userMenuItem);
+                    if (userNode.seperator && j < userDefinedItems.Count - 1)
+                    {
+                        menu.Items.Add(new Avalonia.Controls.Separator());
+                    }
 
                     if (userNode.children.Count > 0)
                     {
@@ -291,6 +303,10 @@ internal static class ControlsFactory
                 };
                 
                 parentItem.Items.Add(childItem);
+                if (childNode.seperator && i < children.Count - 1 && itemNodes.ContainsKey(children[i + 1]))
+                {
+                    parentItem.Items.Add(new Avalonia.Controls.Separator());
+                }
 
                 if (!isLeafNode)
                 {
