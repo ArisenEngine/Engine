@@ -5,6 +5,7 @@ using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using DynamicData;
 using MenuItem = NebulaEditor.Attributes.MenuItem;
 
 namespace NebulaEditor.Utilities;
@@ -56,18 +57,28 @@ internal static class ControlFactory
                 {
                     var menuHierarchies = attribute.menuItem.Split(MenuItem.kMenuItemSeparators);
                     
-                    // NOTE: menu root should not be as a leaf node
-                    if (menuHierarchies[0] != menuType.ToString() || menuHierarchies.Length <= 1)
+                    if (menuHierarchies.Length <= 1)
                     {
+                        // NOTE: menu root should not be as a leaf node
+                        // TODO: add a warning message to console
+                        continue;
+                    }
+                    
+                    if (menuHierarchies[0] != menuType.ToString())
+                    {
+                        // Undefined menu type
                         continue;
                     }
 
+                    bool isUserDefinedMenu = InternalHeaderMenus.IndexOf(menuHierarchies[1]) < 0;
+                    
                     MenuItemNode parent = null;
                     string parentKey = "";
                     for (int i = 1; i < menuHierarchies.Length; ++i)
                     {
                         var childHeader = menuHierarchies[i];
-                        var key =  string.IsNullOrEmpty(parentKey) ? childHeader : parentKey + MenuItem.kMenuItemSeparators + childHeader;
+                        var childKey = i == 1 && isUserDefinedMenu ? CustomHeaderMenu : childHeader;
+                        var key =  string.IsNullOrEmpty(parentKey) ? childKey : parentKey + MenuItem.kMenuItemSeparators + childKey;
                         parentKey = key;
                         if (itemNodes.TryGetValue(key, out var node))
                         {
@@ -112,12 +123,11 @@ internal static class ControlFactory
             var header = InternalHeaderMenus[i];
             if (itemNodes.TryGetValue(header, out var node))
             {
-                // internal menu
                 // NOTE: root menu are consider to be always has children node
                 Debug.Assert(node.children.Count > 0);
                 var parentNode = new Avalonia.Controls.MenuItem()
                 {
-                    Header = header
+                    Header = node.Header
                 };
                 
                 menu.Items.Add(parentNode);
@@ -125,11 +135,7 @@ internal static class ControlFactory
                 CreateMenuItem(itemNodes, parentNode, node.children);
                 
             }
-            else
-            {
-                // user custom menu
-                
-            }
+           
         }
         return menu;
     }
