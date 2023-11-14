@@ -44,13 +44,13 @@ namespace NebulaEditor.Windows.MainEditor
             
             var projectViewModel = new ProjectHierarchyViewModel();
             this.ProjectHierarchyView.TreeGridViewer.DataContext = projectViewModel;
-            ProjectHierarchyView.TreeGridViewer.ContextMenu = ControlFactory.CreateContextMenu(ControlFactory.MenuType.Assets);
+            ProjectHierarchyView.TreeGridViewer.ContextMenu = ControlsFactory.CreateContextMenu(ControlsFactory.MenuType.Project);
             this.ProjectHierarchyView.TreeGridViewer.Bind(TreeDataGrid.SourceProperty, new Binding("Source"));
 
             m_FileSystemWatcher = new NebulaFileSystemWatcher();
 
             HeaderMenuContainer.Children.Clear();
-            HeaderMenuContainer.Children.Add(ControlFactory.CreateMenu(ControlFactory.MenuType.Header));
+            HeaderMenuContainer.Children.Add(ControlsFactory.CreateMenu(ControlsFactory.MenuType.Header));
         }
        
         private async Task<int> LoadEditorConfigAsync(MainWindowViewModel mainWindowViewModel)
