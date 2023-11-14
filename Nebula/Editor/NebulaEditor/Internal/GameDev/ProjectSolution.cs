@@ -24,7 +24,7 @@ namespace NebulaEditor.GameDev
 
         [DllImport("ole32.dll")]
         private static extern int CreateBindCtx(uint reserved, out IBindCtx ppbc);
-
+        
         internal static void OpenVisualStudio(string solutionFullPath)
         {
             IRunningObjectTable rot = null;

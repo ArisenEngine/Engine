@@ -22,32 +22,14 @@
 	<DockPanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 
 		<Grid ColumnDefinitions="*" RowDefinitions="Auto, 110*">
-
-			<!-- Menu Bar TODO: dynamic add item for easily to expend -->
 			<Grid Grid.Row="0" RowDefinitions="Auto, Auto" VerticalAlignment="Center">
-				<Menu Grid.Row="0"  Foreground="AliceBlue" Height="25">
-					<MenuItem Header="File" Margin="0,0,0,0" Height="25">
-						<MenuItem Header="Open"  Margin="0,0,0,0" Height="25" />
-						<Separator/>
-                        <MenuItem Header="Build"  Margin="0,0,0,0" Height="25" />
-                        <Separator/>
-						<MenuItem Header="Exit"  Margin="0,0,0,0" Height="25" />
-					</MenuItem>
-					<MenuItem Header="Edit" Margin="0,0,0,0" Height="25">
-						<MenuItem Header="Copy"  Margin="0,0,0,0" Height="25" />
-						<Separator/>
-						<MenuItem Header="Paste"  Margin="0,0,0,0" Height="25" />
-						<Separator/>
-						
-					</MenuItem>
-					<MenuItem Header="Assets" Margin="0,0,0,0" Height="25">
+				<Grid Name="HeaderMenuContainer" Height="30">
 					
-						<MenuItem Header="Open C# Project"  Margin="0,0,0,0" Height="25" Click="OpenProjectClick"/>
-					</MenuItem>
-				</Menu>
-                <!-- Play Button -->
+				</Grid>
+				
+				<!-- Play Button -->
                 <Grid Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="30">
-                    <StackPanel Orientation="Horizontal" Spacing="5" Height="25">
+                    <StackPanel Orientation="Horizontal" Spacing="5" Height="25" Name="ButtonBar">
                         <Button >
                             <Image Height="15" Width="15" Source="avares://NebulaEditor/Assets/Icons/icons8-play-96.png"></Image> 
                         </Button>
