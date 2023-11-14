@@ -1,6 +1,6 @@
 namespace NebulaEditor.Internal.MenuItemEntries;
 
-internal static class ProjectContextMenuEntries
+internal static class HierarchyContextMenuEntries
 {
     
 }
