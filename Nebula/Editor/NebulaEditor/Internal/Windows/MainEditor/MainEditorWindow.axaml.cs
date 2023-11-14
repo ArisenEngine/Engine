@@ -11,6 +11,7 @@ using Avalonia.Data;
 using NebulaEditor.Utilities;
 using NebulaEditor.ViewModels.Startup;
 using ReactiveUI;
+using MenuItem = NebulaEditor.Attributes.MenuItem;
 
 namespace NebulaEditor.Windows.MainEditor
 {
@@ -43,21 +44,15 @@ namespace NebulaEditor.Windows.MainEditor
             
             var projectViewModel = new ProjectHierarchyViewModel();
             this.ProjectHierarchyView.TreeGridViewer.DataContext = projectViewModel;
-            ProjectHierarchyView.TreeGridViewer.ContextMenu = ContextMenuFactory.CreateContextMenu(ContextMenuFactory.MenuType.Folder);
+            ProjectHierarchyView.TreeGridViewer.ContextMenu = ControlFactory.CreateContextMenu(ControlFactory.MenuType.Assets);
             this.ProjectHierarchyView.TreeGridViewer.Bind(TreeDataGrid.SourceProperty, new Binding("Source"));
 
             m_FileSystemWatcher = new NebulaFileSystemWatcher();
+
+            HeaderMenuContainer.Children.Clear();
+            HeaderMenuContainer.Children.Add(ControlFactory.CreateMenu(ControlFactory.MenuType.Header));
         }
        
-        private void OpenProjectClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-        {
-            Task.Run(()=> {
-
-                ProjectSolution.OpenVisualStudio(System.IO.Path.Combine(GameApplication.projectRoot, GameApplication.projectName + @".sln"));
-
-            });
-        }
-
         private async Task<int> LoadEditorConfigAsync(MainWindowViewModel mainWindowViewModel)
         {
             int code = await mainWindowViewModel.LoadEditorConfigAsync();
