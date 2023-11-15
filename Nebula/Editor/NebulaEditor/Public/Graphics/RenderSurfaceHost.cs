@@ -1,13 +1,6 @@
 ﻿using Avalonia.Controls;
-using Avalonia.Controls.Platform;
 using Avalonia.Platform;
-using System.Net.Mail;
-using System;
-using NebulaEngine;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using AvaloniaLib;
-using static AvaloniaLib.Native.NativeAPI;
 using NebulaEngine.API;
 
 namespace NebulaEngine.Graphics

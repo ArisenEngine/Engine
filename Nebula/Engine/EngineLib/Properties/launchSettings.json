@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "AvaloniaLib": {
-      "commandName": "Project",
-      "nativeDebugging": true
-    }
-  }
-}
