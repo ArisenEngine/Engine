@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
+using Avalonia.Controls;
 using Avalonia.Threading;
 using NebulaEngine;
 
@@ -12,27 +13,30 @@ public partial class NebulaFileSystemWatcher : IDisposable
     
     internal NebulaFileSystemWatcher()
     {
-        m_Watcher = new FileSystemWatcher()
+        if (!Design.IsDesignMode)
         {
-            Path = GameApplication.dataPath,
-            NotifyFilter =
-                NotifyFilters.Attributes
-                | NotifyFilters.Security
-                | NotifyFilters.Size
-                | NotifyFilters.CreationTime
-                | NotifyFilters.DirectoryName
-                | NotifyFilters.FileName
-                | NotifyFilters.LastAccess
-                | NotifyFilters.LastWrite
-        };
+            m_Watcher = new FileSystemWatcher()
+            {
+                Path = GameApplication.dataPath,
+                NotifyFilter =
+                    NotifyFilters.Attributes
+                    | NotifyFilters.Security
+                    | NotifyFilters.Size
+                    | NotifyFilters.CreationTime
+                    | NotifyFilters.DirectoryName
+                    | NotifyFilters.FileName
+                    | NotifyFilters.LastAccess
+                    | NotifyFilters.LastWrite
+            };
 
-        m_Watcher.IncludeSubdirectories = true;
-        m_Watcher.Changed += OnChangedInternal;
-        m_Watcher.Renamed += OnRenamedInternal;
-        m_Watcher.Deleted += OnDeletedInternal;
-        m_Watcher.Created += OnCreatedInternal;
-        m_Watcher.Error += OnErrorInternal;
-        m_Watcher.EnableRaisingEvents = true;
+            m_Watcher.IncludeSubdirectories = true;
+            m_Watcher.Changed += OnChangedInternal;
+            m_Watcher.Renamed += OnRenamedInternal;
+            m_Watcher.Deleted += OnDeletedInternal;
+            m_Watcher.Created += OnCreatedInternal;
+            m_Watcher.Error += OnErrorInternal;
+            m_Watcher.EnableRaisingEvents = true;
+        }
     }
 
     private void OnErrorInternal(object sender, ErrorEventArgs e)

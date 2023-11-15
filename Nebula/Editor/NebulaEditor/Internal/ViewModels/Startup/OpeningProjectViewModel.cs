@@ -14,10 +14,10 @@ using ReactiveUI;
 
 namespace NebulaEditor.ViewModels.Startup
 {
-    internal class OpeningProjectViewModel : StartupSubViewBaseViewModel
+    public class OpeningProjectViewModel : StartupSubViewBaseViewModel
     {
         internal ICommand OpenProjectCommand { get; }
-        internal OpeningProjectViewModel(): base()
+        public OpeningProjectViewModel(): base()
         {
             OpenProjectCommand = ReactiveCommand.Create(() =>
             {

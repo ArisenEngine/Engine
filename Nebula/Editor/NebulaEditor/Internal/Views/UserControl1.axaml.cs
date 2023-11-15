@@ -2,12 +2,11 @@ using Avalonia.Controls;
 
 namespace NebulaEditor.Views
 {
-    public partial class CreateProjectPage : UserControl
+    public partial class UserControl1 : UserControl
     {
-        public CreateProjectPage()
+        public UserControl1()
         {
             InitializeComponent();
-            
         }
     }
 }

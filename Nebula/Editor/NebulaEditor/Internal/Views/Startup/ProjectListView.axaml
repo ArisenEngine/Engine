@@ -3,7 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:NebulaEditor.ViewModels.Startup"
-             xmlns:startup="clr-namespace:NebulaEditor.Models.Startup"
+             xmlns:startup="using:NebulaEditor.Models.Startup"
              mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="450"
              x:CompileBindings="True"
 			 x:DataType="vm:ProjectListViewModel"

@@ -9,13 +9,21 @@ using System.Threading.Tasks;
 
 namespace NebulaEditor.ViewModels.Startup
 {
-    internal class OpeningWindowViewModel : ViewModelBase
+    public class OpeningWindowViewModel : ViewModelBase
     {
         private double m_ProgressVaule = 0;
         internal double ProgressValue 
         {
             get { return m_ProgressVaule; }
             set { this.RaiseAndSetIfChanged(ref m_ProgressVaule, value); }
+        }
+
+        private string m_ProgressText = "Project Loading...";
+
+        internal string ProgressText
+        {
+            get { return m_ProgressText; }
+            set { this.RaiseAndSetIfChanged(ref m_ProgressText, value); }
         }
 
         public OpeningWindowViewModel(): base()

@@ -10,7 +10,7 @@ using Avalonia.Interactivity;
 
 namespace NebulaEditor.Windows
 {
-    internal partial class MainWindow : Window
+    public partial class MainWindow : Window
     {
 
         public MainWindow()

@@ -116,7 +116,10 @@
 
 						<!-- Console -->
 						<Grid Grid.Column="2">
-							<Label FontSize="100"> Console </Label>
+							<Label>AAAAAAbbbAAssAsKKKs</Label>
+							<views:HierarchyView>
+								
+							</views:HierarchyView>
 						</Grid>
 
 					</Grid>

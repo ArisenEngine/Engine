@@ -12,12 +12,12 @@ using Serialization;
 
 namespace NebulaEditor.ViewModels.Startup
 {
-    internal class MainWindowViewModel : ViewModelBase
+    public class MainWindowViewModel : ViewModelBase
     {
         
 
         private OpeningProjectViewModel m_OpeningProjectViewModel;
-        internal OpeningProjectViewModel OpeningProjectViewModel
+        public OpeningProjectViewModel OpeningProjectViewModel
         {
             get
             {
@@ -26,7 +26,7 @@ namespace NebulaEditor.ViewModels.Startup
         }
 
         private CreateProjectViewModel m_CreateProjectViewModel;
-        internal CreateProjectViewModel CreateProjectViewModel
+        public CreateProjectViewModel CreateProjectViewModel
         {
             get
             {
@@ -36,7 +36,7 @@ namespace NebulaEditor.ViewModels.Startup
 
         internal ICommand SelectionChangedCommand { get; }
 
-        internal MainWindowViewModel()
+        public MainWindowViewModel()
         {
             m_OpeningProjectViewModel = new OpeningProjectViewModel();
             m_CreateProjectViewModel = new CreateProjectViewModel();

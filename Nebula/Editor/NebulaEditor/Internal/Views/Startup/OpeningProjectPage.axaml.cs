@@ -4,7 +4,7 @@ using Avalonia.Markup.Xaml;
 
 namespace NebulaEditor.Views
 {
-    internal partial class OpeningProjectPage : UserControl
+    public partial class OpeningProjectPage : UserControl
     {
         public OpeningProjectPage()
         {
