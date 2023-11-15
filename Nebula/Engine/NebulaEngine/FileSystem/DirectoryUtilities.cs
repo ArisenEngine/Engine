@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EngineLib.FileSystem
+namespace NebulaEngine.FileSystem
 {
     public static class DirectoryUtilities
     {

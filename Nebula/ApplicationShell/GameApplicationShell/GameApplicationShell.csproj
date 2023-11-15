@@ -22,8 +22,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Engine\EngineLib\EngineLib.csproj" />
     <ProjectReference Include="..\..\Engine\NebulaEngine\NebulaEngine.csproj" />
 	<!--###-GAME_PROJECT_REFERENCE-###-->
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Views\Rendering\RenderSurfaceView.axaml.cs">
+      <DependentUpon>RenderSurfaceView.axaml</DependentUpon>
+    </Compile>
   </ItemGroup>
 </Project>

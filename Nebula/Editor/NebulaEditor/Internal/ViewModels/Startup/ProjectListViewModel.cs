@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace NebulaEditor.ViewModels.Startup
 {
-    internal class ProjectListViewModel : ViewModelBase
+    public class ProjectListViewModel : ViewModelBase
     {
         private int m_SelectedIndex = 0;
         internal int SelectedIndex 
@@ -18,7 +18,7 @@ namespace NebulaEditor.ViewModels.Startup
             set { this.RaiseAndSetIfChanged(ref m_SelectedIndex, value); }
         }
 
-        internal ObservableCollection<ProjectInfo> ProjectsList { get; set; } = new ObservableCollection<ProjectInfo>()
+        public ObservableCollection<ProjectInfo> ProjectsList { get; set; } = new ObservableCollection<ProjectInfo>()
         {
             new ProjectInfo(),
             new ProjectInfo()

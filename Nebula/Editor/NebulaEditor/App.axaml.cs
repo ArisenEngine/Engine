@@ -1,8 +1,7 @@
+
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using MsBox.Avalonia.Enums;
-using MsBox.Avalonia;
 using NebulaEditor.ViewModels.Startup;
 using System.Threading.Tasks;
 using Avalonia.Controls;
@@ -17,6 +16,13 @@ namespace NebulaEditor
         }
 
         public override async void OnFrameworkInitializationCompleted()
+        {
+            EnterNormally();
+            
+            base.OnFrameworkInitializationCompleted();
+        }
+
+        private async void EnterNormally()
         {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
@@ -53,8 +59,20 @@ namespace NebulaEditor
                 splashWindow.Close();
 
             }
+        }
 
-            base.OnFrameworkInitializationCompleted();
+        public object CreateView(Window window)
+        {
+            throw new System.NotImplementedException();
+        }
+        
+        private static bool IsProduction()
+        {
+#if DEBUG
+            return false;
+#else
+        return true;
+#endif
         }
     }
 }

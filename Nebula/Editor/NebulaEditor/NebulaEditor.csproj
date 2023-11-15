@@ -22,7 +22,13 @@
     <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
   </PropertyGroup>
 
-
+<!--    <ItemGroup>-->
+<!--        <InternalsVisibleTo Include="Avalonia" />-->
+<!--        <InternalsVisibleTo Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" />-->
+<!--        <InternalsVisibleTo Include="Avalonia.Designer.HostApp" />-->
+<!--        <InternalsVisibleTo Include="Avalonia.Designer.HostApp.dll" />-->
+<!--    </ItemGroup>-->
+    
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.0.4" />
     <PackageReference Include="Avalonia.Controls.TreeDataGrid" Version="11.0.1" />
@@ -92,7 +98,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Core\Core.ECS\Core.ECS.csproj" />
-    <ProjectReference Include="..\..\Engine\EngineLib\EngineLib.csproj" />
     <ProjectReference Include="..\..\Engine\NebulaEngine\NebulaEngine.csproj" />
     <ProjectReference Include="..\..\Serialization\Serialization\Serialization.csproj" />
     <ProjectReference Include="..\ProjectBuilderDll\ProjectBuilderDll.csproj" />
@@ -107,5 +112,6 @@
     <AdditionalFiles Include="Internal\Windows\Startup\MainWindow.axaml" />
     <AdditionalFiles Include="Internal\Windows\Startup\OpeningWindow.axaml" />
     <AdditionalFiles Include="Internal\Windows\Startup\Splash.axaml" />
+    <AdditionalFiles Include="Public\Views\Rendering\RenderSurfaceView.axaml" />
   </ItemGroup>
 </Project>

@@ -4,25 +4,16 @@ using NebulaEditor.Models.Startup;
 using System.Windows.Input;
 using ReactiveUI;
 using System;
-using Avalonia.Controls;
-using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
 using NebulaEditor.Utilities;
-using Avalonia.Platform.Storage;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.IO;
-using NebulaEditor.Windows.MainEditor;
 using System.Linq;
 using Serialization;
 using NebulaEditor.GameDev;
-using EngineLib.FileSystem;
 using System.Diagnostics;
-using Avalonia.Media.Imaging;
 
 namespace NebulaEditor.ViewModels.Startup
 {
-    internal class CreateProjectViewModel : StartupSubViewBaseViewModel
+    public class CreateProjectViewModel : StartupSubViewBaseViewModel
     {
         #region Project Info
 

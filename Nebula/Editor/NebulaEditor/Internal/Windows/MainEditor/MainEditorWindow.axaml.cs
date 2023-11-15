@@ -15,7 +15,7 @@ using MenuItem = NebulaEditor.Attributes.MenuItem;
 
 namespace NebulaEditor.Windows.MainEditor
 {
-    internal partial class MainEditorWindow : Window
+    public partial class MainEditorWindow : Window
     {
         private NebulaFileSystemWatcher m_FileSystemWatcher;
 
@@ -24,7 +24,7 @@ namespace NebulaEditor.Windows.MainEditor
             get { return DataContext as MainEditorWindowViewModel; }
         }
 
-        internal MainEditorWindow()
+        public MainEditorWindow()
         {
             InitializeComponent();
         }

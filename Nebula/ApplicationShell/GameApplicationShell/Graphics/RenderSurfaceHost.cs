@@ -59,21 +59,6 @@ namespace NebulaEngine.Graphics
         public void Dispose()
         {
             Debug.WriteLine("############# RenderSurfaceHost Dispose #################");
-            // API.PlatformAPI.RemoveRenderSurface(SurfaceId);  
         }
-
-
-
-        //private IntPtr InternalWindowProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam)
-        //{
-        //    if (MessageHook != null)
-        //    {
-        //        MessageHook.Invoke(hWnd, msg, wParam, lParam);
-
-        //    }
-
-        //    return IntPtr.Zero;
-        //}
-
     }
 }

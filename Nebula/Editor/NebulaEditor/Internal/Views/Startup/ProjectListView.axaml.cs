@@ -3,7 +3,7 @@ using NebulaEditor.ViewModels.Startup;
 
 namespace NebulaEditor.Views
 {
-    internal partial class ProjectListView : UserControl
+    public partial class ProjectListView : UserControl
     {
         internal ProjectListViewModel ViewModel
         {

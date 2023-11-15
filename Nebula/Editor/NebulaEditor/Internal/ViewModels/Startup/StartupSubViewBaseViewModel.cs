@@ -8,7 +8,7 @@ using ReactiveUI;
 
 namespace NebulaEditor.ViewModels.Startup
 {
-    internal abstract class StartupSubViewBaseViewModel : NebulaEditor.ViewModels.ViewModelBase
+    public abstract class StartupSubViewBaseViewModel : NebulaEditor.ViewModels.ViewModelBase
     {
         protected Bitmap m_PreviewImage;
         internal Bitmap PreivewImage
@@ -37,7 +37,7 @@ namespace NebulaEditor.ViewModels.Startup
         
         internal ProjectListViewModel ProjectListViewModel { get; set; } = new ProjectListViewModel();
 
-        internal StartupSubViewBaseViewModel() : base()
+        public StartupSubViewBaseViewModel() : base()
         {
             PreivewImage = ImageHelper.LoadFromResource("/Assets/LOGO.png");
             ProjectListViewModel.OnSelectionChanged += (int selectedIndex) =>

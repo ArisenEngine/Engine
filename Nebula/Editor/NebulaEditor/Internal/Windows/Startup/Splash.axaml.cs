@@ -2,9 +2,9 @@ using Avalonia.Controls;
 
 namespace NebulaEditor
 {
-    internal partial class Splash : Window
+    public partial class Splash : Window
     {
-        internal Splash()
+        public Splash()
         {
             InitializeComponent();
         }
