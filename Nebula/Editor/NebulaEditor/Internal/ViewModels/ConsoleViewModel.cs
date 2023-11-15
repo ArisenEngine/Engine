@@ -21,24 +21,50 @@ public class ConsoleViewModel : ViewModelBase
         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "",0)),
         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "",0)),
         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "",0)),
+        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "",0)),
     };
 
-    private int m_SelectedIndex = 0;
+    private int m_SelectedIndex;
 
     public int SelectedIndex
     {
-        get { return m_SelectedIndex; }
+        get
+        {
+            return m_SelectedIndex;
+        }
         set
         {
             this.RaiseAndSetIfChanged(ref m_SelectedIndex, value);
         }
     }
-
     public void OnAddMessage(Logger.LogMessage message)
     {
         Dispatcher.UIThread.Invoke(() =>
         {
-            Messages.Add(new MessageItemNode(message));
+            Messages.Insert(0, new MessageItemNode(message));
             
         });
     }
