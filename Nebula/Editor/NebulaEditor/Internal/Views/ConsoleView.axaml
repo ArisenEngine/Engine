@@ -17,33 +17,28 @@
         <converts:ConsoleViewIconConverter x:Key="IconConverter"></converts:ConsoleViewIconConverter>
     </UserControl.Resources>
 
-    <StackPanel Orientation="Vertical">
-        <TextBlock Text="Console" FontSize="15"></TextBlock>
-        <ListBox Name="MessageList" SelectionMode="Single,Toggle" ItemsSource="{Binding Messages}" AutoScrollToSelectedItem="True">
-            <!--Items template -->
-            <ListBox.ItemTemplate>
-                <DataTemplate x:DataType="m:MessageItemNode">
-                    <StackPanel Orientation="Horizontal">
-                        <Image Margin="0 0 4 0"
-                               VerticalAlignment="Center" Width="15" Height="15">
-                            <Image.Source>
-                                <Binding Path="." Converter="{StaticResource IconConverter}"/>
-                            </Image.Source>
-                        </Image>
-                        <TextBlock MaxWidth="700" Text="{Binding MessageText}" VerticalAlignment="Center" HorizontalAlignment="Left" TextWrapping="Wrap"/>
-                    </StackPanel>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
+    <ListBox  Name="MessageList" SelectionMode="Single,Toggle" ItemsSource="{Binding Messages}">
+        <!--Items template -->
+        <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="m:MessageItemNode">
+                <StackPanel Orientation="Horizontal">
+                    <Image Margin="0 0 4 0"
+                           VerticalAlignment="Center" Width="15" Height="15">
+                        <Image.Source>
+                            <Binding Path="." Converter="{StaticResource IconConverter}"/>
+                        </Image.Source>
+                    </Image>
+                    <TextBlock MaxWidth="700" Text="{Binding MessageText}" VerticalAlignment="Center" HorizontalAlignment="Left" TextWrapping="Wrap"/>
+                </StackPanel>
+            </DataTemplate>
+        </ListBox.ItemTemplate>
         
-            <ListBox.Styles>
-                <Style Selector="ListBox ListBoxItem:nth-child(2n)">
-                    <Setter Property="Background"  Value="#20808080"/>
-                </Style>
-            </ListBox.Styles>
+        <ListBox.Styles>
+            <Style Selector="ListBox ListBoxItem:nth-child(2n)">
+                <Setter Property="Background"  Value="#20808080"/>
+            </Style>
+        </ListBox.Styles>
         
-        </ListBox>
-    </StackPanel>
-    
-   
+    </ListBox>
     
 </UserControl>

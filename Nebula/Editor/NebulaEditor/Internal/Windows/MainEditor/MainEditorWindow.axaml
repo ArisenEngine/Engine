@@ -115,14 +115,17 @@
 						<GridSplitter Grid.Column="1" ResizeDirection="Columns" ></GridSplitter>
 
 						<!-- Console -->
-						<Grid Grid.Column="2" RowDefinitions="1.5*, Auto, 1*">
-							<views:ConsoleView Name="ConsoleHierarchyView">
+						<Grid Grid.Column="2" RowDefinitions="Auto, 1.5*, Auto, 1*">
+							
+							<TextBlock Text="Console"></TextBlock>
+							
+							<views:ConsoleView Grid.Row="1" Name="ConsoleHierarchyView">
 								
 							</views:ConsoleView>
 							
-							<GridSplitter Grid.Row="1" ResizeDirection="Rows" ></GridSplitter>
+							<GridSplitter Grid.Row="2" ResizeDirection="Rows" ></GridSplitter>
 							
-							<Grid Grid.Row="2">
+							<Grid Grid.Row="3">
 								
 							</Grid>
 							
