@@ -45,12 +45,12 @@
 			</Grid>
             
                 <!-- Body Content of Main Editor -->
-			<Grid Grid.Row="1" ColumnDefinitions="5*,0.0001*,1*" RowDefinitions="*">
+			<Grid Grid.Row="1" ColumnDefinitions="5*,Auto,1*" RowDefinitions="*">
 
 				<!-- Hierarchy | Scene/Game View-->
 				<!-- **************************** -->
 				<!-- Project | Console -->
-				<Grid Grid.Column="0"  ColumnDefinitions="*" RowDefinitions="2*,0.005*,1*">
+				<Grid Grid.Column="0"  ColumnDefinitions="*" RowDefinitions="2*,Auto,1*">
 
 					<!-- Hierarchy | Scene/Game View-->
 					<Grid Grid.Row="0" ColumnDefinitions="1*,0.0001*,4*">
@@ -64,7 +64,7 @@
 							</views:HierarchyView>
 						</Grid>
 
-						<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
+						<GridSplitter Grid.Column="1" ResizeDirection="Columns"></GridSplitter>
 
 						<!-- Scene View / Game View -->
 						<Grid Grid.Column="2" ColumnDefinitions="0.5*, 0.001*,0.5*">
@@ -72,7 +72,7 @@
                                 
                             </rendering:RenderSurfaceView>
                             
-							<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
+							<GridSplitter Grid.Column="1" ResizeDirection="Columns"></GridSplitter>
                             <rendering:RenderSurfaceView Grid.Column="2">
 
                             </rendering:RenderSurfaceView>
@@ -80,10 +80,10 @@
 
 					</Grid>
 
-					<GridSplitter Grid.Row="1" ResizeDirection="Rows" Background="Gray" ></GridSplitter>
+					<GridSplitter Grid.Row="1" ResizeDirection="Rows"></GridSplitter>
 
 					<!-- Project | Console -->
-					<Grid Grid.Row="2" ColumnDefinitions="0.5*, 0.0001*, 0.5*">
+					<Grid Grid.Row="2" ColumnDefinitions="0.5*, Auto, 0.5*">
 
 						<!-- Project -->
 						<Grid Grid.Column="0" RowDefinitions="Auto, *" ColumnDefinitions="*">
@@ -93,7 +93,7 @@
 							</Grid>
 
 							<!-- Project & Asset -->
-							<Grid Grid.Row="1" ColumnDefinitions="0.5*,0.0001*, 0.5*">
+							<Grid Grid.Row="1" ColumnDefinitions="0.5*,Auto, 0.5*">
 								<Grid Grid.Column="0">
 									<!-- <views:AssetsHierarchyView/> -->
 									<views:HierarchyView Name="ProjectHierarchyView">
@@ -103,7 +103,7 @@
 									</views:HierarchyView>
 								</Grid>
 
-								<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
+								<GridSplitter Grid.Column="1" ResizeDirection="Columns"></GridSplitter>
 
 								<Grid Grid.Column="2">
 									<Label FontSize="30"> Assets View </Label>
@@ -112,26 +112,32 @@
 							</Grid>
 						</Grid>
 
-						<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
+						<GridSplitter Grid.Column="1" ResizeDirection="Columns" ></GridSplitter>
 
 						<!-- Console -->
-						<Grid Grid.Column="2">
-							<Label>AAAAAAbbbAAssAsKKKs</Label>
-							<views:HierarchyView>
+						<Grid Grid.Column="2" RowDefinitions="1.5*, Auto, 1*">
+							<views:ConsoleView Name="ConsoleHierarchyView">
 								
-							</views:HierarchyView>
+							</views:ConsoleView>
+							
+							<GridSplitter Grid.Row="1" ResizeDirection="Rows" ></GridSplitter>
+							
+							<Grid Grid.Row="2">
+								
+							</Grid>
+							
 						</Grid>
 
 					</Grid>
 
 				</Grid>
 
-				<GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" ></GridSplitter>
+				<GridSplitter Grid.Column="1" ResizeDirection="Columns" ></GridSplitter>
 
 				<!-- Inspector area -->
-				<Grid Grid.Column="2" ColumnDefinitions="*" RowDefinitions="*,0.0001*,*">
+				<Grid Grid.Column="2" ColumnDefinitions="*" RowDefinitions="*,Auto,*">
 					<Label Grid.Row="0" FontSize="70"> Inspertor </Label>
-					<GridSplitter Grid.Row="1" ResizeDirection="Rows" Background="Gray" ></GridSplitter>
+					<GridSplitter Grid.Row="1" ResizeDirection="Rows"></GridSplitter>
 					<rendering:RenderSurfaceView Grid.Row="2">
 					</rendering:RenderSurfaceView>
 				</Grid>

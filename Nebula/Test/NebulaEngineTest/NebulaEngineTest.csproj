@@ -8,4 +8,8 @@
     <RootNamespace>EngineLibTest</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Engine\NebulaEngine\NebulaEngine.csproj" />
+  </ItemGroup>
+
 </Project>

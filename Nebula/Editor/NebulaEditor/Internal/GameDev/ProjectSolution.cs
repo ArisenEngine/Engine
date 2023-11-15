@@ -169,7 +169,7 @@ namespace NebulaEditor.GameDev
         {
             var sourcePath = Path.Combine (template.ProjectPath, template.ProjectName);
             var fullPath = Path.Combine(newProjectPath, newProjectName);
-            DirectoryUtilities.CopyDirectoryRecursively(sourcePath, fullPath, HandleFiles);
+            FileSystemUtilities.CopyDirectoryRecursively(sourcePath, fullPath, HandleFiles);
         }
 
         //public static void BuildProject(GameBuilder.TargetPlatform target)

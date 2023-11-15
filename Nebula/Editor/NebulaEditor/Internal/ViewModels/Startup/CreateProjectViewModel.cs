@@ -60,7 +60,7 @@ namespace NebulaEditor.ViewModels.Startup
         {
             BroweProjectLocationCommand = ReactiveCommand.Create(async () =>
             {
-                var pathList = await FileSystemUtility.BrowseDictionary("Select your project location");
+                var pathList = await FileSystemUtilities.BrowseDictionary("Select your project location");
 
                 if (pathList != null && pathList.Count > 0)
                 {

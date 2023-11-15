@@ -20,8 +20,6 @@ public abstract class TreeNodeBase : ReactiveObject, IEditableObject
         }
     }
     
-    public abstract bool ShowExpander { get; }
-    
     public bool IsBranch { get; }
 
     public bool IsRoot { get; private set; }
