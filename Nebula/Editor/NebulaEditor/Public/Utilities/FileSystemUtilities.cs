@@ -58,5 +58,24 @@ namespace NebulaEditor.Utilities
             var directories = Directory.GetDirectories(path);
             return directories.Length == 0 && files.Length == 0;
         }
+
+        public static void AppendTextToFile(string text, string fileFullPath)
+        {
+            if (!File.Exists(fileFullPath))
+            {
+                // Create a file to write to.
+                using (StreamWriter sw = File.CreateText(fileFullPath))
+                {
+                    sw.WriteLine(text);
+                }	
+            }
+            else
+            {
+                using (StreamWriter sw = File.AppendText(fileFullPath))
+                {
+                    sw.WriteLine(text);
+                }	
+            }
+        }
     }
 }
