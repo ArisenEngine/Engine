@@ -47,8 +47,6 @@ public class FolderTreeNode : TreeNodeBase
         return result;
     }
 
-    public override bool ShowExpander => true;
-
     public override IReadOnlyList<FolderTreeNode> Children<FolderTreeNode>()
     {
         if (m_Children == null)
@@ -161,7 +159,7 @@ public class FolderTreeNode : TreeNodeBase
         {
             Name = m_UndoName;
         }
-        else
+        else if (Name != m_UndoName)
         {
             var oldPath = Path;
             try

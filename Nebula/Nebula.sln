@@ -111,7 +111,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectBuilderDll", "Editor
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SolutionManager", "Editor\SolutionManager\SolutionManager.vcxproj", "{E495BF49-D4E8-4C17-9528-BF724A4064C7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EngineLibTest", "Test\EngineLibTest\EngineLibTest.csproj", "{4ADE4E0E-6BE5-4F8E-8C54-FB1A93DB7C47}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NebulaEngineTest", "Test\NebulaEngineTest\NebulaEngineTest.csproj", "{4ADE4E0E-6BE5-4F8E-8C54-FB1A93DB7C47}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GameApplicationShell", "ApplicationShell\GameApplicationShell\GameApplicationShell.csproj", "{DD58C13B-E2E9-4CAA-BEB7-4FF00A2F33D2}"
 EndProject

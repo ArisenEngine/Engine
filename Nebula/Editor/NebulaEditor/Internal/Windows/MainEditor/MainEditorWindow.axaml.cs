@@ -1,8 +1,7 @@
+
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using NebulaEditor.GameDev;
 using NebulaEditor.ViewModels;
-using NebulaEditor.Views;
 using NebulaEngine;
 using System.Threading.Tasks;
 using Avalonia;
@@ -10,14 +9,15 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data;
 using NebulaEditor.Utilities;
 using NebulaEditor.ViewModels.Startup;
-using ReactiveUI;
-using MenuItem = NebulaEditor.Attributes.MenuItem;
+using NebulaEngine.Debugger;
 
 namespace NebulaEditor.Windows.MainEditor
 {
     public partial class MainEditorWindow : Window
     {
         private NebulaFileSystemWatcher m_FileSystemWatcher;
+
+        private ConsoleViewModel m_ConsoleViewModel;
 
         internal MainEditorWindowViewModel viewModel
         {
@@ -34,17 +34,26 @@ namespace NebulaEditor.Windows.MainEditor
         {
             base.OnLoaded(e);
             this.Title = GameApplication.projectName;
-
-            WorldHierarchyView.TreeGridViewer.ShowColumnHeaders = false;
+            
+            // World Hierarchy
+            WorldHierarchyView.TreeGridViewer.ShowColumnHeaders = true;
             WorldHierarchyView.TreeGridViewer.CanUserSortColumns = false;
             // var worldViewModel = new WorldHierarchyViewModel();
             // this.WorldHierarchyView.TreeGridViewer.DataContext = worldViewModel;
             // this.WorldHierarchyView.TreeGridViewer.Bind(TreeDataGrid.SourceProperty, new Binding("Source"));
 
+            // Project Hierarchy
             var projectViewModel = new ProjectHierarchyViewModel();
+            // ProjectHierarchyView.TreeGridViewer.CanUserResizeColumns = true;
             this.ProjectHierarchyView.TreeGridViewer.DataContext = projectViewModel;
             this.ProjectHierarchyView.TreeGridViewer.Bind(TreeDataGrid.SourceProperty, new Binding("Source"));
 
+            // Console Hierarchy
+            m_ConsoleViewModel = new ConsoleViewModel();
+            m_ConsoleViewModel.Messages.Clear();
+            ConsoleHierarchyView.MessageList.DataContext = m_ConsoleViewModel;
+            Logger.MessageAdded += OnLogMessageAdd;
+            
             // File Watcher
             m_FileSystemWatcher = new NebulaFileSystemWatcher();
 
@@ -57,8 +66,27 @@ namespace NebulaEditor.Windows.MainEditor
 
             WorldHierarchyView.TreeGridViewer.ContextMenu =
                 ControlsFactory.CreateContextMenu(ControlsFactory.MenuType.Hierarchy);
+
+            int logCount = 0;
+            Task.Run(async () =>
+            {
+                while (logCount < 10000)
+                {
+                    ++logCount;
+                    Logger.Log($"Log:{logCount}");
+                    Logger.Info($"Log:{logCount}");
+                    Logger.Warning($"Log:{logCount}");
+                    Logger.Error($"Log:{logCount}");
+                    await Task.Delay(300);
+                }
+            });
         }
 
+        private void OnLogMessageAdd(Logger.LogMessage message)
+        {
+            m_ConsoleViewModel.OnAddMessage(message);
+        }
+        
         private void OnProjectTreeViewRowPrepared(object? sender, TreeDataGridRowEventArgs args)
         {
             if (args != null && args.Row != null && args.Row.ContextMenu == null)
@@ -90,6 +118,8 @@ namespace NebulaEditor.Windows.MainEditor
 
             ProjectHierarchyView.TreeGridViewer.RowPrepared -= OnProjectTreeViewRowPrepared;
             ProjectHierarchyView.TreeGridViewer.RowClearing -= OnProjectTreeViewRowClearing;
+            
+            Logger.MessageAdded -= OnLogMessageAdd;
             
             if (App.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {

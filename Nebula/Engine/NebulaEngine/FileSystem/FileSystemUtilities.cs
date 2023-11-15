@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace NebulaEngine.FileSystem
 {
-    public static class DirectoryUtilities
+    public static class FileSystemUtilities
     {
         /// <summary>
         /// Copy directory recursively, while overrideAction returns true means that user want to hanle files fully by self 
@@ -66,6 +67,38 @@ namespace NebulaEngine.FileSystem
                     string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
                     CopyDirectory(subDir.FullName, newDestinationDir, true, overrideAction);
                 }
+            }
+        }
+        
+        
+        static ReaderWriterLock locker = new ReaderWriterLock();
+        public static void AppendTextToFile(string text, string fileFullPath)
+        {
+            // Use Encoding.UTF8 or another encoding based on your requirements
+            Encoding encoding = Encoding.UTF8;
+
+            locker.AcquireWriterLock(int.MaxValue);
+            try
+            {
+                if (!File.Exists(fileFullPath))
+                {
+                    File.Create(fileFullPath).Close();
+                }
+
+
+                using (var sw = new StreamWriter(fileFullPath, true, encoding))
+                {
+                    sw.WriteLineAsync(text);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+            finally
+            {
+                locker.ReleaseWriterLock();
             }
         }
     }

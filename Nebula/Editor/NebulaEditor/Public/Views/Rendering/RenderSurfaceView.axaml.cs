@@ -45,6 +45,7 @@ namespace NebulaEngine.Views.Rendering
             Debug.Assert(sender != null);
             Unloaded -= OnRenderSurfaceViewUnloaded;
 
+            // TODO: remove true
 #if (NEBULA_EDITOR || true)
 
             //m_Host.MessageHook -= HostMsgFilter;

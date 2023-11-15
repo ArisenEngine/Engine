@@ -28,7 +28,6 @@
                                 <Binding Path="IsRoot"/>
                                 <Binding Path="."/>
                             </MultiBinding>
-                            <!-- <Binding Path="." Converter="{x:Static vm:HierarchyViewModel.IconConverter}"></Binding> -->
                         </Image.Source>
                     </Image>
                     <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
@@ -49,7 +48,6 @@
                                 <Binding Path="IsRoot"/>
                                 <Binding Path="."/>
                             </MultiBinding>
-                            <!-- <Binding Path="." Converter="{x:Static vm:HierarchyViewModel.IconConverter}"></Binding> -->
                         </Image.Source>
                     </Image>
                     <TextBox Text="{Binding Name}" VerticalAlignment="Center"/>

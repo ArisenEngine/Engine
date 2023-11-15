@@ -50,8 +50,6 @@ public class SceneTreeNode : TreeNodeBase
 
     public override bool HasChildren => true;
     
-    public override bool ShowExpander => true;
-
     protected override string LeafIconPath => "avares://NebulaEditor/Assets/Icons/entity-icon.png";
     protected override string BranchIconPath => "avares://NebulaEditor/Assets/Icons/entity-icon.png";
     protected override string BranchOpenIconPath => "avares://NebulaEditor/Assets/Icons/entity-icon.png";

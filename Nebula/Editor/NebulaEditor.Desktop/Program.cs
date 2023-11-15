@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using Avalonia;
 using Avalonia.ReactiveUI;
 using NebulaEditor.GameDev;
