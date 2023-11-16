@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Avalonia;
 using Avalonia.ReactiveUI;
 using NebulaEditor.GameDev;
@@ -14,6 +15,7 @@ class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        Thread.CurrentThread.Name = "MainThread";
         NebulaEngine.GameApplication.platform = NebulaEngine.RuntimePlatform.Windows;
         ProjectSolution.InstallationRoot = Environment.GetEnvironmentVariable(ProjectSolution.INSTALLATION_ENV_VARIABLE, EnvironmentVariableTarget.User);
         if (ProjectSolution.InstallationRoot == null)

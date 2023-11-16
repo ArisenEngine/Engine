@@ -77,7 +77,7 @@ namespace NebulaEngine.FileSystem
             // Use Encoding.UTF8 or another encoding based on your requirements
             Encoding encoding = Encoding.UTF8;
 
-            locker.AcquireWriterLock(int.MaxValue);
+            locker.AcquireWriterLock(Int32.MaxValue);
             try
             {
                 if (!File.Exists(fileFullPath))
@@ -88,8 +88,10 @@ namespace NebulaEngine.FileSystem
 
                 using (var sw = new StreamWriter(fileFullPath, true, encoding))
                 {
-                    sw.WriteLineAsync(text);
+                    sw.WriteLine(text);
                 }
+                
+                
             }
             catch (Exception e)
             {

@@ -17,28 +17,62 @@
         <converts:ConsoleViewIconConverter x:Key="IconConverter"></converts:ConsoleViewIconConverter>
     </UserControl.Resources>
 
-    <ListBox  Name="MessageList" SelectionMode="Single,Toggle" ItemsSource="{Binding Messages}">
-        <!--Items template -->
-        <ListBox.ItemTemplate>
-            <DataTemplate x:DataType="m:MessageItemNode">
-                <StackPanel Orientation="Horizontal">
-                    <Image Margin="0 0 4 0"
-                           VerticalAlignment="Center" Width="15" Height="15">
-                        <Image.Source>
-                            <Binding Path="." Converter="{StaticResource IconConverter}"/>
-                        </Image.Source>
-                    </Image>
-                    <TextBlock MaxWidth="700" Text="{Binding MessageText}" VerticalAlignment="Center" HorizontalAlignment="Left" TextWrapping="Wrap"/>
-                </StackPanel>
-            </DataTemplate>
-        </ListBox.ItemTemplate>
+    <DockPanel>
+        <!-- <TextBlock DockPanel.Dock="Top" Text="Console" FontSize="15"></TextBlock> -->
+        <Border BorderThickness="0,1,0,0" DockPanel.Dock="Top" Background="Black"></Border>
         
-        <ListBox.Styles>
-            <Style Selector="ListBox ListBoxItem:nth-child(2n)">
-                <Setter Property="Background"  Value="#20808080"/>
-            </Style>
-        </ListBox.Styles>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" HorizontalAlignment="Left" Spacing="5" >
+            
+            <Button Name="CleanLog" Margin="0, 0,0,0" Command="{Binding ClearCommand}">
+                <Image Width="15" Height="15" Source="avares://NebulaEditor/Assets/Icons/clean.png"></Image>
+            </Button>
+								
+            <ToggleButton Name="ThreadToggle" IsChecked="{Binding ThreadChecked}">
+                <Image Width="15" Height="15" Source="avares://NebulaEditor/Assets/Icons/parallel.png"></Image>
+            </ToggleButton>
+            <TextBox Name="LogSearch" Watermark="Search" Text="{Binding SearchText}" VerticalAlignment="Center" TextWrapping="NoWrap" Width="400">
+									   
+            </TextBox>
+            <StackPanel Spacing="2" HorizontalAlignment="Right" Orientation="Horizontal" Width="315">
+                <ToggleButton Name="InfoToggle" HorizontalAlignment="Right" IsChecked="{Binding InfoChecked}">
+                    <Image Width="15" Height="15" Source="avares://NebulaEditor/Assets/Icons/info.png"></Image>
+                </ToggleButton>
+                <ToggleButton Name="LogToggle" HorizontalAlignment="Right" IsChecked="{Binding LogChecked}">
+                    <Image Width="15" Height="15" Source="avares://NebulaEditor/Assets/Icons/log.png"></Image>
+                </ToggleButton>
+                <ToggleButton Name="WarningToggle" HorizontalAlignment="Right" IsChecked="{Binding WarningChecked}">
+                    <Image Width="15" Height="15" Source="avares://NebulaEditor/Assets/Icons/warning.png"></Image>
+                </ToggleButton>
+                <ToggleButton Name="ErrorToggle" HorizontalAlignment="Right" IsChecked="{Binding ErrorChecked}">
+                    <Image Width="15" Height="15" Source="avares://NebulaEditor/Assets/Icons/error.png"></Image>
+                </ToggleButton>
+            </StackPanel>
+								
+        </StackPanel>
         
-    </ListBox>
+        <ListBox Name="MessageList" SelectionMode="Single,Toggle" ItemsSource="{Binding Messages}">
+            <!--Items template -->
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="m:MessageItemNode">
+                    <StackPanel Orientation="Horizontal">
+                        <Image Margin="4 0 4 0"
+                               VerticalAlignment="Center" Width="15" Height="15">
+                            <Image.Source>
+                                <Binding Path="." Converter="{StaticResource IconConverter}"/>
+                            </Image.Source>
+                        </Image>
+                        <TextBlock MaxWidth="700" Text="{Binding MessageText}" VerticalAlignment="Center" HorizontalAlignment="Left" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        
+            <ListBox.Styles>
+                <Style Selector="ListBox ListBoxItem:nth-child(2n)">
+                    <Setter Property="Background"  Value="#20808080"/>
+                </Style>
+            </ListBox.Styles>
+        
+        </ListBox>
+    </DockPanel>
     
 </UserControl>
