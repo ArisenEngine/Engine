@@ -1,10 +1,13 @@
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Windows.Input;
 using Avalonia.Controls;
 using DynamicData;
+using DynamicData.Alias;
 using DynamicData.Binding;
 using NebulaEditor.Models;
 using NebulaEngine.Debugger;
@@ -127,7 +130,6 @@ public class ConsoleViewModel : ViewModelBase, IDisposable
         set
         {
             this.RaiseAndSetIfChanged(ref m_ErrorChecked, value);
-            Subscribe();
         }
     }
     
@@ -150,34 +152,41 @@ public class ConsoleViewModel : ViewModelBase, IDisposable
     }
 
     public ICommand? ClearCommand { get; }
-
-    private IDisposable m_Subscription = null;
+    
     private readonly Subject<bool> m_CountChanged = new();
+    private readonly CompositeDisposable m_Disposable = new();
+    
     public ConsoleViewModel() : base()
     {
         ClearCommand = ReactiveCommand.Create(Clear);
         
-        Subscribe();
-    }
-
-    private void Subscribe()
-    {
-        if (m_Subscription != null)
-        {
-            m_Subscription.Dispose();
-        }
+        var filter = new BehaviorSubject<Func<MessageItemNode, bool>>(Filter);
         
-        m_Subscription = m_SourceList
+        m_SourceList
             .Connect()
-            .Filter(Filter)
+            .Filter(filter)
             .Sort(SortExpressionComparer<MessageItemNode>.Descending(x => x.DateTime))
+            .Transform((MessageItemNode x) => { 
+                x.ShowFullMessage = ThreadChecked;
+                return x;
+            })
             .ObserveOn(RxApp.MainThreadScheduler)
             .Bind(out m_Messages)
-            .DisposeMany()
-            .Subscribe(
-            );
+            .Subscribe(_=>filter.OnNext(Filter)).DisposeWith(m_Disposable);
+
+        
+        this.WhenAnyPropertyChanged(
+                nameof(InfoChecked),
+                nameof(LogChecked), 
+                nameof(WarningChecked),
+                nameof(ErrorChecked),
+                nameof(ThreadChecked),
+                nameof(SearchText)
+                )
+            .Subscribe(_ => filter.OnNext(Filter))
+            .DisposeWith(m_Disposable);
     }
-    
+
     public void Clear()
     {
         m_SourceList.Clear();
@@ -217,7 +226,7 @@ public class ConsoleViewModel : ViewModelBase, IDisposable
         }
         
 
-        return searchFilter && typeFilter ;
+        return searchFilter && typeFilter;
     }
 
     public void OnMessageClear()
@@ -229,7 +238,7 @@ public class ConsoleViewModel : ViewModelBase, IDisposable
     public void Dispose()
     {
         m_SourceList.Dispose();
-        m_Subscription.Dispose();
+        m_Disposable.Dispose();
         m_CountChanged.Dispose();
     }
 }
