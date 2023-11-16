@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Windows.Input;
 using Avalonia.Controls;
 using DynamicData;
@@ -11,7 +12,7 @@ using ReactiveUI;
 
 namespace NebulaEditor.ViewModels;
 
-public class ConsoleViewModel : ViewModelBase
+public class ConsoleViewModel : ViewModelBase, IDisposable
 {
     private ReadOnlyObservableCollection<MessageItemNode> m_Messages = new ReadOnlyObservableCollection<MessageItemNode>(
         new ObservableCollection<MessageItemNode>()
@@ -51,14 +52,6 @@ public class ConsoleViewModel : ViewModelBase
         {
             return m_Messages;
         }
-
-        // set
-        // {
-        //     if (this.RaiseAndSetIfChanged(ref m_Messages, value))
-        //     {
-        //         
-        //     }
-        // }
     }
 
     private int m_SelectedIndex;
@@ -134,7 +127,7 @@ public class ConsoleViewModel : ViewModelBase
         set
         {
             this.RaiseAndSetIfChanged(ref m_ErrorChecked, value);
-            
+            Subscribe();
         }
     }
     
@@ -153,30 +146,43 @@ public class ConsoleViewModel : ViewModelBase
 
     public void OnAddMessage(Logger.LogMessage message)
     {
-        // Dispatcher.UIThread.Invoke(() =>
-        // {
-            m_SourceList.Insert(0, new MessageItemNode(message));
-        // });
+        m_SourceList.Add(new MessageItemNode(message));
     }
 
     public ICommand? ClearCommand { get; }
 
-    private IDisposable m_Disposable;
+    private IDisposable m_Subscription = null;
+    private readonly Subject<bool> m_CountChanged = new();
     public ConsoleViewModel() : base()
     {
         ClearCommand = ReactiveCommand.Create(Clear);
         
-        m_Disposable = m_SourceList.Connect().Sort(SortExpressionComparer<MessageItemNode>.Descending(t => t.DateTime)).Filter(Filter)
-            .ObserveOn(RxApp.MainThreadScheduler).Bind(out m_Messages).Subscribe();
+        Subscribe();
     }
 
+    private void Subscribe()
+    {
+        if (m_Subscription != null)
+        {
+            m_Subscription.Dispose();
+        }
+        
+        m_Subscription = m_SourceList
+            .Connect()
+            .Filter(Filter)
+            .Sort(SortExpressionComparer<MessageItemNode>.Descending(x => x.DateTime))
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Bind(out m_Messages)
+            .DisposeMany()
+            .Subscribe(
+            );
+    }
     
-  
     public void Clear()
     {
         m_SourceList.Clear();
     }
-
+    
     private bool Filter(MessageItemNode messageItemNodes)
     {
         bool typeFilter = true;
@@ -211,14 +217,19 @@ public class ConsoleViewModel : ViewModelBase
         }
         
 
-        return searchFilter && typeFilter;
+        return searchFilter && typeFilter ;
     }
 
     public void OnMessageClear()
     {
-        // Dispatcher.UIThread.Invoke(() =>
-        // {
-            this.Clear();
-        // });
+        this.Clear();
+    }
+
+
+    public void Dispose()
+    {
+        m_SourceList.Dispose();
+        m_Subscription.Dispose();
+        m_CountChanged.Dispose();
     }
 }
