@@ -11,7 +11,7 @@
              x:Class="NebulaEditor.Views.ConsoleView">
 
     <Design.DataContext>
-        <vm:ConsoleViewModel/>
+        <vm:ConsoleViewModel />
     </Design.DataContext>
     <UserControl.Resources>
         <converts:ConsoleViewIconConverter x:Key="IconConverter"></converts:ConsoleViewIconConverter>
@@ -20,18 +20,19 @@
     <DockPanel>
         <!-- <TextBlock DockPanel.Dock="Top" Text="Console" FontSize="15"></TextBlock> -->
         <Border BorderThickness="0,1,0,0" DockPanel.Dock="Top" Background="Black"></Border>
-        
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" HorizontalAlignment="Left" Spacing="5" >
-            
+
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" HorizontalAlignment="Left" Spacing="5">
+
             <Button Name="CleanLog" Margin="0, 0,0,0" Command="{Binding ClearCommand}">
                 <Image Width="15" Height="15" Source="avares://NebulaEditor/Assets/Icons/clean.png"></Image>
             </Button>
-								
+
             <ToggleButton Name="ThreadToggle" IsChecked="{Binding ThreadChecked}">
                 <Image Width="15" Height="15" Source="avares://NebulaEditor/Assets/Icons/parallel.png"></Image>
             </ToggleButton>
-            <TextBox Name="LogSearch" Watermark="Search" Text="{Binding SearchText}" VerticalAlignment="Center" TextWrapping="NoWrap" Width="400">
-									   
+            <TextBox Name="LogSearch" Watermark="Search" Text="{Binding SearchText}" VerticalAlignment="Center"
+                     TextWrapping="NoWrap" Width="400">
+
             </TextBox>
             <StackPanel Spacing="2" HorizontalAlignment="Right" Orientation="Horizontal" Width="315">
                 <ToggleButton Name="InfoToggle" HorizontalAlignment="Right" IsChecked="{Binding InfoChecked}">
@@ -47,32 +48,54 @@
                     <Image Width="15" Height="15" Source="avares://NebulaEditor/Assets/Icons/error.png"></Image>
                 </ToggleButton>
             </StackPanel>
-								
+
         </StackPanel>
-        
-        <ListBox Name="MessageList" SelectionMode="Single,Toggle" ItemsSource="{Binding Messages}">
-            <!--Items template -->
-            <ListBox.ItemTemplate>
-                <DataTemplate x:DataType="m:MessageItemNode">
-                    <StackPanel Orientation="Horizontal">
+
+        <DataGrid GridLinesVisibility="None" ColumnHeaderHeight="20" Name="LogDataGrid" SelectionMode="Extended"
+                  ItemsSource="{Binding Messages}" IsReadOnly="True" HeadersVisibility="Column" CanUserResizeColumns="True">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="Type">
+                    <DataTemplate x:DataType="m:MessageItemNode">
                         <Image Margin="4 0 4 0"
                                VerticalAlignment="Center" Width="15" Height="15">
                             <Image.Source>
-                                <Binding Path="." Converter="{StaticResource IconConverter}"/>
+                                <Binding Path="." Converter="{StaticResource IconConverter}" />
                             </Image.Source>
                         </Image>
-                        <TextBlock MaxWidth="700" Text="{Binding MessageText}" VerticalAlignment="Center" HorizontalAlignment="Left" TextWrapping="Wrap"/>
-                    </StackPanel>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        
-            <ListBox.Styles>
-                <Style Selector="ListBox ListBoxItem:nth-child(2n)">
-                    <Setter Property="Background"  Value="#20808080"/>
+                    </DataTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="Thread" IsVisible="{Binding ThreadChecked}">
+                    <DataTemplate x:DataType="m:MessageItemNode">
+                        <TextBlock MaxWidth="700" Text="{Binding ThreadText}" VerticalAlignment="Center"
+                                   HorizontalAlignment="Center" TextWrapping="NoWrap" />
+                    </DataTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="Time">
+                    <DataTemplate x:DataType="m:MessageItemNode">
+                        <TextBlock MaxWidth="700" Text="{Binding TimeText}" VerticalAlignment="Center"
+                                   HorizontalAlignment="Center" TextWrapping="NoWrap" />
+                    </DataTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="Message" Width="1000">
+                    <DataTemplate x:DataType="m:MessageItemNode">
+                        <TextBlock MaxWidth="700" Text="{Binding MessageText}" VerticalAlignment="Center" Margin="10,0,0,0"
+                                   HorizontalAlignment="Left" TextWrapping="Wrap" />
+                    </DataTemplate>
+                </DataGridTemplateColumn>
+
+            </DataGrid.Columns>
+
+
+            <DataGrid.Styles>
+                <Style Selector="DataGrid DataGridRow:nth-child(2n)">
+                    <Setter Property="Background" Value="#20808080" />
                 </Style>
-            </ListBox.Styles>
-        
-        </ListBox>
+            </DataGrid.Styles>
+
+        </DataGrid>
     </DockPanel>
-    
+
 </UserControl>

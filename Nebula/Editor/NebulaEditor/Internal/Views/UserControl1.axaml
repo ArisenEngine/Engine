@@ -1,0 +1,16 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="NebulaEditor.Internal.Views.UserControl1">
+  <DataGrid   GridLinesVisibility="All"
+              BorderThickness="1" BorderBrush="Gray">
+      <DataGrid.Columns>
+          <DataGridTextColumn Header="First Name" Width="2*"
+                              />
+          <DataGridTextColumn Header="Last Name" Width="2*"
+                             />
+      </DataGrid.Columns>
+  </DataGrid>
+</UserControl>

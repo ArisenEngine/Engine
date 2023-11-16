@@ -1,8 +1,5 @@
 using System;
-using System.Collections.Generic;
-using Avalonia.Controls.Templates;
 using NebulaEngine.Debugger;
-using ReactiveUI;
 
 namespace NebulaEditor.Models;
 
@@ -12,7 +9,7 @@ public class MessageItemNode
     {
         get
         {
-            return !ShowFullMessage ? $"[{m_Message.Time}]{m_Message.Message}" :  $"[{m_Message.Time}]{ThreadText}{m_Message.Message}";
+            return m_Message.Message;
         }
     }
 
@@ -20,7 +17,15 @@ public class MessageItemNode
     {
         get
         {
-            return $"[Thread:{m_Message.ThreadId},Name:{m_Message.ThreadName}]";
+            return $"{m_Message.ThreadId}" + (string.IsNullOrEmpty(m_Message.ThreadName) ? "" : $":{m_Message.ThreadName}");
+        }
+    }
+
+    public string TimeText
+    {
+        get
+        {
+            return $"[{m_Message.Time}]";
         }
     }
 

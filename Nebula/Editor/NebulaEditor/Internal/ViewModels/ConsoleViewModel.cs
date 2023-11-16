@@ -1,13 +1,11 @@
 using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Windows.Input;
 using Avalonia.Controls;
 using DynamicData;
-using DynamicData.Alias;
 using DynamicData.Binding;
 using NebulaEditor.Models;
 using NebulaEngine.Debugger;
@@ -17,35 +15,8 @@ namespace NebulaEditor.ViewModels;
 
 public class ConsoleViewModel : ViewModelBase, IDisposable
 {
-    private ReadOnlyObservableCollection<MessageItemNode> m_Messages = new ReadOnlyObservableCollection<MessageItemNode>(
-        new ObservableCollection<MessageItemNode>()
-    {
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10223, "KDFJF")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 103423, "DASDAF")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10342, "AFSF")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 10324, "FASF")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 1032, "FGDSD")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 102342, "FSDF")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 102342, "GDFGS")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 102342, "DSFG")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10234, "DFG")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 2342, "DFG")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 234, "DSFG")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 243, "DSFGDH")),
-
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10223, "KDFJF")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 103423, "DASDAF")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10342, "AFSF")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 10324, "FASF")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 1032, "FGDSD")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 102342, "FSDF")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 102342, "GDFGS")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 102342, "DSFG")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10234, "DFG")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 2342, "DFG")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 234, "DSFG")),
-                new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 243, "DSFGDH")),
-    });
+    private ReadOnlyObservableCollection<MessageItemNode> m_Messages;
+    
 
     private SourceList<MessageItemNode> m_SourceList = new SourceList<MessageItemNode>();
 
@@ -53,6 +24,62 @@ public class ConsoleViewModel : ViewModelBase, IDisposable
     {
         get
         {
+            if (Design.IsDesignMode)
+            {
+                return new ReadOnlyObservableCollection<MessageItemNode>(
+                    new ObservableCollection<MessageItemNode>()
+                    {
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10223,
+                            "KDFJF")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 103423,
+                            "DASDAF")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10342,
+                            "AFSF")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 10324,
+                            "FASF")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 1032,
+                            "FGDSD")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 102342,
+                            "FSDF")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 102342,
+                            "GDFGS")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 102342,
+                            "DSFG")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10234,
+                            "DFG")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 2342,
+                            "DFG")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 234,
+                            "DSFG")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 243,
+                            "DSFGDH")),
+
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10223,
+                            "KDFJF")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 103423,
+                            "DASDAF")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10342,
+                            "AFSF")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 10324,
+                            "FASF")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 1032,
+                            "FGDSD")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 102342,
+                            "FSDF")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 102342,
+                            "GDFGS")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 102342,
+                            "DSFG")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10234,
+                            "DFG")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 2342,
+                            "DFG")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 234,
+                            "DSFG")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 243,
+                            "DSFGDH")),
+                    });
+            }
             return m_Messages;
         }
     }

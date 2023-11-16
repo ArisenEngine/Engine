@@ -51,7 +51,6 @@ namespace NebulaEditor.Windows.MainEditor
             // Console Hierarchy
             m_ConsoleViewModel = new ConsoleViewModel();
             m_ConsoleViewModel.Clear();
-            ConsoleHierarchyView.MessageList.AutoScrollToSelectedItem = false;
             ConsoleHierarchyView.DataContext = m_ConsoleViewModel;
             Logger.MessageAdded += OnLogMessageAdd;
             Logger.MessageCleared += OnLogMessageCleared;
