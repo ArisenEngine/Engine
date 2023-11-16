@@ -1,10 +1,13 @@
 
+using System;
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using NebulaEditor.ViewModels.Startup;
 using System.Threading.Tasks;
 using Avalonia.Controls;
+using NebulaEngine;
 
 namespace NebulaEditor
 {
@@ -17,6 +20,7 @@ namespace NebulaEditor
 
         public override async void OnFrameworkInitializationCompleted()
         {
+            GameApplication.IsDesignMode = Design.IsDesignMode;
             EnterNormally();
             
             base.OnFrameworkInitializationCompleted();
@@ -73,6 +77,11 @@ namespace NebulaEditor
 #else
         return true;
 #endif
+        }
+
+        public static void Shutdown(IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.Shutdown();
         }
     }
 }

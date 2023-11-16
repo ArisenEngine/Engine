@@ -37,7 +37,7 @@ namespace NebulaEditor.Windows
             {
                 if (desktop.MainWindow is MainWindow)
                 {
-                   desktop.Shutdown();
+                   App.Shutdown(desktop);
                 }
                 
             }

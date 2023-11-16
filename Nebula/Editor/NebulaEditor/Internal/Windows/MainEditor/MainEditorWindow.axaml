@@ -103,7 +103,7 @@
 									</views:HierarchyView>
 								</Grid>
 
-								<GridSplitter Grid.Column="1" ResizeDirection="Columns"></GridSplitter>
+								<GridSplitter Grid.Column="1" ResizeDirection="Columns" ></GridSplitter>
 
 								<Grid Grid.Column="2">
 									<Label FontSize="30"> Assets View </Label>
@@ -115,17 +115,15 @@
 						<GridSplitter Grid.Column="1" ResizeDirection="Columns" ></GridSplitter>
 
 						<!-- Console -->
-						<Grid Grid.Column="2" RowDefinitions="Auto, 1.5*, Auto, 1*">
+						<Grid Grid.Column="2" RowDefinitions="1.5*, Auto, 1*">
 							
-							<TextBlock Text="Console"></TextBlock>
-							
-							<views:ConsoleView Grid.Row="1" Name="ConsoleHierarchyView">
+							<views:ConsoleView Grid.Row="0" Name="ConsoleHierarchyView">
 								
 							</views:ConsoleView>
 							
-							<GridSplitter Grid.Row="2" ResizeDirection="Rows" ></GridSplitter>
+							<GridSplitter Grid.Row="1" ResizeDirection="Rows" ></GridSplitter>
 							
-							<Grid Grid.Row="3">
+							<Grid Grid.Row="2">
 								
 							</Grid>
 							

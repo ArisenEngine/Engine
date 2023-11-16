@@ -50,10 +50,12 @@ namespace NebulaEditor.Windows.MainEditor
 
             // Console Hierarchy
             m_ConsoleViewModel = new ConsoleViewModel();
-            m_ConsoleViewModel.Messages.Clear();
+            m_ConsoleViewModel.Clear();
+            m_ConsoleViewModel.ListBox = ConsoleHierarchyView.MessageList;
             ConsoleHierarchyView.MessageList.AutoScrollToSelectedItem = false;
-            ConsoleHierarchyView.MessageList.DataContext = m_ConsoleViewModel;
+            ConsoleHierarchyView.DataContext = m_ConsoleViewModel;
             Logger.MessageAdded += OnLogMessageAdd;
+            Logger.MessageCleared += OnLogMessageCleared;
             
             // File Watcher
             m_FileSystemWatcher = new NebulaFileSystemWatcher();
@@ -71,21 +73,42 @@ namespace NebulaEditor.Windows.MainEditor
             int logCount = 0;
             Task.Run(async () =>
             {
-                while (logCount < 10000)
+                while (logCount < 10)
                 {
                     ++logCount;
                     Logger.Log($"Log:{logCount}");
-                    Logger.Info($"Log:{logCount}");
-                    Logger.Warning($"Log:{logCount}");
-                    Logger.Error($"Log:{logCount}");
-                    await Task.Delay(300);
+                    Logger.Info($"Info:{logCount}");
+                    Logger.Warning($"Warning:{logCount}");
+                    Logger.Error($"Error:{logCount}");
+                    await Task.Delay(10);
                 }
             });
+            
+            // int logCount2 = 0;
+            // Task.Run(async () =>
+            // {
+            //     while (logCount < 10)
+            //     {
+            //         ++logCount2;
+            //         Logger.Log($"Log11111:{logCount2}");
+            //         Logger.Info($"Info:1111{logCount2}");
+            //         Logger.Warning($"Warning111:{logCount2}");
+            //         Logger.Error($"Error111:{logCount2}");
+            //         await Task.Delay(10);
+            //     }
+            // });
+            
+            
         }
 
         private void OnLogMessageAdd(Logger.LogMessage message)
         {
             m_ConsoleViewModel.OnAddMessage(message);
+        }
+
+        private void OnLogMessageCleared()
+        {
+            m_ConsoleViewModel.OnMessageClear();
         }
         
         private void OnProjectTreeViewRowPrepared(object? sender, TreeDataGridRowEventArgs args)
@@ -121,6 +144,7 @@ namespace NebulaEditor.Windows.MainEditor
             ProjectHierarchyView.TreeGridViewer.RowClearing -= OnProjectTreeViewRowClearing;
             
             Logger.MessageAdded -= OnLogMessageAdd;
+            Logger.MessageCleared -= OnLogMessageCleared;
             
             if (App.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
@@ -129,7 +153,7 @@ namespace NebulaEditor.Windows.MainEditor
                 int resultCode = LoadEditorConfigAsync(mainWindowViewModel).Result;
                 if (resultCode != 0)
                 {
-                    desktop.Shutdown();
+                    App.Shutdown(desktop);
 
                     return;
                 }

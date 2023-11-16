@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.Versioning;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Avalonia;
@@ -14,6 +15,7 @@ internal partial class Program
 {
     private static async Task Main(string[] args)
     {
+        Thread.CurrentThread.Name = "MainThread";
         NebulaEngine.GameApplication.platform = NebulaEngine.RuntimePlatform.Browser;
         NebulaEngine.GameApplication.startupPath = AppDomain.CurrentDomain.SetupInformation.ApplicationBase;
         NebulaEngine.GameApplication.isInEditor = false;

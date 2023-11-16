@@ -29,6 +29,7 @@ namespace NebulaEngine
         public static  string projectName = string.Empty;
         public static  bool isRunning = false;
         public static  bool isInEditor = false;
+        public static bool IsDesignMode = false;
         public static  RuntimePlatform platform = RuntimePlatform.Unknow;
 
     }

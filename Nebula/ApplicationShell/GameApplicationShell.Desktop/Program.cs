@@ -1,5 +1,5 @@
 ﻿using System;
-
+using System.Threading;
 using Avalonia;
 using Avalonia.ReactiveUI;
 
@@ -13,6 +13,7 @@ class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        Thread.CurrentThread.Name = "MainThread";
         NebulaEngine.GameApplication.platform = NebulaEngine.RuntimePlatform.Windows;
         NebulaEngine.GameApplication.startupPath = AppDomain.CurrentDomain.SetupInformation.ApplicationBase;
         NebulaEngine.GameApplication.isInEditor = false;
