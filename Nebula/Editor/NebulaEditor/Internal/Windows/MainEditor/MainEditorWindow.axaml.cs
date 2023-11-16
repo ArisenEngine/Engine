@@ -51,7 +51,6 @@ namespace NebulaEditor.Windows.MainEditor
             // Console Hierarchy
             m_ConsoleViewModel = new ConsoleViewModel();
             m_ConsoleViewModel.Clear();
-            m_ConsoleViewModel.ListBox = ConsoleHierarchyView.MessageList;
             ConsoleHierarchyView.MessageList.AutoScrollToSelectedItem = false;
             ConsoleHierarchyView.DataContext = m_ConsoleViewModel;
             Logger.MessageAdded += OnLogMessageAdd;
@@ -145,6 +144,7 @@ namespace NebulaEditor.Windows.MainEditor
             
             Logger.MessageAdded -= OnLogMessageAdd;
             Logger.MessageCleared -= OnLogMessageCleared;
+            m_ConsoleViewModel.Dispose();
             
             if (App.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
