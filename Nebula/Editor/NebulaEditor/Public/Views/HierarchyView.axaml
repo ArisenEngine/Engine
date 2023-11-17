@@ -11,7 +11,8 @@
         <converts:TreeViewIconConverter x:Key="IconConverter"></converts:TreeViewIconConverter>
     </UserControl.Resources>
     
-    <TreeDataGrid Name="TreeGridViewer">
+    <DockPanel>
+        <TreeDataGrid Name="TreeGridViewer">
         
         <TreeDataGrid.Resources>
             
@@ -63,5 +64,6 @@
         </TreeDataGrid.Styles>
         
     </TreeDataGrid>
+    </DockPanel>
     
 </UserControl>

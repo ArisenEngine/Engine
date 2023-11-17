@@ -18,4 +18,9 @@
     <Folder Include="Hook\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="NebulaEditor" />
+  </ItemGroup>
+  
+  
 </Project>

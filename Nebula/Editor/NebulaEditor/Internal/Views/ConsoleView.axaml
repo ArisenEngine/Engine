@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="400"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="800"
              xmlns:vm="using:NebulaEditor.ViewModels"
              xmlns:converts="using:NebulaEditor.Converters"
              xmlns:m="using:NebulaEditor.Models"
@@ -17,10 +17,9 @@
         <converts:ConsoleViewIconConverter x:Key="IconConverter"></converts:ConsoleViewIconConverter>
     </UserControl.Resources>
 
-    <DockPanel>
-        <!-- <TextBlock DockPanel.Dock="Top" Text="Console" FontSize="15"></TextBlock> -->
-        <Border BorderThickness="0,1,0,0" DockPanel.Dock="Top" Background="Black"></Border>
-
+    <Grid RowDefinitions="5*, Auto, 5*">
+        <DockPanel>
+      
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" HorizontalAlignment="Left" Spacing="5">
 
             <Button Name="CleanLog" Margin="0, 0,0,0" Command="{Binding ClearCommand}">
@@ -51,8 +50,9 @@
 
         </StackPanel>
 
-        <DataGrid GridLinesVisibility="None" ColumnHeaderHeight="20" Name="LogDataGrid" SelectionMode="Extended"
+        <DataGrid GridLinesVisibility="None" ColumnHeaderHeight="20" Name="LogDataGrid" SelectionMode="Single" SelectionChanged="LogDataGrid_OnSelectionChanged"
                   ItemsSource="{Binding Messages}" IsReadOnly="True" HeadersVisibility="Column" CanUserResizeColumns="True">
+         
             <DataGrid.Columns>
                 <DataGridTemplateColumn Header="Type">
                     <DataTemplate x:DataType="m:MessageItemNode">
@@ -104,5 +104,12 @@
 
         </DataGrid>
     </DockPanel>
+        
+        <GridSplitter Grid.Row="1" ResizeDirection="Rows"></GridSplitter>
+        
+        <ScrollViewer Grid.Row="2">
+            <TextBlock Margin="10,5" TextWrapping="Wrap" Text="{Binding StackTrace}"></TextBlock>
+        </ScrollViewer>
+    </Grid>
 
 </UserControl>

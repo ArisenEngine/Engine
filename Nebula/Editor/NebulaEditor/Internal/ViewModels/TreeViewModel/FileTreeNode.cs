@@ -9,17 +9,17 @@ using NebulaEditor.Utilities;
 
 namespace NebulaEditor.ViewModels;
 
-public class FolderTreeNode : TreeNodeBase
+public class FileTreeNode : TreeNodeBase
 {
     private string? m_UndoName;
-    public FolderTreeNode(string name, string path, bool isBranch, bool isRoot = false, bool isImmutable = false) : base(name, path, isBranch, isRoot, isImmutable)
+    public FileTreeNode(string name, string path, bool isBranch, bool isRoot = false, bool isImmutable = false) : base(name, path, isBranch, isRoot, isImmutable)
     {
        
     }
 
-    private ObservableCollection<FolderTreeNode>? m_Children;
+    private ObservableCollection<FileTreeNode>? m_Children;
     
-    private ObservableCollection<FolderTreeNode> LoadChildren()
+    private ObservableCollection<FileTreeNode> LoadChildren()
     {
         if (!IsBranch)
         {
@@ -31,12 +31,19 @@ public class FolderTreeNode : TreeNodeBase
             IgnoreInaccessible = true ,
             AttributesToSkip = FileAttributes.Hidden | FileAttributes.System
         };
-        var result = new ObservableCollection<FolderTreeNode>();
+        var result = new ObservableCollection<FileTreeNode>();
 
-        foreach (var d in Directory.EnumerateDirectories(Path, "*", options))
+        foreach (var fullPath in Directory.EnumerateDirectories(Path, "*", options))
         {
-            var name = d.Split(System.IO.Path.DirectorySeparatorChar)[^1];
-            result.Add(new FolderTreeNode(name, d, true, false));
+            var name = fullPath.Split(System.IO.Path.DirectorySeparatorChar)[^1];
+            result.Add(new FileTreeNode(name, fullPath, true, false)
+            {
+                
+                Size = NebulaEngine.FileSystem.FileSystemUtilities.GetFolderSize(fullPath),
+                Modified = new DirectoryInfo(fullPath).LastWriteTimeUtc
+                
+            });
+
         }
         
         NebulaFileSystemWatcher.Changed += OnChanged;
@@ -56,7 +63,7 @@ public class FolderTreeNode : TreeNodeBase
         return (IReadOnlyList<FolderTreeNode>)m_Children;
     }
 
-    public override bool HasChildren => Children<FolderTreeNode>().Count > 0;
+    public override bool HasChildren => Children<FileTreeNode>().Count > 0;
 
     protected override string LeafIconPath => "avares://NebulaEditor/Assets/Icons/file.png";
     protected override string BranchIconPath => "avares://NebulaEditor/Assets/Icons/folder.png";
@@ -73,7 +80,13 @@ public class FolderTreeNode : TreeNodeBase
             {
                 if (child.Path == e.FullPath)
                 {
-                    if (!child.IsBranch)
+                    if (child.IsBranch)
+                    {
+                        var info = new DirectoryInfo(e.FullPath);
+                        child.Size = NebulaEngine.FileSystem.FileSystemUtilities.GetFolderSize(e.FullPath);
+                        child.Modified = info.LastWriteTimeUtc;
+                    }
+                    else
                     {
                         var info = new FileInfo(e.FullPath);
                         child.Size = info.Length;
@@ -97,7 +110,7 @@ public class FolderTreeNode : TreeNodeBase
         var parentPath = e.FullPath.Substring(0, e.FullPath.Length - name.Length - 1);
         if (string.Equals(parentPath, this.Path))
         {
-            var node = new FolderTreeNode(
+            var node = new FileTreeNode(
                 name,
                 e.FullPath,
                 true,

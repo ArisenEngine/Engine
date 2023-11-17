@@ -56,13 +56,11 @@
 					<Grid Grid.Row="0" ColumnDefinitions="1*,0.0001*,4*">
 
 						<!-- Hierarchy -->
-						<Grid Grid.Column="0">
-							<views:HierarchyView Name="WorldHierarchyView">
-								<views:HierarchyView.DataContext>
-									<vm:WorldHierarchyViewModel />
-								</views:HierarchyView.DataContext>
-							</views:HierarchyView>
-						</Grid>
+						<views:HierarchyView Name="WorldHierarchyView" Grid.Column="0">
+							<views:HierarchyView.DataContext>
+								<vm:WorldHierarchyViewModel />
+							</views:HierarchyView.DataContext>
+						</views:HierarchyView>
 
 						<GridSplitter Grid.Column="1" ResizeDirection="Columns"></GridSplitter>
 
@@ -84,50 +82,16 @@
 
 					<!-- Project | Console -->
 					<Grid Grid.Row="2" ColumnDefinitions="0.5*, Auto, 0.5*">
-
-						<!-- Project -->
-						<Grid Grid.Column="0" RowDefinitions="Auto, *" ColumnDefinitions="*">
-							<!-- Search bar -->
-							<Grid Grid.Row="0" Height="35" VerticalAlignment="Top">
-
-							</Grid>
-
-							<!-- Project & Asset -->
-							<Grid Grid.Row="1" ColumnDefinitions="0.5*,Auto, 0.5*">
-								<Grid Grid.Column="0">
-									<!-- <views:AssetsHierarchyView/> -->
-									<views:HierarchyView Name="ProjectHierarchyView">
-										<views:HierarchyView.DataContext>
-											<vm:ProjectHierarchyViewModel />
-										</views:HierarchyView.DataContext>
-									</views:HierarchyView>
-								</Grid>
-
-								<GridSplitter Grid.Column="1" ResizeDirection="Columns" ></GridSplitter>
-
-								<Grid Grid.Column="2">
-									<Label FontSize="30"> Assets View </Label>
-								</Grid>
-
-							</Grid>
-						</Grid>
+						
+						<!-- Project & Asset -->
+						<views:ProjectHierarchyView Grid.Row="1" Name="ProjectHierarchyView">
+						</views:ProjectHierarchyView>
 
 						<GridSplitter Grid.Column="1" ResizeDirection="Columns" ></GridSplitter>
 
 						<!-- Console -->
-						<Grid Grid.Column="2" RowDefinitions="1.5*, Auto, 1*">
-							
-							<views:ConsoleView Grid.Row="0" Name="ConsoleHierarchyView">
-								
-							</views:ConsoleView>
-							
-							<GridSplitter Grid.Row="1" ResizeDirection="Rows" ></GridSplitter>
-							
-							<Grid Grid.Row="2">
-								
-							</Grid>
-							
-						</Grid>
+						<views:ConsoleView Grid.Column="2" Grid.Row="0" Name="ConsoleHierarchyView">
+						</views:ConsoleView>
 
 					</Grid>
 
@@ -136,11 +100,8 @@
 				<GridSplitter Grid.Column="1" ResizeDirection="Columns" ></GridSplitter>
 
 				<!-- Inspector area -->
-				<Grid Grid.Column="2" ColumnDefinitions="*" RowDefinitions="*,Auto,*">
-					<Label Grid.Row="0" FontSize="70"> Inspertor </Label>
-					<GridSplitter Grid.Row="1" ResizeDirection="Rows"></GridSplitter>
-					<rendering:RenderSurfaceView Grid.Row="2">
-					</rendering:RenderSurfaceView>
+				<Grid Grid.Column="2" ColumnDefinitions="*" RowDefinitions="Auto" Background="Gray">
+					
 				</Grid>
 			</Grid>
 		</Grid>

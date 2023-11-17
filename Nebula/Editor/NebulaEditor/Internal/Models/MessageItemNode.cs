@@ -7,6 +7,13 @@ namespace NebulaEditor.Models;
 
 public class MessageItemNode
 {
+    public string StackTrace
+    {
+        get
+        {
+            return m_Message.StackTrace;
+        }
+    }
     public string FullText
     {
         get

@@ -11,15 +11,31 @@ namespace NebulaEditor.ViewModels;
 public abstract class TreeNodeBase : ReactiveObject, IEditableObject
 {
     private bool m_IsExpanded;
+
     public bool IsExpanded
     {
         get => m_IsExpanded;
-        set 
-        {
-            this.RaiseAndSetIfChanged(ref m_IsExpanded, value && HasChildren);
-        }
+        set { this.RaiseAndSetIfChanged(ref m_IsExpanded, value && HasChildren); }
     }
-    
+
+    private bool m_AllowDrag = true;
+
+    public bool AllowDrag
+    {
+        get => m_AllowDrag;
+        set => this.RaiseAndSetIfChanged(ref m_AllowDrag, value);
+    }
+
+
+    private bool m_AllowDrop = true;
+
+    public bool AllowDrop
+    {
+        get => m_AllowDrop;
+        set => this.RaiseAndSetIfChanged(ref m_AllowDrop, value);
+    }
+
+
     public bool IsBranch { get; }
 
     public bool IsRoot { get; private set; }
@@ -27,34 +43,59 @@ public abstract class TreeNodeBase : ReactiveObject, IEditableObject
     public bool IsChecked { get; set; }
 
     private string m_Name = "TreeNode";
-    public string Name 
+
+    public string Name
     {
         get => m_Name;
         set => this.RaiseAndSetIfChanged(ref m_Name, value);
     }
-    
-    private long? m_Size;
-    public long? Size 
+
+    private long m_Size = 0;
+
+    public long Size
     {
         get => m_Size;
-        set => this.RaiseAndSetIfChanged(ref m_Size, value);
+        set
+        {
+            this.RaiseAndSetIfChanged(ref m_Size, value);
+        }
     }
-    
+
+    public string SizeString
+    {
+        get
+        {
+            var bytes = Size;
+            string[] sizes = { "Bytes", "KB", "MB", "GB", "TB" };
+            int order = 0;
+            while (bytes >= 1024 && order < sizes.Length - 1)
+            {
+                order++;
+                bytes = bytes / 1024;
+            }
+
+            return $"{bytes:0.##} {sizes[order]}";
+        }
+    }
+
     private string m_Path;
-    public string Path 
+
+    public string Path
     {
         get => m_Path;
         set => this.RaiseAndSetIfChanged(ref m_Path, value);
     }
-    
-    private DateTimeOffset? m_Modified;
-    public DateTimeOffset? Modified 
+
+    private DateTimeOffset m_Modified;
+
+    public DateTimeOffset Modified
     {
         get => m_Modified;
         set => this.RaiseAndSetIfChanged(ref m_Modified, value);
     }
+
     public abstract IReadOnlyList<T> Children<T>() where T : TreeNodeBase;
-    
+
     public abstract bool HasChildren { get; }
 
     private Bitmap m_LeafIcon;
@@ -74,9 +115,9 @@ public abstract class TreeNodeBase : ReactiveObject, IEditableObject
             return m_LeafIcon;
         }
     }
-    
+
     private Bitmap m_BranchIcon;
-    
+
     public Bitmap BranchIcon
     {
         get
@@ -92,9 +133,9 @@ public abstract class TreeNodeBase : ReactiveObject, IEditableObject
             return m_BranchIcon;
         }
     }
-    
+
     private Bitmap m_BranchOpenIcon;
-    
+
     public Bitmap BranchOpenIcon
     {
         get
@@ -110,9 +151,9 @@ public abstract class TreeNodeBase : ReactiveObject, IEditableObject
             return m_BranchOpenIcon;
         }
     }
-    
+
     private Bitmap m_RootIcon;
-    
+
     public Bitmap RootIcon
     {
         get
@@ -128,7 +169,7 @@ public abstract class TreeNodeBase : ReactiveObject, IEditableObject
             return m_RootIcon;
         }
     }
-    
+
     protected virtual string LeafIconPath => "";
     protected virtual string BranchIconPath => "";
     protected virtual string BranchOpenIconPath => "";
@@ -138,7 +179,7 @@ public abstract class TreeNodeBase : ReactiveObject, IEditableObject
     private bool m_IsImmutable;
 
     public bool Immutable => m_IsImmutable;
-    
+
     public TreeNodeBase(
         string name, string path, bool isBranch, bool isRoot = false, bool isImmutable = false)
     {
@@ -149,7 +190,7 @@ public abstract class TreeNodeBase : ReactiveObject, IEditableObject
         IsBranch = isBranch;
         m_IsImmutable = isImmutable;
     }
-    
+
     #region Sort
 
     public static Comparison<TreeNodeBase?> SortAscending<T>(Func<TreeNodeBase, T> selector)
@@ -170,7 +211,7 @@ public abstract class TreeNodeBase : ReactiveObject, IEditableObject
                 return 1;
         };
     }
-    
+
     public static Comparison<TreeNodeBase?> SortDescending<T>(Func<TreeNodeBase, T> selector)
     {
         return (x, y) =>
@@ -191,8 +232,8 @@ public abstract class TreeNodeBase : ReactiveObject, IEditableObject
     }
 
     #endregion
-    
-    
+
+
     #region IEditableObject
 
     public void BeginEdit()
@@ -202,7 +243,6 @@ public abstract class TreeNodeBase : ReactiveObject, IEditableObject
 
     protected virtual void OnBeginEdit()
     {
-        
     }
 
     public void CancelEdit()
@@ -212,7 +252,6 @@ public abstract class TreeNodeBase : ReactiveObject, IEditableObject
 
     protected virtual void OnCancelEdit()
     {
-        
     }
 
     public void EndEdit()
@@ -222,9 +261,7 @@ public abstract class TreeNodeBase : ReactiveObject, IEditableObject
 
     protected virtual void OnEndEdit()
     {
-        
     }
-    
+
     #endregion
-    
 }
