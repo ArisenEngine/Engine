@@ -36,9 +36,18 @@ public static class Logger
         public int ThreadId { get; }
         public string ThreadName { get; }
         public string Caller { get; }
-        public string MetaData => $"{File}:{Caller}({Line})";
 
-        public LogMessage(MessageType messageType, string msg, string file, string caller, int line, int threadId, string threadName)
+        public string StackTrace { get; } = string.Empty;
+
+        public string FullLogString
+        {
+            get
+            {
+                return $"[{Time}] [{MessageType}] [ThreadId:{ThreadId}, ThreadName:{ThreadName}] \nMessage: {Message} \n" + (MessageType == Logger.MessageType.Log ? "" : StackTrace);
+            }
+        }
+       
+        public LogMessage(MessageType messageType, string msg, string file, string caller, int line, int threadId, string threadName, string stackTrace = "")
         {
             Time = DateTime.Now;
             MessageType = messageType;
@@ -48,6 +57,7 @@ public static class Logger
             Line = line;
             ThreadId = threadId;
             ThreadName = threadName;
+            StackTrace = stackTrace;
         }
     }
 
@@ -65,7 +75,7 @@ public static class Logger
                 return;
             }
             
-            FileSystemUtilities.AppendTextToFile($"[{message.Time}] [{message.MessageType}] {message.Message} {message.MetaData}", DebuggerLogPath);
+            FileSystemUtilities.AppendTextToFile(message.FullLogString, DebuggerLogPath);
         }
         catch (Exception e)
         {
@@ -73,66 +83,51 @@ public static class Logger
             throw;
         }
     }
-    
-    public static async void Log(object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
+
+    private static void DoWriteMessage(MessageType type, object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
     {
         int id = Thread.CurrentThread.ManagedThreadId;
         string threadName = Thread.CurrentThread.Name;
+        string trace = Environment.StackTrace;
         
-        await Task.Run(() =>
+        Task.Run(() =>
         {
-            var message = new LogMessage(MessageType.Log, msg.ToString(), file, caller, line, id, threadName);
+            var message = new LogMessage(type, msg.ToString(), file, caller, line, id, threadName, trace);
             WriteMessage(message);
             
         });
     }
     
-    public static async void Info(object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
+    public static void Log(object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
+    {
+        DoWriteMessage(MessageType.Log, msg, file, caller, line);
+    }
+    
+    public static void Info(object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
+    {
+        DoWriteMessage(MessageType.Info, msg, file, caller, line);
+    }
+    
+    public static void Warning(object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
+    {
+        DoWriteMessage(MessageType.Warning, msg, file, caller, line);
+    }
+    
+    public static void Error(object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
+    {
+        DoWriteMessage(MessageType.Error, msg, file, caller, line);
+    }
+    
+    public static void Clear([CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
     {
         int id = Thread.CurrentThread.ManagedThreadId;
         string threadName = Thread.CurrentThread.Name;
+        string trace = Environment.StackTrace;
         
-        await Task.Run(() =>
-        {
-            var message = new LogMessage(MessageType.Info, msg.ToString(), file, caller, line, id, threadName);
-            WriteMessage(message);
-            
-        });
-    }
-    
-    public static async void Warning(object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
-    {
-        int id = Thread.CurrentThread.ManagedThreadId;
-        string threadName = Thread.CurrentThread.Name;
-        
-        await Task.Run(() =>
-        {
-            var message = new LogMessage(MessageType.Warning, msg.ToString(), file, caller, line, id, threadName);
-            WriteMessage(message);
-            
-        });
-    }
-    
-    public static async void Error(object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
-    {
-        int id = Thread.CurrentThread.ManagedThreadId;
-        string threadName = Thread.CurrentThread.Name;
-        await Task.Run(() =>
-        {
-            var message = new LogMessage(MessageType.Error, msg.ToString(), file, caller, line, id, threadName);
-            WriteMessage(message);
-            
-        });
-    }
-    
-    public static async void Clear([CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
-    {
-        int id = Thread.CurrentThread.ManagedThreadId;
-        string threadName = Thread.CurrentThread.Name;
-        await Task.Run(() =>
+        Task.Run(() =>
         {
             MessageCleared?.Invoke();
-            var message = new LogMessage(MessageType.Log, "Clear....", file, caller, line, id, threadName);
+            var message = new LogMessage(MessageType.Log, "Clear....", file, caller, line, id, threadName, trace);
             WriteMessage(message);
             
         });

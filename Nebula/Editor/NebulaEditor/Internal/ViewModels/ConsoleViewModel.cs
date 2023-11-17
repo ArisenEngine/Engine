@@ -30,54 +30,54 @@ public class ConsoleViewModel : ViewModelBase, IDisposable
                     new ObservableCollection<MessageItemNode>()
                     {
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10223,
-                            "KDFJF")),
+                            "KDFJF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 103423,
-                            "DASDAF")),
+                            "DASDAF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10342,
-                            "AFSF")),
+                            "AFSF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 10324,
-                            "FASF")),
+                            "FASF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 1032,
-                            "FGDSD")),
+                            "FGDSD", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 102342,
-                            "FSDF")),
+                            "FSDF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 102342,
-                            "GDFGS")),
+                            "GDFGS", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 102342,
-                            "DSFG")),
+                            "DSFG", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10234,
-                            "DFG")),
+                            "DFG", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 2342,
-                            "DFG")),
+                            "DFG", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 234,
-                            "DSFG")),
+                            "DSFG", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 243,
-                            "DSFGDH")),
+                            "DSFGDH", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
 
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10223,
-                            "KDFJF")),
+                            "KDFJF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 103423,
-                            "DASDAF")),
+                            "DASDAF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10342,
-                            "AFSF")),
+                            "AFSF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 10324,
-                            "FASF")),
+                            "FASF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 1032,
-                            "FGDSD")),
+                            "FGDSD", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 102342,
-                            "FSDF")),
+                            "FSDF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 102342,
-                            "GDFGS")),
+                            "GDFGS", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 102342,
-                            "DSFG")),
+                            "DSFG", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10234,
-                            "DFG")),
+                            "DFG", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 2342,
-                            "DFG")),
+                            "DFG", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 234,
-                            "DSFG")),
+                            "DSFG", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                         new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 243,
-                            "DSFGDH")),
+                            "DSFGDH", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
                     });
             }
             return m_Messages;
@@ -146,6 +146,35 @@ public class ConsoleViewModel : ViewModelBase, IDisposable
             this.RaiseAndSetIfChanged(ref m_WarningChecked, value);
         }
     }
+
+    private MessageItemNode m_SelectedItem;
+
+    public MessageItemNode SelectedItem
+    {
+        get
+        {
+            return m_SelectedItem;
+        }
+        set
+        {
+            m_SelectedItem = value;
+            StackTrace = m_SelectedItem?.StackTrace;
+        }
+    }
+
+    private string m_StackTrace;
+
+    public string StackTrace
+    {
+        get
+        {
+            return m_StackTrace;
+        }
+        set
+        {
+            this.RaiseAndSetIfChanged(ref m_StackTrace, value);
+        }
+    }
     
     private bool m_ErrorChecked = true;
     public bool ErrorChecked
@@ -182,9 +211,10 @@ public class ConsoleViewModel : ViewModelBase, IDisposable
     
     private readonly Subject<bool> m_CountChanged = new();
     private readonly CompositeDisposable m_Disposable = new();
-    
+
     public ConsoleViewModel() : base()
     {
+        
         ClearCommand = ReactiveCommand.Create(Clear);
         
         var filter = new BehaviorSubject<Func<MessageItemNode, bool>>(Filter);

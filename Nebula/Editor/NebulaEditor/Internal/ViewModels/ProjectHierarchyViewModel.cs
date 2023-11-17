@@ -5,107 +5,186 @@ using Avalonia.Controls;
 using Avalonia.Controls.Models.TreeDataGrid;
 using Avalonia.Controls.Selection;
 using NebulaEngine;
+using ReactiveUI;
 
 namespace NebulaEditor.ViewModels;
 
 public class ProjectHierarchyViewModel : ViewModelBase
 {
-    public string Header
+    private string m_AssetsSearchText = String.Empty;
+
+    public string AssetsSearchText
     {
-        get => "Project";
+        get { return m_AssetsSearchText; }
+        set { this.RaiseAndSetIfChanged(ref m_AssetsSearchText, value); }
     }
 
-    private void InitializeRoots()
+    public ProjectHierarchyViewModel()
     {
-        m_Roots = new FolderTreeNode[2]
-        {
-            new FolderTreeNode("Assets", Path.Combine(GameApplication.projectRoot, "Assets"), true, isRoot: true, true),
-            new FolderTreeNode("Packages", Path.Combine(GameApplication.projectRoot, "Packages"), true, isRoot: true, true),
-        };
-    }
-    
-    private string? m_SelectedPath;
-    
-    private FolderTreeNode[] m_Roots = null;
-    
-    private HierarchicalTreeDataGridSource<FolderTreeNode> m_FolderSource;
-
-    public HierarchicalTreeDataGridSource<FolderTreeNode> FolderSource
-    {
-        get
-        {
-            if (m_FolderSource == null)
-            {
-                InitializeSource();
-            }
-
-            return m_FolderSource;
-        }
+        InitializeFolderSource();
+        InitializeAssetsSource();
     }
 
-    public FolderTreeNode[] Roots
-    {
-        get
-        {
-            if (m_Roots == null)
-            {
-                InitializeRoots();
-            }
+    #region Project Part
 
-            return m_Roots;
-        }
-    }
-    
-    private void InitializeSource()
+    public HierarchicalTreeDataGridSource<FileTreeNode> FolderSource { get; set; }
+
+    private void InitializeFolderSource()
     {
-        m_FolderSource = new HierarchicalTreeDataGridSource<FolderTreeNode>(Array.Empty<FolderTreeNode>())
+        FolderSource = new HierarchicalTreeDataGridSource<FileTreeNode>(Array.Empty<FileTreeNode>())
         {
             Columns =
             {
-                new HierarchicalExpanderColumn<FolderTreeNode>(
-                    new TemplateColumn<FolderTreeNode>(
-                        Header,
+                new HierarchicalExpanderColumn<FileTreeNode>(
+                    new TemplateColumn<FileTreeNode>(
+                        "Project://",
                         "NameCell",
                         "NameEditCell",
                         new GridLength(1, GridUnitType.Star),
-                        new TemplateColumnOptions<FolderTreeNode>()
+                        new TemplateColumnOptions<FileTreeNode>()
                         {
-                            CompareAscending = FolderTreeNode.SortAscending(x => x.Name),
-                            CompareDescending = FolderTreeNode.SortDescending(x => x.Name),
+                            CompareAscending = FileTreeNode.SortAscending(x => x.Name),
+                            CompareDescending = FileTreeNode.SortDescending(x => x.Name),
                             IsTextSearchEnabled = true,
                             TextSearchValueSelector = x => x.Name
                         }),
-                    x => x.Children<FolderTreeNode>(),
+                    x => x.Children<FileTreeNode>(),
                     x => x.HasChildren,
                     x => x.IsExpanded
                 ),
+
+                new TextColumn<FileTreeNode, string>(
+                    "Size",
+                    node => node.SizeString),
+
+                new TextColumn<FileTreeNode, DateTimeOffset>(
+                    "Modified",
+                    node => node.Modified),
             }
         };
-        
-        m_FolderSource.RowSelection!.SingleSelect = false;
-        
-        m_FolderSource.Items = Roots;
-        
-        m_FolderSource.RowSelection.SelectionChanged += SelectionChanged;
-        
+
+        FolderSource.RowSelection!.SingleSelect = false;
+
+        FolderSource.Items = new FileTreeNode[2]
+        {
+            new FileTreeNode("Assets", Path.Combine(GameApplication.projectRoot, "Assets"), true, isRoot: true, true),
+            new FileTreeNode("Packages", Path.Combine(GameApplication.projectRoot, "Packages"), true, isRoot: true, true)
+            {
+                AllowDrag = false,
+                AllowDrop = false
+            },
+        };
+
+        FolderSource.RowSelection.SelectionChanged += FolderSelectionChanged;
     }
 
-    private FolderTreeNode[] m_FolderSelections;
 
-    public FolderTreeNode[] FolderSelections
+    private FileTreeNode[] m_FolderSelections;
+
+    public FileTreeNode[] FolderSelections
     {
         get
         {
             if (m_FolderSelections == null)
             {
-                m_FolderSelections = new FolderTreeNode[] { };
+                m_FolderSelections = new FileTreeNode[] { };
             }
 
             return m_FolderSelections;
         }
     }
-    private void SelectionChanged(object? sender, TreeSelectionModelSelectionChangedEventArgs<FolderTreeNode> e)
+
+    private void FolderSelectionChanged(object? sender, TreeSelectionModelSelectionChangedEventArgs<FileTreeNode> e)
     {
         m_FolderSelections = e.SelectedItems.ToArray();
     }
+
+    #endregion
+
+
+    #region Assets Part
+
+    public HierarchicalTreeDataGridSource<FileTreeNode> AssetsSource { get; set; }
+
+
+    private string m_AssetsHeader;
+    public string AssetsHeader
+    {
+        get => m_AssetsHeader;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref m_AssetsHeader, value);
+        }
+    }
+    
+    private void InitializeAssetsSource()
+    {
+        AssetsSource = new HierarchicalTreeDataGridSource<FileTreeNode>(Array.Empty<FileTreeNode>())
+        {
+            Columns =
+            {
+                new HierarchicalExpanderColumn<FileTreeNode>(
+                    new TemplateColumn<FileTreeNode>(
+                        "Name",
+                        "AssetsNameCell",
+                        "AssetsNameEditCell",
+                        new GridLength(1, GridUnitType.Star),
+                        new TemplateColumnOptions<FileTreeNode>()
+                        {
+                            CompareAscending = FileTreeNode.SortAscending(x => x.Name),
+                            CompareDescending = FileTreeNode.SortDescending(x => x.Name),
+                            IsTextSearchEnabled = true,
+                            TextSearchValueSelector = x => x.Name
+                        }),
+                    x => x.Children<FileTreeNode>(),
+                    x => x.HasChildren,
+                    x => x.IsExpanded
+                ),
+
+                new TextColumn<FileTreeNode, string>(
+                    "Size",
+                    node => node.SizeString),
+
+                new TextColumn<FileTreeNode, DateTimeOffset>(
+                    "Modified",
+                    node => node.Modified),
+            }
+        };
+
+        AssetsSource.RowSelection!.SingleSelect = false;
+
+        AssetsSource.Items = new FileTreeNode[2]
+        {
+            new FileTreeNode("Assets", Path.Combine(GameApplication.projectRoot, "Assets"), true, isRoot: true, true),
+            new FileTreeNode("Packages", Path.Combine(GameApplication.projectRoot, "Packages"), true, isRoot: true, true)
+            {
+                AllowDrag = false,
+                AllowDrop = false
+            },
+        };
+
+        AssetsSource.RowSelection.SelectionChanged += AssetsSelectionChanged;
+    }
+
+    private void AssetsSelectionChanged(object? sender, TreeSelectionModelSelectionChangedEventArgs<FileTreeNode> e)
+    {
+        m_AssetsSelections = e.SelectedItems.ToArray();
+    }
+
+    private FileTreeNode[] m_AssetsSelections;
+
+    public FileTreeNode[] AssetsSelections
+    {
+        get
+        {
+            if (m_AssetsSelections == null)
+            {
+                m_AssetsSelections = new FileTreeNode[] { };
+            }
+
+            return m_AssetsSelections;
+        }
+    }
+
+    #endregion
 }

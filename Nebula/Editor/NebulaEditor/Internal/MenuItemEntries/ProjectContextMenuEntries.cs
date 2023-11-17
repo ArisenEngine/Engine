@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Avalonia.Interactivity;
 using NebulaEditor.Attributes;
+using NebulaEditor.Utilities;
 using NebulaEditor.ViewModels;
 
 namespace NebulaEditor.Internal.MenuItemEntries;
@@ -12,8 +13,22 @@ internal static class ProjectContextMenuEntries
     {
         if (sender != null)
         {
-            FolderTreeNode treeNode = ((Avalonia.Controls.MenuItem) sender).DataContext as FolderTreeNode;
-            Process.Start("explorer.exe", $"/select,\"{treeNode.Path}\"");
+            var dataContext = ((Avalonia.Controls.MenuItem) sender).DataContext;
+            if (dataContext != null)
+            {
+                if (dataContext is FileTreeNode fileTreeNode)
+                {
+                    Process.Start("explorer.exe", $"/select,\"{fileTreeNode.Path}\"");
+                }
+                else if (dataContext is ProjectHierarchyViewModel projectHierarchyViewModel)
+                {
+                    
+                }
+            }
+            else
+            {
+                var _ = MessageBoxUtility.ShowMessageBoxStandard("Error", "Data context is null");
+            }
         }
     }
 }

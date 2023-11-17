@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace NebulaEngine.FileSystem
 {
-    public static class FileSystemUtilities
+    public  static partial class FileSystemUtilities
     {
         /// <summary>
         /// Copy directory recursively, while overrideAction returns true means that user want to hanle files fully by self 
@@ -102,6 +102,30 @@ namespace NebulaEngine.FileSystem
             {
                 locker.ReleaseWriterLock();
             }
+        }
+
+        public static long GetFolderSize(string folderPath)
+        {
+            long size = 0;
+            try
+            {
+                var dirInfo = new DirectoryInfo(folderPath);
+                if (dirInfo.Exists)
+                {
+                    var files = dirInfo.GetFiles("*", SearchOption.AllDirectories);
+                    foreach (var file in files)
+                    {
+                        size += file.Length;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+
+            return size;
         }
     }
 }

@@ -8,7 +8,7 @@ using System.IO;
 
 namespace NebulaEditor.Utilities
 {
-    public static class FileSystemUtilities
+    public static partial class FileSystemUtilities
     {
         public static async Task<List<string>?> BrowseDictionary(string Title, bool isAllowMultiple = false)
         {
