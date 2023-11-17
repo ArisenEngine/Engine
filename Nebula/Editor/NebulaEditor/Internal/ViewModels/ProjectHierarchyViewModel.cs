@@ -8,7 +8,7 @@ using NebulaEngine;
 
 namespace NebulaEditor.ViewModels;
 
-public class ProjectHierarchyViewModel : ViewModelBase, IHierarchyVM<FolderTreeNode>
+public class ProjectHierarchyViewModel : ViewModelBase
 {
     public string Header
     {
@@ -28,18 +28,18 @@ public class ProjectHierarchyViewModel : ViewModelBase, IHierarchyVM<FolderTreeN
     
     private FolderTreeNode[] m_Roots = null;
     
-    private HierarchicalTreeDataGridSource<FolderTreeNode> m_Source;
+    private HierarchicalTreeDataGridSource<FolderTreeNode> m_FolderSource;
 
-    public HierarchicalTreeDataGridSource<FolderTreeNode> Source
+    public HierarchicalTreeDataGridSource<FolderTreeNode> FolderSource
     {
         get
         {
-            if (m_Source == null)
+            if (m_FolderSource == null)
             {
                 InitializeSource();
             }
 
-            return m_Source;
+            return m_FolderSource;
         }
     }
 
@@ -58,7 +58,7 @@ public class ProjectHierarchyViewModel : ViewModelBase, IHierarchyVM<FolderTreeN
     
     private void InitializeSource()
     {
-        m_Source = new HierarchicalTreeDataGridSource<FolderTreeNode>(Array.Empty<FolderTreeNode>())
+        m_FolderSource = new HierarchicalTreeDataGridSource<FolderTreeNode>(Array.Empty<FolderTreeNode>())
         {
             Columns =
             {
@@ -82,30 +82,30 @@ public class ProjectHierarchyViewModel : ViewModelBase, IHierarchyVM<FolderTreeN
             }
         };
         
-        m_Source.RowSelection!.SingleSelect = false;
+        m_FolderSource.RowSelection!.SingleSelect = false;
         
-        m_Source.Items = Roots;
+        m_FolderSource.Items = Roots;
         
-        m_Source.RowSelection.SelectionChanged += SelectionChanged;
+        m_FolderSource.RowSelection.SelectionChanged += SelectionChanged;
         
     }
 
-    private FolderTreeNode[] m_Selections;
+    private FolderTreeNode[] m_FolderSelections;
 
-    public FolderTreeNode[] Selections
+    public FolderTreeNode[] FolderSelections
     {
         get
         {
-            if (m_Selections == null)
+            if (m_FolderSelections == null)
             {
-                m_Selections = new FolderTreeNode[] { };
+                m_FolderSelections = new FolderTreeNode[] { };
             }
 
-            return m_Selections;
+            return m_FolderSelections;
         }
     }
     private void SelectionChanged(object? sender, TreeSelectionModelSelectionChangedEventArgs<FolderTreeNode> e)
     {
-        m_Selections = e.SelectedItems.ToArray();
+        m_FolderSelections = e.SelectedItems.ToArray();
     }
 }
