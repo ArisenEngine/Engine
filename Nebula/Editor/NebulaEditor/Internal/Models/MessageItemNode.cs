@@ -1,10 +1,19 @@
 using System;
+using Avalonia.Media;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using NebulaEngine.Debugger;
 
 namespace NebulaEditor.Models;
 
 public class MessageItemNode
 {
+    public string FullText
+    {
+        get
+        {
+            return this.TimeText + this.ThreadId + this.ThreadName + this.MessageText;
+        }
+    }
     public string MessageText
     {
         get
@@ -13,11 +22,19 @@ public class MessageItemNode
         }
     }
 
-    public string ThreadText
+    public string ThreadId
     {
         get
         {
-            return $"{m_Message.ThreadId}" + (string.IsNullOrEmpty(m_Message.ThreadName) ? "" : $":{m_Message.ThreadName}");
+            return $"{m_Message.ThreadId}";
+        }
+    }
+    
+    public string ThreadName
+    {
+        get
+        {
+            return $"{m_Message.ThreadName}";
         }
     }
 
@@ -25,18 +42,10 @@ public class MessageItemNode
     {
         get
         {
-            return $"[{m_Message.Time}]";
+            return $"[{m_Message.Time.TimeOfDay}]";
         }
     }
-
-    public bool ShowFullMessage
-    {
-        get;
-        set;
-    } = false;
-
-    public long Time => m_Message.Time.Ticks;
-
+    
     public DateTime DateTime => m_Message.Time;
 
     public Logger.MessageType MessageType => m_Message.MessageType;

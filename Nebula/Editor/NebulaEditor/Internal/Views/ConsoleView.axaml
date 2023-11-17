@@ -65,9 +65,16 @@
                     </DataTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="Thread" IsVisible="{Binding ThreadChecked}">
+                <DataGridTemplateColumn Header="ThreadId" IsVisible="{Binding ThreadChecked}">
                     <DataTemplate x:DataType="m:MessageItemNode">
-                        <TextBlock MaxWidth="700" Text="{Binding ThreadText}" VerticalAlignment="Center"
+                        <TextBlock MaxWidth="700" Text="{Binding ThreadId}" VerticalAlignment="Center"
+                                   HorizontalAlignment="Center" TextWrapping="NoWrap" />
+                    </DataTemplate>
+                </DataGridTemplateColumn>
+                
+                <DataGridTemplateColumn Header="ThreadName" IsVisible="{Binding ThreadChecked}">
+                    <DataTemplate x:DataType="m:MessageItemNode">
+                        <TextBlock MaxWidth="700" Text="{Binding ThreadName}" VerticalAlignment="Center"
                                    HorizontalAlignment="Center" TextWrapping="NoWrap" />
                     </DataTemplate>
                 </DataGridTemplateColumn>

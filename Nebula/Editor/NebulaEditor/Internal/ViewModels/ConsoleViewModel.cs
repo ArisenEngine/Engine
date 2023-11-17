@@ -193,10 +193,6 @@ public class ConsoleViewModel : ViewModelBase, IDisposable
             .Connect()
             .Filter(filter)
             .Sort(SortExpressionComparer<MessageItemNode>.Descending(x => x.DateTime))
-            .Transform((MessageItemNode x) => { 
-                x.ShowFullMessage = ThreadChecked;
-                return x;
-            })
             .ObserveOn(RxApp.MainThreadScheduler)
             .Bind(out m_Messages)
             .Subscribe(_=>filter.OnNext(Filter)).DisposeWith(m_Disposable);
@@ -223,8 +219,6 @@ public class ConsoleViewModel : ViewModelBase, IDisposable
     {
         bool typeFilter = true;
 
-        messageItemNodes.ShowFullMessage = ThreadChecked;
-        
         if (!ErrorChecked)
         {
             typeFilter &= !(((int)messageItemNodes.MessageType & (int)Logger.MessageType.Error) != 0);
@@ -249,7 +243,7 @@ public class ConsoleViewModel : ViewModelBase, IDisposable
 
         if (!string.IsNullOrEmpty(SearchText))
         {
-            searchFilter = messageItemNodes.MessageText.Contains(SearchText);
+            searchFilter = messageItemNodes.FullText.Contains(SearchText);
         }
         
 
