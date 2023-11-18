@@ -4,107 +4,81 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="1920" d:DesignHeight="1080"
         x:Class="NebulaEditor.Windows.MainEditor.MainEditorWindow"
-        xmlns:rendering ="using:NebulaEngine.Views.Rendering"
-		xmlns:views ="using:NebulaEditor.Views"
-		xmlns:vm="using:NebulaEditor.ViewModels"
-		SystemDecorations="Full"
-		WindowStartupLocation="CenterScreen"
-		CanResize="True"
-		WindowState="Maximized"
-		Icon="/Assets/nebula-logo.ico"
+        xmlns:rendering="using:NebulaEngine.Views.Rendering"
+        xmlns:views="using:NebulaEditor.Views"
+        xmlns:vm="using:NebulaEditor.ViewModels"
+        SystemDecorations="Full"
+        WindowStartupLocation="CenterScreen"
+        CanResize="True"
+        WindowState="Maximized"
+        Icon="/Assets/nebula-logo.ico"
         Title="MainEditorWindow">
-	<Design.DataContext>
+    <Design.DataContext>
 
-		<vm:MainEditorWindowViewModel />
-			
-	</Design.DataContext>
-	
-	<DockPanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <vm:MainEditorWindowViewModel />
 
-		<Grid ColumnDefinitions="*" RowDefinitions="Auto, 110*">
-			<Grid Grid.Row="0" RowDefinitions="Auto, Auto" VerticalAlignment="Center">
-				<Grid Name="HeaderMenuContainer" Height="30">
-					
-				</Grid>
-				
-				<!-- Play Button -->
-                <Grid Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="30">
-                    <StackPanel Orientation="Horizontal" Spacing="5" Height="25" Name="ButtonBar">
-                        <Button >
-                            <Image Height="15" Width="15" Source="avares://NebulaEditor/Assets/Icons/icons8-play-96.png"></Image> 
-                        </Button>
-                        <Button>
-                            <Image Height="15" Width="15" Source="avares://NebulaEditor/Assets/Icons/icons8-pause-96.png"></Image>
-                        </Button>
-                        <Button>
-                            <Image Height="15" Width="15" Source="avares://NebulaEditor/Assets/Icons/icons8-resume-button-96.png"></Image>
-                        </Button>
-                    </StackPanel>
+    </Design.DataContext>
+
+    <DockPanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Name="HeaderMenuContainer" VerticalAlignment="Top">
+            <!-- Header Menu Items -->
+        </StackPanel>
+        <Grid ColumnDefinitions="8*,Auto, 2*">
+
+            <!-- Hierarchy Scene Game Viewer Project Console -->
+            <Grid RowDefinitions="3*, Auto, 1.5*">
+
+                <!-- Hierarchy | Scene | Game -->
+                <Grid ColumnDefinitions="1*, Auto, 4*">
+                    <Grid></Grid>
+                    <GridSplitter Grid.Column="1" ResizeDirection="Columns"></GridSplitter>
+
+                    <!-- Play Button / Scene Game Viewer -->
+                    <DockPanel Grid.Column="2">
+                        <StackPanel Name="HeaderButtonContainer" Orientation="Horizontal" VerticalAlignment="Top"
+                                    HorizontalAlignment="Center" Spacing="5" DockPanel.Dock="Top">
+                            <Button>
+                                <Image Height="15" Width="15"
+                                       Source="avares://NebulaEditor/Assets/Icons/icons8-play-96.png">
+                                </Image>
+                            </Button>
+                            <Button>
+                                <Image Height="15" Width="15"
+                                       Source="avares://NebulaEditor/Assets/Icons/icons8-pause-96.png">
+                                </Image>
+                            </Button>
+                            <Button>
+                                <Image Height="15" Width="15"
+                                       Source="avares://NebulaEditor/Assets/Icons/icons8-resume-button-96.png">
+                                </Image>
+                            </Button>
+                        </StackPanel>
+                        <Grid ColumnDefinitions="5*, 1, 5*" Margin="0, 5, 0,0">
+                            <rendering:RenderSurfaceView></rendering:RenderSurfaceView>
+                            <GridSplitter Grid.Column="1" ResizeDirection="Columns"></GridSplitter>
+                            <rendering:RenderSurfaceView Grid.Column="2"></rendering:RenderSurfaceView>
+                        </Grid>
+                    </DockPanel>
                 </Grid>
-                
-			</Grid>
-            
-                <!-- Body Content of Main Editor -->
-			<Grid Grid.Row="1" ColumnDefinitions="5*,Auto,1*" RowDefinitions="*">
 
-				<!-- Hierarchy | Scene/Game View-->
-				<!-- **************************** -->
-				<!-- Project | Console -->
-				<Grid Grid.Column="0"  ColumnDefinitions="*" RowDefinitions="2*,Auto,1*">
+                <GridSplitter Grid.Row="1" ResizeDirection="Rows"> </GridSplitter>
 
-					<!-- Hierarchy | Scene/Game View-->
-					<Grid Grid.Row="0" ColumnDefinitions="1*,0.0001*,4*">
+                <!-- Project Viewer | Console Viewer -->
+                <Grid Grid.Row="2" ColumnDefinitions="1.5*, Auto, 1*">
+                    <views:ProjectHierarchyView></views:ProjectHierarchyView>
+                    <GridSplitter Grid.Column="1" ResizeDirection="Columns"></GridSplitter>
+                    <views:ConsoleView Grid.Column="2"></views:ConsoleView>
+                </Grid>
 
-						<!-- Hierarchy -->
-						<views:HierarchyView Name="WorldHierarchyView" Grid.Column="0">
-							<views:HierarchyView.DataContext>
-								<vm:WorldHierarchyViewModel />
-							</views:HierarchyView.DataContext>
-						</views:HierarchyView>
+            </Grid>
 
-						<GridSplitter Grid.Column="1" ResizeDirection="Columns"></GridSplitter>
+            <GridSplitter Grid.Column="1" ResizeDirection="Columns"></GridSplitter>
 
-						<!-- Scene View / Game View -->
-						<Grid Grid.Column="2" ColumnDefinitions="0.5*, 0.001*,0.5*">
-                            <rendering:RenderSurfaceView Grid.Column="0"> 
-                                
-                            </rendering:RenderSurfaceView>
-                            
-							<GridSplitter Grid.Column="1" ResizeDirection="Columns"></GridSplitter>
-                            <rendering:RenderSurfaceView Grid.Column="2">
+            <ScrollViewer Grid.Column="2" Name="InspectorViewer" Background="Gray">
 
-                            </rendering:RenderSurfaceView>
-						</Grid>
+            </ScrollViewer>
+        </Grid>
 
-					</Grid>
 
-					<GridSplitter Grid.Row="1" ResizeDirection="Rows"></GridSplitter>
-
-					<!-- Project | Console -->
-					<Grid Grid.Row="2" ColumnDefinitions="0.5*, Auto, 0.5*">
-						
-						<!-- Project & Asset -->
-						<views:ProjectHierarchyView Grid.Row="1" Name="ProjectHierarchyView">
-						</views:ProjectHierarchyView>
-
-						<GridSplitter Grid.Column="1" ResizeDirection="Columns" ></GridSplitter>
-
-						<!-- Console -->
-						<views:ConsoleView Grid.Column="2" Grid.Row="0" Name="ConsoleHierarchyView">
-						</views:ConsoleView>
-
-					</Grid>
-
-				</Grid>
-
-				<GridSplitter Grid.Column="1" ResizeDirection="Columns" ></GridSplitter>
-
-				<!-- Inspector area -->
-				<Grid Grid.Column="2" ColumnDefinitions="*" RowDefinitions="Auto" Background="Gray">
-					
-				</Grid>
-			</Grid>
-		</Grid>
-
-	</DockPanel>
+    </DockPanel>
 </Window>

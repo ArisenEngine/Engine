@@ -31,7 +31,7 @@ public partial class ProjectHierarchyView : UserControl
 
         FolderTree.DataContext = m_ViewModel;
         FolderTree.Bind(TreeDataGrid.SourceProperty, new Binding(nameof(m_ViewModel.FolderSource)));
-
+        
         // Assets Tree
         AssetsTree.ContextMenu = ControlsFactory.CreateContextMenu(ControlsFactory.MenuType.Project);
 

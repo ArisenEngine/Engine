@@ -14,7 +14,17 @@ public class FileTreeNode : TreeNodeBase
     private string? m_UndoName;
     public FileTreeNode(string name, string path, bool isBranch, bool isRoot = false, bool isImmutable = false) : base(name, path, isBranch, isRoot, isImmutable)
     {
-       
+        if (isBranch)
+        {
+            Size = NebulaEngine.FileSystem.FileSystemUtilities.GetFolderSize(path);
+            Modified = new DirectoryInfo(path).LastWriteTimeUtc;
+        }
+        else
+        {
+            var info = new FileInfo(path);
+            Size = info.Length;
+            Modified = info.LastWriteTimeUtc;
+        }
     }
 
     private ObservableCollection<FileTreeNode>? m_Children;
@@ -36,13 +46,7 @@ public class FileTreeNode : TreeNodeBase
         foreach (var fullPath in Directory.EnumerateDirectories(Path, "*", options))
         {
             var name = fullPath.Split(System.IO.Path.DirectorySeparatorChar)[^1];
-            result.Add(new FileTreeNode(name, fullPath, true, false)
-            {
-                
-                Size = NebulaEngine.FileSystem.FileSystemUtilities.GetFolderSize(fullPath),
-                Modified = new DirectoryInfo(fullPath).LastWriteTimeUtc
-                
-            });
+            result.Add(new FileTreeNode(name, fullPath, true, false));
 
         }
         
@@ -177,15 +181,22 @@ public class FileTreeNode : TreeNodeBase
             var oldPath = Path;
             try
             {
-                var dir = new DirectoryInfo(Path);
                 Path = Path.Replace(m_UndoName, Name);
-                dir.MoveTo(Path);
+                if (IsBranch)
+                {
+                    var dir = new DirectoryInfo(Path);
+                    dir.MoveTo(Path);
+                }
+                else
+                {
+                    File.Move(oldPath, Path);
+                }
             }
             catch (Exception e)
             {
                 Name = m_UndoName;
                 Path = oldPath;
-                var _ = MessageBoxUtility.ShowMessageBoxStandard("Rename folder failed", $"{e.Message}");
+                var _ = MessageBoxUtility.ShowMessageBoxStandard("Rename failed", $"{e.Message}");
             }
         }
 
