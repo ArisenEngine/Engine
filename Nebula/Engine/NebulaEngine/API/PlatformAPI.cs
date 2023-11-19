@@ -12,7 +12,7 @@ namespace NebulaEngine.API
         private const string ENGINE_DLL = "Engine.dll";
 
         [DllImport(ENGINE_DLL, EntryPoint = "CreateRenderSurface")]
-        public static extern int CreateRenderSurface(IntPtr host, int width, int height);
+        public static extern int CreateRenderSurface(IntPtr host, IntPtr messageHandle, int width, int height);
 
         [DllImport(ENGINE_DLL, EntryPoint = "RemoveRenderSurface")]
         public static extern void RemoveRenderSurface(int surfaceId);

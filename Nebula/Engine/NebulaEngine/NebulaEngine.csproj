@@ -14,12 +14,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Platforms\Android\" />
+    <Folder Include="Platforms\IOS\" />
+    <Folder Include="Platforms\PS5\" />
+    <Folder Include="Platforms\Switch\" />
+    <Folder Include="Platforms\XBox\" />
     <Folder Include="Serialization\Meta\" />
     <Folder Include="Hook\" />
   </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="NebulaEditor" />
+    <InternalsVisibleTo Include="GameApplicationShell" />
   </ItemGroup>
   
   

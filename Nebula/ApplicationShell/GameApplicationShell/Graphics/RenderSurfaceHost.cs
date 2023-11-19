@@ -2,6 +2,7 @@
 using Avalonia.Controls;
 using Avalonia.Platform;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using NebulaEngine.API;
 
 namespace NebulaEngine.Graphics
@@ -37,7 +38,7 @@ namespace NebulaEngine.Graphics
         {
             Debug.WriteLine("############ CreateNativeControlCore ##############");
 
-            SurfaceId = API.PlatformAPI.CreateRenderSurface(parent.Handle, m_Width, m_Height);
+            SurfaceId = API.PlatformAPI.CreateRenderSurface(parent.Handle, Engine.MessageHandle != null ? Marshal.GetFunctionPointerForDelegate(Engine.MessageHandle) : IntPtr.Zero, m_Width, m_Height);
             // TODO: Assert the id is valid
             m_RenderSurfaceWindowHandle = API.PlatformAPI.GetWindowHandle(SurfaceId);
             Debug.Assert(m_RenderSurfaceWindowHandle != IntPtr.Zero);

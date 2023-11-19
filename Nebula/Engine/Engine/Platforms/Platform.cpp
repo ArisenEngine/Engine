@@ -103,7 +103,11 @@ namespace NebulaEngine::Platforms
 				GetClientRect(info->hwnd, info->isFullScreen ? &info->fullScreenArea : &info->clientArea);
 			}
 			LONG_PTR longPtr{ GetWindowLongPtr(hwnd, 0) };
-			return longPtr ? ((WindowProc)longPtr)(hwnd, msg, wparam, lparam) : DefWindowProc(hwnd, msg, wparam, lparam);
+			if (longPtr)
+			{
+				((WindowProc)longPtr)(hwnd, msg, wparam, lparam);
+			}
+			return DefWindowProc(hwnd, msg, wparam, lparam);
 		}
 
 		// Interface of window
@@ -241,7 +245,7 @@ namespace NebulaEngine::Platforms
 
 		AdjustWindowRect(&rect, info.style, FALSE);
 
-		const wchar_t* caption{ (initInfo && initInfo->callback) ? initInfo->caption : L"Nebula" };
+		const wchar_t* caption{ (initInfo && initInfo->caption) ? initInfo->caption : L"Nebula" };
 		const s32 left{ (initInfo) ? initInfo->left : info.topLeft.x };
 		const s32 top{ (initInfo) ? initInfo->top : info.topLeft.y };
 		const s32 width{ rect.right - rect.left };
@@ -274,7 +278,7 @@ namespace NebulaEngine::Platforms
 
 			assert(GetLastError() == 0);
 
-			ShowWindow(info.hwnd, SW_DENORMAL);
+			ShowWindow(info.hwnd, SW_NORMAL);
 			UpdateWindow(info.hwnd);
 			return Window{ id };
 		}
