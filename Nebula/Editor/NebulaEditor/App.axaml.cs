@@ -21,6 +21,16 @@ namespace NebulaEditor
         public override async void OnFrameworkInitializationCompleted()
         {
             GameApplication.IsDesignMode = Design.IsDesignMode;
+            
+            if (OperatingSystem.IsWindows())
+            {
+                GameApplication.platform = RuntimePlatform.Windows;
+                    
+            } else if (OperatingSystem.IsMacOS())
+            {
+                GameApplication.platform = RuntimePlatform.MacOS;
+            }
+            
             EnterNormally();
             
             base.OnFrameworkInitializationCompleted();

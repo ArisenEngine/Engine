@@ -6,19 +6,28 @@ using NebulaEngine.Graphics;
 using System.Diagnostics;
 using System.Drawing;
 using System.Reflection.Metadata;
+using NebulaEditor.ViewModels;
 using static AvaloniaLib.Native.NativeAPI;
 
 namespace NebulaEngine.Views.Rendering
 {
     public partial class RenderSurfaceView : UserControl
     {
+        private RenderSurfaceViewModel? ViewModel
+        {
+            get
+            {
+                return DataContext != null ? (DataContext as RenderSurfaceViewModel) : null;
+            }
+        }
+        
         private NebulaEngine.Graphics.RenderSurfaceHost m_Host = null;
+        public string Name = "RenderSurface";
         public RenderSurfaceView()
         {
             InitializeComponent();
             Loaded += OnRenderSurfaceViewLoaded;
             Unloaded += OnRenderSurfaceViewUnloaded;
-            
         }
         private void OnRenderSurfaceViewLoaded(object? sender, RoutedEventArgs e)
         {
@@ -26,18 +35,15 @@ namespace NebulaEngine.Views.Rendering
 
             Loaded -= OnRenderSurfaceViewLoaded;
 
-            m_Host = new RenderSurfaceHost(Width, Height);
+            if (!Design.IsDesignMode)
+            {
+                m_Host = new RenderSurfaceHost(RenderViewContainer.Width, RenderViewContainer.Height);
+                
+                SizeChanged += OnSizeChanged;
 
-
-
-#if (NEBULA_EDITOR || true)
-
-            SizeChanged += OnSizeChanged;
-            //m_Host.MessageHook += HostMsgFilter;
-
-#endif
-
-            Content = m_Host;
+                RenderViewContainer.Children.Insert(0, m_Host);
+            }
+            
         }
 
         private void OnRenderSurfaceViewUnloaded(object? sender, RoutedEventArgs e)
@@ -45,16 +51,15 @@ namespace NebulaEngine.Views.Rendering
             Debug.Assert(sender != null);
             Unloaded -= OnRenderSurfaceViewUnloaded;
 
-            // TODO: remove true
-#if (NEBULA_EDITOR || true)
+            if (!Design.IsDesignMode)
+            {
+                SizeChanged -= OnSizeChanged;
+                RenderViewContainer.Children.RemoveAt(0);
 
-            //m_Host.MessageHook -= HostMsgFilter;
-            SizeChanged -= OnSizeChanged;
-#endif
-            Content = null;
-
-            m_Host.Dispose();
-            m_Host = null;
+                m_Host.Dispose();
+                m_Host = null;
+            }
+          
         }
 
         private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
@@ -64,55 +69,5 @@ namespace NebulaEngine.Views.Rendering
                 m_Host.Resize();
             }
         }
-
-        //private IntPtr HostMsgFilter(IntPtr hwnd, int msg, IntPtr wparam, IntPtr lparam/*, ref bool handled*/)
-        //{
-        //    switch ((Win32Msg)msg)
-        //    {
-        //        case Win32Msg.WM_MOVE:
-        //            {
-
-        //            }
-        //            break;
-
-        //        case Win32Msg.WM_CREATE:
-        //            {
-
-        //            }
-        //            break;
-        //        case Win32Msg.WM_DESTROY:
-        //            {
-
-        //            }
-        //            break;
-        //        case Win32Msg.WM_SIZE:
-        //            {
-        //                m_Host.Resize();
-        //            }
-        //            break;
-        //        case Win32Msg.WM_ACTIVATE:
-        //            {
-
-        //            }
-        //            break;
-        //        case Win32Msg.WM_ENTERSIZEMOVE:
-        //            {
-
-        //            }
-        //            break;
-        //        case Win32Msg.WM_EXITSIZEMOVE:
-        //            {
-
-        //            }
-        //            break;
-        //        case Win32Msg.WM_SIZING:
-        //            {
-
-        //            }
-        //            break;
-        //    }
-
-        //    return IntPtr.Zero;
-        //}
     }
 }

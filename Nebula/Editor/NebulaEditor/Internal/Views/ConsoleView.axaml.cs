@@ -42,42 +42,42 @@ public partial class ConsoleView : UserControl
         #region Test
 
         
-        int logCount = 0;
-        Task.Run(async () =>
-        {
-            while (logCount < 10)
-            {
-                ++logCount;
-                Logger.Log($"Log:{logCount}");
-                Logger.Info($"Info:{logCount}");
-                Logger.Warning($"Warning:{logCount}");
-                Logger.Error($"Error:{logCount}");
-                await Task.Delay(10);
-            }
-        });
-            
-        int logCount2 = 0;
-        Task.Run(async () =>
-        {
-            while (logCount < 10)
-            {
-                ++logCount2;
-                Logger.Log($"Log11111:{logCount2}");
-                Logger.Info($"Info:1111{logCount2}");
-                Logger.Warning($"Warning111:{logCount2}");
-                Logger.Error($"Error111:{logCount2}");
-                await Task.Delay(10);
-            }
-        });
-
-        Dispatcher.UIThread.Invoke(() =>
-        {
-            Logger.Log($"Log : UI Thread ");
-            Logger.Info($"Info : UI Thread ");
-            Logger.Warning($"Warning : UI Thread ");
-            Logger.Error($"Error: UI Thread ");
-        });
-        
+        // int logCount = 0;
+        // Task.Run(async () =>
+        // {
+        //     while (logCount < 10)
+        //     {
+        //         ++logCount;
+        //         Logger.Log($"Log:{logCount}");
+        //         Logger.Info($"Info:{logCount}");
+        //         Logger.Warning($"Warning:{logCount}");
+        //         Logger.Error($"Error:{logCount}");
+        //         await Task.Delay(10);
+        //     }
+        // });
+        //     
+        // int logCount2 = 0;
+        // Task.Run(async () =>
+        // {
+        //     while (logCount < 10)
+        //     {
+        //         ++logCount2;
+        //         Logger.Log($"Log11111:{logCount2}");
+        //         Logger.Info($"Info:1111{logCount2}");
+        //         Logger.Warning($"Warning111:{logCount2}");
+        //         Logger.Error($"Error111:{logCount2}");
+        //         await Task.Delay(10);
+        //     }
+        // });
+        //
+        // Dispatcher.UIThread.Invoke(() =>
+        // {
+        //     Logger.Log($"Log : UI Thread ");
+        //     Logger.Info($"Info : UI Thread ");
+        //     Logger.Warning($"Warning : UI Thread ");
+        //     Logger.Error($"Error: UI Thread ");
+        // });
+        //
 
         #endregion
     }

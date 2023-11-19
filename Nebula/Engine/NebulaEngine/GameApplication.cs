@@ -38,5 +38,6 @@ namespace NebulaEngine
         internal static bool IsDesignMode = false;
 
         #endregion
+        
     }
 }

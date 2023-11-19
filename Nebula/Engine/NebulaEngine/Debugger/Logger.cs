@@ -6,7 +6,7 @@ namespace NebulaEngine.Debugger;
 
 public static class Logger
 {
-    public static string DebuggerLogPath = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + "Debugger.log";
+    internal static string DebuggerLogPath = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + "Debugger.log";
     static ReaderWriterLock locker = new ReaderWriterLock();
     static Logger()
     {
@@ -18,7 +18,7 @@ public static class Logger
         locker.ReleaseLock();
     }
     
-    public enum MessageType
+    internal enum MessageType
     {
         Log = 0x01,
         Info = 0x02,
@@ -26,7 +26,7 @@ public static class Logger
         Error = 0x08
     }
 
-    public class LogMessage
+    internal class LogMessage
     {
         public DateTime Time { get; }
         public MessageType MessageType { get; }
@@ -47,7 +47,7 @@ public static class Logger
             }
         }
        
-        public LogMessage(MessageType messageType, string msg, string file, string caller, int line, int threadId, string threadName, string stackTrace = "")
+        internal LogMessage(MessageType messageType, string msg, string file, string caller, int line, int threadId, string threadName, string stackTrace = "")
         {
             Time = DateTime.Now;
             MessageType = messageType;
@@ -61,8 +61,8 @@ public static class Logger
         }
     }
 
-    public static Action<LogMessage>? MessageAdded;
-    public static Action? MessageCleared;
+    internal static Action<LogMessage>? MessageAdded;
+    internal static Action? MessageCleared;
     
     private static void WriteMessage(LogMessage message)
     {

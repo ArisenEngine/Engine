@@ -55,11 +55,11 @@ public class MessageItemNode
     
     public DateTime DateTime => m_Message.Time;
 
-    public Logger.MessageType MessageType => m_Message.MessageType;
+    internal Logger.MessageType MessageType => m_Message.MessageType;
     
     private Logger.LogMessage m_Message;
 
-    public MessageItemNode(Logger.LogMessage message)
+    internal MessageItemNode(Logger.LogMessage message)
     {
         m_Message = message;
     }

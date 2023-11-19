@@ -202,7 +202,7 @@ public class ConsoleViewModel : ViewModelBase, IDisposable
         }
     }
 
-    public void OnAddMessage(Logger.LogMessage message)
+    internal void OnAddMessage(Logger.LogMessage message)
     {
         m_SourceList.Add(new MessageItemNode(message));
     }

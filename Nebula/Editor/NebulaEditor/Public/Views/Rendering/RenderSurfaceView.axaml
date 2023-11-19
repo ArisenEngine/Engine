@@ -3,6 +3,45 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="1920" d:DesignHeight="1080"
-             x:Class="NebulaEngine.Views.Rendering.RenderSurfaceView">
-  
+             xmlns:vm="using:NebulaEditor.ViewModels"
+             xmlns:v="using:NebulaEditor.Views"
+             x:Class="NebulaEngine.Views.Rendering.RenderSurfaceView"
+             x:DataType="vm:RenderSurfaceViewModel">
+    
+    <Design.DataContext>
+        <vm:RenderSurfaceViewModel></vm:RenderSurfaceViewModel>
+    </Design.DataContext>
+    
+    <Panel>
+        <DockPanel>
+            
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="2" DockPanel.Dock="Top">
+                <ToggleButton IsChecked="{Binding StatsToggleChecked}">
+                    <Image Source="avares://NebulaEditor/Assets/Icons/clean.png" Width="15" Height="15"></Image>
+                </ToggleButton>
+            </StackPanel>
+            
+            <Panel DockPanel.Dock="Top">
+                <Panel Name="RenderViewContainer" Background="Brown">
+                  
+                    <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Background="#22222255" IsVisible="{Binding StatsToggleChecked}" Width="400" Height="400">
+                        <StackPanel Orientation="Horizontal" Margin="10" VerticalAlignment="Center">
+                            <Label FontSize="25" Margin="0,0,5,0"> FPS:  </Label>
+                            <TextBlock  FontSize="25" Text="{Binding FPS}"></TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+                    
+                </Panel>
+                
+                
+            </Panel>
+            
+        </DockPanel>
+        
+        
+       
+    </Panel>
+    
+    
+   
 </UserControl>

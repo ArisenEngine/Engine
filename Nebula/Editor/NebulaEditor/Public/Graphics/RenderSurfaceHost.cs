@@ -2,6 +2,10 @@
 using Avalonia.Controls;
 using Avalonia.Platform;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+using Avalonia.Threading;
+using EnvDTE;
 using NebulaEngine.API;
 
 namespace NebulaEngine.Graphics
@@ -11,15 +15,15 @@ namespace NebulaEngine.Graphics
         private readonly int m_Width = 800;
         private readonly int m_Height = 600;
         private IntPtr m_RenderSurfaceWindowHandle = IntPtr.Zero;
-
-        //public WindowProc MessageHook;
-
+        
         public IntPtr Handle
         {
             get { return m_RenderSurfaceWindowHandle; }
         }
 
         public int SurfaceId { get; private set; }
+        
+        public Engine Engine { get; private set; }
 
         public RenderSurfaceHost(double width, double height) 
         {
@@ -37,13 +41,24 @@ namespace NebulaEngine.Graphics
         {
             Debug.WriteLine("############ CreateNativeControlCore ##############");
 
-            SurfaceId = API.PlatformAPI.CreateRenderSurface(parent.Handle, m_Width, m_Height);
+            Engine = new Engine();
+            SurfaceId = API.PlatformAPI.CreateRenderSurface(parent.Handle,  Engine.MessageHandle, m_Width, m_Height);
             // TODO: Assert the id is valid
             m_RenderSurfaceWindowHandle = API.PlatformAPI.GetWindowHandle(SurfaceId);
             Debug.Assert(m_RenderSurfaceWindowHandle != IntPtr.Zero);
+            
+            Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                Task.Run((() =>
+                {
+                    var engineContext = new EngineContext(m_RenderSurfaceWindowHandle);
+                    Engine.Run(engineContext);
+                    Engine.Dispose();
+                    
+                }));
 
-            //SetWindowLong(m_RenderSurfaceWindowHandle, GWL_WNDPROC, InternalWindowProc);
-
+            }, DispatcherPriority.Background);
+            
             return new PlatformHandle(m_RenderSurfaceWindowHandle, "");
         }
 
@@ -59,21 +74,8 @@ namespace NebulaEngine.Graphics
         public void Dispose()
         {
             Debug.WriteLine("############# RenderSurfaceHost Dispose #################");
-            // API.PlatformAPI.RemoveRenderSurface(SurfaceId);  
+            
         }
-
-
-
-        //private IntPtr InternalWindowProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam)
-        //{
-        //    if (MessageHook != null)
-        //    {
-        //        MessageHook.Invoke(hWnd, msg, wParam, lParam);
-
-        //    }
-
-        //    return IntPtr.Zero;
-        //}
 
     }
 }

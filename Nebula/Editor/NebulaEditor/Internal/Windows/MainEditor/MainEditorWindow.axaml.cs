@@ -11,6 +11,7 @@ using Avalonia.Threading;
 using NebulaEditor.Utilities;
 using NebulaEditor.ViewModels.Startup;
 using NebulaEngine.Debugger;
+using NebulaEngine.Views.Rendering;
 
 namespace NebulaEditor.Windows.MainEditor
 {
@@ -36,6 +37,18 @@ namespace NebulaEditor.Windows.MainEditor
             HeaderMenuContainer.Children.Clear();
             HeaderMenuContainer.Children.Add(ControlsFactory.CreateMenu(ControlsFactory.MenuType.Header));
 
+            // Preview
+            SceneView.Children.Add(new RenderSurfaceView()
+            {
+                Name = "Scene View",
+                DataContext = new RenderSurfaceViewModel()
+            });
+            
+            GameView.Children.Add(new RenderSurfaceView()
+            {
+                Name = "Game View",
+                DataContext = new RenderSurfaceViewModel()
+            });
         }
 
         // TODO: remove this
