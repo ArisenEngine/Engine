@@ -36,19 +36,29 @@ namespace NebulaEditor.Windows.MainEditor
             // Menu Items
             HeaderMenuContainer.Children.Clear();
             HeaderMenuContainer.Children.Add(ControlsFactory.CreateMenu(ControlsFactory.MenuType.Header));
-
+            
             // Preview
             SceneView.Children.Add(new RenderSurfaceView()
             {
+                ParentWindow = this,
+                IsSceneView = true,
                 Name = "Scene View",
-                DataContext = new RenderSurfaceViewModel()
+                DataContext = new RenderSurfaceViewModel(true)
             });
             
             GameView.Children.Add(new RenderSurfaceView()
             {
+                ParentWindow = this,
+                IsSceneView = false,
                 Name = "Game View",
-                DataContext = new RenderSurfaceViewModel()
+                DataContext = new RenderSurfaceViewModel(false)
             });
+
+            // Dispatcher.UIThread.InvokeAsync(() =>
+            // {
+            //     Engine.Run(renderContext);
+            //     Engine.Dispose();
+            // });
         }
 
         // TODO: remove this
@@ -61,7 +71,7 @@ namespace NebulaEditor.Windows.MainEditor
         protected override void OnUnloaded(RoutedEventArgs e)
         {
             base.OnUnloaded(e);
-
+            
             m_FileSystemWatcher.Dispose();
             m_FileSystemWatcher = null;
             

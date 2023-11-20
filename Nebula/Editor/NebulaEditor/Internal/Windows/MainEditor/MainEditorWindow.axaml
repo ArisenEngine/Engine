@@ -52,6 +52,12 @@
                                        Source="avares://NebulaEditor/Assets/Icons/icons8-resume-button-96.png">
                                 </Image>
                             </Button>
+                            <!-- ~1~ Stats Bar @1@ -->
+                            <!-- <StackPanel Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right"> -->
+                            <!--     <ToggleButton> -->
+                            <!--         <Image Width="15" Height="15" Source="avares://NebulaEditor/Assets/Icons/statistics.png"></Image> -->
+                            <!--     </ToggleButton> -->
+                            <!-- </StackPanel> -->
                         </StackPanel>
                         <Grid ColumnDefinitions="5*, 1, 5*" Margin="0, 5, 0,0">
                             <Grid Name="SceneView"></Grid>

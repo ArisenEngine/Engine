@@ -5,6 +5,9 @@ namespace NebulaEditor.ViewModels;
 
 public class RenderSurfaceViewModel : ViewModelBase
 {
+    private bool m_IsSceneView = false;
+    public bool IsGameView => !m_IsSceneView;
+    
     private bool m_StatsToggleChecked;
 
     public bool StatsToggleChecked
@@ -19,13 +22,15 @@ public class RenderSurfaceViewModel : ViewModelBase
         }
     }
 
-    private Engine m_Engine;
-
-    public void SetEngine(Engine engine)
+    public RenderSurfaceViewModel(bool isSceneView)
     {
-        m_Engine = engine;
+        m_IsSceneView = isSceneView;
     }
-
-    public int FPS => m_Engine != null ? m_Engine.FPS : 0;
+    
+    // FOR designer preview
+    public RenderSurfaceViewModel()
+    {
+        m_IsSceneView = false;
+    }
 
 }

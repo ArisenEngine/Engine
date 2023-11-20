@@ -24,8 +24,7 @@ namespace NebulaEngine::Platforms {
 
 	extern "C" DLL u32 CreateRenderSurface(HWND host, WindowProc callback, s32 width, s32 height)
 	{
-		assert(host);
-		WindowInitInfo info{ callback, host, nullptr, 0, 0, width, height };
+		WindowInitInfo info{ callback, host ? host : nullptr, nullptr, 0, 0, width, height };
 		Graphics::RenderSurface surface{ CreateNewWindow(&info), {} };
 		assert(surface.window.IsValid());
 		surfaces.emplace_back(surface);

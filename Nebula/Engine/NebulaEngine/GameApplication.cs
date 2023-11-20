@@ -20,7 +20,7 @@ namespace NebulaEngine
     }
 
 
-    public static class GameApplication
+    public class GameApplication
     {
         // TODO: constraint the gamecode.dll only has read access
         public static  string startupPath = string.Empty;
@@ -38,6 +38,13 @@ namespace NebulaEngine
         internal static bool IsDesignMode = false;
 
         #endregion
-        
+
+        // TODO: 
+        private GameInstance m_GameInstance;
+
+        public void Run(int width, int height)
+        {
+            
+        }
     }
 }

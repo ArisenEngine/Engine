@@ -12,62 +12,37 @@ namespace NebulaEngine.Graphics
 {
      public class RenderSurfaceHost : NativeControlHost, IDisposable
     {
-        private readonly int m_Width = 800;
-        private readonly int m_Height = 600;
-        private IntPtr m_RenderSurfaceWindowHandle = IntPtr.Zero;
+        private int m_Width;
+        private int m_Height;
+        private GameInstance m_GameInstance;
+        public string Name;
         
-        public IntPtr Handle
+        public RenderSurfaceHost(int width, int height)
         {
-            get { return m_RenderSurfaceWindowHandle; }
+            m_Width = width;
+            m_Height = height;
         }
 
-        public int SurfaceId { get; private set; }
         
-        public Engine Engine { get; private set; }
-
-        public RenderSurfaceHost(double width, double height) 
-        {
-            m_Width = (int)width;
-            m_Height = (int)height;
-        }
-
-        public void Resize()
-        {
-            Debug.WriteLine("Resized");
-            PlatformAPI.ResizeRenderSurface(SurfaceId);
-        }
-
         protected override IPlatformHandle CreateNativeControlCore(IPlatformHandle parent)
         {
-            Debug.WriteLine("############ CreateNativeControlCore ##############");
+            IntPtr host = parent.Handle;
+            m_GameInstance = new GameInstance(host, Name, m_Width, m_Height);
 
-            Engine = new Engine();
-            SurfaceId = API.PlatformAPI.CreateRenderSurface(parent.Handle,  Engine.MessageHandle, m_Width, m_Height);
-            // TODO: Assert the id is valid
-            m_RenderSurfaceWindowHandle = API.PlatformAPI.GetWindowHandle(SurfaceId);
-            Debug.Assert(m_RenderSurfaceWindowHandle != IntPtr.Zero);
-            
             Dispatcher.UIThread.InvokeAsync(() =>
             {
-                Task.Run((() =>
-                {
-                    var engineContext = new EngineContext(m_RenderSurfaceWindowHandle);
-                    Engine.Run(engineContext);
-                    Engine.Dispose();
-                    
-                }));
-
-            }, DispatcherPriority.Background);
+                m_GameInstance.Run();
+                m_GameInstance.Dispose();
+                
+            }, DispatcherPriority.Render);
             
-            return new PlatformHandle(m_RenderSurfaceWindowHandle, "");
+            return new PlatformHandle(m_GameInstance, "");
         }
 
-       // TODO: fix when application closed, this callback not be invoked
+      
+    
         protected override void DestroyNativeControlCore(IPlatformHandle control)
         {
-            Debug.WriteLine("############ DestroyNativeControlCore ##############");
-           
-            API.PlatformAPI.RemoveRenderSurface(SurfaceId);  
             
         }
 
