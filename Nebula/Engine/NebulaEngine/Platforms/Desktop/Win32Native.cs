@@ -182,4 +182,7 @@ internal static class Win32Native
     public const int WM_NCPAINT = 0x0085;
 
     public const int PM_REMOVE = 0x0001;
+    public const int WM_EXITSIZEMOVE = 0x0232;
+
+    public const int SIZE_MAXIMIZED = 2;
 }

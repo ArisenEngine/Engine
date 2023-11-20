@@ -103,6 +103,7 @@ namespace NebulaEngine::Platforms
 				GetClientRect(info->hwnd, info->isFullScreen ? &info->fullScreenArea : &info->clientArea);
 			}
 			LONG_PTR longPtr{ GetWindowLongPtr(hwnd, 0) };
+			
 			if (longPtr)
 			{
 				((WindowProc)longPtr)(hwnd, msg, wparam, lparam);

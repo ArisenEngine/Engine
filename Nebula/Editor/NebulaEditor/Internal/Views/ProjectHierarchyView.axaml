@@ -86,7 +86,7 @@
             <GridSplitter Grid.Column="1" ResizeDirection="Columns"></GridSplitter>
 
             <DockPanel Grid.Column="2">
-                <TreeDataGrid Name="AssetsTree" DockPanel.Dock="Top" AutoDragDropRows="True" Background="Bisque"
+                <TreeDataGrid Name="AssetsTree" DockPanel.Dock="Top" AutoDragDropRows="True"
                               RowDragStarted="AssetsTree_OnRowDragStarted"
                               RowDragOver="AssetsTree_OnRowDragOver"
                               RowDrop="AssetsTree_OnRowDrop">

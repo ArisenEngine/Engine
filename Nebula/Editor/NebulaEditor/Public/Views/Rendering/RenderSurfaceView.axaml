@@ -15,24 +15,20 @@
     <Panel>
         <DockPanel>
             
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="2" DockPanel.Dock="Top">
-                <ToggleButton IsChecked="{Binding StatsToggleChecked}">
-                    <Image Source="avares://NebulaEditor/Assets/Icons/clean.png" Width="15" Height="15"></Image>
+            <StackPanel  Height="15" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="2" DockPanel.Dock="Top">
+                <ToggleButton IsChecked="{Binding StatsToggleChecked}" IsVisible="{Binding IsGameView}">
+                    <Image Source="avares://NebulaEditor/Assets/Icons/statistics.png" Width="15" Height="15"></Image>
                 </ToggleButton>
             </StackPanel>
             
             <Panel DockPanel.Dock="Top">
-                <Panel Name="RenderViewContainer" Background="Brown">
-                  
-                    <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Background="#22222255" IsVisible="{Binding StatsToggleChecked}" Width="400" Height="400">
-                        <StackPanel Orientation="Horizontal" Margin="10" VerticalAlignment="Center">
-                            <Label FontSize="25" Margin="0,0,5,0"> FPS:  </Label>
-                            <TextBlock  FontSize="25" Text="{Binding FPS}"></TextBlock>
-                        </StackPanel>
-                    </StackPanel>
+                <Panel Name="RenderViewContainer">
                     
                 </Panel>
                 
+                <Panel VerticalAlignment="Top" HorizontalAlignment="Right" Width="400" Height="600" Name="StatsPanel" IsVisible="{Binding StatsToggleChecked}" Background="Aqua">
+                  
+                </Panel>
                 
             </Panel>
             

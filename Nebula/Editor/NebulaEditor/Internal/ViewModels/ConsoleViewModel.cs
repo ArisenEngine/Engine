@@ -5,6 +5,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Windows.Input;
 using Avalonia.Controls;
+using Avalonia.Threading;
 using DynamicData;
 using DynamicData.Binding;
 using NebulaEditor.Models;
@@ -204,7 +205,11 @@ public class ConsoleViewModel : ViewModelBase, IDisposable
 
     internal void OnAddMessage(Logger.LogMessage message)
     {
-        m_SourceList.Add(new MessageItemNode(message));
+        Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            m_SourceList.Add(new MessageItemNode(message));
+            
+        }, DispatcherPriority.Background);
     }
 
     public ICommand? ClearCommand { get; }

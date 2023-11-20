@@ -1,3 +1,4 @@
+using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -6,7 +7,10 @@ using NebulaEngine.Graphics;
 using System.Diagnostics;
 using System.Drawing;
 using System.Reflection.Metadata;
+using Avalonia.Input;
+using NebulaEditor;
 using NebulaEditor.ViewModels;
+using NebulaEngine.Debugger;
 using static AvaloniaLib.Native.NativeAPI;
 
 namespace NebulaEngine.Views.Rendering
@@ -23,12 +27,17 @@ namespace NebulaEngine.Views.Rendering
         
         private NebulaEngine.Graphics.RenderSurfaceHost m_Host = null;
         public string Name = "RenderSurface";
+        public bool IsSceneView = false;
+        public Window ParentWindow;
+        
         public RenderSurfaceView()
         {
             InitializeComponent();
             Loaded += OnRenderSurfaceViewLoaded;
             Unloaded += OnRenderSurfaceViewUnloaded;
+           
         }
+        
         private void OnRenderSurfaceViewLoaded(object? sender, RoutedEventArgs e)
         {
             Debug.Assert(sender != null);
@@ -37,13 +46,20 @@ namespace NebulaEngine.Views.Rendering
 
             if (!Design.IsDesignMode)
             {
-                m_Host = new RenderSurfaceHost(RenderViewContainer.Width, RenderViewContainer.Height);
+                m_Host = new RenderSurfaceHost((int)RenderViewContainer.Width, (int)RenderViewContainer.Height)
+                {
+                    Name = Name
+                };
                 
-                SizeChanged += OnSizeChanged;
-
                 RenderViewContainer.Children.Insert(0, m_Host);
             }
             
+        }
+
+        protected override void OnGotFocus(GotFocusEventArgs e)
+        {
+            base.OnGotFocus(e);
+            Logger.Log($"Focus on :{Name}");
         }
 
         private void OnRenderSurfaceViewUnloaded(object? sender, RoutedEventArgs e)
@@ -53,21 +69,21 @@ namespace NebulaEngine.Views.Rendering
 
             if (!Design.IsDesignMode)
             {
-                SizeChanged -= OnSizeChanged;
                 RenderViewContainer.Children.RemoveAt(0);
-
+            
                 m_Host.Dispose();
                 m_Host = null;
             }
           
         }
 
-        private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
-        {
-            if (!Design.IsDesignMode)
-            {
-                m_Host.Resize();
-            }
-        }
+        // protected override void OnSizeChanged(SizeChangedEventArgs e)
+        // {
+        //     base.OnSizeChanged(e);
+        //     if (m_Host != null)
+        //     {
+        //         m_Host.Resize();
+        //     }
+        // }
     }
 }
