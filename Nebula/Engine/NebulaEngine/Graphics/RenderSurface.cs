@@ -4,6 +4,26 @@ using NebulaEngine.Platforms;
 
 namespace NebulaEngine.Graphics;
 
+internal enum SurfaceType
+{
+    GameView = 0,
+    // TODO: add Editor marco 
+    // #if NEBULA_EDITOR
+    SceneView,
+    AssetView,
+    // #endif
+    Count
+}
+    
+internal struct SurfaceInfo
+{
+    public string Name;
+    public IntPtr Parent;
+    public RenderSurface Surface;
+    public SurfaceType SurfaceType;
+}
+
+
 internal class RenderSurface : IDisposable, IRenderSurface
 {
     internal List<RenderSurface> Surfaces = new List<RenderSurface>();
@@ -12,7 +32,7 @@ internal class RenderSurface : IDisposable, IRenderSurface
     private IntPtr m_Handle;
     private string m_Name = "RenderSurface";
 
-    private MessageHandler m_MessageHandler;
+    private WindowProcessor m_Processor;
 
     private bool m_Hosted = true;
 
@@ -25,7 +45,7 @@ internal class RenderSurface : IDisposable, IRenderSurface
         if (Initialize())
         {
             m_Host = host;
-            m_SurfaceId = PlatformAPI.CreateRenderSurface(host, m_MessageHandler.CallbackPtr, width, height);
+            m_SurfaceId = PlatformAPI.CreateRenderSurface(host, m_Processor.ProcPtr, width, height);
             m_Handle = PlatformAPI.GetWindowHandle(m_SurfaceId);
             Surfaces.Add(this);
         }
@@ -34,14 +54,13 @@ internal class RenderSurface : IDisposable, IRenderSurface
             throw new Exception("Render Surface init failed.");
         }
     }
-
-    public MessageHandler MessageHandler => m_MessageHandler;
+    
     private bool Initialize()
     {
         switch (GameApplication.platform)
         {
             case RuntimePlatform.Windows:
-                m_MessageHandler = new WindowsMessageHandle(this);
+                m_Processor = new WindowsProcHandler(this);
                 return true;
         }
 

@@ -5,7 +5,7 @@ using NebulaEngine.Platforms;
 
 namespace NebulaEngine;
 
-internal static class GameInstance
+internal static class NebulaInstance
 {
     /// <summary>
     /// Surface is bound to window
@@ -44,9 +44,25 @@ internal static class GameInstance
                 Surface = new RenderSurface(host, name, width, height),
                 SurfaceType = surfaceType
             });
+            
+            return;
         }
 
         throw new Exception($"Same host : {host} already added");
+    }
+
+    internal static void UnregisterSurface(IntPtr host)
+    {
+        if (m_RenderSurfaces.TryGetValue(host, out var surfaceInfo))
+        {
+            surfaceInfo.Surface.Dispose();
+            m_RenderSurfaces.Remove(host);
+            
+            
+            return;
+        }
+        
+        throw new Exception($"Surface of host {host} not exists");
     }
 
     internal static void RegisterSurface(string name, int width, int height)
@@ -68,8 +84,9 @@ internal static class GameInstance
     {
         return m_RenderSurfaces.Count > 0;
     }
-    
-    public static void Run()
+
+   
+    internal static void Run()
     {
         if (!Initialize())
         {
@@ -80,7 +97,7 @@ internal static class GameInstance
         {
             throw new Exception($"Game instance: {m_Name} is already running.");
         }
-
+        
         m_IsRunning = true;
         
         while (m_IsRunning)
@@ -89,14 +106,21 @@ internal static class GameInstance
             {
                 // run loop
                 Logger.Log($"{m_Name} update");
+                
             }
+            
+            
         }
         
     }
-    
-    public static void Dispose()
+
+    internal static void End()
     {
         m_IsRunning = false;
+    }
+    internal static void Dispose()
+    {
+        
         
     }
 }

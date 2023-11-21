@@ -14,36 +14,31 @@ namespace NebulaEngine.Graphics
     {
         private int m_Width;
         private int m_Height;
-        private GameInstance m_GameInstance;
         public string Name;
+        private SurfaceType m_SurfaceType;
+        private IntPtr m_Parent;
         
-        public RenderSurfaceHost(int width, int height)
+        internal RenderSurfaceHost(int width, int height, SurfaceType surfaceType)
         {
             m_Width = width;
             m_Height = height;
+            m_SurfaceType = surfaceType;
         }
 
         
         protected override IPlatformHandle CreateNativeControlCore(IPlatformHandle parent)
         {
-            IntPtr host = parent.Handle;
-            m_GameInstance = new GameInstance(host, Name, m_Width, m_Height);
-
-            Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                m_GameInstance.Run();
-                m_GameInstance.Dispose();
-                
-            }, DispatcherPriority.Render);
+            m_Parent = parent.Handle;
+            NebulaInstance.RegisterSurface(m_Parent, Name, m_Width, m_Height, m_SurfaceType);
             
-            return new PlatformHandle(m_GameInstance, "");
+            return new PlatformHandle(NebulaInstance.GetNativeHandle(m_Parent), m_SurfaceType + " Host");
         }
 
       
     
         protected override void DestroyNativeControlCore(IPlatformHandle control)
         {
-            
+            NebulaInstance.UnregisterSurface(m_Parent);
         }
 
         public void Dispose()

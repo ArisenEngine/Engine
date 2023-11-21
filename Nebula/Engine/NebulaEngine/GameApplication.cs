@@ -38,10 +38,7 @@ namespace NebulaEngine
         internal static bool IsDesignMode = false;
 
         #endregion
-
-        // TODO: 
-        private GameInstance m_GameInstance;
-
+        
         public void Run(int width, int height)
         {
             
