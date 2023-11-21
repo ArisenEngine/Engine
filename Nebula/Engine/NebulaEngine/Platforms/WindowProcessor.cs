@@ -1,4 +1,4 @@
-using NebulaEngine.Graphics;
+using NebulaEngine.Rendering;
 
 namespace NebulaEngine.Platforms;
 

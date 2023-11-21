@@ -28,7 +28,7 @@ namespace NebulaEditor.Windows.MainEditor
         protected override void OnLoaded(RoutedEventArgs e)
         {
             base.OnLoaded(e);
-            this.Title = GameApplication.projectName;
+            this.Title = NebulaApplication.s_ProjectName;
             
             // File Watcher
             m_FileSystemWatcher = new NebulaFileSystemWatcher();
@@ -42,7 +42,7 @@ namespace NebulaEditor.Windows.MainEditor
             {
                 ParentWindow = this,
                 IsSceneView = true,
-                SurfaceType = NebulaEngine.Graphics.SurfaceType.SceneView,
+                SurfaceType = NebulaEngine.Rendering.SurfaceType.SceneView,
                 DataContext = new RenderSurfaceViewModel(true)
             });
             
@@ -50,14 +50,14 @@ namespace NebulaEditor.Windows.MainEditor
             {
                 ParentWindow = this,
                 IsSceneView = false,
-                SurfaceType = NebulaEngine.Graphics.SurfaceType.GameView,
+                SurfaceType = NebulaEngine.Rendering.SurfaceType.GameView,
                 DataContext = new RenderSurfaceViewModel(false)
             });
             
             Dispatcher.UIThread.InvokeAsync(() =>
             {
-                NebulaInstance.Run();
-                NebulaInstance.Dispose();
+                NebulaInstance.Run("Nebula Instance (Attach to Editor)");
+                
             });
             
         }

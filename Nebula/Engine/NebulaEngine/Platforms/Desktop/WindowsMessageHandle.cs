@@ -1,5 +1,5 @@
 using System.Runtime.InteropServices;
-using NebulaEngine.Graphics;
+using NebulaEngine.Rendering;
 
 namespace NebulaEngine.Platforms;
 

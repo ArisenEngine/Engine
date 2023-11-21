@@ -13,6 +13,10 @@ namespace NebulaEngine.API
 
         [DllImport(ENGINE_DLL, EntryPoint = "CreateRenderSurface")]
         public static extern int CreateRenderSurface(IntPtr host, IntPtr messageHandle, int width, int height);
+        
+        // TODO: implement in cpp file
+        [DllImport(ENGINE_DLL, EntryPoint = "CreateFullScreenRenderSurface")]
+        public static extern int CreateFullScreenRenderSurface(IntPtr host, IntPtr messageHandle);
 
         [DllImport(ENGINE_DLL, EntryPoint = "RemoveRenderSurface")]
         public static extern void RemoveRenderSurface(int surfaceId);

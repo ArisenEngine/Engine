@@ -38,12 +38,12 @@ public class TestTreeViewModel : ViewModelBase
         
         m_Source.Items = new FileTreeNode[]
         {
-            new FileTreeNode("A", Path.Combine(GameApplication.projectRoot, "Assets"), true, isRoot: true, true),
-            new FileTreeNode("B", Path.Combine(GameApplication.projectRoot, "Packages"), true, isRoot: true, true),
-            new FileTreeNode("C", Path.Combine(GameApplication.projectRoot, "Assets"), true, isRoot: true, true),
-            new FileTreeNode("D", Path.Combine(GameApplication.projectRoot, "Packages"), true, isRoot: true, true),
-            new FileTreeNode("E", Path.Combine(GameApplication.projectRoot, "Assets"), true, isRoot: true, true),
-            new FileTreeNode("F", Path.Combine(GameApplication.projectRoot, "Packages"), true, isRoot: true, true),
+            new FileTreeNode("A", Path.Combine(NebulaApplication.s_ProjectRoot, "Assets"), true, isRoot: true, true),
+            new FileTreeNode("B", Path.Combine(NebulaApplication.s_ProjectRoot, "Packages"), true, isRoot: true, true),
+            new FileTreeNode("C", Path.Combine(NebulaApplication.s_ProjectRoot, "Assets"), true, isRoot: true, true),
+            new FileTreeNode("D", Path.Combine(NebulaApplication.s_ProjectRoot, "Packages"), true, isRoot: true, true),
+            new FileTreeNode("E", Path.Combine(NebulaApplication.s_ProjectRoot, "Assets"), true, isRoot: true, true),
+            new FileTreeNode("F", Path.Combine(NebulaApplication.s_ProjectRoot, "Packages"), true, isRoot: true, true),
         };
         
     }

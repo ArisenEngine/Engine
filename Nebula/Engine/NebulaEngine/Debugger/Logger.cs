@@ -70,7 +70,7 @@ public static class Logger
         {
             MessageAdded?.Invoke(message);
             
-            if (GameApplication.IsDesignMode)
+            if (NebulaApplication.s_IsDesignMode)
             {
                 return;
             }

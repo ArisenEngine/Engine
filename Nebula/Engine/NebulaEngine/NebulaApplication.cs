@@ -20,9 +20,9 @@ namespace NebulaEngine
     }
 
 
-    public class GameApplication
+    public class NebulaApplication
     {
-        static GameApplication()
+        static NebulaApplication()
         {
             NebulaInstance.AllSurfacesDestroyed += OnSurfacesAllClosed;
         }
@@ -36,7 +36,7 @@ namespace NebulaEngine
         #region Internal
 
         
-        internal static bool s_IsDesignMode = false;
+        internal static  bool s_IsDesignMode = false;
         internal static  string s_StartupPath = string.Empty;
         internal static  string s_DataPath = string.Empty;
         internal static  string s_ProjectRoot = string.Empty;
@@ -48,7 +48,7 @@ namespace NebulaEngine
         #endregion
 
         #region Public 
-
+        
         /// <summary>
         /// Windowed run
         /// </summary>

@@ -1,5 +1,5 @@
 ﻿using System.Runtime.InteropServices;
-using NebulaEngine.Graphics;
+using NebulaEngine.Rendering;
 
 namespace NebulaEngine.Platforms;
 
@@ -22,6 +22,9 @@ internal class WindowsProcHandler : WindowProcessor
                 break;
             case Win32Native.WM_EXITSIZEMOVE:
                 OnResized();
+                break;
+            case Win32Native.WM_DESTROY:
+                OnDestroy();
                 break;
         }
         return IntPtr.Zero;

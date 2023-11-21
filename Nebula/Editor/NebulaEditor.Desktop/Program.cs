@@ -2,6 +2,7 @@
 using System.Threading;
 using Avalonia;
 using Avalonia.ReactiveUI;
+using Avalonia.Styling;
 using NebulaEditor.GameDev;
 using NebulaEngine;
 
@@ -16,19 +17,25 @@ class Program
     public static void Main(string[] args)
     {
         Thread.CurrentThread.Name = "MainThread";
-        NebulaEngine.GameApplication.platform = NebulaEngine.RuntimePlatform.Windows;
+        Setup();
+        
+        BuildAvaloniaApp()
+            .StartWithClassicDesktopLifetime(args);
+    }
+
+    static void Setup()
+    {
         ProjectSolution.InstallationRoot = Environment.GetEnvironmentVariable(ProjectSolution.INSTALLATION_ENV_VARIABLE, EnvironmentVariableTarget.User);
         if (ProjectSolution.InstallationRoot == null)
         {
             ProjectSolution.InstallationRoot = System.AppDomain.CurrentDomain.SetupInformation.ApplicationBase;
             Environment.SetEnvironmentVariable(ProjectSolution.INSTALLATION_ENV_VARIABLE, ProjectSolution.InstallationRoot, EnvironmentVariableTarget.User);
         }
-
-        NebulaEngine.GameApplication.startupPath = ProjectSolution.InstallationRoot;
-        NebulaEngine.GameApplication.isInEditor = true;
-
-        BuildAvaloniaApp()
-            .StartWithClassicDesktopLifetime(args);
+        
+        
+        NebulaEngine.NebulaApplication.s_Platform = NebulaEngine.RuntimePlatform.Windows;
+        NebulaEngine.NebulaApplication.s_StartupPath = ProjectSolution.InstallationRoot;
+        NebulaEngine.NebulaApplication.s_IsInEditor = true;
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.

@@ -62,12 +62,12 @@ public class ProjectHierarchyViewModel : ViewModelBase
 
         FolderSource.Items = new FileTreeNode[2]
         {
-            new FileTreeNode("Assets", Path.Combine(GameApplication.projectRoot, "Assets"), true, isRoot: true, true)
+            new FileTreeNode("Assets", Path.Combine(NebulaApplication.s_ProjectRoot, "Assets"), true, isRoot: true, true)
             {
                 AllowDrag = false,
                 AllowDrop = false
             },
-            new FileTreeNode("Packages", Path.Combine(GameApplication.projectRoot, "Packages"), true, isRoot: true,
+            new FileTreeNode("Packages", Path.Combine(NebulaApplication.s_ProjectRoot, "Packages"), true, isRoot: true,
                 true)
             {
                 AllowDrag = false,
@@ -129,7 +129,7 @@ public class ProjectHierarchyViewModel : ViewModelBase
     // TODO: figure out why if dont add a default FileTreeNode, the AssetsView will not auto refresh when selection changed
     private ObservableCollection<FileTreeNode> m_Assets = new ObservableCollection<FileTreeNode>()
     {
-        new FileTreeNode("Assets", Path.Combine(GameApplication.projectRoot, "Assets"), true, isRoot: true, true)
+        new FileTreeNode("Assets", Path.Combine(NebulaApplication.s_ProjectRoot, "Assets"), true, isRoot: true, true)
     };
 
     private ObservableCollection<FileTreeNode> Assets
