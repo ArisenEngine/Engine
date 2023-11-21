@@ -1,12 +1,13 @@
 using System.Diagnostics;
 using NebulaEngine.Debugger;
-using NebulaEngine.Graphics;
+using NebulaEngine.Rendering;
 using NebulaEngine.Platforms;
 
 namespace NebulaEngine;
 
 internal static class NebulaInstance
 {
+    internal static Action AllSurfacesDestroyed;
     /// <summary>
     /// Surface is bound to window
     /// </summary>
@@ -18,22 +19,17 @@ internal static class NebulaInstance
     private static MessageHandler m_MessageHandler;
     private static bool Initialize()
     {
-        switch (GameApplication.platform)
+        switch (NebulaApplication.s_Platform)
         {
             case RuntimePlatform.Windows:
                 m_MessageHandler = new WindowsMessageHandle();
                 return true;
         }
         
-        throw new Exception($"Unsupported platform type:{GameApplication.platform}");
+        throw new Exception($"Unsupported platform type:{NebulaApplication.s_Platform}");
     }
     
-    internal static void SetInstanceName(string name)
-    {
-        m_Name = name;
-    }
-    
-    internal static void RegisterSurface(IntPtr host, string name, int width, int height, SurfaceType surfaceType)
+    internal static void RegisterSurface(IntPtr host, string name, SurfaceType surfaceType, int width = 0, int height = 0)
     {
         if (!m_RenderSurfaces.ContainsKey(host))
         {
@@ -65,11 +61,16 @@ internal static class NebulaInstance
         throw new Exception($"Surface of host {host} not exists");
     }
 
-    internal static void RegisterSurface(string name, int width, int height)
+    internal static void UnregisterSurface()
     {
-        RegisterSurface(IntPtr.Zero, name, width, height, SurfaceType.GameView);
+        UnregisterSurface(IntPtr.Zero);
     }
 
+    internal static void RegisterSurface(string name, int width = 0, int height = 0)
+    {
+        RegisterSurface(IntPtr.Zero, name, SurfaceType.GameView, width, height);
+    }
+    
     internal static IntPtr GetNativeHandle(IntPtr host)
     {
         if (m_RenderSurfaces.TryGetValue(host, out var surfaceInfo))
@@ -86,7 +87,7 @@ internal static class NebulaInstance
     }
 
    
-    internal static void Run()
+    internal static void Run(string instanceName = "")
     {
         if (!Initialize())
         {
@@ -97,6 +98,8 @@ internal static class NebulaInstance
         {
             throw new Exception($"Game instance: {m_Name} is already running.");
         }
+
+        m_Name = instanceName;
         
         m_IsRunning = true;
         
@@ -105,12 +108,15 @@ internal static class NebulaInstance
             while (m_MessageHandler.NextFrame())
             {
                 // run loop
-                Logger.Log($"{m_Name} update");
+               
+                RenderPipelineManager.DoRenderLoop(Rendering.Graphics.currentRenderPipelineAsset);
                 
             }
             
             
         }
+        
+        Dispose();
         
     }
 
@@ -118,9 +124,10 @@ internal static class NebulaInstance
     {
         m_IsRunning = false;
     }
-    internal static void Dispose()
+    private static void Dispose()
     {
         
+        Logger.Log($"{m_Name} Dispose");
         
     }
 }

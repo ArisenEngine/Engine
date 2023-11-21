@@ -44,8 +44,8 @@ public class WorldHierarchyViewModel : ViewModelBase, IHierarchyVM<SceneTreeNode
     {
         m_Roots = new SceneTreeNode[2]
         {
-            new SceneTreeNode("New Scene", Path.Combine(GameApplication.projectRoot, "Assets"), true, isRoot: true),
-            new SceneTreeNode("New Scene", Path.Combine(GameApplication.projectRoot, "Packages"), true, isRoot: true),
+            new SceneTreeNode("New Scene", Path.Combine(NebulaApplication.s_ProjectRoot, "Assets"), true, isRoot: true),
+            new SceneTreeNode("New Scene", Path.Combine(NebulaApplication.s_ProjectRoot, "Packages"), true, isRoot: true),
         };
     }
 

@@ -3,7 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
-using NebulaEngine.Graphics;
+using NebulaEngine.Rendering;
 using System.Diagnostics;
 using System.Drawing;
 using System.Reflection.Metadata;
@@ -25,8 +25,8 @@ namespace NebulaEngine.Views.Rendering
             }
         }
         
-        private NebulaEngine.Graphics.RenderSurfaceHost m_Host = null;
-        internal NebulaEngine.Graphics.SurfaceType SurfaceType;
+        private NebulaEngine.Rendering.RenderSurfaceHost m_Host = null;
+        internal NebulaEngine.Rendering.SurfaceType SurfaceType;
         public bool IsSceneView = false;
         public Window ParentWindow;
         
@@ -46,7 +46,7 @@ namespace NebulaEngine.Views.Rendering
 
             if (!Design.IsDesignMode)
             {
-                m_Host = new RenderSurfaceHost((int)RenderViewContainer.Width, (int)RenderViewContainer.Height, SurfaceType)
+                m_Host = new RenderSurfaceHost((int)RenderViewContainer.Bounds.Width, (int)RenderViewContainer.Bounds.Height, SurfaceType)
                 {
                     Name = Name
                 };

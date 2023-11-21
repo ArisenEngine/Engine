@@ -17,7 +17,7 @@ public partial class NebulaFileSystemWatcher : IDisposable
         {
             m_Watcher = new FileSystemWatcher()
             {
-                Path = GameApplication.dataPath,
+                Path = NebulaApplication.s_DataPath,
                 NotifyFilter =
                     NotifyFilters.Attributes
                     | NotifyFilters.Security

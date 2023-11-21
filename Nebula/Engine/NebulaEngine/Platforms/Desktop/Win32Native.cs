@@ -153,6 +153,7 @@ internal static class Win32Native
 
     public const int GCS_COMPSTR = 0x0008;
 
+    public const int WM_DESTROY = 0x0002;
     public const int WM_SIZE = 0x0005;
     public const int WM_ACTIVATEAPP = 0x001C;
     public const int WM_POWERBROADCAST = 0x0218;

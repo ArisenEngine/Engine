@@ -16,7 +16,7 @@ internal static class HeaderMenuEntries
     {
         Task.Run(()=> {
 
-            ProjectSolution.OpenVisualStudio(Path.Combine(GameApplication.projectRoot, GameApplication.projectName + @".sln"));
+            ProjectSolution.OpenVisualStudio(Path.Combine(NebulaApplication.s_ProjectRoot, NebulaApplication.s_ProjectName + @".sln"));
 
         });
     }

@@ -2,7 +2,7 @@
 using NebulaEngine.Debugger;
 using NebulaEngine.Platforms;
 
-namespace NebulaEngine.Graphics;
+namespace NebulaEngine.Rendering;
 
 internal enum SurfaceType
 {

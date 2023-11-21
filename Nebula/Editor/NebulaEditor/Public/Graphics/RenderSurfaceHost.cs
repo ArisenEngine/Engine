@@ -8,7 +8,7 @@ using Avalonia.Threading;
 using EnvDTE;
 using NebulaEngine.API;
 
-namespace NebulaEngine.Graphics
+namespace NebulaEngine.Rendering
 {
      public class RenderSurfaceHost : NativeControlHost, IDisposable
     {
@@ -29,7 +29,7 @@ namespace NebulaEngine.Graphics
         protected override IPlatformHandle CreateNativeControlCore(IPlatformHandle parent)
         {
             m_Parent = parent.Handle;
-            NebulaInstance.RegisterSurface(m_Parent, Name, m_Width, m_Height, m_SurfaceType);
+            NebulaInstance.RegisterSurface(m_Parent, Name, m_SurfaceType, m_Width, m_Height);
             
             return new PlatformHandle(NebulaInstance.GetNativeHandle(m_Parent), m_SurfaceType + " Host");
         }
