@@ -26,7 +26,7 @@ namespace NebulaEngine.Views.Rendering
         }
         
         private NebulaEngine.Graphics.RenderSurfaceHost m_Host = null;
-        public string Name = "RenderSurface";
+        internal NebulaEngine.Graphics.SurfaceType SurfaceType;
         public bool IsSceneView = false;
         public Window ParentWindow;
         
@@ -46,7 +46,7 @@ namespace NebulaEngine.Views.Rendering
 
             if (!Design.IsDesignMode)
             {
-                m_Host = new RenderSurfaceHost((int)RenderViewContainer.Width, (int)RenderViewContainer.Height)
+                m_Host = new RenderSurfaceHost((int)RenderViewContainer.Width, (int)RenderViewContainer.Height, SurfaceType)
                 {
                     Name = Name
                 };

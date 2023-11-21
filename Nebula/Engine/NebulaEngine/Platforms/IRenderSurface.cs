@@ -2,6 +2,7 @@
 
 internal interface IRenderSurface
 {
+    
     public IntPtr GetHandle();
     public void OnCreate();
     public void OnResizing();

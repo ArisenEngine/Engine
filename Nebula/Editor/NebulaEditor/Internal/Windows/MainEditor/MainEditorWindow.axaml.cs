@@ -42,7 +42,7 @@ namespace NebulaEditor.Windows.MainEditor
             {
                 ParentWindow = this,
                 IsSceneView = true,
-                Name = "Scene View",
+                SurfaceType = NebulaEngine.Graphics.SurfaceType.SceneView,
                 DataContext = new RenderSurfaceViewModel(true)
             });
             
@@ -50,15 +50,16 @@ namespace NebulaEditor.Windows.MainEditor
             {
                 ParentWindow = this,
                 IsSceneView = false,
-                Name = "Game View",
+                SurfaceType = NebulaEngine.Graphics.SurfaceType.GameView,
                 DataContext = new RenderSurfaceViewModel(false)
             });
-
-            // Dispatcher.UIThread.InvokeAsync(() =>
-            // {
-            //     Engine.Run(renderContext);
-            //     Engine.Dispose();
-            // });
+            
+            Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                NebulaInstance.Run();
+                NebulaInstance.Dispose();
+            });
+            
         }
 
         // TODO: remove this
@@ -74,6 +75,7 @@ namespace NebulaEditor.Windows.MainEditor
             
             m_FileSystemWatcher.Dispose();
             m_FileSystemWatcher = null;
+            NebulaInstance.End();
             
             if (App.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
