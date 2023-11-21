@@ -38,14 +38,17 @@ internal class RenderSurface : IDisposable, IRenderSurface
 
     public IntPtr Handle => m_Handle;
 
-    public RenderSurface(IntPtr host, string name, int width, int height, bool hosted = true)
+    public RenderSurface(IntPtr host, string name, int width = 0, int height = 0, bool hosted = true)
     {
         m_Name = name;
         m_Hosted = hosted;
+        bool isFullScreen = (width == 0 || height == 0) && host == IntPtr.Zero;
         if (Initialize())
         {
             m_Host = host;
-            m_SurfaceId = PlatformAPI.CreateRenderSurface(host, m_Processor.ProcPtr, width, height);
+            m_SurfaceId = isFullScreen
+                ? PlatformAPI.CreateFullScreenRenderSurface(host, m_Processor.ProcPtr)
+                : PlatformAPI.CreateRenderSurface(host, m_Processor.ProcPtr, width, height);
             m_Handle = PlatformAPI.GetWindowHandle(m_SurfaceId);
             Surfaces.Add(this);
         }
@@ -57,14 +60,14 @@ internal class RenderSurface : IDisposable, IRenderSurface
     
     private bool Initialize()
     {
-        switch (GameApplication.platform)
+        switch (NebulaApplication.s_Platform)
         {
             case RuntimePlatform.Windows:
                 m_Processor = new WindowsProcHandler(this);
                 return true;
         }
 
-        throw new Exception($"Unsupported platform type: {GameApplication.platform}");
+        throw new Exception($"Unsupported platform type: {NebulaApplication.s_Platform}");
     }
     
     public bool IsValid()
@@ -76,6 +79,10 @@ internal class RenderSurface : IDisposable, IRenderSurface
     {
         PlatformAPI.RemoveRenderSurface(m_SurfaceId);
         Surfaces.Remove(this);
+        if (Surfaces.Count <= 0)
+        {
+            NebulaInstance.AllSurfacesDestroyed?.Invoke();
+        }
     }
 
     public IntPtr GetHandle()
@@ -102,6 +109,6 @@ internal class RenderSurface : IDisposable, IRenderSurface
 
     public void OnDestroy()
     {
-        throw new NotImplementedException();
+        Dispose();
     }
 }
