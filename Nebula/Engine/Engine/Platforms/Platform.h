@@ -1,7 +1,7 @@
 #pragma once
 #include "Windows.h"
 
-namespace NebulaEngine::Platforms {
+namespace NebulaEngine::API {
 
 #ifndef WINDOES_TEST
 

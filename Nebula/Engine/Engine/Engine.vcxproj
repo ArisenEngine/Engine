@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="API\PlatformAPI.h" />
+    <ClInclude Include="API\Renderding\RenderSurface.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="Graphics\Renderer.h" />
     <ClInclude Include="Platforms\Platform.h" />

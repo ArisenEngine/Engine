@@ -2,7 +2,7 @@
 #include"Common/CommandHeaders.h"
 #include "../Common.h"
 
-namespace NebulaEngine::Platforms
+namespace NebulaEngine::API
 {
 	DEFINE_TYPED_ID(WindowID)
 
