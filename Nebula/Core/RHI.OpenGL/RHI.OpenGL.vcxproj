@@ -25,6 +25,12 @@
   <ItemGroup>
     <ClCompile Include="Devices\glDevice.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Core.Infra\Core.Infra.vcxproj">
+      <Project>{47ab1dd6-11a7-4f0e-81f5-67af87bf3810}</Project>
+      <Name>Core.Infra</Name>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>

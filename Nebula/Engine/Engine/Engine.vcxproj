@@ -19,8 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="API\Debugger\Logger.h" />
     <ClInclude Include="API\Renderding\RenderSurface.h" />
-    <ClInclude Include="Common.h" />
+    <ClInclude Include="EngineCommon.h" />
     <ClInclude Include="Graphics\Renderer.h" />
     <ClInclude Include="Platforms\Platform.h" />
     <ClInclude Include="Platforms\PlatformTypes.h" />
@@ -28,6 +29,27 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Platforms\Platform.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Core.Infra\Core.Infra.vcxproj">
+      <Project>{47ab1dd6-11a7-4f0e-81f5-67af87bf3810}</Project>
+      <Name>Core.Infra</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Core\RHI.DX12\RHI.DX12.vcxproj">
+      <Project>{caa51b31-2b28-4c37-bb66-fa85762aaf8f}</Project>
+      <Name>RHI.DX12</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Core\RHI.OpenGL\RHI.OpenGL.vcxproj">
+      <Project>{53325655-fd23-4eb2-a353-f61425888374}</Project>
+      <Name>RHI.OpenGL</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Core\RHI.Vulkan\RHI.Vulkan.vcxproj">
+      <Project>{8b80dbdf-a0b9-46e2-865b-4d42a092bd15}</Project>
+      <Name>RHI.Vulkan</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -38,13 +60,13 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -57,7 +79,7 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -166,5 +188,28 @@
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\..\packages\boost.1.83.0\build\boost.targets" Condition="Exists('..\..\packages\boost.1.83.0\build\boost.targets')" />
+    <Import Project="..\..\packages\boost_atomic-vc143.1.83.0\build\boost_atomic-vc143.targets" Condition="Exists('..\..\packages\boost_atomic-vc143.1.83.0\build\boost_atomic-vc143.targets')" />
+    <Import Project="..\..\packages\boost_chrono-vc143.1.83.0\build\boost_chrono-vc143.targets" Condition="Exists('..\..\packages\boost_chrono-vc143.1.83.0\build\boost_chrono-vc143.targets')" />
+    <Import Project="..\..\packages\boost_date_time-vc143.1.83.0\build\boost_date_time-vc143.targets" Condition="Exists('..\..\packages\boost_date_time-vc143.1.83.0\build\boost_date_time-vc143.targets')" />
+    <Import Project="..\..\packages\boost_filesystem-vc143.1.83.0\build\boost_filesystem-vc143.targets" Condition="Exists('..\..\packages\boost_filesystem-vc143.1.83.0\build\boost_filesystem-vc143.targets')" />
+    <Import Project="..\..\packages\boost_log_setup-vc143.1.83.0\build\boost_log_setup-vc143.targets" Condition="Exists('..\..\packages\boost_log_setup-vc143.1.83.0\build\boost_log_setup-vc143.targets')" />
+    <Import Project="..\..\packages\boost_log-vc143.1.83.0\build\boost_log-vc143.targets" Condition="Exists('..\..\packages\boost_log-vc143.1.83.0\build\boost_log-vc143.targets')" />
+    <Import Project="..\..\packages\boost_system-vc143.1.83.0\build\boost_system-vc143.targets" Condition="Exists('..\..\packages\boost_system-vc143.1.83.0\build\boost_system-vc143.targets')" />
+    <Import Project="..\..\packages\boost_thread-vc143.1.83.0\build\boost_thread-vc143.targets" Condition="Exists('..\..\packages\boost_thread-vc143.1.83.0\build\boost_thread-vc143.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\packages\boost.1.83.0\build\boost.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost.1.83.0\build\boost.targets'))" />
+    <Error Condition="!Exists('..\..\packages\boost_atomic-vc143.1.83.0\build\boost_atomic-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost_atomic-vc143.1.83.0\build\boost_atomic-vc143.targets'))" />
+    <Error Condition="!Exists('..\..\packages\boost_chrono-vc143.1.83.0\build\boost_chrono-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost_chrono-vc143.1.83.0\build\boost_chrono-vc143.targets'))" />
+    <Error Condition="!Exists('..\..\packages\boost_date_time-vc143.1.83.0\build\boost_date_time-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost_date_time-vc143.1.83.0\build\boost_date_time-vc143.targets'))" />
+    <Error Condition="!Exists('..\..\packages\boost_filesystem-vc143.1.83.0\build\boost_filesystem-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost_filesystem-vc143.1.83.0\build\boost_filesystem-vc143.targets'))" />
+    <Error Condition="!Exists('..\..\packages\boost_log_setup-vc143.1.83.0\build\boost_log_setup-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost_log_setup-vc143.1.83.0\build\boost_log_setup-vc143.targets'))" />
+    <Error Condition="!Exists('..\..\packages\boost_log-vc143.1.83.0\build\boost_log-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost_log-vc143.1.83.0\build\boost_log-vc143.targets'))" />
+    <Error Condition="!Exists('..\..\packages\boost_system-vc143.1.83.0\build\boost_system-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost_system-vc143.1.83.0\build\boost_system-vc143.targets'))" />
+    <Error Condition="!Exists('..\..\packages\boost_thread-vc143.1.83.0\build\boost_thread-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost_thread-vc143.1.83.0\build\boost_thread-vc143.targets'))" />
+  </Target>
 </Project>

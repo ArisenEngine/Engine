@@ -9,8 +9,15 @@
     <ClInclude Include="Common\Id.h" />
     <ClInclude Include="Common\MathTypes.h" />
     <ClInclude Include="RHI\Surfaces\Surface.h" />
+    <ClInclude Include="RHI\Instance.h" />
+    <ClInclude Include="Debugger\Logger.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="RHI\Instance.cpp" />
+    <ClCompile Include="Debugger\Logger.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

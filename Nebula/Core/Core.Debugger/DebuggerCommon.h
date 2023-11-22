@@ -1,6 +1,7 @@
 #pragma once
 
-#ifdef ENGINE_EXPORTS
+
+#ifdef COREDEBUGGER_EXPORTS
 
 #define DLL   __declspec( dllexport )
 

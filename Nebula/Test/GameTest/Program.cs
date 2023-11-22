@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using GameTest;
 using NebulaEngine;
-using NebulaEngine.Rendering;
+using Debugger = NebulaEngine.API.Debugger;
 
 const string RenderPipelineAssetPath = "./CustomRenderPipelineAsset";
 
@@ -10,9 +10,10 @@ var customPipelineAsset =
 
 Debug.Assert(customPipelineAsset != null);
 
+Debugger.Debugger_Log("Start");
 
 NebulaEngine.Rendering.Graphics.SetCurrentRenderPipeline(customPipelineAsset);
-int code = NebulaApplication.Run(1280, 1080, "Game Test");
+int code = NebulaApplication.Run(1920, 1080, "Game Test");
 
 Serialization.SerializationUtil.Serialize(customPipelineAsset, RenderPipelineAssetPath);
 

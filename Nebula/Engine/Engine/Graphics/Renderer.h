@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Common\CommandHeaders.h"
-#include "RHI\Surfaces\Surface.h"
-#include "../Platforms/Windows.h"
+#include "Common/CommandHeaders.h"
+#include "RHI/Surfaces/Surface.h"
+#include "../../Platforms/Windows.h"
 
 namespace NebulaEngine::Graphics
 {

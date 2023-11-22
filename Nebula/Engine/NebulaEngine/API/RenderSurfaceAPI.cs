@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace NebulaEngine.API
 {
-    public static class PlatformAPI
+    public static class RenderSurfaceAPI
     {
         private const string ENGINE_DLL = "Engine.dll";
 
