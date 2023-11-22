@@ -7,7 +7,7 @@
 #include "../Platforms/PlatformTypes.h"
 #include "../Platforms/Platform.h"
 
-namespace NebulaEngine::Platforms {
+namespace NebulaEngine::API {
 
 	using namespace Containers;
 
