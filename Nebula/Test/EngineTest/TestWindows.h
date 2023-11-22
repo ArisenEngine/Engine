@@ -1,6 +1,6 @@
 #pragma once
-#include "Engine/Platforms/PlatformTypes.h"
-#include "Engine/Platforms/Platform.h"
+#include "Platforms/PlatformTypes.h"
+#include "Platforms/Platform.h"
 #include "Test.h"
 
 using namespace NebulaEngine;

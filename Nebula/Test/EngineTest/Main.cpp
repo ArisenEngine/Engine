@@ -3,7 +3,13 @@
 #define TEST_WINDOWS 0
 #define TEST_ENGINE 1
 
-#if define(TEST_WINDOWS)
+#pragma comment(lib,"Core.Infra.lib")
+
+#include "Debugger/Logger.h"
+
+
+
+#if(TEST_WINDOWS)
 
 #ifdef _WIN64
 
@@ -12,19 +18,20 @@
 
 #endif
 
+#pragma comment(lib,"Engine.lib")
+#include "API/Debugger/Logger.h"
+#include "API/Renderding/RenderSurface.h"
 #include "TestWindows.h"
 
 #elif(TEST_ENGINE)
 
 #include "TestEngine.h"
 
-
-
 #endif
 
-#pragma comment(lib,"Engine.lib")
 
-#if define(TEST_WINDOWS)
+
+#if(TEST_WINDOWS)
 
 #ifdef _WIN64
 
@@ -45,6 +52,7 @@ int main()
 
 {
 
+	NebulaEngine::Debugger::Logger::Log(L"Engine Log Test");
 
 	// testing
 

@@ -19,22 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Debugger\Logger.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Test.h" />
-    <ClInclude Include="TestEngine.h" />
-    <ClInclude Include="TestWindows.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\Core\Core.Infra\Core.Infra.vcxproj">
-      <Project>{47ab1dd6-11a7-4f0e-81f5-67af87bf3810}</Project>
-      <Name>Core.Infra</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Engine\Engine\Engine.vcxproj">
-      <Project>{2559850e-93eb-4095-ac4b-6e94f1dd40c0}</Project>
-      <Name>Engine</Name>
-    </ProjectReference>
+    <ClInclude Include="Debugger\Logger.h" />
+    <ClInclude Include="DebuggerCommon.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -42,32 +31,32 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{e4cf8c2e-833c-481b-ba2c-e8faa3feebb9}</ProjectGuid>
-    <RootNamespace>EngineTest</RootNamespace>
+    <ProjectGuid>{6fd8b09a-57d4-47da-893d-ae3cc79ee994}</ProjectGuid>
+    <RootNamespace>CoreDebugger</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -95,12 +84,15 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;COREDEBUGGER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -109,31 +101,35 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;COREDEBUGGER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;COREDEBUGGER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine\Engine\;$(SolutionDir)Core\Core.Infra\</AdditionalIncludeDirectories>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(SolutionDir)Core\Core.Infra\</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies);Core.Infra.lib;Engine.lib</AdditionalDependencies>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalLibraryDirectories>$(BOOST_ROOT)/stage/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -142,14 +138,17 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;COREDEBUGGER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
@@ -157,8 +156,9 @@
     <Import Project="..\..\packages\boost.1.83.0\build\boost.targets" Condition="Exists('..\..\packages\boost.1.83.0\build\boost.targets')" />
     <Import Project="..\..\packages\boost_atomic-vc143.1.83.0\build\boost_atomic-vc143.targets" Condition="Exists('..\..\packages\boost_atomic-vc143.1.83.0\build\boost_atomic-vc143.targets')" />
     <Import Project="..\..\packages\boost_chrono-vc143.1.83.0\build\boost_chrono-vc143.targets" Condition="Exists('..\..\packages\boost_chrono-vc143.1.83.0\build\boost_chrono-vc143.targets')" />
-    <Import Project="..\..\packages\boost_date_time-vc143.1.83.0\build\boost_date_time-vc143.targets" Condition="Exists('..\..\packages\boost_date_time-vc143.1.83.0\build\boost_date_time-vc143.targets')" />
     <Import Project="..\..\packages\boost_filesystem-vc143.1.83.0\build\boost_filesystem-vc143.targets" Condition="Exists('..\..\packages\boost_filesystem-vc143.1.83.0\build\boost_filesystem-vc143.targets')" />
+    <Import Project="..\..\packages\boost_date_time-vc143.1.83.0\build\boost_date_time-vc143.targets" Condition="Exists('..\..\packages\boost_date_time-vc143.1.83.0\build\boost_date_time-vc143.targets')" />
+    <Import Project="..\..\packages\boost_iostreams-vc143.1.83.0\build\boost_iostreams-vc143.targets" Condition="Exists('..\..\packages\boost_iostreams-vc143.1.83.0\build\boost_iostreams-vc143.targets')" />
     <Import Project="..\..\packages\boost_log_setup-vc143.1.83.0\build\boost_log_setup-vc143.targets" Condition="Exists('..\..\packages\boost_log_setup-vc143.1.83.0\build\boost_log_setup-vc143.targets')" />
     <Import Project="..\..\packages\boost_log-vc143.1.83.0\build\boost_log-vc143.targets" Condition="Exists('..\..\packages\boost_log-vc143.1.83.0\build\boost_log-vc143.targets')" />
     <Import Project="..\..\packages\boost_system-vc143.1.83.0\build\boost_system-vc143.targets" Condition="Exists('..\..\packages\boost_system-vc143.1.83.0\build\boost_system-vc143.targets')" />
@@ -171,8 +171,9 @@
     <Error Condition="!Exists('..\..\packages\boost.1.83.0\build\boost.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost.1.83.0\build\boost.targets'))" />
     <Error Condition="!Exists('..\..\packages\boost_atomic-vc143.1.83.0\build\boost_atomic-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost_atomic-vc143.1.83.0\build\boost_atomic-vc143.targets'))" />
     <Error Condition="!Exists('..\..\packages\boost_chrono-vc143.1.83.0\build\boost_chrono-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost_chrono-vc143.1.83.0\build\boost_chrono-vc143.targets'))" />
-    <Error Condition="!Exists('..\..\packages\boost_date_time-vc143.1.83.0\build\boost_date_time-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost_date_time-vc143.1.83.0\build\boost_date_time-vc143.targets'))" />
     <Error Condition="!Exists('..\..\packages\boost_filesystem-vc143.1.83.0\build\boost_filesystem-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost_filesystem-vc143.1.83.0\build\boost_filesystem-vc143.targets'))" />
+    <Error Condition="!Exists('..\..\packages\boost_date_time-vc143.1.83.0\build\boost_date_time-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost_date_time-vc143.1.83.0\build\boost_date_time-vc143.targets'))" />
+    <Error Condition="!Exists('..\..\packages\boost_iostreams-vc143.1.83.0\build\boost_iostreams-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost_iostreams-vc143.1.83.0\build\boost_iostreams-vc143.targets'))" />
     <Error Condition="!Exists('..\..\packages\boost_log_setup-vc143.1.83.0\build\boost_log_setup-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost_log_setup-vc143.1.83.0\build\boost_log_setup-vc143.targets'))" />
     <Error Condition="!Exists('..\..\packages\boost_log-vc143.1.83.0\build\boost_log-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost_log-vc143.1.83.0\build\boost_log-vc143.targets'))" />
     <Error Condition="!Exists('..\..\packages\boost_system-vc143.1.83.0\build\boost_system-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\boost_system-vc143.1.83.0\build\boost_system-vc143.targets'))" />

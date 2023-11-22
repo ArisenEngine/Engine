@@ -1,4 +1,5 @@
 using Microsoft.VisualBasic.Logging;
+using NebulaEngine.API;
 
 namespace GameTest;
 
@@ -12,7 +13,7 @@ public class CustomRenderPipeline : NebulaEngine.Rendering.RenderPipeline
     
     protected override void Render()
     {
-        
+       
     }
 
     protected override void OnDisposed()

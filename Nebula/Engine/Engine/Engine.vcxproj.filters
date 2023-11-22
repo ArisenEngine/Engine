@@ -2,13 +2,17 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClInclude Include="Platforms\Windows.h" />
-    <ClInclude Include="Common.h" />
     <ClInclude Include="Platforms\Platform.h" />
     <ClInclude Include="Platforms\PlatformTypes.h" />
-    <ClInclude Include="API\PlatformAPI.h" />
     <ClInclude Include="Graphics\Renderer.h" />
+    <ClInclude Include="API\Debugger\Logger.h" />
+    <ClInclude Include="API\Renderding\RenderSurface.h" />
+    <ClInclude Include="EngineCommon.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Platforms\Platform.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

@@ -13,4 +13,9 @@
     <Folder Include="Components\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="boost_system-vc142" Version="1.83.0" />
+    <PackageReference Include="boost_thread-vc142" Version="1.83.0" />
+  </ItemGroup>
+
 </Project>

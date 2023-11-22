@@ -8,4 +8,7 @@
     <ClInclude Include="TestWindows.h" />
     <ClInclude Include="TestEngine.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
 </Project>

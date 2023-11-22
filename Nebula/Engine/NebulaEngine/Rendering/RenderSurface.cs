@@ -47,9 +47,9 @@ internal class RenderSurface : IDisposable, IRenderSurface
         {
             m_Host = host;
             m_SurfaceId = isFullScreen
-                ? PlatformAPI.CreateFullScreenRenderSurface(host, m_Processor.ProcPtr)
-                : PlatformAPI.CreateRenderSurface(host, m_Processor.ProcPtr, width, height);
-            m_Handle = PlatformAPI.GetWindowHandle(m_SurfaceId);
+                ? RenderSurfaceAPI.CreateFullScreenRenderSurface(host, m_Processor.ProcPtr)
+                : RenderSurfaceAPI.CreateRenderSurface(host, m_Processor.ProcPtr, width, height);
+            m_Handle = RenderSurfaceAPI.GetWindowHandle(m_SurfaceId);
             Surfaces.Add(this);
         }
         else
@@ -77,7 +77,7 @@ internal class RenderSurface : IDisposable, IRenderSurface
 
     public void Dispose()
     {
-        PlatformAPI.RemoveRenderSurface(m_SurfaceId);
+        RenderSurfaceAPI.RemoveRenderSurface(m_SurfaceId);
         Surfaces.Remove(this);
         if (Surfaces.Count <= 0)
         {
