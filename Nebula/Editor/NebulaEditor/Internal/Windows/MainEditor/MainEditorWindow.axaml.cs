@@ -56,7 +56,10 @@ namespace NebulaEditor.Windows.MainEditor
             
             Dispatcher.UIThread.InvokeAsync(() =>
             {
-                NebulaInstance.Run("Nebula Instance (Attach to Editor)");
+                if (NebulaInstance.Run("Nebula Instance (Attach to Editor)") != 0);
+                {
+                    Logger.Error("Nebula instance run error.");
+                }
                 
             });
             

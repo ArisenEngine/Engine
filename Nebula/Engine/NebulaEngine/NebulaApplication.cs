@@ -55,20 +55,20 @@ namespace NebulaEngine
         /// <param name="width"></param>
         /// <param name="height"></param>
         /// <param name="name"></param>
-        public static void Run(int width, int height, string name = "")
+        public static int Run(int width, int height, string name = "")
         {
             NebulaInstance.RegisterSurface(name, width, height);
-            NebulaInstance.Run(name);
+            return NebulaInstance.Run(name);
         }
         
         /// <summary>
         /// Full-screen run
         /// </summary>
         /// <param name="name"></param>
-        public static void Run(string name = "")
+        public static int Run(string name = "")
         {
             NebulaInstance.RegisterSurface(name);
-            NebulaInstance.Run(name);
+            return NebulaInstance.Run(name);
         }
 
         #endregion

@@ -1,7 +1,7 @@
 #pragma once
 #include "Common/CommandHeaders.h"
 
-namespace NebulaEngine::Platforms
+namespace NebulaEngine::API
 {
 
 #ifdef _WIN64

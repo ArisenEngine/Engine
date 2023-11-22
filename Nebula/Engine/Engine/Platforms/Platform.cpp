@@ -1,11 +1,10 @@
-#include "../API/PlatformAPI.h"
+#include "../API/Renderding/RenderSurface.h"
 #include "Platform.h"
 #include "PlatformTypes.h"
 #include "Common/CommandHeaders.h"
-#include "../Graphics/Renderer.h"
 #include "Windows.h"
 
-namespace NebulaEngine::Platforms
+namespace NebulaEngine::API
 {
 	using namespace NebulaEngine::Containers;
 

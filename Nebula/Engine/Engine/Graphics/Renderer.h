@@ -6,7 +6,7 @@
 
 namespace NebulaEngine::Graphics
 {
-	using namespace Platforms;
+	using namespace API;
 	using namespace RHI;
 
 	struct RenderSurface

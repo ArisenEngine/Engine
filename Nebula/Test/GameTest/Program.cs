@@ -12,8 +12,8 @@ Debug.Assert(customPipelineAsset != null);
 
 
 NebulaEngine.Rendering.Graphics.SetCurrentRenderPipeline(customPipelineAsset);
-NebulaApplication.Run(800, 600, "Game Test");
+int code = NebulaApplication.Run(1280, 1080, "Game Test");
 
 Serialization.SerializationUtil.Serialize(customPipelineAsset, RenderPipelineAssetPath);
 
-Environment.Exit(0);
+Environment.Exit(code);

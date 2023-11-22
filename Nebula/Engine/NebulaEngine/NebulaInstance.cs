@@ -87,7 +87,7 @@ internal static class NebulaInstance
     }
 
    
-    internal static void Run(string instanceName = "")
+    internal static int Run(string instanceName = "")
     {
         if (!Initialize())
         {
@@ -102,22 +102,35 @@ internal static class NebulaInstance
         m_Name = instanceName;
         
         m_IsRunning = true;
-        
-        while (m_IsRunning)
+
+        var errorCode = 0;
+        try
         {
-            while (m_MessageHandler.NextFrame())
+            while (m_IsRunning)
             {
-                // run loop
-               
-                RenderPipelineManager.DoRenderLoop(Rendering.Graphics.currentRenderPipelineAsset);
-                
+                while (m_MessageHandler.NextFrame())
+                {
+                    // run loop
+
+                    RenderPipelineManager.DoRenderLoop(Graphics.currentRenderPipelineAsset);
+
+                }
+
+
             }
-            
-            
         }
-        
-        Dispose();
-        
+        catch (Exception e)
+        {
+            Logger.Error(e);
+            errorCode = -1;
+        }
+        finally
+        {
+            Dispose();
+        }
+
+        return errorCode;
+
     }
 
     internal static void End()
