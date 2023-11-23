@@ -30,55 +30,8 @@ public class ConsoleViewModel : ViewModelBase, IDisposable
                 return new ReadOnlyObservableCollection<MessageItemNode>(
                     new ObservableCollection<MessageItemNode>()
                     {
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10223,
-                            "KDFJF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 103423,
-                            "DASDAF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10342,
-                            "AFSF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 10324,
-                            "FASF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 1032,
-                            "FGDSD", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 102342,
-                            "FSDF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 102342,
-                            "GDFGS", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 102342,
-                            "DSFG", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10234,
-                            "DFG", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 2342,
-                            "DFG", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 234,
-                            "DSFG", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 243,
-                            "DSFGDH", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10223,
-                            "KDFJF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 103423,
-                            "DASDAF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10342,
-                            "AFSF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 10324,
-                            "FASF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 1032,
-                            "FGDSD", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 102342,
-                            "FSDF", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 102342,
-                            "GDFGS", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 102342,
-                            "DSFG", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 10234,
-                            "DFG", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 2342,
-                            "DFG", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Error, "aaa", "", "", 0, 234,
-                            "DSFG", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.MessageType.Info, "aaa", "", "", 0, 243,
-                            "DSFGDH", "aaaaaa \n bbbbbbbbbbb \n cccccccccccccccccc")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.LogLevel.Error, "aaa", "", "", DateTime.Now, "10223")),
+                        new MessageItemNode(new Logger.LogMessage(Logger.LogLevel.Error, "aaa", "", "", DateTime.Now, "10223")),
                     });
             }
             return m_Messages;
@@ -256,22 +209,22 @@ public class ConsoleViewModel : ViewModelBase, IDisposable
 
         if (!ErrorChecked)
         {
-            typeFilter &= !(((int)messageItemNodes.MessageType & (int)Logger.MessageType.Error) != 0);
+            typeFilter &= !(((int)messageItemNodes.LogLevel & (int)Logger.LogLevel.Error) != 0);
         }
         
         if (!WarningChecked)
         {
-            typeFilter &= !(((int)messageItemNodes.MessageType & (int)Logger.MessageType.Warning) != 0);
+            typeFilter &= !(((int)messageItemNodes.LogLevel & (int)Logger.LogLevel.Warning) != 0);
         }
         
         if (!InfoChecked)
         {
-            typeFilter &= !(((int)messageItemNodes.MessageType &(int)Logger.MessageType.Info) != 0);
+            typeFilter &= !(((int)messageItemNodes.LogLevel &(int)Logger.LogLevel.Info) != 0);
         }
         
         if (!LogChecked)
         {
-            typeFilter &= !(((int)messageItemNodes.MessageType & (int)Logger.MessageType.Log) != 0);
+            typeFilter &= !(((int)messageItemNodes.LogLevel & (int)Logger.LogLevel.Log) != 0);
         }
 
         bool searchFilter = true;

@@ -6,12 +6,16 @@ namespace NebulaEngine.Debugger;
 
 public static class Logger
 {
+    internal delegate void OnLogReceived (LogLevel type, string msg, string trace);
+
+    internal static OnLogReceived ReceiveLog;
     static Logger()
     {
-     
+        ReceiveLog = new OnLogReceived(RecordLog);
+        API.Debugger.Debugger_BindCallback(ReceiveLog);
     }
     
-    internal enum MessageType
+    internal enum LogLevel
     {
         /// <summary>
         /// finer-grained info for debugging
@@ -42,32 +46,25 @@ public static class Logger
     internal class LogMessage
     {
         public DateTime Time { get; }
-        public MessageType MessageType { get; }
+        public LogLevel LogLevel { get; }
         public string Message { get; }
-        public string File { get; }
-        public int Line { get; }
-        public int ThreadId { get; }
+        public string ThreadId { get; }
         public string ThreadName { get; }
-        public string Caller { get; }
-
         public string StackTrace { get; } = string.Empty;
 
         public string FullLogString
         {
             get
             {
-                return $"[{Time}] [{MessageType}] [ThreadId:{ThreadId}, ThreadName:{ThreadName}] \nMessage: {Message} \n" + (MessageType == Logger.MessageType.Log ? "" : StackTrace);
+                return $"[{Time}] [{LogLevel}] [ThreadId:{ThreadId}, ThreadName:{ThreadName}] \nMessage: {Message} \n" + (LogLevel == Logger.LogLevel.Log ? "" : StackTrace);
             }
         }
        
-        internal LogMessage(MessageType messageType, string msg, string file, string caller, int line, int threadId, string threadName, string stackTrace = "")
+        internal LogMessage(LogLevel logLevel, string msg, string threadId, string threadName, DateTime time, string stackTrace)
         {
-            Time = DateTime.Now;
-            MessageType = messageType;
+            Time = time;
+            LogLevel = logLevel;
             Message = msg;
-            File = Path.GetFileName(file);
-            Caller = caller;
-            Line = line;
             ThreadId = threadId;
             ThreadName = threadName;
             StackTrace = stackTrace;
@@ -76,67 +73,61 @@ public static class Logger
 
     internal static Action<LogMessage>? MessageAdded;
     internal static Action? MessageCleared;
-    
-    private static void DoWriteMessage(MessageType type, object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
+   
+    internal static void RecordLog(LogLevel type, string msg, string trace)
     {
-        int id = Thread.CurrentThread.ManagedThreadId;
+       
         string threadName = Thread.CurrentThread.Name;
-
-        string trace = Environment.StackTrace;
+        string threadId = Thread.CurrentThread.ManagedThreadId.ToString();
+        var message = new LogMessage(type, msg, threadId, threadName, DateTime.Now, trace);
 
         Task.Run(() =>
         {
-            var message = new LogMessage(type, msg.ToString(), file, caller, line, id, threadName, trace);
-            //WriteMessage(message);
-
             MessageAdded?.Invoke(message);
-
         });
+
     }
     
-    public static void Log(object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
+    public static void Log(object msg)
     {
         string trace = Environment.StackTrace;
         API.Debugger.Debugger_Log(msg.ToString(), Thread.CurrentThread.Name, trace);
-        //DoWriteMessage(MessageType.Log, msg, file, caller, line);
+        
     }
     
-    public static void Info(object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
+    public static void Info(object msg)
     {
         string trace = Environment.StackTrace;
         API.Debugger.Debugger_Info(msg.ToString(), Thread.CurrentThread.Name, trace);
-        //DoWriteMessage(MessageType.Info, msg, file, caller, line);
+        
     }
 
-    public static void Trace(object msg, [CallerFilePath] string file = "", [CallerMemberName] string caller = "", [CallerLineNumber] int line = 0)
+    public static void Trace(object msg)
     {
         string trace = Environment.StackTrace;
         API.Debugger.Debugger_Trace(msg.ToString(), Thread.CurrentThread.Name, trace);
-        //DoWriteMessage(MessageType.Info, msg, file, caller, line);
+        
     }
 
-    public static void Warning(object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
+    public static void Warning(object msg)
     {
         string trace = Environment.StackTrace;
         API.Debugger.Debugger_Warning(msg.ToString(), Thread.CurrentThread.Name, trace);
-        //DoWriteMessage(MessageType.Warning, msg, file, caller, line);
     }
     
-    public static void Error(object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
+    public static void Error(object msg)
     {
         string trace = Environment.StackTrace;
         API.Debugger.Debugger_Error(msg.ToString(), Thread.CurrentThread.Name, trace);
-        //DoWriteMessage(MessageType.Error, msg, file, caller, line);
     }
 
-    public static void Fatal(object msg, [CallerFilePath] string file = "", [CallerMemberName] string caller = "", [CallerLineNumber] int line = 0)
+    public static void Fatal(object msg)
     {
         string trace = Environment.StackTrace;
         API.Debugger.Debugger_Fatal(msg.ToString(), Thread.CurrentThread.Name, trace);
-        //DoWriteMessage(MessageType.Error, msg, file, caller, line);
     }
 
-    public static void Clear([CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
+    public static void Clear()
     {
         MessageCleared?.Invoke();
     }

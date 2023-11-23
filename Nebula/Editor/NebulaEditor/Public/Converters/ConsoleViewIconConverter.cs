@@ -86,15 +86,15 @@ public class ConsoleViewIconConverter : IValueConverter
         {
             MessageItemNode messageItemNode = value as MessageItemNode;
 
-            switch (messageItemNode.MessageType)
+            switch (messageItemNode.LogLevel)
             {
-                case Logger.MessageType.Error:
+                case Logger.LogLevel.Error:
                     return ErrorIcon;
-                case Logger.MessageType.Log:
+                case Logger.LogLevel.Log:
                     return LogIcon;
-                case Logger.MessageType.Info:
+                case Logger.LogLevel.Info:
                     return InfoIcon;
-                case Logger.MessageType.Warning:
+                case Logger.LogLevel.Warning:
                     return WarningIcon;
             }
         }
