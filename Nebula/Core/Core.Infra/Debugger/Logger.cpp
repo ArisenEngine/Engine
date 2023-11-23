@@ -25,8 +25,8 @@ void Logger::Initialize()
 
         keywords::file_name = current / "/Debugger.log",
         keywords::format = 
-        "[%TimeStamp%] [%ProcessID%] [%ThreadID%] %ThreadName% [%Severity%] %Message% \n" \
-        "%STACK_TRACE% \n"
+        "[%TimeStamp%] [%ProcessID%] [%ThreadID%] %ThreadName% [%Severity%] %Message%" \
+        "%STACK_TRACE%"
     );
 
     Logger::SetServerityLevel(LogLevel::Trace);
@@ -39,7 +39,7 @@ void NebulaEngine::Debugger::Logger::StackTrace(std::string& stack_info)
 {
     std::stringstream trace_stream;
     trace_stream << boost::stacktrace::stacktrace() << std::endl;
-    stack_info = trace_stream.str();
+    stack_info = "\n" + trace_stream.str();
     trace_stream.clear();
 }
 
