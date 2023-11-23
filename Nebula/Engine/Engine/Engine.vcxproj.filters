@@ -11,6 +11,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Platforms\Platform.cpp" />
+    <ClCompile Include="API\Renderding\RenderSurface.cpp" />
+    <ClCompile Include="API\Debugger\Logger.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -95,7 +95,7 @@ public static class Logger
                 return;
             }
             
-            FileSystemUtilities.AppendTextToFile(message.FullLogString, DebuggerLogPath);
+            //FileSystemUtilities.AppendTextToFile(message.FullLogString, DebuggerLogPath);
         }
         catch (Exception e)
         {
@@ -120,7 +120,8 @@ public static class Logger
     
     public static void Log(object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
     {
-        DoWriteMessage(MessageType.Log, msg, file, caller, line);
+        //API.Debugger.Debugger_Log(msg.ToString(), Thread.CurrentThread.Name);
+        //DoWriteMessage(MessageType.Log, msg, file, caller, line);
     }
     
     public static void Info(object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)

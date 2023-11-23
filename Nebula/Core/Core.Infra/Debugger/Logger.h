@@ -1,14 +1,5 @@
 #pragma once
-#include <iostream>
 
-#define DBOOST_STACKTRACE_USE_ADDR2LINE
-#include <boost/filesystem.hpp>
-#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/stacktrace.hpp>
-#include <boost/log/expressions.hpp>
-#include <boost/log/utility/setup/file.hpp>
-#include <boost/log/utility/setup/common_attributes.hpp>
 
 #include"../Common/CommandHeaders.h"
 

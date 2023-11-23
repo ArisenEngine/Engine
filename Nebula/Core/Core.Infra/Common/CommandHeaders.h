@@ -7,8 +7,28 @@
 #include<memory>
 #include<typeinfo>
 
+// BOOST
+#ifdef USE_BOOST 
+
+#include <iostream>
+
+#define DBOOST_STACKTRACE_USE_ADDR2LINE
+
+#include <boost/filesystem.hpp>
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/stacktrace.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/utility/setup/file.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+
+
+#endif
+
 #if _WIN64
 #include<DirectXMath.h>
+
+/// NOTE: Windows.h should included after boost lib
 #include<Windows.h>
 #endif
 

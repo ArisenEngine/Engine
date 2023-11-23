@@ -140,7 +140,7 @@ internal static class NebulaInstance
     private static void Dispose()
     {
         
-        Logger.Log($"{m_Name} Dispose");
+        //Logger.Log($"{m_Name} Dispose");
         
     }
 }

@@ -28,6 +28,8 @@
     <ClInclude Include="Platforms\Windows.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="API\Debugger\Logger.cpp" />
+    <ClCompile Include="API\Renderding\RenderSurface.cpp" />
     <ClCompile Include="Platforms\Platform.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -154,6 +156,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <CallingConvention>FastCall</CallingConvention>
       <AdditionalIncludeDirectories>$(SolutionDir)Core\Core.Infra\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>
