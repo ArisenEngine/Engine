@@ -37,12 +37,12 @@ namespace NebulaEngine::Debugger
             
         };
 
-        static void Log(const wchar_t* msg, const char* thread_name = nullptr);
-        static void Info(const wchar_t* msg, const char* thread_name = nullptr);
-        static void Warning(const wchar_t* msg, const char* thread_name = nullptr);
-        static void Error(const wchar_t* msg, const char* thread_name = nullptr);
-        static void Fatal(const wchar_t* msg, const char* thread_name = nullptr);
-        static void Trace(const wchar_t* msg, const char* thread_name = nullptr);
+        static void Log(const wchar_t* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
+        static void Info(const wchar_t* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
+        static void Warning(const wchar_t* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
+        static void Error(const wchar_t* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
+        static void Fatal(const wchar_t* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
+        static void Trace(const wchar_t* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
         static void SetServerityLevel(LogLevel level);
   
       
