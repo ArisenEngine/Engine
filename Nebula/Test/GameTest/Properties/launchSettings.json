@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "GameTest": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

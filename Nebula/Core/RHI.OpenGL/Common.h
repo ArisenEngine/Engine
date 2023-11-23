@@ -1,5 +1,6 @@
 #pragma once
 
+#include "./Common/CommandHeaders.h"
 
 #ifdef RHIOPENGL_EXPORTS
 
