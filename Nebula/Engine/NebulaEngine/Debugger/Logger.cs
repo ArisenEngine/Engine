@@ -20,10 +20,30 @@ public static class Logger
     
     internal enum MessageType
     {
-        Log = 0x01,
-        Info = 0x02,
-        Warning = 0x04,
-        Error = 0x08
+        /// <summary>
+        /// finer-grained info for debugging
+        /// </summary>
+        Trace = 0x01, // 
+        /// <summary>
+        /// fine-grained info
+        /// </summary>
+        Log = 0x02,   // 
+        /// <summary>
+        /// coarse-grained info
+        /// </summary>
+        Info = 0x04, // 
+        /// <summary>
+        /// harmful situation info
+        /// </summary>
+        Warning = 0x08, // 
+        /// <summary>
+        /// errors but app can still run
+        /// </summary>
+        Error = 0x10, // 
+        /// <summary>
+        /// severe errors that will lead to abort
+        /// </summary>
+        Fatal = 0x20 // 
     }
 
     internal class LogMessage

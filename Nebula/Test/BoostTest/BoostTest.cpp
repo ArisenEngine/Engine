@@ -29,7 +29,7 @@ void init_logging()
 
     logging::add_file_log(
         keywords::file_name = "sample.log",
-        keywords::format = "[%TimeStamp%] [%ThreadID%] [%Severity%] [%ProcessID%] [%LineID%] %Message%"
+        keywords::format = "[%TimeStamp%] [%ThreadID%] [%Severity%] [%ProcessID%] %Message% \n"
     );
 
     logging::core::get()->set_filter
