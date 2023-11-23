@@ -34,22 +34,22 @@ Thread.CurrentThread.Name = "MainThread";
 //});
 
 
-Logger.Log("Start", Thread.CurrentThread.Name);
-Logger.Info("Start", Thread.CurrentThread.Name);
-Logger.Trace("Start", Thread.CurrentThread.Name);
-Logger.Warning("Start", Thread.CurrentThread.Name);
-Logger.Error("Start", Thread.CurrentThread.Name);
-Logger.Fatal("Start", Thread.CurrentThread.Name);
+Logger.Log("Start");
+Logger.Info("Start");
+Logger.Trace("Start");
+Logger.Warning("Start");
+Logger.Error("Start");
+Logger.Fatal("Start");
 
 Task.Run(() =>
 {
 
-    Logger.Log("Task", Thread.CurrentThread.Name);
-    Logger.Info("Task", Thread.CurrentThread.Name);
-    Logger.Trace("Task", Thread.CurrentThread.Name);
-    Logger.Warning("Task", Thread.CurrentThread.Name);
-    Logger.Error("Task", Thread.CurrentThread.Name);
-    Logger.Fatal("Task", Thread.CurrentThread.Name);
+    Logger.Log("Task");
+    Logger.Info("Task");
+    Logger.Trace("Task");
+    Logger.Warning("Task");
+    Logger.Error("Task");
+    Logger.Fatal("Task");
 
 });
 

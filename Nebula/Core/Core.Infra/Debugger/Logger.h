@@ -6,6 +6,8 @@
 
 namespace NebulaEngine::Debugger
 {
+    using LogCallback = void(*)(u32, const char*, const char*);
+
     class Logger final
     {
     public:
@@ -37,16 +39,18 @@ namespace NebulaEngine::Debugger
             
         };
 
-        static void Log(const wchar_t* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
-        static void Info(const wchar_t* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
-        static void Warning(const wchar_t* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
-        static void Error(const wchar_t* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
-        static void Fatal(const wchar_t* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
-        static void Trace(const wchar_t* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
+        static void Log(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
+        static void Info(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
+        static void Warning(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
+        static void Error(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
+        static void Fatal(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
+        static void Trace(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
         static void SetServerityLevel(LogLevel level);
   
-      
+        static void BindCallback(LogCallback callback);
+
         static bool m_IsInitialize;
+        static LogCallback m_LogCallback;
         
     private:
         static void Initialize();

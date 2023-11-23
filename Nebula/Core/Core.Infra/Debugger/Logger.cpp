@@ -1,12 +1,12 @@
 #include "Logger.h"
 
-
 using namespace NebulaEngine::Debugger;
 namespace logging = boost::log;
 namespace keywords = boost::log::keywords;
 namespace attrs = boost::log::attributes;
 
 bool Logger::m_IsInitialize = false;
+LogCallback Logger::m_LogCallback = nullptr;
 
 void Logger::Initialize()
 {
@@ -75,8 +75,13 @@ void Logger::SetServerityLevel(LogLevel level)
 	);
 }
 
+void NebulaEngine::Debugger::Logger::BindCallback(LogCallback callback)
+{
+	m_LogCallback = callback;
+}
 
-void Logger::Log(const wchar_t* msg, const char* thread_name, const char* cs_trace)
+
+void Logger::Log(const char* msg, const char* thread_name, const char* cs_trace)
 {
 
 	Initialize();
@@ -101,9 +106,14 @@ void Logger::Log(const wchar_t* msg, const char* thread_name, const char* cs_tra
 	BOOST_LOG_TRIVIAL(debug) << msg;
 	logging::core::get()->remove_global_attribute(attri.first);
 
+	if (m_LogCallback != nullptr)
+	{
+		m_LogCallback((u32)LogLevel::Log, msg, stack_info.c_str());
+	}
+
 }
 
-void Logger::Info(const wchar_t* msg, const char* thread_name, const char* cs_trace)
+void Logger::Info(const char* msg, const char* thread_name, const char* cs_trace)
 {
 
 	Initialize();
@@ -127,9 +137,14 @@ void Logger::Info(const wchar_t* msg, const char* thread_name, const char* cs_tr
 	BOOST_LOG_TRIVIAL(info) << msg;
 
 	logging::core::get()->remove_global_attribute(attri.first);
+
+	if (m_LogCallback != nullptr)
+	{
+		m_LogCallback((u32)LogLevel::Info, msg, stack_info.c_str());
+	}
 }
 
-void Logger::Warning(const wchar_t* msg, const char* thread_name, const char* cs_trace)
+void Logger::Warning(const char* msg, const char* thread_name, const char* cs_trace)
 {
 
 	Initialize();
@@ -156,9 +171,14 @@ void Logger::Warning(const wchar_t* msg, const char* thread_name, const char* cs
 	BOOST_LOG_TRIVIAL(warning) << msg;
 	logging::core::get()->remove_global_attribute(attri.first);
 	logging::core::get()->remove_global_attribute(thread_name_attri.first);
+
+	if (m_LogCallback != nullptr)
+	{
+		m_LogCallback((u32)LogLevel::Warning, msg, stack_info.c_str());
+	}
 }
 
-void Logger::Trace(const wchar_t* msg, const char* thread_name, const char* cs_trace)
+void Logger::Trace(const char* msg, const char* thread_name, const char* cs_trace)
 {
 
 	Initialize();
@@ -182,9 +202,14 @@ void Logger::Trace(const wchar_t* msg, const char* thread_name, const char* cs_t
 	BOOST_LOG_TRIVIAL(trace) << msg;
 	logging::core::get()->remove_global_attribute(attri.first);
 	logging::core::get()->remove_global_attribute(thread_name_attri.first);
+
+	if (m_LogCallback != nullptr)
+	{
+		m_LogCallback((u32)LogLevel::Trace, msg, stack_info.c_str());
+	}
 }
 
-void Logger::Error(const wchar_t* msg, const char* thread_name, const char* cs_trace)
+void Logger::Error(const char* msg, const char* thread_name, const char* cs_trace)
 {
 
 	Initialize();
@@ -206,11 +231,17 @@ void Logger::Error(const wchar_t* msg, const char* thread_name, const char* cs_t
 	auto thread_name_attri = logging::core::get()
 		->add_global_attribute("ThreadName", attrs::constant<std::string>(threadName));
 	BOOST_LOG_TRIVIAL(error) << msg;
+
 	logging::core::get()->remove_global_attribute(attri.first);
 	logging::core::get()->remove_global_attribute(thread_name_attri.first);
+
+	if (m_LogCallback != nullptr)
+	{
+		m_LogCallback((u32)LogLevel::Error, msg, stack_info.c_str());
+	}
 }
 
-void Logger::Fatal(const wchar_t* msg, const char* thread_name, const char* cs_trace)
+void Logger::Fatal(const char* msg, const char* thread_name, const char* cs_trace)
 {
 
 	Initialize();
@@ -234,4 +265,9 @@ void Logger::Fatal(const wchar_t* msg, const char* thread_name, const char* cs_t
 	BOOST_LOG_TRIVIAL(fatal) << msg;
 	logging::core::get()->remove_global_attribute(attri.first);
 	logging::core::get()->remove_global_attribute(thread_name_attri.first);
+
+	if (m_LogCallback != nullptr)
+	{
+		m_LogCallback((u32)LogLevel::Fatal, msg, stack_info.c_str());
+	}
 }

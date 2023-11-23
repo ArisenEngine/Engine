@@ -55,7 +55,7 @@ public class MessageItemNode
     
     public DateTime DateTime => m_Message.Time;
 
-    internal Logger.MessageType MessageType => m_Message.MessageType;
+    internal Logger.LogLevel LogLevel => m_Message.LogLevel;
     
     private Logger.LogMessage m_Message;
 
