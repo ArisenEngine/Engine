@@ -6,16 +6,9 @@ namespace NebulaEngine.Debugger;
 
 public static class Logger
 {
-    internal static string DebuggerLogPath = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + "Debugger.log";
-    static ReaderWriterLock locker = new ReaderWriterLock();
     static Logger()
     {
-        locker.AcquireWriterLock(Int32.MaxValue);
-        if (File.Exists(DebuggerLogPath))
-        {
-            File.Delete(DebuggerLogPath);
-        }
-        locker.ReleaseLock();
+     
     }
     
     internal enum MessageType
@@ -84,74 +77,68 @@ public static class Logger
     internal static Action<LogMessage>? MessageAdded;
     internal static Action? MessageCleared;
     
-    private static void WriteMessage(LogMessage message)
-    {
-        try
-        {
-            MessageAdded?.Invoke(message);
-            
-            if (NebulaApplication.s_IsDesignMode)
-            {
-                return;
-            }
-            
-            //FileSystemUtilities.AppendTextToFile(message.FullLogString, DebuggerLogPath);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
-    }
-
     private static void DoWriteMessage(MessageType type, object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
     {
         int id = Thread.CurrentThread.ManagedThreadId;
         string threadName = Thread.CurrentThread.Name;
+
         string trace = Environment.StackTrace;
-        
+
         Task.Run(() =>
         {
             var message = new LogMessage(type, msg.ToString(), file, caller, line, id, threadName, trace);
-            WriteMessage(message);
-            
+            //WriteMessage(message);
+
+            MessageAdded?.Invoke(message);
+
         });
     }
     
     public static void Log(object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
     {
-        //API.Debugger.Debugger_Log(msg.ToString(), Thread.CurrentThread.Name);
+        string trace = Environment.StackTrace;
+        API.Debugger.Debugger_Log(msg.ToString(), Thread.CurrentThread.Name, trace);
         //DoWriteMessage(MessageType.Log, msg, file, caller, line);
     }
     
     public static void Info(object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
     {
-        DoWriteMessage(MessageType.Info, msg, file, caller, line);
+        string trace = Environment.StackTrace;
+        API.Debugger.Debugger_Info(msg.ToString(), Thread.CurrentThread.Name, trace);
+        //DoWriteMessage(MessageType.Info, msg, file, caller, line);
     }
-    
+
+    public static void Trace(object msg, [CallerFilePath] string file = "", [CallerMemberName] string caller = "", [CallerLineNumber] int line = 0)
+    {
+        string trace = Environment.StackTrace;
+        API.Debugger.Debugger_Trace(msg.ToString(), Thread.CurrentThread.Name, trace);
+        //DoWriteMessage(MessageType.Info, msg, file, caller, line);
+    }
+
     public static void Warning(object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
     {
-        DoWriteMessage(MessageType.Warning, msg, file, caller, line);
+        string trace = Environment.StackTrace;
+        API.Debugger.Debugger_Warning(msg.ToString(), Thread.CurrentThread.Name, trace);
+        //DoWriteMessage(MessageType.Warning, msg, file, caller, line);
     }
     
     public static void Error(object msg, [CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
     {
-        DoWriteMessage(MessageType.Error, msg, file, caller, line);
+        string trace = Environment.StackTrace;
+        API.Debugger.Debugger_Error(msg.ToString(), Thread.CurrentThread.Name, trace);
+        //DoWriteMessage(MessageType.Error, msg, file, caller, line);
     }
-    
+
+    public static void Fatal(object msg, [CallerFilePath] string file = "", [CallerMemberName] string caller = "", [CallerLineNumber] int line = 0)
+    {
+        string trace = Environment.StackTrace;
+        API.Debugger.Debugger_Fatal(msg.ToString(), Thread.CurrentThread.Name, trace);
+        //DoWriteMessage(MessageType.Error, msg, file, caller, line);
+    }
+
     public static void Clear([CallerFilePath]string file = "", [CallerMemberName]string caller = "", [CallerLineNumber]int line = 0)
     {
-        int id = Thread.CurrentThread.ManagedThreadId;
-        string threadName = Thread.CurrentThread.Name;
-        string trace = Environment.StackTrace;
-        
-        Task.Run(() =>
-        {
-            MessageCleared?.Invoke();
-            var message = new LogMessage(MessageType.Log, "Clear....", file, caller, line, id, threadName, trace);
-            WriteMessage(message);
-            
-        });
+        MessageCleared?.Invoke();
     }
     
 }

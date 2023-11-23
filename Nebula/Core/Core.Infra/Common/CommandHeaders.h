@@ -11,6 +11,7 @@
 #ifdef USE_BOOST 
 
 #include <iostream>
+#include <regex>
 
 #define DBOOST_STACKTRACE_USE_ADDR2LINE
 

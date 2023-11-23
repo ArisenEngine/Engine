@@ -33,6 +33,26 @@ Thread.CurrentThread.Name = "MainThread";
 
 //});
 
+
+Logger.Log("Start", Thread.CurrentThread.Name);
+Logger.Info("Start", Thread.CurrentThread.Name);
+Logger.Trace("Start", Thread.CurrentThread.Name);
+Logger.Warning("Start", Thread.CurrentThread.Name);
+Logger.Error("Start", Thread.CurrentThread.Name);
+Logger.Fatal("Start", Thread.CurrentThread.Name);
+
+Task.Run(() =>
+{
+
+    Logger.Log("Task", Thread.CurrentThread.Name);
+    Logger.Info("Task", Thread.CurrentThread.Name);
+    Logger.Trace("Task", Thread.CurrentThread.Name);
+    Logger.Warning("Task", Thread.CurrentThread.Name);
+    Logger.Error("Task", Thread.CurrentThread.Name);
+    Logger.Fatal("Task", Thread.CurrentThread.Name);
+
+});
+
 NebulaEngine.Rendering.Graphics.SetCurrentRenderPipeline(customPipelineAsset);
 int code = NebulaApplication.Run(1920, 1080, "Game Test");
 
