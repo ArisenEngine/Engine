@@ -52,8 +52,12 @@ int main()
 
 {
 
-	NebulaEngine::Debugger::Logger::Log(L"Engine Log Test");
-
+	NebulaEngine::Debugger::Logger::Log(L"Engine Log", "CustomThread");
+	NebulaEngine::Debugger::Logger::Info(L"Engine Info");
+	NebulaEngine::Debugger::Logger::Trace(L"Engine Trace");
+	NebulaEngine::Debugger::Logger::Warning(L"Engine Warning");
+	NebulaEngine::Debugger::Logger::Error(L"Engine Error");
+	NebulaEngine::Debugger::Logger::Fatal(L"Engine Fatal");
 	// testing
 
 #if _DEBUG

@@ -1,7 +1,11 @@
 #pragma once
 #include <iostream>
+
+#define DBOOST_STACKTRACE_USE_ADDR2LINE
+#include <boost/filesystem.hpp>
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
+#include <boost/stacktrace.hpp>
 #include <boost/log/expressions.hpp>
 #include <boost/log/utility/setup/file.hpp>
 #include <boost/log/utility/setup/common_attributes.hpp>
@@ -30,20 +34,24 @@ namespace NebulaEngine::Debugger
          */
         enum class LogLevel: NebulaEngine::u8
         {
-            Log = 0x01,
-            Info = 0x02,
-            Warning = 0x04,
-            Error = 0x08,
-            Fatal = 0x10,
-            Trace = 0x20
+         
+            Trace = 0x01, // finer-grained info for debugging
+            Log = 0x02,   // fine-grained info
+
+            
+            Info = 0x04, // coarse-grained info
+            Warning = 0x08, // harmful situation info
+            Error = 0x10, // errors but app can still run
+            Fatal = 0x20 // severe errors that will lead to abort
+            
         };
 
-        static void Log(const wchar_t* msg);
-        static void Info();
-        static void Warning();
-        static void Error();
-        static void Fatal();
-        static void Trace();
+        static void Log(const wchar_t* msg, const char* thread_name = nullptr);
+        static void Info(const wchar_t* msg, const char* thread_name = nullptr);
+        static void Warning(const wchar_t* msg, const char* thread_name = nullptr);
+        static void Error(const wchar_t* msg, const char* thread_name = nullptr);
+        static void Fatal(const wchar_t* msg, const char* thread_name = nullptr);
+        static void Trace(const wchar_t* msg, const char* thread_name = nullptr);
         static void SetServerityLevel(LogLevel level);
   
       
@@ -51,5 +59,6 @@ namespace NebulaEngine::Debugger
         
     private:
         static void Initialize();
+        static void StackTrace(std::string& stack_info);
     };
 }
