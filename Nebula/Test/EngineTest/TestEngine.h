@@ -19,7 +19,7 @@ public:
 
 	void Shutdown() override
 	{
-
+		NebulaEngine::Debugger::Logger::Exit();
 	}
 
 

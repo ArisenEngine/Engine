@@ -33,13 +33,15 @@ Thread.CurrentThread.Name = "MainThread";
 
 //});
 
-
+var now = DateTime.Now;
 Logger.Log("Start");
 Logger.Info("Start");
 Logger.Trace("Start");
 Logger.Warning("Start");
 Logger.Error("Start");
 Logger.Fatal("Start");
+
+var cost = DateTime.Now - now;
 
 Task.Run(() =>
 {

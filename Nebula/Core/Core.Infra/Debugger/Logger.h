@@ -6,7 +6,7 @@
 
 namespace NebulaEngine::Debugger
 {
-    using LogCallback = void(*)(u32, const char*, const char*);
+    using LogCallback = void(*)(u32, const wchar_t*, const wchar_t*);
 
     class Logger final
     {
@@ -51,9 +51,13 @@ namespace NebulaEngine::Debugger
 
         static bool m_IsInitialize;
         static LogCallback m_LogCallback;
-        
+        static void Exit();
+
     private:
+        
         static void Initialize();
-        static void StackTrace(std::string& stack_info);
+        static void StackTrace(std::string* stack_info);
+
+        static void Warning_Threaded(const std::string* msg, const std::string* thread_name, const std::string* invoker_thread_id, const std::string* cs_trace);
     };
 }

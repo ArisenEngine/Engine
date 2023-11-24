@@ -7,6 +7,8 @@
 #include<memory>
 #include<typeinfo>
 
+#include <wchar.h>
+
 // BOOST
 #ifdef USE_BOOST 
 
@@ -18,11 +20,18 @@
 #include <boost/filesystem.hpp>
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
-#include <boost/stacktrace.hpp>
 #include <boost/log/expressions.hpp>
 #include <boost/log/utility/setup/file.hpp>
 #include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/common.hpp>
+#include <boost/log/attributes.hpp>
+#include <boost/log/sinks.hpp>
+#include <boost/log/sources/logger.hpp>
+#include <boost/log/utility/record_ordering.hpp>
+#include <boost/stacktrace.hpp>
+#include <boost/thread/thread.hpp>
 
+// #include <boost/locale.hpp>
 
 #endif
 
