@@ -56,7 +56,7 @@ namespace NebulaEditor.Windows.MainEditor
             
             Dispatcher.UIThread.InvokeAsync(() =>
             {
-                if (NebulaInstance.Run("Nebula Instance (Attach to Editor)") != 0);
+                if (NebulaInstance.Run("Nebula Instance (Attach to Editor)") != 0)
                 {
                     Logger.Error("Nebula instance run error.");
                 }
@@ -75,7 +75,7 @@ namespace NebulaEditor.Windows.MainEditor
         protected override void OnUnloaded(RoutedEventArgs e)
         {
             base.OnUnloaded(e);
-            
+            Logger.Warning("Close Editor Window.");
             m_FileSystemWatcher.Dispose();
             m_FileSystemWatcher = null;
             NebulaInstance.End();

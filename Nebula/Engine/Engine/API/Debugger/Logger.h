@@ -3,6 +3,7 @@
 #include "../../EngineCommon.h"
 #include "Debugger/Logger.h"
 
+using namespace NebulaEngine::Debugger;
 namespace NebulaEngine::API
 {
     extern "C" DLL void Debugger_Log(const char* msg, const char* threadName, const char* csharpTracce);
@@ -47,10 +48,17 @@ namespace NebulaEngine::API
         Debugger::Logger::Fatal(msg, threadName, csharpTracce);
     }
    
-    extern "C" DLL void Debugger_BindCallback(void(*callback)(u32, const char*, const char*));
+    extern "C" DLL void Debugger_BindCallback(LogCallback callback);
     
-    inline void Debugger_BindCallback(void(*callback)(u32, const char*, const char*))
+    inline void Debugger_BindCallback(LogCallback callback)
     {
         Debugger::Logger::BindCallback(callback);
+    }
+
+    extern "C" DLL void Debugger_Flush();
+
+    inline void Debugger_Flush()
+    {
+        Debugger::Logger::Exit();
     }
 }

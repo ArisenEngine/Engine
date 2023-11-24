@@ -28,6 +28,9 @@ namespace NebulaEngine.API
 
         [DllImport(ENGINE_DLL, EntryPoint = @"Debugger_BindCallback", CharSet = CharSet.Unicode)]
         internal static extern void Debugger_BindCallback(Logger.OnLogReceived callback);
+
+        [DllImport(ENGINE_DLL, EntryPoint = @"Debugger_Flush", CharSet = CharSet.Unicode)]
+        internal static extern void Debugger_Flush();
     }
 
 }

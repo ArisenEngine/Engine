@@ -121,7 +121,7 @@ internal static class NebulaInstance
         }
         catch (Exception e)
         {
-            Logger.Error(e);
+            Logger.Error(e.Message);
             errorCode = -1;
         }
         finally
@@ -140,7 +140,8 @@ internal static class NebulaInstance
     private static void Dispose()
     {
         
-        //Logger.Log($"{m_Name} Dispose");
+        Logger.Log($"{m_Name} Dispose");
+        Logger.Dispose();
         
     }
 }

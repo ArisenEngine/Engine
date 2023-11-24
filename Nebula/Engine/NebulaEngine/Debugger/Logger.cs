@@ -1,19 +1,36 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 using NebulaEngine.FileSystem;
 
 namespace NebulaEngine.Debugger;
 
 public static class Logger
 {
-    internal delegate void OnLogReceived (LogLevel type, string msg, string trace);
+    internal delegate void OnLogReceived (LogLevel type, [MarshalAs(UnmanagedType.LPStr)]string msg, [MarshalAs(UnmanagedType.LPStr)]string trace);
+    internal static void RecordLog(LogLevel type, string msg, string trace)
+    {
+       
+        string threadName = Thread.CurrentThread.Name;
+        string threadId = Thread.CurrentThread.ManagedThreadId.ToString();
+        var message = new LogMessage(type, msg, threadId, threadName, DateTime.Now, trace);
 
+        Task.Run(() =>
+        {
+            MessageAdded?.Invoke(message);
+        });
+
+    }
+    
     internal static OnLogReceived ReceiveLog;
     static Logger()
     {
         ReceiveLog = new OnLogReceived(RecordLog);
         API.Debugger.Debugger_BindCallback(ReceiveLog);
     }
+    
+    
     
     internal enum LogLevel
     {
@@ -73,21 +90,12 @@ public static class Logger
 
     internal static Action<LogMessage>? MessageAdded;
     internal static Action? MessageCleared;
-   
-    internal static void RecordLog(LogLevel type, string msg, string trace)
+
+    public static void Dispose()
     {
-       
-        string threadName = Thread.CurrentThread.Name;
-        string threadId = Thread.CurrentThread.ManagedThreadId.ToString();
-        var message = new LogMessage(type, msg, threadId, threadName, DateTime.Now, trace);
-
-        Task.Run(() =>
-        {
-            MessageAdded?.Invoke(message);
-        });
-
+        API.Debugger.Debugger_Flush();
     }
-    
+
     public static void Log(object msg)
     {
         string trace = Environment.StackTrace;
