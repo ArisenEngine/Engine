@@ -61,4 +61,12 @@ namespace NebulaEngine::API
     {
         Debugger::Logger::Exit();
     }
+
+    extern "C" DLL bool Debugger_Initialize();
+
+    inline bool Debugger_Initialize()
+    {
+        return Debugger::Logger::Initialize();
+    }
+
 }
