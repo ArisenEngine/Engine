@@ -4,7 +4,7 @@
 #define TEST_ENGINE 1
 
 #pragma comment(lib,"Core.Infra.lib")
-
+#include <chrono>
 #include "Debugger/Logger.h"
 
 
@@ -51,14 +51,6 @@ int main()
 
 
 {
-
-	//NebulaEngine::Debugger::Logger::Log("Engine Log", "CustomThread");
-	//NebulaEngine::Debugger::Logger::Info("Engine Info");
-	//NebulaEngine::Debugger::Logger::Trace("Engine Trace");
-	NebulaEngine::Debugger::Logger::Warning("Engine Warning Threaded");
-	/*NebulaEngine::Debugger::Logger::Error("Engine Error");
-	NebulaEngine::Debugger::Logger::Fatal("Engine Fatal");*/
-	// testing
 
 #if _DEBUG
 

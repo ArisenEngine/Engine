@@ -1,9 +1,5 @@
 #pragma once
-
-
 #include"../Common/CommandHeaders.h"
-
-
 namespace NebulaEngine::Debugger
 {
     using LogCallback = void(*)(u32, const wchar_t*, const wchar_t*);
@@ -12,19 +8,7 @@ namespace NebulaEngine::Debugger
     {
     public:
         Logger() = delete;
-
-        /**
-         * \brief
-        * enum severity_level
-         {
-            trace          = 0,
-            debug          = 1,
-            info           = 2,
-            warning        = 3,
-            error          = 4,
-            fatal          = 5
-         };
-         */
+        
         enum class LogLevel: NebulaEngine::u8
         {
          
@@ -52,10 +36,9 @@ namespace NebulaEngine::Debugger
         static bool m_IsInitialize;
         static LogCallback m_LogCallback;
         static void Exit();
-
+        static bool Initialize();
     private:
         
-        static void Initialize();
         static void StackTrace(std::string* stack_info);
 
         static void Warning_Threaded(const std::string* msg, const std::string* thread_name, const std::string* invoker_thread_id, const std::string* cs_trace);

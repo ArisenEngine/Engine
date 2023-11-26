@@ -1,6 +1,5 @@
 using System;
 using Avalonia.Media;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using NebulaEngine.Debugger;
 
 namespace NebulaEditor.Models;
