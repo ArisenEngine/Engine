@@ -2,7 +2,7 @@
 #include"../Common/CommandHeaders.h"
 namespace NebulaEngine::Debugger
 {
-    using LogCallback = void(*)(u32, const wchar_t*, const wchar_t*);
+    using LogCallback = void(*)(u32, const char*, const char*);
 
     class Logger final
     {
@@ -39,8 +39,6 @@ namespace NebulaEngine::Debugger
         static bool Initialize();
     private:
         
-        static void StackTrace(std::string* stack_info);
-
         static void Warning_Threaded(const std::string* msg, const std::string* thread_name, const std::string* invoker_thread_id, const std::string* cs_trace);
     };
 }

@@ -19,14 +19,20 @@ internal static class NebulaInstance
     private static MessageHandler m_MessageHandler;
     private static bool Initialize()
     {
+        bool isInitializeDone = true;
         switch (NebulaApplication.s_Platform)
         {
             case RuntimePlatform.Windows:
                 m_MessageHandler = new WindowsMessageHandle();
-                return true;
+                break;
+            default:
+                isInitializeDone = false;
+                throw new Exception($"Unsupported platform type:{NebulaApplication.s_Platform}");
         }
+
+        isInitializeDone &= Logger.Initialize();
         
-        throw new Exception($"Unsupported platform type:{NebulaApplication.s_Platform}");
+        return isInitializeDone;
     }
     
     internal static void RegisterSurface(IntPtr host, string name, SurfaceType surfaceType, int width = 0, int height = 0)
