@@ -2,7 +2,7 @@
 #include"../Common/CommandHeaders.h"
 namespace NebulaEngine::Debugger
 {
-    using LogCallback = void(*)(u32, const char*, const char*);
+    using LogCallback = void(*)(u32, const char*, const char*, const char*);
 
     class Logger final
     {

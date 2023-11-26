@@ -22,6 +22,26 @@ const wchar_t* char_to_wchar(const char* c)
 	return wc;
 }
 
+#define DO_LOG_MESSAGE(spd_level, callback_level, msg, thread_name, cs_trace)                                 \
+	auto msg_str = std::string(msg != nullptr ? msg : "");                                                    \
+	auto thread_name_str = std::string(thread_name != nullptr ? thread_name : "");                            \
+	auto cs_trace_str = std::string(cs_trace != nullptr ? cs_trace : "");                                     \
+                                                                                                              \
+	std::stringstream trace_stream;                                                                           \
+	trace_stream << std::stacktrace::current();                                                               \
+	auto trace_str = trace_stream.str() + cs_trace_str;                                                       \
+                                                                                                              \
+	std::string content = std::string(msg) + "\n" + trace_str + "\n";                                         \
+	spdlog::default_logger()->spd_level(content);                                                             \
+                                                                                                              \
+	std::stringstream thread_id_stream;                                                                       \
+	thread_id_stream << std::this_thread::get_id();                                                           \
+                                                                                                              \
+	if (m_LogCallback != nullptr)                                                                             \
+	{                                                                                                         \
+		m_LogCallback((u32)LogLevel::callback_level, thread_id_stream.str().c_str(), msg, trace_str.c_str()); \
+	}                                                                                                         \
+
 void NebulaEngine::Debugger::Logger::Exit()
 {
 	// Release all spdlog resources, and drop all loggers in the registry.
@@ -46,7 +66,14 @@ bool Logger::Initialize()
 		spdlog::flush_every(std::chrono::seconds(3));
 
 		// default
+#if _DEBUG
 		spdlog::set_level(spdlog::level::trace);
+#else
+		spdlog::set_level(spdlog::level::info);
+#endif
+		
+
+		spdlog::set_pattern("[%Y-%m-%d %T][process %p][thread %t][%l] %v");
 	}
 	catch (const spdlog::spdlog_ex &ex)	
 	{
@@ -92,46 +119,30 @@ void NebulaEngine::Debugger::Logger::BindCallback(LogCallback callback)
 
 void Logger::Log(const char* msg, const char* thread_name, const char* cs_trace)
 {
-	
+	DO_LOG_MESSAGE(debug, Log, msg, thread_name, cs_trace);
 }
 
 void Logger::Info(const char* msg, const char* thread_name, const char* cs_trace)
 {
-	
+	DO_LOG_MESSAGE(info, Info, msg, thread_name, cs_trace);
 }
 
 void Logger::Warning(const char* msg, const char* thread_name, const char* cs_trace)
 {
-	auto msg_str = std::string(msg != nullptr ? msg : "");
-	auto thread_name_str = std::string(thread_name != nullptr ? thread_name : "");
-	auto cs_trace_str = std::string(cs_trace != nullptr ? cs_trace : "");
-
-	std::stringstream trace_stream;
-	trace_stream << std::stacktrace::current();
-	auto trace_str = trace_stream.str() + cs_trace_str;
-
-	std::string content = std::string(msg) + "\n" + trace_str + "\n";
-	spdlog::default_logger()->warn(content);
-	
-	if (m_LogCallback != nullptr)
-	{
-		m_LogCallback((u32)LogLevel::Warning, msg, trace_str.c_str());
-	}
-	
+	DO_LOG_MESSAGE(warn, Warning, msg, thread_name, cs_trace);
 }
 
 void Logger::Trace(const char* msg, const char* thread_name, const char* cs_trace)
 {
-	
+	DO_LOG_MESSAGE(trace, Trace, msg, thread_name, cs_trace);
 }
 
 void Logger::Error(const char* msg, const char* thread_name, const char* cs_trace)
 {
-
+	DO_LOG_MESSAGE(error, Error, msg, thread_name, cs_trace);
 }
 
 void Logger::Fatal(const char* msg, const char* thread_name, const char* cs_trace)
 {
-
-	
+	DO_LOG_MESSAGE(critical, Fatal, msg, thread_name, cs_trace);
 }
