@@ -139,5 +139,10 @@ public static class Logger
     {
         MessageCleared?.Invoke();
     }
+
+    public static bool Initialize()
+    {
+        return API.Debugger.Debugger_Initialize();
+    }
     
 }

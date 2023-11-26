@@ -31,6 +31,9 @@ namespace NebulaEngine.API
 
         [DllImport(ENGINE_DLL, EntryPoint = @"Debugger_Flush", CharSet = CharSet.Unicode)]
         internal static extern void Debugger_Flush();
+        
+        [DllImport(ENGINE_DLL, EntryPoint = @"Debugger_Initialize", CharSet = CharSet.Unicode)]
+        internal static extern bool Debugger_Initialize();
     }
 
 }

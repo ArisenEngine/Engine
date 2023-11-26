@@ -3,8 +3,7 @@
 #include <spdlog/cfg/env.h>   // support for loading levels from the environment variable
 #include <spdlog/fmt/ostr.h> // support for user defined types
 #include <spdlog/sinks/basic_file_sink.h>
-
-
+#include <stacktrace>
 #include "Logger.h"
 
 
@@ -27,57 +26,62 @@ void NebulaEngine::Debugger::Logger::Exit()
 {
 	// Release all spdlog resources, and drop all loggers in the registry.
 	// This is optional (only mandatory if using windows + async log).
-	// spdlog::shutdown();
+	spdlog::shutdown();
 }
 
 bool Logger::Initialize()
 {
 	if (m_IsInitialize) return false;
 
-	// init spdlog
-	auto async_file =
-			spdlog::basic_logger_mt<spdlog::async_factory>("async_file_logger", "logs/async_log.txt");
+	try
+	{
+		// init spdlog
+		auto async_file =
+			spdlog::basic_logger_mt<spdlog::async_factory>("log", "logs/debugger.log", true);
+
+		spdlog::set_default_logger(async_file);
 	
-	for (int i = 0; i < 1000000; ++i) {
-		async_file->info("Async message #{}", i);
+		// Flush all *registered* loggers using a worker thread every 3 seconds.
+		// note: registered loggers *must* be thread safe for this to work correctly!
+		spdlog::flush_every(std::chrono::seconds(3));
+
+		// default
+		spdlog::set_level(spdlog::level::trace);
+	}
+	catch (const spdlog::spdlog_ex &ex)	
+	{
+		std::printf("Log initialization failed: %s\n", ex.what());
+		return false;
 	}
 	
 	m_IsInitialize = true;
 	return true;
 }
 
-void NebulaEngine::Debugger::Logger::StackTrace(std::string* stack_info)
-{
-	
-}
 
 void Logger::SetServerityLevel(LogLevel level)
 {
-	
-
 	switch (level)
 	{
 	case LogLevel::Error:
-		
+		spdlog::set_level(spdlog::level::err);
 		break;
 	case LogLevel::Fatal:
-		
+		spdlog::set_level(spdlog::level::critical);
 		break;
 	case LogLevel::Info:
-		
+		spdlog::set_level(spdlog::level::info);
 		break;
 	case LogLevel::Log:
-		
+		spdlog::set_level(spdlog::level::debug);
 		break;
 	case LogLevel::Trace:
-		
+		spdlog::set_level(spdlog::level::trace);
 		break;
 	case LogLevel::Warning:
-		
+		spdlog::set_level(spdlog::level::warn);
 		break;
 	}
-
-	
 }
 
 void NebulaEngine::Debugger::Logger::BindCallback(LogCallback callback)
@@ -88,56 +92,31 @@ void NebulaEngine::Debugger::Logger::BindCallback(LogCallback callback)
 
 void Logger::Log(const char* msg, const char* thread_name, const char* cs_trace)
 {
-	std::string* stack_info = new std::string();
-
-	StackTrace(stack_info);
-
-if (cs_trace != nullptr)
-{
-	*stack_info += std::string(cs_trace) + "\n";
-}
-
-std::string threadName;
-if (thread_name == nullptr) threadName = "";
-else threadName = "[" + std::string(thread_name) + "]";
-
-if (m_LogCallback != nullptr)
-{
-	//m_LogCallback((u32)LogLevel::Log, msg, stack_info.c_str());
-}
-
+	
 }
 
 void Logger::Info(const char* msg, const char* thread_name, const char* cs_trace)
-{
-	std::string* stack_info = new std::string();
-
-	StackTrace(stack_info);
-	std::string threadName;
-
-	if (cs_trace != nullptr)
-	{
-		*stack_info += std::string(cs_trace) + "\n";
-	}
-
-	if (thread_name == nullptr) threadName = "";
-	else threadName = "[" + std::string(thread_name) + "]";
-	
-
-	if (m_LogCallback != nullptr)
-	{
-		//m_LogCallback((u32)LogLevel::Info, msg, stack_info.c_str());
-	}
-}
-
-void Logger::Warning_Threaded(const std::string* msg, const std::string* thread_name, const std::string* invoker_thread_id, const std::string* cs_trace)
 {
 	
 }
 
 void Logger::Warning(const char* msg, const char* thread_name, const char* cs_trace)
 {
+	auto msg_str = std::string(msg != nullptr ? msg : "");
+	auto thread_name_str = std::string(thread_name != nullptr ? thread_name : "");
+	auto cs_trace_str = std::string(cs_trace != nullptr ? cs_trace : "");
+
+	std::stringstream trace_stream;
+	trace_stream << std::stacktrace::current();
+	auto trace_str = trace_stream.str() + cs_trace_str;
+
+	std::string content = std::string(msg) + "\n" + trace_str + "\n";
+	spdlog::default_logger()->warn(content);
 	
+	if (m_LogCallback != nullptr)
+	{
+		m_LogCallback((u32)LogLevel::Warning, msg, trace_str.c_str());
+	}
 	
 }
 
