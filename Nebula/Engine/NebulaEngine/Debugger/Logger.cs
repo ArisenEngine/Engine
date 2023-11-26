@@ -8,12 +8,11 @@ namespace NebulaEngine.Debugger;
 
 public static class Logger
 {
-    internal delegate void OnLogReceived (LogLevel type, [MarshalAs(UnmanagedType.LPStr)]string msg, [MarshalAs(UnmanagedType.LPStr)]string trace);
-    internal static void RecordLog(LogLevel type, string msg, string trace)
+    internal delegate void OnLogReceived (LogLevel type, [MarshalAs(UnmanagedType.LPStr)]string msg, [MarshalAs(UnmanagedType.LPStr)]string threadId,[MarshalAs(UnmanagedType.LPStr)]string trace);
+    internal static void RecordLog(LogLevel type, string threadId, string msg, string trace)
     {
        
         string threadName = Thread.CurrentThread.Name;
-        string threadId = Thread.CurrentThread.ManagedThreadId.ToString();
         var message = new LogMessage(type, msg, threadId, threadName, DateTime.Now, trace);
 
         Task.Run(() =>
