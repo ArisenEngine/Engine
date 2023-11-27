@@ -31,20 +31,19 @@ SOFTWARE.
 
 
 #pragma once
-#include <iostream>
-
+#include"Debugger/Logger.h"
 #include "../Common/PrimitiveTypes.h"
 
 namespace NebulaEngine::RHI
 {
-    struct InstanceCreateInfo
+    struct AppInfo
     {
         const char* name;
         const char* engineName;
         bool validationLayer;
         // API Version
         u32 variant, major, minor, patch;
-        // App Version
+        // App Version And Engine Version
         u32 appMajor, appMinor, appPatch;
         
     };
@@ -52,11 +51,9 @@ namespace NebulaEngine::RHI
     class Instance
     {
     public:
-
-        Instance() = delete;
-        Instance(Instance&& _) = delete;
-        Instance(InstanceCreateInfo& createInfo);
-        virtual ~Instance() noexcept { std::cout << "~Instance()" << std::endl; }
+        NO_COPY_NO_MOVE_NO_DEFAULT(Instance)
+        Instance(AppInfo&& createInfo) {}
+        virtual ~Instance() noexcept { Debugger::Logger::Info("~Instance()"); }
     };
 }
 

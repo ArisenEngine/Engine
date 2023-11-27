@@ -20,10 +20,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Devices\VkDevice.cpp" />
+    <ClCompile Include="VkInstance.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />
     <ClInclude Include="Devices\VkDevice.h" />
+    <ClInclude Include="VkInstance.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Core.Infra\Core.Infra.vcxproj">

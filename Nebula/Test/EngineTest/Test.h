@@ -1,7 +1,6 @@
 #pragma once
 #include<thread>
 
-
 class Test
 {
 public:

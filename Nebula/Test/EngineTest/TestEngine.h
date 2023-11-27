@@ -1,10 +1,15 @@
 #pragma once
 
 #include "Test.h"
+#include "Common/PrimitiveTypes.h"
 
 class EngineTest : public Test
 {
 
+private :
+
+	NebulaEngine::u32 m_surface_id;
+	
 public:
 	bool Initialize() override
 	{

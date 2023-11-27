@@ -4,11 +4,12 @@
 #define TEST_ENGINE 0
 
 #pragma comment(lib,"Core.Infra.lib")
+#pragma comment(lib,"RHI.Vulkan.lib")
 #pragma comment(lib,"Engine.lib")
 
 #include <chrono>
-#include "Debugger/Logger.h"
 
+#include "Debugger/Logger.h"
 
 
 #if(TEST_WINDOWS)
@@ -21,8 +22,7 @@
 #endif
 
 
-#include "API/Debugger/Logger.h"
-#include "API/Renderding/RenderSurface.h"
+
 #include "TestWindows.h"
 
 #elif(TEST_ENGINE)
@@ -65,24 +65,32 @@ int main()
 
 #if TEST_WINDOWS
 
-	if (test.Initialize())
+	try
 	{
-		MSG msg{};
-		bool isRunning{ true };
-		while (isRunning)
+		if (test.Initialize())
 		{
-			while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+			MSG msg{};
+			bool isRunning{ true };
+			while (isRunning)
 			{
-				TranslateMessage(&msg);
-				DispatchMessage(&msg);
-				isRunning &= (msg.message != WM_QUIT);
-			}
+				while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+				{
+					TranslateMessage(&msg);
+					DispatchMessage(&msg);
+					isRunning &= (msg.message != WM_QUIT);
+				}
 
-			test.Run();
+				test.Run();
+			}
 		}
 	}
-
-		test.Shutdown();
+	catch (const std::exception &ex)
+	{
+		Debugger::Logger::Fatal(ex.what());
+	}
+	
+	test.Shutdown();
+		
 
 
 #else

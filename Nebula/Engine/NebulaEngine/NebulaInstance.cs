@@ -30,7 +30,7 @@ internal static class NebulaInstance
                 throw new Exception($"Unsupported platform type:{NebulaApplication.s_Platform}");
         }
 
-        isInitializeDone &= Logger.Initialize();
+        isInitializeDone &= Logger.Initialize(NebulaApplication.s_IsInEditor);
         
         return isInitializeDone;
     }

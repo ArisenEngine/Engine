@@ -26,7 +26,7 @@ public static class Logger
     static Logger()
     {
         ReceiveLog = new OnLogReceived(RecordLog);
-        API.Debugger.Debugger_BindCallback(ReceiveLog);
+        
     }
     
     
@@ -139,9 +139,12 @@ public static class Logger
         MessageCleared?.Invoke();
     }
 
-    public static bool Initialize()
+    public static bool Initialize(bool bindCallback = false)
     {
+        API.Debugger.Debugger_BindCallback(ReceiveLog);
+        
         return API.Debugger.Debugger_Initialize();
+        
     }
     
 }

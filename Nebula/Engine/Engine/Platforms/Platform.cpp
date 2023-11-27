@@ -3,7 +3,7 @@
 #include "Common/CommandHeaders.h"
 #include "Windows.h"
 
-namespace NebulaEngine::API
+namespace NebulaEngine::Platforms
 {
 	using namespace NebulaEngine::Containers;
 

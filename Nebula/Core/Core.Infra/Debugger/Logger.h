@@ -7,7 +7,7 @@ namespace NebulaEngine::Debugger
     class Logger final
     {
     public:
-        Logger() = delete;
+        NO_COPY_NO_MOVE_NO_DEFAULT(Logger)
         
         enum class LogLevel: NebulaEngine::u8
         {
