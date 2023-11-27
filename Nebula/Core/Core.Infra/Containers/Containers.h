@@ -1,7 +1,7 @@
 #pragma once
 
-#define USE_STL_VECTOR 1;
-#define USE_STL_MAP 1;
+#define USE_STL_VECTOR 1
+#define USE_STL_MAP 1
 
 #if USE_STL_VECTOR
 

@@ -3,7 +3,7 @@
 
 #define WINDOES_TEST
 
-namespace NebulaEngine::API {
+namespace NebulaEngine::Platforms {
 
 	struct WindowInitInfo;
 	

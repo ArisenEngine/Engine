@@ -5,7 +5,7 @@
 #include "../Platforms/Windows.h"
 #include "../Renderding/RenderSurface.h"
 
-namespace NebulaEngine::Graphics
+namespace NebulaEngine::Rendering
 {
 	using namespace RHI;
 

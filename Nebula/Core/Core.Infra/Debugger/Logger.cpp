@@ -73,7 +73,7 @@ bool Logger::Initialize()
 #endif
 		
 
-		spdlog::set_pattern("[%Y-%m-%d %T][process %p][thread %t][%l] %v");
+		spdlog::set_pattern("[%Y-%m-%d %T.%e][process %p][thread %t][%l] %v");
 	}
 	catch (const spdlog::spdlog_ex &ex)	
 	{

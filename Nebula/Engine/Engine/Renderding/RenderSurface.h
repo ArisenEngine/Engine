@@ -1,9 +1,9 @@
 #pragma once
 #include "Common/CommandHeaders.h"
-#include "../../EngineCommon.h"
-#include "../../Platforms/PlatformTypes.h"
-#include "../../Platforms/Platform.h"
-#include "../../Graphics/Renderer.h"
+#include "../EngineCommon.h"
+#include "../Platforms/PlatformTypes.h"
+#include "../Platforms/Platform.h"
+#include "./Renderer.h"
 
 
 
@@ -12,14 +12,14 @@ namespace NebulaEngine::Rendering {
 	using namespace Containers;
 
 	struct WindowInitInfo;
-	vector<Graphics::RenderSurface> surfaces;
+	vector<RenderSurface> surfaces;
 	
-	extern "C" DLL u32 CreateRenderSurface(HWND host, WindowProc callback, s32 width, s32 height);
+	extern "C" DLL u32 CreateRenderSurface(HWND host, Platforms::WindowProc callback, s32 width, s32 height);
 
-	inline u32 CreateRenderSurface(HWND host, WindowProc callback, s32 width, s32 height)
+	inline u32 CreateRenderSurface(HWND host, Platforms::WindowProc callback, s32 width, s32 height)
 	{
-		WindowInitInfo info{ callback, host ? host : nullptr, nullptr, 0, 0, width, height };
-		Graphics::RenderSurface surface{ CreateNewWindow(&info), {} };
+		Platforms::WindowInitInfo info{ callback, host ? host : nullptr, nullptr, 0, 0, width, height };
+		RenderSurface surface{ CreateNewWindow(&info), {} };
 		assert(surface.window.IsValid());
 		surfaces.emplace_back(surface);
 		return (u32)surfaces.size() - 1;
@@ -30,7 +30,7 @@ namespace NebulaEngine::Rendering {
 	inline void RemoveRenderSurface(u32 id)
 	{
 		assert(id < surfaces.size());
-		RemoveWindow(surfaces[id].window.ID());
+		Platforms::RemoveWindow(surfaces[id].window.ID());
 	}
 
 	extern "C" DLL void ResizeRenderSurface(u32 id);
@@ -41,11 +41,11 @@ namespace NebulaEngine::Rendering {
 		surfaces[id].window.Resize(0, 0);
 	}
 
-	extern "C" DLL WindowHandle GetWindowHandle(u32 id);
+	extern "C" DLL Platforms::WindowHandle GetWindowHandle(u32 id);
 
-	inline WindowHandle GetWindowHandle(u32 id)
+	inline Platforms::WindowHandle GetWindowHandle(u32 id)
 	{
 		assert(id < surfaces.size());
-		return (WindowHandle)surfaces[id].window.Handle();
+		return (Platforms::WindowHandle)surfaces[id].window.Handle();
 	}
 }
