@@ -13,15 +13,7 @@ namespace NebulaEngine::API {
 
 	struct WindowInitInfo;
 	vector<Graphics::RenderSurface> surfaces;
-
-#ifdef WINDOES_TEST
 	
-	extern "C" DLL Window CreateNewWindow(const WindowInitInfo* const initInfo = nullptr);
-
-	extern "C" DLL void RemoveWindow(WindowID id);
-
-#endif
-
 	extern "C" DLL u32 CreateRenderSurface(HWND host, WindowProc callback, s32 width, s32 height);
 
 	inline u32 CreateRenderSurface(HWND host, WindowProc callback, s32 width, s32 height)

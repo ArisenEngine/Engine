@@ -1,16 +1,14 @@
 #pragma once
 #include "Windows.h"
 
-namespace NebulaEngine::API {
+#define WINDOES_TEST
 
-#ifndef WINDOES_TEST
+namespace NebulaEngine::API {
 
 	struct WindowInitInfo;
 	
 	Window CreateNewWindow(const WindowInitInfo* const initInfo = nullptr);
 
 	void RemoveWindow(WindowID id);
-
-#endif
 
 }

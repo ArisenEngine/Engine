@@ -1,9 +1,11 @@
 
 
-#define TEST_WINDOWS 0
-#define TEST_ENGINE 1
+#define TEST_WINDOWS 1
+#define TEST_ENGINE 0
 
 #pragma comment(lib,"Core.Infra.lib")
+#pragma comment(lib,"Engine.lib")
+
 #include <chrono>
 #include "Debugger/Logger.h"
 
@@ -18,7 +20,7 @@
 
 #endif
 
-#pragma comment(lib,"Engine.lib")
+
 #include "API/Debugger/Logger.h"
 #include "API/Renderding/RenderSurface.h"
 #include "TestWindows.h"
