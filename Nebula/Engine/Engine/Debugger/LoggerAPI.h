@@ -1,10 +1,9 @@
 ﻿#pragma once
 
-#include "../../EngineCommon.h"
+#include "../EngineCommon.h"
 #include "Debugger/Logger.h"
 
-using namespace NebulaEngine::Debugger;
-namespace NebulaEngine::API
+namespace NebulaEngine::Debugger
 {
     extern "C" DLL void Debugger_Log(const char* msg, const char* threadName, const char* csharpTracce);
 
