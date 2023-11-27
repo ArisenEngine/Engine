@@ -7,7 +7,7 @@
 
 
 
-namespace NebulaEngine::API {
+namespace NebulaEngine::Rendering {
 
 	using namespace Containers;
 
