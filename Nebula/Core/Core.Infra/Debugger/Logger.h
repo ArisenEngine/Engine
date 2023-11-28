@@ -1,5 +1,6 @@
 #pragma once
 #include"../Common/CommandHeaders.h"
+
 namespace NebulaEngine::Debugger
 {
     using LogCallback = void(*)(u32, const char*, const char*, const char*);
@@ -7,38 +8,66 @@ namespace NebulaEngine::Debugger
     class Logger final
     {
     public:
-        NO_COPY_NO_MOVE_NO_DEFAULT(Logger)
-        
+        NO_COPY_NO_MOVE(Logger)
+        NO_COMPARE(Logger)
+
         enum class LogLevel: NebulaEngine::u8
         {
-         
-            Trace = 0x01, // finer-grained info for debugging
-            Log = 0x02,   // fine-grained info
+            Trace = 0x01,
+            // finer-grained info for debugging
+            Log = 0x02,
+            // fine-grained info
 
-            
-            Info = 0x04, // coarse-grained info
-            Warning = 0x08, // harmful situation info
-            Error = 0x10, // errors but app can still run
+
+            Info = 0x04,
+            // coarse-grained info
+            Warning = 0x08,
+            // harmful situation info
+            Error = 0x10,
+            // errors but app can still run
             Fatal = 0x20 // severe errors that will lead to abort
-            
         };
 
-        static void Log(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
-        static void Info(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
-        static void Warning(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
-        static void Error(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
-        static void Fatal(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
-        static void Trace(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
-        static void SetServerityLevel(LogLevel level);
-  
-        static void BindCallback(LogCallback callback);
+        void Log(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
+        void Info(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
+        void Warning(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
+        void Error(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
+        void Fatal(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
+        void Trace(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
 
-        static bool m_IsInitialize;
-        static LogCallback m_LogCallback;
-        static void Exit();
-        static bool Initialize();
-    private:
+        void Log(const std::string&& msg);
+        void Info(const std::string&& msg);
+        void Warning(const std::string&& msg);
+        void Error(const std::string&& msg);
+        void Fatal(const std::string&& msg);
+        void Trace(const std::string&& msg);
+
+
+        void SetServerityLevel(LogLevel level);
+        void BindCallback(LogCallback callback);
+        bool Initialize();
+
+        static Logger& GetInstance();
         
-        static void Warning_Threaded(const std::string* msg, const std::string* thread_name, const std::string* invoker_thread_id, const std::string* cs_trace);
+
+        static void Dispose();
+        
+
+    private:
+        bool m_IsInitialize;
+        LogCallback m_LogCallback;
+
+        void Flush();
+        
+        Logger();
     };
 }
+
+#define LOG_INFO(msg) NebulaEngine::Debugger::Logger::GetInstance().Info(msg);
+#define LOG_DEBUG(msg) NebulaEngine::Debugger::Logger::GetInstance().Log(msg);
+#define LOG_WARN(msg) NebulaEngine::Debugger::Logger::GetInstance().Warning(msg);
+#define LOG_ERROR(msg) NebulaEngine::Debugger::Logger::GetInstance().Error(msg);
+#define LOG_FATAL(msg) NebulaEngine::Debugger::Logger::GetInstance().Fatal(msg);
+#define LOG_TRACE(msg) NebulaEngine::Debugger::Logger::GetInstance().Trace(msg);
+
+#define ASSERT(x) DEBUG_OP(assert(x);)

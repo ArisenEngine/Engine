@@ -5,10 +5,10 @@
 
 namespace NebulaEngine::Graphics
 {
-    class RHISelector
+    class DLL RHILoader
     {
     public:
-        NO_COPY_NO_MOVE_NO_DEFAULT(RHISelector)
+        NO_COPY_NO_MOVE_NO_DEFAULT(RHILoader)
 
         static void SetCurrentGraphicsAPI(RHI::GraphsicsAPI api_type);
         static RHI::Instance* CreateInstance(RHI::AppInfo&& app_info);
@@ -22,13 +22,13 @@ namespace NebulaEngine::Graphics
     extern "C" DLL void SetGraphicsAPI(RHI::GraphsicsAPI api_type);
     inline void SetGraphicsAPI(RHI::GraphsicsAPI api_type)
     {
-        RHISelector::SetCurrentGraphicsAPI(api_type);
+        RHILoader::SetCurrentGraphicsAPI(api_type);
     }
 
     extern "C" DLL RHI::Instance* CreateInstance(RHI::AppInfo&& app_info);
     inline RHI::Instance* CreateInstance(RHI::AppInfo&& app_info)
     {
-        return RHISelector::CreateInstance(std::move(app_info));
+        return RHILoader::CreateInstance(std::move(app_info));
     }
 
 }

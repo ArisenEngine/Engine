@@ -9,19 +9,6 @@
 
 using namespace NebulaEngine::Debugger;
 
-bool Logger::m_IsInitialize = false;
-LogCallback Logger::m_LogCallback = nullptr;
-
-const wchar_t* char_to_wchar(const char* c)
-{
-	const size_t cSize = strlen(c) + 1;
-	size_t converted = 0;
-	wchar_t* wc = new wchar_t[cSize];
-	mbstowcs_s(&converted, wc, cSize, c, cSize -1 );
-
-	return wc;
-}
-
 #define DO_LOG_MESSAGE(spd_level, callback_level, msg, thread_name, cs_trace)                                 \
 	auto msg_str = std::string(msg != nullptr ? msg : "");                                                    \
 	auto thread_name_str = std::string(thread_name != nullptr ? thread_name : "");                            \
@@ -42,11 +29,15 @@ const wchar_t* char_to_wchar(const char* c)
 		m_LogCallback((u32)LogLevel::callback_level, thread_id_stream.str().c_str(), msg, trace_str.c_str()); \
 	}                                                                                                         \
 
-void NebulaEngine::Debugger::Logger::Exit()
+void NebulaEngine::Debugger::Logger::Flush()
 {
 	// Release all spdlog resources, and drop all loggers in the registry.
 	// This is optional (only mandatory if using windows + async log).
 	spdlog::shutdown();
+}
+
+Logger::Logger(): m_IsInitialize(false), m_LogCallback(nullptr)
+{
 }
 
 bool Logger::Initialize()
@@ -85,6 +76,16 @@ bool Logger::Initialize()
 	return true;
 }
 
+Logger& Logger::GetInstance()
+{
+	static Logger _log_instnace;
+	return _log_instnace;
+}
+
+void Logger::Dispose()
+{
+	GetInstance().Flush();
+}
 
 void Logger::SetServerityLevel(LogLevel level)
 {
@@ -116,7 +117,6 @@ void NebulaEngine::Debugger::Logger::BindCallback(LogCallback callback)
 	m_LogCallback = callback;
 }
 
-
 void Logger::Log(const char* msg, const char* thread_name, const char* cs_trace)
 {
 	DO_LOG_MESSAGE(debug, Log, msg, thread_name, cs_trace);
@@ -124,6 +124,7 @@ void Logger::Log(const char* msg, const char* thread_name, const char* cs_trace)
 
 void Logger::Info(const char* msg, const char* thread_name, const char* cs_trace)
 {
+	auto isInit = m_IsInitialize;
 	DO_LOG_MESSAGE(info, Info, msg, thread_name, cs_trace);
 }
 
@@ -145,4 +146,34 @@ void Logger::Error(const char* msg, const char* thread_name, const char* cs_trac
 void Logger::Fatal(const char* msg, const char* thread_name, const char* cs_trace)
 {
 	DO_LOG_MESSAGE(critical, Fatal, msg, thread_name, cs_trace);
+}
+
+void Logger::Log(const std::string&& msg)
+{
+	Log(msg.c_str());
+}
+
+void Logger::Info(const std::string&& msg)
+{
+	Info(msg.c_str());
+}
+
+void Logger::Warning(const std::string&& msg)
+{
+	Warning(msg.c_str());
+}
+
+void Logger::Error(const std::string&& msg)
+{
+	Error(msg.c_str());
+}
+
+void Logger::Fatal(const std::string&& msg)
+{
+	Fatal(msg.c_str());
+}
+
+void Logger::Trace(const std::string&& msg)
+{
+	Trace(msg.c_str());
 }

@@ -1,7 +1,7 @@
 #pragma once
 #include "Platforms/PlatformTypes.h"
-#include "Platforms/Platform.h"
 #include "Test.h"
+#include "Graphics\RHILoader.h"
 #include "RHI/Instance.h"
 #include "Renderding/RenderSurface.h"
 
@@ -38,23 +38,41 @@ class EngineTest : public Test
 {
 private:
 
-    RHI::Instance* m_instance;
+    RHI::Instance* m_Instance;
     
 public:
 
-    EngineTest(): m_instance(nullptr)
+    EngineTest(): m_Instance(nullptr)
     {
     }
 
     bool Initialize() override
     {
-        if (!NebulaEngine::Debugger::Logger::Initialize())
+        if (!NebulaEngine::Debugger::Logger::GetInstance().Initialize())
         {
             throw std::exception(" Logger initialize failed.");
         }
 
         render_surface_id = Rendering::CreateRenderSurface(nullptr, WinProc, 1920, 1080);
 
+        RHI::AppInfo app_info
+        {
+            /** app name */
+            " Engine Test",
+            /** engine name */
+            "Engine Test",
+            /** enable validation layer */
+            true,
+            /** API Version */
+            0, 1, 3, 0,
+            /** App Version */
+            1, 0, 0,
+            /** App Version */
+            1, 0, 0
+        };
+        
+        Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphsicsAPI::Vulkan);
+        // m_Instance = Graphics::RHILoader::CreateInstance(std::move(app_info));
         
         return true;
     }
@@ -66,7 +84,11 @@ public:
 
     void Shutdown() override
     {
-        Debugger::Logger::Exit();
+        LOG_INFO(" Shut down ...");
+        Graphics::RHILoader::Dispose();
+
+        // NOTE: logger must be dispose at the last
+        Debugger::Logger::Dispose();
     }
 };
 

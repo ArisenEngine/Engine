@@ -52,3 +52,9 @@ type_name(type_name&&) = delete;            \
 
 #define NO_MOVE(type_name)                  \
 type_name(const type_name&) = delete;       \
+
+#define NO_COMPARE(type_name)  type_name& operator=(const type_name&) = delete;
+
+
+
+

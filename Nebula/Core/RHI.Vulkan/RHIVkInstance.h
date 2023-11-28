@@ -6,17 +6,17 @@
 
 namespace NebulaEngine::RHI
 {
-    class DLL VkInstance final : public Instance
+    class DLL RHIVkInstance final : public Instance
     {
     public:
-        NO_COPY_NO_MOVE_NO_DEFAULT(VkInstance)
-        VkInstance(AppInfo&& app_info);
-        ~VkInstance() noexcept final override;
+        NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkInstance)
+        RHIVkInstance(AppInfo&& app_info);
+        ~RHIVkInstance() noexcept final override;
     private:
         
-        VkInstance m_Instance;
+        std::shared_ptr<VkInstance> m_Instance;
         
     };
 }
 
-extern "C" DLL NebulaEngine::RHI::Instance * CreateInstance();
+extern "C" DLL NebulaEngine::RHI::Instance* CreateInstance(NebulaEngine::RHI::AppInfo&& app_info);

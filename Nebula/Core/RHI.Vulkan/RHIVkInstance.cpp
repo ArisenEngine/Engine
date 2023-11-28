@@ -87,7 +87,7 @@ void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
-NebulaEngine::RHI::VkInstance::VkInstance(AppInfo&& app_info): Instance(std::move(app_info))
+NebulaEngine::RHI::RHIVkInstance::RHIVkInstance(AppInfo&& app_info): Instance(std::move(app_info))
 {
 
     if (app_info.validationLayer && !CheckValidationLayerSupport())
@@ -148,14 +148,19 @@ NebulaEngine::RHI::VkInstance::VkInstance(AppInfo&& app_info): Instance(std::mov
     createInfo.enabledExtensionCount = static_cast<uint32_t>(InstanceExtensionNames.size());
     createInfo.ppEnabledExtensionNames = InstanceExtensionNames.data();
     
-    if (vkCreateInstance(&createInfo, nullptr, &m_Instance) != VK_SUCCESS)
+    if (vkCreateInstance(&createInfo, nullptr, m_Instance.get()) != VK_SUCCESS)
     {
         LOG_FATAL("failed to create instance!");
         throw std::runtime_error("failed to create instance!");
     }
 }
 
-NebulaEngine::RHI::VkInstance::~VkInstance() noexcept
+NebulaEngine::RHI::RHIVkInstance::~RHIVkInstance() noexcept
 {
-    LOG_INFO(" ~VkInstance ");
+    LOG_INFO(" ~RHIVkInstance ");
+}
+
+NebulaEngine::RHI::Instance* CreateInstance(NebulaEngine::RHI::AppInfo&& app_info)
+{
+    return new NebulaEngine::RHI::RHIVkInstance(std::move(app_info));
 }
