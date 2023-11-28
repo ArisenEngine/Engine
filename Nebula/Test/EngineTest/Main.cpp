@@ -3,8 +3,6 @@
 #define TEST_WINDOWS 1
 #define TEST_ENGINE 0
 
-// #pragma comment(lib,"Core.Infra.lib")
-// #pragma comment(lib,"RHI.Vulkan.lib")
 #pragma comment(lib,"Engine.lib")
 
 #include <chrono>

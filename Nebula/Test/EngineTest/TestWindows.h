@@ -53,6 +53,8 @@ public:
             throw std::exception(" Logger initialize failed.");
         }
 
+        LOG_INFO("Logger initialized..");
+        
         render_surface_id = Rendering::CreateRenderSurface(nullptr, WinProc, 1920, 1080);
 
         RHI::AppInfo app_info
