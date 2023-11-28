@@ -38,6 +38,7 @@ void NebulaEngine::Debugger::Logger::Flush()
 
 Logger::Logger(): m_IsInitialize(false), m_LogCallback(nullptr)
 {
+	std::cout<<"Logger:"<<this<<std::endl;
 }
 
 bool Logger::Initialize()
