@@ -1,5 +1,4 @@
 #include "RHILoader.h"
-
 #include "Debugger/Logger.h"
 
 void NebulaEngine::Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphsicsAPI api_type)
@@ -23,7 +22,14 @@ void NebulaEngine::Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphsicsAPI 
         break;
 
     default:
-        Debugger::Logger::Fatal("Unsupported graphics api.");
+        LOG_FATAL("Unsupported graphics api.");
+    }
+
+    char dllPath[MAX_PATH];
+    DWORD result = GetModuleFileNameA(_rhi_dll, dllPath, MAX_PATH);
+    if (result != 0)
+    {
+        LOG_INFO("rhi: " + std::string(dllPath));
     }
 }
 

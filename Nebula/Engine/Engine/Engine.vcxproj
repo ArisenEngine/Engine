@@ -21,7 +21,7 @@
   <ItemGroup>
     <ClInclude Include="Debugger\LoggerAPI.h" />
     <ClInclude Include="EngineCommon.h" />
-    <ClInclude Include="Graphics\RHISelector.h" />
+    <ClInclude Include="Graphics\RHILoader.h" />
     <ClInclude Include="Platforms\Platform.h" />
     <ClInclude Include="Platforms\PlatformTypes.h" />
     <ClInclude Include="Platforms\Windows.h" />
@@ -30,7 +30,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Debugger\Logger.cpp" />
-    <ClCompile Include="Graphics\RHISelector.cpp" />
+    <ClCompile Include="Graphics\RHILoader.cpp" />
     <ClCompile Include="Platforms\Platform.cpp" />
     <ClCompile Include="Renderding\RenderSurface.cpp" />
   </ItemGroup>

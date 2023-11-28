@@ -38,14 +38,18 @@ namespace NebulaEngine::RHI
 {
     struct AppInfo
     {
+        /** app name */
         const char* name;
+        /** engine name */
         const char* engineName;
+        /** enable validation layer */
         bool validationLayer;
-        // API Version
+        /** API Version */
         u32 variant, major, minor, patch;
-        // App Version And Engine Version
+        /** App Version */
         u32 appMajor, appMinor, appPatch;
-        
+        /** App Version */
+        u32 engineMajor, engineMinor, enginePatch;
     };
     
     class Instance
@@ -53,7 +57,7 @@ namespace NebulaEngine::RHI
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(Instance)
         Instance(AppInfo&& createInfo) {}
-        virtual ~Instance() noexcept { Debugger::Logger::Info("~Instance()"); }
+        virtual ~Instance() noexcept { LOG_INFO("~Instance()"); }
     };
 }
 
