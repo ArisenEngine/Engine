@@ -74,7 +74,7 @@ public:
         };
         
         Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphsicsAPI::Vulkan);
-        // m_Instance = Graphics::RHILoader::CreateInstance(std::move(app_info));
+        m_Instance = Graphics::RHILoader::CreateInstance(std::move(app_info));
         
         return true;
     }

@@ -2,9 +2,11 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="Devices\VkDevice.cpp" />
+    <ClCompile Include="RHIVkInstance.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Devices\VkDevice.h" />
     <ClInclude Include="Common.h" />
+    <ClInclude Include="RHIVkInstance.h" />
   </ItemGroup>
 </Project>

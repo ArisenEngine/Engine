@@ -4,15 +4,17 @@
     <ClInclude Include="Platforms\Windows.h" />
     <ClInclude Include="Platforms\Platform.h" />
     <ClInclude Include="Platforms\PlatformTypes.h" />
-    <ClInclude Include="Graphics\Renderer.h" />
-    <ClInclude Include="API\Debugger\Logger.h" />
-    <ClInclude Include="API\Renderding\RenderSurface.h" />
     <ClInclude Include="EngineCommon.h" />
+    <ClInclude Include="Debugger\LoggerAPI.h" />
+    <ClInclude Include="Graphics\RHILoader.h" />
+    <ClInclude Include="Renderding\Renderer.h" />
+    <ClInclude Include="Renderding\RenderSurface.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Platforms\Platform.cpp" />
-    <ClCompile Include="API\Renderding\RenderSurface.cpp" />
-    <ClCompile Include="API\Debugger\Logger.cpp" />
+    <ClCompile Include="Debugger\Logger.cpp" />
+    <ClCompile Include="Graphics\RHILoader.cpp" />
+    <ClCompile Include="Renderding\RenderSurface.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -1,17 +1,18 @@
 #pragma once
-#include"../Common/CommandHeaders.h"
+#include "Common/CommandHeaders.h"
+#include"../DllHeader.h"
 
 namespace NebulaEngine::Debugger
 {
     using LogCallback = void(*)(u32, const char*, const char*, const char*);
 
-    class Logger final
+    class DEBUGGER_DLL Logger final
     {
     public:
         NO_COPY_NO_MOVE(Logger)
         NO_COMPARE(Logger)
 
-        enum class LogLevel: NebulaEngine::u8
+        enum class DEBUGGER_DLL LogLevel: NebulaEngine::u8
         {
             Trace = 0x01,
             // finer-grained info for debugging

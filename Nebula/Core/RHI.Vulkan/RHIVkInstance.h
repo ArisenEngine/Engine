@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 #include "./Common.h"
 #include "RHI/Instance.h"
+#include "Logger/Logger.h"
 
 namespace NebulaEngine::RHI
 {
@@ -14,7 +15,7 @@ namespace NebulaEngine::RHI
         ~RHIVkInstance() noexcept final override;
     private:
         
-        std::shared_ptr<VkInstance> m_Instance;
+        VkInstance m_Instance;
         
     };
 }
