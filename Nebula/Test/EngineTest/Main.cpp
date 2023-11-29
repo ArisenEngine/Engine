@@ -22,7 +22,7 @@
 
 
 
-#include "TestWindows.h"
+#include "VulkanTest.h"
 
 #elif(TEST_ENGINE)
 

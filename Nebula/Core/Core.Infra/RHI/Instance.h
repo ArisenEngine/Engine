@@ -58,6 +58,13 @@ namespace NebulaEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(Instance)
         Instance(AppInfo&& createInfo) {}
         virtual ~Instance() noexcept { }
+        bool IsEnableValidation() { return m_EnableValidation; }
+
+        // pure virtuals
+        virtual void* GetHandle() = 0;
+        
+    protected:
+        bool m_EnableValidation { false };
     };
 }
 
