@@ -38,7 +38,7 @@ class EngineTest : public Test
 {
 private:
 
-    RHI::Instance* m_Instance;
+    RHI::Instance* m_Instance {};
     
 public:
 
@@ -81,12 +81,17 @@ public:
 
     void Run() override
     {
-       
+        
     }
 
     void Shutdown() override
     {
         LOG_INFO(" Shut down ...");
+
+        // rhi dispose
+        delete m_Instance;
+        
+        // rhi loader dispose 
         Graphics::RHILoader::Dispose();
 
         // NOTE: logger must be dispose at the last
