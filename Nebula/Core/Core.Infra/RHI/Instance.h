@@ -31,7 +31,7 @@ SOFTWARE.
 
 
 #pragma once
-#include"Debugger/Logger.h"
+#include "../Common/CommandHeaders.h"
 #include "../Common/PrimitiveTypes.h"
 
 namespace NebulaEngine::RHI
@@ -57,7 +57,7 @@ namespace NebulaEngine::RHI
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(Instance)
         Instance(AppInfo&& createInfo) {}
-        virtual ~Instance() noexcept { LOG_INFO("~Instance()"); }
+        virtual ~Instance() noexcept { }
     };
 }
 

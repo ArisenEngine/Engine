@@ -148,7 +148,7 @@ NebulaEngine::RHI::RHIVkInstance::RHIVkInstance(AppInfo&& app_info): Instance(st
     createInfo.enabledExtensionCount = static_cast<uint32_t>(InstanceExtensionNames.size());
     createInfo.ppEnabledExtensionNames = InstanceExtensionNames.data();
     
-    if (vkCreateInstance(&createInfo, nullptr, m_Instance.get()) != VK_SUCCESS)
+    if (vkCreateInstance(&createInfo, nullptr, &m_Instance) != VK_SUCCESS)
     {
         LOG_FATAL("failed to create instance!");
         throw std::runtime_error("failed to create instance!");

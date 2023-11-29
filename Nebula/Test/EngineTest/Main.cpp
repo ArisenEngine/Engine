@@ -4,10 +4,11 @@
 #define TEST_ENGINE 0
 
 #pragma comment(lib,"Engine.lib")
+#pragma comment(lib, "Core.Debugger.lib")
 
 #include <chrono>
 
-#include "Debugger/Logger.h"
+#include "Logger/Logger.h"
 
 
 #if(TEST_WINDOWS)

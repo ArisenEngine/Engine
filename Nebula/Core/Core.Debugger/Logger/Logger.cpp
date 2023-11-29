@@ -10,15 +10,35 @@
 using namespace NebulaEngine::Debugger;
 
 #define DO_LOG_MESSAGE(spd_level, callback_level, msg, thread_name, cs_trace)                                 \
-	auto msg_str = std::string(msg != nullptr ? msg : "");                                                    \
-	auto thread_name_str = std::string(thread_name != nullptr ? thread_name : "");                            \
-	auto cs_trace_str = std::string(cs_trace != nullptr ? cs_trace : "");                                     \
+	std::string msg_str { msg != nullptr ? msg : "" };													      \
+	std::string thread_name_str { thread_name != nullptr ? thread_name : "" };                                \
+	std::string cs_trace_str { cs_trace != nullptr ? cs_trace : "" };                                         \
                                                                                                               \
 	std::stringstream trace_stream;                                                                           \
 	trace_stream << std::stacktrace::current();                                                               \
-	auto trace_str = trace_stream.str() + cs_trace_str;                                                       \
+	std::string trace_str { trace_stream.str() + cs_trace_str };                                              \
                                                                                                               \
-	std::string content = std::string(msg) + "\n" + trace_str + "\n";                                         \
+	std::string content { std::string(msg) + "\n" + trace_str + "\n" };                                       \
+	spdlog::default_logger()->spd_level(content);                                                             \
+                                                                                                              \
+	std::stringstream thread_id_stream;                                                                       \
+	thread_id_stream << std::this_thread::get_id();                                                           \
+                                                                                                              \
+	if (m_LogCallback != nullptr)                                                                             \
+	{                                                                                                         \
+		m_LogCallback((u32)LogLevel::callback_level, thread_id_stream.str().c_str(), msg, trace_str.c_str()); \
+	}                                                                                                         \
+
+#define DO_LOG_MESSAGE_NO_TRACE_WRITE(spd_level, callback_level, msg, thread_name, cs_trace)                  \
+	std::string msg_str { msg != nullptr ? msg : "" };													      \
+	std::string thread_name_str { thread_name != nullptr ? thread_name : "" };                                \
+	std::string cs_trace_str { cs_trace != nullptr ? cs_trace : "" };                                         \
+                                                                                                              \
+	std::stringstream trace_stream;                                                                           \
+	trace_stream << std::stacktrace::current();                                                               \
+	std::string trace_str { trace_stream.str() + cs_trace_str };                                              \
+                                                                                                              \
+	std::string content { msg };                                                                              \
 	spdlog::default_logger()->spd_level(content);                                                             \
                                                                                                               \
 	std::stringstream thread_id_stream;                                                                       \
@@ -120,13 +140,12 @@ void NebulaEngine::Debugger::Logger::BindCallback(LogCallback callback)
 
 void Logger::Log(const char* msg, const char* thread_name, const char* cs_trace)
 {
-	DO_LOG_MESSAGE(debug, Log, msg, thread_name, cs_trace);
+	DO_LOG_MESSAGE_NO_TRACE_WRITE(debug, Log, msg, thread_name, cs_trace);
 }
 
 void Logger::Info(const char* msg, const char* thread_name, const char* cs_trace)
 {
-	auto isInit = m_IsInitialize;
-	DO_LOG_MESSAGE(info, Info, msg, thread_name, cs_trace);
+	DO_LOG_MESSAGE_NO_TRACE_WRITE(info, Info, msg, thread_name, cs_trace);
 }
 
 void Logger::Warning(const char* msg, const char* thread_name, const char* cs_trace)

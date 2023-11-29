@@ -23,7 +23,6 @@
     <ClInclude Include="Common\Id.h" />
     <ClInclude Include="Common\MathTypes.h" />
     <ClInclude Include="Containers\Containers.h" />
-    <ClInclude Include="Debugger\Logger.h" />
     <ClInclude Include="RHI\Instance.h" />
     <ClInclude Include="RHI\Devices\Device.h" />
     <ClInclude Include="Platforms\GraphsicsAPI.h" />
@@ -31,7 +30,6 @@
     <ClInclude Include="RHI\Surfaces\Surface.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Debugger\Logger.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>

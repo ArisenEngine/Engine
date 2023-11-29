@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "../EngineCommon.h"
-#include "Debugger/Logger.h"
+#include "Logger/Logger.h"
 
 namespace NebulaEngine::Debugger
 {
