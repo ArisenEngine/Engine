@@ -23,11 +23,6 @@
 #include"MathTypes.h"
 #include"../Containers/Containers.h"
 
-// RHI
-#include "../RHI/Devices/Device.h"
-#include "../RHI/Surfaces/Surface.h"
-#include "../Platforms/GraphsicsAPI.h"
-
 #ifdef _DEBUG
 
 #define DEBUG_OP(x) x
@@ -53,8 +48,13 @@ type_name(type_name&&) = delete;            \
 #define NO_MOVE(type_name)                  \
 type_name(const type_name&) = delete;       \
 
+#define VIRTUAL_DECONSTRUCTOR(type_name) virtual ~type_name() noexcept { }
+
 #define NO_COMPARE(type_name)  type_name& operator=(const type_name&) = delete;
 
 
 
-
+// RHI
+#include "../RHI/Devices/Device.h"
+#include "../RHI/Surfaces/Surface.h"
+#include "../Platforms/GraphsicsAPI.h"

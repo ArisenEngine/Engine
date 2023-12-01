@@ -69,6 +69,8 @@ namespace NebulaEngine::Debugger
 #define LOG_WARN(msg) NebulaEngine::Debugger::Logger::GetInstance().Warning(msg);
 #define LOG_ERROR(msg) NebulaEngine::Debugger::Logger::GetInstance().Error(msg);
 #define LOG_FATAL(msg) NebulaEngine::Debugger::Logger::GetInstance().Fatal(msg);
+#define LOG_FATAL_AND_THROW(msg) NebulaEngine::Debugger::Logger::GetInstance().Fatal(msg); \
+                                 throw std::runtime_error(msg);
 #define LOG_TRACE(msg) NebulaEngine::Debugger::Logger::GetInstance().Trace(msg);
 
 #define ASSERT(x) DEBUG_OP(assert(x);)

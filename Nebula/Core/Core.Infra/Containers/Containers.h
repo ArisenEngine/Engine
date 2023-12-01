@@ -23,6 +23,9 @@ namespace NebulaEngine::Containers
 {
 	template<class TMapKey, class TMapValue>
 	using map = std::map<TMapKey, TMapValue>;
+
+	template<class TMapKey, class TMapValue>
+	using multimap = std::multimap<TMapKey, TMapValue>;
 }
 
 #endif;

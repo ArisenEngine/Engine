@@ -57,7 +57,7 @@ public:
         
         render_surface_id = Rendering::CreateRenderSurface(nullptr, WinProc, 1920, 1080);
 
-        RHI::AppInfo app_info
+        RHI::InstanceInfo app_info
         {
             /** app name */
             " Engine Test",
@@ -75,7 +75,8 @@ public:
         
         Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphsicsAPI::Vulkan);
         m_Instance = Graphics::RHILoader::CreateInstance(std::move(app_info));
-        
+        auto env = m_Instance->GetEnvString();
+        std::cout<<env<<"\n";
         return true;
     }
 

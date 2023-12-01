@@ -11,7 +11,7 @@ namespace NebulaEngine::Graphics
         NO_COPY_NO_MOVE_NO_DEFAULT(RHILoader)
 
         static void SetCurrentGraphicsAPI(RHI::GraphsicsAPI api_type);
-        static RHI::Instance* CreateInstance(RHI::AppInfo&& app_info);
+        static RHI::Instance* CreateInstance(RHI::InstanceInfo&& app_info);
         static void Dispose();
     private:
 
@@ -25,8 +25,8 @@ namespace NebulaEngine::Graphics
         RHILoader::SetCurrentGraphicsAPI(api_type);
     }
 
-    extern "C" DLL RHI::Instance* CreateInstance(RHI::AppInfo&& app_info);
-    inline RHI::Instance* CreateInstance(RHI::AppInfo&& app_info)
+    extern "C" DLL RHI::Instance* CreateInstance(RHI::InstanceInfo&& app_info);
+    inline RHI::Instance* CreateInstance(RHI::InstanceInfo&& app_info)
     {
         return RHILoader::CreateInstance(std::move(app_info));
     }
