@@ -5,6 +5,6 @@ namespace NebulaEngine::RHI
 	{
 
 	public:
-
+		VIRTUAL_DECONSTRUCTOR(Surface)
 	};
 }

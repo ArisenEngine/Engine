@@ -19,12 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Devices\VkDevice.cpp" />
+    <ClCompile Include="Devices\RHIVkDevice.cpp" />
     <ClCompile Include="RHIVkInstance.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />
-    <ClInclude Include="Devices\VkDevice.h" />
+    <ClInclude Include="Devices\RHIVkDevice.h" />
     <ClInclude Include="RHIVkInstance.h" />
   </ItemGroup>
   <ItemGroup>

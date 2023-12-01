@@ -24,7 +24,6 @@
     <ClInclude Include="Common\MathTypes.h" />
     <ClInclude Include="Containers\Containers.h" />
     <ClInclude Include="RHI\Instance.h" />
-    <ClInclude Include="RHI\Devices\Device.h" />
     <ClInclude Include="Platforms\GraphsicsAPI.h" />
     <ClInclude Include="Common\PrimitiveTypes.h" />
     <ClInclude Include="RHI\Surfaces\Surface.h" />
@@ -37,6 +36,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RHI\Debugger\DebugMessager.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="RHI\Devices\Device.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

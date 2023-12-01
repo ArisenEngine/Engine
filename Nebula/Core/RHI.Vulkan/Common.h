@@ -10,4 +10,5 @@
 
 #define DLL   __declspec( dllimport )
 
-#endif 
+#endif
+

@@ -9,9 +9,7 @@ namespace NebulaEngine::RHI
 	{
 	public:
 
-		int GetOSVersion() const noexcept final override;
-		std::string GetPlatformName() const noexcept final override { return "OpenGL"; }
-	     ~glDevice() noexcept final override;
+		
 	};
 
 }

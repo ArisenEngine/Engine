@@ -1,6 +1,8 @@
 #include "RHIVkInstance.h"
 #include <vulkan/vulkan_core.h>
 
+
+
 NebulaEngine::Containers::vector<const char*> InstanceExtensionNames
 {
     VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
@@ -13,6 +15,7 @@ NebulaEngine::Containers::vector<const char*> DeviceExtensionNames
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
+// validation layers
 NebulaEngine::Containers::vector<const char*> ValidationLayers
 {
     "VK_LAYER_KHRONOS_validation"
@@ -97,15 +100,15 @@ void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
-NebulaEngine::RHI::RHIVkInstance::RHIVkInstance(AppInfo&& app_info): Instance(std::move(app_info))
+NebulaEngine::RHI::RHIVkInstance::RHIVkInstance(InstanceInfo&& app_info): Instance(std::move(app_info))
 {
     if (app_info.validationLayer && !CheckValidationLayerSupport())
     {
-        LOG_FATAL("validation layers requested, but not available!");
-        throw std::runtime_error("validation layers requested, but not available!");
+        LOG_FATAL_AND_THROW("validation layers requested, but not available!");
     }
 
     m_EnableValidation = app_info.validationLayer;
+    m_VulkanVersion = { app_info.variant, app_info.major, app_info.minor };
 
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -160,11 +163,12 @@ NebulaEngine::RHI::RHIVkInstance::RHIVkInstance(AppInfo&& app_info): Instance(st
 
     if (vkCreateInstance(&createInfo, nullptr, &m_Instance) != VK_SUCCESS)
     {
-        LOG_FATAL("failed to create instance!");
-        throw std::runtime_error("failed to create instance!");
+        LOG_FATAL_AND_THROW("failed to create instance!");
     }
 
     SetupDebugMessager();
+
+    CreatePhysicalDevice();
 }
 
 VkResult CreateDebugUtilsMessengerEXT(
@@ -186,6 +190,12 @@ VkResult CreateDebugUtilsMessengerEXT(
     }
 }
 
+void NebulaEngine::RHI::RHIVkInstance::CreatePhysicalDevice()
+{
+    m_PhyscialDevice = new RHIVkDevice(*this);
+    
+}
+
 void NebulaEngine::RHI::RHIVkInstance::SetupDebugMessager()
 {
     if (!m_EnableValidation)
@@ -198,7 +208,7 @@ void NebulaEngine::RHI::RHIVkInstance::SetupDebugMessager()
     
     if (CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to set up debug messenger!");
+        LOG_FATAL_AND_THROW("failed to set up debug messenger!");
     }
 }
 
@@ -226,16 +236,20 @@ void NebulaEngine::RHI::RHIVkInstance::DisposeDebugMessager()
     DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
 }
 
-NebulaEngine::RHI::Instance* CreateInstance(NebulaEngine::RHI::AppInfo&& app_info)
+NebulaEngine::RHI::Instance* CreateInstance(NebulaEngine::RHI::InstanceInfo&& app_info)
 {
     return new NebulaEngine::RHI::RHIVkInstance(std::move(app_info));
 }
 
 NebulaEngine::RHI::RHIVkInstance::~RHIVkInstance() noexcept
 {
-    LOG_INFO(" ~RHIVkInstance ");
-
+    
     DisposeDebugMessager();
-
+    delete m_PhyscialDevice;
+    
+    LOG_INFO(" ~RHIVkInstance ");
     vkDestroyInstance(m_Instance, nullptr);
+    
 }
+
+

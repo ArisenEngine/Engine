@@ -33,7 +33,7 @@ void NebulaEngine::Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphsicsAPI 
     }
 }
 
-NebulaEngine::RHI::Instance* NebulaEngine::Graphics::RHILoader::CreateInstance(RHI::AppInfo&& app_info)
+NebulaEngine::RHI::Instance* NebulaEngine::Graphics::RHILoader::CreateInstance(RHI::InstanceInfo&& app_info)
 {
     if (_rhi_dll == NULL)
     {
@@ -41,7 +41,7 @@ NebulaEngine::RHI::Instance* NebulaEngine::Graphics::RHILoader::CreateInstance(R
         throw std::exception(" RHI dll not loaded !");
     }
 
-    typedef RHI::Instance* (__fastcall* InstanceCreate)(RHI::AppInfo&& app_info);
+    typedef RHI::Instance* (__fastcall* InstanceCreate)(RHI::InstanceInfo&& app_info);
     InstanceCreate createInstance;
 
     createInstance = (InstanceCreate)GetProcAddress(_rhi_dll, "CreateInstance");

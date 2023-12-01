@@ -36,7 +36,7 @@ SOFTWARE.
 
 namespace NebulaEngine::RHI
 {
-    struct AppInfo
+    struct InstanceInfo
     {
         /** app name */
         const char* name;
@@ -56,15 +56,29 @@ namespace NebulaEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(Instance)
-        Instance(AppInfo&& createInfo) {}
-        virtual ~Instance() noexcept { }
-        bool IsEnableValidation() { return m_EnableValidation; }
-
-        // pure virtuals
-        virtual void* GetHandle() = 0;
+        VIRTUAL_DECONSTRUCTOR(Instance)
         
+        Instance(InstanceInfo&& instance_info)
+        {
+            
+        }
+        
+        bool IsEnableValidation()
+        {
+            return m_EnableValidation;
+        }
+
+        virtual void* GetHandle() const = 0;
+
+        
+        /// \brief used for DXC args
+        /// \return api env value
+        virtual const std::string GetEnvString() const = 0;
+    
     protected:
+        
         bool m_EnableValidation { false };
+
     };
 }
 
