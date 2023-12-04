@@ -2,3 +2,6 @@
 	path = Nebula/Samples/RayTracingInOneWeekend
 	url = https://github.com/NebulaGraphics/RayTracingInOneWeekend.git
 
+[submodule "Nebula/Samples/RayTracingTheNextWeek"]
+	path = Nebula/Samples/RayTracingTheNextWeek
+	url = https://github.com/NebulaGraphics/RayTracingTheNextWeek.git
