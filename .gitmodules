@@ -5,3 +5,6 @@
 [submodule "Nebula/Samples/RayTracingTheNextWeek"]
 	path = Nebula/Samples/RayTracingTheNextWeek
 	url = https://github.com/NebulaGraphics/RayTracingTheNextWeek.git
+[submodule "Nebula/Samples/Monte-Carlo-Integration"]
+	path = Nebula/Samples/Monte-Carlo-Integration
+	url = https://github.com/NebulaGraphics/Monte-Carlo-Integration.git
