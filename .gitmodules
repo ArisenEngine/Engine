@@ -8,3 +8,6 @@
 [submodule "Nebula/Samples/Monte-Carlo-Integration"]
 	path = Nebula/Samples/Monte-Carlo-Integration
 	url = https://github.com/NebulaGraphics/Monte-Carlo-Integration.git
+[submodule "Nebula/Samples/RayTracingTheRestOfLife"]
+	path = Nebula/Samples/RayTracingTheRestOfLife
+	url = https://github.com/NebulaGraphics/RayTracingTheRestOfLife.git
