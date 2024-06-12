@@ -156,7 +156,8 @@ NebulaEngine::RHI::RHIVkDevice::RHIVkDevice(Instance& instance): Device(instance
         LOG_FATAL_AND_THROW("failed to create logical device!");
     }
 
-    
+    auto indices = FindQueueFamilies(m_CurrentPhysicsDevice);
+    vkGetDeviceQueue(m_LogicalDevice, indices.graphicsFamily.value(), 0, &m_GraphicsQueue);
 }
 
 NebulaEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept

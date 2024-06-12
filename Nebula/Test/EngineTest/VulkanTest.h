@@ -76,7 +76,7 @@ public:
         Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphsicsAPI::Vulkan);
         m_Instance = Graphics::RHILoader::CreateInstance(std::move(app_info));
         auto env = m_Instance->GetEnvString();
-        std::cout<<env<<"\n";
+        LOG_INFO(std::move(env));
         return true;
     }
 
