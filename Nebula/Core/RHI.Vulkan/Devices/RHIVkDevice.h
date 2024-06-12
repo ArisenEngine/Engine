@@ -35,7 +35,7 @@ namespace NebulaEngine::RHI
         Containers::multimap<int, std::pair<VkPhysicalDevice, QueueFamilyIndices>> m_Candidates;
 
         VkDevice m_LogicalDevice;
-
+        VkQueue m_GraphicsQueue;
         
         // queue family
         QueueFamilyIndices m_QueueFamilyIndices {};
