@@ -12,11 +12,16 @@ namespace NebulaEditor.GameDev
 {
     public static partial class ProjectSolution
     {
+        private static readonly string k_TemplateSuffix = @".template";
+        private static readonly string k_Sln = @".sln";
+        private static readonly string k_Csproj = @".csproj";
+        
         private static object m_VisualStudioInstance = null;
         private static EnvDTE80.DTE2 DTE => (m_VisualStudioInstance as EnvDTE80.DTE2);
 
         // use visual studio 2022
-        private static readonly string m_ProgID = "VisualStudio.DTE.17.0";
+        private static readonly string k_ProgID = @"VisualStudio.DTE.17.0";
+        
 
         // TODO: find a probably way to handle IDE in cross-platform
         [DllImport("ole32.dll")]
@@ -50,7 +55,7 @@ namespace NebulaEditor.GameDev
                     {
                         string name = string.Empty;
                         currentMoniker[0]?.GetDisplayName(bindCtx, null, out name);
-                        if (name.Contains(m_ProgID))
+                        if (name.Contains(k_ProgID))
                         {
                             hResult = rot.GetObject(currentMoniker[0], out object obj);
                             if (hResult < 0 || obj == null) throw new COMException($"Running object table's GetObject() returned HRESULT: {hResult:X8}");
@@ -68,7 +73,7 @@ namespace NebulaEditor.GameDev
 
                     if (m_VisualStudioInstance == null)
                     {
-                        Type visualStudioType = Type.GetTypeFromProgID(m_ProgID, true);
+                        Type visualStudioType = Type.GetTypeFromProgID(k_ProgID, true);
                         m_VisualStudioInstance = Activator.CreateInstance(visualStudioType);
                         DTE.Solution.Open(solutionFullPath);
                     }
@@ -115,9 +120,9 @@ namespace NebulaEditor.GameDev
         internal static bool HandleFiles(FileInfo file, DirectoryInfo sourceDir, DirectoryInfo destinationDir)
         {
        
-            if (file.Extension == @".sln")
+            if (file.Name.Contains(k_Sln))
             {
-                var fileName = destinationDir.Name + @".sln";
+                var fileName = destinationDir.Name + k_Sln;
 
                 string sourceFilePath = Path.Combine(sourceDir.FullName, file.Name);
                 string targetFilePath = Path.Combine(destinationDir.FullName, fileName);
@@ -135,12 +140,12 @@ namespace NebulaEditor.GameDev
             }
 
             
-            if (file.Extension == @".csproj")
+            if (file.Name.Contains(k_Csproj))
             {
-                if (file.Name == @"Assembly-Editor.csproj")
+                if (file.Name == @"Assembly-Editor.csproj.template")
                 {
                     string sourceFilePath = Path.Combine(sourceDir.FullName, file.Name);
-                    string targetFilePath = Path.Combine(destinationDir.FullName, file.Name);
+                    string targetFilePath = Path.Combine(destinationDir.FullName, file.Name.Replace(".template",""));
                     string proj = File.ReadAllText(sourceFilePath);
                     proj = string.Format(proj, "\"NebulaEditor\"", InstallationRoot + @"NebulaEditor.dll");
                     File.WriteAllText(targetFilePath, proj);
@@ -148,10 +153,10 @@ namespace NebulaEditor.GameDev
                     return true;
                 }
 
-                if (file.Name == @"Assembly-Runtime.csproj")
+                if (file.Name == @"Assembly-Runtime.csproj.template")
                 {
                     string sourceFilePath = Path.Combine(sourceDir.FullName, file.Name);
-                    string targetFilePath = Path.Combine(destinationDir.FullName, file.Name);
+                    string targetFilePath = Path.Combine(destinationDir.FullName, file.Name.Replace(".template",""));
                     string proj = File.ReadAllText(sourceFilePath);
                     proj = string.Format(proj, InstallationRoot + @"NebulaEngine.dll");
                     File.WriteAllText(targetFilePath, proj);

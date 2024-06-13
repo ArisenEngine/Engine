@@ -43,10 +43,6 @@
 	<ItemGroup>
 		<AvaloniaResource Include="Assets\**" />
 		<AvaloniaResource Include="Resources\**" />
-		<AvaloniaXaml Remove="Templates\**" />
-		<Compile Remove="Templates\**" />
-		<EmbeddedResource Remove="Templates\**" />
-		<None Remove="Templates\**" />
 		<None Remove=".gitignore" />
 		<None Remove="Assets\default_project_preview.jpg" />
 		<None Remove="Assets\Icons\entity-icon.png" />
@@ -114,4 +110,12 @@
     <AdditionalFiles Include="Internal\Windows\Startup\Splash.axaml" />
     <AdditionalFiles Include="Public\Views\Rendering\RenderSurfaceView.axaml" />
   </ItemGroup>
+
+    <ItemGroup>
+        <!-- 将文件夹中的所有文件添加到构建时的内容中 -->
+        <None Update="Templates\**\*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+    
 </Project>
