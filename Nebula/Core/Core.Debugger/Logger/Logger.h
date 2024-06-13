@@ -2,6 +2,8 @@
 #include "Common/CommandHeaders.h"
 #include"../DllHeader.h"
 
+#pragma warning(disable : 4996)
+
 namespace NebulaEngine::Debugger
 {
     using LogCallback = void(*)(u32, const char*, const char*, const char*);
