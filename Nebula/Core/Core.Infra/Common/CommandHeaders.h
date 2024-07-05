@@ -57,4 +57,5 @@ type_name(const type_name&) = delete;       \
 // RHI
 #include "../RHI/Devices/Device.h"
 #include "../RHI/Surfaces/Surface.h"
+#include "../RHI/Instance.h"
 #include "../Platforms/GraphsicsAPI.h"

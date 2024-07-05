@@ -36,6 +36,8 @@ SOFTWARE.
 
 namespace NebulaEngine::RHI
 {
+    class Surface;
+
     struct InstanceInfo
     {
         /** app name */
@@ -74,9 +76,13 @@ namespace NebulaEngine::RHI
         /// \brief used for DXC args
         /// \return api env value
         virtual const std::string GetEnvString() const = 0;
+
+        virtual void CreateSurface(u32&& windowId) = 0;
+    
     
     protected:
-        
+
+        Containers::map<u32, Surface*> m_Surfaces;
         bool m_EnableValidation { false };
 
     };

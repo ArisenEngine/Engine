@@ -12,6 +12,5 @@ namespace NebulaEngine::Rendering
 	struct RenderSurface
 	{
 		Platforms::Window window {};
-		Surface surface {};
 	};
 }

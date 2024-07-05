@@ -21,11 +21,13 @@
   <ItemGroup>
     <ClCompile Include="Devices\RHIVkDevice.cpp" />
     <ClCompile Include="RHIVkInstance.cpp" />
+    <ClCompile Include="Surfaces\RHIVkSurface.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />
     <ClInclude Include="Devices\RHIVkDevice.h" />
     <ClInclude Include="RHIVkInstance.h" />
+    <ClInclude Include="Surfaces\RHIVkSurface.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Core.Infra\Core.Infra.vcxproj">

@@ -55,7 +55,7 @@ public:
 
         LOG_INFO("Logger initialized..");
         
-        render_surface_id = Rendering::CreateRenderSurface(nullptr, WinProc, 1920, 1080);
+        render_surface_id = Rendering::CreateRenderSurface(nullptr, WinProc, 640, 480);
 
         RHI::InstanceInfo app_info
         {
