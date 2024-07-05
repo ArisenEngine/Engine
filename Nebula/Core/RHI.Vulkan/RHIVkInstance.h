@@ -6,6 +6,7 @@
 #include "RHI/Instance.h"
 #include "Logger/Logger.h"
 #include "Devices/RHIVkDevice.h"
+#include "Surfaces/RHIVkSurface.h"
 
 namespace NebulaEngine::RHI
 {
@@ -20,17 +21,19 @@ namespace NebulaEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkInstance)
         
         RHIVkInstance(InstanceInfo&& app_info);
-        ~RHIVkInstance() noexcept final override;
+        ~RHIVkInstance() noexcept override;
 
-        [[nodiscard]] void* GetHandle() const final override { return m_Instance; }
+        [[nodiscard]] void* GetHandle() const override { return m_Instance; }
 
-        const std::string GetEnvString() const final override
+        const std::string GetEnvString() const override
         {
             return std::string(
                 "vulkan"
                 + std::to_string(m_VulkanVersion.major)
                 + "." + std::to_string(m_VulkanVersion.minor));
         };
+
+        void CreateSurface(u32&& windowId) override;
 
         VkInstance GetVkInstance() const { return m_Instance; }
 

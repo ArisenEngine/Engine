@@ -22,7 +22,7 @@ namespace NebulaEngine::RHI
         
     public:
         
-        ~RHIVkDevice() noexcept;
+        ~RHIVkDevice() noexcept override;
         
     private:
 

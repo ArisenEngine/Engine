@@ -151,6 +151,8 @@ NebulaEngine::RHI::RHIVkDevice::RHIVkDevice(Instance& instance): Device(instance
         createInfo.enabledLayerCount = 0;
     }
 
+
+    // TODO： support multiple logic devices
     if (vkCreateDevice(m_CurrentPhysicsDevice, &createInfo, nullptr, &m_LogicalDevice) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("failed to create logical device!");

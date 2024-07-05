@@ -19,7 +19,7 @@ namespace NebulaEngine::Rendering {
 	inline u32 CreateRenderSurface(HWND host, Platforms::WindowProc callback, s32 width, s32 height)
 	{
 		Platforms::WindowInitInfo info{ callback, host ? host : nullptr, nullptr, 0, 0, width, height };
-		RenderSurface surface{ CreateNewWindow(&info), {} };
+		RenderSurface surface{ CreateNewWindow(&info) };
 		assert(surface.window.IsValid());
 		surfaces.emplace_back(surface);
 		return (u32)surfaces.size() - 1;

@@ -236,6 +236,12 @@ void NebulaEngine::RHI::RHIVkInstance::DisposeDebugMessager()
     DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
 }
 
+void NebulaEngine::RHI::RHIVkInstance::CreateSurface(u32&& windowId)
+{
+    
+}
+
+
 NebulaEngine::RHI::Instance* CreateInstance(NebulaEngine::RHI::InstanceInfo&& app_info)
 {
     return new NebulaEngine::RHI::RHIVkInstance(std::move(app_info));
