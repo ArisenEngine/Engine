@@ -15,6 +15,10 @@
 
 /// NOTE: Windows.h should included after boost lib
 #include<Windows.h>
+// TODO: 需要考虑别的平台
+#define VK_USE_PLATFORM_WIN32_KHR 1
+
+
 #endif
 
 // common headers
@@ -56,6 +60,6 @@ type_name(const type_name&) = delete;       \
 
 // RHI
 #include "../RHI/Devices/Device.h"
-#include "../RHI/Surfaces/Surface.h"
 #include "../RHI/Instance.h"
+#include "../RHI/Surfaces/Surface.h"
 #include "../Platforms/GraphsicsAPI.h"

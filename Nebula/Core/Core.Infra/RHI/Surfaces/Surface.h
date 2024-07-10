@@ -6,11 +6,14 @@ namespace NebulaEngine::RHI
 	class Surface 
 	{
 
-	protected:
-		u32 m_RenderSurfaceId;
 	public:
 		NO_COPY_NO_MOVE_NO_DEFAULT(Surface)
 		VIRTUAL_DECONSTRUCTOR(Surface)
-		explicit Surface(const u32 id): m_RenderSurfaceId(id) { };
+		explicit Surface(u32&& id, std::shared_ptr<Instance> instance): m_RenderSurfaceId(id), m_Instance(instance) { };
+		
+	protected:
+		u32 m_RenderSurfaceId;
+		std::shared_ptr<Instance> m_Instance;
+	
 	};
 }

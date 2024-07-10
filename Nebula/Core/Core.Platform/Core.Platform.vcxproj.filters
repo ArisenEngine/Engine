@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Windows\Platform.cpp" />
+    <ClCompile Include="Windows\RenderWindow.cpp" />
+    <ClCompile Include="Windows\Windows.cpp" />
+    <ClCompile Include="Source.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Windows\Platform.h" />
+    <ClInclude Include="Windows\PlatformTypes.h" />
+    <ClInclude Include="Windows\RenderWindowAPI.h" />
+    <ClInclude Include="Windows\Windows.h" />
+    <ClInclude Include="Common.h" />
+  </ItemGroup>
+</Project>

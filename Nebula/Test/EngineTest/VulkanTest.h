@@ -3,13 +3,13 @@
 #include "Test.h"
 #include "Graphics\RHILoader.h"
 #include "RHI/Instance.h"
-#include "Renderding/RenderSurface.h"
+#include "Renderding/RenderWindow.h"
 
 using namespace NebulaEngine;
 
 #ifdef TEST_WINDOWS
 
-u32 render_surface_id;
+u32 windowId;
 
 LRESULT WinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -55,7 +55,7 @@ public:
 
         LOG_INFO("Logger initialized..");
         
-        render_surface_id = Rendering::CreateRenderSurface(nullptr, WinProc, 640, 480);
+        windowId = Rendering::CreateRenderWindow(nullptr, WinProc, 640, 480);
 
         RHI::InstanceInfo app_info
         {
@@ -77,6 +77,10 @@ public:
         m_Instance = Graphics::RHILoader::CreateInstance(std::move(app_info));
         auto env = m_Instance->GetEnvString();
         LOG_INFO(std::move(env));
+
+        // init surface
+        m_Instance->CreateSurface(std::move(windowId));
+        
         return true;
     }
 

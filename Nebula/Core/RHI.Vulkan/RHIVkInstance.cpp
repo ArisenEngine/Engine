@@ -238,9 +238,21 @@ void NebulaEngine::RHI::RHIVkInstance::DisposeDebugMessager()
 
 void NebulaEngine::RHI::RHIVkInstance::CreateSurface(u32&& windowId)
 {
+    auto pRHIVkSurface = new RHIVkSurface(std::move(windowId), static_cast<std::shared_ptr<Instance>>(this));
     
+    u32 key = windowId;
+    m_Surfaces.insert({key, static_cast<Surface*>(pRHIVkSurface)});
 }
 
+void NebulaEngine::RHI::RHIVkInstance::DestroySurface(u32&& windowId)
+{
+    auto surface = m_Surfaces[windowId];
+    if (surface != nullptr)
+    {
+        delete surface;
+        m_Surfaces.erase(windowId);
+    }
+}
 
 NebulaEngine::RHI::Instance* CreateInstance(NebulaEngine::RHI::InstanceInfo&& app_info)
 {
@@ -252,6 +264,15 @@ NebulaEngine::RHI::RHIVkInstance::~RHIVkInstance() noexcept
     
     DisposeDebugMessager();
     delete m_PhyscialDevice;
+
+    for (const auto& pair : m_Surfaces) {
+        if (pair.second != nullptr)
+        {
+            delete pair.second;
+        }
+    }
+
+    m_Surfaces.clear();
     
     LOG_INFO(" ~RHIVkInstance ");
     vkDestroyInstance(m_Instance, nullptr);

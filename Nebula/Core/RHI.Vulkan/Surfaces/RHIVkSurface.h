@@ -2,6 +2,11 @@
 #include <vulkan/vulkan_core.h>
 #include "RHI/Surfaces/Surface.h"
 #include "../Common.h"
+
+#if VK_USE_PLATFORM_WIN32_KHR
+#include <vulkan/vulkan_win32.h>
+#endif
+
 #include <optional>
 
 namespace NebulaEngine::RHI
@@ -11,9 +16,10 @@ namespace NebulaEngine::RHI
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkSurface);
         ~RHIVkSurface() noexcept override;
+        explicit RHIVkSurface(u32&& id, std::shared_ptr<Instance> instance);
     
     private:
 
-        
+        VkSurfaceKHR m_Surface;
     };
 }
