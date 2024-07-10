@@ -34,6 +34,7 @@ namespace NebulaEngine::RHI
         };
 
         void CreateSurface(u32&& windowId) override;
+        void DestroySurface(u32&& windowId) override;
 
         VkInstance GetVkInstance() const { return m_Instance; }
 

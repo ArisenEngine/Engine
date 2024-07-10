@@ -78,7 +78,7 @@ namespace NebulaEngine::RHI
         virtual const std::string GetEnvString() const = 0;
 
         virtual void CreateSurface(u32&& windowId) = 0;
-    
+        virtual void DestroySurface(u32&& windowId) = 0;
     
     protected:
 
