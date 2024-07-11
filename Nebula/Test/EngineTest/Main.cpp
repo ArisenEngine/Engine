@@ -5,6 +5,7 @@
 
 #pragma comment(lib,"Engine.lib")
 #pragma comment(lib, "Core.Debugger.lib")
+#pragma comment(lib,"Core.Platform.lib")
 
 #include <chrono>
 
