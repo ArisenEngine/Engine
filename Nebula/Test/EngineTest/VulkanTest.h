@@ -1,9 +1,9 @@
 #pragma once
-#include "Platforms/PlatformTypes.h"
+#include "Windows/PlatformTypes.h"
 #include "Test.h"
 #include "Graphics\RHILoader.h"
 #include "RHI/Instance.h"
-#include "Renderding/RenderWindow.h"
+#include "Windows/RenderWindowAPI.h"
 
 using namespace NebulaEngine;
 
@@ -55,7 +55,7 @@ public:
 
         LOG_INFO("Logger initialized..");
         
-        windowId = Rendering::CreateRenderWindow(nullptr, WinProc, 640, 480);
+        windowId = Platforms::CreateRenderWindow(nullptr, WinProc, 640, 480);
 
         RHI::InstanceInfo app_info
         {

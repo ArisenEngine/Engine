@@ -1,7 +1,7 @@
 #include "RHIVkSurface.h"
 #include "Logger/Logger.h"
-#include "Platforms/Platform.h"
-#include "Platforms/RenderWindow.h"
+#include "Windows/Platform.h"
+#include "Windows/RenderWindowAPI.h"
 
 
 using namespace NebulaEngine;

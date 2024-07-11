@@ -22,17 +22,19 @@
     <ClInclude Include="Debugger\LoggerAPI.h" />
     <ClInclude Include="EngineCommon.h" />
     <ClInclude Include="Graphics\RHILoader.h" />
-    <ClInclude Include="Renderding\RenderWindow.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Debugger\Logger.cpp" />
     <ClCompile Include="Graphics\RHILoader.cpp" />
-    <ClCompile Include="Renderding\RenderSurface.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Core\Core.Infra\Core.Infra.vcxproj">
       <Project>{47ab1dd6-11a7-4f0e-81f5-67af87bf3810}</Project>
       <Name>Core.Infra</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Core\Core.Platform\Core.Platform.vcxproj">
+      <Project>{43b2f072-81af-42c7-b6e6-db3eaf13bb9e}</Project>
+      <Name>Core.Platform</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Core\RHI.DX12\RHI.DX12.vcxproj">
       <Project>{caa51b31-2b28-4c37-bb66-fa85762aaf8f}</Project>
@@ -49,6 +51,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Renderding\" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
