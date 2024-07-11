@@ -12,3 +12,9 @@
 
 #endif
 
+
+// validation layers
+static NebulaEngine::Containers::Vector<const char*> ValidationLayers
+{
+    "VK_LAYER_KHRONOS_validation"
+};

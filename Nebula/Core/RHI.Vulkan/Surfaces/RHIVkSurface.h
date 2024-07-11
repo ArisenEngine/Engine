@@ -16,8 +16,9 @@ namespace NebulaEngine::RHI
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkSurface);
         ~RHIVkSurface() noexcept override;
-        explicit RHIVkSurface(u32&& id, std::shared_ptr<Instance> instance);
-    
+        explicit RHIVkSurface(u32&& id, Instance*  instance);
+        [[nodiscard]] void* GetHandle() const override { return m_Surface; }
+        
     private:
 
         VkSurfaceKHR m_Surface;

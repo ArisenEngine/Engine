@@ -3,22 +3,11 @@
 
 
 
-NebulaEngine::Containers::vector<const char*> InstanceExtensionNames
+NebulaEngine::Containers::Vector<const char*> InstanceExtensionNames
 {
     VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
     "VK_KHR_win32_surface",
     "VK_KHR_surface"
-};
-
-NebulaEngine::Containers::vector<const char*> DeviceExtensionNames
-{
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
-};
-
-// validation layers
-NebulaEngine::Containers::vector<const char*> ValidationLayers
-{
-    "VK_LAYER_KHRONOS_validation"
 };
 
 bool CheckValidationLayerSupport()
@@ -161,14 +150,14 @@ NebulaEngine::RHI::RHIVkInstance::RHIVkInstance(InstanceInfo&& app_info): Instan
     createInfo.enabledExtensionCount = static_cast<uint32_t>(InstanceExtensionNames.size());
     createInfo.ppEnabledExtensionNames = InstanceExtensionNames.data();
 
-    if (vkCreateInstance(&createInfo, nullptr, &m_Instance) != VK_SUCCESS)
+    if (vkCreateInstance(&createInfo, nullptr, &m_VkInstance) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("failed to create instance!");
     }
 
     SetupDebugMessager();
 
-    CreatePhysicalDevice();
+    CreateDevice();
 }
 
 VkResult CreateDebugUtilsMessengerEXT(
@@ -190,9 +179,9 @@ VkResult CreateDebugUtilsMessengerEXT(
     }
 }
 
-void NebulaEngine::RHI::RHIVkInstance::CreatePhysicalDevice()
+void NebulaEngine::RHI::RHIVkInstance::CreateDevice()
 {
-    m_PhyscialDevice = new RHIVkDevice(*this);
+    m_Device = new RHIVkDevice(*this);
     
 }
 
@@ -206,7 +195,7 @@ void NebulaEngine::RHI::RHIVkInstance::SetupDebugMessager()
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     PopulateDebugMessengerCreateInfo(createInfo);
     
-    if (CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS)
+    if (CreateDebugUtilsMessengerEXT(m_VkInstance, &createInfo, nullptr, &m_VkDebugMessenger) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("failed to set up debug messenger!");
     }
@@ -233,25 +222,25 @@ void NebulaEngine::RHI::RHIVkInstance::DisposeDebugMessager()
         return;
     }
 
-    DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
+    DestroyDebugUtilsMessengerEXT(m_VkInstance, m_VkDebugMessenger, nullptr);
 }
 
 void NebulaEngine::RHI::RHIVkInstance::CreateSurface(u32&& windowId)
 {
-    auto pRHIVkSurface = new RHIVkSurface(std::move(windowId), static_cast<std::shared_ptr<Instance>>(this));
-    
     u32 key = windowId;
-    m_Surfaces.insert({key, static_cast<Surface*>(pRHIVkSurface)});
+    m_Surfaces.insert({key, std::make_unique<RHIVkSurface>(std::move(windowId), this)});
 }
 
 void NebulaEngine::RHI::RHIVkInstance::DestroySurface(u32&& windowId)
 {
-    auto surface = m_Surfaces[windowId];
-    if (surface != nullptr)
-    {
-        delete surface;
-        m_Surfaces.erase(windowId);
-    }
+    m_Surfaces.erase(windowId);
+}
+
+const NebulaEngine::RHI::Surface& NebulaEngine::RHI::RHIVkInstance::GetSurface(u32&& windowId)
+{
+    ASSERT(m_Surfaces[windowId] && m_Surfaces[windowId].get());
+    Surface& surface = *m_Surfaces[windowId].get();
+    return surface;
 }
 
 NebulaEngine::RHI::Instance* CreateInstance(NebulaEngine::RHI::InstanceInfo&& app_info)
@@ -263,20 +252,34 @@ NebulaEngine::RHI::RHIVkInstance::~RHIVkInstance() noexcept
 {
     
     DisposeDebugMessager();
-    delete m_PhyscialDevice;
+    delete m_Device;
+    
+    m_Surfaces.clear();
+    vkDestroyInstance(m_VkInstance, nullptr);
+    LOG_INFO(" ~RHIVkInstance ");
+}
 
-    for (const auto& pair : m_Surfaces) {
-        if (pair.second != nullptr)
-        {
-            delete pair.second;
-        }
+void NebulaEngine::RHI::RHIVkInstance::InitLogicDevices()
+{
+    if (m_Surfaces.empty())
+    {
+        LOG_FATAL_AND_THROW("Should create all the surfaces first before init logical devices");
     }
 
-    m_Surfaces.clear();
-    
-    LOG_INFO(" ~RHIVkInstance ");
-    vkDestroyInstance(m_Instance, nullptr);
-    
+    for (auto& surfacePair : m_Surfaces)
+    {
+        auto windowId = surfacePair.first;
+        
+        if (surfacePair.second.get() == nullptr)
+        {
+            LOG_WARN(" window: {" + std::to_string(windowId) + "}'s surface is nullptr!");
+            continue;
+        }
+        
+        m_Device->CreateLogicDevice(windowId);
+    }
+
+    LOG_INFO(" Logical Devices Init! ");
 }
 
 

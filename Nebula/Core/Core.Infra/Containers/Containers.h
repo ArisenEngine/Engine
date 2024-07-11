@@ -2,6 +2,7 @@
 
 #define USE_STL_VECTOR 1
 #define USE_STL_MAP 1
+#define USE_STL_SET 1
 
 #if USE_STL_VECTOR
 
@@ -9,7 +10,7 @@
 namespace NebulaEngine::Containers
 {
 	template<class TVector>
-	using vector = std::vector<TVector>;
+	using Vector = std::vector<TVector>;
 }
 
 #endif
@@ -22,14 +23,25 @@ namespace NebulaEngine::Containers
 namespace NebulaEngine::Containers
 {
 	template<class TMapKey, class TMapValue>
-	using map = std::map<TMapKey, TMapValue>;
+	using Map = std::map<TMapKey, TMapValue>;
 
 	template<class TMapKey, class TMapValue>
-	using multimap = std::multimap<TMapKey, TMapValue>;
+	using Multimap = std::multimap<TMapKey, TMapValue>;
 }
 
 #endif;
 
+
+#if USE_STL_MAP
+
+#include<set>
+namespace NebulaEngine::Containers
+{
+	template<class TSet>
+	using Set = std::set<TSet>;
+}
+
+#endif
 
 // todo: implement my own verison of containers
 namespace NebulaEngine::Containers
