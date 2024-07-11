@@ -57,6 +57,9 @@ public:
         
         windowId = Platforms::CreateRenderWindow(nullptr, WinProc, 640, 480);
 
+        auto window2 = Platforms::CreateRenderWindow(nullptr, WinProc, 40, 80);
+        auto window3 = Platforms::CreateRenderWindow(nullptr, WinProc, 60, 80);
+
         RHI::InstanceInfo app_info
         {
             /** app name */
@@ -80,6 +83,11 @@ public:
 
         // init surface
         m_Instance->CreateSurface(std::move(windowId));
+        m_Instance->CreateSurface(std::move(window2));
+        m_Instance->CreateSurface(std::move(window3));
+
+        // init logical devices
+        m_Instance->InitLogicDevices();
         
         return true;
     }

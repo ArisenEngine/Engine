@@ -1,10 +1,18 @@
 #include "RHIVkDevice.h"
+
+#include <stacktrace>
+
 #include "Logger/Logger.h"
 
 // validation layers
-NebulaEngine::Containers::vector<const char*> DeviceValidationLayers
+NebulaEngine::Containers::Vector<const char*> DeviceValidationLayers
 {
     "VK_LAYER_KHRONOS_validation"
+};
+
+NebulaEngine::Containers::Vector<const char*> DeviceExtensionNames
+{
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
 int RateDeviceSuitability(VkPhysicalDevice device) {
@@ -33,7 +41,7 @@ int RateDeviceSuitability(VkPhysicalDevice device) {
     return score;
 }
 
-NebulaEngine::RHI::QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device)
+NebulaEngine::RHI::QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
 {
     if (device == VK_NULL_HANDLE)
     {
@@ -46,124 +54,149 @@ NebulaEngine::RHI::QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device)
     vkGetPhysicalDeviceQueueFamilyProperties(device,
         &queueFamilyCount, nullptr);
 
-    NebulaEngine::Containers::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    NebulaEngine::Containers::Vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
         queueFamilies.data());
 
     int i = 0;
     for (const auto& queueFamily : queueFamilies)
     {
-        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-        {
-            indices.graphicsFamily = i;
-        }
 
         if (indices.IsComplete())
         {
             break;
         }
         
-        i++;
+        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        {
+            indices.graphicsFamily = i;
+        }
+
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+
+        if (presentSupport)
+        {
+            indices.presentFamily = i;
+        }
+        
+        ++i;
     }
 
     return indices;
 }
 
-bool IsDeviceSuitable(VkPhysicalDevice device, NebulaEngine::RHI::QueueFamilyIndices& indices)
-{
-    indices = FindQueueFamilies(device);
-    return indices.IsComplete();
-}
-
 NebulaEngine::RHI::RHIVkDevice::RHIVkDevice(Instance& instance): Device(instance)
 {
     // physical device
+    PickPhysicalDevice();
     
+}
+
+void NebulaEngine::RHI::RHIVkDevice::PickPhysicalDevice()
+{
     uint32_t deviceCount = 0;
-    auto vkInstance = static_cast<VkInstance>(instance.GetHandle());
+    auto vkInstance = static_cast<VkInstance>(m_Instance.GetHandle());
     vkEnumeratePhysicalDevices(vkInstance, &deviceCount, nullptr);
-    
-    if (deviceCount == 0)
+
+    if (deviceCount == 0) 
     {
-        LOG_FATAL_AND_THROW("failed to find GPUs with Vulkan support!")
+        LOG_FATAL_AND_THROW("failed to find GPUs with Vulkan support!");
     }
+    
+    LOG_INFO("Device Count:" + deviceCount);
 
-    Containers::vector<VkPhysicalDevice> physicalDevices(deviceCount);
-    vkEnumeratePhysicalDevices(vkInstance, &deviceCount, physicalDevices.data());
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(vkInstance, &deviceCount, devices.data());
 
-    for (const auto& device : physicalDevices) 
+    // Use an ordered map to automatically sort candidates by increasing score
+    std::multimap<int, VkPhysicalDevice> candidates;
+
+    for (const auto& device : devices)
     {
-        QueueFamilyIndices indices;
-        if (IsDeviceSuitable(device, indices))
-        {
-            int score = RateDeviceSuitability(device);
-            m_Candidates.insert(std::make_pair(score, std::pair(device, indices)));
-        }
+        int score = RateDeviceSuitability(device);
+        candidates.insert(std::make_pair(score, device));
     }
 
     // Check if the best candidate is suitable at all
-    if (m_Candidates.rbegin()->first > 0)
+    if (candidates.rbegin()->first > 0)
     {
-        m_CurrentPhysicsDevice = m_Candidates.rbegin()->second.first;
-        m_QueueFamilyIndices = m_Candidates.rbegin()->second.second;
-
-        if (!m_QueueFamilyIndices.IsComplete())
-        {
-            LOG_FATAL_AND_THROW("failed to find queue family!")
-        }
+        m_CurrentPhysicsDevice = candidates.rbegin()->second;
     }
     else
     {
-        LOG_FATAL_AND_THROW("failed to find a suitable GPU!")
+        LOG_FATAL_AND_THROW("failed to find a suitable GPU!");
     }
 
     VkPhysicalDeviceProperties deviceProperties;
     vkGetPhysicalDeviceProperties(m_CurrentPhysicsDevice, &deviceProperties);
     
     LOG_INFO("GPU Device : " + std::string(deviceProperties.deviceName));
-
-
-    // create logical device
-    VkDeviceQueueCreateInfo queueCreateInfo{};
-    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInfo.queueFamilyIndex = m_QueueFamilyIndices.graphicsFamily.value();
-    queueCreateInfo.queueCount = 1;
     
+}
+
+NebulaEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
+{
+    LOG_INFO("~RHIVkPhysicalDevice");
+    m_LogicalDevices.clear();
+}
+
+void NebulaEngine::RHI::RHIVkDevice::CreateLogicDevice(u32 windowId)
+{
+    const Surface& rhiSurface = m_Instance.GetSurface(std::move(windowId));
+    QueueFamilyIndices indices = FindQueueFamilies(m_CurrentPhysicsDevice, static_cast<VkSurfaceKHR>(rhiSurface.GetHandle()));
+
+    // Queue Create Info 
+    Containers::Vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    Containers::Set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+
     float queuePriority = 1.0f;
-    queueCreateInfo.pQueuePriorities = &queuePriority;
-    
+    for (uint32_t queueFamily : uniqueQueueFamilies)
+    {
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = queueFamily;
+        queueCreateInfo.queueCount = 1;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+        queueCreateInfos.push_back(queueCreateInfo);
+    }
+
+    // Device Features
     VkPhysicalDeviceFeatures deviceFeatures{};
-    
+
+    // Device Create Info
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInfo.pQueueCreateInfos = &queueCreateInfo;
-    createInfo.queueCreateInfoCount = 1;
+
+    createInfo.pQueueCreateInfos = queueCreateInfos.data();
+    createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+
     createInfo.pEnabledFeatures = &deviceFeatures;
-    
-    createInfo.enabledExtensionCount = 0;
+
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(DeviceExtensionNames.size());
+    createInfo.ppEnabledExtensionNames = DeviceExtensionNames.data();
+
     if (m_Instance.IsEnableValidation())
     {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(DeviceValidationLayers.size());
-        createInfo.ppEnabledLayerNames = DeviceValidationLayers.data();
+        createInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
+        createInfo.ppEnabledLayerNames = ValidationLayers.data();
     }
     else
     {
         createInfo.enabledLayerCount = 0;
     }
 
-
-    // TODO： support multiple logic devices
-    if (vkCreateDevice(m_CurrentPhysicsDevice, &createInfo, nullptr, &m_LogicalDevice) != VK_SUCCESS)
+    VkDevice device;
+    if (vkCreateDevice(m_CurrentPhysicsDevice, &createInfo, nullptr, &device) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("failed to create logical device!");
     }
 
-    auto indices = FindQueueFamilies(m_CurrentPhysicsDevice);
-    vkGetDeviceQueue(m_LogicalDevice, indices.graphicsFamily.value(), 0, &m_GraphicsQueue);
-}
+    VkQueue graphicQueue;
+    vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicQueue);
+    VkQueue presentQueue;
+    vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 
-NebulaEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
-{
-    LOG_INFO("~RHIVkPhysicalDevice");
-    vkDestroyDevice(m_LogicalDevice, nullptr);
+    LOG_INFO(" Create Logical Device for surface " + std::to_string(windowId));
+    m_LogicalDevices.insert({windowId, std::make_unique<LogicalDevice>(graphicQueue, presentQueue, device)});
 }

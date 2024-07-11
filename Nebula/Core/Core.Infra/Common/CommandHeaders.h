@@ -9,6 +9,7 @@
 #include <iostream>
 #include <fstream>
 #include <wchar.h>
+#include <string>
 
 #if _WIN64
 #include<DirectXMath.h>
@@ -56,10 +57,11 @@ type_name(const type_name&) = delete;       \
 
 #define NO_COMPARE(type_name)  type_name& operator=(const type_name&) = delete;
 
+#define ASSERT assert
 
 
 // RHI
 #include "../RHI/Devices/Device.h"
-#include "../RHI/Instance.h"
 #include "../RHI/Surfaces/Surface.h"
+#include "../RHI/Instance.h"
 #include "../Platforms/GraphsicsAPI.h"

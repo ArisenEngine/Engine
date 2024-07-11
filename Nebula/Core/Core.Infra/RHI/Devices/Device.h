@@ -14,6 +14,8 @@ namespace NebulaEngine::RHI
     protected:
         Instance& m_Instance;
         Device(Instance& instance): m_Instance(instance) {}
+        virtual void CreateLogicDevice(u32 windowId) = 0;
+        
     private:
 
         

@@ -23,8 +23,8 @@ namespace NebulaEngine::Platforms
 		};
 
 
-		vector<WindowInfo> windows;
-		vector<u32> availableSlots;
+		Vector<WindowInfo> windows;
+		Vector<u32> availableSlots;
 		
 		u32 AddToWindows(WindowInfo info)
 		{

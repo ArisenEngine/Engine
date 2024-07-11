@@ -23,7 +23,9 @@ namespace NebulaEngine::RHI
         RHIVkInstance(InstanceInfo&& app_info);
         ~RHIVkInstance() noexcept override;
 
-        [[nodiscard]] void* GetHandle() const override { return m_Instance; }
+        [[nodiscard]] void* GetHandle() const override { return m_VkInstance; }
+        
+        void InitLogicDevices() override;
 
         const std::string GetEnvString() const override
         {
@@ -35,19 +37,20 @@ namespace NebulaEngine::RHI
 
         void CreateSurface(u32&& windowId) override;
         void DestroySurface(u32&& windowId) override;
+        const Surface& GetSurface(u32&& windowId) override;
 
-        VkInstance GetVkInstance() const { return m_Instance; }
+        VkInstance GetVkInstance() const { return m_VkInstance; }
 
     private:
-        VkInstance m_Instance;
+        VkInstance m_VkInstance;
         VulkanVersion m_VulkanVersion;
 
         // devices
-        RHIVkDevice* m_PhyscialDevice;
-        void CreatePhysicalDevice();
+        RHIVkDevice* m_Device;
+        void CreateDevice();
 
         // debuger
-        VkDebugUtilsMessengerEXT m_DebugMessenger;
+        VkDebugUtilsMessengerEXT m_VkDebugMessenger;
         void SetupDebugMessager();
         void DisposeDebugMessager();
 

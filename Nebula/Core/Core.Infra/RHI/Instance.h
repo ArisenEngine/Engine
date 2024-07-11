@@ -72,6 +72,8 @@ namespace NebulaEngine::RHI
 
         virtual void* GetHandle() const = 0;
 
+        virtual void InitLogicDevices() = 0;
+
         
         /// \brief used for DXC args
         /// \return api env value
@@ -79,10 +81,12 @@ namespace NebulaEngine::RHI
 
         virtual void CreateSurface(u32&& windowId) = 0;
         virtual void DestroySurface(u32&& windowId) = 0;
+        virtual const Surface& GetSurface(u32&& windowId) = 0;
     
     protected:
 
-        Containers::map<u32, Surface*> m_Surfaces;
+        // NOTE: 这里在静态库，所以m_Surfaces在不同的api dll上会有多份拷贝，不过同时只会加载一种dll。
+        Containers::Map<u32, std::unique_ptr<Surface>> m_Surfaces;
         bool m_EnableValidation { false };
 
     };
