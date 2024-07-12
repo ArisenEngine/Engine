@@ -364,6 +364,8 @@ int VulkanApplication::RateDeviceSuitability(VkPhysicalDevice device)
 		return 0;
 	}
 
+	bool extensionsSupported = CheckDeviceExtensionSupport(device);
+
 	return score;
 }
 

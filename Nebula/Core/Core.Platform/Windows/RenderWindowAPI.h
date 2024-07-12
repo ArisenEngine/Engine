@@ -46,9 +46,22 @@ namespace NebulaEngine::Platforms
     extern "C" DLL Platforms::WindowHandle GetWindowHandle(u32 id);
     inline Platforms::WindowHandle GetWindowHandle(u32 id)
     {
-        auto size = renderWindows.size();
         ASSERT(id < renderWindows.size());
         return (Platforms::WindowHandle)renderWindows[id].window.Handle();
+    }
+
+    extern "C" DLL u32 GetWindowWidth(u32 id);
+    inline u32 GetWindowWidth(u32 id)
+    {
+        ASSERT(id < renderWindows.size());
+        return renderWindows[id].window.Width();
+    }
+
+    extern "C" DLL u32 GetWindowHeight(u32 id);
+    inline u32 GetWindowHeight(u32 id)
+    {
+        ASSERT(id < renderWindows.size());
+        return renderWindows[id].window.Height();
     }
     
 }

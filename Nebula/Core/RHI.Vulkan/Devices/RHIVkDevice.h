@@ -1,6 +1,7 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
 #include "RHI/Devices/Device.h"
+#include "../Surfaces/RHIVkSurface.h"
 #include "../Common.h"
 #include <optional>
 
@@ -35,31 +36,53 @@ namespace NebulaEngine::RHI
 
         ~LogicalDevice()
         {
-            LOG_INFO("## vkDestroyDevice ##");
+            LOG_INFO("## Destroy Vulkan Logical Device ##");
             vkDestroyDevice(vkDevice, nullptr);
         }
     };
+
     
+
     class DLL RHIVkDevice final: public Device
     {
         
     public:
         
         ~RHIVkDevice() noexcept override;
-        void CreateLogicDevice(u32 windowId) override;
+        
         
     private:
 
         friend class RHIVkInstance;
-        RHIVkDevice(Instance& instance);
+        RHIVkDevice(Instance* instance);
         void PickPhysicalDevice();
 
         // devices
         VkPhysicalDevice m_CurrentPhysicsDevice { VK_NULL_HANDLE };
+        VkPhysicalDeviceProperties m_DeviceProperties {};
+        
+        bool IsPhysicalDeviceAvailable() const override { return m_CurrentPhysicsDevice != VK_NULL_HANDLE; }
+        bool IsSurfaceAvailable() const override { return !m_Surfaces.empty(); }
+        const SwapChainSupportDetail GetSwapChainSupportDetails(u32&& windowId);
+    
         
         // Use an ordered map to automatically sort candidates by increasing score
         Containers::Multimap<int, std::pair<VkPhysicalDevice, QueueFamilyIndices>> m_Candidates;
         
         Containers::Map<u32, std::unique_ptr<LogicalDevice>> m_LogicalDevices;
+        Containers::Map<u32, std::unique_ptr<Surface>> m_Surfaces;
+
+        void CreateLogicDevice(u32 windowId) override;
+        void InitLogicDevices() override;
+        void* GetLogicalDevice(u32 windowId) override;
+        void CreateSwapChain(u32 windowId) override;
+        const SwapChainSupportDetail QuerySwapChainSupport(const VkSurfaceKHR surface) const;
+
+        void CreateSurface(u32&& windowId) override;
+        void DestroySurface(u32&& windowId) override;
+        const Surface& GetSurface(u32&& windowId) override;
+        void SetResolution(const u32&& windowId, const u32&& width, const u32&& height) override;
+        void CheckSwapChainCapabilities() override;
+        void InitDefaultSwapChains() override;
     };
 }

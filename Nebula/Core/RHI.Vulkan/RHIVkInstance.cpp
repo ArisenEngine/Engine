@@ -1,6 +1,7 @@
 #include "RHIVkInstance.h"
 #include <vulkan/vulkan_core.h>
 
+#include "Windows/RenderWindowAPI.h"
 
 
 NebulaEngine::Containers::Vector<const char*> InstanceExtensionNames
@@ -86,8 +87,6 @@ void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
     createInfo.pfnUserCallback = DebugCallback;
 }
-
-const int MAX_FRAMES_IN_FLIGHT = 2;
 
 NebulaEngine::RHI::RHIVkInstance::RHIVkInstance(InstanceInfo&& app_info): Instance(std::move(app_info))
 {
@@ -181,8 +180,7 @@ VkResult CreateDebugUtilsMessengerEXT(
 
 void NebulaEngine::RHI::RHIVkInstance::CreateDevice()
 {
-    m_Device = new RHIVkDevice(*this);
-    
+    m_Device = new RHIVkDevice(this);
 }
 
 void NebulaEngine::RHI::RHIVkInstance::SetupDebugMessager()
@@ -227,20 +225,72 @@ void NebulaEngine::RHI::RHIVkInstance::DisposeDebugMessager()
 
 void NebulaEngine::RHI::RHIVkInstance::CreateSurface(u32&& windowId)
 {
-    u32 key = windowId;
-    m_Surfaces.insert({key, std::make_unique<RHIVkSurface>(std::move(windowId), this)});
+    m_Device->CreateSurface(std::move(windowId));
 }
 
 void NebulaEngine::RHI::RHIVkInstance::DestroySurface(u32&& windowId)
 {
-    m_Surfaces.erase(windowId);
+    m_Device->DestroySurface(std::move(windowId));
 }
 
 const NebulaEngine::RHI::Surface& NebulaEngine::RHI::RHIVkInstance::GetSurface(u32&& windowId)
 {
-    ASSERT(m_Surfaces[windowId] && m_Surfaces[windowId].get());
-    Surface& surface = *m_Surfaces[windowId].get();
-    return surface;
+    return m_Device->GetSurface(std::move(windowId));
+}
+
+bool NebulaEngine::RHI::RHIVkInstance::IsSupportLinearColorSpace(u32&& windowId)
+{
+   
+    auto& supportDetail = m_Device->GetSwapChainSupportDetails(std::move(windowId));
+
+    for (const auto& availableFormat : supportDetail.formats)
+    {
+        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+bool NebulaEngine::RHI::RHIVkInstance::PresentModeSupported(u32&& windowId, PresentMode mode)
+{
+    auto& supportDetail = m_Device->GetSwapChainSupportDetails(std::move(windowId));
+    for (const auto& presentMode : supportDetail.presentModes)
+    {
+        if (presentMode == mode)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void NebulaEngine::RHI::RHIVkInstance::SetCurrentPresentMode(u32&& windowId, PresentMode mode)
+{
+    
+}
+
+void NebulaEngine::RHI::RHIVkInstance::SetResolution(const u32&& windowId, const u32&& width, const u32&& height)
+{
+    m_Device->SetResolution(std::move(windowId), std::move(width), std::move(height));
+}
+
+const NebulaEngine::RHI::Format NebulaEngine::RHI::RHIVkInstance::GetSuitableSwapChainFormat(u32&& windowId)
+{
+    return FORMAT_R8G8B8_SRGB;
+}
+
+const NebulaEngine::RHI::PresentMode NebulaEngine::RHI::RHIVkInstance::GetSuitablePresentMode(u32&& windowId)
+{
+    return PRESENT_MODE_FIFO;
+}
+
+void NebulaEngine::RHI::RHIVkInstance::CheckSwapChainCapabilities()
+{
+    m_Device->CheckSwapChainCapabilities();
 }
 
 NebulaEngine::RHI::Instance* CreateInstance(NebulaEngine::RHI::InstanceInfo&& app_info)
@@ -254,32 +304,56 @@ NebulaEngine::RHI::RHIVkInstance::~RHIVkInstance() noexcept
     DisposeDebugMessager();
     delete m_Device;
     
-    m_Surfaces.clear();
     vkDestroyInstance(m_VkInstance, nullptr);
     LOG_INFO(" ~RHIVkInstance ");
 }
 
 void NebulaEngine::RHI::RHIVkInstance::InitLogicDevices()
 {
-    if (m_Surfaces.empty())
+    if (!m_Device->IsPhysicalDeviceAvailable())
+    {
+        LOG_FATAL_AND_THROW("Should pick a physical device first before init logical devices");
+    }
+
+    if (!m_Device->IsSurfaceAvailable())
     {
         LOG_FATAL_AND_THROW("Should create all the surfaces first before init logical devices");
     }
+    
+    m_Device->InitLogicDevices();
+    
+    LOG_INFO(" Logical Devices Init! ");
+}
 
-    for (auto& surfacePair : m_Surfaces)
+void NebulaEngine::RHI::RHIVkInstance::PickPhysicalDevice(bool considerSurface)
+{
+    if (!m_Device->IsSurfaceAvailable())
     {
-        auto windowId = surfacePair.first;
-        
-        if (surfacePair.second.get() == nullptr)
-        {
-            LOG_WARN(" window: {" + std::to_string(windowId) + "}'s surface is nullptr!");
-            continue;
-        }
-        
-        m_Device->CreateLogicDevice(windowId);
+        LOG_FATAL_AND_THROW("Should create all the surfaces first before pick physical devices");
     }
 
-    LOG_INFO(" Logical Devices Init! ");
+    // TODO: pick device by surface ?
+    m_Device->PickPhysicalDevice();
+    // TODO: configurable physical device
+    // TODO: if current physical device not adequate suitable swap chain, should repick one
+    CheckSwapChainCapabilities();
+}
+
+void NebulaEngine::RHI::RHIVkInstance::InitDefaultSwapChains()
+{
+    if (!m_Device->IsSurfaceAvailable())
+    {
+        LOG_FATAL_AND_THROW("Should create all the surfaces first before init swap chain.");
+    }
+
+    if (!m_Device->IsPhysicalDeviceAvailable())
+    {
+        LOG_FATAL_AND_THROW("Should pick a physical device first before init swap chain.");
+    }
+
+    m_Device->InitDefaultSwapChains();
+
+    LOG_INFO(" SwapChains Init! ");
 }
 
 
