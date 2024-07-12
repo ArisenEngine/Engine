@@ -6,6 +6,8 @@
 #include "RHI/Instance.h"
 #include "Logger/Logger.h"
 #include "Devices/RHIVkDevice.h"
+#include "RHI/Enums/Format.h"
+#include "RHI/Enums/PresentMode.h"
 #include "Surfaces/RHIVkSurface.h"
 
 namespace NebulaEngine::RHI
@@ -26,6 +28,9 @@ namespace NebulaEngine::RHI
         [[nodiscard]] void* GetHandle() const override { return m_VkInstance; }
         
         void InitLogicDevices() override;
+        void PickPhysicalDevice(bool considerSurface = false) override;
+        void* GetLogicalDevice(u32&& windowId) const override { return m_Device->GetLogicalDevice(windowId); }
+        void InitDefaultSwapChains() override;
 
         const std::string GetEnvString() const override
         {
@@ -41,6 +46,17 @@ namespace NebulaEngine::RHI
 
         VkInstance GetVkInstance() const { return m_VkInstance; }
 
+        bool IsSupportLinearColorSpace(u32&& windowId) override;
+        bool PresentModeSupported(u32&& windowId, PresentMode mode) override;
+        void SetCurrentPresentMode(u32&& windowId, PresentMode mode) override;
+        void SetResolution(const u32&& windowId, const u32&& width, const u32&& height) override;
+        const Format GetSuitableSwapChainFormat(u32&& windowId) override;
+        const PresentMode GetSuitablePresentMode(u32&& windowId) override;
+        
+    protected:
+        
+        void CheckSwapChainCapabilities() override;
+        
     private:
         VkInstance m_VkInstance;
         VulkanVersion m_VulkanVersion;
@@ -51,6 +67,7 @@ namespace NebulaEngine::RHI
 
         // debuger
         VkDebugUtilsMessengerEXT m_VkDebugMessenger;
+        
         void SetupDebugMessager();
         void DisposeDebugMessager();
 

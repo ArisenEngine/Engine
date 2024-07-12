@@ -23,10 +23,15 @@
     <ClInclude Include="Common\Id.h" />
     <ClInclude Include="Common\MathTypes.h" />
     <ClInclude Include="Containers\Containers.h" />
+    <ClInclude Include="RHI\Enums\ColorSpace.h" />
+    <ClInclude Include="RHI\Enums\Format.h" />
+    <ClInclude Include="RHI\Enums\PresentMode.h" />
+    <ClInclude Include="RHI\Enums\SharingMode.h" />
     <ClInclude Include="RHI\Instance.h" />
     <ClInclude Include="Platforms\GraphsicsAPI.h" />
     <ClInclude Include="Common\PrimitiveTypes.h" />
     <ClInclude Include="RHI\Surfaces\Surface.h" />
+    <ClInclude Include="RHI\Surfaces\SwapChain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp" />
@@ -39,6 +44,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RHI\Devices\Device.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="RHI\Enums\ImageUsageFlagBits.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
