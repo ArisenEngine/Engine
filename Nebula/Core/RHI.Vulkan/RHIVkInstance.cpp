@@ -19,7 +19,7 @@ bool CheckValidationLayerSupport()
     std::vector<VkLayerProperties> availableLayers(layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-    for (const char* layerName : ValidationLayers)
+    for (const char* layerName : NebulaEngine::RHI::VkValidationLayers)
     {
         bool layerFound = false;
 
@@ -116,8 +116,8 @@ NebulaEngine::RHI::RHIVkInstance::RHIVkInstance(InstanceInfo&& app_info): Instan
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     if (app_info.validationLayer)
     {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
-        createInfo.ppEnabledLayerNames = ValidationLayers.data();
+        createInfo.enabledLayerCount = static_cast<uint32_t>(VkValidationLayers.size());
+        createInfo.ppEnabledLayerNames = VkValidationLayers.data();
 
         PopulateDebugMessengerCreateInfo(debugCreateInfo);
         createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
@@ -305,7 +305,7 @@ NebulaEngine::RHI::RHIVkInstance::~RHIVkInstance() noexcept
     delete m_Device;
     
     vkDestroyInstance(m_VkInstance, nullptr);
-    LOG_INFO(" ~RHIVkInstance ");
+    LOG_INFO("##  Destroy Vulkan Instance ## ");
 }
 
 void NebulaEngine::RHI::RHIVkInstance::InitLogicDevices()
@@ -322,7 +322,7 @@ void NebulaEngine::RHI::RHIVkInstance::InitLogicDevices()
     
     m_Device->InitLogicDevices();
     
-    LOG_INFO(" Logical Devices Init! ");
+    LOG_INFO(" All Logical Devices Init! ");
 }
 
 void NebulaEngine::RHI::RHIVkInstance::PickPhysicalDevice(bool considerSurface)

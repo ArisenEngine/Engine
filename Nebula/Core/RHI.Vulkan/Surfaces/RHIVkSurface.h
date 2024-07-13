@@ -27,12 +27,18 @@ namespace NebulaEngine::RHI
 
         friend class RHIVkDevice;
 
-        void SetSwapChainSupportDetail(SwapChainSupportDetail&& swapChainSupportDetail) { m_SwapChainSupportDetail = swapChainSupportDetail; };
-        const SwapChainSupportDetail& GetSwapChainSupportDetail() const { return m_SwapChainSupportDetail; }
-        SwapChainSupportDetail m_SwapChainSupportDetail;
+        void SetSwapChainSupportDetail(VkSwapChainSupportDetail&& swapChainSupportDetail) { m_SwapChainSupportDetail = swapChainSupportDetail; };
+        void SetQueueFamilyIndices(VkQueueFamilyIndices&& queueFaimlyIndices) { m_QueueFamilyIndices = queueFaimlyIndices; }
+
+        VkSurfaceFormatKHR GetDefaultSurfaceFormat();
+        VkPresentModeKHR GetDefaultSwapPresentMode();
+        
+        const VkSwapChainSupportDetail& GetSwapChainSupportDetail() const { return m_SwapChainSupportDetail; }
+        VkSwapChainSupportDetail m_SwapChainSupportDetail;
         VkSurfaceKHR m_VkSurface;
 
         std::unique_ptr<RHIVkSwapChain> m_SwapChain;
+        VkQueueFamilyIndices m_QueueFamilyIndices;
         
     };
 }

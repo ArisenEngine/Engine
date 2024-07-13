@@ -10,6 +10,8 @@
 #include <fstream>
 #include <wchar.h>
 #include <string>
+#include <algorithm>
+#include <optional>
 
 #if _WIN64
 #include<DirectXMath.h>
@@ -67,10 +69,11 @@ type_name() = delete;       \
 
 #define ASSERT assert
 
-#include "../Enums/Format.h"
-#include "../Enums/PresentMode.h"
-#include "../Enums/ColorSpace.h"
-#include "../Enums/SharingMode.h"
+#include "../RHI/Enums/Format.h"
+#include "../RHI/Enums/PresentMode.h"
+#include "../RHI/Enums/ColorSpace.h"
+#include "../RHI/Enums/SharingMode.h"
+#include "../RHI/Enums/SurfaceTransformFlagBits.h"
 
 // RHI
 #include "../RHI/Devices/Device.h"

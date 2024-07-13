@@ -24,6 +24,7 @@
     <ClInclude Include="Common\MathTypes.h" />
     <ClInclude Include="Containers\Containers.h" />
     <ClInclude Include="RHI\Enums\ColorSpace.h" />
+    <ClInclude Include="RHI\Enums\CompositeAlphaFlagBits.h" />
     <ClInclude Include="RHI\Enums\Format.h" />
     <ClInclude Include="RHI\Enums\PresentMode.h" />
     <ClInclude Include="RHI\Enums\SharingMode.h" />
@@ -47,6 +48,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="RHI\Enums\ImageUsageFlagBits.h" />
+    <Content Include="RHI\Enums\SurfaceTransformFlagBits.h" />
+    <Content Include="RHI\Enums\SwapChainCreateFlagBits.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
