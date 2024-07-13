@@ -5,7 +5,6 @@ namespace NebulaEngine::RHI
 {
 
     struct SwapChainDescriptor
-
     {
         u32 m_Width { 0 }, m_Height { 0 }, m_ImageCount { 1 };
         /// specific image layer, should be always 1, unless in VR
@@ -13,9 +12,18 @@ namespace NebulaEngine::RHI
         u32 m_ImageUsageFlagBits { 0 };
         u32 m_QueueFamilyIndexCount {2};
         
-        Format m_Format { FORMAT_R8G8B8_SRGB };
+        Format m_ColorFormat { FORMAT_R8G8B8_SRGB };
         ColorSpace m_ColorSpace { COLOR_SPACE_SRGB_NONLINEAR };
         SharingMode m_SharingMode { SHARING_MODE_CONCURRENT };
+        PresentMode m_PresentMode { PRESENT_MODE_FIFO };
+
+        std::optional<VkQueueFamilyIndices> m_VkQueueFamilyIndices;
+
+        bool clipped { true };
+        u32 m_SurfaceTransformFlagBits { 0 };
+        u32 m_CompositeAlphaFlagBits { 0 };
+        u32 m_SwapChainCreateFlags { 0 };
+        std::optional<void*> customData;
     };
 
     
@@ -68,12 +76,12 @@ namespace NebulaEngine::RHI
         
         void SetImageFormat(Format format)
         {
-            if (format == m_Desc.m_Format)
+            if (format == m_Desc.m_ColorFormat)
             {
                 return;
             }
 
-            m_Desc.m_Format = format;
+            m_Desc.m_ColorFormat = format;
             RecreateSwapChainIfNeeded();
         }
         

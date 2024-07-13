@@ -9,17 +9,6 @@
 
 namespace NebulaEngine::RHI
 {
-    struct QueueFamilyIndices
-    {
-        std::optional<uint32_t> graphicsFamily;
-        std::optional<uint32_t> presentFamily;
-
-        bool IsComplete() const
-        {
-            return graphicsFamily.has_value() && presentFamily.has_value();
-        }
-    };
-
     struct LogicalDevice
     {
         VkQueue vkGraphicQueue;
@@ -36,8 +25,8 @@ namespace NebulaEngine::RHI
 
         ~LogicalDevice()
         {
-            LOG_INFO("## Destroy Vulkan Logical Device ##");
             vkDestroyDevice(vkDevice, nullptr);
+            LOG_INFO("## Destroy Vulkan Logical Device ##");
         }
     };
 
@@ -63,12 +52,8 @@ namespace NebulaEngine::RHI
         
         bool IsPhysicalDeviceAvailable() const override { return m_CurrentPhysicsDevice != VK_NULL_HANDLE; }
         bool IsSurfaceAvailable() const override { return !m_Surfaces.empty(); }
-        const SwapChainSupportDetail GetSwapChainSupportDetails(u32&& windowId);
+        const VkSwapChainSupportDetail GetSwapChainSupportDetails(u32&& windowId);
     
-        
-        // Use an ordered map to automatically sort candidates by increasing score
-        Containers::Multimap<int, std::pair<VkPhysicalDevice, QueueFamilyIndices>> m_Candidates;
-        
         Containers::Map<u32, std::unique_ptr<LogicalDevice>> m_LogicalDevices;
         Containers::Map<u32, std::unique_ptr<Surface>> m_Surfaces;
 
@@ -76,7 +61,7 @@ namespace NebulaEngine::RHI
         void InitLogicDevices() override;
         void* GetLogicalDevice(u32 windowId) override;
         void CreateSwapChain(u32 windowId) override;
-        const SwapChainSupportDetail QuerySwapChainSupport(const VkSurfaceKHR surface) const;
+        const VkSwapChainSupportDetail QuerySwapChainSupport(const VkSurfaceKHR surface) const;
 
         void CreateSurface(u32&& windowId) override;
         void DestroySurface(u32&& windowId) override;
@@ -84,5 +69,7 @@ namespace NebulaEngine::RHI
         void SetResolution(const u32&& windowId, const u32&& width, const u32&& height) override;
         void CheckSwapChainCapabilities() override;
         void InitDefaultSwapChains() override;
+
+        NebulaEngine::RHI::VkQueueFamilyIndices FindQueueFamilies(VkSurfaceKHR surface);
     };
 }

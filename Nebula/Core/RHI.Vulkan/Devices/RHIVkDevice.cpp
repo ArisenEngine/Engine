@@ -34,7 +34,7 @@ bool CheckDeviceExtensionSupport(VkPhysicalDevice device)
     return requiredExtensions.empty();
 }
 
-NebulaEngine::RHI::SwapChainSupportDetail QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
+NebulaEngine::RHI::VkSwapChainSupportDetail QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
 int RateDeviceSuitability(VkPhysicalDevice device) {
     
     VkPhysicalDeviceProperties deviceProperties;
@@ -67,9 +67,9 @@ int RateDeviceSuitability(VkPhysicalDevice device) {
     return score;
 }
 
-const NebulaEngine::RHI::SwapChainSupportDetail NebulaEngine::RHI::RHIVkDevice::QuerySwapChainSupport(const VkSurfaceKHR surface) const
+const NebulaEngine::RHI::VkSwapChainSupportDetail NebulaEngine::RHI::RHIVkDevice::QuerySwapChainSupport(const VkSurfaceKHR surface) const
 {
-    NebulaEngine::RHI::SwapChainSupportDetail details {};
+    NebulaEngine::RHI::VkSwapChainSupportDetail details {};
 
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_CurrentPhysicsDevice, surface, &details.capabilities);
 
@@ -128,9 +128,12 @@ void NebulaEngine::RHI::RHIVkDevice::CheckSwapChainCapabilities()
         }
 
         RHIVkSurface* rhiSurface = static_cast<RHIVkSurface*>(surfacePair.second.get());
-        auto swapChainSupportDetail = QuerySwapChainSupport(static_cast<VkSurfaceKHR>(
-            rhiSurface->GetHandle()));
+        auto vkSurface = static_cast<VkSurfaceKHR>(
+            rhiSurface->GetHandle());
+        auto swapChainSupportDetail = QuerySwapChainSupport(vkSurface);
+
         rhiSurface->SetSwapChainSupportDetail(std::move(swapChainSupportDetail));
+        rhiSurface->SetQueueFamilyIndices(std::move(FindQueueFamilies(vkSurface)));
         
         LOG_DEBUG("Surface " + std::to_string(windowId) + " supported format and color space : ");
         for (auto& format : swapChainSupportDetail.formats)
@@ -161,21 +164,21 @@ void NebulaEngine::RHI::RHIVkDevice::InitDefaultSwapChains()
     }
 }
 
-NebulaEngine::RHI::QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
+NebulaEngine::RHI::VkQueueFamilyIndices NebulaEngine::RHI::RHIVkDevice::FindQueueFamilies(VkSurfaceKHR surface)
 {
-    if (device == VK_NULL_HANDLE)
+    if (m_CurrentPhysicsDevice == VK_NULL_HANDLE)
     {
         LOG_FATAL_AND_THROW("Physical device invalid!")
     }
 
-    NebulaEngine::RHI::QueueFamilyIndices indices;
+    NebulaEngine::RHI::VkQueueFamilyIndices indices;
     
     uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device,
+    vkGetPhysicalDeviceQueueFamilyProperties(m_CurrentPhysicsDevice,
         &queueFamilyCount, nullptr);
 
     NebulaEngine::Containers::Vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
+    vkGetPhysicalDeviceQueueFamilyProperties(m_CurrentPhysicsDevice, &queueFamilyCount,
         queueFamilies.data());
 
     int i = 0;
@@ -193,7 +196,7 @@ NebulaEngine::RHI::QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device,
         }
 
         VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+        vkGetPhysicalDeviceSurfaceSupportKHR(m_CurrentPhysicsDevice, i, surface, &presentSupport);
 
         if (presentSupport)
         {
@@ -257,7 +260,7 @@ void NebulaEngine::RHI::RHIVkDevice::PickPhysicalDevice()
     
 }
 
-const NebulaEngine::RHI::SwapChainSupportDetail NebulaEngine::RHI::RHIVkDevice::GetSwapChainSupportDetails(u32&& windowId)
+const NebulaEngine::RHI::VkSwapChainSupportDetail NebulaEngine::RHI::RHIVkDevice::GetSwapChainSupportDetails(u32&& windowId)
 {
     ASSERT(m_Surfaces[windowId] && m_Surfaces[windowId].get());
     
@@ -269,6 +272,7 @@ const NebulaEngine::RHI::SwapChainSupportDetail NebulaEngine::RHI::RHIVkDevice::
 NebulaEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
 {
     m_Instance = nullptr;
+    m_Surfaces.clear();
     m_LogicalDevices.clear();
     LOG_INFO("~RHIVkDevice");
 }
@@ -276,7 +280,7 @@ NebulaEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
 void NebulaEngine::RHI::RHIVkDevice::CreateLogicDevice(u32 windowId)
 {
     const Surface& rhiSurface = m_Instance->GetSurface(std::move(windowId));
-    QueueFamilyIndices indices = FindQueueFamilies(m_CurrentPhysicsDevice, static_cast<VkSurfaceKHR>(rhiSurface.GetHandle()));
+    VkQueueFamilyIndices indices = FindQueueFamilies(static_cast<VkSurfaceKHR>(rhiSurface.GetHandle()));
 
     // Queue Create Info 
     Containers::Vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -310,8 +314,8 @@ void NebulaEngine::RHI::RHIVkDevice::CreateLogicDevice(u32 windowId)
 
     if (m_Instance->IsEnableValidation())
     {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
-        createInfo.ppEnabledLayerNames = ValidationLayers.data();
+        createInfo.enabledLayerCount = static_cast<uint32_t>(VkValidationLayers.size());
+        createInfo.ppEnabledLayerNames = VkValidationLayers.data();
     }
     else
     {
@@ -353,7 +357,7 @@ void NebulaEngine::RHI::RHIVkDevice::InitLogicDevices()
 void* NebulaEngine::RHI::RHIVkDevice::GetLogicalDevice(u32 windowId)
 {
     ASSERT(m_LogicalDevices[windowId] && m_LogicalDevices[windowId].get());
-    
+    ASSERT(m_LogicalDevices[windowId].get()->vkDevice != VK_NULL_HANDLE);
     return m_LogicalDevices[windowId].get()->vkDevice;
 }
 
