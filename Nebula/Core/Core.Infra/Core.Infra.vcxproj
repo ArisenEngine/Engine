@@ -24,13 +24,22 @@
     <ClInclude Include="Common\MathTypes.h" />
     <ClInclude Include="Containers\Containers.h" />
     <ClInclude Include="RHI\Enums\ColorSpace.h" />
+    <ClInclude Include="RHI\Enums\ComponentSwizzle.h" />
     <ClInclude Include="RHI\Enums\CompositeAlphaFlagBits.h" />
     <ClInclude Include="RHI\Enums\Format.h" />
+    <ClInclude Include="RHI\Enums\ImageAspectFlagBits.h" />
+    <ClInclude Include="RHI\Enums\ImageViewCreateFlagBits.h" />
+    <ClInclude Include="RHI\Enums\ImageViewType.h" />
+    <ClInclude Include="RHI\Enums\MemoryViewType.h" />
     <ClInclude Include="RHI\Enums\PresentMode.h" />
     <ClInclude Include="RHI\Enums\SharingMode.h" />
+    <ClInclude Include="RHI\Handles\ComponentMapping.h" />
+    <ClInclude Include="RHI\Handles\ImageHandle.h" />
     <ClInclude Include="RHI\Instance.h" />
     <ClInclude Include="Platforms\GraphsicsAPI.h" />
     <ClInclude Include="Common\PrimitiveTypes.h" />
+    <ClInclude Include="RHI\Memory\RawMemory.h" />
+    <ClInclude Include="RHI\Memory\MemoryView.h" />
     <ClInclude Include="RHI\Surfaces\Surface.h" />
     <ClInclude Include="RHI\Surfaces\SwapChain.h" />
   </ItemGroup>

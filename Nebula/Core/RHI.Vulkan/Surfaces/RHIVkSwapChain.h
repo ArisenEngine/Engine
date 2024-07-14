@@ -1,5 +1,6 @@
 #pragma once
 #include "../Common.h"
+#include "../Handles/RHIVkImageHandle.h"
 #include "RHI/Surfaces/SwapChain.h"
 
 namespace NebulaEngine::RHI
@@ -17,8 +18,9 @@ namespace NebulaEngine::RHI
         void RecreateSwapChainIfNeeded() override;
     private:
         
-        VkSwapchainKHR m_VkSwapChain {VK_NULL_HANDLE};
+        VkSwapchainKHR m_VkSwapChain { VK_NULL_HANDLE };
         VkDevice m_VkDevice;
         VkSurfaceKHR m_VkSurface;
+        Containers::Vector<std::unique_ptr<RHIVkImageHandle>> m_ImageHandles;
     };
 }

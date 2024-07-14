@@ -20,6 +20,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Devices\RHIVkDevice.cpp" />
+    <ClCompile Include="Handles\RHIVkImageHandle.cpp" />
+    <ClCompile Include="Memory\RHIVkImageView.cpp" />
+    <ClCompile Include="Memory\RHIVkMemory.cpp" />
     <ClCompile Include="RHIVkInstance.cpp" />
     <ClCompile Include="Surfaces\RHIVkSurface.cpp" />
     <ClCompile Include="Surfaces\RHIVkSwapChain.cpp" />
@@ -27,6 +30,9 @@
   <ItemGroup>
     <ClInclude Include="Common.h" />
     <ClInclude Include="Devices\RHIVkDevice.h" />
+    <ClInclude Include="Handles\RHIVkImageHandle.h" />
+    <ClInclude Include="Memory\RHIVkImageView.h" />
+    <ClInclude Include="Memory\RHIVkMemory.h" />
     <ClInclude Include="RHIVkInstance.h" />
     <ClInclude Include="Surfaces\RHIVkSurface.h" />
     <ClInclude Include="Surfaces\RHIVkSwapChain.h" />

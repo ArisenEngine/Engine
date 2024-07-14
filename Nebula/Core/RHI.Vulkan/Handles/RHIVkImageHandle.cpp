@@ -1,0 +1,31 @@
+﻿#include "RHIVkImageHandle.h"
+
+#include "../Memory/RHIVkImageView.h"
+#include "Logger/Logger.h"
+
+NebulaEngine::RHI::RHIVkImageHandle::RHIVkImageHandle(VkDevice device):
+ImageHandle(true), m_VKDevice(device)
+{
+    
+}
+
+NebulaEngine::RHI::RHIVkImageHandle::RHIVkImageHandle(VkDevice device, VkImage image, ImageViewDesc desc):
+ImageHandle(false), m_VKDevice(device), m_VkImage(image)
+{
+    m_MemoryView = new RHIVkImageView(desc, device, image);
+}
+
+NebulaEngine::RHI::RHIVkImageHandle::~RHIVkImageHandle() noexcept
+{
+    delete m_MemoryView;
+    m_MemoryView = nullptr;
+    
+    if (m_NeedRecycleMemory)
+    {
+        // TODO: recycle raw memory to memory pool
+        
+    } else
+    {
+        
+    }
+}
