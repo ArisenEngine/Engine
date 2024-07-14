@@ -15,7 +15,7 @@ using namespace NebulaEngine;
 NebulaEngine::RHI::RHIVkSurface::~RHIVkSurface() noexcept
 {
     vkDestroySurfaceKHR(static_cast<VkInstance>(m_Instance->GetHandle()), m_VkSurface, nullptr);
-    LOG_INFO("## Destroy Vulkan Surface ##");
+    LOG_INFO("[RHIVkSurface::~RHIVkSurface]: Destroy Vulkan Surface");
 }
 
 NebulaEngine::RHI::RHIVkSurface::RHIVkSurface(u32&& id, Instance* instance):
@@ -28,18 +28,18 @@ Surface(std::move(id), instance), m_SwapChainSupportDetail({}), m_SwapChain(null
     
     if (vkCreateWin32SurfaceKHR(static_cast<VkInstance>(m_Instance->GetHandle()), &createInfo, nullptr, &m_VkSurface) != VK_SUCCESS)
     {
-        LOG_FATAL_AND_THROW("failed to create window surface!");
+        LOG_FATAL_AND_THROW("[RHIVkSurface::RHIVkSurface]: failed to create window surface!");
     }
 
 }
 
 void RHI::RHIVkSurface::InitSwapChain()
 {
-    LOG_INFO("InitSwapChain");
+    LOG_DEBUG("[RHIVkSurface::InitSwapChain]: InitSwapChain");
     
     if (m_VkSurface == VK_NULL_HANDLE)
     {
-        LOG_FATAL_AND_THROW("Should init VkSurfachKHR first.");
+        LOG_FATAL_AND_THROW("[RHIVkSurface::InitSwapChain]: Should init VkSurfachKHR first.");
     }
     
     auto rhiInstance = static_cast<RHIVkInstance*>(m_Instance);

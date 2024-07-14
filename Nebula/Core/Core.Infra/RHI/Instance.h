@@ -74,7 +74,6 @@ namespace NebulaEngine::RHI
         virtual void* GetHandle() const = 0;
         virtual void* GetLogicalDevice(u32&& windowId) const = 0;
         virtual void InitLogicDevices() = 0;
-        virtual void InitDefaultSwapChains() = 0;
         virtual void PickPhysicalDevice(bool considerSurface = false) = 0;
 
         virtual bool IsSupportLinearColorSpace(u32&& windowId) = 0;

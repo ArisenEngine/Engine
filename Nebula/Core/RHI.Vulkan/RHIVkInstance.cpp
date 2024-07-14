@@ -34,7 +34,7 @@ bool CheckValidationLayerSupport()
 
         if (!layerFound)
         {
-            LOG_INFO("ValidationLayer not found:" + std::string(layerName));
+            LOG_INFO("[RHIVkInstance::CheckValidationLayerSupport]: ValidationLayer not found:" + std::string(layerName));
             return false;
         }
     }
@@ -92,7 +92,7 @@ NebulaEngine::RHI::RHIVkInstance::RHIVkInstance(InstanceInfo&& app_info): Instan
 {
     if (app_info.validationLayer && !CheckValidationLayerSupport())
     {
-        LOG_FATAL_AND_THROW("validation layers requested, but not available!");
+        LOG_FATAL_AND_THROW("[RHIVkInstance::RHIVkInstance]: validation layers requested, but not available!");
     }
 
     m_EnableValidation = app_info.validationLayer;
@@ -136,7 +136,7 @@ NebulaEngine::RHI::RHIVkInstance::RHIVkInstance(InstanceInfo&& app_info): Instan
 
 #if _DEBUG
 
-    LOG_DEBUG("available extensions:");
+    LOG_DEBUG("[RHIVkInstance::RHIVkInstance]: available extensions:");
     for (const auto& extension : extensions)
     {
         LOG_DEBUG(extension.extensionName);
@@ -151,7 +151,7 @@ NebulaEngine::RHI::RHIVkInstance::RHIVkInstance(InstanceInfo&& app_info): Instan
 
     if (vkCreateInstance(&createInfo, nullptr, &m_VkInstance) != VK_SUCCESS)
     {
-        LOG_FATAL_AND_THROW("failed to create instance!");
+        LOG_FATAL_AND_THROW("[RHIVkInstance::RHIVkInstance]: failed to create instance!");
     }
 
     SetupDebugMessager();
@@ -195,7 +195,7 @@ void NebulaEngine::RHI::RHIVkInstance::SetupDebugMessager()
     
     if (CreateDebugUtilsMessengerEXT(m_VkInstance, &createInfo, nullptr, &m_VkDebugMessenger) != VK_SUCCESS)
     {
-        LOG_FATAL_AND_THROW("failed to set up debug messenger!");
+        LOG_FATAL_AND_THROW("[RHIVkInstance::SetupDebugMessager]: failed to set up debug messenger!");
     }
 }
 
@@ -305,31 +305,31 @@ NebulaEngine::RHI::RHIVkInstance::~RHIVkInstance() noexcept
     delete m_Device;
     
     vkDestroyInstance(m_VkInstance, nullptr);
-    LOG_INFO("##  Destroy Vulkan Instance ## ");
+    LOG_INFO("[RHIVkInstance::~RHIVkInstance]: Destroy Vulkan Instance");
 }
 
 void NebulaEngine::RHI::RHIVkInstance::InitLogicDevices()
 {
     if (!m_Device->IsPhysicalDeviceAvailable())
     {
-        LOG_FATAL_AND_THROW("Should pick a physical device first before init logical devices");
+        LOG_FATAL_AND_THROW("[RHIVkInstance::InitLogicDevices]: Should pick a physical device first before init logical devices");
     }
 
     if (!m_Device->IsSurfaceAvailable())
     {
-        LOG_FATAL_AND_THROW("Should create all the surfaces first before init logical devices");
+        LOG_FATAL_AND_THROW("[RHIVkInstance::InitLogicDevices]: Should create all the surfaces first before init logical devices");
     }
     
     m_Device->InitLogicDevices();
     
-    LOG_INFO(" All Logical Devices Init! ");
+    LOG_INFO("[RHIVkInstance::InitLogicDevices]: All Logical Devices Init! ");
 }
 
 void NebulaEngine::RHI::RHIVkInstance::PickPhysicalDevice(bool considerSurface)
 {
     if (!m_Device->IsSurfaceAvailable())
     {
-        LOG_FATAL_AND_THROW("Should create all the surfaces first before pick physical devices");
+        LOG_FATAL_AND_THROW("[RHIVkInstance::PickPhysicalDevice]: Should create all the surfaces first before pick physical devices");
     }
 
     // TODO: pick device by surface ?
@@ -339,21 +339,5 @@ void NebulaEngine::RHI::RHIVkInstance::PickPhysicalDevice(bool considerSurface)
     CheckSwapChainCapabilities();
 }
 
-void NebulaEngine::RHI::RHIVkInstance::InitDefaultSwapChains()
-{
-    if (!m_Device->IsSurfaceAvailable())
-    {
-        LOG_FATAL_AND_THROW("Should create all the surfaces first before init swap chain.");
-    }
-
-    if (!m_Device->IsPhysicalDeviceAvailable())
-    {
-        LOG_FATAL_AND_THROW("Should pick a physical device first before init swap chain.");
-    }
-
-    m_Device->InitDefaultSwapChains();
-
-    LOG_INFO(" SwapChains Init! ");
-}
 
 

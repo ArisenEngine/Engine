@@ -26,7 +26,7 @@ namespace NebulaEngine::RHI
         ~LogicalDevice()
         {
             vkDestroyDevice(vkDevice, nullptr);
-            LOG_INFO("## Destroy Vulkan Logical Device ##");
+            LOG_INFO("[LogicalDevice::~LogicalDevice]: Destroy Vulkan Logical Device");
         }
     };
 
@@ -60,7 +60,6 @@ namespace NebulaEngine::RHI
         void CreateLogicDevice(u32 windowId) override;
         void InitLogicDevices() override;
         void* GetLogicalDevice(u32 windowId) override;
-        void CreateSwapChain(u32 windowId) override;
         const VkSwapChainSupportDetail QuerySwapChainSupport(const VkSurfaceKHR surface) const;
 
         void CreateSurface(u32&& windowId) override;
@@ -68,7 +67,6 @@ namespace NebulaEngine::RHI
         const Surface& GetSurface(u32&& windowId) override;
         void SetResolution(const u32&& windowId, const u32&& width, const u32&& height) override;
         void CheckSwapChainCapabilities() override;
-        void InitDefaultSwapChains() override;
 
         NebulaEngine::RHI::VkQueueFamilyIndices FindQueueFamilies(VkSurfaceKHR surface);
     };

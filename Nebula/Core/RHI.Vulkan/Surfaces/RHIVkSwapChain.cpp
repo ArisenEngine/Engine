@@ -11,11 +11,11 @@ SwapChain(), m_VkDevice(device), m_VkSurface(surface)
 
 NebulaEngine::RHI::RHIVkSwapChain::~RHIVkSwapChain() noexcept
 {
-    LOG_INFO("~RHIVkSwapChain");
+    LOG_INFO("[RHIVkSwapChain::~RHIVkSwapChain]: ~RHIVkSwapChain");
     m_ImageHandles.clear();
     if (m_VkSwapChain != VK_NULL_HANDLE && m_VkDevice != VK_NULL_HANDLE)
     {
-        LOG_INFO("## Destroy Vulkan SwapChain ##");
+        LOG_INFO("[RHIVkSwapChain::~RHIVkSwapChain]: Destroy Vulkan SwapChain");
         vkDestroySwapchainKHR(m_VkDevice, m_VkSwapChain, nullptr);
     }
 }
@@ -50,10 +50,10 @@ void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
 
     if (vkCreateSwapchainKHR(m_VkDevice, &createInfo, nullptr, &m_VkSwapChain) != VK_SUCCESS)
     {
-        LOG_FATAL_AND_THROW("failed to create swap chain!");
+        LOG_FATAL_AND_THROW("[RHIVkSwapChain::CreateSwapChainWithDesc]: failed to create swap chain!");
     }
 
-    LOG_INFO(" vkSwapchain Created .");
+    LOG_DEBUG("[RHIVkSwapChain::CreateSwapChainWithDesc]: vkSwapchain Created .");
 
     u32 actualImageCount = 0;
     Containers::Vector<VkImage> images;

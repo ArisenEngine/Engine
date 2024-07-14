@@ -30,8 +30,7 @@ namespace NebulaEngine::RHI
         void InitLogicDevices() override;
         void PickPhysicalDevice(bool considerSurface = false) override;
         void* GetLogicalDevice(u32&& windowId) const override { return m_Device->GetLogicalDevice(windowId); }
-        void InitDefaultSwapChains() override;
-
+        
         const std::string GetEnvString() const override
         {
             return std::string(

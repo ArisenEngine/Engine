@@ -27,11 +27,9 @@ namespace NebulaEngine::RHI
         virtual void CreateLogicDevice(u32 windowId) = 0;
         virtual void* GetLogicalDevice(u32 windowId) = 0;
         virtual void InitLogicDevices() = 0;
-        virtual void CreateSwapChain(u32 windowId) = 0;
         virtual bool IsPhysicalDeviceAvailable() const = 0;
         virtual bool IsSurfaceAvailable() const = 0;
 
         virtual void CheckSwapChainCapabilities() = 0;
-        virtual void InitDefaultSwapChains() = 0;
     };
 }
