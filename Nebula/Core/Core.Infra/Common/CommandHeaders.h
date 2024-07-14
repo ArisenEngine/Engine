@@ -69,6 +69,8 @@ type_name() = delete;       \
 
 #define ASSERT assert
 
+#include "../RHI/Enums/ComponentSwizzle.h"
+#include "../RHI/Enums/MemoryViewType.h"
 #include "../RHI/Enums/Format.h"
 #include "../RHI/Enums/PresentMode.h"
 #include "../RHI/Enums/ColorSpace.h"

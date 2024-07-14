@@ -31,6 +31,8 @@ bool CheckDeviceExtensionSupport(VkPhysicalDevice device)
         requiredExtensions.erase(extension.extensionName);
     }
 
+    VkBufferCreateInfo ;
+    VkMemoryRequirements ;
     return requiredExtensions.empty();
 }
 

@@ -23,7 +23,7 @@ namespace NebulaEngine::RHI
         u32 m_SurfaceTransformFlagBits { 0 };
         u32 m_CompositeAlphaFlagBits { 0 };
         u32 m_SwapChainCreateFlags { 0 };
-        std::optional<void*> customData;
+        std::optional<const void*> customData;
     };
 
     

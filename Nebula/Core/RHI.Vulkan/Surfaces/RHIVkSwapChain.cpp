@@ -1,6 +1,7 @@
 #include "RHIVkSwapChain.h"
 
 #include "Logger/Logger.h"
+#include "RHI/Enums/ImageAspectFlagBits.h"
 
 NebulaEngine::RHI::RHIVkSwapChain::RHIVkSwapChain(VkDevice device, VkSurfaceKHR surface):
 SwapChain(), m_VkDevice(device), m_VkSurface(surface)
@@ -11,6 +12,7 @@ SwapChain(), m_VkDevice(device), m_VkSurface(surface)
 NebulaEngine::RHI::RHIVkSwapChain::~RHIVkSwapChain() noexcept
 {
     LOG_INFO("~RHIVkSwapChain");
+    m_ImageHandles.clear();
     if (m_VkSwapChain != VK_NULL_HANDLE && m_VkDevice != VK_NULL_HANDLE)
     {
         LOG_INFO("## Destroy Vulkan SwapChain ##");
@@ -52,6 +54,34 @@ void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
     }
 
     LOG_INFO(" vkSwapchain Created .");
+
+    u32 actualImageCount = 0;
+    Containers::Vector<VkImage> images;
+    vkGetSwapchainImagesKHR(m_VkDevice, m_VkSwapChain, &actualImageCount, nullptr);
+    m_ImageHandles.resize(actualImageCount);
+    images.resize(actualImageCount);
+    vkGetSwapchainImagesKHR(m_VkDevice, m_VkSwapChain, &actualImageCount, images.data());
+
+    for (int i = 0; i < images.size(); ++i)
+    {
+        VkImage image = images[i];
+        ImageViewDesc desc
+        {
+            0,
+            IMAGE_VIEW_TYPE_2D,
+            m_Desc.m_ColorFormat,
+            {
+                COMPONENT_SWIZZLE_IDENTITY,
+                COMPONENT_SWIZZLE_IDENTITY,
+                COMPONENT_SWIZZLE_IDENTITY,
+                COMPONENT_SWIZZLE_IDENTITY
+            },
+            IMAGE_ASPECT_COLOR_BIT,
+            0,1,0,1
+        };
+        m_ImageHandles.emplace_back(std::make_unique<RHIVkImageHandle>(m_VkDevice, image, desc));
+    }
+    
 }
 
 void NebulaEngine::RHI::RHIVkSwapChain::RecreateSwapChainIfNeeded()
