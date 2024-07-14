@@ -150,22 +150,6 @@ void NebulaEngine::RHI::RHIVkDevice::CheckSwapChainCapabilities()
     }
 }
 
-void NebulaEngine::RHI::RHIVkDevice::InitDefaultSwapChains()
-{
-    for (auto& surfacePair : m_Surfaces)
-    {
-        auto windowId = surfacePair.first;
-        
-        if (surfacePair.second.get() == nullptr)
-        {
-            LOG_WARN(" window: {" + std::to_string(windowId) + "}'s surface is nullptr!");
-            continue;
-        }
-        
-        CreateSwapChain(windowId);
-    }
-}
-
 NebulaEngine::RHI::VkQueueFamilyIndices NebulaEngine::RHI::RHIVkDevice::FindQueueFamilies(VkSurfaceKHR surface)
 {
     if (m_CurrentPhysicsDevice == VK_NULL_HANDLE)
@@ -224,10 +208,10 @@ void NebulaEngine::RHI::RHIVkDevice::PickPhysicalDevice()
 
     if (deviceCount == 0) 
     {
-        LOG_FATAL_AND_THROW("failed to find GPUs with Vulkan support!");
+        LOG_FATAL_AND_THROW("[RHIVkDevice::PickPhysicalDevice]: failed to find GPUs with Vulkan support!");
     }
     
-    LOG_INFO("Device Count:" + std::to_string(deviceCount));
+    LOG_DEBUG("[RHIVkDevice::PickPhysicalDevice]: Device Count:" + std::to_string(deviceCount));
     
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(vkInstance, &deviceCount, devices.data());
@@ -243,7 +227,8 @@ void NebulaEngine::RHI::RHIVkDevice::PickPhysicalDevice()
         int score = RateDeviceSuitability(device);
         candidates.insert(std::make_pair(score, device));
 
-        LOG_INFO(std::string(deviceProperties.deviceName) + "'s score :" + std::to_string(score));
+        LOG_DEBUG("[RHIVkDevice::PickPhysicalDevice]: " + std::string(deviceProperties.deviceName)
+            + "'s score :" + std::to_string(score));
     }
 
     // Check if the best candidate is suitable at all
@@ -253,12 +238,12 @@ void NebulaEngine::RHI::RHIVkDevice::PickPhysicalDevice()
     }
     else
     {
-        LOG_FATAL_AND_THROW("failed to find a suitable GPU!");
+        LOG_FATAL_AND_THROW("[RHIVkDevice::PickPhysicalDevice]: failed to find a suitable GPU!");
     }
     
     vkGetPhysicalDeviceProperties(m_CurrentPhysicsDevice, &m_DeviceProperties);
     
-    LOG_INFO("Picked gpu device : " + std::string(m_DeviceProperties.deviceName));
+    LOG_DEBUG("[RHIVkDevice::PickPhysicalDevice]: Picked gpu device : " + std::string(m_DeviceProperties.deviceName));
     
 }
 
@@ -276,7 +261,7 @@ NebulaEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
     m_Instance = nullptr;
     m_Surfaces.clear();
     m_LogicalDevices.clear();
-    LOG_INFO("~RHIVkDevice");
+    LOG_INFO("[RHIVkDevice::~RHIVkDevice]: ~RHIVkDevice");
 }
 
 void NebulaEngine::RHI::RHIVkDevice::CreateLogicDevice(u32 windowId)
@@ -327,7 +312,7 @@ void NebulaEngine::RHI::RHIVkDevice::CreateLogicDevice(u32 windowId)
     VkDevice device;
     if (vkCreateDevice(m_CurrentPhysicsDevice, &createInfo, nullptr, &device) != VK_SUCCESS)
     {
-        LOG_FATAL_AND_THROW("failed to create logical device!");
+        LOG_FATAL_AND_THROW("[RHIVkDevice::CreateLogicDevice]: failed to create logical device!");
     }
 
     VkQueue graphicQueue;
@@ -335,7 +320,7 @@ void NebulaEngine::RHI::RHIVkDevice::CreateLogicDevice(u32 windowId)
     VkQueue presentQueue;
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 
-    LOG_INFO(" Create Logical Device for surface " + std::to_string(windowId));
+    LOG_INFO("[RHIVkDevice::CreateLogicDevice]: Create Logical Device for surface " + std::to_string(windowId));
     m_LogicalDevices.insert({windowId, std::make_unique<LogicalDevice>(graphicQueue, presentQueue, device)});
 }
 
@@ -347,7 +332,7 @@ void NebulaEngine::RHI::RHIVkDevice::InitLogicDevices()
         
         if (surfacePair.second.get() == nullptr)
         {
-            LOG_WARN(" window: {" + std::to_string(windowId) + "}'s surface is nullptr!");
+            LOG_WARN("[RHIVkDevice::InitLogicDevices]: window: {" + std::to_string(windowId) + "}'s surface is nullptr!");
             continue;
         }
         
@@ -363,7 +348,3 @@ void* NebulaEngine::RHI::RHIVkDevice::GetLogicalDevice(u32 windowId)
     return m_LogicalDevices[windowId].get()->vkDevice;
 }
 
-void NebulaEngine::RHI::RHIVkDevice::CreateSwapChain(u32 windowId)
-{
-    
-}
