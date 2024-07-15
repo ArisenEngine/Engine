@@ -4,6 +4,7 @@
 #include "Graphics\RHILoader.h"
 #include "RHI/Instance.h"
 #include "Windows/RenderWindowAPI.h"
+#include "ShaderCompiler/ShaderCompilerAPI.h"
 
 using namespace NebulaEngine;
 
@@ -94,7 +95,7 @@ public:
         
         LOG_INFO(" Is support linear space:" + std::to_string(m_Instance->IsSupportLinearColorSpace(std::move(windowId))));
 
-        
+        Platforms::InitDXC();
         
         return true;
     }
@@ -110,6 +111,8 @@ public:
 
         // rhi dispose
         delete m_Instance;
+
+        Platforms::ReleaseDXC();
         
         // rhi loader dispose 
         Graphics::RHILoader::Dispose();

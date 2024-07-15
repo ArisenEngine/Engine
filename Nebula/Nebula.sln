@@ -148,6 +148,30 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RayTracingTheRest", "Sample
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core.Platform", "Core\Core.Platform\Core.Platform.vcxproj", "{43B2F072-81AF-42C7-B6E6-DB3EAF13BB9E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dxc", "dxc", "{14F7BFEE-7C4D-4949-A445-274ACEB81580}"
+	ProjectSection(SolutionItems) = preProject
+		3rdparty\dxc\inc\d3d12shader.h = 3rdparty\dxc\inc\d3d12shader.h
+		3rdparty\dxc\bin\arm64\dxc.exe = 3rdparty\dxc\bin\arm64\dxc.exe
+		3rdparty\dxc\bin\x64\dxc.exe = 3rdparty\dxc\bin\x64\dxc.exe
+		3rdparty\dxc\bin\x86\dxc.exe = 3rdparty\dxc\bin\x86\dxc.exe
+		3rdparty\dxc\inc\dxcapi.h = 3rdparty\dxc\inc\dxcapi.h
+		3rdparty\dxc\inc\dxcerrors.h = 3rdparty\dxc\inc\dxcerrors.h
+		3rdparty\dxc\inc\dxcisense.h = 3rdparty\dxc\inc\dxcisense.h
+		3rdparty\dxc\bin\arm64\dxcompiler.dll = 3rdparty\dxc\bin\arm64\dxcompiler.dll
+		3rdparty\dxc\bin\x64\dxcompiler.dll = 3rdparty\dxc\bin\x64\dxcompiler.dll
+		3rdparty\dxc\bin\x86\dxcompiler.dll = 3rdparty\dxc\bin\x86\dxcompiler.dll
+		3rdparty\dxc\lib\arm64\dxcompiler.lib = 3rdparty\dxc\lib\arm64\dxcompiler.lib
+		3rdparty\dxc\lib\x64\dxcompiler.lib = 3rdparty\dxc\lib\x64\dxcompiler.lib
+		3rdparty\dxc\lib\x86\dxcompiler.lib = 3rdparty\dxc\lib\x86\dxcompiler.lib
+		3rdparty\dxc\bin\arm64\dxil.dll = 3rdparty\dxc\bin\arm64\dxil.dll
+		3rdparty\dxc\bin\x64\dxil.dll = 3rdparty\dxc\bin\x64\dxil.dll
+		3rdparty\dxc\bin\x86\dxil.dll = 3rdparty\dxc\bin\x86\dxil.dll
+		3rdparty\dxc\LICENSE-LLVM.txt = 3rdparty\dxc\LICENSE-LLVM.txt
+		3rdparty\dxc\LICENSE-MIT.txt = 3rdparty\dxc\LICENSE-MIT.txt
+		3rdparty\dxc\LICENSE-MS.txt = 3rdparty\dxc\LICENSE-MS.txt
+		3rdparty\dxc\README.md = 3rdparty\dxc\README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -928,6 +952,7 @@ Global
 		{5BF8E29A-24B8-4C5B-9CED-AC0835D9FD79} = {A54FCB4A-823A-4E5D-BCFE-B7390CEDC436}
 		{D4E6BD34-4F28-40A3-B16C-A3FB75F8D2F9} = {A54FCB4A-823A-4E5D-BCFE-B7390CEDC436}
 		{43B2F072-81AF-42C7-B6E6-DB3EAF13BB9E} = {9082B97A-9A87-497B-9D0C-2CD2CC3B24F0}
+		{14F7BFEE-7C4D-4949-A445-274ACEB81580} = {457B3F2F-ABC8-49A4-954D-CF1A41F2FAD8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CB8D1469-ACB1-4735-A3C8-DA8F4221D2E4}
