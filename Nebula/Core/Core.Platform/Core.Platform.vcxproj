@@ -24,6 +24,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ShaderCompiler\ShaderCompiler.cpp" />
     <ClCompile Include="Source.cpp" />
     <ClCompile Include="Windows\Platform.cpp" />
     <ClCompile Include="Windows\RenderWindow.cpp" />
@@ -31,6 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />
+    <ClInclude Include="ShaderCompiler\ShaderCompilerAPI.h" />
     <ClInclude Include="Windows\Platform.h" />
     <ClInclude Include="Windows\PlatformTypes.h" />
     <ClInclude Include="Windows\RenderWindowAPI.h" />
@@ -136,13 +138,13 @@
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <CallingConvention>FastCall</CallingConvention>
-      <AdditionalIncludeDirectories>$(SolutionDir)Core\Core.Debugger\;$(SolutionDir)Core\Core.Infra\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Core\Core.Debugger\;$(SolutionDir)Core\Core.Infra\;$(SolutionDir)3rdparty\dxc\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>%(AdditionalDependencies);$(OutDir);</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Core.Infra.lib;Core.Debugger.lib;$(CoreLibraryDependencies);</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalDependencies);$(OutDir);$(SolutionDir)3rdparty\dxc\lib\x64;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Core.Infra.lib;Core.Debugger.lib;dxcompiler.lib;$(CoreLibraryDependencies);</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
