@@ -84,7 +84,7 @@ namespace NebulaEngine::RHI
         
         /// \brief used for DXC args
         /// \return api env value
-        virtual const std::string GetEnvString() const = 0;
+        virtual const std::wstring GetEnvString() const = 0;
 
         virtual void CreateSurface(u32&& windowId) = 0;
         virtual void DestroySurface(u32&& windowId) = 0;
