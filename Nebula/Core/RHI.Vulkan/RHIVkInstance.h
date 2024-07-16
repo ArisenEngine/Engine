@@ -31,12 +31,12 @@ namespace NebulaEngine::RHI
         void PickPhysicalDevice(bool considerSurface = false) override;
         void* GetLogicalDevice(u32&& windowId) const override { return m_Device->GetLogicalDevice(windowId); }
         
-        const std::string GetEnvString() const override
+        const std::wstring GetEnvString() const override
         {
-            return std::string(
-                "vulkan"
-                + std::to_string(m_VulkanVersion.major)
-                + "." + std::to_string(m_VulkanVersion.minor));
+            return std::wstring(
+                L"vulkan"
+                + std::to_wstring(m_VulkanVersion.major)
+                + L"." + std::to_wstring(m_VulkanVersion.minor));
         };
 
         void CreateSurface(u32&& windowId) override;

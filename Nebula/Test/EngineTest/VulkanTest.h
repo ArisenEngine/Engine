@@ -58,8 +58,8 @@ public:
         
         windowId = Platforms::CreateRenderWindow(nullptr, WinProc, 640, 480);
 
-        auto window2 = Platforms::CreateRenderWindow(nullptr, WinProc, 400, 680);
-        auto window3 = Platforms::CreateRenderWindow(nullptr, WinProc, 600, 380);
+        // auto window2 = Platforms::CreateRenderWindow(nullptr, WinProc, 400, 680);
+        // auto window3 = Platforms::CreateRenderWindow(nullptr, WinProc, 600, 380);
 
         RHI::InstanceInfo app_info
         {
@@ -80,12 +80,12 @@ public:
         Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphsicsAPI::Vulkan);
         m_Instance = Graphics::RHILoader::CreateInstance(std::move(app_info));
         auto env = m_Instance->GetEnvString();
-        LOG_INFO(std::move(env));
+        // LOG_INFO(std::move(env));
 
         // init surface
         m_Instance->CreateSurface(std::move(windowId));
-        m_Instance->CreateSurface(std::move(window2));
-        m_Instance->CreateSurface(std::move(window3));
+        // m_Instance->CreateSurface(std::move(window2));
+        // m_Instance->CreateSurface(std::move(window3));
 
         // pick physical device
         m_Instance->PickPhysicalDevice();
@@ -96,6 +96,23 @@ public:
         LOG_INFO(" Is support linear space:" + std::to_string(m_Instance->IsSupportLinearColorSpace(std::move(windowId))));
 
         Platforms::InitDXC();
+
+        Platforms::ShaderCompileParams params
+        {
+            L"vert.hlsl",
+            L"main",
+            L"6_0",
+            L"-spirv",
+            m_Instance->GetEnvString(),
+            L"0",
+            Platforms::Vertex
+        };
+
+        auto path = L"D:\\EngineSource\\Nebula\\Engine\\Nebula\\Test\\EngineTest\\Shader\\vert.hlsl";
+        if (Platforms::CompileShaderFromFile(std::move(path), std::move(params)))
+        {
+            LOG_DEBUG("Shader Compilation done.");
+        }
         
         return true;
     }
