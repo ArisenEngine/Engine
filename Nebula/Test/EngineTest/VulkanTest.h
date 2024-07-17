@@ -105,10 +105,13 @@ public:
             L"-spirv",
             m_Instance->GetEnvString(),
             L"0",
-            Platforms::Vertex
+            Platforms::Vertex,
+            {},
+            {},
+            L"D:\\EngineSource\\Nebula\\Engine\\Nebula\\Test\\EngineTest\\Shader\\FullScreen.vert"
         };
 
-        auto path = L"D:\\EngineSource\\Nebula\\Engine\\Nebula\\Test\\EngineTest\\Shader\\vert.hlsl";
+        auto path = L"D:\\EngineSource\\Nebula\\Engine\\Nebula\\Test\\EngineTest\\Shader\\FullScreen.hlsl";
         if (Platforms::CompileShaderFromFile(std::move(path), std::move(params)))
         {
             LOG_DEBUG("Shader Compilation done.");
