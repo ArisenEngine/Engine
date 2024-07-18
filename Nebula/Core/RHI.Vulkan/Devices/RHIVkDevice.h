@@ -32,7 +32,7 @@ namespace NebulaEngine::RHI
 
     
 
-    class DLL RHIVkDevice final: public Device
+    class RHIVkDevice final: public Device
     {
         
     public:

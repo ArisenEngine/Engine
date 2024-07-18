@@ -1,7 +1,4 @@
 #include "RHIVkDevice.h"
-
-#include <stacktrace>
-
 #include "Logger/Logger.h"
 #include "Windows/RenderWindowAPI.h"
 

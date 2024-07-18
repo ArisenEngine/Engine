@@ -4,10 +4,10 @@
 
 #ifdef RHIDX12_EXPORTS
 
-#define DLL   __declspec( dllexport )
+#define RHI_DLL   __declspec( dllexport )
 
 #else
 
-#define DLL   __declspec( dllimport )
+#define RHI_DLL   __declspec( dllimport )
 
 #endif 

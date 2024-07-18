@@ -1,5 +1,6 @@
 #pragma once
 #include "../../Common/CommandHeaders.h"
+#include "Logger/Logger.h"
 
 namespace NebulaEngine::RHI
 {

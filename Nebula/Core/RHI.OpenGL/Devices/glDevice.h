@@ -5,7 +5,7 @@
 
 namespace NebulaEngine::RHI
 {
-	 class DLL glDevice final : public Device
+	 class RHI_DLL glDevice final : public Device
 	{
 	public:
 
@@ -14,6 +14,6 @@ namespace NebulaEngine::RHI
 
 }
 
-extern "C" DLL NebulaEngine::RHI::Device * CreateDevice();
+extern "C" RHI_DLL NebulaEngine::RHI::Device * CreateDevice();
 
 

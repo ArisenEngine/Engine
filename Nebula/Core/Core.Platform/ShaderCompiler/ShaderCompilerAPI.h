@@ -5,27 +5,11 @@
 
 #include "../Common.h"
 #include "Logger/Logger.h"
+#include "RHI/Enums/ProgramStage.h"
 
 namespace NebulaEngine::Platforms
 {
-    typedef enum ShaderStage
-    {
-        Vertex = 0,
-        Hull,
-        Domain,
-        Fragment,
-        Geometry,
-        Compute,
-        // Shader Model 6.3
-        RayTracing,
-        // Shader Model 6.5
-        Amplification,
-        // Shader Model 6.5
-        Mesh,
-        STAGE_MAX
-    } ShaderStage;
-
-    static std::wstring s_Stages[STAGE_MAX] =
+    static std::wstring s_Stages[RHI::STAGE_MAX] =
     {
         L"vs_",
         L"hs_",
@@ -50,7 +34,7 @@ namespace NebulaEngine::Platforms
         // eg: vulkan1.3
         std::wstring targetEnv;
         std::wstring optimizeLevel { L"0" };
-        ShaderStage stage;
+        RHI::ProgramStage stage;
         
         // eg: _TEST_KEY_WORDS_
         Containers::Vector<std::wstring> defines;
@@ -62,8 +46,8 @@ namespace NebulaEngine::Platforms
     static CComPtr<IDxcLibrary> s_DXCLibrary = nullptr;
     static CComPtr<IDxcCompiler3> s_DXCompiler = nullptr;
     static CComPtr<IDxcUtils> s_DXCUtils = nullptr;
-    extern "C" DLL void InitDXC();
-    inline void InitDXC()
+    extern "C" PLATFORM_DLL void InitDXC();
+    inline void InitDXC() 
     {
         HRESULT hres;
         
@@ -71,28 +55,28 @@ namespace NebulaEngine::Platforms
         hres = DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&s_DXCLibrary));
         if (FAILED(hres))
         {
-            LOG_FATAL_AND_THROW("[NebulaEngine::Platforms::InitDXC]: Could not init DXC Library");
+            LOG_ERROR("[NebulaEngine::Platforms::InitDXC]: Could not init DXC Library");
         }
 
         // Initialize DXC compiler
         hres = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&s_DXCompiler));
         if (FAILED(hres))
         {
-            LOG_FATAL_AND_THROW("[NebulaEngine::Platforms::InitDXC]: Could not init DXC Compiler");
+            LOG_ERROR("[NebulaEngine::Platforms::InitDXC]: Could not init DXC Compiler");
         }
 
         // Initialize DXC utility
         hres = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&s_DXCUtils));
         if (FAILED(hres))
         {
-           LOG_FATAL_AND_THROW("[NebulaEngine::Platforms::InitDXC]: Could not init DXC Utiliy");
+           LOG_ERROR("[NebulaEngine::Platforms::InitDXC]: Could not init DXC Utiliy");
         }
 
         LOG_DEBUG("[NebulaEngine::Platforms::InitDXC]: DXC init. ");
         
     }
 
-    extern "C" DLL void ReleaseDXC();
+    extern "C" PLATFORM_DLL void ReleaseDXC();
     inline void ReleaseDXC()
     {
         s_DXCompiler.Release();
@@ -105,7 +89,7 @@ namespace NebulaEngine::Platforms
         LOG_DEBUG("[Platforms::ReleaseDXC]: DXC Release. ");
     }
 
-    extern "C" DLL bool CompileShaderFromFile(std::wstring&& filePath, ShaderCompileParams&& params);
+    extern "C" PLATFORM_DLL bool CompileShaderFromFile(std::wstring&& filePath, ShaderCompileParams&& params);
     inline bool CompileShaderFromFile(std::wstring&& filePath, ShaderCompileParams&& params)
     {
         ASSERT(s_DXCompiler != nullptr && s_DXCLibrary != nullptr && s_DXCUtils != nullptr);
@@ -116,7 +100,7 @@ namespace NebulaEngine::Platforms
         hres = s_DXCUtils->LoadFile(filePath.c_str(), &codePage, &sourceBlob);
         if (FAILED(hres))
         {
-            LOG_FATAL_AND_THROW("[Platforms::CompileShaderFromFile]: Could not load shader file");
+            LOG_ERROR("[Platforms::CompileShaderFromFile]: Could not load shader file");
         }
 
         // Configure the compiler arguments for compiling the HLSL shader to SPIR-V
@@ -170,7 +154,7 @@ namespace NebulaEngine::Platforms
         hres = s_DXCompiler->Compile(
             &buffer,
             arguments.data(),
-            (uint32_t)arguments.size(),
+            static_cast<UINT32>(arguments.size()),
             nullptr,
             IID_PPV_ARGS(&result));
 
@@ -192,6 +176,7 @@ namespace NebulaEngine::Platforms
             return false;
         }
 
+        
         return true;
     }
 
