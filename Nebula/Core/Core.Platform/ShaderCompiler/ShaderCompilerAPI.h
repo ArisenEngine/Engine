@@ -89,8 +89,8 @@ namespace NebulaEngine::Platforms
         LOG_DEBUG("[Platforms::ReleaseDXC]: DXC Release. ");
     }
 
-    extern "C" PLATFORM_DLL bool CompileShaderFromFile(std::wstring&& filePath, ShaderCompileParams&& params);
-    inline bool CompileShaderFromFile(std::wstring&& filePath, ShaderCompileParams&& params)
+    extern "C" PLATFORM_DLL bool CompileShaderFromFile(std::wstring&& filePath, ShaderCompileParams&& params, std::string& msgOut);
+    inline bool CompileShaderFromFile(std::wstring&& filePath, ShaderCompileParams&& params, std::string& msgOut)
     {
         ASSERT(s_DXCompiler != nullptr && s_DXCLibrary != nullptr && s_DXCUtils != nullptr);
         HRESULT hres;
@@ -100,7 +100,9 @@ namespace NebulaEngine::Platforms
         hres = s_DXCUtils->LoadFile(filePath.c_str(), &codePage, &sourceBlob);
         if (FAILED(hres))
         {
+            msgOut = "Could not load shader file. ";
             LOG_ERROR("[Platforms::CompileShaderFromFile]: Could not load shader file");
+            return false;
         }
 
         // Configure the compiler arguments for compiling the HLSL shader to SPIR-V
@@ -169,8 +171,8 @@ namespace NebulaEngine::Platforms
             hres = result->GetErrorBuffer(&errorBlob);
             if (SUCCEEDED(hres) && errorBlob)
             {
-                std::string errorMsg= std::string((const char*)errorBlob->GetBufferPointer());
-                LOG_ERROR("[Platforms::CompileShaderFromFile]: Shader compilation failed : " + errorMsg);
+                msgOut = std::string((const char*)errorBlob->GetBufferPointer());
+                LOG_ERROR("[Platforms::CompileShaderFromFile]: Shader compilation failed : " + msgOut);
             }
 
             return false;
