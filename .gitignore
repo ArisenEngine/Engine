@@ -1,7 +1,8 @@
+.VSCodeCounter
 .vs
 bin
 obj
 Debug
 Release
-
-.VSCodeCounter
+!Nebula/3rdparty/dxc/bin/
+!Nebula/3rdparty/dxc/bin/*
