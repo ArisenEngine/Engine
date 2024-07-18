@@ -2,10 +2,10 @@
 
 #ifdef ENGINE_EXPORTS
 
-#define DLL   __declspec( dllexport )
+#define ENGINE_DLL   __declspec( dllexport )
 
 #else
 
-#define DLL   __declspec( dllimport )
+#define ENGINE_DLL   __declspec( dllimport )
 
 #endif 

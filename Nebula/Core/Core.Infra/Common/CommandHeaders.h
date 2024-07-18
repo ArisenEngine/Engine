@@ -67,8 +67,6 @@ type_name() = delete;       \
 
 #define NO_COMPARE(type_name)  type_name& operator=(const type_name&) = delete;
 
-#define ASSERT assert
-
 #include "../RHI/Enums/ComponentSwizzle.h"
 #include "../RHI/Enums/MemoryViewType.h"
 #include "../RHI/Enums/Format.h"

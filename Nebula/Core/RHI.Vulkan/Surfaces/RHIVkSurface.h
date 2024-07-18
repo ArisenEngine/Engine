@@ -14,7 +14,7 @@
 
 namespace NebulaEngine::RHI
 {
-    class DLL RHIVkSurface final : public Surface
+    class RHIVkSurface final : public Surface
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkSurface);

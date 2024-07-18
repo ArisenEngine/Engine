@@ -5,7 +5,7 @@
 
 namespace NebulaEngine::Graphics
 {
-    class DLL RHILoader
+    class ENGINE_DLL RHILoader
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHILoader)
@@ -19,13 +19,13 @@ namespace NebulaEngine::Graphics
         static inline HMODULE _rhi_dll {NULL};
     };
 
-    extern "C" DLL void SetGraphicsAPI(RHI::GraphsicsAPI api_type);
+    extern "C" ENGINE_DLL void SetGraphicsAPI(RHI::GraphsicsAPI api_type);
     inline void SetGraphicsAPI(RHI::GraphsicsAPI api_type)
     {
         RHILoader::SetCurrentGraphicsAPI(api_type);
     }
 
-    extern "C" DLL RHI::Instance* CreateInstance(RHI::InstanceInfo&& app_info);
+    extern "C" ENGINE_DLL RHI::Instance* CreateInstance(RHI::InstanceInfo&& app_info);
     inline RHI::Instance* CreateInstance(RHI::InstanceInfo&& app_info)
     {
         return RHILoader::CreateInstance(std::move(app_info));

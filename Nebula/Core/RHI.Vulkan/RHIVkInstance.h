@@ -1,5 +1,4 @@
 #pragma once
-#define VK_USE_PLATFORM_WIN32_KHR
 #include <string>
 #include <vulkan/vulkan.h>
 #include "./Common.h"
@@ -17,7 +16,7 @@ namespace NebulaEngine::RHI
         u32 variant, major, minor;
     };
 
-    class DLL RHIVkInstance final : public Instance
+    class RHIVkInstance final : public Instance
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkInstance)
@@ -73,4 +72,4 @@ namespace NebulaEngine::RHI
     };
 }
 
-extern "C" DLL NebulaEngine::RHI::Instance* CreateInstance(NebulaEngine::RHI::InstanceInfo&& app_info);
+extern "C" RHI_DLL NebulaEngine::RHI::Instance* CreateInstance(NebulaEngine::RHI::InstanceInfo&& app_info);

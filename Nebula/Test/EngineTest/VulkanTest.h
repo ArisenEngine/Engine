@@ -105,7 +105,7 @@ public:
             L"-spirv",
             m_Instance->GetEnvString(),
             L"0",
-            Platforms::Vertex,
+            RHI::ProgramStage::Vertex,
             {},
             {},
             L"D:\\EngineSource\\Nebula\\Engine\\Nebula\\Test\\EngineTest\\Shader\\FullScreen.vert"
