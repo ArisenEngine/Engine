@@ -43,6 +43,7 @@
     <ClInclude Include="Common\PrimitiveTypes.h" />
     <ClInclude Include="RHI\Memory\RawMemory.h" />
     <ClInclude Include="RHI\Memory\MemoryView.h" />
+    <ClInclude Include="RHI\Program\GPUPipeline.h" />
     <ClInclude Include="RHI\Program\GPUProgram.h" />
     <ClInclude Include="RHI\Surfaces\Surface.h" />
     <ClInclude Include="RHI\Surfaces\SwapChain.h" />
