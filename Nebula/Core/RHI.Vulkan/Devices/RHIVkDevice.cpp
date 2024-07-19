@@ -18,18 +18,16 @@ bool CheckDeviceExtensionSupport(VkPhysicalDevice device)
     uint32_t extensionCount;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 
-    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    NebulaEngine::Containers::Vector<VkExtensionProperties> availableExtensions(extensionCount);
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
 
-    std::set<std::string> requiredExtensions(DeviceExtensionNames.begin(), DeviceExtensionNames.end());
+    NebulaEngine::Containers::Set<std::string> requiredExtensions(DeviceExtensionNames.begin(), DeviceExtensionNames.end());
 
     for (const auto& extension : availableExtensions)
     {
         requiredExtensions.erase(extension.extensionName);
     }
-
-    VkBufferCreateInfo ;
-    VkMemoryRequirements ;
+    
     return requiredExtensions.empty();
 }
 
@@ -126,7 +124,7 @@ void NebulaEngine::RHI::RHIVkDevice::CheckSwapChainCapabilities()
             continue;
         }
 
-        RHIVkSurface* rhiSurface = static_cast<RHIVkSurface*>(surfacePair.second.get());
+        RHIVkSurface* rhiSurface = surfacePair.second.get();
         auto vkSurface = static_cast<VkSurfaceKHR>(
             rhiSurface->GetHandle());
         auto swapChainSupportDetail = QuerySwapChainSupport(vkSurface);
@@ -210,11 +208,11 @@ void NebulaEngine::RHI::RHIVkDevice::PickPhysicalDevice()
     
     LOG_DEBUG("[RHIVkDevice::PickPhysicalDevice]: Device Count:" + std::to_string(deviceCount));
     
-    std::vector<VkPhysicalDevice> devices(deviceCount);
+    Containers::Vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(vkInstance, &deviceCount, devices.data());
 
     // Use an ordered map to automatically sort candidates by increasing score
-    std::multimap<int, VkPhysicalDevice> candidates;
+    Containers::Multimap<int, VkPhysicalDevice> candidates;
 
     for (const auto& device : devices)
     {
@@ -248,7 +246,7 @@ const NebulaEngine::RHI::VkSwapChainSupportDetail NebulaEngine::RHI::RHIVkDevice
 {
     ASSERT(m_Surfaces[windowId] && m_Surfaces[windowId].get());
     
-    RHIVkSurface* surface = static_cast<RHIVkSurface*>(m_Surfaces[windowId].get());
+    RHIVkSurface* surface = m_Surfaces[windowId].get();
     
     return surface->GetSwapChainSupportDetail();
 }

@@ -10,6 +10,7 @@
 #include <fstream>
 #include <wchar.h>
 #include <string>
+#include <cwchar>
 #include <algorithm>
 #include <optional>
 
@@ -18,7 +19,7 @@
 
 /// NOTE: Windows.h should included after boost lib
 #include<Windows.h>
-// TODO: 需要考虑别的平台
+// TODO: Need Consider Multiple Platform
 #define VK_USE_PLATFORM_WIN32_KHR 1
 
 

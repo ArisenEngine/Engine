@@ -97,10 +97,12 @@ public:
 
         Platforms::InitDXC();
 
-        Platforms::ShaderCompileParams params
+        auto path = L"D:\\EngineSource\\Nebula\\Engine\\Nebula\\Test\\EngineTest\\Shader\\FullScreen.hlsl";
+        
+        Platforms::ShaderCompileParams vertexParams
         {
-            L"vert.hlsl",
-            L"main",
+            path,
+            L"Vert",
             L"6_0",
             L"-spirv",
             m_Instance->GetEnvString(),
@@ -111,11 +113,32 @@ public:
             L"D:\\EngineSource\\Nebula\\Engine\\Nebula\\Test\\EngineTest\\Shader\\FullScreen.vert"
         };
 
-        auto path = L"D:\\EngineSource\\Nebula\\Engine\\Nebula\\Test\\EngineTest\\Shader\\FullScreen.hlsl";
-        if (Platforms::CompileShaderFromFile(std::move(path), std::move(params)))
+        std::string msg;
+        if (Platforms::CompileShaderFromFile(std::move(path), std::move(vertexParams), msg))
         {
-            LOG_DEBUG("Shader Compilation done.");
+            LOG_DEBUG("Vertex Shader Compilation done.");
         }
+
+        Platforms::ShaderCompileParams fragmentParams
+        {
+            path,
+            L"Frag",
+            L"6_0",
+            L"-spirv",
+            m_Instance->GetEnvString(),
+            L"0",
+            RHI::ProgramStage::Fragment,
+            {},
+            {},
+            L"D:\\EngineSource\\Nebula\\Engine\\Nebula\\Test\\EngineTest\\Shader\\FullScreen.frag"
+        };
+        
+        if (Platforms::CompileShaderFromFile(std::move(path), std::move(fragmentParams), msg))
+        {
+            LOG_DEBUG("Fragment Shader Compilation done.");
+        }
+
+        
         
         return true;
     }

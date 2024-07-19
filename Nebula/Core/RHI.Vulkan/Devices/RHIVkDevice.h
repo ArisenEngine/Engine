@@ -5,6 +5,7 @@
 #include "../Common.h"
 #include <optional>
 
+#include "../Program/RHIVkGPUPipeline.h"
 #include "Logger/Logger.h"
 
 namespace NebulaEngine::RHI
@@ -26,7 +27,7 @@ namespace NebulaEngine::RHI
         ~LogicalDevice()
         {
             vkDestroyDevice(vkDevice, nullptr);
-            LOG_INFO("[LogicalDevice::~LogicalDevice]: Destroy Vulkan Logical Device");
+            LOG_DEBUG("## Destroy Vulkan Logical Device ##");
         }
     };
 
@@ -55,7 +56,8 @@ namespace NebulaEngine::RHI
         const VkSwapChainSupportDetail GetSwapChainSupportDetails(u32&& windowId);
     
         Containers::Map<u32, std::unique_ptr<LogicalDevice>> m_LogicalDevices;
-        Containers::Map<u32, std::unique_ptr<Surface>> m_Surfaces;
+        Containers::Map<u32, std::unique_ptr<RHIVkGPUPipeline>> m_GPUPipelines;
+        Containers::Map<u32, std::unique_ptr<RHIVkSurface>> m_Surfaces;
 
         void CreateLogicDevice(u32 windowId) override;
         void InitLogicDevices() override;

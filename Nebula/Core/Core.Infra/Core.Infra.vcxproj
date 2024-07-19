@@ -64,6 +64,10 @@
     <Content Include="RHI\Enums\ImageUsageFlagBits.h" />
     <Content Include="RHI\Enums\SurfaceTransformFlagBits.h" />
     <Content Include="RHI\Enums\SwapChainCreateFlagBits.h" />
+    <Content Include="RHI\Program\GPURenderPass.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="RHI\Synchronization\" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

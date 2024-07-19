@@ -24,7 +24,7 @@ namespace NebulaEngine::Platforms
     
     struct ShaderCompileParams
     {
-        std::wstring name {L"Unknow" };
+        std::wstring input {L"" };
         // eg: main
         std::wstring entry { L"main" };
         // eg: 6_1
@@ -42,7 +42,8 @@ namespace NebulaEngine::Platforms
         Containers::Vector<std::wstring> includes;
         std::optional<std::wstring> output;
     };
-    
+
+    // TODO: support for multiple thread compilation
     static CComPtr<IDxcLibrary> s_DXCLibrary = nullptr;
     static CComPtr<IDxcCompiler3> s_DXCompiler = nullptr;
     static CComPtr<IDxcUtils> s_DXCUtils = nullptr;
@@ -114,7 +115,7 @@ namespace NebulaEngine::Platforms
         optimize.append(params.optimizeLevel);
         Containers::Vector<LPCWSTR> arguments = {
             // (Optional) name of the shader file to be displayed e.g. in an error message
-            params.name.c_str(),
+            params.input.c_str(),
             // Shader main entry point
             L"-E", params.entry.c_str(),
             // Shader target profile
@@ -152,6 +153,19 @@ namespace NebulaEngine::Platforms
         buffer.Ptr = sourceBlob->GetBufferPointer();
         buffer.Size = sourceBlob->GetBufferSize();
 
+
+#if _DEBUG
+        std::string finalArguments = "";
+
+        for (auto arg : arguments)
+        {
+            finalArguments += String::WStringToString(std::wstring(arg));
+            finalArguments += " ";
+        }
+        LOG_DEBUG("[ShaderCompilerAPI::CompileShaderFromFile] arguments : " + finalArguments);
+#endif
+        
+        
         CComPtr<IDxcResult> result{ nullptr };
         hres = s_DXCompiler->Compile(
             &buffer,
