@@ -5,7 +5,7 @@
 
 namespace NebulaEngine::RHI
 {
-	 class RHI_DLL DX12Device final : public Device
+	 class DX12Device final : public Device
 	{
 	public:
 

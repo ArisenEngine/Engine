@@ -23,7 +23,9 @@
     <ClCompile Include="Handles\RHIVkImageHandle.cpp" />
     <ClCompile Include="Memory\RHIVkImageView.cpp" />
     <ClCompile Include="Memory\RHIVkMemory.cpp" />
+    <ClCompile Include="Program\RHIVkGPUPipeline.cpp" />
     <ClCompile Include="Program\RHIVkGPUProgram.cpp" />
+    <ClCompile Include="Program\RHIVkGPURenderPass.cpp" />
     <ClCompile Include="RHIVkInstance.cpp" />
     <ClCompile Include="Surfaces\RHIVkSurface.cpp" />
     <ClCompile Include="Surfaces\RHIVkSwapChain.cpp" />
@@ -34,7 +36,9 @@
     <ClInclude Include="Handles\RHIVkImageHandle.h" />
     <ClInclude Include="Memory\RHIVkImageView.h" />
     <ClInclude Include="Memory\RHIVkMemory.h" />
+    <ClInclude Include="Program\RHIVkGPUPipeline.h" />
     <ClInclude Include="Program\RHIVkGPUProgram.h" />
+    <ClInclude Include="Program\RHIVkGPURenderPass.h" />
     <ClInclude Include="RHIVkInstance.h" />
     <ClInclude Include="Surfaces\RHIVkSurface.h" />
     <ClInclude Include="Surfaces\RHIVkSwapChain.h" />
@@ -47,6 +51,9 @@
       <Project>{43b2f072-81af-42c7-b6e6-db3eaf13bb9e}</Project>
       <Name>Core.Platform</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Synchronization\" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

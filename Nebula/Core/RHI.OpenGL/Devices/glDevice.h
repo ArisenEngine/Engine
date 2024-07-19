@@ -5,7 +5,7 @@
 
 namespace NebulaEngine::RHI
 {
-	 class RHI_DLL glDevice final : public Device
+	 class glDevice final : public Device
 	{
 	public:
 

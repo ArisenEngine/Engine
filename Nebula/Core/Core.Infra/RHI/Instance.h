@@ -61,7 +61,10 @@ namespace NebulaEngine::RHI
         virtual void DestroySurface(u32&& windowId) = 0;
         virtual const Surface& GetSurface(u32&& windowId) = 0;
         virtual void SetResolution(const u32&& windowId, const u32&& width, const u32&& height) = 0;
-    
+
+
+        
+        
     protected:
         
         bool m_EnableValidation { false };
