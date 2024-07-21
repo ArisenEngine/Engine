@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include "Windows/PlatformTypes.h"
 #include "Test.h"
 #include "Graphics\RHILoader.h"
@@ -96,8 +97,10 @@ public:
         LOG_INFO(" Is support linear space:" + std::to_string(m_Instance->IsSupportLinearColorSpace(std::move(windowId))));
 
         Platforms::InitDXC();
-
-        auto path = L"D:\\EngineSource\\Nebula\\Engine\\Nebula\\Test\\EngineTest\\Shader\\FullScreen.hlsl";
+        
+        namespace fs = std::filesystem;
+        auto currentPath = fs::current_path().generic_wstring();
+        auto path = currentPath + L"\\FullScreen.hlsl";
         
         Platforms::ShaderCompileParams vertexParams
         {
@@ -110,11 +113,11 @@ public:
             RHI::ProgramStage::Vertex,
             {},
             {},
-            L"D:\\EngineSource\\Nebula\\Engine\\Nebula\\Test\\EngineTest\\Shader\\FullScreen.vert"
+            currentPath + L"\\FullScreen.vert.spirv"
         };
 
-        std::string msg;
-        if (Platforms::CompileShaderFromFile(std::move(path), std::move(vertexParams), msg))
+        Platforms::ShaderCompilerOutput outputVertex;
+        if (Platforms::CompileShaderFromFile(std::move(vertexParams), outputVertex))
         {
             LOG_DEBUG("Vertex Shader Compilation done.");
         }
@@ -130,14 +133,14 @@ public:
             RHI::ProgramStage::Fragment,
             {},
             {},
-            L"D:\\EngineSource\\Nebula\\Engine\\Nebula\\Test\\EngineTest\\Shader\\FullScreen.frag"
+            currentPath + L"\\FullScreen.frag.spirv"
         };
-        
-        if (Platforms::CompileShaderFromFile(std::move(path), std::move(fragmentParams), msg))
+
+        Platforms::ShaderCompilerOutput outputfragment;
+        if (Platforms::CompileShaderFromFile(std::move(fragmentParams), outputfragment))
         {
             LOG_DEBUG("Fragment Shader Compilation done.");
         }
-
         
         
         return true;

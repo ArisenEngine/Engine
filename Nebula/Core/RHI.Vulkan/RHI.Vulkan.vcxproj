@@ -26,7 +26,10 @@
     <ClCompile Include="Program\RHIVkGPUPipeline.cpp" />
     <ClCompile Include="Program\RHIVkGPUProgram.cpp" />
     <ClCompile Include="Program\RHIVkGPURenderPass.cpp" />
+    <ClCompile Include="Program\RHIVkGPUSubPass.cpp" />
     <ClCompile Include="RHIVkInstance.cpp" />
+    <ClCompile Include="Surfaces\RHIVkAttachment.cpp" />
+    <ClCompile Include="Surfaces\RHIVkFrameBuffer.cpp" />
     <ClCompile Include="Surfaces\RHIVkSurface.cpp" />
     <ClCompile Include="Surfaces\RHIVkSwapChain.cpp" />
   </ItemGroup>
@@ -39,7 +42,10 @@
     <ClInclude Include="Program\RHIVkGPUPipeline.h" />
     <ClInclude Include="Program\RHIVkGPUProgram.h" />
     <ClInclude Include="Program\RHIVkGPURenderPass.h" />
+    <ClInclude Include="Program\RHIVkGPUSubPass.h" />
     <ClInclude Include="RHIVkInstance.h" />
+    <ClInclude Include="Surfaces\RHIVkAttachment.h" />
+    <ClInclude Include="Surfaces\RHIVkFrameBuffer.h" />
     <ClInclude Include="Surfaces\RHIVkSurface.h" />
     <ClInclude Include="Surfaces\RHIVkSwapChain.h" />
   </ItemGroup>

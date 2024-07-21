@@ -10,6 +10,7 @@ namespace NebulaEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkImageView)
         RHIVkImageView(ImageViewDesc desc, VkDevice device, VkImage image);
         ~RHIVkImageView() noexcept override;
+        void* GetView() override { return m_VkImageView; }
     private:
         VkDevice m_VkDevice;
         VkImageView m_VkImageView;

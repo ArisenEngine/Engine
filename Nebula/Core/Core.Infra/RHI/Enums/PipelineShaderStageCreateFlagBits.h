@@ -2,7 +2,6 @@
 
 namespace NebulaEngine::RHI
 {
-    // NOT USE FOR NOW 
     typedef enum PipelineShaderStageCreateFlagBits
     {
         PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT = 0x00000001,

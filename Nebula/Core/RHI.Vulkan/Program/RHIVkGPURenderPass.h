@@ -14,7 +14,7 @@ namespace NebulaEngine::RHI
         ~RHIVkGPURenderPass() noexcept override;
 
     private:
-        VkRenderPass m_VkRenderPass;
+        VkRenderPass m_VkRenderPass { VK_NULL_HANDLE };
         VkDevice m_VkDevice;
     };
 }

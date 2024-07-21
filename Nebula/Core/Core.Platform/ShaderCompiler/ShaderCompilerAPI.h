@@ -22,6 +22,13 @@ namespace NebulaEngine::Platforms
         L"ms_"
     };
     
+    struct ShaderCompilerOutput
+    {
+        const uint32_t* codePointer;
+        SIZE_T codeSize;
+        std::string msgOut;
+    };
+    
     struct ShaderCompileParams
     {
         std::wstring input {L"" };
@@ -90,19 +97,19 @@ namespace NebulaEngine::Platforms
         LOG_DEBUG("[Platforms::ReleaseDXC]: DXC Release. ");
     }
 
-    extern "C" PLATFORM_DLL bool CompileShaderFromFile(std::wstring&& filePath, ShaderCompileParams&& params, std::string& msgOut);
-    inline bool CompileShaderFromFile(std::wstring&& filePath, ShaderCompileParams&& params, std::string& msgOut)
+    extern "C" PLATFORM_DLL bool CompileShaderFromFile(ShaderCompileParams&& params, ShaderCompilerOutput& output);
+    inline bool CompileShaderFromFile(ShaderCompileParams&& params, ShaderCompilerOutput& output)
     {
         ASSERT(s_DXCompiler != nullptr && s_DXCLibrary != nullptr && s_DXCUtils != nullptr);
         HRESULT hres;
         // Load the HLSL text shader from disk
         uint32_t codePage = DXC_CP_ACP;
         CComPtr<IDxcBlobEncoding> sourceBlob;
-        hres = s_DXCUtils->LoadFile(filePath.c_str(), &codePage, &sourceBlob);
+        hres = s_DXCUtils->LoadFile(params.input.c_str(), &codePage, &sourceBlob);
         if (FAILED(hres))
         {
-            msgOut = "Could not load shader file. ";
-            LOG_ERROR("[Platforms::CompileShaderFromFile]: Could not load shader file");
+            output.msgOut = "Could not load shader file. ";
+            LOG_ERROR("[Platforms::CompileShaderFromFile]: Could not load shader file at path:" + String::WStringToString(params.input));
             return false;
         }
 
@@ -185,14 +192,38 @@ namespace NebulaEngine::Platforms
             hres = result->GetErrorBuffer(&errorBlob);
             if (SUCCEEDED(hres) && errorBlob)
             {
-                msgOut = std::string((const char*)errorBlob->GetBufferPointer());
-                LOG_ERROR("[Platforms::CompileShaderFromFile]: Shader compilation failed : " + msgOut);
+                output.msgOut = std::string((const char*)errorBlob->GetBufferPointer());
+                LOG_ERROR("[Platforms::CompileShaderFromFile]: Shader compilation failed : " + output.msgOut);
             }
 
             return false;
         }
 
-        
+
+        // Get compilation result
+        CComPtr<IDxcBlob> shaderCode;
+        result->GetResult(&shaderCode);
+
+        output.codePointer = static_cast<const uint32_t*>(shaderCode->GetBufferPointer());
+        output.codeSize = shaderCode->GetBufferSize();
+
+        if (params.output.has_value())
+        {
+            // Write the bytecode to a file
+            std::ofstream outFile(params.output.value(), std::ios::binary);
+            if (outFile.is_open())
+            {
+                outFile.write(reinterpret_cast<const char*>(shaderCode->GetBufferPointer()), shaderCode->GetBufferSize());
+                outFile.close();
+                LOG_DEBUG("[ShaderCompilerAPI::CompileShaderFromFile]: Shader bytecode successfully written to :" + String::WStringToString(params.output.value()));
+            }
+            else
+            {
+                LOG_ERROR("[ShaderCompilerAPI::CompileShaderFromFile]: Shader bytecode falied to written to :" + String::WStringToString(params.output.value()));
+                return false;
+            }
+        }
+       
         return true;
     }
 

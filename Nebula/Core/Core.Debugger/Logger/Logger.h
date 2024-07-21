@@ -45,6 +45,13 @@ namespace NebulaEngine::Debugger
         void Fatal(const std::string&& msg);
         void Trace(const std::string&& msg);
 
+        void Log(const std::wstring&& msg);
+        void Info(const std::wstring&& msg);
+        void Warning(const std::wstring&& msg);
+        void Error(const std::wstring&& msg);
+        void Fatal(const std::wstring&& msg);
+        void Trace(const std::wstring&& msg);
+
 
         void SetServerityLevel(LogLevel level);
         void BindCallback(LogCallback callback);

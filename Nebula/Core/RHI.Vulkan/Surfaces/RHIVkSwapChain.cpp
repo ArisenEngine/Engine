@@ -12,6 +12,7 @@ SwapChain(), m_VkDevice(device), m_VkSurface(surface)
 NebulaEngine::RHI::RHIVkSwapChain::~RHIVkSwapChain() noexcept
 {
     LOG_INFO("[RHIVkSwapChain::~RHIVkSwapChain]: ~RHIVkSwapChain");
+    m_FrameBuffers.clear();
     m_ImageHandles.clear();
     if (m_VkSwapChain != VK_NULL_HANDLE && m_VkDevice != VK_NULL_HANDLE)
     {
@@ -58,10 +59,14 @@ void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
     u32 actualImageCount = 0;
     Containers::Vector<VkImage> images;
     vkGetSwapchainImagesKHR(m_VkDevice, m_VkSwapChain, &actualImageCount, nullptr);
+
     m_ImageHandles.resize(actualImageCount);
+    m_FrameBuffers.resize(actualImageCount);
+    
     images.resize(actualImageCount);
     vkGetSwapchainImagesKHR(m_VkDevice, m_VkSwapChain, &actualImageCount, images.data());
 
+   
     for (int i = 0; i < images.size(); ++i)
     {
         VkImage image = images[i];
@@ -79,9 +84,10 @@ void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
             IMAGE_ASPECT_COLOR_BIT,
             0,1,0,1
         };
-        m_ImageHandles.emplace_back(std::make_unique<RHIVkImageHandle>(m_VkDevice, image, desc));
+        
+        m_ImageHandles[i] = std::make_unique<RHIVkImageHandle>(m_VkDevice, image, desc);
     }
-    
+
 }
 
 void NebulaEngine::RHI::RHIVkSwapChain::RecreateSwapChainIfNeeded()

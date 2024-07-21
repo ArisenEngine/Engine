@@ -8,6 +8,9 @@ NebulaEngine::RHI::RHIVkGPURenderPass::RHIVkGPURenderPass(VkDevice device): GPUR
 
 NebulaEngine::RHI::RHIVkGPURenderPass::~RHIVkGPURenderPass() noexcept
 {
-    vkDestroyRenderPass(m_VkDevice, m_VkRenderPass, nullptr);
-    LOG_DEBUG("## Destroy Vulkan Render Pass ##");
+    if (m_VkRenderPass != VK_NULL_HANDLE)
+    {
+        vkDestroyRenderPass(m_VkDevice, m_VkRenderPass, nullptr);
+        LOG_DEBUG("## Destroy Vulkan Render Pass ##");
+    }
 }

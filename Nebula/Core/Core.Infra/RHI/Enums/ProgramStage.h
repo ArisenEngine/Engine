@@ -8,8 +8,8 @@ namespace NebulaEngine::RHI
         Vertex = 0,
         Hull,
         Domain,
-        Fragment,
         Geometry,
+        Fragment,
         Compute,
         // Shader Model 6.3
         RayTracing,

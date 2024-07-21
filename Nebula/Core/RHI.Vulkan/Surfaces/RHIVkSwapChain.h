@@ -1,4 +1,5 @@
 #pragma once
+#include "RHIVkFrameBuffer.h"
 #include "../Common.h"
 #include "../Handles/RHIVkImageHandle.h"
 #include "RHI/Surfaces/SwapChain.h"
@@ -22,5 +23,6 @@ namespace NebulaEngine::RHI
         VkDevice m_VkDevice;
         VkSurfaceKHR m_VkSurface;
         Containers::Vector<std::unique_ptr<RHIVkImageHandle>> m_ImageHandles;
+        Containers::Vector<std::unique_ptr<RHIVkFrameBuffer>> m_FrameBuffers;
     };
 }

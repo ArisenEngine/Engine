@@ -8,7 +8,11 @@ namespace NebulaEngine::RHI
 	{
 	public:
 		NO_COPY_NO_MOVE_NO_DEFAULT(Surface)
-		VIRTUAL_DECONSTRUCTOR(Surface)
+		virtual ~Surface() noexcept
+		{
+			m_RenderWindowId = ID::InvalidID;
+			m_Instance = nullptr;
+		}
 		explicit Surface(u32&& id, Instance* instance): m_RenderWindowId(id), m_Instance(instance) { };
 		virtual void* GetHandle() const = 0;
 		virtual void InitSwapChain() = 0;
