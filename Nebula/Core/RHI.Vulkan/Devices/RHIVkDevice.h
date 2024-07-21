@@ -70,6 +70,8 @@ namespace NebulaEngine::RHI
         void SetResolution(const u32&& windowId, const u32&& width, const u32&& height) override;
         void CheckSwapChainCapabilities() override;
 
+        void CreatePipeline(u32 windowId) override;
+        
         NebulaEngine::RHI::VkQueueFamilyIndices FindQueueFamilies(VkSurfaceKHR surface);
     };
 }

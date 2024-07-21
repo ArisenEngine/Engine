@@ -5,10 +5,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Test.h" />
-    <ClInclude Include="TestWindows.h" />
-    <ClInclude Include="TestEngine.h" />
+    <ClInclude Include="LoggerTest.h" />
+    <ClInclude Include="VulkanTest.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="Shader\*" />
   </ItemGroup>
 </Project>

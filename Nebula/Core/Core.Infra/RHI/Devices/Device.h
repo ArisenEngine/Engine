@@ -9,7 +9,10 @@ namespace NebulaEngine::RHI
         
     public:
         NO_COPY_NO_MOVE(Device)
-        VIRTUAL_DECONSTRUCTOR(Device)
+        virtual ~Device() noexcept
+        {
+            m_Instance = nullptr;
+        }
 
         
         
@@ -31,5 +34,7 @@ namespace NebulaEngine::RHI
         virtual bool IsSurfaceAvailable() const = 0;
 
         virtual void CheckSwapChainCapabilities() = 0;
+
+        virtual void CreatePipeline(u32 windowId) = 0;
     };
 }

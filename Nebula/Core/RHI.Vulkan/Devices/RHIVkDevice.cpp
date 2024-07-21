@@ -110,6 +110,7 @@ const NebulaEngine::RHI::Surface& NebulaEngine::RHI::RHIVkDevice::GetSurface(u32
 
 void NebulaEngine::RHI::RHIVkDevice::SetResolution(const u32&& windowId, const u32&& width, const u32&& height)
 {
+    // TODO:
 }
 
 void NebulaEngine::RHI::RHIVkDevice::CheckSwapChainCapabilities()
@@ -143,6 +144,13 @@ void NebulaEngine::RHI::RHIVkDevice::CheckSwapChainCapabilities()
             LOG_DEBUG("Mode :" + std::to_string(present));
         }
     }
+}
+
+void NebulaEngine::RHI::RHIVkDevice::CreatePipeline(u32 windowId)
+{
+    ASSERT(m_LogicalDevices[windowId] && m_LogicalDevices[windowId].get());
+    auto logical = m_LogicalDevices[windowId].get();
+    m_GPUPipelines.insert({windowId, std::make_unique<RHIVkGPUPipeline>(logical->vkDevice)});
 }
 
 NebulaEngine::RHI::VkQueueFamilyIndices NebulaEngine::RHI::RHIVkDevice::FindQueueFamilies(VkSurfaceKHR surface)
@@ -255,6 +263,7 @@ NebulaEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
 {
     m_Instance = nullptr;
     m_Surfaces.clear();
+    m_GPUPipelines.clear();
     m_LogicalDevices.clear();
     LOG_INFO("[RHIVkDevice::~RHIVkDevice]: ~RHIVkDevice");
 }
@@ -332,6 +341,7 @@ void NebulaEngine::RHI::RHIVkDevice::InitLogicDevices()
         }
         
         CreateLogicDevice(windowId);
+        CreatePipeline(windowId);
         surfacePair.second.get()->InitSwapChain();
     }
 }

@@ -28,6 +28,7 @@ namespace NebulaEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(MemoryView)
         MemoryView(MemoryViewType type) : m_ViewType(type) { }
         VIRTUAL_DECONSTRUCTOR(MemoryView)
+        virtual void* GetView() = 0;
     protected:
         MemoryViewType m_ViewType;
         std::optional<ImageViewDesc> m_ImageViewDesc;

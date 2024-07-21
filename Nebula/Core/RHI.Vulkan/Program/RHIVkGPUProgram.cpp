@@ -31,7 +31,7 @@ bool NebulaEngine::RHI::RHIVkGPUProgram::AttachProgramByteCode(GPUProgramDesc&& 
     }
 
     m_Stage = desc.stage;
-    
+    m_Entry = desc.entry;
     return true;
 }
 
