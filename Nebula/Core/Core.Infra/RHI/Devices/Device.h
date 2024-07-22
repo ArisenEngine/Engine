@@ -14,7 +14,8 @@ namespace NebulaEngine::RHI
             m_Instance = nullptr;
         }
 
-        virtual void* GetHandle() const = 0; 
+        virtual void* GetHandle() const = 0;
+        virtual void DeviceWaitIdle() const = 0;
         
     protected:
         Instance* m_Instance;

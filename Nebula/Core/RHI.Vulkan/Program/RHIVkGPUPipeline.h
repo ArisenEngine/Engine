@@ -17,7 +17,6 @@ namespace NebulaEngine::RHI
 
 
     private:
-        Containers::Vector<std::unique_ptr<RHIVkGPURenderPass>> m_RenderPasses;
         VkPipelineLayout m_VkPipelineLayout;
         VkPipeline m_VkPipeline;
         VkDevice m_VkDevice;

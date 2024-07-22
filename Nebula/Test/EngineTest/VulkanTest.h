@@ -11,7 +11,9 @@ using namespace NebulaEngine;
 
 #ifdef TEST_WINDOWS
 
-u32 windowId;
+Containers::Vector<u32> windowsList;
+
+const int k_WindowsCount = 4;
 
 LRESULT WinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -57,7 +59,10 @@ public:
 
         LOG_INFO("Logger initialized..");
         
-        windowId = Platforms::CreateRenderWindow(nullptr, WinProc, 640, 480);
+        for (int i = 0; i < k_WindowsCount; ++i)
+        {
+            windowsList.emplace_back(Platforms::CreateRenderWindow(nullptr, WinProc, 640, 480));
+        }
 
         // auto window2 = Platforms::CreateRenderWindow(nullptr, WinProc, 400, 680);
         // auto window3 = Platforms::CreateRenderWindow(nullptr, WinProc, 600, 380);
@@ -83,10 +88,11 @@ public:
         auto env = m_Instance->GetEnvString();
         // LOG_INFO(std::move(env));
 
-        // init surface
-        m_Instance->CreateSurface(std::move(windowId));
-        // m_Instance->CreateSurface(std::move(window2));
-        // m_Instance->CreateSurface(std::move(window3));
+        // init surfaces
+        for (auto& windowId : windowsList)
+        {
+            m_Instance->CreateSurface(std::move(windowId));
+        }
 
         // pick physical device
         m_Instance->PickPhysicalDevice();
@@ -94,8 +100,6 @@ public:
         // init logical devices
         m_Instance->InitLogicDevices();
         
-        LOG_INFO(" Is support linear space:" + std::to_string(m_Instance->IsSupportLinearColorSpace(std::move(windowId))));
-
         Platforms::InitDXC();
         
         namespace fs = std::filesystem;
@@ -165,6 +169,8 @@ public:
 
         // NOTE: logger must be dispose at the last
         Debugger::Logger::Dispose();
+
+        windowsList.clear();
     }
 };
 

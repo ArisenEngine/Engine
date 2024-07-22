@@ -26,6 +26,4 @@ NebulaEngine::RHI::RHIVkGPUPipeline::~RHIVkGPUPipeline() noexcept
         vkDestroyPipelineLayout(m_VkDevice, m_VkPipelineLayout, nullptr);
         LOG_DEBUG("## Destroy Vulkan Pipeline Layout ##");
     }
-
-    m_RenderPasses.clear();
 }

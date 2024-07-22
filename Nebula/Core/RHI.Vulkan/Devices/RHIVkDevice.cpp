@@ -8,8 +8,14 @@ NebulaEngine::RHI::RHIVkDevice::RHIVkDevice(Instance* instance, VkQueue graphicQ
     
 }
 
+void NebulaEngine::RHI::RHIVkDevice::DeviceWaitIdle() const
+{
+    vkDeviceWaitIdle(m_VkDevice);
+}
+
 NebulaEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
 {
+    DeviceWaitIdle();
     vkDestroyDevice(m_VkDevice, nullptr);
     LOG_DEBUG("## Destroy Vulkan Device ##")
     m_Instance = nullptr;
