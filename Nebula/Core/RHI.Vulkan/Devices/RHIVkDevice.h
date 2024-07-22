@@ -18,6 +18,8 @@ namespace NebulaEngine::RHI
         ~RHIVkDevice() noexcept override;
         void* GetHandle() const override { return m_VkDevice; }
         RHIVkDevice(Instance* instance, VkQueue graphicQueue, VkQueue presentQueue, VkDevice device);
+
+        void DeviceWaitIdle() const override;
     private:
 
         friend class RHIVkInstance;
