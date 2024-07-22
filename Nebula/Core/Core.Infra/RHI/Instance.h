@@ -5,6 +5,7 @@
 #include "../Common/CommandHeaders.h"
 #include "../Common/PrimitiveTypes.h"
 #include "Devices/Device.h"
+#include "Program/GPUProgram.h"
 
 
 namespace NebulaEngine::RHI
@@ -68,8 +69,7 @@ namespace NebulaEngine::RHI
         virtual bool IsSurfacesAvailable() const = 0;
         
         virtual void CreateLogicDevice(u32 windowId) = 0;
-        virtual const Device& GetLogicalDevice(u32 windowId) = 0;
-        
+        virtual Device& GetLogicalDevice(u32 windowId) = 0;
     protected:
         
         bool m_EnableValidation { false };

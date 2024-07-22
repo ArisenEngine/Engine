@@ -53,8 +53,7 @@ namespace NebulaEngine::RHI
         bool IsSurfacesAvailable() const override { return !m_Surfaces.empty(); }
         
         void CreateLogicDevice(u32 windowId) override;
-        const Device& GetLogicalDevice(u32 windowId) override;
-    
+        Device& GetLogicalDevice(u32 windowId) override;
     protected:
         
         void CheckSwapChainCapabilities() override;

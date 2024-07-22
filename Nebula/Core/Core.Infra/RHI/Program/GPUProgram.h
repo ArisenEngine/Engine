@@ -3,17 +3,10 @@
 #include "RHI/Enums/PipelineShaderStageCreateFlagBits.h"
 #include "RHI/Enums/ProgramStage.h"
 #include "RHI/Enums/ShaderStage.h"
+#include "../RHICommon.h"
 
 namespace NebulaEngine::RHI
 {
-    struct GPUProgramDesc
-    {
-        size_t codeSize;
-        const uint32_t* byteCode;
-        const char* entry;
-        ShaderStage stage;
-    };
-    
     class GPUProgram
     {
     public:

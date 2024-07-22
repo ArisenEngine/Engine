@@ -1,6 +1,7 @@
 #include "RHIVkInstance.h"
 #include <vulkan/vulkan_core.h>
 
+#include "Program/RHIVkGPUProgram.h"
 #include "Windows/RenderWindowAPI.h"
 
 bool CheckDeviceExtensionSupport(VkPhysicalDevice device)
@@ -463,7 +464,7 @@ void NebulaEngine::RHI::RHIVkInstance::CreateLogicDevice(u32 windowId)
     m_LogicalDevices.insert({windowId, std::make_unique<RHIVkDevice>(this, graphicQueue, presentQueue, device)});
 }
 
-const NebulaEngine::RHI::Device& NebulaEngine::RHI::RHIVkInstance::GetLogicalDevice(u32 windowId)
+NebulaEngine::RHI::Device& NebulaEngine::RHI::RHIVkInstance::GetLogicalDevice(u32 windowId)
 {
     ASSERT(m_LogicalDevices[windowId] && m_LogicalDevices[windowId].get());
     ASSERT(m_LogicalDevices[windowId].get()->m_VkDevice != VK_NULL_HANDLE);
