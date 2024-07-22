@@ -27,7 +27,6 @@ namespace NebulaEngine::RHI
         NO_COPY_NO_MOVE(GPUPipeline)
         GPUPipeline() = default;
         virtual ~GPUPipeline() noexcept { m_DynamicPipelineStates.clear(); }
-        virtual void* GetHandle() const = 0;
     protected:
         Containers::Vector<DynamicPipelineState> m_DynamicPipelineStates;
     };

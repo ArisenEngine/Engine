@@ -21,8 +21,8 @@ namespace NebulaEngine::RHI
         VkPipelineLayout m_VkPipelineLayout;
         VkPipeline m_VkPipeline;
         VkDevice m_VkDevice;
-        VkPipelineShaderStageCreateInfo ;
-        VkGraphicsPipelineCreateInfo;
-        VkComputePipelineCreateInfo;
+        // VkPipelineShaderStageCreateInfo ;
+        // VkGraphicsPipelineCreateInfo;
+        // VkComputePipelineCreateInfo;
     };
 }

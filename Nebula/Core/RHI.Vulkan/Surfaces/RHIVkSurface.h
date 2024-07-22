@@ -26,6 +26,7 @@ namespace NebulaEngine::RHI
     private:
 
         friend class RHIVkDevice;
+        friend class RHIVkInstance;
 
         void SetSwapChainSupportDetail(VkSwapChainSupportDetail&& swapChainSupportDetail) { m_SwapChainSupportDetail = swapChainSupportDetail; };
         void SetQueueFamilyIndices(VkQueueFamilyIndices&& queueFaimlyIndices) { m_QueueFamilyIndices = queueFaimlyIndices; }

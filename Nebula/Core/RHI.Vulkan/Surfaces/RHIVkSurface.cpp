@@ -44,7 +44,7 @@ void RHI::RHIVkSurface::InitSwapChain()
     
     auto rhiInstance = static_cast<RHIVkInstance*>(m_Instance);
     m_SwapChain = std::make_unique<RHIVkSwapChain>(static_cast<VkDevice>(
-                                                       rhiInstance->GetLogicalDevice(std::move(m_RenderWindowId))), m_VkSurface);
+                                                       rhiInstance->GetLogicalDevice(std::move(m_RenderWindowId)).GetHandle()), m_VkSurface);
     auto width = Platforms::GetWindowWidth(m_RenderWindowId);
     auto height = Platforms::GetWindowHeight(m_RenderWindowId);
 
