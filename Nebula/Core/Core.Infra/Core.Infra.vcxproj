@@ -50,6 +50,7 @@
     <ClInclude Include="RHI\Program\GPUPipeline.h" />
     <ClInclude Include="RHI\Program\GPUProgram.h" />
     <ClInclude Include="RHI\Program\GPUSubPass.h" />
+    <ClInclude Include="RHI\RHICommon.h" />
     <ClInclude Include="RHI\Surfaces\Attachment.h" />
     <ClInclude Include="RHI\Surfaces\FrameBuffer.h" />
     <ClInclude Include="RHI\Surfaces\Surface.h" />

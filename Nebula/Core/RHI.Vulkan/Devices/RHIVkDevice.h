@@ -6,6 +6,8 @@
 #include <optional>
 
 #include "../Program/RHIVkGPUPipeline.h"
+#include "../Program/RHIVkGPUProgram.h"
+
 #include "Logger/Logger.h"
 
 namespace NebulaEngine::RHI
@@ -20,6 +22,9 @@ namespace NebulaEngine::RHI
         RHIVkDevice(Instance* instance, VkQueue graphicQueue, VkQueue presentQueue, VkDevice device);
 
         void DeviceWaitIdle() const override;
+        u32 CreateGPUProgram() override;
+        void DestroyGPUProgram(u32 programId) override;
+        bool AttachProgramByteCode(u32 programId, GPUProgramDesc&& desc) override;
     private:
 
         friend class RHIVkInstance;
@@ -28,6 +33,6 @@ namespace NebulaEngine::RHI
         VkQueue m_VkPresentQueue;
         VkDevice m_VkDevice;
         RHIVkGPUPipeline* m_GPUPipeline;
-        
+        Containers::Map<u32, std::unique_ptr<RHIVkGPUProgram>> m_GPUPrograms;
     };
 }

@@ -11,7 +11,14 @@ using namespace NebulaEngine;
 
 #ifdef TEST_WINDOWS
 
-Containers::Vector<u32> windowsList;
+struct RenderContext
+{
+    u32 windowId;
+    RHI::Device* device;
+    Containers::Vector<u32> vertexProgram;
+    Containers::Vector<u32> fragmentProgram;
+};
+Containers::Vector<RenderContext> g_RenderContexts;
 
 const int k_WindowsCount = 4;
 
@@ -58,10 +65,16 @@ public:
         }
 
         LOG_INFO("Logger initialized..");
+
+        g_RenderContexts.resize(k_WindowsCount);
         
         for (int i = 0; i < k_WindowsCount; ++i)
         {
-            windowsList.emplace_back(Platforms::CreateRenderWindow(nullptr, WinProc, 640, 480));
+            auto windowId = Platforms::CreateRenderWindow(nullptr, WinProc, 640, 480);
+            g_RenderContexts[i] = RenderContext
+            {
+               windowId
+            };
         }
 
         // auto window2 = Platforms::CreateRenderWindow(nullptr, WinProc, 400, 680);
@@ -89,9 +102,9 @@ public:
         // LOG_INFO(std::move(env));
 
         // init surfaces
-        for (auto& windowId : windowsList)
+        for (auto& renderContext : g_RenderContexts)
         {
-            m_Instance->CreateSurface(std::move(windowId));
+            m_Instance->CreateSurface(std::move(renderContext.windowId));
         }
 
         // pick physical device
@@ -99,6 +112,11 @@ public:
         
         // init logical devices
         m_Instance->InitLogicDevices();
+
+        for(int i = 0; i < k_WindowsCount; ++i)
+        {
+            g_RenderContexts[i].device = &m_Instance->GetLogicalDevice(g_RenderContexts[i].windowId);
+        }
         
         Platforms::InitDXC();
         
@@ -126,6 +144,21 @@ public:
             LOG_DEBUG("Vertex Shader Compilation done.");
         }
 
+        for(int i = 0; i < k_WindowsCount; ++i)
+        {
+            auto programId = g_RenderContexts[i].device->CreateGPUProgram();
+            auto desc = RHI::GPUProgramDesc
+            {
+                outputVertex.codeSize,
+                outputVertex.codePointer,
+                "Vert",
+                RHI::SHADER_STAGE_VERTEX_BIT
+            };
+            g_RenderContexts[i].device->AttachProgramByteCode(programId, std::move(desc));
+            g_RenderContexts[i].vertexProgram.emplace_back(programId);
+        }
+
+        
         Platforms::ShaderCompileParams fragmentParams
         {
             path,
@@ -145,7 +178,20 @@ public:
         {
             LOG_DEBUG("Fragment Shader Compilation done.");
         }
-        
+
+        for(int i = 0; i < k_WindowsCount; ++i)
+        {
+            auto programId = g_RenderContexts[i].device->CreateGPUProgram();
+            auto desc = RHI::GPUProgramDesc
+            {
+                outputfragment.codeSize,
+                outputfragment.codePointer,
+                "Frag",
+                RHI::SHADER_STAGE_FRAGMENT_BIT
+            };
+            g_RenderContexts[i].device->AttachProgramByteCode(programId, std::move(desc));
+            g_RenderContexts[i].fragmentProgram.emplace_back(programId);
+        }
         
         return true;
     }
@@ -170,7 +216,7 @@ public:
         // NOTE: logger must be dispose at the last
         Debugger::Logger::Dispose();
 
-        windowsList.clear();
+        g_RenderContexts.clear();
     }
 };
 
