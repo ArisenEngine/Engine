@@ -3,13 +3,56 @@
 
 #include "Windows/RenderWindowAPI.h"
 
-
-NebulaEngine::Containers::Vector<const char*> InstanceExtensionNames
+bool CheckDeviceExtensionSupport(VkPhysicalDevice device)
 {
-    VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-    "VK_KHR_win32_surface",
-    "VK_KHR_surface"
-};
+    uint32_t extensionCount;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+    NebulaEngine::Containers::Vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+    NebulaEngine::Containers::Set<std::string> requiredExtensions(NebulaEngine::RHI::VkDeviceExtensionNames.begin(),
+        NebulaEngine::RHI::VkDeviceExtensionNames.end());
+
+    for (const auto& extension : availableExtensions)
+    {
+        requiredExtensions.erase(extension.extensionName);
+    }
+    
+    return requiredExtensions.empty();
+}
+
+int RateDeviceSuitability(VkPhysicalDevice device) {
+    
+    VkPhysicalDeviceProperties deviceProperties;
+    VkPhysicalDeviceFeatures deviceFeatures;
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+    vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+    
+    int score = 0;
+
+    // Discrete GPUs have a significant performance advantage
+    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+        score += 1000;
+    }
+
+    // Maximum possible size of textures affects graphics quality
+    score += deviceProperties.limits.maxImageDimension2D;
+
+    // Application can't function without geometry shaders
+    if (!deviceFeatures.geometryShader)
+    {
+        return 0;
+    }
+
+    bool extensionsSupported = CheckDeviceExtensionSupport(device);
+    if (!extensionsSupported)
+    {
+        return 0;
+    }
+    
+    return score;
+}
 
 bool CheckValidationLayerSupport()
 {
@@ -146,8 +189,8 @@ NebulaEngine::RHI::RHIVkInstance::RHIVkInstance(InstanceInfo&& app_info): Instan
 
 
     // Extensions Slot 
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(InstanceExtensionNames.size());
-    createInfo.ppEnabledExtensionNames = InstanceExtensionNames.data();
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(VkInstanceExtensionNames.size());
+    createInfo.ppEnabledExtensionNames = VkInstanceExtensionNames.data();
 
     if (vkCreateInstance(&createInfo, nullptr, &m_VkInstance) != VK_SUCCESS)
     {
@@ -155,8 +198,7 @@ NebulaEngine::RHI::RHIVkInstance::RHIVkInstance(InstanceInfo&& app_info): Instan
     }
 
     SetupDebugMessager();
-
-    CreateDevice();
+    
 }
 
 VkResult CreateDebugUtilsMessengerEXT(
@@ -178,9 +220,89 @@ VkResult CreateDebugUtilsMessengerEXT(
     }
 }
 
-void NebulaEngine::RHI::RHIVkInstance::CreateDevice()
+
+NebulaEngine::RHI::VkQueueFamilyIndices NebulaEngine::RHI::RHIVkInstance::FindQueueFamilies(VkSurfaceKHR surface)
 {
-    m_Device = new RHIVkDevice(this);
+
+    if (m_CurrentPhysicsDevice == VK_NULL_HANDLE)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkInstance::FindQueueFamilies]: Physical device invalid!")
+    }
+
+    NebulaEngine::RHI::VkQueueFamilyIndices indices;
+    
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(m_CurrentPhysicsDevice,
+        &queueFamilyCount, nullptr);
+
+    NebulaEngine::Containers::Vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(m_CurrentPhysicsDevice, &queueFamilyCount,
+        queueFamilies.data());
+
+    int i = 0;
+    for (const auto& queueFamily : queueFamilies)
+    {
+
+        if (indices.IsComplete())
+        {
+            break;
+        }
+        
+        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        {
+            indices.graphicsFamily = i;
+        }
+
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(m_CurrentPhysicsDevice, i, surface, &presentSupport);
+
+        if (presentSupport)
+        {
+            indices.presentFamily = i;
+        }
+        
+        ++i;
+    }
+
+    return indices;
+}
+
+const NebulaEngine::RHI::VkSwapChainSupportDetail NebulaEngine::RHI::RHIVkInstance::
+GetSwapChainSupportDetails(u32&& windowId)
+{
+    ASSERT(m_Surfaces[windowId] && m_Surfaces[windowId].get());
+    
+    RHIVkSurface* surface = m_Surfaces[windowId].get();
+    
+    return surface->GetSwapChainSupportDetail();
+}
+
+const NebulaEngine::RHI::VkSwapChainSupportDetail NebulaEngine::RHI::RHIVkInstance::QuerySwapChainSupport(
+    const VkSurfaceKHR surface) const
+{
+    NebulaEngine::RHI::VkSwapChainSupportDetail details {};
+
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_CurrentPhysicsDevice, surface, &details.capabilities);
+
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(m_CurrentPhysicsDevice, surface, &formatCount, nullptr);
+
+    if (formatCount != 0)
+    {
+        details.formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(m_CurrentPhysicsDevice, surface, &formatCount, details.formats.data());
+    }
+
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(m_CurrentPhysicsDevice, surface, &presentModeCount, nullptr);
+
+    if (presentModeCount != 0)
+    {
+        details.presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(m_CurrentPhysicsDevice, surface, &presentModeCount, details.presentModes.data());
+    }
+    
+    return details;
 }
 
 void NebulaEngine::RHI::RHIVkInstance::SetupDebugMessager()
@@ -225,23 +347,26 @@ void NebulaEngine::RHI::RHIVkInstance::DisposeDebugMessager()
 
 void NebulaEngine::RHI::RHIVkInstance::CreateSurface(u32&& windowId)
 {
-    m_Device->CreateSurface(std::move(windowId));
+    u32 key = windowId;
+    m_Surfaces.insert({key, std::make_unique<RHIVkSurface>(std::move(windowId), this)});
 }
 
 void NebulaEngine::RHI::RHIVkInstance::DestroySurface(u32&& windowId)
 {
-    m_Device->DestroySurface(std::move(windowId));
+   // TODO: 
 }
 
 const NebulaEngine::RHI::Surface& NebulaEngine::RHI::RHIVkInstance::GetSurface(u32&& windowId)
 {
-    return m_Device->GetSurface(std::move(windowId));
+    ASSERT(m_Surfaces[windowId] && m_Surfaces[windowId].get());
+    Surface& surface = *m_Surfaces[windowId].get();
+    return surface;
 }
 
 bool NebulaEngine::RHI::RHIVkInstance::IsSupportLinearColorSpace(u32&& windowId)
 {
    
-    auto& supportDetail = m_Device->GetSwapChainSupportDetails(std::move(windowId));
+    auto& supportDetail = GetSwapChainSupportDetails(std::move(windowId));
 
     for (const auto& availableFormat : supportDetail.formats)
     {
@@ -256,7 +381,7 @@ bool NebulaEngine::RHI::RHIVkInstance::IsSupportLinearColorSpace(u32&& windowId)
 
 bool NebulaEngine::RHI::RHIVkInstance::PresentModeSupported(u32&& windowId, PresentMode mode)
 {
-    auto& supportDetail = m_Device->GetSwapChainSupportDetails(std::move(windowId));
+    auto& supportDetail = GetSwapChainSupportDetails(std::move(windowId));
     for (const auto& presentMode : supportDetail.presentModes)
     {
         if (presentMode == mode)
@@ -275,7 +400,74 @@ void NebulaEngine::RHI::RHIVkInstance::SetCurrentPresentMode(u32&& windowId, Pre
 
 void NebulaEngine::RHI::RHIVkInstance::SetResolution(const u32&& windowId, const u32&& width, const u32&& height)
 {
-    m_Device->SetResolution(std::move(windowId), std::move(width), std::move(height));
+   // TODO: 
+}
+
+void NebulaEngine::RHI::RHIVkInstance::CreateLogicDevice(u32 windowId)
+{
+    const Surface& rhiSurface = GetSurface(std::move(windowId));
+    VkQueueFamilyIndices indices = FindQueueFamilies(static_cast<VkSurfaceKHR>(rhiSurface.GetHandle()));
+
+    // Queue Create Info 
+    Containers::Vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    Containers::Set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+
+    float queuePriority = 1.0f;
+    for (uint32_t queueFamily : uniqueQueueFamilies)
+    {
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = queueFamily;
+        queueCreateInfo.queueCount = 1;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+        queueCreateInfos.push_back(queueCreateInfo);
+    }
+
+    // Device Features
+    VkPhysicalDeviceFeatures deviceFeatures{};
+
+    // Device Create Info
+    VkDeviceCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+    createInfo.pQueueCreateInfos = queueCreateInfos.data();
+    createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+
+    createInfo.pEnabledFeatures = &deviceFeatures;
+
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(VkDeviceExtensionNames.size());
+    createInfo.ppEnabledExtensionNames = VkDeviceExtensionNames.data();
+
+    if (IsEnableValidation())
+    {
+        createInfo.enabledLayerCount = static_cast<uint32_t>(VkValidationLayers.size());
+        createInfo.ppEnabledLayerNames = VkValidationLayers.data();
+    }
+    else
+    {
+        createInfo.enabledLayerCount = 0;
+    }
+
+    VkDevice device;
+    if (vkCreateDevice(m_CurrentPhysicsDevice, &createInfo, nullptr, &device) != VK_SUCCESS)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkInstance::CreateLogicDevice]: failed to create logical device!");
+    }
+
+    VkQueue graphicQueue;
+    vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicQueue);
+    VkQueue presentQueue;
+    vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+
+    LOG_INFO("[RHIVkInstance::CreateLogicDevice]: Create Logical Device for surface " + std::to_string(windowId));
+    m_LogicalDevices.insert({windowId, std::make_unique<RHIVkDevice>(this, graphicQueue, presentQueue, device)});
+}
+
+const NebulaEngine::RHI::Device& NebulaEngine::RHI::RHIVkInstance::GetLogicalDevice(u32 windowId)
+{
+    ASSERT(m_LogicalDevices[windowId] && m_LogicalDevices[windowId].get());
+    ASSERT(m_LogicalDevices[windowId].get()->m_VkDevice != VK_NULL_HANDLE);
+    return *m_LogicalDevices[windowId].get();
 }
 
 const NebulaEngine::RHI::Format NebulaEngine::RHI::RHIVkInstance::GetSuitableSwapChainFormat(u32&& windowId)
@@ -290,7 +482,35 @@ const NebulaEngine::RHI::PresentMode NebulaEngine::RHI::RHIVkInstance::GetSuitab
 
 void NebulaEngine::RHI::RHIVkInstance::CheckSwapChainCapabilities()
 {
-    m_Device->CheckSwapChainCapabilities();
+    for (auto& surfacePair : m_Surfaces)
+    {
+        auto windowId = surfacePair.first;
+        
+        if (surfacePair.second.get() == nullptr)
+        {
+            LOG_WARN(" window: {" + std::to_string(windowId) + "}'s surface is nullptr!");
+            continue;
+        }
+
+        RHIVkSurface* rhiSurface = surfacePair.second.get();
+        auto vkSurface = static_cast<VkSurfaceKHR>(
+            rhiSurface->GetHandle());
+        auto swapChainSupportDetail = QuerySwapChainSupport(vkSurface);
+
+        rhiSurface->SetSwapChainSupportDetail(std::move(swapChainSupportDetail));
+        rhiSurface->SetQueueFamilyIndices(std::move(FindQueueFamilies(vkSurface)));
+        
+        LOG_DEBUG("Surface " + std::to_string(windowId) + " supported format and color space : ");
+        for (auto& format : swapChainSupportDetail.formats)
+        {
+            LOG_DEBUG("Format:" + std::to_string(format.format) + ", Space:" + std::to_string(format.colorSpace));
+        }
+        LOG_DEBUG("Surface " + std::to_string(windowId) + " supported present mode : ");
+        for (auto& present : swapChainSupportDetail.presentModes)
+        {
+            LOG_DEBUG("Mode :" + std::to_string(present));
+        }
+    }
 }
 
 NebulaEngine::RHI::Instance* CreateInstance(NebulaEngine::RHI::InstanceInfo&& app_info)
@@ -302,7 +522,8 @@ NebulaEngine::RHI::RHIVkInstance::~RHIVkInstance() noexcept
 {
     
     DisposeDebugMessager();
-    delete m_Device;
+    m_Surfaces.clear();
+    m_LogicalDevices.clear();
     
     vkDestroyInstance(m_VkInstance, nullptr);
     LOG_INFO("[RHIVkInstance::~RHIVkInstance]: Destroy Vulkan Instance");
@@ -310,34 +531,90 @@ NebulaEngine::RHI::RHIVkInstance::~RHIVkInstance() noexcept
 
 void NebulaEngine::RHI::RHIVkInstance::InitLogicDevices()
 {
-    if (!m_Device->IsPhysicalDeviceAvailable())
+    if (!IsPhysicalDeviceAvailable())
     {
         LOG_FATAL_AND_THROW("[RHIVkInstance::InitLogicDevices]: Should pick a physical device first before init logical devices");
     }
 
-    if (!m_Device->IsSurfaceAvailable())
+    if (!IsSurfacesAvailable())
     {
         LOG_FATAL_AND_THROW("[RHIVkInstance::InitLogicDevices]: Should create all the surfaces first before init logical devices");
     }
     
-    m_Device->InitLogicDevices();
+    
+    for (auto& surfacePair : m_Surfaces)
+    {
+        auto windowId = surfacePair.first;
+        
+        if (surfacePair.second.get() == nullptr)
+        {
+            LOG_WARN("[RHIVkInstance::InitLogicDevices]: window: {" + std::to_string(windowId) + "}'s surface is nullptr!");
+            continue;
+        }
+        
+        CreateLogicDevice(windowId);
+        surfacePair.second.get()->InitSwapChain();
+    }
     
     LOG_INFO("[RHIVkInstance::InitLogicDevices]: All Logical Devices Init! ");
 }
 
 void NebulaEngine::RHI::RHIVkInstance::PickPhysicalDevice(bool considerSurface)
 {
-    if (!m_Device->IsSurfaceAvailable())
+    if (!IsSurfacesAvailable())
     {
         LOG_FATAL_AND_THROW("[RHIVkInstance::PickPhysicalDevice]: Should create all the surfaces first before pick physical devices");
     }
 
     // TODO: pick device by surface ?
-    m_Device->PickPhysicalDevice();
+   
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(m_VkInstance, &deviceCount, nullptr);
+
+    if (deviceCount == 0) 
+    {
+        LOG_FATAL_AND_THROW("[RHIVkInstance::PickPhysicalDevice]: failed to find GPUs with Vulkan support!");
+    }
+    
+    LOG_DEBUG("[RHIVkInstance::PickPhysicalDevice]: Device Count:" + std::to_string(deviceCount));
+    
+    Containers::Vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(m_VkInstance, &deviceCount, devices.data());
+
+    // Use an ordered map to automatically sort candidates by increasing score
+    Containers::Multimap<int, VkPhysicalDevice> candidates;
+
+    for (const auto& device : devices)
+    {
+        VkPhysicalDeviceProperties deviceProperties;
+        vkGetPhysicalDeviceProperties(device, &deviceProperties);
+        
+        int score = RateDeviceSuitability(device);
+        candidates.insert(std::make_pair(score, device));
+
+        LOG_DEBUG("[RHIVkInstance::PickPhysicalDevice]: " + std::string(deviceProperties.deviceName)
+            + "'s score :" + std::to_string(score));
+    }
+
+    // Check if the best candidate is suitable at all
+    if (candidates.rbegin()->first > 0)
+    {
+        m_CurrentPhysicsDevice = candidates.rbegin()->second;
+    }
+    else
+    {
+        LOG_FATAL_AND_THROW("[RHIVkDevice::PickPhysicalDevice]: failed to find a suitable GPU!");
+    }
+    
+    vkGetPhysicalDeviceProperties(m_CurrentPhysicsDevice, &m_DeviceProperties);
+    
+    LOG_DEBUG("[RHIVkDevice::PickPhysicalDevice]: Picked gpu device : " + std::string(m_DeviceProperties.deviceName));
+    
     // TODO: configurable physical device
     // TODO: if current physical device not adequate suitable swap chain, should repick one
     CheckSwapChainCapabilities();
 }
+
 
 
 

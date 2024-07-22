@@ -2,3 +2,7 @@
 #include<iostream>
 
 
+NebulaEngine::RHI::Device* CreateDevice()
+{
+    return nullptr;
+}

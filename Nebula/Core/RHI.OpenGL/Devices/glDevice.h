@@ -14,6 +14,6 @@ namespace NebulaEngine::RHI
 
 }
 
-extern "C" RHI_DLL NebulaEngine::RHI::Device * CreateDevice();
+extern "C" RHI_OPENGL_DLL NebulaEngine::RHI::Device * CreateDevice();
 
 

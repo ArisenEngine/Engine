@@ -99,7 +99,7 @@ public:
         Platforms::InitDXC();
         
         namespace fs = std::filesystem;
-        auto currentPath = fs::current_path().generic_wstring();
+        auto currentPath = fs::current_path().generic_wstring() + L"\\Shader";
         auto path = currentPath + L"\\FullScreen.hlsl";
         
         Platforms::ShaderCompileParams vertexParams

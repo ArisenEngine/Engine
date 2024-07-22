@@ -4,10 +4,12 @@
 #pragma once
 #include "../Common/CommandHeaders.h"
 #include "../Common/PrimitiveTypes.h"
+#include "Devices/Device.h"
 
 
 namespace NebulaEngine::RHI
 {
+    class Device;
     class Surface;
 
     struct InstanceInfo
@@ -43,7 +45,6 @@ namespace NebulaEngine::RHI
         }
 
         virtual void* GetHandle() const = 0;
-        virtual void* GetLogicalDevice(u32&& windowId) const = 0;
         virtual void InitLogicDevices() = 0;
         virtual void PickPhysicalDevice(bool considerSurface = false) = 0;
 
@@ -63,7 +64,11 @@ namespace NebulaEngine::RHI
         virtual void SetResolution(const u32&& windowId, const u32&& width, const u32&& height) = 0;
 
 
+        virtual bool IsPhysicalDeviceAvailable() const = 0;
+        virtual bool IsSurfacesAvailable() const = 0;
         
+        virtual void CreateLogicDevice(u32 windowId) = 0;
+        virtual const Device& GetLogicalDevice(u32 windowId) = 0;
         
     protected:
         

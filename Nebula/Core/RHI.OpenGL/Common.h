@@ -4,10 +4,10 @@
 
 #ifdef RHIOPENGL_EXPORTS
 
-#define RHI_DLL   __declspec( dllexport )
+#define RHI_OPENGL_DLL   __declspec( dllexport )
 
 #else
 
-#define RHI_DLL   __declspec( dllimport )
+#define RHI_OPENGL_DLL   __declspec( dllimport )
 
 #endif 
