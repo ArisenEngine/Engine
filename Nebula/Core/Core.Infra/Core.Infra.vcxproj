@@ -23,6 +23,8 @@
     <ClInclude Include="Common\Id.h" />
     <ClInclude Include="Common\MathTypes.h" />
     <ClInclude Include="Containers\Containers.h" />
+    <ClInclude Include="RHI\CommandBuffer\RHICommandBuffer.h" />
+    <ClInclude Include="RHI\CommandBuffer\RHICommandBufferPool.h" />
     <ClInclude Include="RHI\Enums\AttachmentLoadOp.h" />
     <ClInclude Include="RHI\Enums\AttachmentStoreOp.h" />
     <ClInclude Include="RHI\Enums\ColorSpace.h" />

@@ -183,9 +183,19 @@ void Logger::Info(const std::wstring&& msg)
 	Info(String::WStringToString(msg));
 }
 
+void Logger::Info(const std::wstring&& msg, ...)
+{
+	Info(String::WStringToString(msg), ...);
+}
+
 void Logger::Info(const std::string&& msg)
 {
 	Info(msg.c_str());
+}
+
+void Logger::Info(const std::string&& msg, ...)
+{
+	
 }
 
 void Logger::Warning(const std::wstring&& msg)
