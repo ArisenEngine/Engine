@@ -20,8 +20,6 @@ namespace NebulaEngine::Debugger
             // finer-grained info for debugging
             Log = 0x02,
             // fine-grained info
-
-
             Info = 0x04,
             // coarse-grained info
             Warning = 0x08,
@@ -74,6 +72,8 @@ namespace NebulaEngine::Debugger
 }
 
 #define LOG_INFO(msg) NebulaEngine::Debugger::Logger::GetInstance().Info(msg);
+// TODO: support formated log
+// #define LOG_INFO_FORMAT(format,  ...) NebulaEngine::Debugger::Logger::GetInstance().Info(msg);
 #define LOG_DEBUG(msg) NebulaEngine::Debugger::Logger::GetInstance().Log(msg);
 #define LOG_WARN(msg) NebulaEngine::Debugger::Logger::GetInstance().Warning(msg);
 #define LOG_ERROR(msg) NebulaEngine::Debugger::Logger::GetInstance().Error(msg);
