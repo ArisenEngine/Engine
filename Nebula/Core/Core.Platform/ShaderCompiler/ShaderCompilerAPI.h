@@ -24,7 +24,7 @@ namespace NebulaEngine::Platforms
     
     struct ShaderCompilerOutput
     {
-        const uint32_t* codePointer;
+        void* codePointer;
         SIZE_T codeSize;
         std::string msgOut;
     };
@@ -204,7 +204,7 @@ namespace NebulaEngine::Platforms
         CComPtr<IDxcBlob> shaderCode;
         result->GetResult(&shaderCode);
 
-        output.codePointer = static_cast<const uint32_t*>(shaderCode->GetBufferPointer());
+        output.codePointer = shaderCode->GetBufferPointer();
         output.codeSize = shaderCode->GetBufferSize();
 
         if (params.output.has_value())
