@@ -20,8 +20,9 @@ bool NebulaEngine::RHI::RHIVkGPUProgram::AttachProgramByteCode(GPUProgramDesc&& 
     
     VkShaderModuleCreateInfo createInfo {};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    createInfo.flags = 0;
     createInfo.codeSize = desc.codeSize;
-    createInfo.pCode = desc.byteCode;
+    createInfo.pCode = reinterpret_cast<const uint32_t*>(desc.byteCode);
     
     if (vkCreateShaderModule(m_VkDevice, &createInfo, nullptr, &m_VkShaderModule) != VK_SUCCESS)
     {

@@ -8,7 +8,7 @@ namespace NebulaEngine::RHI
     typedef struct GPUProgramDesc
     {
         size_t codeSize;
-        const uint32_t* byteCode;
+        void* byteCode;
         const char* entry;
         ShaderStage stage;
     } GPUProgramDesc;
