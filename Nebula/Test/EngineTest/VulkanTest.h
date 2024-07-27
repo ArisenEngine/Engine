@@ -15,6 +15,7 @@ struct RenderContext
 {
     u32 windowId;
     RHI::Device* device;
+    RHI::RHICommandBufferPool* commandPool;
     Containers::Vector<u32> vertexProgram;
     Containers::Vector<u32> fragmentProgram;
 };
@@ -116,6 +117,8 @@ public:
         for(int i = 0; i < k_WindowsCount; ++i)
         {
             g_RenderContexts[i].device = &m_Instance->GetLogicalDevice(g_RenderContexts[i].windowId);
+            auto poolId = g_RenderContexts[i].device->CreateCommandBufferPool();
+            g_RenderContexts[i].commandPool = g_RenderContexts[i].device->GetCommandBufferPool(poolId);
         }
         
         Platforms::InitDXC();
@@ -197,6 +200,14 @@ public:
     }
 
     void Run() override
+    {
+        for(int i = 0; i < k_WindowsCount; ++i)
+        {
+            RecordCommandBuffer(std::move(g_RenderContexts[i]));
+        }
+    }
+
+    void RecordCommandBuffer(RenderContext&& context)
     {
         
     }

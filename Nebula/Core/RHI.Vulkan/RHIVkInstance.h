@@ -46,7 +46,7 @@ namespace NebulaEngine::RHI
 
         void CreateSurface(u32&& windowId) override;
         void DestroySurface(u32&& windowId) override;
-        const Surface& GetSurface(u32&& windowId) override;
+        Surface& GetSurface(u32&& windowId) override;
         void SetResolution(const u32&& windowId, const u32&& width, const u32&& height) override;
 
         bool IsPhysicalDeviceAvailable() const override { return m_CurrentPhysicsDevice != VK_NULL_HANDLE; }

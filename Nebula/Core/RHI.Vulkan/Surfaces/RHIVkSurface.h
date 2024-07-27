@@ -23,6 +23,7 @@ namespace NebulaEngine::RHI
         [[nodiscard]] void* GetHandle() const override { return m_VkSurface; }
 
         void InitSwapChain() override;
+        const VkQueueFamilyIndices GetQueueFamilyIndices() const { return m_QueueFamilyIndices; }
     private:
 
         friend class RHIVkDevice;
@@ -30,6 +31,7 @@ namespace NebulaEngine::RHI
 
         void SetSwapChainSupportDetail(VkSwapChainSupportDetail&& swapChainSupportDetail) { m_SwapChainSupportDetail = swapChainSupportDetail; };
         void SetQueueFamilyIndices(VkQueueFamilyIndices&& queueFaimlyIndices) { m_QueueFamilyIndices = queueFaimlyIndices; }
+       
 
         VkSurfaceFormatKHR GetDefaultSurfaceFormat();
         VkPresentModeKHR GetDefaultSwapPresentMode();

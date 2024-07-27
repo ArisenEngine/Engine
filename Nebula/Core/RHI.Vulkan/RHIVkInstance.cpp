@@ -357,7 +357,7 @@ void NebulaEngine::RHI::RHIVkInstance::DestroySurface(u32&& windowId)
    // TODO: 
 }
 
-const NebulaEngine::RHI::Surface& NebulaEngine::RHI::RHIVkInstance::GetSurface(u32&& windowId)
+NebulaEngine::RHI::Surface& NebulaEngine::RHI::RHIVkInstance::GetSurface(u32&& windowId)
 {
     ASSERT(m_Surfaces[windowId] && m_Surfaces[windowId].get());
     Surface& surface = *m_Surfaces[windowId].get();
@@ -406,7 +406,7 @@ void NebulaEngine::RHI::RHIVkInstance::SetResolution(const u32&& windowId, const
 
 void NebulaEngine::RHI::RHIVkInstance::CreateLogicDevice(u32 windowId)
 {
-    const Surface& rhiSurface = GetSurface(std::move(windowId));
+    Surface& rhiSurface = GetSurface(std::move(windowId));
     VkQueueFamilyIndices indices = FindQueueFamilies(static_cast<VkSurfaceKHR>(rhiSurface.GetHandle()));
 
     // Queue Create Info 
@@ -461,7 +461,7 @@ void NebulaEngine::RHI::RHIVkInstance::CreateLogicDevice(u32 windowId)
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 
     LOG_INFO("[RHIVkInstance::CreateLogicDevice]: Create Logical Device for surface " + std::to_string(windowId));
-    m_LogicalDevices.insert({windowId, std::make_unique<RHIVkDevice>(this, graphicQueue, presentQueue, device)});
+    m_LogicalDevices.insert({windowId, std::make_unique<RHIVkDevice>(this, &rhiSurface, graphicQueue, presentQueue, device)});
 }
 
 NebulaEngine::RHI::Device& NebulaEngine::RHI::RHIVkInstance::GetLogicalDevice(u32 windowId)

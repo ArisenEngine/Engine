@@ -19,6 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CommandBuffer\RHIVkCommandBuffer.cpp" />
+    <ClCompile Include="CommandBuffer\RHIVkCommandBufferPool.cpp" />
     <ClCompile Include="Devices\RHIVkDevice.cpp" />
     <ClCompile Include="Handles\RHIVkImageHandle.cpp" />
     <ClCompile Include="Memory\RHIVkImageView.cpp" />
@@ -34,6 +36,8 @@
     <ClCompile Include="Surfaces\RHIVkSwapChain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CommandBuffer\RHIVkCommandBuffer.h" />
+    <ClInclude Include="CommandBuffer\RHIVkCommandBufferPool.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="Devices\RHIVkDevice.h" />
     <ClInclude Include="Handles\RHIVkImageHandle.h" />
