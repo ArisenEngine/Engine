@@ -1,7 +1,7 @@
 #pragma once
 #include "GPUProgram.h"
 #include "../../Common/CommandHeaders.h"
-#include "RHI/Enums/DynamicState.h"
+#include "RHI/Enums/EDynamicState.h"
 #include "RHI/Enums/ShaderStage.h"
 
 namespace NebulaEngine::RHI
@@ -28,6 +28,6 @@ namespace NebulaEngine::RHI
         GPUPipeline() = default;
         virtual ~GPUPipeline() noexcept { m_DynamicPipelineStates.clear(); }
     protected:
-        Containers::Vector<DynamicPipelineState> m_DynamicPipelineStates;
+        Containers::Vector<EDynamicPipelineState> m_DynamicPipelineStates;
     };
 }

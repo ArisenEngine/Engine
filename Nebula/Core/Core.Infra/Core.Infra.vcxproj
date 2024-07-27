@@ -30,7 +30,8 @@
     <ClInclude Include="RHI\Enums\ColorSpace.h" />
     <ClInclude Include="RHI\Enums\ComponentSwizzle.h" />
     <ClInclude Include="RHI\Enums\CompositeAlphaFlagBits.h" />
-    <ClInclude Include="RHI\Enums\DynamicState.h" />
+    <ClInclude Include="RHI\Enums\EDynamicState.h" />
+    <ClInclude Include="RHI\Enums\ESubpassContents.h" />
     <ClInclude Include="RHI\Enums\Format.h" />
     <ClInclude Include="RHI\Enums\ImageAspectFlagBits.h" />
     <ClInclude Include="RHI\Enums\ImageViewCreateFlagBits.h" />
@@ -57,6 +58,7 @@
     <ClInclude Include="RHI\Surfaces\FrameBuffer.h" />
     <ClInclude Include="RHI\Surfaces\Surface.h" />
     <ClInclude Include="RHI\Surfaces\SwapChain.h" />
+    <ClInclude Include="RHI\Surfaces\Viewport.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp" />

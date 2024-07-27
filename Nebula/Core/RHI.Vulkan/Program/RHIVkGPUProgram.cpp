@@ -12,7 +12,7 @@ NebulaEngine::RHI::RHIVkGPUProgram::~RHIVkGPUProgram() noexcept
 
 bool NebulaEngine::RHI::RHIVkGPUProgram::AttachProgramByteCode(GPUProgramDesc&& desc)
 {
-
+    VkRenderPassBeginInfo renderPassInfo{};
     if (m_VkShaderModule != VK_NULL_HANDLE)
     {
         DestroyHandle();
