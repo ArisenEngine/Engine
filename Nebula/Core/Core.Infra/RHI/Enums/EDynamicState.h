@@ -2,7 +2,7 @@
 
 namespace NebulaEngine::RHI
 {
-    typedef enum DynamicPipelineState {
+    typedef enum EDynamicPipelineState {
         DYNAMIC_STATE_VIEWPORT = 0,
         DYNAMIC_STATE_SCISSOR = 1,
         DYNAMIC_STATE_LINE_WIDTH = 2,
