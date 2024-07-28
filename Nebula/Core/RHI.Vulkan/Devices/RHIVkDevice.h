@@ -30,7 +30,10 @@ namespace NebulaEngine::RHI
         bool AttachProgramByteCode(u32 programId, GPUProgramDesc&& desc) override;
 
         u32 CreateCommandBufferPool() override;
-        RHICommandBufferPool*  GetCommandBufferPool(u32 id) override;
+        RHICommandBufferPool* GetCommandBufferPool(u32 id) override;
+
+        std::shared_ptr<GPURenderPass> GetRenderPass() override;
+        void ReleaseRenderPass(std::shared_ptr<GPURenderPass> renderPass) override;
         
     private:
 
@@ -42,6 +45,7 @@ namespace NebulaEngine::RHI
         RHIVkGPUPipeline* m_GPUPipeline;
         Containers::Map<u32, std::unique_ptr<RHIVkGPUProgram>> m_GPUPrograms;
         Containers::Map<u32, std::unique_ptr<RHIVkCommandBufferPool>> m_CommandBufferPools;
+        Containers::Vector<std::shared_ptr<GPURenderPass>> m_RenderPasses;
 
     };
 }

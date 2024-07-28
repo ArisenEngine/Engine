@@ -9,8 +9,10 @@ namespace NebulaEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkFrameBuffer)
-        RHIVkFrameBuffer(VkDevice device, FrameBufferDesc&& desc);
+        RHIVkFrameBuffer(VkDevice device);
         ~RHIVkFrameBuffer() noexcept override;
+
+        void* GetHandle() override { return m_VkFrameBuffer; }
     private:
         VkFramebuffer m_VkFrameBuffer;
         VkDevice m_VkDevice;

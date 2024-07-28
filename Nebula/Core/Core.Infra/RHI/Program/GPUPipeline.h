@@ -2,6 +2,7 @@
 #include "GPUProgram.h"
 #include "../../Common/CommandHeaders.h"
 #include "RHI/Enums/EDynamicState.h"
+#include "RHI/Enums/EPipelineBindPoint.h"
 #include "RHI/Enums/ShaderStage.h"
 
 namespace NebulaEngine::RHI
@@ -27,6 +28,9 @@ namespace NebulaEngine::RHI
         NO_COPY_NO_MOVE(GPUPipeline)
         GPUPipeline() = default;
         virtual ~GPUPipeline() noexcept { m_DynamicPipelineStates.clear(); }
+
+        virtual void* GetCurrentPipeline() = 0;
+        virtual EPipelineBindPoint GetBindPoint() = 0;
     protected:
         Containers::Vector<EDynamicPipelineState> m_DynamicPipelineStates;
     };

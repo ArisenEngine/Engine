@@ -1,5 +1,7 @@
 ﻿#include "RHIVkCommandBufferPool.h"
 
+#include "../Synchronization/RHIVkFence.h"
+
 NebulaEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* device): RHICommandBufferPool(device)
 {
     m_VkDevice = static_cast<VkDevice>(device->GetHandle());
@@ -15,10 +17,18 @@ NebulaEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* d
     {
         LOG_ERROR("[RHIVkCommandBufferPool::RHIVkCommandBufferPool]: failed to create command pool!");
     }
+
+    m_Fence = new RHIVkFence(m_VkDevice);
 }
 
 NebulaEngine::RHI::RHIVkCommandBufferPool::~RHIVkCommandBufferPool() noexcept
 {
+    LOG_DEBUG("[RHIVkCommandBufferPool::~RHIVkCommandBufferPool]: ~RHIVkCommandBufferPool");
     vkDestroyCommandPool(m_VkDevice, m_VkCommandPool, nullptr);
     LOG_DEBUG("## Destroy Vulkan Command Pool ##");
+}
+
+std::shared_ptr<NebulaEngine::RHI::RHICommandBuffer> NebulaEngine::RHI::RHIVkCommandBufferPool::CreateCommandBuffer()
+{
+    return std::make_shared<RHIVkCommandBuffer>(dynamic_cast<RHIVkDevice*>(m_Device), this);
 }

@@ -11,7 +11,6 @@ namespace NebulaEngine::RHI
         ImageViewType type;
         Format format;
         ComponentMapping componentMapping;
-
         // subresource
         u32 aspectMask;
         u32 baseMipLevel;

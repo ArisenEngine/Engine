@@ -28,6 +28,10 @@ namespace NebulaEngine::RHI
         virtual bool AttachProgramByteCode(u32 programId, GPUProgramDesc&& desc) = 0;
         virtual u32 CreateCommandBufferPool() = 0;
         virtual RHICommandBufferPool* GetCommandBufferPool(u32 id) = 0;
+
+        virtual std::shared_ptr<GPURenderPass> GetRenderPass() = 0;
+        virtual void ReleaseRenderPass(std::shared_ptr<GPURenderPass> renderPass) = 0;
+        
     protected:
         Instance* m_Instance;
         Surface* m_Surface;

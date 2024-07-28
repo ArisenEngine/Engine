@@ -13,6 +13,8 @@ namespace NebulaEngine::RHI
         RHIVkGPURenderPass(VkDevice device);
         ~RHIVkGPURenderPass() noexcept override;
 
+        void* GetHandle() override { return m_VkRenderPass; }
+        
     private:
         VkRenderPass m_VkRenderPass { VK_NULL_HANDLE };
         VkDevice m_VkDevice;

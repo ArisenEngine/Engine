@@ -3,6 +3,7 @@
 #define USE_STL_VECTOR 1
 #define USE_STL_MAP 1
 #define USE_STL_SET 1
+#define USE_STL_UNORDER_SET 1
 
 #if USE_STL_VECTOR
 
@@ -32,7 +33,7 @@ namespace NebulaEngine::Containers
 #endif;
 
 
-#if USE_STL_MAP
+#if USE_STL_SET
 
 #include<set>
 namespace NebulaEngine::Containers
@@ -40,6 +41,19 @@ namespace NebulaEngine::Containers
 	template<class TSet>
 	using Set = std::set<TSet>;
 }
+
+#endif
+
+
+#if USE_STL_UNORDER_SET
+#include <unordered_set>
+
+namespace NebulaEngine::Containers
+{
+	template<class TSet>
+	using UnorderSet = std::unordered_set<TSet>;
+}
+
 
 #endif
 

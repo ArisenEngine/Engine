@@ -12,7 +12,6 @@ SwapChain(), m_VkDevice(device), m_VkSurface(surface)
 NebulaEngine::RHI::RHIVkSwapChain::~RHIVkSwapChain() noexcept
 {
     LOG_INFO("[RHIVkSwapChain::~RHIVkSwapChain]: ~RHIVkSwapChain");
-    m_FrameBuffers.clear();
     m_ImageHandles.clear();
     if (m_VkSwapChain != VK_NULL_HANDLE && m_VkDevice != VK_NULL_HANDLE)
     {
@@ -59,10 +58,7 @@ void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
     u32 actualImageCount = 0;
     Containers::Vector<VkImage> images;
     vkGetSwapchainImagesKHR(m_VkDevice, m_VkSwapChain, &actualImageCount, nullptr);
-
     m_ImageHandles.resize(actualImageCount);
-    m_FrameBuffers.resize(actualImageCount);
-    
     images.resize(actualImageCount);
     vkGetSwapchainImagesKHR(m_VkDevice, m_VkSwapChain, &actualImageCount, images.data());
 
