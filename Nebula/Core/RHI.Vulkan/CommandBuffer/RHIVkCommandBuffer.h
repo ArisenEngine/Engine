@@ -19,8 +19,17 @@ namespace  NebulaEngine::RHI
 
         void BeginRenderPass(RenderPassBeginDesc&& desc) override;
         void EndRenderPass() override;
+        
+        void Clear() override;
+        void Begin() override;
+        void End() override;
+
+        void BindPipeline(GPUPipeline* pipeline) override;
+        
     private:
         VkCommandBuffer m_VkCommandBuffer;
+        VkCommandPool m_VkCommandPool;
+        VkDevice m_VkDevice;
         
     };
 }

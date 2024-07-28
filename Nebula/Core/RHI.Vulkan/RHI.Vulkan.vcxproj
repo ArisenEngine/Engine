@@ -34,6 +34,7 @@
     <ClCompile Include="Surfaces\RHIVkFrameBuffer.cpp" />
     <ClCompile Include="Surfaces\RHIVkSurface.cpp" />
     <ClCompile Include="Surfaces\RHIVkSwapChain.cpp" />
+    <ClCompile Include="Synchronization\RHIVkFence.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandBuffer\RHIVkCommandBuffer.h" />
@@ -52,6 +53,7 @@
     <ClInclude Include="Surfaces\RHIVkFrameBuffer.h" />
     <ClInclude Include="Surfaces\RHIVkSurface.h" />
     <ClInclude Include="Surfaces\RHIVkSwapChain.h" />
+    <ClInclude Include="Synchronization\RHIVkFence.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Core.Infra\Core.Infra.vcxproj">
@@ -61,9 +63,6 @@
       <Project>{43b2f072-81af-42c7-b6e6-db3eaf13bb9e}</Project>
       <Name>Core.Platform</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Synchronization\" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

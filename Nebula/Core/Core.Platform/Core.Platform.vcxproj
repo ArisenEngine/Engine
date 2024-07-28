@@ -33,6 +33,8 @@
   <ItemGroup>
     <ClInclude Include="Common.h" />
     <ClInclude Include="ShaderCompiler\ShaderCompilerAPI.h" />
+    <ClInclude Include="Synchronization\SynchObject.h" />
+    <ClInclude Include="Synchronization\SynchScope.h" />
     <ClInclude Include="Windows\Platform.h" />
     <ClInclude Include="Windows\PlatformTypes.h" />
     <ClInclude Include="Windows\RenderWindowAPI.h" />

@@ -10,6 +10,8 @@ namespace NebulaEngine::RHI
         VIRTUAL_DECONSTRUCTOR(GPURenderPass)
         virtual void* GetHandle() = 0;
         
+    protected:
+        
     };
     
 }

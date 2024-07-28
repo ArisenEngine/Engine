@@ -204,7 +204,8 @@ namespace NebulaEngine::Platforms
         CComPtr<IDxcBlob> shaderCode;
         result->GetResult(&shaderCode);
 
-        output.codePointer = shaderCode->GetBufferPointer();
+        output.codePointer = std::malloc(shaderCode->GetBufferSize());
+        std::memcpy(output.codePointer, shaderCode->GetBufferPointer(), shaderCode->GetBufferSize());
         output.codeSize = shaderCode->GetBufferSize();
 
         if (params.output.has_value())

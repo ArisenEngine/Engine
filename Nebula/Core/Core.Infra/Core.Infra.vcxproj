@@ -30,7 +30,9 @@
     <ClInclude Include="RHI\Enums\ColorSpace.h" />
     <ClInclude Include="RHI\Enums\ComponentSwizzle.h" />
     <ClInclude Include="RHI\Enums\CompositeAlphaFlagBits.h" />
+    <ClInclude Include="RHI\Enums\ECommandBufferLevel.h" />
     <ClInclude Include="RHI\Enums\EDynamicState.h" />
+    <ClInclude Include="RHI\Enums\EPipelineBindPoint.h" />
     <ClInclude Include="RHI\Enums\ESubpassContents.h" />
     <ClInclude Include="RHI\Enums\Format.h" />
     <ClInclude Include="RHI\Enums\ImageAspectFlagBits.h" />
@@ -59,6 +61,7 @@
     <ClInclude Include="RHI\Surfaces\Surface.h" />
     <ClInclude Include="RHI\Surfaces\SwapChain.h" />
     <ClInclude Include="RHI\Surfaces\Viewport.h" />
+    <ClInclude Include="RHI\Synchronization\RHIFence.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp" />
@@ -79,9 +82,6 @@
     <Content Include="RHI\Enums\SurfaceTransformFlagBits.h" />
     <Content Include="RHI\Enums\SwapChainCreateFlagBits.h" />
     <Content Include="RHI\Program\GPURenderPass.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="RHI\Synchronization\" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

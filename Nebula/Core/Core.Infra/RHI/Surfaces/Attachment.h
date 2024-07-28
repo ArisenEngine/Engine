@@ -24,7 +24,8 @@ namespace NebulaEngine::RHI
     class Attachment
     {
     public:
-        NO_COPY_NO_MOVE_NO_DEFAULT(Attachment)
+        NO_COPY_NO_MOVE(Attachment)
+        Attachment() = default;
         VIRTUAL_DECONSTRUCTOR(Attachment)
         virtual void* GetAttachmentReference() = 0;
     };

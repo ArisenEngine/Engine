@@ -16,7 +16,7 @@ namespace NebulaEngine::RHI
             m_DeviceMemory = nullptr;
         }
         virtual void* GetHandle() const = 0;
-        const MemoryView& GetMemoryView() const { return *m_MemoryView; }
+        MemoryView* GetMemoryView() const { return m_MemoryView; }
         const RawMemory& GetDeviceMemory() const { return  *m_DeviceMemory; }
     protected:
         bool m_NeedRecycleMemory { true };

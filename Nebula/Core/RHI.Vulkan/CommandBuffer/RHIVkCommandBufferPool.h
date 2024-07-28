@@ -17,9 +17,12 @@ namespace NebulaEngine::RHI
         ~RHIVkCommandBufferPool() noexcept override;
 
         void* GetHandle() override { return m_VkCommandPool; }
+
+        std::shared_ptr<RHICommandBuffer> CreateCommandBuffer() override;
     private:
         VkCommandPool m_VkCommandPool;
         VkDevice m_VkDevice;
+        
     };
     
 }

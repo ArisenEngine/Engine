@@ -47,9 +47,31 @@ NebulaEngine::RHI::RHICommandBufferPool* NebulaEngine::RHI::RHIVkDevice::GetComm
     return m_CommandBufferPools[id].get();
 }
 
+std::shared_ptr<NebulaEngine::RHI::GPURenderPass> NebulaEngine::RHI::RHIVkDevice::GetRenderPass()
+{
+    std::shared_ptr<GPURenderPass> renderPass;
+    if (m_RenderPasses.size() > 0)
+    {
+        renderPass = m_RenderPasses.back();
+        m_RenderPasses.pop_back();
+    }
+    else
+    {
+        renderPass = std::make_shared<RHIVkGPURenderPass>(m_VkDevice);
+    }
+
+    return renderPass;
+}
+
+void NebulaEngine::RHI::RHIVkDevice::ReleaseRenderPass(std::shared_ptr<GPURenderPass> renderPass)
+{
+    m_RenderPasses.emplace_back(renderPass);
+}
+
 NebulaEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
 {
     DeviceWaitIdle();
+    m_RenderPasses.clear();
     m_GPUPrograms.clear();
     m_CommandBufferPools.clear();
     vkDestroyDevice(m_VkDevice, nullptr);

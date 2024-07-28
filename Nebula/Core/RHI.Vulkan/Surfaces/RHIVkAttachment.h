@@ -7,6 +7,7 @@ namespace NebulaEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkAttachment)
+        RHIVkAttachment(AttachmentDesc&& desc);
         ~RHIVkAttachment() noexcept override;
     };
 }
