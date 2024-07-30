@@ -34,7 +34,9 @@ namespace NebulaEngine::RHI
 
         std::shared_ptr<GPURenderPass> GetRenderPass() override;
         void ReleaseRenderPass(std::shared_ptr<GPURenderPass> renderPass) override;
-        
+
+        std::shared_ptr<FrameBuffer> GetFrameBuffer() override;
+        void ReleaseFrameBuffer(std::shared_ptr<FrameBuffer> frameBuffer) override;
     private:
 
         friend class RHIVkInstance;
@@ -46,6 +48,7 @@ namespace NebulaEngine::RHI
         Containers::Map<u32, std::unique_ptr<RHIVkGPUProgram>> m_GPUPrograms;
         Containers::Map<u32, std::unique_ptr<RHIVkCommandBufferPool>> m_CommandBufferPools;
         Containers::Vector<std::shared_ptr<GPURenderPass>> m_RenderPasses;
+        Containers::Vector<std::shared_ptr<FrameBuffer>> m_FrameBuffers;
 
     };
 }

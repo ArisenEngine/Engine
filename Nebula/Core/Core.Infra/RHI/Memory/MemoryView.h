@@ -1,7 +1,9 @@
 ﻿#pragma once
 #include "../../Common/CommandHeaders.h"
-#include "RHI/Enums/ImageViewType.h"
+#include "RHI/Enums/Memory/ImageViewType.h"
+#include "RHI/Enums/Memory/MemoryViewType.h"
 #include "RHI/Handles/ComponentMapping.h"
+#include "RHI/Enums/Image/Format.h"
 
 namespace NebulaEngine::RHI
 {
@@ -11,6 +13,8 @@ namespace NebulaEngine::RHI
         ImageViewType type;
         Format format;
         ComponentMapping componentMapping;
+        u32 width;
+        u32 height;
         // subresource
         u32 aspectMask;
         u32 baseMipLevel;
@@ -28,6 +32,7 @@ namespace NebulaEngine::RHI
         MemoryView(MemoryViewType type) : m_ViewType(type) { }
         VIRTUAL_DECONSTRUCTOR(MemoryView)
         virtual void* GetView() = 0;
+        const MemoryViewType GetViewType() const { return m_ViewType; }
     protected:
         MemoryViewType m_ViewType;
         std::optional<ImageViewDesc> m_ImageViewDesc;

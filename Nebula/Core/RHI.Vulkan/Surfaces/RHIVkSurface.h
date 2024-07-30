@@ -14,6 +14,8 @@
 
 namespace NebulaEngine::RHI
 {
+    class RHIVkSwapChain;
+    
     class RHIVkSurface final : public Surface
     {
     public:
@@ -24,6 +26,8 @@ namespace NebulaEngine::RHI
 
         void InitSwapChain() override;
         const VkQueueFamilyIndices GetQueueFamilyIndices() const { return m_QueueFamilyIndices; }
+
+        SwapChain* GetSwapChain() override;
     private:
 
         friend class RHIVkDevice;

@@ -4,6 +4,8 @@
 
 namespace NebulaEngine::RHI
 {
+    class ImageView;
+
     typedef struct FrameBufferDesc
     {
         GPURenderPass& renderPass;
@@ -30,6 +32,10 @@ namespace NebulaEngine::RHI
         FrameBuffer() = default;
         VIRTUAL_DECONSTRUCTOR(FrameBuffer)
         virtual void* GetHandle() = 0;
-        virtual RenderArea GetRenderArea() = 0;
+        const RenderArea GetRenderArea() const { return m_RenderArea; }
+        virtual void SetAttachment(ImageView* imageView, GPURenderPass* renderPass) = 0;
+        virtual Format GetAttachFormat() = 0;
+    protected:
+        RenderArea m_RenderArea;
     };
 }

@@ -1,10 +1,11 @@
 ﻿#pragma once
 #include "../../Common/CommandHeaders.h"
-#include "RHI/Enums/AttachmentDescFlagBits.h"
-#include "RHI/Enums/AttachmentLoadOp.h"
-#include "RHI/Enums/AttachmentStoreOp.h"
-#include "RHI/Enums/ImageLayout.h"
-#include "RHI/Enums/SampleCountFlagBits.h"
+#include "RHI/Enums/Attachment/AttachmentDescFlagBits.h"
+#include "RHI/Enums/Attachment/AttachmentLoadOp.h"
+#include "RHI/Enums/Attachment/AttachmentStoreOp.h"
+#include "RHI/Enums/Attachment/SampleCountFlagBits.h"
+#include "RHI/Enums/Image/Format.h"
+#include "RHI/Enums/Image/ImageLayout.h"
 
 namespace NebulaEngine::RHI
 {

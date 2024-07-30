@@ -1,15 +1,13 @@
 #pragma once
-#include "RHICommandBufferPool.h"
 #include "../../Common/CommandHeaders.h"
-#include "../Enums/ESubpassContents.h"
 #include "../Program/GPURenderPass.h"
 #include "../Surfaces/FrameBuffer.h"
-#include "../Surfaces/Viewport.h"
-#include "RHI/Enums/AttachmentLoadOp.h"
-#include "RHI/Enums/AttachmentStoreOp.h"
+#include "RHI/Devices/Device.h"
+#include "RHI/Enums/Subpass/ESubpassContents.h"
 
 namespace NebulaEngine::RHI
 {
+    class Device;
     class RHICommandBufferPool;
     class FrameBuffer;
     class Viewport;
@@ -20,7 +18,6 @@ namespace NebulaEngine::RHI
     {
         GPURenderPass* renderPass;
         FrameBuffer* frameBuffer;
-        Viewport* viewport;
         ESubpassContents subpassContents;
     } RenderPassBeginDesc;
     

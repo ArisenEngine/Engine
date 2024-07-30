@@ -68,16 +68,3 @@ type_name() = delete;       \
 
 #define NO_COMPARE(type_name)  type_name& operator=(const type_name&) = delete;
 
-#include "../RHI/Enums/ComponentSwizzle.h"
-#include "../RHI/Enums/MemoryViewType.h"
-#include "../RHI/Enums/Format.h"
-#include "../RHI/Enums/PresentMode.h"
-#include "../RHI/Enums/ColorSpace.h"
-#include "../RHI/Enums/SharingMode.h"
-#include "../RHI/Enums/SurfaceTransformFlagBits.h"
-
-// RHI
-#include "../RHI/Devices/Device.h"
-#include "../RHI/Surfaces/Surface.h"
-#include "../RHI/Instance.h"
-#include "../Platforms/GraphsicsAPI.h"

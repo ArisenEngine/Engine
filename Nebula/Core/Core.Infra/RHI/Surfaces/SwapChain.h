@@ -1,9 +1,16 @@
 #pragma once
 #include "../../Common/CommandHeaders.h"
-#include "Logger/Logger.h"
+#include "RHI/Enums/Image/ColorSpace.h"
+#include "RHI/Enums/Image/Format.h"
+#include "RHI/Enums/Swapchain/PresentMode.h"
+#include "RHI/Enums/Swapchain/SharingMode.h"
+#include "RHI/Synchronization/RHISemaphore.h"
 
 namespace NebulaEngine::RHI
 {
+    class Surface;
+    class ImageHandle;
+    class RHISemaphore;
 
     struct SwapChainDescriptor
     {
@@ -17,9 +24,7 @@ namespace NebulaEngine::RHI
         ColorSpace m_ColorSpace { COLOR_SPACE_SRGB_NONLINEAR };
         SharingMode m_SharingMode { SHARING_MODE_CONCURRENT };
         PresentMode m_PresentMode { PRESENT_MODE_FIFO };
-
-        std::optional<VkQueueFamilyIndices> m_VkQueueFamilyIndices;
-
+        
         bool clipped { true };
         u32 m_SurfaceTransformFlagBits { 0 };
         u32 m_CompositeAlphaFlagBits { 0 };
@@ -35,7 +40,16 @@ namespace NebulaEngine::RHI
         SwapChain() {}
         VIRTUAL_DECONSTRUCTOR(SwapChain)
         virtual void* GetHandle() const = 0;
-        
+        virtual void CreateSwapChainWithDesc(Surface* surface, SwapChainDescriptor desc) = 0;
+        virtual const RHISemaphore* GetImageAvailableSemaphore() const = 0;
+        virtual const RHISemaphore* GetRenderFinishSemaphore() const  = 0;
+        virtual ImageHandle* AquireCurrentImage() = 0;
+        virtual void Present() = 0;
+    protected:
+        SwapChainDescriptor m_Desc;
+        virtual void RecreateSwapChainIfNeeded() = 0;
+
+    public:
         void SetResolution(u32 width, u32 height)
         {
             if (m_Desc.m_Width == width && m_Desc.m_Height == height)
@@ -51,7 +65,6 @@ namespace NebulaEngine::RHI
         
         void SetImageCount(u32 count)
         {
-            ASSERT(count > 0);
             if (count == m_Desc.m_ImageCount)
             {
                 return;
@@ -64,7 +77,6 @@ namespace NebulaEngine::RHI
         
         void SetImageArrayLayers(u32 layers)
         {
-            ASSERT(layers >= 1);
             if (m_Desc.m_ImageArrayLayers == layers)
             {
                 return;
@@ -122,10 +134,5 @@ namespace NebulaEngine::RHI
             m_Desc.m_SharingMode = mode;
             RecreateSwapChainIfNeeded();
         }
-
-        virtual void CreateSwapChainWithDesc(SwapChainDescriptor desc) = 0;
-    protected:
-        SwapChainDescriptor m_Desc;
-        virtual void RecreateSwapChainIfNeeded() = 0;
     };
 }

@@ -25,31 +25,35 @@
     <ClInclude Include="Containers\Containers.h" />
     <ClInclude Include="RHI\CommandBuffer\RHICommandBuffer.h" />
     <ClInclude Include="RHI\CommandBuffer\RHICommandBufferPool.h" />
-    <ClInclude Include="RHI\Enums\AttachmentLoadOp.h" />
-    <ClInclude Include="RHI\Enums\AttachmentStoreOp.h" />
-    <ClInclude Include="RHI\Enums\ColorSpace.h" />
-    <ClInclude Include="RHI\Enums\ComponentSwizzle.h" />
-    <ClInclude Include="RHI\Enums\CompositeAlphaFlagBits.h" />
-    <ClInclude Include="RHI\Enums\ECommandBufferLevel.h" />
-    <ClInclude Include="RHI\Enums\EDynamicState.h" />
-    <ClInclude Include="RHI\Enums\EPipelineBindPoint.h" />
-    <ClInclude Include="RHI\Enums\ESubpassContents.h" />
-    <ClInclude Include="RHI\Enums\Format.h" />
-    <ClInclude Include="RHI\Enums\ImageAspectFlagBits.h" />
-    <ClInclude Include="RHI\Enums\ImageViewCreateFlagBits.h" />
-    <ClInclude Include="RHI\Enums\ImageViewType.h" />
-    <ClInclude Include="RHI\Enums\MemoryViewType.h" />
-    <ClInclude Include="RHI\Enums\PipelineShaderStageCreateFlagBits.h" />
-    <ClInclude Include="RHI\Enums\PresentMode.h" />
-    <ClInclude Include="RHI\Enums\ProgramStage.h" />
-    <ClInclude Include="RHI\Enums\SampleCountFlagBits.h" />
-    <ClInclude Include="RHI\Enums\ShaderStage.h" />
-    <ClInclude Include="RHI\Enums\SharingMode.h" />
+    <ClInclude Include="RHI\Enums\Attachment\AttachmentLoadOp.h" />
+    <ClInclude Include="RHI\Enums\Attachment\AttachmentStoreOp.h" />
+    <ClInclude Include="RHI\Enums\Attachment\SampleCountFlagBits.h" />
+    <ClInclude Include="RHI\Enums\Image\ColorSpace.h" />
+    <ClInclude Include="RHI\Enums\Image\ComponentSwizzle.h" />
+    <ClInclude Include="RHI\Enums\Image\CompositeAlphaFlagBits.h" />
+    <ClInclude Include="RHI\Enums\Image\Format.h" />
+    <ClInclude Include="RHI\Enums\Image\ImageAspectFlagBits.h" />
+    <ClInclude Include="RHI\Enums\Memory\ImageViewCreateFlagBits.h" />
+    <ClInclude Include="RHI\Enums\Memory\ImageViewType.h" />
+    <ClInclude Include="RHI\Enums\Memory\MemoryViewType.h" />
+    <ClInclude Include="RHI\Enums\Pipeline\EAccessFlag.h" />
+    <ClInclude Include="RHI\Enums\Pipeline\ECommandBufferLevel.h" />
+    <ClInclude Include="RHI\Enums\Pipeline\EDynamicState.h" />
+    <ClInclude Include="RHI\Enums\Pipeline\EPipelineBindPoint.h" />
+    <ClInclude Include="RHI\Enums\Pipeline\EPipelineStageFlag.h" />
+    <ClInclude Include="RHI\Enums\Pipeline\PipelineShaderStageCreateFlagBits.h" />
+    <ClInclude Include="RHI\Enums\Pipeline\ProgramStage.h" />
+    <ClInclude Include="RHI\Enums\Pipeline\ShaderStage.h" />
+    <ClInclude Include="RHI\Enums\Subpass\EDependencyFlag.h" />
+    <ClInclude Include="RHI\Enums\Subpass\ESubpassContents.h" />
+    <ClInclude Include="RHI\Enums\Swapchain\PresentMode.h" />
+    <ClInclude Include="RHI\Enums\Swapchain\SharingMode.h" />
+    <ClInclude Include="RHI\GraphsicsAPI.h" />
     <ClInclude Include="RHI\Handles\ComponentMapping.h" />
     <ClInclude Include="RHI\Handles\ImageHandle.h" />
     <ClInclude Include="RHI\Instance.h" />
-    <ClInclude Include="Platforms\GraphsicsAPI.h" />
     <ClInclude Include="Common\PrimitiveTypes.h" />
+    <ClInclude Include="RHI\Memory\ImageView.h" />
     <ClInclude Include="RHI\Memory\RawMemory.h" />
     <ClInclude Include="RHI\Memory\MemoryView.h" />
     <ClInclude Include="RHI\Program\GPUPipeline.h" />
@@ -62,6 +66,9 @@
     <ClInclude Include="RHI\Surfaces\SwapChain.h" />
     <ClInclude Include="RHI\Surfaces\Viewport.h" />
     <ClInclude Include="RHI\Synchronization\RHIFence.h" />
+    <ClInclude Include="RHI\Synchronization\RHISemaphore.h" />
+    <ClInclude Include="RHI\Synchronization\SynchObject.h" />
+    <ClInclude Include="RHI\Synchronization\SynchScope.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp" />
@@ -76,12 +83,16 @@
     <ClInclude Include="RHI\Devices\Device.h" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="RHI\Enums\AttachmentDescFlagBits.h" />
-    <Content Include="RHI\Enums\ImageLayout.h" />
-    <Content Include="RHI\Enums\ImageUsageFlagBits.h" />
-    <Content Include="RHI\Enums\SurfaceTransformFlagBits.h" />
-    <Content Include="RHI\Enums\SwapChainCreateFlagBits.h" />
+    <Content Include="RHI\Enums\Attachment\AttachmentDescFlagBits.h" />
+    <Content Include="RHI\Enums\Image\ImageLayout.h" />
+    <Content Include="RHI\Enums\Image\ImageUsageFlagBits.h" />
+    <Content Include="RHI\Enums\Subpass\ESubpassDescFlag.h" />
+    <Content Include="RHI\Enums\Swapchain\SurfaceTransformFlagBits.h" />
+    <Content Include="RHI\Enums\Swapchain\SwapChainCreateFlagBits.h" />
     <Content Include="RHI\Program\GPURenderPass.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Platforms\" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

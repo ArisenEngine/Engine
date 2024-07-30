@@ -5,8 +5,6 @@
 #include "RHI/Instance.h"
 #include "Logger/Logger.h"
 #include "Devices/RHIVkDevice.h"
-#include "RHI/Enums/Format.h"
-#include "RHI/Enums/PresentMode.h"
 #include "Surfaces/RHIVkSurface.h"
 
 namespace NebulaEngine::RHI
@@ -54,6 +52,8 @@ namespace NebulaEngine::RHI
         
         void CreateLogicDevice(u32 windowId) override;
         Device& GetLogicalDevice(u32 windowId) override;
+
+        const u32 GetExternalIndex() const override { return VK_SUBPASS_EXTERNAL; }
     protected:
         
         void CheckSwapChainCapabilities() override;

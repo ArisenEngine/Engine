@@ -1,9 +1,7 @@
 #pragma once
 #include "GPUProgram.h"
 #include "../../Common/CommandHeaders.h"
-#include "RHI/Enums/EDynamicState.h"
-#include "RHI/Enums/EPipelineBindPoint.h"
-#include "RHI/Enums/ShaderStage.h"
+#include "RHI/Enums/Pipeline/EDynamicState.h"
 
 namespace NebulaEngine::RHI
 {

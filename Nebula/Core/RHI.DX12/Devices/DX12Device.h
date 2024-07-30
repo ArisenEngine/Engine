@@ -2,6 +2,7 @@
 
 
 #include "../Common.h"
+#include "RHI/Devices/Device.h"
 
 namespace NebulaEngine::RHI
 {

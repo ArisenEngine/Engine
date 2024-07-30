@@ -2,7 +2,8 @@
 #include "../Common/CommandHeaders.h"
 #include "../Common/PrimitiveTypes.h"
 #include "Devices/Device.h"
-#include "Program/GPUProgram.h"
+#include "Enums/Image/Format.h"
+#include "Enums/Swapchain/PresentMode.h"
 
 
 namespace NebulaEngine::RHI
@@ -67,6 +68,8 @@ namespace NebulaEngine::RHI
         
         virtual void CreateLogicDevice(u32 windowId) = 0;
         virtual Device& GetLogicalDevice(u32 windowId) = 0;
+
+        virtual const u32 GetExternalIndex() const = 0;
     protected:
         
         bool m_EnableValidation { false };

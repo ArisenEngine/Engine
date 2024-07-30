@@ -5,7 +5,7 @@
 
 #include "../Common.h"
 #include "Logger/Logger.h"
-#include "RHI/Enums/ProgramStage.h"
+#include "RHI/Enums/Pipeline/ProgramStage.h"
 
 namespace NebulaEngine::Platforms
 {
