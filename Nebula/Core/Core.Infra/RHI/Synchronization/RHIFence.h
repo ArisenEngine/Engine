@@ -1,18 +1,17 @@
 #pragma once
-#include "../../../Core.Platform/Synchronization/SynchObject.h"
-#include "../../Common/CommandHeaders.h"
+#include "RHI/Synchronization/SynchObject.h"
 
 namespace NebulaEngine::RHI
 {
-    class RHIFence : public Platforms::SynchObject
+    class RHIFence : public virtual SynchObject
     {
     public:
         NO_COPY_NO_MOVE(RHIFence)
         RHIFence(): SynchObject() {};
         ~RHIFence() noexcept override = default;
 
-        void* GetHandle() override = 0;
-        void Lock() override = 0;
-        void Unlock() override = 0;
+        void* GetHandle() override { return nullptr; }
+        void Lock() override  { }
+        void Unlock() override { }
     };
 }

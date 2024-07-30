@@ -1,6 +1,7 @@
 ﻿#include "RHIVkCommandBuffer.h"
 
-#include "Synchronization/SynchScope.h"
+#include "RHI/Synchronization/SynchScope.h"
+
 
 NebulaEngine::RHI::RHIVkCommandBuffer::~RHIVkCommandBuffer() noexcept
 {
@@ -43,6 +44,7 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::BeginRenderPass(RenderPassBeginDesc&
     auto renderArea = desc.frameBuffer->GetRenderArea();
     renderPassInfo.renderArea.offset = {renderArea.offsetX, renderArea.offsetY};
     renderPassInfo.renderArea.extent = {renderArea.width, renderArea.height};
+    
     VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearColor;
@@ -68,7 +70,7 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::Begin()
 {
     {
         {
-            Platforms::ScopeLock ScopeLock(m_CommandBufferPool->GetFence());
+            ScopeLock ScopeLock(m_CommandBufferPool->GetFence());
             if(m_State == ECommandState::NeedReset)
             {
                 vkResetCommandBuffer(m_VkCommandBuffer, /*VkCommandBufferResetFlagBits*/ 0);

@@ -4,6 +4,9 @@
 #include "Test.h"
 #include "Graphics\RHILoader.h"
 #include "RHI/Instance.h"
+#include "RHI/Surfaces/Surface.h"
+#include "RHI/Handles/ImageHandle.h"
+#include "RHI/Program/GPUSubPass.h"
 #include "Windows/RenderWindowAPI.h"
 #include "ShaderCompiler/ShaderCompilerAPI.h"
 
@@ -16,6 +19,7 @@ struct RenderContext
     u32 windowId;
     RHI::Device* device;
     std::shared_ptr<RHI::GPURenderPass> renderPass;
+    std::shared_ptr<RHI::FrameBuffer> frameBuffer;
     RHI::RHICommandBufferPool* commandPool;
     Containers::Vector<u32> vertexProgram;
     Containers::Vector<u32> fragmentProgram;
@@ -121,6 +125,7 @@ public:
             auto poolId = g_RenderContexts[i].device->CreateCommandBufferPool();
             g_RenderContexts[i].commandPool = g_RenderContexts[i].device->GetCommandBufferPool(poolId);
             g_RenderContexts[i].renderPass = g_RenderContexts[i].device->GetRenderPass();
+            g_RenderContexts[i].frameBuffer = g_RenderContexts[i].device->GetFrameBuffer();
         }
         
         Platforms::InitDXC();
@@ -212,11 +217,35 @@ public:
     void RecordCommandBuffer(RenderContext&& context)
     {
         auto commandBuffer = context.commandPool->GetCommandBuffer();
+        auto renderPass = context.renderPass.get();
+        auto frameBuffer = context.frameBuffer.get();
+        auto backBuffer = context.device->GetSurface()->GetSwapChain()->AquireCurrentImage();
 
+        frameBuffer->SetAttachment(static_cast<RHI::ImageView*>(backBuffer->GetMemoryView()->GetView()), renderPass);
+        
+        renderPass->AddAttachmentAction(
+            frameBuffer->GetAttachFormat(), RHI::SAMPLE_COUNT_1_BIT,
+            RHI::ATTACHMENT_LOAD_OP_CLEAR, RHI::ATTACHMENT_STORE_OP_STORE,
+            RHI::ATTACHMENT_LOAD_OP_DONT_CARE, RHI::ATTACHMENT_STORE_OP_DONT_CARE,
+            RHI::IMAGE_LAYOUT_UNDEFINED, RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR
+            );
+
+        auto subpass = renderPass->AddSubPass(RHI::PIPELINE_BIND_POINT_GRAPHICS);
+        //TODO
+        // subpass->SetDependency(m_Instance->GetExternalIndex(), );
         commandBuffer->Begin();
 
+        RHI::RenderPassBeginDesc desc
+        {
+            renderPass,
+            frameBuffer,
+            RHI::SUBPASS_CONTENTS_INLINE
+        };
+
         
-        commandBuffer->BeginRenderPass();
+        commandBuffer->BeginRenderPass(std::move(desc));
+
+        
         
         context.device->DeviceWaitIdle();
     }

@@ -1,10 +1,10 @@
 ﻿#pragma once
 #include <vulkan/vulkan_core.h>
-
 #include "RHI/Synchronization/RHIFence.h"
 
 namespace NebulaEngine::RHI
 {
+    class RHIFence;
     class RHIVkFence final : public RHIFence
     {
     public:

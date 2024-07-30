@@ -32,12 +32,6 @@ namespace NebulaEngine::RHI
         {
             return graphicsFamily.has_value() && presentFamily.has_value();
         }
-
-        // VkQueueFamilyIndices(const VkQueueFamilyIndices&& copy) noexcept
-        // {
-        //     graphicsFamily = copy.graphicsFamily;
-        //     presentFamily = copy.presentFamily;
-        // }
     };
 
     // validation layers

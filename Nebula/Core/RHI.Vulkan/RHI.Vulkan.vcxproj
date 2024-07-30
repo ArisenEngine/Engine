@@ -35,6 +35,7 @@
     <ClCompile Include="Surfaces\RHIVkSurface.cpp" />
     <ClCompile Include="Surfaces\RHIVkSwapChain.cpp" />
     <ClCompile Include="Synchronization\RHIVkFence.cpp" />
+    <ClCompile Include="Synchronization\RHIVkSemaphore.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandBuffer\RHIVkCommandBuffer.h" />
@@ -54,6 +55,7 @@
     <ClInclude Include="Surfaces\RHIVkSurface.h" />
     <ClInclude Include="Surfaces\RHIVkSwapChain.h" />
     <ClInclude Include="Synchronization\RHIVkFence.h" />
+    <ClInclude Include="Synchronization\RHIVkSemaphore.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Core.Infra\Core.Infra.vcxproj">

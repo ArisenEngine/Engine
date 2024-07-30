@@ -1,9 +1,7 @@
 #pragma once
 #include "../../Common/CommandHeaders.h"
-#include "RHI/Enums/PipelineShaderStageCreateFlagBits.h"
-#include "RHI/Enums/ProgramStage.h"
-#include "RHI/Enums/ShaderStage.h"
 #include "../RHICommon.h"
+#include "RHI/Enums/Pipeline/ShaderStage.h"
 
 namespace NebulaEngine::RHI
 {

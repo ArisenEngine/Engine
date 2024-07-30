@@ -5,7 +5,7 @@
 
 namespace NebulaEngine::RHI
 {
-    class RHIVkImageHandle final : ImageHandle
+    class RHIVkImageHandle final : public ImageHandle
     {
     public:
         NO_COPY_NO_MOVE(RHIVkImageHandle)

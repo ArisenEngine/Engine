@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <vulkan/vulkan_core.h>
 
+#include "Logger/Logger.h"
 #include "RHI/Surfaces/FrameBuffer.h"
 
 namespace NebulaEngine::RHI
@@ -12,9 +13,13 @@ namespace NebulaEngine::RHI
         RHIVkFrameBuffer(VkDevice device);
         ~RHIVkFrameBuffer() noexcept override;
 
-        void* GetHandle() override { return m_VkFrameBuffer; }
+        void* GetHandle() override { ASSERT(m_VkFrameBuffer != VK_NULL_HANDLE); return m_VkFrameBuffer; }
+        void SetAttachment(ImageView* imageView, GPURenderPass* renderPass) override;
+        Format GetAttachFormat() override;
     private:
-        VkFramebuffer m_VkFrameBuffer;
+        void FreeFrameBuffer();
+        VkFramebuffer m_VkFrameBuffer { VK_NULL_HANDLE };
         VkDevice m_VkDevice;
+        ImageView* m_ImageView {nullptr};
     };
 }

@@ -1,17 +1,26 @@
 #include "RHIVkSwapChain.h"
-
 #include "Logger/Logger.h"
-#include "RHI/Enums/ImageAspectFlagBits.h"
+#include "RHI/Enums/Image/ImageAspectFlagBits.h"
 
-NebulaEngine::RHI::RHIVkSwapChain::RHIVkSwapChain(VkDevice device, VkSurfaceKHR surface):
-SwapChain(), m_VkDevice(device), m_VkSurface(surface)
+NebulaEngine::RHI::RHIVkSwapChain::RHIVkSwapChain(VkDevice device, const RHIVkSurface* surface):
+SwapChain(), m_VkDevice(device), m_VkSurface(static_cast<VkSurfaceKHR>(surface->GetHandle())), m_ImageIndex(0), m_Surface(surface)
 {
-    
+    m_ImageAvailableSemaphore = new RHIVkSemaphore(m_VkDevice);
+    m_RenderFinishSemaphore = new RHIVkSemaphore(m_VkDevice);
+
+    auto indices = surface->GetQueueFamilyIndices();
+    vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &m_VkPresentQueue);
 }
 
 NebulaEngine::RHI::RHIVkSwapChain::~RHIVkSwapChain() noexcept
 {
     LOG_INFO("[RHIVkSwapChain::~RHIVkSwapChain]: ~RHIVkSwapChain");
+
+    m_Surface = nullptr;
+    
+    delete m_ImageAvailableSemaphore;
+    delete m_RenderFinishSemaphore;
+    
     m_ImageHandles.clear();
     if (m_VkSwapChain != VK_NULL_HANDLE && m_VkDevice != VK_NULL_HANDLE)
     {
@@ -20,7 +29,7 @@ NebulaEngine::RHI::RHIVkSwapChain::~RHIVkSwapChain() noexcept
     }
 }
 
-void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescriptor desc)
+void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(Surface* surface, SwapChainDescriptor desc)
 {
     m_Desc = desc;
     
@@ -37,11 +46,9 @@ void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
     createInfo.imageUsage =  m_Desc.m_ImageUsageFlagBits;
     createInfo.imageSharingMode = static_cast<VkSharingMode>(m_Desc.m_SharingMode);
     createInfo.queueFamilyIndexCount = m_Desc.m_QueueFamilyIndexCount;
-    if (m_Desc.m_VkQueueFamilyIndices.has_value())
-    {
-        uint32_t queueFamilyIndices[] = {m_Desc.m_VkQueueFamilyIndices.value().graphicsFamily.value(), m_Desc.m_VkQueueFamilyIndices.value().presentFamily.value()};
-        createInfo.pQueueFamilyIndices = queueFamilyIndices;
-    }
+    auto queueSurfaceFamilyIndices = static_cast<RHIVkSurface*>(surface)->GetQueueFamilyIndices();
+    uint32_t queueFamilyIndices[] = {queueSurfaceFamilyIndices.graphicsFamily.value(), queueSurfaceFamilyIndices.presentFamily.value()};
+    createInfo.pQueueFamilyIndices = queueFamilyIndices;
     createInfo.preTransform = static_cast<VkSurfaceTransformFlagBitsKHR>(m_Desc.m_SurfaceTransformFlagBits);
     createInfo.compositeAlpha = static_cast<VkCompositeAlphaFlagBitsKHR>(m_Desc.m_CompositeAlphaFlagBits);
     createInfo.presentMode = static_cast<VkPresentModeKHR>(m_Desc.m_PresentMode);
@@ -61,8 +68,6 @@ void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
     m_ImageHandles.resize(actualImageCount);
     images.resize(actualImageCount);
     vkGetSwapchainImagesKHR(m_VkDevice, m_VkSwapChain, &actualImageCount, images.data());
-
-   
     for (int i = 0; i < images.size(); ++i)
     {
         VkImage image = images[i];
@@ -77,6 +82,7 @@ void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
                 COMPONENT_SWIZZLE_IDENTITY,
                 COMPONENT_SWIZZLE_IDENTITY
             },
+            m_Desc.m_Width, m_Desc.m_Height,
             IMAGE_ASPECT_COLOR_BIT,
             0,1,0,1
         };
@@ -84,6 +90,41 @@ void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
         m_ImageHandles[i] = std::make_unique<RHIVkImageHandle>(m_VkDevice, image, desc);
     }
 
+}
+
+const NebulaEngine::RHI::RHISemaphore* NebulaEngine::RHI::RHIVkSwapChain::GetImageAvailableSemaphore() const
+{
+    return m_ImageAvailableSemaphore;
+}
+
+const NebulaEngine::RHI::RHISemaphore* NebulaEngine::RHI::RHIVkSwapChain::GetRenderFinishSemaphore() const
+{
+    return m_RenderFinishSemaphore;
+}
+
+NebulaEngine::RHI::ImageHandle* NebulaEngine::RHI::RHIVkSwapChain::AquireCurrentImage()
+{
+    vkAcquireNextImageKHR(m_VkDevice, m_VkSwapChain, UINT64_MAX, static_cast<VkSemaphore>(
+                              m_ImageAvailableSemaphore->GetHandle()), VK_NULL_HANDLE, &m_ImageIndex);
+    return m_ImageHandles[m_ImageIndex].get();
+}
+
+void NebulaEngine::RHI::RHIVkSwapChain::Present()
+{
+    VkPresentInfoKHR presentInfo{};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+    presentInfo.waitSemaphoreCount = 1;
+    const VkSemaphore semaphore = static_cast<VkSemaphore>(m_RenderFinishSemaphore->GetHandle());
+    presentInfo.pWaitSemaphores = &semaphore;
+
+    VkSwapchainKHR swapChains[] = { m_VkSwapChain };
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = swapChains;
+
+    presentInfo.pImageIndices = &m_ImageIndex;
+
+    vkQueuePresentKHR(m_VkPresentQueue, &presentInfo);
 }
 
 void NebulaEngine::RHI::RHIVkSwapChain::RecreateSwapChainIfNeeded()

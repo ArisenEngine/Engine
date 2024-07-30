@@ -3,7 +3,7 @@
 #include "Logger/Logger.h"
 
 NebulaEngine::RHI::RHIVkImageView::RHIVkImageView(ImageViewDesc desc, VkDevice device, VkImage image):
-MemoryView(IMAGE_MEMORY_VIEW_TYPE), m_VkDevice(device)
+ImageView(), m_VkDevice(device)
 {
     m_ImageViewDesc = desc;
     VkImageViewCreateInfo createInfo{};

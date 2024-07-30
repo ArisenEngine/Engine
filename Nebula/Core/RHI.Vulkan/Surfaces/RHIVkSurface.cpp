@@ -2,10 +2,8 @@
 
 #include "../RHIVkInstance.h"
 #include "Logger/Logger.h"
-#include "RHI/Enums/ColorSpace.h"
-#include "RHI/Enums/CompositeAlphaFlagBits.h"
-#include "RHI/Enums/ImageUsageFlagBits.h"
-#include "RHI/Enums/SharingMode.h"
+#include "RHI/Enums/Image/CompositeAlphaFlagBits.h"
+#include "RHI/Enums/Image/ImageUsageFlagBits.h"
 #include "Windows/Platform.h"
 #include "Windows/RenderWindowAPI.h"
 
@@ -44,7 +42,7 @@ void RHI::RHIVkSurface::InitSwapChain()
     
     auto rhiInstance = static_cast<RHIVkInstance*>(m_Instance);
     m_SwapChain = std::make_unique<RHIVkSwapChain>(static_cast<VkDevice>(
-                                                       rhiInstance->GetLogicalDevice(std::move(m_RenderWindowId)).GetHandle()), m_VkSurface);
+                                                       rhiInstance->GetLogicalDevice(std::move(m_RenderWindowId)).GetHandle()), this);
     auto width = Platforms::GetWindowWidth(m_RenderWindowId);
     auto height = Platforms::GetWindowHeight(m_RenderWindowId);
 
@@ -85,13 +83,17 @@ void RHI::RHIVkSurface::InitSwapChain()
         static_cast<ColorSpace>(formats.colorSpace),
         sharingMode,
         static_cast<PresentMode>(presentMode),
-        m_QueueFamilyIndices,
         true,
         static_cast<u32>(m_SwapChainSupportDetail.capabilities.currentTransform),
         COMPOSITE_ALPHA_OPAQUE_BIT
     };
 
-    swapChainPtr->CreateSwapChainWithDesc(desc);
+    swapChainPtr->CreateSwapChainWithDesc(this, desc);
+}
+
+RHI::SwapChain* RHI::RHIVkSurface::GetSwapChain()
+{
+    return m_SwapChain.get();
 }
 
 VkSurfaceFormatKHR RHI::RHIVkSurface::GetDefaultSurfaceFormat()

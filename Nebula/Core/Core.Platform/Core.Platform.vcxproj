@@ -33,8 +33,6 @@
   <ItemGroup>
     <ClInclude Include="Common.h" />
     <ClInclude Include="ShaderCompiler\ShaderCompilerAPI.h" />
-    <ClInclude Include="Synchronization\SynchObject.h" />
-    <ClInclude Include="Synchronization\SynchScope.h" />
     <ClInclude Include="Windows\Platform.h" />
     <ClInclude Include="Windows\PlatformTypes.h" />
     <ClInclude Include="Windows\RenderWindowAPI.h" />
@@ -120,6 +118,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)Core\Core.Debugger\;$(SolutionDir)Core\Core.Infra\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

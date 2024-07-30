@@ -68,9 +68,31 @@ void NebulaEngine::RHI::RHIVkDevice::ReleaseRenderPass(std::shared_ptr<GPURender
     m_RenderPasses.emplace_back(renderPass);
 }
 
+std::shared_ptr<NebulaEngine::RHI::FrameBuffer> NebulaEngine::RHI::RHIVkDevice::GetFrameBuffer()
+{
+    std::shared_ptr<FrameBuffer> frameBuffer;
+    if (m_FrameBuffers.size() > 0)
+    {
+        frameBuffer = m_FrameBuffers.back();
+        m_FrameBuffers.pop_back();
+    }
+    else
+    {
+        frameBuffer = std::make_shared<RHIVkFrameBuffer>(m_VkDevice);
+    }
+
+    return frameBuffer;
+}
+
+void NebulaEngine::RHI::RHIVkDevice::ReleaseFrameBuffer(std::shared_ptr<FrameBuffer> frameBuffer)
+{
+    m_FrameBuffers.emplace_back(frameBuffer);
+}
+
 NebulaEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
 {
     DeviceWaitIdle();
+    m_FrameBuffers.clear();
     m_RenderPasses.clear();
     m_GPUPrograms.clear();
     m_CommandBufferPools.clear();

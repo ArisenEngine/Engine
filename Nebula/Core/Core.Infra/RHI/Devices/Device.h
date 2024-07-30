@@ -1,13 +1,15 @@
 #pragma once
 #include "../../Common/CommandHeaders.h"
-#include "../Instance.h"
 #include "../RHICommon.h"
 #include "RHI/CommandBuffer/RHICommandBufferPool.h"
 
 namespace NebulaEngine::RHI
 {
+    class Instance;
     class Surface;
     class RHICommandBufferPool;
+    class GPURenderPass;
+    class FrameBuffer;
     
     class Device
     {
@@ -31,6 +33,11 @@ namespace NebulaEngine::RHI
 
         virtual std::shared_ptr<GPURenderPass> GetRenderPass() = 0;
         virtual void ReleaseRenderPass(std::shared_ptr<GPURenderPass> renderPass) = 0;
+
+        virtual std::shared_ptr<FrameBuffer> GetFrameBuffer() = 0;
+        virtual void ReleaseFrameBuffer(std::shared_ptr<FrameBuffer> frameBuffer) = 0;
+
+        
         
     protected:
         Instance* m_Instance;

@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "RHI/Enums/ComponentSwizzle.h"
+#include "RHI/Enums/Image/ComponentSwizzle.h"
 
 namespace NebulaEngine::RHI
 {
