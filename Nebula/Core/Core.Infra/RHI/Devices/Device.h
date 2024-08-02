@@ -5,6 +5,12 @@
 
 namespace NebulaEngine::RHI
 {
+    class GPUProgram;
+}
+
+namespace NebulaEngine::RHI
+{
+    class GPUPipeline;
     class Instance;
     class Surface;
     class RHICommandBufferPool;
@@ -26,6 +32,7 @@ namespace NebulaEngine::RHI
         virtual void* GetHandle() const = 0;
         virtual void DeviceWaitIdle() const = 0;
         virtual u32 CreateGPUProgram() = 0;
+        virtual GPUProgram* GetGPUProgram(u32 programId) = 0;
         virtual void DestroyGPUProgram(u32 programId) = 0;
         virtual bool AttachProgramByteCode(u32 programId, GPUProgramDesc&& desc) = 0;
         virtual u32 CreateCommandBufferPool() = 0;
@@ -37,9 +44,10 @@ namespace NebulaEngine::RHI
         virtual std::shared_ptr<FrameBuffer> GetFrameBuffer() = 0;
         virtual void ReleaseFrameBuffer(std::shared_ptr<FrameBuffer> frameBuffer) = 0;
 
-        
+        virtual GPUPipeline* GetGPUPipeline() const = 0;
         
     protected:
+        
         Instance* m_Instance;
         Surface* m_Surface;
         Device(Instance* instance, Surface* surface): m_Instance(instance), m_Surface(surface) {}

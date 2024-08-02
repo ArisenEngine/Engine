@@ -2,7 +2,7 @@
 
 namespace NebulaEngine::RHI
 {
-    typedef enum ShaderStage
+    typedef enum EShaderStage
     {
         SHADER_STAGE_VERTEX_BIT = 0x00000001,
         SHADER_STAGE_TESSELLATION_CONTROL_BIT = 0x00000002,
@@ -32,6 +32,6 @@ namespace NebulaEngine::RHI
         SHADER_STAGE_MESH_BIT_NV = SHADER_STAGE_MESH_BIT_EXT,
         SHADER_STAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
         
-    } ShaderStage;
+    } EShaderStage;
     
 }

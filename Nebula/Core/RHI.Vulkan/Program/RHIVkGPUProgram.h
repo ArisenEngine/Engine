@@ -1,5 +1,6 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
+#include "Logger/Logger.h"
 #include "RHI/Program/GPUProgram.h"
 
 namespace NebulaEngine::RHI
@@ -10,9 +11,12 @@ namespace NebulaEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkGPUProgram)
         RHIVkGPUProgram(VkDevice device);
         ~RHIVkGPUProgram() noexcept override;
-        void* GetHandle() const override { return m_VkShaderModule; }
+        void* GetHandle() const override { ASSERT(m_VkShaderModule != VK_NULL_HANDLE); return m_VkShaderModule; }
         bool AttachProgramByteCode(GPUProgramDesc&& desc) override;
 
+        // TODO:
+        u32 GetShaderStageCreateFlags() override { return 0; }
+        void* GetSpecializationInfo() override { return nullptr; }
     protected:
         void DestroyHandle() override;
         

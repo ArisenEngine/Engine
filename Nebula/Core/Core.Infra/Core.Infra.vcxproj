@@ -41,9 +41,10 @@
     <ClInclude Include="RHI\Enums\Pipeline\EDynamicState.h" />
     <ClInclude Include="RHI\Enums\Pipeline\EPipelineBindPoint.h" />
     <ClInclude Include="RHI\Enums\Pipeline\EPipelineStageFlag.h" />
-    <ClInclude Include="RHI\Enums\Pipeline\PipelineShaderStageCreateFlagBits.h" />
+    <ClInclude Include="RHI\Enums\Pipeline\EPrimitiveTopology.h" />
+    <ClInclude Include="RHI\Enums\Pipeline\EShaderStageCreateFlag.h" />
     <ClInclude Include="RHI\Enums\Pipeline\ProgramStage.h" />
-    <ClInclude Include="RHI\Enums\Pipeline\ShaderStage.h" />
+    <ClInclude Include="RHI\Enums\Pipeline\EShaderStage.h" />
     <ClInclude Include="RHI\Enums\Subpass\EDependencyFlag.h" />
     <ClInclude Include="RHI\Enums\Subpass\ESubpassContents.h" />
     <ClInclude Include="RHI\Enums\Swapchain\PresentMode.h" />

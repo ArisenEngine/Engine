@@ -4,8 +4,10 @@
 #include "Test.h"
 #include "Graphics\RHILoader.h"
 #include "RHI/Instance.h"
+#include "RHI/Enums/Pipeline/EAccessFlag.h"
 #include "RHI/Surfaces/Surface.h"
 #include "RHI/Handles/ImageHandle.h"
+#include "RHI/Program/GPUPipeline.h"
 #include "RHI/Program/GPUSubPass.h"
 #include "Windows/RenderWindowAPI.h"
 #include "ShaderCompiler/ShaderCompilerAPI.h"
@@ -21,8 +23,7 @@ struct RenderContext
     std::shared_ptr<RHI::GPURenderPass> renderPass;
     std::shared_ptr<RHI::FrameBuffer> frameBuffer;
     RHI::RHICommandBufferPool* commandPool;
-    Containers::Vector<u32> vertexProgram;
-    Containers::Vector<u32> fragmentProgram;
+    Containers::Vector<u32> gpuPrograms;
 };
 Containers::Vector<RenderContext> g_RenderContexts;
 
@@ -162,10 +163,11 @@ public:
                 outputVertex.codeSize,
                 outputVertex.codePointer,
                 "Vert",
+                String::WStringToString(path).c_str(),
                 RHI::SHADER_STAGE_VERTEX_BIT
             };
             g_RenderContexts[i].device->AttachProgramByteCode(programId, std::move(desc));
-            g_RenderContexts[i].vertexProgram.emplace_back(programId);
+            g_RenderContexts[i].gpuPrograms.emplace_back(programId);
         }
 
         
@@ -197,10 +199,11 @@ public:
                 outputfragment.codeSize,
                 outputfragment.codePointer,
                 "Frag",
+                String::WStringToString(path).c_str(),
                 RHI::SHADER_STAGE_FRAGMENT_BIT
             };
             g_RenderContexts[i].device->AttachProgramByteCode(programId, std::move(desc));
-            g_RenderContexts[i].fragmentProgram.emplace_back(programId);
+            g_RenderContexts[i].gpuPrograms.emplace_back(programId);
         }
         
         return true;
@@ -210,11 +213,12 @@ public:
     {
         for(int i = 0; i < k_WindowsCount; ++i)
         {
-            RecordCommandBuffer(std::move(g_RenderContexts[i]));
+            RecordSubmitPresent(std::move(g_RenderContexts[i]));
+            g_RenderContexts[i].device->DeviceWaitIdle();
         }
     }
 
-    void RecordCommandBuffer(RenderContext&& context)
+    void RecordSubmitPresent(RenderContext&& context)
     {
         auto commandBuffer = context.commandPool->GetCommandBuffer();
         auto renderPass = context.renderPass.get();
@@ -231,23 +235,56 @@ public:
             );
 
         auto subpass = renderPass->AddSubPass(RHI::PIPELINE_BIND_POINT_GRAPHICS);
-        //TODO
-        // subpass->SetDependency(m_Instance->GetExternalIndex(), );
-        commandBuffer->Begin();
+        
+        subpass->SetDependency(
+            m_Instance->GetExternalIndex(),
+            RHI::EPipelineStageFlag::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            0,
+            RHI::EPipelineStageFlag::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            RHI::EAccessFlagBits::ACCESS_HOST_WRITE_BIT,
+            0
+            );
 
-        RHI::RenderPassBeginDesc desc
+        renderPass->AllocRenderPass();
+        
         {
-            renderPass,
-            frameBuffer,
-            RHI::SUBPASS_CONTENTS_INLINE
-        };
+            // Record cmd
+            commandBuffer->Begin();
+
+            RHI::RenderPassBeginDesc desc
+            {
+                renderPass,
+                frameBuffer,
+                RHI::SUBPASS_CONTENTS_INLINE
+            };
 
         
-        commandBuffer->BeginRenderPass(std::move(desc));
+            commandBuffer->BeginRenderPass(std::move(desc));
 
+            {
+                auto pipeline = context.device->GetGPUPipeline();
+                for (auto programId : context.gpuPrograms)
+                {
+                    pipeline->AddProgram(programId);
+                }
+                
+                // TODO bind PSO
+                // TODO set viewport
+                // TODO drawcall
+            }
+            commandBuffer->EndRenderPass();
         
+            commandBuffer->End();
+        }
+
+        {
+            // Submit
+        }
+
+        {
+            // Present
+        }
         
-        context.device->DeviceWaitIdle();
     }
 
     void Shutdown() override

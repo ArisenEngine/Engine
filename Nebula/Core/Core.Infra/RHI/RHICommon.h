@@ -1,6 +1,6 @@
 #pragma once
 #include "../Common/CommandHeaders.h"
-#include "Enums/Pipeline/ShaderStage.h"
+#include "Enums/Pipeline/EShaderStage.h"
 
 namespace NebulaEngine::RHI
 {
@@ -9,7 +9,8 @@ namespace NebulaEngine::RHI
         size_t codeSize;
         void* byteCode;
         const char* entry;
-        ShaderStage stage;
+        const char* name;
+        EShaderStage stage;
     } GPUProgramDesc;
     
 }

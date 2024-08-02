@@ -68,7 +68,12 @@ namespace NebulaEngine::RHI
         virtual void Begin() = 0;
         virtual void End() = 0;
 
+        virtual void SetViewport(f32 x, f32 y, f32 width, f32 height, f32 minDepth, f32 maxDepth) = 0;
+        virtual void SetViewport(f32 x, f32 y, f32 width, f32 height) = 0;
+        virtual void SetScissor(u32 offsetX, u32 offsetY, u32 width, u32 height) = 0;
+
         virtual void BindPipeline(GPUPipeline* pipeline) = 0;
+        
         
     protected:
         RHICommandBufferPool* m_CommandBufferPool;

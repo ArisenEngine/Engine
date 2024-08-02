@@ -105,8 +105,38 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::End()
     m_State = ECommandState::HasEnded;
 }
 
+void NebulaEngine::RHI::RHIVkCommandBuffer::SetViewport(f32 x, f32 y, f32 width, f32 height, f32 minDepth, f32 maxDepth)
+{
+    const VkViewport viewport
+    {
+        x, y, width, height, minDepth, maxDepth
+    };
+    vkCmdSetViewport(m_VkCommandBuffer, 0, 1, &viewport);
+    
+}
+
+void NebulaEngine::RHI::RHIVkCommandBuffer::SetViewport(f32 x, f32 y, f32 width, f32 height)
+{
+    const VkViewport viewport
+   {
+       x, y, width, height
+   };
+    vkCmdSetViewport(m_VkCommandBuffer, 0, 1, &viewport);
+}
+
+void NebulaEngine::RHI::RHIVkCommandBuffer::SetScissor(u32 offsetX, u32 offsetY, u32 width, u32 height)
+{
+    const VkRect2D scissor =
+    {
+        {0, 0}, {width, height}
+    };
+
+    vkCmdSetScissor(m_VkCommandBuffer, 0, 1, &scissor);
+    
+}
+
 void NebulaEngine::RHI::RHIVkCommandBuffer::BindPipeline(GPUPipeline* pipeline)
 {
-    vkCmdBindPipeline(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(pipeline->GetBindPoint()), static_cast<VkPipeline>(pipeline->GetCurrentPipeline()));
+    vkCmdBindPipeline(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(pipeline->GetBindPoint()), static_cast<VkPipeline>(pipeline->GetGraphicsPipeline()));
 }
 
