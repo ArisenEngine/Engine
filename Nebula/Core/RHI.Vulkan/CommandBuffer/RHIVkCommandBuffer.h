@@ -24,6 +24,10 @@ namespace  NebulaEngine::RHI
         void Begin() override;
         void End() override;
 
+        void SetViewport(f32 x, f32 y, f32 width, f32 height, f32 minDepth, f32 maxDepth) override;
+        void SetViewport(f32 x, f32 y, f32 width, f32 height) override;
+        void SetScissor(u32 offsetX, u32 offsetY, u32 width, u32 height) override;
+
         void BindPipeline(GPUPipeline* pipeline) override;
         
     private:

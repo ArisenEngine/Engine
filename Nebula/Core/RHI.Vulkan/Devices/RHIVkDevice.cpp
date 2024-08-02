@@ -5,7 +5,7 @@
 NebulaEngine::RHI::RHIVkDevice::RHIVkDevice(Instance* instance, Surface* surface, VkQueue graphicQueue, VkQueue presentQueue, VkDevice device)
 : Device(instance, surface), m_VkGraphicQueue(graphicQueue), m_VkPresentQueue(presentQueue), m_VkDevice(device)
 {
-    
+    m_GPUPipeline = new RHIVkGPUPipeline(this);
 }
 
 void NebulaEngine::RHI::RHIVkDevice::DeviceWaitIdle() const
@@ -19,6 +19,12 @@ NebulaEngine::u32 NebulaEngine::RHI::RHIVkDevice::CreateGPUProgram()
     u32 id = static_cast<u32>(m_GPUPrograms.size());
     m_GPUPrograms.insert({id, std::make_unique<RHIVkGPUProgram>(m_VkDevice)});
     return id;
+}
+
+NebulaEngine::RHI::GPUProgram* NebulaEngine::RHI::RHIVkDevice::GetGPUProgram(u32 programId)
+{
+    ASSERT(m_GPUPrograms[programId]);
+    return m_GPUPrograms[programId].get();
 }
 
 void NebulaEngine::RHI::RHIVkDevice::DestroyGPUProgram(u32 programId)
@@ -92,6 +98,7 @@ void NebulaEngine::RHI::RHIVkDevice::ReleaseFrameBuffer(std::shared_ptr<FrameBuf
 NebulaEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
 {
     DeviceWaitIdle();
+    delete m_GPUPipeline;
     m_FrameBuffers.clear();
     m_RenderPasses.clear();
     m_GPUPrograms.clear();

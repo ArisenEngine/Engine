@@ -45,6 +45,14 @@ namespace NebulaEngine::RHI
         virtual void AddColorReference(u32 index, ImageLayout layout) = 0;
         virtual void SetResolveReference(u32 index, ImageLayout layout) = 0;
         virtual void SetDepthStencilReference(u32 index, ImageLayout layout) = 0;
+
+        /// \brief set the subPass dependency
+        /// \param preIndex indicate that current subPass is dependent to which subPass or outSide the render pass
+        /// \param preStage indicate that curr subPass dependent to which stage
+        /// \param preAccessMask indicate that stage access mask which curr subPass dependent to 
+        /// \param currStage curr subPass stage 
+        /// \param currAccessMask  curr subPass stage access mask
+        /// \param syncFlag sync flags
         void SetDependency(u32 preIndex, u32 preStage, u32 preAccessMask, u32 currStage, u32 currAccessMask, u32 syncFlag)
         {
             m_Dependency.previousIndex = preIndex;

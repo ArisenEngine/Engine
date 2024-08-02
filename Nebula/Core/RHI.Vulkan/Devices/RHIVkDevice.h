@@ -26,6 +26,7 @@ namespace NebulaEngine::RHI
 
         void DeviceWaitIdle() const override;
         u32 CreateGPUProgram() override;
+        GPUProgram* GetGPUProgram(u32 programId) override;
         void DestroyGPUProgram(u32 programId) override;
         bool AttachProgramByteCode(u32 programId, GPUProgramDesc&& desc) override;
 
@@ -37,14 +38,19 @@ namespace NebulaEngine::RHI
 
         std::shared_ptr<FrameBuffer> GetFrameBuffer() override;
         void ReleaseFrameBuffer(std::shared_ptr<FrameBuffer> frameBuffer) override;
+
+        GPUPipeline* GetGPUPipeline() const override
+        {
+            return m_GPUPipeline;
+        }
     private:
 
         friend class RHIVkInstance;
-        
+        RHIVkGPUPipeline* m_GPUPipeline;
         VkQueue m_VkGraphicQueue;
         VkQueue m_VkPresentQueue;
         VkDevice m_VkDevice;
-        RHIVkGPUPipeline* m_GPUPipeline;
+        
         Containers::Map<u32, std::unique_ptr<RHIVkGPUProgram>> m_GPUPrograms;
         Containers::Map<u32, std::unique_ptr<RHIVkCommandBufferPool>> m_CommandBufferPools;
         Containers::Vector<std::shared_ptr<GPURenderPass>> m_RenderPasses;
