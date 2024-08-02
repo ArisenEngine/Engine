@@ -269,6 +269,8 @@ public:
                 }
                 
                 // TODO bind PSO
+                pipeline->AllocGraphicsPipelineLayout();
+                pipeline->AllocGraphicPipeline();
                 // TODO set viewport
                 // TODO drawcall
             }
