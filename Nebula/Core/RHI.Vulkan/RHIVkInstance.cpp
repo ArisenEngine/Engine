@@ -92,6 +92,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
     void* pUserData)
 {
+    std::cout<<pCallbackData->pMessage<<std::endl;
+    
     if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
     {
         LOG_ERROR(" ######### vk message error: " + std::string(pCallbackData->pMessage));
@@ -521,11 +523,9 @@ NebulaEngine::RHI::Instance* CreateInstance(NebulaEngine::RHI::InstanceInfo&& ap
 
 NebulaEngine::RHI::RHIVkInstance::~RHIVkInstance() noexcept
 {
-    
-    DisposeDebugMessager();
     m_Surfaces.clear();
     m_LogicalDevices.clear();
-    
+    DisposeDebugMessager();
     vkDestroyInstance(m_VkInstance, nullptr);
     LOG_INFO("[RHIVkInstance::~RHIVkInstance]: Destroy Vulkan Instance");
 }

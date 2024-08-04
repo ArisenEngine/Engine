@@ -7,9 +7,10 @@ namespace NebulaEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE(ImageView)
-        ImageView():MemoryView(MemoryViewType::IMAGE_MEMORY_VIEW_TYPE) {}
+        ImageView(): MemoryView(MemoryViewType::IMAGE_MEMORY_VIEW_TYPE) {}
         ~ImageView() noexcept override = default;
         void* GetView() override = 0;
+        void* GetViewPointer() override = 0;
 
         virtual const u32 GetWidth() const = 0;
         virtual const u32 GetHeight() const = 0;

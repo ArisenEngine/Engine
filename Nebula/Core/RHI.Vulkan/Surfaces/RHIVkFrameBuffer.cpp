@@ -23,7 +23,7 @@ void NebulaEngine::RHI::RHIVkFrameBuffer::SetAttachment(ImageView* imageView, GP
     createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     createInfo.renderPass = static_cast<VkRenderPass>(renderPass->GetHandle());
     createInfo.attachmentCount = 1;
-    createInfo.pAttachments = static_cast<const VkImageView*>(imageView->GetView());
+    createInfo.pAttachments = static_cast<const VkImageView*>(imageView->GetViewPointer());
     createInfo.width = imageView->GetWidth();
     createInfo.height = imageView->GetHeight();
     createInfo.layers = imageView->GetLayerCount();
@@ -52,6 +52,7 @@ void NebulaEngine::RHI::RHIVkFrameBuffer::FreeFrameBuffer()
     {
         vkDestroyFramebuffer(m_VkDevice, m_VkFrameBuffer, nullptr);
         LOG_DEBUG("## Destroy Vulkan Frame Buffer ##");
+        m_VkFrameBuffer = VK_NULL_HANDLE;
     }
 
     m_ImageView = nullptr;

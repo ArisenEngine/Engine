@@ -10,11 +10,9 @@ namespace NebulaEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE(RHIVkGPUSubPass)
-        RHIVkGPUSubPass(RHIVkGPURenderPass* renderPass, EPipelineBindPoint bindPoint, u32 index);
+        RHIVkGPUSubPass(RHIVkGPURenderPass* renderPass, u32 index);
         ~RHIVkGPUSubPass() override;
 
-        
-        
         void AddInputReference(u32 index, ImageLayout layout) override;
         void AddColorReference(u32 index, ImageLayout layout) override;
         void SetResolveReference(u32 index, ImageLayout layout) override;
@@ -28,11 +26,11 @@ namespace NebulaEngine::RHI
     private:
 
         friend RHIVkGPURenderPass;
-        void Bind(EPipelineBindPoint bindPoint, u32 index) override;
+        void Bind(u32 index) override;
         void RemovePreserve(u32 index);
+        void ResizePreserve();
         bool IsInsidePreserve(u32 index);
         u32 m_Index;
-        EPipelineBindPoint m_BindPoint;
         Containers::Vector<VkAttachmentReference> m_InputReferences {};
         Containers::Vector<VkAttachmentReference> m_ColorReferences {};
         VkAttachmentReference m_ResolveReference { };

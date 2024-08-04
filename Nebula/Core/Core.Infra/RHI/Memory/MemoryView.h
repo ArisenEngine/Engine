@@ -32,6 +32,7 @@ namespace NebulaEngine::RHI
         MemoryView(MemoryViewType type) : m_ViewType(type) { }
         VIRTUAL_DECONSTRUCTOR(MemoryView)
         virtual void* GetView() = 0;
+        virtual void* GetViewPointer() = 0;
         const MemoryViewType GetViewType() const { return m_ViewType; }
     protected:
         MemoryViewType m_ViewType;
