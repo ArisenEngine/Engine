@@ -1,13 +1,13 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
 #include "RHIVkGPURenderPass.h"
-#include "RHI/Program/GPUPipeline.h"
+#include "RHI/Program/GPUPipelineManager.h"
 
 namespace NebulaEngine::RHI
 {
     class RHIVkDevice;
 
-    class RHIVkGPUPipeline final : public GPUPipeline
+    class RHIVkGPUPipeline final : public GPUPipelineManager
     {
 
     public:
@@ -19,7 +19,7 @@ namespace NebulaEngine::RHI
         
         void AddProgram(u32 programId) override;
 
-        void AllocGraphicPipeline() override;
+        void AllocGraphicsPipeline(GPUSubPass* subPass) override;
         void AllocGraphicsPipelineLayout() override;
         void FreeGraphicsPipelineLayout() override;
         void FreeGraphicsPipeline() override;
