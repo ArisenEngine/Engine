@@ -73,6 +73,8 @@ public:
             throw std::exception(" Logger initialize failed.");
         }
 
+        Debugger::Logger::GetInstance().SetServerityLevel(Debugger::Logger::LogLevel::Error);
+        
         LOG_INFO("Logger initialized..");
 
         g_RenderContexts.resize(k_WindowsCount);
@@ -216,7 +218,6 @@ public:
         for (int i = 0; i < k_WindowsCount; ++i)
         {
             RecordSubmitPresent(std::move(g_RenderContexts[i]));
-            g_RenderContexts[i].device->DeviceWaitIdle();
         }
     }
 
@@ -343,6 +344,10 @@ public:
     {
         LOG_INFO(" Shut down ...");
 
+        for (auto renderContext : g_RenderContexts)
+        {
+            renderContext.device->DeviceWaitIdle();
+        }
         g_RenderContexts.clear();
         
         // RHI dispose
@@ -355,8 +360,6 @@ public:
 
         // NOTE: logger must be dispose at the last
         Debugger::Logger::Dispose();
-
-        g_RenderContexts.clear();
     }
 };
 

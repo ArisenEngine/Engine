@@ -74,7 +74,7 @@ namespace NebulaEngine::Debugger
 #define LOG_INFO(msg) NebulaEngine::Debugger::Logger::GetInstance().Info(msg);
 // TODO: support formated log
 // #define LOG_INFO_FORMAT(format,  ...) NebulaEngine::Debugger::Logger::GetInstance().Info(msg);
-#define LOG_DEBUG(msg) NebulaEngine::Debugger::Logger::GetInstance().Log(msg);
+#define LOG_DEBUG(msg) DEBUG_OP(NebulaEngine::Debugger::Logger::GetInstance().Log(msg);)
 #define LOG_WARN(msg) NebulaEngine::Debugger::Logger::GetInstance().Warning(msg);
 #define LOG_ERROR(msg) NebulaEngine::Debugger::Logger::GetInstance().Error(msg);
 #define LOG_FATAL(msg) NebulaEngine::Debugger::Logger::GetInstance().Fatal(msg);
