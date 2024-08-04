@@ -44,7 +44,7 @@ namespace NebulaEngine::RHI
         VkSwapChainSupportDetail m_SwapChainSupportDetail;
         VkSurfaceKHR m_VkSurface;
 
-        std::unique_ptr<RHIVkSwapChain> m_SwapChain;
+        RHIVkSwapChain* m_SwapChain;
         VkQueueFamilyIndices m_QueueFamilyIndices;
         
     };

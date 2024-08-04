@@ -64,7 +64,7 @@ type_name(const type_name&) = delete;       \
 #define NO_DEFAULT(type_name)                \
 type_name() = delete;       \
 
-#define VIRTUAL_DECONSTRUCTOR(type_name) virtual ~type_name() noexcept { }
+#define VIRTUAL_DECONSTRUCTOR(type_name) virtual ~type_name() noexcept = default;
 
 #define NO_COMPARE(type_name)  type_name& operator=(const type_name&) = delete;
 

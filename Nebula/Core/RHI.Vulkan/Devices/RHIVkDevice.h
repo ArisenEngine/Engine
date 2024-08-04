@@ -6,7 +6,7 @@
 #include <optional>
 
 #include "../CommandBuffer/RHIVkCommandBufferPool.h"
-#include "../Program/RHIVkGPUPipeline.h"
+#include "../Program/RHIVkGPUPipelineManager.h"
 #include "../Program/RHIVkGPUProgram.h"
 
 #include "Logger/Logger.h"
@@ -39,14 +39,16 @@ namespace NebulaEngine::RHI
         std::shared_ptr<FrameBuffer> GetFrameBuffer() override;
         void ReleaseFrameBuffer(std::shared_ptr<FrameBuffer> frameBuffer) override;
 
-        GPUPipeline* GetGPUPipeline() const override
+        GPUPipelineManager* GetGPUPipelineManager() const override
         {
-            return m_GPUPipeline;
+            return m_GPUPipelineManager;
         }
+
+        void Submit(RHICommandBuffer* commandBuffer) override;
     private:
 
         friend class RHIVkInstance;
-        RHIVkGPUPipeline* m_GPUPipeline;
+        RHIVkGPUPipelineManager* m_GPUPipelineManager;
         VkQueue m_VkGraphicQueue;
         VkQueue m_VkPresentQueue;
         VkDevice m_VkDevice;

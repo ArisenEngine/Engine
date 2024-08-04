@@ -17,6 +17,7 @@ ImageHandle(false), m_VKDevice(device), m_VkImage(image)
 
 NebulaEngine::RHI::RHIVkImageHandle::~RHIVkImageHandle() noexcept
 {
+    LOG_DEBUG("[RHIVkImageHandle::~RHIVkImageHandle]: ~RHIVkImageHandle");
     delete m_MemoryView;
     m_MemoryView = nullptr;
     

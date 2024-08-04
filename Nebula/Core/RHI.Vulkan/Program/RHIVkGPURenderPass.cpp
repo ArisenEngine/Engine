@@ -14,7 +14,7 @@ NebulaEngine::RHI::RHIVkGPURenderPass::~RHIVkGPURenderPass() noexcept
     
 }
 
-void NebulaEngine::RHI::RHIVkGPURenderPass::AddAttachmentAction(Format format, SampleCountFlagBits sample,
+void NebulaEngine::RHI::RHIVkGPURenderPass::AddAttachmentAction(Format format, ESampleCountFlagBits sample,
     AttachmentLoadOp colorLoadOp, AttachmentStoreOp colorStoreOp, AttachmentLoadOp stencilLoadOp,
     AttachmentStoreOp stencilStoreOp, ImageLayout initialLayout, ImageLayout finalLayout)
 {
@@ -41,9 +41,7 @@ NebulaEngine::u32 NebulaEngine::RHI::RHIVkGPURenderPass::GetAttachmentCount()
 void NebulaEngine::RHI::RHIVkGPURenderPass::AllocRenderPass()
 {
     ASSERT(m_SubpassesToDispatch.size() > 0);
-    
-    // TODO: make this poolable
-    FreeRenderPass();
+    ASSERT(m_State == ERenderPassState::AttachDone);
     
     m_SubpassDescriptions.resize(m_SubpassesToDispatch.size());
     m_Dependencies.resize(m_SubpassesToDispatch.size());
@@ -76,7 +74,7 @@ void NebulaEngine::RHI::RHIVkGPURenderPass::AllocRenderPass()
 
         // deal with dependency;
         auto dependency = subpass->GetDependency();
-        VkSubpassDependency vkSubpassDepency {};
+        VkSubpassDependency vkSubpassDepency;
         vkSubpassDepency.srcSubpass = dependency.previousIndex;
         vkSubpassDepency.dstSubpass = subpass->GetIndex();
         vkSubpassDepency.srcStageMask = dependency.previousStage;
@@ -86,7 +84,7 @@ void NebulaEngine::RHI::RHIVkGPURenderPass::AllocRenderPass()
         vkSubpassDepency.dependencyFlags = dependency.syncFlag;
         m_Dependencies[i] = vkSubpassDepency;
     }
-
+    
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     renderPassInfo.attachmentCount = static_cast<uint32_t>(m_AttachmentDescriptions.size());
@@ -95,12 +93,13 @@ void NebulaEngine::RHI::RHIVkGPURenderPass::AllocRenderPass()
     renderPassInfo.pSubpasses = m_SubpassDescriptions.data();
     renderPassInfo.dependencyCount = static_cast<uint32_t>(m_Dependencies.size());
     renderPassInfo.pDependencies = m_Dependencies.data();
-
-    ASSERT(m_State == ERenderPassState::AttachDone);
+    
     if (vkCreateRenderPass(m_VkDevice, &renderPassInfo, nullptr, &m_VkRenderPass) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("[RHIVkGPURenderPass::AllocRenderPass]: failed to create render pass!");
     }
+
+    LOG_DEBUG("[RHIVkGPURenderPass::AllocRenderPass]: RenderPass Allocated.");
 }
 
 void NebulaEngine::RHI::RHIVkGPURenderPass::FreeRenderPass()
@@ -123,22 +122,27 @@ void NebulaEngine::RHI::RHIVkGPURenderPass::FreeRenderPass()
     m_State = ERenderPassState::NotAllocated;
 }
 
-NebulaEngine::RHI::GPUSubPass* NebulaEngine::RHI::RHIVkGPURenderPass::AddSubPass(EPipelineBindPoint bindPoint)
+NebulaEngine::RHI::GPUSubPass* NebulaEngine::RHI::RHIVkGPURenderPass::AddSubPass()
 {
     std::shared_ptr<GPUSubPass> subpass;
     if (m_SubpassPool.size() > 0)
     {
         subpass = m_SubpassPool.back();
-        static_cast<RHIVkGPUSubPass*>(subpass.get())->Bind(bindPoint, static_cast<u32>(m_SubpassesToDispatch.size()));
+        static_cast<RHIVkGPUSubPass*>(subpass.get())->Bind(static_cast<u32>(m_SubpassesToDispatch.size()));
         m_SubpassPool.pop_back();
     }
     else
     {
-        subpass = std::make_shared<RHIVkGPUSubPass>(this, bindPoint, m_SubpassesToDispatch.size());
+        subpass = std::make_shared<RHIVkGPUSubPass>(this, m_SubpassesToDispatch.size());
     }
 
     m_SubpassesToDispatch.emplace_back(subpass);
 
     return subpass.get();
+}
+
+NebulaEngine::u32 NebulaEngine::RHI::RHIVkGPURenderPass::GetSubPassCount()
+{
+    return static_cast<u32>(m_SubpassesToDispatch.size());
 }
 

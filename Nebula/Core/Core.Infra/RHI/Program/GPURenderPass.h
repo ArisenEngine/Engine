@@ -1,10 +1,9 @@
 #pragma once
 #include "RHI/Enums/Attachment/AttachmentLoadOp.h"
 #include "RHI/Enums/Attachment/AttachmentStoreOp.h"
-#include "RHI/Enums/Attachment/SampleCountFlagBits.h"
+#include "RHI/Enums/Attachment/ESampleCountFlagBits.h"
 #include "RHI/Enums/Image/Format.h"
 #include "RHI/Enums/Image/ImageLayout.h"
-#include "RHI/Enums/Pipeline/EPipelineBindPoint.h"
 
 namespace NebulaEngine::RHI
 {
@@ -29,7 +28,7 @@ namespace NebulaEngine::RHI
 
         virtual void AddAttachmentAction(
             Format format,
-            SampleCountFlagBits sample,
+            ESampleCountFlagBits sample,
             AttachmentLoadOp colorLoadOp, AttachmentStoreOp colorStoreOp,
             AttachmentLoadOp stencilLoadOp, AttachmentStoreOp stencilStoreOp,
             ImageLayout initialLayout, ImageLayout finalLayout
@@ -37,7 +36,8 @@ namespace NebulaEngine::RHI
 
         virtual u32 GetAttachmentCount() = 0;
 
-        virtual GPUSubPass* AddSubPass(EPipelineBindPoint bindPoint) = 0;
+        virtual GPUSubPass* AddSubPass() = 0;
+        virtual u32 GetSubPassCount() = 0;
         virtual void AllocRenderPass() = 0;
         virtual void FreeRenderPass() = 0;
         

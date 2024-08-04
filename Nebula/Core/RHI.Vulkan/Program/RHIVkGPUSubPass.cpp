@@ -2,14 +2,10 @@
 
 #include "Logger/Logger.h"
 
-NebulaEngine::RHI::RHIVkGPUSubPass::RHIVkGPUSubPass(RHIVkGPURenderPass* renderPass, EPipelineBindPoint bindPoint, u32 index):
-GPUSubPass(renderPass), m_BindPoint(bindPoint), m_Index(index)
+NebulaEngine::RHI::RHIVkGPUSubPass::RHIVkGPUSubPass(RHIVkGPURenderPass* renderPass, u32 index):
+GPUSubPass(renderPass), m_Index(index)
 {
-    m_PreserveAttachments.resize(renderPass->GetAttachmentCount());
-    for(int i = 0; i < m_PreserveAttachments.size(); ++i)
-    {
-        m_PreserveAttachments[i] = i;
-    }
+    ResizePreserve();
 }
 
 NebulaEngine::RHI::RHIVkGPUSubPass::~RHIVkGPUSubPass()
@@ -18,10 +14,10 @@ NebulaEngine::RHI::RHIVkGPUSubPass::~RHIVkGPUSubPass()
     ClearAll();
 }
 
-void NebulaEngine::RHI::RHIVkGPUSubPass::Bind(EPipelineBindPoint bindPoint, u32 index)
+void NebulaEngine::RHI::RHIVkGPUSubPass::Bind(u32 index)
 {
-    m_BindPoint = bindPoint;
     m_Index = index;
+    ResizePreserve();
 }
 
 void NebulaEngine::RHI::RHIVkGPUSubPass::AddInputReference(u32 index, ImageLayout layout)
@@ -71,6 +67,15 @@ void NebulaEngine::RHI::RHIVkGPUSubPass::RemovePreserve(u32 index)
     {
         m_PreserveAttachments.erase(it);
     } 
+}
+
+void NebulaEngine::RHI::RHIVkGPUSubPass::ResizePreserve()
+{
+    m_PreserveAttachments.resize(m_OwnerPass->GetAttachmentCount());
+    for(int i = 0; i < m_PreserveAttachments.size(); ++i)
+    {
+        m_PreserveAttachments[i] = i;
+    }
 }
 
 bool NebulaEngine::RHI::RHIVkGPUSubPass::IsInsidePreserve(u32 index)

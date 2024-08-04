@@ -41,8 +41,8 @@ namespace NebulaEngine::RHI
         VIRTUAL_DECONSTRUCTOR(SwapChain)
         virtual void* GetHandle() const = 0;
         virtual void CreateSwapChainWithDesc(Surface* surface, SwapChainDescriptor desc) = 0;
-        virtual const RHISemaphore* GetImageAvailableSemaphore() const = 0;
-        virtual const RHISemaphore* GetRenderFinishSemaphore() const  = 0;
+        virtual RHISemaphore* GetImageAvailableSemaphore() const = 0;
+        virtual RHISemaphore* GetRenderFinishSemaphore() const  = 0;
         virtual ImageHandle* AquireCurrentImage() = 0;
         virtual void Present() = 0;
     protected:

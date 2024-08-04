@@ -5,10 +5,13 @@
 #include "Graphics\RHILoader.h"
 #include "RHI/Instance.h"
 #include "RHI/Enums/Pipeline/EAccessFlag.h"
+#include "RHI/Enums/Pipeline/EColorComponentFlag.h"
 #include "RHI/Surfaces/Surface.h"
 #include "RHI/Handles/ImageHandle.h"
-#include "RHI/Program/GPUPipeline.h"
+#include "RHI/Memory/ImageView.h"
+#include "RHI/Program/GPUPipelineManager.h"
 #include "RHI/Program/GPUSubPass.h"
+#include "RHI/Program/GPUPipelineStateObject.h"
 #include "Windows/RenderWindowAPI.h"
 #include "ShaderCompiler/ShaderCompilerAPI.h"
 
@@ -25,9 +28,10 @@ struct RenderContext
     RHI::RHICommandBufferPool* commandPool;
     Containers::Vector<u32> gpuPrograms;
 };
+
 Containers::Vector<RenderContext> g_RenderContexts;
 
-const int k_WindowsCount = 4;
+const int k_WindowsCount = 1;
 
 LRESULT WinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -55,11 +59,9 @@ LRESULT WinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 class EngineTest : public Test
 {
 private:
+    RHI::Instance* m_Instance{};
 
-    RHI::Instance* m_Instance {};
-    
 public:
-
     EngineTest(): m_Instance(nullptr)
     {
     }
@@ -74,13 +76,13 @@ public:
         LOG_INFO("Logger initialized..");
 
         g_RenderContexts.resize(k_WindowsCount);
-        
+
         for (int i = 0; i < k_WindowsCount; ++i)
         {
             auto windowId = Platforms::CreateRenderWindow(nullptr, WinProc, 640, 480);
             g_RenderContexts[i] = RenderContext
             {
-               windowId
+                windowId
             };
         }
 
@@ -102,7 +104,7 @@ public:
             /** App Version */
             1, 0, 0
         };
-        
+
         Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphsicsAPI::Vulkan);
         m_Instance = Graphics::RHILoader::CreateInstance(std::move(app_info));
         auto env = m_Instance->GetEnvString();
@@ -116,11 +118,11 @@ public:
 
         // pick physical device
         m_Instance->PickPhysicalDevice();
-        
+
         // init logical devices
         m_Instance->InitLogicDevices();
 
-        for(int i = 0; i < k_WindowsCount; ++i)
+        for (int i = 0; i < k_WindowsCount; ++i)
         {
             g_RenderContexts[i].device = &m_Instance->GetLogicalDevice(g_RenderContexts[i].windowId);
             auto poolId = g_RenderContexts[i].device->CreateCommandBufferPool();
@@ -128,13 +130,13 @@ public:
             g_RenderContexts[i].renderPass = g_RenderContexts[i].device->GetRenderPass();
             g_RenderContexts[i].frameBuffer = g_RenderContexts[i].device->GetFrameBuffer();
         }
-        
+
         Platforms::InitDXC();
-        
+
         namespace fs = std::filesystem;
         auto currentPath = fs::current_path().generic_wstring() + L"\\Shader";
         auto path = currentPath + L"\\FullScreen.hlsl";
-        
+
         Platforms::ShaderCompileParams vertexParams
         {
             path,
@@ -155,7 +157,7 @@ public:
             LOG_DEBUG("Vertex Shader Compilation done.");
         }
 
-        for(int i = 0; i < k_WindowsCount; ++i)
+        for (int i = 0; i < k_WindowsCount; ++i)
         {
             auto programId = g_RenderContexts[i].device->CreateGPUProgram();
             auto desc = RHI::GPUProgramDesc
@@ -170,7 +172,7 @@ public:
             g_RenderContexts[i].gpuPrograms.emplace_back(programId);
         }
 
-        
+
         Platforms::ShaderCompileParams fragmentParams
         {
             path,
@@ -191,7 +193,7 @@ public:
             LOG_DEBUG("Fragment Shader Compilation done.");
         }
 
-        for(int i = 0; i < k_WindowsCount; ++i)
+        for (int i = 0; i < k_WindowsCount; ++i)
         {
             auto programId = g_RenderContexts[i].device->CreateGPUProgram();
             auto desc = RHI::GPUProgramDesc
@@ -205,13 +207,13 @@ public:
             g_RenderContexts[i].device->AttachProgramByteCode(programId, std::move(desc));
             g_RenderContexts[i].gpuPrograms.emplace_back(programId);
         }
-        
+
         return true;
     }
 
     void Run() override
     {
-        for(int i = 0; i < k_WindowsCount; ++i)
+        for (int i = 0; i < k_WindowsCount; ++i)
         {
             RecordSubmitPresent(std::move(g_RenderContexts[i]));
             g_RenderContexts[i].device->DeviceWaitIdle();
@@ -221,83 +223,133 @@ public:
     void RecordSubmitPresent(RenderContext&& context)
     {
         auto commandBuffer = context.commandPool->GetCommandBuffer();
-        auto renderPass = context.renderPass.get();
-        auto frameBuffer = context.frameBuffer.get();
-        auto backBuffer = context.device->GetSurface()->GetSwapChain()->AquireCurrentImage();
 
-        frameBuffer->SetAttachment(static_cast<RHI::ImageView*>(backBuffer->GetMemoryView()->GetView()), renderPass);
-        
-        renderPass->AddAttachmentAction(
-            frameBuffer->GetAttachFormat(), RHI::SAMPLE_COUNT_1_BIT,
-            RHI::ATTACHMENT_LOAD_OP_CLEAR, RHI::ATTACHMENT_STORE_OP_STORE,
-            RHI::ATTACHMENT_LOAD_OP_DONT_CARE, RHI::ATTACHMENT_STORE_OP_DONT_CARE,
-            RHI::IMAGE_LAYOUT_UNDEFINED, RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR
-            );
+        // Record cmd
+        commandBuffer->Begin();
 
-        auto subpass = renderPass->AddSubPass(RHI::PIPELINE_BIND_POINT_GRAPHICS);
-        
-        subpass->SetDependency(
-            m_Instance->GetExternalIndex(),
-            RHI::EPipelineStageFlag::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            0,
-            RHI::EPipelineStageFlag::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            RHI::EAccessFlagBits::ACCESS_HOST_WRITE_BIT,
-            0
-            );
-
-        renderPass->AllocRenderPass();
-        
         {
-            // Record cmd
-            commandBuffer->Begin();
+            auto renderPass = context.renderPass.get();
+            auto frameBuffer = context.frameBuffer.get();
+            auto backBuffer = context.device->GetSurface()->GetSwapChain()->AquireCurrentImage();
+            auto backBufferView = static_cast<RHI::ImageView*>(backBuffer->GetMemoryView());
+            auto format = backBufferView->GetFormat();
 
-            RHI::RenderPassBeginDesc desc
+            
+            renderPass->FreeRenderPass();
+            
+            renderPass->AddAttachmentAction(
+                format, RHI::SAMPLE_COUNT_1_BIT,
+                RHI::ATTACHMENT_LOAD_OP_CLEAR, RHI::ATTACHMENT_STORE_OP_STORE,
+                RHI::ATTACHMENT_LOAD_OP_DONT_CARE, RHI::ATTACHMENT_STORE_OP_DONT_CARE,
+                RHI::IMAGE_LAYOUT_UNDEFINED, RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR
+            );
+
+            auto subpass = renderPass->AddSubPass();
+
             {
-                renderPass,
-                frameBuffer,
-                RHI::SUBPASS_CONTENTS_INLINE
-            };
-
-        
-            commandBuffer->BeginRenderPass(std::move(desc));
-
-            {
-                auto pipeline = context.device->GetGPUPipeline();
-                for (auto programId : context.gpuPrograms)
-                {
-                    pipeline->AddProgram(programId);
-                }
-                
-                // TODO bind PSO
-                pipeline->AllocGraphicsPipelineLayout();
-                pipeline->AllocGraphicPipeline();
-                // TODO set viewport
-                // TODO drawcall
+                // setup subpass
+                subpass->SetDependency(
+                    m_Instance->GetExternalIndex(),
+                    RHI::EPipelineStageFlag::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    0,
+                    RHI::EPipelineStageFlag::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    RHI::EAccessFlagBits::ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                    0
+                );
             }
-            commandBuffer->EndRenderPass();
-        
-            commandBuffer->End();
+
+            renderPass->AllocRenderPass();
+
+            frameBuffer->SetAttachment(backBufferView, renderPass);
+
+            {
+                RHI::RenderPassBeginDesc desc
+                {
+                    renderPass,
+                    frameBuffer,
+                    RHI::SUBPASS_CONTENTS_INLINE
+                };
+
+
+                commandBuffer->BeginRenderPass(std::move(desc));
+
+                {
+                    auto pipelineManager = context.device->GetGPUPipelineManager();
+
+                    auto pipelineState = pipelineManager->GetPipelineState();
+                    for (auto programId : context.gpuPrograms)
+                    {
+                        pipelineState->AddProgram(programId);
+                    }
+
+                    {
+                        // Pipeline State Object
+                        pipelineState->AddDynamicPipelineState(RHI::DYNAMIC_STATE_SCISSOR);
+                        pipelineState->AddDynamicPipelineState(RHI::DYNAMIC_STATE_VIEWPORT);
+                        pipelineState->SetPrimitiveState(RHI::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false);
+                        pipelineState->SetDepthClampEnable(false);
+                        pipelineState->SetRasterizerDiscardEnable(false);
+                        pipelineState->SetPolygonMode(RHI::EPOLYGON_MODE_FILL);
+                        pipelineState->SetLineWidth(1.0F);
+                        pipelineState->SetCullMode(RHI::CULL_MODE_BACK_BIT);
+                        pipelineState->SetFrontFace(RHI::FRONT_FACE_CLOCKWISE);
+                        pipelineState->SetDepthBiasEnable(false);
+                        pipelineState->SetSampleShading(false);
+                        pipelineState->SetSampleCount(RHI::SAMPLE_COUNT_1_BIT);
+                        pipelineState->AddBlendAttachmentState(false,
+                                                               RHI::EColorComponentFlagBits::COLOR_COMPONENT_R_BIT |
+                                                               RHI::EColorComponentFlagBits::COLOR_COMPONENT_G_BIT |
+                                                               RHI::EColorComponentFlagBits::COLOR_COMPONENT_B_BIT |
+                                                               RHI::EColorComponentFlagBits::COLOR_COMPONENT_A_BIT);
+                        pipelineState->SetLogicOp(false, RHI::LOGIC_OP_COPY);
+                        pipelineState->SetBlendConstants(0.0f, 0.0f, 0.0f, 0.0f);
+
+                        auto pipeline = pipelineManager->GetGraphicsPipeline(pipelineState.get());
+
+                        pipeline->AllocGraphicPipeline(subpass);
+                        commandBuffer->BindPipeline(pipeline);
+                    }
+
+                    {
+                        // viewport scissor
+                        commandBuffer->SetViewport(0, 0, static_cast<f32>(backBufferView->GetWidth()), static_cast<
+                                                       f32>(backBufferView->GetHeight()), 0, 1);
+                        commandBuffer->SetScissor(0, 0, backBufferView->GetWidth(), backBufferView->GetHeight());
+                    }
+
+                    {
+                        // draw call
+                        commandBuffer->Draw(3, 1, 0, 0);
+                    }
+                }
+                commandBuffer->EndRenderPass();
+            }
         }
+
+        commandBuffer->End();
 
         {
             // Submit
+            context.device->Submit(commandBuffer.get());
         }
 
         {
             // Present
+            context.device->GetSurface()->GetSwapChain()->Present();
         }
-        
     }
 
     void Shutdown() override
     {
         LOG_INFO(" Shut down ...");
 
-        // rhi dispose
-        delete m_Instance;
-
-        Platforms::ReleaseDXC();
+        g_RenderContexts.clear();
         
+        // RHI dispose
+        delete m_Instance;
+        
+        Platforms::ReleaseDXC();
+
         // rhi loader dispose 
         Graphics::RHILoader::Dispose();
 

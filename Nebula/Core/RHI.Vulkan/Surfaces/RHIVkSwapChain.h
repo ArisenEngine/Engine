@@ -17,8 +17,8 @@ namespace NebulaEngine::RHI
         void* GetHandle() const override { return m_VkSwapChain; };
         void CreateSwapChainWithDesc(Surface* surface, SwapChainDescriptor desc) override;
 
-        const RHISemaphore* GetImageAvailableSemaphore() const override;
-        const RHISemaphore* GetRenderFinishSemaphore() const override;
+        RHISemaphore* GetImageAvailableSemaphore() const override;
+        RHISemaphore* GetRenderFinishSemaphore() const override;
         ImageHandle* AquireCurrentImage() override;
         void Present() override;
     protected:

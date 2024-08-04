@@ -5,10 +5,9 @@
 #include "Logger/Logger.h"
 #include "RHI/Enums/Attachment/AttachmentLoadOp.h"
 #include "RHI/Enums/Attachment/AttachmentStoreOp.h"
-#include "RHI/Enums/Attachment/SampleCountFlagBits.h"
+#include "RHI/Enums/Attachment/ESampleCountFlagBits.h"
 #include "RHI/Enums/Image/Format.h"
 #include "RHI/Enums/Image/ImageLayout.h"
-#include "RHI/Enums/Pipeline/EPipelineBindPoint.h"
 #include "RHI/Program/GPURenderPass.h"
 
 namespace NebulaEngine::RHI
@@ -24,7 +23,7 @@ namespace NebulaEngine::RHI
 
         void AddAttachmentAction(
             Format format,
-            SampleCountFlagBits sample,
+            ESampleCountFlagBits sample,
             AttachmentLoadOp colorLoadOp, AttachmentStoreOp colorStoreOp,
             AttachmentLoadOp stencilLoadOp, AttachmentStoreOp stencilStoreOp,
             ImageLayout initialLayout, ImageLayout finalLayout
@@ -35,7 +34,8 @@ namespace NebulaEngine::RHI
         void AllocRenderPass() override;
         void FreeRenderPass() override;
 
-        GPUSubPass* AddSubPass(EPipelineBindPoint bindPoint) override;
+        GPUSubPass* AddSubPass() override;
+        u32 GetSubPassCount() override;
 
     private:
         VkRenderPass m_VkRenderPass { VK_NULL_HANDLE };

@@ -1,4 +1,5 @@
 #pragma once
+#include "GPUPipeline.h"
 #include "GPUProgram.h"
 #include "../../Common/CommandHeaders.h"
 #include "RHI/Enums/Pipeline/EDynamicState.h"
@@ -6,6 +7,8 @@
 
 namespace NebulaEngine::RHI
 {
+    class GPUPipelineStateObject;
+
     // TODO
     struct SpecializationInfoDesc
     {
@@ -20,50 +23,15 @@ namespace NebulaEngine::RHI
         std::optional<SpecializationInfoDesc> specializationInfo;
     };
     
-    class GPUPipeline
+    class GPUPipelineManager
     {
-        
     public:
-        NO_COPY_NO_MOVE(GPUPipeline)
-        GPUPipeline() = default;
-        virtual ~GPUPipeline() noexcept { ClearDynamicPipelineStates(); }
-
-        virtual void* GetGraphicsPipeline() = 0;
-        virtual void AddProgram(u32 programId) = 0;
         
-        virtual void AllocGraphicsPipeline(GPUSubPass* subPass) = 0;
-        virtual void AllocGraphicsPipelineLayout() = 0;
-        virtual void FreeGraphicsPipelineLayout() = 0;
-        virtual void FreeGraphicsPipeline() = 0;
+        NO_COPY_NO_MOVE(GPUPipelineManager)
+        GPUPipelineManager() = default;
+        virtual ~GPUPipelineManager() noexcept = default;
+        virtual GPUPipeline* GetGraphicsPipeline(GPUPipelineStateObject* pso) = 0;
 
-    public:
-
-        void ClearDynamicPipelineStates() { m_DynamicPipelineStates.clear(); }
-        void AddDynamicPipelineState(EDynamicPipelineState state)
-        {
-            m_DynamicPipelineStates.emplace_back(state);
-        }
-
-        void EnablePrimitiveRestart()
-        {
-            m_PrimitiveRestart = true;
-        }
-
-        void DisablePrimitiveRestart()
-        {
-            m_PrimitiveRestart = false;
-        }
-
-        void SetPrimitiveTopology(EPrimitiveTopology topology)
-        {
-            m_PrimitiveTopology = topology;
-        }
-        
-    protected:
-        
-        // input assembly
-        bool m_PrimitiveRestart {false};
-        EPrimitiveTopology m_PrimitiveTopology { EPrimitiveTopology::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST };
-        Containers::Vector<EDynamicPipelineState> m_DynamicPipelineStates;
+        virtual std::unique_ptr<GPUPipelineStateObject> GetPipelineState() = 0;
     };
 }

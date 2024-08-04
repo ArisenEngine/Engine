@@ -92,12 +92,12 @@ void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(Surface* surface
 
 }
 
-const NebulaEngine::RHI::RHISemaphore* NebulaEngine::RHI::RHIVkSwapChain::GetImageAvailableSemaphore() const
+NebulaEngine::RHI::RHISemaphore* NebulaEngine::RHI::RHIVkSwapChain::GetImageAvailableSemaphore() const
 {
     return m_ImageAvailableSemaphore;
 }
 
-const NebulaEngine::RHI::RHISemaphore* NebulaEngine::RHI::RHIVkSwapChain::GetRenderFinishSemaphore() const
+NebulaEngine::RHI::RHISemaphore* NebulaEngine::RHI::RHIVkSwapChain::GetRenderFinishSemaphore() const
 {
     return m_RenderFinishSemaphore;
 }

@@ -12,6 +12,7 @@ namespace NebulaEngine::RHI
         RHIVkImageView(ImageViewDesc desc, VkDevice device, VkImage image);
         ~RHIVkImageView() noexcept override;
         void* GetView() override { return m_VkImageView; }
+        void* GetViewPointer() override { return &m_VkImageView; }
 
         const u32 GetWidth() const override { return m_ImageViewDesc.value().width; }
         const u32 GetHeight() const override { return m_ImageViewDesc.value().height; }

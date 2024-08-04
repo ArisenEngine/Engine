@@ -12,6 +12,7 @@ using namespace NebulaEngine;
 
 NebulaEngine::RHI::RHIVkSurface::~RHIVkSurface() noexcept
 {
+    delete m_SwapChain;
     vkDestroySurfaceKHR(static_cast<VkInstance>(m_Instance->GetHandle()), m_VkSurface, nullptr);
     LOG_INFO("[RHIVkSurface::~RHIVkSurface]: Destroy Vulkan Surface");
 }
@@ -41,13 +42,12 @@ void RHI::RHIVkSurface::InitSwapChain()
     }
     
     auto rhiInstance = static_cast<RHIVkInstance*>(m_Instance);
-    m_SwapChain = std::make_unique<RHIVkSwapChain>(static_cast<VkDevice>(
+    m_SwapChain = new RHIVkSwapChain(static_cast<VkDevice>(
                                                        rhiInstance->GetLogicalDevice(std::move(m_RenderWindowId)).GetHandle()), this);
     auto width = Platforms::GetWindowWidth(m_RenderWindowId);
     auto height = Platforms::GetWindowHeight(m_RenderWindowId);
-
-    auto swapChainPtr = m_SwapChain.get();
-    swapChainPtr->SetResolution(width, height);
+    
+    m_SwapChain->SetResolution(width, height);
 
     auto imageCount = m_SwapChainSupportDetail.capabilities.minImageCount + 1;
     if (m_SwapChainSupportDetail.capabilities.maxImageCount > 0
@@ -88,12 +88,12 @@ void RHI::RHIVkSurface::InitSwapChain()
         COMPOSITE_ALPHA_OPAQUE_BIT
     };
 
-    swapChainPtr->CreateSwapChainWithDesc(this, desc);
+    m_SwapChain->CreateSwapChainWithDesc(this, desc);
 }
 
 RHI::SwapChain* RHI::RHIVkSurface::GetSwapChain()
 {
-    return m_SwapChain.get();
+    return m_SwapChain;
 }
 
 VkSurfaceFormatKHR RHI::RHIVkSurface::GetDefaultSurfaceFormat()

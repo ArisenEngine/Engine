@@ -58,7 +58,7 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::EndRenderPass()
 {
     ASSERT(m_State == ECommandState::IsInsideRenderPass);
     vkCmdEndRenderPass(m_VkCommandBuffer);
-    m_State = ECommandState::ReadyForSubmit;
+    m_State = ECommandState::ReadyForEnd;
 }
 
 void NebulaEngine::RHI::RHIVkCommandBuffer::Clear()
@@ -102,7 +102,7 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::End()
         LOG_FATAL_AND_THROW("[RHIVkCommandBuffer::End]: failed to record command buffer!");
     }
     
-    m_State = ECommandState::HasEnded;
+    m_State = ECommandState::ReadyForSubmit;
 }
 
 void NebulaEngine::RHI::RHIVkCommandBuffer::SetViewport(f32 x, f32 y, f32 width, f32 height, f32 minDepth, f32 maxDepth)
@@ -138,5 +138,10 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::SetScissor(u32 offsetX, u32 offsetY,
 void NebulaEngine::RHI::RHIVkCommandBuffer::BindPipeline(GPUPipeline* pipeline)
 {
     vkCmdBindPipeline(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(pipeline->GetBindPoint()), static_cast<VkPipeline>(pipeline->GetGraphicsPipeline()));
+}
+
+void NebulaEngine::RHI::RHIVkCommandBuffer::Draw(u32 vertexCount, u32 instanceCount, u32 firstVertex, u32 firstInstance)
+{
+    vkCmdDraw(m_VkCommandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
