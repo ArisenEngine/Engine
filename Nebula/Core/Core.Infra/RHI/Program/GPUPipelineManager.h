@@ -31,7 +31,7 @@ namespace NebulaEngine::RHI
         virtual void* GetGraphicsPipeline() = 0;
         virtual void AddProgram(u32 programId) = 0;
         
-        virtual void AllocGraphicPipeline() = 0;
+        virtual void AllocGraphicsPipeline(GPUSubPass* subPass) = 0;
         virtual void AllocGraphicsPipelineLayout() = 0;
         virtual void FreeGraphicsPipelineLayout() = 0;
         virtual void FreeGraphicsPipeline() = 0;

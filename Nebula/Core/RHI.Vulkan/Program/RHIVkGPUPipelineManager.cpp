@@ -1,9 +1,7 @@
 #include "RHIVkGPUPipeline.h"
 #include "../Devices/RHIVkDevice.h"
-
-#include <complex.h>
-
 #include "Logger/Logger.h"
+#include "RHI/Program/GPUSubPass.h"
 
 /**
     Shader stages: the shader modules that define the functionality of the programmable stages of the graphics pipeline
@@ -12,7 +10,7 @@
     Render pass: the attachments referenced by the pipeline stages and their usage 
  */
 
-NebulaEngine::RHI::RHIVkGPUPipeline::RHIVkGPUPipeline(RHIVkDevice* device): GPUPipeline(),
+NebulaEngine::RHI::RHIVkGPUPipeline::RHIVkGPUPipeline(RHIVkDevice* device): GPUPipelineManager(),
 m_Device(device), m_VkDevice(static_cast<VkDevice>(device->GetHandle()))
 {
     
@@ -56,7 +54,7 @@ void NebulaEngine::RHI::RHIVkGPUPipeline::AddProgram(u32 programId)
     m_PipelineStageCreateInfos.insert(it, shaderStageCreateInfo);
 }
 
-void NebulaEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline()
+void NebulaEngine::RHI::RHIVkGPUPipeline::AllocGraphicsPipeline(GPUSubPass* subPass)
 {
     ASSERT(m_VkGraphicsPipelineLayout != VK_NULL_HANDLE);
 
@@ -77,6 +75,12 @@ void NebulaEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline()
     inputAssemblyInfo.primitiveRestartEnable = static_cast<VkBool32>(m_PrimitiveRestart);
 
     // viewport state
+    VkPipelineViewportStateCreateInfo viewportStateInfo {};
+    // TODO
+
+    // rasterizer state
+    VkPipelineRasterizationStateCreateInfo rasterizerInfo {};
+    // TODO 
     
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -84,18 +88,19 @@ void NebulaEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline()
     pipelineInfo.pStages = m_PipelineStageCreateInfos.data();
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &inputAssemblyInfo;
-    pipelineInfo.pViewportState = &viewportState;
-    pipelineInfo.pRasterizationState = &rasterizer;
+    pipelineInfo.pViewportState = &viewportStateInfo;
+    pipelineInfo.pRasterizationState = &rasterizerInfo;
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = &dynamicState;
     pipelineInfo.layout = m_VkGraphicsPipelineLayout;
-    pipelineInfo.renderPass = renderPass;
-    pipelineInfo.subpass = 0;
+    pipelineInfo.renderPass = static_cast<VkRenderPass>(subPass->GetOwner()->GetHandle());
+    pipelineInfo.subpass = subPass->GetIndex();
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
     if (vkCreateGraphicsPipelines(m_VkDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
-        &m_VkGraphicPipeline) != VK_SUCCESS) {
+        &m_VkGraphicPipeline) != VK_SUCCESS)
+    {
         LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocPipeline]: failed to create GPU pipeline!");
     }
 }
