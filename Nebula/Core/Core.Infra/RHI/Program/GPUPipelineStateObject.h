@@ -74,7 +74,7 @@ namespace NebulaEngine::RHI
 
         // Rasterizer
         bool DepthClampEnable() const { return m_DepthClampEnable; }
-        void SetDepthClampEnable(bool enable) { m_DepthClampEnable = true; }
+        void SetDepthClampEnable(bool enable) { m_DepthClampEnable = enable; }
         bool RasterizerDiscardEnable() const { return m_RasterizerDiscardEnable; }
         void SetRasterizerDiscardEnable(bool enable) { m_RasterizerDiscardEnable = enable; }
         EPolygonMode PolygonMode() const { return m_PolygonMode; }

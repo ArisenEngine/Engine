@@ -21,7 +21,7 @@ namespace NebulaEngine::RHI
         std::optional<void*> inputReferences;
         std::optional<void*> resolveReference;
         std::optional<void*> depthStencilReference;
-        std::optional<ESubpassDescriptionFlag> flag;
+        std::optional<u32> flag;
         
     } SubpassDescription;
 
@@ -56,7 +56,7 @@ namespace NebulaEngine::RHI
         SubpassDependency GetDependency() const { return m_Dependency; }
 
         virtual const u32 GetIndex() const = 0;
-    
+        
     public:
 
         /// \brief set the subPass dependency
@@ -78,6 +78,10 @@ namespace NebulaEngine::RHI
         
         GPURenderPass* GetOwner() const { return m_OwnerPass; }
 
+        EPipelineBindPoint GetBindPoint() const { return m_BindPoint; }
+        void SetBindPoint(EPipelineBindPoint point) { m_BindPoint = point; }
+        u32 GetSubPassDescriptionFlag() const { return m_SubPassDescriptionFlag; }
+        void SetSubPassDescriptionFlag(u32 flag) { m_SubPassDescriptionFlag = flag; }
     protected:
         GPURenderPass* m_OwnerPass;
     private:
@@ -85,7 +89,8 @@ namespace NebulaEngine::RHI
         friend GPURenderPass;
         virtual void Bind(u32 index) = 0;
         SubpassDependency m_Dependency {};
-
+        EPipelineBindPoint m_BindPoint;
+        u32 m_SubPassDescriptionFlag;
         
         
     };

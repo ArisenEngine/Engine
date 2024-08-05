@@ -73,21 +73,21 @@ void RHI::RHIVkSurface::InitSwapChain()
         queueFamilyIndexCount = 0; // Optional
     }
     
-    SwapChainDescriptor desc
-    {
-        // TODO: deal with variable dpi 
-        width, height, imageCount, 1,
-        IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-        queueFamilyIndexCount,
-        static_cast<Format>(formats.format),
-        static_cast<ColorSpace>(formats.colorSpace),
-        sharingMode,
-        static_cast<PresentMode>(presentMode),
-        true,
-        static_cast<u32>(m_SwapChainSupportDetail.capabilities.currentTransform),
-        COMPOSITE_ALPHA_OPAQUE_BIT
-    };
-
+    SwapChainDescriptor desc {};
+    desc.width = width;
+    desc.height = height;
+    desc.imageCount = imageCount;
+    desc.imageArrayLayers = 1;
+    desc.imageUsageFlagBits = IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    desc.queueFamilyIndexCount = queueFamilyIndexCount;
+    desc.colorFormat = static_cast<Format>(formats.format);
+    desc.colorSpace = static_cast<ColorSpace>(formats.colorSpace);
+    desc.sharingMode = sharingMode;
+    desc.presentMode = static_cast<PresentMode>(presentMode);
+    desc.clipped = true;
+    desc.surfaceTransformFlagBits = static_cast<u32>(m_SwapChainSupportDetail.capabilities.currentTransform);
+    desc.compositeAlphaFlagBits = COMPOSITE_ALPHA_OPAQUE_BIT;
+   
     m_SwapChain->CreateSwapChainWithDesc(this, desc);
 }
 

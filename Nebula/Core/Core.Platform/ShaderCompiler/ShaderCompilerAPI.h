@@ -48,6 +48,7 @@ namespace NebulaEngine::Platforms
         // eg: "./shader_includes/"
         Containers::Vector<std::wstring> includes;
         std::optional<std::wstring> output;
+        std::optional<bool> useDXLayout; // "-fvk-use-dx-layout"
     };
 
     // TODO: support for multiple thread compilation
@@ -152,6 +153,11 @@ namespace NebulaEngine::Platforms
         {
             arguments.push_back(L"-Fo");
             arguments.push_back(params.output->c_str());
+        }
+
+        if (params.useDXLayout.has_value() && params.useDXLayout.value())
+        {
+            arguments.push_back(L"-fvk-use-dx-layout");
         }
 
         // Compile shader
