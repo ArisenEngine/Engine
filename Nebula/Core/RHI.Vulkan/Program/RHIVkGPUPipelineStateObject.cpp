@@ -110,7 +110,8 @@ NebulaEngine::u32 NebulaEngine::RHI::RHIVkGPUPipelineStateObject::GetVertexBindi
 }
 
 void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddBlendAttachmentState(bool enable, EBlendFactor srcColor,
-                                                                             EBlendFactor dstColor, EBlendOp colorBlendOp, EBlendFactor srcAlpha, EBlendFactor dstAlpha, EBlendOp alphaBlendOp,
+                                                                             EBlendFactor dstColor, EBlendOp colorBlendOp,
+                                                                             EBlendFactor srcAlpha, EBlendFactor dstAlpha, EBlendOp alphaBlendOp,
                                                                              u32 writeMask)
 {
     VkPipelineColorBlendAttachmentState blendState;
@@ -130,6 +131,14 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddBlendAttachmentState(boo
     VkPipelineColorBlendAttachmentState blendState;
     blendState.blendEnable = static_cast<VkBool32>(enable);
     blendState.colorWriteMask = writeMask;
+
+    blendState.srcColorBlendFactor = static_cast<VkBlendFactor>(EBlendFactor::BLEND_FACTOR_ONE);
+    blendState.dstColorBlendFactor = static_cast<VkBlendFactor>(BLEND_FACTOR_ONE);
+    blendState.colorBlendOp = static_cast<VkBlendOp>(EBlendOp::BLEND_OP_ADD);
+    blendState.srcAlphaBlendFactor = static_cast<VkBlendFactor>(BLEND_FACTOR_ONE);
+    blendState.dstAlphaBlendFactor = static_cast<VkBlendFactor>(BLEND_FACTOR_ONE);
+    blendState.alphaBlendOp = static_cast<VkBlendOp>(BLEND_OP_ADD);
+    
     m_BlendAttachmentStates.emplace_back(blendState);
 }
 

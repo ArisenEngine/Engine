@@ -38,7 +38,7 @@ namespace NebulaEngine::Platforms
 			{
 				id = availableSlots.back();
 				availableSlots.pop_back();
-				assert(id != u32_invalid_id);
+				assert(id != u32Invalid);
 				windows[id] = info;
 			}
 

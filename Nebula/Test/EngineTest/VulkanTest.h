@@ -73,7 +73,7 @@ public:
             throw std::exception(" Logger initialize failed.");
         }
 
-        Debugger::Logger::GetInstance().SetServerityLevel(Debugger::Logger::LogLevel::Error);
+        // Debugger::Logger::GetInstance().SetServerityLevel(Debugger::Logger::LogLevel::Log);
         
         LOG_INFO("Logger initialized..");
 
@@ -150,7 +150,8 @@ public:
             RHI::ProgramStage::Vertex,
             {},
             {},
-            currentPath + L"\\FullScreen.vert.spirv"
+            currentPath + L"\\FullScreen.vert.spirv",
+            true
         };
 
         Platforms::ShaderCompilerOutput outputVertex;
@@ -186,7 +187,8 @@ public:
             RHI::ProgramStage::Fragment,
             {},
             {},
-            currentPath + L"\\FullScreen.frag.spirv"
+            currentPath + L"\\FullScreen.frag.spirv",
+            true
         };
 
         Platforms::ShaderCompilerOutput outputfragment;
@@ -234,7 +236,6 @@ public:
             auto backBuffer = context.device->GetSurface()->GetSwapChain()->AquireCurrentImage();
             auto backBufferView = static_cast<RHI::ImageView*>(backBuffer->GetMemoryView());
             auto format = backBufferView->GetFormat();
-
             
             renderPass->FreeRenderPass();
             
@@ -257,6 +258,9 @@ public:
                     RHI::EAccessFlagBits::ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                     0
                 );
+                subpass->SetBindPoint(RHI::PIPELINE_BIND_POINT_GRAPHICS);
+                subpass->AddColorReference(0, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+                subpass->SetSubPassDescriptionFlag(0);
             }
 
             renderPass->AllocRenderPass();
@@ -292,7 +296,7 @@ public:
                         pipelineState->SetRasterizerDiscardEnable(false);
                         pipelineState->SetPolygonMode(RHI::EPOLYGON_MODE_FILL);
                         pipelineState->SetLineWidth(1.0F);
-                        pipelineState->SetCullMode(RHI::CULL_MODE_BACK_BIT);
+                        pipelineState->SetCullMode(RHI::CULL_MODE_NONE);
                         pipelineState->SetFrontFace(RHI::FRONT_FACE_CLOCKWISE);
                         pipelineState->SetDepthBiasEnable(false);
                         pipelineState->SetSampleShading(false);

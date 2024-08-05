@@ -14,21 +14,21 @@ namespace NebulaEngine::RHI
 
     struct SwapChainDescriptor
     {
-        u32 m_Width { 0 }, m_Height { 0 }, m_ImageCount { 1 };
+        u32 width { 0 }, height { 0 }, imageCount { 1 };
         /// specific image layer, should be always 1, unless in VR
-        u32 m_ImageArrayLayers { 1 };
-        u32 m_ImageUsageFlagBits { 0 };
-        u32 m_QueueFamilyIndexCount {2};
+        u32 imageArrayLayers { 1 };
+        u32 imageUsageFlagBits { 0 };
+        u32 queueFamilyIndexCount {2};
         
-        Format m_ColorFormat { FORMAT_R8G8B8_SRGB };
-        ColorSpace m_ColorSpace { COLOR_SPACE_SRGB_NONLINEAR };
-        SharingMode m_SharingMode { SHARING_MODE_CONCURRENT };
-        PresentMode m_PresentMode { PRESENT_MODE_FIFO };
+        Format colorFormat { FORMAT_R8G8B8_SRGB };
+        ColorSpace colorSpace { COLOR_SPACE_SRGB_NONLINEAR };
+        SharingMode sharingMode { SHARING_MODE_CONCURRENT };
+        PresentMode presentMode { PRESENT_MODE_FIFO };
         
         bool clipped { true };
-        u32 m_SurfaceTransformFlagBits { 0 };
-        u32 m_CompositeAlphaFlagBits { 0 };
-        u32 m_SwapChainCreateFlags { 0 };
+        u32 surfaceTransformFlagBits { 0 };
+        u32 compositeAlphaFlagBits { 0 };
+        u32 swapChainCreateFlags { 0 };
         std::optional<const void*> customData;
     };
 
@@ -52,86 +52,86 @@ namespace NebulaEngine::RHI
     public:
         void SetResolution(u32 width, u32 height)
         {
-            if (m_Desc.m_Width == width && m_Desc.m_Height == height)
+            if (m_Desc.width == width && m_Desc.height == height)
             {
                 return;
             }
 
-            m_Desc.m_Width = width;
-            m_Desc.m_Height = height;
+            m_Desc.width = width;
+            m_Desc.height = height;
 
             RecreateSwapChainIfNeeded();
         }
         
         void SetImageCount(u32 count)
         {
-            if (count == m_Desc.m_ImageCount)
+            if (count == m_Desc.imageCount)
             {
                 return;
             }
 
-            m_Desc.m_ImageCount = count;
+            m_Desc.imageCount = count;
 
             RecreateSwapChainIfNeeded();
         }
         
         void SetImageArrayLayers(u32 layers)
         {
-            if (m_Desc.m_ImageArrayLayers == layers)
+            if (m_Desc.imageArrayLayers == layers)
             {
                 return;
             }
 
-            m_Desc.m_ImageArrayLayers = layers;
+            m_Desc.imageArrayLayers = layers;
             
             RecreateSwapChainIfNeeded();
         }
         
         void SetImageFormat(Format format)
         {
-            if (format == m_Desc.m_ColorFormat)
+            if (format == m_Desc.colorFormat)
             {
                 return;
             }
 
-            m_Desc.m_ColorFormat = format;
+            m_Desc.colorFormat = format;
             RecreateSwapChainIfNeeded();
         }
         
         void SetColorSpace(ColorSpace colorSpace)
         {
-            if (m_Desc.m_ColorSpace == colorSpace)
+            if (m_Desc.colorSpace == colorSpace)
             {
                 return;
             }
 
-           m_Desc. m_ColorSpace = colorSpace;
+           m_Desc. colorSpace = colorSpace;
             RecreateSwapChainIfNeeded();
         }
         
         void SetImageUsage(u32 usage)
         {
-            if (usage == m_Desc.m_ImageUsageFlagBits)
+            if (usage == m_Desc.imageUsageFlagBits)
             {
                 return;
             }
             
-            m_Desc.m_ImageUsageFlagBits = usage;
+            m_Desc.imageUsageFlagBits = usage;
             RecreateSwapChainIfNeeded();
         }
 
         u32 GetCurrentImageUsage() const
         {
-            return m_Desc.m_ImageUsageFlagBits;
+            return m_Desc.imageUsageFlagBits;
         }
 
         void SetSharingMode(SharingMode mode)
         {
-            if (mode == m_Desc.m_SharingMode)
+            if (mode == m_Desc.sharingMode)
             {
                 return;
             }
-            m_Desc.m_SharingMode = mode;
+            m_Desc.sharingMode = mode;
             RecreateSwapChainIfNeeded();
         }
     };

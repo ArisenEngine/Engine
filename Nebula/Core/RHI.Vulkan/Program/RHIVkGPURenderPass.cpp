@@ -66,6 +66,10 @@ void NebulaEngine::RHI::RHIVkGPURenderPass::AllocRenderPass()
         {
             vkDesc.pResolveAttachments = static_cast<const VkAttachmentReference*>(description.resolveReference.value());
         }
+        if (description.depthStencilReference.has_value())
+        {
+            vkDesc.pDepthStencilAttachment = static_cast<const VkAttachmentReference*>(description.depthStencilReference.value());
+        }
         if (description.flag.has_value())
         {
             vkDesc.flags = static_cast<VkSubpassDescriptionFlags>(description.flag.value());

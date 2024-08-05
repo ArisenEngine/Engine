@@ -30,11 +30,11 @@ namespace NebulaEngine::RHI
         RHIVkDevice* m_Device;
 
         // subPass
-        GPUPipelineStateObject* m_PipelineStateObject;
+        GPUSubPass* m_SubPass;
         
-        // graphics pipeline 
+        // graphics pipeline
+        GPUPipelineStateObject* m_PipelineStateObject;
         VkPipeline m_VkGraphicPipeline { VK_NULL_HANDLE };
-
         VkPipelineLayout m_VkGraphicsPipelineLayout { VK_NULL_HANDLE };
         Containers::Vector<VkDescriptorSetLayout> m_DescriptorSetLayouts { };
         Containers::Vector<VkPushConstantRange> m_PushConstantRanges { };

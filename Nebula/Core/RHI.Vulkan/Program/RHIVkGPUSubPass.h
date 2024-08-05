@@ -33,9 +33,9 @@ namespace NebulaEngine::RHI
         u32 m_Index;
         Containers::Vector<VkAttachmentReference> m_InputReferences {};
         Containers::Vector<VkAttachmentReference> m_ColorReferences {};
-        VkAttachmentReference m_ResolveReference { };
-        VkAttachmentReference m_DepthStencilReference { };
-        Containers::Vector<u32> m_PreserveAttachments { };
+        VkAttachmentReference m_ResolveReference;
+        VkAttachmentReference m_DepthStencilReference;
+        Containers::Vector<u32> m_PreserveAttachments;
         
     };
 }

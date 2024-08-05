@@ -13,6 +13,7 @@ NebulaEngine::RHI::RHIVkGPUPipeline::~RHIVkGPUPipeline() noexcept
 
     m_Device = nullptr;
     m_PipelineStateObject = nullptr;
+    m_SubPass = nullptr;
     
 }
 
@@ -27,8 +28,8 @@ void NebulaEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(GPUSubPass* subPa
     FreePipeline();
     FreePipelineLayout();
 
+    m_SubPass = subPass;
     ASSERT(m_PipelineStateObject != nullptr);
-    
     {
         // Create Pipeline Layout
         VkPipelineLayoutCreateInfo pipelineLayoutInfo {};
@@ -156,7 +157,8 @@ void NebulaEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(GPUSubPass* subPa
 
 const NebulaEngine::RHI::EPipelineBindPoint NebulaEngine::RHI::RHIVkGPUPipeline::GetBindPoint() const
 {
-    return m_PipelineStateObject->GetBindPoint();
+    ASSERT(m_SubPass != nullptr);
+    return m_SubPass->GetBindPoint();
 }
 
 void NebulaEngine::RHI::RHIVkGPUPipeline::FreePipelineLayout()

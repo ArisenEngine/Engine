@@ -1,7 +1,7 @@
 struct Attribute
 {
-    float3 positionOS : POSITION0;
-    float3 color : COLOR0;
+    // float3 positionOS : POSITION0;
+    // float3 color : COLOR0;
 };
 
 struct Varying

@@ -36,22 +36,22 @@ void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(Surface* surface
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.pNext = VK_NULL_HANDLE;
-    createInfo.flags = static_cast<VkSwapchainCreateFlagsKHR>(m_Desc.m_SwapChainCreateFlags);
+    createInfo.flags = static_cast<VkSwapchainCreateFlagsKHR>(m_Desc.swapChainCreateFlags);
     createInfo.surface = m_VkSurface;
-    createInfo.minImageCount = m_Desc.m_ImageCount;
-    createInfo.imageFormat = static_cast<VkFormat>(m_Desc.m_ColorFormat);
-    createInfo.imageColorSpace = static_cast<VkColorSpaceKHR>( m_Desc.m_ColorSpace);
-    createInfo.imageExtent = { m_Desc.m_Width,  m_Desc.m_Height};
-    createInfo.imageArrayLayers =  m_Desc.m_ImageArrayLayers;
-    createInfo.imageUsage =  m_Desc.m_ImageUsageFlagBits;
-    createInfo.imageSharingMode = static_cast<VkSharingMode>(m_Desc.m_SharingMode);
-    createInfo.queueFamilyIndexCount = m_Desc.m_QueueFamilyIndexCount;
+    createInfo.minImageCount = m_Desc.imageCount;
+    createInfo.imageFormat = static_cast<VkFormat>(m_Desc.colorFormat);
+    createInfo.imageColorSpace = static_cast<VkColorSpaceKHR>( m_Desc.colorSpace);
+    createInfo.imageExtent = { m_Desc.width,  m_Desc.height};
+    createInfo.imageArrayLayers =  m_Desc.imageArrayLayers;
+    createInfo.imageUsage =  m_Desc.imageUsageFlagBits;
+    createInfo.imageSharingMode = static_cast<VkSharingMode>(m_Desc.sharingMode);
+    createInfo.queueFamilyIndexCount = m_Desc.queueFamilyIndexCount;
     auto queueSurfaceFamilyIndices = static_cast<RHIVkSurface*>(surface)->GetQueueFamilyIndices();
     uint32_t queueFamilyIndices[] = {queueSurfaceFamilyIndices.graphicsFamily.value(), queueSurfaceFamilyIndices.presentFamily.value()};
     createInfo.pQueueFamilyIndices = queueFamilyIndices;
-    createInfo.preTransform = static_cast<VkSurfaceTransformFlagBitsKHR>(m_Desc.m_SurfaceTransformFlagBits);
-    createInfo.compositeAlpha = static_cast<VkCompositeAlphaFlagBitsKHR>(m_Desc.m_CompositeAlphaFlagBits);
-    createInfo.presentMode = static_cast<VkPresentModeKHR>(m_Desc.m_PresentMode);
+    createInfo.preTransform = static_cast<VkSurfaceTransformFlagBitsKHR>(m_Desc.surfaceTransformFlagBits);
+    createInfo.compositeAlpha = static_cast<VkCompositeAlphaFlagBitsKHR>(m_Desc.compositeAlphaFlagBits);
+    createInfo.presentMode = static_cast<VkPresentModeKHR>(m_Desc.presentMode);
     createInfo.clipped = static_cast<VkBool32>(m_Desc.clipped);
     createInfo.oldSwapchain = VK_NULL_HANDLE;
 
@@ -64,10 +64,20 @@ void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(Surface* surface
 
     u32 actualImageCount = 0;
     Containers::Vector<VkImage> images;
-    vkGetSwapchainImagesKHR(m_VkDevice, m_VkSwapChain, &actualImageCount, nullptr);
+
+    if (vkGetSwapchainImagesKHR(m_VkDevice, m_VkSwapChain, &actualImageCount, nullptr) != VK_SUCCESS)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkSwapChain::CreateSwapChainWithDesc]: failed to query image count !");
+    }
+    
     m_ImageHandles.resize(actualImageCount);
     images.resize(actualImageCount);
-    vkGetSwapchainImagesKHR(m_VkDevice, m_VkSwapChain, &actualImageCount, images.data());
+
+    if (vkGetSwapchainImagesKHR(m_VkDevice, m_VkSwapChain, &actualImageCount, images.data()) != VK_SUCCESS)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkSwapChain::CreateSwapChainWithDesc]: failed to query images !");
+    }
+    
     for (int i = 0; i < images.size(); ++i)
     {
         VkImage image = images[i];
@@ -75,14 +85,14 @@ void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(Surface* surface
         {
             0,
             IMAGE_VIEW_TYPE_2D,
-            m_Desc.m_ColorFormat,
+            m_Desc.colorFormat,
             {
                 COMPONENT_SWIZZLE_IDENTITY,
                 COMPONENT_SWIZZLE_IDENTITY,
                 COMPONENT_SWIZZLE_IDENTITY,
                 COMPONENT_SWIZZLE_IDENTITY
             },
-            m_Desc.m_Width, m_Desc.m_Height,
+            m_Desc.width, m_Desc.height,
             IMAGE_ASPECT_COLOR_BIT,
             0,1,0,1
         };
@@ -104,8 +114,11 @@ NebulaEngine::RHI::RHISemaphore* NebulaEngine::RHI::RHIVkSwapChain::GetRenderFin
 
 NebulaEngine::RHI::ImageHandle* NebulaEngine::RHI::RHIVkSwapChain::AquireCurrentImage()
 {
-    vkAcquireNextImageKHR(m_VkDevice, m_VkSwapChain, UINT64_MAX, static_cast<VkSemaphore>(
-                              m_ImageAvailableSemaphore->GetHandle()), VK_NULL_HANDLE, &m_ImageIndex);
+    if (vkAcquireNextImageKHR(m_VkDevice, m_VkSwapChain, UINT64_MAX, static_cast<VkSemaphore>(
+                              m_ImageAvailableSemaphore->GetHandle()), VK_NULL_HANDLE, &m_ImageIndex) != VK_SUCCESS)
+    {
+        LOG_DEBUG("[RHIVkSwapChain::AquireCurrentImage]: failed to acquire next image.");
+    }
     return m_ImageHandles[m_ImageIndex].get();
 }
 
