@@ -338,6 +338,8 @@ public:
             context.device->Submit(commandBuffer.get());
         }
 
+        context.commandPool->ReleaseCommandBuffer(commandBuffer);
+        
         {
             // Present
             context.device->GetSurface()->GetSwapChain()->Present();
