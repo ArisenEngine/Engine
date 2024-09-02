@@ -9,7 +9,9 @@ NebulaEngine::RHI::RHIVkCommandBuffer::~RHIVkCommandBuffer() noexcept
     
 }
 
-NebulaEngine::RHI::RHIVkCommandBuffer::RHIVkCommandBuffer(RHIVkDevice* device, RHIVkCommandBufferPool* pool): RHICommandBuffer(device, pool)
+NebulaEngine::RHI::RHIVkCommandBuffer::RHIVkCommandBuffer(RHIVkDevice* device, RHIVkCommandBufferPool* pool)
+: RHICommandBuffer(device, pool),
+m_RHICommandPool(pool)
 {
     m_VkDevice = static_cast<VkDevice>(device->GetHandle());
     m_VkCommandPool = static_cast<VkCommandPool>(pool->GetHandle());
@@ -23,7 +25,7 @@ NebulaEngine::RHI::RHIVkCommandBuffer::RHIVkCommandBuffer(RHIVkDevice* device, R
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = 1;
 
-        // todo: sperate alloc memory and free memory
+        // todo: separate alloc memory and free memory
         if (vkAllocateCommandBuffers(m_VkDevice, &allocInfo, &m_VkCommandBuffer) != VK_SUCCESS)
         {
             LOG_FATAL_AND_THROW("[RHIVkCommandBuffer::RHIVkCommandBuffer]: failed to allocate command buffers!");

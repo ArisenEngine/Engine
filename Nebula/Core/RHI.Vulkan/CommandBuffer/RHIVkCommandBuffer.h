@@ -36,6 +36,6 @@ namespace  NebulaEngine::RHI
         VkCommandBuffer m_VkCommandBuffer;
         VkCommandPool m_VkCommandPool;
         VkDevice m_VkDevice;
-        
+        RHIVkCommandBufferPool* m_RHICommandPool;
     };
 }
