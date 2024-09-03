@@ -92,7 +92,7 @@ public static class Logger
 
     public static void Dispose()
     {
-        API.Debugger.Debugger_Flush();
+        API.Debugger.Debugger_Shutdown();
     }
 
     public static void Log(object msg)

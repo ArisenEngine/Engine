@@ -54,11 +54,11 @@ namespace NebulaEngine::Debugger
         Debugger::Logger::GetInstance().BindCallback(callback);
     }
 
-    extern "C" ENGINE_DLL void Debugger_Flush();
+    extern "C" ENGINE_DLL void Debugger_Shutdown();
 
-    inline void Debugger_Flush()
+    inline void Debugger_Shutdown()
     {
-        Debugger::Logger::Dispose();
+        Debugger::Logger::Shutdown();
     }
 
     extern "C" ENGINE_DLL bool Debugger_Initialize();

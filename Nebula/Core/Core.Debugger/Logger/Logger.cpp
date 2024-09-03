@@ -49,12 +49,6 @@ using namespace NebulaEngine::Debugger;
 		m_LogCallback((u32)LogLevel::callback_level, thread_id_stream.str().c_str(), msg, trace_str.c_str()); \
 	}                                                                                                         \
 
-void NebulaEngine::Debugger::Logger::Flush()
-{
-	// Release all spdlog resources, and drop all loggers in the registry.
-	// This is optional (only mandatory if using windows + async log).
-	spdlog::shutdown();
-}
 
 Logger::Logger(): m_IsInitialize(false), m_LogCallback(nullptr)
 {
@@ -103,9 +97,11 @@ Logger& Logger::GetInstance()
 	return _log_instnace;
 }
 
-void Logger::Dispose()
+void Logger::Shutdown()
 {
-	GetInstance().Flush();
+	// Release all spdlog resources, and drop all loggers in the registry.
+	// This is optional (only mandatory if using windows + async log).
+	spdlog::shutdown();
 }
 
 void Logger::SetServerityLevel(LogLevel level)

@@ -365,7 +365,7 @@ public:
         Graphics::RHILoader::Dispose();
 
         // NOTE: logger must be dispose at the last
-        Debugger::Logger::Dispose();
+        Debugger::Logger::Shutdown();
     }
 };
 
