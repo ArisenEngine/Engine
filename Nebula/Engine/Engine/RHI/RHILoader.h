@@ -19,17 +19,17 @@ namespace NebulaEngine::Graphics
         static inline HMODULE _rhi_dll {NULL};
     };
 
-    extern "C" ENGINE_DLL void SetGraphicsAPI(RHI::GraphsicsAPI api_type);
-    inline void SetGraphicsAPI(RHI::GraphsicsAPI api_type)
-    {
-        RHILoader::SetCurrentGraphicsAPI(api_type);
-    }
-
-    extern "C" ENGINE_DLL RHI::Instance* CreateInstance(RHI::InstanceInfo&& app_info);
-    inline RHI::Instance* CreateInstance(RHI::InstanceInfo&& app_info)
-    {
-        return RHILoader::CreateInstance(std::move(app_info));
-    }
+    // extern "C" ENGINE_DLL void SetGraphicsAPI(RHI::GraphsicsAPI api_type);
+    // inline void SetGraphicsAPI(RHI::GraphsicsAPI api_type)
+    // {
+    //     RHILoader::SetCurrentGraphicsAPI(api_type);
+    // }
+    //
+    // extern "C" ENGINE_DLL RHI::Instance* CreateInstance(RHI::InstanceInfo&& app_info);
+    // inline RHI::Instance* CreateInstance(RHI::InstanceInfo&& app_info)
+    // {
+    //     return RHILoader::CreateInstance(std::move(app_info));
+    // }
 
 }
 
