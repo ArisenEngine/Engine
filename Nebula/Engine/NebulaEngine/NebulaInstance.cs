@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using NebulaEngine.Debugger;
+using NebulaEngine.Debug;
 using NebulaEngine.Rendering;
 using NebulaEngine.Platforms;
 

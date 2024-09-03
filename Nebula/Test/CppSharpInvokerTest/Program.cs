@@ -1,6 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using NebulaEngine.Debugger;
+using NebulaEngine.Debug;
 
 class Program
 {

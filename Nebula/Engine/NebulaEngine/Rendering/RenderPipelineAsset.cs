@@ -1,4 +1,4 @@
-using NebulaEngine.Debugger;
+using NebulaEngine.Debug;
 using Serialization.Interface;
 
 namespace NebulaEngine.Rendering;

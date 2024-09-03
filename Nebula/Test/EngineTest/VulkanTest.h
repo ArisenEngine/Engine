@@ -2,7 +2,7 @@
 #include <filesystem>
 #include "Windows/PlatformTypes.h"
 #include "Test.h"
-#include "Graphics\RHILoader.h"
+#include "RHI\RHILoader.h"
 #include "RHI/Instance.h"
 #include "RHI/Enums/Pipeline/EAccessFlag.h"
 #include "RHI/Enums/Pipeline/EColorComponentFlag.h"
