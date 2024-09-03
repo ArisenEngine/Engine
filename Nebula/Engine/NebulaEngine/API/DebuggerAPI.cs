@@ -1,4 +1,4 @@
-using NebulaEngine.Debugger;
+using NebulaEngine.Debug;
 using System.Runtime.InteropServices;
 using System.Text;
 

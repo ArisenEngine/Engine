@@ -1,5 +1,5 @@
 
-using NebulaEngine.Debugger;
+using NebulaEngine.Debug;
 
 namespace NebulaEngine.Rendering;
 

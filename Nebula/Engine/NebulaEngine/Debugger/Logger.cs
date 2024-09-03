@@ -2,9 +2,10 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using NebulaEngine.Debugger;
 using NebulaEngine.FileSystem;
 
-namespace NebulaEngine.Debugger;
+namespace NebulaEngine.Debug;
 
 public static class Logger
 {
@@ -98,7 +99,7 @@ public static class Logger
     public static void Log(object msg)
     {
         string trace = Environment.StackTrace;
-        API.Debugger.Debugger_Log(msg.ToString(), Thread.CurrentThread.Name, trace);
+        LoggerAPI.DebuggerLog(msg.ToString(), Thread.CurrentThread.Name, trace);
         
     }
     

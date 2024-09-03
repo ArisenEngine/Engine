@@ -14,6 +14,93 @@ using __IntPtr = global::System.IntPtr;
 
 namespace NebulaEngine
 {
+    namespace Debugger
+    {
+        public unsafe partial class LoggerAPI
+        {
+            public partial struct __Internal
+            {
+                [SuppressUnmanagedCodeSecurity, DllImport("Engine", EntryPoint = "Debugger_Log", CallingConvention = __CallingConvention.Cdecl)]
+                internal static extern void DebuggerLog([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string msg, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string threadName, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string csharpTracce);
+
+                [SuppressUnmanagedCodeSecurity, DllImport("Engine", EntryPoint = "Debugger_Info", CallingConvention = __CallingConvention.Cdecl)]
+                internal static extern void DebuggerInfo([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string msg, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string threadName, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string csharpTracce);
+
+                [SuppressUnmanagedCodeSecurity, DllImport("Engine", EntryPoint = "Debugger_Trace", CallingConvention = __CallingConvention.Cdecl)]
+                internal static extern void DebuggerTrace([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string msg, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string threadName, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string csharpTracce);
+
+                [SuppressUnmanagedCodeSecurity, DllImport("Engine", EntryPoint = "Debugger_Warning", CallingConvention = __CallingConvention.Cdecl)]
+                internal static extern void DebuggerWarning([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string msg, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string threadName, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string csharpTracce);
+
+                [SuppressUnmanagedCodeSecurity, DllImport("Engine", EntryPoint = "Debugger_Error", CallingConvention = __CallingConvention.Cdecl)]
+                internal static extern void DebuggerError([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string msg, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string threadName, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string csharpTracce);
+
+                [SuppressUnmanagedCodeSecurity, DllImport("Engine", EntryPoint = "Debugger_Fatal", CallingConvention = __CallingConvention.Cdecl)]
+                internal static extern void DebuggerFatal([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string msg, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string threadName, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string csharpTracce);
+
+                [SuppressUnmanagedCodeSecurity, DllImport("Engine", EntryPoint = "Debugger_BindCallback", CallingConvention = __CallingConvention.Cdecl)]
+                internal static extern void DebuggerBindCallback(__IntPtr callback);
+
+                [SuppressUnmanagedCodeSecurity, DllImport("Engine", EntryPoint = "Debugger_Shutdown", CallingConvention = __CallingConvention.Cdecl)]
+                internal static extern void DebuggerShutdown();
+
+                [SuppressUnmanagedCodeSecurity, DllImport("Engine", EntryPoint = "Debugger_Initialize", CallingConvention = __CallingConvention.Cdecl)]
+                [return: MarshalAs(UnmanagedType.I1)]
+                internal static extern bool DebuggerInitialize();
+            }
+
+            public static void DebuggerLog(string msg, string threadName, string csharpTracce)
+            {
+                __Internal.DebuggerLog(msg, threadName, csharpTracce);
+            }
+
+            public static void DebuggerInfo(string msg, string threadName, string csharpTracce)
+            {
+                __Internal.DebuggerInfo(msg, threadName, csharpTracce);
+            }
+
+            public static void DebuggerTrace(string msg, string threadName, string csharpTracce)
+            {
+                __Internal.DebuggerTrace(msg, threadName, csharpTracce);
+            }
+
+            public static void DebuggerWarning(string msg, string threadName, string csharpTracce)
+            {
+                __Internal.DebuggerWarning(msg, threadName, csharpTracce);
+            }
+
+            public static void DebuggerError(string msg, string threadName, string csharpTracce)
+            {
+                __Internal.DebuggerError(msg, threadName, csharpTracce);
+            }
+
+            public static void DebuggerFatal(string msg, string threadName, string csharpTracce)
+            {
+                __Internal.DebuggerFatal(msg, threadName, csharpTracce);
+            }
+
+            public static void DebuggerBindCallback(global::NebulaEngine.Debugger.LogCallback callback)
+            {
+                var __arg0 = callback == null ? global::System.IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(callback);
+                __Internal.DebuggerBindCallback(__arg0);
+            }
+
+            public static void DebuggerShutdown()
+            {
+                __Internal.DebuggerShutdown();
+            }
+
+            public static bool DebuggerInitialize()
+            {
+                var ___ret = __Internal.DebuggerInitialize();
+                return ___ret;
+            }
+        }
+    }
+}
+
+namespace NebulaEngine
+{
     namespace Containers
     {
     }
@@ -27,17 +114,17 @@ namespace NebulaEngine
         {
             public partial struct __Internal
             {
-                [SuppressUnmanagedCodeSecurity, DllImport("Debugger", EntryPoint = "?IsValid@ID@NebulaEngine@@YA_NI@Z", CallingConvention = __CallingConvention.Cdecl)]
+                [SuppressUnmanagedCodeSecurity, DllImport("Logger", EntryPoint = "?IsValid@ID@NebulaEngine@@YA_NI@Z", CallingConvention = __CallingConvention.Cdecl)]
                 [return: MarshalAs(UnmanagedType.I1)]
                 internal static extern bool IsValid(uint id);
 
-                [SuppressUnmanagedCodeSecurity, DllImport("Debugger", EntryPoint = "?Index@ID@NebulaEngine@@YAII@Z", CallingConvention = __CallingConvention.Cdecl)]
+                [SuppressUnmanagedCodeSecurity, DllImport("Logger", EntryPoint = "?Index@ID@NebulaEngine@@YAII@Z", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern uint Index(uint id);
 
-                [SuppressUnmanagedCodeSecurity, DllImport("Debugger", EntryPoint = "?Generation@ID@NebulaEngine@@YAII@Z", CallingConvention = __CallingConvention.Cdecl)]
+                [SuppressUnmanagedCodeSecurity, DllImport("Logger", EntryPoint = "?Generation@ID@NebulaEngine@@YAII@Z", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern uint Generation(uint id);
 
-                [SuppressUnmanagedCodeSecurity, DllImport("Debugger", EntryPoint = "?NewGeneration@ID@NebulaEngine@@YAII@Z", CallingConvention = __CallingConvention.Cdecl)]
+                [SuppressUnmanagedCodeSecurity, DllImport("Logger", EntryPoint = "?NewGeneration@ID@NebulaEngine@@YAII@Z", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern uint NewGeneration(uint id);
             }
 
@@ -92,21 +179,7 @@ namespace NebulaEngine
 
 namespace NebulaEngine
 {
-    public unsafe partial class PrimitiveTypes
-    {
-        public partial struct __Internal
-        {
-        }
-
-        public const ulong U64Invalid = 18446744073709551615;
-        public const uint U32Invalid = 4294967295;
-        public const ushort U16Invalid = 65535;
-        public const byte U8Invalid = 255;    }
-}
-
-namespace NebulaEngine
-{
-    namespace Debug
+    namespace Debugger
     {
         [SuppressUnmanagedCodeSecurity, UnmanagedFunctionPointer(__CallingConvention.Cdecl)]
         public unsafe delegate void LogCallback(uint __0, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string __1, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string __2, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string __3);
@@ -119,38 +192,38 @@ namespace NebulaEngine
                 internal byte m_IsInitialize;
                 internal __IntPtr m_LogCallback;
 
-                [SuppressUnmanagedCodeSecurity, DllImport("Core.Debugger.dll", EntryPoint = "?Log@Logger@Debugger@NebulaEngine@@QEAAXPEBD00@Z", CallingConvention = __CallingConvention.Cdecl)]
+                [SuppressUnmanagedCodeSecurity, DllImport("Logger", EntryPoint = "?Log@Logger@Debugger@NebulaEngine@@QEAAXPEBD00@Z", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern void Log(__IntPtr __instance, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string msg, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string thread_name, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string cs_trace);
 
-                [SuppressUnmanagedCodeSecurity, DllImport("Core.Debugger.dll", EntryPoint = "?Info@Logger@Debugger@NebulaEngine@@QEAAXPEBD00@Z", CallingConvention = __CallingConvention.Cdecl)]
+                [SuppressUnmanagedCodeSecurity, DllImport("Logger", EntryPoint = "?Info@Logger@Debugger@NebulaEngine@@QEAAXPEBD00@Z", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern void Info(__IntPtr __instance, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string msg, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string thread_name, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string cs_trace);
 
-                [SuppressUnmanagedCodeSecurity, DllImport("Core.Debugger.dll", EntryPoint = "?Warning@Logger@Debugger@NebulaEngine@@QEAAXPEBD00@Z", CallingConvention = __CallingConvention.Cdecl)]
+                [SuppressUnmanagedCodeSecurity, DllImport("Logger", EntryPoint = "?Warning@Logger@Debugger@NebulaEngine@@QEAAXPEBD00@Z", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern void Warning(__IntPtr __instance, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string msg, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string thread_name, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string cs_trace);
 
-                [SuppressUnmanagedCodeSecurity, DllImport("Core.Debugger.dll", EntryPoint = "?Error@Logger@Debugger@NebulaEngine@@QEAAXPEBD00@Z", CallingConvention = __CallingConvention.Cdecl)]
+                [SuppressUnmanagedCodeSecurity, DllImport("Logger", EntryPoint = "?Error@Logger@Debugger@NebulaEngine@@QEAAXPEBD00@Z", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern void Error(__IntPtr __instance, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string msg, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string thread_name, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string cs_trace);
 
-                [SuppressUnmanagedCodeSecurity, DllImport("Core.Debugger.dll", EntryPoint = "?Fatal@Logger@Debugger@NebulaEngine@@QEAAXPEBD00@Z", CallingConvention = __CallingConvention.Cdecl)]
+                [SuppressUnmanagedCodeSecurity, DllImport("Logger", EntryPoint = "?Fatal@Logger@Debugger@NebulaEngine@@QEAAXPEBD00@Z", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern void Fatal(__IntPtr __instance, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string msg, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string thread_name, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string cs_trace);
 
-                [SuppressUnmanagedCodeSecurity, DllImport("Core.Debugger.dll", EntryPoint = "?Trace@Logger@Debugger@NebulaEngine@@QEAAXPEBD00@Z", CallingConvention = __CallingConvention.Cdecl)]
+                [SuppressUnmanagedCodeSecurity, DllImport("Logger", EntryPoint = "?Trace@Logger@Debugger@NebulaEngine@@QEAAXPEBD00@Z", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern void Trace(__IntPtr __instance, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string msg, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string thread_name, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string cs_trace);
 
-                [SuppressUnmanagedCodeSecurity, DllImport("Core.Debugger.dll", EntryPoint = "?SetServerityLevel@Logger@Debugger@NebulaEngine@@QEAAXW4LogLevel@123@@Z", CallingConvention = __CallingConvention.Cdecl)]
-                internal static extern void SetServerityLevel(__IntPtr __instance, global::NebulaEngine.Debug.Logger.LogLevel level);
+                [SuppressUnmanagedCodeSecurity, DllImport("Logger", EntryPoint = "?SetServerityLevel@Logger@Debugger@NebulaEngine@@QEAAXW4LogLevel@123@@Z", CallingConvention = __CallingConvention.Cdecl)]
+                internal static extern void SetServerityLevel(__IntPtr __instance, global::NebulaEngine.Debugger.Logger.LogLevel level);
 
-                [SuppressUnmanagedCodeSecurity, DllImport("Core.Debugger.dll", EntryPoint = "?BindCallback@Logger@Debugger@NebulaEngine@@QEAAXP6AXIPEBD00@Z@Z", CallingConvention = __CallingConvention.Cdecl)]
+                [SuppressUnmanagedCodeSecurity, DllImport("Logger", EntryPoint = "?BindCallback@Logger@Debugger@NebulaEngine@@QEAAXP6AXIPEBD00@Z@Z", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern void BindCallback(__IntPtr __instance, __IntPtr callback);
 
-                [SuppressUnmanagedCodeSecurity, DllImport("Core.Debugger.dll", EntryPoint = "?Initialize@Logger@Debugger@NebulaEngine@@QEAA_NXZ", CallingConvention = __CallingConvention.Cdecl)]
+                [SuppressUnmanagedCodeSecurity, DllImport("Logger", EntryPoint = "?Initialize@Logger@Debugger@NebulaEngine@@QEAA_NXZ", CallingConvention = __CallingConvention.Cdecl)]
                 [return: MarshalAs(UnmanagedType.I1)]
                 internal static extern bool Initialize(__IntPtr __instance);
 
-                [SuppressUnmanagedCodeSecurity, DllImport("Core.Debugger.dll", EntryPoint = "?Shutdown@Logger@Debugger@NebulaEngine@@SAXXZ", CallingConvention = __CallingConvention.Cdecl)]
+                [SuppressUnmanagedCodeSecurity, DllImport("Logger", EntryPoint = "?Shutdown@Logger@Debugger@NebulaEngine@@SAXXZ", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern void Shutdown();
 
-                [SuppressUnmanagedCodeSecurity, DllImport("Core.Debugger.dll", EntryPoint = "?GetInstance@Logger@Debugger@NebulaEngine@@SAAEAV123@XZ", CallingConvention = __CallingConvention.Cdecl)]
+                [SuppressUnmanagedCodeSecurity, DllImport("Logger", EntryPoint = "?GetInstance@Logger@Debugger@NebulaEngine@@SAAEAV123@XZ", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern __IntPtr GetInstance();
             }
 
@@ -167,15 +240,15 @@ namespace NebulaEngine
 
             public __IntPtr __Instance { get; protected set; }
 
-            internal static readonly new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::NebulaEngine.Debug.Logger> NativeToManagedMap =
-                new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::NebulaEngine.Debug.Logger>();
+            internal static readonly new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::NebulaEngine.Debugger.Logger> NativeToManagedMap =
+                new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::NebulaEngine.Debugger.Logger>();
 
-            internal static void __RecordNativeToManagedMapping(IntPtr native, global::NebulaEngine.Debug.Logger managed)
+            internal static void __RecordNativeToManagedMapping(IntPtr native, global::NebulaEngine.Debugger.Logger managed)
             {
                 NativeToManagedMap[native] = managed;
             }
 
-            internal static bool __TryGetNativeToManagedMapping(IntPtr native, out global::NebulaEngine.Debug.Logger managed)
+            internal static bool __TryGetNativeToManagedMapping(IntPtr native, out global::NebulaEngine.Debugger.Logger managed)
             {
     
                 return NativeToManagedMap.TryGetValue(native, out managed);
@@ -276,12 +349,12 @@ namespace NebulaEngine
                 __Internal.Trace(__Instance, msg, thread_name, cs_trace);
             }
 
-            public void SetServerityLevel(global::NebulaEngine.Debug.Logger.LogLevel level)
+            public void SetServerityLevel(global::NebulaEngine.Debugger.Logger.LogLevel level)
             {
                 __Internal.SetServerityLevel(__Instance, level);
             }
 
-            public void BindCallback(global::NebulaEngine.Debug.LogCallback callback)
+            public void BindCallback(global::NebulaEngine.Debugger.LogCallback callback)
             {
                 var __arg0 = callback == null ? global::System.IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(callback);
                 __Internal.BindCallback(__Instance, __arg0);
@@ -298,15 +371,29 @@ namespace NebulaEngine
                 __Internal.Shutdown();
             }
 
-            public static global::NebulaEngine.Debug.Logger Instance
+            public static global::NebulaEngine.Debugger.Logger Instance
             {
                 get
                 {
                     var ___ret = __Internal.GetInstance();
-                    var __result0 = global::NebulaEngine.Debug.Logger.__GetOrCreateInstance(___ret, false);
+                    var __result0 = global::NebulaEngine.Debugger.Logger.__GetOrCreateInstance(___ret, false);
                     return __result0;
                 }
             }
         }
     }
+}
+
+namespace NebulaEngine
+{
+    public unsafe partial class PrimitiveTypes
+    {
+        public partial struct __Internal
+        {
+        }
+
+        public const ulong U64Invalid = 18446744073709551615;
+        public const uint U32Invalid = 4294967295;
+        public const ushort U16Invalid = 65535;
+        public const byte U8Invalid = 255;    }
 }

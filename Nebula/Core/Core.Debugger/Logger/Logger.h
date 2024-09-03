@@ -29,12 +29,12 @@ namespace NebulaEngine::Debugger
             Fatal = 0x20 // severe errors that will lead to abort
         };
 
-        void Log(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
-        void Info(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
-        void Warning(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
-        void Error(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
-        void Fatal(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
-        void Trace(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);
+        void Log(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr); // CS_IGNORE_GEN
+        void Info(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);// CS_IGNORE_GEN
+        void Warning(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);// CS_IGNORE_GEN
+        void Error(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);// CS_IGNORE_GEN
+        void Fatal(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);// CS_IGNORE_GEN
+        void Trace(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);// CS_IGNORE_GEN
 
         void Log(const std::string&& msg);
         void Info(const std::string&& msg);
@@ -42,7 +42,7 @@ namespace NebulaEngine::Debugger
         void Error(const std::string&& msg);
         void Fatal(const std::string&& msg);
         void Trace(const std::string&& msg);
-
+        
         void Log(const std::wstring&& msg);
         void Info(const std::wstring&& msg);
         void Warning(const std::wstring&& msg);
