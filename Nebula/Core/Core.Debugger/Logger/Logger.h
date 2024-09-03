@@ -58,15 +58,12 @@ namespace NebulaEngine::Debugger
         static Logger& GetInstance();
         
 
-        static void Dispose();
+        static void Shutdown();
         
 
     private:
         bool m_IsInitialize;
         LogCallback m_LogCallback;
-
-        void Flush();
-        
         Logger();
     };
 }

@@ -20,8 +20,9 @@ public class EngineLibrary : ILibrary
     {
         var options = driver.Options;
         options.GeneratorKind = GeneratorKind.CSharp;
-        options.OutputDir = "./output";
+        options.OutputDir = @"D:\EngineSource\Nebula\Engine\Nebula\Test\CppSharpInvokerTest\";
         var module = options.AddModule("Debugger");
+        module.OutputNamespace = "";
         // Core.Debugger
         module.IncludeDirs.AddRange(new string[]
         {
