@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Net;
+﻿
 using System.Text;
-using System.Threading.Tasks;
 
 namespace NebulaEngine.FileSystem
 {
@@ -16,12 +11,12 @@ namespace NebulaEngine.FileSystem
         /// <param name="sourceDir"></param>
         /// <param name="destinationDir"></param>
         /// <param name="overrideAction"></param>
-        public static void CopyDirectoryRecursively(string sourceDir, string destinationDir, Func<FileInfo, DirectoryInfo, DirectoryInfo, bool> overrideAction = null)
+        public static void CopyDirectoryRecursively(string sourceDir, string destinationDir, Func<FileInfo, DirectoryInfo, DirectoryInfo, bool>? overrideAction)
         {
-            CopyDirectory(sourceDir, destinationDir, true, overrideAction);
+            CopyDirectory(sourceDir, destinationDir, overrideAction);
         }
 
-        public static void CopyDirectory(string sourceDir, string destinationDir, bool recursive = true, Func<FileInfo, DirectoryInfo, DirectoryInfo, bool> overrideAction = null)
+        public static void CopyDirectory(string sourceDir, string destinationDir, Func<FileInfo, DirectoryInfo, DirectoryInfo, bool>? overrideAction, bool recursive = true)
         {
             // Get information about the source directory
             var dir = new DirectoryInfo(sourceDir);
@@ -65,7 +60,7 @@ namespace NebulaEngine.FileSystem
                 foreach (DirectoryInfo subDir in dirs)
                 {
                     string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
-                    CopyDirectory(subDir.FullName, newDestinationDir, true, overrideAction);
+                    CopyDirectory(subDir.FullName, newDestinationDir, overrideAction);
                 }
             }
         }

@@ -1,20 +1,17 @@
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 using NebulaEngine.Debugger;
-using NebulaEngine.FileSystem;
 
 namespace NebulaEngine.Debug;
 
 public static class Logger
 {
     internal delegate void OnLogReceived (LogLevel type, [MarshalAs(UnmanagedType.LPStr)]string msg, [MarshalAs(UnmanagedType.LPStr)]string threadId,[MarshalAs(UnmanagedType.LPStr)]string trace);
-    internal static void RecordLog(LogLevel type, string threadId, string msg, string trace)
+    
+    internal static void RecordLog(uint type, string threadId, string msg, string trace)
     {
        
         string threadName = Thread.CurrentThread.Name;
-        var message = new LogMessage(type, msg, threadId, threadName, DateTime.Now, trace);
+        var message = new LogMessage((LogLevel)type, msg, threadId, threadName, DateTime.Now, trace);
 
         Task.Run(() =>
         {
@@ -23,10 +20,10 @@ public static class Logger
 
     }
     
-    internal static OnLogReceived ReceiveLog;
+    internal static LogCallback ReceiveLog;
     static Logger()
     {
-        ReceiveLog = new OnLogReceived(RecordLog);
+        ReceiveLog = new LogCallback(RecordLog);
         
     }
     
@@ -93,7 +90,7 @@ public static class Logger
 
     public static void Dispose()
     {
-        API.Debugger.Debugger_Shutdown();
+        LoggerAPI.DebuggerShutdown();
     }
 
     public static void Log(object msg)
@@ -106,33 +103,33 @@ public static class Logger
     public static void Info(object msg)
     {
         string trace = Environment.StackTrace;
-        API.Debugger.Debugger_Info(msg.ToString(), Thread.CurrentThread.Name, trace);
+        LoggerAPI.DebuggerInfo(msg.ToString(), Thread.CurrentThread.Name, trace);
         
     }
 
     public static void Trace(object msg)
     {
         string trace = Environment.StackTrace;
-        API.Debugger.Debugger_Trace(msg.ToString(), Thread.CurrentThread.Name, trace);
+        LoggerAPI.DebuggerTrace(msg.ToString(), Thread.CurrentThread.Name, trace);
         
     }
 
     public static void Warning(object msg)
     {
         string trace = Environment.StackTrace;
-        API.Debugger.Debugger_Warning(msg.ToString(), Thread.CurrentThread.Name, trace);
+        LoggerAPI.DebuggerWarning(msg.ToString(), Thread.CurrentThread.Name, trace);
     }
     
     public static void Error(object msg)
     {
         string trace = Environment.StackTrace;
-        API.Debugger.Debugger_Error(msg.ToString(), Thread.CurrentThread.Name, trace);
+        LoggerAPI.DebuggerError(msg.ToString(), Thread.CurrentThread.Name, trace);
     }
 
     public static void Fatal(object msg)
     {
         string trace = Environment.StackTrace;
-        API.Debugger.Debugger_Fatal(msg.ToString(), Thread.CurrentThread.Name, trace);
+        LoggerAPI.DebuggerFatal(msg.ToString(), Thread.CurrentThread.Name, trace);
     }
 
     public static void Clear()
@@ -142,9 +139,9 @@ public static class Logger
 
     public static bool Initialize(bool bindCallback = false)
     {
-        API.Debugger.Debugger_BindCallback(ReceiveLog);
+        LoggerAPI.DebuggerBindCallback(ReceiveLog);
         
-        return API.Debugger.Debugger_Initialize();
+        return LoggerAPI.DebuggerInitialize();
         
     }
     
