@@ -12,15 +12,15 @@ namespace NebulaEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkSwapChain)
-        RHIVkSwapChain(const VkDevice device, const RHIVkSurface* surface);
+        RHIVkSwapChain(const VkDevice device, const RHIVkSurface* surface, u32 maxFramesInFlight);
         ~RHIVkSwapChain() noexcept override;
         void* GetHandle() const override { return m_VkSwapChain; };
         void CreateSwapChainWithDesc(Surface* surface, SwapChainDescriptor desc) override;
 
-        RHISemaphore* GetImageAvailableSemaphore() const override;
-        RHISemaphore* GetRenderFinishSemaphore() const override;
-        ImageHandle* AquireCurrentImage() override;
-        void Present() override;
+        RHISemaphore* GetImageAvailableSemaphore(u32 frameIndex) const override;
+        RHISemaphore* GetRenderFinishSemaphore(u32 frameIndex) const override;
+        ImageHandle* AquireCurrentImage(u32 frameIndex) override;
+        void Present(u32 frameIndex) override;
     protected:
         void RecreateSwapChainIfNeeded() override;
     private:
@@ -31,8 +31,8 @@ namespace NebulaEngine::RHI
         const RHIVkSurface* m_Surface;
         Containers::Vector<std::unique_ptr<RHIVkImageHandle>> m_ImageHandles;
 
-        RHIVkSemaphore* m_ImageAvailableSemaphore;
-        RHIVkSemaphore* m_RenderFinishSemaphore;
+        Containers::Vector<std::unique_ptr<RHIVkSemaphore>> m_ImageAvailableSemaphores;
+        Containers::Vector<std::unique_ptr<RHIVkSemaphore>> m_RenderFinishSemaphores;
         uint32_t m_ImageIndex;
         VkQueue m_VkPresentQueue;
     };

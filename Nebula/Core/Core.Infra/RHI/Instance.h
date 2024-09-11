@@ -25,6 +25,7 @@ namespace NebulaEngine::RHI
         u32 appMajor, appMinor, appPatch;
         /** App Version */
         u32 engineMajor, engineMinor, enginePatch;
+        u32 maxFramesInFlight;
     };
     
     class Instance
@@ -33,7 +34,7 @@ namespace NebulaEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(Instance)
         VIRTUAL_DECONSTRUCTOR(Instance)
         
-        Instance(InstanceInfo&& instance_info)
+        Instance(InstanceInfo&& instance_info): m_MaxFramesInFlight(instance_info.maxFramesInFlight)
         {
             
         }
@@ -70,8 +71,14 @@ namespace NebulaEngine::RHI
         virtual Device& GetLogicalDevice(u32 windowId) = 0;
 
         virtual const u32 GetExternalIndex() const = 0;
-    protected:
+
+        const u32 GetMaxFramesInFlight() const
+        {
+            return m_MaxFramesInFlight;
+        }
         
+    protected:
+        u32 m_MaxFramesInFlight;
         bool m_EnableValidation { false };
         virtual void CheckSwapChainCapabilities() = 0;
     };

@@ -44,7 +44,7 @@ namespace NebulaEngine::RHI
             return m_GPUPipelineManager;
         }
 
-        void Submit(RHICommandBuffer* commandBuffer) override;
+        void Submit(RHICommandBuffer* commandBuffer, u32 frameIndex) override;
     private:
 
         friend class RHIVkInstance;

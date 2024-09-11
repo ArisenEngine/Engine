@@ -22,7 +22,7 @@ namespace  NebulaEngine::RHI
         void EndRenderPass() override;
         
         void Clear() override;
-        void Begin() override;
+        void Begin(u32 frameIndex) override;
         void End() override;
 
         void SetViewport(f32 x, f32 y, f32 width, f32 height, f32 minDepth, f32 maxDepth) override;

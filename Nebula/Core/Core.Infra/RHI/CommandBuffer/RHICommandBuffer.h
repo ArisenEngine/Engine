@@ -65,7 +65,7 @@ namespace NebulaEngine::RHI
         virtual void EndRenderPass() = 0;
         
         virtual void Clear() = 0;
-        virtual void Begin() = 0;
+        virtual void Begin(u32 frameIndex) = 0;
         virtual void End() = 0;
         
         virtual void SetViewport(f32 x, f32 y, f32 width, f32 height, f32 minDepth, f32 maxDepth) = 0;

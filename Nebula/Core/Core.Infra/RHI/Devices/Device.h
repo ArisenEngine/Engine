@@ -47,7 +47,7 @@ namespace NebulaEngine::RHI
 
         virtual GPUPipelineManager* GetGPUPipelineManager() const = 0;
 
-        virtual void Submit(RHICommandBuffer* commandBuffer) = 0;
+        virtual void Submit(RHICommandBuffer* commandBuffer, u32 frameIndex) = 0;
     protected:
         
         Instance* m_Instance;

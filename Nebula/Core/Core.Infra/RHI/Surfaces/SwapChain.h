@@ -37,15 +37,16 @@ namespace NebulaEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE(SwapChain)
-        SwapChain() {}
+        SwapChain(u32 maxFramesInFlight): m_MaxFramesInFlight(maxFramesInFlight) {}
         VIRTUAL_DECONSTRUCTOR(SwapChain)
         virtual void* GetHandle() const = 0;
         virtual void CreateSwapChainWithDesc(Surface* surface, SwapChainDescriptor desc) = 0;
-        virtual RHISemaphore* GetImageAvailableSemaphore() const = 0;
-        virtual RHISemaphore* GetRenderFinishSemaphore() const  = 0;
-        virtual ImageHandle* AquireCurrentImage() = 0;
-        virtual void Present() = 0;
+        virtual RHISemaphore* GetImageAvailableSemaphore(u32 frameIndex) const = 0;
+        virtual RHISemaphore* GetRenderFinishSemaphore(u32 frameIndex) const  = 0;
+        virtual ImageHandle* AquireCurrentImage(u32 frameIndex) = 0;
+        virtual void Present(u32 frameIndex) = 0;
     protected:
+        u32 m_MaxFramesInFlight;
         SwapChainDescriptor m_Desc;
         virtual void RecreateSwapChainIfNeeded() = 0;
 

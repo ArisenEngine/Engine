@@ -42,8 +42,9 @@ void RHI::RHIVkSurface::InitSwapChain()
     }
     
     auto rhiInstance = static_cast<RHIVkInstance*>(m_Instance);
-    m_SwapChain = new RHIVkSwapChain(static_cast<VkDevice>(
-                                                       rhiInstance->GetLogicalDevice(std::move(m_RenderWindowId)).GetHandle()), this);
+    m_SwapChain = new RHIVkSwapChain(
+        static_cast<VkDevice>(rhiInstance->GetLogicalDevice(std::move(m_RenderWindowId)).GetHandle()),
+        this, rhiInstance->GetMaxFramesInFlight());
     auto width = Platforms::GetWindowWidth(m_RenderWindowId);
     auto height = Platforms::GetWindowHeight(m_RenderWindowId);
     

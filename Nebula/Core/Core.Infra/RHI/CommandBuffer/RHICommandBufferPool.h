@@ -12,10 +12,11 @@ namespace NebulaEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHICommandBufferPool)
-        RHICommandBufferPool(Device* device) : m_Device(device) { };
+        RHICommandBufferPool(Device* device, u32 maxFramesInFlight) :
+        m_Device(device), m_MaxFramesInFlight(maxFramesInFlight) { };
         virtual ~RHICommandBufferPool()
         {
-            delete m_Fence;
+            m_Fences.clear();
             m_Device = nullptr;
             m_CommandBuffers.clear();
         }
@@ -42,11 +43,16 @@ namespace NebulaEngine::RHI
             m_CommandBuffers.emplace_back(commandBuffer);
         }
         virtual std::shared_ptr<RHICommandBuffer> CreateCommandBuffer() = 0;
-
-        RHIFence* GetFence() const { return m_Fence; }
+        
+        RHIFence* GetFence(u32 currentFrameIndex) const
+        {
+            return m_Fences[currentFrameIndex % m_MaxFramesInFlight].get();
+        }
+        
     protected:
-        RHIFence* m_Fence;
+        Containers::Vector<std::unique_ptr<RHIFence>> m_Fences;
         Device* m_Device;
         Containers::Vector<std::shared_ptr<RHICommandBuffer>> m_CommandBuffers;
+        u32 m_MaxFramesInFlight;
     };
 }

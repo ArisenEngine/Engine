@@ -13,7 +13,7 @@ namespace NebulaEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkCommandBufferPool)
-        RHIVkCommandBufferPool(RHIVkDevice* device);
+        RHIVkCommandBufferPool(RHIVkDevice* device, u32 maxFramesInFlight);
         ~RHIVkCommandBufferPool() noexcept override;
 
         void* GetHandle() override { return m_VkCommandPool; }
