@@ -2,11 +2,15 @@
 #include "Logger/Logger.h"
 #include "RHI/Enums/Image/ImageAspectFlagBits.h"
 
-NebulaEngine::RHI::RHIVkSwapChain::RHIVkSwapChain(VkDevice device, const RHIVkSurface* surface):
-SwapChain(), m_VkDevice(device), m_VkSurface(static_cast<VkSurfaceKHR>(surface->GetHandle())), m_ImageIndex(0), m_Surface(surface)
+NebulaEngine::RHI::RHIVkSwapChain::RHIVkSwapChain(VkDevice device, const RHIVkSurface* surface, u32 maxFramesInFlight):
+SwapChain(maxFramesInFlight), m_VkDevice(device), m_VkSurface(static_cast<VkSurfaceKHR>(surface->GetHandle())), m_ImageIndex(0), m_Surface(surface)
 {
-    m_ImageAvailableSemaphore = new RHIVkSemaphore(m_VkDevice);
-    m_RenderFinishSemaphore = new RHIVkSemaphore(m_VkDevice);
+
+    for (int i = 0; i < m_MaxFramesInFlight; ++i)
+    {
+        m_ImageAvailableSemaphores.emplace_back(std::make_unique<RHIVkSemaphore>(m_VkDevice));
+        m_RenderFinishSemaphores.emplace_back(std::make_unique<RHIVkSemaphore>(m_VkDevice));
+    }
 
     auto indices = surface->GetQueueFamilyIndices();
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &m_VkPresentQueue);
@@ -18,8 +22,8 @@ NebulaEngine::RHI::RHIVkSwapChain::~RHIVkSwapChain() noexcept
 
     m_Surface = nullptr;
     
-    delete m_ImageAvailableSemaphore;
-    delete m_RenderFinishSemaphore;
+    m_ImageAvailableSemaphores.clear();
+    m_RenderFinishSemaphores.clear();
     
     m_ImageHandles.clear();
     if (m_VkSwapChain != VK_NULL_HANDLE && m_VkDevice != VK_NULL_HANDLE)
@@ -102,33 +106,36 @@ void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(Surface* surface
 
 }
 
-NebulaEngine::RHI::RHISemaphore* NebulaEngine::RHI::RHIVkSwapChain::GetImageAvailableSemaphore() const
+NebulaEngine::RHI::RHISemaphore* NebulaEngine::RHI::RHIVkSwapChain::GetImageAvailableSemaphore(u32 currentFrame) const
 {
-    return m_ImageAvailableSemaphore;
+    return m_ImageAvailableSemaphores[currentFrame % m_MaxFramesInFlight].get();
 }
 
-NebulaEngine::RHI::RHISemaphore* NebulaEngine::RHI::RHIVkSwapChain::GetRenderFinishSemaphore() const
+NebulaEngine::RHI::RHISemaphore* NebulaEngine::RHI::RHIVkSwapChain::GetRenderFinishSemaphore(u32 currentFrame) const
 {
-    return m_RenderFinishSemaphore;
+    return m_RenderFinishSemaphores[currentFrame % m_MaxFramesInFlight].get();
 }
 
-NebulaEngine::RHI::ImageHandle* NebulaEngine::RHI::RHIVkSwapChain::AquireCurrentImage()
+NebulaEngine::RHI::ImageHandle* NebulaEngine::RHI::RHIVkSwapChain::AquireCurrentImage(u32 frameIndex)
 {
+    auto currentFrame = frameIndex % m_MaxFramesInFlight;
     if (vkAcquireNextImageKHR(m_VkDevice, m_VkSwapChain, UINT64_MAX, static_cast<VkSemaphore>(
-                              m_ImageAvailableSemaphore->GetHandle()), VK_NULL_HANDLE, &m_ImageIndex) != VK_SUCCESS)
+                              m_ImageAvailableSemaphores[currentFrame]->GetHandle()),
+                              VK_NULL_HANDLE, &m_ImageIndex) != VK_SUCCESS)
     {
         LOG_DEBUG("[RHIVkSwapChain::AquireCurrentImage]: failed to acquire next image.");
     }
     return m_ImageHandles[m_ImageIndex].get();
 }
 
-void NebulaEngine::RHI::RHIVkSwapChain::Present()
+void NebulaEngine::RHI::RHIVkSwapChain::Present(u32 frameIndex)
 {
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
     presentInfo.waitSemaphoreCount = 1;
-    const VkSemaphore semaphore = static_cast<VkSemaphore>(m_RenderFinishSemaphore->GetHandle());
+    const VkSemaphore semaphore =
+        static_cast<VkSemaphore>(m_RenderFinishSemaphores[frameIndex % m_MaxFramesInFlight]->GetHandle());
     presentInfo.pWaitSemaphores = &semaphore;
 
     VkSwapchainKHR swapChains[] = { m_VkSwapChain };

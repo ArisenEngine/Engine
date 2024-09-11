@@ -68,11 +68,11 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::Clear()
     m_State = ECommandState::NeedReset;
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::Begin()
+void NebulaEngine::RHI::RHIVkCommandBuffer::Begin(u32 frameIndex)
 {
     {
         {
-            ScopeLock ScopeLock(m_CommandBufferPool->GetFence());
+            ScopeLock ScopeLock(m_CommandBufferPool->GetFence(frameIndex));
             if(m_State == ECommandState::NeedReset)
             {
                 vkResetCommandBuffer(m_VkCommandBuffer, /*VkCommandBufferResetFlagBits*/ 0);

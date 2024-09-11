@@ -59,6 +59,7 @@ LRESULT WinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 class EngineTest : public Test
 {
 private:
+    u32 frameIndex {0};
     RHI::Instance* m_Instance{};
 
 public:
@@ -104,7 +105,9 @@ public:
             /** App Version */
             1, 0, 0,
             /** App Version */
-            1, 0, 0
+            1, 0, 0,
+            /* Max Frames in Flight */
+            2
         };
 
         Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphsicsAPI::Vulkan);
@@ -221,6 +224,8 @@ public:
         {
             RecordSubmitPresent(std::move(g_RenderContexts[i]));
         }
+
+        ++frameIndex;
     }
 
     void RecordSubmitPresent(RenderContext&& context)
@@ -228,12 +233,12 @@ public:
         auto commandBuffer = context.commandPool->GetCommandBuffer();
 
         // Record cmd
-        commandBuffer->Begin();
+        commandBuffer->Begin(frameIndex);
 
         {
             auto renderPass = context.renderPass.get();
             auto frameBuffer = context.frameBuffer.get();
-            auto backBuffer = context.device->GetSurface()->GetSwapChain()->AquireCurrentImage();
+            auto backBuffer = context.device->GetSurface()->GetSwapChain()->AquireCurrentImage(frameIndex);
             auto backBufferView = static_cast<RHI::ImageView*>(backBuffer->GetMemoryView());
             auto format = backBufferView->GetFormat();
             
@@ -335,14 +340,14 @@ public:
 
         {
             // Submit
-            context.device->Submit(commandBuffer.get());
+            context.device->Submit(commandBuffer.get(), frameIndex);
         }
 
         context.commandPool->ReleaseCommandBuffer(commandBuffer);
         
         {
             // Present
-            context.device->GetSurface()->GetSwapChain()->Present();
+            context.device->GetSurface()->GetSwapChain()->Present(frameIndex);
         }
     }
 

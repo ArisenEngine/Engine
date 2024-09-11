@@ -43,7 +43,11 @@ NebulaEngine::u32 NebulaEngine::RHI::RHIVkDevice::CreateCommandBufferPool()
 {
     ASSERT(m_VkDevice != VK_NULL_HANDLE);
     u32 id = static_cast<u32>(m_CommandBufferPools.size());
-    m_CommandBufferPools.insert({id, std::make_unique<RHIVkCommandBufferPool>(this)});
+    m_CommandBufferPools.insert(
+        {
+            id,
+            std::make_unique<RHIVkCommandBufferPool>(this, m_Instance->GetMaxFramesInFlight())
+        });
     return id;
 }
 
@@ -95,7 +99,7 @@ void NebulaEngine::RHI::RHIVkDevice::ReleaseFrameBuffer(std::shared_ptr<FrameBuf
     m_FrameBuffers.emplace_back(frameBuffer);
 }
 
-void NebulaEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer)
+void NebulaEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, u32 frameIndex)
 {
     ASSERT(commandBuffer->ReadyForSubmit());
     
@@ -103,7 +107,7 @@ void NebulaEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer)
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
     VkSemaphore waitSemaphores[] = { static_cast<VkSemaphore>(
-            m_Surface->GetSwapChain()->GetImageAvailableSemaphore()->GetHandle())
+            m_Surface->GetSwapChain()->GetImageAvailableSemaphore(frameIndex)->GetHandle())
     };
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submitInfo.waitSemaphoreCount = 1;
@@ -114,12 +118,12 @@ void NebulaEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer)
     submitInfo.pCommandBuffers = (static_cast<VkCommandBuffer*>(commandBuffer->GetHandlerPointer()));
 
     VkSemaphore signalSemaphores[] = { static_cast<VkSemaphore>(
-            m_Surface->GetSwapChain()->GetRenderFinishSemaphore()->GetHandle()) };
+            m_Surface->GetSwapChain()->GetRenderFinishSemaphore(frameIndex)->GetHandle()) };
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
     if (vkQueueSubmit(m_VkGraphicQueue, 1, &submitInfo, static_cast<VkFence>(
-                          commandBuffer->GetOwner()->GetFence()->GetHandle())) != VK_SUCCESS)
+                          commandBuffer->GetOwner()->GetFence(frameIndex)->GetHandle())) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("[RHIVkDevice::Submit]: failed to submit draw command buffer!");
     }

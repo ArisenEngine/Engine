@@ -2,7 +2,8 @@
 
 #include "../Synchronization/RHIVkFence.h"
 
-NebulaEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* device): RHICommandBufferPool(device)
+NebulaEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* device, u32 maxFramesInFlight)
+: RHICommandBufferPool(device, maxFramesInFlight)
 {
     m_VkDevice = static_cast<VkDevice>(device->GetHandle());
 
@@ -18,7 +19,10 @@ NebulaEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* d
         LOG_ERROR("[RHIVkCommandBufferPool::RHIVkCommandBufferPool]: failed to create command pool!");
     }
 
-    m_Fence = new RHIVkFence(m_VkDevice);
+    for (int i = 0; i < m_MaxFramesInFlight; ++i)
+    {
+        m_Fences.emplace_back(std::make_unique<RHIVkFence>(m_VkDevice));
+    }
 }
 
 NebulaEngine::RHI::RHIVkCommandBufferPool::~RHIVkCommandBufferPool() noexcept
