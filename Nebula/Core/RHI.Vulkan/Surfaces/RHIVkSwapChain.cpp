@@ -2,10 +2,12 @@
 #include "Logger/Logger.h"
 #include "RHI/Enums/Image/ImageAspectFlagBits.h"
 
-NebulaEngine::RHI::RHIVkSwapChain::RHIVkSwapChain(VkDevice device, const RHIVkSurface* surface, u32 maxFramesInFlight):
-SwapChain(maxFramesInFlight), m_VkDevice(device), m_VkSurface(static_cast<VkSurfaceKHR>(surface->GetHandle())), m_ImageIndex(0), m_Surface(surface)
+NebulaEngine::RHI::RHIVkSwapChain::RHIVkSwapChain(const Device* device, const RHIVkSurface* surface, u32 maxFramesInFlight):
+SwapChain(maxFramesInFlight), m_Device(device), m_VkDevice(static_cast<VkDevice>(
+            m_Device->GetHandle())),
+m_VkSurface(static_cast<VkSurfaceKHR>(surface->GetHandle())), m_ImageIndex(0), m_Surface(surface)
 {
-
+    
     for (int i = 0; i < m_MaxFramesInFlight; ++i)
     {
         m_ImageAvailableSemaphores.emplace_back(std::make_unique<RHIVkSemaphore>(m_VkDevice));
@@ -13,7 +15,7 @@ SwapChain(maxFramesInFlight), m_VkDevice(device), m_VkSurface(static_cast<VkSurf
     }
 
     auto indices = surface->GetQueueFamilyIndices();
-    vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &m_VkPresentQueue);
+    vkGetDeviceQueue(m_VkDevice, indices.presentFamily.value(), 0, &m_VkPresentQueue);
 }
 
 NebulaEngine::RHI::RHIVkSwapChain::~RHIVkSwapChain() noexcept
@@ -25,16 +27,12 @@ NebulaEngine::RHI::RHIVkSwapChain::~RHIVkSwapChain() noexcept
     m_ImageAvailableSemaphores.clear();
     m_RenderFinishSemaphores.clear();
     
-    m_ImageHandles.clear();
-    if (m_VkSwapChain != VK_NULL_HANDLE && m_VkDevice != VK_NULL_HANDLE)
-    {
-        LOG_INFO("[RHIVkSwapChain::~RHIVkSwapChain]: Destroy Vulkan SwapChain");
-        vkDestroySwapchainKHR(m_VkDevice, m_VkSwapChain, nullptr);
-    }
+    Cleanup();
 }
 
-void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(Surface* surface, SwapChainDescriptor desc)
+void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescriptor desc)
 {
+    
     m_Desc = desc;
     
     VkSwapchainCreateInfoKHR createInfo{};
@@ -50,7 +48,7 @@ void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(Surface* surface
     createInfo.imageUsage =  m_Desc.imageUsageFlagBits;
     createInfo.imageSharingMode = static_cast<VkSharingMode>(m_Desc.sharingMode);
     createInfo.queueFamilyIndexCount = m_Desc.queueFamilyIndexCount;
-    auto queueSurfaceFamilyIndices = static_cast<RHIVkSurface*>(surface)->GetQueueFamilyIndices();
+    auto queueSurfaceFamilyIndices = m_Surface->GetQueueFamilyIndices();
     uint32_t queueFamilyIndices[] = {queueSurfaceFamilyIndices.graphicsFamily.value(), queueSurfaceFamilyIndices.presentFamily.value()};
     createInfo.pQueueFamilyIndices = queueFamilyIndices;
     createInfo.preTransform = static_cast<VkSurfaceTransformFlagBitsKHR>(m_Desc.surfaceTransformFlagBits);
@@ -128,6 +126,16 @@ NebulaEngine::RHI::ImageHandle* NebulaEngine::RHI::RHIVkSwapChain::AquireCurrent
     return m_ImageHandles[m_ImageIndex].get();
 }
 
+void NebulaEngine::RHI::RHIVkSwapChain::Cleanup()
+{
+    m_ImageHandles.clear();
+    if (m_VkSwapChain != VK_NULL_HANDLE && m_VkDevice != VK_NULL_HANDLE)
+    {
+        LOG_INFO("[RHIVkSwapChain::~RHIVkSwapChain]: Destroy Vulkan SwapChain");
+        vkDestroySwapchainKHR(m_VkDevice, m_VkSwapChain, nullptr);
+    }
+}
+
 void NebulaEngine::RHI::RHIVkSwapChain::Present(u32 frameIndex)
 {
     VkPresentInfoKHR presentInfo{};
@@ -155,5 +163,9 @@ void NebulaEngine::RHI::RHIVkSwapChain::RecreateSwapChainIfNeeded()
         return;
     }
     
-    // TODO
+    m_Device->DeviceWaitIdle();
+
+    Cleanup();
+
+    CreateSwapChainWithDesc(m_Desc);
 }

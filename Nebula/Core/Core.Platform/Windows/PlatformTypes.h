@@ -13,11 +13,13 @@ namespace NebulaEngine::Platforms
 #include<Windows.h>
 
 	using WindowProc = LRESULT(*)(HWND, UINT, WPARAM, LPARAM);
+	using WindowExitResize = void(*)(HWND, u32, u32);
 	using WindowHandle = HWND;
 
 	struct WindowInitInfo
 	{
 		WindowProc         callback{ nullptr };
+		WindowExitResize   resizeCallback {nullptr};
 		WindowHandle       parent{ nullptr };
 		const wchar_t*     caption{ nullptr };
 		s32                left{ 0 };
