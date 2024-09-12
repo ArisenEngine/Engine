@@ -68,7 +68,7 @@ namespace NebulaEngine::RHI
         virtual bool IsSurfacesAvailable() const = 0;
         
         virtual void CreateLogicDevice(u32 windowId) = 0;
-        virtual Device& GetLogicalDevice(u32 windowId) = 0;
+        virtual Device* GetLogicalDevice(u32 windowId) = 0;
 
         virtual const u32 GetExternalIndex() const = 0;
 

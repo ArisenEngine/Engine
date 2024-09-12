@@ -12,20 +12,22 @@ namespace NebulaEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkSwapChain)
-        RHIVkSwapChain(const VkDevice device, const RHIVkSurface* surface, u32 maxFramesInFlight);
+        RHIVkSwapChain(const Device* device, const RHIVkSurface* surface, u32 maxFramesInFlight);
         ~RHIVkSwapChain() noexcept override;
         void* GetHandle() const override { return m_VkSwapChain; };
-        void CreateSwapChainWithDesc(Surface* surface, SwapChainDescriptor desc) override;
+        void CreateSwapChainWithDesc(SwapChainDescriptor desc) override;
 
         RHISemaphore* GetImageAvailableSemaphore(u32 frameIndex) const override;
         RHISemaphore* GetRenderFinishSemaphore(u32 frameIndex) const override;
         ImageHandle* AquireCurrentImage(u32 frameIndex) override;
+        void Cleanup() override;
         void Present(u32 frameIndex) override;
     protected:
         void RecreateSwapChainIfNeeded() override;
     private:
         
         VkSwapchainKHR m_VkSwapChain { VK_NULL_HANDLE };
+        const Device* m_Device;
         VkDevice m_VkDevice;
         VkSurfaceKHR m_VkSurface;
         const RHIVkSurface* m_Surface;

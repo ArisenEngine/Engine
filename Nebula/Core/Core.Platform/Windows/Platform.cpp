@@ -11,6 +11,9 @@ namespace NebulaEngine::Platforms
 
 	namespace
 	{
+	#define WINDOW_PROC_CALLBACK 0
+    #define WINDOW_RESIZE_CALLBACK sizeof(WindowProc)
+		
 		struct WindowInfo
 		{
 			HWND hwnd;
@@ -69,15 +72,17 @@ namespace NebulaEngine::Platforms
 		{
 			WindowInfo* info{ nullptr };
 
+			bool bHasExitResizing = false;
+			
 			switch (msg)
 			{
 			case WM_DESTROY:
 				GetInfoFromHandle(hwnd).isClosed = true;
 				break;
-
-
+			
 			case WM_EXITSIZEMOVE:
 				info = &GetInfoFromHandle(hwnd);
+				bHasExitResizing = true;
 				break;
 
 			case WM_SIZE:
@@ -99,13 +104,31 @@ namespace NebulaEngine::Platforms
 			{
 				assert(info->hwnd);
 				GetClientRect(info->hwnd, info->isFullScreen ? &info->fullScreenArea : &info->clientArea);
+
+				if (bHasExitResizing)
+				{
+					LONG_PTR longPtr{ GetWindowLongPtr(hwnd, WINDOW_RESIZE_CALLBACK) };
+			
+					if (longPtr)
+					{
+						auto width = info->isFullScreen ?
+							info->fullScreenArea.right - info->fullScreenArea.left
+						: info->clientArea.right - info->clientArea.left;
+						auto height = info->isFullScreen ?
+							info->fullScreenArea.bottom - info->fullScreenArea.top
+						: info->clientArea.bottom - info->clientArea.top;
+						((WindowExitResize)longPtr)(hwnd, width, height);
+					}
+				}
 			}
-			LONG_PTR longPtr{ GetWindowLongPtr(hwnd, 0) };
+			
+			LONG_PTR longPtr{ GetWindowLongPtr(hwnd, WINDOW_PROC_CALLBACK) };
 			
 			if (longPtr)
 			{
-				((WindowProc)longPtr)(hwnd, msg, wparam, lparam);
+				return ((WindowProc)longPtr)(hwnd, msg, wparam, lparam);
 			}
+			
 			return DefWindowProc(hwnd, msg, wparam, lparam);
 		}
 
@@ -155,7 +178,7 @@ namespace NebulaEngine::Platforms
 			RECT& area{ info.isFullScreen ? info.fullScreenArea : info.clientArea };
 			return { (u32)area.left, (u32)area.top, (u32)area.right, (u32)area.bottom };
 		}
-
+		
 		void SetWindowCaption(WindowID id, const wchar_t* caption)
 		{
 			WindowInfo& info{ GetInfoFromId(id) };
@@ -208,6 +231,7 @@ namespace NebulaEngine::Platforms
 	Window CreateNewWindow(const WindowInitInfo* const initInfo)
 	{
 		WindowProc callback{ initInfo ? initInfo->callback : nullptr };
+		WindowExitResize resizeCallback {initInfo ? initInfo->resizeCallback : nullptr };
 		WindowHandle parent{ initInfo ? initInfo->parent : nullptr };
 
 		// set up window class
@@ -218,7 +242,7 @@ namespace NebulaEngine::Platforms
 		wc.style = CS_HREDRAW | CS_VREDRAW;
 		wc.lpfnWndProc = InternalWindowProc;
 		wc.cbClsExtra = 0;
-		wc.cbWndExtra = callback ? sizeof(callback) : 0;
+		wc.cbWndExtra = sizeof(WindowProc) + sizeof(WindowExitResize);
 		wc.hInstance = 0;
 		wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
 		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
@@ -273,7 +297,9 @@ namespace NebulaEngine::Platforms
 
 			SetWindowLongPtr(info.hwnd, GWLP_USERDATA, (LONG_PTR)id);
 
-			if (callback) SetWindowLongPtr(info.hwnd, 0, (LONG_PTR)callback);
+			if (callback) SetWindowLongPtr(info.hwnd, WINDOW_PROC_CALLBACK, (LONG_PTR)callback);
+
+			if (resizeCallback) SetWindowLongPtr(info.hwnd, WINDOW_RESIZE_CALLBACK, (LONG_PTR)resizeCallback);
 
 			assert(GetLastError() == 0);
 
@@ -292,6 +318,19 @@ namespace NebulaEngine::Platforms
 		DestroyWindow(info.hwnd);
 		RemoveFromWindows(id);
 	}
+
+	u32 GetWindowID(WindowHandle handle)
+	{
+		const WindowID id{ (ID::IdType)GetWindowLongPtr(handle, GWLP_USERDATA) };
+		return id;
+	}
+
+	void SetWindowResizeCallbackInternal(WindowID id, WindowExitResize callback)
+	{
+		WindowInfo& info{ GetInfoFromId(id) };
+		SetWindowLongPtr(info.hwnd, WINDOW_RESIZE_CALLBACK, (LONG_PTR)callback);
+	}
+	
 #else
 
 #error "platform not be implement"
@@ -354,7 +393,5 @@ namespace NebulaEngine::Platforms
 		assert(IsValid());
 		return IsWindowClosed(m_ID);
 	}
-
-
-
+	
 }

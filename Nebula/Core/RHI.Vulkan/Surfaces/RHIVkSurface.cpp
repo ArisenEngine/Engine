@@ -42,8 +42,7 @@ void RHI::RHIVkSurface::InitSwapChain()
     }
     
     auto rhiInstance = static_cast<RHIVkInstance*>(m_Instance);
-    m_SwapChain = new RHIVkSwapChain(
-        static_cast<VkDevice>(rhiInstance->GetLogicalDevice(std::move(m_RenderWindowId)).GetHandle()),
+    m_SwapChain = new RHIVkSwapChain(rhiInstance->GetLogicalDevice(std::move(m_RenderWindowId)),
         this, rhiInstance->GetMaxFramesInFlight());
     auto width = Platforms::GetWindowWidth(m_RenderWindowId);
     auto height = Platforms::GetWindowHeight(m_RenderWindowId);
@@ -89,7 +88,7 @@ void RHI::RHIVkSurface::InitSwapChain()
     desc.surfaceTransformFlagBits = static_cast<u32>(m_SwapChainSupportDetail.capabilities.currentTransform);
     desc.compositeAlphaFlagBits = COMPOSITE_ALPHA_OPAQUE_BIT;
    
-    m_SwapChain->CreateSwapChainWithDesc(this, desc);
+    m_SwapChain->CreateSwapChainWithDesc(desc);
 }
 
 RHI::SwapChain* RHI::RHIVkSurface::GetSwapChain()

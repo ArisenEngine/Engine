@@ -466,11 +466,11 @@ void NebulaEngine::RHI::RHIVkInstance::CreateLogicDevice(u32 windowId)
     m_LogicalDevices.insert({windowId, std::make_unique<RHIVkDevice>(this, &rhiSurface, graphicQueue, presentQueue, device)});
 }
 
-NebulaEngine::RHI::Device& NebulaEngine::RHI::RHIVkInstance::GetLogicalDevice(u32 windowId)
+NebulaEngine::RHI::Device* NebulaEngine::RHI::RHIVkInstance::GetLogicalDevice(u32 windowId)
 {
     ASSERT(m_LogicalDevices[windowId] && m_LogicalDevices[windowId].get());
     ASSERT(m_LogicalDevices[windowId].get()->m_VkDevice != VK_NULL_HANDLE);
-    return *m_LogicalDevices[windowId].get();
+    return m_LogicalDevices[windowId].get();
 }
 
 const NebulaEngine::RHI::Format NebulaEngine::RHI::RHIVkInstance::GetSuitableSwapChainFormat(u32&& windowId)

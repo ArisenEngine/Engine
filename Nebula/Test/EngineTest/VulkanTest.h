@@ -27,11 +27,28 @@ struct RenderContext
     std::shared_ptr<RHI::FrameBuffer> frameBuffer;
     RHI::RHICommandBufferPool* commandPool;
     Containers::Vector<u32> gpuPrograms;
+    bool bShouldResize;
+    u32 newWidth;
+    u32 newHeight;
 };
 
 Containers::Vector<RenderContext> g_RenderContexts;
 
 const int k_WindowsCount = 1;
+
+void WinResize(HWND hwnd, u32 width, u32 height)
+{
+    auto id = Platforms::GetWindowId(hwnd);
+    for (int i = 0; i < k_WindowsCount; ++i)
+    {
+        if (g_RenderContexts[i].windowId == id)
+        {
+            g_RenderContexts[i].bShouldResize = true;
+            g_RenderContexts[i].newWidth = width;
+            g_RenderContexts[i].newHeight = height;
+        }
+    }
+}
 
 LRESULT WinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -49,6 +66,11 @@ LRESULT WinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             {
                 return 0;
             }
+        }
+        break;
+    case WM_SIZE:
+        {
+           
         }
         break;
     }
@@ -82,7 +104,7 @@ public:
 
         for (int i = 0; i < k_WindowsCount; ++i)
         {
-            auto windowId = Platforms::CreateRenderWindow(nullptr, WinProc, 640, 480);
+            auto windowId = Platforms::CreateRenderWindowWithResizeCallback(nullptr, WinProc, WinResize, 640, 480);
             g_RenderContexts[i] = RenderContext
             {
                 windowId
@@ -129,7 +151,7 @@ public:
 
         for (int i = 0; i < k_WindowsCount; ++i)
         {
-            g_RenderContexts[i].device = &m_Instance->GetLogicalDevice(g_RenderContexts[i].windowId);
+            g_RenderContexts[i].device = m_Instance->GetLogicalDevice(g_RenderContexts[i].windowId);
             auto poolId = g_RenderContexts[i].device->CreateCommandBufferPool();
             g_RenderContexts[i].commandPool = g_RenderContexts[i].device->GetCommandBufferPool(poolId);
             g_RenderContexts[i].renderPass = g_RenderContexts[i].device->GetRenderPass();
@@ -223,6 +245,14 @@ public:
         for (int i = 0; i < k_WindowsCount; ++i)
         {
             RecordSubmitPresent(std::move(g_RenderContexts[i]));
+
+            if (g_RenderContexts[i].bShouldResize)
+            {
+                g_RenderContexts[i].device
+                ->GetSurface()->GetSwapChain()
+                ->SetResolution(g_RenderContexts[i].newWidth, g_RenderContexts[i].newHeight);
+                g_RenderContexts[i].bShouldResize = false;
+            }
         }
 
         ++frameIndex;
