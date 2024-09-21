@@ -271,12 +271,9 @@ public:
             };
             g_RenderContexts[i].bufferHandle->AllocBufferHandle(std::move(desc));
             g_RenderContexts[i].bufferHandle->AllocBufferMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            g_RenderContexts[i].bufferHandle->MemoryCopy(vertices.data(), 0);
         }
 
-        // init Pipeline Assets
-
-        
-        
         return true;
     }
 
@@ -301,7 +298,7 @@ public:
         pipelineState->AddVertexBindingDescription(0, sizeof(Vertex), RHI::VERTEX_INPUT_RATE_VERTEX);
         pipelineState->AddVertexInputAttributeDescription(0, 0, RHI::Format::FORMAT_R32G32_SFLOAT, offsetof(Vertex, pos));
         pipelineState->AddVertexInputAttributeDescription(1, 0, RHI::Format::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color));
-        bufferHandle->MemoryCopy(vertices.data(), 0);
+       
     }
 
     void AddDynamicState(RHI::GPUPipelineStateObject* pipelineState)
