@@ -65,7 +65,7 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::Clear()
 void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddVertexBindingDescription(u32 binding, u32 stride,
     EVertexInputRate inputRate)
 {
-    m_VertexInputBindingDescriptions.emplace_back(VkVertexInputBindingDescription{binding,stride,static_cast<VkVertexInputRate>(inputRate)});
+    m_VertexInputBindingDescriptions.emplace_back(VkVertexInputBindingDescription{binding, stride,static_cast<VkVertexInputRate>(inputRate)});
 }
 
 void* NebulaEngine::RHI::RHIVkGPUPipelineStateObject::GetVertexBindingDescriptions()

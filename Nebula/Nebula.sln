@@ -40,6 +40,153 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Metal", "Metal", "{4FA73163-AAC3-40D3-BFBE-BC3BF668B2D1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "03-3rdparty", "03-3rdparty", "{457B3F2F-ABC8-49A4-954D-CF1A41F2FAD8}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IApplication", "Samples\Rendering\Common\IApplication\IApplication.vcxproj", "{029A9F78-2549-46FF-B365-4266A535E6E4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{DDE1C704-41D1-48DC-A5BD-AC839AE6B75B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VulkanApplication", "Samples\Rendering\Vulkan\VulkanApplication\VulkanApplication.vcxproj", "{0E400837-67C8-4794-A79F-C912527EB0F8}"
+	ProjectSection(ProjectDependencies) = postProject
+		{029A9F78-2549-46FF-B365-4266A535E6E4} = {029A9F78-2549-46FF-B365-4266A535E6E4}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shader", "Shader", "{42B32F92-7B49-4D45-8F10-46B17E294C82}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GLSL", "GLSL", "{7A9416FA-8A5E-4B9F-B941-784F3B3BA51C}"
+	ProjectSection(SolutionItems) = preProject
+		Samples\Rendering\Shader\GLSL\SimpleTriangle.frag = Samples\Rendering\Shader\GLSL\SimpleTriangle.frag
+		Samples\Rendering\Shader\GLSL\SimpleTriangle.vert = Samples\Rendering\Shader\GLSL\SimpleTriangle.vert
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Others", "Others", "{16C71F54-E749-4A45-9CED-58C2251F4B7F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "01-Engine", "01-Engine", "{5B56BE34-C812-4C7E-9522-37668F1C3ECC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NebulaEngine", "Engine\NebulaEngine\NebulaEngine.csproj", "{87D1E012-504B-4437-B025-0A4AEFE8C1F2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0A15349B-BF8C-4F8A-BEF6-1F6BA631690B} = {0A15349B-BF8C-4F8A-BEF6-1F6BA631690B}
+		{20F8F450-F420-4850-9198-460966F00CB9} = {20F8F450-F420-4850-9198-460966F00CB9}
+		{2559850E-93EB-4095-AC4B-6E94F1DD40C0} = {2559850E-93EB-4095-AC4B-6E94F1DD40C0}
+		{38F10E99-94B2-4DF2-80F2-3DD7319728A4} = {38F10E99-94B2-4DF2-80F2-3DD7319728A4}
+		{47AB1DD6-11A7-4F0E-81F5-67AF87BF3810} = {47AB1DD6-11A7-4F0E-81F5-67AF87BF3810}
+		{53325655-FD23-4EB2-A353-F61425888374} = {53325655-FD23-4EB2-A353-F61425888374}
+		{8B80DBDF-A0B9-46E2-865B-4D42A092BD15} = {8B80DBDF-A0B9-46E2-865B-4D42A092BD15}
+		{CAA51B31-2B28-4C37-BB66-FA85762AAF8F} = {CAA51B31-2B28-4C37-BB66-FA85762AAF8F}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Engine", "Engine\Engine\Engine.vcxproj", "{2559850E-93EB-4095-AC4B-6E94F1DD40C0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0A15349B-BF8C-4F8A-BEF6-1F6BA631690B} = {0A15349B-BF8C-4F8A-BEF6-1F6BA631690B}
+		{38F10E99-94B2-4DF2-80F2-3DD7319728A4} = {38F10E99-94B2-4DF2-80F2-3DD7319728A4}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{E946E1B7-0807-428B-85E1-7BC144572024}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowHostTest", "Test\WindowHostTest\WindowHostTest.csproj", "{36AEF810-29B4-48CB-BEC7-672176AB1E46}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowHostTest.Desktop", "Test\WindowHostTest.Desktop\WindowHostTest.Desktop.csproj", "{A5B71710-1069-4FC2-8032-C234E0B90BC0}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RHI.Vulkan", "Core\RHI.Vulkan\RHI.Vulkan.vcxproj", "{8B80DBDF-A0B9-46E2-865B-4D42A092BD15}"
+	ProjectSection(ProjectDependencies) = postProject
+		{44C699A5-6DEA-4EC6-B89C-0A6C6F3B672E} = {44C699A5-6DEA-4EC6-B89C-0A6C6F3B672E}
+		{47AB1DD6-11A7-4F0E-81F5-67AF87BF3810} = {47AB1DD6-11A7-4F0E-81F5-67AF87BF3810}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RHI.DX12", "Core\RHI.DX12\RHI.DX12.vcxproj", "{CAA51B31-2B28-4C37-BB66-FA85762AAF8F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{47AB1DD6-11A7-4F0E-81F5-67AF87BF3810} = {47AB1DD6-11A7-4F0E-81F5-67AF87BF3810}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RHI.OpenGL", "Core\RHI.OpenGL\RHI.OpenGL.vcxproj", "{53325655-FD23-4EB2-A353-F61425888374}"
+	ProjectSection(ProjectDependencies) = postProject
+		{47AB1DD6-11A7-4F0E-81F5-67AF87BF3810} = {47AB1DD6-11A7-4F0E-81F5-67AF87BF3810}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RHIDLLLoadingTest", "Test\RHIDLLLoadingTest\RHIDLLLoadingTest.vcxproj", "{9C785013-4B86-4CD4-836C-B5A2D2A9C6EC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{47AB1DD6-11A7-4F0E-81F5-67AF87BF3810} = {47AB1DD6-11A7-4F0E-81F5-67AF87BF3810}
+		{53325655-FD23-4EB2-A353-F61425888374} = {53325655-FD23-4EB2-A353-F61425888374}
+		{8B80DBDF-A0B9-46E2-865B-4D42A092BD15} = {8B80DBDF-A0B9-46E2-865B-4D42A092BD15}
+		{CAA51B31-2B28-4C37-BB66-FA85762AAF8F} = {CAA51B31-2B28-4C37-BB66-FA85762AAF8F}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EngineTest", "Test\EngineTest\EngineTest.vcxproj", "{E4CF8C2E-833C-481B-BA2C-E8FAA3FEEBB9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2559850E-93EB-4095-AC4B-6E94F1DD40C0} = {2559850E-93EB-4095-AC4B-6E94F1DD40C0}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectBuilderDll", "Editor\ProjectBuilderDll\ProjectBuilderDll.csproj", "{CAC0D4C2-D102-4A86-9EDC-6F8844129E76}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SolutionManager", "Editor\SolutionManager\SolutionManager.vcxproj", "{E495BF49-D4E8-4C17-9528-BF724A4064C7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NebulaEngineTest", "Test\NebulaEngineTest\NebulaEngineTest.csproj", "{4ADE4E0E-6BE5-4F8E-8C54-FB1A93DB7C47}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core.ECS", "Core\Core.ECS\Core.ECS.csproj", "{38F10E99-94B2-4DF2-80F2-3DD7319728A4}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core.Mathematic", "Core\Core.Mathematic\Core.Mathematic.csproj", "{0A15349B-BF8C-4F8A-BEF6-1F6BA631690B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NebulaBuilder", "Editor\Builder\NebulaBuilder.csproj", "{13FB6A68-238E-459C-ABA3-4EA7CDE9CCED}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "spdlog", "3rdparty\spdlog\spdlog.vcxproj", "{8A690D84-1504-433A-BA60-4E1883C48012}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core.Debugger", "Core\Core.Debugger\Core.Debugger.vcxproj", "{44C699A5-6DEA-4EC6-B89C-0A6C6F3B672E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{47AB1DD6-11A7-4F0E-81F5-67AF87BF3810} = {47AB1DD6-11A7-4F0E-81F5-67AF87BF3810}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RayTracing", "Samples\RayTracingInOneWeekend\RayTracing\RayTracing.vcxproj", "{73D17CE5-2194-4B8E-877A-4AC1E845351E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RayTracing", "RayTracing", "{A54FCB4A-823A-4E5D-BCFE-B7390CEDC436}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RayTracingNext", "Samples\RayTracingTheNextWeek\RayTracingNext\RayTracingNext.vcxproj", "{6150EF5E-DEA3-411F-BA5B-2A1241669AB1}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MonteCarlo", "Samples\Monte-Carlo-Integration\MonteCarlo\MonteCarlo.vcxproj", "{5BF8E29A-24B8-4C5B-9CED-AC0835D9FD79}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RayTracingTheRest", "Samples\RayTracingTheRestOfLife\RayTracingTheRest\RayTracingTheRest.vcxproj", "{D4E6BD34-4F28-40A3-B16C-A3FB75F8D2F9}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core.Platform", "Core\Core.Platform\Core.Platform.vcxproj", "{43B2F072-81AF-42C7-B6E6-DB3EAF13BB9E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dxc", "dxc", "{14F7BFEE-7C4D-4949-A445-274ACEB81580}"
+	ProjectSection(SolutionItems) = preProject
+		3rdparty\dxc\inc\d3d12shader.h = 3rdparty\dxc\inc\d3d12shader.h
+		3rdparty\dxc\bin\arm64\dxc.exe = 3rdparty\dxc\bin\arm64\dxc.exe
+		3rdparty\dxc\bin\x64\dxc.exe = 3rdparty\dxc\bin\x64\dxc.exe
+		3rdparty\dxc\bin\x86\dxc.exe = 3rdparty\dxc\bin\x86\dxc.exe
+		3rdparty\dxc\inc\dxcapi.h = 3rdparty\dxc\inc\dxcapi.h
+		3rdparty\dxc\inc\dxcerrors.h = 3rdparty\dxc\inc\dxcerrors.h
+		3rdparty\dxc\inc\dxcisense.h = 3rdparty\dxc\inc\dxcisense.h
+		3rdparty\dxc\bin\arm64\dxcompiler.dll = 3rdparty\dxc\bin\arm64\dxcompiler.dll
+		3rdparty\dxc\bin\x64\dxcompiler.dll = 3rdparty\dxc\bin\x64\dxcompiler.dll
+		3rdparty\dxc\bin\x86\dxcompiler.dll = 3rdparty\dxc\bin\x86\dxcompiler.dll
+		3rdparty\dxc\lib\arm64\dxcompiler.lib = 3rdparty\dxc\lib\arm64\dxcompiler.lib
+		3rdparty\dxc\lib\x64\dxcompiler.lib = 3rdparty\dxc\lib\x64\dxcompiler.lib
+		3rdparty\dxc\lib\x86\dxcompiler.lib = 3rdparty\dxc\lib\x86\dxcompiler.lib
+		3rdparty\dxc\bin\arm64\dxil.dll = 3rdparty\dxc\bin\arm64\dxil.dll
+		3rdparty\dxc\bin\x64\dxil.dll = 3rdparty\dxc\bin\x64\dxil.dll
+		3rdparty\dxc\bin\x86\dxil.dll = 3rdparty\dxc\bin\x86\dxil.dll
+		3rdparty\dxc\LICENSE-LLVM.txt = 3rdparty\dxc\LICENSE-LLVM.txt
+		3rdparty\dxc\LICENSE-MIT.txt = 3rdparty\dxc\LICENSE-MIT.txt
+		3rdparty\dxc\LICENSE-MS.txt = 3rdparty\dxc\LICENSE-MS.txt
+		3rdparty\dxc\README.md = 3rdparty\dxc\README.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CppSharpGeneratorTest", "Test\CppSharpGeneratorTest\CppSharpGeneratorTest.csproj", "{CB267A5C-F73B-4C3A-B5C2-1390936FAA03}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CppSharp", "CppSharp", "{AA651298-B9AB-4A8E-A0BC-C4E3973DDDA5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CppSharpInvokerTest", "Test\CppSharpInvokerTest\CppSharpInvokerTest.csproj", "{28BCA7A9-26B5-42A3-8F99-DE4DA63D6154}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpBindingGenerator", "CSharpBindingGenerator\CSharpBindingGenerator.csproj", "{68FB723D-E699-452E-B680-ED467EC1FA3C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoGenerated", "AutoGenerated\AutoGenerated.csproj", "{DD4777A7-3A45-42D3-8FED-27275B36BFED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebugLogTest", "Test\DebugLogTest\DebugLogTest.csproj", "{6EDB5495-2619-4D04-B4D1-4AF0719BF6AC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "vulkan", "vulkan", "{8D6C440B-7D81-4BAC-9E73-332FAE4ADA18}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "bin", "bin", "{7F2761B5-EEA0-4C0C-9FFD-96E924DA7874}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "include", "include", "{49513476-AAE6-4A8F-81CA-8787530D17A9}"
 	ProjectSection(SolutionItems) = preProject
 		3rdparty\vulkan\Include\dxc\dxcapi.h = 3rdparty\vulkan\Include\dxc\dxcapi.h
 		3rdparty\vulkan\Include\dxc\WinAdapter.h = 3rdparty\vulkan\Include\dxc\WinAdapter.h
@@ -715,149 +862,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "03-3rdparty", "03-3rdparty"
 		3rdparty\vulkan\Include\vulkan_xcb.h = 3rdparty\vulkan\Include\vulkan_xcb.h
 		3rdparty\vulkan\Include\vulkan_xlib.h = 3rdparty\vulkan\Include\vulkan_xlib.h
 		3rdparty\vulkan\Include\vulkan_xlib_xrandr.h = 3rdparty\vulkan\Include\vulkan_xlib_xrandr.h
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "lib", "lib", "{D79E017B-B9EA-476A-A0D4-6EBA403004E3}"
+	ProjectSection(SolutionItems) = preProject
 		3rdparty\vulkan\Lib\vulkan-1.lib = 3rdparty\vulkan\Lib\vulkan-1.lib
 	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IApplication", "Samples\Rendering\Common\IApplication\IApplication.vcxproj", "{029A9F78-2549-46FF-B365-4266A535E6E4}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{DDE1C704-41D1-48DC-A5BD-AC839AE6B75B}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VulkanApplication", "Samples\Rendering\Vulkan\VulkanApplication\VulkanApplication.vcxproj", "{0E400837-67C8-4794-A79F-C912527EB0F8}"
-	ProjectSection(ProjectDependencies) = postProject
-		{029A9F78-2549-46FF-B365-4266A535E6E4} = {029A9F78-2549-46FF-B365-4266A535E6E4}
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shader", "Shader", "{42B32F92-7B49-4D45-8F10-46B17E294C82}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GLSL", "GLSL", "{7A9416FA-8A5E-4B9F-B941-784F3B3BA51C}"
-	ProjectSection(SolutionItems) = preProject
-		Samples\Rendering\Shader\GLSL\SimpleTriangle.frag = Samples\Rendering\Shader\GLSL\SimpleTriangle.frag
-		Samples\Rendering\Shader\GLSL\SimpleTriangle.vert = Samples\Rendering\Shader\GLSL\SimpleTriangle.vert
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Others", "Others", "{16C71F54-E749-4A45-9CED-58C2251F4B7F}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "01-Engine", "01-Engine", "{5B56BE34-C812-4C7E-9522-37668F1C3ECC}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NebulaEngine", "Engine\NebulaEngine\NebulaEngine.csproj", "{87D1E012-504B-4437-B025-0A4AEFE8C1F2}"
-	ProjectSection(ProjectDependencies) = postProject
-		{0A15349B-BF8C-4F8A-BEF6-1F6BA631690B} = {0A15349B-BF8C-4F8A-BEF6-1F6BA631690B}
-		{20F8F450-F420-4850-9198-460966F00CB9} = {20F8F450-F420-4850-9198-460966F00CB9}
-		{2559850E-93EB-4095-AC4B-6E94F1DD40C0} = {2559850E-93EB-4095-AC4B-6E94F1DD40C0}
-		{38F10E99-94B2-4DF2-80F2-3DD7319728A4} = {38F10E99-94B2-4DF2-80F2-3DD7319728A4}
-		{47AB1DD6-11A7-4F0E-81F5-67AF87BF3810} = {47AB1DD6-11A7-4F0E-81F5-67AF87BF3810}
-		{53325655-FD23-4EB2-A353-F61425888374} = {53325655-FD23-4EB2-A353-F61425888374}
-		{8B80DBDF-A0B9-46E2-865B-4D42A092BD15} = {8B80DBDF-A0B9-46E2-865B-4D42A092BD15}
-		{CAA51B31-2B28-4C37-BB66-FA85762AAF8F} = {CAA51B31-2B28-4C37-BB66-FA85762AAF8F}
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Engine", "Engine\Engine\Engine.vcxproj", "{2559850E-93EB-4095-AC4B-6E94F1DD40C0}"
-	ProjectSection(ProjectDependencies) = postProject
-		{0A15349B-BF8C-4F8A-BEF6-1F6BA631690B} = {0A15349B-BF8C-4F8A-BEF6-1F6BA631690B}
-		{38F10E99-94B2-4DF2-80F2-3DD7319728A4} = {38F10E99-94B2-4DF2-80F2-3DD7319728A4}
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{E946E1B7-0807-428B-85E1-7BC144572024}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowHostTest", "Test\WindowHostTest\WindowHostTest.csproj", "{36AEF810-29B4-48CB-BEC7-672176AB1E46}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowHostTest.Desktop", "Test\WindowHostTest.Desktop\WindowHostTest.Desktop.csproj", "{A5B71710-1069-4FC2-8032-C234E0B90BC0}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RHI.Vulkan", "Core\RHI.Vulkan\RHI.Vulkan.vcxproj", "{8B80DBDF-A0B9-46E2-865B-4D42A092BD15}"
-	ProjectSection(ProjectDependencies) = postProject
-		{44C699A5-6DEA-4EC6-B89C-0A6C6F3B672E} = {44C699A5-6DEA-4EC6-B89C-0A6C6F3B672E}
-		{47AB1DD6-11A7-4F0E-81F5-67AF87BF3810} = {47AB1DD6-11A7-4F0E-81F5-67AF87BF3810}
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RHI.DX12", "Core\RHI.DX12\RHI.DX12.vcxproj", "{CAA51B31-2B28-4C37-BB66-FA85762AAF8F}"
-	ProjectSection(ProjectDependencies) = postProject
-		{47AB1DD6-11A7-4F0E-81F5-67AF87BF3810} = {47AB1DD6-11A7-4F0E-81F5-67AF87BF3810}
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RHI.OpenGL", "Core\RHI.OpenGL\RHI.OpenGL.vcxproj", "{53325655-FD23-4EB2-A353-F61425888374}"
-	ProjectSection(ProjectDependencies) = postProject
-		{47AB1DD6-11A7-4F0E-81F5-67AF87BF3810} = {47AB1DD6-11A7-4F0E-81F5-67AF87BF3810}
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RHIDLLLoadingTest", "Test\RHIDLLLoadingTest\RHIDLLLoadingTest.vcxproj", "{9C785013-4B86-4CD4-836C-B5A2D2A9C6EC}"
-	ProjectSection(ProjectDependencies) = postProject
-		{47AB1DD6-11A7-4F0E-81F5-67AF87BF3810} = {47AB1DD6-11A7-4F0E-81F5-67AF87BF3810}
-		{53325655-FD23-4EB2-A353-F61425888374} = {53325655-FD23-4EB2-A353-F61425888374}
-		{8B80DBDF-A0B9-46E2-865B-4D42A092BD15} = {8B80DBDF-A0B9-46E2-865B-4D42A092BD15}
-		{CAA51B31-2B28-4C37-BB66-FA85762AAF8F} = {CAA51B31-2B28-4C37-BB66-FA85762AAF8F}
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EngineTest", "Test\EngineTest\EngineTest.vcxproj", "{E4CF8C2E-833C-481B-BA2C-E8FAA3FEEBB9}"
-	ProjectSection(ProjectDependencies) = postProject
-		{2559850E-93EB-4095-AC4B-6E94F1DD40C0} = {2559850E-93EB-4095-AC4B-6E94F1DD40C0}
-	EndProjectSection
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectBuilderDll", "Editor\ProjectBuilderDll\ProjectBuilderDll.csproj", "{CAC0D4C2-D102-4A86-9EDC-6F8844129E76}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SolutionManager", "Editor\SolutionManager\SolutionManager.vcxproj", "{E495BF49-D4E8-4C17-9528-BF724A4064C7}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NebulaEngineTest", "Test\NebulaEngineTest\NebulaEngineTest.csproj", "{4ADE4E0E-6BE5-4F8E-8C54-FB1A93DB7C47}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core.ECS", "Core\Core.ECS\Core.ECS.csproj", "{38F10E99-94B2-4DF2-80F2-3DD7319728A4}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core.Mathematic", "Core\Core.Mathematic\Core.Mathematic.csproj", "{0A15349B-BF8C-4F8A-BEF6-1F6BA631690B}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NebulaBuilder", "Editor\Builder\NebulaBuilder.csproj", "{13FB6A68-238E-459C-ABA3-4EA7CDE9CCED}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "spdlog", "3rdparty\spdlog\spdlog.vcxproj", "{8A690D84-1504-433A-BA60-4E1883C48012}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core.Debugger", "Core\Core.Debugger\Core.Debugger.vcxproj", "{44C699A5-6DEA-4EC6-B89C-0A6C6F3B672E}"
-	ProjectSection(ProjectDependencies) = postProject
-		{47AB1DD6-11A7-4F0E-81F5-67AF87BF3810} = {47AB1DD6-11A7-4F0E-81F5-67AF87BF3810}
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RayTracing", "Samples\RayTracingInOneWeekend\RayTracing\RayTracing.vcxproj", "{73D17CE5-2194-4B8E-877A-4AC1E845351E}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RayTracing", "RayTracing", "{A54FCB4A-823A-4E5D-BCFE-B7390CEDC436}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RayTracingNext", "Samples\RayTracingTheNextWeek\RayTracingNext\RayTracingNext.vcxproj", "{6150EF5E-DEA3-411F-BA5B-2A1241669AB1}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MonteCarlo", "Samples\Monte-Carlo-Integration\MonteCarlo\MonteCarlo.vcxproj", "{5BF8E29A-24B8-4C5B-9CED-AC0835D9FD79}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RayTracingTheRest", "Samples\RayTracingTheRestOfLife\RayTracingTheRest\RayTracingTheRest.vcxproj", "{D4E6BD34-4F28-40A3-B16C-A3FB75F8D2F9}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core.Platform", "Core\Core.Platform\Core.Platform.vcxproj", "{43B2F072-81AF-42C7-B6E6-DB3EAF13BB9E}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dxc", "dxc", "{14F7BFEE-7C4D-4949-A445-274ACEB81580}"
-	ProjectSection(SolutionItems) = preProject
-		3rdparty\dxc\inc\d3d12shader.h = 3rdparty\dxc\inc\d3d12shader.h
-		3rdparty\dxc\bin\arm64\dxc.exe = 3rdparty\dxc\bin\arm64\dxc.exe
-		3rdparty\dxc\bin\x64\dxc.exe = 3rdparty\dxc\bin\x64\dxc.exe
-		3rdparty\dxc\bin\x86\dxc.exe = 3rdparty\dxc\bin\x86\dxc.exe
-		3rdparty\dxc\inc\dxcapi.h = 3rdparty\dxc\inc\dxcapi.h
-		3rdparty\dxc\inc\dxcerrors.h = 3rdparty\dxc\inc\dxcerrors.h
-		3rdparty\dxc\inc\dxcisense.h = 3rdparty\dxc\inc\dxcisense.h
-		3rdparty\dxc\bin\arm64\dxcompiler.dll = 3rdparty\dxc\bin\arm64\dxcompiler.dll
-		3rdparty\dxc\bin\x64\dxcompiler.dll = 3rdparty\dxc\bin\x64\dxcompiler.dll
-		3rdparty\dxc\bin\x86\dxcompiler.dll = 3rdparty\dxc\bin\x86\dxcompiler.dll
-		3rdparty\dxc\lib\arm64\dxcompiler.lib = 3rdparty\dxc\lib\arm64\dxcompiler.lib
-		3rdparty\dxc\lib\x64\dxcompiler.lib = 3rdparty\dxc\lib\x64\dxcompiler.lib
-		3rdparty\dxc\lib\x86\dxcompiler.lib = 3rdparty\dxc\lib\x86\dxcompiler.lib
-		3rdparty\dxc\bin\arm64\dxil.dll = 3rdparty\dxc\bin\arm64\dxil.dll
-		3rdparty\dxc\bin\x64\dxil.dll = 3rdparty\dxc\bin\x64\dxil.dll
-		3rdparty\dxc\bin\x86\dxil.dll = 3rdparty\dxc\bin\x86\dxil.dll
-		3rdparty\dxc\LICENSE-LLVM.txt = 3rdparty\dxc\LICENSE-LLVM.txt
-		3rdparty\dxc\LICENSE-MIT.txt = 3rdparty\dxc\LICENSE-MIT.txt
-		3rdparty\dxc\LICENSE-MS.txt = 3rdparty\dxc\LICENSE-MS.txt
-		3rdparty\dxc\README.md = 3rdparty\dxc\README.md
-	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CppSharpGeneratorTest", "Test\CppSharpGeneratorTest\CppSharpGeneratorTest.csproj", "{CB267A5C-F73B-4C3A-B5C2-1390936FAA03}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CppSharp", "CppSharp", "{AA651298-B9AB-4A8E-A0BC-C4E3973DDDA5}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CppSharpInvokerTest", "Test\CppSharpInvokerTest\CppSharpInvokerTest.csproj", "{28BCA7A9-26B5-42A3-8F99-DE4DA63D6154}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpBindingGenerator", "CSharpBindingGenerator\CSharpBindingGenerator.csproj", "{68FB723D-E699-452E-B680-ED467EC1FA3C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoGenerated", "AutoGenerated\AutoGenerated.csproj", "{DD4777A7-3A45-42D3-8FED-27275B36BFED}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebugLogTest", "Test\DebugLogTest\DebugLogTest.csproj", "{6EDB5495-2619-4D04-B4D1-4AF0719BF6AC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -1741,6 +1751,10 @@ Global
 		{68FB723D-E699-452E-B680-ED467EC1FA3C} = {5B56BE34-C812-4C7E-9522-37668F1C3ECC}
 		{DD4777A7-3A45-42D3-8FED-27275B36BFED} = {5B56BE34-C812-4C7E-9522-37668F1C3ECC}
 		{6EDB5495-2619-4D04-B4D1-4AF0719BF6AC} = {E946E1B7-0807-428B-85E1-7BC144572024}
+		{8D6C440B-7D81-4BAC-9E73-332FAE4ADA18} = {457B3F2F-ABC8-49A4-954D-CF1A41F2FAD8}
+		{7F2761B5-EEA0-4C0C-9FFD-96E924DA7874} = {8D6C440B-7D81-4BAC-9E73-332FAE4ADA18}
+		{49513476-AAE6-4A8F-81CA-8787530D17A9} = {8D6C440B-7D81-4BAC-9E73-332FAE4ADA18}
+		{D79E017B-B9EA-476A-A0D4-6EBA403004E3} = {8D6C440B-7D81-4BAC-9E73-332FAE4ADA18}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CB8D1469-ACB1-4735-A3C8-DA8F4221D2E4}

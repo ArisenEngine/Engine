@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include <vulkan/vulkan_core.h>
-
 #include "RHI/Handles/ImageHandle.h"
 
 namespace NebulaEngine::RHI
