@@ -6,8 +6,8 @@ NebulaEngine::RHI::RHIVkGPUPipeline::~RHIVkGPUPipeline() noexcept
 {
     LOG_DEBUG("[RHIVkGPUPipeline::~RHIVkGPUPipeline]: ~RHIVkGPUPipeline");
 
-    FreePipeline();
-    FreePipelineLayout();
+    FreeAllPipelines();
+    FreeAllPipelineLayouts();
     m_DescriptorSetLayouts.clear();
     m_PushConstantRanges.clear();
 
@@ -17,16 +17,28 @@ NebulaEngine::RHI::RHIVkGPUPipeline::~RHIVkGPUPipeline() noexcept
     
 }
 
-NebulaEngine::RHI::RHIVkGPUPipeline::RHIVkGPUPipeline(RHIVkDevice* device, GPUPipelineStateObject* pso):
-GPUPipeline(), m_Device(device), m_VkDevice(static_cast<VkDevice>(device->GetHandle())), m_PipelineStateObject(pso)
+NebulaEngine::RHI::RHIVkGPUPipeline::RHIVkGPUPipeline(RHIVkDevice* device, GPUPipelineStateObject* pso, u32 maxFramesInFlight):
+GPUPipeline(maxFramesInFlight), m_Device(device), m_VkDevice(static_cast<VkDevice>(device->GetHandle())), m_PipelineStateObject(pso)
 {
-    
+    m_VkGraphicPipelines.resize(maxFramesInFlight);
+    m_VkGraphicsPipelineLayouts.resize(maxFramesInFlight);
+    for(int i = 0; i < maxFramesInFlight; ++i)
+    {
+        m_VkGraphicPipelines[i] = VK_NULL_HANDLE;
+        m_VkGraphicsPipelineLayouts[i] = VK_NULL_HANDLE;
+    }
 }
 
-void NebulaEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(GPUSubPass* subPass)
+void* NebulaEngine::RHI::RHIVkGPUPipeline::GetGraphicsPipeline(u32 frameIndex)
 {
-    FreePipeline();
-    FreePipelineLayout();
+    ASSERT(m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE);
+    return m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight];
+}
+
+void NebulaEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(u32 frameIndex, GPUSubPass* subPass)
+{
+    FreePipeline(frameIndex);
+    FreePipelineLayout(frameIndex);
 
     m_SubPass = subPass;
     ASSERT(m_PipelineStateObject != nullptr);
@@ -39,7 +51,7 @@ void NebulaEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(GPUSubPass* subPa
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(m_PushConstantRanges.size());
         pipelineLayoutInfo.pPushConstantRanges = m_PushConstantRanges.data();
 
-        if (vkCreatePipelineLayout(m_VkDevice, &pipelineLayoutInfo, nullptr, &m_VkGraphicsPipelineLayout) != VK_SUCCESS)
+        if (vkCreatePipelineLayout(m_VkDevice, &pipelineLayoutInfo, nullptr, &m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS)
         {
             LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocVkPipeline]: failed to create pipeline layout!");
         }
@@ -142,13 +154,13 @@ void NebulaEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(GPUSubPass* subPa
         pipelineInfo.pMultisampleState = &multipleSampleInfo;
         pipelineInfo.pColorBlendState = &blendState;
         pipelineInfo.pDynamicState = &dynamicStatesInfo;
-        pipelineInfo.layout = m_VkGraphicsPipelineLayout;
-        pipelineInfo.renderPass = static_cast<VkRenderPass>(subPass->GetOwner()->GetHandle());
+        pipelineInfo.layout = m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight];
+        pipelineInfo.renderPass = static_cast<VkRenderPass>(subPass->GetOwner()->GetHandle(frameIndex));
         pipelineInfo.subpass = subPass->GetIndex();
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pNext = nullptr;
 
-        if (vkCreateGraphicsPipelines(m_VkDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_VkGraphicPipeline) != VK_SUCCESS)
+        if (vkCreateGraphicsPipelines(m_VkDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS)
         {
             LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocPipeline]: failed to create GPU pipeline!");
         }
@@ -161,29 +173,57 @@ const NebulaEngine::RHI::EPipelineBindPoint NebulaEngine::RHI::RHIVkGPUPipeline:
     return m_SubPass->GetBindPoint();
 }
 
-void NebulaEngine::RHI::RHIVkGPUPipeline::FreePipelineLayout()
+void NebulaEngine::RHI::RHIVkGPUPipeline::FreePipelineLayout(u32 frameIndex)
 {
-    if (m_VkGraphicsPipelineLayout != VK_NULL_HANDLE)
+    if (m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE)
     {
-        vkDestroyPipelineLayout(m_VkDevice, m_VkGraphicsPipelineLayout, nullptr);
+        vkDestroyPipelineLayout(m_VkDevice, m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight], nullptr);
         LOG_DEBUG("## Destroy Vulkan Pipeline Layout ##");
-        m_VkGraphicsPipelineLayout = VK_NULL_HANDLE;
+        m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight] = VK_NULL_HANDLE;
     }
 }
 
-void NebulaEngine::RHI::RHIVkGPUPipeline::FreePipeline()
+void NebulaEngine::RHI::RHIVkGPUPipeline::FreePipeline(u32 frameIndex)
 {
-    if (m_VkGraphicPipeline != VK_NULL_HANDLE)
+    if (m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE)
     {
-        vkDestroyPipeline(m_VkDevice, m_VkGraphicPipeline, nullptr);
+        vkDestroyPipeline(m_VkDevice, m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight], nullptr);
         LOG_DEBUG("## Destroy Vulkan Graphic Pipeline ##");
-        m_VkGraphicPipeline = VK_NULL_HANDLE;
+        m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight] = VK_NULL_HANDLE;
     }
 }
 
 void NebulaEngine::RHI::RHIVkGPUPipeline::BindPipelineStateObject(GPUPipelineStateObject* pso)
 {
     m_PipelineStateObject = pso;
+}
+
+void NebulaEngine::RHI::RHIVkGPUPipeline::FreeAllPipelineLayouts()
+{
+    for(int i = 0; i < m_MaxFramesInFlight; ++i)
+    {
+        if (m_VkGraphicsPipelineLayouts[i] != VK_NULL_HANDLE)
+        {
+            vkDestroyPipelineLayout(m_VkDevice, m_VkGraphicsPipelineLayouts[i], nullptr);
+            m_VkGraphicsPipelineLayouts[i] = VK_NULL_HANDLE;
+        }
+    }
+    LOG_DEBUG("## Destroy All Vulkan Pipeline Layouts ##");
+    m_VkGraphicsPipelineLayouts.clear();
+}
+
+void NebulaEngine::RHI::RHIVkGPUPipeline::FreeAllPipelines()
+{
+    for(int i = 0; i < m_MaxFramesInFlight; ++i)
+    {
+        if (m_VkGraphicPipelines[i] != VK_NULL_HANDLE)
+        {
+            vkDestroyPipeline(m_VkDevice, m_VkGraphicPipelines[i], nullptr);
+            m_VkGraphicPipelines[i] = VK_NULL_HANDLE;
+        }
+    }
+    LOG_DEBUG("## Destroy All Vulkan Pipelines ##");
+    m_VkGraphicPipelines.clear();
 }
 
 

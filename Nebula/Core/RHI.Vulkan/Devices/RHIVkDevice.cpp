@@ -1,11 +1,13 @@
 #include "RHIVkDevice.h"
+
+#include "../Handles/RHIVkBufferHandle.h"
 #include "Logger/Logger.h"
 #include "Windows/RenderWindowAPI.h"
 
-NebulaEngine::RHI::RHIVkDevice::RHIVkDevice(Instance* instance, Surface* surface, VkQueue graphicQueue, VkQueue presentQueue, VkDevice device)
-: Device(instance, surface), m_VkGraphicQueue(graphicQueue), m_VkPresentQueue(presentQueue), m_VkDevice(device)
+NebulaEngine::RHI::RHIVkDevice::RHIVkDevice(Instance* instance, Surface* surface, VkQueue graphicQueue, VkQueue presentQueue, VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties)
+: Device(instance, surface), m_VkGraphicQueue(graphicQueue), m_VkPresentQueue(presentQueue), m_VkDevice(device), m_VkPhysicalDeviceMemoryProperties(memoryProperties)
 {
-    m_GPUPipelineManager = new RHIVkGPUPipelineManager(this);
+    m_GPUPipelineManager = new RHIVkGPUPipelineManager(this, m_Instance->GetMaxFramesInFlight());
 }
 
 void NebulaEngine::RHI::RHIVkDevice::DeviceWaitIdle() const
@@ -67,7 +69,7 @@ std::shared_ptr<NebulaEngine::RHI::GPURenderPass> NebulaEngine::RHI::RHIVkDevice
     }
     else
     {
-        renderPass = std::make_shared<RHIVkGPURenderPass>(m_VkDevice);
+        renderPass = std::make_shared<RHIVkGPURenderPass>(m_VkDevice, m_Instance->GetMaxFramesInFlight());
     }
 
     return renderPass;
@@ -88,7 +90,7 @@ std::shared_ptr<NebulaEngine::RHI::FrameBuffer> NebulaEngine::RHI::RHIVkDevice::
     }
     else
     {
-        frameBuffer = std::make_shared<RHIVkFrameBuffer>(m_VkDevice);
+        frameBuffer = std::make_shared<RHIVkFrameBuffer>(m_VkDevice, m_Instance->GetMaxFramesInFlight());
     }
 
     return frameBuffer;
@@ -97,6 +99,27 @@ std::shared_ptr<NebulaEngine::RHI::FrameBuffer> NebulaEngine::RHI::RHIVkDevice::
 void NebulaEngine::RHI::RHIVkDevice::ReleaseFrameBuffer(std::shared_ptr<FrameBuffer> frameBuffer)
 {
     m_FrameBuffers.emplace_back(frameBuffer);
+}
+
+std::shared_ptr<NebulaEngine::RHI::BufferHandle> NebulaEngine::RHI::RHIVkDevice::GetBufferHandle()
+{
+    std::shared_ptr<BufferHandle> bufferHandle;
+    if (m_BufferHandles.size() > 0)
+    {
+        bufferHandle = m_BufferHandles.back();
+        m_BufferHandles.pop_back();
+    }
+    else
+    {
+        bufferHandle = std::make_shared<RHIVkBufferHandle>(this);
+    }
+
+    return bufferHandle;
+}
+
+void NebulaEngine::RHI::RHIVkDevice::ReleaseBufferHandle(std::shared_ptr<BufferHandle> bufferHandle)
+{
+   throw;
 }
 
 void NebulaEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, u32 frameIndex)
@@ -129,6 +152,27 @@ void NebulaEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, u32
     }
 }
 
+NebulaEngine::u32 NebulaEngine::RHI::RHIVkDevice::FindMemoryType(u32 typeFilter, u32 properties)
+{
+    for (uint32_t i = 0; i < m_VkPhysicalDeviceMemoryProperties.memoryTypeCount; ++i)
+    {
+        if ((typeFilter & (1 << i)) && (m_VkPhysicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
+        {
+            return i;
+        }
+       
+    }
+
+    LOG_FATAL("[RHIVkDevice::FindMemoryType]: failed to find suitable memory type!");
+    return -1;
+}
+
+void NebulaEngine::RHI::RHIVkDevice::SetResolution(u32 width, u32 height)
+{
+    m_Instance->UpdateSurfaceCapabilities(m_Surface);
+    m_Surface->GetSwapChain()->SetResolution(width, height);
+}
+
 NebulaEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
 {
     DeviceWaitIdle();
@@ -137,6 +181,7 @@ NebulaEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
     m_RenderPasses.clear();
     m_GPUPrograms.clear();
     m_CommandBufferPools.clear();
+    m_BufferHandles.clear();
     vkDestroyDevice(m_VkDevice, nullptr);
     LOG_DEBUG("## Destroy Vulkan Device ##")
     m_Instance = nullptr;

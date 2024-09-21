@@ -52,8 +52,10 @@ namespace NebulaEngine::RHI
         
         void CreateLogicDevice(u32 windowId) override;
         Device* GetLogicalDevice(u32 windowId) override;
-
+        
         const u32 GetExternalIndex() const override { return VK_SUBPASS_EXTERNAL; }
+
+        void UpdateSurfaceCapabilities(Surface* surface) override;
     protected:
         
         void CheckSwapChainCapabilities() override;

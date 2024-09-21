@@ -9,14 +9,20 @@ namespace NebulaEngine::RHI
    
     public:
         NO_COPY_NO_MOVE(RHIVkBufferHandle)
-        RHIVkBufferHandle(VkDevice device);
+        explicit RHIVkBufferHandle(Device* device);
         ~RHIVkBufferHandle() noexcept override;
-        void* GetHandle() const override { return m_VkBuffer; }
+        void* GetHandle() const override;
 
-        bool AllocBuffer(BufferAllocDesc && desc) override;
+        bool AllocBufferHandle(BufferAllocDesc && desc) override;
+        void FreeBufferHandle() override;
+
+        bool AllocBufferMemory(u32 memoryPropertiesBits) override;
+        void FreeBufferMemory() override;
+        void MemoryCopy(void const* src, u32 offset) override;
     private:
         
         VkBuffer m_VkBuffer { VK_NULL_HANDLE };
-        VkDevice m_VKDevice;
+        Device* m_Device;
+        u64 m_BufferSize {0};
     };
 }

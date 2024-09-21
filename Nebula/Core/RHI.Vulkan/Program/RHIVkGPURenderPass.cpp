@@ -2,23 +2,33 @@
 #include "RHIVkGPUSubPass.h"
 #include "Logger/Logger.h"
 
-NebulaEngine::RHI::RHIVkGPURenderPass::RHIVkGPURenderPass(VkDevice device): GPURenderPass(), m_VkDevice(device)
+NebulaEngine::RHI::RHIVkGPURenderPass::RHIVkGPURenderPass(VkDevice device, u32 maxFramesInFlight): GPURenderPass(maxFramesInFlight), m_VkDevice(device)
 {
+    m_VkRenderPasses.resize(maxFramesInFlight);
+    for(int i = 0; i < maxFramesInFlight; ++i)
+    {
+        m_VkRenderPasses[i] = VK_NULL_HANDLE;
+    }
 }
 
 NebulaEngine::RHI::RHIVkGPURenderPass::~RHIVkGPURenderPass() noexcept
 {
     m_SubpassPool.clear();
     m_SubpassesToDispatch.clear();
-    FreeRenderPass();
+    FreeAllRenderPasses();
     
 }
 
-void NebulaEngine::RHI::RHIVkGPURenderPass::AddAttachmentAction(Format format, ESampleCountFlagBits sample,
-    AttachmentLoadOp colorLoadOp, AttachmentStoreOp colorStoreOp, AttachmentLoadOp stencilLoadOp,
-    AttachmentStoreOp stencilStoreOp, ImageLayout initialLayout, ImageLayout finalLayout)
+void* NebulaEngine::RHI::RHIVkGPURenderPass::GetHandle(u32 frameIndex)
 {
-    ASSERT(m_State == ERenderPassState::NotAllocated);
+    ASSERT(m_VkRenderPasses[frameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE);
+    return m_VkRenderPasses[frameIndex % m_MaxFramesInFlight];
+}
+
+void NebulaEngine::RHI::RHIVkGPURenderPass::AddAttachmentAction(Format format, ESampleCountFlagBits sample,
+                                                                AttachmentLoadOp colorLoadOp, AttachmentStoreOp colorStoreOp, AttachmentLoadOp stencilLoadOp,
+                                                                AttachmentStoreOp stencilStoreOp, ImageLayout initialLayout, ImageLayout finalLayout)
+{
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format = static_cast<VkFormat>(format);
     colorAttachment.samples = static_cast<VkSampleCountFlagBits>(sample);
@@ -34,15 +44,12 @@ void NebulaEngine::RHI::RHIVkGPURenderPass::AddAttachmentAction(Format format, E
 
 NebulaEngine::u32 NebulaEngine::RHI::RHIVkGPURenderPass::GetAttachmentCount()
 {
-    m_State = ERenderPassState::AttachDone;
     return static_cast<u32>(m_AttachmentDescriptions.size());
 }
 
-void NebulaEngine::RHI::RHIVkGPURenderPass::AllocRenderPass()
+void NebulaEngine::RHI::RHIVkGPURenderPass::AllocRenderPass(u32 frameIndex)
 {
     ASSERT(m_SubpassesToDispatch.size() > 0);
-    ASSERT(m_State == ERenderPassState::AttachDone);
-    
     m_SubpassDescriptions.resize(m_SubpassesToDispatch.size());
     m_Dependencies.resize(m_SubpassesToDispatch.size());
     
@@ -98,7 +105,7 @@ void NebulaEngine::RHI::RHIVkGPURenderPass::AllocRenderPass()
     renderPassInfo.dependencyCount = static_cast<uint32_t>(m_Dependencies.size());
     renderPassInfo.pDependencies = m_Dependencies.data();
     
-    if (vkCreateRenderPass(m_VkDevice, &renderPassInfo, nullptr, &m_VkRenderPass) != VK_SUCCESS)
+    if (vkCreateRenderPass(m_VkDevice, &renderPassInfo, nullptr, &m_VkRenderPasses[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("[RHIVkGPURenderPass::AllocRenderPass]: failed to create render pass!");
     }
@@ -106,7 +113,7 @@ void NebulaEngine::RHI::RHIVkGPURenderPass::AllocRenderPass()
     LOG_DEBUG("[RHIVkGPURenderPass::AllocRenderPass]: RenderPass Allocated.");
 }
 
-void NebulaEngine::RHI::RHIVkGPURenderPass::FreeRenderPass()
+void NebulaEngine::RHI::RHIVkGPURenderPass::FreeRenderPass(u32 frameIndex)
 {
     m_AttachmentDescriptions.clear();
     while (m_SubpassesToDispatch.size() > 0)
@@ -117,13 +124,24 @@ void NebulaEngine::RHI::RHIVkGPURenderPass::FreeRenderPass()
         m_SubpassPool.emplace_back(subpass);
     }
     
-    if (m_VkRenderPass != VK_NULL_HANDLE)
+    if (m_VkRenderPasses[frameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE)
     {
-        vkDestroyRenderPass(m_VkDevice, m_VkRenderPass, nullptr);
+        vkDestroyRenderPass(m_VkDevice, m_VkRenderPasses[frameIndex % m_MaxFramesInFlight], nullptr);
         LOG_DEBUG("## Destroy Vulkan Render Pass ##");
     }
+}
 
-    m_State = ERenderPassState::NotAllocated;
+void NebulaEngine::RHI::RHIVkGPURenderPass::FreeAllRenderPasses()
+{
+    for(int i = 0; i < m_MaxFramesInFlight; ++i)
+    {
+        if (m_VkRenderPasses[i] != VK_NULL_HANDLE)
+        {
+            vkDestroyRenderPass(m_VkDevice, m_VkRenderPasses[i], nullptr);
+        }
+    }
+    m_VkRenderPasses.clear();
+    LOG_DEBUG("## Destroy All Vulkan Render Passes ##");
 }
 
 NebulaEngine::RHI::GPUSubPass* NebulaEngine::RHI::RHIVkGPURenderPass::AddSubPass()

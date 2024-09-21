@@ -27,11 +27,18 @@ namespace NebulaEngine::RHI
     {
     public:
         
-        NO_COPY_NO_MOVE(GPUPipelineManager)
-        GPUPipelineManager() = default;
+        NO_COPY_NO_MOVE_NO_DEFAULT(GPUPipelineManager)
+        GPUPipelineManager(u32 maxFramesInFlight);
         virtual ~GPUPipelineManager() noexcept = default;
         virtual GPUPipeline* GetGraphicsPipeline(GPUPipelineStateObject* pso) = 0;
 
         virtual std::unique_ptr<GPUPipelineStateObject> GetPipelineState() = 0;
+    protected:
+        u32 m_MaxFramesInFlight;
     };
+
+    inline GPUPipelineManager::GPUPipelineManager(u32 maxFramesInFlight):m_MaxFramesInFlight(maxFramesInFlight)
+    {
+            
+    }
 }

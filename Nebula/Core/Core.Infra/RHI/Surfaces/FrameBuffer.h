@@ -28,14 +28,19 @@ namespace NebulaEngine::RHI
     class FrameBuffer
     {
     public:
-        NO_COPY_NO_MOVE(FrameBuffer)
-        FrameBuffer() = default;
+        NO_COPY_NO_MOVE_NO_DEFAULT(FrameBuffer)
+        explicit FrameBuffer(u32 maxFramesInFlight);;
         VIRTUAL_DECONSTRUCTOR(FrameBuffer)
-        virtual void* GetHandle() = 0;
+        virtual void* GetHandle(u32 currentFrameIndex) = 0;
         const RenderArea GetRenderArea() const { return m_RenderArea; }
-        virtual void SetAttachment(ImageView* imageView, GPURenderPass* renderPass) = 0;
+        virtual void SetAttachment(u32 frameIndex, ImageView* imageView, GPURenderPass* renderPass) = 0;
         virtual Format GetAttachFormat() = 0;
     protected:
         RenderArea m_RenderArea;
+        u32 m_MaxFramesInFlight;
     };
+
+    inline FrameBuffer::FrameBuffer(u32 maxFramesInFlight): m_RenderArea(), m_MaxFramesInFlight(maxFramesInFlight)
+    {
+    }
 }

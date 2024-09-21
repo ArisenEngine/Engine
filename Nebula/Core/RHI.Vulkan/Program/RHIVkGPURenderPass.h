@@ -16,10 +16,10 @@ namespace NebulaEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkGPURenderPass)
-        RHIVkGPURenderPass(VkDevice device);
+        RHIVkGPURenderPass(VkDevice device, u32 maxFramesInFlight);
         ~RHIVkGPURenderPass() noexcept override;
 
-        void* GetHandle() override { ASSERT(m_VkRenderPass != VK_NULL_HANDLE); return m_VkRenderPass; }
+        void* GetHandle(u32 frameIndex) override;
 
         void AddAttachmentAction(
             Format format,
@@ -31,14 +31,14 @@ namespace NebulaEngine::RHI
 
         u32 GetAttachmentCount() override;
         
-        void AllocRenderPass() override;
-        void FreeRenderPass() override;
-
+        void AllocRenderPass(u32 frameIndex) override;
+        void FreeRenderPass(u32 frameIndex) override;
+        void FreeAllRenderPasses() override;
         GPUSubPass* AddSubPass() override;
         u32 GetSubPassCount() override;
 
     private:
-        VkRenderPass m_VkRenderPass { VK_NULL_HANDLE };
+        Containers::Vector<VkRenderPass> m_VkRenderPasses;
         VkDevice m_VkDevice;
         Containers::Vector<VkAttachmentDescription> m_AttachmentDescriptions;
         Containers::Vector<VkSubpassDescription> m_SubpassDescriptions;

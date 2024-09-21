@@ -13,6 +13,7 @@ namespace NebulaEngine::RHI
     class FrameBuffer;
     class Viewport;
     class ImageHandle;
+    class BufferHandle;
     class GPUPipelineManager;
 
     typedef struct RenderPassBeginDesc
@@ -61,7 +62,7 @@ namespace NebulaEngine::RHI
         virtual void* GetHandlerPointer() = 0;
 
         // Command Interface
-        virtual void BeginRenderPass(RenderPassBeginDesc&& desc) = 0;
+        virtual void BeginRenderPass(u32 frameIndex, RenderPassBeginDesc&& desc) = 0;
         virtual void EndRenderPass() = 0;
         
         virtual void Clear() = 0;
@@ -72,8 +73,9 @@ namespace NebulaEngine::RHI
         virtual void SetViewport(f32 x, f32 y, f32 width, f32 height) = 0;
         virtual void SetScissor(u32 offsetX, u32 offsetY, u32 width, u32 height) = 0;
 
-        virtual void BindPipeline(GPUPipeline* pipeline) = 0;
+        virtual void BindPipeline(u32 frameIndex, GPUPipeline* pipeline) = 0;
         virtual void Draw(u32 vertexCount, u32 instanceCount, u32 firstVertex, u32 firstInstance) = 0;
+        virtual void BindVertexBuffers(u32 firstBinding, Containers::Vector<BufferHandle*> buffers, Containers::Vector<u64> offsets) = 0;
 
     public:
 

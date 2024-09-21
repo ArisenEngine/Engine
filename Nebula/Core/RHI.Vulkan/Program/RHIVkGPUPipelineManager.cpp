@@ -6,7 +6,7 @@
 #include "RHI/Program/GPUPipelineStateObject.h"
 #include "RHI/Program/GPUSubPass.h"
 
-NebulaEngine::RHI::RHIVkGPUPipelineManager::RHIVkGPUPipelineManager(RHIVkDevice* device): GPUPipelineManager(),
+NebulaEngine::RHI::RHIVkGPUPipelineManager::RHIVkGPUPipelineManager(RHIVkDevice* device, u32 maxFramesInFlight): GPUPipelineManager(maxFramesInFlight),
 m_Device(device)
 {
     
@@ -23,7 +23,7 @@ NebulaEngine::RHI::GPUPipeline* NebulaEngine::RHI::RHIVkGPUPipelineManager::GetG
     auto hash = pso->GetHash();
     if (!m_GPUPipelines.contains(hash))
     {
-        m_GPUPipelines.insert({hash, std::make_unique<RHIVkGPUPipeline>(m_Device, pso)});
+        m_GPUPipelines.insert({hash, std::make_unique<RHIVkGPUPipeline>(m_Device, pso, m_MaxFramesInFlight)});
     }
     else
     {

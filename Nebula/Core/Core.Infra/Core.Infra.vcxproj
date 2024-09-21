@@ -34,6 +34,8 @@
     <ClInclude Include="RHI\Enums\Image\Format.h" />
     <ClInclude Include="RHI\Enums\Image\ImageAspectFlagBits.h" />
     <ClInclude Include="RHI\Enums\Memory\EBufferCreateFlagBits.h" />
+    <ClInclude Include="RHI\Enums\Memory\EBufferUsage.h" />
+    <ClInclude Include="RHI\Enums\Memory\EMemoryPropertyFlagBits.h" />
     <ClInclude Include="RHI\Enums\Memory\ImageViewCreateFlagBits.h" />
     <ClInclude Include="RHI\Enums\Memory\ImageViewType.h" />
     <ClInclude Include="RHI\Enums\Memory\MemoryViewType.h" />
@@ -105,9 +107,6 @@
     <Content Include="RHI\Enums\Swapchain\SurfaceTransformFlagBits.h" />
     <Content Include="RHI\Enums\Swapchain\SwapChainCreateFlagBits.h" />
     <Content Include="RHI\Program\GPURenderPass.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Platforms\" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

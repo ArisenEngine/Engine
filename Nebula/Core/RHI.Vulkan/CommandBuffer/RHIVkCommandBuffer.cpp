@@ -1,5 +1,6 @@
 ﻿#include "RHIVkCommandBuffer.h"
 
+#include "RHI/Handles/BufferHandle.h"
 #include "RHI/Synchronization/SynchScope.h"
 
 
@@ -35,14 +36,14 @@ m_RHICommandPool(pool)
     m_State = ECommandState::ReadyForBegin;
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::BeginRenderPass(RenderPassBeginDesc&& desc)
+void NebulaEngine::RHI::RHIVkCommandBuffer::BeginRenderPass(u32 frameIndex, RenderPassBeginDesc&& desc)
 {
     ASSERT(m_State == ECommandState::IsInsideBegin);
     
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = static_cast<VkRenderPass>(desc.renderPass->GetHandle());
-    renderPassInfo.framebuffer = static_cast<VkFramebuffer>(desc.frameBuffer->GetHandle());
+    renderPassInfo.renderPass = static_cast<VkRenderPass>(desc.renderPass->GetHandle(frameIndex));
+    renderPassInfo.framebuffer = static_cast<VkFramebuffer>(desc.frameBuffer->GetHandle(frameIndex));
     auto renderArea = desc.frameBuffer->GetRenderArea();
     renderPassInfo.renderArea.offset = {renderArea.offsetX, renderArea.offsetY};
     renderPassInfo.renderArea.extent = {renderArea.width, renderArea.height};
@@ -137,13 +138,26 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::SetScissor(u32 offsetX, u32 offsetY,
     
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::BindPipeline(GPUPipeline* pipeline)
+void NebulaEngine::RHI::RHIVkCommandBuffer::BindPipeline(u32 frameIndex, GPUPipeline* pipeline)
 {
-    vkCmdBindPipeline(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(pipeline->GetBindPoint()), static_cast<VkPipeline>(pipeline->GetGraphicsPipeline()));
+    vkCmdBindPipeline(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(pipeline->GetBindPoint()), static_cast<VkPipeline>(pipeline->GetGraphicsPipeline(frameIndex)));
 }
 
 void NebulaEngine::RHI::RHIVkCommandBuffer::Draw(u32 vertexCount, u32 instanceCount, u32 firstVertex, u32 firstInstance)
 {
     vkCmdDraw(m_VkCommandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
+}
+
+void NebulaEngine::RHI::RHIVkCommandBuffer::BindVertexBuffers(u32 firstBinding,
+    Containers::Vector<BufferHandle*> buffers, Containers::Vector<u64> offsets)
+{
+    ASSERT(buffers.size() == offsets.size());
+    m_VertexBuffers.resize(buffers.size());
+    for (int i = 0; i < buffers.size(); ++i)
+    {
+        m_VertexBuffers[i] = static_cast<VkBuffer>(buffers[i]->GetHandle());
+    }
+    ASSERT(m_VertexBuffers.size() > 0);
+    vkCmdBindVertexBuffers(m_VkCommandBuffer, firstBinding, buffers.size(), m_VertexBuffers.data(), offsets.data());
 }
 

@@ -19,9 +19,10 @@ NebulaEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* d
         LOG_ERROR("[RHIVkCommandBufferPool::RHIVkCommandBufferPool]: failed to create command pool!");
     }
 
+    m_Fences.resize(maxFramesInFlight);
     for (int i = 0; i < m_MaxFramesInFlight; ++i)
     {
-        m_Fences.emplace_back(std::make_unique<RHIVkFence>(m_VkDevice));
+        m_Fences[i] = std::make_unique<RHIVkFence>(m_VkDevice);
     }
 }
 

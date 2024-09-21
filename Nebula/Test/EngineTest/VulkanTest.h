@@ -16,6 +16,8 @@
 #include "ShaderCompiler/ShaderCompilerAPI.h"
 #include <glm/glm.hpp>
 
+#include "RHI/Handles/BufferHandle.h"
+
 using namespace NebulaEngine;
 
 #ifdef TEST_WINDOWS
@@ -26,6 +28,7 @@ struct RenderContext
     RHI::Device* device;
     std::shared_ptr<RHI::GPURenderPass> renderPass;
     std::shared_ptr<RHI::FrameBuffer> frameBuffer;
+    std::shared_ptr<RHI::BufferHandle> bufferHandle;
     RHI::RHICommandBufferPool* commandPool;
     Containers::Vector<u32> gpuPrograms;
     bool bShouldResize;
@@ -101,6 +104,9 @@ private:
 public:
     EngineTest(): m_Instance(nullptr)
     {
+        // std::set_terminate([](){
+        //     Debugger::Logger::Shutdown();
+        // });
     }
 
     bool Initialize() override
@@ -170,11 +176,12 @@ public:
             g_RenderContexts[i].commandPool = g_RenderContexts[i].device->GetCommandBufferPool(poolId);
             g_RenderContexts[i].renderPass = g_RenderContexts[i].device->GetRenderPass();
             g_RenderContexts[i].frameBuffer = g_RenderContexts[i].device->GetFrameBuffer();
+            g_RenderContexts[i].bufferHandle = g_RenderContexts[i].device->GetBufferHandle();
         }
 
         Platforms::InitDXC();
 
-        auto shaderFileName = L"FullScreen";
+        auto shaderFileName = L"SimpleUnlit";
         namespace fs = std::filesystem;
         auto currentPath = fs::current_path().generic_wstring() + L"\\Shader";
         auto path = currentPath + L"\\" + shaderFileName + L".hlsl";
@@ -252,6 +259,24 @@ public:
             g_RenderContexts[i].gpuPrograms.emplace_back(programId);
         }
 
+        // Upload Vertex Buffer
+        for (int i = 0; i < k_WindowsCount; ++i)
+        {
+            RHI::BufferAllocDesc desc
+            {
+                0,
+                sizeof(vertices[0]) * vertices.size(),
+                RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                RHI::SHARING_MODE_EXCLUSIVE
+            };
+            g_RenderContexts[i].bufferHandle->AllocBufferHandle(std::move(desc));
+            g_RenderContexts[i].bufferHandle->AllocBufferMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        }
+
+        // init Pipeline Assets
+
+        
+        
         return true;
     }
 
@@ -263,9 +288,7 @@ public:
 
             if (g_RenderContexts[i].bShouldResize)
             {
-                g_RenderContexts[i].device
-                ->GetSurface()->GetSwapChain()
-                ->SetResolution(g_RenderContexts[i].newWidth, g_RenderContexts[i].newHeight);
+                g_RenderContexts[i].device->SetResolution(g_RenderContexts[i].newWidth, g_RenderContexts[i].newHeight);
                 g_RenderContexts[i].bShouldResize = false;
             }
         }
@@ -273,10 +296,12 @@ public:
         ++frameIndex;
     }
 
-    void UploadVertex(RHI::GPUPipelineStateObject* pipelineState)
+    void UploadVertex(RHI::GPUPipelineStateObject* pipelineState, RHI::BufferHandle* bufferHandle)
     {
         pipelineState->AddVertexBindingDescription(0, sizeof(Vertex), RHI::VERTEX_INPUT_RATE_VERTEX);
         pipelineState->AddVertexInputAttributeDescription(0, 0, RHI::Format::FORMAT_R32G32_SFLOAT, offsetof(Vertex, pos));
+        pipelineState->AddVertexInputAttributeDescription(1, 0, RHI::Format::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color));
+        bufferHandle->MemoryCopy(vertices.data(), 0);
     }
 
     void AddDynamicState(RHI::GPUPipelineStateObject* pipelineState)
@@ -287,7 +312,7 @@ public:
     
     void RecordSubmitPresent(RenderContext&& context)
     {
-        auto commandBuffer = context.commandPool->GetCommandBuffer();
+        auto commandBuffer = context.commandPool->GetCommandBuffer(frameIndex);
 
         // Record cmd
         commandBuffer->Begin(frameIndex);
@@ -299,7 +324,7 @@ public:
             auto backBufferView = static_cast<RHI::ImageView*>(backBuffer->GetMemoryView());
             auto format = backBufferView->GetFormat();
             
-            renderPass->FreeRenderPass();
+            renderPass->FreeRenderPass(frameIndex);
             
             renderPass->AddAttachmentAction(
                 format, RHI::SAMPLE_COUNT_1_BIT,
@@ -325,9 +350,9 @@ public:
                 subpass->SetSubPassDescriptionFlag(0);
             }
 
-            renderPass->AllocRenderPass();
+            renderPass->AllocRenderPass(frameIndex);
 
-            frameBuffer->SetAttachment(backBufferView, renderPass);
+            frameBuffer->SetAttachment(frameIndex, backBufferView, renderPass);
 
             {
                 RHI::RenderPassBeginDesc desc
@@ -338,7 +363,7 @@ public:
                 };
 
 
-                commandBuffer->BeginRenderPass(std::move(desc));
+                commandBuffer->BeginRenderPass(frameIndex, std::move(desc));
 
                 {
                     auto pipelineManager = context.device->GetGPUPipelineManager();
@@ -351,7 +376,7 @@ public:
 
                     {
                         // Pipeline State Object
-                        UploadVertex(pipelineState.get());
+                        UploadVertex(pipelineState.get(), context.bufferHandle.get());
                         AddDynamicState(pipelineState.get());
                         pipelineState->SetPrimitiveState(RHI::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false);
                         pipelineState->SetDepthClampEnable(false);
@@ -373,8 +398,8 @@ public:
 
                         auto pipeline = pipelineManager->GetGraphicsPipeline(pipelineState.get());
 
-                        pipeline->AllocGraphicPipeline(subpass);
-                        commandBuffer->BindPipeline(pipeline);
+                        pipeline->AllocGraphicPipeline(frameIndex, subpass);
+                        commandBuffer->BindPipeline(frameIndex, pipeline);
                     }
 
                     {
@@ -384,6 +409,11 @@ public:
                         commandBuffer->SetScissor(0, 0, backBufferView->GetWidth(), backBufferView->GetHeight());
                     }
 
+                    {
+                        // bind vertex buffers
+                        commandBuffer->BindVertexBuffers(0, { context.bufferHandle.get() }, {0});
+                    }
+                    
                     {
                         // draw call
                         commandBuffer->Draw(3, 1, 0, 0);
@@ -400,7 +430,7 @@ public:
             context.device->Submit(commandBuffer.get(), frameIndex);
         }
 
-        context.commandPool->ReleaseCommandBuffer(commandBuffer);
+        context.commandPool->ReleaseCommandBuffer(frameIndex, commandBuffer);
         
         {
             // Present
@@ -416,6 +446,7 @@ public:
         {
             renderContext.device->DeviceWaitIdle();
         }
+        
         g_RenderContexts.clear();
         
         // RHI dispose

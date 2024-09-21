@@ -869,6 +869,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "lib", "lib", "{D79E017B-B9E
 		3rdparty\vulkan\Lib\vulkan-1.lib = 3rdparty\vulkan\Lib\vulkan-1.lib
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "steam", "steam", "{5B5EA8D9-BB2E-4F70-A312-0C9E51FD9B40}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1755,6 +1757,7 @@ Global
 		{7F2761B5-EEA0-4C0C-9FFD-96E924DA7874} = {8D6C440B-7D81-4BAC-9E73-332FAE4ADA18}
 		{49513476-AAE6-4A8F-81CA-8787530D17A9} = {8D6C440B-7D81-4BAC-9E73-332FAE4ADA18}
 		{D79E017B-B9EA-476A-A0D4-6EBA403004E3} = {8D6C440B-7D81-4BAC-9E73-332FAE4ADA18}
+		{5B5EA8D9-BB2E-4F70-A312-0C9E51FD9B40} = {457B3F2F-ABC8-49A4-954D-CF1A41F2FAD8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CB8D1469-ACB1-4735-A3C8-DA8F4221D2E4}
