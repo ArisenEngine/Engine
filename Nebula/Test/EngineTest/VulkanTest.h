@@ -14,6 +14,7 @@
 #include "RHI/Program/GPUPipelineStateObject.h"
 #include "Windows/RenderWindowAPI.h"
 #include "ShaderCompiler/ShaderCompilerAPI.h"
+#include <glm/glm.hpp>
 
 using namespace NebulaEngine;
 
@@ -76,6 +77,19 @@ LRESULT WinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
     }
     return DefWindowProc(hwnd, msg, wparam, lparam);
 }
+
+struct Vertex
+{
+    glm::vec2 pos;
+    glm::vec3 color;
+};
+
+const std::vector<Vertex> vertices =
+{
+    {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+};
 
 
 class EngineTest : public Test
@@ -160,9 +174,10 @@ public:
 
         Platforms::InitDXC();
 
+        auto shaderFileName = L"FullScreen";
         namespace fs = std::filesystem;
         auto currentPath = fs::current_path().generic_wstring() + L"\\Shader";
-        auto path = currentPath + L"\\FullScreen.hlsl";
+        auto path = currentPath + L"\\" + shaderFileName + L".hlsl";
 
         Platforms::ShaderCompileParams vertexParams
         {
@@ -175,7 +190,7 @@ public:
             RHI::ProgramStage::Vertex,
             {},
             {},
-            currentPath + L"\\FullScreen.vert.spirv",
+            currentPath + L"\\"+ shaderFileName + L".vert.spirv",
             true
         };
 
@@ -212,7 +227,7 @@ public:
             RHI::ProgramStage::Fragment,
             {},
             {},
-            currentPath + L"\\FullScreen.frag.spirv",
+            currentPath + L"\\" + shaderFileName + L".frag.spirv",
             true
         };
 
@@ -258,6 +273,18 @@ public:
         ++frameIndex;
     }
 
+    void UploadVertex(RHI::GPUPipelineStateObject* pipelineState)
+    {
+        pipelineState->AddVertexBindingDescription(0, sizeof(Vertex), RHI::VERTEX_INPUT_RATE_VERTEX);
+        pipelineState->AddVertexInputAttributeDescription(0, 0, RHI::Format::FORMAT_R32G32_SFLOAT, offsetof(Vertex, pos));
+    }
+
+    void AddDynamicState(RHI::GPUPipelineStateObject* pipelineState)
+    {
+        pipelineState->AddDynamicPipelineState(RHI::DYNAMIC_STATE_SCISSOR);
+        pipelineState->AddDynamicPipelineState(RHI::DYNAMIC_STATE_VIEWPORT);
+    }
+    
     void RecordSubmitPresent(RenderContext&& context)
     {
         auto commandBuffer = context.commandPool->GetCommandBuffer();
@@ -324,8 +351,8 @@ public:
 
                     {
                         // Pipeline State Object
-                        pipelineState->AddDynamicPipelineState(RHI::DYNAMIC_STATE_SCISSOR);
-                        pipelineState->AddDynamicPipelineState(RHI::DYNAMIC_STATE_VIEWPORT);
+                        UploadVertex(pipelineState.get());
+                        AddDynamicState(pipelineState.get());
                         pipelineState->SetPrimitiveState(RHI::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false);
                         pipelineState->SetDepthClampEnable(false);
                         pipelineState->SetRasterizerDiscardEnable(false);

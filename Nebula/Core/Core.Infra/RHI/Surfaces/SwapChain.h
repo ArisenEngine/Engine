@@ -3,7 +3,7 @@
 #include "RHI/Enums/Image/ColorSpace.h"
 #include "RHI/Enums/Image/Format.h"
 #include "RHI/Enums/Swapchain/PresentMode.h"
-#include "RHI/Enums/Swapchain/SharingMode.h"
+#include "RHI/Enums/Memory/SharingMode.h"
 #include "RHI/Synchronization/RHISemaphore.h"
 
 namespace NebulaEngine::RHI

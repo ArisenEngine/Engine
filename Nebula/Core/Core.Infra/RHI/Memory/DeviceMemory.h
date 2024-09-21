@@ -3,11 +3,11 @@
 
 namespace NebulaEngine::RHI
 {
-    class RawMemory
+    class DeviceMemory
     {
     public:
-        NO_COPY_NO_MOVE_NO_DEFAULT(RawMemory)
-        virtual ~RawMemory() noexcept
+        NO_COPY_NO_MOVE_NO_DEFAULT(DeviceMemory)
+        virtual ~DeviceMemory() noexcept
         {
             m_TotalBytes = 0;
         }
