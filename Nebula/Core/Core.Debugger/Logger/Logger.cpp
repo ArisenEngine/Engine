@@ -72,6 +72,8 @@ bool Logger::Initialize()
 		// note: registered loggers *must* be thread safe for this to work correctly!
 		spdlog::flush_every(std::chrono::seconds(3));
 
+		spdlog::flush_on(spdlog::level::err);
+		
 		// default
 #if _DEBUG
 		spdlog::set_level(spdlog::level::trace);
@@ -79,7 +81,6 @@ bool Logger::Initialize()
 		spdlog::set_level(spdlog::level::info);
 #endif
 		
-
 		spdlog::set_pattern("[%Y-%m-%d %T.%e][process %p][thread %t][%l] %v");
 	}
 	catch (const spdlog::spdlog_ex &ex)	
@@ -102,6 +103,7 @@ void Logger::Shutdown()
 {
 	// Release all spdlog resources, and drop all loggers in the registry.
 	// This is optional (only mandatory if using windows + async log).
+	spdlog::default_logger()->flush();
 	spdlog::shutdown();
 }
 

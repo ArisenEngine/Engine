@@ -13,18 +13,10 @@ namespace NebulaEngine::RHI
     {
         
     public:
-
-        enum class ERenderPassState : u8
-        {
-            NotAllocated,
-            Allocated,
-            AttachDone
-        };
-        
-        NO_COPY_NO_MOVE(GPURenderPass)
-        GPURenderPass() = default;
+        NO_COPY_NO_MOVE_NO_DEFAULT(GPURenderPass)
+        GPURenderPass(u32 maxFramesInFlight);
         VIRTUAL_DECONSTRUCTOR(GPURenderPass)
-        virtual void* GetHandle() = 0;
+        virtual void* GetHandle(u32 frameIndex) = 0;
 
         virtual void AddAttachmentAction(
             Format format,
@@ -38,12 +30,16 @@ namespace NebulaEngine::RHI
 
         virtual GPUSubPass* AddSubPass() = 0;
         virtual u32 GetSubPassCount() = 0;
-        virtual void AllocRenderPass() = 0;
-        virtual void FreeRenderPass() = 0;
+        virtual void AllocRenderPass(u32 frameIndex) = 0;
+        virtual void FreeRenderPass(u32 frameIndex) = 0;
+        virtual void FreeAllRenderPasses() = 0;
         
     protected:
-
-        ERenderPassState m_State { ERenderPassState::NotAllocated };
+        u32 m_MaxFramesInFlight;
     };
-    
+
+    inline GPURenderPass::GPURenderPass(u32 maxFramesInFlight):m_MaxFramesInFlight(maxFramesInFlight)
+    {
+            
+    }
 }

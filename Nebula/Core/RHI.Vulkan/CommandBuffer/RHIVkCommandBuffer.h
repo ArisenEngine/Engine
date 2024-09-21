@@ -18,7 +18,7 @@ namespace  NebulaEngine::RHI
         void* GetHandle() const override { return m_VkCommandBuffer; }
         void* GetHandlerPointer() override { return &m_VkCommandBuffer; }
 
-        void BeginRenderPass(RenderPassBeginDesc&& desc) override;
+        void BeginRenderPass(u32 frameIndex, RenderPassBeginDesc&& desc) override;
         void EndRenderPass() override;
         
         void Clear() override;
@@ -29,13 +29,16 @@ namespace  NebulaEngine::RHI
         void SetViewport(f32 x, f32 y, f32 width, f32 height) override;
         void SetScissor(u32 offsetX, u32 offsetY, u32 width, u32 height) override;
 
-        void BindPipeline(GPUPipeline* pipeline) override;
+        void BindPipeline(u32 frameIndex, GPUPipeline* pipeline) override;
 
         void Draw(u32 vertexCount, u32 instanceCount, u32 firstVertex, u32 firstInstance) override;
+        void BindVertexBuffers(u32 firstBinding, Containers::Vector<BufferHandle*> buffers, Containers::Vector<u64> offsets) override;
+        
     private:
         VkCommandBuffer m_VkCommandBuffer;
         VkCommandPool m_VkCommandPool;
         VkDevice m_VkDevice;
         RHIVkCommandBufferPool* m_RHICommandPool;
+        Containers::Vector<VkBuffer> m_VertexBuffers;
     };
 }

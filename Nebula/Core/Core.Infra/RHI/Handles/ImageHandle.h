@@ -7,11 +7,8 @@ namespace NebulaEngine::RHI
     class ImageHandle : public MemoryHandle
     {
     public:
-        NO_COPY_NO_MOVE_NO_DEFAULT(ImageHandle)
-        ImageHandle(bool needRecycleMemory) : MemoryHandle(needRecycleMemory)
-        {
-            
-        }
+        NO_COPY_NO_MOVE(ImageHandle)
+        ImageHandle() = default;
         ~ImageHandle() noexcept override = default;
     };
 }

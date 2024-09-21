@@ -1,4 +1,6 @@
-﻿namespace NebulaEngine::RHI
+﻿#pragma once
+
+namespace NebulaEngine::RHI
 {
     typedef enum MemoryViewType
     {

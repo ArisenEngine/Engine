@@ -462,8 +462,15 @@ void NebulaEngine::RHI::RHIVkInstance::CreateLogicDevice(u32 windowId)
     VkQueue presentQueue;
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(m_CurrentPhysicsDevice, &memProperties);
+    
     LOG_INFO("[RHIVkInstance::CreateLogicDevice]: Create Logical Device for surface " + std::to_string(windowId));
-    m_LogicalDevices.insert({windowId, std::make_unique<RHIVkDevice>(this, &rhiSurface, graphicQueue, presentQueue, device)});
+    m_LogicalDevices.insert(
+        {
+            windowId,
+            std::make_unique<RHIVkDevice>(this, &rhiSurface, graphicQueue, presentQueue, device, memProperties)
+        });
 }
 
 NebulaEngine::RHI::Device* NebulaEngine::RHI::RHIVkInstance::GetLogicalDevice(u32 windowId)
@@ -481,6 +488,16 @@ const NebulaEngine::RHI::Format NebulaEngine::RHI::RHIVkInstance::GetSuitableSwa
 const NebulaEngine::RHI::PresentMode NebulaEngine::RHI::RHIVkInstance::GetSuitablePresentMode(u32&& windowId)
 {
     return PRESENT_MODE_FIFO;
+}
+
+void NebulaEngine::RHI::RHIVkInstance::UpdateSurfaceCapabilities(Surface* surface)
+{
+    auto vkSurface = static_cast<VkSurfaceKHR>(
+           surface->GetHandle());
+    auto swapChainSupportDetail = QuerySwapChainSupport(vkSurface);
+
+    RHIVkSurface* rhiSurface = static_cast<RHIVkSurface*>(surface);
+    rhiSurface->SetSwapChainSupportDetail(std::move(swapChainSupportDetail));
 }
 
 void NebulaEngine::RHI::RHIVkInstance::CheckSwapChainCapabilities()

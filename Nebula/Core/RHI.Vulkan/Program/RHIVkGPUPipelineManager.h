@@ -12,7 +12,7 @@ namespace NebulaEngine::RHI
 
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkGPUPipelineManager);
-        RHIVkGPUPipelineManager(RHIVkDevice* device);
+        RHIVkGPUPipelineManager(RHIVkDevice* device, u32 maxFramesInFlight);
         ~RHIVkGPUPipelineManager() noexcept override;
 
         GPUPipeline* GetGraphicsPipeline(GPUPipelineStateObject* pso) override;

@@ -4,13 +4,13 @@
 #include "Logger/Logger.h"
 
 NebulaEngine::RHI::RHIVkImageHandle::RHIVkImageHandle(VkDevice device):
-ImageHandle(true), m_VKDevice(device)
+ImageHandle(), m_VKDevice(device)
 {
     
 }
 
 NebulaEngine::RHI::RHIVkImageHandle::RHIVkImageHandle(VkDevice device, VkImage image, ImageViewDesc desc):
-ImageHandle(false), m_VKDevice(device), m_VkImage(image)
+ImageHandle(), m_VKDevice(device), m_VkImage(image)
 {
     m_MemoryView = new RHIVkImageView(desc, device, image);
 }

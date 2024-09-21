@@ -63,6 +63,7 @@ namespace NebulaEngine::RHI
         virtual Surface& GetSurface(u32&& windowId) = 0;
         virtual void SetResolution(const u32&& windowId, const u32&& width, const u32&& height) = 0;
 
+        virtual void UpdateSurfaceCapabilities(Surface* surface) = 0;
 
         virtual bool IsPhysicalDeviceAvailable() const = 0;
         virtual bool IsSurfacesAvailable() const = 0;

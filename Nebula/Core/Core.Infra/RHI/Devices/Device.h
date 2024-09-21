@@ -2,6 +2,12 @@
 #include "../../Common/CommandHeaders.h"
 #include "../RHICommon.h"
 #include "RHI/CommandBuffer/RHICommandBufferPool.h"
+#include "RHI/Enums/Memory/EMemoryPropertyFlagBits.h"
+
+namespace NebulaEngine::RHI
+{
+    class BufferHandle;
+}
 
 namespace NebulaEngine::RHI
 {
@@ -45,9 +51,17 @@ namespace NebulaEngine::RHI
         virtual std::shared_ptr<FrameBuffer> GetFrameBuffer() = 0;
         virtual void ReleaseFrameBuffer(std::shared_ptr<FrameBuffer> frameBuffer) = 0;
 
+        virtual std::shared_ptr<BufferHandle> GetBufferHandle() = 0;
+        virtual void ReleaseBufferHandle(std::shared_ptr<BufferHandle> bufferHandle) = 0;
+
         virtual GPUPipelineManager* GetGPUPipelineManager() const = 0;
 
         virtual void Submit(RHICommandBuffer* commandBuffer, u32 frameIndex) = 0;
+
+        virtual u32 FindMemoryType(u32 typeFilter, u32 properties) = 0;
+
+        virtual void SetResolution(u32 width, u32 height) = 0;
+        
     protected:
         
         Instance* m_Instance;

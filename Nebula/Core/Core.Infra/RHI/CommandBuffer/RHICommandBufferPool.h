@@ -12,8 +12,7 @@ namespace NebulaEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHICommandBufferPool)
-        RHICommandBufferPool(Device* device, u32 maxFramesInFlight) :
-        m_Device(device), m_MaxFramesInFlight(maxFramesInFlight) { };
+        RHICommandBufferPool(Device* device, u32 maxFramesInFlight);;
         virtual ~RHICommandBufferPool()
         {
             m_Fences.clear();
@@ -21,13 +20,15 @@ namespace NebulaEngine::RHI
             m_CommandBuffers.clear();
         }
         virtual void* GetHandle() = 0;
-        std::shared_ptr<RHICommandBuffer> GetCommandBuffer()
+        std::shared_ptr<RHICommandBuffer> GetCommandBuffer(u32 currentFrameIndex)
         {
             std::shared_ptr<RHICommandBuffer> commandBuffer;
-            if (m_CommandBuffers.size() > 0)
+
+            auto index = currentFrameIndex % m_MaxFramesInFlight;
+            if (m_CommandBuffers[index].size() > 0)
             {
-                commandBuffer = m_CommandBuffers.back();
-                m_CommandBuffers.pop_back();
+                commandBuffer = m_CommandBuffers[index].back();
+                m_CommandBuffers[index].pop_back();
             }
             else
             {
@@ -37,10 +38,11 @@ namespace NebulaEngine::RHI
             return commandBuffer;
         }
         
-        void ReleaseCommandBuffer(std::shared_ptr<RHICommandBuffer> commandBuffer)
+        void ReleaseCommandBuffer(u32 currentFrameIndex, std::shared_ptr<RHICommandBuffer> commandBuffer)
         {
+            auto index = currentFrameIndex % m_MaxFramesInFlight;
             commandBuffer->Clear();
-            m_CommandBuffers.emplace_back(commandBuffer);
+            m_CommandBuffers[index].emplace_back(commandBuffer);
         }
         virtual std::shared_ptr<RHICommandBuffer> CreateCommandBuffer() = 0;
         
@@ -52,7 +54,13 @@ namespace NebulaEngine::RHI
     protected:
         Containers::Vector<std::unique_ptr<RHIFence>> m_Fences;
         Device* m_Device;
-        Containers::Vector<std::shared_ptr<RHICommandBuffer>> m_CommandBuffers;
+        Containers::Vector<Containers::Vector<std::shared_ptr<RHICommandBuffer>>> m_CommandBuffers;
         u32 m_MaxFramesInFlight;
     };
+
+    inline RHICommandBufferPool::RHICommandBufferPool(Device* device, u32 maxFramesInFlight):
+        m_Device(device), m_MaxFramesInFlight(maxFramesInFlight)
+    {
+        m_CommandBuffers.resize(m_MaxFramesInFlight);
+    }
 }

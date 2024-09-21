@@ -87,7 +87,7 @@ int main()
 	catch (const std::exception &ex)
 	{
 		LOG_FATAL(ex.what());
-	}
+	} 
 	
 	test.Shutdown();
 		
