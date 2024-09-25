@@ -45,6 +45,7 @@
     <ClInclude Include="RHI\Enums\Pipeline\EBlendOp.h" />
     <ClInclude Include="RHI\Enums\Pipeline\EColorComponentFlag.h" />
     <ClInclude Include="RHI\Enums\Pipeline\ECommandBufferLevel.h" />
+    <ClInclude Include="RHI\Enums\Pipeline\ECommandBufferUsageFlagBits.h" />
     <ClInclude Include="RHI\Enums\Pipeline\ECullMode.h" />
     <ClInclude Include="RHI\Enums\Pipeline\EDynamicState.h" />
     <ClInclude Include="RHI\Enums\Pipeline\EFrontFace.h" />

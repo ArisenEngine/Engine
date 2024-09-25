@@ -1,6 +1,6 @@
 #pragma once
 #include "MemoryHandle.h"
-#include "RHI/Enums/Memory/EBufferUsage.h"
+#include "RHI/Enums/Memory/SharingMode.h"
 
 
 namespace NebulaEngine::RHI
@@ -9,7 +9,7 @@ namespace NebulaEngine::RHI
     {
         u32 createFlagBits;
         u64 size;
-        EBufferUsageFlagBits usage;
+        u32 usage;
         SharingMode sharingMode;
         u32 queueFamilyIndexCount;
         const void* pQueueFamilyIndices;
@@ -28,5 +28,17 @@ namespace NebulaEngine::RHI
         virtual void FreeBufferMemory() = 0;
         virtual void MemoryCopy(void const* src, u32 offset) = 0;
         ~BufferHandle() noexcept override = default;
+
+    public:
+        const u64 BufferSize() const;
+        
+    protected:
+
+        u64 m_BufferSize {0};
     };
+
+    inline const u64 BufferHandle::BufferSize() const
+    {
+        return m_BufferSize;
+    }
 }

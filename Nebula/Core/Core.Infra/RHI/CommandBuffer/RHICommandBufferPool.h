@@ -17,7 +17,6 @@ namespace NebulaEngine::RHI
         {
             m_Fences.clear();
             m_Device = nullptr;
-            m_CommandBuffers.clear();
         }
         virtual void* GetHandle() = 0;
         std::shared_ptr<RHICommandBuffer> GetCommandBuffer(u32 currentFrameIndex)
@@ -41,7 +40,7 @@ namespace NebulaEngine::RHI
         void ReleaseCommandBuffer(u32 currentFrameIndex, std::shared_ptr<RHICommandBuffer> commandBuffer)
         {
             auto index = currentFrameIndex % m_MaxFramesInFlight;
-            commandBuffer->Clear();
+            commandBuffer->Release();
             m_CommandBuffers[index].emplace_back(commandBuffer);
         }
         virtual std::shared_ptr<RHICommandBuffer> CreateCommandBuffer() = 0;
@@ -54,6 +53,7 @@ namespace NebulaEngine::RHI
     protected:
         Containers::Vector<std::unique_ptr<RHIFence>> m_Fences;
         Device* m_Device;
+        // NOTE: should clear by inherent class 
         Containers::Vector<Containers::Vector<std::shared_ptr<RHICommandBuffer>>> m_CommandBuffers;
         u32 m_MaxFramesInFlight;
     };
