@@ -29,7 +29,8 @@ struct RenderContext
     RHI::Device* device;
     std::shared_ptr<RHI::GPURenderPass> renderPass;
     std::shared_ptr<RHI::FrameBuffer> frameBuffer;
-    std::shared_ptr<RHI::BufferHandle> bufferHandle;
+    std::shared_ptr<RHI::BufferHandle> vertexBufferHandle;
+    std::shared_ptr<RHI::BufferHandle> indicesBufferHandle;
     RHI::RHICommandBufferPool* commandPool;
     Containers::Vector<u32> gpuPrograms;
     bool bShouldResize;
@@ -88,13 +89,16 @@ struct Vertex
     glm::vec3 color;
 };
 
-const std::vector<Vertex> vertices =
-{
-    {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+const std::vector<Vertex> vertices = {
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
 };
 
+const std::vector<uint16_t> indices = {
+    0, 1, 2, 2, 3, 0
+};
 
 class EngineTest : public Test
 {
@@ -177,7 +181,8 @@ public:
             g_RenderContexts[i].commandPool = g_RenderContexts[i].device->GetCommandBufferPool(poolId);
             g_RenderContexts[i].renderPass = g_RenderContexts[i].device->GetRenderPass();
             g_RenderContexts[i].frameBuffer = g_RenderContexts[i].device->GetFrameBuffer();
-            g_RenderContexts[i].bufferHandle = g_RenderContexts[i].device->GetBufferHandle();
+            g_RenderContexts[i].vertexBufferHandle = g_RenderContexts[i].device->GetBufferHandle();
+            g_RenderContexts[i].indicesBufferHandle = g_RenderContexts[i].device->GetBufferHandle();
         }
 
         Platforms::InitDXC();
@@ -263,15 +268,21 @@ public:
         // Upload Vertex Buffer
         for (int i = 0; i < k_WindowsCount; ++i)
         {
-            RHI::BufferAllocDesc desc
-            {
+            g_RenderContexts[i].vertexBufferHandle->AllocBufferHandle({
                 0,
                 sizeof(vertices[0]) * vertices.size(),
                 RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT,
                 RHI::SHARING_MODE_EXCLUSIVE
-            };
-            g_RenderContexts[i].bufferHandle->AllocBufferHandle(std::move(desc));
-            g_RenderContexts[i].bufferHandle->AllocBufferMemory(RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            });
+            g_RenderContexts[i].vertexBufferHandle->AllocBufferMemory(RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+            g_RenderContexts[i].indicesBufferHandle->AllocBufferHandle({
+                0,
+                sizeof(indices[0]) * indices.size(),
+                RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_INDEX_BUFFER_BIT,
+                RHI::SHARING_MODE_EXCLUSIVE
+            });
+            g_RenderContexts[i].indicesBufferHandle->AllocBufferMemory(RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
             UploadVertex(g_RenderContexts[i]);
         }
@@ -299,22 +310,37 @@ public:
     void UploadVertex(RenderContext const& context)
     {
         auto device = context.device;
-        auto bufferHandle = context.bufferHandle;
+        auto vertexBufferHandle = context.vertexBufferHandle;
+        auto indicesBufferHandle = context.indicesBufferHandle;
         
-        auto stagingBuffer = device->GetBufferHandle();
-        stagingBuffer->AllocBufferHandle({
+        auto vertexStagingBufferHandle = device->GetBufferHandle();
+        vertexStagingBufferHandle->AllocBufferHandle({
             0,
                sizeof(vertices[0]) * vertices.size(),
                RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
                RHI::SHARING_MODE_EXCLUSIVE
         });
-        stagingBuffer->AllocBufferMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        stagingBuffer->MemoryCopy(vertices.data(), 0);
+        vertexStagingBufferHandle->AllocBufferMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        vertexStagingBufferHandle->MemoryCopy(vertices.data(), 0);
+
+        auto indicesStagingBufferHandle = device->GetBufferHandle();
+        indicesStagingBufferHandle->AllocBufferHandle({
+            0,
+               sizeof(indices[0]) * indices.size(),
+               RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
+               RHI::SHARING_MODE_EXCLUSIVE
+        });
+        indicesStagingBufferHandle->AllocBufferMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        indicesStagingBufferHandle->MemoryCopy(indices.data(), 0);
 
         auto commandBuffer = context.commandPool->GetCommandBuffer(frameIndex);
         commandBuffer->Begin(frameIndex, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-        commandBuffer->CopyBuffer(stagingBuffer.get(), 0,
-            bufferHandle.get(), 0, bufferHandle->BufferSize());
+        commandBuffer->CopyBuffer(vertexStagingBufferHandle.get(), 0,
+            vertexBufferHandle.get(), 0, vertexBufferHandle->BufferSize());
+
+        commandBuffer->CopyBuffer(indicesStagingBufferHandle.get(), 0,
+           indicesBufferHandle.get(), 0, indicesBufferHandle->BufferSize());
+        
         commandBuffer->End();
         device->Submit(commandBuffer.get(), frameIndex);
         device->GraphicQueueWaitIdle();
@@ -432,13 +458,16 @@ public:
 
                     {
                         // bind vertex buffers
-                        commandBuffer->BindVertexBuffers(0, { context.bufferHandle.get() }, {0});
+                        commandBuffer->BindVertexBuffers(context.vertexBufferHandle.get(), 0);
+                        commandBuffer->BindIndexBuffer(context.indicesBufferHandle.get(), 0, RHI::INDEX_TYPE_UINT16);
                     }
                     
                     {
                         // draw call
-                        commandBuffer->Draw(3, 1, 0, 0);
+                        // commandBuffer->Draw(3, 1, 0, 0, 0);
+                        commandBuffer->DrawIndexed(indices.size(), 1, 0, 0, 0, 0);
                     }
+                    
                 }
                 commandBuffer->EndRenderPass();
             }

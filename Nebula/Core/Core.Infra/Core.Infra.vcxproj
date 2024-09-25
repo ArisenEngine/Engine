@@ -49,6 +49,7 @@
     <ClInclude Include="RHI\Enums\Pipeline\ECullMode.h" />
     <ClInclude Include="RHI\Enums\Pipeline\EDynamicState.h" />
     <ClInclude Include="RHI\Enums\Pipeline\EFrontFace.h" />
+    <ClInclude Include="RHI\Enums\Pipeline\EIndexType.h" />
     <ClInclude Include="RHI\Enums\Pipeline\ELogicOp.h" />
     <ClInclude Include="RHI\Enums\Pipeline\EPipelineBindPoint.h" />
     <ClInclude Include="RHI\Enums\Pipeline\EPipelineStageFlag.h" />
