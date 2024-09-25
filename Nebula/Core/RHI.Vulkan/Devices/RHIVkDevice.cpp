@@ -15,6 +15,11 @@ void NebulaEngine::RHI::RHIVkDevice::DeviceWaitIdle() const
     vkDeviceWaitIdle(m_VkDevice);
 }
 
+void NebulaEngine::RHI::RHIVkDevice::GraphicQueueWaitIdle() const
+{
+    vkQueueWaitIdle(m_VkGraphicQueue);
+}
+
 NebulaEngine::u32 NebulaEngine::RHI::RHIVkDevice::CreateGPUProgram()
 {
     ASSERT(m_VkDevice != VK_NULL_HANDLE);
@@ -122,31 +127,36 @@ void NebulaEngine::RHI::RHIVkDevice::ReleaseBufferHandle(std::shared_ptr<BufferH
    throw;
 }
 
+
+// TODO: move submit info to CommandBuffer
+
 void NebulaEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, u32 frameIndex)
 {
     ASSERT(commandBuffer->ReadyForSubmit());
-    
+
+    auto rhiVkCommandBuffer = static_cast<RHIVkCommandBuffer*>(commandBuffer);
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    VkSemaphore waitSemaphores[] = { static_cast<VkSemaphore>(
-            m_Surface->GetSwapChain()->GetImageAvailableSemaphore(frameIndex)->GetHandle())
-    };
-    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = waitSemaphores;
-    submitInfo.pWaitDstStageMask = waitStages;
+    
+    if (rhiVkCommandBuffer->GetSignalSemaphoresCount() > 0)
+    {
+        submitInfo.waitSemaphoreCount = rhiVkCommandBuffer->GetWaitSemaphoresCount();
+        submitInfo.pWaitSemaphores = rhiVkCommandBuffer->GetWaitSemaphores();
+        submitInfo.pWaitDstStageMask = rhiVkCommandBuffer->GetWaitStageMask();
+    }
 
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = (static_cast<VkCommandBuffer*>(commandBuffer->GetHandlerPointer()));
 
-    VkSemaphore signalSemaphores[] = { static_cast<VkSemaphore>(
-            m_Surface->GetSwapChain()->GetRenderFinishSemaphore(frameIndex)->GetHandle()) };
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = signalSemaphores;
+    // VkSemaphore signalSemaphores[] = { static_cast<VkSemaphore>(
+    //         m_Surface->GetSwapChain()->GetRenderFinishSemaphore(frameIndex)->GetHandle()) };
+    if (rhiVkCommandBuffer->GetSignalSemaphoresCount() > 0)
+    {
+        submitInfo.signalSemaphoreCount = rhiVkCommandBuffer->GetSignalSemaphoresCount();
+        submitInfo.pSignalSemaphores = rhiVkCommandBuffer->GetSignalSemaphores();
+    }
 
-    if (vkQueueSubmit(m_VkGraphicQueue, 1, &submitInfo, static_cast<VkFence>(
-                          commandBuffer->GetOwner()->GetFence(frameIndex)->GetHandle())) != VK_SUCCESS)
+    if (vkQueueSubmit(m_VkGraphicQueue, 1, &submitInfo, rhiVkCommandBuffer->GetSubmissionFence()) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("[RHIVkDevice::Submit]: failed to submit draw command buffer!");
     }

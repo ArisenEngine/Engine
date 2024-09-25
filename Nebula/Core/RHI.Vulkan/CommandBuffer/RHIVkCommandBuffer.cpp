@@ -7,7 +7,8 @@
 NebulaEngine::RHI::RHIVkCommandBuffer::~RHIVkCommandBuffer() noexcept
 {
     LOG_DEBUG("[RHIVkCommandBuffer::~RHIVkCommandBuffer]: ~RHIVkCommandBuffer");
-    
+    LOG_DEBUG("## Destory Vulkan CommandBuffer ##");
+    // vkFreeCommandBuffers(m_VkDevice, m_VkCommandPool, 1, &m_VkCommandBuffer);
 }
 
 NebulaEngine::RHI::RHIVkCommandBuffer::RHIVkCommandBuffer(RHIVkDevice* device, RHIVkCommandBufferPool* pool)
@@ -36,6 +37,16 @@ m_RHICommandPool(pool)
     m_State = ECommandState::ReadyForBegin;
 }
 
+void* NebulaEngine::RHI::RHIVkCommandBuffer::GetHandle() const
+{
+    return m_VkCommandBuffer;
+}
+
+void* NebulaEngine::RHI::RHIVkCommandBuffer::GetHandlerPointer()
+{
+    return &m_VkCommandBuffer;
+}
+
 void NebulaEngine::RHI::RHIVkCommandBuffer::BeginRenderPass(u32 frameIndex, RenderPassBeginDesc&& desc)
 {
     ASSERT(m_State == ECommandState::IsInsideBegin);
@@ -61,34 +72,34 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::EndRenderPass()
 {
     ASSERT(m_State == ECommandState::IsInsideRenderPass);
     vkCmdEndRenderPass(m_VkCommandBuffer);
-    m_State = ECommandState::ReadyForEnd;
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::Clear()
+void NebulaEngine::RHI::RHIVkCommandBuffer::Reset()
 {
-    m_State = ECommandState::NeedReset;
+    m_WaitSemaphores.clear();
+    m_SignalSemaphores.clear();
+    m_WaitStages.clear();
+    m_State = ECommandState::ReadyForBegin;
+    m_VkBeginInfo = {};
+    m_SubmissionFence.reset();
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::Begin(u32 frameIndex)
+void NebulaEngine::RHI::RHIVkCommandBuffer::ReadyForBegin(u32 frameIndex)
 {
-    {
         {
-            ScopeLock ScopeLock(m_CommandBufferPool->GetFence(frameIndex));
             if(m_State == ECommandState::NeedReset)
             {
+                Reset();
                 vkResetCommandBuffer(m_VkCommandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
             }
-            else
-            {
-                ASSERT(m_State == ECommandState::ReadyForBegin);
-            }
         }
-    }
 
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    // todo: set usage
-    if (vkBeginCommandBuffer(m_VkCommandBuffer, &beginInfo) != VK_SUCCESS)
+    ASSERT(m_State == ECommandState::ReadyForBegin);
+}
+
+void NebulaEngine::RHI::RHIVkCommandBuffer::DoBegin()
+{
+    if (vkBeginCommandBuffer(m_VkCommandBuffer, &m_VkBeginInfo) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("failed to begin recording command buffer!");
     }
@@ -96,9 +107,24 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::Begin(u32 frameIndex)
     m_State = ECommandState::IsInsideBegin;
 }
 
+void NebulaEngine::RHI::RHIVkCommandBuffer::Begin(u32 frameIndex)
+{
+    ReadyForBegin(frameIndex);
+    m_VkBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    DoBegin();
+}
+
+void NebulaEngine::RHI::RHIVkCommandBuffer::Begin(u32 frameIndex, u32 commandBufferUsage)
+{
+    ReadyForBegin(frameIndex);
+    m_VkBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    m_VkBeginInfo.flags = (commandBufferUsage);
+    DoBegin();
+}
+
 void NebulaEngine::RHI::RHIVkCommandBuffer::End()
 {
-    ASSERT(m_State == ECommandState::ReadyForEnd);
+    ASSERT(m_WaitSemaphores.size() == m_WaitStages.size());
     
     if (vkEndCommandBuffer(m_VkCommandBuffer) != VK_SUCCESS)
     {
@@ -159,5 +185,78 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::BindVertexBuffers(u32 firstBinding,
     }
     ASSERT(m_VertexBuffers.size() > 0);
     vkCmdBindVertexBuffers(m_VkCommandBuffer, firstBinding, buffers.size(), m_VertexBuffers.data(), offsets.data());
+}
+
+void NebulaEngine::RHI::RHIVkCommandBuffer::WaitSemaphore(RHISemaphore* semaphore, EPipelineStageFlag stage)
+{
+    m_WaitSemaphores.emplace_back(static_cast<VkSemaphore>(semaphore->GetHandle()));
+    m_WaitStages.emplace_back(static_cast<VkPipelineStageFlags>(stage));
+}
+
+const VkSemaphore* NebulaEngine::RHI::RHIVkCommandBuffer::GetWaitSemaphores() const
+{
+    return m_WaitSemaphores.data();
+}
+
+NebulaEngine::u32 NebulaEngine::RHI::RHIVkCommandBuffer::GetWaitSemaphoresCount() const
+{
+    return m_WaitSemaphores.size();
+}
+
+void NebulaEngine::RHI::RHIVkCommandBuffer::SignalSemaphore(RHISemaphore* semaphore)
+{
+    m_SignalSemaphores.emplace_back(static_cast<VkSemaphore>(semaphore->GetHandle()));
+}
+
+const VkSemaphore* NebulaEngine::RHI::RHIVkCommandBuffer::GetSignalSemaphores() const
+{
+    return m_SignalSemaphores.data();
+}
+
+NebulaEngine::u32 NebulaEngine::RHI::RHIVkCommandBuffer::GetSignalSemaphoresCount() const
+{
+    return m_SignalSemaphores.size();
+}
+
+const VkPipelineStageFlags* NebulaEngine::RHI::RHIVkCommandBuffer::GetWaitStageMask() const
+{
+    return m_WaitStages.data();
+}
+
+void NebulaEngine::RHI::RHIVkCommandBuffer::CopyBuffer(BufferHandle const * src, u64 srcOffset,
+                                                       BufferHandle const * dst, u64 dstOffset, u64 size)
+{
+    // TODO: support multiple copy regions
+    ASSERT(m_State == ECommandState::IsInsideBegin);
+    VkBufferCopy copyRegion {};
+    copyRegion.srcOffset = srcOffset;
+    copyRegion.dstOffset = dstOffset;
+    copyRegion.size = size;
+    vkCmdCopyBuffer(m_VkCommandBuffer,
+        static_cast<VkBuffer>(src->GetHandle()),
+        static_cast<VkBuffer>(dst->GetHandle()),
+        1, &copyRegion);
+}
+
+VkFence NebulaEngine::RHI::RHIVkCommandBuffer::GetSubmissionFence() const
+{
+    return m_SubmissionFence.has_value() ? m_SubmissionFence.value() : VK_NULL_HANDLE;
+}
+
+void NebulaEngine::RHI::RHIVkCommandBuffer::InjectFence(RHIFence* fence)
+{
+    m_SubmissionFence = static_cast<VkFence>(fence->GetHandle());
+}
+
+void NebulaEngine::RHI::RHIVkCommandBuffer::WaitForFence(u32 frameIndex)
+{
+   {
+       ScopeLock ScopeLock(m_CommandBufferPool->GetFence(frameIndex));
+   }
+}
+
+void NebulaEngine::RHI::RHIVkCommandBuffer::Release()
+{
+    m_State = ECommandState::NeedReset;
 }
 

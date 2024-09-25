@@ -5,6 +5,7 @@
 #include "RHI\RHILoader.h"
 #include "RHI/Instance.h"
 #include "RHI/Enums/Pipeline/EAccessFlag.h"
+#include "RHI/Enums/Memory/EBufferUsage.h"
 #include "RHI/Enums/Pipeline/EColorComponentFlag.h"
 #include "RHI/Surfaces/Surface.h"
 #include "RHI/Handles/ImageHandle.h"
@@ -266,14 +267,16 @@ public:
             {
                 0,
                 sizeof(vertices[0]) * vertices.size(),
-                RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT,
                 RHI::SHARING_MODE_EXCLUSIVE
             };
             g_RenderContexts[i].bufferHandle->AllocBufferHandle(std::move(desc));
-            g_RenderContexts[i].bufferHandle->AllocBufferMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
-            g_RenderContexts[i].bufferHandle->MemoryCopy(vertices.data(), 0);
+            g_RenderContexts[i].bufferHandle->AllocBufferMemory(RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+            UploadVertex(g_RenderContexts[i]);
         }
 
+       
         return true;
     }
 
@@ -293,12 +296,28 @@ public:
         ++frameIndex;
     }
 
-    void UploadVertex(RHI::GPUPipelineStateObject* pipelineState, RHI::BufferHandle* bufferHandle)
+    void UploadVertex(RenderContext const& context)
     {
-        pipelineState->AddVertexBindingDescription(0, sizeof(Vertex), RHI::VERTEX_INPUT_RATE_VERTEX);
-        pipelineState->AddVertexInputAttributeDescription(0, 0, RHI::Format::FORMAT_R32G32_SFLOAT, offsetof(Vertex, pos));
-        pipelineState->AddVertexInputAttributeDescription(1, 0, RHI::Format::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color));
-       
+        auto device = context.device;
+        auto bufferHandle = context.bufferHandle;
+        
+        auto stagingBuffer = device->GetBufferHandle();
+        stagingBuffer->AllocBufferHandle({
+            0,
+               sizeof(vertices[0]) * vertices.size(),
+               RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
+               RHI::SHARING_MODE_EXCLUSIVE
+        });
+        stagingBuffer->AllocBufferMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        stagingBuffer->MemoryCopy(vertices.data(), 0);
+
+        auto commandBuffer = context.commandPool->GetCommandBuffer(frameIndex);
+        commandBuffer->Begin(frameIndex, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        commandBuffer->CopyBuffer(stagingBuffer.get(), 0,
+            bufferHandle.get(), 0, bufferHandle->BufferSize());
+        commandBuffer->End();
+        device->Submit(commandBuffer.get(), frameIndex);
+        device->GraphicQueueWaitIdle();
     }
 
     void AddDynamicState(RHI::GPUPipelineStateObject* pipelineState)
@@ -311,9 +330,17 @@ public:
     {
         auto commandBuffer = context.commandPool->GetCommandBuffer(frameIndex);
 
-        // Record cmd
-        commandBuffer->Begin(frameIndex);
+        auto pipelineManager = context.device->GetGPUPipelineManager();
 
+        auto pipelineState = pipelineManager->GetPipelineState();
+
+        pipelineState->AddVertexBindingDescription(0, sizeof(Vertex), RHI::VERTEX_INPUT_RATE_VERTEX);
+        pipelineState->AddVertexInputAttributeDescription(0, 0, RHI::Format::FORMAT_R32G32_SFLOAT, offsetof(Vertex, pos));
+        pipelineState->AddVertexInputAttributeDescription(1, 0, RHI::Format::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color));
+        
+        // Record cmd
+        commandBuffer->WaitForFence(frameIndex);
+        commandBuffer->Begin(frameIndex);
         {
             auto renderPass = context.renderPass.get();
             auto frameBuffer = context.frameBuffer.get();
@@ -363,9 +390,6 @@ public:
                 commandBuffer->BeginRenderPass(frameIndex, std::move(desc));
 
                 {
-                    auto pipelineManager = context.device->GetGPUPipelineManager();
-
-                    auto pipelineState = pipelineManager->GetPipelineState();
                     for (auto programId : context.gpuPrograms)
                     {
                         pipelineState->AddProgram(programId);
@@ -373,7 +397,7 @@ public:
 
                     {
                         // Pipeline State Object
-                        UploadVertex(pipelineState.get(), context.bufferHandle.get());
+                      
                         AddDynamicState(pipelineState.get());
                         pipelineState->SetPrimitiveState(RHI::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false);
                         pipelineState->SetDepthClampEnable(false);
@@ -423,6 +447,13 @@ public:
         commandBuffer->End();
 
         {
+            auto swapchain = context.device->GetSurface()->GetSwapChain();
+            commandBuffer->WaitSemaphore(
+                swapchain->GetImageAvailableSemaphore(frameIndex),
+                RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+                );
+            commandBuffer->SignalSemaphore(swapchain->GetRenderFinishSemaphore(frameIndex));
+            commandBuffer->InjectFence(commandBuffer->GetOwner()->GetFence(frameIndex));
             // Submit
             context.device->Submit(commandBuffer.get(), frameIndex);
         }

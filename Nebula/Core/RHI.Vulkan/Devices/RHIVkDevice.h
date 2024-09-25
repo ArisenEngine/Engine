@@ -2,14 +2,9 @@
 #include <vulkan/vulkan_core.h>
 #include "RHI/Devices/Device.h"
 #include "../Surfaces/RHIVkSurface.h"
-#include "../Common.h"
-#include <optional>
-
 #include "../CommandBuffer/RHIVkCommandBufferPool.h"
 #include "../Program/RHIVkGPUPipelineManager.h"
 #include "../Program/RHIVkGPUProgram.h"
-
-#include "Logger/Logger.h"
 
 namespace NebulaEngine::RHI
 {
@@ -25,6 +20,7 @@ namespace NebulaEngine::RHI
         RHIVkDevice(Instance* instance, Surface* surface, VkQueue graphicQueue, VkQueue presentQueue, VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties);
 
         void DeviceWaitIdle() const override;
+        void GraphicQueueWaitIdle() const override;
         u32 CreateGPUProgram() override;
         GPUProgram* GetGPUProgram(u32 programId) override;
         void DestroyGPUProgram(u32 programId) override;

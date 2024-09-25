@@ -3,7 +3,20 @@
 #include "../Program/GPURenderPass.h"
 #include "../Surfaces/FrameBuffer.h"
 #include "RHI/Devices/Device.h"
+#include "RHI/Enums/Pipeline/ECommandBufferUsageFlagBits.h"
+#include "RHI/Enums/Pipeline/EPipelineStageFlag.h"
 #include "RHI/Enums/Subpass/ESubpassContents.h"
+#include "RHI/Handles/BufferHandle.h"
+
+namespace NebulaEngine::RHI
+{
+    class RHIFence;
+}
+
+namespace NebulaEngine::RHI
+{
+    class RHISemaphore;
+}
 
 namespace NebulaEngine::RHI
 {
@@ -33,7 +46,6 @@ namespace NebulaEngine::RHI
             ReadyForBegin,
             IsInsideBegin,
             IsInsideRenderPass,
-            ReadyForEnd,
             ReadyForSubmit,
             NotAllocated,
             NeedReset,
@@ -65,8 +77,8 @@ namespace NebulaEngine::RHI
         virtual void BeginRenderPass(u32 frameIndex, RenderPassBeginDesc&& desc) = 0;
         virtual void EndRenderPass() = 0;
         
-        virtual void Clear() = 0;
         virtual void Begin(u32 frameIndex) = 0;
+        virtual void Begin(u32 frameIndex, u32 commandBufferUsage) = 0;
         virtual void End() = 0;
         
         virtual void SetViewport(f32 x, f32 y, f32 width, f32 height, f32 minDepth, f32 maxDepth) = 0;
@@ -77,13 +89,31 @@ namespace NebulaEngine::RHI
         virtual void Draw(u32 vertexCount, u32 instanceCount, u32 firstVertex, u32 firstInstance) = 0;
         virtual void BindVertexBuffers(u32 firstBinding, Containers::Vector<BufferHandle*> buffers, Containers::Vector<u64> offsets) = 0;
 
+        virtual void WaitSemaphore(RHISemaphore* semaphore, EPipelineStageFlag stage) = 0;
+        virtual void SignalSemaphore(RHISemaphore* semaphore) = 0;
+        virtual void InjectFence(RHIFence* fence) = 0;
+
+        virtual void CopyBuffer(BufferHandle const * src, u64 srcOffset, BufferHandle const * dst, u64 dstOffset, u64 size) = 0;
+
+        virtual void WaitForFence(u32 frameIndex) = 0;
     public:
 
-        const bool ReadyForSubmit() const { return m_State == ECommandState::ReadyForSubmit; }
-        
+        const bool ReadyForSubmit() const;
+
     protected:
+        friend RHICommandBufferPool;
+        virtual void Reset() = 0;
+        virtual void Release() = 0;
+        virtual void ReadyForBegin(u32 frameIndex) = 0;
+        virtual void DoBegin() = 0;
         RHICommandBufferPool* m_CommandBufferPool;
         Device* m_Device;
         ECommandState m_State;
+        
     };
+
+    inline const bool RHICommandBuffer::ReadyForSubmit() const
+    {
+        return m_State == ECommandState::ReadyForSubmit;
+    }
 }

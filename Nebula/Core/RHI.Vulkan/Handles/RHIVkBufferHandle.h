@@ -23,6 +23,6 @@ namespace NebulaEngine::RHI
         
         VkBuffer m_VkBuffer { VK_NULL_HANDLE };
         Device* m_Device;
-        u64 m_BufferSize {0};
+        
     };
 }

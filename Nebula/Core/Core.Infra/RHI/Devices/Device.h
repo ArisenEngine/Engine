@@ -38,6 +38,7 @@ namespace NebulaEngine::RHI
         
         virtual void* GetHandle() const = 0;
         virtual void DeviceWaitIdle() const = 0;
+        virtual void GraphicQueueWaitIdle() const = 0;
         virtual u32 CreateGPUProgram() = 0;
         virtual GPUProgram* GetGPUProgram(u32 programId) = 0;
         virtual void DestroyGPUProgram(u32 programId) = 0;

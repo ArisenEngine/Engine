@@ -29,6 +29,7 @@ NebulaEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* d
 NebulaEngine::RHI::RHIVkCommandBufferPool::~RHIVkCommandBufferPool() noexcept
 {
     LOG_DEBUG("[RHIVkCommandBufferPool::~RHIVkCommandBufferPool]: ~RHIVkCommandBufferPool");
+    m_CommandBuffers.clear();
     vkDestroyCommandPool(m_VkDevice, m_VkCommandPool, nullptr);
     LOG_DEBUG("## Destroy Vulkan Command Pool ##");
 }
