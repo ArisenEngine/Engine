@@ -4,6 +4,7 @@
 #include "../Surfaces/FrameBuffer.h"
 #include "RHI/Devices/Device.h"
 #include "RHI/Enums/Pipeline/ECommandBufferUsageFlagBits.h"
+#include "RHI/Enums/Pipeline/EIndexType.h"
 #include "RHI/Enums/Pipeline/EPipelineStageFlag.h"
 #include "RHI/Enums/Subpass/ESubpassContents.h"
 #include "RHI/Handles/BufferHandle.h"
@@ -86,15 +87,18 @@ namespace NebulaEngine::RHI
         virtual void SetScissor(u32 offsetX, u32 offsetY, u32 width, u32 height) = 0;
 
         virtual void BindPipeline(u32 frameIndex, GPUPipeline* pipeline) = 0;
-        virtual void Draw(u32 vertexCount, u32 instanceCount, u32 firstVertex, u32 firstInstance) = 0;
-        virtual void BindVertexBuffers(u32 firstBinding, Containers::Vector<BufferHandle*> buffers, Containers::Vector<u64> offsets) = 0;
-
+        virtual void Draw(u32 vertexCount, u32 instanceCount, u32 firstVertex, u32 firstInstance, u32 firstBinding) = 0;
+        virtual void DrawIndexed(u32 indexCount, u32 instanceCount, u32 firstIndex, u32 vertexOffset, u32 firstInstance,  u32 firstBinding) = 0;
+        virtual void BindVertexBuffers(BufferHandle* buffer, u64 offset) = 0;
+        virtual void BindIndexBuffer(BufferHandle* indexBuffer, u64 offset, EIndexType type) = 0;
+        
         virtual void WaitSemaphore(RHISemaphore* semaphore, EPipelineStageFlag stage) = 0;
         virtual void SignalSemaphore(RHISemaphore* semaphore) = 0;
         virtual void InjectFence(RHIFence* fence) = 0;
 
         virtual void CopyBuffer(BufferHandle const * src, u64 srcOffset, BufferHandle const * dst, u64 dstOffset, u64 size) = 0;
-
+        
+        
         virtual void WaitForFence(u32 frameIndex) = 0;
     public:
 
