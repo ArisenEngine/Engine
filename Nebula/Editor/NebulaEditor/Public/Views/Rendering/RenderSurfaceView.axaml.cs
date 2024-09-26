@@ -1,17 +1,8 @@
-using System;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
 using NebulaEngine.Rendering;
-using System.Diagnostics;
-using System.Drawing;
-using System.Reflection.Metadata;
 using Avalonia.Input;
-using NebulaEditor;
 using NebulaEditor.ViewModels;
-using NebulaEngine.Debugger;
-using static AvaloniaLib.Native.NativeAPI;
 
 namespace NebulaEngine.Views.Rendering
 {
@@ -40,7 +31,7 @@ namespace NebulaEngine.Views.Rendering
         
         private void OnRenderSurfaceViewLoaded(object? sender, RoutedEventArgs e)
         {
-            Debug.Assert(sender != null);
+            Debug.Logger.Assert(sender != null);
 
             Loaded -= OnRenderSurfaceViewLoaded;
 
@@ -59,12 +50,12 @@ namespace NebulaEngine.Views.Rendering
         protected override void OnGotFocus(GotFocusEventArgs e)
         {
             base.OnGotFocus(e);
-            Logger.Log($"Focus on :{Name}");
+            Debug.Logger.Log($"Focus on :{Name}");
         }
 
         private void OnRenderSurfaceViewUnloaded(object? sender, RoutedEventArgs e)
         {
-            Debug.Assert(sender != null);
+            Debug.Logger.Assert(sender != null);
             Unloaded -= OnRenderSurfaceViewUnloaded;
 
             if (!Design.IsDesignMode)

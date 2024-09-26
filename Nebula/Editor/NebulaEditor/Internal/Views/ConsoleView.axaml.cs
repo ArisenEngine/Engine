@@ -10,6 +10,8 @@ using NebulaEditor.ViewModels;
 using NebulaEngine.Debugger;
 
 namespace NebulaEditor.Views;
+using LogMessage = NebulaEngine.Debug.Logger.LogMessage;
+using Logger = NebulaEngine.Debug.Logger;
 
 public partial class ConsoleView : UserControl
 {
@@ -21,7 +23,7 @@ public partial class ConsoleView : UserControl
         DataContext = m_ViewModel;
     }
 
-    private void OnLogMessageAdd(Logger.LogMessage message)
+    private void OnLogMessageAdd(LogMessage message)
     {
         m_ViewModel?.OnAddMessage(message);
     }

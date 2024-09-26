@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using NebulaEngine.Debugger;
 
@@ -93,6 +94,12 @@ public static class Logger
         LoggerAPI.DebuggerShutdown();
     }
 
+    [Conditional("DEBUG")]
+    public static void Assert(bool condition)
+    {
+        System.Diagnostics.Debug.Assert(condition);
+    }
+    
     public static void Log(object msg)
     {
         string trace = Environment.StackTrace;
