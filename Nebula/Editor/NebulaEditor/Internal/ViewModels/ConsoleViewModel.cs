@@ -13,7 +13,8 @@ using NebulaEngine.Debugger;
 using ReactiveUI;
 
 namespace NebulaEditor.ViewModels;
-
+using LogMessage = NebulaEngine.Debug.Logger.LogMessage;
+using LogLevel = NebulaEngine.Debug.Logger.LogLevel;
 public class ConsoleViewModel : ViewModelBase, IDisposable
 {
     private ReadOnlyObservableCollection<MessageItemNode> m_Messages;
@@ -30,8 +31,8 @@ public class ConsoleViewModel : ViewModelBase, IDisposable
                 return new ReadOnlyObservableCollection<MessageItemNode>(
                     new ObservableCollection<MessageItemNode>()
                     {
-                        new MessageItemNode(new Logger.LogMessage(Logger.LogLevel.Error, "aaa", "", "", DateTime.Now, "10223")),
-                        new MessageItemNode(new Logger.LogMessage(Logger.LogLevel.Error, "aaa", "", "", DateTime.Now, "10223")),
+                        new MessageItemNode(new LogMessage(LogLevel.Error, "aaa", "", "", DateTime.Now, "10223")),
+                        new MessageItemNode(new LogMessage(LogLevel.Error, "aaa", "", "", DateTime.Now, "10223")),
                     });
             }
             return m_Messages;
@@ -156,7 +157,7 @@ public class ConsoleViewModel : ViewModelBase, IDisposable
         }
     }
 
-    internal void OnAddMessage(Logger.LogMessage message)
+    internal void OnAddMessage(LogMessage message)
     {
         Dispatcher.UIThread.InvokeAsync(() =>
         {

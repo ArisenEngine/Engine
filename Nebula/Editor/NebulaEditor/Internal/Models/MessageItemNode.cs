@@ -1,8 +1,12 @@
 using System;
+using System.Diagnostics;
 using Avalonia.Media;
 using NebulaEngine.Debugger;
 
 namespace NebulaEditor.Models;
+
+using LogMessage = NebulaEngine.Debug.Logger.LogMessage;
+using LogLevel = NebulaEngine.Debug.Logger.LogLevel;
 
 public class MessageItemNode
 {
@@ -54,11 +58,11 @@ public class MessageItemNode
     
     public DateTime DateTime => m_Message.Time;
 
-    internal Logger.LogLevel LogLevel => m_Message.LogLevel;
+    internal LogLevel LogLevel => m_Message.LogLevel;
     
-    private Logger.LogMessage m_Message;
+    private LogMessage m_Message;
 
-    internal MessageItemNode(Logger.LogMessage message)
+    internal MessageItemNode(LogMessage message)
     {
         m_Message = message;
     }

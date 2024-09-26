@@ -15,6 +15,7 @@ using NebulaEngine.Views.Rendering;
 
 namespace NebulaEditor.Windows.MainEditor
 {
+    using Logger = NebulaEngine.Debug.Logger;
     public partial class MainEditorWindow : Window
     {
         private NebulaFileSystemWatcher m_FileSystemWatcher;
@@ -58,7 +59,7 @@ namespace NebulaEditor.Windows.MainEditor
             {
                 if (NebulaInstance.Run("Nebula Instance (Attach to Editor)") != 0)
                 {
-                    Logger.Error("Nebula instance run error.");
+                    NebulaEngine.Debug.Logger.Error("Nebula instance run error.");
                 }
                 
             });

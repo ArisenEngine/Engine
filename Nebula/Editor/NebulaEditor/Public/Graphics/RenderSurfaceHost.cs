@@ -1,12 +1,6 @@
 ﻿using System;
 using Avalonia.Controls;
 using Avalonia.Platform;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using Avalonia.Threading;
-using EnvDTE;
-using NebulaEngine.API;
 
 namespace NebulaEngine.Rendering
 {
@@ -43,7 +37,7 @@ namespace NebulaEngine.Rendering
 
         public void Dispose()
         {
-            Debug.WriteLine("############# RenderSurfaceHost Dispose #################");
+            Debug.Logger.Log("############# RenderSurfaceHost Dispose #################");
             
         }
 

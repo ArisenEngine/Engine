@@ -30,6 +30,11 @@
     <InternalsVisibleTo Include="NebulaEditor" />
     <InternalsVisibleTo Include="NebulaEditor.Desktop" />
   </ItemGroup>
-  
-  
+
+  <!-- Internal properties are visiable to "NebulaEditor" project -->
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>NebulaEditor</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 </Project>

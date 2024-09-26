@@ -1,14 +1,13 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using Avalonia.Data.Converters;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using NebulaEditor.Models;
-using NebulaEditor.ViewModels;
-using NebulaEngine.Debugger;
+using LogLevel = NebulaEngine.Debug.Logger.LogLevel;
 
 namespace NebulaEditor.Converters;
+
 
 public class ConsoleViewIconConverter : IValueConverter
 {
@@ -88,13 +87,13 @@ public class ConsoleViewIconConverter : IValueConverter
 
             switch (messageItemNode.LogLevel)
             {
-                case Logger.LogLevel.Error:
+                case LogLevel.Error:
                     return ErrorIcon;
-                case Logger.LogLevel.Log:
+                case LogLevel.Log:
                     return LogIcon;
-                case Logger.LogLevel.Info:
+                case LogLevel.Info:
                     return InfoIcon;
-                case Logger.LogLevel.Warning:
+                case LogLevel.Warning:
                     return WarningIcon;
             }
         }
