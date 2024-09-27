@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DllHeader.h" />
+    <ClInclude Include="CoreDebuggerCommon.h" />
     <ClInclude Include="Logger\Logger.h" />
   </ItemGroup>
   <ItemGroup>

@@ -122,5 +122,40 @@ namespace NebulaEngine.FileSystem
 
             return size;
         }
+        
+        public static void DeleteDirectory(string directoryPath, List<string> skipFolders, List<string> excludedExtensions)
+        {
+            var directoryInfo = new DirectoryInfo(directoryPath);
+            if (skipFolders.Contains(directoryInfo.Name))
+            {
+                return;
+            }
+    
+            bool hasSkipFile = false;
+            foreach (var file in Directory.GetFiles(directoryPath))
+            {
+                var fileInfo = new FileInfo(file);
+                if (excludedExtensions.Count > 0 && excludedExtensions.Contains(fileInfo.Extension))
+                {
+                    hasSkipFile = true;
+                    continue;
+                }
+                
+                File.Delete(file);
+            }
+            
+            foreach (var directory in Directory.GetDirectories(directoryPath))
+            {
+                DeleteDirectory(directory, skipFolders, excludedExtensions);
+            }
+    
+            if (hasSkipFile)
+            {
+                return;
+            }
+
+            Directory.Delete(directoryPath);
+            
+        }
     }
 }

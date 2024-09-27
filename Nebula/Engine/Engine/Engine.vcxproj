@@ -19,12 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Debugger\LoggerAPI.h" />
     <ClInclude Include="EngineCommon.h" />
     <ClInclude Include="RHI\RHILoader.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Debugger\Logger.cpp" />
     <ClCompile Include="RHI\RHILoader.cpp" />
   </ItemGroup>
   <ItemGroup>
