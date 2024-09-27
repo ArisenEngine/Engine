@@ -91,7 +91,7 @@ public static class Logger
 
     public static void Dispose()
     {
-        LoggerAPI.DebuggerShutdown();
+        Debugger.Logger.Shutdown();
     }
 
     [Conditional("DEBUG")]
@@ -103,40 +103,40 @@ public static class Logger
     public static void Log(object msg)
     {
         string trace = Environment.StackTrace;
-        LoggerAPI.DebuggerLog(msg.ToString(), Thread.CurrentThread.Name, trace);
+        Debugger.Logger.Instance.Log(msg.ToString(), Thread.CurrentThread.Name, trace);
         
     }
     
     public static void Info(object msg)
     {
         string trace = Environment.StackTrace;
-        LoggerAPI.DebuggerInfo(msg.ToString(), Thread.CurrentThread.Name, trace);
+        Debugger.Logger.Instance.Info(msg.ToString(), Thread.CurrentThread.Name, trace);
         
     }
 
     public static void Trace(object msg)
     {
         string trace = Environment.StackTrace;
-        LoggerAPI.DebuggerTrace(msg.ToString(), Thread.CurrentThread.Name, trace);
+        Debugger.Logger.Instance.Trace(msg.ToString(), Thread.CurrentThread.Name, trace);
         
     }
 
     public static void Warning(object msg)
     {
         string trace = Environment.StackTrace;
-        LoggerAPI.DebuggerWarning(msg.ToString(), Thread.CurrentThread.Name, trace);
+        Debugger.Logger.Instance.Warning(msg.ToString(), Thread.CurrentThread.Name, trace);
     }
     
     public static void Error(object msg)
     {
         string trace = Environment.StackTrace;
-        LoggerAPI.DebuggerError(msg.ToString(), Thread.CurrentThread.Name, trace);
+        Debugger.Logger.Instance.Error(msg.ToString(), Thread.CurrentThread.Name, trace);
     }
 
     public static void Fatal(object msg)
     {
         string trace = Environment.StackTrace;
-        LoggerAPI.DebuggerFatal(msg.ToString(), Thread.CurrentThread.Name, trace);
+        Debugger.Logger.Instance.Fatal(msg.ToString(), Thread.CurrentThread.Name, trace);
     }
 
     public static void Clear()
@@ -146,9 +146,9 @@ public static class Logger
 
     public static bool Initialize(bool bindCallback = false)
     {
-        LoggerAPI.DebuggerBindCallback(ReceiveLog);
+        Debugger.Logger.Instance.BindCallback(ReceiveLog);
         
-        return LoggerAPI.DebuggerInitialize();
+        return  Debugger.Logger.Instance.Initialize();
         
     }
     

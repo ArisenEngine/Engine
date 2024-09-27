@@ -1,5 +1,6 @@
+#include <CoreDebuggerCommon.h>
+#include <Logger\Logger.h>
 #include <EngineCommon.h>
-#include <Debugger\LoggerAPI.h>
 #include <new>
 
 bool (*_0)(unsigned int) = &NebulaEngine::ID::IsValid;
