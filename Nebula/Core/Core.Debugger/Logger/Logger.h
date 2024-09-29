@@ -14,7 +14,7 @@ namespace NebulaEngine::Debugger
         NO_COPY_NO_MOVE(Logger)
         NO_COMPARE(Logger)
 
-        enum class DEBUGGER_DLL LogLevel: NebulaEngine::u8
+        enum class LogLevel: NebulaEngine::u8
         {
             Trace = 0x01,
             // finer-grained info for debugging

@@ -25,13 +25,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ShaderCompiler\ShaderCompiler.cpp" />
-    <ClCompile Include="Source.cpp" />
     <ClCompile Include="Windows\Platform.cpp" />
     <ClCompile Include="Windows\RenderWindow.cpp" />
     <ClCompile Include="Windows\Windows.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Common.h" />
+    <ClInclude Include="CorePlatformCommon.h" />
     <ClInclude Include="ShaderCompiler\ShaderCompilerAPI.h" />
     <ClInclude Include="Windows\Platform.h" />
     <ClInclude Include="Windows\PlatformTypes.h" />

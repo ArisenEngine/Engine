@@ -1,18 +1,19 @@
 #pragma once
-#include "../Common.h"
+#include "../CorePlatformCommon.h"
+#include "Common/PrimitiveTypes.h"
 
 namespace NebulaEngine::Platforms
 {
-	DEFINE_TYPED_ID(WindowID)
+	using WindowID = u32;
 
 	class Window
 	{
 	public:
 
-		constexpr explicit Window(WindowID id) : m_ID{id} {}
-		constexpr Window() : m_ID{ ID::InvalidID } {}
-		constexpr WindowID ID() const { return m_ID; }
-		bool IsValid() const { return ID::IsValid(m_ID); }
+		 explicit Window(WindowID id);
+		 Window();
+		 WindowID ID() const;
+		bool IsValid() const;
 
 		void SetFullScreen(bool isFullScreen) const;
 		bool IsFullScreen() const;
@@ -26,7 +27,8 @@ namespace NebulaEngine::Platforms
 
 	private:
 
-		WindowID m_ID{ID::InvalidID};
+		WindowID m_ID{InvalidID};
 	};
 
+	
 }

@@ -23,11 +23,12 @@ namespace NebulaEngine
 	constexpr u16   u16Invalid{ 0xffffui16 };
 	constexpr u8    u8Invalid{ 0xffui8 };
 
-
-
+    
+  
 
 	using f32 = float;
 
+	constexpr u32 InvalidID =  0xffff'ffffui32;
 
 	namespace String
 	{

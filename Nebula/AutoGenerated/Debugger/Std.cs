@@ -128,15 +128,6 @@ namespace Std
                 return;
             NativeToManagedMap.TryRemove(__Instance, out _);
             DisposePartial(disposing);
-            if (callNativeDtor)
-            {
-                var ___Ty = typeof(_Ty);
-                if (___Ty.IsAssignableFrom(typeof(sbyte)))
-                {
-                    return;
-                }
-                throw new ArgumentOutOfRangeException("_Ty", string.Join(", ", new[] { typeof(_Ty).FullName }), "global::Std.Allocator<_Ty> maps a C++ template class and therefore it only supports a limited set of types and their subclasses: <sbyte>.");
-            }
             if (__ownsNativeInstance)
                 Marshal.FreeHGlobal(__Instance);
             __Instance = IntPtr.Zero;
@@ -255,18 +246,6 @@ namespace Std
                 return;
             NativeToManagedMap.TryRemove(__Instance, out _);
             DisposePartial(disposing);
-            if (callNativeDtor)
-            {
-                var ___Elem = typeof(_Elem);
-                var ___Traits = typeof(_Traits);
-                var ___Alloc = typeof(_Alloc);
-                if (___Elem.IsAssignableFrom(typeof(sbyte)) && ___Traits.IsAssignableFrom(typeof(global::Std.CharTraits<sbyte>)) && ___Alloc.IsAssignableFrom(typeof(global::Std.Allocator<sbyte>)))
-                {
-                    global::Std.BasicString.__Internalc__N_std_S_basic_string__C___N_std_S_char_traits__C___N_std_S_allocator__C.dtorc__N_std_S_basic_string__C___N_std_S_char_traits__C___N_std_S_allocator__C(__Instance);
-                    return;
-                }
-                throw new ArgumentOutOfRangeException("_Elem, _Traits, _Alloc", string.Join(", ", new[] { typeof(_Elem).FullName, typeof(_Traits).FullName, typeof(_Alloc).FullName }), "global::Std.BasicString<_Elem, _Traits, _Alloc> maps a C++ template class and therefore it only supports a limited set of types and their subclasses: <sbyte, global::Std.CharTraits<sbyte>, global::Std.Allocator<sbyte>>.");
-            }
             if (__ownsNativeInstance)
                 Marshal.FreeHGlobal(__Instance);
             __Instance = IntPtr.Zero;
