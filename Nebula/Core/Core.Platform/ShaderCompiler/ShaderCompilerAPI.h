@@ -2,7 +2,7 @@
 #include <windows.h>
 #include "dxcapi.h"
 #include <atlbase.h> 
-#include "../Common.h"
+#include "../CorePlatformCommon.h"
 #include "Logger/Logger.h"
 #include "RHI/Enums/Pipeline/ProgramStage.h"
 

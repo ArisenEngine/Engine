@@ -25,9 +25,10 @@
 
 #endif
 
+#include "../CoreInfraCommon.h"
+
 // common headers
 #include"PrimitiveTypes.h"
-#include"Id.h"
 #include"MathTypes.h"
 #include"../Containers/Containers.h"
 

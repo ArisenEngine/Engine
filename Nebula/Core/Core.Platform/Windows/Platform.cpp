@@ -31,10 +31,10 @@ namespace NebulaEngine::Platforms
 		
 		u32 AddToWindows(WindowInfo info)
 		{
-			u32 id{ ID::InvalidID };
+			u32 id{ InvalidID };
 			if (availableSlots.empty())
 			{
-				id = (ID::IdType)windows.size();
+				id = windows.size();
 				windows.emplace_back(info);
 			}
 			else
@@ -57,7 +57,7 @@ namespace NebulaEngine::Platforms
 
 		WindowInfo& GetInfoFromHandle(WindowHandle handle)
 		{
-			const WindowID id{ (ID::IdType)GetWindowLongPtr(handle, GWLP_USERDATA) };
+			const WindowID id{ static_cast<WindowID>(GetWindowLongPtr(handle, GWLP_USERDATA))};
 			return GetInfoFromId(id);
 		}
 
@@ -321,7 +321,7 @@ namespace NebulaEngine::Platforms
 
 	u32 GetWindowID(WindowHandle handle)
 	{
-		const WindowID id{ (ID::IdType)GetWindowLongPtr(handle, GWLP_USERDATA) };
+		const WindowID id{ static_cast<WindowID>(GetWindowLongPtr(handle, GWLP_USERDATA)) };
 		return id;
 	}
 
@@ -337,6 +337,11 @@ namespace NebulaEngine::Platforms
 
 #endif
 
+
+	bool Window::IsValid() const
+	{
+		return m_ID == InvalidID;
+	}
 
 	void Window::SetFullScreen(bool isFullScreen) const
 	{
