@@ -1,5 +1,4 @@
-﻿using NebulaEngine.API;
-using NebulaEngine.Debug;
+﻿using NebulaEngine.Debug;
 using NebulaEngine.Platforms;
 
 namespace NebulaEngine.Rendering;
@@ -28,7 +27,7 @@ internal class RenderSurface : IDisposable, IRenderSurface
 {
     internal List<RenderSurface> Surfaces = new List<RenderSurface>();
     private IntPtr m_Host;
-    private int m_SurfaceId;
+    private uint m_SurfaceId;
     private IntPtr m_Handle;
     private string m_Name = "RenderSurface";
 
@@ -47,9 +46,9 @@ internal class RenderSurface : IDisposable, IRenderSurface
         {
             m_Host = host;
             m_SurfaceId = isFullScreen
-                ? RenderSurfaceAPI.CreateFullScreenRenderSurface(host, m_Processor.ProcPtr)
-                : RenderSurfaceAPI.CreateRenderSurface(host, m_Processor.ProcPtr, width, height);
-            m_Handle = RenderSurfaceAPI.GetWindowHandle(m_SurfaceId);
+                ? RenderWindowAPI.CreateFullScreenRenderSurface(host, m_Processor.ProcPtr)
+                : RenderWindowAPI.CreateRenderWindow(host, m_Processor.ProcPtr, width, height);
+            m_Handle = RenderWindowAPI.GetWindowHandle(m_SurfaceId);
             Surfaces.Add(this);
         }
         else
@@ -77,7 +76,7 @@ internal class RenderSurface : IDisposable, IRenderSurface
 
     public void Dispose()
     {
-        RenderSurfaceAPI.RemoveRenderSurface(m_SurfaceId);
+        RenderWindowAPI.RemoveRenderSurface(m_SurfaceId);
         Surfaces.Remove(this);
         if (Surfaces.Count <= 0)
         {

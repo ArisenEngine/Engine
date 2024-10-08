@@ -20,17 +20,53 @@ namespace NebulaEngine
         {
             public partial struct __Internal
             {
+                [SuppressUnmanagedCodeSecurity, DllImport("Core.Platform.dll", EntryPoint = "CreateFullScreenRenderSurface", CallingConvention = __CallingConvention.Cdecl)]
+                internal static extern uint CreateFullScreenRenderSurface(global::System.IntPtr host, __IntPtr callback);
+
+                [SuppressUnmanagedCodeSecurity, DllImport("Core.Platform.dll", EntryPoint = "CreateRenderWindow", CallingConvention = __CallingConvention.Cdecl)]
+                internal static extern uint CreateRenderWindow(global::System.IntPtr host, __IntPtr callback, int width, int height);
+
+                [SuppressUnmanagedCodeSecurity, DllImport("Core.Platform.dll", EntryPoint = "CreateRenderWindowWithResizeCallback", CallingConvention = __CallingConvention.Cdecl)]
+                internal static extern uint CreateRenderWindowWithResizeCallback(global::System.IntPtr host, __IntPtr callback, __IntPtr resizeCallback, int width, int height);
+
                 [SuppressUnmanagedCodeSecurity, DllImport("Core.Platform.dll", EntryPoint = "RemoveRenderSurface", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern void RemoveRenderSurface(uint id);
 
                 [SuppressUnmanagedCodeSecurity, DllImport("Core.Platform.dll", EntryPoint = "ResizeRenderSurface", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern void ResizeRenderSurface(uint id, uint width, uint height);
 
+                [SuppressUnmanagedCodeSecurity, DllImport("Core.Platform.dll", EntryPoint = "GetWindowHandle", CallingConvention = __CallingConvention.Cdecl)]
+                internal static extern global::System.IntPtr GetWindowHandle(uint id);
+
                 [SuppressUnmanagedCodeSecurity, DllImport("Core.Platform.dll", EntryPoint = "GetWindowWidth", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern uint GetWindowWidth(uint id);
 
                 [SuppressUnmanagedCodeSecurity, DllImport("Core.Platform.dll", EntryPoint = "GetWindowHeight", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern uint GetWindowHeight(uint id);
+
+                [SuppressUnmanagedCodeSecurity, DllImport("Core.Platform.dll", EntryPoint = "GetWindowId", CallingConvention = __CallingConvention.Cdecl)]
+                internal static extern uint GetWindowId(global::System.IntPtr handle);
+
+                [SuppressUnmanagedCodeSecurity, DllImport("Core.Platform.dll", EntryPoint = "SetWindowResizeCallback", CallingConvention = __CallingConvention.Cdecl)]
+                internal static extern void SetWindowResizeCallback(uint windowId, __IntPtr callback);
+            }
+
+            public static uint CreateFullScreenRenderSurface(global::System.IntPtr host, __IntPtr callback)
+            {
+                var ___ret = __Internal.CreateFullScreenRenderSurface(host, callback);
+                return ___ret;
+            }
+
+            public static uint CreateRenderWindow(global::System.IntPtr host, __IntPtr callback, int width, int height)
+            {
+                var ___ret = __Internal.CreateRenderWindow(host, callback, width, height);
+                return ___ret;
+            }
+
+            public static uint CreateRenderWindowWithResizeCallback(global::System.IntPtr host, __IntPtr callback, __IntPtr resizeCallback, int width, int height)
+            {
+                var ___ret = __Internal.CreateRenderWindowWithResizeCallback(host, callback, resizeCallback, width, height);
+                return ___ret;
             }
 
             public static void RemoveRenderSurface(uint id)
@@ -43,6 +79,12 @@ namespace NebulaEngine
                 __Internal.ResizeRenderSurface(id, width, height);
             }
 
+            public static global::System.IntPtr GetWindowHandle(uint id)
+            {
+                var ___ret = __Internal.GetWindowHandle(id);
+                return ___ret;
+            }
+
             public static uint GetWindowWidth(uint id)
             {
                 var ___ret = __Internal.GetWindowWidth(id);
@@ -53,6 +95,17 @@ namespace NebulaEngine
             {
                 var ___ret = __Internal.GetWindowHeight(id);
                 return ___ret;
+            }
+
+            public static uint GetWindowId(global::System.IntPtr handle)
+            {
+                var ___ret = __Internal.GetWindowId(handle);
+                return ___ret;
+            }
+
+            public static void SetWindowResizeCallback(uint windowId, __IntPtr callback)
+            {
+                __Internal.SetWindowResizeCallback(windowId, callback);
             }
         }
     }

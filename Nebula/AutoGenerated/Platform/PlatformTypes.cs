@@ -17,10 +17,10 @@ namespace NebulaEngine
     namespace Platforms
     {
         [SuppressUnmanagedCodeSecurity, UnmanagedFunctionPointer(__CallingConvention.Cdecl)]
-        public unsafe delegate long WindowProc(__IntPtr __0, uint __1, ulong __2, long __3);
+        public unsafe delegate long WindowProc(global::System.IntPtr __0, uint __1, ulong __2, long __3);
 
         [SuppressUnmanagedCodeSecurity, UnmanagedFunctionPointer(__CallingConvention.Cdecl)]
-        public unsafe delegate void WindowExitResize(__IntPtr __0, uint __1, uint __2);
+        public unsafe delegate void WindowExitResize(global::System.IntPtr __0, uint __1, uint __2);
 
         public unsafe partial class WindowInitInfo : IDisposable
         {
@@ -29,7 +29,7 @@ namespace NebulaEngine
             {
                 internal __IntPtr callback;
                 internal __IntPtr resizeCallback;
-                internal __IntPtr parent;
+                internal global::System.IntPtr parent;
                 internal __IntPtr caption;
                 internal int left;
                 internal int top;
@@ -143,6 +143,47 @@ namespace NebulaEngine
                 if (__ownsNativeInstance)
                     Marshal.FreeHGlobal(__Instance);
                 __Instance = IntPtr.Zero;
+            }
+
+            public global::NebulaEngine.Platforms.WindowProc Callback
+            {
+                get
+                {
+                    var __ptr0 = ((__Internal*)__Instance)->callback;
+                    return __ptr0 == IntPtr.Zero? null : (global::NebulaEngine.Platforms.WindowProc) Marshal.GetDelegateForFunctionPointer(__ptr0, typeof(global::NebulaEngine.Platforms.WindowProc));
+                }
+
+                set
+                {
+                    ((__Internal*)__Instance)->callback = value == null ? global::System.IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(value);
+                }
+            }
+
+            public global::NebulaEngine.Platforms.WindowExitResize ResizeCallback
+            {
+                get
+                {
+                    var __ptr0 = ((__Internal*)__Instance)->resizeCallback;
+                    return __ptr0 == IntPtr.Zero? null : (global::NebulaEngine.Platforms.WindowExitResize) Marshal.GetDelegateForFunctionPointer(__ptr0, typeof(global::NebulaEngine.Platforms.WindowExitResize));
+                }
+
+                set
+                {
+                    ((__Internal*)__Instance)->resizeCallback = value == null ? global::System.IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(value);
+                }
+            }
+
+            public global::System.IntPtr Parent
+            {
+                get
+                {
+                    return ((__Internal*)__Instance)->parent;
+                }
+
+                set
+                {
+                    ((__Internal*)__Instance)->parent = value;
+                }
             }
 
             public string Caption
