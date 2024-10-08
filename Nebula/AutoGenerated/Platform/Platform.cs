@@ -23,8 +23,14 @@ namespace NebulaEngine
                 [SuppressUnmanagedCodeSecurity, DllImport("Core.Platform.dll", EntryPoint = "?CreateNewWindow@Platforms@NebulaEngine@@YA?AVWindow@12@QEBUWindowInitInfo@12@@Z", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern void CreateNewWindow(__IntPtr @return, __IntPtr initInfo);
 
+                [SuppressUnmanagedCodeSecurity, DllImport("Core.Platform.dll", EntryPoint = "?GetWindowID@Platforms@NebulaEngine@@YAIPEAUHWND__@@@Z", CallingConvention = __CallingConvention.Cdecl)]
+                internal static extern uint GetWindowID(global::System.IntPtr handle);
+
                 [SuppressUnmanagedCodeSecurity, DllImport("Core.Platform.dll", EntryPoint = "?RemoveWindow@Platforms@NebulaEngine@@YAXI@Z", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern void RemoveWindow(uint id);
+
+                [SuppressUnmanagedCodeSecurity, DllImport("Core.Platform.dll", EntryPoint = "?SetWindowResizeCallbackInternal@Platforms@NebulaEngine@@YAXIP6AXPEAUHWND__@@II@Z@Z", CallingConvention = __CallingConvention.Cdecl)]
+                internal static extern void SetWindowResizeCallbackInternal(uint id, __IntPtr callback);
             }
 
             public static global::NebulaEngine.Platforms.Window CreateNewWindow(global::NebulaEngine.Platforms.WindowInitInfo initInfo)
@@ -35,9 +41,20 @@ namespace NebulaEngine
                 return global::NebulaEngine.Platforms.Window.__CreateInstance(___ret);
             }
 
+            public static uint GetWindowID(global::System.IntPtr handle)
+            {
+                var ___ret = __Internal.GetWindowID(handle);
+                return ___ret;
+            }
+
             public static void RemoveWindow(uint id)
             {
                 __Internal.RemoveWindow(id);
+            }
+
+            public static void SetWindowResizeCallbackInternal(uint id, __IntPtr callback)
+            {
+                __Internal.SetWindowResizeCallbackInternal(id, callback);
             }
         }
     }

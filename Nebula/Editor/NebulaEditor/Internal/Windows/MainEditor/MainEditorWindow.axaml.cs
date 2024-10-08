@@ -76,7 +76,7 @@ namespace NebulaEditor.Windows.MainEditor
         protected override void OnUnloaded(RoutedEventArgs e)
         {
             base.OnUnloaded(e);
-            Logger.Warning("Close Editor Window.");
+            Logger.Log("Close Editor Window.");
             m_FileSystemWatcher.Dispose();
             m_FileSystemWatcher = null;
             NebulaInstance.End();

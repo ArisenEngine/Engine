@@ -246,7 +246,7 @@ namespace NebulaEngine::Platforms
 		wc.hInstance = 0;
 		wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
 		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-		wc.hbrBackground = CreateSolidBrush(RGB(26, 48, 76));
+		wc.hbrBackground = CreateSolidBrush(RGB(0, 0, 0));//CreateSolidBrush(RGB(26, 48, 76));
 		wc.lpszMenuName = NULL;
 		wc.lpszClassName = L"NebulaWindow";
 		wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
@@ -340,7 +340,7 @@ namespace NebulaEngine::Platforms
 
 	bool Window::IsValid() const
 	{
-		return m_ID == InvalidID;
+		return m_ID != InvalidID;
 	}
 
 	void Window::SetFullScreen(bool isFullScreen) const

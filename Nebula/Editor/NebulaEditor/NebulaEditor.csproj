@@ -89,6 +89,10 @@
   <ItemGroup>
     <Folder Include="Internal\Interface\" />
     <Folder Include="Resources\" />
+    <Folder Include="Templates\1st-Person Project\Packages\" />
+    <Folder Include="Templates\3rd-Person Project\Packages\" />
+    <Folder Include="Templates\Empty Project\Packages\" />
+    <Folder Include="Templates\Top-Down Project\Packages\" />
   </ItemGroup>
 
 

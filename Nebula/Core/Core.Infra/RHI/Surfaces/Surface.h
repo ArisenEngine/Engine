@@ -11,7 +11,7 @@ namespace NebulaEngine::RHI
 		NO_COPY_NO_MOVE_NO_DEFAULT(Surface)
 		virtual ~Surface() noexcept
 		{
-			m_RenderWindowId = ID::InvalidID;
+			m_RenderWindowId = InvalidID;
 			m_Instance = nullptr;
 		}
 		explicit Surface(u32&& id, Instance* instance): m_RenderWindowId(id), m_Instance(instance) { };
