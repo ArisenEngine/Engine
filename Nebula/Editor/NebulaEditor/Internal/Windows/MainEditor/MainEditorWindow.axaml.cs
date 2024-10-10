@@ -59,7 +59,7 @@ namespace NebulaEditor.Windows.MainEditor
             {
                 if (NebulaInstance.Run("Nebula Instance (Attach to Editor)") != 0)
                 {
-                    NebulaEngine.Debug.Logger.Error("Nebula instance run error.");
+                    Logger.Error("Nebula instance run error.");
                 }
                 
             });
