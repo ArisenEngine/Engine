@@ -34,9 +34,7 @@ namespace NebulaEngine
         }
         
         #region Internal
-
         
-        internal static  bool s_IsDesignMode = false;
         internal static  string s_StartupPath = string.Empty;
         internal static  string s_DataPath = string.Empty;
         internal static  string s_ProjectRoot = string.Empty;

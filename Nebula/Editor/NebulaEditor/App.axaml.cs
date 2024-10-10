@@ -20,8 +20,6 @@ namespace NebulaEditor
 
         public override async void OnFrameworkInitializationCompleted()
         {
-            NebulaApplication.s_IsDesignMode = Design.IsDesignMode;
-            
             if (OperatingSystem.IsWindows())
             {
                 NebulaApplication.s_Platform = RuntimePlatform.Windows;
@@ -30,7 +28,7 @@ namespace NebulaEditor
             {
                 NebulaApplication.s_Platform = RuntimePlatform.MacOS;
             }
-            
+
             EnterNormally();
             
             base.OnFrameworkInitializationCompleted();

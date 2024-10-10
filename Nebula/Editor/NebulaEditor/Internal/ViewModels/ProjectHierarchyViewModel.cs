@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Models.TreeDataGrid;
 using Avalonia.Controls.Selection;
@@ -59,7 +60,12 @@ public class ProjectHierarchyViewModel : ViewModelBase
         };
 
         FolderSource.RowSelection!.SingleSelect = false;
-
+        
+        if (Design.IsDesignMode)
+        {
+            return;
+        }
+        
         FolderSource.Items = new FileTreeNode[2]
         {
             new FileTreeNode("Assets", Path.Combine(NebulaApplication.s_ProjectRoot, "Assets"), true, isRoot: true, true)

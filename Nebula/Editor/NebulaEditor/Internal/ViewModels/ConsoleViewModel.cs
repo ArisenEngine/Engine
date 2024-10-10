@@ -31,8 +31,8 @@ public class ConsoleViewModel : ViewModelBase, IDisposable
                 return new ReadOnlyObservableCollection<MessageItemNode>(
                     new ObservableCollection<MessageItemNode>()
                     {
-                        new MessageItemNode(new LogMessage(LogLevel.Error, "aaa", "", "", DateTime.Now, "10223")),
-                        new MessageItemNode(new LogMessage(LogLevel.Error, "aaa", "", "", DateTime.Now, "10223")),
+                        new MessageItemNode(new LogMessage(LogLevel.Error, " In design mode.", "000", "DesignMode", DateTime.Now, "trace")),
+                        new MessageItemNode(new LogMessage(LogLevel.Error, " In design mode.", "000", "DesignMode", DateTime.Now, "trace")),
                     });
             }
             return m_Messages;
