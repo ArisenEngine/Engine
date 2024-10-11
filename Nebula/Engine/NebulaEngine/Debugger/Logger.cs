@@ -6,8 +6,6 @@ namespace NebulaEngine.Debug;
 
 public static class Logger
 {
-    internal delegate void OnLogReceived (LogLevel type, [MarshalAs(UnmanagedType.LPStr)]string msg, [MarshalAs(UnmanagedType.LPStr)]string threadId,[MarshalAs(UnmanagedType.LPStr)]string trace);
-    
     internal static void RecordLog(uint type, string threadId, string msg, string trace)
     {
        
@@ -22,10 +20,10 @@ public static class Logger
     }
     
     internal static LogCallback ReceiveLog;
+    
     static Logger()
     {
         ReceiveLog = new LogCallback(RecordLog);
-        
     }
     
     
@@ -146,8 +144,13 @@ public static class Logger
 
     public static bool Initialize(bool bindCallback = false)
     {
-        Debugger.Logger.Instance.BindCallback(ReceiveLog);
+        if (bindCallback)
+        {
+            Debugger.Logger.Instance.BindCallback(ReceiveLog);
+        }
         
+        Debugger.Logger.Instance.SetServerityLevel(Debugger.Logger.LogLevel.Trace);
+     
         return  Debugger.Logger.Instance.Initialize();
         
     }
