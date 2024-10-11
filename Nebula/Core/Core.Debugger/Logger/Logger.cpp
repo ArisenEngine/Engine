@@ -105,6 +105,7 @@ void Logger::Shutdown()
 	// This is optional (only mandatory if using windows + async log).
 	spdlog::default_logger()->flush();
 	spdlog::shutdown();
+	GetInstance().m_IsInitialize = false;
 }
 
 void Logger::SetServerityLevel(LogLevel level)

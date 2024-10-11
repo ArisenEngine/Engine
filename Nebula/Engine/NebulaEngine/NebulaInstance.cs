@@ -145,9 +145,23 @@ internal static class NebulaInstance
     }
     private static void Dispose()
     {
+
+        // when we are not in editor running, we can directly dispose logger.
+        if (NebulaApplication.s_IsInEditor == false)
+        {
+            DisposeLogger();
+        }
         
+    }
+
+    /// <summary>
+    /// do dispose the logger
+    /// separate logger disposing is necessary because we need logger to record all logs when editor is running
+    /// this interface only visible to editor assembly
+    /// </summary>
+    internal static void DisposeLogger()
+    {
         Logger.Log($"{m_Name} Dispose");
         Logger.Dispose();
-        
     }
 }
