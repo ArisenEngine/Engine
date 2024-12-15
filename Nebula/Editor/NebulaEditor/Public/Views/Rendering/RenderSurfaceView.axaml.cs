@@ -1,3 +1,4 @@
+using System;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using NebulaEngine.Rendering;
@@ -24,7 +25,9 @@ namespace NebulaEngine.Views.Rendering
         public RenderSurfaceView()
         {
             InitializeComponent();
+            Loaded -= OnRenderSurfaceViewLoaded;
             Loaded += OnRenderSurfaceViewLoaded;
+            Unloaded -= OnRenderSurfaceViewUnloaded;
             Unloaded += OnRenderSurfaceViewUnloaded;
            
         }
@@ -41,7 +44,7 @@ namespace NebulaEngine.Views.Rendering
                 {
                     Name = Name
                 };
-                
+                Console.WriteLine("Create Render Surface Host.");
                 RenderViewContainer.Children.Insert(0, m_Host);
             }
             

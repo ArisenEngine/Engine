@@ -57,9 +57,8 @@ internal static class NebulaInstance
     {
         if (m_RenderSurfaces.TryGetValue(host, out var surfaceInfo))
         {
-            surfaceInfo.Surface.Dispose();
+            surfaceInfo.Surface.DisposeSurface();
             m_RenderSurfaces.Remove(host);
-            
             
             return;
         }
@@ -116,7 +115,7 @@ internal static class NebulaInstance
             {
                 while (m_MessageHandler.NextFrame())
                 {
-                    // run loop
+                    // run main loop
 
                     RenderPipelineManager.DoRenderLoop(Graphics.currentRenderPipelineAsset);
 
@@ -142,10 +141,11 @@ internal static class NebulaInstance
     internal static void End()
     {
         m_IsRunning = false;
+        Logger.Log($"{m_Name} End.");
     }
     private static void Dispose()
     {
-
+        Logger.Log($"{m_Name} Disposed.");
         // when we are not in editor running, we can directly dispose logger.
         if (NebulaApplication.s_IsInEditor == false)
         {
@@ -161,7 +161,7 @@ internal static class NebulaInstance
     /// </summary>
     internal static void DisposeLogger()
     {
-        Logger.Log($"{m_Name} Dispose");
+        Logger.Log("Dispose Logger.");
         Logger.Dispose();
     }
 }

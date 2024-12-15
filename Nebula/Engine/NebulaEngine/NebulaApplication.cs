@@ -29,7 +29,6 @@ namespace NebulaEngine
         
         private static void OnSurfacesAllClosed()
         {
-            NebulaInstance.AllSurfacesDestroyed -= OnSurfacesAllClosed;
             NebulaInstance.End();
         }
         

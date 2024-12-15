@@ -79,7 +79,7 @@ namespace NebulaEditor.Windows.MainEditor
             Logger.Log("Close Editor Window.");
             m_FileSystemWatcher.Dispose();
             m_FileSystemWatcher = null;
-            NebulaInstance.End();
+            // NebulaInstance.End();
             
             if (App.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
