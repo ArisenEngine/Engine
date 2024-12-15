@@ -58,7 +58,7 @@ Logger::Logger(): m_IsInitialize(false), m_LogCallback(nullptr)
 
 bool Logger::Initialize()
 {
-	if (m_IsInitialize) return false;
+	if (m_IsInitialize) return true;
 
 	try
 	{
