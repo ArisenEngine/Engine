@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using NebulaEngine.Debug;
 using NebulaEngine.Rendering;
 
 namespace NebulaEngine.Platforms;
@@ -17,6 +18,12 @@ internal class WindowsProcHandler : WindowProcessor
     {
         switch (msg)
         {
+            case Win32Native.WM_SYSCOMMAND:
+                if ((wParam.ToInt32() & 0xFFF0) == Win32Native.SC_CLOSE)
+                {
+                    OnClose();
+                }
+                break;
             case Win32Native.WM_SIZE:
                 OnResizing();
                 break;
@@ -24,6 +31,7 @@ internal class WindowsProcHandler : WindowProcessor
                 OnResized();
                 break;
             case Win32Native.WM_DESTROY:
+                Win32Native.PostQuitMessage(0);
                 OnDestroy();
                 break;
         }
@@ -47,7 +55,14 @@ internal class WindowsProcHandler : WindowProcessor
     }
 
     protected override void OnDestroy()
+    { 
+        Logger.Log(" Windows Proc : OnDestroy "); 
+        m_RenderSurface.OnDestroy();
+    }
+
+    protected override void OnClose()
     {
-       m_RenderSurface.OnDestroy();
+        Logger.Log(" Windows Proc : OnClose ");
+        // m_RenderSurface.DisposeSurface();
     }
 }

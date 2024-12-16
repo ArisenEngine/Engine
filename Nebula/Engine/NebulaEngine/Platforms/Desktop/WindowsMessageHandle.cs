@@ -1,5 +1,7 @@
 using System.Runtime.InteropServices;
+using NebulaEngine.Debugger;
 using NebulaEngine.Rendering;
+using Logger = NebulaEngine.Debug.Logger;
 
 namespace NebulaEngine.Platforms;
 
