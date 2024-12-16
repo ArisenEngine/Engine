@@ -15,20 +15,19 @@ internal sealed class WindowsMessageHandle : MessageHandler
     {
         Win32Native.NativeMessage msg;
         
-        bool isAlive = false;
+        bool isAlive = true;
         
         while (Win32Native.PeekMessage(out msg, IntPtr.Zero, 0, 0, Win32Native.PM_REMOVE) != 0)
         {
-            // NCDESTROY event?
-            if (msg.msg == 130)
+            if (msg.msg == 130) // WM_NCDESTROY
             {
                 isAlive = false;
             }
-            else
+            else if (msg.msg == 0x0012) // WM_QUIT
             {
-                isAlive = true;
+                isAlive = false;
             }
-                
+            
             Win32Native.TranslateMessage(ref msg);
             Win32Native.DispatchMessage(ref msg);
         }
