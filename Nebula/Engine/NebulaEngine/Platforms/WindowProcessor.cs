@@ -21,4 +21,5 @@ internal abstract class WindowProcessor
 
     protected abstract void OnDestroy();
 
+    protected abstract void OnClose();
 }

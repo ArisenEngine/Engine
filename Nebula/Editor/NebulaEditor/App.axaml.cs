@@ -89,6 +89,7 @@ namespace NebulaEditor
 
         public static void Shutdown(IClassicDesktopStyleApplicationLifetime desktop)
         {
+            // NebulaInstance.DisposeLogger();
             desktop.Shutdown();
         }
     }

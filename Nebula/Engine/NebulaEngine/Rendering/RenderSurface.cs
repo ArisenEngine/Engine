@@ -23,7 +23,7 @@ internal struct SurfaceInfo
 }
 
 
-internal class RenderSurface : IDisposable, IRenderSurface
+internal class RenderSurface : IRenderSurface
 {
     internal List<RenderSurface> Surfaces = new List<RenderSurface>();
     private IntPtr m_Host;
@@ -74,7 +74,7 @@ internal class RenderSurface : IDisposable, IRenderSurface
         return ((m_Hosted &&  m_Host != IntPtr.Zero) || !m_Hosted) && m_Handle != IntPtr.Zero;
     }
 
-    public void Dispose()
+    public void DisposeSurface()
     {
         RenderWindowAPI.RemoveRenderSurface(m_SurfaceId);
         Surfaces.Remove(this);
@@ -108,6 +108,6 @@ internal class RenderSurface : IDisposable, IRenderSurface
 
     public void OnDestroy()
     {
-        Dispose();
+        
     }
 }

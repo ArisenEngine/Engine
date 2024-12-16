@@ -135,6 +135,9 @@ internal static class Win32Native
 
     [DllImport("user32.dll", EntryPoint = "DispatchMessage", CharSet = CharSet.Unicode)]
     public static extern int DispatchMessage(ref NativeMessage lpMsg);
+    
+    [DllImport("user32.dll", EntryPoint = "PostQuitMessage", CharSet = CharSet.Unicode)]
+    public static extern void PostQuitMessage(int nExitCode);
 
     [DllImport("user32.dll", EntryPoint = "BeginPaint")]
     public static extern IntPtr BeginPaint(IntPtr hWnd, ref PAINTSTRUCT paintStruct);
@@ -153,6 +156,7 @@ internal static class Win32Native
 
     public const int GCS_COMPSTR = 0x0008;
 
+    public const int WM_QUIT = 0x0012;
     public const int WM_DESTROY = 0x0002;
     public const int WM_SIZE = 0x0005;
     public const int WM_ACTIVATEAPP = 0x001C;
@@ -186,4 +190,7 @@ internal static class Win32Native
     public const int WM_EXITSIZEMOVE = 0x0232;
 
     public const int SIZE_MAXIMIZED = 2;
+
+
+    public const int SC_CLOSE = 0xF060;
 }
