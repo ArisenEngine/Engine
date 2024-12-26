@@ -38,10 +38,6 @@
       <Project>{caa51b31-2b28-4c37-bb66-fa85762aaf8f}</Project>
       <Name>RHI.DX12</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Core\RHI.OpenGL\RHI.OpenGL.vcxproj">
-      <Project>{53325655-fd23-4eb2-a353-f61425888374}</Project>
-      <Name>RHI.OpenGL</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\Core\RHI.Vulkan\RHI.Vulkan.vcxproj">
       <Project>{8b80dbdf-a0b9-46e2-865b-4d42a092bd15}</Project>
       <Name>RHI.Vulkan</Name>
