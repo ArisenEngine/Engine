@@ -28,7 +28,7 @@ namespace NebulaEngine::RHI
         u32 maxFramesInFlight;
     };
     
-    class Instance
+    COREINFRA_DLL class Instance
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(Instance)

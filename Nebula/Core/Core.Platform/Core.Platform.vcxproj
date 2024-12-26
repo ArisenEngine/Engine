@@ -137,7 +137,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <CallingConvention>FastCall</CallingConvention>
+      <CallingConvention>Cdecl</CallingConvention>
       <AdditionalIncludeDirectories>$(SolutionDir)Core\Core.Debugger\;$(SolutionDir)Core\Core.Infra\;$(SolutionDir)3rdparty\dxc\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
