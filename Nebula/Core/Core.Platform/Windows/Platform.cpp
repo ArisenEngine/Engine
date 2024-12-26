@@ -126,7 +126,7 @@ namespace NebulaEngine::Platforms
 			
 			if (longPtr)
 			{
-				return ((WindowProc)longPtr)(hwnd, msg, wparam, lparam);
+				((WindowProc)longPtr)(hwnd, msg, wparam, lparam);
 			}
 			
 			return DefWindowProc(hwnd, msg, wparam, lparam);
