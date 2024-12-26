@@ -1,1 +1,6 @@
-#include "Common/CommandHeaders.h"
+#include "./CoreInfraCommon.h"
+extern "C" COREINFRA_DLL void EmptyFunction();
+void EmptyFunction()
+{
+    // donothing
+}
