@@ -64,6 +64,7 @@
     <ClInclude Include="Surfaces\RHIVkSwapChain.h" />
     <ClInclude Include="Synchronization\RHIVkFence.h" />
     <ClInclude Include="Synchronization\RHIVkSemaphore.h" />
+    <ClInclude Include="VkInitializer.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Core.Debugger\Core.Debugger.vcxproj">

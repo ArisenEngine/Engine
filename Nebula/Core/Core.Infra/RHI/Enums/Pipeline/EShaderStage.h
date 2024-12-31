@@ -2,6 +2,7 @@
 
 namespace NebulaEngine::RHI
 {
+    // VkShaderStageFlagBits
     typedef enum EShaderStage
     {
         SHADER_STAGE_VERTEX_BIT = 0x00000001,

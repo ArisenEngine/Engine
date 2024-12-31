@@ -5,6 +5,7 @@
 #include "RHI/Enums/Pipeline/EBlendFactor.h"
 #include "RHI/Enums/Pipeline/EBlendOp.h"
 #include "RHI/Enums/Pipeline/ECullMode.h"
+#include "RHI/Enums/Pipeline/EDescriptorType.h"
 #include "RHI/Enums/Pipeline/EDynamicState.h"
 #include "RHI/Enums/Pipeline/EFrontFace.h"
 #include "RHI/Enums/Pipeline/ELogicOp.h"
@@ -29,8 +30,7 @@ namespace NebulaEngine::RHI
         virtual const EPipelineBindPoint GetBindPoint() const = 0;
 
         virtual void Clear() = 0;
-
-
+        
         virtual void AddVertexInputAttributeDescription(u32 location, u32 binding, Format format, u32 offset) = 0;
         virtual u32 GetVertexInputAttributeDescriptionCount() = 0;
         virtual void* GetVertexInputAttributeDescriptions() = 0;
@@ -40,6 +40,11 @@ namespace NebulaEngine::RHI
         virtual u32 GetVertexBindingDescriptionCount() = 0;
         virtual void* GetVertexBindingDescriptions() = 0;
         virtual void ClearVertexBindingDescriptions() = 0;
+
+        // TODO:
+        virtual void AddDescriptorSetLayout() = 0;
+        virtual void AddDescriptorSetBinding(u32 layoutIndex, u32 binding, EDescriptorType type,
+            u32 descriptorCount, u32 shaderStageFlags, void* pImmutableSamplers = nullptr) = 0;
 
         virtual u32 GetStageCount() = 0;
         virtual void* GetStageCreateInfo() = 0;
