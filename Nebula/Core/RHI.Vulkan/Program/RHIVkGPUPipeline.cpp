@@ -51,7 +51,8 @@ void NebulaEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(u32 frameIndex, G
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(m_PushConstantRanges.size());
         pipelineLayoutInfo.pPushConstantRanges = m_PushConstantRanges.data();
 
-        if (vkCreatePipelineLayout(m_VkDevice, &pipelineLayoutInfo, nullptr, &m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS)
+        if (vkCreatePipelineLayout(m_VkDevice, &pipelineLayoutInfo,
+            nullptr, &m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS)
         {
             LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocVkPipeline]: failed to create pipeline layout!");
         }
@@ -119,7 +120,6 @@ void NebulaEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(u32 frameIndex, G
         multipleSampleInfo.alphaToOneEnable = static_cast<VkBool32>(m_PipelineStateObject->AlphaToOne());
 
         // blend state
-        
         VkPipelineColorBlendStateCreateInfo blendState {};
         blendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
         blendState.attachmentCount = m_PipelineStateObject->GetBlendStateCount();

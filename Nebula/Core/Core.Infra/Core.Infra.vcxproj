@@ -105,6 +105,7 @@
     <Content Include="RHI\Enums\Attachment\AttachmentDescFlagBits.h" />
     <Content Include="RHI\Enums\Image\ImageLayout.h" />
     <Content Include="RHI\Enums\Image\ImageUsageFlagBits.h" />
+    <Content Include="RHI\Enums\Pipeline\EDescriptorType.h" />
     <Content Include="RHI\Enums\Subpass\ESubpassDescFlag.h" />
     <Content Include="RHI\Enums\Swapchain\SurfaceTransformFlagBits.h" />
     <Content Include="RHI\Enums\Swapchain\SwapChainCreateFlagBits.h" />

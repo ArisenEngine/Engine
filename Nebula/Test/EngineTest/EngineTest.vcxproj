@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" Exclude="Shader/*" />
+    <ClCompile Include="Shader\UniformBuffers.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Test.h" />
