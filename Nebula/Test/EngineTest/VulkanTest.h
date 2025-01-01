@@ -15,8 +15,11 @@
 #include "RHI/Program/GPUPipelineStateObject.h"
 #include "Windows/RenderWindowAPI.h"
 #include "ShaderCompiler/ShaderCompilerAPI.h"
+#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
+#include <chrono>
 #include "RHI/Handles/BufferHandle.h"
 
 using namespace NebulaEngine;
@@ -26,16 +29,18 @@ using namespace NebulaEngine;
 struct RenderContext
 {
     u32 windowId;
+    u32 newWidth;
+    u32 newHeight;
     RHI::Device* device;
     std::shared_ptr<RHI::GPURenderPass> renderPass;
     std::shared_ptr<RHI::FrameBuffer> frameBuffer;
     std::shared_ptr<RHI::BufferHandle> vertexBufferHandle;
     std::shared_ptr<RHI::BufferHandle> indicesBufferHandle;
+    Containers::Vector<std::shared_ptr<RHI::BufferHandle>> uniformBuffers;
+     
     RHI::RHICommandBufferPool* commandPool;
     Containers::Vector<u32> gpuPrograms;
     bool bShouldResize;
-    u32 newWidth;
-    u32 newHeight;
 };
 
 Containers::Vector<RenderContext> g_RenderContexts;
@@ -138,7 +143,8 @@ public:
             auto windowId = Platforms::CreateRenderWindowWithResizeCallback(nullptr, WinProc, WinResize, 640, 480);
             g_RenderContexts[i] = RenderContext
             {
-                windowId
+                windowId,
+                640, 480
             };
         }
 
@@ -189,6 +195,10 @@ public:
             g_RenderContexts[i].frameBuffer = g_RenderContexts[i].device->GetFrameBuffer();
             g_RenderContexts[i].vertexBufferHandle = g_RenderContexts[i].device->GetBufferHandle();
             g_RenderContexts[i].indicesBufferHandle = g_RenderContexts[i].device->GetBufferHandle();
+            for(int frameIndex = 0; frameIndex < m_Instance->GetMaxFramesInFlight(); ++frameIndex)
+            {
+                g_RenderContexts[i].uniformBuffers.emplace_back(g_RenderContexts[i].device->GetBufferHandle());
+            }
         }
 
         Platforms::InitDXC();
@@ -271,7 +281,7 @@ public:
             g_RenderContexts[i].gpuPrograms.emplace_back(programId);
         }
 
-        // Upload Vertex Buffer
+        // Init Buffer
         for (int i = 0; i < k_WindowsCount; ++i)
         {
             g_RenderContexts[i].vertexBufferHandle->AllocBufferHandle({
@@ -290,6 +300,17 @@ public:
             });
             g_RenderContexts[i].indicesBufferHandle->AllocBufferMemory(RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
+            for (const auto& uniformBuffer : g_RenderContexts[i].uniformBuffers)
+            {
+                uniformBuffer->AllocBufferHandle({
+                    0,
+                    sizeof(UniformBufferObject),
+                    RHI::BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                    RHI::SHARING_MODE_EXCLUSIVE
+                });
+                uniformBuffer->AllocBufferMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            }
+            
             UploadVertex(g_RenderContexts[i]);
         }
 
@@ -301,6 +322,7 @@ public:
     {
         for (int i = 0; i < k_WindowsCount; ++i)
         {
+            UploadUniformBuffer(g_RenderContexts[i]);
             RecordSubmitPresent(std::move(g_RenderContexts[i]));
 
             if (g_RenderContexts[i].bShouldResize)
@@ -313,6 +335,24 @@ public:
         ++frameIndex;
     }
 
+    void UploadUniformBuffer(RenderContext const& context)
+    {
+        static auto startTime = std::chrono::high_resolution_clock::now();
+
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+        
+        UniformBufferObject ubo{};
+        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.proj = glm::perspective(glm::radians(45.0f),
+            context.newWidth / (float) context.newHeight, 0.1f, 10.0f);
+        ubo.proj[1][1] *= -1;
+
+        context.uniformBuffers[frameIndex % m_Instance->GetMaxFramesInFlight()]->MemoryCopy(&ubo, 0);
+    }
+    
     void UploadVertex(RenderContext const& context)
     {
         auto device = context.device;
@@ -508,6 +548,7 @@ public:
         for (auto renderContext : g_RenderContexts)
         {
             renderContext.device->DeviceWaitIdle();
+            renderContext.uniformBuffers.clear();
         }
         
         g_RenderContexts.clear();

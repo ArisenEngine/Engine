@@ -8,7 +8,6 @@ NebulaEngine::RHI::RHIVkGPUPipeline::~RHIVkGPUPipeline() noexcept
 
     FreeAllPipelines();
     FreeAllPipelineLayouts();
-    m_DescriptorSetLayouts.clear();
     m_PushConstantRanges.clear();
 
     m_Device = nullptr;
@@ -46,8 +45,8 @@ void NebulaEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(u32 frameIndex, G
         // Create Pipeline Layout
         VkPipelineLayoutCreateInfo pipelineLayoutInfo {};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(m_DescriptorSetLayouts.size());
-        pipelineLayoutInfo.pSetLayouts = m_DescriptorSetLayouts.data();
+        pipelineLayoutInfo.setLayoutCount = m_PipelineStateObject->DescriptorSetLayoutCount();
+        pipelineLayoutInfo.pSetLayouts = static_cast<const VkDescriptorSetLayout*>(m_PipelineStateObject->GetDescriptorSetLayouts());
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(m_PushConstantRanges.size());
         pipelineLayoutInfo.pPushConstantRanges = m_PushConstantRanges.data();
 

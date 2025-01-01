@@ -40,11 +40,14 @@ namespace NebulaEngine::RHI
         virtual u32 GetVertexBindingDescriptionCount() = 0;
         virtual void* GetVertexBindingDescriptions() = 0;
         virtual void ClearVertexBindingDescriptions() = 0;
-
-        // TODO:
-        virtual void AddDescriptorSetLayout() = 0;
-        virtual void AddDescriptorSetBinding(u32 layoutIndex, u32 binding, EDescriptorType type,
+        
+        virtual void AddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding, EDescriptorType type,
             u32 descriptorCount, u32 shaderStageFlags, void* pImmutableSamplers = nullptr) = 0;
+        virtual void ClearDescriptorSetLayoutBindings() = 0;
+        virtual void BuildDescriptorSetLayout() = 0;
+        virtual void* GetDescriptorSetLayouts() = 0;
+        virtual u32 DescriptorSetLayoutCount() = 0;
+        virtual void ClearDescriptorSetLayouts() = 0;
 
         virtual u32 GetStageCount() = 0;
         virtual void* GetStageCreateInfo() = 0;
