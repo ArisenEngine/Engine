@@ -39,7 +39,6 @@ namespace NebulaEngine::RHI
         GPUPipelineStateObject* m_PipelineStateObject;
         Containers::Vector<VkPipeline> m_VkGraphicPipelines;
         Containers::Vector<VkPipelineLayout> m_VkGraphicsPipelineLayouts;
-        Containers::Vector<VkDescriptorSetLayout> m_DescriptorSetLayouts { };
         Containers::Vector<VkPushConstantRange> m_PushConstantRanges { };
 
     };

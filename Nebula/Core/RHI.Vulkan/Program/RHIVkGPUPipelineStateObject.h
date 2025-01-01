@@ -11,7 +11,6 @@ namespace NebulaEngine::RHI
 
 namespace NebulaEngine::RHI
 {
-    
     class RHIVkGPUPipelineStateObject final : public GPUPipelineStateObject
     {
     public:
@@ -53,7 +52,15 @@ namespace NebulaEngine::RHI
         void ClearBlendState() override;
         const u32 GetBlendStateCount() const override;  
         void* GetBlendAttachmentStates() override;
-        
+
+        // Descriptor
+        void AddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding, EDescriptorType type,
+            u32 descriptorCount, u32 shaderStageFlags, void* pImmutableSamplers = nullptr) override;
+        void ClearDescriptorSetLayoutBindings() override;
+        void BuildDescriptorSetLayout() override;
+        void* GetDescriptorSetLayouts() override;
+        u32 DescriptorSetLayoutCount() override;
+        void ClearDescriptorSetLayouts() override;
         
     private:
         
@@ -68,5 +75,9 @@ namespace NebulaEngine::RHI
         // vertex
         Containers::Vector<VkVertexInputBindingDescription> m_VertexInputBindingDescriptions {};
         Containers::Vector<VkVertexInputAttributeDescription> m_VertexInputAttributeDescriptions {};
+
+        // descriptor
+        Containers::Map<u32, Containers::Vector<VkDescriptorSetLayoutBinding>> m_DescriptorSetLayoutBindings {};
+        Containers::Vector<VkDescriptorSetLayout> m_DescriptorSetLayouts {};
     };
 }

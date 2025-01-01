@@ -2,6 +2,7 @@
 #include "RHIVkGPUPipelineStateObject.h"
 #include "RHIVkGPUPipeline.h"
 #include "../Devices/RHIVkDevice.h"
+#include "../VkInitializer.h"
 
 NebulaEngine::RHI::RHIVkGPUPipelineStateObject::~RHIVkGPUPipelineStateObject() noexcept
 {
@@ -60,6 +61,8 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::Clear()
     ClearVertexBindingDescriptions();
     ClearVertexInputAttributeDescriptions();
     ClearDynamicPipelineStates();
+    ClearDescriptorSetLayoutBindings();
+    ClearDescriptorSetLayouts();
 }
 
 void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddVertexBindingDescription(u32 binding, u32 stride,
@@ -155,4 +158,63 @@ const NebulaEngine::u32 NebulaEngine::RHI::RHIVkGPUPipelineStateObject::GetBlend
 void* NebulaEngine::RHI::RHIVkGPUPipelineStateObject::GetBlendAttachmentStates()
 {
     return m_BlendAttachmentStates.data();
+}
+
+void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::ClearDescriptorSetLayoutBindings()
+{
+    m_DescriptorSetLayoutBindings.clear();
+}
+
+void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::BuildDescriptorSetLayout()
+{
+    ClearDescriptorSetLayouts();
+    auto vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
+    for (const auto& pair : m_DescriptorSetLayoutBindings)
+    {
+        auto descriptorSetLayoutInfo = DescriptorSetLayoutCreateInfo(pair.second.size(), pair.second.data());
+        VkDescriptorSetLayout descriptorSetLayout;
+        if (vkCreateDescriptorSetLayout(vkDevice, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
+        {
+            LOG_FATAL_AND_THROW("[RHIVkGPUPipelineStateObject::BuildDescriptorSetLayout]: failed to create descriptor set layout!");
+        }
+        m_DescriptorSetLayouts.emplace_back(descriptorSetLayout);
+    }
+    
+}
+
+void* NebulaEngine::RHI::RHIVkGPUPipelineStateObject::GetDescriptorSetLayouts()
+{
+    return m_DescriptorSetLayouts.data();
+}
+
+NebulaEngine::u32 NebulaEngine::RHI::RHIVkGPUPipelineStateObject::DescriptorSetLayoutCount()
+{
+    return m_DescriptorSetLayouts.size();
+}
+
+void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::ClearDescriptorSetLayouts()
+{
+    auto vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
+    for (const auto& descriptorSetLayout : m_DescriptorSetLayouts)
+    {
+        vkDestroyDescriptorSetLayout(vkDevice, descriptorSetLayout, nullptr);
+    }
+    m_DescriptorSetLayouts.clear();
+}
+
+void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding,
+                                                                                   EDescriptorType type, u32 descriptorCount, u32 shaderStageFlags, void* pImmutableSamplers)
+{
+    auto descriptorSetLayoutBinding = DescriptorSetLayoutBinding(binding,
+        static_cast<VkDescriptorType>(type), descriptorCount, shaderStageFlags,
+        static_cast<const VkSampler*>(pImmutableSamplers));
+    if (m_DescriptorSetLayoutBindings.contains(layoutIndex))
+    {
+        m_DescriptorSetLayoutBindings[layoutIndex].emplace_back(descriptorSetLayoutBinding);
+    }
+    else
+    {
+        Containers::Vector<VkDescriptorSetLayoutBinding> bindings { descriptorSetLayoutBinding };
+        m_DescriptorSetLayoutBindings.try_emplace(layoutIndex, bindings);
+    }
 }
