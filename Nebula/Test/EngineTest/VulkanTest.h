@@ -409,6 +409,11 @@ public:
         pipelineState->AddVertexBindingDescription(0, sizeof(Vertex), RHI::VERTEX_INPUT_RATE_VERTEX);
         pipelineState->AddVertexInputAttributeDescription(0, 0, RHI::Format::FORMAT_R32G32_SFLOAT, offsetof(Vertex, pos));
         pipelineState->AddVertexInputAttributeDescription(1, 0, RHI::Format::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color));
+
+        pipelineState->ClearDescriptorSetLayoutBindings();
+        pipelineState->AddDescriptorSetLayoutBinding(0,
+            0, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, RHI::SHADER_STAGE_VERTEX_BIT);
+        
         
         // Record cmd
         commandBuffer->WaitForFence(frameIndex);
