@@ -4,6 +4,11 @@
 #include "../Devices/RHIVkDevice.h"
 #include "../VkInitializer.h"
 
+NebulaEngine::s32 GetDescriptorPoolHash(NebulaEngine::RHI::EDescriptorType type, NebulaEngine::u32 descriptorCount, )
+{
+    
+}
+
 NebulaEngine::RHI::RHIVkGPUPipelineStateObject::~RHIVkGPUPipelineStateObject() noexcept
 {
     LOG_DEBUG("[RHIVkGPUPipelineStateObject::~RHIVkGPUPipelineStateObject]: ~RHIVkGPUPipelineStateObject");

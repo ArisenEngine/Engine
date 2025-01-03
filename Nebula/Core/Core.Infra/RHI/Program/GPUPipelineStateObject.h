@@ -18,6 +18,7 @@ namespace NebulaEngine::RHI
 {
     class GPUPipelineStateObject
     {
+        friend class GPUPipeline;
     public:
         NO_COPY_NO_MOVE(GPUPipelineStateObject)
         GPUPipelineStateObject() = default;
@@ -44,14 +45,16 @@ namespace NebulaEngine::RHI
         virtual void AddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding, EDescriptorType type,
             u32 descriptorCount, u32 shaderStageFlags, void* pImmutableSamplers = nullptr) = 0;
         virtual void ClearDescriptorSetLayoutBindings() = 0;
-        virtual void BuildDescriptorSetLayout() = 0;
+       
         virtual void* GetDescriptorSetLayouts() = 0;
         virtual u32 DescriptorSetLayoutCount() = 0;
         virtual void ClearDescriptorSetLayouts() = 0;
-
+        
         virtual u32 GetStageCount() = 0;
         virtual void* GetStageCreateInfo() = 0;
-        
+    protected:
+        virtual void BuildDescriptorSetLayout() = 0;
+
     public:
 
         void ClearDynamicPipelineStates() { m_DynamicPipelineStates.clear(); }

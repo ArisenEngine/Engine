@@ -40,6 +40,7 @@ struct RenderContext
      
     RHI::RHICommandBufferPool* commandPool;
     Containers::Vector<u32> gpuPrograms;
+    u32 descriptorPoolId;
     bool bShouldResize;
 };
 
@@ -195,6 +196,8 @@ public:
             g_RenderContexts[i].frameBuffer = g_RenderContexts[i].device->GetFrameBuffer();
             g_RenderContexts[i].vertexBufferHandle = g_RenderContexts[i].device->GetBufferHandle();
             g_RenderContexts[i].indicesBufferHandle = g_RenderContexts[i].device->GetBufferHandle();
+            g_RenderContexts[i].descriptorPoolId =
+                g_RenderContexts[i].device->GetDescriptorPool()->AddPool({RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER},{2},2);
             for(int frameIndex = 0; frameIndex < m_Instance->GetMaxFramesInFlight(); ++frameIndex)
             {
                 g_RenderContexts[i].uniformBuffers.emplace_back(g_RenderContexts[i].device->GetBufferHandle());
@@ -404,6 +407,8 @@ public:
 
         auto pipelineManager = context.device->GetGPUPipelineManager();
 
+        auto descriptorPool = context.device->GetDescriptorPool();
+
         auto pipelineState = pipelineManager->GetPipelineState();
 
         pipelineState->AddVertexBindingDescription(0, sizeof(Vertex), RHI::VERTEX_INPUT_RATE_VERTEX);
@@ -411,8 +416,7 @@ public:
         pipelineState->AddVertexInputAttributeDescription(1, 0, RHI::Format::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color));
 
         pipelineState->ClearDescriptorSetLayoutBindings();
-        pipelineState->AddDescriptorSetLayoutBinding(0,
-            0, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, RHI::SHADER_STAGE_VERTEX_BIT);
+        pipelineState->AddDescriptorSetLayoutBinding(0, 0, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, RHI::SHADER_STAGE_VERTEX_BIT);
         
         
         // Record cmd

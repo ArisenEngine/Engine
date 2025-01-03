@@ -4,6 +4,7 @@
 #define USE_STL_MAP 1
 #define USE_STL_SET 1
 #define USE_STL_UNORDER_SET 1
+#include <unordered_map>
 
 #if USE_STL_VECTOR
 
@@ -28,6 +29,9 @@ namespace NebulaEngine::Containers
 
 	template<class TMapKey, class TMapValue>
 	using Multimap = std::multimap<TMapKey, TMapValue>;
+
+	template<class TMapKey, class TMapValue>
+	using UnorderedMap = std::unordered_map<TMapKey, TMapValue>;
 }
 
 #endif;
