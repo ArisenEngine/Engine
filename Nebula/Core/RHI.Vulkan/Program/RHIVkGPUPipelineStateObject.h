@@ -11,8 +11,10 @@ namespace NebulaEngine::RHI
 
 namespace NebulaEngine::RHI
 {
+   
     class RHIVkGPUPipelineStateObject final : public GPUPipelineStateObject
     {
+        friend class RHIVkGPUPipeline;
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkGPUPipelineStateObject)
         ~RHIVkGPUPipelineStateObject() noexcept override;
@@ -57,11 +59,14 @@ namespace NebulaEngine::RHI
         void AddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding, EDescriptorType type,
             u32 descriptorCount, u32 shaderStageFlags, void* pImmutableSamplers = nullptr) override;
         void ClearDescriptorSetLayoutBindings() override;
-        void BuildDescriptorSetLayout() override;
+      
         void* GetDescriptorSetLayouts() override;
         u32 DescriptorSetLayoutCount() override;
         void ClearDescriptorSetLayouts() override;
         
+    protected:
+        void BuildDescriptorSetLayout() override;
+
     private:
         
         RHIVkDevice* m_Device;

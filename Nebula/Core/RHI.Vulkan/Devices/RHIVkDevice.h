@@ -5,11 +5,15 @@
 #include "../CommandBuffer/RHIVkCommandBufferPool.h"
 #include "../Program/RHIVkGPUPipelineManager.h"
 #include "../Program/RHIVkGPUProgram.h"
+#include "../Program/RHIVkDescriptorPool.h"
 
 namespace NebulaEngine::RHI
 {
     class RHIVkCommandBufferPool;
-    
+}
+
+namespace NebulaEngine::RHI
+{
     class RHIVkDevice final: public Device
     {
         
@@ -43,6 +47,11 @@ namespace NebulaEngine::RHI
             return m_GPUPipelineManager;
         }
 
+        DescriptorPool* GetDescriptorPool() const override
+        {
+            return m_DescriptorPool;
+        }
+
         void Submit(RHICommandBuffer* commandBuffer, u32 frameIndex) override;
         u32 FindMemoryType(u32 typeFilter, u32 properties) override;
 
@@ -51,6 +60,7 @@ namespace NebulaEngine::RHI
 
         friend class RHIVkInstance;
         RHIVkGPUPipelineManager* m_GPUPipelineManager;
+        RHIVkDescriptorPool* m_DescriptorPool;
         VkQueue m_VkGraphicQueue;
         VkQueue m_VkPresentQueue;
         VkDevice m_VkDevice;

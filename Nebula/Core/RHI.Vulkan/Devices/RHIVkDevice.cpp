@@ -8,6 +8,7 @@ NebulaEngine::RHI::RHIVkDevice::RHIVkDevice(Instance* instance, Surface* surface
 : Device(instance, surface), m_VkGraphicQueue(graphicQueue), m_VkPresentQueue(presentQueue), m_VkDevice(device), m_VkPhysicalDeviceMemoryProperties(memoryProperties)
 {
     m_GPUPipelineManager = new RHIVkGPUPipelineManager(this, m_Instance->GetMaxFramesInFlight());
+    m_DescriptorPool = new RHIVkDescriptorPool(this, m_Instance->GetMaxFramesInFlight());
 }
 
 void NebulaEngine::RHI::RHIVkDevice::DeviceWaitIdle() const
@@ -187,6 +188,7 @@ NebulaEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
 {
     DeviceWaitIdle();
     delete m_GPUPipelineManager;
+    delete m_DescriptorPool;
     m_FrameBuffers.clear();
     m_RenderPasses.clear();
     m_GPUPrograms.clear();

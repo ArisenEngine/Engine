@@ -27,6 +27,7 @@
     <ClCompile Include="Memory\RHIVkBufferView.cpp" />
     <ClCompile Include="Memory\RHIVkImageView.cpp" />
     <ClCompile Include="Memory\RHIVkDeviceMemory.cpp" />
+    <ClCompile Include="Program\RHIVkDescriptorPool.cpp" />
     <ClCompile Include="Program\RHIVkGPUPipeline.cpp" />
     <ClCompile Include="Program\RHIVkGPUPipelineManager.cpp" />
     <ClCompile Include="Program\RHIVkGPUPipelineStateObject.cpp" />
@@ -51,6 +52,7 @@
     <ClInclude Include="Memory\RHIVkBufferView.h" />
     <ClInclude Include="Memory\RHIVkImageView.h" />
     <ClInclude Include="Memory\RHIVkDeviceMemory.h" />
+    <ClInclude Include="Program\RHIVkDescriptorPool.h" />
     <ClInclude Include="Program\RHIVkGPUPipeline.h" />
     <ClInclude Include="Program\RHIVkGPUPipelineManager.h" />
     <ClInclude Include="Program\RHIVkGPUPipelineStateObject.h" />

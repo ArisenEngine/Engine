@@ -3,6 +3,7 @@
 #include "../RHICommon.h"
 #include "RHI/CommandBuffer/RHICommandBufferPool.h"
 #include "RHI/Enums/Memory/EMemoryPropertyFlagBits.h"
+#include "RHI/Program/DescriptorPool.h"
 
 namespace NebulaEngine::RHI
 {
@@ -56,6 +57,8 @@ namespace NebulaEngine::RHI
         virtual void ReleaseBufferHandle(std::shared_ptr<BufferHandle> bufferHandle) = 0;
 
         virtual GPUPipelineManager* GetGPUPipelineManager() const = 0;
+
+        virtual DescriptorPool* GetDescriptorPool() const = 0;
 
         virtual void Submit(RHICommandBuffer* commandBuffer, u32 frameIndex) = 0;
 

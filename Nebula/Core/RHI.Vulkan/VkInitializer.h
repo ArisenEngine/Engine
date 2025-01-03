@@ -27,10 +27,30 @@ namespace NebulaEngine::RHI
     {
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        // TODO set flags
+        // TODO: set flags
         // layoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
         layoutInfo.bindingCount = bindingCount;
         layoutInfo.pBindings = pBindings;
         return layoutInfo;
+    }
+
+    inline VkDescriptorPoolSize DescriptorPoolSize(EDescriptorType type, u32 count)
+    {
+        VkDescriptorPoolSize poolSize{};
+        poolSize.type = static_cast<VkDescriptorType>(type);
+        poolSize.descriptorCount = count;
+        return poolSize;
+    }
+
+    inline VkDescriptorPoolCreateInfo DescriptorPoolCreateInfo(u32 poolSizeCount, const VkDescriptorPoolSize* poolSize, u32 maxSets)
+    {
+        VkDescriptorPoolCreateInfo poolInfo{};
+        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.poolSizeCount = poolSizeCount;
+        poolInfo.pPoolSizes = poolSize;
+        poolInfo.maxSets = maxSets;
+        // TODO: set flags
+        // poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_EXT;
+        return poolInfo;
     }
 }
