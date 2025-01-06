@@ -53,4 +53,33 @@ namespace NebulaEngine::RHI
         // poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_EXT;
         return poolInfo;
     }
+
+    inline VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo(VkDescriptorPool pool, u32 descriptorSetCount, const VkDescriptorSetLayout* pSetLayouts)
+    {
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = pool;
+        allocInfo.descriptorSetCount = (descriptorSetCount);
+        allocInfo.pSetLayouts = pSetLayouts;
+        return allocInfo;
+    }
+
+    inline VkWriteDescriptorSet WriteDescriptorSet(
+        VkDescriptorSet dstSet, u32 dstBinding, u32 dstArrayElement, u32 descriptorCount,
+        VkDescriptorType descriptorType, const VkDescriptorImageInfo* pImageInfo, const VkDescriptorBufferInfo* pBufferInfo,
+        const VkBufferView* pTexelBufferView)
+    {
+        VkWriteDescriptorSet descriptorWrite{};
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = dstSet;
+        descriptorWrite.dstBinding = dstBinding;
+        descriptorWrite.dstArrayElement = dstArrayElement;
+        descriptorWrite.descriptorCount = descriptorCount;
+        descriptorWrite.descriptorType = descriptorType;
+        descriptorWrite.pImageInfo = pImageInfo;
+        descriptorWrite.pBufferInfo = pBufferInfo;
+        descriptorWrite.pTexelBufferView = pTexelBufferView;
+        return descriptorWrite;
+    }
+    
 }

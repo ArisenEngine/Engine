@@ -15,6 +15,7 @@ namespace NebulaEngine::RHI
     class RHIVkGPUPipelineStateObject final : public GPUPipelineStateObject
     {
         friend class RHIVkGPUPipeline;
+        friend class RHIVkDescriptorPool;
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkGPUPipelineStateObject)
         ~RHIVkGPUPipelineStateObject() noexcept override;
@@ -82,5 +83,6 @@ namespace NebulaEngine::RHI
         // descriptor
         Containers::Map<u32, Containers::Vector<VkDescriptorSetLayoutBinding>> m_DescriptorSetLayoutBindings {};
         Containers::Vector<VkDescriptorSetLayout> m_DescriptorSetLayouts {};
+        Containers::Vector<VkDescriptorSetLayoutCreateInfo> m_DescriptorSetLayoutCreateInfo {};
     };
 }

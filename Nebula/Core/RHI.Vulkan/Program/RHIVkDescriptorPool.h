@@ -18,12 +18,14 @@ namespace NebulaEngine::RHI
 
         u32 AddPool(Containers::Vector<EDescriptorType> types, Containers::Vector<u32> counts, u32 maxSets) override;
         bool ResetPool(u32 poolId) override;
-        
+        void AllocDescriptorSets(u32 poolId, GPUPipelineStateObject* pso) override;
+        void UpdateDescriptorSets(u32 poolId, GPUPipelineStateObject* pso, u32 frameIndex) override;
     private:
         
         RHIVkDevice* m_pDevice = nullptr;
-        u32 m_maxFramesInFlight;
+        u32 m_MaxFramesInFlight;
         Containers::Vector<VkDescriptorPool> m_Pools {};
         Containers::Vector<VkDescriptorPoolSize> m_DescriptorPoolSizes {};
+        Containers::Vector<Containers::Vector<Containers::Vector<VkDescriptorSet>>> m_DescriptorSets {};
     };
 }

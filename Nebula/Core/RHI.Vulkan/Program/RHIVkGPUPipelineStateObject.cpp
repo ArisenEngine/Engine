@@ -4,11 +4,6 @@
 #include "../Devices/RHIVkDevice.h"
 #include "../VkInitializer.h"
 
-NebulaEngine::s32 GetDescriptorPoolHash(NebulaEngine::RHI::EDescriptorType type, NebulaEngine::u32 descriptorCount, )
-{
-    
-}
-
 NebulaEngine::RHI::RHIVkGPUPipelineStateObject::~RHIVkGPUPipelineStateObject() noexcept
 {
     LOG_DEBUG("[RHIVkGPUPipelineStateObject::~RHIVkGPUPipelineStateObject]: ~RHIVkGPUPipelineStateObject");
@@ -182,6 +177,7 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::BuildDescriptorSetLayout()
         {
             LOG_FATAL_AND_THROW("[RHIVkGPUPipelineStateObject::BuildDescriptorSetLayout]: failed to create descriptor set layout!");
         }
+        m_DescriptorSetLayoutCreateInfo.emplace_back(descriptorSetLayoutInfo);
         m_DescriptorSetLayouts.emplace_back(descriptorSetLayout);
     }
     
@@ -205,6 +201,7 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::ClearDescriptorSetLayouts()
         vkDestroyDescriptorSetLayout(vkDevice, descriptorSetLayout, nullptr);
     }
     m_DescriptorSetLayouts.clear();
+    m_DescriptorSetLayoutCreateInfo.clear();
 }
 
 void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding,

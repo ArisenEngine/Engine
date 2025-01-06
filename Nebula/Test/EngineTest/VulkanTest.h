@@ -408,7 +408,8 @@ public:
         auto pipelineManager = context.device->GetGPUPipelineManager();
 
         auto descriptorPool = context.device->GetDescriptorPool();
-
+        descriptorPool->ResetPool(context.descriptorPoolId);
+        
         auto pipelineState = pipelineManager->GetPipelineState();
 
         pipelineState->AddVertexBindingDescription(0, sizeof(Vertex), RHI::VERTEX_INPUT_RATE_VERTEX);
@@ -416,9 +417,11 @@ public:
         pipelineState->AddVertexInputAttributeDescription(1, 0, RHI::Format::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color));
 
         pipelineState->ClearDescriptorSetLayoutBindings();
-        pipelineState->AddDescriptorSetLayoutBinding(0, 0, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, RHI::SHADER_STAGE_VERTEX_BIT);
+        pipelineState->AddDescriptorSetLayoutBinding(0, 0, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            1, RHI::SHADER_STAGE_VERTEX_BIT);
         pipelineState->BuildDescriptorSetLayout();
 
+        descriptorPool->AllocDescriptorSets(context.descriptorPoolId, pipelineState.get());
         
         
         // Record cmd

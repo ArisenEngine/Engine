@@ -53,7 +53,7 @@ namespace NebulaEngine::RHI
         virtual u32 GetStageCount() = 0;
         virtual void* GetStageCreateInfo() = 0;
         virtual void BuildDescriptorSetLayout() = 0;
-    
+      
 
     public:
 
