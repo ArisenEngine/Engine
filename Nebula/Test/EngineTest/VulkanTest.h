@@ -417,6 +417,8 @@ public:
 
         pipelineState->ClearDescriptorSetLayoutBindings();
         pipelineState->AddDescriptorSetLayoutBinding(0, 0, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, RHI::SHADER_STAGE_VERTEX_BIT);
+        pipelineState->BuildDescriptorSetLayout();
+
         
         
         // Record cmd
