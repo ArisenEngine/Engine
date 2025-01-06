@@ -44,7 +44,6 @@ void NebulaEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(u32 frameIndex, G
     m_SubPass = subPass;
     ASSERT(m_PipelineStateObject != nullptr);
     {
-        static_cast<RHIVkGPUPipelineStateObject*>(m_PipelineStateObject)->BuildDescriptorSetLayout();
         // Create Pipeline Layout
         VkPipelineLayoutCreateInfo pipelineLayoutInfo {};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

@@ -63,10 +63,8 @@ namespace NebulaEngine::RHI
         void* GetDescriptorSetLayouts() override;
         u32 DescriptorSetLayoutCount() override;
         void ClearDescriptorSetLayouts() override;
-        
-    protected:
         void BuildDescriptorSetLayout() override;
-
+    
     private:
         
         RHIVkDevice* m_Device;
