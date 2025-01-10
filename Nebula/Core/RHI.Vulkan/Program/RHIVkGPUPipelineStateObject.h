@@ -11,7 +11,15 @@ namespace NebulaEngine::RHI
 
 namespace NebulaEngine::RHI
 {
-   
+    typedef struct DescriptorUpdateInfo
+    {
+        VkDescriptorSetLayoutCreateInfo layoutInfo;
+        u32 dstArrayElement;
+        const VkDescriptorImageInfo* pImageInfo;
+        const VkDescriptorBufferInfo* pBufferInfo;
+        const VkBufferView* pTexelBufferView;
+    } DescriptorUpdateInfo;
+    
     class RHIVkGPUPipelineStateObject final : public GPUPipelineStateObject
     {
         friend class RHIVkGPUPipeline;
@@ -83,6 +91,6 @@ namespace NebulaEngine::RHI
         // descriptor
         Containers::Map<u32, Containers::Vector<VkDescriptorSetLayoutBinding>> m_DescriptorSetLayoutBindings {};
         Containers::Vector<VkDescriptorSetLayout> m_DescriptorSetLayouts {};
-        Containers::Vector<VkDescriptorSetLayoutCreateInfo> m_DescriptorSetLayoutCreateInfo {};
+        Containers::Vector<DescriptorUpdateInfo> m_DescriptorUpdateInfo {};
     };
 }

@@ -81,6 +81,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Engine", "Engine\Engine\Eng
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{E946E1B7-0807-428B-85E1-7BC144572024}"
+	ProjectSection(SolutionItems) = preProject
+		Test\Test.glsl = Test\Test.glsl
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowHostTest", "Test\WindowHostTest\WindowHostTest.csproj", "{36AEF810-29B4-48CB-BEC7-672176AB1E46}"
 EndProject
