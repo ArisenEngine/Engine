@@ -201,7 +201,7 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::ClearDescriptorSetLayouts()
         vkDestroyDescriptorSetLayout(vkDevice, descriptorSetLayout, nullptr);
     }
     m_DescriptorSetLayouts.clear();
-    m_DescriptorSetLayoutCreateInfo.clear();
+    m_DescriptorUpdateInfo.clear();
 }
 
 void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding,
