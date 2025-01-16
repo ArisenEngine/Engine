@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "DescriptorUpdateInfo.h"
 #include "../../Common/CommandHeaders.h"
 #include "RHI/Enums/Attachment/ESampleCountFlagBits.h"
 #include "RHI/Enums/Image/Format.h"
@@ -16,6 +17,7 @@
 
 namespace NebulaEngine::RHI
 {
+    using ImmutableSamplers = void;
     class GPUPipelineStateObject
     {
         friend class GPUPipeline;
@@ -43,7 +45,11 @@ namespace NebulaEngine::RHI
         virtual void ClearVertexBindingDescriptions() = 0;
         
         virtual void AddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding, EDescriptorType type,
-            u32 descriptorCount, u32 shaderStageFlags, void* pImmutableSamplers = nullptr) = 0;
+            u32 descriptorCount, u32 shaderStageFlags, DescriptorImageInfo* pImageInfos, ImmutableSamplers* pImmutableSamplers = nullptr) = 0;
+        virtual void AddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding, EDescriptorType type,
+                                                   u32 descriptorCount, u32 shaderStageFlags, DescriptorBufferInfo* pBufferInfos) = 0;
+        virtual void AddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding, EDescriptorType type,
+                                                   u32 descriptorCount, u32 shaderStageFlags, BufferView* pTexelBufferView) = 0;
         virtual void ClearDescriptorSetLayoutBindings() = 0;
        
         virtual void* GetDescriptorSetLayouts() = 0;
@@ -53,7 +59,8 @@ namespace NebulaEngine::RHI
         virtual u32 GetStageCount() = 0;
         virtual void* GetStageCreateInfo() = 0;
         virtual void BuildDescriptorSetLayout() = 0;
-      
+        virtual Containers::Map<u32, Containers::Map<u32, Containers::UnorderedMap<EDescriptorType, DescriptorUpdateInfo>>>
+        GetAllDescriptorUpdateInfos() const = 0;
 
     public:
 

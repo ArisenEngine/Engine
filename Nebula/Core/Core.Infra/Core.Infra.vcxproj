@@ -73,12 +73,14 @@
     <ClInclude Include="RHI\Memory\ImageView.h" />
     <ClInclude Include="RHI\Memory\DeviceMemory.h" />
     <ClInclude Include="RHI\Memory\MemoryView.h" />
+    <ClInclude Include="RHI\Program\DescriptorUpdateInfo.h" />
     <ClInclude Include="RHI\Program\DescriptorPool.h" />
     <ClInclude Include="RHI\Program\GPUPipeline.h" />
     <ClInclude Include="RHI\Program\GPUPipelineManager.h" />
     <ClInclude Include="RHI\Program\GPUPipelineStateObject.h" />
     <ClInclude Include="RHI\Program\GPUProgram.h" />
     <ClInclude Include="RHI\Program\GPUSubPass.h" />
+    <ClInclude Include="RHI\Program\Sampler.h" />
     <ClInclude Include="RHI\RHICommon.h" />
     <ClInclude Include="RHI\Surfaces\Attachment.h" />
     <ClInclude Include="RHI\Surfaces\FrameBuffer.h" />
@@ -104,7 +106,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="RHI\Enums\Attachment\AttachmentDescFlagBits.h" />
-    <Content Include="RHI\Enums\Image\ImageLayout.h" />
+    <Content Include="RHI\Enums\Image\EImageLayout.h" />
     <Content Include="RHI\Enums\Image\ImageUsageFlagBits.h" />
     <Content Include="RHI\Enums\Pipeline\EDescriptorType.h" />
     <Content Include="RHI\Enums\Subpass\ESubpassDescFlag.h" />

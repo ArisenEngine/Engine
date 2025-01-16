@@ -45,10 +45,10 @@ namespace NebulaEngine::RHI
             m_OwnerPass = nullptr;
         }
         
-        virtual void AddInputReference(u32 index, ImageLayout layout) = 0;
-        virtual void AddColorReference(u32 index, ImageLayout layout) = 0;
-        virtual void SetResolveReference(u32 index, ImageLayout layout) = 0;
-        virtual void SetDepthStencilReference(u32 index, ImageLayout layout) = 0;
+        virtual void AddInputReference(u32 index, EImageLayout layout) = 0;
+        virtual void AddColorReference(u32 index, EImageLayout layout) = 0;
+        virtual void SetResolveReference(u32 index, EImageLayout layout) = 0;
+        virtual void SetDepthStencilReference(u32 index, EImageLayout layout) = 0;
         
         virtual void ClearAll() = 0;
 

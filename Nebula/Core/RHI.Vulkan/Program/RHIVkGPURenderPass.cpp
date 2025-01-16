@@ -27,7 +27,7 @@ void* NebulaEngine::RHI::RHIVkGPURenderPass::GetHandle(u32 frameIndex)
 
 void NebulaEngine::RHI::RHIVkGPURenderPass::AddAttachmentAction(Format format, ESampleCountFlagBits sample,
                                                                 AttachmentLoadOp colorLoadOp, AttachmentStoreOp colorStoreOp, AttachmentLoadOp stencilLoadOp,
-                                                                AttachmentStoreOp stencilStoreOp, ImageLayout initialLayout, ImageLayout finalLayout)
+                                                                AttachmentStoreOp stencilStoreOp, EImageLayout initialLayout, EImageLayout finalLayout)
 {
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format = static_cast<VkFormat>(format);

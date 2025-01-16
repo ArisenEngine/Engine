@@ -7,7 +7,7 @@
 #include "RHI/Enums/Attachment/AttachmentStoreOp.h"
 #include "RHI/Enums/Attachment/ESampleCountFlagBits.h"
 #include "RHI/Enums/Image/Format.h"
-#include "RHI/Enums/Image/ImageLayout.h"
+#include "RHI/Enums/Image/EImageLayout.h"
 #include "RHI/Program/GPURenderPass.h"
 
 namespace NebulaEngine::RHI
@@ -26,7 +26,7 @@ namespace NebulaEngine::RHI
             ESampleCountFlagBits sample,
             AttachmentLoadOp colorLoadOp, AttachmentStoreOp colorStoreOp,
             AttachmentLoadOp stencilLoadOp, AttachmentStoreOp stencilStoreOp,
-            ImageLayout initialLayout, ImageLayout finalLayout
+            EImageLayout initialLayout, EImageLayout finalLayout
             ) override;
 
         u32 GetAttachmentCount() override;

@@ -93,31 +93,28 @@ void NebulaEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(u32 poolId, GP
     u32 frameIndex)
 {
     ASSERT(m_Pools[poolId] != VK_NULL_HANDLE);
-    auto numLayouts = pso->DescriptorSetLayoutCount();
-    VkDescriptorSetLayout* allLayouts = static_cast<VkDescriptorSetLayout*>(pso->GetDescriptorSetLayouts());
     auto currentIndex = frameIndex % m_MaxFramesInFlight;
     auto descriptorSets = m_DescriptorSets[poolId];
-    auto vkPso = static_cast<RHIVkGPUPipelineStateObject*>(pso);
-
+    auto allUpdateInfos = pso->GetAllDescriptorUpdateInfos();
+    auto numLayouts = pso->DescriptorSetLayoutCount();
+    
     Containers::Vector<VkWriteDescriptorSet> descriptorWrites;
     
     for (size_t layoutIndex = 0; layoutIndex < numLayouts; ++layoutIndex)
     {
-        auto layout = allLayouts[layoutIndex];
-        auto layoutInfo = vkPso->m_DescriptorSetLayoutCreateInfo[layoutIndex];
         auto dstSet = descriptorSets[layoutIndex][currentIndex];
-
-        for (size_t bindingIndex = 0; bindingIndex < layoutInfo.bindingCount; ++ bindingIndex)
+        for (auto& const updateInfoForBinding : allUpdateInfos[layoutIndex])
         {
-            auto descriptorSetLayoutBinding = layoutInfo.pBindings[bindingIndex]; 
-            auto writeDescriptorSet = WriteDescriptorSet(
-                dstSet, descriptorSetLayoutBinding.binding, 0, descriptorSetLayoutBinding.descriptorCount, 
-                descriptorSetLayoutBinding.descriptorType,
+            for (auto& const updateInfoPerType : updateInfoForBinding.second)
+            {
+                auto updateInfo = updateInfoPerType.second;
+                auto writeDescriptorSet = WriteDescriptorSet(
+                    dstSet, updateInfo.binding, 0, updateInfo.descriptorCount, 
+                    updateInfo.type,
                 const VkDescriptorImageInfo* pImageInfo,
                 const VkDescriptorBufferInfo* pBufferInfo,
-            const VkBufferView* pTexelBufferView);
-
-            
+                const VkBufferView* pTexelBufferView);
+            }
         }
     }
 
