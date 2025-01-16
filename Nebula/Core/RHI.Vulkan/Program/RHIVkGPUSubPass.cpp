@@ -22,21 +22,21 @@ void NebulaEngine::RHI::RHIVkGPUSubPass::Bind(u32 index)
     ResizePreserve();
 }
 
-void NebulaEngine::RHI::RHIVkGPUSubPass::AddInputReference(u32 index, ImageLayout layout)
+void NebulaEngine::RHI::RHIVkGPUSubPass::AddInputReference(u32 index, EImageLayout layout)
 {
     ASSERT(IsInsidePreserve(index));
     RemovePreserve(index);
     m_InputReferences.emplace_back(VkAttachmentReference{index, static_cast<VkImageLayout>(layout)});
 }
 
-void NebulaEngine::RHI::RHIVkGPUSubPass::AddColorReference(u32 index, ImageLayout layout)
+void NebulaEngine::RHI::RHIVkGPUSubPass::AddColorReference(u32 index, EImageLayout layout)
 {
     ASSERT(IsInsidePreserve(index));
     RemovePreserve(index);
     m_ColorReferences.emplace_back(VkAttachmentReference{index, static_cast<VkImageLayout>(layout)});
 }
 
-void NebulaEngine::RHI::RHIVkGPUSubPass::SetResolveReference(u32 index, ImageLayout layout)
+void NebulaEngine::RHI::RHIVkGPUSubPass::SetResolveReference(u32 index, EImageLayout layout)
 {
     ASSERT(IsInsidePreserve(index));
     RemovePreserve(index);
@@ -44,7 +44,7 @@ void NebulaEngine::RHI::RHIVkGPUSubPass::SetResolveReference(u32 index, ImageLay
     m_ResolveReference.layout = static_cast<VkImageLayout>(layout);
 }
 
-void NebulaEngine::RHI::RHIVkGPUSubPass::SetDepthStencilReference(u32 index, ImageLayout layout)
+void NebulaEngine::RHI::RHIVkGPUSubPass::SetDepthStencilReference(u32 index, EImageLayout layout)
 {
     ASSERT(IsInsidePreserve(index));
     RemovePreserve(index);

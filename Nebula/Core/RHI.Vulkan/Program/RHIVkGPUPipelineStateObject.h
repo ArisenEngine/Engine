@@ -2,6 +2,8 @@
 #include "RHI/Program/GPUPipelineStateObject.h"
 #include <vulkan/vulkan_core.h>
 
+#include "RHI/Program/DescriptorUpdateInfo.h"
+
 namespace NebulaEngine::RHI
 {
     class RHIVkDevice;
@@ -11,15 +13,6 @@ namespace NebulaEngine::RHI
 
 namespace NebulaEngine::RHI
 {
-    typedef struct DescriptorUpdateInfo
-    {
-        VkDescriptorSetLayoutCreateInfo layoutInfo;
-        u32 dstArrayElement;
-        const VkDescriptorImageInfo* pImageInfo;
-        const VkDescriptorBufferInfo* pBufferInfo;
-        const VkBufferView* pTexelBufferView;
-    } DescriptorUpdateInfo;
-    
     class RHIVkGPUPipelineStateObject final : public GPUPipelineStateObject
     {
         friend class RHIVkGPUPipeline;
@@ -66,7 +59,30 @@ namespace NebulaEngine::RHI
 
         // Descriptor
         void AddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding, EDescriptorType type,
-            u32 descriptorCount, u32 shaderStageFlags, void* pImmutableSamplers = nullptr) override;
+            u32 descriptorCount, u32 shaderStageFlags, DescriptorImageInfo* pImageInfos, ImmutableSamplers* pImmutableSamplers = nullptr) override;
+        void AddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding, EDescriptorType type,
+                                                   u32 descriptorCount, u32 shaderStageFlags, DescriptorBufferInfo* pBufferInfos) override;
+        void AddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding, EDescriptorType type,
+                                                  u32 descriptorCount, u32 shaderStageFlags, BufferView* pTexelBufferView) override;
+
+
+        Containers::Map<u32, Containers::Map<u32, Containers::UnorderedMap<EDescriptorType, DescriptorUpdateInfo>>>
+        GetAllDescriptorUpdateInfos() const
+        {
+            return m_DescriptorUpdateInfos;
+        }
+        
+    private:
+        
+        void InternalAddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding,
+    EDescriptorType type, u32 descriptorCount, u32 shaderStageFlags, ImmutableSamplers* pImmutableSamplers);
+        
+        void InternalAddDescriptorUpdateInfo(u32 layoutIndex, u32 binding,EDescriptorType type,
+            u32 descriptorCount, DescriptorImageInfo* pImageInfos,
+            DescriptorBufferInfo* pRegularBufferInfos, BufferView* pTexelBufferInfos, ImmutableSamplers* pImmutableSamplers = nullptr);
+        
+    public:
+        
         void ClearDescriptorSetLayoutBindings() override;
       
         void* GetDescriptorSetLayouts() override;
@@ -91,6 +107,7 @@ namespace NebulaEngine::RHI
         // descriptor
         Containers::Map<u32, Containers::Vector<VkDescriptorSetLayoutBinding>> m_DescriptorSetLayoutBindings {};
         Containers::Vector<VkDescriptorSetLayout> m_DescriptorSetLayouts {};
-        Containers::Vector<DescriptorUpdateInfo> m_DescriptorUpdateInfo {};
+        // layout index,  binding index, Descriptor Type
+        Containers::Map<u32, Containers::Map<u32, Containers::UnorderedMap<EDescriptorType, DescriptorUpdateInfo>>> m_DescriptorUpdateInfos {};
     };
 }

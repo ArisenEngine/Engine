@@ -5,7 +5,7 @@
 #include "RHI/Enums/Attachment/AttachmentStoreOp.h"
 #include "RHI/Enums/Attachment/ESampleCountFlagBits.h"
 #include "RHI/Enums/Image/Format.h"
-#include "RHI/Enums/Image/ImageLayout.h"
+#include "RHI/Enums/Image/EImageLayout.h"
 
 namespace NebulaEngine::RHI
 {
@@ -18,8 +18,8 @@ namespace NebulaEngine::RHI
         AttachmentStoreOp storeOp;
         AttachmentLoadOp stencilLoadOp;
         AttachmentStoreOp stencilStoreOp;
-        ImageLayout initialLayout;
-        ImageLayout finalLayout;
+        EImageLayout initialLayout;
+        EImageLayout finalLayout;
     };
     
     class Attachment

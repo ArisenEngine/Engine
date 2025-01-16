@@ -165,6 +165,7 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::ClearDescriptorSetLayoutBin
     m_DescriptorSetLayoutBindings.clear();
 }
 
+// TODO: cache descriptor set layout
 void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::BuildDescriptorSetLayout()
 {
     ClearDescriptorSetLayouts();
@@ -177,7 +178,6 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::BuildDescriptorSetLayout()
         {
             LOG_FATAL_AND_THROW("[RHIVkGPUPipelineStateObject::BuildDescriptorSetLayout]: failed to create descriptor set layout!");
         }
-        m_DescriptorSetLayoutCreateInfo.emplace_back(descriptorSetLayoutInfo);
         m_DescriptorSetLayouts.emplace_back(descriptorSetLayout);
     }
     
@@ -201,11 +201,36 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::ClearDescriptorSetLayouts()
         vkDestroyDescriptorSetLayout(vkDevice, descriptorSetLayout, nullptr);
     }
     m_DescriptorSetLayouts.clear();
-    m_DescriptorUpdateInfo.clear();
 }
 
 void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding,
-                                                                                   EDescriptorType type, u32 descriptorCount, u32 shaderStageFlags, void* pImmutableSamplers)
+    EDescriptorType type, u32 descriptorCount, u32 shaderStageFlags, DescriptorImageInfo* pImageInfos,
+    ImmutableSamplers* pImmutableSamplers)
+{
+    InternalAddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, pImmutableSamplers);
+    InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, descriptorCount, pImageInfos,
+        nullptr, nullptr, pImmutableSamplers);
+}
+
+void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(
+    u32 layoutIndex, u32 binding, EDescriptorType type, u32 descriptorCount, u32 shaderStageFlags, DescriptorBufferInfo* pBufferInfos)
+{
+
+    InternalAddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, nullptr);
+    InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, descriptorCount, nullptr,
+      pBufferInfos, nullptr, nullptr);
+}
+
+void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(
+    u32 layoutIndex, u32 binding, EDescriptorType type, u32 descriptorCount, u32 shaderStageFlags, BufferView* pTexelBufferView)
+{
+    InternalAddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, nullptr);
+    InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, descriptorCount, nullptr,
+       nullptr, pTexelBufferView, nullptr);
+}
+
+void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding,
+    EDescriptorType type, u32 descriptorCount, u32 shaderStageFlags, ImmutableSamplers* pImmutableSamplers)
 {
     auto descriptorSetLayoutBinding = DescriptorSetLayoutBinding(binding,
         static_cast<VkDescriptorType>(type), descriptorCount, shaderStageFlags,
@@ -219,4 +244,29 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBindi
         Containers::Vector<VkDescriptorSetLayoutBinding> bindings { descriptorSetLayoutBinding };
         m_DescriptorSetLayoutBindings.try_emplace(layoutIndex, bindings);
     }
+}
+
+void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorUpdateInfo(u32 layoutIndex, u32 binding,
+    EDescriptorType type, u32 descriptorCount, DescriptorImageInfo* pImageInfos,
+    DescriptorBufferInfo* pRegularBufferInfos, BufferView* pTexelBufferInfos, ImmutableSamplers* pImmutableSamplers)
+{
+    if (!m_DescriptorUpdateInfos.contains(layoutIndex))
+    {
+        m_DescriptorUpdateInfos.try_emplace(layoutIndex);
+    }
+
+    if (!m_DescriptorUpdateInfos[layoutIndex].contains(binding))
+    {
+        m_DescriptorUpdateInfos[layoutIndex].try_emplace(binding);
+    }
+
+    m_DescriptorUpdateInfos[layoutIndex][binding].try_emplace(type,
+        new DescriptorUpdateInfo {
+            binding,
+            type,
+            descriptorCount,
+            pImageInfos,
+            pRegularBufferInfos,
+            pTexelBufferInfos,
+        });
 }

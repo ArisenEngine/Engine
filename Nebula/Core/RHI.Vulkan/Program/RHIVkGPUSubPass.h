@@ -13,10 +13,10 @@ namespace NebulaEngine::RHI
         RHIVkGPUSubPass(RHIVkGPURenderPass* renderPass, u32 index);
         ~RHIVkGPUSubPass() override;
 
-        void AddInputReference(u32 index, ImageLayout layout) override;
-        void AddColorReference(u32 index, ImageLayout layout) override;
-        void SetResolveReference(u32 index, ImageLayout layout) override;
-        void SetDepthStencilReference(u32 index, ImageLayout layout) override;
+        void AddInputReference(u32 index, EImageLayout layout) override;
+        void AddColorReference(u32 index, EImageLayout layout) override;
+        void SetResolveReference(u32 index, EImageLayout layout) override;
+        void SetDepthStencilReference(u32 index, EImageLayout layout) override;
         
         void ClearAll() override;
         const u32 GetIndex() const override { return m_Index; }

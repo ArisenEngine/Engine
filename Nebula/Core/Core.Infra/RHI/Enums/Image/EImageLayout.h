@@ -1,7 +1,7 @@
 ﻿#pragma once
 namespace NebulaEngine::RHI
 {
-    typedef enum ImageLayout {
+    typedef enum EImageLayout {
         IMAGE_LAYOUT_UNDEFINED = 0,
         IMAGE_LAYOUT_GENERAL = 1,
         IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL = 2,
@@ -46,5 +46,5 @@ namespace NebulaEngine::RHI
         IMAGE_LAYOUT_READ_ONLY_OPTIMAL_KHR = IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
         IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR = IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
         IMAGE_LAYOUT_MAX_ENUM = 0x7FFFFFFF
-    } ImageLayout;
+    } EImageLayout;
 }
