@@ -12,7 +12,7 @@ namespace NebulaEngine::RHI
 
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkGPUPipelineManager);
-        RHIVkGPUPipelineManager(RHIVkDevice* device, u32 maxFramesInFlight);
+        RHIVkGPUPipelineManager(RHIVkDevice* device, UInt32 maxFramesInFlight);
         ~RHIVkGPUPipelineManager() noexcept override;
 
         GPUPipeline* GetGraphicsPipeline(GPUPipelineStateObject* pso) override;
@@ -20,7 +20,7 @@ namespace NebulaEngine::RHI
     private:
         
         RHIVkDevice* m_Device;
-        Containers::Map<u32, std::unique_ptr<GPUPipeline>> m_GPUPipelines;
+        Containers::Map<UInt32, std::unique_ptr<GPUPipeline>> m_GPUPipelines;
 
     };
 }

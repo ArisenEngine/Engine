@@ -17,7 +17,7 @@ NebulaEngine::RHI::RHIVkSurface::~RHIVkSurface() noexcept
     LOG_INFO("[RHIVkSurface::~RHIVkSurface]: Destroy Vulkan Surface");
 }
 
-NebulaEngine::RHI::RHIVkSurface::RHIVkSurface(u32&& id, Instance* instance):
+NebulaEngine::RHI::RHIVkSurface::RHIVkSurface(UInt32&& id, Instance* instance):
 Surface(std::move(id), instance), m_SwapChainSupportDetail({}), m_SwapChain(nullptr)
 {
     VkWin32SurfaceCreateInfoKHR createInfo{};
@@ -61,7 +61,7 @@ void RHI::RHIVkSurface::InitSwapChain()
     width = std::clamp(width, m_SwapChainSupportDetail.capabilities.minImageExtent.width, m_SwapChainSupportDetail.capabilities.maxImageExtent.width);
     height = std::clamp(height, m_SwapChainSupportDetail.capabilities.minImageExtent.height, m_SwapChainSupportDetail.capabilities.maxImageExtent.height);
 
-    u32 queueFamilyIndexCount;
+    UInt32 queueFamilyIndexCount;
     SharingMode sharingMode;
     if (m_QueueFamilyIndices.graphicsFamily != m_QueueFamilyIndices.presentFamily)
     {
@@ -85,7 +85,7 @@ void RHI::RHIVkSurface::InitSwapChain()
     desc.sharingMode = sharingMode;
     desc.presentMode = static_cast<PresentMode>(presentMode);
     desc.clipped = true;
-    desc.surfaceTransformFlagBits = static_cast<u32>(m_SwapChainSupportDetail.capabilities.currentTransform);
+    desc.surfaceTransformFlagBits = static_cast<UInt32>(m_SwapChainSupportDetail.capabilities.currentTransform);
     desc.compositeAlphaFlagBits = COMPOSITE_ALPHA_OPAQUE_BIT;
    
     m_SwapChain->CreateSwapChainWithDesc(desc);

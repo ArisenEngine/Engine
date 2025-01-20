@@ -21,10 +21,10 @@ namespace NebulaEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkGPUPipelineStateObject)
         ~RHIVkGPUPipelineStateObject() noexcept override;
         RHIVkGPUPipelineStateObject(RHIVkDevice* device);
-        void AddProgram(u32 programId) override;
+        void AddProgram(UInt32 programId) override;
         void ClearAllPrograms() override;
 
-        const u32 GetHash() const override;
+        const UInt32 GetHash() const override;
         const EPipelineBindPoint GetBindPoint() const override { return m_BindPoint; }
 
         void Clear() override;
@@ -35,38 +35,38 @@ namespace NebulaEngine::RHI
         }
 
         // Vertex
-        void AddVertexInputAttributeDescription(u32 location, u32 binding, Format format, u32 offset) override;
-        u32 GetVertexInputAttributeDescriptionCount() override;
+        void AddVertexInputAttributeDescription(UInt32 location, UInt32 binding, Format format, UInt32 offset) override;
+        UInt32 GetVertexInputAttributeDescriptionCount() override;
         void* GetVertexInputAttributeDescriptions() override;
         void ClearVertexBindingDescriptions() override;
         
-        void AddVertexBindingDescription(u32 binding, u32 stride, EVertexInputRate inputRate) override;
-        u32 GetVertexBindingDescriptionCount() override;
+        void AddVertexBindingDescription(UInt32 binding, UInt32 stride, EVertexInputRate inputRate) override;
+        UInt32 GetVertexBindingDescriptionCount() override;
         void* GetVertexBindingDescriptions() override;
         void ClearVertexInputAttributeDescriptions() override;
         
-        u32 GetStageCount() override;
+        UInt32 GetStageCount() override;
        
         // Blend state
     public:
 
         void AddBlendAttachmentState(bool enable, EBlendFactor srcColor, EBlendFactor dstColor, EBlendOp colorBlendOp,
-            EBlendFactor srcAlpha, EBlendFactor dstAlpha, EBlendOp alphaBlendOp, u32 writeMask) override;
-        void AddBlendAttachmentState(bool enable, u32 writeMask) override;
+            EBlendFactor srcAlpha, EBlendFactor dstAlpha, EBlendOp alphaBlendOp, UInt32 writeMask) override;
+        void AddBlendAttachmentState(bool enable, UInt32 writeMask) override;
         void ClearBlendState() override;
-        const u32 GetBlendStateCount() const override;  
+        const UInt32 GetBlendStateCount() const override;  
         void* GetBlendAttachmentStates() override;
 
         // Descriptor
-        void AddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding, EDescriptorType type,
-            u32 descriptorCount, u32 shaderStageFlags, DescriptorImageInfo* pImageInfos, ImmutableSamplers* pImmutableSamplers = nullptr) override;
-        void AddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding, EDescriptorType type,
-                                                   u32 descriptorCount, u32 shaderStageFlags, DescriptorBufferInfo* pBufferInfos) override;
-        void AddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding, EDescriptorType type,
-                                                  u32 descriptorCount, u32 shaderStageFlags, BufferView* pTexelBufferView) override;
+        void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
+            UInt32 descriptorCount, UInt32 shaderStageFlags, DescriptorImageInfo* pImageInfos, ImmutableSamplers* pImmutableSamplers = nullptr) override;
+        void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
+                                                   UInt32 descriptorCount, UInt32 shaderStageFlags, DescriptorBufferInfo* pBufferInfos) override;
+        void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
+                                                  UInt32 descriptorCount, UInt32 shaderStageFlags, BufferView* pTexelBufferView) override;
 
 
-        Containers::Map<u32, Containers::Map<u32, Containers::UnorderedMap<EDescriptorType, DescriptorUpdateInfo>>>
+        Containers::Map<UInt32, Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, DescriptorUpdateInfo>>>
         GetAllDescriptorUpdateInfos() const
         {
             return m_DescriptorUpdateInfos;
@@ -74,11 +74,11 @@ namespace NebulaEngine::RHI
         
     private:
         
-        void InternalAddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding,
-    EDescriptorType type, u32 descriptorCount, u32 shaderStageFlags, ImmutableSamplers* pImmutableSamplers);
+        void InternalAddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding,
+    EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags, ImmutableSamplers* pImmutableSamplers);
         
-        void InternalAddDescriptorUpdateInfo(u32 layoutIndex, u32 binding,EDescriptorType type,
-            u32 descriptorCount, DescriptorImageInfo* pImageInfos,
+        void InternalAddDescriptorUpdateInfo(UInt32 layoutIndex, UInt32 binding,EDescriptorType type,
+            UInt32 descriptorCount, DescriptorImageInfo* pImageInfos,
             DescriptorBufferInfo* pRegularBufferInfos, BufferView* pTexelBufferInfos, ImmutableSamplers* pImmutableSamplers = nullptr);
         
     public:
@@ -86,7 +86,7 @@ namespace NebulaEngine::RHI
         void ClearDescriptorSetLayoutBindings() override;
       
         void* GetDescriptorSetLayouts() override;
-        u32 DescriptorSetLayoutCount() override;
+        UInt32 DescriptorSetLayoutCount() override;
         void ClearDescriptorSetLayouts() override;
         void BuildDescriptorSetLayout() override;
     
@@ -105,9 +105,9 @@ namespace NebulaEngine::RHI
         Containers::Vector<VkVertexInputAttributeDescription> m_VertexInputAttributeDescriptions {};
 
         // descriptor
-        Containers::Map<u32, Containers::Vector<VkDescriptorSetLayoutBinding>> m_DescriptorSetLayoutBindings {};
+        Containers::Map<UInt32, Containers::Vector<VkDescriptorSetLayoutBinding>> m_DescriptorSetLayoutBindings {};
         Containers::Vector<VkDescriptorSetLayout> m_DescriptorSetLayouts {};
         // layout index,  binding index, Descriptor Type
-        Containers::Map<u32, Containers::Map<u32, Containers::UnorderedMap<EDescriptorType, DescriptorUpdateInfo>>> m_DescriptorUpdateInfos {};
+        Containers::Map<UInt32, Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, DescriptorUpdateInfo>>> m_DescriptorUpdateInfos {};
     };
 }

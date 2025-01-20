@@ -12,14 +12,14 @@ namespace NebulaEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHICommandBufferPool)
-        RHICommandBufferPool(Device* device, u32 maxFramesInFlight);;
+        RHICommandBufferPool(Device* device, UInt32 maxFramesInFlight);;
         virtual ~RHICommandBufferPool()
         {
             m_Fences.clear();
             m_Device = nullptr;
         }
         virtual void* GetHandle() = 0;
-        std::shared_ptr<RHICommandBuffer> GetCommandBuffer(u32 currentFrameIndex)
+        std::shared_ptr<RHICommandBuffer> GetCommandBuffer(UInt32 currentFrameIndex)
         {
             std::shared_ptr<RHICommandBuffer> commandBuffer;
 
@@ -37,7 +37,7 @@ namespace NebulaEngine::RHI
             return commandBuffer;
         }
         
-        void ReleaseCommandBuffer(u32 currentFrameIndex, std::shared_ptr<RHICommandBuffer> commandBuffer)
+        void ReleaseCommandBuffer(UInt32 currentFrameIndex, std::shared_ptr<RHICommandBuffer> commandBuffer)
         {
             auto index = currentFrameIndex % m_MaxFramesInFlight;
             commandBuffer->Release();
@@ -45,7 +45,7 @@ namespace NebulaEngine::RHI
         }
         virtual std::shared_ptr<RHICommandBuffer> CreateCommandBuffer() = 0;
         
-        RHIFence* GetFence(u32 currentFrameIndex) const
+        RHIFence* GetFence(UInt32 currentFrameIndex) const
         {
             return m_Fences[currentFrameIndex % m_MaxFramesInFlight].get();
         }
@@ -55,10 +55,10 @@ namespace NebulaEngine::RHI
         Device* m_Device;
         // NOTE: should clear by inherent class 
         Containers::Vector<Containers::Vector<std::shared_ptr<RHICommandBuffer>>> m_CommandBuffers;
-        u32 m_MaxFramesInFlight;
+        UInt32 m_MaxFramesInFlight;
     };
 
-    inline RHICommandBufferPool::RHICommandBufferPool(Device* device, u32 maxFramesInFlight):
+    inline RHICommandBufferPool::RHICommandBufferPool(Device* device, UInt32 maxFramesInFlight):
         m_Device(device), m_MaxFramesInFlight(maxFramesInFlight)
     {
         m_CommandBuffers.resize(m_MaxFramesInFlight);

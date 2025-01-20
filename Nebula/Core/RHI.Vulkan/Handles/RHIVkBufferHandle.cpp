@@ -55,7 +55,7 @@ void NebulaEngine::RHI::RHIVkBufferHandle::FreeBufferHandle()
     }
 }
 
-bool NebulaEngine::RHI::RHIVkBufferHandle::AllocBufferMemory(u32 memoryPropertiesBits)
+bool NebulaEngine::RHI::RHIVkBufferHandle::AllocBufferMemory(UInt32 memoryPropertiesBits)
 {
     ASSERT(m_VkBuffer != VK_NULL_HANDLE);
     
@@ -77,7 +77,7 @@ void NebulaEngine::RHI::RHIVkBufferHandle::FreeBufferMemory()
     m_DeviceMemory->FreeDeviceMemory();
 }
 
-void NebulaEngine::RHI::RHIVkBufferHandle::MemoryCopy(void const* src, const u32 offset)
+void NebulaEngine::RHI::RHIVkBufferHandle::MemoryCopy(void const* src, const UInt32 offset)
 {
     ASSERT(m_DeviceMemory != nullptr);
     ASSERT(m_VkBuffer != VK_NULL_HANDLE);

@@ -27,11 +27,11 @@ namespace NebulaEngine::Platforms
 
 
 		Vector<WindowInfo> windows;
-		Vector<u32> availableSlots;
+		Vector<UInt32> availableSlots;
 		
-		u32 AddToWindows(WindowInfo info)
+		UInt32 AddToWindows(WindowInfo info)
 		{
-			u32 id{ InvalidID };
+			UInt32 id{ InvalidID };
 			if (availableSlots.empty())
 			{
 				id = windows.size();
@@ -61,7 +61,7 @@ namespace NebulaEngine::Platforms
 			return GetInfoFromId(id);
 		}
 
-		void RemoveFromWindows(u32 id)
+		void RemoveFromWindows(UInt32 id)
 		{
 			assert(id < windows.size());
 			availableSlots.emplace_back(id);
@@ -144,14 +144,14 @@ namespace NebulaEngine::Platforms
 			RECT windowRect{ area };
 			AdjustWindowRect(&windowRect, info.style, FALSE);
 
-			const s32 width{ windowRect.right - windowRect.left };
-			const s32 height{ windowRect.bottom - windowRect.top };
+			const SInt32 width{ windowRect.right - windowRect.left };
+			const SInt32 height{ windowRect.bottom - windowRect.top };
 
 			MoveWindow(info.hwnd, info.topLeft.x, info.topLeft.y, width, height, true);
 
 		}
 
-		void ResizeWindow(WindowID id, u32 width, u32 height)
+		void ResizeWindow(WindowID id, UInt32 width, UInt32 height)
 		{
 			WindowInfo& info{ GetInfoFromId(id) };
 
@@ -172,11 +172,11 @@ namespace NebulaEngine::Platforms
 
 		}
 
-		Math::u32v4 GetWindowSize(WindowID id)
+		Math::UInt32Vector4 GetWindowSize(WindowID id)
 		{
 			WindowInfo& info{ GetInfoFromId(id) };
 			RECT& area{ info.isFullScreen ? info.fullScreenArea : info.clientArea };
-			return { (u32)area.left, (u32)area.top, (u32)area.right, (u32)area.bottom };
+			return { (UInt32)area.left, (UInt32)area.top, (UInt32)area.right, (UInt32)area.bottom };
 		}
 		
 		void SetWindowCaption(WindowID id, const wchar_t* caption)
@@ -269,10 +269,10 @@ namespace NebulaEngine::Platforms
 		AdjustWindowRect(&rect, info.style, FALSE);
 
 		const wchar_t* caption{ (initInfo && initInfo->caption) ? initInfo->caption : L"Nebula" };
-		const s32 left{ (initInfo) ? initInfo->left : info.topLeft.x };
-		const s32 top{ (initInfo) ? initInfo->top : info.topLeft.y };
-		const s32 width{ rect.right - rect.left };
-		const s32 height{ rect.bottom - rect.top };
+		const SInt32 left{ (initInfo) ? initInfo->left : info.topLeft.x };
+		const SInt32 top{ (initInfo) ? initInfo->top : info.topLeft.y };
+		const SInt32 width{ rect.right - rect.left };
+		const SInt32 height{ rect.bottom - rect.top };
 
 		info.hwnd = CreateWindowEx(
 			/* DWORD dwExStyle */        0,
@@ -319,7 +319,7 @@ namespace NebulaEngine::Platforms
 		RemoveFromWindows(id);
 	}
 
-	u32 GetWindowID(WindowHandle handle)
+	UInt32 GetWindowID(WindowHandle handle)
 	{
 		const WindowID id{ static_cast<WindowID>(GetWindowLongPtr(handle, GWLP_USERDATA)) };
 		return id;
@@ -367,29 +367,29 @@ namespace NebulaEngine::Platforms
 		SetWindowCaption(m_ID, caption);
 	}
 
-	 Math::u32v4 Window::Size() const
+	 Math::UInt32Vector4 Window::Size() const
 	{
 		assert(IsValid());
 		return GetWindowSize(m_ID);
 	}
 
-	void Window::Resize(u32 width, u32 height) const
+	void Window::Resize(UInt32 width, UInt32 height) const
 	{
 		assert(IsValid());
 		ResizeWindow(m_ID, width, height);
 	}
 
-	 u32 Window::Width() const
+	 UInt32 Window::Width() const
 	{
 		assert(IsValid());
-		Math::u32v4 s{ Size() };
+		Math::UInt32Vector4 s{ Size() };
 		return s.z - s.x;
 	}
 
-	 u32 Window::Height() const
+	 UInt32 Window::Height() const
 	{
 		assert(IsValid());
-		Math::u32v4 s{ Size() };
+		Math::UInt32Vector4 s{ Size() };
 		return s.w - s.y;
 	}
 

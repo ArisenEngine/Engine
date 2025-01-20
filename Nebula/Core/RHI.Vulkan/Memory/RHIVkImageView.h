@@ -14,9 +14,9 @@ namespace NebulaEngine::RHI
         void* GetView() override { return m_VkImageView; }
         void* GetViewPointer() override { return &m_VkImageView; }
 
-        const u32 GetWidth() const override { return m_ImageViewDesc.value().width; }
-        const u32 GetHeight() const override { return m_ImageViewDesc.value().height; }
-        const u32 GetLayerCount() const override { return m_ImageViewDesc.value().layerCount; }
+        const UInt32 GetWidth() const override { return m_ImageViewDesc.value().width; }
+        const UInt32 GetHeight() const override { return m_ImageViewDesc.value().height; }
+        const UInt32 GetLayerCount() const override { return m_ImageViewDesc.value().layerCount; }
         const Format GetFormat() const override { return m_ImageViewDesc.value().format; }
         
     private:

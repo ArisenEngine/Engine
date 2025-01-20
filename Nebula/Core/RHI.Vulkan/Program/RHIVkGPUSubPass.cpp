@@ -2,7 +2,7 @@
 
 #include "Logger/Logger.h"
 
-NebulaEngine::RHI::RHIVkGPUSubPass::RHIVkGPUSubPass(RHIVkGPURenderPass* renderPass, u32 index):
+NebulaEngine::RHI::RHIVkGPUSubPass::RHIVkGPUSubPass(RHIVkGPURenderPass* renderPass, UInt32 index):
 GPUSubPass(renderPass), m_Index(index)
 {
     ClearAll();
@@ -15,28 +15,28 @@ NebulaEngine::RHI::RHIVkGPUSubPass::~RHIVkGPUSubPass()
     ClearAll();
 }
 
-void NebulaEngine::RHI::RHIVkGPUSubPass::Bind(u32 index)
+void NebulaEngine::RHI::RHIVkGPUSubPass::Bind(UInt32 index)
 {
     m_Index = index;
     ClearAll();
     ResizePreserve();
 }
 
-void NebulaEngine::RHI::RHIVkGPUSubPass::AddInputReference(u32 index, EImageLayout layout)
+void NebulaEngine::RHI::RHIVkGPUSubPass::AddInputReference(UInt32 index, EImageLayout layout)
 {
     ASSERT(IsInsidePreserve(index));
     RemovePreserve(index);
     m_InputReferences.emplace_back(VkAttachmentReference{index, static_cast<VkImageLayout>(layout)});
 }
 
-void NebulaEngine::RHI::RHIVkGPUSubPass::AddColorReference(u32 index, EImageLayout layout)
+void NebulaEngine::RHI::RHIVkGPUSubPass::AddColorReference(UInt32 index, EImageLayout layout)
 {
     ASSERT(IsInsidePreserve(index));
     RemovePreserve(index);
     m_ColorReferences.emplace_back(VkAttachmentReference{index, static_cast<VkImageLayout>(layout)});
 }
 
-void NebulaEngine::RHI::RHIVkGPUSubPass::SetResolveReference(u32 index, EImageLayout layout)
+void NebulaEngine::RHI::RHIVkGPUSubPass::SetResolveReference(UInt32 index, EImageLayout layout)
 {
     ASSERT(IsInsidePreserve(index));
     RemovePreserve(index);
@@ -44,7 +44,7 @@ void NebulaEngine::RHI::RHIVkGPUSubPass::SetResolveReference(u32 index, EImageLa
     m_ResolveReference.layout = static_cast<VkImageLayout>(layout);
 }
 
-void NebulaEngine::RHI::RHIVkGPUSubPass::SetDepthStencilReference(u32 index, EImageLayout layout)
+void NebulaEngine::RHI::RHIVkGPUSubPass::SetDepthStencilReference(UInt32 index, EImageLayout layout)
 {
     ASSERT(IsInsidePreserve(index));
     RemovePreserve(index);
@@ -66,14 +66,14 @@ NebulaEngine::RHI::SubpassDescription NebulaEngine::RHI::RHIVkGPUSubPass::GetDes
 {
     SubpassDescription description {};
     description.bindPoint = GetBindPoint();
-    description.colorRefCount = static_cast<u32>(m_ColorReferences.size());
+    description.colorRefCount = static_cast<UInt32>(m_ColorReferences.size());
     description.colorReferences = m_ColorReferences.data();
-    description.preserveCount = static_cast<u32>(m_PreserveAttachments.size());
+    description.preserveCount = static_cast<UInt32>(m_PreserveAttachments.size());
     description.preserves = m_PreserveAttachments.data();
 
     if (m_InputReferences.size() > 0)
     {
-        description.inputRefCount = static_cast<const std::optional<u32>&>(m_InputReferences.size());
+        description.inputRefCount = static_cast<const std::optional<UInt32>&>(m_InputReferences.size());
         description.inputReferences = m_InputReferences.data();
     }
 
@@ -91,7 +91,7 @@ NebulaEngine::RHI::SubpassDescription NebulaEngine::RHI::RHIVkGPUSubPass::GetDes
     return description;
 }
 
-void NebulaEngine::RHI::RHIVkGPUSubPass::RemovePreserve(u32 index)
+void NebulaEngine::RHI::RHIVkGPUSubPass::RemovePreserve(UInt32 index)
 {
     const auto it = std::ranges::find(m_PreserveAttachments, index);
     if (it != m_PreserveAttachments.end())
@@ -109,7 +109,7 @@ void NebulaEngine::RHI::RHIVkGPUSubPass::ResizePreserve()
     }
 }
 
-bool NebulaEngine::RHI::RHIVkGPUSubPass::IsInsidePreserve(u32 index)
+bool NebulaEngine::RHI::RHIVkGPUSubPass::IsInsidePreserve(UInt32 index)
 {
     const auto it = std::ranges::find(m_PreserveAttachments, index);
     return it != m_PreserveAttachments.end();

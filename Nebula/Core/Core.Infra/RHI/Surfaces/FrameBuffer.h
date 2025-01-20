@@ -9,11 +9,11 @@ namespace NebulaEngine::RHI
     typedef struct FrameBufferDesc
     {
         GPURenderPass& renderPass;
-        u32 attachmentCount;
+        UInt32 attachmentCount;
         void* attachments;
-        u32 width;
-        u32 height;
-        u32 layerCount;
+        UInt32 width;
+        UInt32 height;
+        UInt32 layerCount;
     } FrameBufferDesc;
 
     typedef struct RenderArea
@@ -29,18 +29,18 @@ namespace NebulaEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(FrameBuffer)
-        explicit FrameBuffer(u32 maxFramesInFlight);;
+        explicit FrameBuffer(UInt32 maxFramesInFlight);;
         VIRTUAL_DECONSTRUCTOR(FrameBuffer)
-        virtual void* GetHandle(u32 currentFrameIndex) = 0;
+        virtual void* GetHandle(UInt32 currentFrameIndex) = 0;
         const RenderArea GetRenderArea() const { return m_RenderArea; }
-        virtual void SetAttachment(u32 frameIndex, ImageView* imageView, GPURenderPass* renderPass) = 0;
+        virtual void SetAttachment(UInt32 frameIndex, ImageView* imageView, GPURenderPass* renderPass) = 0;
         virtual Format GetAttachFormat() = 0;
     protected:
         RenderArea m_RenderArea;
-        u32 m_MaxFramesInFlight;
+        UInt32 m_MaxFramesInFlight;
     };
 
-    inline FrameBuffer::FrameBuffer(u32 maxFramesInFlight): m_RenderArea(), m_MaxFramesInFlight(maxFramesInFlight)
+    inline FrameBuffer::FrameBuffer(UInt32 maxFramesInFlight): m_RenderArea(), m_MaxFramesInFlight(maxFramesInFlight)
     {
     }
 }

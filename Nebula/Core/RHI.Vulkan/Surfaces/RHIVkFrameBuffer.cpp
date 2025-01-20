@@ -2,7 +2,7 @@
 #include "Logger/Logger.h"
 #include "RHI/Memory/ImageView.h"
 
-NebulaEngine::RHI::RHIVkFrameBuffer::RHIVkFrameBuffer(VkDevice device, u32 maxFramesInFlight): FrameBuffer(maxFramesInFlight), m_VkDevice(device)
+NebulaEngine::RHI::RHIVkFrameBuffer::RHIVkFrameBuffer(VkDevice device, UInt32 maxFramesInFlight): FrameBuffer(maxFramesInFlight), m_VkDevice(device)
 {
     m_VkFrameBuffers.resize(maxFramesInFlight);
     for (int i = 0; i < maxFramesInFlight; ++i)
@@ -16,13 +16,13 @@ NebulaEngine::RHI::RHIVkFrameBuffer::~RHIVkFrameBuffer() noexcept
    FreeAllFrameBuffers();
 }
 
-void* NebulaEngine::RHI::RHIVkFrameBuffer::GetHandle(u32 currentFrameIndex)
+void* NebulaEngine::RHI::RHIVkFrameBuffer::GetHandle(UInt32 currentFrameIndex)
 {
     ASSERT(m_VkFrameBuffers[currentFrameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE);
     return m_VkFrameBuffers[currentFrameIndex % m_MaxFramesInFlight];
 }
 
-void NebulaEngine::RHI::RHIVkFrameBuffer::SetAttachment(u32 frameIndex, ImageView* imageView, GPURenderPass* renderPass)
+void NebulaEngine::RHI::RHIVkFrameBuffer::SetAttachment(UInt32 frameIndex, ImageView* imageView, GPURenderPass* renderPass)
 {
     // TODO: use cache?
     FreeFrameBuffer(frameIndex);
@@ -56,7 +56,7 @@ NebulaEngine::RHI::Format NebulaEngine::RHI::RHIVkFrameBuffer::GetAttachFormat()
     return m_ImageView->GetFormat();
 }
 
-void NebulaEngine::RHI::RHIVkFrameBuffer::FreeFrameBuffer(u32 currentFrameIndex)
+void NebulaEngine::RHI::RHIVkFrameBuffer::FreeFrameBuffer(UInt32 currentFrameIndex)
 {
     if(m_VkFrameBuffers[currentFrameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE)
     {

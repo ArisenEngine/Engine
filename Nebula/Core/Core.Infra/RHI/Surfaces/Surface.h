@@ -14,13 +14,13 @@ namespace NebulaEngine::RHI
 			m_RenderWindowId = InvalidID;
 			m_Instance = nullptr;
 		}
-		explicit Surface(u32&& id, Instance* instance): m_RenderWindowId(id), m_Instance(instance) { };
+		explicit Surface(UInt32&& id, Instance* instance): m_RenderWindowId(id), m_Instance(instance) { };
 		virtual void* GetHandle() const = 0;
 		virtual void InitSwapChain() = 0;
 
 		virtual SwapChain* GetSwapChain() = 0;
 	protected:
-		u32 m_RenderWindowId;
+		UInt32 m_RenderWindowId;
 		Instance* m_Instance;
 	
 	};

@@ -16,17 +16,17 @@ namespace NebulaEngine::RHI
     typedef struct DescriptorBufferInfo
     {
         BufferHandle*    bufferHandle;
-        u64             offset;
-        u64             range;
+        UInt64             offset;
+        UInt64             range;
         
     } DescriptorBufferInfo;
     
     typedef struct DescriptorUpdateInfo
     {
         //layout binding
-        u32 binding;
+        UInt32 binding;
         EDescriptorType type;
-        u32 descriptorCount;
+        UInt32 descriptorCount;
         
         // DescriptorWrite 
         const DescriptorImageInfo*      pImageInfo;

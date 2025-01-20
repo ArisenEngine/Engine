@@ -11,7 +11,7 @@ namespace NebulaEngine::RHI
 {
     struct VulkanVersion
     {
-        u32 variant, major, minor;
+        UInt32 variant, major, minor;
     };
 
     class RHIVkInstance final : public Instance
@@ -26,11 +26,11 @@ namespace NebulaEngine::RHI
         void InitLogicDevices() override;
         void PickPhysicalDevice(bool considerSurface = false) override;
 
-        bool IsSupportLinearColorSpace(u32&& windowId) override;
-        bool PresentModeSupported(u32&& windowId, PresentMode mode) override;
-        void SetCurrentPresentMode(u32&& windowId, PresentMode mode) override;
-        const Format GetSuitableSwapChainFormat(u32&& windowId) override;
-        const PresentMode GetSuitablePresentMode(u32&& windowId) override;
+        bool IsSupportLinearColorSpace(UInt32&& windowId) override;
+        bool PresentModeSupported(UInt32&& windowId, PresentMode mode) override;
+        void SetCurrentPresentMode(UInt32&& windowId, PresentMode mode) override;
+        const Format GetSuitableSwapChainFormat(UInt32&& windowId) override;
+        const PresentMode GetSuitablePresentMode(UInt32&& windowId) override;
         
         const std::wstring GetEnvString() const override
         {
@@ -42,18 +42,18 @@ namespace NebulaEngine::RHI
         
         VkInstance GetVkInstance() const { return m_VkInstance; }
 
-        void CreateSurface(u32&& windowId) override;
-        void DestroySurface(u32&& windowId) override;
-        Surface& GetSurface(u32&& windowId) override;
-        void SetResolution(const u32&& windowId, const u32&& width, const u32&& height) override;
+        void CreateSurface(UInt32&& windowId) override;
+        void DestroySurface(UInt32&& windowId) override;
+        Surface& GetSurface(UInt32&& windowId) override;
+        void SetResolution(const UInt32&& windowId, const UInt32&& width, const UInt32&& height) override;
 
         bool IsPhysicalDeviceAvailable() const override { return m_CurrentPhysicsDevice != VK_NULL_HANDLE; }
         bool IsSurfacesAvailable() const override { return !m_Surfaces.empty(); }
         
-        void CreateLogicDevice(u32 windowId) override;
-        Device* GetLogicalDevice(u32 windowId) override;
+        void CreateLogicDevice(UInt32 windowId) override;
+        Device* GetLogicalDevice(UInt32 windowId) override;
         
-        const u32 GetExternalIndex() const override { return VK_SUBPASS_EXTERNAL; }
+        const UInt32 GetExternalIndex() const override { return VK_SUBPASS_EXTERNAL; }
 
         void UpdateSurfaceCapabilities(Surface* surface) override;
     protected:
@@ -69,11 +69,11 @@ namespace NebulaEngine::RHI
         VulkanVersion m_VulkanVersion;
 
         // devices
-        Containers::Map<u32, std::unique_ptr<RHIVkDevice>> m_LogicalDevices;
-        Containers::Map<u32, std::unique_ptr<RHIVkSurface>> m_Surfaces;
+        Containers::Map<UInt32, std::unique_ptr<RHIVkDevice>> m_LogicalDevices;
+        Containers::Map<UInt32, std::unique_ptr<RHIVkSurface>> m_Surfaces;
 
         NebulaEngine::RHI::VkQueueFamilyIndices FindQueueFamilies(VkSurfaceKHR surface);
-        const VkSwapChainSupportDetail GetSwapChainSupportDetails(u32&& windowId);
+        const VkSwapChainSupportDetail GetSwapChainSupportDetails(UInt32&& windowId);
         const VkSwapChainSupportDetail QuerySwapChainSupport(const VkSurfaceKHR surface) const;
         
         // debuger

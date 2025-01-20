@@ -15,18 +15,18 @@ namespace NebulaEngine::RHI
         DeviceMemory() = default;
         virtual ~DeviceMemory() noexcept;
         virtual void* GetHandle() const = 0;
-        virtual bool AllocDeviceMemory(u32 memoryPropertiesBits) = 0;
-        virtual bool AllocDeviceMemory(u32 memoryPropertiesBits, Containers::Vector<BufferHandle*> handles) = 0;
+        virtual bool AllocDeviceMemory(UInt32 memoryPropertiesBits) = 0;
+        virtual bool AllocDeviceMemory(UInt32 memoryPropertiesBits, Containers::Vector<BufferHandle*> handles) = 0;
         virtual void FreeDeviceMemory() = 0;
-        virtual void MemoryCopy(void const* src, const u32 offset, const u32 size) = 0;
-        const u64 GetTotalBytes() const;
-        const u32 GetAlignment() const;
-        const u32 GetMemoryTypeBits() const;
+        virtual void MemoryCopy(void const* src, const UInt32 offset, const UInt32 size) = 0;
+        const UInt64 GetTotalBytes() const;
+        const UInt32 GetAlignment() const;
+        const UInt32 GetMemoryTypeBits() const;
 
     protected:
-        u64 m_TotalBytes { 0 };
-        u32 m_Alignment { 0 };
-        u32 m_MemoryTypeBits { 0 };
+        UInt64 m_TotalBytes { 0 };
+        UInt32 m_Alignment { 0 };
+        UInt32 m_MemoryTypeBits { 0 };
     };
     
     inline DeviceMemory::~DeviceMemory() noexcept
@@ -36,19 +36,19 @@ namespace NebulaEngine::RHI
 
     /// 
     /// @return total bytes (including alignment bit)
-    inline const u64 DeviceMemory::GetTotalBytes() const
+    inline const UInt64 DeviceMemory::GetTotalBytes() const
     {
         return m_TotalBytes;
     }
 
-    inline const u32 DeviceMemory::GetAlignment() const
+    inline const UInt32 DeviceMemory::GetAlignment() const
     {
         return m_Alignment;
     }
 
     
 
-    inline const u32 DeviceMemory::GetMemoryTypeBits() const
+    inline const UInt32 DeviceMemory::GetMemoryTypeBits() const
     {
         return m_MemoryTypeBits;
     }

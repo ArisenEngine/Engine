@@ -28,9 +28,9 @@ using namespace NebulaEngine;
 
 struct RenderContext
 {
-    u32 windowId;
-    u32 newWidth;
-    u32 newHeight;
+    UInt32 windowId;
+    UInt32 newWidth;
+    UInt32 newHeight;
     RHI::Device* device;
     std::shared_ptr<RHI::GPURenderPass> renderPass;
     std::shared_ptr<RHI::FrameBuffer> frameBuffer;
@@ -39,8 +39,8 @@ struct RenderContext
     Containers::Vector<std::shared_ptr<RHI::BufferHandle>> uniformBuffers;
      
     RHI::RHICommandBufferPool* commandPool;
-    Containers::Vector<u32> gpuPrograms;
-    u32 descriptorPoolId;
+    Containers::Vector<UInt32> gpuPrograms;
+    UInt32 descriptorPoolId;
     bool bShouldResize;
 };
 
@@ -48,7 +48,7 @@ Containers::Vector<RenderContext> g_RenderContexts;
 
 const int k_WindowsCount = 1;
 
-void WinResize(HWND hwnd, u32 width, u32 height)
+void WinResize(HWND hwnd, UInt32 width, UInt32 height)
 {
     auto id = Platforms::GetWindowId(hwnd);
     for (int i = 0; i < k_WindowsCount; ++i)
@@ -115,7 +115,7 @@ const std::vector<uint16_t> indices = {
 class EngineTest : public Test
 {
 private:
-    u32 frameIndex {0};
+    UInt32 frameIndex {0};
     RHI::Instance* m_Instance{};
 
 public:
@@ -511,8 +511,8 @@ public:
 
                     {
                         // viewport scissor
-                        commandBuffer->SetViewport(0, 0, static_cast<f32>(backBufferView->GetWidth()), static_cast<
-                                                       f32>(backBufferView->GetHeight()), 0, 1);
+                        commandBuffer->SetViewport(0, 0, static_cast<Float32>(backBufferView->GetWidth()), static_cast<
+                                                       Float32>(backBufferView->GetHeight()), 0, 1);
                         commandBuffer->SetScissor(0, 0, backBufferView->GetWidth(), backBufferView->GetHeight());
                     }
 

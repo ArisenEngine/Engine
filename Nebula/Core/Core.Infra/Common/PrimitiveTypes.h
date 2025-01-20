@@ -6,29 +6,29 @@ namespace NebulaEngine
 {
 	// unsigned integers
 
-	using u64 = uint64_t;
-	using u32 = uint32_t;
-	using u16 = uint16_t;
-	using u8 = uint8_t;
+	using UInt64 = uint64_t;
+	using UInt32 = uint32_t;
+	using UInt16 = uint16_t;
+	using UInt8 = uint8_t;
 
 	// signed integers
 
-	using s64 = int64_t;
-	using s32 = int32_t;
-	using s16 = int16_t;
-	using s8 = int8_t;
+	using SInt64 = int64_t;
+	using SInt32 = int32_t;
+	using SInt16 = int16_t;
+	using SInt8 = int8_t;
 
-	constexpr u64   u64Invalid{ 0xffff'ffff'ffff'ffffui64 };
-	constexpr u32   u32Invalid{ 0xffff'ffffui32 };
-	constexpr u16   u16Invalid{ 0xffffui16 };
-	constexpr u8    u8Invalid{ 0xffui8 };
+	constexpr UInt64   u64Invalid{ 0xffff'ffff'ffff'ffffui64 };
+	constexpr UInt32   u32Invalid{ 0xffff'ffffui32 };
+	constexpr UInt16   u16Invalid{ 0xffffui16 };
+	constexpr UInt8    u8Invalid{ 0xffui8 };
 
     
   
 
-	using f32 = float;
+	using Float32 = float;
 
-	constexpr u32 InvalidID =  0xffff'ffffui32;
+	constexpr UInt32 InvalidID =  0xffff'ffffui32;
 
 	namespace String
 	{

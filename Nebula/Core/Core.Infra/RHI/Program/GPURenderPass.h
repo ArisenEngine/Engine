@@ -14,9 +14,9 @@ namespace NebulaEngine::RHI
         
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(GPURenderPass)
-        GPURenderPass(u32 maxFramesInFlight);
+        GPURenderPass(UInt32 maxFramesInFlight);
         VIRTUAL_DECONSTRUCTOR(GPURenderPass)
-        virtual void* GetHandle(u32 frameIndex) = 0;
+        virtual void* GetHandle(UInt32 frameIndex) = 0;
 
         virtual void AddAttachmentAction(
             Format format,
@@ -26,19 +26,19 @@ namespace NebulaEngine::RHI
             EImageLayout initialLayout, EImageLayout finalLayout
         ) = 0;
 
-        virtual u32 GetAttachmentCount() = 0;
+        virtual UInt32 GetAttachmentCount() = 0;
 
         virtual GPUSubPass* AddSubPass() = 0;
-        virtual u32 GetSubPassCount() = 0;
-        virtual void AllocRenderPass(u32 frameIndex) = 0;
-        virtual void FreeRenderPass(u32 frameIndex) = 0;
+        virtual UInt32 GetSubPassCount() = 0;
+        virtual void AllocRenderPass(UInt32 frameIndex) = 0;
+        virtual void FreeRenderPass(UInt32 frameIndex) = 0;
         virtual void FreeAllRenderPasses() = 0;
         
     protected:
-        u32 m_MaxFramesInFlight;
+        UInt32 m_MaxFramesInFlight;
     };
 
-    inline GPURenderPass::GPURenderPass(u32 maxFramesInFlight):m_MaxFramesInFlight(maxFramesInFlight)
+    inline GPURenderPass::GPURenderPass(UInt32 maxFramesInFlight):m_MaxFramesInFlight(maxFramesInFlight)
     {
             
     }

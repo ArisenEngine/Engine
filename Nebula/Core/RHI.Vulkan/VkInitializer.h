@@ -34,7 +34,7 @@ namespace NebulaEngine::RHI
         return layoutInfo;
     }
 
-    inline VkDescriptorPoolSize DescriptorPoolSize(EDescriptorType type, u32 count)
+    inline VkDescriptorPoolSize DescriptorPoolSize(EDescriptorType type, UInt32 count)
     {
         VkDescriptorPoolSize poolSize{};
         poolSize.type = static_cast<VkDescriptorType>(type);
@@ -42,7 +42,7 @@ namespace NebulaEngine::RHI
         return poolSize;
     }
 
-    inline VkDescriptorPoolCreateInfo DescriptorPoolCreateInfo(u32 poolSizeCount, const VkDescriptorPoolSize* poolSize, u32 maxSets)
+    inline VkDescriptorPoolCreateInfo DescriptorPoolCreateInfo(UInt32 poolSizeCount, const VkDescriptorPoolSize* poolSize, UInt32 maxSets)
     {
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -54,7 +54,7 @@ namespace NebulaEngine::RHI
         return poolInfo;
     }
 
-    inline VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo(VkDescriptorPool pool, u32 descriptorSetCount, const VkDescriptorSetLayout* pSetLayouts)
+    inline VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo(VkDescriptorPool pool, UInt32 descriptorSetCount, const VkDescriptorSetLayout* pSetLayouts)
     {
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -65,7 +65,7 @@ namespace NebulaEngine::RHI
     }
 
     inline VkWriteDescriptorSet WriteDescriptorSet(
-        VkDescriptorSet dstSet, u32 dstBinding, u32 dstArrayElement, u32 descriptorCount,
+        VkDescriptorSet dstSet, UInt32 dstBinding, UInt32 dstArrayElement, UInt32 descriptorCount,
         VkDescriptorType descriptorType, const VkDescriptorImageInfo* pImageInfo, const VkDescriptorBufferInfo* pBufferInfo,
         const VkBufferView* pTexelBufferView)
     {

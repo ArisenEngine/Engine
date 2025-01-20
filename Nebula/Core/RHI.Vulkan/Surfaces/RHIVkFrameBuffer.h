@@ -10,14 +10,14 @@ namespace NebulaEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkFrameBuffer)
-        RHIVkFrameBuffer(VkDevice device, u32 maxFramesInFlight);
+        RHIVkFrameBuffer(VkDevice device, UInt32 maxFramesInFlight);
         ~RHIVkFrameBuffer() noexcept override;
 
-        void* GetHandle(u32 currentFrameIndex) override;
-        void SetAttachment(u32 frameIndex, ImageView* imageView, GPURenderPass* renderPass) override;
+        void* GetHandle(UInt32 currentFrameIndex) override;
+        void SetAttachment(UInt32 frameIndex, ImageView* imageView, GPURenderPass* renderPass) override;
         Format GetAttachFormat() override;
     private:
-        void FreeFrameBuffer(u32 currentFrameIndex);
+        void FreeFrameBuffer(UInt32 currentFrameIndex);
         void FreeAllFrameBuffers();
         Containers::Vector<VkFramebuffer> m_VkFrameBuffers;
         VkDevice m_VkDevice;

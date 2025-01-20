@@ -18,36 +18,36 @@ namespace  NebulaEngine::RHI
         void* GetHandle() const override;
         void* GetHandlerPointer() override;
 
-        void BeginRenderPass(u32 frameIndex, RenderPassBeginDesc&& desc) override;
+        void BeginRenderPass(UInt32 frameIndex, RenderPassBeginDesc&& desc) override;
         void EndRenderPass() override;
-        void Begin(u32 frameIndex) override;
-        void Begin(u32 frameIndex, u32 commandBufferUsage) override;
+        void Begin(UInt32 frameIndex) override;
+        void Begin(UInt32 frameIndex, UInt32 commandBufferUsage) override;
         void End() override;
 
-        void SetViewport(f32 x, f32 y, f32 width, f32 height, f32 minDepth, f32 maxDepth) override;
-        void SetViewport(f32 x, f32 y, f32 width, f32 height) override;
-        void SetScissor(u32 offsetX, u32 offsetY, u32 width, u32 height) override;
+        void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height, Float32 minDepth, Float32 maxDepth) override;
+        void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height) override;
+        void SetScissor(UInt32 offsetX, UInt32 offsetY, UInt32 width, UInt32 height) override;
 
-        void BindPipeline(u32 frameIndex, GPUPipeline* pipeline) override;
+        void BindPipeline(UInt32 frameIndex, GPUPipeline* pipeline) override;
         
-        void Draw(u32 vertexCount, u32 instanceCount, u32 firstVertex, u32 firstInstance, u32 firstBinding) override;
-        void DrawIndexed(u32 indexCount, u32 instanceCount, u32 firstIndex, u32 vertexOffset, u32 firstInstance,  u32 firstBinding) override;
-        void BindVertexBuffers(BufferHandle* buffers, u64 offset) override;
-        void BindIndexBuffer(BufferHandle* indexBuffer, u64 offset, EIndexType type) override;
+        void Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding) override;
+        void DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 firstIndex, UInt32 vertexOffset, UInt32 firstInstance,  UInt32 firstBinding) override;
+        void BindVertexBuffers(BufferHandle* buffers, UInt64 offset) override;
+        void BindIndexBuffer(BufferHandle* indexBuffer, UInt64 offset, EIndexType type) override;
         
         void WaitSemaphore(RHISemaphore* semaphore, EPipelineStageFlag stage) override;
         void SignalSemaphore(RHISemaphore* semaphore) override;
-        void CopyBuffer(BufferHandle const * src, u64 srcOffset, BufferHandle const * dst, u64 dstOffset, u64 size) override;
+        void CopyBuffer(BufferHandle const * src, UInt64 srcOffset, BufferHandle const * dst, UInt64 dstOffset, UInt64 size) override;
         
         void InjectFence(RHIFence* fence) override;
-        void WaitForFence(u32 frameIndex) override;
+        void WaitForFence(UInt32 frameIndex) override;
         
     public:
         
         const VkSemaphore* GetWaitSemaphores() const;
-        u32 GetWaitSemaphoresCount() const;
+        UInt32 GetWaitSemaphoresCount() const;
         const VkSemaphore* GetSignalSemaphores() const;
-        u32 GetSignalSemaphoresCount() const;
+        UInt32 GetSignalSemaphoresCount() const;
         const VkPipelineStageFlags* GetWaitStageMask() const;
         VkFence GetSubmissionFence() const;
         
@@ -55,7 +55,7 @@ namespace  NebulaEngine::RHI
         
         void Release() override;
         void Reset() override;
-        void ReadyForBegin(u32 frameIndex) override;
+        void ReadyForBegin(UInt32 frameIndex) override;
         void DoBegin() override;
         
     private:
@@ -65,9 +65,9 @@ namespace  NebulaEngine::RHI
         VkDevice m_VkDevice;
         RHIVkCommandBufferPool* m_RHICommandPool;
         Containers::Vector<VkBuffer> m_VertexBuffers;
-        Containers::Vector<u64> m_VertexBindingOffsets;
+        Containers::Vector<UInt64> m_VertexBindingOffsets;
         std::optional<VkBuffer> m_IndexBuffer;
-        std::optional<u64> m_IndexOffset;
+        std::optional<UInt64> m_IndexOffset;
         std::optional<EIndexType> m_IndexType;
 
         Containers::Vector<VkSemaphore> m_WaitSemaphores;

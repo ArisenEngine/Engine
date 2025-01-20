@@ -7,11 +7,11 @@ namespace NebulaEngine::RHI
 {
     typedef struct BufferAllocDesc
     {
-        u32 createFlagBits;
-        u64 size;
-        u32 usage;
+        UInt32 createFlagBits;
+        UInt64 size;
+        UInt32 usage;
         SharingMode sharingMode;
-        u32 queueFamilyIndexCount;
+        UInt32 queueFamilyIndexCount;
         const void* pQueueFamilyIndices;
     } BufferAllocDesc;
 
@@ -24,20 +24,20 @@ namespace NebulaEngine::RHI
         virtual bool AllocBufferHandle(BufferAllocDesc && desc) = 0;
         virtual void FreeBufferHandle() = 0;
 
-        virtual bool AllocBufferMemory(u32 memoryPropertiesBits) = 0;
+        virtual bool AllocBufferMemory(UInt32 memoryPropertiesBits) = 0;
         virtual void FreeBufferMemory() = 0;
-        virtual void MemoryCopy(void const* src, u32 offset) = 0;
+        virtual void MemoryCopy(void const* src, UInt32 offset) = 0;
         ~BufferHandle() noexcept override = default;
 
     public:
-        const u64 BufferSize() const;
+        const UInt64 BufferSize() const;
         
     protected:
 
-        u64 m_BufferSize {0};
+        UInt64 m_BufferSize {0};
     };
 
-    inline const u64 BufferHandle::BufferSize() const
+    inline const UInt64 BufferHandle::BufferSize() const
     {
         return m_BufferSize;
     }

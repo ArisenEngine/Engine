@@ -8,7 +8,7 @@ class EngineTest : public Test
 
 private :
 
-	NebulaEngine::u32 m_surface_id;
+	NebulaEngine::UInt32 m_surface_id;
 	
 public:
 	bool Initialize() override

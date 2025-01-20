@@ -18,7 +18,7 @@ NebulaEngine::RHI::RHIVkGPUPipeline::~RHIVkGPUPipeline() noexcept
     
 }
 
-NebulaEngine::RHI::RHIVkGPUPipeline::RHIVkGPUPipeline(RHIVkDevice* device, GPUPipelineStateObject* pso, u32 maxFramesInFlight):
+NebulaEngine::RHI::RHIVkGPUPipeline::RHIVkGPUPipeline(RHIVkDevice* device, GPUPipelineStateObject* pso, UInt32 maxFramesInFlight):
 GPUPipeline(maxFramesInFlight), m_Device(device), m_VkDevice(static_cast<VkDevice>(device->GetHandle())), m_PipelineStateObject(pso)
 {
     m_VkGraphicPipelines.resize(maxFramesInFlight);
@@ -30,13 +30,13 @@ GPUPipeline(maxFramesInFlight), m_Device(device), m_VkDevice(static_cast<VkDevic
     }
 }
 
-void* NebulaEngine::RHI::RHIVkGPUPipeline::GetGraphicsPipeline(u32 frameIndex)
+void* NebulaEngine::RHI::RHIVkGPUPipeline::GetGraphicsPipeline(UInt32 frameIndex)
 {
     ASSERT(m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE);
     return m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight];
 }
 
-void NebulaEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(u32 frameIndex, GPUSubPass* subPass)
+void NebulaEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex, GPUSubPass* subPass)
 {
     FreePipeline(frameIndex);
     FreePipelineLayout(frameIndex);
@@ -174,7 +174,7 @@ const NebulaEngine::RHI::EPipelineBindPoint NebulaEngine::RHI::RHIVkGPUPipeline:
     return m_SubPass->GetBindPoint();
 }
 
-void NebulaEngine::RHI::RHIVkGPUPipeline::FreePipelineLayout(u32 frameIndex)
+void NebulaEngine::RHI::RHIVkGPUPipeline::FreePipelineLayout(UInt32 frameIndex)
 {
     if (m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE)
     {
@@ -184,7 +184,7 @@ void NebulaEngine::RHI::RHIVkGPUPipeline::FreePipelineLayout(u32 frameIndex)
     }
 }
 
-void NebulaEngine::RHI::RHIVkGPUPipeline::FreePipeline(u32 frameIndex)
+void NebulaEngine::RHI::RHIVkGPUPipeline::FreePipeline(UInt32 frameIndex)
 {
     if (m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE)
     {

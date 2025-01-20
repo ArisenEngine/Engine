@@ -12,18 +12,18 @@ namespace NebulaEngine::RHI
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkGPUPipeline)
         ~RHIVkGPUPipeline() noexcept override;
-        RHIVkGPUPipeline(RHIVkDevice* device, GPUPipelineStateObject* pipelineStateObject, u32 maxFramesInFlight);
-        void* GetGraphicsPipeline(u32 frameIndex) override;
+        RHIVkGPUPipeline(RHIVkDevice* device, GPUPipelineStateObject* pipelineStateObject, UInt32 maxFramesInFlight);
+        void* GetGraphicsPipeline(UInt32 frameIndex) override;
 
-        void AllocGraphicPipeline(u32 frameIndex, GPUSubPass* subPass) override;
+        void AllocGraphicPipeline(UInt32 frameIndex, GPUSubPass* subPass) override;
 
         const EPipelineBindPoint GetBindPoint() const override;
         void BindPipelineStateObject(GPUPipelineStateObject* pso) override;
         
     private:
 
-        void FreePipelineLayout(u32 frameIndex);
-        void FreePipeline(u32 frameIndex);
+        void FreePipelineLayout(UInt32 frameIndex);
+        void FreePipeline(UInt32 frameIndex);
 
         void FreeAllPipelineLayouts();
         void FreeAllPipelines();

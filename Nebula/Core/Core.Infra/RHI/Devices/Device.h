@@ -40,12 +40,12 @@ namespace NebulaEngine::RHI
         virtual void* GetHandle() const = 0;
         virtual void DeviceWaitIdle() const = 0;
         virtual void GraphicQueueWaitIdle() const = 0;
-        virtual u32 CreateGPUProgram() = 0;
-        virtual GPUProgram* GetGPUProgram(u32 programId) = 0;
-        virtual void DestroyGPUProgram(u32 programId) = 0;
-        virtual bool AttachProgramByteCode(u32 programId, GPUProgramDesc&& desc) = 0;
-        virtual u32 CreateCommandBufferPool() = 0;
-        virtual RHICommandBufferPool* GetCommandBufferPool(u32 id) = 0;
+        virtual UInt32 CreateGPUProgram() = 0;
+        virtual GPUProgram* GetGPUProgram(UInt32 programId) = 0;
+        virtual void DestroyGPUProgram(UInt32 programId) = 0;
+        virtual bool AttachProgramByteCode(UInt32 programId, GPUProgramDesc&& desc) = 0;
+        virtual UInt32 CreateCommandBufferPool() = 0;
+        virtual RHICommandBufferPool* GetCommandBufferPool(UInt32 id) = 0;
 
         virtual std::shared_ptr<GPURenderPass> GetRenderPass() = 0;
         virtual void ReleaseRenderPass(std::shared_ptr<GPURenderPass> renderPass) = 0;
@@ -60,11 +60,11 @@ namespace NebulaEngine::RHI
 
         virtual DescriptorPool* GetDescriptorPool() const = 0;
 
-        virtual void Submit(RHICommandBuffer* commandBuffer, u32 frameIndex) = 0;
+        virtual void Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex) = 0;
 
-        virtual u32 FindMemoryType(u32 typeFilter, u32 properties) = 0;
+        virtual UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) = 0;
 
-        virtual void SetResolution(u32 width, u32 height) = 0;
+        virtual void SetResolution(UInt32 width, UInt32 height) = 0;
         
     protected:
         
