@@ -114,7 +114,7 @@ namespace NebulaEngine::Platforms
         }
 
         // Configure the compiler arguments for compiling the HLSL shader to SPIR-V
-        auto stage = s_Stages[(u32)params.stage];
+        auto stage = s_Stages[(UInt32)params.stage];
         stage.append(params.shaderModel);
         std::wstring env = L"-fspv-target-env=";
         env.append(params.targetEnv);

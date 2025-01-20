@@ -13,26 +13,26 @@ namespace NebulaEngine::RHI
     typedef struct SubpassDescription
     {
         EPipelineBindPoint bindPoint;
-        u32 colorRefCount;
+        UInt32 colorRefCount;
         void* colorReferences;
-        u32 preserveCount;
+        UInt32 preserveCount;
         void* preserves;
-        std::optional<u32> inputRefCount;
+        std::optional<UInt32> inputRefCount;
         std::optional<void*> inputReferences;
         std::optional<void*> resolveReference;
         std::optional<void*> depthStencilReference;
-        std::optional<u32> flag;
+        std::optional<UInt32> flag;
         
     } SubpassDescription;
 
     typedef struct SubpassDependency
     {
-        u32 previousIndex;
-        u32 previousStage;
-        u32 previousAccessMask;
-        u32 currentStage;
-        u32 currentAccessMask;
-        u32 syncFlag;
+        UInt32 previousIndex;
+        UInt32 previousStage;
+        UInt32 previousAccessMask;
+        UInt32 currentStage;
+        UInt32 currentAccessMask;
+        UInt32 syncFlag;
     } SubpassDependency;
     
     class GPUSubPass
@@ -45,17 +45,17 @@ namespace NebulaEngine::RHI
             m_OwnerPass = nullptr;
         }
         
-        virtual void AddInputReference(u32 index, EImageLayout layout) = 0;
-        virtual void AddColorReference(u32 index, EImageLayout layout) = 0;
-        virtual void SetResolveReference(u32 index, EImageLayout layout) = 0;
-        virtual void SetDepthStencilReference(u32 index, EImageLayout layout) = 0;
+        virtual void AddInputReference(UInt32 index, EImageLayout layout) = 0;
+        virtual void AddColorReference(UInt32 index, EImageLayout layout) = 0;
+        virtual void SetResolveReference(UInt32 index, EImageLayout layout) = 0;
+        virtual void SetDepthStencilReference(UInt32 index, EImageLayout layout) = 0;
         
         virtual void ClearAll() = 0;
 
         virtual SubpassDescription GetDescriptions() = 0;
         SubpassDependency GetDependency() const { return m_Dependency; }
 
-        virtual const u32 GetIndex() const = 0;
+        virtual const UInt32 GetIndex() const = 0;
         
     public:
 
@@ -66,7 +66,7 @@ namespace NebulaEngine::RHI
         /// \param currStage curr subPass stage 
         /// \param currAccessMask  curr subPass stage access mask
         /// \param syncFlag sync flags
-        void SetDependency(u32 preIndex, u32 preStage, u32 preAccessMask, u32 currStage, u32 currAccessMask, u32 syncFlag)
+        void SetDependency(UInt32 preIndex, UInt32 preStage, UInt32 preAccessMask, UInt32 currStage, UInt32 currAccessMask, UInt32 syncFlag)
         {
             m_Dependency.previousIndex = preIndex;
             m_Dependency.previousStage = preStage;
@@ -80,17 +80,17 @@ namespace NebulaEngine::RHI
 
         EPipelineBindPoint GetBindPoint() const { return m_BindPoint; }
         void SetBindPoint(EPipelineBindPoint point) { m_BindPoint = point; }
-        u32 GetSubPassDescriptionFlag() const { return m_SubPassDescriptionFlag; }
-        void SetSubPassDescriptionFlag(u32 flag) { m_SubPassDescriptionFlag = flag; }
+        UInt32 GetSubPassDescriptionFlag() const { return m_SubPassDescriptionFlag; }
+        void SetSubPassDescriptionFlag(UInt32 flag) { m_SubPassDescriptionFlag = flag; }
     protected:
         GPURenderPass* m_OwnerPass;
     private:
 
         friend GPURenderPass;
-        virtual void Bind(u32 index) = 0;
+        virtual void Bind(UInt32 index) = 0;
         SubpassDependency m_Dependency {};
         EPipelineBindPoint m_BindPoint;
-        u32 m_SubPassDescriptionFlag;
+        UInt32 m_SubPassDescriptionFlag;
         
         
     };

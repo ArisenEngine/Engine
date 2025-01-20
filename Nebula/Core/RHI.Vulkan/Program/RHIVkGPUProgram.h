@@ -15,7 +15,7 @@ namespace NebulaEngine::RHI
         bool AttachProgramByteCode(GPUProgramDesc&& desc) override;
 
         // TODO:
-        u32 GetShaderStageCreateFlags() override { return 0; }
+        UInt32 GetShaderStageCreateFlags() override { return 0; }
         void* GetSpecializationInfo() override { return nullptr; }
     protected:
         void DestroyHandle() override;

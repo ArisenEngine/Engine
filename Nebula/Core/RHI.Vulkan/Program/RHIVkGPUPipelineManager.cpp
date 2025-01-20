@@ -6,7 +6,7 @@
 #include "RHI/Program/GPUPipelineStateObject.h"
 #include "RHI/Program/GPUSubPass.h"
 
-NebulaEngine::RHI::RHIVkGPUPipelineManager::RHIVkGPUPipelineManager(RHIVkDevice* device, u32 maxFramesInFlight): GPUPipelineManager(maxFramesInFlight),
+NebulaEngine::RHI::RHIVkGPUPipelineManager::RHIVkGPUPipelineManager(RHIVkDevice* device, UInt32 maxFramesInFlight): GPUPipelineManager(maxFramesInFlight),
 m_Device(device)
 {
     

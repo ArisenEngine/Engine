@@ -42,7 +42,7 @@ namespace NebulaEngine::RHI
        
         
     public:
-        enum class ECommandState : u8
+        enum class ECommandState : UInt8
         {
             ReadyForBegin,
             IsInsideBegin,
@@ -75,31 +75,31 @@ namespace NebulaEngine::RHI
         virtual void* GetHandlerPointer() = 0;
 
         // Command Interface
-        virtual void BeginRenderPass(u32 frameIndex, RenderPassBeginDesc&& desc) = 0;
+        virtual void BeginRenderPass(UInt32 frameIndex, RenderPassBeginDesc&& desc) = 0;
         virtual void EndRenderPass() = 0;
         
-        virtual void Begin(u32 frameIndex) = 0;
-        virtual void Begin(u32 frameIndex, u32 commandBufferUsage) = 0;
+        virtual void Begin(UInt32 frameIndex) = 0;
+        virtual void Begin(UInt32 frameIndex, UInt32 commandBufferUsage) = 0;
         virtual void End() = 0;
         
-        virtual void SetViewport(f32 x, f32 y, f32 width, f32 height, f32 minDepth, f32 maxDepth) = 0;
-        virtual void SetViewport(f32 x, f32 y, f32 width, f32 height) = 0;
-        virtual void SetScissor(u32 offsetX, u32 offsetY, u32 width, u32 height) = 0;
+        virtual void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height, Float32 minDepth, Float32 maxDepth) = 0;
+        virtual void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height) = 0;
+        virtual void SetScissor(UInt32 offsetX, UInt32 offsetY, UInt32 width, UInt32 height) = 0;
 
-        virtual void BindPipeline(u32 frameIndex, GPUPipeline* pipeline) = 0;
-        virtual void Draw(u32 vertexCount, u32 instanceCount, u32 firstVertex, u32 firstInstance, u32 firstBinding) = 0;
-        virtual void DrawIndexed(u32 indexCount, u32 instanceCount, u32 firstIndex, u32 vertexOffset, u32 firstInstance,  u32 firstBinding) = 0;
-        virtual void BindVertexBuffers(BufferHandle* buffer, u64 offset) = 0;
-        virtual void BindIndexBuffer(BufferHandle* indexBuffer, u64 offset, EIndexType type) = 0;
+        virtual void BindPipeline(UInt32 frameIndex, GPUPipeline* pipeline) = 0;
+        virtual void Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding) = 0;
+        virtual void DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 firstIndex, UInt32 vertexOffset, UInt32 firstInstance,  UInt32 firstBinding) = 0;
+        virtual void BindVertexBuffers(BufferHandle* buffer, UInt64 offset) = 0;
+        virtual void BindIndexBuffer(BufferHandle* indexBuffer, UInt64 offset, EIndexType type) = 0;
         
         virtual void WaitSemaphore(RHISemaphore* semaphore, EPipelineStageFlag stage) = 0;
         virtual void SignalSemaphore(RHISemaphore* semaphore) = 0;
         virtual void InjectFence(RHIFence* fence) = 0;
 
-        virtual void CopyBuffer(BufferHandle const * src, u64 srcOffset, BufferHandle const * dst, u64 dstOffset, u64 size) = 0;
+        virtual void CopyBuffer(BufferHandle const * src, UInt64 srcOffset, BufferHandle const * dst, UInt64 dstOffset, UInt64 size) = 0;
         
         
-        virtual void WaitForFence(u32 frameIndex) = 0;
+        virtual void WaitForFence(UInt32 frameIndex) = 0;
     public:
 
         const bool ReadyForSubmit() const;
@@ -108,7 +108,7 @@ namespace NebulaEngine::RHI
         friend RHICommandBufferPool;
         virtual void Reset() = 0;
         virtual void Release() = 0;
-        virtual void ReadyForBegin(u32 frameIndex) = 0;
+        virtual void ReadyForBegin(UInt32 frameIndex) = 0;
         virtual void DoBegin() = 0;
         RHICommandBufferPool* m_CommandBufferPool;
         Device* m_Device;

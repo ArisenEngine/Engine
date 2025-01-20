@@ -9,20 +9,20 @@ namespace NebulaEngine::RHI
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(GPUPipeline)
 
-        explicit GPUPipeline(u32 maxFramesInFlight);
+        explicit GPUPipeline(UInt32 maxFramesInFlight);
         virtual ~GPUPipeline() noexcept = default;
 
-        virtual void* GetGraphicsPipeline(u32 frameIndex) = 0;
+        virtual void* GetGraphicsPipeline(UInt32 frameIndex) = 0;
         
-        virtual void AllocGraphicPipeline(u32 frameIndex, GPUSubPass* subPass) = 0;
+        virtual void AllocGraphicPipeline(UInt32 frameIndex, GPUSubPass* subPass) = 0;
         virtual const EPipelineBindPoint GetBindPoint() const = 0;
         
         virtual void BindPipelineStateObject(GPUPipelineStateObject* pso) = 0;
     protected:
-        u32 m_MaxFramesInFlight;
+        UInt32 m_MaxFramesInFlight;
     };
 
-    inline GPUPipeline::GPUPipeline(u32 maxFramesInFlight):m_MaxFramesInFlight(maxFramesInFlight)
+    inline GPUPipeline::GPUPipeline(UInt32 maxFramesInFlight):m_MaxFramesInFlight(maxFramesInFlight)
     {
             
     }

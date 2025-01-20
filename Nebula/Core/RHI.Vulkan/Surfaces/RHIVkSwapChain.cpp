@@ -2,7 +2,7 @@
 #include "Logger/Logger.h"
 #include "RHI/Enums/Image/ImageAspectFlagBits.h"
 
-NebulaEngine::RHI::RHIVkSwapChain::RHIVkSwapChain(const Device* device, const RHIVkSurface* surface, u32 maxFramesInFlight):
+NebulaEngine::RHI::RHIVkSwapChain::RHIVkSwapChain(const Device* device, const RHIVkSurface* surface, UInt32 maxFramesInFlight):
 SwapChain(maxFramesInFlight), m_Device(device), m_VkDevice(static_cast<VkDevice>(
             m_Device->GetHandle())),
 m_VkSurface(static_cast<VkSurfaceKHR>(surface->GetHandle())), m_ImageIndex(0), m_Surface(surface)
@@ -64,7 +64,7 @@ void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
 
     LOG_DEBUG("[RHIVkSwapChain::CreateSwapChainWithDesc]: vkSwapchain Created .");
 
-    u32 actualImageCount = 0;
+    UInt32 actualImageCount = 0;
     Containers::Vector<VkImage> images;
 
     if (vkGetSwapchainImagesKHR(m_VkDevice, m_VkSwapChain, &actualImageCount, nullptr) != VK_SUCCESS)
@@ -104,17 +104,17 @@ void NebulaEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
 
 }
 
-NebulaEngine::RHI::RHISemaphore* NebulaEngine::RHI::RHIVkSwapChain::GetImageAvailableSemaphore(u32 currentFrame) const
+NebulaEngine::RHI::RHISemaphore* NebulaEngine::RHI::RHIVkSwapChain::GetImageAvailableSemaphore(UInt32 currentFrame) const
 {
     return m_ImageAvailableSemaphores[currentFrame % m_MaxFramesInFlight].get();
 }
 
-NebulaEngine::RHI::RHISemaphore* NebulaEngine::RHI::RHIVkSwapChain::GetRenderFinishSemaphore(u32 currentFrame) const
+NebulaEngine::RHI::RHISemaphore* NebulaEngine::RHI::RHIVkSwapChain::GetRenderFinishSemaphore(UInt32 currentFrame) const
 {
     return m_RenderFinishSemaphores[currentFrame % m_MaxFramesInFlight].get();
 }
 
-NebulaEngine::RHI::ImageHandle* NebulaEngine::RHI::RHIVkSwapChain::AquireCurrentImage(u32 frameIndex)
+NebulaEngine::RHI::ImageHandle* NebulaEngine::RHI::RHIVkSwapChain::AquireCurrentImage(UInt32 frameIndex)
 {
     auto currentFrame = frameIndex % m_MaxFramesInFlight;
     if (vkAcquireNextImageKHR(m_VkDevice, m_VkSwapChain, UINT64_MAX, static_cast<VkSemaphore>(
@@ -136,7 +136,7 @@ void NebulaEngine::RHI::RHIVkSwapChain::Cleanup()
     }
 }
 
-void NebulaEngine::RHI::RHIVkSwapChain::Present(u32 frameIndex)
+void NebulaEngine::RHI::RHIVkSwapChain::Present(UInt32 frameIndex)
 {
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

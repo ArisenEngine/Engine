@@ -2,7 +2,7 @@
 
 #include "../Synchronization/RHIVkFence.h"
 
-NebulaEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* device, u32 maxFramesInFlight)
+NebulaEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* device, UInt32 maxFramesInFlight)
 : RHICommandBufferPool(device, maxFramesInFlight)
 {
     m_VkDevice = static_cast<VkDevice>(device->GetHandle());

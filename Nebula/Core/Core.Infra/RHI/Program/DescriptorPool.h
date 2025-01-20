@@ -17,10 +17,10 @@ namespace NebulaEngine::RHI
         DescriptorPool() = default;
         VIRTUAL_DECONSTRUCTOR(DescriptorPool)
 
-        virtual u32 AddPool(Containers::Vector<EDescriptorType> types, Containers::Vector<u32> counts, u32 maxSets) = 0;
-        virtual bool ResetPool(u32 poolId) = 0;
-        virtual void AllocDescriptorSets(u32 poolId, GPUPipelineStateObject* pso) = 0;
-        virtual void UpdateDescriptorSets(u32 poolId, GPUPipelineStateObject* pso, u32 frameIndex) = 0;
+        virtual UInt32 AddPool(Containers::Vector<EDescriptorType> types, Containers::Vector<UInt32> counts, UInt32 maxSets) = 0;
+        virtual bool ResetPool(UInt32 poolId) = 0;
+        virtual void AllocDescriptorSets(UInt32 poolId, GPUPipelineStateObject* pso) = 0;
+        virtual void UpdateDescriptorSets(UInt32 poolId, GPUPipelineStateObject* pso, UInt32 frameIndex) = 0;
         
     };
 }

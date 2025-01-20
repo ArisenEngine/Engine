@@ -20,12 +20,12 @@ namespace NebulaEngine::RHI
         /** enable validation layer */
         bool validationLayer;
         /** API Version */
-        u32 variant, major, minor, patch;
+        UInt32 variant, major, minor, patch;
         /** App Version */
-        u32 appMajor, appMinor, appPatch;
+        UInt32 appMajor, appMinor, appPatch;
         /** App Version */
-        u32 engineMajor, engineMinor, enginePatch;
-        u32 maxFramesInFlight;
+        UInt32 engineMajor, engineMinor, enginePatch;
+        UInt32 maxFramesInFlight;
     };
     
     COREINFRA_DLL class Instance
@@ -48,38 +48,38 @@ namespace NebulaEngine::RHI
         virtual void InitLogicDevices() = 0;
         virtual void PickPhysicalDevice(bool considerSurface = false) = 0;
 
-        virtual bool IsSupportLinearColorSpace(u32&& windowId) = 0;
-        virtual bool PresentModeSupported(u32&& windowId, PresentMode mode) = 0;
-        virtual void SetCurrentPresentMode(u32&& windowId, PresentMode mode) = 0;
-        virtual const Format GetSuitableSwapChainFormat(u32&& windowId) = 0;
-        virtual const PresentMode GetSuitablePresentMode(u32&& windowId) = 0;
+        virtual bool IsSupportLinearColorSpace(UInt32&& windowId) = 0;
+        virtual bool PresentModeSupported(UInt32&& windowId, PresentMode mode) = 0;
+        virtual void SetCurrentPresentMode(UInt32&& windowId, PresentMode mode) = 0;
+        virtual const Format GetSuitableSwapChainFormat(UInt32&& windowId) = 0;
+        virtual const PresentMode GetSuitablePresentMode(UInt32&& windowId) = 0;
         
         /// \brief used for DXC args
         /// \return api env value
         virtual const std::wstring GetEnvString() const = 0;
 
-        virtual void CreateSurface(u32&& windowId) = 0;
-        virtual void DestroySurface(u32&& windowId) = 0;
-        virtual Surface& GetSurface(u32&& windowId) = 0;
-        virtual void SetResolution(const u32&& windowId, const u32&& width, const u32&& height) = 0;
+        virtual void CreateSurface(UInt32&& windowId) = 0;
+        virtual void DestroySurface(UInt32&& windowId) = 0;
+        virtual Surface& GetSurface(UInt32&& windowId) = 0;
+        virtual void SetResolution(const UInt32&& windowId, const UInt32&& width, const UInt32&& height) = 0;
 
         virtual void UpdateSurfaceCapabilities(Surface* surface) = 0;
 
         virtual bool IsPhysicalDeviceAvailable() const = 0;
         virtual bool IsSurfacesAvailable() const = 0;
         
-        virtual void CreateLogicDevice(u32 windowId) = 0;
-        virtual Device* GetLogicalDevice(u32 windowId) = 0;
+        virtual void CreateLogicDevice(UInt32 windowId) = 0;
+        virtual Device* GetLogicalDevice(UInt32 windowId) = 0;
 
-        virtual const u32 GetExternalIndex() const = 0;
+        virtual const UInt32 GetExternalIndex() const = 0;
 
-        const u32 GetMaxFramesInFlight() const
+        const UInt32 GetMaxFramesInFlight() const
         {
             return m_MaxFramesInFlight;
         }
         
     protected:
-        u32 m_MaxFramesInFlight;
+        UInt32 m_MaxFramesInFlight;
         bool m_EnableValidation { false };
         virtual void CheckSwapChainCapabilities() = 0;
     };

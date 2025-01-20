@@ -4,7 +4,7 @@
 
 namespace NebulaEngine::Platforms
 {
-	using WindowID = u32;
+	using WindowID = UInt32;
 
 	class Window
 	{
@@ -19,10 +19,10 @@ namespace NebulaEngine::Platforms
 		bool IsFullScreen() const;
 		void* Handle() const;
 		void SetCaption(const wchar_t* caption) const;
-		Math::u32v4 Size() const;
-		void Resize(u32 width, u32 height) const;
-		u32 Width() const;
-		u32 Height() const;
+		Math::UInt32Vector4 Size() const;
+		void Resize(UInt32 width, UInt32 height) const;
+		UInt32 Width() const;
+		UInt32 Height() const;
 		bool IsClosed() const;
 
 	private:

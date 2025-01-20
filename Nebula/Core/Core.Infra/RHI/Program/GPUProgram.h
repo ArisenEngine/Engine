@@ -14,7 +14,7 @@ namespace NebulaEngine::RHI
         virtual void* GetHandle() const = 0;
         const char* GetEntry() const { return m_Entry.c_str(); }
         virtual bool AttachProgramByteCode(GPUProgramDesc&& desc) = 0;
-        virtual u32 GetShaderStageCreateFlags() = 0;
+        virtual UInt32 GetShaderStageCreateFlags() = 0;
         virtual void* GetSpecializationInfo() = 0;
 
     public:

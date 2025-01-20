@@ -10,7 +10,7 @@ namespace NebulaEngine::Platforms {
 	
 	Window CreateNewWindow(const WindowInitInfo* const initInfo = nullptr);
 
-	u32 GetWindowID(WindowHandle handle);
+	UInt32 GetWindowID(WindowHandle handle);
 
 	void RemoveWindow(WindowID id);
 

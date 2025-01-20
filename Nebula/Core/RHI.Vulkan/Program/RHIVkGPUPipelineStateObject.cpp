@@ -15,7 +15,7 @@ NebulaEngine::RHI::RHIVkGPUPipelineStateObject::RHIVkGPUPipelineStateObject(RHIV
     LOG_DEBUG("[RHIVkGPUPipelineStateObject::RHIVkGPUPipelineStateObject]: PSO Create.");
 }
 
-void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddProgram(u32 programId)
+void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddProgram(UInt32 programId)
 {
     auto program = m_Device->GetGPUProgram(programId);
     VkPipelineShaderStageCreateInfo shaderStageCreateInfo {};
@@ -48,7 +48,7 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::ClearAllPrograms()
     m_PipelineStageCreateInfos.clear();
 }
 
-const NebulaEngine::u32 NebulaEngine::RHI::RHIVkGPUPipelineStateObject::GetHash() const 
+const NebulaEngine::UInt32 NebulaEngine::RHI::RHIVkGPUPipelineStateObject::GetHash() const 
 {
     // TODO
     return 0;
@@ -65,7 +65,7 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::Clear()
     ClearDescriptorSetLayouts();
 }
 
-void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddVertexBindingDescription(u32 binding, u32 stride,
+void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddVertexBindingDescription(UInt32 binding, UInt32 stride,
     EVertexInputRate inputRate)
 {
     m_VertexInputBindingDescriptions.emplace_back(VkVertexInputBindingDescription{binding, stride,static_cast<VkVertexInputRate>(inputRate)});
@@ -81,9 +81,9 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::ClearVertexInputAttributeDe
     m_VertexInputAttributeDescriptions.clear();
 }
 
-NebulaEngine::u32 NebulaEngine::RHI::RHIVkGPUPipelineStateObject::GetStageCount()
+NebulaEngine::UInt32 NebulaEngine::RHI::RHIVkGPUPipelineStateObject::GetStageCount()
 {
-    return static_cast<u32>(m_PipelineStageCreateInfos.size());
+    return static_cast<UInt32>(m_PipelineStageCreateInfos.size());
 }
 
 void* NebulaEngine::RHI::RHIVkGPUPipelineStateObject::GetVertexInputAttributeDescriptions()
@@ -96,26 +96,26 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::ClearVertexBindingDescripti
     m_VertexInputBindingDescriptions.clear();
 }
 
-NebulaEngine::u32 NebulaEngine::RHI::RHIVkGPUPipelineStateObject::GetVertexInputAttributeDescriptionCount()
+NebulaEngine::UInt32 NebulaEngine::RHI::RHIVkGPUPipelineStateObject::GetVertexInputAttributeDescriptionCount()
 {
-    return static_cast<u32>(m_VertexInputAttributeDescriptions.size());
+    return static_cast<UInt32>(m_VertexInputAttributeDescriptions.size());
 }
 
-void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddVertexInputAttributeDescription(u32 location, u32 binding,
-    Format format, u32 offset)
+void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddVertexInputAttributeDescription(UInt32 location, UInt32 binding,
+    Format format, UInt32 offset)
 {
     m_VertexInputAttributeDescriptions.emplace_back(VkVertexInputAttributeDescription{location, binding, static_cast<VkFormat>(format), offset});
 }
 
-NebulaEngine::u32 NebulaEngine::RHI::RHIVkGPUPipelineStateObject::GetVertexBindingDescriptionCount()
+NebulaEngine::UInt32 NebulaEngine::RHI::RHIVkGPUPipelineStateObject::GetVertexBindingDescriptionCount()
 {
-    return static_cast<u32>(m_VertexInputBindingDescriptions.size());
+    return static_cast<UInt32>(m_VertexInputBindingDescriptions.size());
 }
 
 void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddBlendAttachmentState(bool enable, EBlendFactor srcColor,
                                                                              EBlendFactor dstColor, EBlendOp colorBlendOp,
                                                                              EBlendFactor srcAlpha, EBlendFactor dstAlpha, EBlendOp alphaBlendOp,
-                                                                             u32 writeMask)
+                                                                             UInt32 writeMask)
 {
     VkPipelineColorBlendAttachmentState blendState;
     blendState.blendEnable = static_cast<VkBool32>(enable);
@@ -129,7 +129,7 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddBlendAttachmentState(boo
     m_BlendAttachmentStates.emplace_back(blendState);
 }
 
-void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddBlendAttachmentState(bool enable, u32 writeMask)
+void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddBlendAttachmentState(bool enable, UInt32 writeMask)
 {
     VkPipelineColorBlendAttachmentState blendState;
     blendState.blendEnable = static_cast<VkBool32>(enable);
@@ -150,9 +150,9 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::ClearBlendState()
     m_BlendAttachmentStates.clear();
 }
 
-const NebulaEngine::u32 NebulaEngine::RHI::RHIVkGPUPipelineStateObject::GetBlendStateCount() const
+const NebulaEngine::UInt32 NebulaEngine::RHI::RHIVkGPUPipelineStateObject::GetBlendStateCount() const
 {
-    return static_cast<u32>(m_BlendAttachmentStates.size());
+    return static_cast<UInt32>(m_BlendAttachmentStates.size());
 }
 
 void* NebulaEngine::RHI::RHIVkGPUPipelineStateObject::GetBlendAttachmentStates()
@@ -188,7 +188,7 @@ void* NebulaEngine::RHI::RHIVkGPUPipelineStateObject::GetDescriptorSetLayouts()
     return m_DescriptorSetLayouts.data();
 }
 
-NebulaEngine::u32 NebulaEngine::RHI::RHIVkGPUPipelineStateObject::DescriptorSetLayoutCount()
+NebulaEngine::UInt32 NebulaEngine::RHI::RHIVkGPUPipelineStateObject::DescriptorSetLayoutCount()
 {
     return m_DescriptorSetLayouts.size();
 }
@@ -203,8 +203,8 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::ClearDescriptorSetLayouts()
     m_DescriptorSetLayouts.clear();
 }
 
-void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding,
-    EDescriptorType type, u32 descriptorCount, u32 shaderStageFlags, DescriptorImageInfo* pImageInfos,
+void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding,
+    EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags, DescriptorImageInfo* pImageInfos,
     ImmutableSamplers* pImmutableSamplers)
 {
     InternalAddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, pImmutableSamplers);
@@ -213,7 +213,7 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBindi
 }
 
 void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(
-    u32 layoutIndex, u32 binding, EDescriptorType type, u32 descriptorCount, u32 shaderStageFlags, DescriptorBufferInfo* pBufferInfos)
+    UInt32 layoutIndex, UInt32 binding, EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags, DescriptorBufferInfo* pBufferInfos)
 {
 
     InternalAddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, nullptr);
@@ -222,15 +222,15 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBindi
 }
 
 void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(
-    u32 layoutIndex, u32 binding, EDescriptorType type, u32 descriptorCount, u32 shaderStageFlags, BufferView* pTexelBufferView)
+    UInt32 layoutIndex, UInt32 binding, EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags, BufferView* pTexelBufferView)
 {
     InternalAddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, nullptr);
     InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, descriptorCount, nullptr,
        nullptr, pTexelBufferView, nullptr);
 }
 
-void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorSetLayoutBinding(u32 layoutIndex, u32 binding,
-    EDescriptorType type, u32 descriptorCount, u32 shaderStageFlags, ImmutableSamplers* pImmutableSamplers)
+void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding,
+    EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags, ImmutableSamplers* pImmutableSamplers)
 {
     auto descriptorSetLayoutBinding = DescriptorSetLayoutBinding(binding,
         static_cast<VkDescriptorType>(type), descriptorCount, shaderStageFlags,
@@ -246,8 +246,8 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorSetLay
     }
 }
 
-void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorUpdateInfo(u32 layoutIndex, u32 binding,
-    EDescriptorType type, u32 descriptorCount, DescriptorImageInfo* pImageInfos,
+void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorUpdateInfo(UInt32 layoutIndex, UInt32 binding,
+    EDescriptorType type, UInt32 descriptorCount, DescriptorImageInfo* pImageInfos,
     DescriptorBufferInfo* pRegularBufferInfos, BufferView* pTexelBufferInfos, ImmutableSamplers* pImmutableSamplers)
 {
     if (!m_DescriptorUpdateInfos.contains(layoutIndex))

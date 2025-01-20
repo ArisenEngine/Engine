@@ -25,13 +25,13 @@ namespace NebulaEngine::RHI
 
         void DeviceWaitIdle() const override;
         void GraphicQueueWaitIdle() const override;
-        u32 CreateGPUProgram() override;
-        GPUProgram* GetGPUProgram(u32 programId) override;
-        void DestroyGPUProgram(u32 programId) override;
-        bool AttachProgramByteCode(u32 programId, GPUProgramDesc&& desc) override;
+        UInt32 CreateGPUProgram() override;
+        GPUProgram* GetGPUProgram(UInt32 programId) override;
+        void DestroyGPUProgram(UInt32 programId) override;
+        bool AttachProgramByteCode(UInt32 programId, GPUProgramDesc&& desc) override;
 
-        u32 CreateCommandBufferPool() override;
-        RHICommandBufferPool* GetCommandBufferPool(u32 id) override;
+        UInt32 CreateCommandBufferPool() override;
+        RHICommandBufferPool* GetCommandBufferPool(UInt32 id) override;
 
         std::shared_ptr<GPURenderPass> GetRenderPass() override;
         void ReleaseRenderPass(std::shared_ptr<GPURenderPass> renderPass) override;
@@ -52,10 +52,10 @@ namespace NebulaEngine::RHI
             return m_DescriptorPool;
         }
 
-        void Submit(RHICommandBuffer* commandBuffer, u32 frameIndex) override;
-        u32 FindMemoryType(u32 typeFilter, u32 properties) override;
+        void Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex) override;
+        UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) override;
 
-        void SetResolution(u32 width, u32 height) override;
+        void SetResolution(UInt32 width, UInt32 height) override;
     private:
 
         friend class RHIVkInstance;
@@ -66,8 +66,8 @@ namespace NebulaEngine::RHI
         VkDevice m_VkDevice;
         VkPhysicalDeviceMemoryProperties m_VkPhysicalDeviceMemoryProperties;
         
-        Containers::Map<u32, std::unique_ptr<RHIVkGPUProgram>> m_GPUPrograms;
-        Containers::Map<u32, std::unique_ptr<RHIVkCommandBufferPool>> m_CommandBufferPools;
+        Containers::Map<UInt32, std::unique_ptr<RHIVkGPUProgram>> m_GPUPrograms;
+        Containers::Map<UInt32, std::unique_ptr<RHIVkCommandBufferPool>> m_CommandBufferPools;
         Containers::Vector<std::shared_ptr<GPURenderPass>> m_RenderPasses;
         Containers::Vector<std::shared_ptr<FrameBuffer>> m_FrameBuffers;
         Containers::Vector<std::shared_ptr<BufferHandle>> m_BufferHandles;

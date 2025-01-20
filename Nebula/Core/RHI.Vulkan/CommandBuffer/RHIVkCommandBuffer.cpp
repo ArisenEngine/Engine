@@ -47,7 +47,7 @@ void* NebulaEngine::RHI::RHIVkCommandBuffer::GetHandlerPointer()
     return &m_VkCommandBuffer;
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::BeginRenderPass(u32 frameIndex, RenderPassBeginDesc&& desc)
+void NebulaEngine::RHI::RHIVkCommandBuffer::BeginRenderPass(UInt32 frameIndex, RenderPassBeginDesc&& desc)
 {
     ASSERT(m_State == ECommandState::IsInsideBegin);
     
@@ -90,7 +90,7 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::Reset()
     m_IndexType.reset();
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::ReadyForBegin(u32 frameIndex)
+void NebulaEngine::RHI::RHIVkCommandBuffer::ReadyForBegin(UInt32 frameIndex)
 {
         {
             if(m_State == ECommandState::NeedReset)
@@ -113,14 +113,14 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::DoBegin()
     m_State = ECommandState::IsInsideBegin;
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::Begin(u32 frameIndex)
+void NebulaEngine::RHI::RHIVkCommandBuffer::Begin(UInt32 frameIndex)
 {
     ReadyForBegin(frameIndex);
     m_VkBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     DoBegin();
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::Begin(u32 frameIndex, u32 commandBufferUsage)
+void NebulaEngine::RHI::RHIVkCommandBuffer::Begin(UInt32 frameIndex, UInt32 commandBufferUsage)
 {
     ReadyForBegin(frameIndex);
     m_VkBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -140,7 +140,7 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::End()
     m_State = ECommandState::ReadyForSubmit;
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::SetViewport(f32 x, f32 y, f32 width, f32 height, f32 minDepth, f32 maxDepth)
+void NebulaEngine::RHI::RHIVkCommandBuffer::SetViewport(Float32 x, Float32 y, Float32 width, Float32 height, Float32 minDepth, Float32 maxDepth)
 {
     const VkViewport viewport
     {
@@ -150,7 +150,7 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::SetViewport(f32 x, f32 y, f32 width,
     
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::SetViewport(f32 x, f32 y, f32 width, f32 height)
+void NebulaEngine::RHI::RHIVkCommandBuffer::SetViewport(Float32 x, Float32 y, Float32 width, Float32 height)
 {
     const VkViewport viewport
    {
@@ -159,7 +159,7 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::SetViewport(f32 x, f32 y, f32 width,
     vkCmdSetViewport(m_VkCommandBuffer, 0, 1, &viewport);
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::SetScissor(u32 offsetX, u32 offsetY, u32 width, u32 height)
+void NebulaEngine::RHI::RHIVkCommandBuffer::SetScissor(UInt32 offsetX, UInt32 offsetY, UInt32 width, UInt32 height)
 {
     const VkRect2D scissor =
     {
@@ -170,12 +170,12 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::SetScissor(u32 offsetX, u32 offsetY,
     
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::BindPipeline(u32 frameIndex, GPUPipeline* pipeline)
+void NebulaEngine::RHI::RHIVkCommandBuffer::BindPipeline(UInt32 frameIndex, GPUPipeline* pipeline)
 {
     vkCmdBindPipeline(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(pipeline->GetBindPoint()), static_cast<VkPipeline>(pipeline->GetGraphicsPipeline(frameIndex)));
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::Draw(u32 vertexCount, u32 instanceCount, u32 firstVertex, u32 firstInstance, u32 firstBinding)
+void NebulaEngine::RHI::RHIVkCommandBuffer::Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding)
 {
     if (m_VertexBuffers.size() > 0)
     {
@@ -184,7 +184,7 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::Draw(u32 vertexCount, u32 instanceCo
     vkCmdDraw(m_VkCommandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::DrawIndexed(u32 indexCount, u32 instanceCount, u32 firstIndex, u32 vertexOffset, u32 firstInstance,  u32 firstBinding)
+void NebulaEngine::RHI::RHIVkCommandBuffer::DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 firstIndex, UInt32 vertexOffset, UInt32 firstInstance,  UInt32 firstBinding)
 {
     if (m_VertexBuffers.size() > 0)
     {
@@ -200,7 +200,7 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::DrawIndexed(u32 indexCount, u32 inst
     vkCmdDrawIndexed(m_VkCommandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::BindVertexBuffers(BufferHandle* buffer, u64 offset)
+void NebulaEngine::RHI::RHIVkCommandBuffer::BindVertexBuffers(BufferHandle* buffer, UInt64 offset)
 {
     m_VertexBuffers.emplace_back(static_cast<VkBuffer>(buffer->GetHandle()));
     m_VertexBindingOffsets.emplace_back(offset);
@@ -217,7 +217,7 @@ const VkSemaphore* NebulaEngine::RHI::RHIVkCommandBuffer::GetWaitSemaphores() co
     return m_WaitSemaphores.data();
 }
 
-NebulaEngine::u32 NebulaEngine::RHI::RHIVkCommandBuffer::GetWaitSemaphoresCount() const
+NebulaEngine::UInt32 NebulaEngine::RHI::RHIVkCommandBuffer::GetWaitSemaphoresCount() const
 {
     return m_WaitSemaphores.size();
 }
@@ -232,7 +232,7 @@ const VkSemaphore* NebulaEngine::RHI::RHIVkCommandBuffer::GetSignalSemaphores() 
     return m_SignalSemaphores.data();
 }
 
-NebulaEngine::u32 NebulaEngine::RHI::RHIVkCommandBuffer::GetSignalSemaphoresCount() const
+NebulaEngine::UInt32 NebulaEngine::RHI::RHIVkCommandBuffer::GetSignalSemaphoresCount() const
 {
     return m_SignalSemaphores.size();
 }
@@ -242,8 +242,8 @@ const VkPipelineStageFlags* NebulaEngine::RHI::RHIVkCommandBuffer::GetWaitStageM
     return m_WaitStages.data();
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::CopyBuffer(BufferHandle const * src, u64 srcOffset,
-                                                       BufferHandle const * dst, u64 dstOffset, u64 size)
+void NebulaEngine::RHI::RHIVkCommandBuffer::CopyBuffer(BufferHandle const * src, UInt64 srcOffset,
+                                                       BufferHandle const * dst, UInt64 dstOffset, UInt64 size)
 {
     // TODO: support multiple copy regions
     ASSERT(m_State == ECommandState::IsInsideBegin);
@@ -257,7 +257,7 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::CopyBuffer(BufferHandle const * src,
         1, &copyRegion);
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::BindIndexBuffer(BufferHandle* indexBuffer, u64 offset, EIndexType type)
+void NebulaEngine::RHI::RHIVkCommandBuffer::BindIndexBuffer(BufferHandle* indexBuffer, UInt64 offset, EIndexType type)
 { 
     m_IndexBuffer = static_cast<VkBuffer>(indexBuffer->GetHandle());
     m_IndexOffset = offset;
@@ -274,7 +274,7 @@ void NebulaEngine::RHI::RHIVkCommandBuffer::InjectFence(RHIFence* fence)
     m_SubmissionFence = static_cast<VkFence>(fence->GetHandle());
 }
 
-void NebulaEngine::RHI::RHIVkCommandBuffer::WaitForFence(u32 frameIndex)
+void NebulaEngine::RHI::RHIVkCommandBuffer::WaitForFence(UInt32 frameIndex)
 {
    {
        ScopeLock ScopeLock(m_CommandBufferPool->GetFence(frameIndex));

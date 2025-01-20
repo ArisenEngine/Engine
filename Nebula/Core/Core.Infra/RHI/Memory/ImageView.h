@@ -12,9 +12,9 @@ namespace NebulaEngine::RHI
         void* GetView() override = 0;
         void* GetViewPointer() override = 0;
 
-        virtual const u32 GetWidth() const = 0;
-        virtual const u32 GetHeight() const = 0;
-        virtual const u32 GetLayerCount() const = 0;
+        virtual const UInt32 GetWidth() const = 0;
+        virtual const UInt32 GetHeight() const = 0;
+        virtual const UInt32 GetLayerCount() const = 0;
         virtual const Format GetFormat() const = 0;
     private:
         

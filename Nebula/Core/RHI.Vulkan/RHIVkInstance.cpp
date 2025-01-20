@@ -271,7 +271,7 @@ NebulaEngine::RHI::VkQueueFamilyIndices NebulaEngine::RHI::RHIVkInstance::FindQu
 }
 
 const NebulaEngine::RHI::VkSwapChainSupportDetail NebulaEngine::RHI::RHIVkInstance::
-GetSwapChainSupportDetails(u32&& windowId)
+GetSwapChainSupportDetails(UInt32&& windowId)
 {
     ASSERT(m_Surfaces[windowId] && m_Surfaces[windowId].get());
     
@@ -348,25 +348,25 @@ void NebulaEngine::RHI::RHIVkInstance::DisposeDebugMessager()
     DestroyDebugUtilsMessengerEXT(m_VkInstance, m_VkDebugMessenger, nullptr);
 }
 
-void NebulaEngine::RHI::RHIVkInstance::CreateSurface(u32&& windowId)
+void NebulaEngine::RHI::RHIVkInstance::CreateSurface(UInt32&& windowId)
 {
-    u32 key = windowId;
+    UInt32 key = windowId;
     m_Surfaces.insert({key, std::make_unique<RHIVkSurface>(std::move(windowId), this)});
 }
 
-void NebulaEngine::RHI::RHIVkInstance::DestroySurface(u32&& windowId)
+void NebulaEngine::RHI::RHIVkInstance::DestroySurface(UInt32&& windowId)
 {
    // TODO: 
 }
 
-NebulaEngine::RHI::Surface& NebulaEngine::RHI::RHIVkInstance::GetSurface(u32&& windowId)
+NebulaEngine::RHI::Surface& NebulaEngine::RHI::RHIVkInstance::GetSurface(UInt32&& windowId)
 {
     ASSERT(m_Surfaces[windowId] && m_Surfaces[windowId].get());
     Surface& surface = *m_Surfaces[windowId].get();
     return surface;
 }
 
-bool NebulaEngine::RHI::RHIVkInstance::IsSupportLinearColorSpace(u32&& windowId)
+bool NebulaEngine::RHI::RHIVkInstance::IsSupportLinearColorSpace(UInt32&& windowId)
 {
    
     auto& supportDetail = GetSwapChainSupportDetails(std::move(windowId));
@@ -382,7 +382,7 @@ bool NebulaEngine::RHI::RHIVkInstance::IsSupportLinearColorSpace(u32&& windowId)
     return false;
 }
 
-bool NebulaEngine::RHI::RHIVkInstance::PresentModeSupported(u32&& windowId, PresentMode mode)
+bool NebulaEngine::RHI::RHIVkInstance::PresentModeSupported(UInt32&& windowId, PresentMode mode)
 {
     auto& supportDetail = GetSwapChainSupportDetails(std::move(windowId));
     for (const auto& presentMode : supportDetail.presentModes)
@@ -396,17 +396,17 @@ bool NebulaEngine::RHI::RHIVkInstance::PresentModeSupported(u32&& windowId, Pres
     return false;
 }
 
-void NebulaEngine::RHI::RHIVkInstance::SetCurrentPresentMode(u32&& windowId, PresentMode mode)
+void NebulaEngine::RHI::RHIVkInstance::SetCurrentPresentMode(UInt32&& windowId, PresentMode mode)
 {
     
 }
 
-void NebulaEngine::RHI::RHIVkInstance::SetResolution(const u32&& windowId, const u32&& width, const u32&& height)
+void NebulaEngine::RHI::RHIVkInstance::SetResolution(const UInt32&& windowId, const UInt32&& width, const UInt32&& height)
 {
    // TODO: 
 }
 
-void NebulaEngine::RHI::RHIVkInstance::CreateLogicDevice(u32 windowId)
+void NebulaEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
 {
     Surface& rhiSurface = GetSurface(std::move(windowId));
     VkQueueFamilyIndices indices = FindQueueFamilies(static_cast<VkSurfaceKHR>(rhiSurface.GetHandle()));
@@ -473,19 +473,19 @@ void NebulaEngine::RHI::RHIVkInstance::CreateLogicDevice(u32 windowId)
         });
 }
 
-NebulaEngine::RHI::Device* NebulaEngine::RHI::RHIVkInstance::GetLogicalDevice(u32 windowId)
+NebulaEngine::RHI::Device* NebulaEngine::RHI::RHIVkInstance::GetLogicalDevice(UInt32 windowId)
 {
     ASSERT(m_LogicalDevices[windowId] && m_LogicalDevices[windowId].get());
     ASSERT(m_LogicalDevices[windowId].get()->m_VkDevice != VK_NULL_HANDLE);
     return m_LogicalDevices[windowId].get();
 }
 
-const NebulaEngine::RHI::Format NebulaEngine::RHI::RHIVkInstance::GetSuitableSwapChainFormat(u32&& windowId)
+const NebulaEngine::RHI::Format NebulaEngine::RHI::RHIVkInstance::GetSuitableSwapChainFormat(UInt32&& windowId)
 {
     return FORMAT_R8G8B8_SRGB;
 }
 
-const NebulaEngine::RHI::PresentMode NebulaEngine::RHI::RHIVkInstance::GetSuitablePresentMode(u32&& windowId)
+const NebulaEngine::RHI::PresentMode NebulaEngine::RHI::RHIVkInstance::GetSuitablePresentMode(UInt32&& windowId)
 {
     return PRESENT_MODE_FIFO;
 }

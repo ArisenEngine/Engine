@@ -5,7 +5,7 @@
 #include "Logger/Logger.h"
 #include "../VkInitializer.h"
 
-NebulaEngine::RHI::RHIVkDescriptorPool::RHIVkDescriptorPool(RHIVkDevice* device, u32 maxFramesInFlight):
+NebulaEngine::RHI::RHIVkDescriptorPool::RHIVkDescriptorPool(RHIVkDevice* device, UInt32 maxFramesInFlight):
 m_pDevice(device), m_MaxFramesInFlight(maxFramesInFlight)
 {
     
@@ -23,8 +23,8 @@ NebulaEngine::RHI::RHIVkDescriptorPool::~RHIVkDescriptorPool()
     }
 }
 
-NebulaEngine::u32 NebulaEngine::RHI::RHIVkDescriptorPool::AddPool(Containers::Vector<EDescriptorType> types,
-    Containers::Vector<u32> counts, u32 maxSets)
+NebulaEngine::UInt32 NebulaEngine::RHI::RHIVkDescriptorPool::AddPool(Containers::Vector<EDescriptorType> types,
+    Containers::Vector<UInt32> counts, UInt32 maxSets)
 {
     m_DescriptorPoolSizes.resize(counts.size());
     for (int i = 0; i < counts.size(); ++i)
@@ -45,7 +45,7 @@ NebulaEngine::u32 NebulaEngine::RHI::RHIVkDescriptorPool::AddPool(Containers::Ve
     return m_Pools.size() - 1;
 }
 
-bool NebulaEngine::RHI::RHIVkDescriptorPool::ResetPool(u32 poolId)
+bool NebulaEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
 {
     ASSERT(poolId < m_Pools.size());
     VkDescriptorPool pool = m_Pools[poolId];
@@ -59,7 +59,7 @@ bool NebulaEngine::RHI::RHIVkDescriptorPool::ResetPool(u32 poolId)
     return true;
 }
 
-void NebulaEngine::RHI::RHIVkDescriptorPool::AllocDescriptorSets(u32 poolId, GPUPipelineStateObject* pso)
+void NebulaEngine::RHI::RHIVkDescriptorPool::AllocDescriptorSets(UInt32 poolId, GPUPipelineStateObject* pso)
 {
     ASSERT(m_Pools[poolId] != VK_NULL_HANDLE);
 
@@ -89,8 +89,8 @@ void NebulaEngine::RHI::RHIVkDescriptorPool::AllocDescriptorSets(u32 poolId, GPU
     m_DescriptorSets[poolId] = allDescriptorSets;
 }
 
-void NebulaEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(u32 poolId, GPUPipelineStateObject* pso,
-    u32 frameIndex)
+void NebulaEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId, GPUPipelineStateObject* pso,
+    UInt32 frameIndex)
 {
     ASSERT(m_Pools[poolId] != VK_NULL_HANDLE);
     auto currentIndex = frameIndex % m_MaxFramesInFlight;

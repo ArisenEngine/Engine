@@ -17,7 +17,7 @@ namespace NebulaEngine::RHI
     
     struct PipelineShaderStageDesc
     {
-        u32 flag;
+        UInt32 flag;
         EShaderStage stage;
         GPUProgram& program;
         std::optional<SpecializationInfoDesc> specializationInfo;
@@ -28,16 +28,16 @@ namespace NebulaEngine::RHI
     public:
         
         NO_COPY_NO_MOVE_NO_DEFAULT(GPUPipelineManager)
-        GPUPipelineManager(u32 maxFramesInFlight);
+        GPUPipelineManager(UInt32 maxFramesInFlight);
         virtual ~GPUPipelineManager() noexcept = default;
         virtual GPUPipeline* GetGraphicsPipeline(GPUPipelineStateObject* pso) = 0;
 
         virtual std::unique_ptr<GPUPipelineStateObject> GetPipelineState() = 0;
     protected:
-        u32 m_MaxFramesInFlight;
+        UInt32 m_MaxFramesInFlight;
     };
 
-    inline GPUPipelineManager::GPUPipelineManager(u32 maxFramesInFlight):m_MaxFramesInFlight(maxFramesInFlight)
+    inline GPUPipelineManager::GPUPipelineManager(UInt32 maxFramesInFlight):m_MaxFramesInFlight(maxFramesInFlight)
     {
             
     }

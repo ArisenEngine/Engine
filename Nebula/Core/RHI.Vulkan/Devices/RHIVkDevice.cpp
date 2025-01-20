@@ -21,36 +21,36 @@ void NebulaEngine::RHI::RHIVkDevice::GraphicQueueWaitIdle() const
     vkQueueWaitIdle(m_VkGraphicQueue);
 }
 
-NebulaEngine::u32 NebulaEngine::RHI::RHIVkDevice::CreateGPUProgram()
+NebulaEngine::UInt32 NebulaEngine::RHI::RHIVkDevice::CreateGPUProgram()
 {
     ASSERT(m_VkDevice != VK_NULL_HANDLE);
-    u32 id = static_cast<u32>(m_GPUPrograms.size());
+    UInt32 id = static_cast<UInt32>(m_GPUPrograms.size());
     m_GPUPrograms.insert({id, std::make_unique<RHIVkGPUProgram>(m_VkDevice)});
     return id;
 }
 
-NebulaEngine::RHI::GPUProgram* NebulaEngine::RHI::RHIVkDevice::GetGPUProgram(u32 programId)
+NebulaEngine::RHI::GPUProgram* NebulaEngine::RHI::RHIVkDevice::GetGPUProgram(UInt32 programId)
 {
     ASSERT(m_GPUPrograms[programId]);
     return m_GPUPrograms[programId].get();
 }
 
-void NebulaEngine::RHI::RHIVkDevice::DestroyGPUProgram(u32 programId)
+void NebulaEngine::RHI::RHIVkDevice::DestroyGPUProgram(UInt32 programId)
 {
     ASSERT(m_GPUPrograms[programId]);
     m_GPUPrograms.erase(programId);
 }
 
-bool NebulaEngine::RHI::RHIVkDevice::AttachProgramByteCode(u32 programId, GPUProgramDesc&& desc)
+bool NebulaEngine::RHI::RHIVkDevice::AttachProgramByteCode(UInt32 programId, GPUProgramDesc&& desc)
 {
     ASSERT(m_GPUPrograms[programId]);
     return m_GPUPrograms[programId]->AttachProgramByteCode(std::move(desc));
 }
 
-NebulaEngine::u32 NebulaEngine::RHI::RHIVkDevice::CreateCommandBufferPool()
+NebulaEngine::UInt32 NebulaEngine::RHI::RHIVkDevice::CreateCommandBufferPool()
 {
     ASSERT(m_VkDevice != VK_NULL_HANDLE);
-    u32 id = static_cast<u32>(m_CommandBufferPools.size());
+    UInt32 id = static_cast<UInt32>(m_CommandBufferPools.size());
     m_CommandBufferPools.insert(
         {
             id,
@@ -59,7 +59,7 @@ NebulaEngine::u32 NebulaEngine::RHI::RHIVkDevice::CreateCommandBufferPool()
     return id;
 }
 
-NebulaEngine::RHI::RHICommandBufferPool* NebulaEngine::RHI::RHIVkDevice::GetCommandBufferPool(u32 id)
+NebulaEngine::RHI::RHICommandBufferPool* NebulaEngine::RHI::RHIVkDevice::GetCommandBufferPool(UInt32 id)
 {
     ASSERT(m_CommandBufferPools[id]);
     return m_CommandBufferPools[id].get();
@@ -131,7 +131,7 @@ void NebulaEngine::RHI::RHIVkDevice::ReleaseBufferHandle(std::shared_ptr<BufferH
 
 // TODO: move submit info to CommandBuffer
 
-void NebulaEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, u32 frameIndex)
+void NebulaEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex)
 {
     ASSERT(commandBuffer->ReadyForSubmit());
 
@@ -163,7 +163,7 @@ void NebulaEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, u32
     }
 }
 
-NebulaEngine::u32 NebulaEngine::RHI::RHIVkDevice::FindMemoryType(u32 typeFilter, u32 properties)
+NebulaEngine::UInt32 NebulaEngine::RHI::RHIVkDevice::FindMemoryType(UInt32 typeFilter, UInt32 properties)
 {
     for (uint32_t i = 0; i < m_VkPhysicalDeviceMemoryProperties.memoryTypeCount; ++i)
     {
@@ -178,7 +178,7 @@ NebulaEngine::u32 NebulaEngine::RHI::RHIVkDevice::FindMemoryType(u32 typeFilter,
     return -1;
 }
 
-void NebulaEngine::RHI::RHIVkDevice::SetResolution(u32 width, u32 height)
+void NebulaEngine::RHI::RHIVkDevice::SetResolution(UInt32 width, UInt32 height)
 {
     m_Instance->UpdateSurfaceCapabilities(m_Surface);
     m_Surface->GetSwapChain()->SetResolution(width, height);

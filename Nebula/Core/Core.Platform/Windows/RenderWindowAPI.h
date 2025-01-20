@@ -3,14 +3,14 @@
 
 namespace NebulaEngine::Platforms
 {
-    extern "C" PLATFORM_DLL u32 CreateFullScreenRenderSurface(HWND host, Platforms::WindowProc callback);
-    extern "C" PLATFORM_DLL u32 CreateRenderWindow(HWND host, Platforms::WindowProc callback, s32 width, s32 height);
-    extern "C" PLATFORM_DLL u32 CreateRenderWindowWithResizeCallback(HWND host, Platforms::WindowProc callback,  WindowExitResize resizeCallback, s32 width, s32 height);
-    extern "C" PLATFORM_DLL void RemoveRenderSurface(u32 id);
-    extern "C" PLATFORM_DLL void ResizeRenderSurface(u32 id, u32 width, u32 height);
-    extern "C" PLATFORM_DLL WindowHandle GetWindowHandle(u32 id);
-    extern "C" PLATFORM_DLL u32 GetWindowWidth(u32 id);
-    extern "C" PLATFORM_DLL u32 GetWindowHeight(u32 id);
-    extern "C" PLATFORM_DLL u32 GetWindowId(WindowHandle handle);
-    extern "C" PLATFORM_DLL void SetWindowResizeCallback(u32 windowId, WindowExitResize callback);
+    extern "C" PLATFORM_DLL UInt32 CreateFullScreenRenderSurface(HWND host, Platforms::WindowProc callback);
+    extern "C" PLATFORM_DLL UInt32 CreateRenderWindow(HWND host, Platforms::WindowProc callback, SInt32 width, SInt32 height);
+    extern "C" PLATFORM_DLL UInt32 CreateRenderWindowWithResizeCallback(HWND host, Platforms::WindowProc callback,  WindowExitResize resizeCallback, SInt32 width, SInt32 height);
+    extern "C" PLATFORM_DLL void RemoveRenderSurface(UInt32 id);
+    extern "C" PLATFORM_DLL void ResizeRenderSurface(UInt32 id, UInt32 width, UInt32 height);
+    extern "C" PLATFORM_DLL WindowHandle GetWindowHandle(UInt32 id);
+    extern "C" PLATFORM_DLL UInt32 GetWindowWidth(UInt32 id);
+    extern "C" PLATFORM_DLL UInt32 GetWindowHeight(UInt32 id);
+    extern "C" PLATFORM_DLL UInt32 GetWindowId(WindowHandle handle);
+    extern "C" PLATFORM_DLL void SetWindowResizeCallback(UInt32 windowId, WindowExitResize callback);
 }

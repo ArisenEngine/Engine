@@ -16,9 +16,9 @@ namespace NebulaEngine::RHI
         bool AllocBufferHandle(BufferAllocDesc && desc) override;
         void FreeBufferHandle() override;
 
-        bool AllocBufferMemory(u32 memoryPropertiesBits) override;
+        bool AllocBufferMemory(UInt32 memoryPropertiesBits) override;
         void FreeBufferMemory() override;
-        void MemoryCopy(void const* src, u32 offset) override;
+        void MemoryCopy(void const* src, UInt32 offset) override;
     private:
         
         VkBuffer m_VkBuffer { VK_NULL_HANDLE };

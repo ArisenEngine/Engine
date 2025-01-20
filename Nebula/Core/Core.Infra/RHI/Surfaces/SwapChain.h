@@ -14,11 +14,11 @@ namespace NebulaEngine::RHI
 
     struct SwapChainDescriptor
     {
-        u32 width { 0 }, height { 0 }, imageCount { 1 };
+        UInt32 width { 0 }, height { 0 }, imageCount { 1 };
         /// specific image layer, should be always 1, unless in VR
-        u32 imageArrayLayers { 1 };
-        u32 imageUsageFlagBits { 0 };
-        u32 queueFamilyIndexCount {2};
+        UInt32 imageArrayLayers { 1 };
+        UInt32 imageUsageFlagBits { 0 };
+        UInt32 queueFamilyIndexCount {2};
         
         Format colorFormat { FORMAT_R8G8B8_SRGB };
         ColorSpace colorSpace { COLOR_SPACE_SRGB_NONLINEAR };
@@ -26,9 +26,9 @@ namespace NebulaEngine::RHI
         PresentMode presentMode { PRESENT_MODE_FIFO };
         
         bool clipped { true };
-        u32 surfaceTransformFlagBits { 0 };
-        u32 compositeAlphaFlagBits { 0 };
-        u32 swapChainCreateFlags { 0 };
+        UInt32 surfaceTransformFlagBits { 0 };
+        UInt32 compositeAlphaFlagBits { 0 };
+        UInt32 swapChainCreateFlags { 0 };
         std::optional<const void*> customData;
     };
 
@@ -37,22 +37,22 @@ namespace NebulaEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE(SwapChain)
-        SwapChain(u32 maxFramesInFlight): m_MaxFramesInFlight(maxFramesInFlight) {}
+        SwapChain(UInt32 maxFramesInFlight): m_MaxFramesInFlight(maxFramesInFlight) {}
         VIRTUAL_DECONSTRUCTOR(SwapChain)
         virtual void* GetHandle() const = 0;
         virtual void CreateSwapChainWithDesc(SwapChainDescriptor desc) = 0;
-        virtual RHISemaphore* GetImageAvailableSemaphore(u32 frameIndex) const = 0;
-        virtual RHISemaphore* GetRenderFinishSemaphore(u32 frameIndex) const  = 0;
-        virtual ImageHandle* AquireCurrentImage(u32 frameIndex) = 0;
-        virtual void Present(u32 frameIndex) = 0;
+        virtual RHISemaphore* GetImageAvailableSemaphore(UInt32 frameIndex) const = 0;
+        virtual RHISemaphore* GetRenderFinishSemaphore(UInt32 frameIndex) const  = 0;
+        virtual ImageHandle* AquireCurrentImage(UInt32 frameIndex) = 0;
+        virtual void Present(UInt32 frameIndex) = 0;
         virtual void Cleanup() = 0;
     protected:
-        u32 m_MaxFramesInFlight;
+        UInt32 m_MaxFramesInFlight;
         SwapChainDescriptor m_Desc;
         virtual void RecreateSwapChainIfNeeded() = 0;
 
     public:
-        void SetResolution(u32 width, u32 height)
+        void SetResolution(UInt32 width, UInt32 height)
         {
             if (m_Desc.width == width && m_Desc.height == height)
             {
@@ -65,7 +65,7 @@ namespace NebulaEngine::RHI
             RecreateSwapChainIfNeeded();
         }
         
-        void SetImageCount(u32 count)
+        void SetImageCount(UInt32 count)
         {
             if (count == m_Desc.imageCount)
             {
@@ -77,7 +77,7 @@ namespace NebulaEngine::RHI
             RecreateSwapChainIfNeeded();
         }
         
-        void SetImageArrayLayers(u32 layers)
+        void SetImageArrayLayers(UInt32 layers)
         {
             if (m_Desc.imageArrayLayers == layers)
             {
@@ -111,7 +111,7 @@ namespace NebulaEngine::RHI
             RecreateSwapChainIfNeeded();
         }
         
-        void SetImageUsage(u32 usage)
+        void SetImageUsage(UInt32 usage)
         {
             if (usage == m_Desc.imageUsageFlagBits)
             {
@@ -122,7 +122,7 @@ namespace NebulaEngine::RHI
             RecreateSwapChainIfNeeded();
         }
 
-        u32 GetCurrentImageUsage() const
+        UInt32 GetCurrentImageUsage() const
         {
             return m_Desc.imageUsageFlagBits;
         }

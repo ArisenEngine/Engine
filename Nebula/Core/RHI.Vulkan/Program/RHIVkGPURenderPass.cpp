@@ -2,7 +2,7 @@
 #include "RHIVkGPUSubPass.h"
 #include "Logger/Logger.h"
 
-NebulaEngine::RHI::RHIVkGPURenderPass::RHIVkGPURenderPass(VkDevice device, u32 maxFramesInFlight): GPURenderPass(maxFramesInFlight), m_VkDevice(device)
+NebulaEngine::RHI::RHIVkGPURenderPass::RHIVkGPURenderPass(VkDevice device, UInt32 maxFramesInFlight): GPURenderPass(maxFramesInFlight), m_VkDevice(device)
 {
     m_VkRenderPasses.resize(maxFramesInFlight);
     for(int i = 0; i < maxFramesInFlight; ++i)
@@ -19,7 +19,7 @@ NebulaEngine::RHI::RHIVkGPURenderPass::~RHIVkGPURenderPass() noexcept
     
 }
 
-void* NebulaEngine::RHI::RHIVkGPURenderPass::GetHandle(u32 frameIndex)
+void* NebulaEngine::RHI::RHIVkGPURenderPass::GetHandle(UInt32 frameIndex)
 {
     ASSERT(m_VkRenderPasses[frameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE);
     return m_VkRenderPasses[frameIndex % m_MaxFramesInFlight];
@@ -42,12 +42,12 @@ void NebulaEngine::RHI::RHIVkGPURenderPass::AddAttachmentAction(Format format, E
     m_AttachmentDescriptions.emplace_back(colorAttachment);
 }
 
-NebulaEngine::u32 NebulaEngine::RHI::RHIVkGPURenderPass::GetAttachmentCount()
+NebulaEngine::UInt32 NebulaEngine::RHI::RHIVkGPURenderPass::GetAttachmentCount()
 {
-    return static_cast<u32>(m_AttachmentDescriptions.size());
+    return static_cast<UInt32>(m_AttachmentDescriptions.size());
 }
 
-void NebulaEngine::RHI::RHIVkGPURenderPass::AllocRenderPass(u32 frameIndex)
+void NebulaEngine::RHI::RHIVkGPURenderPass::AllocRenderPass(UInt32 frameIndex)
 {
     ASSERT(m_SubpassesToDispatch.size() > 0);
     m_SubpassDescriptions.resize(m_SubpassesToDispatch.size());
@@ -113,7 +113,7 @@ void NebulaEngine::RHI::RHIVkGPURenderPass::AllocRenderPass(u32 frameIndex)
     LOG_DEBUG("[RHIVkGPURenderPass::AllocRenderPass]: RenderPass Allocated.");
 }
 
-void NebulaEngine::RHI::RHIVkGPURenderPass::FreeRenderPass(u32 frameIndex)
+void NebulaEngine::RHI::RHIVkGPURenderPass::FreeRenderPass(UInt32 frameIndex)
 {
     m_AttachmentDescriptions.clear();
     while (m_SubpassesToDispatch.size() > 0)
@@ -150,7 +150,7 @@ NebulaEngine::RHI::GPUSubPass* NebulaEngine::RHI::RHIVkGPURenderPass::AddSubPass
     if (m_SubpassPool.size() > 0)
     {
         subpass = m_SubpassPool.back();
-        static_cast<RHIVkGPUSubPass*>(subpass.get())->Bind(static_cast<u32>(m_SubpassesToDispatch.size()));
+        static_cast<RHIVkGPUSubPass*>(subpass.get())->Bind(static_cast<UInt32>(m_SubpassesToDispatch.size()));
         m_SubpassPool.pop_back();
     }
     else
@@ -163,8 +163,8 @@ NebulaEngine::RHI::GPUSubPass* NebulaEngine::RHI::RHIVkGPURenderPass::AddSubPass
     return subpass.get();
 }
 
-NebulaEngine::u32 NebulaEngine::RHI::RHIVkGPURenderPass::GetSubPassCount()
+NebulaEngine::UInt32 NebulaEngine::RHI::RHIVkGPURenderPass::GetSubPassCount()
 {
-    return static_cast<u32>(m_SubpassesToDispatch.size());
+    return static_cast<UInt32>(m_SubpassesToDispatch.size());
 }
 

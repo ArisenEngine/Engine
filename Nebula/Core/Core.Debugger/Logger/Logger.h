@@ -6,7 +6,7 @@
 
 namespace NebulaEngine::Debugger
 {
-    using LogCallback = void(*)(u32, const char*, const char*, const char*);
+    using LogCallback = void(*)(UInt32, const char*, const char*, const char*);
 
     class DEBUGGER_DLL Logger final
     {
@@ -14,7 +14,7 @@ namespace NebulaEngine::Debugger
         NO_COPY_NO_MOVE(Logger)
         NO_COMPARE(Logger)
 
-        enum class LogLevel: NebulaEngine::u8
+        enum class LogLevel: NebulaEngine::UInt8
         {
             Trace = 0x01,
             // finer-grained info for debugging

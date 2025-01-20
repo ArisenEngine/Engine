@@ -13,17 +13,17 @@ namespace NebulaEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkDescriptorPool)
-        RHIVkDescriptorPool(RHIVkDevice* device, u32 maxFramesInFlight);
+        RHIVkDescriptorPool(RHIVkDevice* device, UInt32 maxFramesInFlight);
         virtual ~RHIVkDescriptorPool() override;
 
-        u32 AddPool(Containers::Vector<EDescriptorType> types, Containers::Vector<u32> counts, u32 maxSets) override;
-        bool ResetPool(u32 poolId) override;
-        void AllocDescriptorSets(u32 poolId, GPUPipelineStateObject* pso) override;
-        void UpdateDescriptorSets(u32 poolId, GPUPipelineStateObject* pso, u32 frameIndex) override;
+        UInt32 AddPool(Containers::Vector<EDescriptorType> types, Containers::Vector<UInt32> counts, UInt32 maxSets) override;
+        bool ResetPool(UInt32 poolId) override;
+        void AllocDescriptorSets(UInt32 poolId, GPUPipelineStateObject* pso) override;
+        void UpdateDescriptorSets(UInt32 poolId, GPUPipelineStateObject* pso, UInt32 frameIndex) override;
     private:
         
         RHIVkDevice* m_pDevice = nullptr;
-        u32 m_MaxFramesInFlight;
+        UInt32 m_MaxFramesInFlight;
         Containers::Vector<VkDescriptorPool> m_Pools {};
         Containers::Vector<VkDescriptorPoolSize> m_DescriptorPoolSizes {};
         Containers::Vector<Containers::Vector<Containers::Vector<VkDescriptorSet>>> m_DescriptorSets {};

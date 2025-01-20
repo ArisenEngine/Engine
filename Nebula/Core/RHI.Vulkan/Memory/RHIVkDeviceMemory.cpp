@@ -15,7 +15,7 @@ NebulaEngine::RHI::RHIVkDeviceMemory::~RHIVkDeviceMemory() noexcept
     FreeDeviceMemory();
 }
 
-bool NebulaEngine::RHI::RHIVkDeviceMemory::AllocDeviceMemory(u32 memoryPropertiesBits)
+bool NebulaEngine::RHI::RHIVkDeviceMemory::AllocDeviceMemory(UInt32 memoryPropertiesBits)
 {
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(static_cast<VkDevice>(m_Device->GetHandle()), m_VkBuffer, &memRequirements);
@@ -37,7 +37,7 @@ bool NebulaEngine::RHI::RHIVkDeviceMemory::AllocDeviceMemory(u32 memoryPropertie
     return true;
 }
 
-bool NebulaEngine::RHI::RHIVkDeviceMemory::AllocDeviceMemory(u32 memoryPropertiesBits, Containers::Vector<BufferHandle*> handles)
+bool NebulaEngine::RHI::RHIVkDeviceMemory::AllocDeviceMemory(UInt32 memoryPropertiesBits, Containers::Vector<BufferHandle*> handles)
 {
     // TODO : support multiple handles binding to same device memory
     throw;
@@ -56,7 +56,7 @@ void* NebulaEngine::RHI::RHIVkDeviceMemory::GetHandle() const
     return m_VkDeviceMemory;
 }
 
-void NebulaEngine::RHI::RHIVkDeviceMemory::MemoryCopy(void const* src, const u32 offset, const u32 size)
+void NebulaEngine::RHI::RHIVkDeviceMemory::MemoryCopy(void const* src, const UInt32 offset, const UInt32 size)
 {
     void* data;
     vkMapMemory(static_cast<VkDevice>(m_Device->GetHandle()), m_VkDeviceMemory, offset, size, 0, &data);

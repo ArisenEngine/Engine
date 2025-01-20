@@ -9,18 +9,18 @@ namespace NebulaEngine::RHI
 {
     typedef struct ImageViewDesc
     {
-        u32 createFlags;
+        UInt32 createFlags;
         ImageViewType type;
         Format format;
         ComponentMapping componentMapping;
-        u32 width;
-        u32 height;
+        UInt32 width;
+        UInt32 height;
         // subresource
-        u32 aspectMask;
-        u32 baseMipLevel;
-        u32 levelCount;
-        u32 baseArrayLayer;
-        u32 layerCount;
+        UInt32 aspectMask;
+        UInt32 baseMipLevel;
+        UInt32 levelCount;
+        UInt32 baseArrayLayer;
+        UInt32 layerCount;
         std::optional<const void*> customData;
     } ImageViewDesc;
 
