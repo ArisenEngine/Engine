@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "NebulaEngine": {
-      "commandName": "Project",
-      "nativeDebugging": true
-    }
-  }
-}

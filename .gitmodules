@@ -1,13 +1,13 @@
-[submodule "Nebula/Samples/RayTracingInOneWeekend"]
-	path = Nebula/Samples/RayTracingInOneWeekend
-	url = https://github.com/NebulaGraphics/RayTracingInOneWeekend.git
+[submodule "Arisen/Samples/RayTracingInOneWeekend"]
+	path = Arisen/Samples/RayTracingInOneWeekend
+	url = https://github.com/ArisenEngine/RayTracingInOneWeekend.git
 
-[submodule "Nebula/Samples/RayTracingTheNextWeek"]
-	path = Nebula/Samples/RayTracingTheNextWeek
-	url = https://github.com/NebulaGraphics/RayTracingTheNextWeek.git
-[submodule "Nebula/Samples/Monte-Carlo-Integration"]
-	path = Nebula/Samples/Monte-Carlo-Integration
-	url = https://github.com/NebulaGraphics/Monte-Carlo-Integration.git
-[submodule "Nebula/Samples/RayTracingTheRestOfLife"]
-	path = Nebula/Samples/RayTracingTheRestOfLife
-	url = https://github.com/NebulaGraphics/RayTracingTheRestOfLife.git
+[submodule "Arisen/Samples/RayTracingTheNextWeek"]
+	path = Arisen/Samples/RayTracingTheNextWeek
+	url = https://github.com/ArisenEngine/RayTracingTheNextWeek.git
+[submodule "Arisen/Samples/Monte-Carlo-Integration"]
+	path = Arisen/Samples/Monte-Carlo-Integration
+	url = https://github.com/ArisenEngine/Monte-Carlo-Integration.git
+[submodule "Arisen/Samples/RayTracingTheRestOfLife"]
+	path = Arisen/Samples/RayTracingTheRestOfLife
+	url = https://github.com/ArisenEngine/RayTracingTheRestOfLife.git

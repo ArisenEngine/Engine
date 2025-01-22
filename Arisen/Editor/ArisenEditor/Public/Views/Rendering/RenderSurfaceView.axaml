@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1920" d:DesignHeight="1080"
+             xmlns:vm="using:ArisenEditor.ViewModels"
+             xmlns:v="using:ArisenEditor.Views"
+             x:Class="ArisenEngine.Views.Rendering.RenderSurfaceView"
+             x:DataType="vm:RenderSurfaceViewModel">
+    
+    <Design.DataContext>
+        <vm:RenderSurfaceViewModel></vm:RenderSurfaceViewModel>
+    </Design.DataContext>
+    
+    <Panel>
+        <DockPanel>
+            
+            <StackPanel  Height="15" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="2" DockPanel.Dock="Top">
+                <ToggleButton IsChecked="{Binding StatsToggleChecked}" IsVisible="{Binding IsGameView}">
+                    <Image Source="avares://ArisenEditor/Assets/Icons/statistics.png" Width="15" Height="15"></Image>
+                </ToggleButton>
+            </StackPanel>
+            
+            <Panel DockPanel.Dock="Top">
+                <Panel Name="RenderViewContainer">
+                    
+                </Panel>
+                
+                <Panel VerticalAlignment="Top" HorizontalAlignment="Right" Width="400" Height="600" Name="StatsPanel" IsVisible="{Binding StatsToggleChecked}" Background="Aqua">
+                  
+                </Panel>
+                
+            </Panel>
+            
+        </DockPanel>
+        
+        
+       
+    </Panel>
+    
+    
+   
+</UserControl>

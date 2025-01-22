@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "NebulaEditor": {
-      "commandName": "Project",
-      "nativeDebugging": true
-    }
-  }
-}

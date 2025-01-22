@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ArisenEditor.Desktop": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}
