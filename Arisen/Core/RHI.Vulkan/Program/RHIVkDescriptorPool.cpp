@@ -4,6 +4,7 @@
 #include "../Devices/RHIVkDevice.h"
 #include "Logger/Logger.h"
 #include "../VkInitializer.h"
+#include "RHI/Memory/ImageView.h"
 
 ArisenEngine::RHI::RHIVkDescriptorPool::RHIVkDescriptorPool(RHIVkDevice* device, UInt32 maxFramesInFlight):
 m_pDevice(device), m_MaxFramesInFlight(maxFramesInFlight)
@@ -89,6 +90,60 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::AllocDescriptorSets(UInt32 poolId, 
     m_DescriptorSets[poolId] = allDescriptorSets;
 }
 
+const VkDescriptorImageInfo* GetImageInfos(ArisenEngine::RHI::RHIDescriptorUpdateInfo updateInfo,
+    ArisenEngine::Containers::Vector<VkDescriptorImageInfo> results)
+{
+    results.clear();
+    for (int i = 0; i < updateInfo.descriptorCount; ++i)
+    {
+        auto pImageInfo = updateInfo.pImageInfo + i;
+        if (pImageInfo != nullptr)
+        {
+            results.emplace_back(ArisenEngine::RHI::DescriptorImageInfo(
+                static_cast<VkSampler>(pImageInfo->sampler->GetHandle()),
+                static_cast<VkImageView>(pImageInfo->imageView->GetView()),
+                static_cast<VkImageLayout>(pImageInfo->imageLayout)
+                ));
+        }
+    }
+
+    return results.data();
+}
+
+const VkDescriptorBufferInfo* GetBufferInfos(ArisenEngine::RHI::RHIDescriptorUpdateInfo updateInfo,
+    ArisenEngine::Containers::Vector<VkDescriptorBufferInfo> results)
+{
+    results.clear();
+    for (int i = 0; i < updateInfo.descriptorCount; ++i)
+    {
+        auto pBufferInfo = updateInfo.pBufferInfo + i;
+        if (pBufferInfo != nullptr)
+        {
+            results.emplace_back(ArisenEngine::RHI::DescriptorBufferInfo(
+                static_cast<VkBuffer>(pBufferInfo->bufferHandle->GetHandle()),
+                static_cast<VkDeviceSize>(pBufferInfo->offset),
+                static_cast<VkDeviceSize>(pBufferInfo->range)
+                ));
+        }
+    }
+    return results.data();
+}
+
+const VkBufferView* GetBufferViews(ArisenEngine::RHI::RHIDescriptorUpdateInfo updateInfo,
+    ArisenEngine::Containers::Vector<VkBufferView> results)
+{
+    results.clear();
+    for (int i = 0; i < updateInfo.descriptorCount; ++i)
+    {
+        auto pTexelBufferView = updateInfo.pTexelBufferView + i;
+        if (pTexelBufferView != nullptr)
+        {
+            results.emplace_back(static_cast<VkBufferView>(pTexelBufferView->GetView()));
+        }
+    }
+    return results.data();
+}
+
 void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId, GPUPipelineStateObject* pso,
     UInt32 frameIndex)
 {
@@ -99,6 +154,9 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId,
     auto numLayouts = pso->DescriptorSetLayoutCount();
     
     Containers::Vector<VkWriteDescriptorSet> descriptorWrites;
+    Containers::Vector<Containers::Vector<VkDescriptorImageInfo>> imageInfos;
+    Containers::Vector<Containers::Vector<VkDescriptorBufferInfo>> bufferInfos;
+    Containers::Vector<Containers::Vector<VkBufferView>> bufferViews;
     
     for (size_t layoutIndex = 0; layoutIndex < numLayouts; ++layoutIndex)
     {
@@ -107,13 +165,17 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId,
         {
             for (auto& const updateInfoPerType : updateInfoForBinding.second)
             {
+                imageInfos.emplace_back();
+                bufferInfos.emplace_back();
+                bufferViews.emplace_back();
                 auto updateInfo = updateInfoPerType.second;
                 auto writeDescriptorSet = WriteDescriptorSet(
                     dstSet, updateInfo.binding, 0, updateInfo.descriptorCount, 
-                    updateInfo.type,
-                const VkDescriptorImageInfo* pImageInfo,
-                const VkDescriptorBufferInfo* pBufferInfo,
-                const VkBufferView* pTexelBufferView);
+                    static_cast<VkDescriptorType>(updateInfo.type),
+                    GetImageInfos(updateInfo, imageInfos.back()),
+                    GetBufferInfos(updateInfo, bufferInfos.back()),
+                    GetBufferViews(updateInfo, bufferViews.back()));
+                descriptorWrites.push_back(writeDescriptorSet);
             }
         }
     }

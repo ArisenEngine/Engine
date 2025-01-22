@@ -92,4 +92,15 @@ namespace ArisenEngine::RHI
         };
         return descriptorImageInfo;
     }
+
+    inline VkDescriptorBufferInfo DescriptorBufferInfo(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range)
+    {
+        VkDescriptorBufferInfo descriptorBufferInfo
+        {
+            buffer,
+            offset,
+            range
+        };
+        return descriptorBufferInfo;
+    }
 }

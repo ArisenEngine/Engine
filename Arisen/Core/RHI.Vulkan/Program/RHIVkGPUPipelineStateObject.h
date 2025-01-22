@@ -59,14 +59,14 @@ namespace ArisenEngine::RHI
 
         // Descriptor
         void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
-            UInt32 descriptorCount, UInt32 shaderStageFlags, DescriptorImageInfo* pImageInfos, ImmutableSamplers* pImmutableSamplers = nullptr) override;
+            UInt32 descriptorCount, UInt32 shaderStageFlags, RHIDescriptorImageInfo* pImageInfos, ImmutableSamplers* pImmutableSamplers = nullptr) override;
         void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
-                                                   UInt32 descriptorCount, UInt32 shaderStageFlags, DescriptorBufferInfo* pBufferInfos) override;
+                                                   UInt32 descriptorCount, UInt32 shaderStageFlags, RHIDescriptorBufferInfo* pBufferInfos) override;
         void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
                                                   UInt32 descriptorCount, UInt32 shaderStageFlags, BufferView* pTexelBufferView) override;
 
 
-        Containers::Map<UInt32, Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, DescriptorUpdateInfo>>>
+        Containers::Map<UInt32, Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, RHIDescriptorUpdateInfo>>>
         GetAllDescriptorUpdateInfos() const
         {
             return m_DescriptorUpdateInfos;
@@ -78,8 +78,8 @@ namespace ArisenEngine::RHI
     EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags, ImmutableSamplers* pImmutableSamplers);
         
         void InternalAddDescriptorUpdateInfo(UInt32 layoutIndex, UInt32 binding,EDescriptorType type,
-            UInt32 descriptorCount, DescriptorImageInfo* pImageInfos,
-            DescriptorBufferInfo* pRegularBufferInfos, BufferView* pTexelBufferInfos, ImmutableSamplers* pImmutableSamplers = nullptr);
+            UInt32 descriptorCount, RHIDescriptorImageInfo* pImageInfos,
+            RHIDescriptorBufferInfo* pRegularBufferInfos, BufferView* pTexelBufferInfos, ImmutableSamplers* pImmutableSamplers = nullptr);
         
     public:
         
@@ -108,6 +108,6 @@ namespace ArisenEngine::RHI
         Containers::Map<UInt32, Containers::Vector<VkDescriptorSetLayoutBinding>> m_DescriptorSetLayoutBindings {};
         Containers::Vector<VkDescriptorSetLayout> m_DescriptorSetLayouts {};
         // layout index,  binding index, Descriptor Type
-        Containers::Map<UInt32, Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, DescriptorUpdateInfo>>> m_DescriptorUpdateInfos {};
+        Containers::Map<UInt32, Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, RHIDescriptorUpdateInfo>>> m_DescriptorUpdateInfos {};
     };
 }
