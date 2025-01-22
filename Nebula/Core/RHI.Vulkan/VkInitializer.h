@@ -81,5 +81,15 @@ namespace NebulaEngine::RHI
         descriptorWrite.pTexelBufferView = pTexelBufferView;
         return descriptorWrite;
     }
-    
+
+    inline VkDescriptorImageInfo DescriptorImageInfo(VkSampler sampler, VkImageView imageView, VkImageLayout imageLayout)
+    {
+        VkDescriptorImageInfo descriptorImageInfo
+        {
+            sampler,
+            imageView,
+            imageLayout
+        };
+        return descriptorImageInfo;
+    }
 }

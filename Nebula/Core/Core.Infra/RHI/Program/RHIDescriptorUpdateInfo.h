@@ -5,7 +5,7 @@
 
 namespace NebulaEngine::RHI
 {
-    typedef struct DescriptorImageInfo
+    typedef struct RHIDescriptorImageInfo
     {
         Sampler*        sampler;
         ImageView*      imageView;
@@ -13,7 +13,7 @@ namespace NebulaEngine::RHI
         
     } DescriptorImageInfo;
 
-    typedef struct DescriptorBufferInfo
+    typedef struct RHIDescriptorBufferInfo
     {
         BufferHandle*    bufferHandle;
         UInt64             offset;
@@ -21,7 +21,7 @@ namespace NebulaEngine::RHI
         
     } DescriptorBufferInfo;
     
-    typedef struct DescriptorUpdateInfo
+    typedef struct RHIDescriptorUpdateInfo
     {
         //layout binding
         UInt32 binding;

@@ -2,7 +2,7 @@
 #include "RHI/Program/GPUPipelineStateObject.h"
 #include <vulkan/vulkan_core.h>
 
-#include "RHI/Program/DescriptorUpdateInfo.h"
+#include "RHI/Program/RHIDescriptorUpdateInfo.h"
 
 namespace NebulaEngine::RHI
 {
