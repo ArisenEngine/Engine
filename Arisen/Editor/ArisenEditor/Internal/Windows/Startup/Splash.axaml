@@ -1,0 +1,18 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        x:Class="ArisenEditor.Splash"
+        Width="923"
+        Height="500"
+        SystemDecorations="None"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        Topmost="True"
+        CanResize="False"
+        Icon="/Assets/arisen-logo.ico"
+        >
+
+	<Image Source="/Assets/LOGO.png" Width="923" Height="500"></Image>
+</Window>

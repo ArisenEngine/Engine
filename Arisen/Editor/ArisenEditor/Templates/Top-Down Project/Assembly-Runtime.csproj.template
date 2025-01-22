@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>Assembly_Runtime</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Configurations>Debug;Release;EditorDebug;EditorRelease</Configurations>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <Optimize>True</Optimize>
+    <DefineConstants>$(DefineConstants)TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='EditorDebug|AnyCPU'">
+    <Optimize>False</Optimize>
+    <DefineConstants>$(DefineConstants)TRACE;ARISEN_EDITOR</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='EditorRelease|AnyCPU'">
+    <Optimize>False</Optimize>
+    <DefineConstants>$(DefineConstants)TRACE;ARISEN_EDITOR</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>$(DefineConstants)TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="ArisenEngine">
+      <HintPath>{0}</HintPath>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

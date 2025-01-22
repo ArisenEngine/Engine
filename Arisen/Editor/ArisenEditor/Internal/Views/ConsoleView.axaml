@@ -1,0 +1,115 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="800"
+             xmlns:vm="using:ArisenEditor.ViewModels"
+             xmlns:converts="using:ArisenEditor.Converters"
+             xmlns:m="using:ArisenEditor.Models"
+             x:CompileBindings="True"
+             x:DataType="vm:ConsoleViewModel"
+             x:Class="ArisenEditor.Views.ConsoleView">
+
+    <Design.DataContext>
+        <vm:ConsoleViewModel />
+    </Design.DataContext>
+    <UserControl.Resources>
+        <converts:ConsoleViewIconConverter x:Key="IconConverter"></converts:ConsoleViewIconConverter>
+    </UserControl.Resources>
+
+    <Grid RowDefinitions="5*, Auto, 5*">
+        <DockPanel>
+      
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" HorizontalAlignment="Left" Spacing="5">
+
+            <Button Name="CleanLog" Margin="0, 0,0,0" Command="{Binding ClearCommand}">
+                <Image Width="15" Height="15" Source="avares://ArisenEditor/Assets/Icons/clean.png"></Image>
+            </Button>
+
+            <ToggleButton Name="ThreadToggle" IsChecked="{Binding ThreadChecked}">
+                <Image Width="15" Height="15" Source="avares://ArisenEditor/Assets/Icons/parallel.png"></Image>
+            </ToggleButton>
+            <TextBox Name="LogSearch" Watermark="Search" Text="{Binding SearchText}" VerticalAlignment="Center"
+                     TextWrapping="NoWrap" Width="400">
+
+            </TextBox>
+            <StackPanel Spacing="2" HorizontalAlignment="Right" Orientation="Horizontal" Width="315">
+                <ToggleButton Name="InfoToggle" HorizontalAlignment="Right" IsChecked="{Binding InfoChecked}">
+                    <Image Width="15" Height="15" Source="avares://ArisenEditor/Assets/Icons/info.png"></Image>
+                </ToggleButton>
+                <ToggleButton Name="LogToggle" HorizontalAlignment="Right" IsChecked="{Binding LogChecked}">
+                    <Image Width="15" Height="15" Source="avares://ArisenEditor/Assets/Icons/log.png"></Image>
+                </ToggleButton>
+                <ToggleButton Name="WarningToggle" HorizontalAlignment="Right" IsChecked="{Binding WarningChecked}">
+                    <Image Width="15" Height="15" Source="avares://ArisenEditor/Assets/Icons/warning.png"></Image>
+                </ToggleButton>
+                <ToggleButton Name="ErrorToggle" HorizontalAlignment="Right" IsChecked="{Binding ErrorChecked}">
+                    <Image Width="15" Height="15" Source="avares://ArisenEditor/Assets/Icons/error.png"></Image>
+                </ToggleButton>
+            </StackPanel>
+
+        </StackPanel>
+
+        <DataGrid GridLinesVisibility="None" ColumnHeaderHeight="20" Name="LogDataGrid" SelectionMode="Single" SelectionChanged="LogDataGrid_OnSelectionChanged"
+                  ItemsSource="{Binding Messages}" IsReadOnly="True" HeadersVisibility="Column" CanUserResizeColumns="True">
+         
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="Type">
+                    <DataTemplate x:DataType="m:MessageItemNode">
+                        <Image Margin="4 0 4 0"
+                               VerticalAlignment="Center" Width="15" Height="15">
+                            <Image.Source>
+                                <Binding Path="." Converter="{StaticResource IconConverter}" />
+                            </Image.Source>
+                        </Image>
+                    </DataTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="ThreadId" IsVisible="{Binding ThreadChecked}">
+                    <DataTemplate x:DataType="m:MessageItemNode">
+                        <TextBlock MaxWidth="700" Text="{Binding ThreadId}" VerticalAlignment="Center"
+                                   HorizontalAlignment="Center" TextWrapping="NoWrap" />
+                    </DataTemplate>
+                </DataGridTemplateColumn>
+                
+                <DataGridTemplateColumn Header="ThreadName" IsVisible="{Binding ThreadChecked}">
+                    <DataTemplate x:DataType="m:MessageItemNode">
+                        <TextBlock MaxWidth="700" Text="{Binding ThreadName}" VerticalAlignment="Center"
+                                   HorizontalAlignment="Center" TextWrapping="NoWrap" />
+                    </DataTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="Time">
+                    <DataTemplate x:DataType="m:MessageItemNode">
+                        <TextBlock MaxWidth="700" Text="{Binding TimeText}" VerticalAlignment="Center"
+                                   HorizontalAlignment="Center" TextWrapping="NoWrap" />
+                    </DataTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="Message" Width="1000">
+                    <DataTemplate x:DataType="m:MessageItemNode">
+                        <TextBlock MaxWidth="700" Text="{Binding MessageText}" VerticalAlignment="Center" Margin="10,0,0,0"
+                                   HorizontalAlignment="Left" TextWrapping="Wrap" />
+                    </DataTemplate>
+                </DataGridTemplateColumn>
+
+            </DataGrid.Columns>
+
+
+            <DataGrid.Styles>
+                <Style Selector="DataGrid DataGridRow:nth-child(2n)">
+                    <Setter Property="Background" Value="#20808080" />
+                </Style>
+            </DataGrid.Styles>
+
+        </DataGrid>
+    </DockPanel>
+        
+        <GridSplitter Grid.Row="1" ResizeDirection="Rows"></GridSplitter>
+        
+        <ScrollViewer Grid.Row="2">
+            <TextBlock Margin="10,5" TextWrapping="Wrap" Text="{Binding StackTrace}"></TextBlock>
+        </ScrollViewer>
+    </Grid>
+
+</UserControl>

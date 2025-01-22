@@ -4,5 +4,6 @@ bin
 obj
 Debug
 Release
-!Nebula/3rdparty/dxc/bin/
-!Nebula/3rdparty/dxc/bin/*
+!Arisen/3rdparty/dxc/bin/
+!Arisen/3rdparty/dxc/bin/*
+.vscode
