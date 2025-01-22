@@ -204,7 +204,7 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::ClearDescriptorSetLayouts()
 }
 
 void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding,
-    EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags, DescriptorImageInfo* pImageInfos,
+    EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags, RHIDescriptorImageInfo* pImageInfos,
     ImmutableSamplers* pImmutableSamplers)
 {
     InternalAddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, pImmutableSamplers);
@@ -247,7 +247,7 @@ void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorSetLay
 }
 
 void NebulaEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorUpdateInfo(UInt32 layoutIndex, UInt32 binding,
-    EDescriptorType type, UInt32 descriptorCount, DescriptorImageInfo* pImageInfos,
+    EDescriptorType type, UInt32 descriptorCount, RHIDescriptorImageInfo* pImageInfos,
     DescriptorBufferInfo* pRegularBufferInfos, BufferView* pTexelBufferInfos, ImmutableSamplers* pImmutableSamplers)
 {
     if (!m_DescriptorUpdateInfos.contains(layoutIndex))
