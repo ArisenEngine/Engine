@@ -213,7 +213,7 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBindi
 }
 
 void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(
-    UInt32 layoutIndex, UInt32 binding, EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags, DescriptorBufferInfo* pBufferInfos)
+    UInt32 layoutIndex, UInt32 binding, EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags, RHIDescriptorBufferInfo* pBufferInfos)
 {
 
     InternalAddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, nullptr);
@@ -248,7 +248,7 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorSetLay
 
 void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorUpdateInfo(UInt32 layoutIndex, UInt32 binding,
     EDescriptorType type, UInt32 descriptorCount, RHIDescriptorImageInfo* pImageInfos,
-    DescriptorBufferInfo* pRegularBufferInfos, BufferView* pTexelBufferInfos, ImmutableSamplers* pImmutableSamplers)
+    RHIDescriptorBufferInfo* pRegularBufferInfos, BufferView* pTexelBufferInfos, ImmutableSamplers* pImmutableSamplers)
 {
     if (!m_DescriptorUpdateInfos.contains(layoutIndex))
     {
@@ -260,8 +260,8 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorUpdate
         m_DescriptorUpdateInfos[layoutIndex].try_emplace(binding);
     }
 
-    m_DescriptorUpdateInfos[layoutIndex][binding].try_emplace(type,
-        new DescriptorUpdateInfo {
+    m_DescriptorUpdateInfos[layoutIndex][binding].insert_or_assign(type,
+        RHIDescriptorUpdateInfo {
             binding,
             type,
             descriptorCount,

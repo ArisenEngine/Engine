@@ -45,9 +45,9 @@ namespace ArisenEngine::RHI
         virtual void ClearVertexBindingDescriptions() = 0;
         
         virtual void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
-            UInt32 descriptorCount, UInt32 shaderStageFlags, DescriptorImageInfo* pImageInfos, ImmutableSamplers* pImmutableSamplers = nullptr) = 0;
+            UInt32 descriptorCount, UInt32 shaderStageFlags, RHIDescriptorImageInfo* pImageInfos, ImmutableSamplers* pImmutableSamplers = nullptr) = 0;
         virtual void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
-                                                   UInt32 descriptorCount, UInt32 shaderStageFlags, DescriptorBufferInfo* pBufferInfos) = 0;
+                                                   UInt32 descriptorCount, UInt32 shaderStageFlags, RHIDescriptorBufferInfo* pBufferInfos) = 0;
         virtual void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
                                                    UInt32 descriptorCount, UInt32 shaderStageFlags, BufferView* pTexelBufferView) = 0;
         virtual void ClearDescriptorSetLayoutBindings() = 0;
@@ -59,7 +59,7 @@ namespace ArisenEngine::RHI
         virtual UInt32 GetStageCount() = 0;
         virtual void* GetStageCreateInfo() = 0;
         virtual void BuildDescriptorSetLayout() = 0;
-        virtual Containers::Map<UInt32, Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, DescriptorUpdateInfo>>>
+        virtual Containers::Map<UInt32, Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, RHIDescriptorUpdateInfo>>>
         GetAllDescriptorUpdateInfos() const = 0;
 
     public:

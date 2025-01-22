@@ -31,7 +31,7 @@ namespace ArisenEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(MemoryView)
         MemoryView(MemoryViewType type) : m_ViewType(type) { }
         VIRTUAL_DECONSTRUCTOR(MemoryView)
-        virtual void* GetView() = 0;
+        virtual void* GetView() const = 0;
         virtual void* GetViewPointer() = 0;
         const MemoryViewType GetViewType() const { return m_ViewType; }
     protected:

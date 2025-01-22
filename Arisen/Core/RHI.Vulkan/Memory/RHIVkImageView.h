@@ -11,7 +11,7 @@ namespace ArisenEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkImageView)
         RHIVkImageView(ImageViewDesc desc, VkDevice device, VkImage image);
         ~RHIVkImageView() noexcept override;
-        void* GetView() override { return m_VkImageView; }
+        void* GetView() const override { return m_VkImageView; }
         void* GetViewPointer() override { return &m_VkImageView; }
 
         const UInt32 GetWidth() const override { return m_ImageViewDesc.value().width; }

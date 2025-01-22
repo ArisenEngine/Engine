@@ -418,11 +418,16 @@ public:
 
         pipelineState->ClearDescriptorSetLayoutBindings();
         pipelineState->AddDescriptorSetLayoutBinding(0, 0, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            1, RHI::SHADER_STAGE_VERTEX_BIT);
+            1, RHI::SHADER_STAGE_VERTEX_BIT, new RHI::RHIDescriptorBufferInfo
+            {
+                context.uniformBuffers[frameIndex % m_Instance->GetMaxFramesInFlight()].get(),
+                0,
+                sizeof(UniformBufferObject)
+            });
         pipelineState->BuildDescriptorSetLayout();
 
         descriptorPool->AllocDescriptorSets(context.descriptorPoolId, pipelineState.get());
-        
+        descriptorPool->UpdateDescriptorSets(context.descriptorPoolId, pipelineState.get(), frameIndex);
         
         // Record cmd
         commandBuffer->WaitForFence(frameIndex);
