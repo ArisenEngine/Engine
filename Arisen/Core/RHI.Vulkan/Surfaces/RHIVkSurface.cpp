@@ -113,7 +113,7 @@ VkPresentModeKHR RHI::RHIVkSurface::GetDefaultSwapPresentMode()
 {
     for (const auto& availablePresentMode : m_SwapChainSupportDetail.presentModes)
     {
-        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+        if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
         {
             return availablePresentMode;
         }
