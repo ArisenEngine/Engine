@@ -5,12 +5,14 @@
 #include "RHI/Devices/Device.h"
 #include "RHI/Enums/Pipeline/ECommandBufferUsageFlagBits.h"
 #include "RHI/Enums/Pipeline/EIndexType.h"
+#include "RHI/Enums/Pipeline/EPipelineBindPoint.h"
 #include "RHI/Enums/Pipeline/EPipelineStageFlag.h"
 #include "RHI/Enums/Subpass/ESubpassContents.h"
 #include "RHI/Handles/BufferHandle.h"
 
 namespace ArisenEngine::RHI
 {
+    class RHIDescriptorSet;
     class RHIFence;
 }
 
@@ -98,7 +100,8 @@ namespace ArisenEngine::RHI
 
         virtual void CopyBuffer(BufferHandle const * src, UInt64 srcOffset, BufferHandle const * dst, UInt64 dstOffset, UInt64 size) = 0;
         
-        
+        virtual void BindDescriptorSets(UInt32 frameIndex, EPipelineBindPoint bindPoint,
+    UInt32 firstSet, Containers::Vector<std::shared_ptr<RHIDescriptorSet>>& descriptorsets, UInt32 dynamicOffsetCount, const UInt32* pDynamicOffsets) = 0;
         virtual void WaitForFence(UInt32 frameIndex) = 0;
     public:
 

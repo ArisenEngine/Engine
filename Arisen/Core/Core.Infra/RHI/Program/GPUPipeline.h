@@ -18,6 +18,7 @@ namespace ArisenEngine::RHI
         virtual const EPipelineBindPoint GetBindPoint() const = 0;
         
         virtual void BindPipelineStateObject(GPUPipelineStateObject* pso) = 0;
+        virtual GPUPipelineStateObject* GetPipelineStateObject() const = 0;
     protected:
         UInt32 m_MaxFramesInFlight;
     };

@@ -13,7 +13,7 @@ namespace ArisenEngine::RHI
         MemoryHandle() = default;
         virtual ~MemoryHandle() noexcept
         {
-            LOG_DEBUG(" ~MemoryHandle ");
+            LOG_DEBUG(" ~MemoryHandle: " + m_Name);
             
             if (m_MemoryView != nullptr)
             {
@@ -32,8 +32,19 @@ namespace ArisenEngine::RHI
         
         MemoryView* GetMemoryView() const { return m_MemoryView; }
         DeviceMemory* GetDeviceMemory() const { return  m_DeviceMemory; }
+
+        const std::string GetName() const
+        {
+            return m_Name;
+        }
+
+        void SetName(const std::string&& name)
+        {
+            m_Name = name;
+        }
         
     protected:
+        std::string m_Name { "Anonymous" };
         MemoryView* m_MemoryView {nullptr};
         DeviceMemory* m_DeviceMemory {nullptr};
     };

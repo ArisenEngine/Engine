@@ -25,6 +25,7 @@
     <ClInclude Include="CoreInfraCommon.h" />
     <ClInclude Include="RHI\CommandBuffer\RHICommandBuffer.h" />
     <ClInclude Include="RHI\CommandBuffer\RHICommandBufferPool.h" />
+    <ClInclude Include="RHI\DeviceLimits.h" />
     <ClInclude Include="RHI\Enums\Attachment\AttachmentLoadOp.h" />
     <ClInclude Include="RHI\Enums\Attachment\AttachmentStoreOp.h" />
     <ClInclude Include="RHI\Enums\Attachment\ESampleCountFlagBits.h" />
@@ -91,9 +92,11 @@
     <ClInclude Include="RHI\Synchronization\RHISemaphore.h" />
     <ClInclude Include="RHI\Synchronization\SynchObject.h" />
     <ClInclude Include="RHI\Synchronization\SynchScope.h" />
+    <ClInclude Include="String\String.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="String\String.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -113,6 +116,7 @@
     <Content Include="RHI\Enums\Swapchain\SurfaceTransformFlagBits.h" />
     <Content Include="RHI\Enums\Swapchain\SwapChainCreateFlagBits.h" />
     <Content Include="RHI\Program\GPURenderPass.h" />
+    <Content Include="RHI\Program\RHIDescriptorSet.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -217,7 +221,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <CallingConvention>FastCall</CallingConvention>
+      <CallingConvention>Cdecl</CallingConvention>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <AdditionalIncludeDirectories>$(SolutionDir)3rdparty\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>

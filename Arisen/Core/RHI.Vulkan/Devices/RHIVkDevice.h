@@ -39,7 +39,7 @@ namespace ArisenEngine::RHI
         std::shared_ptr<FrameBuffer> GetFrameBuffer() override;
         void ReleaseFrameBuffer(std::shared_ptr<FrameBuffer> frameBuffer) override;
 
-        std::shared_ptr<BufferHandle> GetBufferHandle() override;
+        std::shared_ptr<BufferHandle> GetBufferHandle(const std::string&& name) override;
         void ReleaseBufferHandle(std::shared_ptr<BufferHandle> bufferHandle) override;
 
         GPUPipelineManager* GetGPUPipelineManager() const override

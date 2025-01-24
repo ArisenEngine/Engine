@@ -54,7 +54,9 @@ namespace ArisenEngine::RHI
         return poolInfo;
     }
 
-    inline VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo(VkDescriptorPool pool, UInt32 descriptorSetCount, const VkDescriptorSetLayout* pSetLayouts)
+    inline VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo(
+        VkDescriptorPool pool, UInt32 descriptorSetCount,
+        const VkDescriptorSetLayout* pSetLayouts)
     {
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;

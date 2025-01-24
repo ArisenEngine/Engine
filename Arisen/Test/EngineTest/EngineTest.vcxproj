@@ -21,7 +21,7 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp" Exclude="Shader/*" />
     <CopyFileToFolders Include="Shader\UniformBuffers.hlsl">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>

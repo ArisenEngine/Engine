@@ -59,18 +59,14 @@ namespace ArisenEngine::RHI
 
         // Descriptor
         void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
-            UInt32 descriptorCount, UInt32 shaderStageFlags, RHIDescriptorImageInfo* pImageInfos, ImmutableSamplers* pImmutableSamplers = nullptr) override;
+            UInt32 descriptorCount, UInt32 shaderStageFlags, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos,
+             ImmutableSamplers* pImmutableSamplers = nullptr) override;
         void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
-                                                   UInt32 descriptorCount, UInt32 shaderStageFlags, RHIDescriptorBufferInfo* pBufferInfos) override;
+                                                   UInt32 descriptorCount, UInt32 shaderStageFlags,
+                                                   const Containers::Vector<std::shared_ptr<BufferHandle>>&& bufferHandles) override;
         void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
-                                                  UInt32 descriptorCount, UInt32 shaderStageFlags, BufferView* pTexelBufferView) override;
-
-
-        Containers::Map<UInt32, Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, RHIDescriptorUpdateInfo>>>
-        GetAllDescriptorUpdateInfos() const
-        {
-            return m_DescriptorUpdateInfos;
-        }
+                                                  UInt32 descriptorCount, UInt32 shaderStageFlags,
+                                                  const Containers::Vector<BufferView*>&& bufferViews) override;
         
     private:
         
@@ -78,8 +74,8 @@ namespace ArisenEngine::RHI
     EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags, ImmutableSamplers* pImmutableSamplers);
         
         void InternalAddDescriptorUpdateInfo(UInt32 layoutIndex, UInt32 binding,EDescriptorType type,
-            UInt32 descriptorCount, RHIDescriptorImageInfo* pImageInfos,
-            RHIDescriptorBufferInfo* pRegularBufferInfos, BufferView* pTexelBufferInfos, ImmutableSamplers* pImmutableSamplers = nullptr);
+            UInt32 descriptorCount, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos,
+            const Containers::Vector<std::shared_ptr<BufferHandle>>&& bufferHandles, const Containers::Vector<BufferView*>&& bufferViews);
         
     public:
         
@@ -89,7 +85,13 @@ namespace ArisenEngine::RHI
         UInt32 DescriptorSetLayoutCount() override;
         void ClearDescriptorSetLayouts() override;
         void BuildDescriptorSetLayout() override;
-    
+
+    public:
+        // Vk API
+        VkDescriptorSetLayout GetVkDescriptorSetLayout(UInt32 layoutIndex) const;
+
+        Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, RHIDescriptorUpdateInfo>>
+        GetDescriptorUpdateInfos(UInt32 layoutIndex) const;
     private:
         
         RHIVkDevice* m_Device;
@@ -107,7 +109,10 @@ namespace ArisenEngine::RHI
         // descriptor
         Containers::Map<UInt32, Containers::Vector<VkDescriptorSetLayoutBinding>> m_DescriptorSetLayoutBindings {};
         Containers::Vector<VkDescriptorSetLayout> m_DescriptorSetLayouts {};
-        // layout index,  binding index, Descriptor Type
+        // layout index,
+        //     binding index,
+        //             Descriptor Type - RHIDescriptorUpdateInfo
+        //               
         Containers::Map<UInt32, Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, RHIDescriptorUpdateInfo>>> m_DescriptorUpdateInfos {};
     };
 }

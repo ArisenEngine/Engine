@@ -8,7 +8,7 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(Instance* instance, Surface* surface
 : Device(instance, surface), m_VkGraphicQueue(graphicQueue), m_VkPresentQueue(presentQueue), m_VkDevice(device), m_VkPhysicalDeviceMemoryProperties(memoryProperties)
 {
     m_GPUPipelineManager = new RHIVkGPUPipelineManager(this, m_Instance->GetMaxFramesInFlight());
-    m_DescriptorPool = new RHIVkDescriptorPool(this, m_Instance->GetMaxFramesInFlight());
+    m_DescriptorPool = new RHIVkDescriptorPool(this);
 }
 
 void ArisenEngine::RHI::RHIVkDevice::DeviceWaitIdle() const
@@ -107,7 +107,7 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseFrameBuffer(std::shared_ptr<FrameBuf
     m_FrameBuffers.emplace_back(frameBuffer);
 }
 
-std::shared_ptr<ArisenEngine::RHI::BufferHandle> ArisenEngine::RHI::RHIVkDevice::GetBufferHandle()
+std::shared_ptr<ArisenEngine::RHI::BufferHandle> ArisenEngine::RHI::RHIVkDevice::GetBufferHandle(const std::string&& name)
 {
     std::shared_ptr<BufferHandle> bufferHandle;
     if (m_BufferHandles.size() > 0)
@@ -120,6 +120,7 @@ std::shared_ptr<ArisenEngine::RHI::BufferHandle> ArisenEngine::RHI::RHIVkDevice:
         bufferHandle = std::make_shared<RHIVkBufferHandle>(this);
     }
 
+    bufferHandle->SetName(std::move(name));
     return bufferHandle;
 }
 

@@ -36,6 +36,7 @@ namespace ArisenEngine::Debugger
         void Fatal(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);// CS_IGNORE_GEN
         void Trace(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);// CS_IGNORE_GEN
 
+        
         void Log(const std::string&& msg);
         void Info(const std::string&& msg);
         void Warning(const std::string&& msg);
@@ -68,15 +69,30 @@ namespace ArisenEngine::Debugger
     };
 }
 
-#define LOG_INFO(msg) ArisenEngine::Debugger::Logger::GetInstance().Info(msg);
+#define LOG_INFO(msg) ArisenEngine::Debugger::Logger::GetInstance().Info(std::move(msg));
 // TODO: support formated log
 // #define LOG_INFO_FORMAT(format,  ...) ArisenEngine::Debugger::Logger::GetInstance().Info(msg);
-#define LOG_DEBUG(msg) DEBUG_OP(ArisenEngine::Debugger::Logger::GetInstance().Log(msg);)
-#define LOG_WARN(msg) ArisenEngine::Debugger::Logger::GetInstance().Warning(msg);
-#define LOG_ERROR(msg) ArisenEngine::Debugger::Logger::GetInstance().Error(msg);
-#define LOG_FATAL(msg) ArisenEngine::Debugger::Logger::GetInstance().Fatal(msg);
-#define LOG_FATAL_AND_THROW(msg) ArisenEngine::Debugger::Logger::GetInstance().Fatal(msg); \
+#define LOG_DEBUG(msg) DEBUG_OP(ArisenEngine::Debugger::Logger::GetInstance().Log(std::move(msg));)
+#define LOG_WARN(msg) ArisenEngine::Debugger::Logger::GetInstance().Warning(std::move(msg));
+#define LOG_ERROR(msg) ArisenEngine::Debugger::Logger::GetInstance().Error(std::move(msg));
+#define LOG_FATAL(msg) ArisenEngine::Debugger::Logger::GetInstance().Fatal(std::move(msg));
+#define LOG_FATAL_AND_THROW(msg) ArisenEngine::Debugger::Logger::GetInstance().Fatal(std::move(msg)); \
                                  throw std::runtime_error(msg);
-#define LOG_TRACE(msg) ArisenEngine::Debugger::Logger::GetInstance().Trace(msg);
+#define LOG_TRACE(msg) ArisenEngine::Debugger::Logger::GetInstance().Trace(std::move(msg));
+
+#include <cstdlib> // for abort()
+
+#undef assert // 确保不会使用默认的 assert 宏
+#define assert(condition)                                                   \
+do {                                                                    \
+    if (!(condition)) {                                                 \
+        std::string msg = "Assertion failed: (" #condition "), file " \
+            + std::string(__FILE__) +                \
+            ", line " + std::to_string(__LINE__);    \
+        LOG_FATAL(msg)                           \
+        std::abort();                                                   \
+    }                                                                   \
+} while (0)                    
+
 
 #define ASSERT(x) DEBUG_OP(assert(x);)

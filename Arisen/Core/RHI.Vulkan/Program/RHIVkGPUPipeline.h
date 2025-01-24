@@ -19,7 +19,14 @@ namespace ArisenEngine::RHI
 
         const EPipelineBindPoint GetBindPoint() const override;
         void BindPipelineStateObject(GPUPipelineStateObject* pso) override;
-        
+        GPUPipelineStateObject* GetPipelineStateObject() const override
+        {
+            return m_PipelineStateObject;
+        }
+        VkPipelineLayout GetPipelineLayout(UINT32 frameIndex) const
+        {
+            return m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight];
+        }
     private:
 
         void FreePipelineLayout(UInt32 frameIndex);
