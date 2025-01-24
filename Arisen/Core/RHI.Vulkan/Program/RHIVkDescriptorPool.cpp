@@ -63,6 +63,8 @@ bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
     }
 
     m_DescriptorSetsHolder[poolId].sets.clear();
+    LOG_DEBUG("[RHIVkDescriptorPool::ResetPool] Reset descriptor pool:" + std::to_string(poolId));
+    
     return true;
 }
 

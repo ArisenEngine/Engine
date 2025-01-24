@@ -113,6 +113,13 @@ const std::vector<uint16_t> indices = {
     0, 1, 2, 2, 3, 0
 };
 
+using Clock = std::chrono::high_resolution_clock;
+// 初始化计时器
+auto lastTime = Clock::now();
+double frameTime = 0.0;  // 单帧耗时，单位：秒
+double fps = 0.0;
+
+
 class EngineTest : public Test
 {
 private:
@@ -334,7 +341,7 @@ public:
         {
             UploadUniformBuffer(g_RenderContexts[i]);
             RecordSubmitPresent(std::move(g_RenderContexts[i]));
-
+        
             if (g_RenderContexts[i].bShouldResize)
             {
                 g_RenderContexts[i].device->SetResolution(g_RenderContexts[i].newWidth, g_RenderContexts[i].newHeight);
@@ -343,6 +350,16 @@ public:
         }
 
         ++frameIndex;
+
+        // 获取当前时间
+        auto currentTime = Clock::now();
+        std::chrono::duration<double> delta = currentTime - lastTime;
+        lastTime = currentTime;
+
+        // 计算帧耗时和帧率
+        frameTime = delta.count();   // 单位：秒
+        fps = (1.0 / frameTime) * 0.1 + fps * 0.9; // 单位：帧每秒
+        std::cout << "FPS:" << fps << ", Delta Time:"<< frameTime << std::endl;
     }
 
     void UploadUniformBuffer(RenderContext const& context)
