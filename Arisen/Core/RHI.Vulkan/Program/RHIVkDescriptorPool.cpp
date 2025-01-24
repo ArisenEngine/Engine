@@ -1,13 +1,14 @@
 #include "RHIVkDescriptorPool.h"
 
+#include "RHIVkDescriptorSet.h"
 #include "RHIVkGPUPipelineStateObject.h"
 #include "../Devices/RHIVkDevice.h"
 #include "Logger/Logger.h"
 #include "../VkInitializer.h"
 #include "RHI/Memory/ImageView.h"
 
-ArisenEngine::RHI::RHIVkDescriptorPool::RHIVkDescriptorPool(RHIVkDevice* device, UInt32 maxFramesInFlight):
-m_pDevice(device), m_MaxFramesInFlight(maxFramesInFlight)
+ArisenEngine::RHI::RHIVkDescriptorPool::RHIVkDescriptorPool(RHIVkDevice* device):
+m_pDevice(device)
 {
     
 }
@@ -15,173 +16,217 @@ m_pDevice(device), m_MaxFramesInFlight(maxFramesInFlight)
 ArisenEngine::RHI::RHIVkDescriptorPool::~RHIVkDescriptorPool()
 {
     LOG_DEBUG("[RHIVkDescriptorPool::~RHIVkDescriptorPool] ~RHIVkDescriptorPool");
-    m_DescriptorPoolSizes.clear();
     auto device = static_cast<VkDevice>(m_pDevice->GetHandle());
-    for (const auto& pool : m_Pools)
+    for (const auto& holder : m_DescriptorSetsHolder)
     {
         LOG_DEBUG("## Destroy Vulkan Descriptor Pool ##");
-        vkDestroyDescriptorPool(device, pool, nullptr);
+        vkDestroyDescriptorPool(device, holder.descriptorPool, nullptr);
     }
+
+    m_DescriptorSetsHolder.clear();
 }
 
 ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDescriptorPool::AddPool(Containers::Vector<EDescriptorType> types,
     Containers::Vector<UInt32> counts, UInt32 maxSets)
 {
-    m_DescriptorPoolSizes.resize(counts.size());
+    RHIVkDescriptorSetsHolder descriptorSetsHolder;
     for (int i = 0; i < counts.size(); ++i)
     {
-        m_DescriptorPoolSizes[i] = DescriptorPoolSize(types[i], counts[i]);
+        descriptorSetsHolder.poolSizes.emplace_back(DescriptorPoolSize(types[i], counts[i]));
     }
-
-    VkDescriptorPoolCreateInfo poolInfo = DescriptorPoolCreateInfo(m_DescriptorPoolSizes.size(), m_DescriptorPoolSizes.data(), maxSets);
-
-    VkDescriptorPool pool = VK_NULL_HANDLE;
-    if (vkCreateDescriptorPool(static_cast<VkDevice>(m_pDevice->GetHandle()), &poolInfo, nullptr, &pool) != VK_SUCCESS)
+    
+    VkDescriptorPoolCreateInfo poolInfo =
+        DescriptorPoolCreateInfo(
+            descriptorSetsHolder.poolSizes.size(),
+            descriptorSetsHolder.poolSizes.data(), maxSets);
+    
+    if (vkCreateDescriptorPool(static_cast<VkDevice>(m_pDevice->GetHandle()),
+        &poolInfo, nullptr, &descriptorSetsHolder.descriptorPool) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::AddPool] failed to create descriptor pool!");
     }
+
+    m_DescriptorSetsHolder.emplace_back(descriptorSetsHolder);
     
-    m_Pools.emplace_back(pool);
-    
-    return m_Pools.size() - 1;
+    return m_DescriptorSetsHolder.size() - 1;
 }
 
 bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
 {
-    ASSERT(poolId < m_Pools.size());
-    VkDescriptorPool pool = m_Pools[poolId];
+    ASSERT(poolId < m_DescriptorSetsHolder.size());
+    VkDescriptorPool pool = m_DescriptorSetsHolder[poolId].descriptorPool;
     VkResult result = vkResetDescriptorPool(static_cast<VkDevice>(m_pDevice->GetHandle()), pool, 0);
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("[RHIVkDescriptorPool::ResetPool] Failed to reset descriptor pool: " + result);
         return false;
     }
-    
+
+    m_DescriptorSetsHolder[poolId].sets.clear();
     return true;
 }
 
-void ArisenEngine::RHI::RHIVkDescriptorPool::AllocDescriptorSets(UInt32 poolId, GPUPipelineStateObject* pso)
+ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDescriptorPool::AllocDescriptorSet(UInt32 poolId, UInt32 layoutIndex, GPUPipelineStateObject* pso)
 {
-    ASSERT(m_Pools[poolId] != VK_NULL_HANDLE);
+    ASSERT(poolId < m_DescriptorSetsHolder.size());
+    ASSERT(m_DescriptorSetsHolder[poolId].descriptorPool != VK_NULL_HANDLE);
 
-    if (m_DescriptorSets.size() <= poolId)
+    RHIVkGPUPipelineStateObject* vkPipelineStateObject = static_cast<RHIVkGPUPipelineStateObject*>(pso);
+    VkDescriptorSetLayout descriptorSetLayout = vkPipelineStateObject->GetVkDescriptorSetLayout(layoutIndex);
+    VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = DescriptorSetAllocateInfo(
+    m_DescriptorSetsHolder[poolId].descriptorPool,
+    1,
+    &descriptorSetLayout
+        );
+    VkDescriptorSet descriptorSet;
+    if (vkAllocateDescriptorSets(static_cast<VkDevice>(m_pDevice->GetHandle()),
+        &descriptorSetAllocateInfo, &descriptorSet) != VK_SUCCESS)
     {
-        m_DescriptorSets.resize(poolId + 1);
+        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::AllocDescriptorSet] failed to allocate descriptor sets!");
     }
     
-    auto numLayouts = pso->DescriptorSetLayoutCount();
-    VkDescriptorSetLayout* allLayouts = static_cast<VkDescriptorSetLayout*>(pso->GetDescriptorSetLayouts());
-    // 每种 layout 的 descriptorSets
-    Containers::Vector<Containers::Vector<VkDescriptorSet>> allDescriptorSets(numLayouts);
+  
+        m_DescriptorSetsHolder[poolId].sets.emplace_back(
+            std::make_shared<RHIVkDescriptorSet>(
+this, layoutIndex, descriptorSet
+));
     
-    for (size_t layoutIndex = 0; layoutIndex < numLayouts; ++layoutIndex)
-    {
-        Containers::Vector<VkDescriptorSetLayout> layouts(m_MaxFramesInFlight, allLayouts[layoutIndex]);
-        VkDescriptorSetAllocateInfo allocInfo
-        = DescriptorSetAllocateInfo(m_Pools[poolId], m_MaxFramesInFlight, layouts.data());
-        allDescriptorSets[layoutIndex].resize(m_MaxFramesInFlight);
-        if (vkAllocateDescriptorSets(static_cast<VkDevice>(m_pDevice->GetHandle()), &allocInfo,
-            allDescriptorSets[layoutIndex].data()) != VK_SUCCESS)
-        {
-            LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSet]: failed to allocate descriptor sets!");
-        }
-    }
-
-    m_DescriptorSets[poolId] = allDescriptorSets;
+    return m_DescriptorSetsHolder[poolId].sets.size() - 1;
 }
 
-const VkDescriptorImageInfo* GetImageInfos(ArisenEngine::RHI::RHIDescriptorUpdateInfo updateInfo,
-    ArisenEngine::Containers::Vector<VkDescriptorImageInfo> results)
+ArisenEngine::RHI::RHIDescriptorSet* ArisenEngine::RHI::RHIVkDescriptorPool::GetDescriptorSet(UInt32 poolId,
+    UInt32 setIndex)
 {
-    results.clear();
-    for (int i = 0; i < updateInfo.descriptorCount; ++i)
+    ASSERT(poolId < m_DescriptorSetsHolder.size());
+    ASSERT(setIndex < m_DescriptorSetsHolder[poolId].sets.size());
+
+    return m_DescriptorSetsHolder[poolId].sets[setIndex].get();
+}
+
+const ArisenEngine::Containers::Vector<std::shared_ptr<ArisenEngine::RHI::RHIDescriptorSet>>&
+    ArisenEngine::RHI::RHIVkDescriptorPool::
+GetDescriptorSets(UInt32 poolId)
+{
+    ASSERT(poolId < m_DescriptorSetsHolder.size());
+    return m_DescriptorSetsHolder[poolId].sets;
+}
+
+const VkDescriptorImageInfo* GetImageInfos(ArisenEngine::RHI::RHIDescriptorUpdateInfo& updateInfo,
+                                           ArisenEngine::Containers::Vector<VkDescriptorImageInfo>& results)
+{
+    if (updateInfo.imageInfo.size() <= 0)
     {
-        auto pImageInfo = updateInfo.pImageInfo + i;
-        if (pImageInfo != nullptr)
-        {
-            results.emplace_back(ArisenEngine::RHI::DescriptorImageInfo(
-                static_cast<VkSampler>(pImageInfo->sampler->GetHandle()),
-                static_cast<VkImageView>(pImageInfo->imageView->GetView()),
-                static_cast<VkImageLayout>(pImageInfo->imageLayout)
+        return nullptr;
+    }
+    
+    results.clear();
+    for (int i = 0; i < updateInfo.imageInfo.size(); ++i)
+    {
+        auto pImageInfo = updateInfo.imageInfo[i];
+        results.emplace_back(ArisenEngine::RHI::DescriptorImageInfo(
+                static_cast<VkSampler>(pImageInfo.sampler->GetHandle()),
+                static_cast<VkImageView>(pImageInfo.imageView->GetView()),
+                static_cast<VkImageLayout>(pImageInfo.imageLayout)
                 ));
-        }
     }
 
     return results.data();
 }
 
-const VkDescriptorBufferInfo* GetBufferInfos(ArisenEngine::RHI::RHIDescriptorUpdateInfo updateInfo,
-    ArisenEngine::Containers::Vector<VkDescriptorBufferInfo> results)
+const VkDescriptorBufferInfo* GetBufferInfos(ArisenEngine::RHI::RHIDescriptorUpdateInfo& updateInfo,
+    ArisenEngine::Containers::Vector<VkDescriptorBufferInfo>& results)
 {
-    results.clear();
-    for (int i = 0; i < updateInfo.descriptorCount; ++i)
+    if (updateInfo.bufferHaneles.size() <= 0)
     {
-        auto pBufferInfo = updateInfo.pBufferInfo + i;
+        return nullptr;
+    }
+    
+    results.clear();
+    for (int i = 0; i < updateInfo.bufferHaneles.size(); ++i)
+    {
+        auto pBufferInfo = updateInfo.bufferHaneles[i];
         if (pBufferInfo != nullptr)
         {
             results.emplace_back(ArisenEngine::RHI::DescriptorBufferInfo(
-                static_cast<VkBuffer>(pBufferInfo->bufferHandle->GetHandle()),
-                static_cast<VkDeviceSize>(pBufferInfo->offset),
-                static_cast<VkDeviceSize>(pBufferInfo->range)
+                static_cast<VkBuffer>(pBufferInfo->GetHandle()),
+                static_cast<VkDeviceSize>(pBufferInfo->Offset()),
+                static_cast<VkDeviceSize>(pBufferInfo->Range())
                 ));
         }
     }
     return results.data();
 }
 
-const VkBufferView* GetBufferViews(ArisenEngine::RHI::RHIDescriptorUpdateInfo updateInfo,
-    ArisenEngine::Containers::Vector<VkBufferView> results)
+const VkBufferView* GetBufferViews(ArisenEngine::RHI::RHIDescriptorUpdateInfo& updateInfo,
+    ArisenEngine::Containers::Vector<VkBufferView>& results)
 {
-    results.clear();
-    for (int i = 0; i < updateInfo.descriptorCount; ++i)
+    if (updateInfo.texelBufferViews.size() <= 0)
     {
-        auto pTexelBufferView = updateInfo.pTexelBufferView + i;
-        if (pTexelBufferView != nullptr)
-        {
-            results.emplace_back(static_cast<VkBufferView>(pTexelBufferView->GetView()));
-        }
+        return nullptr;
+    }
+    
+    results.clear();
+    for (int i = 0; i < updateInfo.texelBufferViews.size(); ++i)
+    {
+        auto bufferView = updateInfo.texelBufferViews[i];
+        results.emplace_back(static_cast<VkBufferView>(bufferView->GetView()));
     }
     return results.data();
 }
 
-void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId, GPUPipelineStateObject* pso,
-    UInt32 frameIndex)
+void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId, GPUPipelineStateObject* pso)
 {
-    ASSERT(m_Pools[poolId] != VK_NULL_HANDLE);
-    auto currentIndex = frameIndex % m_MaxFramesInFlight;
-    auto descriptorSets = m_DescriptorSets[poolId];
-    auto allUpdateInfos = pso->GetAllDescriptorUpdateInfos();
-    auto numLayouts = pso->DescriptorSetLayoutCount();
+    ASSERT(poolId < m_DescriptorSetsHolder.size());
+    ASSERT(m_DescriptorSetsHolder[poolId].descriptorPool != VK_NULL_HANDLE);
     
+    auto descriptorSets = m_DescriptorSetsHolder[poolId].sets;
     Containers::Vector<VkWriteDescriptorSet> descriptorWrites;
     Containers::Vector<Containers::Vector<VkDescriptorImageInfo>> imageInfos;
     Containers::Vector<Containers::Vector<VkDescriptorBufferInfo>> bufferInfos;
     Containers::Vector<Containers::Vector<VkBufferView>> bufferViews;
+
+    RHIVkGPUPipelineStateObject* vkPipelineStateObject = static_cast<RHIVkGPUPipelineStateObject*>(pso);
     
-    for (size_t layoutIndex = 0; layoutIndex < numLayouts; ++layoutIndex)
+    for (UInt32 i = 0; i < descriptorSets.size(); ++i)
     {
-        auto dstSet = descriptorSets[layoutIndex][currentIndex];
-        for (auto& const updateInfoForBinding : allUpdateInfos[layoutIndex])
+        auto descriptorSet = descriptorSets[i].get();
+        VkDescriptorSet dstSet = static_cast<VkDescriptorSet>(descriptorSet->GetHandle());
+        UInt32 layoutIndex = descriptorSet->GetLayoutIndex();
+        auto updateInfosForAllBindings = vkPipelineStateObject->GetDescriptorUpdateInfos(layoutIndex);
+        for (const auto& updateInfoForAllTypePair : updateInfosForAllBindings)
         {
-            for (auto& const updateInfoPerType : updateInfoForBinding.second)
+            auto updateInfoForAllType = updateInfoForAllTypePair.second;
+            for (const auto& updateInfoPair : updateInfoForAllType)
             {
                 imageInfos.emplace_back();
                 bufferInfos.emplace_back();
                 bufferViews.emplace_back();
-                auto updateInfo = updateInfoPerType.second;
+                
+                auto updateInfo = updateInfoPair.second;
+                auto pImageInfos = GetImageInfos(updateInfo, imageInfos.back());
+                auto pBufferInfos = GetBufferInfos(updateInfo, bufferInfos.back());
+                auto pBufferViews = GetBufferViews(updateInfo, bufferViews.back());
                 auto writeDescriptorSet = WriteDescriptorSet(
-                    dstSet, updateInfo.binding, 0, updateInfo.descriptorCount, 
-                    static_cast<VkDescriptorType>(updateInfo.type),
-                    GetImageInfos(updateInfo, imageInfos.back()),
-                    GetBufferInfos(updateInfo, bufferInfos.back()),
-                    GetBufferViews(updateInfo, bufferViews.back()));
+                   dstSet, updateInfo.binding, 0, updateInfo.descriptorCount, 
+                   static_cast<VkDescriptorType>(updateInfo.type),
+                   // TODO: add type validation to figure out whether it can be nullptr
+                   pImageInfos,
+                   pBufferInfos,
+                   pBufferViews);
+                
                 descriptorWrites.push_back(writeDescriptorSet);
             }
         }
     }
-
+    
     vkUpdateDescriptorSets(static_cast<VkDevice>(m_pDevice->GetHandle()),
         descriptorWrites.size(), descriptorWrites.data(),
         0, nullptr);
     
+}
+
+void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSet(UInt32 poolId, UInt32 setIndex,
+    GPUPipelineStateObject* pso)
+{
+    // TODO: 
 }

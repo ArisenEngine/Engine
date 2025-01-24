@@ -40,7 +40,7 @@ struct RenderContext
      
     RHI::RHICommandBufferPool* commandPool;
     Containers::Vector<UInt32> gpuPrograms;
-    UInt32 descriptorPoolId;
+    Containers::Vector<UInt32> descriptorPoolIds;
     bool bShouldResize;
 };
 
@@ -95,10 +95,11 @@ struct Vertex
     glm::vec3 color;
 };
 
+// Vulkan require using std140 alignment
 struct UniformBufferObject {
-    glm::mat4 model;
-    glm::mat4 view;
-    glm::mat4 proj;
+   alignas(16) glm::mat4 model;
+   alignas(16) glm::mat4 view;
+   alignas(16) glm::mat4 proj;
 };
 
 const std::vector<Vertex> vertices = {
@@ -194,19 +195,24 @@ public:
             g_RenderContexts[i].commandPool = g_RenderContexts[i].device->GetCommandBufferPool(poolId);
             g_RenderContexts[i].renderPass = g_RenderContexts[i].device->GetRenderPass();
             g_RenderContexts[i].frameBuffer = g_RenderContexts[i].device->GetFrameBuffer();
-            g_RenderContexts[i].vertexBufferHandle = g_RenderContexts[i].device->GetBufferHandle();
-            g_RenderContexts[i].indicesBufferHandle = g_RenderContexts[i].device->GetBufferHandle();
-            g_RenderContexts[i].descriptorPoolId =
-                g_RenderContexts[i].device->GetDescriptorPool()->AddPool({RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER},{2},2);
+            g_RenderContexts[i].vertexBufferHandle = g_RenderContexts[i].device->GetBufferHandle("Vertex Buffer");
+            g_RenderContexts[i].indicesBufferHandle = g_RenderContexts[i].device->GetBufferHandle("Indices Buffer");
+           
             for(int frameIndex = 0; frameIndex < m_Instance->GetMaxFramesInFlight(); ++frameIndex)
             {
-                g_RenderContexts[i].uniformBuffers.emplace_back(g_RenderContexts[i].device->GetBufferHandle());
+                g_RenderContexts[i].descriptorPoolIds.emplace_back(
+                    g_RenderContexts[i].device->GetDescriptorPool()
+                    ->AddPool({RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER},
+                        {1},1));
+                g_RenderContexts[i].uniformBuffers.emplace_back(
+                    g_RenderContexts[i].device->GetBufferHandle(
+                        "Uniform Buffer " + std::to_string(frameIndex)));
             }
         }
 
         Platforms::InitDXC();
 
-        auto shaderFileName = L"SimpleUnlit";
+        auto shaderFileName = L"UniformBuffers";
         namespace fs = std::filesystem;
         auto currentPath = fs::current_path().generic_wstring() + L"\\Shader";
         auto path = currentPath + L"\\" + shaderFileName + L".hlsl";
@@ -312,6 +318,7 @@ public:
                     RHI::SHARING_MODE_EXCLUSIVE
                 });
                 uniformBuffer->AllocBufferMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                uniformBuffer ->SetBufferOffsetRange(0, sizeof(UniformBufferObject));
             }
             
             UploadVertex(g_RenderContexts[i]);
@@ -362,7 +369,7 @@ public:
         auto vertexBufferHandle = context.vertexBufferHandle;
         auto indicesBufferHandle = context.indicesBufferHandle;
         
-        auto vertexStagingBufferHandle = device->GetBufferHandle();
+        auto vertexStagingBufferHandle = device->GetBufferHandle("Vertex Staging Buffer");
         vertexStagingBufferHandle->AllocBufferHandle({
             0,
                sizeof(vertices[0]) * vertices.size(),
@@ -372,7 +379,7 @@ public:
         vertexStagingBufferHandle->AllocBufferMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
         vertexStagingBufferHandle->MemoryCopy(vertices.data(), 0);
 
-        auto indicesStagingBufferHandle = device->GetBufferHandle();
+        auto indicesStagingBufferHandle = device->GetBufferHandle("Indices Staging Buffer");
         indicesStagingBufferHandle->AllocBufferHandle({
             0,
                sizeof(indices[0]) * indices.size(),
@@ -403,12 +410,11 @@ public:
     
     void RecordSubmitPresent(RenderContext&& context)
     {
+        auto currentIndex = frameIndex % m_Instance->GetMaxFramesInFlight();
+        
         auto commandBuffer = context.commandPool->GetCommandBuffer(frameIndex);
 
         auto pipelineManager = context.device->GetGPUPipelineManager();
-
-        auto descriptorPool = context.device->GetDescriptorPool();
-        descriptorPool->ResetPool(context.descriptorPoolId);
         
         auto pipelineState = pipelineManager->GetPipelineState();
 
@@ -418,19 +424,20 @@ public:
 
         pipelineState->ClearDescriptorSetLayoutBindings();
         pipelineState->AddDescriptorSetLayoutBinding(0, 0, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            1, RHI::SHADER_STAGE_VERTEX_BIT, new RHI::RHIDescriptorBufferInfo
-            {
-                context.uniformBuffers[frameIndex % m_Instance->GetMaxFramesInFlight()].get(),
-                0,
-                sizeof(UniformBufferObject)
+            1, RHI::SHADER_STAGE_VERTEX_BIT,
+            Containers::Vector<std::shared_ptr<RHI::BufferHandle>>{
+                context.uniformBuffers[currentIndex]
             });
         pipelineState->BuildDescriptorSetLayout();
-
-        descriptorPool->AllocDescriptorSets(context.descriptorPoolId, pipelineState.get());
-        descriptorPool->UpdateDescriptorSets(context.descriptorPoolId, pipelineState.get(), frameIndex);
         
         // Record cmd
         commandBuffer->WaitForFence(frameIndex);
+
+        auto descriptorPool = context.device->GetDescriptorPool();
+        descriptorPool->ResetPool(context.descriptorPoolIds[currentIndex]);
+        descriptorPool->AllocDescriptorSet(context.descriptorPoolIds[currentIndex], 0, pipelineState.get());
+        descriptorPool->UpdateDescriptorSets(context.descriptorPoolIds[currentIndex], pipelineState.get());
+        
         commandBuffer->Begin(frameIndex);
         {
             auto renderPass = context.renderPass.get();
@@ -526,7 +533,12 @@ public:
                         commandBuffer->BindVertexBuffers(context.vertexBufferHandle.get(), 0);
                         commandBuffer->BindIndexBuffer(context.indicesBufferHandle.get(), 0, RHI::INDEX_TYPE_UINT16);
                     }
-                    
+
+                    {
+                        // bind descriptor sets
+                        auto descriptorSets = descriptorPool->GetDescriptorSets(context.descriptorPoolIds[currentIndex]);
+                        commandBuffer->BindDescriptorSets(frameIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, descriptorSets, 0, 0);
+                    }
                     {
                         // draw call
                         // commandBuffer->Draw(3, 1, 0, 0, 0);

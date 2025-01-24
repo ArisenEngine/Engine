@@ -28,6 +28,7 @@
     <ClCompile Include="Memory\RHIVkImageView.cpp" />
     <ClCompile Include="Memory\RHIVkDeviceMemory.cpp" />
     <ClCompile Include="Program\RHIVkDescriptorPool.cpp" />
+    <ClCompile Include="Program\RHIVkDescriptorSet.cpp" />
     <ClCompile Include="Program\RHIVkGPUPipeline.cpp" />
     <ClCompile Include="Program\RHIVkGPUPipelineManager.cpp" />
     <ClCompile Include="Program\RHIVkGPUPipelineStateObject.cpp" />
@@ -53,6 +54,7 @@
     <ClInclude Include="Memory\RHIVkImageView.h" />
     <ClInclude Include="Memory\RHIVkDeviceMemory.h" />
     <ClInclude Include="Program\RHIVkDescriptorPool.h" />
+    <ClInclude Include="Program\RHIVkDescriptorSet.h" />
     <ClInclude Include="Program\RHIVkGPUPipeline.h" />
     <ClInclude Include="Program\RHIVkGPUPipelineManager.h" />
     <ClInclude Include="Program\RHIVkGPUPipelineStateObject.h" />
@@ -133,6 +135,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <CopyLocalDebugSymbols>true</CopyLocalDebugSymbols>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -179,8 +184,9 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <CallingConvention>FastCall</CallingConvention>
+      <CallingConvention>Cdecl</CallingConvention>
       <AdditionalIncludeDirectories>$(SolutionDir)Core\Core.Debugger\;$(SolutionDir)Core\Core.Platform\;$(SolutionDir)Core\Core.Infra\;$(SolutionDir)\3rdparty\vulkan\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

@@ -11,19 +11,18 @@ struct Varying
     float3 color : TEXCOORD1;
 };
 
-struct UBOView
+cbuffer UboView : register(b0, space0) // 绑定到 set 0, binding 0
 {
     float4x4 model;
     float4x4 projection;
     float4x4 view;
 };
-ConstantBuffer<UBOView> uboView;
 
 Varying Vert(Attribute input, uint vertexId : SV_VertexID)
 {
     Varying output = (Varying)0;
     // 00, 01, 10
-    output.positionCS = mul(uboView.projection, mul(uboView.view, mul(uboView.model, float4(input.positionOS, 1.0))));
+    output.positionCS = mul(projection, mul(view, mul(model, float4(input.positionOS, 1.0))));
     output.color = input.color;
     return output;
 }

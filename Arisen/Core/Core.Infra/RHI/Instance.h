@@ -1,4 +1,5 @@
 #pragma once
+#include "DeviceLimits.h"
 #include "../Common/CommandHeaders.h"
 #include "../Common/PrimitiveTypes.h"
 #include "Devices/Device.h"
@@ -77,6 +78,8 @@ namespace ArisenEngine::RHI
         {
             return m_MaxFramesInFlight;
         }
+
+        virtual RHIDeviceLimits GetDeviceLimits() const = 0;
         
     protected:
         UInt32 m_MaxFramesInFlight;

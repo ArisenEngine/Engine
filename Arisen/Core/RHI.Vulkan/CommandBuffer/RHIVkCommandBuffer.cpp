@@ -1,5 +1,7 @@
 ﻿#include "RHIVkCommandBuffer.h"
 
+#include "../Program/RHIVkGPUPipeline.h"
+#include "../Program/RHIVkGPUPipelineStateObject.h"
 #include "RHI/Handles/BufferHandle.h"
 #include "RHI/Synchronization/SynchScope.h"
 
@@ -88,6 +90,8 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::Reset()
     m_IndexBuffer.reset();
     m_IndexOffset.reset();
     m_IndexType.reset();
+
+    m_CurrentPipeline = nullptr;
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::ReadyForBegin(UInt32 frameIndex)
@@ -172,7 +176,33 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::SetScissor(UInt32 offsetX, UInt32 of
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::BindPipeline(UInt32 frameIndex, GPUPipeline* pipeline)
 {
-    vkCmdBindPipeline(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(pipeline->GetBindPoint()), static_cast<VkPipeline>(pipeline->GetGraphicsPipeline(frameIndex)));
+    m_CurrentPipeline = pipeline;
+    vkCmdBindPipeline(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(pipeline->GetBindPoint()),
+        static_cast<VkPipeline>(pipeline->GetGraphicsPipeline(frameIndex)));
+}
+
+void ArisenEngine::RHI::RHIVkCommandBuffer::BindDescriptorSets(UInt32 frameIndex, EPipelineBindPoint bindPoint,
+    UInt32 firstSet, Containers::Vector<std::shared_ptr<RHIDescriptorSet>>& descriptorsets, UInt32 dynamicOffsetCount, const UInt32* pDynamicOffsets)
+{
+    if (m_CurrentPipeline == nullptr)
+    {
+        LOG_FATAL("[RHIVkCommandBuffer::BindDescriptorSets] pipeline is null, should binding pipeline first.")
+        return;
+    }
+
+    RHIVkGPUPipeline* pipeline = static_cast<RHIVkGPUPipeline*>(m_CurrentPipeline);
+
+    Containers::Vector<VkDescriptorSet> vkDescriptorSets;
+    vkDescriptorSets.resize(descriptorsets.size());
+    for (UInt32 i = 0; i < descriptorsets.size(); ++i)
+    {
+        vkDescriptorSets[i] = static_cast<VkDescriptorSet>(descriptorsets[i]->GetHandle());
+    }
+    vkCmdBindDescriptorSets(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(bindPoint),
+        pipeline->GetPipelineLayout(frameIndex),
+        firstSet, descriptorsets.size(),
+       vkDescriptorSets.data(),
+        dynamicOffsetCount, pDynamicOffsets);
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding)

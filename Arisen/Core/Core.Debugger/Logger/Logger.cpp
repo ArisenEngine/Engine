@@ -64,7 +64,7 @@ bool Logger::Initialize()
 	{
 		// init spdlog
 		auto async_file =
-			spdlog::basic_logger_mt<spdlog::async_factory>("log", "logs/debugger.log", true);
+			spdlog::basic_logger_mt<spdlog::async_factory>("log", "logs/log.log", true);
 
 		spdlog::set_default_logger(async_file);
 	

@@ -41,6 +41,8 @@ namespace  ArisenEngine::RHI
         
         void InjectFence(RHIFence* fence) override;
         void WaitForFence(UInt32 frameIndex) override;
+        void BindDescriptorSets(UInt32 frameIndex, EPipelineBindPoint bindPoint,
+    UInt32 firstSet, Containers::Vector<std::shared_ptr<RHIDescriptorSet>>& descriptorsets, UInt32 dynamicOffsetCount, const UInt32* pDynamicOffsets) override;
         
     public:
         
@@ -76,5 +78,7 @@ namespace  ArisenEngine::RHI
        
         VkCommandBufferBeginInfo m_VkBeginInfo {};
         std::optional<VkFence> m_SubmissionFence;
+
+        GPUPipeline* m_CurrentPipeline { nullptr };
     };
 }

@@ -12,14 +12,6 @@ namespace ArisenEngine::RHI
         EImageLayout   imageLayout;
         
     } RHIDescriptorImageInfo;
-
-    typedef struct RHIDescriptorBufferInfo
-    {
-        BufferHandle*    bufferHandle;
-        UInt64             offset;
-        UInt64             range;
-        
-    } RHIDescriptorBufferInfo;
     
     typedef struct RHIDescriptorUpdateInfo
     {
@@ -29,9 +21,9 @@ namespace ArisenEngine::RHI
         UInt32 descriptorCount;
         
         // DescriptorWrite 
-        const RHIDescriptorImageInfo*      pImageInfo;
-        const RHIDescriptorBufferInfo*     pBufferInfo;
-        const BufferView*               pTexelBufferView;
+        Containers::Vector<RHIDescriptorImageInfo>          imageInfo;
+        Containers::Vector<std::shared_ptr<BufferHandle>>   bufferHaneles;
+        Containers::Vector<BufferView*>                     texelBufferViews;
         
     } RHIDescriptorUpdateInfo;
 }

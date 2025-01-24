@@ -183,6 +183,27 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::BuildDescriptorSetLayout()
     
 }
 
+VkDescriptorSetLayout ArisenEngine::RHI::RHIVkGPUPipelineStateObject::GetVkDescriptorSetLayout(UInt32 layoutIndex) const
+{
+    ASSERT(layoutIndex < m_DescriptorSetLayoutBindings.size());
+    return m_DescriptorSetLayouts[layoutIndex];
+}
+
+ArisenEngine::Containers::
+Map<ArisenEngine::UInt32,ArisenEngine::Containers::
+UnorderedMap<ArisenEngine::RHI::EDescriptorType, ArisenEngine::RHI::RHIDescriptorUpdateInfo>>
+ArisenEngine::RHI::RHIVkGPUPipelineStateObject::GetDescriptorUpdateInfos(
+    UInt32 layoutIndex) const
+{
+    if (m_DescriptorUpdateInfos.contains(layoutIndex))
+    {
+        return m_DescriptorUpdateInfos.at(layoutIndex);
+    }
+
+    LOG_FATAL_AND_THROW("[RHIVkGPUPipelineStateObject::GetDescriptorUpdateInfos] layout index: " + std::to_string(layoutIndex) + " is not exist.");
+}
+
+
 void* ArisenEngine::RHI::RHIVkGPUPipelineStateObject::GetDescriptorSetLayouts()
 {
     return m_DescriptorSetLayouts.data();
@@ -203,30 +224,38 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::ClearDescriptorSetLayouts()
     m_DescriptorSetLayouts.clear();
 }
 
-void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding,
-    EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags, RHIDescriptorImageInfo* pImageInfos,
-    ImmutableSamplers* pImmutableSamplers)
+void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
+            UInt32 descriptorCount, UInt32 shaderStageFlags, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos,
+             ImmutableSamplers* pImmutableSamplers)
 {
+    ASSERT(descriptorCount == imageInfos.size());
+    
     InternalAddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, pImmutableSamplers);
-    InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, descriptorCount, pImageInfos,
-        nullptr, nullptr, pImmutableSamplers);
+    InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, descriptorCount, std::move(imageInfos),
+        {}, {});
 }
 
 void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(
-    UInt32 layoutIndex, UInt32 binding, EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags, RHIDescriptorBufferInfo* pBufferInfos)
+UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
+                                               UInt32 descriptorCount, UInt32 shaderStageFlags,
+                                               const Containers::Vector<std::shared_ptr<BufferHandle>>&& bufferHandles)
 {
 
+    ASSERT(descriptorCount == bufferHandles.size());
     InternalAddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, nullptr);
-    InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, descriptorCount, nullptr,
-      pBufferInfos, nullptr, nullptr);
+    InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, descriptorCount, {},
+      std::move(bufferHandles), {});
 }
 
 void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(
-    UInt32 layoutIndex, UInt32 binding, EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags, BufferView* pTexelBufferView)
+UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
+                                              UInt32 descriptorCount, UInt32 shaderStageFlags,
+                                              const Containers::Vector<BufferView*>&& bufferViews)
 {
+    ASSERT(descriptorCount == bufferViews.size());
     InternalAddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, nullptr);
-    InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, descriptorCount, nullptr,
-       nullptr, pTexelBufferView, nullptr);
+    InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, descriptorCount, {},
+       {}, std::move(bufferViews));
 }
 
 void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding,
@@ -246,9 +275,9 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorSetLay
     }
 }
 
-void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorUpdateInfo(UInt32 layoutIndex, UInt32 binding,
-    EDescriptorType type, UInt32 descriptorCount, RHIDescriptorImageInfo* pImageInfos,
-    RHIDescriptorBufferInfo* pRegularBufferInfos, BufferView* pTexelBufferInfos, ImmutableSamplers* pImmutableSamplers)
+void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorUpdateInfo(UInt32 layoutIndex, UInt32 binding,EDescriptorType type,
+            UInt32 descriptorCount, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos,
+            const Containers::Vector<std::shared_ptr<BufferHandle>>&& bufferHandles, const Containers::Vector<BufferView*>&& bufferViews)
 {
     if (!m_DescriptorUpdateInfos.contains(layoutIndex))
     {
@@ -265,8 +294,8 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorUpdate
             binding,
             type,
             descriptorCount,
-            pImageInfos,
-            pRegularBufferInfos,
-            pTexelBufferInfos,
+            imageInfos,
+            bufferHandles,
+            bufferViews,
         });
 }

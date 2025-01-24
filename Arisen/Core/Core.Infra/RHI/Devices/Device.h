@@ -53,7 +53,7 @@ namespace ArisenEngine::RHI
         virtual std::shared_ptr<FrameBuffer> GetFrameBuffer() = 0;
         virtual void ReleaseFrameBuffer(std::shared_ptr<FrameBuffer> frameBuffer) = 0;
 
-        virtual std::shared_ptr<BufferHandle> GetBufferHandle() = 0;
+        virtual std::shared_ptr<BufferHandle> GetBufferHandle(const std::string && name = "Anonymous") = 0;
         virtual void ReleaseBufferHandle(std::shared_ptr<BufferHandle> bufferHandle) = 0;
 
         virtual GPUPipelineManager* GetGPUPipelineManager() const = 0;
