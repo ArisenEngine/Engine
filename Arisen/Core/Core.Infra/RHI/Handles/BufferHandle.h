@@ -1,19 +1,19 @@
 #pragma once
 #include "MemoryHandle.h"
-#include "RHI/Enums/Memory/SharingMode.h"
+#include "RHI/Enums/Memory/ESharingMode.h"
 
 
 namespace ArisenEngine::RHI
 {
-    typedef struct BufferAllocDesc
+    typedef struct BufferDescriptor
     {
         UInt32 createFlagBits;
         UInt64 size;
         UInt32 usage;
-        SharingMode sharingMode;
+        ESharingMode sharingMode;
         UInt32 queueFamilyIndexCount;
         const void* pQueueFamilyIndices;
-    } BufferAllocDesc;
+    } BufferDescriptor;
 
     
     class BufferHandle : public MemoryHandle
@@ -21,11 +21,9 @@ namespace ArisenEngine::RHI
     public:
         NO_COPY_NO_MOVE(BufferHandle)
         BufferHandle() = default;
-        virtual bool AllocBufferHandle(BufferAllocDesc && desc) = 0;
+        virtual bool AllocBufferHandle(BufferDescriptor && desc) = 0;
         virtual void FreeBufferHandle() = 0;
-
-        virtual bool AllocBufferMemory(UInt32 memoryPropertiesBits) = 0;
-        virtual void FreeBufferMemory() = 0;
+        bool AllocDeviceMemory(UInt32 memoryPropertiesBits) override = 0;
         virtual void MemoryCopy(void const* src, UInt32 offset) = 0;
         ~BufferHandle() noexcept override = default;
 

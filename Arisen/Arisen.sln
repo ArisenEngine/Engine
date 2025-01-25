@@ -903,6 +903,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "layers", "layers", "{EC562F
 		3rdparty\vulkan\Layers\VkLayer_screenshot.json = 3rdparty\vulkan\Layers\VkLayer_screenshot.json
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "image", "image", "{EEA1BAD1-3BBE-493F-BFC1-EE6A606156E2}"
+	ProjectSection(SolutionItems) = preProject
+		3rdparty\image\stb_image.h = 3rdparty\image\stb_image.h
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1741,6 +1746,7 @@ Global
 		{D79E017B-B9EA-476A-A0D4-6EBA403004E3} = {8D6C440B-7D81-4BAC-9E73-332FAE4ADA18}
 		{5B5EA8D9-BB2E-4F70-A312-0C9E51FD9B40} = {457B3F2F-ABC8-49A4-954D-CF1A41F2FAD8}
 		{EC562F8F-F4AF-4BEF-AEB7-9C800ED8A3C6} = {8D6C440B-7D81-4BAC-9E73-332FAE4ADA18}
+		{EEA1BAD1-3BBE-493F-BFC1-EE6A606156E2} = {457B3F2F-ABC8-49A4-954D-CF1A41F2FAD8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CB8D1469-ACB1-4735-A3C8-DA8F4221D2E4}

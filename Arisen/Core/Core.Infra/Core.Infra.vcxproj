@@ -28,19 +28,21 @@
     <ClInclude Include="RHI\DeviceLimits.h" />
     <ClInclude Include="RHI\Enums\Attachment\AttachmentLoadOp.h" />
     <ClInclude Include="RHI\Enums\Attachment\AttachmentStoreOp.h" />
-    <ClInclude Include="RHI\Enums\Attachment\ESampleCountFlagBits.h" />
     <ClInclude Include="RHI\Enums\Image\ColorSpace.h" />
     <ClInclude Include="RHI\Enums\Image\ComponentSwizzle.h" />
     <ClInclude Include="RHI\Enums\Image\CompositeAlphaFlagBits.h" />
-    <ClInclude Include="RHI\Enums\Image\Format.h" />
-    <ClInclude Include="RHI\Enums\Image\ImageAspectFlagBits.h" />
+    <ClInclude Include="RHI\Enums\Image\EFormat.h" />
+    <ClInclude Include="RHI\Enums\Image\EImageTiling.h" />
+    <ClInclude Include="RHI\Enums\Image\EImageType.h" />
+    <ClInclude Include="RHI\Enums\Image\ESampleCountFlagBits.h" />
+    <ClInclude Include="RHI\Enums\Image\EImageAspectFlagBits.h" />
     <ClInclude Include="RHI\Enums\Memory\EBufferCreateFlagBits.h" />
     <ClInclude Include="RHI\Enums\Memory\EBufferUsage.h" />
     <ClInclude Include="RHI\Enums\Memory\EMemoryPropertyFlagBits.h" />
     <ClInclude Include="RHI\Enums\Memory\ImageViewCreateFlagBits.h" />
     <ClInclude Include="RHI\Enums\Memory\ImageViewType.h" />
     <ClInclude Include="RHI\Enums\Memory\MemoryViewType.h" />
-    <ClInclude Include="RHI\Enums\Memory\SharingMode.h" />
+    <ClInclude Include="RHI\Enums\Memory\ESharingMode.h" />
     <ClInclude Include="RHI\Enums\Pipeline\EAccessFlag.h" />
     <ClInclude Include="RHI\Enums\Pipeline\EBlendFactor.h" />
     <ClInclude Include="RHI\Enums\Pipeline\EBlendOp.h" />
@@ -70,7 +72,9 @@
     <ClInclude Include="RHI\Handles\MemoryHandle.h" />
     <ClInclude Include="RHI\Instance.h" />
     <ClInclude Include="Common\PrimitiveTypes.h" />
+    <ClInclude Include="RHI\Memory\BufferImageCopy.h" />
     <ClInclude Include="RHI\Memory\BufferView.h" />
+    <ClInclude Include="RHI\Memory\ImageSubresourceLayers.h" />
     <ClInclude Include="RHI\Memory\ImageView.h" />
     <ClInclude Include="RHI\Memory\DeviceMemory.h" />
     <ClInclude Include="RHI\Memory\MemoryView.h" />
@@ -89,6 +93,9 @@
     <ClInclude Include="RHI\Surfaces\SwapChain.h" />
     <ClInclude Include="RHI\Surfaces\Viewport.h" />
     <ClInclude Include="RHI\Synchronization\RHIFence.h" />
+    <ClInclude Include="RHI\Synchronization\RHIImageMemoryBarrier.h" />
+    <ClInclude Include="RHI\Synchronization\RHIImageSubresourceRange.h" />
+    <ClInclude Include="RHI\Synchronization\RHIMemoryBarrier.h" />
     <ClInclude Include="RHI\Synchronization\RHISemaphore.h" />
     <ClInclude Include="RHI\Synchronization\SynchObject.h" />
     <ClInclude Include="RHI\Synchronization\SynchScope.h" />
@@ -110,7 +117,7 @@
   <ItemGroup>
     <Content Include="RHI\Enums\Attachment\AttachmentDescFlagBits.h" />
     <Content Include="RHI\Enums\Image\EImageLayout.h" />
-    <Content Include="RHI\Enums\Image\ImageUsageFlagBits.h" />
+    <Content Include="RHI\Enums\Image\EImageUsageFlagBits.h" />
     <Content Include="RHI\Enums\Pipeline\EDescriptorType.h" />
     <Content Include="RHI\Enums\Subpass\ESubpassDescFlag.h" />
     <Content Include="RHI\Enums\Swapchain\SurfaceTransformFlagBits.h" />

@@ -1,9 +1,9 @@
 #pragma once
 #include "../../Common/CommandHeaders.h"
 #include "RHI/Enums/Image/ColorSpace.h"
-#include "RHI/Enums/Image/Format.h"
+#include "RHI/Enums/Image/EFormat.h"
 #include "RHI/Enums/Swapchain/PresentMode.h"
-#include "RHI/Enums/Memory/SharingMode.h"
+#include "RHI/Enums/Memory/ESharingMode.h"
 #include "RHI/Synchronization/RHISemaphore.h"
 
 namespace ArisenEngine::RHI
@@ -20,9 +20,9 @@ namespace ArisenEngine::RHI
         UInt32 imageUsageFlagBits { 0 };
         UInt32 queueFamilyIndexCount {2};
         
-        Format colorFormat { FORMAT_R8G8B8_SRGB };
+        EFormat colorFormat { FORMAT_R8G8B8_SRGB };
         ColorSpace colorSpace { COLOR_SPACE_SRGB_NONLINEAR };
-        SharingMode sharingMode { SHARING_MODE_CONCURRENT };
+        ESharingMode sharingMode { SHARING_MODE_CONCURRENT };
         PresentMode presentMode { PRESENT_MODE_FIFO };
         
         bool clipped { true };
@@ -89,7 +89,7 @@ namespace ArisenEngine::RHI
             RecreateSwapChainIfNeeded();
         }
         
-        void SetImageFormat(Format format)
+        void SetImageFormat(EFormat format)
         {
             if (format == m_Desc.colorFormat)
             {
@@ -127,7 +127,7 @@ namespace ArisenEngine::RHI
             return m_Desc.imageUsageFlagBits;
         }
 
-        void SetSharingMode(SharingMode mode)
+        void SetSharingMode(ESharingMode mode)
         {
             if (mode == m_Desc.sharingMode)
             {

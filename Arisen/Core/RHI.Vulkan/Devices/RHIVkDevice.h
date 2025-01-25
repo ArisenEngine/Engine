@@ -39,8 +39,11 @@ namespace ArisenEngine::RHI
         std::shared_ptr<FrameBuffer> GetFrameBuffer() override;
         void ReleaseFrameBuffer(std::shared_ptr<FrameBuffer> frameBuffer) override;
 
-        std::shared_ptr<BufferHandle> GetBufferHandle(const std::string&& name) override;
+        std::shared_ptr<BufferHandle> GetBufferHandle(const std::string&& name = "Anonymous") override;
         void ReleaseBufferHandle(std::shared_ptr<BufferHandle> bufferHandle) override;
+       
+        std::shared_ptr<ImageHandle> GetImageHandle(const std::string && name = "Anonymous") override;
+        void ReleaseImageHandle(std::shared_ptr<ImageHandle> imageHandle) override;
 
         GPUPipelineManager* GetGPUPipelineManager() const override
         {
@@ -71,6 +74,7 @@ namespace ArisenEngine::RHI
         Containers::Vector<std::shared_ptr<GPURenderPass>> m_RenderPasses;
         Containers::Vector<std::shared_ptr<FrameBuffer>> m_FrameBuffers;
         Containers::Vector<std::shared_ptr<BufferHandle>> m_BufferHandles;
+        Containers::Vector<std::shared_ptr<ImageHandle>> m_ImageHandles;
 
     };
 }

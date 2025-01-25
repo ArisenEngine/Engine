@@ -129,6 +129,28 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseBufferHandle(std::shared_ptr<BufferH
    throw;
 }
 
+std::shared_ptr<ArisenEngine::RHI::ImageHandle> ArisenEngine::RHI::RHIVkDevice::GetImageHandle(const std::string&& name)
+{
+    std::shared_ptr<ImageHandle> imageHandle;
+    if (m_ImageHandles.size() > 0)
+    {
+        imageHandle = m_ImageHandles.back();
+        m_ImageHandles.pop_back();
+    }
+    else
+    {
+        imageHandle = std::make_shared<RHIVkImageHandle>(this);
+    }
+
+    imageHandle->SetName(std::move(name));
+    return imageHandle;
+}
+
+void ArisenEngine::RHI::RHIVkDevice::ReleaseImageHandle(std::shared_ptr<ImageHandle> imageHandle)
+{
+    throw;
+}
+
 
 // TODO: move submit info to CommandBuffer
 

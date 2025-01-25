@@ -3,7 +3,7 @@
 namespace ArisenEngine::RHI
 {
     /// value is from Vulkan
-    typedef enum Format
+    typedef enum EFormat
     {
         FORMAT_UNDEFINED = 0,
         FORMAT_R4G4_UNORM_PACK8 = 1,
@@ -276,5 +276,5 @@ namespace ArisenEngine::RHI
         FORMAT_A4R4G4B4_UNORM_PACK16_EXT = FORMAT_A4R4G4B4_UNORM_PACK16,
         FORMAT_A4B4G4R4_UNORM_PACK16_EXT = FORMAT_A4B4G4R4_UNORM_PACK16,
         FORMAT_MAX_ENUM = 0x7FFFFFFF
-    } Format;
+    } EFormat;
 }

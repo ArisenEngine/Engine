@@ -25,7 +25,7 @@ void* ArisenEngine::RHI::RHIVkGPURenderPass::GetHandle(UInt32 frameIndex)
     return m_VkRenderPasses[frameIndex % m_MaxFramesInFlight];
 }
 
-void ArisenEngine::RHI::RHIVkGPURenderPass::AddAttachmentAction(Format format, ESampleCountFlagBits sample,
+void ArisenEngine::RHI::RHIVkGPURenderPass::AddAttachmentAction(EFormat format, ESampleCountFlagBits sample,
                                                                 AttachmentLoadOp colorLoadOp, AttachmentStoreOp colorStoreOp, AttachmentLoadOp stencilLoadOp,
                                                                 AttachmentStoreOp stencilStoreOp, EImageLayout initialLayout, EImageLayout finalLayout)
 {

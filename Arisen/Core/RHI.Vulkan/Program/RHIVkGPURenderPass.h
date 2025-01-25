@@ -5,8 +5,8 @@
 #include "Logger/Logger.h"
 #include "RHI/Enums/Attachment/AttachmentLoadOp.h"
 #include "RHI/Enums/Attachment/AttachmentStoreOp.h"
-#include "RHI/Enums/Attachment/ESampleCountFlagBits.h"
-#include "RHI/Enums/Image/Format.h"
+#include "RHI/Enums/Image/ESampleCountFlagBits.h"
+#include "RHI/Enums/Image/EFormat.h"
 #include "RHI/Enums/Image/EImageLayout.h"
 #include "RHI/Program/GPURenderPass.h"
 
@@ -22,7 +22,7 @@ namespace ArisenEngine::RHI
         void* GetHandle(UInt32 frameIndex) override;
 
         void AddAttachmentAction(
-            Format format,
+            EFormat format,
             ESampleCountFlagBits sample,
             AttachmentLoadOp colorLoadOp, AttachmentStoreOp colorStoreOp,
             AttachmentLoadOp stencilLoadOp, AttachmentStoreOp stencilStoreOp,

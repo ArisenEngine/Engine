@@ -102,7 +102,7 @@ ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkGPUPipelineStateObject::GetVertexIn
 }
 
 void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddVertexInputAttributeDescription(UInt32 location, UInt32 binding,
-    Format format, UInt32 offset)
+    EFormat format, UInt32 offset)
 {
     m_VertexInputAttributeDescriptions.emplace_back(VkVertexInputAttributeDescription{location, binding, static_cast<VkFormat>(format), offset});
 }

@@ -35,7 +35,7 @@ namespace ArisenEngine::RHI
         }
 
         // Vertex
-        void AddVertexInputAttributeDescription(UInt32 location, UInt32 binding, Format format, UInt32 offset) override;
+        void AddVertexInputAttributeDescription(UInt32 location, UInt32 binding, EFormat format, UInt32 offset) override;
         UInt32 GetVertexInputAttributeDescriptionCount() override;
         void* GetVertexInputAttributeDescriptions() override;
         void ClearVertexBindingDescriptions() override;

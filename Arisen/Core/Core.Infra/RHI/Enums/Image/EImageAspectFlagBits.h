@@ -2,7 +2,7 @@
 
 namespace ArisenEngine::RHI
 {
-    typedef enum ImageAspectFlagBits {
+    typedef enum EImageAspectFlagBits {
         IMAGE_ASPECT_COLOR_BIT = 0x00000001,
         IMAGE_ASPECT_DEPTH_BIT = 0x00000002,
         IMAGE_ASPECT_STENCIL_BIT = 0x00000004,
@@ -20,5 +20,5 @@ namespace ArisenEngine::RHI
         IMAGE_ASPECT_PLANE_2_BIT_KHR = IMAGE_ASPECT_PLANE_2_BIT,
         IMAGE_ASPECT_NONE_KHR = IMAGE_ASPECT_NONE,
         IMAGE_ASPECT_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
-    } ImageAspectFlagBits;
+    } EImageAspectFlagBits;
 }

@@ -2,7 +2,8 @@
 
 namespace ArisenEngine::RHI
 {
-typedef enum ImageUsageFlagBits {
+typedef enum EImageUsageFlagBits
+{
     IMAGE_USAGE_TRANSFER_SRC_BIT = 0x00000001,
     IMAGE_USAGE_TRANSFER_DST_BIT = 0x00000002,
     IMAGE_USAGE_SAMPLED_BIT = 0x00000004,
@@ -26,6 +27,7 @@ typedef enum ImageUsageFlagBits {
     IMAGE_USAGE_SAMPLE_BLOCK_MATCH_BIT_QCOM = 0x00200000,
     IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV = IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT,
     IMAGE_USAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
-} ImageUsageFlagBits;
+} EImageUsageFlagBits;
+    
 }
 

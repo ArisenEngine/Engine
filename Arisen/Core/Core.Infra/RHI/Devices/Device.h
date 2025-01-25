@@ -8,6 +8,7 @@
 namespace ArisenEngine::RHI
 {
     class BufferHandle;
+    class ImageHandle;
 }
 
 namespace ArisenEngine::RHI
@@ -24,6 +25,7 @@ namespace ArisenEngine::RHI
     class RHICommandBufferPool;
     class GPURenderPass;
     class FrameBuffer;
+    
     
     class Device
     {
@@ -55,6 +57,9 @@ namespace ArisenEngine::RHI
 
         virtual std::shared_ptr<BufferHandle> GetBufferHandle(const std::string && name = "Anonymous") = 0;
         virtual void ReleaseBufferHandle(std::shared_ptr<BufferHandle> bufferHandle) = 0;
+
+        virtual std::shared_ptr<ImageHandle> GetImageHandle(const std::string && name = "Anonymous") = 0;
+        virtual void ReleaseImageHandle(std::shared_ptr<ImageHandle> imageHandle) = 0;
 
         virtual GPUPipelineManager* GetGPUPipelineManager() const = 0;
 

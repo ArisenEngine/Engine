@@ -13,11 +13,10 @@ namespace ArisenEngine::RHI
         ~RHIVkBufferHandle() noexcept override;
         void* GetHandle() const override;
 
-        bool AllocBufferHandle(BufferAllocDesc && desc) override;
+        bool AllocBufferHandle(BufferDescriptor && desc) override;
         void FreeBufferHandle() override;
 
-        bool AllocBufferMemory(UInt32 memoryPropertiesBits) override;
-        void FreeBufferMemory() override;
+        bool AllocDeviceMemory(UInt32 memoryPropertiesBits) override;
         void MemoryCopy(void const* src, UInt32 offset) override;
     private:
         

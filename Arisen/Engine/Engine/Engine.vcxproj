@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EngineCommon.h" />
+    <ClInclude Include="Job\EJobType.h" />
     <ClInclude Include="RHI\RHILoader.h" />
   </ItemGroup>
   <ItemGroup>

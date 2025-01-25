@@ -4,6 +4,8 @@
 #include "../Program/RHIVkGPUPipelineStateObject.h"
 #include "RHI/Handles/BufferHandle.h"
 #include "RHI/Synchronization/SynchScope.h"
+#include "../VkInitializer.h"
+#include "RHI/Enums/Subpass/EDependencyFlag.h"
 
 
 ArisenEngine::RHI::RHIVkCommandBuffer::~RHIVkCommandBuffer() noexcept
@@ -203,6 +205,47 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BindDescriptorSets(UInt32 frameIndex
         firstSet, descriptorsets.size(),
        vkDescriptorSets.data(),
         dynamicOffsetCount, pDynamicOffsets);
+}
+
+void ArisenEngine::RHI::RHIVkCommandBuffer::CopyBufferToImage(BufferHandle const * srcBuffer, ImageHandle const * dst,
+            EImageLayout dstImageLayout, Containers::Vector<BufferImageCopy>&& regions)
+{
+    Containers::Vector<VkBufferImageCopy> vkRegionCopies;
+    vkRegionCopies.resize(regions.size());
+    for (UInt32 i = 0; i < regions.size(); ++i)
+    {
+        auto regionInfo = regions[i];
+        vkRegionCopies[i] = BufferImageCopyRegion(regionInfo.bufferOffset,
+        regionInfo.bufferRowLength,
+        regionInfo.bufferImageHeight,
+        regionInfo.imageSubresource,
+    regionInfo.offsetX, regionInfo.offsetY, regionInfo.offsetZ,
+    regionInfo.width, regionInfo.height, regionInfo.depth);
+        
+    }
+    
+    vkCmdCopyBufferToImage(m_VkCommandBuffer,
+        static_cast<VkBuffer>(srcBuffer->GetHandle()), static_cast<VkImage>(dst->GetHandle()),
+        static_cast<VkImageLayout>(dstImageLayout), vkRegionCopies.size(), vkRegionCopies.data()
+        );
+    
+}
+
+void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(
+    EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, EDependencyFlagBits dependency, )
+{
+    vkCmdPipelineBarrier(
+        m_VkCommandBuffer,
+        static_cast<VkPipelineStageFlags>(srcStage),
+        static_cast<VkPipelineStageFlags>(dstStage),
+        static_cast<VkDependencyFlags>(dependency),
+        uint32_t                                    memoryBarrierCount,
+   const VkMemoryBarrier*                      pMemoryBarriers,
+   uint32_t                                    bufferMemoryBarrierCount,
+   const VkBufferMemoryBarrier*                pBufferMemoryBarriers,
+   uint32_t                                    imageMemoryBarrierCount,
+   const VkImageMemoryBarrier*                 pImageMemoryBarriers
+        );
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding)

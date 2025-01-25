@@ -34,7 +34,7 @@ namespace ArisenEngine::RHI
         virtual void* GetHandle(UInt32 currentFrameIndex) = 0;
         const RenderArea GetRenderArea() const { return m_RenderArea; }
         virtual void SetAttachment(UInt32 frameIndex, ImageView* imageView, GPURenderPass* renderPass) = 0;
-        virtual Format GetAttachFormat() = 0;
+        virtual EFormat GetAttachFormat() = 0;
     protected:
         RenderArea m_RenderArea;
         UInt32 m_MaxFramesInFlight;
