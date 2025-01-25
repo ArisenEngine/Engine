@@ -55,6 +55,25 @@ Logger::Logger(): m_IsInitialize(false), m_LogCallback(nullptr)
 	std::cout<<"Logger:"<<this<<std::endl;
 }
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <pthread.h>
+#endif
+
+void set_thread_affinity(int core_id) {
+#ifdef _WIN32
+	HANDLE thread = GetCurrentThread();
+	DWORD_PTR mask = 1ULL << core_id;
+	SetThreadAffinityMask(thread, mask);
+#else
+	cpu_set_t cpuset;
+	CPU_ZERO(&cpuset);
+	CPU_SET(core_id, &cpuset);
+	pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+#endif
+}
+
 
 bool Logger::Initialize()
 {
@@ -62,10 +81,16 @@ bool Logger::Initialize()
 
 	try
 	{
+		// 初始化一个容量为 8192、单线程的日志线程池
+		constexpr size_t queue_size = 8192;
+		constexpr size_t num_threads = 1;  // 固定为单线程
+		auto thread_pool = std::make_shared<spdlog::details::thread_pool>(queue_size, num_threads);
+
+		
 		// init spdlog
 		auto async_file =
 			spdlog::basic_logger_mt<spdlog::async_factory>("log", "logs/log.log", true);
-
+		
 		spdlog::set_default_logger(async_file);
 	
 		// Flush all *registered* loggers using a worker thread every 3 seconds.
