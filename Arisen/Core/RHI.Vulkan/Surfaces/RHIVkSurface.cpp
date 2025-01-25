@@ -3,7 +3,7 @@
 #include "../RHIVkInstance.h"
 #include "Logger/Logger.h"
 #include "RHI/Enums/Image/CompositeAlphaFlagBits.h"
-#include "RHI/Enums/Image/ImageUsageFlagBits.h"
+#include "RHI/Enums/Image/EImageUsageFlagBits.h"
 #include "Windows/Platform.h"
 #include "Windows/RenderWindowAPI.h"
 
@@ -62,7 +62,7 @@ void RHI::RHIVkSurface::InitSwapChain()
     height = std::clamp(height, m_SwapChainSupportDetail.capabilities.minImageExtent.height, m_SwapChainSupportDetail.capabilities.maxImageExtent.height);
 
     UInt32 queueFamilyIndexCount;
-    SharingMode sharingMode;
+    ESharingMode sharingMode;
     if (m_QueueFamilyIndices.graphicsFamily != m_QueueFamilyIndices.presentFamily)
     {
         sharingMode = SHARING_MODE_CONCURRENT;
@@ -80,7 +80,7 @@ void RHI::RHIVkSurface::InitSwapChain()
     desc.imageArrayLayers = 1;
     desc.imageUsageFlagBits = IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     desc.queueFamilyIndexCount = queueFamilyIndexCount;
-    desc.colorFormat = static_cast<Format>(formats.format);
+    desc.colorFormat = static_cast<EFormat>(formats.format);
     desc.colorSpace = static_cast<ColorSpace>(formats.colorSpace);
     desc.sharingMode = sharingMode;
     desc.presentMode = static_cast<PresentMode>(presentMode);

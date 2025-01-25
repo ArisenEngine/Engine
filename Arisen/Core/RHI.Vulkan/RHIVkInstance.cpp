@@ -480,7 +480,7 @@ ArisenEngine::RHI::Device* ArisenEngine::RHI::RHIVkInstance::GetLogicalDevice(UI
     return m_LogicalDevices[windowId].get();
 }
 
-const ArisenEngine::RHI::Format ArisenEngine::RHI::RHIVkInstance::GetSuitableSwapChainFormat(UInt32&& windowId)
+const ArisenEngine::RHI::EFormat ArisenEngine::RHI::RHIVkInstance::GetSuitableSwapChainFormat(UInt32&& windowId)
 {
     return FORMAT_R8G8B8_SRGB;
 }

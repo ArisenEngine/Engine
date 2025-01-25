@@ -9,6 +9,7 @@
 #include "RHI/Enums/Pipeline/EPipelineStageFlag.h"
 #include "RHI/Enums/Subpass/ESubpassContents.h"
 #include "RHI/Handles/BufferHandle.h"
+#include "RHI/Memory/BufferImageCopy.h"
 
 namespace ArisenEngine::RHI
 {
@@ -103,6 +104,11 @@ namespace ArisenEngine::RHI
         virtual void BindDescriptorSets(UInt32 frameIndex, EPipelineBindPoint bindPoint,
     UInt32 firstSet, Containers::Vector<std::shared_ptr<RHIDescriptorSet>>& descriptorsets, UInt32 dynamicOffsetCount, const UInt32* pDynamicOffsets) = 0;
         virtual void WaitForFence(UInt32 frameIndex) = 0;
+
+        virtual void CopyBufferToImage(BufferHandle const * srcBuffer, ImageHandle const * dst,
+            EImageLayout dstImageLayout, Containers::Vector<BufferImageCopy>&& regions) = 0;
+        virtual void PipelineBarrier() = 0;
+        
     public:
 
         const bool ReadyForSubmit() const;

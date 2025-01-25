@@ -15,7 +15,7 @@ namespace ArisenEngine::RHI
 
         void* GetHandle(UInt32 currentFrameIndex) override;
         void SetAttachment(UInt32 frameIndex, ImageView* imageView, GPURenderPass* renderPass) override;
-        Format GetAttachFormat() override;
+        EFormat GetAttachFormat() override;
     private:
         void FreeFrameBuffer(UInt32 currentFrameIndex);
         void FreeAllFrameBuffers();

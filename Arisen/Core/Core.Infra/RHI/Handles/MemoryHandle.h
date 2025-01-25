@@ -29,6 +29,10 @@ namespace ArisenEngine::RHI
         }
         
         virtual void* GetHandle() const = 0;
+
+        virtual bool AllocDeviceMemory(UInt32 memoryPropertiesBits) = 0;
+    
+    public:
         
         MemoryView* GetMemoryView() const { return m_MemoryView; }
         DeviceMemory* GetDeviceMemory() const { return  m_DeviceMemory; }
@@ -41,6 +45,12 @@ namespace ArisenEngine::RHI
         void SetName(const std::string&& name)
         {
             m_Name = name;
+        }
+        
+        void FreeDeviceMemory() const
+        {
+            ASSERT(m_DeviceMemory != nullptr);
+            m_DeviceMemory->FreeDeviceMemory();
         }
         
     protected:

@@ -50,7 +50,7 @@ void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachment(UInt32 frameIndex, Image
     m_RenderArea.offsetY = 0;
 }
 
-ArisenEngine::RHI::Format ArisenEngine::RHI::RHIVkFrameBuffer::GetAttachFormat()
+ArisenEngine::RHI::EFormat ArisenEngine::RHI::RHIVkFrameBuffer::GetAttachFormat()
 {
     ASSERT(m_ImageView != nullptr);
     return m_ImageView->GetFormat();

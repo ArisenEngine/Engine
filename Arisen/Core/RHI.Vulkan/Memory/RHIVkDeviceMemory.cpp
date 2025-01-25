@@ -9,6 +9,11 @@ m_VkDeviceMemory(VK_NULL_HANDLE), m_Device(device), m_VkBuffer(buffer)
             
 }
 
+ArisenEngine::RHI::RHIVkDeviceMemory::RHIVkDeviceMemory(Device* device, VkImage image):
+m_VkDeviceMemory(VK_NULL_HANDLE), m_Device(device), m_VkImage(image)
+{
+}
+
 ArisenEngine::RHI::RHIVkDeviceMemory::~RHIVkDeviceMemory() noexcept
 {
     LOG_DEBUG("RHIVkDeviceMemory::~RHIVkDeviceMemory");
@@ -17,27 +22,48 @@ ArisenEngine::RHI::RHIVkDeviceMemory::~RHIVkDeviceMemory() noexcept
 
 bool ArisenEngine::RHI::RHIVkDeviceMemory::AllocDeviceMemory(UInt32 memoryPropertiesBits)
 {
+    ASSERT((m_VkBuffer.has_value() && !m_VkImage.has_value()) || (!m_VkBuffer.has_value() && m_VkImage.has_value()));
+    
     VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(static_cast<VkDevice>(m_Device->GetHandle()), m_VkBuffer, &memRequirements);
+    VkDevice vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
+    
+    if (m_VkBuffer.has_value())
+    {
+        vkGetBufferMemoryRequirements(vkDevice, m_VkBuffer.value(), &memRequirements);
+    }
+    else if (m_VkImage.has_value())
+    {
+        vkGetImageMemoryRequirements(vkDevice, m_VkImage.value(), &memRequirements);
+    }
+    else
+    {
+        LOG_FATAL_AND_THROW("[RHIVkDeviceMemory::AllocDeviceMemory]: Failed to get memory requirements");
+    }
+    
     m_TotalBytes = memRequirements.size;
     m_Alignment = memRequirements.alignment;
     m_MemoryTypeBits = memRequirements.memoryTypeBits;
 
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = m_Device->FindMemoryType(memRequirements.memoryTypeBits, memoryPropertiesBits);
-    if (vkAllocateMemory(static_cast<VkDevice>(m_Device->GetHandle()), &allocInfo, nullptr, &m_VkDeviceMemory) != VK_SUCCESS)
-    {
-        LOG_FATAL_AND_THROW("[RHIVkDeviceMemory::AllocDeviceMemory]: failed to allocate vertex buffer memory!");
-    }
+    AllocMemory(std::move(memRequirements), memoryPropertiesBits);
 
-    vkBindBufferMemory(static_cast<VkDevice>(m_Device->GetHandle()), m_VkBuffer, m_VkDeviceMemory, 0);
+    if (m_VkBuffer.has_value())
+    {
+        vkBindBufferMemory(vkDevice, m_VkBuffer.value(), m_VkDeviceMemory, 0);
+    }
+    else if (m_VkImage.has_value())
+    {
+        vkBindImageMemory(vkDevice, m_VkImage.value(), m_VkDeviceMemory, 0);
+    }
+    else
+    {
+        LOG_FATAL_AND_THROW("[RHIVkDeviceMemory::AllocDeviceMemory]: Failed to bind memory.");
+    }
     
     return true;
 }
 
-bool ArisenEngine::RHI::RHIVkDeviceMemory::AllocDeviceMemory(UInt32 memoryPropertiesBits, Containers::Vector<BufferHandle*> handles)
+bool ArisenEngine::RHI::RHIVkDeviceMemory::AllocDeviceMemory(UInt32 memoryPropertiesBits,
+    Containers::Vector<BufferHandle*> handles)
 {
     // TODO : support multiple handles binding to same device memory
     throw;
@@ -62,4 +88,17 @@ void ArisenEngine::RHI::RHIVkDeviceMemory::MemoryCopy(void const* src, const UIn
     vkMapMemory(static_cast<VkDevice>(m_Device->GetHandle()), m_VkDeviceMemory, offset, size, 0, &data);
     memcpy(data, src, size);
     vkUnmapMemory(static_cast<VkDevice>(m_Device->GetHandle()), m_VkDeviceMemory);
+}
+
+void ArisenEngine::RHI::RHIVkDeviceMemory::AllocMemory(VkMemoryRequirements&& memRequirements, UInt32 memoryPropertiesBits)
+{
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = m_Device->FindMemoryType(memRequirements.memoryTypeBits, memoryPropertiesBits);
+    if (vkAllocateMemory(static_cast<VkDevice>(m_Device->GetHandle()),
+        &allocInfo, nullptr, &m_VkDeviceMemory) != VK_SUCCESS)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkDeviceMemory::AllocDeviceMemory]: failed to allocate vertex buffer memory!");
+    }
 }

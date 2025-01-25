@@ -12,7 +12,7 @@ namespace ArisenEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkSwapChain)
-        RHIVkSwapChain(const Device* device, const RHIVkSurface* surface, UInt32 maxFramesInFlight);
+        RHIVkSwapChain(Device* device, const RHIVkSurface* surface, UInt32 maxFramesInFlight);
         ~RHIVkSwapChain() noexcept override;
         void* GetHandle() const override { return m_VkSwapChain; };
         void CreateSwapChainWithDesc(SwapChainDescriptor desc) override;
@@ -27,7 +27,7 @@ namespace ArisenEngine::RHI
     private:
         
         VkSwapchainKHR m_VkSwapChain { VK_NULL_HANDLE };
-        const Device* m_Device;
+        Device* m_Device;
         VkDevice m_VkDevice;
         VkSurfaceKHR m_VkSurface;
         const RHIVkSurface* m_Surface;

@@ -1,8 +1,8 @@
 ﻿#pragma once
 #include "RHIDescriptorUpdateInfo.h"
 #include "../../Common/CommandHeaders.h"
-#include "RHI/Enums/Attachment/ESampleCountFlagBits.h"
-#include "RHI/Enums/Image/Format.h"
+#include "RHI/Enums/Image/ESampleCountFlagBits.h"
+#include "RHI/Enums/Image/EFormat.h"
 #include "RHI/Enums/Pipeline/EBlendFactor.h"
 #include "RHI/Enums/Pipeline/EBlendOp.h"
 #include "RHI/Enums/Pipeline/ECullMode.h"
@@ -34,7 +34,7 @@ namespace ArisenEngine::RHI
 
         virtual void Clear() = 0;
         
-        virtual void AddVertexInputAttributeDescription(UInt32 location, UInt32 binding, Format format, UInt32 offset) = 0;
+        virtual void AddVertexInputAttributeDescription(UInt32 location, UInt32 binding, EFormat format, UInt32 offset) = 0;
         virtual UInt32 GetVertexInputAttributeDescriptionCount() = 0;
         virtual void* GetVertexInputAttributeDescriptions() = 0;
         virtual void ClearVertexInputAttributeDescriptions() = 0;

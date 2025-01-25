@@ -1,5 +1,12 @@
 #pragma once
+#include <format>
 #include <vulkan/vulkan.h>
+#include "RHI/Enums/Pipeline/EDescriptorType.h"
+#include "RHI/Enums/Image/EImageTiling.h"
+#include "RHI/Enums/Image/EImageType.h"
+#include "RHI/Enums/Image/EImageUsageFlagBits.h"
+#include "RHI/Memory/ImageSubresourceLayers.h"
+
 namespace ArisenEngine::RHI
 {
     /// 
@@ -104,5 +111,85 @@ namespace ArisenEngine::RHI
             range
         };
         return descriptorBufferInfo;
+    }
+
+    inline VkBufferCreateInfo BufferCreateInfo(
+        UInt32 createFlagBits,
+        UInt64 size, 
+        UInt32 usage,
+        ESharingMode sharingMode,
+        UInt32 queueFamilyIndexCount,
+        const void* pQueueFamilyIndices)
+    {
+        VkBufferCreateInfo bufferInfo{};
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferInfo.flags = createFlagBits;
+        bufferInfo.size = size;
+        bufferInfo.usage = static_cast<VkBufferUsageFlags>(usage);
+        bufferInfo.sharingMode = static_cast<VkSharingMode>(sharingMode);
+
+        if (sharingMode == SHARING_MODE_CONCURRENT)
+        {
+            bufferInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndexCount);
+            bufferInfo.pQueueFamilyIndices = static_cast<const uint32_t*>(pQueueFamilyIndices);
+        }
+
+        return bufferInfo;
+    }
+
+    inline VkImageCreateInfo ImageCreateInfo(
+        EImageType imageType,
+        UInt32 width, UInt32 height, UInt32 depth, UInt32 mipLevels, UInt32 arrayLayers,
+        EFormat format, EImageTiling tiling, EImageLayout initialLayout, UInt32 usage,
+        ESampleCountFlagBits sampleCount, ESharingMode sharingMode,
+        UInt32 queueFamilyIndexCount,
+        const void* pQueueFamilyIndices)
+    {
+        VkImageCreateInfo imageInfo{};
+        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageInfo.imageType = static_cast<VkImageType>(imageType);
+        imageInfo.extent.width = width;
+        imageInfo.extent.height = height;
+        imageInfo.extent.depth = depth;
+        imageInfo.mipLevels = mipLevels;
+        imageInfo.arrayLayers = arrayLayers;
+        imageInfo.format = static_cast<VkFormat>(format);
+        imageInfo.tiling = static_cast<VkImageTiling>(tiling);
+        imageInfo.initialLayout = static_cast<VkImageLayout>(initialLayout);
+        imageInfo.usage = static_cast<VkImageUsageFlags>(usage);
+        imageInfo.samples = static_cast<VkSampleCountFlagBits>(sampleCount);
+        imageInfo.sharingMode = static_cast<VkSharingMode>(sharingMode);
+
+        if (sharingMode == RHI::SHARING_MODE_CONCURRENT)
+        {
+            imageInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndexCount);
+            imageInfo.pQueueFamilyIndices = static_cast<const uint32_t*>(pQueueFamilyIndices);
+        }
+        
+        return imageInfo;
+    }
+
+    inline VkBufferImageCopy BufferImageCopyRegion(
+        UInt64 bufferOffset,
+        UInt32 bufferRowLength,
+        UInt32 bufferImageHeight,
+        ImageSubresourceLayers imageSubresource,
+    SInt32 offsetX, SInt32 offsetY, SInt32 offsetZ,
+    UInt32 width, UInt32 height, UInt32 depth)
+    {
+        VkBufferImageCopy imageCopy{};
+        imageCopy.bufferOffset = static_cast<VkDeviceSize>(bufferOffset);
+        imageCopy.bufferRowLength = static_cast<uint32_t>(bufferRowLength);
+        imageCopy.bufferImageHeight = static_cast<uint32_t>(bufferImageHeight);
+        imageCopy.imageSubresource = {
+            static_cast<VkImageAspectFlags>(imageSubresource.aspectMask),
+            imageSubresource.mipLevel,
+            imageSubresource.baseArrayLayer,
+            imageSubresource.layerCount
+        };
+        imageCopy.imageOffset = { offsetX, offsetY, offsetZ};
+        imageCopy.imageExtent = { width, height, depth};
+        
+        return imageCopy;
     }
 }

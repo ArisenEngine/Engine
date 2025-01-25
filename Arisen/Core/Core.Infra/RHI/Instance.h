@@ -3,7 +3,7 @@
 #include "../Common/CommandHeaders.h"
 #include "../Common/PrimitiveTypes.h"
 #include "Devices/Device.h"
-#include "Enums/Image/Format.h"
+#include "Enums/Image/EFormat.h"
 #include "Enums/Swapchain/PresentMode.h"
 
 
@@ -52,7 +52,7 @@ namespace ArisenEngine::RHI
         virtual bool IsSupportLinearColorSpace(UInt32&& windowId) = 0;
         virtual bool PresentModeSupported(UInt32&& windowId, PresentMode mode) = 0;
         virtual void SetCurrentPresentMode(UInt32&& windowId, PresentMode mode) = 0;
-        virtual const Format GetSuitableSwapChainFormat(UInt32&& windowId) = 0;
+        virtual const EFormat GetSuitableSwapChainFormat(UInt32&& windowId) = 0;
         virtual const PresentMode GetSuitablePresentMode(UInt32&& windowId) = 0;
         
         /// \brief used for DXC args

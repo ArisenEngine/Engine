@@ -22,6 +22,9 @@
 #include <chrono>
 #include "RHI/Handles/BufferHandle.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 using namespace ArisenEngine;
 
 #ifdef TEST_WINDOWS
@@ -37,7 +40,7 @@ struct RenderContext
     std::shared_ptr<RHI::BufferHandle> vertexBufferHandle;
     std::shared_ptr<RHI::BufferHandle> indicesBufferHandle;
     Containers::Vector<std::shared_ptr<RHI::BufferHandle>> uniformBuffers;
-     
+    std::shared_ptr<RHI::ImageHandle> textureHandle;
     RHI::RHICommandBufferPool* commandPool;
     Containers::Vector<UInt32> gpuPrograms;
     Containers::Vector<UInt32> descriptorPoolIds;
@@ -134,17 +137,8 @@ public:
         // });
     }
 
-    bool Initialize() override
+    void CreateRenderWindow()
     {
-        if (!ArisenEngine::Debugger::Logger::GetInstance().Initialize())
-        {
-            throw std::exception(" Logger initialize failed.");
-        }
-
-        // Debugger::Logger::GetInstance().SetServerityLevel(Debugger::Logger::LogLevel::Log);
-        
-        LOG_INFO("Logger initialized..");
-
         g_RenderContexts.resize(k_WindowsCount);
 
         for (int i = 0; i < k_WindowsCount; ++i)
@@ -156,27 +150,27 @@ public:
                 640, 480
             };
         }
+    }
 
-        // auto window2 = Platforms::CreateRenderWindow(nullptr, WinProc, 400, 680);
-        // auto window3 = Platforms::CreateRenderWindow(nullptr, WinProc, 600, 380);
-
+    void InitRenderHardwareDriver()
+    {
         RHI::InstanceInfo app_info
-        {
-            /** app name */
-            " Engine Test",
-            /** engine name */
-            "Engine Test",
-            /** enable validation layer */
-            true,
-            /** API Version */
-            0, 1, 3, 0,
-            /** App Version */
-            1, 0, 0,
-            /** App Version */
-            1, 0, 0,
-            /* Max Frames in Flight */
-            2
-        };
+       {
+           /** app name */
+           " Engine Test",
+           /** engine name */
+           "Engine Test",
+           /** enable validation layer */
+           true,
+           /** API Version */
+           0, 1, 3, 0,
+           /** App Version */
+           1, 0, 0,
+           /** App Version */
+           1, 0, 0,
+           /* Max Frames in Flight */
+           2
+       };
 
         Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphsicsAPI::Vulkan);
         m_Instance = Graphics::RHILoader::CreateInstance(std::move(app_info));
@@ -194,7 +188,11 @@ public:
 
         // init logical devices
         m_Instance->InitLogicDevices();
+        
+    }
 
+    void InitRenderContext()
+    {
         for (int i = 0; i < k_WindowsCount; ++i)
         {
             g_RenderContexts[i].device = m_Instance->GetLogicalDevice(g_RenderContexts[i].windowId);
@@ -204,7 +202,7 @@ public:
             g_RenderContexts[i].frameBuffer = g_RenderContexts[i].device->GetFrameBuffer();
             g_RenderContexts[i].vertexBufferHandle = g_RenderContexts[i].device->GetBufferHandle("Vertex Buffer");
             g_RenderContexts[i].indicesBufferHandle = g_RenderContexts[i].device->GetBufferHandle("Indices Buffer");
-           
+            g_RenderContexts[i].textureHandle = g_RenderContexts[i].device->GetImageHandle("Texture Image");
             for(int frameIndex = 0; frameIndex < m_Instance->GetMaxFramesInFlight(); ++frameIndex)
             {
                 g_RenderContexts[i].descriptorPoolIds.emplace_back(
@@ -216,9 +214,11 @@ public:
                         "Uniform Buffer " + std::to_string(frameIndex)));
             }
         }
+    }
 
-        Platforms::InitDXC();
 
+    void InitShaderProgram()
+    {
         auto shaderFileName = L"UniformBuffers";
         namespace fs = std::filesystem;
         auto currentPath = fs::current_path().generic_wstring() + L"\\Shader";
@@ -296,7 +296,10 @@ public:
             g_RenderContexts[i].device->AttachProgramByteCode(programId, std::move(desc));
             g_RenderContexts[i].gpuPrograms.emplace_back(programId);
         }
+    }
 
+    void InitBuffer()
+    {
         // Init Buffer
         for (int i = 0; i < k_WindowsCount; ++i)
         {
@@ -306,7 +309,7 @@ public:
                 RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT,
                 RHI::SHARING_MODE_EXCLUSIVE
             });
-            g_RenderContexts[i].vertexBufferHandle->AllocBufferMemory(RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            g_RenderContexts[i].vertexBufferHandle->AllocDeviceMemory(RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
             g_RenderContexts[i].indicesBufferHandle->AllocBufferHandle({
                 0,
@@ -314,7 +317,7 @@ public:
                 RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_INDEX_BUFFER_BIT,
                 RHI::SHARING_MODE_EXCLUSIVE
             });
-            g_RenderContexts[i].indicesBufferHandle->AllocBufferMemory(RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            g_RenderContexts[i].indicesBufferHandle->AllocDeviceMemory(RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
             for (const auto& uniformBuffer : g_RenderContexts[i].uniformBuffers)
             {
@@ -324,14 +327,66 @@ public:
                     RHI::BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                     RHI::SHARING_MODE_EXCLUSIVE
                 });
-                uniformBuffer->AllocBufferMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                uniformBuffer->AllocDeviceMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
                 uniformBuffer ->SetBufferOffsetRange(0, sizeof(UniformBufferObject));
             }
             
             UploadVertex(g_RenderContexts[i]);
         }
+    }
+    
+    void CreateImage()
+    {
+        int texWidth, texHeight, texChannels;
+        stbi_uc* pixels = stbi_load("Assets/Arisen.png",
+            &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+        UInt64 imageSize = texWidth * texHeight * 4;
 
-       
+        if (!pixels)
+        {
+            LOG_ERROR("failed to load texture image!");
+        }
+
+        for (int i = 0; i < k_WindowsCount; ++i)
+        {
+            g_RenderContexts[i].textureHandle->AllocHandle(std::move(RHI::ImageDescriptor
+                {
+                    RHI::IMAGE_TYPE_2D, static_cast<UInt32>(texWidth), static_cast<UInt32>(texHeight), 1,
+                    1, 1, RHI::FORMAT_R8G8B8A8_SRGB, RHI::IMAGE_TILING_OPTIMAL,
+                    RHI::IMAGE_LAYOUT_UNDEFINED, RHI::IMAGE_USAGE_SAMPLED_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT,
+                    RHI::SAMPLE_COUNT_1_BIT, RHI::SHARING_MODE_EXCLUSIVE
+            }));
+            g_RenderContexts[i].textureHandle->AllocDeviceMemory(RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            UploadImage(g_RenderContexts[i], imageSize, pixels);
+        }
+        
+    }
+    
+    bool Initialize() override
+    {
+        if (!ArisenEngine::Debugger::Logger::GetInstance().Initialize())
+        {
+            throw std::exception(" Logger initialize failed.");
+        }
+
+        // Debugger::Logger::GetInstance().SetServerityLevel(Debugger::Logger::LogLevel::Log);
+        
+        LOG_INFO("Logger initialized..");
+
+        CreateRenderWindow();
+
+        InitRenderHardwareDriver();
+        
+        InitRenderContext();
+
+        Platforms::InitDXC();
+
+        InitShaderProgram();
+
+        InitBuffer();
+
+        CreateImage();
+        
         return true;
     }
 
@@ -393,7 +448,7 @@ public:
                RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
                RHI::SHARING_MODE_EXCLUSIVE
         });
-        vertexStagingBufferHandle->AllocBufferMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        vertexStagingBufferHandle->AllocDeviceMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
         vertexStagingBufferHandle->MemoryCopy(vertices.data(), 0);
 
         auto indicesStagingBufferHandle = device->GetBufferHandle("Indices Staging Buffer");
@@ -403,7 +458,7 @@ public:
                RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
                RHI::SHARING_MODE_EXCLUSIVE
         });
-        indicesStagingBufferHandle->AllocBufferMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        indicesStagingBufferHandle->AllocDeviceMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
         indicesStagingBufferHandle->MemoryCopy(indices.data(), 0);
 
         auto commandBuffer = context.commandPool->GetCommandBuffer(frameIndex);
@@ -417,6 +472,26 @@ public:
         commandBuffer->End();
         device->Submit(commandBuffer.get(), frameIndex);
         device->GraphicQueueWaitIdle();
+    }
+
+    void UploadImage(RenderContext const& context, UInt64 textureSize, void* data)
+    {
+        auto device = context.device;
+        auto textureStagingBufferHandle = device->GetBufferHandle("Texture Staging Buffer");
+        textureStagingBufferHandle->AllocBufferHandle({
+            0,
+               textureSize,
+               RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
+               RHI::SHARING_MODE_EXCLUSIVE
+        });
+
+        textureStagingBufferHandle->AllocDeviceMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+            RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        textureStagingBufferHandle->MemoryCopy(data, 0);
+
+        auto commandBuffer = context.commandPool->GetCommandBuffer(frameIndex);
+        commandBuffer->Begin(frameIndex, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        
     }
 
     void AddDynamicState(RHI::GPUPipelineStateObject* pipelineState)
@@ -436,8 +511,8 @@ public:
         auto pipelineState = pipelineManager->GetPipelineState();
 
         pipelineState->AddVertexBindingDescription(0, sizeof(Vertex), RHI::VERTEX_INPUT_RATE_VERTEX);
-        pipelineState->AddVertexInputAttributeDescription(0, 0, RHI::Format::FORMAT_R32G32_SFLOAT, offsetof(Vertex, pos));
-        pipelineState->AddVertexInputAttributeDescription(1, 0, RHI::Format::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color));
+        pipelineState->AddVertexInputAttributeDescription(0, 0, RHI::EFormat::FORMAT_R32G32_SFLOAT, offsetof(Vertex, pos));
+        pipelineState->AddVertexInputAttributeDescription(1, 0, RHI::EFormat::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color));
 
         pipelineState->ClearDescriptorSetLayoutBindings();
         pipelineState->AddDescriptorSetLayoutBinding(0, 0, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER,

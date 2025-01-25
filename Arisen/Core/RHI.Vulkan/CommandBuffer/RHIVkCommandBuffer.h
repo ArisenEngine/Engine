@@ -43,9 +43,12 @@ namespace  ArisenEngine::RHI
         void WaitForFence(UInt32 frameIndex) override;
         void BindDescriptorSets(UInt32 frameIndex, EPipelineBindPoint bindPoint,
     UInt32 firstSet, Containers::Vector<std::shared_ptr<RHIDescriptorSet>>& descriptorsets, UInt32 dynamicOffsetCount, const UInt32* pDynamicOffsets) override;
-        
+
+        void CopyBufferToImage(BufferHandle const * srcBuffer, ImageHandle const * dst,
+            EImageLayout dstImageLayout, Containers::Vector<BufferImageCopy>&& regions) override;
+        void PipelineBarrier() override;
     public:
-        
+        // Vulkan only
         const VkSemaphore* GetWaitSemaphores() const;
         UInt32 GetWaitSemaphoresCount() const;
         const VkSemaphore* GetSignalSemaphores() const;

@@ -4,7 +4,7 @@
 #include "RHI/Enums/Attachment/AttachmentLoadOp.h"
 #include "RHI/Enums/Attachment/AttachmentStoreOp.h"
 #include "RHI/Enums/Attachment/ESampleCountFlagBits.h"
-#include "RHI/Enums/Image/Format.h"
+#include "RHI/Enums/Image/EFormat.h"
 #include "RHI/Enums/Image/EImageLayout.h"
 
 namespace ArisenEngine::RHI
@@ -12,7 +12,7 @@ namespace ArisenEngine::RHI
     struct AttachmentDesc
     {
         AttachmentDescriptionFlagBits flag;
-        Format format;
+        EFormat format;
         ESampleCountFlagBits sampleCount;
         AttachmentLoadOp loadOp;
         AttachmentStoreOp storeOp;

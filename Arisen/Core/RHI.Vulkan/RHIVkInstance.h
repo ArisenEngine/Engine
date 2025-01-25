@@ -29,7 +29,7 @@ namespace ArisenEngine::RHI
         bool IsSupportLinearColorSpace(UInt32&& windowId) override;
         bool PresentModeSupported(UInt32&& windowId, PresentMode mode) override;
         void SetCurrentPresentMode(UInt32&& windowId, PresentMode mode) override;
-        const Format GetSuitableSwapChainFormat(UInt32&& windowId) override;
+        const EFormat GetSuitableSwapChainFormat(UInt32&& windowId) override;
         const PresentMode GetSuitablePresentMode(UInt32&& windowId) override;
         
         const std::wstring GetEnvString() const override

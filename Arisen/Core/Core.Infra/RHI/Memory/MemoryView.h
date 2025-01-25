@@ -3,7 +3,7 @@
 #include "RHI/Enums/Memory/ImageViewType.h"
 #include "RHI/Enums/Memory/MemoryViewType.h"
 #include "RHI/Handles/ComponentMapping.h"
-#include "RHI/Enums/Image/Format.h"
+#include "RHI/Enums/Image/EFormat.h"
 
 namespace ArisenEngine::RHI
 {
@@ -11,7 +11,7 @@ namespace ArisenEngine::RHI
     {
         UInt32 createFlags;
         ImageViewType type;
-        Format format;
+        EFormat format;
         ComponentMapping componentMapping;
         UInt32 width;
         UInt32 height;
