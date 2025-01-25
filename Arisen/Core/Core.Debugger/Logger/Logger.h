@@ -80,6 +80,23 @@ namespace ArisenEngine::Debugger
                                  throw std::runtime_error(msg);
 #define LOG_TRACE(msg) ArisenEngine::Debugger::Logger::GetInstance().Trace(std::move(msg));
 
+// #undef LOG_INFO
+// #define LOG_INFO(msg) 
+// // TODO: support formated log
+// // #define LOG_INFO_FORMAT(format,  ...) ArisenEngine::Debugger::Logger::GetInstance().Info(msg);
+// #undef LOG_DEBUG
+// #define LOG_DEBUG(msg)
+// #undef LOG_WARN
+// #define LOG_WARN(msg)
+// #undef LOG_ERROR
+// #define LOG_ERROR(msg)
+// #undef LOG_FATAL
+// #define LOG_FATAL(msg)
+// #undef LOG_FATAL_AND_THROW
+// #define LOG_FATAL_AND_THROW(msg)
+// #undef LOG_TRACE
+// #define LOG_TRACE(msg) 
+
 #include <cstdlib> // for abort()
 
 #undef assert // 确保不会使用默认的 assert 宏
