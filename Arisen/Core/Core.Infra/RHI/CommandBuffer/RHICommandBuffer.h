@@ -7,9 +7,13 @@
 #include "RHI/Enums/Pipeline/EIndexType.h"
 #include "RHI/Enums/Pipeline/EPipelineBindPoint.h"
 #include "RHI/Enums/Pipeline/EPipelineStageFlag.h"
+#include "RHI/Enums/Subpass/EDependencyFlag.h"
 #include "RHI/Enums/Subpass/ESubpassContents.h"
 #include "RHI/Handles/BufferHandle.h"
 #include "RHI/Memory/BufferImageCopy.h"
+#include "RHI/Synchronization/RHIBufferMemoryBarrier.h"
+#include "RHI/Synchronization/RHIImageMemoryBarrier.h"
+#include "RHI/Synchronization/RHIMemoryBarrier.h"
 
 namespace ArisenEngine::RHI
 {
@@ -107,7 +111,10 @@ namespace ArisenEngine::RHI
 
         virtual void CopyBufferToImage(BufferHandle const * srcBuffer, ImageHandle const * dst,
             EImageLayout dstImageLayout, Containers::Vector<BufferImageCopy>&& regions) = 0;
-        virtual void PipelineBarrier() = 0;
+        virtual void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, EDependencyFlagBits dependency,
+    Containers::Vector<RHIMemoryBarrier>&& memoryBarriers,
+    Containers::Vector<RHIImageMemoryBarrier> && imageMemoryBarriers,
+    Containers::Vector<RHIBufferMemoryBarrier> && bufferMemoryBarriers) = 0;
         
     public:
 

@@ -5,8 +5,8 @@ namespace ArisenEngine::RHI
 {
     typedef struct RHIMemoryBarrier
     {
-        EAccessFlagBits srcAccessMask;
-        EAccessFlagBits dstAccessMask;
+        EAccessFlag srcAccessMask;
+        EAccessFlag dstAccessMask;
         
     } RHIMemoryBarrier;
 }

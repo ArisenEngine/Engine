@@ -3,7 +3,7 @@
 #include "RHI/Enums/Attachment/AttachmentDescFlagBits.h"
 #include "RHI/Enums/Attachment/AttachmentLoadOp.h"
 #include "RHI/Enums/Attachment/AttachmentStoreOp.h"
-#include "RHI/Enums/Attachment/ESampleCountFlagBits.h"
+#include "RHI/Enums/Image/ESampleCountFlagBits.h"
 #include "RHI/Enums/Image/EFormat.h"
 #include "RHI/Enums/Image/EImageLayout.h"
 

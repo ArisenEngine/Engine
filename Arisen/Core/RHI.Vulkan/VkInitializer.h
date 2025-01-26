@@ -5,7 +5,10 @@
 #include "RHI/Enums/Image/EImageTiling.h"
 #include "RHI/Enums/Image/EImageType.h"
 #include "RHI/Enums/Image/EImageUsageFlagBits.h"
+#include "RHI/Enums/Pipeline/EAccessFlag.h"
+#include "RHI/Handles/BufferHandle.h"
 #include "RHI/Memory/ImageSubresourceLayers.h"
+#include "RHI/Synchronization/RHIImageSubresourceRange.h"
 
 namespace ArisenEngine::RHI
 {
@@ -191,5 +194,58 @@ namespace ArisenEngine::RHI
         imageCopy.imageExtent = { width, height, depth};
         
         return imageCopy;
+    }
+
+    inline VkMemoryBarrier CreateMemoryBarrier(EAccessFlag srcAccess, EAccessFlag dstAccess)
+    {
+        VkMemoryBarrier barrier;
+        barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+        barrier.srcAccessMask = static_cast<VkAccessFlags>(srcAccess);
+        barrier.dstAccessMask = static_cast<VkAccessFlags>(dstAccess);
+        return barrier;
+    }
+
+    inline VkBufferMemoryBarrier BufferMemoryBarrier(
+        EAccessFlag srcAccess, EAccessFlag dstAccess,
+        UInt32 srcQueueFamilyIndex, UInt32 dstQueueFamilyIndex, BufferHandle* bufferHandle)
+    {
+        VkBufferMemoryBarrier barrier;
+        barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        barrier.srcAccessMask = static_cast<VkAccessFlags>(srcAccess);
+        barrier.dstAccessMask = static_cast<VkAccessFlags>(dstAccess);
+        barrier.srcQueueFamilyIndex = srcQueueFamilyIndex;
+        barrier.dstQueueFamilyIndex = dstQueueFamilyIndex;
+        barrier.buffer = static_cast<VkBuffer>(bufferHandle->GetHandle());
+        barrier.offset = bufferHandle->Offset();
+        barrier.size = bufferHandle->Range();
+        
+        return barrier;
+    }
+
+    inline VkImageMemoryBarrier ImageMemoryBarrier(
+        EAccessFlag srcAccess, EAccessFlag dstAccess,
+        UInt32 srcQueueFamilyIndex, UInt32 dstQueueFamilyIndex,
+        EImageLayout oldLayout, EImageLayout newLayout, ImageHandle* imageHandle,
+        RHIImageSubresourceRange&& subResourceRange)
+    {
+        VkImageMemoryBarrier barrier;
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.srcAccessMask = static_cast<VkAccessFlags>(srcAccess);
+        barrier.dstAccessMask = static_cast<VkAccessFlags>(dstAccess);
+        barrier.srcQueueFamilyIndex = srcQueueFamilyIndex;
+        barrier.dstQueueFamilyIndex = dstQueueFamilyIndex;
+        barrier.oldLayout = static_cast<VkImageLayout>(oldLayout);
+        barrier.newLayout = static_cast<VkImageLayout>(newLayout);
+        barrier.image = static_cast<VkImage>(imageHandle->GetHandle());
+        barrier.subresourceRange =
+        {
+            static_cast<VkImageAspectFlags>(subResourceRange.aspectMask),
+            subResourceRange.baseMipLevel,
+            subResourceRange.levelCount,
+            subResourceRange.baseArrayLayer,
+            subResourceRange.layerCount
+        };
+        
+        return barrier;
     }
 }

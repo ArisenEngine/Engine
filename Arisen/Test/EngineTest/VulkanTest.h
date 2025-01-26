@@ -556,7 +556,7 @@ public:
                     RHI::EPipelineStageFlag::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                     0,
                     RHI::EPipelineStageFlag::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                    RHI::EAccessFlagBits::ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                    RHI::EAccessFlag::ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                     0
                 );
                 subpass->SetBindPoint(RHI::PIPELINE_BIND_POINT_GRAPHICS);

@@ -6,13 +6,13 @@
 namespace ArisenEngine::RHI
 {
     typedef struct RHIImageMemoryBarrier {
-        EAccessFlagBits              srcAccessMask;
-        EAccessFlagBits              dstAccessMask;
+        EAccessFlag               srcAccess;
+        EAccessFlag               dstAccess;
         EImageLayout              oldLayout;
         EImageLayout              newLayout;
-        UInt32                       srcQueueFamilyIndex;
-        UInt32                      dstQueueFamilyIndex;
-        ImageHandle*               image;
-        RHIImageSubresourceRange    subresourceRange;
+        UInt32                    srcQueueFamilyIndex;
+        UInt32                    dstQueueFamilyIndex;
+        ImageHandle*              image;
+        RHIImageSubresourceRange  subresourceRange;
     } RHIImageMemoryBarrier;
 }
