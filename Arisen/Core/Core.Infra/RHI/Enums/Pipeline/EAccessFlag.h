@@ -3,7 +3,7 @@
 namespace ArisenEngine::RHI
 {
     // can be multiple bits
-    typedef enum EAccessFlagBits {
+    typedef enum EAccessFlag {
         ACCESS_INDIRECT_COMMAND_READ_BIT = 0x00000001,
         ACCESS_INDEX_READ_BIT = 0x00000002,
         ACCESS_VERTEX_ATTRIBUTE_READ_BIT = 0x00000004,
@@ -38,5 +38,5 @@ namespace ArisenEngine::RHI
         ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV = ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
         ACCESS_NONE_KHR = ACCESS_NONE,
         ACCESS_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
-} EAccessFlagBits;
+} EAccessFlag;
 }

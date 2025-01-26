@@ -92,6 +92,7 @@
     <ClInclude Include="RHI\Surfaces\Surface.h" />
     <ClInclude Include="RHI\Surfaces\SwapChain.h" />
     <ClInclude Include="RHI\Surfaces\Viewport.h" />
+    <ClInclude Include="RHI\Synchronization\RHIBufferMemoryBarrier.h" />
     <ClInclude Include="RHI\Synchronization\RHIFence.h" />
     <ClInclude Include="RHI\Synchronization\RHIImageMemoryBarrier.h" />
     <ClInclude Include="RHI\Synchronization\RHIImageSubresourceRange.h" />

@@ -4,6 +4,10 @@
 #include "../Surfaces/RHIVkFrameBuffer.h"
 #include "RHI/CommandBuffer/RHICommandBuffer.h"
 #include "RHI/Enums/Pipeline/EIndexType.h"
+#include "RHI/Enums/Subpass/EDependencyFlag.h"
+#include "RHI/Synchronization/RHIBufferMemoryBarrier.h"
+#include "RHI/Synchronization/RHIImageMemoryBarrier.h"
+#include "RHI/Synchronization/RHIMemoryBarrier.h"
 
 namespace  ArisenEngine::RHI
 {
@@ -46,7 +50,10 @@ namespace  ArisenEngine::RHI
 
         void CopyBufferToImage(BufferHandle const * srcBuffer, ImageHandle const * dst,
             EImageLayout dstImageLayout, Containers::Vector<BufferImageCopy>&& regions) override;
-        void PipelineBarrier() override;
+        void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, EDependencyFlagBits dependency,
+    Containers::Vector<RHIMemoryBarrier>&& memoryBarriers,
+    Containers::Vector<RHIImageMemoryBarrier> && imageMemoryBarriers,
+    Containers::Vector<RHIBufferMemoryBarrier> && bufferMemoryBarriers) override;
     public:
         // Vulkan only
         const VkSemaphore* GetWaitSemaphores() const;
