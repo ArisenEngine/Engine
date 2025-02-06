@@ -9,18 +9,18 @@ namespace ArisenEngine::RHI
 {
     typedef struct ImageViewDesc
     {
-        UInt32 createFlags;
         ImageViewType type;
         EFormat format;
-        ComponentMapping componentMapping;
-        UInt32 width;
-        UInt32 height;
         // subresource
         UInt32 aspectMask;
         UInt32 baseMipLevel;
         UInt32 levelCount;
         UInt32 baseArrayLayer;
         UInt32 layerCount;
+        
+        std::optional<UInt32> width;
+        std::optional<UInt32> height;
+        std::optional<ComponentMapping> componentMapping;
         std::optional<const void*> customData;
     } ImageViewDesc;
 

@@ -111,11 +111,16 @@ namespace ArisenEngine::RHI
 
         virtual void CopyBufferToImage(BufferHandle const * srcBuffer, ImageHandle const * dst,
             EImageLayout dstImageLayout, Containers::Vector<BufferImageCopy>&& regions) = 0;
-        virtual void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, EDependencyFlagBits dependency,
+        virtual void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
     Containers::Vector<RHIMemoryBarrier>&& memoryBarriers,
     Containers::Vector<RHIImageMemoryBarrier> && imageMemoryBarriers,
     Containers::Vector<RHIBufferMemoryBarrier> && bufferMemoryBarriers) = 0;
-        
+        virtual void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
+   Containers::Vector<RHIMemoryBarrier>&& memoryBarriers) = 0;
+        virtual void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
+   Containers::Vector<RHIImageMemoryBarrier> && imageMemoryBarriers) = 0;
+        virtual void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
+    Containers::Vector<RHIBufferMemoryBarrier> && bufferMemoryBarriers) = 0;
     public:
 
         const bool ReadyForSubmit() const;

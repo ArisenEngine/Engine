@@ -85,19 +85,20 @@ void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
         VkImage image = images[i];
         ImageViewDesc desc
         {
-            0,
             IMAGE_VIEW_TYPE_2D,
             m_Desc.colorFormat,
-            {
-                COMPONENT_SWIZZLE_IDENTITY,
-                COMPONENT_SWIZZLE_IDENTITY,
-                COMPONENT_SWIZZLE_IDENTITY,
-                COMPONENT_SWIZZLE_IDENTITY
-            },
-            m_Desc.width, m_Desc.height,
             IMAGE_ASPECT_COLOR_BIT,
-            0,1,0,1
+            0,1,0,1,
         };
+
+        desc.componentMapping.emplace(
+            COMPONENT_SWIZZLE_IDENTITY,
+            COMPONENT_SWIZZLE_IDENTITY,
+            COMPONENT_SWIZZLE_IDENTITY,
+            COMPONENT_SWIZZLE_IDENTITY
+        );
+        desc.width = m_Desc.width;
+        desc.height = m_Desc.height;
         
         m_ImageHandles[i] = std::make_unique<RHIVkImageHandle>(m_Device, image, desc);
     }

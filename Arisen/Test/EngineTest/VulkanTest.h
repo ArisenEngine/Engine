@@ -24,6 +24,7 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "vulkan_core.h"
 
 using namespace ArisenEngine;
 
@@ -357,7 +358,14 @@ public:
                     RHI::SAMPLE_COUNT_1_BIT, RHI::SHARING_MODE_EXCLUSIVE
             }));
             g_RenderContexts[i].textureHandle->AllocDeviceMemory(RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-            UploadImage(g_RenderContexts[i], imageSize, pixels);
+            RHI::ImageViewDesc imageViewDesc {
+                RHI::IMAGE_VIEW_TYPE_2D, RHI::FORMAT_R8G8B8A8_SRGB, RHI::IMAGE_ASPECT_COLOR_BIT,
+                0, 1, 0, 1,
+            };
+            imageViewDesc.width = static_cast<UInt32>(texWidth);
+            imageViewDesc.height = static_cast<UInt32>(texHeight);
+            g_RenderContexts[i].textureHandle->AddImageView(std::move(imageViewDesc));
+            UploadImage(g_RenderContexts[i], imageSize, pixels, texWidth, texHeight);
         }
         
     }
@@ -474,7 +482,7 @@ public:
         device->GraphicQueueWaitIdle();
     }
 
-    void UploadImage(RenderContext const& context, UInt64 textureSize, void* data)
+    void UploadImage(RenderContext const& context, UInt64 textureSize, void* data, UInt32 texWidth, UInt32 texHeight)
     {
         auto device = context.device;
         auto textureStagingBufferHandle = device->GetBufferHandle("Texture Staging Buffer");
@@ -489,9 +497,73 @@ public:
             RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
         textureStagingBufferHandle->MemoryCopy(data, 0);
 
+       
+        // Transfer Undefined to Transfer Dst
         auto commandBuffer = context.commandPool->GetCommandBuffer(frameIndex);
         commandBuffer->Begin(frameIndex, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-        
+        {
+            Containers::Vector<RHI::RHIImageMemoryBarrier> barriers {
+                            {
+                                RHI::ACCESS_NONE,
+                                RHI::ACCESS_TRANSFER_WRITE_BIT,
+                                RHI::IMAGE_LAYOUT_UNDEFINED,
+                                RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                VK_QUEUE_FAMILY_IGNORED,
+                                VK_QUEUE_FAMILY_IGNORED,
+                                context.textureHandle.get(),
+                                {
+                                    RHI::IMAGE_ASPECT_COLOR_BIT,
+                                    0, 1, 0, 1
+                                }
+                            }
+        };
+            commandBuffer->PipelineBarrier(
+                RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT, RHI::PIPELINE_STAGE_TRANSFER_BIT,
+                0,
+                std::move(barriers));
+        } // end of pipeline barrier
+
+        // Copy Buffer To Image
+        {
+            commandBuffer->CopyBufferToImage(
+                textureStagingBufferHandle.get(), context.textureHandle.get(),
+                RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                {
+                       { 0, 0, 0, {
+                           RHI::IMAGE_ASPECT_COLOR_BIT, 0, 0, 1
+                        },
+                        0, 0, 0,
+                        texWidth, texHeight, 1}
+                });
+        } // end of copy buffer to image
+
+        // Transfer Dst to Shader Read Only
+        {
+            Containers::Vector<RHI::RHIImageMemoryBarrier> barriers{
+                    {
+                        RHI::ACCESS_TRANSFER_WRITE_BIT,
+                        RHI::ACCESS_SHADER_READ_BIT,
+                        RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                        RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                        ~0U,
+                        ~0U,
+                        context.textureHandle.get(),
+                        {
+                            RHI::IMAGE_ASPECT_COLOR_BIT,
+                            0, 1, 0, 1
+                        }
+                    }
+            };
+            commandBuffer->PipelineBarrier(
+                RHI::PIPELINE_STAGE_TRANSFER_BIT, RHI::PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                0,
+                std::move(barriers));
+        } // end of pipeline barrier
+
+        commandBuffer->End();
+        device->Submit(commandBuffer.get(), frameIndex);
+        context.commandPool->ReleaseCommandBuffer(frameIndex, commandBuffer);
+        device->GraphicQueueWaitIdle();
     }
 
     void AddDynamicState(RHI::GPUPipelineStateObject* pipelineState)

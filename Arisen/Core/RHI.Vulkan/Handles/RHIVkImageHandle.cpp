@@ -33,12 +33,11 @@ void ArisenEngine::RHI::RHIVkImageHandle::AllocHandle(ImageDescriptor&& desc)
     m_NeedDestroy = true;
 
     VkImageCreateInfo imageInfo = ImageCreateInfo(desc.imageType,
-   desc.width, desc.height, desc.depth, desc.mipLevels, desc.arrayLayers,
-   desc.format, desc.tiling, desc.imageLayout, desc.usage,
-  desc.sampleCount, desc.sharingMode,
-  desc.queueFamilyIndexCount,
-  desc.pQueueFamilyIndices
-        );
+    desc.width, desc.height, desc.depth, desc.mipLevels, desc.arrayLayers,
+    desc.format, desc.tiling, desc.imageLayout, desc.usage,
+    desc.sampleCount, desc.sharingMode,
+    desc.queueFamilyIndexCount,
+    desc.pQueueFamilyIndices);
 
     if (vkCreateImage(m_VKDevice, &imageInfo, nullptr, &m_VkImage) != VK_SUCCESS)
     {
@@ -55,6 +54,18 @@ void ArisenEngine::RHI::RHIVkImageHandle::FreeHandle()
         vkDestroyImage(m_VKDevice, m_VkImage, nullptr);
         LOG_DEBUG("## Destroy Vulkan Image:" + m_Name +" ##")
     }
+}
+
+ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkImageHandle::AddImageView(ImageViewDesc&& desc)
+{
+    if (m_MemoryView != nullptr)
+    {
+        delete m_MemoryView;
+    }
+    
+    m_MemoryView = new RHIVkImageView(desc, m_VKDevice, m_VkImage);
+
+    return 0;
 }
 
 bool ArisenEngine::RHI::RHIVkImageHandle::AllocDeviceMemory(UInt32 memoryPropertiesBits)

@@ -17,6 +17,8 @@ namespace ArisenEngine::RHI
         void AllocHandle(ImageDescriptor&& desc) override;
         void FreeHandle() override;
 
+        UInt32 AddImageView(ImageViewDesc&& desc) override;
+        
         bool AllocDeviceMemory(UInt32 memoryPropertiesBits) override;
     private:
 

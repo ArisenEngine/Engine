@@ -3,7 +3,7 @@ namespace ArisenEngine::RHI
 {
     // can be multiple bits
     typedef enum EDependencyFlagBits
-     {
+     {  
         DEPENDENCY_BY_REGION_BIT = 0x00000001,
         DEPENDENCY_DEVICE_GROUP_BIT = 0x00000004,
         DEPENDENCY_VIEW_LOCAL_BIT = 0x00000002,
