@@ -10,6 +10,8 @@
 #include "RHI/Memory/ImageSubresourceLayers.h"
 #include "RHI/Synchronization/RHIImageSubresourceRange.h"
 
+#define VK_STRUCT_INITIALIZE(type, name) type name ##{##};
+
 namespace ArisenEngine::RHI
 {
     /// 
@@ -22,7 +24,7 @@ namespace ArisenEngine::RHI
     inline VkDescriptorSetLayoutBinding DescriptorSetLayoutBinding(uint32_t binding, VkDescriptorType type,
         uint32_t count, VkShaderStageFlags stage, const VkSampler* pImmutableSamplers)
     {
-        VkDescriptorSetLayoutBinding layoutBinding{};
+        VK_STRUCT_INITIALIZE(VkDescriptorSetLayoutBinding, layoutBinding)
         layoutBinding.binding = binding;
         layoutBinding.descriptorType = type;
         layoutBinding.descriptorCount = count;
@@ -35,7 +37,7 @@ namespace ArisenEngine::RHI
     
     inline VkDescriptorSetLayoutCreateInfo DescriptorSetLayoutCreateInfo(uint32_t bindingCount, const VkDescriptorSetLayoutBinding* pBindings)
     {
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        VK_STRUCT_INITIALIZE(VkDescriptorSetLayoutCreateInfo, layoutInfo)
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         // TODO: set flags
         // layoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
@@ -46,7 +48,7 @@ namespace ArisenEngine::RHI
 
     inline VkDescriptorPoolSize DescriptorPoolSize(EDescriptorType type, UInt32 count)
     {
-        VkDescriptorPoolSize poolSize{};
+        VK_STRUCT_INITIALIZE(VkDescriptorPoolSize, poolSize)
         poolSize.type = static_cast<VkDescriptorType>(type);
         poolSize.descriptorCount = count;
         return poolSize;
@@ -54,7 +56,7 @@ namespace ArisenEngine::RHI
 
     inline VkDescriptorPoolCreateInfo DescriptorPoolCreateInfo(UInt32 poolSizeCount, const VkDescriptorPoolSize* poolSize, UInt32 maxSets)
     {
-        VkDescriptorPoolCreateInfo poolInfo{};
+        VK_STRUCT_INITIALIZE(VkDescriptorPoolCreateInfo, poolInfo)
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = poolSizeCount;
         poolInfo.pPoolSizes = poolSize;
@@ -68,7 +70,7 @@ namespace ArisenEngine::RHI
         VkDescriptorPool pool, UInt32 descriptorSetCount,
         const VkDescriptorSetLayout* pSetLayouts)
     {
-        VkDescriptorSetAllocateInfo allocInfo{};
+        VK_STRUCT_INITIALIZE(VkDescriptorSetAllocateInfo, allocInfo)
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = pool;
         allocInfo.descriptorSetCount = (descriptorSetCount);
@@ -81,7 +83,7 @@ namespace ArisenEngine::RHI
         VkDescriptorType descriptorType, const VkDescriptorImageInfo* pImageInfo, const VkDescriptorBufferInfo* pBufferInfo,
         const VkBufferView* pTexelBufferView)
     {
-        VkWriteDescriptorSet descriptorWrite{};
+        VK_STRUCT_INITIALIZE(VkWriteDescriptorSet, descriptorWrite)
         descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrite.dstSet = dstSet;
         descriptorWrite.dstBinding = dstBinding;
@@ -124,7 +126,7 @@ namespace ArisenEngine::RHI
         UInt32 queueFamilyIndexCount,
         const void* pQueueFamilyIndices)
     {
-        VkBufferCreateInfo bufferInfo{};
+        VK_STRUCT_INITIALIZE(VkBufferCreateInfo, bufferInfo)
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         bufferInfo.flags = createFlagBits;
         bufferInfo.size = size;
@@ -148,7 +150,7 @@ namespace ArisenEngine::RHI
         UInt32 queueFamilyIndexCount,
         const void* pQueueFamilyIndices)
     {
-        VkImageCreateInfo imageInfo{};
+        VK_STRUCT_INITIALIZE(VkImageCreateInfo, imageInfo)
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         imageInfo.imageType = static_cast<VkImageType>(imageType);
         imageInfo.extent.width = width;
@@ -180,25 +182,28 @@ namespace ArisenEngine::RHI
     SInt32 offsetX, SInt32 offsetY, SInt32 offsetZ,
     UInt32 width, UInt32 height, UInt32 depth)
     {
-        VkBufferImageCopy imageCopy{};
+        VK_STRUCT_INITIALIZE(VkBufferImageCopy, imageCopy)
         imageCopy.bufferOffset = static_cast<VkDeviceSize>(bufferOffset);
         imageCopy.bufferRowLength = static_cast<uint32_t>(bufferRowLength);
         imageCopy.bufferImageHeight = static_cast<uint32_t>(bufferImageHeight);
-        imageCopy.imageSubresource = {
-            static_cast<VkImageAspectFlags>(imageSubresource.aspectMask),
-            imageSubresource.mipLevel,
-            imageSubresource.baseArrayLayer,
-            imageSubresource.layerCount
-        };
-        imageCopy.imageOffset = { offsetX, offsetY, offsetZ};
-        imageCopy.imageExtent = { width, height, depth};
-        
+        imageCopy.imageSubresource.aspectMask = static_cast<VkImageAspectFlags>(imageSubresource.aspectMask);
+        imageCopy.imageSubresource.mipLevel = static_cast<uint32_t>(imageSubresource.mipLevel);
+        imageCopy.imageSubresource.baseArrayLayer = static_cast<uint32_t>(imageSubresource.baseArrayLayer);
+        imageCopy.imageSubresource.layerCount = static_cast<uint32_t>(imageSubresource.layerCount);
+        imageCopy.imageOffset.x = offsetX;
+        imageCopy.imageOffset.y = offsetY;
+        imageCopy.imageOffset.z = offsetZ;
+        imageCopy.imageExtent.width = width;
+        imageCopy.imageExtent.height = height;
+        imageCopy.imageExtent.depth = depth;
+      
         return imageCopy;
     }
 
     inline VkMemoryBarrier CreateMemoryBarrier(EAccessFlag srcAccess, EAccessFlag dstAccess)
     {
-        VkMemoryBarrier barrier;
+        VK_STRUCT_INITIALIZE(VkMemoryBarrier, barrier)
+        barrier.pNext = nullptr;
         barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
         barrier.srcAccessMask = static_cast<VkAccessFlags>(srcAccess);
         barrier.dstAccessMask = static_cast<VkAccessFlags>(dstAccess);
@@ -209,7 +214,8 @@ namespace ArisenEngine::RHI
         EAccessFlag srcAccess, EAccessFlag dstAccess,
         UInt32 srcQueueFamilyIndex, UInt32 dstQueueFamilyIndex, BufferHandle* bufferHandle)
     {
-        VkBufferMemoryBarrier barrier;
+        VK_STRUCT_INITIALIZE(VkBufferMemoryBarrier, barrier)
+        barrier.pNext = nullptr;
         barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
         barrier.srcAccessMask = static_cast<VkAccessFlags>(srcAccess);
         barrier.dstAccessMask = static_cast<VkAccessFlags>(dstAccess);
@@ -228,8 +234,9 @@ namespace ArisenEngine::RHI
         EImageLayout oldLayout, EImageLayout newLayout, ImageHandle* imageHandle,
         RHIImageSubresourceRange&& subResourceRange)
     {
-        VkImageMemoryBarrier barrier;
+        VK_STRUCT_INITIALIZE(VkImageMemoryBarrier, barrier)
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.pNext = nullptr;
         barrier.srcAccessMask = static_cast<VkAccessFlags>(srcAccess);
         barrier.dstAccessMask = static_cast<VkAccessFlags>(dstAccess);
         barrier.srcQueueFamilyIndex = srcQueueFamilyIndex;
@@ -237,14 +244,11 @@ namespace ArisenEngine::RHI
         barrier.oldLayout = static_cast<VkImageLayout>(oldLayout);
         barrier.newLayout = static_cast<VkImageLayout>(newLayout);
         barrier.image = static_cast<VkImage>(imageHandle->GetHandle());
-        barrier.subresourceRange =
-        {
-            static_cast<VkImageAspectFlags>(subResourceRange.aspectMask),
-            subResourceRange.baseMipLevel,
-            subResourceRange.levelCount,
-            subResourceRange.baseArrayLayer,
-            subResourceRange.layerCount
-        };
+        barrier.subresourceRange.aspectMask = static_cast<VkImageAspectFlags>(subResourceRange.aspectMask);
+        barrier.subresourceRange.baseMipLevel = subResourceRange.baseMipLevel;
+        barrier.subresourceRange.levelCount = subResourceRange.levelCount;
+        barrier.subresourceRange.baseArrayLayer = subResourceRange.baseArrayLayer;
+        barrier.subresourceRange.layerCount = subResourceRange.layerCount;
         
         return barrier;
     }

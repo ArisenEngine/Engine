@@ -56,15 +56,14 @@ namespace ArisenEngine::RHI
         const UInt32 GetExternalIndex() const override { return VK_SUBPASS_EXTERNAL; }
 
         void UpdateSurfaceCapabilities(Surface* surface) override;
-
-        // TODO: 
-        RHIDeviceLimits GetDeviceLimits() const override { return RHIDeviceLimits(); }
-        
+    
     protected:
         
         void CheckSwapChainCapabilities() override;
         
     private:
+
+        
         VkInstance m_VkInstance;
         // devices
         VkPhysicalDevice m_CurrentPhysicsDevice { VK_NULL_HANDLE };

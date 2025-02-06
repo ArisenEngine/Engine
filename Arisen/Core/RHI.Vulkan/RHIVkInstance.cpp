@@ -627,7 +627,14 @@ void ArisenEngine::RHI::RHIVkInstance::PickPhysicalDevice(bool considerSurface)
     vkGetPhysicalDeviceProperties(m_CurrentPhysicsDevice, &m_DeviceProperties);
     
     LOG_DEBUG("[RHIVkDevice::PickPhysicalDevice]: Picked gpu device : " + std::string(m_DeviceProperties.deviceName));
-    
+
+
+    // initialize limit info
+    {
+        // sampler 
+        m_DeviceLimits.sampler.maxSamplerAnisotropy = m_DeviceProperties.limits.maxSamplerAnisotropy;
+        
+    }
     // TODO: configurable physical device
     // TODO: if current physical device not adequate suitable swap chain, should repick one
     CheckSwapChainCapabilities();

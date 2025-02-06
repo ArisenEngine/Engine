@@ -50,10 +50,18 @@ namespace  ArisenEngine::RHI
 
         void CopyBufferToImage(BufferHandle const * srcBuffer, ImageHandle const * dst,
             EImageLayout dstImageLayout, Containers::Vector<BufferImageCopy>&& regions) override;
-        void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, EDependencyFlagBits dependency,
+        void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
     Containers::Vector<RHIMemoryBarrier>&& memoryBarriers,
     Containers::Vector<RHIImageMemoryBarrier> && imageMemoryBarriers,
     Containers::Vector<RHIBufferMemoryBarrier> && bufferMemoryBarriers) override;
+        void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
+   Containers::Vector<RHIMemoryBarrier>&& memoryBarriers) override;
+        void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
+   Containers::Vector<RHIImageMemoryBarrier> && imageMemoryBarriers) override;
+        void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
+    Containers::Vector<RHIBufferMemoryBarrier> && bufferMemoryBarriers) override;
+
+        
     public:
         // Vulkan only
         const VkSemaphore* GetWaitSemaphores() const;
@@ -88,6 +96,10 @@ namespace  ArisenEngine::RHI
        
         VkCommandBufferBeginInfo m_VkBeginInfo {};
         std::optional<VkFence> m_SubmissionFence;
+
+        Containers::Vector<VkMemoryBarrier> m_VkMemoryBarriers {};
+        Containers::Vector<VkBufferMemoryBarrier> m_VkBufferMemoryBarriers {};
+        Containers::Vector<VkImageMemoryBarrier> m_VkImageMemoryBarriers {};
 
         GPUPipeline* m_CurrentPipeline { nullptr };
     };

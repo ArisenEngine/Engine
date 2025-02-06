@@ -35,6 +35,8 @@ namespace ArisenEngine::RHI
         ImageHandle() = default;
         virtual void AllocHandle(ImageDescriptor&& desc) = 0;
         virtual void FreeHandle() = 0;
+        // TODO: support multiple views
+        virtual UInt32 AddImageView(ImageViewDesc&& desc) = 0;
         bool AllocDeviceMemory(UInt32 memoryPropertiesBits) override = 0;
         ~ImageHandle() noexcept override = default;
     };

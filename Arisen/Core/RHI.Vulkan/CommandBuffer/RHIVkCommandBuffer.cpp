@@ -235,23 +235,23 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::CopyBufferToImage(BufferHandle const
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(
-    EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, EDependencyFlagBits dependency,
+    EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
     Containers::Vector<RHIMemoryBarrier>&& memoryBarriers,
     Containers::Vector<RHIImageMemoryBarrier> && imageMemoryBarriers,
     Containers::Vector<RHIBufferMemoryBarrier> && bufferMemoryBarriers)
 {
-    Containers::Vector<VkMemoryBarrier> vkMemoryBarriers(memoryBarriers.size());
-    Containers::Vector<VkBufferMemoryBarrier> vkBufferMemoryBarriers(bufferMemoryBarriers.size());
-    Containers::Vector<VkImageMemoryBarrier> vkImageMemoryBarriers(imageMemoryBarriers.size());
+    m_VkMemoryBarriers.resize(memoryBarriers.size());
+    m_VkBufferMemoryBarriers.resize(bufferMemoryBarriers.size());
+    m_VkImageMemoryBarriers.resize(imageMemoryBarriers.size());
 
     for(int i = 0; i < memoryBarriers.size(); ++i)
     {
-        vkMemoryBarriers[i] = CreateMemoryBarrier(memoryBarriers[i].srcAccessMask,  memoryBarriers[i].dstAccessMask);
+        m_VkMemoryBarriers[i] = CreateMemoryBarrier(memoryBarriers[i].srcAccessMask,  memoryBarriers[i].dstAccessMask);
     }
     
     for (int i = 0; i < bufferMemoryBarriers.size(); ++i)
     {
-        vkBufferMemoryBarriers[i] = BufferMemoryBarrier(
+        m_VkBufferMemoryBarriers[i] = BufferMemoryBarrier(
         bufferMemoryBarriers[i].srcAccessMask, bufferMemoryBarriers[i].dstAccessMask,
         bufferMemoryBarriers[i].srcQueueFamilyIndex, bufferMemoryBarriers[i].dstQueueFamilyIndex,
         bufferMemoryBarriers[i].buffer);
@@ -259,7 +259,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(
 
     for (int i = 0; i < imageMemoryBarriers.size(); ++i)
     {
-        vkImageMemoryBarriers[i] = ImageMemoryBarrier(
+        m_VkImageMemoryBarriers[i] = ImageMemoryBarrier(
         imageMemoryBarriers[i].srcAccess, imageMemoryBarriers[i].dstAccess,
         imageMemoryBarriers[i].srcQueueFamilyIndex, imageMemoryBarriers[i].dstQueueFamilyIndex,
         imageMemoryBarriers[i].oldLayout, imageMemoryBarriers[i].newLayout, imageMemoryBarriers[i].image,
@@ -271,13 +271,51 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(
         static_cast<VkPipelineStageFlags>(srcStage),
         static_cast<VkPipelineStageFlags>(dstStage),
         static_cast<VkDependencyFlags>(dependency),
-        memoryBarriers.size(),
-        memoryBarriers.size() <= 0 ? nullptr : vkMemoryBarriers.data(),
-        bufferMemoryBarriers.size(),
-        bufferMemoryBarriers.size() <= 0 ? nullptr : vkBufferMemoryBarriers.data(),
-        vkImageMemoryBarriers.size(),
-        vkImageMemoryBarriers.size() <= 0 ? nullptr : vkImageMemoryBarriers.data()
+        m_VkMemoryBarriers.size(),
+        m_VkMemoryBarriers.size() <= 0 ? nullptr : m_VkMemoryBarriers.data(),
+        m_VkBufferMemoryBarriers.size(),
+        m_VkBufferMemoryBarriers.size() <= 0 ? nullptr : m_VkBufferMemoryBarriers.data(),
+        m_VkImageMemoryBarriers.size(),
+        m_VkImageMemoryBarriers.size() <= 0 ? nullptr : m_VkImageMemoryBarriers.data()
         );
+}
+
+void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage,
+    UInt32 dependency, Containers::Vector<RHIMemoryBarrier>&& memoryBarriers)
+{
+  
+   Containers::Vector<RHIImageMemoryBarrier> imageMemoryBarriers; imageMemoryBarriers.resize(0);
+   Containers::Vector<RHIBufferMemoryBarrier> bufferMemoryBarriers; bufferMemoryBarriers.resize(0);
+    PipelineBarrier(
+    srcStage, dstStage, dependency,
+    std::move(memoryBarriers),
+    std::move(imageMemoryBarriers),
+    std::move(bufferMemoryBarriers));
+}
+
+void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage,
+    UInt32 dependency, Containers::Vector<RHIImageMemoryBarrier>&& imageMemoryBarriers)
+{
+    Containers::Vector<RHIMemoryBarrier> memoryBarriers; memoryBarriers.resize(0);
+    Containers::Vector<RHIBufferMemoryBarrier> bufferMemoryBarriers; bufferMemoryBarriers.resize(0);
+    PipelineBarrier(
+    srcStage, dstStage, dependency,
+    std::move(memoryBarriers),
+    std::move(imageMemoryBarriers),
+    std::move(bufferMemoryBarriers));
+}
+
+void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage,
+    UInt32 dependency, Containers::Vector<RHIBufferMemoryBarrier>&& bufferMemoryBarriers)
+{
+    Containers::Vector<RHIMemoryBarrier> memoryBarriers; memoryBarriers.resize(0);
+    Containers::Vector<RHIImageMemoryBarrier> imageMemoryBarriers; imageMemoryBarriers.resize(0);
+    PipelineBarrier(
+    srcStage, dstStage, dependency,
+    std::move(memoryBarriers),
+    std::move(imageMemoryBarriers),
+    std::move(bufferMemoryBarriers));
+    
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding)
@@ -374,6 +412,7 @@ VkFence ArisenEngine::RHI::RHIVkCommandBuffer::GetSubmissionFence() const
     return m_SubmissionFence.has_value() ? m_SubmissionFence.value() : VK_NULL_HANDLE;
 }
 
+// TODO: 用一个map去存储不同type的fence，在调用相关接口时根据type等待fence
 void ArisenEngine::RHI::RHIVkCommandBuffer::InjectFence(RHIFence* fence)
 {
     m_SubmissionFence = static_cast<VkFence>(fence->GetHandle());

@@ -79,9 +79,14 @@ namespace ArisenEngine::RHI
             return m_MaxFramesInFlight;
         }
 
-        virtual RHIDeviceLimits GetDeviceLimits() const = 0;
+        RHIDeviceLimits GetDeviceLimits() const
+        {
+            return m_DeviceLimits;
+        };
         
     protected:
+
+        RHIDeviceLimits m_DeviceLimits;
         UInt32 m_MaxFramesInFlight;
         bool m_EnableValidation { false };
         virtual void CheckSwapChainCapabilities() = 0;

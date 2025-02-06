@@ -8,10 +8,6 @@ ImageView(), m_VkDevice(device)
     m_ImageViewDesc = desc;
     VkImageViewCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    createInfo.components.a = static_cast<VkComponentSwizzle>(desc.componentMapping.a);
-    createInfo.components.r = static_cast<VkComponentSwizzle>(desc.componentMapping.r);
-    createInfo.components.g = static_cast<VkComponentSwizzle>(desc.componentMapping.g);
-    createInfo.components.b = static_cast<VkComponentSwizzle>(desc.componentMapping.b);
     createInfo.image = image;
     createInfo.format = static_cast<VkFormat>(desc.format);
     createInfo.viewType = static_cast<VkImageViewType>(desc.type);
@@ -20,6 +16,14 @@ ImageView(), m_VkDevice(device)
     createInfo.subresourceRange.levelCount = desc.levelCount;
     createInfo.subresourceRange.baseArrayLayer = desc.baseArrayLayer;
     createInfo.subresourceRange.layerCount = desc.layerCount;
+
+    if (desc.componentMapping.has_value())
+    {
+        createInfo.components.a = static_cast<VkComponentSwizzle>(desc.componentMapping.value().a);
+        createInfo.components.r = static_cast<VkComponentSwizzle>(desc.componentMapping.value().r);
+        createInfo.components.g = static_cast<VkComponentSwizzle>(desc.componentMapping.value().g);
+        createInfo.components.b = static_cast<VkComponentSwizzle>(desc.componentMapping.value().b);
+    }
 
     if (vkCreateImageView(device, &createInfo, nullptr, &m_VkImageView) != VK_SUCCESS)
     {
