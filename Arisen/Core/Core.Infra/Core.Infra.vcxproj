@@ -62,6 +62,11 @@
     <ClInclude Include="RHI\Enums\Pipeline\EVertexInputRate.h" />
     <ClInclude Include="RHI\Enums\Pipeline\ProgramStage.h" />
     <ClInclude Include="RHI\Enums\Pipeline\EShaderStage.h" />
+    <ClInclude Include="RHI\Enums\Sampler\EBorderColor.h" />
+    <ClInclude Include="RHI\Enums\Sampler\ECompareOp.h" />
+    <ClInclude Include="RHI\Enums\Sampler\EFilter.h" />
+    <ClInclude Include="RHI\Enums\Sampler\ESamplerAddressMode.h" />
+    <ClInclude Include="RHI\Enums\Sampler\ESamplerMipmapMode.h" />
     <ClInclude Include="RHI\Enums\Subpass\EDependencyFlag.h" />
     <ClInclude Include="RHI\Enums\Subpass\ESubpassContents.h" />
     <ClInclude Include="RHI\Enums\Swapchain\PresentMode.h" />

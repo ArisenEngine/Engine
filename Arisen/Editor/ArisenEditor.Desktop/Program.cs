@@ -16,6 +16,7 @@ class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        Console.WriteLine(" Main Called. ");
         Thread.CurrentThread.Name = "MainThread";
         Setup();
         
@@ -28,14 +29,14 @@ class Program
         ProjectSolution.InstallationRoot = Environment.GetEnvironmentVariable(ProjectSolution.INSTALLATION_ENV_VARIABLE, EnvironmentVariableTarget.User);
         if (ProjectSolution.InstallationRoot == null)
         {
-            ProjectSolution.InstallationRoot = System.AppDomain.CurrentDomain.SetupInformation.ApplicationBase;
+            ProjectSolution.InstallationRoot = AppDomain.CurrentDomain.SetupInformation.ApplicationBase;
             Environment.SetEnvironmentVariable(ProjectSolution.INSTALLATION_ENV_VARIABLE, ProjectSolution.InstallationRoot, EnvironmentVariableTarget.User);
         }
         
         
-        ArisenEngine.ArisenApplication.s_Platform = ArisenEngine.RuntimePlatform.Windows;
-        ArisenEngine.ArisenApplication.s_StartupPath = ProjectSolution.InstallationRoot;
-        ArisenEngine.ArisenApplication.s_IsInEditor = true;
+        ArisenApplication.s_Platform = RuntimePlatform.Windows;
+        ArisenApplication.s_StartupPath = ProjectSolution.InstallationRoot;
+        ArisenApplication.s_IsInEditor = true;
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
