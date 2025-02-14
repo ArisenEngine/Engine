@@ -7,7 +7,7 @@ using ArisenEngine;
 
 namespace ArisenEditor.Internal.MenuItemEntries;
 
-internal static class HeaderMenuEntries
+internal partial class HeaderMenuEntries
 {
     #region Assets
 
@@ -44,5 +44,7 @@ internal static class HeaderMenuEntries
     }
 
     #endregion
+    
+    
     
 }

@@ -252,4 +252,12 @@ namespace ArisenEngine::RHI
         
         return barrier;
     }
+
+    inline VkSamplerCreateInfo SamplerCreateInfo()
+    {
+        VK_STRUCT_INITIALIZE(VkSamplerCreateInfo, samplerCreateInfo)
+        samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        
+        return samplerCreateInfo;
+    }
 }
