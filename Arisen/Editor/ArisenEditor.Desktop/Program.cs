@@ -3,7 +3,6 @@ using System.Threading;
 using ArisenEditor.GameDev;
 using Avalonia;
 using Avalonia.ReactiveUI;
-using Avalonia.Styling;
 using ArisenEngine;
 
 namespace ArisenEditor.Desktop.Desktop;
