@@ -68,12 +68,12 @@ public class ProjectHierarchyViewModel : ViewModelBase
         
         FolderSource.Items = new FileTreeNode[2]
         {
-            new FileTreeNode("Assets", Path.Combine(ArisenApplication.s_ProjectRoot, "Assets"), true, isRoot: true, true)
+            new FileTreeNode("Content", Path.Combine(ArisenApplication.s_ProjectRoot, "Content"), true, isRoot: true, true)
             {
                 AllowDrag = false,
                 AllowDrop = false
             },
-            new FileTreeNode("Packages", Path.Combine(ArisenApplication.s_ProjectRoot, "Packages"), true, isRoot: true,
+            new FileTreeNode("Dependencies", Path.Combine(ArisenApplication.s_ProjectRoot, "Dependencies"), true, isRoot: true,
                 true)
             {
                 AllowDrag = false,
