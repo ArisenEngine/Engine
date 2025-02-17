@@ -59,9 +59,6 @@
 		  <DependentUpon>HierarchyView.axaml</DependentUpon>
 		  <SubType>Code</SubType>
 		</Compile>
-		<None Update="Templates\3rd-Person Project\Packages\manifest.json">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
 		<None Update="Templates\Empty Project\Packages\manifest.json">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
@@ -99,7 +96,6 @@
   <ItemGroup>
     <Folder Include="Internal\Interface\" />
     <Folder Include="Resources\" />
-    <Folder Include="Templates\Top-Down Project\Packages\" />
   </ItemGroup>
 
 
