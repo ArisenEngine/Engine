@@ -6,6 +6,7 @@
         mc:Ignorable="d" d:DesignWidth="1920" d:DesignHeight="1080"
         x:Class="ArisenEditor.Core.Views.MainEditorHostView"
         x:DataType="view:MainEditorHostViewModel" x:CompileBindings="True"
+        WindowState="Maximized"
         Icon="/Assets/arisen-logo.ico"
         Title="ArisenEditor">
         

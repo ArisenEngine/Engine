@@ -13,7 +13,7 @@ using ReactiveUI;
 
 namespace ArisenEditor.ViewModels;
 
-internal class ContentViewModel : BaseDockableViewModel
+internal class ContentViewModel : BaseToolViewModel
 {
     private string m_AssetsSearchText = String.Empty;
 

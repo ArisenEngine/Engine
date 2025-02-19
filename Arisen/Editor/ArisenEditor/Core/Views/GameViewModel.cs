@@ -1,6 +1,6 @@
 namespace ArisenEditor.ViewModels;
 
-internal class GameViewModel : BaseDockableViewModel
+internal class GameViewModel : BaseDocumentViewModel
 {
     internal GameViewModel()
     {
