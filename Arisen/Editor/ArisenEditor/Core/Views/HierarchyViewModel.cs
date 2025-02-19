@@ -8,7 +8,7 @@ using Dock.Model.Mvvm.Controls;
 
 namespace ArisenEditor.ViewModels;
 
-internal class HierarchyViewModel : Tool, IHierarchyViewModel<SceneTreeNode>
+internal class HierarchyViewModel : BaseToolViewModel, IHierarchyViewModel<SceneTreeNode>
 {
     public string Header => "Hierarchy";
 

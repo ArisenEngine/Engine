@@ -16,7 +16,7 @@ using ReactiveUI;
 namespace ArisenEditor.ViewModels;
 using LogMessage = ArisenEngine.Debug.Logger.LogMessage;
 using LogLevel = ArisenEngine.Debug.Logger.LogLevel;
-public class ConsoleViewModel : BaseDockableViewModel, IDisposable
+public class ConsoleViewModel : BaseToolViewModel, IDisposable
 {
     private ReadOnlyObservableCollection<MessageItemNode> m_Messages;
     
@@ -172,7 +172,7 @@ public class ConsoleViewModel : BaseDockableViewModel, IDisposable
     private readonly Subject<bool> m_CountChanged = new();
     private readonly CompositeDisposable m_Disposable = new();
 
-    public ConsoleViewModel() : base()
+    public ConsoleViewModel()
     {
         
         ClearCommand = ReactiveCommand.Create(Clear, outputScheduler: AvaloniaScheduler.Instance);
@@ -183,7 +183,7 @@ public class ConsoleViewModel : BaseDockableViewModel, IDisposable
             .Connect()
             .Filter(filter)
             .Sort(SortExpressionComparer<MessageItemNode>.Descending(x => x.DateTime))
-            .ObserveOn(RxApp.MainThreadScheduler)
+            .ObserveOn(AvaloniaScheduler.Instance)
             .Bind(out m_Messages)
             .Subscribe(_=>filter.OnNext(Filter)).DisposeWith(m_Disposable);
 

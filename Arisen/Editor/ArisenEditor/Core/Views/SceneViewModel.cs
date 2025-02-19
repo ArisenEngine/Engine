@@ -5,7 +5,7 @@ namespace ArisenEditor.ViewModels;
 /// <summary>
 /// 
 /// </summary>
-internal class SceneViewModel : BaseDockableViewModel
+internal class SceneViewModel : BaseDocumentViewModel
 {
     /// <summary>
     /// 

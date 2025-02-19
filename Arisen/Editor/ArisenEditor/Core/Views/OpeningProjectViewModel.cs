@@ -74,12 +74,24 @@ namespace ArisenEditor.ViewModels.Startup
 
                 await openingWindowViewModel.UpdateProgress();
 
+                var mainWindowViewModel = new MainEditorHostViewModel();
                 // main editor window
                 var mainEditorWindow = new MainEditorHostView()
                 {
-                    DataContext = new MainEditorHostViewModel()
+                    DataContext = mainWindowViewModel
                 };
+                mainEditorWindow.Closing += (_, _) =>
+                {
+                    mainWindowViewModel.CloseLayout();
+                };
+                
+                desktop.Exit += (_, _) =>
+                {
+                    mainWindowViewModel.CloseLayout();
+                };
+                
                 desktop.MainWindow = mainEditorWindow;
+                
                 mainEditorWindow.Show();
 
                 openingWindow.Close();

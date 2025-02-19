@@ -4,11 +4,8 @@ using Dock.Model.Mvvm.Controls;
 namespace ArisenEditor.ViewModels;
 
 [DataContract(IsReference = true)]
-public class BaseDockableViewModel : Document
+
+public class BaseToolViewModel : Tool
 {
-    public BaseDockableViewModel()
-    {
-        Id = "Window";
-        Title = "Default";
-    }
+    
 }

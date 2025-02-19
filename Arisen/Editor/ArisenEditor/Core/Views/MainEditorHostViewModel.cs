@@ -1,5 +1,6 @@
 using ArisenEditor.Core.Factory;
 using Dock.Model.Controls;
+using Dock.Model.Core;
 using ReactiveUI;
 
 namespace ArisenEditor.Core.Views;
@@ -21,6 +22,17 @@ internal class MainEditorHostViewModel : ReactiveObject
         if (Layout is { } root)
         {
             m_DockFactory.InitLayout(root);
+        }
+    }
+    
+    public void CloseLayout()
+    {
+        if (Layout is IDock dock)
+        {
+            if (dock.Close.CanExecute(null))
+            {
+                dock.Close.Execute(null);
+            }
         }
     }
 }

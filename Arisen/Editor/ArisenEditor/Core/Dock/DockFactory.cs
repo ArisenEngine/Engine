@@ -35,9 +35,11 @@ internal class DockFactory : Dock.Model.Mvvm.Factory
         var hierarchyView = new HierarchyViewModel() { Id = "Hierarchy", Title = "Hierarchy" };
         var inspectorView = new InspectorViewModel() { Id = "Inspector", Title = "Inspector" };
         var contentView = new ContentViewModel() { Id = "Content", Title = "Content" };
+        var consoleView = new ConsoleViewModel() { Id = "Console", Title = "Console" };
 
-        var documentDock = new DocumentDock()
+        var documentDock = new RenderViewDocumentDock()
         {
+            Proportion = 0.75,
             Id = "Document",
             Title = "Document",
             ActiveDockable = sceneViewModel,
@@ -48,9 +50,11 @@ internal class DockFactory : Dock.Model.Mvvm.Factory
 
         var leftToolDock = new ToolDock()
         {
+            Proportion = 0.25,
             Id = "LeftTool",
             Title = "LeftTool",
             ActiveDockable = hierarchyView,
+            Alignment = Alignment.Left,
             VisibleDockables = CreateList<IDockable>(hierarchyView)
         };
 
@@ -59,15 +63,32 @@ internal class DockFactory : Dock.Model.Mvvm.Factory
             Id = "RightTool",
             Title = "RightTool",
             ActiveDockable = inspectorView,
+            Alignment = Alignment.Right,
             VisibleDockables = CreateList<IDockable>(inspectorView)
         };
 
-        var bottomToolDock = new ToolDock()
+        var bottomToolDock = new ProportionalDock()
         {
+            Proportion = 0.25,
             Id = "BottomTool",
             Title = "BottomTool",
             ActiveDockable = contentView,
-            VisibleDockables = CreateList<IDockable>(contentView),
+            Orientation = Orientation.Horizontal,
+            VisibleDockables = CreateList<IDockable>(
+                new ToolDock
+                {
+                    ActiveDockable = contentView,
+                    VisibleDockables = CreateList<IDockable>(contentView),
+                    Alignment = Alignment.Left
+                },
+                new ProportionalDockSplitter(),
+                new ToolDock
+                {
+                    ActiveDockable = consoleView,
+                    VisibleDockables = CreateList<IDockable>(consoleView),
+                    Alignment = Alignment.Right
+                }
+                ),
         };
         
         var mainLayout = new ProportionalDock
@@ -78,11 +99,13 @@ internal class DockFactory : Dock.Model.Mvvm.Factory
             VisibleDockables = CreateList<IDockable>(
                new ProportionalDock()
                {
+                   Proportion = 0.8,
                    Id = "LeftPart",
                    Orientation = Orientation.Vertical,
                    VisibleDockables = CreateList<IDockable>(
                       new ProportionalDock()
                       {
+                          Proportion = 0.75,
                           Id = "DocumentAndHierarchy",
                           Orientation = Orientation.Horizontal,
                           VisibleDockables = CreateList<IDockable>( 
@@ -91,19 +114,13 @@ internal class DockFactory : Dock.Model.Mvvm.Factory
                               documentDock),
                       },
                        new ProportionalDockSplitter(),
-                   new ProportionalDock()
-                   {
-                       Id = "ContentAndConsole",
-                       Orientation = Orientation.Horizontal,
-                       VisibleDockables = CreateList<IDockable>(bottomToolDock),
-                   }
+                       bottomToolDock
                        ),
-                   
-                   
                },
                new ProportionalDockSplitter(),
                new ProportionalDock()
                {
+                   Proportion = 0.2,
                    Id = "RightPart",
                    Orientation = Orientation.Vertical,
                    VisibleDockables = CreateList<IDockable>(rightToolDock),

@@ -11,3 +11,6 @@
 [submodule "Arisen/Samples/RayTracingTheRestOfLife"]
 	path = Arisen/Samples/RayTracingTheRestOfLife
 	url = https://github.com/ArisenEngine/RayTracingTheRestOfLife.git
+[submodule "Arisen/3rdparty/Ava.Dock"]
+	path = Arisen/3rdparty/Ava.Dock
+	url = https://github.com/eatdreamcat/Dock.git
