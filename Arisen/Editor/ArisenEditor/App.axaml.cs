@@ -5,16 +5,22 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using System.Threading.Tasks;
+using ArisenEditor.Core.Views;
+using ArisenEditor.Themes;
 using ArisenEditor.ViewModels.Startup;
 using Avalonia.Controls;
 using ArisenEngine;
+using ReactiveUI;
 
 namespace ArisenEditor
 {
-    public partial class App : Application
+    internal partial class App : Application
     {
+        internal static ThemeManager? ThemeManager;
         public override void Initialize()
         {
+            ThemeManager = new ThemeManager();
+            ThemeManager.Initialize(this);
             AvaloniaXamlLoader.Load(this);
         }
 
@@ -40,7 +46,7 @@ namespace ArisenEditor
             {
                 desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
                 
-                var mainWindowViewModel = new MainWindowViewModel();
+                var mainWindowViewModel = new StartupWindowViewModel();
                 var splashWindow = new Splash();
                 desktop.MainWindow = splashWindow;
                 splashWindow.Show();
@@ -59,7 +65,7 @@ namespace ArisenEditor
                
                 await Task.Delay( 1000 );
 
-                var mainWindow = new Windows.MainWindow()
+                var mainWindow = new Windows.StartupWindowView()
                 {
                     DataContext = mainWindowViewModel
                 };

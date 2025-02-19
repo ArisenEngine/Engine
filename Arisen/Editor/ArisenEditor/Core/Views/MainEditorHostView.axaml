@@ -1,0 +1,29 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:view="using:ArisenEditor.Core.Views"
+        mc:Ignorable="d" d:DesignWidth="1920" d:DesignHeight="1080"
+        x:Class="ArisenEditor.Core.Views.MainEditorHostView"
+        x:DataType="view:MainEditorHostViewModel" x:CompileBindings="True"
+        Icon="/Assets/arisen-logo.ico"
+        Title="ArisenEditor">
+        
+        <Design.DataContext>
+                <view:MainEditorHostViewModel>
+        </view:MainEditorHostViewModel>
+        </Design.DataContext>
+        
+        <Grid RowDefinitions="Auto, 1000, Auto">
+                <StackPanel Orientation="Vertical">
+                        <view:MenuItemBarView>
+                        </view:MenuItemBarView>
+                        <view:ToolBarView>
+                        </view:ToolBarView>
+                </StackPanel>
+                <DockControl Grid.Row="1" Margin="1" Layout="{Binding Layout}"></DockControl>
+                <StackPanel Grid.Row="2" Orientation="Horizontal">
+                        
+                </StackPanel>
+        </Grid>
+</Window>

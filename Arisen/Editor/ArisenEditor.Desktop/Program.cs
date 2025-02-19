@@ -15,7 +15,6 @@ class Program
     [STAThread]
     public static void Main(string[] args)
     {
-        Console.WriteLine(" Main Called. ");
         Thread.CurrentThread.Name = "MainThread";
         Setup();
         
@@ -43,6 +42,6 @@ class Program
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
-            .LogToTrace()
-            .UseReactiveUI();
+            .LogToTrace();
+            // .UseReactiveUI();
 }

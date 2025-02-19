@@ -24,12 +24,34 @@
     <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
   </PropertyGroup>
 
-<!--    <ItemGroup>-->
+	<PropertyGroup>
+		<AvaloniaLibraries>
+			Avalonia;
+			Avalonia.Base;
+			Avalonia.Controls.ColorPicker;
+			Avalonia.Controls.DataGrid;
+			Avalonia.Controls;
+			Avalonia.Controls.ProportionalStackPanel;
+			Avalonia.Controls.Recycling;
+			Avalonia.Diagnostics;
+			Avalonia.Controls;
+			Avalonia.Markup.Xaml;
+			Avalonia.Desktop;
+			Avalonia.ReactiveUI;
+			CommunityToolkit.Mvvm;
+		</AvaloniaLibraries>
+	</PropertyGroup>
+	
+    <ItemGroup>
 <!--        <InternalsVisibleTo Include="Avalonia" />-->
 <!--        <InternalsVisibleTo Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" />-->
 <!--        <InternalsVisibleTo Include="Avalonia.Designer.HostApp" />-->
 <!--        <InternalsVisibleTo Include="Avalonia.Designer.HostApp.dll" />-->
-<!--    </ItemGroup>-->
+        <InternalsVisibleTo Include="ArisenEditor.Desktop" />
+<!--		<InternalsVisibleTo Include="%(AvaloniaLibraries.Identity)" />-->
+		
+    </ItemGroup>
+	
     
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.2.4" />
@@ -55,13 +77,53 @@
 		  <DependentUpon>AssetsHierarchyView.axaml</DependentUpon>
 		  <SubType>Code</SubType>
 		</Compile>
-		<Compile Update="Public\Views\HierarchyView.axaml.cs">
-		  <DependentUpon>HierarchyView.axaml</DependentUpon>
-		  <SubType>Code</SubType>
-		</Compile>
 		<None Update="Templates\Empty Project\Packages\manifest.json">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
+		<Compile Update="Core\Views\MenuItemBarView.axaml.cs">
+		  <DependentUpon>MenuItemBar.axaml</DependentUpon>
+		  <SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Core\Views\CreateProjectView.axaml.cs">
+		  <DependentUpon>CreateProjectPage.axaml</DependentUpon>
+		  <SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Core\Views\OpeningProjectView.axaml.cs">
+		  <DependentUpon>OpeningProjectPage.axaml</DependentUpon>
+		  <SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Core\Views\ProjectListView.axaml.cs">
+		  <DependentUpon>ProjectListView.axaml</DependentUpon>
+		  <SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Core\Views\OpeningWindowView.axaml.cs">
+		  <DependentUpon>OpeningWindow.axaml</DependentUpon>
+		  <SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Core\Views\Splash.axaml.cs">
+		  <DependentUpon>Splash.axaml</DependentUpon>
+		  <SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Core\Views\StartupWindowView.axaml.cs">
+		  <DependentUpon>StartupWindow.axaml</DependentUpon>
+		  <SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Core\Views\ConsoleView.axaml.cs">
+		  <DependentUpon>ConsoleView.axaml</DependentUpon>
+		  <SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Core\Views\ContentView.axaml.cs">
+		  <DependentUpon>ContentView.axaml</DependentUpon>
+		  <SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Core\Views\HierarchyView.axaml.cs">
+		  <DependentUpon>HierarchyView.axaml</DependentUpon>
+		  <SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Core\Views\RenderSurfaceView.axaml.cs">
+		  <DependentUpon>RenderSurfaceView.axaml</DependentUpon>
+		  <SubType>Code</SubType>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -94,8 +156,8 @@
 
 
   <ItemGroup>
-    <Folder Include="Internal\Interface\" />
-    <Folder Include="Resources\" />
+    <Folder Include="Core\Action\ToolButtonEntries\" />
+    <Folder Include="Core\Services\" />
   </ItemGroup>
 
 
@@ -106,23 +168,16 @@
     <ProjectReference Include="..\ProjectBuilderDll\ProjectBuilderDll.csproj" />
   </ItemGroup>
 
-
-  <ItemGroup>
-    <AdditionalFiles Include="Internal\Views\Startup\CreateProjectPage.axaml" />
-    <AdditionalFiles Include="Internal\Views\Startup\OpeningProjectPage.axaml" />
-    <AdditionalFiles Include="Internal\Views\Startup\ProjectListView.axaml" />
-    <AdditionalFiles Include="Internal\Windows\MainEditor\MainEditorWindow.axaml" />
-    <AdditionalFiles Include="Internal\Windows\Startup\MainWindow.axaml" />
-    <AdditionalFiles Include="Internal\Windows\Startup\OpeningWindow.axaml" />
-    <AdditionalFiles Include="Internal\Windows\Startup\Splash.axaml" />
-    <AdditionalFiles Include="Public\Views\Rendering\RenderSurfaceView.axaml" />
-  </ItemGroup>
-
     <ItemGroup>
         <!-- 将文件夹中的所有文件添加到构建时的内容中 -->
         <None Update="Templates\**\*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <UpToDateCheckInput Remove="Public\Views\HomeView.axaml" />
+      <UpToDateCheckInput Remove="Public\Views\TestView.axaml" />
     </ItemGroup>
     
 </Project>
