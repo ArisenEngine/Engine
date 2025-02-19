@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1920" d:DesignHeight="250"
+             x:Class="ArisenEditor.Core.Views.ToolBarView">
+    <Grid VerticalAlignment="Top">
+        <!-- 定义三列 -->
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" /> <!-- 左边容器 -->
+            <ColumnDefinition Width="Auto" /> <!-- 中间容器 -->
+            <ColumnDefinition Width="*" /> <!-- 右边容器 -->
+        </Grid.ColumnDefinitions>
+        <!-- 左边容器：靠右对齐，按钮从右到左排列 -->
+        <StackPanel Grid.Column="0" Name="LeftToolBar" Orientation="Horizontal" HorizontalAlignment="Right" FlowDirection="RightToLeft">
+        </StackPanel>
+
+        <!-- 中间容器 -->
+        <StackPanel Grid.Column="1" Name="CenterToolBar" Orientation="Horizontal" HorizontalAlignment="Center">
+        </StackPanel>
+
+        <!-- 右边容器：靠左对齐，按钮从左到右排列 -->
+        <StackPanel Grid.Column="2" Name="RightToolBar" Orientation="Horizontal" HorizontalAlignment="Left">
+        </StackPanel>
+    </Grid>
+</UserControl>
