@@ -12,7 +12,7 @@
              </Application.DataTemplates>
     
              <Application.Resources>
-                 <recycling:ControlRecycling x:Key="ControlRecyclingKey" TryToUseIdAsKey="True" />
+                 <recycling:ControlRecycling x:Key="ControlRecyclingKey" TryToUseIdAsKey="False" />
                  <Color x:Key="RegionColor">Transparent</Color>
              </Application.Resources>
     <Application.Styles>

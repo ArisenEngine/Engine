@@ -86,14 +86,14 @@
             <GridSplitter Grid.Column="1" ResizeDirection="Columns"></GridSplitter>
 
             <DockPanel Grid.Column="2">
-                <TreeDataGrid Name="AssetsTree" DockPanel.Dock="Top" AutoDragDropRows="True"
+                <TreeDataGrid Name="ContentTree" DockPanel.Dock="Top" AutoDragDropRows="True"
                               RowDragStarted="AssetsTree_OnRowDragStarted"
                               RowDragOver="AssetsTree_OnRowDragOver"
                               RowDrop="AssetsTree_OnRowDrop">
                     <TreeDataGrid.Resources>
 
                         <!-- Template for Name column cells -->
-                        <DataTemplate x:Key="AssetsNameCell" DataType="vm:FileTreeNode">
+                        <DataTemplate x:Key="ContentNameCell" DataType="vm:FileTreeNode">
 
                             <StackPanel Orientation="Horizontal">
                                 <Image Margin="0 0 4 0"
@@ -114,7 +114,7 @@
 
 
                         <!-- Edit template for Name column cells -->
-                        <DataTemplate x:Key="AssetsNameEditCell" DataType="vm:FileTreeNode">
+                        <DataTemplate x:Key="ContentNameEditCell" DataType="vm:FileTreeNode">
                             <StackPanel Orientation="Horizontal">
                                 <Image Margin="0 0 4 0"
                                        VerticalAlignment="Center" Width="15" Height="15">
