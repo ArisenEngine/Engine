@@ -6,5 +6,7 @@
              xmlns:vm="using:ArisenEditor.ViewModels"
              x:DataType="vm:InspectorViewModel" x:CompileBindings="True"
              x:Class="ArisenEditor.Views.InspectorView">
-   Inspector
+   <DataGrid Background="Honeydew">
+       
+   </DataGrid>
 </UserControl>
