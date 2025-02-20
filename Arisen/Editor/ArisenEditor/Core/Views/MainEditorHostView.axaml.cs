@@ -53,7 +53,7 @@ internal partial class MainEditorHostView : Window
         Logger.Log("Close Editor Window.");
         m_FileSystemWatcher.Dispose();
         m_FileSystemWatcher = null;
-        // ArisenInstance.End();
+        ArisenInstance.End();
             
         if (App.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
