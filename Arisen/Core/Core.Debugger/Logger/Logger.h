@@ -113,3 +113,5 @@ do {                                                                    \
 
 
 #define ASSERT(x) DEBUG_OP(assert(x);)
+
+extern "C" DEBUGGER_DLL int dummy_function();

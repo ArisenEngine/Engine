@@ -8,4 +8,9 @@
 
 #define ENGINE_DLL   __declspec( dllimport )
 
-#endif 
+#endif
+extern "C" ENGINE_DLL void dummy_engine_function();
+inline void dummy_engine_function()
+{
+    
+}

@@ -8,4 +8,10 @@
 
 #define PLATFORM_DLL   __declspec( dllimport )
 
-#endif 
+#endif
+
+extern "C" PLATFORM_DLL void dummy_core_platform_function();
+inline void dummy_core_platform_function()
+{
+    
+}

@@ -13,6 +13,12 @@
 
 #endif
 
+extern "C" RHI_VULKAN_DLL void dummy_vulkan_function();
+inline void dummy_vulkan_function()
+{
+    
+}
+
 namespace ArisenEngine::RHI
 {
     struct VkSwapChainSupportDetail
