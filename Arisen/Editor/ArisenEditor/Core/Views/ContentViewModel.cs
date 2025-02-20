@@ -20,7 +20,7 @@ internal class ContentViewModel : BaseToolViewModel
     internal string AssetsSearchText
     {
         get { return m_AssetsSearchText; }
-        set { this.SetProperty(ref m_AssetsSearchText, value); }
+        set { this.RaiseAndSetIfChanged(ref m_AssetsSearchText, value); }
     }
 
     internal ContentViewModel()
@@ -99,7 +99,7 @@ internal class ContentViewModel : BaseToolViewModel
 
         set
         {
-            this.SetProperty(ref m_FolderSelections, value);
+            this.RaiseAndSetIfChanged(ref m_FolderSelections, value);
         }
     }
 
@@ -108,7 +108,7 @@ internal class ContentViewModel : BaseToolViewModel
         
         m_FolderSelections = FolderSource.RowSelection.SelectedItems.ToArray();
 
-        Assets.Clear();
+        Content.Clear();
         foreach (var folderSelection  in FolderSelections)
         {
             var folders = Directory.EnumerateDirectories(folderSelection.Path, "*", SearchOption.TopDirectoryOnly);
@@ -116,17 +116,17 @@ internal class ContentViewModel : BaseToolViewModel
             foreach (var folder in folders)
             {
                 var folderName = folder.Split(Path.DirectorySeparatorChar)[^1];
-                Assets.Add(new FileTreeNode(folderName, folder, true));
+                Content.Add(new FileTreeNode(folderName, folder, true));
             }
             
             foreach (var file in files)
             {
                 var fileName = file.Split(Path.DirectorySeparatorChar)[^1];
-                Assets.Add(new FileTreeNode(fileName, file, false));
+                Content.Add(new FileTreeNode(fileName, file, false));
             }
         }
         
-        AssetsSource.Items = Assets;
+        ContentSource.Items = Content;
     }
 
     #endregion
@@ -135,28 +135,28 @@ internal class ContentViewModel : BaseToolViewModel
     #region Assets Part
 
     // TODO: figure out why if dont add a default FileTreeNode, the AssetsView will not auto refresh when selection changed
-    private ObservableCollection<FileTreeNode> m_Assets = new ObservableCollection<FileTreeNode>()
+    private ObservableCollection<FileTreeNode> m_Content = new ObservableCollection<FileTreeNode>()
     {
-        new FileTreeNode("Assets", Path.Combine(ArisenApplication.s_ProjectRoot, "Assets"), true, isRoot: true, true)
+        new FileTreeNode("Content", Path.Combine(ArisenApplication.s_ProjectRoot, "Content"), true, isRoot: true, true)
     };
 
-    private ObservableCollection<FileTreeNode> Assets
+    private ObservableCollection<FileTreeNode> Content
     {
-        get => m_Assets;
+        get => m_Content;
         set
         {
-            this.SetProperty(ref m_Assets, value);
+            this.RaiseAndSetIfChanged(ref m_Content, value);
         }
     }
-    public FlatTreeDataGridSource<FileTreeNode> AssetsSource { get; set; }
+    public FlatTreeDataGridSource<FileTreeNode> ContentSource { get; set; }
 
 
-    private string m_AssetsHeader;
+    private string m_ContentHeader;
 
-    public string AssetsHeader
+    public string ContentHeader
     {
-        get => m_AssetsHeader;
-        set { this.SetProperty(ref m_AssetsHeader, value); }
+        get => m_ContentHeader;
+        set { this.RaiseAndSetIfChanged(ref m_ContentHeader, value); }
     }
 
     private void InitializeAssetsSource()
@@ -166,14 +166,14 @@ internal class ContentViewModel : BaseToolViewModel
         //     Assets.Clear();
         // }
         
-        AssetsSource = new FlatTreeDataGridSource<FileTreeNode>(Array.Empty<FileTreeNode>())
+        ContentSource = new FlatTreeDataGridSource<FileTreeNode>(Array.Empty<FileTreeNode>())
         {
             Columns =
             {
                 new TemplateColumn<FileTreeNode>(
                     "Name",
-                    "AssetsNameCell",
-                    "AssetsNameEditCell",
+                    "ContentNameCell",
+                    "ContentNameEditCell",
                     new GridLength(1, GridUnitType.Star),
                     new TemplateColumnOptions<FileTreeNode>()
                     {
@@ -193,32 +193,32 @@ internal class ContentViewModel : BaseToolViewModel
             }
         };
 
-        AssetsSource.RowSelection!.SingleSelect = false;
+        ContentSource.RowSelection!.SingleSelect = false;
 
-        AssetsSource.RowSelection.SelectionChanged += AssetsSelectionChanged;
+        ContentSource.RowSelection.SelectionChanged += AssetsSelectionChanged;
 
-        var rows = AssetsSource.Rows;
-        AssetsSource.Items = Assets;
+        var rows = ContentSource.Rows;
+        ContentSource.Items = Content;
         
     }
 
     private void AssetsSelectionChanged(object? sender, TreeSelectionModelSelectionChangedEventArgs<FileTreeNode> e)
     {
-        m_AssetsSelections = e.SelectedItems.ToArray();
+        m_ContentSelections = e.SelectedItems.ToArray();
     }
 
-    private FileTreeNode[] m_AssetsSelections;
+    private FileTreeNode[] m_ContentSelections;
 
-    public FileTreeNode[] AssetsSelections
+    public FileTreeNode[] ContentSelections
     {
         get
         {
-            if (m_AssetsSelections == null)
+            if (m_ContentSelections == null)
             {
-                m_AssetsSelections = new FileTreeNode[] { };
+                m_ContentSelections = new FileTreeNode[] { };
             }
 
-            return m_AssetsSelections;
+            return m_ContentSelections;
         }
     }
 

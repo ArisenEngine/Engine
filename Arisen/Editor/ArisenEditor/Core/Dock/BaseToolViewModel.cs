@@ -1,5 +1,5 @@
 using System.Runtime.Serialization;
-using Dock.Model.Mvvm.Controls;
+using Dock.Model.ReactiveUI.Controls;
 
 namespace ArisenEditor.ViewModels;
 

@@ -1,4 +1,3 @@
-using Dock.Model.Mvvm.Controls;
 
 namespace ArisenEditor.ViewModels;
 

@@ -1,7 +1,6 @@
 using System;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
-using CommunityToolkit.Mvvm.ComponentModel;
 using Dock.Model.Core;
 using ReactiveUI;
 
@@ -37,6 +36,6 @@ public class ViewLocator : IDataTemplate
 
     public bool Match(object? data)
     {
-        return data is ObservableObject || data is IDockable || data is ReactiveObject;
+        return data is ReactiveObject || data is IDockable || data is ReactiveObject;
     }
 }

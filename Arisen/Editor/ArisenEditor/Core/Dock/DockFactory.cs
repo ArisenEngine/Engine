@@ -4,11 +4,11 @@ using ArisenEditor.ViewModels;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
-using Dock.Model.Mvvm.Controls;
+using Dock.Model.ReactiveUI.Controls;
 
 namespace ArisenEditor.Core.Factory;
 
-internal class DockFactory : Dock.Model.Mvvm.Factory
+internal class DockFactory : Dock.Model.ReactiveUI.Factory
 {
     
     internal IRootDock CreateBaseLayout()
