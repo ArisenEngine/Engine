@@ -29,7 +29,7 @@ namespace ArisenEngine
         
         private static void OnSurfacesAllClosed()
         {
-            ArisenInstance.End();
+            
         }
         
         #region Internal
