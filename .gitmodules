@@ -14,4 +14,4 @@
 [submodule "Arisen/3rdparty/Ava.Dock"]
 	path = Arisen/3rdparty/Ava.Dock
 	url = https://github.com/eatdreamcat/Dock.git
-	branch = release/11.2.0
+
