@@ -29,10 +29,10 @@ public partial class ContentView : UserControl
         FolderTree.Bind(TreeDataGrid.SourceProperty, new Binding(nameof(m_ViewModel.FolderSource)));
         
         // Assets Tree
-        AssetsTree.ContextMenu = ControlsFactory.CreateContextMenu(ControlsFactory.MenuType.Project);
+        ContentTree.ContextMenu = ControlsFactory.CreateContextMenu(ControlsFactory.MenuType.Project);
 
-        AssetsTree.DataContext = m_ViewModel;
-        AssetsTree.Bind(TreeDataGrid.SourceProperty, new Binding(nameof(m_ViewModel.ContentSource)));
+        ContentTree.DataContext = m_ViewModel;
+        ContentTree.Bind(TreeDataGrid.SourceProperty, new Binding(nameof(m_ViewModel.ContentSource)));
 
     }
 
