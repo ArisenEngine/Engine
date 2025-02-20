@@ -6,5 +6,5 @@
              mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="450"
              x:Class="ArisenEditor.Views.SceneView"
              x:DataType="vm:SceneViewModel" x:CompileBindings="True">
-    <Grid x:Name="SceneViewContainer"></Grid>
+    <Grid x:Name="SceneViewContainer" Background="Honeydew"></Grid>
 </UserControl>

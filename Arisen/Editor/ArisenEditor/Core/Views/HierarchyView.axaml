@@ -11,7 +11,7 @@
         <converts:TreeViewIconConverter x:Key="IconConverter"></converts:TreeViewIconConverter>
     </UserControl.Resources>
     
-    <DockPanel>
+    <DockPanel Background="Honeydew">
         <TreeDataGrid Name="TreeGridViewer">
         
         <TreeDataGrid.Resources>

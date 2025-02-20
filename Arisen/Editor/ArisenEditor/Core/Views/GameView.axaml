@@ -6,5 +6,5 @@
              mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="450"
              x:Class="ArisenEditor.Views.GameView"
              x:DataType="vm:GameViewModel" x:CompileBindings="True">
-    <Grid Name="GameViewContainer"></Grid>
+    <Grid Name="GameViewContainer" Background="Honeydew"></Grid>
 </UserControl>

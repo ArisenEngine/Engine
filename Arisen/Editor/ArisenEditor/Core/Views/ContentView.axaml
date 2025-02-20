@@ -16,7 +16,7 @@
         <vm:ContentViewModel></vm:ContentViewModel>
     </Design.DataContext>
 
-    <DockPanel>
+    <DockPanel Background="Honeydew">
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" HorizontalAlignment="Right" Margin="4" >
             <ToggleButton></ToggleButton>
             <ToggleButton></ToggleButton>

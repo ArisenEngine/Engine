@@ -17,7 +17,7 @@
         <converts:ConsoleViewIconConverter x:Key="IconConverter"></converts:ConsoleViewIconConverter>
     </UserControl.Resources>
 
-    <Grid RowDefinitions="5*, Auto, 5*">
+    <Grid RowDefinitions="5*, Auto, 5*" Background="Honeydew">
         <DockPanel>
       
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" HorizontalAlignment="Left" Spacing="5">
