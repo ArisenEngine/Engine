@@ -27,6 +27,10 @@
     <ClCompile Include="RHI\RHILoader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Core\Core.Debugger\Core.Debugger.vcxproj">
+      <Project>{44c699a5-6dea-4ec6-b89c-0a6c6f3b672e}</Project>
+      <Name>Core.Debugger</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\Core\Core.Infra\Core.Infra.vcxproj">
       <Project>{47ab1dd6-11a7-4f0e-81f5-67af87bf3810}</Project>
       <Name>Core.Infra</Name>

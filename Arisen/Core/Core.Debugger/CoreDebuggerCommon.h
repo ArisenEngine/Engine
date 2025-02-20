@@ -8,4 +8,10 @@
 
 #define DEBUGGER_DLL   __declspec( dllimport )
 
-#endif 
+#endif
+
+extern "C" DEBUGGER_DLL void dummy_core_debugger_function();
+inline void dummy_core_debugger_function()
+{
+    
+}
