@@ -1,6 +1,8 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:ArisenEditor"
+             xmlns:recycling="clr-namespace:Avalonia.Controls.Recycling;assembly=Avalonia.Controls.Recycling"
+             xmlns:controls="clr-namespace:Dock.Avalonia.Controls;assembly=Dock.Avalonia"
              x:Class="ArisenEditor.App"
              RequestedThemeVariant="Light">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
@@ -10,7 +12,7 @@
              </Application.DataTemplates>
     
              <Application.Resources>
-                 <ControlRecycling x:Key="ControlRecyclingKey" TryToUseIdAsKey="True" />
+                 <recycling:ControlRecycling x:Key="ControlRecyclingKey" TryToUseIdAsKey="True" />
                  <Color x:Key="RegionColor">Transparent</Color>
              </Application.Resources>
     <Application.Styles>
@@ -26,8 +28,8 @@
         <StyleInclude Source="avares://ArisenEditor/Themes/Fluent.axaml"/>
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
         
-        <Style Selector="DockControl">
-            <Setter Property="(ControlRecyclingDataTemplate.ControlRecycling)" Value="{StaticResource ControlRecyclingKey}" />
+        <Style Selector="controls|DockControl">
+            <Setter Property="(recycling:ControlRecyclingDataTemplate.ControlRecycling)" Value="{StaticResource ControlRecyclingKey}" />
         </Style>
         
     </Application.Styles>
