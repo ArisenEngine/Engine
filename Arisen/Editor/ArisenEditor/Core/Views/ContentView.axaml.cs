@@ -1,11 +1,9 @@
 using ArisenEditor.Utilities;
 using ArisenEditor.ViewModels;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
 
 namespace ArisenEditor.Views;
 
