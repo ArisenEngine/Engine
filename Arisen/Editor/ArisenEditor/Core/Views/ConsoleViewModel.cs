@@ -45,7 +45,7 @@ public class ConsoleViewModel : BaseToolViewModel, IDisposable
     public int SelectedIndex
     {
         get { return m_SelectedIndex; }
-        set { this.SetProperty(ref m_SelectedIndex, value); }
+        set { this.RaiseAndSetIfChanged(ref m_SelectedIndex, value); }
     }
 
     private bool m_ThreadChecked;
@@ -58,7 +58,7 @@ public class ConsoleViewModel : BaseToolViewModel, IDisposable
         }
         set
         {
-            this.SetProperty(ref m_ThreadChecked, value);
+            this.RaiseAndSetIfChanged(ref m_ThreadChecked, value);
         }
     }
     
@@ -72,7 +72,7 @@ public class ConsoleViewModel : BaseToolViewModel, IDisposable
         }
         set
         {
-            this.SetProperty(ref m_InfoChecked, value);
+            this.RaiseAndSetIfChanged(ref m_InfoChecked, value);
         }
     }
     
@@ -86,7 +86,7 @@ public class ConsoleViewModel : BaseToolViewModel, IDisposable
         }
         set
         {
-            this.SetProperty(ref m_LogChecked, value);
+            this.RaiseAndSetIfChanged(ref m_LogChecked, value);
         }
     }
     
@@ -99,7 +99,7 @@ public class ConsoleViewModel : BaseToolViewModel, IDisposable
         }
         set
         {
-            this.SetProperty(ref m_WarningChecked, value);
+            this.RaiseAndSetIfChanged(ref m_WarningChecked, value);
         }
     }
 
@@ -128,7 +128,7 @@ public class ConsoleViewModel : BaseToolViewModel, IDisposable
         }
         set
         {
-            this.SetProperty(ref m_StackTrace, value);
+            this.RaiseAndSetIfChanged(ref m_StackTrace, value);
         }
     }
     
@@ -141,7 +141,7 @@ public class ConsoleViewModel : BaseToolViewModel, IDisposable
         }
         set
         {
-            this.SetProperty(ref m_ErrorChecked, value);
+            this.RaiseAndSetIfChanged(ref m_ErrorChecked, value);
         }
     }
     
@@ -154,7 +154,7 @@ public class ConsoleViewModel : BaseToolViewModel, IDisposable
         }
         set
         {
-            this.SetProperty(ref m_SearchText, value);
+            this.RaiseAndSetIfChanged(ref m_SearchText, value);
         }
     }
 

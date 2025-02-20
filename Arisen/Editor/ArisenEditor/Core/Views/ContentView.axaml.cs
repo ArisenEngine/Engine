@@ -34,7 +34,7 @@ public partial class ContentView : UserControl
         AssetsTree.ContextMenu = ControlsFactory.CreateContextMenu(ControlsFactory.MenuType.Project);
 
         AssetsTree.DataContext = m_ViewModel;
-        AssetsTree.Bind(TreeDataGrid.SourceProperty, new Binding(nameof(m_ViewModel.AssetsSource)));
+        AssetsTree.Bind(TreeDataGrid.SourceProperty, new Binding(nameof(m_ViewModel.ContentSource)));
 
     }
 

@@ -4,7 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Models.TreeDataGrid;
 using ArisenEditor.Models;
 using ArisenEngine;
-using Dock.Model.Mvvm.Controls;
+using Dock.Model.ReactiveUI.Controls;
 
 namespace ArisenEditor.ViewModels;
 
