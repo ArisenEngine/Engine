@@ -139,12 +139,14 @@
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <CallingConvention>Cdecl</CallingConvention>
       <AdditionalIncludeDirectories>$(SolutionDir)Core\Core.Debugger\;$(SolutionDir)Core\Core.Infra\;$(SolutionDir)3rdparty\dxc\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>%(AdditionalDependencies);$(OutDir);$(SolutionDir)3rdparty\dxc\lib\x64;</AdditionalLibraryDirectories>
       <AdditionalDependencies>Core.Infra.lib;Core.Debugger.lib;dxcompiler.lib;$(CoreLibraryDependencies);</AdditionalDependencies>
+      <AssemblyDebug>true</AssemblyDebug>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

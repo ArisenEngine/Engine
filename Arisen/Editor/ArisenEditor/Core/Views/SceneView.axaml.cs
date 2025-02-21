@@ -24,8 +24,6 @@ public partial class SceneView : UserControl
         // Preview
         SceneViewContainer.Children.Add(new RenderSurfaceView()
         {
-            ParentWindow = Parent as Window,
-            IsSceneView = true,
             SurfaceType = ArisenEngine.Rendering.SurfaceType.SceneView,
             DataContext = new RenderSurfaceViewModel(true)
         });

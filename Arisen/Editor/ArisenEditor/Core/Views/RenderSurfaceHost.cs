@@ -20,6 +20,11 @@ namespace ArisenEngine.Rendering
         }
 
         
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <returns></returns>
         protected override IPlatformHandle CreateNativeControlCore(IPlatformHandle parent)
         {
             m_Parent = parent.Handle;

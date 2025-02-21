@@ -4,6 +4,7 @@ using ArisenEditor.Utilities;
 using ArisenEditor.ViewModels.Startup;
 using ArisenEditor.Windows;
 using ArisenEngine;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
@@ -38,6 +39,7 @@ internal partial class MainEditorHostView : Window
             }
                 
         });
+        
     }
     
     // TODO: remove this
