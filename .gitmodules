@@ -1,16 +1,3 @@
-[submodule "Arisen/Samples/RayTracingInOneWeekend"]
-	path = Arisen/Samples/RayTracingInOneWeekend
-	url = https://github.com/ArisenEngine/RayTracingInOneWeekend.git
-
-[submodule "Arisen/Samples/RayTracingTheNextWeek"]
-	path = Arisen/Samples/RayTracingTheNextWeek
-	url = https://github.com/ArisenEngine/RayTracingTheNextWeek.git
-[submodule "Arisen/Samples/Monte-Carlo-Integration"]
-	path = Arisen/Samples/Monte-Carlo-Integration
-	url = https://github.com/ArisenEngine/Monte-Carlo-Integration.git
-[submodule "Arisen/Samples/RayTracingTheRestOfLife"]
-	path = Arisen/Samples/RayTracingTheRestOfLife
-	url = https://github.com/ArisenEngine/RayTracingTheRestOfLife.git
 [submodule "Arisen/3rdparty/Ava.Dock"]
 	path = Arisen/3rdparty/Ava.Dock
 	url = https://github.com/eatdreamcat/Dock.git
