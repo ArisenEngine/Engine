@@ -8,6 +8,6 @@
              x:DataType="vm:GameViewModel" x:CompileBindings="True">
     <Grid>
         <Grid Name="GameViewContainer" Background="Honeydew"></Grid>
-        <Popup Width="100" Height="400" Topmost="True"> <Label> hhhh </Label></Popup>
+        <Popup Width="100" Height="400" Topmost="True" IsOpen="True"> <Grid Background="Chocolate"> <Label> hhhh </Label> </Grid></Popup>
     </Grid>
 </UserControl>
