@@ -11,33 +11,6 @@
     <Design.DataContext>
         <vm:RenderSurfaceViewModel></vm:RenderSurfaceViewModel>
     </Design.DataContext>
-    
-    <Panel>
-        <DockPanel>
-            
-            <StackPanel  Height="15" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="2" DockPanel.Dock="Top">
-                <ToggleButton IsChecked="{Binding StatsToggleChecked}" IsVisible="{Binding IsGameView}">
-                    <Image Source="avares://ArisenEditor/Assets/Icons/statistics.png" Width="15" Height="15"></Image>
-                </ToggleButton>
-            </StackPanel>
-            
-            <Panel DockPanel.Dock="Top">
-                <Panel Name="RenderViewContainer">
-                    
-                </Panel>
-                
-                <UserControl VerticalAlignment="Top" HorizontalAlignment="Right" Width="400" Height="600" Name="StatsPanel" IsVisible="True" Background="Aqua">
-                  
-                </UserControl>
-                
-            </Panel>
-            
-        </DockPanel>
-        
-        
-       
+    <Panel Name="RenderViewContainer">
     </Panel>
-    
-    
-   
 </UserControl>

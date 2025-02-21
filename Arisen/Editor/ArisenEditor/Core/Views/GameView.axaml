@@ -6,5 +6,8 @@
              mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="450"
              x:Class="ArisenEditor.Views.GameView"
              x:DataType="vm:GameViewModel" x:CompileBindings="True">
-    <Grid Name="GameViewContainer" Background="Honeydew"></Grid>
+    <Grid>
+        <Grid Name="GameViewContainer" Background="Honeydew"></Grid>
+        <Popup Width="100" Height="400" Topmost="True"> <Label> hhhh </Label></Popup>
+    </Grid>
 </UserControl>
