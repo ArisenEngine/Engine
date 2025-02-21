@@ -262,8 +262,8 @@ namespace ArisenEngine::Platforms
 
 		info.clientArea.right = (initInfo && initInfo->width) ? info.clientArea.left + initInfo->width : info.clientArea.right;
 		info.clientArea.bottom = (initInfo && initInfo->height) ? info.clientArea.top + initInfo->height : info.clientArea.bottom;
-		info.style |= parent ? WS_CHILD : WS_OVERLAPPEDWINDOW;
-
+		info.style |= parent ? (WS_CHILD) : WS_OVERLAPPEDWINDOW;
+		
 		RECT rect{ info.clientArea };
 
 		AdjustWindowRect(&rect, info.style, FALSE);
@@ -291,6 +291,11 @@ namespace ArisenEngine::Platforms
 
 		if (info.hwnd)
 		{
+			if (parent != nullptr)
+			{
+				SetWindowPos(info.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+			}
+			
 			DEBUG_OP(SetLastError(0));
 
 			const WindowID id{ AddToWindows(info) };

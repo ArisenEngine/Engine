@@ -25,8 +25,6 @@ public partial class GameView : UserControl
     {
         GameViewContainer.Children.Add(new RenderSurfaceView()
         {
-            ParentWindow = Parent as Window,
-            IsSceneView = false,
             SurfaceType = ArisenEngine.Rendering.SurfaceType.GameView,
             DataContext = new RenderSurfaceViewModel(false)
         });

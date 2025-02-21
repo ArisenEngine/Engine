@@ -19,8 +19,6 @@ namespace ArisenEngine.Views.Rendering
         
         private RenderSurfaceHost m_Host = null;
         internal SurfaceType SurfaceType;
-        public bool IsSceneView = false;
-        public Window ParentWindow;
         
         public RenderSurfaceView()
         {
@@ -63,6 +61,7 @@ namespace ArisenEngine.Views.Rendering
 
             if (!Design.IsDesignMode)
             {
+                Console.WriteLine("Remove Render Surface Host.");
                 RenderViewContainer.Children.RemoveAt(0);
             
                 m_Host.Dispose();

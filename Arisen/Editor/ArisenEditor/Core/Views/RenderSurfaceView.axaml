@@ -26,9 +26,9 @@
                     
                 </Panel>
                 
-                <Panel VerticalAlignment="Top" HorizontalAlignment="Right" Width="400" Height="600" Name="StatsPanel" IsVisible="{Binding StatsToggleChecked}" Background="Aqua">
+                <UserControl VerticalAlignment="Top" HorizontalAlignment="Right" Width="400" Height="600" Name="StatsPanel" IsVisible="True" Background="Aqua">
                   
-                </Panel>
+                </UserControl>
                 
             </Panel>
             
