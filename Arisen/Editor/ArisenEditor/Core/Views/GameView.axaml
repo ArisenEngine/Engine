@@ -3,11 +3,17 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:ArisenEditor.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="450"
+             mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="450"
              x:Class="ArisenEditor.Views.GameView"
              x:DataType="vm:GameViewModel" x:CompileBindings="True">
-    <Grid>
-        <Grid Name="GameViewContainer" Background="Honeydew"></Grid>
-        <Popup Width="100" Height="400" Topmost="True" IsOpen="True"> <Grid Background="Chocolate"> <Label> hhhh </Label> </Grid></Popup>
-    </Grid>
+    <StackPanel Orientation="Vertical">
+        <StackPanel Orientation="Horizontal" Height="15" VerticalAlignment="Top">
+            <ComboBox SelectedIndex="0" MaxDropDownHeight="100" Height="15">
+                <ComboBoxItem  Height="15" >Text Item 1</ComboBoxItem>
+                <ComboBoxItem  Height="15" >Text Item 2</ComboBoxItem>
+                <ComboBoxItem  Height="15" >Text Item 3</ComboBoxItem>
+            </ComboBox>
+        </StackPanel>
+        <Grid Height="435" Name="GameViewContainer"></Grid>
+    </StackPanel>
 </UserControl>
