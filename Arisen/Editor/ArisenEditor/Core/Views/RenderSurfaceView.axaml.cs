@@ -1,4 +1,5 @@
 using System;
+using ArisenEditor.Extensions.GameView;
 using ArisenEngine.Rendering;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -20,25 +21,27 @@ namespace ArisenEngine.Views.Rendering
         private RenderSurfaceHost m_Host = null;
         internal SurfaceType SurfaceType;
         
-        public RenderSurfaceView()
-        {
-            InitializeComponent();
-            Loaded -= OnRenderSurfaceViewLoaded;
-            Loaded += OnRenderSurfaceViewLoaded;
-            Unloaded -= OnRenderSurfaceViewUnloaded;
-            Unloaded += OnRenderSurfaceViewUnloaded;
-           
-        }
+        GameViewResolutionConfig m_ResolutionConfig;
         
-        private void OnRenderSurfaceViewLoaded(object? sender, RoutedEventArgs e)
+        public RenderSurfaceView(GameViewResolutionConfig resolutionConfig = null)
         {
-            Debug.Logger.Assert(sender != null);
+            m_ResolutionConfig = resolutionConfig;
+            InitializeComponent();
+            
+            GameViewResolution.s_OnResolutionChanged -= OnGameViewResolutionChanged;
+            GameViewResolution.s_OnResolutionChanged += OnGameViewResolutionChanged;
+        }
 
-            Loaded -= OnRenderSurfaceViewLoaded;
-
+        protected override void OnLoaded(RoutedEventArgs e)
+        {
+            base.OnLoaded(e);
+            
             if (!Design.IsDesignMode)
             {
-                m_Host = new RenderSurfaceHost((int)RenderViewContainer.Bounds.Width, (int)RenderViewContainer.Bounds.Height, SurfaceType)
+                int finalWidth = (int)RenderViewContainer.Bounds.Width;
+                int finalHeight = (int)RenderViewContainer.Bounds.Height;
+                InitRenderViewSize(ref finalWidth, ref finalHeight);
+                m_Host = new RenderSurfaceHost(finalWidth, finalHeight, SurfaceType)
                 {
                     Name = Name
                 };
@@ -46,7 +49,48 @@ namespace ArisenEngine.Views.Rendering
                 Console.WriteLine($"Create Render Surface Host: {SurfaceType}");
                 RenderViewContainer.Children.Insert(0, m_Host);
             }
+
+        }
+
+        protected override void OnUnloaded(RoutedEventArgs e)
+        {
+            base.OnUnloaded(e);
             
+            if (!Design.IsDesignMode)
+            {
+                GameViewResolution.s_OnResolutionChanged -= OnGameViewResolutionChanged;
+                Console.WriteLine($"Remove Render Surface Host: {SurfaceType}");
+                RenderViewContainer.Children.RemoveAt(0);
+            
+                m_Host.Dispose();
+                m_Host = null;
+            }
+            
+        }
+
+        void OnGameViewResolutionChanged(GameViewResolutionConfig resolutionConfig)
+        {
+            m_ResolutionConfig = resolutionConfig;
+        }
+        
+        void InitRenderViewSize(ref int originalWidth, ref int originalHeight)
+        {
+            if (m_ResolutionConfig == null)
+            {
+                // TODO: log
+                return;
+            }
+
+            float aspect = m_ResolutionConfig.width / (float)m_ResolutionConfig.height;
+            
+            if (m_ResolutionConfig.Orientation == GameViewOrientation.Landscape)
+            {
+                originalHeight = (int)(originalWidth / aspect);
+            }
+            else if (m_ResolutionConfig.Orientation == GameViewOrientation.Portrait)
+            {
+                originalWidth = (int)(originalHeight * aspect);
+            }
         }
 
         protected override void OnGotFocus(GotFocusEventArgs e)
@@ -54,30 +98,6 @@ namespace ArisenEngine.Views.Rendering
             base.OnGotFocus(e);
             Debug.Logger.Log($"Focus on :{Name}");
         }
-
-        private void OnRenderSurfaceViewUnloaded(object? sender, RoutedEventArgs e)
-        {
-            Debug.Logger.Assert(sender != null);
-            Unloaded -= OnRenderSurfaceViewUnloaded;
-
-            if (!Design.IsDesignMode)
-            {
-                Console.WriteLine($"Remove Render Surface Host: {SurfaceType}");
-                RenderViewContainer.Children.RemoveAt(0);
-            
-                m_Host.Dispose();
-                m_Host = null;
-            }
-          
-        }
-
-        // protected override void OnSizeChanged(SizeChangedEventArgs e)
-        // {
-        //     base.OnSizeChanged(e);
-        //     if (m_Host != null)
-        //     {
-        //         m_Host.Resize();
-        //     }
-        // }
+        
     }
 }

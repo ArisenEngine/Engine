@@ -6,17 +6,16 @@ namespace ArisenEngine.Rendering
 {
      public class RenderSurfaceHost : NativeControlHost, IDisposable
     {
-        private int m_Width;
-        private int m_Height;
         public string Name;
         private SurfaceType m_SurfaceType;
         private IntPtr m_Parent;
         
         internal RenderSurfaceHost(int width, int height, SurfaceType surfaceType)
         {
-            m_Width = width;
-            m_Height = height;
             m_SurfaceType = surfaceType;
+            
+            this.Width = width;
+            this.Height = height;
         }
 
         
@@ -28,7 +27,7 @@ namespace ArisenEngine.Rendering
         protected override IPlatformHandle CreateNativeControlCore(IPlatformHandle parent)
         {
             m_Parent = parent.Handle;
-            ArisenInstance.RegisterSurface(m_Parent, Name, m_SurfaceType, m_Width, m_Height);
+            ArisenInstance.RegisterSurface(m_Parent, Name, m_SurfaceType, (int)Width, (int)Height);
             
             return new PlatformHandle(ArisenInstance.GetNativeHandle(m_Parent), m_SurfaceType + " Host");
         }
@@ -46,5 +45,9 @@ namespace ArisenEngine.Rendering
             
         }
 
+        public void Resize(int width, int height)
+        {
+            
+        }
     }
 }
