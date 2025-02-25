@@ -27,7 +27,8 @@
             </ComboBox>
             <ComboBox SelectedIndex="{Binding GameViewResolutionSelectedIndex}" HorizontalAlignment="Stretch" MaxWidth="200" MinWidth="200"
                       MaxHeight="25" MinHeight="25" FontSize="10" FontFamily="Bold" Name="ResolutionComboBox"
-                      ItemsSource="{Binding GameViewResolutionConfigs}">
+                      ItemsSource="{Binding GameViewResolutionConfigs}"
+                      SelectedItem="{Binding SelectedResolution, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
                     <DataTemplate DataType="gameview:GameViewResolutionConfig">
                         <TextBlock Text="{Binding Name}"/>
