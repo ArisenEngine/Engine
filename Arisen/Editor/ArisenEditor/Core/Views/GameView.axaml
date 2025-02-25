@@ -3,17 +3,38 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:ArisenEditor.ViewModels"
+             xmlns:gameview="using:ArisenEditor.Extensions.GameView"
              mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="450"
              x:Class="ArisenEditor.Views.GameView"
              x:DataType="vm:GameViewModel" x:CompileBindings="True">
-    <StackPanel Orientation="Vertical">
-        <StackPanel Orientation="Horizontal" Height="15" VerticalAlignment="Top">
-            <ComboBox SelectedIndex="0" MaxDropDownHeight="100" Height="15">
-                <ComboBoxItem  Height="15" >Text Item 1</ComboBoxItem>
-                <ComboBoxItem  Height="15" >Text Item 2</ComboBoxItem>
-                <ComboBoxItem  Height="15" >Text Item 3</ComboBoxItem>
+    
+    <Design.DataContext>
+        <vm:GameViewModel></vm:GameViewModel>
+    </Design.DataContext>
+    
+    <Grid RowDefinitions="Auto, *">
+        <StackPanel Orientation="Horizontal" Height="25" VerticalAlignment="Top" Spacing="1">
+            <ComboBox HorizontalAlignment="Stretch" MaxWidth="80" MinWidth="80" SelectedIndex="0"
+                      MaxHeight="25" MinHeight="25" FontSize="10" FontFamily="Bold" Name="ViewTypeComboBox">
+                <!-- <ComboBox.ItemTemplate> -->
+                <!--     <DataTemplate> -->
+                <!--         <TextBlock Text="Game"/> -->
+                <!--     </DataTemplate> -->
+                <!-- </ComboBox.ItemTemplate> -->
+                <ComboBoxItem>
+                    <TextBlock Text="Game"></TextBlock>
+                </ComboBoxItem>
+            </ComboBox>
+            <ComboBox SelectedIndex="{Binding GameViewResolutionSelectedIndex}" HorizontalAlignment="Stretch" MaxWidth="200" MinWidth="200"
+                      MaxHeight="25" MinHeight="25" FontSize="10" FontFamily="Bold" Name="ResolutionComboBox"
+                      ItemsSource="{Binding GameViewResolutionConfigs}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="gameview:GameViewResolutionConfig">
+                        <TextBlock Text="{Binding Name}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
             </ComboBox>
         </StackPanel>
-        <Grid Height="435" Name="GameViewContainer"></Grid>
-    </StackPanel>
+        <Grid Grid.Row="1" Name="GameViewContainer"></Grid>
+    </Grid>
 </UserControl>

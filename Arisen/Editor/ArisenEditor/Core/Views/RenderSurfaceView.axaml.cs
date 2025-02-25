@@ -42,7 +42,8 @@ namespace ArisenEngine.Views.Rendering
                 {
                     Name = Name
                 };
-                Console.WriteLine("Create Render Surface Host.");
+                
+                Console.WriteLine($"Create Render Surface Host: {SurfaceType}");
                 RenderViewContainer.Children.Insert(0, m_Host);
             }
             
@@ -61,7 +62,7 @@ namespace ArisenEngine.Views.Rendering
 
             if (!Design.IsDesignMode)
             {
-                Console.WriteLine("Remove Render Surface Host.");
+                Console.WriteLine($"Remove Render Surface Host: {SurfaceType}");
                 RenderViewContainer.Children.RemoveAt(0);
             
                 m_Host.Dispose();
