@@ -71,7 +71,7 @@ internal abstract class TreeNodeBase : ReactiveObject, IEditableObject
             while (bytes >= 1024 && order < sizes.Length - 1)
             {
                 order++;
-                bytes = bytes / 1024;
+                bytes /= 1024;
             }
 
             return $"{bytes:0.##} {sizes[order]}";

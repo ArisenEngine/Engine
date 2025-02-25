@@ -21,6 +21,7 @@ public class ViewLocator : IDataTemplate
             var instance = Activator.CreateInstance(type);
             if (instance is { })
             {
+                ((Control)instance).DataContext = data;
                 return (Control)instance;
             }
             else
