@@ -69,15 +69,30 @@ public class GameViewResolutionConfig
 /// <summary>
 /// 
 /// </summary>
-public static class GameViewResolution
+internal static class GameViewResolution
 {
     private static Dictionary<string, GameViewResolutionConfig> s_ResolutionConfigs = new();
     
-    public static Action<GameViewResolutionConfig> s_OnResolutionListAdded;
-    public static Action<GameViewResolutionConfig> s_OnResolutionListRemoved;
-    public static Action<GameViewResolutionConfig> s_OnResolutionChanged;
+    internal static Action<GameViewResolutionConfig> s_OnResolutionListAdded;
+    internal static Action<GameViewResolutionConfig> s_OnResolutionListRemoved;
+    internal static Action<GameViewResolutionConfig> s_OnResolutionChanged;
+    internal static Action<float> s_OnGameViewScaleChanged;
+    
 
-    internal static float s_GameViewScale = 1.0f;
+    private static float s_GameViewScale = 1.0f;
+
+    public static float GameViewScale
+    {
+        get => s_GameViewScale;
+        set
+        {
+            if (Math.Abs(s_GameViewScale - value) > float.Epsilon)
+            {
+                s_GameViewScale = value;
+                s_OnGameViewScaleChanged?.Invoke(s_GameViewScale);
+            }
+        }
+    }
     /// <summary>
     /// 
     /// </summary>

@@ -13,7 +13,7 @@
     </Design.DataContext>
     
     <Grid RowDefinitions="Auto, *">
-        <StackPanel Orientation="Horizontal" Height="25" VerticalAlignment="Top" Spacing="1">
+        <StackPanel Orientation="Horizontal" Height="25" VerticalAlignment="Center" Spacing="1">
             <ComboBox HorizontalAlignment="Stretch" MaxWidth="80" MinWidth="80" SelectedIndex="0"
                       MaxHeight="25" MinHeight="25" FontSize="10" FontFamily="Bold" Name="ViewTypeComboBox">
                 <!-- <ComboBox.ItemTemplate> -->
@@ -35,6 +35,11 @@
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
+            <TextBlock VerticalAlignment="Center" Text="Scale" />
+            <Slider VerticalAlignment="Center"  
+                     Value="{Binding GameViewScaleValue, Mode=TwoWay}" 
+                     MaxWidth="200" MinWidth="200" MaxHeight="25" MinHeight="25"></Slider>
+            <TextBlock  VerticalAlignment="Center" Text="{Binding GameViewScaleValue}"></TextBlock>
         </StackPanel>
         <Grid Grid.Row="1" Name="GameViewContainer"></Grid>
     </Grid>

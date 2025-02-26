@@ -34,7 +34,7 @@ public partial class GameView : UserControl
         m_GameViewModel = (DataContext as GameViewModel)!;
         LoadNativeRenderWindow();
         m_GameViewModel.OnLoaded();
-        ResolutionComboBox.SelectedIndex = 0;
+        ResolutionComboBox.SelectedIndex = 2;
     }
 
     /// <summary>

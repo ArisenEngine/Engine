@@ -101,6 +101,7 @@ internal class RenderSurface : IRenderSurface
 
     public void OnResized()
     {
+        Console.WriteLine($"RenderSurface : {m_Name} resized.");
         Logger.Log($"RenderSurface : {m_Name} resized.");
     }
 
