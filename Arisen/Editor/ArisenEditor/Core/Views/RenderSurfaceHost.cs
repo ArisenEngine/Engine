@@ -1,5 +1,6 @@
 ﻿using System;
 using Avalonia.Controls;
+using Avalonia.Media;
 using Avalonia.Platform;
 
 namespace ArisenEngine.Rendering
@@ -16,6 +17,7 @@ namespace ArisenEngine.Rendering
             
             this.Width = width;
             this.Height = height;
+            
         }
 
         
