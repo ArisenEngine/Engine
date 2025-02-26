@@ -36,9 +36,10 @@
                 </ComboBox.ItemTemplate>
             </ComboBox>
             <TextBlock VerticalAlignment="Center" Text="Scale" />
-            <Slider VerticalAlignment="Center"  
+            <Slider VerticalAlignment="Top" IsEnabled="False"
                      Value="{Binding GameViewScaleValue, Mode=TwoWay}" 
-                     MaxWidth="200" MinWidth="200" MaxHeight="25" MinHeight="25"></Slider>
+                     MaxWidth="200" MinWidth="200" MaxHeight="25" MinHeight="25" Height="10">
+            </Slider>
             <TextBlock  VerticalAlignment="Center" Text="{Binding GameViewScaleValue}"></TextBlock>
         </StackPanel>
         <Grid Grid.Row="1" Name="GameViewContainer"></Grid>
