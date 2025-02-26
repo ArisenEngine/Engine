@@ -28,6 +28,14 @@ internal class GameViewModel : BaseDocumentViewModel
         set => this.RaiseAndSetIfChanged(ref m_GameViewResolutionSelectedIndex, value);
     }
     
+    private float m_GameViewScaleValue = 1.0f;
+
+    public float GameViewScaleValue
+    {
+        get => m_GameViewScaleValue;
+        set => this.RaiseAndSetIfChanged(ref m_GameViewScaleValue, value);
+    }
+    
     private GameViewResolutionConfig? m_SelectedResolution;
     public GameViewResolutionConfig? SelectedResolution
     {
@@ -43,6 +51,9 @@ internal class GameViewModel : BaseDocumentViewModel
         this.WhenAnyValue(x => x.SelectedResolution)
             .Where(res => res != null)
             .Subscribe(OnResolutionConfigChanged).DisposeWith(m_Disposables);
+        
+        this.WhenAnyValue(x=>x.GameViewScaleValue)
+            .Subscribe(OnGameViewScaleChanged).DisposeWith(m_Disposables);
     }
 
     internal void OnUnloaded()
@@ -57,11 +68,30 @@ internal class GameViewModel : BaseDocumentViewModel
         InitDefaultResolutionConfig();
     }
 
-    private void OnResolutionConfigChanged(GameViewResolutionConfig config)
+    private void OnResolutionConfigChanged(GameViewResolutionConfig? config)
     {
         GameViewResolution.s_OnResolutionChanged?.Invoke(config);
     }
-    
+
+    void OnGameViewScaleChanged(float value)
+    {
+        if (MathF.Abs(value - GameViewResolution.GameViewScale) < float.Epsilon)
+        {
+            return;
+        }
+        
+        GameViewResolution.GameViewScale = value;
+    }
+
+    void OnGameViewScaleUpdated(float value)
+    {
+        if (MathF.Abs(value - GameViewScaleValue) < float.Epsilon)
+        {
+            return;
+        }
+        
+        GameViewScaleValue = value;
+    }
     
     private void AttachActions()
     {
@@ -69,12 +99,15 @@ internal class GameViewModel : BaseDocumentViewModel
         GameViewResolution.s_OnResolutionListAdded += OnResolutionListAdded;
         GameViewResolution.s_OnResolutionListRemoved -= OnResolutionListRemoved;
         GameViewResolution.s_OnResolutionListRemoved += OnResolutionListRemoved;
+        GameViewResolution.s_OnGameViewScaleChanged -= OnGameViewScaleUpdated;
+        GameViewResolution.s_OnGameViewScaleChanged += OnGameViewScaleUpdated;
     }
 
     private void DetachActions()
     {
         GameViewResolution.s_OnResolutionListAdded -= OnResolutionListAdded;
         GameViewResolution.s_OnResolutionListRemoved -= OnResolutionListRemoved;
+        GameViewResolution.s_OnGameViewScaleChanged -= OnGameViewScaleUpdated;
     }
     
     private void OnResolutionListAdded(GameViewResolutionConfig config)

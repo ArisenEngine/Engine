@@ -43,7 +43,7 @@ namespace ArisenEngine.Views.Rendering
                 InitRenderViewSize(ref finalWidth, ref finalHeight);
                 m_Host = new RenderSurfaceHost(finalWidth, finalHeight, SurfaceType)
                 {
-                    Name = Name
+                    Name = SurfaceType.ToString()
                 };
                 
                 Console.WriteLine($"Create Render Surface Host: {SurfaceType}");
@@ -72,9 +72,14 @@ namespace ArisenEngine.Views.Rendering
         {
             m_ResolutionConfig = resolutionConfig;
         }
-        
+
         void InitRenderViewSize(ref int originalWidth, ref int originalHeight)
         {
+            if (SurfaceType != SurfaceType.GameView)
+            {
+                return;
+            }
+
             if (m_ResolutionConfig == null)
             {
                 // TODO: log
@@ -82,14 +87,27 @@ namespace ArisenEngine.Views.Rendering
             }
 
             float aspect = m_ResolutionConfig.width / (float)m_ResolutionConfig.height;
-            
+
             if (m_ResolutionConfig.Orientation == GameViewOrientation.Landscape)
             {
-                originalHeight = (int)(originalWidth / aspect);
+                var newHeight = (int)(originalWidth / aspect);
+                GameViewResolution.GameViewScale = (float)newHeight / originalHeight;
+                originalHeight = System.Math.Min(newHeight, originalHeight);
+                if (newHeight > originalHeight)
+                {
+                    originalWidth = (int)(originalWidth / GameViewResolution.GameViewScale);
+                }
+
             }
             else if (m_ResolutionConfig.Orientation == GameViewOrientation.Portrait)
             {
-                originalWidth = (int)(originalHeight * aspect);
+                var newWidth = (int)(originalHeight * aspect);
+                GameViewResolution.GameViewScale = (float)newWidth / originalWidth;
+                originalWidth = System.Math.Min(newWidth, originalWidth);
+                if (newWidth > originalWidth)
+                {
+                    originalHeight = (int)(originalHeight / GameViewResolution.GameViewScale);
+                }
             }
         }
 
@@ -98,6 +116,14 @@ namespace ArisenEngine.Views.Rendering
             base.OnGotFocus(e);
             Debug.Logger.Log($"Focus on :{Name}");
         }
-        
+
+        protected override void OnSizeChanged(SizeChangedEventArgs e)
+        {
+            base.OnSizeChanged(e);
+            var finalWidth = (int)e.NewSize.Width;
+            var finalHeight = (int)e.NewSize.Height;
+            InitRenderViewSize(ref finalWidth, ref finalHeight);
+            m_Host?.Resize(finalWidth, finalHeight);
+        }
     }
 }
