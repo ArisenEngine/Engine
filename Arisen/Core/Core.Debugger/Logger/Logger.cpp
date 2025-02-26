@@ -233,14 +233,18 @@ void Logger::Error(const std::string&& msg)
 	Error(msg.c_str());
 }
 
-void Logger::Fatal(const std::wstring&& msg)
+void Logger::Fatal(const std::wstring&& msg, bool needThrow)
 {
 	Fatal(String::WStringToString(msg));
 }
 
-void Logger::Fatal(const std::string&& msg)
+void Logger::Fatal(const std::string&& msg, bool needThrow)
 {
 	Fatal(msg.c_str());
+	if (needThrow)
+	{
+		throw std::runtime_error(msg);
+	}
 }
 
 void Logger::Trace(const std::wstring&& msg)

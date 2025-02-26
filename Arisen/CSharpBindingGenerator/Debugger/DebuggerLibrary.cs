@@ -6,6 +6,7 @@ namespace CSharpBindingGenerator;
 
 public class DebuggerLibrary : ILibrary
 {
+    
     public void Preprocess(Driver driver, ASTContext ctx)
     {
         // 遍历所有翻译单元并忽略特定的头文件
@@ -15,12 +16,19 @@ public class DebuggerLibrary : ILibrary
             {
                 unit.Ignore = true;
             }
+            
+            foreach (var func in unit.Functions)
+            {
+                if (SkipCheckUtils.ShouldIgnoreFunction(func))
+                {
+                    func.GenerationKind = GenerationKind.None;
+                }
+            }
         }
     }
 
     public void Postprocess(Driver driver, ASTContext ctx)
     {
-        // throw new NotImplementedException();
     }
 
     public void Setup(Driver driver)
@@ -34,13 +42,13 @@ public class DebuggerLibrary : ILibrary
         options.GeneratorKind = GeneratorKind.CSharp;
         options.Verbose = true;
         options.Compilation.DebugMode = true;
-        options.CheckSymbols = true;
+        // options.CheckSymbols = true;
         var module = options.AddModule("Core.Debugger");
         module.OutputNamespace = "";
         module.Headers.Clear();
         module.Headers.Add(@"/Logger/Logger.h");
         module.LibraryDirs.Add(@"../../../../x64/Debug");
-        module.Libraries.Add(@"Core.Debugger.lib");
+        module.Libraries.Add(@"Core.Debugger");
         
     }
 

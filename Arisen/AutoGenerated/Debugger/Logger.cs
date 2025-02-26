@@ -45,6 +45,9 @@ namespace ArisenEngine
                 [SuppressUnmanagedCodeSecurity, DllImport("Core.Debugger.dll", EntryPoint = "?Trace@Logger@Debugger@ArisenEngine@@QEAAXPEBD00@Z", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern void Trace(__IntPtr __instance, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string msg, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string thread_name, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string cs_trace);
 
+                [SuppressUnmanagedCodeSecurity, DllImport("Core.Debugger.dll", EntryPoint = "?Fatal@Logger@Debugger@ArisenEngine@@QEAAX$$QEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z", CallingConvention = __CallingConvention.Cdecl)]
+                internal static extern void Fatal(__IntPtr __instance, __IntPtr msg, bool needThrow);
+
                 [SuppressUnmanagedCodeSecurity, DllImport("Core.Debugger.dll", EntryPoint = "?SetServerityLevel@Logger@Debugger@ArisenEngine@@QEAAXW4LogLevel@123@@Z", CallingConvention = __CallingConvention.Cdecl)]
                 internal static extern void SetServerityLevel(__IntPtr __instance, global::ArisenEngine.Debugger.Logger.LogLevel level);
 
@@ -182,6 +185,15 @@ namespace ArisenEngine
             public void Trace(string msg, string thread_name, string cs_trace)
             {
                 __Internal.Trace(__Instance, msg, thread_name, cs_trace);
+            }
+
+            public void Fatal(string msg, bool needThrow)
+            {
+                var __basicString0 = new global::Std.BasicString<sbyte, global::Std.CharTraits<sbyte>, global::Std.Allocator<sbyte>>();
+                global::Std.BasicStringExtensions.Assign(__basicString0, msg);
+                var __arg0 = __basicString0.__Instance;
+                __Internal.Fatal(__Instance, __arg0, needThrow);
+                __basicString0.Dispose();
             }
 
             public void SetServerityLevel(global::ArisenEngine.Debugger.Logger.LogLevel level)

@@ -41,14 +41,14 @@ namespace ArisenEngine::Debugger
         void Info(const std::string&& msg);
         void Warning(const std::string&& msg);
         void Error(const std::string&& msg);
-        void Fatal(const std::string&& msg);
+        void Fatal(const std::string&& msg, bool needThrow = false);
         void Trace(const std::string&& msg);
         
         void Log(const std::wstring&& msg);
         void Info(const std::wstring&& msg);
         void Warning(const std::wstring&& msg);
         void Error(const std::wstring&& msg);
-        void Fatal(const std::wstring&& msg);
+        void Fatal(const std::wstring&& msg, bool needThrow = false);
         void Trace(const std::wstring&& msg);
 
 
@@ -69,33 +69,17 @@ namespace ArisenEngine::Debugger
     };
 }
 
-#define LOG_INFO(msg) ArisenEngine::Debugger::Logger::GetInstance().Info(std::move(msg));
+
+
+#define LOG_INFO(msg) EXECUTE_CODE(ArisenEngine::Debugger::Logger::GetInstance().Info(std::move(msg));)
 // TODO: support formated log
 // #define LOG_INFO_FORMAT(format,  ...) ArisenEngine::Debugger::Logger::GetInstance().Info(msg);
-#define LOG_DEBUG(msg) DEBUG_OP(ArisenEngine::Debugger::Logger::GetInstance().Log(std::move(msg));)
-#define LOG_WARN(msg) ArisenEngine::Debugger::Logger::GetInstance().Warning(std::move(msg));
-#define LOG_ERROR(msg) ArisenEngine::Debugger::Logger::GetInstance().Error(std::move(msg));
-#define LOG_FATAL(msg) ArisenEngine::Debugger::Logger::GetInstance().Fatal(std::move(msg));
-#define LOG_FATAL_AND_THROW(msg) ArisenEngine::Debugger::Logger::GetInstance().Fatal(std::move(msg)); \
-                                 throw std::runtime_error(msg);
-#define LOG_TRACE(msg) ArisenEngine::Debugger::Logger::GetInstance().Trace(std::move(msg));
-
-// #undef LOG_INFO
-// #define LOG_INFO(msg) 
-// // TODO: support formated log
-// // #define LOG_INFO_FORMAT(format,  ...) ArisenEngine::Debugger::Logger::GetInstance().Info(msg);
-// #undef LOG_DEBUG
-// #define LOG_DEBUG(msg)
-// #undef LOG_WARN
-// #define LOG_WARN(msg)
-// #undef LOG_ERROR
-// #define LOG_ERROR(msg)
-// #undef LOG_FATAL
-// #define LOG_FATAL(msg)
-// #undef LOG_FATAL_AND_THROW
-// #define LOG_FATAL_AND_THROW(msg)
-// #undef LOG_TRACE
-// #define LOG_TRACE(msg) 
+#define LOG_DEBUG(msg) EXECUTE_CODE(DEBUG_OP(ArisenEngine::Debugger::Logger::GetInstance().Log(std::move(msg));))
+#define LOG_WARN(msg) EXECUTE_CODE(ArisenEngine::Debugger::Logger::GetInstance().Warning(std::move(msg));)
+#define LOG_ERROR(msg) EXECUTE_CODE(ArisenEngine::Debugger::Logger::GetInstance().Error(std::move(msg));)
+#define LOG_FATAL(msg) EXECUTE_CODE(ArisenEngine::Debugger::Logger::GetInstance().Fatal(std::move(msg));)
+#define LOG_FATAL_AND_THROW(msg) EXECUTE_CODE(ArisenEngine::Debugger::Logger::GetInstance().Fatal(std::move(msg), true);)
+#define LOG_TRACE(msg) EXECUTE_CODE(ArisenEngine::Debugger::Logger::GetInstance().Trace(std::move(msg));)
 
 #include <cstdlib> // for abort()
 
@@ -109,7 +93,7 @@ do {                                                                    \
         LOG_FATAL(msg)                           \
         std::abort();                                                   \
     }                                                                   \
-} while (0)                    
+} while (0);                    
 
 
 #define ASSERT(x) DEBUG_OP(assert(x);)

@@ -19,8 +19,6 @@ internal partial class ConsoleView : UserControl
     public ConsoleView()
     {
         InitializeComponent();
-        m_ViewModel = new ConsoleViewModel();
-        DataContext = m_ViewModel;
     }
 
     private void OnLogMessageAdd(LogMessage message)
@@ -36,6 +34,7 @@ internal partial class ConsoleView : UserControl
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
+        m_ViewModel = DataContext as ConsoleViewModel;
         m_ViewModel?.Clear();
         
         Logger.MessageAdded += OnLogMessageAdd;
