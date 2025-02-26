@@ -20,17 +20,22 @@ internal static class ArisenInstance
     private static bool Initialize()
     {
         bool isInitializeDone = true;
-        switch (ArisenApplication.s_Platform)
-        {
-            case RuntimePlatform.Windows:
-                m_MessageHandler = new WindowsMessageHandle();
-                break;
-            default:
-                isInitializeDone = false;
-                throw new Exception($"Unsupported platform type:{ArisenApplication.s_Platform}");
-        }
-
+        
         isInitializeDone &= Logger.Initialize(ArisenApplication.s_IsInEditor);
+
+        if (isInitializeDone)
+        {
+            switch (ArisenApplication.s_Platform)
+            {
+                case RuntimePlatform.Windows:
+                    m_MessageHandler = new WindowsMessageHandle();
+                    break;
+                default:
+                    isInitializeDone = false;
+                    Logger.Fatal($"Unsupported platform type:{ArisenApplication.s_Platform}");
+                    break;
+            }
+        }
         
         return isInitializeDone;
     }
@@ -51,6 +56,14 @@ internal static class ArisenInstance
         }
 
         throw new Exception($"Same host : {host} already added");
+    }
+
+    internal static void ResizeSurface(IntPtr host, int width, int height)
+    {
+        if (m_RenderSurfaces.ContainsKey(host))
+        {
+            
+        }
     }
 
     internal static void UnregisterSurface(IntPtr host)

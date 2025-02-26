@@ -4,6 +4,7 @@ using ArisenEditor.GameDev;
 using Avalonia;
 using Avalonia.ReactiveUI;
 using ArisenEngine;
+using ArisenEngine.Debug;
 
 namespace ArisenEditor.Desktop.Desktop;
 
@@ -24,6 +25,7 @@ class Program
 
     static void Setup()
     {
+        Logger.Initialize(ArisenApplication.s_IsInEditor);
         ProjectSolution.InstallationRoot = Environment.GetEnvironmentVariable(ProjectSolution.INSTALLATION_ENV_VARIABLE, EnvironmentVariableTarget.User);
         if (ProjectSolution.InstallationRoot == null)
         {

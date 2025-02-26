@@ -8,7 +8,7 @@ public static class Logger
 {
     internal static void RecordLog(uint type, string threadId, string msg, string trace)
     {
-       
+        
         string threadName = Thread.CurrentThread.Name;
         var message = new LogMessage((LogLevel)type, msg, threadId, threadName, DateTime.Now, trace);
 

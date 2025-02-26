@@ -1,4 +1,5 @@
 using ArisenEngine.Rendering;
+using CppSharp.Types.Std;
 
 namespace ArisenEngine.Platforms;
 
@@ -12,6 +13,9 @@ internal abstract class WindowProcessor
     
     protected IntPtr m_ProcPtr;
     public IntPtr ProcPtr => m_ProcPtr;
+
+    protected IntPtr m_ResizeCallbackPtr;
+    public IntPtr ResizeCallbackPtr => m_ResizeCallbackPtr;
     
     protected abstract void OnResizing();
 

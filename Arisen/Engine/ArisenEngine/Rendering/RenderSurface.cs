@@ -45,11 +45,14 @@ internal class RenderSurface : IRenderSurface
         if (Initialize())
         {
             m_Host = host;
+            System.Diagnostics.Debug.Assert(m_Processor != null, nameof(m_Processor) + " != null");
             m_SurfaceId = isFullScreen
                 ? RenderWindowAPI.CreateFullScreenRenderSurface(host, m_Processor.ProcPtr)
                 : RenderWindowAPI.CreateRenderWindow(host, m_Processor.ProcPtr, width, height);
             m_Handle = RenderWindowAPI.GetWindowHandle(m_SurfaceId);
             Surfaces.Add(this);
+            
+            RenderWindowAPI.SetWindowResizeCallback(m_SurfaceId, m_Processor.ResizeCallbackPtr);
         }
         else
         {

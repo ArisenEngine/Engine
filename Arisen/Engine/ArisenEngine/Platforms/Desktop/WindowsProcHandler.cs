@@ -8,10 +8,24 @@ internal class WindowsProcHandler : WindowProcessor
 {
     private Win32Native.WndProc m_WndProc;
     
+    private delegate void ResizeCallback(IntPtr hwnd, int width, int height);
+    
+    private ResizeCallback m_ResizeCallback;
+    
     internal WindowsProcHandler(RenderSurface renderSurface): base(renderSurface)
     {
-        m_WndProc = new Win32Native.WndProc(WindowProc);
+        m_WndProc = WindowProc;
+        m_ResizeCallback = OnResizeDone;
+        
         m_ProcPtr = Marshal.GetFunctionPointerForDelegate(m_WndProc);
+     
+        m_ResizeCallbackPtr = Marshal.GetFunctionPointerForDelegate(m_ResizeCallback);
+        
+    }
+
+    private void OnResizeDone(IntPtr hwnd, int width, int height)
+    {
+        Console.WriteLine($"OnResizeDone hwnd:{hwnd}, width:{width}, height:{height}");
     }
     
     private IntPtr WindowProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam)
