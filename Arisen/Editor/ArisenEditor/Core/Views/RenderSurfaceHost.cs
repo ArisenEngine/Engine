@@ -49,8 +49,6 @@ namespace ArisenEngine.Rendering
         {
             this.Width = width;
             this.Height = height;
-            
-            
         }
     }
 }

@@ -36,6 +36,8 @@ internal class RenderSurface : IRenderSurface
     private bool m_Hosted = true;
 
     public IntPtr Handle => m_Handle;
+    
+    public uint SurfaceId => m_SurfaceId;
 
     public RenderSurface(IntPtr host, string name, int width = 0, int height = 0, bool hosted = true)
     {
@@ -99,7 +101,7 @@ internal class RenderSurface : IRenderSurface
 
     public void OnResizing()
     {
-        
+        Console.WriteLine($"RenderSurface : {m_Name} resizing.");
     }
 
     public void OnResized()

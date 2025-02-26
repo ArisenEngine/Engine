@@ -60,9 +60,9 @@ internal static class ArisenInstance
 
     internal static void ResizeSurface(IntPtr host, int width, int height)
     {
-        if (m_RenderSurfaces.ContainsKey(host))
+        if (m_RenderSurfaces.TryGetValue(host, out var surface))
         {
-            
+            // RenderWindowAPI.ResizeRenderSurface(surface.Surface.SurfaceId, (uint)width, (uint)height);
         }
     }
 

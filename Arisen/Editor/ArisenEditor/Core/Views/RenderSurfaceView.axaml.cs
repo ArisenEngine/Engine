@@ -70,7 +70,16 @@ namespace ArisenEngine.Views.Rendering
 
         void OnGameViewResolutionChanged(GameViewResolutionConfig resolutionConfig)
         {
+            if (m_Host == null)
+            {
+                return;
+            }
+            
             m_ResolutionConfig = resolutionConfig;
+            int finalWidth = (int)RenderViewContainer.Bounds.Width;
+            int finalHeight = (int)RenderViewContainer.Bounds.Height;
+            InitRenderViewSize(ref finalWidth, ref finalHeight);
+            m_Host?.Resize(finalWidth, finalHeight);
         }
 
         void InitRenderViewSize(ref int originalWidth, ref int originalHeight)
