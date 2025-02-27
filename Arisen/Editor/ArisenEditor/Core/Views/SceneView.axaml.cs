@@ -19,6 +19,12 @@ public partial class SceneView : UserControl
         LoadNativeRenderWindow();
     }
 
+    protected override void OnUnloaded(RoutedEventArgs e)
+    {
+        base.OnUnloaded(e);
+        SceneViewContainer.Children.Clear();
+    }
+
     private void LoadNativeRenderWindow()
     {
         // Preview
