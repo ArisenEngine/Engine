@@ -52,8 +52,8 @@ internal class GameViewModel : BaseDocumentViewModel
             .Where(res => res != null)
             .Subscribe(OnResolutionConfigChanged).DisposeWith(m_Disposables);
         
-        this.WhenAnyValue(x=>x.GameViewScaleValue)
-            .Subscribe(OnGameViewScaleChanged).DisposeWith(m_Disposables);
+        // this.WhenAnyValue(x=>x.GameViewScaleValue)
+        //     .Subscribe(OnGameViewScaleChanged).DisposeWith(m_Disposables);
     }
 
     internal void OnUnloaded()

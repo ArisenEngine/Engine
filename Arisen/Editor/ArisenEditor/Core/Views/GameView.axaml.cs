@@ -45,6 +45,7 @@ public partial class GameView : UserControl
     {
         base.OnUnloaded(e);
         m_GameViewModel.OnUnloaded();
+        GameViewContainer.Children.Clear();
     }
     
     private void LoadNativeRenderWindow()
