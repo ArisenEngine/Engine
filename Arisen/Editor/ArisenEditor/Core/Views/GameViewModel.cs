@@ -80,7 +80,7 @@ internal class GameViewModel : BaseDocumentViewModel
             return;
         }
         
-        GameViewResolution.GameViewScale = value;
+        // GameViewResolution.GameViewScale = value;
     }
 
     void OnGameViewScaleUpdated(float value)
