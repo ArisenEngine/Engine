@@ -43,7 +43,7 @@ namespace ArisenEngine.Rendering
 
         public void Dispose()
         {
-            Debug.Logger.Log("############# RenderSurfaceHost Dispose #################");
+            Debug.Logger.Log($"############# RenderSurfaceHost Dispose:{m_SurfaceType} #################");
             
         }
 

@@ -63,7 +63,7 @@ public static class RenderPipelineManager
         
         if (currentPipeline == null)
         {
-            Logger.Warning("Current render pipeline is null");
+           // Logger.Warning("Current render pipeline is null");
             return;
         }
         

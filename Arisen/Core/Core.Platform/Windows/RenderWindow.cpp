@@ -12,7 +12,7 @@ struct RenderWindow
     Platforms::Window window {};
 };
 
-static Vector<RenderWindow> renderWindows;
+static Map<UInt32, RenderWindow> renderWindows;
 
 UInt32 Platforms::CreateFullScreenRenderSurface(HWND host, Platforms::WindowProc callback)
 {
@@ -25,8 +25,8 @@ inline UInt32 Platforms::CreateRenderWindow(HWND host, WindowProc callback, SInt
     Platforms::WindowInitInfo info{ callback, nullptr, host ? host : nullptr, nullptr, 0, 0, width, height };
     RenderWindow surface{ CreateNewWindow(&info) };
     ASSERT(surface.window.IsValid());
-    renderWindows.emplace_back(surface);
-    return (UInt32)renderWindows.size() - 1;
+    renderWindows[surface.window.ID()] = surface;
+    return surface.window.ID();
 }
 
 inline UInt32 Platforms::CreateRenderWindowWithResizeCallback(HWND host, Platforms::WindowProc callback, WindowExitResize resizeCallback, SInt32 width, SInt32 height)
@@ -34,37 +34,37 @@ inline UInt32 Platforms::CreateRenderWindowWithResizeCallback(HWND host, Platfor
     Platforms::WindowInitInfo info{ callback, resizeCallback, host ? host : nullptr, nullptr, 0, 0, width, height };
     RenderWindow surface{ CreateNewWindow(&info) };
     ASSERT(surface.window.IsValid());
-    renderWindows.emplace_back(surface);
-    return (UInt32)renderWindows.size() - 1;
+    renderWindows[surface.window.ID()] = surface;
+    return surface.window.ID();
 }
 
 inline void Platforms::RemoveRenderSurface(UInt32 id)
 {
-    ASSERT(id < renderWindows.size());
+    ASSERT(renderWindows.contains(id));
     Platforms::RemoveWindow(renderWindows[id].window.ID());
 }
 
 inline void Platforms::ResizeRenderSurface(UInt32 id, UInt32 width, UInt32 height)
 {
-    ASSERT(id < renderWindows.size());
+    ASSERT(renderWindows.contains(id));
     renderWindows[id].window.Resize(width, height);
 }
 
 inline Platforms::WindowHandle Platforms::GetWindowHandle(UInt32 id)
 {
-    ASSERT(id < renderWindows.size());
+    ASSERT(renderWindows.contains(id));
     return (Platforms::WindowHandle)renderWindows[id].window.Handle();
 }
 
 inline UInt32 Platforms::GetWindowWidth(UInt32 id)
 {
-    ASSERT(id < renderWindows.size());
+    ASSERT(renderWindows.contains(id));
     return renderWindows[id].window.Width();
 }
 
 inline UInt32 Platforms::GetWindowHeight(UInt32 id)
 {
-    ASSERT(id < renderWindows.size());
+    ASSERT(renderWindows.contains(id));
     return renderWindows[id].window.Height();
 }
 
