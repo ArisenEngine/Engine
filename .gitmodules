@@ -2,3 +2,6 @@
 	path = Arisen/3rdparty/Ava.Dock
 	url = https://github.com/eatdreamcat/Dock.git
 
+[submodule "Arisen/3rdparty/tracy"]
+	path = Arisen/3rdparty/tracy
+	url = https://github.com/eatdreamcat/tracy.git

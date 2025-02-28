@@ -8,3 +8,6 @@
 Vulkan SDK
 C++ ATL
 DotNet 9.0
+
+Tracy 编译环境
+cmake version 3.29.2
