@@ -21,12 +21,10 @@ integration, you might want to try defining both TRACY_DELAYED_INIT and TRACY_MA
 #define TRACY_FIBERS 1
 
 // Manual lifetime and delayed init should define together
-#define TRACY_MANUAL_LIFETIME
-#define TRACY_DELAYED_INIT
+#define TRACY_MANUAL_LIFETIME 1
+#define TRACY_DELAYED_INIT 1
 
 #include <tracy/Tracy.hpp> // NOLINT(clang-diagnostic-invalid-utf8)
-#include <tracy/TracyC.h>
-
 
 #include "Common.h"
 
@@ -36,13 +34,12 @@ namespace Arisen::Tools::Profiler
     {
         static void Initialize()
         {
-            // TODO: fix compile link error
-            // tracy::StartupProfiler();
+            tracy::GetProfiler();
         }
         
         static void Terminate()
         {
-            // tracy::ShutdownProfiler();
+           
         }
         
         TOOL_PROFILER_DLL void SetThreadName(const char* name);
@@ -55,16 +52,16 @@ namespace Arisen::Tools::Profiler
         TOOL_PROFILER_DLL void SetFrameMarkEnd(const char* name);
         TOOL_PROFILER_DLL void CaptureFrameImage(const void* image, uint16_t w, uint16_t h, uint8_t offset, bool flip );
         
-        TOOL_PROFILER_DLL TracyCZoneCtx MarkNamedZoneScope(const char* name);
-        TOOL_PROFILER_DLL TracyCZoneCtx MarkZoneScope();
-        TOOL_PROFILER_DLL void MarkZoneEnd(TracyCZoneCtx zone);
+        TOOL_PROFILER_DLL void MarkNamedZoneScope(const char* name);
+        TOOL_PROFILER_DLL void MarkZoneScope();
+        TOOL_PROFILER_DLL void MarkZoneEnd();
         TOOL_PROFILER_DLL void MarkLock();
         TOOL_PROFILER_DLL void MarkMemoryDiscard(const char* name, bool secure);
         TOOL_PROFILER_DLL void MarkMemoryAlloc(const void* ptr, size_t size, bool secure);
         TOOL_PROFILER_DLL void MarkMemoryFree(const void* ptr, bool secure);
         TOOL_PROFILER_DLL void MarkNamedMemoryAlloc(const void* ptr, size_t size, bool secure, const char* name);
         TOOL_PROFILER_DLL void MarkNamedMemoryFree(const void* ptr, bool secure, const char* name);
-        TOOL_PROFILER_DLL void MarkFiberEnter(const char* name, int32_t groupHint);
+        TOOL_PROFILER_DLL void MarkFiberEnter(const char* fiber, int32_t groupHint);
         TOOL_PROFILER_DLL void MarkFiberExit();
         
     }

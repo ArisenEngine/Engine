@@ -27,9 +27,9 @@ namespace Arisen::Tools::Profiler
         tracy::Profiler::LeaveFiber();
     }
 
-    inline void MarkFiberEnter(const char* name, int32_t groupHint)
+    inline void MarkFiberEnter(const char* fiber, int32_t groupHint )
     {
-        tracy::Profiler::EnterFiber(name, groupHint);
+        tracy::Profiler::EnterFiber(fiber, groupHint);
     }
     
     inline void MarkNamedMemoryFree(const void* ptr, bool secure, const char* name)
@@ -62,22 +62,18 @@ namespace Arisen::Tools::Profiler
        
     }
 
-    inline TracyCZoneCtx MarkZoneScope()
+    inline void MarkZoneScope()
     {
-        TracyCZone(tracy_zone, true);  // 开启 Tracy 采样区
-        return tracy_zone;
     }
 
-    inline TracyCZoneCtx MarkNamedZoneScope(const char* name)
+    inline void MarkNamedZoneScope(const char* name)
     {
-        TracyCZone(tracy_zone, true);  // 开启 Tracy 采样区
-        TracyCZoneText(tracy_zone, name, strlen(name));  // 设置动态名称
-        return tracy_zone;
+       
     }
 
-    inline void MarkZoneEnd(TracyCZoneCtx zone)
+    inline void MarkZoneEnd()
     {
-        TracyCZoneEnd(zone);  // 结束 Tracy 采样区
+       
     }
 
     inline void CaptureFrameImage(const void* image, uint16_t w, uint16_t h, uint8_t offset, bool flip)
