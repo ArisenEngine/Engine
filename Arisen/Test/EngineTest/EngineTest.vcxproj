@@ -13,7 +13,7 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp" Exclude="Shader/*" />
     <CopyFileToFolders Include="Shader\UniformBuffers.hlsl">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
@@ -46,7 +46,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Assets\Arisen.png" />
+    <Content Include="Assets\Arisen.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

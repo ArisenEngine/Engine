@@ -1,6 +1,4 @@
 #pragma once
-#include <format>
-#include <vulkan/vulkan.h>
 #include "RHI/Enums/Pipeline/EDescriptorType.h"
 #include "RHI/Enums/Image/EImageTiling.h"
 #include "RHI/Enums/Image/EImageType.h"
@@ -9,6 +7,7 @@
 #include "RHI/Handles/BufferHandle.h"
 #include "RHI/Memory/ImageSubresourceLayers.h"
 #include "RHI/Synchronization/RHIImageSubresourceRange.h"
+#include "RHI/Program/RHISampler.h"
 
 #define VK_STRUCT_INITIALIZE(type, name) type name ##{##};
 
@@ -253,11 +252,25 @@ namespace ArisenEngine::RHI
         return barrier;
     }
 
-    inline VkSamplerCreateInfo SamplerCreateInfo()
+    inline VkSamplerCreateInfo SamplerCreateInfo(RHISamplerDesc&& desc)
     {
         VK_STRUCT_INITIALIZE(VkSamplerCreateInfo, samplerCreateInfo)
         samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        
+        samplerCreateInfo.magFilter = static_cast<VkFilter>(desc.magFilter);
+        samplerCreateInfo.minFilter = static_cast<VkFilter>(desc.minFilter);
+        samplerCreateInfo.mipmapMode = static_cast<VkSamplerMipmapMode>(desc.mipmapMode);
+        samplerCreateInfo.addressModeU = static_cast<::VkSamplerAddressMode>(desc.addressModeU);
+        samplerCreateInfo.addressModeV = static_cast<::VkSamplerAddressMode>(desc.addressModeV);
+        samplerCreateInfo.addressModeW = static_cast<::VkSamplerAddressMode>(desc.addressModeW);
+        samplerCreateInfo.mipLodBias = static_cast<float>(desc.mipLodBias);
+        samplerCreateInfo.anisotropyEnable = static_cast<VkBool32>(desc.anisotropyEnable);
+        samplerCreateInfo.maxAnisotropy = static_cast<float>(desc.maxAnisotropy);
+        samplerCreateInfo.compareEnable = static_cast<VkBool32>(desc.compareEnable);
+        samplerCreateInfo.compareOp = static_cast<VkCompareOp>(desc.compareOp);
+        samplerCreateInfo.minLod = static_cast<float>(desc.minLod);
+        samplerCreateInfo.maxLod = static_cast<float>(desc.maxLod);
+        samplerCreateInfo.borderColor = static_cast<VkBorderColor>(desc.borderColor);
+        samplerCreateInfo.unnormalizedCoordinates = static_cast<VkBool32>(desc.unnormalizedCoordinates);
         return samplerCreateInfo;
     }
 }

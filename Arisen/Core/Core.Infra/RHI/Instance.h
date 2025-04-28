@@ -11,7 +11,12 @@ namespace ArisenEngine::RHI
 {
     class Device;
     class Surface;
+    class RHIFactory;
+}
 
+namespace ArisenEngine::RHI
+{
+    
     struct InstanceInfo
     {
         /** app name */
@@ -34,12 +39,12 @@ namespace ArisenEngine::RHI
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(Instance)
         VIRTUAL_DECONSTRUCTOR(Instance)
-        
-        Instance(InstanceInfo&& instance_info): m_MaxFramesInFlight(instance_info.maxFramesInFlight)
+
+        explicit Instance(InstanceInfo&& instance_info): m_DeviceLimits(),
+                                                         m_MaxFramesInFlight(instance_info.maxFramesInFlight)
         {
-            
         }
-        
+
         bool IsEnableValidation()
         {
             return m_EnableValidation;
@@ -83,9 +88,11 @@ namespace ArisenEngine::RHI
         {
             return m_DeviceLimits;
         };
+
+        virtual RHIFactory* CreateFactory() = 0;
         
     protected:
-
+        
         RHIDeviceLimits m_DeviceLimits;
         UInt32 m_MaxFramesInFlight;
         bool m_EnableValidation { false };

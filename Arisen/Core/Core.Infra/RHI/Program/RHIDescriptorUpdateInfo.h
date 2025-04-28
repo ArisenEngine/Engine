@@ -1,5 +1,5 @@
 #pragma once
-#include "Sampler.h"
+#include "RHISampler.h"
 #include "../RHICommon.h"
 #include "../Memory/BufferView.h"
 
@@ -7,7 +7,7 @@ namespace ArisenEngine::RHI
 {
     typedef struct RHIDescriptorImageInfo
     {
-        Sampler*        sampler;
+        RHISampler*        sampler;
         ImageView*      imageView;
         EImageLayout   imageLayout;
         

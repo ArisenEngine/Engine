@@ -4,6 +4,7 @@
 typedef struct RHISamplerLimits
 {
     ArisenEngine::Float32 maxSamplerAnisotropy;
+    
 } RHISamplerLimits;
 
 typedef struct RHIDeviceLimits

@@ -9,6 +9,11 @@
 
 namespace ArisenEngine::RHI
 {
+    class RHIVkFactory;
+}
+
+namespace ArisenEngine::RHI
+{
     struct VulkanVersion
     {
         UInt32 variant, major, minor;
@@ -56,13 +61,14 @@ namespace ArisenEngine::RHI
         const UInt32 GetExternalIndex() const override { return VK_SUBPASS_EXTERNAL; }
 
         void UpdateSurfaceCapabilities(Surface* surface) override;
+
+        RHIFactory* CreateFactory() override;
     
     protected:
         
         void CheckSwapChainCapabilities() override;
         
     private:
-
         
         VkInstance m_VkInstance;
         // devices

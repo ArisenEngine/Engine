@@ -1,6 +1,6 @@
 #include "RHIVkInstance.h"
 #include <vulkan/vulkan_core.h>
-
+#include "RHIVkFactory.h"
 #include "Program/RHIVkGPUProgram.h"
 #include "Windows/RenderWindowAPI.h"
 
@@ -33,15 +33,24 @@ int RateDeviceSuitability(VkPhysicalDevice device) {
     int score = 0;
 
     // Discrete GPUs have a significant performance advantage
-    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+    {
         score += 1000;
     }
 
+    
     // Maximum possible size of textures affects graphics quality
     score += deviceProperties.limits.maxImageDimension2D;
+    score += deviceProperties.limits.maxViewports;
+    score += deviceProperties.limits.maxSamplerAnisotropy;
 
     // Application can't function without geometry shaders
     if (!deviceFeatures.geometryShader)
+    {
+        return 0;
+    }
+
+    if (!deviceFeatures.samplerAnisotropy)
     {
         return 0;
     }
@@ -426,9 +435,10 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
-    // Device Features
+    // Set Device Features
     VkPhysicalDeviceFeatures deviceFeatures{};
-
+    deviceFeatures.samplerAnisotropy = VK_TRUE;
+    
     // Device Create Info
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -464,12 +474,18 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
 
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(m_CurrentPhysicsDevice, &memProperties);
+
+    auto logicalDevice = std::make_unique<RHIVkDevice>(this, &rhiSurface, graphicQueue, presentQueue, device, memProperties);
+    VkPhysicalDeviceProperties physicalProperties {};
+    vkGetPhysicalDeviceProperties(m_CurrentPhysicsDevice, &physicalProperties);
+    {
+        logicalDevice->m_DeviceLimits.sampler.maxSamplerAnisotropy = physicalProperties.limits.maxSamplerAnisotropy;
+    }
     
     LOG_INFO("[RHIVkInstance::CreateLogicDevice]: Create Logical Device for surface " + std::to_string(windowId));
     m_LogicalDevices.insert(
-        {
-            windowId,
-            std::make_unique<RHIVkDevice>(this, &rhiSurface, graphicQueue, presentQueue, device, memProperties)
+        {    windowId,
+             std::move(logicalDevice)
         });
 }
 
@@ -488,6 +504,11 @@ const ArisenEngine::RHI::EFormat ArisenEngine::RHI::RHIVkInstance::GetSuitableSw
 const ArisenEngine::RHI::PresentMode ArisenEngine::RHI::RHIVkInstance::GetSuitablePresentMode(UInt32&& windowId)
 {
     return PRESENT_MODE_FIFO;
+}
+
+ArisenEngine::RHI::RHIFactory* ArisenEngine::RHI::RHIVkInstance::CreateFactory()
+{
+   return new RHIVkFactory();
 }
 
 void ArisenEngine::RHI::RHIVkInstance::UpdateSurfaceCapabilities(Surface* surface)

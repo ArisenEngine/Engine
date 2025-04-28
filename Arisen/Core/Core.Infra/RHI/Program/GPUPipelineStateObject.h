@@ -43,13 +43,32 @@ namespace ArisenEngine::RHI
         virtual UInt32 GetVertexBindingDescriptionCount() = 0;
         virtual void* GetVertexBindingDescriptions() = 0;
         virtual void ClearVertexBindingDescriptions() = 0;
-        
+        /// 
+        /// @param layoutIndex descriptorSetLayout index
+        /// @param binding binding index in layout(set)
+        /// @param type descriptorType
+        /// @param descriptorCount  
+        /// @param shaderStageFlags 
+        /// @param imageInfos 
+        /// @param pImmutableSamplers 
         virtual void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
-            UInt32 descriptorCount, UInt32 shaderStageFlags, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos,
-            ImmutableSamplers* pImmutableSamplers = nullptr) = 0;
+                                                   UInt32 descriptorCount, UInt32 shaderStageFlags, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos,
+                                                   ImmutableSamplers* pImmutableSamplers = nullptr) = 0;
+        /// 
+        /// @param layoutIndex descriptorSetLayout index
+        /// @param binding binding index in layout(set)
+        /// @param type descriptorType
+        /// @param descriptorCount  
+        /// @param shaderStageFlags 
         virtual void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
                                                    UInt32 descriptorCount, UInt32 shaderStageFlags,
                                                    const Containers::Vector<std::shared_ptr<BufferHandle>>&& bufferHandles) = 0;
+        /// 
+        /// @param layoutIndex descriptorSetLayout index
+        /// @param binding binding index in layout(set)
+        /// @param type descriptorType
+        /// @param descriptorCount  
+        /// @param shaderStageFlags 
         virtual void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
                                                    UInt32 descriptorCount, UInt32 shaderStageFlags,
                                                    const Containers::Vector<BufferView*>&& texelBufferViews) = 0;

@@ -4,6 +4,7 @@
 #include "RHI/CommandBuffer/RHICommandBufferPool.h"
 #include "RHI/Enums/Memory/EMemoryPropertyFlagBits.h"
 #include "RHI/Program/DescriptorPool.h"
+#include "RHI/DeviceLimits.h"
 
 namespace ArisenEngine::RHI
 {
@@ -70,11 +71,17 @@ namespace ArisenEngine::RHI
         virtual UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) = 0;
 
         virtual void SetResolution(UInt32 width, UInt32 height) = 0;
+
+        const RHIDeviceLimits GetDeviceLimits() const
+        {
+            return m_DeviceLimits;
+        }
         
     protected:
         
         Instance* m_Instance;
         Surface* m_Surface;
+        RHIDeviceLimits m_DeviceLimits;
         Device(Instance* instance, Surface* surface): m_Instance(instance), m_Surface(surface) {}
     private:
         
