@@ -11,12 +11,14 @@ struct Varying
     float3 color : TEXCOORD1;
 };
 
-cbuffer UboView : register(b0, space0) // 绑定到 set 0, binding 0
+cbuffer UboView : register(b0, space0) // set 0, binding 0
 {
     float4x4 model;
     float4x4 view;
     float4x4 projection;
 };
+
+
 
 Varying Vert(Attribute input, uint vertexId : SV_VertexID)
 {

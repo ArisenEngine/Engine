@@ -1,7 +1,7 @@
 #pragma once
 namespace ArisenEngine::RHI
 {
-    typedef enum VkSamplerAddressMode {
+    typedef enum ESamplerAddressMode {
         SAMPLER_ADDRESS_MODE_REPEAT = 0,
         SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT = 1,
         SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE = 2,

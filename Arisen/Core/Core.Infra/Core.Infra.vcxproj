@@ -90,8 +90,9 @@
     <ClInclude Include="RHI\Program\GPUPipelineStateObject.h" />
     <ClInclude Include="RHI\Program\GPUProgram.h" />
     <ClInclude Include="RHI\Program\GPUSubPass.h" />
-    <ClInclude Include="RHI\Program\Sampler.h" />
+    <ClInclude Include="RHI\Program\RHISampler.h" />
     <ClInclude Include="RHI\RHICommon.h" />
+    <ClInclude Include="RHI\RHIFactory.h" />
     <ClInclude Include="RHI\Surfaces\Attachment.h" />
     <ClInclude Include="RHI\Surfaces\FrameBuffer.h" />
     <ClInclude Include="RHI\Surfaces\Surface.h" />

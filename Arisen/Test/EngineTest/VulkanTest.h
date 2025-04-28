@@ -50,6 +50,7 @@ struct RenderContext
 
 Containers::Vector<RenderContext> g_RenderContexts;
 
+RHI::RHIFactory* gRHIFactory = nullptr;
 const int k_WindowsCount = 1;
 
 void WinResize(HWND hwnd, UInt32 width, UInt32 height)
@@ -175,6 +176,7 @@ public:
 
         Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphsicsAPI::Vulkan);
         m_Instance = Graphics::RHILoader::CreateInstance(std::move(app_info));
+        gRHIFactory = m_Instance->CreateFactory();
         auto env = m_Instance->GetEnvString();
         // LOG_INFO(std::move(env));
 
@@ -592,6 +594,8 @@ public:
             Containers::Vector<std::shared_ptr<RHI::BufferHandle>>{
                 context.uniformBuffers[currentIndex]
             });
+        pipelineState->AddDescriptorSetLayoutBinding(0, 1, RHI::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            1, RHI::SHADER_STAGE_FRAGMENT_BIT)
         pipelineState->BuildDescriptorSetLayout();
         
         // Record cmd
