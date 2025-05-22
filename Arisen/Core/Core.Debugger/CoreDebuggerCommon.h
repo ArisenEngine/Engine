@@ -10,8 +10,9 @@
 
 #endif
 
+
 extern "C" DEBUGGER_DLL void dummy_core_debugger_function();
 inline void dummy_core_debugger_function()
 {
-    
+    //
 }

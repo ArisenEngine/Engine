@@ -1,8 +1,9 @@
 #pragma once
+
 #include "Common/CommandHeaders.h"
 #include"../CoreDebuggerCommon.h"
 
-#pragma warning(disable : 4996)
+
 
 namespace ArisenEngine::Debugger
 {

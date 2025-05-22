@@ -3,51 +3,71 @@
 #include <spdlog/cfg/env.h>   // support for loading levels from the environment variable
 #include <spdlog/fmt/ostr.h> // support for user defined types
 #include <spdlog/sinks/basic_file_sink.h>
-#include <stacktrace>
+
+#if defined(__has_include) && __has_include(<stacktrace>) && __cpp_lib_stacktrace >= 202011
+    #define HAS_STD_STACKTRACE 1
+    #include <stacktrace>
+#else
+    #define HAS_STD_STACKTRACE 0
+#endif
+
 #include "Logger.h"
 
 
 using namespace ArisenEngine::Debugger;
 
+inline std::string GetStacktrace()
+{
+#if HAS_STD_STACKTRACE
+    std::stringstream trace_stream;
+    trace_stream << std::stacktrace::current();
+    return trace_stream.str();
+#else
+    return "[stacktrace not available]";
+#endif
+}
+
 #define DO_LOG_MESSAGE(spd_level, callback_level, msg, thread_name, cs_trace)                                 \
-	std::string msg_str { msg != nullptr ? msg : "" };													      \
-	std::string thread_name_str { thread_name != nullptr ? thread_name : "" };                                \
-	std::string cs_trace_str { cs_trace != nullptr ? cs_trace : "" };                                         \
-                                                                                                              \
-	std::stringstream trace_stream;                                                                           \
-	trace_stream << std::stacktrace::current();                                                               \
-	std::string trace_str { trace_stream.str() + cs_trace_str };                                              \
-                                                                                                              \
-	std::string content { std::string(msg) + "\n" + trace_str + "\n" };                                       \
-	spdlog::default_logger()->spd_level(content);                                                             \
-                                                                                                              \
-	std::stringstream thread_id_stream;                                                                       \
-	thread_id_stream << std::this_thread::get_id();                                                           \
-                                                                                                              \
-	if (m_LogCallback != nullptr)                                                                             \
-	{                                                                                                         \
-		m_LogCallback((UInt32)LogLevel::callback_level, thread_id_stream.str().c_str(), msg, trace_str.c_str()); \
-	}                                                                                                         \
+{                                                                                                           \
+    const std::string msg_str = (msg) != nullptr ? (msg) : "";                                               \
+    const std::string thread_name_str = (thread_name) != nullptr ? (thread_name) : "";                       \
+    const std::string cs_trace_str = (cs_trace) != nullptr ? (cs_trace) : "";                                \
+                                                                                                            \
+    const std::string trace_str = GetStacktrace() + cs_trace_str;                                         \
+                                                                                                            \
+    const std::string content = msg_str + "\n" + trace_str + "\n";                                           \
+                                                                                                            \
+    spdlog::default_logger()->spd_level(content);                                                           \
+                                                                                                            \
+    std::stringstream thread_id_stream;                                                                     \
+    thread_id_stream << std::this_thread::get_id();                                                         \
+                                                                                                            \
+    if (m_LogCallback != nullptr)                                                                            \
+    {                                                                                                       \
+        m_LogCallback(static_cast<UInt32>(LogLevel::callback_level), thread_id_stream.str().c_str(), msg_str.c_str(), trace_str.c_str()); \
+    }                                                                                                       \
+}                                                                                                             \
 
 #define DO_LOG_MESSAGE_NO_TRACE_WRITE(spd_level, callback_level, msg, thread_name, cs_trace)                  \
-	std::string msg_str { msg != nullptr ? msg : "" };													      \
-	std::string thread_name_str { thread_name != nullptr ? thread_name : "" };                                \
-	std::string cs_trace_str { cs_trace != nullptr ? cs_trace : "" };                                         \
-                                                                                                              \
-	std::stringstream trace_stream;                                                                           \
-	trace_stream << std::stacktrace::current();                                                               \
-	std::string trace_str { trace_stream.str() + cs_trace_str };                                              \
-                                                                                                              \
-	std::string content { msg };                                                                              \
-	spdlog::default_logger()->spd_level(content);                                                             \
-                                                                                                              \
-	std::stringstream thread_id_stream;                                                                       \
-	thread_id_stream << std::this_thread::get_id();                                                           \
-                                                                                                              \
-	if (m_LogCallback != nullptr)                                                                             \
-	{                                                                                                         \
-		m_LogCallback((UInt32)LogLevel::callback_level, thread_id_stream.str().c_str(), msg, trace_str.c_str()); \
-	}                                                                                                         \
+{                                                                                                            \
+    const std::string msg_str = ((msg) != nullptr) ? (msg) : "";                                             \
+    const std::string thread_name_str = ((thread_name) != nullptr) ? (thread_name) : "";                     \
+    const std::string cs_trace_str = ((cs_trace) != nullptr) ? (cs_trace) : "";                              \
+                                                                                                             \
+   const std::string trace_str = GetStacktrace() + cs_trace_str;                                           \
+                                                                                                             \
+    const std::string content = msg_str;                                                                      \
+    spdlog::default_logger()->log(spd_level, content);                                                       \
+                                                                                                             \
+    std::stringstream thread_id_stream;                                                                       \
+    thread_id_stream << std::this_thread::get_id();                                                           \
+                                                                                                             \
+    if (m_LogCallback != nullptr)                                                                              \
+    {                                                                                                         \
+        m_LogCallback(static_cast<UInt32>(LogLevel::callback_level), thread_id_stream.str().c_str(),          \
+                     msg_str.c_str(), trace_str.c_str());                                                     \
+    }                                                                                                         \
+}                                                                                                             \
 
 
 Logger::Logger(): m_IsInitialize(false), m_LogCallback(nullptr)
@@ -165,12 +185,12 @@ void ArisenEngine::Debugger::Logger::BindCallback(LogCallback callback)
 
 void Logger::Log(const char* msg, const char* thread_name, const char* cs_trace)
 {
-	DO_LOG_MESSAGE_NO_TRACE_WRITE(debug, Log, msg, thread_name, cs_trace);
+	DO_LOG_MESSAGE_NO_TRACE_WRITE(spdlog::level::debug, Log, msg, thread_name, cs_trace);
 }
 
 void Logger::Info(const char* msg, const char* thread_name, const char* cs_trace)
 {
-	DO_LOG_MESSAGE_NO_TRACE_WRITE(info, Info, msg, thread_name, cs_trace);
+	DO_LOG_MESSAGE_NO_TRACE_WRITE(spdlog::level::info, Info, msg, thread_name, cs_trace);
 }
 
 void Logger::Warning(const char* msg, const char* thread_name, const char* cs_trace)

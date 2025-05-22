@@ -5,3 +5,6 @@
 [submodule "Arisen/3rdparty/tracy"]
 	path = Arisen/3rdparty/tracy
 	url = https://github.com/eatdreamcat/tracy.git
+[submodule "Arisen/3rdparty/spdlog"]
+	path = Arisen/3rdparty/spdlog
+	url = https://github.com/eatdreamcat/spdlog.git

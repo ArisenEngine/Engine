@@ -10,7 +10,7 @@
 #include "RHI/Program/RHISampler.h"
 
 #define VK_STRUCT_INITIALIZE(type, name) type name ##{##};
-
+//
 namespace ArisenEngine::RHI
 {
     /// 
