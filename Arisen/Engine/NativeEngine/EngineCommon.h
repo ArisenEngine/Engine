@@ -12,5 +12,5 @@
 extern "C" ENGINE_DLL void dummy_engine_function();
 inline void dummy_engine_function()
 {
-    
+    //
 }

@@ -1,6 +1,6 @@
 using CppSharp.AST;
 
-namespace CSharpBindingGenerator;
+namespace BindingGenerator;
 
 public static class SkipCheckUtils
 {

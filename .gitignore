@@ -7,3 +7,6 @@ Release
 !Arisen/3rdparty/dxc/bin/
 !Arisen/3rdparty/dxc/bin/*
 .vscode
+build
+Projects
+

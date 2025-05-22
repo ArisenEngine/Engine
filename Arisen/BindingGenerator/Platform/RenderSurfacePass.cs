@@ -1,7 +1,7 @@
 using CppSharp.AST;
 using CppSharp.Passes;
 
-namespace CSharpBindingGenerator;
+namespace BindingGenerator.Platform;
 
 public class RenderSurfacePass : TranslationUnitPass
 {

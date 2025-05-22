@@ -2,7 +2,7 @@
 using CppSharp.AST;
 using CppSharp.Generators;
 
-namespace CSharpBindingGenerator;
+namespace BindingGenerator.Debugger;
 
 public class DebuggerLibrary : ILibrary
 {
@@ -34,11 +34,11 @@ public class DebuggerLibrary : ILibrary
     public void Setup(Driver driver)
     {
         driver.ParserOptions.Setup(TargetPlatform.Windows);
-        driver.ParserOptions.AddIncludeDirs(@"../../../../Core/Core.Infra/");
-        driver.ParserOptions.AddIncludeDirs( @"../../../../Core/Core.Debugger/");
+        driver.ParserOptions.AddIncludeDirs(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.Infra") + Path.PathSeparator);
+        driver.ParserOptions.AddIncludeDirs(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.Debugger") + Path.PathSeparator);
         var options = driver.Options;
         options.GenerationOutputMode = GenerationOutputMode.FilePerUnit;
-        options.OutputDir = @$"../../../../{GlobalConfig.s_ProjectName}/Debugger";
+        options.OutputDir = Path.Combine(GlobalConfig.s_Output, GlobalConfig.s_ProjectName, "Debugger");
         options.GeneratorKind = GeneratorKind.CSharp;
         options.Verbose = true;
         options.Compilation.DebugMode = true;
@@ -47,7 +47,7 @@ public class DebuggerLibrary : ILibrary
         module.OutputNamespace = "";
         module.Headers.Clear();
         module.Headers.Add(@"/Logger/Logger.h");
-        module.LibraryDirs.Add(@"../../../../x64/Debug");
+        module.LibraryDirs.Add(GlobalConfig.s_LibraryPath);
         module.Libraries.Add(@"Core.Debugger");
         
     }
