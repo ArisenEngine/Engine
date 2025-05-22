@@ -1,0 +1,59 @@
+﻿using CppSharp;
+using CppSharp.AST;
+using CppSharp.Generators;
+
+namespace CSharpBindingGenerator;
+
+public class DebuggerLibrary : ILibrary
+{
+    
+    public void Preprocess(Driver driver, ASTContext ctx)
+    {
+        // 遍历所有翻译单元并忽略特定的头文件
+        foreach (var unit in ctx.TranslationUnits)
+        {
+            if (unit.FileName.Contains("PrimitiveTypes.h"))
+            {
+                unit.Ignore = true;
+            }
+            
+            foreach (var func in unit.Functions)
+            {
+                if (SkipCheckUtils.ShouldIgnoreFunction(func))
+                {
+                    func.GenerationKind = GenerationKind.None;
+                }
+            }
+        }
+    }
+
+    public void Postprocess(Driver driver, ASTContext ctx)
+    {
+    }
+
+    public void Setup(Driver driver)
+    {
+        driver.ParserOptions.Setup(TargetPlatform.Windows);
+        driver.ParserOptions.AddIncludeDirs(@"../../../../Core/Core.Infra/");
+        driver.ParserOptions.AddIncludeDirs( @"../../../../Core/Core.Debugger/");
+        var options = driver.Options;
+        options.GenerationOutputMode = GenerationOutputMode.FilePerUnit;
+        options.OutputDir = @$"../../../../{GlobalConfig.s_ProjectName}/Debugger";
+        options.GeneratorKind = GeneratorKind.CSharp;
+        options.Verbose = true;
+        options.Compilation.DebugMode = true;
+        // options.CheckSymbols = true;
+        var module = options.AddModule("Core.Debugger");
+        module.OutputNamespace = "";
+        module.Headers.Clear();
+        module.Headers.Add(@"/Logger/Logger.h");
+        module.LibraryDirs.Add(@"../../../../x64/Debug");
+        module.Libraries.Add(@"Core.Debugger");
+        
+    }
+
+    public void SetupPasses(Driver driver)
+    {
+        // throw new NotImplementedException();
+    }
+}
