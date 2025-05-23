@@ -43,12 +43,12 @@ public class DebuggerLibrary : ILibrary
         options.Verbose = true;
         options.Compilation.DebugMode = true;
         // options.CheckSymbols = true;
-        var module = options.AddModule("Core.Debugger");
+        var module = options.AddModule("libCore.Debugger");
         module.OutputNamespace = "";
         module.Headers.Clear();
         module.Headers.Add(@"/Logger/Logger.h");
         module.LibraryDirs.Add(GlobalConfig.s_LibraryPath);
-        module.Libraries.Add(@"Core.Debugger");
+        module.Libraries.Add(@"libCore.Debugger");
         
     }
 

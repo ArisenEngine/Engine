@@ -89,11 +89,11 @@ public class PlatformLibrary : ILibrary
         options.Verbose = true;
         options.Compilation.DebugMode = true;
         // options.CheckSymbols = true;
-        var module = options.AddModule("Core.Platform");
+        var module = options.AddModule("libCore.Platform");
         module.OutputNamespace = "";
         module.Headers.Add(@"/Windows/RenderWindowAPI.h");
         module.LibraryDirs.Add(GlobalConfig.s_LibraryPath);
-        module.Libraries.Add(@"Core.Platform");
+        module.Libraries.Add(@"libCore.Platform");
         
     }
 

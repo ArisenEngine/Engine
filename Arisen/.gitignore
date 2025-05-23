@@ -455,3 +455,7 @@ $RECYCLE.BIN/
 
 !3rdparty/dxc/bin/
 !3rdparty/dxc/bin/*
+
+Scripts/Windows/tools/*
+Scripts/Windows/*.log
+Scripts/Windows/tools/*.tar.xz

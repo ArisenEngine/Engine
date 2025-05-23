@@ -70,4 +70,4 @@ type_name() = delete;       \
 #define NO_COMPARE(type_name)  type_name& operator=(const type_name&) = delete;
 
 #define EXECUTE_CODE(code) \
-        do { code } while (0);
+        do { code; } while (0)
