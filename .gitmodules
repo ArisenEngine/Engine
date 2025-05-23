@@ -10,3 +10,6 @@
 	path = Arisen/3rdparty/spdlog
 	url = https://github.com/eatdreamcat/spdlog.git
 	branch = arisen_dev
+[submodule "Arisen/3rdparty/DirectXShaderCompiler"]
+	path = Arisen/3rdparty/DirectXShaderCompiler
+	url = https://github.com/eatdreamcat/DirectXShaderCompiler.git
