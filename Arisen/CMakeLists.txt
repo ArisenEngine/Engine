@@ -1,3 +1,6 @@
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+include(Utils)
+
 cmake_minimum_required(VERSION 3.29)
 project(Arisen LANGUAGES CXX)
 
@@ -5,6 +8,12 @@ string(TIMESTAMP START_TIME "%s")
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_definitions(-DUNICODE -D_UNICODE)
+
+
+
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--verbose")
 
 # --------------------------
 # Parse TARGET and PLATFORM
@@ -21,11 +30,11 @@ endif()
 # Set Macro
 # --------------------------
 if(${TARGET} STREQUAL "Editor")
-    set(TARGET_MACRO "EDITOR")
+    set(TARGET_MACRO "ARISEN_EDITOR")
 else()
-    set(TARGET_MACRO "RUNTIME")
+    set(TARGET_MACRO "ARISEN_RUNTIME")
 endif()
-
+add_compile_definitions(${TARGET_MACRO}=1)
 message(STATUS "Detected target macro: ${TARGET_MACRO}")
 
 string(TOUPPER "${PLATFORM}" PLATFORM_UPPER)
@@ -45,11 +54,31 @@ else()
     set(PLATFORM_MACRO "UNKNOWN_PLATFORM")
 endif()
 
+add_compile_definitions(${PLATFORM_MACRO}=1)
+
 message(STATUS "Detected platform macro: ${PLATFORM_MACRO}")
+
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(COMPILER_MACRO "MSVC_COMPILER")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    if (CMAKE_CXX_COMPILER MATCHES "clang-cl")
+        set(COMPILER_MACRO "CLANG_CL_COMPILER")
+    else()
+        set(COMPILER_MACRO "CLANG_COMPILER")
+    endif()
+else()
+    set(COMPILER_MACRO "UNKNOWN_COMPILER")
+endif()
+
+add_compile_definitions(${COMPILER_MACRO}=1)
+message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER}")
+
 
 # Unified output path
 set(OUTPUT_DIR ${CMAKE_BINARY_DIR}/${TARGET}/${CMAKE_BUILD_TYPE}/outputs)
 file(MAKE_DIRECTORY ${OUTPUT_DIR})
+set_property(GLOBAL PROPERTY GLOBAL_OUTPUT_DIR ${OUTPUT_DIR})
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR})
@@ -79,6 +108,7 @@ endforeach()
 endif()
 
 add_subdirectory(Core/Core.Infra)
+
 add_subdirectory(Tools/Profiler)
 
 # spdlog
@@ -88,12 +118,21 @@ set_target_properties(spdlog PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
     RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
 )
-set_target_properties(spdlog PROPERTIES
-    PREFIX "" 
-)
 
+# dxc compile dxc if needed in future
+# set(LLVM_TARGETS_TO_BUILD "X64" CACHE STRING "" FORCE)
+# add_subdirectory(3rdparty/DirectXShaderCompiler)
+# set_target_properties(dxcompiler PROPERTIES
+#     ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR}
+#     LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
+#     RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
+# )
+# set_target_properties(dxcompiler PROPERTIES
+#     PREFIX "" 
+# )
 
 add_subdirectory(Core/Core.Debugger)
+
 add_subdirectory(Core/Core.Platform)
 add_subdirectory(Core/RHI.DX12)
 add_subdirectory(Core/RHI.Vulkan)
@@ -128,7 +167,7 @@ add_dependencies(GenerateAutoBinding Core.Debugger)
 if(${TARGET} STREQUAL "Editor")
 
     add_custom_target(BuildEditor ALL)
-    add_dependencies(BuildEditor GenerateAutoBinding)
+    add_dependencies(BuildEditor Core.Platform)
     string(TIMESTAMP END_TIME "%s")
     math(EXPR ELAPSED_TIME "${END_TIME} - ${START_TIME}")
     message(STATUS "\\033[32m Configure success. Elapsed time: ${ELAPSED_TIME} seconds \\033[0m")

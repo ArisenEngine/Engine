@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef PLATFORM_EXPORTS
+#ifdef COREPLATFORM_EXPORTS
 
 #define PLATFORM_DLL   __declspec( dllexport )
 

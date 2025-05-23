@@ -1,10 +1,21 @@
 #pragma once
 #include <windows.h>
+#include "DxcCompat.h"
+#include <initguid.h>
 #include "dxcapi.h"
-#include <atlbase.h> 
+#include <wrl/client.h>  // 用微软WRL智能指针替代CComPtr
 #include "../CorePlatformCommon.h"
 #include "Logger/Logger.h"
 #include "RHI/Enums/Pipeline/ProgramStage.h"
+#include <fstream>
+#include <optional>
+#include <cstring> 
+#include <string>
+#include <vector>
+#include <filesystem>
+namespace fs = std::filesystem;
+
+using Microsoft::WRL::ComPtr;
 
 namespace ArisenEngine::Platforms
 {
@@ -20,134 +31,122 @@ namespace ArisenEngine::Platforms
         L"as_",
         L"ms_"
     };
-    
+
     struct ShaderCompilerOutput
     {
-        void* codePointer;
-        SIZE_T codeSize;
+        // 使用智能指针避免泄露，目前存在泄露
+        void* codePointer = nullptr;
+        SIZE_T codeSize = 0;
         std::string msgOut;
     };
-    
+
     struct ShaderCompileParams
     {
-        std::wstring input {L"" };
-        // eg: main
-        std::wstring entry { L"main" };
-        // eg: 6_1
-        std::wstring shaderModel { L"6_4"} ;
-        // eg: -spirv
-        std::wstring target { L" -spirv" };
-        // eg: vulkan1.3
+        std::wstring input{ L"" };
+        std::wstring entry{ L"main" };
+        std::wstring shaderModel{ L"6_4" };
+        std::wstring target{ L"-spirv" };
         std::wstring targetEnv;
-        std::wstring optimizeLevel { L"0" };
+        std::wstring optimizeLevel{ L"0" };
         RHI::ProgramStage stage;
-        
-        // eg: _TEST_KEY_WORDS_
-        Containers::Vector<std::wstring> defines;
-        // eg: "./shader_includes/"
-        Containers::Vector<std::wstring> includes;
+
+        std::vector<std::wstring> defines;
+        std::vector<std::wstring> includes;
         std::optional<std::wstring> output;
-        std::optional<bool> useDXLayout; // "-fvk-use-dx-layout"
+        std::optional<bool> useDXLayout;
     };
 
-    // TODO: support for multiple thread compilation
-    static CComPtr<IDxcLibrary> s_DXCLibrary = nullptr;
-    static CComPtr<IDxcCompiler3> s_DXCompiler = nullptr;
-    static CComPtr<IDxcUtils> s_DXCUtils = nullptr;
+    static ComPtr<IDxcLibrary> s_DXCLibrary = nullptr;
+    static ComPtr<IDxcCompiler3> s_DXCompiler = nullptr;
+    static ComPtr<IDxcUtils> s_DXCUtils = nullptr;
+
     extern "C" PLATFORM_DLL void InitDXC();
-    inline void InitDXC() 
+    void InitDXC()
     {
-        HRESULT hres;
-        
-        // Initialize DXC library
-        hres = DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&s_DXCLibrary));
+        HRESULT hres = DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&s_DXCLibrary));
         if (FAILED(hres))
         {
             LOG_ERROR("[ArisenEngine::Platforms::InitDXC]: Could not init DXC Library");
+            return;
         }
 
-        // Initialize DXC compiler
         hres = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&s_DXCompiler));
         if (FAILED(hres))
         {
             LOG_ERROR("[ArisenEngine::Platforms::InitDXC]: Could not init DXC Compiler");
+            return;
         }
 
-        // Initialize DXC utility
         hres = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&s_DXCUtils));
         if (FAILED(hres))
         {
-           LOG_ERROR("[ArisenEngine::Platforms::InitDXC]: Could not init DXC Utiliy");
+            LOG_ERROR("[ArisenEngine::Platforms::InitDXC]: Could not init DXC Utility");
+            return;
         }
 
-        LOG_DEBUG("[ArisenEngine::Platforms::InitDXC]: DXC init. ");
-        
+        LOG_DEBUG("[ArisenEngine::Platforms::InitDXC]: DXC initialized.");
     }
 
     extern "C" PLATFORM_DLL void ReleaseDXC();
-    inline void ReleaseDXC()
+    void ReleaseDXC()
     {
-        s_DXCompiler.Release();
-        s_DXCLibrary.Release();
-        s_DXCUtils.Release();
-        
-        s_DXCompiler = nullptr;
-        s_DXCUtils = nullptr;
-        s_DXCUtils = nullptr;
-        LOG_DEBUG("[Platforms::ReleaseDXC]: DXC Release. ");
+        s_DXCompiler.Reset();
+        s_DXCLibrary.Reset();
+        s_DXCUtils.Reset();
+
+        LOG_DEBUG("[Platforms::ReleaseDXC]: DXC released.");
     }
 
     extern "C" PLATFORM_DLL bool CompileShaderFromFile(ShaderCompileParams&& params, ShaderCompilerOutput& output);
-    inline bool CompileShaderFromFile(ShaderCompileParams&& params, ShaderCompilerOutput& output)
+    bool CompileShaderFromFile(ShaderCompileParams&& params, ShaderCompilerOutput& output)
     {
         ASSERT(s_DXCompiler != nullptr && s_DXCLibrary != nullptr && s_DXCUtils != nullptr);
-        HRESULT hres;
-        // Load the HLSL text shader from disk
-        uint32_t codePage = DXC_CP_ACP;
-        CComPtr<IDxcBlobEncoding> sourceBlob;
+
+        HRESULT hres = S_OK;
+
+        // Load shader file with UTF8 encoding (跨平台友好)
+        uint32_t codePage = DXC_CP_UTF8;
+        ComPtr<IDxcBlobEncoding> sourceBlob;
         hres = s_DXCUtils->LoadFile(params.input.c_str(), &codePage, &sourceBlob);
         if (FAILED(hres))
         {
-            output.msgOut = "Could not load shader file. ";
-            LOG_ERROR("[Platforms::CompileShaderFromFile]: Could not load shader file at path:" + String::WStringToString(params.input));
+            output.msgOut = "Could not load shader file.";
+            LOG_ERROR("[Platforms::CompileShaderFromFile]: Failed to load shader: " + String::WStringToString(params.input));
             return false;
         }
 
-        // Configure the compiler arguments for compiling the HLSL shader to SPIR-V
-        auto stage = s_Stages[(UInt32)params.stage];
+        // 组装编译参数
+        std::wstring stage = s_Stages[static_cast<uint32_t>(params.stage)];
         stage.append(params.shaderModel);
-        std::wstring env = L"-fspv-target-env=";
-        env.append(params.targetEnv);
-        std::wstring optimize = L"-O";
-        optimize.append(params.optimizeLevel);
-        Containers::Vector<LPCWSTR> arguments = {
-            // (Optional) name of the shader file to be displayed e.g. in an error message
+
+        std::wstring env = L"-fspv-target-env=" + params.targetEnv;
+        std::wstring optimize = L"-O" + params.optimizeLevel;
+
+        // 参数集合
+        std::vector<LPCWSTR> arguments = {
             params.input.c_str(),
-            // Shader main entry point
             L"-E", params.entry.c_str(),
-            // Shader target profile
             L"-T", stage.c_str(),
-            //eg: Compile to SPIRV
             params.target.c_str(),
-            // env
             env.c_str(),
-            // optimize level
-           optimize.c_str()
+            optimize.c_str()
         };
 
-        for (const auto& dir : params.includes)
+        // includes
+        for (const auto& inc : params.includes)
         {
             arguments.push_back(L"-I");
-            arguments.push_back(dir.c_str());
+            arguments.push_back(inc.c_str());
         }
 
-        // define
-        for (const auto& define : params.defines)
+        // defines
+        for (const auto& def : params.defines)
         {
             arguments.push_back(L"-D");
-            arguments.push_back(define.c_str());
+            arguments.push_back(def.c_str());
         }
 
+        // 输出路径
         if (params.output.has_value())
         {
             arguments.push_back(L"-Fo");
@@ -159,26 +158,19 @@ namespace ArisenEngine::Platforms
             arguments.push_back(L"-fvk-use-dx-layout");
         }
 
-        // Compile shader
+#if _DEBUG
+        std::string argLog;
+        for (auto arg : arguments)
+            argLog += String::WStringToString(std::wstring(arg)) + " ";
+        LOG_DEBUG("[CompileShaderFromFile] Arguments: " + argLog);
+#endif
+
         DxcBuffer buffer{};
-        buffer.Encoding = DXC_CP_ACP;
+        buffer.Encoding = DXC_CP_UTF8;
         buffer.Ptr = sourceBlob->GetBufferPointer();
         buffer.Size = sourceBlob->GetBufferSize();
 
-
-#if _DEBUG
-        std::string finalArguments = "";
-
-        for (auto arg : arguments)
-        {
-            finalArguments += String::WStringToString(std::wstring(arg));
-            finalArguments += " ";
-        }
-        LOG_DEBUG("[ShaderCompilerAPI::CompileShaderFromFile] arguments : " + finalArguments);
-#endif
-        
-        
-        CComPtr<IDxcResult> result{ nullptr };
+        ComPtr<IDxcResult> result;
         hres = s_DXCompiler->Compile(
             &buffer,
             arguments.data(),
@@ -188,52 +180,67 @@ namespace ArisenEngine::Platforms
 
         if (SUCCEEDED(hres))
         {
+            hres = S_OK;
             result->GetStatus(&hres);
         }
 
-        // Output error if compilation failed
-        if (FAILED(hres) && (result)) {
-            CComPtr<IDxcBlobEncoding> errorBlob;
-            hres = result->GetErrorBuffer(&errorBlob);
-            if (SUCCEEDED(hres) && errorBlob)
-            {
-                output.msgOut = std::string((const char*)errorBlob->GetBufferPointer());
-                LOG_ERROR("[Platforms::CompileShaderFromFile]: Shader compilation failed : " + output.msgOut);
-            }
-
-            return false;
-        }
-
-
-        // Get compilation result
-        CComPtr<IDxcBlob> shaderCode;
-        result->GetResult(&shaderCode);
-
-        output.codePointer = std::malloc(shaderCode->GetBufferSize());
-        std::memcpy(output.codePointer, shaderCode->GetBufferPointer(), shaderCode->GetBufferSize());
-        output.codeSize = shaderCode->GetBufferSize();
-
-        if (params.output.has_value())
+        if (FAILED(hres))
         {
-            // Write the bytecode to a file
-            std::ofstream outFile(params.output.value(), std::ios::binary);
-            if (outFile.is_open())
+            ComPtr<IDxcBlobEncoding> errorBlob;
+            if (result && SUCCEEDED(result->GetErrorBuffer(&errorBlob)) && errorBlob)
             {
-                outFile.write(reinterpret_cast<const char*>(shaderCode->GetBufferPointer()), shaderCode->GetBufferSize());
-                outFile.close();
-                LOG_DEBUG("[ShaderCompilerAPI::CompileShaderFromFile]: Shader bytecode successfully written to :" + String::WStringToString(params.output.value()));
+                output.msgOut = std::string(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()), errorBlob->GetBufferSize());
+                LOG_ERROR("[CompileShaderFromFile] Shader compilation failed: " + output.msgOut);
             }
             else
             {
-                LOG_ERROR("[ShaderCompilerAPI::CompileShaderFromFile]: Shader bytecode falied to written to :" + String::WStringToString(params.output.value()));
+                LOG_ERROR("[CompileShaderFromFile] Shader compilation failed with unknown error.");
+            }
+            return false;
+        }
+
+        ComPtr<IDxcBlob> shaderCode;
+        if (FAILED(result->GetResult(&shaderCode)) || !shaderCode)
+        {
+            LOG_ERROR("[CompileShaderFromFile] Failed to get compiled shader bytecode.");
+            return false;
+        }
+
+        output.codeSize = shaderCode->GetBufferSize();
+        output.codePointer = std::malloc(output.codeSize);
+        if (!output.codePointer)
+        {
+            LOG_ERROR("[CompileShaderFromFile] Memory allocation failed.");
+            return false;
+        }
+        memcpy(output.codePointer, shaderCode->GetBufferPointer(), output.codeSize);
+
+        // 写输出文件（如果指定了）
+        if (params.output.has_value())
+        {
+            fs::path outputPath(params.output.value());
+            std::ofstream outFile(outputPath, std::ios::binary);
+
+             if (!outFile) 
+             {
+                LOG_ERROR("Failed to open: " + String::WStringToString(outputPath.wstring()));
+                return false;
+             }
+
+            if (outFile.is_open())
+            {
+                outFile.write(reinterpret_cast<const char*>(shaderCode->GetBufferPointer()), 
+                static_cast<std::streamsize>(shaderCode->GetBufferSize()));
+                outFile.close();
+                LOG_DEBUG("[CompileShaderFromFile] Shader bytecode written to: " + String::WStringToString(params.output.value()));
+            }
+            else
+            {
+                LOG_ERROR("[CompileShaderFromFile] Failed to write shader bytecode to file: " + String::WStringToString(params.output.value()));
                 return false;
             }
         }
-       
+
         return true;
     }
-
-    
-    
-    
 }

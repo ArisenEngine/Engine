@@ -9,4 +9,5 @@ Release
 .vscode
 build
 Projects
+Scripts/Windows/tools/*
 
