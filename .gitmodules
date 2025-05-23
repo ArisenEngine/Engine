@@ -13,3 +13,4 @@
 [submodule "Arisen/3rdparty/DirectXShaderCompiler"]
 	path = Arisen/3rdparty/DirectXShaderCompiler
 	url = https://github.com/eatdreamcat/DirectXShaderCompiler.git
+	branch = arisen_dev
