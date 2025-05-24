@@ -14,4 +14,4 @@ target_include_directories(Core.Infra PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_compile_definitions(Core.Infra PRIVATE CORE_INFRA_EXPORTS)
+target_compile_definitions(Core.Infra PRIVATE COREINFRA_EXPORTS)

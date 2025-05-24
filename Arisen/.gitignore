@@ -459,3 +459,4 @@ $RECYCLE.BIN/
 Scripts/Windows/tools/*
 Scripts/Windows/*.log
 Scripts/Windows/tools/*.tar.xz
+env-vars.bat
