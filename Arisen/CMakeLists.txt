@@ -1,6 +1,9 @@
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(Utils)
 
+set(CMAKE_RC_COMPILER "")
+set(CMAKE_LINKER_USE_MANIFEST OFF)
+
 cmake_minimum_required(VERSION 3.29)
 project(Arisen LANGUAGES CXX)
 
@@ -8,6 +11,11 @@ string(TIMESTAMP START_TIME "%s")
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+
+#option
+option(ARISEN_GENERATE_PROJECT "Whether to generate IDE project files (sln/vcxproj/xcodeproj)" OFF)
+
 
 add_definitions(-DUNICODE -D_UNICODE)
 
@@ -84,28 +92,43 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR})
 
-## Decide the project output path
-if(${CMAKE_GENERATOR} MATCHES "Visual Studio")
-    set(PROJECT_GENERATE_DIR VisualStudio)
-elseif(${CMAKE_GENERATOR} MATCHES "Xcode")
-    set(PROJECT_GENERATE_DIR Xcode)
+# 生成项目文件目录（这里只用来提示，真正控制生成目录通过 cmake -B 指定）
+set(PROJECT_GENERATE_DIR "")
+if(ARISEN_GENERATE_PROJECT)
+    if(${CMAKE_GENERATOR} MATCHES "Visual Studio")
+        set(PROJECT_GENERATE_DIR VisualStudio)
+    elseif(${CMAKE_GENERATOR} MATCHES "Xcode")
+        set(PROJECT_GENERATE_DIR Xcode)
+    else()
+        set(PROJECT_GENERATE_DIR "")
+    endif()
+endif()
+
+if(PROJECT_GENERATE_DIR)
+    set(PROJECT_DIR ${CMAKE_SOURCE_DIR}/Projects/${PROJECT_GENERATE_DIR})
+    file(MAKE_DIRECTORY ${PROJECT_DIR})
+    message(STATUS "Project files will be generated under: ${PROJECT_DIR}")
+endif()
+
+
+if(DEFINED PROJECT_GENERATE_DIR AND NOT PROJECT_GENERATE_DIR STREQUAL "")
+    set(PROJECT_DIR ${CMAKE_SOURCE_DIR}/Projects/${PROJECT_GENERATE_DIR})
+    file(MAKE_DIRECTORY ${PROJECT_DIR})
+
+    foreach(OUTPUTCONFIG IN LISTS CMAKE_CONFIGURATION_TYPES)
+        string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
+        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_DIR})
+        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_DIR})
+        set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_DIR})
+    endforeach()
 else()
-    # do not generate project
+    # 单配置生成器（比如 Makefile 或 Ninja）直接设置
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR} CACHE PATH "Runtime output directory" FORCE)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR} CACHE PATH "Library output directory" FORCE)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR} CACHE PATH "Archive output directory" FORCE)    
 endif()
 
-if(DEFINED PROJECT_GENERATE_DIR)
 
-set(PROJECT_DIR ${CMAKE_SOURCE_DIR}/Projects/${PROJECT_GENERATE_DIR})
-file(MAKE_DIRECTORY ${PROJECT_DIR})
-
-foreach(OUTPUTCONFIG IN LISTS CMAKE_CONFIGURATION_TYPES)
-    string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_DIR})
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_DIR})
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_DIR})
-endforeach()
-
-endif()
 
 add_subdirectory(Core/Core.Infra)
 
@@ -167,7 +190,6 @@ add_dependencies(GenerateAutoBinding Core.Debugger)
 if(${TARGET} STREQUAL "Editor")
 
     add_custom_target(BuildEditor ALL)
-    add_dependencies(BuildEditor Core.Platform)
     string(TIMESTAMP END_TIME "%s")
     math(EXPR ELAPSED_TIME "${END_TIME} - ${START_TIME}")
     message(STATUS "\\033[32m Configure success. Elapsed time: ${ELAPSED_TIME} seconds \\033[0m")

@@ -3,8 +3,14 @@
 #include "Common/CommandHeaders.h"
 #include "Windows.h"
 
-#define UNICODE
-#define _UNICODE
+#ifndef UNICODE
+#define UNICODE 
+#endif
+
+#ifndef _UNICODE
+#define _UNICODE 
+#endif
+
 
 namespace ArisenEngine::Platforms
 {

@@ -19,18 +19,37 @@ REM ==== 1. 调用环境准备脚本 ====
 call "%SCRIPT_DIR%\setup-env.bat"
 if errorlevel 1 (
     echo ERROR: Environment setup failed. Aborting build.
+    pause
     exit /b 1
 )
+call "%SCRIPT_DIR%\env-vars.bat"
+
+echo CMake Program: %CMAKE_MAKE_PROGRAM%
 
 REM setup-env.bat 会把 COMPILER_PATH 传出来
 echo Using compiler: %COMPILER_PATH%
 
 REM ==== 2. 配置CMake工程 ====
 echo === Configuring (%BUILD_CONFIG%) ===
-cmake -S "%ROOT_DIR%" -B "%ROOT_DIR%\build" -DTARGET=%TARGET% -DPLATFORM=%PLATFORM% -DCMAKE_BUILD_TYPE=%BUILD_CONFIG% -DCMAKE_CXX_COMPILER="%COMPILER_PATH%"
+
+cmake -S "%ROOT_DIR%" ^
+  -B "%ROOT_DIR%\build" ^
+  -DTARGET="%TARGET%" ^
+  -DPLATFORM="%PLATFORM%" ^
+  -DCMAKE_BUILD_TYPE="%BUILD_CONFIG%" ^
+  -DCMAKE_CXX_COMPILER="%COMPILER_PATH%" ^
+  -DCMAKE_LINKER="%LINKER_PATH%" ^
+  -DCMAKE_MAKE_PROGRAM="%CMAKE_MAKE_PROGRAM%" ^
+  -DMT_PATH="%MT_PATH%" ^
+  -DCMAKE_RC_COMPILER=cmake ^
+  -G "Ninja"
+
+
+
 if errorlevel 1 (
     echo ERROR: CMake configuration failed.
     exit /b 1
+    pause
 )
 
 REM ==== 3. 编译 ====
@@ -38,6 +57,7 @@ echo === Building (%BUILD_CONFIG%) ===
 cmake --build "%ROOT_DIR%\build" --config %BUILD_CONFIG%
 if errorlevel 1 (
     echo ERROR: Build failed.
+    pause
     exit /b 1
 )
 
