@@ -111,8 +111,8 @@ echo Compiler path set to: %COMPILER_PATH%
 REM 你这里注释掉了llvm link，如果想用，去掉注释即可
 REM set LINKER_PATH=%LLVM_DIR%clang+llvm-20.1.5-x86_64-pc-windows-msvc\bin\lld-link.exe
 
-REM === 直接使用llvm-rc
-set RC_PATH=%LLVM_DIR%clang+llvm-20.1.5-x86_64-pc-windows-msvc\bin\llvm-rc.exe
+REM === 直接使用fake-rc
+set RC_PATH=%SCRIPT_DIR%/fake-rc.bat
 
 
 if defined LINKER_PATH (
