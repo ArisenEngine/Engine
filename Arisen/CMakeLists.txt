@@ -1,28 +1,20 @@
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-include(Utils)
-
 cmake_minimum_required(VERSION 3.29)
 project(Arisen LANGUAGES CXX)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+include(Utils)
 
 string(TIMESTAMP START_TIME "%s")
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
-#option
 option(ARISEN_GENERATE_PROJECT "Whether to generate IDE project files (sln/vcxproj/xcodeproj)" OFF)
 
-
 add_definitions(-DUNICODE -D_UNICODE)
-
-
-
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--verbose")
 
-# --------------------------
 # Parse TARGET and PLATFORM
-# --------------------------
 if(NOT DEFINED TARGET)
     message(FATAL_ERROR "Please specify -DTARGET=[Editor|WindowsPlayerSupport|AndroidPlayerSupport|...].")
 endif()
@@ -31,9 +23,7 @@ if(NOT DEFINED PLATFORM)
     message(FATAL_ERROR "Please specify -DPLATFORM=[Windows|Android|Linux|Apple].")
 endif()
 
-# --------------------------
-# Set Macro
-# --------------------------
+# Set Macros
 if(${TARGET} STREQUAL "Editor")
     set(TARGET_MACRO "ARISEN_EDITOR")
 else()
@@ -58,11 +48,8 @@ elseif(PLATFORM_UPPER STREQUAL "LINUX")
 else()
     set(PLATFORM_MACRO "UNKNOWN_PLATFORM")
 endif()
-
 add_compile_definitions(${PLATFORM_MACRO}=1)
-
 message(STATUS "Detected platform macro: ${PLATFORM_MACRO}")
-
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(COMPILER_MACRO "MSVC_COMPILER")
@@ -75,49 +62,34 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 else()
     set(COMPILER_MACRO "UNKNOWN_COMPILER")
 endif()
-
 add_compile_definitions(${COMPILER_MACRO}=1)
 message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER}")
 
-
-# --------------------------
 # Unified output path
-# --------------------------
-# 获取生成器名
 string(TOLOWER "${CMAKE_GENERATOR}" _GEN_LOWER)
-
-# 是否多配置生成器（如 VS/Xcode）
 set(IS_MULTI_CONFIG FALSE)
 if(CMAKE_CONFIGURATION_TYPES)
     set(IS_MULTI_CONFIG TRUE)
 endif()
 
-# 设置项目生成目录
 set(PROJECT_DIR "")
 if(_GEN_LOWER MATCHES "visual studio")
     set(PROJECT_DIR "${CMAKE_SOURCE_DIR}/Projects/Visual Studio")
 elseif(_GEN_LOWER MATCHES "xcode")
     set(PROJECT_DIR "${CMAKE_SOURCE_DIR}/Projects/Xcode")
 endif()
-
 if(PROJECT_DIR)
     file(MAKE_DIRECTORY ${PROJECT_DIR})
     message(STATUS "Generating project files into: ${PROJECT_DIR}")
 endif()
 
-# 设置构建输出目录
 if(PROJECT_DIR)
-    # 对于 VS/Xcode，输出目录在 Projects/XXX/outputs/$(Configuration)
     set(OUTPUT_DIR "${PROJECT_DIR}/${CMAKE_CFG_INTDIR}")
 else()
-    # 对于默认生成器（如 Ninja/Unix Makefiles），输出目录为 build/outputs
     set(OUTPUT_DIR "${CMAKE_BINARY_DIR}/outputs")
 endif()
-
-# 设置全局输出路径属性（供所有 target 使用）
 set_property(GLOBAL PROPERTY GLOBAL_OUTPUT_DIR ${OUTPUT_DIR})
 
-# 配置输出路径
 if(IS_MULTI_CONFIG)
     foreach(OUTPUTCONFIG IN LISTS CMAKE_CONFIGURATION_TYPES)
         string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG_UPPER)
@@ -133,46 +105,27 @@ endif()
 
 message(STATUS "Unified binary output dir: ${OUTPUT_DIR}")
 
-
+# Add C++ Submodules
 add_subdirectory(Core/Core.Infra)
-
 add_subdirectory(Tools/Profiler)
-
-# spdlog
 add_subdirectory(3rdparty/spdlog)
-set_target_properties(spdlog PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-    LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-    RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-)
-
-# dxc compile dxc if needed in future
-# set(LLVM_TARGETS_TO_BUILD "X64" CACHE STRING "" FORCE)
-# add_subdirectory(3rdparty/DirectXShaderCompiler)
-# set_target_properties(dxcompiler PROPERTIES
-#     ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-#     LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-#     RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-# )
-# set_target_properties(dxcompiler PROPERTIES
-#     PREFIX "" 
-# )
-
 add_subdirectory(Core/Core.Debugger)
-
 add_subdirectory(Core/Core.Platform)
 add_subdirectory(Core/RHI.DX12)
 add_subdirectory(Core/RHI.Vulkan)
 add_subdirectory(Engine/NativeEngine)
 
+# Setup .NET Paths
 set(BINDING_GENERATOR_DIR ${CMAKE_SOURCE_DIR}/BindingGenerator)
-set(BINDING_GENERATOR_PROJ ${CMAKE_SOURCE_DIR}/BindingGenerator/BindingGenerator.csproj)
+set(BINDING_GENERATOR_PROJ ${BINDING_GENERATOR_DIR}/BindingGenerator.csproj)
 set(BINDING_GENERATOR_EXE ${OUTPUT_DIR}/Generator)
-set(AUTO_BINDING_DIR ${CMAKE_SOURCE_DIR}/AutoBinding)
-set(AUTO_BINDING_PROJECT ${AUTO_BINDING_DIR}/AutoBinding.csproj)
-set(ARISEN_ENGINE_PROJECT ${CMAKE_SOURCE_DIR}/Engine/ArisenEngine/ArisenEngine.csproj)
 
-## Build Binding And Generate
+set(AUTO_BINDING_DIR ${CMAKE_SOURCE_DIR}/AutoBinding)
+set(AUTO_BINDING_PROJ ${AUTO_BINDING_DIR}/AutoBinding.csproj)
+
+set(ARISEN_ENGINE_PROJ ${CMAKE_SOURCE_DIR}/Engine/ArisenEngine/ArisenEngine.csproj)
+
+# Build C# Projects
 add_custom_target(BuildBindingGenerator
     COMMAND dotnet build ${BINDING_GENERATOR_PROJ} --configuration ${CMAKE_BUILD_TYPE} --output ${BINDING_GENERATOR_EXE}
     WORKING_DIRECTORY ${BINDING_GENERATOR_DIR}
@@ -181,24 +134,44 @@ add_custom_target(BuildBindingGenerator
     USES_TERMINAL
 )
 
-add_custom_target(GenerateAutoBinding
-    COMMAND BindingGenerator.exe --source_code ${CMAKE_SOURCE_DIR} --output ${CMAKE_SOURCE_DIR} --library ${OUTPUT_DIR}
-    WORKING_DIRECTORY ${BINDING_GENERATOR_EXE}
-    COMMENT "Generating Auto Binding Project\n"
+add_custom_target(BuildAutoBinding
+    COMMAND dotnet build ${AUTO_BINDING_PROJ} --configuration ${CMAKE_BUILD_TYPE}
+    WORKING_DIRECTORY ${AUTO_BINDING_DIR}
+    COMMENT "Building AutoBinding Project"
     VERBATIM
     USES_TERMINAL
 )
-add_dependencies(GenerateAutoBinding BuildBindingGenerator)
+add_dependencies(BuildAutoBinding BuildBindingGenerator)
+
+# Generate auto binding
+add_custom_target(GenerateAutoBinding
+    COMMAND BindingGenerator.exe --source_code ${CMAKE_SOURCE_DIR} --output ${CMAKE_SOURCE_DIR} --library ${OUTPUT_DIR}
+    WORKING_DIRECTORY ${BINDING_GENERATOR_EXE}
+    COMMENT "Generating Auto Binding Project"
+    VERBATIM
+    USES_TERMINAL
+)
+add_dependencies(GenerateAutoBinding BuildAutoBinding)
 add_dependencies(GenerateAutoBinding Core.Infra)
 
-if(${TARGET} STREQUAL "Editor")
+# Visual Studio Solution Integration
+if(MSVC AND ARISEN_GENERATE_PROJECT)
+    add_custom_target(BindingGeneratorProj SOURCES ${BINDING_GENERATOR_PROJ})
+    add_custom_target(AutoBindingProj SOURCES ${AUTO_BINDING_PROJ})
+    add_custom_target(ArisenEngineProj SOURCES ${ARISEN_ENGINE_PROJ})
 
+    add_dependencies(AutoBindingProj BindingGeneratorProj)
+    add_dependencies(ArisenEngineProj AutoBindingProj)
+endif()
+
+# Final Target Setup
+if(${TARGET} STREQUAL "Editor")
     add_custom_target(BuildEditor ALL)
     string(TIMESTAMP END_TIME "%s")
     math(EXPR ELAPSED_TIME "${END_TIME} - ${START_TIME}")
     message(STATUS "\\033[32m Configure success. Elapsed time: ${ELAPSED_TIME} seconds \\033[0m")
 elseif(${TARGET} STREQUAL "WindowsPlayerSupport")
-   
+    # Add your platform player support setup here
 else()
     message(FATAL_ERROR "Unknown TARGET: ${TARGET}")
 endif()
