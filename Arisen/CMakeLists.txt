@@ -1,9 +1,6 @@
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(Utils)
 
-set(CMAKE_RC_COMPILER "")
-set(CMAKE_LINKER_USE_MANIFEST OFF)
-
 cmake_minimum_required(VERSION 3.29)
 project(Arisen LANGUAGES CXX)
 
@@ -83,51 +80,58 @@ add_compile_definitions(${COMPILER_MACRO}=1)
 message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER}")
 
 
+# --------------------------
 # Unified output path
-set(OUTPUT_DIR ${CMAKE_BINARY_DIR}/${TARGET}/${CMAKE_BUILD_TYPE}/outputs)
-file(MAKE_DIRECTORY ${OUTPUT_DIR})
+# --------------------------
+# 获取生成器名
+string(TOLOWER "${CMAKE_GENERATOR}" _GEN_LOWER)
+
+# 是否多配置生成器（如 VS/Xcode）
+set(IS_MULTI_CONFIG FALSE)
+if(CMAKE_CONFIGURATION_TYPES)
+    set(IS_MULTI_CONFIG TRUE)
+endif()
+
+# 设置项目生成目录
+set(PROJECT_DIR "")
+if(_GEN_LOWER MATCHES "visual studio")
+    set(PROJECT_DIR "${CMAKE_SOURCE_DIR}/Projects/Visual Studio")
+elseif(_GEN_LOWER MATCHES "xcode")
+    set(PROJECT_DIR "${CMAKE_SOURCE_DIR}/Projects/Xcode")
+endif()
+
+if(PROJECT_DIR)
+    file(MAKE_DIRECTORY ${PROJECT_DIR})
+    message(STATUS "Generating project files into: ${PROJECT_DIR}")
+endif()
+
+# 设置构建输出目录
+if(PROJECT_DIR)
+    # 对于 VS/Xcode，输出目录在 Projects/XXX/outputs/$(Configuration)
+    set(OUTPUT_DIR "${PROJECT_DIR}/${CMAKE_CFG_INTDIR}")
+else()
+    # 对于默认生成器（如 Ninja/Unix Makefiles），输出目录为 build/outputs
+    set(OUTPUT_DIR "${CMAKE_BINARY_DIR}/outputs")
+endif()
+
+# 设置全局输出路径属性（供所有 target 使用）
 set_property(GLOBAL PROPERTY GLOBAL_OUTPUT_DIR ${OUTPUT_DIR})
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR})
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR})
-
-# 生成项目文件目录（这里只用来提示，真正控制生成目录通过 cmake -B 指定）
-set(PROJECT_GENERATE_DIR "")
-if(ARISEN_GENERATE_PROJECT)
-    if(${CMAKE_GENERATOR} MATCHES "Visual Studio")
-        set(PROJECT_GENERATE_DIR VisualStudio)
-    elseif(${CMAKE_GENERATOR} MATCHES "Xcode")
-        set(PROJECT_GENERATE_DIR Xcode)
-    else()
-        set(PROJECT_GENERATE_DIR "")
-    endif()
-endif()
-
-if(PROJECT_GENERATE_DIR)
-    set(PROJECT_DIR ${CMAKE_SOURCE_DIR}/Projects/${PROJECT_GENERATE_DIR})
-    file(MAKE_DIRECTORY ${PROJECT_DIR})
-    message(STATUS "Project files will be generated under: ${PROJECT_DIR}")
-endif()
-
-
-if(DEFINED PROJECT_GENERATE_DIR AND NOT PROJECT_GENERATE_DIR STREQUAL "")
-    set(PROJECT_DIR ${CMAKE_SOURCE_DIR}/Projects/${PROJECT_GENERATE_DIR})
-    file(MAKE_DIRECTORY ${PROJECT_DIR})
-
+# 配置输出路径
+if(IS_MULTI_CONFIG)
     foreach(OUTPUTCONFIG IN LISTS CMAKE_CONFIGURATION_TYPES)
-        string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
-        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_DIR})
-        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_DIR})
-        set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_DIR})
+        string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG_UPPER)
+        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} ${OUTPUT_DIR})
+        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} ${OUTPUT_DIR})
+        set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} ${OUTPUT_DIR})
     endforeach()
 else()
-    # 单配置生成器（比如 Makefile 或 Ninja）直接设置
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR} CACHE PATH "Runtime output directory" FORCE)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR} CACHE PATH "Library output directory" FORCE)
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR} CACHE PATH "Archive output directory" FORCE)    
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR} CACHE PATH "Archive output directory" FORCE)
 endif()
 
+message(STATUS "Unified binary output dir: ${OUTPUT_DIR}")
 
 
 add_subdirectory(Core/Core.Infra)
@@ -185,7 +189,7 @@ add_custom_target(GenerateAutoBinding
     USES_TERMINAL
 )
 add_dependencies(GenerateAutoBinding BuildBindingGenerator)
-add_dependencies(GenerateAutoBinding Core.Debugger)
+add_dependencies(GenerateAutoBinding Core.Infra)
 
 if(${TARGET} STREQUAL "Editor")
 
