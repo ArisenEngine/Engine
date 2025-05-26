@@ -5,6 +5,8 @@
 
 # Requirements
 
+CMake 3.29
+
 ### Vulkan SDK
 
 ### C++ ATL

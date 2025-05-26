@@ -95,6 +95,7 @@ function(setup_dxc_for_target target dxc_root)
 
     # 获取输出目录
     get_property(OUTPUT_DIR GLOBAL PROPERTY GLOBAL_OUTPUT_DIR)
+    message(STATUS "Global Output Dir: ${OUTPUT_DIR}")
     if(NOT OUTPUT_DIR)
         set(OUTPUT_DIR "$<TARGET_FILE_DIR:${target}>")  # fallback：默认输出目录
     endif()
