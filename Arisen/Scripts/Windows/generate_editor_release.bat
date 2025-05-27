@@ -45,7 +45,7 @@ for %%I in ("!CMAKE_RC_COMPILER!") do set "RC_DIR=%%~dpI"
 set "PATH=!RC_DIR!;!PATH!"
 
 cmake -S "!ROOT_DIR!" ^
-  -B "!ROOT_DIR!/Projects/Visual Studio" ^
+  -B "!ROOT_DIR!/Projects/Visual Studio/Editor" ^
   -DTARGET="Editor" ^
   -DPLATFORM="Windows" ^
   -DCMAKE_BUILD_TYPE="Release" ^
@@ -59,7 +59,7 @@ if errorlevel 1 (
 
 REM ==== 3. 编译 ====
 echo === Building (!BUILD_CONFIG!) ===
-cmake --build "!ROOT_DIR!/Projects/Visual Studio" --config !BUILD_CONFIG!
+cmake --build "!ROOT_DIR!/Projects/Visual Studio/Editor" --config !BUILD_CONFIG!
 if errorlevel 1 (
     echo ERROR: Build failed.
     exit /b 1

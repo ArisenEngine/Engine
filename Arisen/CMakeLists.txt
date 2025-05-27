@@ -1,5 +1,14 @@
 cmake_minimum_required(VERSION 3.29)
-project(Arisen LANGUAGES CXX)
+# Parse TARGET and PLATFORM
+if(NOT DEFINED TARGET)
+    message(FATAL_ERROR "Please specify -DTARGET=[Editor|WindowsPlayerSupport|AndroidPlayerSupport|...].")
+endif()
+
+if(NOT DEFINED PLATFORM)
+    message(FATAL_ERROR "Please specify -DPLATFORM=[Windows|Android|Linux|Apple].")
+endif()
+
+project("Arisen${TARGET}" LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(Utils)
@@ -13,15 +22,6 @@ option(ARISEN_GENERATE_PROJECT "Whether to generate IDE project files (sln/vcxpr
 
 add_definitions(-DUNICODE -D_UNICODE)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--verbose")
-
-# Parse TARGET and PLATFORM
-if(NOT DEFINED TARGET)
-    message(FATAL_ERROR "Please specify -DTARGET=[Editor|WindowsPlayerSupport|AndroidPlayerSupport|...].")
-endif()
-
-if(NOT DEFINED PLATFORM)
-    message(FATAL_ERROR "Please specify -DPLATFORM=[Windows|Android|Linux|Apple].")
-endif()
 
 # Set Macros
 if(${TARGET} STREQUAL "Editor")
@@ -74,9 +74,9 @@ endif()
 
 set(PROJECT_DIR "")
 if(_GEN_LOWER MATCHES "visual studio")
-    set(PROJECT_DIR "${CMAKE_SOURCE_DIR}/Projects/Visual Studio")
+    set(PROJECT_DIR "${CMAKE_SOURCE_DIR}/Projects/Visual Studio/${TARGET}")
 elseif(_GEN_LOWER MATCHES "xcode")
-    set(PROJECT_DIR "${CMAKE_SOURCE_DIR}/Projects/Xcode")
+    set(PROJECT_DIR "${CMAKE_SOURCE_DIR}/Projects/Xcode/$${TARGET}")
 endif()
 if(PROJECT_DIR)
     file(MAKE_DIRECTORY ${PROJECT_DIR})
@@ -84,7 +84,7 @@ if(PROJECT_DIR)
 endif()
 
 if(PROJECT_DIR)
-    set(OUTPUT_DIR "${PROJECT_DIR}/${CMAKE_CFG_INTDIR}")
+    set(OUTPUT_DIR "${PROJECT_DIR}/Outputs/${CMAKE_CFG_INTDIR}")
 else()
     set(OUTPUT_DIR "${CMAKE_BINARY_DIR}/outputs")
 endif()
