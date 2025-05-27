@@ -53,7 +53,7 @@ echo CMAKE_RC_COMPILER is: !CMAKE_RC_COMPILER!
 for %%I in ("!CMAKE_RC_COMPILER!") do set "RC_DIR=%%~dpI"
 set "PATH=!RC_DIR!;!PATH!"
 
-echo CMake Command: cmake -S "%ROOT_DIR%" ^
+echo CMake Command: -S "%ROOT_DIR%" ^
   -B "%ROOT_DIR%\build" ^
   -DTARGET="%TARGET%" ^
   -DPLATFORM="%PLATFORM%" ^
@@ -63,29 +63,23 @@ echo CMake Command: cmake -S "%ROOT_DIR%" ^
   -DCMAKE_LINKER="%LINKER_PATH%" ^
   -DCMAKE_MAKE_PROGRAM="%CMAKE_MAKE_PROGRAM%" ^
   -DMT_PATH="%MT_PATH%" ^
-  -DCMAKE_RC_COMPILER="%CMAKE_RC_COMPILER%" ^
+  -DCMAKE_RC_COMPILER=`%CMAKE_RC_COMPILER%` ^
+  -DCMAKE_RC_COMPILER_INIT=`rc` ^
   -G Ninja
 
-@REM cmake -S "%ROOT_DIR%" ^
-@REM   -B "%ROOT_DIR%\build" ^
-@REM   -DTARGET="%TARGET%" ^
-@REM   -DPLATFORM="%PLATFORM%" ^
-@REM   -DCMAKE_BUILD_TYPE="%BUILD_CONFIG%" ^
-@REM   -DCMAKE_CXX_COMPILER="%COMPILER_PATH%" ^
-@REM   -DCMAKE_C_COMPILER="%COMPILER_PATH%" ^
-@REM   -DCMAKE_LINKER="%LINKER_PATH%" ^
-@REM   -DCMAKE_MAKE_PROGRAM="%CMAKE_MAKE_PROGRAM%" ^
-@REM   -DMT_PATH="%MT_PATH%" ^
-@REM   -DCMAKE_RC_COMPILER="%CMAKE_RC_COMPILER%" ^
-@REM   -DCMAKE_RC_COMPILER_INIT="rc" ^
-@REM   -G Ninja
-
-cmake -S "../../" ^
-  -B "../../build" ^
-  -DTARGET="Editor" ^
-  -DPLATFORM="Windows" ^
-  -DCMAKE_BUILD_TYPE="Release" ^
-  -G "Visual Studio 17 2022" -A x64
+cmake -S "%ROOT_DIR%" ^
+  -B "%ROOT_DIR%\build" ^
+  -DTARGET=%TARGET% ^
+  -DPLATFORM=%PLATFORM% ^
+  -DCMAKE_BUILD_TYPE=%BUILD_CONFIG% ^
+  -DCMAKE_CXX_COMPILER=%COMPILER_PATH% ^
+  -DCMAKE_C_COMPILER=%COMPILER_PATH% ^
+  -DCMAKE_LINKER=%LINKER_PATH% ^
+  -DCMAKE_MAKE_PROGRAM=%CMAKE_MAKE_PROGRAM% ^
+  -DMT_PATH=%MT_PATH% ^
+  -DCMAKE_RC_COMPILER=%CMAKE_RC_COMPILER% ^
+  -DCMAKE_RC_COMPILER_INIT=rc ^
+  -G Ninja
 
 if errorlevel 1 (
     echo ERROR: CMake configuration failed.
