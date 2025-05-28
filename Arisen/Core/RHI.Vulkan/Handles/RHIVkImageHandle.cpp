@@ -52,7 +52,7 @@ void ArisenEngine::RHI::RHIVkImageHandle::FreeHandle()
     if (m_VkImage != VK_NULL_HANDLE)
     {
         vkDestroyImage(m_VKDevice, m_VkImage, nullptr);
-        LOG_DEBUG("## Destroy Vulkan Image:" + m_Name +" ##")
+        LOG_DEBUG("## Destroy Vulkan Image:" + m_Name +" ##");
     }
 }
 
