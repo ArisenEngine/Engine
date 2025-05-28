@@ -1,13 +1,14 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<?xml version='1.0' encoding='utf-8'?>
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-    </PropertyGroup>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath></PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\ArisenEditor\ArisenEditor.csproj" />
     </ItemGroup>
 
-</Project>
+<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>E:\Jingwen\ArisenEngine\Engine\Arisen/Projects/Visual Studio/Editor/Outputs/Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>E:\Jingwen\ArisenEngine\Engine\Arisen/Projects/Visual Studio/Editor/Outputs/Release\</OutputPath></PropertyGroup></Project>

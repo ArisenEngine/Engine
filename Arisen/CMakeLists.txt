@@ -106,8 +106,8 @@ endif()
 message(STATUS "Unified binary output dir: ${OUTPUT_DIR}")
 
 # Add C++ Submodules
-add_subdirectory(Core/Core.Infra)
 add_subdirectory(Tools/Profiler)
+add_subdirectory(Core/Core.Infra)
 add_subdirectory(3rdparty/spdlog)
 add_subdirectory(Core/Core.Debugger)
 add_subdirectory(Core/Core.Platform)
@@ -125,8 +125,13 @@ set(AUTO_BINDING_PROJ ${AUTO_BINDING_DIR}/AutoBinding.csproj)
 
 set(ARISEN_ENGINE_PROJ ${CMAKE_SOURCE_DIR}/Engine/ArisenEngine/ArisenEngine.csproj)
 
+set(ARISEN_EDITOR_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor/ArisenEditor.csproj)
+set(ARISEN_EDITOR_SHELL_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenEditorShell/ArisenEditorShell.csproj)
+set(ARISEN_EDITOR_DESKTOP_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor.Desktop/ArisenEditor.Desktop.csproj)
+
 # Build C# Projects
-add_custom_target(BuildBindingGenerator
+add_custom_command(
+    OUTPUT ${BINDING_GENERATOR_EXE}
     COMMAND dotnet build ${BINDING_GENERATOR_PROJ} --configuration ${CMAKE_BUILD_TYPE} --output ${BINDING_GENERATOR_EXE}
     WORKING_DIRECTORY ${BINDING_GENERATOR_DIR}
     COMMENT "Building Binding Generator"
@@ -134,35 +139,26 @@ add_custom_target(BuildBindingGenerator
     USES_TERMINAL
 )
 
-add_custom_target(BuildAutoBinding
-    COMMAND dotnet build ${AUTO_BINDING_PROJ} --configuration ${CMAKE_BUILD_TYPE}
-    WORKING_DIRECTORY ${AUTO_BINDING_DIR}
-    COMMENT "Building AutoBinding Project"
-    VERBATIM
-    USES_TERMINAL
-)
-add_dependencies(BuildAutoBinding BuildBindingGenerator)
-
 # Generate auto binding
-add_custom_target(GenerateAutoBinding
+add_custom_command(
+    OUTPUT ${AUTO_BINDING_PROJ}
     COMMAND BindingGenerator.exe --source_code ${CMAKE_SOURCE_DIR} --output ${CMAKE_SOURCE_DIR} --library ${OUTPUT_DIR}
     WORKING_DIRECTORY ${BINDING_GENERATOR_EXE}
     COMMENT "Generating Auto Binding Project"
+    DEPENDS ${BINDING_GENERATOR_EXE}
     VERBATIM
     USES_TERMINAL
 )
-add_dependencies(GenerateAutoBinding BuildAutoBinding)
-add_dependencies(GenerateAutoBinding Core.Infra)
 
-# Visual Studio Solution Integration
-if(MSVC AND ARISEN_GENERATE_PROJECT)
-    add_custom_target(BindingGeneratorProj SOURCES ${BINDING_GENERATOR_PROJ})
-    add_custom_target(AutoBindingProj SOURCES ${AUTO_BINDING_PROJ})
-    add_custom_target(ArisenEngineProj SOURCES ${ARISEN_ENGINE_PROJ})
-
-    add_dependencies(AutoBindingProj BindingGeneratorProj)
-    add_dependencies(ArisenEngineProj AutoBindingProj)
-endif()
+add_custom_command(
+    OUTPUT "AutoBinding.dll"
+    COMMAND dotnet build ${AUTO_BINDING_PROJ} --configuration ${CMAKE_BUILD_TYPE}
+    WORKING_DIRECTORY ${AUTO_BINDING_DIR}
+    COMMENT "Building AutoBinding Project"
+    DEPENDS ${AUTO_BINDING_PROJ}
+    VERBATIM
+    USES_TERMINAL
+)
 
 # Final Target Setup
 if(${TARGET} STREQUAL "Editor")
@@ -174,4 +170,65 @@ elseif(${TARGET} STREQUAL "WindowsPlayerSupport")
     # Add your platform player support setup here
 else()
     message(FATAL_ERROR "Unknown TARGET: ${TARGET}")
+endif()
+
+# Visual Studio Solution Integration
+if(MSVC AND ARISEN_GENERATE_PROJECT)
+   # 假设 sln 名为 ArisenEditor.sln，且在 PROJECT_DIR 目录下
+    set(ARISEN_SOLUTION "${PROJECT_DIR}/ArisenEditor.sln")
+
+    # dotnet sln add 命令只能在 sln 已存在时使用
+    if(EXISTS ${ARISEN_SOLUTION})
+        message(STATUS "Adding .csproj files to ${ARISEN_SOLUTION}...")
+
+        execute_process(
+            COMMAND dotnet sln ${ARISEN_SOLUTION} add ${BINDING_GENERATOR_PROJ}
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            RESULT_VARIABLE ADD_BINDINGGEN_RESULT
+        )
+
+        execute_process(
+            COMMAND dotnet sln ${ARISEN_SOLUTION} add ${AUTO_BINDING_PROJ}
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            RESULT_VARIABLE ADD_AUTOBINDING_RESULT
+        )
+
+        execute_process(
+            COMMAND dotnet sln ${ARISEN_SOLUTION} add ${ARISEN_ENGINE_PROJ}
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            RESULT_VARIABLE ADD_ENGINE_RESULT
+        )
+
+        execute_process(
+            COMMAND dotnet sln ${ARISEN_SOLUTION} add ${ARISEN_EDITOR_PROJ}
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            RESULT_VARIABLE ADD_EDITOR_RESULT
+        )
+
+        execute_process(
+            COMMAND dotnet sln ${ARISEN_SOLUTION} add ${ARISEN_EDITOR_SHELL_PROJ}
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            RESULT_VARIABLE ADD_EDITORSHELL_RESULT
+        )
+
+        execute_process(
+            COMMAND dotnet sln ${ARISEN_SOLUTION} add ${ARISEN_EDITOR_DESKTOP_PROJ}
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            RESULT_VARIABLE ADD_EDITORDESKTOP_RESULT
+        )
+
+        if(NOT ADD_BINDINGGEN_RESULT EQUAL 0 
+        OR NOT ADD_AUTOBINDING_RESULT EQUAL 0 
+        OR NOT ADD_ENGINE_RESULT EQUAL 0
+        OR NOT ADD_EDITOR_RESULT EQUAL 0
+        OR NOT ADD_EDITORSHELL_RESULT EQUAL 0
+        OR NOT ADD_EDITORDESKTOP_RESULT EQUAL 0
+        )
+            message(WARNING "Some .csproj files may not have been added to ${ARISEN_SOLUTION}")
+        else()
+            message(STATUS "All .csproj files added to ${ARISEN_SOLUTION}")
+        endif()
+    else()
+        message(WARNING "${ARISEN_SOLUTION} not found, skipping .csproj injection.")
+    endif()
 endif()
