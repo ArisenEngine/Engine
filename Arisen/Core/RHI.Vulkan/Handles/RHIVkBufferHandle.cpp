@@ -45,7 +45,7 @@ void ArisenEngine::RHI::RHIVkBufferHandle::FreeBufferHandle()
 {
     if (m_VkBuffer != VK_NULL_HANDLE)
     {
-        LOG_DEBUG("## Destroy Vulkan Buffer:"+ m_Name +" ##")
+        LOG_DEBUG("## Destroy Vulkan Buffer:"+ m_Name +" ##");
         vkDestroyBuffer(static_cast<VkDevice>(m_Device->GetHandle()), m_VkBuffer, nullptr);
     }
 }

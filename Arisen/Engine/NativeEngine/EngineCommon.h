@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef ENGINE_EXPORTS
+#ifdef NATIVEENGINE_EXPORTS
 
 #define ENGINE_DLL   __declspec( dllexport )
 

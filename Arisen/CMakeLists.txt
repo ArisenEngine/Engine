@@ -106,7 +106,13 @@ endif()
 message(STATUS "Unified binary output dir: ${OUTPUT_DIR}")
 
 # Add C++ Submodules
+
+# 配置 tracy 作为动态库
+set(TRACY_STATIC OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+add_subdirectory(3rdparty/tracy)
 add_subdirectory(Tools/Profiler)
+
 add_subdirectory(Core/Core.Infra)
 add_subdirectory(3rdparty/spdlog)
 add_subdirectory(Core/Core.Debugger)

@@ -10,6 +10,10 @@ add_library(Core.Debugger SHARED
     ${ALL_SOURCE_FILES}
 )
 
+target_include_directories(Core.Debugger PRIVATE
+    ${CMAKE_SOURCE_DIR}/Core/Core.Infra
+    )  
+
 target_include_directories(Core.Debugger PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )

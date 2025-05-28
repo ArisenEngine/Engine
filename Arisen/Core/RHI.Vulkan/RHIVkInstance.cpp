@@ -238,7 +238,7 @@ ArisenEngine::RHI::VkQueueFamilyIndices ArisenEngine::RHI::RHIVkInstance::FindQu
 
     if (m_CurrentPhysicsDevice == VK_NULL_HANDLE)
     {
-        LOG_FATAL_AND_THROW("[RHIVkInstance::FindQueueFamilies]: Physical device invalid!")
+        LOG_FATAL_AND_THROW("[RHIVkInstance::FindQueueFamilies]: Physical device invalid!");
     }
 
     ArisenEngine::RHI::VkQueueFamilyIndices indices;

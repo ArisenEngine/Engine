@@ -91,7 +91,7 @@ do {                                                                    \
         std::string msg = "Assertion failed: (" #condition "), file " \
             + std::string(__FILE__) +                \
             ", line " + std::to_string(__LINE__);    \
-        LOG_FATAL(msg)                           \
+        LOG_FATAL(msg);                           \
         std::abort();                                                   \
     }                                                                   \
 } while (0);                    
