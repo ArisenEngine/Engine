@@ -67,5 +67,6 @@ if errorlevel 1 (
 )
 
 echo === Build succeeded ===
+call "!SCRIPT_DIR!/dotnet_add_csproj_editor.bat" "!ROOT_DIR!/Projects/Visual Studio/Editor/ArisenEditor.sln" "!ROOT_DIR!/Projects/Visual Studio/Editor/Outputs/"
 pause
 exit /b 0

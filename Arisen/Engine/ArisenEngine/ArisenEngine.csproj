@@ -1,4 +1,5 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<?xml version='1.0' encoding='utf-8'?>
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
 	 
@@ -32,10 +33,10 @@
     <InternalsVisibleTo Include="ArisenEditor.Desktop" />
   </ItemGroup>
 
-  <!-- Internal properties are visiable to "ArisenEditor" project -->
+  
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>ArisenEditor</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
-</Project>
+<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>E:\Jingwen\ArisenEngine\Engine\Arisen/Projects/Visual Studio/Editor/Outputs/Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>E:\Jingwen\ArisenEngine\Engine\Arisen/Projects/Visual Studio/Editor/Outputs/Release\</OutputPath></PropertyGroup></Project>
