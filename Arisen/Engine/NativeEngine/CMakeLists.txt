@@ -14,6 +14,14 @@ target_include_directories(NativeEngine PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+target_include_directories(NativeEngine PRIVATE
+    ${CMAKE_SOURCE_DIR}/Tools/Profiler
+    ${CMAKE_SOURCE_DIR}/Core/Core.Infra
+    ${CMAKE_SOURCE_DIR}/Core/Core.Debugger
+    ${CMAKE_SOURCE_DIR}/Core/Core.Platform
+    )  
+
+
 target_compile_definitions(NativeEngine PRIVATE NATIVEENGINE_EXPORTS)
 
-target_link_libraries(NativeEngine PRIVATE Core.Platform Core.Debugger RHI.DX12 RHI.Vulkan)
+target_link_libraries(NativeEngine PRIVATE Profiler Core.Infra Core.Debugger Core.Platform RHI.DX12 RHI.Vulkan)

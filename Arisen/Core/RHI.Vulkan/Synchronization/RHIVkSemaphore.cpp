@@ -4,7 +4,7 @@
 
 ArisenEngine::RHI::RHIVkSemaphore::~RHIVkSemaphore() noexcept
 {
-    LOG_DEBUG("[RHIVkSemaphore::~RHIVkSemaphore]: ~RHIVkSemaphore")
+    LOG_DEBUG("[RHIVkSemaphore::~RHIVkSemaphore]: ~RHIVkSemaphore");
     vkDestroySemaphore(m_VkDevice, m_VkSemaphore, nullptr);
     LOG_DEBUG("## Destroy Vulkan Semaphore ##");
 }
