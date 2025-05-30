@@ -130,24 +130,30 @@ set(AUTO_BINDING_DIR ${CMAKE_SOURCE_DIR}/AutoBinding)
 set(AUTO_BINDING_PROJ ${AUTO_BINDING_DIR}/AutoBinding.csproj)
 
 set(ARISEN_ENGINE_PROJ ${CMAKE_SOURCE_DIR}/Engine/ArisenEngine/ArisenEngine.csproj)
+set(ARISEN_ENGINE_PROJ_DIR ${CMAKE_SOURCE_DIR}/Engine/ArisenEngine/)
 
 set(ARISEN_EDITOR_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor/ArisenEditor.csproj)
+set(ARISEN_EDITOR_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor/)
 set(ARISEN_EDITOR_SHELL_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenEditorShell/ArisenEditorShell.csproj)
+set(ARISEN_EDITOR_SHELL_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenEditorShell/)
 set(ARISEN_EDITOR_DESKTOP_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor.Desktop/ArisenEditor.Desktop.csproj)
+set(ARISEN_EDITOR_DESKTOP_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor.Desktop/)
 
 # Build C# Projects
-add_custom_command(
-    OUTPUT ${BINDING_GENERATOR_EXE}
+add_custom_target(BuildBindingGenerator
     COMMAND dotnet build ${BINDING_GENERATOR_PROJ} --configuration ${CMAKE_BUILD_TYPE} --output ${BINDING_GENERATOR_EXE}
     WORKING_DIRECTORY ${BINDING_GENERATOR_DIR}
     COMMENT "Building Binding Generator"
     VERBATIM
     USES_TERMINAL
 )
+add_dependencies(BuildBindingGenerator Core.Infra)
+add_dependencies(BuildBindingGenerator Core.Debugger)
+add_dependencies(BuildBindingGenerator Core.Platform)
+add_dependencies(BuildBindingGenerator NativeEngine)
 
 # Generate auto binding
-add_custom_command(
-    OUTPUT ${AUTO_BINDING_PROJ}
+add_custom_target(GenerateAutoBinding
     COMMAND BindingGenerator.exe --source_code ${CMAKE_SOURCE_DIR} --output ${CMAKE_SOURCE_DIR} --library ${OUTPUT_DIR}
     WORKING_DIRECTORY ${BINDING_GENERATOR_EXE}
     COMMENT "Generating Auto Binding Project"
@@ -156,8 +162,9 @@ add_custom_command(
     USES_TERMINAL
 )
 
-add_custom_command(
-    OUTPUT "AutoBinding.dll"
+add_dependencies(GenerateAutoBinding BuildBindingGenerator)
+
+add_custom_target(BuildAutoBinding
     COMMAND dotnet build ${AUTO_BINDING_PROJ} --configuration ${CMAKE_BUILD_TYPE}
     WORKING_DIRECTORY ${AUTO_BINDING_DIR}
     COMMENT "Building AutoBinding Project"
@@ -166,9 +173,58 @@ add_custom_command(
     USES_TERMINAL
 )
 
+add_dependencies(BuildAutoBinding GenerateAutoBinding)
+
+add_custom_target(BuildArisenEngine
+    COMMAND dotnet build ${ARISEN_ENGINE_PROJ} --configuration ${CMAKE_BUILD_TYPE}
+    WORKING_DIRECTORY ${ARISEN_ENGINE_PROJ_DIR}
+    COMMENT "Building Arisen Engine"
+    DEPENDS "AutoBinding.dll"
+    VERBATIM
+    USES_TERMINAL
+)
+
+add_dependencies(BuildArisenEngine BuildAutoBinding)
+
 # Final Target Setup
 if(${TARGET} STREQUAL "Editor")
-    add_custom_target(BuildEditor ALL)
+    
+    add_custom_target(BuildArisenEditor
+    COMMAND dotnet build ${ARISEN_EDITOR_PROJ} --configuration ${CMAKE_BUILD_TYPE}
+    WORKING_DIRECTORY ${ARISEN_EDITOR_PROJ_DIR}
+    COMMENT "Building Arisen Editor"
+    DEPENDS "ArisenEngine.dll"
+    VERBATIM
+    USES_TERMINAL
+    )
+
+    add_dependencies(BuildArisenEditor BuildArisenEngine)
+
+    add_custom_target(BuildArisenEditorShell
+    COMMAND dotnet build ${ARISEN_EDITOR_SHELL_PROJ} --configuration ${CMAKE_BUILD_TYPE}
+    WORKING_DIRECTORY ${ARISEN_EDITOR_SHELL_PROJ_DIR}
+    COMMENT "Building Arisen Editor Shell"
+    DEPENDS "ArisenEditor.dll"
+    VERBATIM
+    USES_TERMINAL
+    )
+
+    add_dependencies(BuildArisenEditorShell BuildArisenEditor)
+
+
+    add_custom_target(BuildArisenEditorDesktop ALL
+    COMMAND dotnet build ${ARISEN_EDITOR_DESKTOP_PROJ} --configuration ${CMAKE_BUILD_TYPE}
+    WORKING_DIRECTORY ${ARISEN_EDITOR_DESKTOP_PROJ_DIR}
+    COMMENT "Building Arisen Editor Desktop"
+    DEPENDS "ArisenEditorShell.dll"
+    VERBATIM
+    USES_TERMINAL
+    )
+
+    add_dependencies(BuildArisenEditorDesktop BuildArisenEditorShell)
+
+    
+
     string(TIMESTAMP END_TIME "%s")
     math(EXPR ELAPSED_TIME "${END_TIME} - ${START_TIME}")
     message(STATUS "\\033[32m Configure success. Elapsed time: ${ELAPSED_TIME} seconds \\033[0m")
@@ -176,65 +232,4 @@ elseif(${TARGET} STREQUAL "WindowsPlayerSupport")
     # Add your platform player support setup here
 else()
     message(FATAL_ERROR "Unknown TARGET: ${TARGET}")
-endif()
-
-# Visual Studio Solution Integration
-if(MSVC AND ARISEN_GENERATE_PROJECT)
-   # 假设 sln 名为 ArisenEditor.sln，且在 PROJECT_DIR 目录下
-    set(ARISEN_SOLUTION "${PROJECT_DIR}/ArisenEditor.sln")
-
-    # dotnet sln add 命令只能在 sln 已存在时使用
-    if(EXISTS ${ARISEN_SOLUTION})
-        message(STATUS "Adding .csproj files to ${ARISEN_SOLUTION}...")
-
-        execute_process(
-            COMMAND dotnet sln ${ARISEN_SOLUTION} add ${BINDING_GENERATOR_PROJ}
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-            RESULT_VARIABLE ADD_BINDINGGEN_RESULT
-        )
-
-        execute_process(
-            COMMAND dotnet sln ${ARISEN_SOLUTION} add ${AUTO_BINDING_PROJ}
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-            RESULT_VARIABLE ADD_AUTOBINDING_RESULT
-        )
-
-        execute_process(
-            COMMAND dotnet sln ${ARISEN_SOLUTION} add ${ARISEN_ENGINE_PROJ}
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-            RESULT_VARIABLE ADD_ENGINE_RESULT
-        )
-
-        execute_process(
-            COMMAND dotnet sln ${ARISEN_SOLUTION} add ${ARISEN_EDITOR_PROJ}
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-            RESULT_VARIABLE ADD_EDITOR_RESULT
-        )
-
-        execute_process(
-            COMMAND dotnet sln ${ARISEN_SOLUTION} add ${ARISEN_EDITOR_SHELL_PROJ}
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-            RESULT_VARIABLE ADD_EDITORSHELL_RESULT
-        )
-
-        execute_process(
-            COMMAND dotnet sln ${ARISEN_SOLUTION} add ${ARISEN_EDITOR_DESKTOP_PROJ}
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-            RESULT_VARIABLE ADD_EDITORDESKTOP_RESULT
-        )
-
-        if(NOT ADD_BINDINGGEN_RESULT EQUAL 0 
-        OR NOT ADD_AUTOBINDING_RESULT EQUAL 0 
-        OR NOT ADD_ENGINE_RESULT EQUAL 0
-        OR NOT ADD_EDITOR_RESULT EQUAL 0
-        OR NOT ADD_EDITORSHELL_RESULT EQUAL 0
-        OR NOT ADD_EDITORDESKTOP_RESULT EQUAL 0
-        )
-            message(WARNING "Some .csproj files may not have been added to ${ARISEN_SOLUTION}")
-        else()
-            message(STATUS "All .csproj files added to ${ARISEN_SOLUTION}")
-        endif()
-    else()
-        message(WARNING "${ARISEN_SOLUTION} not found, skipping .csproj injection.")
-    endif()
 endif()
