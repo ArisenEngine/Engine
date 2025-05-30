@@ -38,4 +38,4 @@
       <_Parameter1>ArisenEditor</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
-<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>E:\Jingwen\ArisenEngine\Engine\Arisen/Projects/Visual Studio/Editor/Outputs/Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>E:\Jingwen\ArisenEngine\Engine\Arisen/Projects/Visual Studio/Editor/Outputs/Release\</OutputPath></PropertyGroup></Project>
+<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>E:\Jingwen\ArisenEngine\Engine\Arisen\Projects\Visual Studio\Editor\Outputs"\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>E:\Jingwen\ArisenEngine\Engine\Arisen\Projects\Visual Studio\Editor\Outputs"\Release\</OutputPath></PropertyGroup></Project>
