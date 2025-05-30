@@ -121,6 +121,12 @@ add_subdirectory(Core/RHI.DX12)
 add_subdirectory(Core/RHI.Vulkan)
 add_subdirectory(Engine/NativeEngine)
 
+if("${TARGET}" STREQUAL "VulkanTest")
+add_subdirectory(Test/VulkanTest)
+endif()
+
+if(NOT "${TARGET}" STREQUAL "VulkanTest")
+
 # Setup .NET Paths
 set(BINDING_GENERATOR_DIR ${CMAKE_SOURCE_DIR}/BindingGenerator)
 set(BINDING_GENERATOR_PROJ ${BINDING_GENERATOR_DIR}/BindingGenerator.csproj)
@@ -186,6 +192,8 @@ add_custom_target(BuildArisenEngine
 
 add_dependencies(BuildArisenEngine BuildAutoBinding)
 
+endif()
+
 # Final Target Setup
 if(${TARGET} STREQUAL "Editor")
     
@@ -230,6 +238,10 @@ if(${TARGET} STREQUAL "Editor")
     message(STATUS "\\033[32m Configure success. Elapsed time: ${ELAPSED_TIME} seconds \\033[0m")
 elseif(${TARGET} STREQUAL "WindowsPlayerSupport")
     # Add your platform player support setup here
+
+elseif(${TARGET} STREQUAL "VulkanTest")    
+
+    
 else()
     message(FATAL_ERROR "Unknown TARGET: ${TARGET}")
 endif()
