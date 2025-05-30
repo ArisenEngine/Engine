@@ -24,18 +24,21 @@ REM ==== 2. 配置CMake工程 ====
 echo === Configuring (!BUILD_CONFIG!) ===
 
 :: 清理构建目录
-if exist "!ROOT_DIR!\Projects" (
-    echo Removing build directory...
-    rmdir /s /q "!ROOT_DIR!\Projects"
+@REM if exist "!ROOT_DIR!\Projects" (
+@REM     echo Removing build directory...
+@REM     rmdir /s /q "!ROOT_DIR!\Projects"
+@REM )
+
+@REM if exist "!ROOT_DIR!\Projects" (
+@REM     echo ERROR: Failed to remove build directory.
+@REM     pause
+@REM     exit /b 1
+@REM )
+
+if not exist "!ROOT_DIR!\Projects" (
+    mkdir "!ROOT_DIR!\Projects"
 )
 
-if exist "!ROOT_DIR!\Projects" (
-    echo ERROR: Failed to remove build directory.
-    pause
-    exit /b 1
-)
-
-mkdir "!ROOT_DIR!\Projects"
 
 
 for %%I in ("!LINKER_PATH!") do set "LINKER_DIR=%%~dpI"
@@ -60,6 +63,9 @@ if errorlevel 1 (
 REM ==== 3. 编译 ====
 echo === Building (!BUILD_CONFIG!) ===
 cmake --build "!ROOT_DIR!/Projects/Visual Studio/Editor" --config !BUILD_CONFIG!
+
+:: add csproj anyway
+call "!SCRIPT_DIR!/dotnet_add_csproj_editor.bat" "!ROOT_DIR!/Projects/Visual Studio/Editor/ArisenEditor.sln" "!ROOT_DIR!/Projects/Visual Studio/Editor/Outputs/"
 if errorlevel 1 (
     echo ERROR: Build failed.
     exit /b 1
@@ -67,6 +73,5 @@ if errorlevel 1 (
 )
 
 echo === Build succeeded ===
-call "!SCRIPT_DIR!/dotnet_add_csproj_editor.bat" "!ROOT_DIR!/Projects/Visual Studio/Editor/ArisenEditor.sln" "!ROOT_DIR!/Projects/Visual Studio/Editor/Outputs/"
 pause
 exit /b 0
