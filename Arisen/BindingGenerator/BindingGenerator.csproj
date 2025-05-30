@@ -15,9 +15,9 @@
     </ItemGroup>
 
 <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-<OutputPath>E:\Jingwen\ArisenEngine\Engine\Arisen/Projects/Visual Studio/Editor/Outputs/Debug\</OutputPath>
+<OutputPath>E:\Jingwen\ArisenEngine\Engine\Arisen\Projects\Visual Studio\Editor\Outputs"\Debug\</OutputPath>
 </PropertyGroup>
 <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-<OutputPath>E:\Jingwen\ArisenEngine\Engine\Arisen/Projects/Visual Studio/Editor/Outputs/Release\</OutputPath>
+<OutputPath>E:\Jingwen\ArisenEngine\Engine\Arisen\Projects\Visual Studio\Editor\Outputs"\Release\</OutputPath>
 </PropertyGroup>
 </Project>
