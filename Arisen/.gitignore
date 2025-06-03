@@ -455,6 +455,10 @@ $RECYCLE.BIN/
 
 !3rdparty/dxc/bin/
 !3rdparty/dxc/bin/*
+!3rdparty/dxc/inc/
+!3rdparty/dxc/inc/*
+!3rdparty/dxc/lib/
+!3rdparty/dxc/lib/*
 
 Scripts/Windows/tools/*
 Scripts/Windows/*.log
