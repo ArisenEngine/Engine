@@ -9,8 +9,6 @@ CMake 3.29
 
 ### Vulkan SDK
 
-### C++ ATL
-
 ### DotNet 9.0
 
 ### Tracy 编译环境
