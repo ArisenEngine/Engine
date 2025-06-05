@@ -41,6 +41,7 @@ def ensure_framework_flag(tree):
         ET.SubElement(pg, "AppendTargetFrameworkToOutputPath").text = "false"
 
 def update_output_path(csproj_path, base_output):
+    base_output = os.path.normpath(base_output)
     tree = ET.parse(csproj_path)
     ensure_property_group_with_output(tree, "Debug", os.path.join(base_output, "Debug") + os.sep)
     ensure_property_group_with_output(tree, "Release", os.path.join(base_output, "Release") + os.sep)
@@ -67,7 +68,7 @@ if len(sys.argv) != 3:
 
 sln_file = sys.argv[1]
 output_base = sys.argv[2]
-
+print("Update csproj Output base:" + output_base)
 if not os.path.exists(sln_file):
     print(f"Error: Solution file not found: {sln_file}")
     sys.exit(1)
