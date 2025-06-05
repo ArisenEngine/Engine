@@ -5,9 +5,9 @@
 
 # Requirements
 
-### Vulkan SDK
+CMake 3.29
 
-### C++ ATL
+### Vulkan SDK
 
 ### DotNet 9.0
 

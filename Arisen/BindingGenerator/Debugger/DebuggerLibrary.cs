@@ -34,8 +34,8 @@ public class DebuggerLibrary : ILibrary
     public void Setup(Driver driver)
     {
         driver.ParserOptions.Setup(TargetPlatform.Windows);
-        driver.ParserOptions.AddIncludeDirs(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.Infra") + Path.PathSeparator);
-        driver.ParserOptions.AddIncludeDirs(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.Debugger") + Path.PathSeparator);
+        driver.ParserOptions.AddIncludeDirs(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.Infra"));
+        driver.ParserOptions.AddIncludeDirs(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.Debugger"));
         var options = driver.Options;
         options.GenerationOutputMode = GenerationOutputMode.FilePerUnit;
         options.OutputDir = Path.Combine(GlobalConfig.s_Output, GlobalConfig.s_ProjectName, "Debugger");
@@ -46,10 +46,10 @@ public class DebuggerLibrary : ILibrary
         var module = options.AddModule("Core.Debugger");
         module.OutputNamespace = "";
         module.Headers.Clear();
-        module.Headers.Add(@"/Logger/Logger.h");
+        module.Headers.Add(@"Logger/Logger.h");
         module.LibraryDirs.Add(GlobalConfig.s_LibraryPath);
         module.Libraries.Add(@"Core.Debugger");
-        
+    
     }
 
     public void SetupPasses(Driver driver)

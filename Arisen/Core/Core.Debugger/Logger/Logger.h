@@ -72,15 +72,15 @@ namespace ArisenEngine::Debugger
 
 
 
-#define LOG_INFO(msg) EXECUTE_CODE(ArisenEngine::Debugger::Logger::GetInstance().Info(std::move(msg));)
+#define LOG_INFO(msg) EXECUTE_CODE(ArisenEngine::Debugger::Logger::GetInstance().Info(std::move(msg)))
 // TODO: support formated log
 // #define LOG_INFO_FORMAT(format,  ...) ArisenEngine::Debugger::Logger::GetInstance().Info(msg);
-#define LOG_DEBUG(msg) EXECUTE_CODE(DEBUG_OP(ArisenEngine::Debugger::Logger::GetInstance().Log(std::move(msg));))
-#define LOG_WARN(msg) EXECUTE_CODE(ArisenEngine::Debugger::Logger::GetInstance().Warning(std::move(msg));)
-#define LOG_ERROR(msg) EXECUTE_CODE(ArisenEngine::Debugger::Logger::GetInstance().Error(std::move(msg));)
-#define LOG_FATAL(msg) EXECUTE_CODE(ArisenEngine::Debugger::Logger::GetInstance().Fatal(std::move(msg));)
-#define LOG_FATAL_AND_THROW(msg) EXECUTE_CODE(ArisenEngine::Debugger::Logger::GetInstance().Fatal(std::move(msg), true);)
-#define LOG_TRACE(msg) EXECUTE_CODE(ArisenEngine::Debugger::Logger::GetInstance().Trace(std::move(msg));)
+#define LOG_DEBUG(msg) EXECUTE_CODE(DEBUG_OP(ArisenEngine::Debugger::Logger::GetInstance().Log(std::move(msg))))
+#define LOG_WARN(msg) EXECUTE_CODE(ArisenEngine::Debugger::Logger::GetInstance().Warning(std::move(msg)))
+#define LOG_ERROR(msg) EXECUTE_CODE(ArisenEngine::Debugger::Logger::GetInstance().Error(std::move(msg)))
+#define LOG_FATAL(msg) EXECUTE_CODE(ArisenEngine::Debugger::Logger::GetInstance().Fatal(std::move(msg)))
+#define LOG_FATAL_AND_THROW(msg) EXECUTE_CODE(ArisenEngine::Debugger::Logger::GetInstance().Fatal(std::move(msg), true))
+#define LOG_TRACE(msg) EXECUTE_CODE(ArisenEngine::Debugger::Logger::GetInstance().Trace(std::move(msg)))
 
 #include <cstdlib> // for abort()
 
@@ -91,7 +91,7 @@ do {                                                                    \
         std::string msg = "Assertion failed: (" #condition "), file " \
             + std::string(__FILE__) +                \
             ", line " + std::to_string(__LINE__);    \
-        LOG_FATAL(msg)                           \
+        LOG_FATAL(msg);                           \
         std::abort();                                                   \
     }                                                                   \
 } while (0);                    

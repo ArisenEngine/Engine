@@ -77,9 +77,9 @@ public class PlatformLibrary : ILibrary
     public void Setup(Driver driver)
     {
         driver.ParserOptions.Setup(TargetPlatform.Windows);
-        driver.ParserOptions.AddIncludeDirs(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.Infra") + Path.PathSeparator);
-        driver.ParserOptions.AddIncludeDirs( Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.Debugger") + Path.PathSeparator);
-        driver.ParserOptions.AddIncludeDirs( Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.Platform") + Path.PathSeparator);
+        driver.ParserOptions.AddIncludeDirs(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.Infra"));
+        driver.ParserOptions.AddIncludeDirs( Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.Debugger"));
+        driver.ParserOptions.AddIncludeDirs( Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.Platform"));
        
         var options = driver.Options;
         
@@ -91,10 +91,10 @@ public class PlatformLibrary : ILibrary
         // options.CheckSymbols = true;
         var module = options.AddModule("Core.Platform");
         module.OutputNamespace = "";
-        module.Headers.Add(@"/Windows/RenderWindowAPI.h");
+        module.Headers.Add(@"Windows/RenderWindowAPI.h");
         module.LibraryDirs.Add(GlobalConfig.s_LibraryPath);
         module.Libraries.Add(@"Core.Platform");
-        
+    
     }
 
     public void SetupPasses(Driver driver)

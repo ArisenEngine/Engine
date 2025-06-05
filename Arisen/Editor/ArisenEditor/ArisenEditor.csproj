@@ -1,4 +1,5 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<?xml version='1.0' encoding='utf-8'?>
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net8.0</TargetFramework>
@@ -43,12 +44,12 @@
 	</PropertyGroup>
 	
     <ItemGroup>
-<!--        <InternalsVisibleTo Include="Avalonia" />-->
-<!--        <InternalsVisibleTo Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" />-->
-<!--        <InternalsVisibleTo Include="Avalonia.Designer.HostApp" />-->
-<!--        <InternalsVisibleTo Include="Avalonia.Designer.HostApp.dll" />-->
+
+
+
+
         <InternalsVisibleTo Include="ArisenEditor.Desktop" />
-<!--		<InternalsVisibleTo Include="%(AvaloniaLibraries.Identity)" />-->
+
 		
     </ItemGroup>
 	
@@ -56,10 +57,11 @@
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.2.4" />
     <PackageReference Include="Avalonia.Controls.TreeDataGrid" Version="11.1.1" />
+	 <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.2.4" />
     <PackageReference Include="Avalonia.ReactiveUI" Version="11.2.4" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.4" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.4" />
-    <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
+    
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.2.4" />
     <PackageReference Include="MessageBox.Avalonia" Version="3.2.0" />
   </ItemGroup>
@@ -124,26 +126,7 @@
 		</Compile>
 	</ItemGroup>
 
-	<ItemGroup>
-	  <COMReference Include="EnvDTE80">
-	    <WrapperTool>tlbimp</WrapperTool>
-	    <VersionMinor>0</VersionMinor>
-	    <VersionMajor>8</VersionMajor>
-	    <Guid>1a31287a-4d7d-413e-8e32-3b374931bd89</Guid>
-	    <Lcid>0</Lcid>
-	    <Isolated>false</Isolated>
-	    <EmbedInteropTypes>true</EmbedInteropTypes>
-	  </COMReference>
-	  <COMReference Include="EnvDTE">
-	    <WrapperTool>tlbimp</WrapperTool>
-	    <VersionMinor>0</VersionMinor>
-	    <VersionMajor>8</VersionMajor>
-	    <Guid>80cc9f66-e7d8-4ddd-85b6-d9e6cd0e93e2</Guid>
-	    <Lcid>0</Lcid>
-	    <Isolated>false</Isolated>
-	    <EmbedInteropTypes>true</EmbedInteropTypes>
-	  </COMReference>
-	</ItemGroup>
+	
 
 
   <ItemGroup>
@@ -163,14 +146,12 @@
     <ProjectReference Include="..\..\3rdparty\Ava.Dock\src\Dock.Avalonia\Dock.Avalonia.csproj" />
     <ProjectReference Include="..\..\3rdparty\Ava.Dock\src\Dock.Model.ReactiveUI\Dock.Model.ReactiveUI.csproj" />
     <ProjectReference Include="..\..\3rdparty\Ava.Dock\src\Dock.Serializer\Dock.Serializer.csproj" />
-    <ProjectReference Include="..\..\Core\Core.ECS\Core.ECS.csproj" />
     <ProjectReference Include="..\..\Engine\ArisenEngine\ArisenEngine.csproj" />
     <ProjectReference Include="..\..\Serialization\Serialization\Serialization.csproj" />
-    <ProjectReference Include="..\ProjectBuilderDll\ProjectBuilderDll.csproj" />
   </ItemGroup>
 
     <ItemGroup>
-        <!-- 将文件夹中的所有文件添加到构建时的内容中 -->
+        
         <None Update="Templates\**\*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
@@ -181,4 +162,4 @@
       <UpToDateCheckInput Remove="Public\Views\TestView.axaml" />
     </ItemGroup>
     
-</Project>
+<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>..\Projects\Visual Studio\Editor\Outputs\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>..\Projects\Visual Studio\Editor\Outputs\Release\</OutputPath></PropertyGroup></Project>

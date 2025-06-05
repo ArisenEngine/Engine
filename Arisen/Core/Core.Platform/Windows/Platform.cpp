@@ -3,6 +3,15 @@
 #include "Common/CommandHeaders.h"
 #include "Windows.h"
 
+#ifndef UNICODE
+#define UNICODE 
+#endif
+
+#ifndef _UNICODE
+#define _UNICODE 
+#endif
+
+
 namespace ArisenEngine::Platforms
 {
 	using namespace ArisenEngine::Containers;
@@ -182,7 +191,7 @@ namespace ArisenEngine::Platforms
 		void SetWindowCaption(WindowID id, const wchar_t* caption)
 		{
 			WindowInfo& info{ GetInfoFromId(id) };
-			SetWindowText(info.hwnd, caption);
+			SetWindowTextW(info.hwnd, caption);
 
 		}
 
@@ -235,10 +244,9 @@ namespace ArisenEngine::Platforms
 		WindowHandle parent{ initInfo ? initInfo->parent : nullptr };
 
 		// set up window class
-
-		WNDCLASSEX wc;
+		WNDCLASSEXW  wc;
 		ZeroMemory(&wc, sizeof(wc));
-		wc.cbSize = sizeof(WNDCLASSEX);
+		wc.cbSize = sizeof(WNDCLASSEXW );
 		wc.style = CS_HREDRAW | CS_VREDRAW;
 		wc.lpfnWndProc = InternalWindowProc;
 		wc.cbClsExtra = 0;
@@ -274,7 +282,7 @@ namespace ArisenEngine::Platforms
 		const SInt32 width{ rect.right - rect.left };
 		const SInt32 height{ rect.bottom - rect.top };
 
-		info.hwnd = CreateWindowEx(
+		info.hwnd = CreateWindowExW(
 			/* DWORD dwExStyle */        0,
 			/* LPCTSTR lpClassName */    wc.lpszClassName,
 			/* LPCTSTR lpWindowName */   caption,

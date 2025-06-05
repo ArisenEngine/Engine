@@ -218,7 +218,7 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
     m_CommandBufferPools.clear();
     m_BufferHandles.clear();
     vkDestroyDevice(m_VkDevice, nullptr);
-    LOG_DEBUG("## Destroy Vulkan Device ##")
+    LOG_DEBUG("## Destroy Vulkan Device ##");
     m_Instance = nullptr;
     LOG_INFO("[RHIVkDevice::~RHIVkDevice]: ~RHIVkDevice");
 }

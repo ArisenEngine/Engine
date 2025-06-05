@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<?xml version='1.0' encoding='utf-8'?>
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <!--If you are willing to use Windows/MacOS native APIs you will need to create 3 projects.
-    One for Windows with net7.0-windows TFM, one for MacOS with net7.0-macos and one with net7.0 TFM for Linux.-->
+    
     <TargetFramework>net9.0</TargetFramework>
 	<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <Nullable>enable</Nullable>
@@ -29,4 +29,4 @@
   <ItemGroup>
     <ProjectReference Include="..\ArisenEditorShell\ArisenEditorShell.csproj" />
   </ItemGroup>
-</Project>
+<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>..\Projects\Visual Studio\Editor\Outputs\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>..\Projects\Visual Studio\Editor\Outputs\Release\</OutputPath></PropertyGroup></Project>
