@@ -7,7 +7,7 @@ set PLATFORM=Windows
 
 REM 根目录假设是 setup-env.bat 的上上级目录，按你项目结构改
 set SCRIPT_DIR=%~dp0
-set "SCRIPT_DIR=!SCRIPT_DIR:~0,-1!"
+set SCRIPT_DIR=!SCRIPT_DIR:~0,-1!
 set ROOT_DIR=!SCRIPT_DIR!\..\..
 
 REM 规范路径转换（绝对路径）
@@ -44,7 +44,14 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM ==== 3. 编译 Debug ====
+REM ==== 3. 添加csproj ====
+call "!SCRIPT_DIR!/dotnet_add_csproj_editor.bat" "!VS_BUILD_DIR!\ArisenEditor.sln" "!VS_BUILD_DIR!\Outputs"
+if errorlevel 1 (
+    echo ERROR: dotnet csproj add failed.
+    exit /b 1
+)
+
+REM ==== 4. 编译 Debug ====
 echo === Building Debug ===
 cmake --build "!VS_BUILD_DIR!" --config Debug
 if errorlevel 1 (
@@ -53,7 +60,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM ==== 4. 编译 Release ====
+REM ==== 5 编译 Release ====
 echo === Building Release ===
 cmake --build "!VS_BUILD_DIR!" --config Release
 if errorlevel 1 (
@@ -62,13 +69,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM ==== 5. 添加csproj ====
-call "!SCRIPT_DIR!/dotnet_add_csproj_editor.bat" "!VS_BUILD_DIR!\ArisenEditor.sln" "!VS_BUILD_DIR!\Outputs\"
-if errorlevel 1 (
-    echo ERROR: dotnet csproj add failed.
-    exit /b 1
-)
-
 echo === All builds succeeded ===
+
 pause
 exit /b 0
