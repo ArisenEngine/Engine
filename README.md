@@ -1,27 +1,34 @@
-![Contributors](https://contrib.rocks/image?repo=ArisenEngine/Engine)<br>
+# ArisenEngine
+
+ArisenEngine 是一个开源的、面向学习与研究的自研渲染引擎，采用模块化架构，支持多平台构建与现代图形 API（如 Vulkan）。目标是打造一个兼具可扩展性与可读性的图形引擎，供开发者探索图形编程与引擎架构。
+
+---
+
+![License](https://img.shields.io/github/license/ArisenEngine/Engine)
 ![Contributors](https://img.shields.io/github/contributors/ArisenEngine/Engine)
+[![Contributors](https://contrib.rocks/image?repo=ArisenEngine/Engine)](https://github.com/ArisenEngine/Engine/graphs/contributors)
 
-[![License](https://img.shields.io/github/license/ArisenEngine/Engine)](https://github.com/ArisenEngine/Engine/blob/main/LICENSE)
+---
 
-# Requirements
+## 🧰 环境要求
 
-CMake 3.29
+| 组件          | 要求版本             |
+| ------------- | -------------------- |
+| CMake         | ≥ 3.29               |
+| Vulkan SDK    | 已安装（建议最新版） |
+| Visual Studio | 2022（支持 C++23）   |
+| Windows SDK   | 10+                  |
+| .NET SDK      | 9.0+                 |
+| Python        | 3.0+                 |
 
-### Vulkan SDK
+---
 
-### DotNet 9.0
+## ⚙️ 编译方式（Windows 平台）
 
-### Tracy 编译环境
+### ✅ 快速构建 Editor（推荐）
 
-cmake version 3.29.2
-window sdk version 10+
+执行以下脚本生成编辑器解决方案：
 
-```
-cmake -B projects -G "Visual Studio 17 2022" -A x64 -DCMAKE_CONFIGURATION_TYPES="Debug;Release" -DBUILD_SHARED_LIBS=ON -DCMAKE_SYSTEM_VERSION=10.0
-
-```
-
-```
-cmake --build projects --config Debug   # 构建 Debug 版本
-cmake --build projects --config Release # 构建 Release 版本
+```bash
+Scripts/Windows/generate_editor_all.bat
 ```
