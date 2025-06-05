@@ -594,8 +594,8 @@ public:
             Containers::Vector<std::shared_ptr<RHI::BufferHandle>>{
                 context.uniformBuffers[currentIndex]
             });
-        pipelineState->AddDescriptorSetLayoutBinding(0, 1, RHI::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            1, RHI::SHADER_STAGE_FRAGMENT_BIT)
+        // pipelineState->AddDescriptorSetLayoutBinding(0, 1, RHI::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        //     1, RHI::SHADER_STAGE_FRAGMENT_BIT);
         pipelineState->BuildDescriptorSetLayout();
         
         // Record cmd

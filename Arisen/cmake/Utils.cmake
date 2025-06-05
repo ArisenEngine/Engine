@@ -91,7 +91,7 @@ function(setup_dxc_for_target target dxc_root)
 
     # 设置 include / link
     target_include_directories(${target} PRIVATE "${DXC_INCLUDE_DIR}")
-    target_link_libraries(${target} PRIVATE dxcompiler)
+    target_link_libraries(${target} PUBLIC dxcompiler)
 
     # 获取输出目录
     get_property(OUTPUT_DIR GLOBAL PROPERTY GLOBAL_OUTPUT_DIR)

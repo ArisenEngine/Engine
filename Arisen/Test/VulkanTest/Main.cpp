@@ -3,10 +3,6 @@
 #define TEST_WINDOWS 1
 #define TEST_ENGINE 0
 
-#pragma comment(lib,"Engine.lib")
-#pragma comment(lib, "Core.Debugger.lib")
-#pragma comment(lib,"Core.Platform.lib")
-
 #include <chrono>
 
 #include "Logger/Logger.h"
