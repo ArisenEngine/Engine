@@ -19,7 +19,7 @@ ArisenEngine 是一个开源的、面向学习与研究的自研渲染引擎，�
     <td align="center"><a href="https://github.com/ArisenEngine"><img src="https://avatars.githubusercontent.com/u/1234567?v=4" width="80;" alt="ArisenEngine"/><br /><sub><b>ArisenEngine</b></sub></a></td>
     <td align="center"><a href="https://github.com/yourusername"><img src="https://avatars.githubusercontent.com/u/7654321?v=4" width="80;" alt="YourName"/><br /><sub><b>YourName</b></sub></a></td>
     <!-- ChatGPT 头像，用静态版本，示意用 OpenAI logo（可替换为你喜欢的图标） -->
-    <td align="center"><a href="https://chat.openai.com/"><img src="https://upload.wikimedia.org/wikipedia/commons/0/04/OpenAI_Logo.svg" width="80;" alt="ChatGPT"/><br /><sub><b>ChatGPT</b></sub></a></td>
+    <td align="center"><a href="https://chat.openai.com/"><img src="https://upload.wikimedia.org/wikipedia/commons/e/ef/ChatGPT-Logo.svg" width="80;" alt="ChatGPT"/><br /><sub><b>ChatGPT</b></sub></a></td>
   </tr>
 </table>
 
