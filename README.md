@@ -19,24 +19,25 @@ ArisenEngine 是一个开源的、面向学习与研究的自研渲染引擎，�
   <tr>
     <td align="center">
       <a href="https://github.com/eatdreamcat">
-        <img src="https://avatars.githubusercontent.com/u/42267382?v=4" width="80" alt="eatdreamcat"/>
+        <img src="https://avatars.githubusercontent.com/u/42267382?v=4" width="80" style="border-radius: 50%;" alt="eatdreamcat"/>
         <br /><sub><b>eatdreamcat</b></sub>
       </a>
     </td>
     <td align="center">
       <a href="https://github.com/AWhipser">
-        <img src="https://avatars.githubusercontent.com/u/15261257?v=4" width="80" alt="AWhipser"/>
+        <img src="https://avatars.githubusercontent.com/u/20467875?v=4" width="80" style="border-radius: 50%;" alt="AWhipser"/>
         <br /><sub><b>AWhipser</b></sub>
       </a>
     </td>
     <td align="center">
       <a href="https://chat.openai.com/">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/e/ef/ChatGPT-Logo.svg" width="80" alt="ChatGPT" style="background:#fff; border-radius: 8px; padding: 8px;" />
+        <img src="https://upload.wikimedia.org/wikipedia/commons/e/ef/ChatGPT-Logo.svg" width="80" style="border-radius: 50%; background: #fff; padding: 8px;" alt="ChatGPT" />
         <br /><sub><b>ChatGPT</b></sub>
       </a>
     </td>
   </tr>
 </table>
+
 
 ---
 
