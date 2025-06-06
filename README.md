@@ -19,7 +19,7 @@ ArisenEngine 是一个开源的、面向学习与研究的自研渲染引擎，�
   <tr>
     <td align="center">
       <a href="https://github.com/eatdreamcat">
-        <img src="https://avatars.githubusercontent.com/u/35916798?v=4" width="80" alt="eatdreamcat"/>
+        <img src="https://avatars.githubusercontent.com/u/42267382?v=4" width="80" alt="eatdreamcat"/>
         <br /><sub><b>eatdreamcat</b></sub>
       </a>
     </td>
