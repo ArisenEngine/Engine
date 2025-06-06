@@ -9,19 +9,35 @@ ArisenEngine 是一个开源的、面向学习与研究的自研渲染引擎，�
 
 ---
 
-## 🤝 Contributors
+---
 
-感谢所有为 ArisenEngine 贡献代码和支持的朋友们！
+## 🙌 贡献者（Contributors）
+
+感谢所有贡献者，特别是以下几位：
 
 <table>
   <tr>
-    <!-- 这是示例头像，替换成真实的头像链接 -->
-    <td align="center"><a href="https://github.com/ArisenEngine"><img src="https://avatars.githubusercontent.com/u/1234567?v=4" width="80;" alt="ArisenEngine"/><br /><sub><b>ArisenEngine</b></sub></a></td>
-    <td align="center"><a href="https://github.com/yourusername"><img src="https://avatars.githubusercontent.com/u/7654321?v=4" width="80;" alt="YourName"/><br /><sub><b>YourName</b></sub></a></td>
-    <!-- ChatGPT 头像，用静态版本，示意用 OpenAI logo（可替换为你喜欢的图标） -->
-    <td align="center"><a href="https://chat.openai.com/"><img src="https://upload.wikimedia.org/wikipedia/commons/e/ef/ChatGPT-Logo.svg" width="80;" alt="ChatGPT"/><br /><sub><b>ChatGPT</b></sub></a></td>
+    <td align="center">
+      <a href="https://github.com/crossoverJie">
+        <img src="https://avatars.githubusercontent.com/u/349339?v=4" width="80;" alt="crossoverJie"/><br />
+        <sub><b>crossoverJie</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/ArisenTian">
+        <img src="https://avatars.githubusercontent.com/u/3785342?v=4" width="80;" alt="ArisenTian"/><br />
+        <sub><b>ArisenTian</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://chat.openai.com/">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/e/ef/ChatGPT-Logo.svg" width="80;" alt="ChatGPT" style="background:#fff; border-radius: 8px; padding: 8px;" /><br />
+        <sub><b>ChatGPT</b></sub>
+      </a>
+    </td>
   </tr>
 </table>
+
 
 ---
 
