@@ -6,7 +6,22 @@ ArisenEngine 是一个开源的、面向学习与研究的自研渲染引擎，�
 
 ![License](https://img.shields.io/github/license/ArisenEngine/Engine)
 ![Contributors](https://img.shields.io/github/contributors/ArisenEngine/Engine)
-[![Contributors](https://contrib.rocks/image?repo=ArisenEngine/Engine)](https://github.com/ArisenEngine/Engine/graphs/contributors)
+
+---
+
+## 🤝 Contributors
+
+感谢所有为 ArisenEngine 贡献代码和支持的朋友们！
+
+<table>
+  <tr>
+    <!-- 这是示例头像，替换成真实的头像链接 -->
+    <td align="center"><a href="https://github.com/ArisenEngine"><img src="https://avatars.githubusercontent.com/u/1234567?v=4" width="80;" alt="ArisenEngine"/><br /><sub><b>ArisenEngine</b></sub></a></td>
+    <td align="center"><a href="https://github.com/yourusername"><img src="https://avatars.githubusercontent.com/u/7654321?v=4" width="80;" alt="YourName"/><br /><sub><b>YourName</b></sub></a></td>
+    <!-- ChatGPT 头像，用静态版本，示意用 OpenAI logo（可替换为你喜欢的图标） -->
+    <td align="center"><a href="https://chat.openai.com/"><img src="https://upload.wikimedia.org/wikipedia/commons/0/04/OpenAI_Logo.svg" width="80;" alt="ChatGPT"/><br /><sub><b>ChatGPT</b></sub></a></td>
+  </tr>
+</table>
 
 ---
 
@@ -31,4 +46,3 @@ ArisenEngine 是一个开源的、面向学习与研究的自研渲染引擎，�
 
 ```bash
 Scripts/Windows/generate_editor_all.bat
-```
