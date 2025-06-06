@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -13,4 +13,4 @@
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
 
-<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>..\Projects\Visual Studio\Editor\Outputs\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>..\Projects\Visual Studio\Editor\Outputs\Release\</OutputPath></PropertyGroup></Project>
+<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>G:\WorkSpace\ArisenEngine\Engine\Arisen\Projects\Visual Studio\Editor\Outputs\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>G:\WorkSpace\ArisenEngine\Engine\Arisen\Projects\Visual Studio\Editor\Outputs\Release\</OutputPath></PropertyGroup></Project>

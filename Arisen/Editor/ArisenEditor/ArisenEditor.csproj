@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <Nullable>enable</Nullable>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
@@ -162,4 +162,4 @@
       <UpToDateCheckInput Remove="Public\Views\TestView.axaml" />
     </ItemGroup>
     
-<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>..\Projects\Visual Studio\Editor\Outputs\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>..\Projects\Visual Studio\Editor\Outputs\Release\</OutputPath></PropertyGroup></Project>
+<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>G:\WorkSpace\ArisenEngine\Engine\Arisen\Projects\Visual Studio\Editor\Outputs\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>G:\WorkSpace\ArisenEngine\Engine\Arisen\Projects\Visual Studio\Editor\Outputs\Release\</OutputPath></PropertyGroup></Project>
