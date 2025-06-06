@@ -15,25 +15,28 @@ ArisenEngine 是一个开源的、面向学习与研究的自研渲染引擎，�
 
 感谢所有贡献者，特别是以下几位：
 
----
-
-## 🙌 贡献者（Contributors）
-
-感谢所有贡献者，特别是以下几位：
-
-<p align="center">
-  <img src="https://contrib.rocks/image?repo=ArisenEngine/Engine" alt="Contributors" />
-</p>
-
-<p align="center">
-  <a href="https://chat.openai.com/">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/e/ef/ChatGPT-Logo.svg" width="80" alt="ChatGPT" style="background:#fff; border-radius: 8px; padding: 8px;" />
-    <br/>
-    <sub><b>ChatGPT</b></sub>
-  </a>
-</p>
-
-
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/eatdreamcat">
+        <img src="https://avatars.githubusercontent.com/u/35916798?v=4" width="80" alt="eatdreamcat"/>
+        <br /><sub><b>eatdreamcat</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/AWhipser">
+        <img src="https://avatars.githubusercontent.com/u/15261257?v=4" width="80" alt="AWhipser"/>
+        <br /><sub><b>AWhipser</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://chat.openai.com/">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/e/ef/ChatGPT-Logo.svg" width="80" alt="ChatGPT" style="background:#fff; border-radius: 8px; padding: 8px;" />
+        <br /><sub><b>ChatGPT</b></sub>
+      </a>
+    </td>
+  </tr>
+</table>
 
 ---
 
