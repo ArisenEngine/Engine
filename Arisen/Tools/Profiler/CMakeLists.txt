@@ -17,3 +17,5 @@ target_include_directories(Profiler PUBLIC
 target_compile_definitions(Profiler PRIVATE TOOL_PROFILER_EXPORTS)
 
 target_link_libraries(Profiler PRIVATE TracyClient)
+
+set_target_properties(Profiler PROPERTIES FOLDER "ToolChain")

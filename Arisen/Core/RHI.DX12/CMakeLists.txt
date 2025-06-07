@@ -24,3 +24,5 @@ target_include_directories(RHI.DX12 PRIVATE
 target_compile_definitions(RHI.DX12 PRIVATE RHIDX12_EXPORTS)
 
 target_link_libraries(RHI.DX12 PUBLIC Core.Infra Core.Debugger)
+
+set_target_properties(RHI.DX12 PROPERTIES FOLDER "RHI")

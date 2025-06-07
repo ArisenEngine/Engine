@@ -25,3 +25,5 @@ target_include_directories(NativeEngine PRIVATE
 target_compile_definitions(NativeEngine PRIVATE NATIVEENGINE_EXPORTS)
 
 target_link_libraries(NativeEngine PRIVATE Profiler Core.Infra Core.Debugger Core.Platform RHI.DX12 RHI.Vulkan)
+
+set_target_properties(NativeEngine PROPERTIES FOLDER "Runtime")

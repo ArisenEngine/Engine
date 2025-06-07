@@ -27,3 +27,5 @@ target_compile_definitions(RHI.Vulkan PRIVATE RHIVULKAN_EXPORTS)
 target_link_directories(RHI.Vulkan PUBLIC ${CMAKE_SOURCE_DIR}/3rdparty/vulkan/Lib)
 
 target_link_libraries(RHI.Vulkan PUBLIC Core.Infra Core.Debugger Core.Platform vulkan-1)
+
+set_target_properties(RHI.Vulkan PROPERTIES FOLDER "RHI")

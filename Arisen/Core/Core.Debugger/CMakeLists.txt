@@ -21,3 +21,5 @@ target_include_directories(Core.Debugger PUBLIC
 target_compile_definitions(Core.Debugger PRIVATE COREDEBUGGER_EXPORTS)
 
 target_link_libraries(Core.Debugger PRIVATE spdlog Core.Infra)
+
+set_target_properties(Core.Debugger PROPERTIES FOLDER "Core")
