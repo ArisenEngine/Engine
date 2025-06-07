@@ -51,6 +51,13 @@ if errorlevel 1 (
     exit /b 1
 )
 
+REM ==== group 
+python "!SCRIPT_DIR!/group_sln_cs.py" "!VS_BUILD_DIR!\ArisenEditor.sln"
+if errorlevel 1 (
+    echo ERROR: group sln failed.
+    exit /b 1
+)
+
 REM ==== 4. 编译 Debug ====
 echo === Building Debug ===
 cmake --build "!VS_BUILD_DIR!" --config Debug
