@@ -111,10 +111,12 @@ message(STATUS "Unified binary output dir: ${OUTPUT_DIR}")
 set(TRACY_STATIC OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
 add_subdirectory(3rdparty/tracy)
+set_target_properties(TracyClient PROPERTIES FOLDER "3rdparty")
 add_subdirectory(Tools/Profiler)
 
 add_subdirectory(Core/Core.Infra)
 add_subdirectory(3rdparty/spdlog)
+set_target_properties(spdlog PROPERTIES FOLDER "3rdparty")
 add_subdirectory(Core/Core.Debugger)
 add_subdirectory(Core/Core.Platform)
 add_subdirectory(Core/RHI.DX12)
@@ -157,6 +159,7 @@ add_dependencies(BuildBindingGenerator Core.Infra)
 add_dependencies(BuildBindingGenerator Core.Debugger)
 add_dependencies(BuildBindingGenerator Core.Platform)
 add_dependencies(BuildBindingGenerator NativeEngine)
+set_target_properties(BuildBindingGenerator PROPERTIES FOLDER "CMakeProcess")
 
 # Generate auto binding
 add_custom_target(GenerateAutoBinding
@@ -167,8 +170,8 @@ add_custom_target(GenerateAutoBinding
     VERBATIM
     USES_TERMINAL
 )
-
 add_dependencies(GenerateAutoBinding BuildBindingGenerator)
+set_target_properties(GenerateAutoBinding PROPERTIES FOLDER "CMakeProcess")
 
 add_custom_target(BuildAutoBinding
     COMMAND dotnet build ${AUTO_BINDING_PROJ} --configuration $<CONFIG>
@@ -178,8 +181,8 @@ add_custom_target(BuildAutoBinding
     VERBATIM
     USES_TERMINAL
 )
-
 add_dependencies(BuildAutoBinding GenerateAutoBinding)
+set_target_properties(BuildAutoBinding PROPERTIES FOLDER "CMakeProcess")
 
 add_custom_target(BuildArisenEngine
     COMMAND dotnet build ${ARISEN_ENGINE_PROJ} --configuration $<CONFIG>
@@ -189,8 +192,8 @@ add_custom_target(BuildArisenEngine
     VERBATIM
     USES_TERMINAL
 )
-
 add_dependencies(BuildArisenEngine BuildAutoBinding)
+set_target_properties(BuildArisenEngine PROPERTIES FOLDER "CMakeProcess")
 
 endif()
 
@@ -205,8 +208,8 @@ if(${TARGET} STREQUAL "Editor")
     VERBATIM
     USES_TERMINAL
     )
-
     add_dependencies(BuildArisenEditor BuildArisenEngine)
+    set_target_properties(BuildArisenEditor PROPERTIES FOLDER "CMakeProcess")
 
     add_custom_target(BuildArisenEditorShell
     COMMAND dotnet build ${ARISEN_EDITOR_SHELL_PROJ} --configuration $<CONFIG>
@@ -216,8 +219,8 @@ if(${TARGET} STREQUAL "Editor")
     VERBATIM
     USES_TERMINAL
     )
-
     add_dependencies(BuildArisenEditorShell BuildArisenEditor)
+    set_target_properties(BuildArisenEditorShell PROPERTIES FOLDER "CMakeProcess")
 
 
     add_custom_target(BuildArisenEditorDesktop ALL
@@ -228,9 +231,8 @@ if(${TARGET} STREQUAL "Editor")
     VERBATIM
     USES_TERMINAL
     )
-
     add_dependencies(BuildArisenEditorDesktop BuildArisenEditorShell)
-
+    set_target_properties(BuildArisenEditorDesktop PROPERTIES FOLDER "CMakeProcess")
     
 
     string(TIMESTAMP END_TIME "%s")

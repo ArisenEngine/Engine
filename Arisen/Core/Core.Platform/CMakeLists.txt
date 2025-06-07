@@ -33,3 +33,5 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wno-attributes)
 endif()
 setup_dxc_for_target(Core.Platform "${CMAKE_SOURCE_DIR}/3rdparty/dxc")
+
+set_target_properties(Core.Platform PROPERTIES FOLDER "Core")

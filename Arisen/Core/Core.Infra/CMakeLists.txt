@@ -17,3 +17,5 @@ target_include_directories(Core.Infra PUBLIC
 target_compile_definitions(Core.Infra PRIVATE COREINFRA_EXPORTS)
 
 target_link_libraries(Core.Infra PRIVATE Profiler)
+
+set_target_properties(Core.Infra PROPERTIES FOLDER "Core")
