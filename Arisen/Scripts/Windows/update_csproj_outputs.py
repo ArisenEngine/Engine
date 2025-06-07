@@ -40,13 +40,19 @@ def ensure_framework_flag(tree):
             pg = ET.SubElement(root, "PropertyGroup")
         ET.SubElement(pg, "AppendTargetFrameworkToOutputPath").text = "false"
 
-def update_output_path(csproj_path, base_output):
-    base_output = os.path.normpath(base_output)
+def update_output_path(csproj_path, sln_dir, base_output):
+    base_output_abs = os.path.abspath(base_output)
+    csproj_dir = os.path.dirname(os.path.abspath(csproj_path))
+
+    # Output 相对于 csproj 的相对路径
+    output_rel = os.path.relpath(base_output_abs, csproj_dir)
+
     tree = ET.parse(csproj_path)
-    ensure_property_group_with_output(tree, "Debug", os.path.join(base_output, "Debug") + os.sep)
-    ensure_property_group_with_output(tree, "Release", os.path.join(base_output, "Release") + os.sep)
+    ensure_property_group_with_output(tree, "Debug", os.path.join(output_rel, "Debug") + os.sep)
+    ensure_property_group_with_output(tree, "Release", os.path.join(output_rel, "Release") + os.sep)
     ensure_framework_flag(tree)
     tree.write(csproj_path, encoding="utf-8", xml_declaration=True)
+
 
 def extract_csproj_paths_from_sln(sln_path):
     csproj_paths = []
@@ -67,7 +73,8 @@ if len(sys.argv) != 3:
     sys.exit(1)
 
 sln_file = sys.argv[1]
-output_base = sys.argv[2]
+output_base = os.path.abspath(sys.argv[2])
+sln_dir = os.path.dirname(os.path.abspath(sln_file))
 print("Update csproj Output base:" + output_base)
 if not os.path.exists(sln_file):
     print(f"Error: Solution file not found: {sln_file}")
@@ -78,7 +85,7 @@ csproj_files = extract_csproj_paths_from_sln(sln_file)
 for csproj in csproj_files:
     if os.path.exists(csproj):
         print(f"Updating {csproj}...")
-        update_output_path(csproj, output_base)
+        update_output_path(csproj, sln_dir, output_base)
     else:
         print(f"Warning: .csproj not found: {csproj}")
         
