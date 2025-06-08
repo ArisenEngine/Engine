@@ -11,6 +11,9 @@ collect_sources(DXTEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src)
 # 可执行目标
 add_executable(DXTest ${DXTEST_SOURCES})
 
+# 设置预编译头
+target_precompile_headers(DXTest PRIVATE src/stdafx.h)
+
 target_include_directories(DXTest PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -29,3 +32,7 @@ set_target_properties(DXTest PROPERTIES
 )
 
 target_link_libraries(DXTest PRIVATE Profiler Core.Infra Core.Debugger Core.Platform RHI.DX12 NativeEngine)
+target_link_libraries(DXTest PRIVATE
+    d3d12
+    dxgi
+    d3dcompiler)
