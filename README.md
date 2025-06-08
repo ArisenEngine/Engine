@@ -24,9 +24,9 @@ ArisenEngine 是一个开源的、面向学习与研究的自研渲染引擎，�
       </a>
     </td>
     <td align="center">
-      <a href="https://github.com/AWhipser">
+      <a href="https://github.com/UWhisper">
         <img src="https://avatars.githubusercontent.com/u/20467875?v=4" width="80" style="border-radius: 50%;" alt="AWhipser"/>
-        <br /><sub><b>AWhipser</b></sub>
+        <br /><sub><b>UWhisper</b></sub>
       </a>
     </td>
     <td align="center">
