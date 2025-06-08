@@ -1,0 +1,31 @@
+cmake_minimum_required(VERSION 3.29)
+
+project(DXTest)
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# 查找 DXTest 源码
+collect_sources(DXTEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+# 可执行目标
+add_executable(DXTest ${DXTEST_SOURCES})
+
+target_include_directories(DXTest PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_include_directories(DXTest PRIVATE
+    ${CMAKE_SOURCE_DIR}/Tools/Profiler
+    ${CMAKE_SOURCE_DIR}/Core/Core.Infra
+    ${CMAKE_SOURCE_DIR}/Core/Core.Debugger
+    ${CMAKE_SOURCE_DIR}/Core/Core.Platform
+    ${CMAKE_SOURCE_DIR}/Engine/NativeEngine
+    )  
+
+# 设置为 Windows GUI 子系统
+set_target_properties(DXTest PROPERTIES
+    WIN32_EXECUTABLE TRUE
+)
+
+target_link_libraries(DXTest PRIVATE Profiler Core.Infra Core.Debugger Core.Platform RHI.DX12 NativeEngine)
