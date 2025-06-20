@@ -13,6 +13,9 @@
   <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
 </PropertyGroup>
+<ItemGroup>
+      <ProjectReference Include="..\..\Engine\ArisenEngine\ArisenEngine.csproj" />
+</ItemGroup>
 
 <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
 <OutputPath>..\..\Projects\Visual Studio\ArisenEngineTest\Outputs\Debug\</OutputPath>
