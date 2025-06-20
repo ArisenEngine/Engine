@@ -8,7 +8,12 @@ if(NOT DEFINED PLATFORM)
     message(FATAL_ERROR "Please specify -DPLATFORM=[Windows|Android|Linux|Apple].")
 endif()
 
+if(${TARGET} STREQUAL "ArisenEngineTest")
+project("ArisenEngineTest" LANGUAGES CXX)
+else()
 project("Arisen${TARGET}" LANGUAGES CXX)
+endif()
+
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(Utils)
@@ -270,7 +275,7 @@ elseif(${TARGET} STREQUAL "ArisenEngineTest")
     set(ARISEN_ENGINE_TEST_PROJ_DIR ${CMAKE_SOURCE_DIR}/Test/ArisenEngineTest/)
 
     add_custom_target(BuildArisenEngineTest ALL
-    COMMAND dotnet build ${ARISEN_ENGINE_TEST_PROJ} --configuration $<CONFIG> 
+    COMMAND dotnet build ${ARISEN_ENGINE_TEST_PROJ} --configuration $<CONFIG>
     WORKING_DIRECTORY ${ARISEN_ENGINE_TEST_PROJ_DIR}
     COMMENT "Building Arisen Engine Test"
     DEPENDS "ArisenEngine.dll"
