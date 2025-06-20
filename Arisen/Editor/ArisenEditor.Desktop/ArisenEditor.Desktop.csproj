@@ -16,6 +16,7 @@
   </PropertyGroup>
   <PropertyGroup>
   <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
 </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <DebugType>embedded</DebugType>
