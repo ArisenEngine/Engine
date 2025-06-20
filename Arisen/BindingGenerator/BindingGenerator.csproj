@@ -9,7 +9,9 @@
         <AssemblyName>BindingGenerator</AssemblyName>
         <RootNamespace>BindingGenerator</RootNamespace>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath></PropertyGroup>
-
+<PropertyGroup>
+  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+</PropertyGroup>
     <ItemGroup>
       <PackageReference Include="CppSharp" Version="1.1.5.3168" />
     </ItemGroup>
