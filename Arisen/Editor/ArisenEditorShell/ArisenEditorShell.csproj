@@ -12,5 +12,6 @@
     </ItemGroup>
 <PropertyGroup>
   <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
 </PropertyGroup>
 <PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>..\..\Projects\Visual Studio\Editor\Outputs\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>..\..\Projects\Visual Studio\Editor\Outputs\Release\</OutputPath></PropertyGroup></Project>

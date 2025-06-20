@@ -11,14 +11,15 @@
 	<PlatformTarget>x64</PlatformTarget>
 	<RootNamespace>ArisenEngine</RootNamespace>
   </PropertyGroup>
-<PropertyGroup>
-  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-</PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\AutoBinding\AutoBinding.csproj" />
     <ProjectReference Include="..\..\Serialization\Serialization\Serialization.csproj" />
   </ItemGroup>
-
+<PropertyGroup>
+  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+</PropertyGroup>
   <ItemGroup>
     <Folder Include="Platforms\Android\" />
     <Folder Include="Platforms\IOS\" />
