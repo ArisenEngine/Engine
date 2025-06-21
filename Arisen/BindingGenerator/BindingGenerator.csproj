@@ -16,6 +16,9 @@
     <ItemGroup>
       <PackageReference Include="CppSharp" Version="1.1.5.3168" />
     </ItemGroup>
+    <ItemGroup>
+      <Folder Include="Src\" />
+    </ItemGroup>
 
 <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
 <OutputPath>..\Projects\Visual Studio\Editor\Outputs\Debug\</OutputPath>
