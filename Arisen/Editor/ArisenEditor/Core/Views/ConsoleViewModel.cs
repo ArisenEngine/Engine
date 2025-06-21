@@ -9,7 +9,7 @@ using Avalonia.Controls;
 using Avalonia.Threading;
 using DynamicData;
 using DynamicData.Binding;
-using ArisenEngine.Debugger;
+using ArisenEngine.Debug;
 using Avalonia.ReactiveUI;
 using ReactiveUI;
 
