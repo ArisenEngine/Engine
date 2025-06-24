@@ -16,6 +16,9 @@
 <ItemGroup>
       <ProjectReference Include="..\..\Engine\ArisenEngine\ArisenEngine.csproj" />
 </ItemGroup>
+<ItemGroup>
+  <ClCompile Include="ShaderLabRes\Lit.hlsl" />
+</ItemGroup>
 
 <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
 <OutputPath>..\..\Projects\Visual Studio\ArisenEngineTest\Outputs\Debug\</OutputPath>

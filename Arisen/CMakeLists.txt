@@ -274,6 +274,17 @@ elseif(${TARGET} STREQUAL "ArisenEngineTest")
     set(ARISEN_ENGINE_TEST_PROJ ${CMAKE_SOURCE_DIR}/Test/ArisenEngineTest/ArisenEngineTest.csproj)
     set(ARISEN_ENGINE_TEST_PROJ_DIR ${CMAKE_SOURCE_DIR}/Test/ArisenEngineTest/)
 
+    set(SHADER_LAB_RES "${CMAKE_SOURCE_DIR}/Test/ArisenEngineTest/ShaderLabRes")
+   
+    set(SHADER_LAB_RES_DEST "${OUTPUT_DIR}/ShaderLabRes")
+
+    add_custom_target(CopyShaderLabRes
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${SHADER_LAB_RES}" "${SHADER_LAB_RES_DEST}"
+        COMMENT "Copy shader lab res"
+        USES_TERMINAL
+    )
+    set_target_properties(CopyShaderLabRes PROPERTIES FOLDER "CMakeProcess")
+
     add_custom_target(BuildArisenEngineTest ALL
     COMMAND dotnet build ${ARISEN_ENGINE_TEST_PROJ} --configuration $<CONFIG>
     WORKING_DIRECTORY ${ARISEN_ENGINE_TEST_PROJ_DIR}
@@ -283,6 +294,7 @@ elseif(${TARGET} STREQUAL "ArisenEngineTest")
     USES_TERMINAL
     )
     add_dependencies(BuildArisenEngineTest BuildArisenEngine)
+    add_dependencies(BuildArisenEngineTest CopyShaderLabRes)
     set_target_properties(BuildArisenEngineTest PROPERTIES FOLDER "CMakeProcess")
 else()
     message(FATAL_ERROR "Unknown TARGET: ${TARGET}")
