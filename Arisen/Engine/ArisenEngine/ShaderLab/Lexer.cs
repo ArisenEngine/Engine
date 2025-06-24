@@ -51,59 +51,69 @@ public class Lexer
 
     private void Tokenize()
     {
-        var matches = s_TokenRegex.Matches(k_Input);
-        foreach (Match m in matches)
+        while (m_Position < k_Input.Length)
         {
-            if (m.Groups["whitespace"].Success)
+            var match = s_TokenRegex.Match(k_Input, m_Position);
+
+            if (!match.Success || match.Index != m_Position)
             {
-                // Count lines in whitespace
-                _line += CountNewlines(m.Value);
-                continue;
+                throw new Exception(
+                    $"Unrecognized token at position {m_Position}, near \"{PreviewText()}\" (line {_line})");
             }
-            else if (m.Groups["comment"].Success)
+
+            string value = match.Value;
+
+            if (match.Groups["whitespace"].Success)
             {
-                var txt = m.Value;
-                var type = txt.StartsWith("//") ? TokenType.CommentLine : TokenType.CommentBlock;
-                m_Tokens.Add(new Token { type = type, text = txt, line = _line });
-                _line += CountNewlines(txt);
-                continue;
+                _line += CountNewlines(value);
             }
-            else if (m.Groups["preprocessor"].Success)
+            else if (match.Groups["comment"].Success)
             {
-                m_Tokens.Add(new Token { type = TokenType.PreprocessorDirective, text = m.Value.Trim(), line = _line });
-                _line += CountNewlines(m.Value);
-                continue;
+                var type = value.StartsWith("//") ? TokenType.CommentLine : TokenType.CommentBlock;
+                m_Tokens.Add(new Token { type = type, text = value, line = _line });
+                _line += CountNewlines(value);
             }
-            else if (m.Groups["string"].Success)
+            else if (match.Groups["preprocessor"].Success)
             {
-                m_Tokens.Add(new Token { type = TokenType.StringLiteral, text = m.Value, line = _line });
-                _line += CountNewlines(m.Value);
-                continue;
+                m_Tokens.Add(new Token { type = TokenType.PreprocessorDirective, text = value.Trim(), line = _line });
+                _line += CountNewlines(value);
             }
-            else if (m.Groups["number"].Success)
+            else if (match.Groups["string"].Success)
             {
-                m_Tokens.Add(new Token { type = TokenType.Number, text = m.Value, line = _line });
-                _line += CountNewlines(m.Value);
-                continue;
+                m_Tokens.Add(new Token { type = TokenType.StringLiteral, text = value, line = _line });
+                _line += CountNewlines(value);
             }
-            else if (m.Groups["identifier"].Success)
+            else if (match.Groups["number"].Success)
             {
-                m_Tokens.Add(new Token { type = TokenType.Identifier, text = m.Value, line = _line });
-                _line += CountNewlines(m.Value);
-                continue;
+                m_Tokens.Add(new Token { type = TokenType.Number, text = value, line = _line });
+                _line += CountNewlines(value);
             }
-            else if (m.Groups["symbol"].Success)
+            else if (match.Groups["identifier"].Success)
             {
-                m_Tokens.Add(new Token { type = TokenType.Symbol, text = m.Value, line = _line });
-                _line += CountNewlines(m.Value);
-                continue;
+                m_Tokens.Add(new Token { type = TokenType.Identifier, text = value, line = _line });
+                _line += CountNewlines(value);
+            }
+            else if (match.Groups["symbol"].Success)
+            {
+                m_Tokens.Add(new Token { type = TokenType.Symbol, text = value, line = _line });
+                _line += CountNewlines(value);
             }
             else
             {
-                throw new Exception($"Unrecognized token at line {_line}");
+                Debug.Logger.Error($"[ShaderLab::Lexer] Unrecognized token at line {_line}, position {m_Position}");
+                break;
             }
+
+            m_Position += value.Length;
         }
-        m_Tokens.Add(new Token { type = TokenType.EndOfFile, text = "<EOF>", line = _line });
+
+        m_Tokens.Add(new Token { type = TokenType.EndOfFile, text = "<EOF>", line = _line + 1 });
+    }
+
+    private string PreviewText(int maxLen = 20)
+    {
+        int len = Math.Min(maxLen, k_Input.Length - m_Position);
+        return k_Input.Substring(m_Position, len).Replace("\n", "\\n").Replace("\r", "\\r");
     }
 
     private int CountNewlines(string s)
@@ -144,7 +154,7 @@ public class Lexer
     {
         var t = Next();
         if (t.type != type || (text != null && t.text != text))
-            throw new Exception($"Expected token {type} '{text}', got {t.type} '{t.text}' at line {t.line}");
+            Debug.Logger.Error($"Expected token {type} '{text}', got {t.type} '{t.text}' at line {t.line}");
         return t;
     }
 }
