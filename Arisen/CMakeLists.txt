@@ -8,7 +8,12 @@ if(NOT DEFINED PLATFORM)
     message(FATAL_ERROR "Please specify -DPLATFORM=[Windows|Android|Linux|Apple].")
 endif()
 
+if(${TARGET} STREQUAL "ArisenEngineTest")
+project("ArisenEngineTest" LANGUAGES CXX)
+else()
 project("Arisen${TARGET}" LANGUAGES CXX)
+endif()
+
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(Utils)
@@ -36,20 +41,33 @@ string(TOUPPER "${PLATFORM}" PLATFORM_UPPER)
 if(PLATFORM_UPPER STREQUAL "WINDOWS")
     set(PLATFORM_MACRO "WINDOWS_PLATFORM")
     set(ENGINE_LIB_SUFFIX ".dll")
+    set(DOTNET_RUNTIME "win-x64")
 elseif(PLATFORM_UPPER STREQUAL "ANDROID")
     set(PLATFORM_MACRO "ANDROID_PLATFORM")
     set(ENGINE_LIB_SUFFIX ".so")
+    # 没有正式支持的 Android RID，跳过 dotnet runtime 设置
+    set(DOTNET_RUNTIME "")
 elseif(PLATFORM_UPPER STREQUAL "APPLE")
     set(PLATFORM_MACRO "APPLE_PLATFORM")
     set(ENGINE_LIB_SUFFIX ".a")
+    set(DOTNET_RUNTIME "osx-x64") # 如果是 ARM，可以用 osx-arm64
 elseif(PLATFORM_UPPER STREQUAL "LINUX")
     set(PLATFORM_MACRO "LINUX_PLATFORM")
     set(ENGINE_LIB_SUFFIX ".so")
+    set(DOTNET_RUNTIME "linux-x64")
 else()
     set(PLATFORM_MACRO "UNKNOWN_PLATFORM")
+    set(DOTNET_RUNTIME "")
 endif()
 add_compile_definitions(${PLATFORM_MACRO}=1)
-message(STATUS "Detected platform macro: ${PLATFORM_MACRO}")
+message(STATUS "Detected platform macro: ${PLATFORM_MACRO}, dotnet runtime: ${DOTNET_RUNTIME}")
+
+if(DOTNET_RUNTIME)
+    set(DOTNET_RUNTIME_ARG "--runtime ${DOTNET_RUNTIME}")
+else()
+    set(DOTNET_RUNTIME_ARG "")
+endif()
+
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(COMPILER_MACRO "MSVC_COMPILER")
@@ -144,16 +162,13 @@ set(AUTO_BINDING_PROJ ${AUTO_BINDING_DIR}/AutoBinding.csproj)
 set(ARISEN_ENGINE_PROJ ${CMAKE_SOURCE_DIR}/Engine/ArisenEngine/ArisenEngine.csproj)
 set(ARISEN_ENGINE_PROJ_DIR ${CMAKE_SOURCE_DIR}/Engine/ArisenEngine/)
 
-set(ARISEN_EDITOR_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor/ArisenEditor.csproj)
-set(ARISEN_EDITOR_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor/)
-set(ARISEN_EDITOR_SHELL_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenEditorShell/ArisenEditorShell.csproj)
-set(ARISEN_EDITOR_SHELL_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenEditorShell/)
-set(ARISEN_EDITOR_DESKTOP_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor.Desktop/ArisenEditor.Desktop.csproj)
-set(ARISEN_EDITOR_DESKTOP_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor.Desktop/)
-
 # Build C# Projects
 add_custom_target(BuildBindingGenerator
-    COMMAND dotnet build "${BINDING_GENERATOR_PROJ}" --configuration $<CONFIG> --output "${BINDING_GENERATOR_EXE}"
+    COMMAND ${CMAKE_COMMAND} -E env
+        dotnet build "${BINDING_GENERATOR_PROJ}"
+        --configuration $<CONFIG>
+        --output "${BINDING_GENERATOR_EXE}"
+       
     WORKING_DIRECTORY ${BINDING_GENERATOR_DIR}
     COMMENT "Building Binding Generator"
     VERBATIM
@@ -189,7 +204,7 @@ add_dependencies(BuildAutoBinding GenerateAutoBinding)
 set_target_properties(BuildAutoBinding PROPERTIES FOLDER "CMakeProcess")
 
 add_custom_target(BuildArisenEngine
-    COMMAND dotnet build ${ARISEN_ENGINE_PROJ} --configuration $<CONFIG>
+    COMMAND dotnet build ${ARISEN_ENGINE_PROJ} --configuration $<CONFIG> 
     WORKING_DIRECTORY ${ARISEN_ENGINE_PROJ_DIR}
     COMMENT "Building Arisen Engine"
     DEPENDS "AutoBinding.dll"
@@ -204,6 +219,13 @@ endif()
 # Final Target Setup
 if(${TARGET} STREQUAL "Editor")
     
+    set(ARISEN_EDITOR_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor/ArisenEditor.csproj)
+    set(ARISEN_EDITOR_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor/)
+    set(ARISEN_EDITOR_SHELL_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenEditorShell/ArisenEditorShell.csproj)
+    set(ARISEN_EDITOR_SHELL_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenEditorShell/)
+    set(ARISEN_EDITOR_DESKTOP_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor.Desktop/ArisenEditor.Desktop.csproj)
+    set(ARISEN_EDITOR_DESKTOP_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor.Desktop/)
+
     add_custom_target(BuildArisenEditor
     COMMAND dotnet build ${ARISEN_EDITOR_PROJ} --configuration $<CONFIG>
     WORKING_DIRECTORY ${ARISEN_EDITOR_PROJ_DIR}
@@ -247,7 +269,33 @@ elseif(${TARGET} STREQUAL "WindowsPlayerSupport")
 
 elseif(${TARGET} STREQUAL "VulkanTest" OR ${TARGET} STREQUAL "DXTest")    
 
-    
+elseif(${TARGET} STREQUAL "ArisenEngineTest")    
+
+    set(ARISEN_ENGINE_TEST_PROJ ${CMAKE_SOURCE_DIR}/Test/ArisenEngineTest/ArisenEngineTest.csproj)
+    set(ARISEN_ENGINE_TEST_PROJ_DIR ${CMAKE_SOURCE_DIR}/Test/ArisenEngineTest/)
+
+    set(SHADER_LAB_RES "${CMAKE_SOURCE_DIR}/Test/ArisenEngineTest/ShaderLabRes")
+   
+    set(SHADER_LAB_RES_DEST "${OUTPUT_DIR}/ShaderLabRes")
+
+    add_custom_target(CopyShaderLabRes
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${SHADER_LAB_RES}" "${SHADER_LAB_RES_DEST}"
+        COMMENT "Copy shader lab res"
+        USES_TERMINAL
+    )
+    set_target_properties(CopyShaderLabRes PROPERTIES FOLDER "CMakeProcess")
+
+    add_custom_target(BuildArisenEngineTest ALL
+    COMMAND dotnet build ${ARISEN_ENGINE_TEST_PROJ} --configuration $<CONFIG>
+    WORKING_DIRECTORY ${ARISEN_ENGINE_TEST_PROJ_DIR}
+    COMMENT "Building Arisen Engine Test"
+    DEPENDS "ArisenEngine.dll"
+    VERBATIM
+    USES_TERMINAL
+    )
+    add_dependencies(BuildArisenEngineTest BuildArisenEngine)
+    add_dependencies(BuildArisenEngineTest CopyShaderLabRes)
+    set_target_properties(BuildArisenEngineTest PROPERTIES FOLDER "CMakeProcess")
 else()
     message(FATAL_ERROR "Unknown TARGET: ${TARGET}")
 endif()

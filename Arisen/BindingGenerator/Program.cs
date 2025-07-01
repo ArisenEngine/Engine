@@ -24,7 +24,7 @@ internal static class Program
         DeleteDirectory(
             Path.GetFullPath(Path.Combine(GlobalConfig.s_Output, GlobalConfig.s_ProjectName)),
             new List<string>() { "obj" }, new List<string>() { ".csproj" });
-
+        
         ConsoleDriver.Run(new DebuggerLibrary());
         ConsoleDriver.Run(new PlatformLibrary());
     }

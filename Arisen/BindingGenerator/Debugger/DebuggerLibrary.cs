@@ -38,13 +38,14 @@ public class DebuggerLibrary : ILibrary
         driver.ParserOptions.AddIncludeDirs(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.Debugger"));
         var options = driver.Options;
         options.GenerationOutputMode = GenerationOutputMode.FilePerUnit;
-        options.OutputDir = Path.Combine(GlobalConfig.s_Output, GlobalConfig.s_ProjectName, "Debugger");
+        options.OutputDir = Path.Combine(GlobalConfig.s_Output, GlobalConfig.s_ProjectName, "NativeDebugger");
         options.GeneratorKind = GeneratorKind.CSharp;
         options.Verbose = true;
         options.Compilation.DebugMode = true;
+        // 设置 C# 输出的 namespace
         // options.CheckSymbols = true;
         var module = options.AddModule("Core.Debugger");
-        module.OutputNamespace = "";
+        module.OutputNamespace = GlobalConfig.GetNamespace("");
         module.Headers.Clear();
         module.Headers.Add(@"Logger/Logger.h");
         module.LibraryDirs.Add(GlobalConfig.s_LibraryPath);

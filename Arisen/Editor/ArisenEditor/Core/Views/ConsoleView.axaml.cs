@@ -7,7 +7,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
-using ArisenEngine.Debugger;
+using ArisenEngine.Debug;
 
 namespace ArisenEditor.Views;
 using LogMessage = ArisenEngine.Debug.Logger.LogMessage;

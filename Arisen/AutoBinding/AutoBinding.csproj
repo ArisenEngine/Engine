@@ -7,9 +7,12 @@
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath></PropertyGroup>
-
+<PropertyGroup>
+  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+</PropertyGroup>
     <ItemGroup>
       <PackageReference Include="CppSharp" Version="1.1.5.3168" />
     </ItemGroup>
 
-<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>G:\WorkSpace\ArisenEngine\Engine\Arisen\Projects\Visual Studio\Editor\Outputs\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>G:\WorkSpace\ArisenEngine\Engine\Arisen\Projects\Visual Studio\Editor\Outputs\Release\</OutputPath></PropertyGroup></Project>
+<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>..\Projects\Visual Studio\Editor\Outputs\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>..\Projects\Visual Studio\Editor\Outputs\Release\</OutputPath></PropertyGroup></Project>

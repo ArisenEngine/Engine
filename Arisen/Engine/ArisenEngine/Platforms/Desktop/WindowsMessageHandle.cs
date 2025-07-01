@@ -1,5 +1,5 @@
 using System.Runtime.InteropServices;
-using ArisenEngine.Debugger;
+using ArisenEngine.Debug;
 using ArisenEngine.Rendering;
 using Logger = ArisenEngine.Debug.Logger;
 

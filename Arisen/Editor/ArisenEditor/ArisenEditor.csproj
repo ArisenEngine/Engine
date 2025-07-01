@@ -14,6 +14,10 @@
     <AssemblyName>ArisenEditor</AssemblyName>
     <RootNamespace>ArisenEditor</RootNamespace>
   </PropertyGroup>
+  <PropertyGroup>
+  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+</PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DefineConstants>ARISEN_EDITOR</DefineConstants>
     <DebugType>embedded</DebugType>
@@ -162,4 +166,4 @@
       <UpToDateCheckInput Remove="Public\Views\TestView.axaml" />
     </ItemGroup>
     
-<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>G:\WorkSpace\ArisenEngine\Engine\Arisen\Projects\Visual Studio\Editor\Outputs\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>G:\WorkSpace\ArisenEngine\Engine\Arisen\Projects\Visual Studio\Editor\Outputs\Release\</OutputPath></PropertyGroup></Project>
+<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>..\..\Projects\Visual Studio\Editor\Outputs\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>..\..\Projects\Visual Studio\Editor\Outputs\Release\</OutputPath></PropertyGroup></Project>
