@@ -32,3 +32,16 @@ RHI分三层设计：
 - Interface层对外暴露高度抽象，外层无法接触到其它层。
 - RHIBaseImpl层在Core中与API无法，主要用来实现一些通用逻辑和代码，比如BaseRenderDevice中的创建资源，资源绑定等相关逻辑。
 - RHIImpl则是各种API的具体实现，为了实现多种API兼容，这里应该高度聚合
+
+---
+
+## Interface层
+核心接口：
+- IRenderDevice:
+- IDeviceContext:
+- ISwapChain:
+- IPipelineState:
+
+---
+
+# 内存管理
