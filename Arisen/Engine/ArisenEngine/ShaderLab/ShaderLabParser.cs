@@ -20,62 +20,87 @@ public class ShaderLabParser
     private bool Match(TokenType type, string text = null) => m_Lexer.Match(type, text);
     private Token Expect(TokenType type, string text = null) => m_Lexer.Expect(type, text);
 
-    public ShaderLabShader ParseShader()
+    public ShaderLabShader ParseGraphicsShader()
     {
         var shader = new ShaderLabShader();
-
         while (!Match(TokenType.EndOfFile))
         {
             if (Match(TokenType.PreprocessorDirective))
             {
-                var directive = Next().text;
-                m_Preprocessor.ProcessDirective(directive);
-                continue;
-            }
-
-            if (!m_Preprocessor.IsCodeActive())
-            {
-                Next();
+                ProcessDirective();
                 continue;
             }
 
             if (Match(TokenType.Identifier, "Shader"))
             {
-                Next();
-                shader.name = ParseStringOrIdentifier();
-                Expect(TokenType.Symbol, "{");
-
-                while (!Match(TokenType.Symbol, "}"))
-                {
-                    if (Match(TokenType.Identifier, "Properties"))
-                    {
-                        Next();
-                        shader.properties = ParseProperties();
-                    }
-                    else if (Match(TokenType.Identifier, "SubShader"))
-                    {
-                        Next();
-                        Expect(TokenType.Symbol, "{");
-                        var subShader = ParseSubShader();
-                        shader.subShaders.Add(subShader);
-                        Expect(TokenType.Symbol, "}");
-                    }
-                    else
-                    {
-                        // 其它块忽略或跳过
-                        SkipUnknownBlockOrToken();
-                    }
-                }
-                Expect(TokenType.Symbol, "}");
-                break;
+                ProcessShader(shader);
             }
             else
             {
-                Next();
+                Debug.Logger.Error($"Unexpected token {Current.type}, content: {Current.text} at line {Current.line}.");
+                break;
             }
         }
 
         return shader;
+    }
+
+    private void ProcessShader(ShaderLabShader shader)
+    {
+        Next();
+        shader.name = ParseStringOrIdentifier();
+        Expect(TokenType.Symbol, "{");
+
+        while (!Match(TokenType.Symbol, "}"))
+        {
+            if (Match(TokenType.Identifier, "Properties"))
+            {
+                Next();
+                shader.properties = ParseProperties();
+            }
+            else if (Match(TokenType.Identifier, "SubShader"))
+            {
+                Next();
+                Expect(TokenType.Symbol, "{");
+                var subShader = ParseSubShader();
+                shader.subShaders.Add(subShader);
+                Expect(TokenType.Symbol, "}");
+            }
+            else if (Match(TokenType.Identifier, "HLSLINCLUDE"))
+            {
+                Next();
+                var includedHlsl = new IncludedHLSL()
+                {
+                    passIndex = -1,
+                    subShaderIndex = -1
+                };
+                var hlslCode = new StringBuilder();
+                ParseHlslCode(hlslCode);
+                includedHlsl.hlslCode = hlslCode.ToString();
+                shader.includedHLSLs.Add(includedHlsl);
+            }
+            else if (Match(TokenType.Identifier, "Fallback"))
+            {
+                // TODO
+                Next();
+                var fallback = Current.text;
+                Debug.Logger.Info($"Get Fallback Info:{fallback}");
+                Next();
+            }
+            else
+            {
+                Debug.Logger.Error($"[ShaderLabParser] Unexpected identifier: {Current.text} at line {Current.line} ");
+                break;
+            }
+        }
+        Expect(TokenType.Symbol, "}");
+    }
+
+
+    private void ProcessDirective()
+    {
+        var directive = Next().text;
+        m_Preprocessor.ProcessDirective(directive);
     }
 
     private string ParseStringOrIdentifier()
@@ -124,6 +149,7 @@ public class ShaderLabParser
                     if (Match(TokenType.Symbol, ")"))
                         break;
                 }
+
                 prop.defaultValue = defaultValueSb.ToString();
                 list.Add(prop);
             }
@@ -169,12 +195,9 @@ public class ShaderLabParser
                     else
                         Next();
                 }
+
                 subShader.tags = tags;
                 Expect(TokenType.Symbol, "}");
-            }
-            else
-            {
-                Next();
             }
         }
         return subShader;
@@ -185,50 +208,52 @@ public class ShaderLabParser
         var pass = new Pass();
         var sb = new StringBuilder();
 
-        int braceDepth = 1;
-        while (braceDepth > 0)
+        while (!Match(TokenType.Symbol, "}"))
         {
-            var tok = m_Lexer.Next();
-            if (tok.type == TokenType.Symbol)
-            {
-                if (tok.text == "{")
-                    braceDepth++;
-                else if (tok.text == "}")
-                    braceDepth--;
-            }
-            if (braceDepth > 0)
-                sb.Append(tok.text + (tok.type == TokenType.Symbol ? " " : ""));
+            // TODO:
+            Next();
         }
-
-        pass.hlslCode = sb.ToString();
-
-        // 解析HLSL代码结构体和变量
-        var hlslParser = new HlslParser(pass.hlslCode);
-        pass.hlslStructs = hlslParser.ParseStructs();
-        pass.variables = hlslParser.ParseVariables();
 
         return pass;
     }
 
-    private void SkipUnknownBlockOrToken()
+    private void ParseHlslCode(StringBuilder hlslCode)
     {
-        if (Match(TokenType.Symbol, "{"))
+        while (!Match(TokenType.Identifier, "ENDHLSL"))
         {
-            int depth = 1;
-            Next();
-            while (depth > 0)
+            while (Match(TokenType.PreprocessorDirective))
             {
-                var tok = Next();
-                if (tok.type == TokenType.Symbol)
+                var directive = Next().text;
+                m_Preprocessor.ProcessDirective(directive);
+            }
+
+            if (Match(TokenType.Identifier))
+            {
+                hlslCode.Append(Current.text);
+                if (m_Lexer.Peek(1).type != TokenType.Symbol)
                 {
-                    if (tok.text == "{") depth++;
-                    else if (tok.text == "}") depth--;
+                    hlslCode.Append(' ');
                 }
             }
+            else if (Match(TokenType.CommentBlock) || Match(TokenType.CommentLine))
+            {
+                Next();
+                continue;
+            }
+            else if (Match(TokenType.Number) || Match(TokenType.Symbol))
+            {
+                hlslCode.Append(Current.text);
+            }
+            else
+            {
+                Debug.Logger.Error($"[ShaderLabParser] Unexpected identifier: {Current.text} in HLSL Block at line {Current.line}");
+                break;
+            }
+
+            Next(); 
         }
-        else
-        {
-            Next();
-        }
+        
+        Next(); 
+        
     }
 }

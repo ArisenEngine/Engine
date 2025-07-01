@@ -1,6 +1,5 @@
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using ArisenEngine.Debugger;
+using Debugger = ArisenBinding.ArisenEngine.Debugger;
 
 namespace ArisenEngine.Debug;
 
@@ -19,11 +18,11 @@ public static class Logger
 
     }
     
-    internal static LogCallback ReceiveLog;
+    internal static Debugger.LogCallback ReceiveLog;
     
     static Logger()
     {
-        ReceiveLog = new LogCallback(RecordLog);
+        ReceiveLog = new Debugger.LogCallback(RecordLog);
     }
     
     

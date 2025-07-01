@@ -68,6 +68,11 @@ namespace ArisenEngine
             return ArisenInstance.Run(name);
         }
 
+        public static void Exit()
+        {
+            ArisenInstance.End();
+        }
+
         #endregion
 
         

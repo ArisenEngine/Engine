@@ -84,13 +84,13 @@ public class PlatformLibrary : ILibrary
         var options = driver.Options;
         
         options.GenerationOutputMode = GenerationOutputMode.FilePerUnit;
-        options.OutputDir =  Path.Combine(GlobalConfig.s_Output, GlobalConfig.s_ProjectName, "Platform");;
+        options.OutputDir =  Path.Combine(GlobalConfig.s_Output, GlobalConfig.s_ProjectName, "NativePlatform");;
         options.GeneratorKind = GeneratorKind.CSharp;
         options.Verbose = true;
         options.Compilation.DebugMode = true;
         // options.CheckSymbols = true;
         var module = options.AddModule("Core.Platform");
-        module.OutputNamespace = "";
+        module.OutputNamespace = GlobalConfig.GetNamespace("");
         module.Headers.Add(@"Windows/RenderWindowAPI.h");
         module.LibraryDirs.Add(GlobalConfig.s_LibraryPath);
         module.Libraries.Add(@"Core.Platform");

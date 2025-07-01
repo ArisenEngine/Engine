@@ -12,17 +12,20 @@ using __IntPtr = global::System.IntPtr;
 
 #pragma warning disable CS0109 // Member does not hide an inherited member; new keyword is not required
 
-namespace ArisenEngine
+namespace ArisenBinding
 {
-    public unsafe partial class PrimitiveTypes
+    namespace ArisenEngine
     {
-        public partial struct __Internal
+        public unsafe partial class PrimitiveTypes
         {
-        }
+            public partial struct __Internal
+            {
+            }
 
-        public const ulong U64Invalid = 18446744073709551615;
-        public const uint U32Invalid = 4294967295;
-        public const ushort U16Invalid = 65535;
-        public const byte U8Invalid = 255;
-        public const uint InvalidID = 4294967295;    }
+            public const ulong U64Invalid = 18446744073709551615;
+            public const uint U32Invalid = 4294967295;
+            public const ushort U16Invalid = 65535;
+            public const byte U8Invalid = 255;
+            public const uint InvalidID = 4294967295;        }
+    }
 }

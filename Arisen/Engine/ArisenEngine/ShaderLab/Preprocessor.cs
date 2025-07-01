@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 public class Preprocessor
 {
+    private Dictionary<string, string> m_Entries = new();
     private Dictionary<string, bool> m_Defines = new Dictionary<string, bool>();
     private Stack<bool> m_ConditionalStack = new Stack<bool>();
 
