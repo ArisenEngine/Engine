@@ -50,8 +50,26 @@ RHI分三层设计：
 
 ## 智能指针
 - 为了方便前期开发，先使用std::智能指针，后续逐步改造成自实现的RefCountPtr
--- std的智能指针需要额外的块控制开销，性能不如自己实现的
--- 没办法很精确的控制生命周期，不方便增加调试信息和断点
--- 可能在多模块和跨dll开发时出现兼容问题
+    - std的智能指针需要额外的块控制开销，性能不如自己实现的
+    - 没办法很精确的控制生命周期，不方便增加调试信息和断点
+    - 可能在多模块和跨dll开发时出现兼容问题
+
+- RefCountPtr:
+    - 限制RefCountedObject的创建方式，通过allocator手动管理内存，并实现debug信息记录dump.私有分配
+ 
 
 ## MemoryAllocator
+| 引擎常用的核心managed类型需要自己实现高效allocator
+- 后续需要支持自定义allocator，实现内存调试追踪
+
+```mermaid
+classDiagram
+direction BT
+class RawMemoryAllocator{
+    +Allocate()
+    +Release()
+}
+
+class FixedBlockMemoryAllocator
+FixedBlockMemoryAllocator --> RawMemoryAllocator
+```
