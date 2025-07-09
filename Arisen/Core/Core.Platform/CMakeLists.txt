@@ -26,12 +26,13 @@ target_compile_definitions(Core.Platform PRIVATE COREPLATFORM_EXPORTS)
 target_link_libraries(Core.Platform
     PRIVATE 
     Core.Debugger
+    Core.Infra
 )
 
 # setup dxc
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wno-attributes)
 endif()
-setup_dxc_for_target(Core.Platform "${CMAKE_SOURCE_DIR}/3rdparty/dxc")
+setup_dxc_for_target(Core.Platform "${CMAKE_CURRENT_LIST_DIR}/../../3rdparty/dxc")
 
 set_target_properties(Core.Platform PROPERTIES FOLDER "Core")
