@@ -8,28 +8,39 @@ project(ArisenRHITest)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 设置模块路径（可选，用于 include 自定义 cmake 函数）
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../cmake")
+# MSVC UTF-8 编码输出
+add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 
-# 引入自定义工具函数（如 collect_sources）
+# 统一输出目录
+set(ARISEN_OUTPUT_DIR ${CMAKE_BINARY_DIR}/bin)
+foreach(OUTPUT_CONFIG IN ITEMS RUNTIME LIBRARY ARCHIVE)
+    set(CMAKE_${OUTPUT_CONFIG}_OUTPUT_DIRECTORY ${ARISEN_OUTPUT_DIR})
+    foreach(OUTPUT_TYPE IN ITEMS DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
+        set(CMAKE_${OUTPUT_CONFIG}_OUTPUT_DIRECTORY_${OUTPUT_TYPE} ${ARISEN_OUTPUT_DIR})
+    endforeach()
+endforeach()
+
+# 模块路径（自定义函数）
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../cmake")
 include(Utils OPTIONAL)
 
-# 添加依赖子模块（按依赖顺序添加，且指定 binary 目录）
+# 添加依赖子模块（并设定 binary dir）
 add_subdirectory(${CMAKE_SOURCE_DIR}/../../Core/Core.Infra        ${CMAKE_BINARY_DIR}/Core/Core.Infra)
 add_subdirectory(${CMAKE_SOURCE_DIR}/../../Core/Core.Debugger     ${CMAKE_BINARY_DIR}/Core/Core.Debugger)
 add_subdirectory(${CMAKE_SOURCE_DIR}/../../Core/Core.Platform     ${CMAKE_BINARY_DIR}/Core/Core.Platform)
 add_subdirectory(${CMAKE_SOURCE_DIR}/../../Core/ArisenRHI         ${CMAKE_BINARY_DIR}/Core/ArisenRHI)
 add_subdirectory(${CMAKE_SOURCE_DIR}/../../Core/ArisenRHID3D12    ${CMAKE_BINARY_DIR}/Core/ArisenRHID3D12)
 
+# Tracy 与 spdlog
 set(TRACY_STATIC OFF CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_SOURCE_DIR}/../../3rdparty/tracy         ${CMAKE_BINARY_DIR}/3rdparty/tracy)
 set_target_properties(TracyClient PROPERTIES FOLDER "3rdparty")
+
 add_subdirectory(${CMAKE_SOURCE_DIR}/../../Tools/Profiler         ${CMAKE_BINARY_DIR}/Tools/Profiler)
-add_subdirectory(${CMAKE_SOURCE_DIR}/../../3rdparty/spdlog      ${CMAKE_BINARY_DIR}/3rdparty/spdlog)
+add_subdirectory(${CMAKE_SOURCE_DIR}/../../3rdparty/spdlog        ${CMAKE_BINARY_DIR}/3rdparty/spdlog)
 set_target_properties(spdlog PROPERTIES FOLDER "3rdparty")
 
-
-# 自动收集源文件
+# 收集源文件
 if(COMMAND collect_sources)
     collect_sources(ARISENRHITEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR})
 else()
@@ -40,8 +51,11 @@ else()
     )
 endif()
 
-# 创建可执行程序
+# 可执行程序
 add_executable(ArisenRHITest ${ARISENRHITEST_SOURCES})
+
+# 设置为 GUI 子系统
+set_target_properties(ArisenRHITest PROPERTIES WIN32_EXECUTABLE TRUE)
 
 # 包含路径（本地）
 target_include_directories(ArisenRHITest
@@ -61,8 +75,5 @@ target_link_libraries(ArisenRHITest
     spdlog
 )
 
-# 设置为 GUI 程序（如果你不希望打开控制台窗口）
-set_target_properties(ArisenRHITest PROPERTIES WIN32_EXECUTABLE TRUE)
-
 # 打印配置完成信息
-message(STATUS "ArisenRHITest CMake setup complete!")
+message(STATUS "ArisenRHITest CMake setup complete! Output to ${ARISEN_OUTPUT_DIR}")
