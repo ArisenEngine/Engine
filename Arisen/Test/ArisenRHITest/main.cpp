@@ -43,7 +43,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 #endif
     const std::wstring windowTitle = L"ArisenEngine DXTest";
 
-    MessageBoxW(nullptr, windowTitle.c_str(), L"ArisenEngine", MB_OK);
+    // MessageBoxW(nullptr, windowTitle.c_str(), L"ArisenEngine", MB_OK);
 
     // 创建并初始化全局游戏实例
     gInstance = std::make_unique<GameInstance>();
