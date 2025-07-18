@@ -17,11 +17,18 @@ public:
         
     }
 
-    virtual void CreateDeviceAndContextD3D12() override;
+    virtual void CreateDeviceAndContextD3D12(IDevice** pOutDevice, IDeviceContext** pOutDeviceContext) override;
+    virtual void CreateSwapChainD3D12(IDevice* pDevice, IDeviceContext* pContext, ISwapChain** pOutSwapChain) override;
 };
 
-void RHIFactoryD3D12Impl::CreateDeviceAndContextD3D12()
+void RHIFactoryD3D12Impl::CreateSwapChainD3D12(IDevice* pDevice, IDeviceContext* pContext, ISwapChain** pOutSwapChain)
 {
+}
+
+void RHIFactoryD3D12Impl::CreateDeviceAndContextD3D12(IDevice** pOutDevice, IDeviceContext** pOutDeviceContext)
+{
+    //TODO: Check version.
+
     
 }
 
