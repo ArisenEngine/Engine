@@ -37,8 +37,8 @@ RHI分三层设计：
 
 ## Interface层
 核心接口：
-- IRenderDevice:
-- IDeviceContext:
+- IDevice:
+- ICommandBuffer:
 - ISwapChain:
 - IPipelineState:
 
@@ -73,3 +73,9 @@ class RawMemoryAllocator{
 class FixedBlockMemoryAllocator
 FixedBlockMemoryAllocator --> RawMemoryAllocator
 ```
+
+【参考】
+https://github.com/microsoft/DirectX-Graphics-Samples
+https://github.com/NVIDIA-RTX/NRI/tree/main
+https://github.com/cofenberg/unrimp/tree/master
+https://github.com/MethanePowered/MethaneKit
