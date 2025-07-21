@@ -70,7 +70,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
     ShowWindow(hwnd, nCmdShow);
     UpdateWindow(hwnd);
 
-    gInstance->Initialize();
+    gInstance->Initialize(hwnd);
 
     // 主消息循环
     MSG msg = {};
