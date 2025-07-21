@@ -11,4 +11,9 @@ enum class RHI_DEVICE_TYPE : uint8_t
     RHI_DEVICE_TYPE_VULKAN
 };
 
+struct EngineCreateInfo
+{
+    bool EnableValidation{false};
+};
+
 ARISENRHI_END_NAMESPACE
