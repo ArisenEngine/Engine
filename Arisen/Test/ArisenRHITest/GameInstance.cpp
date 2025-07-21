@@ -35,11 +35,11 @@ void GameInstance::InitArisenRHI(HWND hwnd)
     switch (DeviceType)
     {
     case RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_D3D12:
-        IRHIFactoryD3D12* FactoryD3D12 = CreateRHIFactoryD3D12();
-        FactoryD3D12->CreateDeviceAndContextD3D12(&SharedPtrOutWrapper<IDevice>(pDevice),
-                                                  &SharedPtrOutWrapper<IDeviceContext>(pImmediateContext));
-        FactoryD3D12->CreateSwapChainD3D12(pDevice.get(), pImmediateContext.get(),
-                                           &SharedPtrOutWrapper<ISwapChain>(pSwapChain));
+        {
+            IRHIFactoryD3D12* FactoryD3D12 = CreateRHIFactoryD3D12();
+            FactoryD3D12->CreateDeviceD3D12(&SharedPtrOutWrapper<IDevice>(pDevice));
+            FactoryD3D12->CreateSwapChainD3D12(pDevice.get(),&SharedPtrOutWrapper<ISwapChain>(pSwapChain));
+        }
         break;
     case RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_VULKAN:
         break;
