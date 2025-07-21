@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include "CoreMinimalD3D12.h"
 #include "IDevice.h"
-#include "IDeviceContext.h"
 #include "IRHIFactory.h"
 #include "ISwapChain.h"
 #include "RHITypesD3D12.h"
