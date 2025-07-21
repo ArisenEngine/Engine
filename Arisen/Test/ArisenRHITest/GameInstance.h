@@ -3,7 +3,6 @@
 #include <windows.h>
 
 #include "IDevice.h"
-#include "IDeviceContext.h"
 #include "ISwapChain.h"
 #include "RHITypes.h"
 
@@ -28,6 +27,5 @@ private:
     RHI_DEVICE_TYPE DeviceType{RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_D3D12};
 
     AutoPtr(IDevice) pDevice;
-    AutoPtr(IDeviceContext) pImmediateContext;
     AutoPtr(ISwapChain) pSwapChain;
 };
