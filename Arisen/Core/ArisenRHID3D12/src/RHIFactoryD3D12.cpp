@@ -4,8 +4,7 @@
 #include <d3d12sdklayers.h>
 
 #include "RHIFactoryBase.h"
-#include "../../../3rdparty/spdlog/include/spdlog/spdlog.h"
-#include "Logger/DebugUtils.hpp"
+#include "Logger/DebugUtils.h"
 
 using Microsoft::WRL::ComPtr;
 
