@@ -1,28 +1,25 @@
-﻿#pragma once
+#pragma once
 #include "Logger.h"
 
 #ifdef ARISEN_DEBUG
 
-
-
-
+// TODO:debug log func and line
+// #define ASSERTION_FAILED(Message, ...)    \
+// do                                  \
+// {                                   \
+// LOG_FATAL_AND_THROW(Message);             \
+// } while (0)
+//
+// #define CHECK(Expr, Message, ...)    \
+// do                          \
+// {                           \
+// if (!(Expr))            \
+// {                       \
+// ASSERTION_FAILED(Message,##__VA_ARGS__); \
+// }                       \
+// } while (false)    
 
 #else
-
-// debug log func and line         
-#define ASSERTION_FAILED(Message, ...)    \
-    do                                  \
-    {                                   \
-        LOG_FATAL(Message);             \
-    } while (0)
-
-#define CHECK(Expr, Message, ...)    \
-    do                          \
-    {                           \
-        if (!(Expr))            \
-        {                       \
-            ASSERTION_FAILED(Message,##__VA_ARGS__); \
-        }                       \
-    } while (false)             
+// #define ASSERTION_FAILED(Message, ...) do{}while(false)
+// #define CHECK(Expr, Message, ...) do{} while(false)
 #endif
-
