@@ -1,9 +1,10 @@
-﻿#include "GameInstance.h"
+#include "GameInstance.h"
 
 #include "RHIFactoryD3D12.h"
 #include "SharedPtrOutWrapper.h"
 #include "Containers/Containers.h"
 #include "Logger/Logger.h"
+#include "CommonFlags.hpp"
 
 GameInstance::~GameInstance()
 {
