@@ -5,6 +5,8 @@
 
 #include "RHIFactoryBase.h"
 #include "Logger/DebugUtils.h"
+#include "CommonFlags.hpp"
+#include "dxgi1_4.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -37,6 +39,8 @@ ARISENRHI_BEGIN_NAMEPSACE
         LOG_RHI_DEBUG("Create DeviceD3D12."); 
         CHECK(pOutDevice, "pOutDevice is nullptr."); 
 
+        ComPtr<ID3D12Device> d3d12Device;
+        
         try
         {
             // enable debug layer.
@@ -46,9 +50,73 @@ ARISENRHI_BEGIN_NAMEPSACE
                 if (SUCCEEDED(D3D12GetDebugInterface(__uuidof(debugController),reinterpret_cast<void**>(static_cast<ID3D12Debug**>(&debugController)))))
                 {
                     debugController->EnableDebugLayer();
-                    
+                    if (HasFlag(InCreateInfo.ValidationFlags, D3D12_VALIDATION_FLAGS::D3D12_VALIDATION_FLAG_GPU_BASED_VALIDATION))
+                    {
+                        LOG_RHI_DEBUG("Enable gpu based invalidation!");
+                        ComPtr<ID3D12Debug1> debugController1;
+                        debugController->QueryInterface(IID_PPV_ARGS(&debugController1));
+                        if (debugController1)
+                        {
+                            debugController1->SetEnableGPUBasedValidation(true);
+                        }
+                    }
                 }
             }
+
+            ComPtr<IDXGIFactory4> factory;
+            HRESULT hr = CreateDXGIFactory1(__uuidof(factory), reinterpret_cast<void**>( static_cast<IDXGIFactory4**>(&factory)));
+            CHECK_D3D_HR(hr,"failed to create dxgi factory.");
+
+            D3D_FEATURE_LEVEL MinFeatureLevel(D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0);
+            uint32_t AdapterId = InCreateInfo.AdapterId;
+
+            // find adapter.
+            ComPtr<IDXGIAdapter1> adapter;
+            if (AdapterId == DEFAULT_ADAPTER_ID)
+            {
+                for (UINT AdapterIndex = 0; factory->EnumAdapters1(AdapterIndex, &adapter) != DXGI_ERROR_NOT_FOUND; ++AdapterIndex,adapter->Release())
+                {
+                    DXGI_ADAPTER_DESC1 desc;
+                    adapter->GetDesc1(&desc);
+
+                    if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+                    {
+                        continue;
+                    }
+
+                    if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), MinFeatureLevel, _uuidof(ID3D12Device), nullptr)))
+                    {
+                        LOG_RHI_DEBUG("adapter found.");
+                        break;
+                    }
+                }
+
+                CHECK(adapter,"no suitable hardware adapter found for d3d12.");
+            }
+            else
+            {
+                CHECK(nullptr, "specified adapter id is not implemented.");
+            }
+
+            const D3D_FEATURE_LEVEL FeatureLevels[] = {D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0, D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
+            for (auto FeatureLevel : FeatureLevels)
+            {
+                hr = D3D12CreateDevice(adapter.Get(), FeatureLevel, IID_PPV_ARGS(&d3d12Device));
+                if (SUCCEEDED(hr))
+                {
+                    LOG_RHI_DEBUG("device created.");
+                    break;
+                }
+            }
+
+            // create from soft ware.
+            if (FAILED(hr))
+            {
+                CHECK(0, "failed to create hardware deice, and software device is not implemented!");
+            }
+
+            
+            
         }
         catch (const std::runtime_error& e)
         {
