@@ -23,3 +23,5 @@
     LOG_ERROR(Message)
 #define LOG_RHI_FATAL(Message, ...)\
     LOG_FATAL(Message)
+#define LOG_RHI_FATAL_AND_THROW(Message, ...)\
+    LOG_FATAL_AND_THROW(Message)
