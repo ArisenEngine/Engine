@@ -64,3 +64,11 @@ operator^=(E& lhs, E rhs)
     lhs = lhs ^ rhs;
     return lhs;
 }
+
+template<typename E>
+inline std::enable_if_t<IsEnumClass<E>, bool>
+HasFlag(E value, E flag)
+{
+    using U = std::underlying_type_t<E>;
+    return (static_cast<U>(value) & static_cast<U>(flag)) != 0;
+}
