@@ -115,7 +115,47 @@ ARISENRHI_BEGIN_NAMEPSACE
                 CHECK(0, "failed to create hardware deice, and software device is not implemented!");
             }
 
-            
+             // config debug output.
+            if (InCreateInfo.EnableValidation)
+            {
+                ComPtr<ID3D12InfoQueue> pInfoQueue;
+                hr = d3d12Device->QueryInterface(IID_PPV_ARGS(&pInfoQueue));
+                if (SUCCEEDED(hr))
+                {
+                    D3D12_MESSAGE_SEVERITY Severities[]={D3D12_MESSAGE_SEVERITY_INFO};
+
+                    D3D12_MESSAGE_ID DenyIds[]={
+                        D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
+                        D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE
+                    };
+
+                    D3D12_INFO_QUEUE_FILTER NewFilter{};
+                    NewFilter.DenyList.NumSeverities = _countof(Severities);
+                    NewFilter.DenyList.pSeverityList = Severities;
+                    NewFilter.DenyList.NumIDs = _countof(DenyIds);
+                    NewFilter.DenyList.pIDList = DenyIds;
+
+                    hr = pInfoQueue->PushStorageFilter(&NewFilter);
+                    CHECK_D3D_HR(hr, "Failed to push storage filter.");
+
+                    if (HasFlag(InCreateInfo.ValidationFlags, D3D12_VALIDATION_FLAGS::D3D12_VALIDATION_FLAG_BREAK_ON_CORRUPTION))
+                    {
+                        hr = pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
+                        CHECK_D3D_HR(hr, "Failed to set break on corruption severity.");
+                    }
+
+                    if (HasFlag(InCreateInfo.ValidationFlags, D3D12_VALIDATION_FLAGS::D3D12_VALIDATION_FLAG_BREAK_ON_ERROR))
+                    {
+                        hr = pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
+                        CHECK_D3D_HR(hr, "Failed to set break on error severity.");
+                    }
+                }
+            }
+
+            // verify adapter compatible with create info.
+            LOG_RHI_DEBUG("[TODO]: verify adapter compatible with create info.");
+
+            // create the command queue.
             
         }
         catch (const std::runtime_error& e)
