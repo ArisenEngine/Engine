@@ -10,7 +10,7 @@
 #define ARISENRHI_END_NAMESPACE\
     }
 
-#define AutoPtr(ClassName) std::shared_ptr<ClassName>
+#define Ptr(ClassName) std::shared_ptr<ClassName>
 
 // TODO: add log types.
 #define LOG_RHI_DEBUG(Message, ...)\
