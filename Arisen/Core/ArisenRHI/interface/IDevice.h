@@ -3,8 +3,9 @@
 #include "IObject.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
-    struct IDevice : IObject
+struct IDevice : virtual IObject
 {
 };
+
 
 ARISENRHI_END_NAMESPACE
