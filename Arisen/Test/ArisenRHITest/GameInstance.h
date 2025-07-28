@@ -26,6 +26,6 @@ private:
 private:
     RHI_DEVICE_TYPE DeviceType{RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_D3D12};
 
-    AutoPtr(IDevice) pDevice;
-    AutoPtr(ISwapChain) pSwapChain;
+    Ptr(IDevice) pDevice;
+    Ptr(ISwapChain) pSwapChain;
 };
