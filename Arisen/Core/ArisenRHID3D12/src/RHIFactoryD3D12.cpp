@@ -154,8 +154,8 @@ ARISENRHI_BEGIN_NAMEPSACE
 
             // verify adapter compatible with create info.
             LOG_RHI_DEBUG("[TODO]: verify adapter compatible with create info.");
-
-            // create the command queue.
+            
+            *pOutDevice = std::make_shared<DeviceD3D12>(adapter, d3d12Device);
             
         }
         catch (const std::runtime_error& e)
