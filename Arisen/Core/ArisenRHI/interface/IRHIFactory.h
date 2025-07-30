@@ -2,7 +2,7 @@
 #include "RHIMacros.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
-struct IRHIFactory : public IObject
+struct IRHIFactory : public virtual IObject
 {
     
 };

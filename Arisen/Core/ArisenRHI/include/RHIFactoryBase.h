@@ -1,9 +1,8 @@
 ﻿#include "CoreMiminalRHI.h"
+#include "ObjectBase.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
-
-template<class BaseInterface>
-class RHIFactoryBase : public BaseInterface
+class RHIFactoryBase : public ObjectBase, public IRHIFactory
 {
     
 };

@@ -2,8 +2,10 @@
 #include <d3d12.h>
 #include <dxgi.h>
 #include <wrl/client.h>
-
+#include "RHIMacros.h"
 #include "DeviceBase.h"
+
+ARISENRHI_BEGIN_NAMEPSACE
 using namespace Microsoft::WRL;
 class DeviceD3D12 : public DeviceBase
 {
