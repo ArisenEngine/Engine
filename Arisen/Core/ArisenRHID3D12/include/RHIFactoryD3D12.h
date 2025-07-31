@@ -11,7 +11,7 @@ class RHIFactoryD3D12 : public RHIFactoryBase
 {
 public:
     static RHIFactoryD3D12* GetInstance();
-    virtual void CreateDeviceD3D12(const EngineCreateInfoD3D12& InCreateInfo, IDevice** pOutDevice);
+    virtual Ptr<IDevice> CreateDeviceD3D12(const EngineCreateInfoD3D12& InCreateInfo);
     virtual void CreateSwapChainD3D12(IDevice* pDevice, ISwapChain** pOutSwapChain);
 };
 

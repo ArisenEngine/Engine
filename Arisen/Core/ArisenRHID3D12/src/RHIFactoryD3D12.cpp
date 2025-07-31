@@ -16,11 +16,10 @@ RHIFactoryD3D12* RHIFactoryD3D12::GetInstance()
     return &FactoryD3D12Impl;
 }
 
-void RHIFactoryD3D12::CreateDeviceD3D12(const EngineCreateInfoD3D12& InCreateInfo, IDevice** pOutDevice)
+Ptr<IDevice> RHIFactoryD3D12::CreateDeviceD3D12(const EngineCreateInfoD3D12& InCreateInfo)
 {
     //TODO: Check Engine version.
     LOG_RHI_DEBUG("Create DeviceD3D12.");
-    CHECK(pOutDevice, "pOutDevice is nullptr.");
 
     ComPtr<ID3D12Device> d3d12Device;
 
@@ -148,11 +147,16 @@ void RHIFactoryD3D12::CreateDeviceD3D12(const EngineCreateInfoD3D12& InCreateInf
         LOG_RHI_DEBUG("[TODO]: verify adapter compatible with create info.");
 
         // *pOutDevice = std::make_shared<DeviceD3D12>(adapter, d3d12Device);
+        auto ptr_device = MakePtr(DeviceD3D12 ,adapter, d3d12Device);
+
+
+
+        return ptr_device;
     }
     catch (const std::runtime_error& e)
     {
         LOG_ERROR("failed to create DeviceD3D12.");
-        return;
+        return nullptr;
     }
 }
 

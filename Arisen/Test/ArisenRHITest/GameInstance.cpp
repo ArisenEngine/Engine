@@ -42,7 +42,7 @@ void GameInstance::InitArisenRHI(HWND hwnd)
             EngineCreateInfo.ValidationFlags |= D3D12_VALIDATION_FLAGS::D3D12_VALIDATION_FLAG_GPU_BASED_VALIDATION;
             
             RHIFactoryD3D12* FactoryD3D12 = CreateRHIFactoryD3D12();
-            FactoryD3D12->CreateDeviceD3D12(EngineCreateInfo, &SharedPtrOutWrapper<IDevice>(pDevice));
+            pDevice = FactoryD3D12->CreateDeviceD3D12(EngineCreateInfo);
             FactoryD3D12->CreateSwapChainD3D12(pDevice.get(),&SharedPtrOutWrapper<ISwapChain>(pSwapChain));
         }
         break;
