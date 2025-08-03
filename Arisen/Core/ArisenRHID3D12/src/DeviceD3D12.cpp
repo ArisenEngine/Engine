@@ -2,6 +2,8 @@
 
 #include <codecvt>
 
+#include "RenderContextD3D12.h"
+
 ARISENRHI_BEGIN_NAMEPSACE
     static std::string GetAdapterNameDxgi(IDXGIAdapter& adapter)
 {
@@ -15,6 +17,12 @@ DeviceD3D12::DeviceD3D12(const ComPtr<IDXGIAdapter>& adapter_cptr, const ComPtr<
     :DeviceBase(GetAdapterNameDxgi(*adapter_cptr.Get()))
     ,m_device_cptr(device_cptr)
 {
+    
+}
+
+Ptr<IRenderContext> DeviceD3D12::CreateRenderContext(const RenderContextSettings& render_context_settings)
+{
+    auto render_context = MakePtr(RenderContextD3D12, *this, render_context_settings);
     
 }
 
