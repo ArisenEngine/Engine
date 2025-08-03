@@ -9,6 +9,7 @@ namespace ArisenEngine::Math
     template <typename T> requires std::is_arithmetic_v<T>
     class RectSize
     {
+    public:
         RectSize() = default;
         template<typename V>
         RectSize(V w, V h) noexcept(std::is_unsigned_v<V>)

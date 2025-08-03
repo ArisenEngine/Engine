@@ -8,6 +8,7 @@ class DeviceBase : public ObjectBase, public IDevice
 {
 public:
     DeviceBase(const std::string& adapter_name);
+
 private:
     const std::string m_adapter_name;
     

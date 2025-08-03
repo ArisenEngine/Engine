@@ -149,8 +149,6 @@ Ptr<IDevice> RHIFactoryD3D12::CreateDeviceD3D12(const EngineCreateInfoD3D12& InC
         // *pOutDevice = std::make_shared<DeviceD3D12>(adapter, d3d12Device);
         auto ptr_device = MakePtr(DeviceD3D12 ,adapter, d3d12Device);
 
-
-
         return ptr_device;
     }
     catch (const std::runtime_error& e)
