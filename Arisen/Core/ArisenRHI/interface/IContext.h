@@ -9,7 +9,7 @@ enum class ContextType
     Compute,
 };
 
-struct IContext : virtual IObject
+struct IContext : public IObject
 {
     
 };

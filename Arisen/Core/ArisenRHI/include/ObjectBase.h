@@ -2,13 +2,29 @@
 #include "IObject.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
-class ObjectBase : public virtual IObject
+template<typename BaseInterface>
+class ObjectBase : public BaseInterface
 {
 public:
     ObjectBase() =default;
-    explicit ObjectBase(std::string_view name);
+    explicit ObjectBase(std::string_view name)
+    :m_name(name)
+    {
+    }
     
-    virtual bool SetName(std::string_view name) override;
+    virtual bool SetName(std::string_view name) override
+    {
+        if (m_name == name)
+        {
+            return false;
+        }
+
+        // TODO : name changed.
+
+        m_name = name;
+        return true;
+    }
+    
     [[nodiscard]] virtual std::string_view GetName() const noexcept override{return m_name;}
 
 private:

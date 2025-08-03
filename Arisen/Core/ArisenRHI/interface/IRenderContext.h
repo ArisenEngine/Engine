@@ -10,7 +10,7 @@ struct RenderContextSettings
     FrameSize frame_size{800, 600};
 };
 
-struct IRenderContext : virtual IContext
+struct IRenderContext : public IContext
 {
     using Settings = RenderContextSettings;
 };

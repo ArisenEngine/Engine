@@ -158,10 +158,6 @@ Ptr<IDevice> RHIFactoryD3D12::CreateDeviceD3D12(const EngineCreateInfoD3D12& InC
     }
 }
 
-void RHIFactoryD3D12::CreateSwapChainD3D12(IDevice* pDevice, ISwapChain** pOutSwapChain)
-{
-}
-
 RHIFactoryD3D12* CreateRHIFactoryD3D12()
 {
     return RHIFactoryD3D12::GetInstance();

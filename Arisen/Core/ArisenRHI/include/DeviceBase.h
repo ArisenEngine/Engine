@@ -4,7 +4,7 @@
 #include "RHIMacros.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
-class DeviceBase : public ObjectBase, public IDevice
+class DeviceBase : public ObjectBase<IDevice>
 {
 public:
     DeviceBase(const std::string& adapter_name);
