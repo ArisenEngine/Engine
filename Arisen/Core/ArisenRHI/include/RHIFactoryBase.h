@@ -2,7 +2,7 @@
 #include "ObjectBase.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
-class RHIFactoryBase : public ObjectBase, public IRHIFactory
+class RHIFactoryBase : public ObjectBase<IRHIFactory>
 {
     
 };

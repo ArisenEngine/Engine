@@ -5,12 +5,12 @@
 #include "IRenderContext.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
-class RenderContextBase : virtual IRenderContext
-    , virtual ContextBase
+class RenderContextBase : public ContextBase<IRenderContext>
 {
 public:
     RenderContextBase(IDevice& device, const RenderContextSettings& settings);
 
+    virtual void Initialize() override;
 private:
     RenderContextSettings m_settings;
     

@@ -4,7 +4,7 @@
 #include "IRenderContext.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
-    struct IDevice : virtual IObject
+struct IDevice : public IObject
 {
     virtual Ptr<IRenderContext> CreateRenderContext(const RenderContextSettings& render_context_settings)= 0;
 };

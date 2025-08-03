@@ -43,7 +43,6 @@ void GameInstance::InitArisenRHI(HWND hwnd)
             
             RHIFactoryD3D12* FactoryD3D12 = CreateRHIFactoryD3D12();
             pDevice = FactoryD3D12->CreateDeviceD3D12(EngineCreateInfo);
-            FactoryD3D12->CreateSwapChainD3D12(pDevice.get(),&SharedPtrOutWrapper<ISwapChain>(pSwapChain));
         }
         break;
     case RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_VULKAN:

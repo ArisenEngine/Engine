@@ -23,7 +23,8 @@ DeviceD3D12::DeviceD3D12(const ComPtr<IDXGIAdapter>& adapter_cptr, const ComPtr<
 Ptr<IRenderContext> DeviceD3D12::CreateRenderContext(const RenderContextSettings& render_context_settings)
 {
     auto render_context = MakePtr(RenderContextD3D12, *this, render_context_settings);
-    
+    render_context->Initialize();
+    return nullptr;
 }
 
 ARISENRHI_END_NAMESPACE

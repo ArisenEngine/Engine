@@ -27,5 +27,5 @@ private:
     RHI_DEVICE_TYPE DeviceType{RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_D3D12};
 
     Ptr<IDevice> pDevice;
-    Ptr<ISwapChain> pSwapChain;
+    Ptr<IRenderContext> pRenderContext;
 };

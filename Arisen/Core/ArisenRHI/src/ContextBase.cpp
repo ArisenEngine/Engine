@@ -1,7 +1,5 @@
 ﻿#include "ContextBase.h"
 
-ArisenRHI::ContextBase::ContextBase(IDevice& device, ContextType type)
-    :m_pDevice(device.GetInterface<IDevice>())
-,m_type(type)
-{
-}
+ARISENRHI_BEGIN_NAMEPSACE
+
+ARISENRHI_END_NAMESPACE
