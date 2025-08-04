@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include "BasicTypes.h"
-#include "CoreMiminalRHI.h"
-#include "IContext.h"
+#include "IRHIContext.h"
 #include "RHITypes.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
@@ -13,7 +12,7 @@ ARISENRHI_BEGIN_NAMEPSACE
     uint32_t frameBuffersCount{3};
 };
 
-struct IRenderContext : public IContext
+struct IRenderContext : public IRHIContext
 {
     using Settings = RenderContextSettings;
 

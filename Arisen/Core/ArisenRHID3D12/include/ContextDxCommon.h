@@ -4,7 +4,7 @@
 #include "DeviceD3D12.h"
 
 ARISENRHI_D3D12_BEGIN_NAMEPSACE
-    template<typename TContext> requires std::is_base_of_v<ArisenRHI::IContext, TContext>
+    template<typename TContext> requires std::is_base_of_v<ArisenRHI::IRHIContext, TContext>
 class ContextDxCommon : public TContext
 {
 public:
