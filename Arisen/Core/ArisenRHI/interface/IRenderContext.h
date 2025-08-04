@@ -2,16 +2,22 @@
 #include "BasicTypes.h"
 #include "CoreMiminalRHI.h"
 #include "IContext.h"
+#include "RHITypes.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
-
-struct RenderContextSettings
+    struct RenderContextSettings
 {
-    FrameSize frame_size{800, 600};
+    FrameSize frameSize{800, 600};
+    TextureFormat textureFormat{TextureFormat::BGRA8Unorm};
+    TextureFormat depthStencilFormat{TextureFormat::UnKnown};
+    uint32_t frameBuffersCount{3};
 };
 
 struct IRenderContext : public IContext
 {
     using Settings = RenderContextSettings;
+
+    const virtual Settings& GetSettings() const noexcept = 0;
+    
 };
 ARISENRHI_END_NAMESPACE

@@ -4,7 +4,7 @@
 
 #include "RenderContextD3D12.h"
 
-ARISENRHI_BEGIN_NAMEPSACE
+ARISENRHI_D3D12_BEGIN_NAMEPSACE
     static std::string GetAdapterNameDxgi(IDXGIAdapter& adapter)
 {
     DXGI_ADAPTER_DESC desc{};
@@ -27,4 +27,4 @@ Ptr<IRenderContext> DeviceD3D12::CreateRenderContext(const RenderContextSettings
     return nullptr;
 }
 
-ARISENRHI_END_NAMESPACE
+ARISENRHI_D3D12_END_NAMESPACE

@@ -19,4 +19,14 @@ struct EngineCreateInfo
     uint32_t AdapterId{DEFAULT_ADAPTER_ID};
 };
 
+enum class TextureFormat : uint16_t
+{
+    UnKnown = 0u,
+    RGBA8,
+    RGBA8Unorm,
+    RGBA8Unorm_sRGB,
+    BGRA8Unorm,
+    BGRA8Unorm_sRGB,
+};
+
 ARISENRHI_END_NAMESPACE

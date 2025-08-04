@@ -1,4 +1,4 @@
-﻿#include "CoreMiminalRHI.h"
+﻿#include "CoreMinimalRHI.h"
 #include "ObjectBase.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
