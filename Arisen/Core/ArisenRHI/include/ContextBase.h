@@ -1,7 +1,9 @@
 ﻿#pragma once
+#include "CommonFlags.hpp"
 #include "CoreMinimalRHI.h"
 #include "ICommandKit.h"
 #include "ICommandList.h"
+#include "ICommandQueue.h"
 #include "ObjectBase.h"
 #include "IContext.h"
 #include "IDevice.h"
@@ -24,15 +26,30 @@ public:
         return *mDevicePtr;
     }
 
-    ICommandKit& GetDefaultCommandKit(CommandListType type) const
+    virtual Ptr<ICommandKit> CreateCommandKit(CommandListType type) const override
     {
         
     }
+    
+    // lazy create 
+    virtual ICommandKit& GetDefaultCommandKit(CommandListType type) const override
+    {
+        Ptr<ICommandKit>& cmdKitPtr = mDefaultCommandKitPtrs[ToInt32(type)];
+        if (cmdKitPtr)
+        {
+            return *cmdKitPtr;
+        }
+
+        // Create
+        
+    }
 private:
-    using CommandKitPtrsByType = std::array<Ptr<ICommandKit>, CommandListType::__COUNT>;
+    typedef std::array<Ptr<ICommandKit>, static_cast<size_t>(CommandListType::__COUNT)> CommandKitPtrsByType;
+    typedef std::map<ICommandQueue*, Ptr<ICommandKit>> CommandKitByQueue;
     
     const ContextType mType;
     Ptr<IDevice> mDevicePtr;
-    
+    CommandKitPtrsByType mDefaultCommandKitPtrs;
+    CommandKitByQueue mDefaultCommandKitPtrsByQueue;
 };
 ARISENRHI_END_NAMESPACE
