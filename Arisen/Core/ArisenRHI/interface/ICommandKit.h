@@ -3,13 +3,7 @@
 #include "IObject.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
-enum class ContextType
-{
-    Render,
-    Compute,
-};
-
-struct IContext : public IObject
+struct ICommandKit : public IObject
 {
     
 };

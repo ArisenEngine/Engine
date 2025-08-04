@@ -13,19 +13,21 @@ namespace ArisenEngine::Math
         RectSize() = default;
         template<typename V>
         RectSize(V w, V h) noexcept(std::is_unsigned_v<V>)
-        :m_width(RoundCast<T>(w))
-        ,m_height(RoundCast<T>(h))
+        :mWidth(RoundCast<T>(w))
+        ,mHeight(RoundCast<T>(h))
         {
             if constexpr(std::is_signed_v<V>)
             {
-                CHECK_GREATER_OR_EQUAL(m_width, 0, "width cannot be less than 0!");
-                CHECK_GREATER_OR_EQUAL(m_height, 0, "height cannot be less than 0!");
+                CHECK_GREATER_OR_EQUAL(mWidth, 0, "width cannot be less than 0!");
+                CHECK_GREATER_OR_EQUAL(mHeight, 0, "height cannot be less than 0!");
             }
         }
-        
+
+        T GetWidth() const noexcept {return mWidth;}
+        T GetHeight() const noexcept {return mHeight;}
     private:
-        T m_width{};
-        T m_height{};
+        T mWidth{};
+        T mHeight{};
     };
 
     class Rect

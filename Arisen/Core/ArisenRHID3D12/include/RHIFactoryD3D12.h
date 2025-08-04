@@ -6,7 +6,7 @@
 #include "RHIFactoryBase.h"
 #include "RHITypesD3D12.h"
 
-ARISENRHI_BEGIN_NAMEPSACE
+ARISENRHI_D3D12_BEGIN_NAMEPSACE
 class RHIFactoryD3D12 : public RHIFactoryBase
 {
 public:
@@ -16,4 +16,4 @@ public:
 
 RHIFactoryD3D12* CreateRHIFactoryD3D12();
 
-ARISENRHI_END_NAMESPACE
+ARISENRHI_D3D12_END_NAMESPACE

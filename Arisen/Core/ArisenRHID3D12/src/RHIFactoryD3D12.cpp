@@ -9,7 +9,7 @@
 
 using Microsoft::WRL::ComPtr;
 
-ARISENRHI_BEGIN_NAMEPSACE
+ARISENRHI_D3D12_BEGIN_NAMEPSACE
 RHIFactoryD3D12* RHIFactoryD3D12::GetInstance()
 {
     static RHIFactoryD3D12 FactoryD3D12Impl;
@@ -163,4 +163,4 @@ RHIFactoryD3D12* CreateRHIFactoryD3D12()
     return RHIFactoryD3D12::GetInstance();
 }
 
-ARISENRHI_END_NAMESPACE
+ARISENRHI_D3D12_END_NAMESPACE

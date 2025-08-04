@@ -1,9 +1,10 @@
 ﻿#pragma once
 #include "ContextBase.h"
 #include "CoreMinimalD3D12.h"
+#include "DeviceD3D12.h"
 
-ARISENRHI_BEGIN_NAMEPSACE
-template<typename TContext> requires std::is_base_of_v<IContext, TContext>
+ARISENRHI_D3D12_BEGIN_NAMEPSACE
+    template<typename TContext> requires std::is_base_of_v<ArisenRHI::IContext, TContext>
 class ContextDxCommon : public TContext
 {
 public:
@@ -14,8 +15,13 @@ public:
     {
         
     }
+
+    const DeviceD3D12& GetDeviceD3D12() const noexcept
+    {
+        return static_cast<const DeviceD3D12&>(TContext::GetDevice());
+    }
 };
 
 
 
-ARISENRHI_END_NAMESPACE
+ARISENRHI_D3D12_END_NAMESPACE

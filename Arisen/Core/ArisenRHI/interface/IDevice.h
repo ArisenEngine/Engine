@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "CoreMiminalRHI.h"
+#include "CoreMinimalRHI.h"
 #include "IObject.h"
 #include "IRenderContext.h"
 

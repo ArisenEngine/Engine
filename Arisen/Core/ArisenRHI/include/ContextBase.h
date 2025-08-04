@@ -1,21 +1,38 @@
 ﻿#pragma once
-#include "CoreMiminalRHI.h"
+#include "CoreMinimalRHI.h"
+#include "ICommandKit.h"
+#include "ICommandList.h"
 #include "ObjectBase.h"
 #include "IContext.h"
 #include "IDevice.h"
+#include "Logger/DebugUtils.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
-template<typename ContextInterface> requires std::is_base_of_v<IContext , ContextInterface>
+    template<typename ContextInterface> requires std::is_base_of_v<IContext , ContextInterface>
 class ContextBase : public ObjectBase<ContextInterface>
 {
 public:
     ContextBase(IDevice& device, ContextType type)
-    :m_pDevice(device.GetInterface<IDevice>())
-    ,m_type(type){}
+    :mDevicePtr(device.GetInterface<IDevice>())
+    ,mType(type){}
 
     virtual void Initialize(){}
+
+    IDevice& GetDevice()
+    {
+        CHECK_VALID(mDevicePtr);
+        return *mDevicePtr;
+    }
+
+    ICommandKit& GetDefaultCommandKit(CommandListType type) const
+    {
+        
+    }
 private:
-    const ContextType m_type;
-    Ptr<IDevice> m_pDevice;
+    using CommandKitPtrsByType = std::array<Ptr<ICommandKit>, CommandListType::__COUNT>;
+    
+    const ContextType mType;
+    Ptr<IDevice> mDevicePtr;
+    
 };
 ARISENRHI_END_NAMESPACE
