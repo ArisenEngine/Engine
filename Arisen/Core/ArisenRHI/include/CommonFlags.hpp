@@ -72,3 +72,10 @@ HasFlag(E value, E flag)
     using U = std::underlying_type_t<E>;
     return (static_cast<U>(value) & static_cast<U>(flag)) != 0;
 }
+
+template<typename E>
+inline std::enable_if_t<IsEnumClass<E>, int32_t>
+ToInt32(E value)
+{
+    return static_cast<int32_t>(value);
+}
