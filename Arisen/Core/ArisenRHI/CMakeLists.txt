@@ -1,5 +1,6 @@
 # 设置 CMake 最低版本
 cmake_minimum_required(VERSION 3.15)
+set(CMAKE_CXX_STANDARD 23)
 
 # 项目名称
 project(ArisenRHI)
@@ -48,6 +49,7 @@ target_link_libraries(ArisenRHI
     Core.Infra
     Core.Platform
 )
+
 
 # 日志输出
 message(STATUS "ArisenRHI CMake setup complete!")

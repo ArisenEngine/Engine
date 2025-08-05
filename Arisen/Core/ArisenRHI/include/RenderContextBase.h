@@ -5,17 +5,25 @@
 #include "IRenderContext.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
-class RenderContextBase : public ContextBase<IRenderContext>
+template<typename TContextInterface, typename TSettings>
+class RenderContextBase : public ContextBase<TContextInterface>
 {
 public:
-    RenderContextBase(IDevice& device, const RenderContextSettings& settings);
+    RenderContextBase(IDevice& device, const TSettings& settings)
+    :ContextBase<TContextInterface>(device, ContextType::Render)
+    ,m_settings(settings)
+    {
+    }
 
-    virtual void Initialize() override;
+    virtual void Initialize() override
+    {
+        
+    }
 
-    const virtual Settings& GetSettings() const noexcept final {return mSettings;}
+    const virtual TSettings& GetSettings() const noexcept final {return m_settings;}
     
 private:
-    RenderContextSettings mSettings;
+    TSettings m_settings;
     
 };
 ARISENRHI_END_NAMESPACE
