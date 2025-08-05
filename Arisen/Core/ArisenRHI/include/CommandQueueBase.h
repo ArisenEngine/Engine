@@ -5,10 +5,13 @@
 #include "ObjectBase.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
-class CommandQueueBase : public ObjectBase<ICommandQueue>
+template<typename BaseInterface>
+class CommandQueueBase : public ObjectBase<BaseInterface>
 {
 public:
-    CommandQueueBase(const IRHIContext& context, CommandListType type);
+    CommandQueueBase(const IRHIContext& context, CommandListType type)
+    :m_context(context),m_command_list_type(type)
+    {}
     
 private:
     const IRHIContext& m_context;

@@ -30,8 +30,7 @@ public:
 
     virtual Ptr<ICommandQueue> CreateCommandQueue(CommandListType type) const override
     {
-        return nullptr;
-        // return MakePtr(CommandQueueD3D12, this, type);
+        return MakePtr(CommandQueueD3D12, this, type);
     }
 };
 
