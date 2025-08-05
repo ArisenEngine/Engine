@@ -1,4 +1,5 @@
 ﻿#include "CommandKit.h"
+#include <format>
 
 ArisenRHI::CommandKit::CommandKit(const IRHIContext& context, CommandListType cmd_list_type)
     :m_context(context), m_cmd_list_type(cmd_list_type)

@@ -10,7 +10,7 @@
 
 ARISENRHI_D3D12_BEGIN_NAMEPSACE
     RenderContextD3D12::RenderContextD3D12(DeviceD3D12& device, RenderContextSettings settings)
-    :ContextDxCommon(device, settings)
+    :ContextCommonD3D12(device, settings)
 {
 }
 
@@ -58,7 +58,7 @@ void RenderContextD3D12::Initialize()
     // lazy create command queue first.
     
     
-    ContextDxCommon<RenderContextBase>::Initialize();
+    ContextCommonD3D12<RenderContextBase>::Initialize();
 }
 
 ARISENRHI_D3D12_END_NAMESPACE

@@ -37,10 +37,11 @@ void GameInstance::InitArisenRHI(HWND hwnd)
     {
     case RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_D3D12:
         {
+            using namespace ArisenRHID3D12;
             EngineCreateInfoD3D12 EngineCreateInfo;
             EngineCreateInfo.EnableValidation = true;
             EngineCreateInfo.ValidationFlags |= D3D12_VALIDATION_FLAGS::D3D12_VALIDATION_FLAG_GPU_BASED_VALIDATION;
-            
+
             RHIFactoryD3D12* FactoryD3D12 = CreateRHIFactoryD3D12();
             pDevice = FactoryD3D12->CreateDeviceD3D12(EngineCreateInfo);
         }

@@ -25,7 +25,7 @@ public:
         m_name = name;
         return true;
     }
-    
+
     [[nodiscard]] virtual std::string_view GetName() const noexcept override{return m_name;}
 
 private:
