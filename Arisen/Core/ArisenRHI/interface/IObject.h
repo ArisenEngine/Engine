@@ -12,10 +12,10 @@ struct IObject
     [[nodiscard]] virtual std::string_view GetName() const noexcept = 0;
 
     // todo : change to ref count ptr.
-    [[nodiscard]] virtual Ptr<IObject> AsObjectPtr(){return shared_from_this();};
+    [[nodiscard]] virtual Ptr<IObject> AsObjectPtr() {return shared_from_this();};
     
     template<typename T> requires std::is_base_of_v<IObject, T>
-    [[nodiscard]] Ptr<T> GetInterface(){return std::static_pointer_cast<T>(AsObjectPtr());}
+    [[nodiscard]] Ptr<T> GetInterface() {return std::static_pointer_cast<T>(AsObjectPtr());}
 };
 
 ARISENRHI_END_NAMESPACE
