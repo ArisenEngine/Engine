@@ -27,4 +27,10 @@ Ptr<IRenderContext> DeviceD3D12::CreateRenderContext(const RenderContextSettings
     return nullptr;
 }
 
+ComPtr<ID3D12Device>& DeviceD3D12::GetNativeDevice() const
+{
+    CHECK(m_device_cptr,"Native Device is null!");
+    return m_device_cptr;
+}
+
 ARISENRHI_D3D12_END_NAMESPACE

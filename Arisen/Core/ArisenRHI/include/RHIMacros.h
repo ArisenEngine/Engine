@@ -31,4 +31,4 @@ using Ptr = std::shared_ptr<T>;
 #define LOG_RHI_FATAL_AND_THROW(Message, ...)\
     LOG_FATAL_AND_THROW(ADD_RHI_HEAD(Message))
 #define LOG_RHI_CONSTRUCTOR(ClassNameStr,...)\
-    LOG_RHI_DEBUG(std::format("[{}] Constructor!", ClassNameStr))
+    LOG_RHI_DEBUG(std::format("<{}> Constructor!", ClassNameStr))
