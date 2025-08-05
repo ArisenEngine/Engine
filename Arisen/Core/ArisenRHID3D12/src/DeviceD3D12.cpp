@@ -17,7 +17,7 @@ DeviceD3D12::DeviceD3D12(const ComPtr<IDXGIAdapter>& adapter_cptr, const ComPtr<
     :DeviceBase(GetAdapterNameDxgi(*adapter_cptr.Get()))
     ,m_device_cptr(device_cptr)
 {
-    
+    LOG_RHI_CONSTRUCTOR("DeviceD3D12");
 }
 
 Ptr<IRenderContext> DeviceD3D12::CreateRenderContext(const RenderContextSettings& render_context_settings)
