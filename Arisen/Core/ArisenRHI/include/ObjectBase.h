@@ -9,8 +9,9 @@ public:
     ObjectBase() =default;
     explicit ObjectBase(std::string_view name)
     :m_name(name)
-    {
-    }
+    {}
+
+    virtual ~ObjectBase() = default;
     
     virtual bool SetName(std::string_view name) override
     {

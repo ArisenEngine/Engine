@@ -9,7 +9,7 @@ ARISENRHI_BEGIN_NAMEPSACE
 class CommandKit final : public ObjectBase<ICommandKit>
 {
 public:
-   CommandKit(const IContext& context, CommandListType cmd_list_type);
+   CommandKit(const IRHIContext& context, CommandListType cmd_list_type);
 
    virtual bool SetName(std::string_view name) override;
 

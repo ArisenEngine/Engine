@@ -1,14 +1,21 @@
 ﻿#pragma once
+#include "CommandQueueD3D12.h"
 #include "ContextBase.h"
 #include "CoreMinimalD3D12.h"
 #include "DeviceD3D12.h"
 
 ARISENRHI_D3D12_BEGIN_NAMEPSACE
-    template<typename TContext> requires std::is_base_of_v<ArisenRHI::IRHIContext, TContext>
+
+struct IContextD3D12
+{
+        
+};
+
+template<typename TContext> requires std::is_base_of_v<IRHIContext, TContext>
 class ContextDxCommon : public TContext
 {
 public:
-    ContextDxCommon(IDevice& device, const TContext::Settings& settings)
+    ContextDxCommon(IDevice& device, const typename TContext::Settings& settings)
         :TContext(device, settings){}
 
     virtual void Initialize()
@@ -19,6 +26,11 @@ public:
     const DeviceD3D12& GetDeviceD3D12() const noexcept
     {
         return static_cast<const DeviceD3D12&>(TContext::GetDevice());
+    }
+
+    virtual Ptr<ICommandQueue> CreateCommandQueue(CommandListType type) const override
+    {
+        return MakePtr(CommandQueueD3D12, this, type);
     }
 };
 

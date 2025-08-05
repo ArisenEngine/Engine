@@ -1,7 +1,9 @@
 ﻿#include "RenderContextBase.h"
 
-ArisenRHI::RenderContextBase::RenderContextBase(IDevice& device, const RenderContextSettings& settings)
+ARISENRHI_BEGIN_NAMEPSACE
+RenderContextBase::RenderContextBase(IDevice& device, const RenderContextSettings& settings)
     :ContextBase(device, ContextType::Render)
     ,mSettings(settings)
 {
 }
+ARISENRHI_END_NAMESPACE

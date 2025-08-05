@@ -30,7 +30,7 @@ public:
 
     virtual void Initialize(){}
 
-    IDevice& GetDevice()
+    virtual const IDevice& GetDevice() const
     {
         CHECK_VALID(m_device_ptr);
         return *m_device_ptr;
