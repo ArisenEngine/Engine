@@ -12,6 +12,7 @@ ARISENRHI_D3D12_BEGIN_NAMEPSACE
     RenderContextD3D12::RenderContextD3D12(DeviceD3D12& device, RenderContextSettings settings)
     :ContextCommonD3D12(device, settings)
 {
+    LOG_RHI_CONSTRUCTOR("RenderContextD3D12");
 }
 
 void RenderContextD3D12::Initialize()
@@ -56,6 +57,7 @@ void RenderContextD3D12::Initialize()
 
     ComPtr<IDXGISwapChain1> swapChainCPtr;
     // lazy create command queue first.
+    
     
     
     ContextCommonD3D12<RenderContextBase>::Initialize();

@@ -28,5 +28,5 @@ private:
     RHI_DEVICE_TYPE DeviceType{RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_D3D12};
 
     Ptr<IDevice> pDevice;
-    Ptr<IRenderContext> pRenderContext;
+    Ptr<IRenderContext> pRender_context;
 };

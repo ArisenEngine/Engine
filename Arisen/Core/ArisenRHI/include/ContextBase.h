@@ -53,7 +53,7 @@ public:
 
         // Create
         cmd_kit_Ptr = CreateCommandKit(type);
-        cmd_kit_Ptr->SetName(std::format("{} {}", ContextInterface::GetName(), g_default_command_kit_names[ToInt32(type)] ));
+        cmd_kit_Ptr->SetName(std::format("{} {}", ContextBase::GetName(), g_default_command_kit_names[ToInt32(type)] ));
 
         m_default_command_kit_ptrs_byQueue[std::addressof(cmd_kit_Ptr->GetQueue())] = cmd_kit_Ptr;
         return * cmd_kit_Ptr;
