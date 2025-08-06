@@ -11,11 +11,10 @@
 #include "ObjectBase.h"
 #include "IRHIContext.h"
 #include "IDevice.h"
-#include "Logger/DebugUtils.h"
+#include "DebugUtils/Checks.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
-
-static const std::array<std::string, static_cast<size_t>(CommandListType::__COUNT)> g_default_command_kit_names{
+    static const std::array<std::string, static_cast<size_t>(CommandListType::__COUNT)> g_default_command_kit_names{
     "Upload",
     "Render",
     "Compute"

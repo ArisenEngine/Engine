@@ -1,8 +1,7 @@
 ﻿#pragma once
 #include <type_traits>
-
+#include "DebugUtils/Verifies.h"
 #include "Math.h"
-#include "Common/Checks.h"
 
 namespace ArisenEngine::Math
 {
@@ -18,8 +17,8 @@ namespace ArisenEngine::Math
         {
             if constexpr(std::is_signed_v<V>)
             {
-                CHECK_GREATER_OR_EQUAL(mWidth, 0, "width cannot be less than 0!");
-                CHECK_GREATER_OR_EQUAL(mHeight, 0, "height cannot be less than 0!");
+                VERIFY_GREATER_OR_EQUAL(mWidth, 0, "width cannot be less than 0!");
+                VERIFY_GREATER_OR_EQUAL(mHeight, 0, "height cannot be less than 0!");
             }
         }
 

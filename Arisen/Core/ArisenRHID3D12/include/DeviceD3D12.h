@@ -13,7 +13,7 @@ class DeviceD3D12 final : public DeviceBase<IDevice>
 public:
     DeviceD3D12(const ComPtr<IDXGIAdapter>& adapter_cptr, const ComPtr<ID3D12Device>& device_cptr);
 
-    virtual Ptr<IRenderContext> CreateRenderContext(const RenderContextSettings& render_context_settings) override;
+    virtual Ptr<IRenderContext> CreateRenderContext(const RenderContextSettings& render_context_settings, const Environment environment) override;
 
     ComPtr<ID3D12Device>& GetNativeDevice() const;
 private:
