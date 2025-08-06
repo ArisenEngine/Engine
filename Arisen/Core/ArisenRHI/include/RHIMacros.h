@@ -19,16 +19,16 @@ using Ptr = std::shared_ptr<T>;
 // TODO: add log types.
 #define ADD_RHI_HEAD(Message) std::format("[RHI]:{}",Message)
 #define LOG_RHI_DEBUG(Message, ...)\
-    LOG_DEBUG(ADD_RHI_HEAD(Message))
+    LOG_DEBUG(ADD_RHI_HEAD(Message));
 #define LOG_RHI_INFO(Message, ...)\
-    LOG_INFO(ADD_RHI_HEAD(Message))
+    LOG_INFO(ADD_RHI_HEAD(Message));
 #define LOG_RHI_WARNING(Message, ...)\
-    LOG_WARNING(ADD_RHI_HEAD(Message))
+    LOG_WARNING(ADD_RHI_HEAD(Message));
 #define LOG_RHI_ERROR(Message, ...)\
-    LOG_ERROR(ADD_RHI_HEAD(Message))
+    LOG_ERROR(ADD_RHI_HEAD(Message));
 #define LOG_RHI_FATAL(Message, ...)\
-    LOG_FATAL(ADD_RHI_HEAD(Message))
+    LOG_FATAL(ADD_RHI_HEAD(Message));
 #define LOG_RHI_FATAL_AND_THROW(Message, ...)\
     LOG_FATAL_AND_THROW(ADD_RHI_HEAD(Message))
 #define LOG_RHI_CONSTRUCTOR(ClassNameStr,...)\
-    LOG_RHI_DEBUG(std::format("<{}> Constructor!", ClassNameStr))
+    LOG_RHI_DEBUG(std::format("<{}> Constructor!", ClassNameStr));
