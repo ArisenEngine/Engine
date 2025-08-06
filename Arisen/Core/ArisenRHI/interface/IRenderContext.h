@@ -11,6 +11,7 @@ struct RenderContextSettings
     TextureFormat textureFormat{TextureFormat::BGRA8Unorm};
     TextureFormat depthStencilFormat{TextureFormat::UnKnown};
     uint32_t frameBuffersCount{3};
+    ContextOption options{ContextOption::DefaultProgramBindingsInitialization};
 };
 
 struct IRenderContext : public IRHIContext
