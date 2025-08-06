@@ -37,14 +37,14 @@ void RenderContextD3D12::Initialize()
     dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
 #endif
 
-    ComPtr<IDXGIFactory5> factoryCPtr;
-    ThrowIfFailed(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&factoryCPtr)));
-    CHECK(factoryCPtr,"factory is null, create swapchain failed!");
+    ComPtr<IDXGIFactory5> factory_cptr;
+    ThrowIfFailed(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&factory_cptr)));
+    CHECK(factory_cptr,"factory is null, create swapchain failed!");
 
     // TODO:
-    ID3D12Device* DeviceD3D12 = nullptr;
+    ID3D12Device* device_d3d12 = nullptr;
     BOOL presentTearingSupport = FALSE;
-    ThrowIfFailed(factoryCPtr->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &presentTearingSupport, sizeof(presentTearingSupport)), DeviceD3D12);
+    ThrowIfFailed(factory_cptr->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &presentTearingSupport, sizeof(presentTearingSupport)), device_d3d12);
     if (presentTearingSupport)
     {
         swapChainDesc.Flags |= DXGI_FEATURE_PRESENT_ALLOW_TEARING;
@@ -55,12 +55,14 @@ void RenderContextD3D12::Initialize()
         mIsTearingSupported = false;
     }
 
-    ComPtr<IDXGISwapChain1> swapChainCPtr;
+    ComPtr<IDXGISwapChain1> swap_chain_cptr;
     // lazy create command queue first.
-    
+    ID3D12CommandQueue& command_queue = GetDefaultCommandQueueD3D12(CommandListType::Render).GetNativeCommandQueue();
+    ThrowIfFailed(factory_cptr->CreateSwapChainForHwnd(command_queue,))
     
     
     ContextCommonD3D12<RenderContextBase>::Initialize();
 }
+
 
 ARISENRHI_D3D12_END_NAMESPACE

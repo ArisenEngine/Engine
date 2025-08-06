@@ -16,6 +16,8 @@ public:
     template<typename T>
     CommandQueueD3D12(const ContextCommonD3D12<T>& context, CommandListType type);
     ~CommandQueueD3D12() override;
+
+    ID3D12CommandQueue& GetNativeCommandQueue();
 private:
     ComPtr<ID3D12CommandQueue> m_command_queue_cptr;
 };

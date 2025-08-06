@@ -24,7 +24,7 @@ Ptr<IRenderContext> DeviceD3D12::CreateRenderContext(const RenderContextSettings
 {
     auto render_context = MakePtr(RenderContextD3D12, *this, render_context_settings);
     render_context->Initialize();
-    return nullptr;
+    return render_context;
 }
 
 ComPtr<ID3D12Device>& DeviceD3D12::GetNativeDevice() const

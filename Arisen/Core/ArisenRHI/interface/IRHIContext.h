@@ -12,6 +12,12 @@ enum class ContextType
     Compute,
 };
 
+enum class ContextOption
+{
+    DefaultProgramBindingsInitialization,
+    TransferWithD3D12DirectQueue,
+};
+
 struct IRHIContext : public IObject
 {
     virtual Ptr<ICommandKit> CreateCommandKit(CommandListType type) const = 0;
@@ -19,5 +25,6 @@ struct IRHIContext : public IObject
     
     virtual ICommandKit& GetDefaultCommandKit(CommandListType type) const = 0;
     virtual const IDevice& GetDevice() const = 0;
+    virtual ContextOption GetOptions() const noexcept =0;
 };
 ARISENRHI_END_NAMESPACE

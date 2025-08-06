@@ -20,8 +20,11 @@ public:
         
     }
 
-    const virtual TSettings& GetSettings() const noexcept final {return m_settings;}
-    
+    const virtual TSettings& GetSettings() const noexcept override final {return m_settings;}
+    virtual ContextOption GetOptions() const noexcept override
+    {
+        return m_settings.options;
+    }
 private:
     TSettings m_settings;
     

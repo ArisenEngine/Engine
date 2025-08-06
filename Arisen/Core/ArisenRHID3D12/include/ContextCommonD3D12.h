@@ -32,6 +32,12 @@ public:
     {
         return MakePtr(CommandQueueD3D12, this, type);
     }
+
+    CommandQueueD3D12& GetDefaultCommandQueueD3D12(CommandListType type)
+    {
+        return static_cast<CommandQueueD3D12&>(ContextCommonD3D12::GetDefaultCommandKit(type).GetQueue());
+    }
+    
 };
 
 
