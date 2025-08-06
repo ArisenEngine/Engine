@@ -13,13 +13,14 @@ public:
     
     ~CommandQueueCommon() override
     {
+        LOG_RHI_DEBUG("CommandqueueCommon desctructor!")
         ShutdownQueueExecution();
     }
     
 protected:
     void ShutdownQueueExecution()
     {
-        LOG_RHI_ERROR("Shutdown queue not implemented!");
+        LOG_RHI_ERROR(std::format("Shutdown queue not implemented:{}!",static_cast<void*>(this)));
     }
 };
 ARISENRHI_END_NAMESPACE

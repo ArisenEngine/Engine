@@ -44,7 +44,6 @@ ComPtr<ID3D12CommandQueue> CommandQueueD3D12::CreateNativeCommandQueue(const IRH
 
 CommandQueueD3D12::~CommandQueueD3D12()
 {
-    CommandQueueCommon::~CommandQueueCommon();
 }
 
 ID3D12CommandQueue& CommandQueueD3D12::GetNativeCommandQueue()
