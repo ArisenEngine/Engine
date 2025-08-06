@@ -22,11 +22,11 @@ static D3D12_COMMAND_LIST_TYPE GetNativeCommandListType(CommandListType type, Co
         return D3D12_COMMAND_LIST_TYPE_COMPUTE;
         
     default:
-        UNEXPECTED_RETURN(type,"Unknown command list type");
+        CHECK_UNEXPECTED_RETURN(type,"Unknown command list type");
     }
 }
 
-static ComPtr<ID3D12CommandQueue> CreateNativeCommandQueue(const IRHIContext& context, CommandListType type)
+ComPtr<ID3D12CommandQueue> CommandQueueD3D12::CreateNativeCommandQueue(const IRHIContext& context, CommandListType type)
 {
     const DeviceD3D12& device = static_cast<const DeviceD3D12&>(context.GetDevice());
     const ComPtr<ID3D12Device>& device_cptr = device.GetNativeDevice();
@@ -41,14 +41,6 @@ static ComPtr<ID3D12CommandQueue> CreateNativeCommandQueue(const IRHIContext& co
     return command_queue_cptr;
 }
 
-template<typename T>
-CommandQueueD3D12::CommandQueueD3D12(const ContextCommonD3D12<T>& context, CommandListType type)
-    :CommandQueueCommon(context, type)
-,m_command_queue_cptr(CreateNativeCommandQueue(context, type))
-{
-    LOG_RHI_CONSTRUCTOR("CommandQueueD3D12");
-    // tracy context.
-}
 
 CommandQueueD3D12::~CommandQueueD3D12()
 {

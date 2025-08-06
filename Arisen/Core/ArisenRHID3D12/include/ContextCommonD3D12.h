@@ -6,16 +6,11 @@
 
 ARISENRHI_D3D12_BEGIN_NAMEPSACE
 
-struct IContextD3D12
-{
-        
-};
-
-template<typename TContext> requires std::is_base_of_v<IRHIContext, TContext>
+template<typename TContext, typename TSettings> //requires std::is_base_of_v<IRHIContext, TContext>
 class ContextCommonD3D12 : public TContext
 {
 public:
-    ContextCommonD3D12(IDevice& device, const typename TContext::Settings& settings)
+    ContextCommonD3D12(IDevice& device, const TSettings& settings)
         :TContext(device, settings){}
 
     virtual void Initialize()
@@ -30,7 +25,7 @@ public:
 
     virtual Ptr<ICommandQueue> CreateCommandQueue(CommandListType type) const override
     {
-        return MakePtr(CommandQueueD3D12, this, type);
+        return MakePtr(CommandQueueD3D12, *this, type);
     }
 
     CommandQueueD3D12& GetDefaultCommandQueueD3D12(CommandListType type)

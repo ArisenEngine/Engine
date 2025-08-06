@@ -46,7 +46,9 @@ void GameInstance::InitArisenRHI(HWND hwnd)
             RHIFactoryD3D12* FactoryD3D12 = CreateRHIFactoryD3D12();
             pDevice = FactoryD3D12->CreateDeviceD3D12(EngineCreateInfo);
             RenderContextSettings Settings;
-            pRender_context = pDevice->CreateRenderContext(Settings);
+            Environment env;
+            env.window_handle = hwnd;
+            pRender_context = pDevice->CreateRenderContext(Settings, env);
         }
         break;
     case RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_VULKAN:

@@ -7,17 +7,15 @@
 ARISENRHI_BEGIN_NAMEPSACE
 struct RenderContextSettings
 {
-    FrameSize frameSize{800, 600};
-    TextureFormat textureFormat{TextureFormat::BGRA8Unorm};
-    TextureFormat depthStencilFormat{TextureFormat::UnKnown};
-    uint32_t frameBuffersCount{3};
+    FrameSize frame_size{800, 600};
+    TextureFormat texture_format{TextureFormat::BGRA8Unorm};
+    TextureFormat depth_stencil_format{TextureFormat::UnKnown};
+    uint32_t frame_buffers_Count{3};
     ContextOption options{ContextOption::DefaultProgramBindingsInitialization};
 };
 
 struct IRenderContext : public IRHIContext
 {
-    using Settings = RenderContextSettings;
-
-    const virtual Settings& GetSettings() const noexcept = 0;
+    const virtual RenderContextSettings& GetSettings() const noexcept = 0;
 };
 ARISENRHI_END_NAMESPACE

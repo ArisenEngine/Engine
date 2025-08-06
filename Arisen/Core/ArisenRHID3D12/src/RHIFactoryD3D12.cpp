@@ -2,10 +2,10 @@
 
 #include <wrl/client.h>
 #include <d3d12sdklayers.h>
-#include "Logger/DebugUtils.h"
 #include "CommonFlags.hpp"
 #include "DeviceD3D12.h"
 #include "dxgi1_4.h"
+#include "DebugUtils/Checks.h"
 
 using Microsoft::WRL::ComPtr;
 

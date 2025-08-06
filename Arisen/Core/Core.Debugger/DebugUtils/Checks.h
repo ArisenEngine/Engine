@@ -1,8 +1,9 @@
 #pragma once
-#include "Logger.h"
+#include "../Logger/Logger.h"
+
+// checks is a set of check stuff which can be ignored in release mode.
 
 #ifdef _DEBUG
-
 #define ASSERTION_FAILED(Message, ...)    \
 do                                  \
 {                                   \
@@ -18,7 +19,7 @@ ASSERTION_FAILED(Message,##__VA_ARGS__); \
 }                       \
 } while (false)    
 
-#define UNEXPECTED_RETURN(argument, ReturnVal)\
+#define CHECK_UNEXPECTED_RETURN(argument, ReturnVal)\
     do{\
     ASSERTION_FAILED("Unexpected return value occured!");\
     throw std::runtime_error("Unexpected return value occured!");\
@@ -34,6 +35,6 @@ ASSERTION_FAILED(Message,##__VA_ARGS__); \
 
 #define ASSERTION_FAILED(Message, ...) do{}while(false)
 #define CHECK(Expr, Message, ...) do{} while(false)
-#define UNEXPECTED_RETURN(argument, ReturnVal) do{}while(false)
+#define CHECK_UNEXPECTED_RETURN(argument, ReturnVal) do{}while(false)
 #endif
 
