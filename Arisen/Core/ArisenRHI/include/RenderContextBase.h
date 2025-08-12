@@ -18,7 +18,8 @@ public:
 
     virtual void Initialize() override
     {
-        
+        ContextBase<TContextInterface>::Initialize();
+        m_frame_index = 0u;
     }
 
     const virtual RenderContextSettings& GetSettings() const noexcept override final {return m_settings;}

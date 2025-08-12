@@ -28,7 +28,16 @@ public:
     :m_device_ptr(device.GetInterface<IDevice>())
     ,m_type(type){}
 
-    virtual void Initialize(){}
+    virtual void Initialize()
+    {
+        LOG_RHI_DEBUG("Context {} Initialize!", this->GetName())
+
+        if (const std::string_view context_name = this->GetName();
+            !context_name.empty() && m_device_ptr != nullptr)
+        {
+            m_device_ptr->SetName(std::format("{} Device", context_name));
+        }
+    }
 
     virtual const IDevice& GetDevice() const
     {
