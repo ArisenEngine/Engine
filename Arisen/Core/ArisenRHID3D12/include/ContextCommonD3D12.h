@@ -15,7 +15,8 @@ public:
 
     virtual void Initialize()
     {
-        
+        TContext::Initialize();
+        // create descriptor.
     }
 
     const DeviceD3D12& GetDeviceD3D12() const noexcept
