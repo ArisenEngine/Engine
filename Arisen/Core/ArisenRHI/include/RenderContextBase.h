@@ -6,19 +6,22 @@
 #include "DebugUtils/Verifies.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
-    template<typename TContextInterface> requires std::is_base_of_v<IRenderContext, TContextInterface>
-class RenderContextBase : public ContextBase<TContextInterface>
+    template<typename RHIImplTraits> requires std::is_base_of_v<IRenderContext, typename RHIImplTraits::RenderContextInterface>
+class RenderContextBase : public ContextBase<RHIImplTraits, typename RHIImplTraits::RenderContextInterface>
 {
 public:
-    RenderContextBase(IDevice& device, const RenderContextSettings& settings)
-    :ContextBase<TContextInterface>(device, ContextType::Render)
-    ,m_settings(settings)
+    using BaseInterface = typename RHIImplTraits::RenderContextInterface;
+    using DescriptorManagerImplType = typename RHIImplTraits::DescriptorManagerImplType;
+    
+    RenderContextBase(IDevice& device, const RenderContextSettings& settings, UniquePtr<DescriptorManagerImplType>&& descriptor_manager_ptr)
+        :ContextBase<RHIImplTraits, BaseInterface>(device, ContextType::Render, std::move(descriptor_manager_ptr))
+        ,m_settings(settings)
     {
     }
 
     virtual void Initialize() override
     {
-        ContextBase<TContextInterface>::Initialize();
+        ContextBase<RHIImplTraits, BaseInterface>::Initialize();
         m_frame_index = 0u;
     }
 
