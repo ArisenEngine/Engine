@@ -11,12 +11,12 @@ class DescriptorManagerBase : public ObjectBase<typename RHIImplTraits::Descript
 public:
     using BaseInterface = typename RHIImplTraits::DescriptorInterface;
     
-    template<typename ContextInterface> 
-    DescriptorManagerBase(ContextBase<ContextInterface>& context)
+    explicit DescriptorManagerBase(IRHIContext& context)
+
         :m_common_context(context)
     {}
 private:
-    template<typename ContextInterface> 
-    ContextBase<ContextInterface>& m_common_context;
+    IRHIContext& m_common_context;
+
 };
 ARISENRHI_END_NAMESPACE
