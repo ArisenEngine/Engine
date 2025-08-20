@@ -16,6 +16,10 @@ using Ptr = std::shared_ptr<T>;
 // #define Ptr(ClassName) std::shared_ptr<ClassName>
 #define MakePtr(ClassName,...) std::make_shared<ClassName>(##__VA_ARGS__)
 
+template<class T>
+using UniquePtr = std::unique_ptr<T>;
+#define MakeUniquePtr(ClassName,...) std::make_unique<ClassName>(##__VA_ARGS__)
+
 // TODO: add log types.
 #define ADD_RHI_HEAD(Message) std::format("[RHI]:{}",Message)
 #define LOG_RHI_DEBUG(Message, ...)\
@@ -32,3 +36,6 @@ using Ptr = std::shared_ptr<T>;
     LOG_FATAL_AND_THROW(ADD_RHI_HEAD(Message))
 #define LOG_RHI_CONSTRUCTOR(ClassNameStr,...)\
     LOG_RHI_DEBUG(std::format("<{}> Constructor!", ClassNameStr));
+#define LOG_RHI_DESTRUCTOR(ClassNameStr,...)\
+    LOG_RHI_DEBUG(std::format("<{}> Destructor!", ClassNameStr));
+No newline at end of file
