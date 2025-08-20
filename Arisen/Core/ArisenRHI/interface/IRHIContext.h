@@ -3,6 +3,7 @@
 #include "IObject.h"
 #include "ICommandKit.h"
 #include "ICommandList.h"
+#include "IDescriptorManager.h"
 #include "IDevice.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
@@ -26,5 +27,7 @@ struct IRHIContext : public IObject
     virtual ICommandKit& GetDefaultCommandKit(CommandListType type) const = 0;
     virtual const IDevice& GetDevice() const = 0;
     virtual ContextOption GetOptions() const noexcept =0;
+
+    virtual IDescriptorManager& GetDescriptorManager() = 0;
 };
 ARISENRHI_END_NAMESPACE
