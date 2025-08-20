@@ -1,14 +1,17 @@
 ﻿#pragma once
 #include "CoreMinimalD3D12.h"
+#include "IRenderContext.h"
+#include "IDescriptorManager.h"
 
 ARISENRHI_D3D12_BEGIN_NAMEPSACE
 
-class DesciptorManagerD3D12;
+class DescriptorManagerD3D12;
 
 struct RHID3D12ImplTraits
 {
     using DescriptorInterface = IDescriptorManager;
-    using DescriptorManagerImplType = DesciptorManagerD3D12;
-
+    using RenderContextInterface = IRenderContext;
+    
+    using DescriptorManagerImplType = DescriptorManagerD3D12;
 };
 ARISENRHI_D3D12_END_NAMESPACE
