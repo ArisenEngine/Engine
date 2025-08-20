@@ -5,11 +5,12 @@
 #include "CoreMinimalRHI.h"
 #include "DeviceD3D12.h"
 #include "RenderContextBase.h"
+#include "RHID3D12ImplTraits.h"
 #include "Windows/Environment.h"
 
 ARISENRHI_D3D12_BEGIN_NAMEPSACE
-    class RenderContextD3D12
-: public ContextCommonD3D12<RenderContextBase<IRenderContext>, RenderContextSettings>
+class RenderContextD3D12
+    : public ContextCommonD3D12<RenderContextBase<RHID3D12ImplTraits>, RenderContextSettings>
 {
 public:
     RenderContextD3D12(DeviceD3D12& device, RenderContextSettings settings, Environment environment);
