@@ -38,4 +38,3 @@ using UniquePtr = std::unique_ptr<T>;
     LOG_RHI_DEBUG(std::format("<{}> Constructor!", ClassNameStr));
 #define LOG_RHI_DESTRUCTOR(ClassNameStr,...)\
     LOG_RHI_DEBUG(std::format("<{}> Destructor!", ClassNameStr));
-No newline at end of file
