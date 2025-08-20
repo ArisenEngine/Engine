@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "CoreMinimalD3D12.h"
+#include "DescriptorHeap.h"
 #include "DescriptorManagerBase.h"
 #include "RHID3D12ImplTraits.h"
 
@@ -15,8 +16,13 @@ public:
 
     virtual ~DescriptorManagerD3D12();
 
-    void Iniitialize();
+    void Initialize();
 
-    
+    virtual void CompleteInitialize() override;
+
+private:
+
+    // pool
+    std::array<UniquePtrs<DescriptorHeap>, static_cast<size_t>(DescriptorType::Undefined)> m_descriptor_heap_types;
 };
 ARISENRHI_D3D12_END_NAMESPACE
