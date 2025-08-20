@@ -12,9 +12,15 @@ DescriptorManagerD3D12::~DescriptorManagerD3D12()
     LOG_RHI_DESTRUCTOR("DescriptorManagerD3D12")
 }
 
-void DescriptorManagerD3D12::Iniitialize()
+void DescriptorManagerD3D12::Initialize()
 {
-    
+    // Create descriptor heaps./
+    for (const )
+}
+
+void DescriptorManagerD3D12::CompleteInitialize()
+{
+    DescriptorManagerBase<RHID3D12ImplTraits>::CompleteInitialize();
 }
 
 

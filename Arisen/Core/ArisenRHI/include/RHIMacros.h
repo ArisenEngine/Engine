@@ -13,11 +13,14 @@
 // TODO: refactor to ref count object and memory allocator.
 template<class T>
 using Ptr = std::shared_ptr<T>;
-// #define Ptr(ClassName) std::shared_ptr<ClassName>
+template<class T>
+using Ptrs = std::vector<Ptr<T>>;
 #define MakePtr(ClassName,...) std::make_shared<ClassName>(##__VA_ARGS__)
 
 template<class T>
 using UniquePtr = std::unique_ptr<T>;
+template<typename T>
+using UniquePtrs = std::vector<UniquePtr<T>>;
 #define MakeUniquePtr(ClassName,...) std::make_unique<ClassName>(##__VA_ARGS__)
 
 // TODO: add log types.

@@ -12,9 +12,15 @@ public:
     using BaseInterface = typename RHIImplTraits::DescriptorInterface;
     
     explicit DescriptorManagerBase(IRHIContext& context)
-
         :m_common_context(context)
     {}
+
+
+    virtual void CompleteInitialize() override
+    {
+        
+    }
+    
 private:
     IRHIContext& m_common_context;
 
