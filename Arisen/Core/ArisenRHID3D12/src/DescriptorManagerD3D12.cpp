@@ -19,4 +19,3 @@ void DescriptorManagerD3D12::Iniitialize()
 
 
 ARISENRHI_D3D12_END_NAMESPACE
-No newline at end of file
