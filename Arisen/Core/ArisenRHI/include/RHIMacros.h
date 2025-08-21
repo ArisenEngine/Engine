@@ -19,7 +19,7 @@ using Ptrs = std::vector<Ptr<T>>;
 
 template<class T>
 using UniquePtr = std::unique_ptr<T>;
-template<typename T>
+template<class T>
 using UniquePtrs = std::vector<UniquePtr<T>>;
 #define MakeUniquePtr(ClassName,...) std::make_unique<ClassName>(##__VA_ARGS__)
 

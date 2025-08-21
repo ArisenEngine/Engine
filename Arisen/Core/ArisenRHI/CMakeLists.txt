@@ -17,6 +17,17 @@ file(GLOB_RECURSE ARISENRHI_HEADERS CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/interface/*.h
 )
 
+
+include(FetchContent)
+# 拉取 magic_enum
+message(STATUS ">>> Fetching magic_enum ...")
+FetchContent_Declare(
+    magic_enum
+    GIT_REPOSITORY https://github.com/Neargye/magic_enum.git
+    GIT_TAG        master   # 可以指定版本 tag，避免 master 改动
+)
+FetchContent_MakeAvailable(magic_enum)
+
 # 创建静态库
 add_library(ArisenRHI STATIC
     ${ARISENRHI_SOURCES}
@@ -48,6 +59,8 @@ target_link_libraries(ArisenRHI
     Core.Debugger
     Core.Infra
     Core.Platform
+    
+    magic_enum::magic_enum
 )
 
 

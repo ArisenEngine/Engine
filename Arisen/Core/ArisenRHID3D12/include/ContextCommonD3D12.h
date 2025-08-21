@@ -7,6 +7,11 @@
 
 ARISENRHI_D3D12_BEGIN_NAMEPSACE
 
+struct IRHIContextCommonD3D12 : public IRHIContext
+{
+    
+};
+
 template<typename TContext, typename TSettings> //requires std::is_base_of_v<ContextBase<>, TContext>
 class ContextCommonD3D12 : public TContext
 {
@@ -19,7 +24,9 @@ public:
     {
         TContext::Initialize();
         // create descriptor.
-        GetDescriptorManagerD3D12().Iniitialize();
+        GetDescriptorManagerD3D12().Initialize();
+
+        //  TODO:emit context inited.
     }
 
     const DeviceD3D12& GetDeviceD3D12() const noexcept
