@@ -49,6 +49,8 @@ void GameInstance::InitArisenRHI(HWND hwnd)
             Environment env;
             env.window_handle = hwnd;
             pRender_context = pDevice->CreateRenderContext(Settings, env);
+            pRender_context->SetName("Graphics Context");
+            
         }
         break;
     case RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_VULKAN:
