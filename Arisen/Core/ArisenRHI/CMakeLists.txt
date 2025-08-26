@@ -27,6 +27,12 @@ FetchContent_Declare(
     GIT_TAG        master   # 可以指定版本 tag，避免 master 改动
 )
 FetchContent_MakeAvailable(magic_enum)
+message(STATUS ">>> Fetching hlslpp ...")
+FetchContent_Declare(
+    hlslpp
+    GIT_REPOSITORY https://github.com/redorav/hlslpp.git
+    GIT_TAG 3.7
+)
 
 # 创建静态库
 add_library(ArisenRHI STATIC
