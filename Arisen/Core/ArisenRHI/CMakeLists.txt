@@ -20,7 +20,7 @@ file(GLOB_RECURSE ARISENRHI_HEADERS CONFIGURE_DEPENDS
 
 include(FetchContent)
 
-# Declare dependencies
+# Declare dependencies Test
 FetchContent_Declare(
     magic_enum
     GIT_REPOSITORY https://github.com/Neargye/magic_enum.git
