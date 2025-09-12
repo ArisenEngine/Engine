@@ -19,20 +19,38 @@ file(GLOB_RECURSE ARISENRHI_HEADERS CONFIGURE_DEPENDS
 
 
 include(FetchContent)
-# 拉取 magic_enum
-message(STATUS ">>> Fetching magic_enum ...")
+
+# Declare dependencies
 FetchContent_Declare(
     magic_enum
     GIT_REPOSITORY https://github.com/Neargye/magic_enum.git
-    GIT_TAG        master   # 可以指定版本 tag，避免 master 改动
+    GIT_TAG        v0.9.6   # Use a specific version tag to avoid updates
+    UPDATE_DISCONNECTED TRUE
 )
-FetchContent_MakeAvailable(magic_enum)
-message(STATUS ">>> Fetching hlslpp ...")
 FetchContent_Declare(
     hlslpp
     GIT_REPOSITORY https://github.com/redorav/hlslpp.git
     GIT_TAG 3.7
+    UPDATE_DISCONNECTED TRUE
 )
+
+# Check and fetch magic_enum
+FetchContent_GetProperties(magic_enum)
+if(NOT magic_enum_POPULATED)
+    message(STATUS ">>> Fetching magic_enum ...")
+else()
+    message(STATUS ">>> Found magic_enum locally.")
+endif()
+FetchContent_MakeAvailable(magic_enum)
+
+# Check and fetch hlslpp
+FetchContent_GetProperties(hlslpp)
+if(NOT hlslpp_POPULATED)
+    message(STATUS ">>> Fetching hlslpp ...")
+else()
+    message(STATUS ">>> Found hlslpp locally.")
+endif()
+FetchContent_MakeAvailable(hlslpp)
 
 # 创建静态库
 add_library(ArisenRHI STATIC
@@ -67,6 +85,7 @@ target_link_libraries(ArisenRHI
     Core.Platform
     
     magic_enum::magic_enum
+    hlslpp
 )
 
 
