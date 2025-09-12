@@ -5,6 +5,7 @@
 #include <dxgi1_5.h>
 
 #include "ExceptionHandle.h"
+#include "RenderPatternD3D12.h"
 #include "TypeConverterDX.h"
 #include "DebugUtils/Checks.h"
 
@@ -75,6 +76,12 @@ void RenderContextD3D12::Initialize()
 
     // create descriptor.
     ContextCommonD3D12::Initialize();
+}
+
+Ptr<IRenderPattern> RenderContextD3D12::CreateRenderPattern(const RenderPatternSettings& Settings) noexcept
+{
+    return nullptr;
+    //return MakePtr(RenderPatternD3D12, *this, Settings);
 }
 
 uint32_t RenderContextD3D12::GetNextFrameBufferIndex()

@@ -5,6 +5,7 @@
 #include "Containers/Containers.h"
 #include "Logger/Logger.h"
 #include "CommonFlags.hpp"
+#include "DescriptorHeap.h"
 #include "IRenderContext.h"
 
 GameInstance::~GameInstance()
@@ -50,7 +51,23 @@ void GameInstance::InitArisenRHI(HWND hwnd)
             env.window_handle = hwnd;
             pRender_context = pDevice->CreateRenderContext(Settings, env);
             pRender_context->SetName("Graphics Context");
-            
+
+            int32_t attachment_index = 0;
+            // create render pass pattern settings.
+            m_screen_pass_pattern_settings.shader_access_mask = {RenderPassAccess::ShaderResources, RenderPassAccess::Samplers};
+            m_screen_pass_pattern_settings.is_final_pass = true;
+
+            const Vector4F default_clear_color(0.0F, 0.2F, 0.4F, 1.0F);
+            m_screen_pass_pattern_settings.color_attachments = {
+                RenderPassColorAttachment(attachment_index,
+                TextureFormat::BGRA8Unorm,
+                RenderPassAttachment::LoadAction::Clear,
+                RenderPassAttachment::StoreAction::Store,
+                default_clear_color
+                )
+            };
+
+            // create render pattern.
         }
         break;
     case RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_VULKAN:

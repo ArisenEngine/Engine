@@ -3,6 +3,7 @@
 #include "IRHIContext.h"
 #include "RHIMacros.h"
 #include "RHITypes.h"
+#include "IRenderPattern.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
 struct RenderContextSettings
@@ -17,5 +18,7 @@ struct RenderContextSettings
 struct IRenderContext : public IRHIContext
 {
     const virtual RenderContextSettings& GetSettings() const noexcept = 0;
+
+    [[nodiscard]] virtual Ptr<IRenderPattern> CreateRenderPattern(const RenderPatternSettings& Settings) noexcept = 0;
 };
 ARISENRHI_END_NAMESPACE
