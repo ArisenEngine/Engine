@@ -1,5 +1,5 @@
 ﻿#include "DescriptorManagerD3D12.h"
-#include<magic_enum/magic_enum.hpp>
+#include<magic_enum.hpp>
 
 ARISENRHI_D3D12_BEGIN_NAMEPSACE
 

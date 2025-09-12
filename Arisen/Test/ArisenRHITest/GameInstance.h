@@ -7,6 +7,8 @@
 #include "RHITypes.h"
 #include <format>
 
+#include "IRenderPattern.h"
+
 using namespace ArisenRHI;
 
 class GameInstance
@@ -29,4 +31,5 @@ private:
 
     Ptr<IDevice> pDevice;
     Ptr<IRenderContext> pRender_context;
+    RenderPatternSettings m_screen_pass_pattern_settings;
 };

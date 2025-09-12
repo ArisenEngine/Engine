@@ -6,7 +6,7 @@
 #include "DebugUtils/Verifies.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
-    template<typename RHIImplTraits> requires std::is_base_of_v<IRenderContext, typename RHIImplTraits::RenderContextInterface>
+template<typename RHIImplTraits> requires std::is_base_of_v<IRenderContext, typename RHIImplTraits::RenderContextInterface>
 class RenderContextBase : public ContextBase<RHIImplTraits, typename RHIImplTraits::RenderContextInterface>
 {
 public:
