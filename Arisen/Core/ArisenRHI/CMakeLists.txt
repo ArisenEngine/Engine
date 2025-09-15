@@ -64,6 +64,9 @@ target_compile_features(ArisenRHI PUBLIC cxx_std_23)
 # 禁用 RTTI
 if(MSVC)
     target_compile_options(ArisenRHI PRIVATE /GR-)
+    # Prevent windows.h from defining min and max macros.
+    # Set to PUBLIC so any target linking against ArisenRHI inherits this definition.
+    target_compile_definitions(ArisenRHI PUBLIC NOMINMAX)
 else()
     target_compile_options(ArisenRHI PRIVATE -fno-rtti)
 endif()
@@ -86,7 +89,9 @@ target_link_libraries(ArisenRHI
     Core.Platform
     
     magic_enum::magic_enum
-    hlslpp
+    # hlslpp is a header-only library, so we only need its include directories,
+    # not to link against it.
+    # hlslpp
 )
 
 

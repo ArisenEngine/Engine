@@ -54,6 +54,12 @@ endif()
 # 可执行程序
 add_executable(ArisenRHITest ${ARISENRHITEST_SOURCES})
 
+# The NOMINMAX definition is now inherited from the ArisenRHI target,
+# so this block is no longer needed here.
+# if(MSVC)
+#     target_compile_definitions(ArisenRHITest PRIVATE NOMINMAX)
+# endif()
+
 # 设置为 GUI 子系统
 set_target_properties(ArisenRHITest PROPERTIES WIN32_EXECUTABLE TRUE)
 
@@ -62,6 +68,12 @@ target_include_directories(ArisenRHITest
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+# This is no longer needed as we are not trying to link hlslpp.lib anymore.
+# target_link_directories(ArisenRHITest
+#     PRIVATE
+#     ${ARISEN_OUTPUT_DIR}
+# )
 
 # 链接依赖库
 target_link_libraries(ArisenRHITest
