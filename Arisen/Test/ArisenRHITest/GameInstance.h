@@ -2,14 +2,21 @@
 #include <memory>
 #include <windows.h>
 
+#include "Frame.h"
 #include "IDevice.h"
-#include "ISwapChain.h"
 #include "RHITypes.h"
-#include <format>
 
 #include "IRenderPattern.h"
+#include "IViewState.h"
 
 using namespace ArisenRHI;
+
+// maybe app frame should be standard in a normal style.
+struct AppFrame final: public Frame
+{
+    // renderCommandList
+    // RenderCommandSet.
+};
 
 class GameInstance
 {
@@ -32,4 +39,8 @@ private:
     Ptr<IDevice> pDevice;
     Ptr<IRenderContext> pRender_context;
     RenderPatternSettings m_screen_pass_pattern_settings;
+    Ptr<IRenderPattern> m_screen_pass_pattern_ptr;
+    Ptr<IViewState> m_view_state_ptr;
+
+    std::vector<AppFrame> m_frames;
 };

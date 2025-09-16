@@ -1,8 +1,8 @@
 ﻿#pragma once
-#include "BasicTypes.h"
 #include "IRHIContext.h"
 #include "RHIMacros.h"
 #include "RHITypes.h"
+#include "IViewState.h"
 #include "IRenderPattern.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
@@ -20,5 +20,6 @@ struct IRenderContext : public IRHIContext
     const virtual RenderContextSettings& GetSettings() const noexcept = 0;
 
     [[nodiscard]] virtual Ptr<IRenderPattern> CreateRenderPattern(const RenderPatternSettings& Settings) noexcept = 0;
+    [[nodiscard]] virtual Ptr<IViewState> CreateViewState(const ViewSettings& view_settings) noexcept = 0;
 };
 ARISENRHI_END_NAMESPACE
