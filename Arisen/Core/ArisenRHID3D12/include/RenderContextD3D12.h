@@ -18,6 +18,7 @@ public:
     void Initialize() override;
 
     virtual Ptr<IRenderPattern> CreateRenderPattern(const RenderPatternSettings& Settings) noexcept override;
+    virtual Ptr<IViewState> CreateViewState(const ViewSettings& view_settings) noexcept override;
 protected:
     virtual uint32_t GetNextFrameBufferIndex() override;
 private:

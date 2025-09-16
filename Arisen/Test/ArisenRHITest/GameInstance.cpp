@@ -5,8 +5,10 @@
 #include "Containers/Containers.h"
 #include "Logger/Logger.h"
 #include "CommonFlags.hpp"
+#include "DataUtils.h"
 #include "DescriptorHeap.h"
 #include "IRenderContext.h"
+#include "ViewStateD3D12.h"
 
 GameInstance::~GameInstance()
 {
@@ -68,6 +70,21 @@ void GameInstance::InitArisenRHI(HWND hwnd)
             };
 
             // create render pattern.
+            m_screen_pass_pattern_ptr = pRender_context->CreateRenderPattern(m_screen_pass_pattern_settings);
+            m_screen_pass_pattern_ptr->SetName("Final Screen Pass Pattern");
+
+            // Set view state.
+            m_view_state_ptr = pRender_context->CreateViewState({
+                {GetRect(Settings.frame_size)},
+                {GetRect(Settings.frame_size)}
+            });
+
+            // Create Frame Resources.
+            for (uint32_t frame_index = 0; frame_index < Settings.frame_buffers_Count; frame_index++ )
+            {
+                AppFrame& frame = m_frames.emplace_back(frame_index);
+                /Create screenTexture.
+            }
         }
         break;
     case RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_VULKAN:

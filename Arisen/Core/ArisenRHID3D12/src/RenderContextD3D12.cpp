@@ -7,6 +7,7 @@
 #include "ExceptionHandle.h"
 #include "RenderPatternD3D12.h"
 #include "TypeConverterDX.h"
+#include "ViewStateD3D12.h"
 #include "DebugUtils/Checks.h"
 
 ARISENRHI_D3D12_BEGIN_NAMEPSACE
@@ -80,8 +81,12 @@ void RenderContextD3D12::Initialize()
 
 Ptr<IRenderPattern> RenderContextD3D12::CreateRenderPattern(const RenderPatternSettings& Settings) noexcept
 {
-    return nullptr;
-    //return MakePtr(RenderPatternD3D12, *this, Settings);
+    return MakePtr(RenderPatternD3D12, *this, Settings);
+}
+
+Ptr<IViewState> RenderContextD3D12::CreateViewState(const ViewSettings& view_settings) noexcept
+{
+    return MakePtr(ViewStateD3D12, view_settings);
 }
 
 uint32_t RenderContextD3D12::GetNextFrameBufferIndex()
