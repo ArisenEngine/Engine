@@ -1,11 +1,9 @@
 #pragma once
-#include "IResourceD3D12.h"
-#include "ITexture.h"
 #include "RHIMacrosD3D12.h"
 ARISENRHI_D3D12_BEGIN_NAMEPSACE
-struct ITextureD3D12 : IResourceD3D12<ITexture>
+template<typename BaseResourceInterface>
+struct IResourceD3D12 : BaseResourceInterface
 {
     
 };
-
 ARISENRHI_D3D12_END_NAMESPACE

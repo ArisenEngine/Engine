@@ -6,6 +6,7 @@
 
 #include "ExceptionHandle.h"
 #include "RenderPatternD3D12.h"
+#include "TextureD3D12.h"
 #include "TypeConverterDX.h"
 #include "ViewStateD3D12.h"
 #include "DebugUtils/Checks.h"
@@ -87,6 +88,11 @@ Ptr<IRenderPattern> RenderContextD3D12::CreateRenderPattern(const RenderPatternS
 Ptr<IViewState> RenderContextD3D12::CreateViewState(const ViewSettings& view_settings) noexcept
 {
     return MakePtr(ViewStateD3D12, view_settings);
+}
+
+Ptr<ITexture> RenderContextD3D12::CreateTexture(const TextureSettings& settings) const
+{
+    return MakePtr(TextureD3D12, *this, settings);
 }
 
 uint32_t RenderContextD3D12::GetNextFrameBufferIndex()
