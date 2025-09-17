@@ -5,6 +5,7 @@
 #include "ICommandList.h"
 #include "IDescriptorManager.h"
 #include "IDevice.h"
+#include "ITexture.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
 enum class ContextType
@@ -19,10 +20,11 @@ enum class ContextOption
     TransferWithD3D12DirectQueue,
 };
 
-struct IRHIContext : public IObject
+struct IRHIContext : IObject
 {
     virtual Ptr<ICommandKit> CreateCommandKit(CommandListType type) const = 0;
     virtual Ptr<ICommandQueue> CreateCommandQueue(CommandListType type) const = 0;
+    [[nodiscard]] virtual Ptr<ITexture> CreateTexture(const TextureSettings& settings) const = 0;
     
     virtual ICommandKit& GetDefaultCommandKit(CommandListType type) const = 0;
     virtual const IDevice& GetDevice() const = 0;

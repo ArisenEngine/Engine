@@ -19,6 +19,7 @@ public:
 
     virtual Ptr<IRenderPattern> CreateRenderPattern(const RenderPatternSettings& Settings) noexcept override;
     virtual Ptr<IViewState> CreateViewState(const ViewSettings& view_settings) noexcept override;
+    [[nodiscard]] virtual Ptr<ITexture> CreateTexture(const TextureSettings& settings) const override;
 protected:
     virtual uint32_t GetNextFrameBufferIndex() override;
 private:
