@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "IRenderPass.h"
 #include "IRHIContext.h"
 #include "RHIMacros.h"
 #include "RHITypes.h"
@@ -21,5 +22,6 @@ struct IRenderContext : public IRHIContext
 
     [[nodiscard]] virtual Ptr<IRenderPattern> CreateRenderPattern(const RenderPatternSettings& Settings) noexcept = 0;
     [[nodiscard]] virtual Ptr<IViewState> CreateViewState(const ViewSettings& view_settings) noexcept = 0;
+    [[nodiscard]] virtual Ptr<IRenderPass> CreateRenderPass(const IRenderPattern& render_pattern, const RenderPassSettings& settings) noexcept = 0;
 };
 ARISENRHI_END_NAMESPACE

@@ -18,7 +18,7 @@ using Ptrs = std::vector<Ptr<T>>;
 #define MakePtr(ClassName,...) std::make_shared<ClassName>(##__VA_ARGS__)
 
 template<class T>
-using OPT = std::optional<T>;
+using Opt = std::optional<T>;
 
 template<class T>
 using UniquePtr = std::unique_ptr<T>;

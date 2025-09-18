@@ -1,5 +1,6 @@
 #pragma once
 #include "IRenderPass.h"
+#include "IRenderPattern.h"
 #include "ObjectBase.h"
 #include "RHIMacros.h"
 
@@ -8,6 +9,14 @@ template<typename RHIImplTraits> requires std::is_base_of_v<IRenderPass, typenam
 class RenderPassBase : public ObjectBase<typename RHIImplTraits::RenderPassInterface>
 {
 public:
+    RenderPassBase(const IRenderPattern& render_pattern, const RenderPassSettings& settings)
+    {
+        /
+    }
+
     
 };
+
+
+
 ARISENRHI_END_NAMESPACE

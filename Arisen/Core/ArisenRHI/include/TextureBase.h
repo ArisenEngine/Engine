@@ -2,6 +2,7 @@
 #include "ITexture.h"
 #include "ObjectBase.h"
 #include "ResourceBase.h"
+#include "ResourceViewBase.h"
 #include "RHIMacros.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
@@ -13,8 +14,15 @@ public:
         :ResourceBase<typename RHIImplTraits::TextureInterface>(context, ResourceType::Texture),m_settings(settings)
     {}
 
+    // ITexture
     virtual const TextureSettings& GetSettings() const override {return m_settings;}
+    [[nodiscard]] virtual TextureViewBase GetTextureView()
+    {
+        
+    };
 private:
     const TextureSettings m_settings;
 };
+
+
 ARISENRHI_END_NAMESPACE
