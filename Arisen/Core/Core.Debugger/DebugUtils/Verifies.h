@@ -23,3 +23,8 @@
     }while(0)
 
 #define VERIFY_NOT_NULL(arg, log) if(arg == nullptr) LOG_AND_THROW(log)
+
+#define VERIFY(expression)\
+    do{\
+        if(!(expression)) {LOG_AND_THROW(std::format("VERIFY failed: {}",#expression));}\
+    }while (0)

@@ -48,11 +48,11 @@ void GameInstance::InitArisenRHI(HWND hwnd)
 
             RHIFactoryD3D12* FactoryD3D12 = CreateRHIFactoryD3D12();
             pDevice = FactoryD3D12->CreateDeviceD3D12(EngineCreateInfo);
-            RenderContextSettings Settings;
+            RenderContextSettings context_ettings;
             Environment env;
             env.window_handle = hwnd;
-            pRender_context = pDevice->CreateRenderContext(Settings, env);
-            pRender_context->SetName("Graphics Context");
+            m_render_context_ptr = pDevice->CreateRenderContext(context_ettings, env);
+            m_render_context_ptr->SetName("Graphics Context");
 
             int32_t attachment_index = 0;
             // create render pass pattern settings.
@@ -70,20 +70,29 @@ void GameInstance::InitArisenRHI(HWND hwnd)
             };
 
             // create render pattern.
-            m_screen_pass_pattern_ptr = pRender_context->CreateRenderPattern(m_screen_pass_pattern_settings);
+            m_screen_pass_pattern_ptr = m_render_context_ptr->CreateRenderPattern(m_screen_pass_pattern_settings);
             m_screen_pass_pattern_ptr->SetName("Final Screen Pass Pattern");
 
             // Set view state.
-            m_view_state_ptr = pRender_context->CreateViewState({
-                {GetRect(Settings.frame_size)},
-                {GetRect(Settings.frame_size)}
+            m_view_state_ptr = m_render_context_ptr->CreateViewState({
+                {GetRect(context_ettings.frame_size)},
+                {GetRect(context_ettings.frame_size)}
             });
 
             // Create Frame Resources.
-            for (uint32_t frame_index = 0; frame_index < Settings.frame_buffers_Count; frame_index++ )
+            for (uint32_t frame_index = 0; frame_index < context_ettings.frame_buffers_Count; frame_index++ )
             {
                 AppFrame& frame = m_frames.emplace_back(frame_index);
-                /Create screenTexture.
+                frame.screen_texture = m_render_context_ptr->CreateTexture(ConvertToTextureSettings(context_ettings, frame_index));
+                frame.screen_texture->SetName(std::format("frame buffer {}", frame_index));
+
+                std::vector<TextureViewBase> attachments{frame.screen_texture->GetTextureView};
+                
+                
+                frame.screen_pass = m_render_context_ptr->CreateRenderPass(m_screen_pass_pattern_ptr,
+                    {
+                        
+                    });
             }
         }
         break;
