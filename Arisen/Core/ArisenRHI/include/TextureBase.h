@@ -16,9 +16,9 @@ public:
 
     // ITexture
     virtual const TextureSettings& GetSettings() const override {return m_settings;}
-    [[nodiscard]] virtual TextureViewBase GetTextureView()
+    [[nodiscard]] virtual TextureViewBase GetTextureView() override final
     {
-        
+        return TextureViewBase(*this);
     };
 private:
     const TextureSettings m_settings;
