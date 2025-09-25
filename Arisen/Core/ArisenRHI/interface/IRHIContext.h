@@ -5,6 +5,7 @@
 #include "ICommandList.h"
 #include "IDescriptorManager.h"
 #include "IDevice.h"
+#include "IProgram.h"
 #include "ITexture.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
@@ -25,6 +26,7 @@ struct IRHIContext : IObject
     virtual Ptr<ICommandKit> CreateCommandKit(CommandListType type) const = 0;
     virtual Ptr<ICommandQueue> CreateCommandQueue(CommandListType type) const = 0;
     [[nodiscard]] virtual Ptr<ITexture> CreateTexture(const TextureSettings& settings) const = 0;
+    [[nodiscard]] virtual Ptr<IProgram> CreateProgram(const ProgramSettings& settings) const = 0;
     
     virtual ICommandKit& GetDefaultCommandKit(CommandListType type) const = 0;
     virtual const IDevice& GetDevice() const = 0;

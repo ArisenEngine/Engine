@@ -7,6 +7,7 @@
 #include "ExceptionHandle.h"
 #include "RenderPassD3D12.h"
 #include "RenderPatternD3D12.h"
+#include "RenderPipelineStateObjectD3D12.h"
 #include "TextureD3D12.h"
 #include "TypeConverterDX.h"
 #include "ViewStateD3D12.h"
@@ -95,6 +96,11 @@ Ptr<IRenderPass> RenderContextD3D12::CreateRenderPass(const IRenderPattern& rend
     const RenderPassSettings& settings) noexcept
 {
     return MakePtr(RenderPassD3D12, render_pattern, settings);
+}
+
+Ptr<IRenderPipelineStateObject> RenderContextD3D12::CreateRenderPipelineStateObject(const RenderPipelineStateObjectSettings& settings) noexcept
+{
+    return MakePtr(RenderPipelineStateObjectD3D12, *this, settings);
 }
 
 Ptr<ITexture> RenderContextD3D12::CreateTexture(const TextureSettings& settings) const

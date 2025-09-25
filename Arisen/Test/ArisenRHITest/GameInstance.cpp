@@ -86,14 +86,17 @@ void GameInstance::InitArisenRHI(HWND hwnd)
                 frame.screen_texture = m_render_context_ptr->CreateTexture(ConvertToTextureSettings(context_ettings, frame_index));
                 frame.screen_texture->SetName(std::format("frame buffer {}", frame_index));
 
-                std::vector<TextureViewBase> attachments{frame.screen_texture->GetTextureView}; 
+                std::vector<TextureViewBase> attachments{frame.screen_texture->GetTextureView()}; 
+                //depth
                 
-                
-                frame.screen_pass = m_render_context_ptr->CreateRenderPass(m_screen_pass_pattern_ptr,
+                frame.screen_pass = m_render_context_ptr->CreateRenderPass(*m_screen_pass_pattern_ptr,
                     {
-                        
+                        attachments, context_ettings.frame_size
                     });
             }
+
+            // create PSO
+            
         }
         break;
     case RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_VULKAN:

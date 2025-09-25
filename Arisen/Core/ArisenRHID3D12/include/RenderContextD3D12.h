@@ -24,6 +24,7 @@ public:
     [[nodiscard]] virtual Ptr<IRenderPattern> CreateRenderPattern(const RenderPatternSettings& Settings) noexcept override;
     [[nodiscard]] virtual Ptr<IViewState> CreateViewState(const ViewSettings& view_settings) noexcept override;
     [[nodiscard]]virtual Ptr<IRenderPass> CreateRenderPass(const IRenderPattern& render_pattern, const RenderPassSettings& settings) noexcept override;
+    [[nodiscard]] virtual Ptr<IRenderPipelineStateObject> CreateRenderPipelineStateObject(const RenderPipelineStateObjectSettings& settings) noexcept override final;
 
 
     const ComPtr<IDXGISwapChain3>& GetNativeSwapChain()const {return m_swap_chain_cptr;}

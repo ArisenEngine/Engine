@@ -4,10 +4,10 @@
 #include "CoreMinimalD3D12.h"
 #include "DescriptorManagerD3D12.h"
 #include "DeviceD3D12.h"
+#include "ProgramD3D12.h"
 
 ARISENRHI_D3D12_BEGIN_NAMEPSACE
-
-struct IRHIContextCommonD3D12 : public IRHIContext
+    struct IRHIContextCommonD3D12 : public IRHIContext
 {
     
 };
@@ -39,6 +39,11 @@ public:
         return MakePtr(CommandQueueD3D12, *this, type);
     }
 
+    [[nodiscard]] virtual Ptr<IProgram> CreateProgram(const ProgramSettings& settings) const
+    {
+        return MakePtr(ProgramD3D12, this, settings);
+    }
+
     CommandQueueD3D12& GetDefaultCommandQueueD3D12(CommandListType type)
     {
         return static_cast<CommandQueueD3D12&>(ContextCommonD3D12::GetDefaultCommandKit(type).GetQueue());
@@ -48,6 +53,8 @@ public:
     {
         return static_cast<DescriptorManagerD3D12&>(ContextCommonD3D12::GetDescriptorManager());
     }
+
+    
 };
 
 
