@@ -86,8 +86,8 @@ enum class RenderPassAccess : uint32_t
 struct RenderPatternSettings
 {
     std::vector<RenderPassColorAttachment> color_attachments;
-    OPT<RenderPassDepthAttachment> depth_attachment;
-    OPT<RenderPassStencilAttachment> stencil_attachment;
+    Opt<RenderPassDepthAttachment> depth_attachment;
+    Opt<RenderPassStencilAttachment> stencil_attachment;
     
     EnumMask<RenderPassAccess> shader_access_mask;
     bool is_final_pass = true;

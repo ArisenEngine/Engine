@@ -7,6 +7,6 @@ ARISENRHI_D3D12_BEGIN_NAMEPSACE
 class RenderPassD3D12 final : public RenderPassBase<RHID3D12ImplTraits>
 {
 public:
-    
+    RenderPassD3D12(const IRenderPattern& render_pattern, const RenderPassSettings& settings);
 };
 ARISENRHI_D3D12_END_NAMESPACE

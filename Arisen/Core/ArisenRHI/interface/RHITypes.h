@@ -29,4 +29,11 @@ enum class TextureFormat : uint16_t
     BGRA8Unorm_sRGB,
 };
 
+struct AttachmentFormats
+{
+    std::vector<TextureFormat> colors;
+    TextureFormat depth = TextureFormat::UnKnown;
+    TextureFormat stencil = TextureFormat::UnKnown;
+};
+
 ARISENRHI_END_NAMESPACE

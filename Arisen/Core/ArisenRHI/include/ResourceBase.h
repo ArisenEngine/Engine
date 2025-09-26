@@ -11,7 +11,7 @@ class ResourceBase : public ObjectBase<BaseInterface>
 public:
     ResourceBase(const IRHIContext& context, ResourceType resourceType)
         :m_resourceType(resourceType), m_context(context){}
-private:
+protected:
     const IRHIContext& m_context;
     ResourceType m_resourceType;
 };
