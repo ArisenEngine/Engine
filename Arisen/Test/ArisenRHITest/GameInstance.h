@@ -37,7 +37,7 @@ private:
     RHI_DEVICE_TYPE DeviceType{RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_D3D12};
 
     Ptr<IDevice> pDevice;
-    Ptr<IRenderContext> pRender_context;
+    Ptr<IRenderContext> m_render_context_ptr;
     RenderPatternSettings m_screen_pass_pattern_settings;
     Ptr<IRenderPattern> m_screen_pass_pattern_ptr;
     Ptr<IViewState> m_view_state_ptr;

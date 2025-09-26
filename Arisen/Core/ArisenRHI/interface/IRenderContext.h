@@ -1,12 +1,14 @@
 ﻿#pragma once
+#include "IRenderPass.h"
 #include "IRHIContext.h"
 #include "RHIMacros.h"
 #include "RHITypes.h"
 #include "IViewState.h"
 #include "IRenderPattern.h"
+#include "IRenderPipelineStateObject.h"
 
 ARISENRHI_BEGIN_NAMEPSACE
-struct RenderContextSettings
+    struct RenderContextSettings
 {
     FrameSize frame_size{800, 600};
     TextureFormat texture_format{TextureFormat::BGRA8Unorm};
@@ -21,5 +23,7 @@ struct IRenderContext : public IRHIContext
 
     [[nodiscard]] virtual Ptr<IRenderPattern> CreateRenderPattern(const RenderPatternSettings& Settings) noexcept = 0;
     [[nodiscard]] virtual Ptr<IViewState> CreateViewState(const ViewSettings& view_settings) noexcept = 0;
+    [[nodiscard]] virtual Ptr<IRenderPass> CreateRenderPass(const IRenderPattern& render_pattern, const RenderPassSettings& settings) noexcept = 0;
+    [[nodiscard]] virtual Ptr<IRenderPipelineStateObject> CreateRenderPipelineStateObject(const RenderPipelineStateObjectSettings& settings) noexcept = 0;
 };
 ARISENRHI_END_NAMESPACE

@@ -2,9 +2,11 @@
 #include "CoreMinimalD3D12.h"
 #include "IRenderContext.h"
 #include "IDescriptorManager.h"
+#include "IProgramD3D12.h"
 #include "IRenderContextD3D12.h"
 #include "IRenderPassD3D12.h"
 #include "IRenderPattern.h"
+#include "IRenderPipelineStateObjectD3D12.h"
 #include "ITextureD3D12.h"
 #include "IViewStateD3D12.h"
 
@@ -19,6 +21,8 @@ struct RHID3D12ImplTraits
     using ViewStateInterface = IViewStateD3D12;
     using TextureInterface = ITextureD3D12;
     using RenderPassInterface = IRenderPassD3D12;
+    using ProgramInterface = IProgramD3D12;
+    using RenderPipelineStateObjectInterface = IRenderPipelineStateObjectD3D12;
     
     using DescriptorManagerImplType = DescriptorManagerD3D12;
 };

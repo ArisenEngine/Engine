@@ -5,7 +5,9 @@
 #include <dxgi1_5.h>
 
 #include "ExceptionHandle.h"
+#include "RenderPassD3D12.h"
 #include "RenderPatternD3D12.h"
+#include "RenderPipelineStateObjectD3D12.h"
 #include "TextureD3D12.h"
 #include "TypeConverterDX.h"
 #include "ViewStateD3D12.h"
@@ -88,6 +90,17 @@ Ptr<IRenderPattern> RenderContextD3D12::CreateRenderPattern(const RenderPatternS
 Ptr<IViewState> RenderContextD3D12::CreateViewState(const ViewSettings& view_settings) noexcept
 {
     return MakePtr(ViewStateD3D12, view_settings);
+}
+
+Ptr<IRenderPass> RenderContextD3D12::CreateRenderPass(const IRenderPattern& render_pattern,
+    const RenderPassSettings& settings) noexcept
+{
+    return MakePtr(RenderPassD3D12, render_pattern, settings);
+}
+
+Ptr<IRenderPipelineStateObject> RenderContextD3D12::CreateRenderPipelineStateObject(const RenderPipelineStateObjectSettings& settings) noexcept
+{
+    return MakePtr(RenderPipelineStateObjectD3D12, *this, settings);
 }
 
 Ptr<ITexture> RenderContextD3D12::CreateTexture(const TextureSettings& settings) const

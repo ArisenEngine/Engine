@@ -20,7 +20,6 @@ enum class TextureDimensionType : uint32_t
 
 struct IResource : IObject
 {
-public:
     
 };
 ARISENRHI_END_NAMESPACE
