@@ -7,6 +7,7 @@
 #include "RHITypes.h"
 
 #include "IRenderPattern.h"
+#include "IRenderPipelineStateObject.h"
 #include "IViewState.h"
 
 using namespace ArisenRHI;
@@ -41,6 +42,7 @@ private:
     RenderPatternSettings m_screen_pass_pattern_settings;
     Ptr<IRenderPattern> m_screen_pass_pattern_ptr;
     Ptr<IViewState> m_view_state_ptr;
+    Ptr<IRenderPipelineStateObject> m_pso_ptr;
 
     std::vector<AppFrame> m_frames;
 };
