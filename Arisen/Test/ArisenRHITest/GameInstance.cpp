@@ -96,7 +96,15 @@ void GameInstance::InitArisenRHI(HWND hwnd)
             }
 
             // create PSO
-            
+            m_pso_ptr = m_render_context_ptr->CreateRenderPipelineStateObject({
+                .program = m_render_context_ptr->CreateProgram({
+                    .shader_set = {
+                        {ShaderType::Vertex, {}},
+                        {}
+                    },
+                    .attachment_formats = 
+                }),
+            });
         }
         break;
     case RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_VULKAN:
