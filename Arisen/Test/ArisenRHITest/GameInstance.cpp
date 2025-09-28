@@ -8,6 +8,7 @@
 #include "DataUtils.h"
 #include "DescriptorHeap.h"
 #include "IRenderContext.h"
+#include "ResourceProvider.h"
 #include "ViewStateD3D12.h"
 
 GameInstance::~GameInstance()
@@ -86,9 +87,9 @@ void GameInstance::InitArisenRHI(HWND hwnd)
                 frame.screen_texture = m_render_context_ptr->CreateTexture(ConvertToTextureSettings(context_ettings, frame_index));
                 frame.screen_texture->SetName(std::format("frame buffer {}", frame_index));
 
-                std::vector<TextureViewBase> attachments{frame.screen_texture->GetTextureView()}; 
+                std::vector<TextureViewBase> attachments{frame.screen_texture->GetTextureView()};
                 //depth
-                
+
                 frame.screen_pass = m_render_context_ptr->CreateRenderPass(*m_screen_pass_pattern_ptr,
                     {
                         attachments, context_ettings.frame_size
@@ -99,12 +100,16 @@ void GameInstance::InitArisenRHI(HWND hwnd)
             m_pso_ptr = m_render_context_ptr->CreateRenderPipelineStateObject({
                 .program = m_render_context_ptr->CreateProgram({
                     .shader_set = {
-                        {ShaderType::Vertex, {}},
-                        {}
+                        {ShaderType::Vertex, {ResourceProvider::Get(), "HelloTriangle","VS"}},
+                        {ShaderType::Pixel, {ResourceProvider::Get(), "HelloTriangle","PS"}},
                     },
-                    .attachment_formats = 
+                    .attachment_formats = m_screen_pass_pattern_ptr->GetAttachmentFormats()
                 }),
+                .render_pattern = m_screen_pass_pattern_ptr.get()
             });
+
+            const ICommandQueue& cmd_queue = m_render_context_ptr->GetDefaultCommandKit(CommandListType::Render).GetQueue();
+            /
         }
         break;
     case RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_VULKAN:
