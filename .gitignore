@@ -1,3 +1,7 @@
+# Ignore editor config files
+.editorconfig
+.clang-format
+
 .VSCodeCounter
 .vs
 bin

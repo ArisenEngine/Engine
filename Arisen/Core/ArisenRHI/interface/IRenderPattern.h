@@ -95,5 +95,6 @@ struct RenderPatternSettings
 
 struct IRenderPattern : public IObject
 {
+    [[nodiscard]] virtual AttachmentFormats GetAttachmentFormats() const = 0;
 };
 ARISENRHI_END_NAMESPACE
