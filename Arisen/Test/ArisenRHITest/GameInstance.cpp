@@ -109,7 +109,9 @@ void GameInstance::InitArisenRHI(HWND hwnd)
             });
 
             const ICommandQueue& cmd_queue = m_render_context_ptr->GetDefaultCommandKit(CommandListType::Render).GetQueue();
-            /
+            for (Frame& frame : m_frames) {
+
+            }
         }
         break;
     case RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_VULKAN:

@@ -14,6 +14,11 @@ enum class CommandListType
 
 struct ICommandList : public IObject
 {
-       
+
+};
+
+struct IRenderCommandList : ICommandList
+{
+
 };
 ARISENRHI_END_NAMESPACE
