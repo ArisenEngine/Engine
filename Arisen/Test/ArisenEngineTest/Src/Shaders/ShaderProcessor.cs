@@ -12,7 +12,7 @@ public class ShaderProcessor
             var shaderContent = File.ReadAllText(fullPath);
             var shaderLabParser = new ShaderLabParser(shaderContent);
             var shaderLabShader = shaderLabParser.ParseGraphicsShader();
-            var metaPath = Path.Combine(path, fileName + ".meta");
+            var metaPath = Path.Combine(path, fileName + ".yaml");
             Serialization.SerializationUtil.Serialize(shaderLabShader, metaPath);
             Console.WriteLine($"Parse shader:{fileName}, output:{metaPath}");
         }
