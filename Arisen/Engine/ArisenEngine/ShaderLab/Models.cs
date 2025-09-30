@@ -54,6 +54,28 @@ public class BlendState
     public RenderStateValue? DstAlpha;
 }
 
+// 基础渲染状态集合（最小化子集，覆盖常见 ShaderLab 风格语义）
+public class RenderStates
+{
+    // 混合
+    public BlendState Blend;
+
+    // 剔除（Back/Front/Off）
+    public string Cull;
+
+    // 深度写入（On/Off）
+    public string ZWrite;
+
+    // 深度测试函数（LEqual/Less/Greater/GEqual/Equal/NotEqual/Always/Never）
+    public string ZTest;
+
+    // 颜色写掩码（RGBA/None/单通道组合）
+    public string ColorMask;
+
+    // Stencil（先提供原始文本，后续可细分字段）
+    public string StencilRaw;
+}
+
 public class ShaderLabShader
 {
     public string name;
@@ -87,7 +109,23 @@ public class Pass
 {
     public string name;
     public string tagsRaw;
+    // 解析后的标签字典（例如 { "LightMode": "ForwardBase" }）
+    public Dictionary<string, string> tags = new ();
+    // 渲染状态集合
+    public RenderStates states = new ();
+    // 程序块中的HLSL源码（HLSLPROGRAM..ENDHLSL），用于工具链落地及编译
     public string hlslCode;
+    // 从代码与指令解析出的包含文件清单（行内 #include / include_with_pragmas 提取的相对路径）
+    public List<string> includedHLSLs = new ();
+    // Pragma 信息
+    public string target; // ps_6_8 / vs_6_8 等
+    public string vertexEntry;
+    public string fragmentEntry;
+    public string geometryEntry;
+    public string hullEntry;
+    public string domainEntry;
+    public List<string> multiCompile = new ();
+    public List<string> shaderFeature = new ();
     public List<HlslStruct> hlslStructs = new ();
     public List<HlslVariable> variables = new ();
     public Dictionary<PassStage, string> passStages = new ();

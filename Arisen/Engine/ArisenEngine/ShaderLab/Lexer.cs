@@ -25,6 +25,9 @@ public class Token
     public TokenType type;
     public string text;
     public int line;
+    // 起始字符索引与长度，用于基于源文本的区间切片
+    public int start;
+    public int length;
     public override string ToString() =>  $"{line}: {type} => {text}";
 }
 
@@ -55,6 +58,15 @@ public class Lexer
         Tokenize();
     }
 
+    // 返回原始源码在 [start, end) 区间的子串，用于保持原始格式的切片
+    public string Slice(int start, int endExclusive)
+    {
+        if (start < 0) start = 0;
+        if (endExclusive > k_Input.Length) endExclusive = k_Input.Length;
+        if (endExclusive <= start) return string.Empty;
+        return k_Input.Substring(start, endExclusive - start);
+    }
+
     private void Tokenize()
     {
         while (m_Position < k_Input.Length)
@@ -77,37 +89,37 @@ public class Lexer
             else if (match.Groups["comment"].Success)
             {
                 var type = value.StartsWith("//") ? TokenType.CommentLine : TokenType.CommentBlock;
-                m_Tokens.Add(new Token { type = type, text = value, line = _line });
+                m_Tokens.Add(new Token { type = type, text = value, line = _line, start = m_Position, length = value.Length });
                 _line += CountNewlines(value);
             }
             else if (match.Groups["preprocessor"].Success)
             {
-                m_Tokens.Add(new Token { type = TokenType.PreprocessorDirective, text = value.Trim(), line = _line });
+                m_Tokens.Add(new Token { type = TokenType.PreprocessorDirective, text = value.Trim(), line = _line, start = m_Position, length = value.Length });
                 _line += CountNewlines(value);
             }
             else if (match.Groups["string"].Success)
             {
-                m_Tokens.Add(new Token { type = TokenType.StringLiteral, text = value, line = _line });
+                m_Tokens.Add(new Token { type = TokenType.StringLiteral, text = value, line = _line, start = m_Position, length = value.Length });
                 _line += CountNewlines(value);
             }
             else if (match.Groups["float"].Success)
             {
-                m_Tokens.Add(new Token { type = TokenType.FloatLiteral, text = value, line = _line });
+                m_Tokens.Add(new Token { type = TokenType.FloatLiteral, text = value, line = _line, start = m_Position, length = value.Length });
                 _line += CountNewlines(value);
             }
             else if (match.Groups["int"].Success)
             {
-                m_Tokens.Add(new Token { type = TokenType.IntegerLiteral, text = value, line = _line });
+                m_Tokens.Add(new Token { type = TokenType.IntegerLiteral, text = value, line = _line, start = m_Position, length = value.Length });
                 _line += CountNewlines(value);
             }
             else if (match.Groups["identifier"].Success)
             {
-                m_Tokens.Add(new Token { type = TokenType.Identifier, text = value, line = _line });
+                m_Tokens.Add(new Token { type = TokenType.Identifier, text = value, line = _line, start = m_Position, length = value.Length });
                 _line += CountNewlines(value);
             }
             else if (match.Groups["symbol"].Success)
             {
-                m_Tokens.Add(new Token { type = TokenType.Symbol, text = value, line = _line });
+                m_Tokens.Add(new Token { type = TokenType.Symbol, text = value, line = _line, start = m_Position, length = value.Length });
                 _line += CountNewlines(value);
             }
             else
@@ -119,7 +131,7 @@ public class Lexer
             m_Position += value.Length;
         }
 
-        m_Tokens.Add(new Token { type = TokenType.EndOfFile, text = "<EOF>", line = _line + 1 });
+        m_Tokens.Add(new Token { type = TokenType.EndOfFile, text = "<EOF>", line = _line + 1, start = k_Input.Length, length = 0 });
         
         // TODO: 测试用
         RemovePropertiesBlock(); 

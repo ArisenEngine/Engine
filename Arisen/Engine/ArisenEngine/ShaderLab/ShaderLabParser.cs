@@ -73,16 +73,39 @@ public class ShaderLabParser
             }
             else if (Match(TokenType.Identifier, "HLSLINCLUDE"))
             {
-                Next();
+                var startTok = Next();
+                int sliceStart = startTok.start + startTok.length;
                 var includedHlsl = new IncludedHLSL()
                 {
                     passIndex = -1,
                     subShaderIndex = -1
                 };
-                var hlslCode = new StringBuilder();
-                ParseHlslCode(hlslCode);
-                includedHlsl.hlslCode = hlslCode.ToString();
+                while (!Match(TokenType.Identifier, "ENDHLSL"))
+                {
+                    if (Match(TokenType.EndOfFile))
+                    {
+                        Debug.Logger.Error("Unexpected EOF while parsing HLSLINCLUDE block");
+                        break;
+                    }
+                    if (Match(TokenType.PreprocessorDirective))
+                    {
+                        var directiveTok = Next();
+                        m_Preprocessor.ProcessDirective(directiveTok.text);
+                        continue;
+                    }
+                    Next();
+                }
+                var endTok = Expect(TokenType.Identifier, "ENDHLSL");
+                int sliceEnd = endTok.start;
+                includedHlsl.hlslCode = m_Lexer.Slice(sliceStart, sliceEnd);
                 shader.includedHLSLs.Add(includedHlsl);
+            }
+            else if (Match(TokenType.Identifier, "CustomEditor"))
+            {
+                // 引擎外的编辑器扩展字段，不参与运行时解析，跳过
+                Next();
+                if (Match(TokenType.StringLiteral) || Match(TokenType.Identifier))
+                    Next();
             }
             else if (Match(TokenType.Identifier, "Fallback"))
             {
@@ -190,38 +213,85 @@ public class ShaderLabParser
                 // TODO: get shader lod
                 Next();
             }
+            // 处理 SubShader 级别常见渲染状态指令（常见渲染管线写法）
             else if (Match(TokenType.Identifier, "Blend"))
             {
+                // Blend [_SrcBlend] [_DstBlend] [, One One]
                 Next();
-                // Step 1: 主颜色混合源因子
-                var srcColor = ParseRenderStateFactor(); // 支持 [xxx] 和直接写关键字
-
-                // Step 2: 主颜色混合目标因子
-                var dstColor = ParseRenderStateFactor();
-
-                // Step 3: 判断是否还有 Alpha 混合参数
-                RenderStateValue? srcAlpha = null;
-                RenderStateValue? dstAlpha = null;
+                var _ = ParseRenderStateFactor();
+                _ = ParseRenderStateFactor();
                 if (Match(TokenType.Symbol, ","))
                 {
                     Next();
-                    srcAlpha = ParseRenderStateFactor();
-                    dstAlpha = ParseRenderStateFactor();
+                    _ = ParseRenderStateFactor();
+                    _ = ParseRenderStateFactor();
                 }
-                
-                Debug.Logger.Info($"[ShaderLabParser] Processing blend factor: " +
-                                  $"srcColor={srcColor}," +
-                                  $" dstColor={dstColor}," +
-                                  $" srcAlpha={srcAlpha}, " +
-                                  $"dstAlpha={dstAlpha}");
+            }
+            else if (Match(TokenType.Identifier, "BlendOp"))
+            {
+                // BlendOp Add[, Sub]
+                Next();
+                if (Match(TokenType.Identifier) || Match(TokenType.Symbol, "["))
+                {
+                    var _ = ParseRenderStateFactor();
+                    if (Match(TokenType.Symbol, ",")) { Next(); _ = ParseRenderStateFactor(); }
+                }
             }
             else if (Match(TokenType.Identifier, "ZWrite"))
             {
-                
+                Next();
+                if (Match(TokenType.Identifier) || Match(TokenType.Symbol, "["))
+                {
+                    var _ = ParseRenderStateFactor();
+                }
+            }
+            else if (Match(TokenType.Identifier, "ZTest"))
+            {
+                Next();
+                if (Match(TokenType.Identifier)) Next();
+            }
+            else if (Match(TokenType.Identifier, "Cull"))
+            {
+                Next();
+                if (Match(TokenType.Identifier) || Match(TokenType.Symbol, "["))
+                {
+                    var _ = ParseRenderStateFactor();
+                }
+            }
+            else if (Match(TokenType.Identifier, "AlphaToMask"))
+            {
+                Next();
+                if (Match(TokenType.Identifier) || Match(TokenType.Symbol, "["))
+                {
+                    var _ = ParseRenderStateFactor();
+                }
+            }
+            else if (Match(TokenType.Identifier, "Offset"))
+            {
+                // Offset a,b 或 [_Factor],[_Units]
+                Next();
+                if (Match(TokenType.Symbol, "[") || Match(TokenType.Identifier) || Match(TokenType.IntegerLiteral) || Match(TokenType.FloatLiteral))
+                {
+                    var _ = ParseRenderStateFactor();
+                    if (Match(TokenType.Symbol, ",")) { Next(); _ = ParseRenderStateFactor(); }
+                }
+            }
+            else if (Match(TokenType.Identifier, "ColorMask"))
+            {
+                Next();
+                if (Match(TokenType.Identifier) || Match(TokenType.IntegerLiteral)) Next();
+            }
+            else if (Match(TokenType.Identifier, "Stencil"))
+            {
+                Next();
+                // 捕获并丢弃子块
+                _ = CaptureRawBracedBlock();
             }
             else
             {
-                Debug.Logger.Error($" [ShaderLabParser] Unexpected identifier: {Current.text} at line {Current.line}");
+                // 其他未知标识，跳过避免卡住
+                Debug.Logger.Info($"[ShaderLabParser] Skip token at SubShader: {Current.text} line {Current.line}");
+                Next();
             }
             
         }
@@ -283,16 +353,310 @@ public class ShaderLabParser
     
     private Pass ParsePass()
     {
+        // 解析 Pass 块
+        // 目标：
+        // - Name/Tags
+        // - Render States: Blend/Cull/ZWrite/ZTest/ColorMask/Stencil
+        // - HLSLPROGRAM .. ENDHLSL 代码块
+        // - #pragma vertex/fragment/.../target/multi_compile/shader_feature
+
         var pass = new Pass();
-        var sb = new StringBuilder();
 
         while (!Match(TokenType.Symbol, "}"))
         {
-            // TODO:
+            if (Match(TokenType.CommentBlock) || Match(TokenType.CommentLine))
+            {
+                Next();
+                continue;
+            }
+
+            // Name "ForwardBase"
+            if (Match(TokenType.Identifier, "Name"))
+            {
+                Next();
+                if (Match(TokenType.StringLiteral) || Match(TokenType.Identifier))
+                {
+                    pass.name = Match(TokenType.StringLiteral) ? Next().text.Trim('"') : Next().text;
+                }
+                continue;
+            }
+
+            // Tags { "LightMode" = "ForwardBase" }
+            if (Match(TokenType.Identifier, "Tags"))
+            {
+                Next();
+                Expect(TokenType.Symbol, "{");
+                pass.tags = ParseTagsDictionary();
+                Expect(TokenType.Symbol, "}");
+                continue;
+            }
+
+            // Blend src dst [, srcA dstA]
+            if (Match(TokenType.Identifier, "Blend"))
+            {
+                Next();
+                var srcColor = ParseRenderStateFactor();
+                var dstColor = ParseRenderStateFactor();
+                RenderStateValue? srcAlpha = null;
+                RenderStateValue? dstAlpha = null;
+                if (Match(TokenType.Symbol, ","))
+                {
+                    Next();
+                    srcAlpha = ParseRenderStateFactor();
+                    dstAlpha = ParseRenderStateFactor();
+                }
+                pass.states.Blend = new BlendState { SrcColor = srcColor, DstColor = dstColor, SrcAlpha = srcAlpha, DstAlpha = dstAlpha };
+                continue;
+            }
+
+            // Cull Back/Front/Off
+            if (Match(TokenType.Identifier, "Cull"))
+            {
+                Next();
+                if (Match(TokenType.Identifier))
+                    pass.states.Cull = Next().text;
+                continue;
+            }
+
+            // ZWrite On/Off
+            if (Match(TokenType.Identifier, "ZWrite"))
+            {
+                Next();
+                if (Match(TokenType.Identifier))
+                    pass.states.ZWrite = Next().text;
+                continue;
+            }
+
+            // ZTest LEqual/Less/.../Always
+            if (Match(TokenType.Identifier, "ZTest"))
+            {
+                Next();
+                if (Match(TokenType.Identifier))
+                    pass.states.ZTest = Next().text;
+                continue;
+            }
+
+            // ColorMask RGBA/0/None
+            if (Match(TokenType.Identifier, "ColorMask"))
+            {
+                Next();
+                if (Match(TokenType.Identifier))
+                    pass.states.ColorMask = Next().text;
+                else if (Match(TokenType.IntegerLiteral))
+                    pass.states.ColorMask = Next().text;
+                continue;
+            }
+
+            // Stencil { ... }（暂存原始文本）
+            if (Match(TokenType.Identifier, "Stencil"))
+            {
+                Next();
+                pass.states.StencilRaw = CaptureRawBracedBlock();
+                continue;
+            }
+
+            // HLSLPROGRAM ... ENDHLSL（基于源文本切片，并移除特定工具链指令行）
+            if (Match(TokenType.Identifier, "HLSLPROGRAM"))
+            {
+                var startTok = Next();
+                int sliceStart = startTok.start + startTok.length;
+                var removed = new List<(int s, int e)>();
+                while (!Match(TokenType.Identifier, "ENDHLSL"))
+                {
+                    if (Match(TokenType.EndOfFile))
+                    {
+                        Debug.Logger.Error("Unexpected EOF while parsing HLSLPROGRAM block");
+                        break;
+                    }
+
+                    if (Match(TokenType.PreprocessorDirective))
+                    {
+                        var directiveTok = Next();
+                        var directive = directiveTok.text;
+                        if (directive.StartsWith("#pragma "))
+                        {
+                            ProcessPragma(directive, pass);
+                            removed.Add((directiveTok.start, directiveTok.start + directiveTok.length));
+                        }
+                        else
+                        {
+                            m_Preprocessor.ProcessDirective(directive);
+                            if (directive.StartsWith("#include_with_pragmas "))
+                            {
+                                var path = ExtractIncludePath(directive);
+                                if (!string.IsNullOrEmpty(path)) pass.includedHLSLs.Add(path);
+                                removed.Add((directiveTok.start, directiveTok.start + directiveTok.length));
+                            }
+                            else if (directive.StartsWith("#include "))
+                            {
+                                var path = ExtractIncludePath(directive);
+                                if (!string.IsNullOrEmpty(path)) pass.includedHLSLs.Add(path);
+                                // 现在：普通 #include 也从源码中移除，由上层以 -I/拼接策略处理
+                                removed.Add((directiveTok.start, directiveTok.start + directiveTok.length));
+                            }
+                        }
+                        continue;
+                    }
+                    Next();
+                }
+                var endTok = Expect(TokenType.Identifier, "ENDHLSL");
+                int sliceEnd = endTok.start;
+                var raw = m_Lexer.Slice(sliceStart, sliceEnd);
+                pass.hlslCode = RemoveSlices(raw, sliceStart, removed);
+                continue;
+            }
+
+            // 其它未覆盖标识，先跳过，避免死循环
             Next();
         }
 
         return pass;
+    }
+
+    // 解析 Tags 字典：支持 "Key" = "Value"，或无等号的连续字符串（退化为列表合并为原文）
+    private Dictionary<string, string> ParseTagsDictionary()
+    {
+        var dict = new Dictionary<string, string>();
+        while (!Match(TokenType.Symbol, "}"))
+        {
+            if (Match(TokenType.StringLiteral) || Match(TokenType.Identifier))
+            {
+                var keyTok = Next();
+                string key = keyTok.type == TokenType.StringLiteral ? keyTok.text.Trim('"') : keyTok.text;
+                if (Match(TokenType.Symbol, "="))
+                {
+                    Next();
+                    if (Match(TokenType.StringLiteral) || Match(TokenType.Identifier))
+                    {
+                        var valTok = Next();
+                        string val = valTok.type == TokenType.StringLiteral ? valTok.text.Trim('"') : valTok.text;
+                        dict[key] = val;
+                    }
+                }
+                else
+                {
+                    // 不带等号，记录为自身
+                    dict[key] = string.Empty;
+                }
+            }
+            else
+            {
+                Next();
+            }
+        }
+        return dict;
+    }
+
+    // 捕获 { ... } 的原始文本（包括嵌套），用于 Stencil 等复杂块的占位保存
+    private string CaptureRawBracedBlock()
+    {
+        var sb = new StringBuilder();
+        Expect(TokenType.Symbol, "{");
+        sb.Append("{");
+        int depth = 1;
+        while (depth > 0 && !Match(TokenType.EndOfFile))
+        {
+            var tok = Next();
+            sb.Append(tok.text);
+            if (tok.type == TokenType.Symbol)
+            {
+                if (tok.text == "{") depth++;
+                else if (tok.text == "}") depth--;
+            }
+        }
+        return sb.ToString();
+    }
+
+    // 处理 #pragma 指令，提取入口与目标、宏切换等
+    private void ProcessPragma(string directive, Pass pass)
+    {
+        // 形如：#pragma vertex VSMain
+        //      #pragma fragment PSMain
+        //      #pragma geometry GSMain
+        //      #pragma hull HSMain
+        //      #pragma domain DSMain
+        //      #pragma target ps_6_8
+        //      #pragma multi_compile KEY1 KEY2
+        //      #pragma shader_feature FEATURE_A FEATURE_B
+
+        var line = directive.Trim();
+        var parts = line.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 2) return;
+
+        string kind = parts[1];
+        if (kind == "vertex" && parts.Length >= 3)
+            pass.vertexEntry = parts[2];
+        else if (kind == "fragment" && parts.Length >= 3)
+            pass.fragmentEntry = parts[2];
+        else if (kind == "geometry" && parts.Length >= 3)
+            pass.geometryEntry = parts[2];
+        else if (kind == "hull" && parts.Length >= 3)
+            pass.hullEntry = parts[2];
+        else if (kind == "domain" && parts.Length >= 3)
+            pass.domainEntry = parts[2];
+        else if (kind == "target" && parts.Length >= 3)
+            pass.target = parts[2];
+        else if (kind == "multi_compile" && parts.Length >= 3)
+        {
+            for (int i = 2; i < parts.Length; i++)
+                pass.multiCompile.Add(parts[i]);
+        }
+        else if (kind == "shader_feature" && parts.Length >= 3)
+        {
+            for (int i = 2; i < parts.Length; i++)
+                pass.shaderFeature.Add(parts[i]);
+        }
+    }
+
+    // 从预处理指令中提取 include 路径（支持 "path" 或 <path> 形式）
+    private string ExtractIncludePath(string directive)
+    {
+        int quoteStart = directive.IndexOf('"');
+        if (quoteStart >= 0)
+        {
+            int quoteEnd = directive.IndexOf('"', quoteStart + 1);
+            if (quoteEnd > quoteStart) return directive.Substring(quoteStart + 1, quoteEnd - quoteStart - 1);
+        }
+        int lt = directive.IndexOf('<');
+        if (lt >= 0)
+        {
+            int gt = directive.IndexOf('>', lt + 1);
+            if (gt > lt) return directive.Substring(lt + 1, gt - lt - 1);
+        }
+        return string.Empty;
+    }
+
+    // 根据全局源码起点偏移，移除若干 (start,end) 片段，保持其它内容原样
+    private string RemoveSlices(string rawSlice, int sliceGlobalStart, List<(int s, int e)> globalRanges)
+    {
+        if (string.IsNullOrEmpty(rawSlice) || globalRanges == null || globalRanges.Count == 0)
+            return rawSlice;
+
+        globalRanges.Sort((a, b) => a.s.CompareTo(b.s));
+        var sb = new StringBuilder(rawSlice.Length);
+        int cursorGlobal = sliceGlobalStart;
+        foreach (var (s, e) in globalRanges)
+        {
+            int sClamped = Math.Max(s, sliceGlobalStart);
+            int eClamped = Math.Min(e, sliceGlobalStart + rawSlice.Length);
+            if (eClamped <= sClamped) continue;
+
+            // 追加 [cursor, sClamped)
+            int localStart = cursorGlobal - sliceGlobalStart;
+            int localEnd = sClamped - sliceGlobalStart;
+            if (localEnd > localStart)
+                sb.Append(rawSlice, localStart, localEnd - localStart);
+
+            // 跳过 [sClamped, eClamped)
+            cursorGlobal = eClamped;
+        }
+
+        // 追加剩余部分
+        int tailLocalStart = cursorGlobal - sliceGlobalStart;
+        if (tailLocalStart < rawSlice.Length)
+            sb.Append(rawSlice, tailLocalStart, rawSlice.Length - tailLocalStart);
+
+        return sb.ToString();
     }
 
     private void ParseHlslCode(StringBuilder hlslCode)
