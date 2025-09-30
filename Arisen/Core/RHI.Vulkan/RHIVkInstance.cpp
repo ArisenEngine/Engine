@@ -513,6 +513,7 @@ ArisenEngine::RHI::RHIFactory* ArisenEngine::RHI::RHIVkInstance::CreateFactory()
 
 void ArisenEngine::RHI::RHIVkInstance::UpdateSurfaceCapabilities(Surface* surface)
 {
+    vkGetPhysicalDeviceImageFormatProperties2
     auto vkSurface = static_cast<VkSurfaceKHR>(
            surface->GetHandle());
     auto swapChainSupportDetail = QuerySwapChainSupport(vkSurface);

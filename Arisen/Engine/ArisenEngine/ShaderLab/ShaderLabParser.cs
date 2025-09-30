@@ -8,6 +8,7 @@ public class ShaderLabParser
 {
     private Lexer m_Lexer;
     private Preprocessor m_Preprocessor;
+    private bool m_HasErrors = false;
 
     public ShaderLabParser(string code)
     {
@@ -34,6 +35,10 @@ public class ShaderLabParser
             if (Match(TokenType.Identifier, "Shader"))
             {
                 ProcessShader(shader);
+            } 
+            else if (Match(TokenType.CommentLine) || Match(TokenType.CommentBlock))
+            {
+                Next();
             }
             else
             {
@@ -87,6 +92,10 @@ public class ShaderLabParser
                 Debug.Logger.Info($"Get Fallback Info:{fallback}");
                 Next();
             }
+            else if (Match(TokenType.CommentBlock) || Match(TokenType.CommentLine))
+            {
+                Next();
+            }
             else
             {
                 Debug.Logger.Error($"[ShaderLabParser] Unexpected identifier: {Current.text} at line {Current.line} ");
@@ -120,6 +129,7 @@ public class ShaderLabParser
         }
     }
 
+    // TODO: to remove
     private List<Property> ParseProperties()
     {
         var list = new List<Property>();
@@ -127,36 +137,7 @@ public class ShaderLabParser
 
         while (!Match(TokenType.Symbol, "}"))
         {
-            if (!m_Preprocessor.IsCodeActive())
-            {
-                Next();
-                continue;
-            }
-
-            if (Match(TokenType.Identifier))
-            {
-                var prop = new Property();
-                prop.name = Next().text;
-                prop.type = Expect(TokenType.Identifier).text;
-                prop.displayName = Expect(TokenType.StringLiteral).text.Trim('"');
-                var defaultValueSb = new StringBuilder();
-                while (!Match(TokenType.Symbol, "}"))
-                {
-                    var tok = Next();
-                    if (tok.type == TokenType.Symbol && tok.text == "}")
-                        break;
-                    defaultValueSb.Append(tok.text);
-                    if (Match(TokenType.Symbol, ")"))
-                        break;
-                }
-
-                prop.defaultValue = defaultValueSb.ToString();
-                list.Add(prop);
-            }
-            else
-            {
-                Next();
-            }
+            Next();
         }
 
         Expect(TokenType.Symbol, "}");
@@ -199,10 +180,107 @@ public class ShaderLabParser
                 subShader.tags = tags;
                 Expect(TokenType.Symbol, "}");
             }
+            else if (Match(TokenType.CommentBlock) || Match(TokenType.CommentLine))
+            {
+                Next();
+            }
+            else if (Match(TokenType.Identifier, "LOD"))
+            {
+                Next();
+                // TODO: get shader lod
+                Next();
+            }
+            else if (Match(TokenType.Identifier, "Blend"))
+            {
+                Next();
+                // Step 1: 主颜色混合源因子
+                var srcColor = ParseRenderStateFactor(); // 支持 [xxx] 和直接写关键字
+
+                // Step 2: 主颜色混合目标因子
+                var dstColor = ParseRenderStateFactor();
+
+                // Step 3: 判断是否还有 Alpha 混合参数
+                RenderStateValue? srcAlpha = null;
+                RenderStateValue? dstAlpha = null;
+                if (Match(TokenType.Symbol, ","))
+                {
+                    Next();
+                    srcAlpha = ParseRenderStateFactor();
+                    dstAlpha = ParseRenderStateFactor();
+                }
+                
+                Debug.Logger.Info($"[ShaderLabParser] Processing blend factor: " +
+                                  $"srcColor={srcColor}," +
+                                  $" dstColor={dstColor}," +
+                                  $" srcAlpha={srcAlpha}, " +
+                                  $"dstAlpha={dstAlpha}");
+            }
+            else if (Match(TokenType.Identifier, "ZWrite"))
+            {
+                
+            }
+            else
+            {
+                Debug.Logger.Error($" [ShaderLabParser] Unexpected identifier: {Current.text} at line {Current.line}");
+            }
+            
         }
         return subShader;
     }
 
+    RenderStateValue ParseRenderStateFactor()
+    {
+        if (Match(TokenType.Symbol, "["))
+        {
+            Next();
+            // 开始解析引用
+            var identifierToken = Expect(TokenType.Identifier);
+            Expect(TokenType.Symbol, "]");
+
+            return new RenderStateValue
+            {
+                isReference = true,
+                referenceName = identifierToken.text
+            };
+        }
+        
+        // 直接关键字，如 One, SrcAlpha, Zero
+        var valueToken = Next();
+
+        if (valueToken.type == TokenType.Identifier)
+        {
+            return new RenderStateValue
+            {
+                isReference = false,
+                stringValue = valueToken.text,
+                kind = RenderStateValue.ValueKind.String
+            };
+        }
+
+        if (valueToken.type == TokenType.FloatLiteral)
+        {
+            return new RenderStateValue()
+            {
+                isReference = false,
+                floatValue = float.Parse(valueToken.text),
+                kind = RenderStateValue.ValueKind.Float
+            };
+        }
+
+        if (valueToken.type == TokenType.IntegerLiteral)
+        {
+            return new RenderStateValue()
+            {
+                isReference = false,
+                intValue = int.Parse(valueToken.text),
+                kind = RenderStateValue.ValueKind.Int
+            };
+        }
+        
+        Debug.Logger.Error($"[ShaderLabParser] Unexpected token type: {valueToken.type}, value: {valueToken.text}, line {Current.line}");
+        return null;
+    }
+    
     private Pass ParsePass()
     {
         var pass = new Pass();
@@ -240,7 +318,7 @@ public class ShaderLabParser
                 Next();
                 continue;
             }
-            else if (Match(TokenType.Number) || Match(TokenType.Symbol))
+            else if (Match(TokenType.IntegerLiteral) || Match(TokenType.Symbol) || Match(TokenType.FloatLiteral))
             {
                 hlslCode.Append(Current.text);
             }

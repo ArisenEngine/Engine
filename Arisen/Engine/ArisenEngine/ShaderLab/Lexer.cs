@@ -6,14 +6,18 @@ using System.Text.RegularExpressions;
 
 public enum TokenType
 {
-    Identifier,
-    Number,
-    StringLiteral,
-    Symbol,
-    PreprocessorDirective,
-    CommentLine,
-    CommentBlock,
-    EndOfFile,
+    Identifier,             // 变量名、关键词等（如 Blend, _SrcBlend）
+    IntegerLiteral,         // 整数，如 0, 1, 255
+    FloatLiteral,           // 浮点数，如 1.0, .5, 2.75
+    StringLiteral,          // 字符串（如 "MyTexture"）
+    Symbol,                 // 符号（如 {}, (), [], =, ; 等）
+
+    PreprocessorDirective,  // 预处理指令（如 #include, #pragma）
+    
+    CommentLine,            // 单行注释（如 // 注释）
+    CommentBlock,           // 多行注释（如 /* 注释 */）
+
+    EndOfFile               // 文件结尾标志
 }
 
 public class Token
@@ -21,7 +25,7 @@ public class Token
     public TokenType type;
     public string text;
     public int line;
-    public override string ToString() => $"{type}: {text}";
+    public override string ToString() =>  $"{line}: {type} => {text}";
 }
 
 public class Lexer
@@ -31,10 +35,12 @@ public class Lexer
         + @"|(?<comment>//[^\r\n]*|/\*.*?\*/)"
         + @"|(?<preprocessor>#[^\r\n]+)"
         + @"|(?<string>""([^""\\]|\\.)*"")"
-        + @"|(?<number>\d+(\.\d+)?)"
+        + @"|(?<float>\d+\.\d+|\.\d+)"       // 放在 int 前
+        + @"|(?<int>\d+)"
         + @"|(?<identifier>[A-Za-z_][A-Za-z0-9_]*)"
         + @"|(?<symbol>[{}()\[\];:,<>.+\-*/=%&|^!~?])"
         , RegexOptions.Singleline | RegexOptions.Compiled);
+
 
     private readonly string k_Input;
     private int m_Position;
@@ -57,8 +63,9 @@ public class Lexer
 
             if (!match.Success || match.Index != m_Position)
             {
-                throw new Exception(
+                Debug.Logger.Error(
                     $"Unrecognized token at position {m_Position}, near \"{PreviewText()}\" (line {_line})");
+                break;
             }
 
             string value = match.Value;
@@ -83,9 +90,14 @@ public class Lexer
                 m_Tokens.Add(new Token { type = TokenType.StringLiteral, text = value, line = _line });
                 _line += CountNewlines(value);
             }
-            else if (match.Groups["number"].Success)
+            else if (match.Groups["float"].Success)
             {
-                m_Tokens.Add(new Token { type = TokenType.Number, text = value, line = _line });
+                m_Tokens.Add(new Token { type = TokenType.FloatLiteral, text = value, line = _line });
+                _line += CountNewlines(value);
+            }
+            else if (match.Groups["int"].Success)
+            {
+                m_Tokens.Add(new Token { type = TokenType.IntegerLiteral, text = value, line = _line });
                 _line += CountNewlines(value);
             }
             else if (match.Groups["identifier"].Success)
@@ -108,6 +120,47 @@ public class Lexer
         }
 
         m_Tokens.Add(new Token { type = TokenType.EndOfFile, text = "<EOF>", line = _line + 1 });
+        
+        // TODO: 测试用
+        RemovePropertiesBlock(); 
+        
+        Serialization.SerializationUtil.Serialize(m_Tokens, "tokens.token");
+    }
+
+    private void RemovePropertiesBlock()
+    {
+        for (int i = 0; i < m_Tokens.Count; i++)
+        {
+            var token = m_Tokens[i];
+            if (token.type == TokenType.Identifier && token.text == "Properties")
+            {
+                // 期望下一个是 {
+                if (i + 1 < m_Tokens.Count && m_Tokens[i + 1].type == TokenType.Symbol && m_Tokens[i + 1].text == "{")
+                {
+                    int startIndex = i;
+                    int braceDepth = 0;
+                    i++; // skip "Properties"
+
+                    for (; i < m_Tokens.Count; i++)
+                    {
+                        var t = m_Tokens[i];
+                        if (t.type == TokenType.Symbol)
+                        {
+                            if (t.text == "{") braceDepth++;
+                            else if (t.text == "}") braceDepth--;
+
+                            if (braceDepth == 0)
+                            {
+                                // 到达 }，删除 [startIndex, i] 区间
+                                m_Tokens.RemoveRange(startIndex, i - startIndex + 1);
+                                i = startIndex - 1; // reset i
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private string PreviewText(int maxLen = 20)
@@ -157,4 +210,5 @@ public class Lexer
             Debug.Logger.Error($"Expected token {type} '{text}', got {t.type} '{t.text}' at line {t.line}");
         return t;
     }
+    
 }
