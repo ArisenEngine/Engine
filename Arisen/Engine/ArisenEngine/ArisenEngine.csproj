@@ -41,4 +41,4 @@
       <_Parameter1>ArisenEditor</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
-<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>..\..\Projects\Visual Studio\Editor\Outputs\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>..\..\Projects\Visual Studio\Editor\Outputs\Release\</OutputPath></PropertyGroup></Project>
+<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>..\..\Projects\Visual Studio\ArisenEngineTest\Outputs\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>..\..\Projects\Visual Studio\ArisenEngineTest\Outputs\Release\</OutputPath></PropertyGroup></Project>

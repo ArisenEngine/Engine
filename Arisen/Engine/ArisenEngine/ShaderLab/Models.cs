@@ -12,6 +12,48 @@ public enum PassStage
     Domain,
 }
 
+
+public class RenderStateValue
+{
+    public string stateName; // "Blend", "ZTest" ...
+    public bool isReference;
+    public string referenceName; // 如果是引用
+    
+    public enum ValueKind
+    {
+        None,
+        String,
+        Int,
+        Float
+    }
+
+    public ValueKind kind;
+    public string stringValue;
+    public int intValue;
+    public float floatValue;
+
+    public override string ToString()
+    {
+        return isReference
+            ? $"[{referenceName}]"
+            : kind switch
+            {
+                ValueKind.String => stringValue,
+                ValueKind.Int => intValue.ToString(),
+                ValueKind.Float => floatValue.ToString("0.###"),
+                _ => "(null)"
+            };
+    }
+}
+
+public class BlendState
+{
+    public RenderStateValue SrcColor;
+    public RenderStateValue DstColor;
+    public RenderStateValue? SrcAlpha;
+    public RenderStateValue? DstAlpha;
+}
+
 public class ShaderLabShader
 {
     public string name;
