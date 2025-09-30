@@ -74,6 +74,16 @@ public class RenderStates
 
     // Stencil（先提供原始文本，后续可细分字段）
     public string StencilRaw;
+
+    // 偏移：Offset Factor, Units
+    public RenderStateValue OffsetFactor;
+    public RenderStateValue OffsetUnits;
+
+    // 混合运算符（Add、Sub、RevSub、Min、Max 等）
+    public string BlendOp;
+
+    // AlphaToMask（On/Off）
+    public string AlphaToMask;
 }
 
 public class ShaderLabShader

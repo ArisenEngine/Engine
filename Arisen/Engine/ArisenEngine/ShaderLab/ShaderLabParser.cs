@@ -105,15 +105,19 @@ public class ShaderLabParser
                 // 引擎外的编辑器扩展字段，不参与运行时解析，跳过
                 Next();
                 if (Match(TokenType.StringLiteral) || Match(TokenType.Identifier))
-                    Next();
+                Next();
             }
-            else if (Match(TokenType.Identifier, "Fallback"))
+            else if (Match(TokenType.Identifier, "Fallback") || Match(TokenType.Identifier, "FallBack"))
             {
-                // TODO
+                // 顶层 Fallback/FallBack 语句：记录并跳过
                 Next();
-                var fallback = Current.text;
-                Debug.Logger.Info($"Get Fallback Info:{fallback}");
-                Next();
+                string fb = string.Empty;
+                if (Match(TokenType.StringLiteral) || Match(TokenType.Identifier))
+                {
+                    fb = Next().text.Trim('"');
+                }
+                Debug.Logger.Info($"Get Fallback Info:{fb}");
+                continue;
             }
             else if (Match(TokenType.CommentBlock) || Match(TokenType.CommentLine))
             {
@@ -229,6 +233,7 @@ public class ShaderLabParser
             }
             else if (Match(TokenType.Identifier, "BlendOp"))
             {
+                // SubShader 级别：仅解析并跳过（当前不存储到 SubShader）
                 // BlendOp Add[, Sub]
                 Next();
                 if (Match(TokenType.Identifier) || Match(TokenType.Symbol, "["))
@@ -260,6 +265,7 @@ public class ShaderLabParser
             }
             else if (Match(TokenType.Identifier, "AlphaToMask"))
             {
+                // SubShader 级别：仅解析并跳过
                 Next();
                 if (Match(TokenType.Identifier) || Match(TokenType.Symbol, "["))
                 {
@@ -268,6 +274,7 @@ public class ShaderLabParser
             }
             else if (Match(TokenType.Identifier, "Offset"))
             {
+                // SubShader 级别：仅解析并跳过
                 // Offset a,b 或 [_Factor],[_Units]
                 Next();
                 if (Match(TokenType.Symbol, "[") || Match(TokenType.Identifier) || Match(TokenType.IntegerLiteral) || Match(TokenType.FloatLiteral))
