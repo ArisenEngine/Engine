@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "CommandListD3D12.h"
 #include "IRenderCommandListD3D12.h"
 #include "RenderCommandListBase.h"

@@ -12,7 +12,7 @@ public:
         :m_settings(settings), m_context(context)
     {}
 
-    void Reset(const RenderPipelineStateObjectSettings& settings)
+    void Reset(const RenderPipelineStateObjectSettings& settings);
 private:
     const IRHIContext& m_context;
     RenderPipelineStateObjectSettings m_settings;
