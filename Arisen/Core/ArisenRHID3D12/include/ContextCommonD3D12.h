@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "CommandQueueD3D12.h"
 #include "ContextBase.h"
 #include "CoreMinimalD3D12.h"
@@ -9,7 +9,7 @@
 ARISENRHI_D3D12_BEGIN_NAMEPSACE
     struct IRHIContextCommonD3D12 : public IRHIContext
 {
-    
+
 };
 
 template<typename TContext, typename TSettings> //requires std::is_base_of_v<ContextBase<>, TContext>
@@ -41,7 +41,7 @@ public:
 
     [[nodiscard]] virtual Ptr<IProgram> CreateProgram(const ProgramSettings& settings) const
     {
-        return MakePtr(ProgramD3D12, this, settings);
+        return MakePtr(ProgramD3D12, *this, settings);
     }
 
     CommandQueueD3D12& GetDefaultCommandQueueD3D12(CommandListType type)
@@ -54,7 +54,7 @@ public:
         return static_cast<DescriptorManagerD3D12&>(ContextCommonD3D12::GetDescriptorManager());
     }
 
-    
+
 };
 
 

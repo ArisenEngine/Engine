@@ -11,10 +11,10 @@ class RenderPassBase : public ObjectBase<typename RHIImplTraits::RenderPassInter
 public:
     RenderPassBase(const IRenderPattern& render_pattern, const RenderPassSettings& settings)
     {
-        /
+        // Constructor implementation
     }
 
-    
+
 };
 
 
