@@ -19,7 +19,7 @@ public:
     void Initialize();
 
     virtual void CompleteInitialize() override;
-
+    DescriptorHeap& GetDescriptorHeap(DescriptorType type, uint32_t heap_index = 0);
 private:
 
     // pool

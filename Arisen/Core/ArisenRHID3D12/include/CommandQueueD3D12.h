@@ -21,14 +21,17 @@ public:
         LOG_RHI_CONSTRUCTOR("CommandQueueD3D12");
         // tracy context.
     }
-    
+
     ~CommandQueueD3D12() override;
 
     ID3D12CommandQueue& GetNativeCommandQueue();
 
+    // ICommandQueue
+    [[nodiscard]] virtual Ptr<IRenderCommandList> CreateRenderCommandList(IRenderPass& render_pass) const override final;
+    [[nodiscard]] virtual Ptr<ICommandListSet> CreateCommandListSet(std::vector<Ptr<ICommandList>> command_lists) const override final;
 private:
     static ComPtr<ID3D12CommandQueue> CreateNativeCommandQueue(const IRHIContext& context, CommandListType type);
-    
+
 private:
     ComPtr<ID3D12CommandQueue> m_command_queue_cptr;
 };

@@ -22,7 +22,7 @@ void DescriptorManagerD3D12::Initialize()
         DescriptorHeapSettings settings{heap_type, 0, is_shader_visible};
         target_heaps.push_back(MakeUniquePtr(DescriptorHeap, GetContext(), settings));
     };
-    
+
     for (const DescriptorType heap_type : magic_enum::enum_values<DescriptorType>())
     {
         if (heap_type == DescriptorType::Undefined)
@@ -45,6 +45,13 @@ void DescriptorManagerD3D12::CompleteInitialize()
 {
     DescriptorManagerBase<RHID3D12ImplTraits>::CompleteInitialize();
     // TODO: complete initialize is note implemented.
+}
+
+DescriptorHeap& DescriptorManagerD3D12::GetDescriptorHeap(DescriptorType type, uint32_t heap_index)
+{
+    const UniquePtrs<DescriptorHeap>& desc_heaps = m_descriptor_heap_types[magic_enum::enum_integer(type)];
+    const UniquePtr<DescriptorHeap>& descriptor_heap = desc_heaps[heap_index];
+    return *descriptor_heap;
 }
 
 

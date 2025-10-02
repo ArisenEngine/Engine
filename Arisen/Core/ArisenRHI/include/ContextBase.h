@@ -26,7 +26,7 @@ class ContextBase : public ObjectBase<ContextInterface>
 {
 public:
     using DescriptorManagerImplType = typename RHIImplTraits::DescriptorManagerImplType;
-    
+
     ContextBase(IDevice& device, ContextType type, UniquePtr<DescriptorManagerImplType>&& descriptor_manager_ptr)
     :m_device_ptr(device.GetInterface<IDevice>())
     ,m_type(type)
@@ -54,8 +54,8 @@ public:
     {
         return MakePtr(CommandKit, *this, type);
     }
-    
-    // lazy create 
+
+    // lazy create
     virtual ICommandKit& GetDefaultCommandKit(CommandListType type) const override final
     {
         Ptr<ICommandKit>& cmd_kit_Ptr = m_default_Command_Kit_Ptrs[ToInt32(type)];
@@ -77,11 +77,12 @@ public:
         VERIFY_NOT_NULL(m_descriptor_manager_ptr, "DescriptorManager is null!");
         return *m_descriptor_manager_ptr;
     }
-    
+
+
 private:
     typedef std::array<Ptr<ICommandKit>, static_cast<size_t>(CommandListType::__COUNT)> CommandKitPtrsByType;
     typedef std::map<ICommandQueue*, Ptr<ICommandKit>> CommandKitByQueue;
-    
+
     const ContextType m_type;
     Ptr<IDevice> m_device_ptr;
     mutable CommandKitPtrsByType m_default_Command_Kit_Ptrs;

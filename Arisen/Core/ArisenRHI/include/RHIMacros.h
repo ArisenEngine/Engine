@@ -26,6 +26,9 @@ template<class T>
 using UniquePtrs = std::vector<UniquePtr<T>>;
 #define MakeUniquePtr(ClassName,...) std::make_unique<ClassName>(##__VA_ARGS__)
 
+//
+#define DYNAMIC_CAST(type, expr) dynamic_cast<type>(expr)
+
 // TODO: add log types.
 #define ADD_RHI_HEAD(Message) std::format("[RHI]:{}",Message)
 #define LOG_RHI_DEBUG(Message, ...)\

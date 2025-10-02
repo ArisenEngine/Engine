@@ -14,7 +14,11 @@ public:
     TextureD3D12(const IRHIContext& context, const TextureSettings& settings);
 
     const RenderContextD3D12& GetRenderContextD3D12()const;
+
+    // IResourceD3D12
+    virtual Opt<ResourceDescriptor> InitializeNativeViewDescriptor(const ResourceViewId& view_id) override;
 private:
     void CreateAsFrameBuffer();
+    void CreateRenderTargetView(const ResourceDescriptor& descriptor, const ResourceViewId& view_id) const;
 };
 ARISENRHI_D3D12_END_NAMESPACE

@@ -4,6 +4,7 @@
 #include "ExceptionHandle.h"
 #include "DebugUtils/Checks.h"
 #include "DebugUtils/Verifies.h"
+#include "d3dx12.h"
 
 ARISENRHI_D3D12_BEGIN_NAMEPSACE
     D3D12_DESCRIPTOR_HEAP_TYPE GetNativeDescriptorHeapType(DescriptorType type)
@@ -12,16 +13,16 @@ ARISENRHI_D3D12_BEGIN_NAMEPSACE
     {
     case DescriptorType::ShaderResources:
         return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-        
-    case DescriptorType::Sampler:
+
+    case DescriptorType::Samplers:
         return D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-        
+
     case DescriptorType::RenderTargets:
         return D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-        
+
     case DescriptorType::DepthStencil:
         return D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-        
+
     default:
         CHECK_UNEXPECTED_RETURN(type, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES);
     }
@@ -36,7 +37,8 @@ DescriptorHeap::DescriptorHeap(const IRHIContext& context, const DescriptorHeapS
 {
     if (m_deferred_size > 0)
     {
-        // TODO: resource container reserver
+        m_resources.reserve(m_deferred_size);
+        m_free_ranges.Add({0, m_deferred_size});
     }
 
     if (settings.size > 0)
@@ -47,7 +49,7 @@ DescriptorHeap::DescriptorHeap(const IRHIContext& context, const DescriptorHeapS
 
 bool DescriptorHeap::IsShaderVisibleHeapType(DescriptorType type)
 {
-    return type == DescriptorType::ShaderResources || type == DescriptorType::Sampler;
+    return type == DescriptorType::ShaderResources || type == DescriptorType::Samplers;
 }
 
 void DescriptorHeap::Allocate()
@@ -83,9 +85,9 @@ void DescriptorHeap::Allocate()
     }
 
     m_allocated_size = m_deferred_size;
-    
+
     // TODO: emit and notify render pass to update all descriptor heaps.
-    
+
 }
 
 uint32_t DescriptorHeap::GetAllocatedSize() const
@@ -96,4 +98,26 @@ uint32_t DescriptorHeap::GetDeferredSize() const
 {
     return  m_deferred_size;
 }
+
+uint32_t DescriptorHeap::AddResource(const IResourceD3D12& resource)
+{
+    std::scoped_lock lock_guard(m_modification_mutext);
+
+    if (m_resources.size() >= m_settings.size)
+    {
+        m_deferred_size++;
+        Allocate();
+    }
+
+    m_resources.push_back(&resource);
+    uint32_t resource_index = m_resources.size() - 1;
+    m_free_ranges.Remove(Range(resource_index, resource_index + 1));
+    return resource_index;
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE DescriptorHeap::GetNativeCpuDescriptorHandle(uint32_t descriptor_index) const
+{
+    return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_native_heap_ptr->GetCPUDescriptorHandleForHeapStart(), descriptor_index, m_native_heap_size);
+}
+
 ARISENRHI_D3D12_END_NAMESPACE

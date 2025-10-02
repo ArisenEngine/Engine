@@ -109,9 +109,14 @@ void GameInstance::InitArisenRHI(HWND hwnd)
             });
 
             const ICommandQueue& cmd_queue = m_render_context_ptr->GetDefaultCommandKit(CommandListType::Render).GetQueue();
-            for (Frame& frame : m_frames) {
-
+            for (Frame& frame : m_frames)
+            {
+                frame.render_command_list = cmd_queue.CreateRenderCommandList(*frame.screen_pass);
+                frame.render_command_list->SetName(std::format("Render Triangle{}", frame.index));
+                frame.command_list_set = cmd_queue.CreateCommandListSet({frame.render_command_list});
             }
+
+            // complete.
         }
         break;
     case RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_VULKAN:
