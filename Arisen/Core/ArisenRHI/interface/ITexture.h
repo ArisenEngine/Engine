@@ -23,6 +23,7 @@ struct TextureSettings
 };
 
 class TextureViewBase;
+// template<typename BaseResourceClass> requires std::is_base_of_v<IResource, BaseResourceClass>
 struct ITexture : IResource
 {
     virtual const TextureSettings& GetSettings() const = 0;
@@ -33,6 +34,7 @@ class TextureViewBase: public ResourceViewBase
 {
 public:
     TextureViewBase(ITexture& texture);
+
 private:
     Ptr<ITexture> m_texture_ptr;
 };
