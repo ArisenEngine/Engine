@@ -20,12 +20,28 @@ void GameInstance::Initialize(HWND hwnd)
     ArisenEngine::Debugger::Logger::GetInstance().Initialize();
     LOG_DEBUG("GameInstance Init!");
 
-    InitArisenRHI(hwnd);
-    LoadAssets();
+    try {
+        LOG_DEBUG("Starting InitArisenRHI...");
+        InitArisenRHI(hwnd);
+        LOG_DEBUG("InitArisenRHI completed successfully");
+
+        LOG_DEBUG("Starting LoadAssets...");
+        LoadAssets();
+        LOG_DEBUG("LoadAssets completed successfully");
+
+        LOG_DEBUG("GameInstance::Initialize completed successfully");
+    } catch (const std::exception& e) {
+        LOG_FATAL(std::string("Exception in GameInstance::Initialize: ") + e.what());
+        throw;
+    } catch (...) {
+        LOG_FATAL("Unknown exception in GameInstance::Initialize");
+        throw;
+    }
 }
 
 void GameInstance::Loop()
 {
+    LOG_DEBUG("GameInstance::Loop called - currently empty, this needs implementation");
 }
 
 void GameInstance::OnKeyDown(char KeyCode)
@@ -130,4 +146,5 @@ void GameInstance::InitArisenRHI(HWND hwnd)
 
 void GameInstance::LoadAssets()
 {
+    LOG_DEBUG("LoadAssets called - currently empty, this is expected");
 }

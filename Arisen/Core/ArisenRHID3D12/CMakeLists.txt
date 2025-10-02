@@ -32,11 +32,11 @@ target_include_directories(ArisenRHID3D12
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-# 禁用 RTTI
+# 启用 RTTI 以支持调试和 dynamic_cast
 if(MSVC)
-    target_compile_options(ArisenRHID3D12 PRIVATE /GR-)
+    target_compile_options(ArisenRHID3D12 PRIVATE /GR)
 else()
-    target_compile_options(ArisenRHID3D12 PRIVATE -fno-rtti)
+    target_compile_options(ArisenRHID3D12 PRIVATE -frtti)
 endif()
 
 # 链接外部模块（由顶层 add_subdirectory 控制顺序）
