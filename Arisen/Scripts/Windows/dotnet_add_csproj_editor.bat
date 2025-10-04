@@ -1,22 +1,29 @@
 @echo off
+setlocal
+
+REM === Ensure console code page matches localized tool output ===
+for /f "tokens=2 delims=:" %%I in ('chcp') do set "ORIGINAL_CP=%%I"
+set "ORIGINAL_CP=%ORIGINAL_CP: =%"
+if defined ARISEN_CODEPAGE (
+    chcp %ARISEN_CODEPAGE% >nul
+) else (
+    chcp 936 >nul
+)
+
+set "EXIT_CODE=0"
+
 if "%~1"=="" (
     echo Missing solution path.
-    goto :usage
+    set "EXIT_CODE=1"
+    goto :cleanup
 )
 if "%~2"=="" (
     echo Missing output path.
-    goto :usage
+    set "EXIT_CODE=1"
+    goto :cleanup
 )
-goto :main
-
-:usage
-echo Usage: add_csproj_to_sln.bat path\to\solution.sln path\to\outputs
-exit /b 1
-
-:main
 
 set SCRIPT_DIR=%~dp0
-
 set PROJ_OUTPUTS=%~2
 set SLN_PATH=%~1
 
@@ -48,4 +55,10 @@ if exist "%SLN_PATH%" (
     python "%SCRIPT_DIR%/update_csproj_outputs.py" "%SLN_PATH%" "%PROJ_OUTPUTS%"
 ) else (
     echo Solution file not found: %SLN_PATH%
+    set "EXIT_CODE=1"
 )
+
+:cleanup
+if defined ORIGINAL_CP chcp %ORIGINAL_CP% >nul
+endlocal
+exit /b %EXIT_CODE%
