@@ -5,28 +5,32 @@
 // </auto-generated>
 // ----------------------------------------------------------------------------
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using __CallingConvention = global::System.Runtime.InteropServices.CallingConvention;
 using __IntPtr = global::System.IntPtr;
 
-[assembly:InternalsVisibleTo("Core.Debugger")]
-
 #pragma warning disable CS0109 // Member does not hide an inherited member; new keyword is not required
 
-namespace Std
+namespace ArisenBinding.NativePlatform
 {
-}
-
-namespace Std
-{
-}
-
-namespace Std
-{
-}
-
-namespace Std
-{
+    namespace ArisenEngine
+    {
+        namespace RHI
+        {
+            public enum ProgramStage
+            {
+                Vertex = 0,
+                Hull = 1,
+                Domain = 2,
+                Geometry = 3,
+                Fragment = 4,
+                Compute = 5,
+                RayTracing = 6,
+                Amplification = 7,
+                Mesh = 8,
+                STAGE_MAX = 9
+            }
+        }
+    }
 }

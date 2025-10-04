@@ -12,6 +12,14 @@ public class DebuggerLibrary : ILibrary
         // 遍历所有翻译单元并忽略特定的头文件
         foreach (var unit in ctx.TranslationUnits)
         {
+            // 忽略整个 std 命名空间映射，避免与平台模块的 std 投影冲突
+            foreach (var ns in unit.Namespaces)
+            {
+                if (ns.Name == "std")
+                {
+                    ns.Ignore = true;
+                }
+            }
             if (unit.FileName.Contains("PrimitiveTypes.h"))
             {
                 unit.Ignore = true;
@@ -45,7 +53,7 @@ public class DebuggerLibrary : ILibrary
         // 设置 C# 输出的 namespace
         // options.CheckSymbols = true;
         var module = options.AddModule("Core.Debugger");
-        module.OutputNamespace = GlobalConfig.GetNamespace("");
+        module.OutputNamespace = GlobalConfig.GetNamespace("NativeDebugger");
         module.Headers.Clear();
         module.Headers.Add(@"Logger/Logger.h");
         module.LibraryDirs.Add(GlobalConfig.s_LibraryPath);

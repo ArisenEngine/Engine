@@ -12,7 +12,7 @@ using __IntPtr = global::System.IntPtr;
 
 #pragma warning disable CS0109 // Member does not hide an inherited member; new keyword is not required
 
-namespace ArisenBinding
+namespace ArisenBinding.NativePlatform
 {
     namespace ArisenEngine
     {
@@ -47,15 +47,15 @@ namespace ArisenBinding
 
                 public __IntPtr __Instance { get; protected set; }
 
-                internal static readonly new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::ArisenBinding.ArisenEngine.Platforms.WindowInitInfo> NativeToManagedMap =
-                    new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::ArisenBinding.ArisenEngine.Platforms.WindowInitInfo>();
+                internal static readonly new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.WindowInitInfo> NativeToManagedMap =
+                    new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.WindowInitInfo>();
 
-                internal static void __RecordNativeToManagedMapping(IntPtr native, global::ArisenBinding.ArisenEngine.Platforms.WindowInitInfo managed)
+                internal static void __RecordNativeToManagedMapping(IntPtr native, global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.WindowInitInfo managed)
                 {
                     NativeToManagedMap[native] = managed;
                 }
 
-                internal static bool __TryGetNativeToManagedMapping(IntPtr native, out global::ArisenBinding.ArisenEngine.Platforms.WindowInitInfo managed)
+                internal static bool __TryGetNativeToManagedMapping(IntPtr native, out global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.WindowInitInfo managed)
                 {
     
                     return NativeToManagedMap.TryGetValue(native, out managed);
@@ -111,18 +111,18 @@ namespace ArisenBinding
 
                 public WindowInitInfo()
                 {
-                    __Instance = Marshal.AllocHGlobal(sizeof(global::ArisenBinding.ArisenEngine.Platforms.WindowInitInfo.__Internal));
+                    __Instance = Marshal.AllocHGlobal(sizeof(global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.WindowInitInfo.__Internal));
                     __ownsNativeInstance = true;
                     __RecordNativeToManagedMapping(__Instance, this);
                     __Internal.ctor(__Instance);
                 }
 
-                public WindowInitInfo(global::ArisenBinding.ArisenEngine.Platforms.WindowInitInfo _0)
+                public WindowInitInfo(global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.WindowInitInfo _0)
                 {
-                    __Instance = Marshal.AllocHGlobal(sizeof(global::ArisenBinding.ArisenEngine.Platforms.WindowInitInfo.__Internal));
+                    __Instance = Marshal.AllocHGlobal(sizeof(global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.WindowInitInfo.__Internal));
                     __ownsNativeInstance = true;
                     __RecordNativeToManagedMapping(__Instance, this);
-                    *((global::ArisenBinding.ArisenEngine.Platforms.WindowInitInfo.__Internal*) __Instance) = *((global::ArisenBinding.ArisenEngine.Platforms.WindowInitInfo.__Internal*) _0.__Instance);
+                    *((global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.WindowInitInfo.__Internal*) __Instance) = *((global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.WindowInitInfo.__Internal*) _0.__Instance);
                     if (_0.__caption_OwnsNativeMemory)
                         this.Caption = _0.Caption;
                 }
@@ -147,12 +147,12 @@ namespace ArisenBinding
                     __Instance = IntPtr.Zero;
                 }
 
-                public global::ArisenBinding.ArisenEngine.Platforms.WindowProc Callback
+                public global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.WindowProc Callback
                 {
                     get
                     {
                         var __ptr0 = ((__Internal*)__Instance)->callback;
-                        return __ptr0 == IntPtr.Zero? null : (global::ArisenBinding.ArisenEngine.Platforms.WindowProc) Marshal.GetDelegateForFunctionPointer(__ptr0, typeof(global::ArisenBinding.ArisenEngine.Platforms.WindowProc));
+                        return __ptr0 == IntPtr.Zero? null : (global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.WindowProc) Marshal.GetDelegateForFunctionPointer(__ptr0, typeof(global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.WindowProc));
                     }
 
                     set
@@ -161,12 +161,12 @@ namespace ArisenBinding
                     }
                 }
 
-                public global::ArisenBinding.ArisenEngine.Platforms.WindowExitResize ResizeCallback
+                public global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.WindowExitResize ResizeCallback
                 {
                     get
                     {
                         var __ptr0 = ((__Internal*)__Instance)->resizeCallback;
-                        return __ptr0 == IntPtr.Zero? null : (global::ArisenBinding.ArisenEngine.Platforms.WindowExitResize) Marshal.GetDelegateForFunctionPointer(__ptr0, typeof(global::ArisenBinding.ArisenEngine.Platforms.WindowExitResize));
+                        return __ptr0 == IntPtr.Zero? null : (global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.WindowExitResize) Marshal.GetDelegateForFunctionPointer(__ptr0, typeof(global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.WindowExitResize));
                     }
 
                     set

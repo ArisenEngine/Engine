@@ -15,4 +15,11 @@
       <PackageReference Include="CppSharp" Version="1.1.5.3168" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Remove="NativeDebugger/Std.cs" />
+      <None Include="NativeDebugger/Std.cs" />
+    </ItemGroup>
+
+  
+
 <PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>..\Projects\Visual Studio\ArisenEngineTest\Outputs\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>..\Projects\Visual Studio\ArisenEngineTest\Outputs\Release\</OutputPath></PropertyGroup></Project>

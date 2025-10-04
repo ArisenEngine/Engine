@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using Debugger = ArisenBinding.ArisenEngine.Debugger;
+using Debugger = ArisenBinding.NativeDebugger.ArisenEngine.Debugger;
 
 namespace ArisenEngine.Debug;
 

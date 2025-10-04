@@ -1,4 +1,4 @@
-﻿using ArisenBinding.ArisenEngine.Platforms;
+﻿using ArisenBinding.NativePlatform.ArisenEngine.Platforms;
 using ArisenEngine.Debug;
 using ArisenEngine.Platforms;
 
