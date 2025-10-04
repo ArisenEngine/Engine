@@ -275,14 +275,23 @@ elseif(${TARGET} STREQUAL "ArisenEngineTest")
     set(ARISEN_ENGINE_TEST_PROJ_DIR ${CMAKE_SOURCE_DIR}/Test/ArisenEngineTest/)
 
     set(SHADER_LAB_RES "${CMAKE_SOURCE_DIR}/Test/ArisenEngineTest/ShaderLabRes")
-   
     set(SHADER_LAB_RES_DEST "${OUTPUT_DIR}/ShaderLabRes")
 
-    add_custom_target(CopyShaderLabRes
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${SHADER_LAB_RES}" "${SHADER_LAB_RES_DEST}"
-        COMMENT "Copy shader lab res"
-        USES_TERMINAL
-    )
+    if(EXISTS "${SHADER_LAB_RES}")
+        add_custom_target(CopyShaderLabRes
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADER_LAB_RES_DEST}"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory "${SHADER_LAB_RES}" "${SHADER_LAB_RES_DEST}"
+            COMMENT "Copy shader lab res"
+            USES_TERMINAL
+        )
+    else()
+        message(WARNING "ShaderLabRes not found at ${SHADER_LAB_RES}. Creating empty destination.")
+        add_custom_target(CopyShaderLabRes
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADER_LAB_RES_DEST}"
+            COMMENT "Create empty ShaderLabRes destination"
+            USES_TERMINAL
+        )
+    endif()
     set_target_properties(CopyShaderLabRes PROPERTIES FOLDER "CMakeProcess")
 
     add_custom_target(BuildArisenEngineTest ALL
