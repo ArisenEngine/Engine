@@ -8,17 +8,55 @@
 #include "Logger/Logger.h"
 #include "RHI/Enums/Pipeline/ProgramStage.h"
 #include <fstream>
+#if __has_include(<optional>)
 #include <optional>
+#elif __has_include(<experimental/optional>)
+#include <experimental/optional>
+namespace std { using experimental::optional; }
+#else
+// Fallback to satisfy parser when neither optional header is present
+namespace std { template <class T> class optional; }
+#endif
 #include <cstring> 
 #include <string>
 #include <vector>
+#if __has_include(<filesystem>)
 #include <filesystem>
 namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
+#else
+// Fallback type for parser-only environments
+namespace fs { class path {}; }
+#endif
 
 using Microsoft::WRL::ComPtr;
 
 namespace ArisenEngine::Platforms
 {
+#if defined(ARISEN_AUTOBINDING)
+    inline std::wstring GetStagePrefix(RHI::ProgramStage stage)
+    {
+        switch (static_cast<uint32_t>(stage))
+        {
+        case 0: return L"vs_"; // Vertex
+        case 1: return L"hs_"; // Hull
+        case 2: return L"ds_"; // Domain
+        case 3: return L"gs_"; // Geometry
+        case 4: return L"ps_"; // Pixel
+        case 5: return L"cs_"; // Compute
+        case 6: return L"lib_"; // Library
+        case 7: return L"as_"; // Amplification
+        case 8: return L"ms_"; // Mesh
+        default: return L"";
+        }
+    }
+#define STAGE_PREFIX_ENUM(e) GetStagePrefix(e)
+#else
+#define STAGE_PREFIX_ENUM(e) s_Stages[static_cast<uint32_t>(e)]
+#endif
+    #if !defined(ARISEN_AUTOBINDING)
     static std::wstring s_Stages[RHI::STAGE_MAX] =
     {
         L"vs_",
@@ -31,6 +69,7 @@ namespace ArisenEngine::Platforms
         L"as_",
         L"ms_"
     };
+    #endif
 
     struct ShaderCompilerOutput
     {
@@ -116,7 +155,7 @@ namespace ArisenEngine::Platforms
         }
 
         // 组装编译参数
-        std::wstring stage = s_Stages[static_cast<uint32_t>(params.stage)];
+        std::wstring stage = STAGE_PREFIX_ENUM(params.stage);
         stage.append(params.shaderModel);
 
         std::wstring env = L"-fspv-target-env=" + params.targetEnv;

@@ -12,7 +12,7 @@ using __IntPtr = global::System.IntPtr;
 
 #pragma warning disable CS0109 // Member does not hide an inherited member; new keyword is not required
 
-namespace ArisenBinding
+namespace ArisenBinding.NativePlatform
 {
     namespace ArisenEngine
     {
@@ -35,12 +35,12 @@ namespace ArisenBinding
                     internal static extern void SetWindowResizeCallbackInternal(uint id, __IntPtr callback);
                 }
 
-                public static global::ArisenBinding.ArisenEngine.Platforms.Window CreateNewWindow(global::ArisenBinding.ArisenEngine.Platforms.WindowInitInfo initInfo)
+                public static global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.Window CreateNewWindow(global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.WindowInitInfo initInfo)
                 {
                     var __arg0 = initInfo is null ? __IntPtr.Zero : initInfo.__Instance;
-                    var ___ret = new global::ArisenBinding.ArisenEngine.Platforms.Window.__Internal();
+                    var ___ret = new global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.Window.__Internal();
                     __Internal.CreateNewWindow(new IntPtr(&___ret), __arg0);
-                    return global::ArisenBinding.ArisenEngine.Platforms.Window.__CreateInstance(___ret);
+                    return global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.Window.__CreateInstance(___ret);
                 }
 
                 public static uint GetWindowID(global::System.IntPtr handle)

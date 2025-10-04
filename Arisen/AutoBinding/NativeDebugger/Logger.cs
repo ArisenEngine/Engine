@@ -12,7 +12,7 @@ using __IntPtr = global::System.IntPtr;
 
 #pragma warning disable CS0109 // Member does not hide an inherited member; new keyword is not required
 
-namespace ArisenBinding
+namespace ArisenBinding.NativeDebugger
 {
     namespace ArisenEngine
     {
@@ -47,11 +47,8 @@ namespace ArisenBinding
                     [SuppressUnmanagedCodeSecurity, DllImport("Core.Debugger.dll", EntryPoint = "?Trace@Logger@Debugger@ArisenEngine@@QEAAXPEBD00@Z", CallingConvention = __CallingConvention.Cdecl)]
                     internal static extern void Trace(__IntPtr __instance, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string msg, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string thread_name, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CppSharp.Runtime.UTF8Marshaller))] string cs_trace);
 
-                    [SuppressUnmanagedCodeSecurity, DllImport("Core.Debugger.dll", EntryPoint = "?Fatal@Logger@Debugger@ArisenEngine@@QEAAX$$QEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z", CallingConvention = __CallingConvention.Cdecl)]
-                    internal static extern void Fatal(__IntPtr __instance, __IntPtr msg, bool needThrow);
-
                     [SuppressUnmanagedCodeSecurity, DllImport("Core.Debugger.dll", EntryPoint = "?SetServerityLevel@Logger@Debugger@ArisenEngine@@QEAAXW4LogLevel@123@@Z", CallingConvention = __CallingConvention.Cdecl)]
-                    internal static extern void SetServerityLevel(__IntPtr __instance, global::ArisenBinding.ArisenEngine.Debugger.Logger.LogLevel level);
+                    internal static extern void SetServerityLevel(__IntPtr __instance, global::ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger.LogLevel level);
 
                     [SuppressUnmanagedCodeSecurity, DllImport("Core.Debugger.dll", EntryPoint = "?BindCallback@Logger@Debugger@ArisenEngine@@QEAAXP6AXIPEBD00@Z@Z", CallingConvention = __CallingConvention.Cdecl)]
                     internal static extern void BindCallback(__IntPtr __instance, __IntPtr callback);
@@ -80,15 +77,15 @@ namespace ArisenBinding
 
                 public __IntPtr __Instance { get; protected set; }
 
-                internal static readonly new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::ArisenBinding.ArisenEngine.Debugger.Logger> NativeToManagedMap =
-                    new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::ArisenBinding.ArisenEngine.Debugger.Logger>();
+                internal static readonly new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger> NativeToManagedMap =
+                    new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger>();
 
-                internal static void __RecordNativeToManagedMapping(IntPtr native, global::ArisenBinding.ArisenEngine.Debugger.Logger managed)
+                internal static void __RecordNativeToManagedMapping(IntPtr native, global::ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger managed)
                 {
                     NativeToManagedMap[native] = managed;
                 }
 
-                internal static bool __TryGetNativeToManagedMapping(IntPtr native, out global::ArisenBinding.ArisenEngine.Debugger.Logger managed)
+                internal static bool __TryGetNativeToManagedMapping(IntPtr native, out global::ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger managed)
                 {
     
                     return NativeToManagedMap.TryGetValue(native, out managed);
@@ -189,21 +186,12 @@ namespace ArisenBinding
                     __Internal.Trace(__Instance, msg, thread_name, cs_trace);
                 }
 
-                public void Fatal(string msg, bool needThrow)
-                {
-                    var __basicString0 = new global::Std.BasicString<sbyte, global::Std.CharTraits<sbyte>, global::Std.Allocator<sbyte>>();
-                    global::Std.BasicStringExtensions.Assign(__basicString0, msg);
-                    var __arg0 = __basicString0.__Instance;
-                    __Internal.Fatal(__Instance, __arg0, needThrow);
-                    __basicString0.Dispose();
-                }
-
-                public void SetServerityLevel(global::ArisenBinding.ArisenEngine.Debugger.Logger.LogLevel level)
+                public void SetServerityLevel(global::ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger.LogLevel level)
                 {
                     __Internal.SetServerityLevel(__Instance, level);
                 }
 
-                public void BindCallback(global::ArisenBinding.ArisenEngine.Debugger.LogCallback callback)
+                public void BindCallback(global::ArisenBinding.NativeDebugger.ArisenEngine.Debugger.LogCallback callback)
                 {
                     var __arg0 = callback == null ? global::System.IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(callback);
                     __Internal.BindCallback(__Instance, __arg0);
@@ -220,12 +208,12 @@ namespace ArisenBinding
                     __Internal.Shutdown();
                 }
 
-                public static global::ArisenBinding.ArisenEngine.Debugger.Logger Instance
+                public static global::ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger Instance
                 {
                     get
                     {
                         var ___ret = __Internal.GetInstance();
-                        var __result0 = global::ArisenBinding.ArisenEngine.Debugger.Logger.__GetOrCreateInstance(___ret, false);
+                        var __result0 = global::ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger.__GetOrCreateInstance(___ret, false);
                         return __result0;
                     }
                 }

@@ -12,7 +12,7 @@ using __IntPtr = global::System.IntPtr;
 
 #pragma warning disable CS0109 // Member does not hide an inherited member; new keyword is not required
 
-namespace ArisenBinding
+namespace ArisenBinding.NativeDebugger
 {
     namespace ArisenEngine
     {

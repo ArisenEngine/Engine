@@ -12,7 +12,7 @@ using __IntPtr = global::System.IntPtr;
 
 #pragma warning disable CS0109 // Member does not hide an inherited member; new keyword is not required
 
-namespace ArisenBinding
+namespace ArisenBinding.NativePlatform
 {
     namespace ArisenEngine
     {
@@ -70,15 +70,15 @@ namespace ArisenBinding
 
                 public __IntPtr __Instance { get; protected set; }
 
-                internal static readonly new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::ArisenBinding.ArisenEngine.Platforms.Window> NativeToManagedMap =
-                    new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::ArisenBinding.ArisenEngine.Platforms.Window>();
+                internal static readonly new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.Window> NativeToManagedMap =
+                    new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.Window>();
 
-                internal static void __RecordNativeToManagedMapping(IntPtr native, global::ArisenBinding.ArisenEngine.Platforms.Window managed)
+                internal static void __RecordNativeToManagedMapping(IntPtr native, global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.Window managed)
                 {
                     NativeToManagedMap[native] = managed;
                 }
 
-                internal static bool __TryGetNativeToManagedMapping(IntPtr native, out global::ArisenBinding.ArisenEngine.Platforms.Window managed)
+                internal static bool __TryGetNativeToManagedMapping(IntPtr native, out global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.Window managed)
                 {
     
                     return NativeToManagedMap.TryGetValue(native, out managed);
@@ -133,7 +133,7 @@ namespace ArisenBinding
 
                 public Window(uint id)
                 {
-                    __Instance = Marshal.AllocHGlobal(sizeof(global::ArisenBinding.ArisenEngine.Platforms.Window.__Internal));
+                    __Instance = Marshal.AllocHGlobal(sizeof(global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.Window.__Internal));
                     __ownsNativeInstance = true;
                     __RecordNativeToManagedMapping(__Instance, this);
                     __Internal.ctor(__Instance, id);
@@ -141,18 +141,18 @@ namespace ArisenBinding
 
                 public Window()
                 {
-                    __Instance = Marshal.AllocHGlobal(sizeof(global::ArisenBinding.ArisenEngine.Platforms.Window.__Internal));
+                    __Instance = Marshal.AllocHGlobal(sizeof(global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.Window.__Internal));
                     __ownsNativeInstance = true;
                     __RecordNativeToManagedMapping(__Instance, this);
                     __Internal.ctor(__Instance);
                 }
 
-                public Window(global::ArisenBinding.ArisenEngine.Platforms.Window _0)
+                public Window(global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.Window _0)
                 {
-                    __Instance = Marshal.AllocHGlobal(sizeof(global::ArisenBinding.ArisenEngine.Platforms.Window.__Internal));
+                    __Instance = Marshal.AllocHGlobal(sizeof(global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.Window.__Internal));
                     __ownsNativeInstance = true;
                     __RecordNativeToManagedMapping(__Instance, this);
-                    *((global::ArisenBinding.ArisenEngine.Platforms.Window.__Internal*) __Instance) = *((global::ArisenBinding.ArisenEngine.Platforms.Window.__Internal*) _0.__Instance);
+                    *((global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.Window.__Internal*) __Instance) = *((global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.Window.__Internal*) _0.__Instance);
                 }
 
                 public void Dispose()
@@ -188,9 +188,9 @@ namespace ArisenBinding
                     __Internal.Resize(__Instance, width, height);
                 }
 
-                public static explicit operator global::ArisenBinding.ArisenEngine.Platforms.Window(uint id)
+                public static explicit operator global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.Window(uint id)
                 {
-                    return new global::ArisenBinding.ArisenEngine.Platforms.Window(id);
+                    return new global::ArisenBinding.NativePlatform.ArisenEngine.Platforms.Window(id);
                 }
 
                 public uint ID
