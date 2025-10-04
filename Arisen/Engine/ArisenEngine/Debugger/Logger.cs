@@ -1,7 +1,6 @@
 using System.Diagnostics;
-using Debugger = ArisenBinding.NativeDebugger.ArisenEngine.Debugger;
 
-namespace ArisenEngine.Debug;
+namespace ArisenEngine.Debugger;
 
 public static class Logger
 {
@@ -18,11 +17,11 @@ public static class Logger
 
     }
     
-    internal static Debugger.LogCallback ReceiveLog;
+    internal static ArisenBinding.NativeDebugger.ArisenEngine.Debugger.LogCallback ReceiveLog;
     
     static Logger()
     {
-        ReceiveLog = new Debugger.LogCallback(RecordLog);
+        ReceiveLog = new ArisenBinding.NativeDebugger.ArisenEngine.Debugger.LogCallback(RecordLog);
     }
     
     
@@ -88,7 +87,7 @@ public static class Logger
 
     public static void Dispose()
     {
-        Debugger.Logger.Shutdown();
+        ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger.Shutdown();
     }
 
     [Conditional("DEBUG")]
@@ -100,40 +99,40 @@ public static class Logger
     public static void Log(object msg)
     {
         string trace = Environment.StackTrace;
-        Debugger.Logger.Instance.Log(msg.ToString(), Thread.CurrentThread.Name, trace);
+        ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger.Instance.Log(msg.ToString(), Thread.CurrentThread.Name, trace);
         
     }
     
     public static void Info(object msg)
     {
         string trace = Environment.StackTrace;
-        Debugger.Logger.Instance.Info(msg.ToString(), Thread.CurrentThread.Name, trace);
+        ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger.Instance.Info(msg.ToString(), Thread.CurrentThread.Name, trace);
         
     }
 
     public static void Trace(object msg)
     {
         string trace = Environment.StackTrace;
-        Debugger.Logger.Instance.Trace(msg.ToString(), Thread.CurrentThread.Name, trace);
+        ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger.Instance.Trace(msg.ToString(), Thread.CurrentThread.Name, trace);
         
     }
 
     public static void Warning(object msg)
     {
         string trace = Environment.StackTrace;
-        Debugger.Logger.Instance.Warning(msg.ToString(), Thread.CurrentThread.Name, trace);
+        ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger.Instance.Warning(msg.ToString(), Thread.CurrentThread.Name, trace);
     }
     
     public static void Error(object msg)
     {
         string trace = Environment.StackTrace;
-        Debugger.Logger.Instance.Error(msg.ToString(), Thread.CurrentThread.Name, trace);
+        ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger.Instance.Error(msg.ToString(), Thread.CurrentThread.Name, trace);
     }
 
     public static void Fatal(object msg)
     {
         string trace = Environment.StackTrace;
-        Debugger.Logger.Instance.Fatal(msg.ToString(), Thread.CurrentThread.Name, trace);
+        ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger.Instance.Fatal(msg.ToString(), Thread.CurrentThread.Name, trace);
     }
 
     public static void Clear()
@@ -145,12 +144,12 @@ public static class Logger
     {
         if (bindCallback)
         {
-            Debugger.Logger.Instance.BindCallback(ReceiveLog);
+            ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger.Instance.BindCallback(ReceiveLog);
         }
         
-        Debugger.Logger.Instance.SetServerityLevel(Debugger.Logger.LogLevel.Trace);
+        ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger.Instance.SetServerityLevel(ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger.LogLevel.Trace);
      
-        return  Debugger.Logger.Instance.Initialize();
+        return  ArisenBinding.NativeDebugger.ArisenEngine.Debugger.Logger.Instance.Initialize();
         
     }
     

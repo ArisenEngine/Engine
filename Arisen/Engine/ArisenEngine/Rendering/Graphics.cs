@@ -1,4 +1,4 @@
-using ArisenEngine.Debug;
+using ArisenEngine.Debugger;
 
 namespace ArisenEngine.Rendering;
 

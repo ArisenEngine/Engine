@@ -1,3 +1,5 @@
+using ArisenEngine.Debugger;
+
 namespace ArisenEngine.ShaderLab;
 
 using System;
@@ -75,7 +77,7 @@ public class Lexer
 
             if (!match.Success || match.Index != m_Position)
             {
-                Debug.Logger.Error(
+                Logger.Error(
                     $"Unrecognized token at position {m_Position}, near \"{PreviewText()}\" (line {_line})");
                 break;
             }
@@ -124,7 +126,7 @@ public class Lexer
             }
             else
             {
-                Debug.Logger.Error($"[ShaderLab::Lexer] Unrecognized token at line {_line}, position {m_Position}");
+                Logger.Error($"[ShaderLab::Lexer] Unrecognized token at line {_line}, position {m_Position}");
                 break;
             }
 
@@ -219,7 +221,7 @@ public class Lexer
     {
         var t = Next();
         if (t.type != type || (text != null && t.text != text))
-            Debug.Logger.Error($"Expected token {type} '{text}', got {t.type} '{t.text}' at line {t.line}");
+            Logger.Error($"Expected token {type} '{text}', got {t.type} '{t.text}' at line {t.line}");
         return t;
     }
     

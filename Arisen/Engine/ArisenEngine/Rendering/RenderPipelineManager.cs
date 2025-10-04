@@ -1,6 +1,4 @@
 
-using ArisenEngine.Debug;
-
 namespace ArisenEngine.Rendering;
 
 public static class RenderPipelineManager

@@ -1,7 +1,6 @@
 using System.Runtime.InteropServices;
-using ArisenEngine.Debug;
 using ArisenEngine.Rendering;
-using Logger = ArisenEngine.Debug.Logger;
+using Logger = ArisenEngine.Debugger.Logger;
 
 namespace ArisenEngine.Platforms;
 

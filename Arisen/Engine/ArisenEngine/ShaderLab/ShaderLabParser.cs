@@ -1,3 +1,5 @@
+using ArisenEngine.Debugger;
+
 namespace ArisenEngine.ShaderLab;
 
 using System;
@@ -53,7 +55,7 @@ public class ShaderLabParser
             }
             else
             {
-                Debug.Logger.Error($"Unexpected token {Current.type}, content: {Current.text} at line {Current.line}.");
+                Logger.Error($"Unexpected token {Current.type}, content: {Current.text} at line {Current.line}.");
                 break;
             }
         }
@@ -117,7 +119,7 @@ public class ShaderLabParser
                 {
                     if (Match(TokenType.EndOfFile))
                     {
-                        Debug.Logger.Error("Unexpected EOF while parsing HLSLINCLUDE block");
+                        Logger.Error("Unexpected EOF while parsing HLSLINCLUDE block");
                         break;
                     }
                     if (Match(TokenType.PreprocessorDirective))
@@ -149,7 +151,7 @@ public class ShaderLabParser
                 {
                     fb = Next().text.Trim('"');
                 }
-                Debug.Logger.Info($"Get Fallback Info:{fb}");
+                Logger.Info($"Get Fallback Info:{fb}");
                 continue;
             }
             else if (Match(TokenType.CommentBlock) || Match(TokenType.CommentLine))
@@ -158,7 +160,7 @@ public class ShaderLabParser
             }
             else
             {
-                Debug.Logger.Error($"[ShaderLabParser] Unexpected identifier: {Current.text} at line {Current.line} ");
+                Logger.Error($"[ShaderLabParser] Unexpected identifier: {Current.text} at line {Current.line} ");
                 break;
             }
         }
@@ -355,7 +357,7 @@ public class ShaderLabParser
             else
             {
                 // 其他未知标识，跳过避免卡住
-                Debug.Logger.Info($"[ShaderLabParser] Skip token at SubShader: {Current.text} line {Current.line}");
+                Logger.Info($"[ShaderLabParser] Skip token at SubShader: {Current.text} line {Current.line}");
                 Next();
             }
             
@@ -412,7 +414,7 @@ public class ShaderLabParser
             };
         }
         
-        Debug.Logger.Error($"[ShaderLabParser] Unexpected token type: {valueToken.type}, value: {valueToken.text}, line {Current.line}");
+        Logger.Error($"[ShaderLabParser] Unexpected token type: {valueToken.type}, value: {valueToken.text}, line {Current.line}");
         return null;
     }
     
@@ -530,7 +532,7 @@ public class ShaderLabParser
                 {
                     if (Match(TokenType.EndOfFile))
                     {
-                        Debug.Logger.Error("Unexpected EOF while parsing HLSLPROGRAM block");
+                        Logger.Error("Unexpected EOF while parsing HLSLPROGRAM block");
                         break;
                     }
 
@@ -831,7 +833,7 @@ public class ShaderLabParser
             }
             else
             {
-                Debug.Logger.Error($"[ShaderLabParser] Unexpected identifier: {Current.text} in HLSL Block at line {Current.line}");
+                Logger.Error($"[ShaderLabParser] Unexpected identifier: {Current.text} in HLSL Block at line {Current.line}");
                 break;
             }
 
