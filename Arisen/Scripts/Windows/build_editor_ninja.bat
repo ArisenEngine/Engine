@@ -1,6 +1,20 @@
 @echo off
 setlocal enabledelayedexpansion
 
+REM === Ensure console code page matches localized tool output ===
+for /f "tokens=2 delims=:" %%I in ('chcp') do set "ORIGINAL_CP=%%I"
+set "ORIGINAL_CP=!ORIGINAL_CP: =!"
+if defined ARISEN_CODEPAGE (
+    chcp %ARISEN_CODEPAGE% >nul
+) else (
+    chcp 65001 >nul
+)
+
+set "DOTNET_CLI_UI_LANGUAGE=en-US"
+set "VSLANG=1033"
+
+set "EXIT_CODE=0"
+
 REM === 配置部分 ===
 set BUILD_CONFIG=Release
 set TARGET=Editor
@@ -19,8 +33,8 @@ REM ==== 1. 调用环境准备脚本 ====
 call "!SCRIPT_DIR!\setup-env.bat"
 if errorlevel 1 (
     echo ERROR: Environment setup failed. Aborting build.
-    pause
-    exit /b 1
+    set "EXIT_CODE=1"
+    goto :cleanup
 )
 call "!SCRIPT_DIR!\env-vars.bat"
 
@@ -40,8 +54,8 @@ if exist "!ROOT_DIR!\build" (
 
 if exist "!ROOT_DIR!\build" (
     echo ERROR: Failed to remove build directory.
-    pause
-    exit /b 1
+    set "EXIT_CODE=1"
+    goto :cleanup
 )
 
 mkdir "!ROOT_DIR!\build"
@@ -83,8 +97,8 @@ cmake -S "%ROOT_DIR%" ^
 
 if errorlevel 1 (
     echo ERROR: CMake configuration failed.
-    pause
-    exit /b 1
+    set "EXIT_CODE=1"
+    goto :cleanup
 )
 
 REM ==== 3. 编译 ====
@@ -92,10 +106,19 @@ echo === Building (!BUILD_CONFIG!) ===
 cmake --build "!ROOT_DIR!\build" --config !BUILD_CONFIG!
 if errorlevel 1 (
     echo ERROR: Build failed.
-    exit /b 1
-    pause
+    set "EXIT_CODE=1"
+    goto :cleanup
 )
 
 echo === Build succeeded ===
+goto :cleanup
+
+:cleanup
+if defined ORIGINAL_CP chcp !ORIGINAL_CP! >nul
+if not "%EXIT_CODE%"=="0" (
+    echo Script aborted with exit code %EXIT_CODE%.
+    pause
+    exit /b %EXIT_CODE%
+)
 pause
-exit /b 0
+exit /b %EXIT_CODE%

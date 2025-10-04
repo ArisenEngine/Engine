@@ -1,83 +1,135 @@
 @echo off
-setlocal enabledelayedexpansion
+setlocal EnableExtensions
 
-REM === 配置部分 ===
+REM No code page change
+
+set "DOTNET_CLI_UI_LANGUAGE=en-US"
+set "VSLANG=1033"
+
+set "EXIT_CODE=0"
+set "STEP_INDEX=0"
+set "STEP_TOTAL=5"
+
+REM === Config section ===
 set TARGET=ArisenEngineTest
 set PLATFORM=Windows
 
-REM 根目录假设是 setup-env.bat 的上上级目录，按你项目结构改
-set SCRIPT_DIR=%~dp0
-set SCRIPT_DIR=!SCRIPT_DIR:~0,-1!
-set ROOT_DIR=!SCRIPT_DIR!\..\..\..
+REM Script and root directories
+set "SCRIPT_DIR=%~dp0"
+if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+set "ROOT_DIR=%SCRIPT_DIR%\..\..\.."
 
-REM 规范路径转换（绝对路径）
-for %%I in ("!ROOT_DIR!") do set "ROOT_DIR=%%~fI"
+REM Normalize to absolute path
+for %%I in ("%ROOT_DIR%") do set "ROOT_DIR=%%~fI"
 
-REM 输出工具链信息
-echo CMake Program: !CMAKE_MAKE_PROGRAM!
-echo Using compiler: !COMPILER_PATH!
-
-REM ==== 1. 创建构建目录（如果不存在）====
-set VS_BUILD_DIR=!ROOT_DIR!\Projects\Visual Studio\ArisenEngineTest
-if not exist "!VS_BUILD_DIR!" (
-    mkdir "!VS_BUILD_DIR!"
+REM ==== Prepare environment (compiler/linker/Ninja/RC) ====
+set "ENV_DIR=%SCRIPT_DIR%\.."
+if exist "%ENV_DIR%\setup-env.bat" (
+    call "%ENV_DIR%\setup-env.bat"
+    if errorlevel 1 (
+        echo ERROR: setup-env failed.
+        set "EXIT_CODE=1"
+        goto :cleanup
+    )
+    if exist "%ENV_DIR%\env-vars.bat" (
+        call "%ENV_DIR%\env-vars.bat"
+    )
+) else (
+    echo WARNING: setup-env.bat not found at %ENV_DIR%
 )
 
-REM ==== 2. 配置CMake工程（只需一次，生成多配置.sln） ====
+REM Toolchain info
+echo CMake Program: %CMAKE_MAKE_PROGRAM%
+echo Using compiler: %COMPILER_PATH%
+
+REM ==== 1. Create build directory if not exists ====
+set VS_BUILD_DIR=%ROOT_DIR%\Projects\Visual Studio\ArisenEngineTest
+if not exist "%VS_BUILD_DIR%" (
+    mkdir "%VS_BUILD_DIR%"
+)
+
+set "LOG_FILE=%VS_BUILD_DIR%\build.log"
+echo === ArisenEngineTest Build Log === > "%LOG_FILE%"
+
+REM ==== 2. Configure CMake (multi-config .sln) ====
 echo === Configuring (Debug + Release) ===
 
-for %%I in ("!LINKER_PATH!") do set "LINKER_DIR=%%~dpI"
-set "PATH=!LINKER_DIR!;!PATH!"
-echo CMAKE_RC_COMPILER is: !CMAKE_RC_COMPILER!
-for %%I in ("!CMAKE_RC_COMPILER!") do set "RC_DIR=%%~dpI"
-set "PATH=!RC_DIR!;!PATH!"
+for %%I in ("%LINKER_PATH%") do set "LINKER_DIR=%%~dpI"
+set "PATH=%LINKER_DIR%;%PATH%"
+echo CMAKE_RC_COMPILER is: %CMAKE_RC_COMPILER%
+for %%I in ("%CMAKE_RC_COMPILER%") do set "RC_DIR=%%~dpI"
+set "PATH=%RC_DIR%;%PATH%"
 
-cmake -S "!ROOT_DIR!" ^
-  -B "!VS_BUILD_DIR!" ^
-  -DTARGET="ArisenEngineTest" ^
-  -DPLATFORM="Windows" ^
-  -G "Visual Studio 17 2022" -A x64
+set /a STEP_INDEX+=1 >nul
+echo [%STEP_INDEX%/%STEP_TOTAL%] Configuring CMake (multi-config solution)
+call :run cmake -S "%ROOT_DIR%" -B "%VS_BUILD_DIR%" -DTARGET="ArisenEngineTest" -DPLATFORM="Windows" -G "Visual Studio 17 2022" -A x64
 
 if errorlevel 1 (
     echo ERROR: CMake configuration failed.
-    pause
-    exit /b 1
+    set "EXIT_CODE=1"
+    goto :cleanup
 )
 
-REM ==== 3. 添加csproj ====
-call "!SCRIPT_DIR!/dotnet_add_csproj_engine_test.bat" "!VS_BUILD_DIR!\ArisenEngineTest.sln" "!VS_BUILD_DIR!\Outputs"
+REM ==== 3. Add csproj ====
+set /a STEP_INDEX+=1 >nul
+echo [%STEP_INDEX%/%STEP_TOTAL%] Adding .csproj to solution
+call :run call "%SCRIPT_DIR%\dotnet_add_csproj_engine_test.bat" "%VS_BUILD_DIR%\ArisenEngineTest.sln" "%VS_BUILD_DIR%\Outputs"
 if errorlevel 1 (
     echo ERROR: dotnet csproj add failed.
-    exit /b 1
+    set "EXIT_CODE=1"
+    goto :cleanup
 )
 
 REM ==== group 
-python "!SCRIPT_DIR!/../group_sln_cs.py" "!VS_BUILD_DIR!\ArisenEngineTest.sln"
+set /a STEP_INDEX+=1 >nul
+echo [%STEP_INDEX%/%STEP_TOTAL%] Grouping solution folders
+call :run python "%SCRIPT_DIR%\..\group_sln_cs.py" "%VS_BUILD_DIR%\ArisenEngineTest.sln"
 if errorlevel 1 (
     echo ERROR: group sln failed.
-    exit /b 1
+    set "EXIT_CODE=1"
+    goto :cleanup
 )
 
 
-REM ==== 4. 编译 Debug ====
-echo === Building Debug ===
-cmake --build "!VS_BUILD_DIR!" --config Debug
+REM ==== 4. Build Debug ====
+set /a STEP_INDEX+=1 >nul
+echo [%STEP_INDEX%/%STEP_TOTAL%] Building Debug
+call :run cmake --build "%VS_BUILD_DIR%" --config Debug
 if errorlevel 1 (
     echo ERROR: Debug build failed.
-    pause
-    exit /b 1
+    set "EXIT_CODE=1"
+    goto :cleanup
 )
 
-REM ==== 5 编译 Release ====
-echo === Building Release ===
-cmake --build "!VS_BUILD_DIR!" --config Release
+REM ==== 5. Build Release ====
+set /a STEP_INDEX+=1 >nul
+echo [%STEP_INDEX%/%STEP_TOTAL%] Building Release
+call :run cmake --build "%VS_BUILD_DIR%" --config Release
 if errorlevel 1 (
     echo ERROR: Release build failed.
-    pause
-    exit /b 1
+    set "EXIT_CODE=1"
+    goto :cleanup
 )
 
-echo === All builds succeeded ===
+goto :cleanup
+
+:cleanup
+if "%EXIT_CODE%"=="0" (
+    echo === All builds succeeded ===
+) else (
+    echo Script aborted with exit code %EXIT_CODE%.
+)
 
 pause
-exit /b 0
+exit /b %EXIT_CODE%
+
+:run
+echo [RUN] %*
+>> "%LOG_FILE%" echo [RUN] %*
+%* >> "%LOG_FILE%" 2>&1
+set "RC=%ERRORLEVEL%"
+if not "%RC%"=="0" (
+    echo Command failed with exit code %RC%. Showing last 120 lines from log:
+    powershell -NoProfile -Command "Get-Content -LiteralPath '%LOG_FILE%' -Tail 120"
+)
+exit /b %RC%

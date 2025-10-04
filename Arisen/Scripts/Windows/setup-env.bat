@@ -1,6 +1,20 @@
 @echo off
 setlocal enabledelayedexpansion
 
+REM === Ensure console code page matches localized tool output ===
+for /f "tokens=2 delims=:" %%I in ('chcp') do set "ORIGINAL_CP=%%I"
+set "ORIGINAL_CP=!ORIGINAL_CP: =!"
+if defined ARISEN_CODEPAGE (
+    chcp %ARISEN_CODEPAGE% >nul
+) else (
+    chcp 65001 >nul
+)
+
+set "DOTNET_CLI_UI_LANGUAGE=en-US"
+set "VSLANG=1033"
+
+set "EXIT_CODE=0"
+
 REM 取得脚本目录，去掉末尾反斜杠（如果有）
 set "SCRIPT_DIR=%~dp0"
 if "!SCRIPT_DIR:~-1!"=="\" set "SCRIPT_DIR=!SCRIPT_DIR:~0,-1!"
@@ -12,7 +26,8 @@ if not exist "!VSWHERE_PATH!" (
 )
 if not exist "!VSWHERE_PATH!" (
     echo ERROR: Cannot find vswhere.exe. Please install Visual Studio Installer.
-    exit /b 1
+    set "EXIT_CODE=1"
+    goto :cleanup
 )
 
 REM 用 vswhere 查找带 MSVC 的最新 VS 安装路径
@@ -22,7 +37,8 @@ for /f "usebackq tokens=*" %%i in (`"!VSWHERE_PATH!" -latest -requires Microsoft
 )
 if not defined VSINSTALLDIR (
     echo ERROR: Cannot find Visual Studio with C++ components installed.
-    exit /b 1
+    set "EXIT_CODE=1"
+    goto :cleanup
 )
 
 echo VC Path !VSINSTALLDIR!
@@ -46,7 +62,8 @@ for /f "usebackq tokens=*" %%R in (`where rc`) do (
     goto :FoundRC
 )
 echo ERROR: rc.exe not found in PATH or Windows SDK not installed.
-exit /b 1
+set "EXIT_CODE=1"
+goto :cleanup
 
 :FoundRC
 for %%D in ("!RC_PATH!") do set "RC_DIR=%%~dpD"
@@ -85,7 +102,8 @@ if not exist "!SEVEN_ZIP_PATH!" (
     powershell -ExecutionPolicy Bypass -File "!SCRIPT_DIR!\setup-7z.ps1"
     if errorlevel 1 (
         echo ERROR: Failed to setup 7-Zip.
-        exit /b 1
+        set "EXIT_CODE=1"
+        goto :cleanup
     )
 ) else (
     echo Found 7z.exe at !SEVEN_ZIP_PATH!
@@ -96,7 +114,8 @@ echo Starting LLVM setup...
 powershell -ExecutionPolicy Bypass -File "!SCRIPT_DIR!\setup-llvm.ps1"
 if errorlevel 1 (
     echo ERROR: Failed to setup LLVM environment.
-    exit /b 1
+    set "EXIT_CODE=1"
+    goto :cleanup
 )
 
 REM ==== 设置环境变量 ====
@@ -137,7 +156,8 @@ REM ==== Ninja 检查与安装 ====
 powershell -ExecutionPolicy Bypass -File "!SCRIPT_DIR!\setup-ninja.ps1"
 if errorlevel 1 (
     echo ERROR: Failed to setup Ninja.
-    exit /b 1
+    set "EXIT_CODE=1"
+    goto :cleanup
 ) else (
     echo Ninja setup complete.
 )
@@ -148,7 +168,8 @@ if exist "!NINJA_EXE!" (
     echo Using ninja at !NINJA_EXE!
 ) else (
     echo ERROR: ninja.exe not found after install!
-    exit /b 1
+    set "EXIT_CODE=1"
+    goto :cleanup
 )
 
 set "MT_PATH=!LLVM_DIR!\clang+llvm-20.1.5-x86_64-pc-windows-msvc\bin\llvm-mt.exe"
@@ -171,5 +192,7 @@ REM ==== 导出变量定义到 env-vars.bat ====
     echo set CMAKE_RC_COMPILER=!RC_PATH_SAVE!
 ) > "!SCRIPT_DIR!\env-vars.bat"
 
+:cleanup
+if defined ORIGINAL_CP chcp !ORIGINAL_CP! >nul
 endlocal
-exit /b 0
+exit /b %EXIT_CODE%
