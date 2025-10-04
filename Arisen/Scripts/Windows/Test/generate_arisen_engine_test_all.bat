@@ -10,6 +10,12 @@ set "EXIT_CODE=0"
 set "STEP_INDEX=0"
 set "STEP_TOTAL=5"
 
+REM Optional --no-pause flag
+if /i "%~1"=="--no-pause" (
+    set "ARISEN_NO_PAUSE=1"
+    shift /1
+)
+
 REM === Config section ===
 set TARGET=ArisenEngineTest
 set PLATFORM=Windows
@@ -120,7 +126,7 @@ if "%EXIT_CODE%"=="0" (
     echo Script aborted with exit code %EXIT_CODE%.
 )
 
-pause
+if not defined ARISEN_NO_PAUSE pause
 exit /b %EXIT_CODE%
 
 :run
