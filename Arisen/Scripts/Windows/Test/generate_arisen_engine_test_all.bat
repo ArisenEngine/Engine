@@ -1,6 +1,22 @@
 @echo off
 setlocal EnableExtensions
 
+REM ============================================================================
+REM ArisenEngine - Generate and Build ArisenEngineTest (VS multi-config solution)
+REM ----------------------------------------------------------------------------
+REM Usage:
+REM   generate_arisen_engine_test_all.bat [--no-pause]
+REM
+REM This script:
+REM   1) Loads toolchain environment (MSVC/SDK/LLVM/Ninja) via setup-env.bat
+REM   2) Generates a Visual Studio multi-config solution with CMake
+REM   3) Adds managed .csproj projects into the solution
+REM   4) Groups solution folders and builds Debug and Release
+REM
+REM Options:
+REM   --no-pause   Do not pause at the end (useful for CI/IDE terminals)
+REM ============================================================================
+
 REM No code page change
 
 set "DOTNET_CLI_UI_LANGUAGE=en-US"
@@ -38,13 +54,14 @@ if exist "%ENV_DIR%\setup-env.bat" (
         goto :cleanup
     )
     if exist "%ENV_DIR%\env-vars.bat" (
+        REM env-vars.bat exports COMPILER_PATH/LINKER_PATH/CMAKE_MAKE_PROGRAM/etc.
         call "%ENV_DIR%\env-vars.bat"
     )
 ) else (
     echo WARNING: setup-env.bat not found at %ENV_DIR%
 )
 
-REM Toolchain info
+REM Toolchain info (for diagnostics)
 echo CMake Program: %CMAKE_MAKE_PROGRAM%
 echo Using compiler: %COMPILER_PATH%
 
@@ -54,12 +71,14 @@ if not exist "%VS_BUILD_DIR%" (
     mkdir "%VS_BUILD_DIR%"
 )
 
+REM Log file for all invoked commands
 set "LOG_FILE=%VS_BUILD_DIR%\build.log"
 echo === ArisenEngineTest Build Log === > "%LOG_FILE%"
 
 REM ==== 2. Configure CMake (multi-config .sln) ====
 echo === Configuring (Debug + Release) ===
 
+REM Ensure linker/rc are on PATH for CMake
 for %%I in ("%LINKER_PATH%") do set "LINKER_DIR=%%~dpI"
 set "PATH=%LINKER_DIR%;%PATH%"
 echo CMAKE_RC_COMPILER is: %CMAKE_RC_COMPILER%
@@ -86,7 +105,7 @@ if errorlevel 1 (
     goto :cleanup
 )
 
-REM ==== group 
+REM ==== group (arrange solution folders) ====
 set /a STEP_INDEX+=1 >nul
 echo [%STEP_INDEX%/%STEP_TOTAL%] Grouping solution folders
 call :run python "%SCRIPT_DIR%\..\group_sln_cs.py" "%VS_BUILD_DIR%\ArisenEngineTest.sln"
@@ -130,6 +149,7 @@ if not defined ARISEN_NO_PAUSE pause
 exit /b %EXIT_CODE%
 
 :run
+REM Echo the command and log it before execution
 echo [RUN] %*
 >> "%LOG_FILE%" echo [RUN] %*
 %* >> "%LOG_FILE%" 2>&1
