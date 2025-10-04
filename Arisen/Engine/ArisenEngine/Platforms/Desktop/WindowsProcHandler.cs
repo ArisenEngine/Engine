@@ -1,5 +1,5 @@
 ﻿using System.Runtime.InteropServices;
-using ArisenEngine.Debug;
+using ArisenEngine.Debugger;
 using ArisenEngine.Rendering;
 
 namespace ArisenEngine.Platforms;

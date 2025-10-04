@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using ArisenEngine.Debug;
+using ArisenEngine.Debugger;
 using ArisenEngine.Platforms;
 using ArisenEngine.Rendering;
 

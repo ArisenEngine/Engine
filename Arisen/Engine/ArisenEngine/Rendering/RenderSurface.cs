@@ -1,5 +1,5 @@
 ﻿using ArisenBinding.NativePlatform.ArisenEngine.Platforms;
-using ArisenEngine.Debug;
+using ArisenEngine.Debugger;
 using ArisenEngine.Platforms;
 
 namespace ArisenEngine.Rendering;

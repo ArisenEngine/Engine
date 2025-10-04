@@ -1,4 +1,4 @@
-using ArisenEngine.Debug;
+using ArisenEngine.Debugger;
 using Serialization.Interface;
 
 namespace ArisenEngine.Rendering;
