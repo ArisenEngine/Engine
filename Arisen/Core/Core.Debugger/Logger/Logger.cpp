@@ -3,6 +3,7 @@
 #include <spdlog/cfg/env.h>   // support for loading levels from the environment variable
 #include <spdlog/fmt/ostr.h> // support for user defined types
 #include <spdlog/sinks/basic_file_sink.h>
+#include <filesystem>
 
 #if defined(__has_include) && __has_include(<stacktrace>) && __cpp_lib_stacktrace >= 202011
     #define HAS_STD_STACKTRACE 1
@@ -101,6 +102,10 @@ bool Logger::Initialize()
 
 	try
 	{
+        // Ensure log directory exists
+        std::error_code _ec;
+        std::filesystem::create_directories("logs", _ec);
+        (void)_ec;
 		// 初始化一个容量为 8192、单线程的日志线程池
 		constexpr size_t queue_size = 8192;
 		constexpr size_t num_threads = 1;  // 固定为单线程
@@ -108,8 +113,8 @@ bool Logger::Initialize()
 
 		
 		// init spdlog
-		auto async_file =
-			spdlog::basic_logger_mt<spdlog::async_factory>("log", "logs/log.log", true);
+        auto async_file =
+            spdlog::basic_logger_mt<spdlog::async_factory>("log", "logs/log.log", true);
 		
 		spdlog::set_default_logger(async_file);
 	
