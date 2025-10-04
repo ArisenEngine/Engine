@@ -1,4 +1,19 @@
 cmake_minimum_required(VERSION 3.29)
+
+# ============================================================================
+# ArisenEngine - Root CMake configuration
+# ----------------------------------------------------------------------------
+# Usage examples:
+#   cmake -S Arisen -B Arisen/Projects/Visual\ Studio/<Target> -G "Visual Studio 17 2022" -A x64 \
+#         -DTARGET=ArisenEngineTest -DPLATFORM=Windows
+#
+# Key concepts:
+#   - TARGET controls which high-level target to configure (Editor, DXTest, etc.)
+#   - PLATFORM sets platform macros and optional .NET runtime selection
+#   - PROJECT_DIR/OUTPUT_DIR unify IDE project and binary output locations
+#   - Custom targets drive .NET builds and resource copy steps
+# ============================================================================
+
 # Parse TARGET and PLATFORM
 if(NOT DEFINED TARGET)
     message(FATAL_ERROR "Please specify -DTARGET=[Editor|WindowsPlayerSupport|AndroidPlayerSupport|...].")
@@ -123,7 +138,7 @@ endif()
 
 message(STATUS "Unified binary output dir: ${OUTPUT_DIR}")
 
-# Add C++ Submodules
+# Add C++ submodules and third-party libraries
 
 # 配置 tracy 作为动态库
 set(TRACY_STATIC OFF CACHE BOOL "" FORCE)
@@ -151,7 +166,7 @@ endif()
 
 if(NOT "${TARGET}" STREQUAL "VulkanTest" AND NOT "${TARGET}" STREQUAL "DXTest")
 
-# Setup .NET Paths
+    # Setup .NET paths (BindingGenerator, AutoBinding, Engine)
 set(BINDING_GENERATOR_DIR ${CMAKE_SOURCE_DIR}/BindingGenerator)
 set(BINDING_GENERATOR_PROJ ${BINDING_GENERATOR_DIR}/BindingGenerator.csproj)
 set(BINDING_GENERATOR_EXE ${OUTPUT_DIR}/Generator)
@@ -162,7 +177,7 @@ set(AUTO_BINDING_PROJ ${AUTO_BINDING_DIR}/AutoBinding.csproj)
 set(ARISEN_ENGINE_PROJ ${CMAKE_SOURCE_DIR}/Engine/ArisenEngine/ArisenEngine.csproj)
 set(ARISEN_ENGINE_PROJ_DIR ${CMAKE_SOURCE_DIR}/Engine/ArisenEngine/)
 
-# Build C# Projects
+    # Build C# projects
 add_custom_target(BuildBindingGenerator
     COMMAND ${CMAKE_COMMAND} -E env
         dotnet build "${BINDING_GENERATOR_PROJ}"
@@ -180,7 +195,7 @@ add_dependencies(BuildBindingGenerator Core.Platform)
 add_dependencies(BuildBindingGenerator NativeEngine)
 set_target_properties(BuildBindingGenerator PROPERTIES FOLDER "CMakeProcess")
 
-# Generate auto binding
+    # Generate auto binding
 add_custom_target(GenerateAutoBinding
     COMMAND BindingGenerator.exe --source_code "${CMAKE_SOURCE_DIR}" --output "${CMAKE_SOURCE_DIR}" --library "${OUTPUT_DIR}"
     WORKING_DIRECTORY ${BINDING_GENERATOR_EXE}
@@ -216,7 +231,7 @@ set_target_properties(BuildArisenEngine PROPERTIES FOLDER "CMakeProcess")
 
 endif()
 
-# Final Target Setup
+# Final target setup (Editor, Players, Tests)
 if(${TARGET} STREQUAL "Editor")
     
     set(ARISEN_EDITOR_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor/ArisenEditor.csproj)
@@ -274,6 +289,7 @@ elseif(${TARGET} STREQUAL "ArisenEngineTest")
     set(ARISEN_ENGINE_TEST_PROJ ${CMAKE_SOURCE_DIR}/Test/ArisenEngineTest/ArisenEngineTest.csproj)
     set(ARISEN_ENGINE_TEST_PROJ_DIR ${CMAKE_SOURCE_DIR}/Test/ArisenEngineTest/)
 
+    # Copy shader resources for test if present; otherwise create an empty dir to avoid build failure
     set(SHADER_LAB_RES "${CMAKE_SOURCE_DIR}/Test/ArisenEngineTest/ShaderLabRes")
     set(SHADER_LAB_RES_DEST "${OUTPUT_DIR}/ShaderLabRes")
 

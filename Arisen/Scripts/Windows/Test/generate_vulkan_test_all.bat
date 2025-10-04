@@ -1,6 +1,18 @@
 @echo off
 setlocal EnableExtensions enabledelayedexpansion
 
+REM ============================================================================
+REM ArisenEngine - Generate and Build VulkanTest (VS multi-config solution)
+REM ----------------------------------------------------------------------------
+REM Usage:
+REM   generate_vulkan_test_all.bat
+REM
+REM This script:
+REM   1) Uses environment prepared by setup-env.bat (MSVC/SDK/Ninja)
+REM   2) Generates a Visual Studio multi-config solution with CMake
+REM   3) Builds Debug and Release
+REM ============================================================================
+
 REM === Ensure console code page matches localized tool output ===
 for /f "tokens=2 delims=:" %%I in ('chcp') do set "ORIGINAL_CP=%%I"
 set "ORIGINAL_CP=!ORIGINAL_CP: =!"

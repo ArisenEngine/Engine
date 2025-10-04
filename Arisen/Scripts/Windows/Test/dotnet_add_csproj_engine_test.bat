@@ -1,6 +1,18 @@
 @echo off
 setlocal enabledelayedexpansion
 
+REM ============================================================================
+REM ArisenEngine - Add .csproj to generated solution and set outputs
+REM ----------------------------------------------------------------------------
+REM Usage:
+REM   dotnet_add_csproj_engine_test.bat <solution_path> <outputs_dir>
+REM
+REM This script:
+REM   1) Validates and resolves project paths
+REM   2) Adds required .csproj files into the solution root using `dotnet sln add --in-root`
+REM   3) Calls update_csproj_outputs.py to update OutputPath for the solution
+REM ============================================================================
+
 REM === Ensure console code page matches localized tool output ===
 for /f "tokens=2 delims=:" %%I in ('chcp') do set "ORIGINAL_CP=%%I"
 set "ORIGINAL_CP=%ORIGINAL_CP: =%"
@@ -25,12 +37,13 @@ if "%~2"=="" (
 
 set "SCRIPT_DIR=%~dp0"
 set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
-echo SCRIPT_DIR: !SCRIPT_DIR!
+REM Outputs dir and solution path
 set "PROJ_OUTPUTS=%~2"
 set "SLN_PATH=%~1"
 
 if exist "%SLN_PATH%" (
 
+    REM Resolve absolute paths to project files
     for %%I in ("!SCRIPT_DIR!\..\..\..\BindingGenerator\BindingGenerator.csproj") do set "BINDING_GENERATOR=%%~fI"
     for %%I in ("!SCRIPT_DIR!\..\..\..\AutoBinding\AutoBinding.csproj") do set "AUTO_BINDING=%%~fI"
     for %%I in ("!SCRIPT_DIR!\..\..\..\Serialization\Serialization\Serialization.csproj") do set "SERIALIZATION=%%~fI"
@@ -44,6 +57,7 @@ if exist "%SLN_PATH%" (
     echo ARISEN_ENGINE: !ARISEN_ENGINE!
     echo ARISEN_ENGINE_TEST: !ARISEN_ENGINE_TEST!
 
+    REM Sanity checks on resolved paths
     if "!BINDING_GENERATOR!"=="" (
         echo ERROR: BINDING_GENERATOR path is empty.
         set "EXIT_CODE=1"
@@ -70,6 +84,7 @@ if exist "%SLN_PATH%" (
         goto :cleanup
     )
 
+    REM Existence checks for projects
     if not exist "!BINDING_GENERATOR!" (
         echo ERROR: Missing project ^(BindingGenerator^) at !SCRIPT_DIR!\..\..\..\BindingGenerator\BindingGenerator.csproj
         set "EXIT_CODE=1"
@@ -96,6 +111,7 @@ if exist "%SLN_PATH%" (
         goto :cleanup
     )
 
+    REM Extract solution dir and file
     for %%I in ("!SLN_PATH!") do (
         set "SLN_DIR=%%~dpI"
         set "SLN_FILE=%%~nxI"
@@ -104,6 +120,7 @@ if exist "%SLN_PATH%" (
     echo Changing directory to solution: !SLN_DIR!
     pushd "!SLN_DIR!"
 
+    REM Use relative paths so the solution stays portable
     set "REL_BINDING_GENERATOR=..\..\..\BindingGenerator\BindingGenerator.csproj"
     set "REL_AUTO_BINDING=..\..\..\AutoBinding\AutoBinding.csproj"
     set "REL_SERIALIZATION=..\..\..\Serialization\Serialization\Serialization.csproj"
