@@ -124,51 +124,51 @@ namespace ArisenEditor.GameDev
         internal static bool HandleFiles(FileInfo file, DirectoryInfo sourceDir, DirectoryInfo destinationDir)
         {
        
-            // if (file.Name.Contains(k_Sln))
-            // {
-            //     var fileName = destinationDir.Name + k_Sln;
-            //
-            //     string sourceFilePath = Path.Combine(sourceDir.FullName, file.Name);
-            //     string targetFilePath = Path.Combine(destinationDir.FullName, fileName);
-            //
-            //     string sln = File.ReadAllText(sourceFilePath);
-            //     var runtimeGuid = @"{" + Guid.NewGuid().ToString().ToUpper() + @"}";
-            //     var editorGuid = @"{" + Guid.NewGuid().ToString().ToUpper() + @"}";
-            //     var solutionGuid = @"{" + Guid.NewGuid().ToString().ToUpper() + @"}";
-            //
-            //     sln = string.Format(sln, runtimeGuid, editorGuid, solutionGuid);
-            //
-            //     File.WriteAllText(targetFilePath, sln);
-            //
-            //     return true;
-            // }
-            //
-            //
-            // if (file.Name.Contains(k_Csproj))
-            // {
-            //     if (file.Name == @"Assembly-Editor.csproj.template")
-            //     {
-            //         string sourceFilePath = Path.Combine(sourceDir.FullName, file.Name);
-            //         string targetFilePath = Path.Combine(destinationDir.FullName, file.Name.Replace(".template",""));
-            //         string proj = File.ReadAllText(sourceFilePath);
-            //         proj = string.Format(proj, "\"ArisenEditor\"", InstallationRoot + @"ArisenEditor.dll");
-            //         File.WriteAllText(targetFilePath, proj);
-            //
-            //         return true;
-            //     }
-            //
-            //     if (file.Name == @"Assembly-Runtime.csproj.template")
-            //     {
-            //         string sourceFilePath = Path.Combine(sourceDir.FullName, file.Name);
-            //         string targetFilePath = Path.Combine(destinationDir.FullName, file.Name.Replace(".template",""));
-            //         string proj = File.ReadAllText(sourceFilePath);
-            //         proj = string.Format(proj, InstallationRoot + @"ArisenEngine.dll");
-            //         File.WriteAllText(targetFilePath, proj);
-            //
-            //         return true;
-            //     }
-            // }
-            //
+            if (file.Name.Contains(k_Sln))
+            {
+                var fileName = destinationDir.Name + k_Sln;
+            
+                string sourceFilePath = Path.Combine(sourceDir.FullName, file.Name);
+                string targetFilePath = Path.Combine(destinationDir.FullName, fileName);
+            
+                string sln = File.ReadAllText(sourceFilePath);
+                var runtimeGuid = @"{" + Guid.NewGuid().ToString().ToUpper() + @"}";
+                var editorGuid = @"{" + Guid.NewGuid().ToString().ToUpper() + @"}";
+                var solutionGuid = @"{" + Guid.NewGuid().ToString().ToUpper() + @"}";
+            
+                sln = string.Format(sln, runtimeGuid, editorGuid, solutionGuid);
+            
+                File.WriteAllText(targetFilePath, sln);
+            
+                return true;
+            }
+            
+            
+            if (file.Name.Contains(k_Csproj))
+            {
+                if (file.Name == @"Assembly-Editor.csproj.template")
+                {
+                    string sourceFilePath = Path.Combine(sourceDir.FullName, file.Name);
+                    string targetFilePath = Path.Combine(destinationDir.FullName, file.Name.Replace(".template",""));
+                    string proj = File.ReadAllText(sourceFilePath);
+                    proj = string.Format(proj, "\"ArisenEditor\"", InstallationRoot + @"ArisenEditor.dll");
+                    File.WriteAllText(targetFilePath, proj);
+            
+                    return true;
+                }
+            
+                if (file.Name == @"Assembly-Runtime.csproj.template")
+                {
+                    string sourceFilePath = Path.Combine(sourceDir.FullName, file.Name);
+                    string targetFilePath = Path.Combine(destinationDir.FullName, file.Name.Replace(".template",""));
+                    string proj = File.ReadAllText(sourceFilePath);
+                    proj = string.Format(proj, InstallationRoot + @"ArisenEngine.dll");
+                    File.WriteAllText(targetFilePath, proj);
+            
+                    return true;
+                }
+            }
+            
 
 
             return false;
@@ -176,9 +176,9 @@ namespace ArisenEditor.GameDev
 
         internal static void CreateProjectSolution(ProjectInfo template, string newProjectPath, string newProjectName)
         {
-            // var sourcePath = Path.Combine (template.ProjectPath, template.ProjectName);
-            // var fullPath = Path.Combine(newProjectPath, newProjectName);
-            // FileSystemUtilities.CopyDirectoryRecursively(sourcePath, fullPath, HandleFiles);
+            var sourcePath = Path.Combine (template.ProjectPath, template.ProjectName);
+            var fullPath = Path.Combine(newProjectPath, newProjectName);
+            FileSystemUtilities.CopyDirectoryRecursively(sourcePath, fullPath, HandleFiles);
         }
 
         //public static void BuildProject(GameBuilder.TargetPlatform target)
