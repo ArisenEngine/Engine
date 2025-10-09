@@ -62,8 +62,10 @@ for %%P in (devenv.exe MSBuild.exe MSBuildNode.exe VBCSCompiler.exe mspdbsrv.exe
         taskkill /F /T /IM %%P >nul 2>&1
     )
 )
+REM Also ask dotnet to shut down build servers to release file locks
+dotnet build-server shutdown >nul 2>&1
 REM Give the system a moment to release handles
-ping -n 2 127.0.0.1 >nul
+ping -n 3 127.0.0.1 >nul
 exit /b 0
 
 :retry_rmdir
@@ -74,6 +76,8 @@ if "%__TRIES__%"=="" set "__TRIES__=5"
 set /a __COUNT__=0
 :__rmdir_loop
 if not exist "%__DIR__%" goto :__rmdir_done
+REM Clear read-only/system/hidden attributes recursively before deletion
+attrib -R -S -H "%__DIR__%\*" /S /D >nul 2>&1
 rmdir /s /q "%__DIR__%" >nul 2>&1
 if exist "%__DIR__%" (
     set /a __COUNT__+=1
@@ -83,7 +87,9 @@ if exist "%__DIR__%" (
     )
     call :kill_build_processes
     echo Retry removing "%__DIR__%" (attempt %__COUNT__%/%__TRIES__%) ...
-    ping -n 2 127.0.0.1 >nul
+    REM Use PowerShell as a stronger fallback to force delete
+    powershell -NoProfile -Command "Try { Remove-Item -LiteralPath '%__DIR__%' -Recurse -Force -ErrorAction Stop } Catch {}" >nul 2>&1
+    ping -n 3 127.0.0.1 >nul
     goto :__rmdir_loop
 )
 :__rmdir_done
