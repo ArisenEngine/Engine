@@ -30,3 +30,7 @@ namespace Std
 namespace Std
 {
 }
+
+namespace Std
+{
+}

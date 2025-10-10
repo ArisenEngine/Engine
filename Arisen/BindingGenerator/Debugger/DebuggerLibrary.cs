@@ -42,6 +42,8 @@ public class DebuggerLibrary : ILibrary
     public void Setup(Driver driver)
     {
         driver.ParserOptions.Setup(TargetPlatform.Windows);
+        // Bypass MSVC STL's strict compiler-version check (STL1000) when using bundled Clang
+        driver.ParserOptions.AddDefines("_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH");
         driver.ParserOptions.AddIncludeDirs(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.Infra"));
         driver.ParserOptions.AddIncludeDirs(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.Debugger"));
         var options = driver.Options;
