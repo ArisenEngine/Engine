@@ -213,7 +213,7 @@ public class PlatformLibrary : ILibrary
         var module = options.AddModule("Core.Platform");
         module.OutputNamespace = GlobalConfig.GetNamespace("NativePlatform");
         module.Headers.Add(@"Windows/RenderWindowAPI.h");
-        // module.Headers.Add(@"ShaderCompiler/ShaderCompilerAPI.h");
+        module.Headers.Add(@"ShaderCompiler/ShaderCompilerAPI.h");
         module.LibraryDirs.Add(GlobalConfig.s_LibraryPath);
         module.Libraries.Add(@"Core.Platform");
     
