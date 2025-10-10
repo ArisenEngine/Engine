@@ -107,7 +107,7 @@ endif()
 
 set(PROJECT_DIR "")
 if(_GEN_LOWER MATCHES "visual studio")
-    set(PROJECT_DIR "${CMAKE_SOURCE_DIR}/Projects/Visual Studio/${TARGET}")
+    set(PROJECT_DIR "${CMAKE_SOURCE_DIR}/Projects/VisualStudio/${TARGET}")
 elseif(_GEN_LOWER MATCHES "xcode")
     set(PROJECT_DIR "${CMAKE_SOURCE_DIR}/Projects/Xcode/$${TARGET}")
 endif()

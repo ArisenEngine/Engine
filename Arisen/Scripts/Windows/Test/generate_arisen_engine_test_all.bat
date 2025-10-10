@@ -66,7 +66,7 @@ echo CMake Program: %CMAKE_MAKE_PROGRAM%
 echo Using compiler: %COMPILER_PATH%
 
 REM ==== 1. Create build directory if not exists ====
-set VS_BUILD_DIR=%ROOT_DIR%\Projects\Visual Studio\ArisenEngineTest
+set VS_BUILD_DIR=%ROOT_DIR%\Projects\VisualStudio\ArisenEngineTest
 if not exist "%VS_BUILD_DIR%" (
     mkdir "%VS_BUILD_DIR%"
 )
