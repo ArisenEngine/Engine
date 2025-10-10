@@ -23,7 +23,7 @@ internal static class Program
 
         DeleteDirectory(
             Path.GetFullPath(Path.Combine(GlobalConfig.s_Output, GlobalConfig.s_ProjectName)),
-            new List<string>() { "obj" }, new List<string>() { ".csproj" });
+            new List<string>() { "obj" }, new List<string>() { ".csproj" , ".gitignore"});
         
         // Generate both modules with distinct namespaces
         ConsoleDriver.Run(new DebuggerLibrary());
