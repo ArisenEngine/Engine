@@ -124,13 +124,15 @@ public class PlatformLibrary : ILibrary
         driver.ParserOptions.AddDefines("_HAS_CXX17=1");
         driver.ParserOptions.AddDefines("_HAS_CXX20=1");
         driver.ParserOptions.AddDefines("_MSVC_LANG=202002L");
+        // Bypass MSVC STL's strict compiler-version check (STL1000) when using bundled Clang
+        driver.ParserOptions.AddDefines("_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH");
         driver.ParserOptions.AddDefines("ARISEN_AUTOBINDING=1");
         driver.ParserOptions.NoBuiltinIncludes = false;
         driver.ParserOptions.NoStandardIncludes = false;
         // Help clang choose the correct C++ standard
         try
         {
-            driver.ParserOptions.AddArguments("-std=c++20");
+            driver.ParserOptions.AddArguments("-std=c++23");
         }
         catch { /* Some versions of CppSharp may not expose AddArguments; ignore */ }
         driver.ParserOptions.AddIncludeDirs(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.Infra"));
@@ -211,7 +213,7 @@ public class PlatformLibrary : ILibrary
         var module = options.AddModule("Core.Platform");
         module.OutputNamespace = GlobalConfig.GetNamespace("NativePlatform");
         module.Headers.Add(@"Windows/RenderWindowAPI.h");
-        module.Headers.Add(@"ShaderCompiler/ShaderCompilerAPI.h");
+        // module.Headers.Add(@"ShaderCompiler/ShaderCompilerAPI.h");
         module.LibraryDirs.Add(GlobalConfig.s_LibraryPath);
         module.Libraries.Add(@"Core.Platform");
     
