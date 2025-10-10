@@ -282,4 +282,20 @@ namespace ArisenEngine::Platforms
 
         return true;
     }
+
+    // A simpler C ABI for managed callers: avoids constructing STL containers from C# side
+    extern "C" PLATFORM_DLL bool CompileShaderFromFileSimple(
+        const wchar_t* input,
+        RHI::ProgramStage stage,
+        const wchar_t* entry,
+        const wchar_t* shaderModel,
+        const wchar_t* target,
+        const wchar_t* targetEnv,
+        const wchar_t* optimizeLevel,
+        const wchar_t** defines,
+        int numDefines,
+        const wchar_t** includes,
+        int numIncludes,
+        const wchar_t* output,
+        bool useDXLayout);
 }
