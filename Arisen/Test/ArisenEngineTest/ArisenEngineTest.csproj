@@ -18,9 +18,9 @@
 </ItemGroup>
 
 <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-<OutputPath>..\..\Projects\Visual Studio\ArisenEngineTest\Outputs\Debug\</OutputPath>
+<OutputPath>..\..\Projects\VisualStudio\ArisenEngineTest\Outputs\Debug\</OutputPath>
 </PropertyGroup>
 <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-<OutputPath>..\..\Projects\Visual Studio\ArisenEngineTest\Outputs\Release\</OutputPath>
+<OutputPath>..\..\Projects\VisualStudio\ArisenEngineTest\Outputs\Release\</OutputPath>
 </PropertyGroup>
 </Project>

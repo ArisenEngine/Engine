@@ -46,7 +46,7 @@ echo CMake Program: !CMAKE_MAKE_PROGRAM!
 echo Using compiler: !COMPILER_PATH!
 
 REM ==== 1. 创建构建目录（如果不存在）====
-set VS_BUILD_DIR=!ROOT_DIR!\Projects\Visual Studio\VulkanTest
+set VS_BUILD_DIR=!ROOT_DIR!\Projects\VisualStudio\VulkanTest
 if not exist "!VS_BUILD_DIR!" (
     mkdir "!VS_BUILD_DIR!"
 )

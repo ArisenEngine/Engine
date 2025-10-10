@@ -21,7 +21,7 @@ REM 规范路径转换（绝对路径）
 for %%I in ("!ROOT_DIR!") do set "ROOT_DIR=%%~fI"
 
 REM ==== 1. 创建构建目录（如果不存在）====
-set VS_BUILD_DIR=!ROOT_DIR!\Projects\Visual Studio\Editor
+set VS_BUILD_DIR=!ROOT_DIR!\Projects\VisualStudio\Editor
 if not exist "!VS_BUILD_DIR!" (
     mkdir "!VS_BUILD_DIR!"
 )

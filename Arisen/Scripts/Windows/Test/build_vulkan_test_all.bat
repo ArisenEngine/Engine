@@ -24,7 +24,7 @@ REM 规范路径转换（绝对路径）
 for %%I in ("!ROOT_DIR!") do set "ROOT_DIR=%%~fI"
 
 
-set VS_BUILD_DIR=!ROOT_DIR!\Projects\Visual Studio\VulkanTest
+set VS_BUILD_DIR=!ROOT_DIR!\Projects\VisualStudio\VulkanTest
 
 REM ==== 4. 编译 Debug ====
 echo === Building Debug ===
