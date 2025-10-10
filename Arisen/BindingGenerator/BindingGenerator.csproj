@@ -20,10 +20,4 @@
       <Folder Include="Src\" />
     </ItemGroup>
 
-<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-<OutputPath>..\Projects\VisualStudio\ArisenEngineTest\Outputs\Debug\</OutputPath>
-</PropertyGroup>
-<PropertyGroup Condition="'$(Configuration)' == 'Release'">
-<OutputPath>..\Projects\VisualStudio\ArisenEngineTest\Outputs\Release\</OutputPath>
-</PropertyGroup>
 </Project>

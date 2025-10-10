@@ -33,4 +33,4 @@
   <ItemGroup>
     <ProjectReference Include="..\ArisenEditorShell\ArisenEditorShell.csproj" />
   </ItemGroup>
-<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>..\..\Projects\Visual Studio\Editor\Outputs\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>..\..\Projects\Visual Studio\Editor\Outputs\Release\</OutputPath></PropertyGroup></Project>
+</Project>
