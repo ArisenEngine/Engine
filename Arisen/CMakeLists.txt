@@ -183,7 +183,6 @@ add_custom_target(BuildBindingGenerator
         dotnet build "${BINDING_GENERATOR_PROJ}"
         --configuration $<CONFIG>
         --output "${BINDING_GENERATOR_EXE}"
-       
     WORKING_DIRECTORY ${BINDING_GENERATOR_DIR}
     COMMENT "Building Binding Generator"
     VERBATIM
@@ -208,7 +207,7 @@ add_dependencies(GenerateAutoBinding BuildBindingGenerator)
 set_target_properties(GenerateAutoBinding PROPERTIES FOLDER "CMakeProcess")
 
 add_custom_target(BuildAutoBinding
-    COMMAND dotnet build ${AUTO_BINDING_PROJ} --configuration $<CONFIG>
+    COMMAND dotnet build ${AUTO_BINDING_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}"
     WORKING_DIRECTORY ${AUTO_BINDING_DIR}
     COMMENT "Building AutoBinding Project"
     DEPENDS ${AUTO_BINDING_PROJ}
@@ -219,7 +218,7 @@ add_dependencies(BuildAutoBinding GenerateAutoBinding)
 set_target_properties(BuildAutoBinding PROPERTIES FOLDER "CMakeProcess")
 
 add_custom_target(BuildArisenEngine
-    COMMAND dotnet build ${ARISEN_ENGINE_PROJ} --configuration $<CONFIG> 
+    COMMAND dotnet build ${ARISEN_ENGINE_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}"
     WORKING_DIRECTORY ${ARISEN_ENGINE_PROJ_DIR}
     COMMENT "Building Arisen Engine"
     DEPENDS "AutoBinding.dll"
@@ -242,7 +241,7 @@ if(${TARGET} STREQUAL "Editor")
     set(ARISEN_EDITOR_DESKTOP_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor.Desktop/)
 
     add_custom_target(BuildArisenEditor
-    COMMAND dotnet build ${ARISEN_EDITOR_PROJ} --configuration $<CONFIG>
+    COMMAND dotnet build ${ARISEN_EDITOR_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}"
     WORKING_DIRECTORY ${ARISEN_EDITOR_PROJ_DIR}
     COMMENT "Building Arisen Editor"
     DEPENDS "ArisenEngine.dll"
@@ -253,7 +252,7 @@ if(${TARGET} STREQUAL "Editor")
     set_target_properties(BuildArisenEditor PROPERTIES FOLDER "CMakeProcess")
 
     add_custom_target(BuildArisenEditorShell
-    COMMAND dotnet build ${ARISEN_EDITOR_SHELL_PROJ} --configuration $<CONFIG>
+    COMMAND dotnet build ${ARISEN_EDITOR_SHELL_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}"
     WORKING_DIRECTORY ${ARISEN_EDITOR_SHELL_PROJ_DIR}
     COMMENT "Building Arisen Editor Shell"
     DEPENDS "ArisenEditor.dll"
@@ -265,7 +264,7 @@ if(${TARGET} STREQUAL "Editor")
 
 
     add_custom_target(BuildArisenEditorDesktop ALL
-    COMMAND dotnet build ${ARISEN_EDITOR_DESKTOP_PROJ} --configuration $<CONFIG>
+    COMMAND dotnet build ${ARISEN_EDITOR_DESKTOP_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}"
     WORKING_DIRECTORY ${ARISEN_EDITOR_DESKTOP_PROJ_DIR}
     COMMENT "Building Arisen Editor Desktop"
     DEPENDS "ArisenEditorShell.dll"

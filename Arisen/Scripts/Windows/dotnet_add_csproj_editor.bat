@@ -131,9 +131,6 @@ if exist "%SLN_PATH%" (
     )
 
     popd
-
-    echo Setting solution...
-    python "%SCRIPT_DIR%\update_csproj_outputs.py" "%SLN_PATH%" "%PROJ_OUTPUTS%"
 ) else (
     echo Solution file not found: %SLN_PATH%
     set "EXIT_CODE=1"
