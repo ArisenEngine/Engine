@@ -1,0 +1,10 @@
+# Ignore everything in this directory
+*
+
+# But keep this .gitignore itself
+!.gitignore
+
+# And keep the project file tracked
+!AutoBinding.csproj
+
+
