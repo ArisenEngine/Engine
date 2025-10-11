@@ -123,7 +123,7 @@ namespace ArisenEngine.Views.Rendering
         protected override void OnGotFocus(GotFocusEventArgs e)
         {
             base.OnGotFocus(e);
-            Debug.Logger.Log($"Focus on :{Name}");
+            Debugger.Logger.Log($"Focus on :{Name}");
         }
 
         protected override void OnSizeChanged(SizeChangedEventArgs e)

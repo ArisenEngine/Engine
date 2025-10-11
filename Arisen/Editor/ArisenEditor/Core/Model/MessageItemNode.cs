@@ -1,12 +1,12 @@
 using System;
 using System.Diagnostics;
 using Avalonia.Media;
-using ArisenEngine.Debug;
+using ArisenEngine.Debugger;
 
 namespace ArisenEditor.Models;
 
-using LogMessage = ArisenEngine.Debug.Logger.LogMessage;
-using LogLevel = ArisenEngine.Debug.Logger.LogLevel;
+using LogMessage = Logger.LogMessage;
+using LogLevel = Logger.LogLevel;
 
 internal class MessageItemNode
 {

@@ -12,7 +12,7 @@ using Avalonia.Threading;
 
 namespace ArisenEditor.Core.Views;
 
-using Logger = ArisenEngine.Debug.Logger;
+using Logger = ArisenEngine.Debugger.Logger;
 internal partial class MainEditorHostView : Window
 {
     private ArisenFileSystemWatcher m_FileSystemWatcher;

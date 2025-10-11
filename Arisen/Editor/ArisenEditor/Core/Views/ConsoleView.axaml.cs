@@ -7,11 +7,11 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
-using ArisenEngine.Debug;
+using ArisenEngine.Debugger;
 
 namespace ArisenEditor.Views;
-using LogMessage = ArisenEngine.Debug.Logger.LogMessage;
-using Logger = ArisenEngine.Debug.Logger;
+using LogMessage = Logger.LogMessage;
+using Logger = Logger;
 
 internal partial class ConsoleView : UserControl
 {
