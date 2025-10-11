@@ -106,6 +106,8 @@ public class SubShader
 {
     public List<Pass> passes = new ();
     public List<string> tags = new ();
+    // HLSLINCLUDE blocks defined at SubShader scope; their code should be prepended to each pass within this SubShader
+    public List<string> includeHlslCodes = new ();
 }
 
 public class IncludedHLSL

@@ -2,6 +2,8 @@ namespace ArisenEngine.ShaderLab;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text;
 
 public class ShaderLabParser
@@ -9,11 +11,20 @@ public class ShaderLabParser
     private Lexer m_Lexer;
     private Preprocessor m_Preprocessor;
     private bool m_HasErrors = false;
+    private SubShader _lastParsedSubShader = null;
+    private readonly string m_BaseDir = string.Empty;
 
     public ShaderLabParser(string code)
     {
         m_Lexer = new Lexer(code);
         m_Preprocessor = new Preprocessor();
+    }
+
+    public ShaderLabParser(string code, string baseDirectory)
+    {
+        m_Lexer = new Lexer(code);
+        m_Preprocessor = new Preprocessor();
+        m_BaseDir = baseDirectory ?? string.Empty;
     }
 
     private Token Current => m_Lexer.Peek();
@@ -47,6 +58,27 @@ public class ShaderLabParser
             }
         }
 
+        // Post-process include content root rewrite if base dir is provided
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(m_BaseDir))
+            {
+                var includeParents = shader.subShaders
+                    .SelectMany(s => s.passes)
+                    .SelectMany(p => p.includedHLSLs)
+                    .Distinct()
+                    .ToArray();
+                var contentRoot = FindIncludeContentRoot(m_BaseDir, includeParents);
+                if (!string.IsNullOrWhiteSpace(contentRoot))
+                {
+                    foreach (var sub in shader.subShaders)
+                        foreach (var p in sub.passes)
+                            p.includedHLSLs = new List<string> { contentRoot };
+                }
+            }
+        }
+        catch { }
+
         return shader;
     }
 
@@ -68,6 +100,7 @@ public class ShaderLabParser
                 Next();
                 Expect(TokenType.Symbol, "{");
                 var subShader = ParseSubShader();
+                _lastParsedSubShader = subShader;
                 shader.subShaders.Add(subShader);
                 Expect(TokenType.Symbol, "}");
             }
@@ -189,6 +222,31 @@ public class ShaderLabParser
                 var pass = ParsePass();
                 subShader.passes.Add(pass);
                 Expect(TokenType.Symbol, "}");
+            }
+            else if (Match(TokenType.Identifier, "HLSLINCLUDE"))
+            {
+                // SubShader-level include block; capture raw code and store for later prepend
+                var startTok = Next();
+                int sliceStart = startTok.start + startTok.length;
+                while (!Match(TokenType.Identifier, "ENDHLSL"))
+                {
+                    if (Match(TokenType.EndOfFile))
+                    {
+                        Debug.Logger.Error("Unexpected EOF while parsing SubShader HLSLINCLUDE block");
+                        break;
+                    }
+                    if (Match(TokenType.PreprocessorDirective))
+                    {
+                        var directiveTok = Next();
+                        m_Preprocessor.ProcessDirective(directiveTok.text);
+                        continue;
+                    }
+                    Next();
+                }
+                var endTok = Expect(TokenType.Identifier, "ENDHLSL");
+                int sliceEnd = endTok.start;
+                var code = m_Lexer.Slice(sliceStart, sliceEnd);
+                subShader.includeHlslCodes.Add(code);
             }
             else if (Match(TokenType.Identifier, "Tags"))
             {
@@ -491,15 +549,23 @@ public class ShaderLabParser
                             if (directive.StartsWith("#include_with_pragmas "))
                             {
                                 var path = ExtractIncludePath(directive);
-                                if (!string.IsNullOrEmpty(path)) pass.includedHLSLs.Add(path);
+                                if (!string.IsNullOrEmpty(path))
+                                {
+                                    var dir = ExtractIncludeParentDir(path);
+                                    if (!string.IsNullOrEmpty(dir)) pass.includedHLSLs.Add(dir);
+                                }
                                 removed.Add((directiveTok.start, directiveTok.start + directiveTok.length));
                             }
                             else if (directive.StartsWith("#include "))
                             {
                                 var path = ExtractIncludePath(directive);
-                                if (!string.IsNullOrEmpty(path)) pass.includedHLSLs.Add(path);
-                                // 现在：普通 #include 也从源码中移除，由上层以 -I/拼接策略处理
-                                removed.Add((directiveTok.start, directiveTok.start + directiveTok.length));
+                                if (!string.IsNullOrEmpty(path))
+                                {
+                                    var dir = ExtractIncludeParentDir(path);
+                                    if (!string.IsNullOrEmpty(dir)) pass.includedHLSLs.Add(dir);
+                                }
+                                // 保留 include 语句在源码中，这样 dxc 可按 -I 解析
+                                // 因此这里不将其移除
                             }
                         }
                         continue;
@@ -509,7 +575,20 @@ public class ShaderLabParser
                 var endTok = Expect(TokenType.Identifier, "ENDHLSL");
                 int sliceEnd = endTok.start;
                 var raw = m_Lexer.Slice(sliceStart, sliceEnd);
-                pass.hlslCode = RemoveSlices(raw, sliceStart, removed);
+                var body = RemoveSlices(raw, sliceStart, removed);
+                // Prepend SubShader-level HLSLINCLUDE code and inline #include content previously tracked
+                var sb = new StringBuilder();
+                // try to locate nearest SubShader to grab its include blocks
+                // (parser structure guarantees current pass belongs to last parsed SubShader)
+                if (_lastParsedSubShader != null && _lastParsedSubShader.includeHlslCodes.Count > 0)
+                {
+                    foreach (var incCode in _lastParsedSubShader.includeHlslCodes)
+                        sb.AppendLine(incCode);
+                }
+                // Inline pass-level previously captured include code if any existed at root shader (global HLSLINCLUDE)
+                // Note: shader.includedHLSLs 保持原样，不在此处内联
+                sb.Append(body);
+                pass.hlslCode = sb.ToString();
                 continue;
             }
 
@@ -631,6 +710,63 @@ public class ShaderLabParser
             if (gt > lt) return directive.Substring(lt + 1, gt - lt - 1);
         }
         return string.Empty;
+    }
+
+    // 提取包含路径的父级目录（保持相对路径风格，统一使用正斜杠）
+    private string ExtractIncludeParentDir(string include)
+    {
+        if (string.IsNullOrEmpty(include)) return string.Empty;
+        var norm = include.Replace('\\', '/');
+        int idx = norm.LastIndexOf('/');
+        if (idx <= 0) return string.Empty;
+        return norm.Substring(0, idx);
+    }
+
+    // 根据 pass.includedHLSLs 中的父级相对路径，推断通用的内容根（起点目录中向上查找包含该首段目录名的最近祖先）
+    private static string? FindIncludeContentRoot(string startDir, IEnumerable<string> includeParents)
+    {
+        try
+        {
+            string anchor = includeParents
+                .Select(p => (p ?? string.Empty).Replace('\\', '/'))
+                .Where(p => p.Contains('/'))
+                .Select(p => p.Split('/')[0])
+                .GroupBy(s => s, StringComparer.OrdinalIgnoreCase)
+                .OrderByDescending(g => g.Count())
+                .Select(g => g.Key)
+                .FirstOrDefault() ?? string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(anchor))
+            {
+                var dir = new DirectoryInfo(startDir);
+                for (int i = 0; i < 8 && dir != null; i++, dir = dir.Parent)
+                {
+                    if (dir.GetDirectories(anchor).Length > 0)
+                        return dir.FullName;
+                }
+            }
+        }
+        catch { }
+        try
+        {
+            var anchor = includeParents
+                .Select(p => (p ?? string.Empty).Replace('\\', '/'))
+                .Where(p => p.Contains('/'))
+                .Select(p => p.Split('/')[0])
+                .FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(anchor))
+            {
+                var probe = startDir.Replace('\\', '/');
+                var token = "/" + anchor + "/";
+                var idx = probe.IndexOf(token, StringComparison.OrdinalIgnoreCase);
+                if (idx > 0)
+                {
+                    return probe.Substring(0, idx).Replace('/', Path.DirectorySeparatorChar);
+                }
+            }
+        }
+        catch { }
+        return null;
     }
 
     // 根据全局源码起点偏移，移除若干 (start,end) 片段，保持其它内容原样
