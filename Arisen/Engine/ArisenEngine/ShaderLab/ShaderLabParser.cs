@@ -234,7 +234,7 @@ public class ShaderLabParser
                 {
                     if (Match(TokenType.EndOfFile))
                     {
-                        Debug.Logger.Error("Unexpected EOF while parsing SubShader HLSLINCLUDE block");
+                        Logger.Error("Unexpected EOF while parsing SubShader HLSLINCLUDE block");
                         break;
                     }
                     if (Match(TokenType.PreprocessorDirective))

@@ -4,7 +4,7 @@ using ArisenEditor.GameDev;
 using Avalonia;
 using Avalonia.ReactiveUI;
 using ArisenEngine;
-using ArisenEngine.Debug;
+using ArisenEngine.Debugger;
 
 namespace ArisenEditor.Desktop.Desktop;
 

@@ -9,13 +9,13 @@ using Avalonia.Controls;
 using Avalonia.Threading;
 using DynamicData;
 using DynamicData.Binding;
-using ArisenEngine.Debug;
+using ArisenEngine.Debugger;
 using Avalonia.ReactiveUI;
 using ReactiveUI;
 
 namespace ArisenEditor.ViewModels;
-using LogMessage = ArisenEngine.Debug.Logger.LogMessage;
-using LogLevel = ArisenEngine.Debug.Logger.LogLevel;
+using LogMessage = Logger.LogMessage;
+using LogLevel = Logger.LogLevel;
 public class ConsoleViewModel : BaseToolViewModel, IDisposable
 {
     private ReadOnlyObservableCollection<MessageItemNode> m_Messages;
