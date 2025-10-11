@@ -15,17 +15,14 @@ public class ShaderProcessor
         if (File.Exists(fullPath))
         {
             var shaderContent = File.ReadAllText(fullPath);
-            var shaderLabParser = new ShaderLabParser(shaderContent);
+            var shaderLabParser = new ShaderLabParser(shaderContent, Path.GetDirectoryName(fullPath) ?? path);
             var shaderLabShader = shaderLabParser.ParseGraphicsShader();
             var metaPath = Path.Combine(path, fileName + ".yaml");
+            var shaderDir = Path.GetDirectoryName(fullPath) ?? path;
+            // Serialize after parser's internal rewrite so YAML contains absolute content root
             Serialization.SerializationUtil.Serialize(shaderLabShader, metaPath);
             Console.WriteLine($"Parse shader:{fileName}, output:{metaPath}");
-
-            // Compile per pass and stage to SPIR-V
-            var shaderDir = Path.GetDirectoryName(fullPath) ?? path;
-            // Try to locate the content root that contains the "Packages" folder so that
-            // DXC can resolve includes like "Packages/.../ShaderLibrary/*.hlsl"
-            string? packagesRoot = FindPackagesRoot(shaderDir);
+            return;
             for (int si = 0; si < shaderLabShader.subShaders.Count; si++)
             {
                 var sub = shaderLabShader.subShaders[si];
@@ -49,7 +46,6 @@ public class ShaderProcessor
                     {
                         shaderDir
                     };
-                    if (!string.IsNullOrWhiteSpace(packagesRoot)) includeDirs.Add(packagesRoot);
                     foreach (var inc in pass.includedHLSLs)
                     {
                         try
@@ -119,26 +115,5 @@ public class ShaderProcessor
                 }
             }
         }
-    }
-
-    private static string? FindPackagesRoot(string startDir)
-    {
-        try
-        {
-            var dir = new DirectoryInfo(startDir);
-            for (int i = 0; i < 8 && dir != null; i++, dir = dir.Parent)
-            {
-                if (dir.GetDirectories("Packages").Length > 0)
-                    return dir.FullName;
-            }
-        }
-        catch { }
-        // Fallback: trim path up to "Packages" segment if present
-        var idx = startDir.IndexOf(Path.DirectorySeparatorChar + "Packages" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
-        if (idx > 0)
-        {
-            return startDir.Substring(0, idx);
-        }
-        return null;
     }
 }
