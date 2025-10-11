@@ -22,7 +22,6 @@ public class ShaderProcessor
             // Serialize after parser's internal rewrite so YAML contains absolute content root
             Serialization.SerializationUtil.Serialize(shaderLabShader, metaPath);
             Console.WriteLine($"Parse shader:{fileName}, output:{metaPath}");
-            return;
             for (int si = 0; si < shaderLabShader.subShaders.Count; si++)
             {
                 var sub = shaderLabShader.subShaders[si];
@@ -42,19 +41,20 @@ public class ShaderProcessor
                     }
 
                     // Build include directories
-                    var includeDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                    {
-                        shaderDir
-                    };
+                    var includeDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    bool hasRoot = false;
                     foreach (var inc in pass.includedHLSLs)
                     {
                         try
                         {
-                            var abs = Path.GetFullPath(Path.Combine(shaderDir, inc));
-                            var dir = Path.GetDirectoryName(abs);
-                            if (!string.IsNullOrWhiteSpace(dir)) includeDirs.Add(dir);
+                            var abs = Path.IsPathRooted(inc) ? inc : Path.GetFullPath(Path.Combine(shaderDir, inc));
+                            if (!string.IsNullOrWhiteSpace(abs)) { includeDirs.Add(abs); hasRoot = true; }
                         }
                         catch { }
+                    }
+                    if (!hasRoot)
+                    {
+                        includeDirs.Add(shaderDir);
                     }
 
                     // Create an HLSL file alongside the original shader to keep relative includes stable
@@ -103,6 +103,7 @@ public class ShaderProcessor
                             TargetEnv = "vulkan1.3",
                             OptimizeLevel = "3",
                             Includes = includeDirs.ToArray(),
+                            Defines = new[] { "SHADER_API_VULKAN" },
                             OutputPath = outSpv,
                             UseDXLayout = true
                         };

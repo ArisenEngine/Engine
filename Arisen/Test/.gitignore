@@ -198,8 +198,6 @@ PublishScripts/
 *.nupkg
 # NuGet Symbol Packages
 *.snupkg
-# The packages folder can be ignored because of Package Restore
-**/[Pp]ackages/*
 # except build/, which is used as an MSBuild target.
 !**/[Pp]ackages/build/
 # Uncomment if necessary however generally it will be regenerated when needed
@@ -452,3 +450,8 @@ $RECYCLE.BIN/
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+!/ArisenEngineTest/ShaderLabRes/
+!/ArisenEngineTest/ShaderLabRes/Packages/
+!/ArisenEngineTest/ShaderLabRes/Packages/com.unity.render-pipelines.core/ShaderLibrary/**
+!/ArisenEngineTest/ShaderLabRes/Packages/com.unity.render-pipelines.universal/**
+!/ArisenEngineTest/ShaderLabRes/Packages/com.unity.render-pipelines.universal-config/**
