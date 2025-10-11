@@ -210,11 +210,16 @@ namespace ArisenEngine::Platforms
         buffer.Size = sourceBlob->GetBufferSize();
 
         ComPtr<IDxcResult> result;
+        ComPtr<IDxcIncludeHandler> includeHandler;
+        if (s_DXCUtils)
+        {
+            s_DXCUtils->CreateDefaultIncludeHandler(&includeHandler);
+        }
         hres = s_DXCompiler->Compile(
             &buffer,
             arguments.data(),
             static_cast<UINT32>(arguments.size()),
-            nullptr,
+            includeHandler.Get(),
             IID_PPV_ARGS(&result));
 
         if (SUCCEEDED(hres))
