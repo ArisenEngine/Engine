@@ -1,7 +1,6 @@
 #pragma once
 #include "../../Common/CommandHeaders.h"
 #include "../RHICommon.h"
-#include "RHI/CommandBuffer/RHICommandBufferPool.h"
 #include "RHI/Enums/Memory/EMemoryPropertyFlagBits.h"
 #include "RHI/Program/DescriptorPool.h"
 #include "RHI/DeviceLimits.h"

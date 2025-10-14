@@ -2,9 +2,15 @@
 #include "RHISampler.h"
 #include "../RHICommon.h"
 #include "../Memory/BufferView.h"
+#include "../Handles/BufferHandle.h"
+#include "../Memory/ImageView.h"
+#include "RHI/Enums/Pipeline/EDescriptorType.h"
+#include "RHI/Enums/Image/EImageLayout.h"
 
 namespace ArisenEngine::RHI
 {
+    class ImageView;
+
     typedef struct RHIDescriptorImageInfo
     {
         RHISampler*        sampler;

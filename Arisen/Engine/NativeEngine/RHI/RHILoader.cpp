@@ -30,6 +30,8 @@ void ArisenEngine::Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphsicsAPI 
         LOG_FATAL("Unsupported graphics api.");
     }
 
+    _api_type = api_type;
+
     char dllPath[MAX_PATH];
     DWORD result = GetModuleFileNameA(_rhi_dll, dllPath, MAX_PATH);
     if (result != 0)
