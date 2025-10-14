@@ -3,11 +3,16 @@
 #include "RHI/Enums/Image/EImageTiling.h"
 #include "RHI/Enums/Image/EImageType.h"
 #include "RHI/Enums/Image/EImageUsageFlagBits.h"
+#include "RHI/Enums/Image/ESampleCountFlagBits.h"
+#include "RHI/Enums/Image/EFormat.h"
+#include "RHI/Enums/Memory/ESharingMode.h"
 #include "RHI/Enums/Pipeline/EAccessFlag.h"
 #include "RHI/Handles/BufferHandle.h"
 #include "RHI/Memory/ImageSubresourceLayers.h"
 #include "RHI/Synchronization/RHIImageSubresourceRange.h"
 #include "RHI/Program/RHISampler.h"
+#include "RHI/Enums/Image/EImageLayout.h"
+#include "RHI/Handles/ImageHandle.h"
 
 #define VK_STRUCT_INITIALIZE(type, name) type name ##{##};
 //
