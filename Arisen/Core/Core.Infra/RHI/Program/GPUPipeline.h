@@ -4,6 +4,7 @@
 
 namespace ArisenEngine::RHI
 {
+    class GPUSubPass;
     class GPUPipeline
     {
     public:
