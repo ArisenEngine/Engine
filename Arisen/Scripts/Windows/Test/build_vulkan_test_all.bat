@@ -1,58 +1,56 @@
 @echo off
-setlocal enabledelayedexpansion
+setlocal EnableExtensions
 
-REM === Ensure console code page matches localized tool output ===
-for /f "tokens=2 delims=:" %%I in ('chcp') do set "ORIGINAL_CP=%%I"
-set "ORIGINAL_CP=!ORIGINAL_CP: =!"
-if defined ARISEN_CODEPAGE (
-    chcp %ARISEN_CODEPAGE% >nul
-) else (
-    chcp 65001 >nul
-)
-
-set "DOTNET_CLI_UI_LANGUAGE=en-US"
-set "VSLANG=1033"
+REM === Skip code page and language tweaks to avoid parsing issues ===
+REM set "DOTNET_CLI_UI_LANGUAGE=en-US"
+REM set "VSLANG=1033"
 
 set "EXIT_CODE=0"
+set "STEP_INDEX=0"
+set "STEP_TOTAL=3"
 
-REM 根目录假设是 setup-env.bat 的上上级目录，按你项目结构改
-set SCRIPT_DIR=%~dp0
-set SCRIPT_DIR=!SCRIPT_DIR:~0,-1!
-set ROOT_DIR=!SCRIPT_DIR!\..\..\..
+REM Optional --no-pause flag
+if /i "%~1"=="--no-pause" set "ARISEN_NO_PAUSE=1"
 
-REM 规范路径转换（绝对路径）
-for %%I in ("!ROOT_DIR!") do set "ROOT_DIR=%%~fI"
+REM Resolve directories
+set "SCRIPT_DIR=%~dp0"
+if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+set "ROOT_DIR=%SCRIPT_DIR%\..\..\.."
+for %%I in ("%ROOT_DIR%") do set "ROOT_DIR=%%~fI"
 
 
-set VS_BUILD_DIR=!ROOT_DIR!\Projects\VisualStudio\VulkanTest
+set "VS_BUILD_DIR=%ROOT_DIR%\Projects\VisualStudio\VulkanTest"
+set "LOG_FILE=%VS_BUILD_DIR%\build.log"
 
-REM ==== 4. 编译 Debug ====
+echo ROOT_DIR: %ROOT_DIR%
+echo VS_BUILD_DIR: %VS_BUILD_DIR%
+
+if not exist "%VS_BUILD_DIR%" mkdir "%VS_BUILD_DIR%"
+
+echo === VulkanTest Build Log === > "%LOG_FILE%"
+
+REM Configure on first run when CMakeCache.txt is absent
+if not exist "%VS_BUILD_DIR%\CMakeCache.txt" (
+    echo === Configuring (Debug + Release) ===
+    cmake -S "%ROOT_DIR%" -B "%VS_BUILD_DIR%" -DTARGET=VulkanTest -DPLATFORM=Windows -G "Visual Studio 17 2022" -A x64 >> "%LOG_FILE%" 2>&1 || goto :fail
+)
+
+REM Build Debug
 echo === Building Debug ===
-cmake --build "!VS_BUILD_DIR!" --config Debug
-if errorlevel 1 (
-    echo ERROR: Debug build failed.
-    set "EXIT_CODE=1"
-    goto :cleanup
-)
+cmake --build "%VS_BUILD_DIR%" --config Debug >> "%LOG_FILE%" 2>&1 || goto :fail
 
-REM ==== 5 编译 Release ====
+REM Build Release
 echo === Building Release ===
-cmake --build "!VS_BUILD_DIR!" --config Release
-if errorlevel 1 (
-    echo ERROR: Release build failed.
-    set "EXIT_CODE=1"
-    goto :cleanup
-)
+cmake --build "%VS_BUILD_DIR%" --config Release >> "%LOG_FILE%" 2>&1 || goto :fail
 
-goto :cleanup
-
-:cleanup
-if "%EXIT_CODE%"=="0" (
-    echo === All builds succeeded ===
-) else (
-    echo Script aborted with exit code %EXIT_CODE%.
-)
-
-if defined ORIGINAL_CP chcp !ORIGINAL_CP! >nul
+echo === All builds succeeded ===
+if /i "%~1"=="--no-pause" exit /b 0
 pause
-exit /b %EXIT_CODE%
+exit /b 0
+
+:fail
+echo ERROR: Build failed. See log: "%LOG_FILE%"
+if exist "%LOG_FILE%" powershell -NoProfile -Command "Get-Content -LiteralPath '%LOG_FILE%' -Tail 120"
+if /i "%~1"=="--no-pause" exit /b 1
+pause
+exit /b 1
