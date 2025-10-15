@@ -25,6 +25,15 @@
 #include "RHI/Program/GPUSubPass.h"
 #include "RHI/Program/GPUPipelineStateObject.h"
 #include "Windows/RenderWindowAPI.h"
+#include "../../Engine/NativeEngine/RHI/RHIExports.h"
+#include "../../Engine/NativeEngine/RHI/InstanceExports.h"
+#include "../../Engine/NativeEngine/RHI/DeviceExports.h"
+#include "../../Engine/NativeEngine/RHI/SurfaceExports.h"
+#include "../../Engine/NativeEngine/RHI/HandlesExports.h"
+#include "../../Engine/NativeEngine/RHI/CommandBufferExports.h"
+#include "../../Engine/NativeEngine/RHI/PipelineExports.h"
+#include "../../Engine/NativeEngine/RHI/DescriptorExports.h"
+#include "../../Engine/NativeEngine/RHI/SyncExports.h"
 #include "ShaderCompiler/ShaderCompilerAPI.h"
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -46,14 +55,15 @@ struct RenderContext
     UInt32 windowId;
     UInt32 newWidth;
     UInt32 newHeight;
-    RHI::Device* device;
-    std::shared_ptr<RHI::GPURenderPass> renderPass;
-    std::shared_ptr<RHI::FrameBuffer> frameBuffer;
-    std::shared_ptr<RHI::BufferHandle> vertexBufferHandle;
-    std::shared_ptr<RHI::BufferHandle> indicesBufferHandle;
-    Containers::Vector<std::shared_ptr<RHI::BufferHandle>> uniformBuffers;
-    std::shared_ptr<RHI::ImageHandle> textureHandle;
-    RHI::RHICommandBufferPool* commandPool;
+    RHI_DeviceHandle device;
+    RHI_RenderPassHandle renderPass;
+    RHI_FrameBufferHandle frameBuffer;
+    RHI_BufferHandle vertexBufferHandle;
+    RHI_BufferHandle indicesBufferHandle;
+    Containers::Vector<RHI_BufferHandle> uniformBuffers;
+    RHI_ImageHandle textureHandle;
+    unsigned int commandPoolId;
+    RHI_DescriptorPoolHandle descriptorPool;
     Containers::Vector<UInt32> gpuPrograms;
     Containers::Vector<UInt32> descriptorPoolIds;
     bool bShouldResize;
@@ -140,7 +150,8 @@ class EngineTest : public Test
 {
 private:
     UInt32 frameIndex {0};
-    RHI::Instance* m_Instance{};
+    RHI_InstanceHandle m_Instance{};
+    UInt32 m_MaxFramesInFlight {2};
 
 public:
     EngineTest(): m_Instance(nullptr)
@@ -185,23 +196,23 @@ public:
            2
        };
 
-        Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphsicsAPI::Vulkan);
-        m_Instance = Graphics::RHILoader::CreateInstance(std::move(app_info));
-        gRHIFactory = m_Instance->CreateFactory();
-        auto env = m_Instance->GetEnvString();
+        RHI_SetGraphicsAPI(RHI::GraphsicsAPI::Vulkan);
+        m_Instance = RHI_CreateInstance(&app_info);
+        m_MaxFramesInFlight = RHI_Instance_GetMaxFramesInFlight(m_Instance);
+        // env string will be retrieved when compiling shaders
         // LOG_INFO(std::move(env));
 
         // init surfaces
         for (auto& renderContext : g_RenderContexts)
         {
-            m_Instance->CreateSurface(std::move(renderContext.windowId));
+            RHI_Instance_CreateSurface(m_Instance, renderContext.windowId);
         }
 
         // pick physical device
-        m_Instance->PickPhysicalDevice();
+        RHI_Instance_PickPhysicalDevice(m_Instance, true);
 
         // init logical devices
-        m_Instance->InitLogicDevices();
+        RHI_Instance_InitLogicDevices(m_Instance);
         
     }
 
@@ -209,23 +220,22 @@ public:
     {
         for (int i = 0; i < k_WindowsCount; ++i)
         {
-            g_RenderContexts[i].device = m_Instance->GetLogicalDevice(g_RenderContexts[i].windowId);
-            auto poolId = g_RenderContexts[i].device->CreateCommandBufferPool();
-            g_RenderContexts[i].commandPool = g_RenderContexts[i].device->GetCommandBufferPool(poolId);
-            g_RenderContexts[i].renderPass = g_RenderContexts[i].device->GetRenderPass();
-            g_RenderContexts[i].frameBuffer = g_RenderContexts[i].device->GetFrameBuffer();
-            g_RenderContexts[i].vertexBufferHandle = g_RenderContexts[i].device->GetBufferHandle("Vertex Buffer");
-            g_RenderContexts[i].indicesBufferHandle = g_RenderContexts[i].device->GetBufferHandle("Indices Buffer");
-            g_RenderContexts[i].textureHandle = g_RenderContexts[i].device->GetImageHandle("Texture Image");
-            for(int frameIndex = 0; frameIndex < m_Instance->GetMaxFramesInFlight(); ++frameIndex)
+            g_RenderContexts[i].device = RHI_Instance_GetLogicalDevice(m_Instance, g_RenderContexts[i].windowId);
+            g_RenderContexts[i].commandPoolId = RHI_Device_CreateCommandBufferPool(g_RenderContexts[i].device);
+            g_RenderContexts[i].renderPass = RHI_Device_GetRenderPass(g_RenderContexts[i].device);
+            g_RenderContexts[i].frameBuffer = RHI_Device_GetFrameBuffer(g_RenderContexts[i].device);
+            g_RenderContexts[i].vertexBufferHandle = RHI_Device_GetBufferHandle(g_RenderContexts[i].device, "Vertex Buffer");
+            g_RenderContexts[i].indicesBufferHandle = RHI_Device_GetBufferHandle(g_RenderContexts[i].device, "Indices Buffer");
+            g_RenderContexts[i].textureHandle = RHI_Device_GetImageHandle(g_RenderContexts[i].device, "Texture Image");
+            g_RenderContexts[i].descriptorPool = RHI_Device_GetDescriptorPool(g_RenderContexts[i].device);
+            for(int frameIndex = 0; frameIndex < (int)m_MaxFramesInFlight; ++frameIndex)
             {
-                g_RenderContexts[i].descriptorPoolIds.emplace_back(
-                    g_RenderContexts[i].device->GetDescriptorPool()
-                    ->AddPool({RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER},
-                        {1},1));
-                g_RenderContexts[i].uniformBuffers.emplace_back(
-                    g_RenderContexts[i].device->GetBufferHandle(
-                        "Uniform Buffer " + std::to_string(frameIndex)));
+                Containers::Vector<RHI::EDescriptorType> types { RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER };
+                Containers::Vector<unsigned int> counts { 1 };
+                unsigned int poolId = RHI_DescriptorPool_AddPool(g_RenderContexts[i].descriptorPool, &types, &counts, 1);
+                g_RenderContexts[i].descriptorPoolIds.emplace_back(poolId);
+                auto name = std::string("Uniform Buffer ") + std::to_string(frameIndex);
+                g_RenderContexts[i].uniformBuffers.emplace_back(RHI_Device_GetBufferHandle(g_RenderContexts[i].device, name.c_str()));
             }
         }
     }
@@ -233,6 +243,21 @@ public:
 
     void InitShaderProgram()
     {
+        // Retrieve environment string from instance (wide string)
+        std::wstring envStr;
+        {
+            unsigned int len = RHI_Instance_GetEnvStringW(m_Instance, nullptr, 0);
+            if (len > 0)
+            {
+                std::wstring tmp;
+                tmp.resize(len ? (len - 1) : 0);
+                if (len > 1)
+                {
+                    RHI_Instance_GetEnvStringW(m_Instance, tmp.data(), len);
+                }
+                envStr = std::move(tmp);
+            }
+        }
         auto shaderFileName = L"UniformBuffers";
         namespace fs = std::filesystem;
         auto currentPath = fs::current_path().generic_wstring() + L"\\Shader";
@@ -244,7 +269,7 @@ public:
             L"Vert",
             L"6_0",
             L"-spirv",
-            m_Instance->GetEnvString(),
+            envStr,
             L"0",
             RHI::ProgramStage::Vertex,
             {},
@@ -261,7 +286,7 @@ public:
 
         for (int i = 0; i < k_WindowsCount; ++i)
         {
-            auto programId = g_RenderContexts[i].device->CreateGPUProgram();
+            auto programId = RHI_Device_CreateGPUProgram(g_RenderContexts[i].device);
             auto desc = RHI::GPUProgramDesc
             {
                 outputVertex.codeSize,
@@ -270,7 +295,7 @@ public:
                 String::WStringToString(path).c_str(),
                 RHI::SHADER_STAGE_VERTEX_BIT
             };
-            g_RenderContexts[i].device->AttachProgramByteCode(programId, std::move(desc));
+            RHI_Device_AttachProgramByteCode(g_RenderContexts[i].device, programId, &desc);
             g_RenderContexts[i].gpuPrograms.emplace_back(programId);
         }
 
@@ -281,7 +306,7 @@ public:
             L"Frag",
             L"6_0",
             L"-spirv",
-            m_Instance->GetEnvString(),
+            envStr,
             L"0",
             RHI::ProgramStage::Fragment,
             {},
@@ -298,7 +323,7 @@ public:
 
         for (int i = 0; i < k_WindowsCount; ++i)
         {
-            auto programId = g_RenderContexts[i].device->CreateGPUProgram();
+            auto programId = RHI_Device_CreateGPUProgram(g_RenderContexts[i].device);
             auto desc = RHI::GPUProgramDesc
             {
                 outputfragment.codeSize,
@@ -307,7 +332,7 @@ public:
                 String::WStringToString(path).c_str(),
                 RHI::SHADER_STAGE_FRAGMENT_BIT
             };
-            g_RenderContexts[i].device->AttachProgramByteCode(programId, std::move(desc));
+            RHI_Device_AttachProgramByteCode(g_RenderContexts[i].device, programId, &desc);
             g_RenderContexts[i].gpuPrograms.emplace_back(programId);
         }
     }
@@ -317,32 +342,34 @@ public:
         // Init Buffer
         for (int i = 0; i < k_WindowsCount; ++i)
         {
-            g_RenderContexts[i].vertexBufferHandle->AllocBufferHandle({
+            RHI::BufferDescriptor vbDesc{
                 0,
                 sizeof(vertices[0]) * vertices.size(),
                 RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT,
                 RHI::SHARING_MODE_EXCLUSIVE
-            });
-            g_RenderContexts[i].vertexBufferHandle->AllocDeviceMemory(RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            };
+            RHI_Buffer_Alloc(g_RenderContexts[i].vertexBufferHandle, &vbDesc);
+            RHI_Buffer_AllocDeviceMemory(g_RenderContexts[i].vertexBufferHandle, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-            g_RenderContexts[i].indicesBufferHandle->AllocBufferHandle({
+            RHI::BufferDescriptor ibDesc{
                 0,
                 sizeof(indices[0]) * indices.size(),
                 RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_INDEX_BUFFER_BIT,
                 RHI::SHARING_MODE_EXCLUSIVE
-            });
-            g_RenderContexts[i].indicesBufferHandle->AllocDeviceMemory(RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            };
+            RHI_Buffer_Alloc(g_RenderContexts[i].indicesBufferHandle, &ibDesc);
+            RHI_Buffer_AllocDeviceMemory(g_RenderContexts[i].indicesBufferHandle, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
             for (const auto& uniformBuffer : g_RenderContexts[i].uniformBuffers)
             {
-                uniformBuffer->AllocBufferHandle({
+                RHI::BufferDescriptor ubDesc{
                     0,
                     sizeof(UniformBufferObject),
                     RHI::BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                     RHI::SHARING_MODE_EXCLUSIVE
-                });
-                uniformBuffer->AllocDeviceMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
-                uniformBuffer ->SetBufferOffsetRange(0, sizeof(UniformBufferObject));
+                };
+                RHI_Buffer_Alloc(uniformBuffer, &ubDesc);
+                RHI_Buffer_AllocDeviceMemory(uniformBuffer, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
             }
             
             UploadVertex(g_RenderContexts[i]);
@@ -363,21 +390,21 @@ public:
 
         for (int i = 0; i < k_WindowsCount; ++i)
         {
-            g_RenderContexts[i].textureHandle->AllocHandle(std::move(RHI::ImageDescriptor
-                {
-                    RHI::IMAGE_TYPE_2D, static_cast<UInt32>(texWidth), static_cast<UInt32>(texHeight), 1,
-                    1, 1, RHI::FORMAT_R8G8B8A8_SRGB, RHI::IMAGE_TILING_OPTIMAL,
-                    RHI::IMAGE_LAYOUT_UNDEFINED, RHI::IMAGE_USAGE_SAMPLED_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT,
-                    RHI::SAMPLE_COUNT_1_BIT, RHI::SHARING_MODE_EXCLUSIVE
-            }));
-            g_RenderContexts[i].textureHandle->AllocDeviceMemory(RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            RHI::ImageDescriptor imgDesc{
+                RHI::IMAGE_TYPE_2D, static_cast<UInt32>(texWidth), static_cast<UInt32>(texHeight), 1,
+                1, 1, RHI::FORMAT_R8G8B8A8_SRGB, RHI::IMAGE_TILING_OPTIMAL,
+                RHI::IMAGE_LAYOUT_UNDEFINED, RHI::IMAGE_USAGE_SAMPLED_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT,
+                RHI::SAMPLE_COUNT_1_BIT, RHI::SHARING_MODE_EXCLUSIVE
+            };
+            RHI_Image_Alloc(g_RenderContexts[i].textureHandle, &imgDesc);
+            RHI_Image_AllocDeviceMemory(g_RenderContexts[i].textureHandle, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
             RHI::ImageViewDesc imageViewDesc {
                 RHI::IMAGE_VIEW_TYPE_2D, RHI::FORMAT_R8G8B8A8_SRGB, RHI::IMAGE_ASPECT_COLOR_BIT,
                 0, 1, 0, 1,
             };
             imageViewDesc.width = static_cast<UInt32>(texWidth);
             imageViewDesc.height = static_cast<UInt32>(texHeight);
-            g_RenderContexts[i].textureHandle->AddImageView(std::move(imageViewDesc));
+            RHI_Image_AddImageView(g_RenderContexts[i].textureHandle, &imageViewDesc);
             UploadImage(g_RenderContexts[i], imageSize, pixels, texWidth, texHeight);
         }
         
@@ -420,7 +447,7 @@ public:
         
             if (g_RenderContexts[i].bShouldResize)
             {
-                g_RenderContexts[i].device->SetResolution(g_RenderContexts[i].newWidth, g_RenderContexts[i].newHeight);
+                RHI_Device_SetResolution(g_RenderContexts[i].device, g_RenderContexts[i].newWidth, g_RenderContexts[i].newHeight);
                 g_RenderContexts[i].bShouldResize = false;
             }
         }
@@ -453,7 +480,7 @@ public:
             context.newWidth / (float) context.newHeight, 0.1f, 10.0f);
         ubo.proj[1][1] *= -1;
 
-        context.uniformBuffers[frameIndex % m_Instance->GetMaxFramesInFlight()]->MemoryCopy(&ubo, 0);
+        RHI_Buffer_MemoryCopy(context.uniformBuffers[frameIndex % m_MaxFramesInFlight], &ubo, 0);
     }
     
     void UploadVertex(RenderContext const& context)
@@ -462,58 +489,59 @@ public:
         auto vertexBufferHandle = context.vertexBufferHandle;
         auto indicesBufferHandle = context.indicesBufferHandle;
         
-        auto vertexStagingBufferHandle = device->GetBufferHandle("Vertex Staging Buffer");
-        vertexStagingBufferHandle->AllocBufferHandle({
+        auto vertexStagingBufferHandle = RHI_Device_GetBufferHandle(device, "Vertex Staging Buffer");
+        RHI::BufferDescriptor vsb{
             0,
                sizeof(vertices[0]) * vertices.size(),
                RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
                RHI::SHARING_MODE_EXCLUSIVE
-        });
-        vertexStagingBufferHandle->AllocDeviceMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        vertexStagingBufferHandle->MemoryCopy(vertices.data(), 0);
+        };
+        RHI_Buffer_Alloc(vertexStagingBufferHandle, &vsb);
+        RHI_Buffer_AllocDeviceMemory(vertexStagingBufferHandle, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        RHI_Buffer_MemoryCopy(vertexStagingBufferHandle, vertices.data(), 0);
 
-        auto indicesStagingBufferHandle = device->GetBufferHandle("Indices Staging Buffer");
-        indicesStagingBufferHandle->AllocBufferHandle({
+        auto indicesStagingBufferHandle = RHI_Device_GetBufferHandle(device, "Indices Staging Buffer");
+        RHI::BufferDescriptor isb{
             0,
                sizeof(indices[0]) * indices.size(),
                RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
                RHI::SHARING_MODE_EXCLUSIVE
-        });
-        indicesStagingBufferHandle->AllocDeviceMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        indicesStagingBufferHandle->MemoryCopy(indices.data(), 0);
+        };
+        RHI_Buffer_Alloc(indicesStagingBufferHandle, &isb);
+        RHI_Buffer_AllocDeviceMemory(indicesStagingBufferHandle, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        RHI_Buffer_MemoryCopy(indicesStagingBufferHandle, indices.data(), 0);
 
-        auto commandBuffer = context.commandPool->GetCommandBuffer(frameIndex);
-        commandBuffer->Begin(frameIndex, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-        commandBuffer->CopyBuffer(vertexStagingBufferHandle.get(), 0,
-            vertexBufferHandle.get(), 0, vertexBufferHandle->BufferSize());
+        auto commandBuffer = RHI_Device_GetCommandBuffer(device, context.commandPoolId, frameIndex);
+        RHI_Cmd_Begin(commandBuffer, frameIndex, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        RHI_Cmd_CopyBuffer(commandBuffer, vertexStagingBufferHandle, 0, vertexBufferHandle, 0, RHI_Buffer_Size(vertexBufferHandle));
 
-        commandBuffer->CopyBuffer(indicesStagingBufferHandle.get(), 0,
-           indicesBufferHandle.get(), 0, indicesBufferHandle->BufferSize());
+        RHI_Cmd_CopyBuffer(commandBuffer, indicesStagingBufferHandle, 0, indicesBufferHandle, 0, RHI_Buffer_Size(indicesBufferHandle));
         
-        commandBuffer->End();
-        device->Submit(commandBuffer.get(), frameIndex);
-        device->GraphicQueueWaitIdle();
+        RHI_Cmd_End(commandBuffer);
+        RHI_Device_Submit(device, commandBuffer, frameIndex);
+        RHI_Device_GraphicQueueWaitIdle(device);
     }
 
     void UploadImage(RenderContext const& context, UInt64 textureSize, void* data, UInt32 texWidth, UInt32 texHeight)
     {
         auto device = context.device;
-        auto textureStagingBufferHandle = device->GetBufferHandle("Texture Staging Buffer");
-        textureStagingBufferHandle->AllocBufferHandle({
+        auto textureStagingBufferHandle = RHI_Device_GetBufferHandle(device, "Texture Staging Buffer");
+        RHI::BufferDescriptor tsb{
             0,
                textureSize,
                RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
                RHI::SHARING_MODE_EXCLUSIVE
-        });
+        };
 
-        textureStagingBufferHandle->AllocDeviceMemory(RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+        RHI_Buffer_Alloc(textureStagingBufferHandle, &tsb);
+        RHI_Buffer_AllocDeviceMemory(textureStagingBufferHandle, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT |
             RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        textureStagingBufferHandle->MemoryCopy(data, 0);
+        RHI_Buffer_MemoryCopy(textureStagingBufferHandle, data, 0);
 
        
         // Transfer Undefined to Transfer Dst
-        auto commandBuffer = context.commandPool->GetCommandBuffer(frameIndex);
-        commandBuffer->Begin(frameIndex, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        auto commandBuffer = RHI_Device_GetCommandBuffer(device, context.commandPoolId, frameIndex);
+        RHI_Cmd_Begin(commandBuffer, frameIndex, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         {
             Containers::Vector<RHI::RHIImageMemoryBarrier> barriers {
                             {
@@ -523,31 +551,24 @@ public:
                                 RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                 VK_QUEUE_FAMILY_IGNORED,
                                 VK_QUEUE_FAMILY_IGNORED,
-                                context.textureHandle.get(),
+                                reinterpret_cast<RHI::ImageHandle*>(context.textureHandle),
                                 {
                                     RHI::IMAGE_ASPECT_COLOR_BIT,
                                     0, 1, 0, 1
                                 }
                             }
         };
-            commandBuffer->PipelineBarrier(
-                RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT, RHI::PIPELINE_STAGE_TRANSFER_BIT,
-                0,
-                std::move(barriers));
+            RHI_Cmd_PipelineBarrier_Image(commandBuffer, RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT, RHI::PIPELINE_STAGE_TRANSFER_BIT,
+                0, &barriers);
         } // end of pipeline barrier
 
         // Copy Buffer To Image
         {
-            commandBuffer->CopyBufferToImage(
-                textureStagingBufferHandle.get(), context.textureHandle.get(),
-                RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                {
-                       { 0, 0, 0, {
-                           RHI::IMAGE_ASPECT_COLOR_BIT, 0, 0, 1
-                        },
-                        0, 0, 0,
-                        texWidth, texHeight, 1}
-                });
+            ArisenEngine::Containers::Vector<RHI::BufferImageCopy> regions{
+                { 0, 0, 0, { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 }, 0, 0, 0, texWidth, texHeight, 1 }
+            };
+            RHI_Cmd_CopyBufferToImage(commandBuffer, textureStagingBufferHandle, context.textureHandle,
+                RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &regions);
         } // end of copy buffer to image
 
         // Transfer Dst to Shader Read Only
@@ -560,23 +581,21 @@ public:
                         RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                         ~0U,
                         ~0U,
-                        context.textureHandle.get(),
+                        reinterpret_cast<RHI::ImageHandle*>(context.textureHandle),
                         {
                             RHI::IMAGE_ASPECT_COLOR_BIT,
                             0, 1, 0, 1
                         }
                     }
             };
-            commandBuffer->PipelineBarrier(
-                RHI::PIPELINE_STAGE_TRANSFER_BIT, RHI::PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                0,
-                std::move(barriers));
+            RHI_Cmd_PipelineBarrier_Image(commandBuffer, RHI::PIPELINE_STAGE_TRANSFER_BIT, RHI::PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                0, &barriers);
         } // end of pipeline barrier
 
-        commandBuffer->End();
-        device->Submit(commandBuffer.get(), frameIndex);
-        context.commandPool->ReleaseCommandBuffer(frameIndex, commandBuffer);
-        device->GraphicQueueWaitIdle();
+        RHI_Cmd_End(commandBuffer);
+        RHI_Device_Submit(device, commandBuffer, frameIndex);
+        RHI_Device_ReleaseCommandBuffer(device, context.commandPoolId, frameIndex, commandBuffer);
+        RHI_Device_GraphicQueueWaitIdle(device);
     }
 
     void AddDynamicState(RHI::GPUPipelineStateObject* pipelineState)
@@ -587,73 +606,67 @@ public:
     
     void RecordSubmitPresent(RenderContext&& context)
     {
-        auto currentIndex = frameIndex % m_Instance->GetMaxFramesInFlight();
+        auto currentIndex = frameIndex % m_MaxFramesInFlight;
         
-        auto commandBuffer = context.commandPool->GetCommandBuffer(frameIndex);
-
-        auto pipelineManager = context.device->GetGPUPipelineManager();
+        auto commandBuffer = RHI_Device_GetCommandBuffer(context.device, context.commandPoolId, frameIndex);
+        auto pipelineManager = RHI_Device_GetPipelineManager(context.device);
         
-        auto pipelineState = pipelineManager->GetPipelineState();
+        auto pipelineState = RHI_PipelineManager_CreatePSO(pipelineManager);
 
-        pipelineState->AddVertexBindingDescription(0, sizeof(Vertex), RHI::VERTEX_INPUT_RATE_VERTEX);
-        pipelineState->AddVertexInputAttributeDescription(0, 0, RHI::EFormat::FORMAT_R32G32_SFLOAT, offsetof(Vertex, pos));
-        pipelineState->AddVertexInputAttributeDescription(1, 0, RHI::EFormat::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color));
+        RHI_PSO_AddVertexBindingDescription(pipelineState, 0, sizeof(Vertex), RHI::VERTEX_INPUT_RATE_VERTEX);
+        RHI_PSO_AddVertexInputAttributeDescription(pipelineState, 0, 0, RHI::EFormat::FORMAT_R32G32_SFLOAT, offsetof(Vertex, pos));
+        RHI_PSO_AddVertexInputAttributeDescription(pipelineState, 1, 0, RHI::EFormat::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color));
 
-        pipelineState->ClearDescriptorSetLayoutBindings();
-        pipelineState->AddDescriptorSetLayoutBinding(0, 0, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            1, RHI::SHADER_STAGE_VERTEX_BIT,
-            Containers::Vector<std::shared_ptr<RHI::BufferHandle>>{
-                context.uniformBuffers[currentIndex]
-            });
-        // pipelineState->AddDescriptorSetLayoutBinding(0, 1, RHI::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-        //     1, RHI::SHADER_STAGE_FRAGMENT_BIT);
-        pipelineState->BuildDescriptorSetLayout();
+        RHI_PSO_ClearDescriptorSetLayoutBindings(pipelineState);
+        Containers::Vector<std::shared_ptr<RHI::BufferHandle>> ubos;
+        ubos.emplace_back(std::shared_ptr<RHI::BufferHandle>(reinterpret_cast<RHI::BufferHandle*>(context.uniformBuffers[currentIndex]), [](RHI::BufferHandle*){}));
+        RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(pipelineState, 0, 0, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, RHI::SHADER_STAGE_VERTEX_BIT, &ubos);
+        RHI_PSO_BuildDescriptorSetLayout(pipelineState);
         
         // Record cmd
-        commandBuffer->WaitForFence(frameIndex);
+        RHI_Cmd_WaitForFence(commandBuffer, frameIndex);
 
-        auto descriptorPool = context.device->GetDescriptorPool();
-        descriptorPool->ResetPool(context.descriptorPoolIds[currentIndex]);
-        descriptorPool->AllocDescriptorSet(context.descriptorPoolIds[currentIndex], 0, pipelineState.get());
-        descriptorPool->UpdateDescriptorSets(context.descriptorPoolIds[currentIndex], pipelineState.get());
+        RHI_DescriptorPool_Reset(context.descriptorPool, context.descriptorPoolIds[currentIndex]);
+        RHI_DescriptorPool_AllocDescriptorSet(context.descriptorPool, context.descriptorPoolIds[currentIndex], 0, pipelineState);
+        RHI_DescriptorPool_UpdateDescriptorSets(context.descriptorPool, context.descriptorPoolIds[currentIndex], pipelineState);
         
-        commandBuffer->Begin(frameIndex);
+        RHI_Cmd_Begin(commandBuffer, frameIndex, 0);
         {
-            auto renderPass = context.renderPass.get();
-            auto frameBuffer = context.frameBuffer.get();
-            auto backBuffer = context.device->GetSurface()->GetSwapChain()->AquireCurrentImage(frameIndex);
-            auto backBufferView = static_cast<RHI::ImageView*>(backBuffer->GetMemoryView());
+            auto renderPass = reinterpret_cast<RHI::GPURenderPass*>(context.renderPass);
+            auto frameBuffer = reinterpret_cast<RHI::FrameBuffer*>(context.frameBuffer);
+            auto surface = RHI_Instance_GetSurface(m_Instance, context.windowId);
+            auto swapchain = RHI_Surface_GetSwapChain(surface);
+            auto backBuffer = RHI_SwapChain_AquireCurrentImage(swapchain, frameIndex);
+            auto backBufferView = RHI_Image_GetView(backBuffer);
             auto format = backBufferView->GetFormat();
             
-            renderPass->FreeRenderPass(frameIndex);
+            RHI_RenderPass_Free(context.renderPass, frameIndex);
             
-            renderPass->AddAttachmentAction(
+            RHI_RenderPass_AddAttachmentAction(context.renderPass,
                 format, RHI::SAMPLE_COUNT_1_BIT,
                 RHI::ATTACHMENT_LOAD_OP_CLEAR, RHI::ATTACHMENT_STORE_OP_STORE,
                 RHI::ATTACHMENT_LOAD_OP_DONT_CARE, RHI::ATTACHMENT_STORE_OP_DONT_CARE,
-                RHI::IMAGE_LAYOUT_UNDEFINED, RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR
-            );
+                RHI::IMAGE_LAYOUT_UNDEFINED, RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-            auto subpass = renderPass->AddSubPass();
+            auto subpass = RHI_RenderPass_AddSubPass(context.renderPass);
 
             {
                 // setup subpass
-                subpass->SetDependency(
-                    m_Instance->GetExternalIndex(),
+                RHI_Subpass_SetDependency(subpass,
+                    RHI_Instance_GetExternalIndex(m_Instance),
                     RHI::EPipelineStageFlag::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                     0,
                     RHI::EPipelineStageFlag::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                     RHI::EAccessFlag::ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                    0
-                );
-                subpass->SetBindPoint(RHI::PIPELINE_BIND_POINT_GRAPHICS);
-                subpass->AddColorReference(0, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-                subpass->SetSubPassDescriptionFlag(0);
+                    0);
+                RHI_Subpass_SetBindPoint(subpass, RHI::PIPELINE_BIND_POINT_GRAPHICS);
+                RHI_Subpass_AddColorReference(subpass, 0, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+                RHI_Subpass_SetDescriptionFlag(subpass, 0);
             }
 
-            renderPass->AllocRenderPass(frameIndex);
+            RHI_RenderPass_Alloc(context.renderPass, frameIndex);
 
-            frameBuffer->SetAttachment(frameIndex, backBufferView, renderPass);
+            RHI_FrameBuffer_SetAttachment(context.frameBuffer, frameIndex, backBufferView, context.renderPass);
 
             {
                 RHI::RenderPassBeginDesc desc
@@ -664,90 +677,88 @@ public:
                 };
 
 
-                commandBuffer->BeginRenderPass(frameIndex, std::move(desc));
+                RHI_Cmd_BeginRenderPass(commandBuffer, frameIndex, &desc);
 
                 {
                     for (auto programId : context.gpuPrograms)
                     {
-                        pipelineState->AddProgram(programId);
+                        RHI_PSO_AddProgram(pipelineState, programId);
                     }
 
                     {
                         // Pipeline State Object
                       
-                        AddDynamicState(pipelineState.get());
-                        pipelineState->SetPrimitiveState(RHI::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false);
-                        pipelineState->SetDepthClampEnable(false);
-                        pipelineState->SetRasterizerDiscardEnable(false);
-                        pipelineState->SetPolygonMode(RHI::EPOLYGON_MODE_FILL);
-                        pipelineState->SetLineWidth(1.0F);
-                        pipelineState->SetCullMode(RHI::CULL_MODE_NONE);
-                        pipelineState->SetFrontFace(RHI::FRONT_FACE_CLOCKWISE);
-                        pipelineState->SetDepthBiasEnable(false);
-                        pipelineState->SetSampleShading(false);
-                        pipelineState->SetSampleCount(RHI::SAMPLE_COUNT_1_BIT);
-                        pipelineState->AddBlendAttachmentState(false,
+                        RHI_PSO_AddDynamicState(pipelineState, RHI::DYNAMIC_STATE_SCISSOR);
+                        RHI_PSO_AddDynamicState(pipelineState, RHI::DYNAMIC_STATE_VIEWPORT);
+                        RHI_PSO_SetPrimitiveState(pipelineState, RHI::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false);
+                        RHI_PSO_SetDepthClampEnable(pipelineState, false);
+                        RHI_PSO_SetRasterizerDiscardEnable(pipelineState, false);
+                        RHI_PSO_SetPolygonMode(pipelineState, RHI::EPOLYGON_MODE_FILL);
+                        RHI_PSO_SetLineWidth(pipelineState, 1.0F);
+                        RHI_PSO_SetCullMode(pipelineState, RHI::CULL_MODE_NONE);
+                        RHI_PSO_SetFrontFace(pipelineState, RHI::FRONT_FACE_CLOCKWISE);
+                        RHI_PSO_SetDepthBiasEnable(pipelineState, false);
+                        RHI_PSO_SetSampleShading(pipelineState, false);
+                        RHI_PSO_SetSampleCount(pipelineState, RHI::SAMPLE_COUNT_1_BIT);
+                        RHI_PSO_AddBlendAttachmentState_Simple(pipelineState, false,
                                                                RHI::EColorComponentFlagBits::COLOR_COMPONENT_R_BIT |
                                                                RHI::EColorComponentFlagBits::COLOR_COMPONENT_G_BIT |
                                                                RHI::EColorComponentFlagBits::COLOR_COMPONENT_B_BIT |
                                                                RHI::EColorComponentFlagBits::COLOR_COMPONENT_A_BIT);
-                        pipelineState->SetLogicOp(false, RHI::LOGIC_OP_COPY);
-                        pipelineState->SetBlendConstants(0.0f, 0.0f, 0.0f, 0.0f);
+                        RHI_PSO_SetLogicOp(pipelineState, false, RHI::LOGIC_OP_COPY);
+                        RHI_PSO_SetBlendConstants(pipelineState, 0.0f, 0.0f, 0.0f, 0.0f);
 
-                        auto pipeline = pipelineManager->GetGraphicsPipeline(pipelineState.get());
+                        auto pipeline = RHI_PipelineManager_GetGraphicsPipeline(pipelineManager, pipelineState);
 
-                        pipeline->AllocGraphicPipeline(frameIndex, subpass);
-                        commandBuffer->BindPipeline(frameIndex, pipeline);
+                        RHI_Pipeline_AllocGraphics(pipeline, frameIndex, subpass);
+                        RHI_Cmd_BindPipeline(commandBuffer, frameIndex, pipeline);
                     }
 
                     {
                         // viewport scissor
-                        commandBuffer->SetViewport(0, 0, static_cast<Float32>(backBufferView->GetWidth()), static_cast<
+                        RHI_Cmd_SetViewport(commandBuffer, 0, 0, static_cast<Float32>(backBufferView->GetWidth()), static_cast<
                                                        Float32>(backBufferView->GetHeight()), 0, 1);
-                        commandBuffer->SetScissor(0, 0, backBufferView->GetWidth(), backBufferView->GetHeight());
+                        RHI_Cmd_SetScissor(commandBuffer, 0, 0, backBufferView->GetWidth(), backBufferView->GetHeight());
                     }
 
                     {
                         // bind vertex buffers
-                        commandBuffer->BindVertexBuffers(context.vertexBufferHandle.get(), 0);
-                        commandBuffer->BindIndexBuffer(context.indicesBufferHandle.get(), 0, RHI::INDEX_TYPE_UINT16);
+                        RHI_Cmd_BindVertexBuffers(commandBuffer, context.vertexBufferHandle, 0);
+                        RHI_Cmd_BindIndexBuffer(commandBuffer, context.indicesBufferHandle, 0, RHI::INDEX_TYPE_UINT16);
                     }
 
                     {
                         // bind descriptor sets
-                        auto descriptorSets = descriptorPool->GetDescriptorSets(context.descriptorPoolIds[currentIndex]);
-                        commandBuffer->BindDescriptorSets(frameIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, descriptorSets, 0, 0);
+                        RHI_Cmd_BindDescriptorSets_FromPool(commandBuffer, frameIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, context.descriptorPool, context.descriptorPoolIds[currentIndex]);
                     }
                     {
                         // draw call
                         // commandBuffer->Draw(3, 1, 0, 0, 0);
-                        commandBuffer->DrawIndexed(indices.size(), 1, 0, 0, 0, 0);
+                        RHI_Cmd_DrawIndexed(commandBuffer, static_cast<unsigned int>(indices.size()), 1, 0, 0, 0, 0);
                     }
                     
                 }
-                commandBuffer->EndRenderPass();
+                RHI_Cmd_EndRenderPass(commandBuffer);
             }
         }
 
-        commandBuffer->End();
+        RHI_Cmd_End(commandBuffer);
 
         {
-            auto swapchain = context.device->GetSurface()->GetSwapChain();
-            commandBuffer->WaitSemaphore(
-                swapchain->GetImageAvailableSemaphore(frameIndex),
-                RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-                );
-            commandBuffer->SignalSemaphore(swapchain->GetRenderFinishSemaphore(frameIndex));
-            commandBuffer->InjectFence(commandBuffer->GetOwner()->GetFence(frameIndex));
-            // Submit
-            context.device->Submit(commandBuffer.get(), frameIndex);
+            auto surface = RHI_Instance_GetSurface(m_Instance, context.windowId);
+            auto swapchain = RHI_Surface_GetSwapChain(surface);
+            RHI_Cmd_WaitSemaphore(commandBuffer, RHI_SwapChain_GetImageAvailableSemaphore(swapchain, frameIndex), RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+            RHI_Cmd_SignalSemaphore(commandBuffer, RHI_SwapChain_GetRenderFinishSemaphore(swapchain, frameIndex));
+            RHI_Device_Submit(context.device, commandBuffer, frameIndex);
         }
 
-        context.commandPool->ReleaseCommandBuffer(frameIndex, commandBuffer);
+        RHI_Device_ReleaseCommandBuffer(context.device, context.commandPoolId, frameIndex, commandBuffer);
         
         {
             // Present
-            context.device->GetSurface()->GetSwapChain()->Present(frameIndex);
+            auto surface = RHI_Instance_GetSurface(m_Instance, context.windowId);
+            auto swapchain = RHI_Surface_GetSwapChain(surface);
+            RHI_SwapChain_Present(swapchain, frameIndex);
         }
     }
 
@@ -757,14 +768,35 @@ public:
 
         for (auto renderContext : g_RenderContexts)
         {
-            renderContext.device->DeviceWaitIdle();
-            renderContext.uniformBuffers.clear();
+            RHI_Device_WaitIdle(renderContext.device);
+            for (auto ub : renderContext.uniformBuffers)
+            {
+                RHI_Buffer_Free(ub);
+                RHI_Device_ReleaseBufferHandle(renderContext.device, ub);
+            }
+            if (renderContext.vertexBufferHandle)
+            {
+                RHI_Buffer_Free(renderContext.vertexBufferHandle);
+                RHI_Device_ReleaseBufferHandle(renderContext.device, renderContext.vertexBufferHandle);
+            }
+            if (renderContext.indicesBufferHandle)
+            {
+                RHI_Buffer_Free(renderContext.indicesBufferHandle);
+                RHI_Device_ReleaseBufferHandle(renderContext.device, renderContext.indicesBufferHandle);
+            }
+            if (renderContext.textureHandle)
+            {
+                RHI_Image_Free(renderContext.textureHandle);
+                RHI_Device_ReleaseImageHandle(renderContext.device, renderContext.textureHandle);
+            }
+            if (renderContext.frameBuffer) RHI_Device_ReleaseFrameBuffer(renderContext.device, renderContext.frameBuffer);
+            if (renderContext.renderPass) RHI_Device_ReleaseRenderPass(renderContext.device, renderContext.renderPass);
         }
         
         g_RenderContexts.clear();
         
         // RHI dispose
-        delete m_Instance;
+        if (m_Instance) RHI_DestroyInstance(m_Instance);
         
         Platforms::ReleaseDXC();
 

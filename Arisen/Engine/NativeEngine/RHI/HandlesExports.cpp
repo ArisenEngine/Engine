@@ -117,4 +117,11 @@ extern "C" ENGINE_DLL unsigned int RHI_Image_AddImageView(RHI_ImageHandle image,
     return img->AddImageView(std::move(copy));
 }
 
+extern "C" ENGINE_DLL RHI::ImageView* RHI_Image_GetView(RHI_ImageHandle image)
+{
+    auto* img = reinterpret_cast<RHI::ImageHandle*>(image);
+    if (img == nullptr) return nullptr;
+    return reinterpret_cast<RHI::ImageView*>(img->GetMemoryView());
+}
+
 
