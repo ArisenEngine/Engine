@@ -1,4 +1,5 @@
 #include "HandlesExports.h"
+#include "../../Core/Core.Infra/RHI/Memory/ImageView.h"
 
 using namespace ArisenEngine;
 
@@ -122,6 +123,24 @@ extern "C" ENGINE_DLL RHI::ImageView* RHI_Image_GetView(RHI_ImageHandle image)
     auto* img = reinterpret_cast<RHI::ImageHandle*>(image);
     if (img == nullptr) return nullptr;
     return reinterpret_cast<RHI::ImageView*>(img->GetMemoryView());
+}
+
+extern "C" ENGINE_DLL RHI::EFormat RHI_ImageView_GetFormat(RHI::ImageView* view)
+{
+    if (view == nullptr) return RHI::EFormat::FORMAT_UNDEFINED;
+    return view->GetFormat();
+}
+
+extern "C" ENGINE_DLL unsigned int RHI_ImageView_GetWidth(RHI::ImageView* view)
+{
+    if (view == nullptr) return 0U;
+    return view->GetWidth();
+}
+
+extern "C" ENGINE_DLL unsigned int RHI_ImageView_GetHeight(RHI::ImageView* view)
+{
+    if (view == nullptr) return 0U;
+    return view->GetHeight();
 }
 
 
