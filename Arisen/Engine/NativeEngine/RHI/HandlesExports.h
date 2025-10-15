@@ -29,5 +29,8 @@ extern "C" ENGINE_DLL bool RHI_Image_AllocDeviceMemory(RHI_ImageHandle image, un
 extern "C" ENGINE_DLL void RHI_Image_Free(RHI_ImageHandle image);
 extern "C" ENGINE_DLL unsigned int RHI_Image_AddImageView(RHI_ImageHandle image, const ArisenEngine::RHI::ImageViewDesc* desc);
 extern "C" ENGINE_DLL ArisenEngine::RHI::ImageView* RHI_Image_GetView(RHI_ImageHandle image);
+extern "C" ENGINE_DLL ArisenEngine::RHI::EFormat RHI_ImageView_GetFormat(ArisenEngine::RHI::ImageView* view);
+extern "C" ENGINE_DLL unsigned int RHI_ImageView_GetWidth(ArisenEngine::RHI::ImageView* view);
+extern "C" ENGINE_DLL unsigned int RHI_ImageView_GetHeight(ArisenEngine::RHI::ImageView* view);
 
 

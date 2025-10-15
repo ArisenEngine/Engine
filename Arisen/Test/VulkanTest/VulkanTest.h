@@ -598,10 +598,10 @@ public:
         RHI_Device_GraphicQueueWaitIdle(device);
     }
 
-    void AddDynamicState(RHI::GPUPipelineStateObject* pipelineState)
+    void AddDynamicState(RHI_PSOHandle pipelineState)
     {
-        pipelineState->AddDynamicPipelineState(RHI::DYNAMIC_STATE_SCISSOR);
-        pipelineState->AddDynamicPipelineState(RHI::DYNAMIC_STATE_VIEWPORT);
+        RHI_PSO_AddDynamicState(pipelineState, RHI::DYNAMIC_STATE_SCISSOR);
+        RHI_PSO_AddDynamicState(pipelineState, RHI::DYNAMIC_STATE_VIEWPORT);
     }
     
     void RecordSubmitPresent(RenderContext&& context)
@@ -638,7 +638,7 @@ public:
             auto swapchain = RHI_Surface_GetSwapChain(surface);
             auto backBuffer = RHI_SwapChain_AquireCurrentImage(swapchain, frameIndex);
             auto backBufferView = RHI_Image_GetView(backBuffer);
-            auto format = backBufferView->GetFormat();
+            auto format = RHI_ImageView_GetFormat(backBufferView);
             
             RHI_RenderPass_Free(context.renderPass, frameIndex);
             
@@ -716,9 +716,9 @@ public:
 
                     {
                         // viewport scissor
-                        RHI_Cmd_SetViewport(commandBuffer, 0, 0, static_cast<Float32>(backBufferView->GetWidth()), static_cast<
-                                                       Float32>(backBufferView->GetHeight()), 0, 1);
-                        RHI_Cmd_SetScissor(commandBuffer, 0, 0, backBufferView->GetWidth(), backBufferView->GetHeight());
+                        RHI_Cmd_SetViewport(commandBuffer, 0, 0, static_cast<Float32>(RHI_ImageView_GetWidth(backBufferView)), static_cast<
+                                                       Float32>(RHI_ImageView_GetHeight(backBufferView)), 0, 1);
+                        RHI_Cmd_SetScissor(commandBuffer, 0, 0, RHI_ImageView_GetWidth(backBufferView), RHI_ImageView_GetHeight(backBufferView));
                     }
 
                     {
