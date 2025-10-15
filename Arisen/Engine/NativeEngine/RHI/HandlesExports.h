@@ -8,6 +8,7 @@
 typedef void* RHI_DeviceHandle;
 typedef void* RHI_BufferHandle;
 typedef void* RHI_ImageHandle;
+namespace ArisenEngine { namespace RHI { class ImageView; } }
 
 // BufferHandle lifecycle & ops
 extern "C" ENGINE_DLL RHI_BufferHandle RHI_Device_GetBufferHandle(RHI_DeviceHandle device, const char* name);
@@ -27,5 +28,6 @@ extern "C" ENGINE_DLL void RHI_Image_Alloc(RHI_ImageHandle image, const ArisenEn
 extern "C" ENGINE_DLL bool RHI_Image_AllocDeviceMemory(RHI_ImageHandle image, unsigned int memoryPropertiesBits);
 extern "C" ENGINE_DLL void RHI_Image_Free(RHI_ImageHandle image);
 extern "C" ENGINE_DLL unsigned int RHI_Image_AddImageView(RHI_ImageHandle image, const ArisenEngine::RHI::ImageViewDesc* desc);
+extern "C" ENGINE_DLL ArisenEngine::RHI::ImageView* RHI_Image_GetView(RHI_ImageHandle image);
 
 

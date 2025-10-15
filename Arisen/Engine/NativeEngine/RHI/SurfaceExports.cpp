@@ -77,4 +77,12 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseFrameBuffer(RHI_DeviceHandle device
     dev->ReleaseFrameBuffer(sp);
 }
 
+extern "C" ENGINE_DLL void RHI_FrameBuffer_SetAttachment(RHI_FrameBufferHandle fb, unsigned int frameIndex, RHI::ImageView* view, RHI_RenderPassHandle rp)
+{
+    auto* f = reinterpret_cast<RHI::FrameBuffer*>(fb);
+    auto* r = reinterpret_cast<RHI::GPURenderPass*>(rp);
+    if (f == nullptr || r == nullptr || view == nullptr) return;
+    f->SetAttachment(frameIndex, view, r);
+}
+
 
