@@ -14,5 +14,6 @@ extern "C" ENGINE_DLL void RHI_Device_DestroyGPUProgram(RHI_DeviceHandle device,
 extern "C" ENGINE_DLL bool RHI_Device_AttachProgramByteCode(RHI_DeviceHandle device, unsigned int programId, const ArisenEngine::RHI::GPUProgramDesc* desc);
 extern "C" ENGINE_DLL void RHI_Device_SetResolution(RHI_DeviceHandle device, unsigned int width, unsigned int height);
 extern "C" ENGINE_DLL RHIDeviceLimits RHI_Device_GetDeviceLimits(RHI_DeviceHandle device);
+extern "C" ENGINE_DLL void RHI_Device_Submit(RHI_DeviceHandle device, RHI_CommandBufferHandle cmd, unsigned int frameIndex);
 
 
