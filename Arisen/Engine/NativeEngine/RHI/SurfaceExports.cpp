@@ -39,6 +39,27 @@ extern "C" ENGINE_DLL void RHI_SwapChain_Present(RHI_SwapChainHandle swapchain, 
     sc->Present(frameIndex);
 }
 
+extern "C" ENGINE_DLL RHI::ImageHandle* RHI_SwapChain_AquireCurrentImage(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
+{
+    auto* sc = reinterpret_cast<RHI::SwapChain*>(swapchain);
+    if (sc == nullptr) return nullptr;
+    return sc->AquireCurrentImage(frameIndex);
+}
+
+extern "C" ENGINE_DLL RHI::RHISemaphore* RHI_SwapChain_GetImageAvailableSemaphore(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
+{
+    auto* sc = reinterpret_cast<RHI::SwapChain*>(swapchain);
+    if (sc == nullptr) return nullptr;
+    return sc->GetImageAvailableSemaphore(frameIndex);
+}
+
+extern "C" ENGINE_DLL RHI::RHISemaphore* RHI_SwapChain_GetRenderFinishSemaphore(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
+{
+    auto* sc = reinterpret_cast<RHI::SwapChain*>(swapchain);
+    if (sc == nullptr) return nullptr;
+    return sc->GetRenderFinishSemaphore(frameIndex);
+}
+
 extern "C" ENGINE_DLL RHI_FrameBufferHandle RHI_Device_GetFrameBuffer(RHI_DeviceHandle device)
 {
     auto* dev = reinterpret_cast<RHI::Device*>(device);

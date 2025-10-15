@@ -1,5 +1,6 @@
 #include "PipelineExports.h"
 #include "../../Core/Core.Infra/RHI/Program/GPUPipelineManager.h"
+#include "../../Core/Core.Infra/RHI/Program/GPUSubPass.h"
 
 using namespace ArisenEngine;
 
@@ -32,6 +33,139 @@ extern "C" ENGINE_DLL void RHI_PSO_ClearPrograms(RHI_PSOHandle pso)
     s->ClearAllPrograms();
 }
 
+extern "C" ENGINE_DLL void RHI_PSO_AddVertexBindingDescription(RHI_PSOHandle pso, unsigned int binding, unsigned int stride, RHI::EVertexInputRate inputRate)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    s->AddVertexBindingDescription(binding, stride, inputRate);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_AddVertexInputAttributeDescription(RHI_PSOHandle pso, unsigned int location, unsigned int binding, RHI::EFormat format, unsigned int offset)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    s->AddVertexInputAttributeDescription(location, binding, format, offset);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_ClearDescriptorSetLayoutBindings(RHI_PSOHandle pso)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    s->ClearDescriptorSetLayoutBindings();
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, RHI::EDescriptorType type, unsigned int descriptorCount, unsigned int shaderStageFlags, Containers::Vector<std::shared_ptr<RHI::BufferHandle>>* buffers)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr || buffers == nullptr) return;
+    s->AddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, std::move(*buffers));
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_BuildDescriptorSetLayout(RHI_PSOHandle pso)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    s->BuildDescriptorSetLayout();
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_AddDynamicState(RHI_PSOHandle pso, RHI::EDynamicPipelineState state)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    s->AddDynamicPipelineState(state);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_SetPrimitiveState(RHI_PSOHandle pso, RHI::EPrimitiveTopology topology, bool primitiveRestart)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    s->SetPrimitiveState(topology, primitiveRestart);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_SetDepthClampEnable(RHI_PSOHandle pso, bool enable)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    s->SetDepthClampEnable(enable);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_SetRasterizerDiscardEnable(RHI_PSOHandle pso, bool enable)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    s->SetRasterizerDiscardEnable(enable);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_SetPolygonMode(RHI_PSOHandle pso, RHI::EPolygonMode mode)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    s->SetPolygonMode(mode);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_SetLineWidth(RHI_PSOHandle pso, float lineWidth)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    s->SetLineWidth(lineWidth);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_SetCullMode(RHI_PSOHandle pso, RHI::ECullModeFlagBits cull)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    s->SetCullMode(cull);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_SetFrontFace(RHI_PSOHandle pso, RHI::EFrontFace face)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    s->SetFrontFace(face);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_SetDepthBiasEnable(RHI_PSOHandle pso, bool enable)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    s->SetDepthBiasEnable(enable);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_SetSampleShading(RHI_PSOHandle pso, bool enable)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    s->SetSampleShading(enable);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_SetSampleCount(RHI_PSOHandle pso, RHI::ESampleCountFlagBits sample)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    s->SetSampleCount(sample);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_AddBlendAttachmentState_Simple(RHI_PSOHandle pso, bool enable, unsigned int writeMask)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    s->AddBlendAttachmentState(enable, writeMask);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_SetLogicOp(RHI_PSOHandle pso, bool enable, RHI::ELogicOp op)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    s->SetLogicOp(enable, op);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_SetBlendConstants(RHI_PSOHandle pso, float r, float g, float b, float a)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    s->SetBlendConstants(r, g, b, a);
+}
+
 extern "C" ENGINE_DLL RHI_PipelineHandle RHI_PipelineManager_GetGraphicsPipeline(RHI_PipelineManagerHandle pm, RHI_PSOHandle pso)
 {
     auto* mgr = reinterpret_cast<RHI::GPUPipelineManager*>(pm);
@@ -48,6 +182,69 @@ extern "C" ENGINE_DLL RHI_RenderPassHandle RHI_Device_GetRenderPass(RHI_DeviceHa
     return reinterpret_cast<RHI_RenderPassHandle>(sp.get());
 }
 
+extern "C" ENGINE_DLL void RHI_RenderPass_Free(RHI_RenderPassHandle rp, unsigned int frameIndex)
+{
+    auto* r = reinterpret_cast<RHI::GPURenderPass*>(rp);
+    if (r == nullptr) return;
+    r->FreeRenderPass(frameIndex);
+}
+
+extern "C" ENGINE_DLL void RHI_RenderPass_AddAttachmentAction(RHI_RenderPassHandle rp, RHI::EFormat format, RHI::ESampleCountFlagBits samples, RHI::AttachmentLoadOp colorLoad, RHI::AttachmentStoreOp colorStore, RHI::AttachmentLoadOp stencilLoad, RHI::AttachmentStoreOp stencilStore, RHI::EImageLayout initialLayout, RHI::EImageLayout finalLayout)
+{
+    auto* r = reinterpret_cast<RHI::GPURenderPass*>(rp);
+    if (r == nullptr) return;
+    r->AddAttachmentAction(format, samples, colorLoad, colorStore, stencilLoad, stencilStore, initialLayout, finalLayout);
+}
+
+extern "C" ENGINE_DLL RHI_SubpassHandle RHI_RenderPass_AddSubPass(RHI_RenderPassHandle rp)
+{
+    auto* r = reinterpret_cast<RHI::GPURenderPass*>(rp);
+    if (r == nullptr) return nullptr;
+    return reinterpret_cast<RHI_SubpassHandle>(r->AddSubPass());
+}
+
+extern "C" ENGINE_DLL void RHI_Subpass_SetDependency(RHI_SubpassHandle sp, unsigned int prevIndex, unsigned int prevStage, unsigned int prevAccessMask, unsigned int currStage, unsigned int currAccessMask, unsigned int syncFlag)
+{
+    auto* s = reinterpret_cast<RHI::GPUSubPass*>(sp);
+    if (s == nullptr) return;
+    s->SetDependency(prevIndex, prevStage, prevAccessMask, currStage, currAccessMask, syncFlag);
+}
+
+extern "C" ENGINE_DLL void RHI_Subpass_SetBindPoint(RHI_SubpassHandle sp, RHI::EPipelineBindPoint bindPoint)
+{
+    auto* s = reinterpret_cast<RHI::GPUSubPass*>(sp);
+    if (s == nullptr) return;
+    s->SetBindPoint(bindPoint);
+}
+
+extern "C" ENGINE_DLL void RHI_Subpass_AddColorReference(RHI_SubpassHandle sp, unsigned int index, RHI::EImageLayout layout)
+{
+    auto* s = reinterpret_cast<RHI::GPUSubPass*>(sp);
+    if (s == nullptr) return;
+    s->AddColorReference(index, layout);
+}
+
+extern "C" ENGINE_DLL void RHI_Subpass_SetDescriptionFlag(RHI_SubpassHandle sp, unsigned int flag)
+{
+    auto* s = reinterpret_cast<RHI::GPUSubPass*>(sp);
+    if (s == nullptr) return;
+    s->SetSubPassDescriptionFlag(flag);
+}
+
+extern "C" ENGINE_DLL void RHI_RenderPass_Alloc(RHI_RenderPassHandle rp, unsigned int frameIndex)
+{
+    auto* r = reinterpret_cast<RHI::GPURenderPass*>(rp);
+    if (r == nullptr) return;
+    r->AllocRenderPass(frameIndex);
+}
+
+extern "C" ENGINE_DLL void RHI_Pipeline_AllocGraphics(RHI_PipelineHandle pipeline, unsigned int frameIndex, RHI_SubpassHandle subpass)
+{
+    auto* p = reinterpret_cast<RHI::GPUPipeline*>(pipeline);
+    auto* s = reinterpret_cast<RHI::GPUSubPass*>(subpass);
+    if (p == nullptr || s == nullptr) return;
+    p->AllocGraphicPipeline(frameIndex, s);
+}
 extern "C" ENGINE_DLL void RHI_Device_ReleaseRenderPass(RHI_DeviceHandle device, RHI_RenderPassHandle rp)
 {
     auto* dev = reinterpret_cast<RHI::Device*>(device);

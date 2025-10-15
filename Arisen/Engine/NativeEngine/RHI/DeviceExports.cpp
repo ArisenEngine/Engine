@@ -52,4 +52,12 @@ extern "C" ENGINE_DLL RHIDeviceLimits RHI_Device_GetDeviceLimits(RHI_DeviceHandl
     return dev->GetDeviceLimits();
 }
 
+extern "C" ENGINE_DLL void RHI_Device_Submit(RHI_DeviceHandle device, RHI_CommandBufferHandle cmd, unsigned int frameIndex)
+{
+    auto* dev = reinterpret_cast<RHI::Device*>(device);
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (dev == nullptr || c == nullptr) return;
+    dev->Submit(c, frameIndex);
+}
+
 
