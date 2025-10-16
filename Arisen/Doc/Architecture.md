@@ -149,6 +149,70 @@ struct ReleaseBuckets {
 };
 ```
 
+—
+
+#### Overdue 桶处理（窗口外的大 fence 值）
+当 `fence - baseFence` 远大于 ring 窗口时，如果直接扩容 `buckets` 会造成内存浪费。解决思路：将窗口外条目放入按 fence 值排序的“过期堆（min-heap）”，在完成度推进到相应值时再批量释放。
+
+策略要点：
+- **入队**：若 `fence - baseFence >= window`，不要扩容 ring，改为入 `overdueMinHeap`。
+- **回收顺序**：先清 `ring` 中 `<= completedFence` 的桶，再从 `overdueMinHeap` 依 fence 升序弹出 `<= completedFence` 的条目。
+- **滑动窗口**：在 reclaim 结束后，可根据 `baseFence` 与 `completedFence` 的距离适度收缩/平移窗口，避免 buckets 长期膨胀。
+- **预算控制**：对 overdue 释放同样套用时间/数量预算以防抖动。
+
+扩展实现示例：
+```cpp
+struct OverdueItem { uint64_t fence; ResourceId id; };
+struct ByFenceAsc { bool operator()(const OverdueItem& a, const OverdueItem& b) const { return a.fence > b.fence; } };
+using OverdueMinHeap = std::priority_queue<OverdueItem, std::vector<OverdueItem>, ByFenceAsc>;
+
+struct ReleaseBucketsWithOverdue {
+    uint64_t baseFence = 0;
+    size_t window = 1024;
+    std::deque<std::vector<ResourceId>> buckets;
+    OverdueMinHeap overdue;
+
+    void enqueue(ResourceId id, uint64_t fence) {
+        if (fence < baseFence) { resourceManager.releaseIfUnused(id); return; }
+        const uint64_t delta = fence - baseFence;
+        if (delta >= window) { overdue.push({ fence, id }); return; }
+        const size_t idx = size_t(delta);
+        if (idx >= buckets.size()) buckets.resize(window);
+        buckets[idx].push_back(id);
+    }
+
+    void reclaim(uint64_t completedFence, double msBudget, size_t countBudget = SIZE_MAX) {
+        const auto start = now_ms();
+        size_t released = 0;
+
+        // 1) 先清 ring
+        while (baseFence <= completedFence && !buckets.empty()) {
+            for (auto id : buckets.front()) {
+                resourceManager.releaseIfUnused(id);
+                if (++released >= countBudget) return;
+                if (now_ms() - start > msBudget) return;
+            }
+            buckets.pop_front();
+            buckets.emplace_back(); // 维持固定窗口大小
+            baseFence++;
+        }
+
+        // 2) 再清 overdue（按 fence 升序）
+        while (!overdue.empty() && overdue.top().fence <= completedFence) {
+            auto it = overdue.top(); overdue.pop();
+            resourceManager.releaseIfUnused(it.id);
+            if (++released >= countBudget) return;
+            if (now_ms() - start > msBudget) return;
+        }
+    }
+};
+```
+
+可选优化：
+- **过量保护**：当 `overdue.size()` 超过阈值时，分批提前清理最老 N% 的条目（仍受预算约束），避免堆爆。
+- **合并记录**：同一资源多次 enqueue 仅保留最大 fence（用哈希表去重），避免重复释放。
+- **多队列隔离**：为 Gfx/Compute/Transfer 分别维持 ring 与 overdue，使用各自的 `completedFence`。
+
 - **做法 B：完成事件队列 + 阈值触发**
   - 每次 submit 仅将 `SubmissionId` 入无锁队列；回收器以“累计提交数、待回收资源数、累计占用字节或定时器”作为触发条件，批量查询 `completedFence`，并释放对应资源。
   - 适合提交频繁但单次资源数量很少的场景。
