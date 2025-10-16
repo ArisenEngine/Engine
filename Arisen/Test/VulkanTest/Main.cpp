@@ -6,6 +6,8 @@
 #include <chrono>
 
 #include "Logger/Logger.h"
+#include <csignal>
+#include <exception>
 
 
 #if(TEST_WINDOWS)
@@ -14,11 +16,38 @@
 
 #include<Windows.h>
 
+// Ensure logger shutdown on unhandled SEH
+static LONG WINAPI ArisenUnhandledExceptionFilter(EXCEPTION_POINTERS*)
+{
+    try { ArisenEngine::Debugger::Logger::Shutdown(); } catch(...) {}
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+
 
 #endif
 
 
 
+#if TEST_WINDOWS
+
+// Ensure logger shutdown on abnormal termination
+static void ArisenOnTerminate()
+{
+    try { ArisenEngine::Debugger::Logger::Shutdown(); } catch(...) {}
+    std::abort();
+}
+
+static void ArisenOnSignal(int)
+{
+    try { ArisenEngine::Debugger::Logger::Shutdown(); } catch(...) {}
+#ifdef _WIN64
+    ::ExitProcess(3);
+#else
+    std::_Exit(3);
+#endif
+}
+
+#endif
 #include "VulkanTest.h"
 
 #elif(TEST_ENGINE)
@@ -58,6 +87,20 @@ int main()
 
 	EngineTest test{};
 
+	// Crash-safe shutdown hooks
+#if TEST_WINDOWS
+#ifdef _WIN64
+	SetUnhandledExceptionFilter(ArisenUnhandledExceptionFilter);
+#endif
+	std::set_terminate(ArisenOnTerminate);
+	signal(SIGABRT, ArisenOnSignal);
+	signal(SIGSEGV, ArisenOnSignal);
+	signal(SIGILL, ArisenOnSignal);
+	signal(SIGFPE, ArisenOnSignal);
+	std::atexit([](){
+		try { ArisenEngine::Debugger::Logger::Shutdown(); } catch(...) {}
+	});
+#endif
 
 #if TEST_WINDOWS
 
@@ -83,7 +126,11 @@ int main()
 	catch (const std::exception &ex)
 	{
 		LOG_FATAL(ex.what());
-	} 
+	}
+	catch (...)
+	{
+		LOG_FATAL("Unhandled exception");
+	}
 	
 	test.Shutdown();
 		

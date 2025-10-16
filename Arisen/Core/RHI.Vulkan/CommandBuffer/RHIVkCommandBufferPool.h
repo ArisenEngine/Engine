@@ -2,6 +2,7 @@
 #include <vulkan/vulkan_core.h>
 #include "RHIVkCommandBuffer.h"
 #include "RHI/CommandBuffer/RHICommandBufferPool.h"
+#include <mutex>
 
 
 namespace ArisenEngine::RHI
@@ -19,9 +20,12 @@ namespace ArisenEngine::RHI
         void* GetHandle() override { return m_VkCommandPool; }
 
         std::shared_ptr<RHICommandBuffer> CreateCommandBuffer() override;
+        VkCommandPool AcquireThreadCommandPool();
     private:
         VkCommandPool m_VkCommandPool;
         VkDevice m_VkDevice;
+        Containers::Vector<VkCommandPool> m_AllCommandPools;
+        std::mutex m_PoolsMutex;
         
     };
     

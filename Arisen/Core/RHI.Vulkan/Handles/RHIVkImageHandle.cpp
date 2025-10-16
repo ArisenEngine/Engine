@@ -49,11 +49,13 @@ void ArisenEngine::RHI::RHIVkImageHandle::AllocHandle(ImageDescriptor&& desc)
 
 void ArisenEngine::RHI::RHIVkImageHandle::FreeHandle()
 {
-    if (m_VkImage != VK_NULL_HANDLE)
+    if (m_VkImage == VK_NULL_HANDLE)
     {
-        vkDestroyImage(m_VKDevice, m_VkImage, nullptr);
-        LOG_DEBUG("## Destroy Vulkan Image:" + m_Name +" ##");
+        return;
     }
+    vkDestroyImage(m_VKDevice, m_VkImage, nullptr);
+    LOG_DEBUG("## Destroy Vulkan Image:" + m_Name +" ##");
+    m_VkImage = VK_NULL_HANDLE;
 }
 
 ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkImageHandle::AddImageView(ImageViewDesc&& desc)

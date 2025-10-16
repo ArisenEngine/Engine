@@ -126,7 +126,7 @@ std::shared_ptr<ArisenEngine::RHI::BufferHandle> ArisenEngine::RHI::RHIVkDevice:
 
 void ArisenEngine::RHI::RHIVkDevice::ReleaseBufferHandle(std::shared_ptr<BufferHandle> bufferHandle)
 {
-   throw;
+   
 }
 
 std::shared_ptr<ArisenEngine::RHI::ImageHandle> ArisenEngine::RHI::RHIVkDevice::GetImageHandle(const std::string&& name)
@@ -148,7 +148,7 @@ std::shared_ptr<ArisenEngine::RHI::ImageHandle> ArisenEngine::RHI::RHIVkDevice::
 
 void ArisenEngine::RHI::RHIVkDevice::ReleaseImageHandle(std::shared_ptr<ImageHandle> imageHandle)
 {
-    throw;
+   
 }
 
 
@@ -158,11 +158,12 @@ void ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, UIn
 {
     ASSERT(commandBuffer->ReadyForSubmit());
 
+    std::lock_guard<std::mutex> lock(m_SubmitMutex);
     auto rhiVkCommandBuffer = static_cast<RHIVkCommandBuffer*>(commandBuffer);
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     
-    if (rhiVkCommandBuffer->GetSignalSemaphoresCount() > 0)
+    if (rhiVkCommandBuffer->GetWaitSemaphoresCount() > 0)
     {
         submitInfo.waitSemaphoreCount = rhiVkCommandBuffer->GetWaitSemaphoresCount();
         submitInfo.pWaitSemaphores = rhiVkCommandBuffer->GetWaitSemaphores();

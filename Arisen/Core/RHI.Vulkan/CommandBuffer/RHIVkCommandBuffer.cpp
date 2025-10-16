@@ -23,7 +23,7 @@ ArisenEngine::RHI::RHIVkCommandBuffer::RHIVkCommandBuffer(RHIVkDevice* device, R
 m_RHICommandPool(pool)
 {
     m_VkDevice = static_cast<VkDevice>(device->GetHandle());
-    m_VkCommandPool = static_cast<VkCommandPool>(pool->GetHandle());
+    m_VkCommandPool = pool->AcquireThreadCommandPool();
 
     // Alloc Memory
     {
