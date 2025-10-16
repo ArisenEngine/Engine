@@ -71,9 +71,13 @@ bool ArisenEngine::RHI::RHIVkDeviceMemory::AllocDeviceMemory(UInt32 memoryProper
 
 void ArisenEngine::RHI::RHIVkDeviceMemory::FreeDeviceMemory()
 {
-    ASSERT(m_VkDeviceMemory != VK_NULL_HANDLE);
+    if (m_VkDeviceMemory == VK_NULL_HANDLE)
+    {
+        return;
+    }
     LOG_DEBUG("## Destroy Vulkan Device Memory ##");
     vkFreeMemory(static_cast<VkDevice>(m_Device->GetHandle()), m_VkDeviceMemory, nullptr);
+    m_VkDeviceMemory = VK_NULL_HANDLE;
 }
 
 void* ArisenEngine::RHI::RHIVkDeviceMemory::GetHandle() const

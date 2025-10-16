@@ -1,5 +1,12 @@
 #include "HandlesExports.h"
 #include "../../Core/Core.Infra/RHI/Memory/ImageView.h"
+#include <unordered_map>
+
+using BufferHandlePtr = std::shared_ptr<ArisenEngine::RHI::BufferHandle>;
+using ImageHandlePtr  = std::shared_ptr<ArisenEngine::RHI::ImageHandle>;
+
+static std::unordered_map<ArisenEngine::RHI::BufferHandle*, BufferHandlePtr> g_BufferKeepAlive;
+static std::unordered_map<ArisenEngine::RHI::ImageHandle*, ImageHandlePtr>  g_ImageKeepAlive;
 
 using namespace ArisenEngine;
 
@@ -7,18 +14,23 @@ extern "C" ENGINE_DLL RHI_BufferHandle RHI_Device_GetBufferHandle(RHI_DeviceHand
 {
     auto* dev = reinterpret_cast<RHI::Device*>(device);
     if (dev == nullptr) return nullptr;
-    std::shared_ptr<RHI::BufferHandle> handle = dev->GetBufferHandle(name != nullptr ? std::string(name) : std::string("Anonymous"));
-    return reinterpret_cast<RHI_BufferHandle>(handle.get());
+    BufferHandlePtr handle = dev->GetBufferHandle(name != nullptr ? std::string(name) : std::string("Anonymous"));
+    auto* raw = handle.get();
+    g_BufferKeepAlive[raw] = handle;
+    return reinterpret_cast<RHI_BufferHandle>(raw);
 }
 
 extern "C" ENGINE_DLL void RHI_Device_ReleaseBufferHandle(RHI_DeviceHandle device, RHI_BufferHandle buffer)
 {
     auto* dev = reinterpret_cast<RHI::Device*>(device);
-    auto ptr = reinterpret_cast<RHI::BufferHandle*>(buffer);
+    auto* ptr = reinterpret_cast<RHI::BufferHandle*>(buffer);
     if (dev == nullptr || ptr == nullptr) return;
-    // NOTE: API expects shared_ptr management inside Device; we just pass raw ptr
-    std::shared_ptr<RHI::BufferHandle> sptr(ptr, [](RHI::BufferHandle*){});
-    dev->ReleaseBufferHandle(sptr);
+    auto it = g_BufferKeepAlive.find(ptr);
+    if (it != g_BufferKeepAlive.end())
+    {
+        dev->ReleaseBufferHandle(it->second);
+        g_BufferKeepAlive.erase(it);
+    }
 }
 
 extern "C" ENGINE_DLL bool RHI_Buffer_Alloc(RHI_BufferHandle buffer, const RHI::BufferDescriptor* desc)
@@ -75,17 +87,23 @@ extern "C" ENGINE_DLL RHI_ImageHandle RHI_Device_GetImageHandle(RHI_DeviceHandle
 {
     auto* dev = reinterpret_cast<RHI::Device*>(device);
     if (dev == nullptr) return nullptr;
-    std::shared_ptr<RHI::ImageHandle> handle = dev->GetImageHandle(name != nullptr ? std::string(name) : std::string("Anonymous"));
-    return reinterpret_cast<RHI_ImageHandle>(handle.get());
+    ImageHandlePtr handle = dev->GetImageHandle(name != nullptr ? std::string(name) : std::string("Anonymous"));
+    auto* raw = handle.get();
+    g_ImageKeepAlive[raw] = handle;
+    return reinterpret_cast<RHI_ImageHandle>(raw);
 }
 
 extern "C" ENGINE_DLL void RHI_Device_ReleaseImageHandle(RHI_DeviceHandle device, RHI_ImageHandle image)
 {
     auto* dev = reinterpret_cast<RHI::Device*>(device);
-    auto ptr = reinterpret_cast<RHI::ImageHandle*>(image);
+    auto* ptr = reinterpret_cast<RHI::ImageHandle*>(image);
     if (dev == nullptr || ptr == nullptr) return;
-    std::shared_ptr<RHI::ImageHandle> sptr(ptr, [](RHI::ImageHandle*){});
-    dev->ReleaseImageHandle(sptr);
+    auto it = g_ImageKeepAlive.find(ptr);
+    if (it != g_ImageKeepAlive.end())
+    {
+        dev->ReleaseImageHandle(it->second);
+        g_ImageKeepAlive.erase(it);
+    }
 }
 
 extern "C" ENGINE_DLL void RHI_Image_Alloc(RHI_ImageHandle image, const RHI::ImageDescriptor* desc)

@@ -6,6 +6,7 @@
 #include "../Program/RHIVkGPUPipelineManager.h"
 #include "../Program/RHIVkGPUProgram.h"
 #include "../Program/RHIVkDescriptorPool.h"
+#include <mutex>
 
 namespace ArisenEngine::RHI
 {
@@ -68,6 +69,7 @@ namespace ArisenEngine::RHI
         VkQueue m_VkPresentQueue;
         VkDevice m_VkDevice;
         VkPhysicalDeviceMemoryProperties m_VkPhysicalDeviceMemoryProperties;
+        std::mutex m_SubmitMutex;
         
         Containers::Map<UInt32, std::unique_ptr<RHIVkGPUProgram>> m_GPUPrograms;
         Containers::Map<UInt32, std::unique_ptr<RHIVkCommandBufferPool>> m_CommandBufferPools;

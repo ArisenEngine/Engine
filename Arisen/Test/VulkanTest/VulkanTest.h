@@ -38,6 +38,7 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <cstdlib>
 
 #include <chrono>
 #include "RHI/Handles/BufferHandle.h"
@@ -260,7 +261,10 @@ public:
         }
         auto shaderFileName = L"UniformBuffers";
         namespace fs = std::filesystem;
-        auto currentPath = fs::current_path().generic_wstring() + L"\\Shader";
+        wchar_t exePathW[MAX_PATH]{};
+        GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
+        auto exeDir = fs::path(exePathW).parent_path();
+        auto currentPath = exeDir.generic_wstring() + L"\\Shader";
         auto path = currentPath + L"\\" + shaderFileName + L".hlsl";
 
         Platforms::ShaderCompileParams vertexParams
@@ -279,24 +283,33 @@ public:
         };
 
         Platforms::ShaderCompilerOutput outputVertex;
-        if (Platforms::CompileShaderFromFile(std::move(vertexParams), outputVertex))
+        if (!Platforms::CompileShaderFromFile(std::move(vertexParams), outputVertex) || outputVertex.codePointer == nullptr || outputVertex.codeSize == 0)
         {
-            LOG_DEBUG("Vertex Shader Compilation done.");
+            LOG_ERROR("Vertex shader compilation failed.");
+            throw std::exception("Vertex shader compilation failed.");
         }
+        LOG_DEBUG("Vertex Shader Compilation done.");
 
         for (int i = 0; i < k_WindowsCount; ++i)
         {
             auto programId = RHI_Device_CreateGPUProgram(g_RenderContexts[i].device);
+            std::string nameStr = String::WStringToString(path);
             auto desc = RHI::GPUProgramDesc
             {
                 outputVertex.codeSize,
                 outputVertex.codePointer,
                 "Vert",
-                String::WStringToString(path).c_str(),
+                nameStr.c_str(),
                 RHI::SHADER_STAGE_VERTEX_BIT
             };
             RHI_Device_AttachProgramByteCode(g_RenderContexts[i].device, programId, &desc);
             g_RenderContexts[i].gpuPrograms.emplace_back(programId);
+        }
+        if (outputVertex.codePointer)
+        {
+            std::free(outputVertex.codePointer);
+            outputVertex.codePointer = nullptr;
+            outputVertex.codeSize = 0;
         }
 
 
@@ -316,24 +329,33 @@ public:
         };
 
         Platforms::ShaderCompilerOutput outputfragment;
-        if (Platforms::CompileShaderFromFile(std::move(fragmentParams), outputfragment))
+        if (!Platforms::CompileShaderFromFile(std::move(fragmentParams), outputfragment) || outputfragment.codePointer == nullptr || outputfragment.codeSize == 0)
         {
-            LOG_DEBUG("Fragment Shader Compilation done.");
+            LOG_ERROR("Fragment shader compilation failed.");
+            throw std::exception("Fragment shader compilation failed.");
         }
+        LOG_DEBUG("Fragment Shader Compilation done.");
 
         for (int i = 0; i < k_WindowsCount; ++i)
         {
             auto programId = RHI_Device_CreateGPUProgram(g_RenderContexts[i].device);
+            std::string nameStr = String::WStringToString(path);
             auto desc = RHI::GPUProgramDesc
             {
                 outputfragment.codeSize,
                 outputfragment.codePointer,
                 "Frag",
-                String::WStringToString(path).c_str(),
+                nameStr.c_str(),
                 RHI::SHADER_STAGE_FRAGMENT_BIT
             };
             RHI_Device_AttachProgramByteCode(g_RenderContexts[i].device, programId, &desc);
             g_RenderContexts[i].gpuPrograms.emplace_back(programId);
+        }
+        if (outputfragment.codePointer)
+        {
+            std::free(outputfragment.codePointer);
+            outputfragment.codePointer = nullptr;
+            outputfragment.codeSize = 0;
         }
     }
 
@@ -771,22 +793,18 @@ public:
             RHI_Device_WaitIdle(renderContext.device);
             for (auto ub : renderContext.uniformBuffers)
             {
-                RHI_Buffer_Free(ub);
                 RHI_Device_ReleaseBufferHandle(renderContext.device, ub);
             }
             if (renderContext.vertexBufferHandle)
             {
-                RHI_Buffer_Free(renderContext.vertexBufferHandle);
                 RHI_Device_ReleaseBufferHandle(renderContext.device, renderContext.vertexBufferHandle);
             }
             if (renderContext.indicesBufferHandle)
             {
-                RHI_Buffer_Free(renderContext.indicesBufferHandle);
                 RHI_Device_ReleaseBufferHandle(renderContext.device, renderContext.indicesBufferHandle);
             }
             if (renderContext.textureHandle)
             {
-                RHI_Image_Free(renderContext.textureHandle);
                 RHI_Device_ReleaseImageHandle(renderContext.device, renderContext.textureHandle);
             }
             if (renderContext.frameBuffer) RHI_Device_ReleaseFrameBuffer(renderContext.device, renderContext.frameBuffer);

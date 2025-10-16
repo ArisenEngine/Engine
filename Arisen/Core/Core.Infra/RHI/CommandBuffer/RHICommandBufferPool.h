@@ -2,6 +2,7 @@
 #include "RHICommandBuffer.h"
 #include "../../Common/CommandHeaders.h"
 #include "RHI/Synchronization/RHIFence.h"
+#include <mutex>
 
 namespace ArisenEngine::RHI
 {
@@ -21,6 +22,7 @@ namespace ArisenEngine::RHI
         virtual void* GetHandle() = 0;
         std::shared_ptr<RHICommandBuffer> GetCommandBuffer(UInt32 currentFrameIndex)
         {
+            std::lock_guard<std::mutex> lock(m_BuffersMutex);
             std::shared_ptr<RHICommandBuffer> commandBuffer;
 
             auto index = currentFrameIndex % m_MaxFramesInFlight;
@@ -39,6 +41,7 @@ namespace ArisenEngine::RHI
         
         void ReleaseCommandBuffer(UInt32 currentFrameIndex, std::shared_ptr<RHICommandBuffer> commandBuffer)
         {
+            std::lock_guard<std::mutex> lock(m_BuffersMutex);
             auto index = currentFrameIndex % m_MaxFramesInFlight;
             commandBuffer->Release();
             m_CommandBuffers[index].emplace_back(commandBuffer);
@@ -56,6 +59,7 @@ namespace ArisenEngine::RHI
         // NOTE: should clear by inherent class 
         Containers::Vector<Containers::Vector<std::shared_ptr<RHICommandBuffer>>> m_CommandBuffers;
         UInt32 m_MaxFramesInFlight;
+        std::mutex m_BuffersMutex;
     };
 
     inline RHICommandBufferPool::RHICommandBufferPool(Device* device, UInt32 maxFramesInFlight):
