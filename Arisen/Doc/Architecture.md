@@ -224,3 +224,90 @@ struct ReleaseBucketsWithOverdue {
 - **放置与调度**：
   - 回收器建议在 `RHIThread` 或独立 `Reclaimer` 线程以固定周期/阈值运行；或在渲染帧尾执行一次“轻量 sweep”，重回收留给后台线程。
   - 对超大释放操作（大页内存、庞大描述符批量销毁）可分批切片，或让 JobSystem 低优先级异步处理，避免阻塞 RHI 提交。
+
+### 线程安全与内存模型（releaseIfUnused 在独立回收线程）
+- **单一销毁者原则**：只有回收器对资源执行“最终销毁”；其它线程仅做引用计数增减与状态标记（Bound/Unbound）。
+- **引用计数**：使用原子 `strongRef`（绑定/使用期）和可选 `weakRef`（句柄表/缓存）。
+- **状态机**：`Ready -> Bound -> Unbound -> PendingDestroy -> Destroyed`，其中 `PendingDestroy` 只由回收器设置。
+- **生成计数（generation）**：句柄为 `(index, generation)`；销毁后 `++generation`，杜绝 ABA 与悬空句柄使用。
+- **释放判定**：`strongRef==0 && completedFence >= lastUseFence && state==Unbound` 才进入 `PendingDestroy`。
+- **内存序**：
+  - `addRef()`：`fetch_add(Relaxed)`；`release()`：`fetch_sub(Release)`；当减到 0 后由回收器以 `Acquire` 读取，形成释放-获取配对，保证先前写入对销毁线程可见。
+  - 状态迁移使用 `compare_exchange_strong(AcqRel, Acquire)`；`lastUseFence` 读写用 `Relaxed/Acquire` 足矣（围绕 timeline 读取）。
+- **销毁落点**：
+  - 安全默认：回收器仅判定与编组，真正调用 `vkDestroy*/ID3D12Release` 放入 `rhiDestroyQueue`，在 `RHIThread` 执行。
+  - 若驱动 API 允许跨线程销毁且已确保外部同步，可直接在回收器线程销毁，但仍建议集中到 RHI 以便可观测与节流。
+
+参考实现（要点示意）：
+```cpp
+enum class ResourceState : uint8_t { Ready, Bound, Unbound, PendingDestroy, Destroyed };
+
+struct GpuResource {
+    std::atomic<uint32_t> strong{1};
+    std::atomic<ResourceState> state{ResourceState::Ready};
+    std::atomic<uint64_t> lastUseFence{0};
+    std::atomic<uint32_t> generation{1};
+    std::atomic<uint8_t> destroying{0}; // 0/1，作为销毁令牌
+    // 驱动句柄...
+};
+
+inline void addRef(GpuResource& r) {
+    r.strong.fetch_add(1, std::memory_order_relaxed);
+}
+
+inline void release(GpuResource& r) {
+    if (r.strong.fetch_sub(1, std::memory_order_release) == 1) {
+        std::atomic_thread_fence(std::memory_order_acquire); // 与回收器配对
+    }
+}
+
+// 回收线程调用：若满足条件则发起销毁
+bool releaseIfUnused(GpuResource& r, uint64_t completedFence, bool enqueueDestroyToRHI) {
+    if (r.strong.load(std::memory_order_acquire) != 0) return false;
+    if (r.lastUseFence.load(std::memory_order_acquire) > completedFence) return false;
+
+    ResourceState expected = ResourceState::Unbound;
+    if (!r.state.compare_exchange_strong(expected, ResourceState::PendingDestroy,
+                                         std::memory_order_acq_rel, std::memory_order_acquire)) {
+        return false; // 仍在使用或已被处理
+    }
+
+    uint8_t zero = 0;
+    if (!r.destroying.compare_exchange_strong(zero, 1, std::memory_order_acq_rel)) {
+        return false; // 其他回收器已接手
+    }
+
+    if (enqueueDestroyToRHI) {
+        rhiDestroyQueue.push(&r); // 由 RHIThread 执行实际销毁
+    } else {
+        destroyOnThisThread(r);
+    }
+    return true;
+}
+
+// RHI 线程集中销毁（节流与观测友好）
+void drainRhiDestroyQueue() {
+    GpuResource* r = nullptr;
+    size_t budget = 4096; // 数量预算示例
+    while (budget-- && rhiDestroyQueue.try_pop(r)) {
+        destroyOnRHIThread(*r);
+        r.state.store(ResourceState::Destroyed, std::memory_order_release);
+        r.generation.fetch_add(1, std::memory_order_relaxed);
+    }
+}
+
+// 绑定阶段（RDG）：检查就绪与代数，防止 ABA
+bool tryBind(const Handle h, DescriptorSet& out) {
+    auto* r = handleTable.lookup(h.index);
+    if (!r || r->generation.load(std::memory_order_acquire) != h.generation) return false;
+    if (r->state.load(std::memory_order_acquire) != ResourceState::Ready) return false;
+    addRef(*r);
+    // 读取描述符/句柄，写入命令缓冲...
+    return true;
+}
+```
+
+实践提示：
+- 绑定路径只在 `Ready` 上成功，`PendingDestroy/Destroyed` 均失败；解绑定后若 `strong==0`，由回收器回收。
+- 如有多队列，`lastUseFence` 取“该资源最后绑定的队列及其 fence”，或记录每队列 fence 后取最小完成条件。
+- 大对象销毁可继续沿用“时间/数量预算”并优先走 `rhiDestroyQueue`，避免阻塞提交路径。
