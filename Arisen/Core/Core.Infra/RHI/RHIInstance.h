@@ -2,14 +2,14 @@
 #include "DeviceLimits.h"
 #include "../Common/CommandHeaders.h"
 #include "../Common/PrimitiveTypes.h"
-#include "Devices/Device.h"
+#include "Devices/RHIDevice.h"
 #include "Enums/Image/EFormat.h"
 #include "Enums/Swapchain/PresentMode.h"
 
 
 namespace ArisenEngine::RHI
 {
-    class Device;
+    class RHIDevice;
     class Surface;
     class RHIFactory;
 }
@@ -34,13 +34,13 @@ namespace ArisenEngine::RHI
         UInt32 maxFramesInFlight;
     };
     
-    COREINFRA_DLL class Instance
+    COREINFRA_DLL class RHIInstance
     {
     public:
-        NO_COPY_NO_MOVE_NO_DEFAULT(Instance)
-        VIRTUAL_DECONSTRUCTOR(Instance)
+        NO_COPY_NO_MOVE_NO_DEFAULT(RHIInstance)
+        VIRTUAL_DECONSTRUCTOR(RHIInstance)
 
-        explicit Instance(InstanceInfo&& instance_info): m_DeviceLimits(),
+        explicit RHIInstance(InstanceInfo&& instance_info): m_DeviceLimits(),
                                                          m_MaxFramesInFlight(instance_info.maxFramesInFlight)
         {
         }
@@ -75,7 +75,7 @@ namespace ArisenEngine::RHI
         virtual bool IsSurfacesAvailable() const = 0;
         
         virtual void CreateLogicDevice(UInt32 windowId) = 0;
-        virtual Device* GetLogicalDevice(UInt32 windowId) = 0;
+        virtual RHIDevice* GetLogicalDevice(UInt32 windowId) = 0;
 
         virtual const UInt32 GetExternalIndex() const = 0;
 

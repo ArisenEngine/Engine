@@ -5,7 +5,7 @@ using namespace ArisenEngine;
 extern "C" ENGINE_DLL RHI_SamplerHandle RHI_Factory_CreateSampler(RHI_FactoryHandle factory, RHI_DeviceHandle device, const RHI::RHISamplerDesc* desc)
 {
     auto* f = reinterpret_cast<RHI::RHIFactory*>(factory);
-    auto* d = reinterpret_cast<RHI::Device*>(device);
+    auto* d = reinterpret_cast<RHI::RHIDevice*>(device);
     if (f == nullptr || d == nullptr || desc == nullptr) return nullptr;
     RHI::RHISamplerDesc copy = *desc;
     auto sampler = f->CreateSampler(d, std::move(copy));

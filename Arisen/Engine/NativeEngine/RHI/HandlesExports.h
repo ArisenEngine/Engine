@@ -1,6 +1,6 @@
 #pragma once
 #include "EngineCommon.h"
-#include "../../Core/Core.Infra/RHI/Devices/Device.h"
+#include "../../Core/Core.Infra/RHI/Devices/RHIDevice.h"
 #include "../../Core/Core.Infra/RHI/Handles/BufferHandle.h"
 #include "../../Core/Core.Infra/RHI/Handles/ImageHandle.h"
 #include "../../Core/Core.Infra/RHI/Memory/MemoryView.h"

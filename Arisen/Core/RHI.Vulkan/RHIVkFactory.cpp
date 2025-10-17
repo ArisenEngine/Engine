@@ -11,7 +11,7 @@ ArisenEngine::RHI::RHIVkFactory::~RHIVkFactory()
     
 }
 
-std::shared_ptr<ArisenEngine::RHI::RHISampler> ArisenEngine::RHI::RHIVkFactory::CreateSampler(Device* device,
+std::shared_ptr<ArisenEngine::RHI::RHISampler> ArisenEngine::RHI::RHIVkFactory::CreateSampler(RHIDevice* device,
     RHISamplerDesc&& desc)
 {
     return std::make_shared<RHIVkSampler>(device, std::move(desc));

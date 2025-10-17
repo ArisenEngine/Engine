@@ -13,7 +13,7 @@ namespace ArisenEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHICommandBufferPool)
-        RHICommandBufferPool(Device* device, UInt32 maxFramesInFlight);;
+        RHICommandBufferPool(RHIDevice* device, UInt32 maxFramesInFlight);;
         virtual ~RHICommandBufferPool()
         {
             m_Fences.clear();
@@ -55,14 +55,14 @@ namespace ArisenEngine::RHI
         
     protected:
         Containers::Vector<std::unique_ptr<RHIFence>> m_Fences;
-        Device* m_Device;
+        RHIDevice* m_Device;
         // NOTE: should clear by inherent class 
         Containers::Vector<Containers::Vector<std::shared_ptr<RHICommandBuffer>>> m_CommandBuffers;
         UInt32 m_MaxFramesInFlight;
         std::mutex m_BuffersMutex;
     };
 
-    inline RHICommandBufferPool::RHICommandBufferPool(Device* device, UInt32 maxFramesInFlight):
+    inline RHICommandBufferPool::RHICommandBufferPool(RHIDevice* device, UInt32 maxFramesInFlight):
         m_Device(device), m_MaxFramesInFlight(maxFramesInFlight)
     {
         m_CommandBuffers.resize(m_MaxFramesInFlight);

@@ -9,7 +9,7 @@ namespace ArisenEngine::RHI
    
     public:
         NO_COPY_NO_MOVE(RHIVkBufferHandle)
-        explicit RHIVkBufferHandle(Device* device);
+        explicit RHIVkBufferHandle(RHIDevice* device);
         ~RHIVkBufferHandle() noexcept override;
         void* GetHandle() const override;
 
@@ -21,7 +21,7 @@ namespace ArisenEngine::RHI
     private:
         
         VkBuffer m_VkBuffer { VK_NULL_HANDLE };
-        Device* m_Device;
+        RHIDevice* m_Device;
         
     };
 }

@@ -21,7 +21,7 @@ namespace ArisenEngine::RHI
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkSurface);
         ~RHIVkSurface() noexcept override;
-        explicit RHIVkSurface(UInt32&& id, Instance*  instance);
+        explicit RHIVkSurface(UInt32&& id, RHIInstance*  instance);
         [[nodiscard]] void* GetHandle() const override { return m_VkSurface; }
 
         void InitSwapChain() override;

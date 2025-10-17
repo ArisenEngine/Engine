@@ -20,18 +20,18 @@ namespace ArisenEngine::RHI
 namespace ArisenEngine::RHI
 {
     class GPUPipelineManager;
-    class Instance;
+    class RHIInstance;
     class Surface;
     class RHICommandBufferPool;
     class GPURenderPass;
     class FrameBuffer;
     
     
-    class Device
+    class RHIDevice
     {
     public:
-        NO_COPY_NO_MOVE_NO_DEFAULT(Device)
-        virtual ~Device() noexcept
+        NO_COPY_NO_MOVE_NO_DEFAULT(RHIDevice)
+        virtual ~RHIDevice() noexcept
         {
             m_Instance = nullptr;
             m_Surface = nullptr;
@@ -78,10 +78,10 @@ namespace ArisenEngine::RHI
         
     protected:
         
-        Instance* m_Instance;
+        RHIInstance* m_Instance;
         Surface* m_Surface;
         RHIDeviceLimits m_DeviceLimits;
-        Device(Instance* instance, Surface* surface): m_Instance(instance), m_Surface(surface) {}
+        RHIDevice(RHIInstance* instance, Surface* surface): m_Instance(instance), m_Surface(surface) {}
     private:
         
     };

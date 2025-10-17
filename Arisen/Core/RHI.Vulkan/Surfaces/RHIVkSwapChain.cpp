@@ -2,7 +2,7 @@
 #include "Logger/Logger.h"
 #include "RHI/Enums/Image/EImageAspectFlagBits.h"
 
-ArisenEngine::RHI::RHIVkSwapChain::RHIVkSwapChain(Device* device, const RHIVkSurface* surface, UInt32 maxFramesInFlight):
+ArisenEngine::RHI::RHIVkSwapChain::RHIVkSwapChain(RHIDevice* device, const RHIVkSurface* surface, UInt32 maxFramesInFlight):
 SwapChain(maxFramesInFlight), m_Device(device), m_VkDevice(static_cast<VkDevice>(
             m_Device->GetHandle())),
 m_VkSurface(static_cast<VkSurfaceKHR>(surface->GetHandle())), m_ImageIndex(0), m_Surface(surface)

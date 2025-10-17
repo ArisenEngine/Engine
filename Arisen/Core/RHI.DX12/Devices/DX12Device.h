@@ -2,11 +2,11 @@
 
 
 #include "../Common.h"
-#include "RHI/Devices/Device.h"
+#include "RHI/Devices/RHIDevice.h"
 
 namespace ArisenEngine::RHI
 {
-	 class DX12Device final : public Device
+	 class DX12Device final : public RHIDevice
 	{
 	public:
 
@@ -15,6 +15,6 @@ namespace ArisenEngine::RHI
 
 }
 
-extern "C" RHI_DX12_DLL ArisenEngine::RHI::Device * CreateDevice();
+extern "C" RHI_DX12_DLL ArisenEngine::RHI::RHIDevice * CreateDevice();
 
 

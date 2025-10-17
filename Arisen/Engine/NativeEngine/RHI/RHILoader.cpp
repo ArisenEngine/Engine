@@ -96,7 +96,7 @@ void ArisenEngine::Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphsicsAPI 
 
 }
 
-ArisenEngine::RHI::Instance* ArisenEngine::Graphics::RHILoader::CreateInstance(RHI::InstanceInfo&& app_info)
+ArisenEngine::RHI::RHIInstance* ArisenEngine::Graphics::RHILoader::CreateInstance(RHI::InstanceInfo&& app_info)
 {
     if (_rhi_dll == NULL)
     {
@@ -104,7 +104,7 @@ ArisenEngine::RHI::Instance* ArisenEngine::Graphics::RHILoader::CreateInstance(R
         throw std::exception(" RHI dll not loaded !");
     }
 
-    typedef RHI::Instance* (__fastcall* InstanceCreate)(RHI::InstanceInfo&& app_info);
+    typedef RHI::RHIInstance* (__fastcall* InstanceCreate)(RHI::InstanceInfo&& app_info);
     InstanceCreate createInstance;
 
     createInstance = (InstanceCreate)GetProcAddress(_rhi_dll, "CreateInstance");

@@ -1,6 +1,6 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
-#include "RHI/Devices/Device.h"
+#include "RHI/Devices/RHIDevice.h"
 #include "../Surfaces/RHIVkSurface.h"
 #include "../CommandBuffer/RHIVkCommandBufferPool.h"
 #include "../Program/RHIVkGPUPipelineManager.h"
@@ -15,14 +15,14 @@ namespace ArisenEngine::RHI
 
 namespace ArisenEngine::RHI
 {
-    class RHIVkDevice final: public Device
+    class RHIVkDevice final: public RHIDevice
     {
         
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkDevice)
         ~RHIVkDevice() noexcept override;
         void* GetHandle() const override { return m_VkDevice; }
-        RHIVkDevice(Instance* instance, Surface* surface, VkQueue graphicQueue, VkQueue presentQueue, VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties);
+        RHIVkDevice(RHIInstance* instance, Surface* surface, VkQueue graphicQueue, VkQueue presentQueue, VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties);
 
         void DeviceWaitIdle() const override;
         void GraphicQueueWaitIdle() const override;

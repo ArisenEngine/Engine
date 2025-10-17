@@ -5,7 +5,7 @@
 namespace ArisenEngine::RHI
 {
     class DescriptorPool;
-    class Device;
+    class RHIDevice;
 }
 
 namespace ArisenEngine::RHI

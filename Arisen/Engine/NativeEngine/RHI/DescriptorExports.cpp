@@ -1,11 +1,11 @@
 #include "DescriptorExports.h"
-#include "../../Core/Core.Infra/RHI/Devices/Device.h"
+#include "../../Core/Core.Infra/RHI/Devices/RHIDevice.h"
 
 using namespace ArisenEngine;
 
 extern "C" ENGINE_DLL RHI_DescriptorPoolHandle RHI_Device_GetDescriptorPool(RHI_DeviceHandle device)
 {
-    auto* dev = reinterpret_cast<RHI::Device*>(device);
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return nullptr;
     return reinterpret_cast<RHI_DescriptorPoolHandle>(dev->GetDescriptorPool());
 }

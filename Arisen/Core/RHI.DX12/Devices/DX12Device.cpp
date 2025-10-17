@@ -1,6 +1,6 @@
 #include "DX12Device.h"
 
-ArisenEngine::RHI::Device* CreateDevice()
+ArisenEngine::RHI::RHIDevice* CreateDevice()
 {
     return nullptr;
 }

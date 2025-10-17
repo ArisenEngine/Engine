@@ -12,7 +12,7 @@ using namespace ArisenEngine;
 
 extern "C" ENGINE_DLL RHI_BufferHandle RHI_Device_GetBufferHandle(RHI_DeviceHandle device, const char* name)
 {
-    auto* dev = reinterpret_cast<RHI::Device*>(device);
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return nullptr;
     BufferHandlePtr handle = dev->GetBufferHandle(name != nullptr ? std::string(name) : std::string("Anonymous"));
     auto* raw = handle.get();
@@ -22,7 +22,7 @@ extern "C" ENGINE_DLL RHI_BufferHandle RHI_Device_GetBufferHandle(RHI_DeviceHand
 
 extern "C" ENGINE_DLL void RHI_Device_ReleaseBufferHandle(RHI_DeviceHandle device, RHI_BufferHandle buffer)
 {
-    auto* dev = reinterpret_cast<RHI::Device*>(device);
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     auto* ptr = reinterpret_cast<RHI::BufferHandle*>(buffer);
     if (dev == nullptr || ptr == nullptr) return;
     auto it = g_BufferKeepAlive.find(ptr);
@@ -85,7 +85,7 @@ extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Range(RHI_BufferHandle buffe
 
 extern "C" ENGINE_DLL RHI_ImageHandle RHI_Device_GetImageHandle(RHI_DeviceHandle device, const char* name)
 {
-    auto* dev = reinterpret_cast<RHI::Device*>(device);
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return nullptr;
     ImageHandlePtr handle = dev->GetImageHandle(name != nullptr ? std::string(name) : std::string("Anonymous"));
     auto* raw = handle.get();
@@ -95,7 +95,7 @@ extern "C" ENGINE_DLL RHI_ImageHandle RHI_Device_GetImageHandle(RHI_DeviceHandle
 
 extern "C" ENGINE_DLL void RHI_Device_ReleaseImageHandle(RHI_DeviceHandle device, RHI_ImageHandle image)
 {
-    auto* dev = reinterpret_cast<RHI::Device*>(device);
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     auto* ptr = reinterpret_cast<RHI::ImageHandle*>(image);
     if (dev == nullptr || ptr == nullptr) return;
     auto it = g_ImageKeepAlive.find(ptr);

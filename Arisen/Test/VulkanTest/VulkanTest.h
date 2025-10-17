@@ -3,7 +3,7 @@
 #include "Windows/PlatformTypes.h"
 #include "Test.h"
 #include "RHI\RHILoader.h"
-#include "RHI/Instance.h"
+#include "RHI/RHIInstance.h"
 #include "RHI/Enums/Pipeline/EAccessFlag.h"
 #include "RHI/Enums/Memory/EBufferUsage.h"
 #include "RHI/Enums/Pipeline/EColorComponentFlag.h"
