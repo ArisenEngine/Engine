@@ -311,3 +311,18 @@ bool tryBind(const Handle h, DescriptorSet& out) {
 - 绑定路径只在 `Ready` 上成功，`PendingDestroy/Destroyed` 均失败；解绑定后若 `strong==0`，由回收器回收。
 - 如有多队列，`lastUseFence` 取“该资源最后绑定的队列及其 fence”，或记录每队列 fence 后取最小完成条件。
 - 大对象销毁可继续沿用“时间/数量预算”并优先走 `rhiDestroyQueue`，避免阻塞提交路径。
+
+### 内存序速查表（C++ std::memory_order）
+- relaxed: 仅保证该原子操作本身原子性；不提供可见性/顺序。用于计数、ID 等。
+- consume: 设计为基于数据依赖的轻 acquire；实现不一致，等同 acquire 使用。
+- acquire: 本线程在此操作之后的读写，能看到与之成对的 release 之前的写入。
+- release: 本线程在此操作之前的写，不会被重排到之后；与对方 acquire 成对。
+- acq_rel: 读改写同时具备 acquire 与 release（CAS/fetch_add 成功路径）。
+- seq_cst: 最强，形成全局总序；一般不必滥用，按需兜底。
+
+常用模式：
+- 发布-订阅：producer 写数据 → flag.store(true, release)；consumer if(flag.load(acquire)) 读数据。
+- 指针发布：producer 填充对象 → ptr.store(p, release)；consumer p = ptr.load(acquire)。
+- 引用计数删除边界：if (ref.fetch_sub(1, release) == 1) fence(acquire); delete。
+- 状态机/CAS：compare_exchange_strong(..., acq_rel, acquire)。
+- MPSC 队列：producer exchange(head, release) → prev->next.store(node, release)；consumer next = tail->next.load(acquire)。
