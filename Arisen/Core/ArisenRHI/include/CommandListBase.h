@@ -12,6 +12,12 @@ public:
         : m_command_queue(command_queue)
         , m_type(type)
     {}
+
+    // ICommandList interface
+    virtual ICommandQueue& GetCommandQueue() const override final
+    {
+        return const_cast<ICommandQueue&>(m_command_queue);
+    }
 private:
     const ICommandQueue& m_command_queue;
     CommandListType m_type;
