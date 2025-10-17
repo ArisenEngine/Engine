@@ -1,9 +1,9 @@
 #pragma once
-#include "RHI/Synchronization/SynchObject.h"
+#include "Threadable/SemaphoreObject.h"
 
 namespace ArisenEngine::RHI
 {
-    class RHISemaphore : public SynchObject
+    class RHISemaphore : public Threadable::SemaphoreObject
     {
     public:
         NO_COPY_NO_MOVE(RHISemaphore)
@@ -11,7 +11,7 @@ namespace ArisenEngine::RHI
         ~RHISemaphore() noexcept override = default;
 
         void* GetHandle() override = 0;
-        void Lock() override = 0;
-        void Unlock() override = 0;
+        void Wait() override = 0;
+        void Signal() override = 0;
     };
 }

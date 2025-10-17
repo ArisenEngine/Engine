@@ -1,9 +1,9 @@
 #pragma once
-#include "RHI/Synchronization/SynchObject.h"
+#include "Threadable/SynchObject.h"
 
 namespace ArisenEngine::RHI
 {
-    class RHIFence : public virtual SynchObject
+    class RHIFence : public virtual Threadable::SynchObject
     {
     public:
         NO_COPY_NO_MOVE(RHIFence)

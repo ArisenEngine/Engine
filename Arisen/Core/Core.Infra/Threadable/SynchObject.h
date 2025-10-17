@@ -1,7 +1,7 @@
 #pragma once
-#include "../../Common/CommandHeaders.h"
+#include "Common/CommandHeaders.h"
 
-namespace ArisenEngine::RHI
+namespace ArisenEngine::Threadable
 {
     class SynchObject
     {

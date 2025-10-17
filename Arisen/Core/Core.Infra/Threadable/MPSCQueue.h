@@ -4,27 +4,55 @@
 #include <utility>
 #include <cstddef>
 
-namespace ArisenEngine::Containers
+namespace ArisenEngine::Threadable::Containers
 {
+    // Forward declaration
+    class AtomicNodePool;
 	// Intrusive node used by ConcurrentLinkList
 	COREINFRA_DLL class AtomicNode
 	{
-		friend class MPSCLinkList;
+		friend class MPSCQueue;
 	public:
 		AtomicNode() noexcept : _next(nullptr) {}
 		AtomicNode* Next() const noexcept { return _next.load(std::memory_order_acquire); }
 		AtomicNode* Link(AtomicNode* next) noexcept { _next.store(next, std::memory_order_release); return next; }
 		void* data[3] = { nullptr, nullptr, nullptr };
+
+		// Object pool helpers
+		static AtomicNode* Acquire(AtomicNodePool& pool) noexcept;
+		void Recycle(AtomicNodePool& pool) noexcept;
 	private:
 		std::atomic<AtomicNode*> _next;
 	};
 
-	COREINFRA_DLL class MPSCLinkList
+    // Simple lock-free object pool for AtomicNode
+    COREINFRA_DLL class AtomicNodePool
+    {
+    public:
+        AtomicNodePool() noexcept : _freeHead(nullptr) {}
+        AtomicNodePool(const AtomicNodePool&) = delete;
+        AtomicNodePool& operator=(const AtomicNodePool&) = delete;
+
+        // Acquire a node from the pool, or allocate if empty
+        AtomicNode* Acquire() noexcept;
+        // Return a node to the pool
+        void Release(AtomicNode* node) noexcept;
+        // Preallocate N nodes into the pool
+        void Preallocate(std::size_t count);
+
+    private:
+        std::atomic<AtomicNode*> _freeHead; // Treiber stack head; multiple consumers pop, single producer push is supported
+    };
+
+    // Global default pool accessor (lazy-initialized in cpp)
+    COREINFRA_DLL AtomicNodePool& GetGlobalAtomicNodePool() noexcept;
+
+	COREINFRA_DLL class MPSCQueue
 	{
 	public:
-		MPSCLinkList() noexcept;
-		MPSCLinkList(const MPSCLinkList&) = delete;
-		MPSCLinkList& operator=(const MPSCLinkList&) = delete;
+		MPSCQueue() noexcept;
+		MPSCQueue(const MPSCQueue&) = delete;
+		MPSCQueue& operator=(const MPSCQueue&) = delete;
 
 		void Enqueue(AtomicNode* node) noexcept;
 		AtomicNode* TryDequeue() noexcept;
