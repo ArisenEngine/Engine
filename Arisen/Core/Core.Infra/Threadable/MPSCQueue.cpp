@@ -1,17 +1,17 @@
-#include "MPSCLinkList.h"
+#include "MPSCQueue.h"
 #include <atomic>
 #if defined(_WIN32)
 #include <windows.h>
 #endif
 
-using namespace ArisenEngine::Containers;
+using namespace ArisenEngine::Threadable::Containers;
 
 // -------- AtomicNodePool implementation --------
-namespace ArisenEngine::Containers {
+namespace ArisenEngine::Threadable::Containers {
     static AtomicNodePool* g_GlobalPool = nullptr;
 }
 
-AtomicNodePool& ArisenEngine::Containers::GetGlobalAtomicNodePool() noexcept
+AtomicNodePool& ArisenEngine::Threadable::Containers::GetGlobalAtomicNodePool() noexcept
 {
     if (!g_GlobalPool) g_GlobalPool = new AtomicNodePool();
     return *g_GlobalPool;
@@ -52,14 +52,14 @@ void AtomicNodePool::Preallocate(std::size_t count)
     }
 }
 
-MPSCLinkList::MPSCLinkList() noexcept
+MPSCQueue::MPSCQueue() noexcept
 {
 	_stub._next.store(nullptr, std::memory_order_relaxed);
 	_head.store(&_stub, std::memory_order_relaxed);
 	_tail = &_stub;
 }
 
-void MPSCLinkList::Enqueue(AtomicNode* node) noexcept
+void MPSCQueue::Enqueue(AtomicNode* node) noexcept
 {
 	// Prepare node link before publish
 	node->_next.store(nullptr, std::memory_order_relaxed);
@@ -71,7 +71,7 @@ void MPSCLinkList::Enqueue(AtomicNode* node) noexcept
 	prev->_next.store(node, std::memory_order_release);
 }
 
-AtomicNode* MPSCLinkList::TryDequeue() noexcept
+AtomicNode* MPSCQueue::TryDequeue() noexcept
 {
 	AtomicNode* tail = _tail;
 	AtomicNode* next = tail->_next.load(std::memory_order_acquire);
@@ -111,14 +111,14 @@ AtomicNode* MPSCLinkList::TryDequeue() noexcept
 	return nullptr;
 }
 
-bool MPSCLinkList::Empty() const noexcept
+bool MPSCQueue::Empty() const noexcept
 {
 	AtomicNode* tail = _tail;
 	if (tail->_next.load(std::memory_order_acquire) != nullptr) return false;
 	return tail == _head.load(std::memory_order_acquire);
 }
 
-std::size_t MPSCLinkList::TryDequeueAll(AtomicNode*& first, AtomicNode*& last, std::size_t maxCount) noexcept
+std::size_t MPSCQueue::TryDequeueAll(AtomicNode*& first, AtomicNode*& last, std::size_t maxCount) noexcept
 {
     first = nullptr;
     last = nullptr;
