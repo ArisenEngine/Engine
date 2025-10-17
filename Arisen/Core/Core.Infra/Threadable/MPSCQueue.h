@@ -11,6 +11,7 @@ namespace ArisenEngine::Threadable::Containers
 	// Intrusive node used by ConcurrentLinkList
 	COREINFRA_DLL class AtomicNode
 	{
+		friend class AtomicNodePool;
 		friend class MPSCQueue;
 	public:
 		AtomicNode() noexcept : _next(nullptr) {}
@@ -77,7 +78,7 @@ namespace ArisenEngine::Threadable::Containers
 		}
 
 	private:
-		struct StubNode { std::atomic<AtomicNode*> _next{ nullptr }; } _stub;
+		AtomicNode _stub;                     // sentinel node
 		std::atomic<AtomicNode*> _head{ nullptr };
 		AtomicNode* _tail{ nullptr };
 
