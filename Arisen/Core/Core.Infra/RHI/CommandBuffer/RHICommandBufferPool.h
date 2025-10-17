@@ -20,10 +20,10 @@ namespace ArisenEngine::RHI
             m_Device = nullptr;
         }
         virtual void* GetHandle() = 0;
-        std::shared_ptr<RHICommandBuffer> GetCommandBuffer(UInt32 currentFrameIndex)
+        RHICommandBuffer* GetCommandBuffer(UInt32 currentFrameIndex)
         {
             std::lock_guard<std::mutex> lock(m_BuffersMutex);
-            std::shared_ptr<RHICommandBuffer> commandBuffer;
+            RHICommandBuffer* commandBuffer;
 
             auto index = currentFrameIndex % m_MaxFramesInFlight;
             if (m_CommandBuffers[index].size() > 0)
@@ -39,14 +39,14 @@ namespace ArisenEngine::RHI
             return commandBuffer;
         }
         
-        void ReleaseCommandBuffer(UInt32 currentFrameIndex, std::shared_ptr<RHICommandBuffer> commandBuffer)
+        void ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBuffer* commandBuffer)
         {
             std::lock_guard<std::mutex> lock(m_BuffersMutex);
             auto index = currentFrameIndex % m_MaxFramesInFlight;
             commandBuffer->Release();
             m_CommandBuffers[index].emplace_back(commandBuffer);
         }
-        virtual std::shared_ptr<RHICommandBuffer> CreateCommandBuffer() = 0;
+        virtual RHICommandBuffer* CreateCommandBuffer() = 0;
         
         RHIFence* GetFence(UInt32 currentFrameIndex) const
         {
@@ -57,7 +57,7 @@ namespace ArisenEngine::RHI
         Containers::Vector<std::unique_ptr<RHIFence>> m_Fences;
         RHIDevice* m_Device;
         // NOTE: should clear by inherent class 
-        Containers::Vector<Containers::Vector<std::shared_ptr<RHICommandBuffer>>> m_CommandBuffers;
+        Containers::Vector<Containers::Vector<RHICommandBuffer*>> m_CommandBuffers;
         UInt32 m_MaxFramesInFlight;
         std::mutex m_BuffersMutex;
     };

@@ -6,6 +6,52 @@
 
 using namespace ArisenEngine::Containers;
 
+// -------- AtomicNodePool implementation --------
+namespace ArisenEngine::Containers {
+    static AtomicNodePool* g_GlobalPool = nullptr;
+}
+
+AtomicNodePool& ArisenEngine::Containers::GetGlobalAtomicNodePool() noexcept
+{
+    if (!g_GlobalPool) g_GlobalPool = new AtomicNodePool();
+    return *g_GlobalPool;
+}
+
+AtomicNode* AtomicNode::Acquire(AtomicNodePool& pool) noexcept { return pool.Acquire(); }
+void AtomicNode::Recycle(AtomicNodePool& pool) noexcept { pool.Release(this); }
+
+AtomicNode* AtomicNodePool::Acquire() noexcept
+{
+    AtomicNode* head = _freeHead.load(std::memory_order_acquire);
+    while (head)
+    {
+        AtomicNode* next = head->_next.load(std::memory_order_relaxed);
+        if (_freeHead.compare_exchange_weak(head, next, std::memory_order_acq_rel, std::memory_order_acquire))
+        {
+            head->_next.store(nullptr, std::memory_order_relaxed);
+            head->data[0] = head->data[1] = head->data[2] = nullptr;
+            return head;
+        }
+    }
+    return new AtomicNode();
+}
+
+void AtomicNodePool::Release(AtomicNode* node) noexcept
+{
+    AtomicNode* head = _freeHead.load(std::memory_order_relaxed);
+    do {
+        node->_next.store(head, std::memory_order_relaxed);
+    } while (!_freeHead.compare_exchange_weak(head, node, std::memory_order_release, std::memory_order_relaxed));
+}
+
+void AtomicNodePool::Preallocate(std::size_t count)
+{
+    for (std::size_t i = 0; i < count; ++i)
+    {
+        Release(new AtomicNode());
+    }
+}
+
 MPSCLinkList::MPSCLinkList() noexcept
 {
 	_stub._next.store(nullptr, std::memory_order_relaxed);
