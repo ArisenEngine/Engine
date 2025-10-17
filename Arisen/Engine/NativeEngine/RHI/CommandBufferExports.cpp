@@ -11,14 +11,14 @@ static std::mutex g_CmdKeepAliveMutex;
 
 extern "C" ENGINE_DLL unsigned int RHI_Device_CreateCommandBufferPool(RHI_DeviceHandle device)
 {
-    auto* dev = reinterpret_cast<RHI::Device*>(device);
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return 0U;
     return dev->CreateCommandBufferPool();
 }
 
 extern "C" ENGINE_DLL RHI_CommandBufferHandle RHI_Device_GetCommandBuffer(RHI_DeviceHandle device, unsigned int poolId, unsigned int currentFrameIndex)
 {
-    auto* dev = reinterpret_cast<RHI::Device*>(device);
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return nullptr;
     auto pool = dev->GetCommandBufferPool(poolId);
     auto sp = pool->GetCommandBuffer(currentFrameIndex);
@@ -32,7 +32,7 @@ extern "C" ENGINE_DLL RHI_CommandBufferHandle RHI_Device_GetCommandBuffer(RHI_De
 
 extern "C" ENGINE_DLL void RHI_Device_ReleaseCommandBuffer(RHI_DeviceHandle device, unsigned int poolId, unsigned int currentFrameIndex, RHI_CommandBufferHandle cmd)
 {
-    auto* dev = reinterpret_cast<RHI::Device*>(device);
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return;
     auto pool = dev->GetCommandBufferPool(poolId);
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);

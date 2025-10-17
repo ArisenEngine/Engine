@@ -1,7 +1,7 @@
 #include "RHIVkSampler.h"
 #include "../VkInitializer.h"
 
-ArisenEngine::RHI::RHIVkSampler::RHIVkSampler(Device* device, RHISamplerDesc&& desc) : RHISampler(device)
+ArisenEngine::RHI::RHIVkSampler::RHIVkSampler(RHIDevice* device, RHISamplerDesc&& desc) : RHISampler(device)
 {
     m_VkDevice = static_cast<VkDevice>(device->GetHandle());
     auto samplerInfo = RHI::SamplerCreateInfo(std::move(desc));

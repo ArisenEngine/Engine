@@ -2,7 +2,7 @@
 #include "../../Common/CommandHeaders.h"
 #include "../Program/GPURenderPass.h"
 #include "../Surfaces/FrameBuffer.h"
-#include "RHI/Devices/Device.h"
+#include "RHI/Devices/RHIDevice.h"
 #include "RHI/Enums/Pipeline/ECommandBufferUsageFlagBits.h"
 #include "RHI/Enums/Pipeline/EIndexType.h"
 #include "RHI/Enums/Pipeline/EPipelineBindPoint.h"
@@ -29,7 +29,7 @@ namespace ArisenEngine::RHI
 namespace ArisenEngine::RHI
 {
     class GPUPipeline;
-    class Device;
+    class RHIDevice;
     class RHICommandBufferPool;
     class FrameBuffer;
     class Viewport;
@@ -61,7 +61,7 @@ namespace ArisenEngine::RHI
         
         NO_COPY_NO_MOVE_NO_DEFAULT(RHICommandBuffer)
 
-        RHICommandBuffer(Device* device, RHICommandBufferPool* pool):
+        RHICommandBuffer(RHIDevice* device, RHICommandBufferPool* pool):
         m_CommandBufferPool(pool), m_Device(device), m_State(ECommandState::NotAllocated)
         {
             
@@ -132,7 +132,7 @@ namespace ArisenEngine::RHI
         virtual void ReadyForBegin(UInt32 frameIndex) = 0;
         virtual void DoBegin() = 0;
         RHICommandBufferPool* m_CommandBufferPool;
-        Device* m_Device;
+        RHIDevice* m_Device;
         ECommandState m_State;
         
     };

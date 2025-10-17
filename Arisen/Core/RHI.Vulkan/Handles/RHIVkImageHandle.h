@@ -4,14 +4,14 @@
 
 namespace ArisenEngine::RHI
 {
-    class Device;
+    class RHIDevice;
 
     class RHIVkImageHandle final : public ImageHandle
     {
     public:
         NO_COPY_NO_MOVE(RHIVkImageHandle)
-        RHIVkImageHandle(Device* device);
-        RHIVkImageHandle(Device* device, VkImage image, ImageViewDesc desc);
+        RHIVkImageHandle(RHIDevice* device);
+        RHIVkImageHandle(RHIDevice* device, VkImage image, ImageViewDesc desc);
         ~RHIVkImageHandle() noexcept override;
         void* GetHandle() const override { return m_VkImage; }
         void AllocHandle(ImageDescriptor&& desc) override;
@@ -26,6 +26,6 @@ namespace ArisenEngine::RHI
         bool m_NeedDestroy {false};
         VkImage m_VkImage { VK_NULL_HANDLE };
         VkDevice m_VKDevice;
-        Device* m_Device { nullptr };
+        RHIDevice* m_Device { nullptr };
     };
 }

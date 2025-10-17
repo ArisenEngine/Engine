@@ -1,7 +1,7 @@
 #pragma once
 #include "SwapChain.h"
 #include "../../Common/CommandHeaders.h"
-#include "RHI/Instance.h"
+#include "RHI/RHIInstance.h"
 
 namespace ArisenEngine::RHI 
 {
@@ -14,14 +14,14 @@ namespace ArisenEngine::RHI
 			m_RenderWindowId = InvalidID;
 			m_Instance = nullptr;
 		}
-		explicit Surface(UInt32&& id, Instance* instance): m_RenderWindowId(id), m_Instance(instance) { };
+		explicit Surface(UInt32&& id, RHIInstance* instance): m_RenderWindowId(id), m_Instance(instance) { };
 		virtual void* GetHandle() const = 0;
 		virtual void InitSwapChain() = 0;
 
 		virtual SwapChain* GetSwapChain() = 0;
 	protected:
 		UInt32 m_RenderWindowId;
-		Instance* m_Instance;
+		RHIInstance* m_Instance;
 	
 	};
 }

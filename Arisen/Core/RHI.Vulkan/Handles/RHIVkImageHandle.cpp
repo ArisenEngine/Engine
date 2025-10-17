@@ -2,16 +2,16 @@
 #include "../VkInitializer.h"
 #include "../Memory/RHIVkImageView.h"
 #include "Logger/Logger.h"
-#include "RHI/Devices/Device.h"
+#include "RHI/Devices/RHIDevice.h"
 #include "../Memory/RHIVkDeviceMemory.h"
 
-ArisenEngine::RHI::RHIVkImageHandle::RHIVkImageHandle(Device* device):
+ArisenEngine::RHI::RHIVkImageHandle::RHIVkImageHandle(RHIDevice* device):
 ImageHandle(), m_Device(device), m_VKDevice(static_cast<VkDevice>(device->GetHandle()))
 {
     
 }
 
-ArisenEngine::RHI::RHIVkImageHandle::RHIVkImageHandle(Device* device, VkImage image, ImageViewDesc desc):
+ArisenEngine::RHI::RHIVkImageHandle::RHIVkImageHandle(RHIDevice* device, VkImage image, ImageViewDesc desc):
 ImageHandle(), m_Device(device), m_VKDevice(static_cast<VkDevice>(device->GetHandle())), m_VkImage(image)
 {
     m_MemoryView = new RHIVkImageView(desc, m_VKDevice, image);

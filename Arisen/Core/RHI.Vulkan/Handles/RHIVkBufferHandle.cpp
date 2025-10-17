@@ -2,7 +2,7 @@
 #include "../VkInitializer.h"
 #include "../Memory/RHIVkDeviceMemory.h"
 
-ArisenEngine::RHI::RHIVkBufferHandle::RHIVkBufferHandle(Device* device)
+ArisenEngine::RHI::RHIVkBufferHandle::RHIVkBufferHandle(RHIDevice* device)
 : BufferHandle() , m_Device(device)
 {
     

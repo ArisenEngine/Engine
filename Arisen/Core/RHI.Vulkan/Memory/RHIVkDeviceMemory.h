@@ -4,14 +4,14 @@
 
 namespace ArisenEngine::RHI
 {
-    class Device;
+    class RHIDevice;
 
     class RHIVkDeviceMemory final : public DeviceMemory
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkDeviceMemory)
-        explicit RHIVkDeviceMemory(Device* device, VkBuffer buffer);
-        explicit RHIVkDeviceMemory(Device* device, VkImage image);
+        explicit RHIVkDeviceMemory(RHIDevice* device, VkBuffer buffer);
+        explicit RHIVkDeviceMemory(RHIDevice* device, VkImage image);
         ~RHIVkDeviceMemory() noexcept override;
         bool AllocDeviceMemory(UInt32 memoryPropertiesBits) override;
         bool AllocDeviceMemory(UInt32 memoryPropertiesBits, Containers::Vector<BufferHandle*> handles) override;
@@ -28,7 +28,7 @@ namespace ArisenEngine::RHI
     private:
         
         VkDeviceMemory m_VkDeviceMemory;
-        Device* m_Device;
+        RHIDevice* m_Device;
         std::optional<VkBuffer> m_VkBuffer;
         std::optional<VkImage> m_VkImage;
     };

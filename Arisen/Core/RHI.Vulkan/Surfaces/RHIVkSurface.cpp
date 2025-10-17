@@ -17,7 +17,7 @@ ArisenEngine::RHI::RHIVkSurface::~RHIVkSurface() noexcept
     LOG_INFO("[RHIVkSurface::~RHIVkSurface]: Destroy Vulkan Surface");
 }
 
-ArisenEngine::RHI::RHIVkSurface::RHIVkSurface(UInt32&& id, Instance* instance):
+ArisenEngine::RHI::RHIVkSurface::RHIVkSurface(UInt32&& id, RHIInstance* instance):
 Surface(std::move(id), instance), m_SwapChainSupportDetail({}), m_SwapChain(nullptr)
 {
     VkWin32SurfaceCreateInfoKHR createInfo{};

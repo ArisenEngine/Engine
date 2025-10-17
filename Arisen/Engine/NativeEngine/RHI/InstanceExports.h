@@ -1,6 +1,6 @@
 #pragma once
 #include "EngineCommon.h"
-#include "../../Core/Core.Infra/RHI/Instance.h"
+#include "../../Core/Core.Infra/RHI/RHIInstance.h"
 #include "../../Core/Core.Infra/RHI/Enums/Swapchain/PresentMode.h"
 #include "../../Core/Core.Infra/RHI/Enums/Image/EFormat.h"
 

@@ -2,7 +2,7 @@
 #include <string>
 #include <vulkan/vulkan.h>
 #include "./Common.h"
-#include "RHI/Instance.h"
+#include "RHI/RHIInstance.h"
 #include "Logger/Logger.h"
 #include "Devices/RHIVkDevice.h"
 #include "Surfaces/RHIVkSurface.h"
@@ -19,7 +19,7 @@ namespace ArisenEngine::RHI
         UInt32 variant, major, minor;
     };
 
-    class RHIVkInstance final : public Instance
+    class RHIVkInstance final : public RHIInstance
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkInstance)
@@ -56,7 +56,7 @@ namespace ArisenEngine::RHI
         bool IsSurfacesAvailable() const override { return !m_Surfaces.empty(); }
         
         void CreateLogicDevice(UInt32 windowId) override;
-        Device* GetLogicalDevice(UInt32 windowId) override;
+        RHIDevice* GetLogicalDevice(UInt32 windowId) override;
         
         const UInt32 GetExternalIndex() const override { return VK_SUBPASS_EXTERNAL; }
 
@@ -94,4 +94,4 @@ namespace ArisenEngine::RHI
     };
 }
 
-extern "C" RHI_VULKAN_DLL ArisenEngine::RHI::Instance* CreateInstance(ArisenEngine::RHI::InstanceInfo&& app_info);
+extern "C" RHI_VULKAN_DLL ArisenEngine::RHI::RHIInstance* CreateInstance(ArisenEngine::RHI::InstanceInfo&& app_info);

@@ -1,6 +1,6 @@
 #pragma once
 #include "EngineCommon.h"
-#include "../../Core/Core.Infra/RHI/Devices/Device.h"
+#include "../../Core/Core.Infra/RHI/Devices/RHIDevice.h"
 #include "../../Core/Core.Infra/RHI/DeviceLimits.h"
 
 typedef void* RHI_DeviceHandle;

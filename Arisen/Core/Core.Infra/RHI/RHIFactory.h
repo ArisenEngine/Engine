@@ -3,7 +3,7 @@
 
 namespace ArisenEngine::RHI
 {
-    class Device;
+    class RHIDevice;
     class RHISampler;
 }
 
@@ -15,6 +15,6 @@ namespace ArisenEngine::RHI
         RHIFactory() = default;
         NO_COPY_NO_MOVE(RHIFactory)
         VIRTUAL_DECONSTRUCTOR(RHIFactory)
-        virtual std::shared_ptr<RHISampler> CreateSampler(Device* device, RHISamplerDesc&& desc) = 0;
+        virtual RHISampler* CreateSampler(RHIDevice* device, RHISamplerDesc&& desc) = 0;
     };
 }

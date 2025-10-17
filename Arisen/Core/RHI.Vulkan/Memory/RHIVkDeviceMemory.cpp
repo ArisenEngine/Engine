@@ -1,15 +1,15 @@
 ﻿#include "RHIVkDeviceMemory.h"
 
 #include "Logger/Logger.h"
-#include "RHI/Devices/Device.h"
+#include "RHI/Devices/RHIDevice.h"
 
-ArisenEngine::RHI::RHIVkDeviceMemory::RHIVkDeviceMemory(Device* device, VkBuffer buffer):
+ArisenEngine::RHI::RHIVkDeviceMemory::RHIVkDeviceMemory(RHIDevice* device, VkBuffer buffer):
 m_VkDeviceMemory(VK_NULL_HANDLE), m_Device(device), m_VkBuffer(buffer)
 {
             
 }
 
-ArisenEngine::RHI::RHIVkDeviceMemory::RHIVkDeviceMemory(Device* device, VkImage image):
+ArisenEngine::RHI::RHIVkDeviceMemory::RHIVkDeviceMemory(RHIDevice* device, VkImage image):
 m_VkDeviceMemory(VK_NULL_HANDLE), m_Device(device), m_VkImage(image)
 {
 }

@@ -8,7 +8,7 @@ namespace ArisenEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkSampler);
-        RHIVkSampler(Device* device, RHISamplerDesc&& desc);
+        RHIVkSampler(RHIDevice* device, RHISamplerDesc&& desc);
         virtual ~RHIVkSampler();
         void* GetHandle() const override;
     private:

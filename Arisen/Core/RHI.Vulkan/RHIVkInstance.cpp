@@ -143,7 +143,7 @@ void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
     createInfo.pfnUserCallback = DebugCallback;
 }
 
-ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(InstanceInfo&& app_info): Instance(std::move(app_info))
+ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(InstanceInfo&& app_info): RHIInstance(std::move(app_info))
 {
     if (app_info.validationLayer && !CheckValidationLayerSupport())
     {
@@ -489,7 +489,7 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
         });
 }
 
-ArisenEngine::RHI::Device* ArisenEngine::RHI::RHIVkInstance::GetLogicalDevice(UInt32 windowId)
+ArisenEngine::RHI::RHIDevice* ArisenEngine::RHI::RHIVkInstance::GetLogicalDevice(UInt32 windowId)
 {
     ASSERT(m_LogicalDevices[windowId] && m_LogicalDevices[windowId].get());
     ASSERT(m_LogicalDevices[windowId].get()->m_VkDevice != VK_NULL_HANDLE);
@@ -554,7 +554,7 @@ void ArisenEngine::RHI::RHIVkInstance::CheckSwapChainCapabilities()
     }
 }
 
-ArisenEngine::RHI::Instance* CreateInstance(ArisenEngine::RHI::InstanceInfo&& app_info)
+ArisenEngine::RHI::RHIInstance* CreateInstance(ArisenEngine::RHI::InstanceInfo&& app_info)
 {
     return new ArisenEngine::RHI::RHIVkInstance(std::move(app_info));
 }

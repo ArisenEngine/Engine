@@ -1,6 +1,6 @@
 #pragma once
 #include "../RHICommon.h"
-#include "../Devices/Device.h"
+#include "../Devices/RHIDevice.h"
 #include "RHI/Enums/Sampler/EBorderColor.h"
 #include "RHI/Enums/Sampler/ECompareOp.h"
 #include "RHI/Enums/Sampler/EFilter.h"
@@ -33,13 +33,13 @@ namespace ArisenEngine::RHI
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHISampler)
         VIRTUAL_DECONSTRUCTOR(RHISampler)
-        RHISampler(Device* device):m_Device(device){};
+        RHISampler(RHIDevice* device):m_Device(device){};
         virtual void* GetHandle() const = 0;
-        Device* GetDevice() const
+        RHIDevice* GetDevice() const
         {
             return m_Device;
         }
     private:
-        Device* m_Device;
+        RHIDevice* m_Device;
     };
 }
