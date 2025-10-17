@@ -10,6 +10,7 @@
 #include "IRenderPassD3D12.h"
 #include "IRenderPattern.h"
 #include "IRenderPipelineStateObjectD3D12.h"
+#include "IShaderD3D12.h"
 #include "ITextureD3D12.h"
 #include "IViewStateD3D12.h"
 
@@ -29,6 +30,7 @@ struct RHID3D12ImplTraits
     using RenderPipelineStateObjectInterface = IRenderPipelineStateObjectD3D12;
     using RenderCommandListInterface = IRenderCommandListD3D12;
     using CommandListSetInterface = ICommandListSetD3D12;
+    using ShaderInterface = IShaderD3D12;
 
     using DescriptorManagerImplType = DescriptorManagerD3D12;
 };

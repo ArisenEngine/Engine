@@ -27,6 +27,6 @@ struct ShaderSettings
 
 struct IShader : IObject
 {
-    
+    virtual ShaderType GetType() const = 0;
 };
 ARISENRHI_END_NAMESPACE

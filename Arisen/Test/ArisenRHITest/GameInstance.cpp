@@ -1,5 +1,7 @@
 #include "GameInstance.h"
 
+#include <ranges>
+
 #include "RHIFactoryD3D12.h"
 #include "SharedPtrOutWrapper.h"
 #include "Containers/Containers.h"
@@ -112,13 +114,22 @@ void GameInstance::InitArisenRHI(HWND hwnd)
                     });
             }
 
+            // Create shaders.
+            std::map<ShaderType, ShaderSettings> shader_set
+            {
+                {ShaderType::Vertex, {ResourceProvider::Get(), "HelloTriangle","VS"}},
+                {ShaderType::Pixel, {ResourceProvider::Get(), "HelloTriangle","PS"}},
+            };
+
+            Ptrs<IShader> shaders_created;
+            std::ranges::transform(shader_set, std::back_inserter(shaders_created), [this](const auto& pair){
+                return m_render_context_ptr->CreateShader(pair.first, pair.second);
+            });
+
             // create PSO
             m_pso_ptr = m_render_context_ptr->CreateRenderPipelineStateObject({
                 .program = m_render_context_ptr->CreateProgram({
-                    .shader_set = {
-                        {ShaderType::Vertex, {ResourceProvider::Get(), "HelloTriangle","VS"}},
-                        {ShaderType::Pixel, {ResourceProvider::Get(), "HelloTriangle","PS"}},
-                    },
+                    .shaders = shaders_created,
                     .attachment_formats = m_screen_pass_pattern_ptr->GetAttachmentFormats()
                 }),
                 .render_pattern = m_screen_pass_pattern_ptr.get()

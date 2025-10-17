@@ -11,6 +11,17 @@ public:
         , m_render_pass_ptr(render_pass.GetInterface<IRenderPass>())
     {}
 
+    // IRenderCommandList
+    virtual void ResetWithPSO(const IRenderPipelineStateObject& pso) const override
+    {
+        SetPSO(pso);
+    }
+
+    virtual void SetPSO(const IRenderPipelineStateObject& pso) const override
+    {
+        pso.Apply(*this);
+    }
+
 private:
     Ptr<IRenderPass> m_render_pass_ptr;
 };

@@ -12,7 +12,26 @@ public:
         :m_settings(settings), m_context(context)
     {}
 
-    void Reset(const RenderPipelineStateObjectSettings& settings);
+    virtual void Reset(const RenderPipelineStateObjectSettings& settings)
+    {
+        m_settings = settings;
+    }
+
+    // IRenderPipelineStateObject
+    virtual void Apply(const struct IRenderCommandList& command_list) const override
+    {
+    }
+
+    virtual IProgram& GetProgram() override
+    {
+        return *m_settings.program;
+    }
+
+
+    const IRHIContext& GetContext() const
+    {
+        return m_context;
+    }
 private:
     const IRHIContext& m_context;
     RenderPipelineStateObjectSettings m_settings;

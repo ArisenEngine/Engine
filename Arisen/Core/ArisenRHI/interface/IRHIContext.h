@@ -27,7 +27,8 @@ struct IRHIContext : IObject
     virtual Ptr<ICommandQueue> CreateCommandQueue(CommandListType type) const = 0;
     [[nodiscard]] virtual Ptr<ITexture> CreateTexture(const TextureSettings& settings) const = 0;
     [[nodiscard]] virtual Ptr<IProgram> CreateProgram(const ProgramSettings& settings) const = 0;
-    
+    [[nodiscard]] virtual Ptr<IShader> CreateShader(ShaderType type, const ShaderSettings& settings) const = 0;
+
     virtual ICommandKit& GetDefaultCommandKit(CommandListType type) const = 0;
     virtual const IDevice& GetDevice() const = 0;
     virtual ContextOption GetOptions() const noexcept =0;
