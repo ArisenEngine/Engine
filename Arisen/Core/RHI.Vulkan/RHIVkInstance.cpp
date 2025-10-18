@@ -280,7 +280,7 @@ ArisenEngine::RHI::VkQueueFamilyIndices ArisenEngine::RHI::RHIVkInstance::FindQu
 }
 
 const ArisenEngine::RHI::VkSwapChainSupportDetail ArisenEngine::RHI::RHIVkInstance::
-GetSwapChainSupportDetails(UInt32&& windowId)
+GetSwapChainSupportDetails(UInt32 windowId)
 {
     ASSERT(m_Surfaces[windowId] && m_Surfaces[windowId].get());
     
@@ -357,28 +357,33 @@ void ArisenEngine::RHI::RHIVkInstance::DisposeDebugMessager()
     DestroyDebugUtilsMessengerEXT(m_VkInstance, m_VkDebugMessenger, nullptr);
 }
 
-void ArisenEngine::RHI::RHIVkInstance::CreateSurface(UInt32&& windowId)
+void ArisenEngine::RHI::RHIVkInstance::CreateSurface(UInt32 windowId)
 {
     UInt32 key = windowId;
     m_Surfaces.insert({key, std::make_unique<RHIVkSurface>(std::move(windowId), this)});
 }
 
-void ArisenEngine::RHI::RHIVkInstance::DestroySurface(UInt32&& windowId)
+void ArisenEngine::RHI::RHIVkInstance::DestroySurface(UInt32 windowId)
 {
-   // TODO: 
+   auto it = m_Surfaces.find(windowId);
+   if (it != m_Surfaces.end())
+   {
+       it->second.reset();
+       m_Surfaces.erase(it);
+   }
 }
 
-ArisenEngine::RHI::Surface& ArisenEngine::RHI::RHIVkInstance::GetSurface(UInt32&& windowId)
+ArisenEngine::RHI::Surface& ArisenEngine::RHI::RHIVkInstance::GetSurface(UInt32 windowId)
 {
     ASSERT(m_Surfaces[windowId] && m_Surfaces[windowId].get());
     Surface& surface = *m_Surfaces[windowId].get();
     return surface;
 }
 
-bool ArisenEngine::RHI::RHIVkInstance::IsSupportLinearColorSpace(UInt32&& windowId)
+bool ArisenEngine::RHI::RHIVkInstance::IsSupportLinearColorSpace(UInt32 windowId)
 {
    
-    auto& supportDetail = GetSwapChainSupportDetails(std::move(windowId));
+    auto& supportDetail = GetSwapChainSupportDetails(windowId);
 
     for (const auto& availableFormat : supportDetail.formats)
     {
@@ -391,9 +396,9 @@ bool ArisenEngine::RHI::RHIVkInstance::IsSupportLinearColorSpace(UInt32&& window
     return false;
 }
 
-bool ArisenEngine::RHI::RHIVkInstance::PresentModeSupported(UInt32&& windowId, PresentMode mode)
+bool ArisenEngine::RHI::RHIVkInstance::PresentModeSupported(UInt32 windowId, PresentMode mode)
 {
-    auto& supportDetail = GetSwapChainSupportDetails(std::move(windowId));
+    auto& supportDetail = GetSwapChainSupportDetails(windowId);
     for (const auto& presentMode : supportDetail.presentModes)
     {
         if (presentMode == mode)
@@ -405,19 +410,19 @@ bool ArisenEngine::RHI::RHIVkInstance::PresentModeSupported(UInt32&& windowId, P
     return false;
 }
 
-void ArisenEngine::RHI::RHIVkInstance::SetCurrentPresentMode(UInt32&& windowId, PresentMode mode)
+void ArisenEngine::RHI::RHIVkInstance::SetCurrentPresentMode(UInt32 windowId, PresentMode mode)
 {
-    
+    m_PreferredPresentModes[windowId] = mode;
 }
 
-void ArisenEngine::RHI::RHIVkInstance::SetResolution(const UInt32&& windowId, const UInt32&& width, const UInt32&& height)
+void ArisenEngine::RHI::RHIVkInstance::SetResolution(UInt32 windowId, UInt32 width, UInt32 height)
 {
    // TODO: 
 }
 
 void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
 {
-    Surface& rhiSurface = GetSurface(std::move(windowId));
+    Surface& rhiSurface = GetSurface(windowId);
     VkQueueFamilyIndices indices = FindQueueFamilies(static_cast<VkSurfaceKHR>(rhiSurface.GetHandle()));
 
     // Queue Create Info 
@@ -496,13 +501,40 @@ ArisenEngine::RHI::RHIDevice* ArisenEngine::RHI::RHIVkInstance::GetLogicalDevice
     return m_LogicalDevices[windowId].get();
 }
 
-const ArisenEngine::RHI::EFormat ArisenEngine::RHI::RHIVkInstance::GetSuitableSwapChainFormat(UInt32&& windowId)
+ArisenEngine::RHI::EFormat ArisenEngine::RHI::RHIVkInstance::GetSuitableSwapChainFormat(UInt32 windowId)
 {
-    return FORMAT_R8G8B8_SRGB;
+    auto& supportDetail = GetSwapChainSupportDetails(windowId);
+    // Prefer SRGB BGRA8 if available, else first format
+    for (const auto& f : supportDetail.formats)
+    {
+        if (f.format == VK_FORMAT_B8G8R8A8_SRGB && f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        {
+            return static_cast<EFormat>(f.format);
+        }
+    }
+    return static_cast<EFormat>(supportDetail.formats[0].format);
 }
 
-const ArisenEngine::RHI::PresentMode ArisenEngine::RHI::RHIVkInstance::GetSuitablePresentMode(UInt32&& windowId)
+ArisenEngine::RHI::PresentMode ArisenEngine::RHI::RHIVkInstance::GetSuitablePresentMode(UInt32 windowId)
 {
+    auto& supportDetail = GetSwapChainSupportDetails(windowId);
+    // If user set a preferred mode and it's supported, use it
+    auto it = m_PreferredPresentModes.find(windowId);
+    if (it != m_PreferredPresentModes.end())
+    {
+        for (auto pm : supportDetail.presentModes)
+        {
+            if (pm == static_cast<VkPresentModeKHR>(it->second))
+            {
+                return it->second;
+            }
+        }
+    }
+    // Else prefer IMMEDIATE, fall back to FIFO
+    for (auto pm : supportDetail.presentModes)
+    {
+        if (pm == VK_PRESENT_MODE_IMMEDIATE_KHR) return static_cast<PresentMode>(pm);
+    }
     return PRESENT_MODE_FIFO;
 }
 
