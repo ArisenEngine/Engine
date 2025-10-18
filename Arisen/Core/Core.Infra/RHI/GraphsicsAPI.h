@@ -2,14 +2,11 @@
 
 namespace ArisenEngine::RHI
 {
-	 enum class GraphsicsAPI
+	 enum class GraphicsAPI
 	{
 	 	None                             = 0,
-		Vulkan							 ,
-		DirectX12						 ,
-		Metal							 ,
-		OpenGL							 ,
-		Mali_Simulator					 ,
-		PowerVR_Simulator				 
+		Vulkan						 ,
+		DirectX12					 ,
+		Metal						 
 	};
 }

@@ -31,13 +31,13 @@ namespace ArisenEngine::RHI
         void InitLogicDevices() override;
         void PickPhysicalDevice(bool considerSurface = false) override;
 
-        bool IsSupportLinearColorSpace(UInt32&& windowId) override;
-        bool PresentModeSupported(UInt32&& windowId, PresentMode mode) override;
-        void SetCurrentPresentMode(UInt32&& windowId, PresentMode mode) override;
-        const EFormat GetSuitableSwapChainFormat(UInt32&& windowId) override;
-        const PresentMode GetSuitablePresentMode(UInt32&& windowId) override;
+        bool IsSupportLinearColorSpace(UInt32 windowId) override;
+        bool PresentModeSupported(UInt32 windowId, PresentMode mode) override;
+        void SetCurrentPresentMode(UInt32 windowId, PresentMode mode) override;
+        EFormat GetSuitableSwapChainFormat(UInt32 windowId) override;
+        PresentMode GetSuitablePresentMode(UInt32 windowId) override;
         
-        const std::wstring GetEnvString() const override
+        std::wstring GetEnvString() const override
         {
             return std::wstring(
                 L"vulkan"
@@ -47,10 +47,10 @@ namespace ArisenEngine::RHI
         
         VkInstance GetVkInstance() const { return m_VkInstance; }
 
-        void CreateSurface(UInt32&& windowId) override;
-        void DestroySurface(UInt32&& windowId) override;
-        Surface& GetSurface(UInt32&& windowId) override;
-        void SetResolution(const UInt32&& windowId, const UInt32&& width, const UInt32&& height) override;
+        void CreateSurface(UInt32 windowId) override;
+        void DestroySurface(UInt32 windowId) override;
+        Surface& GetSurface(UInt32 windowId) override;
+        void SetResolution(UInt32 windowId, UInt32 width, UInt32 height) override;
 
         bool IsPhysicalDeviceAvailable() const override { return m_CurrentPhysicsDevice != VK_NULL_HANDLE; }
         bool IsSurfacesAvailable() const override { return !m_Surfaces.empty(); }
@@ -58,7 +58,7 @@ namespace ArisenEngine::RHI
         void CreateLogicDevice(UInt32 windowId) override;
         RHIDevice* GetLogicalDevice(UInt32 windowId) override;
         
-        const UInt32 GetExternalIndex() const override { return VK_SUBPASS_EXTERNAL; }
+        UInt32 GetExternalIndex() const override { return VK_SUBPASS_EXTERNAL; }
 
         void UpdateSurfaceCapabilities(Surface* surface) override;
 
@@ -80,9 +80,10 @@ namespace ArisenEngine::RHI
         // devices
         Containers::Map<UInt32, std::unique_ptr<RHIVkDevice>> m_LogicalDevices;
         Containers::Map<UInt32, std::unique_ptr<RHIVkSurface>> m_Surfaces;
+        Containers::Map<UInt32, PresentMode> m_PreferredPresentModes;
 
         ArisenEngine::RHI::VkQueueFamilyIndices FindQueueFamilies(VkSurfaceKHR surface);
-        const VkSwapChainSupportDetail GetSwapChainSupportDetails(UInt32&& windowId);
+        const VkSwapChainSupportDetail GetSwapChainSupportDetails(UInt32 windowId);
         const VkSwapChainSupportDetail QuerySwapChainSupport(const VkSurfaceKHR surface) const;
         
         // debuger

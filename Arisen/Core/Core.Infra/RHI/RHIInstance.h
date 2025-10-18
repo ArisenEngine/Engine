@@ -45,7 +45,7 @@ namespace ArisenEngine::RHI
         {
         }
 
-        bool IsEnableValidation()
+        bool IsEnableValidation() const
         {
             return m_EnableValidation;
         }
@@ -54,20 +54,20 @@ namespace ArisenEngine::RHI
         virtual void InitLogicDevices() = 0;
         virtual void PickPhysicalDevice(bool considerSurface = false) = 0;
 
-        virtual bool IsSupportLinearColorSpace(UInt32&& windowId) = 0;
-        virtual bool PresentModeSupported(UInt32&& windowId, PresentMode mode) = 0;
-        virtual void SetCurrentPresentMode(UInt32&& windowId, PresentMode mode) = 0;
-        virtual const EFormat GetSuitableSwapChainFormat(UInt32&& windowId) = 0;
-        virtual const PresentMode GetSuitablePresentMode(UInt32&& windowId) = 0;
+        virtual bool IsSupportLinearColorSpace(UInt32 windowId) = 0;
+        virtual bool PresentModeSupported(UInt32 windowId, PresentMode mode) = 0;
+        virtual void SetCurrentPresentMode(UInt32 windowId, PresentMode mode) = 0;
+        virtual EFormat GetSuitableSwapChainFormat(UInt32 windowId) = 0;
+        virtual PresentMode GetSuitablePresentMode(UInt32 windowId) = 0;
         
         /// \brief used for DXC args
         /// \return api env value
-        virtual const std::wstring GetEnvString() const = 0;
+        virtual std::wstring GetEnvString() const = 0;
 
-        virtual void CreateSurface(UInt32&& windowId) = 0;
-        virtual void DestroySurface(UInt32&& windowId) = 0;
-        virtual Surface& GetSurface(UInt32&& windowId) = 0;
-        virtual void SetResolution(const UInt32&& windowId, const UInt32&& width, const UInt32&& height) = 0;
+        virtual void CreateSurface(UInt32 windowId) = 0;
+        virtual void DestroySurface(UInt32 windowId) = 0;
+        virtual Surface& GetSurface(UInt32 windowId) = 0;
+        virtual void SetResolution(UInt32 windowId, UInt32 width, UInt32 height) = 0;
 
         virtual void UpdateSurfaceCapabilities(Surface* surface) = 0;
 
@@ -77,9 +77,9 @@ namespace ArisenEngine::RHI
         virtual void CreateLogicDevice(UInt32 windowId) = 0;
         virtual RHIDevice* GetLogicalDevice(UInt32 windowId) = 0;
 
-        virtual const UInt32 GetExternalIndex() const = 0;
+        virtual UInt32 GetExternalIndex() const = 0;
 
-        const UInt32 GetMaxFramesInFlight() const
+        UInt32 GetMaxFramesInFlight() const
         {
             return m_MaxFramesInFlight;
         }
