@@ -140,3 +140,78 @@
 - 将本文件与 `Architecture.md` 同步更新：新增接口草图、关键决策记录、已完成标记。
 
 
+## 资源模型与分类设计（句柄 + 代数 + Fence 回收）
+
+### 对外暴露与所有权
+- 首选：`RHIResourceHandle { index, generation }`
+  - 外部长期保存“句柄”，使用时短期查询指针；禁止长期缓存原始指针。
+  - 防 ABA：每次销毁后 `generation++`，`Get(handle)` 校验代数不符立即失败。
+- C++ 侧 RAII（可选）：`UniqueResource<T>` 仅包装句柄，析构时调用 `ResourceManager::Release(handle, lastUseFence)`，不直接 delete。
+
+### 生命周期与回收
+- CPU 端：原子引用计数 `strongRef`；`Release` 归零后不立即销毁，仅记录最后使用的提交 `SubmissionId{queue, fence}`。
+- GPU 端：回收器基于 timeline fence 前进统一回收（Epoch Ring + Overdue 桶，见 `Architecture.md`）。
+- 线程模型：最终销毁统一在 `RHIThread` 或 `Reclaimer` 执行；其他线程仅做计数与状态标记。
+
+### 资源分类与建议
+- Device/Instance/Queue
+  - 生命周期显式 `Create/Destroy`；不建议对外智能指针；内部以句柄登记、集中销毁。
+- Surface/Swapchain（每窗口）
+  - 显式 `Create/Destroy/Resize/Present`；内部资源（images/semaphore）走句柄/回收器。
+- Buffer/Image/DeviceMemory
+  - 句柄 + 代数；分配器（Vulkan: VMA / DX12: D3D12MA）；Barrier/状态在 RDG 或 Command 封装层管理。
+- View/Sampler（ImageView/Sampler/RTV/DSV）
+  - 句柄；可池化/重用；高频创建建议走对象池与延迟回收。
+- DescriptorSet/Heap/Bindless Slot
+  - 句柄 + 租借模型；更新与回收由管理器批量处理；Bindless 由索引范围管理。
+- ShaderModule/Reflection/PipelineLayout
+  - ShaderModule 句柄；反射数据可用智能指针（纯 CPU 资源）；Layout/SetLayout 句柄。
+- Pipeline（Graphics/Compute）
+  - 句柄；可搭配缓存（hash → pipeline）与 LRU 弱引用；销毁仍走回收器。
+- CommandBuffer/Framebuffer/Transient Attachments
+  - 帧域租借；归还时记录 fence；回收器批量清理。
+- Upload/Staging 子分配
+  - 子分配句柄（blockId+offset），按 fence 归还分配器。
+
+### 接口草案（示意）
+```cpp
+struct RHIResourceHandle { uint32_t index; uint32_t generation; };
+
+class ResourceManager {
+public:
+    void addRef(RHIResourceHandle h) noexcept;
+    void release(RHIResourceHandle h, SubmissionId lastUse) noexcept; // 仅登记
+    void destroy(RHIResourceHandle h) noexcept; // 仅标记；真正销毁由回收器执行
+
+    template<class T>
+    T* get(RHIResourceHandle h) noexcept { /* 查表+代数校验，短期借用 */ }
+
+    void reclaim(RHIQueueType q, uint64_t completedFence, double msBudget);
+};
+```
+
+```cpp
+// RAII 包装（内部仍是句柄）
+template<class T>
+class UniqueResource {
+public:
+    UniqueResource(ResourceManager* m, RHIResourceHandle h): mgr(m), handle(h) {}
+    ~UniqueResource() { if (mgr && valid()) mgr->release(handle, currentSubmission()); }
+    T* get() const { return mgr ? mgr->get<T>(handle) : nullptr; }
+    bool valid() const { return handle.index != 0; }
+private:
+    ResourceManager* mgr{}; RHIResourceHandle handle{};
+};
+```
+
+### 选择策略与适用性
+- 对外 API：“一律句柄”；C#/脚本层以 `int64`/`struct` 承载，更安全跨边界。
+- C++ 业务代码：可选 `UniqueResource<T>` 以提升可读性，但最终回收路径仍统一由回收器在 fence 达成后执行。
+- 禁止：外部 delete、长期缓存指针、以 shared_ptr 直接承载 GPU 对象（析构线程与时机不可控）。
+
+### 后续里程碑落地
+- M3 中完成 `RHIBuffer/RHIImage/Allocator` 与句柄表/代数；
+- M4 完成描述符与 PipelineLayout 句柄；
+- M6 将回收器与 timeline fence 对接上线，贯穿全部资源类型。
+
+
