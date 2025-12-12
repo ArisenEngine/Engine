@@ -11,6 +11,7 @@ sequenceDiagram
     participant CmpQ as "GPU ComputeQ"
     participant XferQ as "GPU TransferQ"
 
+    Note over Render,RHI: RenderThread never blocks on CPU; use readiness checks
 
     par GameUpdate
         Game->>Jobs: ECS System Tasks (non-blocking)
@@ -55,6 +56,7 @@ sequenceDiagram
 ```
 
 ### 关键说明
+
 - **Non-blocking Unbind/Unload**: `Render->>Jobs: Schedule Unbind/Unload` 不在 Job 内等待 fence。Job 仅入队“延后释放”记录并立即返回，由后台回收器或主循环在 timeline fence 达成后执行真正的 Unbind/Release。
 - **资源状态语义**:
   - **Resident**: 资源已在 CPU 内存或磁盘缓存中，可被上传。
@@ -69,6 +71,7 @@ sequenceDiagram
   - 也可将回收做成 `JobSystem` 的周期任务（低优先级），确保不会与录制任务抢占关键核心。
 
 ### 具体实现方式（示例）
+
 ```cpp
 // 记录需要在 GPU 使用完成后释放的资源
 struct PendingRelease { ResourceId id; uint64_t lastUseFence; };
@@ -95,11 +98,13 @@ void reclaimLoop(TimelineFence& timelineFence) {
 ```
 
 实现要点：
+
 - **记录最后使用的 fence**：在 RDG 编译或提交时，为每个被绑定的资源写入本帧对应队列的 fence 值。
 - **回收职责单点化**：由 `ResourceManager` 统一判定 Unbound/Release，避免多线程重复释放。
 - **跨 API 统一**：Vulkan 用 timeline semaphore；D3D12 用 fence + signal 值，抽象为 `TimelineFence` 接口。
 
 ### 资产资源 vs GPU 资源的分层
+
 - **AssetManager（资产层）**:
   - 管 Mesh/Texture 等“内容资源”的生命周期、引用计数、LOD/Streaming、CPU 缓存与解压。
   - 生成上传任务，但不直接持有驱动对象；以 `AssetHandle` 标识，映射到一个或多个 GPU 物化体。
@@ -111,6 +116,7 @@ void reclaimLoop(TimelineFence& timelineFence) {
 两层解耦：资产释放 → 触发 GPU 层按最后使用的 `SubmissionId` 延后回收；GPU 层可因内存压力提前做 aliasing/evict，而不影响资产的逻辑存在。
 
 ### Submit 粒度的回收（不在每次 submit 执行 GC）
+
 - **核心思路**：提交时仅记录“完成后可回收”的资源到按 fence 值分桶的数据结构；由回收器按时间片/阈值批量处理，避免每次 submit 即做 GC。
 
 - **做法 A：Epoch Ring（按 fence 分桶）**
@@ -152,15 +158,18 @@ struct ReleaseBuckets {
 —
 
 #### Overdue 桶处理（窗口外的大 fence 值）
+
 当 `fence - baseFence` 远大于 ring 窗口时，如果直接扩容 `buckets` 会造成内存浪费。解决思路：将窗口外条目放入按 fence 值排序的“过期堆（min-heap）”，在完成度推进到相应值时再批量释放。
 
 策略要点：
+
 - **入队**：若 `fence - baseFence >= window`，不要扩容 ring，改为入 `overdueMinHeap`。
 - **回收顺序**：先清 `ring` 中 `<= completedFence` 的桶，再从 `overdueMinHeap` 依 fence 升序弹出 `<= completedFence` 的条目。
 - **滑动窗口**：在 reclaim 结束后，可根据 `baseFence` 与 `completedFence` 的距离适度收缩/平移窗口，避免 buckets 长期膨胀。
 - **预算控制**：对 overdue 释放同样套用时间/数量预算以防抖动。
 
 扩展实现示例：
+
 ```cpp
 struct OverdueItem { uint64_t fence; ResourceId id; };
 struct ByFenceAsc { bool operator()(const OverdueItem& a, const OverdueItem& b) const { return a.fence > b.fence; } };
@@ -209,15 +218,18 @@ struct ReleaseBucketsWithOverdue {
 ```
 
 可选优化：
+
 - **过量保护**：当 `overdue.size()` 超过阈值时，分批提前清理最老 N% 的条目（仍受预算约束），避免堆爆。
 - **合并记录**：同一资源多次 enqueue 仅保留最大 fence（用哈希表去重），避免重复释放。
 - **多队列隔离**：为 Gfx/Compute/Transfer 分别维持 ring 与 overdue，使用各自的 `completedFence`。
 
 - **做法 B：完成事件队列 + 阈值触发**
+
   - 每次 submit 仅将 `SubmissionId` 入无锁队列；回收器以“累计提交数、待回收资源数、累计占用字节或定时器”作为触发条件，批量查询 `completedFence`，并释放对应资源。
   - 适合提交频繁但单次资源数量很少的场景。
 
 - **查询完成度**：
+
   - Vulkan：每个队列 1 个 timeline semaphore；提交 signal 递增值；CPU 用 `vkGetSemaphoreCounterValue` 读取完成值。
   - D3D12：每个队列 1 个 `ID3D12Fence`；`Signal(value)` 后用 `GetCompletedValue()` 查询。
 
@@ -226,6 +238,7 @@ struct ReleaseBucketsWithOverdue {
   - 对超大释放操作（大页内存、庞大描述符批量销毁）可分批切片，或让 JobSystem 低优先级异步处理，避免阻塞 RHI 提交。
 
 ### 线程安全与内存模型（releaseIfUnused 在独立回收线程）
+
 - **单一销毁者原则**：只有回收器对资源执行“最终销毁”；其它线程仅做引用计数增减与状态标记（Bound/Unbound）。
 - **引用计数**：使用原子 `strongRef`（绑定/使用期）和可选 `weakRef`（句柄表/缓存）。
 - **状态机**：`Ready -> Bound -> Unbound -> PendingDestroy -> Destroyed`，其中 `PendingDestroy` 只由回收器设置。
@@ -239,6 +252,7 @@ struct ReleaseBucketsWithOverdue {
   - 若驱动 API 允许跨线程销毁且已确保外部同步，可直接在回收器线程销毁，但仍建议集中到 RHI 以便可观测与节流。
 
 参考实现（要点示意）：
+
 ```cpp
 enum class ResourceState : uint8_t { Ready, Bound, Unbound, PendingDestroy, Destroyed };
 
@@ -308,11 +322,13 @@ bool tryBind(const Handle h, DescriptorSet& out) {
 ```
 
 实践提示：
+
 - 绑定路径只在 `Ready` 上成功，`PendingDestroy/Destroyed` 均失败；解绑定后若 `strong==0`，由回收器回收。
 - 如有多队列，`lastUseFence` 取“该资源最后绑定的队列及其 fence”，或记录每队列 fence 后取最小完成条件。
 - 大对象销毁可继续沿用“时间/数量预算”并优先走 `rhiDestroyQueue`，避免阻塞提交路径。
 
 ### 内存序速查表（C++ std::memory_order）
+
 - relaxed: 仅保证该原子操作本身原子性；不提供可见性/顺序。用于计数、ID 等。
 - consume: 设计为基于数据依赖的轻 acquire；实现不一致，等同 acquire 使用。
 - acquire: 本线程在此操作之后的读写，能看到与之成对的 release 之前的写入。
@@ -321,8 +337,41 @@ bool tryBind(const Handle h, DescriptorSet& out) {
 - seq_cst: 最强，形成全局总序；一般不必滥用，按需兜底。
 
 常用模式：
+
 - 发布-订阅：producer 写数据 → flag.store(true, release)；consumer if(flag.load(acquire)) 读数据。
 - 指针发布：producer 填充对象 → ptr.store(p, release)；consumer p = ptr.load(acquire)。
 - 引用计数删除边界：if (ref.fetch_sub(1, release) == 1) fence(acquire); delete。
 - 状态机/CAS：compare_exchange_strong(..., acq_rel, acquire)。
 - MPSC 队列：producer exchange(head, release) → prev->next.store(node, release)；consumer next = tail->next.load(acquire)。
+
+### Web3 & Distributed Compute Integration
+
+本引擎架构在设计时预留了与去中心化基础设施（DePin/Web3）结合的接口，主要针对**资产流式加载、互操作性、确定性模拟与离线分布式计算**。
+
+#### 1. 去中心化资产流式加载 (Decentralized Asset Streaming)
+
+- **IO 抽象层扩展**：`IOThread` 设计为支持 `ipfs://` 或 `ar://` 协议，接入 IPFS/Arweave 存储。
+- **P2P 缓存**：引擎运行时可维护 DHT 节点，利用玩家闲置带宽加速 P2P 资源分发。
+- **降级策略**：配合 RDG 的 placeholder/LOD 机制，应对去中心化存储的高延迟。
+
+#### 2. 资产互操作性 (Interoperability)
+
+- **Runtime Import**：强化 `AssetManager` 对 glTF/USD 的运行时解析能力，支持 Web3 通用资产标准。
+- **标准化材质**：支持 MaterialX，确保跨引擎渲染一致性。
+
+#### 3. 确定性模拟 (Deterministic Simulation)
+
+- **定点数支持**：核心数学库支持 FixedPoint 切换，确保跨机器/链上验证的物理与逻辑结果一致。
+- **ECS 快照**：配合 ECS 架构实现状态快照与回滚，支持全链游戏的验证需求。
+
+#### 4. 分布式算力与 Gas Fee 优化 (Off-chain Compute)
+
+利用去中心化算力网络（如 Render Network, Golem）加速离线重计算，而非实时渲染。
+
+- **适用场景**：Shader 编译变体、光照贴图烘焙、LOD 生成。
+- **Gas Fee 解决方案**：采用**链下计算 + 链上结算 (Off-chain Compute, On-chain Settlement)** 模型。
+  - **状态通道**：微任务通过支付通道记账（签名），不直接上链，仅在最终结算时产生 Gas。
+  - **任务验证**：引擎 `ToolChain` 需实现冗余分发与 Hash 校验（A/B 节点结果一致才付费）。
+  - **Job 序列化**：`JobSystem` 支持将 Task 打包为 WASM/SPIR-V 容器，分发至算力节点执行。
+
+此设计旨在利用去中心化基础设施解决存储与算力成本，而非强行将实时渲染上链。
