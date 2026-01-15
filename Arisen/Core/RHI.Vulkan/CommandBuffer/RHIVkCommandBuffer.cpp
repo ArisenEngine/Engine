@@ -422,16 +422,9 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::InjectFence(RHIFence* fence)
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::WaitForFence(UInt32 frameIndex)
 {
-    auto* fence = m_CommandBufferPool->GetFence(frameIndex);
-    if (fence == nullptr) return;
-
-    // Wait for GPU completion for this frame and flush deferred destructions tied to this frame index.
-    fence->Lock();
-    if (m_Device != nullptr)
-    {
-        static_cast<RHIVkDevice*>(m_Device)->FlushDeferredDestroys(frameIndex);
-    }
-    fence->Unlock();
+    // Deprecated: fence ownership and GPU completion polling live at queue/device level.
+    // Use RHIDevice::Update() (or per-queue Update) for automatic GC.
+    (void)frameIndex;
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::Release()
