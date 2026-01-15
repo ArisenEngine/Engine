@@ -1,16 +1,22 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
 #include "RHI/Devices/RHIDevice.h"
+#include "RHI/Utils/RHIDeferredDeletionQueue.h"
+#include "RHI/Utils/RHIResourceRegistry.h"
 #include "../Surfaces/RHIVkSurface.h"
 #include "../CommandBuffer/RHIVkCommandBufferPool.h"
 #include "../Program/RHIVkGPUPipelineManager.h"
 #include "../Program/RHIVkGPUProgram.h"
 #include "../Program/RHIVkDescriptorPool.h"
 #include <mutex>
+#include <memory>
+#include <functional>
+#include <deque>
 
 namespace ArisenEngine::RHI
 {
     class RHIVkCommandBufferPool;
+    class RHIVkDeferredDeletion;
 }
 
 namespace ArisenEngine::RHI
@@ -77,6 +83,32 @@ namespace ArisenEngine::RHI
         Containers::Vector<std::shared_ptr<FrameBuffer>> m_FrameBuffers;
         Containers::Vector<std::shared_ptr<BufferHandle>> m_BufferHandles;
         Containers::Vector<std::shared_ptr<ImageHandle>> m_ImageHandles;
+        std::unique_ptr<IRHIDeferredDeletionQueue> m_DeferredDeletion;
+        std::unique_ptr<RHIResourceRegistry> m_ResourceRegistry;
+        std::atomic<UInt32> m_CurrentFrameIndex {0};
+
+        // SubmitID-based GPU completion tracking (single queue, in-order).
+        struct InFlightSubmit
+        {
+            VkFence fence { VK_NULL_HANDLE };
+            RHIGpuTicket submitId { 0 };
+        };
+        std::atomic<RHIGpuTicket> m_NextSubmitId { 1 };
+        std::atomic<RHIGpuTicket> m_CompletedSubmitId { 0 };
+        std::mutex m_GcMutex;
+        std::deque<InFlightSubmit> m_InFlight;
+
+    public:
+        // Deferred destruction (GPU-safe): enqueue on producer threads, flush on the frame fence.
+        void EnqueueDeferredDestroy(UInt32 frameIndex, std::function<void()>&& fn);
+        void FlushDeferredDestroys(UInt32 frameIndex);
+
+        // Modern resource system entry point
+        RHIResourceRegistry* GetResourceRegistry() const { return m_ResourceRegistry.get(); }
+        UInt32 GetCurrentFrameIndex() const { return m_CurrentFrameIndex.load(std::memory_order_acquire); }
+        RHIGpuTicket GetCompletedSubmitId() const { return m_CompletedSubmitId.load(std::memory_order_acquire); }
+
+        void Update() override;
 
     };
 }

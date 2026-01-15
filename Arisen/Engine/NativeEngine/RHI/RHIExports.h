@@ -3,7 +3,7 @@
 #include "../../Core/Core.Infra/RHI/RHIInstance.h"
 #include "../../Core/Core.Infra/RHI/GraphsicsAPI.h"
 
-extern "C" ENGINE_DLL void RHI_SetGraphicsAPI(ArisenEngine::RHI::GraphsicsAPI api);
+extern "C" ENGINE_DLL void RHI_SetGraphicsAPI(ArisenEngine::RHI::GraphicsAPI api);
 
 // Opaque handle types for C ABI
 typedef void* RHI_InstanceHandle;

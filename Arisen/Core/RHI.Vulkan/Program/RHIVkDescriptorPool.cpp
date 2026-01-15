@@ -53,12 +53,19 @@ ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDescriptorPool::AddPool(Containers:
 
 bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
 {
-    ASSERT(poolId < m_DescriptorSetsHolder.size());
+    if (poolId >= m_DescriptorSetsHolder.size())
+    {
+        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::ResetPool] poolId out of range: " + std::to_string(poolId));
+    }
     VkDescriptorPool pool = m_DescriptorSetsHolder[poolId].descriptorPool;
+    if (pool == VK_NULL_HANDLE)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::ResetPool] descriptorPool is VK_NULL_HANDLE for poolId: " + std::to_string(poolId));
+    }
     VkResult result = vkResetDescriptorPool(static_cast<VkDevice>(m_pDevice->GetHandle()), pool, 0);
     if (result != VK_SUCCESS)
     {
-        LOG_ERROR("[RHIVkDescriptorPool::ResetPool] Failed to reset descriptor pool: " + result);
+        LOG_ERROR("[RHIVkDescriptorPool::ResetPool] Failed to reset descriptor pool, VkResult: " + std::to_string(static_cast<int>(result)));
         return false;
     }
 
@@ -70,8 +77,19 @@ bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
 
 ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDescriptorPool::AllocDescriptorSet(UInt32 poolId, UInt32 layoutIndex, GPUPipelineStateObject* pso)
 {
-    ASSERT(poolId < m_DescriptorSetsHolder.size());
-    ASSERT(m_DescriptorSetsHolder[poolId].descriptorPool != VK_NULL_HANDLE);
+    LOG_DEBUG("[RHIVkDescriptorPool::AllocDescriptorSet] poolId=" + std::to_string(poolId) + ", layoutIndex=" + std::to_string(layoutIndex));
+    if (poolId >= m_DescriptorSetsHolder.size())
+    {
+        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::AllocDescriptorSet] poolId out of range: " + std::to_string(poolId));
+    }
+    if (m_DescriptorSetsHolder[poolId].descriptorPool == VK_NULL_HANDLE)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::AllocDescriptorSet] descriptorPool is VK_NULL_HANDLE for poolId: " + std::to_string(poolId));
+    }
+    if (pso == nullptr)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::AllocDescriptorSet] pso is null");
+    }
 
     RHIVkGPUPipelineStateObject* vkPipelineStateObject = static_cast<RHIVkGPUPipelineStateObject*>(pso);
     VkDescriptorSetLayout descriptorSetLayout = vkPipelineStateObject->GetVkDescriptorSetLayout(layoutIndex);
@@ -86,6 +104,7 @@ ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDescriptorPool::AllocDescriptorSet(
     {
         LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::AllocDescriptorSet] failed to allocate descriptor sets!");
     }
+    LOG_DEBUG("[RHIVkDescriptorPool::AllocDescriptorSet] vkAllocateDescriptorSets ok");
     
   
         m_DescriptorSetsHolder[poolId].sets.emplace_back(
@@ -147,14 +166,32 @@ const VkDescriptorBufferInfo* GetBufferInfos(ArisenEngine::RHI::RHIDescriptorUpd
     for (int i = 0; i < updateInfo.bufferHaneles.size(); ++i)
     {
         auto pBufferInfo = updateInfo.bufferHaneles[i];
-        if (pBufferInfo != nullptr)
+        if (pBufferInfo == nullptr)
         {
-            results.emplace_back(ArisenEngine::RHI::DescriptorBufferInfo(
-                static_cast<VkBuffer>(pBufferInfo->GetHandle()),
-                static_cast<VkDeviceSize>(pBufferInfo->Offset()),
-                static_cast<VkDeviceSize>(pBufferInfo->Range())
-                ));
+            LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::GetBufferInfos] null BufferHandle in descriptor update info (binding=" + std::to_string(updateInfo.binding) + ")");
         }
+
+        const VkDeviceSize offset = static_cast<VkDeviceSize>(pBufferInfo->Offset());
+        VkDeviceSize range = static_cast<VkDeviceSize>(pBufferInfo->Range());
+        if (range == 0)
+        {
+            // Default to the remaining buffer size when caller didn't set an explicit binding range.
+            const VkDeviceSize bufferSize = static_cast<VkDeviceSize>(pBufferInfo->BufferSize());
+            if (bufferSize > offset)
+            {
+                range = bufferSize - offset;
+            }
+            else
+            {
+                // Fallback: satisfy validation (range must be > 0 if not VK_WHOLE_SIZE).
+                range = VK_WHOLE_SIZE;
+            }
+        }
+        results.emplace_back(ArisenEngine::RHI::DescriptorBufferInfo(
+            static_cast<VkBuffer>(pBufferInfo->GetHandle()),
+            offset,
+            range
+            ));
     }
     return results.data();
 }
@@ -178,8 +215,19 @@ const VkBufferView* GetBufferViews(ArisenEngine::RHI::RHIDescriptorUpdateInfo& u
 
 void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId, GPUPipelineStateObject* pso)
 {
-    ASSERT(poolId < m_DescriptorSetsHolder.size());
-    ASSERT(m_DescriptorSetsHolder[poolId].descriptorPool != VK_NULL_HANDLE);
+    LOG_DEBUG("[RHIVkDescriptorPool::UpdateDescriptorSets] poolId=" + std::to_string(poolId));
+    if (poolId >= m_DescriptorSetsHolder.size())
+    {
+        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSets] poolId out of range: " + std::to_string(poolId));
+    }
+    if (m_DescriptorSetsHolder[poolId].descriptorPool == VK_NULL_HANDLE)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSets] descriptorPool is VK_NULL_HANDLE for poolId: " + std::to_string(poolId));
+    }
+    if (pso == nullptr)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSets] pso is null");
+    }
     
     auto descriptorSets = m_DescriptorSetsHolder[poolId].sets;
     Containers::Vector<VkWriteDescriptorSet> descriptorWrites;
@@ -188,10 +236,16 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId,
     Containers::Vector<Containers::Vector<VkBufferView>> bufferViews;
 
     RHIVkGPUPipelineStateObject* vkPipelineStateObject = static_cast<RHIVkGPUPipelineStateObject*>(pso);
+
+    // NOTE: keep logging minimal; this runs per-frame in some tests.
     
     for (UInt32 i = 0; i < descriptorSets.size(); ++i)
     {
         auto descriptorSet = descriptorSets[i].get();
+        if (descriptorSet == nullptr)
+        {
+            LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSets] descriptorSet is null for poolId: " + std::to_string(poolId));
+        }
         VkDescriptorSet dstSet = static_cast<VkDescriptorSet>(descriptorSet->GetHandle());
         UInt32 layoutIndex = descriptorSet->GetLayoutIndex();
         auto updateInfosForAllBindings = vkPipelineStateObject->GetDescriptorUpdateInfos(layoutIndex);
@@ -208,6 +262,21 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId,
                 auto pImageInfos = GetImageInfos(updateInfo, imageInfos.back());
                 auto pBufferInfos = GetBufferInfos(updateInfo, bufferInfos.back());
                 auto pBufferViews = GetBufferViews(updateInfo, bufferViews.back());
+
+                // Validate we have backing arrays for the descriptor type to avoid UB inside vkUpdateDescriptorSets.
+                const auto type = updateInfo.type;
+                if (type == DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
+                    type == DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+                    type == DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ||
+                    type == DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
+                {
+                    if (pBufferInfos == nullptr || bufferInfos.back().size() != updateInfo.descriptorCount)
+                    {
+                        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSets] buffer descriptor missing infos: binding=" +
+                            std::to_string(updateInfo.binding) + ", count=" + std::to_string(updateInfo.descriptorCount) +
+                            ", provided=" + std::to_string(bufferInfos.back().size()));
+                    }
+                }
                 auto writeDescriptorSet = WriteDescriptorSet(
                    dstSet, updateInfo.binding, 0, updateInfo.descriptorCount, 
                    static_cast<VkDescriptorType>(updateInfo.type),

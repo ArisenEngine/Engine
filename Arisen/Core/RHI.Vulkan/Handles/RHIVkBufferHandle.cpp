@@ -16,7 +16,10 @@ ArisenEngine::RHI::RHIVkBufferHandle::~RHIVkBufferHandle() noexcept
 
 void* ArisenEngine::RHI::RHIVkBufferHandle::GetHandle() const
 {
-    ASSERT(m_VkBuffer != VK_NULL_HANDLE);
+    if (m_VkBuffer == VK_NULL_HANDLE)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkBufferHandle::GetHandle] VkBuffer is VK_NULL_HANDLE for buffer: " + m_Name);
+    }
     return m_VkBuffer;
 }
 

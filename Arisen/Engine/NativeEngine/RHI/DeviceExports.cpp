@@ -60,4 +60,11 @@ extern "C" ENGINE_DLL void RHI_Device_Submit(RHI_DeviceHandle device, RHI_Comman
     dev->Submit(c, frameIndex);
 }
 
+extern "C" ENGINE_DLL void RHI_Device_Update(RHI_DeviceHandle device)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr) return;
+    dev->Update();
+}
+
 

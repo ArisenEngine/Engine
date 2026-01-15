@@ -1,6 +1,5 @@
 ﻿#pragma once
-#include "RHIVkCommandBufferPool.h"
-#include "../Devices/RHIVkDevice.h"
+#include <vulkan/vulkan_core.h>
 #include "../Surfaces/RHIVkFrameBuffer.h"
 #include "RHI/CommandBuffer/RHICommandBuffer.h"
 #include "RHI/Enums/Pipeline/EIndexType.h"
@@ -12,6 +11,7 @@
 namespace  ArisenEngine::RHI
 {
     class RHIVkCommandBufferPool;
+    class RHIVkDevice;
     class RHIVkCommandBuffer final : public RHICommandBuffer
     {
     public:

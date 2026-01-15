@@ -140,7 +140,10 @@ extern "C" ENGINE_DLL RHI::ImageView* RHI_Image_GetView(RHI_ImageHandle image)
 {
     auto* img = reinterpret_cast<RHI::ImageHandle*>(image);
     if (img == nullptr) return nullptr;
-    return reinterpret_cast<RHI::ImageView*>(img->GetMemoryView());
+    auto* mv = img->GetMemoryView();
+    if (mv == nullptr) return nullptr;
+    auto* iv = dynamic_cast<RHI::ImageView*>(mv);
+    return iv;
 }
 
 extern "C" ENGINE_DLL RHI::EFormat RHI_ImageView_GetFormat(RHI::ImageView* view)

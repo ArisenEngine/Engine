@@ -67,6 +67,10 @@ namespace ArisenEngine::RHI
 
         virtual void Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex) = 0;
 
+        // Optional per-frame update hook for GPU completion polling / automatic GC.
+        // Default: no-op.
+        virtual void Update() {}
+
         virtual UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) = 0;
 
         virtual void SetResolution(UInt32 width, UInt32 height) = 0;

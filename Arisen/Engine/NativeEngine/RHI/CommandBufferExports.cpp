@@ -1,13 +1,7 @@
 #include "CommandBufferExports.h"
 #include "../../Core/Core.Infra/RHI/CommandBuffer/RHICommandBufferPool.h"
-#include <unordered_map>
-#include <mutex>
 
 using namespace ArisenEngine;
-
-// Keep command buffers alive across FFI by retaining shared_ptrs keyed by raw pointer
-static std::unordered_map<RHI::RHICommandBuffer*, std::shared_ptr<RHI::RHICommandBuffer>> g_CmdKeepAlive;
-static std::mutex g_CmdKeepAliveMutex;
 
 extern "C" ENGINE_DLL unsigned int RHI_Device_CreateCommandBufferPool(RHI_DeviceHandle device)
 {
@@ -21,12 +15,7 @@ extern "C" ENGINE_DLL RHI_CommandBufferHandle RHI_Device_GetCommandBuffer(RHI_De
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return nullptr;
     auto pool = dev->GetCommandBufferPool(poolId);
-    auto sp = pool->GetCommandBuffer(currentFrameIndex);
-    auto* raw = sp.get();
-    {
-        std::lock_guard<std::mutex> lock(g_CmdKeepAliveMutex);
-        g_CmdKeepAlive[raw] = sp;
-    }
+    auto* raw = pool->GetCommandBuffer(currentFrameIndex);
     return reinterpret_cast<RHI_CommandBufferHandle>(raw);
 }
 
@@ -37,20 +26,7 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseCommandBuffer(RHI_DeviceHandle devi
     auto pool = dev->GetCommandBufferPool(poolId);
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
     if (pool == nullptr || c == nullptr) return;
-    std::shared_ptr<RHI::RHICommandBuffer> sp;
-    {
-        std::lock_guard<std::mutex> lock(g_CmdKeepAliveMutex);
-        auto it = g_CmdKeepAlive.find(c);
-        if (it != g_CmdKeepAlive.end())
-        {
-            sp = it->second;
-            g_CmdKeepAlive.erase(it);
-        }
-    }
-    if (sp)
-    {
-        pool->ReleaseCommandBuffer(currentFrameIndex, sp);
-    }
+    pool->ReleaseCommandBuffer(currentFrameIndex, c);
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_Begin(RHI_CommandBufferHandle cmd, unsigned int frameIndex, unsigned int usageFlags)

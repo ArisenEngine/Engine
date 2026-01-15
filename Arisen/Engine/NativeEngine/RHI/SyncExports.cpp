@@ -6,14 +6,14 @@ extern "C" ENGINE_DLL void RHI_Semaphore_Lock(RHI_SemaphoreHandle semaphore)
 {
     auto* s = reinterpret_cast<RHI::RHISemaphore*>(semaphore);
     if (s == nullptr) return;
-    s->Lock();
+    s->Wait();
 }
 
 extern "C" ENGINE_DLL void RHI_Semaphore_Unlock(RHI_SemaphoreHandle semaphore)
 {
     auto* s = reinterpret_cast<RHI::RHISemaphore*>(semaphore);
     if (s == nullptr) return;
-    s->Unlock();
+    s->Signal();
 }
 
 extern "C" ENGINE_DLL void RHI_Fence_Lock(RHI_FenceHandle fence)

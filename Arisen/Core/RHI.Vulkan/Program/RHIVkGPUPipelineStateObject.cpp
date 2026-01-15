@@ -185,7 +185,12 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::BuildDescriptorSetLayout()
 
 VkDescriptorSetLayout ArisenEngine::RHI::RHIVkGPUPipelineStateObject::GetVkDescriptorSetLayout(UInt32 layoutIndex) const
 {
-    ASSERT(layoutIndex < m_DescriptorSetLayoutBindings.size());
+    // NOTE: layoutIndex is a logical set index, not "nth element in map".
+    // We keep descriptor set layouts in a vector; validate against that.
+    if (layoutIndex >= m_DescriptorSetLayouts.size())
+    {
+        LOG_FATAL_AND_THROW("[RHIVkGPUPipelineStateObject::GetVkDescriptorSetLayout] layout index out of range: " + std::to_string(layoutIndex));
+    }
     return m_DescriptorSetLayouts[layoutIndex];
 }
 
@@ -201,6 +206,7 @@ ArisenEngine::RHI::RHIVkGPUPipelineStateObject::GetDescriptorUpdateInfos(
     }
 
     LOG_FATAL_AND_THROW("[RHIVkGPUPipelineStateObject::GetDescriptorUpdateInfos] layout index: " + std::to_string(layoutIndex) + " is not exist.");
+    return {};
 }
 
 

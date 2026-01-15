@@ -1,14 +1,16 @@
 ﻿#include "RHIVkCommandBuffer.h"
 
+#include "RHIVkCommandBufferPool.h"
+#include "../Devices/RHIVkDevice.h"
 #include "../Program/RHIVkGPUPipeline.h"
 #include "../Program/RHIVkGPUPipelineStateObject.h"
 #include "RHI/Handles/BufferHandle.h"
-#include "RHI/Synchronization/SynchScope.h"
 #include "../VkInitializer.h"
 #include "RHI/Enums/Subpass/EDependencyFlag.h"
 #include "RHI/Synchronization/RHIBufferMemoryBarrier.h"
 #include "RHI/Synchronization/RHIImageMemoryBarrier.h"
 #include "RHI/Synchronization/RHIMemoryBarrier.h"
+#include "Threadable/SynchScope.h"
 
 
 ArisenEngine::RHI::RHIVkCommandBuffer::~RHIVkCommandBuffer() noexcept
@@ -420,9 +422,16 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::InjectFence(RHIFence* fence)
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::WaitForFence(UInt32 frameIndex)
 {
-   {
-       ScopeLock ScopeLock(m_CommandBufferPool->GetFence(frameIndex));
-   }
+    auto* fence = m_CommandBufferPool->GetFence(frameIndex);
+    if (fence == nullptr) return;
+
+    // Wait for GPU completion for this frame and flush deferred destructions tied to this frame index.
+    fence->Lock();
+    if (m_Device != nullptr)
+    {
+        static_cast<RHIVkDevice*>(m_Device)->FlushDeferredDestroys(frameIndex);
+    }
+    fence->Unlock();
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::Release()

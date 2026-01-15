@@ -1,5 +1,8 @@
 ﻿#include "RHIVkCommandBufferPool.h"
 
+#include "RHIVkCommandBuffer.h"
+#include "../Devices/RHIVkDevice.h"
+#include "../Surfaces/RHIVkSurface.h"
 #include "../Synchronization/RHIVkFence.h"
 
 ArisenEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* device, UInt32 maxFramesInFlight)
@@ -30,6 +33,7 @@ ArisenEngine::RHI::RHIVkCommandBufferPool::~RHIVkCommandBufferPool() noexcept
 {
     LOG_DEBUG("[RHIVkCommandBufferPool::~RHIVkCommandBufferPool]: ~RHIVkCommandBufferPool");
     m_CommandBuffers.clear();
+    m_OwnedCommandBuffers.clear();
     {
         std::lock_guard<std::mutex> lock(m_PoolsMutex);
         for (auto pool : m_AllCommandPools)
@@ -42,9 +46,12 @@ ArisenEngine::RHI::RHIVkCommandBufferPool::~RHIVkCommandBufferPool() noexcept
     LOG_DEBUG("## Destroy Vulkan Command Pool ##");
 }
 
-std::shared_ptr<ArisenEngine::RHI::RHICommandBuffer> ArisenEngine::RHI::RHIVkCommandBufferPool::CreateCommandBuffer()
+ArisenEngine::RHI::RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::CreateCommandBuffer()
 {
-    return std::make_shared<RHIVkCommandBuffer>(dynamic_cast<RHIVkDevice*>(m_Device), this);
+    auto* vkDevice = dynamic_cast<RHIVkDevice*>(m_Device);
+    ASSERT(vkDevice != nullptr);
+    m_OwnedCommandBuffers.emplace_back(std::make_unique<RHIVkCommandBuffer>(vkDevice, this));
+    return m_OwnedCommandBuffers.back().get();
 }
 
 VkCommandPool ArisenEngine::RHI::RHIVkCommandBufferPool::AcquireThreadCommandPool()
