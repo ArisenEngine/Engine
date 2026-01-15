@@ -9,7 +9,7 @@ extern "C" ENGINE_DLL RHI_SamplerHandle RHI_Factory_CreateSampler(RHI_FactoryHan
     if (f == nullptr || d == nullptr || desc == nullptr) return nullptr;
     RHI::RHISamplerDesc copy = *desc;
     auto sampler = f->CreateSampler(d, std::move(copy));
-    return reinterpret_cast<RHI_SamplerHandle>(sampler.get());
+    return reinterpret_cast<RHI_SamplerHandle>(sampler);
 }
 
 extern "C" ENGINE_DLL void RHI_Factory_Destroy(RHI_FactoryHandle factory)

@@ -6,7 +6,7 @@
 #pragma comment(lib, "Dbghelp.lib")
 
 
-void ArisenEngine::Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphsicsAPI api_type)
+void ArisenEngine::Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphicsAPI api_type)
 {
     if (_rhi_dll != NULL && _api_type == api_type)
     {
@@ -22,7 +22,7 @@ void ArisenEngine::Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphsicsAPI 
 
     switch (api_type)
     {
-    case RHI::GraphsicsAPI::Vulkan:
+    case RHI::GraphicsAPI::Vulkan:
         _rhi_dll = LoadLibraryA("RHI.Vulkan.dll");
         break;
 

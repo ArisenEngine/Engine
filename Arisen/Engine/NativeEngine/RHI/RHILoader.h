@@ -11,12 +11,12 @@ namespace ArisenEngine::Graphics
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHILoader)
 
-        static void SetCurrentGraphicsAPI(RHI::GraphsicsAPI api_type);
+        static void SetCurrentGraphicsAPI(RHI::GraphicsAPI api_type);
         static RHI::RHIInstance* CreateInstance(RHI::InstanceInfo&& app_info);
         static void Dispose();
     private:
 
-        static inline RHI::GraphsicsAPI _api_type {RHI::GraphsicsAPI::None};
+        static inline RHI::GraphicsAPI _api_type {RHI::GraphicsAPI::None};
         static inline HMODULE _rhi_dll {NULL};
     };
 

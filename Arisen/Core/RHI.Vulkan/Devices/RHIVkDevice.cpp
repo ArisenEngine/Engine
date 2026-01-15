@@ -3,12 +3,15 @@
 #include "../Handles/RHIVkBufferHandle.h"
 #include "Logger/Logger.h"
 #include "Windows/RenderWindowAPI.h"
+#include "../Utils/RHIVkDeferredDeletion.h"
 
 ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surface, VkQueue graphicQueue, VkQueue presentQueue, VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties)
 : RHIDevice(instance, surface), m_VkGraphicQueue(graphicQueue), m_VkPresentQueue(presentQueue), m_VkDevice(device), m_VkPhysicalDeviceMemoryProperties(memoryProperties)
 {
     m_GPUPipelineManager = new RHIVkGPUPipelineManager(this, m_Instance->GetMaxFramesInFlight());
     m_DescriptorPool = new RHIVkDescriptorPool(this);
+    m_DeferredDeletion = std::make_unique<RHIVkDeferredDeletion>(m_Instance->GetMaxFramesInFlight());
+    m_ResourceRegistry = std::make_unique<RHIResourceRegistry>(m_DeferredDeletion.get());
 }
 
 void ArisenEngine::RHI::RHIVkDevice::DeviceWaitIdle() const
@@ -25,7 +28,7 @@ ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDevice::CreateGPUProgram()
 {
     ASSERT(m_VkDevice != VK_NULL_HANDLE);
     UInt32 id = static_cast<UInt32>(m_GPUPrograms.size());
-    m_GPUPrograms.insert({id, std::make_unique<RHIVkGPUProgram>(m_VkDevice)});
+    m_GPUPrograms.emplace(id, std::make_unique<RHIVkGPUProgram>(m_VkDevice));
     return id;
 }
 
@@ -51,11 +54,9 @@ ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDevice::CreateCommandBufferPool()
 {
     ASSERT(m_VkDevice != VK_NULL_HANDLE);
     UInt32 id = static_cast<UInt32>(m_CommandBufferPools.size());
-    m_CommandBufferPools.insert(
-        {
-            id,
-            std::make_unique<RHIVkCommandBufferPool>(this, m_Instance->GetMaxFramesInFlight())
-        });
+    m_CommandBufferPools.emplace(
+        id,
+        std::make_unique<RHIVkCommandBufferPool>(this, m_Instance->GetMaxFramesInFlight()));
     return id;
 }
 
@@ -151,6 +152,53 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseImageHandle(std::shared_ptr<ImageHan
    
 }
 
+void ArisenEngine::RHI::RHIVkDevice::EnqueueDeferredDestroy(UInt32 frameIndex, std::function<void()>&& fn)
+{
+    if (m_DeferredDeletion)
+    {
+        // For now map frameIndex -> ticket (legacy callers). SubmitID-based callers should use Enqueue(ticket).
+        m_DeferredDeletion->Enqueue(static_cast<RHIGpuTicket>(frameIndex), std::move(fn));
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::FlushDeferredDestroys(UInt32 frameIndex)
+{
+    if (m_DeferredDeletion)
+    {
+        m_DeferredDeletion->Flush(static_cast<RHIGpuTicket>(frameIndex));
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::Update()
+{
+    std::lock_guard<std::mutex> lock(m_GcMutex);
+
+    // Advance completed submit ID by polling fences in-order.
+    while (!m_InFlight.empty())
+    {
+        const auto& front = m_InFlight.front();
+        if (front.fence == VK_NULL_HANDLE)
+        {
+            m_InFlight.pop_front();
+            continue;
+        }
+
+        const auto status = vkGetFenceStatus(m_VkDevice, front.fence);
+        if (status == VK_SUCCESS)
+        {
+            m_CompletedSubmitId.store(front.submitId, std::memory_order_release);
+            m_InFlight.pop_front();
+            continue;
+        }
+        break; // oldest not completed yet => stop (queue is in-order)
+    }
+
+    if (m_DeferredDeletion)
+    {
+        m_DeferredDeletion->Flush(m_CompletedSubmitId.load(std::memory_order_acquire));
+    }
+}
+
 
 // TODO: move submit info to CommandBuffer
 
@@ -159,7 +207,25 @@ void ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, UIn
     ASSERT(commandBuffer->ReadyForSubmit());
 
     std::lock_guard<std::mutex> lock(m_SubmitMutex);
+    m_CurrentFrameIndex.store(frameIndex, std::memory_order_release);
     auto rhiVkCommandBuffer = static_cast<RHIVkCommandBuffer*>(commandBuffer);
+
+    // Assign a monotonic submit ID (ticket).
+    const auto submitId = m_NextSubmitId.fetch_add(1, std::memory_order_acq_rel);
+
+    // Use the per-frame fence from the command buffer pool as the submission fence.
+    VkFence submissionFence = VK_NULL_HANDLE;
+    if (auto* pool = commandBuffer->GetOwner())
+    {
+        if (auto* fence = pool->GetFence(frameIndex))
+        {
+            // Wait for previous use of this fence (frame ring), then reset it for this submit.
+            fence->Lock();
+            fence->Unlock();
+            submissionFence = static_cast<VkFence>(fence->GetHandle());
+        }
+    }
+
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     
@@ -181,9 +247,16 @@ void ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, UIn
         submitInfo.pSignalSemaphores = rhiVkCommandBuffer->GetSignalSemaphores();
     }
 
-    if (vkQueueSubmit(m_VkGraphicQueue, 1, &submitInfo, rhiVkCommandBuffer->GetSubmissionFence()) != VK_SUCCESS)
+    if (vkQueueSubmit(m_VkGraphicQueue, 1, &submitInfo, submissionFence) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("[RHIVkDevice::Submit]: failed to submit draw command buffer!");
+    }
+
+    // Track in-flight submit for deferred deletion GC.
+    if (submissionFence != VK_NULL_HANDLE)
+    {
+        std::lock_guard<std::mutex> gcLock(m_GcMutex);
+        m_InFlight.push_back({ submissionFence, submitId });
     }
 }
 

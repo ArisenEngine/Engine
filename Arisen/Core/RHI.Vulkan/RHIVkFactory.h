@@ -10,7 +10,7 @@ namespace ArisenEngine::RHI
         RHIVkFactory();
         ~RHIVkFactory();
 
-        std::shared_ptr<RHISampler> CreateSampler(RHIDevice* device, RHISamplerDesc&& desc) override;
+        RHISampler* CreateSampler(RHIDevice* device, RHISamplerDesc&& desc) override;
     };
     
 }

@@ -3,7 +3,7 @@
 
 using namespace ArisenEngine;
 
-extern "C" ENGINE_DLL void RHI_SetGraphicsAPI(RHI::GraphsicsAPI api)
+extern "C" ENGINE_DLL void RHI_SetGraphicsAPI(RHI::GraphicsAPI api)
 {
     Graphics::RHILoader::SetCurrentGraphicsAPI(api);
 }

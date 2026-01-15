@@ -13,8 +13,8 @@ namespace ArisenEngine::RHI
         ~RHIVkSemaphore() noexcept override;
         RHIVkSemaphore(VkDevice device);
         void* GetHandle() override { return m_VkSemaphore; }
-        void Lock() override {};
-        void Unlock() override {};
+        void Wait() override {}
+        void Signal() override {}
     private:
         VkSemaphore m_VkSemaphore;
         VkDevice m_VkDevice;

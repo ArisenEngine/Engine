@@ -197,7 +197,7 @@ public:
            2
        };
 
-        RHI_SetGraphicsAPI(RHI::GraphsicsAPI::Vulkan);
+        RHI_SetGraphicsAPI(RHI::GraphicsAPI::Vulkan);
         m_Instance = RHI_CreateInstance(&app_info);
         m_MaxFramesInFlight = RHI_Instance_GetMaxFramesInFlight(m_Instance);
         // env string will be retrieved when compiling shaders
@@ -645,13 +645,13 @@ public:
         RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(pipelineState, 0, 0, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, RHI::SHADER_STAGE_VERTEX_BIT, &ubos);
         RHI_PSO_BuildDescriptorSetLayout(pipelineState);
         
-        // Record cmd
-        RHI_Cmd_WaitForFence(commandBuffer, frameIndex);
+        // GC / GPU completion polling should be owned by device/queue, not command buffers.
+        // We call it at end-of-frame (after present) below.
 
         RHI_DescriptorPool_Reset(context.descriptorPool, context.descriptorPoolIds[currentIndex]);
         RHI_DescriptorPool_AllocDescriptorSet(context.descriptorPool, context.descriptorPoolIds[currentIndex], 0, pipelineState);
         RHI_DescriptorPool_UpdateDescriptorSets(context.descriptorPool, context.descriptorPoolIds[currentIndex], pipelineState);
-        
+
         RHI_Cmd_Begin(commandBuffer, frameIndex, 0);
         {
             auto renderPass = reinterpret_cast<RHI::GPURenderPass*>(context.renderPass);
@@ -659,7 +659,17 @@ public:
             auto surface = RHI_Instance_GetSurface(m_Instance, context.windowId);
             auto swapchain = RHI_Surface_GetSwapChain(surface);
             auto backBuffer = RHI_SwapChain_AquireCurrentImage(swapchain, frameIndex);
+            if (backBuffer == nullptr)
+            {
+                LOG_FATAL("BackBuffer is null after acquire.");
+                return;
+            }
             auto backBufferView = RHI_Image_GetView(backBuffer);
+            if (backBufferView == nullptr)
+            {
+                LOG_FATAL("BackBuffer view is null.");
+                return;
+            }
             auto format = RHI_ImageView_GetFormat(backBufferView);
             
             RHI_RenderPass_Free(context.renderPass, frameIndex);
@@ -782,6 +792,9 @@ public:
             auto swapchain = RHI_Surface_GetSwapChain(surface);
             RHI_SwapChain_Present(swapchain, frameIndex);
         }
+
+        // End-of-frame GC: poll GPU completion and flush deferred deletions up to completed submitID.
+        RHI_Device_Update(context.device);
     }
 
     void Shutdown() override
