@@ -11,12 +11,12 @@
 #include <mutex>
 #include <memory>
 #include <functional>
-#include <deque>
 
 namespace ArisenEngine::RHI
 {
     class RHIVkCommandBufferPool;
     class RHIVkDeferredDeletion;
+    class IRHIQueue;
 }
 
 namespace ArisenEngine::RHI
@@ -86,17 +86,7 @@ namespace ArisenEngine::RHI
         std::unique_ptr<IRHIDeferredDeletionQueue> m_DeferredDeletion;
         std::unique_ptr<RHIResourceRegistry> m_ResourceRegistry;
         std::atomic<UInt32> m_CurrentFrameIndex {0};
-
-        // SubmitID-based GPU completion tracking (single queue, in-order).
-        struct InFlightSubmit
-        {
-            VkFence fence { VK_NULL_HANDLE };
-            RHIGpuTicket submitId { 0 };
-        };
-        std::atomic<RHIGpuTicket> m_NextSubmitId { 1 };
-        std::atomic<RHIGpuTicket> m_CompletedSubmitId { 0 };
-        std::mutex m_GcMutex;
-        std::deque<InFlightSubmit> m_InFlight;
+        std::unique_ptr<IRHIQueue> m_GraphicsQueue;
 
     public:
         // Deferred destruction (GPU-safe): enqueue on producer threads, flush on the frame fence.
@@ -106,7 +96,7 @@ namespace ArisenEngine::RHI
         // Modern resource system entry point
         RHIResourceRegistry* GetResourceRegistry() const { return m_ResourceRegistry.get(); }
         UInt32 GetCurrentFrameIndex() const { return m_CurrentFrameIndex.load(std::memory_order_acquire); }
-        RHIGpuTicket GetCompletedSubmitId() const { return m_CompletedSubmitId.load(std::memory_order_acquire); }
+        RHIGpuTicket GetCompletedSubmitId() const;
 
         void Update() override;
 

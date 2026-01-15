@@ -4,6 +4,7 @@
 #include "Logger/Logger.h"
 #include "Windows/RenderWindowAPI.h"
 #include "../Utils/RHIVkDeferredDeletion.h"
+#include "../Queues/RHIVkQueue.h"
 
 ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surface, VkQueue graphicQueue, VkQueue presentQueue, VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties)
 : RHIDevice(instance, surface), m_VkGraphicQueue(graphicQueue), m_VkPresentQueue(presentQueue), m_VkDevice(device), m_VkPhysicalDeviceMemoryProperties(memoryProperties)
@@ -12,6 +13,7 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surf
     m_DescriptorPool = new RHIVkDescriptorPool(this);
     m_DeferredDeletion = std::make_unique<RHIVkDeferredDeletion>(m_Instance->GetMaxFramesInFlight());
     m_ResourceRegistry = std::make_unique<RHIResourceRegistry>(m_DeferredDeletion.get());
+    m_GraphicsQueue = std::make_unique<RHIVkQueue>(m_VkDevice, m_VkGraphicQueue, m_DeferredDeletion.get());
 }
 
 void ArisenEngine::RHI::RHIVkDevice::DeviceWaitIdle() const
@@ -171,32 +173,15 @@ void ArisenEngine::RHI::RHIVkDevice::FlushDeferredDestroys(UInt32 frameIndex)
 
 void ArisenEngine::RHI::RHIVkDevice::Update()
 {
-    std::lock_guard<std::mutex> lock(m_GcMutex);
-
-    // Advance completed submit ID by polling fences in-order.
-    while (!m_InFlight.empty())
+    if (m_GraphicsQueue)
     {
-        const auto& front = m_InFlight.front();
-        if (front.fence == VK_NULL_HANDLE)
-        {
-            m_InFlight.pop_front();
-            continue;
-        }
-
-        const auto status = vkGetFenceStatus(m_VkDevice, front.fence);
-        if (status == VK_SUCCESS)
-        {
-            m_CompletedSubmitId.store(front.submitId, std::memory_order_release);
-            m_InFlight.pop_front();
-            continue;
-        }
-        break; // oldest not completed yet => stop (queue is in-order)
+        m_GraphicsQueue->Update();
     }
+}
 
-    if (m_DeferredDeletion)
-    {
-        m_DeferredDeletion->Flush(m_CompletedSubmitId.load(std::memory_order_acquire));
-    }
+ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::GetCompletedSubmitId() const
+{
+    return m_GraphicsQueue ? m_GraphicsQueue->GetCompletedTicket() : 0;
 }
 
 
@@ -208,55 +193,13 @@ void ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, UIn
 
     std::lock_guard<std::mutex> lock(m_SubmitMutex);
     m_CurrentFrameIndex.store(frameIndex, std::memory_order_release);
-    auto rhiVkCommandBuffer = static_cast<RHIVkCommandBuffer*>(commandBuffer);
-
-    // Assign a monotonic submit ID (ticket).
-    const auto submitId = m_NextSubmitId.fetch_add(1, std::memory_order_acq_rel);
-
-    // Use the per-frame fence from the command buffer pool as the submission fence.
-    VkFence submissionFence = VK_NULL_HANDLE;
-    if (auto* pool = commandBuffer->GetOwner())
+    if (m_GraphicsQueue)
     {
-        if (auto* fence = pool->GetFence(frameIndex))
-        {
-            // Wait for previous use of this fence (frame ring), then reset it for this submit.
-            fence->Lock();
-            fence->Unlock();
-            submissionFence = static_cast<VkFence>(fence->GetHandle());
-        }
+        m_GraphicsQueue->Submit(commandBuffer);
     }
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    
-    if (rhiVkCommandBuffer->GetWaitSemaphoresCount() > 0)
+    else
     {
-        submitInfo.waitSemaphoreCount = rhiVkCommandBuffer->GetWaitSemaphoresCount();
-        submitInfo.pWaitSemaphores = rhiVkCommandBuffer->GetWaitSemaphores();
-        submitInfo.pWaitDstStageMask = rhiVkCommandBuffer->GetWaitStageMask();
-    }
-
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = (static_cast<VkCommandBuffer*>(commandBuffer->GetHandlerPointer()));
-
-    // VkSemaphore signalSemaphores[] = { static_cast<VkSemaphore>(
-    //         m_Surface->GetSwapChain()->GetRenderFinishSemaphore(frameIndex)->GetHandle()) };
-    if (rhiVkCommandBuffer->GetSignalSemaphoresCount() > 0)
-    {
-        submitInfo.signalSemaphoreCount = rhiVkCommandBuffer->GetSignalSemaphoresCount();
-        submitInfo.pSignalSemaphores = rhiVkCommandBuffer->GetSignalSemaphores();
-    }
-
-    if (vkQueueSubmit(m_VkGraphicQueue, 1, &submitInfo, submissionFence) != VK_SUCCESS)
-    {
-        LOG_FATAL_AND_THROW("[RHIVkDevice::Submit]: failed to submit draw command buffer!");
-    }
-
-    // Track in-flight submit for deferred deletion GC.
-    if (submissionFence != VK_NULL_HANDLE)
-    {
-        std::lock_guard<std::mutex> gcLock(m_GcMutex);
-        m_InFlight.push_back({ submissionFence, submitId });
+        LOG_FATAL_AND_THROW("[RHIVkDevice::Submit]: graphics queue not initialized!");
     }
 }
 
