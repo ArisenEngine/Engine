@@ -399,15 +399,26 @@ public:
     
     void CreateImage()
     {
-        int texWidth, texHeight, texChannels;
-        stbi_uc* pixels = stbi_load("Assets/Arisen.png",
-            &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-        UInt64 imageSize = texWidth * texHeight * 4;
+        namespace fs = std::filesystem;
 
-        if (!pixels)
+        // Prefer assets relative to executable directory (VS working dir may differ).
+        wchar_t exePathW[MAX_PATH]{};
+        GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
+        const fs::path exeDir = fs::path(exePathW).parent_path();
+        const fs::path assetPath = exeDir / "Assets" / "Arisen.png";
+
+        int texWidth = 0, texHeight = 0, texChannels = 0;
+        stbi_uc* pixels = stbi_load(assetPath.string().c_str(),
+            &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+        if (!pixels || texWidth <= 0 || texHeight <= 0)
         {
-            LOG_ERROR("failed to load texture image!");
+            const std::string msg = std::string("failed to load texture image: ") + assetPath.string();
+            LOG_FATAL_AND_THROW(msg);
+            return;
         }
+
+        const UInt64 imageSize = static_cast<UInt64>(texWidth) * static_cast<UInt64>(texHeight) * 4ull;
 
         for (int i = 0; i < k_WindowsCount; ++i)
         {
@@ -428,6 +439,8 @@ public:
             RHI_Image_AddImageView(g_RenderContexts[i].textureHandle, &imageViewDesc);
             UploadImage(g_RenderContexts[i], imageSize, pixels, texWidth, texHeight);
         }
+
+        stbi_image_free(pixels);
         
     }
     
