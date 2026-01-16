@@ -1,6 +1,8 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include "RHI/Program/DescriptorPool.h"
+#include "RHI/Utils/RHIDeferredDeletionQueue.h"
+#include <mutex>
 
 namespace ArisenEngine::RHI
 {
@@ -14,6 +16,7 @@ namespace ArisenEngine::RHI
         VkDescriptorPool descriptorPool {VK_NULL_HANDLE};
         
         Containers::Vector<VkDescriptorPoolSize> poolSizes;
+        UInt32 maxSets {0};
         //sets list
         Containers::Vector<std::shared_ptr<RHIDescriptorSet>> sets;
         
@@ -37,10 +40,18 @@ namespace ArisenEngine::RHI
         const Containers::Vector<std::shared_ptr<RHIDescriptorSet>>& GetDescriptorSets(UInt32 poolId) override;
         void UpdateDescriptorSets(UInt32 poolId, GPUPipelineStateObject* pso) override;
         void UpdateDescriptorSet(UInt32 poolId, UInt32 setIndex, GPUPipelineStateObject* pso) override;
+
+        // Called by queue submit to mark that a poolId's descriptor sets were used by a given submit ticket.
+        void MarkPoolUsed(UInt32 poolId, RHIQueueType queue, RHIGpuTicket ticket);
+        // Internal: called by deferred descriptor-pool destructor to decrement rotation counters.
+        void OnDeferredPoolDestroyed(UInt32 poolId);
     private:
         
         RHIVkDevice* m_pDevice = nullptr;
         // poolId - layoutIndex - Array of sets
         Containers::Vector<RHIVkDescriptorSetsHolder> m_DescriptorSetsHolder {};
+        Containers::Vector<RHIGpuTicket> m_PoolLastUsedTicket {};
+        Containers::Vector<UInt32> m_PoolOutstandingRotations {};
+        std::mutex m_Mutex;
     };
 }

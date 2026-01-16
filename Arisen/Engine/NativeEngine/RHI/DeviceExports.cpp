@@ -67,4 +67,12 @@ extern "C" ENGINE_DLL void RHI_Device_Update(RHI_DeviceHandle device)
     dev->Update();
 }
 
+extern "C" ENGINE_DLL RHI_SamplerHandle RHI_Device_CreateSampler(RHI_DeviceHandle device, const RHI::RHISamplerDesc* desc)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || desc == nullptr) return nullptr;
+    RHI::RHISamplerDesc copy = *desc;
+    return reinterpret_cast<RHI_SamplerHandle>(dev->CreateSampler(std::move(copy)));
+}
+
 

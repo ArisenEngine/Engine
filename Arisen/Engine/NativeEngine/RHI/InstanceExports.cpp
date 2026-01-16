@@ -144,11 +144,4 @@ extern "C" ENGINE_DLL RHI_DeviceHandle RHI_Instance_GetLogicalDevice(RHI_Instanc
     return reinterpret_cast<RHI_DeviceHandle>(inst->GetLogicalDevice(windowId));
 }
 
-extern "C" ENGINE_DLL RHI_FactoryHandle RHI_Instance_CreateFactory(RHI_InstanceHandle instance)
-{
-    auto* inst = reinterpret_cast<RHI::RHIInstance*>(instance);
-    if (inst == nullptr) return nullptr;
-    return reinterpret_cast<RHI_FactoryHandle>(inst->CreateFactory());
-}
-
 

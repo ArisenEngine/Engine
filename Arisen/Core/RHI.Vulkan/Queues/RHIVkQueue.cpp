@@ -3,9 +3,10 @@
 #include "Logger/Logger.h"
 #include "RHI/CommandBuffer/RHICommandBuffer.h"
 #include "../CommandBuffer/RHIVkCommandBuffer.h"
+#include "../Program/RHIVkDescriptorPool.h"
 
-ArisenEngine::RHI::RHIVkQueue::RHIVkQueue(VkDevice device, VkQueue queue, IRHIDeferredDeletionQueue* deferredDeletionQueue)
-    : m_Device(device), m_Queue(queue), m_DeferredDeletion(deferredDeletionQueue)
+ArisenEngine::RHI::RHIVkQueue::RHIVkQueue(VkDevice device, VkQueue queue, RHIQueueType type, IRHIDeferredDeletionQueue* deferredDeletionQueue)
+    : m_Device(device), m_Queue(queue), m_Type(type), m_DeferredDeletion(deferredDeletionQueue)
 {
 }
 
@@ -96,7 +97,16 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommand
         LOG_FATAL_AND_THROW("[RHIVkQueue::Submit]: failed to submit command buffer!");
     }
 
+    m_LastSubmittedSubmitId.store(submitId, std::memory_order_release);
     m_InFlight.push_back({ fence, submitId });
+
+    // Mark descriptor pools used by this submission so ResetPool can be GPU-safe.
+    for (const auto& t : vkCmd->GetTrackedDescriptorPools())
+    {
+        auto* p = static_cast<RHIVkDescriptorPool*>(t.pool);
+        if (p) p->MarkPoolUsed(t.poolId, m_Type, submitId);
+    }
+    vkCmd->ClearTrackedDescriptorPools();
     return submitId;
 }
 
@@ -132,7 +142,7 @@ void ArisenEngine::RHI::RHIVkQueue::Update()
 
     if (m_DeferredDeletion)
     {
-        m_DeferredDeletion->Flush(newCompleted);
+        m_DeferredDeletion->Flush(m_Type, newCompleted);
     }
 }
 

@@ -9,7 +9,6 @@
 
 namespace ArisenEngine::RHI
 {
-    class RHIVkFactory;
 }
 
 namespace ArisenEngine::RHI
@@ -62,8 +61,6 @@ namespace ArisenEngine::RHI
 
         void UpdateSurfaceCapabilities(Surface* surface) override;
 
-        RHIFactory* CreateFactory() override;
-    
     protected:
         
         void CheckSwapChainCapabilities() override;

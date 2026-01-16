@@ -72,7 +72,6 @@ struct RenderContext
 
 Containers::Vector<RenderContext> g_RenderContexts;
 
-RHI::RHIFactory* gRHIFactory = nullptr;
 const int k_WindowsCount = 1;
 
 void WinResize(HWND hwnd, UInt32 width, UInt32 height)

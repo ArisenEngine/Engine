@@ -17,12 +17,12 @@ namespace ArisenEngine::RHI
         explicit RHIVkDeferredDeletion(UInt32 maxFramesInFlight);
 
         // IRHIDeferredDeletionQueue
-        void Enqueue(RHIGpuTicket ticket, std::function<void()>&& fn) override;
-        void Flush(RHIGpuTicket ticket) override;
+        void Enqueue(RHIQueueType queue, RHIGpuTicket ticket, RHIDeferredDeleteItem item) override;
+        void Flush(RHIQueueType queue, RHIGpuTicket ticket) override;
 
     private:
         UInt32 m_MaxFramesInFlight {0}; // kept for future ring-based strategies / diagnostics
-        std::map<RHIGpuTicket, Containers::Vector<std::function<void()>>> m_Pending;
+        std::map<RHIQueueType, std::map<RHIGpuTicket, Containers::Vector<RHIDeferredDeleteItem>>> m_Pending;
         std::mutex m_Mutex;
     };
 }

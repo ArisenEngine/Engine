@@ -19,6 +19,7 @@ namespace ArisenEngine::RHI
 {
     class RHIDescriptorSet;
     class RHIFence;
+    class DescriptorPool;
 }
 
 namespace ArisenEngine::RHI
@@ -121,6 +122,14 @@ namespace ArisenEngine::RHI
    Containers::Vector<RHIImageMemoryBarrier> && imageMemoryBarriers) = 0;
         virtual void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
     Containers::Vector<RHIBufferMemoryBarrier> && bufferMemoryBarriers) = 0;
+
+        // Optional hook: allow the backend to track per-submit resource usage (descriptor pools, etc).
+        // Default: no-op.
+        virtual void TrackDescriptorPoolUse(DescriptorPool* pool, UInt32 poolId)
+        {
+            (void)pool;
+            (void)poolId;
+        }
     public:
 
         const bool ReadyForSubmit() const;

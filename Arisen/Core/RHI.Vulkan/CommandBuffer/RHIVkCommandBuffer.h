@@ -12,6 +12,7 @@ namespace  ArisenEngine::RHI
 {
     class RHIVkCommandBufferPool;
     class RHIVkDevice;
+    class DescriptorPool;
     class RHIVkCommandBuffer final : public RHICommandBuffer
     {
     public:
@@ -47,6 +48,7 @@ namespace  ArisenEngine::RHI
         void WaitForFence(UInt32 frameIndex) override;
         void BindDescriptorSets(UInt32 frameIndex, EPipelineBindPoint bindPoint,
     UInt32 firstSet, Containers::Vector<std::shared_ptr<RHIDescriptorSet>>& descriptorsets, UInt32 dynamicOffsetCount, const UInt32* pDynamicOffsets) override;
+        void TrackDescriptorPoolUse(DescriptorPool* pool, UInt32 poolId) override;
 
         void CopyBufferToImage(BufferHandle const * srcBuffer, ImageHandle const * dst,
             EImageLayout dstImageLayout, Containers::Vector<BufferImageCopy>&& regions) override;
@@ -102,5 +104,16 @@ namespace  ArisenEngine::RHI
         Containers::Vector<VkImageMemoryBarrier> m_VkImageMemoryBarriers {};
 
         GPUPipeline* m_CurrentPipeline { nullptr };
+
+        struct TrackedPoolUse
+        {
+            DescriptorPool* pool { nullptr };
+            UInt32 poolId { 0 };
+        };
+        Containers::Vector<TrackedPoolUse> m_TrackedDescriptorPools;
+
+    public:
+        const Containers::Vector<TrackedPoolUse>& GetTrackedDescriptorPools() const { return m_TrackedDescriptorPools; }
+        void ClearTrackedDescriptorPools() { m_TrackedDescriptorPools.clear(); }
     };
 }

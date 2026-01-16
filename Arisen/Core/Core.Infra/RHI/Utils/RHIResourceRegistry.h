@@ -5,7 +5,6 @@
 #include "RHIDeferredDeletionQueue.h"
 #include "RHIResourceHandle.h"
 
-#include <functional>
 #include <mutex>
 
 namespace ArisenEngine::RHI
@@ -24,8 +23,8 @@ namespace ArisenEngine::RHI
         }
 
         // Create a new entry with refCount=1.
-        // destroyFn should perform the backend-specific destroy (vkDestroy*, Release(), etc).
-        RHIResourceHandle Create(std::function<void()>&& destroyFn)
+        // item is the object + deleter; backend-specific cleanup should live in the object's destructor.
+        RHIResourceHandle Create(RHIDeferredDeleteItem item)
         {
             std::lock_guard<std::mutex> lock(m_Mutex);
 
@@ -43,7 +42,7 @@ namespace ArisenEngine::RHI
 
             auto& e = m_Entries[idx];
             e.refCount = 1;
-            e.destroy = std::move(destroyFn);
+            e.item = item;
             return RHIResourceHandle{ idx, e.generation };
         }
 
@@ -55,9 +54,9 @@ namespace ArisenEngine::RHI
             return true;
         }
 
-        void Release(RHIResourceHandle h, RHIGpuTicket ticket)
+        void Release(RHIResourceHandle h, RHIQueueType queue, RHIGpuTicket ticket)
         {
-            std::function<void()> destroyFn;
+            RHIDeferredDeleteItem item{};
             {
                 std::lock_guard<std::mutex> lock(m_Mutex);
                 if (!ValidateUnlocked(h)) return;
@@ -70,16 +69,16 @@ namespace ArisenEngine::RHI
                 }
 
                 // last ref
-                destroyFn = std::move(e.destroy);
-                e.destroy = nullptr;
+                item = e.item;
+                e.item = {};
                 e.refCount = 0;
                 e.generation += 1;
                 m_FreeList.emplace_back(h.index);
             }
 
-            if (destroyFn && m_DeletionQueue)
+            if (item.ptr && item.deleter && m_DeletionQueue)
             {
-                m_DeletionQueue->Enqueue(ticket, std::move(destroyFn));
+                m_DeletionQueue->Enqueue(queue, ticket, item);
             }
         }
 
@@ -94,7 +93,7 @@ namespace ArisenEngine::RHI
         {
             UInt32 refCount { 0 };
             UInt32 generation { 1 };
-            std::function<void()> destroy;
+            RHIDeferredDeleteItem item;
         };
 
         bool ValidateUnlocked(RHIResourceHandle h) const

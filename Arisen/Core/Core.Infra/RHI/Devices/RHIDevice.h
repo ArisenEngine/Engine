@@ -4,11 +4,14 @@
 #include "RHI/Enums/Memory/EMemoryPropertyFlagBits.h"
 #include "RHI/Program/DescriptorPool.h"
 #include "RHI/DeviceLimits.h"
+#include "RHI/Queues/IRHIQueue.h"
 
 namespace ArisenEngine::RHI
 {
     class BufferHandle;
     class ImageHandle;
+    class RHISampler;
+    struct RHISamplerDesc;
 }
 
 namespace ArisenEngine::RHI
@@ -70,6 +73,23 @@ namespace ArisenEngine::RHI
         // Optional per-frame update hook for GPU completion polling / automatic GC.
         // Default: no-op.
         virtual void Update() {}
+
+        // Optional: expose backend queues (graphics/compute/transfer/present).
+        // Backends may return nullptr for unsupported queues.
+        virtual IRHIQueue* GetQueue(RHIQueueType type) { (void)type; return nullptr; }
+
+        // Queue-scoped deferred delete helper. Backends can override to route to their deletion queue.
+        // Default is immediate delete (safe for non-GPU objects).
+        virtual void DeferredDelete(RHIQueueType queue, RHIGpuTicket ticket, RHIDeferredDeleteItem item)
+        {
+            (void)queue;
+            (void)ticket;
+            if (item.deleter && item.ptr) item.deleter(item.ptr);
+        }
+
+        // Resource creation: keep creation on the device rather than a global factory.
+        // NOTE: The returned pointer is an opaque handle for FFI; destruction must go through the exported Destroy/Release API.
+        virtual RHISampler* CreateSampler(RHISamplerDesc&& desc) = 0;
 
         virtual UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) = 0;
 

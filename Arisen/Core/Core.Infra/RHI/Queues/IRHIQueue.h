@@ -2,18 +2,11 @@
 
 #include "Common/CommandHeaders.h"
 #include "RHI/Utils/RHIDeferredDeletionQueue.h"
+#include "RHI/Queues/RHIQueueType.h"
 
 namespace ArisenEngine::RHI
 {
     class RHICommandBuffer;
-
-    enum class RHIQueueType : UInt8
-    {
-        Graphics,
-        Compute,
-        Transfer,
-        Present,
-    };
 
     // RHI-level queue abstraction:
     // - Submit produces a monotonic ticket (submitID / fenceValue / completion serial)
@@ -32,6 +25,10 @@ namespace ArisenEngine::RHI
         virtual void Update() = 0;
 
         virtual RHIGpuTicket GetCompletedTicket() const = 0;
+
+        // Returns the most recently assigned ticket on this queue (monotonic).
+        // Useful for scheduling deferred deletion at "everything submitted so far must be complete".
+        virtual RHIGpuTicket GetLastSubmittedTicket() const = 0;
     };
 }
 

@@ -20,10 +20,10 @@ namespace ArisenEngine::RHI
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkQueue)
 
-        RHIVkQueue(VkDevice device, VkQueue queue, IRHIDeferredDeletionQueue* deferredDeletionQueue);
+        RHIVkQueue(VkDevice device, VkQueue queue, RHIQueueType type, IRHIDeferredDeletionQueue* deferredDeletionQueue);
         ~RHIVkQueue() noexcept;
 
-        RHIQueueType GetType() const override { return RHIQueueType::Graphics; } // current: graphics queue only
+        RHIQueueType GetType() const override { return m_Type; }
 
         // Returns the submitID assigned to this submission.
         RHIGpuTicket Submit(RHICommandBuffer* commandBuffer) override;
@@ -34,6 +34,11 @@ namespace ArisenEngine::RHI
         RHIGpuTicket GetCompletedTicket() const override
         {
             return m_CompletedSubmitId.load(std::memory_order_acquire);
+        }
+
+        RHIGpuTicket GetLastSubmittedTicket() const override
+        {
+            return m_LastSubmittedSubmitId.load(std::memory_order_acquire);
         }
 
     private:
@@ -48,6 +53,7 @@ namespace ArisenEngine::RHI
 
         VkDevice m_Device { VK_NULL_HANDLE };
         VkQueue m_Queue { VK_NULL_HANDLE };
+        RHIQueueType m_Type { RHIQueueType::Graphics };
         IRHIDeferredDeletionQueue* m_DeferredDeletion { nullptr }; // not owned
 
         std::mutex m_Mutex;
@@ -55,6 +61,7 @@ namespace ArisenEngine::RHI
         std::deque<InFlightSubmit> m_InFlight;
 
         std::atomic<RHIGpuTicket> m_NextSubmitId { 1 };
+        std::atomic<RHIGpuTicket> m_LastSubmittedSubmitId { 0 };
         std::atomic<RHIGpuTicket> m_CompletedSubmitId { 0 };
     };
 }
