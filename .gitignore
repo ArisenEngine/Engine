@@ -11,3 +11,11 @@ build
 Projects
 Scripts/Windows/tools/*
 
+# CMake-only repo: do not commit Visual Studio generator outputs
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.vcxitems
+*.vcxitems.filters
+
