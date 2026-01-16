@@ -102,27 +102,41 @@ bool Logger::Initialize()
 
 	try
 	{
-        // Ensure log directory exists
+        // Ensure log directory exists.
+        // Prefer exe-relative path on Windows to avoid Visual Studio working-directory surprises.
+        std::filesystem::path log_dir;
+#ifdef _WIN32
+        wchar_t exePathW[MAX_PATH]{};
+        GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
+        log_dir = std::filesystem::path(exePathW).parent_path() / "logs";
+#else
+        log_dir = std::filesystem::absolute(std::filesystem::path("logs"));
+#endif
         std::error_code _ec;
-        std::filesystem::create_directories("logs", _ec);
+        std::filesystem::create_directories(log_dir, _ec);
         (void)_ec;
-		// 初始化一个容量为 8192、单线程的日志线程池
+
+        const auto log_file = (log_dir / "log.log").string();
+
+		// Initialize async logger thread pool (required for async_factory)
 		constexpr size_t queue_size = 8192;
-		constexpr size_t num_threads = 1;  // 固定为单线程
-		auto thread_pool = std::make_shared<spdlog::details::thread_pool>(queue_size, num_threads);
+		constexpr size_t num_threads = 1;  // single worker thread
+        spdlog::init_thread_pool(queue_size, num_threads);
 
 		
 		// init spdlog
         auto async_file =
-            spdlog::basic_logger_mt<spdlog::async_factory>("log", "logs/log.log", true);
+            spdlog::basic_logger_mt<spdlog::async_factory>("log", log_file, true);
 		
 		spdlog::set_default_logger(async_file);
+
+        std::cout << "Log file: " << log_file << std::endl;
 	
 		// Flush all *registered* loggers using a worker thread every 3 seconds.
 		// note: registered loggers *must* be thread safe for this to work correctly!
 		spdlog::flush_every(std::chrono::seconds(3));
 
-		spdlog::flush_on(spdlog::level::err);
+		spdlog::flush_on(spdlog::level::info);
 		
 		// default
 #if _DEBUG
@@ -153,7 +167,10 @@ void Logger::Shutdown()
 {
 	// Release all spdlog resources, and drop all loggers in the registry.
 	// This is optional (only mandatory if using windows + async log).
-	spdlog::default_logger()->flush();
+    if (auto* logger = spdlog::default_logger_raw())
+    {
+        logger->flush();
+    }
 	spdlog::shutdown();
 	GetInstance().m_IsInitialize = false;
 }
