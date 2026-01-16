@@ -62,7 +62,11 @@ namespace ArisenEngine::RHI
             return m_DescriptorPool;
         }
 
+        RHISampler* CreateSampler(RHISamplerDesc&& desc) override;
+
         void Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex) override;
+        IRHIQueue* GetQueue(RHIQueueType type) override;
+        void DeferredDelete(RHIQueueType queue, RHIGpuTicket ticket, RHIDeferredDeleteItem item) override;
         UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) override;
 
         void SetResolution(UInt32 width, UInt32 height) override;
@@ -90,6 +94,7 @@ namespace ArisenEngine::RHI
 
     public:
         // Deferred destruction (GPU-safe): enqueue on producer threads, flush on the frame fence.
+        void EnqueueDeferredDestroy(UInt32 frameIndex, RHIDeferredDeleteItem item);
         void EnqueueDeferredDestroy(UInt32 frameIndex, std::function<void()>&& fn);
         void FlushDeferredDestroys(UInt32 frameIndex);
 

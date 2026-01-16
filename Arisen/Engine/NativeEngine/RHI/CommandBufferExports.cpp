@@ -175,5 +175,6 @@ extern "C" ENGINE_DLL void RHI_Cmd_BindDescriptorSets_FromPool(RHI_CommandBuffer
     if (c == nullptr || p == nullptr) return;
     auto& sets = p->GetDescriptorSets(poolId);
     c->BindDescriptorSets(frameIndex, bindPoint, firstSet, const_cast<Containers::Vector<std::shared_ptr<RHI::RHIDescriptorSet>>&>(sets), 0, nullptr);
+    c->TrackDescriptorPoolUse(p, poolId);
 }
 

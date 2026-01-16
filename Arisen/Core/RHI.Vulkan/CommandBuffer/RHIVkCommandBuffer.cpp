@@ -91,6 +91,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::Reset()
     m_State = ECommandState::ReadyForBegin;
     m_VkBeginInfo = {};
     m_SubmissionFence.reset();
+    m_TrackedDescriptorPools.clear();
 
     m_VertexBuffers.clear();
     m_VertexBindingOffsets.clear();
@@ -99,6 +100,17 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::Reset()
     m_IndexType.reset();
 
     m_CurrentPipeline = nullptr;
+}
+
+void ArisenEngine::RHI::RHIVkCommandBuffer::TrackDescriptorPoolUse(DescriptorPool* pool, UInt32 poolId)
+{
+    if (pool == nullptr) return;
+    // avoid duplicates
+    for (const auto& t : m_TrackedDescriptorPools)
+    {
+        if (t.pool == pool && t.poolId == poolId) return;
+    }
+    m_TrackedDescriptorPools.emplace_back(TrackedPoolUse{ pool, poolId });
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::ReadyForBegin(UInt32 frameIndex)

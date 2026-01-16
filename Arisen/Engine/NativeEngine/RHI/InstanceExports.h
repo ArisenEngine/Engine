@@ -7,7 +7,6 @@
 // Opaque handle types for C ABI
 typedef void* RHI_InstanceHandle;
 typedef void* RHI_DeviceHandle;
-typedef void* RHI_FactoryHandle;
 
 extern "C" ENGINE_DLL RHI_InstanceHandle RHI_CreateInstance(const ArisenEngine::RHI::InstanceInfo* info);
 extern "C" ENGINE_DLL void RHI_DestroyInstance(RHI_InstanceHandle instance);
@@ -29,6 +28,4 @@ extern "C" ENGINE_DLL unsigned int RHI_Instance_GetEnvStringW(RHI_InstanceHandle
 
 extern "C" ENGINE_DLL void RHI_Instance_CreateLogicDevice(RHI_InstanceHandle instance, unsigned int windowId);
 extern "C" ENGINE_DLL RHI_DeviceHandle RHI_Instance_GetLogicalDevice(RHI_InstanceHandle instance, unsigned int windowId);
-
-extern "C" ENGINE_DLL RHI_FactoryHandle RHI_Instance_CreateFactory(RHI_InstanceHandle instance);
 

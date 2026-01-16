@@ -1,6 +1,5 @@
 #include "RHIVkInstance.h"
 #include <vulkan/vulkan_core.h>
-#include "RHIVkFactory.h"
 #include "Program/RHIVkGPUProgram.h"
 #include "Windows/RenderWindowAPI.h"
 
@@ -536,11 +535,6 @@ ArisenEngine::RHI::PresentMode ArisenEngine::RHI::RHIVkInstance::GetSuitablePres
         if (pm == VK_PRESENT_MODE_IMMEDIATE_KHR) return static_cast<PresentMode>(pm);
     }
     return PRESENT_MODE_FIFO;
-}
-
-ArisenEngine::RHI::RHIFactory* ArisenEngine::RHI::RHIVkInstance::CreateFactory()
-{
-   return new RHIVkFactory();
 }
 
 void ArisenEngine::RHI::RHIVkInstance::UpdateSurfaceCapabilities(Surface* surface)

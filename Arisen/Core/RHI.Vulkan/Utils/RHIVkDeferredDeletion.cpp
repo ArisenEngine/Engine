@@ -5,34 +5,35 @@ ArisenEngine::RHI::RHIVkDeferredDeletion::RHIVkDeferredDeletion(UInt32 maxFrames
 {
 }
 
-void ArisenEngine::RHI::RHIVkDeferredDeletion::Enqueue(RHIGpuTicket ticket, std::function<void()>&& fn)
+void ArisenEngine::RHI::RHIVkDeferredDeletion::Enqueue(RHIQueueType queue, RHIGpuTicket ticket, RHIDeferredDeleteItem item)
 {
     {
         std::lock_guard<std::mutex> lock(m_Mutex);
-        m_Pending[ticket].emplace_back(std::move(fn));
+        m_Pending[queue][ticket].emplace_back(item);
     }
 }
 
-void ArisenEngine::RHI::RHIVkDeferredDeletion::Flush(RHIGpuTicket ticket)
+void ArisenEngine::RHI::RHIVkDeferredDeletion::Flush(RHIQueueType queue, RHIGpuTicket ticket)
 {
-    Containers::Vector<std::function<void()>> toRun;
+    Containers::Vector<RHIDeferredDeleteItem> toRun;
     {
         std::lock_guard<std::mutex> lock(m_Mutex);
-        auto it = m_Pending.begin();
-        while (it != m_Pending.end() && it->first <= ticket)
+        auto& pending = m_Pending[queue];
+        auto it = pending.begin();
+        while (it != pending.end() && it->first <= ticket)
         {
             auto& bucket = it->second;
-            for (auto& fn : bucket)
+            for (auto& item : bucket)
             {
-                toRun.emplace_back(std::move(fn));
+                toRun.emplace_back(item);
             }
-            it = m_Pending.erase(it);
+            it = pending.erase(it);
         }
     }
 
-    for (auto& fn : toRun)
+    for (auto& item : toRun)
     {
-        if (fn) fn();
+        if (item.deleter && item.ptr) item.deleter(item.ptr);
     }
 }
 

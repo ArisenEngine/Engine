@@ -32,6 +32,7 @@ namespace ArisenEngine::RHI
         [[nodiscard]] RHIResourceHandle Get() const { return m_Handle; }
 
         void Release(RHIGpuTicket ticket);
+        void Release(RHIQueueType queue, RHIGpuTicket ticket);
 
     private:
         void ResetNoRelease()

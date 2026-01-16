@@ -11,7 +11,6 @@ namespace ArisenEngine::RHI
 {
     class RHIDevice;
     class Surface;
-    class RHIFactory;
 }
 
 namespace ArisenEngine::RHI
@@ -89,8 +88,6 @@ namespace ArisenEngine::RHI
             return m_DeviceLimits;
         };
 
-        virtual RHIFactory* CreateFactory() = 0;
-        
     protected:
         
         RHIDeviceLimits m_DeviceLimits;

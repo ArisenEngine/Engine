@@ -36,7 +36,6 @@
     <ClCompile Include="Program\RHIVkGPURenderPass.cpp" />
     <ClCompile Include="Program\RHIVkGPUSubPass.cpp" />
     <ClCompile Include="Program\RHIVkSampler.cpp" />
-    <ClCompile Include="RHIVkFactory.cpp" />
     <ClCompile Include="RHIVkInstance.cpp" />
     <ClCompile Include="Surfaces\RHIVkAttachment.cpp" />
     <ClCompile Include="Surfaces\RHIVkFrameBuffer.cpp" />
@@ -64,7 +63,6 @@
     <ClInclude Include="Program\RHIVkGPURenderPass.h" />
     <ClInclude Include="Program\RHIVkGPUSubPass.h" />
     <ClInclude Include="Program\RHIVkSampler.h" />
-    <ClInclude Include="RHIVkFactory.h" />
     <ClInclude Include="RHIVkInstance.h" />
     <ClInclude Include="Surfaces\RHIVkAttachment.h" />
     <ClInclude Include="Surfaces\RHIVkFrameBuffer.h" />

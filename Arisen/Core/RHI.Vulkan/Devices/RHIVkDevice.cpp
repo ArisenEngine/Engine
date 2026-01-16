@@ -5,6 +5,7 @@
 #include "Windows/RenderWindowAPI.h"
 #include "../Utils/RHIVkDeferredDeletion.h"
 #include "../Queues/RHIVkQueue.h"
+#include "../Program/RHIVkSampler.h"
 
 ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surface, VkQueue graphicQueue, VkQueue presentQueue, VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties)
 : RHIDevice(instance, surface), m_VkGraphicQueue(graphicQueue), m_VkPresentQueue(presentQueue), m_VkDevice(device), m_VkPhysicalDeviceMemoryProperties(memoryProperties)
@@ -13,7 +14,12 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surf
     m_DescriptorPool = new RHIVkDescriptorPool(this);
     m_DeferredDeletion = std::make_unique<RHIVkDeferredDeletion>(m_Instance->GetMaxFramesInFlight());
     m_ResourceRegistry = std::make_unique<RHIResourceRegistry>(m_DeferredDeletion.get());
-    m_GraphicsQueue = std::make_unique<RHIVkQueue>(m_VkDevice, m_VkGraphicQueue, m_DeferredDeletion.get());
+    m_GraphicsQueue = std::make_unique<RHIVkQueue>(m_VkDevice, m_VkGraphicQueue, RHIQueueType::Graphics, m_DeferredDeletion.get());
+}
+
+ArisenEngine::RHI::RHISampler* ArisenEngine::RHI::RHIVkDevice::CreateSampler(RHISamplerDesc&& desc)
+{
+    return new RHIVkSampler(this, std::move(desc));
 }
 
 void ArisenEngine::RHI::RHIVkDevice::DeviceWaitIdle() const
@@ -154,20 +160,40 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseImageHandle(std::shared_ptr<ImageHan
    
 }
 
-void ArisenEngine::RHI::RHIVkDevice::EnqueueDeferredDestroy(UInt32 frameIndex, std::function<void()>&& fn)
+void ArisenEngine::RHI::RHIVkDevice::EnqueueDeferredDestroy(UInt32 frameIndex, RHIDeferredDeleteItem item)
 {
     if (m_DeferredDeletion)
     {
         // For now map frameIndex -> ticket (legacy callers). SubmitID-based callers should use Enqueue(ticket).
-        m_DeferredDeletion->Enqueue(static_cast<RHIGpuTicket>(frameIndex), std::move(fn));
+        m_DeferredDeletion->Enqueue(RHIQueueType::Graphics, static_cast<RHIGpuTicket>(frameIndex), item);
     }
+}
+
+namespace
+{
+    struct DeferredCallItem
+    {
+        std::function<void()> fn;
+    };
+    static void DeferredCallDeleter(void* p)
+    {
+        auto* item = static_cast<DeferredCallItem*>(p);
+        if (item && item->fn) item->fn();
+        delete item;
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::EnqueueDeferredDestroy(UInt32 frameIndex, std::function<void()>&& fn)
+{
+    auto* item = new DeferredCallItem{ std::move(fn) };
+    EnqueueDeferredDestroy(frameIndex, RHIDeferredDeleteItem{ item, &DeferredCallDeleter });
 }
 
 void ArisenEngine::RHI::RHIVkDevice::FlushDeferredDestroys(UInt32 frameIndex)
 {
     if (m_DeferredDeletion)
     {
-        m_DeferredDeletion->Flush(static_cast<RHIGpuTicket>(frameIndex));
+        m_DeferredDeletion->Flush(RHIQueueType::Graphics, static_cast<RHIGpuTicket>(frameIndex));
     }
 }
 
@@ -203,6 +229,26 @@ void ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, UIn
     }
 }
 
+ArisenEngine::RHI::IRHIQueue* ArisenEngine::RHI::RHIVkDevice::GetQueue(RHIQueueType type)
+{
+    if (type == RHIQueueType::Graphics)
+    {
+        return m_GraphicsQueue.get();
+    }
+    return nullptr;
+}
+
+void ArisenEngine::RHI::RHIVkDevice::DeferredDelete(RHIQueueType queue, RHIGpuTicket ticket, RHIDeferredDeleteItem item)
+{
+    if (m_DeferredDeletion)
+    {
+        m_DeferredDeletion->Enqueue(queue, ticket, item);
+        return;
+    }
+    // Fallback (should be rare)
+    if (item.deleter && item.ptr) item.deleter(item.ptr);
+}
+
 ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDevice::FindMemoryType(UInt32 typeFilter, UInt32 properties)
 {
     for (uint32_t i = 0; i < m_VkPhysicalDeviceMemoryProperties.memoryTypeCount; ++i)
@@ -227,6 +273,18 @@ void ArisenEngine::RHI::RHIVkDevice::SetResolution(UInt32 width, UInt32 height)
 ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
 {
     DeviceWaitIdle();
+
+    // After waiting idle, it's safe to flush all deferred deletions immediately
+    // so vkDestroy* runs before vkDestroyDevice.
+    if (m_DeferredDeletion)
+    {
+        constexpr RHIGpuTicket kAll = ~static_cast<RHIGpuTicket>(0);
+        m_DeferredDeletion->Flush(RHIQueueType::Graphics, kAll);
+        m_DeferredDeletion->Flush(RHIQueueType::Compute, kAll);
+        m_DeferredDeletion->Flush(RHIQueueType::Transfer, kAll);
+        m_DeferredDeletion->Flush(RHIQueueType::Present, kAll);
+    }
+
     delete m_GPUPipelineManager;
     delete m_DescriptorPool;
     m_FrameBuffers.clear();
