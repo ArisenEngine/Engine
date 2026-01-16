@@ -26,6 +26,14 @@ namespace ArisenEngine::RHI
             RHICommandBuffer* commandBuffer;
 
             auto index = currentFrameIndex % m_MaxFramesInFlight;
+
+            // Per-frame reuse safety: wait for the previous submission that used this frame-slot to finish.
+            // This prevents reusing command buffers / semaphores while still in-flight on the GPU.
+            if (auto* fence = GetFence(currentFrameIndex))
+            {
+                fence->Lock();
+            }
+
             if (m_CommandBuffers[index].size() > 0)
             {
                 commandBuffer = m_CommandBuffers[index].back();

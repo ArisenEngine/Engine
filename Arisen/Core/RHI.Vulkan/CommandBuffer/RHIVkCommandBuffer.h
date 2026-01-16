@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <vulkan/vulkan_core.h>
 #include "../Surfaces/RHIVkFrameBuffer.h"
 #include "RHI/CommandBuffer/RHICommandBuffer.h"
@@ -97,7 +97,7 @@ namespace  ArisenEngine::RHI
         Containers::Vector<VkPipelineStageFlags> m_WaitStages;
        
         VkCommandBufferBeginInfo m_VkBeginInfo {};
-        std::optional<VkFence> m_SubmissionFence;
+        // Fence ownership is separated from command buffer (owned by queue/device/pool).
 
         Containers::Vector<VkMemoryBarrier> m_VkMemoryBarriers {};
         Containers::Vector<VkBufferMemoryBarrier> m_VkBufferMemoryBarriers {};
