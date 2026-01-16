@@ -27,7 +27,7 @@ ArisenEngine::RHI::RHIVkQueue::~RHIVkQueue() noexcept
 
     for (auto& s : m_InFlight)
     {
-        if (s.fence) vkDestroyFence(m_Device, s.fence, nullptr);
+        if (s.ownedFence && s.fence) vkDestroyFence(m_Device, s.fence, nullptr);
     }
     m_InFlight.clear();
 }
@@ -66,6 +66,15 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommand
 {
     ASSERT(commandBuffer && commandBuffer->ReadyForSubmit());
 
+    // Internal fence ownership path (queue-managed fences)
+    VkFence fence = AcquireFence();
+    return SubmitWithFence(commandBuffer, fence, true);
+}
+
+ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(RHICommandBuffer* commandBuffer, VkFence fence, bool ownedFence)
+{
+    ASSERT(commandBuffer && commandBuffer->ReadyForSubmit());
+
     auto* vkCmd = static_cast<RHIVkCommandBuffer*>(commandBuffer);
 
     VkSubmitInfo submitInfo{};
@@ -90,7 +99,6 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommand
     std::lock_guard<std::mutex> lock(m_Mutex);
 
     const auto submitId = m_NextSubmitId.fetch_add(1, std::memory_order_acq_rel);
-    VkFence fence = AcquireFence();
 
     if (vkQueueSubmit(m_Queue, 1, &submitInfo, fence) != VK_SUCCESS)
     {
@@ -98,7 +106,7 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommand
     }
 
     m_LastSubmittedSubmitId.store(submitId, std::memory_order_release);
-    m_InFlight.push_back({ fence, submitId });
+    m_InFlight.push_back({ fence, submitId, ownedFence });
 
     // Mark descriptor pools used by this submission so ResetPool can be GPU-safe.
     for (const auto& t : vkCmd->GetTrackedDescriptorPools())
@@ -125,7 +133,10 @@ void ArisenEngine::RHI::RHIVkQueue::Update()
             if (status == VK_SUCCESS)
             {
                 newCompleted = front.submitId;
-                recycle.emplace_back(front.fence);
+                if (front.ownedFence)
+                {
+                    recycle.emplace_back(front.fence);
+                }
                 m_InFlight.pop_front();
                 continue;
             }

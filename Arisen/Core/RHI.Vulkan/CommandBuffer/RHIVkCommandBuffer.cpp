@@ -1,4 +1,4 @@
-﻿#include "RHIVkCommandBuffer.h"
+#include "RHIVkCommandBuffer.h"
 
 #include "RHIVkCommandBufferPool.h"
 #include "../Devices/RHIVkDevice.h"
@@ -90,7 +90,6 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::Reset()
     m_WaitStages.clear();
     m_State = ECommandState::ReadyForBegin;
     m_VkBeginInfo = {};
-    m_SubmissionFence.reset();
     m_TrackedDescriptorPools.clear();
 
     m_VertexBuffers.clear();
@@ -423,13 +422,15 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BindIndexBuffer(BufferHandle* indexB
 
 VkFence ArisenEngine::RHI::RHIVkCommandBuffer::GetSubmissionFence() const
 {
-    return m_SubmissionFence.has_value() ? m_SubmissionFence.value() : VK_NULL_HANDLE;
+    // Fence ownership is separated from command buffer. Queue/device owns synchronization.
+    return VK_NULL_HANDLE;
 }
 
 // TODO: 用一个map去存储不同type的fence，在调用相关接口时根据type等待fence
 void ArisenEngine::RHI::RHIVkCommandBuffer::InjectFence(RHIFence* fence)
 {
-    m_SubmissionFence = static_cast<VkFence>(fence->GetHandle());
+    // Fence ownership is separated from command buffer. Kept for ABI compatibility (no-op).
+    (void)fence;
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::WaitForFence(UInt32 frameIndex)

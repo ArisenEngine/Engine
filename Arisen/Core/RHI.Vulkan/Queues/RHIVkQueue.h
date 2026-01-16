@@ -28,6 +28,10 @@ namespace ArisenEngine::RHI
         // Returns the submitID assigned to this submission.
         RHIGpuTicket Submit(RHICommandBuffer* commandBuffer) override;
 
+        // Fence is owned outside of the command buffer (e.g. per-frame fence in the command buffer pool).
+        // RHIVkQueue will NOT destroy or recycle this fence.
+        RHIGpuTicket SubmitWithFence(RHICommandBuffer* commandBuffer, VkFence fence, bool ownedFence = false);
+
         // Poll GPU completion and flush deferred deletions up to completed submitID.
         void Update() override;
 
@@ -46,6 +50,7 @@ namespace ArisenEngine::RHI
         {
             VkFence fence { VK_NULL_HANDLE };
             RHIGpuTicket submitId { 0 };
+            bool ownedFence { true };
         };
 
         VkFence AcquireFence();

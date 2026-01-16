@@ -221,6 +221,30 @@ void ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, UIn
     m_CurrentFrameIndex.store(frameIndex, std::memory_order_release);
     if (m_GraphicsQueue)
     {
+        // Fence ownership is separated from command buffer:
+        // Use the per-frame fence from the owning command buffer pool (frameIndex % MaxFramesInFlight).
+        VkFence vkFence = VK_NULL_HANDLE;
+        if (auto* pool = commandBuffer->GetOwner())
+        {
+            if (auto* fence = pool->GetFence(frameIndex))
+            {
+                // IMPORTANT: fence wait happens when acquiring a command buffer (pool->GetCommandBuffer),
+                // so at submit-time we only reset it to unsignaled and use it as the submission fence.
+                fence->Unlock(); // vkResetFences for Vulkan
+                vkFence = static_cast<VkFence>(fence->GetHandle());
+            }
+        }
+
+        if (auto* vkQueue = dynamic_cast<RHIVkQueue*>(m_GraphicsQueue.get()))
+        {
+            if (vkFence != VK_NULL_HANDLE)
+            {
+                vkQueue->SubmitWithFence(commandBuffer, vkFence, /*ownedFence*/ false);
+                return;
+            }
+        }
+
+        // Fallback: queue-managed fence.
         m_GraphicsQueue->Submit(commandBuffer);
     }
     else
