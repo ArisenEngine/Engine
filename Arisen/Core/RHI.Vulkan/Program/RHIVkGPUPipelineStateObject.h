@@ -94,7 +94,7 @@ namespace ArisenEngine::RHI
         // Vk API
         VkDescriptorSetLayout GetVkDescriptorSetLayout(UInt32 layoutIndex) const;
 
-        Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, RHIDescriptorUpdateInfo>>
+        const Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, RHIDescriptorUpdateInfo>>&
         GetDescriptorUpdateInfos(UInt32 layoutIndex) const;
     private:
         

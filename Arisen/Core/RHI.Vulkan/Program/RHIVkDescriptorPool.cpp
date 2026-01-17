@@ -256,7 +256,7 @@ GetDescriptorSets(UInt32 poolId)
     return m_DescriptorSetsHolder[poolId].sets;
 }
 
-const VkDescriptorImageInfo* GetImageInfos(ArisenEngine::RHI::RHIDescriptorUpdateInfo& updateInfo,
+const VkDescriptorImageInfo* GetImageInfos(const ArisenEngine::RHI::RHIDescriptorUpdateInfo& updateInfo,
                                            ArisenEngine::Containers::Vector<VkDescriptorImageInfo>& results)
 {
     if (updateInfo.imageInfo.size() <= 0)
@@ -278,7 +278,7 @@ const VkDescriptorImageInfo* GetImageInfos(ArisenEngine::RHI::RHIDescriptorUpdat
     return results.data();
 }
 
-const VkDescriptorBufferInfo* GetBufferInfos(ArisenEngine::RHI::RHIDescriptorUpdateInfo& updateInfo,
+const VkDescriptorBufferInfo* GetBufferInfos(const ArisenEngine::RHI::RHIDescriptorUpdateInfo& updateInfo,
     ArisenEngine::Containers::Vector<VkDescriptorBufferInfo>& results)
 {
     if (updateInfo.bufferHaneles.size() <= 0)
@@ -320,7 +320,7 @@ const VkDescriptorBufferInfo* GetBufferInfos(ArisenEngine::RHI::RHIDescriptorUpd
     return results.data();
 }
 
-const VkBufferView* GetBufferViews(ArisenEngine::RHI::RHIDescriptorUpdateInfo& updateInfo,
+const VkBufferView* GetBufferViews(const ArisenEngine::RHI::RHIDescriptorUpdateInfo& updateInfo,
     ArisenEngine::Containers::Vector<VkBufferView>& results)
 {
     if (updateInfo.texelBufferViews.size() <= 0)
@@ -372,17 +372,17 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId,
         }
         VkDescriptorSet dstSet = static_cast<VkDescriptorSet>(descriptorSet->GetHandle());
         UInt32 layoutIndex = descriptorSet->GetLayoutIndex();
-        auto updateInfosForAllBindings = vkPipelineStateObject->GetDescriptorUpdateInfos(layoutIndex);
+        const auto& updateInfosForAllBindings = vkPipelineStateObject->GetDescriptorUpdateInfos(layoutIndex);
         for (const auto& updateInfoForAllTypePair : updateInfosForAllBindings)
         {
-            auto updateInfoForAllType = updateInfoForAllTypePair.second;
+            const auto& updateInfoForAllType = updateInfoForAllTypePair.second;
             for (const auto& updateInfoPair : updateInfoForAllType)
             {
                 imageInfos.emplace_back();
                 bufferInfos.emplace_back();
                 bufferViews.emplace_back();
                 
-                auto updateInfo = updateInfoPair.second;
+                const auto& updateInfo = updateInfoPair.second;
                 auto pImageInfos = GetImageInfos(updateInfo, imageInfos.back());
                 auto pBufferInfos = GetBufferInfos(updateInfo, bufferInfos.back());
                 auto pBufferViews = GetBufferViews(updateInfo, bufferViews.back());

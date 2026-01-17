@@ -211,9 +211,9 @@ VkDescriptorSetLayout ArisenEngine::RHI::RHIVkGPUPipelineStateObject::GetVkDescr
     return m_DescriptorSetLayouts[layoutIndex];
 }
 
-ArisenEngine::Containers::
+const ArisenEngine::Containers::
 Map<ArisenEngine::UInt32,ArisenEngine::Containers::
-UnorderedMap<ArisenEngine::RHI::EDescriptorType, ArisenEngine::RHI::RHIDescriptorUpdateInfo>>
+UnorderedMap<ArisenEngine::RHI::EDescriptorType, ArisenEngine::RHI::RHIDescriptorUpdateInfo>>&
 ArisenEngine::RHI::RHIVkGPUPipelineStateObject::GetDescriptorUpdateInfos(
     UInt32 layoutIndex) const
 {
@@ -223,7 +223,6 @@ ArisenEngine::RHI::RHIVkGPUPipelineStateObject::GetDescriptorUpdateInfos(
     }
 
     LOG_FATAL_AND_THROW("[RHIVkGPUPipelineStateObject::GetDescriptorUpdateInfos] layout index: " + std::to_string(layoutIndex) + " is not exist.");
-    return {};
 }
 
 
