@@ -682,9 +682,9 @@ public:
 
         RHI_Cmd_End(commandBuffer);
         RHI_Device_Submit(device, commandBuffer, frameIndex);
-        RHI_Device_ReleaseCommandBuffer(device, context.commandPoolId, frameIndex, commandBuffer);
         RHI_Device_GraphicQueueWaitIdle(device);
-
+        RHI_Device_ReleaseCommandBuffer(device, context.commandPoolId, frameIndex, commandBuffer);
+        
         RHI_Device_ReleaseBufferHandle(device, textureStagingBufferHandle);
     }
 
