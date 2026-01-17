@@ -442,6 +442,10 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     // Set Device Features
     VkPhysicalDeviceFeatures deviceFeatures{};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
+
+    VkPhysicalDeviceTimelineSemaphoreFeatures timelineFeatures{};
+    timelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
+    timelineFeatures.timelineSemaphore = VK_TRUE;
     
     // Device Create Info
     VkDeviceCreateInfo createInfo{};
@@ -451,6 +455,7 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 
     createInfo.pEnabledFeatures = &deviceFeatures;
+    createInfo.pNext = &timelineFeatures;
 
     createInfo.enabledExtensionCount = static_cast<uint32_t>(VkDeviceExtensionNames.size());
     createInfo.ppEnabledExtensionNames = VkDeviceExtensionNames.data();
