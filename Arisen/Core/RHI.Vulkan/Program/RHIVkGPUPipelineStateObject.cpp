@@ -1,6 +1,7 @@
 ﻿
 #include "RHIVkGPUPipelineStateObject.h"
 #include "RHIVkGPUPipeline.h"
+#include "RHIVkGPUProgram.h"
 #include "../Devices/RHIVkDevice.h"
 #include "../VkInitializer.h"
 
@@ -41,6 +42,22 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddProgram(UInt32 programId
     }
 
     m_PipelineStageCreateInfos.insert(it, shaderStageCreateInfo);
+
+    // Merge Reflection Data
+    auto vkProgram = static_cast<RHIVkGPUProgram*>(program);
+    const auto& reflectionData = vkProgram->GetReflectionData();
+    
+    for (const auto& binding : reflectionData.ResourceBindings)
+    {
+        InternalAddDescriptorSetLayoutBinding(
+            binding.Set,
+            binding.Binding,
+            binding.DescriptorType,
+            binding.Count,
+            binding.StageFlags,
+            nullptr // No immutable samplers from reflection (simplification)
+        );
+    }
 }
 
 void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::ClearAllPrograms()
@@ -272,7 +289,32 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorSetLay
         static_cast<const VkSampler*>(pImmutableSamplers));
     if (m_DescriptorSetLayoutBindings.contains(layoutIndex))
     {
-        m_DescriptorSetLayoutBindings[layoutIndex].emplace_back(descriptorSetLayoutBinding);
+        auto& bindings = m_DescriptorSetLayoutBindings[layoutIndex];
+        bool found = false;
+        for (auto& existingBinding : bindings)
+        {
+            if (existingBinding.binding == binding)
+            {
+                // Verify compatibility
+                if (existingBinding.descriptorType != static_cast<VkDescriptorType>(type) ||
+                    existingBinding.descriptorCount != descriptorCount)
+                {
+                    LOG_ERROR("[RHIVkGPUPipelineStateObject::InternalAddDescriptorSetLayoutBinding]: Binding conflict at Set " 
+                        + std::to_string(layoutIndex) + " Binding " + std::to_string(binding));
+                    // Depending on severity, we might want to throw or return. For now, log error.
+                }
+                
+                // Merge stages
+                existingBinding.stageFlags |= shaderStageFlags;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            bindings.emplace_back(descriptorSetLayoutBinding);
+        }
     }
     else
     {
@@ -304,4 +346,76 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorUpdate
             bufferHandles,
             bufferViews,
         });
+}
+
+void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding,
+    const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos)
+{
+    if (!m_DescriptorSetLayoutBindings.contains(layoutIndex)) return;
+    
+    EDescriptorType type = EDescriptorType::DESCRIPTOR_TYPE_MAX_ENUM;
+    UInt32 count = 0;
+    
+    for (const auto& b : m_DescriptorSetLayoutBindings[layoutIndex])
+    {
+        if (b.binding == binding)
+        {
+            type = static_cast<EDescriptorType>(b.descriptorType);
+            count = b.descriptorCount;
+            break;
+        }
+    }
+    
+    if (type != EDescriptorType::DESCRIPTOR_TYPE_MAX_ENUM)
+    {
+        InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, count, std::move(imageInfos), {}, {});
+    }
+}
+
+void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding,
+    const Containers::Vector<std::shared_ptr<BufferHandle>>&& bufferHandles)
+{
+    if (!m_DescriptorSetLayoutBindings.contains(layoutIndex)) return;
+    
+    EDescriptorType type = EDescriptorType::DESCRIPTOR_TYPE_MAX_ENUM;
+    UInt32 count = 0;
+    
+    for (const auto& b : m_DescriptorSetLayoutBindings[layoutIndex])
+    {
+        if (b.binding == binding)
+        {
+            type = static_cast<EDescriptorType>(b.descriptorType);
+            count = b.descriptorCount;
+            break;
+        }
+    }
+    
+    if (type != EDescriptorType::DESCRIPTOR_TYPE_MAX_ENUM)
+    {
+        InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, count, {}, std::move(bufferHandles), {});
+    }
+}
+
+void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding,
+    const Containers::Vector<BufferView*>&& texelBufferViews)
+{
+     if (!m_DescriptorSetLayoutBindings.contains(layoutIndex)) return;
+    
+    EDescriptorType type = EDescriptorType::DESCRIPTOR_TYPE_MAX_ENUM;
+    UInt32 count = 0;
+    
+    for (const auto& b : m_DescriptorSetLayoutBindings[layoutIndex])
+    {
+        if (b.binding == binding)
+        {
+            type = static_cast<EDescriptorType>(b.descriptorType);
+            count = b.descriptorCount;
+            break;
+        }
+    }
+    
+    if (type != EDescriptorType::DESCRIPTOR_TYPE_MAX_ENUM)
+    {
+        InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, count, {}, {}, std::move(texelBufferViews));
+    }
 }

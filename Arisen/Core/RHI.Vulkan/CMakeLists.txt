@@ -24,8 +24,16 @@ target_include_directories(RHI.Vulkan PRIVATE
 
 target_compile_definitions(RHI.Vulkan PRIVATE RHIVULKAN_EXPORTS)
 
-target_link_directories(RHI.Vulkan PUBLIC ${CMAKE_SOURCE_DIR}/3rdparty/vulkan/Lib)
+target_link_directories(RHI.Vulkan PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/vulkan/Lib
+    $ENV{VULKAN_SDK}/Lib
+)
 
-target_link_libraries(RHI.Vulkan PUBLIC Core.Infra Core.Debugger Core.Platform vulkan-1)
+target_link_libraries(RHI.Vulkan PUBLIC 
+    Core.Infra Core.Debugger Core.Platform 
+    vulkan-1 
+    debug spirv-cross-cored optimized spirv-cross-core
+    debug spirv-cross-glsld optimized spirv-cross-glsl
+)
 
 set_target_properties(RHI.Vulkan PROPERTIES FOLDER "RHI")

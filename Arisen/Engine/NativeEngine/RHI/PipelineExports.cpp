@@ -74,6 +74,13 @@ extern "C" ENGINE_DLL void RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(RHI_PSO
     s->AddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, std::move(*buffers));
 }
 
+extern "C" ENGINE_DLL void RHI_PSO_UpdateDescriptorSet_Buffers(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, Containers::Vector<std::shared_ptr<RHI::BufferHandle>>* buffers)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr || buffers == nullptr) return;
+    s->UpdateDescriptorSet(layoutIndex, binding, std::move(*buffers));
+}
+
 extern "C" ENGINE_DLL void RHI_PSO_BuildDescriptorSetLayout(RHI_PSOHandle pso)
 {
     auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
