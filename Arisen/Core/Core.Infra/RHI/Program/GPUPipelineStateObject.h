@@ -87,7 +87,7 @@ namespace ArisenEngine::RHI
         virtual UInt32 GetStageCount() = 0;
         virtual void* GetStageCreateInfo() = 0;
         virtual void BuildDescriptorSetLayout() = 0;
-        virtual Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, RHIDescriptorUpdateInfo>>
+        virtual const Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, RHIDescriptorUpdateInfo>>&
         GetDescriptorUpdateInfos(UInt32 layoutIndex) const = 0;
 
     public:
