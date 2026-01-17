@@ -146,7 +146,7 @@ auto lastTime = Clock::now();
 double frameTime = 0.0;  // 单帧耗时，单位：秒
 double fps = 0.0;
 
-
+static Float32 s_FrameTimeSpacing = 0.0;
 class EngineTest : public Test
 {
 private:
@@ -515,6 +515,7 @@ public:
         return true;
     }
 
+    
     void Run() override
     {
         for (int i = 0; i < k_WindowsCount; ++i)
@@ -539,7 +540,13 @@ public:
         // 计算帧耗时和帧率
         frameTime = delta.count();   // 单位：秒
         fps = (1.0 / frameTime) * 0.1 + fps * 0.9; // 单位：帧每秒
-        std::cout << "FPS:" << fps << ", Delta Time:"<< frameTime << std::endl;
+        s_FrameTimeSpacing += frameTime;
+        if (s_FrameTimeSpacing >= 1.0)
+        {
+            s_FrameTimeSpacing = 0.0;
+            std::cout << "FPS:" << fps << ", Delta Time:"<< frameTime << std::endl;
+        }
+        
     }
 
     void UploadUniformBuffer(RenderContext const& context)
