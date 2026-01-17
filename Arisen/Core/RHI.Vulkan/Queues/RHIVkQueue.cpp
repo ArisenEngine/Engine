@@ -8,77 +8,65 @@
 ArisenEngine::RHI::RHIVkQueue::RHIVkQueue(VkDevice device, VkQueue queue, RHIQueueType type, IRHIDeferredDeletionQueue* deferredDeletionQueue)
     : m_Device(device), m_Queue(queue), m_Type(type), m_DeferredDeletion(deferredDeletionQueue)
 {
+    CreateTimelineSemaphore();
 }
 
 ArisenEngine::RHI::RHIVkQueue::~RHIVkQueue() noexcept
 {
-    // Ensure GPU finished before destroying fences.
+    // Ensure GPU finished before destroying the queue semaphore.
     if (m_Queue != VK_NULL_HANDLE)
     {
         vkQueueWaitIdle(m_Queue);
     }
-
-    std::lock_guard<std::mutex> lock(m_Mutex);
-    for (auto fence : m_FreeFences)
+    if (m_TimelineSemaphore != VK_NULL_HANDLE)
     {
-        if (fence) vkDestroyFence(m_Device, fence, nullptr);
+        vkDestroySemaphore(m_Device, m_TimelineSemaphore, nullptr);
+        m_TimelineSemaphore = VK_NULL_HANDLE;
     }
-    m_FreeFences.clear();
-
-    for (auto& s : m_InFlight)
-    {
-        if (s.ownedFence && s.fence) vkDestroyFence(m_Device, s.fence, nullptr);
-    }
-    m_InFlight.clear();
 }
 
-VkFence ArisenEngine::RHI::RHIVkQueue::AcquireFence()
+void ArisenEngine::RHI::RHIVkQueue::CreateTimelineSemaphore()
 {
-    if (!m_FreeFences.empty())
+    VkSemaphoreTypeCreateInfo typeInfo{};
+    typeInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+    typeInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+    typeInfo.initialValue = 0;
+
+    VkSemaphoreCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    createInfo.pNext = &typeInfo;
+
+    if (vkCreateSemaphore(m_Device, &createInfo, nullptr, &m_TimelineSemaphore) != VK_SUCCESS)
     {
-        VkFence fence = m_FreeFences.back();
-        m_FreeFences.pop_back();
-        vkResetFences(m_Device, 1, &fence);
-        return fence;
+        LOG_FATAL_AND_THROW("[RHIVkQueue::CreateTimelineSemaphore]: failed to create timeline semaphore!");
     }
-
-    VkFenceCreateInfo fenceInfo{};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.flags = 0; // unsignaled
-
-    VkFence fence = VK_NULL_HANDLE;
-    if (vkCreateFence(m_Device, &fenceInfo, nullptr, &fence) != VK_SUCCESS)
-    {
-        LOG_FATAL_AND_THROW("[RHIVkQueue::AcquireFence]: failed to create fence!");
-    }
-    return fence;
-}
-
-void ArisenEngine::RHI::RHIVkQueue::RecycleFence(VkFence fence)
-{
-    if (fence == VK_NULL_HANDLE) return;
-    // Fence is signaled; reset so it can be reused.
-    vkResetFences(m_Device, 1, &fence);
-    m_FreeFences.emplace_back(fence);
 }
 
 ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommandBuffer* commandBuffer)
 {
     ASSERT(commandBuffer && commandBuffer->ReadyForSubmit());
 
-    // Internal fence ownership path (queue-managed fences)
-    VkFence fence = AcquireFence();
-    return SubmitWithFence(commandBuffer, fence, true);
+    return SubmitWithFence(commandBuffer, VK_NULL_HANDLE, false);
 }
 
 ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(RHICommandBuffer* commandBuffer, VkFence fence, bool ownedFence)
 {
     ASSERT(commandBuffer && commandBuffer->ReadyForSubmit());
+    (void)ownedFence;
 
     auto* vkCmd = static_cast<RHIVkCommandBuffer*>(commandBuffer);
 
+    // Timeline signal value
+    const auto submitId = m_NextSubmitId.fetch_add(1, std::memory_order_acq_rel);
+
+    VkTimelineSemaphoreSubmitInfo timelineInfo{};
+    timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+    timelineInfo.signalSemaphoreValueCount = 1;
+    timelineInfo.pSignalSemaphoreValues = &submitId;
+
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.pNext = &timelineInfo;
 
     if (vkCmd->GetWaitSemaphoresCount() > 0)
     {
@@ -90,15 +78,21 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = (static_cast<VkCommandBuffer*>(commandBuffer->GetHandlerPointer()));
 
+    // Always signal the timeline semaphore; also propagate any binary signal semaphores.
+    Containers::Vector<VkSemaphore> signalSemaphores;
+    signalSemaphores.emplace_back(m_TimelineSemaphore);
     if (vkCmd->GetSignalSemaphoresCount() > 0)
     {
-        submitInfo.signalSemaphoreCount = vkCmd->GetSignalSemaphoresCount();
-        submitInfo.pSignalSemaphores = vkCmd->GetSignalSemaphores();
+        const auto* sems = vkCmd->GetSignalSemaphores();
+        for (UInt32 i = 0; i < vkCmd->GetSignalSemaphoresCount(); ++i)
+        {
+            signalSemaphores.emplace_back(sems[i]);
+        }
     }
+    submitInfo.signalSemaphoreCount = static_cast<UInt32>(signalSemaphores.size());
+    submitInfo.pSignalSemaphores = signalSemaphores.data();
 
     std::lock_guard<std::mutex> lock(m_Mutex);
-
-    const auto submitId = m_NextSubmitId.fetch_add(1, std::memory_order_acq_rel);
 
     if (vkQueueSubmit(m_Queue, 1, &submitInfo, fence) != VK_SUCCESS)
     {
@@ -106,7 +100,6 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     }
 
     m_LastSubmittedSubmitId.store(submitId, std::memory_order_release);
-    m_InFlight.push_back({ fence, submitId, ownedFence });
 
     // Mark descriptor pools used by this submission so ResetPool can be GPU-safe.
     for (const auto& t : vkCmd->GetTrackedDescriptorPools())
@@ -120,40 +113,45 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
 
 void ArisenEngine::RHI::RHIVkQueue::Update()
 {
-    RHIGpuTicket newCompleted = m_CompletedSubmitId.load(std::memory_order_acquire);
-    Containers::Vector<VkFence> recycle;
-
+    if (m_TimelineSemaphore == VK_NULL_HANDLE)
     {
-        std::lock_guard<std::mutex> lock(m_Mutex);
-
-        while (!m_InFlight.empty())
-        {
-            const auto& front = m_InFlight.front();
-            const auto status = vkGetFenceStatus(m_Device, front.fence);
-            if (status == VK_SUCCESS)
-            {
-                newCompleted = front.submitId;
-                if (front.ownedFence)
-                {
-                    recycle.emplace_back(front.fence);
-                }
-                m_InFlight.pop_front();
-                continue;
-            }
-            break; // in-order queue: stop at first not completed
-        }
-
-        for (auto fence : recycle)
-        {
-            RecycleFence(fence);
-        }
+        return;
     }
 
-    m_CompletedSubmitId.store(newCompleted, std::memory_order_release);
+    uint64_t completed = 0;
+    if (vkGetSemaphoreCounterValue(m_Device, m_TimelineSemaphore, &completed) == VK_SUCCESS)
+    {
+        m_CompletedSubmitId.store(static_cast<RHIGpuTicket>(completed), std::memory_order_release);
+    }
 
     if (m_DeferredDeletion)
     {
-        m_DeferredDeletion->Flush(m_Type, newCompleted);
+        m_DeferredDeletion->Flush(m_Type, m_CompletedSubmitId.load(std::memory_order_acquire));
     }
 }
 
+void ArisenEngine::RHI::RHIVkQueue::WaitForTicket(RHIGpuTicket ticket)
+{
+    if (ticket == 0)
+    {
+        return;
+    }
+
+    if (GetCompletedTicket() >= ticket)
+    {
+        return;
+    }
+    if (m_TimelineSemaphore == VK_NULL_HANDLE)
+    {
+        return;
+    }
+
+    VkSemaphoreWaitInfo waitInfo{};
+    waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+    waitInfo.semaphoreCount = 1;
+    waitInfo.pSemaphores = &m_TimelineSemaphore;
+    waitInfo.pValues = &ticket;
+
+    vkWaitSemaphores(m_Device, &waitInfo, UINT64_MAX);
+    Update();
+}

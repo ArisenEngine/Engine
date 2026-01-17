@@ -1,14 +1,12 @@
 #pragma once
 #include "RHICommandBuffer.h"
 #include "../../Common/CommandHeaders.h"
-#include "RHI/Synchronization/RHIFence.h"
+#include "RHI/Devices/RHIDevice.h"
 #include <mutex>
 
 namespace ArisenEngine::RHI
 {
     class RHICommandBuffer;
-    class RHIFence;
-
     class RHICommandBufferPool
     {
     public:
@@ -16,7 +14,6 @@ namespace ArisenEngine::RHI
         RHICommandBufferPool(RHIDevice* device, UInt32 maxFramesInFlight);;
         virtual ~RHICommandBufferPool()
         {
-            m_Fences.clear();
             m_Device = nullptr;
         }
         virtual void* GetHandle() = 0;
@@ -28,10 +25,10 @@ namespace ArisenEngine::RHI
             auto index = currentFrameIndex % m_MaxFramesInFlight;
 
             // Per-frame reuse safety: wait for the previous submission that used this frame-slot to finish.
-            // This prevents reusing command buffers / semaphores while still in-flight on the GPU.
-            if (auto* fence = GetFence(currentFrameIndex))
+            // Centralized fence ownership lives on the device.
+            if (m_Device)
             {
-                fence->Lock();
+                m_Device->WaitFrameFence(currentFrameIndex);
             }
 
             if (m_CommandBuffers[index].size() > 0)
@@ -56,13 +53,7 @@ namespace ArisenEngine::RHI
         }
         virtual RHICommandBuffer* CreateCommandBuffer() = 0;
         
-        RHIFence* GetFence(UInt32 currentFrameIndex) const
-        {
-            return m_Fences[currentFrameIndex % m_MaxFramesInFlight].get();
-        }
-        
     protected:
-        Containers::Vector<std::unique_ptr<RHIFence>> m_Fences;
         RHIDevice* m_Device;
         // NOTE: should clear by inherent class 
         Containers::Vector<Containers::Vector<RHICommandBuffer*>> m_CommandBuffers;

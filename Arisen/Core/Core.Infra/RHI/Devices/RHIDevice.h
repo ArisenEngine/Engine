@@ -28,6 +28,7 @@ namespace ArisenEngine::RHI
     class RHICommandBufferPool;
     class GPURenderPass;
     class FrameBuffer;
+    class RHIFence;
     
     
     class RHIDevice
@@ -94,6 +95,12 @@ namespace ArisenEngine::RHI
         virtual UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) = 0;
 
         virtual void SetResolution(UInt32 width, UInt32 height) = 0;
+
+        // Optional per-frame fence management (centralized sync ownership).
+        // Default: no-op / null, for backends that do not use per-frame fences.
+        virtual RHIFence* GetFrameFence(UInt32 frameIndex) { (void)frameIndex; return nullptr; }
+        virtual void WaitFrameFence(UInt32 frameIndex) { (void)frameIndex; }
+        virtual void ResetFrameFence(UInt32 frameIndex) { (void)frameIndex; }
 
         const RHIDeviceLimits GetDeviceLimits() const
         {
