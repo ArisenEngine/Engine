@@ -3,7 +3,6 @@
 #include "RHIVkCommandBuffer.h"
 #include "../Devices/RHIVkDevice.h"
 #include "../Surfaces/RHIVkSurface.h"
-#include "../Synchronization/RHIVkFence.h"
 
 ArisenEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* device, UInt32 maxFramesInFlight)
 : RHICommandBufferPool(device, maxFramesInFlight)
@@ -22,11 +21,7 @@ ArisenEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* d
         LOG_ERROR("[RHIVkCommandBufferPool::RHIVkCommandBufferPool]: failed to create command pool!");
     }
     
-    m_Fences.resize(maxFramesInFlight);
-    for (int i = 0; i < m_MaxFramesInFlight; ++i)
-    {
-        m_Fences[i] = std::make_unique<RHIVkFence>(m_VkDevice);
-    }
+    (void)maxFramesInFlight;
 }
 
 ArisenEngine::RHI::RHIVkCommandBufferPool::~RHIVkCommandBufferPool() noexcept

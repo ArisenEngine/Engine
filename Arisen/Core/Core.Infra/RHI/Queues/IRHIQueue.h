@@ -29,6 +29,16 @@ namespace ArisenEngine::RHI
         // Returns the most recently assigned ticket on this queue (monotonic).
         // Useful for scheduling deferred deletion at "everything submitted so far must be complete".
         virtual RHIGpuTicket GetLastSubmittedTicket() const = 0;
+
+        // Block until the specified ticket is completed.
+        // Default implementation polls Update without sleeping.
+        virtual void WaitForTicket(RHIGpuTicket ticket)
+        {
+            while (GetCompletedTicket() < ticket)
+            {
+                Update();
+            }
+        }
     };
 }
 

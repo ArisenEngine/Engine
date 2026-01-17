@@ -11,6 +11,7 @@
 #include <mutex>
 #include <memory>
 #include <functional>
+#include "RHI/Synchronization/FrameSyncTracker.h"
 
 namespace ArisenEngine::RHI
 {
@@ -70,6 +71,10 @@ namespace ArisenEngine::RHI
         UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) override;
 
         void SetResolution(UInt32 width, UInt32 height) override;
+
+        RHIFence* GetFrameFence(UInt32 frameIndex) override;
+        void WaitFrameFence(UInt32 frameIndex) override;
+        void ResetFrameFence(UInt32 frameIndex) override;
     private:
 
         friend class RHIVkInstance;
@@ -91,6 +96,7 @@ namespace ArisenEngine::RHI
         std::unique_ptr<RHIResourceRegistry> m_ResourceRegistry;
         std::atomic<UInt32> m_CurrentFrameIndex {0};
         std::unique_ptr<IRHIQueue> m_GraphicsQueue;
+        std::unique_ptr<FrameSyncTracker> m_FrameSync;
 
     public:
         // Deferred destruction (GPU-safe): enqueue on producer threads, flush on the frame fence.

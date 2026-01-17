@@ -15,6 +15,9 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surf
     m_DeferredDeletion = std::make_unique<RHIVkDeferredDeletion>(m_Instance->GetMaxFramesInFlight());
     m_ResourceRegistry = std::make_unique<RHIResourceRegistry>(m_DeferredDeletion.get());
     m_GraphicsQueue = std::make_unique<RHIVkQueue>(m_VkDevice, m_VkGraphicQueue, RHIQueueType::Graphics, m_DeferredDeletion.get());
+
+    const UInt32 maxFramesInFlight = m_Instance->GetMaxFramesInFlight();
+    m_FrameSync = std::make_unique<FrameSyncTracker>(maxFramesInFlight);
 }
 
 ArisenEngine::RHI::RHISampler* ArisenEngine::RHI::RHIVkDevice::CreateSampler(RHISamplerDesc&& desc)
@@ -211,8 +214,6 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::GetCompletedSubm
 }
 
 
-// TODO: move submit info to CommandBuffer
-
 void ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex)
 {
     ASSERT(commandBuffer->ReadyForSubmit());
@@ -221,36 +222,47 @@ void ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, UIn
     m_CurrentFrameIndex.store(frameIndex, std::memory_order_release);
     if (m_GraphicsQueue)
     {
-        // Fence ownership is separated from command buffer:
-        // Use the per-frame fence from the owning command buffer pool (frameIndex % MaxFramesInFlight).
-        VkFence vkFence = VK_NULL_HANDLE;
-        if (auto* pool = commandBuffer->GetOwner())
-        {
-            if (auto* fence = pool->GetFence(frameIndex))
-            {
-                // IMPORTANT: fence wait happens when acquiring a command buffer (pool->GetCommandBuffer),
-                // so at submit-time we only reset it to unsignaled and use it as the submission fence.
-                fence->Unlock(); // vkResetFences for Vulkan
-                vkFence = static_cast<VkFence>(fence->GetHandle());
-            }
-        }
-
         if (auto* vkQueue = dynamic_cast<RHIVkQueue*>(m_GraphicsQueue.get()))
         {
-            if (vkFence != VK_NULL_HANDLE)
+            const auto submitId = vkQueue->Submit(commandBuffer);
+            if (m_FrameSync)
             {
-                vkQueue->SubmitWithFence(commandBuffer, vkFence, /*ownedFence*/ false);
-                return;
+                m_FrameSync->OnSubmit(frameIndex, submitId);
             }
+            return;
         }
 
-        // Fallback: queue-managed fence.
-        m_GraphicsQueue->Submit(commandBuffer);
+        // Fallback: queue-managed fence via IRHIQueue.
+        const auto submitId = m_GraphicsQueue->Submit(commandBuffer);
+        if (m_FrameSync)
+        {
+            m_FrameSync->OnSubmit(frameIndex, submitId);
+        }
     }
     else
     {
         LOG_FATAL_AND_THROW("[RHIVkDevice::Submit]: graphics queue not initialized!");
     }
+}
+
+ArisenEngine::RHI::RHIFence* ArisenEngine::RHI::RHIVkDevice::GetFrameFence(UInt32 frameIndex)
+{
+    (void)frameIndex;
+    return nullptr;
+}
+
+void ArisenEngine::RHI::RHIVkDevice::WaitFrameFence(UInt32 frameIndex)
+{
+    if (m_FrameSync == nullptr || m_GraphicsQueue == nullptr)
+    {
+        return;
+    }
+    m_FrameSync->Wait(frameIndex, m_GraphicsQueue.get());
+}
+
+void ArisenEngine::RHI::RHIVkDevice::ResetFrameFence(UInt32 frameIndex)
+{
+    (void)frameIndex;
 }
 
 ArisenEngine::RHI::IRHIQueue* ArisenEngine::RHI::RHIVkDevice::GetQueue(RHIQueueType type)
@@ -316,6 +328,11 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
     m_GPUPrograms.clear();
     m_CommandBufferPools.clear();
     m_BufferHandles.clear();
+    if (m_FrameSync && m_GraphicsQueue)
+    {
+        m_FrameSync->Drain(m_GraphicsQueue.get());
+    }
+    m_FrameSync.reset();
     // Destroy queues before destroying the device to avoid invalid vkQueueWaitIdle calls.
     m_GraphicsQueue.reset();
     vkDestroyDevice(m_VkDevice, nullptr);
