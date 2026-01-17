@@ -48,6 +48,7 @@ void ArisenEngine::RHI::FrameSyncTracker::Drain(IRHIQueue* queue)
         const auto t = m_FrameLastSubmitId[i].load(std::memory_order_acquire);
         if (t > maxTarget) maxTarget = t;
     }
+    
     if (maxTarget == 0)
     {
         return;

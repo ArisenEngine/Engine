@@ -118,11 +118,10 @@ bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
         if (outstanding >= maxOutstanding && q)
         {
             lock.unlock();
-            while (q->GetCompletedTicket() < lastUsed)
-            {
-                q->Update();
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            }
+            
+            // Use hardware wait instead of busy loop
+            q->WaitForTicket(lastUsed);
+
             lock.lock();
             // Re-read holder after waiting.
             pool = holder.descriptorPool;

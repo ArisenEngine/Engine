@@ -3,6 +3,7 @@
 #include "RHI/CommandBuffer/RHICommandBufferPool.h"
 #include <memory>
 #include <mutex>
+#include <thread>
 
 
 namespace ArisenEngine::RHI
@@ -18,14 +19,13 @@ namespace ArisenEngine::RHI
         RHIVkCommandBufferPool(RHIVkDevice* device, UInt32 maxFramesInFlight);
         ~RHIVkCommandBufferPool() noexcept override;
 
-        void* GetHandle() override { return m_VkCommandPool; }
+        void* GetHandle() override { return AcquireThreadCommandPool(); }
 
         RHICommandBuffer* CreateCommandBuffer() override;
         VkCommandPool AcquireThreadCommandPool();
     private:
-        VkCommandPool m_VkCommandPool;
         VkDevice m_VkDevice;
-        Containers::Vector<VkCommandPool> m_AllCommandPools;
+        Containers::Map<std::thread::id, VkCommandPool> m_ThreadPools;
         Containers::Vector<std::unique_ptr<RHIVkCommandBuffer>> m_OwnedCommandBuffers;
         std::mutex m_PoolsMutex;
         
