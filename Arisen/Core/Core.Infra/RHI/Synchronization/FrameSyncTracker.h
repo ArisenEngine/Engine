@@ -4,10 +4,12 @@
 #include <atomic>
 #include <memory>
 
+#include "CoreInfraCommon.h"
+
 namespace ArisenEngine::RHI
 {
     // Tracks per-frame submit tickets and provides CPU<->GPU sync helpers.
-    class FrameSyncTracker
+    class COREINFRA_DLL FrameSyncTracker
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(FrameSyncTracker)
@@ -22,6 +24,7 @@ namespace ArisenEngine::RHI
         void Drain(IRHIQueue* queue);
 
     private:
-        Containers::Vector<std::atomic<RHIGpuTicket>> m_FrameLastSubmitId;
+        std::unique_ptr<std::atomic<RHIGpuTicket>[]> m_FrameLastSubmitId;
+        UInt32 m_FrameCount = 0;
     };
 }
