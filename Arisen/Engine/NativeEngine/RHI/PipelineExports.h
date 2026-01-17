@@ -13,6 +13,7 @@ typedef void* RHI_SubpassHandle;
 
 extern "C" ENGINE_DLL RHI_PipelineManagerHandle RHI_Device_GetPipelineManager(RHI_DeviceHandle device);
 extern "C" ENGINE_DLL RHI_PSOHandle RHI_PipelineManager_CreatePSO(RHI_PipelineManagerHandle pm);
+extern "C" ENGINE_DLL void RHI_PSO_Destroy(RHI_PSOHandle pso);
 extern "C" ENGINE_DLL void RHI_PSO_AddProgram(RHI_PSOHandle pso, unsigned int programId);
 extern "C" ENGINE_DLL void RHI_PSO_ClearPrograms(RHI_PSOHandle pso);
 extern "C" ENGINE_DLL void RHI_PSO_AddVertexBindingDescription(RHI_PSOHandle pso, unsigned int binding, unsigned int stride, ArisenEngine::RHI::EVertexInputRate inputRate);

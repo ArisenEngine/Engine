@@ -25,6 +25,13 @@ extern "C" ENGINE_DLL RHI_PSOHandle RHI_PipelineManager_CreatePSO(RHI_PipelineMa
     return reinterpret_cast<RHI_PSOHandle>(up.release());
 }
 
+extern "C" ENGINE_DLL void RHI_PSO_Destroy(RHI_PSOHandle pso)
+{
+    auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
+    if (s == nullptr) return;
+    delete s;
+}
+
 extern "C" ENGINE_DLL void RHI_PSO_AddProgram(RHI_PSOHandle pso, unsigned int programId)
 {
     auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);

@@ -65,6 +65,7 @@ struct RenderContext
     RHI_ImageHandle textureHandle;
     unsigned int commandPoolId;
     RHI_DescriptorPoolHandle descriptorPool;
+    RHI_PSOHandle pipelineState;
     Containers::Vector<UInt32> gpuPrograms;
     Containers::Vector<UInt32> descriptorPoolIds;
     bool bShouldResize;
@@ -228,6 +229,7 @@ public:
             g_RenderContexts[i].indicesBufferHandle = RHI_Device_GetBufferHandle(g_RenderContexts[i].device, "Indices Buffer");
             g_RenderContexts[i].textureHandle = RHI_Device_GetImageHandle(g_RenderContexts[i].device, "Texture Image");
             g_RenderContexts[i].descriptorPool = RHI_Device_GetDescriptorPool(g_RenderContexts[i].device);
+            g_RenderContexts[i].pipelineState = nullptr;
             for(int frameIndex = 0; frameIndex < (int)m_MaxFramesInFlight; ++frameIndex)
             {
                 Containers::Vector<RHI::EDescriptorType> types { RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER };
@@ -237,6 +239,45 @@ public:
                 auto name = std::string("Uniform Buffer ") + std::to_string(frameIndex);
                 g_RenderContexts[i].uniformBuffers.emplace_back(RHI_Device_GetBufferHandle(g_RenderContexts[i].device, name.c_str()));
             }
+        }
+    }
+
+    void InitPipelineStates()
+    {
+        for (int i = 0; i < k_WindowsCount; ++i)
+        {
+            auto pipelineManager = RHI_Device_GetPipelineManager(g_RenderContexts[i].device);
+            g_RenderContexts[i].pipelineState = RHI_PipelineManager_CreatePSO(pipelineManager);
+
+            auto pipelineState = g_RenderContexts[i].pipelineState;
+            RHI_PSO_AddVertexBindingDescription(pipelineState, 0, sizeof(Vertex), RHI::VERTEX_INPUT_RATE_VERTEX);
+            RHI_PSO_AddVertexInputAttributeDescription(pipelineState, 0, 0, RHI::EFormat::FORMAT_R32G32_SFLOAT, offsetof(Vertex, pos));
+            RHI_PSO_AddVertexInputAttributeDescription(pipelineState, 1, 0, RHI::EFormat::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color));
+
+            for (auto programId : g_RenderContexts[i].gpuPrograms)
+            {
+                RHI_PSO_AddProgram(pipelineState, programId);
+            }
+
+            RHI_PSO_AddDynamicState(pipelineState, RHI::DYNAMIC_STATE_SCISSOR);
+            RHI_PSO_AddDynamicState(pipelineState, RHI::DYNAMIC_STATE_VIEWPORT);
+            RHI_PSO_SetPrimitiveState(pipelineState, RHI::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false);
+            RHI_PSO_SetDepthClampEnable(pipelineState, false);
+            RHI_PSO_SetRasterizerDiscardEnable(pipelineState, false);
+            RHI_PSO_SetPolygonMode(pipelineState, RHI::EPOLYGON_MODE_FILL);
+            RHI_PSO_SetLineWidth(pipelineState, 1.0F);
+            RHI_PSO_SetCullMode(pipelineState, RHI::CULL_MODE_NONE);
+            RHI_PSO_SetFrontFace(pipelineState, RHI::FRONT_FACE_CLOCKWISE);
+            RHI_PSO_SetDepthBiasEnable(pipelineState, false);
+            RHI_PSO_SetSampleShading(pipelineState, false);
+            RHI_PSO_SetSampleCount(pipelineState, RHI::SAMPLE_COUNT_1_BIT);
+            RHI_PSO_AddBlendAttachmentState_Simple(pipelineState, false,
+                                                   RHI::EColorComponentFlagBits::COLOR_COMPONENT_R_BIT |
+                                                   RHI::EColorComponentFlagBits::COLOR_COMPONENT_G_BIT |
+                                                   RHI::EColorComponentFlagBits::COLOR_COMPONENT_B_BIT |
+                                                   RHI::EColorComponentFlagBits::COLOR_COMPONENT_A_BIT);
+            RHI_PSO_SetLogicOp(pipelineState, false, RHI::LOGIC_OP_COPY);
+            RHI_PSO_SetBlendConstants(pipelineState, 0.0f, 0.0f, 0.0f, 0.0f);
         }
     }
 
@@ -465,6 +506,8 @@ public:
 
         InitShaderProgram();
 
+        InitPipelineStates();
+
         InitBuffer();
 
         CreateImage();
@@ -554,6 +597,10 @@ public:
         RHI_Cmd_End(commandBuffer);
         RHI_Device_Submit(device, commandBuffer, frameIndex);
         RHI_Device_GraphicQueueWaitIdle(device);
+        RHI_Device_ReleaseCommandBuffer(device, context.commandPoolId, frameIndex, commandBuffer);
+
+        RHI_Device_ReleaseBufferHandle(device, vertexStagingBufferHandle);
+        RHI_Device_ReleaseBufferHandle(device, indicesStagingBufferHandle);
     }
 
     void UploadImage(RenderContext const& context, UInt64 textureSize, void* data, UInt32 texWidth, UInt32 texHeight)
@@ -630,6 +677,8 @@ public:
         RHI_Device_Submit(device, commandBuffer, frameIndex);
         RHI_Device_ReleaseCommandBuffer(device, context.commandPoolId, frameIndex, commandBuffer);
         RHI_Device_GraphicQueueWaitIdle(device);
+
+        RHI_Device_ReleaseBufferHandle(device, textureStagingBufferHandle);
     }
 
     void AddDynamicState(RHI_PSOHandle pipelineState)
@@ -645,12 +694,7 @@ public:
         auto commandBuffer = RHI_Device_GetCommandBuffer(context.device, context.commandPoolId, frameIndex);
         auto pipelineManager = RHI_Device_GetPipelineManager(context.device);
         
-        auto pipelineState = RHI_PipelineManager_CreatePSO(pipelineManager);
-
-        RHI_PSO_AddVertexBindingDescription(pipelineState, 0, sizeof(Vertex), RHI::VERTEX_INPUT_RATE_VERTEX);
-        RHI_PSO_AddVertexInputAttributeDescription(pipelineState, 0, 0, RHI::EFormat::FORMAT_R32G32_SFLOAT, offsetof(Vertex, pos));
-        RHI_PSO_AddVertexInputAttributeDescription(pipelineState, 1, 0, RHI::EFormat::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color));
-
+        auto pipelineState = context.pipelineState;
         RHI_PSO_ClearDescriptorSetLayoutBindings(pipelineState);
         Containers::Vector<std::shared_ptr<RHI::BufferHandle>> ubos;
         ubos.emplace_back(std::shared_ptr<RHI::BufferHandle>(reinterpret_cast<RHI::BufferHandle*>(context.uniformBuffers[currentIndex]), [](RHI::BufferHandle*){}));
@@ -724,34 +768,8 @@ public:
                 RHI_Cmd_BeginRenderPass(commandBuffer, frameIndex, &desc);
 
                 {
-                    for (auto programId : context.gpuPrograms)
-                    {
-                        RHI_PSO_AddProgram(pipelineState, programId);
-                    }
-
                     {
                         // Pipeline State Object
-                      
-                        RHI_PSO_AddDynamicState(pipelineState, RHI::DYNAMIC_STATE_SCISSOR);
-                        RHI_PSO_AddDynamicState(pipelineState, RHI::DYNAMIC_STATE_VIEWPORT);
-                        RHI_PSO_SetPrimitiveState(pipelineState, RHI::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false);
-                        RHI_PSO_SetDepthClampEnable(pipelineState, false);
-                        RHI_PSO_SetRasterizerDiscardEnable(pipelineState, false);
-                        RHI_PSO_SetPolygonMode(pipelineState, RHI::EPOLYGON_MODE_FILL);
-                        RHI_PSO_SetLineWidth(pipelineState, 1.0F);
-                        RHI_PSO_SetCullMode(pipelineState, RHI::CULL_MODE_NONE);
-                        RHI_PSO_SetFrontFace(pipelineState, RHI::FRONT_FACE_CLOCKWISE);
-                        RHI_PSO_SetDepthBiasEnable(pipelineState, false);
-                        RHI_PSO_SetSampleShading(pipelineState, false);
-                        RHI_PSO_SetSampleCount(pipelineState, RHI::SAMPLE_COUNT_1_BIT);
-                        RHI_PSO_AddBlendAttachmentState_Simple(pipelineState, false,
-                                                               RHI::EColorComponentFlagBits::COLOR_COMPONENT_R_BIT |
-                                                               RHI::EColorComponentFlagBits::COLOR_COMPONENT_G_BIT |
-                                                               RHI::EColorComponentFlagBits::COLOR_COMPONENT_B_BIT |
-                                                               RHI::EColorComponentFlagBits::COLOR_COMPONENT_A_BIT);
-                        RHI_PSO_SetLogicOp(pipelineState, false, RHI::LOGIC_OP_COPY);
-                        RHI_PSO_SetBlendConstants(pipelineState, 0.0f, 0.0f, 0.0f, 0.0f);
-
                         auto pipeline = RHI_PipelineManager_GetGraphicsPipeline(pipelineManager, pipelineState);
 
                         RHI_Pipeline_AllocGraphics(pipeline, frameIndex, subpass);
@@ -816,6 +834,10 @@ public:
         for (auto renderContext : g_RenderContexts)
         {
             RHI_Device_WaitIdle(renderContext.device);
+            if (renderContext.pipelineState)
+            {
+                RHI_PSO_Destroy(renderContext.pipelineState);
+            }
             for (auto ub : renderContext.uniformBuffers)
             {
                 RHI_Device_ReleaseBufferHandle(renderContext.device, ub);
