@@ -1,5 +1,6 @@
 #include "RHIVkGPUProgram.h"
 #include "Logger/Logger.h"
+#include "../Services/RHIVkSpirvReflectionService.h"
 
 ArisenEngine::RHI::RHIVkGPUProgram::RHIVkGPUProgram(VkDevice device): GPUProgram(), m_VkDevice(device), m_VkShaderModule(VK_NULL_HANDLE)
 {
@@ -34,6 +35,16 @@ bool ArisenEngine::RHI::RHIVkGPUProgram::AttachProgramByteCode(GPUProgramDesc&& 
     m_Stage = desc.stage;
     m_Entry = std::string(desc.entry);
     m_Name = std::string(desc.name);
+
+    // Perform reflection
+    RHIVkSpirvReflectionService reflectionService;
+    if (!reflectionService.Reflect(desc.byteCode, desc.codeSize, m_ReflectionData))
+    {
+        LOG_WARN("[RHIVkGPUProgram::AttachProgramByteCode]: Failed to reflect shader resources for: " + m_Name);
+        // We warn but do not fail, as the shader module is valid. 
+        // Automatic layout generation will likely fail later if reflection failed.
+    }
+    
     return true;
 }
 

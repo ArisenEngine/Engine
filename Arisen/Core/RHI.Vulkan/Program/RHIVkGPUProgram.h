@@ -2,6 +2,7 @@
 #include <vulkan/vulkan_core.h>
 #include "Logger/Logger.h"
 #include "RHI/Program/GPUProgram.h"
+#include "RHI/Program/RHIShaderReflection.h"
 
 namespace ArisenEngine::RHI
 {
@@ -17,12 +18,14 @@ namespace ArisenEngine::RHI
         // TODO:
         UInt32 GetShaderStageCreateFlags() override { return 0; }
         void* GetSpecializationInfo() override { return nullptr; }
+        const RHIShaderReflectionData& GetReflectionData() const { return m_ReflectionData; }
+
     protected:
         void DestroyHandle() override;
         
     private:
-
         VkDevice m_VkDevice;
         VkShaderModule m_VkShaderModule;
+        RHIShaderReflectionData m_ReflectionData;
     };
 }

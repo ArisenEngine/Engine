@@ -258,6 +258,7 @@ public:
             {
                 RHI_PSO_AddProgram(pipelineState, programId);
             }
+            RHI_PSO_BuildDescriptorSetLayout(pipelineState);
 
             RHI_PSO_AddDynamicState(pipelineState, RHI::DYNAMIC_STATE_SCISSOR);
             RHI_PSO_AddDynamicState(pipelineState, RHI::DYNAMIC_STATE_VIEWPORT);
@@ -702,11 +703,9 @@ public:
         auto pipelineManager = RHI_Device_GetPipelineManager(context.device);
         
         auto pipelineState = context.pipelineState;
-        RHI_PSO_ClearDescriptorSetLayoutBindings(pipelineState);
         Containers::Vector<std::shared_ptr<RHI::BufferHandle>> ubos;
         ubos.emplace_back(std::shared_ptr<RHI::BufferHandle>(reinterpret_cast<RHI::BufferHandle*>(context.uniformBuffers[currentIndex]), [](RHI::BufferHandle*){}));
-        RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(pipelineState, 0, 0, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, RHI::SHADER_STAGE_VERTEX_BIT, &ubos);
-        RHI_PSO_BuildDescriptorSetLayout(pipelineState);
+        RHI_PSO_UpdateDescriptorSet_Buffers(pipelineState, 0, 0, &ubos);
         
         // GC / GPU completion polling should be owned by device/queue, not command buffers.
         // We call it at end-of-frame (after present) below.

@@ -67,6 +67,10 @@ namespace ArisenEngine::RHI
         void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
                                                   UInt32 descriptorCount, UInt32 shaderStageFlags,
                                                   const Containers::Vector<BufferView*>&& bufferViews) override;
+
+        void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos) override;
+        void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<std::shared_ptr<BufferHandle>>&& bufferHandles) override;
+        void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<BufferView*>&& texelBufferViews) override;
         
     private:
         
