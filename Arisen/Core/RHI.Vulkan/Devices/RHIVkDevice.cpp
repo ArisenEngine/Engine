@@ -316,6 +316,8 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
     m_GPUPrograms.clear();
     m_CommandBufferPools.clear();
     m_BufferHandles.clear();
+    // Destroy queues before destroying the device to avoid invalid vkQueueWaitIdle calls.
+    m_GraphicsQueue.reset();
     vkDestroyDevice(m_VkDevice, nullptr);
     LOG_DEBUG("## Destroy Vulkan Device ##");
     m_Instance = nullptr;
