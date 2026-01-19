@@ -40,7 +40,18 @@ bool ArisenEngine::RHI::RHIVkBufferHandle::AllocBufferHandle(BufferDescriptor &&
     {
         LOG_FATAL_AND_THROW("[RHIVkBufferHandle::AllocBuffer]: failed to create vertex buffer!");
     }
+
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* registry = vkDevice->GetResourceRegistry();
     
+    m_RHIHandle = registry->Create(RHIDeferredDeleteItem{
+        m_VkBuffer,
+        [vkDevice](void* p) {
+            vkDestroyBuffer(static_cast<VkDevice>(vkDevice->GetHandle()), static_cast<VkBuffer>(p), nullptr);
+            LOG_DEBUG("## Destroy Vulkan Buffer via Registry Deleter ##");
+        }
+    });
+
     return true;
 }
 
@@ -48,8 +59,15 @@ void ArisenEngine::RHI::RHIVkBufferHandle::FreeBufferHandle()
 {
     if (m_VkBuffer != VK_NULL_HANDLE)
     {
-        LOG_DEBUG("## Destroy Vulkan Buffer:"+ m_Name +" ##");
-        vkDestroyBuffer(static_cast<VkDevice>(m_Device->GetHandle()), m_VkBuffer, nullptr);
+        auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+        auto* registry = vkDevice->GetResourceRegistry();
+        
+        // Use a generic graphics queue ticket for manual release.
+        // In real usage, the CommandBuffer will Retain this.
+        registry->Release(m_RHIHandle, RHIQueueType::Graphics, vkDevice->GetCompletedSubmitId());
+        
+        m_VkBuffer = VK_NULL_HANDLE;
+        m_RHIHandle = RHIResourceHandle::Invalid();
     }
 }
 

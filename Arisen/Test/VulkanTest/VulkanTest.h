@@ -521,6 +521,7 @@ public:
     {
         for (int i = 0; i < k_WindowsCount; ++i)
         {
+            RHI_Device_WaitFrameFence(g_RenderContexts[i].device, frameIndex);
             UploadUniformBuffer(g_RenderContexts[i]);
             RecordSubmitPresent(std::move(g_RenderContexts[i]));
         
@@ -604,11 +605,8 @@ public:
         
         RHI_Cmd_End(commandBuffer);
         RHI_Device_Submit(device, commandBuffer, frameIndex);
-        RHI_Device_GraphicQueueWaitIdle(device);
+        // NO NEED to WaitIdle or manual Release for staging buffers; they are now managed by CommandBuffer lifetime tracking.
         RHI_Device_ReleaseCommandBuffer(device, context.commandPoolId, frameIndex, commandBuffer);
-
-        RHI_Device_ReleaseBufferHandle(device, vertexStagingBufferHandle);
-        RHI_Device_ReleaseBufferHandle(device, indicesStagingBufferHandle);
     }
 
     void UploadImage(RenderContext const& context, UInt64 textureSize, void* data, UInt32 texWidth, UInt32 texHeight)
@@ -683,10 +681,8 @@ public:
 
         RHI_Cmd_End(commandBuffer);
         RHI_Device_Submit(device, commandBuffer, frameIndex);
-        RHI_Device_GraphicQueueWaitIdle(device);
+        // Manual wait and release avoided due to CommandBuffer lifetime tracking.
         RHI_Device_ReleaseCommandBuffer(device, context.commandPoolId, frameIndex, commandBuffer);
-        
-        RHI_Device_ReleaseBufferHandle(device, textureStagingBufferHandle);
     }
 
     void AddDynamicState(RHI_PSOHandle pipelineState)
@@ -734,31 +730,9 @@ public:
             }
             auto format = RHI_ImageView_GetFormat(backBufferView);
             
-            RHI_RenderPass_Free(context.renderPass, frameIndex);
-            
-            RHI_RenderPass_AddAttachmentAction(context.renderPass,
-                format, RHI::SAMPLE_COUNT_1_BIT,
-                RHI::ATTACHMENT_LOAD_OP_CLEAR, RHI::ATTACHMENT_STORE_OP_STORE,
-                RHI::ATTACHMENT_LOAD_OP_DONT_CARE, RHI::ATTACHMENT_STORE_OP_DONT_CARE,
-                RHI::IMAGE_LAYOUT_UNDEFINED, RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-            auto subpass = RHI_RenderPass_AddSubPass(context.renderPass);
-
-            {
-                // setup subpass
-                RHI_Subpass_SetDependency(subpass,
-                    RHI_Instance_GetExternalIndex(m_Instance),
-                    RHI::EPipelineStageFlag::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                    0,
-                    RHI::EPipelineStageFlag::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                    RHI::EAccessFlag::ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                    0);
-                RHI_Subpass_SetBindPoint(subpass, RHI::PIPELINE_BIND_POINT_GRAPHICS);
-                RHI_Subpass_AddColorReference(subpass, 0, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-                RHI_Subpass_SetDescriptionFlag(subpass, 0);
-            }
-
-            RHI_RenderPass_Alloc(context.renderPass, frameIndex);
+            // RenderPass and FrameBuffer are now cached and persistent.
+            // No need to call Free/Add/Alloc every frame in normal usage.
+            // Caching logic inside RHI handles the reuse.
 
             RHI_FrameBuffer_SetAttachment(context.frameBuffer, frameIndex, backBufferView, context.renderPass);
 

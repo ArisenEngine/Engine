@@ -67,6 +67,20 @@ extern "C" ENGINE_DLL void RHI_Device_Update(RHI_DeviceHandle device)
     dev->Update();
 }
 
+extern "C" ENGINE_DLL void RHI_Device_WaitFrameFence(RHI_DeviceHandle device, unsigned int frameIndex)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr) return;
+    dev->WaitFrameFence(frameIndex);
+}
+
+extern "C" ENGINE_DLL void RHI_Device_WaitQueueTicket(RHI_DeviceHandle device, unsigned long long ticket)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr) return;
+    dev->WaitQueueTicket(static_cast<RHI::RHIGpuTicket>(ticket));
+}
+
 extern "C" ENGINE_DLL RHI_SamplerHandle RHI_Device_CreateSampler(RHI_DeviceHandle device, const RHI::RHISamplerDesc* desc)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);

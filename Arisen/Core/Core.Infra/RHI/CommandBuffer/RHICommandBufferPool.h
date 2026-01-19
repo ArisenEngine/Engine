@@ -19,44 +19,49 @@ namespace ArisenEngine::RHI
         virtual void* GetHandle() = 0;
         RHICommandBuffer* GetCommandBuffer(UInt32 currentFrameIndex)
         {
+            (void)currentFrameIndex;
             std::lock_guard<std::mutex> lock(m_BuffersMutex);
-            RHICommandBuffer* commandBuffer;
 
-            auto index = currentFrameIndex % m_MaxFramesInFlight;
-
-            // Per-frame reuse safety: wait for the previous submission that used this frame-slot to finish.
-            // Centralized fence ownership lives on the device.
-            if (m_Device)
+            // Fetch any buffer from the free list. 
+            // Buffers only enter m_FreeCommandBuffers via deferred release, so they are guaranteed GPU-safe.
+            if (!m_FreeCommandBuffers.empty())
             {
-                m_Device->WaitFrameFence(currentFrameIndex);
-            }
-
-            if (m_CommandBuffers[index].size() > 0)
-            {
-                commandBuffer = m_CommandBuffers[index].back();
-                m_CommandBuffers[index].pop_back();
-            }
-            else
-            {
-                commandBuffer = CreateCommandBuffer();
+                RHICommandBuffer* commandBuffer = m_FreeCommandBuffers.back();
+                m_FreeCommandBuffers.pop_back();
+                return commandBuffer;
             }
             
-            return commandBuffer;
+            // If empty, always create new to avoid CPU stalls.
+            return CreateCommandBuffer();
         }
         
         void ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBuffer* commandBuffer)
         {
-            std::lock_guard<std::mutex> lock(m_BuffersMutex);
-            auto index = currentFrameIndex % m_MaxFramesInFlight;
-            commandBuffer->Release();
-            m_CommandBuffers[index].emplace_back(commandBuffer);
+            (void)currentFrameIndex;
+            auto ticket = commandBuffer->GetLastSubmitId();
+            
+            // If the GPU is already done with it, recycle immediately.
+            if (m_Device->GetCompletedSubmitId() >= ticket)
+            {
+                std::lock_guard<std::mutex> lock(m_BuffersMutex);
+                commandBuffer->Release();
+                m_FreeCommandBuffers.emplace_back(commandBuffer);
+            }
+            else
+            {
+                // Otherwise, defer recycling until the GPU ticket is reached.
+                m_Device->EnqueueDeferredDestroy(static_cast<UInt32>(ticket), [this, commandBuffer]() {
+                    std::lock_guard<std::mutex> lock(m_BuffersMutex);
+                    commandBuffer->Release();
+                    m_FreeCommandBuffers.emplace_back(commandBuffer);
+                });
+            }
         }
         virtual RHICommandBuffer* CreateCommandBuffer() = 0;
         
     protected:
         RHIDevice* m_Device;
-        // NOTE: should clear by inherent class 
-        Containers::Vector<Containers::Vector<RHICommandBuffer*>> m_CommandBuffers;
+        Containers::Vector<RHICommandBuffer*> m_FreeCommandBuffers;
         UInt32 m_MaxFramesInFlight;
         std::mutex m_BuffersMutex;
     };
@@ -64,6 +69,5 @@ namespace ArisenEngine::RHI
     inline RHICommandBufferPool::RHICommandBufferPool(RHIDevice* device, UInt32 maxFramesInFlight):
         m_Device(device), m_MaxFramesInFlight(maxFramesInFlight)
     {
-        m_CommandBuffers.resize(m_MaxFramesInFlight);
     }
 }

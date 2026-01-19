@@ -14,7 +14,7 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surf
     m_DescriptorPool = new RHIVkDescriptorPool(this);
     m_DeferredDeletion = std::make_unique<RHIVkDeferredDeletion>(m_Instance->GetMaxFramesInFlight());
     m_ResourceRegistry = std::make_unique<RHIResourceRegistry>(m_DeferredDeletion.get());
-    m_GraphicsQueue = std::make_unique<RHIVkQueue>(m_VkDevice, m_VkGraphicQueue, RHIQueueType::Graphics, m_DeferredDeletion.get());
+    m_GraphicsQueue = std::make_unique<RHIVkQueue>(m_VkDevice, m_VkGraphicQueue, RHIQueueType::Graphics, m_DeferredDeletion.get(), m_ResourceRegistry.get());
 
     const UInt32 maxFramesInFlight = m_Instance->GetMaxFramesInFlight();
     m_FrameSync = std::make_unique<FrameSyncTracker>(maxFramesInFlight);
@@ -258,6 +258,14 @@ void ArisenEngine::RHI::RHIVkDevice::WaitFrameFence(UInt32 frameIndex)
         return;
     }
     m_FrameSync->Wait(frameIndex, m_GraphicsQueue.get());
+}
+
+void ArisenEngine::RHI::RHIVkDevice::WaitQueueTicket(RHIGpuTicket ticket)
+{
+    if (m_GraphicsQueue)
+    {
+        m_GraphicsQueue->WaitForTicket(ticket);
+    }
 }
 
 void ArisenEngine::RHI::RHIVkDevice::ResetFrameFence(UInt32 frameIndex)

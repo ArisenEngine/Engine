@@ -1,5 +1,7 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
+#include <map>
+#include <vector>
 
 #include "Common/CommandHeaders.h"
 #include "Logger/Logger.h"
@@ -38,12 +40,15 @@ namespace ArisenEngine::RHI
         UInt32 GetSubPassCount() override;
 
     private:
-        Containers::Vector<VkRenderPass> m_VkRenderPasses;
+        struct RenderPassCacheKey;
+
         VkDevice m_VkDevice;
         Containers::Vector<VkAttachmentDescription> m_AttachmentDescriptions;
         Containers::Vector<VkSubpassDescription> m_SubpassDescriptions;
         Containers::Vector<VkSubpassDependency> m_Dependencies;
-
+        
+        Containers::Vector<VkRenderPass> m_VkRenderPasses;
+        std::map<RenderPassCacheKey, VkRenderPass> m_RenderPassCache;
         Containers::Vector<std::shared_ptr<GPUSubPass>> m_SubpassPool;
         Containers::Vector<std::shared_ptr<GPUSubPass>> m_SubpassesToDispatch;
     };

@@ -1,6 +1,23 @@
-﻿#include "RHIVkFrameBuffer.h"
-#include "Logger/Logger.h"
-#include "RHI/Memory/ImageView.h"
+﻿#include "RHI/Memory/ImageView.h"
+#include "RHI/Program/GPURenderPass.h"
+#include <tuple>
+
+namespace ArisenEngine::RHI {
+
+struct FramebufferCacheKey {
+    VkRenderPass renderPass;
+    std::vector<VkImageView> attachments;
+    uint32_t width;
+    uint32_t height;
+    uint32_t layers;
+
+    bool operator<(const FramebufferCacheKey& other) const {
+        return std::tie(renderPass, attachments, width, height, layers) <
+               std::tie(other.renderPass, other.attachments, other.width, other.height, other.layers);
+    }
+};
+
+} // namespace ArisenEngine::RHI
 
 ArisenEngine::RHI::RHIVkFrameBuffer::RHIVkFrameBuffer(VkDevice device, UInt32 maxFramesInFlight): FrameBuffer(maxFramesInFlight), m_VkDevice(device)
 {
@@ -24,28 +41,57 @@ void* ArisenEngine::RHI::RHIVkFrameBuffer::GetHandle(UInt32 currentFrameIndex)
 
 void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachment(UInt32 frameIndex, ImageView* imageView, GPURenderPass* renderPass)
 {
-    // TODO: use cache?
-    FreeFrameBuffer(frameIndex);
+    SetAttachments(frameIndex, { imageView }, renderPass);
+}
 
-    m_ImageView = imageView;
+void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachments(UInt32 frameIndex, const Containers::Vector<ImageView*>& imageViews, GPURenderPass* renderPass)
+{
+    if (imageViews.empty()) return;
+
+    m_ImageView = imageViews[0]; // Track primary for legacy GetAttachFormat
     
-    VkFramebufferCreateInfo createInfo {};
-    createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    createInfo.renderPass = static_cast<VkRenderPass>(renderPass->GetHandle(frameIndex));
-    createInfo.attachmentCount = 1;
-    createInfo.pAttachments = static_cast<const VkImageView*>(imageView->GetViewPointer());
-    createInfo.width = imageView->GetWidth();
-    createInfo.height = imageView->GetHeight();
-    createInfo.layers = imageView->GetLayerCount();
-
-    if (vkCreateFramebuffer(m_VkDevice, &createInfo, nullptr, &m_VkFrameBuffers[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS)
+    std::vector<VkImageView> vkViews;
+    for (auto* iv : imageViews)
     {
-        LOG_FATAL_AND_THROW("[RHIVkFrameBuffer::SetAttachment]: failed to create framebuffer!");
+        vkViews.push_back(*static_cast<const VkImageView*>(iv->GetViewPointer()));
     }
 
-    LOG_DEBUG("[RHIVkFrameBuffer::SetAttachment]: create vulkan frame buffer.");
-    m_RenderArea.height = imageView->GetHeight();
-    m_RenderArea.width = imageView->GetWidth();
+    FramebufferCacheKey key;
+    key.renderPass = static_cast<VkRenderPass>(renderPass->GetHandle(frameIndex));
+    key.attachments = vkViews;
+    key.width = imageViews[0]->GetWidth();
+    key.height = imageViews[0]->GetHeight();
+    key.layers = imageViews[0]->GetLayerCount();
+
+    auto it = m_FramebufferCache.find(key);
+    if (it != m_FramebufferCache.end())
+    {
+        m_VkFrameBuffers[frameIndex % m_MaxFramesInFlight] = it->second;
+    }
+    else
+    {
+        VkFramebufferCreateInfo createInfo {};
+        createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        createInfo.renderPass = key.renderPass;
+        createInfo.attachmentCount = static_cast<uint32_t>(vkViews.size());
+        createInfo.pAttachments = vkViews.data();
+        createInfo.width = key.width;
+        createInfo.height = key.height;
+        createInfo.layers = key.layers;
+
+        VkFramebuffer newFb = VK_NULL_HANDLE;
+        if (vkCreateFramebuffer(m_VkDevice, &createInfo, nullptr, &newFb) != VK_SUCCESS)
+        {
+            LOG_FATAL_AND_THROW("[RHIVkFrameBuffer::SetAttachments]: failed to create framebuffer!");
+        }
+
+        m_VkFrameBuffers[frameIndex % m_MaxFramesInFlight] = newFb;
+        m_FramebufferCache[key] = newFb;
+        LOG_DEBUG("[RHIVkFrameBuffer::SetAttachments]: New Vulkan FrameBuffer Cached.");
+    }
+
+    m_RenderArea.height = key.height;
+    m_RenderArea.width = key.width;
     m_RenderArea.offsetX = 0;
     m_RenderArea.offsetY = 0;
 }
@@ -58,26 +104,23 @@ ArisenEngine::RHI::EFormat ArisenEngine::RHI::RHIVkFrameBuffer::GetAttachFormat(
 
 void ArisenEngine::RHI::RHIVkFrameBuffer::FreeFrameBuffer(UInt32 currentFrameIndex)
 {
-    if(m_VkFrameBuffers[currentFrameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE)
-    {
-        vkDestroyFramebuffer(m_VkDevice, m_VkFrameBuffers[currentFrameIndex % m_MaxFramesInFlight], nullptr);
-        LOG_DEBUG("## Destroy Vulkan Frame Buffer ##");
-        m_VkFrameBuffers[currentFrameIndex % m_MaxFramesInFlight] = VK_NULL_HANDLE;
-    }
-
+    // Caching means we don't destroy per-frame.
+    // Just clear the working reference.
     m_ImageView = nullptr;
+    m_VkFrameBuffers[currentFrameIndex % m_MaxFramesInFlight] = VK_NULL_HANDLE;
 }
 
 void ArisenEngine::RHI::RHIVkFrameBuffer::FreeAllFrameBuffers()
 {
-    for (int i = 0; i < m_VkFrameBuffers.size(); ++i)
+    for (auto const& [key, fb] : m_FramebufferCache)
     {
-        if(m_VkFrameBuffers[i] != VK_NULL_HANDLE)
+        if (fb != VK_NULL_HANDLE)
         {
-            vkDestroyFramebuffer(m_VkDevice, m_VkFrameBuffers[i], nullptr);
-            m_VkFrameBuffers[i] = VK_NULL_HANDLE;
+            vkDestroyFramebuffer(m_VkDevice, fb, nullptr);
         }
     }
-    LOG_DEBUG("## Destroy All Vulkan Frame Buffers ##");
+    m_FramebufferCache.clear();
+    std::fill(m_VkFrameBuffers.begin(), m_VkFrameBuffers.end(), (VkFramebuffer)VK_NULL_HANDLE);
+    LOG_DEBUG("## Destroy All Cached Vulkan Frame Buffers ##");
     m_VkFrameBuffers.clear();
 }
