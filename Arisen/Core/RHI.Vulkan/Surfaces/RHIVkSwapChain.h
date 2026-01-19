@@ -35,7 +35,7 @@ namespace ArisenEngine::RHI
 
         Containers::Vector<std::unique_ptr<RHIVkSemaphore>> m_ImageAvailableSemaphores;
         Containers::Vector<std::unique_ptr<RHIVkSemaphore>> m_RenderFinishSemaphores;
-        uint32_t m_ImageIndex;
+        Containers::Vector<uint32_t> m_AcquiredImageIndices;
         VkQueue m_VkPresentQueue;
     };
 }

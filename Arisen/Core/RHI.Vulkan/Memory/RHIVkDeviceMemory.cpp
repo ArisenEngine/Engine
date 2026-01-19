@@ -1,7 +1,19 @@
 ﻿#include "RHIVkDeviceMemory.h"
 
 #include "Logger/Logger.h"
-#include "RHI/Devices/RHIDevice.h"
+#include "../Devices/RHIVkDevice.h"
+
+namespace ArisenEngine::RHI {
+    struct DeferredVkMemory {
+        VkDevice device;
+        VkDeviceMemory memory;
+        ~DeferredVkMemory() {
+            if (device != VK_NULL_HANDLE && memory != VK_NULL_HANDLE) {
+                vkFreeMemory(device, memory, nullptr);
+            }
+        }
+    };
+}
 
 ArisenEngine::RHI::RHIVkDeviceMemory::RHIVkDeviceMemory(RHIDevice* device, VkBuffer buffer):
 m_VkDeviceMemory(VK_NULL_HANDLE), m_Device(device), m_VkBuffer(buffer)
@@ -71,13 +83,17 @@ bool ArisenEngine::RHI::RHIVkDeviceMemory::AllocDeviceMemory(UInt32 memoryProper
 
 void ArisenEngine::RHI::RHIVkDeviceMemory::FreeDeviceMemory()
 {
-    if (m_VkDeviceMemory == VK_NULL_HANDLE)
+    if (m_VkDeviceMemory != VK_NULL_HANDLE)
     {
-        return;
+        auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+        auto* registry = vkDevice->GetResourceRegistry();
+        
+        LOG_DEBUG("## Release Vulkan Device Memory ##");
+        registry->Release(m_RHIHandle, RHIQueueType::Graphics, vkDevice->GetCompletedSubmitId());
+        
+        m_VkDeviceMemory = VK_NULL_HANDLE;
+        m_RHIHandle = RHIResourceHandle::Invalid();
     }
-    LOG_DEBUG("## Destroy Vulkan Device Memory ##");
-    vkFreeMemory(static_cast<VkDevice>(m_Device->GetHandle()), m_VkDeviceMemory, nullptr);
-    m_VkDeviceMemory = VK_NULL_HANDLE;
 }
 
 void* ArisenEngine::RHI::RHIVkDeviceMemory::GetHandle() const
@@ -103,6 +119,16 @@ void ArisenEngine::RHI::RHIVkDeviceMemory::AllocMemory(VkMemoryRequirements&& me
     if (vkAllocateMemory(static_cast<VkDevice>(m_Device->GetHandle()),
         &allocInfo, nullptr, &m_VkDeviceMemory) != VK_SUCCESS)
     {
-        LOG_FATAL_AND_THROW("[RHIVkDeviceMemory::AllocDeviceMemory]: failed to allocate vertex buffer memory!");
+        LOG_FATAL_AND_THROW("[RHIVkDeviceMemory::AllocDeviceMemory]: failed to allocate device memory!");
     }
+
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* registry = vkDevice->GetResourceRegistry();
+
+    auto* deferred = new DeferredVkMemory{
+        static_cast<VkDevice>(vkDevice->GetHandle()),
+        m_VkDeviceMemory
+    };
+
+    m_RHIHandle = registry->Create(MakeDeferredDeleteItem(deferred));
 }

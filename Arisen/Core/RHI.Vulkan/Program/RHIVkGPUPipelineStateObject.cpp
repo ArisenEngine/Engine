@@ -223,6 +223,10 @@ ArisenEngine::RHI::RHIVkGPUPipelineStateObject::GetDescriptorUpdateInfos(
     }
 
     LOG_FATAL_AND_THROW("[RHIVkGPUPipelineStateObject::GetDescriptorUpdateInfos] layout index: " + std::to_string(layoutIndex) + " is not exist.");
+    
+    // Satisfy compiler warning; execution will not reach here.
+    static const ArisenEngine::Containers::Map<ArisenEngine::UInt32, ArisenEngine::Containers::UnorderedMap<ArisenEngine::RHI::EDescriptorType, ArisenEngine::RHI::RHIDescriptorUpdateInfo>> dummy;
+    return dummy;
 }
 
 

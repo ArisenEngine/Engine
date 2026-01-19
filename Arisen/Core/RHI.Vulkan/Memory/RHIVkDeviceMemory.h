@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "RHI/Memory/DeviceMemory.h"
 #include "vulkan_core.h"
+#include "RHI/Utils/RHIResourceHandle.h"
 
 namespace ArisenEngine::RHI
 {
@@ -20,7 +21,10 @@ namespace ArisenEngine::RHI
         void* GetHandle() const override;
 
         void MemoryCopy(void const* src, const UInt32 offset, const UInt32 size) override;
-
+        
+        void SetRHIHandle(RHIResourceHandle h) { m_RHIHandle = h; }
+        RHIResourceHandle GetRHIHandle() const { return m_RHIHandle; }
+        
     private:
 
         void AllocMemory(VkMemoryRequirements&& memRequirements, UInt32 memoryPropertiesBits);
@@ -31,5 +35,6 @@ namespace ArisenEngine::RHI
         RHIDevice* m_Device;
         std::optional<VkBuffer> m_VkBuffer;
         std::optional<VkImage> m_VkImage;
+        RHIResourceHandle m_RHIHandle;
     };
 }

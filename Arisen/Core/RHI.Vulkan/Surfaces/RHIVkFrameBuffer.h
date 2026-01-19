@@ -5,6 +5,7 @@
 #include "RHI/Surfaces/FrameBuffer.h"
 #include <map>
 #include <vector>
+#include <tuple>
 
 namespace ArisenEngine::RHI
 {
@@ -26,7 +27,19 @@ namespace ArisenEngine::RHI
         void FreeFrameBuffer(UInt32 currentFrameIndex);
         void FreeAllFrameBuffers();
 
-        struct FramebufferCacheKey;
+    private:
+        struct FramebufferCacheKey {
+            VkRenderPass renderPass;
+            Containers::Vector<VkImageView> attachments;
+            UInt32 width;
+            UInt32 height;
+            UInt32 layers;
+
+            bool operator<(const FramebufferCacheKey& other) const {
+                return std::tie(renderPass, attachments, width, height, layers) <
+                       std::tie(other.renderPass, other.attachments, other.width, other.height, other.layers);
+            }
+        };
 
         Containers::Vector<VkFramebuffer> m_VkFrameBuffers;
         VkDevice m_VkDevice;

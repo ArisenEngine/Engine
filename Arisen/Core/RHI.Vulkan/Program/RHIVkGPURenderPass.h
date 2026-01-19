@@ -40,7 +40,17 @@ namespace ArisenEngine::RHI
         UInt32 GetSubPassCount() override;
 
     private:
-        struct RenderPassCacheKey;
+        struct RenderPassCacheKey {
+            Containers::Vector<VkAttachmentDescription> attachments;
+            Containers::Vector<VkSubpassDescription> subpasses;
+            Containers::Vector<VkSubpassDependency> dependencies;
+
+            bool operator<(const RenderPassCacheKey& other) const {
+                if (attachments.size() != other.attachments.size()) return attachments.size() < other.attachments.size();
+                if (subpasses.size() != other.subpasses.size()) return subpasses.size() < other.subpasses.size();
+                return dependencies.size() < other.dependencies.size();
+            }
+        };
 
         VkDevice m_VkDevice;
         Containers::Vector<VkAttachmentDescription> m_AttachmentDescriptions;

@@ -6,6 +6,8 @@
 namespace ArisenEngine::RHI
 {
     class RHIDevice;
+    class RHIVkImageView;
+    class RHIVkDevice;
 
     class RHIVkImageHandle final : public ImageHandle
     {
@@ -29,7 +31,6 @@ namespace ArisenEngine::RHI
         
         bool m_NeedDestroy {false};
         VkImage m_VkImage { VK_NULL_HANDLE };
-        RHIVkImageView* m_MemoryView {nullptr};
         VkDevice m_VKDevice;
         RHIDevice* m_Device { nullptr };
         RHIResourceHandle m_RHIHandle;

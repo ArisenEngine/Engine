@@ -65,6 +65,7 @@ struct RenderContext
     RHI_ImageHandle textureHandle;
     unsigned int commandPoolId;
     RHI_DescriptorPoolHandle descriptorPool;
+    RHI_SubpassHandle subpass;
     RHI_PSOHandle pipelineState;
     Containers::Vector<UInt32> gpuPrograms;
     Containers::Vector<UInt32> descriptorPoolIds;
@@ -224,6 +225,27 @@ public:
             g_RenderContexts[i].device = RHI_Instance_GetLogicalDevice(m_Instance, g_RenderContexts[i].windowId);
             g_RenderContexts[i].commandPoolId = RHI_Device_CreateCommandBufferPool(g_RenderContexts[i].device);
             g_RenderContexts[i].renderPass = RHI_Device_GetRenderPass(g_RenderContexts[i].device);
+            {
+                // Configure RenderPass
+                RHI_RenderPass_AddAttachmentAction(g_RenderContexts[i].renderPass, 
+                    RHI::EFormat::FORMAT_B8G8R8A8_SRGB, // Typical swapchain format, though should ideally query it
+                    RHI::SAMPLE_COUNT_1_BIT,
+                    RHI::ATTACHMENT_LOAD_OP_CLEAR,
+                    RHI::ATTACHMENT_STORE_OP_STORE,
+                    RHI::ATTACHMENT_LOAD_OP_DONT_CARE,
+                    RHI::ATTACHMENT_STORE_OP_DONT_CARE,
+                    RHI::IMAGE_LAYOUT_UNDEFINED,
+                    RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+                auto subpass = RHI_RenderPass_AddSubPass(g_RenderContexts[i].renderPass);
+                RHI_Subpass_SetBindPoint(subpass, RHI::PIPELINE_BIND_POINT_GRAPHICS);
+                RHI_Subpass_AddColorReference(subpass, 0, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+                RHI_Subpass_SetDependency(subpass, VK_SUBPASS_EXTERNAL, 
+                    RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0,
+                    RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, RHI::ACCESS_COLOR_ATTACHMENT_WRITE_BIT, 0);
+                g_RenderContexts[i].subpass = subpass;
+            }
+
             g_RenderContexts[i].frameBuffer = RHI_Device_GetFrameBuffer(g_RenderContexts[i].device);
             g_RenderContexts[i].vertexBufferHandle = RHI_Device_GetBufferHandle(g_RenderContexts[i].device, "Vertex Buffer");
             g_RenderContexts[i].indicesBufferHandle = RHI_Device_GetBufferHandle(g_RenderContexts[i].device, "Indices Buffer");
@@ -523,7 +545,7 @@ public:
         {
             RHI_Device_WaitFrameFence(g_RenderContexts[i].device, frameIndex);
             UploadUniformBuffer(g_RenderContexts[i]);
-            RecordSubmitPresent(std::move(g_RenderContexts[i]));
+            RecordSubmitPresent(g_RenderContexts[i]);
         
             if (g_RenderContexts[i].bShouldResize)
             {
@@ -605,7 +627,11 @@ public:
         
         RHI_Cmd_End(commandBuffer);
         RHI_Device_Submit(device, commandBuffer, frameIndex);
-        // NO NEED to WaitIdle or manual Release for staging buffers; they are now managed by CommandBuffer lifetime tracking.
+        
+        // Release staging buffers immediately; they will be destroyed ONLY after GPU is done.
+        RHI_Device_ReleaseBufferHandle(device, vertexStagingBufferHandle);
+        RHI_Device_ReleaseBufferHandle(device, indicesStagingBufferHandle);
+
         RHI_Device_ReleaseCommandBuffer(device, context.commandPoolId, frameIndex, commandBuffer);
     }
 
@@ -681,7 +707,10 @@ public:
 
         RHI_Cmd_End(commandBuffer);
         RHI_Device_Submit(device, commandBuffer, frameIndex);
-        // Manual wait and release avoided due to CommandBuffer lifetime tracking.
+
+        // Release staging buffer immediately; it will be destroyed ONLY after GPU is done.
+        RHI_Device_ReleaseBufferHandle(device, textureStagingBufferHandle);
+
         RHI_Device_ReleaseCommandBuffer(device, context.commandPoolId, frameIndex, commandBuffer);
     }
 
@@ -691,7 +720,7 @@ public:
         RHI_PSO_AddDynamicState(pipelineState, RHI::DYNAMIC_STATE_VIEWPORT);
     }
     
-    void RecordSubmitPresent(RenderContext&& context)
+    void RecordSubmitPresent(RenderContext& context)
     {
         auto currentIndex = frameIndex % m_MaxFramesInFlight;
         
@@ -733,6 +762,9 @@ public:
             // RenderPass and FrameBuffer are now cached and persistent.
             // No need to call Free/Add/Alloc every frame in normal usage.
             // Caching logic inside RHI handles the reuse.
+            
+            // Allocate the render pass for the current frame if not already done.
+            RHI_RenderPass_Alloc(context.renderPass, frameIndex);
 
             RHI_FrameBuffer_SetAttachment(context.frameBuffer, frameIndex, backBufferView, context.renderPass);
 
@@ -752,7 +784,7 @@ public:
                         // Pipeline State Object
                         auto pipeline = RHI_PipelineManager_GetGraphicsPipeline(pipelineManager, pipelineState);
 
-                        RHI_Pipeline_AllocGraphics(pipeline, frameIndex, subpass);
+                        RHI_Pipeline_AllocGraphics(pipeline, frameIndex, context.subpass);
                         RHI_Cmd_BindPipeline(commandBuffer, frameIndex, pipeline);
                     }
 

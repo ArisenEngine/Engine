@@ -35,6 +35,18 @@ namespace ArisenEngine::RHI
             return CreateCommandBuffer();
         }
         
+        struct CommandBufferRecycler {
+            RHICommandBufferPool* pool;
+            RHICommandBuffer* buffer;
+            ~CommandBufferRecycler() {
+                if (pool && buffer) {
+                    std::lock_guard<std::mutex> lock(pool->m_BuffersMutex);
+                    buffer->Release();
+                    pool->m_FreeCommandBuffers.emplace_back(buffer);
+                }
+            }
+        };
+
         void ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBuffer* commandBuffer)
         {
             (void)currentFrameIndex;
@@ -50,11 +62,8 @@ namespace ArisenEngine::RHI
             else
             {
                 // Otherwise, defer recycling until the GPU ticket is reached.
-                m_Device->EnqueueDeferredDestroy(static_cast<UInt32>(ticket), [this, commandBuffer]() {
-                    std::lock_guard<std::mutex> lock(m_BuffersMutex);
-                    commandBuffer->Release();
-                    m_FreeCommandBuffers.emplace_back(commandBuffer);
-                });
+                m_Device->DeferredDelete(RHIQueueType::Graphics, static_cast<RHIGpuTicket>(ticket), 
+                    MakeDeferredDeleteItem(new CommandBufferRecycler{this, commandBuffer}));
             }
         }
         virtual RHICommandBuffer* CreateCommandBuffer() = 0;
