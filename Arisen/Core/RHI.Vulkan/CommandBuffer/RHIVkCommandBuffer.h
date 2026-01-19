@@ -1,6 +1,7 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
 #include "../Surfaces/RHIVkFrameBuffer.h"
+#include "RHI/Utils/RHIResourceHandle.h"
 #include "RHI/CommandBuffer/RHICommandBuffer.h"
 #include "RHI/Enums/Pipeline/EIndexType.h"
 #include "RHI/Enums/Subpass/EDependencyFlag.h"
@@ -111,6 +112,15 @@ namespace  ArisenEngine::RHI
             UInt32 poolId { 0 };
         };
         Containers::Vector<TrackedPoolUse> m_TrackedDescriptorPools;
+        Containers::Vector<RHIResourceHandle> m_TrackedResourceHandles;
+
+    private:
+        void CaptureResource(BufferHandle const* buffer);
+        void CaptureResource(ImageHandle const* image);
+
+    public:
+        const Containers::Vector<RHIResourceHandle>& GetTrackedResourceHandles() const { return m_TrackedResourceHandles; }
+        void ClearTrackedResourceHandles() { m_TrackedResourceHandles.clear(); }
 
     public:
         const Containers::Vector<TrackedPoolUse>& GetTrackedDescriptorPools() const { return m_TrackedDescriptorPools; }

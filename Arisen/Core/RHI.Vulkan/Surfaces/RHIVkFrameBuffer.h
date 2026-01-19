@@ -3,6 +3,8 @@
 
 #include "Logger/Logger.h"
 #include "RHI/Surfaces/FrameBuffer.h"
+#include <map>
+#include <vector>
 
 namespace ArisenEngine::RHI
 {
@@ -15,12 +17,20 @@ namespace ArisenEngine::RHI
 
         void* GetHandle(UInt32 currentFrameIndex) override;
         void SetAttachment(UInt32 frameIndex, ImageView* imageView, GPURenderPass* renderPass) override;
+        
+        // Extended for multi-attachment caching
+        void SetAttachments(UInt32 frameIndex, const Containers::Vector<ImageView*>& imageViews, GPURenderPass* renderPass);
+
         EFormat GetAttachFormat() override;
     private:
         void FreeFrameBuffer(UInt32 currentFrameIndex);
         void FreeAllFrameBuffers();
+
+        struct FramebufferCacheKey;
+
         Containers::Vector<VkFramebuffer> m_VkFrameBuffers;
         VkDevice m_VkDevice;
         ImageView* m_ImageView {nullptr};
+        std::map<FramebufferCacheKey, VkFramebuffer> m_FramebufferCache;
     };
 }

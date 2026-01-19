@@ -44,7 +44,16 @@ void ArisenEngine::RHI::RHIVkImageHandle::AllocHandle(ImageDescriptor&& desc)
         LOG_FATAL_AND_THROW("[RHIVkImageHandle::AllocHandle] failed to create image!");
     }
 
-    
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* registry = vkDevice->GetResourceRegistry();
+
+    m_RHIHandle = registry->Create(RHIDeferredDeleteItem{
+        m_VkImage,
+        [vkDevice](void* p) {
+            vkDestroyImage(static_cast<VkDevice>(vkDevice->GetHandle()), static_cast<VkImage>(p), nullptr);
+            LOG_DEBUG("## Destroy Vulkan Image via Registry Deleter ##");
+        }
+    });
 }
 
 void ArisenEngine::RHI::RHIVkImageHandle::FreeHandle()
@@ -53,9 +62,14 @@ void ArisenEngine::RHI::RHIVkImageHandle::FreeHandle()
     {
         return;
     }
-    vkDestroyImage(m_VKDevice, m_VkImage, nullptr);
-    LOG_DEBUG("## Destroy Vulkan Image:" + m_Name +" ##");
+    
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* registry = vkDevice->GetResourceRegistry();
+
+    registry->Release(m_RHIHandle, RHIQueueType::Graphics, vkDevice->GetCompletedSubmitId());
+
     m_VkImage = VK_NULL_HANDLE;
+    m_RHIHandle = RHIResourceHandle::Invalid();
 }
 
 ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkImageHandle::AddImageView(ImageViewDesc&& desc)

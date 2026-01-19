@@ -1,12 +1,12 @@
 #include "RHIVkQueue.h"
-
+#include "../Devices/RHIVkDevice.h"
 #include "Logger/Logger.h"
 #include "RHI/CommandBuffer/RHICommandBuffer.h"
 #include "../CommandBuffer/RHIVkCommandBuffer.h"
 #include "../Program/RHIVkDescriptorPool.h"
 
-ArisenEngine::RHI::RHIVkQueue::RHIVkQueue(VkDevice device, VkQueue queue, RHIQueueType type, IRHIDeferredDeletionQueue* deferredDeletionQueue)
-    : m_Device(device), m_Queue(queue), m_Type(type), m_DeferredDeletion(deferredDeletionQueue)
+ArisenEngine::RHI::RHIVkQueue::RHIVkQueue(VkDevice device, VkQueue queue, RHIQueueType type, IRHIDeferredDeletionQueue* deferredDeletionQueue, RHIResourceRegistry* resourceRegistry)
+    : m_Device(device), m_Queue(queue), m_Type(type), m_DeferredDeletion(deferredDeletionQueue), m_ResourceRegistry(resourceRegistry)
 {
     CreateTimelineSemaphore();
 }
@@ -114,9 +114,22 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     for (const auto& t : vkCmd->GetTrackedDescriptorPools())
     {
         auto* p = static_cast<RHIVkDescriptorPool*>(t.pool);
-        if (p) p->MarkPoolUsed(t.poolId, m_Type, submitId);
+        p->MarkPoolUsed(t.poolId, m_Type, submitId);
     }
     vkCmd->ClearTrackedDescriptorPools();
+
+    // Automatically release references captured by the CommandBuffer.
+    // They will be destroyed only when the GPU work (ticket) is completed.
+    if (m_ResourceRegistry)
+    {
+        for (auto h : vkCmd->GetTrackedResourceHandles())
+        {
+            m_ResourceRegistry->Release(h, m_Type, submitId);
+        }
+    }
+    vkCmd->ClearTrackedResourceHandles();
+    vkCmd->SetLastSubmitId(submitId);
+
     return submitId;
 }
 
@@ -146,10 +159,13 @@ void ArisenEngine::RHI::RHIVkQueue::WaitForTicket(RHIGpuTicket ticket)
         return;
     }
 
+    Update();
+    
     if (GetCompletedTicket() >= ticket)
     {
         return;
     }
+
     if (m_TimelineSemaphore == VK_NULL_HANDLE)
     {
         return;

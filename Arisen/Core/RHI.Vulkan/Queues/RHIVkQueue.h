@@ -8,6 +8,7 @@
 
 #include <atomic>
 #include <mutex>
+#include "RHI/Utils/RHIResourceRegistry.h"
 
 namespace ArisenEngine::RHI
 {
@@ -18,7 +19,7 @@ namespace ArisenEngine::RHI
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkQueue)
 
-        RHIVkQueue(VkDevice device, VkQueue queue, RHIQueueType type, IRHIDeferredDeletionQueue* deferredDeletionQueue);
+        RHIVkQueue(VkDevice device, VkQueue queue, RHIQueueType type, IRHIDeferredDeletionQueue* deferredDeletionQueue, RHIResourceRegistry* resourceRegistry);
         ~RHIVkQueue() noexcept;
 
         RHIQueueType GetType() const override { return m_Type; }
@@ -51,6 +52,7 @@ namespace ArisenEngine::RHI
         VkQueue m_Queue { VK_NULL_HANDLE };
         RHIQueueType m_Type { RHIQueueType::Graphics };
         IRHIDeferredDeletionQueue* m_DeferredDeletion { nullptr }; // not owned
+        RHIResourceRegistry* m_ResourceRegistry { nullptr }; // not owned
 
         std::mutex m_Mutex;
         VkSemaphore m_TimelineSemaphore { VK_NULL_HANDLE };

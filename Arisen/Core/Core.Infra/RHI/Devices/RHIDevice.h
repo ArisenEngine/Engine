@@ -75,6 +75,9 @@ namespace ArisenEngine::RHI
         // Default: no-op.
         virtual void Update() {}
 
+        virtual RHIGpuTicket GetCompletedSubmitId() const { return 0; }
+        virtual void WaitQueueTicket(RHIGpuTicket ticket) { (void)ticket; }
+
         // Optional: expose backend queues (graphics/compute/transfer/present).
         // Backends may return nullptr for unsupported queues.
         virtual IRHIQueue* GetQueue(RHIQueueType type) { (void)type; return nullptr; }

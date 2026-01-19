@@ -107,9 +107,9 @@ namespace ArisenEngine::RHI
         // Modern resource system entry point
         RHIResourceRegistry* GetResourceRegistry() const { return m_ResourceRegistry.get(); }
         UInt32 GetCurrentFrameIndex() const { return m_CurrentFrameIndex.load(std::memory_order_acquire); }
-        RHIGpuTicket GetCompletedSubmitId() const;
-
+        RHIGpuTicket GetCompletedSubmitId() const override;
         void Update() override;
+        void WaitQueueTicket(RHIGpuTicket ticket) override;
 
     };
 }

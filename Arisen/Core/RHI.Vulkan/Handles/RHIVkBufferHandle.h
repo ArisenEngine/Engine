@@ -1,6 +1,7 @@
 #pragma once
 #include "../CommandBuffer/RHIVkCommandBuffer.h"
 #include "RHI/Handles/BufferHandle.h"
+#include "RHI/Utils/RHIResourceHandle.h"
 
 namespace ArisenEngine::RHI
 {
@@ -22,6 +23,11 @@ namespace ArisenEngine::RHI
         
         VkBuffer m_VkBuffer { VK_NULL_HANDLE };
         RHIDevice* m_Device;
+        RHIResourceHandle m_RHIHandle;
+
+    public:
+        void SetRHIHandle(RHIResourceHandle h) { m_RHIHandle = h; }
+        RHIResourceHandle GetRHIHandle() const { return m_RHIHandle; }
         
     };
 }
