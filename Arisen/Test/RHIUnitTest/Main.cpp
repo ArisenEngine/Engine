@@ -48,7 +48,7 @@ static void ArisenOnSignal(int)
 }
 
 #endif
-#include "VulkanTest.h"
+#include "RHIUnitTest.h"
 
 #elif(TEST_ENGINE)
 

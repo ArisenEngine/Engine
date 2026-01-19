@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Collect code files
 collect_sources(ALL_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(ASSETS_DIR "${CMAKE_SOURCE_DIR}/Test/VulkanTest/Assets")
-set(SHADER_DIR "${CMAKE_SOURCE_DIR}/Test/VulkanTest/Shader")
+set(ASSETS_DIR "${CMAKE_SOURCE_DIR}/Test/RHIUnitTest/Assets")
+set(SHADER_DIR "${CMAKE_SOURCE_DIR}/Test/RHIUnitTest/Shader")
 
 get_property(OUTPUT_DIR GLOBAL PROPERTY GLOBAL_OUTPUT_DIR)
 set(ASSETS_DEST "${OUTPUT_DIR}/Assets")
@@ -20,17 +20,17 @@ add_custom_target(CopyAll
     USES_TERMINAL
 )
 
-add_executable(VulkanTest
+add_executable(RHIUnitTest
     ${ALL_SOURCE_FILES}
 )
 
-add_dependencies(VulkanTest CopyAll)
+add_dependencies(RHIUnitTest CopyAll)
 
-target_include_directories(VulkanTest PUBLIC
+target_include_directories(RHIUnitTest PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_include_directories(VulkanTest PRIVATE
+target_include_directories(RHIUnitTest PRIVATE
     ${CMAKE_SOURCE_DIR}/3rdparty/image
     ${CMAKE_SOURCE_DIR}/3rdparty/vulkan/Include
     ${CMAKE_SOURCE_DIR}/Tools/Profiler
@@ -41,8 +41,8 @@ target_include_directories(VulkanTest PRIVATE
     )  
 
 # 设置为 Windows GUI 子系统
-set_target_properties(VulkanTest PROPERTIES
+set_target_properties(RHIUnitTest PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
-target_link_libraries(VulkanTest PRIVATE Profiler Core.Infra Core.Debugger Core.Platform RHI.Vulkan NativeEngine)
+target_link_libraries(RHIUnitTest PRIVATE Profiler Core.Infra Core.Debugger Core.Platform RHI.Vulkan NativeEngine)

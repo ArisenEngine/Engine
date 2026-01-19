@@ -156,15 +156,15 @@ add_subdirectory(Core/RHI.DX12)
 add_subdirectory(Core/RHI.Vulkan)
 add_subdirectory(Engine/NativeEngine)
 
-if("${TARGET}" STREQUAL "VulkanTest")
-add_subdirectory(Test/VulkanTest)
+if("${TARGET}" STREQUAL "RHIUnitTest")
+    add_subdirectory(Test/RHIUnitTest)
 endif()
 
 if("${TARGET}" STREQUAL "DXTest")
 add_subdirectory(Test/DXTest)
 endif()
 
-if(NOT "${TARGET}" STREQUAL "VulkanTest" AND NOT "${TARGET}" STREQUAL "DXTest")
+if(NOT "${TARGET}" STREQUAL "RHIUnitTest" AND NOT "${TARGET}" STREQUAL "DXTest")
 
     # Setup .NET paths (BindingGenerator, AutoBinding, Engine)
 set(BINDING_GENERATOR_DIR ${CMAKE_SOURCE_DIR}/BindingGenerator)
@@ -281,7 +281,7 @@ if(${TARGET} STREQUAL "Editor")
 elseif(${TARGET} STREQUAL "WindowsPlayerSupport")
     # Add your platform player support setup here
 
-elseif(${TARGET} STREQUAL "VulkanTest" OR ${TARGET} STREQUAL "DXTest")    
+elseif(${TARGET} STREQUAL "RHIUnitTest" OR ${TARGET} STREQUAL "DXTest")    
 
 elseif(${TARGET} STREQUAL "ArisenEngineTest")    
 

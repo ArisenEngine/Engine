@@ -2,7 +2,7 @@
 setlocal EnableExtensions enabledelayedexpansion
 
 REM ============================================================================
-REM ArisenEngine - Generate and Build VulkanTest (VS multi-config solution)
+REM ArisenEngine - Generate and Build RHIUnitTest (VS multi-config solution)
 REM ----------------------------------------------------------------------------
 REM Usage:
 REM   generate_vulkan_test_all.bat
@@ -30,7 +30,7 @@ set "STEP_INDEX=0"
 set "STEP_TOTAL=4"
 
 REM === 配置部分 ===
-set TARGET=VulkanTest
+set TARGET=RHIUnitTest
 set PLATFORM=Windows
 
 REM 根目录假设是 setup-env.bat 的上上级目录，按你项目结构改
@@ -46,13 +46,13 @@ echo CMake Program: !CMAKE_MAKE_PROGRAM!
 echo Using compiler: !COMPILER_PATH!
 
 REM ==== 1. 创建构建目录（如果不存在）====
-set VS_BUILD_DIR=!ROOT_DIR!\Projects\VisualStudio\VulkanTest
+set VS_BUILD_DIR=!ROOT_DIR!\Projects\VisualStudio\RHIUnitTest
 if not exist "!VS_BUILD_DIR!" (
     mkdir "!VS_BUILD_DIR!"
 )
 
 set "LOG_FILE=!VS_BUILD_DIR!\build.log"
-echo === VulkanTest Build Log === > "!LOG_FILE!"
+echo === RHIUnitTest Build Log === > "!LOG_FILE!"
 
 REM ==== 2. 配置CMake工程（只需一次，生成多配置.sln） ====
 echo === Configuring (Debug + Release) ===
@@ -63,7 +63,7 @@ echo CMAKE_RC_COMPILER is: !CMAKE_RC_COMPILER!
 for %%I in ("!CMAKE_RC_COMPILER!") do set "RC_DIR=%%~dpI"
 set "PATH=!RC_DIR!;!PATH!"
 
-call :step "Configuring CMake (multi-config solution)" cmake -S "!ROOT_DIR!" -B "!VS_BUILD_DIR!" -DTARGET="VulkanTest" -DPLATFORM="Windows" -G "Visual Studio 17 2022" -A x64
+call :step "Configuring CMake (multi-config solution)" cmake -S "!ROOT_DIR!" -B "!VS_BUILD_DIR!" -DTARGET="RHIUnitTest" -DPLATFORM="Windows" -G "Visual Studio 17 2022" -A x64
 
 if errorlevel 1 (
     echo ERROR: CMake configuration failed.
