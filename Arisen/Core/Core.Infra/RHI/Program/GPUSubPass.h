@@ -89,8 +89,8 @@ namespace ArisenEngine::RHI
         friend GPURenderPass;
         virtual void Bind(UInt32 index) = 0;
         SubpassDependency m_Dependency {};
-        EPipelineBindPoint m_BindPoint;
-        UInt32 m_SubPassDescriptionFlag;
+        EPipelineBindPoint m_BindPoint = PIPELINE_BIND_POINT_GRAPHICS;
+        UInt32 m_SubPassDescriptionFlag = 0;
         
         
     };

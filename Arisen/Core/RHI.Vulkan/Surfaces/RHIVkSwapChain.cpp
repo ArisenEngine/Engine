@@ -5,13 +5,14 @@
 ArisenEngine::RHI::RHIVkSwapChain::RHIVkSwapChain(RHIDevice* device, const RHIVkSurface* surface, UInt32 maxFramesInFlight):
 SwapChain(maxFramesInFlight), m_Device(device), m_VkDevice(static_cast<VkDevice>(
             m_Device->GetHandle())),
-m_VkSurface(static_cast<VkSurfaceKHR>(surface->GetHandle())), m_ImageIndex(0), m_Surface(surface)
+m_VkSurface(static_cast<VkSurfaceKHR>(surface->GetHandle())), m_Surface(surface)
 {
     
     for (int i = 0; i < m_MaxFramesInFlight; ++i)
     {
         m_ImageAvailableSemaphores.emplace_back(std::make_unique<RHIVkSemaphore>(m_VkDevice));
         m_RenderFinishSemaphores.emplace_back(std::make_unique<RHIVkSemaphore>(m_VkDevice));
+        m_AcquiredImageIndices.push_back(0);
     }
 
     auto indices = surface->GetQueueFamilyIndices();
@@ -118,13 +119,18 @@ ArisenEngine::RHI::RHISemaphore* ArisenEngine::RHI::RHIVkSwapChain::GetRenderFin
 ArisenEngine::RHI::ImageHandle* ArisenEngine::RHI::RHIVkSwapChain::AquireCurrentImage(UInt32 frameIndex)
 {
     auto currentFrame = frameIndex % m_MaxFramesInFlight;
+    uint32_t imageIndex = 0;
+    LOG_INFO("[RHIVkSwapChain::AquireCurrentImage]: Frame %u acquiring image. Semaphore: %p", frameIndex, m_ImageAvailableSemaphores[currentFrame]->GetHandle());
     if (vkAcquireNextImageKHR(m_VkDevice, m_VkSwapChain, UINT64_MAX, static_cast<VkSemaphore>(
                               m_ImageAvailableSemaphores[currentFrame]->GetHandle()),
-                              VK_NULL_HANDLE, &m_ImageIndex) != VK_SUCCESS)
+                              VK_NULL_HANDLE, &imageIndex) != VK_SUCCESS)
     {
-        LOG_DEBUG("[RHIVkSwapChain::AquireCurrentImage]: failed to acquire next image.");
+        LOG_ERROR("[RHIVkSwapChain::AquireCurrentImage]: failed to acquire next image (frame %u).", frameIndex);
+        return nullptr;
     }
-    return m_ImageHandles[m_ImageIndex].get();
+    LOG_INFO("[RHIVkSwapChain::AquireCurrentImage]: Acquired image %u for frame %u", imageIndex, frameIndex);
+    m_AcquiredImageIndices[currentFrame] = imageIndex;
+    return m_ImageHandles[imageIndex].get();
 }
 
 void ArisenEngine::RHI::RHIVkSwapChain::Cleanup()
@@ -139,19 +145,20 @@ void ArisenEngine::RHI::RHIVkSwapChain::Cleanup()
 
 void ArisenEngine::RHI::RHIVkSwapChain::Present(UInt32 frameIndex)
 {
+    auto currentFrame = frameIndex % m_MaxFramesInFlight;
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
     presentInfo.waitSemaphoreCount = 1;
     const VkSemaphore semaphore =
-        static_cast<VkSemaphore>(m_RenderFinishSemaphores[frameIndex % m_MaxFramesInFlight]->GetHandle());
+        static_cast<VkSemaphore>(m_RenderFinishSemaphores[currentFrame]->GetHandle());
     presentInfo.pWaitSemaphores = &semaphore;
 
     VkSwapchainKHR swapChains[] = { m_VkSwapChain };
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
 
-    presentInfo.pImageIndices = &m_ImageIndex;
+    presentInfo.pImageIndices = &m_AcquiredImageIndices[currentFrame];
 
     vkQueuePresentKHR(m_VkPresentQueue, &presentInfo);
 }

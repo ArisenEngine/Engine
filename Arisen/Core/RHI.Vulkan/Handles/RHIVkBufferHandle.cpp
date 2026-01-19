@@ -1,6 +1,20 @@
 #include "RHIVkBufferHandle.h"
 #include "../VkInitializer.h"
 #include "../Memory/RHIVkDeviceMemory.h"
+#include "../Devices/RHIVkDevice.h"
+#include "RHI/Utils/RHIResourceRegistry.h"
+
+namespace ArisenEngine::RHI {
+    struct DeferredVkBuffer {
+        VkDevice device;
+        VkBuffer buffer;
+        ~DeferredVkBuffer() {
+            if (device != VK_NULL_HANDLE && buffer != VK_NULL_HANDLE) {
+                vkDestroyBuffer(device, buffer, nullptr);
+            }
+        }
+    };
+}
 
 ArisenEngine::RHI::RHIVkBufferHandle::RHIVkBufferHandle(RHIDevice* device)
 : BufferHandle() , m_Device(device)
@@ -44,13 +58,12 @@ bool ArisenEngine::RHI::RHIVkBufferHandle::AllocBufferHandle(BufferDescriptor &&
     auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
     auto* registry = vkDevice->GetResourceRegistry();
     
-    m_RHIHandle = registry->Create(RHIDeferredDeleteItem{
-        m_VkBuffer,
-        [vkDevice](void* p) {
-            vkDestroyBuffer(static_cast<VkDevice>(vkDevice->GetHandle()), static_cast<VkBuffer>(p), nullptr);
-            LOG_DEBUG("## Destroy Vulkan Buffer via Registry Deleter ##");
-        }
-    });
+    auto* deferred = new DeferredVkBuffer{
+        static_cast<VkDevice>(vkDevice->GetHandle()),
+        m_VkBuffer
+    };
+
+    m_RHIHandle = registry->Create(MakeDeferredDeleteItem(deferred));
 
     return true;
 }

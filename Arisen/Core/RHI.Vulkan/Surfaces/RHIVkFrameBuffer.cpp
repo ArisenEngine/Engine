@@ -1,23 +1,12 @@
-﻿#include "RHI/Memory/ImageView.h"
-#include "RHI/Program/GPURenderPass.h"
+﻿#include "RHIVkFrameBuffer.h"
+#include "../Program/RHIVkGPURenderPass.h"
+#include "RHI/Memory/ImageView.h"
+#include "Logger/Logger.h"
+#include <vulkan/vulkan_core.h>
 #include <tuple>
+#include <algorithm>
 
 namespace ArisenEngine::RHI {
-
-struct FramebufferCacheKey {
-    VkRenderPass renderPass;
-    std::vector<VkImageView> attachments;
-    uint32_t width;
-    uint32_t height;
-    uint32_t layers;
-
-    bool operator<(const FramebufferCacheKey& other) const {
-        return std::tie(renderPass, attachments, width, height, layers) <
-               std::tie(other.renderPass, other.attachments, other.width, other.height, other.layers);
-    }
-};
-
-} // namespace ArisenEngine::RHI
 
 ArisenEngine::RHI::RHIVkFrameBuffer::RHIVkFrameBuffer(VkDevice device, UInt32 maxFramesInFlight): FrameBuffer(maxFramesInFlight), m_VkDevice(device)
 {
@@ -124,3 +113,5 @@ void ArisenEngine::RHI::RHIVkFrameBuffer::FreeAllFrameBuffers()
     LOG_DEBUG("## Destroy All Cached Vulkan Frame Buffers ##");
     m_VkFrameBuffers.clear();
 }
+
+} // namespace ArisenEngine::RHI

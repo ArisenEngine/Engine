@@ -61,24 +61,26 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
 
     VkTimelineSemaphoreSubmitInfo timelineInfo{};
     timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
-    timelineInfo.signalSemaphoreValueCount = 1;
-    timelineInfo.pSignalSemaphoreValues = &submitId;
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.pNext = &timelineInfo;
 
+    Containers::Vector<uint64_t> waitValues;
     if (vkCmd->GetWaitSemaphoresCount() > 0)
     {
         submitInfo.waitSemaphoreCount = vkCmd->GetWaitSemaphoresCount();
         submitInfo.pWaitSemaphores = vkCmd->GetWaitSemaphores();
         submitInfo.pWaitDstStageMask = vkCmd->GetWaitStageMask();
+        waitValues.resize(submitInfo.waitSemaphoreCount, 0); // Binary semaphores use 0
+        timelineInfo.waitSemaphoreValueCount = submitInfo.waitSemaphoreCount;
+        timelineInfo.pWaitSemaphoreValues = waitValues.data();
+        LOG_INFO("[RHIVkQueue::SubmitWithFence]: Wait %u semaphores", submitInfo.waitSemaphoreCount);
     }
 
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = (static_cast<VkCommandBuffer*>(commandBuffer->GetHandlerPointer()));
 
-    // Always signal the timeline semaphore; also propagate any binary signal semaphores.
     Containers::Vector<VkSemaphore> signalSemaphores;
     Containers::Vector<uint64_t> signalValues;
 
@@ -91,15 +93,15 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
         for (UInt32 i = 0; i < vkCmd->GetSignalSemaphoresCount(); ++i)
         {
             signalSemaphores.emplace_back(sems[i]);
-            signalValues.emplace_back(0); // Value ignored for binary semaphores
+            signalValues.emplace_back(0); 
         }
     }
+
     submitInfo.signalSemaphoreCount = static_cast<UInt32>(signalSemaphores.size());
     submitInfo.pSignalSemaphores = signalSemaphores.data();
-
-    // Update timeline info to match counts
     timelineInfo.signalSemaphoreValueCount = static_cast<uint32_t>(signalValues.size());
     timelineInfo.pSignalSemaphoreValues = signalValues.data();
+    LOG_INFO("[RHIVkQueue::SubmitWithFence]: Signalling %u semaphores. Ticket: %llu", submitInfo.signalSemaphoreCount, submitId);
 
     std::lock_guard<std::mutex> lock(m_Mutex);
 

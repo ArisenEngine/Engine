@@ -3,7 +3,21 @@
 #include "../Memory/RHIVkImageView.h"
 #include "Logger/Logger.h"
 #include "RHI/Devices/RHIDevice.h"
+#include "../Devices/RHIVkDevice.h"
 #include "../Memory/RHIVkDeviceMemory.h"
+#include "RHI/Utils/RHIResourceRegistry.h"
+
+namespace ArisenEngine::RHI {
+    struct DeferredVkImage {
+        VkDevice device;
+        VkImage image;
+        ~DeferredVkImage() {
+            if (device != VK_NULL_HANDLE && image != VK_NULL_HANDLE) {
+                vkDestroyImage(device, image, nullptr);
+            }
+        }
+    };
+}
 
 ArisenEngine::RHI::RHIVkImageHandle::RHIVkImageHandle(RHIDevice* device):
 ImageHandle(), m_Device(device), m_VKDevice(static_cast<VkDevice>(device->GetHandle()))
@@ -47,13 +61,12 @@ void ArisenEngine::RHI::RHIVkImageHandle::AllocHandle(ImageDescriptor&& desc)
     auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
     auto* registry = vkDevice->GetResourceRegistry();
 
-    m_RHIHandle = registry->Create(RHIDeferredDeleteItem{
-        m_VkImage,
-        [vkDevice](void* p) {
-            vkDestroyImage(static_cast<VkDevice>(vkDevice->GetHandle()), static_cast<VkImage>(p), nullptr);
-            LOG_DEBUG("## Destroy Vulkan Image via Registry Deleter ##");
-        }
-    });
+    auto* deferred = new DeferredVkImage{
+        static_cast<VkDevice>(vkDevice->GetHandle()),
+        m_VkImage
+    };
+
+    m_RHIHandle = registry->Create(MakeDeferredDeleteItem(deferred));
 }
 
 void ArisenEngine::RHI::RHIVkImageHandle::FreeHandle()

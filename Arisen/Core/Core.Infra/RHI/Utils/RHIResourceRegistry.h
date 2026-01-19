@@ -43,6 +43,7 @@ namespace ArisenEngine::RHI
             auto& e = m_Entries[idx];
             e.refCount = 1;
             e.item = item;
+            e.maxTicket = 0;
             return RHIResourceHandle{ idx, e.generation };
         }
 
@@ -57,11 +58,14 @@ namespace ArisenEngine::RHI
         void Release(RHIResourceHandle h, RHIQueueType queue, RHIGpuTicket ticket)
         {
             RHIDeferredDeleteItem item{};
+            RHIGpuTicket finalTicket = 0;
             {
                 std::lock_guard<std::mutex> lock(m_Mutex);
                 if (!ValidateUnlocked(h)) return;
 
                 auto& e = m_Entries[h.index];
+                if (ticket > e.maxTicket) e.maxTicket = ticket;
+
                 if (e.refCount > 1)
                 {
                     e.refCount -= 1;
@@ -70,15 +74,17 @@ namespace ArisenEngine::RHI
 
                 // last ref
                 item = e.item;
+                finalTicket = e.maxTicket;
                 e.item = {};
                 e.refCount = 0;
                 e.generation += 1;
+                e.maxTicket = 0;
                 m_FreeList.emplace_back(h.index);
             }
 
             if (item.ptr && item.deleter && m_DeletionQueue)
             {
-                m_DeletionQueue->Enqueue(queue, ticket, item);
+                m_DeletionQueue->Enqueue(queue, finalTicket, item);
             }
         }
 
@@ -94,6 +100,7 @@ namespace ArisenEngine::RHI
             UInt32 refCount { 0 };
             UInt32 generation { 1 };
             RHIDeferredDeleteItem item;
+            RHIGpuTicket maxTicket { 0 };
         };
 
         bool ValidateUnlocked(RHIResourceHandle h) const

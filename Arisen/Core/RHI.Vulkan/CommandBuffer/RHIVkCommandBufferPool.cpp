@@ -15,7 +15,6 @@ ArisenEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* d
 ArisenEngine::RHI::RHIVkCommandBufferPool::~RHIVkCommandBufferPool() noexcept
 {
     LOG_DEBUG("[RHIVkCommandBufferPool::~RHIVkCommandBufferPool]: ~RHIVkCommandBufferPool");
-    m_CommandBuffers.clear();
     m_OwnedCommandBuffers.clear();
     {
         std::lock_guard<std::mutex> lock(m_PoolsMutex);

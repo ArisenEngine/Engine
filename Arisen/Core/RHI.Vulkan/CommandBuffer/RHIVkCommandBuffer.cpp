@@ -2,6 +2,8 @@
 
 #include "RHIVkCommandBufferPool.h"
 #include "../Devices/RHIVkDevice.h"
+#include "../Handles/RHIVkBufferHandle.h"
+#include "../Handles/RHIVkImageHandle.h"
 #include "../Program/RHIVkGPUPipeline.h"
 #include "../Program/RHIVkGPUPipelineStateObject.h"
 #include "RHI/Handles/BufferHandle.h"
@@ -11,6 +13,7 @@
 #include "RHI/Synchronization/RHIImageMemoryBarrier.h"
 #include "RHI/Synchronization/RHIMemoryBarrier.h"
 #include "Threadable/SynchScope.h"
+#include "../Memory/RHIVkDeviceMemory.h"
 
 
 ArisenEngine::RHI::RHIVkCommandBuffer::~RHIVkCommandBuffer() noexcept
@@ -118,11 +121,22 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::CaptureResource(BufferHandle const* 
     if (buffer == nullptr) return;
     auto const* vkBuffer = static_cast<RHIVkBufferHandle const*>(buffer);
     auto handle = vkBuffer->GetRHIHandle();
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
     if (handle.IsValid())
     {
         m_TrackedResourceHandles.emplace_back(handle);
-        auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
         vkDevice->GetResourceRegistry()->Retain(handle);
+    }
+    
+    if (buffer->GetDeviceMemory())
+    {
+        auto* vkMem = static_cast<RHIVkDeviceMemory*>(buffer->GetDeviceMemory());
+        auto memHandle = vkMem->GetRHIHandle();
+        if (memHandle.IsValid())
+        {
+            m_TrackedResourceHandles.emplace_back(memHandle);
+            vkDevice->GetResourceRegistry()->Retain(memHandle);
+        }
     }
 }
 
@@ -131,11 +145,22 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::CaptureResource(ImageHandle const* i
     if (image == nullptr) return;
     auto const* vkImage = static_cast<RHIVkImageHandle const*>(image);
     auto handle = vkImage->GetRHIHandle();
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
     if (handle.IsValid())
     {
         m_TrackedResourceHandles.emplace_back(handle);
-        auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
         vkDevice->GetResourceRegistry()->Retain(handle);
+    }
+
+    if (image->GetDeviceMemory())
+    {
+        auto* vkMem = static_cast<RHIVkDeviceMemory*>(image->GetDeviceMemory());
+        auto memHandle = vkMem->GetRHIHandle();
+        if (memHandle.IsValid())
+        {
+            m_TrackedResourceHandles.emplace_back(memHandle);
+            vkDevice->GetResourceRegistry()->Retain(memHandle);
+        }
     }
 }
 
