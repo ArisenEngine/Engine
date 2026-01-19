@@ -1,0 +1,152 @@
+#pragma once
+
+#include <string>
+#include <vector>
+#include <functional>
+#include <memory>
+#include "Logger/Logger.h"
+
+namespace ArisenEngine::Testing
+{
+    /**
+     * @brief Base interface for all test cases.
+     */
+    class ITest
+    {
+    public:
+        virtual ~ITest() = default;
+
+        /**
+         * @brief Get the name of this test.
+         */
+        virtual const char* GetName() const = 0;
+
+        /**
+         * @brief Setup test resources before running.
+         * @return true if setup succeeded, false otherwise.
+         */
+        virtual bool Setup() = 0;
+
+        /**
+         * @brief Run the actual test logic.
+         * @return true if test passed, false if test failed.
+         */
+        virtual bool Run() = 0;
+
+        /**
+         * @brief Cleanup test resources after running.
+         */
+        virtual void Teardown() = 0;
+    };
+
+    /**
+     * @brief Test registration and execution system.
+     * 
+     * Usage:
+     *   TestRunner::RegisterTest<MyTest>();
+     *   TestRunner::RunAllTests();
+     */
+    class TestRunner
+    {
+    public:
+        struct TestResult
+        {
+            std::string testName;
+            bool passed;
+            std::string errorMessage;
+        };
+
+        /**
+         * @brief Register a test for execution.
+         */
+        template<typename T>
+        static void RegisterTest()
+        {
+            static_assert(std::is_base_of<ITest, T>::value, "T must inherit from ITest");
+            
+            GetRegistry().push_back([]() -> std::unique_ptr<ITest> {
+                return std::make_unique<T>();
+            });
+        }
+
+        /**
+         * @brief Run all registered tests.
+         * @return Vector of test results.
+         */
+        static std::vector<TestResult> RunAllTests()
+        {
+            std::vector<TestResult> results;
+            auto& registry = GetRegistry();
+
+            LOG_INFO("=== Running RHI Unit Tests ===");
+            LOG_INFO("Total tests registered: %zu", registry.size());
+
+            for (auto& factory : registry)
+            {
+                auto test = factory();
+                TestResult result{ test->GetName(), false, "" };
+
+                try
+                {
+                    LOG_INFO("[TEST] Starting: %s", test->GetName());
+
+                    if (!test->Setup())
+                    {
+                        result.errorMessage = "Setup failed";
+                        LOG_ERROR("[FAILED] %s - Setup failed", test->GetName());
+                    }
+                    else
+                    {
+                        result.passed = test->Run();
+                        test->Teardown();
+
+                        if (result.passed)
+                        {
+                            LOG_INFO("[PASSED] %s", test->GetName());
+                        }
+                        else
+                        {
+                            LOG_ERROR("[FAILED] %s - Test logic failed", test->GetName());
+                            result.errorMessage = "Test logic failed";
+                        }
+                    }
+                }
+                catch (const std::exception& ex)
+                {
+                    result.passed = false;
+                    result.errorMessage = ex.what();
+                    LOG_ERROR("[FAILED] %s - Exception: %s", test->GetName(), ex.what());
+                }
+                catch (...)
+                {
+                    result.passed = false;
+                    result.errorMessage = "Unknown exception";
+                    LOG_ERROR("[FAILED] %s - Unknown exception", test->GetName());
+                }
+
+                results.push_back(result);
+            }
+
+            // Print summary
+            size_t passed = 0;
+            for (const auto& result : results)
+            {
+                if (result.passed) ++passed;
+            }
+
+            LOG_INFO("=== Test Summary ===");
+            LOG_INFO("Total: %zu | Passed: %zu | Failed: %zu", results.size(), passed, results.size() - passed);
+
+            return results;
+        }
+
+    private:
+        using TestFactory = std::function<std::unique_ptr<ITest>()>;
+
+        static std::vector<TestFactory>& GetRegistry()
+        {
+            static std::vector<TestFactory> registry;
+            return registry;
+        }
+    };
+}

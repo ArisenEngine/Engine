@@ -1,7 +1,14 @@
 #pragma once
 #include <filesystem>
 #include "Windows/PlatformTypes.h"
-#include "Test.h"
+// Base test interface (previously in Test.h)
+class Test
+{
+public:
+    virtual bool Initialize() = 0;
+    virtual void Run() = 0;
+    virtual void Shutdown() = 0;
+};
 #include "RHI\RHILoader.h"
 #include "RHI/RHIInstance.h"
 #include "RHI/Enums/Pipeline/EAccessFlag.h"
