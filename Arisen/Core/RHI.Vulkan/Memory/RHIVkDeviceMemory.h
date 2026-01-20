@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "RHI/Memory/DeviceMemory.h"
 #include "vulkan_core.h"
+#include <vma/vk_mem_alloc.h>
 #include "RHI/Utils/RHIResourceHandle.h"
 
 namespace ArisenEngine::RHI
@@ -31,7 +32,8 @@ namespace ArisenEngine::RHI
 
     private:
         
-        VkDeviceMemory m_VkDeviceMemory;
+        VmaAllocation m_Allocation{ VK_NULL_HANDLE };
+        VkDeviceMemory m_VkDeviceMemory { VK_NULL_HANDLE };
         RHIDevice* m_Device;
         std::optional<VkBuffer> m_VkBuffer;
         std::optional<VkImage> m_VkImage;

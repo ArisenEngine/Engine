@@ -1,28 +1,29 @@
 ﻿#include "RHIVkDeviceMemory.h"
+#include "RHIVkMemoryAllocator.h"
 
 #include "Logger/Logger.h"
 #include "../Devices/RHIVkDevice.h"
 
 namespace ArisenEngine::RHI {
-    struct DeferredVkMemory {
-        VkDevice device;
-        VkDeviceMemory memory;
-        ~DeferredVkMemory() {
-            if (device != VK_NULL_HANDLE && memory != VK_NULL_HANDLE) {
-                vkFreeMemory(device, memory, nullptr);
+    struct DeferredVmaAllocation {
+        VmaAllocator allocator;
+        VmaAllocation allocation;
+        ~DeferredVmaAllocation() {
+            if (allocator != VK_NULL_HANDLE && allocation != VK_NULL_HANDLE) {
+                vmaFreeMemory(allocator, allocation);
             }
         }
     };
 }
 
 ArisenEngine::RHI::RHIVkDeviceMemory::RHIVkDeviceMemory(RHIDevice* device, VkBuffer buffer):
-m_VkDeviceMemory(VK_NULL_HANDLE), m_Device(device), m_VkBuffer(buffer)
+m_Allocation(VK_NULL_HANDLE), m_VkDeviceMemory(VK_NULL_HANDLE), m_Device(device), m_VkBuffer(buffer)
 {
             
 }
 
 ArisenEngine::RHI::RHIVkDeviceMemory::RHIVkDeviceMemory(RHIDevice* device, VkImage image):
-m_VkDeviceMemory(VK_NULL_HANDLE), m_Device(device), m_VkImage(image)
+m_Allocation(VK_NULL_HANDLE), m_VkDeviceMemory(VK_NULL_HANDLE), m_Device(device), m_VkImage(image)
 {
 }
 
@@ -36,40 +37,46 @@ bool ArisenEngine::RHI::RHIVkDeviceMemory::AllocDeviceMemory(UInt32 memoryProper
 {
     ASSERT((m_VkBuffer.has_value() && !m_VkImage.has_value()) || (!m_VkBuffer.has_value() && m_VkImage.has_value()));
     
-    VkMemoryRequirements memRequirements;
-    VkDevice vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
-    
-    if (m_VkBuffer.has_value())
-    {
-        vkGetBufferMemoryRequirements(vkDevice, m_VkBuffer.value(), &memRequirements);
-    }
-    else if (m_VkImage.has_value())
-    {
-        vkGetImageMemoryRequirements(vkDevice, m_VkImage.value(), &memRequirements);
-    }
-    else
-    {
-        LOG_FATAL_AND_THROW("[RHIVkDeviceMemory::AllocDeviceMemory]: Failed to get memory requirements");
-    }
-    
-    m_TotalBytes = memRequirements.size;
-    m_Alignment = memRequirements.alignment;
-    m_MemoryTypeBits = memRequirements.memoryTypeBits;
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* allocator = static_cast<RHIVkMemoryAllocator*>(vkDevice->GetMemoryAllocator());
+    VmaAllocator vmaAllocator = allocator->GetVmaAllocator();
 
-    AllocMemory(std::move(memRequirements), memoryPropertiesBits);
+    VmaAllocationCreateInfo allocCreateInfo = {};
+    // Map RHI memory properties to VMA usage/flags if needed. 
+    // For now, use a simple mapping or let VMA decide based on properties.
+    allocCreateInfo.requiredFlags = memoryPropertiesBits;
 
     if (m_VkBuffer.has_value())
     {
-        vkBindBufferMemory(vkDevice, m_VkBuffer.value(), m_VkDeviceMemory, 0);
+        if (vmaAllocateMemoryForBuffer(vmaAllocator, m_VkBuffer.value(), &allocCreateInfo, &m_Allocation, nullptr) != VK_SUCCESS)
+        {
+             LOG_FATAL_AND_THROW("[RHIVkDeviceMemory::AllocDeviceMemory]: Failed to allocate VMA memory for buffer");
+        }
+        vmaBindBufferMemory(vmaAllocator, m_Allocation, m_VkBuffer.value());
     }
     else if (m_VkImage.has_value())
     {
-        vkBindImageMemory(vkDevice, m_VkImage.value(), m_VkDeviceMemory, 0);
+        if (vmaAllocateMemoryForImage(vmaAllocator, m_VkImage.value(), &allocCreateInfo, &m_Allocation, nullptr) != VK_SUCCESS)
+        {
+             LOG_FATAL_AND_THROW("[RHIVkDeviceMemory::AllocDeviceMemory]: Failed to allocate VMA memory for image");
+        }
+        vmaBindImageMemory(vmaAllocator, m_Allocation, m_VkImage.value());
     }
-    else
-    {
-        LOG_FATAL_AND_THROW("[RHIVkDeviceMemory::AllocDeviceMemory]: Failed to bind memory.");
-    }
+
+    VmaAllocationInfo allocInfo;
+    vmaGetAllocationInfo(vmaAllocator, m_Allocation, &allocInfo);
+    
+    m_TotalBytes = allocInfo.size;
+    m_VkDeviceMemory = allocInfo.deviceMemory;
+    // VMA handles alignment and memory type internally efficiently.
+
+    auto* registry = vkDevice->GetResourceRegistry();
+    auto* deferred = new DeferredVmaAllocation{
+        vmaAllocator,
+        m_Allocation
+    };
+
+    m_RHIHandle = registry->Create(MakeDeferredDeleteItem(deferred));
     
     return true;
 }
@@ -83,14 +90,15 @@ bool ArisenEngine::RHI::RHIVkDeviceMemory::AllocDeviceMemory(UInt32 memoryProper
 
 void ArisenEngine::RHI::RHIVkDeviceMemory::FreeDeviceMemory()
 {
-    if (m_VkDeviceMemory != VK_NULL_HANDLE)
+    if (m_Allocation != VK_NULL_HANDLE)
     {
         auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
         auto* registry = vkDevice->GetResourceRegistry();
         
-        LOG_DEBUG("## Release Vulkan Device Memory ##");
+        LOG_DEBUG("## Release Vulkan VMA Allocation ##");
         registry->Release(m_RHIHandle, RHIQueueType::Graphics, vkDevice->GetCompletedSubmitId());
         
+        m_Allocation = VK_NULL_HANDLE;
         m_VkDeviceMemory = VK_NULL_HANDLE;
         m_RHIHandle = RHIResourceHandle::Invalid();
     }
@@ -104,31 +112,17 @@ void* ArisenEngine::RHI::RHIVkDeviceMemory::GetHandle() const
 
 void ArisenEngine::RHI::RHIVkDeviceMemory::MemoryCopy(void const* src, const UInt32 offset, const UInt32 size)
 {
-    void* data;
-    vkMapMemory(static_cast<VkDevice>(m_Device->GetHandle()), m_VkDeviceMemory, offset, size, 0, &data);
-    memcpy(data, src, size);
-    vkUnmapMemory(static_cast<VkDevice>(m_Device->GetHandle()), m_VkDeviceMemory);
-}
-
-void ArisenEngine::RHI::RHIVkDeviceMemory::AllocMemory(VkMemoryRequirements&& memRequirements, UInt32 memoryPropertiesBits)
-{
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = m_Device->FindMemoryType(memRequirements.memoryTypeBits, memoryPropertiesBits);
-    if (vkAllocateMemory(static_cast<VkDevice>(m_Device->GetHandle()),
-        &allocInfo, nullptr, &m_VkDeviceMemory) != VK_SUCCESS)
-    {
-        LOG_FATAL_AND_THROW("[RHIVkDeviceMemory::AllocDeviceMemory]: failed to allocate device memory!");
-    }
-
     auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
-    auto* registry = vkDevice->GetResourceRegistry();
+    auto* allocator = static_cast<RHIVkMemoryAllocator*>(vkDevice->GetMemoryAllocator());
+    VmaAllocator vmaAllocator = allocator->GetVmaAllocator();
 
-    auto* deferred = new DeferredVkMemory{
-        static_cast<VkDevice>(vkDevice->GetHandle()),
-        m_VkDeviceMemory
-    };
-
-    m_RHIHandle = registry->Create(MakeDeferredDeleteItem(deferred));
+    void* data;
+    if (vmaMapMemory(vmaAllocator, m_Allocation, &data) != VK_SUCCESS)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkDeviceMemory::MemoryCopy]: Failed to map VMA memory");
+    }
+    memcpy(static_cast<uint8_t*>(data) + offset, src, size);
+    vmaUnmapMemory(vmaAllocator, m_Allocation);
 }
+
+// AllocMemory is no longer used, as VMA combines allocation and requirements handling.

@@ -23,6 +23,7 @@ namespace ArisenEngine::RHI
 namespace ArisenEngine::RHI
 {
     class RHIVkFactory;
+    class RHIVkMemoryAllocator;
 
     class RHIVkDevice final: public RHIDevice
     {
@@ -49,6 +50,8 @@ namespace ArisenEngine::RHI
             return m_DescriptorPool;
         }
 
+        RHIMemoryAllocator* GetMemoryAllocator() const override;
+
         void Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex) override;
         IRHIQueue* GetQueue(RHIQueueType type) override;
         void DeferredDelete(RHIQueueType queue, RHIGpuTicket ticket, RHIDeferredDeleteItem item) override;
@@ -64,6 +67,7 @@ namespace ArisenEngine::RHI
         friend class RHIVkInstance;
         RHIVkGPUPipelineManager* m_GPUPipelineManager;
         RHIVkDescriptorPool* m_DescriptorPool;
+        RHIVkMemoryAllocator* m_MemoryAllocator;
         RHIVkFactory* m_Factory;
         VkQueue m_VkGraphicQueue;
         VkQueue m_VkPresentQueue;
