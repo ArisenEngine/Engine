@@ -7,9 +7,9 @@
 - [x] **集成 VMA (Vulkan Memory Allocator)**
   - [x] 替换当前的 `RHIVkDeviceMemory` 手动分配逻辑。
   - [x] 实现高效的内存分池、对齐和整理，减少分配开销。
-- [ ] **升级至 Synchronization 2.0 (`VK_KHR_synchronization2`)**
-  - 使用更清晰的 `VkDependencyInfo` 替换旧的 Pipeline Barrier。
-  - 简化 Resource Barrier 的接口封装，支持全局同步状态管理。
+- [x] **升级至 Synchronization 2.0 (`VK_KHR_synchronization2`)**
+  - [x] 使用更清晰的 `VkDependencyInfo` 替换旧的 Pipeline Barrier。
+  - [x] 简化 Resource Barrier 的接口封装，支持全局同步状态管理。
 - [ ] **支持 Dynamic Rendering (`VK_KHR_dynamic_rendering`)**
   - 在核心流程中逐步替代传统的 `VkRenderPass` 和 `VkFramebuffer`。
   - 减少 RHI 层的对象管理复杂度，提高灵活性。
