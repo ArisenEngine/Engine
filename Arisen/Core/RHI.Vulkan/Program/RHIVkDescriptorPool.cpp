@@ -44,11 +44,9 @@ m_pDevice(device)
 
 ArisenEngine::RHI::RHIVkDescriptorPool::~RHIVkDescriptorPool()
 {
-    LOG_DEBUG("[RHIVkDescriptorPool::~RHIVkDescriptorPool] ~RHIVkDescriptorPool");
     auto device = static_cast<VkDevice>(m_pDevice->GetHandle());
     for (const auto& holder : m_DescriptorSetsHolder)
     {
-        LOG_DEBUG("## Destroy Vulkan Descriptor Pool ##");
         vkDestroyDescriptorPool(device, holder.descriptorPool, nullptr);
     }
 
@@ -162,7 +160,6 @@ bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
         holder.descriptorPool = newPool;
         m_PoolLastUsedTicket[poolId] = 0;
         holder.sets.clear();
-        LOG_DEBUG("[RHIVkDescriptorPool::ResetPool] Rotated descriptor poolId=" + std::to_string(poolId));
         return true;
         }
     }
@@ -176,7 +173,6 @@ bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
 
     m_PoolLastUsedTicket[poolId] = 0;
     holder.sets.clear();
-    LOG_DEBUG("[RHIVkDescriptorPool::ResetPool] Reset descriptor pool:" + std::to_string(poolId));
     
     return true;
 }
@@ -201,7 +197,6 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::MarkPoolUsed(UInt32 poolId, RHIQueu
 
 ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDescriptorPool::AllocDescriptorSet(UInt32 poolId, UInt32 layoutIndex, GPUPipelineStateObject* pso)
 {
-    LOG_DEBUG("[RHIVkDescriptorPool::AllocDescriptorSet] poolId=" + std::to_string(poolId) + ", layoutIndex=" + std::to_string(layoutIndex));
     if (poolId >= m_DescriptorSetsHolder.size())
     {
         LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::AllocDescriptorSet] poolId out of range: " + std::to_string(poolId));
@@ -228,7 +223,6 @@ ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDescriptorPool::AllocDescriptorSet(
     {
         LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::AllocDescriptorSet] failed to allocate descriptor sets!");
     }
-    LOG_DEBUG("[RHIVkDescriptorPool::AllocDescriptorSet] vkAllocateDescriptorSets ok");
     
   
         m_DescriptorSetsHolder[poolId].sets.emplace_back(
@@ -339,7 +333,6 @@ const VkBufferView* GetBufferViews(const ArisenEngine::RHI::RHIDescriptorUpdateI
 
 void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId, GPUPipelineStateObject* pso)
 {
-    LOG_DEBUG("[RHIVkDescriptorPool::UpdateDescriptorSets] poolId=" + std::to_string(poolId));
     if (poolId >= m_DescriptorSetsHolder.size())
     {
         LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSets] poolId out of range: " + std::to_string(poolId));

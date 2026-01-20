@@ -18,8 +18,6 @@
 
 ArisenEngine::RHI::RHIVkCommandBuffer::~RHIVkCommandBuffer() noexcept
 {
-    LOG_DEBUG("[RHIVkCommandBuffer::~RHIVkCommandBuffer]: ~RHIVkCommandBuffer");
-    LOG_DEBUG("## Destory Vulkan CommandBuffer ##");
     // vkFreeCommandBuffers(m_VkDevice, m_VkCommandPool, 1, &m_VkCommandBuffer);
 }
 

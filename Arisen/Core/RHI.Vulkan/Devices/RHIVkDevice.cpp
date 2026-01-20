@@ -50,7 +50,6 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseGPUProgram(GPUProgram* program)
         {
             delete program;
         });
-        LOG_INFO("[RHIVkDevice::ReleaseGPUProgram] Enqueued destroy for Program");
     }
 }
 
@@ -77,7 +76,6 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseCommandBufferPool(RHICommandBufferPo
         {
             delete pool;
         });
-        LOG_INFO("[RHIVkDevice::ReleaseCommandBufferPool] Enqueued destroy for Pool");
     }
 }
 
@@ -94,7 +92,6 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseRenderPass(GPURenderPass* renderPass
         {
             delete renderPass;
         });
-        LOG_INFO("[RHIVkDevice::ReleaseRenderPass] Enqueued destroy for RenderPass");
     }
 }
 
@@ -111,7 +108,6 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseFrameBuffer(FrameBuffer* frameBuffer
         {
             delete frameBuffer;
         });
-        LOG_INFO("[RHIVkDevice::ReleaseFrameBuffer] Enqueued destroy for FrameBuffer");
     }
 }
 
@@ -130,7 +126,6 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseBufferHandle(BufferHandle* bufferHan
        {
            delete bufferHandle;
        });
-        LOG_INFO("[RHIVkDevice::ReleaseBufferHandle] Enqueued destroy for Buffer");
    }
 }
 
@@ -149,7 +144,6 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseImageHandle(ImageHandle* imageHandle
        {
            delete imageHandle;
        });
-        LOG_INFO("[RHIVkDevice::ReleaseImageHandle] Enqueued destroy for Image");
    }
 }
 
@@ -305,39 +299,24 @@ void ArisenEngine::RHI::RHIVkDevice::SetResolution(UInt32 width, UInt32 height)
 
 ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
 {
-    LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Start");
-    
     // 1. Wait for GPU to be idle
     DeviceWaitIdle();
-    LOG_INFO("[RHIVkDevice::~RHIVkDevice]: DeviceWaitIdle Done");
 
     // 2. Drain FrameSync to ensure all submitted work is tracked as completed
     if (m_FrameSync && m_GraphicsQueue)
     {
-        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Draining FrameSync");
         m_FrameSync->Drain(m_GraphicsQueue.get());
-        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Drain Done");
     }
 
     // 3. Flush all deferred deletions now that we know the GPU is idle and all tickets are completed.
     if (m_DeferredDeletion)
     {
-        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Flushing Deferred Deletion");
         constexpr RHIGpuTicket kAll = ~static_cast<RHIGpuTicket>(0);
         
-        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Flushing Graphics");
         m_DeferredDeletion->Flush(RHIQueueType::Graphics, kAll);
-        
-        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Flushing Compute");
         m_DeferredDeletion->Flush(RHIQueueType::Compute, kAll);
-        
-        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Flushing Transfer");
         m_DeferredDeletion->Flush(RHIQueueType::Transfer, kAll);
-        
-        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Flushing Present");
         m_DeferredDeletion->Flush(RHIQueueType::Present, kAll);
-        
-        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Flush Done");
     }
 
     // 4. Destroy managers that might rely on the device still being alive
@@ -349,12 +328,9 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
     m_GraphicsQueue.reset();
 
     // 6. Finally destroy the Vulkan device
-    LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Destroying VkDevice");
     vkDestroyDevice(m_VkDevice, nullptr);
-    LOG_DEBUG("## Destroy Vulkan Device ##");
     
     m_Instance = nullptr;
-    LOG_INFO("[RHIVkDevice::~RHIVkDevice]: ~RHIVkDevice End");
 }
 
 
