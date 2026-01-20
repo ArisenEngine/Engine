@@ -5,6 +5,8 @@
 #include "RHI/RHIInstance.h"
 #include "Windows/RenderWindowAPI.h"
 #include "Windows/PlatformTypes.h"
+#include "../../../Engine/NativeEngine/RHI/InstanceExports.h"
+#include "../../../Engine/NativeEngine/RHI/RHIExports.h"
 
 namespace ArisenEngine::Testing
 {
@@ -22,7 +24,7 @@ namespace ArisenEngine::Testing
     protected:
         RHI_InstanceHandle m_Instance = nullptr;
         RHI_DeviceHandle m_Device = nullptr;
-        UInt32 m_WindowId = 0;
+        UInt32 m_WindowId = ~0u;
         UInt32 m_MaxFramesInFlight = 2;
         UInt32 m_FrameIndex = 0;
 
@@ -57,10 +59,27 @@ namespace ArisenEngine::Testing
         /**
          * @brief Create a render window.
          */
-        bool CreateWindow(UInt32 width = 640, UInt32 height = 480)
+        static LRESULT CALLBACK TestWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         {
-            m_WindowId = Platforms::CreateRenderWindow(nullptr, DefWindowProc, width, height);
-            return m_WindowId != 0;
+            switch (msg)
+            {
+            case WM_DESTROY:
+                PostQuitMessage(0);
+                return 0;
+            }
+            return DefWindowProc(hwnd, msg, wParam, lParam);
+        }
+
+        /**
+         * @brief Create a render window.
+         */
+        bool CreateAppWindow(UInt32 width = 640, UInt32 height = 480)
+        {
+            m_WindowId = Platforms::CreateRenderWindow(nullptr, TestWndProc, width, height);
+            // Platforms assumes Assert on failure, but returns InvalidID (~0) if Assert disabled/ignored
+            // Valid valid IDs are 0, 1, ...
+            // We check against ~0u (UINT32_MAX)
+            return m_WindowId != ~0u;
         }
 
         /**
@@ -68,7 +87,7 @@ namespace ArisenEngine::Testing
          */
         bool InitializeDeviceAndSurface()
         {
-            if (!m_Instance || m_WindowId == 0)
+            if (!m_Instance || m_WindowId == ~0u)
             {
                 LOG_ERROR("Instance or window not initialized");
                 return false;
@@ -111,7 +130,7 @@ namespace ArisenEngine::Testing
                 return false;
             }
 
-            if (!CreateWindow())
+            if (!CreateAppWindow())
             {
                 LOG_ERROR("Failed to create window");
                 return false;
@@ -139,10 +158,10 @@ namespace ArisenEngine::Testing
                 m_Instance = nullptr;
             }
 
-            if (m_WindowId != 0)
+            if (m_WindowId != ~0u)
             {
-                Platforms::DestroyRenderWindow(m_WindowId);
-                m_WindowId = 0;
+                Platforms::RemoveRenderSurface(m_WindowId);
+                m_WindowId = ~0u;
             }
         }
 

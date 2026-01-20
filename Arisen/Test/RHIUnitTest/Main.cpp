@@ -1,151 +1,41 @@
-
-
 #define TEST_WINDOWS 1
-#define TEST_ENGINE 0
 
-#include <chrono>
+#include "Framework/TestRunner.h"
+#include "RHI/RHIBasicRenderingTest.h"
+#include "../../Engine/NativeEngine/Core/EngineInit.h"
+#include <windows.h>
 
-#include "Logger/Logger.h"
-#include <csignal>
-#include <exception>
-
-
-#if(TEST_WINDOWS)
-
-#ifdef _WIN64
-
-#include<Windows.h>
-
-// Ensure logger shutdown on unhandled SEH
-static LONG WINAPI ArisenUnhandledExceptionFilter(EXCEPTION_POINTERS*)
-{
-    try { ArisenEngine::Debugger::Logger::Shutdown(); } catch(...) {}
-    return EXCEPTION_EXECUTE_HANDLER;
-}
-
-
-#endif
-
-
-
-#if TEST_WINDOWS
-
-// Ensure logger shutdown on abnormal termination
-static void ArisenOnTerminate()
-{
-    try { ArisenEngine::Debugger::Logger::Shutdown(); } catch(...) {}
-    std::abort();
-}
-
-static void ArisenOnSignal(int)
-{
-    try { ArisenEngine::Debugger::Logger::Shutdown(); } catch(...) {}
-#ifdef _WIN64
-    ::ExitProcess(3);
-#else
-    std::_Exit(3);
-#endif
-}
-
-#endif
-#include "RHIUnitTest.h"
-
-#elif(TEST_ENGINE)
-
-#include "TestEngine.h"
-
-#endif
-
-
+using namespace ArisenEngine::Testing;
 
 #if(TEST_WINDOWS)
-
 #ifdef _WIN64
-
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
-
 #else
-
-#error "should implement a main entry"
-
+// Ensure a main entry exists for other configurations if needed
+int main() 
 #endif
-
 #else
-
 int main()
-
 #endif
-
-
 {
-
 #if _DEBUG
-
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
-	EngineTest test{};
+    // Centralized Engine Initialization (Logger + Crash Handlers)
+    if (!ArisenEngine::Core::EngineInit::Initialize())
+    {
+        return -1;
+    }
 
-	// Crash-safe shutdown hooks
-#if TEST_WINDOWS
-#ifdef _WIN64
-	SetUnhandledExceptionFilter(ArisenUnhandledExceptionFilter);
-#endif
-	std::set_terminate(ArisenOnTerminate);
-	signal(SIGABRT, ArisenOnSignal);
-	signal(SIGSEGV, ArisenOnSignal);
-	signal(SIGILL, ArisenOnSignal);
-	signal(SIGFPE, ArisenOnSignal);
-	std::atexit([](){
-		try { ArisenEngine::Debugger::Logger::Shutdown(); } catch(...) {}
-	});
-#endif
+    // Register the Basic Rendering Test
+    TestRunner::RegisterTest<RHIBasicRenderingTest>();
 
-#if TEST_WINDOWS
+    // Run all registered tests
+    TestRunner::RunAllTests();
 
-	try
-	{
-		if (test.Initialize())
-		{
-			MSG msg{};
-			bool isRunning{ true };
-			while (isRunning)
-			{
-				while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-				{
-					TranslateMessage(&msg);
-					DispatchMessage(&msg);
-					isRunning &= (msg.message != WM_QUIT);
-				}
+    // Centralized Engine Shutdown
+    ArisenEngine::Core::EngineInit::Shutdown();
 
-				test.Run();
-			}
-		}
-	}
-	catch (const std::exception &ex)
-	{
-		LOG_FATAL(ex.what());
-	}
-	catch (...)
-	{
-		LOG_FATAL("Unhandled exception");
-	}
-	
-	test.Shutdown();
-		
-
-
-#else
-	
-	if (test.Initialize())
-	{
-		test.Run();
-	}
-
-	test.Shutdown();
-
-#endif
-
-	return 0;
+    return 0;
 }
