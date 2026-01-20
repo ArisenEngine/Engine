@@ -46,11 +46,11 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseGPUProgram(GPUProgram* program)
 {
     if (program)
     {
-        EnqueueDeferredDestroy(m_CurrentFrameIndex.load(), [program]()
+        EnqueueDeferredDestroy(m_GraphicsQueue->GetLatestTicket(), [program]()
         {
             delete program;
         });
-        LOG_INFO("[RHIVkDevice::ReleaseGPUProgram] Enqueued destroy for Program: %p", program);
+        LOG_INFO("[RHIVkDevice::ReleaseGPUProgram] Enqueued destroy for Program");
     }
 }
 
@@ -73,11 +73,11 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseCommandBufferPool(RHICommandBufferPo
 {
      if (pool)
     {
-        EnqueueDeferredDestroy(m_CurrentFrameIndex.load(), [pool]()
+        EnqueueDeferredDestroy(m_GraphicsQueue->GetLatestTicket(), [pool]()
         {
             delete pool;
         });
-        LOG_INFO("[RHIVkDevice::ReleaseCommandBufferPool] Enqueued destroy for Pool: %p", pool);
+        LOG_INFO("[RHIVkDevice::ReleaseCommandBufferPool] Enqueued destroy for Pool");
     }
 }
 
@@ -90,11 +90,11 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseRenderPass(GPURenderPass* renderPass
 {
     if (renderPass)
     {
-        EnqueueDeferredDestroy(m_CurrentFrameIndex.load(), [renderPass]()
+        EnqueueDeferredDestroy(m_GraphicsQueue->GetLatestTicket(), [renderPass]()
         {
             delete renderPass;
         });
-        LOG_INFO("[RHIVkDevice::ReleaseRenderPass] Enqueued destroy for RenderPass: %p", renderPass);
+        LOG_INFO("[RHIVkDevice::ReleaseRenderPass] Enqueued destroy for RenderPass");
     }
 }
 
@@ -107,11 +107,11 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseFrameBuffer(FrameBuffer* frameBuffer
 {
     if (frameBuffer)
     {
-        EnqueueDeferredDestroy(m_CurrentFrameIndex.load(), [frameBuffer]()
+        EnqueueDeferredDestroy(m_GraphicsQueue->GetLatestTicket(), [frameBuffer]()
         {
             delete frameBuffer;
         });
-        LOG_INFO("[RHIVkDevice::ReleaseFrameBuffer] Enqueued destroy for FrameBuffer: %p", frameBuffer);
+        LOG_INFO("[RHIVkDevice::ReleaseFrameBuffer] Enqueued destroy for FrameBuffer");
     }
 }
 
@@ -126,11 +126,11 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseBufferHandle(BufferHandle* bufferHan
 {
    if (bufferHandle)
    {
-       EnqueueDeferredDestroy(m_CurrentFrameIndex.load(), [bufferHandle]()
+       EnqueueDeferredDestroy(m_GraphicsQueue->GetLatestTicket(), [bufferHandle]()
        {
            delete bufferHandle;
        });
-       LOG_INFO("[RHIVkDevice::ReleaseBufferHandle] Enqueued destroy for Buffer: %p", bufferHandle);
+        LOG_INFO("[RHIVkDevice::ReleaseBufferHandle] Enqueued destroy for Buffer");
    }
 }
 
@@ -145,20 +145,19 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseImageHandle(ImageHandle* imageHandle
 {
    if (imageHandle)
    {
-       EnqueueDeferredDestroy(m_CurrentFrameIndex.load(), [imageHandle]()
+       EnqueueDeferredDestroy(m_GraphicsQueue->GetLatestTicket(), [imageHandle]()
        {
            delete imageHandle;
        });
-       LOG_INFO("[RHIVkDevice::ReleaseImageHandle] Enqueued destroy for Image: %p", imageHandle);
+        LOG_INFO("[RHIVkDevice::ReleaseImageHandle] Enqueued destroy for Image");
    }
 }
 
-void ArisenEngine::RHI::RHIVkDevice::EnqueueDeferredDestroy(UInt32 frameIndex, RHIDeferredDeleteItem item)
+void ArisenEngine::RHI::RHIVkDevice::EnqueueDeferredDestroy(RHIGpuTicket ticket, RHIDeferredDeleteItem item)
 {
     if (m_DeferredDeletion)
     {
-        // For now map frameIndex -> ticket (legacy callers). SubmitID-based callers should use Enqueue(ticket).
-        m_DeferredDeletion->Enqueue(RHIQueueType::Graphics, static_cast<RHIGpuTicket>(frameIndex), item);
+        m_DeferredDeletion->Enqueue(RHIQueueType::Graphics, ticket, item);
     }
 }
 
@@ -176,17 +175,17 @@ namespace
     }
 }
 
-void ArisenEngine::RHI::RHIVkDevice::EnqueueDeferredDestroy(UInt32 frameIndex, std::function<void()>&& fn)
+void ArisenEngine::RHI::RHIVkDevice::EnqueueDeferredDestroy(RHIGpuTicket ticket, std::function<void()>&& fn)
 {
     auto* item = new DeferredCallItem{ std::move(fn) };
-    EnqueueDeferredDestroy(frameIndex, RHIDeferredDeleteItem{ item, &DeferredCallDeleter });
+    EnqueueDeferredDestroy(ticket, RHIDeferredDeleteItem{ item, &DeferredCallDeleter });
 }
 
-void ArisenEngine::RHI::RHIVkDevice::FlushDeferredDestroys(UInt32 frameIndex)
+void ArisenEngine::RHI::RHIVkDevice::FlushDeferredDestroys(RHIGpuTicket ticket)
 {
     if (m_DeferredDeletion)
     {
-        m_DeferredDeletion->Flush(RHIQueueType::Graphics, static_cast<RHIGpuTicket>(frameIndex));
+        m_DeferredDeletion->Flush(RHIQueueType::Graphics, ticket);
     }
 }
 
@@ -307,11 +306,20 @@ void ArisenEngine::RHI::RHIVkDevice::SetResolution(UInt32 width, UInt32 height)
 ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
 {
     LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Start");
+    
+    // 1. Wait for GPU to be idle
     DeviceWaitIdle();
     LOG_INFO("[RHIVkDevice::~RHIVkDevice]: DeviceWaitIdle Done");
 
-    // After waiting idle, it's safe to flush all deferred deletions immediately
-    // so vkDestroy* runs before vkDestroyDevice.
+    // 2. Drain FrameSync to ensure all submitted work is tracked as completed
+    if (m_FrameSync && m_GraphicsQueue)
+    {
+        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Draining FrameSync");
+        m_FrameSync->Drain(m_GraphicsQueue.get());
+        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Drain Done");
+    }
+
+    // 3. Flush all deferred deletions now that we know the GPU is idle and all tickets are completed.
     if (m_DeferredDeletion)
     {
         LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Flushing Deferred Deletion");
@@ -332,23 +340,21 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
         LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Flush Done");
     }
 
+    // 4. Destroy managers that might rely on the device still being alive
     delete m_GPUPipelineManager;
     delete m_DescriptorPool;
 
-    if (m_FrameSync && m_GraphicsQueue)
-    {
-        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Draining FrameSync");
-        m_FrameSync->Drain(m_GraphicsQueue.get());
-        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Drain Done");
-    }
+    // 5. Clean up sync and queue objects
     m_FrameSync.reset();
-    // Destroy queues before destroying the device to avoid invalid vkQueueWaitIdle calls.
     m_GraphicsQueue.reset();
+
+    // 6. Finally destroy the Vulkan device
     LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Destroying VkDevice");
     vkDestroyDevice(m_VkDevice, nullptr);
     LOG_DEBUG("## Destroy Vulkan Device ##");
+    
     m_Instance = nullptr;
-    LOG_INFO("[RHIVkDevice::~RHIVkDevice]: ~RHIVkDevice");
+    LOG_INFO("[RHIVkDevice::~RHIVkDevice]: ~RHIVkDevice End");
 }
 
 

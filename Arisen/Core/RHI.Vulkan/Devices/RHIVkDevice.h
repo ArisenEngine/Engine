@@ -95,9 +95,9 @@ namespace ArisenEngine::RHI
 
     public:
         // Deferred destruction (GPU-safe): enqueue on producer threads, flush on the frame fence.
-        void EnqueueDeferredDestroy(UInt32 frameIndex, RHIDeferredDeleteItem item);
-        void EnqueueDeferredDestroy(UInt32 frameIndex, std::function<void()>&& fn);
-        void FlushDeferredDestroys(UInt32 frameIndex);
+        void EnqueueDeferredDestroy(RHIGpuTicket ticket, RHIDeferredDeleteItem item);
+        void EnqueueDeferredDestroy(RHIGpuTicket ticket, std::function<void()>&& fn);
+        void FlushDeferredDestroys(RHIGpuTicket ticket);
 
         // Modern resource system entry point
         RHIResourceRegistry* GetResourceRegistry() const { return m_ResourceRegistry.get(); }
