@@ -120,7 +120,6 @@ ArisenEngine::RHI::ImageHandle* ArisenEngine::RHI::RHIVkSwapChain::AquireCurrent
 {
     auto currentFrame = frameIndex % m_MaxFramesInFlight;
     uint32_t imageIndex = 0;
-    LOG_INFO("[RHIVkSwapChain::AquireCurrentImage]: Frame " + std::to_string(frameIndex) + " acquiring image.");
     if (vkAcquireNextImageKHR(m_VkDevice, m_VkSwapChain, UINT64_MAX, static_cast<VkSemaphore>(
                               m_ImageAvailableSemaphores[currentFrame]->GetHandle()),
                               VK_NULL_HANDLE, &imageIndex) != VK_SUCCESS)
@@ -128,7 +127,6 @@ ArisenEngine::RHI::ImageHandle* ArisenEngine::RHI::RHIVkSwapChain::AquireCurrent
         LOG_ERROR("[RHIVkSwapChain::AquireCurrentImage]: failed to acquire next image (frame %u).", frameIndex);
         return nullptr;
     }
-    LOG_INFO("[RHIVkSwapChain::AquireCurrentImage]: Acquired image " + std::to_string(imageIndex) + " for frame " + std::to_string(frameIndex));
     m_AcquiredImageIndices[currentFrame] = imageIndex;
     return m_ImageHandles[imageIndex].get();
 }

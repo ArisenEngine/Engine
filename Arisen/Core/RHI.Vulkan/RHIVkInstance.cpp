@@ -571,17 +571,6 @@ void ArisenEngine::RHI::RHIVkInstance::CheckSwapChainCapabilities()
 
         rhiSurface->SetSwapChainSupportDetail(std::move(swapChainSupportDetail));
         rhiSurface->SetQueueFamilyIndices(std::move(FindQueueFamilies(vkSurface)));
-        
-        LOG_DEBUG("Surface " + std::to_string(windowId) + " supported format and color space : ");
-        for (auto& format : swapChainSupportDetail.formats)
-        {
-            LOG_DEBUG("Format:" + std::to_string(format.format) + ", Space:" + std::to_string(format.colorSpace));
-        }
-        LOG_DEBUG("Surface " + std::to_string(windowId) + " supported present mode : ");
-        for (auto& present : swapChainSupportDetail.presentModes)
-        {
-            LOG_DEBUG("Mode :" + std::to_string(present));
-        }
     }
 }
 
@@ -661,9 +650,6 @@ void ArisenEngine::RHI::RHIVkInstance::PickPhysicalDevice(bool considerSurface)
         
         int score = RateDeviceSuitability(device);
         candidates.insert(std::make_pair(score, device));
-
-        LOG_DEBUG("[RHIVkInstance::PickPhysicalDevice]: " + std::string(deviceProperties.deviceName)
-            + "'s score :" + std::to_string(score));
     }
 
     // Check if the best candidate is suitable at all
