@@ -41,11 +41,11 @@ namespace ArisenEngine::RHI
         UInt32 CreateCommandBufferPool() override;
         RHICommandBufferPool* GetCommandBufferPool(UInt32 id) override;
 
-        std::shared_ptr<GPURenderPass> GetRenderPass() override;
-        void ReleaseRenderPass(std::shared_ptr<GPURenderPass> renderPass) override;
+        GPURenderPass* GetRenderPass() override;
+        void ReleaseRenderPass(GPURenderPass* renderPass) override;
 
-        std::shared_ptr<FrameBuffer> GetFrameBuffer() override;
-        void ReleaseFrameBuffer(std::shared_ptr<FrameBuffer> frameBuffer) override;
+        FrameBuffer* GetFrameBuffer() override;
+        void ReleaseFrameBuffer(FrameBuffer* frameBuffer) override;
 
         std::shared_ptr<BufferHandle> GetBufferHandle(const std::string&& name = "Anonymous") override;
         void ReleaseBufferHandle(std::shared_ptr<BufferHandle> bufferHandle) override;
@@ -88,8 +88,6 @@ namespace ArisenEngine::RHI
         
         Containers::Map<UInt32, std::unique_ptr<RHIVkGPUProgram>> m_GPUPrograms;
         Containers::Map<UInt32, std::unique_ptr<RHIVkCommandBufferPool>> m_CommandBufferPools;
-        Containers::Vector<std::shared_ptr<GPURenderPass>> m_RenderPasses;
-        Containers::Vector<std::shared_ptr<FrameBuffer>> m_FrameBuffers;
         Containers::Vector<std::shared_ptr<BufferHandle>> m_BufferHandles;
         Containers::Vector<std::shared_ptr<ImageHandle>> m_ImageHandles;
         std::unique_ptr<IRHIDeferredDeletionQueue> m_DeferredDeletion;

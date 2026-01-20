@@ -77,46 +77,36 @@ ArisenEngine::RHI::RHICommandBufferPool* ArisenEngine::RHI::RHIVkDevice::GetComm
     return m_CommandBufferPools[id].get();
 }
 
-std::shared_ptr<ArisenEngine::RHI::GPURenderPass> ArisenEngine::RHI::RHIVkDevice::GetRenderPass()
+ArisenEngine::RHI::GPURenderPass* ArisenEngine::RHI::RHIVkDevice::GetRenderPass()
 {
-    std::shared_ptr<GPURenderPass> renderPass;
-    if (m_RenderPasses.size() > 0)
-    {
-        renderPass = m_RenderPasses.back();
-        m_RenderPasses.pop_back();
-    }
-    else
-    {
-        renderPass = std::make_shared<RHIVkGPURenderPass>(m_VkDevice, m_Instance->GetMaxFramesInFlight());
-    }
-
-    return renderPass;
+    return new RHIVkGPURenderPass(this, m_Instance->GetMaxFramesInFlight());
 }
 
-void ArisenEngine::RHI::RHIVkDevice::ReleaseRenderPass(std::shared_ptr<GPURenderPass> renderPass)
+void ArisenEngine::RHI::RHIVkDevice::ReleaseRenderPass(GPURenderPass* renderPass)
 {
-    m_RenderPasses.emplace_back(renderPass);
+    if (renderPass)
+    {
+        EnqueueDeferredDestroy(m_CurrentFrameIndex.load(), [renderPass]()
+        {
+            delete renderPass;
+        });
+    }
 }
 
-std::shared_ptr<ArisenEngine::RHI::FrameBuffer> ArisenEngine::RHI::RHIVkDevice::GetFrameBuffer()
+ArisenEngine::RHI::FrameBuffer* ArisenEngine::RHI::RHIVkDevice::GetFrameBuffer()
 {
-    std::shared_ptr<FrameBuffer> frameBuffer;
-    if (m_FrameBuffers.size() > 0)
-    {
-        frameBuffer = m_FrameBuffers.back();
-        m_FrameBuffers.pop_back();
-    }
-    else
-    {
-        frameBuffer = std::make_shared<RHIVkFrameBuffer>(m_VkDevice, m_Instance->GetMaxFramesInFlight());
-    }
-
-    return frameBuffer;
+    return new RHIVkFrameBuffer(this, m_Instance->GetMaxFramesInFlight());
 }
 
-void ArisenEngine::RHI::RHIVkDevice::ReleaseFrameBuffer(std::shared_ptr<FrameBuffer> frameBuffer)
+void ArisenEngine::RHI::RHIVkDevice::ReleaseFrameBuffer(FrameBuffer* frameBuffer)
 {
-    m_FrameBuffers.emplace_back(frameBuffer);
+    if (frameBuffer)
+    {
+        EnqueueDeferredDestroy(m_CurrentFrameIndex.load(), [frameBuffer]()
+        {
+            delete frameBuffer;
+        });
+    }
 }
 
 std::shared_ptr<ArisenEngine::RHI::BufferHandle> ArisenEngine::RHI::RHIVkDevice::GetBufferHandle(const std::string&& name)
@@ -331,8 +321,7 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
 
     delete m_GPUPipelineManager;
     delete m_DescriptorPool;
-    m_FrameBuffers.clear();
-    m_RenderPasses.clear();
+
     m_GPUPrograms.clear();
     m_CommandBufferPools.clear();
     m_BufferHandles.clear();

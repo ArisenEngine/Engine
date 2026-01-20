@@ -6,9 +6,7 @@
 
 using namespace ArisenEngine;
 
-// Keep render passes alive across FFI by retaining shared_ptrs keyed by raw pointer.
-static std::unordered_map<RHI::GPURenderPass*, std::shared_ptr<RHI::GPURenderPass>> g_RenderPassKeepAlive;
-static std::mutex g_RenderPassKeepAliveMutex;
+
 
 extern "C" ENGINE_DLL RHI_PipelineManagerHandle RHI_Device_GetPipelineManager(RHI_DeviceHandle device)
 {
@@ -198,12 +196,7 @@ extern "C" ENGINE_DLL RHI_RenderPassHandle RHI_Device_GetRenderPass(RHI_DeviceHa
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return nullptr;
-    auto sp = dev->GetRenderPass();
-    auto* raw = sp.get();
-    {
-        std::lock_guard<std::mutex> lock(g_RenderPassKeepAliveMutex);
-        g_RenderPassKeepAlive[raw] = sp;
-    }
+    auto* raw = dev->GetRenderPass();
     return reinterpret_cast<RHI_RenderPassHandle>(raw);
 }
 
@@ -275,20 +268,7 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseRenderPass(RHI_DeviceHandle device,
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     auto* r = reinterpret_cast<RHI::GPURenderPass*>(rp);
     if (dev == nullptr || r == nullptr) return;
-    std::shared_ptr<RHI::GPURenderPass> sp;
-    {
-        std::lock_guard<std::mutex> lock(g_RenderPassKeepAliveMutex);
-        auto it = g_RenderPassKeepAlive.find(r);
-        if (it != g_RenderPassKeepAlive.end())
-        {
-            sp = it->second;
-            g_RenderPassKeepAlive.erase(it);
-        }
-    }
-    if (sp)
-    {
-        dev->ReleaseRenderPass(sp);
-    }
+    dev->ReleaseRenderPass(r);
 }
 
 

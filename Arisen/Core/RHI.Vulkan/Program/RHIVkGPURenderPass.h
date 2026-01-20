@@ -14,11 +14,12 @@
 
 namespace ArisenEngine::RHI
 {
+    class RHIVkDevice;
     class RHIVkGPURenderPass final : public GPURenderPass
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkGPURenderPass)
-        RHIVkGPURenderPass(VkDevice device, UInt32 maxFramesInFlight);
+        RHIVkGPURenderPass(RHIVkDevice* device, UInt32 maxFramesInFlight);
         ~RHIVkGPURenderPass() noexcept override;
 
         void* GetHandle(UInt32 frameIndex) override;
@@ -52,7 +53,7 @@ namespace ArisenEngine::RHI
             }
         };
 
-        VkDevice m_VkDevice;
+        RHIVkDevice* m_Device;
         Containers::Vector<VkAttachmentDescription> m_AttachmentDescriptions;
         Containers::Vector<VkSubpassDescription> m_SubpassDescriptions;
         Containers::Vector<VkSubpassDependency> m_Dependencies;

@@ -1,6 +1,7 @@
 #include "RHIVkGPURenderPass.h"
 #include "RHIVkGPUSubPass.h"
 #include "Logger/Logger.h"
+#include "../Devices/RHIVkDevice.h"
 #include <vector>
 #include <map>
 #include <tuple> // For std::tie
@@ -93,7 +94,7 @@ struct RenderPassCacheKey {
 
 } // namespace ArisenEngine::RHI
 
-ArisenEngine::RHI::RHIVkGPURenderPass::RHIVkGPURenderPass(VkDevice device, UInt32 maxFramesInFlight): GPURenderPass(maxFramesInFlight), m_VkDevice(device)
+ArisenEngine::RHI::RHIVkGPURenderPass::RHIVkGPURenderPass(RHIVkDevice* device, UInt32 maxFramesInFlight): GPURenderPass(maxFramesInFlight), m_Device(device)
 {
     m_VkRenderPasses.resize(maxFramesInFlight);
     for(int i = 0; i < maxFramesInFlight; ++i)
@@ -208,7 +209,8 @@ void ArisenEngine::RHI::RHIVkGPURenderPass::AllocRenderPass(UInt32 frameIndex)
     renderPassInfo.pDependencies = m_Dependencies.data();
     
     VkRenderPass newPass = VK_NULL_HANDLE;
-    if (vkCreateRenderPass(m_VkDevice, &renderPassInfo, nullptr, &newPass) != VK_SUCCESS)
+    auto device = static_cast<VkDevice>(m_Device->GetHandle());
+    if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &newPass) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("[RHIVkGPURenderPass::AllocRenderPass]: failed to create render pass!");
     }
@@ -235,11 +237,12 @@ void ArisenEngine::RHI::RHIVkGPURenderPass::FreeRenderPass(UInt32 frameIndex)
 
 void ArisenEngine::RHI::RHIVkGPURenderPass::FreeAllRenderPasses()
 {
+    auto device = static_cast<VkDevice>(m_Device->GetHandle());
     for (auto const& [key, pass] : m_RenderPassCache)
     {
         if (pass != VK_NULL_HANDLE)
         {
-            vkDestroyRenderPass(m_VkDevice, pass, nullptr);
+            vkDestroyRenderPass(device, pass, nullptr);
         }
     }
     m_RenderPassCache.clear();

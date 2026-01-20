@@ -2,13 +2,14 @@
 #include "../Program/RHIVkGPURenderPass.h"
 #include "RHI/Memory/ImageView.h"
 #include "Logger/Logger.h"
+#include "../Devices/RHIVkDevice.h"
 #include <vulkan/vulkan_core.h>
 #include <tuple>
 #include <algorithm>
 
 namespace ArisenEngine::RHI {
 
-ArisenEngine::RHI::RHIVkFrameBuffer::RHIVkFrameBuffer(VkDevice device, UInt32 maxFramesInFlight): FrameBuffer(maxFramesInFlight), m_VkDevice(device)
+ArisenEngine::RHI::RHIVkFrameBuffer::RHIVkFrameBuffer(RHIVkDevice* device, UInt32 maxFramesInFlight): FrameBuffer(maxFramesInFlight), m_Device(device)
 {
     m_VkFrameBuffers.resize(maxFramesInFlight);
     for (int i = 0; i < maxFramesInFlight; ++i)
@@ -19,6 +20,8 @@ ArisenEngine::RHI::RHIVkFrameBuffer::RHIVkFrameBuffer(VkDevice device, UInt32 ma
 
 ArisenEngine::RHI::RHIVkFrameBuffer::~RHIVkFrameBuffer() noexcept
 {
+   // This destructor is called via RHIVkDevice::ReleaseFrameBuffer's deferred lambda.
+   // Thus, FreeAllFrameBuffers() executes safely on the CPU after the GPU has finished the frame.
    FreeAllFrameBuffers();
 }
 
@@ -69,7 +72,8 @@ void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachments(UInt32 frameIndex, cons
         createInfo.layers = key.layers;
 
         VkFramebuffer newFb = VK_NULL_HANDLE;
-        if (vkCreateFramebuffer(m_VkDevice, &createInfo, nullptr, &newFb) != VK_SUCCESS)
+        auto device = static_cast<VkDevice>(m_Device->GetHandle());
+        if (vkCreateFramebuffer(device, &createInfo, nullptr, &newFb) != VK_SUCCESS)
         {
             LOG_FATAL_AND_THROW("[RHIVkFrameBuffer::SetAttachments]: failed to create framebuffer!");
         }
@@ -101,11 +105,12 @@ void ArisenEngine::RHI::RHIVkFrameBuffer::FreeFrameBuffer(UInt32 currentFrameInd
 
 void ArisenEngine::RHI::RHIVkFrameBuffer::FreeAllFrameBuffers()
 {
+    auto device = static_cast<VkDevice>(m_Device->GetHandle());
     for (auto const& [key, fb] : m_FramebufferCache)
     {
         if (fb != VK_NULL_HANDLE)
         {
-            vkDestroyFramebuffer(m_VkDevice, fb, nullptr);
+            vkDestroyFramebuffer(device, fb, nullptr);
         }
     }
     m_FramebufferCache.clear();

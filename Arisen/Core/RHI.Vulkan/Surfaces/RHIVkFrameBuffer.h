@@ -9,11 +9,12 @@
 
 namespace ArisenEngine::RHI
 {
+    class RHIVkDevice;
     class RHIVkFrameBuffer final : public FrameBuffer
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkFrameBuffer)
-        RHIVkFrameBuffer(VkDevice device, UInt32 maxFramesInFlight);
+        RHIVkFrameBuffer(RHIVkDevice* device, UInt32 maxFramesInFlight);
         ~RHIVkFrameBuffer() noexcept override;
 
         void* GetHandle(UInt32 currentFrameIndex) override;
@@ -42,7 +43,7 @@ namespace ArisenEngine::RHI
         };
 
         Containers::Vector<VkFramebuffer> m_VkFrameBuffers;
-        VkDevice m_VkDevice;
+        RHIVkDevice* m_Device;
         ImageView* m_ImageView {nullptr};
         std::map<FramebufferCacheKey, VkFramebuffer> m_FramebufferCache;
     };
