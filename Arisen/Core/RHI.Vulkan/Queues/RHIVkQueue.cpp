@@ -57,7 +57,7 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     auto* vkCmd = static_cast<RHIVkCommandBuffer*>(commandBuffer);
 
     // Timeline signal value
-    const auto submitId = m_NextSubmitId.fetch_add(1, std::memory_order_acq_rel);
+    const auto submitId = m_LatestTicket.fetch_add(1, std::memory_order_acq_rel) + 1;
 
     VkTimelineSemaphoreSubmitInfo timelineInfo{};
     timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
@@ -75,7 +75,7 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
         waitValues.resize(submitInfo.waitSemaphoreCount, 0); // Binary semaphores use 0
         timelineInfo.waitSemaphoreValueCount = submitInfo.waitSemaphoreCount;
         timelineInfo.pWaitSemaphoreValues = waitValues.data();
-        LOG_INFO("[RHIVkQueue::SubmitWithFence]: Wait %u semaphores", submitInfo.waitSemaphoreCount);
+        LOG_INFO("[RHIVkQueue::SubmitWithFence]: Wait " + std::to_string(submitInfo.waitSemaphoreCount) + " semaphores");
     }
 
     submitInfo.commandBufferCount = 1;
@@ -101,7 +101,7 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     submitInfo.pSignalSemaphores = signalSemaphores.data();
     timelineInfo.signalSemaphoreValueCount = static_cast<uint32_t>(signalValues.size());
     timelineInfo.pSignalSemaphoreValues = signalValues.data();
-    LOG_INFO("[RHIVkQueue::SubmitWithFence]: Signalling %u semaphores. Ticket: %llu", submitInfo.signalSemaphoreCount, submitId);
+    LOG_INFO("[RHIVkQueue::SubmitWithFence]: Signalling " + std::to_string(submitInfo.signalSemaphoreCount) + " semaphores. Ticket: " + std::to_string(submitId));
 
     std::lock_guard<std::mutex> lock(m_Mutex);
 
@@ -110,7 +110,7 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
         LOG_FATAL_AND_THROW("[RHIVkQueue::Submit]: failed to submit command buffer!");
     }
 
-    m_LastSubmittedSubmitId.store(submitId, std::memory_order_release);
+    // m_LatestTicket already updated via fetch_add above.
 
     // Mark descriptor pools used by this submission so ResetPool can be GPU-safe.
     for (const auto& t : vkCmd->GetTrackedDescriptorPools())
@@ -179,8 +179,8 @@ void ArisenEngine::RHI::RHIVkQueue::WaitForTicket(RHIGpuTicket ticket)
     waitInfo.pSemaphores = &m_TimelineSemaphore;
     waitInfo.pValues = &ticket;
 
-    LOG_INFO("[RHIVkQueue::WaitForTicket] Waiting for ticket %llu (Current: %llu)", ticket, GetCompletedTicket());
+    LOG_INFO("[RHIVkQueue::WaitForTicket] Waiting for ticket " + std::to_string(ticket) + " (Current: " + std::to_string(GetCompletedTicket()) + ")");
     vkWaitSemaphores(m_Device, &waitInfo, UINT64_MAX);
     Update();
-    LOG_INFO("[RHIVkQueue::WaitForTicket] Wait finished for ticket %llu (Current: %llu)", ticket, GetCompletedTicket());
+    LOG_INFO("[RHIVkQueue::WaitForTicket] Wait finished for ticket " + std::to_string(ticket) + " (Current: " + std::to_string(GetCompletedTicket()) + ")");
 }

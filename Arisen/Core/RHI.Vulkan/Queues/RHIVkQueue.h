@@ -37,10 +37,10 @@ namespace ArisenEngine::RHI
         {
             return m_CompletedSubmitId.load(std::memory_order_acquire);
         }
-
-        RHIGpuTicket GetLastSubmittedTicket() const override
+        
+        RHIGpuTicket GetLatestTicket() const override
         {
-            return m_LastSubmittedSubmitId.load(std::memory_order_acquire);
+            return m_LatestTicket.load(std::memory_order_acquire);
         }
 
         void WaitForTicket(RHIGpuTicket ticket) override;
@@ -57,8 +57,7 @@ namespace ArisenEngine::RHI
         std::mutex m_Mutex;
         VkSemaphore m_TimelineSemaphore { VK_NULL_HANDLE };
 
-        std::atomic<RHIGpuTicket> m_NextSubmitId { 1 };
-        std::atomic<RHIGpuTicket> m_LastSubmittedSubmitId { 0 };
+        std::atomic<RHIGpuTicket> m_LatestTicket { 0 };
         std::atomic<RHIGpuTicket> m_CompletedSubmitId { 0 };
     };
 }
