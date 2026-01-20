@@ -2,11 +2,7 @@
 #include "../../Core/Core.Infra/RHI/Memory/ImageView.h"
 #include <unordered_map>
 
-using BufferHandlePtr = std::shared_ptr<ArisenEngine::RHI::BufferHandle>;
-using ImageHandlePtr  = std::shared_ptr<ArisenEngine::RHI::ImageHandle>;
 
-static std::unordered_map<ArisenEngine::RHI::BufferHandle*, BufferHandlePtr> g_BufferKeepAlive;
-static std::unordered_map<ArisenEngine::RHI::ImageHandle*, ImageHandlePtr>  g_ImageKeepAlive;
 
 using namespace ArisenEngine;
 
@@ -14,9 +10,7 @@ extern "C" ENGINE_DLL RHI_BufferHandle RHI_Device_GetBufferHandle(RHI_DeviceHand
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return nullptr;
-    BufferHandlePtr handle = dev->GetBufferHandle(name != nullptr ? std::string(name) : std::string("Anonymous"));
-    auto* raw = handle.get();
-    g_BufferKeepAlive[raw] = handle;
+    auto* raw = dev->GetBufferHandle(name != nullptr ? std::string(name) : std::string("Anonymous"));
     return reinterpret_cast<RHI_BufferHandle>(raw);
 }
 
@@ -25,12 +19,7 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseBufferHandle(RHI_DeviceHandle devic
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     auto* ptr = reinterpret_cast<RHI::BufferHandle*>(buffer);
     if (dev == nullptr || ptr == nullptr) return;
-    auto it = g_BufferKeepAlive.find(ptr);
-    if (it != g_BufferKeepAlive.end())
-    {
-        dev->ReleaseBufferHandle(it->second);
-        g_BufferKeepAlive.erase(it);
-    }
+    dev->ReleaseBufferHandle(ptr);
 }
 
 extern "C" ENGINE_DLL bool RHI_Buffer_Alloc(RHI_BufferHandle buffer, const RHI::BufferDescriptor* desc)
@@ -87,9 +76,7 @@ extern "C" ENGINE_DLL RHI_ImageHandle RHI_Device_GetImageHandle(RHI_DeviceHandle
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return nullptr;
-    ImageHandlePtr handle = dev->GetImageHandle(name != nullptr ? std::string(name) : std::string("Anonymous"));
-    auto* raw = handle.get();
-    g_ImageKeepAlive[raw] = handle;
+    auto* raw = dev->GetImageHandle(name != nullptr ? std::string(name) : std::string("Anonymous"));
     return reinterpret_cast<RHI_ImageHandle>(raw);
 }
 
@@ -98,12 +85,7 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseImageHandle(RHI_DeviceHandle device
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     auto* ptr = reinterpret_cast<RHI::ImageHandle*>(image);
     if (dev == nullptr || ptr == nullptr) return;
-    auto it = g_ImageKeepAlive.find(ptr);
-    if (it != g_ImageKeepAlive.end())
-    {
-        dev->ReleaseImageHandle(it->second);
-        g_ImageKeepAlive.erase(it);
-    }
+    dev->ReleaseImageHandle(ptr);
 }
 
 extern "C" ENGINE_DLL void RHI_Image_Alloc(RHI_ImageHandle image, const RHI::ImageDescriptor* desc)

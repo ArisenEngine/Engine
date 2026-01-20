@@ -63,6 +63,9 @@ namespace ArisenEngine::Testing
         {
             switch (msg)
             {
+            case WM_CLOSE:
+                DestroyWindow(hwnd);
+                return 0;
             case WM_DESTROY:
                 PostQuitMessage(0);
                 return 0;

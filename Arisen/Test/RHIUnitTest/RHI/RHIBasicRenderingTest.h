@@ -68,12 +68,12 @@ namespace ArisenEngine::Testing
             RHI_BufferHandle indicesBufferHandle;
             Containers::Vector<RHI_BufferHandle> uniformBuffers;
             RHI_ImageHandle textureHandle;
-            unsigned int commandPoolId;
+            RHI_CommandBufferPoolHandle commandPool;
             RHI_DescriptorPoolHandle descriptorPool;
             RHI_SubpassHandle subpass;
             RHI_PSOHandle pipelineState;
             RHI_PipelineHandle pipeline;
-            Containers::Vector<UInt32> gpuPrograms;
+            Containers::Vector<RHI_GPUProgramHandle> gpuPrograms;
             Containers::Vector<UInt32> descriptorPoolIds;
             bool bShouldResize;
         };
@@ -176,12 +176,13 @@ namespace ArisenEngine::Testing
                 RHI_Device_ReleaseFrameBuffer(m_Context.device, m_Context.frameBuffer);
                 m_Context.frameBuffer = nullptr;
             }
-            if (m_Context.renderPass)
+          
             if (m_Context.frameBuffer)
             {
                 RHI_Device_ReleaseFrameBuffer(m_Context.device, m_Context.frameBuffer);
                 m_Context.frameBuffer = nullptr;
             }
+            
             if (m_Context.renderPass)
             {
                 RHI_Device_ReleaseRenderPass(m_Context.device, m_Context.renderPass);
@@ -219,6 +220,21 @@ namespace ArisenEngine::Testing
                 m_Context.pipelineState = nullptr;
             }
             
+            // Release Programs
+            for (auto& program : m_Context.gpuPrograms)
+            {
+                if (program)
+                    RHI_Device_ReleaseGPUProgram(m_Context.device, program);
+            }
+            m_Context.gpuPrograms.clear();
+
+            // Release Command Pool
+            if (m_Context.commandPool)
+            {
+                RHI_Device_ReleaseCommandBufferPool(m_Context.device, m_Context.commandPool);
+                m_Context.commandPool = nullptr;
+            }
+
             // Note: DescriptorPool is seemingly owned by Device or not exposed for explicit release in Exports.
             // Assuming Device destruction handles it or it's a non-owning handle.
             // Update: DescriptorExports has no Release/Destroy for pool.
@@ -257,7 +273,7 @@ namespace ArisenEngine::Testing
 
         void InitRenderContext()
         {
-            m_Context.commandPoolId = RHI_Device_CreateCommandBufferPool(m_Context.device);
+            m_Context.commandPool = RHI_Device_CreateCommandBufferPool(m_Context.device);
             m_Context.renderPass = RHI_Device_GetRenderPass(m_Context.device);
             
             // Configure RenderPass
@@ -313,9 +329,9 @@ namespace ArisenEngine::Testing
             RHI_PSO_AddVertexInputAttributeDescription(pipelineState, 0, 0, RHI::EFormat::FORMAT_R32G32_SFLOAT, offsetof(Vertex, pos));
             RHI_PSO_AddVertexInputAttributeDescription(pipelineState, 1, 0, RHI::EFormat::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color));
 
-            for (auto programId : m_Context.gpuPrograms)
+            for (auto program : m_Context.gpuPrograms)
             {
-                RHI_PSO_AddProgram(pipelineState, programId);
+                RHI_PSO_AddProgram(pipelineState, program);
             }
             RHI_PSO_BuildDescriptorSetLayout(pipelineState);
 
@@ -398,7 +414,7 @@ namespace ArisenEngine::Testing
             LOG_DEBUG("Vertex Shader Compilation done.");
 
             {
-                auto programId = RHI_Device_CreateGPUProgram(m_Context.device);
+                auto program = RHI_Device_CreateGPUProgram(m_Context.device);
                 std::string nameStr = String::WStringToString(path);
                 auto desc = RHI::GPUProgramDesc
                 {
@@ -408,8 +424,8 @@ namespace ArisenEngine::Testing
                     nameStr.c_str(),
                     RHI::SHADER_STAGE_VERTEX_BIT
                 };
-                RHI_Device_AttachProgramByteCode(m_Context.device, programId, &desc);
-                m_Context.gpuPrograms.emplace_back(programId);
+                RHI_Device_AttachProgramByteCode(m_Context.device, program, &desc);
+                m_Context.gpuPrograms.emplace_back(program);
             }
             if (outputVertex.codePointer)
             {
@@ -441,7 +457,7 @@ namespace ArisenEngine::Testing
             LOG_DEBUG("Fragment Shader Compilation done.");
 
             {
-                auto programId = RHI_Device_CreateGPUProgram(m_Context.device);
+                auto program = RHI_Device_CreateGPUProgram(m_Context.device);
                 std::string nameStr = String::WStringToString(path);
                 auto desc = RHI::GPUProgramDesc
                 {
@@ -451,8 +467,8 @@ namespace ArisenEngine::Testing
                     nameStr.c_str(),
                     RHI::SHADER_STAGE_FRAGMENT_BIT
                 };
-                RHI_Device_AttachProgramByteCode(m_Context.device, programId, &desc);
-                m_Context.gpuPrograms.emplace_back(programId);
+                RHI_Device_AttachProgramByteCode(m_Context.device, program, &desc);
+                m_Context.gpuPrograms.emplace_back(program);
             }
             if (outputfragment.codePointer)
             {
@@ -564,7 +580,7 @@ namespace ArisenEngine::Testing
             RHI_Buffer_AllocDeviceMemory(indicesStagingBufferHandle, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
             RHI_Buffer_MemoryCopy(indicesStagingBufferHandle, indices.data(), 0);
 
-            auto commandBuffer = RHI_Device_GetCommandBuffer(device, m_Context.commandPoolId, m_FrameIndex);
+            auto commandBuffer = RHI_Device_GetCommandBuffer(device, m_Context.commandPool, m_FrameIndex);
             RHI_Cmd_Begin(commandBuffer, m_FrameIndex, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
             RHI_Cmd_CopyBuffer(commandBuffer, vertexStagingBufferHandle, 0, vertexBufferHandle, 0, RHI_Buffer_Size(vertexBufferHandle));
             RHI_Cmd_CopyBuffer(commandBuffer, indicesStagingBufferHandle, 0, indicesBufferHandle, 0, RHI_Buffer_Size(indicesBufferHandle));
@@ -575,7 +591,7 @@ namespace ArisenEngine::Testing
             RHI_Device_ReleaseBufferHandle(device, vertexStagingBufferHandle);
             RHI_Device_ReleaseBufferHandle(device, indicesStagingBufferHandle);
 
-            RHI_Device_ReleaseCommandBuffer(device, m_Context.commandPoolId, m_FrameIndex, commandBuffer);
+            RHI_Device_ReleaseCommandBuffer(device, m_Context.commandPool, m_FrameIndex, commandBuffer);
         }
 
         void UploadImage(UInt64 textureSize, void* data, UInt32 texWidth, UInt32 texHeight)
@@ -595,7 +611,7 @@ namespace ArisenEngine::Testing
             RHI_Buffer_MemoryCopy(textureStagingBufferHandle, data, 0);
 
             // Transfer commands
-            auto commandBuffer = RHI_Device_GetCommandBuffer(device, m_Context.commandPoolId, m_FrameIndex);
+            auto commandBuffer = RHI_Device_GetCommandBuffer(device, m_Context.commandPool, m_FrameIndex);
             RHI_Cmd_Begin(commandBuffer, m_FrameIndex, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
             {
                 Containers::Vector<RHI::RHIImageMemoryBarrier> barriers {
@@ -647,7 +663,7 @@ namespace ArisenEngine::Testing
             RHI_Device_Submit(device, commandBuffer, m_FrameIndex);
 
             RHI_Device_ReleaseBufferHandle(device, textureStagingBufferHandle);
-            RHI_Device_ReleaseCommandBuffer(device, m_Context.commandPoolId, m_FrameIndex, commandBuffer);
+            RHI_Device_ReleaseCommandBuffer(device, m_Context.commandPool, m_FrameIndex, commandBuffer);
         }
 
         void UploadUniformBuffer(RenderContext const& context)
@@ -673,7 +689,7 @@ namespace ArisenEngine::Testing
         {
             auto currentIndex = GetCurrentFrameIndex();
             
-            auto commandBuffer = RHI_Device_GetCommandBuffer(context.device, context.commandPoolId, m_FrameIndex);
+            auto commandBuffer = RHI_Device_GetCommandBuffer(context.device, context.commandPool, m_FrameIndex);
             
             auto pipelineState = context.pipelineState;
             Containers::Vector<std::shared_ptr<RHI::BufferHandle>> ubos;
@@ -754,7 +770,7 @@ namespace ArisenEngine::Testing
             
             RHI_SwapChain_Present(swapchain, m_FrameIndex);
 
-            RHI_Device_ReleaseCommandBuffer(context.device, context.commandPoolId, m_FrameIndex, commandBuffer);
+            RHI_Device_ReleaseCommandBuffer(context.device, context.commandPool, m_FrameIndex, commandBuffer);
         }
     };
 }

@@ -33,13 +33,12 @@ namespace ArisenEngine::RHI
 
         void DeviceWaitIdle() const override;
         void GraphicQueueWaitIdle() const override;
-        UInt32 CreateGPUProgram() override;
-        GPUProgram* GetGPUProgram(UInt32 programId) override;
-        void DestroyGPUProgram(UInt32 programId) override;
-        bool AttachProgramByteCode(UInt32 programId, GPUProgramDesc&& desc) override;
+        GPUProgram* CreateGPUProgram() override;
+        void ReleaseGPUProgram(GPUProgram* program) override;
+        bool AttachProgramByteCode(GPUProgram* program, GPUProgramDesc&& desc) override;
 
-        UInt32 CreateCommandBufferPool() override;
-        RHICommandBufferPool* GetCommandBufferPool(UInt32 id) override;
+        RHICommandBufferPool* CreateCommandBufferPool() override;
+        void ReleaseCommandBufferPool(RHICommandBufferPool* pool) override;
 
         GPURenderPass* GetRenderPass() override;
         void ReleaseRenderPass(GPURenderPass* renderPass) override;
@@ -47,11 +46,11 @@ namespace ArisenEngine::RHI
         FrameBuffer* GetFrameBuffer() override;
         void ReleaseFrameBuffer(FrameBuffer* frameBuffer) override;
 
-        std::shared_ptr<BufferHandle> GetBufferHandle(const std::string&& name = "Anonymous") override;
-        void ReleaseBufferHandle(std::shared_ptr<BufferHandle> bufferHandle) override;
+        BufferHandle* GetBufferHandle(const std::string&& name = "Anonymous") override;
+        void ReleaseBufferHandle(BufferHandle* bufferHandle) override;
        
-        std::shared_ptr<ImageHandle> GetImageHandle(const std::string && name = "Anonymous") override;
-        void ReleaseImageHandle(std::shared_ptr<ImageHandle> imageHandle) override;
+        ImageHandle* GetImageHandle(const std::string && name = "Anonymous") override;
+        void ReleaseImageHandle(ImageHandle* imageHandle) override;
 
         GPUPipelineManager* GetGPUPipelineManager() const override
         {
@@ -86,10 +85,8 @@ namespace ArisenEngine::RHI
         VkPhysicalDeviceMemoryProperties m_VkPhysicalDeviceMemoryProperties;
         std::mutex m_SubmitMutex;
         
-        Containers::Map<UInt32, std::unique_ptr<RHIVkGPUProgram>> m_GPUPrograms;
-        Containers::Map<UInt32, std::unique_ptr<RHIVkCommandBufferPool>> m_CommandBufferPools;
-        Containers::Vector<std::shared_ptr<BufferHandle>> m_BufferHandles;
-        Containers::Vector<std::shared_ptr<ImageHandle>> m_ImageHandles;
+
+
         std::unique_ptr<IRHIDeferredDeletionQueue> m_DeferredDeletion;
         std::unique_ptr<RHIResourceRegistry> m_ResourceRegistry;
         std::atomic<UInt32> m_CurrentFrameIndex {0};

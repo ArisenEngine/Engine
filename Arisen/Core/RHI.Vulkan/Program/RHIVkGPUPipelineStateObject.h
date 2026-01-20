@@ -21,7 +21,7 @@ namespace ArisenEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkGPUPipelineStateObject)
         ~RHIVkGPUPipelineStateObject() noexcept override;
         RHIVkGPUPipelineStateObject(RHIVkDevice* device);
-        void AddProgram(UInt32 programId) override;
+        void AddProgram(GPUProgram* program) override;
         void ClearAllPrograms() override;
 
         const UInt32 GetHash() const override;

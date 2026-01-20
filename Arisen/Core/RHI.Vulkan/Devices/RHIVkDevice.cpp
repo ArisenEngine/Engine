@@ -1,6 +1,7 @@
 #include "RHIVkDevice.h"
 
 #include "../Handles/RHIVkBufferHandle.h"
+#include "../Handles/RHIVkImageHandle.h"
 #include "Logger/Logger.h"
 #include "Windows/RenderWindowAPI.h"
 #include "../Utils/RHIVkDeferredDeletion.h"
@@ -35,46 +36,49 @@ void ArisenEngine::RHI::RHIVkDevice::GraphicQueueWaitIdle() const
     vkQueueWaitIdle(m_VkGraphicQueue);
 }
 
-ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDevice::CreateGPUProgram()
+ArisenEngine::RHI::GPUProgram* ArisenEngine::RHI::RHIVkDevice::CreateGPUProgram()
 {
     ASSERT(m_VkDevice != VK_NULL_HANDLE);
-    UInt32 id = static_cast<UInt32>(m_GPUPrograms.size());
-    m_GPUPrograms.emplace(id, std::make_unique<RHIVkGPUProgram>(m_VkDevice));
-    return id;
+    return new RHIVkGPUProgram(m_VkDevice);
 }
 
-ArisenEngine::RHI::GPUProgram* ArisenEngine::RHI::RHIVkDevice::GetGPUProgram(UInt32 programId)
+void ArisenEngine::RHI::RHIVkDevice::ReleaseGPUProgram(GPUProgram* program)
 {
-    ASSERT(m_GPUPrograms[programId]);
-    return m_GPUPrograms[programId].get();
+    if (program)
+    {
+        EnqueueDeferredDestroy(m_CurrentFrameIndex.load(), [program]()
+        {
+            delete program;
+        });
+        LOG_INFO("[RHIVkDevice::ReleaseGPUProgram] Enqueued destroy for Program: %p", program);
+    }
 }
 
-void ArisenEngine::RHI::RHIVkDevice::DestroyGPUProgram(UInt32 programId)
+bool ArisenEngine::RHI::RHIVkDevice::AttachProgramByteCode(GPUProgram* program, GPUProgramDesc&& desc)
 {
-    ASSERT(m_GPUPrograms[programId]);
-    m_GPUPrograms.erase(programId);
+    if (program)
+    {
+        return program->AttachProgramByteCode(std::move(desc));
+    }
+    return false;
 }
 
-bool ArisenEngine::RHI::RHIVkDevice::AttachProgramByteCode(UInt32 programId, GPUProgramDesc&& desc)
-{
-    ASSERT(m_GPUPrograms[programId]);
-    return m_GPUPrograms[programId]->AttachProgramByteCode(std::move(desc));
-}
-
-ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDevice::CreateCommandBufferPool()
+ArisenEngine::RHI::RHICommandBufferPool* ArisenEngine::RHI::RHIVkDevice::CreateCommandBufferPool()
 {
     ASSERT(m_VkDevice != VK_NULL_HANDLE);
-    UInt32 id = static_cast<UInt32>(m_CommandBufferPools.size());
-    m_CommandBufferPools.emplace(
-        id,
-        std::make_unique<RHIVkCommandBufferPool>(this, m_Instance->GetMaxFramesInFlight()));
-    return id;
+    return new RHIVkCommandBufferPool(this, m_Instance->GetMaxFramesInFlight());
 }
 
-ArisenEngine::RHI::RHICommandBufferPool* ArisenEngine::RHI::RHIVkDevice::GetCommandBufferPool(UInt32 id)
+void ArisenEngine::RHI::RHIVkDevice::ReleaseCommandBufferPool(RHICommandBufferPool* pool)
 {
-    ASSERT(m_CommandBufferPools[id]);
-    return m_CommandBufferPools[id].get();
+     if (pool)
+    {
+        EnqueueDeferredDestroy(m_CurrentFrameIndex.load(), [pool]()
+        {
+            delete pool;
+        });
+        LOG_INFO("[RHIVkDevice::ReleaseCommandBufferPool] Enqueued destroy for Pool: %p", pool);
+    }
 }
 
 ArisenEngine::RHI::GPURenderPass* ArisenEngine::RHI::RHIVkDevice::GetRenderPass()
@@ -90,6 +94,7 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseRenderPass(GPURenderPass* renderPass
         {
             delete renderPass;
         });
+        LOG_INFO("[RHIVkDevice::ReleaseRenderPass] Enqueued destroy for RenderPass: %p", renderPass);
     }
 }
 
@@ -106,51 +111,46 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseFrameBuffer(FrameBuffer* frameBuffer
         {
             delete frameBuffer;
         });
+        LOG_INFO("[RHIVkDevice::ReleaseFrameBuffer] Enqueued destroy for FrameBuffer: %p", frameBuffer);
     }
 }
 
-std::shared_ptr<ArisenEngine::RHI::BufferHandle> ArisenEngine::RHI::RHIVkDevice::GetBufferHandle(const std::string&& name)
+ArisenEngine::RHI::BufferHandle* ArisenEngine::RHI::RHIVkDevice::GetBufferHandle(const std::string&& name)
 {
-    std::shared_ptr<BufferHandle> bufferHandle;
-    if (m_BufferHandles.size() > 0)
-    {
-        bufferHandle = m_BufferHandles.back();
-        m_BufferHandles.pop_back();
-    }
-    else
-    {
-        bufferHandle = std::make_shared<RHIVkBufferHandle>(this);
-    }
-
+    auto* bufferHandle = new RHIVkBufferHandle(this);
     bufferHandle->SetName(std::move(name));
     return bufferHandle;
 }
 
-void ArisenEngine::RHI::RHIVkDevice::ReleaseBufferHandle(std::shared_ptr<BufferHandle> bufferHandle)
+void ArisenEngine::RHI::RHIVkDevice::ReleaseBufferHandle(BufferHandle* bufferHandle)
 {
-   
+   if (bufferHandle)
+   {
+       EnqueueDeferredDestroy(m_CurrentFrameIndex.load(), [bufferHandle]()
+       {
+           delete bufferHandle;
+       });
+       LOG_INFO("[RHIVkDevice::ReleaseBufferHandle] Enqueued destroy for Buffer: %p", bufferHandle);
+   }
 }
 
-std::shared_ptr<ArisenEngine::RHI::ImageHandle> ArisenEngine::RHI::RHIVkDevice::GetImageHandle(const std::string&& name)
+ArisenEngine::RHI::ImageHandle* ArisenEngine::RHI::RHIVkDevice::GetImageHandle(const std::string&& name)
 {
-    std::shared_ptr<ImageHandle> imageHandle;
-    if (m_ImageHandles.size() > 0)
-    {
-        imageHandle = m_ImageHandles.back();
-        m_ImageHandles.pop_back();
-    }
-    else
-    {
-        imageHandle = std::make_shared<RHIVkImageHandle>(this);
-    }
-
+    auto* imageHandle = new RHIVkImageHandle(this);
     imageHandle->SetName(std::move(name));
     return imageHandle;
 }
 
-void ArisenEngine::RHI::RHIVkDevice::ReleaseImageHandle(std::shared_ptr<ImageHandle> imageHandle)
+void ArisenEngine::RHI::RHIVkDevice::ReleaseImageHandle(ImageHandle* imageHandle)
 {
-   
+   if (imageHandle)
+   {
+       EnqueueDeferredDestroy(m_CurrentFrameIndex.load(), [imageHandle]()
+       {
+           delete imageHandle;
+       });
+       LOG_INFO("[RHIVkDevice::ReleaseImageHandle] Enqueued destroy for Image: %p", imageHandle);
+   }
 }
 
 void ArisenEngine::RHI::RHIVkDevice::EnqueueDeferredDestroy(UInt32 frameIndex, RHIDeferredDeleteItem item)
@@ -306,32 +306,45 @@ void ArisenEngine::RHI::RHIVkDevice::SetResolution(UInt32 width, UInt32 height)
 
 ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
 {
+    LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Start");
     DeviceWaitIdle();
+    LOG_INFO("[RHIVkDevice::~RHIVkDevice]: DeviceWaitIdle Done");
 
     // After waiting idle, it's safe to flush all deferred deletions immediately
     // so vkDestroy* runs before vkDestroyDevice.
     if (m_DeferredDeletion)
     {
+        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Flushing Deferred Deletion");
         constexpr RHIGpuTicket kAll = ~static_cast<RHIGpuTicket>(0);
+        
+        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Flushing Graphics");
         m_DeferredDeletion->Flush(RHIQueueType::Graphics, kAll);
+        
+        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Flushing Compute");
         m_DeferredDeletion->Flush(RHIQueueType::Compute, kAll);
+        
+        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Flushing Transfer");
         m_DeferredDeletion->Flush(RHIQueueType::Transfer, kAll);
+        
+        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Flushing Present");
         m_DeferredDeletion->Flush(RHIQueueType::Present, kAll);
+        
+        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Flush Done");
     }
 
     delete m_GPUPipelineManager;
     delete m_DescriptorPool;
 
-    m_GPUPrograms.clear();
-    m_CommandBufferPools.clear();
-    m_BufferHandles.clear();
     if (m_FrameSync && m_GraphicsQueue)
     {
+        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Draining FrameSync");
         m_FrameSync->Drain(m_GraphicsQueue.get());
+        LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Drain Done");
     }
     m_FrameSync.reset();
     // Destroy queues before destroying the device to avoid invalid vkQueueWaitIdle calls.
     m_GraphicsQueue.reset();
+    LOG_INFO("[RHIVkDevice::~RHIVkDevice]: Destroying VkDevice");
     vkDestroyDevice(m_VkDevice, nullptr);
     LOG_DEBUG("## Destroy Vulkan Device ##");
     m_Instance = nullptr;
