@@ -21,7 +21,13 @@ inline std::string GetStacktrace()
 {
 #if HAS_STD_STACKTRACE
     std::stringstream trace_stream;
-    trace_stream << std::stacktrace::current();
+    auto trace = std::stacktrace::current();
+    for (size_t i = 1; i < trace.size(); ++i) { // Skip current frame (GetStacktrace)
+        const auto& entry = trace[i];
+        if (!entry.description().empty() || !entry.source_file().empty()) {
+            trace_stream << i << "> " << entry.source_file() << "(" << entry.source_line() << "): " << entry.description() << "\n";
+        }
+    }
     return trace_stream.str();
 #else
     return "[stacktrace not available]";

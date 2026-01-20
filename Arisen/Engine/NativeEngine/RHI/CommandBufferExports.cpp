@@ -2,6 +2,10 @@
 #include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
 #include "../../Core/Core.Infra/RHI/CommandBuffer/RHICommandBufferPool.h"
 
+#include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
+#include "../../Core/Core.Infra/RHI/CommandBuffer/RHICommandBufferPool.h"
+
+// Force rebuild for ABI compatibility check
 using namespace ArisenEngine;
 
 extern "C" ENGINE_DLL RHI_CommandBufferPoolHandle RHI_Device_CreateCommandBufferPool(RHI_DeviceHandle device)

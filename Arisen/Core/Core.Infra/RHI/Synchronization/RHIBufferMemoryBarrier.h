@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "../../Common/PrimitiveTypes.h"
 #include "../Enums/Pipeline/EAccessFlag.h"
+#include "../Enums/Pipeline/EPipelineStageFlag.h"
 #include "../Handles/BufferHandle.h"
 
 namespace ArisenEngine::RHI
