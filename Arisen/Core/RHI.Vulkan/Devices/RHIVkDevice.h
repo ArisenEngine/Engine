@@ -22,6 +22,8 @@ namespace ArisenEngine::RHI
 
 namespace ArisenEngine::RHI
 {
+    class RHIVkFactory;
+
     class RHIVkDevice final: public RHIDevice
     {
         
@@ -33,24 +35,9 @@ namespace ArisenEngine::RHI
 
         void DeviceWaitIdle() const override;
         void GraphicQueueWaitIdle() const override;
-        GPUProgram* CreateGPUProgram() override;
-        void ReleaseGPUProgram(GPUProgram* program) override;
-        bool AttachProgramByteCode(GPUProgram* program, GPUProgramDesc&& desc) override;
 
-        RHICommandBufferPool* CreateCommandBufferPool() override;
-        void ReleaseCommandBufferPool(RHICommandBufferPool* pool) override;
-
-        GPURenderPass* GetRenderPass() override;
-        void ReleaseRenderPass(GPURenderPass* renderPass) override;
-
-        FrameBuffer* GetFrameBuffer() override;
-        void ReleaseFrameBuffer(FrameBuffer* frameBuffer) override;
-
-        BufferHandle* GetBufferHandle(const std::string&& name = "Anonymous") override;
-        void ReleaseBufferHandle(BufferHandle* bufferHandle) override;
-       
-        ImageHandle* GetImageHandle(const std::string && name = "Anonymous") override;
-        void ReleaseImageHandle(ImageHandle* imageHandle) override;
+        RHIFactory* GetFactory() const override;
+        UInt32 GetMaxFramesInFlight() const override;
 
         GPUPipelineManager* GetGPUPipelineManager() const override
         {
@@ -61,8 +48,6 @@ namespace ArisenEngine::RHI
         {
             return m_DescriptorPool;
         }
-
-        RHISampler* CreateSampler(RHISamplerDesc&& desc) override;
 
         void Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex) override;
         IRHIQueue* GetQueue(RHIQueueType type) override;
@@ -79,6 +64,7 @@ namespace ArisenEngine::RHI
         friend class RHIVkInstance;
         RHIVkGPUPipelineManager* m_GPUPipelineManager;
         RHIVkDescriptorPool* m_DescriptorPool;
+        RHIVkFactory* m_Factory;
         VkQueue m_VkGraphicQueue;
         VkQueue m_VkPresentQueue;
         VkDevice m_VkDevice;

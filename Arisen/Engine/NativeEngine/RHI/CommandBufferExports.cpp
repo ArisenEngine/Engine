@@ -1,4 +1,5 @@
 #include "CommandBufferExports.h"
+#include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
 #include "../../Core/Core.Infra/RHI/CommandBuffer/RHICommandBufferPool.h"
 
 using namespace ArisenEngine;
@@ -7,7 +8,7 @@ extern "C" ENGINE_DLL RHI_CommandBufferPoolHandle RHI_Device_CreateCommandBuffer
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return nullptr;
-    return reinterpret_cast<RHI_CommandBufferPoolHandle>(dev->CreateCommandBufferPool());
+    return reinterpret_cast<RHI_CommandBufferPoolHandle>(dev->GetFactory()->CreateCommandBufferPool());
 }
 
 extern "C" ENGINE_DLL void RHI_Device_ReleaseCommandBufferPool(RHI_DeviceHandle device, RHI_CommandBufferPoolHandle pool)
@@ -15,7 +16,7 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseCommandBufferPool(RHI_DeviceHandle 
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     auto* p = reinterpret_cast<RHI::RHICommandBufferPool*>(pool);
     if (dev == nullptr) return;
-    return dev->ReleaseCommandBufferPool(p);
+    return dev->GetFactory()->ReleaseCommandBufferPool(p);
 }
 
 extern "C" ENGINE_DLL RHI_CommandBufferHandle RHI_Device_GetCommandBuffer(RHI_DeviceHandle device, RHI_CommandBufferPoolHandle pool, unsigned int currentFrameIndex)

@@ -1,4 +1,5 @@
 #include "DeviceExports.h"
+#include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
 
 using namespace ArisenEngine;
 
@@ -20,7 +21,7 @@ extern "C" ENGINE_DLL RHI_GPUProgramHandle RHI_Device_CreateGPUProgram(RHI_Devic
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return nullptr;
-    return reinterpret_cast<RHI_GPUProgramHandle>(dev->CreateGPUProgram());
+    return reinterpret_cast<RHI_GPUProgramHandle>(dev->GetFactory()->CreateGPUProgram());
 }
 
 extern "C" ENGINE_DLL void RHI_Device_ReleaseGPUProgram(RHI_DeviceHandle device, RHI_GPUProgramHandle program)
@@ -28,7 +29,7 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseGPUProgram(RHI_DeviceHandle device,
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     auto* p = reinterpret_cast<RHI::GPUProgram*>(program);
     if (dev == nullptr) return;
-    dev->ReleaseGPUProgram(p);
+    dev->GetFactory()->ReleaseGPUProgram(p);
 }
 
 extern "C" ENGINE_DLL bool RHI_Device_AttachProgramByteCode(RHI_DeviceHandle device, RHI_GPUProgramHandle program, const RHI::GPUProgramDesc* desc)
@@ -37,7 +38,7 @@ extern "C" ENGINE_DLL bool RHI_Device_AttachProgramByteCode(RHI_DeviceHandle dev
     auto* p = reinterpret_cast<RHI::GPUProgram*>(program);
     if (dev == nullptr || desc == nullptr || p == nullptr) return false;
     RHI::GPUProgramDesc copy = *desc;
-    return dev->AttachProgramByteCode(p, std::move(copy));
+    return dev->GetFactory()->AttachProgramByteCode(p, std::move(copy));
 }
 
 extern "C" ENGINE_DLL void RHI_Device_SetResolution(RHI_DeviceHandle device, unsigned int width, unsigned int height)
@@ -88,7 +89,7 @@ extern "C" ENGINE_DLL RHI_SamplerHandle RHI_Device_CreateSampler(RHI_DeviceHandl
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr || desc == nullptr) return nullptr;
     RHI::RHISamplerDesc copy = *desc;
-    return reinterpret_cast<RHI_SamplerHandle>(dev->CreateSampler(std::move(copy)));
+    return reinterpret_cast<RHI_SamplerHandle>(dev->GetFactory()->CreateSampler(std::move(copy)));
 }
 
 

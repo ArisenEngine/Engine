@@ -1,4 +1,5 @@
 #include "PipelineExports.h"
+#include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
 #include "../../Core/Core.Infra/RHI/Program/GPUPipelineManager.h"
 #include "../../Core/Core.Infra/RHI/Program/GPUSubPass.h"
 #include <unordered_map>
@@ -197,7 +198,7 @@ extern "C" ENGINE_DLL RHI_RenderPassHandle RHI_Device_GetRenderPass(RHI_DeviceHa
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return nullptr;
-    auto* raw = dev->GetRenderPass();
+    auto* raw = dev->GetFactory()->CreateRenderPass();
     return reinterpret_cast<RHI_RenderPassHandle>(raw);
 }
 
@@ -269,7 +270,7 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseRenderPass(RHI_DeviceHandle device,
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     auto* r = reinterpret_cast<RHI::GPURenderPass*>(rp);
     if (dev == nullptr || r == nullptr) return;
-    dev->ReleaseRenderPass(r);
+    dev->GetFactory()->ReleaseRenderPass(r);
 }
 
 
