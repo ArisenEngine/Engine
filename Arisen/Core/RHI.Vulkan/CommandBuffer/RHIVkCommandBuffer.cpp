@@ -311,40 +311,56 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(
 
     for(int i = 0; i < memoryBarriers.size(); ++i)
     {
-        m_VkMemoryBarriers[i] = CreateMemoryBarrier(memoryBarriers[i].srcAccessMask,  memoryBarriers[i].dstAccessMask);
+        m_VkMemoryBarriers[i] = MemoryBarrier2(
+            MapPipelineStageFlags2(memoryBarriers[i].srcStageMask != PIPELINE_STAGE_NONE ? memoryBarriers[i].srcStageMask : srcStage),
+            MapAccessFlags2(memoryBarriers[i].srcAccessMask),
+            MapPipelineStageFlags2(memoryBarriers[i].dstStageMask != PIPELINE_STAGE_NONE ? memoryBarriers[i].dstStageMask : dstStage),
+            MapAccessFlags2(memoryBarriers[i].dstAccessMask));
     }
     
     for (int i = 0; i < bufferMemoryBarriers.size(); ++i)
     {
-        m_VkBufferMemoryBarriers[i] = BufferMemoryBarrier(
-        bufferMemoryBarriers[i].srcAccessMask, bufferMemoryBarriers[i].dstAccessMask,
-        bufferMemoryBarriers[i].srcQueueFamilyIndex, bufferMemoryBarriers[i].dstQueueFamilyIndex,
-        bufferMemoryBarriers[i].buffer);
+        m_VkBufferMemoryBarriers[i] = BufferMemoryBarrier2(
+            MapPipelineStageFlags2(bufferMemoryBarriers[i].srcStageMask != PIPELINE_STAGE_NONE ? bufferMemoryBarriers[i].srcStageMask : srcStage),
+            MapAccessFlags2(bufferMemoryBarriers[i].srcAccessMask),
+            MapPipelineStageFlags2(bufferMemoryBarriers[i].dstStageMask != PIPELINE_STAGE_NONE ? bufferMemoryBarriers[i].dstStageMask : dstStage),
+            MapAccessFlags2(bufferMemoryBarriers[i].dstAccessMask),
+            bufferMemoryBarriers[i].srcQueueFamilyIndex, bufferMemoryBarriers[i].dstQueueFamilyIndex,
+            bufferMemoryBarriers[i].buffer);
+            
+         CaptureResource(bufferMemoryBarriers[i].buffer);
     }
 
     for (int i = 0; i < imageMemoryBarriers.size(); ++i)
     {
-        m_VkImageMemoryBarriers[i] = ImageMemoryBarrier(
-        imageMemoryBarriers[i].srcAccess, imageMemoryBarriers[i].dstAccess,
-        imageMemoryBarriers[i].srcQueueFamilyIndex, imageMemoryBarriers[i].dstQueueFamilyIndex,
-        imageMemoryBarriers[i].oldLayout, imageMemoryBarriers[i].newLayout, imageMemoryBarriers[i].image,
-        std::move(imageMemoryBarriers[i].subresourceRange));
+        m_VkImageMemoryBarriers[i] = ImageMemoryBarrier2(
+            MapPipelineStageFlags2(imageMemoryBarriers[i].srcStageMask != PIPELINE_STAGE_NONE ? imageMemoryBarriers[i].srcStageMask : srcStage),
+            MapAccessFlags2(imageMemoryBarriers[i].srcAccess),
+            MapPipelineStageFlags2(imageMemoryBarriers[i].dstStageMask != PIPELINE_STAGE_NONE ? imageMemoryBarriers[i].dstStageMask : dstStage),
+            MapAccessFlags2(imageMemoryBarriers[i].dstAccess),
+            imageMemoryBarriers[i].srcQueueFamilyIndex, imageMemoryBarriers[i].dstQueueFamilyIndex,
+            imageMemoryBarriers[i].oldLayout, imageMemoryBarriers[i].newLayout, imageMemoryBarriers[i].image,
+            imageMemoryBarriers[i].subresourceRange);
 
         CaptureResource(imageMemoryBarriers[i].image);
     }
     
-    vkCmdPipelineBarrier(
-        m_VkCommandBuffer,
-        static_cast<VkPipelineStageFlags>(srcStage),
-        static_cast<VkPipelineStageFlags>(dstStage),
-        static_cast<VkDependencyFlags>(dependency),
-        m_VkMemoryBarriers.size(),
-        m_VkMemoryBarriers.size() <= 0 ? nullptr : m_VkMemoryBarriers.data(),
-        m_VkBufferMemoryBarriers.size(),
-        m_VkBufferMemoryBarriers.size() <= 0 ? nullptr : m_VkBufferMemoryBarriers.data(),
-        m_VkImageMemoryBarriers.size(),
-        m_VkImageMemoryBarriers.size() <= 0 ? nullptr : m_VkImageMemoryBarriers.data()
-        );
+    VkDependencyInfoKHR dependencyInfo = DependencyInfo(
+        m_VkMemoryBarriers.size(), m_VkMemoryBarriers.data(),
+        m_VkBufferMemoryBarriers.size(), m_VkBufferMemoryBarriers.data(),
+        m_VkImageMemoryBarriers.size(), m_VkImageMemoryBarriers.data(),
+        static_cast<VkDependencyFlags>(dependency));
+
+    // Use extension function
+    auto func = (PFN_vkCmdPipelineBarrier2KHR)vkGetDeviceProcAddr(m_VkDevice, "vkCmdPipelineBarrier2KHR");
+    if (func)
+    {
+        func(m_VkCommandBuffer, &dependencyInfo);
+    }
+    else
+    {
+        LOG_ERROR("[RHIVkCommandBuffer::PipelineBarrier]: vkCmdPipelineBarrier2KHR not found!");
+    }
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage,

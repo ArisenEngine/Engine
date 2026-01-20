@@ -446,6 +446,11 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     VkPhysicalDeviceTimelineSemaphoreFeatures timelineFeatures{};
     timelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
     timelineFeatures.timelineSemaphore = VK_TRUE;
+
+    VkPhysicalDeviceSynchronization2Features sync2Features{};
+    sync2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
+    sync2Features.synchronization2 = VK_TRUE;
+    timelineFeatures.pNext = &sync2Features;
     
     // Device Create Info
     VkDeviceCreateInfo createInfo{};
