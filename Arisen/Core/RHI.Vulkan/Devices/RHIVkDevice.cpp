@@ -1,5 +1,6 @@
 #include "RHIVkDevice.h"
 
+#include "RHIVkFactory.h"
 #include "../Handles/RHIVkBufferHandle.h"
 #include "../Handles/RHIVkImageHandle.h"
 #include "Logger/Logger.h"
@@ -13,6 +14,7 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surf
 {
     m_GPUPipelineManager = new RHIVkGPUPipelineManager(this, m_Instance->GetMaxFramesInFlight());
     m_DescriptorPool = new RHIVkDescriptorPool(this);
+    m_Factory = new RHIVkFactory(this);
     m_DeferredDeletion = std::make_unique<RHIVkDeferredDeletion>(m_Instance->GetMaxFramesInFlight());
     m_ResourceRegistry = std::make_unique<RHIResourceRegistry>(m_DeferredDeletion.get());
     m_GraphicsQueue = std::make_unique<RHIVkQueue>(m_VkDevice, m_VkGraphicQueue, RHIQueueType::Graphics, m_DeferredDeletion.get(), m_ResourceRegistry.get());
@@ -21,9 +23,14 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surf
     m_FrameSync = std::make_unique<FrameSyncTracker>(maxFramesInFlight);
 }
 
-ArisenEngine::RHI::RHISampler* ArisenEngine::RHI::RHIVkDevice::CreateSampler(RHISamplerDesc&& desc)
+ArisenEngine::RHI::RHIFactory* ArisenEngine::RHI::RHIVkDevice::GetFactory() const
 {
-    return new RHIVkSampler(this, std::move(desc));
+    return m_Factory;
+}
+
+ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDevice::GetMaxFramesInFlight() const
+{
+    return m_Instance->GetMaxFramesInFlight();
 }
 
 void ArisenEngine::RHI::RHIVkDevice::DeviceWaitIdle() const
@@ -36,116 +43,6 @@ void ArisenEngine::RHI::RHIVkDevice::GraphicQueueWaitIdle() const
     vkQueueWaitIdle(m_VkGraphicQueue);
 }
 
-ArisenEngine::RHI::GPUProgram* ArisenEngine::RHI::RHIVkDevice::CreateGPUProgram()
-{
-    ASSERT(m_VkDevice != VK_NULL_HANDLE);
-    return new RHIVkGPUProgram(m_VkDevice);
-}
-
-void ArisenEngine::RHI::RHIVkDevice::ReleaseGPUProgram(GPUProgram* program)
-{
-    if (program)
-    {
-        EnqueueDeferredDestroy(m_GraphicsQueue->GetLatestTicket(), [program]()
-        {
-            delete program;
-        });
-    }
-}
-
-bool ArisenEngine::RHI::RHIVkDevice::AttachProgramByteCode(GPUProgram* program, GPUProgramDesc&& desc)
-{
-    if (program)
-    {
-        return program->AttachProgramByteCode(std::move(desc));
-    }
-    return false;
-}
-
-ArisenEngine::RHI::RHICommandBufferPool* ArisenEngine::RHI::RHIVkDevice::CreateCommandBufferPool()
-{
-    ASSERT(m_VkDevice != VK_NULL_HANDLE);
-    return new RHIVkCommandBufferPool(this, m_Instance->GetMaxFramesInFlight());
-}
-
-void ArisenEngine::RHI::RHIVkDevice::ReleaseCommandBufferPool(RHICommandBufferPool* pool)
-{
-     if (pool)
-    {
-        EnqueueDeferredDestroy(m_GraphicsQueue->GetLatestTicket(), [pool]()
-        {
-            delete pool;
-        });
-    }
-}
-
-ArisenEngine::RHI::GPURenderPass* ArisenEngine::RHI::RHIVkDevice::GetRenderPass()
-{
-    return new RHIVkGPURenderPass(this, m_Instance->GetMaxFramesInFlight());
-}
-
-void ArisenEngine::RHI::RHIVkDevice::ReleaseRenderPass(GPURenderPass* renderPass)
-{
-    if (renderPass)
-    {
-        EnqueueDeferredDestroy(m_GraphicsQueue->GetLatestTicket(), [renderPass]()
-        {
-            delete renderPass;
-        });
-    }
-}
-
-ArisenEngine::RHI::FrameBuffer* ArisenEngine::RHI::RHIVkDevice::GetFrameBuffer()
-{
-    return new RHIVkFrameBuffer(this, m_Instance->GetMaxFramesInFlight());
-}
-
-void ArisenEngine::RHI::RHIVkDevice::ReleaseFrameBuffer(FrameBuffer* frameBuffer)
-{
-    if (frameBuffer)
-    {
-        EnqueueDeferredDestroy(m_GraphicsQueue->GetLatestTicket(), [frameBuffer]()
-        {
-            delete frameBuffer;
-        });
-    }
-}
-
-ArisenEngine::RHI::BufferHandle* ArisenEngine::RHI::RHIVkDevice::GetBufferHandle(const std::string&& name)
-{
-    auto* bufferHandle = new RHIVkBufferHandle(this);
-    bufferHandle->SetName(std::move(name));
-    return bufferHandle;
-}
-
-void ArisenEngine::RHI::RHIVkDevice::ReleaseBufferHandle(BufferHandle* bufferHandle)
-{
-   if (bufferHandle)
-   {
-       EnqueueDeferredDestroy(m_GraphicsQueue->GetLatestTicket(), [bufferHandle]()
-       {
-           delete bufferHandle;
-       });
-   }
-}
-
-ArisenEngine::RHI::ImageHandle* ArisenEngine::RHI::RHIVkDevice::GetImageHandle(const std::string&& name)
-{
-    auto* imageHandle = new RHIVkImageHandle(this);
-    imageHandle->SetName(std::move(name));
-    return imageHandle;
-}
-
-void ArisenEngine::RHI::RHIVkDevice::ReleaseImageHandle(ImageHandle* imageHandle)
-{
-   if (imageHandle)
-   {
-       EnqueueDeferredDestroy(m_GraphicsQueue->GetLatestTicket(), [imageHandle]()
-       {
-           delete imageHandle;
-       });
-   }
-}
 
 void ArisenEngine::RHI::RHIVkDevice::EnqueueDeferredDestroy(RHIGpuTicket ticket, RHIDeferredDeleteItem item)
 {
@@ -322,6 +219,7 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
     // 4. Destroy managers that might rely on the device still being alive
     delete m_GPUPipelineManager;
     delete m_DescriptorPool;
+    delete m_Factory;
 
     // 5. Clean up sync and queue objects
     m_FrameSync.reset();

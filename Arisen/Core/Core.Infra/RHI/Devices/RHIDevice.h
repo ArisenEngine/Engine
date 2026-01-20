@@ -31,6 +31,8 @@ namespace ArisenEngine::RHI
     class RHIFence;
     
     
+    class RHIFactory;
+
     class RHIDevice
     {
     public:
@@ -42,27 +44,14 @@ namespace ArisenEngine::RHI
         }
 
         Surface* GetSurface() const { return m_Surface; }
+        RHIInstance* GetInstance() const { return m_Instance; }
+        virtual UInt32 GetMaxFramesInFlight() const = 0;
         
         virtual void* GetHandle() const = 0;
         virtual void DeviceWaitIdle() const = 0;
         virtual void GraphicQueueWaitIdle() const = 0;
-        virtual GPUProgram* CreateGPUProgram() = 0;
-        virtual void ReleaseGPUProgram(GPUProgram* program) = 0;
-        virtual bool AttachProgramByteCode(GPUProgram* program, GPUProgramDesc&& desc) = 0;
-        virtual RHICommandBufferPool* CreateCommandBufferPool() = 0;
-        virtual void ReleaseCommandBufferPool(RHICommandBufferPool* pool) = 0;
 
-        virtual GPURenderPass* GetRenderPass() = 0;
-        virtual void ReleaseRenderPass(GPURenderPass* renderPass) = 0;
-
-        virtual FrameBuffer* GetFrameBuffer() = 0;
-        virtual void ReleaseFrameBuffer(FrameBuffer* frameBuffer) = 0;
-
-        virtual BufferHandle* GetBufferHandle(const std::string && name = "Anonymous") = 0;
-        virtual void ReleaseBufferHandle(BufferHandle* bufferHandle) = 0;
-
-        virtual ImageHandle* GetImageHandle(const std::string && name = "Anonymous") = 0;
-        virtual void ReleaseImageHandle(ImageHandle* imageHandle) = 0;
+        virtual RHIFactory* GetFactory() const = 0;
 
         virtual GPUPipelineManager* GetGPUPipelineManager() const = 0;
 
@@ -89,10 +78,6 @@ namespace ArisenEngine::RHI
             (void)ticket;
             if (item.deleter && item.ptr) item.deleter(item.ptr);
         }
-
-        // Resource creation: keep creation on the device rather than a global factory.
-        // NOTE: The returned pointer is an opaque handle for FFI; destruction must go through the exported Destroy/Release API.
-        virtual RHISampler* CreateSampler(RHISamplerDesc&& desc) = 0;
 
         virtual UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) = 0;
 

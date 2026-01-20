@@ -1,4 +1,5 @@
 #include "SurfaceExports.h"
+#include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
 #include <unordered_map>
 #include <mutex>
 
@@ -68,7 +69,7 @@ extern "C" ENGINE_DLL RHI_FrameBufferHandle RHI_Device_GetFrameBuffer(RHI_Device
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return nullptr;
-    auto* raw = dev->GetFrameBuffer();
+    auto* raw = dev->GetFactory()->CreateFrameBuffer();
     return reinterpret_cast<RHI_FrameBufferHandle>(raw);
 }
 
@@ -77,7 +78,7 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseFrameBuffer(RHI_DeviceHandle device
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     auto* f = reinterpret_cast<RHI::FrameBuffer*>(fb);
     if (dev == nullptr || f == nullptr) return;
-    dev->ReleaseFrameBuffer(f);
+    dev->GetFactory()->ReleaseFrameBuffer(f);
 }
 
 extern "C" ENGINE_DLL void RHI_FrameBuffer_SetAttachment(RHI_FrameBufferHandle fb, unsigned int frameIndex, RHI::ImageView* view, RHI_RenderPassHandle rp)

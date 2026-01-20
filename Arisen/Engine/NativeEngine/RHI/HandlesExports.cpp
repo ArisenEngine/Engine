@@ -1,5 +1,6 @@
 #include "HandlesExports.h"
 #include "../../Core/Core.Infra/RHI/Memory/ImageView.h"
+#include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
 #include <unordered_map>
 
 
@@ -10,7 +11,7 @@ extern "C" ENGINE_DLL RHI_BufferHandle RHI_Device_GetBufferHandle(RHI_DeviceHand
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return nullptr;
-    auto* raw = dev->GetBufferHandle(name != nullptr ? std::string(name) : std::string("Anonymous"));
+    auto* raw = dev->GetFactory()->CreateBuffer(name != nullptr ? std::string(name) : std::string("Anonymous"));
     return reinterpret_cast<RHI_BufferHandle>(raw);
 }
 
@@ -19,7 +20,7 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseBufferHandle(RHI_DeviceHandle devic
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     auto* ptr = reinterpret_cast<RHI::BufferHandle*>(buffer);
     if (dev == nullptr || ptr == nullptr) return;
-    dev->ReleaseBufferHandle(ptr);
+    dev->GetFactory()->ReleaseBuffer(ptr);
 }
 
 extern "C" ENGINE_DLL bool RHI_Buffer_Alloc(RHI_BufferHandle buffer, const RHI::BufferDescriptor* desc)
@@ -76,7 +77,7 @@ extern "C" ENGINE_DLL RHI_ImageHandle RHI_Device_GetImageHandle(RHI_DeviceHandle
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return nullptr;
-    auto* raw = dev->GetImageHandle(name != nullptr ? std::string(name) : std::string("Anonymous"));
+    auto* raw = dev->GetFactory()->CreateImage(name != nullptr ? std::string(name) : std::string("Anonymous"));
     return reinterpret_cast<RHI_ImageHandle>(raw);
 }
 
@@ -85,7 +86,7 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseImageHandle(RHI_DeviceHandle device
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     auto* ptr = reinterpret_cast<RHI::ImageHandle*>(image);
     if (dev == nullptr || ptr == nullptr) return;
-    dev->ReleaseImageHandle(ptr);
+    dev->GetFactory()->ReleaseImage(ptr);
 }
 
 extern "C" ENGINE_DLL void RHI_Image_Alloc(RHI_ImageHandle image, const RHI::ImageDescriptor* desc)
