@@ -16,9 +16,8 @@ ArisenEngine::RHI::RHIVkGPUPipelineStateObject::RHIVkGPUPipelineStateObject(RHIV
     LOG_DEBUG("[RHIVkGPUPipelineStateObject::RHIVkGPUPipelineStateObject]: PSO Create.");
 }
 
-void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddProgram(UInt32 programId)
+void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddProgram(GPUProgram* program)
 {
-    auto program = m_Device->GetGPUProgram(programId);
     VkPipelineShaderStageCreateInfo shaderStageCreateInfo {};
     shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shaderStageCreateInfo.flags = program->GetShaderStageCreateFlags();

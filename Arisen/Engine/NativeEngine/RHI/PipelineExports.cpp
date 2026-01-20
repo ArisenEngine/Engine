@@ -30,11 +30,12 @@ extern "C" ENGINE_DLL void RHI_PSO_Destroy(RHI_PSOHandle pso)
     delete s;
 }
 
-extern "C" ENGINE_DLL void RHI_PSO_AddProgram(RHI_PSOHandle pso, unsigned int programId)
+extern "C" ENGINE_DLL void RHI_PSO_AddProgram(RHI_PSOHandle pso, RHI_GPUProgramHandle program)
 {
     auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
-    if (s == nullptr) return;
-    s->AddProgram(programId);
+    auto* p = reinterpret_cast<RHI::GPUProgram*>(program);
+    if (s == nullptr || p == nullptr) return;
+    s->AddProgram(p);
 }
 
 extern "C" ENGINE_DLL void RHI_PSO_ClearPrograms(RHI_PSOHandle pso)

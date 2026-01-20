@@ -46,12 +46,11 @@ namespace ArisenEngine::RHI
         virtual void* GetHandle() const = 0;
         virtual void DeviceWaitIdle() const = 0;
         virtual void GraphicQueueWaitIdle() const = 0;
-        virtual UInt32 CreateGPUProgram() = 0;
-        virtual GPUProgram* GetGPUProgram(UInt32 programId) = 0;
-        virtual void DestroyGPUProgram(UInt32 programId) = 0;
-        virtual bool AttachProgramByteCode(UInt32 programId, GPUProgramDesc&& desc) = 0;
-        virtual UInt32 CreateCommandBufferPool() = 0;
-        virtual RHICommandBufferPool* GetCommandBufferPool(UInt32 id) = 0;
+        virtual GPUProgram* CreateGPUProgram() = 0;
+        virtual void ReleaseGPUProgram(GPUProgram* program) = 0;
+        virtual bool AttachProgramByteCode(GPUProgram* program, GPUProgramDesc&& desc) = 0;
+        virtual RHICommandBufferPool* CreateCommandBufferPool() = 0;
+        virtual void ReleaseCommandBufferPool(RHICommandBufferPool* pool) = 0;
 
         virtual GPURenderPass* GetRenderPass() = 0;
         virtual void ReleaseRenderPass(GPURenderPass* renderPass) = 0;
@@ -59,11 +58,11 @@ namespace ArisenEngine::RHI
         virtual FrameBuffer* GetFrameBuffer() = 0;
         virtual void ReleaseFrameBuffer(FrameBuffer* frameBuffer) = 0;
 
-        virtual std::shared_ptr<BufferHandle> GetBufferHandle(const std::string && name = "Anonymous") = 0;
-        virtual void ReleaseBufferHandle(std::shared_ptr<BufferHandle> bufferHandle) = 0;
+        virtual BufferHandle* GetBufferHandle(const std::string && name = "Anonymous") = 0;
+        virtual void ReleaseBufferHandle(BufferHandle* bufferHandle) = 0;
 
-        virtual std::shared_ptr<ImageHandle> GetImageHandle(const std::string && name = "Anonymous") = 0;
-        virtual void ReleaseImageHandle(std::shared_ptr<ImageHandle> imageHandle) = 0;
+        virtual ImageHandle* GetImageHandle(const std::string && name = "Anonymous") = 0;
+        virtual void ReleaseImageHandle(ImageHandle* imageHandle) = 0;
 
         virtual GPUPipelineManager* GetGPUPipelineManager() const = 0;
 

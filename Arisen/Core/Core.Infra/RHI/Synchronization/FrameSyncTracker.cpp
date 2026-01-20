@@ -1,3 +1,4 @@
+
 #include "FrameSyncTracker.h"
 ArisenEngine::RHI::FrameSyncTracker::FrameSyncTracker(UInt32 maxFramesInFlight)
 {

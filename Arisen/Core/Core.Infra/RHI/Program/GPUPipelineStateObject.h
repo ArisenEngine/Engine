@@ -18,6 +18,7 @@
 namespace ArisenEngine::RHI
 {
     using ImmutableSamplers = void;
+    class GPUProgram;
     class GPUPipelineStateObject
     {
         friend class GPUPipeline;
@@ -26,7 +27,7 @@ namespace ArisenEngine::RHI
         GPUPipelineStateObject() = default;
         virtual ~GPUPipelineStateObject() noexcept { ClearDynamicPipelineStates(); }
 
-        virtual void AddProgram(UInt32 programId) = 0;
+        virtual void AddProgram(GPUProgram* program) = 0;
         virtual void ClearAllPrograms() = 0;
 
         virtual const UInt32 GetHash() const = 0;

@@ -179,6 +179,8 @@ void ArisenEngine::RHI::RHIVkQueue::WaitForTicket(RHIGpuTicket ticket)
     waitInfo.pSemaphores = &m_TimelineSemaphore;
     waitInfo.pValues = &ticket;
 
+    LOG_INFO("[RHIVkQueue::WaitForTicket] Waiting for ticket %llu (Current: %llu)", ticket, GetCompletedTicket());
     vkWaitSemaphores(m_Device, &waitInfo, UINT64_MAX);
     Update();
+    LOG_INFO("[RHIVkQueue::WaitForTicket] Wait finished for ticket %llu (Current: %llu)", ticket, GetCompletedTicket());
 }

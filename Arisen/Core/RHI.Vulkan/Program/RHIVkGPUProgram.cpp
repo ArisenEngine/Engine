@@ -8,7 +8,10 @@ ArisenEngine::RHI::RHIVkGPUProgram::RHIVkGPUProgram(VkDevice device): GPUProgram
 
 ArisenEngine::RHI::RHIVkGPUProgram::~RHIVkGPUProgram() noexcept
 {
-    DestroyHandle();
+    if (m_VkShaderModule != VK_NULL_HANDLE)
+    {
+        DestroyHandle();
+    }
 }
 
 bool ArisenEngine::RHI::RHIVkGPUProgram::AttachProgramByteCode(GPUProgramDesc&& desc)
