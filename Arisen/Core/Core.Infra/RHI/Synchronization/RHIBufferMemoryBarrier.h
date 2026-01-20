@@ -7,10 +7,12 @@ namespace ArisenEngine::RHI
 {
     typedef struct RHIBufferMemoryBarrier
     {
-        EAccessFlag      srcAccessMask;
-        EAccessFlag      dstAccessMask;
+        EAccessFlag          srcAccessMask;
+        EAccessFlag          dstAccessMask;
         UInt32               srcQueueFamilyIndex;
         UInt32               dstQueueFamilyIndex;
         BufferHandle*        buffer;
+        EPipelineStageFlag   srcStageMask;
+        EPipelineStageFlag   dstStageMask;
     } RHIBufferMemoryBarrier;
 }

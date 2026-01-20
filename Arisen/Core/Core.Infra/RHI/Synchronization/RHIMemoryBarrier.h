@@ -7,6 +7,8 @@ namespace ArisenEngine::RHI
     {
         EAccessFlag srcAccessMask;
         EAccessFlag dstAccessMask;
+        EPipelineStageFlag srcStageMask;
+        EPipelineStageFlag dstStageMask;
         
     } RHIMemoryBarrier;
 }

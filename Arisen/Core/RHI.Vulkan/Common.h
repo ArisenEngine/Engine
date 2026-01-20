@@ -50,7 +50,8 @@ namespace ArisenEngine::RHI
     static ArisenEngine::Containers::Vector<const char*> VkDeviceExtensionNames
     {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-        VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME
+        VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
+        VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME
     };
 
     static ArisenEngine::Containers::Vector<const char*> VkInstanceExtensionNames

@@ -100,9 +100,9 @@ namespace  ArisenEngine::RHI
         VkCommandBufferBeginInfo m_VkBeginInfo {};
         // Fence ownership is separated from command buffer (owned by queue/device/pool).
 
-        Containers::Vector<VkMemoryBarrier> m_VkMemoryBarriers {};
-        Containers::Vector<VkBufferMemoryBarrier> m_VkBufferMemoryBarriers {};
-        Containers::Vector<VkImageMemoryBarrier> m_VkImageMemoryBarriers {};
+        Containers::Vector<VkMemoryBarrier2KHR> m_VkMemoryBarriers {};
+        Containers::Vector<VkBufferMemoryBarrier2KHR> m_VkBufferMemoryBarriers {};
+        Containers::Vector<VkImageMemoryBarrier2KHR> m_VkImageMemoryBarriers {};
 
         GPUPipeline* m_CurrentPipeline { nullptr };
 

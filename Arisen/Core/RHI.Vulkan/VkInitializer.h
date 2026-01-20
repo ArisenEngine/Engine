@@ -7,6 +7,7 @@
 #include "RHI/Enums/Image/EFormat.h"
 #include "RHI/Enums/Memory/ESharingMode.h"
 #include "RHI/Enums/Pipeline/EAccessFlag.h"
+#include "RHI/Enums/Pipeline/EPipelineStageFlag.h"
 #include "RHI/Handles/BufferHandle.h"
 #include "RHI/Memory/ImageSubresourceLayers.h"
 #include "RHI/Synchronization/RHIImageSubresourceRange.h"
@@ -204,6 +205,82 @@ namespace ArisenEngine::RHI
         return imageCopy;
     }
 
+    inline VkMemoryBarrier2KHR MemoryBarrier2(
+        VkPipelineStageFlags2KHR srcStageMask, VkAccessFlags2KHR srcAccessMask,
+        VkPipelineStageFlags2KHR dstStageMask, VkAccessFlags2KHR dstAccessMask)
+    {
+        VK_STRUCT_INITIALIZE(VkMemoryBarrier2KHR, barrier)
+        barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR;
+        barrier.srcStageMask = srcStageMask;
+        barrier.srcAccessMask = srcAccessMask;
+        barrier.dstStageMask = dstStageMask;
+        barrier.dstAccessMask = dstAccessMask;
+        return barrier;
+    }
+
+    inline VkBufferMemoryBarrier2KHR BufferMemoryBarrier2(
+        VkPipelineStageFlags2KHR srcStageMask, VkAccessFlags2KHR srcAccessMask,
+        VkPipelineStageFlags2KHR dstStageMask, VkAccessFlags2KHR dstAccessMask,
+        UInt32 srcQueueFamilyIndex, UInt32 dstQueueFamilyIndex, BufferHandle* bufferHandle)
+    {
+        VK_STRUCT_INITIALIZE(VkBufferMemoryBarrier2KHR, barrier)
+        barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR;
+        barrier.srcStageMask = srcStageMask;
+        barrier.srcAccessMask = srcAccessMask;
+        barrier.dstStageMask = dstStageMask;
+        barrier.dstAccessMask = dstAccessMask;
+        barrier.srcQueueFamilyIndex = srcQueueFamilyIndex;
+        barrier.dstQueueFamilyIndex = dstQueueFamilyIndex;
+        barrier.buffer = static_cast<VkBuffer>(bufferHandle->GetHandle());
+        barrier.offset = bufferHandle->Offset();
+        barrier.size = bufferHandle->Range();
+        return barrier;
+    }
+
+    inline VkImageMemoryBarrier2KHR ImageMemoryBarrier2(
+        VkPipelineStageFlags2KHR srcStageMask, VkAccessFlags2KHR srcAccessMask,
+        VkPipelineStageFlags2KHR dstStageMask, VkAccessFlags2KHR dstAccessMask,
+        UInt32 srcQueueFamilyIndex, UInt32 dstQueueFamilyIndex,
+        EImageLayout oldLayout, EImageLayout newLayout, ImageHandle* imageHandle,
+        const RHIImageSubresourceRange& subResourceRange)
+    {
+        VK_STRUCT_INITIALIZE(VkImageMemoryBarrier2KHR, barrier)
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR;
+        barrier.srcStageMask = srcStageMask;
+        barrier.srcAccessMask = srcAccessMask;
+        barrier.dstStageMask = dstStageMask;
+        barrier.dstAccessMask = dstAccessMask;
+        barrier.srcQueueFamilyIndex = srcQueueFamilyIndex;
+        barrier.dstQueueFamilyIndex = dstQueueFamilyIndex;
+        barrier.oldLayout = static_cast<VkImageLayout>(oldLayout);
+        barrier.newLayout = static_cast<VkImageLayout>(newLayout);
+        barrier.image = static_cast<VkImage>(imageHandle->GetHandle());
+        barrier.subresourceRange.aspectMask = static_cast<VkImageAspectFlags>(subResourceRange.aspectMask);
+        barrier.subresourceRange.baseMipLevel = subResourceRange.baseMipLevel;
+        barrier.subresourceRange.levelCount = subResourceRange.levelCount;
+        barrier.subresourceRange.baseArrayLayer = subResourceRange.baseArrayLayer;
+        barrier.subresourceRange.layerCount = subResourceRange.layerCount;
+        return barrier;
+    }
+
+    inline VkDependencyInfoKHR DependencyInfo(
+        UInt32 memoryBarrierCount, const VkMemoryBarrier2KHR* pMemoryBarriers,
+        UInt32 bufferMemoryBarrierCount, const VkBufferMemoryBarrier2KHR* pBufferMemoryBarriers,
+        UInt32 imageMemoryBarrierCount, const VkImageMemoryBarrier2KHR* pImageMemoryBarriers,
+        VkDependencyFlags dependencyFlags = 0)
+    {
+        VK_STRUCT_INITIALIZE(VkDependencyInfoKHR, dependencyInfo)
+        dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;
+        dependencyInfo.dependencyFlags = dependencyFlags;
+        dependencyInfo.memoryBarrierCount = memoryBarrierCount;
+        dependencyInfo.pMemoryBarriers = pMemoryBarriers;
+        dependencyInfo.bufferMemoryBarrierCount = bufferMemoryBarrierCount;
+        dependencyInfo.pBufferMemoryBarriers = pBufferMemoryBarriers;
+        dependencyInfo.imageMemoryBarrierCount = imageMemoryBarrierCount;
+        dependencyInfo.pImageMemoryBarriers = pImageMemoryBarriers;
+        return dependencyInfo;
+    }
+
     inline VkMemoryBarrier CreateMemoryBarrier(EAccessFlag srcAccess, EAccessFlag dstAccess)
     {
         VK_STRUCT_INITIALIZE(VkMemoryBarrier, barrier)
@@ -255,6 +332,19 @@ namespace ArisenEngine::RHI
         barrier.subresourceRange.layerCount = subResourceRange.layerCount;
         
         return barrier;
+    }
+
+    inline VkPipelineStageFlags2KHR MapPipelineStageFlags2(EPipelineStageFlag flags)
+    {
+        if (flags == PIPELINE_STAGE_NONE) return VK_PIPELINE_STAGE_2_NONE_KHR;
+        // Optimization: if bits align, we can just cast, but let's be safe for common bits
+        return static_cast<VkPipelineStageFlags2KHR>(flags);
+    }
+
+    inline VkAccessFlags2KHR MapAccessFlags2(EAccessFlag flags)
+    {
+        if (flags == ACCESS_NONE) return VK_ACCESS_2_NONE_KHR;
+        return static_cast<VkAccessFlags2KHR>(flags);
     }
 
     inline VkSamplerCreateInfo SamplerCreateInfo(RHISamplerDesc&& desc)

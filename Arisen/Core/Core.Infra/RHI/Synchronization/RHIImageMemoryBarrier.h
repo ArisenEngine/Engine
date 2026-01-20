@@ -14,5 +14,7 @@ namespace ArisenEngine::RHI
         UInt32                    dstQueueFamilyIndex;
         ImageHandle*              image;
         RHIImageSubresourceRange  subresourceRange;
+        EPipelineStageFlag        srcStageMask;
+        EPipelineStageFlag        dstStageMask;
     } RHIImageMemoryBarrier;
 }
