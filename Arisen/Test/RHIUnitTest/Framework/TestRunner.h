@@ -79,7 +79,7 @@ namespace ArisenEngine::Testing
             auto& registry = GetRegistry();
 
             LOG_INFO("=== Running RHI Unit Tests ===");
-            LOG_INFO("Total tests registered: %zu", registry.size());
+            LOG_INFO("Total tests registered: " + std::to_string(registry.size()));
 
             for (auto& factory : registry)
             {
@@ -88,12 +88,12 @@ namespace ArisenEngine::Testing
 
                 try
                 {
-                    LOG_INFO("[TEST] Starting: %s", test->GetName());
+                    LOG_INFO((std::string("[TEST] Starting: ") + test->GetName()).c_str());
 
                     if (!test->Setup())
                     {
                         result.errorMessage = "Setup failed";
-                        LOG_ERROR("[FAILED] %s - Setup failed", test->GetName());
+                        LOG_ERROR((std::string("[FAILED] ") + test->GetName() + " - Setup failed").c_str());
                     }
                     else
                     {
@@ -102,11 +102,11 @@ namespace ArisenEngine::Testing
 
                         if (result.passed)
                         {
-                            LOG_INFO("[PASSED] %s", test->GetName());
+                            LOG_INFO((std::string("[PASSED] ") + test->GetName()).c_str());
                         }
                         else
                         {
-                            LOG_ERROR("[FAILED] %s - Test logic failed", test->GetName());
+                            LOG_ERROR((std::string("[FAILED] ") + test->GetName() + " - Test logic failed").c_str());
                             result.errorMessage = "Test logic failed";
                         }
                     }
@@ -115,13 +115,13 @@ namespace ArisenEngine::Testing
                 {
                     result.passed = false;
                     result.errorMessage = ex.what();
-                    LOG_ERROR("[FAILED] %s - Exception: %s", test->GetName(), ex.what());
+                    LOG_ERROR((std::string("[FAILED] ") + test->GetName() + " - Exception: " + ex.what()).c_str());
                 }
                 catch (...)
                 {
                     result.passed = false;
                     result.errorMessage = "Unknown exception";
-                    LOG_ERROR("[FAILED] %s - Unknown exception", test->GetName());
+                    LOG_ERROR((std::string("[FAILED] ") + test->GetName() + " - Unknown exception").c_str());
                 }
 
                 results.push_back(result);
@@ -135,7 +135,7 @@ namespace ArisenEngine::Testing
             }
 
             LOG_INFO("=== Test Summary ===");
-            LOG_INFO("Total: %zu | Passed: %zu | Failed: %zu", results.size(), passed, results.size() - passed);
+            LOG_INFO("Total: " + std::to_string(results.size()) + " | Passed: " + std::to_string(passed) + " | Failed: " + std::to_string(results.size() - passed));
 
             return results;
         }
