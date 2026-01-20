@@ -45,6 +45,7 @@ namespace ArisenEngine::RHI
         };
         
         VkInstance GetVkInstance() const { return m_VkInstance; }
+        VkPhysicalDevice GetPhysicalDevice() const { return m_CurrentPhysicsDevice; }
 
         void CreateSurface(UInt32 windowId) override;
         void DestroySurface(UInt32 windowId) override;

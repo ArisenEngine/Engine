@@ -8,12 +8,18 @@
 #include "../Utils/RHIVkDeferredDeletion.h"
 #include "../Queues/RHIVkQueue.h"
 #include "../Program/RHIVkSampler.h"
+#include "../Memory/RHIVkMemoryAllocator.h"
+#include "../RHIVkInstance.h"
 
 ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surface, VkQueue graphicQueue, VkQueue presentQueue, VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties)
 : RHIDevice(instance, surface), m_VkGraphicQueue(graphicQueue), m_VkPresentQueue(presentQueue), m_VkDevice(device), m_VkPhysicalDeviceMemoryProperties(memoryProperties)
 {
     m_GPUPipelineManager = new RHIVkGPUPipelineManager(this, m_Instance->GetMaxFramesInFlight());
     m_DescriptorPool = new RHIVkDescriptorPool(this);
+    
+    auto* vkInstance = static_cast<RHIVkInstance*>(m_Instance);
+    m_MemoryAllocator = new RHIVkMemoryAllocator(this, vkInstance->GetVkInstance(), vkInstance->GetPhysicalDevice(), m_VkDevice, VK_API_VERSION_1_2);
+
     m_Factory = new RHIVkFactory(this);
     m_DeferredDeletion = std::make_unique<RHIVkDeferredDeletion>(m_Instance->GetMaxFramesInFlight());
     m_ResourceRegistry = std::make_unique<RHIResourceRegistry>(m_DeferredDeletion.get());
@@ -31,6 +37,11 @@ ArisenEngine::RHI::RHIFactory* ArisenEngine::RHI::RHIVkDevice::GetFactory() cons
 ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDevice::GetMaxFramesInFlight() const
 {
     return m_Instance->GetMaxFramesInFlight();
+}
+
+ArisenEngine::RHI::RHIMemoryAllocator* ArisenEngine::RHI::RHIVkDevice::GetMemoryAllocator() const
+{
+    return m_MemoryAllocator;
 }
 
 void ArisenEngine::RHI::RHIVkDevice::DeviceWaitIdle() const
@@ -219,6 +230,7 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
     // 4. Destroy managers that might rely on the device still being alive
     delete m_GPUPipelineManager;
     delete m_DescriptorPool;
+    delete m_MemoryAllocator;
     delete m_Factory;
 
     // 5. Clean up sync and queue objects

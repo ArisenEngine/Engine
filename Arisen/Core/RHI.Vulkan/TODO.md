@@ -4,9 +4,9 @@
 
 ## 优先级 1：核心基础设施优化 (Stability & Foundation)
 
-- [ ] **集成 VMA (Vulkan Memory Allocator)**
-  - 替换当前的 `RHIVkDeviceMemory` 手动分配逻辑。
-  - 实现高效的内存分池、对齐和整理，减少分配开销。
+- [x] **集成 VMA (Vulkan Memory Allocator)**
+  - [x] 替换当前的 `RHIVkDeviceMemory` 手动分配逻辑。
+  - [x] 实现高效的内存分池、对齐和整理，减少分配开销。
 - [ ] **升级至 Synchronization 2.0 (`VK_KHR_synchronization2`)**
   - 使用更清晰的 `VkDependencyInfo` 替换旧的 Pipeline Barrier。
   - 简化 Resource Barrier 的接口封装，支持全局同步状态管理。

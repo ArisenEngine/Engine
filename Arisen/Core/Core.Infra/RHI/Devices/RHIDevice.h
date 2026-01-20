@@ -57,6 +57,8 @@ namespace ArisenEngine::RHI
 
         virtual DescriptorPool* GetDescriptorPool() const = 0;
 
+        virtual class RHIMemoryAllocator* GetMemoryAllocator() const = 0;
+
         virtual void Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex) = 0;
 
         // Optional per-frame update hook for GPU completion polling / automatic GC.
