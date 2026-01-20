@@ -4,9 +4,7 @@
 
 using namespace ArisenEngine;
 
-// Keep framebuffers alive across FFI by retaining shared_ptrs keyed by raw pointer.
-static std::unordered_map<RHI::FrameBuffer*, std::shared_ptr<RHI::FrameBuffer>> g_FrameBufferKeepAlive;
-static std::mutex g_FrameBufferKeepAliveMutex;
+
 
 extern "C" ENGINE_DLL RHI_SurfaceHandle RHI_Instance_GetSurface(RHI_InstanceHandle instance, unsigned int windowId)
 {
@@ -70,12 +68,7 @@ extern "C" ENGINE_DLL RHI_FrameBufferHandle RHI_Device_GetFrameBuffer(RHI_Device
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return nullptr;
-    auto sp = dev->GetFrameBuffer();
-    auto* raw = sp.get();
-    {
-        std::lock_guard<std::mutex> lock(g_FrameBufferKeepAliveMutex);
-        g_FrameBufferKeepAlive[raw] = sp;
-    }
+    auto* raw = dev->GetFrameBuffer();
     return reinterpret_cast<RHI_FrameBufferHandle>(raw);
 }
 
@@ -84,20 +77,7 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseFrameBuffer(RHI_DeviceHandle device
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     auto* f = reinterpret_cast<RHI::FrameBuffer*>(fb);
     if (dev == nullptr || f == nullptr) return;
-    std::shared_ptr<RHI::FrameBuffer> sp;
-    {
-        std::lock_guard<std::mutex> lock(g_FrameBufferKeepAliveMutex);
-        auto it = g_FrameBufferKeepAlive.find(f);
-        if (it != g_FrameBufferKeepAlive.end())
-        {
-            sp = it->second;
-            g_FrameBufferKeepAlive.erase(it);
-        }
-    }
-    if (sp)
-    {
-        dev->ReleaseFrameBuffer(sp);
-    }
+    dev->ReleaseFrameBuffer(f);
 }
 
 extern "C" ENGINE_DLL void RHI_FrameBuffer_SetAttachment(RHI_FrameBufferHandle fb, unsigned int frameIndex, RHI::ImageView* view, RHI_RenderPassHandle rp)

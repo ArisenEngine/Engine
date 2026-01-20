@@ -53,11 +53,11 @@ namespace ArisenEngine::RHI
         virtual UInt32 CreateCommandBufferPool() = 0;
         virtual RHICommandBufferPool* GetCommandBufferPool(UInt32 id) = 0;
 
-        virtual std::shared_ptr<GPURenderPass> GetRenderPass() = 0;
-        virtual void ReleaseRenderPass(std::shared_ptr<GPURenderPass> renderPass) = 0;
+        virtual GPURenderPass* GetRenderPass() = 0;
+        virtual void ReleaseRenderPass(GPURenderPass* renderPass) = 0;
 
-        virtual std::shared_ptr<FrameBuffer> GetFrameBuffer() = 0;
-        virtual void ReleaseFrameBuffer(std::shared_ptr<FrameBuffer> frameBuffer) = 0;
+        virtual FrameBuffer* GetFrameBuffer() = 0;
+        virtual void ReleaseFrameBuffer(FrameBuffer* frameBuffer) = 0;
 
         virtual std::shared_ptr<BufferHandle> GetBufferHandle(const std::string && name = "Anonymous") = 0;
         virtual void ReleaseBufferHandle(std::shared_ptr<BufferHandle> bufferHandle) = 0;
