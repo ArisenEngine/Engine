@@ -177,12 +177,52 @@ namespace ArisenEngine::Testing
                 m_Context.frameBuffer = nullptr;
             }
             if (m_Context.renderPass)
+            if (m_Context.frameBuffer)
+            {
+                RHI_Device_ReleaseFrameBuffer(m_Context.device, m_Context.frameBuffer);
+                m_Context.frameBuffer = nullptr;
+            }
+            if (m_Context.renderPass)
             {
                 RHI_Device_ReleaseRenderPass(m_Context.device, m_Context.renderPass);
                 m_Context.renderPass = nullptr;
             }
-            // For now, we assume other handles are cleaned up by device or don't use KeepAlive maps
-            // e.g. buffers/images are stored in device's vectors and cleared on device destruction
+
+            // Release Buffers
+            if (m_Context.vertexBufferHandle)
+            {
+                RHI_Device_ReleaseBufferHandle(m_Context.device, m_Context.vertexBufferHandle);
+                m_Context.vertexBufferHandle = nullptr;
+            }
+            if (m_Context.indicesBufferHandle)
+            {
+                RHI_Device_ReleaseBufferHandle(m_Context.device, m_Context.indicesBufferHandle);
+                m_Context.indicesBufferHandle = nullptr;
+            }
+            for (auto& ub : m_Context.uniformBuffers)
+            {
+                if (ub) RHI_Device_ReleaseBufferHandle(m_Context.device, ub);
+            }
+            m_Context.uniformBuffers.clear();
+
+            // Release Texture
+            if (m_Context.textureHandle)
+            {
+                RHI_Device_ReleaseImageHandle(m_Context.device, m_Context.textureHandle);
+                m_Context.textureHandle = nullptr;
+            }
+
+            // Release Pipeline State (This destroys VK Descriptor Set Layouts)
+            if (m_Context.pipelineState)
+            {
+                RHI_PSO_Destroy(m_Context.pipelineState);
+                m_Context.pipelineState = nullptr;
+            }
+            
+            // Note: DescriptorPool is seemingly owned by Device or not exposed for explicit release in Exports.
+            // Assuming Device destruction handles it or it's a non-owning handle.
+            // Update: DescriptorExports has no Release/Destroy for pool.
+
         }
 
     private:
