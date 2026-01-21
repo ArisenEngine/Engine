@@ -6,6 +6,7 @@
 #include <vector>
 #include "../Devices/RHIVkDevice.h"
 #include "../VkInitializer.h"
+#include "RHIVkBindlessManager.h"
 
 ArisenEngine::RHI::RHIVkGPUPipelineStateObject::~RHIVkGPUPipelineStateObject() noexcept
 {

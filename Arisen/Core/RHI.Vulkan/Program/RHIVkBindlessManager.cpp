@@ -131,7 +131,7 @@ namespace ArisenEngine::RHI
 
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = static_cast<VkImageView>(vkImage->GetView());
+        imageInfo.imageView = static_cast<VkImageView>(image->GetMemoryView()->GetView());
         imageInfo.sampler = VK_NULL_HANDLE;
 
         VkWriteDescriptorSet write{};
@@ -184,7 +184,7 @@ namespace ArisenEngine::RHI
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = static_cast<VkBuffer>(vkBuffer->GetHandle());
         bufferInfo.offset = 0;
-        bufferInfo.range = vkBuffer->GetSize();
+        bufferInfo.range = vkBuffer->BufferSize();
 
         VkWriteDescriptorSet write{};
         write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
