@@ -3,8 +3,8 @@
 #undef STB_IMAGE_IMPLEMENTATION
 
 #include "Framework/TestRunner.h"
-#include "RHI/RHIBasicRenderingTest.h"
-#include "RHI/RHIDynamicRenderingTest.h"
+#include "RHI/Rendering/RHIBasicRenderingTest.h"
+#include "RHI/Rendering/RHIDynamicRenderingTest.h"
 #include "RHI/Unit/RHISyncTest.h"
 #include "RHI/Unit/RHIBindlessTest.h"
 #include "../../Engine/NativeEngine/Core/EngineInit.h"

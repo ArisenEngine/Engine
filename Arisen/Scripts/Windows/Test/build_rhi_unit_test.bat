@@ -19,7 +19,7 @@ set "ROOT_DIR=%SCRIPT_DIR%\..\..\.."
 for %%I in ("%ROOT_DIR%") do set "ROOT_DIR=%%~fI"
 
 
-set "VS_BUILD_DIR=%ROOT_DIR%\Projects\VisualStudio\RHIUnitTest"
+set "VS_BUILD_DIR=%ROOT_DIR%\Projects\VisualStudio\RHITestCase"
 set "LOG_FILE=%VS_BUILD_DIR%\build.log"
 
 echo ROOT_DIR: %ROOT_DIR%
@@ -27,12 +27,12 @@ echo VS_BUILD_DIR: %VS_BUILD_DIR%
 
 if not exist "%VS_BUILD_DIR%" mkdir "%VS_BUILD_DIR%"
 
-echo === RHIUnitTest Build Log === > "%LOG_FILE%"
+echo === RHITestCase Build Log === > "%LOG_FILE%"
 
 REM Configure on first run when CMakeCache.txt is absent
 if not exist "%VS_BUILD_DIR%\CMakeCache.txt" (
     echo === Configuring (Debug + Release) ===
-    cmake -S "%ROOT_DIR%" -B "%VS_BUILD_DIR%" -DTARGET=RHIUnitTest -DPLATFORM=Windows -G "Visual Studio 17 2022" -A x64 >> "%LOG_FILE%" 2>&1 || goto :fail
+    cmake -S "%ROOT_DIR%" -B "%VS_BUILD_DIR%" -DTARGET=RHITestCase -DPLATFORM=Windows -G "Visual Studio 17 2022" -A x64 >> "%LOG_FILE%" 2>&1 || goto :fail
 )
 
 REM Build Debug
