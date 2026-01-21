@@ -28,18 +28,23 @@ namespace ArisenEngine::Testing
             LOG_INFO("Running Synchronization 2.0 Test...");
 
             // Create a dummy image for barrier testing
+            LOG_INFO("Getting image handle...");
             RHI_ImageHandle testImage = RHI_Device_GetImageHandle(m_Device, "SyncTestImage");
-            RHI::ImageDescriptor desc{
-                RHI::IMAGE_TYPE_2D, 256, 256, 1, 1, 1,
+            ArisenEngine::RHI::ImageDescriptor desc{
+                RHI::IMAGE_TYPE_2D, 1024, 1024, 1, 1, 1,
                 RHI::FORMAT_R8G8B8A8_UNORM, RHI::IMAGE_TILING_OPTIMAL,
                 RHI::IMAGE_LAYOUT_UNDEFINED,
                 RHI::IMAGE_USAGE_SAMPLED_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT,
                 RHI::SAMPLE_COUNT_1_BIT, RHI::SHARING_MODE_EXCLUSIVE
             };
+            LOG_INFO("Allocating image...");
             RHI_Image_Alloc(testImage, &desc);
-            RHI_Image_AllocDeviceMemory(testImage, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            LOG_INFO("Allocating device memory...");
+            RHI_Image_AllocDeviceMemory(testImage, 0x1); // DEVICE_LOCAL
 
+            LOG_INFO("Getting command buffer...");
             RHI_CommandBufferHandle cmd = RHI_Device_GetCommandBuffer(m_Device, m_CommandPool, 0);
+            LOG_INFO("Beginning command buffer...");
             RHI_Cmd_Begin(cmd, 0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
             // Test Image Barrier (Undefined -> Transfer Dst)
@@ -56,19 +61,28 @@ namespace ArisenEngine::Testing
                 }
             };
 
+            LOG_INFO("Adding pipeline barrier...");
             // Using the new Sync 2.0 API (internally) via the existing export
             RHI_Cmd_PipelineBarrier_Image(cmd, 
                 RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT, 
                 RHI::PIPELINE_STAGE_TRANSFER_BIT, 
                 0, &imageBarriers);
 
+            LOG_INFO("Ending command buffer...");
             RHI_Cmd_End(cmd);
+
+            LOG_INFO("Submitting command buffer...");
             RHI_Device_Submit(m_Device, cmd, 0);
+
+            LOG_INFO("Waiting for device idle...");
             RHI_Device_WaitIdle(m_Device);
 
             LOG_INFO("Synchronization barrier submitted and verified.");
 
+            // Cleanup
+            LOG_INFO("Releasing image handle...");
             RHI_Device_ReleaseImageHandle(m_Device, testImage);
+            LOG_INFO("Releasing command buffer...");
             RHI_Device_ReleaseCommandBuffer(m_Device, m_CommandPool, 0, cmd);
 
             return true;
