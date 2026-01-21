@@ -156,10 +156,33 @@ void ArisenEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex
         pipelineInfo.pColorBlendState = &blendState;
         pipelineInfo.pDynamicState = &dynamicStatesInfo;
         pipelineInfo.layout = m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight];
-        pipelineInfo.renderPass = static_cast<VkRenderPass>(subPass->GetOwner()->GetHandle(frameIndex));
-        pipelineInfo.subpass = subPass->GetIndex();
+        
+        // Handle Dynamic Rendering vs RenderPass
+        auto* vkPSO = static_cast<RHIVkGPUPipelineStateObject*>(m_PipelineStateObject);
+        VkPipelineRenderingCreateInfoKHR renderingInfo {};
+
+        if (subPass == nullptr || vkPSO->IsDynamicRendering())
+        {
+            if (vkPSO->IsDynamicRendering())
+            {
+                vkPSO->FillRenderingCreateInfo(renderingInfo);
+                pipelineInfo.pNext = &renderingInfo;
+                pipelineInfo.renderPass = VK_NULL_HANDLE;
+                pipelineInfo.subpass = 0; // ignored when renderPass is NULL
+            }
+            else
+            {
+                 LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocGraphicPipeline]: SubPass is null but PSO not configured for dynamic rendering!");
+            }
+        }
+        else
+        {
+            pipelineInfo.renderPass = static_cast<VkRenderPass>(subPass->GetOwner()->GetHandle(frameIndex));
+            pipelineInfo.subpass = subPass->GetIndex();
+            pipelineInfo.pNext = nullptr;
+        }
+
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-        pipelineInfo.pNext = nullptr;
 
         if (vkCreateGraphicsPipelines(m_VkDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS)
         {

@@ -1,7 +1,11 @@
 #define TEST_WINDOWS 1
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+#undef STB_IMAGE_IMPLEMENTATION
 
 #include "Framework/TestRunner.h"
 #include "RHI/RHIBasicRenderingTest.h"
+#include "RHI/RHIDynamicRenderingTest.h"
 #include "../../Engine/NativeEngine/Core/EngineInit.h"
 #include <windows.h>
 
@@ -29,7 +33,8 @@ int main()
     }
 
     // Register the Basic Rendering Test
-    TestRunner::RegisterTest<RHIBasicRenderingTest>();
+    // TestRunner::RegisterTest<RHIBasicRenderingTest>();
+    TestRunner::RegisterTest<RHIDynamicRenderingTest>();
 
     // Run all registered tests
     TestRunner::RunAllTests();

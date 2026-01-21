@@ -29,6 +29,9 @@ namespace  ArisenEngine::RHI
         void Begin(UInt32 frameIndex) override;
         void Begin(UInt32 frameIndex, UInt32 commandBufferUsage) override;
         void End() override;
+        
+        void BeginRendering(const RHIRenderingInfo& info) override;
+        void EndRendering() override;
 
         void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height, Float32 minDepth, Float32 maxDepth) override;
         void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height) override;

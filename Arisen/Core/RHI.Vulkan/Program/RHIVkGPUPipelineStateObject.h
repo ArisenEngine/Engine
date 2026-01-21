@@ -102,6 +102,19 @@ namespace ArisenEngine::RHI
 
         EPipelineBindPoint m_BindPoint { EPipelineBindPoint::PIPELINE_BIND_POINT_GRAPHICS };
         
+        // Dynamic Rendering
+        Containers::Vector<VkFormat> m_ColorAttachmentFormats;
+        VkFormat m_DepthAttachmentFormat { VK_FORMAT_UNDEFINED };
+        VkFormat m_StencilAttachmentFormat { VK_FORMAT_UNDEFINED };
+        
+    public:
+        void SetRenderingFormats(const Containers::Vector<EFormat>& colorFormats, EFormat depthFormat, EFormat stencilFormat) override;
+        bool IsDynamicRendering() const { return !m_ColorAttachmentFormats.empty() || m_DepthAttachmentFormat != VK_FORMAT_UNDEFINED || m_StencilAttachmentFormat != VK_FORMAT_UNDEFINED; }
+        
+        void FillRenderingCreateInfo(VkPipelineRenderingCreateInfoKHR& createInfo) const;
+
+    private:
+
         // stages
         Containers::Vector<VkPipelineShaderStageCreateInfo> m_PipelineStageCreateInfos {};
         Containers::Vector<VkPipelineColorBlendAttachmentState> m_BlendAttachmentStates {};

@@ -1,7 +1,9 @@
 ﻿
 #include "RHIVkGPUPipelineStateObject.h"
 #include "RHIVkGPUPipeline.h"
-#include "RHIVkGPUProgram.h"
+#include <vulkan/vulkan.h>
+#include <cstring>
+#include <vector>
 #include "../Devices/RHIVkDevice.h"
 #include "../VkInitializer.h"
 
@@ -420,4 +422,34 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::UpdateDescriptorSet(UInt32 
     {
         InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, count, {}, {}, std::move(texelBufferViews));
     }
+}
+
+void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::SetRenderingFormats(const Containers::Vector<EFormat>& colorFormats,
+    EFormat depthFormat, EFormat stencilFormat)
+{
+    m_ColorAttachmentFormats.clear();
+    for (const auto format : colorFormats)
+    {
+        m_ColorAttachmentFormats.emplace_back(static_cast<VkFormat>(format));
+    }
+
+    if (depthFormat != EFormat::FORMAT_UNDEFINED)
+    {
+        m_DepthAttachmentFormat = static_cast<VkFormat>(depthFormat);
+    }
+
+    if (stencilFormat != EFormat::FORMAT_UNDEFINED)
+    {
+        m_StencilAttachmentFormat = static_cast<VkFormat>(stencilFormat);
+    }
+}
+
+void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::FillRenderingCreateInfo(VkPipelineRenderingCreateInfoKHR& createInfo) const
+{
+    createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
+    createInfo.pNext = nullptr;
+    createInfo.colorAttachmentCount = static_cast<uint32_t>(m_ColorAttachmentFormats.size());
+    createInfo.pColorAttachmentFormats = m_ColorAttachmentFormats.data();
+    createInfo.depthAttachmentFormat = m_DepthAttachmentFormat;
+    createInfo.stencilAttachmentFormat = m_StencilAttachmentFormat;
 }

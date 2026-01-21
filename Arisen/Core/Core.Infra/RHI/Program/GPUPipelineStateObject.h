@@ -179,6 +179,8 @@ namespace ArisenEngine::RHI
         Float32 BlendConstantB() const { return  m_BlendConstants[2]; }
         Float32 BlendConstantA() const { return  m_BlendConstants[3]; }
 
+        virtual void SetRenderingFormats(const Containers::Vector<EFormat>& colorFormats, EFormat depthFormat, EFormat stencilFormat) = 0;
+
     private:
 
         bool m_PrimitiveRestart {false};
