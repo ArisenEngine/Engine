@@ -193,7 +193,10 @@ void ArisenEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex
 
 const ArisenEngine::RHI::EPipelineBindPoint ArisenEngine::RHI::RHIVkGPUPipeline::GetBindPoint() const
 {
-    ASSERT(m_SubPass != nullptr);
+    if (m_SubPass == nullptr)
+    {
+        return PIPELINE_BIND_POINT_GRAPHICS;
+    }
     return m_SubPass->GetBindPoint();
 }
 
