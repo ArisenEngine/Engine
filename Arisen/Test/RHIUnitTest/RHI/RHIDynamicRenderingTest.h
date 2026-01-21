@@ -71,6 +71,12 @@ namespace ArisenEngine::Testing
             Containers::Vector<RHI_GPUProgramHandle> gpuPrograms;
             Containers::Vector<UInt32> descriptorPoolIds;
             bool bShouldResize;
+
+            // Cached vectors and structures to avoid per-frame heap allocations
+            Containers::Vector<RHI::RHIImageMemoryBarrier> cachedBarriers;
+            RHI::RHIRenderingInfo cachedRenderingInfo;
+            RHI::RHIRenderingAttachmentInfo cachedColorAtt;
+            Containers::Vector<std::shared_ptr<RHI::BufferHandle>> cachedUbos;
         };
 
         struct Vertex
@@ -455,9 +461,9 @@ namespace ArisenEngine::Testing
             auto currentIndex = GetCurrentFrameIndex();
             auto commandBuffer = RHI_Device_GetCommandBuffer(context.device, context.commandPool, m_FrameIndex);
             auto pipelineState = context.pipelineState;
-            Containers::Vector<std::shared_ptr<RHI::BufferHandle>> ubos;
-            ubos.emplace_back(std::shared_ptr<RHI::BufferHandle>(reinterpret_cast<RHI::BufferHandle*>(context.uniformBuffers[currentIndex]), [](RHI::BufferHandle*){}));
-            RHI_PSO_UpdateDescriptorSet_Buffers(pipelineState, 0, 0, &ubos);
+            context.cachedUbos.clear();
+            context.cachedUbos.emplace_back(std::shared_ptr<RHI::BufferHandle>(reinterpret_cast<RHI::BufferHandle*>(context.uniformBuffers[currentIndex]), [](RHI::BufferHandle*){}));
+            RHI_PSO_UpdateDescriptorSet_Buffers(pipelineState, 0, 0, &context.cachedUbos);
             RHI_DescriptorPool_Reset(context.descriptorPool, context.descriptorPoolIds[currentIndex]);
             RHI_DescriptorPool_AllocDescriptorSet(context.descriptorPool, context.descriptorPoolIds[currentIndex], 0, pipelineState);
             RHI_DescriptorPool_UpdateDescriptorSets(context.descriptorPool, context.descriptorPoolIds[currentIndex], pipelineState);
@@ -470,77 +476,77 @@ namespace ArisenEngine::Testing
                 if (backBuffer == nullptr) return;
                 auto backBufferView = RHI_Image_GetView(backBuffer); // Returns ImageView*
                 
-                // --- Dynamic Rendering Begin ---
+            // --- Dynamic Rendering Begin ---
+            
+            // 1. Transition Image to Color Attachment Optimal
+            {
+                context.cachedBarriers.assign({
+                    {
+                        RHI::ACCESS_NONE,
+                        RHI::ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                        RHI::IMAGE_LAYOUT_UNDEFINED,
+                        RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                        VK_QUEUE_FAMILY_IGNORED,
+                        VK_QUEUE_FAMILY_IGNORED,
+                        backBuffer,
+                        { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }
+                    }
+                });
+                RHI_Cmd_PipelineBarrier_Image(commandBuffer, RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, &context.cachedBarriers);
+            }
+
+            // 2. Begin Rendering
+            {
+                context.cachedColorAtt.imageView = backBufferView;
+                context.cachedColorAtt.imageLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                context.cachedColorAtt.loadOp = RHI::ATTACHMENT_LOAD_OP_CLEAR;
+                context.cachedColorAtt.storeOp = RHI::ATTACHMENT_STORE_OP_STORE;
+                context.cachedColorAtt.clearValue.float32[0] = 0.0f;
+                context.cachedColorAtt.clearValue.float32[1] = 0.0f;
+                context.cachedColorAtt.clearValue.float32[2] = 0.0f;
+                context.cachedColorAtt.clearValue.float32[3] = 1.0f;
+
+                context.cachedRenderingInfo.renderArea = { 0, 0, RHI_ImageView_GetWidth(backBufferView), RHI_ImageView_GetHeight(backBufferView) };
+                context.cachedRenderingInfo.layerCount = 1;
+                context.cachedRenderingInfo.pColorAttachments = &context.cachedColorAtt;
+                context.cachedRenderingInfo.colorAttachmentCount = 1;
+                context.cachedRenderingInfo.pDepthAttachment = nullptr;
+                context.cachedRenderingInfo.pStencilAttachment = nullptr;
                 
-                // 1. Transition Image to Color Attachment Optimal
-                {
-                    Containers::Vector<RHI::RHIImageMemoryBarrier> barriers {
-                        {
-                            RHI::ACCESS_NONE,
-                            RHI::ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                            RHI::IMAGE_LAYOUT_UNDEFINED, // Or PRESENT_SRC if we care? Usually UNDEFINED is fine for starting frame
-                            RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                            VK_QUEUE_FAMILY_IGNORED,
-                            VK_QUEUE_FAMILY_IGNORED,
-                            backBuffer,
-                            { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }
-                        }
-                    };
-                    RHI_Cmd_PipelineBarrier_Image(commandBuffer, RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, &barriers);
-                }
+                RHI_Cmd_BeginRendering(commandBuffer, &context.cachedRenderingInfo);
+            }
 
-                // 2. Begin Rendering
-                {
-                    RHI::RHIRenderingAttachmentInfo colorAtt{};
-                    colorAtt.imageView = backBufferView;
-                    colorAtt.imageLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                    colorAtt.loadOp = RHI::ATTACHMENT_LOAD_OP_CLEAR;
-                    colorAtt.storeOp = RHI::ATTACHMENT_STORE_OP_STORE;
-                    colorAtt.clearValue.float32[0] = 0.0f;
-                    colorAtt.clearValue.float32[1] = 0.0f;
-                    colorAtt.clearValue.float32[2] = 0.0f;
-                    colorAtt.clearValue.float32[3] = 1.0f;
+            // 3. Draw
+            {
+                auto pipeline = context.pipeline;
+                RHI_Cmd_BindPipeline(commandBuffer, m_FrameIndex, pipeline);
+                RHI_Cmd_SetViewport(commandBuffer, 0.0f, 0.0f, static_cast<Float32>(RHI_ImageView_GetWidth(backBufferView)), static_cast<Float32>(RHI_ImageView_GetHeight(backBufferView)), 0.0f, 1.0f);
+                RHI_Cmd_SetScissor(commandBuffer, 0, 0, RHI_ImageView_GetWidth(backBufferView), RHI_ImageView_GetHeight(backBufferView));
+                RHI_Cmd_BindDescriptorSets_FromPool(commandBuffer, m_FrameIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, context.descriptorPool, context.descriptorPoolIds[currentIndex]);
+                RHI_Cmd_BindVertexBuffers(commandBuffer, context.vertexBufferHandle, 0);
+                RHI_Cmd_BindIndexBuffer(commandBuffer, context.indicesBufferHandle, 0, RHI::INDEX_TYPE_UINT16);
+                RHI_Cmd_DrawIndexed(commandBuffer, static_cast<UInt32>(indices.size()), 1, 0, 0, 0, 0);
+            }
 
-                    RHI::RHIRenderingInfo renderingInfo{};
-                    renderingInfo.renderArea = { 0, 0, RHI_ImageView_GetWidth(backBufferView), RHI_ImageView_GetHeight(backBufferView) };
-                    renderingInfo.layerCount = 1;
-                    renderingInfo.colorAttachments.emplace_back(colorAtt);
-                    // No depth/stencil
-                    
-                    RHI_Cmd_BeginRendering(commandBuffer, &renderingInfo);
-                }
+            // 4. End Rendering
+            RHI_Cmd_EndRendering(commandBuffer);
 
-                // 3. Draw
-                {
-                    auto pipeline = context.pipeline;
-                    RHI_Cmd_BindPipeline(commandBuffer, m_FrameIndex, pipeline);
-                    RHI_Cmd_SetViewport(commandBuffer, 0.0f, 0.0f, static_cast<Float32>(RHI_ImageView_GetWidth(backBufferView)), static_cast<Float32>(RHI_ImageView_GetHeight(backBufferView)), 0.0f, 1.0f);
-                    RHI_Cmd_SetScissor(commandBuffer, 0, 0, RHI_ImageView_GetWidth(backBufferView), RHI_ImageView_GetHeight(backBufferView));
-                    RHI_Cmd_BindDescriptorSets_FromPool(commandBuffer, m_FrameIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, context.descriptorPool, context.descriptorPoolIds[currentIndex]);
-                    RHI_Cmd_BindVertexBuffers(commandBuffer, context.vertexBufferHandle, 0);
-                    RHI_Cmd_BindIndexBuffer(commandBuffer, context.indicesBufferHandle, 0, RHI::INDEX_TYPE_UINT16);
-                    RHI_Cmd_DrawIndexed(commandBuffer, static_cast<UInt32>(indices.size()), 1, 0, 0, 0, 0);
-                }
-
-                // 4. End Rendering
-                RHI_Cmd_EndRendering(commandBuffer);
-
-                // 5. Transition to Present
-                {
-                    Containers::Vector<RHI::RHIImageMemoryBarrier> barriers {
-                        {
-                            RHI::ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                            RHI::ACCESS_NONE,
-                            RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                            RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                            VK_QUEUE_FAMILY_IGNORED,
-                            VK_QUEUE_FAMILY_IGNORED,
-                            backBuffer,
-                            { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }
-                        }
-                    };
-                    RHI_Cmd_PipelineBarrier_Image(commandBuffer, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, RHI::PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, &barriers);
-                }
+            // 5. Transition to Present
+            {
+                context.cachedBarriers.assign({
+                    {
+                        RHI::ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                        RHI::ACCESS_NONE,
+                        RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                        RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                        VK_QUEUE_FAMILY_IGNORED,
+                        VK_QUEUE_FAMILY_IGNORED,
+                        backBuffer,
+                        { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }
+                    }
+                });
+                RHI_Cmd_PipelineBarrier_Image(commandBuffer, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, RHI::PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, &context.cachedBarriers);
+            }
             }
 
             {
