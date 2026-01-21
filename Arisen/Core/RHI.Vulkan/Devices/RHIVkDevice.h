@@ -33,7 +33,7 @@ namespace ArisenEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkDevice)
         ~RHIVkDevice() noexcept override;
         void* GetHandle() const override { return m_VkDevice; }
-        RHIVkDevice(RHIInstance* instance, Surface* surface, VkQueue graphicQueue, VkQueue presentQueue, VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties);
+        RHIVkDevice(RHIInstance* instance, Surface* surface, VkQueue graphicQueue, VkQueue presentQueue, VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties, UInt32 graphicsFamilyIndex);
 
         void DeviceWaitIdle() const override;
         void GraphicQueueWaitIdle() const override;
@@ -69,6 +69,7 @@ namespace ArisenEngine::RHI
         UInt32 RegisterBindlessResource(RHISampler* sampler) override;
 
         RHIVkBindlessManager* GetBindlessManager() const { return m_BindlessManager; }
+        UInt32 GetGraphicsFamilyIndex() const { return m_GraphicsFamilyIndex; }
     private:
 
         friend class RHIVkInstance;
@@ -80,6 +81,7 @@ namespace ArisenEngine::RHI
         VkQueue m_VkGraphicQueue;
         VkQueue m_VkPresentQueue;
         VkDevice m_VkDevice;
+        UInt32 m_GraphicsFamilyIndex;
         VkPhysicalDeviceMemoryProperties m_VkPhysicalDeviceMemoryProperties;
         std::mutex m_SubmitMutex;
         

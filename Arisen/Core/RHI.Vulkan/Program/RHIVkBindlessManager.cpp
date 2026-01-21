@@ -22,87 +22,92 @@ namespace ArisenEngine::RHI
 
     void RHIVkBindlessManager::Initialize()
     {
-        VkDevice vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
+        auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+        VkDevice device = static_cast<VkDevice>(vkDevice->GetHandle());
 
         // 1. Create Descriptor Set Layout
-        VkDescriptorSetLayoutBinding bindings[3] = {};
+        Containers::Vector<VkDescriptorSetLayoutBinding> bindings;
         
-        // Binding 0: Sampled Images
-        bindings[0].binding = IMAGE_BINDING;
-        bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        bindings[0].descriptorCount = MAX_BINDLESS_IMAGES;
-        bindings[0].stageFlags = VK_SHADER_STAGE_ALL;
-        bindings[0].pImmutableSamplers = nullptr;
+        // Bindless Image - Descriptor Count can be huge (e.g., 100,000)
+        VkDescriptorSetLayoutBinding imageBinding{};
+        imageBinding.binding = 0;
+        imageBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        imageBinding.descriptorCount = 10000; // Placeholder Max
+        imageBinding.stageFlags = VK_SHADER_STAGE_ALL;
+        imageBinding.pImmutableSamplers = nullptr;
+        bindings.emplace_back(imageBinding);
 
-        // Binding 1: Samplers
-        bindings[1].binding = SAMPLER_BINDING;
-        bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-        bindings[1].descriptorCount = MAX_BINDLESS_SAMPLERS;
-        bindings[1].stageFlags = VK_SHADER_STAGE_ALL;
-        bindings[1].pImmutableSamplers = nullptr;
-
-        // Binding 2: Storage Buffers
-        bindings[2].binding = BUFFER_BINDING;
-        bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        bindings[2].descriptorCount = MAX_BINDLESS_BUFFERS;
-        bindings[2].stageFlags = VK_SHADER_STAGE_ALL;
-        bindings[2].pImmutableSamplers = nullptr;
-
-        VkDescriptorBindingFlags bindingFlags[3] = {
-            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
-            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
-            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT
-        };
-
-        VkDescriptorSetLayoutBindingFlagsCreateInfo layoutFlags{};
-        layoutFlags.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
-        layoutFlags.bindingCount = 3;
-        layoutFlags.pBindingFlags = bindingFlags;
+        // Bindless Buffer
+        VkDescriptorSetLayoutBinding bufferBinding{};
+        bufferBinding.binding = 1;
+        bufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        bufferBinding.descriptorCount = 10000;
+        bufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
+        bufferBinding.pImmutableSamplers = nullptr;
+        bindings.emplace_back(bufferBinding);
 
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = 3;
-        layoutInfo.pBindings = bindings;
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
         layoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
-        layoutInfo.pNext = &layoutFlags;
 
-        if (vkCreateDescriptorSetLayout(vkDevice, &layoutInfo, nullptr, &m_DescriptorSetLayout) != VK_SUCCESS)
+        // Indexing flags for bindless
+        VkDescriptorBindingFlags bindingFlags[2] = {
+            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
+            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT
+        };
+
+        VkDescriptorSetLayoutBindingFlagsCreateInfo layoutBindingFlags{};
+        layoutBindingFlags.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+        layoutBindingFlags.bindingCount = 2;
+        layoutBindingFlags.pBindingFlags = bindingFlags;
+        layoutInfo.pNext = &layoutBindingFlags;
+
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &m_DescriptorSetLayout) != VK_SUCCESS)
         {
-            LOG_FATAL_AND_THROW("[RHIVkBindlessManager::Initialize]: Failed to create bindless descriptor set layout!");
+            LOG_FATAL_AND_THROW("[RHIVkBindlessManager]: failed to create descriptor set layout!");
         }
 
         // 2. Create Descriptor Pool
-        VkDescriptorPoolSize poolSizes[3] = {};
+        VkDescriptorPoolSize poolSizes[2];
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        poolSizes[0].descriptorCount = MAX_BINDLESS_IMAGES;
-        poolSizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLER;
-        poolSizes[1].descriptorCount = MAX_BINDLESS_SAMPLERS;
-        poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        poolSizes[2].descriptorCount = MAX_BINDLESS_BUFFERS;
+        poolSizes[0].descriptorCount = 10000;
+        poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        poolSizes[1].descriptorCount = 10000;
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.maxSets = 1;
-        poolInfo.poolSizeCount = 3;
-        poolInfo.pPoolSizes = poolSizes;
         poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
+        poolInfo.maxSets = 1;
+        poolInfo.poolSizeCount = 2;
+        poolInfo.pPoolSizes = poolSizes;
+        poolInfo.pPoolSizes = poolSizes;
 
-        if (vkCreateDescriptorPool(vkDevice, &poolInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS)
+        if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS)
         {
-            LOG_FATAL_AND_THROW("[RHIVkBindlessManager::Initialize]: Failed to create bindless descriptor pool!");
+            LOG_FATAL_AND_THROW("[RHIVkBindlessManager]: failed to create descriptor pool!");
         }
 
         // 3. Allocate Descriptor Set
+        VkDescriptorSetVariableDescriptorCountAllocateInfo variableDescriptorCountAllocInfo{};
+        variableDescriptorCountAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
+        uint32_t variableDescriptorCount = 10000;
+        variableDescriptorCountAllocInfo.descriptorSetCount = 1;
+        variableDescriptorCountAllocInfo.pDescriptorCounts = &variableDescriptorCount;
+
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = m_DescriptorPool;
         allocInfo.descriptorSetCount = 1;
         allocInfo.pSetLayouts = &m_DescriptorSetLayout;
+        allocInfo.pNext = &variableDescriptorCountAllocInfo;
 
-        if (vkAllocateDescriptorSets(vkDevice, &allocInfo, &m_DescriptorSet) != VK_SUCCESS)
+        if (vkAllocateDescriptorSets(device, &allocInfo, &m_DescriptorSet) != VK_SUCCESS)
         {
-            LOG_FATAL_AND_THROW("[RHIVkBindlessManager::Initialize]: Failed to allocate bindless descriptor set!");
+            LOG_FATAL_AND_THROW("[RHIVkBindlessManager]: failed to allocate descriptor set!");
         }
+        std::cout << "[DEBUG] RHIVkBindlessManager::Initialize END" << std::endl;
     }
 
     void RHIVkBindlessManager::Shutdown()

@@ -32,13 +32,14 @@ void ArisenEngine::RHI::RHIVkQueue::CreateTimelineSemaphore()
     typeInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
     typeInfo.initialValue = 0;
 
-    VkSemaphoreCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    createInfo.pNext = &typeInfo;
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    semaphoreInfo.pNext = &typeInfo;
 
-    if (vkCreateSemaphore(m_Device, &createInfo, nullptr, &m_TimelineSemaphore) != VK_SUCCESS)
+    VkResult result = vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &m_TimelineSemaphore);
+    if (result != VK_SUCCESS)
     {
-        LOG_FATAL_AND_THROW("[RHIVkQueue::CreateTimelineSemaphore]: failed to create timeline semaphore!");
+        LOG_FATAL_AND_THROW("[RHIVkQueue]: failed to create timeline semaphore!");
     }
 }
 

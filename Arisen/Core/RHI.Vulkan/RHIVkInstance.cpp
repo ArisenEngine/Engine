@@ -487,6 +487,7 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
     descriptorIndexingFeatures.shaderStorageImageArrayNonUniformIndexing = VK_TRUE;
     descriptorIndexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+    descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
 
     timelineFeatures.pNext = &sync2Features;
     sync2Features.pNext = &dynamicRenderingFeatures;
@@ -533,10 +534,10 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
         vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
     }
 
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(m_CurrentPhysicsDevice, &memProperties);
+    VkPhysicalDeviceMemoryProperties memoryProperties;
+    vkGetPhysicalDeviceMemoryProperties(m_CurrentPhysicsDevice, &memoryProperties);
 
-    auto logicalDevice = std::make_unique<RHIVkDevice>(this, rhiSurface, graphicQueue, presentQueue, device, memProperties);
+    auto logicalDevice = std::make_unique<RHIVkDevice>(this, rhiSurface, graphicQueue, presentQueue, device, memoryProperties, indices.graphicsFamily.value());
     VkPhysicalDeviceProperties physicalProperties {};
     vkGetPhysicalDeviceProperties(m_CurrentPhysicsDevice, &physicalProperties);
     {

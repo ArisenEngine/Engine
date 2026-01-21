@@ -46,12 +46,12 @@ VkCommandPool ArisenEngine::RHI::RHIVkCommandBufferPool::AcquireThreadCommandPoo
         return m_ThreadPools[threadId];
     }
 
-    VkQueueFamilyIndices queueFamilyIndices = static_cast<RHIVkSurface*>(m_Device->GetSurface())->GetQueueFamilyIndices();
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
 
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+    poolInfo.queueFamilyIndex = vkDevice->GetGraphicsFamilyIndex();
 
     VkCommandPool pool;
     if (vkCreateCommandPool(m_VkDevice, &poolInfo, nullptr, &pool) != VK_SUCCESS)
