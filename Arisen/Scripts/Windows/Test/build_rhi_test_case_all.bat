@@ -31,17 +31,20 @@ echo === RHITestCase Build Log === > "%LOG_FILE%"
 
 REM Configure on first run when CMakeCache.txt is absent
 if not exist "%VS_BUILD_DIR%\CMakeCache.txt" (
-    echo === Configuring (Debug + Release) ===
-    cmake -S "%ROOT_DIR%" -B "%VS_BUILD_DIR%" -DTARGET=RHITestCase -DPLATFORM=Windows -G "Visual Studio 17 2022" -A x64 >> "%LOG_FILE%" 2>&1 || goto :fail
+    echo === Configuring ^(Debug + Release^) ...
+    cmake -S "%ROOT_DIR%" -B "%VS_BUILD_DIR%" -DTARGET=RHITestCase -DPLATFORM=Windows -G "Visual Studio 17 2022" -A x64 > "%LOG_FILE%" 2>&1
+    if errorlevel 1 goto :fail
 )
 
 REM Build Debug
-echo === Building Debug ===
-cmake --build "%VS_BUILD_DIR%" --config Debug >> "%LOG_FILE%" 2>&1 || goto :fail
+echo === Building Debug ...
+cmake --build "%VS_BUILD_DIR%" --config Debug >> "%LOG_FILE%" 2>&1
+if errorlevel 1 goto :fail
 
 REM Build Release
-echo === Building Release ===
-cmake --build "%VS_BUILD_DIR%" --config Release >> "%LOG_FILE%" 2>&1 || goto :fail
+echo === Building Release ...
+cmake --build "%VS_BUILD_DIR%" --config Release >> "%LOG_FILE%" 2>&1
+if errorlevel 1 goto :fail
 
 echo === All builds succeeded ===
 if /i "%~1"=="--no-pause" exit /b 0
