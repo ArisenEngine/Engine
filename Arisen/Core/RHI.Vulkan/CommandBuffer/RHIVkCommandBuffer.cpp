@@ -150,10 +150,10 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRendering(const RHIRenderingInf
         renderingInfo.pStencilAttachment = &stencilAtt;
     }
 
-    auto func = (PFN_vkCmdBeginRenderingKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCmdBeginRenderingKHR");
-    if (func)
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    if (vkDevice->vkCmdBeginRenderingKHR)
     {
-        func(m_VkCommandBuffer, &renderingInfo);
+        vkDevice->vkCmdBeginRenderingKHR(m_VkCommandBuffer, &renderingInfo);
     }
     else
     {
@@ -167,10 +167,10 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::EndRendering()
 {
     ASSERT(m_State == ECommandState::IsInsideRenderPass);
 
-    auto func = (PFN_vkCmdEndRenderingKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCmdEndRenderingKHR");
-    if (func)
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    if (vkDevice->vkCmdEndRenderingKHR)
     {
-        func(m_VkCommandBuffer);
+        vkDevice->vkCmdEndRenderingKHR(m_VkCommandBuffer);
     }
     else
     {
@@ -446,10 +446,10 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(
         static_cast<VkDependencyFlags>(dependency));
 
     // Use extension function
-    auto func = (PFN_vkCmdPipelineBarrier2KHR)vkGetDeviceProcAddr(m_VkDevice, "vkCmdPipelineBarrier2KHR");
-    if (func)
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    if (vkDevice->vkCmdPipelineBarrier2KHR)
     {
-        func(m_VkCommandBuffer, &dependencyInfo);
+        vkDevice->vkCmdPipelineBarrier2KHR(m_VkCommandBuffer, &dependencyInfo);
     }
     else
     {
