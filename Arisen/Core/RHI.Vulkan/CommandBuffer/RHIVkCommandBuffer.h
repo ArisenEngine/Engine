@@ -57,15 +57,15 @@ namespace  ArisenEngine::RHI
         void CopyBufferToImage(BufferHandle const * srcBuffer, ImageHandle const * dst,
             EImageLayout dstImageLayout, Containers::Vector<BufferImageCopy>&& regions) override;
         void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
-    Containers::Vector<RHIMemoryBarrier>&& memoryBarriers,
-    Containers::Vector<RHIImageMemoryBarrier> && imageMemoryBarriers,
-    Containers::Vector<RHIBufferMemoryBarrier> && bufferMemoryBarriers) override;
+            const RHIMemoryBarrier* pMemoryBarriers, UInt32 memoryBarrierCount,
+            const RHIImageMemoryBarrier* pImageMemoryBarriers, UInt32 imageMemoryBarrierCount,
+            const RHIBufferMemoryBarrier* pBufferMemoryBarriers, UInt32 bufferMemoryBarrierCount) override;
         void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
-   Containers::Vector<RHIMemoryBarrier>&& memoryBarriers) override;
+            const RHIMemoryBarrier* pMemoryBarriers, UInt32 memoryBarrierCount) override;
         void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
-   Containers::Vector<RHIImageMemoryBarrier> && imageMemoryBarriers) override;
+            const RHIImageMemoryBarrier* pImageMemoryBarriers, UInt32 imageMemoryBarrierCount) override;
         void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
-    Containers::Vector<RHIBufferMemoryBarrier> && bufferMemoryBarriers) override;
+            const RHIBufferMemoryBarrier* pBufferMemoryBarriers, UInt32 bufferMemoryBarrierCount) override;
 
         
     public:
@@ -109,6 +109,10 @@ namespace  ArisenEngine::RHI
         Containers::Vector<VkRenderingAttachmentInfoKHR> m_VkColorAttachments {};
         VkRenderingAttachmentInfoKHR m_VkDepthAttachment {};
         VkRenderingAttachmentInfoKHR m_VkStencilAttachment {};
+
+        // Cached vectors for other commands
+        Containers::Vector<VkDescriptorSet> m_VkDescriptorSets {};
+        Containers::Vector<VkBufferImageCopy> m_VkBufferImageCopies {};
 
         GPUPipeline* m_CurrentPipeline { nullptr };
 

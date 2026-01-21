@@ -62,9 +62,10 @@ namespace ArisenEngine::RHI
 
     struct RHIRenderingInfo
     {
-        Containers::Vector<RHIRenderingAttachmentInfo> colorAttachments;
-        std::optional<RHIRenderingAttachmentInfo> depthAttachment;
-        std::optional<RHIRenderingAttachmentInfo> stencilAttachment;
+        const RHIRenderingAttachmentInfo* pColorAttachments;
+        UInt32 colorAttachmentCount;
+        const RHIRenderingAttachmentInfo* pDepthAttachment;
+        const RHIRenderingAttachmentInfo* pStencilAttachment;
         UInt32 layerCount;
         struct
         {
@@ -150,15 +151,45 @@ namespace ArisenEngine::RHI
         virtual void CopyBufferToImage(BufferHandle const * srcBuffer, ImageHandle const * dst,
             EImageLayout dstImageLayout, Containers::Vector<BufferImageCopy>&& regions) = 0;
         virtual void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
-    Containers::Vector<RHIMemoryBarrier>&& memoryBarriers,
-    Containers::Vector<RHIImageMemoryBarrier> && imageMemoryBarriers,
-    Containers::Vector<RHIBufferMemoryBarrier> && bufferMemoryBarriers) = 0;
+            const RHIMemoryBarrier* pMemoryBarriers, UInt32 memoryBarrierCount,
+            const RHIImageMemoryBarrier* pImageMemoryBarriers, UInt32 imageMemoryBarrierCount,
+            const RHIBufferMemoryBarrier* pBufferMemoryBarriers, UInt32 bufferMemoryBarrierCount) = 0;
         virtual void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
-   Containers::Vector<RHIMemoryBarrier>&& memoryBarriers) = 0;
+            const RHIMemoryBarrier* pMemoryBarriers, UInt32 memoryBarrierCount) = 0;
         virtual void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
-   Containers::Vector<RHIImageMemoryBarrier> && imageMemoryBarriers) = 0;
+            const RHIImageMemoryBarrier* pImageMemoryBarriers, UInt32 imageMemoryBarrierCount) = 0;
         virtual void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
-    Containers::Vector<RHIBufferMemoryBarrier> && bufferMemoryBarriers) = 0;
+            const RHIBufferMemoryBarrier* pBufferMemoryBarriers, UInt32 bufferMemoryBarrierCount) = 0;
+
+        // Vector-based overloads (delegating to pointer-based ones)
+        void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
+            Containers::Vector<RHIMemoryBarrier>&& memoryBarriers,
+            Containers::Vector<RHIImageMemoryBarrier>&& imageMemoryBarriers,
+            Containers::Vector<RHIBufferMemoryBarrier>&& bufferMemoryBarriers)
+        {
+            PipelineBarrier(srcStage, dstStage, dependency,
+                memoryBarriers.data(), static_cast<UInt32>(memoryBarriers.size()),
+                imageMemoryBarriers.data(), static_cast<UInt32>(imageMemoryBarriers.size()),
+                bufferMemoryBarriers.data(), static_cast<UInt32>(bufferMemoryBarriers.size()));
+        }
+
+        void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
+            Containers::Vector<RHIMemoryBarrier>&& memoryBarriers)
+        {
+            PipelineBarrier(srcStage, dstStage, dependency, memoryBarriers.data(), static_cast<UInt32>(memoryBarriers.size()));
+        }
+
+        void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
+            Containers::Vector<RHIImageMemoryBarrier>&& imageMemoryBarriers)
+        {
+            PipelineBarrier(srcStage, dstStage, dependency, imageMemoryBarriers.data(), static_cast<UInt32>(imageMemoryBarriers.size()));
+        }
+
+        void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
+            Containers::Vector<RHIBufferMemoryBarrier>&& bufferMemoryBarriers)
+        {
+            PipelineBarrier(srcStage, dstStage, dependency, bufferMemoryBarriers.data(), static_cast<UInt32>(bufferMemoryBarriers.size()));
+        }
 
         // Optional hook: allow the backend to track per-submit resource usage (descriptor pools, etc).
         // Default: no-op.
