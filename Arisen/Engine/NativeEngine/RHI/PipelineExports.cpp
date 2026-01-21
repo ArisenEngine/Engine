@@ -276,7 +276,7 @@ extern "C" ENGINE_DLL void RHI_Pipeline_AllocGraphics(RHI_PipelineHandle pipelin
 {
     auto* p = reinterpret_cast<RHI::GPUPipeline*>(pipeline);
     auto* s = reinterpret_cast<RHI::GPUSubPass*>(subpass);
-    if (p == nullptr || s == nullptr) return;
+    if (p == nullptr) return;
     p->AllocGraphicPipeline(frameIndex, s);
 }
 extern "C" ENGINE_DLL void RHI_Device_ReleaseRenderPass(RHI_DeviceHandle device, RHI_RenderPassHandle rp)
