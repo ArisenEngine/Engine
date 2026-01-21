@@ -50,9 +50,19 @@
 > 为了解决 "C# Binding" 和当前调用方式 "怪怪的" (Mixed OO/C-Style) 问题，建议重构底层为面向数据的 Handle-based 架构。
 
 - [ ] **RHI 句柄化重构 (Handle-Based Architecture)**
-  - [ ] 移除各种 `virtual` 接口中传递的裸指针/智能指针，全面使用 POD 类型的 `RHIHandle` (Index + Generation)。
-  - [ ] RHI 层改为无状态 (Stateless) API 设计，所有状态由 Device 内部的 Pool 管理。
-  - [ ] 确保所有 API 参数均为 Blittable 类型，直接对齐 C# `unmanaged` 结构。
+  - [ ] **Phase 1: 基础类型与资源池 (Foundation)**
+    - [ ] Define `RHIHandle` POD structs (Index + Generation) for all resources.
+    - [ ] Implement `RHIResourcePool` for lifecycle management & handle lookups.
+    - [ ] Ensure all Handles are Blittable for C# interop.
+  - [ ] **Phase 2: 渐进式迁移 (Incremental Migration)**
+    - [ ] *Resources*: Add handle-returning `Create` functions alongside existing ones.
+    - [ ] *Descriptors*: Update `UpdateDescriptorSets` to accept handles.
+    - [ ] *Pipelines*: Refactor Pipeline creation to return handles.
+    - [ ] *Commands*: Abstract CommandBuffer to use handles for barriers/draws.
+  - [ ] **Phase 3: 清理与强制转型 (Cleanup)**
+    - [ ] Mark pointer-based interfaces `[[deprecated]]`.
+    - [ ] Remove `virtual` interface pointer passing.
+    - [ ] Finalize stateless API design.
 - [ ] **API 清理与命名规范化 (API Cleanup)** -> *[NEW]*
   - [ ] 移除过时/废弃接口 (如 `GetHandle` vs `GetHandlerPointer` 的歧义)。
   - [ ] 统一命名规范 (e.g., `Cmd` 前缀用于 CommandBuffer 命令, `Alloc/Free` vs `Create/Destroy` 语义明确化)。
