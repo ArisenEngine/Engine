@@ -188,17 +188,46 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::BuildDescriptorSetLayout()
 {
     ClearDescriptorSetLayouts();
     auto vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
+    
+    UInt32 maxSetIndex = 3; // Set 3 is Reserved for Bindless
     for (const auto& pair : m_DescriptorSetLayoutBindings)
     {
-        auto descriptorSetLayoutInfo = DescriptorSetLayoutCreateInfo(pair.second.size(), pair.second.data());
-        VkDescriptorSetLayout descriptorSetLayout;
-        if (vkCreateDescriptorSetLayout(vkDevice, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
-        {
-            LOG_FATAL_AND_THROW("[RHIVkGPUPipelineStateObject::BuildDescriptorSetLayout]: failed to create descriptor set layout!");
-        }
-        m_DescriptorSetLayouts.emplace_back(descriptorSetLayout);
+        if (pair.first > maxSetIndex) maxSetIndex = pair.first;
     }
-    
+
+    m_DescriptorSetLayouts.resize(maxSetIndex + 1, VK_NULL_HANDLE);
+    VkDescriptorSetLayout bindlessLayout = m_Device->GetBindlessManager()->GetDescriptorSetLayout();
+
+    for (UInt32 i = 0; i <= maxSetIndex; ++i)
+    {
+        if (i == 3)
+        {
+            m_DescriptorSetLayouts[i] = bindlessLayout;
+            continue;
+        }
+
+        if (m_DescriptorSetLayoutBindings.contains(i))
+        {
+            const auto& bindings = m_DescriptorSetLayoutBindings[i];
+            auto descriptorSetLayoutInfo = DescriptorSetLayoutCreateInfo(static_cast<uint32_t>(bindings.size()), bindings.data());
+            VkDescriptorSetLayout descriptorSetLayout;
+            if (vkCreateDescriptorSetLayout(vkDevice, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
+            {
+                LOG_FATAL_AND_THROW("[RHIVkGPUPipelineStateObject::BuildDescriptorSetLayout]: failed to create descriptor set layout!");
+            }
+            m_DescriptorSetLayouts[i] = descriptorSetLayout;
+        }
+        else
+        {
+            auto descriptorSetLayoutInfo = DescriptorSetLayoutCreateInfo(0, nullptr);
+            VkDescriptorSetLayout descriptorSetLayout;
+            if (vkCreateDescriptorSetLayout(vkDevice, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
+            {
+                LOG_FATAL_AND_THROW("[RHIVkGPUPipelineStateObject::BuildDescriptorSetLayout]: failed to create empty descriptor set layout!");
+            }
+            m_DescriptorSetLayouts[i] = descriptorSetLayout;
+        }
+    }
 }
 
 VkDescriptorSetLayout ArisenEngine::RHI::RHIVkGPUPipelineStateObject::GetVkDescriptorSetLayout(UInt32 layoutIndex) const
@@ -244,9 +273,14 @@ ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkGPUPipelineStateObject::DescriptorS
 void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::ClearDescriptorSetLayouts()
 {
     auto vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
+    VkDescriptorSetLayout bindlessLayout = m_Device->GetBindlessManager()->GetDescriptorSetLayout();
+
     for (const auto& descriptorSetLayout : m_DescriptorSetLayouts)
     {
-        vkDestroyDescriptorSetLayout(vkDevice, descriptorSetLayout, nullptr);
+        if (descriptorSetLayout != VK_NULL_HANDLE && descriptorSetLayout != bindlessLayout)
+        {
+            vkDestroyDescriptorSetLayout(vkDevice, descriptorSetLayout, nullptr);
+        }
     }
     m_DescriptorSetLayouts.clear();
 }

@@ -10,6 +10,7 @@
 #include "../Program/RHIVkSampler.h"
 #include "../Memory/RHIVkMemoryAllocator.h"
 #include "../RHIVkInstance.h"
+#include "../Program/RHIVkBindlessManager.h"
 
 ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surface, VkQueue graphicQueue, VkQueue presentQueue, VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties)
 : RHIDevice(instance, surface), m_VkGraphicQueue(graphicQueue), m_VkPresentQueue(presentQueue), m_VkDevice(device), m_VkPhysicalDeviceMemoryProperties(memoryProperties)
@@ -19,6 +20,9 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surf
     
     auto* vkInstance = static_cast<RHIVkInstance*>(m_Instance);
     m_MemoryAllocator = new RHIVkMemoryAllocator(this, vkInstance->GetVkInstance(), vkInstance->GetPhysicalDevice(), m_VkDevice, VK_API_VERSION_1_2);
+
+    m_BindlessManager = new RHIVkBindlessManager(this);
+    m_BindlessManager->Initialize();
 
     m_Factory = new RHIVkFactory(this);
     m_DeferredDeletion = std::make_unique<RHIVkDeferredDeletion>(m_Instance->GetMaxFramesInFlight());
@@ -210,6 +214,21 @@ void ArisenEngine::RHI::RHIVkDevice::SetResolution(UInt32 width, UInt32 height)
     m_Surface->GetSwapChain()->SetResolution(width, height);
 }
 
+ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDevice::RegisterBindlessResource(ImageHandle* image)
+{
+    return m_BindlessManager->RegisterImage(image);
+}
+
+ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDevice::RegisterBindlessResource(BufferHandle* buffer)
+{
+    return m_BindlessManager->RegisterBuffer(buffer);
+}
+
+ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDevice::RegisterBindlessResource(RHISampler* sampler)
+{
+    return m_BindlessManager->RegisterSampler(sampler);
+}
+
 ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
 {
     // 1. Wait for GPU to be idle
@@ -236,6 +255,7 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
     delete m_GPUPipelineManager;
     delete m_DescriptorPool;
     delete m_MemoryAllocator;
+    delete m_BindlessManager;
     delete m_Factory;
 
     // 5. Clean up sync and queue objects
