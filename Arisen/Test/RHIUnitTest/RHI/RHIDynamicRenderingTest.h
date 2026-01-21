@@ -115,6 +115,7 @@ namespace ArisenEngine::Testing
 
     public:
         const char* GetName() const override { return "DynamicRenderingTest"; }
+        TestCategory GetCategory() const override { return TestCategory::Rendering; }
 
         bool SetupTest() override
         {

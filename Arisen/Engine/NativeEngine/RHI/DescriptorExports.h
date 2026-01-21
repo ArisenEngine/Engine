@@ -16,4 +16,8 @@ extern "C" ENGINE_DLL RHI_DescriptorSetHandle RHI_DescriptorPool_GetDescriptorSe
 extern "C" ENGINE_DLL void RHI_DescriptorPool_UpdateDescriptorSets(RHI_DescriptorPoolHandle pool, unsigned int poolId, RHI_PSOHandle pso);
 extern "C" ENGINE_DLL void RHI_DescriptorPool_UpdateDescriptorSet(RHI_DescriptorPoolHandle pool, unsigned int poolId, unsigned int setIndex, RHI_PSOHandle pso);
 
+// Bindless
+extern "C" ENGINE_DLL unsigned int RHI_Device_BindlessRegisterImage(RHI_DeviceHandle device, RHI_ImageHandle image);
+extern "C" ENGINE_DLL unsigned int RHI_Device_BindlessRegisterBuffer(RHI_DeviceHandle device, RHI_BufferHandle buffer);
+
 
