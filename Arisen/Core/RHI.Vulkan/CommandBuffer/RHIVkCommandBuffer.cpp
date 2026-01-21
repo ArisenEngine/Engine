@@ -89,14 +89,14 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRendering(const RHIRenderingInf
 {
     ASSERT(m_State == ECommandState::IsInsideBegin);
 
-    Containers::Vector<VkRenderingAttachmentInfoKHR> colorAttachments;
-    colorAttachments.resize(info.colorAttachments.size());
+    m_VkColorAttachments.clear();
+    m_VkColorAttachments.reserve(info.colorAttachments.size());
 
     for (size_t i = 0; i < info.colorAttachments.size(); ++i)
     {
         const auto& att = info.colorAttachments[i];
    
-        auto& vkAtt = colorAttachments[i];
+        VkRenderingAttachmentInfoKHR vkAtt{};
         vkAtt.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
         vkAtt.imageView = static_cast<VkImageView>(att.imageView->GetView());
         vkAtt.imageLayout = static_cast<VkImageLayout>(att.imageLayout);
@@ -105,30 +105,29 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRendering(const RHIRenderingInf
         
         // Copy clear value
         std::memcpy(&vkAtt.clearValue, &att.clearValue, sizeof(VkClearValue));
+        m_VkColorAttachments.emplace_back(vkAtt);
     }
 
-    VkRenderingAttachmentInfoKHR depthAtt{};
     if (info.depthAttachment.has_value())
     {
         const auto& att = info.depthAttachment.value();
-        depthAtt.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-        depthAtt.imageView = static_cast<VkImageView>(att.imageView->GetView());
-        depthAtt.imageLayout = static_cast<VkImageLayout>(att.imageLayout);
-        depthAtt.loadOp = static_cast<VkAttachmentLoadOp>(att.loadOp);
-        depthAtt.storeOp = static_cast<VkAttachmentStoreOp>(att.storeOp);
-        std::memcpy(&depthAtt.clearValue, &att.clearValue, sizeof(VkClearValue));
+        m_VkDepthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+        m_VkDepthAttachment.imageView = static_cast<VkImageView>(att.imageView->GetView());
+        m_VkDepthAttachment.imageLayout = static_cast<VkImageLayout>(att.imageLayout);
+        m_VkDepthAttachment.loadOp = static_cast<VkAttachmentLoadOp>(att.loadOp);
+        m_VkDepthAttachment.storeOp = static_cast<VkAttachmentStoreOp>(att.storeOp);
+        std::memcpy(&m_VkDepthAttachment.clearValue, &att.clearValue, sizeof(VkClearValue));
     }
 
-    VkRenderingAttachmentInfoKHR stencilAtt{};
     if (info.stencilAttachment.has_value())
     {
         const auto& att = info.stencilAttachment.value();
-        stencilAtt.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-        stencilAtt.imageView = static_cast<VkImageView>(att.imageView->GetView());
-        stencilAtt.imageLayout = static_cast<VkImageLayout>(att.imageLayout);
-        stencilAtt.loadOp = static_cast<VkAttachmentLoadOp>(att.loadOp);
-        stencilAtt.storeOp = static_cast<VkAttachmentStoreOp>(att.storeOp);
-        std::memcpy(&stencilAtt.clearValue, &att.clearValue, sizeof(VkClearValue));
+        m_VkStencilAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+        m_VkStencilAttachment.imageView = static_cast<VkImageView>(att.imageView->GetView());
+        m_VkStencilAttachment.imageLayout = static_cast<VkImageLayout>(att.imageLayout);
+        m_VkStencilAttachment.loadOp = static_cast<VkAttachmentLoadOp>(att.loadOp);
+        m_VkStencilAttachment.storeOp = static_cast<VkAttachmentStoreOp>(att.storeOp);
+        std::memcpy(&m_VkStencilAttachment.clearValue, &att.clearValue, sizeof(VkClearValue));
     }
 
     VkRenderingInfoKHR renderingInfo{};
@@ -137,17 +136,17 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRendering(const RHIRenderingInf
     renderingInfo.renderArea.extent = { info.renderArea.width, info.renderArea.height };
     renderingInfo.layerCount = info.layerCount;
 
-    renderingInfo.colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size());
-    renderingInfo.pColorAttachments = colorAttachments.data();
+    renderingInfo.colorAttachmentCount = static_cast<uint32_t>(m_VkColorAttachments.size());
+    renderingInfo.pColorAttachments = m_VkColorAttachments.data();
     
     if (info.depthAttachment.has_value())
     {
-        renderingInfo.pDepthAttachment = &depthAtt;
+        renderingInfo.pDepthAttachment = &m_VkDepthAttachment;
     }
 
     if (info.stencilAttachment.has_value())
     {
-        renderingInfo.pStencilAttachment = &stencilAtt;
+        renderingInfo.pStencilAttachment = &m_VkStencilAttachment;
     }
 
     auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
@@ -192,7 +191,10 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::Reset()
     m_VertexBindingOffsets.clear();
     m_IndexBuffer.reset();
     m_IndexOffset.reset();
-    m_IndexType.reset();
+    m_VkMemoryBarriers.clear();
+    m_VkBufferMemoryBarriers.clear();
+    m_VkImageMemoryBarriers.clear();
+    m_VkColorAttachments.clear();
 
     m_CurrentPipeline = nullptr;
 }
@@ -213,19 +215,34 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::CaptureResource(BufferHandle const* 
     if (buffer == nullptr) return;
     auto const* vkBuffer = static_cast<RHIVkBufferHandle const*>(buffer);
     auto handle = vkBuffer->GetRHIHandle();
-    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    
+    // Performance: skip redundant tracking to avoid registry mutex contention
+    for (const auto& h : m_TrackedResourceHandles)
+    {
+        if (h.index == handle.index && h.generation == handle.generation) goto check_mem;
+    }
+
     if (handle.IsValid())
     {
+        auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
         m_TrackedResourceHandles.emplace_back(handle);
         vkDevice->GetResourceRegistry()->Retain(handle);
     }
     
+check_mem:
     if (buffer->GetDeviceMemory())
     {
         auto* vkMem = static_cast<RHIVkDeviceMemory*>(buffer->GetDeviceMemory());
         auto memHandle = vkMem->GetRHIHandle();
+        
+        for (const auto& h : m_TrackedResourceHandles)
+        {
+            if (h.index == memHandle.index && h.generation == memHandle.generation) return;
+        }
+
         if (memHandle.IsValid())
         {
+            auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
             m_TrackedResourceHandles.emplace_back(memHandle);
             vkDevice->GetResourceRegistry()->Retain(memHandle);
         }
@@ -237,19 +254,33 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::CaptureResource(ImageHandle const* i
     if (image == nullptr) return;
     auto const* vkImage = static_cast<RHIVkImageHandle const*>(image);
     auto handle = vkImage->GetRHIHandle();
-    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    
+    for (const auto& h : m_TrackedResourceHandles)
+    {
+        if (h.index == handle.index && h.generation == handle.generation) goto check_mem;
+    }
+
     if (handle.IsValid())
     {
+        auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
         m_TrackedResourceHandles.emplace_back(handle);
         vkDevice->GetResourceRegistry()->Retain(handle);
     }
 
+check_mem:
     if (image->GetDeviceMemory())
     {
         auto* vkMem = static_cast<RHIVkDeviceMemory*>(image->GetDeviceMemory());
         auto memHandle = vkMem->GetRHIHandle();
+
+        for (const auto& h : m_TrackedResourceHandles)
+        {
+            if (h.index == memHandle.index && h.generation == memHandle.generation) return;
+        }
+
         if (memHandle.IsValid())
         {
+            auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
             m_TrackedResourceHandles.emplace_back(memHandle);
             vkDevice->GetResourceRegistry()->Retain(memHandle);
         }
