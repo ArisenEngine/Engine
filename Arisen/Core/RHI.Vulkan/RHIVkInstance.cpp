@@ -450,7 +450,13 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     VkPhysicalDeviceSynchronization2Features sync2Features{};
     sync2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
     sync2Features.synchronization2 = VK_TRUE;
+
+    VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures{};
+    dynamicRenderingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
+    dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
+
     timelineFeatures.pNext = &sync2Features;
+    sync2Features.pNext = &dynamicRenderingFeatures;
     
     // Device Create Info
     VkDeviceCreateInfo createInfo{};

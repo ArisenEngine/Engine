@@ -186,6 +186,20 @@ extern "C" ENGINE_DLL void RHI_PSO_SetBlendConstants(RHI_PSOHandle pso, float r,
     s->SetBlendConstants(r, g, b, a);
 }
 
+extern "C" ENGINE_DLL void RHI_PSO_SetRenderingFormats(RHI_PSOHandle pso, ArisenEngine::Containers::Vector<ArisenEngine::RHI::EFormat>* colorFormats, ArisenEngine::RHI::EFormat depthFormat, ArisenEngine::RHI::EFormat stencilFormat)
+{
+    auto* pipelineState = reinterpret_cast<ArisenEngine::RHI::GPUPipelineStateObject*>(pso);
+    if (pipelineState == nullptr) return;
+    if (colorFormats)
+    {
+        pipelineState->SetRenderingFormats(*colorFormats, depthFormat, stencilFormat);
+    }
+    else
+    {
+         pipelineState->SetRenderingFormats({}, depthFormat, stencilFormat);
+    }
+}
+
 extern "C" ENGINE_DLL RHI_PipelineHandle RHI_PipelineManager_GetGraphicsPipeline(RHI_PipelineManagerHandle pm, RHI_PSOHandle pso)
 {
     auto* mgr = reinterpret_cast<RHI::GPUPipelineManager*>(pm);

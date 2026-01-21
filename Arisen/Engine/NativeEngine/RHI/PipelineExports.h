@@ -38,6 +38,7 @@ extern "C" ENGINE_DLL void RHI_PSO_SetSampleCount(RHI_PSOHandle pso, ArisenEngin
 extern "C" ENGINE_DLL void RHI_PSO_AddBlendAttachmentState_Simple(RHI_PSOHandle pso, bool enable, unsigned int writeMask);
 extern "C" ENGINE_DLL void RHI_PSO_SetLogicOp(RHI_PSOHandle pso, bool enable, ArisenEngine::RHI::ELogicOp op);
 extern "C" ENGINE_DLL void RHI_PSO_SetBlendConstants(RHI_PSOHandle pso, float r, float g, float b, float a);
+extern "C" ENGINE_DLL void RHI_PSO_SetRenderingFormats(RHI_PSOHandle pso, ArisenEngine::Containers::Vector<ArisenEngine::RHI::EFormat>* colorFormats, ArisenEngine::RHI::EFormat depthFormat, ArisenEngine::RHI::EFormat stencilFormat);
 extern "C" ENGINE_DLL RHI_PipelineHandle RHI_PipelineManager_GetGraphicsPipeline(RHI_PipelineManagerHandle pm, RHI_PSOHandle pso);
 extern "C" ENGINE_DLL void RHI_Pipeline_AllocGraphics(RHI_PipelineHandle pipeline, unsigned int frameIndex, RHI_SubpassHandle subpass);
 

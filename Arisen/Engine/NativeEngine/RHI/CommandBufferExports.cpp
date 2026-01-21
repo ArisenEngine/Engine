@@ -177,9 +177,29 @@ extern "C" ENGINE_DLL void RHI_Cmd_InjectFence(RHI_CommandBufferHandle cmd, RHI_
 
 extern "C" ENGINE_DLL void RHI_Cmd_WaitForFence(RHI_CommandBufferHandle cmd, unsigned int frameIndex)
 {
-    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
-    if (c == nullptr) return;
-    c->WaitForFence(frameIndex);
+    auto* commandBuffer = reinterpret_cast<ArisenEngine::RHI::RHICommandBuffer*>(cmd);
+    if (commandBuffer)
+    {
+        commandBuffer->WaitForFence(frameIndex);
+    }
+}
+
+extern "C" ENGINE_DLL void RHI_Cmd_BeginRendering(RHI_CommandBufferHandle cmd, ArisenEngine::RHI::RHIRenderingInfo* info)
+{
+    auto* commandBuffer = reinterpret_cast<ArisenEngine::RHI::RHICommandBuffer*>(cmd);
+    if (commandBuffer && info)
+    {
+        commandBuffer->BeginRendering(*info);
+    }
+}
+
+extern "C" ENGINE_DLL void RHI_Cmd_EndRendering(RHI_CommandBufferHandle cmd)
+{
+    auto* commandBuffer = reinterpret_cast<ArisenEngine::RHI::RHICommandBuffer*>(cmd);
+    if (commandBuffer)
+    {
+        commandBuffer->EndRendering();
+    }
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_BindDescriptorSets_FromPool(RHI_CommandBufferHandle cmd, unsigned int frameIndex, RHI::EPipelineBindPoint bindPoint, unsigned int firstSet, RHI_DescriptorPoolHandle pool, unsigned int poolId)

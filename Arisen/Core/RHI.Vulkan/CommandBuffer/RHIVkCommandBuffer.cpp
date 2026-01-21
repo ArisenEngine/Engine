@@ -14,6 +14,7 @@
 #include "RHI/Synchronization/RHIMemoryBarrier.h"
 #include "Threadable/SynchScope.h"
 #include "../Memory/RHIVkDeviceMemory.h"
+#include "RHI/Memory/ImageView.h"
 
 
 ArisenEngine::RHI::RHIVkCommandBuffer::~RHIVkCommandBuffer() noexcept
@@ -82,6 +83,99 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::EndRenderPass()
 {
     ASSERT(m_State == ECommandState::IsInsideRenderPass);
     vkCmdEndRenderPass(m_VkCommandBuffer);
+}
+
+void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRendering(const RHIRenderingInfo& info)
+{
+    ASSERT(m_State == ECommandState::IsInsideBegin);
+
+    Containers::Vector<VkRenderingAttachmentInfoKHR> colorAttachments;
+    colorAttachments.resize(info.colorAttachments.size());
+
+    for (size_t i = 0; i < info.colorAttachments.size(); ++i)
+    {
+        const auto& att = info.colorAttachments[i];
+   
+        auto& vkAtt = colorAttachments[i];
+        vkAtt.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+        vkAtt.imageView = static_cast<VkImageView>(att.imageView->GetView());
+        vkAtt.imageLayout = static_cast<VkImageLayout>(att.imageLayout);
+        vkAtt.loadOp = static_cast<VkAttachmentLoadOp>(att.loadOp);
+        vkAtt.storeOp = static_cast<VkAttachmentStoreOp>(att.storeOp);
+        
+        // Copy clear value
+        std::memcpy(&vkAtt.clearValue, &att.clearValue, sizeof(VkClearValue));
+    }
+
+    VkRenderingAttachmentInfoKHR depthAtt{};
+    if (info.depthAttachment.has_value())
+    {
+        const auto& att = info.depthAttachment.value();
+        depthAtt.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+        depthAtt.imageView = static_cast<VkImageView>(att.imageView->GetView());
+        depthAtt.imageLayout = static_cast<VkImageLayout>(att.imageLayout);
+        depthAtt.loadOp = static_cast<VkAttachmentLoadOp>(att.loadOp);
+        depthAtt.storeOp = static_cast<VkAttachmentStoreOp>(att.storeOp);
+        std::memcpy(&depthAtt.clearValue, &att.clearValue, sizeof(VkClearValue));
+    }
+
+    VkRenderingAttachmentInfoKHR stencilAtt{};
+    if (info.stencilAttachment.has_value())
+    {
+        const auto& att = info.stencilAttachment.value();
+        stencilAtt.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+        stencilAtt.imageView = static_cast<VkImageView>(att.imageView->GetView());
+        stencilAtt.imageLayout = static_cast<VkImageLayout>(att.imageLayout);
+        stencilAtt.loadOp = static_cast<VkAttachmentLoadOp>(att.loadOp);
+        stencilAtt.storeOp = static_cast<VkAttachmentStoreOp>(att.storeOp);
+        std::memcpy(&stencilAtt.clearValue, &att.clearValue, sizeof(VkClearValue));
+    }
+
+    VkRenderingInfoKHR renderingInfo{};
+    renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
+    renderingInfo.renderArea.offset = { info.renderArea.x, info.renderArea.y };
+    renderingInfo.renderArea.extent = { info.renderArea.width, info.renderArea.height };
+    renderingInfo.layerCount = info.layerCount;
+
+    renderingInfo.colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size());
+    renderingInfo.pColorAttachments = colorAttachments.data();
+    
+    if (info.depthAttachment.has_value())
+    {
+        renderingInfo.pDepthAttachment = &depthAtt;
+    }
+
+    if (info.stencilAttachment.has_value())
+    {
+        renderingInfo.pStencilAttachment = &stencilAtt;
+    }
+
+    auto func = (PFN_vkCmdBeginRenderingKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCmdBeginRenderingKHR");
+    if (func)
+    {
+        func(m_VkCommandBuffer, &renderingInfo);
+    }
+    else
+    {
+        LOG_ERROR("[RHIVkCommandBuffer::BeginRendering]: vkCmdBeginRenderingKHR not found!");
+    }
+
+    m_State = ECommandState::IsInsideRenderPass;
+}
+
+void ArisenEngine::RHI::RHIVkCommandBuffer::EndRendering()
+{
+    ASSERT(m_State == ECommandState::IsInsideRenderPass);
+
+    auto func = (PFN_vkCmdEndRenderingKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCmdEndRenderingKHR");
+    if (func)
+    {
+        func(m_VkCommandBuffer);
+    }
+    else
+    {
+        LOG_ERROR("[RHIVkCommandBuffer::EndRendering]: vkCmdEndRenderingKHR not found!");
+    }
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::Reset()

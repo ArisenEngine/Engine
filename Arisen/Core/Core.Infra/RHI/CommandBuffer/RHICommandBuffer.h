@@ -44,6 +44,37 @@ namespace ArisenEngine::RHI
         FrameBuffer* frameBuffer;
         ESubpassContents subpassContents;
     } RenderPassBeginDesc;
+
+    struct RHIRenderingAttachmentInfo
+    {
+        ImageView* imageView;
+        EImageLayout imageLayout;
+        AttachmentLoadOp loadOp;
+        AttachmentStoreOp storeOp;
+        // clear value
+        union
+        {
+            float float32[4];
+            int32_t int32[4];
+            uint32_t uint32[4];
+        } clearValue;
+    };
+
+    struct RHIRenderingInfo
+    {
+        Containers::Vector<RHIRenderingAttachmentInfo> colorAttachments;
+        std::optional<RHIRenderingAttachmentInfo> depthAttachment;
+        std::optional<RHIRenderingAttachmentInfo> stencilAttachment;
+        UInt32 layerCount;
+        struct
+        {
+            SInt32 x;
+            SInt32 y;
+            UInt32 width;
+            UInt32 height;
+        } renderArea;
+    };
+    
     
     class RHICommandBuffer
     {
@@ -88,6 +119,9 @@ namespace ArisenEngine::RHI
         // Command Interface
         virtual void BeginRenderPass(UInt32 frameIndex, RenderPassBeginDesc&& desc) = 0;
         virtual void EndRenderPass() = 0;
+
+        virtual void BeginRendering(const RHIRenderingInfo& info) = 0;
+        virtual void EndRendering() = 0;
         
         virtual void Begin(UInt32 frameIndex) = 0;
         virtual void Begin(UInt32 frameIndex, UInt32 commandBufferUsage) = 0;
