@@ -112,6 +112,7 @@ namespace ArisenEngine::Testing
 
     public:
         const char* GetName() const override { return "BasicRenderingTest"; }
+        TestCategory GetCategory() const override { return TestCategory::Rendering; }
 
         bool SetupTest() override
         {

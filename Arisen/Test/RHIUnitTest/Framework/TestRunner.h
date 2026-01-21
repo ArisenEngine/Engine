@@ -9,6 +9,17 @@
 namespace ArisenEngine::Testing
 {
     /**
+     * @brief Test categories for organization and filtering.
+     */
+    enum class TestCategory
+    {
+        Unit,        // Logic and resource creation (no rendering/swapchain)
+        Rendering,   // Full rendering flow including window and swapchain
+        Performance, // Benchmarking specific operations
+        Misc         // Other tests
+    };
+
+    /**
      * @brief Base interface for all test cases.
      */
     class ITest
@@ -20,6 +31,11 @@ namespace ArisenEngine::Testing
          * @brief Get the name of this test.
          */
         virtual const char* GetName() const = 0;
+
+        /**
+         * @brief Get the category of this test.
+         */
+        virtual TestCategory GetCategory() const { return TestCategory::Misc; }
 
         /**
          * @brief Setup test resources before running.
@@ -45,6 +61,7 @@ namespace ArisenEngine::Testing
      * Usage:
      *   TestRunner::RegisterTest<MyTest>();
      *   TestRunner::RunAllTests();
+     *   TestRunner::RunByCategory(TestCategory::Unit);
      */
     class TestRunner
     {
@@ -75,17 +92,45 @@ namespace ArisenEngine::Testing
          */
         static std::vector<TestResult> RunAllTests()
         {
+            return RunWithFilter([](const ITest&) { return true; });
+        }
+
+        /**
+         * @brief Run tests in a specific category.
+         */
+        static std::vector<TestResult> RunByCategory(TestCategory category)
+        {
+            return RunWithFilter([category](const ITest& test) { 
+                return test.GetCategory() == category; 
+            });
+        }
+
+        /**
+         * @brief Run a specific test by name.
+         */
+        static std::vector<TestResult> RunTestByName(const std::string& name)
+        {
+            return RunWithFilter([&name](const ITest& test) {
+                return std::string(test.GetName()) == name;
+            });
+        }
+
+        /**
+         * @brief Internal implementation of filtered test execution.
+         */
+        static std::vector<TestResult> RunWithFilter(std::function<bool(const ITest&)> filter)
+        {
             std::vector<TestResult> results;
             auto& registry = GetRegistry();
 
             LOG_INFO("=== Running RHI Unit Tests ===");
-            LOG_INFO("Total tests registered: " + std::to_string(registry.size()));
-
+            
             for (auto& factory : registry)
             {
                 auto test = factory();
-                TestResult result{ test->GetName(), false, "" };
+                if (!filter(*test)) continue;
 
+                TestResult result{ test->GetName(), false, "" };
                 try
                 {
                     LOG_INFO((std::string("[TEST] Starting: ") + test->GetName()).c_str());
@@ -128,14 +173,17 @@ namespace ArisenEngine::Testing
             }
 
             // Print summary
-            size_t passed = 0;
-            for (const auto& result : results)
+            if (results.empty())
             {
-                if (result.passed) ++passed;
+                LOG_INFO("No tests matched the filter.");
             }
-
-            LOG_INFO("=== Test Summary ===");
-            LOG_INFO("Total: " + std::to_string(results.size()) + " | Passed: " + std::to_string(passed) + " | Failed: " + std::to_string(results.size() - passed));
+            else
+            {
+                size_t passed = 0;
+                for (const auto& r : results) { if (r.passed) ++passed; }
+                LOG_INFO("=== Test Summary ===");
+                LOG_INFO("Total: " + std::to_string(results.size()) + " | Passed: " + std::to_string(passed) + " | Failed: " + std::to_string(results.size() - passed));
+            }
 
             return results;
         }

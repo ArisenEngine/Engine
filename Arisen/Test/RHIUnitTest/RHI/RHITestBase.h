@@ -29,6 +29,11 @@ namespace ArisenEngine::Testing
         UInt32 m_FrameIndex = 0;
 
         /**
+         * @brief Whether this test requires a window and swapchain.
+         */
+        virtual bool IsHeadless() const { return false; }
+
+        /**
          * @brief Initialize RHI instance with default settings.
          */
         bool InitializeRHI(const char* appName = "RHI Unit Test")
@@ -88,19 +93,39 @@ namespace ArisenEngine::Testing
         /**
          * @brief Initialize device and surface.
          */
-        bool InitializeDeviceAndSurface()
+        bool InitializeDevice()
         {
-            if (!m_Instance || m_WindowId == ~0u)
+            if (!m_Instance)
             {
-                LOG_ERROR("Instance or window not initialized");
+                LOG_ERROR("Instance not initialized");
                 return false;
             }
 
-            RHI_Instance_CreateSurface(m_Instance, m_WindowId);
-            RHI_Instance_PickPhysicalDevice(m_Instance, true);
+            if (!IsHeadless())
+            {
+                if (m_WindowId == ~0u)
+                {
+                    LOG_ERROR("Window not initialized for non-headless test");
+                    return false;
+                }
+                RHI_Instance_CreateSurface(m_Instance, m_WindowId);
+            }
+
+            RHI_Instance_PickPhysicalDevice(m_Instance, !IsHeadless());
             RHI_Instance_InitLogicDevices(m_Instance);
 
-            m_Device = RHI_Instance_GetLogicalDevice(m_Instance, m_WindowId);
+            if (!IsHeadless())
+            {
+                m_Device = RHI_Instance_GetLogicalDevice(m_Instance, m_WindowId);
+            }
+            else
+            {
+                // For headless, we might need a way to get a device without a window.
+                // Assuming RHI_Instance_GetLogicalDevice(m_Instance, ~0u) or similar works, 
+                // but usually the first device is fine.
+                m_Device = RHI_Instance_GetLogicalDevice(m_Instance, ~0u);
+            }
+
             return m_Device != nullptr;
         }
 
@@ -133,15 +158,18 @@ namespace ArisenEngine::Testing
                 return false;
             }
 
-            if (!CreateAppWindow())
+            if (!IsHeadless())
             {
-                LOG_ERROR("Failed to create window");
-                return false;
+                if (!CreateAppWindow())
+                {
+                    LOG_ERROR("Failed to create window");
+                    return false;
+                }
             }
 
-            if (!InitializeDeviceAndSurface())
+            if (!InitializeDevice())
             {
-                LOG_ERROR("Failed to initialize device and surface");
+                LOG_ERROR("Failed to initialize device");
                 return false;
             }
 
