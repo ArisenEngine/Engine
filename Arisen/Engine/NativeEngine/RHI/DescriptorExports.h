@@ -7,6 +7,8 @@ typedef void* RHI_DeviceHandle;
 typedef void* RHI_DescriptorPoolHandle;
 typedef void* RHI_DescriptorSetHandle;
 typedef void* RHI_PSOHandle;
+typedef void* RHI_BufferHandle;
+typedef void* RHI_ImageHandle;
 
 extern "C" ENGINE_DLL RHI_DescriptorPoolHandle RHI_Device_GetDescriptorPool(RHI_DeviceHandle device);
 extern "C" ENGINE_DLL unsigned int RHI_DescriptorPool_AddPool(RHI_DescriptorPoolHandle pool, ArisenEngine::Containers::Vector<ArisenEngine::RHI::EDescriptorType>* types, ArisenEngine::Containers::Vector<unsigned int>* counts, unsigned int maxSets);
