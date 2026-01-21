@@ -106,6 +106,9 @@ namespace  ArisenEngine::RHI
         Containers::Vector<VkMemoryBarrier2KHR> m_VkMemoryBarriers {};
         Containers::Vector<VkBufferMemoryBarrier2KHR> m_VkBufferMemoryBarriers {};
         Containers::Vector<VkImageMemoryBarrier2KHR> m_VkImageMemoryBarriers {};
+        Containers::Vector<VkRenderingAttachmentInfoKHR> m_VkColorAttachments {};
+        VkRenderingAttachmentInfoKHR m_VkDepthAttachment {};
+        VkRenderingAttachmentInfoKHR m_VkStencilAttachment {};
 
         GPUPipeline* m_CurrentPipeline { nullptr };
 
