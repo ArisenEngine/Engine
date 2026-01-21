@@ -16,9 +16,9 @@
 
 ## 优先级 2：性能与易用性提升 (Performance & Usability)
 
-- [ ] **Bindless Resource 架构实现**
-  - 实现基于全局 Descriptor Set 的资源绑定（Descriptor Indexing）。
-  - 支持 `update-after-bind`，减少 Descriptor 更新导致的 CPU 等待。
+- [x] **Bindless Resource 架构实现**
+  - [x] 实现基于全局 Descriptor Set 的资源绑定（Descriptor Indexing）。
+  - [x] 支持 `update-after-bind`，减少 Descriptor 更新导致的 CPU 等待。
 - [ ] **Pipeline State Object (PSO) 缓存管理**
   - 实现 `VkPipelineCache` 的持久化存储（序列化到磁盘）。
   - 优化 PSO 创建流程，利用多线程预初始化常用 Pipeline。

@@ -8,6 +8,7 @@
 #include "../Program/RHIVkGPUPipelineStateObject.h"
 #include "RHI/Handles/BufferHandle.h"
 #include "../VkInitializer.h"
+#include "../Program/RHIVkBindlessManager.h"
 #include "RHI/Enums/Subpass/EDependencyFlag.h"
 #include "RHI/Synchronization/RHIBufferMemoryBarrier.h"
 #include "RHI/Synchronization/RHIImageMemoryBarrier.h"
@@ -374,6 +375,18 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BindPipeline(UInt32 frameIndex, GPUP
     m_CurrentPipeline = pipeline;
     vkCmdBindPipeline(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(pipeline->GetBindPoint()),
         static_cast<VkPipeline>(pipeline->GetGraphicsPipeline(frameIndex)));
+
+    // Bind Global Bindless Descriptor Set (Set 3)
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* bindlessManager = vkDevice->GetBindlessManager();
+    if (bindlessManager)
+    {
+        VkDescriptorSet bindlessSet = bindlessManager->GetDescriptorSet();
+        auto* vkPipeline = static_cast<RHIVkGPUPipeline*>(pipeline);
+        vkCmdBindDescriptorSets(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(pipeline->GetBindPoint()),
+            vkPipeline->GetPipelineLayout(frameIndex),
+            3, 1, &bindlessSet, 0, nullptr);
+    }
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::BindDescriptorSets(UInt32 frameIndex, EPipelineBindPoint bindPoint,

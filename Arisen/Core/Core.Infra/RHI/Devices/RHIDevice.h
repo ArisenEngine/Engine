@@ -95,6 +95,11 @@ namespace ArisenEngine::RHI
         {
             return m_DeviceLimits;
         }
+
+        // Bindless Resource Support
+        virtual UInt32 RegisterBindlessResource(ImageHandle* image) { (void)image; return 0xFFFFFFFF; }
+        virtual UInt32 RegisterBindlessResource(BufferHandle* buffer) { (void)buffer; return 0xFFFFFFFF; }
+        virtual UInt32 RegisterBindlessResource(RHISampler* sampler) { (void)sampler; return 0xFFFFFFFF; }
         
     protected:
         

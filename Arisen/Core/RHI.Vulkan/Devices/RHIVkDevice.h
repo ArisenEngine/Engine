@@ -18,6 +18,7 @@ namespace ArisenEngine::RHI
     class RHIVkCommandBufferPool;
     class RHIVkDeferredDeletion;
     class IRHIQueue;
+    class RHIVkBindlessManager;
 }
 
 namespace ArisenEngine::RHI
@@ -62,12 +63,19 @@ namespace ArisenEngine::RHI
         RHIFence* GetFrameFence(UInt32 frameIndex) override;
         void WaitFrameFence(UInt32 frameIndex) override;
         void ResetFrameFence(UInt32 frameIndex) override;
+
+        UInt32 RegisterBindlessResource(ImageHandle* image) override;
+        UInt32 RegisterBindlessResource(BufferHandle* buffer) override;
+        UInt32 RegisterBindlessResource(RHISampler* sampler) override;
+
+        RHIVkBindlessManager* GetBindlessManager() const { return m_BindlessManager; }
     private:
 
         friend class RHIVkInstance;
         RHIVkGPUPipelineManager* m_GPUPipelineManager;
         RHIVkDescriptorPool* m_DescriptorPool;
         RHIVkMemoryAllocator* m_MemoryAllocator;
+        RHIVkBindlessManager* m_BindlessManager;
         RHIVkFactory* m_Factory;
         VkQueue m_VkGraphicQueue;
         VkQueue m_VkPresentQueue;
