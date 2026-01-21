@@ -1,18 +1,22 @@
-# RHIUnitTest - RHI 测试框架
+# RHITestCase - RHI 测试框架
 
-RHIUnitTest 是一个模块化、可扩展的 RHI (渲染硬件接口) 测试框架，用于验证 Vulkan/DirectX 渲染功能。
+RHITestCase 是一个模块化、可扩展的 RHI (渲染硬件接口) 测试框架，用于验证 Vulkan/DirectX 渲染功能。
 
 ## 项目结构
 
 ```
-Test/RHIUnitTest/
+Test/RHITestCase/
 ├── Main.cpp                        # 入口点
 ├── Framework/
 │   └── TestRunner.h                # 测试注册与执行系统
 ├── RHI/
 │   ├── RHITestBase.h               # RHI 测试基类
-│   └── RHIBasicRenderingTest.h     # 基础渲染测试示例
-├── RHIUnitTest.h                   # 遗留单体测试（保留以确保稳定性）
+│   ├── Unit/                       # 单元测试 (Headless)
+│   │   ├── RHISyncTest.h
+│   │   └── RHIBindlessTest.h
+│   └── Rendering/                  # 渲染测试 (Windowed)
+│       ├── RHIBasicRenderingTest.h
+│       └── RHIDynamicRenderingTest.h
 ├── Assets/                         # 测试资源
 └── Shader/                         # 测试着色器
 ```
@@ -29,8 +33,10 @@ build_rhi_unit_test.bat
 ### 运行测试
 
 ```batch
-cd Projects\VisualStudio\RHIUnitTest\Outputs\Debug
-RHIUnitTest.exe
+cd Projects\VisualStudio\RHITestCase\Outputs\Debug
+RHITestCase.exe            # 运行所有测试
+RHITestCase.exe --unit      # 仅运行单元测试
+RHITestCase.exe --rendering # 仅运行渲染测试
 ```
 
 **当前状态**: ✅ 构建成功 | ✅ ~190 FPS | ✅ 无验证错误
@@ -39,50 +45,35 @@ RHIUnitTest.exe
 
 ### 1. 创建测试类
 
-在 `Test/RHIUnitTest/RHI/` 目录下创建新的测试文件：
+在 `Test/RHITestCase/RHI/Unit/` 或 `Test/RHITestCase/RHI/Rendering/` 目录下创建新的测试文件：
 
 ```cpp
-// RHIBufferTest.h
+// RHIExampleTest.h
 #pragma once
-#include "RHITestBase.h"
+#include "../RHITestBase.h"
 
 namespace ArisenEngine::Testing {
-    class RHIBufferTest : public RHITestBase {
+    class RHIExampleTest : public RHITestBase {
     public:
-        const char* GetName() const override { 
-            return "RHIBufferTest"; 
-        }
+        const char* GetName() const override { return "RHIExampleTest"; }
+        TestCategory GetCategory() const override { return TestCategory::Unit; }
+        bool IsHeadless() const override { return true; }
         
-        bool SetupTest() override {
-            // 初始化测试资源
-            // 例如：创建缓冲区、分配内存等
-            return true;
-        }
-        
-        bool Run() override {
-            // 执行测试逻辑
-            // 例如：测试缓冲区读写、映射等
-            return true;
-        }
-        
-        void TeardownTest() override {
-            // 清理测试资源
-        }
+        bool SetupTest() override { return true; }
+        bool Run() override { return true; }
+        void TeardownTest() override {}
     };
 }
 ```
 
-### 2. 注册并运行测试（未来迁移）
+### 2. 注册并运行测试
 
 ```cpp
-// 在 Main.cpp 中（当前使用遗留测试，未来迁移时使用）
-#include "RHI/RHIBufferTest.h"
+// 在 Main.cpp 中
+#include "RHI/Unit/RHIExampleTest.h"
 
 // 注册测试
-TestRunner::RegisterTest<RHIBufferTest>();
-
-// 运行所有测试
-auto results = TestRunner::RunAllTests();
+TestRunner::RegisterTest<RHIExampleTest>();
 ```
 
 ## 测试框架组件
@@ -94,43 +85,15 @@ auto results = TestRunner::RunAllTests();
 - 自动执行和结果报告
 - 异常处理和日志记录
 - 通过/失败状态追踪
-
-```cpp
-// 注册一个测试
-TestRunner::RegisterTest<MyCustomTest>();
-
-// 运行所有已注册的测试
-auto results = TestRunner::RunAllTests();
-
-// 检查结果
-for (const auto& result : results) {
-    if (!result.passed) {
-        LOG_ERROR("Test %s failed: %s", 
-                  result.testName.c_str(), 
-                  result.errorMessage.c_str());
-    }
-}
-```
+- 类别过滤 (`--unit`, `--rendering`)
 
 ### RHITestBase（RHI 测试基类）
 
 [RHITestBase.h](RHI/RHITestBase.h) 处理通用 RHI 设置：
 - RHI 实例创建
-- 设备和表面初始化
-- 窗口管理
+- 设备管理
+- 窗口管理 (可选，通过 `IsHeadless()`)
 - 帧同步
-
-**继承的成员变量**:
-- `m_Instance` - RHI 实例句柄
-- `m_Device` - 设备句柄
-- `m_WindowId` - 窗口 ID
-- `m_MaxFramesInFlight` - 最大飞行帧数
-- `m_FrameIndex` - 当前帧索引
-
-**可重写的方法**:
-- `SetupTest()` - 测试特定的设置
-- `Run()` - 测试逻辑执行
-- `TeardownTest()` - 测试特定的清理
 
 ### EngineInit（引擎初始化模块）
 
@@ -168,33 +131,12 @@ ArisenEngine::Core::EngineInit::Shutdown();
 4. **描述符集测试** - 创建 `RHIDescriptorTest`
 5. **渲染通道测试** - 创建 `RHIRenderPassTest`
 
-## 示例测试用例
-
-### 基础渲染测试
-
-[RHIBasicRenderingTest.h](RHI/RHIBasicRenderingTest.h) 演示新结构：
-- 继承自 `RHITestBase`
-- 将测试逻辑组织成专注的方法
-- 包含 TODO 标记，用于逐步迁移完整渲染逻辑
-- 自包含且可重用
-
-**验证内容**:
-- RHI 初始化
-- 缓冲区创建（顶点、索引、uniform）
-- 图像/纹理创建
-- 着色器编译和加载
-- 管线状态配置
-- 渲染通道和帧缓冲设置
-- 命令缓冲区记录和提交
-- 交换链呈现
-
 ## 最佳实践
 
 1. **测试隔离**: 每个测试应该独立，不依赖其他测试的状态
 2. **资源清理**: 总是在 `TeardownTest()` 中正确清理资源
-3. **错误处理**: 使用 `LOG_ERROR` 报告失败，并返回 `false`
-4. **命名约定**: 测试类名应该清晰描述测试内容（例如 `RHIBufferTest`）
-5. **文档注释**: 为测试类添加注释，说明测试验证的内容
+3. **正确归类**: 逻辑测试放 `Unit`，涉及屏幕显示放 `Rendering`
+4. **使用 Headless**: 尽量使用 `IsHeadless() = true` 提高测试效率
 
 ## 调试技巧
 
