@@ -1,42 +1,42 @@
 ﻿#pragma once
+#include "RHI/Handles/RHIHandle.h"
 #include "RHI/Memory/DeviceMemory.h"
 #include "vulkan_core.h"
 #include <vma/vk_mem_alloc.h>
-#include "RHI/Utils/RHIResourceHandle.h"
 
-namespace ArisenEngine::RHI
-{
-    class RHIDevice;
 
-    class RHIVkDeviceMemory final : public DeviceMemory
-    {
-    public:
-        NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkDeviceMemory)
-        explicit RHIVkDeviceMemory(RHIDevice* device, VkBuffer buffer);
-        explicit RHIVkDeviceMemory(RHIDevice* device, VkImage image);
-        ~RHIVkDeviceMemory() noexcept override;
-        bool AllocDeviceMemory(UInt32 memoryPropertiesBits) override;
-        bool AllocDeviceMemory(UInt32 memoryPropertiesBits, Containers::Vector<BufferHandle*> handles) override;
-        
-        void FreeDeviceMemory() override;
-        void* GetHandle() const override;
+namespace ArisenEngine::RHI {
+class RHIDevice;
 
-        void MemoryCopy(void const* src, const UInt32 offset, const UInt32 size) override;
-        
-        void SetRHIHandle(RHIResourceHandle h) { m_RHIHandle = h; }
-        RHIResourceHandle GetRHIHandle() const { return m_RHIHandle; }
-        
-    private:
+class RHIVkDeviceMemory final : public DeviceMemory {
+public:
+  NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkDeviceMemory)
+  explicit RHIVkDeviceMemory(RHIDevice *device, VkBuffer buffer);
+  explicit RHIVkDeviceMemory(RHIDevice *device, VkImage image);
+  ~RHIVkDeviceMemory() noexcept override;
+  bool AllocDeviceMemory(UInt32 memoryPropertiesBits) override;
+  bool AllocDeviceMemory(UInt32 memoryPropertiesBits,
+                         Containers::Vector<BufferHandle *> handles) override;
 
-        void AllocMemory(VkMemoryRequirements&& memRequirements, UInt32 memoryPropertiesBits);
+  void FreeDeviceMemory() override;
+  void *GetHandle() const override;
 
-    private:
-        
-        VmaAllocation m_Allocation{ VK_NULL_HANDLE };
-        VkDeviceMemory m_VkDeviceMemory { VK_NULL_HANDLE };
-        RHIDevice* m_Device;
-        std::optional<VkBuffer> m_VkBuffer;
-        std::optional<VkImage> m_VkImage;
-        RHIResourceHandle m_RHIHandle;
-    };
-}
+  void MemoryCopy(void const *src, const UInt32 offset,
+                  const UInt32 size) override;
+
+  void SetRHIHandle(RHIResourceHandle h) { m_RHIHandle = h; }
+  RHIResourceHandle GetRHIHandle() const { return m_RHIHandle; }
+
+private:
+  void AllocMemory(VkMemoryRequirements &&memRequirements,
+                   UInt32 memoryPropertiesBits);
+
+private:
+  VmaAllocation m_Allocation{VK_NULL_HANDLE};
+  VkDeviceMemory m_VkDeviceMemory{VK_NULL_HANDLE};
+  RHIDevice *m_Device;
+  std::optional<VkBuffer> m_VkBuffer;
+  std::optional<VkImage> m_VkImage;
+  RHIResourceHandle m_RHIHandle;
+};
+} // namespace ArisenEngine::RHI
