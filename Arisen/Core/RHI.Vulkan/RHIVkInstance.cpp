@@ -264,12 +264,22 @@ ArisenEngine::RHI::VkQueueFamilyIndices ArisenEngine::RHI::RHIVkInstance::FindQu
             indices.graphicsFamily = i;
         }
 
-        VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(m_CurrentPhysicsDevice, i, surface, &presentSupport);
-
-        if (presentSupport)
+        if (surface != VK_NULL_HANDLE)
         {
-            indices.presentFamily = i;
+            VkBool32 presentSupport = false;
+            vkGetPhysicalDeviceSurfaceSupportKHR(m_CurrentPhysicsDevice, i, surface, &presentSupport);
+
+            if (presentSupport)
+            {
+                indices.presentFamily = i;
+            }
+        }
+        else
+        {
+            // For headless, we just need a valid index, but presentFamily won't be used for presentation.
+            // We can leave it empty or set it to graphicsFamily. 
+            // In RHIVkInstance::CreateLogicDevice, it uses uniqueQueueFamilies.
+            indices.presentFamily = i; 
         }
         
         ++i;
@@ -421,12 +431,22 @@ void ArisenEngine::RHI::RHIVkInstance::SetResolution(UInt32 windowId, UInt32 wid
 
 void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
 {
-    Surface& rhiSurface = GetSurface(windowId);
-    VkQueueFamilyIndices indices = FindQueueFamilies(static_cast<VkSurfaceKHR>(rhiSurface.GetHandle()));
+    Surface* rhiSurface = nullptr;
+    VkSurfaceKHR vkSurface = VK_NULL_HANDLE;
+    if (windowId != ~0u)
+    {
+        rhiSurface = &GetSurface(windowId);
+        vkSurface = static_cast<VkSurfaceKHR>(rhiSurface->GetHandle());
+    }
+
+    VkQueueFamilyIndices indices = FindQueueFamilies(vkSurface);
 
     // Queue Create Info 
     Containers::Vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    Containers::Set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+    
+    Containers::Set<uint32_t> uniqueQueueFamilies;
+    if (indices.graphicsFamily.has_value()) uniqueQueueFamilies.insert(indices.graphicsFamily.value());
+    if (indices.presentFamily.has_value()) uniqueQueueFamilies.insert(indices.presentFamily.value());
 
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies)
@@ -501,15 +521,22 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
         LOG_FATAL_AND_THROW("[RHIVkInstance::CreateLogicDevice]: failed to create logical device!");
     }
 
-    VkQueue graphicQueue;
-    vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicQueue);
-    VkQueue presentQueue;
-    vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+    VkQueue graphicQueue = VK_NULL_HANDLE;
+    if (indices.graphicsFamily.has_value())
+    {
+        vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicQueue);
+    }
+    
+    VkQueue presentQueue = VK_NULL_HANDLE;
+    if (windowId != ~0u && indices.presentFamily.has_value())
+    {
+        vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+    }
 
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(m_CurrentPhysicsDevice, &memProperties);
 
-    auto logicalDevice = std::make_unique<RHIVkDevice>(this, &rhiSurface, graphicQueue, presentQueue, device, memProperties);
+    auto logicalDevice = std::make_unique<RHIVkDevice>(this, rhiSurface, graphicQueue, presentQueue, device, memProperties);
     VkPhysicalDeviceProperties physicalProperties {};
     vkGetPhysicalDeviceProperties(m_CurrentPhysicsDevice, &physicalProperties);
     {
@@ -622,7 +649,9 @@ void ArisenEngine::RHI::RHIVkInstance::InitLogicDevices()
 
     if (!IsSurfacesAvailable())
     {
-        LOG_FATAL_AND_THROW("[RHIVkInstance::InitLogicDevices]: Should create all the surfaces first before init logical devices");
+        LOG_INFO("[RHIVkInstance::InitLogicDevices]: No surfaces available, creating headless logical device.");
+        CreateLogicDevice(~0u);
+        return;
     }
     
     
@@ -645,10 +674,9 @@ void ArisenEngine::RHI::RHIVkInstance::InitLogicDevices()
 
 void ArisenEngine::RHI::RHIVkInstance::PickPhysicalDevice(bool considerSurface)
 {
-    if (!IsSurfacesAvailable())
-    {
-        LOG_FATAL_AND_THROW("[RHIVkInstance::PickPhysicalDevice]: Should create all the surfaces first before pick physical devices");
-    }
+    // For headless, we might not have surfaces yet.
+    // In multi-window scenarios, we might want to pick a device that supports all surfaces.
+    // However, for now, we just pick the best device.
 
     // TODO: pick device by surface ?
    

@@ -231,6 +231,7 @@ ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDevice::RegisterBindlessResource(RH
 
 ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
 {
+    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Start destruction");
     // 1. Wait for GPU to be idle
     DeviceWaitIdle();
 
@@ -244,7 +245,14 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
     if (m_DeferredDeletion)
     {
         constexpr RHIGpuTicket kAll = ~static_cast<RHIGpuTicket>(0);
-        
+        // Pass 1: Flush to destroy handle objects (like RHIVkImageHandle).
+        // These might enqueue resource destruction (like DeferredVkImage) into the same queue.
+        m_DeferredDeletion->Flush(RHIQueueType::Graphics, kAll);
+        m_DeferredDeletion->Flush(RHIQueueType::Compute, kAll);
+        m_DeferredDeletion->Flush(RHIQueueType::Transfer, kAll);
+        m_DeferredDeletion->Flush(RHIQueueType::Present, kAll);
+
+        // Pass 2: Flush to destroy the underlying Vulkan resources enqueued during Pass 1.
         m_DeferredDeletion->Flush(RHIQueueType::Graphics, kAll);
         m_DeferredDeletion->Flush(RHIQueueType::Compute, kAll);
         m_DeferredDeletion->Flush(RHIQueueType::Transfer, kAll);
@@ -252,20 +260,33 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
     }
 
     // 4. Destroy managers that might rely on the device still being alive
-    delete m_GPUPipelineManager;
-    delete m_DescriptorPool;
-    delete m_MemoryAllocator;
-    delete m_BindlessManager;
-    delete m_Factory;
+    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Deleting managers");
+    if (m_GPUPipelineManager) { delete m_GPUPipelineManager; m_GPUPipelineManager = nullptr; }
+    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_GPUPipelineManager deleted");
+    if (m_BindlessManager) { delete m_BindlessManager; m_BindlessManager = nullptr; }
+    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_BindlessManager deleted");
+    if (m_DescriptorPool) { delete m_DescriptorPool; m_DescriptorPool = nullptr; }
+    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_DescriptorPool deleted");
+    if (m_MemoryAllocator) { delete m_MemoryAllocator; m_MemoryAllocator = nullptr; }
+    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_MemoryAllocator deleted");
+    if (m_Factory) { delete m_Factory; m_Factory = nullptr; }
+    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_Factory deleted");
 
     // 5. Clean up sync and queue objects
     m_FrameSync.reset();
     m_GraphicsQueue.reset();
+    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Sync and Queue objects reset");
 
     // 6. Finally destroy the Vulkan device
-    vkDestroyDevice(m_VkDevice, nullptr);
+    if (m_VkDevice != VK_NULL_HANDLE)
+    {
+        vkDestroyDevice(m_VkDevice, nullptr);
+        m_VkDevice = VK_NULL_HANDLE;
+        LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: vkDestroyDevice called");
+    }
     
     m_Instance = nullptr;
+    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Finished destruction");
 }
 
 
