@@ -28,18 +28,27 @@ namespace ArisenEngine::RHI
         // 1. Create Descriptor Set Layout
         Containers::Vector<VkDescriptorSetLayoutBinding> bindings;
         
-        // Bindless Image - Descriptor Count can be huge (e.g., 100,000)
+        // Bindless Image
         VkDescriptorSetLayoutBinding imageBinding{};
-        imageBinding.binding = 0;
+        imageBinding.binding = IMAGE_BINDING;
         imageBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        imageBinding.descriptorCount = 10000; // Placeholder Max
+        imageBinding.descriptorCount = 10000;
         imageBinding.stageFlags = VK_SHADER_STAGE_ALL;
         imageBinding.pImmutableSamplers = nullptr;
         bindings.emplace_back(imageBinding);
 
+        // Bindless Sampler
+        VkDescriptorSetLayoutBinding samplerBinding{};
+        samplerBinding.binding = SAMPLER_BINDING;
+        samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+        samplerBinding.descriptorCount = 1000;
+        samplerBinding.stageFlags = VK_SHADER_STAGE_ALL;
+        samplerBinding.pImmutableSamplers = nullptr;
+        bindings.emplace_back(samplerBinding);
+
         // Bindless Buffer
         VkDescriptorSetLayoutBinding bufferBinding{};
-        bufferBinding.binding = 1;
+        bufferBinding.binding = BUFFER_BINDING;
         bufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         bufferBinding.descriptorCount = 10000;
         bufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
@@ -53,14 +62,15 @@ namespace ArisenEngine::RHI
         layoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
 
         // Indexing flags for bindless
-        VkDescriptorBindingFlags bindingFlags[2] = {
+        VkDescriptorBindingFlags bindingFlags[3] = {
+            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT
         };
 
         VkDescriptorSetLayoutBindingFlagsCreateInfo layoutBindingFlags{};
         layoutBindingFlags.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
-        layoutBindingFlags.bindingCount = 2;
+        layoutBindingFlags.bindingCount = 3;
         layoutBindingFlags.pBindingFlags = bindingFlags;
         layoutInfo.pNext = &layoutBindingFlags;
 
@@ -70,18 +80,19 @@ namespace ArisenEngine::RHI
         }
 
         // 2. Create Descriptor Pool
-        VkDescriptorPoolSize poolSizes[2];
+        VkDescriptorPoolSize poolSizes[3];
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
         poolSizes[0].descriptorCount = 10000;
-        poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        poolSizes[1].descriptorCount = 10000;
+        poolSizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLER;
+        poolSizes[1].descriptorCount = 1000;
+        poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        poolSizes[2].descriptorCount = 10000;
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
         poolInfo.maxSets = 1;
-        poolInfo.poolSizeCount = 2;
-        poolInfo.pPoolSizes = poolSizes;
+        poolInfo.poolSizeCount = 3;
         poolInfo.pPoolSizes = poolSizes;
 
         if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS)
