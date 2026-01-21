@@ -1,106 +1,85 @@
-# Vulkan RHI Modernization Roadmap
+# Arisen Vulkan RHI 现代化升级路线图 (Modernization Roadmap)
 
-目标：构建一个现代、高性能、低开销且易于扩展的 Vulkan 渲染底层封装。
-
-## 优先级 1：核心基础设施优化 (Stability & Foundation)
-
-- [x] **集成 VMA (Vulkan Memory Allocator)**
-  - [x] 替换当前的 `RHIVkDeviceMemory` 手动分配逻辑。
-  - [x] 实现高效的内存分池、对齐和整理，减少分配开销。
-- [x] **升级至 Synchronization 2.0 (`VK_KHR_synchronization2`)**
-  - [x] 使用更清晰的 `VkDependencyInfo` 替换旧的 Pipeline Barrier。
-  - [x] 简化 Resource Barrier 的接口封装，支持全局同步状态管理。
-- [x] **支持 Dynamic Rendering (`VK_KHR_dynamic_rendering`)**
-  - [x] 在核心流程中逐步替代传统的 `VkRenderPass` 和 `VkFramebuffer`。
-  - [x] 减少 RHI 层的对象管理复杂度，提高灵活性。
-
-## 优先级 2：性能与易用性提升 (Performance & Usability)
-
-- [x] **Bindless Resource 架构实现**
-  - [x] 实现基于全局 Descriptor Set 的资源绑定（Descriptor Indexing）。
-  - [x] 支持 `update-after-bind`，减少 Descriptor 更新导致的 CPU 等待。
-- [ ] **Pipeline State Object (PSO) 缓存管理**
-  - 实现 `VkPipelineCache` 的持久化存储（序列化到磁盘）。
-  - 优化 PSO 创建流程，利用多线程预初始化常用 Pipeline。
-- [ ] **多线程 Command Buffer 录制优化**
-  - 优化 `RHIVkCommandBufferPool` 的线程分配策略。
-  - 支持 Secondary Command Buffers 并行录制（针对高 Draw Call 场景）。
-- [ ] **统一的 Descriptor 管理策略**
-  - 引入更智能的 Descriptor Pool 自动扩容与回收机制。
-  - 针对 Dynamic Uniform Buffers 提供更低开销的分配路径。
-
-## 优先级 3：进阶功能与架构扩展 (Advanced Features)
-
-- [ ] **Transient Resource & Aliasing (瞬时资源与重用)**
-  - 实现 RenderTarget 的内存复用（Aliasing），降低显存占用。
-  - 为 FrameGraph 的集成打下基础。
-- [ ] **GPU-Driven Rendering 基础设施**
-  - 完善 `DrawIndirect` 和 `DrawIndexedIndirect` 支持。
-  - 为 GPU 端的 Culling 和 LOD 切换提供接口。
-- [ ] **Shader 反射与自动 Layout 生成**
-  - 集成 SPIRV-Reflect，自动从 Shader 中提取 Descriptor Layout 和 Push Constant 定义。
-  - 减少手动声明 `RHIVkDescriptorSetLayout` 的繁琐过程。
-- [ ] **Mesh Shader & Ray Tracing 支持 (可选)**
-  - 为次世代特性预留扩展接口。
+目标：构建一个**无状态 (Stateless)**、**句柄化 (Handle-based)**、**高并行 (Highly Parallel)** 且对 **C# 自动绑定友好** 的高性能渲染底层。
 
 ---
-*注：此文档将根据开发进度动态更新。优先完成优先级 1 的内容以确保底层稳定性。*
 
-## 优先级 1.5：现代 API 架构与 C# 互操作准备 (Modern API & Interop) -> *[NEW/CRITICAL]*
-> 为了解决 "C# Binding" 和当前调用方式 "怪怪的" (Mixed OO/C-Style) 问题，建议重构底层为面向数据的 Handle-based 架构。
+## 0. 核心设计原则 (Design Principles)
 
-- [ ] **RHI 句柄化重构 (Handle-Based Architecture)**
-  - [ ] **Phase 1: 基础类型与资源池 (Foundation)**
-    - [ ] Define `RHIHandle` POD structs (Index + Generation) for all resources.
-    - [ ] Implement `RHIResourcePool` for lifecycle management & handle lookups.
-    - [ ] Ensure all Handles are Blittable for C# interop.
-  - [ ] **Phase 2: 渐进式迁移 (Incremental Migration)**
-    - [ ] *Resources*: Add handle-returning `Create` functions alongside existing ones.
-    - [ ] *Descriptors*: Update `UpdateDescriptorSets` to accept handles.
-    - [ ] *Pipelines*: Refactor Pipeline creation to return handles.
-    - [ ] *Commands*: Abstract CommandBuffer to use handles for barriers/draws.
-  - [ ] **Phase 3: 清理与强制转型 (Cleanup)**
-    - [ ] Mark pointer-based interfaces `[[deprecated]]`.
-    - [ ] Remove `virtual` interface pointer passing.
-    - [ ] Finalize stateless API design.
-- [ ] **API 清理与命名规范化 (API Cleanup)** -> *[NEW]*
-  - [ ] 移除过时/废弃接口 (如 `GetHandle` vs `GetHandlerPointer` 的歧义)。
-  - [ ] 统一命名规范 (e.g., `Cmd` 前缀用于 CommandBuffer 命令, `Alloc/Free` vs `Create/Destroy` 语义明确化)。
-  - [ ] 确保对外暴露的 C++ 接口风格统一，便于自动 Binding 生成。
+*   **Handle-Based Architecture**: 所有资源引用通过 64 位 POD 句柄 (`Index + Generation`) 进行，彻底解决虚表开销与跨语言生命周期管理痛点。
+*   **Lock-Free Multi-Threading**: 核心路径（申请句柄、命令录制、引用计数）通过原子操作和 Thread-Local 存储实现无锁化，确保多核缩放性。
+*   **API Purity & Interop**: 保持接口 Blittable，移除 C++ 虚接口在核心录制路径的硬依赖，支持自动 P/Invoke 绑定生成。
+*   **Modern Features First**: 默认启用 Synchronization 2.0、Dynamic Rendering 和 Bindless，不背负旧版 Vulkan 的历史包容。
 
-## 优先级 2：性能与易用性提升 (Performance & Usability)
+---
 
-- [x] **Bindless Resource 架构实现**
-  - [x] 实现基于全局 Descriptor Set 的资源绑定（Descriptor Indexing）。
-  - [x] 支持 `update-after-bind`，减少 Descriptor 更新导致的 CPU 等待。
-- [ ] **加强 Queue 管理 (Queue Management)** -> *[NEW]*
-  - [ ] 显式暴露 `RHIQueue` 概念 (Graphics, Compute, Transfer)。
-  - [ ] 实现 `Async Compute` 队列的探测与提交逻辑。
-  - [ ] 支持 Queue 之间的 Ownership Transfer Barrier (针对跨队列资源同步)。
-- [ ] **Compute Shader 完整支持** -> *[NEW]*
-  - [ ] 新增 `Dispatch` 和 `DispatchIndirect` 命令接口。
-  - [ ] 抽象 `ComputePipeline`，分离于当前的 `GPUPipeline` (Graphics-focused)。
-- [ ] **Pipeline State Object (PSO) 缓存管理**
-  - 实现 `VkPipelineCache` 的持久化存储（序列化到磁盘）。
-  - 优化 PSO 创建流程，利用多线程预初始化常用 Pipeline。
-- [ ] **多线程 Command Buffer 录制优化**
-  - 优化 `RHIVkCommandBufferPool` 的线程分配策略。
-  - 支持 Secondary Command Buffers 并行录制（针对高 Draw Call 场景）。
-- [ ] **统一的 Descriptor 管理策略**
-  - 引入更智能的 Descriptor Pool 自动扩容与回收机制。
-  - 针对 Dynamic Uniform Buffers 提供更低开销的分配路径。
+## 1. 第一阶段：句柄化重构与 C# 互操作 (Current Focus: Handle-Based & Interop)
 
-## 优先级 3：进阶功能与架构扩展 (Advanced Features)
+### 迭代目标
+完成从“对象/指针”模式向“数据/句柄”模式的彻底转型，确保底层资源管理与宿主语言（C#）解耦。
 
-- [ ] **GPU-Driven Rendering 基础设施**
-  - 完善 `DrawIndirect` 和 `DrawIndexedIndirect` 支持。
-  - [ ] **Multi-Draw 支持**: 实现 `vkCmdDrawIndexedIndirectCount` 等高效批量绘制。 -> *[NEW]*
-  - [ ] **Mesh Shader 支持**: 引入 `DrawMeshTasks`。 -> *[NEW]*
-- [ ] **Transient Resource & Aliasing (瞬时资源与重用)**
-  - 实现 RenderTarget 的内存复用（Aliasing），降低显存占用。
-  - 为 FrameGraph 的集成打下基础。
-- [ ] **Shader 反射与自动 Layout 生成**
-  - 集成 SPIRV-Reflect，自动从 Shader 中提取 Descriptor Layout 和 Push Constant 定义。
-  - 减少手动声明 `RHIVkDescriptorSetLayout` 的繁琐过程。
-- [ ] **Ray Tracing 支持 (可选)**
-  - 为次世代特性预留扩展接口。
+- [x] **句柄基础架构实现**
+    - [x] 定义 `RHIHandle` POD 结构（32-bit Index + 32-bit Generation）。
+    - [ ] **完善 RHIResourcePool/Registry**
+        - [ ] 针对 Buffer, Image, Sampler 等轻量级资源实现特化池。
+        - [ ] 实现基础的多线程安全分配（当前已使用 Mutex，下阶段升级）。
+- [ ] **接口层全面句柄化 (The Great Refactoring)**
+    - [ ] **Device 接口**: `CreateBuffer` 等接口返回 `RHIBufferHandle` 而非 `unique_ptr`。
+    - [ ] **Command 接口**: 所有 `CmdXXX` 命令参数从指针切换为 Handle，移除 `virtual` 调用。
+    - [ ] **Descriptor 升级**: `UpdateDescriptorSets` 接受 Handle 数组，简化 C# 端的内存封送。
+- [ ] **C# 绑定基础设施**
+    - [ ] 实现 `RHIExports.cpp`，暴露 C-style 扁平化接口给 C# 调用。
+
+> **设计抉择提示 (Rationale)**: 
+> 为什么坚持 Handle-based？因为 C# 垃圾回收器无法感知指针背后的 GPU 资源生命周期。通过 Handle，我们可以在 C++ 端统一维护索引池和引用计数，C# 端只需持有一个 64 位整数，安全性与性能兼得。
+
+---
+
+## 2. 第二阶段：无锁化多线程基础设施 (Lock-Free Infrastructure)
+
+### 迭代目标
+消除核心路径中的全局互斥锁，实现高并发录制。
+
+- [ ] **无锁资源管理 (Lock-Free Registry)**
+    - [ ] **方案实现**: 使用 `std::atomic<UInt32>` 替换 `RHIResourceRegistry` 中的 `refCount`。
+    - [ ] **方案实现**: 使用原子操作（如 `compare_exchange`）管理 `FreeList` 索引，实现 `Allocate/Release` 的无锁化。
+    - [ ] **方案实现**: 资源池预分配大容量地址空间，利用内存分页避免 `std::vector` 扩容导致的全局挂起。
+- [ ] **Thread-Local 命令池优化**
+    - [ ] 升级 `RHIVkCommandBufferPool`，利用 `thread_local` 缓存每个线程的 `VkCommandPool`。
+    - [ ] 实现基于帧序号 (FrameIndex) 的多级回收机制，确保 Command Buffer 在提交完成前不被重置。
+- [ ] **异步提交与负载均衡 (Async Submission)**
+    - [ ] 抽象 `RHICommandQueueManager`，负责跨线程的任务聚合与 `Async Compute` 优先级调度。
+
+> **设计抉择提示 (Rationale)**: 
+> Vulkan 的精髓在于并行性。如果 `Allocate` 资源或 `CmdDraw` 时还在争抢同一个全局 `std::mutex`，现代 CPU 的多核优势将被白白浪费。
+
+---
+
+## 3. 第三阶段：现代特性与基建完善 (Next-Gen Infrastructure)
+
+### 迭代目标
+结合现代图形特性，简化 PSO 管理，降低 CPU 提交开销。
+
+- [ ] **自动化 Pipeline 管理 (Infrastructure)**
+    - [ ] **SPIRV-Reflect 集成**: 自动从 Shader 字节码提取 Layout 信息，移除手动声明 `VkDescriptorSetLayout` 的繁琐过程。
+    - [ ] **持久化 PSO 缓存**: 实现 `VkPipelineCache` 的磁盘序列化，解决“初次运行卡顿”问题。
+- [ ] **瞬时资源与内存复用 (Transient Assets)**
+    - [ ] 基于 VMA 实现内存别名 (Aliasing)，支持 RenderTarget 在 RenderPass 间的显存复用（针对 FrameGraph 深度优化）。
+- [ ] **GPU-Driven 基础设施**
+    - [ ] 完善 `Multi-Draw Indirect (MDI)` 封装，支持 GPU 端剔除后的批量绘制。
+    - [ ] 统一的 Bindless Descriptor 管理器，支持按需动态更新全局索引表。
+
+> **设计抉择提示 (Rationale)**: 
+> 手动维护 Pipeline Layout 是 Vulkan 开发中最容易出错的地方。通过反射机制结合 Handle 管理，可以极大降低上层逻辑（如 Material System）的使用难度。
+
+---
+
+## 4. 第四阶段：稳定性检测与生产工具 (Validation & Tooling)
+
+- [ ] **RHI 自省工具**: 实现资源视图，实时查看各种 Pool 的内存分布、Handle 存活情况。
+- [ ] **增强 Validation 注入**: 在 Debug 模式下将 RHI 层面的状态错误映射到具体的 VUID 解释。
+- [ ] **多层级性能标记 (Tuning)**: 实现核心流程的埋点，支持导出到 NSight / RenderDoc 进行深度分析。
+
+---
+*上次更新日期: 2026-01-21*
+*迭代负责人: Antigravity*
