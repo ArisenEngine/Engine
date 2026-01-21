@@ -96,5 +96,10 @@ namespace ArisenEngine::RHI
         void Update() override;
         void WaitQueueTicket(RHIGpuTicket ticket) override;
 
+        // Cached Function Pointers
+        PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR = nullptr;
+        PFN_vkCmdEndRenderingKHR vkCmdEndRenderingKHR = nullptr;
+        PFN_vkCmdPipelineBarrier2KHR vkCmdPipelineBarrier2KHR = nullptr;
+
     };
 }
