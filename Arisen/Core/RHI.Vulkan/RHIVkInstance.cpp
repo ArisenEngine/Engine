@@ -457,17 +457,16 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
 
     VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{};
     descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
-    descriptorIndexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
     descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
     descriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE;
     descriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending = VK_TRUE;
     descriptorIndexingFeatures.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
     descriptorIndexingFeatures.descriptorBindingUniformBufferUpdateAfterBind = VK_TRUE;
-    descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
     descriptorIndexingFeatures.runtimeDescriptorArray = VK_TRUE;
-    descriptorIndexingFeatures.shaderSampledImageArrayDynamicIndexing = VK_TRUE;
-    descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
     descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+    descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
+    descriptorIndexingFeatures.shaderStorageImageArrayNonUniformIndexing = VK_TRUE;
+    descriptorIndexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
 
     timelineFeatures.pNext = &sync2Features;
     sync2Features.pNext = &dynamicRenderingFeatures;

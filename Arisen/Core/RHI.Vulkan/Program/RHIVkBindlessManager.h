@@ -1,7 +1,8 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include <mutex>
-#include "RHI/Common/Containers.h"
+#include "Containers/Containers.h"
+#include "RHI/RHICommon.h"
 
 namespace ArisenEngine::RHI
 {
