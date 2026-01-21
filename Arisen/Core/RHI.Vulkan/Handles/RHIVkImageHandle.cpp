@@ -8,6 +8,17 @@
 #include "RHI/Utils/RHIResourceRegistry.h"
 
 namespace ArisenEngine::RHI {
+    struct DeferredVkBuffer {
+        VkDevice device;
+        VkBuffer buffer;
+        ~DeferredVkBuffer() {
+            if (device != VK_NULL_HANDLE && buffer != VK_NULL_HANDLE) {
+                LOG_DEBUG("## vkDestroyBuffer called ##");
+                vkDestroyBuffer(device, buffer, nullptr);
+            }
+        }
+    };
+
     struct DeferredVkImage {
         VkDevice device;
         VkImage image;

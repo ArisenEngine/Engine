@@ -131,7 +131,15 @@ namespace ArisenEngine::RHI
 
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = static_cast<VkImageView>(image->GetMemoryView()->GetView());
+        
+        MemoryView* view = image->GetMemoryView();
+        if (!view)
+        {
+            LOG_ERROR("[RHIVkBindlessManager::RegisterImage]: Image " + image->GetName() + " has no memory view!");
+            return 0xFFFFFFFF;
+        }
+        
+        imageInfo.imageView = static_cast<VkImageView>(view->GetView());
         imageInfo.sampler = VK_NULL_HANDLE;
 
         VkWriteDescriptorSet write{};

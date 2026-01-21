@@ -47,6 +47,10 @@ namespace ArisenEngine::Testing
             RHI_Image_Alloc(testImage, &imgDesc);
             RHI_Image_AllocDeviceMemory(testImage, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
+            // Create a view for registration
+            RHI::ImageViewDesc viewDesc{ RHI::IMAGE_VIEW_TYPE_2D, RHI::FORMAT_R8G8B8A8_UNORM, RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+            RHI_Image_AddImageView(testImage, &viewDesc);
+
             // 4. Register image
             UInt32 imageIndex = RHI_Device_BindlessRegisterImage(m_Device, testImage);
             if (imageIndex == 0xFFFFFFFF)
