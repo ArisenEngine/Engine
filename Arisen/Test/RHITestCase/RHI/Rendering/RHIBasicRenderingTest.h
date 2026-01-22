@@ -17,7 +17,6 @@
 #include "RHI/Surfaces/Surface.h"
 #include "RHI/Surfaces/FrameBuffer.h"
 #include "RHI/Handles/RHIHandle.h"
-#include "RHI/Memory/ImageView.h"
 #include "RHI/Synchronization/RHIImageMemoryBarrier.h"
 #include "RHI/CommandBuffer/RHICommandBuffer.h"
 #include "RHI/CommandBuffer/RHICommandBufferPool.h"
@@ -172,31 +171,31 @@ namespace ArisenEngine::Testing
             if (m_Context.frameBuffer)
             {
                 RHI_Device_ReleaseFrameBuffer(m_Context.device, m_Context.frameBuffer);
-                m_Context.frameBuffer = nullptr;
+                m_Context.frameBuffer = 0ULL;
             }
           
             if (m_Context.frameBuffer)
             {
                 RHI_Device_ReleaseFrameBuffer(m_Context.device, m_Context.frameBuffer);
-                m_Context.frameBuffer = nullptr;
+                m_Context.frameBuffer = 0ULL;
             }
             
             if (m_Context.renderPass)
             {
                 RHI_Device_ReleaseRenderPass(m_Context.device, m_Context.renderPass);
-                m_Context.renderPass = nullptr;
+                m_Context.renderPass = 0ULL;
             }
 
             // Release Buffers
             if (m_Context.vertexBufferHandle)
             {
                 RHI_Device_ReleaseBufferHandle(m_Context.device, m_Context.vertexBufferHandle);
-                m_Context.vertexBufferHandle = nullptr;
+                m_Context.vertexBufferHandle = 0ULL;
             }
             if (m_Context.indicesBufferHandle)
             {
                 RHI_Device_ReleaseBufferHandle(m_Context.device, m_Context.indicesBufferHandle);
-                m_Context.indicesBufferHandle = nullptr;
+                m_Context.indicesBufferHandle = 0ULL;
             }
             for (auto& ub : m_Context.uniformBuffers)
             {
@@ -208,7 +207,7 @@ namespace ArisenEngine::Testing
             if (m_Context.textureHandle)
             {
                 RHI_Device_ReleaseImageHandle(m_Context.device, m_Context.textureHandle);
-                m_Context.textureHandle = nullptr;
+                m_Context.textureHandle = 0ULL;
             }
 
             // Release Pipeline State (This destroys VK Descriptor Set Layouts)
@@ -275,7 +274,7 @@ namespace ArisenEngine::Testing
             m_Context.renderPass = RHI_Device_GetRenderPass(m_Context.device);
             
             // Configure RenderPass
-            RHI_RenderPass_AddAttachmentAction(m_Context.renderPass, 
+            RHI_RenderPass_AddAttachmentAction(m_Context.device, m_Context.renderPass, 
                 RHI::EFormat::FORMAT_B8G8R8A8_SRGB,
                 RHI::SAMPLE_COUNT_1_BIT,
                 RHI::ATTACHMENT_LOAD_OP_CLEAR,
@@ -285,7 +284,7 @@ namespace ArisenEngine::Testing
                 RHI::IMAGE_LAYOUT_UNDEFINED,
                 RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-            auto subpass = RHI_RenderPass_AddSubPass(m_Context.renderPass);
+            auto subpass = RHI_RenderPass_AddSubPass(m_Context.device, m_Context.renderPass);
             RHI_Subpass_SetBindPoint(subpass, RHI::PIPELINE_BIND_POINT_GRAPHICS);
             RHI_Subpass_AddColorReference(subpass, 0, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
             RHI_Subpass_SetDependency(subpass, VK_SUBPASS_EXTERNAL, 
@@ -296,7 +295,7 @@ namespace ArisenEngine::Testing
             // Allocate RenderPass for all frames
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
-                RHI_RenderPass_Alloc(m_Context.renderPass, i);
+                RHI_RenderPass_Alloc(m_Context.device, m_Context.renderPass, i);
             }
 
             m_Context.frameBuffer = RHI_Device_GetFrameBuffer(m_Context.device);
@@ -357,7 +356,7 @@ namespace ArisenEngine::Testing
             m_Context.pipeline = RHI_PipelineManager_GetGraphicsPipeline(pipelineManager, pipelineState);
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
-                RHI_Pipeline_AllocGraphics(m_Context.pipeline, i, m_Context.subpass);
+                RHI_Pipeline_AllocGraphics(m_Context.device, m_Context.pipeline, i, m_Context.subpass);
             }
         }
 
@@ -482,8 +481,8 @@ namespace ArisenEngine::Testing
                 RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT,
                 RHI::SHARING_MODE_EXCLUSIVE
             };
-            RHI_Buffer_Alloc(m_Context.vertexBufferHandle, &vbDesc);
-            RHI_Buffer_AllocDeviceMemory(m_Context.vertexBufferHandle, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            RHI_Buffer_Alloc(m_Context.device, m_Context.vertexBufferHandle, &vbDesc);
+            RHI_Buffer_AllocDeviceMemory(m_Context.device, m_Context.vertexBufferHandle, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
             RHI::BufferDescriptor ibDesc{
                 0,
@@ -491,8 +490,8 @@ namespace ArisenEngine::Testing
                 RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_INDEX_BUFFER_BIT,
                 RHI::SHARING_MODE_EXCLUSIVE
             };
-            RHI_Buffer_Alloc(m_Context.indicesBufferHandle, &ibDesc);
-            RHI_Buffer_AllocDeviceMemory(m_Context.indicesBufferHandle, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            RHI_Buffer_Alloc(m_Context.device, m_Context.indicesBufferHandle, &ibDesc);
+            RHI_Buffer_AllocDeviceMemory(m_Context.device, m_Context.indicesBufferHandle, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
             for (const auto& uniformBuffer : m_Context.uniformBuffers)
             {
@@ -502,8 +501,8 @@ namespace ArisenEngine::Testing
                     RHI::BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                     RHI::SHARING_MODE_EXCLUSIVE
                 };
-                RHI_Buffer_Alloc(uniformBuffer, &ubDesc);
-                RHI_Buffer_AllocDeviceMemory(uniformBuffer, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                RHI_Buffer_Alloc(m_Context.device, uniformBuffer, &ubDesc);
+                RHI_Buffer_AllocDeviceMemory(m_Context.device, uniformBuffer, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
             }
             
             UploadVertex();
@@ -536,15 +535,15 @@ namespace ArisenEngine::Testing
                 RHI::IMAGE_LAYOUT_UNDEFINED, RHI::IMAGE_USAGE_SAMPLED_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT,
                 RHI::SAMPLE_COUNT_1_BIT, RHI::SHARING_MODE_EXCLUSIVE
             };
-            RHI_Image_Alloc(m_Context.textureHandle, &imgDesc);
-            RHI_Image_AllocDeviceMemory(m_Context.textureHandle, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            RHI_Image_Alloc(m_Context.device, m_Context.textureHandle, &imgDesc);
+            RHI_Image_AllocDeviceMemory(m_Context.device, m_Context.textureHandle, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
             RHI::ImageViewDesc imageViewDesc {
                 RHI::IMAGE_VIEW_TYPE_2D, RHI::FORMAT_R8G8B8A8_SRGB, RHI::IMAGE_ASPECT_COLOR_BIT,
                 0, 1, 0, 1,
             };
             imageViewDesc.width = static_cast<UInt32>(texWidth);
             imageViewDesc.height = static_cast<UInt32>(texHeight);
-            RHI_Image_AddImageView(m_Context.textureHandle, &imageViewDesc);
+            RHI_Image_AddImageView(m_Context.device, m_Context.textureHandle, &imageViewDesc);
             UploadImage(imageSize, pixels, texWidth, texHeight);
             
             stbi_image_free(pixels);
@@ -563,9 +562,9 @@ namespace ArisenEngine::Testing
                 RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
                 RHI::SHARING_MODE_EXCLUSIVE
             };
-            RHI_Buffer_Alloc(vertexStagingBufferHandle, &vsb);
-            RHI_Buffer_AllocDeviceMemory(vertexStagingBufferHandle, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
-            RHI_Buffer_MemoryCopy(vertexStagingBufferHandle, vertices.data(), 0);
+            RHI_Buffer_Alloc(device, vertexStagingBufferHandle, &vsb);
+            RHI_Buffer_AllocDeviceMemory(device, vertexStagingBufferHandle, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            RHI_Buffer_MemoryCopy(device, vertexStagingBufferHandle, vertices.data(), 0);
 
             auto indicesStagingBufferHandle = RHI_Device_GetBufferHandle(device, "Indices Staging Buffer");
             RHI::BufferDescriptor isb{
@@ -574,14 +573,14 @@ namespace ArisenEngine::Testing
                 RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
                 RHI::SHARING_MODE_EXCLUSIVE
             };
-            RHI_Buffer_Alloc(indicesStagingBufferHandle, &isb);
-            RHI_Buffer_AllocDeviceMemory(indicesStagingBufferHandle, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
-            RHI_Buffer_MemoryCopy(indicesStagingBufferHandle, indices.data(), 0);
+            RHI_Buffer_Alloc(device, indicesStagingBufferHandle, &isb);
+            RHI_Buffer_AllocDeviceMemory(device, indicesStagingBufferHandle, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            RHI_Buffer_MemoryCopy(device, indicesStagingBufferHandle, indices.data(), 0);
 
             auto commandBuffer = RHI_Device_GetCommandBuffer(device, m_Context.commandPool, m_FrameIndex);
             RHI_Cmd_Begin(commandBuffer, m_FrameIndex, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-            RHI_Cmd_CopyBuffer(commandBuffer, vertexStagingBufferHandle, 0, vertexBufferHandle, 0, RHI_Buffer_Size(vertexBufferHandle));
-            RHI_Cmd_CopyBuffer(commandBuffer, indicesStagingBufferHandle, 0, indicesBufferHandle, 0, RHI_Buffer_Size(indicesBufferHandle));
+            RHI_Cmd_CopyBuffer(commandBuffer, vertexStagingBufferHandle, 0, vertexBufferHandle, 0, RHI_Buffer_Size(device, vertexBufferHandle));
+            RHI_Cmd_CopyBuffer(commandBuffer, indicesStagingBufferHandle, 0, indicesBufferHandle, 0, RHI_Buffer_Size(device, indicesBufferHandle));
             
             RHI_Cmd_End(commandBuffer);
             RHI_Device_Submit(device, commandBuffer, m_FrameIndex);
@@ -603,10 +602,10 @@ namespace ArisenEngine::Testing
                 RHI::SHARING_MODE_EXCLUSIVE
             };
 
-            RHI_Buffer_Alloc(textureStagingBufferHandle, &tsb);
-            RHI_Buffer_AllocDeviceMemory(textureStagingBufferHandle, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+            RHI_Buffer_Alloc(device, textureStagingBufferHandle, &tsb);
+            RHI_Buffer_AllocDeviceMemory(device, textureStagingBufferHandle, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                 RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
-            RHI_Buffer_MemoryCopy(textureStagingBufferHandle, data, 0);
+            RHI_Buffer_MemoryCopy(device, textureStagingBufferHandle, data, 0);
 
             // Transfer commands
             auto commandBuffer = RHI_Device_GetCommandBuffer(device, m_Context.commandPool, m_FrameIndex);
@@ -620,7 +619,7 @@ namespace ArisenEngine::Testing
                         RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                         VK_QUEUE_FAMILY_IGNORED,
                         VK_QUEUE_FAMILY_IGNORED,
-                        reinterpret_cast<RHI::ImageHandle*>(m_Context.textureHandle),
+                        *reinterpret_cast<RHI::RHIImageHandle*>(&m_Context.textureHandle),
                         {
                             RHI::IMAGE_ASPECT_COLOR_BIT,
                             0, 1, 0, 1
@@ -647,7 +646,7 @@ namespace ArisenEngine::Testing
                         RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                         ~0U,
                         ~0U,
-                        reinterpret_cast<RHI::ImageHandle*>(m_Context.textureHandle),
+                        *reinterpret_cast<RHI::RHIImageHandle*>(&m_Context.textureHandle),
                         {
                             RHI::IMAGE_ASPECT_COLOR_BIT,
                             0, 1, 0, 1
@@ -680,7 +679,7 @@ namespace ArisenEngine::Testing
             ubo.proj[1][1] *= -1;
 
             auto currentIndex = GetCurrentFrameIndex();
-            RHI_Buffer_MemoryCopy(context.uniformBuffers[currentIndex], &ubo, 0);
+            RHI_Buffer_MemoryCopy(context.device, context.uniformBuffers[currentIndex], &ubo, 0);
         }
 
         void RecordSubmitPresent(RenderContext& context)
@@ -706,22 +705,22 @@ namespace ArisenEngine::Testing
                 auto frameBuffer = reinterpret_cast<RHI::FrameBuffer*>(context.frameBuffer);
                 auto surface = RHI_Instance_GetSurface(this->m_Instance, context.windowId);
                 auto swapchain = RHI_Surface_GetSwapChain(surface);
-                ArisenEngine::RHI::ImageHandle* backBuffer = RHI_SwapChain_AquireCurrentImage(swapchain, m_FrameIndex);
-                if (backBuffer == nullptr)
+                RHI_ImageHandle backBuffer = RHI_SwapChain_AquireCurrentImage(swapchain, m_FrameIndex);
+                if (backBuffer == 0)
                 {
                    return;
                 }
-                auto backBufferView = RHI_Image_GetView(backBuffer);
+                auto backBufferView = RHI_SwapChain_GetImageView(swapchain, m_FrameIndex);
                 
                 // Allocate the render pass for the current frame
-                RHI_RenderPass_Alloc(context.renderPass, m_FrameIndex);
+                RHI_RenderPass_Alloc(context.device, context.renderPass, m_FrameIndex);
 
-                RHI_FrameBuffer_SetAttachment(context.frameBuffer, m_FrameIndex, backBufferView, context.renderPass);
+                RHI_FrameBuffer_SetAttachment(context.device, context.frameBuffer, m_FrameIndex, backBufferView, context.renderPass);
 
                 RHI::RenderPassBeginDesc desc
                 {
-                    renderPass,
-                    frameBuffer,
+                    *reinterpret_cast<RHI::RHIRenderPassHandle*>(&context.renderPass),
+                    *reinterpret_cast<RHI::RHIFrameBufferHandle*>(&context.frameBuffer),
                     RHI::SUBPASS_CONTENTS_INLINE
                 };
 
@@ -734,8 +733,8 @@ namespace ArisenEngine::Testing
                     // RHI_Pipeline_AllocGraphics is now called in InitPipelineStates for all frames
                     RHI_Cmd_BindPipeline(commandBuffer, m_FrameIndex, pipeline);
 
-                    RHI_Cmd_SetViewport(commandBuffer, 0.0f, 0.0f, static_cast<Float32>(RHI_ImageView_GetWidth(backBufferView)), static_cast<Float32>(RHI_ImageView_GetHeight(backBufferView)), 0.0f, 1.0f);
-                    RHI_Cmd_SetScissor(commandBuffer, 0, 0, RHI_ImageView_GetWidth(backBufferView), RHI_ImageView_GetHeight(backBufferView));
+                    RHI_Cmd_SetViewport(commandBuffer, 0.0f, 0.0f, static_cast<Float32>(RHI_ImageView_GetWidth(m_Context.device, backBufferView)), static_cast<Float32>(RHI_ImageView_GetHeight(m_Context.device, backBufferView)), 0.0f, 1.0f);
+                    RHI_Cmd_SetScissor(commandBuffer, 0, 0, RHI_ImageView_GetWidth(m_Context.device, backBufferView), RHI_ImageView_GetHeight(m_Context.device, backBufferView));
 
                     RHI_Cmd_BindDescriptorSets_FromPool(commandBuffer, m_FrameIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, context.descriptorPool, context.descriptorPoolIds[currentIndex]);
 

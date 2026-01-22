@@ -20,6 +20,7 @@ namespace ArisenEngine::RHI
         RHISemaphore* GetImageAvailableSemaphore(UInt32 frameIndex) const override;
         RHISemaphore* GetRenderFinishSemaphore(UInt32 frameIndex) const override;
         RHIImageHandle AquireCurrentImage(UInt32 frameIndex) override;
+        RHIImageViewHandle GetImageView(UInt32 frameIndex) const override;
         void Cleanup() override;
         void Present(UInt32 frameIndex) override;
     protected:

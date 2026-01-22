@@ -38,9 +38,9 @@ namespace ArisenEngine::Testing
                 RHI::SAMPLE_COUNT_1_BIT, RHI::SHARING_MODE_EXCLUSIVE
             };
             LOG_INFO("Allocating image...");
-            RHI_Image_Alloc(testImage, &desc);
+            RHI_Image_Alloc(m_Device, testImage, &desc);
             LOG_INFO("Allocating device memory...");
-            RHI_Image_AllocDeviceMemory(testImage, 0x1); // DEVICE_LOCAL
+            RHI_Image_AllocDeviceMemory(m_Device, testImage, 0x1); // DEVICE_LOCAL
 
             LOG_INFO("Getting command buffer...");
             RHI_CommandBufferHandle cmd = RHI_Device_GetCommandBuffer(m_Device, m_CommandPool, 0);

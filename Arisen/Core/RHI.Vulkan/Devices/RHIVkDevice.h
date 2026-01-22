@@ -139,7 +139,8 @@ namespace ArisenEngine::RHI
         void FreeImage(RHIImageHandle handle);
 
         bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, ImageViewDesc&& desc);
-        void FreeImageView(RHIImageViewHandle handle);
+        void FreeImageView(RHIImageViewHandle handle) override;
+        RHIImageViewHandle FindImageViewForImage(RHIImageHandle imageHandle) override;
 
         // Pool Accessors
         RHIResourcePool<RHIBufferHandle, RHIVkBufferPoolItem>* GetBufferPool() const { return m_BufferPool.get(); }
