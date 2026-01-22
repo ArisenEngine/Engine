@@ -19,20 +19,29 @@ namespace ArisenEngine::RHI
         RHICommandBufferPool* CreateCommandBufferPool() override;
         void ReleaseCommandBufferPool(RHICommandBufferPool* pool) override;
 
-        GPURenderPass* CreateRenderPass() override;
-        void ReleaseRenderPass(GPURenderPass* renderPass) override;
+        RHIRenderPassHandle CreateRenderPass() override;
+        void ReleaseRenderPass(RHIRenderPassHandle renderPass) override;
 
-        FrameBuffer* CreateFrameBuffer() override;
-        void ReleaseFrameBuffer(FrameBuffer* frameBuffer) override;
+        RHIFrameBufferHandle CreateFrameBuffer() override;
+        void ReleaseFrameBuffer(RHIFrameBufferHandle frameBuffer) override;
 
-        BufferHandle* CreateBuffer(const std::string&& name = "Anonymous") override;
-        void ReleaseBuffer(BufferHandle* bufferHandle) override;
+        RHIBufferHandle CreateBuffer(const std::string&& name = "Anonymous") override;
+        void ReleaseBuffer(RHIBufferHandle bufferHandle) override;
 
-        ImageHandle* CreateImage(const std::string&& name = "Anonymous") override;
-        void ReleaseImage(ImageHandle* imageHandle) override;
+        RHIImageHandle CreateImage(const std::string&& name = "Anonymous") override;
+        void ReleaseImage(RHIImageHandle imageHandle) override;
 
-        RHISampler* CreateSampler(RHISamplerDesc&& desc) override;
-        void ReleaseSampler(RHISampler* sampler) override;
+        RHIImageViewHandle CreateImageView() override;
+        void ReleaseImageView(RHIImageViewHandle imageView) override;
+
+        RHISamplerHandle CreateSampler(RHISamplerDesc&& desc) override;
+        void ReleaseSampler(RHISamplerHandle sampler) override;
+
+        RHISemaphoreHandle CreateSemaphore() override;
+        void ReleaseSemaphore(RHISemaphoreHandle semaphore) override;
+
+        RHIFenceHandle CreateFence(bool signaled = false) override;
+        void ReleaseFence(RHIFenceHandle fence) override;
 
     private:
         RHIVkDevice* m_Device;

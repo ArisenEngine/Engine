@@ -1,5 +1,6 @@
 #pragma once
 #include "GPUPipeline.h"
+#include "../Handles/RHIHandle.h"
 #include "GPUProgram.h"
 #include "../../Common/CommandHeaders.h"
 #include "RHI/Enums/Pipeline/EDynamicState.h"
@@ -30,7 +31,7 @@ namespace ArisenEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(GPUPipelineManager)
         GPUPipelineManager(UInt32 maxFramesInFlight);
         virtual ~GPUPipelineManager() noexcept = default;
-        virtual GPUPipeline* GetGraphicsPipeline(GPUPipelineStateObject* pso) = 0;
+        virtual RHIPipelineHandle GetGraphicsPipeline(GPUPipelineStateObject* pso) = 0;
 
         virtual std::unique_ptr<GPUPipelineStateObject> GetPipelineState() = 0;
     protected:

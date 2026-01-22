@@ -9,11 +9,11 @@
 #include "RHI/Enums/Pipeline/EPipelineStageFlag.h"
 #include "RHI/Enums/Subpass/EDependencyFlag.h"
 #include "RHI/Enums/Subpass/ESubpassContents.h"
-#include "RHI/Handles/BufferHandle.h"
 #include "RHI/Memory/BufferImageCopy.h"
 #include "RHI/Synchronization/RHIBufferMemoryBarrier.h"
 #include "RHI/Synchronization/RHIImageMemoryBarrier.h"
 #include "RHI/Synchronization/RHIMemoryBarrier.h"
+#include "../Handles/RHIHandle.h"
 
 namespace ArisenEngine::RHI
 {
@@ -34,20 +34,18 @@ namespace ArisenEngine::RHI
     class RHICommandBufferPool;
     class FrameBuffer;
     class Viewport;
-    class ImageHandle;
-    class BufferHandle;
     class GPUPipelineManager;
 
     typedef struct RenderPassBeginDesc
     {
-        GPURenderPass* renderPass;
-        FrameBuffer* frameBuffer;
+        RHIRenderPassHandle renderPass;
+        RHIFrameBufferHandle frameBuffer;
         ESubpassContents subpassContents;
     } RenderPassBeginDesc;
 
     struct RHIRenderingAttachmentInfo
     {
-        ImageView* imageView;
+        RHIImageViewHandle imageView;
         EImageLayout imageLayout;
         AttachmentLoadOp loadOp;
         AttachmentStoreOp storeOp;
@@ -132,23 +130,23 @@ namespace ArisenEngine::RHI
         virtual void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height) = 0;
         virtual void SetScissor(UInt32 offsetX, UInt32 offsetY, UInt32 width, UInt32 height) = 0;
 
-        virtual void BindPipeline(UInt32 frameIndex, GPUPipeline* pipeline) = 0;
+        virtual void BindPipeline(UInt32 frameIndex, RHIPipelineHandle pipeline) = 0;
         virtual void Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding) = 0;
         virtual void DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 firstIndex, UInt32 vertexOffset, UInt32 firstInstance,  UInt32 firstBinding) = 0;
-        virtual void BindVertexBuffers(BufferHandle* buffer, UInt64 offset) = 0;
-        virtual void BindIndexBuffer(BufferHandle* indexBuffer, UInt64 offset, EIndexType type) = 0;
+        virtual void BindVertexBuffers(RHIBufferHandle buffer, UInt64 offset) = 0;
+        virtual void BindIndexBuffer(RHIBufferHandle indexBuffer, UInt64 offset, EIndexType type) = 0;
         
-        virtual void WaitSemaphore(RHISemaphore* semaphore, EPipelineStageFlag stage) = 0;
-        virtual void SignalSemaphore(RHISemaphore* semaphore) = 0;
-        virtual void InjectFence(RHIFence* fence) = 0;
+        virtual void WaitSemaphore(RHISemaphoreHandle semaphore, EPipelineStageFlag stage) = 0;
+        virtual void SignalSemaphore(RHISemaphoreHandle semaphore) = 0;
+        virtual void InjectFence(RHIFenceHandle fence) = 0;
 
-        virtual void CopyBuffer(BufferHandle const * src, UInt64 srcOffset, BufferHandle const * dst, UInt64 dstOffset, UInt64 size) = 0;
+        virtual void CopyBuffer(RHIBufferHandle src, UInt64 srcOffset, RHIBufferHandle dst, UInt64 dstOffset, UInt64 size) = 0;
         
         virtual void BindDescriptorSets(UInt32 frameIndex, EPipelineBindPoint bindPoint,
     UInt32 firstSet, Containers::Vector<std::shared_ptr<RHIDescriptorSet>>& descriptorsets, UInt32 dynamicOffsetCount, const UInt32* pDynamicOffsets) = 0;
         virtual void WaitForFence(UInt32 frameIndex) = 0;
 
-        virtual void CopyBufferToImage(BufferHandle const * srcBuffer, ImageHandle const * dst,
+        virtual void CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst,
             EImageLayout dstImageLayout, Containers::Vector<BufferImageCopy>&& regions) = 0;
         virtual void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
             const RHIMemoryBarrier* pMemoryBarriers, UInt32 memoryBarrierCount,

@@ -28,4 +28,26 @@ namespace ArisenEngine::RHI
             m_VmaAllocator = VK_NULL_HANDLE;
         }
     }
+
+    bool RHIVkMemoryAllocator::AllocateBufferMemory(VkBuffer buffer, VmaMemoryUsage usage, VmaAllocation* outAllocation)
+    {
+        VmaAllocationCreateInfo allocInfo = {};
+        allocInfo.usage = usage;
+        return vmaAllocateMemoryForBuffer(m_VmaAllocator, buffer, &allocInfo, outAllocation, nullptr) == VK_SUCCESS;
+    }
+
+    bool RHIVkMemoryAllocator::AllocateImageMemory(VkImage image, VmaMemoryUsage usage, VmaAllocation* outAllocation)
+    {
+        VmaAllocationCreateInfo allocInfo = {};
+        allocInfo.usage = usage;
+        return vmaAllocateMemoryForImage(m_VmaAllocator, image, &allocInfo, outAllocation, nullptr) == VK_SUCCESS;
+    }
+
+    void RHIVkMemoryAllocator::FreeMemory(VmaAllocation allocation)
+    {
+        if (allocation != VK_NULL_HANDLE)
+        {
+            vmaFreeMemory(m_VmaAllocator, allocation);
+        }
+    }
 }

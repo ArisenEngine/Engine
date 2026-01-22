@@ -1,0 +1,105 @@
+#pragma once
+
+#include <vulkan/vulkan_core.h>
+#include <vma/vk_mem_alloc.h>
+#include "RHI/Enums/Memory/ESharingMode.h"
+#include "RHI/Enums/Image/EFormat.h"
+#include "RHI/Handles/RHIHandle.h"
+#include <string>
+
+namespace ArisenEngine::RHI {
+
+class GPUPipeline;
+
+/**
+ * @brief Internal Vulkan implementation data for a Buffer.
+ */
+struct RHIVkBufferPoolItem {
+    VkBuffer buffer{VK_NULL_HANDLE};
+    VmaAllocation allocation{VK_NULL_HANDLE};
+    UInt64 size{0};
+    UInt64 offset{0};
+    UInt64 range{0};
+    std::string name{"Anonymous"};
+    RHIResourceHandle registryHandle; 
+};
+
+/**
+ * @brief Internal Vulkan implementation data for an Image.
+ */
+struct RHIVkImagePoolItem {
+    VkImage image{VK_NULL_HANDLE};
+    VmaAllocation allocation{VK_NULL_HANDLE};
+    UInt64 size{0};
+    std::string name{"Anonymous"};
+    bool needDestroy{false};
+    RHIResourceHandle registryHandle;
+};
+
+/**
+ * @brief Internal Vulkan implementation data for an Image View.
+ */
+struct RHIVkImageViewPoolItem {
+    VkImageView view{VK_NULL_HANDLE};
+    EFormat format{EFormat::FORMAT_UNDEFINED};
+    UInt32 width{0};
+    UInt32 height{0};
+    RHIResourceHandle registryHandle;
+};
+
+/**
+ * @brief Internal Vulkan implementation data for a Sampler.
+ */
+struct RHIVkSamplerPoolItem {
+    VkSampler sampler{VK_NULL_HANDLE};
+    std::string name{"Anonymous"};
+    RHIResourceHandle registryHandle;
+};
+
+/**
+ * @brief Internal Vulkan implementation data for a RenderPass.
+ */
+struct RHIVkRenderPassPoolItem {
+    VkRenderPass renderPass{VK_NULL_HANDLE};
+    void* renderPassObj{nullptr}; // Pointer to GPURenderPass if needed
+    std::string name{"Anonymous"};
+    RHIResourceHandle registryHandle;
+};
+
+/**
+ * @brief Internal Vulkan implementation data for a FrameBuffer.
+ */
+struct RHIVkFrameBufferPoolItem {
+    VkFramebuffer frameBuffer{VK_NULL_HANDLE};
+    std::string name{"Anonymous"};
+    RHIResourceHandle registryHandle;
+};
+
+/**
+ * @brief Internal Vulkan implementation data for a Semaphore.
+ */
+struct RHIVkSemaphorePoolItem {
+    VkSemaphore semaphore{VK_NULL_HANDLE};
+    std::string name{"Anonymous"};
+    RHIResourceHandle registryHandle;
+};
+
+/**
+ * @brief Internal Vulkan implementation data for a Pipeline.
+ */
+struct RHIVkPipelinePoolItem {
+    GPUPipeline* pipeline{nullptr}; 
+    std::string name{"Anonymous"};
+    RHIResourceHandle registryHandle;
+};
+
+/**
+ * @brief Internal Vulkan implementation data for a Fence.
+ */
+struct RHIVkFencePoolItem {
+    VkFence fence{VK_NULL_HANDLE};
+    std::string name{"Anonymous"};
+    RHIResourceHandle registryHandle;
+};
+
+} // namespace ArisenEngine::RHI

@@ -1,6 +1,8 @@
 #include "HandlesExports.h"
-#include "../../Core/Core.Infra/RHI/Memory/ImageView.h"
+
+#include "../../Core/RHI.Vulkan/Devices/RHIVkDevice.h"
 #include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
+#include "../../../Core/RHI.Vulkan/Handles/RHIVkResourcePools.h"
 #include <unordered_map>
 
 
@@ -10,141 +12,183 @@ using namespace ArisenEngine;
 extern "C" ENGINE_DLL RHI_BufferHandle RHI_Device_GetBufferHandle(RHI_DeviceHandle device, const char* name)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
-    if (dev == nullptr) return nullptr;
-    auto* raw = dev->GetFactory()->CreateBuffer(name != nullptr ? std::string(name) : std::string("Anonymous"));
-    return reinterpret_cast<RHI_BufferHandle>(raw);
+    if (dev == nullptr) return 0;
+    auto handle = dev->GetFactory()->CreateBuffer(name != nullptr ? std::string(name) : std::string("Anonymous"));
+    return *reinterpret_cast<unsigned long long*>(&handle);
 }
 
 extern "C" ENGINE_DLL void RHI_Device_ReleaseBufferHandle(RHI_DeviceHandle device, RHI_BufferHandle buffer)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
-    auto* ptr = reinterpret_cast<RHI::BufferHandle*>(buffer);
-    if (dev == nullptr || ptr == nullptr) return;
-    dev->GetFactory()->ReleaseBuffer(ptr);
+    if (dev == nullptr || buffer == 0) return;
+    auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
+    dev->GetFactory()->ReleaseBuffer(h);
 }
 
-extern "C" ENGINE_DLL bool RHI_Buffer_Alloc(RHI_BufferHandle buffer, const RHI::BufferDescriptor* desc)
+extern "C" ENGINE_DLL bool RHI_Buffer_Alloc(RHI_DeviceHandle device, RHI_BufferHandle buffer, const RHI::BufferDescriptor* desc)
 {
-    auto* b = reinterpret_cast<RHI::BufferHandle*>(buffer);
-    if (b == nullptr || desc == nullptr) return false;
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || buffer == 0 || desc == nullptr) return false;
+    auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
     RHI::BufferDescriptor copy = *desc;
-    return b->AllocBufferHandle(std::move(copy));
+    return dev->AllocBuffer(h, std::move(copy));
 }
 
-extern "C" ENGINE_DLL bool RHI_Buffer_AllocDeviceMemory(RHI_BufferHandle buffer, unsigned int memoryPropertiesBits)
+extern "C" ENGINE_DLL bool RHI_Buffer_AllocDeviceMemory(RHI_DeviceHandle device, RHI_BufferHandle buffer, unsigned int memoryPropertiesBits)
 {
-    auto* b = reinterpret_cast<RHI::BufferHandle*>(buffer);
-    if (b == nullptr) return false;
-    return b->AllocDeviceMemory(memoryPropertiesBits);
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || buffer == 0) return false;
+    auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
+    return dev->AllocBufferDeviceMemory(h, memoryPropertiesBits);
 }
 
-extern "C" ENGINE_DLL void RHI_Buffer_Free(RHI_BufferHandle buffer)
+extern "C" ENGINE_DLL void RHI_Buffer_Free(RHI_DeviceHandle device, RHI_BufferHandle buffer)
 {
-    auto* b = reinterpret_cast<RHI::BufferHandle*>(buffer);
-    if (b == nullptr) return;
-    b->FreeBufferHandle();
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || buffer == 0) return;
+    auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
+    dev->FreeBuffer(h);
 }
 
-extern "C" ENGINE_DLL void RHI_Buffer_MemoryCopy(RHI_BufferHandle buffer, const void* src, unsigned int offset)
+extern "C" ENGINE_DLL void RHI_Buffer_MemoryCopy(RHI_DeviceHandle device, RHI_BufferHandle buffer, const void* src, unsigned int offset)
 {
-    auto* b = reinterpret_cast<RHI::BufferHandle*>(buffer);
-    if (b == nullptr || src == nullptr) return;
-    b->MemoryCopy(src, offset);
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || buffer == 0 || src == nullptr) return;
+    auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
+    dev->BufferMemoryCopy(h, src, offset);
 }
 
-extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Size(RHI_BufferHandle buffer)
+extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Size(RHI_DeviceHandle device, RHI_BufferHandle buffer)
 {
-    auto* b = reinterpret_cast<RHI::BufferHandle*>(buffer);
-    if (b == nullptr) return 0ULL;
-    return b->BufferSize();
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || buffer == 0) return 0ULL;
+    auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
+    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
+    if (vkDev) {
+        auto* buf = vkDev->GetBufferPool()->Get(h);
+        return buf ? buf->size : 0ULL;
+    }
+    return 0ULL;
 }
 
-extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Offset(RHI_BufferHandle buffer)
+extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Offset(RHI_DeviceHandle device, RHI_BufferHandle buffer)
 {
-    auto* b = reinterpret_cast<RHI::BufferHandle*>(buffer);
-    if (b == nullptr) return 0ULL;
-    return b->Offset();
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || buffer == 0) return 0ULL;
+    auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
+    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
+    if (vkDev) {
+        auto* buf = vkDev->GetBufferPool()->Get(h);
+        return buf ? buf->offset : 0ULL;
+    }
+    return 0ULL;
 }
 
-extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Range(RHI_BufferHandle buffer)
+extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Range(RHI_DeviceHandle device, RHI_BufferHandle buffer)
 {
-    auto* b = reinterpret_cast<RHI::BufferHandle*>(buffer);
-    if (b == nullptr) return 0ULL;
-    return b->Range();
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || buffer == 0) return 0ULL;
+    auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
+    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
+    if (vkDev) {
+        auto* buf = vkDev->GetBufferPool()->Get(h);
+        return buf ? buf->range : 0ULL;
+    }
+    return 0ULL;
 }
 
 extern "C" ENGINE_DLL RHI_ImageHandle RHI_Device_GetImageHandle(RHI_DeviceHandle device, const char* name)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
-    if (dev == nullptr) return nullptr;
-    auto* raw = dev->GetFactory()->CreateImage(name != nullptr ? std::string(name) : std::string("Anonymous"));
-    return reinterpret_cast<RHI_ImageHandle>(raw);
+    if (dev == nullptr) return 0;
+    auto handle = dev->GetFactory()->CreateImage(name != nullptr ? std::string(name) : std::string("Anonymous"));
+    return *reinterpret_cast<unsigned long long*>(&handle);
 }
 
 extern "C" ENGINE_DLL void RHI_Device_ReleaseImageHandle(RHI_DeviceHandle device, RHI_ImageHandle image)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
-    auto* ptr = reinterpret_cast<RHI::ImageHandle*>(image);
-    if (dev == nullptr || ptr == nullptr) return;
-    dev->GetFactory()->ReleaseImage(ptr);
+    if (dev == nullptr || image == 0) return;
+    auto h = *reinterpret_cast<RHI::RHIImageHandle*>(&image);
+    dev->GetFactory()->ReleaseImage(h);
 }
 
-extern "C" ENGINE_DLL void RHI_Image_Alloc(RHI_ImageHandle image, const RHI::ImageDescriptor* desc)
+extern "C" ENGINE_DLL void RHI_Image_Alloc(RHI_DeviceHandle device, RHI_ImageHandle image, const RHI::ImageDescriptor* desc)
 {
-    auto* img = reinterpret_cast<RHI::ImageHandle*>(image);
-    if (img == nullptr || desc == nullptr) return;
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || image == 0 || desc == nullptr) return;
+    auto h = *reinterpret_cast<RHI::RHIImageHandle*>(&image);
     RHI::ImageDescriptor copy = *desc;
-    img->AllocHandle(std::move(copy));
+    dev->AllocImage(h, std::move(copy));
 }
 
-extern "C" ENGINE_DLL bool RHI_Image_AllocDeviceMemory(RHI_ImageHandle image, unsigned int memoryPropertiesBits)
+extern "C" ENGINE_DLL bool RHI_Image_AllocDeviceMemory(RHI_DeviceHandle device, RHI_ImageHandle image, unsigned int memoryPropertiesBits)
 {
-    auto* img = reinterpret_cast<RHI::ImageHandle*>(image);
-    if (img == nullptr) return false;
-    return img->AllocDeviceMemory(memoryPropertiesBits);
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || image == 0) return false;
+    auto h = *reinterpret_cast<RHI::RHIImageHandle*>(&image);
+    return dev->AllocImageDeviceMemory(h, memoryPropertiesBits);
 }
 
-extern "C" ENGINE_DLL void RHI_Image_Free(RHI_ImageHandle image)
+extern "C" ENGINE_DLL void RHI_Image_Free(RHI_DeviceHandle device, RHI_ImageHandle image)
 {
-    auto* img = reinterpret_cast<RHI::ImageHandle*>(image);
-    if (img == nullptr) return;
-    img->FreeHandle();
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || image == 0) return;
+    auto h = *reinterpret_cast<RHI::RHIImageHandle*>(&image);
+    dev->FreeImage(h);
 }
 
-extern "C" ENGINE_DLL unsigned int RHI_Image_AddImageView(RHI_ImageHandle image, const RHI::ImageViewDesc* desc)
+extern "C" ENGINE_DLL RHI_ImageViewHandle RHI_Image_AddImageView(RHI_DeviceHandle device, RHI_ImageHandle image, const RHI::ImageViewDesc* desc)
 {
-    auto* img = reinterpret_cast<RHI::ImageHandle*>(image);
-    if (img == nullptr || desc == nullptr) return 0U;
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || image == 0 || desc == nullptr) return 0ULL;
+    auto hImg = *reinterpret_cast<RHI::RHIImageHandle*>(&image);
+    
+    // Create handle from factory
+    auto ivHandle = dev->GetFactory()->CreateImageView();
+    
     RHI::ImageViewDesc copy = *desc;
-    return img->AddImageView(std::move(copy));
+    dev->AllocImageView(ivHandle, hImg, std::move(copy));
+    return *reinterpret_cast<unsigned long long*>(&ivHandle);
 }
 
-extern "C" ENGINE_DLL RHI::ImageView* RHI_Image_GetView(RHI_ImageHandle image)
+extern "C" ENGINE_DLL RHI::EFormat RHI_ImageView_GetFormat(RHI_DeviceHandle device, RHI_ImageViewHandle view)
 {
-    auto* img = reinterpret_cast<RHI::ImageHandle*>(image);
-    if (img == nullptr) return nullptr;
-    auto* mv = img->GetMemoryView();
-    if (mv == nullptr) return nullptr;
-    auto* iv = dynamic_cast<RHI::ImageView*>(mv);
-    return iv;
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || view == 0) return RHI::EFormat::FORMAT_UNDEFINED;
+    auto h = *reinterpret_cast<RHI::RHIImageViewHandle*>(&view);
+    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
+    if (vkDev) {
+        auto* v = vkDev->GetImageViewPool()->Get(h);
+        return v ? v->format : RHI::EFormat::FORMAT_UNDEFINED;
+    }
+    return RHI::EFormat::FORMAT_UNDEFINED;
 }
 
-extern "C" ENGINE_DLL RHI::EFormat RHI_ImageView_GetFormat(RHI::ImageView* view)
+extern "C" ENGINE_DLL unsigned int RHI_ImageView_GetWidth(RHI_DeviceHandle device, RHI_ImageViewHandle view)
 {
-    if (view == nullptr) return RHI::EFormat::FORMAT_UNDEFINED;
-    return view->GetFormat();
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || view == 0) return 0;
+    auto h = *reinterpret_cast<RHI::RHIImageViewHandle*>(&view);
+    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
+    if (vkDev) {
+        auto* v = vkDev->GetImageViewPool()->Get(h);
+        return v ? v->width : 0;
+    }
+    return 0;
 }
 
-extern "C" ENGINE_DLL unsigned int RHI_ImageView_GetWidth(RHI::ImageView* view)
+extern "C" ENGINE_DLL unsigned int RHI_ImageView_GetHeight(RHI_DeviceHandle device, RHI_ImageViewHandle view)
 {
-    if (view == nullptr) return 0U;
-    return view->GetWidth();
-}
-
-extern "C" ENGINE_DLL unsigned int RHI_ImageView_GetHeight(RHI::ImageView* view)
-{
-    if (view == nullptr) return 0U;
-    return view->GetHeight();
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || view == 0) return 0;
+    auto h = *reinterpret_cast<RHI::RHIImageViewHandle*>(&view);
+    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
+    if (vkDev) {
+        auto* v = vkDev->GetImageViewPool()->Get(h);
+        return v ? v->height : 0;
+    }
+    return 0;
 }
 
 

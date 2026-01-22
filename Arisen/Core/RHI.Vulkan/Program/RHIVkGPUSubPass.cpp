@@ -1,4 +1,4 @@
-﻿#include "RHIVkGPUSubPass.h"
+#include "RHIVkGPUSubPass.h"
 
 #include "Logger/Logger.h"
 

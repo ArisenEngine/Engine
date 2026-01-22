@@ -1,10 +1,10 @@
 ﻿#pragma once
 #include "../../Common/CommandHeaders.h"
 #include "RHI/Program/GPURenderPass.h"
+#include "../Handles/RHIHandle.h"
 
 namespace ArisenEngine::RHI
 {
-    class ImageView;
 
     typedef struct FrameBufferDesc
     {
@@ -33,7 +33,8 @@ namespace ArisenEngine::RHI
         VIRTUAL_DECONSTRUCTOR(FrameBuffer)
         virtual void* GetHandle(UInt32 currentFrameIndex) = 0;
         const RenderArea GetRenderArea() const { return m_RenderArea; }
-        virtual void SetAttachment(UInt32 frameIndex, ImageView* imageView, GPURenderPass* renderPass) = 0;
+        virtual void SetAttachment(UInt32 frameIndex, RHIImageViewHandle imageView, GPURenderPass* renderPass) = 0;
+        virtual void SetAttachments(UInt32 frameIndex, const Containers::Vector<RHIImageViewHandle>& imageViews, GPURenderPass* renderPass) = 0;
         virtual EFormat GetAttachFormat() = 0;
     protected:
         RenderArea m_RenderArea;

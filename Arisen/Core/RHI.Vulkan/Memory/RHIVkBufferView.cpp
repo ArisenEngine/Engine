@@ -1,1 +1,1 @@
-#include "RHIVkBufferView.h"
+// Obsolete file, content removed.

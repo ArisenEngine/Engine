@@ -15,22 +15,38 @@ m_Device(device)
 ArisenEngine::RHI::RHIVkGPUPipelineManager::~RHIVkGPUPipelineManager() noexcept
 {
     LOG_DEBUG("[RHIVkGPUPipelineManager::~RHIVkGPUPipelineManager]: ~RHIVkGPUPipelineManager");
+    // Release handles from pool
+    for (auto const& [hash, handle] : m_PipelineHandles)
+    {
+        m_Device->GetPipelinePool()->Deallocate(handle);
+    }
     m_GPUPipelines.clear();
+    m_PipelineHandles.clear();
 }
 
-ArisenEngine::RHI::GPUPipeline* ArisenEngine::RHI::RHIVkGPUPipelineManager::GetGraphicsPipeline(GPUPipelineStateObject* pso)
+ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager::GetGraphicsPipeline(GPUPipelineStateObject* pso)
 {
     auto hash = pso->GetHash();
     if (!m_GPUPipelines.contains(hash))
     {
-        m_GPUPipelines.insert({hash, std::make_unique<RHIVkGPUPipeline>(m_Device, pso, m_MaxFramesInFlight)});
+        auto pipeline = std::make_unique<RHIVkGPUPipeline>(m_Device, pso, m_MaxFramesInFlight);
+        auto* rawPtr = pipeline.get();
+        m_GPUPipelines.emplace(hash, std::move(pipeline));
+        
+        auto* internalPipe = new RHIVkPipelinePoolItem();
+        internalPipe->pipeline = rawPtr;
+        // Not using deferred destroy here as Manager owns the unique_ptr and pool just stores observation
+        // Actually, if we use handles, we should be careful about ownership.
+        // For now, let's say the Pool observation is valid as long as m_GPUPipelines has it.
+        auto handle = m_Device->GetPipelinePool()->Allocate(internalPipe);
+        m_PipelineHandles.emplace(hash, handle);
+        return handle;
     }
     else
     {
         m_GPUPipelines[hash].get()->BindPipelineStateObject(pso);
+        return m_PipelineHandles[hash];
     }
-    
-    return m_GPUPipelines[hash].get();
 }
 
 std::unique_ptr<ArisenEngine::RHI::GPUPipelineStateObject> ArisenEngine::RHI::RHIVkGPUPipelineManager::GetPipelineState()

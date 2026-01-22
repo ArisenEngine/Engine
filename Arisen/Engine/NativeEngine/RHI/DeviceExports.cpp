@@ -87,9 +87,10 @@ extern "C" ENGINE_DLL void RHI_Device_WaitQueueTicket(RHI_DeviceHandle device, u
 extern "C" ENGINE_DLL RHI_SamplerHandle RHI_Device_CreateSampler(RHI_DeviceHandle device, const RHI::RHISamplerDesc* desc)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
-    if (dev == nullptr || desc == nullptr) return nullptr;
+    if (dev == nullptr || desc == nullptr) return 0;
     RHI::RHISamplerDesc copy = *desc;
-    return reinterpret_cast<RHI_SamplerHandle>(dev->GetFactory()->CreateSampler(std::move(copy)));
+    auto handle = dev->GetFactory()->CreateSampler(std::move(copy));
+    return *reinterpret_cast<RHI_SamplerHandle*>(&handle);
 }
 
 

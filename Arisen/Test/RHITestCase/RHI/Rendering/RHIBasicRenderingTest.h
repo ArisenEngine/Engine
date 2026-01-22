@@ -16,7 +16,7 @@
 #include "RHI/Enums/Subpass/ESubpassContents.h"
 #include "RHI/Surfaces/Surface.h"
 #include "RHI/Surfaces/FrameBuffer.h"
-#include "RHI/Handles/ImageHandle.h"
+#include "RHI/Handles/RHIHandle.h"
 #include "RHI/Memory/ImageView.h"
 #include "RHI/Synchronization/RHIImageMemoryBarrier.h"
 #include "RHI/CommandBuffer/RHICommandBuffer.h"
@@ -25,7 +25,6 @@
 #include "RHI/Program/GPURenderPass.h"
 #include "RHI/Program/GPUSubPass.h"
 #include "RHI/Program/GPUPipelineStateObject.h"
-#include "RHI/Handles/BufferHandle.h"
 
 // Engine Exports
 #include "../../Engine/NativeEngine/RHI/RHIExports.h"
@@ -691,8 +690,10 @@ namespace ArisenEngine::Testing
             auto commandBuffer = RHI_Device_GetCommandBuffer(context.device, context.commandPool, m_FrameIndex);
             
             auto pipelineState = context.pipelineState;
-            Containers::Vector<std::shared_ptr<RHI::BufferHandle>> ubos;
-            ubos.emplace_back(std::shared_ptr<RHI::BufferHandle>(reinterpret_cast<RHI::BufferHandle*>(context.uniformBuffers[currentIndex]), [](RHI::BufferHandle*){}));
+            Containers::Vector<RHI::RHIBufferHandle> ubos;
+            auto rawHandle = context.uniformBuffers[currentIndex];
+            auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&rawHandle);
+            ubos.emplace_back(h);
             RHI_PSO_UpdateDescriptorSet_Buffers(pipelineState, 0, 0, &ubos);
             
             RHI_DescriptorPool_Reset(context.descriptorPool, context.descriptorPoolIds[currentIndex]);

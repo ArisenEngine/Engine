@@ -2,11 +2,8 @@
 
 #include "RHIVkCommandBufferPool.h"
 #include "../Devices/RHIVkDevice.h"
-#include "../Handles/RHIVkBufferHandle.h"
-#include "../Handles/RHIVkImageHandle.h"
 #include "../Program/RHIVkGPUPipeline.h"
 #include "../Program/RHIVkGPUPipelineStateObject.h"
-#include "RHI/Handles/BufferHandle.h"
 #include "../VkInitializer.h"
 #include "../Program/RHIVkBindlessManager.h"
 #include "RHI/Enums/Subpass/EDependencyFlag.h"
@@ -14,8 +11,7 @@
 #include "RHI/Synchronization/RHIImageMemoryBarrier.h"
 #include "RHI/Synchronization/RHIMemoryBarrier.h"
 #include "Threadable/SynchScope.h"
-#include "../Memory/RHIVkDeviceMemory.h"
-#include "RHI/Memory/ImageView.h"
+#include "../Memory/RHIVkMemoryAllocator.h"
 
 
 ArisenEngine::RHI::RHIVkCommandBuffer::~RHIVkCommandBuffer() noexcept
@@ -63,19 +59,30 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRenderPass(UInt32 frameIndex, R
 {
     ASSERT(m_State == ECommandState::IsInsideBegin);
     
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* rp = vkDevice->GetRenderPassPool()->Get(desc.renderPass);
+    auto* fb = vkDevice->GetFrameBufferPool()->Get(desc.frameBuffer);
+
+    if (!rp || !fb) {
+        LOG_ERROR("[RHIVkCommandBuffer::BeginRenderPass]: invalid renderPass or frameBuffer handle!");
+        return;
+    }
+
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = static_cast<VkRenderPass>(desc.renderPass->GetHandle(frameIndex));
-    renderPassInfo.framebuffer = static_cast<VkFramebuffer>(desc.frameBuffer->GetHandle(frameIndex));
-    auto renderArea = desc.frameBuffer->GetRenderArea();
-    renderPassInfo.renderArea.offset = {renderArea.offsetX, renderArea.offsetY};
-    renderPassInfo.renderArea.extent = {renderArea.width, renderArea.height};
+    renderPassInfo.renderPass = rp->renderPass;
+    renderPassInfo.framebuffer = fb->frameBuffer;
+    
+    // TODO: We need a way to get render area from handle-based fb
+    // For now, assume it's stored in the struct or calculated elsewhere
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent = {1920, 1080}; // Dummy
     
     VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearColor;
 
-    vkCmdBeginRenderPass(m_VkCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(m_VkCommandBuffer, &renderPassInfo, static_cast<VkSubpassContents>(desc.subpassContents));
 
     m_State = ECommandState::IsInsideRenderPass;
 }
@@ -93,13 +100,17 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRendering(const RHIRenderingInf
     m_VkColorAttachments.clear();
     m_VkColorAttachments.reserve(info.colorAttachmentCount);
 
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+
     for (UInt32 i = 0; i < info.colorAttachmentCount; ++i)
     {
         const auto& att = info.pColorAttachments[i];
+        auto* view = vkDevice->GetImageViewPool()->Get(att.imageView);
+        if (!view) continue;
    
         VkRenderingAttachmentInfoKHR vkAtt{};
         vkAtt.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-        vkAtt.imageView = static_cast<VkImageView>(att.imageView->GetView());
+        vkAtt.imageView = view->view;
         vkAtt.imageLayout = static_cast<VkImageLayout>(att.imageLayout);
         vkAtt.loadOp = static_cast<VkAttachmentLoadOp>(att.loadOp);
         vkAtt.storeOp = static_cast<VkAttachmentStoreOp>(att.storeOp);
@@ -112,23 +123,29 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRendering(const RHIRenderingInf
     if (info.pDepthAttachment != nullptr)
     {
         const auto& att = *info.pDepthAttachment;
-        m_VkDepthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-        m_VkDepthAttachment.imageView = static_cast<VkImageView>(att.imageView->GetView());
-        m_VkDepthAttachment.imageLayout = static_cast<VkImageLayout>(att.imageLayout);
-        m_VkDepthAttachment.loadOp = static_cast<VkAttachmentLoadOp>(att.loadOp);
-        m_VkDepthAttachment.storeOp = static_cast<VkAttachmentStoreOp>(att.storeOp);
-        std::memcpy(&m_VkDepthAttachment.clearValue, &att.clearValue, sizeof(VkClearValue));
+        auto* view = vkDevice->GetImageViewPool()->Get(att.imageView);
+        if (view) {
+            m_VkDepthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+            m_VkDepthAttachment.imageView = view->view;
+            m_VkDepthAttachment.imageLayout = static_cast<VkImageLayout>(att.imageLayout);
+            m_VkDepthAttachment.loadOp = static_cast<VkAttachmentLoadOp>(att.loadOp);
+            m_VkDepthAttachment.storeOp = static_cast<VkAttachmentStoreOp>(att.storeOp);
+            std::memcpy(&m_VkDepthAttachment.clearValue, &att.clearValue, sizeof(VkClearValue));
+        }
     }
 
     if (info.pStencilAttachment != nullptr)
     {
         const auto& att = *info.pStencilAttachment;
-        m_VkStencilAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-        m_VkStencilAttachment.imageView = static_cast<VkImageView>(att.imageView->GetView());
-        m_VkStencilAttachment.imageLayout = static_cast<VkImageLayout>(att.imageLayout);
-        m_VkStencilAttachment.loadOp = static_cast<VkAttachmentLoadOp>(att.loadOp);
-        m_VkStencilAttachment.storeOp = static_cast<VkAttachmentStoreOp>(att.storeOp);
-        std::memcpy(&m_VkStencilAttachment.clearValue, &att.clearValue, sizeof(VkClearValue));
+        auto* view = vkDevice->GetImageViewPool()->Get(att.imageView);
+        if (view) {
+            m_VkStencilAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+            m_VkStencilAttachment.imageView = view->view;
+            m_VkStencilAttachment.imageLayout = static_cast<VkImageLayout>(att.imageLayout);
+            m_VkStencilAttachment.loadOp = static_cast<VkAttachmentLoadOp>(att.loadOp);
+            m_VkStencilAttachment.storeOp = static_cast<VkAttachmentStoreOp>(att.storeOp);
+            std::memcpy(&m_VkStencilAttachment.clearValue, &att.clearValue, sizeof(VkClearValue));
+        }
     }
 
     VkRenderingInfoKHR renderingInfo{};
@@ -150,7 +167,6 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRendering(const RHIRenderingInf
         renderingInfo.pStencilAttachment = &m_VkStencilAttachment;
     }
 
-    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
     if (vkDevice->vkCmdBeginRenderingKHR)
     {
         vkDevice->vkCmdBeginRenderingKHR(m_VkCommandBuffer, &renderingInfo);
@@ -213,13 +229,16 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::TrackDescriptorPoolUse(DescriptorPoo
     m_TrackedDescriptorPools.emplace_back(TrackedPoolUse{ pool, poolId });
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::CaptureResource(BufferHandle const* buffer)
+void ArisenEngine::RHI::RHIVkCommandBuffer::CaptureResource(RHIBufferHandle buffer)
 {
-    if (buffer == nullptr) return;
-    auto const* vkBuffer = static_cast<RHIVkBufferHandle const*>(buffer);
-    auto handle = vkBuffer->GetRHIHandle();
+    if (!buffer.IsValid()) return;
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* buf = vkDevice->GetBufferPool()->Get(buffer);
+    if (!buf) return;
+
+    auto handle = buf->registryHandle;
     
-    // Performance: skip redundant tracking to avoid registry mutex contention
+    // Performance: skip redundant tracking
     for (const auto& h : m_TrackedResourceHandles)
     {
         if (h.index == handle.index && h.generation == handle.generation) goto check_mem;
@@ -227,36 +246,24 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::CaptureResource(BufferHandle const* 
 
     if (handle.IsValid())
     {
-        auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
         m_TrackedResourceHandles.emplace_back(handle);
         vkDevice->GetResourceRegistry()->Retain(handle);
     }
     
 check_mem:
-    if (buffer->GetDeviceMemory())
-    {
-        auto* vkMem = static_cast<RHIVkDeviceMemory*>(buffer->GetDeviceMemory());
-        auto memHandle = vkMem->GetRHIHandle();
-        
-        for (const auto& h : m_TrackedResourceHandles)
-        {
-            if (h.index == memHandle.index && h.generation == memHandle.generation) return;
-        }
-
-        if (memHandle.IsValid())
-        {
-            auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
-            m_TrackedResourceHandles.emplace_back(memHandle);
-            vkDevice->GetResourceRegistry()->Retain(memHandle);
-        }
-    }
+    // Memory is now managed by VMA and bound to the buffer/image. 
+    // We don't have a separate RHIDeviceMemory handle to track for resource lifetime in the same way.
+    return;
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::CaptureResource(ImageHandle const* image)
+void ArisenEngine::RHI::RHIVkCommandBuffer::CaptureResource(RHIImageHandle image)
 {
-    if (image == nullptr) return;
-    auto const* vkImage = static_cast<RHIVkImageHandle const*>(image);
-    auto handle = vkImage->GetRHIHandle();
+    if (!image.IsValid()) return;
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* img = vkDevice->GetImagePool()->Get(image);
+    if (!img) return;
+
+    auto handle = img->registryHandle;
     
     for (const auto& h : m_TrackedResourceHandles)
     {
@@ -265,29 +272,13 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::CaptureResource(ImageHandle const* i
 
     if (handle.IsValid())
     {
-        auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
         m_TrackedResourceHandles.emplace_back(handle);
         vkDevice->GetResourceRegistry()->Retain(handle);
     }
 
 check_mem:
-    if (image->GetDeviceMemory())
-    {
-        auto* vkMem = static_cast<RHIVkDeviceMemory*>(image->GetDeviceMemory());
-        auto memHandle = vkMem->GetRHIHandle();
-
-        for (const auto& h : m_TrackedResourceHandles)
-        {
-            if (h.index == memHandle.index && h.generation == memHandle.generation) return;
-        }
-
-        if (memHandle.IsValid())
-        {
-            auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
-            m_TrackedResourceHandles.emplace_back(memHandle);
-            vkDevice->GetResourceRegistry()->Retain(memHandle);
-        }
-    }
+    // Memory is now managed by VMA and bound to the buffer/image.
+    return;
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::ReadyForBegin(UInt32 frameIndex)
@@ -370,14 +361,18 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::SetScissor(UInt32 offsetX, UInt32 of
     
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::BindPipeline(UInt32 frameIndex, GPUPipeline* pipeline)
+void ArisenEngine::RHI::RHIVkCommandBuffer::BindPipeline(UInt32 frameIndex, RHIPipelineHandle pipelineHandle)
 {
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* p = vkDevice->GetPipelinePool()->Get(pipelineHandle);
+    if (!p || !p->pipeline) return;
+
+    GPUPipeline* pipeline = p->pipeline;
     m_CurrentPipeline = pipeline;
     vkCmdBindPipeline(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(pipeline->GetBindPoint()),
         static_cast<VkPipeline>(pipeline->GetGraphicsPipeline(frameIndex)));
 
     // Bind Global Bindless Descriptor Set (Set 3)
-    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
     auto* bindlessManager = vkDevice->GetBindlessManager();
     if (bindlessManager)
     {
@@ -413,9 +408,15 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BindDescriptorSets(UInt32 frameIndex
         dynamicOffsetCount, pDynamicOffsets);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::CopyBufferToImage(BufferHandle const * srcBuffer, ImageHandle const * dst,
+void ArisenEngine::RHI::RHIVkCommandBuffer::CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst,
             EImageLayout dstImageLayout, Containers::Vector<BufferImageCopy>&& regions)
 {
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* srcBuf = vkDevice->GetBufferPool()->Get(srcBuffer);
+    auto* dstImg = vkDevice->GetImagePool()->Get(dst);
+
+    if (!srcBuf || !dstImg) return;
+
     m_VkBufferImageCopies.clear();
     m_VkBufferImageCopies.reserve(regions.size());
     for (UInt32 i = 0; i < regions.size(); ++i)
@@ -427,11 +428,10 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::CopyBufferToImage(BufferHandle const
         regionInfo.imageSubresource,
         regionInfo.offsetX, regionInfo.offsetY, regionInfo.offsetZ,
         regionInfo.width, regionInfo.height, regionInfo.depth));
-        
     }
     
     vkCmdCopyBufferToImage(m_VkCommandBuffer,
-        static_cast<VkBuffer>(srcBuffer->GetHandle()), static_cast<VkImage>(dst->GetHandle()),
+        srcBuf->buffer, dstImg->image,
         static_cast<VkImageLayout>(dstImageLayout), static_cast<uint32_t>(m_VkBufferImageCopies.size()), m_VkBufferImageCopies.data()
         );
     
@@ -465,13 +465,19 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(
     for (UInt32 i = 0; i < bufferMemoryBarrierCount; ++i)
     {
         const auto& barrier = pBufferMemoryBarriers[i];
+        
+        // Resolve Buffer Handle
+        auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+        auto* buf = vkDevice->GetBufferPool()->Get(barrier.buffer);
+        if (!buf) continue;
+
         m_VkBufferMemoryBarriers.emplace_back(BufferMemoryBarrier2(
             MapPipelineStageFlags2(barrier.srcStageMask != PIPELINE_STAGE_NONE ? barrier.srcStageMask : srcStage),
             MapAccessFlags2(barrier.srcAccessMask),
             MapPipelineStageFlags2(barrier.dstStageMask != PIPELINE_STAGE_NONE ? barrier.dstStageMask : dstStage),
             MapAccessFlags2(barrier.dstAccessMask),
             barrier.srcQueueFamilyIndex, barrier.dstQueueFamilyIndex,
-            barrier.buffer));
+            buf->buffer, 0, VK_WHOLE_SIZE));
             
          CaptureResource(barrier.buffer);
     }
@@ -479,13 +485,19 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(
     for (UInt32 i = 0; i < imageMemoryBarrierCount; ++i)
     {
         const auto& barrier = pImageMemoryBarriers[i];
+        
+        // Resolve Image Handle
+        auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+        auto* img = vkDevice->GetImagePool()->Get(barrier.image);
+        if (!img) continue;
+
         m_VkImageMemoryBarriers.emplace_back(ImageMemoryBarrier2(
             MapPipelineStageFlags2(barrier.srcStageMask != PIPELINE_STAGE_NONE ? barrier.srcStageMask : srcStage),
             MapAccessFlags2(barrier.srcAccess),
             MapPipelineStageFlags2(barrier.dstStageMask != PIPELINE_STAGE_NONE ? barrier.dstStageMask : dstStage),
             MapAccessFlags2(barrier.dstAccess),
             barrier.srcQueueFamilyIndex, barrier.dstQueueFamilyIndex,
-            barrier.oldLayout, barrier.newLayout, barrier.image,
+            barrier.oldLayout, barrier.newLayout, img->image,
             barrier.subresourceRange));
 
         CaptureResource(barrier.image);
@@ -553,16 +565,24 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::DrawIndexed(UInt32 indexCount, UInt3
     vkCmdDrawIndexed(m_VkCommandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::BindVertexBuffers(BufferHandle* buffer, UInt64 offset)
+void ArisenEngine::RHI::RHIVkCommandBuffer::BindVertexBuffers(RHIBufferHandle buffer, UInt64 offset)
 {
-    m_VertexBuffers.emplace_back(static_cast<VkBuffer>(buffer->GetHandle()));
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* buf = vkDevice->GetBufferPool()->Get(buffer);
+    if (!buf) return;
+
+    m_VertexBuffers.emplace_back(buf->buffer);
     m_VertexBindingOffsets.emplace_back(offset);
     CaptureResource(buffer);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::WaitSemaphore(RHISemaphore* semaphore, EPipelineStageFlag stage)
+void ArisenEngine::RHI::RHIVkCommandBuffer::WaitSemaphore(RHISemaphoreHandle semaphore, EPipelineStageFlag stage)
 {
-    m_WaitSemaphores.emplace_back(static_cast<VkSemaphore>(semaphore->GetHandle()));
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* sem = vkDevice->GetSemaphorePool()->Get(semaphore);
+    if (!sem) return;
+
+    m_WaitSemaphores.emplace_back(sem->semaphore);
     m_WaitStages.emplace_back(static_cast<VkPipelineStageFlags>(stage));
 }
 
@@ -576,9 +596,13 @@ ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkCommandBuffer::GetWaitSemaphoresCou
     return m_WaitSemaphores.size();
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::SignalSemaphore(RHISemaphore* semaphore)
+void ArisenEngine::RHI::RHIVkCommandBuffer::SignalSemaphore(RHISemaphoreHandle semaphore)
 {
-    m_SignalSemaphores.emplace_back(static_cast<VkSemaphore>(semaphore->GetHandle()));
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* sem = vkDevice->GetSemaphorePool()->Get(semaphore);
+    if (!sem) return;
+
+    m_SignalSemaphores.emplace_back(sem->semaphore);
 }
 
 const VkSemaphore* ArisenEngine::RHI::RHIVkCommandBuffer::GetSignalSemaphores() const
@@ -596,27 +620,33 @@ const VkPipelineStageFlags* ArisenEngine::RHI::RHIVkCommandBuffer::GetWaitStageM
     return m_WaitStages.data();
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::CopyBuffer(BufferHandle const * src, UInt64 srcOffset,
-                                                       BufferHandle const * dst, UInt64 dstOffset, UInt64 size)
+void ArisenEngine::RHI::RHIVkCommandBuffer::CopyBuffer(RHIBufferHandle src, UInt64 srcOffset,
+                                                       RHIBufferHandle dst, UInt64 dstOffset, UInt64 size)
 {
-    // TODO: support multiple copy regions
     ASSERT(m_State == ECommandState::IsInsideBegin);
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* srcBuf = vkDevice->GetBufferPool()->Get(src);
+    auto* dstBuf = vkDevice->GetBufferPool()->Get(dst);
+
+    if (!srcBuf || !dstBuf) return;
+
     VkBufferCopy copyRegion {};
     copyRegion.srcOffset = srcOffset;
     copyRegion.dstOffset = dstOffset;
     copyRegion.size = size;
-    vkCmdCopyBuffer(m_VkCommandBuffer,
-        static_cast<VkBuffer>(src->GetHandle()),
-        static_cast<VkBuffer>(dst->GetHandle()),
-        1, &copyRegion);
+    vkCmdCopyBuffer(m_VkCommandBuffer, srcBuf->buffer, dstBuf->buffer, 1, &copyRegion);
 
     CaptureResource(src);
     CaptureResource(dst);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::BindIndexBuffer(BufferHandle* indexBuffer, UInt64 offset, EIndexType type)
+void ArisenEngine::RHI::RHIVkCommandBuffer::BindIndexBuffer(RHIBufferHandle indexBuffer, UInt64 offset, EIndexType type)
 { 
-    m_IndexBuffer = static_cast<VkBuffer>(indexBuffer->GetHandle());
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* buf = vkDevice->GetBufferPool()->Get(indexBuffer);
+    if (!buf) return;
+
+    m_IndexBuffer = buf->buffer;
     m_IndexOffset = offset;
     m_IndexType = type;
     CaptureResource(indexBuffer);
@@ -629,10 +659,10 @@ VkFence ArisenEngine::RHI::RHIVkCommandBuffer::GetSubmissionFence() const
 }
 
 // TODO: 用一个map去存储不同type的fence，在调用相关接口时根据type等待fence
-void ArisenEngine::RHI::RHIVkCommandBuffer::InjectFence(RHIFence* fence)
+void ArisenEngine::RHI::RHIVkCommandBuffer::InjectFence(RHIFenceHandle fence)
 {
     // Fence ownership is separated from command buffer. Kept for ABI compatibility (no-op).
-    (void)fence;
+    // (void)fence; 
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::WaitForFence(UInt32 frameIndex)

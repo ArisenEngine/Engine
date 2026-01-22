@@ -1,19 +1,18 @@
 #pragma once
 #include "../../Common/CommandHeaders.h"
 #include "../RHICommon.h"
+#include "../Handles/RHIHandle.h"
 #include <string>
 
 namespace ArisenEngine::RHI
 {
-    class BufferHandle;
-    class ImageHandle;
     class RHISampler;
     struct RHISamplerDesc;
     class GPUProgram;
     struct GPUProgramDesc;
     class RHICommandBufferPool;
-    class GPURenderPass;
-    class FrameBuffer;
+    struct RenderPassDescriptor; // Assuming this exists or will be added
+    struct FrameBufferDescriptor; // Assuming this exists or will be added
 
     class RHIFactory
     {
@@ -27,19 +26,28 @@ namespace ArisenEngine::RHI
         virtual RHICommandBufferPool* CreateCommandBufferPool() = 0;
         virtual void ReleaseCommandBufferPool(RHICommandBufferPool* pool) = 0;
 
-        virtual GPURenderPass* CreateRenderPass() = 0;
-        virtual void ReleaseRenderPass(GPURenderPass* renderPass) = 0;
+        virtual RHIRenderPassHandle CreateRenderPass() = 0;
+        virtual void ReleaseRenderPass(RHIRenderPassHandle renderPass) = 0;
 
-        virtual FrameBuffer* CreateFrameBuffer() = 0;
-        virtual void ReleaseFrameBuffer(FrameBuffer* frameBuffer) = 0;
+        virtual RHIFrameBufferHandle CreateFrameBuffer() = 0;
+        virtual void ReleaseFrameBuffer(RHIFrameBufferHandle frameBuffer) = 0;
 
-        virtual BufferHandle* CreateBuffer(const std::string&& name = "Anonymous") = 0;
-        virtual void ReleaseBuffer(BufferHandle* bufferHandle) = 0;
+        virtual RHIBufferHandle CreateBuffer(const std::string&& name = "Anonymous") = 0;
+        virtual void ReleaseBuffer(RHIBufferHandle bufferHandle) = 0;
 
-        virtual ImageHandle* CreateImage(const std::string&& name = "Anonymous") = 0;
-        virtual void ReleaseImage(ImageHandle* imageHandle) = 0;
+        virtual RHIImageHandle CreateImage(const std::string&& name = "Anonymous") = 0;
+        virtual void ReleaseImage(RHIImageHandle imageHandle) = 0;
 
-        virtual RHISampler* CreateSampler(RHISamplerDesc&& desc) = 0;
-        virtual void ReleaseSampler(RHISampler* sampler) = 0;
+        virtual RHIImageViewHandle CreateImageView() = 0;
+        virtual void ReleaseImageView(RHIImageViewHandle imageViewMap) = 0;
+
+        virtual RHISamplerHandle CreateSampler(RHISamplerDesc&& desc) = 0;
+        virtual void ReleaseSampler(RHISamplerHandle sampler) = 0;
+
+        virtual RHISemaphoreHandle CreateSemaphore() = 0;
+        virtual void ReleaseSemaphore(RHISemaphoreHandle semaphore) = 0;
+
+        virtual RHIFenceHandle CreateFence(bool signaled = false) = 0;
+        virtual void ReleaseFence(RHIFenceHandle fence) = 0;
     };
 }

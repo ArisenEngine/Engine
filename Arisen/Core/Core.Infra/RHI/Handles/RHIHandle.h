@@ -27,6 +27,7 @@ template <typename T> struct RHIHandle {
 struct RHIBufferTag {};
 struct RHIImageTag {};
 struct RHISamplerTag {};
+struct RHIImageViewTag {};
 struct RHIShaderTag {};
 struct RHIPipelineTag {};
 struct RHICommandBufferTag {};
@@ -38,6 +39,7 @@ struct RHIFrameBufferTag {};
 
 using RHIBufferHandle = RHIHandle<RHIBufferTag>;
 using RHIImageHandle = RHIHandle<RHIImageTag>;
+using RHIImageViewHandle = RHIHandle<RHIImageViewTag>;
 using RHISamplerHandle = RHIHandle<RHISamplerTag>;
 using RHIShaderHandle = RHIHandle<RHIShaderTag>;
 using RHIPipelineHandle = RHIHandle<RHIPipelineTag>;

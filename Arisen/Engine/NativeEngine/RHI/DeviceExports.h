@@ -7,7 +7,7 @@
 typedef void* RHI_DeviceHandle;
 typedef void* RHI_CommandBufferPoolHandle;
 typedef void* RHI_CommandBufferHandle;
-typedef void* RHI_SamplerHandle;
+typedef unsigned long long RHI_SamplerHandle;
 typedef void* RHI_GPUProgramHandle;
 
 extern "C" ENGINE_DLL void RHI_Device_WaitIdle(RHI_DeviceHandle device);

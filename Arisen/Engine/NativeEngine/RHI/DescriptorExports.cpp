@@ -56,20 +56,20 @@ extern "C" ENGINE_DLL void RHI_DescriptorPool_UpdateDescriptorSet(RHI_Descriptor
     p->UpdateDescriptorSet(poolId, setIndex, s);
 }
 
-extern "C" ENGINE_DLL unsigned int RHI_Device_BindlessRegisterImage(RHI_DeviceHandle device, RHI_ImageHandle image)
+extern "C" ENGINE_DLL unsigned int RHI_Device_BindlessRegisterImage(RHI_DeviceHandle device, RHI_ImageViewHandle image)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
-    auto* img = reinterpret_cast<RHI::ImageHandle*>(image);
-    if (dev == nullptr || img == nullptr) return 0xFFFFFFFF;
-    return dev->RegisterBindlessResource(img);
+    if (dev == nullptr || image == 0) return 0xFFFFFFFF;
+    auto h = *reinterpret_cast<RHI::RHIImageViewHandle*>(&image);
+    return dev->RegisterBindlessResource(h);
 }
 
 extern "C" ENGINE_DLL unsigned int RHI_Device_BindlessRegisterBuffer(RHI_DeviceHandle device, RHI_BufferHandle buffer)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
-    auto* buf = reinterpret_cast<RHI::BufferHandle*>(buffer);
-    if (dev == nullptr || buf == nullptr) return 0xFFFFFFFF;
-    return dev->RegisterBindlessResource(buf);
+    if (dev == nullptr || buffer == 0) return 0xFFFFFFFF;
+    auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
+    return dev->RegisterBindlessResource(h);
 }
 
 

@@ -1,4 +1,4 @@
-﻿#include "RHIVkCommandBufferPool.h"
+#include "RHIVkCommandBufferPool.h"
 
 #include "RHIVkCommandBuffer.h"
 #include "../Devices/RHIVkDevice.h"

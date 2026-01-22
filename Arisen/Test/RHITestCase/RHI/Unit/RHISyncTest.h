@@ -56,8 +56,10 @@ namespace ArisenEngine::Testing
                     RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     VK_QUEUE_FAMILY_IGNORED,
                     VK_QUEUE_FAMILY_IGNORED,
-                    reinterpret_cast<RHI::ImageHandle*>(testImage),
-                    { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }
+                    *reinterpret_cast<RHI::RHIImageHandle*>(&testImage),
+                    { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 },
+                    RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                    RHI::PIPELINE_STAGE_TRANSFER_BIT
                 }
             };
 

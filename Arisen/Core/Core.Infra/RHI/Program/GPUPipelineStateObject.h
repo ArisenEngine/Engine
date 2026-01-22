@@ -63,7 +63,7 @@ namespace ArisenEngine::RHI
         /// @param shaderStageFlags 
         virtual void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
                                                    UInt32 descriptorCount, UInt32 shaderStageFlags,
-                                                   const Containers::Vector<std::shared_ptr<BufferHandle>>&& bufferHandles) = 0;
+                                                   const Containers::Vector<RHIBufferHandle>&& bufferHandles) = 0;
         /// 
         /// @param layoutIndex descriptorSetLayout index
         /// @param binding binding index in layout(set)
@@ -72,12 +72,12 @@ namespace ArisenEngine::RHI
         /// @param shaderStageFlags 
         virtual void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
                                                    UInt32 descriptorCount, UInt32 shaderStageFlags,
-                                                   const Containers::Vector<BufferView*>&& texelBufferViews) = 0;
+                                                   const Containers::Vector<RHIImageViewHandle>&& texelBufferViews) = 0;
 
         // Resource Binding (Auto-Layout compatible)
         virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos) = 0;
-        virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<std::shared_ptr<BufferHandle>>&& bufferHandles) = 0;
-        virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<BufferView*>&& texelBufferViews) = 0;
+        virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIBufferHandle>&& bufferHandles) = 0;
+        virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIImageViewHandle>&& texelBufferViews) = 0;
 
         virtual void ClearDescriptorSetLayoutBindings() = 0;
        

@@ -1,4 +1,4 @@
-﻿
+
 #include "RHIVkGPUPipelineStateObject.h"
 #include "RHIVkGPUPipeline.h"
 #include <vulkan/vulkan.h>
@@ -297,10 +297,11 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBindi
         {}, {});
 }
 
+// Update method signature for RHIBufferHandle
 void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(
 UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
                                                UInt32 descriptorCount, UInt32 shaderStageFlags,
-                                               const Containers::Vector<std::shared_ptr<BufferHandle>>&& bufferHandles)
+                                               const Containers::Vector<RHIBufferHandle>&& bufferHandles)
 {
 
     ASSERT(descriptorCount == bufferHandles.size());
@@ -309,10 +310,11 @@ UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
       std::move(bufferHandles), {});
 }
 
+// Update method signature for RHIImageViewHandle
 void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(
 UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
                                               UInt32 descriptorCount, UInt32 shaderStageFlags,
-                                              const Containers::Vector<BufferView*>&& bufferViews)
+                                              const Containers::Vector<RHIImageViewHandle>&& bufferViews)
 {
     ASSERT(descriptorCount == bufferViews.size());
     InternalAddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, nullptr);
@@ -364,7 +366,7 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorSetLay
 
 void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorUpdateInfo(UInt32 layoutIndex, UInt32 binding,EDescriptorType type,
             UInt32 descriptorCount, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos,
-            const Containers::Vector<std::shared_ptr<BufferHandle>>&& bufferHandles, const Containers::Vector<BufferView*>&& bufferViews)
+            const Containers::Vector<RHIBufferHandle>&& bufferHandles, const Containers::Vector<RHIImageViewHandle>&& bufferViews)
 {
     if (!m_DescriptorUpdateInfos.contains(layoutIndex))
     {
@@ -412,7 +414,7 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::UpdateDescriptorSet(UInt32 
 }
 
 void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding,
-    const Containers::Vector<std::shared_ptr<BufferHandle>>&& bufferHandles)
+    const Containers::Vector<RHIBufferHandle>&& bufferHandles)
 {
     if (!m_DescriptorSetLayoutBindings.contains(layoutIndex)) return;
     
@@ -436,7 +438,7 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::UpdateDescriptorSet(UInt32 
 }
 
 void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding,
-    const Containers::Vector<BufferView*>&& texelBufferViews)
+    const Containers::Vector<RHIImageViewHandle>&& texelBufferViews)
 {
      if (!m_DescriptorSetLayoutBindings.contains(layoutIndex)) return;
     

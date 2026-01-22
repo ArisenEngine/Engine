@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "RHI/Surfaces/Attachment.h"
 
 namespace ArisenEngine::RHI

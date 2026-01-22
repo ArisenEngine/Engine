@@ -1,5 +1,8 @@
 #include "RHIVkSwapChain.h"
 #include "Logger/Logger.h"
+#include "../Devices/RHIVkDevice.h"
+#include "../Devices/RHIVkFactory.h"
+#include "RHI/Enums/Image/CompositeAlphaFlagBits.h"
 #include "RHI/Enums/Image/EImageAspectFlagBits.h"
 
 ArisenEngine::RHI::RHIVkSwapChain::RHIVkSwapChain(RHIDevice* device, const RHIVkSurface* surface, UInt32 maxFramesInFlight):
@@ -74,6 +77,7 @@ void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
     }
     
     m_ImageHandles.resize(actualImageCount);
+    m_ImageViewHandles.resize(actualImageCount);
     images.resize(actualImageCount);
 
     if (vkGetSwapchainImagesKHR(m_VkDevice, m_VkSwapChain, &actualImageCount, images.data()) != VK_SUCCESS)
@@ -81,29 +85,30 @@ void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
         LOG_FATAL_AND_THROW("[RHIVkSwapChain::CreateSwapChainWithDesc]: failed to query images !");
     }
     
+    auto* factory = m_Device->GetFactory();
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+
     for (int i = 0; i < images.size(); ++i)
     {
-        VkImage image = images[i];
-        ImageViewDesc desc
-        {
-            IMAGE_VIEW_TYPE_2D,
-            m_Desc.colorFormat,
-            IMAGE_ASPECT_COLOR_BIT,
-            0,1,0,1,
-        };
+        m_ImageHandles[i] = factory->CreateImage("SwapChainImage_" + std::to_string(i));
+        auto* imageItem = vkDevice->GetImagePool()->Get(m_ImageHandles[i]);
+        imageItem->image = images[i];
+        imageItem->needDestroy = false; // Swapchain owns these images
 
-        desc.componentMapping.emplace(
-            COMPONENT_SWIZZLE_IDENTITY,
-            COMPONENT_SWIZZLE_IDENTITY,
-            COMPONENT_SWIZZLE_IDENTITY,
-            COMPONENT_SWIZZLE_IDENTITY
-        );
-        desc.width = m_Desc.width;
-        desc.height = m_Desc.height;
+        m_ImageViewHandles[i] = factory->CreateImageView();
         
-        m_ImageHandles[i] = std::make_unique<RHIVkImageHandle>(m_Device, image, desc);
-    }
+        ImageViewDesc viewDesc;
+        viewDesc.viewType = IMAGE_VIEW_TYPE_2D;
+        viewDesc.format = m_Desc.colorFormat;
+        viewDesc.baseMipLevel = 0;
+        viewDesc.levelCount = 1;
+        viewDesc.baseArrayLayer = 0;
+        viewDesc.layerCount = 1;
+        viewDesc.width = m_Desc.width;
+        viewDesc.height = m_Desc.height;
 
+        vkDevice->AllocImageView(m_ImageViewHandles[i], m_ImageHandles[i], std::move(viewDesc));
+    }
 }
 
 ArisenEngine::RHI::RHISemaphore* ArisenEngine::RHI::RHIVkSwapChain::GetImageAvailableSemaphore(UInt32 currentFrame) const
@@ -116,7 +121,7 @@ ArisenEngine::RHI::RHISemaphore* ArisenEngine::RHI::RHIVkSwapChain::GetRenderFin
     return m_RenderFinishSemaphores[currentFrame % m_MaxFramesInFlight].get();
 }
 
-ArisenEngine::RHI::ImageHandle* ArisenEngine::RHI::RHIVkSwapChain::AquireCurrentImage(UInt32 frameIndex)
+ArisenEngine::RHI::RHIImageHandle ArisenEngine::RHI::RHIVkSwapChain::AquireCurrentImage(UInt32 frameIndex)
 {
     auto currentFrame = frameIndex % m_MaxFramesInFlight;
     uint32_t imageIndex = 0;
@@ -127,15 +132,31 @@ ArisenEngine::RHI::ImageHandle* ArisenEngine::RHI::RHIVkSwapChain::AquireCurrent
     {
         std::string msg = "[RHIVkSwapChain::AquireCurrentImage]: failed to acquire next image (frame " + std::to_string(frameIndex) + ") result: " + std::to_string(result);
         LOG_ERROR(msg);
-        return nullptr;
+        return RHIImageHandle::Invalid();
     }
     m_AcquiredImageIndices[currentFrame] = imageIndex;
-    return m_ImageHandles[imageIndex].get();
+    return m_ImageHandles[imageIndex];
 }
 
 void ArisenEngine::RHI::RHIVkSwapChain::Cleanup()
 {
+    auto* factory = m_Device->GetFactory();
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+
+    for (auto h : m_ImageViewHandles) {
+        vkDevice->FreeImageView(h);
+        factory->ReleaseImageView(h);
+    }
+    for (auto h : m_ImageHandles) {
+        // vkDevice->FreeImage(h); // We don't free images from swapchain, they are not ours.
+        // But we should clear the pool item.
+        auto* item = vkDevice->GetImagePool()->Get(h);
+        if (item) item->image = VK_NULL_HANDLE;
+        factory->ReleaseImage(h);
+    }
     m_ImageHandles.clear();
+    m_ImageViewHandles.clear();
+
     if (m_VkSwapChain != VK_NULL_HANDLE && m_VkDevice != VK_NULL_HANDLE)
     {
         LOG_INFO("[RHIVkSwapChain::~RHIVkSwapChain]: Destroy Vulkan SwapChain");

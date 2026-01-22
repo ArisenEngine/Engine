@@ -3,11 +3,10 @@
 #include "../Program/RHIVkGPUProgram.h"
 #include "../CommandBuffer/RHIVkCommandBufferPool.h"
 #include "../Program/RHIVkGPURenderPass.h"
-#include "../Surfaces/RHIVkFrameBuffer.h"
-#include "../Handles/RHIVkBufferHandle.h"
-#include "../Handles/RHIVkImageHandle.h"
-#include "../Program/RHIVkSampler.h"
+// #include "../Surfaces/RHIVkFrameBufferPoolItem.h"
+#include "../Handles/RHIVkResourcePools.h"
 #include "RHI/RHIInstance.h"
+#include "../VkInitializer.h"
 
 namespace ArisenEngine::RHI
 {
@@ -54,86 +53,222 @@ namespace ArisenEngine::RHI
         }
     }
 
-    GPURenderPass* RHIVkFactory::CreateRenderPass()
+    RHIRenderPassHandle RHIVkFactory::CreateRenderPass()
     {
-        return new RHIVkGPURenderPass(m_Device, m_Device->GetInstance()->GetMaxFramesInFlight());
+        auto* rp = new RHIVkRenderPassPoolItem();
+        // Note: Actual VkRenderPass is created in Alloc later (if applicable)
+        // or we can keep existing logic if we move it.
+        return m_Device->GetRenderPassPool()->Allocate(rp);
     }
 
-    void RHIVkFactory::ReleaseRenderPass(GPURenderPass* renderPass)
+    void RHIVkFactory::ReleaseRenderPass(RHIRenderPassHandle renderPass)
     {
-        if (renderPass)
+        auto* rp = m_Device->GetRenderPassPool()->Deallocate(renderPass);
+        if (rp)
         {
-            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [renderPass]()
+            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [rp]()
             {
-                delete renderPass;
+                // TODO: Cleanup internal rp->renderPass if it exists
+                delete rp;
             });
         }
     }
 
-    FrameBuffer* RHIVkFactory::CreateFrameBuffer()
+    RHIFrameBufferHandle RHIVkFactory::CreateFrameBuffer()
     {
-        return new RHIVkFrameBuffer(m_Device, m_Device->GetInstance()->GetMaxFramesInFlight());
+        auto* fb = new RHIVkFrameBufferPoolItem();
+        return m_Device->GetFrameBufferPool()->Allocate(fb);
     }
 
-    void RHIVkFactory::ReleaseFrameBuffer(FrameBuffer* frameBuffer)
+    void RHIVkFactory::ReleaseFrameBuffer(RHIFrameBufferHandle frameBuffer)
     {
-        if (frameBuffer)
+        auto* fb = m_Device->GetFrameBufferPool()->Deallocate(frameBuffer);
+        if (fb)
         {
-            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [frameBuffer]()
+            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [fb]()
             {
-                delete frameBuffer;
+                delete fb;
             });
         }
     }
 
-    BufferHandle* RHIVkFactory::CreateBuffer(const std::string&& name)
+    RHIBufferHandle RHIVkFactory::CreateBuffer(const std::string&& name)
     {
-        auto* bufferHandle = new RHIVkBufferHandle(m_Device);
-        bufferHandle->SetName(std::move(name));
-        return bufferHandle;
+        auto* buffer = new RHIVkBufferPoolItem();
+        buffer->name = std::move(name);
+        return m_Device->GetBufferPool()->Allocate(buffer);
     }
 
-    void RHIVkFactory::ReleaseBuffer(BufferHandle* bufferHandle)
+    void RHIVkFactory::ReleaseBuffer(RHIBufferHandle bufferHandle)
     {
-        if (bufferHandle)
+        auto* buffer = m_Device->GetBufferPool()->Deallocate(bufferHandle);
+        if (buffer)
         {
-            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [bufferHandle]()
+            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [buffer]()
             {
-                delete bufferHandle;
+                delete buffer;
             });
         }
     }
 
-    ImageHandle* RHIVkFactory::CreateImage(const std::string&& name)
+    RHIImageHandle RHIVkFactory::CreateImage(const std::string&& name)
     {
-        auto* imageHandle = new RHIVkImageHandle(m_Device);
-        imageHandle->SetName(std::move(name));
-        return imageHandle;
+        auto* image = new RHIVkImagePoolItem();
+        image->name = std::move(name);
+        return m_Device->GetImagePool()->Allocate(image);
     }
 
-    void RHIVkFactory::ReleaseImage(ImageHandle* imageHandle)
+    void RHIVkFactory::ReleaseImage(RHIImageHandle imageHandle)
     {
-        if (imageHandle)
+        auto* image = m_Device->GetImagePool()->Deallocate(imageHandle);
+        if (image)
         {
-            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [imageHandle]()
+            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [image]()
             {
-                delete imageHandle;
+                delete image;
             });
         }
     }
 
-    RHISampler* RHIVkFactory::CreateSampler(RHISamplerDesc&& desc)
+    RHIImageViewHandle RHIVkFactory::CreateImageView()
     {
-        return new RHIVkSampler(m_Device, std::move(desc));
+        auto* view = new RHIVkImageViewPoolItem();
+        return m_Device->GetImageViewPool()->Allocate(view);
     }
 
-    void RHIVkFactory::ReleaseSampler(RHISampler* sampler)
+    void RHIVkFactory::ReleaseImageView(RHIImageViewHandle imageViewHandle)
     {
+        auto* view = m_Device->GetImageViewPool()->Deallocate(imageViewHandle);
+        if (view)
+        {
+            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [view]()
+            {
+                delete view;
+            });
+        }
+    }
+
+    RHISamplerHandle RHIVkFactory::CreateSampler(RHISamplerDesc&& desc)
+    {
+        auto* sampler = new RHIVkSamplerPoolItem();
+        auto samplerInfo = SamplerCreateInfo(std::move(desc));
+        if (vkCreateSampler(static_cast<VkDevice>(m_Device->GetHandle()), &samplerInfo, nullptr, &sampler->sampler) != VK_SUCCESS)
+        {
+            LOG_ERROR("[RHIVkFactory::CreateSampler]: failed to create texture sampler!");
+        }
+
+        struct DeferredVkSampler {
+            VkDevice device;
+            VkSampler sampler;
+            ~DeferredVkSampler() {
+                if (device != VK_NULL_HANDLE && sampler != VK_NULL_HANDLE) {
+                    vkDestroySampler(device, sampler, nullptr);
+                }
+            }
+        };
+        auto* deferred = new DeferredVkSampler{ static_cast<VkDevice>(m_Device->GetHandle()), sampler->sampler };
+        sampler->registryHandle = m_Device->GetResourceRegistry()->Create(MakeDeferredDeleteItem(deferred));
+
+        return m_Device->GetSamplerPool()->Allocate(sampler);
+    }
+
+    void RHIVkFactory::ReleaseSampler(RHISamplerHandle samplerHandle)
+    {
+        auto* sampler = m_Device->GetSamplerPool()->Deallocate(samplerHandle);
         if (sampler)
         {
-            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [sampler]()
+            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [sampler, this]()
             {
+                if (sampler->sampler != VK_NULL_HANDLE)
+                {
+                    m_Device->GetResourceRegistry()->Release(sampler->registryHandle, RHIQueueType::Graphics, m_Device->GetCompletedSubmitId());
+                }
                 delete sampler;
+            });
+        }
+    }
+
+    RHISemaphoreHandle RHIVkFactory::CreateSemaphore()
+    {
+        auto* sem = new RHIVkSemaphorePoolItem();
+        VkSemaphoreCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        
+        if (vkCreateSemaphore(static_cast<VkDevice>(m_Device->GetHandle()), &createInfo, nullptr, &sem->semaphore) != VK_SUCCESS)
+        {
+            LOG_ERROR("[RHIVkFactory::CreateSemaphore]: failed to create semaphore!");
+        }
+
+        struct DeferredVkSemaphore {
+            VkDevice device;
+            VkSemaphore semaphore;
+            ~DeferredVkSemaphore() {
+                if (device != VK_NULL_HANDLE && semaphore != VK_NULL_HANDLE) {
+                    vkDestroySemaphore(device, semaphore, nullptr);
+                }
+            }
+        };
+        auto* deferred = new DeferredVkSemaphore{ static_cast<VkDevice>(m_Device->GetHandle()), sem->semaphore };
+        sem->registryHandle = m_Device->GetResourceRegistry()->Create(MakeDeferredDeleteItem(deferred));
+
+        return m_Device->GetSemaphorePool()->Allocate(sem);
+    }
+
+    void RHIVkFactory::ReleaseSemaphore(RHISemaphoreHandle semaphoreHandle)
+    {
+        auto* sem = m_Device->GetSemaphorePool()->Deallocate(semaphoreHandle);
+        if (sem)
+        {
+            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [sem, this]()
+            {
+                if (sem->semaphore != VK_NULL_HANDLE)
+                {
+                    m_Device->GetResourceRegistry()->Release(sem->registryHandle, RHIQueueType::Graphics, m_Device->GetCompletedSubmitId());
+                }
+                delete sem;
+            });
+        }
+    }
+
+    RHIFenceHandle RHIVkFactory::CreateFence(bool signaled)
+    {
+        auto* fence = new RHIVkFencePoolItem();
+        VkFenceCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        if (signaled) createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+        if (vkCreateFence(static_cast<VkDevice>(m_Device->GetHandle()), &createInfo, nullptr, &fence->fence) != VK_SUCCESS)
+        {
+            LOG_ERROR("[RHIVkFactory::CreateFence]: failed to create fence!");
+        }
+
+        struct DeferredVkFence {
+            VkDevice device;
+            VkFence fence;
+            ~DeferredVkFence() {
+                if (device != VK_NULL_HANDLE && fence != VK_NULL_HANDLE) {
+                    vkDestroyFence(device, fence, nullptr);
+                }
+            }
+        };
+        auto* deferred = new DeferredVkFence{ static_cast<VkDevice>(m_Device->GetHandle()), fence->fence };
+        fence->registryHandle = m_Device->GetResourceRegistry()->Create(MakeDeferredDeleteItem(deferred));
+
+        return m_Device->GetFencePool()->Allocate(fence);
+    }
+
+    void RHIVkFactory::ReleaseFence(RHIFenceHandle fenceHandle)
+    {
+        auto* f = m_Device->GetFencePool()->Deallocate(fenceHandle);
+        if (f)
+        {
+            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [f, this]()
+            {
+                if (f->fence != VK_NULL_HANDLE)
+                {
+                    m_Device->GetResourceRegistry()->Release(f->registryHandle, RHIQueueType::Graphics, m_Device->GetCompletedSubmitId());
+                }
+                delete f;
             });
         }
     }
