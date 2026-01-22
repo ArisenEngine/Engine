@@ -121,6 +121,12 @@ ArisenEngine::RHI::RHISemaphore* ArisenEngine::RHI::RHIVkSwapChain::GetRenderFin
     return m_RenderFinishSemaphores[currentFrame % m_MaxFramesInFlight].get();
 }
 
+ArisenEngine::RHI::RHIImageViewHandle ArisenEngine::RHI::RHIVkSwapChain::GetImageView(UInt32 frameIndex) const
+{
+    auto currentFrame = frameIndex % m_MaxFramesInFlight;
+    return m_ImageViewHandles[m_AcquiredImageIndices[currentFrame]];
+}
+
 ArisenEngine::RHI::RHIImageHandle ArisenEngine::RHI::RHIVkSwapChain::AquireCurrentImage(UInt32 frameIndex)
 {
     auto currentFrame = frameIndex % m_MaxFramesInFlight;

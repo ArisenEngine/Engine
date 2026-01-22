@@ -41,6 +41,7 @@ struct RHIVkImagePoolItem {
  */
 struct RHIVkImageViewPoolItem {
     VkImageView view{VK_NULL_HANDLE};
+    RHIImageHandle imageHandle; // The image this view belongs to
     EFormat format{EFormat::FORMAT_UNDEFINED};
     UInt32 width{0};
     UInt32 height{0};

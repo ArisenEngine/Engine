@@ -44,6 +44,7 @@ namespace ArisenEngine::RHI
         virtual RHISemaphore* GetImageAvailableSemaphore(UInt32 frameIndex) const = 0;
         virtual RHISemaphore* GetRenderFinishSemaphore(UInt32 frameIndex) const  = 0;
         virtual RHIImageHandle AquireCurrentImage(UInt32 frameIndex) = 0;
+        virtual RHIImageViewHandle GetImageView(UInt32 frameIndex) const = 0;
         virtual void Present(UInt32 frameIndex) = 0;
         virtual void Cleanup() = 0;
     protected:

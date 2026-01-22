@@ -510,6 +510,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImageView(RHIImageViewHandle handle, R
     }
 
     viewItem->format = desc.format;
+    viewItem->imageHandle = imageHandle;
     viewItem->width = desc.width.value_or(0);
     viewItem->height = desc.height.value_or(0);
 
@@ -540,6 +541,13 @@ void ArisenEngine::RHI::RHIVkDevice::FreeImageView(RHIImageViewHandle handle)
         viewItem->view = VK_NULL_HANDLE;
         viewItem->registryHandle = RHIResourceHandle::Invalid();
     }
+}
+
+ArisenEngine::RHI::RHIImageViewHandle ArisenEngine::RHI::RHIVkDevice::FindImageViewForImage(RHIImageHandle imageHandle)
+{
+    return m_ImageViewPool->FindHandle([imageHandle](const RHIVkImageViewPoolItem& item) {
+        return item.imageHandle == imageHandle;
+    });
 }
 
 ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept

@@ -33,4 +33,4 @@ extern "C" ENGINE_DLL ArisenEngine::RHI::EFormat RHI_ImageView_GetFormat(RHI_Dev
 extern "C" ENGINE_DLL unsigned int RHI_ImageView_GetWidth(RHI_DeviceHandle device, RHI_ImageViewHandle view);
 extern "C" ENGINE_DLL unsigned int RHI_ImageView_GetHeight(RHI_DeviceHandle device, RHI_ImageViewHandle view);
 
-
+extern "C" ENGINE_DLL RHI_ImageViewHandle RHI_Image_GetView(RHI_DeviceHandle device, RHI_ImageHandle image);

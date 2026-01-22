@@ -112,7 +112,8 @@ namespace ArisenEngine::RHI
         virtual void FreeImage(RHIImageHandle handle) {}
 
         virtual bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, ImageViewDesc&& desc) { return false; }
-        virtual void FreeImageView(RHIImageViewHandle handle) {}
+        virtual void FreeImageView(RHIImageViewHandle handle) = 0;
+        virtual RHIImageViewHandle FindImageViewForImage(RHIImageHandle imageHandle) = 0;
         
     protected:
         

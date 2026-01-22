@@ -1,5 +1,6 @@
 #include "SurfaceExports.h"
 #include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
+#include "../../Core/RHI.Vulkan/Surfaces/RHIVkSwapChain.h"
 #include <unordered_map>
 #include <mutex>
 
@@ -64,6 +65,14 @@ extern "C" ENGINE_DLL RHI::RHISemaphore* RHI_SwapChain_GetRenderFinishSemaphore(
     auto* sc = reinterpret_cast<RHI::SwapChain*>(swapchain);
     if (sc == nullptr) return nullptr;
     return sc->GetRenderFinishSemaphore(frameIndex);
+}
+
+extern "C" ENGINE_DLL RHI_ImageViewHandle RHI_SwapChain_GetImageView(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
+{
+    auto* sc = reinterpret_cast<RHI::SwapChain*>(swapchain);
+    if (sc == nullptr) return 0ULL;
+    auto hView = sc->GetImageView(frameIndex);
+    return *reinterpret_cast<unsigned long long*>(&hView);
 }
 
 extern "C" ENGINE_DLL RHI_FrameBufferHandle RHI_Device_GetFrameBuffer(RHI_DeviceHandle device)

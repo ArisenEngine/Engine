@@ -22,6 +22,7 @@ extern "C" ENGINE_DLL void RHI_SwapChain_Present(RHI_SwapChainHandle swapchain, 
 extern "C" ENGINE_DLL RHI_ImageHandle RHI_SwapChain_AquireCurrentImage(RHI_SwapChainHandle swapchain, unsigned int frameIndex);
 extern "C" ENGINE_DLL ArisenEngine::RHI::RHISemaphore* RHI_SwapChain_GetImageAvailableSemaphore(RHI_SwapChainHandle swapchain, unsigned int frameIndex);
 extern "C" ENGINE_DLL ArisenEngine::RHI::RHISemaphore* RHI_SwapChain_GetRenderFinishSemaphore(RHI_SwapChainHandle swapchain, unsigned int frameIndex);
+extern "C" ENGINE_DLL RHI_ImageViewHandle RHI_SwapChain_GetImageView(RHI_SwapChainHandle swapchain, unsigned int frameIndex);
 
 extern "C" ENGINE_DLL RHI_FrameBufferHandle RHI_Device_GetFrameBuffer(RHI_DeviceHandle device);
 extern "C" ENGINE_DLL void RHI_Device_ReleaseFrameBuffer(RHI_DeviceHandle device, RHI_FrameBufferHandle fb);

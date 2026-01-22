@@ -121,6 +121,24 @@ public:
     }
   }
 
+  /**
+   * @brief Finds the first handle whose resource matches the predicate.
+   */
+  template <typename TPredicate>
+  THandle FindHandle(TPredicate&& predicate) const {
+    std::lock_guard<std::mutex> lock(m_Mutex);
+    for (size_t i = 0; i < m_Entries.size(); ++i) {
+      const auto& entry = m_Entries[i];
+      if (entry.resource && predicate(*entry.resource)) {
+        THandle handle;
+        handle.index = static_cast<UInt32>(i);
+        handle.generation = entry.generation;
+        return handle;
+      }
+    }
+    return THandle::Invalid();
+  }
+
 private:
   mutable std::mutex m_Mutex;
   Containers::Vector<PoolEntry> m_Entries;

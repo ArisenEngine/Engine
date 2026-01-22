@@ -191,4 +191,11 @@ extern "C" ENGINE_DLL unsigned int RHI_ImageView_GetHeight(RHI_DeviceHandle devi
     return 0;
 }
 
-
+extern "C" ENGINE_DLL RHI_ImageViewHandle RHI_Image_GetView(RHI_DeviceHandle device, RHI_ImageHandle image)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || image == 0) return 0ULL;
+    auto hImg = *reinterpret_cast<RHI::RHIImageHandle*>(&image);
+    auto hView = dev->FindImageViewForImage(hImg);
+    return *reinterpret_cast<unsigned long long*>(&hView);
+}
