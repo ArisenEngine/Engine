@@ -7,6 +7,7 @@ Release
 !Arisen/3rdparty/dxc/bin/
 !Arisen/3rdparty/dxc/bin/*
 .vscode
+.codebuddy
 build
 Projects
 Scripts/Windows/tools/*
