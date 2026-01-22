@@ -19,6 +19,20 @@ public:
   explicit RHIResourceRegistry(IRHIDeferredDeletionQueue *deletionQueue)
       : m_DeletionQueue(deletionQueue) {}
 
+  ~RHIResourceRegistry() {
+    std::lock_guard<std::mutex> lock(m_Mutex);
+    for (size_t i = 0; i < m_Entries.size(); ++i) {
+      auto &e = m_Entries[i];
+      if (e.refCount > 0 && e.item.ptr && e.item.deleter && m_DeletionQueue) {
+        // GPU is usually idle during registry destruction (shutdown), 
+        // so we can use a ticket of 0.
+        m_DeletionQueue->Enqueue(RHIQueueType::Graphics, 0, e.item);
+        e.refCount = 0;
+        e.item = {};
+      }
+    }
+  }
+
   // Create a new entry with refCount=1.
   // item is the object + deleter; backend-specific cleanup should live in the
   // object's destructor.

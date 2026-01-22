@@ -12,11 +12,31 @@ namespace ArisenEngine::RHI {
 class GPUPipeline;
 
 /**
+ * @brief Shared state for a Vulkan Buffer and its memory.
+ */
+struct RHIVkBufferState {
+    VkDevice device{VK_NULL_HANDLE};
+    VkBuffer buffer{VK_NULL_HANDLE};
+    VmaAllocator allocator{VK_NULL_HANDLE};
+    VmaAllocation allocation{VK_NULL_HANDLE};
+
+    ~RHIVkBufferState() {
+        if (device != VK_NULL_HANDLE && buffer != VK_NULL_HANDLE) {
+            vkDestroyBuffer(device, buffer, nullptr);
+        }
+        if (allocator != VK_NULL_HANDLE && allocation != VK_NULL_HANDLE) {
+            vmaFreeMemory(allocator, allocation);
+        }
+    }
+};
+
+/**
  * @brief Internal Vulkan implementation data for a Buffer.
  */
 struct RHIVkBufferPoolItem {
-    VkBuffer buffer{VK_NULL_HANDLE};
-    VmaAllocation allocation{VK_NULL_HANDLE};
+    RHIVkBufferState* state{nullptr};
+    VkBuffer buffer{VK_NULL_HANDLE};      // Cached for fast access
+    VmaAllocation allocation{VK_NULL_HANDLE}; // Cached for fast access
     UInt64 size{0};
     UInt64 offset{0};
     UInt64 range{0};
@@ -25,11 +45,31 @@ struct RHIVkBufferPoolItem {
 };
 
 /**
+ * @brief Shared state for a Vulkan Image and its memory.
+ */
+struct RHIVkImageState {
+    VkDevice device{VK_NULL_HANDLE};
+    VkImage image{VK_NULL_HANDLE};
+    VmaAllocator allocator{VK_NULL_HANDLE};
+    VmaAllocation allocation{VK_NULL_HANDLE};
+
+    ~RHIVkImageState() {
+        if (device != VK_NULL_HANDLE && image != VK_NULL_HANDLE) {
+            vkDestroyImage(device, image, nullptr);
+        }
+        if (allocator != VK_NULL_HANDLE && allocation != VK_NULL_HANDLE) {
+            vmaFreeMemory(allocator, allocation);
+        }
+    }
+};
+
+/**
  * @brief Internal Vulkan implementation data for an Image.
  */
 struct RHIVkImagePoolItem {
-    VkImage image{VK_NULL_HANDLE};
-    VmaAllocation allocation{VK_NULL_HANDLE};
+    RHIVkImageState* state{nullptr};
+    VkImage image{VK_NULL_HANDLE};        // Cached for fast access
+    VmaAllocation allocation{VK_NULL_HANDLE}; // Cached for fast access
     UInt64 size{0};
     std::string name{"Anonymous"};
     bool needDestroy{false};

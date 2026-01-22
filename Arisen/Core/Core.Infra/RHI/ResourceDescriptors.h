@@ -41,6 +41,7 @@ struct ImageDescriptor {
 struct ImageViewDesc {
     EImageViewType viewType;
     EFormat format;
+    UInt32 aspectMask;
     UInt32 baseMipLevel;
     UInt32 levelCount;
     UInt32 baseArrayLayer;
