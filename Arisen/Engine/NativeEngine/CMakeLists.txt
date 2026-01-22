@@ -19,6 +19,7 @@ target_include_directories(NativeEngine PRIVATE
     ${CMAKE_SOURCE_DIR}/Core/Core.Infra
     ${CMAKE_SOURCE_DIR}/Core/Core.Debugger
     ${CMAKE_SOURCE_DIR}/Core/Core.Platform
+    ${CMAKE_SOURCE_DIR}/3rdparty/vulkan/Include
     )  
 
 

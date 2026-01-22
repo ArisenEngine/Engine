@@ -1,7 +1,7 @@
 #include "RHIVkBindlessManager.h"
 #include "../Devices/RHIVkDevice.h"
-#include "../Handles/RHIVkImageHandle.h"
-#include "../Handles/RHIVkBufferHandle.h"
+// #include "../Handles/RHIVkImageHandle.h"
+// #include "../Handles/RHIVkBufferHandle.h"
 #include "../Program/RHIVkSampler.h"
 #include "../VkInitializer.h"
 
@@ -137,25 +137,23 @@ namespace ArisenEngine::RHI
         m_DescriptorSet = VK_NULL_HANDLE;
     }
 
-    UInt32 RHIVkBindlessManager::RegisterImage(ImageHandle* image)
+    UInt32 RHIVkBindlessManager::RegisterImage(RHIImageViewHandle image)
     {
         UInt32 index = AcquireIndex(m_ImageFreeList);
         if (index == 0xFFFFFFFF) return index;
 
         VkDevice vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
-        RHIVkImageHandle* vkImage = static_cast<RHIVkImageHandle*>(image);
+        auto* imageViewItem = m_Device->GetImageViewPool()->Get(image);
+        if (!imageViewItem)
+        {
+             LOG_ERROR("[RHIVkBindlessManager::RegisterImage]: Invalid ImageViewHandle!");
+             ReleaseIndex(m_ImageFreeList, index);
+             return 0xFFFFFFFF;
+        }
 
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        
-        MemoryView* view = image->GetMemoryView();
-        if (!view)
-        {
-            LOG_ERROR("[RHIVkBindlessManager::RegisterImage]: Image " + image->GetName() + " has no memory view!");
-            return 0xFFFFFFFF;
-        }
-        
-        imageInfo.imageView = static_cast<VkImageView>(view->GetView());
+        imageInfo.imageView = imageViewItem->view;
         imageInfo.sampler = VK_NULL_HANDLE;
 
         VkWriteDescriptorSet write{};
@@ -172,16 +170,22 @@ namespace ArisenEngine::RHI
         return index;
     }
 
-    UInt32 RHIVkBindlessManager::RegisterSampler(RHISampler* sampler)
+    UInt32 RHIVkBindlessManager::RegisterSampler(RHISamplerHandle sampler)
     {
         UInt32 index = AcquireIndex(m_SamplerFreeList);
         if (index == 0xFFFFFFFF) return index;
 
         VkDevice vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
-        RHIVkSampler* vkSampler = static_cast<RHIVkSampler*>(sampler);
+        auto* samplerItem = m_Device->GetSamplerPool()->Get(sampler);
+        if (!samplerItem)
+        {
+             LOG_ERROR("[RHIVkBindlessManager::RegisterSampler]: Invalid SamplerHandle!");
+             ReleaseIndex(m_SamplerFreeList, index);
+             return 0xFFFFFFFF;
+        }
 
         VkDescriptorImageInfo samplerInfo{};
-        samplerInfo.sampler = static_cast<VkSampler>(vkSampler->GetHandle());
+        samplerInfo.sampler = samplerItem->sampler;
 
         VkWriteDescriptorSet write{};
         write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -197,18 +201,24 @@ namespace ArisenEngine::RHI
         return index;
     }
 
-    UInt32 RHIVkBindlessManager::RegisterBuffer(BufferHandle* buffer)
+    UInt32 RHIVkBindlessManager::RegisterBuffer(RHIBufferHandle buffer)
     {
         UInt32 index = AcquireIndex(m_BufferFreeList);
         if (index == 0xFFFFFFFF) return index;
 
         VkDevice vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
-        RHIVkBufferHandle* vkBuffer = static_cast<RHIVkBufferHandle*>(buffer);
+        auto* bufferItem = m_Device->GetBufferPool()->Get(buffer);
+        if (!bufferItem)
+        {
+             LOG_ERROR("[RHIVkBindlessManager::RegisterBuffer]: Invalid BufferHandle!");
+             ReleaseIndex(m_BufferFreeList, index);
+             return 0xFFFFFFFF;
+        }
 
         VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = static_cast<VkBuffer>(vkBuffer->GetHandle());
+        bufferInfo.buffer = bufferItem->buffer;
         bufferInfo.offset = 0;
-        bufferInfo.range = vkBuffer->BufferSize();
+        bufferInfo.range = bufferItem->range; // Use allocated range
 
         VkWriteDescriptorSet write{};
         write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

@@ -1,4 +1,4 @@
-﻿#include "RHIVkAttachment.h"
+#include "RHIVkAttachment.h"
 
 #include <vulkan/vulkan_core.h>
 

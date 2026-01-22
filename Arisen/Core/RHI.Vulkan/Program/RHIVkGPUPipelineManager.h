@@ -15,12 +15,13 @@ namespace ArisenEngine::RHI
         RHIVkGPUPipelineManager(RHIVkDevice* device, UInt32 maxFramesInFlight);
         ~RHIVkGPUPipelineManager() noexcept override;
 
-        GPUPipeline* GetGraphicsPipeline(GPUPipelineStateObject* pso) override;
+        RHIPipelineHandle GetGraphicsPipeline(GPUPipelineStateObject* pso) override;
         std::unique_ptr<GPUPipelineStateObject> GetPipelineState() override;
     private:
         
         RHIVkDevice* m_Device;
         Containers::Map<UInt32, std::unique_ptr<GPUPipeline>> m_GPUPipelines;
+        Containers::Map<UInt32, RHIPipelineHandle> m_PipelineHandles;
 
     };
 }

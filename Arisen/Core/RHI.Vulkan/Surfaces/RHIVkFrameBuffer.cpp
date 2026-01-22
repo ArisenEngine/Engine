@@ -1,6 +1,5 @@
-﻿#include "RHIVkFrameBuffer.h"
+#include "RHIVkFrameBuffer.h"
 #include "../Program/RHIVkGPURenderPass.h"
-#include "RHI/Memory/ImageView.h"
 #include "Logger/Logger.h"
 #include "../Devices/RHIVkDevice.h"
 #include <vulkan/vulkan_core.h>
@@ -31,29 +30,35 @@ void* ArisenEngine::RHI::RHIVkFrameBuffer::GetHandle(UInt32 currentFrameIndex)
     return m_VkFrameBuffers[currentFrameIndex % m_MaxFramesInFlight];
 }
 
-void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachment(UInt32 frameIndex, ImageView* imageView, GPURenderPass* renderPass)
+void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachment(UInt32 frameIndex, RHIImageViewHandle imageView, GPURenderPass* renderPass)
 {
     SetAttachments(frameIndex, { imageView }, renderPass);
 }
 
-void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachments(UInt32 frameIndex, const Containers::Vector<ImageView*>& imageViews, GPURenderPass* renderPass)
+void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachments(UInt32 frameIndex, const Containers::Vector<RHIImageViewHandle>& imageViews, GPURenderPass* renderPass)
 {
     if (imageViews.empty()) return;
 
     m_ImageView = imageViews[0]; // Track primary for legacy GetAttachFormat
     
     std::vector<VkImageView> vkViews;
-    for (auto* iv : imageViews)
+    for (auto h : imageViews)
     {
-        vkViews.push_back(*static_cast<const VkImageView*>(iv->GetViewPointer()));
+        auto* vkView = m_Device->GetImageViewPool()->Get(h);
+        if (vkView) {
+            vkViews.push_back(vkView->view);
+        }
     }
+
+    auto* primaryView = m_Device->GetImageViewPool()->Get(imageViews[0]);
+    if (!primaryView) return;
 
     FramebufferCacheKey key;
     key.renderPass = static_cast<VkRenderPass>(renderPass->GetHandle(frameIndex));
     key.attachments = vkViews;
-    key.width = imageViews[0]->GetWidth();
-    key.height = imageViews[0]->GetHeight();
-    key.layers = imageViews[0]->GetLayerCount();
+    key.width = primaryView->width;
+    key.height = primaryView->height;
+    key.layers = 1; // Default
 
     auto it = m_FramebufferCache.find(key);
     if (it != m_FramebufferCache.end())
@@ -91,15 +96,16 @@ void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachments(UInt32 frameIndex, cons
 
 ArisenEngine::RHI::EFormat ArisenEngine::RHI::RHIVkFrameBuffer::GetAttachFormat()
 {
-    ASSERT(m_ImageView != nullptr);
-    return m_ImageView->GetFormat();
+    auto* vkView = m_Device->GetImageViewPool()->Get(m_ImageView);
+    ASSERT(vkView != nullptr);
+    return vkView->format;
 }
 
 void ArisenEngine::RHI::RHIVkFrameBuffer::FreeFrameBuffer(UInt32 currentFrameIndex)
 {
     // Caching means we don't destroy per-frame.
     // Just clear the working reference.
-    m_ImageView = nullptr;
+    m_ImageView = RHIImageViewHandle::Invalid();
     m_VkFrameBuffers[currentFrameIndex % m_MaxFramesInFlight] = VK_NULL_HANDLE;
 }
 

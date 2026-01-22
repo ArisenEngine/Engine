@@ -1,6 +1,6 @@
 #pragma once
 #include "RHIVkSurface.h"
-#include "../Handles/RHIVkImageHandle.h"
+#include "RHI/Handles/RHIHandle.h"
 #include "../Synchronization/RHIVkSemaphore.h"
 #include "RHI/Surfaces/SwapChain.h"
 
@@ -19,7 +19,7 @@ namespace ArisenEngine::RHI
 
         RHISemaphore* GetImageAvailableSemaphore(UInt32 frameIndex) const override;
         RHISemaphore* GetRenderFinishSemaphore(UInt32 frameIndex) const override;
-        ImageHandle* AquireCurrentImage(UInt32 frameIndex) override;
+        RHIImageHandle AquireCurrentImage(UInt32 frameIndex) override;
         void Cleanup() override;
         void Present(UInt32 frameIndex) override;
     protected:
@@ -31,7 +31,8 @@ namespace ArisenEngine::RHI
         VkDevice m_VkDevice;
         VkSurfaceKHR m_VkSurface;
         const RHIVkSurface* m_Surface;
-        Containers::Vector<std::unique_ptr<RHIVkImageHandle>> m_ImageHandles;
+        Containers::Vector<RHIImageHandle> m_ImageHandles;
+        Containers::Vector<RHIImageViewHandle> m_ImageViewHandles;
 
         Containers::Vector<std::unique_ptr<RHIVkSemaphore>> m_ImageAvailableSemaphores;
         Containers::Vector<std::unique_ptr<RHIVkSemaphore>> m_RenderFinishSemaphores;

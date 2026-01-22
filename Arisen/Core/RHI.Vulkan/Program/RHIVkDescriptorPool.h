@@ -30,8 +30,8 @@ namespace ArisenEngine::RHI
         virtual ~RHIVkDescriptorPool() override;
         /// 
         /// @param types 总的类型数组，包括所有Set
-        /// @param counts 所有Set每种类型的总个数
-        /// @param maxSets 最多允许Set数
+        /// @param counts 所有Set每种类型的总个�?
+        /// @param maxSets 最多允许Set�?
         /// @return 
         UInt32 AddPool(Containers::Vector<EDescriptorType> types, Containers::Vector<UInt32> counts, UInt32 maxSets) override;
         bool ResetPool(UInt32 poolId) override;

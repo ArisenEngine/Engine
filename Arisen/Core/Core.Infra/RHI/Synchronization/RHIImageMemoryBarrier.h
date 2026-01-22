@@ -1,6 +1,6 @@
 #pragma once
 #include "RHIImageSubresourceRange.h"
-#include "../Handles/ImageHandle.h"
+#include "../Handles/RHIHandle.h"
 #include "../Enums/Pipeline/EAccessFlag.h"
 #include "../Enums/Image/EImageLayout.h"
 #include "../Enums/Pipeline/EPipelineStageFlag.h"
@@ -13,7 +13,7 @@ namespace ArisenEngine::RHI
         EImageLayout              newLayout;
         UInt32                    srcQueueFamilyIndex;
         UInt32                    dstQueueFamilyIndex;
-        ImageHandle*              image;
+        RHIImageHandle            image;
         RHIImageSubresourceRange  subresourceRange;
         EPipelineStageFlag        srcStageMask;
         EPipelineStageFlag        dstStageMask;

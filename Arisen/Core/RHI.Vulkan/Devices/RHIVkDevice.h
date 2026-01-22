@@ -8,6 +8,8 @@
 #include "../Program/RHIVkGPUPipelineManager.h"
 #include "../Program/RHIVkGPUProgram.h"
 #include "../Program/RHIVkDescriptorPool.h"
+#include "RHI/Utils/RHIResourcePool.h"
+#include "../Handles/RHIVkResourcePools.h"
 #include <mutex>
 #include <memory>
 #include <functional>
@@ -19,6 +21,15 @@ namespace ArisenEngine::RHI
     class RHIVkDeferredDeletion;
     class IRHIQueue;
     class RHIVkBindlessManager;
+    struct RHIVkBufferPoolItem;
+    struct RHIVkImagePoolItem;
+    struct RHIVkImageViewPoolItem;
+    struct RHIVkSamplerPoolItem;
+    struct RHIVkRenderPassPoolItem;
+    struct RHIVkFrameBufferPoolItem;
+    struct RHIVkSemaphorePoolItem;
+    struct RHIVkPipelinePoolItem;
+    struct RHIVkFencePoolItem;
 }
 
 namespace ArisenEngine::RHI
@@ -60,13 +71,13 @@ namespace ArisenEngine::RHI
 
         void SetResolution(UInt32 width, UInt32 height) override;
 
-        RHIFence* GetFrameFence(UInt32 frameIndex) override;
+        RHIFenceHandle GetFrameFence(UInt32 frameIndex) override;
         void WaitFrameFence(UInt32 frameIndex) override;
         void ResetFrameFence(UInt32 frameIndex) override;
 
-        UInt32 RegisterBindlessResource(ImageHandle* image) override;
-        UInt32 RegisterBindlessResource(BufferHandle* buffer) override;
-        UInt32 RegisterBindlessResource(RHISampler* sampler) override;
+        virtual UInt32 RegisterBindlessResource(RHIImageViewHandle image) override;
+        UInt32 RegisterBindlessResource(RHIBufferHandle buffer) override;
+        UInt32 RegisterBindlessResource(RHISamplerHandle sampler) override;
 
         RHIVkBindlessManager* GetBindlessManager() const { return m_BindlessManager; }
         UInt32 GetGraphicsFamilyIndex() const { return m_GraphicsFamilyIndex; }
@@ -93,6 +104,17 @@ namespace ArisenEngine::RHI
         std::unique_ptr<IRHIQueue> m_GraphicsQueue;
         std::unique_ptr<FrameSyncTracker> m_FrameSync;
 
+        // Specialized resource pools for handle-based architecture
+        std::unique_ptr<RHIResourcePool<RHIBufferHandle, RHIVkBufferPoolItem>> m_BufferPool;
+        std::unique_ptr<RHIResourcePool<RHIImageHandle, RHIVkImagePoolItem>> m_ImagePool;
+        std::unique_ptr<RHIResourcePool<RHIImageViewHandle, RHIVkImageViewPoolItem>> m_ImageViewPool;
+        std::unique_ptr<RHIResourcePool<RHISamplerHandle, RHIVkSamplerPoolItem>> m_SamplerPool;
+        std::unique_ptr<RHIResourcePool<RHIRenderPassHandle, RHIVkRenderPassPoolItem>> m_RenderPassPool;
+        std::unique_ptr<RHIResourcePool<RHIFrameBufferHandle, RHIVkFrameBufferPoolItem>> m_FrameBufferPool;
+        std::unique_ptr<RHIResourcePool<RHISemaphoreHandle, RHIVkSemaphorePoolItem>> m_SemaphorePool;
+        std::unique_ptr<RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>> m_PipelinePool;
+        std::unique_ptr<RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>> m_FencePool;
+
     public:
         // Deferred destruction (GPU-safe): enqueue on producer threads, flush on the frame fence.
         void EnqueueDeferredDestroy(RHIGpuTicket ticket, RHIDeferredDeleteItem item);
@@ -105,6 +127,30 @@ namespace ArisenEngine::RHI
         RHIGpuTicket GetCompletedSubmitId() const override;
         void Update() override;
         void WaitQueueTicket(RHIGpuTicket ticket) override;
+
+        // Handle-based operations
+        bool AllocBuffer(RHIBufferHandle handle, BufferDescriptor&& desc);
+        bool AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits);
+        void FreeBuffer(RHIBufferHandle handle);
+        void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt32 offset);
+
+        bool AllocImage(RHIImageHandle handle, ImageDescriptor&& desc);
+        bool AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits);
+        void FreeImage(RHIImageHandle handle);
+
+        bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, ImageViewDesc&& desc);
+        void FreeImageView(RHIImageViewHandle handle);
+
+        // Pool Accessors
+        RHIResourcePool<RHIBufferHandle, RHIVkBufferPoolItem>* GetBufferPool() const { return m_BufferPool.get(); }
+        RHIResourcePool<RHIImageHandle, RHIVkImagePoolItem>* GetImagePool() const { return m_ImagePool.get(); }
+        RHIResourcePool<RHIImageViewHandle, RHIVkImageViewPoolItem>* GetImageViewPool() const { return m_ImageViewPool.get(); }
+        RHIResourcePool<RHISamplerHandle, RHIVkSamplerPoolItem>* GetSamplerPool() const { return m_SamplerPool.get(); }
+        RHIResourcePool<RHIRenderPassHandle, RHIVkRenderPassPoolItem>* GetRenderPassPool() const { return m_RenderPassPool.get(); }
+        RHIResourcePool<RHIFrameBufferHandle, RHIVkFrameBufferPoolItem>* GetFrameBufferPool() const { return m_FrameBufferPool.get(); }
+        RHIResourcePool<RHISemaphoreHandle, RHIVkSemaphorePoolItem>* GetSemaphorePool() const { return m_SemaphorePool.get(); }
+        RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>* GetPipelinePool() const { return m_PipelinePool.get(); }
+        RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>* GetFencePool() const { return m_FencePool.get(); }
 
         // Cached Function Pointers
         PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR = nullptr;

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "RHIVkGPUPipelineManager.h"
 #include "RHI/Program/GPUPipeline.h"
 #include "RHI/Program/GPUSubPass.h"

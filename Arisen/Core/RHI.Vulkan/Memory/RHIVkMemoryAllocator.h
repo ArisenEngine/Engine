@@ -16,6 +16,10 @@ namespace ArisenEngine::RHI
 
         void* GetHandle() const override { return m_VmaAllocator; }
         VmaAllocator GetVmaAllocator() const { return m_VmaAllocator; }
+        
+        bool AllocateBufferMemory(VkBuffer buffer, VmaMemoryUsage usage, VmaAllocation* outAllocation);
+        bool AllocateImageMemory(VkImage image, VmaMemoryUsage usage, VmaAllocation* outAllocation);
+        void FreeMemory(VmaAllocation allocation);
 
     private:
         VmaAllocator m_VmaAllocator{ VK_NULL_HANDLE };

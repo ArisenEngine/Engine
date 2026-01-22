@@ -1,11 +1,9 @@
 #include "CommandBufferExports.h"
 #include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
 #include "../../Core/Core.Infra/RHI/CommandBuffer/RHICommandBufferPool.h"
+#include "../../Core/Core.Infra/RHI/Devices/RHIDevice.h"
+#include "../../Core/Core.Infra/RHI/Handles/RHIHandle.h"
 
-#include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
-#include "../../Core/Core.Infra/RHI/CommandBuffer/RHICommandBufferPool.h"
-
-// Force rebuild for ABI compatibility check
 using namespace ArisenEngine;
 
 extern "C" ENGINE_DLL RHI_CommandBufferPoolHandle RHI_Device_CreateCommandBufferPool(RHI_DeviceHandle device)
@@ -61,6 +59,7 @@ extern "C" ENGINE_DLL void RHI_Cmd_BeginRenderPass(RHI_CommandBufferHandle cmd, 
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
     if (c == nullptr || desc == nullptr) return;
+    // Both RHI::RenderPassBeginDesc and the pointers in it are now POD handles if we updated the struct in RHICommandBuffer.h
     RHI::RenderPassBeginDesc copy = *desc;
     c->BeginRenderPass(frameIndex, std::move(copy));
 }
@@ -103,43 +102,43 @@ extern "C" ENGINE_DLL void RHI_Cmd_DrawIndexed(RHI_CommandBufferHandle cmd, unsi
 extern "C" ENGINE_DLL void RHI_Cmd_BindPipeline(RHI_CommandBufferHandle cmd, unsigned int frameIndex, RHI_PipelineHandle pipeline)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
-    auto* p = reinterpret_cast<RHI::GPUPipeline*>(pipeline);
-    if (c == nullptr || p == nullptr) return;
-    c->BindPipeline(frameIndex, p);
+    if (c == nullptr || pipeline == 0) return;
+    auto h = *reinterpret_cast<RHI::RHIPipelineHandle*>(&pipeline);
+    c->BindPipeline(frameIndex, h);
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_BindVertexBuffers(RHI_CommandBufferHandle cmd, RHI_BufferHandle buffer, unsigned long long offset)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
-    auto* b = reinterpret_cast<RHI::BufferHandle*>(buffer);
-    if (c == nullptr || b == nullptr) return;
-    c->BindVertexBuffers(b, static_cast<UInt64>(offset));
+    if (c == nullptr || buffer == 0) return;
+    auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
+    c->BindVertexBuffers(h, static_cast<UInt64>(offset));
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_BindIndexBuffer(RHI_CommandBufferHandle cmd, RHI_BufferHandle buffer, unsigned long long offset, RHI::EIndexType type)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
-    auto* b = reinterpret_cast<RHI::BufferHandle*>(buffer);
-    if (c == nullptr || b == nullptr) return;
-    c->BindIndexBuffer(b, static_cast<UInt64>(offset), type);
+    if (c == nullptr || buffer == 0) return;
+    auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
+    c->BindIndexBuffer(h, static_cast<UInt64>(offset), type);
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_CopyBuffer(RHI_CommandBufferHandle cmd, RHI_BufferHandle src, unsigned long long srcOffset, RHI_BufferHandle dst, unsigned long long dstOffset, unsigned long long size)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
-    auto* sb = reinterpret_cast<const RHI::BufferHandle*>(src);
-    auto* db = reinterpret_cast<const RHI::BufferHandle*>(dst);
-    if (c == nullptr || sb == nullptr || db == nullptr) return;
-    c->CopyBuffer(sb, static_cast<UInt64>(srcOffset), db, static_cast<UInt64>(dstOffset), static_cast<UInt64>(size));
+    if (c == nullptr || src == 0 || dst == 0) return;
+    auto sh = *reinterpret_cast<RHI::RHIBufferHandle*>(&src);
+    auto dh = *reinterpret_cast<RHI::RHIBufferHandle*>(&dst);
+    c->CopyBuffer(sh, static_cast<UInt64>(srcOffset), dh, static_cast<UInt64>(dstOffset), static_cast<UInt64>(size));
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_CopyBufferToImage(RHI_CommandBufferHandle cmd, RHI_BufferHandle src, RHI_ImageHandle dst, RHI::EImageLayout dstLayout, Containers::Vector<RHI::BufferImageCopy>* regions)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
-    auto* sb = reinterpret_cast<const RHI::BufferHandle*>(src);
-    auto* di = reinterpret_cast<const RHI::ImageHandle*>(dst);
-    if (c == nullptr || sb == nullptr || di == nullptr || regions == nullptr) return;
-    c->CopyBufferToImage(sb, di, dstLayout, std::move(*regions));
+    if (c == nullptr || src == 0 || dst == 0 || regions == nullptr) return;
+    auto sh = *reinterpret_cast<RHI::RHIBufferHandle*>(&src);
+    auto dh = *reinterpret_cast<RHI::RHIImageHandle*>(&dst);
+    c->CopyBufferToImage(sh, dh, dstLayout, std::move(*regions));
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_PipelineBarrier_Image(RHI_CommandBufferHandle cmd, unsigned int srcStage, unsigned int dstStage, unsigned int dependency, Containers::Vector<RHI::RHIImageMemoryBarrier>* imageBarriers)
@@ -154,25 +153,25 @@ extern "C" ENGINE_DLL void RHI_Cmd_PipelineBarrier_Image(RHI_CommandBufferHandle
 extern "C" ENGINE_DLL void RHI_Cmd_WaitSemaphore(RHI_CommandBufferHandle cmd, RHI_SemaphoreHandle semaphore, unsigned int stageFlags)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
-    auto* s = reinterpret_cast<RHI::RHISemaphore*>(semaphore);
-    if (c == nullptr || s == nullptr) return;
-    c->WaitSemaphore(s, static_cast<RHI::EPipelineStageFlag>(stageFlags));
+    if (c == nullptr || semaphore == 0) return;
+    auto h = *reinterpret_cast<RHI::RHISemaphoreHandle*>(&semaphore);
+    c->WaitSemaphore(h, static_cast<RHI::EPipelineStageFlag>(stageFlags));
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_SignalSemaphore(RHI_CommandBufferHandle cmd, RHI_SemaphoreHandle semaphore)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
-    auto* s = reinterpret_cast<RHI::RHISemaphore*>(semaphore);
-    if (c == nullptr || s == nullptr) return;
-    c->SignalSemaphore(s);
+    if (c == nullptr || semaphore == 0) return;
+    auto h = *reinterpret_cast<RHI::RHISemaphoreHandle*>(&semaphore);
+    c->SignalSemaphore(h);
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_InjectFence(RHI_CommandBufferHandle cmd, RHI_FenceHandle fence)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
-    auto* f = reinterpret_cast<RHI::RHIFence*>(fence);
-    if (c == nullptr || f == nullptr) return;
-    c->InjectFence(f);
+    if (c == nullptr) return;
+    auto h = *reinterpret_cast<RHI::RHIFenceHandle*>(&fence);
+    c->InjectFence(h);
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_WaitForFence(RHI_CommandBufferHandle cmd, unsigned int frameIndex)

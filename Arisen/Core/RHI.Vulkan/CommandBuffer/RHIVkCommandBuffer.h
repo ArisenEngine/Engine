@@ -39,25 +39,25 @@ public:
   void SetScissor(UInt32 offsetX, UInt32 offsetY, UInt32 width,
                   UInt32 height) override;
 
-  void BindPipeline(UInt32 frameIndex, GPUPipeline *pipeline) override;
+  void BindPipeline(UInt32 frameIndex, RHIPipelineHandle pipeline) override;
 
   void Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex,
             UInt32 firstInstance, UInt32 firstBinding) override;
   void DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 firstIndex,
                    UInt32 vertexOffset, UInt32 firstInstance,
                    UInt32 firstBinding) override;
-  void BindVertexBuffers(BufferHandle *buffers, UInt64 offset) override;
-  void BindIndexBuffer(BufferHandle *indexBuffer, UInt64 offset,
+  void BindVertexBuffers(RHIBufferHandle buffers, UInt64 offset) override;
+  void BindIndexBuffer(RHIBufferHandle indexBuffer, UInt64 offset,
                        EIndexType type) override;
 
-  void WaitSemaphore(RHISemaphore *semaphore,
+  void WaitSemaphore(RHISemaphoreHandle semaphore,
                      EPipelineStageFlag stage) override;
-  void SignalSemaphore(RHISemaphore *semaphore) override;
-  void CopyBuffer(BufferHandle const *src, UInt64 srcOffset,
-                  BufferHandle const *dst, UInt64 dstOffset,
+  void SignalSemaphore(RHISemaphoreHandle semaphore) override;
+  void CopyBuffer(RHIBufferHandle src, UInt64 srcOffset,
+                  RHIBufferHandle dst, UInt64 dstOffset,
                   UInt64 size) override;
 
-  void InjectFence(RHIFence *fence) override;
+  void InjectFence(RHIFenceHandle fence) override;
   void WaitForFence(UInt32 frameIndex) override;
   void BindDescriptorSets(
       UInt32 frameIndex, EPipelineBindPoint bindPoint, UInt32 firstSet,
@@ -66,7 +66,7 @@ public:
   void TrackDescriptorPoolUse(DescriptorPool *pool, UInt32 poolId) override;
 
   void
-  CopyBufferToImage(BufferHandle const *srcBuffer, ImageHandle const *dst,
+  CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst,
                     EImageLayout dstImageLayout,
                     Containers::Vector<BufferImageCopy> &&regions) override;
   void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage,
@@ -145,8 +145,8 @@ private:
   Containers::Vector<RHIResourceHandle> m_TrackedResourceHandles;
 
 private:
-  void CaptureResource(BufferHandle const *buffer);
-  void CaptureResource(ImageHandle const *image);
+  void CaptureResource(RHIBufferHandle buffer);
+  void CaptureResource(RHIImageHandle image);
 
 public:
   const Containers::Vector<RHIResourceHandle> &

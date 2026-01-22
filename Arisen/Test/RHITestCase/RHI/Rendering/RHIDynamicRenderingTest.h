@@ -15,14 +15,13 @@
 #include "RHI/Enums/Image/EImageAspectFlagBits.h"
 #include "RHI/Surfaces/Surface.h"
 #include "RHI/Surfaces/FrameBuffer.h"
-#include "RHI/Handles/ImageHandle.h"
+#include "RHI/Handles/RHIHandle.h"
 #include "RHI/Memory/ImageView.h"
 #include "RHI/Synchronization/RHIImageMemoryBarrier.h"
 #include "RHI/CommandBuffer/RHICommandBuffer.h"
 #include "RHI/CommandBuffer/RHICommandBufferPool.h"
 #include "RHI/Program/GPUPipelineManager.h"
 #include "RHI/Program/GPUPipelineStateObject.h"
-#include "RHI/Handles/BufferHandle.h"
 
 // Engine Exports
 #include "../../Engine/NativeEngine/RHI/RHIExports.h"
@@ -76,7 +75,7 @@ namespace ArisenEngine::Testing
             Containers::Vector<RHI::RHIImageMemoryBarrier> cachedBarriers;
             RHI::RHIRenderingInfo cachedRenderingInfo;
             RHI::RHIRenderingAttachmentInfo cachedColorAtt;
-            Containers::Vector<std::shared_ptr<RHI::BufferHandle>> cachedUbos;
+            Containers::Vector<RHI::RHIBufferHandle> cachedUbos;
         };
 
         struct Vertex
@@ -463,7 +462,9 @@ namespace ArisenEngine::Testing
             auto commandBuffer = RHI_Device_GetCommandBuffer(context.device, context.commandPool, m_FrameIndex);
             auto pipelineState = context.pipelineState;
             context.cachedUbos.clear();
-            context.cachedUbos.emplace_back(std::shared_ptr<RHI::BufferHandle>(reinterpret_cast<RHI::BufferHandle*>(context.uniformBuffers[currentIndex]), [](RHI::BufferHandle*){}));
+            auto rawHandle = context.uniformBuffers[currentIndex];
+            auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&rawHandle);
+            context.cachedUbos.emplace_back(h);
             RHI_PSO_UpdateDescriptorSet_Buffers(pipelineState, 0, 0, &context.cachedUbos);
             RHI_DescriptorPool_Reset(context.descriptorPool, context.descriptorPoolIds[currentIndex]);
             RHI_DescriptorPool_AllocDescriptorSet(context.descriptorPool, context.descriptorPoolIds[currentIndex], 0, pipelineState);

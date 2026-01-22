@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "RHI/Program/GPUPipelineStateObject.h"
 #include <vulkan/vulkan_core.h>
 
@@ -63,14 +63,14 @@ namespace ArisenEngine::RHI
              ImmutableSamplers* pImmutableSamplers = nullptr) override;
         void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
                                                    UInt32 descriptorCount, UInt32 shaderStageFlags,
-                                                   const Containers::Vector<std::shared_ptr<BufferHandle>>&& bufferHandles) override;
+                                                   const Containers::Vector<RHIBufferHandle>&& bufferHandles) override;
         void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
                                                   UInt32 descriptorCount, UInt32 shaderStageFlags,
-                                                  const Containers::Vector<BufferView*>&& bufferViews) override;
+                                                  const Containers::Vector<RHIImageViewHandle>&& bufferViews) override;
 
         void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos) override;
-        void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<std::shared_ptr<BufferHandle>>&& bufferHandles) override;
-        void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<BufferView*>&& texelBufferViews) override;
+        void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIBufferHandle>&& bufferHandles) override;
+        void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIImageViewHandle>&& texelBufferViews) override;
         
     private:
         
@@ -79,7 +79,7 @@ namespace ArisenEngine::RHI
         
         void InternalAddDescriptorUpdateInfo(UInt32 layoutIndex, UInt32 binding,EDescriptorType type,
             UInt32 descriptorCount, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos,
-            const Containers::Vector<std::shared_ptr<BufferHandle>>&& bufferHandles, const Containers::Vector<BufferView*>&& bufferViews);
+            const Containers::Vector<RHIBufferHandle>&& bufferHandles, const Containers::Vector<RHIImageViewHandle>&& bufferViews);
         
     public:
         

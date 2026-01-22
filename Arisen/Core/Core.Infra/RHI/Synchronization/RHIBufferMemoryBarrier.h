@@ -2,7 +2,8 @@
 #include "../../Common/PrimitiveTypes.h"
 #include "../Enums/Pipeline/EAccessFlag.h"
 #include "../Enums/Pipeline/EPipelineStageFlag.h"
-#include "../Handles/BufferHandle.h"
+#include "../Enums/Pipeline/EPipelineStageFlag.h"
+#include "../Handles/RHIHandle.h"
 
 namespace ArisenEngine::RHI
 {
@@ -12,7 +13,7 @@ namespace ArisenEngine::RHI
         EAccessFlag          dstAccessMask;
         UInt32               srcQueueFamilyIndex;
         UInt32               dstQueueFamilyIndex;
-        BufferHandle*        buffer;
+        RHIBufferHandle      buffer;
         EPipelineStageFlag   srcStageMask;
         EPipelineStageFlag   dstStageMask;
     } RHIBufferMemoryBarrier;

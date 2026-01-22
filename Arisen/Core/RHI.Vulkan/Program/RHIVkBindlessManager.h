@@ -3,13 +3,13 @@
 #include <mutex>
 #include "Containers/Containers.h"
 #include "RHI/RHICommon.h"
+#include "../Handles/RHIVkResourcePools.h" // Includes RHIHandle.h
 
 namespace ArisenEngine::RHI
 {
     class RHIVkDevice;
-    class ImageHandle;
-    class BufferHandle;
-    class RHISampler;
+    class RHIVkDevice;
+
 
     class RHIVkBindlessManager
     {
@@ -20,9 +20,9 @@ namespace ArisenEngine::RHI
         void Initialize();
         void Shutdown();
 
-        UInt32 RegisterImage(ImageHandle* image);
-        UInt32 RegisterBuffer(BufferHandle* buffer);
-        UInt32 RegisterSampler(RHISampler* sampler);
+        UInt32 RegisterImage(RHIImageViewHandle image);
+        UInt32 RegisterBuffer(RHIBufferHandle buffer);
+        UInt32 RegisterSampler(RHISamplerHandle sampler);
 
         void UnregisterImage(UInt32 index);
         void UnregisterBuffer(UInt32 index);

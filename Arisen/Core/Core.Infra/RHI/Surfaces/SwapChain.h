@@ -5,11 +5,11 @@
 #include "RHI/Enums/Swapchain/PresentMode.h"
 #include "RHI/Enums/Memory/ESharingMode.h"
 #include "RHI/Synchronization/RHISemaphore.h"
+#include "../Handles/RHIHandle.h"
 
 namespace ArisenEngine::RHI
 {
     class Surface;
-    class ImageHandle;
     class RHISemaphore;
 
     struct SwapChainDescriptor
@@ -43,7 +43,7 @@ namespace ArisenEngine::RHI
         virtual void CreateSwapChainWithDesc(SwapChainDescriptor desc) = 0;
         virtual RHISemaphore* GetImageAvailableSemaphore(UInt32 frameIndex) const = 0;
         virtual RHISemaphore* GetRenderFinishSemaphore(UInt32 frameIndex) const  = 0;
-        virtual ImageHandle* AquireCurrentImage(UInt32 frameIndex) = 0;
+        virtual RHIImageHandle AquireCurrentImage(UInt32 frameIndex) = 0;
         virtual void Present(UInt32 frameIndex) = 0;
         virtual void Cleanup() = 0;
     protected:

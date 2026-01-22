@@ -1,4 +1,4 @@
-﻿#include "RHIVkFence.h"
+#include "RHIVkFence.h"
 
 #include "Logger/Logger.h"
 

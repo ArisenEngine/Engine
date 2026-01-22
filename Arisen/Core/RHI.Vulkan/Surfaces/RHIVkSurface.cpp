@@ -1,4 +1,5 @@
 #include "RHIVkSurface.h"
+#include "RHIVkSwapChain.h"
 
 #include "../RHIVkInstance.h"
 #include "Logger/Logger.h"

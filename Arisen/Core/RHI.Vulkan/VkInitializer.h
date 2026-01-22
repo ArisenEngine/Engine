@@ -8,12 +8,10 @@
 #include "RHI/Enums/Memory/ESharingMode.h"
 #include "RHI/Enums/Pipeline/EAccessFlag.h"
 #include "RHI/Enums/Pipeline/EPipelineStageFlag.h"
-#include "RHI/Handles/BufferHandle.h"
-#include "RHI/Memory/ImageSubresourceLayers.h"
-#include "RHI/Synchronization/RHIImageSubresourceRange.h"
-#include "RHI/Program/RHISampler.h"
 #include "RHI/Enums/Image/EImageLayout.h"
-#include "RHI/Handles/ImageHandle.h"
+#include "RHI/Synchronization/RHIImageSubresourceRange.h"
+#include "RHI/Memory/ImageSubresourceLayers.h"
+// #include "RHI/Handles/ImageHandle.h"
 
 #define VK_STRUCT_INITIALIZE(type, name) type name ##{##};
 //
@@ -221,7 +219,7 @@ namespace ArisenEngine::RHI
     inline VkBufferMemoryBarrier2KHR BufferMemoryBarrier2(
         VkPipelineStageFlags2KHR srcStageMask, VkAccessFlags2KHR srcAccessMask,
         VkPipelineStageFlags2KHR dstStageMask, VkAccessFlags2KHR dstAccessMask,
-        UInt32 srcQueueFamilyIndex, UInt32 dstQueueFamilyIndex, BufferHandle* bufferHandle)
+        UInt32 srcQueueFamilyIndex, UInt32 dstQueueFamilyIndex, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size)
     {
         VK_STRUCT_INITIALIZE(VkBufferMemoryBarrier2KHR, barrier)
         barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR;
@@ -231,9 +229,9 @@ namespace ArisenEngine::RHI
         barrier.dstAccessMask = dstAccessMask;
         barrier.srcQueueFamilyIndex = srcQueueFamilyIndex;
         barrier.dstQueueFamilyIndex = dstQueueFamilyIndex;
-        barrier.buffer = static_cast<VkBuffer>(bufferHandle->GetHandle());
-        barrier.offset = bufferHandle->Offset();
-        barrier.size = bufferHandle->Range();
+        barrier.buffer = buffer;
+        barrier.offset = offset;
+        barrier.size = size;
         return barrier;
     }
 
@@ -241,7 +239,7 @@ namespace ArisenEngine::RHI
         VkPipelineStageFlags2KHR srcStageMask, VkAccessFlags2KHR srcAccessMask,
         VkPipelineStageFlags2KHR dstStageMask, VkAccessFlags2KHR dstAccessMask,
         UInt32 srcQueueFamilyIndex, UInt32 dstQueueFamilyIndex,
-        EImageLayout oldLayout, EImageLayout newLayout, ImageHandle* imageHandle,
+        EImageLayout oldLayout, EImageLayout newLayout, VkImage image,
         const RHIImageSubresourceRange& subResourceRange)
     {
         VK_STRUCT_INITIALIZE(VkImageMemoryBarrier2KHR, barrier)
@@ -254,7 +252,7 @@ namespace ArisenEngine::RHI
         barrier.dstQueueFamilyIndex = dstQueueFamilyIndex;
         barrier.oldLayout = static_cast<VkImageLayout>(oldLayout);
         barrier.newLayout = static_cast<VkImageLayout>(newLayout);
-        barrier.image = static_cast<VkImage>(imageHandle->GetHandle());
+        barrier.image = image;
         barrier.subresourceRange.aspectMask = static_cast<VkImageAspectFlags>(subResourceRange.aspectMask);
         barrier.subresourceRange.baseMipLevel = subResourceRange.baseMipLevel;
         barrier.subresourceRange.levelCount = subResourceRange.levelCount;
@@ -293,7 +291,7 @@ namespace ArisenEngine::RHI
 
     inline VkBufferMemoryBarrier BufferMemoryBarrier(
         EAccessFlag srcAccess, EAccessFlag dstAccess,
-        UInt32 srcQueueFamilyIndex, UInt32 dstQueueFamilyIndex, BufferHandle* bufferHandle)
+        UInt32 srcQueueFamilyIndex, UInt32 dstQueueFamilyIndex, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size)
     {
         VK_STRUCT_INITIALIZE(VkBufferMemoryBarrier, barrier)
         barrier.pNext = nullptr;
@@ -302,9 +300,9 @@ namespace ArisenEngine::RHI
         barrier.dstAccessMask = static_cast<VkAccessFlags>(dstAccess);
         barrier.srcQueueFamilyIndex = srcQueueFamilyIndex;
         barrier.dstQueueFamilyIndex = dstQueueFamilyIndex;
-        barrier.buffer = static_cast<VkBuffer>(bufferHandle->GetHandle());
-        barrier.offset = bufferHandle->Offset();
-        barrier.size = bufferHandle->Range();
+        barrier.buffer = buffer;
+        barrier.offset = offset;
+        barrier.size = size;
         
         return barrier;
     }
@@ -312,7 +310,7 @@ namespace ArisenEngine::RHI
     inline VkImageMemoryBarrier ImageMemoryBarrier(
         EAccessFlag srcAccess, EAccessFlag dstAccess,
         UInt32 srcQueueFamilyIndex, UInt32 dstQueueFamilyIndex,
-        EImageLayout oldLayout, EImageLayout newLayout, ImageHandle* imageHandle,
+        EImageLayout oldLayout, EImageLayout newLayout, VkImage image,
         RHIImageSubresourceRange&& subResourceRange)
     {
         VK_STRUCT_INITIALIZE(VkImageMemoryBarrier, barrier)
@@ -324,7 +322,7 @@ namespace ArisenEngine::RHI
         barrier.dstQueueFamilyIndex = dstQueueFamilyIndex;
         barrier.oldLayout = static_cast<VkImageLayout>(oldLayout);
         barrier.newLayout = static_cast<VkImageLayout>(newLayout);
-        barrier.image = static_cast<VkImage>(imageHandle->GetHandle());
+        barrier.image = image;
         barrier.subresourceRange.aspectMask = static_cast<VkImageAspectFlags>(subResourceRange.aspectMask);
         barrier.subresourceRange.baseMipLevel = subResourceRange.baseMipLevel;
         barrier.subresourceRange.levelCount = subResourceRange.levelCount;
@@ -400,5 +398,22 @@ namespace ArisenEngine::RHI
         samplerCreateInfo.borderColor = static_cast<VkBorderColor>(desc.borderColor);
         samplerCreateInfo.unnormalizedCoordinates = static_cast<VkBool32>(desc.unnormalizedCoordinates);
         return samplerCreateInfo;
+    }
+
+    inline VkImageViewCreateInfo ImageViewCreateInfo(VkImage image, EImageViewType viewType, EFormat format, 
+        UInt32 baseMipLevel, UInt32 levelCount, UInt32 baseArrayLayer, UInt32 layerCount)
+    {
+        VK_STRUCT_INITIALIZE(VkImageViewCreateInfo, viewInfo)
+        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewInfo.image = image;
+        viewInfo.viewType = static_cast<VkImageViewType>(viewType);
+        viewInfo.format = static_cast<VkFormat>(format);
+        viewInfo.subresourceRange.aspectMask = (viewType == IMAGE_VIEW_TYPE_CUBE || viewType == IMAGE_VIEW_TYPE_CUBE_ARRAY) ? VK_IMAGE_ASPECT_COLOR_BIT : VK_IMAGE_ASPECT_COLOR_BIT; // Simplified
+        // TODO: handle depth/stencil aspect
+        viewInfo.subresourceRange.baseMipLevel = baseMipLevel;
+        viewInfo.subresourceRange.levelCount = levelCount;
+        viewInfo.subresourceRange.baseArrayLayer = baseArrayLayer;
+        viewInfo.subresourceRange.layerCount = layerCount;
+        return viewInfo;
     }
 }

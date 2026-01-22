@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <vulkan/vulkan_core.h>
 
 #include "Logger/Logger.h"
@@ -18,10 +18,10 @@ namespace ArisenEngine::RHI
         ~RHIVkFrameBuffer() noexcept override;
 
         void* GetHandle(UInt32 currentFrameIndex) override;
-        void SetAttachment(UInt32 frameIndex, ImageView* imageView, GPURenderPass* renderPass) override;
+        void SetAttachment(UInt32 frameIndex, RHIImageViewHandle imageView, GPURenderPass* renderPass) override;
         
         // Extended for multi-attachment caching
-        void SetAttachments(UInt32 frameIndex, const Containers::Vector<ImageView*>& imageViews, GPURenderPass* renderPass);
+        void SetAttachments(UInt32 frameIndex, const Containers::Vector<RHIImageViewHandle>& imageViews, GPURenderPass* renderPass) override;
 
         EFormat GetAttachFormat() override;
     private:
@@ -44,7 +44,7 @@ namespace ArisenEngine::RHI
 
         Containers::Vector<VkFramebuffer> m_VkFrameBuffers;
         RHIVkDevice* m_Device;
-        ImageView* m_ImageView {nullptr};
+        RHIImageViewHandle m_ImageView {RHIImageViewHandle::Invalid()};
         std::map<FramebufferCacheKey, VkFramebuffer> m_FramebufferCache;
     };
 }

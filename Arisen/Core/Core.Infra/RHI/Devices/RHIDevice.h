@@ -5,11 +5,11 @@
 #include "RHI/Program/DescriptorPool.h"
 #include "RHI/DeviceLimits.h"
 #include "RHI/Queues/IRHIQueue.h"
+#include "RHI/Handles/RHIHandle.h"
+#include "RHI/ResourceDescriptors.h"
 
 namespace ArisenEngine::RHI
 {
-    class BufferHandle;
-    class ImageHandle;
     class RHISampler;
     struct RHISamplerDesc;
 }
@@ -87,7 +87,7 @@ namespace ArisenEngine::RHI
 
         // Optional per-frame fence management (centralized sync ownership).
         // Default: no-op / null, for backends that do not use per-frame fences.
-        virtual RHIFence* GetFrameFence(UInt32 frameIndex) { (void)frameIndex; return nullptr; }
+        virtual RHIFenceHandle GetFrameFence(UInt32 frameIndex) { (void)frameIndex; return RHIFenceHandle::Invalid(); }
         virtual void WaitFrameFence(UInt32 frameIndex) { (void)frameIndex; }
         virtual void ResetFrameFence(UInt32 frameIndex) { (void)frameIndex; }
 
@@ -97,9 +97,22 @@ namespace ArisenEngine::RHI
         }
 
         // Bindless Resource Support
-        virtual UInt32 RegisterBindlessResource(ImageHandle* image) { (void)image; return 0xFFFFFFFF; }
-        virtual UInt32 RegisterBindlessResource(BufferHandle* buffer) { (void)buffer; return 0xFFFFFFFF; }
-        virtual UInt32 RegisterBindlessResource(RHISampler* sampler) { (void)sampler; return 0xFFFFFFFF; }
+        virtual UInt32 RegisterBindlessResource(RHIImageViewHandle image) { (void)image; return 0xFFFFFFFF; }
+        virtual UInt32 RegisterBindlessResource(RHIBufferHandle buffer) { (void)buffer; return 0xFFFFFFFF; }
+        virtual UInt32 RegisterBindlessResource(RHISamplerHandle sampler) { (void)sampler; return 0xFFFFFFFF; }
+
+        // Handle-based operations
+        virtual bool AllocBuffer(RHIBufferHandle handle, BufferDescriptor&& desc) { return false; }
+        virtual bool AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits) { return false; }
+        virtual void FreeBuffer(RHIBufferHandle handle) {}
+        virtual void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt32 offset) {}
+
+        virtual bool AllocImage(RHIImageHandle handle, ImageDescriptor&& desc) { return false; }
+        virtual bool AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits) { return false; }
+        virtual void FreeImage(RHIImageHandle handle) {}
+
+        virtual bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, ImageViewDesc&& desc) { return false; }
+        virtual void FreeImageView(RHIImageViewHandle handle) {}
         
     protected:
         

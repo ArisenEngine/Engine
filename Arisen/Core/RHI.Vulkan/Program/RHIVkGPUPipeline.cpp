@@ -1,4 +1,4 @@
-﻿#include "RHIVkGPUPipeline.h"
+#include "RHIVkGPUPipeline.h"
 
 #include "RHIVkGPUPipelineStateObject.h"
 #include "RHI/Program/GPUPipelineStateObject.h"

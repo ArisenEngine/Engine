@@ -1,5 +1,6 @@
 #include "RHIVkSampler.h"
 #include "../VkInitializer.h"
+#include "Logger/Logger.h"
 
 ArisenEngine::RHI::RHIVkSampler::RHIVkSampler(RHIDevice* device, RHISamplerDesc&& desc) : RHISampler(device)
 {
