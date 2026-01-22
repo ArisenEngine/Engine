@@ -259,6 +259,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocBuffer(RHIBufferHandle handle, BufferD
         (const uint32_t*)desc.pQueueFamilyIndices);
 
     buffer->size = desc.size;
+    buffer->range = desc.size;
 
     if (vkCreateBuffer(m_VkDevice, &bufferInfo, nullptr, &buffer->buffer) != VK_SUCCESS)
     {
@@ -266,23 +267,13 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocBuffer(RHIBufferHandle handle, BufferD
         return false;
     }
 
-    // Register for deferred deletion
-    struct DeferredVkBuffer {
-        VkDevice device;
-        VkBuffer buffer;
-        VmaAllocator allocator;
-        VmaAllocation allocation;
-        ~DeferredVkBuffer() {
-            if (device != VK_NULL_HANDLE && buffer != VK_NULL_HANDLE) {
-                vkDestroyBuffer(device, buffer, nullptr);
-            }
-            if (allocator != VK_NULL_HANDLE && allocation != VK_NULL_HANDLE) {
-                vmaFreeMemory(allocator, allocation);
-            }
-        }
-    };
-    auto* deferred = new DeferredVkBuffer{ m_VkDevice, buffer->buffer, m_MemoryAllocator->GetVmaAllocator(), VK_NULL_HANDLE };
-    buffer->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(deferred));
+    // Register for deferred deletion using a shared state object
+    buffer->state = new RHIVkBufferState();
+    buffer->state->device = m_VkDevice;
+    buffer->state->buffer = buffer->buffer;
+    buffer->state->allocator = m_MemoryAllocator->GetVmaAllocator();
+    
+    buffer->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(buffer->state));
 
     return true;
 }
@@ -290,21 +281,8 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocBuffer(RHIBufferHandle handle, BufferD
 bool ArisenEngine::RHI::RHIVkDevice::AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits)
 {
     auto* buffer = m_BufferPool->Get(handle);
-    if (!buffer || buffer->buffer == VK_NULL_HANDLE) return false;
+    if (!buffer || buffer->buffer == VK_NULL_HANDLE || !buffer->state) return false;
 
-    // If we are re-allocating memory, the OLD allocation must be part of the deferred deletion
-    // However, since we currently bundle buffer + allocation in one registry entry, 
-    // it's better to just update the existing deferred object if it hasn't been queued yet.
-    // BUT the registry object is created at AllocBuffer.
-    
-    // For simplicity and safety: 
-    // We should probably allow the pool item to track its current allocation, 
-    // and when the registry entry is finally executed, it cleans up whatever was registered.
-    
-    // Re-getting the deferred object from registry is hard. 
-    // Correct way: The registry entry ONLY handles the buffer. 
-    // We create a separate registry entry for the allocation if needed, or bundle them better.
-    
     VmaMemoryUsage usage = VMA_MEMORY_USAGE_AUTO;
     if (memoryPropertiesBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
         usage = VMA_MEMORY_USAGE_GPU_ONLY;
@@ -317,29 +295,17 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocBufferDeviceMemory(RHIBufferHandle han
         return false;
     }
 
-    // Capture the allocation to be freed later
-    struct DeferredVmaAllocation {
-        VmaAllocator allocator;
-        VmaAllocation allocation;
-        ~DeferredVmaAllocation() {
-            if (allocator != VK_NULL_HANDLE && allocation != VK_NULL_HANDLE) {
-                vmaFreeMemory(allocator, allocation);
+    // If there was an old allocation, queue it for individual deletion
+    if (buffer->state->allocation != VK_NULL_HANDLE) {
+        EnqueueDeferredDestroy(GetCompletedSubmitId(), [allocator = buffer->state->allocator, oldAlloc = buffer->state->allocation]() {
+            if (allocator != VK_NULL_HANDLE && oldAlloc != VK_NULL_HANDLE) {
+                vmaFreeMemory(allocator, oldAlloc);
             }
-        }
-    };
-    
-    // If there was an old allocation, queue it for deletion
-    if (buffer->allocation != VK_NULL_HANDLE) {
-        auto* oldAllocDeleter = new DeferredVmaAllocation{ m_MemoryAllocator->GetVmaAllocator(), buffer->allocation };
-        m_ResourceRegistry->Create(MakeDeferredDeleteItem(oldAllocDeleter));
+        });
     }
 
-    buffer->allocation = newAlloc;
-    
-    // Also track this NEW allocation for deletion when the buffer itself is released
-    auto* bufAllocDeleter = new DeferredVmaAllocation{ m_MemoryAllocator->GetVmaAllocator(), buffer->allocation };
-    // This is a bit redundant but ensures that even if FreeBuffer is called, it gets cleaned up.
-    // Actually, let's just make sure FreeBuffer handles it.
+    buffer->state->allocation = newAlloc;
+    buffer->allocation = newAlloc; // Sync cache
     
     return true;
 }
@@ -351,24 +317,13 @@ void ArisenEngine::RHI::RHIVkDevice::FreeBuffer(RHIBufferHandle handle)
 
     if (buffer->buffer != VK_NULL_HANDLE)
     {
-        // Allocation cleanup
-        if (buffer->allocation != VK_NULL_HANDLE) {
-            struct DeferredVmaAllocation {
-                VmaAllocator allocator;
-                VmaAllocation allocation;
-                ~DeferredVmaAllocation() {
-                    if (allocator != VK_NULL_HANDLE && allocation != VK_NULL_HANDLE) {
-                        vmaFreeMemory(allocator, allocation);
-                    }
-                }
-            };
-            auto* allocDeleter = new DeferredVmaAllocation{ m_MemoryAllocator->GetVmaAllocator(), buffer->allocation };
-            m_ResourceRegistry->Create(MakeDeferredDeleteItem(allocDeleter));
-            buffer->allocation = VK_NULL_HANDLE;
-        }
-
+        // Simply release the registry handle. 
+        // The shared State object's destructor will handle cleaning up both VkBuffer and VmaAllocation.
         m_ResourceRegistry->Release(buffer->registryHandle, RHIQueueType::Graphics, GetCompletedSubmitId());
+        
         buffer->buffer = VK_NULL_HANDLE;
+        buffer->allocation = VK_NULL_HANDLE;
+        buffer->state = nullptr;
         buffer->registryHandle = RHIResourceHandle::Invalid();
     }
 }
@@ -409,23 +364,13 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImage(RHIImageHandle handle, ImageDesc
 
     image->needDestroy = true;
 
-    // Register for deferred deletion
-    struct DeferredVkImage {
-        VkDevice device;
-        VkImage image;
-        VmaAllocator allocator;
-        VmaAllocation allocation;
-        ~DeferredVkImage() {
-            if (device != VK_NULL_HANDLE && image != VK_NULL_HANDLE) {
-                vkDestroyImage(device, image, nullptr);
-            }
-            if (allocator != VK_NULL_HANDLE && allocation != VK_NULL_HANDLE) {
-                vmaFreeMemory(allocator, allocation);
-            }
-        }
-    };
-    auto* deferred = new DeferredVkImage{ m_VkDevice, image->image, m_MemoryAllocator->GetVmaAllocator(), VK_NULL_HANDLE };
-    image->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(deferred));
+    // Register for deferred deletion using a shared state object
+    image->state = new RHIVkImageState();
+    image->state->device = m_VkDevice;
+    image->state->image = image->image;
+    image->state->allocator = m_MemoryAllocator->GetVmaAllocator();
+    
+    image->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(image->state));
 
     return true;
 }
@@ -433,7 +378,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImage(RHIImageHandle handle, ImageDesc
 bool ArisenEngine::RHI::RHIVkDevice::AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits)
 {
     auto* image = m_ImagePool->Get(handle);
-    if (!image || image->image == VK_NULL_HANDLE) return false;
+    if (!image || image->image == VK_NULL_HANDLE || !image->state) return false;
 
     VmaMemoryUsage usage = VMA_MEMORY_USAGE_AUTO;
     if (memoryPropertiesBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
@@ -445,22 +390,17 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImageDeviceMemory(RHIImageHandle handl
         return false;
     }
 
-    struct DeferredVmaAllocation {
-        VmaAllocator allocator;
-        VmaAllocation allocation;
-        ~DeferredVmaAllocation() {
-            if (allocator != VK_NULL_HANDLE && allocation != VK_NULL_HANDLE) {
-                vmaFreeMemory(allocator, allocation);
+    // If there was an old allocation, queue it for individual deletion
+    if (image->state->allocation != VK_NULL_HANDLE) {
+        EnqueueDeferredDestroy(GetCompletedSubmitId(), [allocator = image->state->allocator, oldAlloc = image->state->allocation]() {
+            if (allocator != VK_NULL_HANDLE && oldAlloc != VK_NULL_HANDLE) {
+                vmaFreeMemory(allocator, oldAlloc);
             }
-        }
-    };
-
-    if (image->allocation != VK_NULL_HANDLE) {
-        auto* oldAllocDeleter = new DeferredVmaAllocation{ m_MemoryAllocator->GetVmaAllocator(), image->allocation };
-        m_ResourceRegistry->Create(MakeDeferredDeleteItem(oldAllocDeleter));
+        });
     }
 
-    image->allocation = newAlloc;
+    image->state->allocation = newAlloc;
+    image->allocation = newAlloc; // Sync cache
     return true;
 }
 
@@ -471,23 +411,13 @@ void ArisenEngine::RHI::RHIVkDevice::FreeImage(RHIImageHandle handle)
 
     if (image->image != VK_NULL_HANDLE && image->needDestroy)
     {
-        if (image->allocation != VK_NULL_HANDLE) {
-            struct DeferredVmaAllocation {
-                VmaAllocator allocator;
-                VmaAllocation allocation;
-                ~DeferredVmaAllocation() {
-                    if (allocator != VK_NULL_HANDLE && allocation != VK_NULL_HANDLE) {
-                        vmaFreeMemory(allocator, allocation);
-                    }
-                }
-            };
-            auto* allocDeleter = new DeferredVmaAllocation{ m_MemoryAllocator->GetVmaAllocator(), image->allocation };
-            m_ResourceRegistry->Create(MakeDeferredDeleteItem(allocDeleter));
-            image->allocation = VK_NULL_HANDLE;
-        }
-
+        // Simply release the registry handle. 
+        // The shared State object's destructor will handle cleaning up both VkImage and VmaAllocation.
         m_ResourceRegistry->Release(image->registryHandle, RHIQueueType::Graphics, GetCompletedSubmitId());
+        
         image->image = VK_NULL_HANDLE;
+        image->allocation = VK_NULL_HANDLE;
+        image->state = nullptr;
         image->registryHandle = RHIResourceHandle::Invalid();
         image->needDestroy = false;
     }
@@ -500,7 +430,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImageView(RHIImageViewHandle handle, R
     if (!viewItem || !imageItem || imageItem->image == VK_NULL_HANDLE) return false;
 
     auto viewInfo = ImageViewCreateInfo(
-        imageItem->image, desc.viewType, desc.format,
+        imageItem->image, desc.viewType, desc.format, desc.aspectMask,
         desc.baseMipLevel, desc.levelCount, desc.baseArrayLayer, desc.layerCount);
 
     if (vkCreateImageView(m_VkDevice, &viewInfo, nullptr, &viewItem->view) != VK_SUCCESS)
@@ -562,35 +492,33 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
         m_FrameSync->Drain(m_GraphicsQueue.get());
     }
 
-    // 3. Flush all deferred deletions now that we know the GPU is idle and all tickets are completed.
+    // 3. Destroy the Resource Registry first to ensure all remaining resources are enqueued for deferred destruction.
+    // This triggers ~RHIResourceRegistry() which enqueues everything that wasn't explicitly released.
+    m_ResourceRegistry.reset();
+    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Resource Registry destroyed, remaining resources enqueued");
+
+    // 4. Flush all deferred deletions now that we know the GPU is idle and all tickets are completed.
     if (m_DeferredDeletion)
     {
+        LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Flushing deferred deletions");
         constexpr RHIGpuTicket kAll = ~static_cast<RHIGpuTicket>(0);
-        // Pass 1: Flush to destroy handle objects (like RHIVkImageHandle).
-        // These might enqueue resource destruction (like DeferredVkImage) into the same queue.
-        m_DeferredDeletion->Flush(RHIQueueType::Graphics, kAll);
-        m_DeferredDeletion->Flush(RHIQueueType::Compute, kAll);
-        m_DeferredDeletion->Flush(RHIQueueType::Transfer, kAll);
-        m_DeferredDeletion->Flush(RHIQueueType::Present, kAll);
-
-        // Pass 2: Flush to destroy the underlying Vulkan resources enqueued during Pass 1.
+        
         m_DeferredDeletion->Flush(RHIQueueType::Graphics, kAll);
         m_DeferredDeletion->Flush(RHIQueueType::Compute, kAll);
         m_DeferredDeletion->Flush(RHIQueueType::Transfer, kAll);
         m_DeferredDeletion->Flush(RHIQueueType::Present, kAll);
     }
 
-    // 4. Destroy managers that might rely on the device still being alive
-    // 4. Destroy managers that might rely on the device still being alive
+    // 5. Destroy managers that might rely on the device still being alive
     LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Deleting managers");
     if (m_GPUPipelineManager) { delete m_GPUPipelineManager; m_GPUPipelineManager = nullptr; }
-    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_GPUPipelineManager deleted");
     if (m_BindlessManager) { delete m_BindlessManager; m_BindlessManager = nullptr; }
-    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_BindlessManager deleted");
     if (m_DescriptorPool) { delete m_DescriptorPool; m_DescriptorPool = nullptr; }
-    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_DescriptorPool deleted");
+    
+    // IMPORTANT: Memory allocator must be deleted AFTER all resources that might use it are flushed.
     if (m_MemoryAllocator) { delete m_MemoryAllocator; m_MemoryAllocator = nullptr; }
     LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_MemoryAllocator deleted");
+    
     if (m_Factory) { delete m_Factory; m_Factory = nullptr; }
     LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_Factory deleted");
 

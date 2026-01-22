@@ -401,15 +401,14 @@ namespace ArisenEngine::RHI
     }
 
     inline VkImageViewCreateInfo ImageViewCreateInfo(VkImage image, EImageViewType viewType, EFormat format, 
-        UInt32 baseMipLevel, UInt32 levelCount, UInt32 baseArrayLayer, UInt32 layerCount)
+        UInt32 aspectMask, UInt32 baseMipLevel, UInt32 levelCount, UInt32 baseArrayLayer, UInt32 layerCount)
     {
         VK_STRUCT_INITIALIZE(VkImageViewCreateInfo, viewInfo)
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image = image;
         viewInfo.viewType = static_cast<VkImageViewType>(viewType);
         viewInfo.format = static_cast<VkFormat>(format);
-        viewInfo.subresourceRange.aspectMask = (viewType == IMAGE_VIEW_TYPE_CUBE || viewType == IMAGE_VIEW_TYPE_CUBE_ARRAY) ? VK_IMAGE_ASPECT_COLOR_BIT : VK_IMAGE_ASPECT_COLOR_BIT; // Simplified
-        // TODO: handle depth/stencil aspect
+        viewInfo.subresourceRange.aspectMask = aspectMask;
         viewInfo.subresourceRange.baseMipLevel = baseMipLevel;
         viewInfo.subresourceRange.levelCount = levelCount;
         viewInfo.subresourceRange.baseArrayLayer = baseArrayLayer;

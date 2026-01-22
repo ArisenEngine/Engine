@@ -101,6 +101,7 @@ namespace ArisenEngine::RHI
 
     void RHIVkFactory::ReleaseBuffer(RHIBufferHandle bufferHandle)
     {
+        m_Device->FreeBuffer(bufferHandle);
         auto* buffer = m_Device->GetBufferPool()->Deallocate(bufferHandle);
         if (buffer)
         {
@@ -120,6 +121,7 @@ namespace ArisenEngine::RHI
 
     void RHIVkFactory::ReleaseImage(RHIImageHandle imageHandle)
     {
+        m_Device->FreeImage(imageHandle);
         auto* image = m_Device->GetImagePool()->Deallocate(imageHandle);
         if (image)
         {
@@ -138,6 +140,7 @@ namespace ArisenEngine::RHI
 
     void RHIVkFactory::ReleaseImageView(RHIImageViewHandle imageViewHandle)
     {
+        m_Device->FreeImageView(imageViewHandle);
         auto* view = m_Device->GetImageViewPool()->Deallocate(imageViewHandle);
         if (view)
         {
@@ -177,12 +180,13 @@ namespace ArisenEngine::RHI
         auto* sampler = m_Device->GetSamplerPool()->Deallocate(samplerHandle);
         if (sampler)
         {
-            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [sampler, this]()
+            if (sampler->sampler != VK_NULL_HANDLE)
             {
-                if (sampler->sampler != VK_NULL_HANDLE)
-                {
-                    m_Device->GetResourceRegistry()->Release(sampler->registryHandle, RHIQueueType::Graphics, m_Device->GetCompletedSubmitId());
-                }
+                m_Device->GetResourceRegistry()->Release(sampler->registryHandle, RHIQueueType::Graphics, m_Device->GetCompletedSubmitId());
+            }
+
+            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [sampler]()
+            {
                 delete sampler;
             });
         }
@@ -219,12 +223,13 @@ namespace ArisenEngine::RHI
         auto* sem = m_Device->GetSemaphorePool()->Deallocate(semaphoreHandle);
         if (sem)
         {
-            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [sem, this]()
+            if (sem->semaphore != VK_NULL_HANDLE)
             {
-                if (sem->semaphore != VK_NULL_HANDLE)
-                {
-                    m_Device->GetResourceRegistry()->Release(sem->registryHandle, RHIQueueType::Graphics, m_Device->GetCompletedSubmitId());
-                }
+                m_Device->GetResourceRegistry()->Release(sem->registryHandle, RHIQueueType::Graphics, m_Device->GetCompletedSubmitId());
+            }
+
+            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [sem]()
+            {
                 delete sem;
             });
         }
@@ -262,12 +267,13 @@ namespace ArisenEngine::RHI
         auto* f = m_Device->GetFencePool()->Deallocate(fenceHandle);
         if (f)
         {
-            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [f, this]()
+            if (f->fence != VK_NULL_HANDLE)
             {
-                if (f->fence != VK_NULL_HANDLE)
-                {
-                    m_Device->GetResourceRegistry()->Release(f->registryHandle, RHIQueueType::Graphics, m_Device->GetCompletedSubmitId());
-                }
+                m_Device->GetResourceRegistry()->Release(f->registryHandle, RHIQueueType::Graphics, m_Device->GetCompletedSubmitId());
+            }
+
+            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [f]()
+            {
                 delete f;
             });
         }

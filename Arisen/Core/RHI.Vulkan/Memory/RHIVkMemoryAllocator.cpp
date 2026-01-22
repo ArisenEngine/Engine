@@ -31,16 +31,32 @@ namespace ArisenEngine::RHI
 
     bool RHIVkMemoryAllocator::AllocateBufferMemory(VkBuffer buffer, VmaMemoryUsage usage, VmaAllocation* outAllocation)
     {
+        VkMemoryRequirements memReq;
+        vkGetBufferMemoryRequirements(static_cast<VkDevice>(m_Device->GetHandle()), buffer, &memReq);
+
         VmaAllocationCreateInfo allocInfo = {};
         allocInfo.usage = usage;
-        return vmaAllocateMemoryForBuffer(m_VmaAllocator, buffer, &allocInfo, outAllocation, nullptr) == VK_SUCCESS;
+        
+        if (vmaAllocateMemory(m_VmaAllocator, &memReq, &allocInfo, outAllocation, nullptr) != VK_SUCCESS)
+        {
+            return false;
+        }
+        return vmaBindBufferMemory(m_VmaAllocator, *outAllocation, buffer) == VK_SUCCESS;
     }
 
     bool RHIVkMemoryAllocator::AllocateImageMemory(VkImage image, VmaMemoryUsage usage, VmaAllocation* outAllocation)
     {
+        VkMemoryRequirements memReq;
+        vkGetImageMemoryRequirements(static_cast<VkDevice>(m_Device->GetHandle()), image, &memReq);
+
         VmaAllocationCreateInfo allocInfo = {};
         allocInfo.usage = usage;
-        return vmaAllocateMemoryForImage(m_VmaAllocator, image, &allocInfo, outAllocation, nullptr) == VK_SUCCESS;
+        
+        if (vmaAllocateMemory(m_VmaAllocator, &memReq, &allocInfo, outAllocation, nullptr) != VK_SUCCESS)
+        {
+            return false;
+        }
+        return vmaBindImageMemory(m_VmaAllocator, *outAllocation, image) == VK_SUCCESS;
     }
 
     void RHIVkMemoryAllocator::FreeMemory(VmaAllocation allocation)
