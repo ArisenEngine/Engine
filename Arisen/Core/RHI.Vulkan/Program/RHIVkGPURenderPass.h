@@ -22,7 +22,11 @@ namespace ArisenEngine::RHI
         RHIVkGPURenderPass(RHIVkDevice* device, UInt32 maxFramesInFlight);
         ~RHIVkGPURenderPass() noexcept override;
 
-        void* GetHandle(UInt32 frameIndex) override;
+        inline void* GetHandle(UInt32 frameIndex) override
+        {
+            ASSERT(m_VkRenderPasses[frameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE);
+            return m_VkRenderPasses[frameIndex % m_MaxFramesInFlight];
+        }
 
         void AddAttachmentAction(
             EFormat format,

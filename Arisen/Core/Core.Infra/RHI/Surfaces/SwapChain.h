@@ -41,8 +41,8 @@ namespace ArisenEngine::RHI
         VIRTUAL_DECONSTRUCTOR(SwapChain)
         virtual void* GetHandle() const = 0;
         virtual void CreateSwapChainWithDesc(SwapChainDescriptor desc) = 0;
-        virtual RHISemaphore* GetImageAvailableSemaphore(UInt32 frameIndex) const = 0;
-        virtual RHISemaphore* GetRenderFinishSemaphore(UInt32 frameIndex) const  = 0;
+        virtual RHISemaphoreHandle GetImageAvailableSemaphore(UInt32 frameIndex) const = 0;
+        virtual RHISemaphoreHandle GetRenderFinishSemaphore(UInt32 frameIndex) const  = 0;
         virtual RHIImageHandle AquireCurrentImage(UInt32 frameIndex) = 0;
         virtual RHIImageViewHandle GetImageView(UInt32 frameIndex) const = 0;
         virtual void Present(UInt32 frameIndex) = 0;

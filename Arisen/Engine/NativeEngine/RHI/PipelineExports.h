@@ -4,14 +4,7 @@
 #include "../../Core/Core.Infra/RHI/Program/GPUPipeline.h"
 #include "../../Core/Core.Infra/RHI/Program/GPUPipelineStateObject.h"
 
-typedef void* RHI_DeviceHandle;
-typedef void* RHI_PipelineManagerHandle;
-typedef unsigned long long RHI_PipelineHandle;
-typedef unsigned long long RHI_RenderPassHandle;
-typedef void* RHI_PSOHandle;
-typedef void* RHI_SubpassHandle;
-
-typedef void* RHI_GPUProgramHandle;
+#include "RHIHandleExports.h"
 
 extern "C" ENGINE_DLL RHI_PipelineManagerHandle RHI_Device_GetPipelineManager(RHI_DeviceHandle device);
 extern "C" ENGINE_DLL RHI_PSOHandle RHI_PipelineManager_CreatePSO(RHI_PipelineManagerHandle pm);

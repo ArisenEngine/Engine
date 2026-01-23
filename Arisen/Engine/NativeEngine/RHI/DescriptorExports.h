@@ -3,14 +3,7 @@
 #include "../../Core/Core.Infra/RHI/Program/DescriptorPool.h"
 #include "../../Core/Core.Infra/RHI/Program/RHIDescriptorSet.h"
 
-typedef void* RHI_DeviceHandle;
-typedef void* RHI_DescriptorPoolHandle;
-typedef void* RHI_DescriptorSetHandle;
-typedef void* RHI_PSOHandle;
-typedef unsigned long long RHI_BufferHandle;
-typedef unsigned long long RHI_ImageHandle;
-
-typedef unsigned long long RHI_ImageViewHandle;
+#include "RHIHandleExports.h"
 
 extern "C" ENGINE_DLL RHI_DescriptorPoolHandle RHI_Device_GetDescriptorPool(RHI_DeviceHandle device);
 extern "C" ENGINE_DLL unsigned int RHI_DescriptorPool_AddPool(RHI_DescriptorPoolHandle pool, ArisenEngine::Containers::Vector<ArisenEngine::RHI::EDescriptorType>* types, ArisenEngine::Containers::Vector<unsigned int>* counts, unsigned int maxSets);

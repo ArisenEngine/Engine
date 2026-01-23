@@ -243,11 +243,9 @@ extern "C" ENGINE_DLL void RHI_RenderPass_AddAttachmentAction(RHI_DeviceHandle d
     if (!vkDev) return;
 
     auto* r = vkDev->GetRenderPassPool()->Get(h);
-    if (r) {
-        auto* rpObj = static_cast<RHI::GPURenderPass*>(r->renderPassObj); // Assuming we store the obj or it IS the obj
-        // Wait, RHIVkRenderPassPoolItemstruct in RHIVkResourcePools.h only has VkRenderPass.
-        // We might need to store the GPURenderPass object there too if we want to use its methods.
-        // For now, let's assume it's there.
+    if (r && r->renderPassObj) {
+        auto* rpObj = static_cast<RHI::GPURenderPass*>(r->renderPassObj);
+        rpObj->AddAttachmentAction(format, samples, colorLoad, colorStore, stencilLoad, stencilStore, initialLayout, finalLayout);
     }
 }
 
@@ -308,16 +306,15 @@ extern "C" ENGINE_DLL void RHI_RenderPass_Alloc(RHI_DeviceHandle device, RHI_Ren
         if (item && item->renderPassObj) {
             auto* r = static_cast<RHI::GPURenderPass*>(item->renderPassObj);
             r->AllocRenderPass(frameIndex);
+            
+            // Sync the cached VkRenderPass handle in the pool item
+            item->renderPass = static_cast<VkRenderPass>(r->GetHandle(frameIndex));
         }
     }
 }
 
 extern "C" ENGINE_DLL void RHI_Pipeline_AllocGraphics(RHI_DeviceHandle device, RHI_PipelineHandle pipeline, unsigned int frameIndex, RHI_SubpassHandle subpass)
 {
-    // Implementation needed if logic requires device. 
-    // Assuming pipeline handle can retrieve GPUPipeline object similar to RenderPass.
-    // However, Pipeline handle (RHIPipelineHandle) is usually for bind logic.
-    // If we need object, we need pool lookup.
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (!dev) return;
     auto h = *reinterpret_cast<RHI::RHIPipelineHandle*>(&pipeline);
@@ -326,15 +323,10 @@ extern "C" ENGINE_DLL void RHI_Pipeline_AllocGraphics(RHI_DeviceHandle device, R
     if (vkDev) {
         auto* item = vkDev->GetPipelinePool()->Get(h);
         if (item && item->pipeline) {
-             // item->pipeline is GPUPipeline*
-             // But GPUPipeline::AllocGraphics signatures?
-             // Assuming it exists?
-             // Wait, original code:
-             // (void)pipeline; (void)frameIndex; (void)subpass;
-             // So original was empty! I'll keep it empty but update signature.
+             auto* sub = reinterpret_cast<RHI::GPUSubPass*>(subpass);
+             item->pipeline->AllocGraphicPipeline(frameIndex, sub);
         }
     }
-    (void)device; (void)pipeline; (void)frameIndex; (void)subpass;
 }
 
 extern "C" ENGINE_DLL void RHI_Device_ReleaseRenderPass(RHI_DeviceHandle device, RHI_RenderPassHandle rp)

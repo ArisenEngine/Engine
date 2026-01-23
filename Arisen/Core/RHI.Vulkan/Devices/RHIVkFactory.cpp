@@ -56,8 +56,16 @@ namespace ArisenEngine::RHI
     RHIRenderPassHandle RHIVkFactory::CreateRenderPass()
     {
         auto* rp = new RHIVkRenderPassPoolItem();
-        // Note: Actual VkRenderPass is created in Alloc later (if applicable)
-        // or we can keep existing logic if we move it.
+        auto* rpObj = new RHIVkGPURenderPass(m_Device, m_Device->GetMaxFramesInFlight());
+        rp->renderPassObj = rpObj;
+        
+        // Register for deferred deletion
+        struct DeferredGPURenderPass {
+            RHIVkGPURenderPass* obj;
+            ~DeferredGPURenderPass() { delete obj; }
+        };
+        rp->registryHandle = m_Device->GetResourceRegistry()->Create(MakeDeferredDeleteItem(new DeferredGPURenderPass{rpObj}));
+
         return m_Device->GetRenderPassPool()->Allocate(rp);
     }
 
@@ -66,9 +74,13 @@ namespace ArisenEngine::RHI
         auto* rp = m_Device->GetRenderPassPool()->Deallocate(renderPass);
         if (rp)
         {
-            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [rp]()
+            if (rp->registryHandle.IsValid())
             {
-                // TODO: Cleanup internal rp->renderPass if it exists
+                m_Device->GetResourceRegistry()->Release(rp->registryHandle, RHIQueueType::Graphics, m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+            }
+
+            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [rp]()
+            {
                 delete rp;
             });
         }
@@ -85,7 +97,12 @@ namespace ArisenEngine::RHI
         auto* fb = m_Device->GetFrameBufferPool()->Deallocate(frameBuffer);
         if (fb)
         {
-            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [fb]()
+            if (fb->registryHandle.IsValid())
+            {
+                m_Device->GetResourceRegistry()->Release(fb->registryHandle, RHIQueueType::Graphics, m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+            }
+
+            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [fb]()
             {
                 delete fb;
             });
@@ -105,7 +122,7 @@ namespace ArisenEngine::RHI
         auto* buffer = m_Device->GetBufferPool()->Deallocate(bufferHandle);
         if (buffer)
         {
-            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [buffer]()
+            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [buffer]()
             {
                 delete buffer;
             });
@@ -125,7 +142,7 @@ namespace ArisenEngine::RHI
         auto* image = m_Device->GetImagePool()->Deallocate(imageHandle);
         if (image)
         {
-            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [image]()
+            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [image]()
             {
                 delete image;
             });
@@ -144,7 +161,7 @@ namespace ArisenEngine::RHI
         auto* view = m_Device->GetImageViewPool()->Deallocate(imageViewHandle);
         if (view)
         {
-            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [view]()
+            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [view]()
             {
                 delete view;
             });
@@ -182,10 +199,10 @@ namespace ArisenEngine::RHI
         {
             if (sampler->sampler != VK_NULL_HANDLE)
             {
-                m_Device->GetResourceRegistry()->Release(sampler->registryHandle, RHIQueueType::Graphics, m_Device->GetCompletedSubmitId());
+                m_Device->GetResourceRegistry()->Release(sampler->registryHandle, RHIQueueType::Graphics, m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
             }
 
-            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [sampler]()
+            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [sampler]()
             {
                 delete sampler;
             });
@@ -225,10 +242,10 @@ namespace ArisenEngine::RHI
         {
             if (sem->semaphore != VK_NULL_HANDLE)
             {
-                m_Device->GetResourceRegistry()->Release(sem->registryHandle, RHIQueueType::Graphics, m_Device->GetCompletedSubmitId());
+                m_Device->GetResourceRegistry()->Release(sem->registryHandle, RHIQueueType::Graphics, m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
             }
 
-            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [sem]()
+            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [sem]()
             {
                 delete sem;
             });
@@ -269,10 +286,10 @@ namespace ArisenEngine::RHI
         {
             if (f->fence != VK_NULL_HANDLE)
             {
-                m_Device->GetResourceRegistry()->Release(f->registryHandle, RHIQueueType::Graphics, m_Device->GetCompletedSubmitId());
+                m_Device->GetResourceRegistry()->Release(f->registryHandle, RHIQueueType::Graphics, m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
             }
 
-            m_Device->EnqueueDeferredDestroy(m_Device->GetCompletedSubmitId(), [f]()
+            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [f]()
             {
                 delete f;
             });

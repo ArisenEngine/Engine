@@ -3,10 +3,7 @@
 #include "../../Core/Core.Infra/RHI/Devices/RHIDevice.h"
 #include "../../Core/Core.Infra/RHI/Handles/RHIHandle.h"
 
-typedef void* RHI_DeviceHandle;
-typedef unsigned long long RHI_BufferHandle;
-typedef unsigned long long RHI_ImageHandle;
-typedef unsigned long long RHI_ImageViewHandle;
+#include "RHIHandleExports.h"
 namespace ArisenEngine { namespace RHI { class ImageView; } }
 
 // BufferHandle lifecycle & ops

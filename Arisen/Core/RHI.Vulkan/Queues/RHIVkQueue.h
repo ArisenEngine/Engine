@@ -54,7 +54,6 @@ namespace ArisenEngine::RHI
         IRHIDeferredDeletionQueue* m_DeferredDeletion { nullptr }; // not owned
         RHIResourceRegistry* m_ResourceRegistry { nullptr }; // not owned
 
-        std::mutex m_Mutex;
         VkSemaphore m_TimelineSemaphore { VK_NULL_HANDLE };
 
         std::atomic<RHIGpuTicket> m_LatestTicket { 0 };

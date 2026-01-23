@@ -297,7 +297,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocBufferDeviceMemory(RHIBufferHandle han
 
     // If there was an old allocation, queue it for individual deletion
     if (buffer->state->allocation != VK_NULL_HANDLE) {
-        EnqueueDeferredDestroy(GetCompletedSubmitId(), [allocator = buffer->state->allocator, oldAlloc = buffer->state->allocation]() {
+        EnqueueDeferredDestroy(m_GraphicsQueue->GetLatestTicket(), [allocator = buffer->state->allocator, oldAlloc = buffer->state->allocation]() {
             if (allocator != VK_NULL_HANDLE && oldAlloc != VK_NULL_HANDLE) {
                 vmaFreeMemory(allocator, oldAlloc);
             }
@@ -319,7 +319,7 @@ void ArisenEngine::RHI::RHIVkDevice::FreeBuffer(RHIBufferHandle handle)
     {
         // Simply release the registry handle. 
         // The shared State object's destructor will handle cleaning up both VkBuffer and VmaAllocation.
-        m_ResourceRegistry->Release(buffer->registryHandle, RHIQueueType::Graphics, GetCompletedSubmitId());
+        m_ResourceRegistry->Release(buffer->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
         
         buffer->buffer = VK_NULL_HANDLE;
         buffer->allocation = VK_NULL_HANDLE;
@@ -339,6 +339,24 @@ void ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopy(RHIBufferHandle handle, co
         memcpy((uint8_t*)mappedData + offset, src, buffer->size);
         vmaUnmapMemory(m_MemoryAllocator->GetVmaAllocator(), buffer->allocation);
     }
+}
+
+ArisenEngine::UInt64 ArisenEngine::RHI::RHIVkDevice::GetBufferSize(RHIBufferHandle handle)
+{
+    auto* buffer = m_BufferPool->Get(handle);
+    return buffer ? buffer->size : 0ULL;
+}
+
+ArisenEngine::UInt64 ArisenEngine::RHI::RHIVkDevice::GetBufferOffset(RHIBufferHandle handle)
+{
+    auto* buffer = m_BufferPool->Get(handle);
+    return buffer ? buffer->offset : 0ULL;
+}
+
+ArisenEngine::UInt64 ArisenEngine::RHI::RHIVkDevice::GetBufferRange(RHIBufferHandle handle)
+{
+    auto* buffer = m_BufferPool->Get(handle);
+    return buffer ? buffer->range : 0ULL;
 }
 
 bool ArisenEngine::RHI::RHIVkDevice::AllocImage(RHIImageHandle handle, ImageDescriptor&& desc)
@@ -392,7 +410,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImageDeviceMemory(RHIImageHandle handl
 
     // If there was an old allocation, queue it for individual deletion
     if (image->state->allocation != VK_NULL_HANDLE) {
-        EnqueueDeferredDestroy(GetCompletedSubmitId(), [allocator = image->state->allocator, oldAlloc = image->state->allocation]() {
+        EnqueueDeferredDestroy(m_GraphicsQueue->GetLatestTicket(), [allocator = image->state->allocator, oldAlloc = image->state->allocation]() {
             if (allocator != VK_NULL_HANDLE && oldAlloc != VK_NULL_HANDLE) {
                 vmaFreeMemory(allocator, oldAlloc);
             }
@@ -413,7 +431,7 @@ void ArisenEngine::RHI::RHIVkDevice::FreeImage(RHIImageHandle handle)
     {
         // Simply release the registry handle. 
         // The shared State object's destructor will handle cleaning up both VkImage and VmaAllocation.
-        m_ResourceRegistry->Release(image->registryHandle, RHIQueueType::Graphics, GetCompletedSubmitId());
+        m_ResourceRegistry->Release(image->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
         
         image->image = VK_NULL_HANDLE;
         image->allocation = VK_NULL_HANDLE;
@@ -467,7 +485,7 @@ void ArisenEngine::RHI::RHIVkDevice::FreeImageView(RHIImageViewHandle handle)
 
     if (viewItem->view != VK_NULL_HANDLE)
     {
-        m_ResourceRegistry->Release(viewItem->registryHandle, RHIQueueType::Graphics, GetCompletedSubmitId());
+        m_ResourceRegistry->Release(viewItem->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
         viewItem->view = VK_NULL_HANDLE;
         viewItem->registryHandle = RHIResourceHandle::Invalid();
     }

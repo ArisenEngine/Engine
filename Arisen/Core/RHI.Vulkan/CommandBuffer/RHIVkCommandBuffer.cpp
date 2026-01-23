@@ -70,13 +70,27 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRenderPass(UInt32 frameIndex, R
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = rp->renderPass;
+    
+    // Retrieve backend objects for the specific frame
+    auto* rpObj = static_cast<RHIVkGPURenderPass*>(rp->renderPassObj);
+    if (rpObj) {
+         renderPassInfo.renderPass = static_cast<VkRenderPass>(rpObj->GetHandle(frameIndex));
+    } else {
+         renderPassInfo.renderPass = rp->renderPass;
+    }
+    
+    // For now, assume FrameBuffer pool item has the current frame's VkFramebuffer
     renderPassInfo.framebuffer = fb->frameBuffer;
     
-    // TODO: We need a way to get render area from handle-based fb
-    // For now, assume it's stored in the struct or calculated elsewhere
     renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = {1920, 1080}; // Dummy
+    
+    // Use actual framebuffer dimensions if available
+    renderPassInfo.renderArea.extent = { fb->width, fb->height };
+    
+    // Fallback if dimensions are unknown
+    if (renderPassInfo.renderArea.extent.width == 0 || renderPassInfo.renderArea.extent.height == 0) {
+        renderPassInfo.renderArea.extent = {1920, 1080}; 
+    }
     
     VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
     renderPassInfo.clearValueCount = 1;

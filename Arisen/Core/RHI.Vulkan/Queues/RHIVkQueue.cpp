@@ -93,16 +93,18 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
         for (UInt32 i = 0; i < vkCmd->GetSignalSemaphoresCount(); ++i)
         {
             signalSemaphores.emplace_back(sems[i]);
-            signalValues.emplace_back(0); 
+            signalValues.emplace_back(0); // Binary semaphores ignore this value, but array size must match
         }
     }
 
     submitInfo.signalSemaphoreCount = static_cast<UInt32>(signalSemaphores.size());
     submitInfo.pSignalSemaphores = signalSemaphores.data();
+    
+    timelineInfo.waitSemaphoreValueCount = submitInfo.waitSemaphoreCount;
+    timelineInfo.pWaitSemaphoreValues = waitValues.data();
     timelineInfo.signalSemaphoreValueCount = static_cast<uint32_t>(signalValues.size());
     timelineInfo.pSignalSemaphoreValues = signalValues.data();
 
-    std::lock_guard<std::mutex> lock(m_Mutex);
 
     if (vkQueueSubmit(m_Queue, 1, &submitInfo, fence) != VK_SUCCESS)
     {
