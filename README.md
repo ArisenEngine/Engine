@@ -1,6 +1,6 @@
 # ArisenEngine
 
-ArisenEngine 是一个开源的、面向学习与研究的自研渲染引擎，采用模块化架构，支持多平台构建与现代图形 API（如 Vulkan）。目标是打造一个兼具可扩展性与可读性的图形引擎，供开发者探索图形编程与引擎架构。
+ArisenEngine is an open-source, self-developed rendering engine designed for learning and research. It adopts a modular architecture and supports multi-platform builds and modern graphics APIs (specifically Vulkan). The goal is to create a modern, high-performance graphics engine that allows developers to explore cutting-edge graphics programming and engine architecture.
 
 ---
 
@@ -10,42 +10,42 @@ ArisenEngine 是一个开源的、面向学习与研究的自研渲染引擎，�
 
 ---
 
-## 🧰 环境要求
+## 🧰 Requirements
 
-| 组件          | 要求版本             |
-| ------------- | -------------------- |
-| CMake         | ≥ 3.29               |
-| Vulkan SDK    | 已安装（建议最新版） |
-| Visual Studio | 2022（支持 C++23）   |
-| Windows SDK   | 10+                  |
-| .NET SDK      | 9.0+                 |
-| Python        | 3.0+                 |
+| Component     | Version Requirement      |
+| ------------- | ------------------------ |
+| CMake         | ≥ 3.29                   |
+| Vulkan SDK    | Installed (Latest recommended) |
+| Visual Studio | 2022 (C++23 support)     |
+| Windows SDK   | 10+                      |
+| .NET SDK      | 9.0+                     |
+| Python        | 3.0+                     |
 
 ---
 
-## 🏗️ 架构设计
+## 🏗️ Architecture Design
 
-### 核心架构概览
+### Core Architecture Overview
 
-ArisenEngine 采用分层模块化架构，主要分为以下几个核心层次：
+ArisenEngine employs a layered modular architecture, primarily divided into the following core levels:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Editor Layer (C#)                       │
+│                    Editor Layer (C#)                        │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────┐ │
 │  │   ArisenEditor  │  │   Project Mgmt  │  │   UI/UX      │ │
 │  │   (Avalonia)    │  │   & Asset Tools │  │   Framework  │ │
 │  └─────────────────┘  └─────────────────┘  └──────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────────┐
-│                 Engine Layer (C#)                          │
+│                 Engine Layer (C#)                           │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────┐ │
 │  │   ShaderLab     │  │   Serialization │  │   Models     │ │
 │  │   Parser        │  │   System        │  │   & ECS      │ │
 │  └─────────────────┘  └─────────────────┘  └──────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────────┐
-│                Platform Layer (C++)                        │
+│                Platform Layer (C++)                         │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────┐ │
 │  │   Shader        │  │   Window        │  │   File I/O   │ │
 │  │   Compiler      │  │   Management    │  │   & Utils    │ │
@@ -53,14 +53,14 @@ ArisenEngine 采用分层模块化架构，主要分为以下几个核心层次�
 │  └─────────────────┘  └─────────────────┘  └──────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────────┐
-│                   RHI Layer (C++)                          │
+│                   RHI Layer (C++)                           │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────┐ │
 │  │   Vulkan        │  │   DirectX 12    │  │   Common     │ │
-│  │   Backend       │  │   Backend       │  │   RHI        │ │
+│  │   Backend       │  │   (Planned)     │  │   RHI        │ │
 │  └─────────────────┘  └─────────────────┘  └──────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────────┐
-│                 Infrastructure (C++)                       │
+│                 Infrastructure (C++)                        │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────┐ │
 │  │   Logging       │  │   Memory        │  │   Profiling  │ │
 │  │   (spdlog)      │  │   Management    │  │   (Tracy)    │ │
@@ -68,144 +68,125 @@ ArisenEngine 采用分层模块化架构，主要分为以下几个核心层次�
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 核心组件详解
+### Core Components Details
 
-#### 1. ShaderLab 系统 🎨
-- **功能**: 解析 ShaderLab 格式的着色器文件，提取元数据和 HLSL 代码
-- **特性**:
-  - 完整的 Pass 解析（Name, Tags, Render States）
-  - HLSL 代码提取与预处理指令处理
-  - 渲染状态解析（Blend, ZWrite, ZTest, Cull, Stencil 等）
-  - Pragma 指令解析（入口点、目标模型、多编译变体）
-  - 基于源文本切片的代码保真度
-- **输出**: YAML 格式的着色器元数据，纯 HLSL 代码用于 DXC 编译
+#### 1. ShaderLab System 🎨
+- **Function**: Parses ShaderLab format shader files, extracting metadata and HLSL code.
+- **Features**:
+  - Complete Pass parsing (Name, Tags, Render States).
+  - HLSL code extraction and preprocessor directive handling.
+  - Render State parsing (Blend, ZWrite, ZTest, Cull, Stencil, etc.).
+  - Pragma directive parsing (Entry points, Target models, Multi-compile variants).
+  - Code fidelity checking based on source text slicing.
+- **Output**: Shader metadata in YAML format, pure HLSL code for DXC compilation.
 
 #### 2. RHI (Render Hardware Interface) 🖥️
-- **设计理念**: 跨平台图形 API 抽象层
-- **支持后端**:
-  - **Vulkan**: 现代低开销图形 API，支持多线程渲染
-  - **DirectX 12**: Windows 平台高性能渲染
-- **核心功能**:
-  - 设备管理与资源分配
-  - 命令缓冲区与同步机制
-  - 管线状态对象 (PSO) 管理
-  - 描述符集与资源绑定
-  - 内存屏障与资源转换
+- **Design Philosophy**: High-performance thin abstraction over modern graphics APIs.
+- **Supported Backends**:
+  - **Vulkan**: Primary backend. Deeply optimized for low overhead, explicit synchronization, and bindless resources.
+  - **DirectX 12**: Planned for future expansion.
+- **Core Functions**:
+  - Handle-based resource management (Bindless ready).
+  - Explicit synchronization (Barriers, Semaphores, Fences).
+  - Multi-threaded command recording.
+  - Dynamic resource binding via Descriptor Indexing.
 
-#### 3. 着色器编译系统 ⚙️
-- **编译器**: DirectX Shader Compiler (DXC)
-- **目标格式**: SPIR-V (Vulkan) / DXIL (DirectX 12)
-- **功能特性**:
-  - HLSL 到 SPIR-V 的跨平台编译
-  - 着色器变体管理 (multi_compile, shader_feature)
-  - 包含文件依赖解析
-  - 优化级别控制
+#### 3. Shader Compilation System ⚙️
+- **Compiler**: DirectX Shader Compiler (DXC).
+- **Target Formats**: SPIR-V (Vulkan).
+- **Features**:
+  - Cross-platform compilation from HLSL to SPIR-V.
+  - Shader variant management (multi_compile, shader_feature).
+  - Include file dependency resolution.
+  - Optimization level control.
 
-#### 4. 编辑器系统 🛠️
-- **UI 框架**: Avalonia (跨平台 .NET UI)
-- **核心功能**:
-  - 项目管理与资源浏览器
-  - 着色器编辑器与预览
-  - 场景编辑器与实体管理
-  - 实时渲染预览窗口
-- **扩展性**: 基于插件的模块化设计
+#### 4. Editor System 🛠️
+- **UI Framework**: Avalonia (Cross-platform .NET UI).
+- **Core Functions**:
+  - Project management and asset browser.
+  - Shader editor and preview.
+  - Scene editor and entity management.
+  - Real-time rendering preview window.
+- **Extensibility**: Modular design based on plugins.
 
-#### 5. 绑定生成系统 🔗
-- **技术栈**: CppSharp (C++ 到 C# 绑定生成)
-- **功能**:
-  - 自动生成 C++ 原生代码的 C# 绑定
-  - 类型安全的内存管理
-  - 跨语言调用优化
+#### 5. Binding Generation System 🔗
+- **Tech Stack**: CppSharp (C++ to C# binding generation).
+- **Functions**:
+  - Automatic generation of C# bindings for C++ native code.
+  - Type-safe memory management.
+  - Cross-language call optimization (P/Invoke).
 
-### 数据流架构
+### Data Flow Architecture
 
 ```
-ShaderLab 文件 → ShaderLab 解析器 → YAML 元数据
+ShaderLab File → ShaderLab Parser → YAML Metadata
                                     ↓
-纯 HLSL 代码 → DXC 编译器 → SPIR-V 字节码
+Pure HLSL Code → DXC Compiler → SPIR-V Bytecode
                                     ↓
-SPIR-V 反射 → 描述符信息 → Vulkan 管线构建
+SPIR-V Reflection → Descriptor Info → Vulkan Pipeline Build
                                     ↓
-渲染管线 → GPU 执行 → 帧缓冲输出
+Render Pipeline → GPU Execution → Framebuffer Output
 ```
 
-## 🗺️ 开发路线图
+## 🗺️ High-Performance Roadmap
 
-### Phase 1: 核心基础设施 (当前进度: 80%) ✅
-- [x] **RHI 抽象层设计**
-  - [x] Vulkan 后端基础实现
-  - [x] DirectX 12 后端基础实现
-  - [x] 通用 RHI 接口定义
-- [x] **着色器系统**
-  - [x] ShaderLab 解析器完整实现
-  - [x] DXC 集成与 SPIR-V 编译
-  - [x] 渲染状态与 Pragma 解析
-- [x] **构建系统**
-  - [x] CMake 多平台构建配置
-  - [x] 自动化构建脚本
-  - [x] 依赖管理与第三方库集成
+ArisenEngine aims to rival modern commercial engines in rendering architecture, focusing on "GPU-Driven," "Bindless," and "Parallelism."
 
-### Phase 2: 渲染管线 (计划: Q2 2024) 🚧
-- [ ] **基础渲染管线**
-  - [ ] 前向渲染管线实现
-  - [ ] 延迟渲染管线设计
-  - [ ] 阴影映射系统
-- [ ] **材质系统**
-  - [ ] 材质参数管理
-  - [ ] 纹理资源系统
-  - [ ] 材质变体与 LOD
-- [ ] **几何体渲染**
-  - [ ] 网格加载与处理
-  - [ ] 实例化渲染
-  - [ ] 几何着色器支持
+### Phase 1: The Modern Foundation (Current Focus) 🏗️
+Establishing a rock-solid, zero-overhead foundation for modern rendering.
+- [x] **High-Performance RHI (Vulkan)**
+    - [x] Handle-based resource access (preparing for Bindless).
+    - [x] Explicit memory management (VMA integration).
+    - [x] Synchronization primitive abstraction.
+- [ ] **Data-Oriented Core**
+    - [ ] Job System / Task Graph (Fiber-based multitasking).
+    - [ ] SIMD-optimized math library.
+    - [ ] Low-fragmentation memory allocators (Frame/Stack allocators).
+- [ ] **Bindless Architecture**
+    - [ ] Global Descriptor Heap design.
+    - [ ] "Bindless" texture and buffer access in shaders.
+    - [ ] Removal of legacy descriptor set binding management.
 
-### Phase 3: 编辑器功能 (计划: Q3 2024) 📋
-- [ ] **场景编辑器**
-  - [ ] 3D 场景视图与操作
-  - [ ] 实体组件系统 (ECS)
-  - [ ] 变换与层级管理
-- [ ] **着色器编辑器**
-  - [ ] 语法高亮与智能提示
-  - [ ] 实时编译与错误检查
-  - [ ] 着色器变体预览
-- [ ] **资源管理**
-  - [ ] 资源导入与处理
-  - [ ] 资源依赖跟踪
-  - [ ] 热重载支持
+### Phase 2: GPU-Driven Rendering Pipeline 🚀
+Moving the heavy lifting from CPU to GPU.
+- [ ] **GPU-Driven Geometry**
+    - [ ] GPU Culling (Frustum, Occlusion) via Compute Shaders.
+    - [ ] Mesh Shaders pipeline support.
+    - [ ] Indirect Drawing (Multi-Draw Indirect).
+- [ ] **Modern Render Graph**
+    - [ ] Automatic resource barrier placement.
+    - [ ] Transient resource management (memory aliasing).
+    - [ ] Async Compute scheduling.
 
-### Phase 4: 高级渲染 (计划: Q4 2024) 🌟
-- [ ] **光照系统**
-  - [ ] 实时光照计算
-  - [ ] 全局光照 (GI) 支持
-  - [ ] 体积光照与雾效
-- [ ] **后处理效果**
-  - [ ] 色调映射与色彩校正
-  - [ ] 抗锯齿 (TAA, MSAA)
-  - [ ] 景深与运动模糊
-- [ ] **高级特性**
-  - [ ] 计算着色器支持
-  - [ ] 光线追踪 (RTX/DXR)
-  - [ ] 多线程渲染优化
+### Phase 3: Advanced Graphics Features 🌟
+Implementing state-of-the-art rendering techniques.
+- [ ] **Global Illumination**
+    - [ ] Hybrid Ray Tracing pipeline.
+    - [ ] Real-time GI (DDGI or Voxel-based).
+    - [ ] Screen Space Glocal Illumination (SSGI).
+- [ ] **Virtual Geometry**
+    - [ ] Cluster-based rendering (similar to Nanite).
+    - [ ] Continuous Level of Detail (LOD).
+- [ ] **Volumetric Effects**
+    - [ ] Volumetric Fog & Lighting.
+    - [ ] Volumetric Clouds.
 
-### Phase 5: 工具链完善 (计划: Q1 2025) 🔧
-- [ ] **性能分析**
-  - [ ] GPU 性能分析器
-  - [ ] 内存使用监控
-  - [ ] 渲染统计与优化建议
-- [ ] **调试工具**
-  - [ ] 着色器调试器
-  - [ ] 渲染管线可视化
-  - [ ] 资源泄漏检测
-- [ ] **导出与部署**
-  - [ ] 多平台构建支持
-  - [ ] 资源打包与压缩
-  - [ ] 运行时热更新
+### Phase 4: Production Readiness & Tooling 🛠️
+Making the engine usable for actual game production.
+- [ ] **Asset Pipeline**
+    - [ ] Fast texture compression/transcoding (KTX2/DDS).
+    - [ ] Model optimization (MeshOptimizer).
+    - [ ] Asynchronous Asset Streaming.
+- [ ] **Editor & Debugging**
+    - [ ] GPU Frame Profiler integration.
+    - [ ] Visual Shader Graph.
+    - [ ] Scene serialization & Prefab system.
 
-## ⚙️ 编译方式（Windows 平台）
+## ⚙️ Build Instructions (Windows)
 
-### ✅ 快速构建 Editor（推荐）
+### ✅ Quick Build Editor (Recommended)
 
-执行以下脚本生成编辑器解决方案：
+Run the following script to generate the Editor solution:
 
 ```bash
 Scripts/Windows/generate_editor_all.bat
