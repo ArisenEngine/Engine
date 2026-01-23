@@ -14,6 +14,7 @@
 #include "RHI/Enums/Pipeline/EPolygonMode.h"
 #include "RHI/Enums/Pipeline/EPrimitiveTopology.h"
 #include "RHI/Enums/Pipeline/EVertexInputRate.h"
+#include "RHI/Handles/RHIHandle.h"
 
 namespace ArisenEngine::RHI
 {
@@ -27,7 +28,7 @@ namespace ArisenEngine::RHI
         GPUPipelineStateObject() = default;
         virtual ~GPUPipelineStateObject() noexcept { ClearDynamicPipelineStates(); }
 
-        virtual void AddProgram(GPUProgram* program) = 0;
+        virtual void AddProgram(RHIGPUProgramHandle handle) = 0;
         virtual void ClearAllPrograms() = 0;
 
         virtual const UInt32 GetHash() const = 0;

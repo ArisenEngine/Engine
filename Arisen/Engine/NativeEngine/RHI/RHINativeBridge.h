@@ -26,6 +26,18 @@ namespace ArisenEngine::RHI
             return device->GetImageViewPool()->Get(handle);
         }
 
+        // CommandBufferPool
+        static RHIVkCommandBufferPoolItem* GetCommandBufferPoolItem(RHIVkDevice* device, RHICommandBufferPoolHandle handle)
+        {
+            return device->GetCommandBufferPoolPool()->Get(handle);
+        }
+
+        // GPUProgram
+        static RHIVkGPUProgramPoolItem* GetGPUProgramItem(RHIVkDevice* device, RHIGPUProgramHandle handle)
+        {
+            return device->GetGPUProgramPool()->Get(handle);
+        }
+
         // Buffer (if needed, though GetBufferSize is now public)
         static RHIVkBufferPoolItem* GetBufferItem(RHIVkDevice* device, RHIBufferHandle handle)
         {

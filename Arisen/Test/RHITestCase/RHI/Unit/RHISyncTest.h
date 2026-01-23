@@ -20,7 +20,7 @@ namespace ArisenEngine::Testing
         bool SetupTest() override
         {
             m_CommandPool = RHI_Device_CreateCommandBufferPool(m_Device);
-            return m_CommandPool != nullptr;
+            return m_CommandPool != 0;
         }
 
         bool Run() override
@@ -93,11 +93,11 @@ namespace ArisenEngine::Testing
             if (m_CommandPool)
             {
                 RHI_Device_ReleaseCommandBufferPool(m_Device, m_CommandPool);
-                m_CommandPool = nullptr;
+                m_CommandPool = 0;
             }
         }
 
     private:
-        RHI_CommandBufferPoolHandle m_CommandPool = nullptr;
+        RHI_CommandBufferPoolHandle m_CommandPool = 0;
     };
 }

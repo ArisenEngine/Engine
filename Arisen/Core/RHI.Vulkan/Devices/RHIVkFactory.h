@@ -12,12 +12,12 @@ namespace ArisenEngine::RHI
         explicit RHIVkFactory(RHIVkDevice* device);
         ~RHIVkFactory() noexcept override = default;
 
-        GPUProgram* CreateGPUProgram() override;
-        void ReleaseGPUProgram(GPUProgram* program) override;
-        bool AttachProgramByteCode(GPUProgram* program, GPUProgramDesc&& desc) override;
+        RHIGPUProgramHandle CreateGPUProgram() override;
+        void ReleaseGPUProgram(RHIGPUProgramHandle handle) override;
+        bool AttachProgramByteCode(RHIGPUProgramHandle handle, GPUProgramDesc&& desc) override;
 
-        RHICommandBufferPool* CreateCommandBufferPool() override;
-        void ReleaseCommandBufferPool(RHICommandBufferPool* pool) override;
+        RHICommandBufferPoolHandle CreateCommandBufferPool() override;
+        void ReleaseCommandBufferPool(RHICommandBufferPoolHandle handle) override;
 
         RHIRenderPassHandle CreateRenderPass() override;
         void ReleaseRenderPass(RHIRenderPassHandle renderPass) override;

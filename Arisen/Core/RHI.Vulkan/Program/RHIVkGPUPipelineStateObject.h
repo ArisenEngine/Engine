@@ -3,6 +3,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "RHI/Program/RHIDescriptorUpdateInfo.h"
+#include "RHI/Handles/RHIHandle.h"
 
 namespace ArisenEngine::RHI
 {
@@ -21,7 +22,7 @@ namespace ArisenEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkGPUPipelineStateObject)
         ~RHIVkGPUPipelineStateObject() noexcept override;
         RHIVkGPUPipelineStateObject(RHIVkDevice* device);
-        void AddProgram(GPUProgram* program) override;
+        void AddProgram(RHIGPUProgramHandle handle) override;
         void ClearAllPrograms() override;
 
         const UInt32 GetHash() const override;

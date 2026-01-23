@@ -20,25 +20,26 @@ extern "C" ENGINE_DLL void RHI_Device_GraphicQueueWaitIdle(RHI_DeviceHandle devi
 extern "C" ENGINE_DLL RHI_GPUProgramHandle RHI_Device_CreateGPUProgram(RHI_DeviceHandle device)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
-    if (dev == nullptr) return nullptr;
-    return reinterpret_cast<RHI_GPUProgramHandle>(dev->GetFactory()->CreateGPUProgram());
+    if (dev == nullptr) return 0;
+    auto handle = dev->GetFactory()->CreateGPUProgram();
+    return *reinterpret_cast<unsigned long long*>(&handle);
 }
 
 extern "C" ENGINE_DLL void RHI_Device_ReleaseGPUProgram(RHI_DeviceHandle device, RHI_GPUProgramHandle program)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
-    auto* p = reinterpret_cast<RHI::GPUProgram*>(program);
     if (dev == nullptr) return;
-    dev->GetFactory()->ReleaseGPUProgram(p);
+    auto h = *reinterpret_cast<RHI::RHIGPUProgramHandle*>(&program);
+    dev->GetFactory()->ReleaseGPUProgram(h);
 }
 
 extern "C" ENGINE_DLL bool RHI_Device_AttachProgramByteCode(RHI_DeviceHandle device, RHI_GPUProgramHandle program, const RHI::GPUProgramDesc* desc)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
-    auto* p = reinterpret_cast<RHI::GPUProgram*>(program);
-    if (dev == nullptr || desc == nullptr || p == nullptr) return false;
+    if (dev == nullptr || desc == nullptr || program == 0) return false;
+    auto h = *reinterpret_cast<RHI::RHIGPUProgramHandle*>(&program);
     RHI::GPUProgramDesc copy = *desc;
-    return dev->GetFactory()->AttachProgramByteCode(p, std::move(copy));
+    return dev->GetFactory()->AttachProgramByteCode(h, std::move(copy));
 }
 
 extern "C" ENGINE_DLL void RHI_Device_SetResolution(RHI_DeviceHandle device, unsigned int width, unsigned int height)

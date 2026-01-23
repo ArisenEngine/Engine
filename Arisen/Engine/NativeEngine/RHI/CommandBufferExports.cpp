@@ -2,32 +2,42 @@
 #include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
 #include "../../Core/Core.Infra/RHI/CommandBuffer/RHICommandBufferPool.h"
 #include "../../Core/Core.Infra/RHI/Devices/RHIDevice.h"
+#include "../../Core/RHI.Vulkan/Devices/RHIVkDevice.h"
 #include "../../Core/Core.Infra/RHI/Handles/RHIHandle.h"
 
 using namespace ArisenEngine;
 
+#include "RHINativeBridge.h"
+
 extern "C" ENGINE_DLL RHI_CommandBufferPoolHandle RHI_Device_CreateCommandBufferPool(RHI_DeviceHandle device)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
-    if (dev == nullptr) return nullptr;
-    return reinterpret_cast<RHI_CommandBufferPoolHandle>(dev->GetFactory()->CreateCommandBufferPool());
+    if (dev == nullptr) return 0;
+    auto handle = dev->GetFactory()->CreateCommandBufferPool();
+    return *reinterpret_cast<unsigned long long*>(&handle);
 }
 
 extern "C" ENGINE_DLL void RHI_Device_ReleaseCommandBufferPool(RHI_DeviceHandle device, RHI_CommandBufferPoolHandle pool)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
-    auto* p = reinterpret_cast<RHI::RHICommandBufferPool*>(pool);
     if (dev == nullptr) return;
-    return dev->GetFactory()->ReleaseCommandBufferPool(p);
+    auto h = *reinterpret_cast<RHI::RHICommandBufferPoolHandle*>(&pool);
+    dev->GetFactory()->ReleaseCommandBufferPool(h);
 }
 
 extern "C" ENGINE_DLL RHI_CommandBufferHandle RHI_Device_GetCommandBuffer(RHI_DeviceHandle device, RHI_CommandBufferPoolHandle pool, unsigned int currentFrameIndex)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return nullptr;
-    auto* p = reinterpret_cast<RHI::RHICommandBufferPool*>(pool);
-     if (p == nullptr) return nullptr;
-    auto* raw = p->GetCommandBuffer(currentFrameIndex);
+    
+    auto h = *reinterpret_cast<RHI::RHICommandBufferPoolHandle*>(&pool);
+    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
+    if (!vkDev) return nullptr;
+
+    auto* item = RHI::RHINativeBridge::GetCommandBufferPoolItem(vkDev, h);
+    if (!item || !item->pool) return nullptr;
+    
+    auto* raw = item->pool->GetCommandBuffer(currentFrameIndex);
     return reinterpret_cast<RHI_CommandBufferHandle>(raw);
 }
 
@@ -35,10 +45,18 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseCommandBuffer(RHI_DeviceHandle devi
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return;
-    auto* p = reinterpret_cast<RHI::RHICommandBufferPool*>(pool);
+    
+    auto h = *reinterpret_cast<RHI::RHICommandBufferPoolHandle*>(&pool);
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
-    if (p == nullptr || c == nullptr) return;
-    p->ReleaseCommandBuffer(currentFrameIndex, c);
+    
+    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
+    if (!vkDev || !c) return;
+
+    auto* item = RHI::RHINativeBridge::GetCommandBufferPoolItem(vkDev, h);
+    if (item && item->pool)
+    {
+        item->pool->ReleaseCommandBuffer(currentFrameIndex, c);
+    }
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_Begin(RHI_CommandBufferHandle cmd, unsigned int frameIndex, unsigned int usageFlags)

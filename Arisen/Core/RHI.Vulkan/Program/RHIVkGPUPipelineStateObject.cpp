@@ -7,6 +7,7 @@
 #include "../Devices/RHIVkDevice.h"
 #include "../VkInitializer.h"
 #include "RHIVkBindlessManager.h"
+#include "../Handles/RHIVkResourcePools.h"
 
 ArisenEngine::RHI::RHIVkGPUPipelineStateObject::~RHIVkGPUPipelineStateObject() noexcept
 {
@@ -19,8 +20,16 @@ ArisenEngine::RHI::RHIVkGPUPipelineStateObject::RHIVkGPUPipelineStateObject(RHIV
     LOG_DEBUG("[RHIVkGPUPipelineStateObject::RHIVkGPUPipelineStateObject]: PSO Create.");
 }
 
-void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddProgram(GPUProgram* program)
+void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddProgram(RHIGPUProgramHandle handle)
 {
+    auto* item = m_Device->GetGPUProgramPool()->Get(handle);
+    if (!item || !item->program)
+    {
+        LOG_ERROR("[RHIVkGPUPipelineStateObject::AddProgram]: Invalid handle or program not found.");
+        return;
+    }
+    auto* program = item->program;
+
     VkPipelineShaderStageCreateInfo shaderStageCreateInfo {};
     shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shaderStageCreateInfo.flags = program->GetShaderStageCreateFlags();
