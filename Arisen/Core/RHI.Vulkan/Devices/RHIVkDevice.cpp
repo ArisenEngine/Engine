@@ -781,5 +781,23 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocFrameBuffer(RHIFrameBufferHandle handl
     return true;
 }
 
+void ArisenEngine::RHI::RHIVkDevice::WaitFence(RHIFenceHandle handle)
+{
+    auto* f = m_FencePool->Get(handle);
+    if (f && f->fence != VK_NULL_HANDLE)
+    {
+        vkWaitForFences(m_VkDevice, 1, &f->fence, VK_TRUE, UINT64_MAX);
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::ResetFence(RHIFenceHandle handle)
+{
+    auto* f = m_FencePool->Get(handle);
+    if (f && f->fence != VK_NULL_HANDLE)
+    {
+        vkResetFences(m_VkDevice, 1, &f->fence);
+    }
+}
+
 
 

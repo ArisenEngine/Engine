@@ -35,13 +35,22 @@ namespace ArisenEngine::RHI
 
 namespace ArisenEngine::RHI
 {
-    class RHIVkFactory;
     class RHIVkMemoryAllocator;
+    class RHIVkBindlessManager; // Forward decl
 
     class RHIVkDevice final: public RHIDevice
     {
-        
     public:
+        friend class RHIVkFactory;
+        friend class RHIVkCommandBuffer; // Needs pool access
+        friend class RHIVkDescriptorPool; // Needs pool access
+        friend class RHIVkBindlessManager; // Needs pool access
+        friend class RHIVkGPURenderPass; // Might need access
+        friend class RHIVkFrameBuffer; // Needs pool access
+        friend class RHIVkSwapChain; // Needs pool access
+        friend class RHIVkGPUPipelineManager; // Needs pool access
+        friend class RHINativeBridge; // Bridge for NativeExports
+
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkDevice)
         ~RHIVkDevice() noexcept override;
         void* GetHandle() const override { return m_VkDevice; }
@@ -131,6 +140,7 @@ namespace ArisenEngine::RHI
         void WaitQueueTicket(RHIGpuTicket ticket) override;
 
         // Handle-based operations
+    private:
         bool AllocBuffer(RHIBufferHandle handle, BufferDescriptor&& desc) override;
         bool AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits) override;
         void ReleaseBuffer(RHIBufferHandle handle) override;
@@ -155,8 +165,13 @@ namespace ArisenEngine::RHI
         void ReleasePipeline(RHIPipelineHandle handle) override;
 
         bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle, RHIRenderPassHandle renderPassHandle) override;
+        void WaitFence(RHIFenceHandle handle) override;
+        void ResetFence(RHIFenceHandle handle) override;
 
-        // Pool Accessors
+    public:
+
+        // Pool Accessors (Restricted)
+    private:
         RHIResourcePool<RHIBufferHandle, RHIVkBufferPoolItem>* GetBufferPool() const { return m_BufferPool.get(); }
         RHIResourcePool<RHIImageHandle, RHIVkImagePoolItem>* GetImagePool() const { return m_ImagePool.get(); }
         RHIResourcePool<RHIImageViewHandle, RHIVkImageViewPoolItem>* GetImageViewPool() const { return m_ImageViewPool.get(); }
@@ -166,6 +181,8 @@ namespace ArisenEngine::RHI
         RHIResourcePool<RHISemaphoreHandle, RHIVkSemaphorePoolItem>* GetSemaphorePool() const { return m_SemaphorePool.get(); }
         RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>* GetPipelinePool() const { return m_PipelinePool.get(); }
         RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>* GetFencePool() const { return m_FencePool.get(); }
+        
+    public:
 
         // Cached Function Pointers
         PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR = nullptr;

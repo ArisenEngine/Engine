@@ -2,7 +2,9 @@
 
 #include "../../Core/RHI.Vulkan/Devices/RHIVkDevice.h"
 #include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
+#include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
 #include "../../../Core/RHI.Vulkan/Handles/RHIVkResourcePools.h"
+#include "RHINativeBridge.h"
 #include <unordered_map>
 
 
@@ -104,7 +106,7 @@ extern "C" ENGINE_DLL RHI::EFormat RHI_ImageView_GetFormat(RHI_DeviceHandle devi
     auto h = *reinterpret_cast<RHI::RHIImageViewHandle*>(&view);
     auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
     if (vkDev) {
-        auto* v = vkDev->GetImageViewPool()->Get(h);
+        auto* v = RHI::RHINativeBridge::GetImageViewItem(vkDev, h);
         return v ? v->format : RHI::EFormat::FORMAT_UNDEFINED;
     }
     return RHI::EFormat::FORMAT_UNDEFINED;
@@ -117,7 +119,7 @@ extern "C" ENGINE_DLL unsigned int RHI_ImageView_GetWidth(RHI_DeviceHandle devic
     auto h = *reinterpret_cast<RHI::RHIImageViewHandle*>(&view);
     auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
     if (vkDev) {
-        auto* v = vkDev->GetImageViewPool()->Get(h);
+        auto* v = RHI::RHINativeBridge::GetImageViewItem(vkDev, h);
         return v ? v->width : 0;
     }
     return 0;
@@ -130,7 +132,7 @@ extern "C" ENGINE_DLL unsigned int RHI_ImageView_GetHeight(RHI_DeviceHandle devi
     auto h = *reinterpret_cast<RHI::RHIImageViewHandle*>(&view);
     auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
     if (vkDev) {
-        auto* v = vkDev->GetImageViewPool()->Get(h);
+        auto* v = RHI::RHINativeBridge::GetImageViewItem(vkDev, h);
         return v ? v->height : 0;
     }
     return 0;
