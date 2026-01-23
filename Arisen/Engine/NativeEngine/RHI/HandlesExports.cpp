@@ -63,12 +63,7 @@ extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Size(RHI_DeviceHandle device
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr || buffer == 0) return 0ULL;
     auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
-    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
-    if (vkDev) {
-        auto* buf = vkDev->GetBufferPool()->Get(h);
-        return buf ? buf->size : 0ULL;
-    }
-    return 0ULL;
+    return dev->GetBufferSize(h);
 }
 
 extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Offset(RHI_DeviceHandle device, RHI_BufferHandle buffer)
@@ -76,12 +71,7 @@ extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Offset(RHI_DeviceHandle devi
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr || buffer == 0) return 0ULL;
     auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
-    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
-    if (vkDev) {
-        auto* buf = vkDev->GetBufferPool()->Get(h);
-        return buf ? buf->offset : 0ULL;
-    }
-    return 0ULL;
+    return dev->GetBufferOffset(h);
 }
 
 extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Range(RHI_DeviceHandle device, RHI_BufferHandle buffer)
@@ -89,12 +79,7 @@ extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Range(RHI_DeviceHandle devic
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr || buffer == 0) return 0ULL;
     auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
-    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
-    if (vkDev) {
-        auto* buf = vkDev->GetBufferPool()->Get(h);
-        return buf ? buf->range : 0ULL;
-    }
-    return 0ULL;
+    return dev->GetBufferRange(h);
 }
 
 extern "C" ENGINE_DLL RHI_ImageHandle RHI_Device_GetImageHandle(RHI_DeviceHandle device, const char* name)

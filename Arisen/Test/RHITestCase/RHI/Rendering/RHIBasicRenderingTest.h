@@ -477,18 +477,20 @@ namespace ArisenEngine::Testing
         {
             RHI::BufferDescriptor vbDesc{
                 0,
-                sizeof(vertices[0]) * vertices.size(),
+                sizeof(vertices[0]) * (UInt64)vertices.size(),
                 RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                RHI::SHARING_MODE_EXCLUSIVE
+                RHI::SHARING_MODE_EXCLUSIVE,
+                0, nullptr
             };
             RHI_Buffer_Alloc(m_Context.device, m_Context.vertexBufferHandle, &vbDesc);
             RHI_Buffer_AllocDeviceMemory(m_Context.device, m_Context.vertexBufferHandle, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
             RHI::BufferDescriptor ibDesc{
                 0,
-                sizeof(indices[0]) * indices.size(),
+                sizeof(indices[0]) * (UInt64)indices.size(),
                 RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_INDEX_BUFFER_BIT,
-                RHI::SHARING_MODE_EXCLUSIVE
+                RHI::SHARING_MODE_EXCLUSIVE,
+                0, nullptr
             };
             RHI_Buffer_Alloc(m_Context.device, m_Context.indicesBufferHandle, &ibDesc);
             RHI_Buffer_AllocDeviceMemory(m_Context.device, m_Context.indicesBufferHandle, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -499,7 +501,8 @@ namespace ArisenEngine::Testing
                     0,
                     sizeof(UniformBufferObject),
                     RHI::BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                    RHI::SHARING_MODE_EXCLUSIVE
+                    RHI::SHARING_MODE_EXCLUSIVE,
+                    0, nullptr
                 };
                 RHI_Buffer_Alloc(m_Context.device, uniformBuffer, &ubDesc);
                 RHI_Buffer_AllocDeviceMemory(m_Context.device, uniformBuffer, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -533,7 +536,8 @@ namespace ArisenEngine::Testing
                 RHI::IMAGE_TYPE_2D, static_cast<UInt32>(texWidth), static_cast<UInt32>(texHeight), 1,
                 1, 1, RHI::FORMAT_R8G8B8A8_SRGB, RHI::IMAGE_TILING_OPTIMAL,
                 RHI::IMAGE_LAYOUT_UNDEFINED, RHI::IMAGE_USAGE_SAMPLED_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT,
-                RHI::SAMPLE_COUNT_1_BIT, RHI::SHARING_MODE_EXCLUSIVE
+                RHI::SAMPLE_COUNT_1_BIT, RHI::SHARING_MODE_EXCLUSIVE,
+                0, nullptr
             };
             RHI_Image_Alloc(m_Context.device, m_Context.textureHandle, &imgDesc);
             RHI_Image_AllocDeviceMemory(m_Context.device, m_Context.textureHandle, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -585,6 +589,9 @@ namespace ArisenEngine::Testing
             RHI_Cmd_End(commandBuffer);
             RHI_Device_Submit(device, commandBuffer, m_FrameIndex);
             
+            // Sync one-time setup transfers immediately to avoid command buffer reuse conflicts with first frame
+            RHI_Device_WaitIdle(device);
+
             RHI_Device_ReleaseBufferHandle(device, vertexStagingBufferHandle);
             RHI_Device_ReleaseBufferHandle(device, indicesStagingBufferHandle);
 
@@ -659,6 +666,9 @@ namespace ArisenEngine::Testing
             RHI_Cmd_End(commandBuffer);
             RHI_Device_Submit(device, commandBuffer, m_FrameIndex);
 
+            // Sync one-time setup transfers immediately to avoid command buffer reuse conflicts with first frame
+            RHI_Device_WaitIdle(device);
+
             RHI_Device_ReleaseBufferHandle(device, textureStagingBufferHandle);
             RHI_Device_ReleaseCommandBuffer(device, m_Context.commandPool, m_FrameIndex, commandBuffer);
         }
@@ -708,6 +718,7 @@ namespace ArisenEngine::Testing
                 RHI_ImageHandle backBuffer = RHI_SwapChain_AquireCurrentImage(swapchain, m_FrameIndex);
                 if (backBuffer == 0)
                 {
+                   NextFrame(); // Avoid hanging on acquire failure
                    return;
                 }
                 auto backBufferView = RHI_SwapChain_GetImageView(swapchain, m_FrameIndex);
@@ -756,8 +767,8 @@ namespace ArisenEngine::Testing
                 
                 if (imageAvailableSem && renderFinishedSem)
                 {
-                    RHI_Cmd_WaitSemaphore(commandBuffer, reinterpret_cast<RHI_SemaphoreHandle>(imageAvailableSem), RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-                    RHI_Cmd_SignalSemaphore(commandBuffer, reinterpret_cast<RHI_SemaphoreHandle>(renderFinishedSem));
+                    RHI_Cmd_WaitSemaphore(commandBuffer, imageAvailableSem, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+                    RHI_Cmd_SignalSemaphore(commandBuffer, renderFinishedSem);
                 }
             }
 

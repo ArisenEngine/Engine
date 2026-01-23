@@ -111,12 +111,6 @@ ArisenEngine::RHI::RHIVkGPURenderPass::~RHIVkGPURenderPass() noexcept
     
 }
 
-void* ArisenEngine::RHI::RHIVkGPURenderPass::GetHandle(UInt32 frameIndex)
-{
-    ASSERT(m_VkRenderPasses[frameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE);
-    return m_VkRenderPasses[frameIndex % m_MaxFramesInFlight];
-}
-
 void ArisenEngine::RHI::RHIVkGPURenderPass::AddAttachmentAction(EFormat format, ESampleCountFlagBits sample,
                                                                 AttachmentLoadOp colorLoadOp, AttachmentStoreOp colorStoreOp, AttachmentLoadOp stencilLoadOp,
                                                                 AttachmentStoreOp stencilStoreOp, EImageLayout initialLayout, EImageLayout finalLayout)

@@ -1,5 +1,6 @@
 #include "SurfaceExports.h"
 #include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
+#include "../../Core/RHI.Vulkan/Devices/RHIVkDevice.h"
 #include "../../Core/RHI.Vulkan/Surfaces/RHIVkSwapChain.h"
 #include <unordered_map>
 #include <mutex>
@@ -30,7 +31,7 @@ extern "C" ENGINE_DLL RHI_SwapChainHandle RHI_Surface_GetSwapChain(RHI_SurfaceHa
     return reinterpret_cast<RHI_SwapChainHandle>(surf->GetSwapChain());
 }
 
-extern "C" ENGINE_DLL void RHI_SwapChain_CreateWithDesc(RHI_SwapChainHandle swapchain, RHI::SwapChainDescriptor* desc)
+extern "C" ENGINE_DLL void RHI_SwapChain_CreateWithDesc(RHI_SwapChainHandle swapchain, ArisenEngine::RHI::SwapChainDescriptor* desc)
 {
     auto* sc = reinterpret_cast<RHI::SwapChain*>(swapchain);
     if (sc == nullptr || desc == nullptr) return;
@@ -53,18 +54,20 @@ extern "C" ENGINE_DLL RHI_ImageHandle RHI_SwapChain_AquireCurrentImage(RHI_SwapC
     return *reinterpret_cast<RHI_ImageHandle*>(&val);
 }
 
-extern "C" ENGINE_DLL RHI::RHISemaphore* RHI_SwapChain_GetImageAvailableSemaphore(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
+extern "C" ENGINE_DLL RHI_SemaphoreHandle RHI_SwapChain_GetImageAvailableSemaphore(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
 {
     auto* sc = reinterpret_cast<RHI::SwapChain*>(swapchain);
-    if (sc == nullptr) return nullptr;
-    return sc->GetImageAvailableSemaphore(frameIndex);
+    if (sc == nullptr) return 0ULL;
+    auto h = sc->GetImageAvailableSemaphore(frameIndex);
+    return *reinterpret_cast<RHI_SemaphoreHandle*>(&h);
 }
 
-extern "C" ENGINE_DLL RHI::RHISemaphore* RHI_SwapChain_GetRenderFinishSemaphore(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
+extern "C" ENGINE_DLL RHI_SemaphoreHandle RHI_SwapChain_GetRenderFinishSemaphore(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
 {
     auto* sc = reinterpret_cast<RHI::SwapChain*>(swapchain);
-    if (sc == nullptr) return nullptr;
-    return sc->GetRenderFinishSemaphore(frameIndex);
+    if (sc == nullptr) return 0ULL;
+    auto h = sc->GetRenderFinishSemaphore(frameIndex);
+    return *reinterpret_cast<RHI_SemaphoreHandle*>(&h);
 }
 
 extern "C" ENGINE_DLL RHI_ImageViewHandle RHI_SwapChain_GetImageView(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
@@ -93,15 +96,11 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseFrameBuffer(RHI_DeviceHandle device
 
 extern "C" ENGINE_DLL void RHI_FrameBuffer_SetAttachment(RHI_DeviceHandle device, RHI_FrameBufferHandle fb, unsigned int frameIndex, RHI_ImageViewHandle view, RHI_RenderPassHandle rp)
 {
-    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    auto* dev = reinterpret_cast<RHI::RHIVkDevice*>(device);
     if (!dev) return;
     auto hFb = *reinterpret_cast<RHI::RHIFrameBufferHandle*>(&fb);
     auto hView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&view);
     auto hRp = *reinterpret_cast<RHI::RHIRenderPassHandle*>(&rp);
 
-    // TODO: Need to retrieve FrameBuffer object from pool to call SetAttachment.
-    // Logic placeholder.
-    (void)frameIndex;
-    (void)hView;
-    (void)hRp;
+    dev->AllocFrameBuffer(hFb, frameIndex, hView, hRp);
 }

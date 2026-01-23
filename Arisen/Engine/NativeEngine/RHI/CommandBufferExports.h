@@ -2,15 +2,7 @@
 #include "EngineCommon.h"
 #include "../../Core/Core.Infra/RHI/CommandBuffer/RHICommandBuffer.h"
 
-typedef void* RHI_CommandBufferPoolHandle;
-typedef void* RHI_CommandBufferHandle;
-typedef void* RHI_DeviceHandle;
-typedef unsigned long long RHI_PipelineHandle;
-typedef unsigned long long RHI_BufferHandle;
-typedef unsigned long long RHI_ImageHandle;
-typedef void* RHI_DescriptorPoolHandle;
-typedef unsigned long long RHI_SemaphoreHandle;
-typedef unsigned long long RHI_FenceHandle;
+#include "RHIHandleExports.h"
 
 extern "C" ENGINE_DLL RHI_CommandBufferPoolHandle RHI_Device_CreateCommandBufferPool(RHI_DeviceHandle device);
 extern "C" ENGINE_DLL void RHI_Device_ReleaseCommandBufferPool(RHI_DeviceHandle device, RHI_CommandBufferPoolHandle pool);

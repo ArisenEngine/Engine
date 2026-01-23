@@ -13,6 +13,7 @@
 #include <mutex>
 #include <memory>
 #include <functional>
+#include "../Program/RHIVkGPURenderPass.h"
 #include "RHI/Synchronization/FrameSyncTracker.h"
 
 namespace ArisenEngine::RHI
@@ -81,6 +82,7 @@ namespace ArisenEngine::RHI
 
         RHIVkBindlessManager* GetBindlessManager() const { return m_BindlessManager; }
         UInt32 GetGraphicsFamilyIndex() const { return m_GraphicsFamilyIndex; }
+        std::mutex& GetSubmitMutex() { return m_SubmitMutex; }
     private:
 
         friend class RHIVkInstance;
@@ -133,6 +135,9 @@ namespace ArisenEngine::RHI
         bool AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits);
         void FreeBuffer(RHIBufferHandle handle);
         void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt32 offset);
+        UInt64 GetBufferSize(RHIBufferHandle handle) override;
+        UInt64 GetBufferOffset(RHIBufferHandle handle) override;
+        UInt64 GetBufferRange(RHIBufferHandle handle) override;
 
         bool AllocImage(RHIImageHandle handle, ImageDescriptor&& desc);
         bool AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits);
@@ -141,6 +146,53 @@ namespace ArisenEngine::RHI
         bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, ImageViewDesc&& desc);
         void FreeImageView(RHIImageViewHandle handle) override;
         RHIImageViewHandle FindImageViewForImage(RHIImageHandle imageHandle) override;
+
+        inline bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle, RHIRenderPassHandle renderPassHandle)
+        {
+            auto* fbItem = m_FrameBufferPool->Get(handle);
+            auto* viewItem = m_ImageViewPool->Get(viewHandle);
+            auto* rpItem = m_RenderPassPool->Get(renderPassHandle);
+
+            if (!fbItem || !viewItem || !rpItem) return false;
+
+            auto* rpObj = static_cast<RHIVkGPURenderPass*>(rpItem->renderPassObj);
+            if (!rpObj) return false;
+
+            VkImageView attachments[] = { viewItem->view };
+
+            VkFramebufferCreateInfo framebufferInfo{};
+            framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            framebufferInfo.renderPass = static_cast<VkRenderPass>(rpObj->GetHandle(frameIndex));
+            framebufferInfo.attachmentCount = 1;
+            framebufferInfo.pAttachments = attachments;
+            framebufferInfo.width = viewItem->width;
+            framebufferInfo.height = viewItem->height;
+            framebufferInfo.layers = 1;
+
+            if (vkCreateFramebuffer(m_VkDevice, &framebufferInfo, nullptr, &fbItem->frameBuffer) != VK_SUCCESS)
+            {
+                LOG_ERROR("[RHIVkDevice::AllocFrameBuffer]: failed to create framebuffer!");
+                return false;
+            }
+
+            fbItem->width = viewItem->width;
+            fbItem->height = viewItem->height;
+
+            // Register for deferred deletion
+            struct DeferredVkFramebuffer {
+                VkDevice device;
+                VkFramebuffer framebuffer;
+                ~DeferredVkFramebuffer() {
+                    if (device != VK_NULL_HANDLE && framebuffer != VK_NULL_HANDLE) {
+                        vkDestroyFramebuffer(device, framebuffer, nullptr);
+                    }
+                }
+            };
+            auto* deferred = new DeferredVkFramebuffer{ m_VkDevice, fbItem->frameBuffer };
+            fbItem->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(deferred));
+
+            return true;
+        }
 
         // Pool Accessors
         RHIResourcePool<RHIBufferHandle, RHIVkBufferPoolItem>* GetBufferPool() const { return m_BufferPool.get(); }

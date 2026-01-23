@@ -415,6 +415,10 @@ namespace ArisenEngine::Testing
             RHI_Cmd_CopyBuffer(commandBuffer, indicesStagingBufferHandle, 0, indicesBufferHandle, 0, RHI_Buffer_Size(device, indicesBufferHandle));
             RHI_Cmd_End(commandBuffer);
             RHI_Device_Submit(device, commandBuffer, m_FrameIndex);
+            
+            // Sync one-time setup transfers immediately to avoid command buffer reuse conflicts with first frame
+            RHI_Device_WaitIdle(device);
+
             RHI_Device_ReleaseBufferHandle(device, vertexStagingBufferHandle);
             RHI_Device_ReleaseBufferHandle(device, indicesStagingBufferHandle);
             RHI_Device_ReleaseCommandBuffer(device, m_Context.commandPool, m_FrameIndex, commandBuffer);
@@ -463,6 +467,10 @@ namespace ArisenEngine::Testing
             }
             RHI_Cmd_End(commandBuffer);
             RHI_Device_Submit(device, commandBuffer, m_FrameIndex);
+
+            // Sync one-time setup transfers immediately to avoid command buffer reuse conflicts with first frame
+            RHI_Device_WaitIdle(device);
+
             RHI_Device_ReleaseBufferHandle(device, textureStagingBufferHandle);
             RHI_Device_ReleaseCommandBuffer(device, m_Context.commandPool, m_FrameIndex, commandBuffer);
         }
@@ -500,6 +508,12 @@ namespace ArisenEngine::Testing
             auto swapchain = RHI_Surface_GetSwapChain(surface);
             RHI_ImageHandle backBuffer = RHI_SwapChain_AquireCurrentImage(swapchain, m_FrameIndex);
             
+            if (backBuffer == 0)
+            {
+                NextFrame();
+                return;
+            }
+
             if (backBuffer != 0)
             {
                 auto backBufferView = RHI_SwapChain_GetImageView(swapchain, m_FrameIndex);
@@ -585,8 +599,8 @@ namespace ArisenEngine::Testing
                 
                 if (imageAvailableSem && renderFinishedSem)
                 {
-                    RHI_Cmd_WaitSemaphore(commandBuffer, reinterpret_cast<RHI_SemaphoreHandle>(imageAvailableSem), RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-                    RHI_Cmd_SignalSemaphore(commandBuffer, reinterpret_cast<RHI_SemaphoreHandle>(renderFinishedSem));
+                    RHI_Cmd_WaitSemaphore(commandBuffer, imageAvailableSem, (unsigned int)RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+                    RHI_Cmd_SignalSemaphore(commandBuffer, renderFinishedSem);
                 }
             }
 

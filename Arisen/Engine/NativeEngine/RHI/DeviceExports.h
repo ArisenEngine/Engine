@@ -4,11 +4,7 @@
 #include "../../Core/Core.Infra/RHI/DeviceLimits.h"
 #include "../../Core/Core.Infra/RHI/Program/RHISampler.h"
 
-typedef void* RHI_DeviceHandle;
-typedef void* RHI_CommandBufferPoolHandle;
-typedef void* RHI_CommandBufferHandle;
-typedef unsigned long long RHI_SamplerHandle;
-typedef void* RHI_GPUProgramHandle;
+#include "RHIHandleExports.h"
 
 extern "C" ENGINE_DLL void RHI_Device_WaitIdle(RHI_DeviceHandle device);
 extern "C" ENGINE_DLL void RHI_Device_GraphicQueueWaitIdle(RHI_DeviceHandle device);

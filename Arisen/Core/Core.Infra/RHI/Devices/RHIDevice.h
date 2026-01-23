@@ -106,6 +106,9 @@ namespace ArisenEngine::RHI
         virtual bool AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits) { return false; }
         virtual void FreeBuffer(RHIBufferHandle handle) {}
         virtual void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt32 offset) {}
+        virtual UInt64 GetBufferSize(RHIBufferHandle handle) { return 0ULL; }
+        virtual UInt64 GetBufferOffset(RHIBufferHandle handle) { return 0ULL; }
+        virtual UInt64 GetBufferRange(RHIBufferHandle handle) { return 0ULL; }
 
         virtual bool AllocImage(RHIImageHandle handle, ImageDescriptor&& desc) { return false; }
         virtual bool AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits) { return false; }

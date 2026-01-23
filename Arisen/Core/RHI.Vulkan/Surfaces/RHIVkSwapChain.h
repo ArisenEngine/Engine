@@ -1,7 +1,6 @@
 #pragma once
 #include "RHIVkSurface.h"
 #include "RHI/Handles/RHIHandle.h"
-#include "../Synchronization/RHIVkSemaphore.h"
 #include "RHI/Surfaces/SwapChain.h"
 
 namespace ArisenEngine::RHI
@@ -17,8 +16,8 @@ namespace ArisenEngine::RHI
         void* GetHandle() const override { return m_VkSwapChain; };
         void CreateSwapChainWithDesc(SwapChainDescriptor desc) override;
 
-        RHISemaphore* GetImageAvailableSemaphore(UInt32 frameIndex) const override;
-        RHISemaphore* GetRenderFinishSemaphore(UInt32 frameIndex) const override;
+        RHISemaphoreHandle GetImageAvailableSemaphore(UInt32 frameIndex) const override;
+        RHISemaphoreHandle GetRenderFinishSemaphore(UInt32 frameIndex) const override;
         RHIImageHandle AquireCurrentImage(UInt32 frameIndex) override;
         RHIImageViewHandle GetImageView(UInt32 frameIndex) const override;
         void Cleanup() override;
@@ -35,8 +34,8 @@ namespace ArisenEngine::RHI
         Containers::Vector<RHIImageHandle> m_ImageHandles;
         Containers::Vector<RHIImageViewHandle> m_ImageViewHandles;
 
-        Containers::Vector<std::unique_ptr<RHIVkSemaphore>> m_ImageAvailableSemaphores;
-        Containers::Vector<std::unique_ptr<RHIVkSemaphore>> m_RenderFinishSemaphores;
+        Containers::Vector<RHISemaphoreHandle> m_ImageAvailableSemaphores;
+        Containers::Vector<RHISemaphoreHandle> m_RenderFinishSemaphores;
         Containers::Vector<uint32_t> m_AcquiredImageIndices;
         VkQueue m_VkPresentQueue;
     };
