@@ -121,7 +121,7 @@ void ArisenEngine::RHI::RHIVkDevice::Update()
     }
 }
 
-ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::GetCompletedSubmitId() const
+ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::GetCompletedSubmitTicket() const
 {
     return m_GraphicsQueue ? m_GraphicsQueue->GetCompletedTicket() : 0;
 }
@@ -137,19 +137,19 @@ void ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, UIn
     {
         if (auto* vkQueue = dynamic_cast<RHIVkQueue*>(m_GraphicsQueue.get()))
         {
-            const auto submitId = vkQueue->Submit(commandBuffer);
+            const auto submitTicket = vkQueue->Submit(commandBuffer);
             if (m_FrameSync)
             {
-                m_FrameSync->OnSubmit(frameIndex, submitId);
+                m_FrameSync->OnSubmit(frameIndex, submitTicket);
             }
             return;
         }
 
         // Fallback: queue-managed fence via IRHIQueue.
-        const auto submitId = m_GraphicsQueue->Submit(commandBuffer);
+        const auto submitTicket = m_GraphicsQueue->Submit(commandBuffer);
         if (m_FrameSync)
         {
-            m_FrameSync->OnSubmit(frameIndex, submitId);
+            m_FrameSync->OnSubmit(frameIndex, submitTicket);
         }
     }
     else

@@ -15,7 +15,7 @@ namespace ArisenEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(FrameSyncTracker)
         explicit FrameSyncTracker(UInt32 maxFramesInFlight);
 
-        void OnSubmit(UInt32 frameIndex, RHIGpuTicket submitId);
+        void OnSubmit(UInt32 frameIndex, RHIGpuTicket submitTicket);
 
         // Block until the last submit for this frame-slot has completed.
         void Wait(UInt32 frameIndex, IRHIQueue* queue);
@@ -24,7 +24,7 @@ namespace ArisenEngine::RHI
         void Drain(IRHIQueue* queue);
 
     private:
-        std::unique_ptr<std::atomic<RHIGpuTicket>[]> m_FrameLastSubmitId;
+        std::unique_ptr<std::atomic<RHIGpuTicket>[]> m_FrameLatestSubmitTicket;
         UInt32 m_FrameCount = 0;
     };
 }

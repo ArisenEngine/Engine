@@ -109,8 +109,8 @@ namespace ArisenEngine::RHI
             return m_CommandBufferPool;
         };
 
-        void SetLastSubmitId(RHIGpuTicket id) { m_LastSubmitId = id; }
-        RHIGpuTicket GetLastSubmitId() const { return m_LastSubmitId; }
+        void SetLatestSubmitTicket(RHIGpuTicket id) { m_LatestSubmitTicket = id; }
+        RHIGpuTicket GetLatestSubmitTicket() const { return m_LatestSubmitTicket; }
         
         virtual void* GetHandle() const = 0;
         virtual void* GetHandlerPointer() = 0;
@@ -209,7 +209,7 @@ namespace ArisenEngine::RHI
         RHICommandBufferPool* m_CommandBufferPool;
         RHIDevice* m_Device;
         ECommandState m_State;
-        RHIGpuTicket m_LastSubmitId { 0 };
+        RHIGpuTicket m_LatestSubmitTicket { 0 };
         
     };
 
