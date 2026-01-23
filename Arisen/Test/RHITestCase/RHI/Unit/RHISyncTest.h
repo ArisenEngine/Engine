@@ -28,19 +28,17 @@ namespace ArisenEngine::Testing
             LOG_INFO("Running Synchronization 2.0 Test...");
 
             // Create a dummy image for barrier testing
-            LOG_INFO("Getting image handle...");
-            RHI_ImageHandle testImage = RHI_Device_GetImageHandle(m_Device, "SyncTestImage");
             ArisenEngine::RHI::ImageDescriptor desc{
                 RHI::IMAGE_TYPE_2D, 1024, 1024, 1, 1, 1,
                 RHI::FORMAT_R8G8B8A8_UNORM, RHI::IMAGE_TILING_OPTIMAL,
                 RHI::IMAGE_LAYOUT_UNDEFINED,
                 RHI::IMAGE_USAGE_SAMPLED_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT,
-                RHI::SAMPLE_COUNT_1_BIT, RHI::SHARING_MODE_EXCLUSIVE
+                RHI::SAMPLE_COUNT_1_BIT, RHI::SHARING_MODE_EXCLUSIVE,
+                0, nullptr,
+                RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             };
-            LOG_INFO("Allocating image...");
-            RHI_Image_Alloc(m_Device, testImage, &desc);
-            LOG_INFO("Allocating device memory...");
-            RHI_Image_AllocDeviceMemory(m_Device, testImage, 0x1); // DEVICE_LOCAL
+            LOG_INFO("Creating image...");
+            RHI_ImageHandle testImage = RHI_Device_CreateImage(m_Device, &desc, "SyncTestImage");
 
             LOG_INFO("Getting command buffer...");
             RHI_CommandBufferHandle cmd = RHI_Device_GetCommandBuffer(m_Device, m_CommandPool, 0);
@@ -82,8 +80,8 @@ namespace ArisenEngine::Testing
             LOG_INFO("Synchronization barrier submitted and verified.");
 
             // Cleanup
-            LOG_INFO("Releasing image handle...");
-            RHI_Device_ReleaseImageHandle(m_Device, testImage);
+            LOG_INFO("Releasing image...");
+            RHI_Device_ReleaseImage(m_Device, testImage);
             LOG_INFO("Releasing command buffer...");
             RHI_Device_ReleaseCommandBuffer(m_Device, m_CommandPool, 0, cmd);
 

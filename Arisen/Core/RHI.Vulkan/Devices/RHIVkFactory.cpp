@@ -71,19 +71,7 @@ namespace ArisenEngine::RHI
 
     void RHIVkFactory::ReleaseRenderPass(RHIRenderPassHandle renderPass)
     {
-        auto* rp = m_Device->GetRenderPassPool()->Deallocate(renderPass);
-        if (rp)
-        {
-            if (rp->registryHandle.IsValid())
-            {
-                m_Device->GetResourceRegistry()->Release(rp->registryHandle, RHIQueueType::Graphics, m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
-            }
-
-            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [rp]()
-            {
-                delete rp;
-            });
-        }
+        m_Device->ReleaseRenderPass(renderPass);
     }
 
     RHIFrameBufferHandle RHIVkFactory::CreateFrameBuffer()
@@ -94,78 +82,75 @@ namespace ArisenEngine::RHI
 
     void RHIVkFactory::ReleaseFrameBuffer(RHIFrameBufferHandle frameBuffer)
     {
-        auto* fb = m_Device->GetFrameBufferPool()->Deallocate(frameBuffer);
-        if (fb)
-        {
-            if (fb->registryHandle.IsValid())
-            {
-                m_Device->GetResourceRegistry()->Release(fb->registryHandle, RHIQueueType::Graphics, m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
-            }
-
-            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [fb]()
-            {
-                delete fb;
-            });
-        }
+        m_Device->ReleaseFrameBuffer(frameBuffer);
     }
 
-    RHIBufferHandle RHIVkFactory::CreateBuffer(const std::string&& name)
+    ArisenEngine::RHI::RHIBufferHandle ArisenEngine::RHI::RHIVkFactory::CreateBuffer(ArisenEngine::RHI::BufferDescriptor&& desc, const std::string&& name)
     {
-        auto* buffer = new RHIVkBufferPoolItem();
-        buffer->name = std::move(name);
-        return m_Device->GetBufferPool()->Allocate(buffer);
+        auto handle = m_Device->GetBufferPool()->Allocate(new ArisenEngine::RHI::RHIVkBufferPoolItem());
+        auto* buffer = m_Device->GetBufferPool()->Get(handle);
+        buffer->name = name; // Changed from move to copy or just assignment
+
+        if (!m_Device->AllocBuffer(handle, std::move(desc)))
+        {
+            m_Device->ReleaseBuffer(handle);
+            return ArisenEngine::RHI::RHIBufferHandle::Invalid();
+        }
+
+        if (!m_Device->AllocBufferDeviceMemory(handle, desc.memoryPropertyFlags))
+        {
+            m_Device->ReleaseBuffer(handle);
+            return ArisenEngine::RHI::RHIBufferHandle::Invalid();
+        }
+
+        return handle;
     }
 
     void RHIVkFactory::ReleaseBuffer(RHIBufferHandle bufferHandle)
     {
-        m_Device->FreeBuffer(bufferHandle);
-        auto* buffer = m_Device->GetBufferPool()->Deallocate(bufferHandle);
-        if (buffer)
-        {
-            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [buffer]()
-            {
-                delete buffer;
-            });
-        }
+        m_Device->ReleaseBuffer(bufferHandle);
     }
 
-    RHIImageHandle RHIVkFactory::CreateImage(const std::string&& name)
+    ArisenEngine::RHI::RHIImageHandle ArisenEngine::RHI::RHIVkFactory::CreateImage(ArisenEngine::RHI::ImageDescriptor&& desc, const std::string&& name)
     {
-        auto* image = new RHIVkImagePoolItem();
-        image->name = std::move(name);
-        return m_Device->GetImagePool()->Allocate(image);
+        auto handle = m_Device->GetImagePool()->Allocate(new ArisenEngine::RHI::RHIVkImagePoolItem());
+        auto* image = m_Device->GetImagePool()->Get(handle);
+        image->name = name;
+
+        if (!m_Device->AllocImage(handle, std::move(desc)))
+        {
+            m_Device->ReleaseImage(handle);
+            return ArisenEngine::RHI::RHIImageHandle::Invalid();
+        }
+
+        if (!m_Device->AllocImageDeviceMemory(handle, desc.memoryPropertyFlags))
+        {
+            m_Device->ReleaseImage(handle);
+            return ArisenEngine::RHI::RHIImageHandle::Invalid();
+        }
+
+        return handle;
     }
 
     void RHIVkFactory::ReleaseImage(RHIImageHandle imageHandle)
     {
-        m_Device->FreeImage(imageHandle);
-        auto* image = m_Device->GetImagePool()->Deallocate(imageHandle);
-        if (image)
-        {
-            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [image]()
-            {
-                delete image;
-            });
-        }
+        m_Device->ReleaseImage(imageHandle);
     }
 
-    RHIImageViewHandle RHIVkFactory::CreateImageView()
+    ArisenEngine::RHI::RHIImageViewHandle ArisenEngine::RHI::RHIVkFactory::CreateImageView(ArisenEngine::RHI::RHIImageHandle imageHandle, ArisenEngine::RHI::ImageViewDesc&& desc)
     {
-        auto* view = new RHIVkImageViewPoolItem();
-        return m_Device->GetImageViewPool()->Allocate(view);
+        auto handle = m_Device->GetImageViewPool()->Allocate(new ArisenEngine::RHI::RHIVkImageViewPoolItem());
+        if (!m_Device->AllocImageView(handle, imageHandle, std::move(desc)))
+        {
+            m_Device->ReleaseImageView(handle);
+            return ArisenEngine::RHI::RHIImageViewHandle::Invalid();
+        }
+        return handle;
     }
 
     void RHIVkFactory::ReleaseImageView(RHIImageViewHandle imageViewHandle)
     {
-        m_Device->FreeImageView(imageViewHandle);
-        auto* view = m_Device->GetImageViewPool()->Deallocate(imageViewHandle);
-        if (view)
-        {
-            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [view]()
-            {
-                delete view;
-            });
-        }
+        m_Device->ReleaseImageView(imageViewHandle);
     }
 
     RHISamplerHandle RHIVkFactory::CreateSampler(RHISamplerDesc&& desc)
@@ -194,19 +179,7 @@ namespace ArisenEngine::RHI
 
     void RHIVkFactory::ReleaseSampler(RHISamplerHandle samplerHandle)
     {
-        auto* sampler = m_Device->GetSamplerPool()->Deallocate(samplerHandle);
-        if (sampler)
-        {
-            if (sampler->sampler != VK_NULL_HANDLE)
-            {
-                m_Device->GetResourceRegistry()->Release(sampler->registryHandle, RHIQueueType::Graphics, m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
-            }
-
-            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [sampler]()
-            {
-                delete sampler;
-            });
-        }
+        m_Device->ReleaseSampler(samplerHandle);
     }
 
     RHISemaphoreHandle RHIVkFactory::CreateSemaphore()
@@ -237,19 +210,7 @@ namespace ArisenEngine::RHI
 
     void RHIVkFactory::ReleaseSemaphore(RHISemaphoreHandle semaphoreHandle)
     {
-        auto* sem = m_Device->GetSemaphorePool()->Deallocate(semaphoreHandle);
-        if (sem)
-        {
-            if (sem->semaphore != VK_NULL_HANDLE)
-            {
-                m_Device->GetResourceRegistry()->Release(sem->registryHandle, RHIQueueType::Graphics, m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
-            }
-
-            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [sem]()
-            {
-                delete sem;
-            });
-        }
+        m_Device->ReleaseSemaphore(semaphoreHandle);
     }
 
     RHIFenceHandle RHIVkFactory::CreateFence(bool signaled)
@@ -281,18 +242,6 @@ namespace ArisenEngine::RHI
 
     void RHIVkFactory::ReleaseFence(RHIFenceHandle fenceHandle)
     {
-        auto* f = m_Device->GetFencePool()->Deallocate(fenceHandle);
-        if (f)
-        {
-            if (f->fence != VK_NULL_HANDLE)
-            {
-                m_Device->GetResourceRegistry()->Release(f->registryHandle, RHIQueueType::Graphics, m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
-            }
-
-            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [f]()
-            {
-                delete f;
-            });
-        }
+        m_Device->ReleaseFence(fenceHandle);
     }
 }

@@ -19,6 +19,7 @@ struct BufferDescriptor {
     ESharingMode sharingMode;
     UInt32 queueFamilyIndexCount;
     const void* pQueueFamilyIndices;
+    UInt32 memoryPropertyFlags; // Added for One-Stop creation
 };
 
 struct ImageDescriptor {
@@ -36,6 +37,7 @@ struct ImageDescriptor {
     ESharingMode sharingMode;
     UInt32 queueFamilyIndexCount;
     const void* pQueueFamilyIndices;
+    UInt32 memoryPropertyFlags; // Added for One-Stop creation
 };
 
 struct ImageViewDesc {

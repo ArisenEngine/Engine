@@ -91,13 +91,13 @@ void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
 
     for (int i = 0; i < images.size(); ++i)
     {
-        m_ImageHandles[i] = factory->CreateImage("SwapChainImage_" + std::to_string(i));
+        // For SwapChain images, we manually allocate a handle since they are not created via factory
+        m_ImageHandles[i] = vkDevice->GetImagePool()->Allocate(new RHIVkImagePoolItem());
         auto* imageItem = vkDevice->GetImagePool()->Get(m_ImageHandles[i]);
         imageItem->image = images[i];
+        imageItem->name = "SwapChainImage_" + std::to_string(i);
         imageItem->needDestroy = false; // Swapchain owns these images
 
-        m_ImageViewHandles[i] = factory->CreateImageView();
-        
         ImageViewDesc viewDesc;
         viewDesc.viewType = IMAGE_VIEW_TYPE_2D;
         viewDesc.format = m_Desc.colorFormat;
@@ -109,7 +109,7 @@ void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
         viewDesc.width = m_Desc.width;
         viewDesc.height = m_Desc.height;
 
-        vkDevice->AllocImageView(m_ImageViewHandles[i], m_ImageHandles[i], std::move(viewDesc));
+        m_ImageViewHandles[i] = factory->CreateImageView(m_ImageHandles[i], std::move(viewDesc));
     }
 }
 
@@ -155,14 +155,12 @@ void ArisenEngine::RHI::RHIVkSwapChain::Cleanup()
     auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
 
     for (auto h : m_ImageViewHandles) {
-        vkDevice->FreeImageView(h);
         factory->ReleaseImageView(h);
     }
     for (auto h : m_ImageHandles) {
-        // vkDevice->FreeImage(h); // We don't free images from swapchain, they are not ours.
-        // But we should clear the pool item.
-        auto* item = vkDevice->GetImagePool()->Get(h);
-        if (item) item->image = VK_NULL_HANDLE;
+        // Swapchain images are not created via Factory, so we should not call factory->ReleaseImage(h) 
+        // if it tries to do full liberation. However, our ReleaseImage in factory calls Device::ReleaseImage.
+        // For swapchain images, needDestroy is false, so it's safe.
         factory->ReleaseImage(h);
     }
     m_ImageHandles.clear();

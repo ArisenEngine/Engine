@@ -10,6 +10,7 @@
 #include "../RHIVkInstance.h"
 #include "../VkInitializer.h"
 #include "../Program/RHIVkBindlessManager.h"
+#include "../Program/RHIVkGPURenderPass.h"
 using namespace ArisenEngine::RHI;
 
 
@@ -310,21 +311,32 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocBufferDeviceMemory(RHIBufferHandle han
     return true;
 }
 
-void ArisenEngine::RHI::RHIVkDevice::FreeBuffer(RHIBufferHandle handle)
+void ArisenEngine::RHI::RHIVkDevice::FreeBufferInternal(RHIBufferHandle handle)
 {
     auto* buffer = m_BufferPool->Get(handle);
     if (!buffer) return;
 
     if (buffer->buffer != VK_NULL_HANDLE)
     {
-        // Simply release the registry handle. 
-        // The shared State object's destructor will handle cleaning up both VkBuffer and VmaAllocation.
         m_ResourceRegistry->Release(buffer->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
         
         buffer->buffer = VK_NULL_HANDLE;
         buffer->allocation = VK_NULL_HANDLE;
         buffer->state = nullptr;
         buffer->registryHandle = RHIResourceHandle::Invalid();
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::ReleaseBuffer(RHIBufferHandle handle)
+{
+    FreeBufferInternal(handle);
+    auto* buffer = m_BufferPool->Deallocate(handle);
+    if (buffer)
+    {
+        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [buffer]()
+        {
+            delete buffer;
+        });
     }
 }
 
@@ -422,15 +434,13 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImageDeviceMemory(RHIImageHandle handl
     return true;
 }
 
-void ArisenEngine::RHI::RHIVkDevice::FreeImage(RHIImageHandle handle)
+void ArisenEngine::RHI::RHIVkDevice::FreeImageInternal(RHIImageHandle handle)
 {
     auto* image = m_ImagePool->Get(handle);
     if (!image) return;
 
     if (image->image != VK_NULL_HANDLE && image->needDestroy)
     {
-        // Simply release the registry handle. 
-        // The shared State object's destructor will handle cleaning up both VkImage and VmaAllocation.
         m_ResourceRegistry->Release(image->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
         
         image->image = VK_NULL_HANDLE;
@@ -438,6 +448,19 @@ void ArisenEngine::RHI::RHIVkDevice::FreeImage(RHIImageHandle handle)
         image->state = nullptr;
         image->registryHandle = RHIResourceHandle::Invalid();
         image->needDestroy = false;
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::ReleaseImage(RHIImageHandle handle)
+{
+    FreeImageInternal(handle);
+    auto* image = m_ImagePool->Deallocate(handle);
+    if (image)
+    {
+        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [image]()
+        {
+            delete image;
+        });
     }
 }
 
@@ -478,7 +501,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImageView(RHIImageViewHandle handle, R
     return true;
 }
 
-void ArisenEngine::RHI::RHIVkDevice::FreeImageView(RHIImageViewHandle handle)
+void ArisenEngine::RHI::RHIVkDevice::FreeImageViewInternal(RHIImageViewHandle handle)
 {
     auto* viewItem = m_ImageViewPool->Get(handle);
     if (!viewItem) return;
@@ -491,11 +514,165 @@ void ArisenEngine::RHI::RHIVkDevice::FreeImageView(RHIImageViewHandle handle)
     }
 }
 
+void ArisenEngine::RHI::RHIVkDevice::ReleaseImageView(RHIImageViewHandle handle)
+{
+    FreeImageViewInternal(handle);
+    auto* view = m_ImageViewPool->Deallocate(handle);
+    if (view)
+    {
+        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [view]()
+        {
+            delete view;
+        });
+    }
+}
+
 ArisenEngine::RHI::RHIImageViewHandle ArisenEngine::RHI::RHIVkDevice::FindImageViewForImage(RHIImageHandle imageHandle)
 {
     return m_ImageViewPool->FindHandle([imageHandle](const RHIVkImageViewPoolItem& item) {
         return item.imageHandle == imageHandle;
     });
+}
+
+void ArisenEngine::RHI::RHIVkDevice::FreeSamplerInternal(RHISamplerHandle handle)
+{
+    auto* sampler = m_SamplerPool->Get(handle);
+    if (sampler && sampler->sampler != VK_NULL_HANDLE)
+    {
+        m_ResourceRegistry->Release(sampler->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+        sampler->sampler = VK_NULL_HANDLE;
+        sampler->registryHandle = RHIResourceHandle::Invalid();
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::ReleaseSampler(RHISamplerHandle handle)
+{
+    FreeSamplerInternal(handle);
+    auto* sampler = m_SamplerPool->Deallocate(handle);
+    if (sampler)
+    {
+        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [sampler]()
+        {
+            delete sampler;
+        });
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::FreeSemaphoreInternal(RHISemaphoreHandle handle)
+{
+    auto* sem = m_SemaphorePool->Get(handle);
+    if (sem && sem->semaphore != VK_NULL_HANDLE)
+    {
+        m_ResourceRegistry->Release(sem->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+        sem->semaphore = VK_NULL_HANDLE;
+        sem->registryHandle = RHIResourceHandle::Invalid();
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::ReleaseSemaphore(RHISemaphoreHandle handle)
+{
+    FreeSemaphoreInternal(handle);
+    auto* sem = m_SemaphorePool->Deallocate(handle);
+    if (sem)
+    {
+        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [sem]()
+        {
+            delete sem;
+        });
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::FreeFenceInternal(RHIFenceHandle handle)
+{
+    auto* f = m_FencePool->Get(handle);
+    if (f && f->fence != VK_NULL_HANDLE)
+    {
+        m_ResourceRegistry->Release(f->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+        f->fence = VK_NULL_HANDLE;
+        f->registryHandle = RHIResourceHandle::Invalid();
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::ReleaseFence(RHIFenceHandle handle)
+{
+    FreeFenceInternal(handle);
+    auto* f = m_FencePool->Deallocate(handle);
+    if (f)
+    {
+        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [f]()
+        {
+            delete f;
+        });
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::FreeRenderPassInternal(RHIRenderPassHandle handle)
+{
+    auto* rp = m_RenderPassPool->Get(handle);
+    if (rp && rp->registryHandle.IsValid())
+    {
+        m_ResourceRegistry->Release(rp->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+        rp->registryHandle = RHIResourceHandle::Invalid();
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::ReleaseRenderPass(RHIRenderPassHandle handle)
+{
+    FreeRenderPassInternal(handle);
+    auto* rp = m_RenderPassPool->Deallocate(handle);
+    if (rp)
+    {
+        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [rp]()
+        {
+            delete rp;
+        });
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::FreeFrameBufferInternal(RHIFrameBufferHandle handle)
+{
+    auto* fb = m_FrameBufferPool->Get(handle);
+    if (fb && fb->registryHandle.IsValid())
+    {
+        m_ResourceRegistry->Release(fb->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+        fb->registryHandle = RHIResourceHandle::Invalid();
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::ReleaseFrameBuffer(RHIFrameBufferHandle handle)
+{
+    FreeFrameBufferInternal(handle);
+    auto* fb = m_FrameBufferPool->Deallocate(handle);
+    if (fb)
+    {
+        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [fb]()
+        {
+            delete fb;
+        });
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::FreePipelineInternal(RHIPipelineHandle handle)
+{
+    auto* p = m_PipelinePool->Get(handle);
+    if (p && p->registryHandle.IsValid())
+    {
+        m_ResourceRegistry->Release(p->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+        p->registryHandle = RHIResourceHandle::Invalid();
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::ReleasePipeline(RHIPipelineHandle handle)
+{
+    FreePipelineInternal(handle);
+    auto* p = m_PipelinePool->Deallocate(handle);
+    if (p)
+    {
+        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [p]()
+        {
+            delete p;
+        });
+    }
 }
 
 ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
@@ -556,5 +733,53 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
     m_Instance = nullptr;
     LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Finished destruction");
 }
+
+bool ArisenEngine::RHI::RHIVkDevice::AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle, RHIRenderPassHandle renderPassHandle)
+{
+    auto* fbItem = m_FrameBufferPool->Get(handle);
+    auto* viewItem = m_ImageViewPool->Get(viewHandle);
+    auto* rpItem = m_RenderPassPool->Get(renderPassHandle);
+
+    if (!fbItem || !viewItem || !rpItem) return false;
+
+    auto* rpObj = static_cast<RHIVkGPURenderPass*>(rpItem->renderPassObj);
+    if (!rpObj) return false;
+
+    VkImageView attachments[] = { viewItem->view };
+
+    VkFramebufferCreateInfo framebufferInfo{};
+    framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    framebufferInfo.renderPass = static_cast<VkRenderPass>(rpObj->GetHandle(frameIndex));
+    framebufferInfo.attachmentCount = 1;
+    framebufferInfo.pAttachments = attachments;
+    framebufferInfo.width = viewItem->width;
+    framebufferInfo.height = viewItem->height;
+    framebufferInfo.layers = 1;
+
+    if (vkCreateFramebuffer(m_VkDevice, &framebufferInfo, nullptr, &fbItem->frameBuffer) != VK_SUCCESS)
+    {
+        LOG_ERROR("[RHIVkDevice::AllocFrameBuffer]: failed to create framebuffer!");
+        return false;
+    }
+
+    fbItem->width = viewItem->width;
+    fbItem->height = viewItem->height;
+
+    // Register for deferred deletion
+    struct DeferredVkFramebuffer {
+        VkDevice device;
+        VkFramebuffer framebuffer;
+        ~DeferredVkFramebuffer() {
+            if (device != VK_NULL_HANDLE && framebuffer != VK_NULL_HANDLE) {
+                vkDestroyFramebuffer(device, framebuffer, nullptr);
+            }
+        }
+    };
+    auto* deferred = new DeferredVkFramebuffer{ m_VkDevice, fbItem->frameBuffer };
+    fbItem->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(deferred));
+
+    return true;
+}
+
 
 

@@ -3,6 +3,7 @@
 #include "../RHICommon.h"
 #include "../Handles/RHIHandle.h"
 #include <string>
+#include "../ResourceDescriptors.h"
 
 namespace ArisenEngine::RHI
 {
@@ -32,14 +33,14 @@ namespace ArisenEngine::RHI
         virtual RHIFrameBufferHandle CreateFrameBuffer() = 0;
         virtual void ReleaseFrameBuffer(RHIFrameBufferHandle frameBuffer) = 0;
 
-        virtual RHIBufferHandle CreateBuffer(const std::string&& name = "Anonymous") = 0;
+        virtual RHIBufferHandle CreateBuffer(BufferDescriptor&& desc, const std::string&& name = "Anonymous") = 0;
         virtual void ReleaseBuffer(RHIBufferHandle bufferHandle) = 0;
 
-        virtual RHIImageHandle CreateImage(const std::string&& name = "Anonymous") = 0;
+        virtual RHIImageHandle CreateImage(ImageDescriptor&& desc, const std::string&& name = "Anonymous") = 0;
         virtual void ReleaseImage(RHIImageHandle imageHandle) = 0;
 
-        virtual RHIImageViewHandle CreateImageView() = 0;
-        virtual void ReleaseImageView(RHIImageViewHandle imageViewMap) = 0;
+        virtual RHIImageViewHandle CreateImageView(RHIImageHandle image, ImageViewDesc&& desc) = 0;
+        virtual void ReleaseImageView(RHIImageViewHandle imageView) = 0;
 
         virtual RHISamplerHandle CreateSampler(RHISamplerDesc&& desc) = 0;
         virtual void ReleaseSampler(RHISamplerHandle sampler) = 0;

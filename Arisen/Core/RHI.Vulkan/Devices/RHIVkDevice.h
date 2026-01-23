@@ -131,68 +131,30 @@ namespace ArisenEngine::RHI
         void WaitQueueTicket(RHIGpuTicket ticket) override;
 
         // Handle-based operations
-        bool AllocBuffer(RHIBufferHandle handle, BufferDescriptor&& desc);
-        bool AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits);
-        void FreeBuffer(RHIBufferHandle handle);
-        void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt32 offset);
+        bool AllocBuffer(RHIBufferHandle handle, BufferDescriptor&& desc) override;
+        bool AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits) override;
+        void ReleaseBuffer(RHIBufferHandle handle) override;
+        void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt32 offset) override;
         UInt64 GetBufferSize(RHIBufferHandle handle) override;
         UInt64 GetBufferOffset(RHIBufferHandle handle) override;
         UInt64 GetBufferRange(RHIBufferHandle handle) override;
 
-        bool AllocImage(RHIImageHandle handle, ImageDescriptor&& desc);
-        bool AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits);
-        void FreeImage(RHIImageHandle handle);
+        bool AllocImage(RHIImageHandle handle, ImageDescriptor&& desc) override;
+        bool AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits) override;
+        void ReleaseImage(RHIImageHandle handle) override;
 
-        bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, ImageViewDesc&& desc);
-        void FreeImageView(RHIImageViewHandle handle) override;
+        bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, ImageViewDesc&& desc) override;
+        void ReleaseImageView(RHIImageViewHandle handle) override;
         RHIImageViewHandle FindImageViewForImage(RHIImageHandle imageHandle) override;
 
-        inline bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle, RHIRenderPassHandle renderPassHandle)
-        {
-            auto* fbItem = m_FrameBufferPool->Get(handle);
-            auto* viewItem = m_ImageViewPool->Get(viewHandle);
-            auto* rpItem = m_RenderPassPool->Get(renderPassHandle);
+        void ReleaseSampler(RHISamplerHandle handle) override;
+        void ReleaseSemaphore(RHISemaphoreHandle handle) override;
+        void ReleaseFence(RHIFenceHandle handle) override;
+        void ReleaseRenderPass(RHIRenderPassHandle handle) override;
+        void ReleaseFrameBuffer(RHIFrameBufferHandle handle) override;
+        void ReleasePipeline(RHIPipelineHandle handle) override;
 
-            if (!fbItem || !viewItem || !rpItem) return false;
-
-            auto* rpObj = static_cast<RHIVkGPURenderPass*>(rpItem->renderPassObj);
-            if (!rpObj) return false;
-
-            VkImageView attachments[] = { viewItem->view };
-
-            VkFramebufferCreateInfo framebufferInfo{};
-            framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            framebufferInfo.renderPass = static_cast<VkRenderPass>(rpObj->GetHandle(frameIndex));
-            framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = attachments;
-            framebufferInfo.width = viewItem->width;
-            framebufferInfo.height = viewItem->height;
-            framebufferInfo.layers = 1;
-
-            if (vkCreateFramebuffer(m_VkDevice, &framebufferInfo, nullptr, &fbItem->frameBuffer) != VK_SUCCESS)
-            {
-                LOG_ERROR("[RHIVkDevice::AllocFrameBuffer]: failed to create framebuffer!");
-                return false;
-            }
-
-            fbItem->width = viewItem->width;
-            fbItem->height = viewItem->height;
-
-            // Register for deferred deletion
-            struct DeferredVkFramebuffer {
-                VkDevice device;
-                VkFramebuffer framebuffer;
-                ~DeferredVkFramebuffer() {
-                    if (device != VK_NULL_HANDLE && framebuffer != VK_NULL_HANDLE) {
-                        vkDestroyFramebuffer(device, framebuffer, nullptr);
-                    }
-                }
-            };
-            auto* deferred = new DeferredVkFramebuffer{ m_VkDevice, fbItem->frameBuffer };
-            fbItem->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(deferred));
-
-            return true;
-        }
+        bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle, RHIRenderPassHandle renderPassHandle) override;
 
         // Pool Accessors
         RHIResourcePool<RHIBufferHandle, RHIVkBufferPoolItem>* GetBufferPool() const { return m_BufferPool.get(); }
@@ -209,6 +171,19 @@ namespace ArisenEngine::RHI
         PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR = nullptr;
         PFN_vkCmdEndRenderingKHR vkCmdEndRenderingKHR = nullptr;
         PFN_vkCmdPipelineBarrier2KHR vkCmdPipelineBarrier2KHR = nullptr;
+
+    private:
+        // Internal low-level destruction (Vulkan/Memory only, via Registry)
+        void FreeBufferInternal(RHIBufferHandle handle);
+        void FreeImageInternal(RHIImageHandle handle);
+        void FreeImageViewInternal(RHIImageViewHandle handle);
+        void FreeSamplerInternal(RHISamplerHandle handle);
+        void FreeSemaphoreInternal(RHISemaphoreHandle handle);
+        void FreeFenceInternal(RHIFenceHandle handle);
+        void FreeRenderPassInternal(RHIRenderPassHandle handle);
+        void FreeFrameBufferInternal(RHIFrameBufferHandle handle);
+        void FreePipelineInternal(RHIPipelineHandle handle);
+
 
     };
 }

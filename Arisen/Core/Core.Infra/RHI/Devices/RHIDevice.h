@@ -104,7 +104,7 @@ namespace ArisenEngine::RHI
         // Handle-based operations
         virtual bool AllocBuffer(RHIBufferHandle handle, BufferDescriptor&& desc) { return false; }
         virtual bool AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits) { return false; }
-        virtual void FreeBuffer(RHIBufferHandle handle) {}
+        virtual void ReleaseBuffer(RHIBufferHandle handle) {}
         virtual void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt32 offset) {}
         virtual UInt64 GetBufferSize(RHIBufferHandle handle) { return 0ULL; }
         virtual UInt64 GetBufferOffset(RHIBufferHandle handle) { return 0ULL; }
@@ -112,11 +112,20 @@ namespace ArisenEngine::RHI
 
         virtual bool AllocImage(RHIImageHandle handle, ImageDescriptor&& desc) { return false; }
         virtual bool AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits) { return false; }
-        virtual void FreeImage(RHIImageHandle handle) {}
+        virtual void ReleaseImage(RHIImageHandle handle) {}
 
         virtual bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, ImageViewDesc&& desc) { return false; }
-        virtual void FreeImageView(RHIImageViewHandle handle) = 0;
+        virtual void ReleaseImageView(RHIImageViewHandle handle) = 0;
         virtual RHIImageViewHandle FindImageViewForImage(RHIImageHandle imageHandle) = 0;
+
+        virtual void ReleaseSampler(RHISamplerHandle handle) = 0;
+        virtual void ReleaseSemaphore(RHISemaphoreHandle handle) = 0;
+        virtual void ReleaseFence(RHIFenceHandle handle) = 0;
+        virtual void ReleaseRenderPass(RHIRenderPassHandle handle) = 0;
+        virtual void ReleaseFrameBuffer(RHIFrameBufferHandle handle) = 0;
+        virtual void ReleasePipeline(RHIPipelineHandle handle) = 0;
+        
+        virtual bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle, RHIRenderPassHandle renderPassHandle) = 0;
         
     protected:
         
