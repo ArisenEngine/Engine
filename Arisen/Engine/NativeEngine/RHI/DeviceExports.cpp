@@ -3,14 +3,14 @@
 
 using namespace ArisenEngine;
 
-extern "C" ENGINE_DLL void RHI_Device_WaitIdle(void* handle)
+extern "C" ENGINE_DLL void RHI_Device_WaitIdle(RHI_DeviceHandle handle)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(handle);
     if (dev == nullptr) return;
     dev->DeviceWaitIdle();
 }
 
-extern "C" ENGINE_DLL void RHI_Device_GraphicQueueWaitIdle(void* handle)
+extern "C" ENGINE_DLL void RHI_Device_GraphicQueueWaitIdle(RHI_DeviceHandle handle)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(handle);
     if (dev == nullptr) return;
@@ -19,21 +19,21 @@ extern "C" ENGINE_DLL void RHI_Device_GraphicQueueWaitIdle(void* handle)
 
 // Moved to HandlesExports: CreateGPUProgram, ReleaseGPUProgram, AttachByteCode
 
-extern "C" ENGINE_DLL void RHI_Device_SetResolution(void* handle, unsigned int width, unsigned int height)
+extern "C" ENGINE_DLL void RHI_Device_SetResolution(RHI_DeviceHandle handle, unsigned int width, unsigned int height)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(handle);
     if (dev == nullptr) return;
     dev->SetResolution(width, height);
 }
 
-extern "C" ENGINE_DLL RHIDeviceLimits RHI_Device_GetDeviceLimits(void* handle)
+extern "C" ENGINE_DLL RHIDeviceLimits RHI_Device_GetDeviceLimits(RHI_DeviceHandle handle)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(handle);
     if (dev == nullptr) return {};
     return dev->GetDeviceLimits();
 }
 
-extern "C" ENGINE_DLL unsigned long long RHI_Device_Submit(void* handle, void* cmd, unsigned int frameIndex)
+extern "C" ENGINE_DLL unsigned long long RHI_Device_Submit(RHI_DeviceHandle handle, RHI_CommandBufferHandle cmd, unsigned int frameIndex)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(handle);
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
@@ -44,14 +44,14 @@ extern "C" ENGINE_DLL unsigned long long RHI_Device_Submit(void* handle, void* c
 // Update removed
 // extern "C" ENGINE_DLL void RHI_Device_Update(RHI_DeviceHandle device)
 
-extern "C" ENGINE_DLL void RHI_Device_WaitFrameFence(void* handle, unsigned int frameIndex)
+extern "C" ENGINE_DLL void RHI_Device_WaitFrameFence(RHI_DeviceHandle handle, unsigned int frameIndex)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(handle);
     if (dev == nullptr) return;
     dev->WaitFrameFence(frameIndex);
 }
 
-extern "C" ENGINE_DLL void RHI_Device_WaitQueueTicket(void* handle, unsigned long long ticket)
+extern "C" ENGINE_DLL void RHI_Device_WaitQueueTicket(RHI_DeviceHandle handle, unsigned long long ticket)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(handle);
     if (dev == nullptr) return;
