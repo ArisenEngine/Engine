@@ -37,9 +37,9 @@ extern "C" ENGINE_DLL void RHI_PSO_Destroy(RHI_PSOHandle pso)
 extern "C" ENGINE_DLL void RHI_PSO_AddProgram(RHI_PSOHandle pso, RHI_GPUProgramHandle program)
 {
     auto* s = reinterpret_cast<RHI::GPUPipelineStateObject*>(pso);
-    auto* p = reinterpret_cast<RHI::GPUProgram*>(program);
-    if (s == nullptr || p == nullptr) return;
-    s->AddProgram(p);
+    if (s == nullptr || program == 0) return;
+    auto h = *reinterpret_cast<RHI::RHIGPUProgramHandle*>(&program);
+    s->AddProgram(h);
 }
 
 extern "C" ENGINE_DLL void RHI_PSO_ClearPrograms(RHI_PSOHandle pso)

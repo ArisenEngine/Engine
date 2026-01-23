@@ -229,7 +229,7 @@ namespace ArisenEngine::Testing
             if (m_Context.commandPool)
             {
                 RHI_Device_ReleaseCommandBufferPool(m_Context.device, m_Context.commandPool);
-                m_Context.commandPool = nullptr;
+                m_Context.commandPool = 0;
             }
 
             // Note: DescriptorPool is seemingly owned by Device or not exposed for explicit release in Exports.

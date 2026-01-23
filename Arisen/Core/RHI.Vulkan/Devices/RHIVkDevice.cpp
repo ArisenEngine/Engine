@@ -49,6 +49,8 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surf
     m_SemaphorePool = std::make_unique<RHIResourcePool<RHISemaphoreHandle, RHIVkSemaphorePoolItem>>();
     m_PipelinePool = std::make_unique<RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>>();
     m_FencePool = std::make_unique<RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>>();
+    m_GPUProgramPool = std::make_unique<RHIResourcePool<RHIGPUProgramHandle, RHIVkGPUProgramPoolItem>>();
+    m_CommandBufferPoolPool = std::make_unique<RHIResourcePool<RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>>();
 }
 
 ArisenEngine::RHI::RHIFactory* ArisenEngine::RHI::RHIVkDevice::GetFactory() const
@@ -796,6 +798,40 @@ void ArisenEngine::RHI::RHIVkDevice::ResetFence(RHIFenceHandle handle)
     if (f && f->fence != VK_NULL_HANDLE)
     {
         vkResetFences(m_VkDevice, 1, &f->fence);
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::ReleaseGPUProgram(RHIGPUProgramHandle handle)
+{
+    auto* item = m_GPUProgramPool->Get(handle);
+    if (item)
+    {
+        if (item->registryHandle.IsValid())
+            m_ResourceRegistry->Release(item->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+            
+        m_GPUProgramPool->Deallocate(handle);
+        // Note: The object deletion is handled by Deferred Deleter registered during creation in Factory
+        // But here we are just cleaning up the pool slot.
+        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [item]()
+        {
+            delete item;
+        });
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::ReleaseCommandBufferPool(RHICommandBufferPoolHandle handle)
+{
+    auto* item = m_CommandBufferPoolPool->Get(handle);
+    if (item)
+    {
+        if (item->registryHandle.IsValid())
+            m_ResourceRegistry->Release(item->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+            
+        m_CommandBufferPoolPool->Deallocate(handle);
+        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [item]()
+        {
+            delete item;
+        });
     }
 }
 

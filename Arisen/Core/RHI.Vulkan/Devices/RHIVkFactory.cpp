@@ -12,45 +12,53 @@ namespace ArisenEngine::RHI
 {
     RHIVkFactory::RHIVkFactory(RHIVkDevice* device) : m_Device(device) {}
 
-    GPUProgram* RHIVkFactory::CreateGPUProgram()
+    RHIGPUProgramHandle RHIVkFactory::CreateGPUProgram()
     {
-        return new RHIVkGPUProgram((VkDevice)m_Device->GetHandle());
+        auto* item = new RHIVkGPUProgramPoolItem();
+        item->program = new RHIVkGPUProgram((VkDevice)m_Device->GetHandle());
+        
+        // Register for deferred deletion (of the program object itself)
+        struct DeferredGPUProgram {
+            GPUProgram* prog;
+            ~DeferredGPUProgram() { delete prog; }
+        };
+        item->registryHandle = m_Device->GetResourceRegistry()->Create(MakeDeferredDeleteItem(new DeferredGPUProgram{item->program}));
+
+        return m_Device->GetGPUProgramPool()->Allocate(item);
     }
 
-    void RHIVkFactory::ReleaseGPUProgram(GPUProgram* program)
+    void RHIVkFactory::ReleaseGPUProgram(RHIGPUProgramHandle handle)
     {
-        if (program)
-        {
-            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [program]()
-            {
-                delete program;
-            });
-        }
+        m_Device->ReleaseGPUProgram(handle);
     }
 
-    bool RHIVkFactory::AttachProgramByteCode(GPUProgram* program, GPUProgramDesc&& desc)
+    bool RHIVkFactory::AttachProgramByteCode(RHIGPUProgramHandle handle, GPUProgramDesc&& desc)
     {
-        if (program)
+        auto* item = m_Device->GetGPUProgramPool()->Get(handle);
+        if (item && item->program)
         {
-            return program->AttachProgramByteCode(std::move(desc));
+            return item->program->AttachProgramByteCode(std::move(desc));
         }
         return false;
     }
 
-    RHICommandBufferPool* RHIVkFactory::CreateCommandBufferPool()
+    RHICommandBufferPoolHandle RHIVkFactory::CreateCommandBufferPool()
     {
-        return new RHIVkCommandBufferPool(m_Device, m_Device->GetInstance()->GetMaxFramesInFlight());
+        auto* item = new RHIVkCommandBufferPoolItem();
+        item->pool = new RHIVkCommandBufferPool(m_Device, m_Device->GetInstance()->GetMaxFramesInFlight());
+
+        struct DeferredCmdPool {
+            RHICommandBufferPool* p;
+            ~DeferredCmdPool() { delete p; }
+        };
+        item->registryHandle = m_Device->GetResourceRegistry()->Create(MakeDeferredDeleteItem(new DeferredCmdPool{item->pool}));
+         
+        return m_Device->GetCommandBufferPoolPool()->Allocate(item);
     }
 
-    void RHIVkFactory::ReleaseCommandBufferPool(RHICommandBufferPool* pool)
+    void RHIVkFactory::ReleaseCommandBufferPool(RHICommandBufferPoolHandle handle)
     {
-        if (pool)
-        {
-            m_Device->EnqueueDeferredDestroy(m_Device->GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [pool]()
-            {
-                delete pool;
-            });
-        }
+       m_Device->ReleaseCommandBufferPool(handle);
     }
 
     RHIRenderPassHandle RHIVkFactory::CreateRenderPass()

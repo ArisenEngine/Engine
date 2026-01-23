@@ -5,13 +5,12 @@ typedef void* RHI_InstanceHandle;
 typedef void* RHI_DeviceHandle;
 typedef void* RHI_SurfaceHandle;
 typedef void* RHI_SwapChainHandle;
-typedef void* RHI_CommandBufferPoolHandle;
 typedef void* RHI_CommandBufferHandle;
 typedef void* RHI_DescriptorPoolHandle;
 typedef void* RHI_PSOHandle;
 typedef void* RHI_PipelineManagerHandle;
 typedef void* RHI_SubpassHandle;
-typedef void* RHI_GPUProgramHandle;
+typedef void* RHI_DescriptorSetHandle;
 typedef void* RHI_DescriptorSetHandle;
 
 // Value handle types for C ABI (64-bit PODs - matches RHIHandle internal layout)
@@ -25,3 +24,5 @@ typedef unsigned long long RHI_BufferHandle;
 typedef unsigned long long RHI_ShaderHandle;
 typedef unsigned long long RHI_PipelineHandle;
 typedef unsigned long long RHI_FenceHandle;
+typedef unsigned long long RHI_GPUProgramHandle;
+typedef unsigned long long RHI_CommandBufferPoolHandle;

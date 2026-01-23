@@ -49,6 +49,7 @@ namespace ArisenEngine::RHI
         friend class RHIVkFrameBuffer; // Needs pool access
         friend class RHIVkSwapChain; // Needs pool access
         friend class RHIVkGPUPipelineManager; // Needs pool access
+        friend class RHIVkGPUPipelineStateObject; // Needs program pool access
         friend class RHINativeBridge; // Bridge for NativeExports
 
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkDevice)
@@ -125,6 +126,9 @@ namespace ArisenEngine::RHI
         std::unique_ptr<RHIResourcePool<RHISemaphoreHandle, RHIVkSemaphorePoolItem>> m_SemaphorePool;
         std::unique_ptr<RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>> m_PipelinePool;
         std::unique_ptr<RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>> m_FencePool;
+        
+        std::unique_ptr<RHIResourcePool<RHIGPUProgramHandle, RHIVkGPUProgramPoolItem>> m_GPUProgramPool;
+        std::unique_ptr<RHIResourcePool<RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>> m_CommandBufferPoolPool;
 
     public:
         // Deferred destruction (GPU-safe): enqueue on producer threads, flush on the frame fence.
@@ -163,6 +167,9 @@ namespace ArisenEngine::RHI
         void ReleaseRenderPass(RHIRenderPassHandle handle) override;
         void ReleaseFrameBuffer(RHIFrameBufferHandle handle) override;
         void ReleasePipeline(RHIPipelineHandle handle) override;
+        
+        void ReleaseGPUProgram(RHIGPUProgramHandle handle);
+        void ReleaseCommandBufferPool(RHICommandBufferPoolHandle handle);
 
         bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle, RHIRenderPassHandle renderPassHandle) override;
         void WaitFence(RHIFenceHandle handle) override;
@@ -181,6 +188,8 @@ namespace ArisenEngine::RHI
         RHIResourcePool<RHISemaphoreHandle, RHIVkSemaphorePoolItem>* GetSemaphorePool() const { return m_SemaphorePool.get(); }
         RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>* GetPipelinePool() const { return m_PipelinePool.get(); }
         RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>* GetFencePool() const { return m_FencePool.get(); }
+        RHIResourcePool<RHIGPUProgramHandle, RHIVkGPUProgramPoolItem>* GetGPUProgramPool() const { return m_GPUProgramPool.get(); }
+        RHIResourcePool<RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>* GetCommandBufferPoolPool() const { return m_CommandBufferPoolPool.get(); }
         
     public:
 

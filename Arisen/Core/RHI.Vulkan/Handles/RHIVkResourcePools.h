@@ -10,6 +10,8 @@
 namespace ArisenEngine::RHI {
 
 class GPUPipeline;
+class GPUProgram;
+class RHICommandBufferPool;
 
 /**
  * @brief Shared state for a Vulkan Buffer and its memory.
@@ -141,6 +143,24 @@ struct RHIVkPipelinePoolItem {
  */
 struct RHIVkFencePoolItem {
     VkFence fence{VK_NULL_HANDLE};
+    std::string name{"Anonymous"};
+    RHIResourceHandle registryHandle;
+};
+
+/**
+ * @brief Internal Vulkan implementation data for a GPUProgram.
+ */
+struct RHIVkGPUProgramPoolItem {
+    GPUProgram* program{nullptr};
+    std::string name{"Anonymous"}; // Debug name
+    RHIResourceHandle registryHandle;
+};
+
+/**
+ * @brief Internal Vulkan implementation data for a CommandBufferPool.
+ */
+struct RHIVkCommandBufferPoolItem {
+    RHICommandBufferPool* pool{nullptr};
     std::string name{"Anonymous"};
     RHIResourceHandle registryHandle;
 };

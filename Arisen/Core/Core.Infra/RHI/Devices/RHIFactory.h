@@ -20,12 +20,12 @@ namespace ArisenEngine::RHI
     public:
         virtual ~RHIFactory() noexcept = default;
 
-        virtual GPUProgram* CreateGPUProgram() = 0;
-        virtual void ReleaseGPUProgram(GPUProgram* program) = 0;
-        virtual bool AttachProgramByteCode(GPUProgram* program, GPUProgramDesc&& desc) = 0;
+        virtual RHIGPUProgramHandle CreateGPUProgram() = 0;
+        virtual void ReleaseGPUProgram(RHIGPUProgramHandle handle) = 0;
+        virtual bool AttachProgramByteCode(RHIGPUProgramHandle handle, GPUProgramDesc&& desc) = 0;
 
-        virtual RHICommandBufferPool* CreateCommandBufferPool() = 0;
-        virtual void ReleaseCommandBufferPool(RHICommandBufferPool* pool) = 0;
+        virtual RHICommandBufferPoolHandle CreateCommandBufferPool() = 0;
+        virtual void ReleaseCommandBufferPool(RHICommandBufferPoolHandle handle) = 0;
 
         virtual RHIRenderPassHandle CreateRenderPass() = 0;
         virtual void ReleaseRenderPass(RHIRenderPassHandle renderPass) = 0;
