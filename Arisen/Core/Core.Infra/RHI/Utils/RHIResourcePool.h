@@ -194,7 +194,7 @@ private:
     m_BlockCount.fetch_add(1, std::memory_order_release);
   }
 
-  std::atomic<PoolEntry*> m_Blocks[MaxBlocks]{nullptr};
+  std::atomic<PoolEntry*> m_Blocks[MaxBlocks]{};
   std::atomic<uint32_t> m_BlockCount{0};
   
   Threadable::Containers::AtomicStack m_FreeStack;
