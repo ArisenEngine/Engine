@@ -11,7 +11,6 @@ typedef void* RHI_PSOHandle;
 typedef void* RHI_PipelineManagerHandle;
 typedef void* RHI_SubpassHandle;
 typedef void* RHI_DescriptorSetHandle;
-typedef void* RHI_DescriptorSetHandle;
 
 // Value handle types for C ABI (64-bit PODs - matches RHIHandle internal layout)
 typedef unsigned long long RHI_FrameBufferHandle;

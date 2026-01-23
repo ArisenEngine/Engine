@@ -212,13 +212,7 @@ extern "C" ENGINE_DLL RHI_PipelineHandle RHI_PipelineManager_GetGraphicsPipeline
     return *reinterpret_cast<unsigned long long*>(&handle);
 }
 
-extern "C" ENGINE_DLL RHI_RenderPassHandle RHI_Device_GetRenderPass(RHI_DeviceHandle device)
-{
-    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
-    if (dev == nullptr) return 0;
-    auto handle = dev->GetFactory()->CreateRenderPass();
-    return *reinterpret_cast<unsigned long long*>(&handle);
-}
+// Moved to HandlesExports: CreateRenderPass (was GetRenderPass)
 
 extern "C" ENGINE_DLL void RHI_RenderPass_Free(RHI_DeviceHandle device, RHI_RenderPassHandle rp, unsigned int frameIndex)
 {
@@ -331,12 +325,6 @@ extern "C" ENGINE_DLL void RHI_Pipeline_AllocGraphics(RHI_DeviceHandle device, R
     }
 }
 
-extern "C" ENGINE_DLL void RHI_Device_ReleaseRenderPass(RHI_DeviceHandle device, RHI_RenderPassHandle rp)
-{
-    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
-    if (dev == nullptr || rp == 0) return;
-    auto h = *reinterpret_cast<RHI::RHIRenderPassHandle*>(&rp);
-    dev->GetFactory()->ReleaseRenderPass(h);
-}
+// Moved to HandlesExports: ReleaseRenderPass
 
 

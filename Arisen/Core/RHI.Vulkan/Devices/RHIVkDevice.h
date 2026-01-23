@@ -75,7 +75,7 @@ namespace ArisenEngine::RHI
 
         RHIMemoryAllocator* GetMemoryAllocator() const override;
 
-        void Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex) override;
+        RHIGpuTicket Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex) override;
         IRHIQueue* GetQueue(RHIQueueType type) override;
         void DeferredDelete(RHIQueueType queue, RHIGpuTicket ticket, RHIDeferredDeleteItem item) override;
         UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) override;
@@ -93,7 +93,17 @@ namespace ArisenEngine::RHI
         RHIVkBindlessManager* GetBindlessManager() const { return m_BindlessManager; }
         UInt32 GetGraphicsFamilyIndex() const { return m_GraphicsFamilyIndex; }
         std::mutex& GetSubmitMutex() { return m_SubmitMutex; }
+
+        UInt32 GetCurrentFrameIndex() const { return m_CurrentFrameIndex.load(std::memory_order_acquire); }
+        RHIGpuTicket GetCompletedSubmitTicket() const override;
+        void WaitQueueTicket(RHIGpuTicket ticket) override;
+
     private:
+        // Internal methods hidden from public interface
+        void EnqueueDeferredDestroy(RHIGpuTicket ticket, RHIDeferredDeleteItem item);
+        void EnqueueDeferredDestroy(RHIGpuTicket ticket, std::function<void()>&& fn);
+        void FlushDeferredDestroys(RHIGpuTicket ticket);
+        RHIResourceRegistry* GetResourceRegistry() const { return m_ResourceRegistry.get(); } // Made private
 
         friend class RHIVkInstance;
         RHIVkGPUPipelineManager* m_GPUPipelineManager;
@@ -131,17 +141,6 @@ namespace ArisenEngine::RHI
         std::unique_ptr<RHIResourcePool<RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>> m_CommandBufferPoolPool;
 
     public:
-        // Deferred destruction (GPU-safe): enqueue on producer threads, flush on the frame fence.
-        void EnqueueDeferredDestroy(RHIGpuTicket ticket, RHIDeferredDeleteItem item);
-        void EnqueueDeferredDestroy(RHIGpuTicket ticket, std::function<void()>&& fn);
-        void FlushDeferredDestroys(RHIGpuTicket ticket);
-
-        // Modern resource system entry point
-        RHIResourceRegistry* GetResourceRegistry() const { return m_ResourceRegistry.get(); }
-        UInt32 GetCurrentFrameIndex() const { return m_CurrentFrameIndex.load(std::memory_order_acquire); }
-        RHIGpuTicket GetCompletedSubmitTicket() const override;
-        void Update() override;
-        void WaitQueueTicket(RHIGpuTicket ticket) override;
 
         // Handle-based operations
     private:
