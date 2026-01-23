@@ -20,9 +20,9 @@ Target: Build a **Stateless**, **Handle-based**, **Highly Parallel**, and **C# I
 - [x] **Handle Infrastructure**
     - [x] `RHIHandle<T>` POD structure (32-bit Index + 32-bit Generation).
     - [x] Basic `RHIResourcePool` implementation (currently Mutex-guarded).
-- [ ] **Interop Layer Cleanup**
-    - [ ] **`HandlesExports.cpp`**: Remove deprecated/stub functions (`RHI_Buffer_Alloc`, `RHI_Image_Alloc`) to prevent misuse.
-    - [ ] **`DeviceExports.cpp`**: Ensure all APIs accept `RHIHandle` types instead of `void*` or raw pointers for strict type safety.
+- [x] **Interop Layer Cleanup**
+    - [x] **`HandlesExports.cpp`**: Remove deprecated/stub functions (`RHI_Buffer_Alloc`, `RHI_Image_Alloc`) to prevent misuse.
+    - [x] **`DeviceExports.cpp`**: Ensure all APIs accept `RHIHandle` types instead of `void*` or raw pointers for strict type safety.
 - [ ] **API Consistency**
     - [ ] Verify `AllocBuffer` vs `AllocBufferDeviceMemory` usage pattern is thread-safe or properly synchronized at the factory level.
 
