@@ -16,6 +16,7 @@
 #include "RHI/Surfaces/Surface.h"
 #include "RHI/Surfaces/FrameBuffer.h"
 #include "RHI/Handles/RHIHandle.h"
+#include "RHI/RHICommon.h"
 #include "RHI/Synchronization/RHIImageMemoryBarrier.h"
 #include "RHI/CommandBuffer/RHICommandBuffer.h"
 #include "RHI/CommandBuffer/RHICommandBufferPool.h"
@@ -49,6 +50,8 @@ namespace ArisenEngine::Testing
 {
     class RHIDynamicRenderingTest : public RHITestBase
     {
+    public:
+        using RHIGpuTicket = ArisenEngine::UInt64;
     private:
         struct RenderContext
         {
@@ -68,6 +71,7 @@ namespace ArisenEngine::Testing
             RHI_PipelineHandle pipeline;
             Containers::Vector<RHI_GPUProgramHandle> gpuPrograms;
             Containers::Vector<UInt32> descriptorPoolIds;
+            Containers::Vector<RHIGpuTicket> frameTickets;
             bool bShouldResize;
 
             // Cached vectors and structures to avoid per-frame heap allocations
@@ -214,7 +218,11 @@ namespace ArisenEngine::Testing
     private:
         void RenderFrame()
         {
-            RHI_Device_WaitFrameFence(m_Context.device, m_FrameIndex);
+            if (m_Context.frameTickets.size() > m_FrameIndex)
+            {
+                RHI_Device_WaitQueueTicket(m_Context.device, m_Context.frameTickets[m_FrameIndex]);
+            }
+            // RHI_Device_WaitFrameFence(m_Context.device, m_FrameIndex);
             UploadUniformBuffer(m_Context);
             RecordSubmitPresent(m_Context);
         
@@ -253,6 +261,7 @@ namespace ArisenEngine::Testing
                 Containers::Vector<unsigned int> counts { 1 };
                 unsigned int poolId = RHI_DescriptorPool_AddPool(m_Context.descriptorPool, &types, &counts, 1);
                 m_Context.descriptorPoolIds.emplace_back(poolId);
+                m_Context.frameTickets.emplace_back(0);
             }
         }
 
@@ -642,7 +651,12 @@ namespace ArisenEngine::Testing
             }
 
             RHI_Cmd_End(commandBuffer);
-            RHI_Device_Submit(context.device, commandBuffer, m_FrameIndex);
+            RHIGpuTicket ticket = RHI_Device_Submit(context.device, commandBuffer, m_FrameIndex);
+            
+             if (context.frameTickets.size() > m_FrameIndex)
+            {
+                context.frameTickets[m_FrameIndex] = ticket;
+            }
             
             RHI_SwapChain_Present(swapchain, m_FrameIndex);
             RHI_Device_ReleaseCommandBuffer(context.device, context.commandPool, m_FrameIndex, commandBuffer);

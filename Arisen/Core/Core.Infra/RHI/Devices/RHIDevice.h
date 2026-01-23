@@ -59,11 +59,11 @@ namespace ArisenEngine::RHI
 
         virtual class RHIMemoryAllocator* GetMemoryAllocator() const = 0;
 
-        virtual void Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex) = 0;
+        virtual RHIGpuTicket Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex) = 0;
 
         // Optional per-frame update hook for GPU completion polling / automatic GC.
         // Default: no-op.
-        virtual void Update() {}
+        // virtual void Update() {}  <-- REMOVED per user request (redundant)
 
         virtual RHIGpuTicket GetCompletedSubmitTicket() const { return 0; }
         virtual void WaitQueueTicket(RHIGpuTicket ticket) { (void)ticket; }
@@ -88,6 +88,8 @@ namespace ArisenEngine::RHI
         // Optional per-frame fence management (centralized sync ownership).
         // Default: no-op / null, for backends that do not use per-frame fences.
         virtual RHIFenceHandle GetFrameFence(UInt32 frameIndex) { (void)frameIndex; return RHIFenceHandle::Invalid(); }
+        
+        // [DEPRECATED]: Use WaitQueueTicket instead.
         virtual void WaitFrameFence(UInt32 frameIndex) { (void)frameIndex; }
         virtual void ResetFrameFence(UInt32 frameIndex) { (void)frameIndex; }
 

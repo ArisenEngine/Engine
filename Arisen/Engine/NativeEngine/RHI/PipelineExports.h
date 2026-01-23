@@ -35,8 +35,7 @@ extern "C" ENGINE_DLL void RHI_PSO_SetRenderingFormats(RHI_PSOHandle pso, Arisen
 extern "C" ENGINE_DLL RHI_PipelineHandle RHI_PipelineManager_GetGraphicsPipeline(RHI_PipelineManagerHandle pm, RHI_PSOHandle pso);
 extern "C" ENGINE_DLL void RHI_Pipeline_AllocGraphics(RHI_DeviceHandle device, RHI_PipelineHandle pipeline, unsigned int frameIndex, RHI_SubpassHandle subpass);
 
-extern "C" ENGINE_DLL RHI_RenderPassHandle RHI_Device_GetRenderPass(RHI_DeviceHandle device);
-extern "C" ENGINE_DLL void RHI_Device_ReleaseRenderPass(RHI_DeviceHandle device, RHI_RenderPassHandle rp);
+// Moved to HandlesExports: CreateRenderPass, ReleaseRenderPass
 extern "C" ENGINE_DLL void RHI_RenderPass_Free(RHI_DeviceHandle device, RHI_RenderPassHandle rp, unsigned int frameIndex);
 extern "C" ENGINE_DLL void RHI_RenderPass_AddAttachmentAction(RHI_DeviceHandle device, RHI_RenderPassHandle rp, ArisenEngine::RHI::EFormat format, ArisenEngine::RHI::ESampleCountFlagBits samples, ArisenEngine::RHI::AttachmentLoadOp colorLoad, ArisenEngine::RHI::AttachmentStoreOp colorStore, ArisenEngine::RHI::AttachmentLoadOp stencilLoad, ArisenEngine::RHI::AttachmentStoreOp stencilStore, ArisenEngine::RHI::EImageLayout initialLayout, ArisenEngine::RHI::EImageLayout finalLayout);
 extern "C" ENGINE_DLL RHI_SubpassHandle RHI_RenderPass_AddSubPass(RHI_DeviceHandle device, RHI_RenderPassHandle rp);

@@ -115,13 +115,7 @@ void ArisenEngine::RHI::RHIVkDevice::FlushDeferredDestroys(RHIGpuTicket ticket)
     }
 }
 
-void ArisenEngine::RHI::RHIVkDevice::Update()
-{
-    if (m_GraphicsQueue)
-    {
-        m_GraphicsQueue->Update();
-    }
-}
+
 
 ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::GetCompletedSubmitTicket() const
 {
@@ -129,7 +123,7 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::GetCompletedSubm
 }
 
 
-void ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex)
+RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex)
 {
     ASSERT(commandBuffer->ReadyForSubmit());
 
@@ -137,26 +131,27 @@ void ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, UIn
     m_CurrentFrameIndex.store(frameIndex, std::memory_order_release);
     if (m_GraphicsQueue)
     {
+        RHIGpuTicket submitTicket = 0;
         if (auto* vkQueue = dynamic_cast<RHIVkQueue*>(m_GraphicsQueue.get()))
         {
-            const auto submitTicket = vkQueue->Submit(commandBuffer);
-            if (m_FrameSync)
-            {
-                m_FrameSync->OnSubmit(frameIndex, submitTicket);
-            }
-            return;
+            submitTicket = vkQueue->Submit(commandBuffer);
+        }
+        else
+        {
+             // Fallback: queue-managed fence via IRHIQueue.
+             submitTicket = m_GraphicsQueue->Submit(commandBuffer);
         }
 
-        // Fallback: queue-managed fence via IRHIQueue.
-        const auto submitTicket = m_GraphicsQueue->Submit(commandBuffer);
         if (m_FrameSync)
         {
             m_FrameSync->OnSubmit(frameIndex, submitTicket);
         }
+        return submitTicket;
     }
     else
     {
         LOG_FATAL_AND_THROW("[RHIVkDevice::Submit]: graphics queue not initialized!");
+        return 0;
     }
 }
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "RHI/GraphsicsAPI.h"
+#include "RHI/GraphicsAPI.h"
 #include "RHI/RHIInstance.h"
 #include "../EngineCommon.h"
 
