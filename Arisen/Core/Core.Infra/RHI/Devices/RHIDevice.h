@@ -101,23 +101,32 @@ namespace ArisenEngine::RHI
         virtual UInt32 RegisterBindlessResource(RHIBufferHandle buffer) { (void)buffer; return 0xFFFFFFFF; }
         virtual UInt32 RegisterBindlessResource(RHISamplerHandle sampler) { (void)sampler; return 0xFFFFFFFF; }
 
+    protected:
+        friend class RHIFactory;
+
         // Handle-based operations
         virtual bool AllocBuffer(RHIBufferHandle handle, BufferDescriptor&& desc) { return false; }
         virtual bool AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits) { return false; }
         virtual void ReleaseBuffer(RHIBufferHandle handle) {}
+        
+    public:
         virtual void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt32 offset) {}
         virtual UInt64 GetBufferSize(RHIBufferHandle handle) { return 0ULL; }
         virtual UInt64 GetBufferOffset(RHIBufferHandle handle) { return 0ULL; }
         virtual UInt64 GetBufferRange(RHIBufferHandle handle) { return 0ULL; }
 
+    protected:
         virtual bool AllocImage(RHIImageHandle handle, ImageDescriptor&& desc) { return false; }
         virtual bool AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits) { return false; }
         virtual void ReleaseImage(RHIImageHandle handle) {}
 
         virtual bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, ImageViewDesc&& desc) { return false; }
         virtual void ReleaseImageView(RHIImageViewHandle handle) = 0;
+
+    public:
         virtual RHIImageViewHandle FindImageViewForImage(RHIImageHandle imageHandle) = 0;
 
+    protected:
         virtual void ReleaseSampler(RHISamplerHandle handle) = 0;
         virtual void ReleaseSemaphore(RHISemaphoreHandle handle) = 0;
         virtual void ReleaseFence(RHIFenceHandle handle) = 0;
@@ -125,7 +134,12 @@ namespace ArisenEngine::RHI
         virtual void ReleaseFrameBuffer(RHIFrameBufferHandle handle) = 0;
         virtual void ReleasePipeline(RHIPipelineHandle handle) = 0;
         
+    public:
         virtual bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle, RHIRenderPassHandle renderPassHandle) = 0;
+        virtual void WaitFence(RHIFenceHandle handle) = 0;
+        virtual void ResetFence(RHIFenceHandle handle) = 0;
+
+    protected:
         
     protected:
         

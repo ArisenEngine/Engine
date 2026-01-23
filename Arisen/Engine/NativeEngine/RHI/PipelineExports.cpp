@@ -4,7 +4,9 @@
 #include "../../Core/Core.Infra/RHI/Program/GPUSubPass.h"
 #include "../../Core/RHI.Vulkan/Devices/RHIVkDevice.h"
 #include <unordered_map>
+#include <unordered_map>
 #include <mutex>
+#include "RHINativeBridge.h"
 
 using namespace ArisenEngine;
 
@@ -225,7 +227,7 @@ extern "C" ENGINE_DLL void RHI_RenderPass_Free(RHI_DeviceHandle device, RHI_Rend
     auto h = *reinterpret_cast<RHI::RHIRenderPassHandle*>(&rp);
     auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
     if (vkDev) {
-        auto* r = vkDev->GetRenderPassPool()->Get(h);
+        auto* r = RHI::RHINativeBridge::GetRenderPassItem(vkDev, h);
         if (r) {
             // Logic to free or deallocate
             // dev->GetFactory()->ReleaseRenderPass(h);
@@ -242,7 +244,7 @@ extern "C" ENGINE_DLL void RHI_RenderPass_AddAttachmentAction(RHI_DeviceHandle d
     auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
     if (!vkDev) return;
 
-    auto* r = vkDev->GetRenderPassPool()->Get(h);
+    auto* r = RHI::RHINativeBridge::GetRenderPassItem(vkDev, h);
     if (r && r->renderPassObj) {
         auto* rpObj = static_cast<RHI::GPURenderPass*>(r->renderPassObj);
         rpObj->AddAttachmentAction(format, samples, colorLoad, colorStore, stencilLoad, stencilStore, initialLayout, finalLayout);
@@ -257,7 +259,7 @@ extern "C" ENGINE_DLL RHI_SubpassHandle RHI_RenderPass_AddSubPass(RHI_DeviceHand
     
     auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
     if (vkDev) {
-        auto* item = vkDev->GetRenderPassPool()->Get(h);
+        auto* item = RHI::RHINativeBridge::GetRenderPassItem(vkDev, h);
         if (item && item->renderPassObj) {
             auto* r = static_cast<RHI::GPURenderPass*>(item->renderPassObj);
             return reinterpret_cast<RHI_SubpassHandle>(r->AddSubPass());
@@ -302,7 +304,7 @@ extern "C" ENGINE_DLL void RHI_RenderPass_Alloc(RHI_DeviceHandle device, RHI_Ren
 
     auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
     if (vkDev) {
-        auto* item = vkDev->GetRenderPassPool()->Get(h);
+        auto* item = RHI::RHINativeBridge::GetRenderPassItem(vkDev, h);
         if (item && item->renderPassObj) {
             auto* r = static_cast<RHI::GPURenderPass*>(item->renderPassObj);
             r->AllocRenderPass(frameIndex);
@@ -321,7 +323,7 @@ extern "C" ENGINE_DLL void RHI_Pipeline_AllocGraphics(RHI_DeviceHandle device, R
 
     auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
     if (vkDev) {
-        auto* item = vkDev->GetPipelinePool()->Get(h);
+        auto* item = RHI::RHINativeBridge::GetPipelineItem(vkDev, h);
         if (item && item->pipeline) {
              auto* sub = reinterpret_cast<RHI::GPUSubPass*>(subpass);
              item->pipeline->AllocGraphicPipeline(frameIndex, sub);

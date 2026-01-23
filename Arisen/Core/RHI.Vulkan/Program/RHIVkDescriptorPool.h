@@ -3,6 +3,7 @@
 #include "RHI/Program/DescriptorPool.h"
 #include "RHI/Utils/RHIDeferredDeletionQueue.h"
 #include <mutex>
+#include "RHI/Program/RHIDescriptorUpdateInfo.h"
 
 namespace ArisenEngine::RHI
 {
@@ -45,13 +46,18 @@ namespace ArisenEngine::RHI
         void MarkPoolUsed(UInt32 poolId, RHIQueueType queue, RHIGpuTicket ticket);
         // Internal: called by deferred descriptor-pool destructor to decrement rotation counters.
         void OnDeferredPoolDestroyed(UInt32 poolId);
+        // Internal helpers for descriptor updates (moved from global scope to access Device internals via friendship)
+        static const VkDescriptorImageInfo* GetImageInfos(RHIVkDevice* device, const RHIDescriptorUpdateInfo& updateInfo, ArisenEngine::Containers::Vector<VkDescriptorImageInfo>& results);
+        static const VkDescriptorBufferInfo* GetBufferInfos(RHIVkDevice* device, const RHIDescriptorUpdateInfo& updateInfo, ArisenEngine::Containers::Vector<VkDescriptorBufferInfo>& results);
+        static const VkBufferView* GetBufferViews(RHIVkDevice* device, const RHIDescriptorUpdateInfo& updateInfo, ArisenEngine::Containers::Vector<VkBufferView>& results);
+
     private:
         
         RHIVkDevice* m_pDevice = nullptr;
         // poolId - layoutIndex - Array of sets
-        Containers::Vector<RHIVkDescriptorSetsHolder> m_DescriptorSetsHolder {};
-        Containers::Vector<RHIGpuTicket> m_PoolLatestTicket {};
-        Containers::Vector<UInt32> m_PoolOutstandingRotations {};
+        ArisenEngine::Containers::Vector<RHIVkDescriptorSetsHolder> m_DescriptorSetsHolder {};
+        ArisenEngine::Containers::Vector<RHIGpuTicket> m_PoolLatestTicket {};
+        ArisenEngine::Containers::Vector<UInt32> m_PoolOutstandingRotations {};
         std::mutex m_Mutex;
     };
 }

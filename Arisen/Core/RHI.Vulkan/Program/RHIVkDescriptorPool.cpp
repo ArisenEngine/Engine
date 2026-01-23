@@ -250,7 +250,7 @@ GetDescriptorSets(UInt32 poolId)
     return m_DescriptorSetsHolder[poolId].sets;
 }
 
-const VkDescriptorImageInfo* GetImageInfos(ArisenEngine::RHI::RHIVkDevice* device, const ArisenEngine::RHI::RHIDescriptorUpdateInfo& updateInfo,
+const VkDescriptorImageInfo* ArisenEngine::RHI::RHIVkDescriptorPool::GetImageInfos(ArisenEngine::RHI::RHIVkDevice* device, const ArisenEngine::RHI::RHIDescriptorUpdateInfo& updateInfo,
                                            ArisenEngine::Containers::Vector<VkDescriptorImageInfo>& results)
 {
     if (updateInfo.imageInfo.size() <= 0)
@@ -288,7 +288,7 @@ const VkDescriptorImageInfo* GetImageInfos(ArisenEngine::RHI::RHIVkDevice* devic
     return results.data();
 }
 
-const VkDescriptorBufferInfo* GetBufferInfos(ArisenEngine::RHI::RHIVkDevice* device, const ArisenEngine::RHI::RHIDescriptorUpdateInfo& updateInfo,
+const VkDescriptorBufferInfo* ArisenEngine::RHI::RHIVkDescriptorPool::GetBufferInfos(ArisenEngine::RHI::RHIVkDevice* device, const ArisenEngine::RHI::RHIDescriptorUpdateInfo& updateInfo,
     ArisenEngine::Containers::Vector<VkDescriptorBufferInfo>& results)
 {
     if (updateInfo.bufferHandles.size() <= 0)
@@ -334,7 +334,7 @@ const VkDescriptorBufferInfo* GetBufferInfos(ArisenEngine::RHI::RHIVkDevice* dev
     return results.data();
 }
 
-const VkBufferView* GetBufferViews(ArisenEngine::RHI::RHIVkDevice* device, const ArisenEngine::RHI::RHIDescriptorUpdateInfo& updateInfo,
+const VkBufferView* ArisenEngine::RHI::RHIVkDescriptorPool::GetBufferViews(ArisenEngine::RHI::RHIVkDevice* device, const ArisenEngine::RHI::RHIDescriptorUpdateInfo& updateInfo,
     ArisenEngine::Containers::Vector<VkBufferView>& results)
 {
     if (updateInfo.texelBufferViews.size() <= 0)
