@@ -76,7 +76,7 @@ ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDescriptorPool::AddPool(Containers:
     }
 
     m_DescriptorSetsHolder.emplace_back(descriptorSetsHolder);
-    m_PoolLastUsedTicket.emplace_back(0);
+    m_PoolLatestTicket.emplace_back(0);
     m_PoolOutstandingRotations.emplace_back(0);
     
     return m_DescriptorSetsHolder.size() - 1;
@@ -99,12 +99,12 @@ bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
     }
 
     // Non-blocking, GPU-safe reset strategy:
-    // - If GPU has finished using this poolId (completed >= lastUsed), we can vkResetDescriptorPool immediately.
-    // - Otherwise, rotate to a fresh VkDescriptorPool for this poolId and defer-destroy the old pool at lastUsed ticket.
-    const auto lastUsed = (poolId < m_PoolLastUsedTicket.size()) ? m_PoolLastUsedTicket[poolId] : 0;
+    // - If GPU has finished using this poolId (completed >= latestTicket), we can vkResetDescriptorPool immediately.
+    // - Otherwise, rotate to a fresh VkDescriptorPool for this poolId and defer-destroy the old pool at latestTicket.
+    const auto latestTicket = (poolId < m_PoolLatestTicket.size()) ? m_PoolLatestTicket[poolId] : 0;
     auto* q = m_pDevice ? m_pDevice->GetQueue(RHIQueueType::Graphics) : nullptr;
-    const auto completed = q ? q->GetCompletedTicket() : lastUsed;
-    const bool canResetNow = (lastUsed == 0) || (completed >= lastUsed);
+    const auto completed = q ? q->GetCompletedTicket() : latestTicket;
+    const bool canResetNow = (latestTicket == 0) || (completed >= latestTicket);
 
     if (!canResetNow)
     {
@@ -118,7 +118,7 @@ bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
             lock.unlock();
             
             // Use hardware wait instead of busy loop
-            q->WaitForTicket(lastUsed);
+            q->WaitForTicket(latestTicket);
 
             lock.lock();
             // Re-read holder after waiting.
@@ -150,7 +150,7 @@ bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
                 poolId,
             };
             if (poolId < m_PoolOutstandingRotations.size()) m_PoolOutstandingRotations[poolId] += 1;
-            m_pDevice->DeferredDelete(RHIQueueType::Graphics, lastUsed, MakeDeferredDeleteItem(deferred));
+            m_pDevice->DeferredDelete(RHIQueueType::Graphics, latestTicket, MakeDeferredDeleteItem(deferred));
         }
         else
         {
@@ -158,7 +158,7 @@ bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
         }
 
         holder.descriptorPool = newPool;
-        m_PoolLastUsedTicket[poolId] = 0;
+        m_PoolLatestTicket[poolId] = 0;
         holder.sets.clear();
         return true;
         }
@@ -171,7 +171,7 @@ bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
         return false;
     }
 
-    m_PoolLastUsedTicket[poolId] = 0;
+    m_PoolLatestTicket[poolId] = 0;
     holder.sets.clear();
     
     return true;
@@ -188,10 +188,10 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::MarkPoolUsed(UInt32 poolId, RHIQueu
 {
     std::lock_guard<std::mutex> lock(m_Mutex);
     (void)queue; // current impl is per-device graphics queue
-    if (poolId >= m_PoolLastUsedTicket.size()) return;
-    if (ticket > m_PoolLastUsedTicket[poolId])
+    if (poolId >= m_PoolLatestTicket.size()) return;
+    if (ticket > m_PoolLatestTicket[poolId])
     {
-        m_PoolLastUsedTicket[poolId] = ticket;
+        m_PoolLatestTicket[poolId] = ticket;
     }
 }
 

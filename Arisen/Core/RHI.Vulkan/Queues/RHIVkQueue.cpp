@@ -58,7 +58,7 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     auto* vkCmd = static_cast<RHIVkCommandBuffer*>(commandBuffer);
 
     // Timeline signal value
-    const auto submitId = m_LatestTicket.fetch_add(1, std::memory_order_acq_rel) + 1;
+    const auto submitTicket = m_LatestTicket.fetch_add(1, std::memory_order_acq_rel) + 1;
 
     VkTimelineSemaphoreSubmitInfo timelineInfo{};
     timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
@@ -85,7 +85,7 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     Containers::Vector<uint64_t> signalValues;
 
     signalSemaphores.emplace_back(m_TimelineSemaphore);
-    signalValues.emplace_back(submitId);
+    signalValues.emplace_back(submitTicket);
 
     if (vkCmd->GetSignalSemaphoresCount() > 0)
     {
@@ -117,7 +117,7 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     for (const auto& t : vkCmd->GetTrackedDescriptorPools())
     {
         auto* p = static_cast<RHIVkDescriptorPool*>(t.pool);
-        p->MarkPoolUsed(t.poolId, m_Type, submitId);
+        p->MarkPoolUsed(t.poolId, m_Type, submitTicket);
     }
     vkCmd->ClearTrackedDescriptorPools();
 
@@ -127,13 +127,13 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     {
         for (auto h : vkCmd->GetTrackedResourceHandles())
         {
-            m_ResourceRegistry->Release(h, m_Type, submitId);
+            m_ResourceRegistry->Release(h, m_Type, submitTicket);
         }
     }
     vkCmd->ClearTrackedResourceHandles();
-    vkCmd->SetLastSubmitId(submitId);
+    vkCmd->SetLatestSubmitTicket(submitTicket);
 
-    return submitId;
+    return submitTicket;
 }
 
 void ArisenEngine::RHI::RHIVkQueue::Update()
@@ -146,12 +146,12 @@ void ArisenEngine::RHI::RHIVkQueue::Update()
     uint64_t completed = 0;
     if (vkGetSemaphoreCounterValue(m_Device, m_TimelineSemaphore, &completed) == VK_SUCCESS)
     {
-        m_CompletedSubmitId.store(static_cast<RHIGpuTicket>(completed), std::memory_order_release);
+        m_CompletedSubmitTicket.store(static_cast<RHIGpuTicket>(completed), std::memory_order_release);
     }
 
     if (m_DeferredDeletion)
     {
-        m_DeferredDeletion->Flush(m_Type, m_CompletedSubmitId.load(std::memory_order_acquire));
+        m_DeferredDeletion->Flush(m_Type, m_CompletedSubmitTicket.load(std::memory_order_acquire));
     }
 }
 

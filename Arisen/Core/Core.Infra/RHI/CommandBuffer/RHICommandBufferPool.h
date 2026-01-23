@@ -50,10 +50,10 @@ namespace ArisenEngine::RHI
         void ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBuffer* commandBuffer)
         {
             (void)currentFrameIndex;
-            auto ticket = commandBuffer->GetLastSubmitId();
+            auto ticket = commandBuffer->GetLatestSubmitTicket();
             
             // If the GPU is already done with it, recycle immediately.
-            if (m_Device->GetCompletedSubmitId() >= ticket)
+            if (m_Device->GetCompletedSubmitTicket() >= ticket)
             {
                 std::lock_guard<std::mutex> lock(m_BuffersMutex);
                 commandBuffer->Release();

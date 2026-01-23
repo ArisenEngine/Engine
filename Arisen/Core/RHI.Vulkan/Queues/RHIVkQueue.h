@@ -35,7 +35,7 @@ namespace ArisenEngine::RHI
 
         RHIGpuTicket GetCompletedTicket() const override
         {
-            return m_CompletedSubmitId.load(std::memory_order_acquire);
+            return m_CompletedSubmitTicket.load(std::memory_order_acquire);
         }
         
         RHIGpuTicket GetLatestTicket() const override
@@ -57,7 +57,7 @@ namespace ArisenEngine::RHI
         VkSemaphore m_TimelineSemaphore { VK_NULL_HANDLE };
 
         std::atomic<RHIGpuTicket> m_LatestTicket { 0 };
-        std::atomic<RHIGpuTicket> m_CompletedSubmitId { 0 };
+        std::atomic<RHIGpuTicket> m_CompletedSubmitTicket { 0 };
     };
 }
 
