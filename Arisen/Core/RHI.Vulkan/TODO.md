@@ -23,8 +23,8 @@ Target: Build a **Stateless**, **Handle-based**, **Highly Parallel**, and **C# I
 - [x] **Interop Layer Cleanup**
     - [x] **`HandlesExports.cpp`**: Remove deprecated/stub functions (`RHI_Buffer_Alloc`, `RHI_Image_Alloc`) to prevent misuse.
     - [x] **`DeviceExports.cpp`**: Ensure all APIs accept `RHIHandle` types instead of `void*` or raw pointers for strict type safety.
-- [ ] **API Consistency**
-    - [ ] Verify `AllocBuffer` vs `AllocBufferDeviceMemory` usage pattern is thread-safe or properly synchronized at the factory level.
+- [x] **API Consistency**
+    - [x] Verify `AllocBuffer` vs `AllocBufferDeviceMemory` usage pattern is thread-safe or properly synchronized at the factory level.
 
 ---
 
