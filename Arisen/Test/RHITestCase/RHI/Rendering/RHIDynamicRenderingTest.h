@@ -218,9 +218,11 @@ namespace ArisenEngine::Testing
     private:
         void RenderFrame()
         {
-            if (m_Context.frameTickets.size() > m_FrameIndex)
+            // Wait for the previous submission of this frame index to complete
+            auto currentIndex = GetCurrentFrameIndex();
+            if (m_Context.frameTickets.size() > currentIndex)
             {
-                RHI_Device_WaitQueueTicket(m_Context.device, m_Context.frameTickets[m_FrameIndex]);
+                RHI_Device_WaitQueueTicket(m_Context.device, m_Context.frameTickets[currentIndex]);
             }
             // RHI_Device_WaitFrameFence(m_Context.device, m_FrameIndex);
             UploadUniformBuffer(m_Context);
@@ -653,9 +655,9 @@ namespace ArisenEngine::Testing
             RHI_Cmd_End(commandBuffer);
             RHIGpuTicket ticket = RHI_Device_Submit(context.device, commandBuffer, m_FrameIndex);
             
-             if (context.frameTickets.size() > m_FrameIndex)
+             if (context.frameTickets.size() > currentIndex)
             {
-                context.frameTickets[m_FrameIndex] = ticket;
+                context.frameTickets[currentIndex] = ticket;
             }
             
             RHI_SwapChain_Present(swapchain, m_FrameIndex);
