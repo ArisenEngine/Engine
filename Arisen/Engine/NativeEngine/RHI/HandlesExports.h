@@ -8,8 +8,8 @@ namespace ArisenEngine { namespace RHI { class ImageView; } }
 
 // BufferHandle lifecycle & ops
 // BufferHandle lifecycle & ops
-extern "C" ENGINE_DLL RHI_BufferHandle RHI_Device_GetBufferHandle(RHI_DeviceHandle device, const char* name);
-extern "C" ENGINE_DLL void RHI_Device_ReleaseBufferHandle(RHI_DeviceHandle device, RHI_BufferHandle buffer);
+extern "C" ENGINE_DLL RHI_BufferHandle RHI_Device_CreateBuffer(RHI_DeviceHandle device, const ArisenEngine::RHI::BufferDescriptor* desc, const char* name);
+extern "C" ENGINE_DLL void RHI_Device_ReleaseBuffer(RHI_DeviceHandle device, RHI_BufferHandle buffer);
 extern "C" ENGINE_DLL bool RHI_Buffer_Alloc(RHI_DeviceHandle device, RHI_BufferHandle buffer, const ArisenEngine::RHI::BufferDescriptor* desc);
 extern "C" ENGINE_DLL bool RHI_Buffer_AllocDeviceMemory(RHI_DeviceHandle device, RHI_BufferHandle buffer, unsigned int memoryPropertiesBits);
 extern "C" ENGINE_DLL void RHI_Buffer_Free(RHI_DeviceHandle device, RHI_BufferHandle buffer);
@@ -20,8 +20,8 @@ extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Range(RHI_DeviceHandle devic
 
 // ImageHandle lifecycle & ops
 // ImageHandle lifecycle & ops
-extern "C" ENGINE_DLL RHI_ImageHandle RHI_Device_GetImageHandle(RHI_DeviceHandle device, const char* name);
-extern "C" ENGINE_DLL void RHI_Device_ReleaseImageHandle(RHI_DeviceHandle device, RHI_ImageHandle image);
+extern "C" ENGINE_DLL RHI_ImageHandle RHI_Device_CreateImage(RHI_DeviceHandle device, const ArisenEngine::RHI::ImageDescriptor* desc, const char* name);
+extern "C" ENGINE_DLL void RHI_Device_ReleaseImage(RHI_DeviceHandle device, RHI_ImageHandle image);
 extern "C" ENGINE_DLL void RHI_Image_Alloc(RHI_DeviceHandle device, RHI_ImageHandle image, const ArisenEngine::RHI::ImageDescriptor* desc);
 extern "C" ENGINE_DLL bool RHI_Image_AllocDeviceMemory(RHI_DeviceHandle device, RHI_ImageHandle image, unsigned int memoryPropertiesBits);
 extern "C" ENGINE_DLL void RHI_Image_Free(RHI_DeviceHandle device, RHI_ImageHandle image);

@@ -96,7 +96,7 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseFrameBuffer(RHI_DeviceHandle device
 
 extern "C" ENGINE_DLL void RHI_FrameBuffer_SetAttachment(RHI_DeviceHandle device, RHI_FrameBufferHandle fb, unsigned int frameIndex, RHI_ImageViewHandle view, RHI_RenderPassHandle rp)
 {
-    auto* dev = reinterpret_cast<RHI::RHIVkDevice*>(device);
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (!dev) return;
     auto hFb = *reinterpret_cast<RHI::RHIFrameBufferHandle*>(&fb);
     auto hView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&view);

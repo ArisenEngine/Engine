@@ -189,24 +189,24 @@ namespace ArisenEngine::Testing
             // Release Buffers
             if (m_Context.vertexBufferHandle)
             {
-                RHI_Device_ReleaseBufferHandle(m_Context.device, m_Context.vertexBufferHandle);
+                RHI_Device_ReleaseBuffer(m_Context.device, m_Context.vertexBufferHandle);
                 m_Context.vertexBufferHandle = 0ULL;
             }
             if (m_Context.indicesBufferHandle)
             {
-                RHI_Device_ReleaseBufferHandle(m_Context.device, m_Context.indicesBufferHandle);
+                RHI_Device_ReleaseBuffer(m_Context.device, m_Context.indicesBufferHandle);
                 m_Context.indicesBufferHandle = 0ULL;
             }
             for (auto& ub : m_Context.uniformBuffers)
             {
-                if (ub) RHI_Device_ReleaseBufferHandle(m_Context.device, ub);
+                if (ub) RHI_Device_ReleaseBuffer(m_Context.device, ub);
             }
             m_Context.uniformBuffers.clear();
 
             // Release Texture
             if (m_Context.textureHandle)
             {
-                RHI_Device_ReleaseImageHandle(m_Context.device, m_Context.textureHandle);
+                RHI_Device_ReleaseImage(m_Context.device, m_Context.textureHandle);
                 m_Context.textureHandle = 0ULL;
             }
 
@@ -299,9 +299,6 @@ namespace ArisenEngine::Testing
             }
 
             m_Context.frameBuffer = RHI_Device_GetFrameBuffer(m_Context.device);
-            m_Context.vertexBufferHandle = RHI_Device_GetBufferHandle(m_Context.device, "Vertex Buffer");
-            m_Context.indicesBufferHandle = RHI_Device_GetBufferHandle(m_Context.device, "Indices Buffer");
-            m_Context.textureHandle = RHI_Device_GetImageHandle(m_Context.device, "Texture Image");
             m_Context.descriptorPool = RHI_Device_GetDescriptorPool(m_Context.device);
             m_Context.pipelineState = nullptr;
             
@@ -311,8 +308,6 @@ namespace ArisenEngine::Testing
                 Containers::Vector<unsigned int> counts { 1 };
                 unsigned int poolId = RHI_DescriptorPool_AddPool(m_Context.descriptorPool, &types, &counts, 1);
                 m_Context.descriptorPoolIds.emplace_back(poolId);
-                auto name = std::string("Uniform Buffer ") + std::to_string(i);
-                m_Context.uniformBuffers.emplace_back(RHI_Device_GetBufferHandle(m_Context.device, name.c_str()));
             }
         }
 
@@ -480,32 +475,33 @@ namespace ArisenEngine::Testing
                 sizeof(vertices[0]) * (UInt64)vertices.size(),
                 RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT,
                 RHI::SHARING_MODE_EXCLUSIVE,
-                0, nullptr
+                0, nullptr,
+                RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             };
-            RHI_Buffer_Alloc(m_Context.device, m_Context.vertexBufferHandle, &vbDesc);
-            RHI_Buffer_AllocDeviceMemory(m_Context.device, m_Context.vertexBufferHandle, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            m_Context.vertexBufferHandle = RHI_Device_CreateBuffer(m_Context.device, &vbDesc, "Vertex Buffer");
 
             RHI::BufferDescriptor ibDesc{
                 0,
                 sizeof(indices[0]) * (UInt64)indices.size(),
                 RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_INDEX_BUFFER_BIT,
                 RHI::SHARING_MODE_EXCLUSIVE,
-                0, nullptr
+                0, nullptr,
+                RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             };
-            RHI_Buffer_Alloc(m_Context.device, m_Context.indicesBufferHandle, &ibDesc);
-            RHI_Buffer_AllocDeviceMemory(m_Context.device, m_Context.indicesBufferHandle, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            m_Context.indicesBufferHandle = RHI_Device_CreateBuffer(m_Context.device, &ibDesc, "Indices Buffer");
 
-            for (const auto& uniformBuffer : m_Context.uniformBuffers)
+            for (int i = 0; i < (int)m_MaxFramesInFlight; ++i)
             {
                 RHI::BufferDescriptor ubDesc{
                     0,
                     sizeof(UniformBufferObject),
                     RHI::BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                     RHI::SHARING_MODE_EXCLUSIVE,
-                    0, nullptr
+                    0, nullptr,
+                    RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT
                 };
-                RHI_Buffer_Alloc(m_Context.device, uniformBuffer, &ubDesc);
-                RHI_Buffer_AllocDeviceMemory(m_Context.device, uniformBuffer, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                auto name = std::string("Uniform Buffer ") + std::to_string(i);
+                m_Context.uniformBuffers.emplace_back(RHI_Device_CreateBuffer(m_Context.device, &ubDesc, name.c_str()));
             }
             
             UploadVertex();
@@ -537,10 +533,10 @@ namespace ArisenEngine::Testing
                 1, 1, RHI::FORMAT_R8G8B8A8_SRGB, RHI::IMAGE_TILING_OPTIMAL,
                 RHI::IMAGE_LAYOUT_UNDEFINED, RHI::IMAGE_USAGE_SAMPLED_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT,
                 RHI::SAMPLE_COUNT_1_BIT, RHI::SHARING_MODE_EXCLUSIVE,
-                0, nullptr
+                0, nullptr,
+                RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             };
-            RHI_Image_Alloc(m_Context.device, m_Context.textureHandle, &imgDesc);
-            RHI_Image_AllocDeviceMemory(m_Context.device, m_Context.textureHandle, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            m_Context.textureHandle = RHI_Device_CreateImage(m_Context.device, &imgDesc, "Texture Image");
             RHI::ImageViewDesc imageViewDesc {
                 RHI::IMAGE_VIEW_TYPE_2D, RHI::FORMAT_R8G8B8A8_SRGB, RHI::IMAGE_ASPECT_COLOR_BIT,
                 0, 1, 0, 1,
@@ -559,26 +555,26 @@ namespace ArisenEngine::Testing
             auto vertexBufferHandle = m_Context.vertexBufferHandle;
             auto indicesBufferHandle = m_Context.indicesBufferHandle;
             
-            auto vertexStagingBufferHandle = RHI_Device_GetBufferHandle(device, "Vertex Staging Buffer");
             RHI::BufferDescriptor vsb{
                 0,
                 sizeof(vertices[0]) * vertices.size(),
                 RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
-                RHI::SHARING_MODE_EXCLUSIVE
+                RHI::SHARING_MODE_EXCLUSIVE,
+                0, nullptr,
+                RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT
             };
-            RHI_Buffer_Alloc(device, vertexStagingBufferHandle, &vsb);
-            RHI_Buffer_AllocDeviceMemory(device, vertexStagingBufferHandle, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            auto vertexStagingBufferHandle = RHI_Device_CreateBuffer(device, &vsb, "Vertex Staging Buffer");
             RHI_Buffer_MemoryCopy(device, vertexStagingBufferHandle, vertices.data(), 0);
 
-            auto indicesStagingBufferHandle = RHI_Device_GetBufferHandle(device, "Indices Staging Buffer");
             RHI::BufferDescriptor isb{
                 0,
                 sizeof(indices[0]) * indices.size(),
                 RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
-                RHI::SHARING_MODE_EXCLUSIVE
+                RHI::SHARING_MODE_EXCLUSIVE,
+                0, nullptr,
+                RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT
             };
-            RHI_Buffer_Alloc(device, indicesStagingBufferHandle, &isb);
-            RHI_Buffer_AllocDeviceMemory(device, indicesStagingBufferHandle, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            auto indicesStagingBufferHandle = RHI_Device_CreateBuffer(device, &isb, "Indices Staging Buffer");
             RHI_Buffer_MemoryCopy(device, indicesStagingBufferHandle, indices.data(), 0);
 
             auto commandBuffer = RHI_Device_GetCommandBuffer(device, m_Context.commandPool, m_FrameIndex);
@@ -592,8 +588,8 @@ namespace ArisenEngine::Testing
             // Sync one-time setup transfers immediately to avoid command buffer reuse conflicts with first frame
             RHI_Device_WaitIdle(device);
 
-            RHI_Device_ReleaseBufferHandle(device, vertexStagingBufferHandle);
-            RHI_Device_ReleaseBufferHandle(device, indicesStagingBufferHandle);
+            RHI_Device_ReleaseBuffer(device, vertexStagingBufferHandle);
+            RHI_Device_ReleaseBuffer(device, indicesStagingBufferHandle);
 
             RHI_Device_ReleaseCommandBuffer(device, m_Context.commandPool, m_FrameIndex, commandBuffer);
         }
@@ -601,17 +597,15 @@ namespace ArisenEngine::Testing
         void UploadImage(UInt64 textureSize, void* data, UInt32 texWidth, UInt32 texHeight)
         {
             auto device = m_Context.device;
-            auto textureStagingBufferHandle = RHI_Device_GetBufferHandle(device, "Texture Staging Buffer");
             RHI::BufferDescriptor tsb{
                 0,
                 textureSize,
                 RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
-                RHI::SHARING_MODE_EXCLUSIVE
+                RHI::SHARING_MODE_EXCLUSIVE,
+                0, nullptr,
+                RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT
             };
-
-            RHI_Buffer_Alloc(device, textureStagingBufferHandle, &tsb);
-            RHI_Buffer_AllocDeviceMemory(device, textureStagingBufferHandle, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            auto textureStagingBufferHandle = RHI_Device_CreateBuffer(device, &tsb, "Texture Staging Buffer");
             RHI_Buffer_MemoryCopy(device, textureStagingBufferHandle, data, 0);
 
             // Transfer commands
@@ -669,7 +663,7 @@ namespace ArisenEngine::Testing
             // Sync one-time setup transfers immediately to avoid command buffer reuse conflicts with first frame
             RHI_Device_WaitIdle(device);
 
-            RHI_Device_ReleaseBufferHandle(device, textureStagingBufferHandle);
+            RHI_Device_ReleaseBuffer(device, textureStagingBufferHandle);
             RHI_Device_ReleaseCommandBuffer(device, m_Context.commandPool, m_FrameIndex, commandBuffer);
         }
 
