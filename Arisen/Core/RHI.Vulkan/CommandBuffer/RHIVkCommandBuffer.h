@@ -57,8 +57,6 @@ public:
                   RHIBufferHandle dst, UInt64 dstOffset,
                   UInt64 size) override;
 
-  void InjectFence(RHIFenceHandle fence) override;
-  void WaitForFence(UInt32 frameIndex) override;
   void BindDescriptorSets(
       UInt32 frameIndex, EPipelineBindPoint bindPoint, UInt32 firstSet,
       Containers::Vector<std::shared_ptr<RHIDescriptorSet>> &descriptorsets,

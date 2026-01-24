@@ -138,13 +138,11 @@ namespace ArisenEngine::RHI
         
         virtual void WaitSemaphore(RHISemaphoreHandle semaphore, EPipelineStageFlag stage) = 0;
         virtual void SignalSemaphore(RHISemaphoreHandle semaphore) = 0;
-        virtual void InjectFence(RHIFenceHandle fence) = 0;
 
         virtual void CopyBuffer(RHIBufferHandle src, UInt64 srcOffset, RHIBufferHandle dst, UInt64 dstOffset, UInt64 size) = 0;
         
         virtual void BindDescriptorSets(UInt32 frameIndex, EPipelineBindPoint bindPoint,
     UInt32 firstSet, Containers::Vector<std::shared_ptr<RHIDescriptorSet>>& descriptorsets, UInt32 dynamicOffsetCount, const UInt32* pDynamicOffsets) = 0;
-        virtual void WaitForFence(UInt32 frameIndex) = 0;
 
         virtual void CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst,
             EImageLayout dstImageLayout, Containers::Vector<BufferImageCopy>&& regions) = 0;
