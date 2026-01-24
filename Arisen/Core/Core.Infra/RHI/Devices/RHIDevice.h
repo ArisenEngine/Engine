@@ -85,13 +85,6 @@ namespace ArisenEngine::RHI
 
         virtual void SetResolution(UInt32 width, UInt32 height) = 0;
 
-        // Optional per-frame fence management (centralized sync ownership).
-        // Default: no-op / null, for backends that do not use per-frame fences.
-        virtual RHIFenceHandle GetFrameFence(UInt32 frameIndex) { (void)frameIndex; return RHIFenceHandle::Invalid(); }
-        
-        // [DEPRECATED]: Use WaitQueueTicket instead.
-        virtual void WaitFrameFence(UInt32 frameIndex) { (void)frameIndex; }
-        virtual void ResetFrameFence(UInt32 frameIndex) { (void)frameIndex; }
 
         const RHIDeviceLimits GetDeviceLimits() const
         {

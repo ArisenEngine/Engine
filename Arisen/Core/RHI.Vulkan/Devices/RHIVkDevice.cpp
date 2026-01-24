@@ -155,22 +155,7 @@ RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuf
     }
 }
 
-ArisenEngine::RHI::RHIFenceHandle ArisenEngine::RHI::RHIVkDevice::GetFrameFence(UInt32 frameIndex)
-{
-    (void)frameIndex;
-    // If using timeline semaphores, we might not have a traditional per-frame fence.
-    // Return invalid for now or we could wrap the timeline progress as a "handle".
-    return RHIFenceHandle::Invalid();
-}
 
-void ArisenEngine::RHI::RHIVkDevice::WaitFrameFence(UInt32 frameIndex)
-{
-    if (m_FrameSync == nullptr || m_GraphicsQueue == nullptr)
-    {
-        return;
-    }
-    m_FrameSync->Wait(frameIndex, m_GraphicsQueue.get());
-}
 
 void ArisenEngine::RHI::RHIVkDevice::WaitQueueTicket(RHIGpuTicket ticket)
 {
@@ -180,10 +165,6 @@ void ArisenEngine::RHI::RHIVkDevice::WaitQueueTicket(RHIGpuTicket ticket)
     }
 }
 
-void ArisenEngine::RHI::RHIVkDevice::ResetFrameFence(UInt32 frameIndex)
-{
-    (void)frameIndex;
-}
 
 ArisenEngine::RHI::IRHIQueue* ArisenEngine::RHI::RHIVkDevice::GetQueue(RHIQueueType type)
 {

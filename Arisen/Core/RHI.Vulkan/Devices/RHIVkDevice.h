@@ -22,6 +22,8 @@ namespace ArisenEngine::RHI
     class RHIVkDeferredDeletion;
     class IRHIQueue;
     class RHIVkBindlessManager;
+    class RHIVkMemoryAllocator;
+    class RHIVkBindlessManager; // Forward decl
     struct RHIVkBufferPoolItem;
     struct RHIVkImagePoolItem;
     struct RHIVkImageViewPoolItem;
@@ -35,9 +37,6 @@ namespace ArisenEngine::RHI
 
 namespace ArisenEngine::RHI
 {
-    class RHIVkMemoryAllocator;
-    class RHIVkBindlessManager; // Forward decl
-
     class RHIVkDevice final: public RHIDevice
     {
     public:
@@ -51,6 +50,8 @@ namespace ArisenEngine::RHI
         friend class RHIVkGPUPipelineManager; // Needs pool access
         friend class RHIVkGPUPipelineStateObject; // Needs program pool access
         friend class RHINativeBridge; // Bridge for NativeExports
+        friend class RHIVkCommandBufferPool; // Needs family index
+        friend class RHIVkQueue; // Needs family index
 
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkDevice)
         ~RHIVkDevice() noexcept override;
@@ -82,14 +83,13 @@ namespace ArisenEngine::RHI
 
         void SetResolution(UInt32 width, UInt32 height) override;
 
-        RHIFenceHandle GetFrameFence(UInt32 frameIndex) override;
-        void WaitFrameFence(UInt32 frameIndex) override;
-        void ResetFrameFence(UInt32 frameIndex) override;
 
         virtual UInt32 RegisterBindlessResource(RHIImageViewHandle image) override;
         UInt32 RegisterBindlessResource(RHIBufferHandle buffer) override;
         UInt32 RegisterBindlessResource(RHISamplerHandle sampler) override;
 
+
+    private:
         RHIVkBindlessManager* GetBindlessManager() const { return m_BindlessManager; }
         UInt32 GetGraphicsFamilyIndex() const { return m_GraphicsFamilyIndex; }
         std::mutex& GetSubmitMutex() { return m_SubmitMutex; }
@@ -192,6 +192,7 @@ namespace ArisenEngine::RHI
         
     public:
 
+    private:
         // Cached Function Pointers
         PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR = nullptr;
         PFN_vkCmdEndRenderingKHR vkCmdEndRenderingKHR = nullptr;

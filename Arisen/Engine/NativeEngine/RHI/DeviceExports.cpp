@@ -44,12 +44,6 @@ extern "C" ENGINE_DLL unsigned long long RHI_Device_Submit(RHI_DeviceHandle hand
 // Update removed
 // extern "C" ENGINE_DLL void RHI_Device_Update(RHI_DeviceHandle device)
 
-extern "C" ENGINE_DLL void RHI_Device_WaitFrameFence(RHI_DeviceHandle handle, unsigned int frameIndex)
-{
-    auto* dev = reinterpret_cast<RHI::RHIDevice*>(handle);
-    if (dev == nullptr) return;
-    dev->WaitFrameFence(frameIndex);
-}
 
 extern "C" ENGINE_DLL void RHI_Device_WaitQueueTicket(RHI_DeviceHandle handle, unsigned long long ticket)
 {

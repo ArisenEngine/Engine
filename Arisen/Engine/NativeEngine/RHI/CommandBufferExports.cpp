@@ -184,22 +184,7 @@ extern "C" ENGINE_DLL void RHI_Cmd_SignalSemaphore(RHI_CommandBufferHandle cmd, 
     c->SignalSemaphore(h);
 }
 
-extern "C" ENGINE_DLL void RHI_Cmd_InjectFence(RHI_CommandBufferHandle cmd, RHI_FenceHandle fence)
-{
-    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
-    if (c == nullptr) return;
-    auto h = *reinterpret_cast<RHI::RHIFenceHandle*>(&fence);
-    c->InjectFence(h);
-}
 
-extern "C" ENGINE_DLL void RHI_Cmd_WaitForFence(RHI_CommandBufferHandle cmd, unsigned int frameIndex)
-{
-    auto* commandBuffer = reinterpret_cast<ArisenEngine::RHI::RHICommandBuffer*>(cmd);
-    if (commandBuffer)
-    {
-        commandBuffer->WaitForFence(frameIndex);
-    }
-}
 
 extern "C" ENGINE_DLL void RHI_Cmd_BeginRendering(RHI_CommandBufferHandle cmd, ArisenEngine::RHI::RHIRenderingInfo* info)
 {

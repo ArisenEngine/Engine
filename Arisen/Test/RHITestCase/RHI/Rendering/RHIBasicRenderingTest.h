@@ -252,7 +252,6 @@ namespace ArisenEngine::Testing
             {
                 RHI_Device_WaitQueueTicket(m_Context.device, m_Context.frameTickets[currentIndex]);
             }
-            // RHI_Device_WaitFrameFence(m_Context.device, m_FrameIndex);  <-- Removed
             UploadUniformBuffer(m_Context);
             RecordSubmitPresent(m_Context);
         

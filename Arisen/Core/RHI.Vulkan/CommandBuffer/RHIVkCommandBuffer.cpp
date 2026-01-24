@@ -673,18 +673,7 @@ VkFence ArisenEngine::RHI::RHIVkCommandBuffer::GetSubmissionFence() const
 }
 
 // TODO: 用一个map去存储不同type的fence，在调用相关接口时根据type等待fence
-void ArisenEngine::RHI::RHIVkCommandBuffer::InjectFence(RHIFenceHandle fence)
-{
-    // Fence ownership is separated from command buffer. Kept for ABI compatibility (no-op).
-    // (void)fence; 
-}
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::WaitForFence(UInt32 frameIndex)
-{
-    // Deprecated: fence ownership and GPU completion polling live at queue/device level.
-    // Use RHIDevice::Update() (or per-queue Update) for automatic GC.
-    (void)frameIndex;
-}
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::Release()
 {
