@@ -42,7 +42,7 @@ m_RHICommandPool(pool)
         }
     }
     
-    m_State = ECommandState::ReadyForBegin;
+    m_State = ECommandBufferState::Initial;
 }
 
 void* ArisenEngine::RHI::RHIVkCommandBuffer::GetHandle() const
@@ -57,7 +57,7 @@ void* ArisenEngine::RHI::RHIVkCommandBuffer::GetHandlerPointer()
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRenderPass(UInt32 frameIndex, RenderPassBeginDesc&& desc)
 {
-    ASSERT(m_State == ECommandState::IsInsideBegin);
+    ASSERT(m_State == ECommandBufferState::Recording);
     
     auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
     auto* rp = vkDevice->GetRenderPassPool()->Get(desc.renderPass);
@@ -98,18 +98,18 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRenderPass(UInt32 frameIndex, R
 
     vkCmdBeginRenderPass(m_VkCommandBuffer, &renderPassInfo, static_cast<VkSubpassContents>(desc.subpassContents));
 
-    m_State = ECommandState::IsInsideRenderPass;
+    m_State = ECommandBufferState::RecordingPass;
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::EndRenderPass()
 {
-    ASSERT(m_State == ECommandState::IsInsideRenderPass);
+    ASSERT(m_State == ECommandBufferState::RecordingPass);
     vkCmdEndRenderPass(m_VkCommandBuffer);
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRendering(const RHIRenderingInfo& info)
 {
-    ASSERT(m_State == ECommandState::IsInsideBegin);
+    ASSERT(m_State == ECommandBufferState::Recording);
 
     m_VkColorAttachments.clear();
     m_VkColorAttachments.reserve(info.colorAttachmentCount);
@@ -190,12 +190,12 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRendering(const RHIRenderingInf
         LOG_ERROR("[RHIVkCommandBuffer::BeginRendering]: vkCmdBeginRenderingKHR not found!");
     }
 
-    m_State = ECommandState::IsInsideRenderPass;
+    m_State = ECommandBufferState::RecordingPass;
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::EndRendering()
 {
-    ASSERT(m_State == ECommandState::IsInsideRenderPass);
+    ASSERT(m_State == ECommandBufferState::RecordingPass);
 
     auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
     if (vkDevice->vkCmdEndRenderingKHR)
@@ -208,29 +208,6 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::EndRendering()
     }
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::Reset()
-{
-    m_WaitSemaphores.clear();
-    m_SignalSemaphores.clear();
-    m_WaitStages.clear();
-    m_State = ECommandState::ReadyForBegin;
-    m_VkBeginInfo = {};
-    m_TrackedDescriptorPools.clear();
-    m_TrackedResourceHandles.clear();
-
-    m_VertexBuffers.clear();
-    m_VertexBindingOffsets.clear();
-    m_IndexBuffer.reset();
-    m_IndexOffset.reset();
-    m_VkMemoryBarriers.clear();
-    m_VkBufferMemoryBarriers.clear();
-    m_VkImageMemoryBarriers.clear();
-    m_VkColorAttachments.clear();
-    m_VkDescriptorSets.clear();
-    m_VkBufferImageCopies.clear();
-
-    m_CurrentPipeline = nullptr;
-}
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::TrackDescriptorPoolUse(DescriptorPool* pool, UInt32 poolId)
 {
@@ -295,42 +272,24 @@ check_mem:
     return;
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::ReadyForBegin(UInt32 frameIndex)
+void ArisenEngine::RHI::RHIVkCommandBuffer::Begin(UInt32 frameIndex)
 {
-        {
-            if(m_State == ECommandState::NeedReset)
-            {
-                Reset();
-                vkResetCommandBuffer(m_VkCommandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
-            }
-        }
-
-    ASSERT(m_State == ECommandState::ReadyForBegin);
+    Begin(frameIndex, 0);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::DoBegin()
+void ArisenEngine::RHI::RHIVkCommandBuffer::Begin(UInt32 frameIndex, UInt32 commandBufferUsage)
 {
+    ASSERT(m_State == ECommandBufferState::Initial);
+
+    m_VkBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    m_VkBeginInfo.flags = commandBufferUsage;
+
     if (vkBeginCommandBuffer(m_VkCommandBuffer, &m_VkBeginInfo) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("failed to begin recording command buffer!");
     }
 
-    m_State = ECommandState::IsInsideBegin;
-}
-
-void ArisenEngine::RHI::RHIVkCommandBuffer::Begin(UInt32 frameIndex)
-{
-    ReadyForBegin(frameIndex);
-    m_VkBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    DoBegin();
-}
-
-void ArisenEngine::RHI::RHIVkCommandBuffer::Begin(UInt32 frameIndex, UInt32 commandBufferUsage)
-{
-    ReadyForBegin(frameIndex);
-    m_VkBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    m_VkBeginInfo.flags = (commandBufferUsage);
-    DoBegin();
+    m_State = ECommandBufferState::Recording;
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::End()
@@ -342,7 +301,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::End()
         LOG_FATAL_AND_THROW("[RHIVkCommandBuffer::End]: failed to record command buffer!");
     }
     
-    m_State = ECommandState::ReadyForSubmit;
+    m_State = ECommandBufferState::Executable;
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::SetViewport(Float32 x, Float32 y, Float32 width, Float32 height, Float32 minDepth, Float32 maxDepth)
@@ -637,7 +596,7 @@ const VkPipelineStageFlags* ArisenEngine::RHI::RHIVkCommandBuffer::GetWaitStageM
 void ArisenEngine::RHI::RHIVkCommandBuffer::CopyBuffer(RHIBufferHandle src, UInt64 srcOffset,
                                                        RHIBufferHandle dst, UInt64 dstOffset, UInt64 size)
 {
-    ASSERT(m_State == ECommandState::IsInsideBegin);
+    ASSERT(m_State == ECommandBufferState::Recording);
     auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
     auto* srcBuf = vkDevice->GetBufferPool()->Get(src);
     auto* dstBuf = vkDevice->GetBufferPool()->Get(dst);
@@ -672,11 +631,31 @@ VkFence ArisenEngine::RHI::RHIVkCommandBuffer::GetSubmissionFence() const
     return VK_NULL_HANDLE;
 }
 
-// TODO: 用一个map去存储不同type的fence，在调用相关接口时根据type等待fence
-
-
 void ArisenEngine::RHI::RHIVkCommandBuffer::Release()
 {
-    m_State = ECommandState::NeedReset;
+    if (m_State == ECommandBufferState::Initial) return;
+
+    m_WaitSemaphores.clear();
+    m_SignalSemaphores.clear();
+    m_WaitStages.clear();
+    m_VkBeginInfo = {};
+    m_TrackedDescriptorPools.clear();
+    m_TrackedResourceHandles.clear();
+
+    m_VertexBuffers.clear();
+    m_VertexBindingOffsets.clear();
+    m_IndexBuffer.reset();
+    m_IndexOffset.reset();
+    m_VkMemoryBarriers.clear();
+    m_VkBufferMemoryBarriers.clear();
+    m_VkImageMemoryBarriers.clear();
+    m_VkColorAttachments.clear();
+    m_VkDescriptorSets.clear();
+    m_VkBufferImageCopies.clear();
+
+    m_CurrentPipeline = nullptr;
+    
+    vkResetCommandBuffer(m_VkCommandBuffer, 0);
+    m_State = ECommandBufferState::Initial;
 }
 

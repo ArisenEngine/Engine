@@ -80,20 +80,18 @@ namespace ArisenEngine::RHI
        
         
     public:
-        enum class ECommandState : UInt8
+        enum class ECommandBufferState : UInt8
         {
-            ReadyForBegin,
-            IsInsideBegin,
-            IsInsideRenderPass,
-            ReadyForSubmit,
-            NotAllocated,
-            NeedReset,
+            Initial,      // Allocated but not recording.
+            Recording,    // Between Begin and End.
+            RecordingPass,// Between BeginRenderPass/BeginRendering and End.
+            Executable,   // Ready to be submitted.
         };
         
         NO_COPY_NO_MOVE_NO_DEFAULT(RHICommandBuffer)
 
         RHICommandBuffer(RHIDevice* device, RHICommandBufferPool* pool):
-        m_CommandBufferPool(pool), m_Device(device), m_State(ECommandState::NotAllocated)
+        m_CommandBufferPool(pool), m_Device(device), m_State(ECommandBufferState::Initial)
         {
             
         }
@@ -200,19 +198,16 @@ namespace ArisenEngine::RHI
 
     protected:
         friend RHICommandBufferPool;
-        virtual void Reset() = 0;
         virtual void Release() = 0;
-        virtual void ReadyForBegin(UInt32 frameIndex) = 0;
-        virtual void DoBegin() = 0;
         RHICommandBufferPool* m_CommandBufferPool;
         RHIDevice* m_Device;
-        ECommandState m_State;
+        ECommandBufferState m_State;
         RHIGpuTicket m_LatestSubmitTicket { 0 };
         
     };
 
     inline const bool RHICommandBuffer::ReadyForSubmit() const
     {
-        return m_State == ECommandState::ReadyForSubmit;
+        return m_State == ECommandBufferState::Executable;
     }
 }

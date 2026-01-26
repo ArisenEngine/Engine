@@ -99,9 +99,6 @@ public:
 
 protected:
   void Release() override;
-  void Reset() override;
-  void ReadyForBegin(UInt32 frameIndex) override;
-  void DoBegin() override;
 
 private:
   VkCommandBuffer m_VkCommandBuffer;
