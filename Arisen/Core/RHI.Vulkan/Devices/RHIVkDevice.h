@@ -37,7 +37,7 @@ namespace ArisenEngine::RHI
 
 namespace ArisenEngine::RHI
 {
-    class RHIVkDevice final: public RHIDevice
+    class RHIVkDevice final : public RHIDevice
     {
     public:
         friend class RHIVkFactory;
@@ -56,7 +56,8 @@ namespace ArisenEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkDevice)
         ~RHIVkDevice() noexcept override;
         void* GetHandle() const override { return m_VkDevice; }
-        RHIVkDevice(RHIInstance* instance, Surface* surface, VkQueue graphicQueue, VkQueue presentQueue, VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties, UInt32 graphicsFamilyIndex);
+        RHIVkDevice(RHIInstance* instance, Surface* surface, VkQueue graphicQueue, VkQueue presentQueue,
+                    VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties, UInt32 graphicsFamilyIndex);
 
         void DeviceWaitIdle() const override;
         void GraphicQueueWaitIdle() const override;
@@ -88,7 +89,6 @@ namespace ArisenEngine::RHI
         UInt32 RegisterBindlessResource(RHIBufferHandle buffer) override;
         UInt32 RegisterBindlessResource(RHISamplerHandle sampler) override;
 
-
     private:
         RHIVkBindlessManager* GetBindlessManager() const { return m_BindlessManager; }
         UInt32 GetGraphicsFamilyIndex() const { return m_GraphicsFamilyIndex; }
@@ -102,7 +102,6 @@ namespace ArisenEngine::RHI
         // Internal methods hidden from public interface
         void EnqueueDeferredDestroy(RHIGpuTicket ticket, RHIDeferredDeleteItem item);
         void EnqueueDeferredDestroy(RHIGpuTicket ticket, std::function<void()>&& fn);
-        void FlushDeferredDestroys(RHIGpuTicket ticket);
         RHIResourceRegistry* GetResourceRegistry() const { return m_ResourceRegistry.get(); } // Made private
 
         friend class RHIVkInstance;
@@ -117,12 +116,11 @@ namespace ArisenEngine::RHI
         UInt32 m_GraphicsFamilyIndex;
         VkPhysicalDeviceMemoryProperties m_VkPhysicalDeviceMemoryProperties;
         std::mutex m_SubmitMutex;
-        
 
 
         std::unique_ptr<IRHIDeferredDeletionQueue> m_DeferredDeletion;
         std::unique_ptr<RHIResourceRegistry> m_ResourceRegistry;
-        std::atomic<UInt32> m_CurrentFrameIndex {0};
+        std::atomic<UInt32> m_CurrentFrameIndex{0};
         std::unique_ptr<IRHIQueue> m_GraphicsQueue;
         std::unique_ptr<FrameSyncTracker> m_FrameSync;
 
@@ -136,12 +134,12 @@ namespace ArisenEngine::RHI
         std::unique_ptr<RHIResourcePool<RHISemaphoreHandle, RHIVkSemaphorePoolItem>> m_SemaphorePool;
         std::unique_ptr<RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>> m_PipelinePool;
         std::unique_ptr<RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>> m_FencePool;
-        
+
         std::unique_ptr<RHIResourcePool<RHIGPUProgramHandle, RHIVkGPUProgramPoolItem>> m_GPUProgramPool;
-        std::unique_ptr<RHIResourcePool<RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>> m_CommandBufferPoolPool;
+        std::unique_ptr<RHIResourcePool<RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>>
+        m_CommandBufferPoolPool;
 
     public:
-
         // Handle-based operations
     private:
         bool AllocBuffer(RHIBufferHandle handle, BufferDescriptor&& desc) override;
@@ -166,30 +164,60 @@ namespace ArisenEngine::RHI
         void ReleaseRenderPass(RHIRenderPassHandle handle) override;
         void ReleaseFrameBuffer(RHIFrameBufferHandle handle) override;
         void ReleasePipeline(RHIPipelineHandle handle) override;
-        
+
         void ReleaseGPUProgram(RHIGPUProgramHandle handle);
         void ReleaseCommandBufferPool(RHICommandBufferPoolHandle handle);
 
-        bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle, RHIRenderPassHandle renderPassHandle) override;
+        bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle,
+                              RHIRenderPassHandle renderPassHandle) override;
         void WaitFence(RHIFenceHandle handle) override;
         void ResetFence(RHIFenceHandle handle) override;
 
     public:
-
         // Pool Accessors (Restricted)
     private:
         RHIResourcePool<RHIBufferHandle, RHIVkBufferPoolItem>* GetBufferPool() const { return m_BufferPool.get(); }
         RHIResourcePool<RHIImageHandle, RHIVkImagePoolItem>* GetImagePool() const { return m_ImagePool.get(); }
-        RHIResourcePool<RHIImageViewHandle, RHIVkImageViewPoolItem>* GetImageViewPool() const { return m_ImageViewPool.get(); }
+
+        RHIResourcePool<RHIImageViewHandle, RHIVkImageViewPoolItem>* GetImageViewPool() const
+        {
+            return m_ImageViewPool.get();
+        }
+
         RHIResourcePool<RHISamplerHandle, RHIVkSamplerPoolItem>* GetSamplerPool() const { return m_SamplerPool.get(); }
-        RHIResourcePool<RHIRenderPassHandle, RHIVkRenderPassPoolItem>* GetRenderPassPool() const { return m_RenderPassPool.get(); }
-        RHIResourcePool<RHIFrameBufferHandle, RHIVkFrameBufferPoolItem>* GetFrameBufferPool() const { return m_FrameBufferPool.get(); }
-        RHIResourcePool<RHISemaphoreHandle, RHIVkSemaphorePoolItem>* GetSemaphorePool() const { return m_SemaphorePool.get(); }
-        RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>* GetPipelinePool() const { return m_PipelinePool.get(); }
+
+        RHIResourcePool<RHIRenderPassHandle, RHIVkRenderPassPoolItem>* GetRenderPassPool() const
+        {
+            return m_RenderPassPool.get();
+        }
+
+        RHIResourcePool<RHIFrameBufferHandle, RHIVkFrameBufferPoolItem>* GetFrameBufferPool() const
+        {
+            return m_FrameBufferPool.get();
+        }
+
+        RHIResourcePool<RHISemaphoreHandle, RHIVkSemaphorePoolItem>* GetSemaphorePool() const
+        {
+            return m_SemaphorePool.get();
+        }
+
+        RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>* GetPipelinePool() const
+        {
+            return m_PipelinePool.get();
+        }
+
         RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>* GetFencePool() const { return m_FencePool.get(); }
-        RHIResourcePool<RHIGPUProgramHandle, RHIVkGPUProgramPoolItem>* GetGPUProgramPool() const { return m_GPUProgramPool.get(); }
-        RHIResourcePool<RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>* GetCommandBufferPoolPool() const { return m_CommandBufferPoolPool.get(); }
-        
+
+        RHIResourcePool<RHIGPUProgramHandle, RHIVkGPUProgramPoolItem>* GetGPUProgramPool() const
+        {
+            return m_GPUProgramPool.get();
+        }
+
+        RHIResourcePool<RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>* GetCommandBufferPoolPool() const
+        {
+            return m_CommandBufferPoolPool.get();
+        }
+
     public:
 
     private:
@@ -209,7 +237,5 @@ namespace ArisenEngine::RHI
         void FreeRenderPassInternal(RHIRenderPassHandle handle);
         void FreeFrameBufferInternal(RHIFrameBufferHandle handle);
         void FreePipelineInternal(RHIPipelineHandle handle);
-
-
     };
 }

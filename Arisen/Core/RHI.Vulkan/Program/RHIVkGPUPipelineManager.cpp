@@ -33,12 +33,13 @@ ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager:
         auto* rawPtr = pipeline.get();
         m_GPUPipelines.emplace(hash, std::move(pipeline));
         
-        auto* internalPipe = new RHIVkPipelinePoolItem();
-        internalPipe->pipeline = rawPtr;
         // Not using deferred destroy here as Manager owns the unique_ptr and pool just stores observation
         // Actually, if we use handles, we should be careful about ownership.
         // For now, let's say the Pool observation is valid as long as m_GPUPipelines has it.
-        auto handle = m_Device->GetPipelinePool()->Allocate(internalPipe);
+        auto handle = m_Device->GetPipelinePool()->Allocate([rawPtr](RHIVkPipelinePoolItem* item) {
+            *item = RHIVkPipelinePoolItem();
+            item->pipeline = rawPtr;
+        });
         m_PipelineHandles.emplace(hash, handle);
         return handle;
     }

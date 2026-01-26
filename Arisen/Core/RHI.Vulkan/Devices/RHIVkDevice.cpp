@@ -14,28 +14,35 @@
 using namespace ArisenEngine::RHI;
 
 
-ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surface, VkQueue graphicQueue, VkQueue presentQueue, VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties, UInt32 graphicsFamilyIndex)
-: RHIDevice(instance, surface), m_VkGraphicQueue(graphicQueue), m_VkPresentQueue(presentQueue), m_VkDevice(device), m_GraphicsFamilyIndex(graphicsFamilyIndex), m_VkPhysicalDeviceMemoryProperties(memoryProperties)
+ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surface, VkQueue graphicQueue,
+                                            VkQueue presentQueue, VkDevice device,
+                                            VkPhysicalDeviceMemoryProperties memoryProperties,
+                                            UInt32 graphicsFamilyIndex)
+    : RHIDevice(instance, surface), m_VkGraphicQueue(graphicQueue), m_VkPresentQueue(presentQueue), m_VkDevice(device),
+      m_GraphicsFamilyIndex(graphicsFamilyIndex), m_VkPhysicalDeviceMemoryProperties(memoryProperties)
 {
     std::cout << "[DEBUG] RHIVkDevice::RHIVkDevice START" << std::endl;
     m_GPUPipelineManager = new RHIVkGPUPipelineManager(this, m_Instance->GetMaxFramesInFlight());
     m_DescriptorPool = new RHIVkDescriptorPool(this);
-    
+
     // Cache function pointers for Sync 2.0 and Dynamic Rendering
-    vkCmdPipelineBarrier2KHR = (PFN_vkCmdPipelineBarrier2KHR)vkGetDeviceProcAddr(m_VkDevice, "vkCmdPipelineBarrier2KHR");
+    vkCmdPipelineBarrier2KHR = (PFN_vkCmdPipelineBarrier2KHR)
+        vkGetDeviceProcAddr(m_VkDevice, "vkCmdPipelineBarrier2KHR");
     vkCmdBeginRenderingKHR = (PFN_vkCmdBeginRenderingKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCmdBeginRenderingKHR");
     vkCmdEndRenderingKHR = (PFN_vkCmdEndRenderingKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCmdEndRenderingKHR");
 
     auto* vkInstance = static_cast<RHIVkInstance*>(m_Instance);
-    m_MemoryAllocator = new RHIVkMemoryAllocator(this, vkInstance->GetVkInstance(), vkInstance->GetPhysicalDevice(), m_VkDevice, VK_API_VERSION_1_2);
-    
+    m_MemoryAllocator = new RHIVkMemoryAllocator(this, vkInstance->GetVkInstance(), vkInstance->GetPhysicalDevice(),
+                                                 m_VkDevice, VK_API_VERSION_1_2);
+
     m_BindlessManager = new RHIVkBindlessManager(this);
     m_BindlessManager->Initialize();
 
     m_Factory = new RHIVkFactory(this);
     m_DeferredDeletion = std::make_unique<RHIVkDeferredDeletion>(m_Instance->GetMaxFramesInFlight());
     m_ResourceRegistry = std::make_unique<RHIResourceRegistry>(m_DeferredDeletion.get());
-    m_GraphicsQueue = std::make_unique<RHIVkQueue>(m_VkDevice, m_VkGraphicQueue, RHIQueueType::Graphics, m_DeferredDeletion.get(), m_ResourceRegistry.get());
+    m_GraphicsQueue = std::make_unique<RHIVkQueue>(m_VkDevice, m_VkGraphicQueue, RHIQueueType::Graphics,
+                                                   m_DeferredDeletion.get(), m_ResourceRegistry.get());
 
     const UInt32 maxFramesInFlight = m_Instance->GetMaxFramesInFlight();
     m_FrameSync = std::make_unique<FrameSyncTracker>(maxFramesInFlight);
@@ -50,7 +57,8 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surf
     m_PipelinePool = std::make_unique<RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>>();
     m_FencePool = std::make_unique<RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>>();
     m_GPUProgramPool = std::make_unique<RHIResourcePool<RHIGPUProgramHandle, RHIVkGPUProgramPoolItem>>();
-    m_CommandBufferPoolPool = std::make_unique<RHIResourcePool<RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>>();
+    m_CommandBufferPoolPool = std::make_unique<RHIResourcePool<
+        RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>>();
 }
 
 ArisenEngine::RHI::RHIFactory* ArisenEngine::RHI::RHIVkDevice::GetFactory() const
@@ -93,6 +101,7 @@ namespace
     {
         std::function<void()> fn;
     };
+
     static void DeferredCallDeleter(void* p)
     {
         auto* item = static_cast<DeferredCallItem*>(p);
@@ -103,19 +112,9 @@ namespace
 
 void ArisenEngine::RHI::RHIVkDevice::EnqueueDeferredDestroy(RHIGpuTicket ticket, std::function<void()>&& fn)
 {
-    auto* item = new DeferredCallItem{ std::move(fn) };
-    EnqueueDeferredDestroy(ticket, RHIDeferredDeleteItem{ item, &DeferredCallDeleter });
+    auto* item = new DeferredCallItem{std::move(fn)};
+    EnqueueDeferredDestroy(ticket, RHIDeferredDeleteItem{item, &DeferredCallDeleter});
 }
-
-void ArisenEngine::RHI::RHIVkDevice::FlushDeferredDestroys(RHIGpuTicket ticket)
-{
-    if (m_DeferredDeletion)
-    {
-        m_DeferredDeletion->Flush(RHIQueueType::Graphics, ticket);
-    }
-}
-
-
 
 ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::GetCompletedSubmitTicket() const
 {
@@ -138,8 +137,8 @@ RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuf
         }
         else
         {
-             // Fallback: queue-managed fence via IRHIQueue.
-             submitTicket = m_GraphicsQueue->Submit(commandBuffer);
+            // Fallback: queue-managed fence via IRHIQueue.
+            submitTicket = m_GraphicsQueue->Submit(commandBuffer);
         }
 
         if (m_FrameSync)
@@ -154,7 +153,6 @@ RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuf
         return 0;
     }
 }
-
 
 
 void ArisenEngine::RHI::RHIVkDevice::WaitQueueTicket(RHIGpuTicket ticket)
@@ -190,11 +188,11 @@ ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDevice::FindMemoryType(UInt32 typeF
 {
     for (uint32_t i = 0; i < m_VkPhysicalDeviceMemoryProperties.memoryTypeCount; ++i)
     {
-        if ((typeFilter & (1 << i)) && (m_VkPhysicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
+        if ((typeFilter & (1 << i)) && (m_VkPhysicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & properties) ==
+            properties)
         {
             return i;
         }
-       
     }
 
     LOG_FATAL("[RHIVkDevice::FindMemoryType]: failed to find suitable memory type!");
@@ -251,7 +249,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocBuffer(RHIBufferHandle handle, BufferD
     buffer->state->device = m_VkDevice;
     buffer->state->buffer = buffer->buffer;
     buffer->state->allocator = m_MemoryAllocator->GetVmaAllocator();
-    
+
     buffer->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(buffer->state));
 
     return true;
@@ -263,29 +261,37 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocBufferDeviceMemory(RHIBufferHandle han
     if (!buffer || buffer->buffer == VK_NULL_HANDLE || !buffer->state) return false;
 
     VmaMemoryUsage usage = VMA_MEMORY_USAGE_AUTO;
-    if (memoryPropertiesBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+    if (memoryPropertiesBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+    {
         usage = VMA_MEMORY_USAGE_GPU_ONLY;
-    } else if (memoryPropertiesBits & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
+    }
+    else if (memoryPropertiesBits & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+    {
         usage = VMA_MEMORY_USAGE_CPU_ONLY;
     }
 
     VmaAllocation newAlloc = VK_NULL_HANDLE;
-    if (!m_MemoryAllocator->AllocateBufferMemory(buffer->buffer, usage, &newAlloc)) {
+    if (!m_MemoryAllocator->AllocateBufferMemory(buffer->buffer, usage, &newAlloc))
+    {
         return false;
     }
 
     // If there was an old allocation, queue it for individual deletion
-    if (buffer->state->allocation != VK_NULL_HANDLE) {
-        EnqueueDeferredDestroy(m_GraphicsQueue->GetLatestTicket(), [allocator = buffer->state->allocator, oldAlloc = buffer->state->allocation]() {
-            if (allocator != VK_NULL_HANDLE && oldAlloc != VK_NULL_HANDLE) {
-                vmaFreeMemory(allocator, oldAlloc);
-            }
-        });
+    if (buffer->state->allocation != VK_NULL_HANDLE)
+    {
+        EnqueueDeferredDestroy(m_GraphicsQueue->GetLatestTicket(),
+                               [allocator = buffer->state->allocator, oldAlloc = buffer->state->allocation]()
+                               {
+                                   if (allocator != VK_NULL_HANDLE && oldAlloc != VK_NULL_HANDLE)
+                                   {
+                                       vmaFreeMemory(allocator, oldAlloc);
+                                   }
+                               });
     }
 
     buffer->state->allocation = newAlloc;
     buffer->allocation = newAlloc; // Sync cache
-    
+
     return true;
 }
 
@@ -296,8 +302,9 @@ void ArisenEngine::RHI::RHIVkDevice::FreeBufferInternal(RHIBufferHandle handle)
 
     if (buffer->buffer != VK_NULL_HANDLE)
     {
-        m_ResourceRegistry->Release(buffer->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
-        
+        m_ResourceRegistry->Release(buffer->registryHandle, RHIQueueType::Graphics,
+                                    GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+
         buffer->buffer = VK_NULL_HANDLE;
         buffer->allocation = VK_NULL_HANDLE;
         buffer->state = nullptr;
@@ -308,13 +315,9 @@ void ArisenEngine::RHI::RHIVkDevice::FreeBufferInternal(RHIBufferHandle handle)
 void ArisenEngine::RHI::RHIVkDevice::ReleaseBuffer(RHIBufferHandle handle)
 {
     FreeBufferInternal(handle);
-    auto* buffer = m_BufferPool->Deallocate(handle);
-    if (buffer)
+    if (!m_BufferPool->Deallocate(handle))
     {
-        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [buffer]()
-        {
-            delete buffer;
-        });
+        LOG_WARN("[RHIVkDevice::ReleaseBuffer]: Failed to deallocate handle (invalid or stale)!");
     }
 }
 
@@ -377,7 +380,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImage(RHIImageHandle handle, ImageDesc
     image->state->device = m_VkDevice;
     image->state->image = image->image;
     image->state->allocator = m_MemoryAllocator->GetVmaAllocator();
-    
+
     image->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(image->state));
 
     return true;
@@ -389,22 +392,28 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImageDeviceMemory(RHIImageHandle handl
     if (!image || image->image == VK_NULL_HANDLE || !image->state) return false;
 
     VmaMemoryUsage usage = VMA_MEMORY_USAGE_AUTO;
-    if (memoryPropertiesBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+    if (memoryPropertiesBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+    {
         usage = VMA_MEMORY_USAGE_GPU_ONLY;
     }
 
     VmaAllocation newAlloc = VK_NULL_HANDLE;
-    if (!m_MemoryAllocator->AllocateImageMemory(image->image, usage, &newAlloc)) {
+    if (!m_MemoryAllocator->AllocateImageMemory(image->image, usage, &newAlloc))
+    {
         return false;
     }
 
     // If there was an old allocation, queue it for individual deletion
-    if (image->state->allocation != VK_NULL_HANDLE) {
-        EnqueueDeferredDestroy(m_GraphicsQueue->GetLatestTicket(), [allocator = image->state->allocator, oldAlloc = image->state->allocation]() {
-            if (allocator != VK_NULL_HANDLE && oldAlloc != VK_NULL_HANDLE) {
-                vmaFreeMemory(allocator, oldAlloc);
-            }
-        });
+    if (image->state->allocation != VK_NULL_HANDLE)
+    {
+        EnqueueDeferredDestroy(m_GraphicsQueue->GetLatestTicket(),
+                               [allocator = image->state->allocator, oldAlloc = image->state->allocation]()
+                               {
+                                   if (allocator != VK_NULL_HANDLE && oldAlloc != VK_NULL_HANDLE)
+                                   {
+                                       vmaFreeMemory(allocator, oldAlloc);
+                                   }
+                               });
     }
 
     image->state->allocation = newAlloc;
@@ -419,8 +428,9 @@ void ArisenEngine::RHI::RHIVkDevice::FreeImageInternal(RHIImageHandle handle)
 
     if (image->image != VK_NULL_HANDLE && image->needDestroy)
     {
-        m_ResourceRegistry->Release(image->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
-        
+        m_ResourceRegistry->Release(image->registryHandle, RHIQueueType::Graphics,
+                                    GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+
         image->image = VK_NULL_HANDLE;
         image->allocation = VK_NULL_HANDLE;
         image->state = nullptr;
@@ -432,17 +442,14 @@ void ArisenEngine::RHI::RHIVkDevice::FreeImageInternal(RHIImageHandle handle)
 void ArisenEngine::RHI::RHIVkDevice::ReleaseImage(RHIImageHandle handle)
 {
     FreeImageInternal(handle);
-    auto* image = m_ImagePool->Deallocate(handle);
-    if (image)
+    if (!m_ImagePool->Deallocate(handle))
     {
-        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [image]()
-        {
-            delete image;
-        });
+        LOG_WARN("[RHIVkDevice::ReleaseImage]: Failed to deallocate handle (invalid or stale)!");
     }
 }
 
-bool ArisenEngine::RHI::RHIVkDevice::AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, ImageViewDesc&& desc)
+bool ArisenEngine::RHI::RHIVkDevice::AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle,
+                                                    ImageViewDesc&& desc)
 {
     auto* viewItem = m_ImageViewPool->Get(handle);
     auto* imageItem = m_ImagePool->Get(imageHandle);
@@ -464,16 +471,20 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImageView(RHIImageViewHandle handle, R
     viewItem->height = desc.height.value_or(0);
 
     // Register for deferred deletion
-    struct DeferredVkImageView {
+    struct DeferredVkImageView
+    {
         VkDevice device;
         VkImageView view;
-        ~DeferredVkImageView() {
-            if (device != VK_NULL_HANDLE && view != VK_NULL_HANDLE) {
+
+        ~DeferredVkImageView()
+        {
+            if (device != VK_NULL_HANDLE && view != VK_NULL_HANDLE)
+            {
                 vkDestroyImageView(device, view, nullptr);
             }
         }
     };
-    auto* deferred = new DeferredVkImageView{ m_VkDevice, viewItem->view };
+    auto* deferred = new DeferredVkImageView{m_VkDevice, viewItem->view};
     viewItem->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(deferred));
 
     return true;
@@ -486,7 +497,8 @@ void ArisenEngine::RHI::RHIVkDevice::FreeImageViewInternal(RHIImageViewHandle ha
 
     if (viewItem->view != VK_NULL_HANDLE)
     {
-        m_ResourceRegistry->Release(viewItem->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+        m_ResourceRegistry->Release(viewItem->registryHandle, RHIQueueType::Graphics,
+                                    GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
         viewItem->view = VK_NULL_HANDLE;
         viewItem->registryHandle = RHIResourceHandle::Invalid();
     }
@@ -495,19 +507,16 @@ void ArisenEngine::RHI::RHIVkDevice::FreeImageViewInternal(RHIImageViewHandle ha
 void ArisenEngine::RHI::RHIVkDevice::ReleaseImageView(RHIImageViewHandle handle)
 {
     FreeImageViewInternal(handle);
-    auto* view = m_ImageViewPool->Deallocate(handle);
-    if (view)
+    if (!m_ImageViewPool->Deallocate(handle))
     {
-        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [view]()
-        {
-            delete view;
-        });
+        LOG_WARN("[RHIVkDevice::ReleaseImageView]: Failed to deallocate handle (invalid or stale)!");
     }
 }
 
 ArisenEngine::RHI::RHIImageViewHandle ArisenEngine::RHI::RHIVkDevice::FindImageViewForImage(RHIImageHandle imageHandle)
 {
-    return m_ImageViewPool->FindHandle([imageHandle](const RHIVkImageViewPoolItem& item) {
+    return m_ImageViewPool->FindHandle([imageHandle](const RHIVkImageViewPoolItem& item)
+    {
         return item.imageHandle == imageHandle;
     });
 }
@@ -517,7 +526,8 @@ void ArisenEngine::RHI::RHIVkDevice::FreeSamplerInternal(RHISamplerHandle handle
     auto* sampler = m_SamplerPool->Get(handle);
     if (sampler && sampler->sampler != VK_NULL_HANDLE)
     {
-        m_ResourceRegistry->Release(sampler->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+        m_ResourceRegistry->Release(sampler->registryHandle, RHIQueueType::Graphics,
+                                    GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
         sampler->sampler = VK_NULL_HANDLE;
         sampler->registryHandle = RHIResourceHandle::Invalid();
     }
@@ -526,13 +536,9 @@ void ArisenEngine::RHI::RHIVkDevice::FreeSamplerInternal(RHISamplerHandle handle
 void ArisenEngine::RHI::RHIVkDevice::ReleaseSampler(RHISamplerHandle handle)
 {
     FreeSamplerInternal(handle);
-    auto* sampler = m_SamplerPool->Deallocate(handle);
-    if (sampler)
+    if (!m_SamplerPool->Deallocate(handle))
     {
-        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [sampler]()
-        {
-            delete sampler;
-        });
+        LOG_WARN("[RHIVkDevice::ReleaseSampler]: Failed to deallocate handle (invalid or stale)!");
     }
 }
 
@@ -541,22 +547,20 @@ void ArisenEngine::RHI::RHIVkDevice::FreeSemaphoreInternal(RHISemaphoreHandle ha
     auto* sem = m_SemaphorePool->Get(handle);
     if (sem && sem->semaphore != VK_NULL_HANDLE)
     {
-        m_ResourceRegistry->Release(sem->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+        m_ResourceRegistry->Release(sem->registryHandle, RHIQueueType::Graphics,
+                                    GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
         sem->semaphore = VK_NULL_HANDLE;
         sem->registryHandle = RHIResourceHandle::Invalid();
     }
 }
 
-void ArisenEngine::RHI::RHIVkDevice::ReleaseSemaphore(RHISemaphoreHandle handle)
+void ArisenEngine::RHI::RHIVkDevice::ReleaseSemaphore(
+    RHISemaphoreHandle handle)
 {
     FreeSemaphoreInternal(handle);
-    auto* sem = m_SemaphorePool->Deallocate(handle);
-    if (sem)
+    if (!m_SemaphorePool->Deallocate(handle))
     {
-        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [sem]()
-        {
-            delete sem;
-        });
+        LOG_WARN("[RHIVkDevice::ReleaseSemaphore]: Failed to deallocate handle (invalid or stale)!");
     }
 }
 
@@ -565,7 +569,8 @@ void ArisenEngine::RHI::RHIVkDevice::FreeFenceInternal(RHIFenceHandle handle)
     auto* f = m_FencePool->Get(handle);
     if (f && f->fence != VK_NULL_HANDLE)
     {
-        m_ResourceRegistry->Release(f->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+        m_ResourceRegistry->Release(f->registryHandle, RHIQueueType::Graphics,
+                                    GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
         f->fence = VK_NULL_HANDLE;
         f->registryHandle = RHIResourceHandle::Invalid();
     }
@@ -574,13 +579,9 @@ void ArisenEngine::RHI::RHIVkDevice::FreeFenceInternal(RHIFenceHandle handle)
 void ArisenEngine::RHI::RHIVkDevice::ReleaseFence(RHIFenceHandle handle)
 {
     FreeFenceInternal(handle);
-    auto* f = m_FencePool->Deallocate(handle);
-    if (f)
+    if (!m_FencePool->Deallocate(handle))
     {
-        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [f]()
-        {
-            delete f;
-        });
+        LOG_WARN("[RHIVkDevice::ReleaseFence]: Failed to deallocate handle (invalid or stale)!");
     }
 }
 
@@ -589,21 +590,19 @@ void ArisenEngine::RHI::RHIVkDevice::FreeRenderPassInternal(RHIRenderPassHandle 
     auto* rp = m_RenderPassPool->Get(handle);
     if (rp && rp->registryHandle.IsValid())
     {
-        m_ResourceRegistry->Release(rp->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+        m_ResourceRegistry->Release(rp->registryHandle, RHIQueueType::Graphics,
+                                    GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
         rp->registryHandle = RHIResourceHandle::Invalid();
     }
 }
 
-void ArisenEngine::RHI::RHIVkDevice::ReleaseRenderPass(RHIRenderPassHandle handle)
+void ArisenEngine::RHI::RHIVkDevice::ReleaseRenderPass(
+    RHIRenderPassHandle handle)
 {
     FreeRenderPassInternal(handle);
-    auto* rp = m_RenderPassPool->Deallocate(handle);
-    if (rp)
+    if (!m_RenderPassPool->Deallocate(handle))
     {
-        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [rp]()
-        {
-            delete rp;
-        });
+        LOG_WARN("[RHIVkDevice::ReleaseRenderPass]: Failed to deallocate handle (invalid or stale)!");
     }
 }
 
@@ -612,21 +611,19 @@ void ArisenEngine::RHI::RHIVkDevice::FreeFrameBufferInternal(RHIFrameBufferHandl
     auto* fb = m_FrameBufferPool->Get(handle);
     if (fb && fb->registryHandle.IsValid())
     {
-        m_ResourceRegistry->Release(fb->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+        m_ResourceRegistry->Release(fb->registryHandle, RHIQueueType::Graphics,
+                                    GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
         fb->registryHandle = RHIResourceHandle::Invalid();
     }
 }
 
-void ArisenEngine::RHI::RHIVkDevice::ReleaseFrameBuffer(RHIFrameBufferHandle handle)
+void ArisenEngine::RHI::RHIVkDevice::ReleaseFrameBuffer(
+    RHIFrameBufferHandle handle)
 {
     FreeFrameBufferInternal(handle);
-    auto* fb = m_FrameBufferPool->Deallocate(handle);
-    if (fb)
+    if (!m_FrameBufferPool->Deallocate(handle))
     {
-        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [fb]()
-        {
-            delete fb;
-        });
+        LOG_WARN("[RHIVkDevice::ReleaseFrameBuffer]: Failed to deallocate handle (invalid or stale)!");
     }
 }
 
@@ -635,7 +632,8 @@ void ArisenEngine::RHI::RHIVkDevice::FreePipelineInternal(RHIPipelineHandle hand
     auto* p = m_PipelinePool->Get(handle);
     if (p && p->registryHandle.IsValid())
     {
-        m_ResourceRegistry->Release(p->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+        m_ResourceRegistry->Release(p->registryHandle, RHIQueueType::Graphics,
+                                    GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
         p->registryHandle = RHIResourceHandle::Invalid();
     }
 }
@@ -643,13 +641,9 @@ void ArisenEngine::RHI::RHIVkDevice::FreePipelineInternal(RHIPipelineHandle hand
 void ArisenEngine::RHI::RHIVkDevice::ReleasePipeline(RHIPipelineHandle handle)
 {
     FreePipelineInternal(handle);
-    auto* p = m_PipelinePool->Deallocate(handle);
-    if (p)
+    if (!m_PipelinePool->Deallocate(handle))
     {
-        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [p]()
-        {
-            delete p;
-        });
+        LOG_WARN("[RHIVkDevice::ReleasePipeline]: Failed to deallocate handle (invalid or stale)!");
     }
 }
 
@@ -675,7 +669,7 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
     {
         LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Flushing deferred deletions");
         constexpr RHIGpuTicket kAll = ~static_cast<RHIGpuTicket>(0);
-        
+
         m_DeferredDeletion->Flush(RHIQueueType::Graphics, kAll);
         m_DeferredDeletion->Flush(RHIQueueType::Compute, kAll);
         m_DeferredDeletion->Flush(RHIQueueType::Transfer, kAll);
@@ -684,15 +678,35 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
 
     // 5. Destroy managers that might rely on the device still being alive
     LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Deleting managers");
-    if (m_GPUPipelineManager) { delete m_GPUPipelineManager; m_GPUPipelineManager = nullptr; }
-    if (m_BindlessManager) { delete m_BindlessManager; m_BindlessManager = nullptr; }
-    if (m_DescriptorPool) { delete m_DescriptorPool; m_DescriptorPool = nullptr; }
-    
+    if (m_GPUPipelineManager)
+    {
+        delete m_GPUPipelineManager;
+        m_GPUPipelineManager = nullptr;
+    }
+    if (m_BindlessManager)
+    {
+        delete m_BindlessManager;
+        m_BindlessManager = nullptr;
+    }
+    if (m_DescriptorPool)
+    {
+        delete m_DescriptorPool;
+        m_DescriptorPool = nullptr;
+    }
+
     // IMPORTANT: Memory allocator must be deleted AFTER all resources that might use it are flushed.
-    if (m_MemoryAllocator) { delete m_MemoryAllocator; m_MemoryAllocator = nullptr; }
+    if (m_MemoryAllocator)
+    {
+        delete m_MemoryAllocator;
+        m_MemoryAllocator = nullptr;
+    }
     LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_MemoryAllocator deleted");
-    
-    if (m_Factory) { delete m_Factory; m_Factory = nullptr; }
+
+    if (m_Factory)
+    {
+        delete m_Factory;
+        m_Factory = nullptr;
+    }
     LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_Factory deleted");
 
     // 5. Clean up sync and queue objects
@@ -707,12 +721,14 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
         m_VkDevice = VK_NULL_HANDLE;
         LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: vkDestroyDevice called");
     }
-    
+
     m_Instance = nullptr;
     LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Finished destruction");
 }
 
-bool ArisenEngine::RHI::RHIVkDevice::AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle, RHIRenderPassHandle renderPassHandle)
+bool ArisenEngine::RHI::RHIVkDevice::AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex,
+                                                      RHIImageViewHandle viewHandle,
+                                                      RHIRenderPassHandle renderPassHandle)
 {
     auto* fbItem = m_FrameBufferPool->Get(handle);
     auto* viewItem = m_ImageViewPool->Get(viewHandle);
@@ -723,7 +739,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocFrameBuffer(RHIFrameBufferHandle handl
     auto* rpObj = static_cast<RHIVkGPURenderPass*>(rpItem->renderPassObj);
     if (!rpObj) return false;
 
-    VkImageView attachments[] = { viewItem->view };
+    VkImageView attachments[] = {viewItem->view};
 
     VkFramebufferCreateInfo framebufferInfo{};
     framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -744,16 +760,20 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocFrameBuffer(RHIFrameBufferHandle handl
     fbItem->height = viewItem->height;
 
     // Register for deferred deletion
-    struct DeferredVkFramebuffer {
+    struct DeferredVkFramebuffer
+    {
         VkDevice device;
         VkFramebuffer framebuffer;
-        ~DeferredVkFramebuffer() {
-            if (device != VK_NULL_HANDLE && framebuffer != VK_NULL_HANDLE) {
+
+        ~DeferredVkFramebuffer()
+        {
+            if (device != VK_NULL_HANDLE && framebuffer != VK_NULL_HANDLE)
+            {
                 vkDestroyFramebuffer(device, framebuffer, nullptr);
             }
         }
     };
-    auto* deferred = new DeferredVkFramebuffer{ m_VkDevice, fbItem->frameBuffer };
+    auto* deferred = new DeferredVkFramebuffer{m_VkDevice, fbItem->frameBuffer};
     fbItem->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(deferred));
 
     return true;
@@ -783,15 +803,13 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseGPUProgram(RHIGPUProgramHandle handl
     if (item)
     {
         if (item->registryHandle.IsValid())
-            m_ResourceRegistry->Release(item->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
-            
-        m_GPUProgramPool->Deallocate(handle);
-        // Note: The object deletion is handled by Deferred Deleter registered during creation in Factory
-        // But here we are just cleaning up the pool slot.
-        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [item]()
+            m_ResourceRegistry->Release(item->registryHandle, RHIQueueType::Graphics,
+                                        GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+
+        if (!m_GPUProgramPool->Deallocate(handle))
         {
-            delete item;
-        });
+            LOG_WARN("[RHIVkDevice::ReleaseGPUProgram]: Failed to deallocate handle (invalid or stale)!");
+        }
     }
 }
 
@@ -801,15 +819,12 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseCommandBufferPool(RHICommandBufferPo
     if (item)
     {
         if (item->registryHandle.IsValid())
-            m_ResourceRegistry->Release(item->registryHandle, RHIQueueType::Graphics, GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
-            
-        m_CommandBufferPoolPool->Deallocate(handle);
-        EnqueueDeferredDestroy(GetQueue(RHIQueueType::Graphics)->GetLatestTicket(), [item]()
+            m_ResourceRegistry->Release(item->registryHandle, RHIQueueType::Graphics,
+                                        GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+
+        if (!m_CommandBufferPoolPool->Deallocate(handle))
         {
-            delete item;
-        });
+            LOG_WARN("[RHIVkDevice::ReleaseCommandBufferPool]: Failed to deallocate handle (invalid or stale)!");
+        }
     }
 }
-
-
-
