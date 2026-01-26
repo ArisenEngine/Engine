@@ -16,8 +16,7 @@ namespace ArisenEngine::RHI
         {
             m_Device = nullptr;
         }
-        virtual void* GetHandle() = 0;
-        RHICommandBuffer* GetCommandBuffer(UInt32 currentFrameIndex)
+        virtual RHICommandBuffer* GetCommandBuffer(UInt32 currentFrameIndex)
         {
             (void)currentFrameIndex;
             std::lock_guard<std::mutex> lock(m_BuffersMutex);
@@ -40,14 +39,12 @@ namespace ArisenEngine::RHI
             RHICommandBuffer* buffer;
             ~CommandBufferRecycler() {
                 if (pool && buffer) {
-                    std::lock_guard<std::mutex> lock(pool->m_BuffersMutex);
-                    buffer->Release();
-                    pool->m_FreeCommandBuffers.emplace_back(buffer);
+                    pool->InternalRecycle(buffer);
                 }
             }
         };
 
-        void ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBuffer* commandBuffer)
+        virtual void ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBuffer* commandBuffer)
         {
             (void)currentFrameIndex;
             auto ticket = commandBuffer->GetLatestSubmitTicket();
@@ -55,9 +52,7 @@ namespace ArisenEngine::RHI
             // If the GPU is already done with it, recycle immediately.
             if (m_Device->GetCompletedSubmitTicket() >= ticket)
             {
-                std::lock_guard<std::mutex> lock(m_BuffersMutex);
-                commandBuffer->Release();
-                m_FreeCommandBuffers.emplace_back(commandBuffer);
+                InternalRecycle(commandBuffer);
             }
             else
             {
@@ -65,6 +60,14 @@ namespace ArisenEngine::RHI
                 m_Device->DeferredDelete(RHIQueueType::Graphics, static_cast<RHIGpuTicket>(ticket), 
                     MakeDeferredDeleteItem(new CommandBufferRecycler{this, commandBuffer}));
             }
+        }
+
+    protected:
+        virtual void InternalRecycle(RHICommandBuffer* commandBuffer)
+        {
+             std::lock_guard<std::mutex> lock(m_BuffersMutex);
+             commandBuffer->ResetInternal();
+             m_FreeCommandBuffers.emplace_back(commandBuffer);
         }
         virtual RHICommandBuffer* CreateCommandBuffer() = 0;
         
