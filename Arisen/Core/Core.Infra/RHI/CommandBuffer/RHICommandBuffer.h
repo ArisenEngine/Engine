@@ -197,8 +197,9 @@ namespace ArisenEngine::RHI
         const bool ReadyForSubmit() const;
 
     protected:
-        friend RHICommandBufferPool;
-        virtual void Release() = 0;
+        friend class RHICommandBufferPool;
+        friend class RHIVkCommandBufferPool;
+        virtual void ResetInternal() = 0;
         RHICommandBufferPool* m_CommandBufferPool;
         RHIDevice* m_Device;
         ECommandBufferState m_State;

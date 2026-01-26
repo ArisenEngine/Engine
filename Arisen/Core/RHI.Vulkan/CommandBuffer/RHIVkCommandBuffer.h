@@ -8,6 +8,7 @@
 #include "RHI/Synchronization/RHIImageMemoryBarrier.h"
 #include "RHI/Synchronization/RHIMemoryBarrier.h"
 #include <vulkan/vulkan_core.h>
+#include <thread>
 
 
 namespace ArisenEngine::RHI {
@@ -98,7 +99,7 @@ public:
   VkFence GetSubmissionFence() const;
 
 protected:
-  void Release() override;
+  void ResetInternal() override;
 
 private:
   VkCommandBuffer m_VkCommandBuffer;
@@ -139,6 +140,9 @@ private:
   Containers::Vector<TrackedPoolUse> m_TrackedDescriptorPools;
   Containers::Vector<RHIResourceHandle> m_TrackedResourceHandles;
 
+  std::thread::id m_OwnerThreadId;
+
+  friend class RHIVkCommandBufferPool;
 private:
   void CaptureResource(RHIBufferHandle buffer);
   void CaptureResource(RHIImageHandle image);

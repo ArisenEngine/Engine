@@ -21,7 +21,8 @@ ArisenEngine::RHI::RHIVkCommandBuffer::~RHIVkCommandBuffer() noexcept
 
 ArisenEngine::RHI::RHIVkCommandBuffer::RHIVkCommandBuffer(RHIVkDevice* device, RHIVkCommandBufferPool* pool)
 : RHICommandBuffer(device, pool),
-m_RHICommandPool(pool)
+m_RHICommandPool(pool),
+m_OwnerThreadId(std::this_thread::get_id())
 {
     m_VkDevice = static_cast<VkDevice>(device->GetHandle());
     m_VkCommandPool = pool->AcquireThreadCommandPool();
@@ -631,7 +632,7 @@ VkFence ArisenEngine::RHI::RHIVkCommandBuffer::GetSubmissionFence() const
     return VK_NULL_HANDLE;
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::Release()
+void ArisenEngine::RHI::RHIVkCommandBuffer::ResetInternal()
 {
     if (m_State == ECommandBufferState::Initial) return;
 
