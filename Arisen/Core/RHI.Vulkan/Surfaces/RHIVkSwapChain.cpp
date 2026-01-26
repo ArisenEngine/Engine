@@ -92,11 +92,12 @@ void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
     for (int i = 0; i < images.size(); ++i)
     {
         // For SwapChain images, we manually allocate a handle since they are not created via factory
-        m_ImageHandles[i] = vkDevice->GetImagePool()->Allocate(new RHIVkImagePoolItem());
-        auto* imageItem = vkDevice->GetImagePool()->Get(m_ImageHandles[i]);
-        imageItem->image = images[i];
-        imageItem->name = "SwapChainImage_" + std::to_string(i);
-        imageItem->needDestroy = false; // Swapchain owns these images
+        m_ImageHandles[i] = vkDevice->GetImagePool()->Allocate([&images, i](RHIVkImagePoolItem* imageItem) {
+            *imageItem = RHIVkImagePoolItem();
+            imageItem->image = images[i];
+            imageItem->name = "SwapChainImage_" + std::to_string(i);
+            imageItem->needDestroy = false; // Swapchain owns these images
+        });
 
         ImageViewDesc viewDesc;
         viewDesc.viewType = IMAGE_VIEW_TYPE_2D;

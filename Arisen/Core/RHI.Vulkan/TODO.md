@@ -32,9 +32,9 @@ Target: Build a **Stateless**, **Handle-based**, **Highly Parallel**, and **C# I
 
 **Goal**: Eliminate global mutexes in hot paths. Enable true multi-threaded recording.
 
-- [ ] **Lock-Free Resource Pools**
-    - [ ] **Atomic Registry**: Replace `std::mutex` in `RHIResourcePool` with `std::atomic` free-lists and generation counters.
-    - [ ] **Memory Strategy**: Use chunked/paged memory for pools to avoid `std::vector` resize locks and pointer invalidation.
+- [x] **Lock-Free Resource Pools**
+    - [x] **Atomic Registry**: Replace `std::mutex` in `RHIResourcePool` with `std::atomic` free-lists and generation counters.
+    - [x] **Memory Strategy**: Use chunked/paged memory for pools to avoid `std::vector` resize locks and pointer invalidation.
 - [ ] **Thread-Local Command Management**
     - [ ] **TLS Command Pools**: Implement `RHIVkCommandBufferPool` that caches `VkCommandPool` per thread.
     - [ ] **Frame-Local Recycling**: Ensure Command Buffers are only recycled after the GPU has finished the frame (FrameIndex tracking).
