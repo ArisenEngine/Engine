@@ -37,7 +37,7 @@ Target: Build a **Stateless**, **Handle-based**, **Highly Parallel**, and **C# I
     - [x] **Memory Strategy**: Use chunked/paged memory for pools to avoid `std::vector` resize locks and pointer invalidation.
 - [ ] **Thread-Local Command Management**
     - [ ] **TLS Command Pools**: Implement `RHIVkCommandBufferPool` that caches `VkCommandPool` per thread.
-    - [ ] **Frame-Local Recycling**: Ensure Command Buffers are only recycled after the GPU has finished the frame (FrameIndex tracking).
+    - [ ] **Submit-based Recycling**: Ensure Command Buffers are only recycled after their specific submission is complete (via `RHIGpuTicket` tracking). 
 
 ---
 
