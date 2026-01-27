@@ -16,6 +16,9 @@ namespace ArisenEngine::RHI
         {
             m_Device = nullptr;
         }
+
+        virtual void* GetHandle() = 0;
+
         virtual RHICommandBuffer* GetCommandBuffer(UInt32 currentFrameIndex)
         {
             (void)currentFrameIndex;
