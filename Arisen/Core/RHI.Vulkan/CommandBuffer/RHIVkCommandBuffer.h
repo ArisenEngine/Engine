@@ -21,8 +21,6 @@ public:
   ~RHIVkCommandBuffer() noexcept override;
   RHIVkCommandBuffer(RHIVkDevice *device, RHIVkCommandBufferPool *pool);
 
-  void *GetHandle() const override;
-  void *GetHandlerPointer() override;
 
   void BeginRenderPass(UInt32 frameIndex, RenderPassBeginDesc &&desc) override;
   void EndRenderPass() override;
@@ -89,14 +87,15 @@ public:
                        const RHIBufferMemoryBarrier *pBufferMemoryBarriers,
                        UInt32 bufferMemoryBarrierCount) override;
 
-public:
-  // Vulkan only
-  const VkSemaphore *GetWaitSemaphores() const;
-  UInt32 GetWaitSemaphoresCount() const;
-  const VkSemaphore *GetSignalSemaphores() const;
-  UInt32 GetSignalSemaphoresCount() const;
-  const VkPipelineStageFlags *GetWaitStageMask() const;
-  VkFence GetSubmissionFence() const;
+    private:
+        friend class RHIVkQueue;
+        // Vulkan only
+        const VkSemaphore *GetWaitSemaphores() const;
+        UInt32 GetWaitSemaphoresCount() const;
+        const VkSemaphore *GetSignalSemaphores() const;
+        UInt32 GetSignalSemaphoresCount() const;
+        const VkPipelineStageFlags *GetWaitStageMask() const;
+        VkFence GetSubmissionFence() const;
 
 protected:
   void ResetInternal() override;
@@ -143,21 +142,19 @@ private:
   std::thread::id m_OwnerThreadId;
 
   friend class RHIVkCommandBufferPool;
+  friend class RHIVkQueue;
 private:
   void CaptureResource(RHIBufferHandle buffer);
   void CaptureResource(RHIImageHandle image);
 
-public:
-  const Containers::Vector<RHIResourceHandle> &
-  GetTrackedResourceHandles() const {
+  const Containers::Vector<RHIResourceHandle>& GetTrackedResourceHandles() const {
     return m_TrackedResourceHandles;
   }
   void ClearTrackedResourceHandles() { m_TrackedResourceHandles.clear(); }
 
-public:
-  const Containers::Vector<TrackedPoolUse> &GetTrackedDescriptorPools() const {
+  const Containers::Vector<TrackedPoolUse>& GetTrackedDescriptorPools() const {
     return m_TrackedDescriptorPools;
   }
   void ClearTrackedDescriptorPools() { m_TrackedDescriptorPools.clear(); }
-};
+    };
 } // namespace ArisenEngine::RHI

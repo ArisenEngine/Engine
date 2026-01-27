@@ -107,11 +107,12 @@ namespace ArisenEngine::RHI
             return m_CommandBufferPool;
         };
 
+    protected:
         void SetLatestSubmitTicket(RHIGpuTicket id) { m_LatestSubmitTicket = id; }
         RHIGpuTicket GetLatestSubmitTicket() const { return m_LatestSubmitTicket; }
         
-        virtual void* GetHandle() const = 0;
-        virtual void* GetHandlerPointer() = 0;
+    public:
+        const bool ReadyForSubmit() const;
 
         // Command Interface
         virtual void BeginRenderPass(UInt32 frameIndex, RenderPassBeginDesc&& desc) = 0;
@@ -192,19 +193,26 @@ namespace ArisenEngine::RHI
             (void)pool;
             (void)poolId;
         }
-    public:
-
-        const bool ReadyForSubmit() const;
+    protected:
 
     protected:
         friend class RHICommandBufferPool;
         friend class RHIVkCommandBufferPool;
+        friend class RHIVkQueue; // Added for tracking access
         virtual void ResetInternal() = 0;
+
+    private:
         RHICommandBufferPool* m_CommandBufferPool;
         RHIDevice* m_Device;
         ECommandBufferState m_State;
         RHIGpuTicket m_LatestSubmitTicket { 0 };
         
+    protected:
+        // Protected accessors for members needed by derived classes if any
+        RHICommandBufferPool* GetPool() const { return m_CommandBufferPool; }
+        RHIDevice* GetDevice() const { return m_Device; }
+        ECommandBufferState GetState() const { return m_State; }
+        void SetState(ECommandBufferState state) { m_State = state; }
     };
 
     inline const bool RHICommandBuffer::ReadyForSubmit() const
