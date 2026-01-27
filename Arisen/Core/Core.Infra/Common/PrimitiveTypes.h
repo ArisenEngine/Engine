@@ -1,6 +1,7 @@
 #pragma once
 #include "CommandHeaders.h"
 #include "../Containers/Containers.h"
+#include "../String/String.h"
 
 namespace ArisenEngine
 {
@@ -28,32 +29,5 @@ namespace ArisenEngine
 
 	constexpr UInt32 InvalidID =  0xffff'ffffUL;
 
-	namespace String
-	{
-		// std::wstring to std::string
-		inline std::string WStringToString(const std::wstring& wstr) {
-			std::mbstate_t state = std::mbstate_t();
-			const wchar_t* src = wstr.data();
-			size_t len = 0;
-			wcsrtombs_s(&len, nullptr, 0, &src, 0, &state);  // fetch converted length
-
-			Containers::Vector<char> dst(len);  // create buffer
-			wcsrtombs_s(&len, dst.data(), dst.size(), &src, dst.size(), &state);
-			return std::string(dst.data());
-		}
-
-		// std::string to std::wstring
-		inline std::wstring StringToWString(const std::string& str)
-		{
-			std::mbstate_t state = std::mbstate_t();
-			const char* src = str.data();
-			size_t len = 0;
-			mbsrtowcs_s(&len, nullptr, 0, &src, 0, &state);  // fetch converted length
-
-			Containers::Vector<wchar_t> dst(len);  // create buffer
-			mbsrtowcs_s(&len, dst.data(), dst.size(), &src, dst.size(), &state);
-			return std::wstring(dst.data());
-		}
-	}
-	
+	using String = ArisenEngine::Infra::String;
 }

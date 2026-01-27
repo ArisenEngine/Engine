@@ -25,10 +25,10 @@ namespace ArisenEngine::RHI
         RHIFrameBufferHandle CreateFrameBuffer() override;
         void ReleaseFrameBuffer(RHIFrameBufferHandle frameBuffer) override;
 
-        RHIBufferHandle CreateBuffer(BufferDescriptor&& desc, const std::string&& name = "Anonymous") override;
+        RHIBufferHandle CreateBuffer(BufferDescriptor&& desc, const String& name = "Anonymous") override;
         void ReleaseBuffer(RHIBufferHandle bufferHandle) override;
 
-        RHIImageHandle CreateImage(ImageDescriptor&& desc, const std::string&& name = "Anonymous") override;
+        RHIImageHandle CreateImage(ImageDescriptor&& desc, const String& name = "Anonymous") override;
         void ReleaseImage(RHIImageHandle imageHandle) override;
 
         RHIImageViewHandle CreateImageView(RHIImageHandle image, ImageViewDesc&& desc) override;

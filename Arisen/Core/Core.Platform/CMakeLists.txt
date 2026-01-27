@@ -26,6 +26,7 @@ target_compile_definitions(Core.Platform PRIVATE COREPLATFORM_EXPORTS)
 target_link_libraries(Core.Platform
     PRIVATE 
     Core.Debugger
+    Core.Infra
 )
 
 # setup dxc

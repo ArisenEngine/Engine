@@ -16,7 +16,7 @@ extern "C" ENGINE_DLL RHI_BufferHandle RHI_Device_CreateBuffer(RHI_DeviceHandle 
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr || desc == nullptr) return 0;
     RHI::BufferDescriptor copy = *desc;
-    auto handle = dev->GetFactory()->CreateBuffer(std::move(copy), name != nullptr ? std::string(name) : std::string("Anonymous"));
+    auto handle = dev->GetFactory()->CreateBuffer(std::move(copy), name != nullptr ? name : "Anonymous");
     return *reinterpret_cast<unsigned long long*>(&handle);
 }
 
@@ -68,7 +68,7 @@ extern "C" ENGINE_DLL RHI_ImageHandle RHI_Device_CreateImage(RHI_DeviceHandle de
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr || desc == nullptr) return 0;
     RHI::ImageDescriptor copy = *desc;
-    auto handle = dev->GetFactory()->CreateImage(std::move(copy), name != nullptr ? std::string(name) : std::string("Anonymous"));
+    auto handle = dev->GetFactory()->CreateImage(std::move(copy), name != nullptr ? name : "Anonymous");
     return *reinterpret_cast<unsigned long long*>(&handle);
 }
 

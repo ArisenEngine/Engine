@@ -1,4 +1,6 @@
 #include "RHIVkSwapChain.h"
+
+using namespace ArisenEngine;
 #include "Logger/Logger.h"
 #include "../Devices/RHIVkDevice.h"
 #include "../Devices/RHIVkFactory.h"
@@ -95,7 +97,7 @@ void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
         m_ImageHandles[i] = vkDevice->GetImagePool()->Allocate([&images, i](RHIVkImagePoolItem* imageItem) {
             *imageItem = RHIVkImagePoolItem();
             imageItem->image = images[i];
-            imageItem->name = "SwapChainImage_" + std::to_string(i);
+            imageItem->name = String::Format("SwapChainImage_%d", i);
             imageItem->needDestroy = false; // Swapchain owns these images
         });
 
@@ -142,7 +144,7 @@ ArisenEngine::RHI::RHIImageHandle ArisenEngine::RHI::RHIVkSwapChain::AquireCurre
                               VK_NULL_HANDLE, &imageIndex_local);
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     {
-        std::string msg = "[RHIVkSwapChain::AquireCurrentImage]: failed to acquire next image (frame " + std::to_string(frameIndex) + ") result: " + std::to_string(result);
+        String msg = String::Format("[RHIVkSwapChain::AquireCurrentImage]: failed to acquire next image (frame %d) result: %d", frameIndex, result);
         LOG_ERROR(msg);
         return RHIImageHandle::Invalid();
     }

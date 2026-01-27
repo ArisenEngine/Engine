@@ -4,6 +4,7 @@
 #include <spdlog/fmt/ostr.h> // support for user defined types
 #include <spdlog/sinks/basic_file_sink.h>
 #include <filesystem>
+#include <stdexcept>
 
 #if defined(__has_include) && __has_include(<stacktrace>) && __cpp_lib_stacktrace >= 202011
     #define HAS_STD_STACKTRACE 1
@@ -241,66 +242,15 @@ void Logger::Fatal(const char* msg, const char* thread_name, const char* cs_trac
 	DO_LOG_MESSAGE(critical, Fatal, msg, thread_name, cs_trace);
 }
 
-void Logger::Log(const std::wstring&& msg)
+void Logger::Log(const String& msg) { Log(msg.c_str()); }
+void Logger::Info(const String& msg) { Info(msg.c_str()); }
+void Logger::Warning(const String& msg) { Warning(msg.c_str()); }
+void Logger::Error(const String& msg) { Error(msg.c_str()); }
+void Logger::Fatal(const String& msg, bool needThrow)
 {
-	Log(String::WStringToString(msg));
+    Fatal(msg.c_str());
+    if (needThrow) {
+        throw std::runtime_error(msg.GetString());
+    }
 }
-
-void Logger::Log(const std::string&& msg)
-{
-	Log(msg.c_str());
-}
-
-void Logger::Info(const std::wstring&& msg)
-{
-	Info(String::WStringToString(msg));
-}
-
-void Logger::Info(const std::string&& msg)
-{
-	Info(msg.c_str());
-}
-
-void Logger::Warning(const std::wstring&& msg)
-{
-	Warning(String::WStringToString(msg));
-}
-
-void Logger::Warning(const std::string&& msg)
-{
-	Warning(msg.c_str());
-}
-
-void Logger::Error(const std::wstring&& msg)
-{
-	Error(String::WStringToString(msg));
-}
-
-void Logger::Error(const std::string&& msg)
-{
-	Error(msg.c_str());
-}
-
-void Logger::Fatal(const std::wstring&& msg, bool needThrow)
-{
-	Fatal(String::WStringToString(msg));
-}
-
-void Logger::Fatal(const std::string&& msg, bool needThrow)
-{
-	Fatal(msg.c_str());
-	if (needThrow)
-	{
-		throw std::runtime_error(msg);
-	}
-}
-
-void Logger::Trace(const std::wstring&& msg)
-{
-	Trace(String::WStringToString(msg));
-}
-
-void Logger::Trace(const std::string&& msg)
-{
-	Trace(msg.c_str());
-}
+void Logger::Trace(const String& msg) { Trace(msg.c_str()); }

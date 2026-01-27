@@ -1,7 +1,9 @@
 #include "RHIVkInstance.h"
+using namespace ArisenEngine;
 #include <vulkan/vulkan_core.h>
 #include "Program/RHIVkGPUProgram.h"
 #include "Windows/RenderWindowAPI.h"
+
 
 bool CheckDeviceExtensionSupport(VkPhysicalDevice device)
 {
@@ -11,7 +13,7 @@ bool CheckDeviceExtensionSupport(VkPhysicalDevice device)
     ArisenEngine::Containers::Vector<VkExtensionProperties> availableExtensions(extensionCount);
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
 
-    ArisenEngine::Containers::Set<std::string> requiredExtensions(ArisenEngine::RHI::VkDeviceExtensionNames.begin(),
+    ArisenEngine::Containers::Set<String> requiredExtensions(ArisenEngine::RHI::VkDeviceExtensionNames.begin(),
         ArisenEngine::RHI::VkDeviceExtensionNames.end());
 
     for (const auto& extension : availableExtensions)
@@ -86,7 +88,7 @@ bool CheckValidationLayerSupport()
 
         if (!layerFound)
         {
-            LOG_INFO("[RHIVkInstance::CheckValidationLayerSupport]: ValidationLayer not found:" + std::string(layerName));
+            LOG_INFO(String::Format("[RHIVkInstance::CheckValidationLayerSupport]: ValidationLayer not found: %s", layerName));
             return false;
         }
     }
@@ -104,19 +106,19 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     
     if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
     {
-        LOG_ERROR(" ######### vk message error: " + std::string(pCallbackData->pMessage));
+        LOG_ERROR(String::Format(" ######### vk message error: %s", pCallbackData->pMessage));
     }
     else if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
     {
-        LOG_WARN(" ######### vk message warning: " + std::string(pCallbackData->pMessage));
+        LOG_WARN(String::Format(" ######### vk message warning: %s", pCallbackData->pMessage));
     }
     else if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
     {
-        LOG_INFO(" ######### vk message info: " + std::string(pCallbackData->pMessage));
+        LOG_INFO(String::Format(" ######### vk message info: %s", pCallbackData->pMessage));
     }
     else
     {
-        LOG_DEBUG(" ######### vk message verbose: " + std::string(pCallbackData->pMessage));
+        LOG_DEBUG(String::Format(" ######### vk message verbose: %s", pCallbackData->pMessage));
     }
 
     return VK_FALSE;
@@ -544,7 +546,7 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
         logicalDevice->m_DeviceLimits.sampler.maxSamplerAnisotropy = physicalProperties.limits.maxSamplerAnisotropy;
     }
     
-    LOG_INFO("[RHIVkInstance::CreateLogicDevice]: Create Logical Device for surface " + std::to_string(windowId));
+    LOG_INFO(String::Format("[RHIVkInstance::CreateLogicDevice]: Create Logical Device for surface %d", windowId));
     m_LogicalDevices.insert(
         {    windowId,
              std::move(logicalDevice)
@@ -613,7 +615,7 @@ void ArisenEngine::RHI::RHIVkInstance::CheckSwapChainCapabilities()
         
         if (surfacePair.second.get() == nullptr)
         {
-            LOG_WARN(" window: {" + std::to_string(windowId) + "}'s surface is nullptr!");
+            LOG_WARN(String::Format(" window: {%d}'s surface is nullptr!", windowId));
             continue;
         }
 
@@ -662,7 +664,7 @@ void ArisenEngine::RHI::RHIVkInstance::InitLogicDevices()
         
         if (surfacePair.second.get() == nullptr)
         {
-            LOG_WARN("[RHIVkInstance::InitLogicDevices]: window: {" + std::to_string(windowId) + "}'s surface is nullptr!");
+            LOG_WARN(String::Format("[RHIVkInstance::InitLogicDevices]: window: {%d}'s surface is nullptr!", windowId));
             continue;
         }
         
@@ -689,7 +691,7 @@ void ArisenEngine::RHI::RHIVkInstance::PickPhysicalDevice(bool considerSurface)
         LOG_FATAL_AND_THROW("[RHIVkInstance::PickPhysicalDevice]: failed to find GPUs with Vulkan support!");
     }
     
-    LOG_DEBUG("[RHIVkInstance::PickPhysicalDevice]: Device Count:" + std::to_string(deviceCount));
+    LOG_DEBUG(String::Format("[RHIVkInstance::PickPhysicalDevice]: Device Count: %d", deviceCount));
     
     Containers::Vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(m_VkInstance, &deviceCount, devices.data());
@@ -718,7 +720,7 @@ void ArisenEngine::RHI::RHIVkInstance::PickPhysicalDevice(bool considerSurface)
     
     vkGetPhysicalDeviceProperties(m_CurrentPhysicsDevice, &m_DeviceProperties);
     
-    LOG_DEBUG("[RHIVkDevice::PickPhysicalDevice]: Picked gpu device : " + std::string(m_DeviceProperties.deviceName));
+    LOG_DEBUG(String::Format("[RHIVkDevice::PickPhysicalDevice]: Picked gpu device : %s", m_DeviceProperties.deviceName));
 
 
     // initialize limit info

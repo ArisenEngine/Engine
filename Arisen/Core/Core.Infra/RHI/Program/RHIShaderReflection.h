@@ -10,7 +10,7 @@ namespace ArisenEngine::RHI
     // Represents a single resource binding (e.g., Uniform Buffer, Texture)
     struct RHIShaderResourceBinding
     {
-        std::string Name;
+        String Name;
         UInt32 Set;
         UInt32 Binding;
         UInt32 Count; // Array size (1 for non-arrays)
@@ -26,7 +26,7 @@ namespace ArisenEngine::RHI
     // Represents a Push Constant range
     struct RHIPushConstantRange
     {
-        std::string Name;
+        String Name;
         UInt32 Offset;
         UInt32 Size;
         UInt32 StageFlags;
