@@ -33,11 +33,15 @@ ArisenEngine::RHI::RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::
     ThreadLocalFreeList* tlsList = nullptr;
     using FreeListCache = ThreadLocalCache<RHIVkCommandBufferPool, ThreadLocalFreeList*, struct FreeListTag>;
     
-    if (FreeListCache::Get(this, tlsList) && tlsList && !tlsList->freeBuffers.empty())
+    if (FreeListCache::Get(this, tlsList) && tlsList)
     {
-        RHICommandBuffer* commandBuffer = tlsList->freeBuffers.back();
-        tlsList->freeBuffers.pop_back();
-        return commandBuffer;
+        FlushPendingBuffers(tlsList);
+        if (!tlsList->freeBuffers.empty())
+        {
+            RHICommandBuffer* commandBuffer = tlsList->freeBuffers.back();
+            tlsList->freeBuffers.pop_back();
+            return commandBuffer;
+        }
     }
 
     // fallback to locked map or base class
@@ -64,7 +68,49 @@ ArisenEngine::RHI::RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::
 
 void ArisenEngine::RHI::RHIVkCommandBufferPool::ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBuffer* commandBuffer)
 {
-    RHICommandBufferPool::ReleaseCommandBuffer(currentFrameIndex, commandBuffer);
+    (void)currentFrameIndex;
+    auto ticket = commandBuffer->GetLatestSubmitTicket();
+    
+    // Check if the GPU is already done with it.
+    if (m_Device->GetCompletedSubmitTicket() >= ticket)
+    {
+        InternalRecycle(commandBuffer);
+        return;
+    }
+
+    // Otherwise, defer recycling to the current thread's pending list.
+    ThreadLocalFreeList* tlsList = nullptr;
+    using FreeListCache = ThreadLocalCache<RHIVkCommandBufferPool, ThreadLocalFreeList*, struct FreeListTag>;
+    
+    if (!FreeListCache::Get(this, tlsList) || !tlsList)
+    {
+        tlsList = new ThreadLocalFreeList(); 
+        FreeListCache::Set(this, tlsList);
+    }
+    
+    tlsList->pendingBuffers.emplace_back(ticket, commandBuffer);
+}
+
+void ArisenEngine::RHI::RHIVkCommandBufferPool::FlushPendingBuffers(ThreadLocalFreeList* tlsList)
+{
+    if (!tlsList || tlsList->pendingBuffers.empty()) return;
+
+    auto completed = m_Device->GetCompletedSubmitTicket();
+    
+    for (auto it = tlsList->pendingBuffers.begin(); it != tlsList->pendingBuffers.end(); )
+    {
+        if (completed >= it->first)
+        {
+            auto* cmd = it->second;
+            cmd->ResetInternal();
+            tlsList->freeBuffers.push_back(cmd);
+            it = tlsList->pendingBuffers.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
 }
 
 void ArisenEngine::RHI::RHIVkCommandBufferPool::InternalRecycle(RHICommandBuffer* commandBuffer)
@@ -74,6 +120,19 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::InternalRecycle(RHICommandBuffer
     auto* vkCmd = static_cast<RHIVkCommandBuffer*>(commandBuffer);
     std::thread::id ownerId = vkCmd->m_OwnerThreadId;
 
+    // Optimization: If we're on the same thread as the owner, 
+    // we can bypass the global lock and put it straight into TLS free list.
+    if (ownerId == std::this_thread::get_id())
+    {
+        ThreadLocalFreeList* tlsList = nullptr;
+        using FreeListCache = ThreadLocalCache<RHIVkCommandBufferPool, ThreadLocalFreeList*, struct FreeListTag>;
+        if (FreeListCache::Get(this, tlsList) && tlsList)
+        {
+            tlsList->freeBuffers.push_back(commandBuffer);
+            return;
+        }
+    }
+
     std::lock_guard<std::mutex> lock(m_PoolsMutex);
     m_ThreadFreeBuffers[ownerId].emplace_back(commandBuffer);
 }
@@ -82,9 +141,16 @@ ArisenEngine::RHI::RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::
 {
     auto* vkDevice = dynamic_cast<RHIVkDevice*>(m_Device);
     ASSERT(vkDevice != nullptr);
+    
+    // Create the command buffer object BEFORE locking m_PoolsMutex.
+    // This avoids a deadlock because the RHIVkCommandBuffer constructor 
+    // calls AcquireThreadCommandPool(), which ALSO attempts to lock m_PoolsMutex.
+    auto newBuffer = std::make_unique<RHIVkCommandBuffer>(vkDevice, this);
+    RHICommandBuffer* rawPtr = newBuffer.get();
+
     std::lock_guard<std::mutex> lock(m_PoolsMutex); // Protect m_OwnedCommandBuffers
-    m_OwnedCommandBuffers.emplace_back(std::make_unique<RHIVkCommandBuffer>(vkDevice, this));
-    return m_OwnedCommandBuffers.back().get();
+    m_OwnedCommandBuffers.emplace_back(std::move(newBuffer));
+    return rawPtr;
 }
 
 VkCommandPool ArisenEngine::RHI::RHIVkCommandBufferPool::AcquireThreadCommandPool()

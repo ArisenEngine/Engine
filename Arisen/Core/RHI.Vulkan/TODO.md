@@ -35,8 +35,8 @@ Target: Build a **Stateless**, **Handle-based**, **Highly Parallel**, and **C# I
 - [x] **Lock-Free Resource Pools**
     - [x] **Atomic Registry**: Replace `std::mutex` in `RHIResourcePool` with `std::atomic` free-lists and generation counters.
     - [x] **Memory Strategy**: Use chunked/paged memory for pools to avoid `std::vector` resize locks and pointer invalidation.
-- [ ] **Thread-Local Command Management**
-    - [ ] **TLS Command Pools**: Implement `RHIVkCommandBufferPool` that caches `VkCommandPool` per thread.
+- [x] **Thread-Local Command Management**
+    - [x] **TLS Command Pools**: Implement `RHIVkCommandBufferPool` that caches `VkCommandPool` per thread.
     - [ ] **Submit-based Recycling**: Ensure Command Buffers are only recycled after their specific submission is complete (via `RHIGpuTicket` tracking). 
 
 ---
