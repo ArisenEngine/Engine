@@ -1,6 +1,8 @@
 #include "RHILoader.h"
 #include "Logger/Logger.h"
 
+using namespace ArisenEngine;
+
 #include <dbghelp.h>
 
 #pragma comment(lib, "Dbghelp.lib")
@@ -36,7 +38,7 @@ void ArisenEngine::Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphicsAPI a
     DWORD result = GetModuleFileNameA(_rhi_dll, dllPath, MAX_PATH);
     if (result != 0)
     {
-        LOG_INFO("[RHILoader::SetCurrentGraphicsAPI] RHI dll loaded: " + std::string(dllPath));
+        LOG_INFO(String::Format("[RHILoader::SetCurrentGraphicsAPI] RHI dll loaded: %s", dllPath));
     }
 
     HANDLE process = GetCurrentProcess();
@@ -51,7 +53,7 @@ void ArisenEngine::Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphicsAPI a
         }
         else
         {
-            LOG_FATAL("SymInitialize failed. Error code: " + error);
+            LOG_FATAL(String::Format("SymInitialize failed. Error code: %lu", error));
         }
     }
     else
@@ -74,24 +76,23 @@ void ArisenEngine::Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphicsAPI a
             nullptr,
             0))
     {
-        LOG_INFO("[RHILoader::SetCurrentGraphicsAPI]" + std::string(dllPath) + " Symbols loaded.");
+        LOG_INFO(String::Format("[RHILoader::SetCurrentGraphicsAPI]%s Symbols loaded.", dllPath));
         SymRefreshModuleList(process);
 
         IMAGEHLP_MODULE64 moduleInfo = { sizeof(IMAGEHLP_MODULE64) };
         if (SymGetModuleInfo64(process, moduleBase, &moduleInfo))
         {
-            LOG_INFO("Loaded symbols: " + std::string(moduleInfo.LoadedImageName) + ", Loaded PDB Name: " + std::string(moduleInfo.LoadedPdbName));
+            LOG_INFO(String::Format("Loaded symbols: %s, Loaded PDB Name: %s", moduleInfo.LoadedImageName, moduleInfo.LoadedPdbName));
         }
         else
         {
-           LOG_FATAL("Failed to get module info. Error: " + GetLastError());
+           LOG_FATAL(String::Format("Failed to get module info. Error: %lu", GetLastError()));
         }
 
     }
     else
     {
-        LOG_FATAL("Failed to load symbols for: " + std::string(dllPath));
-        
+        LOG_FATAL(String::Format("Failed to load symbols for: %s", dllPath));
     }
 
 }

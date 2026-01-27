@@ -19,13 +19,13 @@ namespace ArisenEngine::RHI
 
     public:
         const EShaderStage GetShaderState() const { return m_Stage; }
-        const std::string GetName() const { return m_Name; }
+        const String& GetName() const { return m_Name; }
 
     
     protected:    
         virtual void DestroyHandle() = 0;
         EShaderStage m_Stage;
-        std::string m_Entry {};
-        std::string m_Name {};
+        String m_Entry {};
+        String m_Name {};
     };
 }

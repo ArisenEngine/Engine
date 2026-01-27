@@ -38,19 +38,12 @@ namespace ArisenEngine::Debugger
         void Trace(const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr);// CS_IGNORE_GEN
 
         
-        void Log(const std::string&& msg);
-        void Info(const std::string&& msg);
-        void Warning(const std::string&& msg);
-        void Error(const std::string&& msg);
-        void Fatal(const std::string&& msg, bool needThrow = false);
-        void Trace(const std::string&& msg);
-        
-        void Log(const std::wstring&& msg);
-        void Info(const std::wstring&& msg);
-        void Warning(const std::wstring&& msg);
-        void Error(const std::wstring&& msg);
-        void Fatal(const std::wstring&& msg, bool needThrow = false);
-        void Trace(const std::wstring&& msg);
+        void Log(const String& msg);
+        void Info(const String& msg);
+        void Warning(const String& msg);
+        void Error(const String& msg);
+        void Fatal(const String& msg, bool needThrow = false);
+        void Trace(const String& msg);
 
 
         void SetServerityLevel(LogLevel level);
@@ -88,9 +81,7 @@ namespace ArisenEngine::Debugger
 #define assert(condition)                                                   \
 do {                                                                    \
     if (!(condition)) {                                                 \
-        std::string msg = "Assertion failed: (" #condition "), file " \
-            + std::string(__FILE__) +                \
-            ", line " + std::to_string(__LINE__);    \
+        String msg = String::Format("Assertion failed: (%s), file %s, line %d", #condition, __FILE__, __LINE__); \
         LOG_FATAL(msg);                           \
         std::abort();                                                   \
     }                                                                   \

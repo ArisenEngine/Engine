@@ -36,8 +36,8 @@ bool ArisenEngine::RHI::RHIVkGPUProgram::AttachProgramByteCode(GPUProgramDesc&& 
     }
     
     m_Stage = desc.stage;
-    m_Entry = std::string(desc.entry);
-    m_Name = std::string(desc.name);
+    m_Entry = desc.entry;
+    m_Name = desc.name;
 
     // Perform reflection
     RHIVkSpirvReflectionService reflectionService;

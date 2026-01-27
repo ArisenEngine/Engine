@@ -1,4 +1,6 @@
 #include "RHIVkSpirvReflectionService.h"
+
+using namespace ArisenEngine;
 #include "Logger/Logger.h"
 
 namespace ArisenEngine::RHI
@@ -93,7 +95,7 @@ namespace ArisenEngine::RHI
         }
         catch (const std::exception& e)
         {
-            LOG_ERROR(std::string("[RHIVkSpirvReflectionService::Reflect] SPIRV-Cross exception: ") + e.what());
+            LOG_ERROR(String::Format("[RHIVkSpirvReflectionService::Reflect] SPIRV-Cross exception: %s", e.what()));
             return false;
         }
 

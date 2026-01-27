@@ -109,7 +109,7 @@ namespace ArisenEngine::RHI
     }
 
     ArisenEngine::RHI::RHIBufferHandle ArisenEngine::RHI::RHIVkFactory::CreateBuffer(
-        ArisenEngine::RHI::BufferDescriptor&& desc, const std::string&& name)
+        ArisenEngine::RHI::BufferDescriptor&& desc, const String& name)
     {
         auto handle = m_Device->GetBufferPool()->Allocate([&name](ArisenEngine::RHI::RHIVkBufferPoolItem* item)
         {
@@ -138,7 +138,7 @@ namespace ArisenEngine::RHI
     }
 
     ArisenEngine::RHI::RHIImageHandle ArisenEngine::RHI::RHIVkFactory::CreateImage(
-        ArisenEngine::RHI::ImageDescriptor&& desc, const std::string&& name)
+        ArisenEngine::RHI::ImageDescriptor&& desc, const String& name)
     {
         auto handle = m_Device->GetImagePool()->Allocate([&name](ArisenEngine::RHI::RHIVkImagePoolItem* item)
         {

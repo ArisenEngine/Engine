@@ -33,10 +33,10 @@ namespace ArisenEngine::RHI
         virtual RHIFrameBufferHandle CreateFrameBuffer() = 0;
         virtual void ReleaseFrameBuffer(RHIFrameBufferHandle frameBuffer) = 0;
 
-        virtual RHIBufferHandle CreateBuffer(BufferDescriptor&& desc, const std::string&& name = "Anonymous") = 0;
+        virtual RHIBufferHandle CreateBuffer(BufferDescriptor&& desc, const String& name = "Anonymous") = 0;
         virtual void ReleaseBuffer(RHIBufferHandle bufferHandle) = 0;
 
-        virtual RHIImageHandle CreateImage(ImageDescriptor&& desc, const std::string&& name = "Anonymous") = 0;
+        virtual RHIImageHandle CreateImage(ImageDescriptor&& desc, const String& name = "Anonymous") = 0;
         virtual void ReleaseImage(RHIImageHandle imageHandle) = 0;
 
         virtual RHIImageViewHandle CreateImageView(RHIImageHandle image, ImageViewDesc&& desc) = 0;
