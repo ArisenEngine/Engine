@@ -3,6 +3,9 @@
 #include "RHIVkCommandBuffer.h"
 #include "../Devices/RHIVkDevice.h"
 #include "../Surfaces/RHIVkSurface.h"
+#include "../Handles/RHIVkResourcePools.h"
+
+using namespace ArisenEngine::RHI;
 
 ArisenEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* device, UInt32 maxFramesInFlight)
 : RHICommandBufferPool(device, maxFramesInFlight)
@@ -14,7 +17,15 @@ ArisenEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* d
 
 ArisenEngine::RHI::RHIVkCommandBufferPool::~RHIVkCommandBufferPool() noexcept
 {
-    m_OwnedCommandBuffers.clear();
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
+    auto latestTicket = vkDevice->GetQueue(RHIQueueType::Graphics)->GetLatestTicket();
+
+    for (auto handle : m_OwnedHandles)
+    {
+        vkDevice->ReleaseCommandBuffer(handle);
+    }
+    m_OwnedHandles.clear();
+
     {
         std::lock_guard<std::mutex> lock(m_PoolsMutex);
         for (auto& [threadId, pool] : m_ThreadPools)
@@ -139,17 +150,29 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::InternalRecycle(RHICommandBuffer
 
 ArisenEngine::RHI::RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::CreateCommandBuffer()
 {
-    auto* vkDevice = dynamic_cast<RHIVkDevice*>(GetDevice());
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     ASSERT(vkDevice != nullptr);
     
-    // Create the command buffer object BEFORE locking m_PoolsMutex.
-    // This avoids a deadlock because the RHIVkCommandBuffer constructor 
-    // calls AcquireThreadCommandPool(), which ALSO attempts to lock m_PoolsMutex.
-    auto newBuffer = std::make_unique<RHIVkCommandBuffer>(vkDevice, this);
-    RHICommandBuffer* rawPtr = newBuffer.get();
+    RHICommandBufferHandle handle = vkDevice->GetCommandBufferPool()->Allocate([this, vkDevice](RHIVkCommandBufferItem* item)
+    {
+        *item = RHIVkCommandBufferItem();
+        item->commandBuffer = new RHIVkCommandBuffer(vkDevice, this);
+        
+        // Register for deferred deletion (of the C++ object)
+        struct DeferredCmdBuffer
+        {
+            RHIVkCommandBuffer* buffer;
+            ~DeferredCmdBuffer() { delete buffer; }
+        };
+        item->registryHandle = vkDevice->GetResourceRegistry()->Create(
+            MakeDeferredDeleteItem(new DeferredCmdBuffer{item->commandBuffer}));
+    });
 
-    std::lock_guard<std::mutex> lock(m_PoolsMutex); // Protect m_OwnedCommandBuffers
-    m_OwnedCommandBuffers.emplace_back(std::move(newBuffer));
+    auto* item = vkDevice->GetCommandBufferPool()->Get(handle);
+    RHICommandBuffer* rawPtr = item->commandBuffer;
+
+    std::lock_guard<std::mutex> lock(m_PoolsMutex); 
+    m_OwnedHandles.emplace_back(handle);
     return rawPtr;
 }
 
