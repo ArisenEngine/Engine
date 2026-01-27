@@ -37,20 +37,23 @@ Target: Build a **Stateless**, **Handle-based**, **Highly Parallel**, and **C# I
     - [x] **Memory Strategy**: Use chunked/paged memory for pools to avoid `std::vector` resize locks and pointer invalidation.
 - [x] **Thread-Local Command Management**
     - [x] **TLS Command Pools**: Implement `RHIVkCommandBufferPool` that caches `VkCommandPool` per thread.
-    - [ ] **Submit-based Recycling**: Ensure Command Buffers are only recycled after their specific submission is complete (via `RHIGpuTicket` tracking). 
+    - [x] **Submit-based Recycling**: Ensure Command Buffers are only recycled after their specific submission is complete (via `RHIGpuTicket` tracking). 
 
 ---
 
-## 3. Phase 3: Advanced Rendering Features
+## 3. Phase 3: Advanced Rendering Features & Robustness
 
-**Goal**: Leverage modern GPU features to simplify upper-layer logic and improve performance.
+**Goal**: Leverage modern GPU features and ensure system stability under high-concurrency loads.
 
+- [ ] **Infrastructure Robustness**
+    - [ ] **Thread Leak Prevention**: Implement cleanup logic for `m_ThreadPools` in `RHIVkCommandBufferPool` to prevent memory growth when threads are short-lived.
+    - [ ] **Lock-Free Recycling**: Transition from mutex-guarded Maps to lock-free structures (e.g., `MPSCQueue`) for cross-thread command buffer recycling.
+    - [ ] **Capture Optimization**: Improve `CaptureResource` with faster deduplication (e.g., BitSet or Tagging) for complex command buffers.
 - [ ] **Pipeline & Shader System**
     - [ ] **SPIRV-Reflect Integration**: Automatically extract descriptor layouts from shader bytecode. Remove manual `PipelineLayout` creation requirements.
     - [ ] **PSO Caching**: Implement `VkPipelineCache` serialization to disk to reduce startup hitching.
 - [ ] **Memory Optimization**
     - [ ] **Transient Resource Aliasing**: Implement memory reuse for non-overlapping resources (e.g., FrameGraph attachments) using VMA aliasing.
-    - [ ] **Async Transfer Queue**: Offload heavy resource uploads (`vkCmdCopyBufferToImage`) to a dedicated Transfer queue/thread.
 
 ---
 
@@ -60,4 +63,4 @@ Target: Build a **Stateless**, **Handle-based**, **Highly Parallel**, and **C# I
 - [ ] **Handle Validation**: Add `RHI_VALIDATION` macro to enable/disable generation checking overhead in Release builds.
 
 ---
-*Last Updated: 2026-01-23*
+*Last Updated: 2026-01-27*
