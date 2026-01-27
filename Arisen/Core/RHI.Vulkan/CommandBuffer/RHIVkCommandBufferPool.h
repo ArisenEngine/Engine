@@ -26,7 +26,6 @@ namespace ArisenEngine::RHI
         RHIVkCommandBufferPool(RHIVkDevice* device, UInt32 maxFramesInFlight);
         ~RHIVkCommandBufferPool() noexcept override;
 
-        void* GetHandle() override { return AcquireThreadCommandPool(); }
 
         RHICommandBuffer* GetCommandBuffer(UInt32 currentFrameIndex) override;
         void ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBuffer* commandBuffer) override;
