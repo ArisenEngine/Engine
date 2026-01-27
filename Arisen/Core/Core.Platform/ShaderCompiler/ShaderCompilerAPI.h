@@ -36,7 +36,7 @@ using Microsoft::WRL::ComPtr;
 namespace ArisenEngine::Platforms
 {
 #if defined(ARISEN_AUTOBINDING)
-    inline std::wstring GetStagePrefix(RHI::ProgramStage stage)
+    inline String GetStagePrefix(RHI::ProgramStage stage)
     {
         switch (static_cast<uint32_t>(stage))
         {
@@ -57,7 +57,7 @@ namespace ArisenEngine::Platforms
 #define STAGE_PREFIX_ENUM(e) s_Stages[static_cast<uint32_t>(e)]
 #endif
     #if !defined(ARISEN_AUTOBINDING)
-    static std::wstring s_Stages[RHI::STAGE_MAX] =
+    static String s_Stages[RHI::STAGE_MAX] =
     {
         L"vs_",
         L"hs_",
@@ -76,22 +76,22 @@ namespace ArisenEngine::Platforms
         // 使用智能指针避免泄露，目前存在泄露
         void* codePointer = nullptr;
         SIZE_T codeSize = 0;
-        std::string msgOut;
+        String msgOut;
     };
 
     struct ShaderCompileParams
     {
-        std::wstring input{ L"" };
-        std::wstring entry{ L"main" };
-        std::wstring shaderModel{ L"6_4" };
-        std::wstring target{ L"-spirv" };
-        std::wstring targetEnv;
-        std::wstring optimizeLevel{ L"0" };
+        String input{ L"" };
+        String entry{ L"main" };
+        String shaderModel{ L"6_4" };
+        String target{ L"-spirv" };
+        String targetEnv;
+        String optimizeLevel{ L"0" };
         RHI::ProgramStage stage;
 
-        std::vector<std::wstring> defines;
-        std::vector<std::wstring> includes;
-        std::optional<std::wstring> output;
+        std::vector<String> defines;
+        std::vector<String> includes;
+        std::optional<String> output;
         std::optional<bool> useDXLayout;
     };
 
@@ -146,50 +146,55 @@ namespace ArisenEngine::Platforms
         // Load shader file with UTF8 encoding (跨平台友好)
         uint32_t codePage = DXC_CP_UTF8;
         ComPtr<IDxcBlobEncoding> sourceBlob;
-        hres = s_DXCUtils->LoadFile(params.input.c_str(), &codePage, &sourceBlob);
+        hres = s_DXCUtils->LoadFile(params.input.ToWString().c_str(), &codePage, &sourceBlob);
         if (FAILED(hres))
         {
             output.msgOut = "Could not load shader file.";
-            LOG_ERROR("[Platforms::CompileShaderFromFile]: Failed to load shader: " + String::WStringToString(params.input));
+            LOG_ERROR("[Platforms::CompileShaderFromFile]: Failed to load shader: " + params.input);
             return false;
         }
 
         // 组装编译参数
-        std::wstring stage = STAGE_PREFIX_ENUM(params.stage);
-        stage.append(params.shaderModel);
+        String stage = STAGE_PREFIX_ENUM(params.stage);
+        stage += params.shaderModel;
 
-        std::wstring env = L"-fspv-target-env=" + params.targetEnv;
-        std::wstring optimize = L"-O" + params.optimizeLevel;
+        String env = L"-fspv-target-env=" + params.targetEnv;
+        String optimize = L"-O" + params.optimizeLevel;
 
-        // 参数集合
-        std::vector<LPCWSTR> arguments = {
-            params.input.c_str(),
-            L"-E", params.entry.c_str(),
-            L"-T", stage.c_str(),
-            params.target.c_str(),
-            env.c_str(),
-            optimize.c_str()
-        };
+        // We need to keep the wstrings alive while the arguments vector holds pointers to their c_str()
+        std::vector<std::wstring> wArguments;
+        wArguments.push_back(params.input.ToWString());
+        wArguments.push_back(L"-E"); wArguments.push_back(params.entry.ToWString());
+        wArguments.push_back(L"-T"); wArguments.push_back(stage.ToWString());
+        wArguments.push_back(params.target.ToWString());
+        wArguments.push_back(env.ToWString());
+        wArguments.push_back(optimize.ToWString());
 
         // includes
         for (const auto& inc : params.includes)
         {
-            arguments.push_back(L"-I");
-            arguments.push_back(inc.c_str());
+            wArguments.push_back(L"-I");
+            wArguments.push_back(inc.ToWString());
         }
 
         // defines
         for (const auto& def : params.defines)
         {
-            arguments.push_back(L"-D");
-            arguments.push_back(def.c_str());
+            wArguments.push_back(L"-D");
+            wArguments.push_back(def.ToWString());
         }
 
         // 输出路径
         if (params.output.has_value())
         {
-            arguments.push_back(L"-Fo");
-            arguments.push_back(params.output->c_str());
+            wArguments.push_back(L"-Fo");
+            wArguments.push_back(params.output->ToWString());
+        }
+
+        std::vector<LPCWSTR> arguments;
+        for (const auto& warg : wArguments)
+        {
+            arguments.push_back(warg.c_str());
         }
 
         if (params.useDXLayout.has_value() && params.useDXLayout.value())
@@ -198,9 +203,9 @@ namespace ArisenEngine::Platforms
         }
 
 #if _DEBUG
-        std::string argLog;
+        String argLog;
         for (auto arg : arguments)
-            argLog += String::WStringToString(std::wstring(arg)) + " ";
+            argLog += String(arg) + " ";
         LOG_DEBUG("[CompileShaderFromFile] Arguments: " + argLog);
 #endif
 
@@ -233,7 +238,7 @@ namespace ArisenEngine::Platforms
             ComPtr<IDxcBlobEncoding> errorBlob;
             if (result && SUCCEEDED(result->GetErrorBuffer(&errorBlob)) && errorBlob)
             {
-                output.msgOut = std::string(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()), errorBlob->GetBufferSize());
+                output.msgOut = String(reinterpret_cast<const char*>(errorBlob->GetBufferPointer())); // Note: Size might be needed if not null-terminated
                 LOG_ERROR("[CompileShaderFromFile] Shader compilation failed: " + output.msgOut);
             }
             else
@@ -262,12 +267,12 @@ namespace ArisenEngine::Platforms
         // 写输出文件（如果指定了）
         if (params.output.has_value())
         {
-            fs::path outputPath(params.output.value());
+            fs::path outputPath(params.output.value().ToWString());
             std::ofstream outFile(outputPath, std::ios::binary);
 
              if (!outFile) 
              {
-                LOG_ERROR("Failed to open: " + String::WStringToString(outputPath.wstring()));
+                LOG_ERROR("Failed to open: " + params.output.value());
                 return false;
              }
 
@@ -276,11 +281,11 @@ namespace ArisenEngine::Platforms
                 outFile.write(reinterpret_cast<const char*>(shaderCode->GetBufferPointer()), 
                 static_cast<std::streamsize>(shaderCode->GetBufferSize()));
                 outFile.close();
-                LOG_DEBUG("[CompileShaderFromFile] Shader bytecode written to: " + String::WStringToString(params.output.value()));
+                LOG_DEBUG("[CompileShaderFromFile] Shader bytecode written to: " + params.output.value());
             }
             else
             {
-                LOG_ERROR("[CompileShaderFromFile] Failed to write shader bytecode to file: " + String::WStringToString(params.output.value()));
+                LOG_ERROR("[CompileShaderFromFile] Failed to write shader bytecode to file: " + params.output.value());
                 return false;
             }
         }

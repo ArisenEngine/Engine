@@ -72,4 +72,6 @@ namespace ArisenEngine::Infra
     // Global operators for flexibility
     inline String operator+(const String& lhs, const char* rhs) { return lhs + String(rhs); }
     inline String operator+(const char* lhs, const String& rhs) { return String(lhs) + rhs; }
+    inline String operator+(const String& lhs, const wchar_t* rhs) { return lhs + String(rhs); }
+    inline String operator+(const wchar_t* lhs, const String& rhs) { return String(lhs) + rhs; }
 }

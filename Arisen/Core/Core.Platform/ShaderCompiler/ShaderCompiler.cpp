@@ -1,5 +1,6 @@
 #include "ShaderCompilerAPI.h"
 
+using namespace ArisenEngine;
 using namespace ArisenEngine::Platforms;
 
 extern "C" PLATFORM_DLL bool CompileShaderFromFileSimple(
@@ -18,12 +19,12 @@ extern "C" PLATFORM_DLL bool CompileShaderFromFileSimple(
     bool useDXLayout)
 {
     ShaderCompileParams params{};
-    params.input = input ? std::wstring(input) : std::wstring();
-    params.entry = entry ? std::wstring(entry) : std::wstring(L"main");
-    params.shaderModel = shaderModel ? std::wstring(shaderModel) : std::wstring(L"6_4");
-    params.target = target ? std::wstring(target) : std::wstring(L"-spirv");
-    if (targetEnv && *targetEnv) params.targetEnv = std::wstring(targetEnv);
-    params.optimizeLevel = optimizeLevel ? std::wstring(optimizeLevel) : std::wstring(L"0");
+    params.input = input;
+    params.entry = entry ? String(entry) : String(L"main");
+    params.shaderModel = shaderModel ? String(shaderModel) : String(L"6_4");
+    params.target = target ? String(target) : String(L"-spirv");
+    if (targetEnv && *targetEnv) params.targetEnv = targetEnv;
+    params.optimizeLevel = optimizeLevel ? String(optimizeLevel) : String(L"0");
     params.stage = stage;
 
     if (includes && numIncludes > 0)
@@ -46,7 +47,7 @@ extern "C" PLATFORM_DLL bool CompileShaderFromFileSimple(
     }
     if (output && *output)
     {
-        params.output = std::wstring(output);
+        params.output = String(output);
     }
     if (useDXLayout)
     {
