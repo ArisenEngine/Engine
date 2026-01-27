@@ -165,4 +165,13 @@ struct RHIVkCommandBufferPoolItem {
     RHIResourceHandle registryHandle;
 };
 
+/**
+ * @brief Internal Vulkan implementation data for an individual CommandBuffer.
+ */
+struct RHIVkCommandBufferItem {
+    class RHIVkCommandBuffer* commandBuffer{nullptr};
+    std::string name{"Anonymous"};
+    RHIResourceHandle registryHandle;
+};
+
 } // namespace ArisenEngine::RHI

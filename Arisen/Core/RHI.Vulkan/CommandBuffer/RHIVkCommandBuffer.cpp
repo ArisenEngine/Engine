@@ -16,7 +16,16 @@
 
 ArisenEngine::RHI::RHIVkCommandBuffer::~RHIVkCommandBuffer() noexcept
 {
-    // vkFreeCommandBuffers(m_VkDevice, m_VkCommandPool, 1, &m_VkCommandBuffer);
+    // Ensure resources are released if the buffer is destroyed before submission
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
+    auto* registry = vkDevice->GetResourceRegistry();
+    if (registry)
+    {
+        for (auto h : m_TrackedResourceHandles)
+        {
+            registry->Release(h, RHIQueueType::Graphics, 0);
+        }
+    }
 }
 
 ArisenEngine::RHI::RHIVkCommandBuffer::RHIVkCommandBuffer(RHIVkDevice* device, RHIVkCommandBufferPool* pool)
@@ -632,6 +641,16 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::ResetInternal()
     m_WaitStages.clear();
     m_VkBeginInfo = {};
     m_TrackedDescriptorPools.clear();
+    
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
+    auto* registry = vkDevice->GetResourceRegistry();
+    if (registry)
+    {
+        for (auto h : m_TrackedResourceHandles)
+        {
+            registry->Release(h, RHIQueueType::Graphics, 0);
+        }
+    }
     m_TrackedResourceHandles.clear();
 
     m_VertexBuffers.clear();

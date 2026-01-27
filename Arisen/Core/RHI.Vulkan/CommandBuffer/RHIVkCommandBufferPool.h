@@ -40,7 +40,7 @@ namespace ArisenEngine::RHI
         VkDevice m_VkDevice;
         Containers::Map<std::thread::id, VkCommandPool> m_ThreadPools;
         Containers::Map<std::thread::id, Containers::Vector<RHICommandBuffer*>> m_ThreadFreeBuffers;
-        Containers::Vector<std::unique_ptr<RHIVkCommandBuffer>> m_OwnedCommandBuffers;
+        Containers::Vector<RHICommandBufferHandle> m_OwnedHandles;
         std::mutex m_PoolsMutex;
 
         friend class RHIVkCommandBuffer;

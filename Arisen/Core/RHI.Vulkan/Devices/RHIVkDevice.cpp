@@ -59,6 +59,8 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surf
     m_GPUProgramPool = std::make_unique<RHIResourcePool<RHIGPUProgramHandle, RHIVkGPUProgramPoolItem>>();
     m_CommandBufferPoolPool = std::make_unique<RHIResourcePool<
         RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>>();
+    m_CommandBufferPool = std::make_unique<RHIResourcePool<
+        RHICommandBufferHandle, RHIVkCommandBufferItem>>();
 }
 
 ArisenEngine::RHI::RHIFactory* ArisenEngine::RHI::RHIVkDevice::GetFactory() const
@@ -825,6 +827,21 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseCommandBufferPool(RHICommandBufferPo
         if (!m_CommandBufferPoolPool->Deallocate(handle))
         {
             LOG_WARN("[RHIVkDevice::ReleaseCommandBufferPool]: Failed to deallocate handle (invalid or stale)!");
+        }
+    }
+}
+void ArisenEngine::RHI::RHIVkDevice::ReleaseCommandBuffer(RHICommandBufferHandle handle)
+{
+    auto* item = m_CommandBufferPool->Get(handle);
+    if (item)
+    {
+        if (item->registryHandle.IsValid())
+            m_ResourceRegistry->Release(item->registryHandle, RHIQueueType::Graphics,
+                                        GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+
+        if (!m_CommandBufferPool->Deallocate(handle))
+        {
+            LOG_WARN("[RHIVkDevice::ReleaseCommandBuffer]: Failed to deallocate handle (invalid or stale)!");
         }
     }
 }

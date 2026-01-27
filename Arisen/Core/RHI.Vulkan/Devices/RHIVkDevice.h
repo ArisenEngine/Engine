@@ -138,6 +138,7 @@ namespace ArisenEngine::RHI
         std::unique_ptr<RHIResourcePool<RHIGPUProgramHandle, RHIVkGPUProgramPoolItem>> m_GPUProgramPool;
         std::unique_ptr<RHIResourcePool<RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>>
         m_CommandBufferPoolPool;
+        std::unique_ptr<RHIResourcePool<RHICommandBufferHandle, RHIVkCommandBufferItem>> m_CommandBufferPool;
 
     public:
         // Handle-based operations
@@ -167,6 +168,7 @@ namespace ArisenEngine::RHI
 
         void ReleaseGPUProgram(RHIGPUProgramHandle handle);
         void ReleaseCommandBufferPool(RHICommandBufferPoolHandle handle);
+        void ReleaseCommandBuffer(RHICommandBufferHandle handle);
 
         bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle,
                               RHIRenderPassHandle renderPassHandle) override;
@@ -216,6 +218,11 @@ namespace ArisenEngine::RHI
         RHIResourcePool<RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>* GetCommandBufferPoolPool() const
         {
             return m_CommandBufferPoolPool.get();
+        }
+
+        RHIResourcePool<RHICommandBufferHandle, RHIVkCommandBufferItem>* GetCommandBufferPool() const
+        {
+            return m_CommandBufferPool.get();
         }
 
     public:
