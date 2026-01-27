@@ -73,11 +73,16 @@ namespace ArisenEngine::RHI
         }
         virtual RHICommandBuffer* CreateCommandBuffer() = 0;
         
-    protected:
+    private:
         RHIDevice* m_Device;
         Containers::Vector<RHICommandBuffer*> m_FreeCommandBuffers;
         UInt32 m_MaxFramesInFlight;
         std::mutex m_BuffersMutex;
+
+    protected:
+        RHIDevice* GetDevice() const { return m_Device; }
+        Containers::Vector<RHICommandBuffer*>& GetFreeBuffers() { return m_FreeCommandBuffers; }
+        std::mutex& GetBuffersMutex() { return m_BuffersMutex; }
     };
 
     inline RHICommandBufferPool::RHICommandBufferPool(RHIDevice* device, UInt32 maxFramesInFlight):

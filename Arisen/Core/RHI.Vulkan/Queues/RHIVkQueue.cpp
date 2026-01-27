@@ -79,7 +79,7 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     }
 
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = (static_cast<VkCommandBuffer*>(commandBuffer->GetHandlerPointer()));
+    submitInfo.pCommandBuffers = &vkCmd->m_VkCommandBuffer;
 
     Containers::Vector<VkSemaphore> signalSemaphores;
     Containers::Vector<uint64_t> signalValues;

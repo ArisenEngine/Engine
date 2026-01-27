@@ -43,24 +43,15 @@ m_OwnerThreadId(std::this_thread::get_id())
         }
     }
     
-    m_State = ECommandBufferState::Initial;
+    SetState(ECommandBufferState::Initial);
 }
 
-void* ArisenEngine::RHI::RHIVkCommandBuffer::GetHandle() const
-{
-    return m_VkCommandBuffer;
-}
-
-void* ArisenEngine::RHI::RHIVkCommandBuffer::GetHandlerPointer()
-{
-    return &m_VkCommandBuffer;
-}
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRenderPass(UInt32 frameIndex, RenderPassBeginDesc&& desc)
 {
-    ASSERT(m_State == ECommandBufferState::Recording);
+    ASSERT(GetState() == ECommandBufferState::Recording);
     
-    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* rp = vkDevice->GetRenderPassPool()->Get(desc.renderPass);
     auto* fb = vkDevice->GetFrameBufferPool()->Get(desc.frameBuffer);
 
@@ -99,23 +90,23 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRenderPass(UInt32 frameIndex, R
 
     vkCmdBeginRenderPass(m_VkCommandBuffer, &renderPassInfo, static_cast<VkSubpassContents>(desc.subpassContents));
 
-    m_State = ECommandBufferState::RecordingPass;
+    SetState(ECommandBufferState::RecordingPass);
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::EndRenderPass()
 {
-    ASSERT(m_State == ECommandBufferState::RecordingPass);
+    ASSERT(GetState() == ECommandBufferState::RecordingPass);
     vkCmdEndRenderPass(m_VkCommandBuffer);
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRendering(const RHIRenderingInfo& info)
 {
-    ASSERT(m_State == ECommandBufferState::Recording);
+    ASSERT(GetState() == ECommandBufferState::Recording);
 
     m_VkColorAttachments.clear();
     m_VkColorAttachments.reserve(info.colorAttachmentCount);
 
-    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
 
     for (UInt32 i = 0; i < info.colorAttachmentCount; ++i)
     {
@@ -191,14 +182,14 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRendering(const RHIRenderingInf
         LOG_ERROR("[RHIVkCommandBuffer::BeginRendering]: vkCmdBeginRenderingKHR not found!");
     }
 
-    m_State = ECommandBufferState::RecordingPass;
+    SetState(ECommandBufferState::RecordingPass);
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::EndRendering()
 {
-    ASSERT(m_State == ECommandBufferState::RecordingPass);
+    ASSERT(GetState() == ECommandBufferState::RecordingPass);
 
-    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     if (vkDevice->vkCmdEndRenderingKHR)
     {
         vkDevice->vkCmdEndRenderingKHR(m_VkCommandBuffer);
@@ -224,7 +215,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::TrackDescriptorPoolUse(DescriptorPoo
 void ArisenEngine::RHI::RHIVkCommandBuffer::CaptureResource(RHIBufferHandle buffer)
 {
     if (!buffer.IsValid()) return;
-    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* buf = vkDevice->GetBufferPool()->Get(buffer);
     if (!buf) return;
 
@@ -251,7 +242,7 @@ check_mem:
 void ArisenEngine::RHI::RHIVkCommandBuffer::CaptureResource(RHIImageHandle image)
 {
     if (!image.IsValid()) return;
-    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* img = vkDevice->GetImagePool()->Get(image);
     if (!img) return;
 
@@ -280,7 +271,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::Begin(UInt32 frameIndex)
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::Begin(UInt32 frameIndex, UInt32 commandBufferUsage)
 {
-    ASSERT(m_State == ECommandBufferState::Initial);
+    ASSERT(GetState() == ECommandBufferState::Initial);
 
     m_VkBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     m_VkBeginInfo.flags = commandBufferUsage;
@@ -290,7 +281,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::Begin(UInt32 frameIndex, UInt32 comm
         LOG_FATAL_AND_THROW("failed to begin recording command buffer!");
     }
 
-    m_State = ECommandBufferState::Recording;
+    SetState(ECommandBufferState::Recording);
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::End()
@@ -302,7 +293,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::End()
         LOG_FATAL_AND_THROW("[RHIVkCommandBuffer::End]: failed to record command buffer!");
     }
     
-    m_State = ECommandBufferState::Executable;
+    SetState(ECommandBufferState::Executable);
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::SetViewport(Float32 x, Float32 y, Float32 width, Float32 height, Float32 minDepth, Float32 maxDepth)
@@ -337,7 +328,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::SetScissor(UInt32 offsetX, UInt32 of
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::BindPipeline(UInt32 frameIndex, RHIPipelineHandle pipelineHandle)
 {
-    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* p = vkDevice->GetPipelinePool()->Get(pipelineHandle);
     if (!p || !p->pipeline) return;
 
@@ -385,7 +376,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BindDescriptorSets(UInt32 frameIndex
 void ArisenEngine::RHI::RHIVkCommandBuffer::CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst,
             EImageLayout dstImageLayout, Containers::Vector<BufferImageCopy>&& regions)
 {
-    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* srcBuf = vkDevice->GetBufferPool()->Get(srcBuffer);
     auto* dstImg = vkDevice->GetImagePool()->Get(dst);
 
@@ -441,7 +432,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(
         const auto& barrier = pBufferMemoryBarriers[i];
         
         // Resolve Buffer Handle
-        auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+        auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
         auto* buf = vkDevice->GetBufferPool()->Get(barrier.buffer);
         if (!buf) continue;
 
@@ -461,7 +452,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(
         const auto& barrier = pImageMemoryBarriers[i];
         
         // Resolve Image Handle
-        auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+        auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
         auto* img = vkDevice->GetImagePool()->Get(barrier.image);
         if (!img) continue;
 
@@ -484,7 +475,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(
         static_cast<VkDependencyFlags>(dependency));
 
     // Use extension function
-    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     if (vkDevice->vkCmdPipelineBarrier2KHR)
     {
         vkDevice->vkCmdPipelineBarrier2KHR(m_VkCommandBuffer, &dependencyInfo);
@@ -541,7 +532,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::DrawIndexed(UInt32 indexCount, UInt3
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::BindVertexBuffers(RHIBufferHandle buffer, UInt64 offset)
 {
-    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* buf = vkDevice->GetBufferPool()->Get(buffer);
     if (!buf) return;
 
@@ -552,7 +543,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BindVertexBuffers(RHIBufferHandle bu
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::WaitSemaphore(RHISemaphoreHandle semaphore, EPipelineStageFlag stage)
 {
-    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* sem = vkDevice->GetSemaphorePool()->Get(semaphore);
     if (!sem) return;
 
@@ -572,7 +563,7 @@ ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkCommandBuffer::GetWaitSemaphoresCou
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::SignalSemaphore(RHISemaphoreHandle semaphore)
 {
-    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* sem = vkDevice->GetSemaphorePool()->Get(semaphore);
     if (!sem) return;
 
@@ -597,8 +588,8 @@ const VkPipelineStageFlags* ArisenEngine::RHI::RHIVkCommandBuffer::GetWaitStageM
 void ArisenEngine::RHI::RHIVkCommandBuffer::CopyBuffer(RHIBufferHandle src, UInt64 srcOffset,
                                                        RHIBufferHandle dst, UInt64 dstOffset, UInt64 size)
 {
-    ASSERT(m_State == ECommandBufferState::Recording);
-    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    ASSERT(GetState() == ECommandBufferState::Recording);
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* srcBuf = vkDevice->GetBufferPool()->Get(src);
     auto* dstBuf = vkDevice->GetBufferPool()->Get(dst);
 
@@ -616,7 +607,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::CopyBuffer(RHIBufferHandle src, UInt
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::BindIndexBuffer(RHIBufferHandle indexBuffer, UInt64 offset, EIndexType type)
 { 
-    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* buf = vkDevice->GetBufferPool()->Get(indexBuffer);
     if (!buf) return;
 
@@ -634,7 +625,7 @@ VkFence ArisenEngine::RHI::RHIVkCommandBuffer::GetSubmissionFence() const
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::ResetInternal()
 {
-    if (m_State == ECommandBufferState::Initial) return;
+    if (GetState() == ECommandBufferState::Initial) return;
 
     m_WaitSemaphores.clear();
     m_SignalSemaphores.clear();
@@ -657,6 +648,6 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::ResetInternal()
     m_CurrentPipeline = nullptr;
     
     vkResetCommandBuffer(m_VkCommandBuffer, 0);
-    m_State = ECommandBufferState::Initial;
+    SetState(ECommandBufferState::Initial);
 }
 

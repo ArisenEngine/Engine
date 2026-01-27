@@ -30,11 +30,11 @@ namespace ArisenEngine::RHI
         RHICommandBuffer* GetCommandBuffer(UInt32 currentFrameIndex) override;
         void ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBuffer* commandBuffer) override;
 
+    private:
         void FlushPendingBuffers(ThreadLocalFreeList* tlsList);
-
         RHICommandBuffer* CreateCommandBuffer() override;
         VkCommandPool AcquireThreadCommandPool();
-    private:
+
         void InternalRecycle(RHICommandBuffer* commandBuffer) override;
 
         VkDevice m_VkDevice;
@@ -42,6 +42,8 @@ namespace ArisenEngine::RHI
         Containers::Map<std::thread::id, Containers::Vector<RHICommandBuffer*>> m_ThreadFreeBuffers;
         Containers::Vector<std::unique_ptr<RHIVkCommandBuffer>> m_OwnedCommandBuffers;
         std::mutex m_PoolsMutex;
+
+        friend class RHIVkCommandBuffer;
     };
     
 }

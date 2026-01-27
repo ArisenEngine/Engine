@@ -72,7 +72,7 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::ReleaseCommandBuffer(UInt32 curr
     auto ticket = commandBuffer->GetLatestSubmitTicket();
     
     // Check if the GPU is already done with it.
-    if (m_Device->GetCompletedSubmitTicket() >= ticket)
+    if (GetDevice()->GetCompletedSubmitTicket() >= ticket)
     {
         InternalRecycle(commandBuffer);
         return;
@@ -95,7 +95,7 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::FlushPendingBuffers(ThreadLocalF
 {
     if (!tlsList || tlsList->pendingBuffers.empty()) return;
 
-    auto completed = m_Device->GetCompletedSubmitTicket();
+    auto completed = GetDevice()->GetCompletedSubmitTicket();
     
     for (auto it = tlsList->pendingBuffers.begin(); it != tlsList->pendingBuffers.end(); )
     {
@@ -139,7 +139,7 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::InternalRecycle(RHICommandBuffer
 
 ArisenEngine::RHI::RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::CreateCommandBuffer()
 {
-    auto* vkDevice = dynamic_cast<RHIVkDevice*>(m_Device);
+    auto* vkDevice = dynamic_cast<RHIVkDevice*>(GetDevice());
     ASSERT(vkDevice != nullptr);
     
     // Create the command buffer object BEFORE locking m_PoolsMutex.
@@ -174,7 +174,7 @@ VkCommandPool ArisenEngine::RHI::RHIVkCommandBufferPool::AcquireThreadCommandPoo
         return pool;
     }
 
-    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
 
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
