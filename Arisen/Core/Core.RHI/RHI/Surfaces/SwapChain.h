@@ -1,5 +1,5 @@
 #pragma once
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "RHI/Enums/Image/ColorSpace.h"
 #include "RHI/Enums/Image/EFormat.h"
 #include "RHI/Enums/Swapchain/PresentMode.h"
@@ -139,3 +139,4 @@ namespace ArisenEngine::RHI
         }
     };
 }
+

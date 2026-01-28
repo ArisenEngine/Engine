@@ -3,7 +3,7 @@
 #include <map>
 #include <vector>
 
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "Logger/Logger.h"
 #include "RHI/Enums/Attachment/AttachmentLoadOp.h"
 #include "RHI/Enums/Attachment/AttachmentStoreOp.h"
@@ -68,3 +68,4 @@ namespace ArisenEngine::RHI
         Containers::Vector<std::shared_ptr<GPUSubPass>> m_SubpassesToDispatch;
     };
 }
+

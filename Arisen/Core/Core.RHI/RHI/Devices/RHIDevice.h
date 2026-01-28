@@ -1,5 +1,5 @@
 #pragma once
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "../RHICommon.h"
 #include "RHI/Enums/Memory/EMemoryPropertyFlagBits.h"
 #include "RHI/Program/DescriptorPool.h"
@@ -146,3 +146,4 @@ namespace ArisenEngine::RHI
         
     };
 }
+

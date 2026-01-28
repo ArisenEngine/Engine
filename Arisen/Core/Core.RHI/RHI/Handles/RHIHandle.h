@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 
 namespace ArisenEngine {
 namespace RHI {
@@ -57,3 +57,4 @@ struct RHIResourceTag {};
 using RHIResourceHandle = RHIHandle<RHIResourceTag>;
 } // namespace RHI
 } // namespace ArisenEngine
+

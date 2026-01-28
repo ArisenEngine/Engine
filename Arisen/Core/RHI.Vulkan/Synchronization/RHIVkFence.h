@@ -12,7 +12,7 @@ namespace ArisenEngine::RHI
         RHIVkFence(VkDevice device);
         ~RHIVkFence() noexcept override;
         void* GetHandle() override { return m_VkFence; }
-        void Lock() override;
+        bool Lock() override;
         void Unlock() override;
     private:
         VkFence m_VkFence;

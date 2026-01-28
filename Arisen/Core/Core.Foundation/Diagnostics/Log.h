@@ -1,13 +1,8 @@
 #pragma once
-#include "ILogHandler.h"
-#include "CoreFoundationCommon.h"
-#include <cstdlib>
-#include <stdexcept>
-#include <string>
-#include <format>
-#include <source_location>
 
-namespace ArisenEngine::Infra { class String; }
+#include "../Base/BasicMacros.h"
+#include "../Base/StandardHeaders.h"
+#include "ILogHandler.h"
 
 namespace ArisenEngine
 {
@@ -149,28 +144,3 @@ namespace ArisenEngine
         ArisenEngine::Log::Error(_msg.c_str());                    \
         throw std::runtime_error(_msg);                            \
     } while (0)
-
-#ifndef EXECUTE_CODE
-#define EXECUTE_CODE(code) do { code; } while (0)
-#endif
-
-#ifndef DEBUG_OP
-#ifdef _DEBUG
-#define DEBUG_OP(x) x
-#else
-#define DEBUG_OP(x) ((void)0)
-#endif
-#endif
-
-#undef assert
-#define assert(condition)                                                   \
-do {                                                                    \
-    if (!(condition)) {                                                 \
-        ArisenEngine::Log::Fatal("Assertion failed: (" #condition ")"); \
-        std::abort();                                                   \
-    }                                                                   \
-} while (0)
-
-#ifndef ASSERT
-#define ASSERT(x) DEBUG_OP(assert(x))
-#endif

@@ -4,7 +4,7 @@
 #include <vector>
 #include <string_view>
 #include <utility>
-#include "CoreFoundationCommon.h"
+#include "../Base/BasicMacros.h"
 
 namespace ArisenEngine::Infra
 {

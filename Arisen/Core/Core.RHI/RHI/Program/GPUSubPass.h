@@ -1,6 +1,6 @@
-﻿#pragma once
+#pragma once
 
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "RHI/Enums/Pipeline/EDynamicState.h"
 #include "RHI/Enums/Pipeline/EPipelineBindPoint.h"
 #include "RHI/Enums/Pipeline/EPipelineStageFlag.h"
@@ -95,3 +95,4 @@ namespace ArisenEngine::RHI
         
     };
 }
+

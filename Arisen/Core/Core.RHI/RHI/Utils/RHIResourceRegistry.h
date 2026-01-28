@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 
 #include "../Handles/RHIHandle.h"
 #include "RHIDeferredDeletionQueue.h"
@@ -127,3 +127,4 @@ private:
   Containers::Vector<UInt32> m_FreeList;
 };
 } // namespace ArisenEngine::RHI
+

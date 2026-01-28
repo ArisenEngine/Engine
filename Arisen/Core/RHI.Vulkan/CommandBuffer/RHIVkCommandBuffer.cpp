@@ -10,7 +10,7 @@
 #include "RHI/Synchronization/RHIBufferMemoryBarrier.h"
 #include "RHI/Synchronization/RHIImageMemoryBarrier.h"
 #include "RHI/Synchronization/RHIMemoryBarrier.h"
-#include "Threadable/SynchScope.h"
+#include "Concurrency/SyncScope.h"
 #include "../Memory/RHIVkMemoryAllocator.h"
 
 
@@ -669,4 +669,5 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::ResetInternal()
     vkResetCommandBuffer(m_VkCommandBuffer, 0);
     SetState(ECommandBufferState::Initial);
 }
+
 

@@ -1,9 +1,9 @@
 #pragma once
-#include "Threadable/SemaphoreObject.h"
+#include "Concurrency/Semaphore.h"
 
 namespace ArisenEngine::RHI
 {
-    class RHISemaphore : public Threadable::SemaphoreObject
+    class RHISemaphore : public Concurrency::Semaphore
     {
     public:
         NO_COPY_NO_MOVE(RHISemaphore)
@@ -15,3 +15,4 @@ namespace ArisenEngine::RHI
         void Signal() override = 0;
     };
 }
+

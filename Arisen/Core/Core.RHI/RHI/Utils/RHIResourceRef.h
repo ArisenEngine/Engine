@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 
 #include "../Handles/RHIHandle.h"
 #include "RHIDeferredDeletionQueue.h"
@@ -42,3 +42,4 @@ private:
   RHIResourceHandle m_Handle{};
 };
 } // namespace ArisenEngine::RHI
+

@@ -1,6 +1,6 @@
 #pragma once
 #include "SwapChain.h"
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "RHI/RHIInstance.h"
 
 namespace ArisenEngine::RHI 
@@ -25,3 +25,4 @@ namespace ArisenEngine::RHI
 	
 	};
 }
+

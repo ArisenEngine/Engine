@@ -1,5 +1,5 @@
-﻿#pragma once
-#include "Common/CommandHeaders.h"
+#pragma once
+#include "Base/FoundationMinimal.h"
 #include "RHI/Enums/Attachment/AttachmentDescFlagBits.h"
 #include "RHI/Enums/Attachment/AttachmentLoadOp.h"
 #include "RHI/Enums/Attachment/AttachmentStoreOp.h"
@@ -31,3 +31,4 @@ namespace ArisenEngine::RHI
         virtual void* GetAttachmentReference() = 0;
     };
 }
+

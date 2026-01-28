@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "RHI/Queues/RHIQueueType.h"
 
 #include <functional>
@@ -47,4 +47,5 @@ namespace ArisenEngine::RHI
         virtual void Flush(RHIQueueType queue, RHIGpuTicket ticket) = 0;
     };
 }
+
 

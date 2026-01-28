@@ -12,6 +12,7 @@ add_library(Core.Foundation SHARED
 
 target_include_directories(Core.Foundation PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/Base
 )
 
 target_compile_definitions(Core.Foundation PRIVATE COREFOUNDATION_EXPORTS)

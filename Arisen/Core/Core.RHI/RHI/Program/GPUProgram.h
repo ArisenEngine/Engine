@@ -1,5 +1,5 @@
 #pragma once
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "../RHICommon.h"
 #include "RHI/Enums/Pipeline/EShaderStage.h"
 
@@ -29,3 +29,4 @@ namespace ArisenEngine::RHI
         String m_Name {};
     };
 }
+

@@ -1,7 +1,7 @@
 #pragma once
 #include "DeviceLimits.h"
-#include "Common/CommandHeaders.h"
-#include "Common/PrimitiveTypes.h"
+#include "Base/FoundationMinimal.h"
+#include "Base/PrimitiveTypes.h"
 #include "Devices/RHIDevice.h"
 #include "Enums/Image/EFormat.h"
 #include "Enums/Swapchain/PresentMode.h"
@@ -98,4 +98,5 @@ namespace ArisenEngine::RHI
         virtual void CheckSwapChainCapabilities() = 0;
     };
 }
+
 
