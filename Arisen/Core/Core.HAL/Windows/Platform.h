@@ -1,8 +1,8 @@
 #pragma once
-#include "./Windows.h"
+#include "./Window.h"
 #include "PlatformTypes.h"
 
-#define WINDOES_TEST
+#define WINDOWS_TEST
 
 namespace ArisenEngine::Platforms {
 
