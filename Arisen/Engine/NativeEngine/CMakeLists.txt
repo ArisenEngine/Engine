@@ -16,15 +16,16 @@ target_include_directories(NativeEngine PUBLIC
 
 target_include_directories(NativeEngine PRIVATE
     ${CMAKE_SOURCE_DIR}/Tools/Profiler
-    ${CMAKE_SOURCE_DIR}/Core/Core.Infra
-    ${CMAKE_SOURCE_DIR}/Core/Core.Debugger
-    ${CMAKE_SOURCE_DIR}/Core/Core.Platform
+    ${CMAKE_SOURCE_DIR}/Core/Core.Foundation
+    ${CMAKE_SOURCE_DIR}/Core/Core.Diagnostic
+    ${CMAKE_SOURCE_DIR}/Core/Core.HAL
+    ${CMAKE_SOURCE_DIR}/Core/Core.RHI
     ${CMAKE_SOURCE_DIR}/3rdparty/vulkan/Include
     )  
 
 
 target_compile_definitions(NativeEngine PRIVATE NATIVEENGINE_EXPORTS)
 
-target_link_libraries(NativeEngine PRIVATE Profiler Core.Infra Core.Debugger Core.Platform RHI.DX12 RHI.Vulkan)
+target_link_libraries(NativeEngine PRIVATE Profiler Core.Foundation Core.Diagnostic Core.HAL Core.RHI RHI.DX12 RHI.Vulkan)
 
 set_target_properties(NativeEngine PROPERTIES FOLDER "Runtime")

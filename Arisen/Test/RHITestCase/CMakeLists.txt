@@ -34,15 +34,17 @@ target_include_directories(RHITestCase PRIVATE
     ${CMAKE_SOURCE_DIR}/3rdparty/image
     ${CMAKE_SOURCE_DIR}/3rdparty/vulkan/Include
     ${CMAKE_SOURCE_DIR}/Tools/Profiler
-    ${CMAKE_SOURCE_DIR}/Core/Core.Infra
-    ${CMAKE_SOURCE_DIR}/Core/Core.Debugger
-    ${CMAKE_SOURCE_DIR}/Core/Core.Platform
+    ${CMAKE_SOURCE_DIR}/Core/Core.Foundation
+    ${CMAKE_SOURCE_DIR}/Core/Core.Diagnostic
+    ${CMAKE_SOURCE_DIR}/Core/Core.HAL
+    ${CMAKE_SOURCE_DIR}/Core/Core.RHI
+    ${CMAKE_SOURCE_DIR}/Core/Core.ShaderCompiler
     ${CMAKE_SOURCE_DIR}/Engine/NativeEngine
     )  
 
-# 设置为 Windows GUI 子系统
+# è®¾ç½®ä¸?Windows GUI å­�ç³»ç»?
 set_target_properties(RHITestCase PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
-target_link_libraries(RHITestCase PRIVATE Profiler Core.Infra Core.Debugger Core.Platform RHI.Vulkan NativeEngine)
+target_link_libraries(RHITestCase PRIVATE Profiler Core.Foundation Core.Diagnostic Core.HAL Core.RHI Core.ShaderCompiler RHI.Vulkan NativeEngine)

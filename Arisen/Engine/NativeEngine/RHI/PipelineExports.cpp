@@ -1,7 +1,7 @@
 #include "PipelineExports.h"
-#include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
-#include "../../Core/Core.Infra/RHI/Program/GPUPipelineManager.h"
-#include "../../Core/Core.Infra/RHI/Program/GPUSubPass.h"
+#include "../../Core/Core.RHI/RHI/Devices/RHIFactory.h"
+#include "../../Core/Core.RHI/RHI/Program/GPUPipelineManager.h"
+#include "../../Core/Core.RHI/RHI/Program/GPUSubPass.h"
 #include "../../Core/RHI.Vulkan/Devices/RHIVkDevice.h"
 #include <unordered_map>
 #include <unordered_map>

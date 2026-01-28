@@ -1,9 +1,9 @@
 #include "CommandBufferExports.h"
-#include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
-#include "../../Core/Core.Infra/RHI/CommandBuffer/RHICommandBufferPool.h"
-#include "../../Core/Core.Infra/RHI/Devices/RHIDevice.h"
+#include "../../Core/Core.RHI/RHI/Devices/RHIFactory.h"
+#include "../../Core/Core.RHI/RHI/CommandBuffer/RHICommandBufferPool.h"
+#include "../../Core/Core.RHI/RHI/Devices/RHIDevice.h"
 #include "../../Core/RHI.Vulkan/Devices/RHIVkDevice.h"
-#include "../../Core/Core.Infra/RHI/Handles/RHIHandle.h"
+#include "../../Core/Core.RHI/RHI/Handles/RHIHandle.h"
 
 using namespace ArisenEngine;
 

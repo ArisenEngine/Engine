@@ -1,6 +1,6 @@
 #include "DescriptorExports.h"
 #include "HandlesExports.h"
-#include "../../Core/Core.Infra/RHI/Devices/RHIDevice.h"
+#include "../../Core/Core.RHI/RHI/Devices/RHIDevice.h"
 
 using namespace ArisenEngine;
 

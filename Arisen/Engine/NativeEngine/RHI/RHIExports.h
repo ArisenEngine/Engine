@@ -1,7 +1,7 @@
 #pragma once
 #include "EngineCommon.h"
-#include "../../Core/Core.Infra/RHI/RHIInstance.h"
-#include "../../Core/Core.Infra/RHI/GraphicsAPI.h"
+#include "../../Core/Core.RHI/RHI/RHIInstance.h"
+#include "../../Core/Core.RHI/RHI/GraphicsAPI.h"
 
 extern "C" ENGINE_DLL void RHI_SetGraphicsAPI(ArisenEngine::RHI::GraphicsAPI api);
 

@@ -1,8 +1,8 @@
 #pragma once
 #include "EngineCommon.h"
-#include "../../Core/Core.Infra/RHI/RHIInstance.h"
-#include "../../Core/Core.Infra/RHI/Enums/Swapchain/PresentMode.h"
-#include "../../Core/Core.Infra/RHI/Enums/Image/EFormat.h"
+#include "../../Core/Core.RHI/RHI/RHIInstance.h"
+#include "../../Core/Core.RHI/RHI/Enums/Swapchain/PresentMode.h"
+#include "../../Core/Core.RHI/RHI/Enums/Image/EFormat.h"
 
 // Opaque handle types for C ABI
 typedef void* RHI_InstanceHandle;
