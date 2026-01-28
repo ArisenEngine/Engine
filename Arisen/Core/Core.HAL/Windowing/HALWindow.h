@@ -1,12 +1,8 @@
 #pragma once
-#include "./Window.h"
-#include "PlatformTypes.h"
-
-#define WINDOWS_TEST
+#include "Window.h"
+#include "../Common/PlatformTypes.h"
 
 namespace ArisenEngine::Platforms {
-
-	struct WindowInitInfo;
 	
 	Window CreateNewWindow(const WindowInitInfo* const initInfo = nullptr);
 

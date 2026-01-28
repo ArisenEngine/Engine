@@ -30,8 +30,22 @@ namespace ArisenEngine::Platforms
 
 #else
 
-#errer "platform not implement"
-	// other platform 
+    // Generic definitions for other platforms
+    using WindowProc = void*;
+    using WindowExitResize = void*;
+    using WindowHandle = void*;
+
+	struct WindowInitInfo
+	{
+		WindowProc         callback{ nullptr };
+		WindowExitResize   resizeCallback {nullptr};
+		WindowHandle       parent{ nullptr };
+		const wchar_t*     caption{ nullptr };
+		SInt32                left{ 0 };
+		SInt32                top{ 0 };
+		SInt32                width{ 1920 };
+		SInt32                height{ 1080 };
+	};
 #endif
 
 }

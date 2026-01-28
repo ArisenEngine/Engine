@@ -13,10 +13,14 @@ add_library(Core.HAL SHARED
 target_include_directories(Core.HAL PRIVATE
     ${CMAKE_SOURCE_DIR}/Core/Core.Foundation
     ${CMAKE_SOURCE_DIR}/Core/Core.Diagnostic
+    ${CMAKE_CURRENT_SOURCE_DIR}/Common
+    ${CMAKE_CURRENT_SOURCE_DIR}/Windowing
     )    
 
 target_include_directories(Core.HAL PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/Common
+    ${CMAKE_CURRENT_SOURCE_DIR}/Windowing
 )
 
 target_compile_definitions(Core.HAL PRIVATE COREHAL_EXPORTS)

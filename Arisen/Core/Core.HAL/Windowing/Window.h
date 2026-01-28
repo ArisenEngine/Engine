@@ -29,7 +29,4 @@ namespace ArisenEngine::Platforms
 
 		WindowID m_ID{InvalidID};
 	};
-
-	
 }
-
