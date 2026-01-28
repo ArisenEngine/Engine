@@ -1,4 +1,4 @@
-#include "RHI/RHIInstance.h"
+#include "RHI/Instance/RHIInstance.h"
 
 namespace ArisenEngine::RHI
 {

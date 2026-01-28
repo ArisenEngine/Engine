@@ -1,5 +1,5 @@
 #pragma once
-#include "RHIDescriptorUpdateInfo.h"
+#include "../Descriptors/RHIDescriptorUpdateInfo.h"
 #include "Base/FoundationMinimal.h"
 #include "RHI/Enums/Image/ESampleCountFlagBits.h"
 #include "RHI/Enums/Image/EFormat.h"

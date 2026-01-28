@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Base/FoundationMinimal.h"
-#include "RHI/Utils/RHIDeferredDeletionQueue.h"
+#include "RHI/Resources/RHIDeferredDeletionQueue.h"
 #include <functional>
 #include <mutex>
 #include <utility>

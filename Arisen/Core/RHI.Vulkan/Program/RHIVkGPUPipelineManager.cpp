@@ -3,8 +3,9 @@
 #include "RHIVkGPUPipelineStateObject.h"
 #include "../Devices/RHIVkDevice.h"
 #include "Logger/Logger.h"
-#include "RHI/Program/GPUPipelineStateObject.h"
-#include "RHI/Program/GPUSubPass.h"
+#include "RHI/Pipeline/GPUPipeline.h"
+#include "RHI/Pipeline/GPUPipelineStateObject.h"
+#include "RHI/Pipeline/GPUSubPass.h"
 
 ArisenEngine::RHI::RHIVkGPUPipelineManager::RHIVkGPUPipelineManager(RHIVkDevice* device, UInt32 maxFramesInFlight): GPUPipelineManager(maxFramesInFlight),
 m_Device(device)

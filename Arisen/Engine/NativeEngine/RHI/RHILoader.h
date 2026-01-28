@@ -1,6 +1,6 @@
 #pragma once
-#include "RHI/GraphicsAPI.h"
-#include "RHI/RHIInstance.h"
+#include "RHI/Definitions/GraphicsAPI.h"
+#include "RHI/Instance/RHIInstance.h"
 #include "../EngineCommon.h"
 
 

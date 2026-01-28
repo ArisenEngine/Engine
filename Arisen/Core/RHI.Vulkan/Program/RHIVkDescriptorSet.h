@@ -1,7 +1,7 @@
 #pragma once
 #include "RHIVkDescriptorPool.h"
 #include "Base/FoundationMinimal.h"
-#include "RHI/Program/RHIDescriptorSet.h"
+#include "RHI/Descriptors/RHIDescriptorSet.h"
 
 namespace ArisenEngine::RHI
 {

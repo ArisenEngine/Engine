@@ -1,14 +1,14 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
 #include "RHI/Devices/RHIDevice.h"
-#include "RHI/Utils/RHIDeferredDeletionQueue.h"
-#include "RHI/Utils/RHIResourceRegistry.h"
+#include "RHI/Resources/RHIDeferredDeletionQueue.h"
+#include "RHI/Resources/RHIResourceRegistry.h"
 #include "../Surfaces/RHIVkSurface.h"
 #include "../CommandBuffer/RHIVkCommandBufferPool.h"
 #include "../Program/RHIVkGPUPipelineManager.h"
 #include "../Program/RHIVkGPUProgram.h"
 #include "../Program/RHIVkDescriptorPool.h"
-#include "RHI/Utils/RHIResourcePool.h"
+#include "RHI/Resources/RHIResourcePool.h"
 #include "../Handles/RHIVkResourcePools.h"
 #include <mutex>
 #include <memory>

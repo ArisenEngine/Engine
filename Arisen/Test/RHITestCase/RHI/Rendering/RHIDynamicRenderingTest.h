@@ -16,12 +16,12 @@
 #include "RHI/Surfaces/Surface.h"
 #include "RHI/Surfaces/FrameBuffer.h"
 #include "RHI/Handles/RHIHandle.h"
-#include "RHI/RHICommon.h"
+#include "RHI/Definitions/RHICommon.h"
 #include "RHI/Synchronization/RHIImageMemoryBarrier.h"
 #include "RHI/CommandBuffer/RHICommandBuffer.h"
 #include "RHI/CommandBuffer/RHICommandBufferPool.h"
-#include "RHI/Program/GPUPipelineManager.h"
-#include "RHI/Program/GPUPipelineStateObject.h"
+#include "RHI/Pipeline/GPUPipeline.h"
+#include "RHI/Pipeline/GPUPipelineStateObject.h"
 
 // Engine Exports
 #include "../../Engine/NativeEngine/RHI/RHIExports.h"

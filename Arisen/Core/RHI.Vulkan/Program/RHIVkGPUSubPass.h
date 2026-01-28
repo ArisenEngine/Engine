@@ -2,7 +2,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "RHIVkGPURenderPass.h"
-#include "RHI/Program/GPUSubPass.h"
+#include "RHI/Pipeline/GPUSubPass.h"
 
 namespace ArisenEngine::RHI
 {

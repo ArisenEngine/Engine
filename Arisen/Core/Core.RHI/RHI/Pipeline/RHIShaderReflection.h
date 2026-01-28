@@ -1,5 +1,5 @@
 #pragma once
-#include "../RHICommon.h"
+#include "../Definitions/RHICommon.h"
 #include "../Enums/Pipeline/EDescriptorType.h"
 #include "../Enums/Pipeline/ProgramStage.h"
 #include <vector>

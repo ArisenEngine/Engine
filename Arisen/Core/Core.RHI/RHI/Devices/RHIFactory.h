@@ -1,9 +1,9 @@
 #pragma once
 #include "Base/FoundationMinimal.h"
-#include "../RHICommon.h"
+#include "../Definitions/RHICommon.h"
 #include "../Handles/RHIHandle.h"
 #include <string>
-#include "../ResourceDescriptors.h"
+#include "../Descriptors/ResourceDescriptors.h"
 
 namespace ArisenEngine::RHI
 {

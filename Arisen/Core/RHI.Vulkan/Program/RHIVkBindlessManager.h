@@ -2,7 +2,7 @@
 #include <vulkan/vulkan.h>
 #include <mutex>
 #include "Containers/Containers.h"
-#include "RHI/RHICommon.h"
+#include "RHI/Definitions/RHICommon.h"
 #include "../Handles/RHIVkResourcePools.h" // Includes RHIHandle.h
 
 namespace ArisenEngine::RHI

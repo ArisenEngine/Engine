@@ -2,7 +2,7 @@
 
 #include "Framework/TestRunner.h"
 #include "RHI/RHILoader.h"
-#include "RHI/RHIInstance.h"
+#include "RHI/Instance/RHIInstance.h"
 #include "Windows/RenderWindowAPI.h"
 #include "Windows/PlatformTypes.h"
 #include "../../../Engine/NativeEngine/RHI/InstanceExports.h"

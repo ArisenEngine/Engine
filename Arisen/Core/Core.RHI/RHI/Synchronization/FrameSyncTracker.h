@@ -4,7 +4,7 @@
 #include <atomic>
 #include <memory>
 
-#include "CoreRHICommon.h"
+#include "../Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI
 {

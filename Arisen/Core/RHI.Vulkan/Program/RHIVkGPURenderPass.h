@@ -10,7 +10,7 @@
 #include "RHI/Enums/Image/ESampleCountFlagBits.h"
 #include "RHI/Enums/Image/EFormat.h"
 #include "RHI/Enums/Image/EImageLayout.h"
-#include "RHI/Program/GPURenderPass.h"
+#include "RHI/Pipeline/GPURenderPass.h"
 
 namespace ArisenEngine::RHI
 {

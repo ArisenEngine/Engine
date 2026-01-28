@@ -1,5 +1,5 @@
 #pragma once
-#include "CoreRHICommon.h"
+#include "../Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI
 {

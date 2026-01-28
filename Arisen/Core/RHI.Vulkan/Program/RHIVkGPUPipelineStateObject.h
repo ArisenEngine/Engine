@@ -1,8 +1,8 @@
 #pragma once
-#include "RHI/Program/GPUPipelineStateObject.h"
+#include "RHI/Pipeline/GPUPipelineStateObject.h"
 #include <vulkan/vulkan_core.h>
 
-#include "RHI/Program/RHIDescriptorUpdateInfo.h"
+#include "RHI/Descriptors/RHIDescriptorUpdateInfo.h"
 #include "RHI/Handles/RHIHandle.h"
 
 namespace ArisenEngine::RHI
