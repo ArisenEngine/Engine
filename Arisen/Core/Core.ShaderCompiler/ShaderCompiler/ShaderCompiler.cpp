@@ -1,7 +1,7 @@
 #include "ShaderCompilerAPI.h"
 
 using namespace ArisenEngine;
-using namespace ArisenEngine::Platforms;
+using namespace ArisenEngine::HAL;
 
 extern "C" SHADERCOMPILER_DLL bool CompileShaderFromFileSimple(
     const wchar_t* input,

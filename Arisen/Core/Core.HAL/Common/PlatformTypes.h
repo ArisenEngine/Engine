@@ -1,7 +1,7 @@
 #pragma once
 #include "Base/FoundationMinimal.h"
 
-namespace ArisenEngine::Platforms
+namespace ArisenEngine::HAL
 {
 
 #ifdef _WIN64

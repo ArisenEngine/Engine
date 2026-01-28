@@ -83,7 +83,7 @@ namespace ArisenEngine::Testing
          */
         bool CreateAppWindow(UInt32 width = 640, UInt32 height = 480)
         {
-            m_WindowId = Platforms::CreateRenderWindow(nullptr, TestWndProc, width, height);
+            m_WindowId = HAL::CreateRenderWindow(nullptr, TestWndProc, width, height);
             // Platforms assumes Assert on failure, but returns InvalidID (~0) if Assert disabled/ignored
             // Valid valid IDs are 0, 1, ...
             // We check against ~0u (UINT32_MAX)
@@ -191,7 +191,7 @@ namespace ArisenEngine::Testing
 
             if (m_WindowId != ~0u)
             {
-                Platforms::RemoveRenderSurface(m_WindowId);
+                HAL::RemoveRenderSurface(m_WindowId);
                 m_WindowId = ~0u;
             }
         }
@@ -207,3 +207,4 @@ namespace ArisenEngine::Testing
         virtual void TeardownTest() {}
     };
 }
+

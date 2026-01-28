@@ -23,7 +23,7 @@ Surface(std::move(id), instance), m_SwapChainSupportDetail({}), m_SwapChain(null
 {
     VkWin32SurfaceCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-    createInfo.hwnd = Platforms::GetWindowHandle(id);
+    createInfo.hwnd = HAL::GetWindowHandle(id);
     createInfo.hinstance = GetModuleHandle(nullptr);
     
     if (vkCreateWin32SurfaceKHR(static_cast<VkInstance>(m_Instance->GetHandle()), &createInfo, nullptr, &m_VkSurface) != VK_SUCCESS)
@@ -45,8 +45,8 @@ void RHI::RHIVkSurface::InitSwapChain()
     auto rhiInstance = static_cast<RHIVkInstance*>(m_Instance);
     m_SwapChain = new RHIVkSwapChain(rhiInstance->GetLogicalDevice(std::move(m_RenderWindowId)),
         this, rhiInstance->GetMaxFramesInFlight());
-    auto width = Platforms::GetWindowWidth(m_RenderWindowId);
-    auto height = Platforms::GetWindowHeight(m_RenderWindowId);
+    auto width = HAL::GetWindowWidth(m_RenderWindowId);
+    auto height = HAL::GetWindowHeight(m_RenderWindowId);
     
     m_SwapChain->SetResolution(width, height);
 

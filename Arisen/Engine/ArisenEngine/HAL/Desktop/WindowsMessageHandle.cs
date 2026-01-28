@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 using ArisenEngine.Rendering;
 using Logger = ArisenEngine.Debugger.Logger;
 
-namespace ArisenEngine.Platforms;
+namespace ArisenEngine.HAL;
 
 internal sealed class WindowsMessageHandle : MessageHandler
 {

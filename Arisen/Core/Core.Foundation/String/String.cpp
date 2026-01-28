@@ -3,7 +3,7 @@
 #include <cwchar>
 #include <algorithm>
 
-namespace ArisenEngine::Infra
+namespace ArisenEngine
 {
     String::String(const char* str) : m_Data(str ? str : "") {}
 

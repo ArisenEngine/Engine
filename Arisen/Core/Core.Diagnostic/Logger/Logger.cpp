@@ -84,7 +84,7 @@ bool Logger::Initialize()
 		spdlog::set_pattern("[%Y-%m-%d %T.%e][process %p][thread %t][%l] %v");
 
         // Register with Foundation Bridge
-        ArisenEngine::Log::SetHandler(this);
+        ArisenEngine::Diagnostics::Log::SetHandler(this);
 	}
 	catch (const spdlog::spdlog_ex &ex)	
 	{
@@ -104,7 +104,7 @@ Logger& Logger::GetInstance()
 
 void Logger::Shutdown()
 {
-    ArisenEngine::Log::SetHandler(nullptr);
+    ArisenEngine::Diagnostics::Log::SetHandler(nullptr);
     if (auto* logger = spdlog::default_logger_raw())
     {
         logger->flush();

@@ -2,7 +2,7 @@
 #include "../CoreHALCommon.h"
 #include "Base/FoundationMinimal.h"
 
-namespace ArisenEngine::Platforms
+namespace ArisenEngine::HAL
 {
 	using WindowID = UInt32;
 

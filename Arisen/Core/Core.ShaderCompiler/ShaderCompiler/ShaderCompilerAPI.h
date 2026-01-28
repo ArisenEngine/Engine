@@ -34,7 +34,7 @@ namespace fs { class path {}; }
 
 using Microsoft::WRL::ComPtr;
 
-namespace ArisenEngine::Platforms
+namespace ArisenEngine::HAL
 {
 #if defined(ARISEN_AUTOBINDING)
     inline String GetStagePrefix(RHI::ProgramStage stage)
@@ -106,25 +106,25 @@ namespace ArisenEngine::Platforms
         HRESULT hres = DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&s_DXCLibrary));
         if (FAILED(hres))
         {
-            LOG_ERROR("[ArisenEngine::Platforms::InitDXC]: Could not init DXC Library");
+            LOG_ERROR("[ArisenEngine::HAL::InitDXC]: Could not init DXC Library");
             return;
         }
 
         hres = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&s_DXCompiler));
         if (FAILED(hres))
         {
-            LOG_ERROR("[ArisenEngine::Platforms::InitDXC]: Could not init DXC Compiler");
+            LOG_ERROR("[ArisenEngine::HAL::InitDXC]: Could not init DXC Compiler");
             return;
         }
 
         hres = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&s_DXCUtils));
         if (FAILED(hres))
         {
-            LOG_ERROR("[ArisenEngine::Platforms::InitDXC]: Could not init DXC Utility");
+            LOG_ERROR("[ArisenEngine::HAL::InitDXC]: Could not init DXC Utility");
             return;
         }
 
-        LOG_DEBUG("[ArisenEngine::Platforms::InitDXC]: DXC initialized.");
+        LOG_DEBUG("[ArisenEngine::HAL::InitDXC]: DXC initialized.");
     }
 
     extern "C" SHADERCOMPILER_DLL void ReleaseDXC();
@@ -134,7 +134,7 @@ namespace ArisenEngine::Platforms
         s_DXCLibrary.Reset();
         s_DXCUtils.Reset();
 
-        LOG_DEBUG("[Platforms::ReleaseDXC]: DXC released.");
+        LOG_DEBUG("[HAL::ReleaseDXC]: DXC released.");
     }
 
     extern "C" SHADERCOMPILER_DLL bool CompileShaderFromFile(ShaderCompileParams&& params, ShaderCompilerOutput& output);
@@ -151,7 +151,7 @@ namespace ArisenEngine::Platforms
         if (FAILED(hres))
         {
             output.msgOut = "Could not load shader file.";
-            LOG_ERROR("[Platforms::CompileShaderFromFile]: Failed to load shader: " + params.input);
+            LOG_ERROR("[HAL::CompileShaderFromFile]: Failed to load shader: " + params.input);
             return false;
         }
 

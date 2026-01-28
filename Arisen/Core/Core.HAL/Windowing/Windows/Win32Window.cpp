@@ -1,7 +1,7 @@
 #include "../Window.h"
 #include "../../Common/PlatformTypes.h"
 
-namespace ArisenEngine::Platforms
+namespace ArisenEngine::HAL
 {
     Window::Window(WindowID id) : m_ID{id}
     {

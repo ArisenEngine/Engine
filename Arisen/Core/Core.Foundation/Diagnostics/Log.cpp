@@ -1,7 +1,7 @@
 #include "Log.h"
 #include "../String/String.h"
 
-namespace ArisenEngine
+namespace ArisenEngine::Diagnostics
 {
     ILogHandler* Log::s_Handler = nullptr;
 

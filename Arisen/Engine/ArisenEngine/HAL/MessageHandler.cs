@@ -1,6 +1,6 @@
 using ArisenEngine.Rendering;
 
-namespace ArisenEngine.Platforms;
+namespace ArisenEngine.HAL;
 
 internal abstract class MessageHandler
 {

@@ -4,7 +4,7 @@
 #include "../Base/StandardHeaders.h"
 #include "ILogHandler.h"
 
-namespace ArisenEngine
+namespace ArisenEngine::Diagnostics
 {
     class FOUNDATION_DLL Log
     {
@@ -100,32 +100,32 @@ namespace ArisenEngine
 }
 
 // Basic logging macros
-#define LOG_TRACE(msg) ArisenEngine::Log::Trace(msg)
-#define LOG_DEBUG(msg) ArisenEngine::Log::Debug(msg)
-#define LOG_INFO(msg)  ArisenEngine::Log::Info(msg)
-#define LOG_WARN(msg)  ArisenEngine::Log::Warning(msg)
-#define LOG_ERROR(msg) ArisenEngine::Log::Error(msg)
-#define LOG_FATAL(msg) ArisenEngine::Log::Fatal(msg)
+#define LOG_TRACE(msg) ArisenEngine::Diagnostics::Log::Trace(msg)
+#define LOG_DEBUG(msg) ArisenEngine::Diagnostics::Log::Debug(msg)
+#define LOG_INFO(msg)  ArisenEngine::Diagnostics::Log::Info(msg)
+#define LOG_WARN(msg)  ArisenEngine::Diagnostics::Log::Warning(msg)
+#define LOG_ERROR(msg) ArisenEngine::Diagnostics::Log::Error(msg)
+#define LOG_FATAL(msg) ArisenEngine::Diagnostics::Log::Fatal(msg)
 
 // Formatted logging macros
-#define LOG_TRACEF(fmt, ...) ArisenEngine::Log::TraceF(fmt, __VA_ARGS__)
-#define LOG_DEBUGF(fmt, ...) ArisenEngine::Log::DebugF(fmt, __VA_ARGS__)
-#define LOG_INFOF(fmt, ...)  ArisenEngine::Log::InfoF(fmt, __VA_ARGS__)
-#define LOG_WARNF(fmt, ...)  ArisenEngine::Log::WarningF(fmt, __VA_ARGS__)
-#define LOG_ERRORF(fmt, ...) ArisenEngine::Log::ErrorF(fmt, __VA_ARGS__)
-#define LOG_FATALF(fmt, ...) ArisenEngine::Log::FatalF(fmt, __VA_ARGS__)
+#define LOG_TRACEF(fmt, ...) ArisenEngine::Diagnostics::Log::TraceF(fmt, __VA_ARGS__)
+#define LOG_DEBUGF(fmt, ...) ArisenEngine::Diagnostics::Log::DebugF(fmt, __VA_ARGS__)
+#define LOG_INFOF(fmt, ...)  ArisenEngine::Diagnostics::Log::InfoF(fmt, __VA_ARGS__)
+#define LOG_WARNF(fmt, ...)  ArisenEngine::Diagnostics::Log::WarningF(fmt, __VA_ARGS__)
+#define LOG_ERRORF(fmt, ...) ArisenEngine::Diagnostics::Log::ErrorF(fmt, __VA_ARGS__)
+#define LOG_FATALF(fmt, ...) ArisenEngine::Diagnostics::Log::FatalF(fmt, __VA_ARGS__)
 
 #define LOG_FATAL_AND_THROW(msg)           \
     do                                     \
     {                                      \
-        ArisenEngine::Log::Fatal(msg);      \
+        ArisenEngine::Diagnostics::Log::Fatal(msg);      \
         throw std::runtime_error(msg);     \
     } while (0)
 
 #define LOG_ERROR_AND_THROW(msg)           \
     do                                     \
     {                                      \
-        ArisenEngine::Log::Error(msg);      \
+        ArisenEngine::Diagnostics::Log::Error(msg);      \
         throw std::runtime_error(msg);     \
     } while (0)
 
@@ -133,7 +133,7 @@ namespace ArisenEngine
     do                                                             \
     {                                                              \
         std::string _msg = std::format(fmt, __VA_ARGS__);           \
-        ArisenEngine::Log::Fatal(_msg.c_str());                    \
+        ArisenEngine::Diagnostics::Log::Fatal(_msg.c_str());                    \
         throw std::runtime_error(_msg);                            \
     } while (0)
 
@@ -141,6 +141,6 @@ namespace ArisenEngine
     do                                                             \
     {                                                              \
         std::string _msg = std::format(fmt, __VA_ARGS__);           \
-        ArisenEngine::Log::Error(_msg.c_str());                    \
+        ArisenEngine::Diagnostics::Log::Error(_msg.c_str());                    \
         throw std::runtime_error(_msg);                            \
     } while (0)

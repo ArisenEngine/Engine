@@ -1,6 +1,6 @@
-﻿using ArisenBinding.NativePlatform.ArisenEngine.Platforms;
+﻿using ArisenBinding.NativePlatform.ArisenEngine.HAL;
 using ArisenEngine.Debugger;
-using ArisenEngine.Platforms;
+using ArisenEngine.HAL;
 
 namespace ArisenEngine.Rendering;
 

@@ -22,11 +22,11 @@
   <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
 </PropertyGroup>
   <ItemGroup>
-    <Folder Include="Platforms\Android\" />
-    <Folder Include="Platforms\IOS\" />
-    <Folder Include="Platforms\PS5\" />
-    <Folder Include="Platforms\Switch\" />
-    <Folder Include="Platforms\XBox\" />
+    <Folder Include="HAL\Android\" />
+    <Folder Include="HAL\IOS\" />
+    <Folder Include="HAL\PS5\" />
+    <Folder Include="HAL\Switch\" />
+    <Folder Include="HAL\XBox\" />
     <Folder Include="Serialization\Meta\" />
     <Folder Include="Hook\" />
   </ItemGroup>
