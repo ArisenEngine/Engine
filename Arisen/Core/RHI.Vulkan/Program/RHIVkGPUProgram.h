@@ -1,8 +1,8 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
 #include "Logger/Logger.h"
-#include "RHI/Program/GPUProgram.h"
-#include "RHI/Program/RHIShaderReflection.h"
+#include "RHI/Pipeline/GPUProgram.h"
+#include "RHI/Pipeline/RHIShaderReflection.h"
 
 namespace ArisenEngine::RHI
 {

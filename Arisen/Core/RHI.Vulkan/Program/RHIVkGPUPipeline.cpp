@@ -1,7 +1,7 @@
 #include "RHIVkGPUPipeline.h"
 
 #include "RHIVkGPUPipelineStateObject.h"
-#include "RHI/Program/GPUPipelineStateObject.h"
+#include "RHI/Pipeline/GPUPipelineStateObject.h"
 #include "../Devices/RHIVkDevice.h"
 
 ArisenEngine::RHI::RHIVkGPUPipeline::~RHIVkGPUPipeline() noexcept

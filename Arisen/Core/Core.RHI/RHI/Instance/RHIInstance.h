@@ -1,10 +1,10 @@
 #pragma once
-#include "DeviceLimits.h"
+#include "../Definitions/DeviceLimits.h"
 #include "Base/FoundationMinimal.h"
 #include "Base/PrimitiveTypes.h"
-#include "Devices/RHIDevice.h"
-#include "Enums/Image/EFormat.h"
-#include "Enums/Swapchain/PresentMode.h"
+#include "../Devices/RHIDevice.h"
+#include "../Enums/Image/EFormat.h"
+#include "../Enums/Swapchain/PresentMode.h"
 
 
 namespace ArisenEngine::RHI
@@ -13,7 +13,7 @@ namespace ArisenEngine::RHI
     class Surface;
 }
 
-#include "CoreRHICommon.h"
+#include "../Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI
 {

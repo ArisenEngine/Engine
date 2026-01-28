@@ -2,7 +2,7 @@
 #include <string>
 #include <vulkan/vulkan.h>
 #include "./Common.h"
-#include "RHI/RHIInstance.h"
+#include "RHI/Instance/RHIInstance.h"
 #include "Logger/Logger.h"
 #include "Devices/RHIVkDevice.h"
 #include "Surfaces/RHIVkSurface.h"

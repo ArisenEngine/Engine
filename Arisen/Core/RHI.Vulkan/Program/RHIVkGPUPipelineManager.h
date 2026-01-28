@@ -1,7 +1,7 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
 #include "RHIVkGPURenderPass.h"
-#include "RHI/Program/GPUPipelineManager.h"
+#include "RHI/Pipeline/GPUPipelineManager.h"
 
 namespace ArisenEngine::RHI
 {

@@ -1,5 +1,5 @@
 #pragma once
-#include "../RHICommon.h"
+#include "../Definitions/RHICommon.h"
 #include "../Devices/RHIDevice.h"
 #include "RHI/Enums/Sampler/EBorderColor.h"
 #include "RHI/Enums/Sampler/ECompareOp.h"

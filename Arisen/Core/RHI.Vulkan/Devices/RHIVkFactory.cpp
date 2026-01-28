@@ -5,7 +5,7 @@
 #include "../Program/RHIVkGPURenderPass.h"
 // #include "../Surfaces/RHIVkFrameBufferPoolItem.h"
 #include "../Handles/RHIVkResourcePools.h"
-#include "RHI/RHIInstance.h"
+#include "RHI/Instance/RHIInstance.h"
 #include "../VkInitializer.h"
 
 namespace ArisenEngine::RHI

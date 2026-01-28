@@ -1,5 +1,5 @@
 #pragma once
-#include "RHI/Program/RHISampler.h"
+#include "RHI/Samplers/RHISampler.h"
 #include "vulkan/vulkan_core.h"
 
 namespace ArisenEngine::RHI

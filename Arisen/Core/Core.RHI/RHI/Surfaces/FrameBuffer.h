@@ -1,6 +1,6 @@
 #pragma once
 #include "Base/FoundationMinimal.h"
-#include "RHI/Program/GPURenderPass.h"
+#include "../Pipeline/GPURenderPass.h"
 #include "../Handles/RHIHandle.h"
 
 namespace ArisenEngine::RHI

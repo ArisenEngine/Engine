@@ -4,11 +4,11 @@
 
 #include "Base/FoundationMinimal.h"
 #include "RHI/Queues/IRHIQueue.h"
-#include "RHI/Utils/RHIDeferredDeletionQueue.h"
+#include "RHI/Resources/RHIDeferredDeletionQueue.h"
 
 #include <atomic>
 #include <mutex>
-#include "RHI/Utils/RHIResourceRegistry.h"
+#include "RHI/Resources/RHIResourceRegistry.h"
 
 namespace ArisenEngine::RHI
 {

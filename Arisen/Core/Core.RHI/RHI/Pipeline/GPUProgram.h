@@ -1,6 +1,6 @@
 #pragma once
 #include "Base/FoundationMinimal.h"
-#include "../RHICommon.h"
+#include "../Definitions/RHICommon.h"
 #include "RHI/Enums/Pipeline/EShaderStage.h"
 
 namespace ArisenEngine::RHI

@@ -1,7 +1,7 @@
 #pragma once
 #include "RHIVkGPUPipelineManager.h"
-#include "RHI/Program/GPUPipeline.h"
-#include "RHI/Program/GPUSubPass.h"
+#include "RHI/Pipeline/GPUPipeline.h"
+#include "RHI/Pipeline/GPUSubPass.h"
 
 namespace ArisenEngine::RHI
 {

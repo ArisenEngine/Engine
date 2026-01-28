@@ -1,6 +1,6 @@
 #pragma once
 #include "DescriptorPool.h"
-#include "../RHICommon.h"
+#include "../Definitions/RHICommon.h"
 
 namespace ArisenEngine::RHI
 {

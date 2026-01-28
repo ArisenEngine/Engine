@@ -1,9 +1,9 @@
 #pragma once
 #include "EngineCommon.h"
 #include "../../Core/Core.RHI/RHI/Devices/RHIDevice.h"
-#include "../../Core/Core.RHI/RHI/DeviceLimits.h"
-#include "../../Core/Core.RHI/RHI/Program/RHISampler.h"
-#include "../../Core/Core.RHI/RHI/RHICommon.h"
+#include "../../Core/Core.RHI/RHI/Definitions/DeviceLimits.h"
+#include "../../Core/Core.RHI/RHI/Samplers/RHISampler.h"
+#include "../../Core/Core.RHI/RHI/Definitions/RHICommon.h"
 
 #include "RHIHandleExports.h"
 

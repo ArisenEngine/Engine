@@ -1,9 +1,9 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include "RHI/Program/DescriptorPool.h"
-#include "RHI/Utils/RHIDeferredDeletionQueue.h"
+#include "RHI/Descriptors/DescriptorPool.h"
+#include "RHI/Resources/RHIDeferredDeletionQueue.h"
 #include <mutex>
-#include "RHI/Program/RHIDescriptorUpdateInfo.h"
+#include "RHI/Descriptors/RHIDescriptorUpdateInfo.h"
 
 namespace ArisenEngine::RHI
 {

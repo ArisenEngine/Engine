@@ -1,12 +1,12 @@
 #pragma once
 #include "Base/FoundationMinimal.h"
-#include "../RHICommon.h"
+#include "../Definitions/RHICommon.h"
 #include "RHI/Enums/Memory/EMemoryPropertyFlagBits.h"
-#include "RHI/Program/DescriptorPool.h"
-#include "RHI/DeviceLimits.h"
+#include "RHI/Descriptors/DescriptorPool.h"
+#include "RHI/Definitions/DeviceLimits.h"
 #include "RHI/Queues/IRHIQueue.h"
 #include "RHI/Handles/RHIHandle.h"
-#include "RHI/ResourceDescriptors.h"
+#include "RHI/Descriptors/ResourceDescriptors.h"
 
 namespace ArisenEngine::RHI
 {

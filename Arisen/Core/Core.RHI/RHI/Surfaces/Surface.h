@@ -1,7 +1,7 @@
 #pragma once
 #include "SwapChain.h"
 #include "Base/FoundationMinimal.h"
-#include "RHI/RHIInstance.h"
+#include "../Instance/RHIInstance.h"
 
 namespace ArisenEngine::RHI 
 {

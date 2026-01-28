@@ -1,6 +1,6 @@
 #pragma once
 #include "Base/FoundationMinimal.h"
-#include "../Program/GPURenderPass.h"
+#include "../Pipeline/GPURenderPass.h"
 #include "../Surfaces/FrameBuffer.h"
 #include "RHI/Devices/RHIDevice.h"
 #include "RHI/Enums/Pipeline/ECommandBufferUsageFlagBits.h"
