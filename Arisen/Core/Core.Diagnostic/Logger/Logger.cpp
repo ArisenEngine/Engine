@@ -143,32 +143,41 @@ void Logger::BindCallback(LogCallback callback)
 	m_LogCallback = callback;
 }
 
-void Logger::Log(LogLevel level, const char* msg, const char* thread_name, const char* cs_trace)
+void Logger::Log(LogLevel level, const char* msg, const LogSourceLocation& location, const char* thread_name)
 {
     spdlog::level::level_enum spd_level;
-    bool include_trace = true;
-
     switch (level)
     {
-    case LogLevel::Trace: spd_level = spdlog::level::trace; break;
-    case LogLevel::Debug: spd_level = spdlog::level::debug; include_trace = false; break;
-    case LogLevel::Info:  spd_level = spdlog::level::info;  include_trace = false; break;
+    case LogLevel::Trace:   spd_level = spdlog::level::trace; break;
+    case LogLevel::Debug:   spd_level = spdlog::level::debug; break;
+    case LogLevel::Info:    spd_level = spdlog::level::info; break;
     case LogLevel::Warning: spd_level = spdlog::level::warn; break;
-    case LogLevel::Error: spd_level = spdlog::level::err; break;
-    case LogLevel::Fatal: spd_level = spdlog::level::critical; break;
+    case LogLevel::Error:   spd_level = spdlog::level::err; break;
+    case LogLevel::Fatal:   spd_level = spdlog::level::critical; break;
     default: spd_level = spdlog::level::info; break;
     }
 
-    std::string msg_str = msg ? msg : "";
-    std::string trace_str = GetStacktrace() + (cs_trace ? cs_trace : "");
-    std::string content = include_trace ? (msg_str + "\n" + trace_str + "\n") : msg_str;
-
-    spdlog::default_logger()->log(spd_level, content);
+    spdlog::source_loc loc(location.file, static_cast<int>(location.line), location.function);
+    
+    // Use spdlog's native logging with source location
+    if (auto logger = spdlog::default_logger())
+    {
+        logger->log(loc, spd_level, msg ? msg : "");
+    }
 
     if (m_LogCallback)
     {
-        std::stringstream ss;
-        ss << std::this_thread::get_id();
-        m_LogCallback(static_cast<UInt32>(level), ss.str().c_str(), msg_str.c_str(), trace_str.c_str());
+        // For callback, we still provide a thread ID string if not provided
+        std::string tid;
+        if (thread_name) {
+            tid = thread_name;
+        } else {
+            std::stringstream ss;
+            ss << std::this_thread::get_id();
+            tid = ss.str();
+        }
+        
+        // Callback doesn't get structured location yet, keep it simple for now or update callback signature later if needed
+        m_LogCallback(static_cast<UInt32>(level), tid.c_str(), msg ? msg : "", "");
     }
 }

@@ -13,10 +13,17 @@ namespace ArisenEngine
         Fatal = 0x20
     };
 
+    struct LogSourceLocation
+    {
+        const char* file;
+        const char* function;
+        uint32_t line;
+    };
+
     class ILogHandler
     {
     public:
         virtual ~ILogHandler() = default;
-        virtual void Log(LogLevel level, const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr) = 0;
+        virtual void Log(LogLevel level, const char* msg, const LogSourceLocation& location, const char* thread_name = nullptr) = 0;
     };
 }
