@@ -15,14 +15,15 @@ target_include_directories(RHI.DX12 PUBLIC
 )
 
 target_include_directories(RHI.DX12 PRIVATE
-    ${CMAKE_SOURCE_DIR}/Core/Core.Infra
-    ${CMAKE_SOURCE_DIR}/Core/Core.Debugger
-    ${CMAKE_SOURCE_DIR}/Core/Core.Platform
+    ${CMAKE_SOURCE_DIR}/Core/Core.Foundation
+    ${CMAKE_SOURCE_DIR}/Core/Core.Diagnostic
+    ${CMAKE_SOURCE_DIR}/Core/Core.HAL
+    ${CMAKE_SOURCE_DIR}/Core/Core.RHI
     )  
 
 
 target_compile_definitions(RHI.DX12 PRIVATE RHIDX12_EXPORTS)
 
-target_link_libraries(RHI.DX12 PUBLIC Core.Infra Core.Debugger)
+target_link_libraries(RHI.DX12 PUBLIC Core.Foundation Core.Diagnostic Core.HAL Core.RHI)
 
 set_target_properties(RHI.DX12 PROPERTIES FOLDER "RHI")

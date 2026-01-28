@@ -1,8 +1,8 @@
 #include "HandlesExports.h"
 
 #include "../../Core/RHI.Vulkan/Devices/RHIVkDevice.h"
-#include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
-#include "../../Core/Core.Infra/RHI/Devices/RHIFactory.h"
+#include "../../Core/Core.RHI/RHI/Devices/RHIFactory.h"
+#include "../../Core/Core.RHI/RHI/Devices/RHIFactory.h"
 #include "../../../Core/RHI.Vulkan/Handles/RHIVkResourcePools.h"
 #include "RHINativeBridge.h"
 #include <unordered_map>

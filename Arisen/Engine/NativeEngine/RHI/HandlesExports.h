@@ -1,7 +1,7 @@
 #pragma once
 #include "EngineCommon.h"
-#include "../../Core/Core.Infra/RHI/Devices/RHIDevice.h"
-#include "../../Core/Core.Infra/RHI/Handles/RHIHandle.h"
+#include "../../Core/Core.RHI/RHI/Devices/RHIDevice.h"
+#include "../../Core/Core.RHI/RHI/Handles/RHIHandle.h"
 
 #include "RHIHandleExports.h"
 namespace ArisenEngine { namespace RHI { class ImageView; } }

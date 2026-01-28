@@ -17,9 +17,10 @@ target_include_directories(RHI.Vulkan PUBLIC
 
 target_include_directories(RHI.Vulkan PRIVATE
     ${CMAKE_SOURCE_DIR}/3rdparty/vulkan/Include
-    ${CMAKE_SOURCE_DIR}/Core/Core.Infra
-    ${CMAKE_SOURCE_DIR}/Core/Core.Debugger
-    ${CMAKE_SOURCE_DIR}/Core/Core.Platform
+    ${CMAKE_SOURCE_DIR}/Core/Core.Foundation
+    ${CMAKE_SOURCE_DIR}/Core/Core.Diagnostic
+    ${CMAKE_SOURCE_DIR}/Core/Core.HAL
+    ${CMAKE_SOURCE_DIR}/Core/Core.RHI
     )  
 
 target_compile_definitions(RHI.Vulkan PRIVATE RHIVULKAN_EXPORTS)
@@ -30,7 +31,7 @@ target_link_directories(RHI.Vulkan PUBLIC
 )
 
 target_link_libraries(RHI.Vulkan PUBLIC 
-    Core.Infra Core.Debugger Core.Platform 
+    Core.Foundation Core.Diagnostic Core.HAL Core.RHI
     vulkan-1 
     debug spirv-cross-cored optimized spirv-cross-core
     debug spirv-cross-glsld optimized spirv-cross-glsl

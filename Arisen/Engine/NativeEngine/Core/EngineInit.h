@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Logger/Logger.h"
+#include "Diagnostics/Log.h"
 #include <cstdlib>
 #include <csignal>
 #include <exception>
@@ -28,10 +29,12 @@ namespace ArisenEngine::Core
          */
         static bool Initialize()
         {
-            if (!Debugger::Logger::GetInstance().Initialize())
+            if (!Diagnostics::Logger::GetInstance().Initialize())
             {
                 return false;
             }
+            
+            Log::SetHandler(&Diagnostics::Logger::GetInstance());
             
             SetupCrashHandlers();
             return true;
@@ -44,7 +47,7 @@ namespace ArisenEngine::Core
         {
             try
             {
-                Debugger::Logger::Shutdown();
+                Diagnostics::Logger::Shutdown();
             }
             catch (...)
             {

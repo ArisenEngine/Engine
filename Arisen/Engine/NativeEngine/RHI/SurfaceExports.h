@@ -1,7 +1,7 @@
 #pragma once
 #include "EngineCommon.h"
 
-#include "../../Core/Core.Infra/RHI/Surfaces/SwapChain.h"
+#include "../../Core/Core.RHI/RHI/Surfaces/SwapChain.h"
 #include "RHIHandleExports.h"
 
 extern "C" ENGINE_DLL RHI_SurfaceHandle RHI_Instance_GetSurface(RHI_InstanceHandle instance, unsigned int windowId);

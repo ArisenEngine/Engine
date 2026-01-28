@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # 查找 DXTest 源码
 collect_sources(DXTEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-# 可执行目标
+# 可执行目�?
 add_executable(DXTest ${DXTEST_SOURCES})
 
 # 设置预编译头
@@ -20,18 +20,18 @@ target_include_directories(DXTest PUBLIC
 
 target_include_directories(DXTest PRIVATE
     ${CMAKE_SOURCE_DIR}/Tools/Profiler
-    ${CMAKE_SOURCE_DIR}/Core/Core.Infra
-    ${CMAKE_SOURCE_DIR}/Core/Core.Debugger
-    ${CMAKE_SOURCE_DIR}/Core/Core.Platform
+    ${CMAKE_SOURCE_DIR}/Core/Core.Foundation
+    ${CMAKE_SOURCE_DIR}/Core/Core.Diagnostic
+    ${CMAKE_SOURCE_DIR}/Core/Core.HAL
     ${CMAKE_SOURCE_DIR}/Engine/NativeEngine
     )  
 
-# 设置为 Windows GUI 子系统
+# 设置�?Windows GUI 子系�?
 set_target_properties(DXTest PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
-target_link_libraries(DXTest PRIVATE Profiler Core.Infra Core.Debugger Core.Platform RHI.DX12 NativeEngine)
+target_link_libraries(DXTest PRIVATE Profiler Core.Foundation Core.Diagnostic Core.HAL RHI.DX12 NativeEngine)
 target_link_libraries(DXTest PRIVATE
     d3d12
     dxgi

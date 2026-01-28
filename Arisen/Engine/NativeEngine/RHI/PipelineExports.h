@@ -1,8 +1,8 @@
 #pragma once
 #include "EngineCommon.h"
-#include "../../Core/Core.Infra/RHI/Program/GPURenderPass.h"
-#include "../../Core/Core.Infra/RHI/Program/GPUPipeline.h"
-#include "../../Core/Core.Infra/RHI/Program/GPUPipelineStateObject.h"
+#include "../../Core/Core.RHI/RHI/Program/GPURenderPass.h"
+#include "../../Core/Core.RHI/RHI/Program/GPUPipeline.h"
+#include "../../Core/Core.RHI/RHI/Program/GPUPipelineStateObject.h"
 
 #include "RHIHandleExports.h"
 

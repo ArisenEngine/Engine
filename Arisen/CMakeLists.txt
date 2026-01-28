@@ -60,12 +60,12 @@ if(PLATFORM_UPPER STREQUAL "WINDOWS")
 elseif(PLATFORM_UPPER STREQUAL "ANDROID")
     set(PLATFORM_MACRO "ANDROID_PLATFORM")
     set(ENGINE_LIB_SUFFIX ".so")
-    # 没有正式支持的 Android RID，跳过 dotnet runtime 设置
+    # 没有正式支持�?Android RID，跳�?dotnet runtime 设置
     set(DOTNET_RUNTIME "")
 elseif(PLATFORM_UPPER STREQUAL "APPLE")
     set(PLATFORM_MACRO "APPLE_PLATFORM")
     set(ENGINE_LIB_SUFFIX ".a")
-    set(DOTNET_RUNTIME "osx-x64") # 如果是 ARM，可以用 osx-arm64
+    set(DOTNET_RUNTIME "osx-x64") # 如果�?ARM，可以用 osx-arm64
 elseif(PLATFORM_UPPER STREQUAL "LINUX")
     set(PLATFORM_MACRO "LINUX_PLATFORM")
     set(ENGINE_LIB_SUFFIX ".so")
@@ -147,11 +147,13 @@ add_subdirectory(3rdparty/tracy)
 set_target_properties(TracyClient PROPERTIES FOLDER "3rdparty")
 add_subdirectory(Tools/Profiler)
 
-add_subdirectory(Core/Core.Infra)
+add_subdirectory(Core/Core.Foundation)
 add_subdirectory(3rdparty/spdlog)
 set_target_properties(spdlog PROPERTIES FOLDER "3rdparty")
-add_subdirectory(Core/Core.Debugger)
-add_subdirectory(Core/Core.Platform)
+add_subdirectory(Core/Core.Diagnostic)
+add_subdirectory(Core/Core.HAL)
+add_subdirectory(Core/Core.RHI)
+add_subdirectory(Core/Core.ShaderCompiler)
 add_subdirectory(Core/RHI.DX12)
 add_subdirectory(Core/RHI.Vulkan)
 add_subdirectory(Engine/NativeEngine)
@@ -188,9 +190,9 @@ add_custom_target(BuildBindingGenerator
     VERBATIM
     USES_TERMINAL
 )
-add_dependencies(BuildBindingGenerator Core.Infra)
-add_dependencies(BuildBindingGenerator Core.Debugger)
-add_dependencies(BuildBindingGenerator Core.Platform)
+add_dependencies(BuildBindingGenerator Core.Foundation)
+add_dependencies(BuildBindingGenerator Core.Diagnostic)
+add_dependencies(BuildBindingGenerator Core.HAL)
 add_dependencies(BuildBindingGenerator NativeEngine)
 set_target_properties(BuildBindingGenerator PROPERTIES FOLDER "CMakeProcess")
 

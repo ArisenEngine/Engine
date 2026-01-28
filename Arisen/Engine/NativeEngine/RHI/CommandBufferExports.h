@@ -1,6 +1,6 @@
 #pragma once
 #include "EngineCommon.h"
-#include "../../Core/Core.Infra/RHI/CommandBuffer/RHICommandBuffer.h"
+#include "../../Core/Core.RHI/RHI/CommandBuffer/RHICommandBuffer.h"
 
 #include "RHIHandleExports.h"
 
