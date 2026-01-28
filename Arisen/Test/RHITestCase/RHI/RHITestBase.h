@@ -3,8 +3,8 @@
 #include "Framework/TestRunner.h"
 #include "RHI/RHILoader.h"
 #include "RHI/Instance/RHIInstance.h"
-#include "Windows/RenderWindowAPI.h"
-#include "Windows/PlatformTypes.h"
+#include "Windowing/RenderWindowAPI.h"
+#include "Common/PlatformTypes.h"
 #include "../../../Engine/NativeEngine/RHI/InstanceExports.h"
 #include "../../../Engine/NativeEngine/RHI/RHIExports.h"
 

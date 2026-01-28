@@ -1,7 +1,6 @@
-#include "Platform.h"
-#include "PlatformTypes.h"
+#include "../HALWindow.h"
+#include "../../Common/PlatformTypes.h"
 #include "Base/FoundationMinimal.h"
-#include "Windows.h"
 
 #ifndef UNICODE
 #define UNICODE 
@@ -195,7 +194,7 @@ namespace ArisenEngine::Platforms
 
 		}
 
-		WindowHandle GetWindowHandle(WindowID id)
+		WindowHandle GetWindowHandleInternal(WindowID id)
 		{
 			return GetInfoFromId(id).hwnd;
 		}
@@ -283,18 +282,18 @@ namespace ArisenEngine::Platforms
 		const SInt32 height{ rect.bottom - rect.top };
 
 		info.hwnd = CreateWindowExW(
-			/* DWORD dwExStyle */        0,
-			/* LPCTSTR lpClassName */    wc.lpszClassName,
-			/* LPCTSTR lpWindowName */   caption,
-			/* DWORD dwStyle */          info.style,
-			/* int x */                  left,
-			/* int y */                  top,
-			/* int nWidth */             width,
-			/* int nHeight */            height,
-			/* HWND hWndParent */        parent,
-			/* HMENU hMenu */            NULL,
-			/* HINSTANCE hInstance */    NULL,
-			/* LPVOID lpParam */         NULL
+			0,
+			wc.lpszClassName,
+			caption,
+			info.style,
+			left,
+			top,
+			width,
+			height,
+			parent,
+			NULL,
+			NULL,
+			NULL
 		);
 
 		if (info.hwnd)
@@ -371,7 +370,7 @@ namespace ArisenEngine::Platforms
 	void* Window::Handle() const
 	{
 		assert(IsValid());
-		return GetWindowHandle(m_ID);
+		return GetWindowHandleInternal(m_ID);
 	}
 
 	void Window::SetCaption(const wchar_t* caption) const

@@ -5,8 +5,8 @@
 #include "Logger/Logger.h"
 #include "RHI/Enums/Image/CompositeAlphaFlagBits.h"
 #include "RHI/Enums/Image/EImageUsageFlagBits.h"
-#include "Windows/Platform.h"
-#include "Windows/RenderWindowAPI.h"
+#include "Windowing/HALWindow.h"
+#include "Windowing/RenderWindowAPI.h"
 
 
 using namespace ArisenEngine;
