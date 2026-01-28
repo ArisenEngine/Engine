@@ -1,6 +1,6 @@
 #pragma once
 #include "../CoreHALCommon.h"
-#include "Common/PrimitiveTypes.h"
+#include "Base/FoundationMinimal.h"
 
 namespace ArisenEngine::Platforms
 {
@@ -32,3 +32,4 @@ namespace ArisenEngine::Platforms
 
 	
 }
+

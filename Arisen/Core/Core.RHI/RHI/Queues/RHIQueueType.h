@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 
 namespace ArisenEngine::RHI
 {
@@ -12,4 +12,5 @@ namespace ArisenEngine::RHI
         Present,
     };
 }
+
 

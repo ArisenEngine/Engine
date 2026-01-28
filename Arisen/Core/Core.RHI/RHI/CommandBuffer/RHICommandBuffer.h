@@ -1,5 +1,5 @@
 #pragma once
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "../Program/GPURenderPass.h"
 #include "../Surfaces/FrameBuffer.h"
 #include "RHI/Devices/RHIDevice.h"
@@ -220,3 +220,4 @@ namespace ArisenEngine::RHI
         return m_State == ECommandBufferState::Executable;
     }
 }
+

@@ -1,5 +1,5 @@
 #pragma once
-#include "Common/PrimitiveTypes.h"
+#include "Base/PrimitiveTypes.h"
 #include "../Enums/Image/EImageAspectFlagBits.h"
 
 namespace ArisenEngine::RHI
@@ -12,3 +12,4 @@ namespace ArisenEngine::RHI
         UInt32              layerCount;
     } RHIImageSubresourceRange;
 }
+

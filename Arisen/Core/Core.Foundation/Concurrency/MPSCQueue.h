@@ -1,14 +1,12 @@
 #pragma once
-#include "CoreFoundationCommon.h"
-#include <atomic>
-#include <utility>
-#include <cstddef>
+#include "../Base/FoundationMinimal.h"
 
-namespace ArisenEngine::Threadable::Containers
+namespace ArisenEngine::Concurrency
 {
     // Forward declaration
     class AtomicNodePool;
-	// Intrusive node used by ConcurrentLinkList
+
+	// Intrusive node used by MPSCQueue
 	class FOUNDATION_DLL AtomicNode
 	{
 		friend class AtomicNodePool;
@@ -31,8 +29,7 @@ namespace ArisenEngine::Threadable::Containers
     {
     public:
         AtomicNodePool() noexcept : _freeHead(nullptr) {}
-        AtomicNodePool(const AtomicNodePool&) = delete;
-        AtomicNodePool& operator=(const AtomicNodePool&) = delete;
+        NO_COPY_NO_MOVE(AtomicNodePool)
 
         // Acquire a node from the pool, or allocate if empty
         AtomicNode* Acquire() noexcept;
@@ -42,29 +39,25 @@ namespace ArisenEngine::Threadable::Containers
         void Preallocate(std::size_t count);
 
     private:
-        std::atomic<AtomicNode*> _freeHead; // Treiber stack head; multiple consumers pop, single producer push is supported
+        std::atomic<AtomicNode*> _freeHead; // Treiber stack head
     };
 
-    // Global default pool accessor (lazy-initialized in cpp)
+    // Global default pool accessor
     FOUNDATION_DLL AtomicNodePool& GetGlobalAtomicNodePool() noexcept;
 
 	class FOUNDATION_DLL MPSCQueue
 	{
 	public:
 		MPSCQueue() noexcept;
-		MPSCQueue(const MPSCQueue&) = delete;
-		MPSCQueue& operator=(const MPSCQueue&) = delete;
+		NO_COPY_NO_MOVE(MPSCQueue)
 
 		void Enqueue(AtomicNode* node) noexcept;
 		AtomicNode* TryDequeue() noexcept;
 		bool Empty() const noexcept;
 
-        // Batch dequeue up to maxCount nodes; returns number dequeued.
-        // Outputs first/last pointers for efficient bulk processing.
+        // Batch dequeue
         std::size_t TryDequeueAll(AtomicNode*& first, AtomicNode*& last, std::size_t maxCount = (std::size_t)-1) noexcept;
 
-        // Configure spin behavior when waiting for producer to link prev->_next.
-        // maxSpins == 0 means infinite (but may still yield).
         void ConfigureSpin(unsigned maxSpins, bool yieldOnSpin) noexcept { _spinMax = maxSpins; _yieldOnSpin = yieldOnSpin; }
         void SetPauseHook(void(*hook)()) noexcept { _pauseHook = hook; }
 
@@ -78,13 +71,12 @@ namespace ArisenEngine::Threadable::Containers
 		}
 
 	private:
-		AtomicNode _stub;                     // sentinel node
+		AtomicNode _stub;
 		std::atomic<AtomicNode*> _head{ nullptr };
 		AtomicNode* _tail{ nullptr };
 
-        // Spin control
-        unsigned _spinMax = 0;          // 0 => infinite spin (with optional yield)
+        unsigned _spinMax = 0;
         bool _yieldOnSpin = true;
-        void (*_pauseHook)() = nullptr; // optional pause/yield hook
+        void (*_pauseHook)() = nullptr;
 	};
 }

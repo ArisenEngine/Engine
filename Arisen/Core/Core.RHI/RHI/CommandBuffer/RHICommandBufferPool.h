@@ -1,6 +1,6 @@
 #pragma once
 #include "RHICommandBuffer.h"
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "RHI/Devices/RHIDevice.h"
 #include <mutex>
 
@@ -90,3 +90,4 @@ namespace ArisenEngine::RHI
     {
     }
 }
+

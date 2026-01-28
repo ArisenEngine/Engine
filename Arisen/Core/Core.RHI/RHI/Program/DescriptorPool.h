@@ -1,6 +1,6 @@
 #pragma once
 #include "RHIDescriptorSet.h"
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "../Enums/Pipeline/EDescriptorType.h"
 
 namespace ArisenEngine::RHI
@@ -27,3 +27,4 @@ namespace ArisenEngine::RHI
         virtual void UpdateDescriptorSet(UInt32 poolId, UInt32 setIndex, GPUPipelineStateObject* pso) = 0;
     };
 }
+

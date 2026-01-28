@@ -2,7 +2,7 @@
 #include "GPUPipeline.h"
 #include "../Handles/RHIHandle.h"
 #include "GPUProgram.h"
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "RHI/Enums/Pipeline/EDynamicState.h"
 #include "RHI/Enums/Pipeline/EPrimitiveTopology.h"
 
@@ -43,3 +43,4 @@ namespace ArisenEngine::RHI
             
     }
 }
+

@@ -1,5 +1,5 @@
-﻿#pragma once
-#include "Common/PrimitiveTypes.h"
+#pragma once
+#include "Base/PrimitiveTypes.h"
 #include "../Enums/Pipeline/EAccessFlag.h"
 #include "../Enums/Pipeline/EPipelineStageFlag.h"
 #include "../Enums/Pipeline/EPipelineStageFlag.h"
@@ -18,3 +18,4 @@ namespace ArisenEngine::RHI
         EPipelineStageFlag   dstStageMask;
     } RHIBufferMemoryBarrier;
 }
+

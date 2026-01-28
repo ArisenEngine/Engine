@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "../CoreDiagnosticCommon.h"
 #include "../../Core.Foundation/Diagnostics/ILogHandler.h"
 

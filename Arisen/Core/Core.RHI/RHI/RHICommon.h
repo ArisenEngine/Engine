@@ -1,5 +1,5 @@
 #pragma once
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "Enums/Pipeline/EShaderStage.h"
 
 namespace ArisenEngine::RHI
@@ -14,3 +14,4 @@ namespace ArisenEngine::RHI
     } GPUProgramDesc;
     
 }
+

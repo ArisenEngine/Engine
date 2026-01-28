@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./Common/CommandHeaders.h"
+#include "./Base/FoundationMinimal.h"
 
 #ifdef RHIDX12_EXPORTS
 

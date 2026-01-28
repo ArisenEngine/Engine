@@ -1,5 +1,5 @@
 #pragma once
-#include "Common/PrimitiveTypes.h"
+#include "Base/PrimitiveTypes.h"
 
 typedef struct RHISamplerLimits
 {
@@ -12,3 +12,4 @@ typedef struct RHIDeviceLimits
     RHISamplerLimits sampler;
     
 } RHIDeviceLimits;
+

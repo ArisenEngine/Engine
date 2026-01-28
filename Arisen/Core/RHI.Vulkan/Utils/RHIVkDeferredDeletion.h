@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "RHI/Utils/RHIDeferredDeletionQueue.h"
 #include <functional>
 #include <mutex>
@@ -26,4 +26,5 @@ namespace ArisenEngine::RHI
         std::mutex m_Mutex;
     };
 }
+
 

@@ -1,6 +1,6 @@
 #pragma once
 #include "RHI/Queues/IRHIQueue.h"
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include <atomic>
 #include <memory>
 
@@ -28,3 +28,4 @@ namespace ArisenEngine::RHI
         UInt32 m_FrameCount = 0;
     };
 }
+

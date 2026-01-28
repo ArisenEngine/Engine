@@ -1,17 +1,18 @@
 #pragma once
-#include "Threadable/SynchObject.h"
+#include "Concurrency/SyncObject.h"
 
 namespace ArisenEngine::RHI
 {
-    class RHIFence : public virtual Threadable::SynchObject
+    class RHIFence : public virtual Concurrency::SyncObject
     {
     public:
         NO_COPY_NO_MOVE(RHIFence)
-        RHIFence(): SynchObject() {};
+        RHIFence() = default;
         ~RHIFence() noexcept override = default;
 
         void* GetHandle() override { return nullptr; }
-        void Lock() override  { }
+        bool Lock() override  { return true; }
         void Unlock() override { }
     };
 }
+

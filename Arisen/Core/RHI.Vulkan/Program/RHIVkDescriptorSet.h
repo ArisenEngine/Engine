@@ -1,6 +1,6 @@
 #pragma once
 #include "RHIVkDescriptorPool.h"
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "RHI/Program/RHIDescriptorSet.h"
 
 namespace ArisenEngine::RHI
@@ -16,3 +16,4 @@ namespace ArisenEngine::RHI
         VkDescriptorSet m_DescriptorSet;
     };
 }
+

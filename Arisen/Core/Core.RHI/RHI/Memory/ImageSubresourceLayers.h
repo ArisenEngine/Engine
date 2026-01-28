@@ -1,6 +1,6 @@
 #pragma once
 #include "../Enums/Image/EImageAspectFlagBits.h"
-#include "Common/PrimitiveTypes.h"
+#include "Base/PrimitiveTypes.h"
 
 namespace ArisenEngine::RHI
 {
@@ -13,3 +13,4 @@ namespace ArisenEngine::RHI
         
     } ImageSubresourceLayers;
 }
+

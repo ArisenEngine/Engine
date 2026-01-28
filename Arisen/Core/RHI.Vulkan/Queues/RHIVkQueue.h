@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan_core.h>
 
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "RHI/Queues/IRHIQueue.h"
 #include "RHI/Utils/RHIDeferredDeletionQueue.h"
 
@@ -60,4 +60,5 @@ namespace ArisenEngine::RHI
         std::atomic<RHIGpuTicket> m_CompletedSubmitTicket { 0 };
     };
 }
+
 

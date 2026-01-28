@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "Containers/Containers.h"
 #include "../Handles/RHIHandle.h"
-#include "Threadable/AtomicStack.h"
+#include "Concurrency/AtomicStack.h"
 #include <atomic>
 #include <mutex>
 
@@ -51,7 +51,7 @@ public:
       return GetEntry(idx)->nextFreeIndex;
     });
 
-    if (index == Threadable::Containers::AtomicStack::InvalidIndex) {
+    if (index == Concurrency::Containers::AtomicStack::InvalidIndex) {
       // Growth requires a lock as it's a rare and heavy operation
       std::lock_guard<std::mutex> lock(m_GrowMutex);
 
@@ -60,7 +60,7 @@ public:
         return GetEntry(idx)->nextFreeIndex;
       });
 
-      if (index == Threadable::Containers::AtomicStack::InvalidIndex) {
+      if (index == Concurrency::Containers::AtomicStack::InvalidIndex) {
         Grow();
         index = m_FreeStack.Pop([this](uint32_t idx) {
           return GetEntry(idx)->nextFreeIndex;
@@ -200,9 +200,10 @@ private:
   std::atomic<PoolEntry*> m_Blocks[MaxBlocks]{};
   std::atomic<uint32_t> m_BlockCount{0};
   
-  Threadable::Containers::AtomicStack m_FreeStack;
+  Concurrency::Containers::AtomicStack m_FreeStack;
   std::mutex m_GrowMutex; // Only for serialized growth
 };
 
 } // namespace RHI
 } // namespace ArisenEngine
+

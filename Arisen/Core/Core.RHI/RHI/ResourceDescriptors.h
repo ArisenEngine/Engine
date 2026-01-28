@@ -1,5 +1,5 @@
 #pragma once
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "Enums/Image/EImageTiling.h"
 #include "RHI/Enums/Image/EImageType.h"
 #include "RHI/Enums/Image/EImageUsageFlagBits.h"
@@ -53,3 +53,4 @@ struct ImageViewDesc {
 };
 
 } // namespace ArisenEngine::RHI
+

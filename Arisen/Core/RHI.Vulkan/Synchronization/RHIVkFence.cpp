@@ -21,9 +21,9 @@ ArisenEngine::RHI::RHIVkFence::~RHIVkFence() noexcept
     LOG_DEBUG("## Destroy Vulkan Fence ##");
 }
 
-void ArisenEngine::RHI::RHIVkFence::Lock()
+bool ArisenEngine::RHI::RHIVkFence::Lock()
 {
-    vkWaitForFences(m_VkDevice, 1, &m_VkFence, VK_TRUE, UINT64_MAX);
+    return vkWaitForFences(m_VkDevice, 1, &m_VkFence, VK_TRUE, UINT64_MAX) == VK_SUCCESS;
 }
 
 void ArisenEngine::RHI::RHIVkFence::Unlock()

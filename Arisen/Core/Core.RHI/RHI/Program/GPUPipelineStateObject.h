@@ -1,6 +1,6 @@
-﻿#pragma once
+#pragma once
 #include "RHIDescriptorUpdateInfo.h"
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "RHI/Enums/Image/ESampleCountFlagBits.h"
 #include "RHI/Enums/Image/EFormat.h"
 #include "RHI/Enums/Pipeline/EBlendFactor.h"
@@ -214,3 +214,4 @@ namespace ArisenEngine::RHI
         Float32 m_BlendConstants[4] {1.f, 1.f, 1.f, 1.f};
     };
 }
+

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./Common/CommandHeaders.h"
+#include "./Base/FoundationMinimal.h"
 #include <vulkan/vulkan_core.h>
 
 #ifdef RHIVULKAN_EXPORTS
@@ -62,4 +62,5 @@ namespace ArisenEngine::RHI
         "VK_KHR_surface"
     };
 }
+
 

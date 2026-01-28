@@ -1,6 +1,6 @@
 #include "Platform.h"
 #include "PlatformTypes.h"
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "Windows.h"
 
 #ifndef UNICODE

@@ -1,5 +1,5 @@
 #pragma once
-#include "Common/CommandHeaders.h"
+#include "Base/FoundationMinimal.h"
 #include "../RHICommon.h"
 #include "../Handles/RHIHandle.h"
 #include <string>
@@ -52,3 +52,4 @@ namespace ArisenEngine::RHI
         virtual void ReleaseFence(RHIFenceHandle fence) = 0;
     };
 }
+

@@ -1,5 +1,5 @@
-﻿#pragma once
-#include "Common/CommandHeaders.h"
+#pragma once
+#include "Base/FoundationMinimal.h"
 #include "RHI/Program/GPURenderPass.h"
 #include "../Handles/RHIHandle.h"
 
@@ -45,3 +45,4 @@ namespace ArisenEngine::RHI
     {
     }
 }
+
