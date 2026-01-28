@@ -34,7 +34,7 @@ namespace ArisenEngine::Core
                 return false;
             }
             
-            Log::SetHandler(&Diagnostics::Logger::GetInstance());
+            Diagnostics::Log::SetHandler(&Diagnostics::Logger::GetInstance());
             
             SetupCrashHandlers();
             return true;

@@ -12,5 +12,5 @@
 
 namespace ArisenEngine
 {
-    using String = ArisenEngine::Infra::String;
+    // String is now directly in ArisenEngine namespace
 }

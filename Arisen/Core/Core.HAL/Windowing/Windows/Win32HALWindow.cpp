@@ -11,7 +11,7 @@
 #endif
 
 
-namespace ArisenEngine::Platforms
+namespace ArisenEngine::HAL
 {
 	using namespace ArisenEngine::Containers;
 

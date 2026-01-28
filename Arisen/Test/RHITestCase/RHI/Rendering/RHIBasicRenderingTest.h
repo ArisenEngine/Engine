@@ -127,7 +127,7 @@ namespace ArisenEngine::Testing
             m_Context.bShouldResize = false;
 
             InitRenderContext();
-            Platforms::InitDXC();
+            HAL::InitDXC();
             InitShaderProgram();
             InitPipelineStates();
             InitBuffer();
@@ -393,7 +393,7 @@ namespace ArisenEngine::Testing
             auto path = currentPath + L"\\" + shaderFileName + L".hlsl";
 
             // Vertex Shader
-            Platforms::ShaderCompileParams vertexParams
+            HAL::ShaderCompileParams vertexParams
             {
                 path,
                 L"Vert",
@@ -408,8 +408,8 @@ namespace ArisenEngine::Testing
                 true
             };
 
-            Platforms::ShaderCompilerOutput outputVertex;
-            if (!Platforms::CompileShaderFromFile(std::move(vertexParams), outputVertex) || outputVertex.codePointer == nullptr || outputVertex.codeSize == 0)
+            HAL::ShaderCompilerOutput outputVertex;
+            if (!HAL::CompileShaderFromFile(std::move(vertexParams), outputVertex) || outputVertex.codePointer == nullptr || outputVertex.codeSize == 0)
             {
                 LOG_ERROR("Vertex shader compilation failed.");
                 throw std::exception("Vertex shader compilation failed.");
@@ -436,7 +436,7 @@ namespace ArisenEngine::Testing
             }
 
             // Fragment Shader
-            Platforms::ShaderCompileParams fragmentParams
+            HAL::ShaderCompileParams fragmentParams
             {
                 path,
                 L"Frag",
@@ -451,8 +451,8 @@ namespace ArisenEngine::Testing
                 true
             };
 
-            Platforms::ShaderCompilerOutput outputfragment;
-            if (!Platforms::CompileShaderFromFile(std::move(fragmentParams), outputfragment) || outputfragment.codePointer == nullptr || outputfragment.codeSize == 0)
+            HAL::ShaderCompilerOutput outputfragment;
+            if (!HAL::CompileShaderFromFile(std::move(fragmentParams), outputfragment) || outputfragment.codePointer == nullptr || outputfragment.codeSize == 0)
             {
                 LOG_ERROR("Fragment shader compilation failed.");
                 throw std::exception("Fragment shader compilation failed.");
@@ -795,3 +795,4 @@ namespace ArisenEngine::Testing
         }
     };
 }
+

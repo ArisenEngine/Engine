@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using ArisenEngine.Debugger;
-using ArisenEngine.Platforms;
+using ArisenEngine.HAL;
 using ArisenEngine.Rendering;
 
 namespace ArisenEngine;

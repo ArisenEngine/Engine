@@ -1,4 +1,4 @@
-﻿namespace ArisenEngine.Platforms;
+﻿namespace ArisenEngine.HAL;
 
 internal interface IRenderSurface
 {

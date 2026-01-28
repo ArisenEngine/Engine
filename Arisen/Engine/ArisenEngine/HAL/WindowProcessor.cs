@@ -1,7 +1,7 @@
 using ArisenEngine.Rendering;
 using CppSharp.Types.Std;
 
-namespace ArisenEngine.Platforms;
+namespace ArisenEngine.HAL;
 
 internal abstract class WindowProcessor
 {

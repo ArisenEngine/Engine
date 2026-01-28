@@ -4,7 +4,7 @@
 #include "../Window.h"
 #include "../HALWindow.h"
 
-namespace ArisenEngine::Platforms
+namespace ArisenEngine::HAL
 {
     using namespace ArisenEngine::Containers;
 
@@ -73,7 +73,7 @@ namespace ArisenEngine::Platforms
 
         UInt32 GetWindowId(WindowHandle handle)
         {
-            return ArisenEngine::Platforms::GetWindowID(handle);
+            return GetWindowID(handle);
         }
 
         void SetWindowResizeCallback(UInt32 windowId, WindowExitResize callback)

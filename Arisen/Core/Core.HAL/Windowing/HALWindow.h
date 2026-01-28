@@ -2,7 +2,7 @@
 #include "Window.h"
 #include "../Common/PlatformTypes.h"
 
-namespace ArisenEngine::Platforms {
+namespace ArisenEngine::HAL {
 	
 	Window CreateNewWindow(const WindowInitInfo* const initInfo = nullptr);
 

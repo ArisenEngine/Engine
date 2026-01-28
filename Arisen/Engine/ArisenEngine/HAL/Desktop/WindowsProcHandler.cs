@@ -2,7 +2,7 @@
 using ArisenEngine.Debugger;
 using ArisenEngine.Rendering;
 
-namespace ArisenEngine.Platforms;
+namespace ArisenEngine.HAL;
 
 internal class WindowsProcHandler : WindowProcessor
 {

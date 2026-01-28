@@ -133,7 +133,7 @@ namespace ArisenEngine::Testing
             m_Context.bShouldResize = false;
 
             InitRenderContext();
-            Platforms::InitDXC();
+            HAL::InitDXC();
             InitShaderProgram();
             InitPipelineStates();
             InitBuffer();
@@ -335,9 +335,9 @@ namespace ArisenEngine::Testing
             auto currentPath = exeDir.generic_wstring() + L"\\Shader";
             auto path = currentPath + L"\\" + shaderFileName + L".hlsl";
 
-            Platforms::ShaderCompileParams vertexParams{ path, L"Vert", L"6_0", L"-spirv", envStr, L"0", RHI::ProgramStage::Vertex, {}, {}, currentPath + L"\\"+ shaderFileName + L".vert.spirv", true };
-            Platforms::ShaderCompilerOutput outputVertex;
-            if (!Platforms::CompileShaderFromFile(std::move(vertexParams), outputVertex) || outputVertex.codePointer == nullptr || outputVertex.codeSize == 0) throw std::exception("Vertex shader compilation failed.");
+            HAL::ShaderCompileParams vertexParams{ path, L"Vert", L"6_0", L"-spirv", envStr, L"0", RHI::ProgramStage::Vertex, {}, {}, currentPath + L"\\"+ shaderFileName + L".vert.spirv", true };
+            HAL::ShaderCompilerOutput outputVertex;
+            if (!HAL::CompileShaderFromFile(std::move(vertexParams), outputVertex) || outputVertex.codePointer == nullptr || outputVertex.codeSize == 0) throw std::exception("Vertex shader compilation failed.");
 
             {
                 auto program = RHI_Device_CreateGPUProgram(m_Context.device);
@@ -348,9 +348,9 @@ namespace ArisenEngine::Testing
             }
             if (outputVertex.codePointer) std::free(outputVertex.codePointer);
 
-            Platforms::ShaderCompileParams fragmentParams{ path, L"Frag", L"6_0", L"-spirv", envStr, L"0", RHI::ProgramStage::Fragment, {}, {}, currentPath + L"\\" + shaderFileName + L".frag.spirv", true };
-            Platforms::ShaderCompilerOutput outputfragment;
-            if (!Platforms::CompileShaderFromFile(std::move(fragmentParams), outputfragment) || outputfragment.codePointer == nullptr || outputfragment.codeSize == 0) throw std::exception("Fragment shader compilation failed.");
+            HAL::ShaderCompileParams fragmentParams{ path, L"Frag", L"6_0", L"-spirv", envStr, L"0", RHI::ProgramStage::Fragment, {}, {}, currentPath + L"\\" + shaderFileName + L".frag.spirv", true };
+            HAL::ShaderCompilerOutput outputfragment;
+            if (!HAL::CompileShaderFromFile(std::move(fragmentParams), outputfragment) || outputfragment.codePointer == nullptr || outputfragment.codeSize == 0) throw std::exception("Fragment shader compilation failed.");
 
              {
                 auto program = RHI_Device_CreateGPUProgram(m_Context.device);
@@ -664,3 +664,4 @@ namespace ArisenEngine::Testing
         }
     };
 }
+

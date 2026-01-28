@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace ArisenEngine.Platforms;
+namespace ArisenEngine.HAL;
 
 internal static class Win32Native
 {

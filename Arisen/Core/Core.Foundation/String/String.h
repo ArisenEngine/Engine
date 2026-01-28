@@ -6,7 +6,7 @@
 #include <utility>
 #include "../Base/BasicMacros.h"
 
-namespace ArisenEngine::Infra
+namespace ArisenEngine
 {
     /**
      * @brief custom String class for the engine.

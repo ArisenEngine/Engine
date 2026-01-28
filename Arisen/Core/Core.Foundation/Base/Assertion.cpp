@@ -32,7 +32,7 @@ namespace ArisenEngine
 
         // 1. Try to log via engine's log system
         // Log::Fatal might use ASSERT, so we need to be careful, but InternalLog usually just calls the handler
-        Log::Fatal(errorMessage.c_str());
+        Diagnostics::Log::Fatal(errorMessage.c_str());
 
         // 2. Fallback to stderr in case logger is not initialized or crashed
         std::fprintf(stderr, "%s\n", errorMessage.c_str());
