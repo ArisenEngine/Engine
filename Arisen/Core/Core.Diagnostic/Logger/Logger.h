@@ -15,7 +15,7 @@ namespace ArisenEngine::Diagnostics
         NO_COMPARE(Logger)
 
         // Implementation of ILogHandler
-        void Log(LogLevel level, const char* msg, const char* thread_name = nullptr, const char* cs_trace = nullptr) override;
+        void Log(LogLevel level, const char* msg, const LogSourceLocation& location, const char* thread_name = nullptr) override;
 
         void SetServerityLevel(LogLevel level);
         void BindCallback(LogCallback callback);
