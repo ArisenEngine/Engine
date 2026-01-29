@@ -15,7 +15,9 @@ extern "C" ENGINE_DLL void RHI_PSO_AddVertexBindingDescription(RHI_PSOHandle pso
 extern "C" ENGINE_DLL void RHI_PSO_AddVertexInputAttributeDescription(RHI_PSOHandle pso, unsigned int location, unsigned int binding, ArisenEngine::RHI::EFormat format, unsigned int offset);
 extern "C" ENGINE_DLL void RHI_PSO_ClearDescriptorSetLayoutBindings(RHI_PSOHandle pso);
 extern "C" ENGINE_DLL void RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, ArisenEngine::RHI::EDescriptorType type, unsigned int descriptorCount, unsigned int shaderStageFlags, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIBufferHandle>* buffers);
+extern "C" ENGINE_DLL void RHI_PSO_AddDescriptorSetLayoutBinding_Images(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, ArisenEngine::RHI::EDescriptorType type, unsigned int descriptorCount, unsigned int shaderStageFlags, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIDescriptorImageInfo>* images);
 extern "C" ENGINE_DLL void RHI_PSO_UpdateDescriptorSet_Buffers(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIBufferHandle>* buffers);
+extern "C" ENGINE_DLL void RHI_PSO_UpdateDescriptorSet_Images(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIDescriptorImageInfo>* images);
 extern "C" ENGINE_DLL void RHI_PSO_BuildDescriptorSetLayout(RHI_PSOHandle pso);
 extern "C" ENGINE_DLL void RHI_PSO_AddDynamicState(RHI_PSOHandle pso, ArisenEngine::RHI::EDynamicPipelineState state);
 extern "C" ENGINE_DLL void RHI_PSO_SetPrimitiveState(RHI_PSOHandle pso, ArisenEngine::RHI::EPrimitiveTopology topology, bool primitiveRestart);
