@@ -1,78 +1,88 @@
 #include "MPSCQueue.h"
+#include <mutex>
 
 #if defined(_WIN32)
 #include <windows.h>
 #endif
 
-namespace ArisenEngine::Concurrency {
-    static AtomicNodePool* g_GlobalPool = nullptr;
-
-    AtomicNodePool& GetGlobalAtomicNodePool() noexcept
+namespace ArisenEngine::Concurrency::Containers {
+    
+    MPSCQueueNodePool& GetGlobalMPSCQueueNodePool() noexcept
     {
-        if (!g_GlobalPool) g_GlobalPool = new AtomicNodePool();
-        return *g_GlobalPool;
+        static MPSCQueueNodePool s_Pool;
+        return s_Pool;
     }
 
-    AtomicNode* AtomicNode::Acquire(AtomicNodePool& pool) noexcept { return pool.Acquire(); }
-    void AtomicNode::Recycle(AtomicNodePool& pool) noexcept { pool.Release(this); }
+    MPSCQueueNode* MPSCQueueNode::Acquire(MPSCQueueNodePool& pool) noexcept { return pool.Acquire(); }
+    void MPSCQueueNode::Recycle(MPSCQueueNodePool& pool) noexcept { pool.Release(this); }
 
-    AtomicNode* AtomicNodePool::Acquire() noexcept
+    MPSCQueueNodePool::~MPSCQueueNodePool()
     {
-        AtomicNode* head = _freeHead.load(std::memory_order_acquire);
-        while (head)
+        std::lock_guard<std::mutex> lock(_poolMutex);
+        MPSCQueueNode* node = _freeHead.load(std::memory_order_relaxed);
+        while (node)
         {
-            AtomicNode* next = head->_next.load(std::memory_order_relaxed);
-            if (_freeHead.compare_exchange_weak(head, next, std::memory_order_acq_rel, std::memory_order_acquire))
-            {
-                head->_next.store(nullptr, std::memory_order_relaxed);
-                head->data[0] = head->data[1] = head->data[2] = nullptr;
-                return head;
-            }
+            MPSCQueueNode* next = node->_next.load(std::memory_order_relaxed);
+            delete node;
+            node = next;
         }
-        return new AtomicNode();
+        _freeHead.store(nullptr, std::memory_order_relaxed);
     }
 
-    void AtomicNodePool::Release(AtomicNode* node) noexcept
+    MPSCQueueNode* MPSCQueueNodePool::Acquire() noexcept
     {
-        AtomicNode* head = _freeHead.load(std::memory_order_relaxed);
-        do {
-            node->_next.store(head, std::memory_order_relaxed);
-        } while (!_freeHead.compare_exchange_weak(head, node, std::memory_order_release, std::memory_order_relaxed));
+        std::lock_guard<std::mutex> lock(_poolMutex);
+        MPSCQueueNode* head = _freeHead.load(std::memory_order_relaxed);
+        if (head)
+        {
+            _freeHead.store(head->_next.load(std::memory_order_relaxed), std::memory_order_relaxed);
+            head->_next.store(nullptr, std::memory_order_relaxed);
+            head->data[0] = head->data[1] = head->data[2] = nullptr;
+            return head;
+        }
+        return new MPSCQueueNode();
     }
 
-    void AtomicNodePool::Preallocate(std::size_t count)
+    void MPSCQueueNodePool::Release(MPSCQueueNode* node) noexcept
+    {
+        std::lock_guard<std::mutex> lock(_poolMutex);
+        node->_next.store(_freeHead.load(std::memory_order_relaxed), std::memory_order_relaxed);
+        _freeHead.store(node, std::memory_order_relaxed);
+    }
+
+    void MPSCQueueNodePool::Preallocate(std::size_t count)
     {
         for (std::size_t i = 0; i < count; ++i)
         {
-            Release(new AtomicNode());
+            Release(new MPSCQueueNode());
         }
     }
 
-    MPSCQueue::MPSCQueue() noexcept
+    IntrusiveMPSCQueue::IntrusiveMPSCQueue() noexcept
     {
         _stub._next.store(nullptr, std::memory_order_relaxed);
         _head.store(&_stub, std::memory_order_relaxed);
         _tail = &_stub;
     }
 
-    void MPSCQueue::Enqueue(AtomicNode* node) noexcept
+    void IntrusiveMPSCQueue::Enqueue(MPSCQueueNode* node) noexcept
     {
         node->_next.store(nullptr, std::memory_order_relaxed);
-        AtomicNode* prev = _head.exchange(node, std::memory_order_release);
+        MPSCQueueNode* prev = _head.exchange(node, std::memory_order_acq_rel);
         prev->_next.store(node, std::memory_order_release);
     }
 
-    AtomicNode* MPSCQueue::TryDequeue() noexcept
+    MPSCQueueNode* IntrusiveMPSCQueue::Dequeue() noexcept
     {
-        AtomicNode* tail = _tail;
-        AtomicNode* next = tail->_next.load(std::memory_order_acquire);
+        MPSCQueueNode* tail = _tail;
+        MPSCQueueNode* next = tail->_next.load(std::memory_order_acquire);
         if (next)
         {
             _tail = next;
             return next;
         }
 
-        AtomicNode* head = _head.load(std::memory_order_acquire);
+        MPSCQueueNode* head = _head.load(std::memory_order_acquire);
         if (tail != head)
         {
             unsigned spins = 0;
@@ -99,20 +109,35 @@ namespace ArisenEngine::Concurrency {
         return nullptr;
     }
 
-    bool MPSCQueue::Empty() const noexcept
+    MPSCQueueNode* IntrusiveMPSCQueue::TryDequeue() noexcept
     {
-        AtomicNode* tail = _tail;
+        MPSCQueueNode* tail = _tail;
+        MPSCQueueNode* next = tail->_next.load(std::memory_order_acquire);
+        if (next)
+        {
+            _tail = next;
+            return next;
+        }
+        
+        // If tail == head, it's either really empty or a producer is currently Enqueuing (between exchange and store).
+        // TryDequeue returns nullptr in both cases to remain non-blocking.
+        return nullptr;
+    }
+
+    bool IntrusiveMPSCQueue::Empty() const noexcept
+    {
+        MPSCQueueNode* tail = _tail;
         if (tail->_next.load(std::memory_order_acquire) != nullptr) return false;
         return tail == _head.load(std::memory_order_acquire);
     }
 
-    std::size_t MPSCQueue::TryDequeueAll(AtomicNode*& first, AtomicNode*& last, std::size_t maxCount) noexcept
+    std::size_t IntrusiveMPSCQueue::DequeueAll(MPSCQueueNode*& first, MPSCQueueNode*& last, std::size_t maxCount) noexcept
     {
         first = nullptr;
         last = nullptr;
 
         std::size_t count = 0;
-        AtomicNode* n = TryDequeue();
+        MPSCQueueNode* n = Dequeue();
         if (!n) return 0;
 
         first = n;
@@ -121,7 +146,7 @@ namespace ArisenEngine::Concurrency {
 
         while (count < maxCount)
         {
-            AtomicNode* next = TryDequeue();
+            MPSCQueueNode* next = Dequeue();
             if (!next) break;
             last = next;
             ++count;
