@@ -1,6 +1,6 @@
 #pragma once
 #include "RHI/Definitions/GraphicsAPI.h"
-#include "RHI/Instance/RHIInstance.h"
+#include "RHI/Core/RHIInstance.h"
 #include "../EngineCommon.h"
 
 
@@ -12,7 +12,7 @@ namespace ArisenEngine::Graphics
         NO_COPY_NO_MOVE_NO_DEFAULT(RHILoader)
 
         static void SetCurrentGraphicsAPI(RHI::GraphicsAPI api_type);
-        static RHI::RHIInstance* CreateInstance(RHI::InstanceInfo&& app_info);
+        static RHI::RHIInstance* CreateInstance(RHI::RHIInstanceInfo&& app_info);
         static void Dispose();
     private:
 
@@ -26,8 +26,8 @@ namespace ArisenEngine::Graphics
     //     RHILoader::SetCurrentGraphicsAPI(api_type);
     // }
     //
-    // extern "C" ENGINE_DLL RHI::Instance* CreateInstance(RHI::InstanceInfo&& app_info);
-    // inline RHI::Instance* CreateInstance(RHI::InstanceInfo&& app_info)
+    // extern "C" ENGINE_DLL RHI::Instance* CreateInstance(RHI::RHIInstanceInfo&& app_info);
+    // inline RHI::Instance* CreateInstance(RHI::RHIInstanceInfo&& app_info)
     // {
     //     return RHILoader::CreateInstance(std::move(app_info));
     // }

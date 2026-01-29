@@ -1,8 +1,8 @@
 #pragma once
 #include "EngineCommon.h"
-#include "../../Core/Core.RHI/RHI/Pipeline/GPURenderPass.h"
-#include "../../Core/Core.RHI/RHI/Pipeline/GPUPipeline.h"
-#include "../../Core/Core.RHI/RHI/Pipeline/GPUPipelineStateObject.h"
+#include "../../Core/Core.RHI/RHI/RenderPass/RHIRenderPass.h"
+#include "../../Core/Core.RHI/RHI/Pipeline/RHIPipeline.h"
+#include "../../Core/Core.RHI/RHI/Pipeline/RHIPipelineState.h"
 
 #include "RHIHandleExports.h"
 
@@ -37,7 +37,7 @@ extern "C" ENGINE_DLL void RHI_Pipeline_AllocGraphics(RHI_DeviceHandle device, R
 
 // Moved to HandlesExports: CreateRenderPass, ReleaseRenderPass
 extern "C" ENGINE_DLL void RHI_RenderPass_Free(RHI_DeviceHandle device, RHI_RenderPassHandle rp, unsigned int frameIndex);
-extern "C" ENGINE_DLL void RHI_RenderPass_AddAttachmentAction(RHI_DeviceHandle device, RHI_RenderPassHandle rp, ArisenEngine::RHI::EFormat format, ArisenEngine::RHI::ESampleCountFlagBits samples, ArisenEngine::RHI::AttachmentLoadOp colorLoad, ArisenEngine::RHI::AttachmentStoreOp colorStore, ArisenEngine::RHI::AttachmentLoadOp stencilLoad, ArisenEngine::RHI::AttachmentStoreOp stencilStore, ArisenEngine::RHI::EImageLayout initialLayout, ArisenEngine::RHI::EImageLayout finalLayout);
+extern "C" ENGINE_DLL void RHI_RenderPass_AddAttachmentAction(RHI_DeviceHandle device, RHI_RenderPassHandle rp, ArisenEngine::RHI::EFormat format, ArisenEngine::RHI::ESampleCountFlagBits samples, ArisenEngine::RHI::EAttachmentLoadOp colorLoad, ArisenEngine::RHI::EAttachmentStoreOp colorStore, ArisenEngine::RHI::EAttachmentLoadOp stencilLoad, ArisenEngine::RHI::EAttachmentStoreOp stencilStore, ArisenEngine::RHI::EImageLayout initialLayout, ArisenEngine::RHI::EImageLayout finalLayout);
 extern "C" ENGINE_DLL RHI_SubpassHandle RHI_RenderPass_AddSubPass(RHI_DeviceHandle device, RHI_RenderPassHandle rp);
 extern "C" ENGINE_DLL void RHI_Subpass_SetDependency(RHI_SubpassHandle sp, unsigned int prevIndex, unsigned int prevStage, unsigned int prevAccessMask, unsigned int currStage, unsigned int currAccessMask, unsigned int syncFlag);
 extern "C" ENGINE_DLL void RHI_Subpass_SetBindPoint(RHI_SubpassHandle sp, ArisenEngine::RHI::EPipelineBindPoint bindPoint);

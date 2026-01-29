@@ -144,7 +144,7 @@ void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
     createInfo.pfnUserCallback = DebugCallback;
 }
 
-ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(InstanceInfo&& app_info): RHIInstance(std::move(app_info))
+ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(RHIInstanceInfo&& app_info): RHIInstance(std::move(app_info))
 {
     if (app_info.validationLayer && !CheckValidationLayerSupport())
     {
@@ -384,10 +384,10 @@ void ArisenEngine::RHI::RHIVkInstance::DestroySurface(UInt32 windowId)
    }
 }
 
-ArisenEngine::RHI::Surface& ArisenEngine::RHI::RHIVkInstance::GetSurface(UInt32 windowId)
+ArisenEngine::RHI::RHISurface& ArisenEngine::RHI::RHIVkInstance::GetSurface(UInt32 windowId)
 {
     ASSERT(m_Surfaces[windowId] && m_Surfaces[windowId].get());
-    Surface& surface = *m_Surfaces[windowId].get();
+    RHISurface& surface = *m_Surfaces[windowId].get();
     return surface;
 }
 
@@ -398,7 +398,7 @@ bool ArisenEngine::RHI::RHIVkInstance::IsSupportLinearColorSpace(UInt32 windowId
 
     for (const auto& availableFormat : supportDetail.formats)
     {
-        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.EColorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
         {
             return true;
         }
@@ -407,12 +407,12 @@ bool ArisenEngine::RHI::RHIVkInstance::IsSupportLinearColorSpace(UInt32 windowId
     return false;
 }
 
-bool ArisenEngine::RHI::RHIVkInstance::PresentModeSupported(UInt32 windowId, PresentMode mode)
+bool ArisenEngine::RHI::RHIVkInstance::PresentModeSupported(UInt32 windowId, EPresentMode mode)
 {
     auto& supportDetail = GetSwapChainSupportDetails(windowId);
-    for (const auto& presentMode : supportDetail.presentModes)
+    for (const auto& EPresentMode : supportDetail.presentModes)
     {
-        if (presentMode == mode)
+        if (EPresentMode == mode)
         {
             return true;
         }
@@ -421,7 +421,7 @@ bool ArisenEngine::RHI::RHIVkInstance::PresentModeSupported(UInt32 windowId, Pre
     return false;
 }
 
-void ArisenEngine::RHI::RHIVkInstance::SetCurrentPresentMode(UInt32 windowId, PresentMode mode)
+void ArisenEngine::RHI::RHIVkInstance::SetCurrentPresentMode(UInt32 windowId, EPresentMode mode)
 {
     m_PreferredPresentModes[windowId] = mode;
 }
@@ -433,7 +433,7 @@ void ArisenEngine::RHI::RHIVkInstance::SetResolution(UInt32 windowId, UInt32 wid
 
 void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
 {
-    Surface* rhiSurface = nullptr;
+    RHISurface* rhiSurface = nullptr;
     VkSurfaceKHR vkSurface = VK_NULL_HANDLE;
     if (windowId != ~0u)
     {
@@ -566,7 +566,7 @@ ArisenEngine::RHI::EFormat ArisenEngine::RHI::RHIVkInstance::GetSuitableSwapChai
     // Prefer SRGB BGRA8 if available, else first format
     for (const auto& f : supportDetail.formats)
     {
-        if (f.format == VK_FORMAT_B8G8R8A8_SRGB && f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        if (f.format == VK_FORMAT_B8G8R8A8_SRGB && f.EColorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
         {
             return static_cast<EFormat>(f.format);
         }
@@ -574,7 +574,7 @@ ArisenEngine::RHI::EFormat ArisenEngine::RHI::RHIVkInstance::GetSuitableSwapChai
     return static_cast<EFormat>(supportDetail.formats[0].format);
 }
 
-ArisenEngine::RHI::PresentMode ArisenEngine::RHI::RHIVkInstance::GetSuitablePresentMode(UInt32 windowId)
+ArisenEngine::RHI::EPresentMode ArisenEngine::RHI::RHIVkInstance::GetSuitablePresentMode(UInt32 windowId)
 {
     auto& supportDetail = GetSwapChainSupportDetails(windowId);
     // If user set a preferred mode and it's supported, use it
@@ -592,12 +592,12 @@ ArisenEngine::RHI::PresentMode ArisenEngine::RHI::RHIVkInstance::GetSuitablePres
     // Else prefer IMMEDIATE, fall back to FIFO
     for (auto pm : supportDetail.presentModes)
     {
-        if (pm == VK_PRESENT_MODE_IMMEDIATE_KHR) return static_cast<PresentMode>(pm);
+        if (pm == VK_PRESENT_MODE_IMMEDIATE_KHR) return static_cast<EPresentMode>(pm);
     }
     return PRESENT_MODE_FIFO;
 }
 
-void ArisenEngine::RHI::RHIVkInstance::UpdateSurfaceCapabilities(Surface* surface)
+void ArisenEngine::RHI::RHIVkInstance::UpdateSurfaceCapabilities(RHISurface* surface)
 {
     auto vkSurface = static_cast<VkSurfaceKHR>(
            surface->GetHandle());
@@ -629,7 +629,7 @@ void ArisenEngine::RHI::RHIVkInstance::CheckSwapChainCapabilities()
     }
 }
 
-ArisenEngine::RHI::RHIInstance* CreateInstance(ArisenEngine::RHI::InstanceInfo&& app_info)
+ArisenEngine::RHI::RHIInstance* CreateInstance(ArisenEngine::RHI::RHIInstanceInfo&& app_info)
 {
     return new ArisenEngine::RHI::RHIVkInstance(std::move(app_info));
 }

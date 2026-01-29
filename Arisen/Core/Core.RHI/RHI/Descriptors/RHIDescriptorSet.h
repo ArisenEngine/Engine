@@ -1,10 +1,10 @@
 #pragma once
-#include "DescriptorPool.h"
-#include "../Definitions/RHICommon.h"
+#include "RHIDescriptorPool.h"
+#include "../Core/RHICommon.h"
 
 namespace ArisenEngine::RHI
 {
-    class DescriptorPool;
+    class RHIDescriptorPool;
     class RHIDevice;
 }
 
@@ -13,7 +13,7 @@ namespace ArisenEngine::RHI
     class RHIDescriptorSet
     {
     public:
-        RHIDescriptorSet(DescriptorPool* descriptorPool, UInt32 layoutIndex):
+        RHIDescriptorSet(RHIDescriptorPool* descriptorPool, UInt32 layoutIndex):
         m_DescriptorPool(descriptorPool), m_LayoutIndex(layoutIndex)
         {
             
@@ -25,13 +25,13 @@ namespace ArisenEngine::RHI
 
     public:
      
-        DescriptorPool* GetDescriptorPool() { return m_DescriptorPool; }
+        RHIDescriptorPool* GetDescriptorPool() { return m_DescriptorPool; }
         UInt32 GetLayoutIndex() const { return m_LayoutIndex; }
 
     protected:
 
     private:
         UInt32 m_LayoutIndex {0};
-        DescriptorPool* m_DescriptorPool {nullptr};
+        RHIDescriptorPool* m_DescriptorPool {nullptr};
     };
 }

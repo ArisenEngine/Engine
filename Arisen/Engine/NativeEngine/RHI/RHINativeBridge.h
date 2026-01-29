@@ -32,8 +32,8 @@ namespace ArisenEngine::RHI
             return device->GetCommandBufferPoolPool()->Get(handle);
         }
 
-        // GPUProgram
-        static RHIVkGPUProgramPoolItem* GetGPUProgramItem(RHIVkDevice* device, RHIGPUProgramHandle handle)
+        // RHIShaderProgram
+        static RHIVkGPUProgramPoolItem* GetGPUProgramItem(RHIVkDevice* device, RHIShaderProgramHandle handle)
         {
             return device->GetGPUProgramPool()->Get(handle);
         }

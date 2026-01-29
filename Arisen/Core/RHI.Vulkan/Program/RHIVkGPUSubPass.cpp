@@ -3,7 +3,7 @@
 #include "Logger/Logger.h"
 
 ArisenEngine::RHI::RHIVkGPUSubPass::RHIVkGPUSubPass(RHIVkGPURenderPass* renderPass, UInt32 index):
-GPUSubPass(renderPass), m_Index(index)
+RHISubPass(renderPass), m_Index(index)
 {
     ClearAll();
     ResizePreserve();
@@ -62,9 +62,9 @@ void ArisenEngine::RHI::RHIVkGPUSubPass::ClearAll()
     m_DepthStencilReference = { u32Invalid };
 }
 
-ArisenEngine::RHI::SubpassDescription ArisenEngine::RHI::RHIVkGPUSubPass::GetDescriptions()
+ArisenEngine::RHI::RHISubpassDescription ArisenEngine::RHI::RHIVkGPUSubPass::GetDescriptions()
 {
-    SubpassDescription description {};
+    RHISubpassDescription description {};
     description.bindPoint = GetBindPoint();
     description.colorRefCount = static_cast<UInt32>(m_ColorReferences.size());
     description.colorReferences = m_ColorReferences.data();

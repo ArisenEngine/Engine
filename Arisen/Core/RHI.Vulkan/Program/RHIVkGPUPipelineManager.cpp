@@ -3,11 +3,11 @@
 #include "RHIVkGPUPipelineStateObject.h"
 #include "../Devices/RHIVkDevice.h"
 #include "Logger/Logger.h"
-#include "RHI/Pipeline/GPUPipeline.h"
-#include "RHI/Pipeline/GPUPipelineStateObject.h"
-#include "RHI/Pipeline/GPUSubPass.h"
+#include "RHI/Pipeline/RHIPipeline.h"
+#include "RHI/Pipeline/RHIPipelineState.h"
+#include "RHI/RenderPass/RHISubPass.h"
 
-ArisenEngine::RHI::RHIVkGPUPipelineManager::RHIVkGPUPipelineManager(RHIVkDevice* device, UInt32 maxFramesInFlight): GPUPipelineManager(maxFramesInFlight),
+ArisenEngine::RHI::RHIVkGPUPipelineManager::RHIVkGPUPipelineManager(RHIVkDevice* device, UInt32 maxFramesInFlight): RHIPipelineCache(maxFramesInFlight),
 m_Device(device)
 {
     
@@ -25,7 +25,7 @@ ArisenEngine::RHI::RHIVkGPUPipelineManager::~RHIVkGPUPipelineManager() noexcept
     m_PipelineHandles.clear();
 }
 
-ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager::GetGraphicsPipeline(GPUPipelineStateObject* pso)
+ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager::GetGraphicsPipeline(RHIPipelineState* pso)
 {
     auto hash = pso->GetHash();
     if (!m_GPUPipelines.contains(hash))
@@ -51,7 +51,7 @@ ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager:
     }
 }
 
-std::unique_ptr<ArisenEngine::RHI::GPUPipelineStateObject> ArisenEngine::RHI::RHIVkGPUPipelineManager::GetPipelineState()
+std::unique_ptr<ArisenEngine::RHI::RHIPipelineState> ArisenEngine::RHI::RHIVkGPUPipelineManager::GetPipelineState()
 {
     return std::make_unique<RHIVkGPUPipelineStateObject>(m_Device);
 }

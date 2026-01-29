@@ -1,7 +1,7 @@
 #include "RHIVkDescriptorSet.h"
 
-ArisenEngine::RHI::RHIVkDescriptorSet::RHIVkDescriptorSet(DescriptorPool* descriptorPool,
-    UInt32 layoutIndex, VkDescriptorSet vkDescriptorSet): RHIDescriptorSet(descriptorPool, layoutIndex), m_DescriptorSet(vkDescriptorSet)
+ArisenEngine::RHI::RHIVkDescriptorSet::RHIVkDescriptorSet(RHIDescriptorPool* RHIDescriptorPool,
+    UInt32 layoutIndex, VkDescriptorSet vkDescriptorSet): RHIDescriptorSet(RHIDescriptorPool, layoutIndex), m_DescriptorSet(vkDescriptorSet)
 {
     
 }

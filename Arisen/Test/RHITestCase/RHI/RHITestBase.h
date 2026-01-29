@@ -2,7 +2,7 @@
 
 #include "Framework/TestRunner.h"
 #include "RHI/RHILoader.h"
-#include "RHI/Instance/RHIInstance.h"
+#include "RHI/Core/RHIInstance.h"
 #include "Windowing/RenderWindowAPI.h"
 #include "Common/PlatformTypes.h"
 #include "../../../Engine/NativeEngine/RHI/InstanceExports.h"
@@ -38,7 +38,7 @@ namespace ArisenEngine::Testing
          */
         bool InitializeRHI(const char* appName = "RHI Unit Test")
         {
-            RHI::InstanceInfo appInfo{
+            RHI::RHIInstanceInfo appInfo{
                 appName,
                 "Arisen Engine",
                 true,  // Enable validation layers

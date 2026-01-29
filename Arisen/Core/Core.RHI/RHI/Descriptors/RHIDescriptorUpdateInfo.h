@@ -1,6 +1,6 @@
 #pragma once
 #include "../Samplers/RHISampler.h"
-#include "../Definitions/RHICommon.h"
+#include "../Core/RHICommon.h"
 #include "../Handles/RHIHandle.h"
 #include "RHI/Enums/Pipeline/EDescriptorType.h"
 #include "RHI/Enums/Image/EImageLayout.h"

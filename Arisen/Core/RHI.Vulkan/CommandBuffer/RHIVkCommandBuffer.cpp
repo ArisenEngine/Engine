@@ -7,9 +7,9 @@
 #include "../VkInitializer.h"
 #include "../Program/RHIVkBindlessManager.h"
 #include "RHI/Enums/Subpass/EDependencyFlag.h"
-#include "RHI/Synchronization/RHIBufferMemoryBarrier.h"
-#include "RHI/Synchronization/RHIImageMemoryBarrier.h"
-#include "RHI/Synchronization/RHIMemoryBarrier.h"
+#include "RHI/Sync/RHIBufferMemoryBarrier.h"
+#include "RHI/Sync/RHIImageMemoryBarrier.h"
+#include "RHI/Sync/RHIMemoryBarrier.h"
 #include "Concurrency/SyncScope.h"
 #include "../Memory/RHIVkMemoryAllocator.h"
 
@@ -65,7 +65,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRenderPass(UInt32 frameIndex, R
     auto* fb = vkDevice->GetFrameBufferPool()->Get(desc.frameBuffer);
 
     if (!rp || !fb) {
-        LOG_ERROR("[RHIVkCommandBuffer::BeginRenderPass]: invalid renderPass or frameBuffer handle!");
+        LOG_ERROR("[RHIVkCommandBuffer::BeginRenderPass]: invalid renderPass or RHIFrameBuffer handle!");
         return;
     }
 
@@ -80,12 +80,12 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRenderPass(UInt32 frameIndex, R
          renderPassInfo.renderPass = rp->renderPass;
     }
     
-    // For now, assume FrameBuffer pool item has the current frame's VkFramebuffer
-    renderPassInfo.framebuffer = fb->frameBuffer;
+    // For now, assume RHIFrameBuffer pool item has the current frame's VkFramebuffer
+    renderPassInfo.framebuffer = fb->framebuffer;
     
     renderPassInfo.renderArea.offset = {0, 0};
     
-    // Use actual framebuffer dimensions if available
+    // Use actual RHIFrameBuffer dimensions if available
     renderPassInfo.renderArea.extent = { fb->width, fb->height };
     
     // Fallback if dimensions are unknown
@@ -165,8 +165,8 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRendering(const RHIRenderingInf
 
     VkRenderingInfoKHR renderingInfo{};
     renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
-    renderingInfo.renderArea.offset = { info.renderArea.x, info.renderArea.y };
-    renderingInfo.renderArea.extent = { info.renderArea.width, info.renderArea.height };
+    renderingInfo.renderArea.offset = { info.RHIRenderArea.x, info.RHIRenderArea.y };
+    renderingInfo.renderArea.extent = { info.RHIRenderArea.width, info.RHIRenderArea.height };
     renderingInfo.layerCount = info.layerCount;
 
     renderingInfo.colorAttachmentCount = static_cast<uint32_t>(m_VkColorAttachments.size());
@@ -210,7 +210,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::EndRendering()
 }
 
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::TrackDescriptorPoolUse(DescriptorPool* pool, UInt32 poolId)
+void ArisenEngine::RHI::RHIVkCommandBuffer::TrackDescriptorPoolUse(RHIDescriptorPool* pool, UInt32 poolId)
 {
     if (pool == nullptr) return;
     // avoid duplicates
@@ -341,7 +341,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BindPipeline(UInt32 frameIndex, RHIP
     auto* p = vkDevice->GetPipelinePool()->Get(pipelineHandle);
     if (!p || !p->pipeline) return;
 
-    GPUPipeline* pipeline = p->pipeline;
+    RHIPipeline* pipeline = p->pipeline;
     m_CurrentPipeline = pipeline;
     vkCmdBindPipeline(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(pipeline->GetBindPoint()),
         static_cast<VkPipeline>(pipeline->GetGraphicsPipeline(frameIndex)));
@@ -383,7 +383,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BindDescriptorSets(UInt32 frameIndex
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst,
-            EImageLayout dstImageLayout, Containers::Vector<BufferImageCopy>&& regions)
+            EImageLayout dstImageLayout, Containers::Vector<RHIBufferImageCopy>&& regions)
 {
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* srcBuf = vkDevice->GetBufferPool()->Get(srcBuffer);

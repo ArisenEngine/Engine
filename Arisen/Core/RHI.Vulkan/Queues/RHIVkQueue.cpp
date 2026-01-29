@@ -1,7 +1,7 @@
 #include "RHIVkQueue.h"
 #include "../Devices/RHIVkDevice.h"
 #include "Logger/Logger.h"
-#include "RHI/CommandBuffer/RHICommandBuffer.h"
+#include "RHI/Commands/RHICommandBuffer.h"
 #include "../CommandBuffer/RHIVkCommandBuffer.h"
 #include "../Program/RHIVkDescriptorPool.h"
 

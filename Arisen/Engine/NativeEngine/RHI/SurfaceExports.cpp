@@ -1,5 +1,5 @@
 #include "SurfaceExports.h"
-#include "../../Core/Core.RHI/RHI/Devices/RHIFactory.h"
+#include "../../Core/Core.RHI/RHI/Core/RHIFactory.h"
 #include "../../Core/RHI.Vulkan/Devices/RHIVkDevice.h"
 #include "../../Core/RHI.Vulkan/Surfaces/RHIVkSwapChain.h"
 #include <unordered_map>
@@ -19,36 +19,36 @@ extern "C" ENGINE_DLL RHI_SurfaceHandle RHI_Instance_GetSurface(RHI_InstanceHand
 extern "C" ENGINE_DLL void RHI_Instance_UpdateSurfaceCapabilities(RHI_InstanceHandle instance, RHI_SurfaceHandle surface)
 {
     auto* inst = reinterpret_cast<RHI::RHIInstance*>(instance);
-    auto* surf = reinterpret_cast<RHI::Surface*>(surface);
+    auto* surf = reinterpret_cast<RHI::RHISurface*>(surface);
     if (inst == nullptr || surf == nullptr) return;
     inst->UpdateSurfaceCapabilities(surf);
 }
 
 extern "C" ENGINE_DLL RHI_SwapChainHandle RHI_Surface_GetSwapChain(RHI_SurfaceHandle surface)
 {
-    auto* surf = reinterpret_cast<RHI::Surface*>(surface);
+    auto* surf = reinterpret_cast<RHI::RHISurface*>(surface);
     if (surf == nullptr) return nullptr;
     return reinterpret_cast<RHI_SwapChainHandle>(surf->GetSwapChain());
 }
 
-extern "C" ENGINE_DLL void RHI_SwapChain_CreateWithDesc(RHI_SwapChainHandle swapchain, ArisenEngine::RHI::SwapChainDescriptor* desc)
+extern "C" ENGINE_DLL void RHI_SwapChain_CreateWithDesc(RHI_SwapChainHandle swapchain, ArisenEngine::RHI::RHISwapChainDescriptor* desc)
 {
-    auto* sc = reinterpret_cast<RHI::SwapChain*>(swapchain);
+    auto* sc = reinterpret_cast<RHI::RHISwapChain*>(swapchain);
     if (sc == nullptr || desc == nullptr) return;
-    RHI::SwapChainDescriptor copy = *desc;
+    RHI::RHISwapChainDescriptor copy = *desc;
     sc->CreateSwapChainWithDesc(std::move(copy));
 }
 
 extern "C" ENGINE_DLL void RHI_SwapChain_Present(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
 {
-    auto* sc = reinterpret_cast<RHI::SwapChain*>(swapchain);
+    auto* sc = reinterpret_cast<RHI::RHISwapChain*>(swapchain);
     if (sc == nullptr) return;
     sc->Present(frameIndex);
 }
 
 extern "C" ENGINE_DLL RHI_ImageHandle RHI_SwapChain_AquireCurrentImage(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
 {
-    auto* sc = reinterpret_cast<RHI::SwapChain*>(swapchain);
+    auto* sc = reinterpret_cast<RHI::RHISwapChain*>(swapchain);
     if (sc == nullptr) return 0;
     auto val = sc->AquireCurrentImage(frameIndex);
     return *reinterpret_cast<RHI_ImageHandle*>(&val);
@@ -56,7 +56,7 @@ extern "C" ENGINE_DLL RHI_ImageHandle RHI_SwapChain_AquireCurrentImage(RHI_SwapC
 
 extern "C" ENGINE_DLL RHI_SemaphoreHandle RHI_SwapChain_GetImageAvailableSemaphore(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
 {
-    auto* sc = reinterpret_cast<RHI::SwapChain*>(swapchain);
+    auto* sc = reinterpret_cast<RHI::RHISwapChain*>(swapchain);
     if (sc == nullptr) return 0ULL;
     auto h = sc->GetImageAvailableSemaphore(frameIndex);
     return *reinterpret_cast<RHI_SemaphoreHandle*>(&h);
@@ -64,7 +64,7 @@ extern "C" ENGINE_DLL RHI_SemaphoreHandle RHI_SwapChain_GetImageAvailableSemapho
 
 extern "C" ENGINE_DLL RHI_SemaphoreHandle RHI_SwapChain_GetRenderFinishSemaphore(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
 {
-    auto* sc = reinterpret_cast<RHI::SwapChain*>(swapchain);
+    auto* sc = reinterpret_cast<RHI::RHISwapChain*>(swapchain);
     if (sc == nullptr) return 0ULL;
     auto h = sc->GetRenderFinishSemaphore(frameIndex);
     return *reinterpret_cast<RHI_SemaphoreHandle*>(&h);
@@ -72,7 +72,7 @@ extern "C" ENGINE_DLL RHI_SemaphoreHandle RHI_SwapChain_GetRenderFinishSemaphore
 
 extern "C" ENGINE_DLL RHI_ImageViewHandle RHI_SwapChain_GetImageView(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
 {
-    auto* sc = reinterpret_cast<RHI::SwapChain*>(swapchain);
+    auto* sc = reinterpret_cast<RHI::RHISwapChain*>(swapchain);
     if (sc == nullptr) return 0ULL;
     auto hView = sc->GetImageView(frameIndex);
     return *reinterpret_cast<unsigned long long*>(&hView);

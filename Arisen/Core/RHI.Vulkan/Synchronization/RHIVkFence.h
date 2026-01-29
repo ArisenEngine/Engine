@@ -1,6 +1,6 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
-#include "RHI/Synchronization/RHIFence.h"
+#include "RHI/Sync/RHIFence.h"
 
 namespace ArisenEngine::RHI
 {

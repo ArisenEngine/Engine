@@ -1,25 +1,25 @@
 #pragma once
 #include "RHIVkGPUPipelineManager.h"
-#include "RHI/Pipeline/GPUPipeline.h"
-#include "RHI/Pipeline/GPUSubPass.h"
+#include "RHI/Pipeline/RHIPipeline.h"
+#include "RHI/RenderPass/RHISubPass.h"
 
 namespace ArisenEngine::RHI
 {
-    class GPUPipelineStateObject;
+    class RHIPipelineState;
     
-    class RHIVkGPUPipeline final : public GPUPipeline
+    class RHIVkGPUPipeline final : public RHIPipeline
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkGPUPipeline)
         ~RHIVkGPUPipeline() noexcept override;
-        RHIVkGPUPipeline(RHIVkDevice* device, GPUPipelineStateObject* pipelineStateObject, UInt32 maxFramesInFlight);
+        RHIVkGPUPipeline(RHIVkDevice* device, RHIPipelineState* pipelineStateObject, UInt32 maxFramesInFlight);
         void* GetGraphicsPipeline(UInt32 frameIndex) override;
 
-        void AllocGraphicPipeline(UInt32 frameIndex, GPUSubPass* subPass) override;
+        void AllocGraphicPipeline(UInt32 frameIndex, RHISubPass* subPass) override;
 
         const EPipelineBindPoint GetBindPoint() const override;
-        void BindPipelineStateObject(GPUPipelineStateObject* pso) override;
-        GPUPipelineStateObject* GetPipelineStateObject() const override
+        void BindPipelineStateObject(RHIPipelineState* pso) override;
+        RHIPipelineState* GetPipelineStateObject() const override
         {
             return m_PipelineStateObject;
         }
@@ -40,10 +40,10 @@ namespace ArisenEngine::RHI
         RHIVkDevice* m_Device;
 
         // subPass
-        GPUSubPass* m_SubPass;
+        RHISubPass* m_SubPass;
         
         // graphics pipeline
-        GPUPipelineStateObject* m_PipelineStateObject;
+        RHIPipelineState* m_PipelineStateObject;
         Containers::Vector<VkPipeline> m_VkGraphicPipelines;
         Containers::Vector<VkPipelineLayout> m_VkGraphicsPipelineLayouts;
         Containers::Vector<VkPushConstantRange> m_PushConstantRanges { };

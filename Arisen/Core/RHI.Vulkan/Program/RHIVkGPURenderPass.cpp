@@ -94,7 +94,7 @@ struct RenderPassCacheKey {
 
 } // namespace ArisenEngine::RHI
 
-ArisenEngine::RHI::RHIVkGPURenderPass::RHIVkGPURenderPass(RHIVkDevice* device, UInt32 maxFramesInFlight): GPURenderPass(maxFramesInFlight), m_Device(device)
+ArisenEngine::RHI::RHIVkGPURenderPass::RHIVkGPURenderPass(RHIVkDevice* device, UInt32 maxFramesInFlight): RHIRenderPass(maxFramesInFlight), m_Device(device)
 {
     m_VkRenderPasses.resize(maxFramesInFlight);
     for(int i = 0; i < maxFramesInFlight; ++i)
@@ -112,8 +112,8 @@ ArisenEngine::RHI::RHIVkGPURenderPass::~RHIVkGPURenderPass() noexcept
 }
 
 void ArisenEngine::RHI::RHIVkGPURenderPass::AddAttachmentAction(EFormat format, ESampleCountFlagBits sample,
-                                                                AttachmentLoadOp colorLoadOp, AttachmentStoreOp colorStoreOp, AttachmentLoadOp stencilLoadOp,
-                                                                AttachmentStoreOp stencilStoreOp, EImageLayout initialLayout, EImageLayout finalLayout)
+                                                                EAttachmentLoadOp colorLoadOp, EAttachmentStoreOp colorStoreOp, EAttachmentLoadOp stencilLoadOp,
+                                                                EAttachmentStoreOp stencilStoreOp, EImageLayout initialLayout, EImageLayout finalLayout)
 {
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format = static_cast<VkFormat>(format);
@@ -244,9 +244,9 @@ void ArisenEngine::RHI::RHIVkGPURenderPass::FreeAllRenderPasses()
     LOG_DEBUG("## Destroy All Cached Vulkan Render Passes ##");
 }
 
-ArisenEngine::RHI::GPUSubPass* ArisenEngine::RHI::RHIVkGPURenderPass::AddSubPass()
+ArisenEngine::RHI::RHISubPass* ArisenEngine::RHI::RHIVkGPURenderPass::AddSubPass()
 {
-    std::shared_ptr<GPUSubPass> subpass;
+    std::shared_ptr<RHISubPass> subpass;
     if (m_SubpassPool.size() > 0)
     {
         subpass = m_SubpassPool.back();

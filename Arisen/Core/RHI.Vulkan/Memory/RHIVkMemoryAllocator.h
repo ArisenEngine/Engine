@@ -1,5 +1,5 @@
 #pragma once
-#include "RHI/Memory/RHIMemoryAllocator.h"
+#include "RHI/Allocation/RHIMemoryAllocator.h"
 #include <vma/vk_mem_alloc.h>
 #include "vulkan_core.h"
 

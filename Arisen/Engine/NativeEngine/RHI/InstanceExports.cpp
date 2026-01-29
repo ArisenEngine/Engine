@@ -4,14 +4,14 @@
 
 using namespace ArisenEngine;
 
-extern "C" ENGINE_DLL RHI_InstanceHandle RHI_CreateInstance(const RHI::InstanceInfo* info)
+extern "C" ENGINE_DLL RHI_InstanceHandle RHI_CreateInstance(const RHI::RHIInstanceInfo* info)
 {
     if (info == nullptr)
     {
         LOG_FATAL("[RHI_CreateInstance] info is null");
         return nullptr;
     }
-    RHI::InstanceInfo copy = *info;
+    RHI::RHIInstanceInfo copy = *info;
     auto* instance = Graphics::RHILoader::CreateInstance(std::move(copy));
     return reinterpret_cast<RHI_InstanceHandle>(instance);
 }
@@ -79,14 +79,14 @@ extern "C" ENGINE_DLL bool RHI_Instance_IsSurfacesAvailable(RHI_InstanceHandle i
     return inst->IsSurfacesAvailable();
 }
 
-extern "C" ENGINE_DLL bool RHI_Instance_PresentModeSupported(RHI_InstanceHandle instance, unsigned int windowId, RHI::PresentMode mode)
+extern "C" ENGINE_DLL bool RHI_Instance_PresentModeSupported(RHI_InstanceHandle instance, unsigned int windowId, RHI::EPresentMode mode)
 {
     auto* inst = reinterpret_cast<RHI::RHIInstance*>(instance);
     if (inst == nullptr) return false;
     return inst->PresentModeSupported(std::move(windowId), mode);
 }
 
-extern "C" ENGINE_DLL void RHI_Instance_SetCurrentPresentMode(RHI_InstanceHandle instance, unsigned int windowId, RHI::PresentMode mode)
+extern "C" ENGINE_DLL void RHI_Instance_SetCurrentPresentMode(RHI_InstanceHandle instance, unsigned int windowId, RHI::EPresentMode mode)
 {
     auto* inst = reinterpret_cast<RHI::RHIInstance*>(instance);
     if (inst == nullptr) return;
@@ -100,10 +100,10 @@ extern "C" ENGINE_DLL RHI::EFormat RHI_Instance_GetSuitableSwapChainFormat(RHI_I
     return inst->GetSuitableSwapChainFormat(std::move(windowId));
 }
 
-extern "C" ENGINE_DLL RHI::PresentMode RHI_Instance_GetSuitablePresentMode(RHI_InstanceHandle instance, unsigned int windowId)
+extern "C" ENGINE_DLL RHI::EPresentMode RHI_Instance_GetSuitablePresentMode(RHI_InstanceHandle instance, unsigned int windowId)
 {
     auto* inst = reinterpret_cast<RHI::RHIInstance*>(instance);
-    if (inst == nullptr) return static_cast<RHI::PresentMode>(0);
+    if (inst == nullptr) return static_cast<RHI::EPresentMode>(0);
     return inst->GetSuitablePresentMode(std::move(windowId));
 }
 

@@ -6,25 +6,25 @@
 
 // RHI Includes
 #include "RHI/Enums/Pipeline/EAccessFlag.h"
-#include "RHI/Enums/Memory/EBufferUsage.h"
+#include "RHI/Enums/Buffer/EBufferUsage.h"
 #include "RHI/Enums/Pipeline/EColorComponentFlag.h"
 #include "RHI/Enums/Pipeline/ECommandBufferUsageFlagBits.h"
 #include "RHI/Enums/Pipeline/EIndexType.h"
-#include "RHI/Enums/Attachment/AttachmentLoadOp.h"
-#include "RHI/Enums/Attachment/AttachmentStoreOp.h"
+#include "RHI/Enums/Attachment/EAttachmentLoadOp.h"
+#include "RHI/Enums/Attachment/EAttachmentStoreOp.h"
 #include "RHI/Enums/Image/EImageAspectFlagBits.h"
 #include "RHI/Enums/Subpass/ESubpassContents.h"
-#include "RHI/Surfaces/Surface.h"
-#include "RHI/Surfaces/FrameBuffer.h"
+#include "RHI/Presentation/RHISurface.h"
+#include "RHI/RenderPass/RHIFrameBuffer.h"
 #include "RHI/Handles/RHIHandle.h"
-#include "RHI/Definitions/RHICommon.h"
-#include "RHI/Synchronization/RHIImageMemoryBarrier.h"
-#include "RHI/CommandBuffer/RHICommandBuffer.h"
-#include "RHI/CommandBuffer/RHICommandBufferPool.h"
-#include "RHI/Pipeline/GPUPipelineManager.h"
-#include "RHI/Pipeline/GPUPipelineStateObject.h"
-#include "RHI/Pipeline/GPUSubPass.h"
-#include "RHI/Pipeline/GPUPipelineStateObject.h"
+#include "RHI/Core/RHICommon.h"
+#include "RHI/Sync/RHIImageMemoryBarrier.h"
+#include "RHI/Commands/RHICommandBuffer.h"
+#include "RHI/Commands/RHICommandBufferPool.h"
+#include "RHI/Pipeline/RHIPipelineCache.h"
+#include "RHI/Pipeline/RHIPipelineState.h"
+#include "RHI/RenderPass/RHISubPass.h"
+#include "RHI/Pipeline/RHIPipelineState.h"
 
 // Engine Exports
 #include "../../Engine/NativeEngine/RHI/RHIExports.h"
@@ -401,7 +401,7 @@ namespace ArisenEngine::Testing
                 L"-spirv",
                 envStr,
                 L"0",
-                RHI::ProgramStage::Vertex,
+                RHI::EProgramStage::Vertex,
                 {},
                 {},
                 currentPath + L"\\"+ shaderFileName + L".vert.spirv",
@@ -419,7 +419,7 @@ namespace ArisenEngine::Testing
             {
                 auto program = RHI_Device_CreateGPUProgram(m_Context.device);
                 std::string nameStr = String::WStringToString(path);
-                auto desc = RHI::GPUProgramDesc
+                auto desc = RHI::RHIShaderProgramDesc
                 {
                     outputVertex.codeSize,
                     outputVertex.codePointer,
@@ -444,7 +444,7 @@ namespace ArisenEngine::Testing
                 L"-spirv",
                 envStr,
                 L"0",
-                RHI::ProgramStage::Fragment,
+                RHI::EProgramStage::Fragment,
                 {},
                 {},
                 currentPath + L"\\" + shaderFileName + L".frag.spirv",
@@ -462,7 +462,7 @@ namespace ArisenEngine::Testing
             {
                 auto program = RHI_Device_CreateGPUProgram(m_Context.device);
                 std::string nameStr = String::WStringToString(path);
-                auto desc = RHI::GPUProgramDesc
+                auto desc = RHI::RHIShaderProgramDesc
                 {
                     outputfragment.codeSize,
                     outputfragment.codePointer,
@@ -481,7 +481,7 @@ namespace ArisenEngine::Testing
 
         void InitBuffer()
         {
-            RHI::BufferDescriptor vbDesc{
+            RHI::RHIBufferDescriptor vbDesc{
                 0,
                 sizeof(vertices[0]) * (UInt64)vertices.size(),
                 RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT,
@@ -491,7 +491,7 @@ namespace ArisenEngine::Testing
             };
             m_Context.vertexBufferHandle = RHI_Device_CreateBuffer(m_Context.device, &vbDesc, "Vertex Buffer");
 
-            RHI::BufferDescriptor ibDesc{
+            RHI::RHIBufferDescriptor ibDesc{
                 0,
                 sizeof(indices[0]) * (UInt64)indices.size(),
                 RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_INDEX_BUFFER_BIT,
@@ -503,7 +503,7 @@ namespace ArisenEngine::Testing
 
             for (int i = 0; i < (int)m_MaxFramesInFlight; ++i)
             {
-                RHI::BufferDescriptor ubDesc{
+                RHI::RHIBufferDescriptor ubDesc{
                     0,
                     sizeof(UniformBufferObject),
                     RHI::BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -539,7 +539,7 @@ namespace ArisenEngine::Testing
 
             const UInt64 imageSize = static_cast<UInt64>(texWidth) * static_cast<UInt64>(texHeight) * 4ull;
 
-            RHI::ImageDescriptor imgDesc{
+            RHI::RHIImageDescriptor imgDesc{
                 RHI::IMAGE_TYPE_2D, static_cast<UInt32>(texWidth), static_cast<UInt32>(texHeight), 1,
                 1, 1, RHI::FORMAT_R8G8B8A8_SRGB, RHI::IMAGE_TILING_OPTIMAL,
                 RHI::IMAGE_LAYOUT_UNDEFINED, RHI::IMAGE_USAGE_SAMPLED_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT,
@@ -548,7 +548,7 @@ namespace ArisenEngine::Testing
                 RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             };
             m_Context.textureHandle = RHI_Device_CreateImage(m_Context.device, &imgDesc, "Texture Image");
-            RHI::ImageViewDesc imageViewDesc {
+            RHI::RHIImageViewDesc imageViewDesc {
                 RHI::IMAGE_VIEW_TYPE_2D, RHI::FORMAT_R8G8B8A8_SRGB, RHI::IMAGE_ASPECT_COLOR_BIT,
                 0, 1, 0, 1,
             };
@@ -566,7 +566,7 @@ namespace ArisenEngine::Testing
             auto vertexBufferHandle = m_Context.vertexBufferHandle;
             auto indicesBufferHandle = m_Context.indicesBufferHandle;
             
-            RHI::BufferDescriptor vsb{
+            RHI::RHIBufferDescriptor vsb{
                 0,
                 sizeof(vertices[0]) * vertices.size(),
                 RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -577,7 +577,7 @@ namespace ArisenEngine::Testing
             auto vertexStagingBufferHandle = RHI_Device_CreateBuffer(device, &vsb, "Vertex Staging Buffer");
             RHI_Buffer_MemoryCopy(device, vertexStagingBufferHandle, vertices.data(), 0);
 
-            RHI::BufferDescriptor isb{
+            RHI::RHIBufferDescriptor isb{
                 0,
                 sizeof(indices[0]) * indices.size(),
                 RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -608,7 +608,7 @@ namespace ArisenEngine::Testing
         void UploadImage(UInt64 textureSize, void* data, UInt32 texWidth, UInt32 texHeight)
         {
             auto device = m_Context.device;
-            RHI::BufferDescriptor tsb{
+            RHI::RHIBufferDescriptor tsb{
                 0,
                 textureSize,
                 RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -642,7 +642,7 @@ namespace ArisenEngine::Testing
             }
 
             {
-                ArisenEngine::Containers::Vector<RHI::BufferImageCopy> regions{
+                ArisenEngine::Containers::Vector<RHI::RHIBufferImageCopy> regions{
                     { 0, 0, 0, { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 }, 0, 0, 0, texWidth, texHeight, 1 }
                 };
                 RHI_Cmd_CopyBufferToImage(commandBuffer, textureStagingBufferHandle, m_Context.textureHandle,
@@ -716,8 +716,8 @@ namespace ArisenEngine::Testing
 
             RHI_Cmd_Begin(commandBuffer, m_FrameIndex, 0);
             {
-                auto renderPass = reinterpret_cast<RHI::GPURenderPass*>(context.renderPass);
-                auto frameBuffer = reinterpret_cast<RHI::FrameBuffer*>(context.frameBuffer);
+                auto renderPass = reinterpret_cast<RHI::RHIRenderPass*>(context.renderPass);
+                auto frameBuffer = reinterpret_cast<RHI::RHIFrameBuffer*>(context.frameBuffer);
                 auto surface = RHI_Instance_GetSurface(this->m_Instance, context.windowId);
                 auto swapchain = RHI_Surface_GetSwapChain(surface);
                 RHI_ImageHandle backBuffer = RHI_SwapChain_AquireCurrentImage(swapchain, m_FrameIndex);

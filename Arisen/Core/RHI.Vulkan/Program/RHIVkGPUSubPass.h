@@ -2,11 +2,11 @@
 #include <vulkan/vulkan_core.h>
 
 #include "RHIVkGPURenderPass.h"
-#include "RHI/Pipeline/GPUSubPass.h"
+#include "RHI/RenderPass/RHISubPass.h"
 
 namespace ArisenEngine::RHI
 {
-    class RHIVkGPUSubPass final : public GPUSubPass
+    class RHIVkGPUSubPass final : public RHISubPass
     {
     public:
         NO_COPY_NO_MOVE(RHIVkGPUSubPass)
@@ -21,7 +21,7 @@ namespace ArisenEngine::RHI
         void ClearAll() override;
         const UInt32 GetIndex() const override { return m_Index; }
 
-        SubpassDescription GetDescriptions() override;
+        RHISubpassDescription GetDescriptions() override;
     
     private:
 

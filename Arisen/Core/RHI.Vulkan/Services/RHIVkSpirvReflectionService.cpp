@@ -29,7 +29,7 @@ namespace ArisenEngine::RHI
             spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 
             // Set execution model stage
-            outData.Stage = static_cast<RHI::ProgramStage>(MapSpirvExecutionModelToStage(compiler.get_execution_model()));
+            outData.Stage = static_cast<RHI::EProgramStage>(MapSpirvExecutionModelToStage(compiler.get_execution_model()));
 
             auto processResources = [&](const spirv_cross::SmallVector<spirv_cross::Resource>& resourceList, EDescriptorType defaultType)
             {

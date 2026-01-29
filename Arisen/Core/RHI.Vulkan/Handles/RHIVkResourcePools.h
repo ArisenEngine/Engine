@@ -9,8 +9,8 @@
 
 namespace ArisenEngine::RHI {
 
-class GPUPipeline;
-class GPUProgram;
+class RHIPipeline;
+class RHIShaderProgram;
 class RHICommandBufferPool;
 
 /**
@@ -104,16 +104,16 @@ struct RHIVkSamplerPoolItem {
  */
 struct RHIVkRenderPassPoolItem {
     VkRenderPass renderPass{VK_NULL_HANDLE};
-    void* renderPassObj{nullptr}; // Pointer to GPURenderPass if needed
+    void* renderPassObj{nullptr}; // Pointer to RHIRenderPass if needed
     std::string name{"Anonymous"};
     RHIResourceHandle registryHandle;
 };
 
 /**
- * @brief Internal Vulkan implementation data for a FrameBuffer.
+ * @brief Internal Vulkan implementation data for a RHIFrameBuffer.
  */
 struct RHIVkFrameBufferPoolItem {
-    VkFramebuffer frameBuffer{VK_NULL_HANDLE};
+    VkFramebuffer framebuffer{VK_NULL_HANDLE};
     UInt32 width{0};
     UInt32 height{0};
     std::string name{"Anonymous"};
@@ -133,7 +133,7 @@ struct RHIVkSemaphorePoolItem {
  * @brief Internal Vulkan implementation data for a Pipeline.
  */
 struct RHIVkPipelinePoolItem {
-    GPUPipeline* pipeline{nullptr}; 
+    RHIPipeline* pipeline{nullptr}; 
     std::string name{"Anonymous"};
     RHIResourceHandle registryHandle;
 };
@@ -148,10 +148,10 @@ struct RHIVkFencePoolItem {
 };
 
 /**
- * @brief Internal Vulkan implementation data for a GPUProgram.
+ * @brief Internal Vulkan implementation data for a RHIShaderProgram.
  */
 struct RHIVkGPUProgramPoolItem {
-    GPUProgram* program{nullptr};
+    RHIShaderProgram* program{nullptr};
     std::string name{"Anonymous"}; // Debug name
     RHIResourceHandle registryHandle;
 };

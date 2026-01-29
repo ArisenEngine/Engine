@@ -1,0 +1,46 @@
+#pragma once
+#include "RHIPipeline.h"
+#include "../Handles/RHIHandle.h"
+#include "RHIShaderProgram.h"
+#include "Base/FoundationMinimal.h"
+#include "RHI/Enums/Pipeline/EDynamicState.h"
+#include "RHI/Enums/Pipeline/EPrimitiveTopology.h"
+
+namespace ArisenEngine::RHI
+{
+    class RHIPipelineState;
+
+    // TODO
+    struct SpecializationInfoDesc
+    {
+        
+    };
+    
+    struct PipelineShaderStageDesc
+    {
+        UInt32 flag;
+        EShaderStage stage;
+        RHIShaderProgram& program;
+        std::optional<SpecializationInfoDesc> specializationInfo;
+    };
+    
+    class RHIPipelineCache
+    {
+    public:
+        
+        NO_COPY_NO_MOVE_NO_DEFAULT(RHIPipelineCache)
+        RHIPipelineCache(UInt32 maxFramesInFlight);
+        virtual ~RHIPipelineCache() noexcept = default;
+        virtual RHIPipelineHandle GetGraphicsPipeline(RHIPipelineState* pso) = 0;
+
+        virtual std::unique_ptr<RHIPipelineState> GetPipelineState() = 0;
+    protected:
+        UInt32 m_MaxFramesInFlight;
+    };
+
+    inline RHIPipelineCache::RHIPipelineCache(UInt32 maxFramesInFlight):m_MaxFramesInFlight(maxFramesInFlight)
+    {
+            
+    }
+}
+

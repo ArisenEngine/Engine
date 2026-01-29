@@ -1,8 +1,8 @@
 #include "HandlesExports.h"
 
 #include "../../Core/RHI.Vulkan/Devices/RHIVkDevice.h"
-#include "../../Core/Core.RHI/RHI/Devices/RHIFactory.h"
-#include "../../Core/Core.RHI/RHI/Devices/RHIFactory.h"
+#include "../../Core/Core.RHI/RHI/Core/RHIFactory.h"
+#include "../../Core/Core.RHI/RHI/Core/RHIFactory.h"
 #include "../../../Core/RHI.Vulkan/Handles/RHIVkResourcePools.h"
 #include "RHINativeBridge.h"
 #include <unordered_map>
@@ -11,11 +11,11 @@
 
 using namespace ArisenEngine;
 
-extern "C" ENGINE_DLL RHI_BufferHandle RHI_Device_CreateBuffer(RHI_DeviceHandle device, const ArisenEngine::RHI::BufferDescriptor* desc, const char* name)
+extern "C" ENGINE_DLL RHI_BufferHandle RHI_Device_CreateBuffer(RHI_DeviceHandle device, const ArisenEngine::RHI::RHIBufferDescriptor* desc, const char* name)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr || desc == nullptr) return 0;
-    RHI::BufferDescriptor copy = *desc;
+    RHI::RHIBufferDescriptor copy = *desc;
     auto handle = dev->GetFactory()->CreateBuffer(std::move(copy), name != nullptr ? name : "Anonymous");
     return *reinterpret_cast<unsigned long long*>(&handle);
 }
@@ -63,11 +63,11 @@ extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Range(RHI_DeviceHandle devic
     return dev->GetBufferRange(h);
 }
 
-extern "C" ENGINE_DLL RHI_ImageHandle RHI_Device_CreateImage(RHI_DeviceHandle device, const ArisenEngine::RHI::ImageDescriptor* desc, const char* name)
+extern "C" ENGINE_DLL RHI_ImageHandle RHI_Device_CreateImage(RHI_DeviceHandle device, const ArisenEngine::RHI::RHIImageDescriptor* desc, const char* name)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr || desc == nullptr) return 0;
-    RHI::ImageDescriptor copy = *desc;
+    RHI::RHIImageDescriptor copy = *desc;
     auto handle = dev->GetFactory()->CreateImage(std::move(copy), name != nullptr ? name : "Anonymous");
     return *reinterpret_cast<unsigned long long*>(&handle);
 }
@@ -83,13 +83,13 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseImage(RHI_DeviceHandle device, RHI_
 // Internalized or deprecated
 
 
-extern "C" ENGINE_DLL RHI_ImageViewHandle RHI_Image_AddImageView(RHI_DeviceHandle device, RHI_ImageHandle image, const RHI::ImageViewDesc* desc)
+extern "C" ENGINE_DLL RHI_ImageViewHandle RHI_Image_AddImageView(RHI_DeviceHandle device, RHI_ImageHandle image, const RHI::RHIImageViewDesc* desc)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr || image == 0 || desc == nullptr) return 0ULL;
     auto hImg = *reinterpret_cast<RHI::RHIImageHandle*>(&image);
     
-    RHI::ImageViewDesc copy = *desc;
+    RHI::RHIImageViewDesc copy = *desc;
     auto ivHandle = dev->GetFactory()->CreateImageView(hImg, std::move(copy));
     
     return *reinterpret_cast<unsigned long long*>(&ivHandle);
@@ -172,16 +172,16 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseGPUProgram(RHI_DeviceHandle device,
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr || program == 0) return;
-    auto h = *reinterpret_cast<RHI::RHIGPUProgramHandle*>(&program);
+    auto h = *reinterpret_cast<RHI::RHIShaderProgramHandle*>(&program);
     dev->GetFactory()->ReleaseGPUProgram(h);
 }
 
-extern "C" ENGINE_DLL bool RHI_Device_AttachProgramByteCode(RHI_DeviceHandle device, RHI_GPUProgramHandle program, const ArisenEngine::RHI::GPUProgramDesc* desc)
+extern "C" ENGINE_DLL bool RHI_Device_AttachProgramByteCode(RHI_DeviceHandle device, RHI_GPUProgramHandle program, const ArisenEngine::RHI::RHIShaderProgramDesc* desc)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr || program == 0 || desc == nullptr) return false;
-    auto h = *reinterpret_cast<RHI::RHIGPUProgramHandle*>(&program);
-    RHI::GPUProgramDesc copy = *desc;
+    auto h = *reinterpret_cast<RHI::RHIShaderProgramHandle*>(&program);
+    RHI::RHIShaderProgramDesc copy = *desc;
     return dev->GetFactory()->AttachProgramByteCode(h, std::move(copy));
 }
 

@@ -1,7 +1,7 @@
 #include "CommandBufferExports.h"
-#include "../../Core/Core.RHI/RHI/Devices/RHIFactory.h"
-#include "../../Core/Core.RHI/RHI/CommandBuffer/RHICommandBufferPool.h"
-#include "../../Core/Core.RHI/RHI/Devices/RHIDevice.h"
+#include "../../Core/Core.RHI/RHI/Core/RHIFactory.h"
+#include "../../Core/Core.RHI/RHI/Commands/RHICommandBufferPool.h"
+#include "../../Core/Core.RHI/RHI/Core/RHIDevice.h"
 #include "../../Core/RHI.Vulkan/Devices/RHIVkDevice.h"
 #include "../../Core/Core.RHI/RHI/Handles/RHIHandle.h"
 
@@ -150,7 +150,7 @@ extern "C" ENGINE_DLL void RHI_Cmd_CopyBuffer(RHI_CommandBufferHandle cmd, RHI_B
     c->CopyBuffer(sh, static_cast<UInt64>(srcOffset), dh, static_cast<UInt64>(dstOffset), static_cast<UInt64>(size));
 }
 
-extern "C" ENGINE_DLL void RHI_Cmd_CopyBufferToImage(RHI_CommandBufferHandle cmd, RHI_BufferHandle src, RHI_ImageHandle dst, RHI::EImageLayout dstLayout, Containers::Vector<RHI::BufferImageCopy>* regions)
+extern "C" ENGINE_DLL void RHI_Cmd_CopyBufferToImage(RHI_CommandBufferHandle cmd, RHI_BufferHandle src, RHI_ImageHandle dst, RHI::EImageLayout dstLayout, Containers::Vector<RHI::RHIBufferImageCopy>* regions)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
     if (c == nullptr || src == 0 || dst == 0 || regions == nullptr) return;
@@ -207,7 +207,7 @@ extern "C" ENGINE_DLL void RHI_Cmd_EndRendering(RHI_CommandBufferHandle cmd)
 extern "C" ENGINE_DLL void RHI_Cmd_BindDescriptorSets_FromPool(RHI_CommandBufferHandle cmd, unsigned int frameIndex, RHI::EPipelineBindPoint bindPoint, unsigned int firstSet, RHI_DescriptorPoolHandle pool, unsigned int poolId)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
-    auto* p = reinterpret_cast<RHI::DescriptorPool*>(pool);
+    auto* p = reinterpret_cast<RHI::RHIDescriptorPool*>(pool);
     if (c == nullptr || p == nullptr) return;
     auto& sets = p->GetDescriptorSets(poolId);
     c->BindDescriptorSets(frameIndex, bindPoint, firstSet, const_cast<Containers::Vector<std::shared_ptr<RHI::RHIDescriptorSet>>&>(sets), 0, nullptr);

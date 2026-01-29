@@ -5,17 +5,17 @@
 
 #include "Base/FoundationMinimal.h"
 #include "Logger/Logger.h"
-#include "RHI/Enums/Attachment/AttachmentLoadOp.h"
-#include "RHI/Enums/Attachment/AttachmentStoreOp.h"
+#include "RHI/Enums/Attachment/EAttachmentLoadOp.h"
+#include "RHI/Enums/Attachment/EAttachmentStoreOp.h"
 #include "RHI/Enums/Image/ESampleCountFlagBits.h"
 #include "RHI/Enums/Image/EFormat.h"
 #include "RHI/Enums/Image/EImageLayout.h"
-#include "RHI/Pipeline/GPURenderPass.h"
+#include "RHI/RenderPass/RHIRenderPass.h"
 
 namespace ArisenEngine::RHI
 {
     class RHIVkDevice;
-    class RHIVkGPURenderPass final : public GPURenderPass
+    class RHIVkGPURenderPass final : public RHIRenderPass
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkGPURenderPass)
@@ -31,8 +31,8 @@ namespace ArisenEngine::RHI
         void AddAttachmentAction(
             EFormat format,
             ESampleCountFlagBits sample,
-            AttachmentLoadOp colorLoadOp, AttachmentStoreOp colorStoreOp,
-            AttachmentLoadOp stencilLoadOp, AttachmentStoreOp stencilStoreOp,
+            EAttachmentLoadOp colorLoadOp, EAttachmentStoreOp colorStoreOp,
+            EAttachmentLoadOp stencilLoadOp, EAttachmentStoreOp stencilStoreOp,
             EImageLayout initialLayout, EImageLayout finalLayout
             ) override;
 
@@ -41,7 +41,7 @@ namespace ArisenEngine::RHI
         void AllocRenderPass(UInt32 frameIndex) override;
         void FreeRenderPass(UInt32 frameIndex) override;
         void FreeAllRenderPasses() override;
-        GPUSubPass* AddSubPass() override;
+        RHISubPass* AddSubPass() override;
         UInt32 GetSubPassCount() override;
 
     private:
@@ -64,8 +64,8 @@ namespace ArisenEngine::RHI
         
         Containers::Vector<VkRenderPass> m_VkRenderPasses;
         std::map<RenderPassCacheKey, VkRenderPass> m_RenderPassCache;
-        Containers::Vector<std::shared_ptr<GPUSubPass>> m_SubpassPool;
-        Containers::Vector<std::shared_ptr<GPUSubPass>> m_SubpassesToDispatch;
+        Containers::Vector<std::shared_ptr<RHISubPass>> m_SubpassPool;
+        Containers::Vector<std::shared_ptr<RHISubPass>> m_SubpassesToDispatch;
     };
 }
 

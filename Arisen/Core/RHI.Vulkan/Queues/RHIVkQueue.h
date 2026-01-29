@@ -3,7 +3,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "Base/FoundationMinimal.h"
-#include "RHI/Queues/IRHIQueue.h"
+#include "RHI/Queues/RHIQueue.h"
 #include "RHI/Resources/RHIDeferredDeletionQueue.h"
 
 #include <atomic>
@@ -14,7 +14,7 @@ namespace ArisenEngine::RHI
 {
     // Per-queue submit sequencing and GPU completion tracking.
     // Uses timeline semaphores for CPU<->GPU synchronization.
-    class RHIVkQueue final : public IRHIQueue
+    class RHIVkQueue final : public RHIQueue
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkQueue)
