@@ -1,6 +1,6 @@
 #include "HandlesExports.h"
 
-#include "../../Core/RHI.Vulkan/Devices/RHIVkDevice.h"
+#include "../../Core/RHI.Vulkan/Core/RHIVkDevice.h"
 #include "../../Core/Core.RHI/RHI/Core/RHIFactory.h"
 #include "../../Core/Core.RHI/RHI/Core/RHIFactory.h"
 #include "../../../Core/RHI.Vulkan/Handles/RHIVkResourcePools.h"
@@ -200,3 +200,4 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseRenderPass(RHI_DeviceHandle device,
     auto h = *reinterpret_cast<RHI::RHIRenderPassHandle*>(&rp);
     dev->GetFactory()->ReleaseRenderPass(h);
 }
+

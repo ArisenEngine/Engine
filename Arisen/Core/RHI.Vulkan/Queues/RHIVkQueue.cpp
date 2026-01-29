@@ -1,9 +1,9 @@
-#include "RHIVkQueue.h"
-#include "../Devices/RHIVkDevice.h"
+#include "Queues/RHIVkQueue.h"
+#include "Core/RHIVkDevice.h"
 #include "Logger/Logger.h"
 #include "RHI/Commands/RHICommandBuffer.h"
-#include "../CommandBuffer/RHIVkCommandBuffer.h"
-#include "../Program/RHIVkDescriptorPool.h"
+#include "Commands/RHIVkCommandBuffer.h"
+#include "Descriptors/RHIVkDescriptorPool.h"
 
 ArisenEngine::RHI::RHIVkQueue::RHIVkQueue(VkDevice device, VkQueue queue, RHIQueueType type, IRHIDeferredDeletionQueue* deferredDeletionQueue, RHIResourceRegistry* resourceRegistry)
     : m_Device(device), m_Queue(queue), m_Type(type), m_DeferredDeletion(deferredDeletionQueue), m_ResourceRegistry(resourceRegistry)
@@ -183,3 +183,7 @@ void ArisenEngine::RHI::RHIVkQueue::WaitForTicket(RHIGpuTicket ticket)
     vkWaitSemaphores(m_Device, &waitInfo, UINT64_MAX);
     Update();
 }
+
+
+
+

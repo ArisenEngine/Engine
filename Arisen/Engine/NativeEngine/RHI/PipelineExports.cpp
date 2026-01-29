@@ -2,7 +2,7 @@
 #include "../../Core/Core.RHI/RHI/Core/RHIFactory.h"
 #include "../../Core/Core.RHI/RHI/Pipeline/RHIPipelineCache.h"
 #include "../../Core/Core.RHI/RHI/RenderPass/RHISubPass.h"
-#include "../../Core/RHI.Vulkan/Devices/RHIVkDevice.h"
+#include "../../Core/RHI.Vulkan/Core/RHIVkDevice.h"
 #include <unordered_map>
 #include <unordered_map>
 #include <mutex>
@@ -326,5 +326,6 @@ extern "C" ENGINE_DLL void RHI_Pipeline_AllocGraphics(RHI_DeviceHandle device, R
 }
 
 // Moved to HandlesExports: ReleaseRenderPass
+
 
 

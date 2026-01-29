@@ -1,0 +1,26 @@
+#pragma once
+#include <vulkan/vulkan_core.h>
+
+#include "RHI/Sync/RHISemaphore.h"
+
+namespace ArisenEngine::RHI
+{
+    class RHISemaphore;
+    class RHIVkSemaphore final : public RHISemaphore
+    {
+    public:
+        NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkSemaphore)
+        ~RHIVkSemaphore() noexcept override;
+        RHIVkSemaphore(VkDevice device);
+        void* GetHandle() override { return m_VkSemaphore; }
+        void Wait() override {}
+        void Signal() override {}
+    private:
+        VkSemaphore m_VkSemaphore;
+        VkDevice m_VkDevice;
+    };
+}
+
+
+
+
