@@ -146,15 +146,27 @@ void Logger::BindCallback(LogCallback callback)
 void Logger::Log(LogLevel level, const char* msg, const LogSourceLocation& location, const char* thread_name)
 {
     spdlog::level::level_enum spd_level;
+    bool needs_trace = false;
     switch (level)
     {
     case LogLevel::Trace:   spd_level = spdlog::level::trace; break;
     case LogLevel::Debug:   spd_level = spdlog::level::debug; break;
     case LogLevel::Info:    spd_level = spdlog::level::info; break;
-    case LogLevel::Warning: spd_level = spdlog::level::warn; break;
-    case LogLevel::Error:   spd_level = spdlog::level::err; break;
-    case LogLevel::Fatal:   spd_level = spdlog::level::critical; break;
+    case LogLevel::Warning: spd_level = spdlog::level::warn; needs_trace = true; break;
+    case LogLevel::Error:   spd_level = spdlog::level::err; needs_trace = true; break;
+    case LogLevel::Fatal:   spd_level = spdlog::level::critical; needs_trace = true; break;
     default: spd_level = spdlog::level::info; break;
+    }
+
+    std::string full_msg = msg ? msg : "";
+    std::string trace;
+    if (needs_trace)
+    {
+        trace = GetStacktrace();
+        if (!trace.empty())
+        {
+            full_msg += "\n[stacktrace]\n" + trace;
+        }
     }
 
     spdlog::source_loc loc(location.file, static_cast<int>(location.line), location.function);
@@ -162,7 +174,7 @@ void Logger::Log(LogLevel level, const char* msg, const LogSourceLocation& locat
     // Use spdlog's native logging with source location
     if (auto logger = spdlog::default_logger())
     {
-        logger->log(loc, spd_level, msg ? msg : "");
+        logger->log(loc, spd_level, full_msg);
     }
 
     if (m_LogCallback)
@@ -177,7 +189,6 @@ void Logger::Log(LogLevel level, const char* msg, const LogSourceLocation& locat
             tid = ss.str();
         }
         
-        // Callback doesn't get structured location yet, keep it simple for now or update callback signature later if needed
-        m_LogCallback(static_cast<UInt32>(level), tid.c_str(), msg ? msg : "", "");
+        m_LogCallback(static_cast<UInt32>(level), tid.c_str(), msg ? msg : "", trace.c_str());
     }
 }

@@ -18,7 +18,7 @@ cbuffer UboView : register(b0, space0)
 };
 
 Texture2D tex : register(t1, space0);
-SamplerState sam : register(s1, space0);
+SamplerState sam : register(s2, space0);
 
 Varying Vert(Attribute input)
 {

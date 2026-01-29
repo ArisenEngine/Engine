@@ -108,13 +108,6 @@ namespace ArisenEngine::Testing
             0, 1, 2, 2, 3, 0
         };
 
-        // Timing
-        using Clock = std::chrono::high_resolution_clock;
-        Clock::time_point lastTime = Clock::now();
-        double frameTime = 0.0;
-        double fps = 0.0;
-        Float32 s_FrameTimeSpacing = 0.0;
-
     public:
         const char* GetName() const override { return "DynamicRenderingTest"; }
         TestCategory GetCategory() const override { return TestCategory::Rendering; }
@@ -146,8 +139,7 @@ namespace ArisenEngine::Testing
         {
             MSG msg{};
             bool isRunning = true;
-            lastTime = Clock::now();
-
+            
             while (isRunning)
             {
                 while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -234,18 +226,6 @@ namespace ArisenEngine::Testing
             }
 
             NextFrame();
-            
-            auto currentTime = Clock::now();
-            std::chrono::duration<double> delta = currentTime - lastTime;
-            lastTime = currentTime;
-            frameTime = delta.count();
-            fps = (1.0 / frameTime) * 0.1 + fps * 0.9;
-            s_FrameTimeSpacing += (Float32)frameTime;
-            if (s_FrameTimeSpacing >= 1.0)
-            {
-                s_FrameTimeSpacing = 0.0;
-                std::cout << "FPS:" << fps << ", Delta Time:"<< frameTime << std::endl;
-            }
         }
 
         void InitRenderContext()
