@@ -8,7 +8,7 @@ cmake_minimum_required(VERSION 3.29)
 #         -DTARGET=ArisenEngineTest -DPLATFORM=Windows
 #
 # Key concepts:
-#   - TARGET controls which high-level target to configure (Editor, DXTest, etc.)
+#   - TARGET controls which high-level target to configure (Editor, WindowsPlayerSupport, etc.)
 #   - PLATFORM sets platform macros and optional .NET runtime selection
 #   - PROJECT_DIR/OUTPUT_DIR unify IDE project and binary output locations
 #   - Custom targets drive .NET builds and resource copy steps
@@ -23,8 +23,8 @@ if(NOT DEFINED PLATFORM)
     message(FATAL_ERROR "Please specify -DPLATFORM=[Windows|Android|Linux|Apple].")
 endif()
 
-if(${TARGET} STREQUAL "ArisenEngineTest")
-project("ArisenEngineTest" LANGUAGES CXX)
+if(${TARGET} STREQUAL "ArisenEngineTest" OR ${TARGET} STREQUAL "NativeEngineTest")
+project("{TARGET}" LANGUAGES CXX)
 else()
 project("Arisen${TARGET}" LANGUAGES CXX)
 endif()
@@ -60,12 +60,12 @@ if(PLATFORM_UPPER STREQUAL "WINDOWS")
 elseif(PLATFORM_UPPER STREQUAL "ANDROID")
     set(PLATFORM_MACRO "ANDROID_PLATFORM")
     set(ENGINE_LIB_SUFFIX ".so")
-    # 没有正式支持�?Android RID，跳�?dotnet runtime 设置
+    # 没有正式支持�?Android RID，跳�?dotnet runtime 设置
     set(DOTNET_RUNTIME "")
 elseif(PLATFORM_UPPER STREQUAL "APPLE")
     set(PLATFORM_MACRO "APPLE_PLATFORM")
     set(ENGINE_LIB_SUFFIX ".a")
-    set(DOTNET_RUNTIME "osx-x64") # 如果�?ARM，可以用 osx-arm64
+    set(DOTNET_RUNTIME "osx-x64") # 如果�?ARM，可以用 osx-arm64
 elseif(PLATFORM_UPPER STREQUAL "LINUX")
     set(PLATFORM_MACRO "LINUX_PLATFORM")
     set(ENGINE_LIB_SUFFIX ".so")

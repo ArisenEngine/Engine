@@ -42,7 +42,6 @@ target_include_directories(RHITestCase PRIVATE
     ${CMAKE_SOURCE_DIR}/Engine/NativeEngine
     )  
 
-# è®¾ç½®ä¸?Windows GUI å­�ç³»ç»?
 set_target_properties(RHITestCase PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
