@@ -23,8 +23,8 @@ if(NOT DEFINED PLATFORM)
     message(FATAL_ERROR "Please specify -DPLATFORM=[Windows|Android|Linux|Apple].")
 endif()
 
-if(${TARGET} STREQUAL "ArisenEngineTest" OR ${TARGET} STREQUAL "NativeEngineTest")
-project("{TARGET}" LANGUAGES CXX)
+if(${TARGET} STREQUAL "CSharpEngineTest" OR ${TARGET} STREQUAL "NativeEngineTest")
+project(${TARGET} LANGUAGES CXX)
 else()
 project("Arisen${TARGET}" LANGUAGES CXX)
 endif()
@@ -158,15 +158,15 @@ add_subdirectory(Core/RHI.DX12)
 add_subdirectory(Core/RHI.Vulkan)
 add_subdirectory(Engine/NativeEngine)
 
-if("${TARGET}" STREQUAL "RHITestCase")
-    add_subdirectory(Test/RHITestCase)
+if("${TARGET}" STREQUAL "NativeEngineTest")
+    add_subdirectory(Test/NativeEngineTest)
 endif()
 
 if("${TARGET}" STREQUAL "DXTest")
 add_subdirectory(Test/DXTest)
 endif()
 
-if(NOT "${TARGET}" STREQUAL "RHITestCase" AND NOT "${TARGET}" STREQUAL "DXTest")
+if(NOT "${TARGET}" STREQUAL "NativeEngineTest" AND NOT "${TARGET}" STREQUAL "DXTest")
 
     # Setup .NET paths (BindingGenerator, AutoBinding, Engine)
 set(BINDING_GENERATOR_DIR ${CMAKE_SOURCE_DIR}/BindingGenerator)
@@ -283,15 +283,15 @@ if(${TARGET} STREQUAL "Editor")
 elseif(${TARGET} STREQUAL "WindowsPlayerSupport")
     # Add your platform player support setup here
 
-elseif(${TARGET} STREQUAL "RHITestCase" OR ${TARGET} STREQUAL "DXTest")    
+elseif(${TARGET} STREQUAL "NativeEngineTest" OR ${TARGET} STREQUAL "DXTest")    
 
-elseif(${TARGET} STREQUAL "ArisenEngineTest")    
+elseif(${TARGET} STREQUAL "CSharpEngineTest")    
 
-    set(ARISEN_ENGINE_TEST_PROJ ${CMAKE_SOURCE_DIR}/Test/ArisenEngineTest/ArisenEngineTest.csproj)
-    set(ARISEN_ENGINE_TEST_PROJ_DIR ${CMAKE_SOURCE_DIR}/Test/ArisenEngineTest/)
+    set(ARISEN_ENGINE_TEST_PROJ ${CMAKE_SOURCE_DIR}/Test/CSharpEngineTest/CSharpEngineTest.csproj)
+    set(ARISEN_ENGINE_TEST_PROJ_DIR ${CMAKE_SOURCE_DIR}/Test/CSharpEngineTest/)
 
     # Copy shader resources for test if present; otherwise create an empty dir to avoid build failure
-    set(SHADER_LAB_RES "${CMAKE_SOURCE_DIR}/Test/ArisenEngineTest/ShaderLabRes")
+    set(SHADER_LAB_RES "${CMAKE_SOURCE_DIR}/Test/CSharpEngineTest/ShaderLabRes")
     set(SHADER_LAB_RES_DEST "${OUTPUT_DIR}/ShaderLabRes")
 
     if(EXISTS "${SHADER_LAB_RES}")
@@ -311,7 +311,7 @@ elseif(${TARGET} STREQUAL "ArisenEngineTest")
     endif()
     set_target_properties(CopyShaderLabRes PROPERTIES FOLDER "CMakeProcess")
 
-    add_custom_target(BuildArisenEngineTest ALL
+    add_custom_target(BuildCSharpEngineTest ALL
     COMMAND dotnet build ${ARISEN_ENGINE_TEST_PROJ} --configuration $<CONFIG>
     WORKING_DIRECTORY ${ARISEN_ENGINE_TEST_PROJ_DIR}
     COMMENT "Building Arisen Engine Test"
@@ -319,9 +319,9 @@ elseif(${TARGET} STREQUAL "ArisenEngineTest")
     VERBATIM
     USES_TERMINAL
     )
-    add_dependencies(BuildArisenEngineTest BuildArisenEngine)
-    add_dependencies(BuildArisenEngineTest CopyShaderLabRes)
-    set_target_properties(BuildArisenEngineTest PROPERTIES FOLDER "CMakeProcess")
+    add_dependencies(BuildCSharpEngineTest BuildArisenEngine)
+    add_dependencies(BuildCSharpEngineTest CopyShaderLabRes)
+    set_target_properties(BuildCSharpEngineTest PROPERTIES FOLDER "CMakeProcess")
 else()
     message(FATAL_ERROR "Unknown TARGET: ${TARGET}")
 endif()
