@@ -140,7 +140,7 @@ VkSurfaceFormatKHR VulkanApplication::ChooseSwapSurfaceFormat(const std::vector<
 {
 	for (const auto& availableFormat : availableFormats)
 	{
-		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.EColorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 		{
 			return availableFormat;
 		}
@@ -215,7 +215,7 @@ void VulkanApplication::CreateSwapChain()
 	SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(m_PhysicalDevice);
 
 	VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
-	VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
+	VkPresentModeKHR EPresentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
 	VkExtent2D extent = ChooseSwapExtent(swapChainSupport.capabilities);
 
 	uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
@@ -229,7 +229,7 @@ void VulkanApplication::CreateSwapChain()
 	createInfo.surface = m_Surface;
 	createInfo.minImageCount = imageCount;
 	createInfo.imageFormat = surfaceFormat.format;
-	createInfo.imageColorSpace = surfaceFormat.colorSpace;
+	createInfo.imageColorSpace = surfaceFormat.EColorSpace;
 	createInfo.imageExtent = extent;
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -253,7 +253,7 @@ void VulkanApplication::CreateSwapChain()
 
 	createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
 	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	createInfo.presentMode = presentMode;
+	createInfo.EPresentMode = EPresentMode;
 	createInfo.clipped = VK_TRUE;
 	createInfo.oldSwapchain = VK_NULL_HANDLE;
 
@@ -852,8 +852,8 @@ void VulkanApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint3
 	renderPassInfo.renderPass = m_RenderPass;
 	renderPassInfo.framebuffer = m_SwapChainFramebuffers[imageIndex];
 
-	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = m_SwapChainExtent;
+	renderPassInfo.RHIRenderArea.offset = { 0, 0 };
+	renderPassInfo.RHIRenderArea.extent = m_SwapChainExtent;
 
 	VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
 	renderPassInfo.clearValueCount = 1;

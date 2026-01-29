@@ -15,12 +15,12 @@ ArisenEngine::RHI::RHIVkGPUPipelineStateObject::~RHIVkGPUPipelineStateObject() n
     Clear();
 }
 
-ArisenEngine::RHI::RHIVkGPUPipelineStateObject::RHIVkGPUPipelineStateObject(RHIVkDevice* device): GPUPipelineStateObject(), m_Device(device)
+ArisenEngine::RHI::RHIVkGPUPipelineStateObject::RHIVkGPUPipelineStateObject(RHIVkDevice* device): RHIPipelineState(), m_Device(device)
 {
     LOG_DEBUG("[RHIVkGPUPipelineStateObject::RHIVkGPUPipelineStateObject]: PSO Create.");
 }
 
-void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddProgram(RHIGPUProgramHandle handle)
+void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddProgram(RHIShaderProgramHandle handle)
 {
     auto* item = m_Device->GetGPUProgramPool()->Get(handle);
     if (!item || !item->program)

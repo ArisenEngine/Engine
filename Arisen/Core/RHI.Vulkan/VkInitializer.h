@@ -9,8 +9,8 @@
 #include "RHI/Enums/Pipeline/EAccessFlag.h"
 #include "RHI/Enums/Pipeline/EPipelineStageFlag.h"
 #include "RHI/Enums/Image/EImageLayout.h"
-#include "RHI/Synchronization/RHIImageSubresourceRange.h"
-#include "RHI/Memory/ImageSubresourceLayers.h"
+#include "RHI/Sync/RHIImageSubresourceRange.h"
+#include "RHI/Allocation/RHIImageSubresourceLayers.h"
 // #include "RHI/Handles/ImageHandle.h"
 
 #define VK_STRUCT_INITIALIZE(type, name) type name ##{##};
@@ -181,7 +181,7 @@ namespace ArisenEngine::RHI
         UInt64 bufferOffset,
         UInt32 bufferRowLength,
         UInt32 bufferImageHeight,
-        ImageSubresourceLayers imageSubresource,
+        RHIImageSubresourceLayers imageSubresource,
     SInt32 offsetX, SInt32 offsetY, SInt32 offsetZ,
     UInt32 width, UInt32 height, UInt32 depth)
     {

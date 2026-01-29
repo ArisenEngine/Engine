@@ -1,12 +1,12 @@
 #pragma once
 #include "../Surfaces/RHIVkFrameBuffer.h"
-#include "RHI/CommandBuffer/RHICommandBuffer.h"
+#include "RHI/Commands/RHICommandBuffer.h"
 #include "RHI/Enums/Pipeline/EIndexType.h"
 #include "RHI/Enums/Subpass/EDependencyFlag.h"
 #include "RHI/Handles/RHIHandle.h"
-#include "RHI/Synchronization/RHIBufferMemoryBarrier.h"
-#include "RHI/Synchronization/RHIImageMemoryBarrier.h"
-#include "RHI/Synchronization/RHIMemoryBarrier.h"
+#include "RHI/Sync/RHIBufferMemoryBarrier.h"
+#include "RHI/Sync/RHIImageMemoryBarrier.h"
+#include "RHI/Sync/RHIMemoryBarrier.h"
 #include <vulkan/vulkan_core.h>
 #include <thread>
 
@@ -14,7 +14,7 @@
 namespace ArisenEngine::RHI {
 class RHIVkCommandBufferPool;
 class RHIVkDevice;
-class DescriptorPool;
+class RHIDescriptorPool;
 class RHIVkCommandBuffer final : public RHICommandBuffer {
 public:
   NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkCommandBuffer)
@@ -60,12 +60,12 @@ public:
       UInt32 frameIndex, EPipelineBindPoint bindPoint, UInt32 firstSet,
       Containers::Vector<std::shared_ptr<RHIDescriptorSet>> &descriptorsets,
       UInt32 dynamicOffsetCount, const UInt32 *pDynamicOffsets) override;
-  void TrackDescriptorPoolUse(DescriptorPool *pool, UInt32 poolId) override;
+  void TrackDescriptorPoolUse(RHIDescriptorPool *pool, UInt32 poolId) override;
 
   void
   CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst,
                     EImageLayout dstImageLayout,
-                    Containers::Vector<BufferImageCopy> &&regions) override;
+                    Containers::Vector<RHIBufferImageCopy> &&regions) override;
   void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage,
                        UInt32 dependency,
                        const RHIMemoryBarrier *pMemoryBarriers,
@@ -130,10 +130,10 @@ private:
   Containers::Vector<VkDescriptorSet> m_VkDescriptorSets{};
   Containers::Vector<VkBufferImageCopy> m_VkBufferImageCopies{};
 
-  GPUPipeline *m_CurrentPipeline{nullptr};
+  RHIPipeline *m_CurrentPipeline{nullptr};
 
   struct TrackedPoolUse {
-    DescriptorPool *pool{nullptr};
+    RHIDescriptorPool *pool{nullptr};
     UInt32 poolId{0};
   };
   Containers::Vector<TrackedPoolUse> m_TrackedDescriptorPools;

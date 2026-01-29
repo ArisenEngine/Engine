@@ -1,20 +1,20 @@
 #pragma once
 #include "RHIVkSurface.h"
 #include "RHI/Handles/RHIHandle.h"
-#include "RHI/Surfaces/SwapChain.h"
+#include "RHI/Presentation/RHISwapChain.h"
 
 namespace ArisenEngine::RHI
 {
     class RHIVkSurface;
     
-    class RHIVkSwapChain final : public SwapChain
+    class RHIVkSwapChain final : public RHISwapChain
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkSwapChain)
         RHIVkSwapChain(RHIDevice* device, const RHIVkSurface* surface, UInt32 maxFramesInFlight);
         ~RHIVkSwapChain() noexcept override;
         void* GetHandle() const override { return m_VkSwapChain; };
-        void CreateSwapChainWithDesc(SwapChainDescriptor desc) override;
+        void CreateSwapChainWithDesc(RHISwapChainDescriptor desc) override;
 
         RHISemaphoreHandle GetImageAvailableSemaphore(UInt32 frameIndex) const override;
         RHISemaphoreHandle GetRenderFinishSemaphore(UInt32 frameIndex) const override;

@@ -1,7 +1,7 @@
 #pragma once
-#include "../Definitions/RHICommon.h"
+#include "../Core/RHICommon.h"
 #include "../Enums/Pipeline/EDescriptorType.h"
-#include "../Enums/Pipeline/ProgramStage.h"
+#include "../Enums/Pipeline/EProgramStage.h"
 #include <vector>
 #include <string>
 
@@ -35,7 +35,7 @@ namespace ArisenEngine::RHI
     // Reflection data for a single shader stage
     struct RHIShaderReflectionData
     {
-        RHI::ProgramStage Stage;
+        RHI::EProgramStage Stage;
         std::vector<RHIShaderResourceBinding> ResourceBindings;
         std::vector<RHIPushConstantRange> PushConstants;
     };

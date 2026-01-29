@@ -1,6 +1,6 @@
 #pragma once
 #include "EngineCommon.h"
-#include "../../Core/Core.RHI/RHI/Descriptors/DescriptorPool.h"
+#include "../../Core/Core.RHI/RHI/Descriptors/RHIDescriptorPool.h"
 #include "../../Core/Core.RHI/RHI/Descriptors/RHIDescriptorSet.h"
 
 #include "RHIHandleExports.h"

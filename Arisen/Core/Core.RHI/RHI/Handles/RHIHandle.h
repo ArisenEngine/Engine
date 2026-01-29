@@ -36,7 +36,7 @@ struct RHIFenceTag {};
 struct RHISemaphoreTag {};
 struct RHIRenderPassTag {};
 struct RHIFrameBufferTag {};
-struct RHIGPUProgramTag {};
+struct RHIShaderProgramTag {};
 struct RHICommandBufferPoolTag {};
 
 using RHIBufferHandle = RHIHandle<RHIBufferTag>;
@@ -51,7 +51,7 @@ using RHIFenceHandle = RHIHandle<RHIFenceTag>;
 using RHISemaphoreHandle = RHIHandle<RHISemaphoreTag>;
 using RHIRenderPassHandle = RHIHandle<RHIRenderPassTag>;
 using RHIFrameBufferHandle = RHIHandle<RHIFrameBufferTag>;
-using RHIGPUProgramHandle = RHIHandle<RHIGPUProgramTag>;
+using RHIShaderProgramHandle = RHIHandle<RHIShaderProgramTag>;
 using RHICommandBufferPoolHandle = RHIHandle<RHICommandBufferPoolTag>;
 struct RHIResourceTag {};
 using RHIResourceHandle = RHIHandle<RHIResourceTag>;

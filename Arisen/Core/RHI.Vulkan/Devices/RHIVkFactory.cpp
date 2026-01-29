@@ -5,7 +5,7 @@
 #include "../Program/RHIVkGPURenderPass.h"
 // #include "../Surfaces/RHIVkFrameBufferPoolItem.h"
 #include "../Handles/RHIVkResourcePools.h"
-#include "RHI/Instance/RHIInstance.h"
+#include "RHI/Core/RHIInstance.h"
 #include "../VkInitializer.h"
 
 namespace ArisenEngine::RHI
@@ -14,7 +14,7 @@ namespace ArisenEngine::RHI
     {
     }
 
-    RHIGPUProgramHandle RHIVkFactory::CreateGPUProgram()
+    RHIShaderProgramHandle RHIVkFactory::CreateGPUProgram()
     {
         return m_Device->GetGPUProgramPool()->Allocate([this](RHIVkGPUProgramPoolItem* item)
         {
@@ -25,7 +25,7 @@ namespace ArisenEngine::RHI
             // Register for deferred deletion (of the program object itself)
             struct DeferredGPUProgram
             {
-                GPUProgram* prog;
+                RHIShaderProgram* prog;
                 ~DeferredGPUProgram() { delete prog; }
             };
             item->registryHandle = m_Device->GetResourceRegistry()->Create(
@@ -33,12 +33,12 @@ namespace ArisenEngine::RHI
         });
     }
 
-    void RHIVkFactory::ReleaseGPUProgram(RHIGPUProgramHandle handle)
+    void RHIVkFactory::ReleaseGPUProgram(RHIShaderProgramHandle handle)
     {
         m_Device->ReleaseGPUProgram(handle);
     }
 
-    bool RHIVkFactory::AttachProgramByteCode(RHIGPUProgramHandle handle, GPUProgramDesc&& desc)
+    bool RHIVkFactory::AttachProgramByteCode(RHIShaderProgramHandle handle, RHIShaderProgramDesc&& desc)
     {
         auto* item = m_Device->GetGPUProgramPool()->Get(handle);
         if (item && item->program)
@@ -103,13 +103,13 @@ namespace ArisenEngine::RHI
         });
     }
 
-    void RHIVkFactory::ReleaseFrameBuffer(RHIFrameBufferHandle frameBuffer)
+    void RHIVkFactory::ReleaseFrameBuffer(RHIFrameBufferHandle RHIFrameBuffer)
     {
-        m_Device->ReleaseFrameBuffer(frameBuffer);
+        m_Device->ReleaseFrameBuffer(RHIFrameBuffer);
     }
 
     ArisenEngine::RHI::RHIBufferHandle ArisenEngine::RHI::RHIVkFactory::CreateBuffer(
-        ArisenEngine::RHI::BufferDescriptor&& desc, const String& name)
+        ArisenEngine::RHI::RHIBufferDescriptor&& desc, const String& name)
     {
         auto handle = m_Device->GetBufferPool()->Allocate([&name](ArisenEngine::RHI::RHIVkBufferPoolItem* item)
         {
@@ -138,7 +138,7 @@ namespace ArisenEngine::RHI
     }
 
     ArisenEngine::RHI::RHIImageHandle ArisenEngine::RHI::RHIVkFactory::CreateImage(
-        ArisenEngine::RHI::ImageDescriptor&& desc, const String& name)
+        ArisenEngine::RHI::RHIImageDescriptor&& desc, const String& name)
     {
         auto handle = m_Device->GetImagePool()->Allocate([&name](ArisenEngine::RHI::RHIVkImagePoolItem* item)
         {
@@ -167,7 +167,7 @@ namespace ArisenEngine::RHI
     }
 
     ArisenEngine::RHI::RHIImageViewHandle ArisenEngine::RHI::RHIVkFactory::CreateImageView(
-        ArisenEngine::RHI::RHIImageHandle imageHandle, ArisenEngine::RHI::ImageViewDesc&& desc)
+        ArisenEngine::RHI::RHIImageHandle imageHandle, ArisenEngine::RHI::RHIImageViewDesc&& desc)
     {
         auto handle = m_Device->GetImageViewPool()->Allocate([](ArisenEngine::RHI::RHIVkImageViewPoolItem* item)
         {

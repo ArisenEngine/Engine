@@ -5,7 +5,7 @@ using namespace ArisenEngine::HAL;
 
 extern "C" SHADERCOMPILER_DLL bool CompileShaderFromFileSimple(
     const wchar_t* input,
-    ArisenEngine::RHI::ProgramStage stage,
+    ArisenEngine::RHI::EProgramStage stage,
     const wchar_t* entry,
     const wchar_t* shaderModel,
     const wchar_t* target,

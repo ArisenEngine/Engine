@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan_core.h>
 
-ArisenEngine::RHI::RHIVkAttachment::RHIVkAttachment(AttachmentDesc&& desc) : Attachment()
+ArisenEngine::RHI::RHIVkAttachment::RHIVkAttachment(RHIAttachmentDesc&& desc) : RHIAttachment()
 {
 }
 

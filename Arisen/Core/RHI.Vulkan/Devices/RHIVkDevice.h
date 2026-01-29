@@ -1,6 +1,6 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
-#include "RHI/Devices/RHIDevice.h"
+#include "RHI/Core/RHIDevice.h"
 #include "RHI/Resources/RHIDeferredDeletionQueue.h"
 #include "RHI/Resources/RHIResourceRegistry.h"
 #include "../Surfaces/RHIVkSurface.h"
@@ -14,13 +14,13 @@
 #include <memory>
 #include <functional>
 #include "../Program/RHIVkGPURenderPass.h"
-#include "RHI/Synchronization/FrameSyncTracker.h"
+#include "RHI/Sync/FrameSyncTracker.h"
 
 namespace ArisenEngine::RHI
 {
     class RHIVkCommandBufferPool;
     class RHIVkDeferredDeletion;
-    class IRHIQueue;
+    class RHIQueue;
     class RHIVkBindlessManager;
     class RHIVkMemoryAllocator;
     class RHIVkBindlessManager; // Forward decl
@@ -56,7 +56,7 @@ namespace ArisenEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkDevice)
         ~RHIVkDevice() noexcept override;
         void* GetHandle() const override { return m_VkDevice; }
-        RHIVkDevice(RHIInstance* instance, Surface* surface, VkQueue graphicQueue, VkQueue presentQueue,
+        RHIVkDevice(RHIInstance* instance, RHISurface* surface, VkQueue graphicQueue, VkQueue presentQueue,
                     VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties, UInt32 graphicsFamilyIndex);
 
         void DeviceWaitIdle() const override;
@@ -65,12 +65,12 @@ namespace ArisenEngine::RHI
         RHIFactory* GetFactory() const override;
         UInt32 GetMaxFramesInFlight() const override;
 
-        GPUPipelineManager* GetGPUPipelineManager() const override
+        RHIPipelineCache* GetPipelineCache() const override
         {
             return m_GPUPipelineManager;
         }
 
-        DescriptorPool* GetDescriptorPool() const override
+        RHIDescriptorPool* GetDescriptorPool() const override
         {
             return m_DescriptorPool;
         }
@@ -78,7 +78,7 @@ namespace ArisenEngine::RHI
         RHIMemoryAllocator* GetMemoryAllocator() const override;
 
         RHIGpuTicket Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex) override;
-        IRHIQueue* GetQueue(RHIQueueType type) override;
+        RHIQueue* GetQueue(RHIQueueType type) override;
         void DeferredDelete(RHIQueueType queue, RHIGpuTicket ticket, RHIDeferredDeleteItem item) override;
         UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) override;
 
@@ -121,7 +121,7 @@ namespace ArisenEngine::RHI
         std::unique_ptr<IRHIDeferredDeletionQueue> m_DeferredDeletion;
         std::unique_ptr<RHIResourceRegistry> m_ResourceRegistry;
         std::atomic<UInt32> m_CurrentFrameIndex{0};
-        std::unique_ptr<IRHIQueue> m_GraphicsQueue;
+        std::unique_ptr<RHIQueue> m_GraphicsQueue;
         std::unique_ptr<FrameSyncTracker> m_FrameSync;
 
         // Specialized resource pools for handle-based architecture
@@ -135,7 +135,7 @@ namespace ArisenEngine::RHI
         std::unique_ptr<RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>> m_PipelinePool;
         std::unique_ptr<RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>> m_FencePool;
 
-        std::unique_ptr<RHIResourcePool<RHIGPUProgramHandle, RHIVkGPUProgramPoolItem>> m_GPUProgramPool;
+        std::unique_ptr<RHIResourcePool<RHIShaderProgramHandle, RHIVkGPUProgramPoolItem>> m_GPUProgramPool;
         std::unique_ptr<RHIResourcePool<RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>>
         m_CommandBufferPoolPool;
         std::unique_ptr<RHIResourcePool<RHICommandBufferHandle, RHIVkCommandBufferItem>> m_CommandBufferPool;
@@ -143,7 +143,7 @@ namespace ArisenEngine::RHI
     public:
         // Handle-based operations
     private:
-        bool AllocBuffer(RHIBufferHandle handle, BufferDescriptor&& desc) override;
+        bool AllocBuffer(RHIBufferHandle handle, RHIBufferDescriptor&& desc) override;
         bool AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits) override;
         void ReleaseBuffer(RHIBufferHandle handle) override;
         void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt32 offset) override;
@@ -151,11 +151,11 @@ namespace ArisenEngine::RHI
         UInt64 GetBufferOffset(RHIBufferHandle handle) override;
         UInt64 GetBufferRange(RHIBufferHandle handle) override;
 
-        bool AllocImage(RHIImageHandle handle, ImageDescriptor&& desc) override;
+        bool AllocImage(RHIImageHandle handle, RHIImageDescriptor&& desc) override;
         bool AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits) override;
         void ReleaseImage(RHIImageHandle handle) override;
 
-        bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, ImageViewDesc&& desc) override;
+        bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, RHIImageViewDesc&& desc) override;
         void ReleaseImageView(RHIImageViewHandle handle) override;
         RHIImageViewHandle FindImageViewForImage(RHIImageHandle imageHandle) override;
 
@@ -166,7 +166,7 @@ namespace ArisenEngine::RHI
         void ReleaseFrameBuffer(RHIFrameBufferHandle handle) override;
         void ReleasePipeline(RHIPipelineHandle handle) override;
 
-        void ReleaseGPUProgram(RHIGPUProgramHandle handle);
+        void ReleaseGPUProgram(RHIShaderProgramHandle handle);
         void ReleaseCommandBufferPool(RHICommandBufferPoolHandle handle);
         void ReleaseCommandBuffer(RHICommandBufferHandle handle);
 
@@ -210,7 +210,7 @@ namespace ArisenEngine::RHI
 
         RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>* GetFencePool() const { return m_FencePool.get(); }
 
-        RHIResourcePool<RHIGPUProgramHandle, RHIVkGPUProgramPoolItem>* GetGPUProgramPool() const
+        RHIResourcePool<RHIShaderProgramHandle, RHIVkGPUProgramPoolItem>* GetGPUProgramPool() const
         {
             return m_GPUProgramPool.get();
         }

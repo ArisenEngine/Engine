@@ -1,13 +1,13 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
 #include "RHIVkGPURenderPass.h"
-#include "RHI/Pipeline/GPUPipelineManager.h"
+#include "RHI/Pipeline/RHIPipelineCache.h"
 
 namespace ArisenEngine::RHI
 {
     class RHIVkDevice;
 
-    class RHIVkGPUPipelineManager final : public GPUPipelineManager
+    class RHIVkGPUPipelineManager final : public RHIPipelineCache
     {
 
     public:
@@ -15,12 +15,12 @@ namespace ArisenEngine::RHI
         RHIVkGPUPipelineManager(RHIVkDevice* device, UInt32 maxFramesInFlight);
         ~RHIVkGPUPipelineManager() noexcept override;
 
-        RHIPipelineHandle GetGraphicsPipeline(GPUPipelineStateObject* pso) override;
-        std::unique_ptr<GPUPipelineStateObject> GetPipelineState() override;
+        RHIPipelineHandle GetGraphicsPipeline(RHIPipelineState* pso) override;
+        std::unique_ptr<RHIPipelineState> GetPipelineState() override;
     private:
         
         RHIVkDevice* m_Device;
-        Containers::Map<UInt32, std::unique_ptr<GPUPipeline>> m_GPUPipelines;
+        Containers::Map<UInt32, std::unique_ptr<RHIPipeline>> m_GPUPipelines;
         Containers::Map<UInt32, RHIPipelineHandle> m_PipelineHandles;
 
     };

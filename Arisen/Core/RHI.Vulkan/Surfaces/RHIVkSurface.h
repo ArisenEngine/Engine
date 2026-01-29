@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RHI/Surfaces/Surface.h"
+#include "RHI/Presentation/RHISurface.h"
 #include "../Common.h"
 
 #if VK_USE_PLATFORM_WIN32_KHR
@@ -16,7 +16,7 @@ namespace ArisenEngine::RHI
 {
     class RHIVkSwapChain;
     
-    class RHIVkSurface final : public Surface
+    class RHIVkSurface final : public RHISurface
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkSurface);
@@ -27,7 +27,7 @@ namespace ArisenEngine::RHI
         void InitSwapChain() override;
         const VkQueueFamilyIndices GetQueueFamilyIndices() const { return m_QueueFamilyIndices; }
 
-        SwapChain* GetSwapChain() override;
+        RHISwapChain* GetSwapChain() override;
     private:
 
         friend class RHIVkDevice;

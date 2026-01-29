@@ -1,5 +1,5 @@
 #pragma once
-#include "RHI/Devices/RHIFactory.h"
+#include "RHI/Core/RHIFactory.h"
 #include <vulkan/vulkan_core.h>
 
 namespace ArisenEngine::RHI
@@ -12,9 +12,9 @@ namespace ArisenEngine::RHI
         explicit RHIVkFactory(RHIVkDevice* device);
         ~RHIVkFactory() noexcept override = default;
 
-        RHIGPUProgramHandle CreateGPUProgram() override;
-        void ReleaseGPUProgram(RHIGPUProgramHandle handle) override;
-        bool AttachProgramByteCode(RHIGPUProgramHandle handle, GPUProgramDesc&& desc) override;
+        RHIShaderProgramHandle CreateGPUProgram() override;
+        void ReleaseGPUProgram(RHIShaderProgramHandle handle) override;
+        bool AttachProgramByteCode(RHIShaderProgramHandle handle, RHIShaderProgramDesc&& desc) override;
 
         RHICommandBufferPoolHandle CreateCommandBufferPool() override;
         void ReleaseCommandBufferPool(RHICommandBufferPoolHandle handle) override;
@@ -23,15 +23,15 @@ namespace ArisenEngine::RHI
         void ReleaseRenderPass(RHIRenderPassHandle renderPass) override;
 
         RHIFrameBufferHandle CreateFrameBuffer() override;
-        void ReleaseFrameBuffer(RHIFrameBufferHandle frameBuffer) override;
+        void ReleaseFrameBuffer(RHIFrameBufferHandle RHIFrameBuffer) override;
 
-        RHIBufferHandle CreateBuffer(BufferDescriptor&& desc, const String& name = "Anonymous") override;
+        RHIBufferHandle CreateBuffer(RHIBufferDescriptor&& desc, const String& name = "Anonymous") override;
         void ReleaseBuffer(RHIBufferHandle bufferHandle) override;
 
-        RHIImageHandle CreateImage(ImageDescriptor&& desc, const String& name = "Anonymous") override;
+        RHIImageHandle CreateImage(RHIImageDescriptor&& desc, const String& name = "Anonymous") override;
         void ReleaseImage(RHIImageHandle imageHandle) override;
 
-        RHIImageViewHandle CreateImageView(RHIImageHandle image, ImageViewDesc&& desc) override;
+        RHIImageViewHandle CreateImageView(RHIImageHandle image, RHIImageViewDesc&& desc) override;
         void ReleaseImageView(RHIImageViewHandle imageView) override;
 
         RHISamplerHandle CreateSampler(RHISamplerDesc&& desc) override;

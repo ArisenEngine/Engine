@@ -7,7 +7,7 @@
 #include "CoreShaderCompilerCommon.h"
 #include "../Core.HAL/CoreHALCommon.h"
 #include "Logger/Logger.h"
-#include "RHI/Enums/Pipeline/ProgramStage.h"
+#include "RHI/Enums/Pipeline/EProgramStage.h"
 #include <fstream>
 #if __has_include(<optional>)
 #include <optional>
@@ -37,7 +37,7 @@ using Microsoft::WRL::ComPtr;
 namespace ArisenEngine::HAL
 {
 #if defined(ARISEN_AUTOBINDING)
-    inline String GetStagePrefix(RHI::ProgramStage stage)
+    inline String GetStagePrefix(RHI::EProgramStage stage)
     {
         switch (static_cast<uint32_t>(stage))
         {
@@ -88,7 +88,7 @@ namespace ArisenEngine::HAL
         String target{ L"-spirv" };
         String targetEnv;
         String optimizeLevel{ L"0" };
-        RHI::ProgramStage stage;
+        RHI::EProgramStage stage;
 
         std::vector<String> defines;
         std::vector<String> includes;
@@ -297,7 +297,7 @@ namespace ArisenEngine::HAL
     // A simpler C ABI for managed callers: avoids constructing STL containers from C# side
     extern "C" SHADERCOMPILER_DLL bool CompileShaderFromFileSimple(
         const wchar_t* input,
-        RHI::ProgramStage stage,
+        RHI::EProgramStage stage,
         const wchar_t* entry,
         const wchar_t* shaderModel,
         const wchar_t* target,

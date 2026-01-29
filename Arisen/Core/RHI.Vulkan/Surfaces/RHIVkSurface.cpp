@@ -3,7 +3,7 @@
 
 #include "../RHIVkInstance.h"
 #include "Logger/Logger.h"
-#include "RHI/Enums/Image/CompositeAlphaFlagBits.h"
+#include "RHI/Enums/Image/ECompositeAlphaFlagBits.h"
 #include "RHI/Enums/Image/EImageUsageFlagBits.h"
 #include "Windowing/HALWindow.h"
 #include "Windowing/RenderWindowAPI.h"
@@ -19,7 +19,7 @@ ArisenEngine::RHI::RHIVkSurface::~RHIVkSurface() noexcept
 }
 
 ArisenEngine::RHI::RHIVkSurface::RHIVkSurface(UInt32&& id, RHIInstance* instance):
-Surface(std::move(id), instance), m_SwapChainSupportDetail({}), m_SwapChain(nullptr)
+RHISurface(std::move(id), instance), m_SwapChainSupportDetail({}), m_SwapChain(nullptr)
 {
     VkWin32SurfaceCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
@@ -74,7 +74,7 @@ void RHI::RHIVkSurface::InitSwapChain()
         queueFamilyIndexCount = 0; // Optional
     }
     
-    SwapChainDescriptor desc {};
+    RHISwapChainDescriptor desc {};
     desc.width = width;
     desc.height = height;
     desc.imageCount = imageCount;
@@ -82,9 +82,9 @@ void RHI::RHIVkSurface::InitSwapChain()
     desc.imageUsageFlagBits = IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     desc.queueFamilyIndexCount = queueFamilyIndexCount;
     desc.colorFormat = static_cast<EFormat>(formats.format);
-    desc.colorSpace = static_cast<ColorSpace>(formats.colorSpace);
+    desc.EColorSpace = static_cast<EColorSpace>(formats.EColorSpace);
     desc.sharingMode = sharingMode;
-    desc.presentMode = static_cast<PresentMode>(presentMode);
+    desc.EPresentMode = static_cast<EPresentMode>(presentMode);
     desc.clipped = true;
     desc.surfaceTransformFlagBits = static_cast<UInt32>(m_SwapChainSupportDetail.capabilities.currentTransform);
     desc.compositeAlphaFlagBits = COMPOSITE_ALPHA_OPAQUE_BIT;
@@ -92,7 +92,7 @@ void RHI::RHIVkSurface::InitSwapChain()
     m_SwapChain->CreateSwapChainWithDesc(desc);
 }
 
-RHI::SwapChain* RHI::RHIVkSurface::GetSwapChain()
+RHI::RHISwapChain* RHI::RHIVkSurface::GetSwapChain()
 {
     return m_SwapChain;
 }
@@ -101,7 +101,7 @@ VkSurfaceFormatKHR RHI::RHIVkSurface::GetDefaultSurfaceFormat()
 {
     for (const auto& availableFormat : m_SwapChainSupportDetail.formats)
     {
-        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.EColorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
         {
             return availableFormat;
         }

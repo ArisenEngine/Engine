@@ -1,6 +1,6 @@
 #pragma once
-#include "../Definitions/RHICommon.h"
-#include "../Devices/RHIDevice.h"
+#include "../Core/RHICommon.h"
+#include "../Core/RHIDevice.h"
 #include "RHI/Enums/Sampler/EBorderColor.h"
 #include "RHI/Enums/Sampler/ECompareOp.h"
 #include "RHI/Enums/Sampler/EFilter.h"

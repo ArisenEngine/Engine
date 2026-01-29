@@ -8,7 +8,7 @@
 
 namespace ArisenEngine::RHI {
 
-ArisenEngine::RHI::RHIVkFrameBuffer::RHIVkFrameBuffer(RHIVkDevice* device, UInt32 maxFramesInFlight): FrameBuffer(maxFramesInFlight), m_Device(device)
+ArisenEngine::RHI::RHIVkFrameBuffer::RHIVkFrameBuffer(RHIVkDevice* device, UInt32 maxFramesInFlight): RHIFrameBuffer(maxFramesInFlight), m_Device(device)
 {
     m_VkFrameBuffers.resize(maxFramesInFlight);
     for (int i = 0; i < maxFramesInFlight; ++i)
@@ -30,12 +30,12 @@ void* ArisenEngine::RHI::RHIVkFrameBuffer::GetHandle(UInt32 currentFrameIndex)
     return m_VkFrameBuffers[currentFrameIndex % m_MaxFramesInFlight];
 }
 
-void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachment(UInt32 frameIndex, RHIImageViewHandle imageView, GPURenderPass* renderPass)
+void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachment(UInt32 frameIndex, RHIImageViewHandle imageView, RHIRenderPass* renderPass)
 {
     SetAttachments(frameIndex, { imageView }, renderPass);
 }
 
-void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachments(UInt32 frameIndex, const Containers::Vector<RHIImageViewHandle>& imageViews, GPURenderPass* renderPass)
+void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachments(UInt32 frameIndex, const Containers::Vector<RHIImageViewHandle>& imageViews, RHIRenderPass* renderPass)
 {
     if (imageViews.empty()) return;
 
@@ -80,12 +80,12 @@ void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachments(UInt32 frameIndex, cons
         auto device = static_cast<VkDevice>(m_Device->GetHandle());
         if (vkCreateFramebuffer(device, &createInfo, nullptr, &newFb) != VK_SUCCESS)
         {
-            LOG_FATAL_AND_THROW("[RHIVkFrameBuffer::SetAttachments]: failed to create framebuffer!");
+            LOG_FATAL_AND_THROW("[RHIVkFrameBuffer::SetAttachments]: failed to create RHIFrameBuffer!");
         }
 
         m_VkFrameBuffers[frameIndex % m_MaxFramesInFlight] = newFb;
         m_FramebufferCache[key] = newFb;
-        LOG_DEBUG("[RHIVkFrameBuffer::SetAttachments]: New Vulkan FrameBuffer Cached.");
+        LOG_DEBUG("[RHIVkFrameBuffer::SetAttachments]: New Vulkan RHIFrameBuffer Cached.");
     }
 
     m_RenderArea.height = key.height;

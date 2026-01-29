@@ -1,13 +1,13 @@
 #pragma once
-#include "RHI/Surfaces/Attachment.h"
+#include "RHI/Presentation/RHIAttachment.h"
 
 namespace ArisenEngine::RHI
 {
-    class RHIVkAttachment final : public Attachment
+    class RHIVkAttachment final : public RHIAttachment
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkAttachment)
-        RHIVkAttachment(AttachmentDesc&& desc);
+        RHIVkAttachment(RHIAttachmentDesc&& desc);
         ~RHIVkAttachment() noexcept override;
     };
 }

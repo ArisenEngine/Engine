@@ -20,7 +20,7 @@ namespace ArisenEngine::Testing
         {
             LOG_INFO("Running Bindless Resource Test...");
 
-            RHI::BufferDescriptor bufDesc{
+            RHI::RHIBufferDescriptor bufDesc{
                 0, 1024,
                 RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT,
                 RHI::SHARING_MODE_EXCLUSIVE,
@@ -39,7 +39,7 @@ namespace ArisenEngine::Testing
             }
             LOG_INFO("Buffer registered at bindless index: " + std::to_string(bufferIndex));
 
-            RHI::ImageDescriptor imgDesc{
+            RHI::RHIImageDescriptor imgDesc{
                 RHI::IMAGE_TYPE_2D, 256, 256, 1, 1, 1,
                 RHI::FORMAT_R8G8B8A8_UNORM, RHI::IMAGE_TILING_OPTIMAL,
                 RHI::IMAGE_LAYOUT_UNDEFINED, RHI::IMAGE_USAGE_SAMPLED_BIT,
@@ -50,7 +50,7 @@ namespace ArisenEngine::Testing
             RHI_ImageHandle testImage = RHI_Device_CreateImage(m_Device, &imgDesc, "BindlessTestImage");
 
             // Create a view for registration
-            RHI::ImageViewDesc viewDesc{ RHI::IMAGE_VIEW_TYPE_2D, RHI::FORMAT_R8G8B8A8_UNORM, RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+            RHI::RHIImageViewDesc viewDesc{ RHI::IMAGE_VIEW_TYPE_2D, RHI::FORMAT_R8G8B8A8_UNORM, RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
             viewDesc.width = 256;
             viewDesc.height = 256;
             RHI_Image_AddImageView(m_Device, testImage, &viewDesc);

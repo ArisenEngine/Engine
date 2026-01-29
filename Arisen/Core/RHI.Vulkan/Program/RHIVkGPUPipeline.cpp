@@ -1,7 +1,7 @@
 #include "RHIVkGPUPipeline.h"
 
 #include "RHIVkGPUPipelineStateObject.h"
-#include "RHI/Pipeline/GPUPipelineStateObject.h"
+#include "RHI/Pipeline/RHIPipelineState.h"
 #include "../Devices/RHIVkDevice.h"
 
 ArisenEngine::RHI::RHIVkGPUPipeline::~RHIVkGPUPipeline() noexcept
@@ -18,8 +18,8 @@ ArisenEngine::RHI::RHIVkGPUPipeline::~RHIVkGPUPipeline() noexcept
     
 }
 
-ArisenEngine::RHI::RHIVkGPUPipeline::RHIVkGPUPipeline(RHIVkDevice* device, GPUPipelineStateObject* pso, UInt32 maxFramesInFlight):
-GPUPipeline(maxFramesInFlight), m_Device(device), m_VkDevice(static_cast<VkDevice>(device->GetHandle())), m_PipelineStateObject(pso)
+ArisenEngine::RHI::RHIVkGPUPipeline::RHIVkGPUPipeline(RHIVkDevice* device, RHIPipelineState* pso, UInt32 maxFramesInFlight):
+RHIPipeline(maxFramesInFlight), m_Device(device), m_VkDevice(static_cast<VkDevice>(device->GetHandle())), m_PipelineStateObject(pso)
 {
     m_VkGraphicPipelines.resize(maxFramesInFlight);
     m_VkGraphicsPipelineLayouts.resize(maxFramesInFlight);
@@ -36,7 +36,7 @@ void* ArisenEngine::RHI::RHIVkGPUPipeline::GetGraphicsPipeline(UInt32 frameIndex
     return m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight];
 }
 
-void ArisenEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex, GPUSubPass* subPass)
+void ArisenEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex, RHISubPass* subPass)
 {
     FreePipeline(frameIndex);
     FreePipelineLayout(frameIndex);
@@ -220,7 +220,7 @@ void ArisenEngine::RHI::RHIVkGPUPipeline::FreePipeline(UInt32 frameIndex)
     }
 }
 
-void ArisenEngine::RHI::RHIVkGPUPipeline::BindPipelineStateObject(GPUPipelineStateObject* pso)
+void ArisenEngine::RHI::RHIVkGPUPipeline::BindPipelineStateObject(RHIPipelineState* pso)
 {
     m_PipelineStateObject = pso;
 }

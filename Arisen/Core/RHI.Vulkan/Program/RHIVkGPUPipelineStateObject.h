@@ -1,5 +1,5 @@
 #pragma once
-#include "RHI/Pipeline/GPUPipelineStateObject.h"
+#include "RHI/Pipeline/RHIPipelineState.h"
 #include <vulkan/vulkan_core.h>
 
 #include "RHI/Descriptors/RHIDescriptorUpdateInfo.h"
@@ -14,7 +14,7 @@ namespace ArisenEngine::RHI
 
 namespace ArisenEngine::RHI
 {
-    class RHIVkGPUPipelineStateObject final : public GPUPipelineStateObject
+    class RHIVkGPUPipelineStateObject final : public RHIPipelineState
     {
         friend class RHIVkGPUPipeline;
         friend class RHIVkDescriptorPool;
@@ -22,7 +22,7 @@ namespace ArisenEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkGPUPipelineStateObject)
         ~RHIVkGPUPipelineStateObject() noexcept override;
         RHIVkGPUPipelineStateObject(RHIVkDevice* device);
-        void AddProgram(RHIGPUProgramHandle handle) override;
+        void AddProgram(RHIShaderProgramHandle handle) override;
         void ClearAllPrograms() override;
 
         const UInt32 GetHash() const override;

@@ -1,7 +1,7 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
 
-#include "RHI/Synchronization/RHISemaphore.h"
+#include "RHI/Sync/RHISemaphore.h"
 
 namespace ArisenEngine::RHI
 {

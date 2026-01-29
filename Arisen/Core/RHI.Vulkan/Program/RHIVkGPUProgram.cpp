@@ -2,7 +2,7 @@
 #include "Logger/Logger.h"
 #include "../Services/RHIVkSpirvReflectionService.h"
 
-ArisenEngine::RHI::RHIVkGPUProgram::RHIVkGPUProgram(VkDevice device): GPUProgram(), m_VkDevice(device), m_VkShaderModule(VK_NULL_HANDLE)
+ArisenEngine::RHI::RHIVkGPUProgram::RHIVkGPUProgram(VkDevice device): RHIShaderProgram(), m_VkDevice(device), m_VkShaderModule(VK_NULL_HANDLE)
 {
 }
 
@@ -14,7 +14,7 @@ ArisenEngine::RHI::RHIVkGPUProgram::~RHIVkGPUProgram() noexcept
     }
 }
 
-bool ArisenEngine::RHI::RHIVkGPUProgram::AttachProgramByteCode(GPUProgramDesc&& desc)
+bool ArisenEngine::RHI::RHIVkGPUProgram::AttachProgramByteCode(RHIShaderProgramDesc&& desc)
 {
     VkRenderPassBeginInfo renderPassInfo{};
     if (m_VkShaderModule != VK_NULL_HANDLE)

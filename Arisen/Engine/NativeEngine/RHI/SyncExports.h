@@ -1,7 +1,7 @@
 #pragma once
 #include "EngineCommon.h"
-#include "../../Core/Core.RHI/RHI/Synchronization/RHISemaphore.h"
-#include "../../Core/Core.RHI/RHI/Synchronization/RHIFence.h"
+#include "../../Core/Core.RHI/RHI/Sync/RHISemaphore.h"
+#include "../../Core/Core.RHI/RHI/Sync/RHIFence.h"
 
 #include "RHIHandleExports.h"
 

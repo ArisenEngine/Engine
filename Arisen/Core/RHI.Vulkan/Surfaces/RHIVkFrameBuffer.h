@@ -2,7 +2,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "Logger/Logger.h"
-#include "RHI/Surfaces/FrameBuffer.h"
+#include "RHI/RenderPass/RHIFrameBuffer.h"
 #include <map>
 #include <vector>
 #include <tuple>
@@ -10,7 +10,7 @@
 namespace ArisenEngine::RHI
 {
     class RHIVkDevice;
-    class RHIVkFrameBuffer final : public FrameBuffer
+    class RHIVkFrameBuffer final : public RHIFrameBuffer
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkFrameBuffer)
@@ -18,10 +18,10 @@ namespace ArisenEngine::RHI
         ~RHIVkFrameBuffer() noexcept override;
 
         void* GetHandle(UInt32 currentFrameIndex) override;
-        void SetAttachment(UInt32 frameIndex, RHIImageViewHandle imageView, GPURenderPass* renderPass) override;
+        void SetAttachment(UInt32 frameIndex, RHIImageViewHandle imageView, RHIRenderPass* renderPass) override;
         
         // Extended for multi-attachment caching
-        void SetAttachments(UInt32 frameIndex, const Containers::Vector<RHIImageViewHandle>& imageViews, GPURenderPass* renderPass) override;
+        void SetAttachments(UInt32 frameIndex, const Containers::Vector<RHIImageViewHandle>& imageViews, RHIRenderPass* renderPass) override;
 
         EFormat GetAttachFormat() override;
     private:

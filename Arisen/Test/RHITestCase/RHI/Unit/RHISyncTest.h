@@ -1,6 +1,6 @@
 #pragma once
 #include "../RHITestBase.h"
-#include "RHI/Synchronization/RHIImageMemoryBarrier.h"
+#include "RHI/Sync/RHIImageMemoryBarrier.h"
 #include "../../Engine/NativeEngine/RHI/SyncExports.h"
 #include "../../Engine/NativeEngine/RHI/CommandBufferExports.h"
 #include "../../Engine/NativeEngine/RHI/DeviceExports.h"
@@ -28,7 +28,7 @@ namespace ArisenEngine::Testing
             LOG_INFO("Running Synchronization 2.0 Test...");
 
             // Create a dummy image for barrier testing
-            ArisenEngine::RHI::ImageDescriptor desc{
+            ArisenEngine::RHI::RHIImageDescriptor desc{
                 RHI::IMAGE_TYPE_2D, 1024, 1024, 1, 1, 1,
                 RHI::FORMAT_R8G8B8A8_UNORM, RHI::IMAGE_TILING_OPTIMAL,
                 RHI::IMAGE_LAYOUT_UNDEFINED,

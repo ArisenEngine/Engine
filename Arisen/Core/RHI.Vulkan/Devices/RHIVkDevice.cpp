@@ -14,7 +14,7 @@
 using namespace ArisenEngine::RHI;
 
 
-ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surface, VkQueue graphicQueue,
+ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* surface, VkQueue graphicQueue,
                                             VkQueue presentQueue, VkDevice device,
                                             VkPhysicalDeviceMemoryProperties memoryProperties,
                                             UInt32 graphicsFamilyIndex)
@@ -56,7 +56,7 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, Surface* surf
     m_SemaphorePool = std::make_unique<RHIResourcePool<RHISemaphoreHandle, RHIVkSemaphorePoolItem>>();
     m_PipelinePool = std::make_unique<RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>>();
     m_FencePool = std::make_unique<RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>>();
-    m_GPUProgramPool = std::make_unique<RHIResourcePool<RHIGPUProgramHandle, RHIVkGPUProgramPoolItem>>();
+    m_GPUProgramPool = std::make_unique<RHIResourcePool<RHIShaderProgramHandle, RHIVkGPUProgramPoolItem>>();
     m_CommandBufferPoolPool = std::make_unique<RHIResourcePool<
         RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>>();
     m_CommandBufferPool = std::make_unique<RHIResourcePool<
@@ -139,7 +139,7 @@ RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuf
         }
         else
         {
-            // Fallback: queue-managed fence via IRHIQueue.
+            // Fallback: queue-managed fence via RHIQueue.
             submitTicket = m_GraphicsQueue->Submit(commandBuffer);
         }
 
@@ -166,7 +166,7 @@ void ArisenEngine::RHI::RHIVkDevice::WaitQueueTicket(RHIGpuTicket ticket)
 }
 
 
-ArisenEngine::RHI::IRHIQueue* ArisenEngine::RHI::RHIVkDevice::GetQueue(RHIQueueType type)
+ArisenEngine::RHI::RHIQueue* ArisenEngine::RHI::RHIVkDevice::GetQueue(RHIQueueType type)
 {
     if (type == RHIQueueType::Graphics)
     {
@@ -224,7 +224,7 @@ ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDevice::RegisterBindlessResource(RH
 
 // --- Handle-based Buffer Operations ---
 
-bool ArisenEngine::RHI::RHIVkDevice::AllocBuffer(RHIBufferHandle handle, BufferDescriptor&& desc)
+bool ArisenEngine::RHI::RHIVkDevice::AllocBuffer(RHIBufferHandle handle, RHIBufferDescriptor&& desc)
 {
     auto* buffer = m_BufferPool->Get(handle);
     if (!buffer) return false;
@@ -354,7 +354,7 @@ ArisenEngine::UInt64 ArisenEngine::RHI::RHIVkDevice::GetBufferRange(RHIBufferHan
     return buffer ? buffer->range : 0ULL;
 }
 
-bool ArisenEngine::RHI::RHIVkDevice::AllocImage(RHIImageHandle handle, ImageDescriptor&& desc)
+bool ArisenEngine::RHI::RHIVkDevice::AllocImage(RHIImageHandle handle, RHIImageDescriptor&& desc)
 {
     auto* image = m_ImagePool->Get(handle);
     if (!image) return false;
@@ -451,7 +451,7 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseImage(RHIImageHandle handle)
 }
 
 bool ArisenEngine::RHI::RHIVkDevice::AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle,
-                                                    ImageViewDesc&& desc)
+                                                    RHIImageViewDesc&& desc)
 {
     auto* viewItem = m_ImageViewPool->Get(handle);
     auto* imageItem = m_ImagePool->Get(imageHandle);
@@ -752,9 +752,9 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocFrameBuffer(RHIFrameBufferHandle handl
     framebufferInfo.height = viewItem->height;
     framebufferInfo.layers = 1;
 
-    if (vkCreateFramebuffer(m_VkDevice, &framebufferInfo, nullptr, &fbItem->frameBuffer) != VK_SUCCESS)
+    if (vkCreateFramebuffer(m_VkDevice, &framebufferInfo, nullptr, &fbItem->framebuffer) != VK_SUCCESS)
     {
-        LOG_ERROR("[RHIVkDevice::AllocFrameBuffer]: failed to create framebuffer!");
+        LOG_ERROR("[RHIVkDevice::AllocFrameBuffer]: failed to create RHIFrameBuffer!");
         return false;
     }
 
@@ -765,17 +765,17 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocFrameBuffer(RHIFrameBufferHandle handl
     struct DeferredVkFramebuffer
     {
         VkDevice device;
-        VkFramebuffer framebuffer;
+        VkFramebuffer RHIFrameBuffer;
 
         ~DeferredVkFramebuffer()
         {
-            if (device != VK_NULL_HANDLE && framebuffer != VK_NULL_HANDLE)
+            if (device != VK_NULL_HANDLE && RHIFrameBuffer != VK_NULL_HANDLE)
             {
-                vkDestroyFramebuffer(device, framebuffer, nullptr);
+                vkDestroyFramebuffer(device, RHIFrameBuffer, nullptr);
             }
         }
     };
-    auto* deferred = new DeferredVkFramebuffer{m_VkDevice, fbItem->frameBuffer};
+    auto* deferred = new DeferredVkFramebuffer{m_VkDevice, fbItem->framebuffer};
     fbItem->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(deferred));
 
     return true;
@@ -799,7 +799,7 @@ void ArisenEngine::RHI::RHIVkDevice::ResetFence(RHIFenceHandle handle)
     }
 }
 
-void ArisenEngine::RHI::RHIVkDevice::ReleaseGPUProgram(RHIGPUProgramHandle handle)
+void ArisenEngine::RHI::RHIVkDevice::ReleaseGPUProgram(RHIShaderProgramHandle handle)
 {
     auto* item = m_GPUProgramPool->Get(handle);
     if (item)

@@ -1,6 +1,6 @@
 #pragma once
 #include "EngineCommon.h"
-#include "../../Core/Core.RHI/RHI/CommandBuffer/RHICommandBuffer.h"
+#include "../../Core/Core.RHI/RHI/Commands/RHICommandBuffer.h"
 
 #include "RHIHandleExports.h"
 
@@ -23,7 +23,7 @@ extern "C" ENGINE_DLL void RHI_Cmd_BindPipeline(RHI_CommandBufferHandle cmd, uns
 extern "C" ENGINE_DLL void RHI_Cmd_BindVertexBuffers(RHI_CommandBufferHandle cmd, RHI_BufferHandle buffer, unsigned long long offset);
 extern "C" ENGINE_DLL void RHI_Cmd_BindIndexBuffer(RHI_CommandBufferHandle cmd, RHI_BufferHandle buffer, unsigned long long offset, ArisenEngine::RHI::EIndexType type);
 extern "C" ENGINE_DLL void RHI_Cmd_CopyBuffer(RHI_CommandBufferHandle cmd, RHI_BufferHandle src, unsigned long long srcOffset, RHI_BufferHandle dst, unsigned long long dstOffset, unsigned long long size);
-extern "C" ENGINE_DLL void RHI_Cmd_CopyBufferToImage(RHI_CommandBufferHandle cmd, RHI_BufferHandle src, RHI_ImageHandle dst, ArisenEngine::RHI::EImageLayout dstLayout, ArisenEngine::Containers::Vector<ArisenEngine::RHI::BufferImageCopy>* regions);
+extern "C" ENGINE_DLL void RHI_Cmd_CopyBufferToImage(RHI_CommandBufferHandle cmd, RHI_BufferHandle src, RHI_ImageHandle dst, ArisenEngine::RHI::EImageLayout dstLayout, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIBufferImageCopy>* regions);
 extern "C" ENGINE_DLL void RHI_Cmd_PipelineBarrier_Image(RHI_CommandBufferHandle cmd, unsigned int srcStage, unsigned int dstStage, unsigned int dependency, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIImageMemoryBarrier>* imageBarriers);
 extern "C" ENGINE_DLL void RHI_Cmd_WaitSemaphore(RHI_CommandBufferHandle cmd, RHI_SemaphoreHandle semaphore, unsigned int stageFlags);
 extern "C" ENGINE_DLL void RHI_Cmd_SignalSemaphore(RHI_CommandBufferHandle cmd, RHI_SemaphoreHandle semaphore);

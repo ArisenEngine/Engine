@@ -4,11 +4,11 @@ using namespace ArisenEngine;
 #include "Logger/Logger.h"
 #include "../Devices/RHIVkDevice.h"
 #include "../Devices/RHIVkFactory.h"
-#include "RHI/Enums/Image/CompositeAlphaFlagBits.h"
+#include "RHI/Enums/Image/ECompositeAlphaFlagBits.h"
 #include "RHI/Enums/Image/EImageAspectFlagBits.h"
 
 ArisenEngine::RHI::RHIVkSwapChain::RHIVkSwapChain(RHIDevice* device, const RHIVkSurface* surface, UInt32 maxFramesInFlight):
-SwapChain(maxFramesInFlight), m_Device(device), m_VkDevice(static_cast<VkDevice>(
+RHISwapChain(maxFramesInFlight), m_Device(device), m_VkDevice(static_cast<VkDevice>(
             m_Device->GetHandle())),
 m_VkSurface(static_cast<VkSurfaceKHR>(surface->GetHandle())), m_Surface(surface)
 {
@@ -37,7 +37,7 @@ ArisenEngine::RHI::RHIVkSwapChain::~RHIVkSwapChain() noexcept
     Cleanup();
 }
 
-void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescriptor desc)
+void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(RHISwapChainDescriptor desc)
 {
     
     m_Desc = desc;
@@ -49,7 +49,7 @@ void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
     createInfo.surface = m_VkSurface;
     createInfo.minImageCount = m_Desc.imageCount;
     createInfo.imageFormat = static_cast<VkFormat>(m_Desc.colorFormat);
-    createInfo.imageColorSpace = static_cast<VkColorSpaceKHR>( m_Desc.colorSpace);
+    createInfo.imageColorSpace = static_cast<VkColorSpaceKHR>( m_Desc.EColorSpace);
     createInfo.imageExtent = { m_Desc.width,  m_Desc.height};
     createInfo.imageArrayLayers =  m_Desc.imageArrayLayers;
     createInfo.imageUsage =  m_Desc.imageUsageFlagBits;
@@ -60,7 +60,7 @@ void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
     createInfo.pQueueFamilyIndices = queueFamilyIndices;
     createInfo.preTransform = static_cast<VkSurfaceTransformFlagBitsKHR>(m_Desc.surfaceTransformFlagBits);
     createInfo.compositeAlpha = static_cast<VkCompositeAlphaFlagBitsKHR>(m_Desc.compositeAlphaFlagBits);
-    createInfo.presentMode = static_cast<VkPresentModeKHR>(m_Desc.presentMode);
+    createInfo.EPresentMode = static_cast<VkPresentModeKHR>(m_Desc.EPresentMode);
     createInfo.clipped = static_cast<VkBool32>(m_Desc.clipped);
     createInfo.oldSwapchain = VK_NULL_HANDLE;
 
@@ -93,15 +93,15 @@ void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(SwapChainDescrip
 
     for (int i = 0; i < images.size(); ++i)
     {
-        // For SwapChain images, we manually allocate a handle since they are not created via factory
+        // For RHISwapChain images, we manually allocate a handle since they are not created via factory
         m_ImageHandles[i] = vkDevice->GetImagePool()->Allocate([&images, i](RHIVkImagePoolItem* imageItem) {
             *imageItem = RHIVkImagePoolItem();
             imageItem->image = images[i];
             imageItem->name = String::Format("SwapChainImage_%d", i);
-            imageItem->needDestroy = false; // Swapchain owns these images
+            imageItem->needDestroy = false; // RHISwapChain owns these images
         });
 
-        ImageViewDesc viewDesc;
+        RHIImageViewDesc viewDesc;
         viewDesc.viewType = IMAGE_VIEW_TYPE_2D;
         viewDesc.format = m_Desc.colorFormat;
         viewDesc.aspectMask = IMAGE_ASPECT_COLOR_BIT;
@@ -161,9 +161,9 @@ void ArisenEngine::RHI::RHIVkSwapChain::Cleanup()
         factory->ReleaseImageView(h);
     }
     for (auto h : m_ImageHandles) {
-        // Swapchain images are not created via Factory, so we should not call factory->ReleaseImage(h) 
+        // RHISwapChain images are not created via Factory, so we should not call factory->ReleaseImage(h) 
         // if it tries to do full liberation. However, our ReleaseImage in factory calls Device::ReleaseImage.
-        // For swapchain images, needDestroy is false, so it's safe.
+        // For RHISwapChain images, needDestroy is false, so it's safe.
         factory->ReleaseImage(h);
     }
     m_ImageHandles.clear();
@@ -176,7 +176,7 @@ void ArisenEngine::RHI::RHIVkSwapChain::Cleanup()
 
     if (m_VkSwapChain != VK_NULL_HANDLE && m_VkDevice != VK_NULL_HANDLE)
     {
-        LOG_INFO("[RHIVkSwapChain::~RHIVkSwapChain]: Destroy Vulkan SwapChain");
+        LOG_INFO("[RHIVkSwapChain::~RHIVkSwapChain]: Destroy Vulkan RHISwapChain");
         vkDestroySwapchainKHR(m_VkDevice, m_VkSwapChain, nullptr);
     }
 }
