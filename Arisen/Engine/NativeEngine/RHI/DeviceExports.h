@@ -20,3 +20,4 @@ extern "C" ENGINE_DLL unsigned long long RHI_Device_Submit(RHI_DeviceHandle devi
 extern "C" ENGINE_DLL void RHI_Device_WaitQueueTicket(RHI_DeviceHandle device, unsigned long long ticket);
 
 // Moved to HandlesExports: CreateSampler
+

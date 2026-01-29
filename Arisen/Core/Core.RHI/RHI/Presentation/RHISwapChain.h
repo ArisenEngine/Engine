@@ -21,9 +21,9 @@ namespace ArisenEngine::RHI
         UInt32 queueFamilyIndexCount {2};
         
         EFormat colorFormat { FORMAT_R8G8B8_SRGB };
-        EColorSpace EColorSpace { COLOR_SPACE_SRGB_NONLINEAR };
+        EColorSpace colorSpace { COLOR_SPACE_SRGB_NONLINEAR };
         ESharingMode sharingMode { SHARING_MODE_CONCURRENT };
-        EPresentMode EPresentMode { PRESENT_MODE_FIFO };
+        EPresentMode presentMode { PRESENT_MODE_FIFO };
         
         bool clipped { true };
         UInt32 surfaceTransformFlagBits { 0 };
@@ -101,14 +101,14 @@ namespace ArisenEngine::RHI
             RecreateSwapChainIfNeeded();
         }
         
-        void SetColorSpace(EColorSpace EColorSpace)
+        void SetColorSpace(EColorSpace colorSpace)
         {
-            if (m_Desc.EColorSpace == EColorSpace)
+            if (m_Desc.colorSpace == colorSpace)
             {
                 return;
             }
 
-           m_Desc. EColorSpace = EColorSpace;
+           m_Desc.colorSpace = colorSpace;
             RecreateSwapChainIfNeeded();
         }
         

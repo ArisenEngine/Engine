@@ -1,7 +1,7 @@
 #include "SyncExports.h"
-#include "../../Core/RHI.Vulkan/Devices/RHIVkDevice.h"
-#include "../../Core/RHI.Vulkan/Synchronization/RHIVkSemaphore.h"
-#include "../../Core/RHI.Vulkan/Synchronization/RHIVkFence.h"
+#include "../../Core/RHI.Vulkan/Core/RHIVkDevice.h"
+#include "../../Core/RHI.Vulkan/Sync/RHIVkSemaphore.h"
+#include "../../Core/RHI.Vulkan/Sync/RHIVkFence.h"
 
 using namespace ArisenEngine;
 
@@ -36,5 +36,6 @@ extern "C" ENGINE_DLL void RHI_Fence_Unlock(RHI_DeviceHandle device, RHI_FenceHa
     auto h = *reinterpret_cast<RHI::RHIFenceHandle*>(&fence);
     dev->ResetFence(h);
 }
+
 
 

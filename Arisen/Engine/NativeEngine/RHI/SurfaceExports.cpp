@@ -1,7 +1,7 @@
 #include "SurfaceExports.h"
 #include "../../Core/Core.RHI/RHI/Core/RHIFactory.h"
-#include "../../Core/RHI.Vulkan/Devices/RHIVkDevice.h"
-#include "../../Core/RHI.Vulkan/Surfaces/RHIVkSwapChain.h"
+#include "../../Core/RHI.Vulkan/Core/RHIVkDevice.h"
+#include "../../Core/RHI.Vulkan/Presentation/RHIVkSwapChain.h"
 #include <unordered_map>
 #include <mutex>
 
@@ -104,3 +104,4 @@ extern "C" ENGINE_DLL void RHI_FrameBuffer_SetAttachment(RHI_DeviceHandle device
 
     dev->AllocFrameBuffer(hFb, frameIndex, hView, hRp);
 }
+

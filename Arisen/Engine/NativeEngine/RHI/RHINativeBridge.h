@@ -1,5 +1,5 @@
 #pragma once
-#include "../../Core/RHI.Vulkan/Devices/RHIVkDevice.h"
+#include "../../Core/RHI.Vulkan/Core/RHIVkDevice.h"
 #include "../../Core/RHI.Vulkan/Handles/RHIVkResourcePools.h"
 
 namespace ArisenEngine::RHI
@@ -63,3 +63,4 @@ namespace ArisenEngine::RHI
         }
     };
 }
+

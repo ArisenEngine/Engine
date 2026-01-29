@@ -29,3 +29,4 @@ extern "C" ENGINE_DLL unsigned int RHI_Instance_GetEnvStringW(RHI_InstanceHandle
 extern "C" ENGINE_DLL void RHI_Instance_CreateLogicDevice(RHI_InstanceHandle instance, unsigned int windowId);
 extern "C" ENGINE_DLL RHI_DeviceHandle RHI_Instance_GetLogicalDevice(RHI_InstanceHandle instance, unsigned int windowId);
 
+
