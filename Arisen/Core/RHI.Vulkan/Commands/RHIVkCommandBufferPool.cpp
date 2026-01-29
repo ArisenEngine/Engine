@@ -18,8 +18,7 @@ ArisenEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* d
 ArisenEngine::RHI::RHIVkCommandBufferPool::~RHIVkCommandBufferPool() noexcept
 {
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
-    auto latestTicket = vkDevice->GetQueue(RHIQueueType::Graphics)->GetLatestTicket();
-
+   
     for (auto handle : m_OwnedHandles)
     {
         vkDevice->ReleaseCommandBuffer(handle);

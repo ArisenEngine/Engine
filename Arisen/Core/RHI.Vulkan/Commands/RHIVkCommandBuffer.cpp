@@ -30,7 +30,6 @@ ArisenEngine::RHI::RHIVkCommandBuffer::~RHIVkCommandBuffer() noexcept
 
 ArisenEngine::RHI::RHIVkCommandBuffer::RHIVkCommandBuffer(RHIVkDevice* device, RHIVkCommandBufferPool* pool)
 : RHICommandBuffer(device, pool),
-m_RHICommandPool(pool),
 m_OwnerThreadId(std::this_thread::get_id())
 {
     m_VkDevice = static_cast<VkDevice>(device->GetHandle());

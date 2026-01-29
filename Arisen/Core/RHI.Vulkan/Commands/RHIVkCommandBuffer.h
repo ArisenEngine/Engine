@@ -104,7 +104,6 @@ private:
   VkCommandBuffer m_VkCommandBuffer;
   VkCommandPool m_VkCommandPool;
   VkDevice m_VkDevice;
-  RHIVkCommandBufferPool *m_RHICommandPool;
   Containers::Vector<VkBuffer> m_VertexBuffers;
   Containers::Vector<UInt64> m_VertexBindingOffsets;
   std::optional<VkBuffer> m_IndexBuffer;
