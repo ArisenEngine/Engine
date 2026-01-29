@@ -13,6 +13,21 @@ namespace ArisenEngine::RHI
     class RHIVkCommandBuffer;
 
     
+    /**
+     * @brief RHIVkCommandBufferPool manages Vulkan command buffers using a two-tier caching system:
+     *        1. Thread-local cache (FreeListCache) for zero-lock same-thread recycling.
+     *        2. Global map (m_ThreadFreeBuffers) as a "mailbox" for cross-thread recycling.
+     * 
+     * TODO: Future Performance Optimizations:
+     * 1. [Lock-Free Mailbox]: Replace m_ThreadFreeBuffers with a per-thread MPSC lock-free stack 
+     *    to eliminate mutex contention during InternalRecycle (cross-thread return).
+     * 2. [Avoid Map Lookup]: Use a unique thread index and a fixed-size array instead of 
+     *    std::map<std::thread::id, ...> to eliminate hash/lookup overhead in GetCommandBuffer.
+     * 3. [Pool Reset]: Implement vkResetCommandPool optimization if command buffer usage 
+     *    follows strict frame-based lifecycles.
+     * 4. [TLS Cleanup]: Implement a ThreadRegistry to properly delete ThreadLocalFreeList 
+     *    objects when threads terminate to avoid minor memory leaks.
+     */
     class RHIVkCommandBufferPool final : public RHICommandBufferPool
     {
     private:
