@@ -21,6 +21,12 @@ namespace ArisenEngine::Testing
      */
     class RHITestBase : public ITest
     {
+        using Clock = std::chrono::high_resolution_clock;
+        Clock::time_point lastTime = Clock::now();
+        double frameTime = 0.0;
+        double fps = 0.0;
+        Float32 s_FrameTimeSpacing = 0.0;
+        
     protected:
         RHI_InstanceHandle m_Instance = nullptr;
         RHI_DeviceHandle m_Device = nullptr;
@@ -126,6 +132,7 @@ namespace ArisenEngine::Testing
                 m_Device = RHI_Instance_GetLogicalDevice(m_Instance, ~0u);
             }
 
+            lastTime = Clock::now();
             return m_Device != nullptr;
         }
 
@@ -135,6 +142,20 @@ namespace ArisenEngine::Testing
         void NextFrame()
         {
             ++m_FrameIndex;
+
+            // FPS Calculation
+            auto currentTime = Clock::now();
+            std::chrono::duration<double> delta = currentTime - lastTime;
+            lastTime = currentTime;
+
+            frameTime = delta.count();
+            fps = (1.0 / frameTime) * 0.1 + fps * 0.9;
+            s_FrameTimeSpacing += (Float32)frameTime;
+            if (s_FrameTimeSpacing >= 1.0)
+            {
+                s_FrameTimeSpacing = 0.0;
+                std::cout << "FPS:" << fps << ", Delta Time:"<< frameTime << std::endl;
+            }
         }
 
         /**

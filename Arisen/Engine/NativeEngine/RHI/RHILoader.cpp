@@ -38,13 +38,13 @@ void ArisenEngine::Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphicsAPI a
     DWORD result = GetModuleFileNameA(_rhi_dll, dllPath, MAX_PATH);
     if (result != 0)
     {
-        LOG_INFO(String::Format("[RHILoader::SetCurrentGraphicsAPI] RHI dll loaded: %s", dllPath));
+        LOG_INFO(String::Format("[RHILoader::SetCurrentGraphicsAPI] RHI dll loaded: %s", dllPath, GetLastError()));
     }
 
     HANDLE process = GetCurrentProcess();
 
     // 初始化符号解析器
-    if (!SymInitialize(process, nullptr, TRUE))
+    if (!SymInitialize(process, nullptr, FALSE))
     {
         DWORD error = GetLastError();
         if (error == ERROR_INVALID_FUNCTION)
@@ -76,7 +76,7 @@ void ArisenEngine::Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphicsAPI a
             nullptr,
             0))
     {
-        LOG_INFO(String::Format("[RHILoader::SetCurrentGraphicsAPI]%s Symbols loaded.", dllPath));
+        LOG_INFO(String::Format("[RHILoader::SetCurrentGraphicsAPI]%s Symbols loaded.", dllPath, GetLastError()));
         SymRefreshModuleList(process);
 
         IMAGEHLP_MODULE64 moduleInfo = { sizeof(IMAGEHLP_MODULE64) };
@@ -92,7 +92,7 @@ void ArisenEngine::Graphics::RHILoader::SetCurrentGraphicsAPI(RHI::GraphicsAPI a
     }
     else
     {
-        LOG_FATAL(String::Format("Failed to load symbols for: %s", dllPath));
+        LOG_FATAL(String::Format("Failed to load symbols for: %s. Error: %lu", dllPath, GetLastError()));
     }
 
 }
