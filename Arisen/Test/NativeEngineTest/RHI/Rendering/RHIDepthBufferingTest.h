@@ -166,10 +166,22 @@ namespace ArisenEngine::Testing
                 m_UboBuffer[i] = RHI_Device_CreateBuffer(m_Device, &uDesc, "UBO");
             }
 
-            // 4. Texture (Generic white texture for quads)
-            int texWidth = 16, texHeight = 16;
-            stbi_uc* pixels = (stbi_uc*)malloc(16 * 16 * 4);
-            memset(pixels, 255, 16 * 16 * 4);
+            // 4. Texture (Load Arisen.png)
+            namespace fs = std::filesystem;
+            wchar_t exePathW[MAX_PATH]{};
+            GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
+            auto exeDir = fs::path(exePathW).parent_path();
+            auto imagePath = (exeDir / "Assets" / "Arisen.png").string();
+
+            int texWidth, texHeight, texChannels;
+            stbi_uc* pixels = stbi_load(imagePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+            if (!pixels) {
+                LOG_ERROR(String::Format("Failed to load texture: %s", imagePath.c_str()));
+                // Fallback to white if load fails
+                texWidth = texHeight = 16;
+                pixels = (stbi_uc*)malloc(texWidth * texHeight * 4);
+                memset(pixels, 255, texWidth * texHeight * 4);
+            }
 
             RHI::RHIImageDescriptor imgDesc = {};
             imgDesc.imageType = RHI::IMAGE_TYPE_2D;
@@ -196,6 +208,9 @@ namespace ArisenEngine::Testing
             viewDesc.baseArrayLayer = 0;
             viewDesc.layerCount = 1;
             m_TextureView = RHI_Image_AddImageView(m_Device, m_TextureImage, &viewDesc);
+
+            UploadImage(pixels, texWidth, texHeight);
+            stbi_image_free(pixels);
 
             // 5. Depth Image
             RHI::RHIImageDescriptor dimgDesc = {};
@@ -232,9 +247,6 @@ namespace ArisenEngine::Testing
             samplerDesc.addressModeV = RHI::SAMPLER_ADDRESS_MODE_REPEAT;
             samplerDesc.addressModeW = RHI::SAMPLER_ADDRESS_MODE_REPEAT;
             m_Sampler = RHI_Device_CreateSampler(m_Device, &samplerDesc);
-
-            UploadImage(pixels, texWidth, texHeight);
-            stbi_image_free(pixels);
         }
 
         void InitRenderContext()
@@ -480,20 +492,7 @@ namespace ArisenEngine::Testing
             }
 
             static float timer = 0.0f;
-            timer += 0.01f;
-
-            UBO ubo = {};
-            for(int i=0; i<16; ++i) ubo.model[i] = ubo.view[i] = ubo.proj[i] = 0;
-            ubo.model[0] = ubo.model[5] = ubo.model[10] = ubo.model[15] = 1.0f;
-            ubo.view[0] = ubo.view[5] = ubo.view[10] = ubo.view[15] = 1.0f;
-            ubo.proj[0] = ubo.proj[5] = ubo.proj[10] = ubo.proj[15] = 1.0f;
-            
-            // Apply rotation to model matrix to see depth effect better
-            float c = cos(timer), s = sin(timer);
-            ubo.model[0] = c; ubo.model[2] = s;
-            ubo.model[8] = -s; ubo.model[10] = c;
-
-            RHI_Buffer_MemoryCopy(m_Device, m_UboBuffer[currentIndex], &ubo, 0);
+            timer += 0.001f;
 
             Containers::Vector<RHI::RHIBufferHandle> buffers;
             buffers.push_back(*reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[currentIndex]));
@@ -515,19 +514,72 @@ namespace ArisenEngine::Testing
             RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[currentIndex], 0, m_Pso);
             RHI_DescriptorPool_UpdateDescriptorSets(m_DescriptorPool, m_DescriptorPoolIds[currentIndex], m_Pso);
 
-            auto cmd = RHI_Device_GetCommandBuffer(m_Device, m_CmdPool, m_FrameIndex);
-            RHI_Cmd_Begin(cmd, m_FrameIndex, 0);
+            auto cmd = RHI_Device_GetCommandBuffer(m_Device, m_CmdPool, currentIndex);
+            RHI_Cmd_Begin(cmd, currentIndex, 0);
             {
                 auto surface = RHI_Instance_GetSurface(m_Instance, m_WindowId);
                 auto swapchain = RHI_Surface_GetSwapChain(surface);
-                RHI_ImageHandle backBuffer = RHI_SwapChain_AquireCurrentImage(swapchain, m_FrameIndex);
+                RHI_ImageHandle backBuffer = RHI_SwapChain_AquireCurrentImage(swapchain, currentIndex);
                 if (backBuffer != 0) {
-                    auto backBufferView = RHI_SwapChain_GetImageView(swapchain, m_FrameIndex);
-                    RHI_RenderPass_Alloc(m_Device, m_RenderPass, m_FrameIndex);
+                    auto backBufferView = RHI_SwapChain_GetImageView(swapchain, currentIndex);
+                    RHI_RenderPass_Alloc(m_Device, m_RenderPass, currentIndex);
                     
+                    Float32 w = (Float32)RHI_ImageView_GetWidth(m_Device, backBufferView);
+                    Float32 h = (Float32)RHI_ImageView_GetHeight(m_Device, backBufferView);
+                    float aspect = w / h;
+                    float fovy = 60.0f * 3.14159f / 180.0f;
+                    float f = 1.0f / tan(fovy / 2.0f);
+                    float zNear = 0.1f;
+                    float zFar = 10.0f;
+
+                    UBO ubo = {};
+                    for(int i=0; i<16; ++i) ubo.model[i] = ubo.view[i] = ubo.proj[i] = 0;
+                    
+                    // Model (Identity for now, rotation applied later)
+                    ubo.model[0] = ubo.model[5] = ubo.model[10] = ubo.model[15] = 1.0f;
+
+                    // View (Camera at Z = -2, looking at origin)
+                    ubo.view[0] = 1.0f;
+                    ubo.view[5] = 1.0f;
+                    ubo.view[10] = 1.0f;
+                    ubo.view[14] = 2.0f; // Translate Z
+                    ubo.view[15] = 1.0f;
+
+                    // Perspective Projection (Vulkan Y-down fix:proj[5] is negative for Y-up)
+                    ubo.proj[0] = f / aspect;
+                    ubo.proj[5] = -f; // Y-up
+                    ubo.proj[10] = zFar / (zFar - zNear);
+                    ubo.proj[11] = 1.0f;
+                    ubo.proj[14] = -(zFar * zNear) / (zFar - zNear);
+                    
+                    // Apply compound rotation for a better 3D "spinning card" effect
+                    float angleY = timer;
+                    float angleX = timer * 0.3f;
+                    
+                    float cy = cos(angleY), sy = sin(angleY);
+                    float cx = cos(angleX), sx = sin(angleX);
+
+                    // Simplified compound rotation (Y then X)
+                    // We'll just build it manually or use a simple approximation to avoid full matrix math if possible
+                    // But correctly: M = Rx * Ry
+                    ubo.model[0] = cy;
+                    ubo.model[1] = sx * sy;
+                    ubo.model[2] = -cx * sy;
+                    
+                    ubo.model[5] = cx;
+                    ubo.model[6] = sx;
+                    
+                    ubo.model[8] = sy;
+                    ubo.model[9] = -sx * cy;
+                    ubo.model[10] = cx * cy;
+                    
+                    ubo.model[15] = 1.0f;
+
+                    RHI_Buffer_MemoryCopy(m_Device, m_UboBuffer[currentIndex], &ubo, 0);
+
                     // Set color and depth attachments
-                    RHI_FrameBuffer_SetAttachment(m_Device, m_FrameBuffer, m_FrameIndex, backBufferView, m_RenderPass, 0);
-                    RHI_FrameBuffer_SetAttachment(m_Device, m_FrameBuffer, m_FrameIndex, m_DepthView, m_RenderPass, 1);
+                    RHI_FrameBuffer_SetAttachment(m_Device, m_FrameBuffer, currentIndex, backBufferView, m_RenderPass, 0);
+                    RHI_FrameBuffer_SetAttachment(m_Device, m_FrameBuffer, currentIndex, m_DepthView, m_RenderPass, 1);
 
                     RHI::RenderPassBeginDesc desc = {};
                     desc.renderPass = *reinterpret_cast<RHI::RHIRenderPassHandle*>(&m_RenderPass);
@@ -540,40 +592,41 @@ namespace ArisenEngine::Testing
                     clears[1].depthStencil.stencil = 0;
                     desc.pClearValues = clears;
                     
-                    RHI_Cmd_BeginRenderPass(cmd, m_FrameIndex, &desc);
+                    RHI_Cmd_BeginRenderPass(cmd, currentIndex, &desc);
                     {
-                        RHI_Cmd_BindPipeline(cmd, m_FrameIndex, m_Pipeline);
-                        Float32 w = (Float32)RHI_ImageView_GetWidth(m_Device, backBufferView);
-                        Float32 h = (Float32)RHI_ImageView_GetHeight(m_Device, backBufferView);
+                        RHI_Cmd_BindPipeline(cmd, currentIndex, m_Pipeline);
                         RHI_Cmd_SetViewport(cmd, 0.0f, 0.0f, w, h, 0.0f, 1.0f);
                         RHI_Cmd_SetScissor(cmd, 0, 0, (UInt32)w, (UInt32)h);
-                        RHI_Cmd_BindDescriptorSets_FromPool(cmd, m_FrameIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[currentIndex]);
+                        RHI_Cmd_BindDescriptorSets_FromPool(cmd, currentIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[currentIndex]);
                         RHI_Cmd_BindVertexBuffers(cmd, m_VertexBuffer, 0);
                         RHI_Cmd_BindIndexBuffer(cmd, m_IndexBuffer, 0, RHI::INDEX_TYPE_UINT16);
                         RHI_Cmd_DrawIndexed(cmd, 12, 1, 0, 0, 0, 0);
                     }
                     RHI_Cmd_EndRenderPass(cmd);
 
-                    auto imageAvailableSem = RHI_SwapChain_GetImageAvailableSemaphore(swapchain, m_FrameIndex);
-                    auto renderFinishedSem = RHI_SwapChain_GetRenderFinishSemaphore(swapchain, m_FrameIndex);
+                    auto imageAvailableSem = RHI_SwapChain_GetImageAvailableSemaphore(swapchain, currentIndex);
+                    auto renderFinishedSem = RHI_SwapChain_GetRenderFinishSemaphore(swapchain, currentIndex);
                     if (imageAvailableSem && renderFinishedSem) {
                         RHI_Cmd_WaitSemaphore(cmd, imageAvailableSem, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
                         RHI_Cmd_SignalSemaphore(cmd, renderFinishedSem);
                     }
+                    
+                    RHI_Cmd_End(cmd);
+                    m_FrameTickets[currentIndex] = RHI_Device_Submit(m_Device, cmd, currentIndex);
+                    RHI_SwapChain_Present(swapchain, currentIndex);
+                }
+                else
+                {
+                    RHI_Cmd_End(cmd);
                 }
             }
-            RHI_Cmd_End(cmd);
-            m_FrameTickets[currentIndex] = RHI_Device_Submit(m_Device, cmd, m_FrameIndex);
             
             static int frameCount = 0;
             if (frameCount++ % 100 == 0) {
                 LOG_INFO(String::Format("Render loop frame %d, ticket %llu", frameCount, m_FrameTickets[currentIndex]));
             }
             
-            auto surface = RHI_Instance_GetSurface(m_Instance, m_WindowId);
-            auto swapchain = RHI_Surface_GetSwapChain(surface);
-            RHI_SwapChain_Present(swapchain, m_FrameIndex);
-            RHI_Device_ReleaseCommandBuffer(m_Device, m_CmdPool, m_FrameIndex, cmd);
+            RHI_Device_ReleaseCommandBuffer(m_Device, m_CmdPool, currentIndex, cmd);
 
             NextFrame();
         }
