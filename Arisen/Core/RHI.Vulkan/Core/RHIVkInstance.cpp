@@ -519,9 +519,10 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     }
 
     VkDevice device;
-    if (vkCreateDevice(m_CurrentPhysicsDevice, &createInfo, nullptr, &device) != VK_SUCCESS)
+    VkResult res = vkCreateDevice(m_CurrentPhysicsDevice, &createInfo, nullptr, &device);
+    if (res != VK_SUCCESS)
     {
-        LOG_FATAL_AND_THROW("[RHIVkInstance::CreateLogicDevice]: failed to create logical device!");
+        LOG_FATAL_AND_THROW(String::Format("[RHIVkInstance::CreateLogicDevice]: failed to create logical device! VkResult: %d", (int)res));
     }
 
     VkQueue graphicQueue = VK_NULL_HANDLE;

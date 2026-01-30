@@ -203,6 +203,13 @@ extern "C" ENGINE_DLL void RHI_PSO_SetBlendConstants(RHI_PSOHandle pso, float r,
     s->SetBlendConstants(r, g, b, a);
 }
 
+extern "C" ENGINE_DLL void RHI_PSO_SetDepthStencilState(RHI_PSOHandle pso, const RHI::RHIDepthStencilState* state)
+{
+    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
+    if (s == nullptr || state == nullptr) return;
+    s->SetDepthStencilState(*state);
+}
+
 extern "C" ENGINE_DLL void RHI_PSO_SetRenderingFormats(RHI_PSOHandle pso, ArisenEngine::Containers::Vector<ArisenEngine::RHI::EFormat>* colorFormats, ArisenEngine::RHI::EFormat depthFormat, ArisenEngine::RHI::EFormat stencilFormat)
 {
     auto* pipelineState = reinterpret_cast<ArisenEngine::RHI::RHIPipelineState*>(pso);
@@ -297,6 +304,13 @@ extern "C" ENGINE_DLL void RHI_Subpass_AddColorReference(RHI_SubpassHandle sp, u
     s->AddColorReference(index, layout);
 }
 
+extern "C" ENGINE_DLL void RHI_Subpass_SetDepthStencilReference(RHI_SubpassHandle sp, unsigned int index, RHI::EImageLayout layout)
+{
+    auto* s = reinterpret_cast<RHI::RHISubPass*>(sp);
+    if (s == nullptr) return;
+    s->SetDepthStencilReference(index, layout);
+}
+
 extern "C" ENGINE_DLL void RHI_Subpass_SetDescriptionFlag(RHI_SubpassHandle sp, unsigned int flag)
 {
     auto* s = reinterpret_cast<RHI::RHISubPass*>(sp);
@@ -338,6 +352,8 @@ extern "C" ENGINE_DLL void RHI_Pipeline_AllocGraphics(RHI_DeviceHandle device, R
         }
     }
 }
+
+// Moved to SurfaceExports: RHI_FrameBuffer_SetAttachment
 
 // Moved to HandlesExports: ReleaseRenderPass
 

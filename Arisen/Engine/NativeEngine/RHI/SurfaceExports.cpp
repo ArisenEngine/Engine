@@ -2,6 +2,7 @@
 #include "../../Core/Core.RHI/RHI/Core/RHIFactory.h"
 #include "../../Core/RHI.Vulkan/Core/RHIVkDevice.h"
 #include "../../Core/RHI.Vulkan/Presentation/RHIVkSwapChain.h"
+#include "RHINativeBridge.h"
 #include <unordered_map>
 #include <mutex>
 
@@ -94,7 +95,7 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseFrameBuffer(RHI_DeviceHandle device
     dev->GetFactory()->ReleaseFrameBuffer(h);
 }
 
-extern "C" ENGINE_DLL void RHI_FrameBuffer_SetAttachment(RHI_DeviceHandle device, RHI_FrameBufferHandle fb, unsigned int frameIndex, RHI_ImageViewHandle view, RHI_RenderPassHandle rp)
+extern "C" ENGINE_DLL void RHI_FrameBuffer_SetAttachment(RHI_DeviceHandle device, RHI_FrameBufferHandle fb, unsigned int frameIndex, RHI_ImageViewHandle view, RHI_RenderPassHandle rp, unsigned int index)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (!dev) return;
@@ -102,6 +103,16 @@ extern "C" ENGINE_DLL void RHI_FrameBuffer_SetAttachment(RHI_DeviceHandle device
     auto hView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&view);
     auto hRp = *reinterpret_cast<RHI::RHIRenderPassHandle*>(&rp);
 
-    dev->AllocFrameBuffer(hFb, frameIndex, hView, hRp);
+    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
+    if (vkDev) {
+        auto* item = RHI::RHINativeBridge::GetFrameBufferItem(vkDev, hFb);
+        if (item && item->frameBufferObj) {
+            auto* fbObj = static_cast<RHI::RHIFrameBuffer*>(item->frameBufferObj);
+            auto* rpItem = RHI::RHINativeBridge::GetRenderPassItem(vkDev, hRp);
+            if (rpItem && rpItem->renderPassObj) {
+                fbObj->SetAttachment(frameIndex, hView, static_cast<RHI::RHIRenderPass*>(rpItem->renderPassObj), index);
+            }
+        }
+    }
 }
 

@@ -36,11 +36,26 @@ namespace ArisenEngine::RHI
     class RHIViewport;
     class RHIPipelineCache;
 
+    struct RHIClearValue
+    {
+        union
+        {
+            float color[4];
+            struct
+            {
+                float depth;
+                uint32_t stencil;
+            } depthStencil;
+        };
+    };
+
     typedef struct RenderPassBeginDesc
     {
         RHIRenderPassHandle renderPass;
         RHIFrameBufferHandle frameBuffer;
         ESubpassContents subpassContents;
+        UInt32 clearValueCount;
+        const RHIClearValue* pClearValues;
     } RenderPassBeginDesc;
 
     struct RHIRenderingAttachmentInfo

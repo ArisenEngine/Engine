@@ -180,7 +180,10 @@ void ArisenEngine::RHI::RHIVkQueue::WaitForTicket(RHIGpuTicket ticket)
     waitInfo.pSemaphores = &m_TimelineSemaphore;
     waitInfo.pValues = &ticket;
 
-    vkWaitSemaphores(m_Device, &waitInfo, UINT64_MAX);
+    VkResult res = vkWaitSemaphores(m_Device, &waitInfo, UINT64_MAX);
+    if (res != VK_SUCCESS) {
+        LOG_ERROR(String::Format("[RHIVkQueue::WaitForTicket]: vkWaitSemaphores failed! VkResult: %d", (int)res));
+    }
     Update();
 }
 

@@ -19,6 +19,7 @@ namespace ArisenEngine::RHI
 
         void* GetHandle(UInt32 currentFrameIndex) override;
         void SetAttachment(UInt32 frameIndex, RHIImageViewHandle imageView, RHIRenderPass* renderPass) override;
+        void SetAttachment(UInt32 frameIndex, RHIImageViewHandle imageView, RHIRenderPass* renderPass, UInt32 index) override;
         
         // Extended for multi-attachment caching
         void SetAttachments(UInt32 frameIndex, const Containers::Vector<RHIImageViewHandle>& imageViews, RHIRenderPass* renderPass) override;
@@ -46,6 +47,8 @@ namespace ArisenEngine::RHI
         RHIVkDevice* m_Device;
         RHIImageViewHandle m_ImageView {RHIImageViewHandle::Invalid()};
         std::map<FramebufferCacheKey, VkFramebuffer> m_FramebufferCache;
+        Containers::Map<UInt32, Containers::Vector<RHIImageViewHandle>> m_PendingAttachments;
+        Containers::Map<UInt32, RHIRenderPass*> m_PendingRenderPasses;
     };
 }
 

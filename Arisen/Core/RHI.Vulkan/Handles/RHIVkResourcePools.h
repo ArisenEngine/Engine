@@ -114,6 +114,7 @@ struct RHIVkRenderPassPoolItem {
  */
 struct RHIVkFrameBufferPoolItem {
     VkFramebuffer framebuffer{VK_NULL_HANDLE};
+    void* frameBufferObj{nullptr};
     UInt32 width{0};
     UInt32 height{0};
     std::string name{"Anonymous"};
