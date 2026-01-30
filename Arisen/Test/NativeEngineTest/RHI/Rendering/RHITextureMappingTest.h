@@ -11,6 +11,8 @@
 
 #include <stb_image.h>
 #include <windows.h>
+#include <filesystem>
+#include <string>
 
 namespace ArisenEngine::Testing
 {
@@ -110,7 +112,6 @@ namespace ArisenEngine::Testing
                 if (!isRunning) break;
 
                 Render();
-                Sleep(16);
             }
             return true;
         }
@@ -153,8 +154,16 @@ namespace ArisenEngine::Testing
 
             // 4. Texture
             int texWidth, texHeight, texChannels;
-            stbi_uc* pixels = stbi_load("Assets/Arisen.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+            
+            namespace fs = std::filesystem;
+            wchar_t exePathW[MAX_PATH]{};
+            GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
+            auto exeDir = fs::path(exePathW).parent_path();
+            auto texturePath = (exeDir / "Assets" / "Arisen.png").string();
+
+            stbi_uc* pixels = stbi_load(texturePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
             if (!pixels) {
+                LOG_WARNF("Failed to load texture from {0}, falling back to white texture.", texturePath);
                 texWidth = 16; texHeight = 16;
                 pixels = (stbi_uc*)malloc(16 * 16 * 4);
                 memset(pixels, 255, 16 * 16 * 4);
