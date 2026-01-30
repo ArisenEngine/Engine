@@ -61,6 +61,12 @@ namespace ArisenEngine::RHI
         {
             return device->GetFencePool()->Get(handle);
         }
+
+        // FrameBuffer
+        static RHIVkFrameBufferPoolItem* GetFrameBufferItem(RHIVkDevice* device, RHIFrameBufferHandle handle)
+        {
+            return device->GetFrameBufferPool()->Get(handle);
+        }
     };
 }
 

@@ -26,13 +26,41 @@ ArisenEngine::RHI::RHIVkFrameBuffer::~RHIVkFrameBuffer() noexcept
 
 void* ArisenEngine::RHI::RHIVkFrameBuffer::GetHandle(UInt32 currentFrameIndex)
 {
-    ASSERT(m_VkFrameBuffers[currentFrameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE);
-    return m_VkFrameBuffers[currentFrameIndex % m_MaxFramesInFlight];
+    UInt32 frameIndex = currentFrameIndex % m_MaxFramesInFlight;
+    
+    // Lazy build if we have pending attachments but no framebuffer yet
+    if (m_VkFrameBuffers[frameIndex] == VK_NULL_HANDLE) {
+        auto it = m_PendingAttachments.find(frameIndex);
+        auto rpIt = m_PendingRenderPasses.find(frameIndex);
+        if (it != m_PendingAttachments.end() && rpIt != m_PendingRenderPasses.end()) {
+            SetAttachments(currentFrameIndex, it->second, rpIt->second);
+        }
+    }
+
+    if (m_VkFrameBuffers[frameIndex] == VK_NULL_HANDLE) {
+         LOG_WARN(String::Format("[RHIVkFrameBuffer::GetHandle]: Returning VK_NULL_HANDLE for frame %d. Attachments not set?", currentFrameIndex));
+    }
+    
+    return m_VkFrameBuffers[frameIndex];
 }
 
 void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachment(UInt32 frameIndex, RHIImageViewHandle imageView, RHIRenderPass* renderPass)
 {
-    SetAttachments(frameIndex, { imageView }, renderPass);
+    SetAttachment(frameIndex, imageView, renderPass, 0);
+}
+
+void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachment(UInt32 frameIndex, RHIImageViewHandle imageView, RHIRenderPass* renderPass, UInt32 index)
+{
+    auto& attachments = m_PendingAttachments[frameIndex % m_MaxFramesInFlight];
+    if (index >= attachments.size()) {
+        attachments.resize(index + 1, RHIImageViewHandle::Invalid());
+    }
+    attachments[index] = imageView;
+    m_PendingRenderPasses[frameIndex % m_MaxFramesInFlight] = renderPass;
+
+    // We no longer auto-update here to avoid partial framebuffer creation.
+    // The framebuffer will be built lazily in GetHandle() when needed by the command buffer.
+    m_VkFrameBuffers[frameIndex % m_MaxFramesInFlight] = VK_NULL_HANDLE;
 }
 
 void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachments(UInt32 frameIndex, const Containers::Vector<RHIImageViewHandle>& imageViews, RHIRenderPass* renderPass)

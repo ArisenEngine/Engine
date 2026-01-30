@@ -34,6 +34,7 @@ namespace ArisenEngine::RHI
         virtual void* GetHandle(UInt32 currentFrameIndex) = 0;
         const RHIRenderArea GetRenderArea() const { return m_RenderArea; }
         virtual void SetAttachment(UInt32 frameIndex, RHIImageViewHandle imageView, RHIRenderPass* renderPass) = 0;
+        virtual void SetAttachment(UInt32 frameIndex, RHIImageViewHandle imageView, RHIRenderPass* renderPass, UInt32 index) = 0;
         virtual void SetAttachments(UInt32 frameIndex, const Containers::Vector<RHIImageViewHandle>& imageViews, RHIRenderPass* renderPass) = 0;
         virtual EFormat GetAttachFormat() = 0;
     protected:

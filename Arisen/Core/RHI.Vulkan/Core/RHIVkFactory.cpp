@@ -3,7 +3,7 @@
 #include "Pipeline/RHIVkGPUProgram.h"
 #include "Commands/RHIVkCommandBufferPool.h"
 #include "RenderPass/RHIVkGPURenderPass.h"
-// #include "../Surfaces/RHIVkFrameBufferPoolItem.h"
+#include "Presentation/RHIVkFrameBuffer.h"
 #include "Handles/RHIVkResourcePools.h"
 #include "RHI/Core/RHIInstance.h"
 #include "Utils/RHIVkInitializer.h"
@@ -97,9 +97,20 @@ namespace ArisenEngine::RHI
 
     RHIFrameBufferHandle RHIVkFactory::CreateFrameBuffer()
     {
-        return m_Device->GetFrameBufferPool()->Allocate([](RHIVkFrameBufferPoolItem* fb)
+        return m_Device->GetFrameBufferPool()->Allocate([this](RHIVkFrameBufferPoolItem* fb)
         {
             *fb = RHIVkFrameBufferPoolItem();
+            auto* fbObj = new RHIVkFrameBuffer(m_Device, m_Device->GetMaxFramesInFlight());
+            fb->frameBufferObj = fbObj;
+
+            // Register for deferred deletion
+            struct DeferredGPUFrameBuffer
+            {
+                RHIVkFrameBuffer* obj;
+                ~DeferredGPUFrameBuffer() { delete obj; }
+            };
+            fb->registryHandle = m_Device->GetResourceRegistry()->Create(
+                MakeDeferredDeleteItem(new DeferredGPUFrameBuffer{fbObj}));
         });
     }
 

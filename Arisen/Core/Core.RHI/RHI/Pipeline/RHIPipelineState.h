@@ -15,6 +15,7 @@
 #include "RHI/Enums/Pipeline/EPrimitiveTopology.h"
 #include "RHI/Enums/Pipeline/EVertexInputRate.h"
 #include "RHI/Handles/RHIHandle.h"
+#include "RHIDepthStencilState.h"
 
 namespace ArisenEngine::RHI
 {
@@ -182,6 +183,9 @@ namespace ArisenEngine::RHI
 
         virtual void SetRenderingFormats(const Containers::Vector<EFormat>& colorFormats, EFormat depthFormat, EFormat stencilFormat) = 0;
 
+        void SetDepthStencilState(const RHIDepthStencilState& state) { m_DepthStencilState = state; }
+        const RHIDepthStencilState& GetDepthStencilState() const { return m_DepthStencilState; }
+
     private:
 
         bool m_PrimitiveRestart {false};
@@ -212,6 +216,7 @@ namespace ArisenEngine::RHI
         bool m_LogicOpEnable { false };
         ELogicOp m_LogicOp { ELogicOp::LOGIC_OP_NO_OP };
         Float32 m_BlendConstants[4] {1.f, 1.f, 1.f, 1.f};
+        RHIDepthStencilState m_DepthStencilState;
     };
 }
 

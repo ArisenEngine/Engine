@@ -79,22 +79,31 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRenderPass(UInt32 frameIndex, R
          renderPassInfo.renderPass = rp->renderPass;
     }
     
-    // For now, assume RHIFrameBuffer pool item has the current frame's VkFramebuffer
-    renderPassInfo.framebuffer = fb->framebuffer;
+    if (fb->frameBufferObj) {
+        auto* fbObj = static_cast<RHIVkFrameBuffer*>(fb->frameBufferObj);
+        renderPassInfo.framebuffer = static_cast<VkFramebuffer>(fbObj->GetHandle(frameIndex));
+    } else {
+        renderPassInfo.framebuffer = fb->framebuffer;
+    }
     
+    renderPassArea:
     renderPassInfo.renderArea.offset = {0, 0};
     
     // Use actual RHIFrameBuffer dimensions if available
-    renderPassInfo.renderArea.extent = { fb->width, fb->height };
+    renderPassInfo.renderArea.extent = { (UInt32)fb->width, (UInt32)fb->height };
+    if (fb->frameBufferObj) {
+        auto* fbObj = static_cast<RHIVkFrameBuffer*>(fb->frameBufferObj);
+        renderPassInfo.renderArea.extent.width = fbObj->GetRenderArea().width;
+        renderPassInfo.renderArea.extent.height = fbObj->GetRenderArea().height;
+    }
     
     // Fallback if dimensions are unknown
     if (renderPassInfo.renderArea.extent.width == 0 || renderPassInfo.renderArea.extent.height == 0) {
-        renderPassInfo.renderArea.extent = {1920, 1080}; 
+        renderPassInfo.renderArea.extent = {1280, 720}; // Adjusted fallback to default test resolution
     }
     
-    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-    renderPassInfo.clearValueCount = 1;
-    renderPassInfo.pClearValues = &clearColor;
+    renderPassInfo.clearValueCount = desc.clearValueCount;
+    renderPassInfo.pClearValues = reinterpret_cast<const VkClearValue*>(desc.pClearValues);
 
     vkCmdBeginRenderPass(m_VkCommandBuffer, &renderPassInfo, static_cast<VkSubpassContents>(desc.subpassContents));
 

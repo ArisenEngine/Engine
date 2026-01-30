@@ -33,6 +33,7 @@ extern "C" ENGINE_DLL void RHI_PSO_SetSampleCount(RHI_PSOHandle pso, ArisenEngin
 extern "C" ENGINE_DLL void RHI_PSO_AddBlendAttachmentState_Simple(RHI_PSOHandle pso, bool enable, unsigned int writeMask);
 extern "C" ENGINE_DLL void RHI_PSO_SetLogicOp(RHI_PSOHandle pso, bool enable, ArisenEngine::RHI::ELogicOp op);
 extern "C" ENGINE_DLL void RHI_PSO_SetBlendConstants(RHI_PSOHandle pso, float r, float g, float b, float a);
+extern "C" ENGINE_DLL void RHI_PSO_SetDepthStencilState(RHI_PSOHandle pso, const ArisenEngine::RHI::RHIDepthStencilState* state);
 extern "C" ENGINE_DLL void RHI_PSO_SetRenderingFormats(RHI_PSOHandle pso, ArisenEngine::Containers::Vector<ArisenEngine::RHI::EFormat>* colorFormats, ArisenEngine::RHI::EFormat depthFormat, ArisenEngine::RHI::EFormat stencilFormat);
 extern "C" ENGINE_DLL RHI_PipelineHandle RHI_PipelineManager_GetGraphicsPipeline(RHI_PipelineManagerHandle pm, RHI_PSOHandle pso);
 extern "C" ENGINE_DLL void RHI_Pipeline_AllocGraphics(RHI_DeviceHandle device, RHI_PipelineHandle pipeline, unsigned int frameIndex, RHI_SubpassHandle subpass);
@@ -44,8 +45,11 @@ extern "C" ENGINE_DLL RHI_SubpassHandle RHI_RenderPass_AddSubPass(RHI_DeviceHand
 extern "C" ENGINE_DLL void RHI_Subpass_SetDependency(RHI_SubpassHandle sp, unsigned int prevIndex, unsigned int prevStage, unsigned int prevAccessMask, unsigned int currStage, unsigned int currAccessMask, unsigned int syncFlag);
 extern "C" ENGINE_DLL void RHI_Subpass_SetBindPoint(RHI_SubpassHandle sp, ArisenEngine::RHI::EPipelineBindPoint bindPoint);
 extern "C" ENGINE_DLL void RHI_Subpass_AddColorReference(RHI_SubpassHandle sp, unsigned int index, ArisenEngine::RHI::EImageLayout layout);
+extern "C" ENGINE_DLL void RHI_Subpass_SetDepthStencilReference(RHI_SubpassHandle sp, unsigned int index, ArisenEngine::RHI::EImageLayout layout);
 extern "C" ENGINE_DLL void RHI_Subpass_SetDescriptionFlag(RHI_SubpassHandle sp, unsigned int flag);
 extern "C" ENGINE_DLL void RHI_RenderPass_Alloc(RHI_DeviceHandle device, RHI_RenderPassHandle rp, unsigned int frameIndex);
+
+// Moved to SurfaceExports: RHI_FrameBuffer_SetAttachment
 
 
 

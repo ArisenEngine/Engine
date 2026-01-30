@@ -142,6 +142,35 @@ void ArisenEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex
         dynamicStatesInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
         dynamicStatesInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
         dynamicStatesInfo.pDynamicStates = dynamicStates.data();
+
+        // Depth Stencil State
+        const auto& dsState = m_PipelineStateObject->GetDepthStencilState();
+        VkPipelineDepthStencilStateCreateInfo depthStencilInfo {};
+        depthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencilInfo.depthTestEnable = static_cast<VkBool32>(dsState.depthTestEnable);
+        depthStencilInfo.depthWriteEnable = static_cast<VkBool32>(dsState.depthWriteEnable);
+        depthStencilInfo.depthCompareOp = static_cast<VkCompareOp>(dsState.depthCompareOp);
+        depthStencilInfo.depthBoundsTestEnable = static_cast<VkBool32>(dsState.depthBoundsTestEnable);
+        depthStencilInfo.stencilTestEnable = static_cast<VkBool32>(dsState.stencilTestEnable);
+        
+        depthStencilInfo.front.failOp = static_cast<VkStencilOp>(dsState.front.failOp);
+        depthStencilInfo.front.passOp = static_cast<VkStencilOp>(dsState.front.passOp);
+        depthStencilInfo.front.depthFailOp = static_cast<VkStencilOp>(dsState.front.depthFailOp);
+        depthStencilInfo.front.compareOp = static_cast<VkCompareOp>(dsState.front.compareOp);
+        depthStencilInfo.front.compareMask = dsState.front.compareMask;
+        depthStencilInfo.front.writeMask = dsState.front.writeMask;
+        depthStencilInfo.front.reference = dsState.front.reference;
+
+        depthStencilInfo.back.failOp = static_cast<VkStencilOp>(dsState.back.failOp);
+        depthStencilInfo.back.passOp = static_cast<VkStencilOp>(dsState.back.passOp);
+        depthStencilInfo.back.depthFailOp = static_cast<VkStencilOp>(dsState.back.depthFailOp);
+        depthStencilInfo.back.compareOp = static_cast<VkCompareOp>(dsState.back.compareOp);
+        depthStencilInfo.back.compareMask = dsState.back.compareMask;
+        depthStencilInfo.back.writeMask = dsState.back.writeMask;
+        depthStencilInfo.back.reference = dsState.back.reference;
+
+        depthStencilInfo.minDepthBounds = dsState.minDepthBounds;
+        depthStencilInfo.maxDepthBounds = dsState.maxDepthBounds;
         
         auto stages = m_PipelineStateObject->GetStageCreateInfo();
         VkGraphicsPipelineCreateInfo pipelineInfo {};
@@ -153,6 +182,7 @@ void ArisenEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex
         pipelineInfo.pViewportState = &viewportStateInfo;
         pipelineInfo.pRasterizationState = &rasterizerInfo;
         pipelineInfo.pMultisampleState = &multipleSampleInfo;
+        pipelineInfo.pDepthStencilState = &depthStencilInfo;
         pipelineInfo.pColorBlendState = &blendState;
         pipelineInfo.pDynamicState = &dynamicStatesInfo;
         pipelineInfo.layout = m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight];
