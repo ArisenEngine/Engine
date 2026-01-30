@@ -9,6 +9,7 @@
 #ifdef _WIN64
 #include <Windows.h>
 #endif
+#include "../../../Core/Core.Foundation/Base/Assertion.h"
 
 namespace ArisenEngine::Core
 {
@@ -17,6 +18,7 @@ namespace ArisenEngine::Core
      * 
      * This module handles:
      * - Logger initialization and shutdown
+     * - Assertion system initialization (including CRT hooks)
      * - Crash-safe cleanup on unhandled exceptions, signals, and abnormal termination
      * - Platform-specific exception handling (SEH on Windows)
      */
@@ -36,6 +38,8 @@ namespace ArisenEngine::Core
             
             Diagnostics::Log::SetHandler(&Diagnostics::Logger::GetInstance());
             
+            ArisenEngine::InitAssertionSystem();
+
             SetupCrashHandlers();
             return true;
         }
