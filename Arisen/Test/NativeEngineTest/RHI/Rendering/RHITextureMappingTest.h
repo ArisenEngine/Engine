@@ -186,7 +186,6 @@ namespace ArisenEngine::Testing
             viewDesc.layerCount = 1;
             m_TextureView = RHI_Image_AddImageView(m_Device, m_TextureImage, &viewDesc);
 
-            stbi_image_free(pixels);
 
             // 5. Sampler
             RHI::RHISamplerDesc samplerDesc = {};
