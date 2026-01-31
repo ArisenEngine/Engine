@@ -260,8 +260,9 @@ namespace ArisenEngine::Testing
             RHI_Subpass_SetDepthStencilReference(m_Subpass, 1, RHI::IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
             
             RHI_Subpass_SetDependency(m_Subpass, VK_SUBPASS_EXTERNAL, 
-                RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | RHI::PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0,
-                RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | RHI::PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 
+                RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | RHI::PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | RHI::PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, 
+                RHI::ACCESS_COLOR_ATTACHMENT_WRITE_BIT | RHI::ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | RHI::PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | RHI::PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, 
                 RHI::ACCESS_COLOR_ATTACHMENT_WRITE_BIT | RHI::ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, 0);
 
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
@@ -459,6 +460,19 @@ namespace ArisenEngine::Testing
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i) {
                 RHI_Pipeline_AllocGraphics(m_Device, m_Pipeline, i, m_Subpass);
             }
+
+            // Static Descriptor Updates
+            RHI::RHIDescriptorImageInfo texInfo = {};
+            texInfo.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&m_TextureView);
+            texInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            Containers::Vector<RHI::RHIDescriptorImageInfo> texInfos { texInfo };
+            RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 1, &texInfos);
+
+            RHI::RHIDescriptorImageInfo samInfo = {};
+            samInfo.sampler = *reinterpret_cast<RHI::RHISamplerHandle*>(&m_Sampler);
+            samInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            Containers::Vector<RHI::RHIDescriptorImageInfo> samInfos { samInfo };
+            RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 2, &samInfos);
         }
     protected:
         void RenderFrame() override
@@ -474,18 +488,6 @@ namespace ArisenEngine::Testing
             Containers::Vector<RHI::RHIBufferHandle> buffers;
             buffers.push_back(*reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[currentIndex]));
             RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 0, &buffers);
-
-            RHI::RHIDescriptorImageInfo texInfo = {};
-            texInfo.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&m_TextureView);
-            texInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            Containers::Vector<RHI::RHIDescriptorImageInfo> texInfos { texInfo };
-            RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 1, &texInfos);
-
-            RHI::RHIDescriptorImageInfo samInfo = {};
-            samInfo.sampler = *reinterpret_cast<RHI::RHISamplerHandle*>(&m_Sampler);
-            samInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            Containers::Vector<RHI::RHIDescriptorImageInfo> samInfos { samInfo };
-            RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 2, &samInfos);
 
             RHI_DescriptorPool_Reset(m_DescriptorPool, m_DescriptorPoolIds[currentIndex]);
             RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[currentIndex], 0, m_Pso);
@@ -589,7 +591,7 @@ namespace ArisenEngine::Testing
                     }
                     
                     RHI_Cmd_End(cmd);
-                    m_FrameTickets[currentIndex] = RHI_Device_Submit(m_Device, cmd, currentIndex);
+                    m_FrameTickets[currentIndex] = RHI_Device_Submit(m_Device, cmd, m_FrameIndex);
                     RHI_SwapChain_Present(swapchain, currentIndex);
                 }
                 else
