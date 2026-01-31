@@ -2,7 +2,7 @@
 
 #include "../RHIRenderingTestBase.h"
 
-using namespace ArisenEngine;
+
 
 namespace ArisenEngine::Testing
 {
@@ -10,7 +10,7 @@ namespace ArisenEngine::Testing
     {
     private:
         RHI_PSOHandle m_Pso = nullptr;
-        RHI_PipelineHandle m_Pipeline = nullptr;
+        RHI_PipelineHandle m_Pipeline = 0;
         Containers::Vector<RHI_BufferHandle> m_UboBuffer;
         RHI_ImageHandle m_Texture = 0;
         RHI_SamplerHandle m_Sampler = 0;
@@ -115,7 +115,7 @@ namespace ArisenEngine::Testing
                 stbi_image_free(pixels);
             }
 
-            RHI::RHISamplerDescriptor sampDesc = {};
+            RHI::RHISamplerDesc sampDesc = {};
             sampDesc.magFilter = RHI::FILTER_LINEAR;
             sampDesc.minFilter = RHI::FILTER_LINEAR;
             m_Sampler = RHI_Device_CreateSampler(m_Device, &sampDesc);
@@ -180,7 +180,7 @@ namespace ArisenEngine::Testing
             Containers::Vector<RHI::RHIBufferHandle> ubos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[m_FrameIndex]) };
             RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 0, &ubos);
 
-            auto texView = RHI_Image_GetImageView(m_Device, m_Texture, 0);
+            auto texView = RHI_Image_GetView(m_Device, m_Texture);
             RHI::RHIDescriptorImageInfo texInfo = {};
             texInfo.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&texView);
             texInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -225,18 +225,18 @@ namespace ArisenEngine::Testing
                 m_CachedColorAtt.imageLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                 m_CachedColorAtt.loadOp = RHI::ATTACHMENT_LOAD_OP_CLEAR;
                 m_CachedColorAtt.storeOp = RHI::ATTACHMENT_STORE_OP_STORE;
-                m_CachedColorAtt.clearValue.color[0] = 0.0f;
-                m_CachedColorAtt.clearValue.color[1] = 0.0f;
-                m_CachedColorAtt.clearValue.color[2] = 0.2f;
-                m_CachedColorAtt.clearValue.color[3] = 1.0f;
+                m_CachedColorAtt.clearValue.float32[0] = 0.0f;
+                m_CachedColorAtt.clearValue.float32[1] = 0.0f;
+                m_CachedColorAtt.clearValue.float32[2] = 0.2f;
+                m_CachedColorAtt.clearValue.float32[3] = 1.0f;
 
                 m_CachedRenderingInfo = {};
-                m_CachedRenderingInfo.renderArea = { 0, 0, 1280, 720 };
+                m_CachedRenderingInfo.RHIRenderArea = { 0, 0, 1280, 720 };
                 m_CachedRenderingInfo.layerCount = 1;
                 m_CachedRenderingInfo.colorAttachmentCount = 1;
                 m_CachedRenderingInfo.pColorAttachments = &m_CachedColorAtt;
 
-                RHI_Cmd_BeginRendering(cmd, m_FrameIndex, &m_CachedRenderingInfo);
+                RHI_Cmd_BeginRendering(cmd, &m_CachedRenderingInfo);
                 RHI_Cmd_BindPipeline(cmd, m_FrameIndex, m_Pipeline);
                 RHI_Cmd_SetViewport(cmd, 0, 0, 1280, 720, 0, 1);
                 RHI_Cmd_SetScissor(cmd, 0, 0, 1280, 720);

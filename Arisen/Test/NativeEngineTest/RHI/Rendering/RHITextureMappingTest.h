@@ -2,7 +2,7 @@
 
 #include "../RHIRenderingTestBase.h"
 
-using namespace ArisenEngine;
+
 
 namespace ArisenEngine::Testing
 {
@@ -10,10 +10,11 @@ namespace ArisenEngine::Testing
     {
     private:
         RHI_PSOHandle m_Pso = nullptr;
-        RHI_PipelineHandle m_Pipeline = nullptr;
+        RHI_PipelineHandle m_Pipeline = 0;
         Containers::Vector<RHI_BufferHandle> m_UboBuffer;
         RHI_ImageHandle m_Texture = 0;
         RHI_SamplerHandle m_Sampler = 0;
+        RHI_SubpassHandle m_Subpass = 0;
 
     public:
         const char* GetName() const override { return "TextureMappingTest"; }
@@ -112,7 +113,7 @@ namespace ArisenEngine::Testing
                 stbi_image_free(pixels);
             }
 
-            RHI::RHISamplerDescriptor sampDesc = {};
+            RHI::RHISamplerDesc sampDesc = {};
             sampDesc.magFilter = RHI::FILTER_LINEAR;
             sampDesc.minFilter = RHI::FILTER_LINEAR;
             sampDesc.addressModeU = RHI::SAMPLER_ADDRESS_MODE_REPEAT;
@@ -141,11 +142,11 @@ namespace ArisenEngine::Testing
                 RHI::IMAGE_LAYOUT_UNDEFINED,
                 RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-            auto subpass = RHI_RenderPass_AddSubPass(m_Device, m_RenderPass);
-            RHI_Subpass_SetBindPoint(subpass, RHI::PIPELINE_BIND_POINT_GRAPHICS);
-            RHI_Subpass_AddColorReference(subpass, 0, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            m_Subpass = RHI_RenderPass_AddSubPass(m_Device, m_RenderPass);
+            RHI_Subpass_SetBindPoint(m_Subpass, RHI::PIPELINE_BIND_POINT_GRAPHICS);
+            RHI_Subpass_AddColorReference(m_Subpass, 0, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-            RHI_Subpass_SetDependency(subpass, VK_SUBPASS_EXTERNAL,
+            RHI_Subpass_SetDependency(m_Subpass, u32Invalid,
                 RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                 RHI::ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                 RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -183,9 +184,8 @@ namespace ArisenEngine::Testing
             RHI_PSO_AddDynamicState(m_Pso, RHI::DYNAMIC_STATE_SCISSOR);
 
             m_Pipeline = RHI_PipelineManager_GetGraphicsPipeline(pm, m_Pso);
-            auto subpass = RHI_RenderPass_GetSubpass(m_RenderPass, 0);
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i) {
-                RHI_Pipeline_AllocGraphics(m_Device, m_Pipeline, i, subpass);
+                RHI_Pipeline_AllocGraphics(m_Device, m_Pipeline, i, m_Subpass);
             }
         }
 
@@ -207,7 +207,7 @@ namespace ArisenEngine::Testing
             Containers::Vector<RHI::RHIBufferHandle> ubos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[m_FrameIndex]) };
             RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 0, &ubos);
 
-            auto texView = RHI_Image_GetImageView(m_Device, m_Texture, 0);
+            auto texView = RHI_Image_GetView(m_Device, m_Texture);
             RHI::RHIDescriptorImageInfo texInfo = {};
             texInfo.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&texView);
             texInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
