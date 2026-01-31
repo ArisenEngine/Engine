@@ -128,32 +128,7 @@ namespace ArisenEngine::Testing
             
             return true;
         }
-
-        bool Run() override
-        {
-            MSG msg{};
-            bool isRunning = true;
-            
-            while (isRunning)
-            {
-                while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-                {
-                    TranslateMessage(&msg);
-                    DispatchMessage(&msg);
-                    if (msg.message == WM_QUIT)
-                    {
-                        isRunning = false;
-                    }
-                }
-
-                if (!isRunning) break;
-
-                RenderFrame();
-            }
-
-            return true;
-        }
-
+        
         void TeardownTest() override
         {
             // Wait for device before destruction
@@ -234,8 +209,8 @@ namespace ArisenEngine::Testing
 
         }
 
-    private:
-        void RenderFrame()
+    protected:
+        void RenderFrame() override
         {
             // Wait for the previous submission of this frame index to complete
             auto currentIndex = GetCurrentFrameIndex();
@@ -255,6 +230,8 @@ namespace ArisenEngine::Testing
 
             NextFrame(); // Increment m_FrameIndex
         }
+
+    private:
 
         void InitRenderContext()
         {
@@ -711,11 +688,19 @@ namespace ArisenEngine::Testing
 
                 RHI_FrameBuffer_SetAttachment(context.device, context.frameBuffer, m_FrameIndex, backBufferView, context.renderPass);
 
+                RHI::RHIClearValue clearValues[1];
+                clearValues[0].color[0] = 0.0f;
+                clearValues[0].color[1] = 0.0f;
+                clearValues[0].color[2] = 0.0f;
+                clearValues[0].color[3] = 1.0f;
+
                 RHI::RenderPassBeginDesc desc
                 {
                     *reinterpret_cast<RHI::RHIRenderPassHandle*>(&context.renderPass),
                     *reinterpret_cast<RHI::RHIFrameBufferHandle*>(&context.frameBuffer),
-                    RHI::SUBPASS_CONTENTS_INLINE
+                    RHI::SUBPASS_CONTENTS_INLINE,
+                    1,
+                    clearValues
                 };
 
                 RHI_Cmd_BeginRenderPass(commandBuffer, m_FrameIndex, &desc);

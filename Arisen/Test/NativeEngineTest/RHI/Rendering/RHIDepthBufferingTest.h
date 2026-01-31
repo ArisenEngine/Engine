@@ -96,29 +96,6 @@ namespace ArisenEngine::Testing
             }
         }
 
-        bool Run() override
-        {
-            MSG msg{};
-            bool isRunning = true;
-            while (isRunning)
-            {
-                while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-                {
-                    TranslateMessage(&msg);
-                    DispatchMessage(&msg);
-                    if (msg.message == WM_QUIT)
-                    {
-                        isRunning = false;
-                    }
-                }
-
-                if (!isRunning) break;
-
-                Render();
-            }
-            return true;
-        }
-
     private:
         void CreateResources()
         {
@@ -483,8 +460,8 @@ namespace ArisenEngine::Testing
                 RHI_Pipeline_AllocGraphics(m_Device, m_Pipeline, i, m_Subpass);
             }
         }
-
-        void Render()
+    protected:
+        void RenderFrame() override
         {
             UInt32 currentIndex = GetCurrentFrameIndex();
             if (m_FrameTickets[currentIndex] > 0) {

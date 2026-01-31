@@ -33,11 +33,11 @@ int main(int argc, char** argv)
     }
 
     // Register Tests
-    // TestRunner::RegisterTest<RHIBindlessTest>();
-    // TestRunner::RegisterTest<RHISyncTest>();
-    // TestRunner::RegisterTest<RHIBasicRenderingTest>();
-    // TestRunner::RegisterTest<RHIDynamicRenderingTest>();
-    // TestRunner::RegisterTest<RHITextureMappingTest>();
+    TestRunner::RegisterTest<RHIBindlessTest>();
+    TestRunner::RegisterTest<RHISyncTest>();
+    TestRunner::RegisterTest<RHIBasicRenderingTest>();
+    TestRunner::RegisterTest<RHIDynamicRenderingTest>();
+    TestRunner::RegisterTest<RHITextureMappingTest>();
     TestRunner::RegisterTest<RHIDepthBufferingTest>();
 
     // Parse simple command line for filtering (lpCmdLine for WinMain)
