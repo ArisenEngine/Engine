@@ -100,6 +100,8 @@ namespace ArisenEngine::Testing
 
         GLTFModel model;
         model.indexCount = (UInt32)indices.size();
+        
+        LOG_INFOF("Loaded GLTF: {0}. Vertices: {1}, Indices: {2}", path, vertices.size(), indices.size());
 
         // Create RHI Buffers
         RHI::RHIBufferDescriptor vbDesc{};
