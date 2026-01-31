@@ -23,6 +23,8 @@ namespace ArisenEngine::HAL
 		void Resize(UInt32 width, UInt32 height) const;
 		UInt32 Width() const;
 		UInt32 Height() const;
+		void* GetUserData() const;
+		void SetUserData(void* data) const;
 		bool IsClosed() const;
 
 	private:

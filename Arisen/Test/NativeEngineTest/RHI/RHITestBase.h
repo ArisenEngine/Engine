@@ -178,7 +178,7 @@ namespace ArisenEngine::Testing
          */
         static LRESULT CALLBACK TestWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         {
-            RHITestBase* test = (RHITestBase*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+            RHITestBase* test = (RHITestBase*)HAL::GetWindowUserData(HAL::GetWindowId(hwnd));
 
             switch (msg)
             {
@@ -223,8 +223,7 @@ namespace ArisenEngine::Testing
             m_WindowId = HAL::CreateRenderWindow(nullptr, TestWndProc, width, height);
             if (m_WindowId != ~0u)
             {
-                HWND hwnd = HAL::GetWindowHandle(m_WindowId);
-                SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)this);
+                HAL::SetWindowUserData(m_WindowId, this);
                 return true;
             }
             return false;

@@ -22,6 +22,7 @@ namespace ArisenEngine::HAL
 		WindowExitResize   resizeCallback {nullptr};
 		WindowHandle       parent{ nullptr };
 		const wchar_t*     caption{ nullptr };
+		void*              userData{ nullptr };
 		SInt32                left{ 0 };
 		SInt32                top{ 0 };
 		SInt32                width{ 1920 };
@@ -41,6 +42,7 @@ namespace ArisenEngine::HAL
 		WindowExitResize   resizeCallback {nullptr};
 		WindowHandle       parent{ nullptr };
 		const wchar_t*     caption{ nullptr };
+		void*              userData{ nullptr };
 		SInt32                left{ 0 };
 		SInt32                top{ 0 };
 		SInt32                width{ 1920 };
