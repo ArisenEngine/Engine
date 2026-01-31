@@ -183,6 +183,11 @@ namespace ArisenEngine::Testing
             RHI_PSO_AddDynamicState(m_Pso, RHI::DYNAMIC_STATE_VIEWPORT);
             RHI_PSO_AddDynamicState(m_Pso, RHI::DYNAMIC_STATE_SCISSOR);
 
+            RHI_PSO_SetCullMode(m_Pso, RHI::CULL_MODE_NONE);
+            RHI_PSO_SetFrontFace(m_Pso, RHI::FRONT_FACE_COUNTER_CLOCKWISE);
+            RHI_PSO_SetPolygonMode(m_Pso, RHI::EPOLYGON_MODE_FILL);
+            RHI_PSO_SetLineWidth(m_Pso, 1.0f);
+
             m_Pipeline = RHI_PipelineManager_GetGraphicsPipeline(pm, m_Pso);
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i) {
                 RHI_Pipeline_AllocGraphics(m_Device, m_Pipeline, i, m_Subpass);
