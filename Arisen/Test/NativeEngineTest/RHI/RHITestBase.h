@@ -11,6 +11,8 @@
 #include "../../../Engine/NativeEngine/RHI/HandlesExports.h"
 
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <string>
 #include <vector>
 
@@ -33,11 +35,21 @@ namespace ArisenEngine::Testing
         void Release(RHI_DeviceHandle device)
         {
             if (vertexBuffer) RHI_Device_ReleaseBuffer(device, vertexBuffer);
-            if (indexBuffer) RHI_Device_ReleaseBuffer(device, indexBuffer);
+            if (indexCount > 0 && indexBuffer) RHI_Device_ReleaseBuffer(device, indexBuffer);
             vertexBuffer = 0;
             indexBuffer = 0;
             indexCount = 0;
         }
+    };
+
+    /**
+     * @brief Common Uniform Buffer Object for tests.
+     */
+    struct UniformBufferObject
+    {
+        alignas(16) glm::mat4 model;
+        alignas(16) glm::mat4 view;
+        alignas(16) glm::mat4 proj;
     };
 
     /**
@@ -48,21 +60,80 @@ namespace ArisenEngine::Testing
      * - Device and surface management
      * - Window creation
      * - Frame synchronization
+     * - Input and Camera handling
      */
     class RHITestBase : public ITest
     {
+    protected:
         using Clock = std::chrono::high_resolution_clock;
         Clock::time_point lastTime = Clock::now();
         double frameTime = 0.0;
         double fps = 0.0;
         Float32 s_FrameTimeSpacing = 0.0;
         
-    protected:
         RHI_InstanceHandle m_Instance = nullptr;
         RHI_DeviceHandle m_Device = nullptr;
         UInt32 m_WindowId = ~0u;
         UInt32 m_MaxFramesInFlight = 2;
         UInt32 m_FrameIndex = 0;
+
+        // Input state
+        bool m_Keys[256] = { false };
+        float m_MouseX = 0.0f, m_MouseY = 0.0f;
+        float m_MouseDX = 0.0f, m_MouseDY = 0.0f;
+        bool m_MouseButtons[3] = { false }; // 0: Left, 1: Right, 2: Middle
+
+        // Camera state
+        glm::vec3 m_CameraPos = glm::vec3(0.0f, 1.0f, 5.0f);
+        glm::vec3 m_CameraRot = glm::vec3(0.0f, -glm::half_pi<float>(), 0.0f); // pitch, yaw, roll
+
+        void UpdateCamera(float deltaTime)
+        {
+            float speed = 5.0f * deltaTime;
+            if (m_Keys[VK_SHIFT]) speed *= 2.0f;
+
+            glm::vec3 forward;
+            forward.x = cos(m_CameraRot.y) * cos(m_CameraRot.x);
+            forward.y = sin(m_CameraRot.x);
+            forward.z = sin(m_CameraRot.y) * cos(m_CameraRot.x);
+            forward = glm::normalize(forward);
+
+            glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0, 1, 0)));
+            glm::vec3 up = glm::normalize(glm::cross(right, forward));
+
+            if (m_Keys['W']) m_CameraPos += forward * speed;
+            if (m_Keys['S']) m_CameraPos -= forward * speed;
+            if (m_Keys['A']) m_CameraPos -= right * speed;
+            if (m_Keys['D']) m_CameraPos += right * speed;
+            if (m_Keys['E'] || m_Keys[VK_SPACE]) m_CameraPos += glm::vec3(0, 1, 0) * speed;
+            if (m_Keys['Q'] || m_Keys[VK_CONTROL]) m_CameraPos -= glm::vec3(0, 1, 0) * speed;
+
+            if (m_MouseButtons[1]) // Right button drag
+            {
+                float sensitivity = 0.005f;
+                m_CameraRot.y += m_MouseDX * sensitivity;
+                m_CameraRot.x -= m_MouseDY * sensitivity;
+                
+                // Clamp pitch
+                m_CameraRot.x = glm::clamp(m_CameraRot.x, -glm::half_pi<float>() + 0.01f, glm::half_pi<float>() - 0.01f);
+            }
+        }
+
+        glm::mat4 GetViewMatrix()
+        {
+            glm::vec3 forward;
+            forward.x = cos(m_CameraRot.y) * cos(m_CameraRot.x);
+            forward.y = sin(m_CameraRot.x);
+            forward.z = sin(m_CameraRot.y) * cos(m_CameraRot.x);
+            return glm::lookAt(m_CameraPos, m_CameraPos + forward, glm::vec3(0, 1, 0));
+        }
+
+        glm::mat4 GetProjectionMatrix(float aspect)
+        {
+            glm::mat4 proj = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 1000.0f);
+            proj[1][1] *= -1; // Vulkan Y-down
+            return proj;
+        }
 
         /**
          * @brief Whether this test requires a window and swapchain.
@@ -107,6 +178,8 @@ namespace ArisenEngine::Testing
          */
         static LRESULT CALLBACK TestWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         {
+            RHITestBase* test = (RHITestBase*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+
             switch (msg)
             {
             case WM_CLOSE:
@@ -114,6 +187,29 @@ namespace ArisenEngine::Testing
                 return 0;
             case WM_DESTROY:
                 PostQuitMessage(0);
+                return 0;
+            case WM_KEYDOWN:
+                if (test) test->m_Keys[wParam & 0xFF] = true;
+                return 0;
+            case WM_KEYUP:
+                if (test) test->m_Keys[wParam & 0xFF] = false;
+                return 0;
+            case WM_LBUTTONDOWN: if (test) test->m_MouseButtons[0] = true; return 0;
+            case WM_LBUTTONUP:   if (test) test->m_MouseButtons[0] = false; return 0;
+            case WM_RBUTTONDOWN: if (test) test->m_MouseButtons[1] = true; return 0;
+            case WM_RBUTTONUP:   if (test) test->m_MouseButtons[1] = false; return 0;
+            case WM_MBUTTONDOWN: if (test) test->m_MouseButtons[2] = true; return 0;
+            case WM_MBUTTONUP:   if (test) test->m_MouseButtons[2] = false; return 0;
+            case WM_MOUSEMOVE:
+                if (test)
+                {
+                    float x = (float)LOWORD(lParam);
+                    float y = (float)HIWORD(lParam);
+                    test->m_MouseDX += x - test->m_MouseX;
+                    test->m_MouseDY += y - test->m_MouseY;
+                    test->m_MouseX = x;
+                    test->m_MouseY = y;
+                }
                 return 0;
             }
             return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -125,10 +221,13 @@ namespace ArisenEngine::Testing
         bool CreateAppWindow(UInt32 width = 640, UInt32 height = 480)
         {
             m_WindowId = HAL::CreateRenderWindow(nullptr, TestWndProc, width, height);
-            // Platforms assumes Assert on failure, but returns InvalidID (~0) if Assert disabled/ignored
-            // Valid valid IDs are 0, 1, ...
-            // We check against ~0u (UINT32_MAX)
-            return m_WindowId != ~0u;
+            if (m_WindowId != ~0u)
+            {
+                HWND hwnd = HAL::GetWindowHandle(m_WindowId);
+                SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)this);
+                return true;
+            }
+            return false;
         }
 
         /**
@@ -178,6 +277,9 @@ namespace ArisenEngine::Testing
             
             while (isRunning)
             {
+                m_MouseDX = 0;
+                m_MouseDY = 0;
+
                 while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
                 {
                     TranslateMessage(&msg);
