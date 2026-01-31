@@ -90,7 +90,8 @@ namespace ArisenEngine::Testing
         void UpdateCamera(float deltaTime)
         {
             float speed = 5.0f * deltaTime;
-            if (m_Keys[VK_SHIFT]) speed *= 2.0f;
+            if (m_Keys[VK_SHIFT]) speed *= 15.0f;       // Turbo
+            if (m_Keys[VK_CONTROL]) speed *= 0.1f;    // Precision
 
             glm::vec3 forward;
             forward.x = cos(m_CameraRot.y) * cos(m_CameraRot.x);
@@ -99,16 +100,19 @@ namespace ArisenEngine::Testing
             forward = glm::normalize(forward);
 
             glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0, 1, 0)));
-            glm::vec3 up = glm::normalize(glm::cross(right, forward));
+            // Align 'up' with world-up for E/Q movement, or use camera-up? 
+            // Usually 'E' implies world-up in fly cams, but camera-relative is also common. 
+            // Previous code used (0,1,0) which is World Up. Sticking to World Up for Q/E.
 
             if (m_Keys['W']) m_CameraPos += forward * speed;
             if (m_Keys['S']) m_CameraPos -= forward * speed;
             if (m_Keys['A']) m_CameraPos -= right * speed;
             if (m_Keys['D']) m_CameraPos += right * speed;
-            if (m_Keys['E'] || m_Keys[VK_SPACE]) m_CameraPos += glm::vec3(0, 1, 0) * speed;
-            if (m_Keys['Q'] || m_Keys[VK_CONTROL]) m_CameraPos -= glm::vec3(0, 1, 0) * speed;
+            if (m_Keys['E']) m_CameraPos += glm::vec3(0, 1, 0) * speed;
+            if (m_Keys['Q']) m_CameraPos -= glm::vec3(0, 1, 0) * speed;
 
-            if (m_MouseButtons[1]) // Right button drag
+            // Only rotate if RMB is held
+            if (m_MouseButtons[1]) 
             {
                 float sensitivity = 0.005f;
                 m_CameraRot.y += m_MouseDX * sensitivity;
@@ -196,8 +200,20 @@ namespace ArisenEngine::Testing
                 return 0;
             case WM_LBUTTONDOWN: if (test) test->m_MouseButtons[0] = true; return 0;
             case WM_LBUTTONUP:   if (test) test->m_MouseButtons[0] = false; return 0;
-            case WM_RBUTTONDOWN: if (test) test->m_MouseButtons[1] = true; return 0;
-            case WM_RBUTTONUP:   if (test) test->m_MouseButtons[1] = false; return 0;
+            case WM_RBUTTONDOWN: 
+                if (test) {
+                    test->m_MouseButtons[1] = true; 
+                    SetCapture(hwnd);
+                    ShowCursor(FALSE);
+                }
+                return 0;
+            case WM_RBUTTONUP:   
+                if (test) {
+                    test->m_MouseButtons[1] = false; 
+                    ReleaseCapture();
+                    ShowCursor(TRUE);
+                }
+                return 0;
             case WM_MBUTTONDOWN: if (test) test->m_MouseButtons[2] = true; return 0;
             case WM_MBUTTONUP:   if (test) test->m_MouseButtons[2] = false; return 0;
             case WM_MOUSEMOVE:

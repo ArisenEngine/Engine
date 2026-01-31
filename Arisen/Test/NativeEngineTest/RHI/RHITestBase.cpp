@@ -82,7 +82,7 @@ namespace ArisenEngine::Testing
                     indices.resize(index_offset + index_count);
                     for (size_t idx = 0; idx < index_count; ++idx)
                     {
-                        indices[index_offset + idx] = (uint32_t)cgltf_accessor_read_index(primitive.indices, idx);
+                        indices[index_offset + idx] = (uint32_t)cgltf_accessor_read_index(primitive.indices, idx) + (uint32_t)vertex_offset;
                     }
                 }
                 else
