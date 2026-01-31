@@ -177,7 +177,7 @@ namespace ArisenEngine::Testing
 
             RHI_PSO_BuildDescriptorSetLayout(m_Pso);
 
-            RHI_PSO_AddBlendAttachmentState_Simple(m_Pso, true,
+            RHI_PSO_AddBlendAttachmentState_Simple(m_Pso, false,
                 RHI::COLOR_COMPONENT_R_BIT | RHI::COLOR_COMPONENT_G_BIT | RHI::COLOR_COMPONENT_B_BIT | RHI::COLOR_COMPONENT_A_BIT);
 
             RHI_PSO_AddDynamicState(m_Pso, RHI::DYNAMIC_STATE_VIEWPORT);
