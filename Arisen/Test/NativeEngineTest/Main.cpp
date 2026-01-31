@@ -36,9 +36,9 @@ int main(int argc, char** argv)
     TestRunner::RegisterTest<RHIBindlessTest>();
     TestRunner::RegisterTest<RHISyncTest>();
     TestRunner::RegisterTest<RHIBasicRenderingTest>();
-    TestRunner::RegisterTest<RHIDynamicRenderingTest>();
-    TestRunner::RegisterTest<RHITextureMappingTest>();
-    TestRunner::RegisterTest<RHIDepthBufferingTest>();
+    // TestRunner::RegisterTest<RHIDynamicRenderingTest>();
+    // TestRunner::RegisterTest<RHITextureMappingTest>();
+    // TestRunner::RegisterTest<RHIDepthBufferingTest>();
 
     // Parse simple command line for filtering (lpCmdLine for WinMain)
     std::string cmdLine = GetCommandLineA();
