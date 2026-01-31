@@ -168,7 +168,9 @@ namespace ArisenEngine::Testing
             UniformBufferObject ubo;
             ubo.model = glm::mat4(1.0f);
             ubo.view = GetViewMatrix();
-            ubo.proj = GetProjectionMatrix(1280.0f / 720.0f);
+            float width = (float)HAL::GetWindowWidth(m_WindowId);
+            float height = (float)HAL::GetWindowHeight(m_WindowId);
+            ubo.proj = GetProjectionMatrix(width / height);
             RHI_Buffer_MemoryCopy(m_Device, m_UboBuffer[m_FrameIndex], &ubo, 0);
         }
 
@@ -231,15 +233,17 @@ namespace ArisenEngine::Testing
                 m_CachedColorAtt.clearValue.float32[3] = 1.0f;
 
                 m_CachedRenderingInfo = {};
-                m_CachedRenderingInfo.RHIRenderArea = { 0, 0, 1280, 720 };
+                UInt32 width = HAL::GetWindowWidth(m_WindowId);
+                UInt32 height = HAL::GetWindowHeight(m_WindowId);
+                m_CachedRenderingInfo.RHIRenderArea = { 0, 0, width, height };
                 m_CachedRenderingInfo.layerCount = 1;
                 m_CachedRenderingInfo.colorAttachmentCount = 1;
                 m_CachedRenderingInfo.pColorAttachments = &m_CachedColorAtt;
 
                 RHI_Cmd_BeginRendering(cmd, &m_CachedRenderingInfo);
                 RHI_Cmd_BindPipeline(cmd, m_FrameIndex, m_Pipeline);
-                RHI_Cmd_SetViewport(cmd, 0, 0, 1280, 720, 0, 1);
-                RHI_Cmd_SetScissor(cmd, 0, 0, 1280, 720);
+                RHI_Cmd_SetViewport(cmd, 0, 0, (float)width, (float)height, 0, 1);
+                RHI_Cmd_SetScissor(cmd, 0, 0, width, height);
                 RHI_Cmd_BindDescriptorSets_FromPool(cmd, m_FrameIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[m_FrameIndex]);
                 RHI_Cmd_BindVertexBuffers(cmd, m_Model.vertexBuffer, 0);
                 RHI_Cmd_BindIndexBuffer(cmd, m_Model.indexBuffer, 0, RHI::INDEX_TYPE_UINT32);

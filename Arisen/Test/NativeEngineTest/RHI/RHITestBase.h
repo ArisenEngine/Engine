@@ -234,7 +234,7 @@ namespace ArisenEngine::Testing
         /**
          * @brief Create a render window.
          */
-        bool CreateAppWindow(UInt32 width = 640, UInt32 height = 480)
+        bool CreateAppWindow(UInt32 width = 1280, UInt32 height = 720)
         {
             m_WindowId = HAL::CreateRenderWindow(nullptr, TestWndProc, width, height);
             if (m_WindowId != ~0u)
