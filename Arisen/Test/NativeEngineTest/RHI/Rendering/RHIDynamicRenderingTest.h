@@ -135,31 +135,6 @@ namespace ArisenEngine::Testing
             return true;
         }
 
-        bool Run() override
-        {
-            MSG msg{};
-            bool isRunning = true;
-            
-            while (isRunning)
-            {
-                while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-                {
-                    TranslateMessage(&msg);
-                    DispatchMessage(&msg);
-                    if (msg.message == WM_QUIT)
-                    {
-                        isRunning = false;
-                    }
-                }
-
-                if (!isRunning) break;
-
-                RenderFrame();
-            }
-
-            return true;
-        }
-
         void TeardownTest() override
         {
             RHI_Device_WaitIdle(this->m_Device);
@@ -207,8 +182,8 @@ namespace ArisenEngine::Testing
             }
         }
 
-    private:
-        void RenderFrame()
+    protected:
+        void RenderFrame() override
         {
             // Wait for the previous submission of this frame index to complete
             auto currentIndex = GetCurrentFrameIndex();
@@ -227,7 +202,7 @@ namespace ArisenEngine::Testing
 
             NextFrame();
         }
-
+    private:
         void InitRenderContext()
         {
             m_Context.commandPool = RHI_Device_CreateCommandBufferPool(m_Context.device);

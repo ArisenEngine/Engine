@@ -93,29 +93,6 @@ namespace ArisenEngine::Testing
             }
         }
 
-        bool Run() override
-        {
-            MSG msg{};
-            bool isRunning = true;
-            while (isRunning)
-            {
-                while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-                {
-                    TranslateMessage(&msg);
-                    DispatchMessage(&msg);
-                    if (msg.message == WM_QUIT)
-                    {
-                        isRunning = false;
-                    }
-                }
-
-                if (!isRunning) break;
-
-                Render();
-            }
-            return true;
-        }
-
     private:
         void CreateResources()
         {
@@ -455,7 +432,8 @@ namespace ArisenEngine::Testing
             }
         }
 
-        void Render()
+    protected:
+        void RenderFrame() override
         {
             UInt32 currentIndex = GetCurrentFrameIndex();
             if (m_FrameTickets[currentIndex] > 0) {
@@ -505,10 +483,18 @@ namespace ArisenEngine::Testing
                     RHI_RenderPass_Alloc(m_Device, m_RenderPass, m_FrameIndex);
                     RHI_FrameBuffer_SetAttachment(m_Device, m_FrameBuffer, m_FrameIndex, backBufferView, m_RenderPass);
 
+                    RHI::RHIClearValue clearValues[1];
+                    clearValues[0].color[0] = 0.0f;
+                    clearValues[0].color[1] = 0.0f;
+                    clearValues[0].color[2] = 0.0f;
+                    clearValues[0].color[3] = 1.0f;
+
                     RHI::RenderPassBeginDesc desc = {};
                     desc.renderPass = *reinterpret_cast<RHI::RHIRenderPassHandle*>(&m_RenderPass);
                     desc.frameBuffer = *reinterpret_cast<RHI::RHIFrameBufferHandle*>(&m_FrameBuffer);
                     desc.subpassContents = RHI::SUBPASS_CONTENTS_INLINE;
+                    desc.clearValueCount = 1;
+                    desc.pClearValues = clearValues;
                     
                     RHI_Cmd_BeginRenderPass(cmd, m_FrameIndex, &desc);
                     {

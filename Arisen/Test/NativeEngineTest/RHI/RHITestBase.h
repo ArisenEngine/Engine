@@ -39,6 +39,9 @@ namespace ArisenEngine::Testing
          */
         virtual bool IsHeadless() const { return false; }
 
+
+        virtual void RenderFrame() {};
+
         /**
          * @brief Initialize RHI instance with default settings.
          */
@@ -136,6 +139,31 @@ namespace ArisenEngine::Testing
             return m_Device != nullptr;
         }
 
+        bool Run() override
+        {
+            MSG msg{};
+            bool isRunning = true;
+            
+            while (isRunning)
+            {
+                while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+                {
+                    TranslateMessage(&msg);
+                    DispatchMessage(&msg);
+                    if (msg.message == WM_QUIT)
+                    {
+                        isRunning = false;
+                    }
+                }
+
+                if (!isRunning) break;
+
+                RenderFrame();
+            }
+
+            return true;    
+        }
+        
         /**
          * @brief Advance to the next frame.
          */
