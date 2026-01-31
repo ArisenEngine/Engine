@@ -25,7 +25,7 @@ namespace ArisenEngine::HAL
 
         UInt32 CreateRenderWindow(WindowHandle host, WindowProc callback, SInt32 width, SInt32 height)
         {
-            WindowInitInfo info{ callback, nullptr, host, nullptr, 0, 0, width, height };
+            WindowInitInfo info{ callback, nullptr, host, nullptr, nullptr, CW_USEDEFAULT, CW_USEDEFAULT, width, height };
             RenderWindow surface{ CreateNewWindow(&info) };
             ASSERT(surface.window.IsValid());
             renderWindows[surface.window.ID()] = surface;
@@ -34,7 +34,7 @@ namespace ArisenEngine::HAL
 
         UInt32 CreateRenderWindowWithResizeCallback(WindowHandle host, WindowProc callback, WindowExitResize resizeCallback, SInt32 width, SInt32 height)
         {
-            WindowInitInfo info{ callback, resizeCallback, host, nullptr, 0, 0, width, height };
+            WindowInitInfo info{ callback, resizeCallback, host, nullptr, nullptr, CW_USEDEFAULT, CW_USEDEFAULT, width, height };
             RenderWindow surface{ CreateNewWindow(&info) };
             ASSERT(surface.window.IsValid());
             renderWindows[surface.window.ID()] = surface;

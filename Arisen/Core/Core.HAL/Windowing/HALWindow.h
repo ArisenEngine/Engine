@@ -4,12 +4,19 @@
 
 namespace ArisenEngine::HAL {
 	
-	Window CreateNewWindow(const WindowInitInfo* const initInfo = nullptr);
+	extern "C"
+	{
+		HAL_DLL Window CreateNewWindow(const WindowInitInfo* const initInfo = nullptr);
 
-	UInt32 GetWindowID(WindowHandle handle);
+		HAL_DLL UInt32 GetWindowID(WindowHandle handle);
 
-	void RemoveWindow(WindowID id);
+		HAL_DLL void RemoveWindow(WindowID id);
 
-	void SetWindowResizeCallbackInternal(WindowID id, WindowExitResize callback);
+		HAL_DLL void SetWindowResizeCallbackInternal(WindowID id, WindowExitResize callback);
+
+		HAL_DLL void* GetWindowUserData(WindowID id);
+
+		HAL_DLL void SetWindowUserData(WindowID id, void* data);
+	}
 
 }

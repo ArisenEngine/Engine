@@ -31,6 +31,7 @@ namespace ArisenEngine::HAL
 			DWORD style{ WS_VISIBLE };
 			bool isFullScreen{ false };
 			bool isClosed{ false };
+			void* userData{ nullptr };
 		};
 
 
@@ -56,16 +57,18 @@ namespace ArisenEngine::HAL
 			return id;
 		}
 
-		WindowInfo& GetInfoFromId(WindowID id)
+		WindowInfo* GetInfoFromId(WindowID id)
 		{
-			assert(id < windows.size());
-			assert(windows[id].hwnd);
-			return windows[id];
+			if (id < windows.size())
+			{
+				return &windows[id];
+			}
+			return nullptr;
 		}
 
-		WindowInfo& GetInfoFromHandle(WindowHandle handle)
+		WindowInfo* GetInfoFromHandle(WindowHandle handle)
 		{
-			const WindowID id{ static_cast<WindowID>(GetWindowLongPtr(handle, GWLP_USERDATA))};
+			const WindowID id{ static_cast<WindowID>(GetWindowLongPtr(handle, GWLP_USERDATA)) };
 			return GetInfoFromId(id);
 		}
 
@@ -84,25 +87,49 @@ namespace ArisenEngine::HAL
 			
 			switch (msg)
 			{
-			case WM_DESTROY:
-				GetInfoFromHandle(hwnd).isClosed = true;
+			case WM_NCCREATE:
+			{
+				LPCREATESTRUCTW createStruct = reinterpret_cast<LPCREATESTRUCTW>(lparam);
+				WindowID id = static_cast<WindowID>(reinterpret_cast<uintptr_t>(createStruct->lpCreateParams));
+				SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)id);
+				
+				WindowInfo* winInfo = GetInfoFromId(id);
+				if (winInfo)
+				{
+					winInfo->hwnd = hwnd;
+				}
 				break;
+			}
+
+			case WM_DESTROY:
+			{
+				WindowInfo* winInfo = GetInfoFromHandle(hwnd);
+				if (winInfo) winInfo->isClosed = true;
+				break;
+			}
 			
-			case WM_EXITSIZEMOVE:
-				info = &GetInfoFromHandle(hwnd);
-				bHasExitResizing = true;
+			case WM_MOVE:
+				info = GetInfoFromHandle(hwnd);
+				if (info)
+				{
+					info->topLeft.x = (int)(short)LOWORD(lparam);
+					info->topLeft.y = (int)(short)HIWORD(lparam);
+				}
 				break;
 
 			case WM_SIZE:
-				if (wparam == SIZE_MAXIMIZED)
-				{
-					info = &GetInfoFromHandle(hwnd);
-				}
+				info = GetInfoFromHandle(hwnd);
 				break;
+
+			case WM_EXITSIZEMOVE:
+				info = GetInfoFromHandle(hwnd);
+				bHasExitResizing = true;
+				break;
+
 			case WM_SYSCOMMAND:
 				if (wparam == SC_RESTORE)
 				{
-					info = &GetInfoFromHandle(hwnd);
+					info = GetInfoFromHandle(hwnd);
 				}
 				break;
 
@@ -140,13 +167,6 @@ namespace ArisenEngine::HAL
 			return DefWindowProc(hwnd, msg, wparam, lparam);
 		}
 
-		// Interface of window
-
-		bool IsWindowClosed(WindowID id)
-		{
-			return GetInfoFromId(id).isClosed;
-		}
-
 		void ResizeWindow(const WindowInfo& info, const RECT& area)
 		{
 			RECT windowRect{ area };
@@ -159,15 +179,48 @@ namespace ArisenEngine::HAL
 
 		}
 
-		void ResizeWindow(WindowID id, UInt32 width, UInt32 height)
+		Math::UInt32Vector4 GetWindowSize(WindowID id)
 		{
-			WindowInfo& info{ GetInfoFromId(id) };
+			WindowInfo* info{ GetInfoFromId(id) };
+			if (info)
+			{
+				RECT& area{ info->isFullScreen ? info->fullScreenArea : info->clientArea };
+				return { (UInt32)area.left, (UInt32)area.top, (UInt32)area.right, (UInt32)area.bottom };
+			}
+			return { 0, 0, 0, 0 };
+		}
+
+		void SetWindowCaption(WindowID id, const wchar_t* caption)
+		{
+			WindowInfo* info{ GetInfoFromId(id) };
+			if (info)
+			{
+				SetWindowTextW(info->hwnd, caption);
+			}
+		}
+
+		WindowHandle GetWindowHandleInternal(WindowID id)
+		{
+			WindowInfo* info = GetInfoFromId(id);
+			return info ? info->hwnd : nullptr;
+		}
+
+	} // anonymous namespace
+
+	// Interface of window
+	extern "C"
+	{
+		HAL_DLL void ResizeWindow(WindowID id, UInt32 width, UInt32 height)
+		{
+			WindowInfo* infoPtr{ GetInfoFromId(id) };
+			if (!infoPtr) return;
+			WindowInfo& info = *infoPtr;
 
 			if (info.style & WS_CHILD)
 			{
 				GetClientRect(info.hwnd, &info.clientArea);
-			} 
-			else 
+			}
+			else
 			{
 				RECT& area{ info.isFullScreen ? info.fullScreenArea : info.clientArea };
 
@@ -180,33 +233,18 @@ namespace ArisenEngine::HAL
 
 		}
 
-		Math::UInt32Vector4 GetWindowSize(WindowID id)
+		HAL_DLL bool IsWindowFullScreen(WindowID id)
 		{
-			WindowInfo& info{ GetInfoFromId(id) };
-			RECT& area{ info.isFullScreen ? info.fullScreenArea : info.clientArea };
-			return { (UInt32)area.left, (UInt32)area.top, (UInt32)area.right, (UInt32)area.bottom };
-		}
-		
-		void SetWindowCaption(WindowID id, const wchar_t* caption)
-		{
-			WindowInfo& info{ GetInfoFromId(id) };
-			SetWindowTextW(info.hwnd, caption);
-
+			WindowInfo* info = GetInfoFromId(id);
+			return info ? info->isFullScreen : false;
 		}
 
-		WindowHandle GetWindowHandleInternal(WindowID id)
+		HAL_DLL void SetWindowFullScreen(WindowID id, bool isFullScreen)
 		{
-			return GetInfoFromId(id).hwnd;
-		}
+			WindowInfo* infoPtr{ GetInfoFromId(id) };
+			if (!infoPtr) return;
+			WindowInfo& info = *infoPtr;
 
-		bool IsWindowFullScreen(WindowID id)
-		{
-			return GetInfoFromId(id).isFullScreen;
-		}
-
-		void SetWindowFullScreen(WindowID id, bool isFullScreen)
-		{
-			WindowInfo& info{ GetInfoFromId(id) };
 			if (info.isFullScreen != isFullScreen)
 			{
 				info.isFullScreen = isFullScreen;
@@ -234,113 +272,127 @@ namespace ArisenEngine::HAL
 
 		}
 
-	}// annoymous namespace
-
-	Window CreateNewWindow(const WindowInitInfo* const initInfo)
-	{
-		WindowProc callback{ initInfo ? initInfo->callback : nullptr };
-		WindowExitResize resizeCallback {initInfo ? initInfo->resizeCallback : nullptr };
-		WindowHandle parent{ initInfo ? initInfo->parent : nullptr };
-
-		// set up window class
-		WNDCLASSEXW  wc;
-		ZeroMemory(&wc, sizeof(wc));
-		wc.cbSize = sizeof(WNDCLASSEXW );
-		wc.style = CS_HREDRAW | CS_VREDRAW;
-		wc.lpfnWndProc = InternalWindowProc;
-		wc.cbClsExtra = 0;
-		wc.cbWndExtra = sizeof(WindowProc) + sizeof(WindowExitResize);
-		wc.hInstance = 0;
-		wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-		wc.hbrBackground = CreateSolidBrush(RGB(0, 0, 0));//CreateSolidBrush(RGB(26, 48, 76));
-		wc.lpszMenuName = NULL;
-		wc.lpszClassName = L"ArisenWindow";
-		wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
-
-		// register window class 
-
-
-		RegisterClassExW(&wc);
-
-		// create an instance of window class
-
-		WindowInfo info{ };
-
-		info.clientArea.right = (initInfo && initInfo->width) ? info.clientArea.left + initInfo->width : info.clientArea.right;
-		info.clientArea.bottom = (initInfo && initInfo->height) ? info.clientArea.top + initInfo->height : info.clientArea.bottom;
-		info.style |= parent ? (WS_CHILD) : WS_OVERLAPPEDWINDOW;
-		
-		RECT rect{ info.clientArea };
-
-		AdjustWindowRect(&rect, info.style, FALSE);
-
-		const wchar_t* caption{ (initInfo && initInfo->caption) ? initInfo->caption : L"Arisen" };
-		const SInt32 left{ (initInfo) ? initInfo->left : info.topLeft.x };
-		const SInt32 top{ (initInfo) ? initInfo->top : info.topLeft.y };
-		const SInt32 width{ rect.right - rect.left };
-		const SInt32 height{ rect.bottom - rect.top };
-
-		info.hwnd = CreateWindowExW(
-			0,
-			wc.lpszClassName,
-			caption,
-			info.style,
-			left,
-			top,
-			width,
-			height,
-			parent,
-			NULL,
-			NULL,
-			NULL
-		);
-
-		if (info.hwnd)
+		HAL_DLL Window CreateNewWindow(const WindowInitInfo* const initInfo)
 		{
-			if (parent != nullptr)
-			{
-				SetWindowPos(info.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
-			}
-			
-			DEBUG_OP(SetLastError(0));
+			WindowProc callback{ initInfo ? initInfo->callback : nullptr };
+			WindowExitResize resizeCallback{ initInfo ? initInfo->resizeCallback : nullptr };
+			WindowHandle parent{ initInfo ? initInfo->parent : nullptr };
+
+			// set up window class
+			WNDCLASSEXW  wc;
+			ZeroMemory(&wc, sizeof(wc));
+			wc.cbSize = sizeof(WNDCLASSEXW);
+			wc.style = CS_HREDRAW | CS_VREDRAW;
+			wc.lpfnWndProc = InternalWindowProc;
+			wc.cbClsExtra = 0;
+			wc.cbWndExtra = sizeof(WindowProc) + sizeof(WindowExitResize);
+			wc.hInstance = 0;
+			wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+			wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+			wc.hbrBackground = CreateSolidBrush(RGB(0, 0, 0));//CreateSolidBrush(RGB(26, 48, 76));
+			wc.lpszMenuName = NULL;
+			wc.lpszClassName = L"ArisenWindow";
+			wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+
+			// register window class 
+
+
+			RegisterClassExW(&wc);
+
+			// create an instance of window class
+
+			WindowInfo info{ };
+
+			info.clientArea.right = (initInfo && initInfo->width) ? info.clientArea.left + initInfo->width : info.clientArea.right;
+			info.clientArea.bottom = (initInfo && initInfo->height) ? info.clientArea.top + initInfo->height : info.clientArea.bottom;
+			info.style |= parent ? (WS_CHILD) : WS_OVERLAPPEDWINDOW;
+
+			RECT rect{ info.clientArea };
+
+			AdjustWindowRect(&rect, info.style, FALSE);
+
+			const wchar_t* caption{ (initInfo && initInfo->caption) ? initInfo->caption : L"Arisen" };
+			const SInt32 sleft{ (initInfo) ? initInfo->left : info.topLeft.x };
+			const SInt32 stop{ (initInfo) ? initInfo->top : info.topLeft.y };
+			const SInt32 swidth{ rect.right - rect.left };
+			const SInt32 sheight{ rect.bottom - rect.top };
 
 			const WindowID id{ AddToWindows(info) };
 
-			SetWindowLongPtr(info.hwnd, GWLP_USERDATA, (LONG_PTR)id);
+			info.hwnd = CreateWindowExW(
+				0,
+				wc.lpszClassName,
+				caption,
+				info.style,
+				sleft,
+				stop,
+				swidth,
+				sheight,
+				parent,
+				NULL,
+				NULL,
+				(LPVOID)(uintptr_t)id
+			);
 
-			if (callback) SetWindowLongPtr(info.hwnd, WINDOW_PROC_CALLBACK, (LONG_PTR)callback);
+			if (info.hwnd)
+			{
+				if (callback) SetWindowLongPtr(info.hwnd, WINDOW_PROC_CALLBACK, (LONG_PTR)callback);
 
-			if (resizeCallback) SetWindowLongPtr(info.hwnd, WINDOW_RESIZE_CALLBACK, (LONG_PTR)resizeCallback);
+				if (resizeCallback) SetWindowLongPtr(info.hwnd, WINDOW_RESIZE_CALLBACK, (LONG_PTR)resizeCallback);
 
-			assert(GetLastError() == 0);
+				assert(GetLastError() == 0);
 
-			ShowWindow(info.hwnd, SW_NORMAL);
-			UpdateWindow(info.hwnd);
-			return Window{ id };
+				ShowWindow(info.hwnd, SW_NORMAL);
+				UpdateWindow(info.hwnd);
+				return Window{ id };
+			}
+
+			return {};
 		}
 
-		return {};
-	}
 
+		HAL_DLL void RemoveWindow(WindowID id)
+		{
+			WindowInfo* info{ GetInfoFromId(id) };
+			if (info)
+			{
+				DestroyWindow(info->hwnd);
+				RemoveFromWindows(id);
+			}
+		}
 
-	void RemoveWindow(WindowID id)
-	{
-		WindowInfo& info{ GetInfoFromId(id) };
-		DestroyWindow(info.hwnd);
-		RemoveFromWindows(id);
-	}
+		HAL_DLL UInt32 GetWindowID(WindowHandle handle)
+		{
+			const WindowID id{ static_cast<WindowID>(GetWindowLongPtr(handle, GWLP_USERDATA)) };
+			return id;
+		}
 
-	UInt32 GetWindowID(WindowHandle handle)
-	{
-		const WindowID id{ static_cast<WindowID>(GetWindowLongPtr(handle, GWLP_USERDATA)) };
-		return id;
-	}
+		HAL_DLL void SetWindowResizeCallbackInternal(WindowID id, WindowExitResize callback)
+		{
+			WindowInfo* info{ GetInfoFromId(id) };
+			if (info)
+			{
+				SetWindowLongPtr(info->hwnd, WINDOW_RESIZE_CALLBACK, (LONG_PTR)callback);
+			}
+		}
 
-	void SetWindowResizeCallbackInternal(WindowID id, WindowExitResize callback)
-	{
-		WindowInfo& info{ GetInfoFromId(id) };
-		SetWindowLongPtr(info.hwnd, WINDOW_RESIZE_CALLBACK, (LONG_PTR)callback);
+		HAL_DLL void* GetWindowUserData(WindowID id)
+		{
+			WindowInfo* info = GetInfoFromId(id);
+			return info ? info->userData : nullptr;
+		}
+
+		HAL_DLL void SetWindowUserData(WindowID id, void* data)
+		{
+			WindowInfo* info = GetInfoFromId(id);
+			if (info) info->userData = data;
+		}
+
+		HAL_DLL bool IsWindowClosed(WindowID id)
+		{
+			WindowInfo* info = GetInfoFromId(id);
+			return info ? info->isClosed : true;
+		}
 	}
 	
 #else
@@ -409,6 +461,18 @@ namespace ArisenEngine::HAL
 	{
 		assert(IsValid());
 		return IsWindowClosed(m_ID);
+	}
+
+	void* Window::GetUserData() const
+	{
+		assert(IsValid());
+		return GetWindowUserData(m_ID);
+	}
+
+	void Window::SetUserData(void* data) const
+	{
+		assert(IsValid());
+		SetWindowUserData(m_ID, data);
 	}
 	
 }
