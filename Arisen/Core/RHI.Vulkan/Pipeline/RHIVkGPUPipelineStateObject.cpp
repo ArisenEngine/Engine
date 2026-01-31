@@ -78,8 +78,50 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::ClearAllPrograms()
 
 const ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkGPUPipelineStateObject::GetHash() const 
 {
-    // TODO
-    return 0;
+    UInt32 hash = 2166136261u;
+    const UInt32 prime = 16777619u;
+
+    auto hashCombine = [&](UInt32 value) {
+        hash ^= value;
+        hash *= prime;
+    };
+
+    // Hash Shader Modules
+    for (const auto& stage : m_PipelineStageCreateInfos) {
+        hashCombine(static_cast<UInt32>(reinterpret_cast<uintptr_t>(stage.module)));
+        hashCombine(static_cast<UInt32>(stage.stage));
+    }
+
+    // Hash Blend State
+    for (const auto& attachment : m_BlendAttachmentStates) {
+        hashCombine(attachment.blendEnable);
+        hashCombine(attachment.colorWriteMask);
+        if (attachment.blendEnable) {
+             hashCombine(attachment.srcColorBlendFactor);
+             hashCombine(attachment.dstColorBlendFactor);
+             hashCombine(attachment.colorBlendOp);
+             hashCombine(attachment.srcAlphaBlendFactor);
+             hashCombine(attachment.dstAlphaBlendFactor);
+             hashCombine(attachment.alphaBlendOp);
+        }
+    }
+    
+    // Hash Vertex Bindings
+    hashCombine(static_cast<UInt32>(m_VertexInputBindingDescriptions.size()));
+    for (const auto& desc : m_VertexInputBindingDescriptions) {
+        hashCombine(desc.binding);
+        hashCombine(desc.stride);
+    }
+    
+    // Hash Attachments
+    hashCombine(static_cast<UInt32>(m_ColorAttachmentFormats.size()));
+    for (const auto& fmt : m_ColorAttachmentFormats) {
+        hashCombine(static_cast<UInt32>(fmt));
+    }
+    hashCombine(static_cast<UInt32>(m_DepthAttachmentFormat));
+    hashCombine(static_cast<UInt32>(m_StencilAttachmentFormat));
+
+    return hash;
 }
 
 void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::Clear()
