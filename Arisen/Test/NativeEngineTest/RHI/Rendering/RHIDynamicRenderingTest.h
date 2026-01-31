@@ -520,7 +520,16 @@ namespace ArisenEngine::Testing
             {
                 auto backBufferView = RHI_SwapChain_GetImageView(swapchain, m_FrameIndex);
                 
-                // 1. Transition Image to Color Attachment Optimal
+                // 1. Wait for Image Available
+                {
+                    auto imageAvailableSem = RHI_SwapChain_GetImageAvailableSemaphore(swapchain, m_FrameIndex);
+                    if (imageAvailableSem)
+                    {
+                        RHI_Cmd_WaitSemaphore(commandBuffer, imageAvailableSem, (unsigned int)RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+                    }
+                }
+
+                // 2. Transition Image to Color Attachment Optimal
                 {
                     RHI::RHIImageMemoryBarrier barrier{};
                     barrier.srcAccess = RHI::ACCESS_NONE;
@@ -531,12 +540,12 @@ namespace ArisenEngine::Testing
                     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                     barrier.image = *reinterpret_cast<RHI::RHIImageHandle*>(&backBuffer);
                     barrier.subresourceRange = { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-                    barrier.srcStageMask = RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                    barrier.srcStageMask = RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
                     barrier.dstStageMask = RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
                     
                     context.cachedBarriers.clear();
                     context.cachedBarriers.push_back(barrier);
-                    RHI_Cmd_PipelineBarrier_Image(commandBuffer, RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, &context.cachedBarriers);
+                    RHI_Cmd_PipelineBarrier_Image(commandBuffer, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, &context.cachedBarriers);
                 }
 
                 // 2. Begin Rendering
@@ -596,12 +605,9 @@ namespace ArisenEngine::Testing
             }
 
             {
-                auto imageAvailableSem = RHI_SwapChain_GetImageAvailableSemaphore(swapchain, m_FrameIndex);
                 auto renderFinishedSem = RHI_SwapChain_GetRenderFinishSemaphore(swapchain, m_FrameIndex);
-                
-                if (imageAvailableSem && renderFinishedSem)
+                if (renderFinishedSem)
                 {
-                    RHI_Cmd_WaitSemaphore(commandBuffer, imageAvailableSem, (unsigned int)RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
                     RHI_Cmd_SignalSemaphore(commandBuffer, renderFinishedSem);
                 }
             }

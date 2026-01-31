@@ -146,6 +146,12 @@ void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(RHIInstanceInfo&& app_info): RHIInstance(std::move(app_info))
 {
+#ifdef _WIN32
+    // Self-Healing: Clear legacy environment variables that cause noisy warnings during layer init.
+    // This provides "Process Environment Isolation" to ensure the engine runs cleanly.
+    _putenv_s("VK_LAYER_REPORT_FLAGS", "");
+#endif
+
     if (app_info.validationLayer && !CheckValidationLayerSupport())
     {
         LOG_FATAL_AND_THROW("[RHIVkInstance::RHIVkInstance]: validation layers requested, but not available!");
@@ -175,8 +181,24 @@ ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(RHIInstanceInfo&& app_info): RHI
         createInfo.enabledLayerCount = static_cast<uint32_t>(VkValidationLayers.size());
         createInfo.ppEnabledLayerNames = VkValidationLayers.data();
 
-        PopulateDebugMessengerCreateInfo(debugCreateInfo);
-        createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+        // Fundamental fix: Use VK_EXT_layer_settings to explicitly configure the validation layer.
+        // This overrides legacy environment variables and acts as an architectural self-healing mechanism.
+        static const char* validationLayerName = "VK_LAYER_KHRONOS_validation";
+        static const char* reportFlagsValue = "error,warn";
+        static VkBool32 syncVal = VK_TRUE;
+
+        static VkLayerSettingEXT layerSettings[] = {
+            { validationLayerName, "report_flags", VK_LAYER_SETTING_TYPE_STRING_EXT, 1, &reportFlagsValue },
+            { validationLayerName, "validate_sync", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &syncVal }
+        };
+
+        static VkLayerSettingsCreateInfoEXT settingsCreateInfo = {};
+        settingsCreateInfo.sType = VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT;
+        settingsCreateInfo.pNext = &debugCreateInfo;
+        settingsCreateInfo.settingCount = 2;
+        settingsCreateInfo.pSettings = layerSettings;
+
+        createInfo.pNext = &settingsCreateInfo;
     }
     else
     {
