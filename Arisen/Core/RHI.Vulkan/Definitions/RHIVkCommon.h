@@ -58,6 +58,7 @@ namespace ArisenEngine::RHI
     static ArisenEngine::Containers::Vector<const char*> VkInstanceExtensionNames
     {
         VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+        VK_EXT_LAYER_SETTINGS_EXTENSION_NAME,
         "VK_KHR_win32_surface",
         "VK_KHR_surface"
     };
