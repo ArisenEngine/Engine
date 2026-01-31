@@ -7,9 +7,39 @@
 #include "Common/PlatformTypes.h"
 #include "../../../Engine/NativeEngine/RHI/InstanceExports.h"
 #include "../../../Engine/NativeEngine/RHI/RHIExports.h"
+#include "../../../Engine/NativeEngine/RHI/DeviceExports.h"
+#include "../../../Engine/NativeEngine/RHI/HandlesExports.h"
+
+#include <glm/glm.hpp>
+#include <string>
+#include <vector>
+
 
 namespace ArisenEngine::Testing
 {
+    struct GLTFVertex
+    {
+        glm::vec3 pos;
+        glm::vec3 normal;
+        glm::vec2 uv;
+    };
+
+    struct GLTFModel
+    {
+        RHI_BufferHandle vertexBuffer = 0;
+        RHI_BufferHandle indexBuffer = 0;
+        UInt32 indexCount = 0;
+        
+        void Release(RHI_DeviceHandle device)
+        {
+            if (vertexBuffer) RHI_Device_ReleaseBuffer(device, vertexBuffer);
+            if (indexBuffer) RHI_Device_ReleaseBuffer(device, indexBuffer);
+            vertexBuffer = 0;
+            indexBuffer = 0;
+            indexCount = 0;
+        }
+    };
+
     /**
      * @brief Base class for all RHI tests.
      * 
@@ -41,6 +71,8 @@ namespace ArisenEngine::Testing
 
 
         virtual void RenderFrame() {};
+
+        GLTFModel LoadGLTF(const std::string& path);
 
         /**
          * @brief Initialize RHI instance with default settings.

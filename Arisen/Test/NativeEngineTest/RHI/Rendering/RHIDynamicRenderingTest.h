@@ -73,6 +73,7 @@ namespace ArisenEngine::Testing
             Containers::Vector<UInt32> descriptorPoolIds;
             Containers::Vector<RHIGpuTicket> frameTickets;
             bool bShouldResize;
+            GLTFModel model;
 
             // Cached vectors and structures to avoid per-frame heap allocations
             Containers::Vector<RHI::RHIImageMemoryBarrier> cachedBarriers;
@@ -83,8 +84,9 @@ namespace ArisenEngine::Testing
 
         struct Vertex
         {
-            glm::vec2 pos;
-            glm::vec3 color;
+            glm::vec3 pos;
+            glm::vec3 normal;
+            glm::vec2 uv;
         };
 
         struct UniformBufferObject
@@ -95,18 +97,6 @@ namespace ArisenEngine::Testing
         };
 
         RenderContext m_Context{};
-        
-        // Data
-        const std::vector<Vertex> vertices = {
-            {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-            {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-            {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-            {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
-        };
-
-        const std::vector<uint16_t> indices = {
-            0, 1, 2, 2, 3, 0
-        };
 
     public:
         const char* GetName() const override { return "DynamicRenderingTest"; }
@@ -118,8 +108,6 @@ namespace ArisenEngine::Testing
             m_Context.newWidth = 640; 
             m_Context.newHeight = 480;
             m_Context.device = this->m_Device;
-            m_Context.vertexBufferHandle = 0ULL;
-            m_Context.indicesBufferHandle = 0ULL;
             m_Context.textureHandle = 0ULL;
             m_Context.pipelineState = nullptr;
             m_Context.pipeline = 0ULL;
@@ -140,15 +128,9 @@ namespace ArisenEngine::Testing
             RHI_Device_WaitIdle(this->m_Device);
             
             // Cleanup standard resources
-            if (m_Context.vertexBufferHandle)
+            if (m_Context.model.vertexBuffer)
             {
-                RHI_Device_ReleaseBuffer(m_Context.device, m_Context.vertexBufferHandle);
-                m_Context.vertexBufferHandle = 0ULL;
-            }
-            if (m_Context.indicesBufferHandle)
-            {
-                RHI_Device_ReleaseBuffer(m_Context.device, m_Context.indicesBufferHandle);
-                m_Context.indicesBufferHandle = 0ULL;
+                m_Context.model.Release(m_Context.device);
             }
             for (auto& ub : m_Context.uniformBuffers)
             {
@@ -232,8 +214,9 @@ namespace ArisenEngine::Testing
             RHI_PSO_SetRenderingFormats(pipelineState, &colorFormats, RHI::EFormat::FORMAT_UNDEFINED, RHI::EFormat::FORMAT_UNDEFINED);
 
             RHI_PSO_AddVertexBindingDescription(pipelineState, 0, sizeof(Vertex), RHI::VERTEX_INPUT_RATE_VERTEX);
-            RHI_PSO_AddVertexInputAttributeDescription(pipelineState, 0, 0, RHI::EFormat::FORMAT_R32G32_SFLOAT, offsetof(Vertex, pos));
-            RHI_PSO_AddVertexInputAttributeDescription(pipelineState, 1, 0, RHI::EFormat::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color));
+            RHI_PSO_AddVertexInputAttributeDescription(pipelineState, 0, 0, RHI::EFormat::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos));
+            RHI_PSO_AddVertexInputAttributeDescription(pipelineState, 1, 0, RHI::EFormat::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal));
+            RHI_PSO_AddVertexInputAttributeDescription(pipelineState, 2, 0, RHI::EFormat::FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv));
 
             for (auto program : m_Context.gpuPrograms)
             {
@@ -319,25 +302,11 @@ namespace ArisenEngine::Testing
 
         void InitBuffer()
         {
-            RHI::RHIBufferDescriptor vbDesc{
-                0,
-                sizeof(vertices[0]) * (UInt64)vertices.size(),
-                RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                RHI::SHARING_MODE_EXCLUSIVE,
-                0, nullptr,
-                RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-            };
-            m_Context.vertexBufferHandle = RHI_Device_CreateBuffer(m_Context.device, &vbDesc, "Vertex Buffer");
-
-            RHI::RHIBufferDescriptor ibDesc{
-                0,
-                sizeof(indices[0]) * (UInt64)indices.size(),
-                RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_INDEX_BUFFER_BIT,
-                RHI::SHARING_MODE_EXCLUSIVE,
-                0, nullptr,
-                RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-            };
-            m_Context.indicesBufferHandle = RHI_Device_CreateBuffer(m_Context.device, &ibDesc, "Indices Buffer");
+            wchar_t exePathW[MAX_PATH]{};
+            GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
+            auto exeDir = std::filesystem::path(exePathW).parent_path();
+            auto gltfPath = (exeDir / "Assets" / "Buggy.gltf").string();
+            m_Context.model = LoadGLTF(gltfPath);
 
             for (int i = 0; i < (int)m_MaxFramesInFlight; ++i)
             {
@@ -352,7 +321,6 @@ namespace ArisenEngine::Testing
                 auto name = std::string("Uniform Buffer ") + std::to_string(i);
                 m_Context.uniformBuffers.emplace_back(RHI_Device_CreateBuffer(m_Context.device, &ubDesc, name.c_str()));
             }
-            UploadVertex();
         }
 
         void CreateImage() {
@@ -381,45 +349,7 @@ namespace ArisenEngine::Testing
             stbi_image_free(pixels);
         }
 
-        void UploadVertex() {
-            auto device = m_Context.device;
-            auto vertexBufferHandle = m_Context.vertexBufferHandle;
-            auto indicesBufferHandle = m_Context.indicesBufferHandle;
-            RHI::RHIBufferDescriptor vsb{
-                0,
-                sizeof(vertices[0]) * vertices.size(),
-                RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
-                RHI::SHARING_MODE_EXCLUSIVE,
-                0, nullptr,
-                RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT
-            };
-            auto vertexStagingBufferHandle = RHI_Device_CreateBuffer(device, &vsb, "Vertex Staging Buffer");
-            RHI_Buffer_MemoryCopy(device, vertexStagingBufferHandle, vertices.data(), 0);
-            
-            RHI::RHIBufferDescriptor isb{
-                0,
-                sizeof(indices[0]) * indices.size(),
-                RHI::BUFFER_USAGE_TRANSFER_SRC_BIT,
-                RHI::SHARING_MODE_EXCLUSIVE,
-                0, nullptr,
-                RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT
-            };
-            auto indicesStagingBufferHandle = RHI_Device_CreateBuffer(device, &isb, "Indices Staging Buffer");
-            RHI_Buffer_MemoryCopy(device, indicesStagingBufferHandle, indices.data(), 0);
-            auto commandBuffer = RHI_Device_GetCommandBuffer(device, m_Context.commandPool, m_FrameIndex);
-            RHI_Cmd_Begin(commandBuffer, m_FrameIndex, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-            RHI_Cmd_CopyBuffer(commandBuffer, vertexStagingBufferHandle, 0, vertexBufferHandle, 0, RHI_Buffer_Size(device, vertexBufferHandle));
-            RHI_Cmd_CopyBuffer(commandBuffer, indicesStagingBufferHandle, 0, indicesBufferHandle, 0, RHI_Buffer_Size(device, indicesBufferHandle));
-            RHI_Cmd_End(commandBuffer);
-            RHI_Device_Submit(device, commandBuffer, m_FrameIndex);
-            
-            // Sync one-time setup transfers immediately to avoid command buffer reuse conflicts with first frame
-            RHI_Device_WaitIdle(device);
-
-            RHI_Device_ReleaseBuffer(device, vertexStagingBufferHandle);
-            RHI_Device_ReleaseBuffer(device, indicesStagingBufferHandle);
-            RHI_Device_ReleaseCommandBuffer(device, m_Context.commandPool, m_FrameIndex, commandBuffer);
-        }
+        // Data uploading is now handled within LoadGLTF
 
         void UploadImage(UInt64 textureSize, void* data, UInt32 texWidth, UInt32 texHeight) {
             auto device = m_Context.device;
@@ -576,9 +506,9 @@ namespace ArisenEngine::Testing
                     RHI_Cmd_SetViewport(commandBuffer, 0.0f, 0.0f, static_cast<Float32>(RHI_ImageView_GetWidth(context.device, backBufferView)), static_cast<Float32>(RHI_ImageView_GetHeight(context.device, backBufferView)), 0.0f, 1.0f);
                     RHI_Cmd_SetScissor(commandBuffer, 0, 0, RHI_ImageView_GetWidth(context.device, backBufferView), RHI_ImageView_GetHeight(context.device, backBufferView));
                     RHI_Cmd_BindDescriptorSets_FromPool(commandBuffer, m_FrameIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, context.descriptorPool, context.descriptorPoolIds[currentIndex]);
-                    RHI_Cmd_BindVertexBuffers(commandBuffer, context.vertexBufferHandle, 0);
-                    RHI_Cmd_BindIndexBuffer(commandBuffer, context.indicesBufferHandle, 0, RHI::INDEX_TYPE_UINT16);
-                    RHI_Cmd_DrawIndexed(commandBuffer, static_cast<UInt32>(indices.size()), 1, 0, 0, 0, 0);
+                    RHI_Cmd_BindVertexBuffers(commandBuffer, context.model.vertexBuffer, 0);
+                    RHI_Cmd_BindIndexBuffer(commandBuffer, context.model.indexBuffer, 0, RHI::INDEX_TYPE_UINT32);
+                    RHI_Cmd_DrawIndexed(commandBuffer, context.model.indexCount, 1, 0, 0, 0, 0);
                 }
 
                 // 4. End Rendering

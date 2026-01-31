@@ -19,8 +19,9 @@ namespace ArisenEngine::Testing
     class RHIDepthBufferingTest : public RHITestBase
     {
         struct Vertex {
-            float pos[3];
-            float uv[2];
+            glm::vec3 pos;
+            glm::vec3 normal;
+            glm::vec2 uv;
         };
 
         struct alignas(16) UBO {
@@ -55,6 +56,7 @@ namespace ArisenEngine::Testing
         Containers::Vector<UInt32> m_DescriptorPoolIds;
         Containers::Vector<UInt64> m_FrameTickets;
         RHI_DescriptorPoolHandle m_DescriptorPool = 0;
+        GLTFModel m_Model;
 
     public:
         TestCategory GetCategory() const override { return TestCategory::Rendering; }
@@ -76,8 +78,7 @@ namespace ArisenEngine::Testing
             {
                 RHI_Device_WaitIdle(m_Device);
 
-                RHI_Device_ReleaseBuffer(m_Device, m_VertexBuffer);
-                RHI_Device_ReleaseBuffer(m_Device, m_IndexBuffer);
+                m_Model.Release(m_Device);
                 for(int i=0; i<3; ++i) RHI_Device_ReleaseBuffer(m_Device, m_UboBuffer[i]);
                 
                 RHI_Device_ReleaseImage(m_Device, m_TextureImage);
@@ -99,40 +100,11 @@ namespace ArisenEngine::Testing
     private:
         void CreateResources()
         {
-            // 1. Vertex Buffer: Two overlapping quads
-            // Quad 1: Red-ish, Z = 0.5
-            // Quad 2: Green-ish, Z = 0.0 (Closer if using [0,1] depth and LESS test)
-            Vertex vertices[] = {
-                // Quad 1 (Behind)
-                {{-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f}},
-                {{ 0.5f, -0.5f, 0.5f}, {1.0f, 0.0f}},
-                {{ 0.5f,  0.5f, 0.5f}, {1.0f, 1.0f}},
-                {{-0.5f,  0.5f, 0.5f}, {0.0f, 1.0f}},
-                // Quad 2 (Front)
-                {{-0.3f, -0.3f, 0.0f}, {0.0f, 0.0f}},
-                {{ 0.7f, -0.3f, 0.0f}, {1.0f, 0.0f}},
-                {{ 0.7f,  0.7f, 0.0f}, {1.0f, 1.0f}},
-                {{-0.3f,  0.7f, 0.0f}, {0.0f, 1.0f}}
-            };
-            
-            RHI::RHIBufferDescriptor vDesc = {};
-            vDesc.size = sizeof(vertices);
-            vDesc.usage = RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT;
-            vDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
-            m_VertexBuffer = RHI_Device_CreateBuffer(m_Device, &vDesc, "VertexBuffer");
-            RHI_Buffer_MemoryCopy(m_Device, m_VertexBuffer, vertices, 0);
-
-            // 2. Index Buffer
-            uint16_t indices[] = { 
-                0, 1, 2, 2, 3, 0, // Quad 1
-                4, 5, 6, 6, 7, 4  // Quad 2
-            };
-            RHI::RHIBufferDescriptor iDesc = {};
-            iDesc.size = sizeof(indices);
-            iDesc.usage = RHI::BUFFER_USAGE_INDEX_BUFFER_BIT;
-            iDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
-            m_IndexBuffer = RHI_Device_CreateBuffer(m_Device, &iDesc, "IndexBuffer");
-            RHI_Buffer_MemoryCopy(m_Device, m_IndexBuffer, indices, 0);
+            wchar_t exePathW[MAX_PATH]{};
+            GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
+            auto exeDir = std::filesystem::path(exePathW).parent_path();
+            auto gltfPath = (exeDir / "Assets" / "Buggy.gltf").string();
+            m_Model = LoadGLTF(gltfPath);
 
             // 3. UBO
             RHI::RHIBufferDescriptor uDesc = {};
@@ -143,11 +115,6 @@ namespace ArisenEngine::Testing
                 m_UboBuffer[i] = RHI_Device_CreateBuffer(m_Device, &uDesc, "UBO");
             }
 
-            // 4. Texture (Load Arisen.png)
-            namespace fs = std::filesystem;
-            wchar_t exePathW[MAX_PATH]{};
-            GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
-            auto exeDir = fs::path(exePathW).parent_path();
             auto imagePath = (exeDir / "Assets" / "Arisen.png").string();
 
             int texWidth, texHeight, texChannels;
@@ -431,7 +398,8 @@ namespace ArisenEngine::Testing
 
             RHI_PSO_AddVertexBindingDescription(m_Pso, 0, sizeof(Vertex), RHI::VERTEX_INPUT_RATE_VERTEX);
             RHI_PSO_AddVertexInputAttributeDescription(m_Pso, 0, 0, RHI::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos));
-            RHI_PSO_AddVertexInputAttributeDescription(m_Pso, 1, 0, RHI::FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv));
+            RHI_PSO_AddVertexInputAttributeDescription(m_Pso, 1, 0, RHI::FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal));
+            RHI_PSO_AddVertexInputAttributeDescription(m_Pso, 2, 0, RHI::FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv));
 
             Containers::Vector<RHI::RHIBufferHandle> buffers;
             buffers.push_back(*reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[0]));
@@ -577,9 +545,9 @@ namespace ArisenEngine::Testing
                         RHI_Cmd_SetViewport(cmd, 0.0f, 0.0f, w, h, 0.0f, 1.0f);
                         RHI_Cmd_SetScissor(cmd, 0, 0, (UInt32)w, (UInt32)h);
                         RHI_Cmd_BindDescriptorSets_FromPool(cmd, currentIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[currentIndex]);
-                        RHI_Cmd_BindVertexBuffers(cmd, m_VertexBuffer, 0);
-                        RHI_Cmd_BindIndexBuffer(cmd, m_IndexBuffer, 0, RHI::INDEX_TYPE_UINT16);
-                        RHI_Cmd_DrawIndexed(cmd, 12, 1, 0, 0, 0, 0);
+                        RHI_Cmd_BindVertexBuffers(cmd, m_Model.vertexBuffer, 0);
+                        RHI_Cmd_BindIndexBuffer(cmd, m_Model.indexBuffer, 0, RHI::INDEX_TYPE_UINT32);
+                        RHI_Cmd_DrawIndexed(cmd, m_Model.indexCount, 1, 0, 0, 0, 0);
                     }
                     RHI_Cmd_EndRenderPass(cmd);
 
