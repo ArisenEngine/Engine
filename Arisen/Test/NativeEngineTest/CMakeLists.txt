@@ -31,6 +31,7 @@ target_include_directories(NativeEngineTest PUBLIC
 )
 
 target_include_directories(NativeEngineTest PRIVATE
+    ${CMAKE_SOURCE_DIR}/3rdparty/cgltf
     ${CMAKE_SOURCE_DIR}/3rdparty/image
     ${CMAKE_SOURCE_DIR}/3rdparty/vulkan/Include
     ${CMAKE_SOURCE_DIR}/Tools/Profiler

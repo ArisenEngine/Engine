@@ -3,7 +3,7 @@
 #include "DxcCompat.h"
 #include <initguid.h>
 #include "dxcapi.h"
-#include <wrl/client.h>  // 用微软WRL智能指针替代CComPtr
+#include <wrl/client.h>  // Replace CComPtr with Microsoft WRL smart pointer
 #include "CoreShaderCompilerCommon.h"
 #include "../Core.HAL/CoreHALCommon.h"
 #include "Logger/Logger.h"
@@ -74,7 +74,7 @@ namespace ArisenEngine::HAL
 
     struct ShaderCompilerOutput
     {
-        // 使用智能指针避免泄露，目前存在泄露
+        // Use smart pointer to avoid leaks, currently there are leaks
         void* codePointer = nullptr;
         SIZE_T codeSize = 0;
         String msgOut;

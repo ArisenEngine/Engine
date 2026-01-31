@@ -41,7 +41,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(ARISEN_GENERATE_PROJECT "Whether to generate IDE project files (sln/vcxproj/xcodeproj)" OFF)
 
 add_definitions(-DUNICODE -D_UNICODE)
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--verbose")
+if(NOT MSVC)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--verbose")
+endif()
+
 
 # Set Macros
 if(${TARGET} STREQUAL "Editor")
