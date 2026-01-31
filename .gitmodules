@@ -14,3 +14,7 @@
 	path = Arisen/3rdparty/DirectXShaderCompiler
 	url = https://github.com/eatdreamcat/DirectXShaderCompiler.git
 	branch = arisen_dev
+[submodule "Arisen/3rdparty/cgltf"]
+	path = Arisen/3rdparty/cgltf
+	url = https://github.com/ArisenEngine/cgltf.git
+	branch = arisen_dev
