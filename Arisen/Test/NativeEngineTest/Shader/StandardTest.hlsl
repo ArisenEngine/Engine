@@ -19,6 +19,7 @@ cbuffer UboView : register(b0, space0)
     float4x4 model;
     float4x4 view;
     float4x4 projection;
+    float mipmapBias;
 };
 
 Texture2D tex : register(t1, space0);
@@ -36,7 +37,7 @@ Varying Vert(Attribute input)
 
 float4 Frag(Varying input) : SV_Target
 {
-    float4 texColor = tex.Sample(sam, input.uv);
+    float4 texColor = tex.SampleBias(sam, input.uv, mipmapBias);
     float4 color = texColor;
     // Simple NdotL for better visualization
     float3 lightDir = normalize(float3(1.0, 1.0, 1.0));

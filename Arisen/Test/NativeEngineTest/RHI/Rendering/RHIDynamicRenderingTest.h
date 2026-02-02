@@ -171,7 +171,8 @@ namespace ArisenEngine::Testing
             ubo.view = GetViewMatrix();
             float width = (float)HAL::GetWindowWidth(m_WindowId);
             float height = (float)HAL::GetWindowHeight(m_WindowId);
-            ubo.proj = GetProjectionMatrix(width / height);
+            ubo.projection = GetProjectionMatrix(width / height);
+            ubo.mipmapBias = 0.0f;
             RHI_Buffer_MemoryCopy(m_Device, m_UboBuffer[m_FrameIndex], &ubo, 0);
         }
 

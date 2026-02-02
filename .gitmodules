@@ -18,3 +18,6 @@
 	path = Arisen/3rdparty/cgltf
 	url = https://github.com/ArisenEngine/cgltf.git
 	branch = arisen_dev
+[submodule "Arisen/Test/NativeEngineTest/Assets/glTF-Sample-Models"]
+	path = Arisen/Test/NativeEngineTest/Assets/glTF-Sample-Models
+	url = https://github.com/KhronosGroup/glTF-Sample-Models.git

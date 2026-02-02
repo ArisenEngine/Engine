@@ -98,11 +98,11 @@ namespace ArisenEngine::Testing
                 texDesc.width = (UInt32)texWidth;
                 texDesc.height = (UInt32)texHeight;
                 texDesc.depth = 1;
-                texDesc.mipLevels = 1;
+                texDesc.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
                 texDesc.arrayLayers = 1;
                 texDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
                 texDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
-                texDesc.usage = RHI::IMAGE_USAGE_TRANSFER_DST_BIT | RHI::IMAGE_USAGE_SAMPLED_BIT;
+                texDesc.usage = RHI::IMAGE_USAGE_TRANSFER_SRC_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT | RHI::IMAGE_USAGE_SAMPLED_BIT;
                 texDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
                 texDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
                 m_Texture = RHI_Device_CreateImage(m_Device, &texDesc, "Arisen Logo Texture");
@@ -111,11 +111,23 @@ namespace ArisenEngine::Testing
                 viewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
                 viewDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
                 viewDesc.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
-                viewDesc.levelCount = 1;
+                viewDesc.levelCount = texDesc.mipLevels;
                 viewDesc.layerCount = 1;
                 RHI_Image_AddImageView(m_Device, m_Texture, &viewDesc);
 
                 UploadImage(m_Texture, (UInt64)texWidth * texHeight * 4, pixels, (UInt32)texWidth, (UInt32)texHeight);
+                
+                // Mipmap generation
+                {
+                    auto cmd = RHI_Device_GetCommandBuffer(m_Device, m_CmdPool, 0);
+                    RHI_Cmd_Begin(cmd, 0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+                    RHI_Cmd_GenerateMipmaps(cmd, m_Texture);
+                    RHI_Cmd_End(cmd);
+                    RHI_Device_Submit(m_Device, cmd, 0);
+                    RHI_Device_WaitIdle(m_Device);
+                    RHI_Device_ReleaseCommandBuffer(m_Device, m_CmdPool, 0, cmd);
+                }
+
                 stbi_image_free(pixels);
             }
             else
@@ -132,7 +144,7 @@ namespace ArisenEngine::Testing
                 texDesc.arrayLayers = 1;
                 texDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
                 texDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
-                texDesc.usage = RHI::IMAGE_USAGE_TRANSFER_DST_BIT | RHI::IMAGE_USAGE_SAMPLED_BIT;
+                texDesc.usage = RHI::IMAGE_USAGE_TRANSFER_SRC_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT | RHI::IMAGE_USAGE_SAMPLED_BIT;
                 texDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
                 texDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
                 m_Texture = RHI_Device_CreateImage(m_Device, &texDesc, "Fallback White Texture");
@@ -152,6 +164,8 @@ namespace ArisenEngine::Testing
             RHI::RHISamplerDesc sampDesc = {};
             sampDesc.magFilter = RHI::FILTER_LINEAR;
             sampDesc.minFilter = RHI::FILTER_LINEAR;
+            sampDesc.mipmapMode = RHI::SAMPLER_MIPMAP_MODE_LINEAR;
+            sampDesc.maxLod = 12.0f; // Sufficient for most textures
             sampDesc.addressModeU = RHI::SAMPLER_ADDRESS_MODE_REPEAT;
             sampDesc.addressModeV = RHI::SAMPLER_ADDRESS_MODE_REPEAT;
             sampDesc.addressModeW = RHI::SAMPLER_ADDRESS_MODE_REPEAT;
@@ -283,7 +297,8 @@ namespace ArisenEngine::Testing
             ubo.view = GetViewMatrix();
             float width = (float)HAL::GetWindowWidth(m_WindowId);
             float height = (float)HAL::GetWindowHeight(m_WindowId);
-            ubo.proj = GetProjectionMatrix(width / height);
+            ubo.projection = GetProjectionMatrix(width / height);
+            ubo.mipmapBias = 0.0f; // Default No bias
             RHI_Buffer_MemoryCopy(m_Device, m_UboBuffer[GetCurrentFrameIndex()], &ubo, 0);
         }
 

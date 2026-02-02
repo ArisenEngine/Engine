@@ -87,6 +87,8 @@ public:
                        const RHIBufferMemoryBarrier *pBufferMemoryBarriers,
                        UInt32 bufferMemoryBarrierCount) override;
 
+  void GenerateMipmaps(RHIImageHandle image) override;
+
     private:
         friend class RHIVkQueue;
         // Vulkan only

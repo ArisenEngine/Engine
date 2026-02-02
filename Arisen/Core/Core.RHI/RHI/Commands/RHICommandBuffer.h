@@ -171,6 +171,8 @@ namespace ArisenEngine::RHI
         virtual void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
             const RHIBufferMemoryBarrier* pBufferMemoryBarriers, UInt32 bufferMemoryBarrierCount) = 0;
 
+        virtual void GenerateMipmaps(RHIImageHandle image) = 0;
+
         // Vector-based overloads (delegating to pointer-based ones)
         void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
             Containers::Vector<RHIMemoryBarrier>&& memoryBarriers,
