@@ -106,7 +106,7 @@ namespace ArisenEngine::Testing
         void UpdateCamera(float deltaTime)
         {
             float speed = 5.0f * deltaTime;
-            if (m_Keys[VK_SHIFT]) speed *= 15.0f;       // Turbo
+            if (m_Keys[VK_SHIFT]) speed *= 30.0f;       // Turbo
             if (m_Keys[VK_CONTROL]) speed *= 0.1f;    // Precision
 
             glm::vec3 forward;
