@@ -102,6 +102,13 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
     void* pUserData)
 {
+    if (pCallbackData->messageIdNumber == 0x7f1922d7)
+    {
+        // Silence the "all" was not a valid option for VK_LAYER_REPORT_FLAGS warning.
+        // This warning is usually caused by external tools like RenderDoc and is non-critical.
+        return VK_FALSE;
+    }
+
     std::cout<<pCallbackData->pMessage<<std::endl;
     
     if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
@@ -146,15 +153,8 @@ void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(RHIInstanceInfo&& app_info): RHIInstance(std::move(app_info))
 {
-#ifdef _WIN32
-    // Self-Healing: Clear legacy environment variables that cause noisy warnings during layer init.
-    // This provides "Process Environment Isolation" to ensure the engine runs cleanly.
-    _putenv_s("VK_LAYER_REPORT_FLAGS", "");
-    
-    // Architectual Override: Disable Synchronization Validation via environment variable as fallback
-    // for systems where VK_EXT_layer_settings is not supported.
-    _putenv_s("VK_LAYER_KHRONOS_VALIDATION_VALIDATE_SYNC", "false");
-#endif
+    // Environment variable manipulation removed. We now filter non-actionable warnings 
+    // in the DebugCallback for a cleaner approach that doesn't affect global state.
 
     if (app_info.validationLayer && !CheckValidationLayerSupport())
     {
@@ -259,7 +259,11 @@ ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(RHIInstanceInfo&& app_info): RHI
             }
             else
             {
-                LOG_WARN(String::Format("[RHIVkInstance::RHIVkInstance]: instance extension not supported: %s", extensionName));
+                // Silence warning for optional extensions
+                if (strcmp(extensionName, VK_EXT_LAYER_SETTINGS_EXTENSION_NAME) != 0)
+                {
+                    LOG_WARN(String::Format("[RHIVkInstance::RHIVkInstance]: instance extension not supported: %s", extensionName));
+                }
             }
         }
 
