@@ -304,6 +304,13 @@ extern "C" ENGINE_DLL void RHI_Subpass_AddColorReference(RHI_SubpassHandle sp, u
     s->AddColorReference(index, layout);
 }
 
+extern "C" ENGINE_DLL void RHI_Subpass_SetResolveReference(RHI_SubpassHandle sp, unsigned int index, RHI::EImageLayout layout)
+{
+    auto* s = reinterpret_cast<RHI::RHISubPass*>(sp);
+    if (s == nullptr) return;
+    s->SetResolveReference(index, layout);
+}
+
 extern "C" ENGINE_DLL void RHI_Subpass_SetDepthStencilReference(RHI_SubpassHandle sp, unsigned int index, RHI::EImageLayout layout)
 {
     auto* s = reinterpret_cast<RHI::RHISubPass*>(sp);

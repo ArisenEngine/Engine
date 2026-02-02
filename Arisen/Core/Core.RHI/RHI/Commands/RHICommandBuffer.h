@@ -77,6 +77,7 @@ namespace ArisenEngine::RHI
     {
         const RHIRenderingAttachmentInfo* pColorAttachments;
         UInt32 colorAttachmentCount;
+        const RHIRenderingAttachmentInfo* pResolveAttachments;
         const RHIRenderingAttachmentInfo* pDepthAttachment;
         const RHIRenderingAttachmentInfo* pStencilAttachment;
         UInt32 layerCount;

@@ -17,6 +17,10 @@ namespace ArisenEngine::Testing
         RHI_ImageHandle m_Texture = 0;
         RHI_SamplerHandle m_Sampler = 0;
         RHI_SubpassHandle m_Subpass = 0;
+        
+        RHI_ImageHandle m_MSAAColorImage = 0;
+        RHI_ImageViewHandle m_MSAAColorView = 0;
+        RHI::ESampleCountFlagBits m_SampleCount = RHI::SAMPLE_COUNT_4_BIT;
 
     public:
         const char* GetName() const override { return "BasicRenderingTest"; }
@@ -40,6 +44,7 @@ namespace ArisenEngine::Testing
             if (m_Sampler) RHI_Device_ReleaseSampler(m_Device, m_Sampler);
             if (m_Texture) RHI_Device_ReleaseImage(m_Device, m_Texture);
             if (m_DepthImage) RHI_Device_ReleaseImage(m_Device, m_DepthImage);
+            if (m_MSAAColorImage) RHI_Device_ReleaseImage(m_Device, m_MSAAColorImage);
 
             for (auto& ub : m_UboBuffer)
             {
@@ -99,7 +104,7 @@ namespace ArisenEngine::Testing
             dimgDesc.format = RHI::FORMAT_D32_SFLOAT;
             dimgDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
             dimgDesc.usage = RHI::IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-            dimgDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
+            dimgDesc.sampleCount = m_SampleCount;
             dimgDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             m_DepthImage = RHI_Device_CreateImage(m_Device, &dimgDesc, "DepthBuffer");
 
@@ -111,6 +116,29 @@ namespace ArisenEngine::Testing
             dviewDesc.layerCount = 1;
             m_DepthView = RHI_Image_AddImageView(m_Device, m_DepthImage, &dviewDesc);
 
+            // MSAA Color Image
+            RHI::RHIImageDescriptor msaaDesc = {};
+            msaaDesc.imageType = RHI::IMAGE_TYPE_2D;
+            msaaDesc.width = HAL::GetWindowWidth(m_WindowId);
+            msaaDesc.height = HAL::GetWindowHeight(m_WindowId);
+            msaaDesc.depth = 1;
+            msaaDesc.mipLevels = 1;
+            msaaDesc.arrayLayers = 1;
+            msaaDesc.format = RHI::FORMAT_B8G8R8A8_SRGB;
+            msaaDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
+            msaaDesc.usage = RHI::IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | RHI::IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            msaaDesc.sampleCount = m_SampleCount;
+            msaaDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            m_MSAAColorImage = RHI_Device_CreateImage(m_Device, &msaaDesc, "MSAAColorBuffer");
+
+            RHI::RHIImageViewDesc msaaViewDesc = {};
+            msaaViewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
+            msaaViewDesc.format = RHI::FORMAT_B8G8R8A8_SRGB;
+            msaaViewDesc.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
+            msaaViewDesc.levelCount = 1;
+            msaaViewDesc.layerCount = 1;
+            m_MSAAColorView = RHI_Image_AddImageView(m_Device, m_MSAAColorImage, &msaaViewDesc);
+
             // Set a better camera position for Sponza
             m_CameraPos = glm::vec3(0.0f, 1.0f, 0.0f);
             m_CameraRot = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -119,20 +147,32 @@ namespace ArisenEngine::Testing
 
         void InitRenderContext()
         {
+            // MSAA Color attachment (Attachment 0)
+            RHI_RenderPass_AddAttachmentAction(m_Device, m_RenderPass,
+                RHI::FORMAT_B8G8R8A8_SRGB,
+                m_SampleCount,
+                RHI::ATTACHMENT_LOAD_OP_CLEAR,
+                RHI::ATTACHMENT_STORE_OP_DONT_CARE,
+                RHI::ATTACHMENT_LOAD_OP_DONT_CARE,
+                RHI::ATTACHMENT_STORE_OP_DONT_CARE,
+                RHI::IMAGE_LAYOUT_UNDEFINED,
+                RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+            // Swapchain Resolve target (Attachment 1)
             RHI_RenderPass_AddAttachmentAction(m_Device, m_RenderPass,
                 RHI::FORMAT_B8G8R8A8_SRGB,
                 RHI::SAMPLE_COUNT_1_BIT,
-                RHI::ATTACHMENT_LOAD_OP_CLEAR,
+                RHI::ATTACHMENT_LOAD_OP_DONT_CARE,
                 RHI::ATTACHMENT_STORE_OP_STORE,
                 RHI::ATTACHMENT_LOAD_OP_DONT_CARE,
                 RHI::ATTACHMENT_STORE_OP_DONT_CARE,
                 RHI::IMAGE_LAYOUT_UNDEFINED,
                 RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-            // Depth attachment
+            // MSAA Depth attachment (Attachment 2)
             RHI_RenderPass_AddAttachmentAction(m_Device, m_RenderPass,
                 RHI::FORMAT_D32_SFLOAT,
-                RHI::SAMPLE_COUNT_1_BIT,
+                m_SampleCount,
                 RHI::ATTACHMENT_LOAD_OP_CLEAR,
                 RHI::ATTACHMENT_STORE_OP_DONT_CARE,
                 RHI::ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -143,7 +183,8 @@ namespace ArisenEngine::Testing
             m_Subpass = RHI_RenderPass_AddSubPass(m_Device, m_RenderPass);
             RHI_Subpass_SetBindPoint(m_Subpass, RHI::PIPELINE_BIND_POINT_GRAPHICS);
             RHI_Subpass_AddColorReference(m_Subpass, 0, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            RHI_Subpass_SetDepthStencilReference(m_Subpass, 1, RHI::IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+            RHI_Subpass_SetResolveReference(m_Subpass, 1, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            RHI_Subpass_SetDepthStencilReference(m_Subpass, 2, RHI::IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
             RHI_Subpass_SetDependency(m_Subpass, u32Invalid,
                 RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | RHI::PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | RHI::PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
@@ -179,6 +220,8 @@ namespace ArisenEngine::Testing
             {
                 RHI_PSO_AddVertexInputAttributeDescription(m_Pso, attr.location, 0, attr.format, attr.offset);
             }
+
+            RHI_PSO_SetSampleCount(m_Pso, m_SampleCount);
 
             Containers::Vector<RHI::RHIBufferHandle> buffers;
             buffers.push_back(*reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[0]));
@@ -264,22 +307,27 @@ namespace ArisenEngine::Testing
             {
                 auto colorView = RHI_SwapChain_GetImageView(swapchain, currentIndex);
                 RHI_RenderPass_Alloc(m_Device, m_RenderPass, currentIndex);
-                RHI_FrameBuffer_SetAttachment(m_Device, m_FrameBuffer, currentIndex, colorView, m_RenderPass, 0);
-                RHI_FrameBuffer_SetAttachment(m_Device, m_FrameBuffer, currentIndex, m_DepthView, m_RenderPass, 1);
+                RHI_FrameBuffer_SetAttachment(m_Device, m_FrameBuffer, currentIndex, m_MSAAColorView, m_RenderPass, 0);
+                RHI_FrameBuffer_SetAttachment(m_Device, m_FrameBuffer, currentIndex, colorView, m_RenderPass, 1);
+                RHI_FrameBuffer_SetAttachment(m_Device, m_FrameBuffer, currentIndex, m_DepthView, m_RenderPass, 2);
 
-                RHI::RHIClearValue clearValues[2];
+                RHI::RHIClearValue clearValues[3];
                 clearValues[0].color[0] = 0.0f;
                 clearValues[0].color[1] = 0.0f;
                 clearValues[0].color[2] = 0.2f;
                 clearValues[0].color[3] = 1.0f;
-                clearValues[1].depthStencil.depth = 1.0f;
-                clearValues[1].depthStencil.stencil = 0;
+                clearValues[1].color[0] = 0.0f;
+                clearValues[1].color[1] = 0.0f;
+                clearValues[1].color[2] = 0.2f;
+                clearValues[1].color[3] = 1.0f;
+                clearValues[2].depthStencil.depth = 1.0f;
+                clearValues[2].depthStencil.stencil = 0;
 
                 RHI::RenderPassBeginDesc rpBegin = {
                     *reinterpret_cast<RHI::RHIRenderPassHandle*>(&m_RenderPass),
                     *reinterpret_cast<RHI::RHIFrameBufferHandle*>(&m_FrameBuffer),
                     RHI::SUBPASS_CONTENTS_INLINE,
-                    2,
+                    3,
                     clearValues
                 };
 

@@ -140,6 +140,18 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRendering(const RHIRenderingInf
         
         // Copy clear value
         std::memcpy(&vkAtt.clearValue, &att.clearValue, sizeof(VkClearValue));
+        if (info.pResolveAttachments != nullptr)
+        {
+            const auto& resolveAtt = info.pResolveAttachments[i];
+            auto* resolveView = vkDevice->GetImageViewPool()->Get(resolveAtt.imageView);
+            if (resolveView)
+            {
+                vkAtt.resolveImageView = resolveView->view;
+                vkAtt.resolveImageLayout = static_cast<VkImageLayout>(resolveAtt.imageLayout);
+                vkAtt.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
+            }
+        }
+
         m_VkColorAttachments.emplace_back(vkAtt);
     }
 

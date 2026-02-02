@@ -45,6 +45,7 @@ extern "C" ENGINE_DLL RHI_SubpassHandle RHI_RenderPass_AddSubPass(RHI_DeviceHand
 extern "C" ENGINE_DLL void RHI_Subpass_SetDependency(RHI_SubpassHandle sp, unsigned int prevIndex, unsigned int prevStage, unsigned int prevAccessMask, unsigned int currStage, unsigned int currAccessMask, unsigned int syncFlag);
 extern "C" ENGINE_DLL void RHI_Subpass_SetBindPoint(RHI_SubpassHandle sp, ArisenEngine::RHI::EPipelineBindPoint bindPoint);
 extern "C" ENGINE_DLL void RHI_Subpass_AddColorReference(RHI_SubpassHandle sp, unsigned int index, ArisenEngine::RHI::EImageLayout layout);
+extern "C" ENGINE_DLL void RHI_Subpass_SetResolveReference(RHI_SubpassHandle sp, unsigned int index, ArisenEngine::RHI::EImageLayout layout);
 extern "C" ENGINE_DLL void RHI_Subpass_SetDepthStencilReference(RHI_SubpassHandle sp, unsigned int index, ArisenEngine::RHI::EImageLayout layout);
 extern "C" ENGINE_DLL void RHI_Subpass_SetDescriptionFlag(RHI_SubpassHandle sp, unsigned int flag);
 extern "C" ENGINE_DLL void RHI_RenderPass_Alloc(RHI_DeviceHandle device, RHI_RenderPassHandle rp, unsigned int frameIndex);
