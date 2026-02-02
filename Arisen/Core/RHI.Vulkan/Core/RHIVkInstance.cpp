@@ -150,6 +150,10 @@ ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(RHIInstanceInfo&& app_info): RHI
     // Self-Healing: Clear legacy environment variables that cause noisy warnings during layer init.
     // This provides "Process Environment Isolation" to ensure the engine runs cleanly.
     _putenv_s("VK_LAYER_REPORT_FLAGS", "");
+    
+    // Architectual Override: Disable Synchronization Validation via environment variable as fallback
+    // for systems where VK_EXT_layer_settings is not supported.
+    _putenv_s("VK_LAYER_KHRONOS_VALIDATION_VALIDATE_SYNC", "false");
 #endif
 
     if (app_info.validationLayer && !CheckValidationLayerSupport())
@@ -176,35 +180,9 @@ ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(RHIInstanceInfo&& app_info): RHI
     createInfo.pApplicationInfo = &appInfo;
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-    if (app_info.validationLayer)
-    {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(VkValidationLayers.size());
-        createInfo.ppEnabledLayerNames = VkValidationLayers.data();
-
-        // Fundamental fix: Use VK_EXT_layer_settings to explicitly configure the validation layer.
-        // This overrides legacy environment variables and acts as an architectural self-healing mechanism.
-        static const char* validationLayerName = "VK_LAYER_KHRONOS_validation";
-        static const char* reportFlagsValue = "error,warn";
-        static VkBool32 syncVal = VK_TRUE;
-
-        static VkLayerSettingEXT layerSettings[] = {
-            { validationLayerName, "report_flags", VK_LAYER_SETTING_TYPE_STRING_EXT, 1, &reportFlagsValue },
-            { validationLayerName, "validate_sync", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &syncVal }
-        };
-
-        static VkLayerSettingsCreateInfoEXT settingsCreateInfo = {};
-        settingsCreateInfo.sType = VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT;
-        settingsCreateInfo.pNext = &debugCreateInfo;
-        settingsCreateInfo.settingCount = 2;
-        settingsCreateInfo.pSettings = layerSettings;
-
-        createInfo.pNext = &settingsCreateInfo;
-    }
-    else
-    {
-        createInfo.enabledLayerCount = 0;
-        createInfo.pNext = nullptr;
-    }
+    VkLayerSettingsCreateInfoEXT settingsCreateInfo = {};
+    VkLayerSettingEXT layerSettings[2] = {};
+    Containers::Vector<const char*> filteredExtensions;
 
     // shows all supported extensions
     uint32_t extensionCount = 0;
@@ -213,57 +191,107 @@ ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(RHIInstanceInfo&& app_info): RHI
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
 
 #if _DEBUG
-
     LOG_DEBUG("[RHIVkInstance::RHIVkInstance]: available extensions:");
     for (const auto& extension : extensions)
     {
         LOG_DEBUG(extension.extensionName);
     }
-
 #endif
 
-
-    // Extensions Slot 
-    ArisenEngine::Containers::Vector<const char*> filteredExtensions;
-    for (const char* extensionName : VkInstanceExtensionNames)
+    if (app_info.validationLayer)
     {
-        bool found = false;
-        for (const auto& extProps : extensions)
+        createInfo.enabledLayerCount = static_cast<uint32_t>(VkValidationLayers.size());
+        createInfo.ppEnabledLayerNames = VkValidationLayers.data();
+
+        // Configuration for validation layer settings
+        static const char* validationLayerName = "VK_LAYER_KHRONOS_validation";
+        static const char* reportFlagsValue = "error,warn";
+        static VkBool32 syncVal = VK_FALSE;
+
+        // Initialize as standard debug messenger for instance creation/destruction logging
+        PopulateDebugMessengerCreateInfo(debugCreateInfo);
+        createInfo.pNext = &debugCreateInfo;
+
+        bool layerSettingsSupported = false;
+        for (const auto& ext : extensions)
         {
-            if (strcmp(extProps.extensionName, extensionName) == 0)
+            if (strcmp(VK_EXT_LAYER_SETTINGS_EXTENSION_NAME, ext.extensionName) == 0)
             {
-                found = true;
+                layerSettingsSupported = true;
                 break;
             }
         }
 
-        if (found)
+        // Only use layer settings if the extension is supported by the instance
+        if (layerSettingsSupported)
         {
-            filteredExtensions.push_back(extensionName);
+            layerSettings[0] = { validationLayerName, "report_flags", VK_LAYER_SETTING_TYPE_STRING_EXT, 1, &reportFlagsValue };
+            layerSettings[1] = { validationLayerName, "validate_sync", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &syncVal };
+
+            settingsCreateInfo.sType = VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT;
+            settingsCreateInfo.pNext = &debugCreateInfo;
+            settingsCreateInfo.settingCount = 2;
+            settingsCreateInfo.pSettings = layerSettings;
+            createInfo.pNext = &settingsCreateInfo;
+            LOG_INFO("[RHIVkInstance::RHIVkInstance]: VK_EXT_layer_settings supported and used for configuration.");
         }
         else
         {
-            LOG_WARN(String::Format("[RHIVkInstance::RHIVkInstance]: instance extension not supported: %s", extensionName));
-            
-            // Critical check: if VK_EXT_layer_settings is not supported, we must remove it from pNext chain
-            if (strcmp(extensionName, VK_EXT_LAYER_SETTINGS_EXTENSION_NAME) == 0)
+            LOG_INFO("[RHIVkInstance::RHIVkInstance]: VK_EXT_layer_settings not supported, using standard debug messenger fallback.");
+        }
+
+        // Extensions Slot 
+        for (const char* extensionName : VkInstanceExtensionNames)
+        {
+            bool found = false;
+            for (const auto& ext : extensions)
             {
-                LOG_INFO("[RHIVkInstance::RHIVkInstance]: Disabling VK_EXT_layer_settings pNext chain due to lack of extension support.");
-                // Remove from pNext chain by pointing back to debugCreateInfo or null
-                if (app_info.validationLayer)
+                if (strcmp(extensionName, ext.extensionName) == 0)
                 {
-                    createInfo.pNext = &debugCreateInfo;
-                }
-                else
-                {
-                    createInfo.pNext = nullptr;
+                    found = true;
+                    break;
                 }
             }
-        }
-    }
 
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(filteredExtensions.size());
-    createInfo.ppEnabledExtensionNames = filteredExtensions.data();
+            if (found)
+            {
+                filteredExtensions.push_back(extensionName);
+            }
+            else
+            {
+                LOG_WARN(String::Format("[RHIVkInstance::RHIVkInstance]: instance extension not supported: %s", extensionName));
+            }
+        }
+
+        createInfo.enabledExtensionCount = static_cast<uint32_t>(filteredExtensions.size());
+        createInfo.ppEnabledExtensionNames = filteredExtensions.data();
+    }
+    else
+    {
+        createInfo.enabledLayerCount = 0;
+        createInfo.pNext = nullptr;
+
+        // Extensions Slot for non-validation case
+        for (const char* extensionName : VkInstanceExtensionNames)
+        {
+            // Skip validation layer settings extension if validation is off
+            if (strcmp(extensionName, VK_EXT_LAYER_SETTINGS_EXTENSION_NAME) == 0) continue;
+
+            bool found = false;
+            for (const auto& ext : extensions)
+            {
+                if (strcmp(extensionName, ext.extensionName) == 0)
+                {
+                    found = true;
+                    break;
+                }
+            }
+            if (found) filteredExtensions.push_back(extensionName);
+        }
+
+        createInfo.enabledExtensionCount = static_cast<uint32_t>(filteredExtensions.size());
+        createInfo.ppEnabledExtensionNames = filteredExtensions.data();
+    }
 
     VkResult result = vkCreateInstance(&createInfo, nullptr, &m_VkInstance);
     if (result != VK_SUCCESS)
@@ -698,11 +726,38 @@ ArisenEngine::RHI::RHIInstance* CreateInstance(ArisenEngine::RHI::RHIInstanceInf
 
 ArisenEngine::RHI::RHIVkInstance::~RHIVkInstance() noexcept
 {
+    LOG_INFO("[RHIVkInstance::~RHIVkInstance]: Start Destroying Vulkan Instance");
+    
+    // Explicitly wait for all devices to be idle before cleanup to avoid hangs
+    for (auto& pair : m_LogicalDevices)
+    {
+        if (pair.second)
+        {
+            LOG_INFO(String::Format("[RHIVkInstance::~RHIVkInstance]: Waiting for Logical Device (surface %d) to idle", pair.first));
+            auto* vkDevice = static_cast<RHIVkDevice*>(pair.second.get());
+            if (vkDevice->GetHandle())
+            {
+                vkDeviceWaitIdle(static_cast<VkDevice>(vkDevice->GetHandle()));
+            }
+        }
+    }
+
+    LOG_INFO("[RHIVkInstance::~RHIVkInstance]: Clearing Surfaces");
     m_Surfaces.clear();
+
+    LOG_INFO("[RHIVkInstance::~RHIVkInstance]: Clearing Logical Devices");
     m_LogicalDevices.clear();
+    
+    LOG_INFO("[RHIVkInstance::~RHIVkInstance]: Disposing Debug Messenger");
     DisposeDebugMessager();
-    vkDestroyInstance(m_VkInstance, nullptr);
-    LOG_INFO("[RHIVkInstance::~RHIVkInstance]: Destroy Vulkan Instance");
+    
+    LOG_INFO("[RHIVkInstance::~RHIVkInstance]: Calling vkDestroyInstance");
+    if (m_VkInstance != VK_NULL_HANDLE)
+    {
+        vkDestroyInstance(m_VkInstance, nullptr);
+        m_VkInstance = VK_NULL_HANDLE;
+    }
+    LOG_INFO("[RHIVkInstance::~RHIVkInstance]: Destroyed Vulkan Instance");
 }
 
 void ArisenEngine::RHI::RHIVkInstance::InitLogicDevices()
