@@ -123,7 +123,7 @@ namespace ArisenEngine::Testing
             std::vector<TestResult> results;
             auto& registry = GetRegistry();
 
-            LOG_INFO("=== Running RHI Unit Tests ===");
+            LOG_INFO("=== Starting Test Batch ===");
             
             for (auto& factory : registry)
             {
