@@ -98,7 +98,7 @@ namespace ArisenEngine::Testing
         if (outputFragment.codePointer) std::free(outputFragment.codePointer);
     }
 
-    void RHIRenderingTestBase::UploadImage(RHI_ImageHandle textureHandle, UInt64 imageSize, void* data, UInt32 texWidth, UInt32 texHeight)
+    void RHIRenderingTestBase::UploadImage(RHI_ImageHandle textureHandle, UInt64 imageSize, void* data, UInt32 texWidth, UInt32 texHeight, RHI::EImageLayout finalLayout)
     {
         RHI::RHIBufferDescriptor tsb{
             0, imageSize, RHI::BUFFER_USAGE_TRANSFER_SRC_BIT, RHI::SHARING_MODE_EXCLUSIVE,
@@ -138,17 +138,27 @@ namespace ArisenEngine::Testing
             RHI::RHIImageMemoryBarrier barrier{};
             barrier.srcAccess = RHI::ACCESS_TRANSFER_WRITE_BIT;
             barrier.dstAccess = RHI::ACCESS_SHADER_READ_BIT;
-            barrier.oldLayout = RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            barrier.newLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            barrier.newLayout = static_cast<RHI::EImageLayout>(finalLayout);
             barrier.srcQueueFamilyIndex = ~0U;
             barrier.dstQueueFamilyIndex = ~0U;
             barrier.image = *reinterpret_cast<RHI::RHIImageHandle*>(&textureHandle);
             barrier.subresourceRange = { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
             barrier.srcStageMask = RHI::PIPELINE_STAGE_TRANSFER_BIT;
-            barrier.dstStageMask = RHI::PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            
+            // Map layout to appropriate stage
+            if (finalLayout == RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+                barrier.dstStageMask = RHI::PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                barrier.dstAccess = RHI::ACCESS_SHADER_READ_BIT;
+            } else if (finalLayout == RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+                barrier.dstStageMask = RHI::PIPELINE_STAGE_TRANSFER_BIT;
+                barrier.dstAccess = RHI::ACCESS_TRANSFER_WRITE_BIT;
+            } else {
+                barrier.dstStageMask = RHI::PIPELINE_STAGE_ALL_COMMANDS_BIT;
+                barrier.dstAccess = static_cast<RHI::EAccessFlag>(RHI::ACCESS_MEMORY_READ_BIT | RHI::ACCESS_MEMORY_WRITE_BIT);
+            }
 
             Containers::Vector<RHI::RHIImageMemoryBarrier> barriers { barrier };
-            RHI_Cmd_PipelineBarrier_Image(cmd, RHI::PIPELINE_STAGE_TRANSFER_BIT, RHI::PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, &barriers);
+            RHI_Cmd_PipelineBarrier_Image(cmd, RHI::PIPELINE_STAGE_TRANSFER_BIT, barrier.dstStageMask, 0, &barriers);
         }
 
         RHI_Cmd_End(cmd);
