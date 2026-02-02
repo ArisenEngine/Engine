@@ -76,7 +76,8 @@ namespace ArisenEngine::Testing
             GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
             auto exeDir = std::filesystem::path(exePathW).parent_path();
             
-            m_Model = LoadGLTF((exeDir / "Assets" / "Buggy.gltf").string());
+            std::filesystem::path sponzaPath = exeDir / "Assets" / "glTF-Sample-Models" / "2.0" / "Sponza" / "glTF" / "Sponza.gltf";
+            m_Model = LoadGLTF(sponzaPath.string());
 
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
@@ -86,90 +87,6 @@ namespace ArisenEngine::Testing
                 ubDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
                 m_UboBuffer.push_back(RHI_Device_CreateBuffer(m_Device, &ubDesc, "UBO"));
             }
-
-            // Load Texture from Assets
-            int texWidth, texHeight, texChannels;
-            auto texturePath = (exeDir / "Assets" / "Arisen.png").string();
-            stbi_uc* pixels = stbi_load(texturePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-            if (pixels)
-            {
-                RHI::RHIImageDescriptor texDesc = {};
-                texDesc.imageType = RHI::IMAGE_TYPE_2D;
-                texDesc.width = (UInt32)texWidth;
-                texDesc.height = (UInt32)texHeight;
-                texDesc.depth = 1;
-                texDesc.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
-                texDesc.arrayLayers = 1;
-                texDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
-                texDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
-                texDesc.usage = RHI::IMAGE_USAGE_TRANSFER_SRC_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT | RHI::IMAGE_USAGE_SAMPLED_BIT;
-                texDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
-                texDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-                m_Texture = RHI_Device_CreateImage(m_Device, &texDesc, "Arisen Logo Texture");
-
-                RHI::RHIImageViewDesc viewDesc = {};
-                viewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
-                viewDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
-                viewDesc.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
-                viewDesc.levelCount = texDesc.mipLevels;
-                viewDesc.layerCount = 1;
-                RHI_Image_AddImageView(m_Device, m_Texture, &viewDesc);
-
-                UploadImage(m_Texture, (UInt64)texWidth * texHeight * 4, pixels, (UInt32)texWidth, (UInt32)texHeight, RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-                
-                // Mipmap generation
-                {
-                    auto cmd = RHI_Device_GetCommandBuffer(m_Device, m_CmdPool, 0);
-                    RHI_Cmd_Begin(cmd, 0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-                    RHI_Cmd_GenerateMipmaps(cmd, m_Texture);
-                    RHI_Cmd_End(cmd);
-                    RHI_Device_Submit(m_Device, cmd, 0);
-                    RHI_Device_WaitIdle(m_Device);
-                    RHI_Device_ReleaseCommandBuffer(m_Device, m_CmdPool, 0, cmd);
-                }
-
-                stbi_image_free(pixels);
-            }
-            else
-            {
-                LOG_ERRORF("Failed to load texture: {0}", texturePath);
-                // Fallback to 1x1 white texture
-                UInt32 whitePixel = 0xFFFFFFFF;
-                RHI::RHIImageDescriptor texDesc = {};
-                texDesc.imageType = RHI::IMAGE_TYPE_2D;
-                texDesc.width = 1;
-                texDesc.height = 1;
-                texDesc.depth = 1;
-                texDesc.mipLevels = 1;
-                texDesc.arrayLayers = 1;
-                texDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
-                texDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
-                texDesc.usage = RHI::IMAGE_USAGE_TRANSFER_SRC_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT | RHI::IMAGE_USAGE_SAMPLED_BIT;
-                texDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
-                texDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-                m_Texture = RHI_Device_CreateImage(m_Device, &texDesc, "Fallback White Texture");
-
-                RHI::RHIImageViewDesc viewDesc = {};
-                viewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
-                viewDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
-                viewDesc.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
-                viewDesc.levelCount = 1;
-                viewDesc.layerCount = 1;
-                RHI_Image_AddImageView(m_Device, m_Texture, &viewDesc);
-
-                UploadImage(m_Texture, sizeof(whitePixel), &whitePixel, 1, 1);
-            }
-
-            // Default Sampler
-            RHI::RHISamplerDesc sampDesc = {};
-            sampDesc.magFilter = RHI::FILTER_LINEAR;
-            sampDesc.minFilter = RHI::FILTER_LINEAR;
-            sampDesc.mipmapMode = RHI::SAMPLER_MIPMAP_MODE_LINEAR;
-            sampDesc.maxLod = 12.0f; // Sufficient for most textures
-            sampDesc.addressModeU = RHI::SAMPLER_ADDRESS_MODE_REPEAT;
-            sampDesc.addressModeV = RHI::SAMPLER_ADDRESS_MODE_REPEAT;
-            sampDesc.addressModeW = RHI::SAMPLER_ADDRESS_MODE_REPEAT;
-            m_Sampler = RHI_Device_CreateSampler(m_Device, &sampDesc);
 
             // Depth Image
             RHI::RHIImageDescriptor dimgDesc = {};
@@ -193,6 +110,10 @@ namespace ArisenEngine::Testing
             dviewDesc.levelCount = 1;
             dviewDesc.layerCount = 1;
             m_DepthView = RHI_Image_AddImageView(m_Device, m_DepthImage, &dviewDesc);
+
+            // Set a better camera position for Sponza
+            m_CameraPos = glm::vec3(0.0f, 1.0f, 0.0f);
+            m_CameraRot = glm::vec3(0.0f, 0.0f, 0.0f);
         }
 
 
@@ -238,8 +159,10 @@ namespace ArisenEngine::Testing
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
                 Containers::Vector<RHI::EDescriptorType> types = { RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, RHI::DESCRIPTOR_TYPE_SAMPLED_IMAGE, RHI::DESCRIPTOR_TYPE_SAMPLER };
-                Containers::Vector<UInt32> counts = { 1, 1, 1 };
-                m_DescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &types, &counts, 1));
+                UInt32 matCount = (UInt32)m_Model.materials.size();
+                if (matCount == 0) matCount = 1;
+                Containers::Vector<UInt32> counts = { matCount, matCount, matCount };
+                m_DescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &types, &counts, matCount));
             }
         }
 
@@ -307,26 +230,30 @@ namespace ArisenEngine::Testing
             auto currentIndex = GetCurrentFrameIndex();
             auto cmd = RHI_Device_GetCommandBuffer(m_Device, m_CmdPool, currentIndex);
 
-            // Update descriptors
-            Containers::Vector<RHI::RHIBufferHandle> ubos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[currentIndex]) };
-            RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 0, &ubos);
-
-            auto texView = RHI_Image_GetView(m_Device, m_Texture);
-            RHI::RHIDescriptorImageInfo texInfo = {};
-            texInfo.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&texView);
-            texInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            Containers::Vector<RHI::RHIDescriptorImageInfo> texInfos = { texInfo };
-            RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 1, &texInfos);
-
-            RHI::RHIDescriptorImageInfo samInfo = {};
-            samInfo.sampler = *reinterpret_cast<RHI::RHISamplerHandle*>(&m_Sampler);
-            samInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            Containers::Vector<RHI::RHIDescriptorImageInfo> samInfos = { samInfo };
-            RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 2, &samInfos);
-
+            // Update descriptors for each material
             RHI_DescriptorPool_Reset(m_DescriptorPool, m_DescriptorPoolIds[currentIndex]);
-            RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[currentIndex], 0, m_Pso);
-            RHI_DescriptorPool_UpdateDescriptorSets(m_DescriptorPool, m_DescriptorPoolIds[currentIndex], m_Pso);
+            
+            for (UInt32 i = 0; i < m_Model.materials.size(); ++i)
+            {
+                auto& mat = m_Model.materials[i];
+                Containers::Vector<RHI::RHIBufferHandle> ubos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[currentIndex]) };
+                RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 0, &ubos);
+
+                RHI::RHIDescriptorImageInfo texInfo = {};
+                texInfo.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&mat.baseColorView);
+                texInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                Containers::Vector<RHI::RHIDescriptorImageInfo> texInfos = { texInfo };
+                RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 1, &texInfos);
+
+                RHI::RHIDescriptorImageInfo samInfo = {};
+                samInfo.sampler = *reinterpret_cast<RHI::RHISamplerHandle*>(&mat.sampler);
+                samInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                Containers::Vector<RHI::RHIDescriptorImageInfo> samInfos = { samInfo };
+                RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 2, &samInfos);
+
+                UInt32 setIdx = RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[currentIndex], 0, m_Pso);
+                RHI_DescriptorPool_UpdateDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[currentIndex], setIdx, m_Pso);
+            }
 
             RHI_Cmd_Begin(cmd, currentIndex, 0);
 
@@ -362,10 +289,16 @@ namespace ArisenEngine::Testing
                 RHI_Cmd_BindPipeline(cmd, currentIndex, m_Pipeline);
                 RHI_Cmd_SetViewport(cmd, 0, 0, (float)width, (float)height, 0, 1);
                 RHI_Cmd_SetScissor(cmd, 0, 0, width, height);
-                RHI_Cmd_BindDescriptorSets_FromPool(cmd, currentIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[currentIndex]);
+                
                 RHI_Cmd_BindVertexBuffers(cmd, m_Model.vertexBuffer, 0);
                 RHI_Cmd_BindIndexBuffer(cmd, m_Model.indexBuffer, 0, RHI::INDEX_TYPE_UINT32);
-                RHI_Cmd_DrawIndexed(cmd, m_Model.indexCount, 1, 0, 0, 0, 0);
+
+                for (const auto& prim : m_Model.primitives)
+                {
+                    UInt32 setIdx = prim.materialIndex >= 0 ? (UInt32)prim.materialIndex : 0;
+                    RHI_Cmd_BindDescriptorSet_FromPool(cmd, currentIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[currentIndex], setIdx);
+                    RHI_Cmd_DrawIndexed(cmd, prim.indexCount, 1, prim.firstIndex, 0, 0, 0);
+                }
                 RHI_Cmd_EndRenderPass(cmd);
 
                 auto imageAvailableSem = RHI_SwapChain_GetImageAvailableSemaphore(swapchain, currentIndex);

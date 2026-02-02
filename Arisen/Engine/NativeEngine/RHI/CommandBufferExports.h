@@ -34,6 +34,7 @@ extern "C" ENGINE_DLL void RHI_Cmd_EndRendering(RHI_CommandBufferHandle cmd);
 
 // Bind descriptor sets using all sets from a pool/poolId
 extern "C" ENGINE_DLL void RHI_Cmd_BindDescriptorSets_FromPool(RHI_CommandBufferHandle cmd, unsigned int frameIndex, ArisenEngine::RHI::EPipelineBindPoint bindPoint, unsigned int firstSet, RHI_DescriptorPoolHandle pool, unsigned int poolId);
+extern "C" ENGINE_DLL void RHI_Cmd_BindDescriptorSet_FromPool(RHI_CommandBufferHandle cmd, unsigned int frameIndex, ArisenEngine::RHI::EPipelineBindPoint bindPoint, unsigned int firstSet, RHI_DescriptorPoolHandle pool, unsigned int poolId, unsigned int setIndex);
 
 
 
