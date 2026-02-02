@@ -73,6 +73,9 @@ struct RHIVkImagePoolItem {
     VkImage image{VK_NULL_HANDLE};        // Cached for fast access
     VmaAllocation allocation{VK_NULL_HANDLE}; // Cached for fast access
     UInt64 size{0};
+    UInt32 width{0};
+    UInt32 height{0};
+    UInt32 mipLevels{1};
     std::string name{"Anonymous"};
     bool needDestroy{false};
     RHIResourceHandle registryHandle;

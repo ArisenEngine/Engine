@@ -375,6 +375,9 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImage(RHIImageHandle handle, RHIImageD
         return false;
     }
 
+    image->width = desc.width;
+    image->height = desc.height;
+    image->mipLevels = desc.mipLevels;
     image->needDestroy = true;
 
     // Register for deferred deletion using a shared state object

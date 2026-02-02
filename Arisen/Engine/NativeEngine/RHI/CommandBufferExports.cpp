@@ -184,6 +184,14 @@ extern "C" ENGINE_DLL void RHI_Cmd_SignalSemaphore(RHI_CommandBufferHandle cmd, 
     c->SignalSemaphore(h);
 }
 
+extern "C" ENGINE_DLL void RHI_Cmd_GenerateMipmaps(RHI_CommandBufferHandle cmd, RHI_ImageHandle image)
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c == nullptr || image == 0) return;
+    auto h = *reinterpret_cast<RHI::RHIImageHandle*>(&image);
+    c->GenerateMipmaps(h);
+}
+
 
 
 extern "C" ENGINE_DLL void RHI_Cmd_BeginRendering(RHI_CommandBufferHandle cmd, ArisenEngine::RHI::RHIRenderingInfo* info)
