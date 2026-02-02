@@ -466,7 +466,81 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId,
 void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSet(UInt32 poolId, UInt32 setIndex,
     RHIPipelineState* pso)
 {
-    // TODO: 
+    if (poolId >= m_DescriptorSetsHolder.size())
+    {
+        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSet] poolId out of range: " + std::to_string(poolId));
+    }
+    if (m_DescriptorSetsHolder[poolId].RHIDescriptorPool == VK_NULL_HANDLE)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSet] RHIDescriptorPool is VK_NULL_HANDLE for poolId: " + std::to_string(poolId));
+    }
+    if (setIndex >= m_DescriptorSetsHolder[poolId].sets.size())
+    {
+        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSet] setIndex out of range: " + std::to_string(setIndex));
+    }
+    if (pso == nullptr)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSet] pso is null");
+    }
+
+    auto descriptorSet = m_DescriptorSetsHolder[poolId].sets[setIndex].get();
+    if (descriptorSet == nullptr)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSet] descriptorSet is null for poolId: " + std::to_string(poolId));
+    }
+
+    Containers::Vector<VkWriteDescriptorSet> descriptorWrites;
+    Containers::Vector<Containers::Vector<VkDescriptorImageInfo>> imageInfos;
+    Containers::Vector<Containers::Vector<VkDescriptorBufferInfo>> bufferInfos;
+    Containers::Vector<Containers::Vector<VkBufferView>> bufferViews;
+
+    RHIVkGPUPipelineStateObject* vkPipelineStateObject = static_cast<RHIVkGPUPipelineStateObject*>(pso);
+
+    VkDescriptorSet dstSet = static_cast<VkDescriptorSet>(descriptorSet->GetHandle());
+    UInt32 layoutIndex = descriptorSet->GetLayoutIndex();
+    const auto& updateInfosForAllBindings = vkPipelineStateObject->GetDescriptorUpdateInfos(layoutIndex);
+    
+    for (const auto& updateInfoForAllTypePair : updateInfosForAllBindings)
+    {
+        const auto& updateInfoForAllType = updateInfoForAllTypePair.second;
+        for (const auto& updateInfoPair : updateInfoForAllType)
+        {
+            imageInfos.emplace_back();
+            bufferInfos.emplace_back();
+            bufferViews.emplace_back();
+            
+            const auto& updateInfo = updateInfoPair.second;
+            auto pImageInfos = GetImageInfos(m_pDevice, updateInfo, imageInfos.back());
+            auto pBufferInfos = GetBufferInfos(m_pDevice, updateInfo, bufferInfos.back());
+            auto pBufferViews = GetBufferViews(m_pDevice, updateInfo, bufferViews.back());
+
+            const auto type = updateInfo.type;
+            if (type == DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
+                type == DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+                type == DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ||
+                type == DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
+            {
+                if (pBufferInfos == nullptr || bufferInfos.back().size() != updateInfo.descriptorCount)
+                {
+                    LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSet] buffer descriptor missing infos: binding=" +
+                        std::to_string(updateInfo.binding) + ", count=" + std::to_string(updateInfo.descriptorCount));
+                }
+            }
+
+            auto writeDescriptorSet = WriteDescriptorSet(
+               dstSet, updateInfo.binding, 0, updateInfo.descriptorCount, 
+               static_cast<VkDescriptorType>(updateInfo.type),
+               pImageInfos,
+               pBufferInfos,
+               pBufferViews);
+            
+            descriptorWrites.push_back(writeDescriptorSet);
+        }
+    }
+    
+    vkUpdateDescriptorSets(static_cast<VkDevice>(m_pDevice->GetHandle()),
+        static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(),
+        0, nullptr);
 }
 
 

@@ -1,6 +1,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #define CGLTF_IMPLEMENTATION
 #include <cgltf.h>
+#include "stb_image.h"
 #include "RHITestBase.h"
 #include <iostream>
 #include <filesystem>
@@ -45,6 +46,149 @@ namespace ArisenEngine::Testing
         std::vector<uint32_t> indices;
 
         GLTFModel model;
+
+        std::filesystem::path modelPath(path);
+        std::filesystem::path modelDir = modelPath.parent_path();
+
+        // Helper for image uploading and mipmap generation
+        auto uploadAndMipmap = [&](RHI_ImageHandle texture, UInt32 width, UInt32 height, void* data, UInt32 mipLevels) {
+            RHI::RHIBufferDescriptor tsb{
+                0, (UInt64)width * height * 4, RHI::BUFFER_USAGE_TRANSFER_SRC_BIT, RHI::SHARING_MODE_EXCLUSIVE,
+                0, nullptr, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT
+            };
+            auto stagingBuffer = RHI_Device_CreateBuffer(m_Device, &tsb, "Texture Staging Buffer");
+            RHI_Buffer_MemoryCopy(m_Device, stagingBuffer, data, 0);
+
+            auto cmdPool = RHI_Device_CreateCommandBufferPool(m_Device);
+            auto cmd = RHI_Device_GetCommandBuffer(m_Device, cmdPool, 0);
+            RHI_Cmd_Begin(cmd, 0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+            
+            // Transition to DST
+            {
+                RHI::RHIImageMemoryBarrier barrier{};
+                barrier.srcAccess = RHI::ACCESS_NONE;
+                barrier.dstAccess = RHI::ACCESS_TRANSFER_WRITE_BIT;
+                barrier.oldLayout = RHI::IMAGE_LAYOUT_UNDEFINED;
+                barrier.newLayout = RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                barrier.image = *reinterpret_cast<RHI::RHIImageHandle*>(&texture);
+                barrier.subresourceRange = { RHI::IMAGE_ASPECT_COLOR_BIT, 0, mipLevels, 0, 1 };
+                barrier.srcStageMask = RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                barrier.dstStageMask = RHI::PIPELINE_STAGE_TRANSFER_BIT;
+
+                Containers::Vector<RHI::RHIImageMemoryBarrier> barriers { barrier };
+                RHI_Cmd_PipelineBarrier_Image(cmd, RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT, RHI::PIPELINE_STAGE_TRANSFER_BIT, 0, &barriers);
+            }
+
+            // Copy
+            {
+                Containers::Vector<RHI::RHIBufferImageCopy> regions{
+                    { 0, 0, 0, { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 }, 0, 0, 0, width, height, 1 }
+                };
+                RHI_Cmd_CopyBufferToImage(cmd, stagingBuffer, texture, RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &regions);
+            }
+
+            // Generate Mipmaps
+            RHI_Cmd_GenerateMipmaps(cmd, texture);
+
+            RHI_Cmd_End(cmd);
+            RHI_Device_Submit(m_Device, cmd, 0);
+            RHI_Device_WaitIdle(m_Device);
+
+            RHI_Device_ReleaseBuffer(m_Device, stagingBuffer);
+            RHI_Device_ReleaseCommandBuffer(m_Device, cmdPool, 0, cmd);
+            RHI_Device_ReleaseCommandBufferPool(m_Device, cmdPool);
+        };
+
+        // Load Materials
+        for (cgltf_size i = 0; i < data->materials_count; ++i)
+        {
+            cgltf_material& mat = data->materials[i];
+            GLTFMaterial gMat;
+            
+            if (mat.has_pbr_metallic_roughness && mat.pbr_metallic_roughness.base_color_texture.texture)
+            {
+                cgltf_texture* tex = mat.pbr_metallic_roughness.base_color_texture.texture;
+                if (tex->image && tex->image->uri)
+                {
+                    auto texPath = (modelDir / tex->image->uri).string();
+                    int tw, th, tc;
+                    stbi_uc* pixels = stbi_load(texPath.c_str(), &tw, &th, &tc, STBI_rgb_alpha);
+                    if (pixels)
+                    {
+                        RHI::RHIImageDescriptor texDesc = {};
+                        texDesc.imageType = RHI::IMAGE_TYPE_2D;
+                        texDesc.width = (UInt32)tw;
+                        texDesc.height = (UInt32)th;
+                        texDesc.depth = 1;
+                        texDesc.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(tw, th)))) + 1;
+                        texDesc.arrayLayers = 1;
+                        texDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
+                        texDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
+                        texDesc.usage = RHI::IMAGE_USAGE_TRANSFER_SRC_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT | RHI::IMAGE_USAGE_SAMPLED_BIT;
+                        texDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
+                        texDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+                        gMat.baseColorTexture = RHI_Device_CreateImage(m_Device, &texDesc, tex->image->uri);
+
+                        RHI::RHIImageViewDesc viewDesc = {};
+                        viewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
+                        viewDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
+                        viewDesc.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
+                        viewDesc.levelCount = texDesc.mipLevels;
+                        viewDesc.layerCount = 1;
+                        gMat.baseColorView = RHI_Image_AddImageView(m_Device, gMat.baseColorTexture, &viewDesc);
+
+                        uploadAndMipmap(gMat.baseColorTexture, tw, th, pixels, texDesc.mipLevels);
+                        stbi_image_free(pixels);
+                    }
+                    else
+                    {
+                        LOG_ERRORF("Failed to load texture: {0}", texPath);
+                    }
+                }
+            }
+
+            // Create Fallback if loading failed
+            if (!gMat.baseColorTexture)
+            {
+                UInt32 white = 0xFFFFFFFF;
+                RHI::RHIImageDescriptor texDesc = {};
+                texDesc.imageType = RHI::IMAGE_TYPE_2D;
+                texDesc.width = 1;
+                texDesc.height = 1;
+                texDesc.depth = 1;
+                texDesc.mipLevels = 1;
+                texDesc.arrayLayers = 1;
+                texDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
+                texDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
+                texDesc.usage = RHI::IMAGE_USAGE_TRANSFER_SRC_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT | RHI::IMAGE_USAGE_SAMPLED_BIT;
+                texDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
+                texDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+                gMat.baseColorTexture = RHI_Device_CreateImage(m_Device, &texDesc, "Fallback White");
+
+                RHI::RHIImageViewDesc viewDesc = {};
+                viewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
+                viewDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
+                viewDesc.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
+                viewDesc.levelCount = 1;
+                viewDesc.layerCount = 1;
+                gMat.baseColorView = RHI_Image_AddImageView(m_Device, gMat.baseColorTexture, &viewDesc);
+                
+                uploadAndMipmap(gMat.baseColorTexture, 1, 1, &white, 1);
+            }
+
+            // Default Sampler
+            RHI::RHISamplerDesc sampDesc = {};
+            sampDesc.magFilter = RHI::FILTER_LINEAR;
+            sampDesc.minFilter = RHI::FILTER_LINEAR;
+            sampDesc.mipmapMode = RHI::SAMPLER_MIPMAP_MODE_LINEAR;
+            sampDesc.maxLod = 16.0f;
+            sampDesc.addressModeU = RHI::SAMPLER_ADDRESS_MODE_REPEAT;
+            sampDesc.addressModeV = RHI::SAMPLER_ADDRESS_MODE_REPEAT;
+            sampDesc.addressModeW = RHI::SAMPLER_ADDRESS_MODE_REPEAT;
+            gMat.sampler = RHI_Device_CreateSampler(m_Device, &sampDesc);
+
+            model.materials.push_back(gMat);
+        }
 
         // Helper to traverse nodes and apply transforms
         std::function<void(cgltf_node*, const glm::mat4&)> processNode;
@@ -109,6 +253,21 @@ namespace ArisenEngine::Testing
                         model.layout.attributes.push_back({"COLOR0", RHI::FORMAT_R32G32B32A32_SFLOAT, (uint32_t)offsetof(GLTFVertex, color), 3});
                     }
 
+                    GLTFPrimitive gPrim;
+                    gPrim.firstIndex = (UInt32)indices.size();
+                    gPrim.materialIndex = -1;
+                    if (primitive.material)
+                    {
+                        for (cgltf_size i = 0; i < data->materials_count; ++i)
+                        {
+                            if (&data->materials[i] == primitive.material)
+                            {
+                                gPrim.materialIndex = (SInt32)i;
+                                break;
+                            }
+                        }
+                    }
+
                     // Load indices
                     if (primitive.indices)
                     {
@@ -119,6 +278,7 @@ namespace ArisenEngine::Testing
                         {
                             indices[index_offset + idx] = (uint32_t)cgltf_accessor_read_index(primitive.indices, idx) + (uint32_t)vertex_offset;
                         }
+                        gPrim.indexCount = (UInt32)index_count;
                     }
                     else
                     {
@@ -128,7 +288,9 @@ namespace ArisenEngine::Testing
                         {
                             indices[index_offset + idx] = (uint32_t)(vertex_offset + idx);
                         }
+                        gPrim.indexCount = (UInt32)vertex_count;
                     }
+                    model.primitives.push_back(gPrim);
                 }
             }
 
@@ -160,7 +322,8 @@ namespace ArisenEngine::Testing
 
         model.indexCount = (UInt32)indices.size();
         
-        LOG_INFOF("Loaded GLTF: {0}. Vertices: {1}, Indices: {2}", path, vertices.size(), indices.size());
+        LOG_INFOF("Loaded GLTF: {0}. Vertices: {1}, Indices: {2}, Primitives: {3}, Materials: {4}", 
+            path, vertices.size(), indices.size(), model.primitives.size(), model.materials.size());
 
         // Create RHI Buffers
         RHI::RHIBufferDescriptor vbDesc{};

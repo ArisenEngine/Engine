@@ -41,12 +41,29 @@ namespace ArisenEngine::Testing
         glm::vec4 color;
     };
 
+    struct GLTFMaterial
+    {
+        RHI_ImageHandle baseColorTexture = 0;
+        RHI_ImageViewHandle baseColorView = 0;
+        RHI_SamplerHandle sampler = 0;
+    };
+
+    struct GLTFPrimitive
+    {
+        UInt32 firstIndex;
+        UInt32 indexCount;
+        SInt32 materialIndex;
+    };
+
     struct GLTFModel
     {
         RHI_BufferHandle vertexBuffer = 0;
         RHI_BufferHandle indexBuffer = 0;
         UInt32 indexCount = 0;
         VertexLayout layout;
+
+        Containers::Vector<GLTFPrimitive> primitives;
+        Containers::Vector<GLTFMaterial> materials;
         
         void Release(RHI_DeviceHandle device)
         {
@@ -55,6 +72,14 @@ namespace ArisenEngine::Testing
             vertexBuffer = 0;
             indexBuffer = 0;
             indexCount = 0;
+
+            for (auto& mat : materials)
+            {
+                if (mat.baseColorTexture) RHI_Device_ReleaseImage(device, mat.baseColorTexture);
+                if (mat.sampler) RHI_Device_ReleaseSampler(device, mat.sampler);
+            }
+            materials.clear();
+            primitives.clear();
         }
     };
 

@@ -222,4 +222,18 @@ extern "C" ENGINE_DLL void RHI_Cmd_BindDescriptorSets_FromPool(RHI_CommandBuffer
     c->TrackDescriptorPoolUse(p, poolId);
 }
 
+extern "C" ENGINE_DLL void RHI_Cmd_BindDescriptorSet_FromPool(RHI_CommandBufferHandle cmd, unsigned int frameIndex, RHI::EPipelineBindPoint bindPoint, unsigned int firstSet, RHI_DescriptorPoolHandle pool, unsigned int poolId, unsigned int setIndex)
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    auto* p = reinterpret_cast<RHI::RHIDescriptorPool*>(pool);
+    if (c == nullptr || p == nullptr) return;
+    auto& sets = p->GetDescriptorSets(poolId);
+    if (setIndex >= sets.size()) return;
+    
+    Containers::Vector<std::shared_ptr<RHI::RHIDescriptorSet>> singleSet;
+    singleSet.push_back(sets[setIndex]);
+    c->BindDescriptorSets(frameIndex, bindPoint, firstSet, singleSet, 0, nullptr);
+    c->TrackDescriptorPoolUse(p, poolId);
+}
+
 
