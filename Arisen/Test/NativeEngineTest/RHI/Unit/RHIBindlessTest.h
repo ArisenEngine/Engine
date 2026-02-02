@@ -53,10 +53,10 @@ namespace ArisenEngine::Testing
             RHI::RHIImageViewDesc viewDesc{ RHI::IMAGE_VIEW_TYPE_2D, RHI::FORMAT_R8G8B8A8_UNORM, RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
             viewDesc.width = 256;
             viewDesc.height = 256;
-            RHI_Image_AddImageView(m_Device, testImage, &viewDesc);
+            RHI_ImageViewHandle testView = RHI_Image_AddImageView(m_Device, testImage, &viewDesc);
 
-            // 4. Register image
-            UInt32 imageIndex = RHI_Device_BindlessRegisterImage(m_Device, testImage);
+            // 4. Register image (using the view handle, not the image handle)
+            UInt32 imageIndex = RHI_Device_BindlessRegisterImage(m_Device, testView);
             if (imageIndex == 0xFFFFFFFF)
             {
                 LOG_ERROR("Failed to register image with Bindless Manager");
@@ -65,6 +65,9 @@ namespace ArisenEngine::Testing
                 return false;
             }
             LOG_INFO("Image registered at bindless index: " + std::to_string(imageIndex));
+
+            // Wait for all operations to complete before cleanup
+            RHI_Device_WaitIdle(m_Device);
 
             // Cleanup
             RHI_Device_ReleaseImage(m_Device, testImage);

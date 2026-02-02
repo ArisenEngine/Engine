@@ -5,10 +5,8 @@
 #include "Framework/TestRunner.h"
 #include "RHI/Rendering/RHIBasicRenderingTest.h"
 #include "RHI/Rendering/RHIDynamicRenderingTest.h"
-#include "RHI/Rendering/RHITextureMappingTest.h"
 #include "RHI/Unit/RHISyncTest.h"
 #include "RHI/Unit/RHIBindlessTest.h"
-#include "RHI/Rendering/RHIDepthBufferingTest.h"
 #include "../../Engine/NativeEngine/Core/EngineInit.h"
 #include <windows.h>
 #include <vector>
@@ -33,13 +31,11 @@ int main(int argc, char** argv)
     }
 
     // Register Tests
-    // TestRunner::RegisterTest<RHIBindlessTest>();
-    // TestRunner::RegisterTest<RHISyncTest>();
+    TestRunner::RegisterTest<RHIBindlessTest>();
+    TestRunner::RegisterTest<RHISyncTest>();
     TestRunner::RegisterTest<RHIBasicRenderingTest>();
     // TestRunner::RegisterTest<RHIDynamicRenderingTest>();
-    // TestRunner::RegisterTest<RHITextureMappingTest>();
-    // TestRunner::RegisterTest<RHIDepthBufferingTest>();
-
+    
     // Parse simple command line for filtering (lpCmdLine for WinMain)
     std::string cmdLine = GetCommandLineA();
     
@@ -54,7 +50,6 @@ int main(int argc, char** argv)
     }
     else
     {
-        // Run everything or specific default
         TestRunner::RunAllTests();
     }
 

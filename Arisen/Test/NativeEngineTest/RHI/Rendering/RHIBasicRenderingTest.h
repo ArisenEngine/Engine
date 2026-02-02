@@ -87,31 +87,66 @@ namespace ArisenEngine::Testing
                 m_UboBuffer.push_back(RHI_Device_CreateBuffer(m_Device, &ubDesc, "UBO"));
             }
 
-            // Default Texture (White)
-            UInt32 whitePixel = 0xFFFFFFFF;
-            RHI::RHIImageDescriptor texDesc = {};
-            texDesc.imageType = RHI::IMAGE_TYPE_2D;
-            texDesc.width = 1;
-            texDesc.height = 1;
-            texDesc.depth = 1;
-            texDesc.mipLevels = 1;
-            texDesc.arrayLayers = 1;
-            texDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
-            texDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
-            texDesc.usage = RHI::IMAGE_USAGE_TRANSFER_DST_BIT | RHI::IMAGE_USAGE_SAMPLED_BIT;
-            texDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
-            texDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            m_Texture = RHI_Device_CreateImage(m_Device, &texDesc, "Default White Texture");
+            // Load Texture from Assets
+            int texWidth, texHeight, texChannels;
+            auto texturePath = (exeDir / "Assets" / "Arisen.png").string();
+            stbi_uc* pixels = stbi_load(texturePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+            if (pixels)
+            {
+                RHI::RHIImageDescriptor texDesc = {};
+                texDesc.imageType = RHI::IMAGE_TYPE_2D;
+                texDesc.width = (UInt32)texWidth;
+                texDesc.height = (UInt32)texHeight;
+                texDesc.depth = 1;
+                texDesc.mipLevels = 1;
+                texDesc.arrayLayers = 1;
+                texDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
+                texDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
+                texDesc.usage = RHI::IMAGE_USAGE_TRANSFER_DST_BIT | RHI::IMAGE_USAGE_SAMPLED_BIT;
+                texDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
+                texDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+                m_Texture = RHI_Device_CreateImage(m_Device, &texDesc, "Arisen Logo Texture");
 
-            RHI::RHIImageViewDesc viewDesc = {};
-            viewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
-            viewDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
-            viewDesc.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
-            viewDesc.levelCount = 1;
-            viewDesc.layerCount = 1;
-            RHI_Image_AddImageView(m_Device, m_Texture, &viewDesc);
+                RHI::RHIImageViewDesc viewDesc = {};
+                viewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
+                viewDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
+                viewDesc.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
+                viewDesc.levelCount = 1;
+                viewDesc.layerCount = 1;
+                RHI_Image_AddImageView(m_Device, m_Texture, &viewDesc);
 
-            UploadImage(m_Texture, sizeof(whitePixel), &whitePixel, 1, 1);
+                UploadImage(m_Texture, (UInt64)texWidth * texHeight * 4, pixels, (UInt32)texWidth, (UInt32)texHeight);
+                stbi_image_free(pixels);
+            }
+            else
+            {
+                LOG_ERRORF("Failed to load texture: {0}", texturePath);
+                // Fallback to 1x1 white texture
+                UInt32 whitePixel = 0xFFFFFFFF;
+                RHI::RHIImageDescriptor texDesc = {};
+                texDesc.imageType = RHI::IMAGE_TYPE_2D;
+                texDesc.width = 1;
+                texDesc.height = 1;
+                texDesc.depth = 1;
+                texDesc.mipLevels = 1;
+                texDesc.arrayLayers = 1;
+                texDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
+                texDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
+                texDesc.usage = RHI::IMAGE_USAGE_TRANSFER_DST_BIT | RHI::IMAGE_USAGE_SAMPLED_BIT;
+                texDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
+                texDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+                m_Texture = RHI_Device_CreateImage(m_Device, &texDesc, "Fallback White Texture");
+
+                RHI::RHIImageViewDesc viewDesc = {};
+                viewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
+                viewDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
+                viewDesc.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
+                viewDesc.levelCount = 1;
+                viewDesc.layerCount = 1;
+                RHI_Image_AddImageView(m_Device, m_Texture, &viewDesc);
+
+                UploadImage(m_Texture, sizeof(whitePixel), &whitePixel, 1, 1);
+            }
 
             // Default Sampler
             RHI::RHISamplerDesc sampDesc = {};
@@ -145,6 +180,7 @@ namespace ArisenEngine::Testing
             dviewDesc.layerCount = 1;
             m_DepthView = RHI_Image_AddImageView(m_Device, m_DepthImage, &dviewDesc);
         }
+
 
         void InitRenderContext()
         {
