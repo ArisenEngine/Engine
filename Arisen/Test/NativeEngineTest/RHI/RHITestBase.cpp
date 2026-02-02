@@ -1,3 +1,4 @@
+#define GLM_ENABLE_EXPERIMENTAL
 #define CGLTF_IMPLEMENTATION
 #include <cgltf.h>
 #include "RHITestBase.h"
@@ -11,6 +12,9 @@
 #include "RHI/Enums/Memory/EMemoryPropertyFlagBits.h"
 #include "RHI/Enums/Memory/ESharingMode.h"
 #include "RHI/Enums/Pipeline/ECommandBufferUsageFlagBits.h"
+#include <functional>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 
 using namespace ArisenEngine;
@@ -42,75 +46,113 @@ namespace ArisenEngine::Testing
 
         GLTFModel model;
 
-        for (cgltf_size i = 0; i < data->meshes_count; ++i)
-        {
-            cgltf_mesh& mesh = data->meshes[i];
-            for (cgltf_size j = 0; j < mesh.primitives_count; ++j)
+        // Helper to traverse nodes and apply transforms
+        std::function<void(cgltf_node*, const glm::mat4&)> processNode;
+        processNode = [&](cgltf_node* node, const glm::mat4& parentTransform) {
+            glm::mat4 localTransform(1.0f);
+            cgltf_node_transform_local(node, glm::value_ptr(localTransform));
+            glm::mat4 worldTransform = parentTransform * localTransform;
+
+            if (node->mesh)
             {
-                cgltf_primitive& primitive = mesh.primitives[j];
-                
-                // Load attributes
-                cgltf_accessor* pos_accessor = nullptr;
-                cgltf_accessor* normal_accessor = nullptr;
-                cgltf_accessor* uv_accessor = nullptr;
-                cgltf_accessor* color_accessor = nullptr;
-
-                for (cgltf_size k = 0; k < primitive.attributes_count; ++k)
+                cgltf_mesh* mesh = node->mesh;
+                for (cgltf_size j = 0; j < mesh->primitives_count; ++j)
                 {
-                    cgltf_attribute& attr = primitive.attributes[k];
-                    if (attr.type == cgltf_attribute_type_position) pos_accessor = attr.data;
-                    else if (attr.type == cgltf_attribute_type_normal) normal_accessor = attr.data;
-                    else if (attr.type == cgltf_attribute_type_texcoord) uv_accessor = attr.data;
-                    else if (attr.type == cgltf_attribute_type_color) color_accessor = attr.data;
-                }
+                    cgltf_primitive& primitive = mesh->primitives[j];
+                    
+                    // Load attributes
+                    cgltf_accessor* pos_accessor = nullptr;
+                    cgltf_accessor* normal_accessor = nullptr;
+                    cgltf_accessor* uv_accessor = nullptr;
+                    cgltf_accessor* color_accessor = nullptr;
 
-                if (!pos_accessor) continue;
-
-                size_t vertex_offset = vertices.size();
-                size_t vertex_count = pos_accessor->count;
-                vertices.resize(vertex_offset + vertex_count);
-
-                for (size_t v = 0; v < vertex_count; ++v)
-                {
-                    GLTFVertex& vertex = vertices[vertex_offset + v];
-                    vertex.color = glm::vec4(1.0f); // Default to white
-
-                    cgltf_accessor_read_float(pos_accessor, v, &vertex.pos.x, 3);
-                    if (normal_accessor) cgltf_accessor_read_float(normal_accessor, v, &vertex.normal.x, 3);
-                    if (uv_accessor) cgltf_accessor_read_float(uv_accessor, v, &vertex.uv.x, 2);
-                    if (color_accessor) cgltf_accessor_read_float(color_accessor, v, &vertex.color.x, 4);
-                }
-
-                // Populate Layout (only once for the whole model for simplicity in this test base)
-                if (model.layout.attributes.empty())
-                {
-                    model.layout.stride = sizeof(GLTFVertex);
-                    model.layout.attributes.push_back({"POSITION0", RHI::FORMAT_R32G32B32_SFLOAT, (uint32_t)offsetof(GLTFVertex, pos), 0});
-                    if (normal_accessor) model.layout.attributes.push_back({"NORMAL0", RHI::FORMAT_R32G32B32_SFLOAT, (uint32_t)offsetof(GLTFVertex, normal), 1});
-                    if (uv_accessor) model.layout.attributes.push_back({"TEXCOORD0", RHI::FORMAT_R32G32_SFLOAT, (uint32_t)offsetof(GLTFVertex, uv), 2});
-                    if (color_accessor) model.layout.attributes.push_back({"COLOR0", RHI::FORMAT_R32G32B32A32_SFLOAT, (uint32_t)offsetof(GLTFVertex, color), 3});
-                }
-
-                // Load indices
-                if (primitive.indices)
-                {
-                    size_t index_offset = indices.size();
-                    size_t index_count = primitive.indices->count;
-                    indices.resize(index_offset + index_count);
-                    for (size_t idx = 0; idx < index_count; ++idx)
+                    for (cgltf_size k = 0; k < primitive.attributes_count; ++k)
                     {
-                        indices[index_offset + idx] = (uint32_t)cgltf_accessor_read_index(primitive.indices, idx) + (uint32_t)vertex_offset;
+                        cgltf_attribute& attr = primitive.attributes[k];
+                        if (attr.type == cgltf_attribute_type_position) pos_accessor = attr.data;
+                        else if (attr.type == cgltf_attribute_type_normal) normal_accessor = attr.data;
+                        else if (attr.type == cgltf_attribute_type_texcoord) uv_accessor = attr.data;
+                        else if (attr.type == cgltf_attribute_type_color) color_accessor = attr.data;
+                    }
+
+                    if (!pos_accessor) continue;
+
+                    size_t vertex_offset = vertices.size();
+                    size_t vertex_count = pos_accessor->count;
+                    vertices.resize(vertex_offset + vertex_count);
+
+                    for (size_t v = 0; v < vertex_count; ++v)
+                    {
+                        GLTFVertex& vertex = vertices[vertex_offset + v];
+                        vertex.color = glm::vec4(1.0f); // Default to white
+
+                        glm::vec3 localPos;
+                        cgltf_accessor_read_float(pos_accessor, v, &localPos.x, 3);
+                        vertex.pos = glm::vec3(worldTransform * glm::vec4(localPos, 1.0f));
+
+                        if (normal_accessor) {
+                            glm::vec3 localNormal;
+                            cgltf_accessor_read_float(normal_accessor, v, &localNormal.x, 3);
+                            vertex.normal = glm::normalize(glm::vec3(worldTransform * glm::vec4(localNormal, 0.0f)));
+                        }
+                        if (uv_accessor) cgltf_accessor_read_float(uv_accessor, v, &vertex.uv.x, 2);
+                        if (color_accessor) cgltf_accessor_read_float(color_accessor, v, &vertex.color.x, 4);
+                    }
+
+                    // Populate Layout (always provide full attributes to match shader expectations)
+                    if (model.layout.attributes.empty())
+                    {
+                        model.layout.stride = sizeof(GLTFVertex);
+                        model.layout.attributes.push_back({"POSITION0", RHI::FORMAT_R32G32B32_SFLOAT, (uint32_t)offsetof(GLTFVertex, pos), 0});
+                        model.layout.attributes.push_back({"NORMAL0", RHI::FORMAT_R32G32B32_SFLOAT, (uint32_t)offsetof(GLTFVertex, normal), 1});
+                        model.layout.attributes.push_back({"TEXCOORD0", RHI::FORMAT_R32G32_SFLOAT, (uint32_t)offsetof(GLTFVertex, uv), 2});
+                        model.layout.attributes.push_back({"COLOR0", RHI::FORMAT_R32G32B32A32_SFLOAT, (uint32_t)offsetof(GLTFVertex, color), 3});
+                    }
+
+                    // Load indices
+                    if (primitive.indices)
+                    {
+                        size_t index_offset = indices.size();
+                        size_t index_count = primitive.indices->count;
+                        indices.resize(index_offset + index_count);
+                        for (size_t idx = 0; idx < index_count; ++idx)
+                        {
+                            indices[index_offset + idx] = (uint32_t)cgltf_accessor_read_index(primitive.indices, idx) + (uint32_t)vertex_offset;
+                        }
+                    }
+                    else
+                    {
+                        size_t index_offset = indices.size();
+                        indices.resize(index_offset + vertex_count);
+                        for (size_t idx = 0; idx < vertex_count; ++idx)
+                        {
+                            indices[index_offset + idx] = (uint32_t)(vertex_offset + idx);
+                        }
                     }
                 }
-                else
+            }
+
+            for (cgltf_size i = 0; i < node->children_count; ++i)
+            {
+                processNode(node->children[i], worldTransform);
+            }
+        };
+
+        if (data->scene)
+        {
+            for (cgltf_size i = 0; i < data->scene->nodes_count; ++i)
+            {
+                processNode(data->scene->nodes[i], glm::mat4(1.0f));
+            }
+        }
+        else
+        {
+            // Fallback for files without a scene (unlikely but possible)
+            for (cgltf_size i = 0; i < data->nodes_count; ++i)
+            {
+                if (!data->nodes[i].parent)
                 {
-                    // If no indices, create non-indexed indices
-                    size_t index_offset = indices.size();
-                    indices.resize(index_offset + vertex_count);
-                    for (size_t idx = 0; idx < vertex_count; ++idx)
-                    {
-                        indices[index_offset + idx] = (uint32_t)(vertex_offset + idx);
-                    }
+                    processNode(&data->nodes[i], glm::mat4(1.0f));
                 }
             }
         }
