@@ -115,7 +115,7 @@ namespace ArisenEngine::Testing
                 viewDesc.layerCount = 1;
                 RHI_Image_AddImageView(m_Device, m_Texture, &viewDesc);
 
-                UploadImage(m_Texture, (UInt64)texWidth * texHeight * 4, pixels, (UInt32)texWidth, (UInt32)texHeight);
+                UploadImage(m_Texture, (UInt64)texWidth * texHeight * 4, pixels, (UInt32)texWidth, (UInt32)texHeight, RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
                 
                 // Mipmap generation
                 {
