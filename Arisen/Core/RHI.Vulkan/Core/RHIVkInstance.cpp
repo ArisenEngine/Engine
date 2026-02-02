@@ -224,12 +224,51 @@ ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(RHIInstanceInfo&& app_info): RHI
 
 
     // Extensions Slot 
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(VkInstanceExtensionNames.size());
-    createInfo.ppEnabledExtensionNames = VkInstanceExtensionNames.data();
-
-    if (vkCreateInstance(&createInfo, nullptr, &m_VkInstance) != VK_SUCCESS)
+    ArisenEngine::Containers::Vector<const char*> filteredExtensions;
+    for (const char* extensionName : VkInstanceExtensionNames)
     {
-        LOG_FATAL_AND_THROW("[RHIVkInstance::RHIVkInstance]: failed to create instance!");
+        bool found = false;
+        for (const auto& extProps : extensions)
+        {
+            if (strcmp(extProps.extensionName, extensionName) == 0)
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (found)
+        {
+            filteredExtensions.push_back(extensionName);
+        }
+        else
+        {
+            LOG_WARN(String::Format("[RHIVkInstance::RHIVkInstance]: instance extension not supported: %s", extensionName));
+            
+            // Critical check: if VK_EXT_layer_settings is not supported, we must remove it from pNext chain
+            if (strcmp(extensionName, VK_EXT_LAYER_SETTINGS_EXTENSION_NAME) == 0)
+            {
+                LOG_INFO("[RHIVkInstance::RHIVkInstance]: Disabling VK_EXT_layer_settings pNext chain due to lack of extension support.");
+                // Remove from pNext chain by pointing back to debugCreateInfo or null
+                if (app_info.validationLayer)
+                {
+                    createInfo.pNext = &debugCreateInfo;
+                }
+                else
+                {
+                    createInfo.pNext = nullptr;
+                }
+            }
+        }
+    }
+
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(filteredExtensions.size());
+    createInfo.ppEnabledExtensionNames = filteredExtensions.data();
+
+    VkResult result = vkCreateInstance(&createInfo, nullptr, &m_VkInstance);
+    if (result != VK_SUCCESS)
+    {
+        LOG_FATAL_AND_THROW(String::Format("[RHIVkInstance::RHIVkInstance]: failed to create instance! VkResult: %d", (int)result));
     }
 
     SetupDebugMessager();

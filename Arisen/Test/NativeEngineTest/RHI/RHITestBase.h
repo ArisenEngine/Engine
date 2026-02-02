@@ -19,11 +19,26 @@
 
 namespace ArisenEngine::Testing
 {
+    struct VertexAttributeDesc
+    {
+        std::string name;
+        RHI::EFormat format;
+        UInt32 offset;
+        UInt32 location;
+    };
+
+    struct VertexLayout
+    {
+        std::vector<VertexAttributeDesc> attributes;
+        UInt32 stride = 0;
+    };
+
     struct GLTFVertex
     {
         glm::vec3 pos;
         glm::vec3 normal;
         glm::vec2 uv;
+        glm::vec4 color;
     };
 
     struct GLTFModel
@@ -31,6 +46,7 @@ namespace ArisenEngine::Testing
         RHI_BufferHandle vertexBuffer = 0;
         RHI_BufferHandle indexBuffer = 0;
         UInt32 indexCount = 0;
+        VertexLayout layout;
         
         void Release(RHI_DeviceHandle device)
         {
