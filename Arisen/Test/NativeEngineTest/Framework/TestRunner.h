@@ -182,8 +182,11 @@ namespace ArisenEngine::Testing
                 size_t passed = 0;
                 for (const auto& r : results) { if (r.passed) ++passed; }
                 LOG_INFO("=== Test Summary ===");
-                LOG_INFO("Total: " + std::to_string(results.size()) + " | Passed: " + std::to_string(passed) + " | Failed: " + std::to_string(results.size() - passed));
+                LOG_INFO(("Total: " + std::to_string(results.size()) + " | Passed: " + std::to_string(passed) + " | Failed: " + std::to_string(results.size() - passed)).c_str());
             }
+            
+            // Critical: Ensure all logs are flushed before possible exit/crash
+            ArisenEngine::Diagnostics::Logger::Shutdown();
 
             return results;
         }

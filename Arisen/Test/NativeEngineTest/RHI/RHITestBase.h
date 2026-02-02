@@ -173,7 +173,7 @@ namespace ArisenEngine::Testing
             RHI::RHIInstanceInfo appInfo{
                 appName,
                 "Arisen Engine",
-                true,  // Disable validation layers for unit tests to avoid hangs
+                true,  // Enable validation layers for unit tests to catch issues
                 0, 1, 3, 0,  // Vulkan 1.3
                 1, 0, 0,     // App version
                 1, 0, 0,     // Engine version
