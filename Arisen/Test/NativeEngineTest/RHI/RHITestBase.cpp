@@ -40,6 +40,8 @@ namespace ArisenEngine::Testing
         std::vector<GLTFVertex> vertices;
         std::vector<uint32_t> indices;
 
+        GLTFModel model;
+
         for (cgltf_size i = 0; i < data->meshes_count; ++i)
         {
             cgltf_mesh& mesh = data->meshes[i];
@@ -51,6 +53,7 @@ namespace ArisenEngine::Testing
                 cgltf_accessor* pos_accessor = nullptr;
                 cgltf_accessor* normal_accessor = nullptr;
                 cgltf_accessor* uv_accessor = nullptr;
+                cgltf_accessor* color_accessor = nullptr;
 
                 for (cgltf_size k = 0; k < primitive.attributes_count; ++k)
                 {
@@ -58,6 +61,7 @@ namespace ArisenEngine::Testing
                     if (attr.type == cgltf_attribute_type_position) pos_accessor = attr.data;
                     else if (attr.type == cgltf_attribute_type_normal) normal_accessor = attr.data;
                     else if (attr.type == cgltf_attribute_type_texcoord) uv_accessor = attr.data;
+                    else if (attr.type == cgltf_attribute_type_color) color_accessor = attr.data;
                 }
 
                 if (!pos_accessor) continue;
@@ -69,9 +73,22 @@ namespace ArisenEngine::Testing
                 for (size_t v = 0; v < vertex_count; ++v)
                 {
                     GLTFVertex& vertex = vertices[vertex_offset + v];
+                    vertex.color = glm::vec4(1.0f); // Default to white
+
                     cgltf_accessor_read_float(pos_accessor, v, &vertex.pos.x, 3);
                     if (normal_accessor) cgltf_accessor_read_float(normal_accessor, v, &vertex.normal.x, 3);
                     if (uv_accessor) cgltf_accessor_read_float(uv_accessor, v, &vertex.uv.x, 2);
+                    if (color_accessor) cgltf_accessor_read_float(color_accessor, v, &vertex.color.x, 4);
+                }
+
+                // Populate Layout (only once for the whole model for simplicity in this test base)
+                if (model.layout.attributes.empty())
+                {
+                    model.layout.stride = sizeof(GLTFVertex);
+                    model.layout.attributes.push_back({"POSITION0", RHI::FORMAT_R32G32B32_SFLOAT, (uint32_t)offsetof(GLTFVertex, pos), 0});
+                    if (normal_accessor) model.layout.attributes.push_back({"NORMAL0", RHI::FORMAT_R32G32B32_SFLOAT, (uint32_t)offsetof(GLTFVertex, normal), 1});
+                    if (uv_accessor) model.layout.attributes.push_back({"TEXCOORD0", RHI::FORMAT_R32G32_SFLOAT, (uint32_t)offsetof(GLTFVertex, uv), 2});
+                    if (color_accessor) model.layout.attributes.push_back({"COLOR0", RHI::FORMAT_R32G32B32A32_SFLOAT, (uint32_t)offsetof(GLTFVertex, color), 3});
                 }
 
                 // Load indices
@@ -98,7 +115,7 @@ namespace ArisenEngine::Testing
             }
         }
 
-        GLTFModel model;
+
         model.indexCount = (UInt32)indices.size();
         
         LOG_INFOF("Loaded GLTF: {0}. Vertices: {1}, Indices: {2}", path, vertices.size(), indices.size());
