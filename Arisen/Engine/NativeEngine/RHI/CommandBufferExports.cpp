@@ -117,6 +117,13 @@ extern "C" ENGINE_DLL void RHI_Cmd_DrawIndexed(RHI_CommandBufferHandle cmd, unsi
     c->DrawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance, firstBinding);
 }
 
+extern "C" ENGINE_DLL void RHI_Cmd_DrawMeshTasks(RHI_CommandBufferHandle cmd, unsigned int groupCountX, unsigned int groupCountY, unsigned int groupCountZ)
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c == nullptr) return;
+    c->DrawMeshTasks(groupCountX, groupCountY, groupCountZ);
+}
+
 extern "C" ENGINE_DLL void RHI_Cmd_Dispatch(RHI_CommandBufferHandle cmd, unsigned int groupCountX, unsigned int groupCountY, unsigned int groupCountZ)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
