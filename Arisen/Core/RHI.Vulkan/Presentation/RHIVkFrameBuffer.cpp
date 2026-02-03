@@ -1,3 +1,4 @@
+#include <cstdio>
 #include "Presentation/RHIVkFrameBuffer.h"
 #include "RenderPass/RHIVkGPURenderPass.h"
 #include "Logger/Logger.h"
@@ -81,6 +82,8 @@ void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachments(UInt32 frameIndex, cons
     auto* primaryView = m_Device->GetImageViewPool()->Get(imageViews[0]);
     if (!primaryView) return;
 
+    LOG_DEBUGF("[RHIVkFrameBuffer::SetAttachments] FrameIndex={0} Width={1} Height={2}", frameIndex, primaryView->width, primaryView->height);
+
     FramebufferCacheKey key;
     key.renderPass = static_cast<VkRenderPass>(renderPass->GetHandle(frameIndex));
     key.attachments = vkViews;
@@ -95,6 +98,13 @@ void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachments(UInt32 frameIndex, cons
     }
     else
     {
+        if (key.width == 0 || key.height == 0)
+        {
+            LOG_WARNF("[RHIVkFrameBuffer::SetAttachments]: Creating framebuffer with zero dimensions ({0}x{1}). Clamping to 1x1.", key.width, key.height);
+            key.width = (std::max)(1u, key.width);
+            key.height = (std::max)(1u, key.height);
+        }
+
         VkFramebufferCreateInfo createInfo {};
         createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         createInfo.renderPass = key.renderPass;

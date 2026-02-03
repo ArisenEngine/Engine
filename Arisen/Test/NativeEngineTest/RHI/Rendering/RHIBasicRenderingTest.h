@@ -93,11 +93,23 @@ namespace ArisenEngine::Testing
                 m_UboBuffer.push_back(RHI_Device_CreateBuffer(m_Device, &ubDesc, "UBO"));
             }
 
+            UInt32 width = HAL::GetWindowWidth(m_WindowId);
+            UInt32 height = HAL::GetWindowHeight(m_WindowId);
+
+            if (width == 0 || height == 0)
+            {
+                LOG_WARNF("[RHIBasicRenderingTest]: Window dimensions are zero ({0}x{1}) during CreateResources. Falling back to 1280x720.", width, height);
+                width = 1280;
+                height = 720;
+            }
+
+            LOG_INFOF("[RHIBasicRenderingTest]: CreateResources Window Size: {0}x{1} (ID={2})", width, height, (unsigned)m_WindowId);
+
             // Depth Image
             RHI::RHIImageDescriptor dimgDesc = {};
             dimgDesc.imageType = RHI::IMAGE_TYPE_2D;
-            dimgDesc.width = HAL::GetWindowWidth(m_WindowId);
-            dimgDesc.height = HAL::GetWindowHeight(m_WindowId);
+            dimgDesc.width = width;
+            dimgDesc.height = height;
             dimgDesc.depth = 1;
             dimgDesc.mipLevels = 1;
             dimgDesc.arrayLayers = 1;
@@ -114,13 +126,15 @@ namespace ArisenEngine::Testing
             dviewDesc.aspectMask = RHI::IMAGE_ASPECT_DEPTH_BIT;
             dviewDesc.levelCount = 1;
             dviewDesc.layerCount = 1;
+            dviewDesc.width = width;
+            dviewDesc.height = height;
             m_DepthView = RHI_Image_AddImageView(m_Device, m_DepthImage, &dviewDesc);
 
             // MSAA Color Image
             RHI::RHIImageDescriptor msaaDesc = {};
             msaaDesc.imageType = RHI::IMAGE_TYPE_2D;
-            msaaDesc.width = HAL::GetWindowWidth(m_WindowId);
-            msaaDesc.height = HAL::GetWindowHeight(m_WindowId);
+            msaaDesc.width = width;
+            msaaDesc.height = height;
             msaaDesc.depth = 1;
             msaaDesc.mipLevels = 1;
             msaaDesc.arrayLayers = 1;
@@ -137,6 +151,8 @@ namespace ArisenEngine::Testing
             msaaViewDesc.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
             msaaViewDesc.levelCount = 1;
             msaaViewDesc.layerCount = 1;
+            msaaViewDesc.width = width;
+            msaaViewDesc.height = height;
             m_MSAAColorView = RHI_Image_AddImageView(m_Device, m_MSAAColorImage, &msaaViewDesc);
 
             // Set a better camera position for Sponza

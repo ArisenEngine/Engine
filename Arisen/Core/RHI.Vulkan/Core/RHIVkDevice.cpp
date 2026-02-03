@@ -472,8 +472,8 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImageView(RHIImageViewHandle handle, R
 
     viewItem->format = desc.format;
     viewItem->imageHandle = imageHandle;
-    viewItem->width = desc.width.value_or(0);
-    viewItem->height = desc.height.value_or(0);
+    viewItem->width = desc.width.has_value() && desc.width.value() > 0 ? desc.width.value() : imageItem->width;
+    viewItem->height = desc.height.has_value() && desc.height.value() > 0 ? desc.height.value() : imageItem->height;
 
     // Register for deferred deletion
     struct DeferredVkImageView

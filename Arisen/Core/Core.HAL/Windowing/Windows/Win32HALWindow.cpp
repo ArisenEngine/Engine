@@ -1,4 +1,5 @@
 #include "../HALWindow.h"
+#include <cstdio>
 #include "../../Common/PlatformTypes.h"
 #include "Base/FoundationMinimal.h"
 
@@ -118,12 +119,54 @@ namespace ArisenEngine::HAL
 				break;
 
 			case WM_SIZE:
+				if (wparam == SIZE_MINIMIZED) break;
+
 				info = GetInfoFromHandle(hwnd);
+				if (info)
+				{
+					const SInt32 width = LOWORD(lparam);
+					const SInt32 height = HIWORD(lparam);
+
+					if (width > 0 && height > 0)
+					{
+						RECT& area = info->isFullScreen ? info->fullScreenArea : info->clientArea;
+						area.left = 0;
+						area.top = 0;
+						area.right = width;
+						area.bottom = height;
+						LOG_DEBUGF("[Win32HALWindow]: WM_SIZE handled. ID={0} Addr={1} FullScreen={2} Area: {3} {4} {5} {6}", 
+							(unsigned)GetWindowID(hwnd), (void*)info, (int)info->isFullScreen, area.left, area.top, area.right, area.bottom);
+					}
+					else
+					{
+						LOG_DEBUGF("[Win32HALWindow]: WM_SIZE ignored due to zero dimensions ({0}x{1}).", width, height);
+					}
+				}
+				else
+				{
+					LOG_DEBUGF("[Win32HALWindow]: WM_SIZE handled but info is NULL. Hwnd={0}", (void*)hwnd);
+				}
 				break;
 
 			case WM_EXITSIZEMOVE:
 				info = GetInfoFromHandle(hwnd);
-				bHasExitResizing = true;
+				if (info)
+				{
+					GetClientRect(info->hwnd, info->isFullScreen ? &info->fullScreenArea : &info->clientArea);
+
+					LONG_PTR longPtr{ GetWindowLongPtr(hwnd, WINDOW_RESIZE_CALLBACK) };
+
+					if (longPtr)
+					{
+						auto width = info->isFullScreen ?
+							info->fullScreenArea.right - info->fullScreenArea.left
+							: info->clientArea.right - info->clientArea.left;
+						auto height = info->isFullScreen ?
+							info->fullScreenArea.bottom - info->fullScreenArea.top
+							: info->clientArea.bottom - info->clientArea.top;
+						((WindowExitResize)longPtr)(hwnd, width, height);
+					}
+				}
 				break;
 
 			case WM_SYSCOMMAND:
@@ -133,28 +176,6 @@ namespace ArisenEngine::HAL
 				}
 				break;
 
-			}
-
-			if (info)
-			{
-				assert(info->hwnd);
-				GetClientRect(info->hwnd, info->isFullScreen ? &info->fullScreenArea : &info->clientArea);
-
-				if (bHasExitResizing)
-				{
-					LONG_PTR longPtr{ GetWindowLongPtr(hwnd, WINDOW_RESIZE_CALLBACK) };
-			
-					if (longPtr)
-					{
-						auto width = info->isFullScreen ?
-							info->fullScreenArea.right - info->fullScreenArea.left
-						: info->clientArea.right - info->clientArea.left;
-						auto height = info->isFullScreen ?
-							info->fullScreenArea.bottom - info->fullScreenArea.top
-						: info->clientArea.bottom - info->clientArea.top;
-						((WindowExitResize)longPtr)(hwnd, width, height);
-					}
-				}
 			}
 			
 			LONG_PTR longPtr{ GetWindowLongPtr(hwnd, WINDOW_PROC_CALLBACK) };
@@ -185,8 +206,11 @@ namespace ArisenEngine::HAL
 			if (info)
 			{
 				RECT& area{ info->isFullScreen ? info->fullScreenArea : info->clientArea };
+				LOG_DEBUGF("[Win32HALWindow]: GetWindowSize ID={0} Addr={1} FullScreen={2} Area: {3} {4} {5} {6}", 
+					(unsigned)id, (void*)info, (int)info->isFullScreen, area.left, area.top, area.right, area.bottom);
 				return { (UInt32)area.left, (UInt32)area.top, (UInt32)area.right, (UInt32)area.bottom };
 			}
+			LOG_DEBUGF("[Win32HALWindow]: GetWindowSize ID={0} Info is NULL", (unsigned)id);
 			return { 0, 0, 0, 0 };
 		}
 
@@ -318,6 +342,9 @@ namespace ArisenEngine::HAL
 			const SInt32 sheight{ rect.bottom - rect.top };
 
 			const WindowID id{ AddToWindows(info) };
+			
+			LOG_INFOF("[Win32HALWindow]: CreateNewWindow ID={0} Initial ClientArea: {1} {2} {3} {4}", 
+				(unsigned)id, info.clientArea.left, info.clientArea.top, info.clientArea.right, info.clientArea.bottom);
 
 			info.hwnd = CreateWindowExW(
 				0,
