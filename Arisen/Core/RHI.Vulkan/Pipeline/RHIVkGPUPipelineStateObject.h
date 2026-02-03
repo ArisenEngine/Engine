@@ -133,6 +133,12 @@ namespace ArisenEngine::RHI
         //             Descriptor Type - RHIDescriptorUpdateInfo
         //               
         Containers::Map<UInt32, Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, RHIDescriptorUpdateInfo>>> m_DescriptorUpdateInfos {};
+
+        // push constants
+        Containers::Vector<VkPushConstantRange> m_PushConstantRanges {};
+
+    public:
+        const Containers::Vector<VkPushConstantRange>& GetPushConstantRanges() const { return m_PushConstantRanges; }
     };
 }
 

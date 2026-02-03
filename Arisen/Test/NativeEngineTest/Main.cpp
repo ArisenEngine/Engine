@@ -7,6 +7,7 @@
 #include "RHI/Rendering/RHIGPUParticleTest.h"
 #include "RHI/Unit/RHISyncTest.h"
 #include "RHI/Unit/RHIBindlessTest.h"
+#include "RHI/Unit/RHIMultiThreadedTest.h"
 #include "../../Engine/NativeEngine/Core/EngineInit.h"
 #include <windows.h>
 #include <vector>
@@ -31,8 +32,9 @@ int main(int argc, char** argv)
     }
 
     // Register Tests
-    // TestRunner::RegisterTest<RHIBindlessTest>();
-    // TestRunner::RegisterTest<RHISyncTest>();
+    TestRunner::RegisterTest<RHIBindlessTest>();
+    TestRunner::RegisterTest<RHISyncTest>();
+    TestRunner::RegisterTest<RHIMultiThreadedTest>();
     // TestRunner::RegisterTest<RHIBasicRenderingTest>();
     TestRunner::RegisterTest<RHIGPUParticleTest>();
     

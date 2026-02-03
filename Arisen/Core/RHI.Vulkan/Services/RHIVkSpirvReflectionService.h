@@ -16,6 +16,7 @@ namespace ArisenEngine::RHI
     private:
         EDescriptorType MapSpirvTypeToDescriptorType(const spirv_cross::Compiler& compiler, const spirv_cross::Resource& resource);
         UInt32 MapSpirvExecutionModelToStage(spv::ExecutionModel model);
+        EProgramStage MapSpirvExecutionModelToProgramStage(spv::ExecutionModel model);
     };
 }
 

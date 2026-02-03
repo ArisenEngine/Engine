@@ -29,7 +29,9 @@ namespace ArisenEngine::RHI
             spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 
             // Set execution model stage
-            outData.Stage = static_cast<RHI::EProgramStage>(MapSpirvExecutionModelToStage(compiler.get_execution_model()));
+            spv::ExecutionModel model = compiler.get_execution_model();
+            outData.Stage = MapSpirvExecutionModelToProgramStage(model);
+            UInt32 stageBit = MapSpirvExecutionModelToStage(model);
 
             auto processResources = [&](const spirv_cross::SmallVector<spirv_cross::Resource>& resourceList, EDescriptorType defaultType)
             {
@@ -52,7 +54,7 @@ namespace ArisenEngine::RHI
                         binding.Count = 1;
                     }
 
-                    binding.StageFlags = static_cast<UInt32>(outData.Stage);
+                    binding.StageFlags = stageBit;
 
                     // Determine descriptor type dynamically or use default
                     if (defaultType == EDescriptorType::DESCRIPTOR_TYPE_MAX_ENUM)
@@ -74,8 +76,9 @@ namespace ArisenEngine::RHI
             processResources(resources.separate_images, EDescriptorType::DESCRIPTOR_TYPE_SAMPLED_IMAGE);
             processResources(resources.separate_samplers, EDescriptorType::DESCRIPTOR_TYPE_SAMPLER);
             processResources(resources.sampled_images, EDescriptorType::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); 
-            // processResources(resources.storage_images, EDescriptorType::DESCRIPTOR_TYPE_STORAGE_IMAGE); 
-            // processResources(resources.subpass_inputs, EDescriptorType::DESCRIPTOR_TYPE_INPUT_ATTACHMENT);
+            processResources(resources.storage_images, EDescriptorType::DESCRIPTOR_TYPE_STORAGE_IMAGE); 
+            processResources(resources.subpass_inputs, EDescriptorType::DESCRIPTOR_TYPE_INPUT_ATTACHMENT);
+            processResources(resources.acceleration_structures, EDescriptorType::DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
 
             // Push Constants
             for (const auto& res : resources.push_constant_buffers)
@@ -88,7 +91,7 @@ namespace ArisenEngine::RHI
                 range.Name = res.name;
                 range.Offset = 0; // Usually 0 for the block, unless manually offset
                 range.Size = static_cast<UInt32>(structSize);
-                range.StageFlags = static_cast<UInt32>(outData.Stage);
+                range.StageFlags = stageBit;
 
                 outData.PushConstants.push_back(range);
             }
@@ -114,11 +117,46 @@ namespace ArisenEngine::RHI
         switch (model)
         {
         case spv::ExecutionModelVertex: return RHI::SHADER_STAGE_VERTEX_BIT;
+        case spv::ExecutionModelTessellationControl: return RHI::SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+        case spv::ExecutionModelTessellationEvaluation: return RHI::SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+        case spv::ExecutionModelGeometry: return RHI::SHADER_STAGE_GEOMETRY_BIT;
         case spv::ExecutionModelFragment: return RHI::SHADER_STAGE_FRAGMENT_BIT;
         case spv::ExecutionModelGLCompute: return RHI::SHADER_STAGE_COMPUTE_BIT;
-        case spv::ExecutionModelGeometry: return RHI::SHADER_STAGE_GEOMETRY_BIT;
-        // ... add others
+        case spv::ExecutionModelTaskEXT: return RHI::SHADER_STAGE_TASK_BIT_EXT;
+        case spv::ExecutionModelMeshEXT: return RHI::SHADER_STAGE_MESH_BIT_EXT;
+        case spv::ExecutionModelTaskNV: return RHI::SHADER_STAGE_TASK_BIT_NV;
+        case spv::ExecutionModelMeshNV: return RHI::SHADER_STAGE_MESH_BIT_NV;
+        case spv::ExecutionModelRayGenerationKHR: return RHI::SHADER_STAGE_RAYGEN_BIT;
+        case spv::ExecutionModelAnyHitKHR: return RHI::SHADER_STAGE_ANY_HIT_BIT;
+        case spv::ExecutionModelClosestHitKHR: return RHI::SHADER_STAGE_CLOSEST_HIT_BIT;
+        case spv::ExecutionModelMissKHR: return RHI::SHADER_STAGE_MISS_BIT;
+        case spv::ExecutionModelIntersectionKHR: return RHI::SHADER_STAGE_INTERSECTION_BIT;
+        case spv::ExecutionModelCallableKHR: return RHI::SHADER_STAGE_CALLABLE_BIT;
         default: return 0;
+        }
+    }
+
+    EProgramStage RHIVkSpirvReflectionService::MapSpirvExecutionModelToProgramStage(spv::ExecutionModel model)
+    {
+        switch (model)
+        {
+        case spv::ExecutionModelVertex: return EProgramStage::Vertex;
+        case spv::ExecutionModelTessellationControl: return EProgramStage::Hull;
+        case spv::ExecutionModelTessellationEvaluation: return EProgramStage::Domain;
+        case spv::ExecutionModelGeometry: return EProgramStage::Geometry;
+        case spv::ExecutionModelFragment: return EProgramStage::Fragment;
+        case spv::ExecutionModelGLCompute: return EProgramStage::Compute;
+        case spv::ExecutionModelTaskEXT: 
+        case spv::ExecutionModelTaskNV: return EProgramStage::Amplification;
+        case spv::ExecutionModelMeshEXT:
+        case spv::ExecutionModelMeshNV: return EProgramStage::Mesh;
+        case spv::ExecutionModelRayGenerationKHR:
+        case spv::ExecutionModelAnyHitKHR:
+        case spv::ExecutionModelClosestHitKHR:
+        case spv::ExecutionModelMissKHR:
+        case spv::ExecutionModelIntersectionKHR:
+        case spv::ExecutionModelCallableKHR: return EProgramStage::RayTracing;
+        default: return EProgramStage::STAGE_MAX;
         }
     }
 }

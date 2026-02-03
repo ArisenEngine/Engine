@@ -10,7 +10,6 @@ ArisenEngine::RHI::RHIVkGPUPipeline::~RHIVkGPUPipeline() noexcept
 
     FreeAllPipelines();
     FreeAllPipelineLayouts();
-    m_PushConstantRanges.clear();
 
     m_Device = nullptr;
     m_PipelineStateObject = nullptr;
@@ -47,10 +46,11 @@ void ArisenEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex
         // Create Pipeline Layout
         VkPipelineLayoutCreateInfo pipelineLayoutInfo {};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = m_PipelineStateObject->DescriptorSetLayoutCount();
-        pipelineLayoutInfo.pSetLayouts = static_cast<const VkDescriptorSetLayout*>(m_PipelineStateObject->GetDescriptorSetLayouts());
-        pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(m_PushConstantRanges.size());
-        pipelineLayoutInfo.pPushConstantRanges = m_PushConstantRanges.data();
+        auto* vkPSO = static_cast<RHIVkGPUPipelineStateObject*>(m_PipelineStateObject);
+        pipelineLayoutInfo.setLayoutCount = vkPSO->DescriptorSetLayoutCount();
+        pipelineLayoutInfo.pSetLayouts = static_cast<const VkDescriptorSetLayout*>(vkPSO->GetDescriptorSetLayouts());
+        pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(vkPSO->GetPushConstantRanges().size());
+        pipelineLayoutInfo.pPushConstantRanges = vkPSO->GetPushConstantRanges().data();
 
         if (vkCreatePipelineLayout(m_VkDevice, &pipelineLayoutInfo,
             nullptr, &m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS)
@@ -233,8 +233,8 @@ void ArisenEngine::RHI::RHIVkGPUPipeline::AllocComputePipeline(UInt32 frameIndex
     layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     layoutInfo.setLayoutCount = vkPso->DescriptorSetLayoutCount();
     layoutInfo.pSetLayouts = static_cast<const VkDescriptorSetLayout*>(vkPso->GetDescriptorSetLayouts());
-    layoutInfo.pushConstantRangeCount = static_cast<uint32_t>(m_PushConstantRanges.size());
-    layoutInfo.pPushConstantRanges = m_PushConstantRanges.data();
+    layoutInfo.pushConstantRangeCount = static_cast<uint32_t>(vkPso->GetPushConstantRanges().size());
+    layoutInfo.pPushConstantRanges = vkPso->GetPushConstantRanges().data();
 
     if (vkCreatePipelineLayout(m_VkDevice, &layoutInfo, nullptr, &m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS) {
         LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocComputePipeline]: failed to create pipeline layout!");
