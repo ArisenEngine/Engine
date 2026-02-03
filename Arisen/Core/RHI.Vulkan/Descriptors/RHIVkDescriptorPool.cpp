@@ -218,10 +218,11 @@ ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDescriptorPool::AllocDescriptorSet(
     &descriptorSetLayout
         );
     VkDescriptorSet descriptorSet;
-    if (vkAllocateDescriptorSets(static_cast<VkDevice>(m_pDevice->GetHandle()),
-        &descriptorSetAllocateInfo, &descriptorSet) != VK_SUCCESS)
+    VkResult res = vkAllocateDescriptorSets(static_cast<VkDevice>(m_pDevice->GetHandle()),
+        &descriptorSetAllocateInfo, &descriptorSet);
+    if (res != VK_SUCCESS)
     {
-        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::AllocDescriptorSet] failed to allocate descriptor sets!");
+        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::AllocDescriptorSet] failed to allocate descriptor sets! VkResult: " + std::to_string(static_cast<int>(res)));
     }
     
   

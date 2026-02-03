@@ -161,13 +161,13 @@ namespace ArisenEngine::Testing
             {
                 // Compute Pool Family
                 Containers::Vector<RHI::EDescriptorType> cTypes = { RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER };
-                Containers::Vector<UInt32> cCounts = { 1 };
-                m_ComputeDescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &cTypes, &cCounts, 1));
+                Containers::Vector<UInt32> cCounts = { 128 };
+                m_ComputeDescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &cTypes, &cCounts, 128));
                 
                 // Graphics Pool Family
                 Containers::Vector<RHI::EDescriptorType> gTypes = { RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER };
-                Containers::Vector<UInt32> gCounts = { 1, 1 };
-                m_GraphicsDescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &gTypes, &gCounts, 1));
+                Containers::Vector<UInt32> gCounts = { 128, 128 };
+                m_GraphicsDescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &gTypes, &gCounts, 128));
             }
         }
 
@@ -233,6 +233,9 @@ namespace ArisenEngine::Testing
             
             // Update Descriptors
             {
+                RHI_DescriptorPool_Reset(m_DescriptorPool, m_ComputeDescriptorPoolIds[currentIndex]);
+                RHI_DescriptorPool_Reset(m_DescriptorPool, m_GraphicsDescriptorPoolIds[currentIndex]);
+
                 Containers::Vector<RHI::RHIBufferHandle> pBuffers = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_ParticleBuffer) };
                 RHI_PSO_UpdateDescriptorSet_Buffers(m_ComputePso, 0, 0, &pBuffers);
                 
