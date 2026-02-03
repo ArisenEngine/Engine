@@ -16,7 +16,7 @@ namespace ArisenEngine::Testing
         RHI_GPUProgramHandle m_MeshProgram = 0;
         RHI_GPUProgramHandle m_FragProgram = 0;
 
-        RHI_GPUProgramHandle CreateProgram(const std::wstring& shaderName, RHI::EShaderStage stageFlag, const char* entryPoint)
+        RHI_GPUProgramHandle CreateProgram(const std::wstring& shaderName, RHI::EShaderStage stageFlag, const char* entryPoint, const Containers::Vector<String>& defines = {})
         {
             std::wstring envStr = GetShaderEnvString();
             
@@ -48,7 +48,7 @@ namespace ArisenEngine::Testing
             params.targetEnv = envStr;
             params.optimizeLevel = L"0";
             params.stage = stagePoint;
-            params.defines = {};
+            params.defines = defines;
             params.includes = {};
             params.output = std::nullopt;
             params.useDXLayout = true;
@@ -81,8 +81,14 @@ namespace ArisenEngine::Testing
             InitCommonResources();
             
             // Programs
-            m_MeshProgram = CreateProgram(L"MeshShaderTest", RHI::SHADER_STAGE_MESH_BIT_EXT, "MSMain");
-            m_FragProgram = CreateProgram(L"MeshShaderTest", RHI::SHADER_STAGE_FRAGMENT_BIT, "PSMain");
+            m_MeshProgram = CreateProgram(L"MeshShaderTest", RHI::SHADER_STAGE_MESH_BIT_EXT, "MSMain", { L"MESH_STAGE" });
+            m_FragProgram = CreateProgram(L"MeshShaderTest", RHI::SHADER_STAGE_FRAGMENT_BIT, "PSMain", { L"PIXEL_STAGE" });
+
+            if (m_MeshProgram == 0 || m_FragProgram == 0)
+            {
+                LOG_ERROR("MeshShaderTest: Shader compilation failed, skipping test setup.");
+                return false;
+            }
 
             CreateResources();
             CreatePipelines();
@@ -163,6 +169,7 @@ namespace ArisenEngine::Testing
             
             Containers::Vector<RHI::EFormat> colorFormats = { RHI::FORMAT_B8G8R8A8_SRGB };
             RHI_PSO_SetRenderingFormats(m_MeshPso, &colorFormats, RHI::FORMAT_UNDEFINED, RHI::FORMAT_UNDEFINED);
+            RHI_PSO_AddBlendAttachmentState_Simple(m_MeshPso, false, 0xF);
             
             m_MeshPipeline = RHI_PipelineManager_GetGraphicsPipeline(pm, m_MeshPso);
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i) {

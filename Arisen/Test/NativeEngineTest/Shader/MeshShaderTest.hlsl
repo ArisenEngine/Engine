@@ -18,6 +18,7 @@ struct MeshPayload {
 };
 
 // --- Mesh Shader ---
+#ifdef MESH_STAGE
 [NumThreads(128, 1, 1)]
 [OutputTopology("triangle")]
 void MSMain(
@@ -29,7 +30,7 @@ void MSMain(
     const uint numVertices = 64;
     const uint numTriangles = 62; // Simple strip/fan for a circle/sphere slice
 
-    SetMeshOutputs(numVertices, numTriangles);
+    SetMeshOutputCounts(numVertices, numTriangles);
 
     if (gtid < numVertices) {
         float angle = (float(gtid) / float(numVertices)) * 2.0 * 3.14159;
@@ -57,8 +58,11 @@ void MSMain(
         tris[gtid] = uint3(0, gtid + 1, gtid + 2);
     }
 }
+#endif
 
 // --- Pixel Shader ---
+#ifdef PIXEL_STAGE
 float4 PSMain(VertexOut input) : SV_Target {
     return float4(input.color, 1.0);
 }
+#endif
