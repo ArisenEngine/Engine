@@ -59,16 +59,7 @@ namespace ArisenEngine::RHI
         const UInt32 GetBlendStateCount() const override;  
         void* GetBlendAttachmentStates() override;
 
-        // Descriptor
-        void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
-            UInt32 descriptorCount, UInt32 shaderStageFlags, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos,
-             ImmutableSamplers* pImmutableSamplers = nullptr) override;
-        void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
-                                                   UInt32 descriptorCount, UInt32 shaderStageFlags,
-                                                   const Containers::Vector<RHIBufferHandle>&& bufferHandles) override;
-        void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
-                                                  UInt32 descriptorCount, UInt32 shaderStageFlags,
-                                                  const Containers::Vector<RHIImageViewHandle>&& bufferViews) override;
+        // Resource Binding (Auto-Layout compatible)
 
         void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos) override;
         void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIBufferHandle>&& bufferHandles) override;
@@ -77,7 +68,7 @@ namespace ArisenEngine::RHI
     private:
         
         void InternalAddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding,
-    EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags, ImmutableSamplers* pImmutableSamplers);
+    EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags);
         
         void InternalAddDescriptorUpdateInfo(UInt32 layoutIndex, UInt32 binding,EDescriptorType type,
             UInt32 descriptorCount, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos,

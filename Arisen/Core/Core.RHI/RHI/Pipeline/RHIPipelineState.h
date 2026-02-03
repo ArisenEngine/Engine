@@ -19,8 +19,6 @@
 
 namespace ArisenEngine::RHI
 {
-    using ImmutableSamplers = void;
-    class RHIShaderProgram;
     class RHIPipelineState
     {
         friend class RHIPipeline;
@@ -47,35 +45,7 @@ namespace ArisenEngine::RHI
         virtual UInt32 GetVertexBindingDescriptionCount() = 0;
         virtual void* GetVertexBindingDescriptions() = 0;
         virtual void ClearVertexBindingDescriptions() = 0;
-        /// 
-        /// @param layoutIndex descriptorSetLayout index
-        /// @param binding binding index in layout(set)
-        /// @param type descriptorType
-        /// @param descriptorCount  
-        /// @param shaderStageFlags 
-        /// @param imageInfos 
-        /// @param pImmutableSamplers 
-        virtual void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
-                                                   UInt32 descriptorCount, UInt32 shaderStageFlags, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos,
-                                                   ImmutableSamplers* pImmutableSamplers = nullptr) = 0;
-        /// 
-        /// @param layoutIndex descriptorSetLayout index
-        /// @param binding binding index in layout(set)
-        /// @param type descriptorType
-        /// @param descriptorCount  
-        /// @param shaderStageFlags 
-        virtual void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
-                                                   UInt32 descriptorCount, UInt32 shaderStageFlags,
-                                                   const Containers::Vector<RHIBufferHandle>&& bufferHandles) = 0;
-        /// 
-        /// @param layoutIndex descriptorSetLayout index
-        /// @param binding binding index in layout(set)
-        /// @param type descriptorType
-        /// @param descriptorCount  
-        /// @param shaderStageFlags 
-        virtual void AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
-                                                   UInt32 descriptorCount, UInt32 shaderStageFlags,
-                                                   const Containers::Vector<RHIImageViewHandle>&& texelBufferViews) = 0;
+
 
         // Resource Binding (Auto-Layout compatible)
         virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos) = 0;
