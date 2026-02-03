@@ -200,12 +200,6 @@ namespace ArisenEngine::Testing
             RHI_PSO_SetBindPoint(m_ComputePso, RHI::PIPELINE_BIND_POINT_COMPUTE);
             RHI_PSO_AddProgram(m_ComputePso, m_ComputeProgram);
             
-            Containers::Vector<RHI::RHIBufferHandle> pBuffers = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_ParticleBuffer) };
-            RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(m_ComputePso, 0, 0, RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, RHI::SHADER_STAGE_COMPUTE_BIT, &pBuffers);
-            
-            Containers::Vector<RHI::RHIBufferHandle> ubos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[0]) };
-            RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(m_ComputePso, 0, 1, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, RHI::SHADER_STAGE_COMPUTE_BIT, &ubos);
-
             RHI_PSO_BuildDescriptorSetLayout(m_ComputePso);
             
             m_ComputePipeline = RHI_PipelineManager_GetGraphicsPipeline(pm, m_ComputePso);
@@ -217,11 +211,6 @@ namespace ArisenEngine::Testing
             m_GraphicsPso = RHI_PipelineManager_CreatePSO(pm);
             RHI_PSO_AddProgram(m_GraphicsPso, m_VertProgram);
             RHI_PSO_AddProgram(m_GraphicsPso, m_FragProgram);
-            
-            RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(m_GraphicsPso, 0, 0, RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, RHI::SHADER_STAGE_VERTEX_BIT, &pBuffers);
-            
-            Containers::Vector<RHI::RHIBufferHandle> gUbos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[0]) };
-            RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(m_GraphicsPso, 0, 1, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, RHI::SHADER_STAGE_VERTEX_BIT, &gUbos);
             
             RHI_PSO_BuildDescriptorSetLayout(m_GraphicsPso);
             RHI_PSO_SetPrimitiveState(m_GraphicsPso, RHI::PRIMITIVE_TOPOLOGY_POINT_LIST, false);

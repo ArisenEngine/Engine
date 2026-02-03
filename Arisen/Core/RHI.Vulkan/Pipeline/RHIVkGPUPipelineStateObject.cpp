@@ -65,8 +65,7 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddProgram(RHIShaderProgram
             binding.Binding,
             binding.DescriptorType,
             binding.Count,
-            binding.StageFlags,
-            nullptr // No immutable samplers from reflection (simplification)
+            binding.StageFlags
         );
     }
 
@@ -362,48 +361,14 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::ClearDescriptorSetLayouts()
     m_DescriptorSetLayouts.clear();
 }
 
-void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
-            UInt32 descriptorCount, UInt32 shaderStageFlags, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos,
-             ImmutableSamplers* pImmutableSamplers)
-{
-    ASSERT(descriptorCount == imageInfos.size());
-    
-    InternalAddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, pImmutableSamplers);
-    InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, descriptorCount, std::move(imageInfos),
-        {}, {});
-}
 
-// Update method signature for RHIBufferHandle
-void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(
-UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
-                                               UInt32 descriptorCount, UInt32 shaderStageFlags,
-                                               const Containers::Vector<RHIBufferHandle>&& bufferHandles)
-{
-
-    ASSERT(descriptorCount == bufferHandles.size());
-    InternalAddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, nullptr);
-    InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, descriptorCount, {},
-      std::move(bufferHandles), {});
-}
-
-// Update method signature for RHIImageViewHandle
-void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddDescriptorSetLayoutBinding(
-UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
-                                              UInt32 descriptorCount, UInt32 shaderStageFlags,
-                                              const Containers::Vector<RHIImageViewHandle>&& bufferViews)
-{
-    ASSERT(descriptorCount == bufferViews.size());
-    InternalAddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, nullptr);
-    InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, descriptorCount, {},
-       {}, std::move(bufferViews));
-}
 
 void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::InternalAddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding,
-    EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags, ImmutableSamplers* pImmutableSamplers)
+    EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags)
 {
     auto descriptorSetLayoutBinding = DescriptorSetLayoutBinding(binding,
         static_cast<VkDescriptorType>(type), descriptorCount, shaderStageFlags,
-        static_cast<const VkSampler*>(pImmutableSamplers));
+        nullptr);
     if (m_DescriptorSetLayoutBindings.contains(layoutIndex))
     {
         auto& bindings = m_DescriptorSetLayoutBindings[layoutIndex];

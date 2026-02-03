@@ -70,19 +70,7 @@ extern "C" ENGINE_DLL void RHI_PSO_ClearDescriptorSetLayoutBindings(RHI_PSOHandl
     s->ClearDescriptorSetLayoutBindings();
 }
 
-extern "C" ENGINE_DLL void RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, RHI::EDescriptorType type, unsigned int descriptorCount, unsigned int shaderStageFlags, Containers::Vector<RHI::RHIBufferHandle>* buffers)
-{
-    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
-    if (s == nullptr || buffers == nullptr) return;
-    s->AddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, std::move(*buffers));
-}
 
-extern "C" ENGINE_DLL void RHI_PSO_AddDescriptorSetLayoutBinding_Images(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, RHI::EDescriptorType type, unsigned int descriptorCount, unsigned int shaderStageFlags, Containers::Vector<RHI::RHIDescriptorImageInfo>* images)
-{
-    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
-    if (s == nullptr || images == nullptr) return;
-    s->AddDescriptorSetLayoutBinding(layoutIndex, binding, type, descriptorCount, shaderStageFlags, std::move(*images));
-}
 
 extern "C" ENGINE_DLL void RHI_PSO_UpdateDescriptorSet_Buffers(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, Containers::Vector<RHI::RHIBufferHandle>* buffers)
 {
