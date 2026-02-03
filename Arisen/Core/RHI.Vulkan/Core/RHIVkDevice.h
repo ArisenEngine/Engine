@@ -149,7 +149,7 @@ namespace ArisenEngine::RHI
         bool AllocBuffer(RHIBufferHandle handle, RHIBufferDescriptor&& desc) override;
         bool AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits) override;
         void ReleaseBuffer(RHIBufferHandle handle) override;
-        void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt32 offset) override;
+        void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0) override;
         UInt64 GetBufferSize(RHIBufferHandle handle) override;
         UInt64 GetBufferOffset(RHIBufferHandle handle) override;
         UInt64 GetBufferRange(RHIBufferHandle handle) override;

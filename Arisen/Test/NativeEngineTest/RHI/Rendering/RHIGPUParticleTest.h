@@ -142,7 +142,7 @@ namespace ArisenEngine::Testing
                 p.position = glm::vec4((rand() % 1000 - 500) / 100.0f, (rand() % 1000 - 500) / 100.0f, (rand() % 1000 - 500) / 100.0f, 1.0f);
                 p.velocity = glm::vec4((rand() % 100 - 50) / 100.0f, (rand() % 100 - 50) / 100.0f, (rand() % 100 - 50) / 100.0f, 0.0f);
             }
-            RHI_Buffer_MemoryCopy(m_Device, m_ParticleBuffer, particles.data(), pDesc.size);
+            RHI_Buffer_MemoryCopy(m_Device, m_ParticleBuffer, particles.data(), pDesc.size, 0);
 
             // UBO
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
@@ -224,7 +224,7 @@ namespace ArisenEngine::Testing
             float height = (float)HAL::GetWindowHeight(m_WindowId);
             ubo.projection = GetProjectionMatrix(width / height);
             ubo.mipmapBias = 0.0f;
-            RHI_Buffer_MemoryCopy(m_Device, m_UboBuffer[GetCurrentFrameIndex()], &ubo, sizeof(UniformBufferObject));
+            RHI_Buffer_MemoryCopy(m_Device, m_UboBuffer[GetCurrentFrameIndex()], &ubo, sizeof(UniformBufferObject), 0);
         }
 
         void RecordAndSubmit()

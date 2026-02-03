@@ -57,7 +57,7 @@ namespace ArisenEngine::Testing
                 0, nullptr, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT
             };
             auto stagingBuffer = RHI_Device_CreateBuffer(m_Device, &tsb, "Texture Staging Buffer");
-            RHI_Buffer_MemoryCopy(m_Device, stagingBuffer, data, 0);
+            RHI_Buffer_MemoryCopy(m_Device, stagingBuffer, data, (UInt64)width * height * 4, 0);
 
             auto cmdPool = RHI_Device_CreateCommandBufferPool(m_Device);
             auto cmd = RHI_Device_GetCommandBuffer(m_Device, cmdPool, 0);
@@ -359,7 +359,7 @@ namespace ArisenEngine::Testing
         vsb.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
         
         auto vStaging = RHI_Device_CreateBuffer(m_Device, &vsb, "GLTF Vertex Staging");
-        RHI_Buffer_MemoryCopy(m_Device, vStaging, vertices.data(), 0);
+        RHI_Buffer_MemoryCopy(m_Device, vStaging, vertices.data(), vbDesc.size, 0);
 
         RHI::RHIBufferDescriptor isb{};
         isb.createFlagBits = 0;
@@ -371,7 +371,7 @@ namespace ArisenEngine::Testing
         isb.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
         
         auto iStaging = RHI_Device_CreateBuffer(m_Device, &isb, "GLTF Index Staging");
-        RHI_Buffer_MemoryCopy(m_Device, iStaging, indices.data(), 0);
+        RHI_Buffer_MemoryCopy(m_Device, iStaging, indices.data(), ibDesc.size, 0);
 
         auto cmdPool = RHI_Device_CreateCommandBufferPool(m_Device);
         auto cmd = RHI_Device_GetCommandBuffer(m_Device, cmdPool, 0);

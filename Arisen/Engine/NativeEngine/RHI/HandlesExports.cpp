@@ -31,12 +31,12 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseBuffer(RHI_DeviceHandle device, RHI
 // Internalized or deprecated
 
 
-extern "C" ENGINE_DLL void RHI_Buffer_MemoryCopy(RHI_DeviceHandle device, RHI_BufferHandle buffer, const void* src, unsigned int offset)
+extern "C" ENGINE_DLL void RHI_Buffer_MemoryCopy(RHI_DeviceHandle device, RHI_BufferHandle buffer, const void* src, unsigned long long size, unsigned long long offset)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr || buffer == 0 || src == nullptr) return;
     auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
-    dev->BufferMemoryCopy(h, src, offset);
+    dev->BufferMemoryCopy(h, src, size, offset);
 }
 
 extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Size(RHI_DeviceHandle device, RHI_BufferHandle buffer)
