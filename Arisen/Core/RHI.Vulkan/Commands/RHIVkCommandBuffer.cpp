@@ -564,6 +564,19 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::Dispatch(UInt32 groupCountX, UInt32 
     vkCmdDispatch(m_VkCommandBuffer, groupCountX, groupCountY, groupCountZ);
 }
 
+void ArisenEngine::RHI::RHIVkCommandBuffer::DrawMeshTasks(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ)
+{
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
+    if (vkDevice->vkCmdDrawMeshTasksEXT)
+    {
+        vkDevice->vkCmdDrawMeshTasksEXT(m_VkCommandBuffer, groupCountX, groupCountY, groupCountZ);
+    }
+    else
+    {
+        LOG_ERROR("[RHIVkCommandBuffer::DrawMeshTasks]: vkCmdDrawMeshTasksEXT not found!");
+    }
+}
+
 void ArisenEngine::RHI::RHIVkCommandBuffer::BindVertexBuffers(RHIBufferHandle buffer, UInt64 offset)
 {
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());

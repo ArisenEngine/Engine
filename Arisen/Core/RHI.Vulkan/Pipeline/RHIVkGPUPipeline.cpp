@@ -177,8 +177,19 @@ void ArisenEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInfo.stageCount = static_cast<uint32_t>(m_PipelineStateObject->GetStageCount());
         pipelineInfo.pStages = static_cast<const VkPipelineShaderStageCreateInfo*>(stages);
-        pipelineInfo.pVertexInputState = &vertexInputInfo;
-        pipelineInfo.pInputAssemblyState = &inputAssemblyInfo;
+        
+        auto* vkPSO = static_cast<RHIVkGPUPipelineStateObject*>(m_PipelineStateObject);
+        if (vkPSO->IsMeshPipeline())
+        {
+            pipelineInfo.pVertexInputState = nullptr;
+            pipelineInfo.pInputAssemblyState = nullptr;
+        }
+        else
+        {
+            pipelineInfo.pVertexInputState = &vertexInputInfo;
+            pipelineInfo.pInputAssemblyState = &inputAssemblyInfo;
+        }
+        
         pipelineInfo.pViewportState = &viewportStateInfo;
         pipelineInfo.pRasterizationState = &rasterizerInfo;
         pipelineInfo.pMultisampleState = &multipleSampleInfo;
@@ -188,7 +199,6 @@ void ArisenEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex
         pipelineInfo.layout = m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight];
         
         // Handle Dynamic Rendering vs RenderPass
-        auto* vkPSO = static_cast<RHIVkGPUPipelineStateObject*>(m_PipelineStateObject);
         VkPipelineRenderingCreateInfoKHR renderingInfo {};
 
         if (subPass == nullptr || vkPSO->IsDynamicRendering())

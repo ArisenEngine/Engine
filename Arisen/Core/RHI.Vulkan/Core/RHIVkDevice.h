@@ -235,6 +235,7 @@ namespace ArisenEngine::RHI
         PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR = nullptr;
         PFN_vkCmdEndRenderingKHR vkCmdEndRenderingKHR = nullptr;
         PFN_vkCmdPipelineBarrier2KHR vkCmdPipelineBarrier2KHR = nullptr;
+        PFN_vkCmdDrawMeshTasksEXT vkCmdDrawMeshTasksEXT = nullptr;
 
     private:
         // Internal low-level destruction (Vulkan/Memory only, via Registry)
