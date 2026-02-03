@@ -8,6 +8,7 @@
 #include "RHI/Unit/RHISyncTest.h"
 #include "RHI/Unit/RHIBindlessTest.h"
 #include "RHI/Unit/RHIMultiThreadedTest.h"
+#include "RHI/Rendering/RHIMeshShaderTest.h"
 #include "../../Engine/NativeEngine/Core/EngineInit.h"
 #include <windows.h>
 #include <vector>
@@ -36,7 +37,8 @@ int main(int argc, char** argv)
     TestRunner::RegisterTest<RHISyncTest>();
     TestRunner::RegisterTest<RHIMultiThreadedTest>();
     // TestRunner::RegisterTest<RHIBasicRenderingTest>();
-    TestRunner::RegisterTest<RHIGPUParticleTest>();
+    // TestRunner::RegisterTest<RHIGPUParticleTest>();
+    TestRunner::RegisterTest<RHIMeshShaderTest>();
     
     // Parse simple command line for filtering (lpCmdLine for WinMain)
     std::string cmdLine = GetCommandLineA();
