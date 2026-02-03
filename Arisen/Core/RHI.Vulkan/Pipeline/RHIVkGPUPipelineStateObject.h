@@ -31,6 +31,8 @@ namespace ArisenEngine::RHI
 
         void Clear() override;
 
+        bool IsMeshPipeline() const override;
+
         void* GetStageCreateInfo() override
         {
             return m_PipelineStageCreateInfos.data();

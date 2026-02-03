@@ -65,21 +65,14 @@ Target: Build a **Stateless**, **Handle-based**, **Highly Parallel**, and **C# I
 ---
 *Last Updated: 2026-01-27*
 
-🚀 第一阶段：基础设施自动化与并行验证 (最高优先级)
-在引入新 Shader Stage 之前，先要把现有的“地基”打稳，让后续开发更丝滑。
 
-[Task] SPIRV-Reflect 自动化闭环
-目前 PSO 已能自动提取布局，但需补全对更多 Resource Type（如 Storage Image, Input Attachment）及新阶段（Geometry/Tess/Mesh）的支持。
-目标：彻底摆脱手动在 C++ 里写 AddDescriptorSetLayoutBinding。
-[Task] 多线程录制验证 (Multi-threaded Recording Test)
-编写一个专门的测试用例，模拟 4-8 个线程并行录制不同的物体指令，验证 TLS Command Pool 的正确性。
 🎨 第二阶段：现代管线推进 (高优先级)
 Mesh Shader 是未来的趋势，也是你最关心的现代特性。
 
-[Task] Mesh Shader 核心支持
-在 RHIVkInstance 中开启 VK_EXT_mesh_shader 特性。
-更新 PSO 以兼容 Task Shader 和 Mesh Shader 阶段。
-学习点：理解如何跳过 Vertex Buffer，直接在 Mesh Shader 里生成几何数据。
+[x] Mesh Shader 核心支持
+[x] 在 RHIVkInstance 中开启 VK_EXT_mesh_shader 特性。
+[x] 更新 PSO 以兼容 Task Shader 和 Mesh Shader 阶段。
+[x] 学习点：理解如何跳过 Vertex Buffer，直接在 Mesh Shader 里生成几何数据。
 📚 第三阶段：传统管线补完 (中优先级 - 学习导向)
 这一阶段主要满足你对经典管线的好奇。
 

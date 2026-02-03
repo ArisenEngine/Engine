@@ -46,6 +46,7 @@ public:
                    UInt32 vertexOffset, UInt32 firstInstance,
                    UInt32 firstBinding) override;
   void Dispatch(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ) override;
+  void DrawMeshTasks(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ) override;
   void BindVertexBuffers(RHIBufferHandle buffers, UInt64 offset) override;
   void BindIndexBuffer(RHIBufferHandle indexBuffer, UInt64 offset,
                        EIndexType type) override;

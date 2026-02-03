@@ -147,6 +147,18 @@ const ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkGPUPipelineStateObject::GetHa
     return hash;
 }
 
+bool ArisenEngine::RHI::RHIVkGPUPipelineStateObject::IsMeshPipeline() const
+{
+    for (const auto& stage : m_PipelineStageCreateInfos)
+    {
+        if (stage.stage == VK_SHADER_STAGE_MESH_BIT_EXT || stage.stage == VK_SHADER_STAGE_TASK_BIT_EXT)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::Clear()
 {
     ClearAllPrograms();

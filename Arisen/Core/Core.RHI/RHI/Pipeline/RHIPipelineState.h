@@ -64,6 +64,8 @@ namespace ArisenEngine::RHI
         virtual const Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, RHIDescriptorUpdateInfo>>&
         GetDescriptorUpdateInfos(UInt32 layoutIndex) const = 0;
 
+        virtual bool IsMeshPipeline() const = 0;
+
     public:
 
         void ClearDynamicPipelineStates() { m_DynamicPipelineStates.clear(); }

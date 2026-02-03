@@ -600,9 +600,15 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     descriptorIndexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
     descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
 
+    VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures{};
+    meshShaderFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT;
+    meshShaderFeatures.meshShader = VK_TRUE;
+    meshShaderFeatures.taskShader = VK_TRUE;
+
     timelineFeatures.pNext = &sync2Features;
     sync2Features.pNext = &dynamicRenderingFeatures;
     dynamicRenderingFeatures.pNext = &descriptorIndexingFeatures;
+    descriptorIndexingFeatures.pNext = &meshShaderFeatures;
     
     // Device Create Info
     VkDeviceCreateInfo createInfo{};
