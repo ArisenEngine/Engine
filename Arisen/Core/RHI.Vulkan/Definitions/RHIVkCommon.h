@@ -33,6 +33,7 @@ namespace ArisenEngine::RHI
         VkQueueFamilyIndices() = default;
         std::optional<uint32_t> graphicsFamily;
         std::optional<uint32_t> presentFamily;
+        std::optional<uint32_t> computeFamily;
 
         bool IsComplete() const
         {

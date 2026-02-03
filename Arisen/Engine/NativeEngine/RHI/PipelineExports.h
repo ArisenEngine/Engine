@@ -19,6 +19,7 @@ extern "C" ENGINE_DLL void RHI_PSO_AddDescriptorSetLayoutBinding_Images(RHI_PSOH
 extern "C" ENGINE_DLL void RHI_PSO_UpdateDescriptorSet_Buffers(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIBufferHandle>* buffers);
 extern "C" ENGINE_DLL void RHI_PSO_UpdateDescriptorSet_Images(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIDescriptorImageInfo>* images);
 extern "C" ENGINE_DLL void RHI_PSO_BuildDescriptorSetLayout(RHI_PSOHandle pso);
+extern "C" ENGINE_DLL void RHI_PSO_SetBindPoint(RHI_PSOHandle pso, ArisenEngine::RHI::EPipelineBindPoint bindPoint);
 extern "C" ENGINE_DLL void RHI_PSO_AddDynamicState(RHI_PSOHandle pso, ArisenEngine::RHI::EDynamicPipelineState state);
 extern "C" ENGINE_DLL void RHI_PSO_SetPrimitiveState(RHI_PSOHandle pso, ArisenEngine::RHI::EPrimitiveTopology topology, bool primitiveRestart);
 extern "C" ENGINE_DLL void RHI_PSO_SetDepthClampEnable(RHI_PSOHandle pso, bool enable);
@@ -37,6 +38,7 @@ extern "C" ENGINE_DLL void RHI_PSO_SetDepthStencilState(RHI_PSOHandle pso, const
 extern "C" ENGINE_DLL void RHI_PSO_SetRenderingFormats(RHI_PSOHandle pso, ArisenEngine::Containers::Vector<ArisenEngine::RHI::EFormat>* colorFormats, ArisenEngine::RHI::EFormat depthFormat, ArisenEngine::RHI::EFormat stencilFormat);
 extern "C" ENGINE_DLL RHI_PipelineHandle RHI_PipelineManager_GetGraphicsPipeline(RHI_PipelineManagerHandle pm, RHI_PSOHandle pso);
 extern "C" ENGINE_DLL void RHI_Pipeline_AllocGraphics(RHI_DeviceHandle device, RHI_PipelineHandle pipeline, unsigned int frameIndex, RHI_SubpassHandle subpass);
+extern "C" ENGINE_DLL void RHI_Pipeline_AllocCompute(RHI_DeviceHandle device, RHI_PipelineHandle pipeline, unsigned int frameIndex);
 
 // Moved to HandlesExports: CreateRenderPass, ReleaseRenderPass
 extern "C" ENGINE_DLL void RHI_RenderPass_Free(RHI_DeviceHandle device, RHI_RenderPassHandle rp, unsigned int frameIndex);

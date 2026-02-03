@@ -221,13 +221,45 @@ void ArisenEngine::RHI::RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex
     }
 }
 
+void ArisenEngine::RHI::RHIVkGPUPipeline::AllocComputePipeline(UInt32 frameIndex)
+{
+    FreePipeline(frameIndex);
+    FreePipelineLayout(frameIndex);
+
+    auto* vkPso = static_cast<RHIVkGPUPipelineStateObject*>(m_PipelineStateObject);
+    
+    // Create Layout
+    VkPipelineLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    layoutInfo.setLayoutCount = vkPso->DescriptorSetLayoutCount();
+    layoutInfo.pSetLayouts = static_cast<const VkDescriptorSetLayout*>(vkPso->GetDescriptorSetLayouts());
+    layoutInfo.pushConstantRangeCount = static_cast<uint32_t>(m_PushConstantRanges.size());
+    layoutInfo.pPushConstantRanges = m_PushConstantRanges.data();
+
+    if (vkCreatePipelineLayout(m_VkDevice, &layoutInfo, nullptr, &m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS) {
+        LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocComputePipeline]: failed to create pipeline layout!");
+    }
+
+    VkComputePipelineCreateInfo pipelineInfo{};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+    pipelineInfo.layout = m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight];
+    
+    // Compute stage is in m_PipelineStageCreateInfos[0]
+    if (vkPso->m_PipelineStageCreateInfos.empty())
+    {
+        LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocComputePipeline]: No shader stages found in PSO!");
+    }
+    pipelineInfo.stage = vkPso->m_PipelineStageCreateInfos[0];
+
+    if (vkCreateComputePipelines(m_VkDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocComputePipeline]: failed to create compute pipeline!");
+    }
+}
+
 const ArisenEngine::RHI::EPipelineBindPoint ArisenEngine::RHI::RHIVkGPUPipeline::GetBindPoint() const
 {
-    if (m_SubPass == nullptr)
-    {
-        return PIPELINE_BIND_POINT_GRAPHICS;
-    }
-    return m_SubPass->GetBindPoint();
+    return m_PipelineStateObject->GetBindPoint();
 }
 
 void ArisenEngine::RHI::RHIVkGPUPipeline::FreePipelineLayout(UInt32 frameIndex)

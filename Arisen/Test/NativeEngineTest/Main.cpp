@@ -4,6 +4,7 @@
 
 #include "Framework/TestRunner.h"
 #include "RHI/Rendering/RHIBasicRenderingTest.h"
+#include "RHI/Rendering/RHIGPUParticleTest.h"
 #include "RHI/Unit/RHISyncTest.h"
 #include "RHI/Unit/RHIBindlessTest.h"
 #include "../../Engine/NativeEngine/Core/EngineInit.h"
@@ -32,7 +33,8 @@ int main(int argc, char** argv)
     // Register Tests
     TestRunner::RegisterTest<RHIBindlessTest>();
     TestRunner::RegisterTest<RHISyncTest>();
-    TestRunner::RegisterTest<RHIBasicRenderingTest>();
+    // TestRunner::RegisterTest<RHIBasicRenderingTest>();
+    TestRunner::RegisterTest<RHIGPUParticleTest>();
     
     // Parse simple command line for filtering (lpCmdLine for WinMain)
     std::string cmdLine = GetCommandLineA();

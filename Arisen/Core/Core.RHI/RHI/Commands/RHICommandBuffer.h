@@ -148,6 +148,7 @@ namespace ArisenEngine::RHI
         virtual void BindPipeline(UInt32 frameIndex, RHIPipelineHandle pipeline) = 0;
         virtual void Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding) = 0;
         virtual void DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 firstIndex, UInt32 vertexOffset, UInt32 firstInstance,  UInt32 firstBinding) = 0;
+        virtual void Dispatch(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ) = 0;
         virtual void BindVertexBuffers(RHIBufferHandle buffer, UInt64 offset) = 0;
         virtual void BindIndexBuffer(RHIBufferHandle indexBuffer, UInt64 offset, EIndexType type) = 0;
         

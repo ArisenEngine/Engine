@@ -117,6 +117,13 @@ extern "C" ENGINE_DLL void RHI_Cmd_DrawIndexed(RHI_CommandBufferHandle cmd, unsi
     c->DrawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance, firstBinding);
 }
 
+extern "C" ENGINE_DLL void RHI_Cmd_Dispatch(RHI_CommandBufferHandle cmd, unsigned int groupCountX, unsigned int groupCountY, unsigned int groupCountZ)
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c == nullptr) return;
+    c->Dispatch(groupCountX, groupCountY, groupCountZ);
+}
+
 extern "C" ENGINE_DLL void RHI_Cmd_BindPipeline(RHI_CommandBufferHandle cmd, unsigned int frameIndex, RHI_PipelineHandle pipeline)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
@@ -166,6 +173,15 @@ extern "C" ENGINE_DLL void RHI_Cmd_PipelineBarrier_Image(RHI_CommandBufferHandle
     Containers::Vector<RHI::RHIMemoryBarrier> none1; none1.resize(0);
     Containers::Vector<RHI::RHIBufferMemoryBarrier> none2; none2.resize(0);
     c->PipelineBarrier(static_cast<RHI::EPipelineStageFlag>(srcStage), static_cast<RHI::EPipelineStageFlag>(dstStage), dependency, std::move(none1), std::move(*imageBarriers), std::move(none2));
+}
+
+extern "C" ENGINE_DLL void RHI_Cmd_PipelineBarrier_Buffer(RHI_CommandBufferHandle cmd, unsigned int srcStage, unsigned int dstStage, unsigned int dependency, Containers::Vector<RHI::RHIBufferMemoryBarrier>* bufferBarriers)
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c == nullptr || bufferBarriers == nullptr) return;
+    Containers::Vector<RHI::RHIMemoryBarrier> none1; none1.resize(0);
+    Containers::Vector<RHI::RHIImageMemoryBarrier> none2; none2.resize(0);
+    c->PipelineBarrier(static_cast<RHI::EPipelineStageFlag>(srcStage), static_cast<RHI::EPipelineStageFlag>(dstStage), dependency, std::move(none1), std::move(none2), std::move(*bufferBarriers));
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_WaitSemaphore(RHI_CommandBufferHandle cmd, RHI_SemaphoreHandle semaphore, unsigned int stageFlags)
