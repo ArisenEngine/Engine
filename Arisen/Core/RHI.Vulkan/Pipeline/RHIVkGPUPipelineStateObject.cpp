@@ -69,6 +69,30 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddProgram(RHIShaderProgram
             nullptr // No immutable samplers from reflection (simplification)
         );
     }
+
+    // Merge Push Constants
+    for (const auto& pc : reflectionData.PushConstants)
+    {
+        bool found = false;
+        for (auto& existingPC : m_PushConstantRanges)
+        {
+            if (existingPC.offset == pc.Offset && existingPC.size == pc.Size)
+            {
+                existingPC.stageFlags |= pc.StageFlags;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            VkPushConstantRange range{};
+            range.offset = pc.Offset;
+            range.size = pc.Size;
+            range.stageFlags = pc.StageFlags;
+            m_PushConstantRanges.emplace_back(range);
+        }
+    }
 }
 
 void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::ClearAllPrograms()
@@ -133,6 +157,7 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::Clear()
     ClearDynamicPipelineStates();
     ClearDescriptorSetLayoutBindings();
     ClearDescriptorSetLayouts();
+    m_PushConstantRanges.clear();
 }
 
 void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddVertexBindingDescription(UInt32 binding, UInt32 stride,

@@ -47,11 +47,6 @@ namespace ArisenEngine::RHI
         RHIPipelineState* m_PipelineStateObject;
         Containers::Vector<VkPipeline> m_VkGraphicPipelines;
         Containers::Vector<VkPipelineLayout> m_VkGraphicsPipelineLayouts;
-        Containers::Vector<VkPushConstantRange> m_PushConstantRanges { };
 
     };
 }
-
-
-
-
