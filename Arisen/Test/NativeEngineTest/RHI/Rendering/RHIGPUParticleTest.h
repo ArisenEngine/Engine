@@ -5,8 +5,8 @@
 namespace ArisenEngine::Testing
 {
     struct Particle {
-        glm::vec4 position;
-        glm::vec4 velocity;
+        glm::vec4 position; // xyz, w = life
+        glm::vec4 velocity; // xyz, w = maxLife
     };
 
     class RHIGPUParticleTest : public RHIRenderingTestBase
@@ -26,7 +26,7 @@ namespace ArisenEngine::Testing
         
         RHI_GPUProgramHandle m_ComputeProgram = 0;
         
-        const UInt32 m_ParticleCount = 10000;
+        const UInt32 m_ParticleCount = 1000000;
 
         RHI_GPUProgramHandle CreateProgram(const std::wstring& shaderName, RHI::EShaderStage stageFlag, const char* entryPoint)
         {
@@ -139,16 +139,36 @@ namespace ArisenEngine::Testing
             // Init particles
             Containers::Vector<Particle> particles(m_ParticleCount);
             for (auto& p : particles) {
-                p.position = glm::vec4((rand() % 1000 - 500) / 100.0f, (rand() % 1000 - 500) / 100.0f, (rand() % 1000 - 500) / 100.0f, 1.0f);
-                p.velocity = glm::vec4((rand() % 100 - 50) / 100.0f, (rand() % 100 - 50) / 100.0f, (rand() % 100 - 50) / 100.0f, 0.0f);
+                p.position = glm::vec4(
+                    (rand() % 200 - 100) / 100.0f,  // x: -1 to 1
+                    (rand() % 100) / 100.0f - 2.0f, // y: starts low
+                    (rand() % 200 - 100) / 100.0f,  // z: -1 to 1
+                    (rand() % 1000) / 100.0f        // life
+                );
+                p.velocity = glm::vec4(
+                    (rand() % 40 - 20) / 100.0f,    // vx
+                    (rand() % 100 + 50) / 100.0f,   // vy: upward
+                    (rand() % 40 - 20) / 100.0f,    // vz
+                    p.position.w                    // maxLife = initial life
+                );
             }
             RHI_Buffer_MemoryCopy(m_Device, m_ParticleBuffer, particles.data(), pDesc.size, 0);
 
             // UBO
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
+                struct FireUBO {
+                    glm::mat4 model;
+                    glm::mat4 view;
+                    glm::mat4 projection;
+                    float mipmapBias;
+                    float time;
+                    float deltaTime;
+                    float padding;
+                };
+
                 RHI::RHIBufferDescriptor ubDesc = {};
-                ubDesc.size = sizeof(UniformBufferObject);
+                ubDesc.size = sizeof(FireUBO);
                 ubDesc.usage = RHI::BUFFER_USAGE_UNIFORM_BUFFER_BIT;
                 ubDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
                 m_UboBuffer.push_back(RHI_Device_CreateBuffer(m_Device, &ubDesc, "UBO"));
@@ -160,8 +180,8 @@ namespace ArisenEngine::Testing
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
                 // Compute Pool Family
-                Containers::Vector<RHI::EDescriptorType> cTypes = { RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER };
-                Containers::Vector<UInt32> cCounts = { 128 };
+                Containers::Vector<RHI::EDescriptorType> cTypes = { RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER };
+                Containers::Vector<UInt32> cCounts = { 128, 128 };
                 m_ComputeDescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &cTypes, &cCounts, 128));
                 
                 // Graphics Pool Family
@@ -182,6 +202,10 @@ namespace ArisenEngine::Testing
             
             Containers::Vector<RHI::RHIBufferHandle> pBuffers = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_ParticleBuffer) };
             RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(m_ComputePso, 0, 0, RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, RHI::SHADER_STAGE_COMPUTE_BIT, &pBuffers);
+            
+            Containers::Vector<RHI::RHIBufferHandle> ubos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[0]) };
+            RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(m_ComputePso, 0, 1, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, RHI::SHADER_STAGE_COMPUTE_BIT, &ubos);
+
             RHI_PSO_BuildDescriptorSetLayout(m_ComputePso);
             
             m_ComputePipeline = RHI_PipelineManager_GetGraphicsPipeline(pm, m_ComputePso);
@@ -196,8 +220,8 @@ namespace ArisenEngine::Testing
             
             RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(m_GraphicsPso, 0, 0, RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, RHI::SHADER_STAGE_VERTEX_BIT, &pBuffers);
             
-            Containers::Vector<RHI::RHIBufferHandle> ubos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[0]) };
-            RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(m_GraphicsPso, 0, 1, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, RHI::SHADER_STAGE_VERTEX_BIT, &ubos);
+            Containers::Vector<RHI::RHIBufferHandle> gUbos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[0]) };
+            RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(m_GraphicsPso, 0, 1, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, RHI::SHADER_STAGE_VERTEX_BIT, &gUbos);
             
             RHI_PSO_BuildDescriptorSetLayout(m_GraphicsPso);
             RHI_PSO_SetPrimitiveState(m_GraphicsPso, RHI::PRIMITIVE_TOPOLOGY_POINT_LIST, false);
@@ -206,7 +230,11 @@ namespace ArisenEngine::Testing
             
             Containers::Vector<RHI::EFormat> colorFormats = { RHI::FORMAT_B8G8R8A8_SRGB };
             RHI_PSO_SetRenderingFormats(m_GraphicsPso, &colorFormats, RHI::FORMAT_UNDEFINED, RHI::FORMAT_UNDEFINED);
-            RHI_PSO_AddBlendAttachmentState_Simple(m_GraphicsPso, false, 0xF); // Color write mask 0xF (RGBA)
+            
+            // Enable Additive Blending
+            // Note: RHI_PSO_AddBlendAttachmentState_Simple is already there, but we might need a more specific one if available.
+            // For now, let's keep it simple or look for a more advanced one.
+            RHI_PSO_AddBlendAttachmentState_Simple(m_GraphicsPso, true, 0xF); 
 
             m_GraphicsPipeline = RHI_PipelineManager_GetGraphicsPipeline(pm, m_GraphicsPso);
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i) {
@@ -217,14 +245,32 @@ namespace ArisenEngine::Testing
         void UpdateUniformBuffer()
         {
             UpdateCamera((float)frameTime);
-            UniformBufferObject ubo{};
-            ubo.model = glm::mat4(1.0f);
-            ubo.view = GetViewMatrix();
             float width = (float)HAL::GetWindowWidth(m_WindowId);
             float height = (float)HAL::GetWindowHeight(m_WindowId);
-            ubo.projection = GetProjectionMatrix(width / height);
-            ubo.mipmapBias = 0.0f;
-            RHI_Buffer_MemoryCopy(m_Device, m_UboBuffer[GetCurrentFrameIndex()], &ubo, sizeof(UniformBufferObject), 0);
+            
+            static auto startTime = std::chrono::high_resolution_clock::now();
+            auto currentTime = std::chrono::high_resolution_clock::now();
+            float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+            
+            struct FireUBO {
+                glm::mat4 model;
+                glm::mat4 view;
+                glm::mat4 projection;
+                float mipmapBias;
+                float time;
+                float deltaTime;
+                float padding;
+            };
+            
+            FireUBO fireUbo;
+            fireUbo.model = glm::mat4(1.0f);
+            fireUbo.view = GetViewMatrix();
+            fireUbo.projection = GetProjectionMatrix(width / height);
+            fireUbo.mipmapBias = 0.0f;
+            fireUbo.time = time;
+            fireUbo.deltaTime = (float)frameTime;
+            
+            RHI_Buffer_MemoryCopy(m_Device, m_UboBuffer[GetCurrentFrameIndex()], &fireUbo, sizeof(FireUBO), 0);
         }
 
         void RecordAndSubmit()
@@ -238,6 +284,9 @@ namespace ArisenEngine::Testing
 
                 Containers::Vector<RHI::RHIBufferHandle> pBuffers = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_ParticleBuffer) };
                 RHI_PSO_UpdateDescriptorSet_Buffers(m_ComputePso, 0, 0, &pBuffers);
+                
+                Containers::Vector<RHI::RHIBufferHandle> ubos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[currentIndex]) };
+                RHI_PSO_UpdateDescriptorSet_Buffers(m_ComputePso, 0, 1, &ubos);
                 
                 UInt32 setIdx = RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, m_ComputeDescriptorPoolIds[currentIndex], 0, m_ComputePso);
                 RHI_DescriptorPool_UpdateDescriptorSet(m_DescriptorPool, m_ComputeDescriptorPoolIds[currentIndex], setIdx, m_ComputePso);
