@@ -40,9 +40,11 @@ struct PSInput {
 
 StructuredBuffer<Particle> ParticlesRead : register(t0, space0);
 
-float4x4 model;
-float4x4 view;
-float4x4 projection;
+cbuffer UBO : register(b1, space0) {
+    float4x4 model;
+    float4x4 view;
+    float4x4 projection;
+};
 
 VSOutput VSMain(VSInput input) {
     VSOutput output;
