@@ -105,7 +105,7 @@ namespace ArisenEngine::Testing
             0, nullptr, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT
         };
         auto stagingBuffer = RHI_Device_CreateBuffer(m_Device, &tsb, "Texture Staging Buffer");
-        RHI_Buffer_MemoryCopy(m_Device, stagingBuffer, data, 0);
+        RHI_Buffer_MemoryCopy(m_Device, stagingBuffer, data, imageSize, 0);
 
         auto cmd = RHI_Device_GetCommandBuffer(m_Device, m_CmdPool, 0);
         RHI_Cmd_Begin(cmd, 0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);

@@ -105,7 +105,7 @@ namespace ArisenEngine::RHI
         virtual void ReleaseBuffer(RHIBufferHandle handle) {}
         
     public:
-        virtual void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt32 offset) {}
+        virtual void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0) {}
         virtual UInt64 GetBufferSize(RHIBufferHandle handle) { return 0ULL; }
         virtual UInt64 GetBufferOffset(RHIBufferHandle handle) { return 0ULL; }
         virtual UInt64 GetBufferRange(RHIBufferHandle handle) { return 0ULL; }

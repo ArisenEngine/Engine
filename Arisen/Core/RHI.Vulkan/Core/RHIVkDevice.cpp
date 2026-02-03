@@ -333,7 +333,7 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseBuffer(RHIBufferHandle handle)
     }
 }
 
-void ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt32 offset)
+void ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset)
 {
     auto* buffer = m_BufferPool->Get(handle);
     if (!buffer || buffer->allocation == VK_NULL_HANDLE) return;
@@ -341,7 +341,7 @@ void ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopy(RHIBufferHandle handle, co
     void* mappedData;
     if (vmaMapMemory(m_MemoryAllocator->GetVmaAllocator(), buffer->allocation, &mappedData) == VK_SUCCESS)
     {
-        memcpy((uint8_t*)mappedData + offset, src, buffer->size);
+        memcpy((uint8_t*)mappedData + offset, src, size);
         vmaUnmapMemory(m_MemoryAllocator->GetVmaAllocator(), buffer->allocation);
     }
 }

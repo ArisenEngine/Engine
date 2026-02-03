@@ -281,7 +281,7 @@ namespace ArisenEngine::Testing
             float height = (float)HAL::GetWindowHeight(m_WindowId);
             ubo.projection = GetProjectionMatrix(width / height);
             ubo.mipmapBias = 0.0f; // Default No bias
-            RHI_Buffer_MemoryCopy(m_Device, m_UboBuffer[GetCurrentFrameIndex()], &ubo, 0);
+            RHI_Buffer_MemoryCopy(m_Device, m_UboBuffer[GetCurrentFrameIndex()], &ubo, sizeof(UniformBufferObject), 0);
         }
 
         void RecordAndSubmit()
