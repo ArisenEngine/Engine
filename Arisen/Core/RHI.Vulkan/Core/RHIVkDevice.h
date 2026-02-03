@@ -56,8 +56,8 @@ namespace ArisenEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkDevice)
         ~RHIVkDevice() noexcept override;
         void* GetHandle() const override { return m_VkDevice; }
-        RHIVkDevice(RHIInstance* instance, RHISurface* surface, VkQueue graphicQueue, VkQueue presentQueue,
-                    VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties, UInt32 graphicsFamilyIndex);
+        RHIVkDevice(RHIInstance* instance, RHISurface* surface, VkQueue graphicQueue, VkQueue presentQueue, VkQueue computeQueue,
+                    VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties, UInt32 graphicsFamilyIndex, UInt32 computeFamilyIndex);
 
         void DeviceWaitIdle() const override;
         void GraphicQueueWaitIdle() const override;
@@ -112,8 +112,10 @@ namespace ArisenEngine::RHI
         RHIVkFactory* m_Factory;
         VkQueue m_VkGraphicQueue;
         VkQueue m_VkPresentQueue;
+        VkQueue m_VkComputeQueue;
         VkDevice m_VkDevice;
         UInt32 m_GraphicsFamilyIndex;
+        UInt32 m_ComputeFamilyIndex;
         VkPhysicalDeviceMemoryProperties m_VkPhysicalDeviceMemoryProperties;
         std::mutex m_SubmitMutex;
 
@@ -122,6 +124,7 @@ namespace ArisenEngine::RHI
         std::unique_ptr<RHIResourceRegistry> m_ResourceRegistry;
         std::atomic<UInt32> m_CurrentFrameIndex{0};
         std::unique_ptr<RHIQueue> m_GraphicsQueue;
+        std::unique_ptr<RHIQueue> m_ComputeQueue;
         std::unique_ptr<FrameSyncTracker> m_FrameSync;
 
         // Specialized resource pools for handle-based architecture

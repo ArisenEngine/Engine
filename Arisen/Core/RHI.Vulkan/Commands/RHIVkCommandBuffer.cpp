@@ -559,6 +559,11 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::DrawIndexed(UInt32 indexCount, UInt3
     vkCmdDrawIndexed(m_VkCommandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
+void ArisenEngine::RHI::RHIVkCommandBuffer::Dispatch(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ)
+{
+    vkCmdDispatch(m_VkCommandBuffer, groupCountX, groupCountY, groupCountZ);
+}
+
 void ArisenEngine::RHI::RHIVkCommandBuffer::BindVertexBuffers(RHIBufferHandle buffer, UInt64 offset)
 {
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());

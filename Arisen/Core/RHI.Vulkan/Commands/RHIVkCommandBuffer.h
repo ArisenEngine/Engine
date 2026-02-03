@@ -45,6 +45,7 @@ public:
   void DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 firstIndex,
                    UInt32 vertexOffset, UInt32 firstInstance,
                    UInt32 firstBinding) override;
+  void Dispatch(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ) override;
   void BindVertexBuffers(RHIBufferHandle buffers, UInt64 offset) override;
   void BindIndexBuffer(RHIBufferHandle indexBuffer, UInt64 offset,
                        EIndexType type) override;

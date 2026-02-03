@@ -1,0 +1,356 @@
+#pragma once
+
+#include "../RHIRenderingTestBase.h"
+
+namespace ArisenEngine::Testing
+{
+    struct Particle {
+        glm::vec4 position;
+        glm::vec4 velocity;
+    };
+
+    class RHIGPUParticleTest : public RHIRenderingTestBase
+    {
+    private:
+        RHI_PSOHandle m_ComputePso = nullptr;
+        RHI_PipelineHandle m_ComputePipeline = 0;
+        
+        RHI_PSOHandle m_GraphicsPso = nullptr;
+        RHI_PipelineHandle m_GraphicsPipeline = 0;
+
+        RHI_BufferHandle m_ParticleBuffer = 0;
+        Containers::Vector<RHI_BufferHandle> m_UboBuffer;
+        
+        Containers::Vector<UInt32> m_ComputeDescriptorPoolIds;
+        Containers::Vector<UInt32> m_GraphicsDescriptorPoolIds;
+        
+        RHI_GPUProgramHandle m_ComputeProgram = 0;
+        
+        const UInt32 m_ParticleCount = 10000;
+
+        RHI_GPUProgramHandle CreateProgram(const std::wstring& shaderName, RHI::EShaderStage stageFlag, const char* entryPoint)
+        {
+            std::wstring envStr = GetShaderEnvString();
+            
+            namespace fs = std::filesystem;
+            wchar_t exePathW[MAX_PATH]{};
+            GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
+            auto exeDir = fs::path(exePathW).parent_path();
+            auto shaderPath = exeDir / L"Shader" / (shaderName + L".hlsl");
+            auto path = shaderPath.wstring();
+
+            RHI::EProgramStage stagePoint;
+            if (stageFlag == RHI::SHADER_STAGE_VERTEX_BIT) stagePoint = RHI::EProgramStage::Vertex;
+            else if (stageFlag == RHI::SHADER_STAGE_FRAGMENT_BIT) stagePoint = RHI::EProgramStage::Fragment;
+            else if (stageFlag == RHI::SHADER_STAGE_COMPUTE_BIT) stagePoint = RHI::EProgramStage::Compute;
+            else stagePoint = RHI::EProgramStage::Vertex;
+
+            HAL::ShaderCompileParams params;
+            params.input = path;
+            params.entry = String::StringToWString(entryPoint);
+            params.shaderModel = L"6_0";
+            params.target = L"-spirv";
+            params.targetEnv = envStr;
+            params.optimizeLevel = L"0";
+            params.stage = stagePoint;
+            params.defines = {};
+            params.includes = {};
+            params.output = std::nullopt;
+            params.useDXLayout = true;
+
+            HAL::ShaderCompilerOutput output;
+            if (!HAL::CompileShaderFromFile(std::move(params), output) || output.codePointer == nullptr || output.codeSize == 0)
+            {
+                LOG_ERROR((std::string("Shader compilation failed for ") + entryPoint + ": " + output.msgOut.c_str()).c_str());
+                return 0;
+            }
+
+            auto program = RHI_Device_CreateGPUProgram(m_Device);
+            {
+                std::string nameStr = String::WStringToString(path);
+                RHI::RHIShaderProgramDesc desc = { output.codeSize, output.codePointer, entryPoint, nameStr.c_str(), stageFlag };
+                RHI_Device_AttachProgramByteCode(m_Device, program, &desc);
+            }
+            if (output.codePointer) std::free(output.codePointer);
+            return program;
+        }
+
+    public:
+        const char* GetName() const override { return "GPUParticleTest"; }
+        TestCategory GetCategory() const override { return TestCategory::Rendering; }
+
+        bool SetupTest() override
+        {
+            RHIRenderingTestBase::SetupTest();
+
+            InitCommonResources();
+            
+            // Programs
+            m_ComputeProgram = CreateProgram(L"GPUParticle", RHI::SHADER_STAGE_COMPUTE_BIT, "CSMain");
+            m_VertProgram = CreateProgram(L"GPUParticle", RHI::SHADER_STAGE_VERTEX_BIT, "VSMain");
+            m_FragProgram = CreateProgram(L"GPUParticle", RHI::SHADER_STAGE_FRAGMENT_BIT, "PSMain");
+
+            CreateResources();
+            CreatePipelines();
+
+            return true;
+        }
+
+        void TeardownTest() override
+        {
+            if (m_ParticleBuffer) RHI_Device_ReleaseBuffer(m_Device, m_ParticleBuffer);
+            for (auto& ub : m_UboBuffer) if (ub) RHI_Device_ReleaseBuffer(m_Device, ub);
+            
+            if (m_ComputeProgram) RHI_Device_ReleaseGPUProgram(m_Device, m_ComputeProgram);
+            if (m_VertProgram) RHI_Device_ReleaseGPUProgram(m_Device, m_VertProgram);
+            if (m_FragProgram) RHI_Device_ReleaseGPUProgram(m_Device, m_FragProgram);
+
+            if (m_ComputePso) RHI_PSO_Destroy(m_ComputePso);
+            if (m_GraphicsPso) RHI_PSO_Destroy(m_GraphicsPso);
+
+            RHIRenderingTestBase::TeardownTest();
+        }
+
+    protected:
+        void RenderFrame() override
+        {
+            auto currentIndex = GetCurrentFrameIndex();
+            if (m_FrameTickets[currentIndex] > 0)
+            {
+                RHI_Device_WaitQueueTicket(m_Device, m_FrameTickets[currentIndex]);
+            }
+
+            UpdateUniformBuffer();
+            RecordAndSubmit();
+
+            NextFrame();
+        }
+
+    private:
+        void CreateResources()
+        {
+            // Particle Buffer
+            RHI::RHIBufferDescriptor pDesc = {};
+            pDesc.size = m_ParticleCount * sizeof(Particle);
+            pDesc.usage = RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI::BUFFER_USAGE_TRANSFER_DST_BIT;
+            pDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            m_ParticleBuffer = RHI_Device_CreateBuffer(m_Device, &pDesc, "ParticleBuffer");
+
+            // Init particles
+            Containers::Vector<Particle> particles(m_ParticleCount);
+            for (auto& p : particles) {
+                p.position = glm::vec4((rand() % 1000 - 500) / 100.0f, (rand() % 1000 - 500) / 100.0f, (rand() % 1000 - 500) / 100.0f, 1.0f);
+                p.velocity = glm::vec4((rand() % 100 - 50) / 100.0f, (rand() % 100 - 50) / 100.0f, (rand() % 100 - 50) / 100.0f, 0.0f);
+            }
+            RHI_Buffer_MemoryCopy(m_Device, m_ParticleBuffer, particles.data(), pDesc.size);
+
+            // UBO
+            for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
+            {
+                RHI::RHIBufferDescriptor ubDesc = {};
+                ubDesc.size = sizeof(UniformBufferObject);
+                ubDesc.usage = RHI::BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+                ubDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+                m_UboBuffer.push_back(RHI_Device_CreateBuffer(m_Device, &ubDesc, "UBO"));
+            }
+
+            // Descriptors
+            m_ComputeDescriptorPoolIds.clear();
+            m_GraphicsDescriptorPoolIds.clear();
+            for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
+            {
+                // Compute Pool Family
+                Containers::Vector<RHI::EDescriptorType> cTypes = { RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER };
+                Containers::Vector<UInt32> cCounts = { 1 };
+                m_ComputeDescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &cTypes, &cCounts, 1));
+                
+                // Graphics Pool Family
+                Containers::Vector<RHI::EDescriptorType> gTypes = { RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER };
+                Containers::Vector<UInt32> gCounts = { 1, 1 };
+                m_GraphicsDescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &gTypes, &gCounts, 1));
+            }
+        }
+
+        void CreatePipelines()
+        {
+            auto pm = RHI_Device_GetPipelineManager(m_Device);
+
+            // Compute Pipeline
+            m_ComputePso = RHI_PipelineManager_CreatePSO(pm);
+            RHI_PSO_SetBindPoint(m_ComputePso, RHI::PIPELINE_BIND_POINT_COMPUTE);
+            RHI_PSO_AddProgram(m_ComputePso, m_ComputeProgram);
+            
+            Containers::Vector<RHI::RHIBufferHandle> pBuffers = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_ParticleBuffer) };
+            RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(m_ComputePso, 0, 0, RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, RHI::SHADER_STAGE_COMPUTE_BIT, &pBuffers);
+            RHI_PSO_BuildDescriptorSetLayout(m_ComputePso);
+            
+            m_ComputePipeline = RHI_PipelineManager_GetGraphicsPipeline(pm, m_ComputePso);
+            for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i) {
+                RHI_Pipeline_AllocCompute(m_Device, m_ComputePipeline, i);
+            }
+
+            // Graphics Pipeline
+            m_GraphicsPso = RHI_PipelineManager_CreatePSO(pm);
+            RHI_PSO_AddProgram(m_GraphicsPso, m_VertProgram);
+            RHI_PSO_AddProgram(m_GraphicsPso, m_FragProgram);
+            
+            RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(m_GraphicsPso, 0, 0, RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, RHI::SHADER_STAGE_VERTEX_BIT, &pBuffers);
+            
+            Containers::Vector<RHI::RHIBufferHandle> ubos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[0]) };
+            RHI_PSO_AddDescriptorSetLayoutBinding_Buffers(m_GraphicsPso, 0, 1, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, RHI::SHADER_STAGE_VERTEX_BIT, &ubos);
+            
+            RHI_PSO_BuildDescriptorSetLayout(m_GraphicsPso);
+            RHI_PSO_SetPrimitiveState(m_GraphicsPso, RHI::PRIMITIVE_TOPOLOGY_POINT_LIST, false);
+            RHI_PSO_AddDynamicState(m_GraphicsPso, RHI::DYNAMIC_STATE_VIEWPORT);
+            RHI_PSO_AddDynamicState(m_GraphicsPso, RHI::DYNAMIC_STATE_SCISSOR);
+            
+            Containers::Vector<RHI::EFormat> colorFormats = { RHI::FORMAT_B8G8R8A8_SRGB };
+            RHI_PSO_SetRenderingFormats(m_GraphicsPso, &colorFormats, RHI::FORMAT_UNDEFINED, RHI::FORMAT_UNDEFINED);
+            RHI_PSO_AddBlendAttachmentState_Simple(m_GraphicsPso, false, 0xF); // Color write mask 0xF (RGBA)
+
+            m_GraphicsPipeline = RHI_PipelineManager_GetGraphicsPipeline(pm, m_GraphicsPso);
+            for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i) {
+                RHI_Pipeline_AllocGraphics(m_Device, m_GraphicsPipeline, i, nullptr); 
+            }
+        }
+
+        void UpdateUniformBuffer()
+        {
+            UpdateCamera((float)frameTime);
+            UniformBufferObject ubo{};
+            ubo.model = glm::mat4(1.0f);
+            ubo.view = GetViewMatrix();
+            float width = (float)HAL::GetWindowWidth(m_WindowId);
+            float height = (float)HAL::GetWindowHeight(m_WindowId);
+            ubo.projection = GetProjectionMatrix(width / height);
+            ubo.mipmapBias = 0.0f;
+            RHI_Buffer_MemoryCopy(m_Device, m_UboBuffer[GetCurrentFrameIndex()], &ubo, sizeof(UniformBufferObject));
+        }
+
+        void RecordAndSubmit()
+        {
+            auto currentIndex = GetCurrentFrameIndex();
+            
+            // Update Descriptors
+            {
+                Containers::Vector<RHI::RHIBufferHandle> pBuffers = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_ParticleBuffer) };
+                RHI_PSO_UpdateDescriptorSet_Buffers(m_ComputePso, 0, 0, &pBuffers);
+                
+                UInt32 setIdx = RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, m_ComputeDescriptorPoolIds[currentIndex], 0, m_ComputePso);
+                RHI_DescriptorPool_UpdateDescriptorSet(m_DescriptorPool, m_ComputeDescriptorPoolIds[currentIndex], setIdx, m_ComputePso);
+            }
+            {
+                Containers::Vector<RHI::RHIBufferHandle> pBuffers = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_ParticleBuffer) };
+                RHI_PSO_UpdateDescriptorSet_Buffers(m_GraphicsPso, 0, 0, &pBuffers);
+                
+                Containers::Vector<RHI::RHIBufferHandle> ubos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[currentIndex]) };
+                RHI_PSO_UpdateDescriptorSet_Buffers(m_GraphicsPso, 0, 1, &ubos);
+                
+                UInt32 setIdx = RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, m_GraphicsDescriptorPoolIds[currentIndex], 0, m_GraphicsPso);
+                RHI_DescriptorPool_UpdateDescriptorSet(m_DescriptorPool, m_GraphicsDescriptorPoolIds[currentIndex], setIdx, m_GraphicsPso);
+            }
+
+            auto cmd = RHI_Device_GetCommandBuffer(m_Device, m_CmdPool, currentIndex);
+
+            RHI_Cmd_Begin(cmd, currentIndex, 0);
+
+            // Compute Update
+            RHI_Cmd_BindPipeline(cmd, currentIndex, m_ComputePipeline);
+            RHI_Cmd_BindDescriptorSets_FromPool(cmd, currentIndex, RHI::PIPELINE_BIND_POINT_COMPUTE, 0, m_DescriptorPool, m_ComputeDescriptorPoolIds[currentIndex]);
+            RHI_Cmd_Dispatch(cmd, (m_ParticleCount + 255) / 256, 1, 1);
+
+            // Barrier: Compute Write -> Vertex Read
+            RHI::RHIBufferMemoryBarrier barrier = {};
+            barrier.buffer = *reinterpret_cast<RHI::RHIBufferHandle*>(&m_ParticleBuffer);
+            barrier.srcAccessMask = RHI::ACCESS_SHADER_WRITE_BIT;
+            barrier.dstAccessMask = RHI::ACCESS_SHADER_READ_BIT;
+            barrier.srcStageMask = RHI::PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+            barrier.dstStageMask = RHI::PIPELINE_STAGE_VERTEX_SHADER_BIT;
+            barrier.srcQueueFamilyIndex = 0xFFFFFFFF;
+            barrier.dstQueueFamilyIndex = 0xFFFFFFFF;
+            
+            Containers::Vector<RHI::RHIBufferMemoryBarrier> barriers = { barrier };
+            RHI_Cmd_PipelineBarrier_Buffer(cmd, RHI::PIPELINE_STAGE_COMPUTE_SHADER_BIT, RHI::PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, &barriers);
+
+            // Graphics Render
+            auto surface = RHI_Instance_GetSurface(m_Instance, m_WindowId);
+            auto swapchain = RHI_Surface_GetSwapChain(surface);
+            
+            // Acquire the image
+            RHI_SwapChain_AquireCurrentImage(swapchain, currentIndex);
+            
+            auto colorView = RHI_SwapChain_GetImageView(swapchain, currentIndex);
+
+            RHI::RHIRenderingInfo renderInfo = {};
+            renderInfo.RHIRenderArea = { 0, 0, HAL::GetWindowWidth(m_WindowId), HAL::GetWindowHeight(m_WindowId) };
+            renderInfo.layerCount = 1;
+            renderInfo.colorAttachmentCount = 1;
+            
+            RHI::RHIRenderingAttachmentInfo att = {};
+            att.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&colorView);
+            att.imageLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            att.loadOp = RHI::ATTACHMENT_LOAD_OP_CLEAR;
+            att.storeOp = RHI::ATTACHMENT_STORE_OP_STORE;
+            att.clearValue.float32[0] = 0.0f;
+            att.clearValue.float32[1] = 0.0f;
+            att.clearValue.float32[2] = 0.0f;
+            att.clearValue.float32[3] = 1.0f;
+            renderInfo.pColorAttachments = &att;
+
+            // Transition: UNDEFINED -> COLOR_ATTACHMENT_OPTIMAL
+            {
+                RHI::RHIImageMemoryBarrier barrier = {};
+                barrier.srcAccess = RHI::ACCESS_NONE;
+                barrier.dstAccess = RHI::ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                barrier.oldLayout = RHI::IMAGE_LAYOUT_UNDEFINED;
+                barrier.newLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                barrier.srcQueueFamilyIndex = 0xFFFFFFFF;
+                barrier.dstQueueFamilyIndex = 0xFFFFFFFF;
+                barrier.image = *reinterpret_cast<RHI::RHIImageHandle*>(&colorView);
+                barrier.subresourceRange = { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+                barrier.srcStageMask = RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                barrier.dstStageMask = RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+                Containers::Vector<RHI::RHIImageMemoryBarrier> barriers = { barrier };
+                RHI_Cmd_PipelineBarrier_Image(cmd, RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, &barriers);
+            }
+
+            RHI_Cmd_BeginRendering(cmd, &renderInfo);
+            RHI_Cmd_BindPipeline(cmd, currentIndex, m_GraphicsPipeline);
+            RHI_Cmd_SetViewport(cmd, 0, 0, (float)renderInfo.RHIRenderArea.width, (float)renderInfo.RHIRenderArea.height, 0, 1);
+            RHI_Cmd_SetScissor(cmd, 0, 0, renderInfo.RHIRenderArea.width, renderInfo.RHIRenderArea.height);
+            RHI_Cmd_BindDescriptorSets_FromPool(cmd, currentIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_GraphicsDescriptorPoolIds[currentIndex]);
+            RHI_Cmd_Draw(cmd, m_ParticleCount, 1, 0, 0, 0);
+            RHI_Cmd_EndRendering(cmd);
+
+            // Transition: COLOR_ATTACHMENT_OPTIMAL -> PRESENT_SRC_KHR
+            {
+                RHI::RHIImageMemoryBarrier barrier = {};
+                barrier.srcAccess = RHI::ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                barrier.dstAccess = RHI::ACCESS_NONE;
+                barrier.oldLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                barrier.newLayout = RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR;
+                barrier.srcQueueFamilyIndex = 0xFFFFFFFF;
+                barrier.dstQueueFamilyIndex = 0xFFFFFFFF;
+                barrier.image = *reinterpret_cast<RHI::RHIImageHandle*>(&colorView);
+                barrier.subresourceRange = { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+                barrier.srcStageMask = RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                barrier.dstStageMask = RHI::PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+
+                Containers::Vector<RHI::RHIImageMemoryBarrier> barriers = { barrier };
+                RHI_Cmd_PipelineBarrier_Image(cmd, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, RHI::PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, &barriers);
+            }
+
+            // Sync
+            auto imageAvailableSem = RHI_SwapChain_GetImageAvailableSemaphore(swapchain, currentIndex);
+            auto renderFinishedSem = RHI_SwapChain_GetRenderFinishSemaphore(swapchain, currentIndex);
+            RHI_Cmd_WaitSemaphore(cmd, imageAvailableSem, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+            RHI_Cmd_SignalSemaphore(cmd, renderFinishedSem);
+
+            RHI_Cmd_End(cmd);
+            m_FrameTickets[currentIndex] = RHI_Device_Submit(m_Device, cmd, currentIndex);
+            RHI_SwapChain_Present(swapchain, currentIndex);
+            RHI_Device_ReleaseCommandBuffer(m_Device, m_CmdPool, currentIndex, cmd);
+        }
+    };
+}

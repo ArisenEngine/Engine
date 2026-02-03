@@ -105,6 +105,13 @@ extern "C" ENGINE_DLL void RHI_PSO_BuildDescriptorSetLayout(RHI_PSOHandle pso)
     s->BuildDescriptorSetLayout();
 }
 
+extern "C" ENGINE_DLL void RHI_PSO_SetBindPoint(RHI_PSOHandle pso, RHI::EPipelineBindPoint bindPoint)
+{
+    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
+    if (s == nullptr) return;
+    s->SetBindPoint(bindPoint);
+}
+
 extern "C" ENGINE_DLL void RHI_PSO_AddDynamicState(RHI_PSOHandle pso, RHI::EDynamicPipelineState state)
 {
     auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
@@ -356,6 +363,21 @@ extern "C" ENGINE_DLL void RHI_Pipeline_AllocGraphics(RHI_DeviceHandle device, R
         if (item && item->pipeline) {
              auto* sub = reinterpret_cast<RHI::RHISubPass*>(subpass);
              item->pipeline->AllocGraphicPipeline(frameIndex, sub);
+        }
+    }
+}
+
+extern "C" ENGINE_DLL void RHI_Pipeline_AllocCompute(RHI_DeviceHandle device, RHI_PipelineHandle pipeline, unsigned int frameIndex)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (!dev) return;
+    auto h = *reinterpret_cast<RHI::RHIPipelineHandle*>(&pipeline);
+
+    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
+    if (vkDev) {
+        auto* item = RHI::RHINativeBridge::GetPipelineItem(vkDev, h);
+        if (item && item->pipeline) {
+             item->pipeline->AllocComputePipeline(frameIndex);
         }
     }
 }

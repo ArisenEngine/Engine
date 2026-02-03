@@ -15,11 +15,11 @@ using namespace ArisenEngine::RHI;
 
 
 ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* surface, VkQueue graphicQueue,
-                                            VkQueue presentQueue, VkDevice device,
+                                            VkQueue presentQueue, VkQueue computeQueue, VkDevice device,
                                             VkPhysicalDeviceMemoryProperties memoryProperties,
-                                            UInt32 graphicsFamilyIndex)
-    : RHIDevice(instance, surface), m_VkGraphicQueue(graphicQueue), m_VkPresentQueue(presentQueue), m_VkDevice(device),
-      m_GraphicsFamilyIndex(graphicsFamilyIndex), m_VkPhysicalDeviceMemoryProperties(memoryProperties)
+                                            UInt32 graphicsFamilyIndex, UInt32 computeFamilyIndex)
+    : RHIDevice(instance, surface), m_VkGraphicQueue(graphicQueue), m_VkPresentQueue(presentQueue), m_VkComputeQueue(computeQueue), m_VkDevice(device),
+      m_GraphicsFamilyIndex(graphicsFamilyIndex), m_ComputeFamilyIndex(computeFamilyIndex), m_VkPhysicalDeviceMemoryProperties(memoryProperties)
 {
     std::cout << "[DEBUG] RHIVkDevice::RHIVkDevice START" << std::endl;
     m_GPUPipelineManager = new RHIVkGPUPipelineManager(this, m_Instance->GetMaxFramesInFlight());
@@ -43,6 +43,12 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
     m_ResourceRegistry = std::make_unique<RHIResourceRegistry>(m_DeferredDeletion.get());
     m_GraphicsQueue = std::make_unique<RHIVkQueue>(m_VkDevice, m_VkGraphicQueue, RHIQueueType::Graphics,
                                                    m_DeferredDeletion.get(), m_ResourceRegistry.get());
+    
+    if (m_VkComputeQueue != VK_NULL_HANDLE)
+    {
+        m_ComputeQueue = std::make_unique<RHIVkQueue>(m_VkDevice, m_VkComputeQueue, RHIQueueType::Compute,
+                                                       m_DeferredDeletion.get(), m_ResourceRegistry.get());
+    }
 
     const UInt32 maxFramesInFlight = m_Instance->GetMaxFramesInFlight();
     m_FrameSync = std::make_unique<FrameSyncTracker>(maxFramesInFlight);
@@ -171,6 +177,10 @@ ArisenEngine::RHI::RHIQueue* ArisenEngine::RHI::RHIVkDevice::GetQueue(RHIQueueTy
     if (type == RHIQueueType::Graphics)
     {
         return m_GraphicsQueue.get();
+    }
+    else if (type == RHIQueueType::Compute)
+    {
+        return m_ComputeQueue.get();
     }
     return nullptr;
 }
@@ -717,6 +727,7 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
     // 5. Clean up sync and queue objects
     m_FrameSync.reset();
     m_GraphicsQueue.reset();
+    m_ComputeQueue.reset();
     LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Sync and Queue objects reset");
 
     // 6. Finally destroy the Vulkan device

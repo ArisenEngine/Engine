@@ -33,6 +33,7 @@ namespace ArisenEngine::RHI
         virtual void ClearAllPrograms() = 0;
 
         virtual const UInt32 GetHash() const = 0;
+        virtual void SetBindPoint(EPipelineBindPoint bindPoint) = 0;
         virtual const EPipelineBindPoint GetBindPoint() const = 0;
 
         virtual void Clear() = 0;
