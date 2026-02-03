@@ -207,7 +207,7 @@ namespace ArisenEngine::HAL
 			{
 				RECT& area{ info->isFullScreen ? info->fullScreenArea : info->clientArea };
 				// LOG_DEBUGF("[Win32HALWindow]: GetWindowSize ID={0} Addr={1} FullScreen={2} Area: {3} {4} {5} {6}", 
-					(unsigned)id, (void*)info, (int)info->isFullScreen, area.left, area.top, area.right, area.bottom);
+				// 	(unsigned)id, (void*)info, (int)info->isFullScreen, area.left, area.top, area.right, area.bottom);
 				return { (UInt32)area.left, (UInt32)area.top, (UInt32)area.right, (UInt32)area.bottom };
 			}
 			// LOG_DEBUGF("[Win32HALWindow]: GetWindowSize ID={0} Info is NULL", (unsigned)id);
