@@ -94,9 +94,12 @@ void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(RHISwapChainDesc
     for (int i = 0; i < images.size(); ++i)
     {
         // For RHISwapChain images, we manually allocate a handle since they are not created via factory
-        m_ImageHandles[i] = vkDevice->GetImagePool()->Allocate([&images, i](RHIVkImagePoolItem* imageItem) {
+        m_ImageHandles[i] = vkDevice->GetImagePool()->Allocate([&images, i, this](RHIVkImagePoolItem* imageItem) {
             *imageItem = RHIVkImagePoolItem();
             imageItem->image = images[i];
+            imageItem->width = m_Desc.width;
+            imageItem->height = m_Desc.height;
+            std::cout << "[RHIVkSwapChain] Setting image pool width=" << m_Desc.width << " height=" << m_Desc.height << std::endl;
             imageItem->name = String::Format("SwapChainImage_%d", i);
             imageItem->needDestroy = false; // RHISwapChain owns these images
         });

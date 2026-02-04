@@ -573,6 +573,7 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     // Set Device Features
     VkPhysicalDeviceFeatures deviceFeatures{};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
+    deviceFeatures.geometryShader = VK_TRUE;
 
     VkPhysicalDeviceTimelineSemaphoreFeatures timelineFeatures{};
     timelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
@@ -605,10 +606,15 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     meshShaderFeatures.meshShader = VK_TRUE;
     meshShaderFeatures.taskShader = VK_TRUE;
 
+    VkPhysicalDeviceVulkan13Features vulkan13Features{};
+    vulkan13Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+    vulkan13Features.shaderDemoteToHelperInvocation = VK_TRUE;
+
     timelineFeatures.pNext = &sync2Features;
     sync2Features.pNext = &dynamicRenderingFeatures;
     dynamicRenderingFeatures.pNext = &descriptorIndexingFeatures;
     descriptorIndexingFeatures.pNext = &meshShaderFeatures;
+    meshShaderFeatures.pNext = &vulkan13Features;
     
     // Device Create Info
     VkDeviceCreateInfo createInfo{};

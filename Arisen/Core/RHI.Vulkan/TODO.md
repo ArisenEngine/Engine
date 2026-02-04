@@ -69,10 +69,7 @@ Target: Build a **Stateless**, **Handle-based**, **Highly Parallel**, and **C# I
 🎨 第二阶段：现代管线推进 (高优先级)
 Mesh Shader 是未来的趋势，也是你最关心的现代特性。
 
-[x] Mesh Shader 核心支持
-[x] 在 RHIVkInstance 中开启 VK_EXT_mesh_shader 特性。
-[x] 更新 PSO 以兼容 Task Shader 和 Mesh Shader 阶段。
-[x] 学习点：理解如何跳过 Vertex Buffer，直接在 Mesh Shader 里生成几何数据。
+
 📚 第三阶段：传统管线补完 (中优先级 - 学习导向)
 这一阶段主要满足你对经典管线的好奇。
 

@@ -137,7 +137,7 @@ void ArisenEngine::RHI::RHIVkGPURenderPass::AllocRenderPass(UInt32 frameIndex)
 {
     ASSERT(!m_SubpassesToDispatch.empty());
     m_SubpassDescriptions.resize(m_SubpassesToDispatch.size());
-    m_Dependencies.resize(m_SubpassesToDispatch.size());
+    m_Dependencies.clear();
     
     for (int i = 0; i < m_SubpassesToDispatch.size(); ++i)
     {
@@ -170,15 +170,18 @@ void ArisenEngine::RHI::RHIVkGPURenderPass::AllocRenderPass(UInt32 frameIndex)
         m_SubpassDescriptions[i] = vkDesc;
 
         auto dependency = subpass->GetDependency();
-        VkSubpassDependency vkSubpassDependency;
-        vkSubpassDependency.srcSubpass = dependency.previousIndex;
-        vkSubpassDependency.dstSubpass = subpass->GetIndex();
-        vkSubpassDependency.srcStageMask = dependency.previousStage;
-        vkSubpassDependency.srcAccessMask = dependency.previousAccessMask;
-        vkSubpassDependency.dstStageMask = dependency.currentStage;
-        vkSubpassDependency.dstAccessMask = dependency.currentAccessMask;
-        vkSubpassDependency.dependencyFlags = dependency.syncFlag;
-        m_Dependencies[i] = vkSubpassDependency;
+        if (dependency.previousStage != 0 || dependency.currentStage != 0)
+        {
+            VkSubpassDependency vkSubpassDependency;
+            vkSubpassDependency.srcSubpass = dependency.previousIndex;
+            vkSubpassDependency.dstSubpass = subpass->GetIndex();
+            vkSubpassDependency.srcStageMask = dependency.previousStage;
+            vkSubpassDependency.srcAccessMask = dependency.previousAccessMask;
+            vkSubpassDependency.dstStageMask = dependency.currentStage;
+            vkSubpassDependency.dstAccessMask = dependency.currentAccessMask;
+            vkSubpassDependency.dependencyFlags = dependency.syncFlag;
+            m_Dependencies.push_back(vkSubpassDependency);
+        }
     }
     
     RenderPassCacheKey key;

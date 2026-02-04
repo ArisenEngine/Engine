@@ -82,7 +82,7 @@ void ArisenEngine::RHI::RHIVkFrameBuffer::SetAttachments(UInt32 frameIndex, cons
     auto* primaryView = m_Device->GetImageViewPool()->Get(imageViews[0]);
     if (!primaryView) return;
 
-    LOG_DEBUGF("[RHIVkFrameBuffer::SetAttachments] FrameIndex={0} Width={1} Height={2}", frameIndex, primaryView->width, primaryView->height);
+    // LOG_DEBUGF("[RHIVkFrameBuffer::SetAttachments] FrameIndex={0} Width={1} Height={2}", frameIndex, primaryView->width, primaryView->height);
 
     FramebufferCacheKey key;
     key.renderPass = static_cast<VkRenderPass>(renderPass->GetHandle(frameIndex));
