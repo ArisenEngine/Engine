@@ -46,22 +46,22 @@ void gs_main(point VSOutput input[1], inout TriangleStream<GSOutput> outStream)
     float2 size = input[0].Size * 0.5f;
 
     float3 look = normalize(cbScene.CameraPos - vPos);
-    float3 right = normalize(cross(float3(0, 1, 0), look));
+    float3 right = normalize(cross(abs(look.y) > 0.999f ? float3(0, 0, 1) : float3(0, 1, 0), look));
     float3 up = cross(look, right);
 
-    float4x4 viewProj = mul(cbScene.View, cbScene.Proj);
+    float4x4 viewProj = mul(cbScene.Proj, cbScene.View);
 
     float3 corners[4];
-    corners[0] = vPos + (-right * size.x) + (up * size.y); // Top-left
-    corners[1] = vPos + (right * size.x) + (up * size.y);  // Top-right
-    corners[2] = vPos + (-right * size.x) - (up * size.y); // Bottom-left
-    corners[3] = vPos + (right * size.x) - (up * size.y);  // Bottom-right
+    corners[0] = vPos + (-right * size.x) - (up * size.y); // Bottom-left
+    corners[1] = vPos + (right * size.x) - (up * size.y);  // Bottom-right
+    corners[2] = vPos + (-right * size.x) + (up * size.y); // Top-left
+    corners[3] = vPos + (right * size.x) + (up * size.y);  // Top-right
 
     float2 uvs[4] = {
-        float2(0, 0),
-        float2(1, 0),
-        float2(0, 1),
-        float2(1, 1)
+        float2(0, 1), // Bottom-left
+        float2(1, 1), // Bottom-right
+        float2(0, 0), // Top-left
+        float2(1, 0)  // Top-right
     };
 
     GSOutput output;
@@ -70,7 +70,7 @@ void gs_main(point VSOutput input[1], inout TriangleStream<GSOutput> outStream)
     [unroll]
     for (int i = 0; i < 4; ++i)
     {
-        output.PosH = mul(float4(corners[i], 1.0f), viewProj);
+        output.PosH = mul(viewProj, float4(corners[i], 1.0f));
         output.UV = uvs[i];
         outStream.Append(output);
     }

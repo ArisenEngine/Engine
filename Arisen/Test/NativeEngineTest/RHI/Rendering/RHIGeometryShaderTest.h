@@ -161,7 +161,7 @@ namespace ArisenEngine::Testing
             std::vector<ParticleVertex> particles(m_ParticleCount);
             std::default_random_engine rndEngine((unsigned)time(nullptr));
             std::uniform_real_distribution<float> distPos(-5.0f, 5.0f);
-            std::uniform_real_distribution<float> distSize(0.1f, 0.5f);
+            std::uniform_real_distribution<float> distSize(0.5f, 2.0f);
             std::uniform_real_distribution<float> distColor(0.5f, 1.0f);
 
             for (auto& p : particles)
@@ -235,6 +235,7 @@ namespace ArisenEngine::Testing
             RHI_PSO_AddVertexInputAttributeDescription(m_Pso, 2, 0, RHI::FORMAT_R32G32_SFLOAT, offsetof(ParticleVertex, size));
 
             RHI_PSO_SetTopology(m_Pso, RHI::PRIMITIVE_TOPOLOGY_POINT_LIST);
+            RHI_PSO_SetCullMode(m_Pso, RHI::CULL_MODE_NONE);
 
             RHI_PSO_BuildDescriptorSetLayout(m_Pso);
 
