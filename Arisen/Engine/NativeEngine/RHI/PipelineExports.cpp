@@ -107,11 +107,18 @@ extern "C" ENGINE_DLL void RHI_PSO_AddDynamicState(RHI_PSOHandle pso, RHI::EDyna
     s->AddDynamicPipelineState(state);
 }
 
-extern "C" ENGINE_DLL void RHI_PSO_SetPrimitiveState(RHI_PSOHandle pso, RHI::EPrimitiveTopology topology, bool primitiveRestart)
+extern "C" ENGINE_DLL void RHI_PSO_SetTopology(RHI_PSOHandle pso, RHI::EPrimitiveTopology topology)
 {
     auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
     if (s == nullptr) return;
-    s->SetPrimitiveState(topology, primitiveRestart);
+    s->SetPrimitiveState(topology, false);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_AddBlendAttachmentState(RHI_PSOHandle pso, bool enable, RHI::EBlendFactor srcColor, RHI::EBlendFactor dstColor, RHI::EBlendOp colorBlendOp, RHI::EBlendFactor srcAlpha, RHI::EBlendFactor dstAlpha, RHI::EBlendOp alphaBlendOp, unsigned int writeMask)
+{
+    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
+    if (s == nullptr) return;
+    s->AddBlendAttachmentState(enable, srcColor, dstColor, colorBlendOp, srcAlpha, dstAlpha, alphaBlendOp, writeMask);
 }
 
 extern "C" ENGINE_DLL void RHI_PSO_SetDepthClampEnable(RHI_PSOHandle pso, bool enable)

@@ -48,6 +48,7 @@ void RHI::RHIVkSurface::InitSwapChain()
     auto width = HAL::GetWindowWidth(m_RenderWindowId);
     auto height = HAL::GetWindowHeight(m_RenderWindowId);
     
+    LOG_INFOF("[RHIVkSurface::InitSwapChain]: WindowID={0} HALWidth={1} HALHeight={2}", m_RenderWindowId, width, height);
     m_SwapChain->SetResolution(width, height);
 
     auto imageCount = m_SwapChainSupportDetail.capabilities.minImageCount + 1;

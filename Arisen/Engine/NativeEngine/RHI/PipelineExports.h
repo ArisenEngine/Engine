@@ -30,6 +30,8 @@ extern "C" ENGINE_DLL void RHI_PSO_SetDepthBiasEnable(RHI_PSOHandle pso, bool en
 extern "C" ENGINE_DLL void RHI_PSO_SetSampleShading(RHI_PSOHandle pso, bool enable);
 extern "C" ENGINE_DLL void RHI_PSO_SetSampleCount(RHI_PSOHandle pso, ArisenEngine::RHI::ESampleCountFlagBits sample);
 extern "C" ENGINE_DLL void RHI_PSO_AddBlendAttachmentState_Simple(RHI_PSOHandle pso, bool enable, unsigned int writeMask);
+extern "C" ENGINE_DLL void RHI_PSO_SetTopology(RHI_PSOHandle pso, ArisenEngine::RHI::EPrimitiveTopology topology);
+extern "C" ENGINE_DLL void RHI_PSO_AddBlendAttachmentState(RHI_PSOHandle pso, bool enable, ArisenEngine::RHI::EBlendFactor srcColor, ArisenEngine::RHI::EBlendFactor dstColor, ArisenEngine::RHI::EBlendOp colorBlendOp, ArisenEngine::RHI::EBlendFactor srcAlpha, ArisenEngine::RHI::EBlendFactor dstAlpha, ArisenEngine::RHI::EBlendOp alphaBlendOp, unsigned int writeMask);
 extern "C" ENGINE_DLL void RHI_PSO_SetLogicOp(RHI_PSOHandle pso, bool enable, ArisenEngine::RHI::ELogicOp op);
 extern "C" ENGINE_DLL void RHI_PSO_SetBlendConstants(RHI_PSOHandle pso, float r, float g, float b, float a);
 extern "C" ENGINE_DLL void RHI_PSO_SetDepthStencilState(RHI_PSOHandle pso, const ArisenEngine::RHI::RHIDepthStencilState* state);
