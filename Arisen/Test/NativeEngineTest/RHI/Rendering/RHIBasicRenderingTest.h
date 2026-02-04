@@ -244,7 +244,7 @@ namespace ArisenEngine::Testing
             RHI::RHIRasterizationState rs{};
             rs.cullMode = RHI::CULL_MODE_NONE;
             rs.frontFace = RHI::FRONT_FACE_COUNTER_CLOCKWISE;
-            rs.polygonMode = RHI::POLYGON_MODE_FILL;
+            rs.polygonMode = RHI::EPOLYGON_MODE_FILL;
             rs.lineWidth = 1.0f;
             RHI_PSO_SetRasterizationState(m_Pso, &rs);
 
@@ -253,7 +253,10 @@ namespace ArisenEngine::Testing
             RHI_PSO_SetMultisampleState(m_Pso, &ms);
 
             RHI::RHIColorBlendState cb{};
-            cb.attachments.push_back({ false, RHI::COLOR_COMPONENT_R_BIT | RHI::COLOR_COMPONENT_G_BIT | RHI::COLOR_COMPONENT_B_BIT | RHI::COLOR_COMPONENT_A_BIT });
+            RHI::RHIColorBlendAttachmentState blendAttachment{};
+            blendAttachment.blendEnable = false;
+            blendAttachment.colorWriteMask = RHI::COLOR_COMPONENT_R_BIT | RHI::COLOR_COMPONENT_G_BIT | RHI::COLOR_COMPONENT_B_BIT | RHI::COLOR_COMPONENT_A_BIT;
+            cb.attachments.push_back(blendAttachment);
             RHI_PSO_SetColorBlendState(m_Pso, &cb);
 
             Containers::Vector<RHI::RHIBufferHandle> buffers;
