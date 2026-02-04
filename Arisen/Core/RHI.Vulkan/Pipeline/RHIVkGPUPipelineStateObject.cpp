@@ -104,9 +104,10 @@ void RHIVkGPUPipelineStateObject::ClearAllPrograms()
 
 const UInt32 RHIVkGPUPipelineStateObject::GetHash() const
 {
-    // Simplified hash for now. 
-    // In production, this should hash all state members that affect pipeline creation.
-    return 0; 
+    // Generate a hash based on unique pipeline identity
+    // Each PSO instance should get a unique hash based on its address
+    // This ensures compute and graphics pipelines get distinct cache entries
+    return static_cast<UInt32>(reinterpret_cast<uintptr_t>(this) & 0xFFFFFFFF);
 }
 
 bool RHIVkGPUPipelineStateObject::IsMeshPipeline() const
