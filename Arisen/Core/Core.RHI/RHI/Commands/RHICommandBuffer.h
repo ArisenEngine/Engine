@@ -13,6 +13,11 @@
 #include "RHI/Sync/RHIBufferMemoryBarrier.h"
 #include "RHI/Sync/RHIImageMemoryBarrier.h"
 #include "RHI/Sync/RHIMemoryBarrier.h"
+#include "RHI/Enums/Pipeline/ECullMode.h"
+#include "RHI/Enums/Pipeline/EFrontFace.h"
+#include "RHI/Enums/Pipeline/EPrimitiveTopology.h"
+#include "RHI/Enums/Sampler/ECompareOp.h"
+#include "RHI/Pipeline/RHIDepthStencilState.h"
 #include "../Handles/RHIHandle.h"
 
 namespace ArisenEngine::RHI
@@ -144,6 +149,20 @@ namespace ArisenEngine::RHI
         virtual void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height, Float32 minDepth, Float32 maxDepth) = 0;
         virtual void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height) = 0;
         virtual void SetScissor(UInt32 offsetX, UInt32 offsetY, UInt32 width, UInt32 height) = 0;
+        virtual void SetLineWidth(Float32 lineWidth) = 0;
+        virtual void SetDepthBias(Float32 depthBiasConstantFactor, Float32 depthBiasClamp, Float32 depthBiasSlopeFactor) = 0;
+        virtual void SetBlendConstants(const Float32 blendConstants[4]) = 0;
+        virtual void SetStencilReference(UInt32 faceMask, UInt32 reference) = 0;
+        
+        // Extended dynamic states (Modern RHI)
+        virtual void SetCullMode(ECullModeFlagBits cullMode) = 0;
+        virtual void SetFrontFace(EFrontFace frontFace) = 0;
+        virtual void SetPrimitiveTopology(EPrimitiveTopology topology) = 0;
+        virtual void SetDepthTestEnable(bool enable) = 0;
+        virtual void SetDepthWriteEnable(bool enable) = 0;
+        virtual void SetDepthCompareOp(ECompareOp depthCompareOp) = 0;
+        virtual void SetStencilTestEnable(bool enable) = 0;
+        virtual void SetStencilOp(UInt32 faceMask, EStencilOp failOp, EStencilOp passOp, EStencilOp depthFailOp, ECompareOp compareOp) = 0;
 
         virtual void BindPipeline(UInt32 frameIndex, RHIPipelineHandle pipeline) = 0;
         virtual void Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding) = 0;

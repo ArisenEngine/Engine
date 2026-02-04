@@ -14,7 +14,10 @@
 #include "Allocation/RHIVkMemoryAllocator.h"
 
 
-ArisenEngine::RHI::RHIVkCommandBuffer::~RHIVkCommandBuffer() noexcept
+namespace ArisenEngine::RHI
+{
+
+RHIVkCommandBuffer::~RHIVkCommandBuffer() noexcept
 {
     // Ensure resources are released if the buffer is destroyed before submission
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
@@ -28,7 +31,7 @@ ArisenEngine::RHI::RHIVkCommandBuffer::~RHIVkCommandBuffer() noexcept
     }
 }
 
-ArisenEngine::RHI::RHIVkCommandBuffer::RHIVkCommandBuffer(RHIVkDevice* device, RHIVkCommandBufferPool* pool)
+RHIVkCommandBuffer::RHIVkCommandBuffer(RHIVkDevice* device, RHIVkCommandBufferPool* pool)
 : RHICommandBuffer(device, pool),
 m_OwnerThreadId(std::this_thread::get_id())
 {
@@ -45,7 +48,7 @@ m_OwnerThreadId(std::this_thread::get_id())
         allocInfo.commandBufferCount = 1;
 
         // todo: separate alloc memory and free memory
-        if (vkAllocateCommandBuffers(m_VkDevice, &allocInfo, &m_VkCommandBuffer) != VK_SUCCESS)
+        if (::vkAllocateCommandBuffers(m_VkDevice, &allocInfo, &m_VkCommandBuffer) != VK_SUCCESS)
         {
             LOG_FATAL_AND_THROW("[RHIVkCommandBuffer::RHIVkCommandBuffer]: failed to allocate command buffers!");
         }
@@ -55,7 +58,7 @@ m_OwnerThreadId(std::this_thread::get_id())
 }
 
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRenderPass(UInt32 frameIndex, RenderPassBeginDesc&& desc)
+void RHIVkCommandBuffer::BeginRenderPass(UInt32 frameIndex, RenderPassBeginDesc&& desc)
 {
     ASSERT(GetState() == ECommandBufferState::Recording);
     
@@ -86,7 +89,6 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRenderPass(UInt32 frameIndex, R
         renderPassInfo.framebuffer = fb->framebuffer;
     }
     
-    renderPassArea:
     renderPassInfo.renderArea.offset = {0, 0};
     
     // Use actual RHIFrameBuffer dimensions if available
@@ -99,26 +101,35 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRenderPass(UInt32 frameIndex, R
     
     // Fallback if dimensions are unknown
     if (renderPassInfo.renderArea.extent.width == 0 || renderPassInfo.renderArea.extent.height == 0) {
-        renderPassInfo.renderArea.extent = {1280, 720}; // Adjusted fallback to default test resolution
+        renderPassInfo.renderArea.extent.width = 1280;
+        renderPassInfo.renderArea.extent.height = 720;
     }
     
     renderPassInfo.clearValueCount = desc.clearValueCount;
     renderPassInfo.pClearValues = reinterpret_cast<const VkClearValue*>(desc.pClearValues);
 
-    vkCmdBeginRenderPass(m_VkCommandBuffer, &renderPassInfo, static_cast<VkSubpassContents>(desc.subpassContents));
+    ::vkCmdBeginRenderPass(m_VkCommandBuffer, &renderPassInfo, static_cast<VkSubpassContents>(desc.subpassContents));
 
     SetState(ECommandBufferState::RecordingPass);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::EndRenderPass()
+void RHIVkCommandBuffer::EndRenderPass()
 {
     ASSERT(GetState() == ECommandBufferState::RecordingPass);
-    vkCmdEndRenderPass(m_VkCommandBuffer);
+    ::vkCmdEndRenderPass(m_VkCommandBuffer);
+    SetState(ECommandBufferState::Recording);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRendering(const RHIRenderingInfo& info)
+void RHIVkCommandBuffer::BeginRendering(const RHIRenderingInfo& info)
 {
     ASSERT(GetState() == ECommandBufferState::Recording);
+
+    VkRenderingInfoKHR vkInfo = {};
+    vkInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
+    vkInfo.renderArea.offset = { info.RHIRenderArea.x, info.RHIRenderArea.y };
+    vkInfo.renderArea.extent = { info.RHIRenderArea.width, info.RHIRenderArea.height };
+    vkInfo.layerCount = info.layerCount;
+    vkInfo.colorAttachmentCount = info.colorAttachmentCount;
 
     m_VkColorAttachments.clear();
     m_VkColorAttachments.reserve(info.colorAttachmentCount);
@@ -183,28 +194,21 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRendering(const RHIRenderingInf
         }
     }
 
-    VkRenderingInfoKHR renderingInfo{};
-    renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
-    renderingInfo.renderArea.offset = { info.RHIRenderArea.x, info.RHIRenderArea.y };
-    renderingInfo.renderArea.extent = { info.RHIRenderArea.width, info.RHIRenderArea.height };
-    renderingInfo.layerCount = info.layerCount;
-
-    renderingInfo.colorAttachmentCount = static_cast<uint32_t>(m_VkColorAttachments.size());
-    renderingInfo.pColorAttachments = m_VkColorAttachments.data();
+    vkInfo.pColorAttachments = m_VkColorAttachments.data();
     
     if (info.pDepthAttachment != nullptr)
     {
-        renderingInfo.pDepthAttachment = &m_VkDepthAttachment;
+        vkInfo.pDepthAttachment = &m_VkDepthAttachment;
     }
 
     if (info.pStencilAttachment != nullptr)
     {
-        renderingInfo.pStencilAttachment = &m_VkStencilAttachment;
+        vkInfo.pStencilAttachment = &m_VkStencilAttachment;
     }
 
     if (vkDevice->vkCmdBeginRenderingKHR)
     {
-        vkDevice->vkCmdBeginRenderingKHR(m_VkCommandBuffer, &renderingInfo);
+        vkDevice->vkCmdBeginRenderingKHR(m_VkCommandBuffer, &vkInfo);
     }
     else
     {
@@ -214,7 +218,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BeginRendering(const RHIRenderingInf
     SetState(ECommandBufferState::RecordingPass);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::EndRendering()
+void RHIVkCommandBuffer::EndRendering()
 {
     ASSERT(GetState() == ECommandBufferState::RecordingPass);
 
@@ -227,10 +231,11 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::EndRendering()
     {
         LOG_ERROR("[RHIVkCommandBuffer::EndRendering]: vkCmdEndRenderingKHR not found!");
     }
+    SetState(ECommandBufferState::Recording);
 }
 
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::TrackDescriptorPoolUse(RHIDescriptorPool* pool, UInt32 poolId)
+void RHIVkCommandBuffer::TrackDescriptorPoolUse(RHIDescriptorPool* pool, UInt32 poolId)
 {
     if (pool == nullptr) return;
     // avoid duplicates
@@ -241,7 +246,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::TrackDescriptorPoolUse(RHIDescriptor
     m_TrackedDescriptorPools.emplace_back(TrackedPoolUse{ pool, poolId });
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::CaptureResource(RHIBufferHandle buffer)
+void RHIVkCommandBuffer::CaptureResource(RHIBufferHandle buffer)
 {
     if (!buffer.IsValid()) return;
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
@@ -268,7 +273,7 @@ check_mem:
     return;
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::CaptureResource(RHIImageHandle image)
+void RHIVkCommandBuffer::CaptureResource(RHIImageHandle image)
 {
     if (!image.IsValid()) return;
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
@@ -352,10 +357,73 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::SetScissor(UInt32 offsetX, UInt32 of
     };
 
     vkCmdSetScissor(m_VkCommandBuffer, 0, 1, &scissor);
-    
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::BindPipeline(UInt32 frameIndex, RHIPipelineHandle pipelineHandle)
+void ArisenEngine::RHI::RHIVkCommandBuffer::SetLineWidth(Float32 lineWidth)
+{
+    vkCmdSetLineWidth(m_VkCommandBuffer, lineWidth);
+}
+
+void ArisenEngine::RHI::RHIVkCommandBuffer::SetDepthBias(Float32 depthBiasConstantFactor, Float32 depthBiasClamp, Float32 depthBiasSlopeFactor)
+{
+    vkCmdSetDepthBias(m_VkCommandBuffer, depthBiasConstantFactor, depthBiasClamp, depthBiasSlopeFactor);
+}
+
+void ArisenEngine::RHI::RHIVkCommandBuffer::SetBlendConstants(const Float32 blendConstants[4])
+{
+    vkCmdSetBlendConstants(m_VkCommandBuffer, blendConstants);
+}
+
+void ArisenEngine::RHI::RHIVkCommandBuffer::SetStencilReference(UInt32 faceMask, UInt32 reference)
+{
+    vkCmdSetStencilReference(m_VkCommandBuffer, static_cast<VkStencilFaceFlags>(faceMask), reference);
+}
+
+void RHIVkCommandBuffer::SetCullMode(ECullModeFlagBits cullMode)
+{
+    // Note: requires VK_EXT_extended_dynamic_state or Vulkan 1.3
+    ::vkCmdSetCullMode(m_VkCommandBuffer, static_cast<VkCullModeFlags>(cullMode));
+}
+
+void RHIVkCommandBuffer::SetFrontFace(EFrontFace frontFace)
+{
+    ::vkCmdSetFrontFace(m_VkCommandBuffer, static_cast<VkFrontFace>(frontFace));
+}
+
+void RHIVkCommandBuffer::SetPrimitiveTopology(EPrimitiveTopology topology)
+{
+    ::vkCmdSetPrimitiveTopology(m_VkCommandBuffer, static_cast<VkPrimitiveTopology>(topology));
+}
+
+void RHIVkCommandBuffer::SetDepthTestEnable(bool enable)
+{
+    ::vkCmdSetDepthTestEnable(m_VkCommandBuffer, static_cast<VkBool32>(enable));
+}
+
+void RHIVkCommandBuffer::SetDepthWriteEnable(bool enable)
+{
+    ::vkCmdSetDepthWriteEnable(m_VkCommandBuffer, static_cast<VkBool32>(enable));
+}
+
+void RHIVkCommandBuffer::SetDepthCompareOp(ECompareOp depthCompareOp)
+{
+    ::vkCmdSetDepthCompareOp(m_VkCommandBuffer, static_cast<VkCompareOp>(depthCompareOp));
+}
+
+void RHIVkCommandBuffer::SetStencilTestEnable(bool enable)
+{
+    ::vkCmdSetStencilTestEnable(m_VkCommandBuffer, static_cast<VkBool32>(enable));
+}
+
+
+void RHIVkCommandBuffer::SetStencilOp(UInt32 faceMask, EStencilOp failOp, EStencilOp passOp, EStencilOp depthFailOp, ECompareOp compareOp)
+{
+    ::vkCmdSetStencilOp(m_VkCommandBuffer, static_cast<VkStencilFaceFlags>(faceMask), 
+        static_cast<VkStencilOp>(failOp), static_cast<VkStencilOp>(passOp), 
+        static_cast<VkStencilOp>(depthFailOp), static_cast<VkCompareOp>(compareOp));
+}
+
+void RHIVkCommandBuffer::BindPipeline(UInt32 frameIndex, RHIPipelineHandle pipelineHandle)
 {
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* p = vkDevice->GetPipelinePool()->Get(pipelineHandle);
@@ -363,7 +431,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BindPipeline(UInt32 frameIndex, RHIP
 
     RHIPipeline* pipeline = p->pipeline;
     m_CurrentPipeline = pipeline;
-    vkCmdBindPipeline(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(pipeline->GetBindPoint()),
+    ::vkCmdBindPipeline(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(pipeline->GetBindPoint()),
         static_cast<VkPipeline>(pipeline->GetGraphicsPipeline(frameIndex)));
 
     // Bind Global Bindless Descriptor Set (Set 3)
@@ -372,13 +440,13 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BindPipeline(UInt32 frameIndex, RHIP
     {
         VkDescriptorSet bindlessSet = bindlessManager->GetDescriptorSet();
         auto* vkPipeline = static_cast<RHIVkGPUPipeline*>(pipeline);
-        vkCmdBindDescriptorSets(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(pipeline->GetBindPoint()),
+        ::vkCmdBindDescriptorSets(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(pipeline->GetBindPoint()),
             vkPipeline->GetPipelineLayout(frameIndex),
             3, 1, &bindlessSet, 0, nullptr);
     }
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::BindDescriptorSets(UInt32 frameIndex, EPipelineBindPoint bindPoint,
+void RHIVkCommandBuffer::BindDescriptorSets(UInt32 frameIndex, EPipelineBindPoint bindPoint,
     UInt32 firstSet, Containers::Vector<std::shared_ptr<RHIDescriptorSet>>& descriptorsets, UInt32 dynamicOffsetCount, const UInt32* pDynamicOffsets)
 {
     if (m_CurrentPipeline == nullptr)
@@ -395,14 +463,14 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BindDescriptorSets(UInt32 frameIndex
     {
         m_VkDescriptorSets.emplace_back(static_cast<VkDescriptorSet>(descriptorsets[i]->GetHandle()));
     }
-    vkCmdBindDescriptorSets(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(bindPoint),
+    ::vkCmdBindDescriptorSets(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(bindPoint),
         pipeline->GetPipelineLayout(frameIndex),
         firstSet, static_cast<uint32_t>(m_VkDescriptorSets.size()),
         m_VkDescriptorSets.data(),
         dynamicOffsetCount, pDynamicOffsets);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst,
+void RHIVkCommandBuffer::CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst,
             EImageLayout dstImageLayout, Containers::Vector<RHIBufferImageCopy>&& regions)
 {
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
@@ -424,7 +492,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::CopyBufferToImage(RHIBufferHandle sr
         regionInfo.width, regionInfo.height, regionInfo.depth));
     }
     
-    vkCmdCopyBufferToImage(m_VkCommandBuffer,
+    ::vkCmdCopyBufferToImage(m_VkCommandBuffer,
         srcBuf->buffer, dstImg->image,
         static_cast<VkImageLayout>(dstImageLayout), static_cast<uint32_t>(m_VkBufferImageCopies.size()), m_VkBufferImageCopies.data()
         );
@@ -433,7 +501,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::CopyBufferToImage(RHIBufferHandle sr
     CaptureResource(dst);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(
+void RHIVkCommandBuffer::PipelineBarrier(
     EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
     const RHIMemoryBarrier* pMemoryBarriers, UInt32 memoryBarrierCount,
     const RHIImageMemoryBarrier* pImageMemoryBarriers, UInt32 imageMemoryBarrierCount,
@@ -511,21 +579,21 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(
     }
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(
+void RHIVkCommandBuffer::PipelineBarrier(
     EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
     const RHIMemoryBarrier* pMemoryBarriers, UInt32 memoryBarrierCount)
 {
     PipelineBarrier(srcStage, dstStage, dependency, pMemoryBarriers, memoryBarrierCount, nullptr, 0, nullptr, 0);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(
+void RHIVkCommandBuffer::PipelineBarrier(
     EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
     const RHIImageMemoryBarrier* pImageMemoryBarriers, UInt32 imageMemoryBarrierCount)
 {
     PipelineBarrier(srcStage, dstStage, dependency, nullptr, 0, pImageMemoryBarriers, imageMemoryBarrierCount, nullptr, 0);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(
+void RHIVkCommandBuffer::PipelineBarrier(
     EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
     const RHIBufferMemoryBarrier* pBufferMemoryBarriers, UInt32 bufferMemoryBarrierCount)
 {
@@ -534,37 +602,37 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::PipelineBarrier(
 
 
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding)
+void RHIVkCommandBuffer::Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding)
 {
     if (m_VertexBuffers.size() > 0)
     {
-        vkCmdBindVertexBuffers(m_VkCommandBuffer, firstBinding, m_VertexBuffers.size(), m_VertexBuffers.data(), m_VertexBindingOffsets.data());
+        ::vkCmdBindVertexBuffers(m_VkCommandBuffer, firstBinding, m_VertexBuffers.size(), m_VertexBuffers.data(), m_VertexBindingOffsets.data());
     }
-    vkCmdDraw(m_VkCommandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
+    ::vkCmdDraw(m_VkCommandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 firstIndex, UInt32 vertexOffset, UInt32 firstInstance,  UInt32 firstBinding)
+void RHIVkCommandBuffer::DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 firstIndex, UInt32 vertexOffset, UInt32 firstInstance,  UInt32 firstBinding)
 {
     if (m_VertexBuffers.size() > 0)
     {
-        vkCmdBindVertexBuffers(m_VkCommandBuffer, firstBinding, m_VertexBuffers.size(), m_VertexBuffers.data(), m_VertexBindingOffsets.data());
+        ::vkCmdBindVertexBuffers(m_VkCommandBuffer, firstBinding, m_VertexBuffers.size(), m_VertexBuffers.data(), m_VertexBindingOffsets.data());
     }
     
     if (m_IndexBuffer.has_value())
     {
-        vkCmdBindIndexBuffer(m_VkCommandBuffer, m_IndexBuffer.value(), m_IndexOffset.value(), static_cast<
+        ::vkCmdBindIndexBuffer(m_VkCommandBuffer, m_IndexBuffer.value(), m_IndexOffset.value(), static_cast<
                                  VkIndexType>(m_IndexType.value()));
     }
 
-    vkCmdDrawIndexed(m_VkCommandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+    ::vkCmdDrawIndexed(m_VkCommandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::Dispatch(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ)
+void RHIVkCommandBuffer::Dispatch(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ)
 {
-    vkCmdDispatch(m_VkCommandBuffer, groupCountX, groupCountY, groupCountZ);
+    ::vkCmdDispatch(m_VkCommandBuffer, groupCountX, groupCountY, groupCountZ);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::DrawMeshTasks(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ)
+void RHIVkCommandBuffer::DrawMeshTasks(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ)
 {
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     if (vkDevice->vkCmdDrawMeshTasksEXT)
@@ -577,7 +645,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::DrawMeshTasks(UInt32 groupCountX, UI
     }
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::BindVertexBuffers(RHIBufferHandle buffer, UInt64 offset)
+void RHIVkCommandBuffer::BindVertexBuffers(RHIBufferHandle buffer, UInt64 offset)
 {
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* buf = vkDevice->GetBufferPool()->Get(buffer);
@@ -588,7 +656,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BindVertexBuffers(RHIBufferHandle bu
     CaptureResource(buffer);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::WaitSemaphore(RHISemaphoreHandle semaphore, EPipelineStageFlag stage)
+void RHIVkCommandBuffer::WaitSemaphore(RHISemaphoreHandle semaphore, EPipelineStageFlag stage)
 {
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* sem = vkDevice->GetSemaphorePool()->Get(semaphore);
@@ -598,17 +666,17 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::WaitSemaphore(RHISemaphoreHandle sem
     m_WaitStages.emplace_back(static_cast<VkPipelineStageFlags>(stage));
 }
 
-const VkSemaphore* ArisenEngine::RHI::RHIVkCommandBuffer::GetWaitSemaphores() const
+const VkSemaphore* RHIVkCommandBuffer::GetWaitSemaphores() const
 {
     return m_WaitSemaphores.data();
 }
 
-ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkCommandBuffer::GetWaitSemaphoresCount() const
+UInt32 RHIVkCommandBuffer::GetWaitSemaphoresCount() const
 {
     return m_WaitSemaphores.size();
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::SignalSemaphore(RHISemaphoreHandle semaphore)
+void RHIVkCommandBuffer::SignalSemaphore(RHISemaphoreHandle semaphore)
 {
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* sem = vkDevice->GetSemaphorePool()->Get(semaphore);
@@ -617,22 +685,22 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::SignalSemaphore(RHISemaphoreHandle s
     m_SignalSemaphores.emplace_back(sem->semaphore);
 }
 
-const VkSemaphore* ArisenEngine::RHI::RHIVkCommandBuffer::GetSignalSemaphores() const
+const VkSemaphore* RHIVkCommandBuffer::GetSignalSemaphores() const
 {
     return m_SignalSemaphores.data();
 }
 
-ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkCommandBuffer::GetSignalSemaphoresCount() const
+UInt32 RHIVkCommandBuffer::GetSignalSemaphoresCount() const
 {
     return m_SignalSemaphores.size();
 }
 
-const VkPipelineStageFlags* ArisenEngine::RHI::RHIVkCommandBuffer::GetWaitStageMask() const
+const VkPipelineStageFlags* RHIVkCommandBuffer::GetWaitStageMask() const
 {
     return m_WaitStages.data();
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::CopyBuffer(RHIBufferHandle src, UInt64 srcOffset,
+void RHIVkCommandBuffer::CopyBuffer(RHIBufferHandle src, UInt64 srcOffset,
                                                        RHIBufferHandle dst, UInt64 dstOffset, UInt64 size)
 {
     ASSERT(GetState() == ECommandBufferState::Recording);
@@ -646,13 +714,13 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::CopyBuffer(RHIBufferHandle src, UInt
     copyRegion.srcOffset = srcOffset;
     copyRegion.dstOffset = dstOffset;
     copyRegion.size = size;
-    vkCmdCopyBuffer(m_VkCommandBuffer, srcBuf->buffer, dstBuf->buffer, 1, &copyRegion);
+    ::vkCmdCopyBuffer(m_VkCommandBuffer, srcBuf->buffer, dstBuf->buffer, 1, &copyRegion);
 
     CaptureResource(src);
     CaptureResource(dst);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::BindIndexBuffer(RHIBufferHandle indexBuffer, UInt64 offset, EIndexType type)
+void RHIVkCommandBuffer::BindIndexBuffer(RHIBufferHandle indexBuffer, UInt64 offset, EIndexType type)
 { 
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* buf = vkDevice->GetBufferPool()->Get(indexBuffer);
@@ -665,7 +733,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BindIndexBuffer(RHIBufferHandle inde
 }
 
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::GenerateMipmaps(RHIImageHandle image) {
+void RHIVkCommandBuffer::GenerateMipmaps(RHIImageHandle image) {
   if (!image.IsValid()) return;
   auto *vkDevice = static_cast<RHIVkDevice *>(GetDevice());
   auto *img = vkDevice->GetImagePool()->Get(image);
@@ -720,7 +788,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::GenerateMipmaps(RHIImageHandle image
     blit.dstSubresource.baseArrayLayer = 0;
     blit.dstSubresource.layerCount = 1;
 
-    vkCmdBlitImage(m_VkCommandBuffer, img->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+    ::vkCmdBlitImage(m_VkCommandBuffer, img->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                    img->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
 
     // 4. Transition previous level (i-1) to SHADER_READ_ONLY_OPTIMAL
@@ -757,13 +825,13 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::GenerateMipmaps(RHIImageHandle image
   CaptureResource(image);
 }
 
-VkFence ArisenEngine::RHI::RHIVkCommandBuffer::GetSubmissionFence() const
+VkFence RHIVkCommandBuffer::GetSubmissionFence() const
 {
     // Fence ownership is separated from command buffer. Queue/device owns synchronization.
     return VK_NULL_HANDLE;
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::ResetInternal()
+void RHIVkCommandBuffer::ResetInternal()
 {
     if (GetState() == ECommandBufferState::Initial) return;
 
@@ -797,12 +865,9 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::ResetInternal()
 
     m_CurrentPipeline = nullptr;
     
-    vkResetCommandBuffer(m_VkCommandBuffer, 0);
+    ::vkResetCommandBuffer(m_VkCommandBuffer, 0);
     SetState(ECommandBufferState::Initial);
 }
 
-
-
-
-
+} // namespace ArisenEngine::RHI
 

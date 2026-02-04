@@ -237,20 +237,30 @@ namespace ArisenEngine::Testing
                 RHI_PSO_AddVertexInputAttributeDescription(m_Pso, attr.location, 0, attr.format, attr.offset);
             }
 
-            RHI_PSO_SetSampleCount(m_Pso, m_SampleCount);
+            RHI::RHIInputAssemblyState ia{};
+            ia.topology = RHI::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            RHI_PSO_SetInputAssemblyState(m_Pso, &ia);
+
+            RHI::RHIRasterizationState rs{};
+            rs.cullMode = RHI::CULL_MODE_NONE;
+            rs.frontFace = RHI::FRONT_FACE_COUNTER_CLOCKWISE;
+            rs.polygonMode = RHI::POLYGON_MODE_FILL;
+            rs.lineWidth = 1.0f;
+            RHI_PSO_SetRasterizationState(m_Pso, &rs);
+
+            RHI::RHIMultisampleState ms{};
+            ms.rasterizationSamples = m_SampleCount;
+            RHI_PSO_SetMultisampleState(m_Pso, &ms);
+
+            RHI::RHIColorBlendState cb{};
+            cb.attachments.push_back({ false, RHI::COLOR_COMPONENT_R_BIT | RHI::COLOR_COMPONENT_G_BIT | RHI::COLOR_COMPONENT_B_BIT | RHI::COLOR_COMPONENT_A_BIT });
+            RHI_PSO_SetColorBlendState(m_Pso, &cb);
 
             Containers::Vector<RHI::RHIBufferHandle> buffers;
             buffers.push_back(*reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[0]));
             RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 0, &buffers);
 
-
             RHI_PSO_BuildDescriptorSetLayout(m_Pso);
-
-            RHI_PSO_AddBlendAttachmentState_Simple(m_Pso, false,
-                RHI::COLOR_COMPONENT_R_BIT | RHI::COLOR_COMPONENT_G_BIT | RHI::COLOR_COMPONENT_B_BIT | RHI::COLOR_COMPONENT_A_BIT);
-
-            RHI_PSO_AddDynamicState(m_Pso, RHI::DYNAMIC_STATE_VIEWPORT);
-            RHI_PSO_AddDynamicState(m_Pso, RHI::DYNAMIC_STATE_SCISSOR);
 
             RHI::RHIDepthStencilState ds{};
             ds.depthTestEnable = true;
@@ -258,10 +268,7 @@ namespace ArisenEngine::Testing
             ds.depthCompareOp = RHI::COMPARE_OP_LESS;
             RHI_PSO_SetDepthStencilState(m_Pso, &ds);
 
-            RHI_PSO_SetCullMode(m_Pso, RHI::CULL_MODE_NONE);
-            RHI_PSO_SetFrontFace(m_Pso, RHI::FRONT_FACE_COUNTER_CLOCKWISE);
-            RHI_PSO_SetPolygonMode(m_Pso, RHI::EPOLYGON_MODE_FILL);
-            RHI_PSO_SetLineWidth(m_Pso, 1.0f);
+            RHI_PSO_SetDynamicStateMask(m_Pso, RHI::DYNAMIC_STATE_VIEWPORT_BIT | RHI::DYNAMIC_STATE_SCISSOR_BIT);
 
             m_Pipeline = RHI_PipelineManager_GetGraphicsPipeline(pm, m_Pso);
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i) {

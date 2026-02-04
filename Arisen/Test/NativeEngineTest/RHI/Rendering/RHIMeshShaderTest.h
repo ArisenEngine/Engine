@@ -163,14 +163,26 @@ namespace ArisenEngine::Testing
             RHI_PSO_AddProgram(m_MeshPso, m_MeshProgram);
             RHI_PSO_AddProgram(m_MeshPso, m_FragProgram);
             
+            RHI::RHIInputAssemblyState ia{};
+            ia.topology = RHI::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            RHI_PSO_SetInputAssemblyState(m_MeshPso, &ia);
+
+            RHI::RHIRasterizationState rs{};
+            rs.cullMode = RHI::CULL_MODE_NONE;
+            RHI_PSO_SetRasterizationState(m_MeshPso, &rs);
+
+            RHI::RHIColorBlendState cb{};
+            RHI::RHIColorBlendAttachmentState att{};
+            att.blendEnable = false;
+            att.colorWriteMask = 0xF;
+            cb.attachments.push_back(att);
+            RHI_PSO_SetColorBlendState(m_MeshPso, &cb);
+
             RHI_PSO_BuildDescriptorSetLayout(m_MeshPso);
-            RHI_PSO_AddDynamicState(m_MeshPso, RHI::DYNAMIC_STATE_VIEWPORT);
-            RHI_PSO_AddDynamicState(m_MeshPso, RHI::DYNAMIC_STATE_SCISSOR);
+            RHI_PSO_SetDynamicStateMask(m_MeshPso, RHI::DYNAMIC_STATE_VIEWPORT_BIT | RHI::DYNAMIC_STATE_SCISSOR_BIT);
             
             Containers::Vector<RHI::EFormat> colorFormats = { RHI::FORMAT_B8G8R8A8_SRGB };
             RHI_PSO_SetRenderingFormats(m_MeshPso, &colorFormats, RHI::FORMAT_UNDEFINED, RHI::FORMAT_UNDEFINED);
-            RHI_PSO_AddBlendAttachmentState_Simple(m_MeshPso, false, 0xF);
-            
             m_MeshPipeline = RHI_PipelineManager_GetGraphicsPipeline(pm, m_MeshPso);
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i) {
                 RHI_Pipeline_AllocGraphics(m_Device, m_MeshPipeline, i, nullptr); 

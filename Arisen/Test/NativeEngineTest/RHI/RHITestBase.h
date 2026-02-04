@@ -61,6 +61,7 @@ namespace ArisenEngine::Testing
     {
         RHI_BufferHandle vertexBuffer = 0;
         RHI_BufferHandle indexBuffer = 0;
+        UInt32 vertexCount = 0;
         UInt32 indexCount = 0;
         VertexLayout layout;
 

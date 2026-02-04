@@ -65,19 +65,7 @@ Target: Build a **Stateless**, **Handle-based**, **Highly Parallel**, and **C# I
 ---
 *Last Updated: 2026-01-27*
 
-
-🎨 第二阶段：现代管线推进 (高优先级)
-Mesh Shader 是未来的趋势，也是你最关心的现代特性。
-
-
-📚 第三阶段：传统管线补完 (中优先级 - 学习导向)
-这一阶段主要满足你对经典管线的好奇。
-
-[Task] Geometry Shader (几何着色器)
-在 Device 开启 geometryShader 特性。
-更新 RHI 的 Reflection 和 Stage 映射。
-学习点：尝试实现一个简单的法线可视化或粒子展开（Billboard）。
-[Task] Tessellation Shaders (曲面细分)
+Tessellation Shaders (曲面细分)
 开启 tessellationShader 特性。
 在 PSO 中添加对 VkPipelineTessellationStateCreateInfo（Patch Control Points）的支持。
 学习点：实现一个简单的地形细分（LOD）或平滑。

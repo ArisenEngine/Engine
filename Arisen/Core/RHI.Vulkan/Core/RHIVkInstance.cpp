@@ -45,8 +45,8 @@ int RateDeviceSuitability(VkPhysicalDevice device) {
     score += deviceProperties.limits.maxViewports;
     score += deviceProperties.limits.maxSamplerAnisotropy;
 
-    // Application can't function without geometry shaders
-    if (!deviceFeatures.geometryShader)
+    // Application can't function without geometry, tessellation shaders and wireframe support
+    if (!deviceFeatures.geometryShader || !deviceFeatures.tessellationShader || !deviceFeatures.fillModeNonSolid)
     {
         return 0;
     }
@@ -574,6 +574,8 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     VkPhysicalDeviceFeatures deviceFeatures{};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
     deviceFeatures.geometryShader = VK_TRUE;
+    deviceFeatures.tessellationShader = VK_TRUE;
+    deviceFeatures.fillModeNonSolid = VK_TRUE;
 
     VkPhysicalDeviceVulkan12Features vulkan12Features{};
     vulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
