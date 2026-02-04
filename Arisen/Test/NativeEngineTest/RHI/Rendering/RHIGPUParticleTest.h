@@ -212,18 +212,35 @@ namespace ArisenEngine::Testing
             RHI_PSO_AddProgram(m_GraphicsPso, m_VertProgram);
             RHI_PSO_AddProgram(m_GraphicsPso, m_FragProgram);
             
+            RHI_PSO_SetBindPoint(m_GraphicsPso, RHI::PIPELINE_BIND_POINT_GRAPHICS);
+
+            RHI::RHIInputAssemblyState ia{};
+            ia.topology = RHI::PRIMITIVE_TOPOLOGY_POINT_LIST;
+            RHI_PSO_SetInputAssemblyState(m_GraphicsPso, &ia);
+
+            RHI::RHIRasterizationState rs{};
+            rs.cullMode = RHI::CULL_MODE_NONE;
+            RHI_PSO_SetRasterizationState(m_GraphicsPso, &rs);
+
+            RHI::RHIColorBlendState cb{};
+            // Additive blending: SrcColor * 1 + DstColor * 1
+            RHI::RHIColorBlendAttachmentState att{};
+            att.blendEnable = true;
+            att.colorWriteMask = 0xF;
+            att.srcColorBlendFactor = RHI::BLEND_FACTOR_ONE;
+            att.dstColorBlendFactor = RHI::BLEND_FACTOR_ONE;
+            att.colorBlendOp = RHI::BLEND_OP_ADD;
+            att.srcAlphaBlendFactor = RHI::BLEND_FACTOR_ONE;
+            att.dstAlphaBlendFactor = RHI::BLEND_FACTOR_ZERO;
+            att.alphaBlendOp = RHI::BLEND_OP_ADD;
+            cb.attachments.push_back(att);
+            RHI_PSO_SetColorBlendState(m_GraphicsPso, &cb);
+
             RHI_PSO_BuildDescriptorSetLayout(m_GraphicsPso);
-            RHI_PSO_SetPrimitiveState(m_GraphicsPso, RHI::PRIMITIVE_TOPOLOGY_POINT_LIST, false);
-            RHI_PSO_AddDynamicState(m_GraphicsPso, RHI::DYNAMIC_STATE_VIEWPORT);
-            RHI_PSO_AddDynamicState(m_GraphicsPso, RHI::DYNAMIC_STATE_SCISSOR);
-            
+            RHI_PSO_SetDynamicStateMask(m_GraphicsPso, RHI::DYNAMIC_STATE_VIEWPORT_BIT | RHI::DYNAMIC_STATE_SCISSOR_BIT);
+
             Containers::Vector<RHI::EFormat> colorFormats = { RHI::FORMAT_B8G8R8A8_SRGB };
             RHI_PSO_SetRenderingFormats(m_GraphicsPso, &colorFormats, RHI::FORMAT_UNDEFINED, RHI::FORMAT_UNDEFINED);
-            
-            // Enable Additive Blending
-            // Note: RHI_PSO_AddBlendAttachmentState_Simple is already there, but we might need a more specific one if available.
-            // For now, let's keep it simple or look for a more advanced one.
-            RHI_PSO_AddBlendAttachmentState_Simple(m_GraphicsPso, true, 0xF); 
 
             m_GraphicsPipeline = RHI_PipelineManager_GetGraphicsPipeline(pm, m_GraphicsPso);
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i) {

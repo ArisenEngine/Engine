@@ -251,16 +251,23 @@ namespace ArisenEngine::Testing
                 RHI_PSO_AddVertexInputAttributeDescription(m_Pso, attr.location, 0, attr.format, attr.offset);
             }
 
-            RHI_PSO_SetTopology(m_Pso, RHI::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-            RHI_PSO_SetCullMode(m_Pso, RHI::CULL_MODE_NONE);
+            RHI::RHIInputAssemblyState ia{};
+            ia.topology = RHI::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            RHI_PSO_SetInputAssemblyState(m_Pso, &ia);
+
+            RHI::RHIRasterizationState rs{};
+            rs.cullMode = RHI::CULL_MODE_NONE;
+            RHI_PSO_SetRasterizationState(m_Pso, &rs);
+
+            RHI::RHIColorBlendState cb{};
+            RHI::RHIColorBlendAttachmentState att{};
+            att.blendEnable = false;
+            att.colorWriteMask = RHI::COLOR_COMPONENT_R_BIT | RHI::COLOR_COMPONENT_G_BIT | RHI::COLOR_COMPONENT_B_BIT | RHI::COLOR_COMPONENT_A_BIT;
+            cb.attachments.push_back(att);
+            RHI_PSO_SetColorBlendState(m_Pso, &cb);
 
             RHI_PSO_BuildDescriptorSetLayout(m_Pso);
-
-            RHI_PSO_AddBlendAttachmentState_Simple(m_Pso, false,
-                RHI::COLOR_COMPONENT_R_BIT | RHI::COLOR_COMPONENT_G_BIT | RHI::COLOR_COMPONENT_B_BIT | RHI::COLOR_COMPONENT_A_BIT);
-            
-            RHI_PSO_AddDynamicState(m_Pso, RHI::DYNAMIC_STATE_VIEWPORT);
-            RHI_PSO_AddDynamicState(m_Pso, RHI::DYNAMIC_STATE_SCISSOR);
+            RHI_PSO_SetDynamicStateMask(m_Pso, RHI::DYNAMIC_STATE_VIEWPORT_BIT | RHI::DYNAMIC_STATE_SCISSOR_BIT);
 
             RHI::RHIDepthStencilState ds{};
             ds.depthTestEnable = true;

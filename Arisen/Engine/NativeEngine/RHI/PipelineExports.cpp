@@ -100,109 +100,32 @@ extern "C" ENGINE_DLL void RHI_PSO_SetBindPoint(RHI_PSOHandle pso, RHI::EPipelin
     s->SetBindPoint(bindPoint);
 }
 
-extern "C" ENGINE_DLL void RHI_PSO_AddDynamicState(RHI_PSOHandle pso, RHI::EDynamicPipelineState state)
+extern "C" ENGINE_DLL void RHI_PSO_SetInputAssemblyState(RHI_PSOHandle pso, const RHI::RHIInputAssemblyState* state)
 {
     auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
-    if (s == nullptr) return;
-    s->AddDynamicPipelineState(state);
+    if (s == nullptr || state == nullptr) return;
+    s->SetInputAssemblyState(*state);
 }
 
-extern "C" ENGINE_DLL void RHI_PSO_SetTopology(RHI_PSOHandle pso, RHI::EPrimitiveTopology topology)
+extern "C" ENGINE_DLL void RHI_PSO_SetRasterizationState(RHI_PSOHandle pso, const RHI::RHIRasterizationState* state)
 {
     auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
-    if (s == nullptr) return;
-    s->SetPrimitiveState(topology, false);
+    if (s == nullptr || state == nullptr) return;
+    s->SetRasterizationState(*state);
 }
 
-extern "C" ENGINE_DLL void RHI_PSO_AddBlendAttachmentState(RHI_PSOHandle pso, bool enable, RHI::EBlendFactor srcColor, RHI::EBlendFactor dstColor, RHI::EBlendOp colorBlendOp, RHI::EBlendFactor srcAlpha, RHI::EBlendFactor dstAlpha, RHI::EBlendOp alphaBlendOp, unsigned int writeMask)
+extern "C" ENGINE_DLL void RHI_PSO_SetMultisampleState(RHI_PSOHandle pso, const RHI::RHIMultisampleState* state)
 {
     auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
-    if (s == nullptr) return;
-    s->AddBlendAttachmentState(enable, srcColor, dstColor, colorBlendOp, srcAlpha, dstAlpha, alphaBlendOp, writeMask);
+    if (s == nullptr || state == nullptr) return;
+    s->SetMultisampleState(*state);
 }
 
-extern "C" ENGINE_DLL void RHI_PSO_SetDepthClampEnable(RHI_PSOHandle pso, bool enable)
+extern "C" ENGINE_DLL void RHI_PSO_SetColorBlendState(RHI_PSOHandle pso, const RHI::RHIColorBlendState* state)
 {
     auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
-    if (s == nullptr) return;
-    s->SetDepthClampEnable(enable);
-}
-
-extern "C" ENGINE_DLL void RHI_PSO_SetRasterizerDiscardEnable(RHI_PSOHandle pso, bool enable)
-{
-    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
-    if (s == nullptr) return;
-    s->SetRasterizerDiscardEnable(enable);
-}
-
-extern "C" ENGINE_DLL void RHI_PSO_SetPolygonMode(RHI_PSOHandle pso, RHI::EPolygonMode mode)
-{
-    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
-    if (s == nullptr) return;
-    s->SetPolygonMode(mode);
-}
-
-extern "C" ENGINE_DLL void RHI_PSO_SetLineWidth(RHI_PSOHandle pso, float lineWidth)
-{
-    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
-    if (s == nullptr) return;
-    s->SetLineWidth(lineWidth);
-}
-
-extern "C" ENGINE_DLL void RHI_PSO_SetCullMode(RHI_PSOHandle pso, RHI::ECullModeFlagBits cull)
-{
-    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
-    if (s == nullptr) return;
-    s->SetCullMode(cull);
-}
-
-extern "C" ENGINE_DLL void RHI_PSO_SetFrontFace(RHI_PSOHandle pso, RHI::EFrontFace face)
-{
-    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
-    if (s == nullptr) return;
-    s->SetFrontFace(face);
-}
-
-extern "C" ENGINE_DLL void RHI_PSO_SetDepthBiasEnable(RHI_PSOHandle pso, bool enable)
-{
-    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
-    if (s == nullptr) return;
-    s->SetDepthBiasEnable(enable);
-}
-
-extern "C" ENGINE_DLL void RHI_PSO_SetSampleShading(RHI_PSOHandle pso, bool enable)
-{
-    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
-    if (s == nullptr) return;
-    s->SetSampleShading(enable);
-}
-
-extern "C" ENGINE_DLL void RHI_PSO_SetSampleCount(RHI_PSOHandle pso, RHI::ESampleCountFlagBits sample)
-{
-    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
-    if (s == nullptr) return;
-    s->SetSampleCount(sample);
-}
-
-extern "C" ENGINE_DLL void RHI_PSO_AddBlendAttachmentState_Simple(RHI_PSOHandle pso, bool enable, unsigned int writeMask)
-{
-    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
-    if (s == nullptr) return;
-    s->AddBlendAttachmentState(enable, writeMask);
-}
-
-extern "C" ENGINE_DLL void RHI_PSO_SetLogicOp(RHI_PSOHandle pso, bool enable, RHI::ELogicOp op)
-{
-    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
-    if (s == nullptr) return;
-    s->SetLogicOp(enable, op);
-}
-
-extern "C" ENGINE_DLL void RHI_PSO_SetBlendConstants(RHI_PSOHandle pso, float r, float g, float b, float a)
-{
-    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
-    if (s == nullptr) return;
-    s->SetBlendConstants(r, g, b, a);
+    if (s == nullptr || state == nullptr) return;
+    s->SetColorBlendState(*state);
 }
 
 extern "C" ENGINE_DLL void RHI_PSO_SetDepthStencilState(RHI_PSOHandle pso, const RHI::RHIDepthStencilState* state)
@@ -210,6 +133,20 @@ extern "C" ENGINE_DLL void RHI_PSO_SetDepthStencilState(RHI_PSOHandle pso, const
     auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
     if (s == nullptr || state == nullptr) return;
     s->SetDepthStencilState(*state);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_SetTessellationState(RHI_PSOHandle pso, const RHI::RHITessellationState* state)
+{
+    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
+    if (s == nullptr || state == nullptr) return;
+    s->SetTessellationState(*state);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_SetDynamicStateMask(RHI_PSOHandle pso, ArisenEngine::UInt64 mask)
+{
+    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
+    if (s == nullptr) return;
+    s->SetDynamicStateMask(mask);
 }
 
 extern "C" ENGINE_DLL void RHI_PSO_SetRenderingFormats(RHI_PSOHandle pso, ArisenEngine::Containers::Vector<ArisenEngine::RHI::EFormat>* colorFormats, ArisenEngine::RHI::EFormat depthFormat, ArisenEngine::RHI::EFormat stencilFormat)

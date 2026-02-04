@@ -33,57 +33,26 @@ namespace ArisenEngine::RHI
 
         bool IsMeshPipeline() const override;
 
-        void* GetStageCreateInfo() override
-        {
-            return m_PipelineStageCreateInfos.data();
-        }
-
         // Vertex
         void AddVertexInputAttributeDescription(UInt32 location, UInt32 binding, EFormat format, UInt32 offset) override;
-        UInt32 GetVertexInputAttributeDescriptionCount() override;
-        void* GetVertexInputAttributeDescriptions() override;
-        void ClearVertexBindingDescriptions() override;
-        
         void AddVertexBindingDescription(UInt32 binding, UInt32 stride, EVertexInputRate inputRate) override;
-        UInt32 GetVertexBindingDescriptionCount() override;
-        void* GetVertexBindingDescriptions() override;
-        void ClearVertexInputAttributeDescriptions() override;
+        void ClearVertexInputDescriptions() override;
         
-        UInt32 GetStageCount() override;
-       
-        // Blend state
-    public:
-
-        void AddBlendAttachmentState(bool enable, EBlendFactor srcColor, EBlendFactor dstColor, EBlendOp colorBlendOp,
-            EBlendFactor srcAlpha, EBlendFactor dstAlpha, EBlendOp alphaBlendOp, UInt32 writeMask) override;
-        void AddBlendAttachmentState(bool enable, UInt32 writeMask) override;
-        void ClearBlendState() override;
-        const UInt32 GetBlendStateCount() const override;  
-        void* GetBlendAttachmentStates() override;
-
         // Resource Binding (Auto-Layout compatible)
-
         void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos) override;
         void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIBufferHandle>&& bufferHandles) override;
         void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIImageViewHandle>&& texelBufferViews) override;
         
-    private:
-        
-        void InternalAddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding,
-    EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags);
-        
-        void InternalAddDescriptorUpdateInfo(UInt32 layoutIndex, UInt32 binding,EDescriptorType type,
-            UInt32 descriptorCount, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos,
-            const Containers::Vector<RHIBufferHandle>&& bufferHandles, const Containers::Vector<RHIImageViewHandle>&& bufferViews);
-        
-    public:
-        
-        void ClearDescriptorSetLayoutBindings() override;
-      
-        void* GetDescriptorSetLayouts() override;
-        UInt32 DescriptorSetLayoutCount() override;
-        void ClearDescriptorSetLayouts() override;
         void BuildDescriptorSetLayout() override;
+
+        // Structured State
+        void SetTessellationState(const RHITessellationState& state) override { m_TessellationState = state; }
+        const RHITessellationState& GetTessellationState() const override { return m_TessellationState; }
+
+        void SetColorBlendState(const RHIColorBlendState& state) override { m_ColorBlendState = state; }
+        const RHIColorBlendState& GetColorBlendState() const override { return m_ColorBlendState; }
+
+        void SetRenderingFormats(const Containers::Vector<EFormat>& colorFormats, EFormat depthFormat, EFormat stencilFormat) override;
 
     public:
         // Vk API
@@ -91,19 +60,25 @@ namespace ArisenEngine::RHI
 
         const Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, RHIDescriptorUpdateInfo>>&
         GetDescriptorUpdateInfos(UInt32 layoutIndex) const;
+
+        const VkDescriptorSetLayout* GetDescriptorSetLayouts() const;
+        UInt32 GetDescriptorSetLayoutCount() const;
+        void ClearDescriptorSetLayouts();
+        void ClearDescriptorSetLayoutBindings() override;
+
     private:
-        
         RHIVkDevice* m_Device;
 
         EPipelineBindPoint m_BindPoint { EPipelineBindPoint::PIPELINE_BIND_POINT_GRAPHICS };
         
-        // Dynamic Rendering
+        RHITessellationState m_TessellationState;
+        RHIColorBlendState m_ColorBlendState;
+
         Containers::Vector<VkFormat> m_ColorAttachmentFormats;
         VkFormat m_DepthAttachmentFormat { VK_FORMAT_UNDEFINED };
         VkFormat m_StencilAttachmentFormat { VK_FORMAT_UNDEFINED };
         
     public:
-        void SetRenderingFormats(const Containers::Vector<EFormat>& colorFormats, EFormat depthFormat, EFormat stencilFormat) override;
         bool IsDynamicRendering() const { return !m_ColorAttachmentFormats.empty() || m_DepthAttachmentFormat != VK_FORMAT_UNDEFINED || m_StencilAttachmentFormat != VK_FORMAT_UNDEFINED; }
         
         void FillRenderingCreateInfo(VkPipelineRenderingCreateInfoKHR& createInfo) const;
@@ -112,7 +87,6 @@ namespace ArisenEngine::RHI
 
         // stages
         Containers::Vector<VkPipelineShaderStageCreateInfo> m_PipelineStageCreateInfos {};
-        Containers::Vector<VkPipelineColorBlendAttachmentState> m_BlendAttachmentStates {};
 
         // vertex
         Containers::Vector<VkVertexInputBindingDescription> m_VertexInputBindingDescriptions {};
@@ -121,10 +95,7 @@ namespace ArisenEngine::RHI
         // descriptor
         Containers::Map<UInt32, Containers::Vector<VkDescriptorSetLayoutBinding>> m_DescriptorSetLayoutBindings {};
         Containers::Vector<VkDescriptorSetLayout> m_DescriptorSetLayouts {};
-        // layout index,
-        //     binding index,
-        //             Descriptor Type - RHIDescriptorUpdateInfo
-        //               
+        
         Containers::Map<UInt32, Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, RHIDescriptorUpdateInfo>>> m_DescriptorUpdateInfos {};
 
         // push constants
@@ -132,6 +103,20 @@ namespace ArisenEngine::RHI
 
     public:
         const Containers::Vector<VkPushConstantRange>& GetPushConstantRanges() const { return m_PushConstantRanges; }
+        
+        // Internal helpers for pipeline creation
+        UInt32 GetStageCount() const { return static_cast<UInt32>(m_PipelineStageCreateInfos.size()); }
+        const VkPipelineShaderStageCreateInfo* GetStageCreateInfos() const { return m_PipelineStageCreateInfos.data(); }
+        const Containers::Vector<VkVertexInputBindingDescription>& GetVertexInputBindingDescriptions() const { return m_VertexInputBindingDescriptions; }
+        const Containers::Vector<VkVertexInputAttributeDescription>& GetVertexInputAttributeDescriptions() const { return m_VertexInputAttributeDescriptions; }
+
+    private:
+        void InternalAddDescriptorSetLayoutBinding(UInt32 layoutIndex, UInt32 binding,
+            EDescriptorType type, UInt32 descriptorCount, UInt32 shaderStageFlags);
+
+        void InternalAddDescriptorUpdateInfo(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
+            UInt32 descriptorCount, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos,
+            const Containers::Vector<RHIBufferHandle>&& bufferHandles, const Containers::Vector<RHIImageViewHandle>&& bufferViews);
     };
 }
 

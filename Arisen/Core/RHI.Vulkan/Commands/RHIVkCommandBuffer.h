@@ -1,6 +1,6 @@
 #pragma once
 #include "Presentation/RHIVkFrameBuffer.h"
-#include "RHI/Commands/RHICommandBuffer.h"
+#include "../../Core.RHI/RHI/Commands/RHICommandBuffer.h"
 #include "RHI/Enums/Pipeline/EIndexType.h"
 #include "RHI/Enums/Subpass/EDependencyFlag.h"
 #include "RHI/Handles/RHIHandle.h"
@@ -8,6 +8,11 @@
 #include "RHI/Sync/RHIImageMemoryBarrier.h"
 #include "RHI/Sync/RHIMemoryBarrier.h"
 #include <vulkan/vulkan_core.h>
+#include "RHI/Enums/Pipeline/ECullMode.h"
+#include "RHI/Enums/Pipeline/EFrontFace.h"
+#include "RHI/Enums/Pipeline/EPrimitiveTopology.h"
+#include "RHI/Enums/Sampler/ECompareOp.h"
+#include "RHI/Pipeline/RHIDepthStencilState.h"
 #include <thread>
 
 
@@ -37,6 +42,18 @@ public:
                    Float32 height) override;
   void SetScissor(UInt32 offsetX, UInt32 offsetY, UInt32 width,
                   UInt32 height) override;
+  void SetLineWidth(Float32 lineWidth) override;
+  void SetDepthBias(Float32 depthBiasConstantFactor, Float32 depthBiasClamp, Float32 depthBiasSlopeFactor) override;
+  void SetBlendConstants(const Float32 blendConstants[4]) override;
+  void SetStencilReference(UInt32 faceMask, UInt32 reference) override;
+  void SetCullMode(ECullModeFlagBits cullMode) override;
+  void SetFrontFace(EFrontFace frontFace) override;
+  void SetPrimitiveTopology(EPrimitiveTopology topology) override;
+  void SetDepthTestEnable(bool enable) override;
+  void SetDepthWriteEnable(bool enable) override;
+  void SetDepthCompareOp(ECompareOp depthCompareOp) override;
+  void SetStencilTestEnable(bool enable) override;
+  void SetStencilOp(UInt32 faceMask, EStencilOp failOp, EStencilOp passOp, EStencilOp depthFailOp, ECompareOp compareOp) override;
 
   void BindPipeline(UInt32 frameIndex, RHIPipelineHandle pipeline) override;
 
