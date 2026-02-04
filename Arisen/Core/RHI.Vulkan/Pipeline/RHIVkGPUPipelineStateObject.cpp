@@ -183,7 +183,7 @@ void RHIVkGPUPipelineStateObject::BuildDescriptorSetLayout()
         if (set > maxSet) maxSet = set;
     }
 
-    m_DescriptorSetLayouts.resize((std::max)(maxSet + 1, 3u)); // Ensure at least 3 sets for common slot mapping
+    m_DescriptorSetLayouts.resize((std::max)(maxSet + 1, 4u)); // Ensure at least 4 sets (0-2 common + 3 bindless)
     
     for (UInt32 i = 0; i < m_DescriptorSetLayouts.size(); ++i)
     {
