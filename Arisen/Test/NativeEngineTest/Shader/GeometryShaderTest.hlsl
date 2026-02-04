@@ -32,6 +32,8 @@ struct SceneData
 };
 
 ConstantBuffer<SceneData> cbScene : register(b0, space0);
+Texture2D baseColorTexture : register(t1, space0);
+SamplerState baseColorSampler : register(s2, space0);
 
 VSOutput vs_main(VSInput input)
 {
@@ -63,39 +65,45 @@ void gs_main(triangle VSOutput input[3], inout TriangleStream<GSOutput> outStrea
     outStream.RestartStrip();
 
     // 2. Emit fur spikes for each vertex
-    float furLength = 0.05f;
-    float furWidth = 0.01f;
+    float furLength = 0.12f; // Longer fur
+    float furWidth = 0.008f;
+    float3 gravity = float3(0.0f, -0.6f, 0.0f); // Gravity for drooping
 
     for (int j = 0; j < 3; ++j)
     {
         float3 basePos = input[j].PosW;
         float3 normal = normalize(input[j].NormalW);
+        
+        // Calculate tip position with drooping
         float3 tipPos = basePos + normal * furLength;
+        tipPos += gravity * (furLength * furLength); // Droop factor tied to length
 
         // Create a small spike triangle at the vertex
-        // Use a simple right vector for width
         float3 up = abs(normal.y) > 0.999f ? float3(0, 0, 1) : float3(0, 1, 0);
         float3 right = normalize(cross(up, normal)) * furWidth;
 
+        // Sample base color for the fur
+        float4 baseColor = baseColorTexture.SampleLevel(baseColorSampler, input[j].UV, 0);
+
         // Vertex 1: Base Left
         output.PosH = mul(viewProj, float4(basePos - right, 1.0f));
-        output.Color = float4(0.4, 0.2, 0.1, 1.0); // Fur base color
+        output.Color = baseColor; 
         output.UV = input[j].UV;
         output.NormalW = normal;
         outStream.Append(output);
 
         // Vertex 2: Base Right
         output.PosH = mul(viewProj, float4(basePos + right, 1.0f));
-        output.Color = float4(0.4, 0.2, 0.1, 1.0);
+        output.Color = baseColor;
         output.UV = input[j].UV;
         output.NormalW = normal;
         outStream.Append(output);
 
-        // Vertex 3: Tip
+        // Vertex 3: Tip (darker)
         output.PosH = mul(viewProj, float4(tipPos, 1.0f));
-        output.Color = float4(0.1, 0.1, 0.05, 1.0); // Fur tip color
+        output.Color = baseColor * 0.4f; // Darker tip
         output.UV = input[j].UV;
-        output.NormalW = normal;
+        output.NormalW = normalize(normal + gravity * 0.5f);
         outStream.Append(output);
 
         outStream.RestartStrip();
@@ -104,7 +112,15 @@ void gs_main(triangle VSOutput input[3], inout TriangleStream<GSOutput> outStrea
 
 float4 ps_main(GSOutput input) : SV_TARGET
 {
+    float4 texColor = baseColorTexture.Sample(baseColorSampler, input.UV);
+    float3 finalColor = texColor.rgb;
+    
+    // If color in input is overridden (like for spikes), blend it
+    // Note: for original triangle, input.Color is from VS; for spikes, it's the sampled baseColor
+    finalColor = input.Color.rgb;
+
     float3 lightDir = normalize(float3(1.0, 1.0, -1.0));
     float diff = max(dot(normalize(input.NormalW), lightDir), 0.2);
-    return float4(input.Color.rgb * diff, input.Color.a);
+    
+    return float4(finalColor * diff, 1.0f);
 }

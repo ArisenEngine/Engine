@@ -225,9 +225,15 @@ namespace ArisenEngine::Testing
                 RHI_RenderPass_Alloc(m_Device, m_RenderPass, i);
             }
 
-            Containers::Vector<RHI::EDescriptorType> types = { RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER };
-            Containers::Vector<UInt32> counts = { 1 };
-            m_DescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &types, &counts, 1));
+            Containers::Vector<RHI::EDescriptorType> types = { 
+                RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                RHI::DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                RHI::DESCRIPTOR_TYPE_SAMPLER
+            };
+            UInt32 matCount = (UInt32)m_Model.materials.size();
+            if (matCount == 0) matCount = 1;
+            Containers::Vector<UInt32> counts = { matCount, matCount, matCount };
+            m_DescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &types, &counts, matCount));
         }
 
         void CreatePipeline()
@@ -272,7 +278,7 @@ namespace ArisenEngine::Testing
         {
             UpdateCamera((float)frameTime);
             UniformBufferObject ubo;
-            ubo.model = glm::rotate(glm::mat4(1.0f), (float)m_FrameIndex * 0.01f, glm::vec3(0, 1, 0));
+            ubo.model = glm::mat4(1.0f); // Disabled rotation
             ubo.view = GetViewMatrix();
             float width = (float)HAL::GetWindowWidth(m_WindowId);
             float height = (float)HAL::GetWindowHeight(m_WindowId);
@@ -289,12 +295,6 @@ namespace ArisenEngine::Testing
 
             RHI_DescriptorPool_Reset(m_DescriptorPool, m_DescriptorPoolIds[0]);
             
-            Containers::Vector<RHI_BufferHandle> ubos = { m_UboBuffers[currentIndex] };
-            RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 0, reinterpret_cast<ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIBufferHandle>*>(&ubos));
-
-            UInt32 setIdx = RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[0], 0, m_Pso);
-            RHI_DescriptorPool_UpdateDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[0], setIdx, m_Pso);
-
             RHI_Cmd_Begin(cmd, currentIndex, 0);
 
             auto surface = RHI_Instance_GetSurface(m_Instance, m_WindowId);
@@ -333,10 +333,29 @@ namespace ArisenEngine::Testing
                 RHI_Cmd_BindVertexBuffers(cmd, m_Model.vertexBuffer, 0);
                 RHI_Cmd_BindIndexBuffer(cmd, m_Model.indexBuffer, 0, RHI::INDEX_TYPE_UINT32);
 
-                RHI_Cmd_BindDescriptorSet_FromPool(cmd, currentIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[0], setIdx);
-                
                 for (const auto& prim : m_Model.primitives)
                 {
+                    auto& mat = m_Model.materials[prim.materialIndex >= 0 ? prim.materialIndex : 0];
+                    
+                    Containers::Vector<RHI::RHIBufferHandle> ubos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffers[currentIndex]) };
+                    RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 0, &ubos);
+
+                    RHI::RHIDescriptorImageInfo texInfo = {};
+                    texInfo.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&mat.baseColorView);
+                    texInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    Containers::Vector<RHI::RHIDescriptorImageInfo> texInfos = { texInfo };
+                    RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 1, &texInfos);
+
+                    RHI::RHIDescriptorImageInfo samInfo = {};
+                    samInfo.sampler = *reinterpret_cast<RHI::RHISamplerHandle*>(&mat.sampler);
+                    samInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    Containers::Vector<RHI::RHIDescriptorImageInfo> samInfos = { samInfo };
+                    RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 2, &samInfos);
+
+                    UInt32 setIdx = RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[0], 0, m_Pso);
+                    RHI_DescriptorPool_UpdateDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[0], setIdx, m_Pso);
+
+                    RHI_Cmd_BindDescriptorSet_FromPool(cmd, currentIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[0], setIdx);
                     RHI_Cmd_DrawIndexed(cmd, prim.indexCount, 1, prim.firstIndex, 0, 0, 0);
                 }
 
