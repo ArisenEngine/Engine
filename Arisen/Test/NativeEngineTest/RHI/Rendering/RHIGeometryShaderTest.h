@@ -1,37 +1,21 @@
 #pragma once
 
 #include "../RHIRenderingTestBase.h"
-#include <random>
 
 namespace ArisenEngine::Testing
 {
     class RHIGeometryShaderTest : public RHIRenderingTestBase
     {
     private:
-        struct ParticleVertex
-        {
-            glm::vec3 pos;
-            glm::vec4 color;
-            glm::vec2 size;
-        };
-
-        struct ParticleSceneData
-        {
-            glm::mat4 view;
-            glm::mat4 proj;
-            glm::vec3 cameraPos;
-            float padding;
-        };
-
         RHI_PSOHandle m_Pso = nullptr;
         RHI_PipelineHandle m_Pipeline = 0;
-        RHI_BufferHandle m_ParticleBuffer = 0;
         Containers::Vector<RHI_BufferHandle> m_UboBuffers;
         RHI_SubpassHandle m_Subpass = 0;
         
         RHI_GPUProgramHandle m_GsProgram = 0;
 
-        const UInt32 m_ParticleCount = 1000;
+        RHI_ImageHandle m_DepthImage = 0;
+        RHI_ImageViewHandle m_DepthView = 0;
 
     public:
         const char* GetName() const override { return "GeometryShaderTest"; }
@@ -128,13 +112,15 @@ namespace ArisenEngine::Testing
 
         void TeardownTest() override
         {
-            if (m_ParticleBuffer) RHI_Device_ReleaseBuffer(m_Device, m_ParticleBuffer);
+            if (m_DepthImage) RHI_Device_ReleaseImage(m_Device, m_DepthImage);
             for (auto& ub : m_UboBuffers)
             {
                 if (ub) RHI_Device_ReleaseBuffer(m_Device, ub);
             }
             if (m_GsProgram) RHI_Device_ReleaseGPUProgram(m_Device, m_GsProgram);
             if (m_Pso) RHI_PSO_Destroy(m_Pso);
+
+            m_Model.Release(m_Device);
 
             RHIRenderingTestBase::TeardownTest();
         }
@@ -157,40 +143,52 @@ namespace ArisenEngine::Testing
     private:
         void CreateResources()
         {
-            // Create Particles
-            std::vector<ParticleVertex> particles(m_ParticleCount);
-            std::default_random_engine rndEngine((unsigned)time(nullptr));
-            std::uniform_real_distribution<float> distPos(-5.0f, 5.0f);
-            std::uniform_real_distribution<float> distSize(0.5f, 2.0f);
-            std::uniform_real_distribution<float> distColor(0.5f, 1.0f);
-
-            for (auto& p : particles)
-            {
-                p.pos = glm::vec3(distPos(rndEngine), distPos(rndEngine), distPos(rndEngine));
-                p.color = glm::vec4(distColor(rndEngine), distColor(rndEngine), distColor(rndEngine), 1.0f);
-                p.size = glm::vec2(distSize(rndEngine));
-            }
-
-            RHI::RHIBufferDescriptor pDesc = {};
-            pDesc.size = particles.size() * sizeof(ParticleVertex);
-            pDesc.usage = RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT;
-            pDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
-            m_ParticleBuffer = RHI_Device_CreateBuffer(m_Device, &pDesc, "ParticleBuffer");
+            wchar_t exePathW[MAX_PATH]{};
+            GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
+            auto exeDir = std::filesystem::path(exePathW).parent_path();
             
-            // Initial upload
-            RHI_Buffer_MemoryCopy(m_Device, m_ParticleBuffer, particles.data(), pDesc.size, 0);
+            std::filesystem::path duckPath = exeDir / "Assets" / "glTF-Sample-Models" / "2.0" / "Duck" / "glTF" / "Duck.gltf";
+            m_Model = LoadGLTF(duckPath.string());
 
             // UBOs
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
                 RHI::RHIBufferDescriptor ubDesc = {};
-                ubDesc.size = sizeof(ParticleSceneData);
+                ubDesc.size = sizeof(UniformBufferObject);
                 ubDesc.usage = RHI::BUFFER_USAGE_UNIFORM_BUFFER_BIT;
                 ubDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
-                m_UboBuffers.push_back(RHI_Device_CreateBuffer(m_Device, &ubDesc, "ParticleUBO"));
+                m_UboBuffers.push_back(RHI_Device_CreateBuffer(m_Device, &ubDesc, "UBO"));
             }
 
-            m_CameraPos = glm::vec3(0.0f, 0.0f, 10.0f);
+            UInt32 width = HAL::GetWindowWidth(m_WindowId);
+            UInt32 height = HAL::GetWindowHeight(m_WindowId);
+
+            // Depth Image
+            RHI::RHIImageDescriptor dimgDesc = {};
+            dimgDesc.imageType = RHI::IMAGE_TYPE_2D;
+            dimgDesc.width = width;
+            dimgDesc.height = height;
+            dimgDesc.depth = 1;
+            dimgDesc.mipLevels = 1;
+            dimgDesc.arrayLayers = 1;
+            dimgDesc.format = RHI::FORMAT_D32_SFLOAT;
+            dimgDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
+            dimgDesc.usage = RHI::IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+            dimgDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
+            dimgDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            m_DepthImage = RHI_Device_CreateImage(m_Device, &dimgDesc, "DepthBuffer");
+
+            RHI::RHIImageViewDesc dviewDesc = {};
+            dviewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
+            dviewDesc.format = RHI::FORMAT_D32_SFLOAT;
+            dviewDesc.aspectMask = RHI::IMAGE_ASPECT_DEPTH_BIT;
+            dviewDesc.levelCount = 1;
+            dviewDesc.layerCount = 1;
+            dviewDesc.width = width;
+            dviewDesc.height = height;
+            m_DepthView = RHI_Image_AddImageView(m_Device, m_DepthImage, &dviewDesc);
+
+            m_CameraPos = glm::vec3(0.0f, 1.0f, 3.0f);
         }
 
         void InitRenderContext()
@@ -206,9 +204,21 @@ namespace ArisenEngine::Testing
                 RHI::IMAGE_LAYOUT_UNDEFINED,
                 RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
+            // Depth attachment
+            RHI_RenderPass_AddAttachmentAction(m_Device, m_RenderPass,
+                RHI::FORMAT_D32_SFLOAT,
+                RHI::SAMPLE_COUNT_1_BIT,
+                RHI::ATTACHMENT_LOAD_OP_CLEAR,
+                RHI::ATTACHMENT_STORE_OP_DONT_CARE,
+                RHI::ATTACHMENT_LOAD_OP_DONT_CARE,
+                RHI::ATTACHMENT_STORE_OP_DONT_CARE,
+                RHI::IMAGE_LAYOUT_UNDEFINED,
+                RHI::IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
             m_Subpass = RHI_RenderPass_AddSubPass(m_Device, m_RenderPass);
             RHI_Subpass_SetBindPoint(m_Subpass, RHI::PIPELINE_BIND_POINT_GRAPHICS);
             RHI_Subpass_AddColorReference(m_Subpass, 0, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            RHI_Subpass_SetDepthStencilReference(m_Subpass, 1, RHI::IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
@@ -229,23 +239,28 @@ namespace ArisenEngine::Testing
             RHI_PSO_AddProgram(m_Pso, m_GsProgram);
             RHI_PSO_AddProgram(m_Pso, m_FragProgram);
 
-            RHI_PSO_AddVertexBindingDescription(m_Pso, 0, sizeof(ParticleVertex), RHI::VERTEX_INPUT_RATE_VERTEX);
-            RHI_PSO_AddVertexInputAttributeDescription(m_Pso, 0, 0, RHI::FORMAT_R32G32B32_SFLOAT, offsetof(ParticleVertex, pos));
-            RHI_PSO_AddVertexInputAttributeDescription(m_Pso, 1, 0, RHI::FORMAT_R32G32B32A32_SFLOAT, offsetof(ParticleVertex, color));
-            RHI_PSO_AddVertexInputAttributeDescription(m_Pso, 2, 0, RHI::FORMAT_R32G32_SFLOAT, offsetof(ParticleVertex, size));
+            RHI_PSO_AddVertexBindingDescription(m_Pso, 0, m_Model.layout.stride, RHI::VERTEX_INPUT_RATE_VERTEX);
+            for (const auto& attr : m_Model.layout.attributes)
+            {
+                RHI_PSO_AddVertexInputAttributeDescription(m_Pso, attr.location, 0, attr.format, attr.offset);
+            }
 
-            RHI_PSO_SetTopology(m_Pso, RHI::PRIMITIVE_TOPOLOGY_POINT_LIST);
+            RHI_PSO_SetTopology(m_Pso, RHI::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
             RHI_PSO_SetCullMode(m_Pso, RHI::CULL_MODE_NONE);
 
             RHI_PSO_BuildDescriptorSetLayout(m_Pso);
 
-            RHI_PSO_AddBlendAttachmentState(m_Pso, true, 
-                RHI::BLEND_FACTOR_SRC_ALPHA, RHI::BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, RHI::BLEND_OP_ADD,
-                RHI::BLEND_FACTOR_ONE, RHI::BLEND_FACTOR_ZERO, RHI::BLEND_OP_ADD,
-                0xF);
+            RHI_PSO_AddBlendAttachmentState_Simple(m_Pso, false,
+                RHI::COLOR_COMPONENT_R_BIT | RHI::COLOR_COMPONENT_G_BIT | RHI::COLOR_COMPONENT_B_BIT | RHI::COLOR_COMPONENT_A_BIT);
             
             RHI_PSO_AddDynamicState(m_Pso, RHI::DYNAMIC_STATE_VIEWPORT);
             RHI_PSO_AddDynamicState(m_Pso, RHI::DYNAMIC_STATE_SCISSOR);
+
+            RHI::RHIDepthStencilState ds{};
+            ds.depthTestEnable = true;
+            ds.depthWriteEnable = true;
+            ds.depthCompareOp = RHI::COMPARE_OP_LESS;
+            RHI_PSO_SetDepthStencilState(m_Pso, &ds);
 
             m_Pipeline = RHI_PipelineManager_GetGraphicsPipeline(pm, m_Pso);
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i) {
@@ -256,14 +271,15 @@ namespace ArisenEngine::Testing
         void UpdateUniformBuffer()
         {
             UpdateCamera((float)frameTime);
-            ParticleSceneData ubo;
+            UniformBufferObject ubo;
+            ubo.model = glm::rotate(glm::mat4(1.0f), (float)m_FrameIndex * 0.01f, glm::vec3(0, 1, 0));
             ubo.view = GetViewMatrix();
             float width = (float)HAL::GetWindowWidth(m_WindowId);
             float height = (float)HAL::GetWindowHeight(m_WindowId);
-            ubo.proj = GetProjectionMatrix(width / height);
-            ubo.cameraPos = m_CameraPos;
+            ubo.projection = GetProjectionMatrix(width / height);
+            ubo.mipmapBias = 0.0f;
             
-            RHI_Buffer_MemoryCopy(m_Device, m_UboBuffers[GetCurrentFrameIndex()], &ubo, sizeof(ParticleSceneData), 0);
+            RHI_Buffer_MemoryCopy(m_Device, m_UboBuffers[GetCurrentFrameIndex()], &ubo, sizeof(UniformBufferObject), 0);
         }
 
         void RecordAndSubmit()
@@ -290,19 +306,22 @@ namespace ArisenEngine::Testing
                 auto colorView = RHI_SwapChain_GetImageView(swapchain, currentIndex);
                 RHI_RenderPass_Alloc(m_Device, m_RenderPass, currentIndex);
                 RHI_FrameBuffer_SetAttachment(m_Device, m_FrameBuffer, currentIndex, colorView, m_RenderPass, 0);
+                RHI_FrameBuffer_SetAttachment(m_Device, m_FrameBuffer, currentIndex, m_DepthView, m_RenderPass, 1);
                 
-                RHI::RHIClearValue clearValue;
-                clearValue.color[0] = 0.0f;
-                clearValue.color[1] = 0.0f;
-                clearValue.color[2] = 0.0f;
-                clearValue.color[3] = 1.0f;
+                RHI::RHIClearValue clearValues[2];
+                clearValues[0].color[0] = 0.1f;
+                clearValues[0].color[1] = 0.1f;
+                clearValues[0].color[2] = 0.1f;
+                clearValues[0].color[3] = 1.0f;
+                clearValues[1].depthStencil.depth = 1.0f;
+                clearValues[1].depthStencil.stencil = 0;
 
                 RHI::RenderPassBeginDesc rpBegin{};
                 rpBegin.renderPass = *reinterpret_cast<RHI::RHIRenderPassHandle*>(&m_RenderPass);
                 rpBegin.frameBuffer = *reinterpret_cast<RHI::RHIFrameBufferHandle*>(&m_FrameBuffer);
                 rpBegin.subpassContents = RHI::SUBPASS_CONTENTS_INLINE;
-                rpBegin.clearValueCount = 1;
-                rpBegin.pClearValues = &clearValue;
+                rpBegin.clearValueCount = 2;
+                rpBegin.pClearValues = clearValues;
 
                 RHI_Cmd_BeginRenderPass(cmd, currentIndex, &rpBegin);
                 UInt32 width = HAL::GetWindowWidth(m_WindowId);
@@ -311,10 +330,16 @@ namespace ArisenEngine::Testing
                 RHI_Cmd_SetViewport(cmd, 0, 0, (float)width, (float)height, 0, 1);
                 RHI_Cmd_SetScissor(cmd, 0, 0, width, height);
                 
-                RHI_Cmd_BindVertexBuffers(cmd, m_ParticleBuffer, 0);
+                RHI_Cmd_BindVertexBuffers(cmd, m_Model.vertexBuffer, 0);
+                RHI_Cmd_BindIndexBuffer(cmd, m_Model.indexBuffer, 0, RHI::INDEX_TYPE_UINT32);
+
                 RHI_Cmd_BindDescriptorSet_FromPool(cmd, currentIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[0], setIdx);
                 
-                RHI_Cmd_Draw(cmd, m_ParticleCount, 1, 0, 0, 0);
+                for (const auto& prim : m_Model.primitives)
+                {
+                    RHI_Cmd_DrawIndexed(cmd, prim.indexCount, 1, prim.firstIndex, 0, 0, 0);
+                }
+
                 RHI_Cmd_EndRenderPass(cmd);
 
                 auto imageAvailableSem = RHI_SwapChain_GetImageAvailableSemaphore(swapchain, currentIndex);

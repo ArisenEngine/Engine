@@ -2,30 +2,33 @@
 struct VSInput
 {
     float3 Pos : POSITION;
+    float3 Normal : NORMAL;
+    float2 UV : TEXCOORD0;
     float4 Color : COLOR;
-    float2 Size : TEXCOORD; // Quad size (width, height)
 };
 
 struct VSOutput
 {
     float3 PosW : POSITION;
+    float3 NormalW : NORMAL;
+    float2 UV : TEXCOORD0;
     float4 Color : COLOR;
-    float2 Size : TEXCOORD;
 };
 
 struct GSOutput
 {
     float4 PosH : SV_POSITION;
     float4 Color : COLOR;
-    float2 UV : TEXCOORD;
+    float2 UV : TEXCOORD0;
+    float3 NormalW : NORMAL;
 };
 
 struct SceneData
 {
+    float4x4 Model;
     float4x4 View;
     float4x4 Proj;
-    float3 CameraPos;
-    float Padding;
+    float MipmapBias;
 };
 
 ConstantBuffer<SceneData> cbScene : register(b0, space0);
@@ -33,55 +36,75 @@ ConstantBuffer<SceneData> cbScene : register(b0, space0);
 VSOutput vs_main(VSInput input)
 {
     VSOutput output;
-    output.PosW = input.Pos;
+    float4 posW = mul(cbScene.Model, float4(input.Pos, 1.0f));
+    output.PosW = posW.xyz;
+    output.NormalW = mul((float3x3)cbScene.Model, input.Normal);
+    output.UV = input.UV;
     output.Color = input.Color;
-    output.Size = input.Size;
     return output;
 }
 
-[maxvertexcount(4)]
-void gs_main(point VSOutput input[1], inout TriangleStream<GSOutput> outStream)
+[maxvertexcount(12)]
+void gs_main(triangle VSOutput input[3], inout TriangleStream<GSOutput> outStream)
 {
-    float3 vPos = input[0].PosW;
-    float2 size = input[0].Size * 0.5f;
-
-    float3 look = normalize(cbScene.CameraPos - vPos);
-    float3 right = normalize(cross(abs(look.y) > 0.999f ? float3(0, 0, 1) : float3(0, 1, 0), look));
-    float3 up = cross(look, right);
-
     float4x4 viewProj = mul(cbScene.Proj, cbScene.View);
 
-    float3 corners[4];
-    corners[0] = vPos + (-right * size.x) - (up * size.y); // Bottom-left
-    corners[1] = vPos + (right * size.x) - (up * size.y);  // Bottom-right
-    corners[2] = vPos + (-right * size.x) + (up * size.y); // Top-left
-    corners[3] = vPos + (right * size.x) + (up * size.y);  // Top-right
-
-    float2 uvs[4] = {
-        float2(0, 1), // Bottom-left
-        float2(1, 1), // Bottom-right
-        float2(0, 0), // Top-left
-        float2(1, 0)  // Top-right
-    };
-
+    // 1. Emit the original triangle
     GSOutput output;
-    output.Color = input[0].Color;
-
     [unroll]
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < 3; ++i)
     {
-        output.PosH = mul(viewProj, float4(corners[i], 1.0f));
-        output.UV = uvs[i];
+        output.PosH = mul(viewProj, float4(input[i].PosW, 1.0f));
+        output.Color = input[i].Color;
+        output.UV = input[i].UV;
+        output.NormalW = input[i].NormalW;
         outStream.Append(output);
+    }
+    outStream.RestartStrip();
+
+    // 2. Emit fur spikes for each vertex
+    float furLength = 0.05f;
+    float furWidth = 0.01f;
+
+    for (int j = 0; j < 3; ++j)
+    {
+        float3 basePos = input[j].PosW;
+        float3 normal = normalize(input[j].NormalW);
+        float3 tipPos = basePos + normal * furLength;
+
+        // Create a small spike triangle at the vertex
+        // Use a simple right vector for width
+        float3 up = abs(normal.y) > 0.999f ? float3(0, 0, 1) : float3(0, 1, 0);
+        float3 right = normalize(cross(up, normal)) * furWidth;
+
+        // Vertex 1: Base Left
+        output.PosH = mul(viewProj, float4(basePos - right, 1.0f));
+        output.Color = float4(0.4, 0.2, 0.1, 1.0); // Fur base color
+        output.UV = input[j].UV;
+        output.NormalW = normal;
+        outStream.Append(output);
+
+        // Vertex 2: Base Right
+        output.PosH = mul(viewProj, float4(basePos + right, 1.0f));
+        output.Color = float4(0.4, 0.2, 0.1, 1.0);
+        output.UV = input[j].UV;
+        output.NormalW = normal;
+        outStream.Append(output);
+
+        // Vertex 3: Tip
+        output.PosH = mul(viewProj, float4(tipPos, 1.0f));
+        output.Color = float4(0.1, 0.1, 0.05, 1.0); // Fur tip color
+        output.UV = input[j].UV;
+        output.NormalW = normal;
+        outStream.Append(output);
+
+        outStream.RestartStrip();
     }
 }
 
 float4 ps_main(GSOutput input) : SV_TARGET
 {
-    // Simply output color, maybe a radial gradient for "particle" look
-    float dist = length(input.UV - 0.5f);
-    if (dist > 0.5f) discard;
-    
-    float alpha = 1.0f - smoothstep(0.4f, 0.5f, dist);
-    return float4(input.Color.rgb, input.Color.a * alpha);
+    float3 lightDir = normalize(float3(1.0, 1.0, -1.0));
+    float diff = max(dot(normalize(input.NormalW), lightDir), 0.2);
+    return float4(input.Color.rgb * diff, input.Color.a);
 }
