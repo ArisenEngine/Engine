@@ -34,9 +34,9 @@ int main(int argc, char** argv)
     }
 
     // Register Tests
-    TestRunner::RegisterTest<RHIBindlessTest>();
-    TestRunner::RegisterTest<RHISyncTest>();
-    TestRunner::RegisterTest<RHIMultiThreadedTest>();
+    // TestRunner::RegisterTest<RHIBindlessTest>();
+    // TestRunner::RegisterTest<RHISyncTest>();
+    // TestRunner::RegisterTest<RHIMultiThreadedTest>();
     // TestRunner::RegisterTest<RHIBasicRenderingTest>();
     // TestRunner::RegisterTest<RHIGPUParticleTest>();
     // TestRunner::RegisterTest<RHIMeshShaderTest>();

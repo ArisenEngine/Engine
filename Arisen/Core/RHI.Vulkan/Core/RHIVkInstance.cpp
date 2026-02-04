@@ -575,46 +575,34 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     deviceFeatures.samplerAnisotropy = VK_TRUE;
     deviceFeatures.geometryShader = VK_TRUE;
 
-    VkPhysicalDeviceTimelineSemaphoreFeatures timelineFeatures{};
-    timelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
-    timelineFeatures.timelineSemaphore = VK_TRUE;
+    VkPhysicalDeviceVulkan12Features vulkan12Features{};
+    vulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    vulkan12Features.timelineSemaphore = VK_TRUE;
+    vulkan12Features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+    vulkan12Features.descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE;
+    vulkan12Features.descriptorBindingUpdateUnusedWhilePending = VK_TRUE;
+    vulkan12Features.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
+    vulkan12Features.descriptorBindingUniformBufferUpdateAfterBind = VK_TRUE;
+    vulkan12Features.runtimeDescriptorArray = VK_TRUE;
+    vulkan12Features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+    vulkan12Features.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
+    vulkan12Features.shaderStorageImageArrayNonUniformIndexing = VK_TRUE;
+    vulkan12Features.descriptorBindingPartiallyBound = VK_TRUE;
+    vulkan12Features.descriptorBindingVariableDescriptorCount = VK_TRUE;
 
-    VkPhysicalDeviceSynchronization2Features sync2Features{};
-    sync2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
-    sync2Features.synchronization2 = VK_TRUE;
-
-    VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures{};
-    dynamicRenderingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
-    dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
-
-    VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{};
-    descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
-    descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
-    descriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE;
-    descriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending = VK_TRUE;
-    descriptorIndexingFeatures.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
-    descriptorIndexingFeatures.descriptorBindingUniformBufferUpdateAfterBind = VK_TRUE;
-    descriptorIndexingFeatures.runtimeDescriptorArray = VK_TRUE;
-    descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-    descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
-    descriptorIndexingFeatures.shaderStorageImageArrayNonUniformIndexing = VK_TRUE;
-    descriptorIndexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
-    descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
+    VkPhysicalDeviceVulkan13Features vulkan13Features{};
+    vulkan13Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+    vulkan13Features.synchronization2 = VK_TRUE;
+    vulkan13Features.dynamicRendering = VK_TRUE;
+    vulkan13Features.shaderDemoteToHelperInvocation = VK_TRUE;
 
     VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures{};
     meshShaderFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT;
     meshShaderFeatures.meshShader = VK_TRUE;
     meshShaderFeatures.taskShader = VK_TRUE;
 
-    VkPhysicalDeviceVulkan13Features vulkan13Features{};
-    vulkan13Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-    vulkan13Features.shaderDemoteToHelperInvocation = VK_TRUE;
-
-    timelineFeatures.pNext = &sync2Features;
-    sync2Features.pNext = &dynamicRenderingFeatures;
-    dynamicRenderingFeatures.pNext = &descriptorIndexingFeatures;
-    descriptorIndexingFeatures.pNext = &meshShaderFeatures;
-    meshShaderFeatures.pNext = &vulkan13Features;
+    vulkan12Features.pNext = &vulkan13Features;
+    vulkan13Features.pNext = &meshShaderFeatures;
     
     // Device Create Info
     VkDeviceCreateInfo createInfo{};
@@ -624,7 +612,7 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 
     createInfo.pEnabledFeatures = &deviceFeatures;
-    createInfo.pNext = &timelineFeatures;
+    createInfo.pNext = &vulkan12Features;
 
     createInfo.enabledExtensionCount = static_cast<uint32_t>(VkDeviceExtensionNames.size());
     createInfo.ppEnabledExtensionNames = VkDeviceExtensionNames.data();
