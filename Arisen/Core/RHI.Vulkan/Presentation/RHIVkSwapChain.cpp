@@ -119,6 +119,16 @@ void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(RHISwapChainDesc
     }
 }
 
+ArisenEngine::RHI::RHIImageHandle ArisenEngine::RHI::RHIVkSwapChain::BeginFrame(UInt32 frameIndex)
+{
+    return AcquireCurrentImage(frameIndex);
+}
+
+void ArisenEngine::RHI::RHIVkSwapChain::EndFrame(UInt32 frameIndex)
+{
+    Present(frameIndex);
+}
+
 ArisenEngine::RHI::RHISemaphoreHandle ArisenEngine::RHI::RHIVkSwapChain::GetImageAvailableSemaphore(UInt32 currentFrame) const
 {
     return m_ImageAvailableSemaphores[currentFrame % m_MaxFramesInFlight];

@@ -15,6 +15,8 @@ namespace ArisenEngine::RHI
         ~RHIVkSwapChain() noexcept override;
         void* GetHandle() const override { return m_VkSwapChain; };
         void CreateSwapChainWithDesc(RHISwapChainDescriptor desc) override;
+        RHIImageHandle BeginFrame(UInt32 frameIndex) override;
+        void EndFrame(UInt32 frameIndex) override;
 
         RHISemaphoreHandle GetImageAvailableSemaphore(UInt32 frameIndex) const override;
         RHISemaphoreHandle GetRenderFinishSemaphore(UInt32 frameIndex) const override;

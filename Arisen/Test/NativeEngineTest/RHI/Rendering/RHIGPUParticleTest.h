@@ -313,8 +313,8 @@ namespace ArisenEngine::Testing
             RHI_Cmd_Begin(cmd, currentIndex, 0);
 
             // Compute Update
-            RHI_Cmd_BindPipeline(cmd, currentIndex, m_ComputePipeline);
-            RHI_Cmd_BindDescriptorSets_FromPool(cmd, currentIndex, RHI::PIPELINE_BIND_POINT_COMPUTE, 0, m_DescriptorPool, m_ComputeDescriptorPoolIds[currentIndex]);
+            RHI_Cmd_BindPipeline(cmd, m_ComputePipeline);
+            RHI_Cmd_BindDescriptorSets_FromPool(cmd, RHI::PIPELINE_BIND_POINT_COMPUTE, 0, m_DescriptorPool, m_ComputeDescriptorPoolIds[currentIndex]);
             RHI_Cmd_Dispatch(cmd, (m_ParticleCount + 255) / 256, 1, 1);
 
             // Barrier: Compute Write -> Vertex Read
@@ -335,7 +335,7 @@ namespace ArisenEngine::Testing
             auto swapchain = RHI_Surface_GetSwapChain(surface);
             
             // Acquire the image
-            RHI_SwapChain_AcquireCurrentImage(swapchain, currentIndex);
+            RHI_SwapChain_BeginFrame(swapchain, currentIndex);
             
             auto colorView = RHI_SwapChain_GetImageView(swapchain, currentIndex);
 
@@ -374,10 +374,10 @@ namespace ArisenEngine::Testing
             }
 
             RHI_Cmd_BeginRendering(cmd, &renderInfo);
-            RHI_Cmd_BindPipeline(cmd, currentIndex, m_GraphicsPipeline);
+            RHI_Cmd_BindPipeline(cmd, m_GraphicsPipeline);
             RHI_Cmd_SetViewport(cmd, 0, 0, (float)renderInfo.RHIRenderArea.width, (float)renderInfo.RHIRenderArea.height, 0, 1);
             RHI_Cmd_SetScissor(cmd, 0, 0, renderInfo.RHIRenderArea.width, renderInfo.RHIRenderArea.height);
-            RHI_Cmd_BindDescriptorSets_FromPool(cmd, currentIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_GraphicsDescriptorPoolIds[currentIndex]);
+            RHI_Cmd_BindDescriptorSets_FromPool(cmd, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_GraphicsDescriptorPoolIds[currentIndex]);
             RHI_Cmd_Draw(cmd, m_ParticleCount, 1, 0, 0, 0);
             RHI_Cmd_EndRendering(cmd);
 
@@ -407,7 +407,7 @@ namespace ArisenEngine::Testing
 
             RHI_Cmd_End(cmd);
             m_FrameTickets[currentIndex] = RHI_Device_Submit(m_Device, cmd, currentIndex);
-            RHI_SwapChain_Present(swapchain, currentIndex);
+            RHI_SwapChain_EndFrame(swapchain, currentIndex);
             RHI_Device_ReleaseCommandBuffer(m_Device, m_CmdPool, currentIndex, cmd);
         }
     };

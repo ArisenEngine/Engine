@@ -370,7 +370,7 @@ namespace ArisenEngine::Testing
 
             auto surface = RHI_Instance_GetSurface(m_Instance, m_WindowId);
             auto swapchain = RHI_Surface_GetSwapChain(surface);
-            auto colorBuffer = RHI_SwapChain_AcquireCurrentImage(swapchain, currentIndex);
+            auto colorBuffer = RHI_SwapChain_BeginFrame(swapchain, currentIndex);
             
             if (colorBuffer)
             {
@@ -390,11 +390,11 @@ namespace ArisenEngine::Testing
                 rpBegin.clearValueCount = 2;
                 rpBegin.pClearValues = clearValues;
 
-                RHI_Cmd_BeginRenderPass(cmd, currentIndex, &rpBegin);
+                RHI_Cmd_BeginRenderPass(cmd, &rpBegin);
                 UInt32 width = HAL::GetWindowWidth(m_WindowId);
                 UInt32 height = HAL::GetWindowHeight(m_WindowId);
                 
-                RHI_Cmd_BindPipeline(cmd, currentIndex, m_ShowWireframe ? m_WireframePipeline : m_Pipeline);
+                RHI_Cmd_BindPipeline(cmd, m_ShowWireframe ? m_WireframePipeline : m_Pipeline);
                 RHI_Cmd_SetViewport(cmd, 0, 0, (float)width, (float)height, 0, 1);
                 RHI_Cmd_SetScissor(cmd, 0, 0, width, height);
                 
@@ -407,7 +407,7 @@ namespace ArisenEngine::Testing
                 UInt32 setIdx = RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[0], 0, m_ShowWireframe ? m_WireframePso : m_Pso);
                 RHI_DescriptorPool_UpdateDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[0], setIdx, m_ShowWireframe ? m_WireframePso : m_Pso);
 
-                RHI_Cmd_BindDescriptorSet_FromPool(cmd, currentIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[0], setIdx);
+                RHI_Cmd_BindDescriptorSet_FromPool(cmd, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[0], setIdx);
                 RHI_Cmd_DrawIndexed(cmd, m_Model.indexCount, 1, 0, 0, 0, 0);
 
                 RHI_Cmd_EndRenderPass(cmd);
@@ -420,7 +420,7 @@ namespace ArisenEngine::Testing
 
             RHI_Cmd_End(cmd);
             m_FrameTickets[currentIndex] = RHI_Device_Submit(m_Device, cmd, currentIndex);
-            RHI_SwapChain_Present(swapchain, currentIndex);
+            RHI_SwapChain_EndFrame(swapchain, currentIndex);
             RHI_Device_ReleaseCommandBuffer(m_Device, m_CmdPool, currentIndex, cmd);
         }
     };
