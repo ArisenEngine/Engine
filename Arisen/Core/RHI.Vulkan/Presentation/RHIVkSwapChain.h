@@ -18,7 +18,7 @@ namespace ArisenEngine::RHI
 
         RHISemaphoreHandle GetImageAvailableSemaphore(UInt32 frameIndex) const override;
         RHISemaphoreHandle GetRenderFinishSemaphore(UInt32 frameIndex) const override;
-        RHIImageHandle AquireCurrentImage(UInt32 frameIndex) override;
+        RHIImageHandle AcquireCurrentImage(UInt32 frameIndex) override;
         RHIImageViewHandle GetImageView(UInt32 frameIndex) const override;
         void Cleanup() override;
         void Present(UInt32 frameIndex) override;

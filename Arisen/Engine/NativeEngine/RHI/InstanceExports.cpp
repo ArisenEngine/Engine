@@ -1,18 +1,25 @@
 #include "InstanceExports.h"
 #include "RHILoader.h"
 #include "Logger/Logger.h"
+#include "RHIErrorInternal.h"
 
 using namespace ArisenEngine;
 
 extern "C" ENGINE_DLL RHI_InstanceHandle RHI_CreateInstance(const RHI::RHIInstanceInfo* info)
 {
+    ::RHI_ClearError();
     if (info == nullptr)
     {
         LOG_FATAL("[RHI_CreateInstance] info is null");
+        RHI::SetLastError(RHI_ERROR_INVALID_PARAMETER, "RHIInstanceInfo is null");
         return nullptr;
     }
     RHI::RHIInstanceInfo copy = *info;
     auto* instance = Graphics::RHILoader::CreateInstance(std::move(copy));
+    if (!instance)
+    {
+        RHI::SetLastError(RHI_ERROR_INITIALIZATION_FAILED, "Failed to create RHI instance");
+    }
     return reinterpret_cast<RHI_InstanceHandle>(instance);
 }
 

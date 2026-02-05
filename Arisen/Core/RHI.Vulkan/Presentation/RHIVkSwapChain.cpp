@@ -135,7 +135,7 @@ ArisenEngine::RHI::RHIImageViewHandle ArisenEngine::RHI::RHIVkSwapChain::GetImag
     return m_ImageViewHandles[m_AcquiredImageIndices[currentFrame]];
 }
 
-ArisenEngine::RHI::RHIImageHandle ArisenEngine::RHI::RHIVkSwapChain::AquireCurrentImage(UInt32 frameIndex)
+ArisenEngine::RHI::RHIImageHandle ArisenEngine::RHI::RHIVkSwapChain::AcquireCurrentImage(UInt32 frameIndex)
 {
     auto currentFrame = frameIndex % m_MaxFramesInFlight;
     auto hSem = m_ImageAvailableSemaphores[currentFrame];
@@ -147,7 +147,7 @@ ArisenEngine::RHI::RHIImageHandle ArisenEngine::RHI::RHIVkSwapChain::AquireCurre
                               VK_NULL_HANDLE, &imageIndex_local);
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     {
-        String msg = String::Format("[RHIVkSwapChain::AquireCurrentImage]: failed to acquire next image (frame %d) result: %d", frameIndex, result);
+        String msg = String::Format("[RHIVkSwapChain::AcquireCurrentImage]: failed to acquire next image (frame %d) result: %d", frameIndex, result);
         LOG_ERROR(msg);
         return RHIImageHandle::Invalid();
     }

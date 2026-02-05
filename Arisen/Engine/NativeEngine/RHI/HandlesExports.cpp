@@ -5,6 +5,7 @@
 #include "../../Core/Core.RHI/RHI/Core/RHIFactory.h"
 #include "../../../Core/RHI.Vulkan/Handles/RHIVkResourcePools.h"
 #include "RHINativeBridge.h"
+#include "RHIErrorInternal.h"
 #include <unordered_map>
 
 
@@ -14,9 +15,22 @@ using namespace ArisenEngine;
 extern "C" ENGINE_DLL RHI_BufferHandle RHI_Device_CreateBuffer(RHI_DeviceHandle device, const ArisenEngine::RHI::RHIBufferDescriptor* desc, const char* name)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
-    if (dev == nullptr || desc == nullptr) return 0;
+    if (dev == nullptr)
+    {
+        RHI::SetLastError(RHI_ERROR_INVALID_HANDLE, "Device handle is null");
+        return 0;
+    }
+    if (desc == nullptr)
+    {
+        RHI::SetLastError(RHI_ERROR_INVALID_PARAMETER, "RHIBufferDescriptor is null");
+        return 0;
+    }
     RHI::RHIBufferDescriptor copy = *desc;
     auto handle = dev->GetFactory()->CreateBuffer(std::move(copy), name != nullptr ? name : "Anonymous");
+    if (!handle.IsValid())
+    {
+        RHI::SetLastError(RHI_ERROR_OUT_OF_MEMORY, "Failed to create RHI Buffer");
+    }
     return *reinterpret_cast<unsigned long long*>(&handle);
 }
 
@@ -66,9 +80,22 @@ extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Range(RHI_DeviceHandle devic
 extern "C" ENGINE_DLL RHI_ImageHandle RHI_Device_CreateImage(RHI_DeviceHandle device, const ArisenEngine::RHI::RHIImageDescriptor* desc, const char* name)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
-    if (dev == nullptr || desc == nullptr) return 0;
+    if (dev == nullptr)
+    {
+        RHI::SetLastError(RHI_ERROR_INVALID_HANDLE, "Device handle is null");
+        return 0;
+    }
+    if (desc == nullptr)
+    {
+        RHI::SetLastError(RHI_ERROR_INVALID_PARAMETER, "RHIImageDescriptor is null");
+        return 0;
+    }
     RHI::RHIImageDescriptor copy = *desc;
     auto handle = dev->GetFactory()->CreateImage(std::move(copy), name != nullptr ? name : "Anonymous");
+    if (!handle.IsValid())
+    {
+        RHI::SetLastError(RHI_ERROR_OUT_OF_MEMORY, "Failed to create RHI Image");
+    }
     return *reinterpret_cast<unsigned long long*>(&handle);
 }
 
