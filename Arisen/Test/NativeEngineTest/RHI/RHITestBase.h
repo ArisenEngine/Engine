@@ -428,7 +428,7 @@ namespace ArisenEngine::Testing
 
             if (m_Instance)
             {
-                RHI_DestroyInstance(m_Instance);
+                RHI_Instance_Release(m_Instance);
                 m_Instance = nullptr;
             }
 

@@ -16,7 +16,7 @@ extern "C" ENGINE_DLL RHI_InstanceHandle RHI_CreateInstance(const RHI::RHIInstan
     return reinterpret_cast<RHI_InstanceHandle>(instance);
 }
 
-extern "C" ENGINE_DLL void RHI_DestroyInstance(RHI_InstanceHandle instance)
+extern "C" ENGINE_DLL void RHI_Instance_Release(RHI_InstanceHandle instance)
 {
     auto* inst = reinterpret_cast<RHI::RHIInstance*>(instance);
     if (inst == nullptr) return;
@@ -44,7 +44,7 @@ extern "C" ENGINE_DLL void RHI_Instance_CreateSurface(RHI_InstanceHandle instanc
     inst->CreateSurface(std::move(windowId));
 }
 
-extern "C" ENGINE_DLL void RHI_Instance_DestroySurface(RHI_InstanceHandle instance, unsigned int windowId)
+extern "C" ENGINE_DLL void RHI_Instance_ReleaseSurface(RHI_InstanceHandle instance, unsigned int windowId)
 {
     auto* inst = reinterpret_cast<RHI::RHIInstance*>(instance);
     if (inst == nullptr) return;

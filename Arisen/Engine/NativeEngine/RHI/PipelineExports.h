@@ -8,7 +8,7 @@
 
 extern "C" ENGINE_DLL RHI_PipelineManagerHandle RHI_Device_GetPipelineManager(RHI_DeviceHandle device);
 extern "C" ENGINE_DLL RHI_PSOHandle RHI_PipelineManager_CreatePSO(RHI_PipelineManagerHandle pm);
-extern "C" ENGINE_DLL void RHI_PSO_Destroy(RHI_PSOHandle pso);
+extern "C" ENGINE_DLL void RHI_PSO_Release(RHI_PSOHandle pso);
 extern "C" ENGINE_DLL void RHI_PSO_AddProgram(RHI_PSOHandle pso, RHI_GPUProgramHandle program);
 extern "C" ENGINE_DLL void RHI_PSO_ClearPrograms(RHI_PSOHandle pso);
 extern "C" ENGINE_DLL void RHI_PSO_AddVertexBindingDescription(RHI_PSOHandle pso, unsigned int binding, unsigned int stride, ArisenEngine::RHI::EVertexInputRate inputRate);
@@ -31,7 +31,7 @@ extern "C" ENGINE_DLL void RHI_Pipeline_AllocGraphics(RHI_DeviceHandle device, R
 extern "C" ENGINE_DLL void RHI_Pipeline_AllocCompute(RHI_DeviceHandle device, RHI_PipelineHandle pipeline, unsigned int frameIndex);
 
 // Moved to HandlesExports: CreateRenderPass, ReleaseRenderPass
-extern "C" ENGINE_DLL void RHI_RenderPass_Free(RHI_DeviceHandle device, RHI_RenderPassHandle rp, unsigned int frameIndex);
+extern "C" ENGINE_DLL void RHI_RenderPass_Release(RHI_DeviceHandle device, RHI_RenderPassHandle rp, unsigned int frameIndex);
 extern "C" ENGINE_DLL void RHI_RenderPass_AddAttachmentAction(RHI_DeviceHandle device, RHI_RenderPassHandle rp, ArisenEngine::RHI::EFormat format, ArisenEngine::RHI::ESampleCountFlagBits samples, ArisenEngine::RHI::EAttachmentLoadOp colorLoad, ArisenEngine::RHI::EAttachmentStoreOp colorStore, ArisenEngine::RHI::EAttachmentLoadOp stencilLoad, ArisenEngine::RHI::EAttachmentStoreOp stencilStore, ArisenEngine::RHI::EImageLayout initialLayout, ArisenEngine::RHI::EImageLayout finalLayout);
 extern "C" ENGINE_DLL RHI_SubpassHandle RHI_RenderPass_AddSubPass(RHI_DeviceHandle device, RHI_RenderPassHandle rp);
 extern "C" ENGINE_DLL void RHI_Subpass_SetDependency(RHI_SubpassHandle sp, unsigned int prevIndex, unsigned int prevStage, unsigned int prevAccessMask, unsigned int currStage, unsigned int currAccessMask, unsigned int syncFlag);

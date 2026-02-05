@@ -47,7 +47,7 @@ extern "C" ENGINE_DLL void RHI_SwapChain_Present(RHI_SwapChainHandle swapchain, 
     sc->Present(frameIndex);
 }
 
-extern "C" ENGINE_DLL RHI_ImageHandle RHI_SwapChain_AquireCurrentImage(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
+extern "C" ENGINE_DLL RHI_ImageHandle RHI_SwapChain_AcquireCurrentImage(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
 {
     auto* sc = reinterpret_cast<RHI::RHISwapChain*>(swapchain);
     if (sc == nullptr) return 0;

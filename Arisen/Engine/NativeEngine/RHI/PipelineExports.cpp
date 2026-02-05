@@ -27,7 +27,7 @@ extern "C" ENGINE_DLL RHI_PSOHandle RHI_PipelineManager_CreatePSO(RHI_PipelineMa
     return reinterpret_cast<RHI_PSOHandle>(up.release());
 }
 
-extern "C" ENGINE_DLL void RHI_PSO_Destroy(RHI_PSOHandle pso)
+extern "C" ENGINE_DLL void RHI_PSO_Release(RHI_PSOHandle pso)
 {
     auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
     if (s == nullptr) return;
@@ -174,7 +174,7 @@ extern "C" ENGINE_DLL RHI_PipelineHandle RHI_PipelineManager_GetGraphicsPipeline
 
 // Moved to HandlesExports: CreateRenderPass (was GetRenderPass)
 
-extern "C" ENGINE_DLL void RHI_RenderPass_Free(RHI_DeviceHandle device, RHI_RenderPassHandle rp, unsigned int frameIndex)
+extern "C" ENGINE_DLL void RHI_RenderPass_Release(RHI_DeviceHandle device, RHI_RenderPassHandle rp, unsigned int frameIndex)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr || rp == 0) return;

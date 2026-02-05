@@ -52,7 +52,7 @@ namespace ArisenEngine::Testing
             }
             m_UboBuffer.clear();
 
-            if (m_Pso) RHI_PSO_Destroy(m_Pso);
+            if (m_Pso) RHI_PSO_Release(m_Pso);
             
             m_Model.Release(m_Device);
 
@@ -326,7 +326,7 @@ namespace ArisenEngine::Testing
 
             auto surface = RHI_Instance_GetSurface(m_Instance, m_WindowId);
             auto swapchain = RHI_Surface_GetSwapChain(surface);
-            auto colorBuffer = RHI_SwapChain_AquireCurrentImage(swapchain, currentIndex);
+            auto colorBuffer = RHI_SwapChain_AcquireCurrentImage(swapchain, currentIndex);
             if (colorBuffer)
             {
                 auto colorView = RHI_SwapChain_GetImageView(swapchain, currentIndex);
