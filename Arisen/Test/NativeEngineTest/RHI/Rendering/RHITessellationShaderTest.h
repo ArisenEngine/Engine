@@ -368,13 +368,11 @@ namespace ArisenEngine::Testing
             
             RHI_Cmd_Begin(cmd, currentIndex, 0);
 
-            auto surface = RHI_Instance_GetSurface(m_Instance, m_WindowId);
-            auto swapchain = RHI_Surface_GetSwapChain(surface);
-            auto colorBuffer = RHI_SwapChain_BeginFrame(swapchain, currentIndex);
+            auto colorBuffer = RHI_SwapChain_BeginFrame(m_SwapChain, currentIndex);
             
             if (colorBuffer)
             {
-                auto colorView = RHI_SwapChain_GetImageView(swapchain, currentIndex);
+                auto colorView = RHI_SwapChain_GetImageView(m_SwapChain, currentIndex);
                 RHI_RenderPass_Alloc(m_Device, m_RenderPass, currentIndex);
                 RHI_FrameBuffer_SetAttachment(m_Device, m_FrameBuffer, currentIndex, colorView, m_RenderPass, 0);
                 RHI_FrameBuffer_SetAttachment(m_Device, m_FrameBuffer, currentIndex, m_DepthView, m_RenderPass, 1);
@@ -412,15 +410,12 @@ namespace ArisenEngine::Testing
 
                 RHI_Cmd_EndRenderPass(cmd);
 
-                auto imageAvailableSem = RHI_SwapChain_GetImageAvailableSemaphore(swapchain, currentIndex);
-                auto renderFinishedSem = RHI_SwapChain_GetRenderFinishSemaphore(swapchain, currentIndex);
-                RHI_Cmd_WaitSemaphore(cmd, imageAvailableSem, static_cast<unsigned int>(RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
-                RHI_Cmd_SignalSemaphore(cmd, renderFinishedSem);
+
             }
 
             RHI_Cmd_End(cmd);
             m_FrameTickets[currentIndex] = RHI_Device_Submit(m_Device, cmd, currentIndex);
-            RHI_SwapChain_EndFrame(swapchain, currentIndex);
+            RHI_SwapChain_EndFrame(m_SwapChain, currentIndex);
             RHI_Device_ReleaseCommandBuffer(m_Device, m_CmdPool, currentIndex, cmd);
         }
     };
