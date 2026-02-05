@@ -13,6 +13,12 @@
     #define HAS_STACKTRACE 0
 #endif
 
+#ifdef _WIN32
+    #include <Windows.h>
+    #include <DbgHelp.h>
+    #pragma comment(lib, "Dbghelp.lib")
+#endif
+
 namespace ArisenEngine
 {
 #ifdef _WIN32
@@ -56,6 +62,40 @@ namespace ArisenEngine
             errorMessage += "\nStacktrace:\n";
             errorMessage += std::to_string(trace);
         } catch (...) {}
+#elif defined(_WIN32)
+        errorMessage += "\nStacktrace (Windows):\n";
+        void* stack[64];
+        unsigned short frames = CaptureStackBackTrace(0, 64, stack, NULL);
+        
+        HANDLE process = GetCurrentProcess();
+        char symbolBuffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(char)];
+        PSYMBOL_INFO symbol = (PSYMBOL_INFO)symbolBuffer;
+        symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+        symbol->MaxNameLen = MAX_SYM_NAME;
+
+        for (unsigned int i = 0; i < frames; i++)
+        {
+            if (SymFromAddr(process, (DWORD64)(stack[i]), 0, symbol))
+            {
+                IMAGEHLP_LINE64 line;
+                line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+                DWORD displacement;
+                if (SymGetLineFromAddr64(process, (DWORD64)(stack[i]), &displacement, &line))
+                {
+                    errorMessage += std::format("{}: {}() - {}:{}\n", 
+                        i, symbol->Name, line.FileName, line.LineNumber);
+                }
+                else
+                {
+                    errorMessage += std::format("{}: {}() - 0x{:X}\n", 
+                        i, symbol->Name, symbol->Address);
+                }
+            }
+            else
+            {
+                errorMessage += std::format("{}: 0x{:X}\n", i, (uintptr_t)stack[i]);
+            }
+        }
 #endif
 
         // 1. Try to log via engine's log system
@@ -70,6 +110,7 @@ namespace ArisenEngine
     {
 #ifdef _WIN32
         _CrtSetReportHook(CRTReportHook);
+        SymInitialize(GetCurrentProcess(), NULL, TRUE);
 #endif
     }
 }

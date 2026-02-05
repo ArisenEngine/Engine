@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <csignal>
 #include <exception>
+#include <string>
+#include <format>
 
 #ifdef _WIN64
 #include <Windows.h>
@@ -88,8 +90,15 @@ namespace ArisenEngine::Core
         /**
          * @brief Windows SEH exception filter.
          */
-        static LONG WINAPI ArisenUnhandledExceptionFilter(EXCEPTION_POINTERS*)
+        static LONG WINAPI ArisenUnhandledExceptionFilter(EXCEPTION_POINTERS* ep)
         {
+            std::string msg = "Unknown SEH Exception";
+            if (ep && ep->ExceptionRecord)
+            {
+                msg = std::format("Unhandled Exception: 0x{:08X} at address 0x{:P}", 
+                    ep->ExceptionRecord->ExceptionCode, ep->ExceptionRecord->ExceptionAddress);
+            }
+            ArisenEngine::ReportAssertionFailure("SEH Exception", "Unknown", 0, "ArisenUnhandledExceptionFilter", msg.c_str());
             Shutdown();
             return EXCEPTION_EXECUTE_HANDLER;
         }
@@ -100,6 +109,7 @@ namespace ArisenEngine::Core
          */
         static void ArisenOnTerminate()
         {
+            ArisenEngine::ReportAssertionFailure("std::terminate", "Unknown", 0, "ArisenOnTerminate", "Engine terminated abnormally");
             Shutdown();
             std::abort();
         }

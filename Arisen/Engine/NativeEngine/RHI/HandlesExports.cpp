@@ -34,6 +34,30 @@ extern "C" ENGINE_DLL RHI_BufferHandle RHI_Device_CreateBuffer(RHI_DeviceHandle 
     return *reinterpret_cast<unsigned long long*>(&handle);
 }
 
+extern "C" ENGINE_DLL void RHI_Device_BatchCreateBuffers(RHI_DeviceHandle device, unsigned int count, const ArisenEngine::RHI::RHIBufferDescriptor* descs, const char** names, RHI_BufferHandle* outHandles)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || descs == nullptr || outHandles == nullptr)
+    {
+        if (dev == nullptr) RHI::SetLastError(RHI_ERROR_INVALID_HANDLE, "Device handle is null");
+        else RHI::SetLastError(RHI_ERROR_INVALID_PARAMETER, "Invalid parameters for batch buffer creation");
+        return;
+    }
+
+    for (unsigned int i = 0; i < count; ++i)
+    {
+        RHI::RHIBufferDescriptor copy = descs[i];
+        const char* name = (names != nullptr && names[i] != nullptr) ? names[i] : "Anonymous";
+        auto handle = dev->GetFactory()->CreateBuffer(std::move(copy), name);
+        outHandles[i] = *reinterpret_cast<unsigned long long*>(&handle);
+        
+        if (!handle.IsValid())
+        {
+             RHI::SetLastError(RHI_ERROR_OUT_OF_MEMORY, "Failed to create RHI Buffer in batch");
+        }
+    }
+}
+
 extern "C" ENGINE_DLL void RHI_Device_ReleaseBuffer(RHI_DeviceHandle device, RHI_BufferHandle buffer)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
