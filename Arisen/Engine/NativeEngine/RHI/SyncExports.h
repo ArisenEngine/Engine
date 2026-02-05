@@ -3,7 +3,7 @@
 #include "../../Core/Core.RHI/RHI/Sync/RHISemaphore.h"
 #include "../../Core/Core.RHI/RHI/Sync/RHIFence.h"
 
-#include "RHIHandleExports.h"
+#include "RHITypesExports.h"
 
 extern "C" ENGINE_DLL void RHI_Semaphore_Lock(RHI_DeviceHandle device, RHI_SemaphoreHandle semaphore);
 extern "C" ENGINE_DLL void RHI_Semaphore_Unlock(RHI_DeviceHandle device, RHI_SemaphoreHandle semaphore);

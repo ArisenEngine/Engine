@@ -29,6 +29,7 @@ namespace ArisenEngine::RHI
 
     private:
         RHIVkDevice* m_Device;
+        // todo: support for legacy use, currently not found any creation for vkRenderPass
         Containers::Vector<VkRenderPass> m_VkRenderPasses;
     };
 }

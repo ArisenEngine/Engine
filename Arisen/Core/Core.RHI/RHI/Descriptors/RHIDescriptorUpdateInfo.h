@@ -30,4 +30,12 @@ namespace ArisenEngine::RHI
         Containers::Vector<RHIImageViewHandle>              texelBufferViews; // Assuming texel buffers are treated as image views or similar handle
         
     } RHIDescriptorUpdateInfo;
+
+    struct RHIDescriptorUpdateEntry
+    {
+        UInt32 layoutIndex;
+        UInt32 binding;
+        const Containers::Vector<RHIBufferHandle>* bufferHandles;
+        const Containers::Vector<RHIDescriptorImageInfo>* imageInfos;
+    };
 }

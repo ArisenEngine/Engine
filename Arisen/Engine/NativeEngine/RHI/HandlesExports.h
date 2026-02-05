@@ -3,7 +3,7 @@
 #include "../../Core/Core.RHI/RHI/Core/RHIDevice.h"
 #include "../../Core/Core.RHI/RHI/Handles/RHIHandle.h"
 
-#include "RHIHandleExports.h"
+#include "RHITypesExports.h"
 namespace ArisenEngine { namespace RHI { class ImageView; } }
 
 /**
