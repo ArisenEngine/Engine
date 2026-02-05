@@ -129,18 +129,8 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     Containers::Vector<VkPipelineStageFlags> waitDstStageMask;
     Containers::Vector<uint64_t> waitValues;
 
-    // Add CommandBuffer Internal waits
-    if (vkCmd->GetWaitSemaphoresCount() > 0)
-    {
-        auto count = vkCmd->GetWaitSemaphoresCount();
-        auto sems = vkCmd->GetWaitSemaphores();
-        auto stages = vkCmd->GetWaitStageMask();
-        for(UInt32 i=0; i<count; ++i) {
-            waitSemaphores.push_back(sems[i]);
-            waitDstStageMask.push_back(stages[i]);
-            waitValues.push_back(0); 
-        }
-    }
+    // Add CommandBuffer Internal waits (Removed: Sync moved to Descriptor)
+    // if (vkCmd->GetWaitSemaphoresCount() > 0) ...
     
     // Add Extra waits
     for(size_t i=0; i<extraWaitSems.size(); ++i) {
@@ -166,15 +156,7 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     signalSemaphores.emplace_back(m_TimelineSemaphore);
     signalValues.emplace_back(submitTicket);
 
-    if (vkCmd->GetSignalSemaphoresCount() > 0)
-    {
-        const auto* sems = vkCmd->GetSignalSemaphores();
-        for (UInt32 i = 0; i < vkCmd->GetSignalSemaphoresCount(); ++i)
-        {
-            signalSemaphores.emplace_back(sems[i]);
-            signalValues.emplace_back(0); // Binary semaphores ignore this value, but array size must match
-        }
-    }
+    // if (vkCmd->GetSignalSemaphoresCount() > 0) ... (Removed)
     
     // Add Extra signals
     for(const auto& s : extraSignalSems) {

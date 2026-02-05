@@ -207,21 +207,11 @@ extern "C" ENGINE_DLL void RHI_Cmd_BatchPipelineBarrier(RHI_CommandBufferHandle 
     c->PipelineBarrier(static_cast<RHI::EPipelineStageFlag>(srcStage), static_cast<RHI::EPipelineStageFlag>(dstStage), dependency, std::move(m), std::move(i), std::move(b));
 }
 
-extern "C" ENGINE_DLL void RHI_Cmd_WaitSemaphore(RHI_CommandBufferHandle cmd, RHI_SemaphoreHandle semaphore, unsigned int stageFlags)
-{
-    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
-    if (c == nullptr || semaphore == 0) return;
-    auto h = *reinterpret_cast<RHI::RHISemaphoreHandle*>(&semaphore);
-    c->WaitSemaphore(h, static_cast<RHI::EPipelineStageFlag>(stageFlags));
-}
-
-extern "C" ENGINE_DLL void RHI_Cmd_SignalSemaphore(RHI_CommandBufferHandle cmd, RHI_SemaphoreHandle semaphore)
-{
-    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
-    if (c == nullptr || semaphore == 0) return;
-    auto h = *reinterpret_cast<RHI::RHISemaphoreHandle*>(&semaphore);
-    c->SignalSemaphore(h);
-}
+// Deprecated: WaitSemaphore/SignalSemaphore moved to RHISubmitDescriptor
+// extern "C" ENGINE_DLL void RHI_Cmd_WaitSemaphore(RHI_CommandBufferHandle cmd, RHI_SemaphoreHandle semaphore, unsigned int stageFlags)
+// {}
+// extern "C" ENGINE_DLL void RHI_Cmd_SignalSemaphore(RHI_CommandBufferHandle cmd, RHI_SemaphoreHandle semaphore)
+// {}
 
 extern "C" ENGINE_DLL void RHI_Cmd_GenerateMipmaps(RHI_CommandBufferHandle cmd, RHI_ImageHandle image)
 {
