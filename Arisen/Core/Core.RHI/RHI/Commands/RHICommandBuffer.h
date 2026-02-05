@@ -246,8 +246,11 @@ namespace ArisenEngine::RHI
         RHIDevice* GetDevice() const { return m_Device; }
         ECommandBufferState GetState() const { return m_State; }
         void SetState(ECommandBufferState state) { m_State = state; }
-        UInt32 GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
+        
         void SetCurrentFrameIndex(UInt32 index) { m_CurrentFrameIndex = index; }
+
+    public:
+        UInt32 GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
 
     private:
         RHICommandBufferPool* m_CommandBufferPool;

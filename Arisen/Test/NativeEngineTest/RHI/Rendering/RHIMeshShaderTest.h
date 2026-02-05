@@ -306,7 +306,11 @@ namespace ArisenEngine::Testing
 
 
             RHI_Cmd_End(cmd);
-            m_FrameTickets[currentIndex] = RHI_Device_Submit(m_Device, cmd, currentIndex);
+            RHI::RHISubmitDescriptor submitDesc = {};
+            submitDesc.WaitSwapChain = reinterpret_cast<RHI::RHISwapChain*>(m_SwapChain);
+            submitDesc.SignalSwapChain = reinterpret_cast<RHI::RHISwapChain*>(m_SwapChain);
+
+            m_FrameTickets[currentIndex] = RHI_Device_Submit(m_Device, cmd, reinterpret_cast<const ::RHISubmitDescriptor*>(&submitDesc));
             RHI_SwapChain_EndFrame(m_SwapChain, currentIndex);
             RHI_Device_ReleaseCommandBuffer(m_Device, m_CmdPool, currentIndex, cmd);
         }

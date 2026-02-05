@@ -131,24 +131,20 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::GetCompletedSubm
 }
 
 
-RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex)
+RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, const RHISubmitDescriptor* descriptor)
 {
     ASSERT(commandBuffer->ReadyForSubmit());
+
+    UInt32 frameIndex = commandBuffer->GetCurrentFrameIndex();
 
     std::lock_guard<std::mutex> lock(m_SubmitMutex);
     m_CurrentFrameIndex.store(frameIndex, std::memory_order_release);
     if (m_GraphicsQueue)
     {
         RHIGpuTicket submitTicket = 0;
-        if (auto* vkQueue = dynamic_cast<RHIVkQueue*>(m_GraphicsQueue.get()))
-        {
-            submitTicket = vkQueue->Submit(commandBuffer);
-        }
-        else
-        {
-            // Fallback: queue-managed fence via RHIQueue.
-            submitTicket = m_GraphicsQueue->Submit(commandBuffer);
-        }
+        
+        // Always verify valid descriptor pass-through
+        submitTicket = m_GraphicsQueue->Submit(commandBuffer, descriptor);
 
         if (m_FrameSync)
         {

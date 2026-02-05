@@ -4,9 +4,28 @@
 #include "RHI/Resources/RHIDeferredDeletionQueue.h"
 #include "RHI/Queues/RHIQueueType.h"
 
+#include "RHI/Handles/RHIHandle.h" // Needed for RHISemaphoreHandle
+
 namespace ArisenEngine::RHI
 {
     class RHICommandBuffer;
+    class RHISwapChain; // Forward declaration
+
+    class RHISwapChain; // Forward declaration
+
+    // Descriptor for submission synchronization
+    struct RHISubmitDescriptor
+    {
+        class RHISwapChain* WaitSwapChain = nullptr;   // Optional: Waits for local frame's ImageAvailable
+        class RHISwapChain* SignalSwapChain = nullptr; // Optional: Signals local frame's RenderFinished
+
+        // Explicit semaphores (optional, for Async Compute / non-swapchain sync)
+        RHISemaphoreHandle* pWaitSemaphores = nullptr;
+        UInt32 waitSemaphoreCount = 0;
+        
+        RHISemaphoreHandle* pSignalSemaphores = nullptr;
+        UInt32 signalSemaphoreCount = 0;
+    };
 
     // RHI-level queue abstraction:
     // - Submit produces a monotonic ticket (submitID / fenceValue / completion serial)
@@ -19,7 +38,7 @@ namespace ArisenEngine::RHI
         virtual RHIQueueType GetType() const = 0;
 
         // Returns a ticket assigned to this submission.
-        virtual RHIGpuTicket Submit(RHICommandBuffer* commandBuffer) = 0;
+        virtual RHIGpuTicket Submit(RHICommandBuffer* commandBuffer, const RHISubmitDescriptor* descriptor = nullptr) = 0;
 
         // Poll completion and advance completed ticket.
         virtual void Update() = 0;

@@ -25,10 +25,13 @@ namespace ArisenEngine::RHI
         RHIQueueType GetType() const override { return m_Type; }
 
         // Returns the submitID assigned to this submission.
-        RHIGpuTicket Submit(RHICommandBuffer* commandBuffer) override;
+        RHIGpuTicket Submit(RHICommandBuffer* commandBuffer, const RHISubmitDescriptor* descriptor = nullptr) override;
 
         // Legacy path: fence argument is ignored when using timeline semaphores.
-        RHIGpuTicket SubmitWithFence(RHICommandBuffer* commandBuffer, VkFence fence, bool ownedFence = false);
+        RHIGpuTicket SubmitWithFence(RHICommandBuffer* commandBuffer, VkFence fence, bool ownedFence = false, 
+            const Containers::Vector<VkSemaphore>& extraWaitSems = {}, 
+            const Containers::Vector<VkPipelineStageFlags>& extraWaitStages = {}, 
+            const Containers::Vector<VkSemaphore>& extraSignalSems = {});
 
         // Poll GPU completion and flush deferred deletions up to completed submitID.
         void Update() override;

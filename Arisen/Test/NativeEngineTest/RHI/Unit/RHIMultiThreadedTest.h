@@ -60,7 +60,12 @@ namespace ArisenEngine::Testing
                 // Submit recorded buffers
                 for (int i = 0; i < numThreads; ++i)
                 {
-                    RHI_Device_Submit(m_Device, cmdBuffers[i], f);
+                    RHI::RHISubmitDescriptor submitDesc = {};
+                // If this test renders to swapchain, we need it. 
+                // However, unit tests usually don't have m_SwapChain unless derived from RHIRenderingTestBase.
+                // Assuming this is offscreen or simple submit.
+                
+                    RHI_Device_Submit(m_Device, cmdBuffers[i], reinterpret_cast<const ::RHISubmitDescriptor*>(&submitDesc));
                 }
 
                 // Wait for GPU to finish work so we can safely recycle/destroy
