@@ -4,11 +4,6 @@
 
 **Goal**: 提升性能，确保高并发稳定性。
 
-### 3.1 Pipeline 系统
-- [ ] **PSO 缓存持久化**: `VkPipelineCache` 序列化到磁盘
-- [ ] **Push Constants 支持**: 减少 UBO 更新开销
-- [ ] **Specialization Constants**: Shader 变体优化
-
 ### 3.2 Descriptor 优化
 - [ ] **Update Template**: 使用 `vkUpdateDescriptorSetWithTemplate`
 - [ ] **预分配策略**: 减少每帧重分配开销

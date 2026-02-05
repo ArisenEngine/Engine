@@ -160,6 +160,7 @@ bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
         holder.RHIDescriptorPool = newPool;
         m_PoolLatestTicket[poolId] = 0;
         holder.sets.clear();
+        holder.freeSets.clear(); // Clear free sets derived from old pool
         return true;
         }
     }
@@ -173,6 +174,7 @@ bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
 
     m_PoolLatestTicket[poolId] = 0;
     holder.sets.clear();
+    holder.freeSets.clear();
     
     return true;
 }
@@ -197,6 +199,8 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::MarkPoolUsed(UInt32 poolId, RHIQueu
 
 ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDescriptorPool::AllocDescriptorSet(UInt32 poolId, UInt32 layoutIndex, RHIPipelineState* pso)
 {
+    std::lock_guard<std::mutex> lock(m_Mutex);
+
     if (poolId >= m_DescriptorSetsHolder.size())
     {
         LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::AllocDescriptorSet] poolId out of range: " + std::to_string(poolId));
@@ -212,24 +216,60 @@ ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDescriptorPool::AllocDescriptorSet(
 
     RHIVkGPUPipelineStateObject* vkPipelineStateObject = static_cast<RHIVkGPUPipelineStateObject*>(pso);
     VkDescriptorSetLayout descriptorSetLayout = vkPipelineStateObject->GetVkDescriptorSetLayout(layoutIndex);
-    VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = DescriptorSetAllocateInfo(
-    m_DescriptorSetsHolder[poolId].RHIDescriptorPool,
-    1,
-    &descriptorSetLayout
-        );
-    VkDescriptorSet descriptorSet;
-    VkResult res = vkAllocateDescriptorSets(static_cast<VkDevice>(m_pDevice->GetHandle()),
-        &descriptorSetAllocateInfo, &descriptorSet);
-    if (res != VK_SUCCESS)
+    
+    auto& holder = m_DescriptorSetsHolder[poolId];
+    auto& freeList = holder.freeSets[descriptorSetLayout];
+
+    if (freeList.empty())
     {
-        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::AllocDescriptorSet] failed to allocate descriptor sets! VkResult: " + std::to_string(static_cast<int>(res)));
+        // Batch allocate
+        constexpr UInt32 BATCH_SIZE = 16; 
+        // Ensure we don't go over maxSets? currently not tracked strictly per allocation vs pool max.
+        // Assuming pool is large enough or we handle error.
+
+        VkDescriptorSetLayout layouts[BATCH_SIZE];
+        for(int i=0; i<BATCH_SIZE; ++i) layouts[i] = descriptorSetLayout;
+
+        VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = DescriptorSetAllocateInfo(
+            holder.RHIDescriptorPool,
+            BATCH_SIZE,
+            layouts
+        );
+
+        VkDescriptorSet sets[BATCH_SIZE];
+        VkResult res = vkAllocateDescriptorSets(static_cast<VkDevice>(m_pDevice->GetHandle()),
+            &descriptorSetAllocateInfo, sets);
+        
+        if (res != VK_SUCCESS)
+        {
+             // Fallback to single allocation to see if it works (often due to pool fragmentation or reaching exact limit)
+             VkDescriptorSetAllocateInfo singleAllocInfo = descriptorSetAllocateInfo;
+             singleAllocInfo.descriptorSetCount = 1;
+             
+             VkDescriptorSet singleSet;
+             res = vkAllocateDescriptorSets(static_cast<VkDevice>(m_pDevice->GetHandle()),
+                 &singleAllocInfo, &singleSet);
+
+             if (res != VK_SUCCESS)
+             {
+                 LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::AllocDescriptorSet] failed to allocate descriptor sets (batch and single fallback)! VkResult: " + std::to_string(static_cast<int>(res)));
+             }
+
+             freeList.push_back(singleSet);
+        }
+        else 
+        {
+            freeList.insert(freeList.end(), sets, sets + BATCH_SIZE);
+        }
     }
     
-  
-        m_DescriptorSetsHolder[poolId].sets.emplace_back(
-            std::make_shared<RHIVkDescriptorSet>(
-this, layoutIndex, descriptorSet
-));
+    VkDescriptorSet descriptorSet = freeList.back();
+    freeList.pop_back();
+
+    m_DescriptorSetsHolder[poolId].sets.emplace_back(
+        std::make_shared<RHIVkDescriptorSet>(
+            this, layoutIndex, descriptorSet
+    ));
     
     return m_DescriptorSetsHolder[poolId].sets.size() - 1;
 }
@@ -467,38 +507,106 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId,
 void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSet(UInt32 poolId, UInt32 setIndex,
     RHIPipelineState* pso)
 {
-    if (poolId >= m_DescriptorSetsHolder.size())
+    // Use m_Mutex to protect shared_ptr access if Alloc is concurrent
+    std::shared_ptr<RHIDescriptorSet> descriptorSetPtr;
     {
-        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSet] poolId out of range: " + std::to_string(poolId));
+        std::lock_guard<std::mutex> lock(m_Mutex);
+        if (setIndex >= m_DescriptorSetsHolder[poolId].sets.size())
+        {
+            LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSet] setIndex out of range: " + std::to_string(setIndex));
+        }
+        descriptorSetPtr = m_DescriptorSetsHolder[poolId].sets[setIndex];
     }
-    if (m_DescriptorSetsHolder[poolId].RHIDescriptorPool == VK_NULL_HANDLE)
-    {
-        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSet] RHIDescriptorPool is VK_NULL_HANDLE for poolId: " + std::to_string(poolId));
-    }
-    if (setIndex >= m_DescriptorSetsHolder[poolId].sets.size())
-    {
-        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSet] setIndex out of range: " + std::to_string(setIndex));
-    }
-    if (pso == nullptr)
-    {
-        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSet] pso is null");
-    }
-
-    auto descriptorSet = m_DescriptorSetsHolder[poolId].sets[setIndex].get();
+    
+    auto descriptorSet = descriptorSetPtr.get();
     if (descriptorSet == nullptr)
     {
         LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSet] descriptorSet is null for poolId: " + std::to_string(poolId));
     }
 
+    VkDescriptorSet dstSet = static_cast<VkDescriptorSet>(descriptorSet->GetHandle());
+    UInt32 layoutIndex = descriptorSet->GetLayoutIndex();
+
+    RHIVkGPUPipelineStateObject* vkPipelineStateObject = static_cast<RHIVkGPUPipelineStateObject*>(pso);
+    VkDescriptorUpdateTemplate templateHandle = vkPipelineStateObject->GetVkDescriptorUpdateTemplate(layoutIndex);
+
+    if (templateHandle != VK_NULL_HANDLE)
+    {
+        // Use Template Update
+        const auto& updateInfosForAllBindings = vkPipelineStateObject->GetDescriptorUpdateInfos(layoutIndex);
+        
+        // We need to pack data into a buffer matching the template layout (sorted by binding).
+        // Since we know the template creation sorted by binding, we must iterate in the same order.
+        // GetDescriptorUpdateInfos returns a Map<Binding, ...>, which is sorted by Binding.
+        
+        Containers::Vector<uint8_t> dataBuffer;
+        // Pre-reserve? Hard to guess size without first pass, but usually small.
+        dataBuffer.reserve(1024);
+
+        for (const auto& updateInfoForAllTypePair : updateInfosForAllBindings)
+        {
+            // updateInfoForAllTypePair.first is Binding (sorted)
+            const auto& updateInfoForAllType = updateInfoForAllTypePair.second;
+            // Iterate types? Usually only 1 type per binding.
+            for (const auto& updateInfoPair : updateInfoForAllType)
+            {
+                // updateInfoPair.first is Type. 
+                const auto& updateInfo = updateInfoPair.second;
+                
+                // Get Info
+                Containers::Vector<VkDescriptorImageInfo> imageInfos;
+                Containers::Vector<VkDescriptorBufferInfo> bufferInfos;
+                Containers::Vector<VkBufferView> bufferViews;
+                
+                auto pImageInfos = GetImageInfos(m_pDevice, updateInfo, imageInfos);
+                auto pBufferInfos = GetBufferInfos(m_pDevice, updateInfo, bufferInfos);
+                auto pBufferViews = GetBufferViews(m_pDevice, updateInfo, bufferViews);
+
+                // Append to buffer
+                size_t sizeToAppend = 0;
+                const void* dataPtr = nullptr;
+
+                if (pImageInfos) 
+                {
+                    sizeToAppend = imageInfos.size() * sizeof(VkDescriptorImageInfo);
+                    dataPtr = imageInfos.data();
+                }
+                else if (pBufferInfos)
+                {
+                    sizeToAppend = bufferInfos.size() * sizeof(VkDescriptorBufferInfo);
+                    dataPtr = bufferInfos.data();
+                }
+                else if (pBufferViews)
+                {
+                    sizeToAppend = bufferViews.size() * sizeof(VkBufferView);
+                    dataPtr = bufferViews.data();
+                }
+
+                if (sizeToAppend > 0 && dataPtr)
+                {
+                    size_t currentPos = dataBuffer.size();
+                    dataBuffer.resize(currentPos + sizeToAppend);
+                    std::memcpy(dataBuffer.data() + currentPos, dataPtr, sizeToAppend);
+                }
+            }
+        }
+        
+        if (!dataBuffer.empty())
+        {
+            vkUpdateDescriptorSetWithTemplate(static_cast<VkDevice>(m_pDevice->GetHandle()),
+                dstSet,
+                templateHandle,
+                dataBuffer.data());
+             return;
+        }
+    }
+
+    // Fallback to legacy path
     Containers::Vector<VkWriteDescriptorSet> descriptorWrites;
     Containers::Vector<Containers::Vector<VkDescriptorImageInfo>> imageInfos;
     Containers::Vector<Containers::Vector<VkDescriptorBufferInfo>> bufferInfos;
     Containers::Vector<Containers::Vector<VkBufferView>> bufferViews;
 
-    RHIVkGPUPipelineStateObject* vkPipelineStateObject = static_cast<RHIVkGPUPipelineStateObject*>(pso);
-
-    VkDescriptorSet dstSet = static_cast<VkDescriptorSet>(descriptorSet->GetHandle());
-    UInt32 layoutIndex = descriptorSet->GetLayoutIndex();
     const auto& updateInfosForAllBindings = vkPipelineStateObject->GetDescriptorUpdateInfos(layoutIndex);
     
     for (const auto& updateInfoForAllTypePair : updateInfosForAllBindings)

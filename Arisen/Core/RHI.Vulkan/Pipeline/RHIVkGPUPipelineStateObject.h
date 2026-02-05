@@ -66,6 +66,9 @@ namespace ArisenEngine::RHI
         void ClearDescriptorSetLayouts();
         void ClearDescriptorSetLayoutBindings() override;
 
+        VkDescriptorUpdateTemplate GetVkDescriptorUpdateTemplate(UInt32 layoutIndex) const;
+        void BuildDescriptorUpdateTemplate(UInt32 layoutIndex);
+
     private:
         RHIVkDevice* m_Device;
 
@@ -95,6 +98,7 @@ namespace ArisenEngine::RHI
         // descriptor
         Containers::Map<UInt32, Containers::Vector<VkDescriptorSetLayoutBinding>> m_DescriptorSetLayoutBindings {};
         Containers::Vector<VkDescriptorSetLayout> m_DescriptorSetLayouts {};
+        Containers::Vector<VkDescriptorUpdateTemplate> m_DescriptorUpdateTemplates {};
         
         Containers::Map<UInt32, Containers::Map<UInt32, Containers::UnorderedMap<EDescriptorType, RHIDescriptorUpdateInfo>>> m_DescriptorUpdateInfos {};
 

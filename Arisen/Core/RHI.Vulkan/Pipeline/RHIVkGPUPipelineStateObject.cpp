@@ -221,6 +221,15 @@ void RHIVkGPUPipelineStateObject::BuildDescriptorSetLayout()
             }
         }
     }
+
+    m_DescriptorUpdateTemplates.resize(m_DescriptorSetLayouts.size(), VK_NULL_HANDLE);
+    for (UInt32 i = 0; i < m_DescriptorSetLayouts.size(); ++i)
+    {
+        if (m_DescriptorSetLayouts[i] != VK_NULL_HANDLE && m_DescriptorSetLayouts[i] != bindlessLayout)
+        {
+            BuildDescriptorUpdateTemplate(i);
+        }
+    }
 }
 
 VkDescriptorSetLayout RHIVkGPUPipelineStateObject::GetVkDescriptorSetLayout(UInt32 layoutIndex) const
@@ -272,6 +281,15 @@ void RHIVkGPUPipelineStateObject::ClearDescriptorSetLayouts()
         }
     }
     m_DescriptorSetLayouts.clear();
+
+    for (VkDescriptorUpdateTemplate templateHandle : m_DescriptorUpdateTemplates)
+    {
+        if (templateHandle != VK_NULL_HANDLE)
+        {
+             vkDestroyDescriptorUpdateTemplate(vkDevice, templateHandle, nullptr);
+        }
+    }
+    m_DescriptorUpdateTemplates.clear();
 }
 
 
@@ -444,6 +462,109 @@ void RHIVkGPUPipelineStateObject::FillRenderingCreateInfo(VkPipelineRenderingCre
     createInfo.pColorAttachmentFormats = m_ColorAttachmentFormats.data();
     createInfo.depthAttachmentFormat = m_DepthAttachmentFormat;
     createInfo.stencilAttachmentFormat = m_StencilAttachmentFormat;
+}
+
+
+VkDescriptorUpdateTemplate RHIVkGPUPipelineStateObject::GetVkDescriptorUpdateTemplate(UInt32 layoutIndex) const
+{
+    if (layoutIndex >= m_DescriptorUpdateTemplates.size())
+    {
+        return VK_NULL_HANDLE;
+    }
+    return m_DescriptorUpdateTemplates[layoutIndex];
+}
+
+void RHIVkGPUPipelineStateObject::BuildDescriptorUpdateTemplate(UInt32 layoutIndex)
+{
+    if (!m_DescriptorSetLayoutBindings.contains(layoutIndex)) return;
+    
+    const auto& bindings = m_DescriptorSetLayoutBindings[layoutIndex];
+    if (bindings.empty()) return;
+
+    // Sort bindings to ensure consistent order (although map/vector might be already sorted or implicitly ordered by insertion if we were careful, but bindings is a vector here).
+    // The vector is populated in InternalAddDescriptorSetLayoutBinding. It might not be sorted by binding point.
+    // However, for the template, the order of entries in the info structure must match the offsets we calculate.
+    // We will assume a packed struct where data follows the order of bindings in the vector, 
+    // BUT strictly sorting by binding number is safer for the filler to know the order.
+    
+    // Let's create a sorted copy.
+    auto sortedBindings = bindings;
+    std::sort(sortedBindings.begin(), sortedBindings.end(), [](const VkDescriptorSetLayoutBinding& a, const VkDescriptorSetLayoutBinding& b){
+        return a.binding < b.binding;
+    });
+
+    Containers::Vector<VkDescriptorUpdateTemplateEntry> entries;
+    size_t currentOffset = 0;
+
+    for (const auto& binding : sortedBindings)
+    {
+        VkDescriptorUpdateTemplateEntry entry{};
+        entry.dstBinding = binding.binding;
+        entry.dstArrayElement = 0;
+        entry.descriptorCount = binding.descriptorCount;
+        entry.descriptorType = binding.descriptorType;
+        entry.offset = currentOffset;
+        entry.stride = 0; 
+
+        size_t typeSize = 0;
+        switch (binding.descriptorType) {
+            case VK_DESCRIPTOR_TYPE_SAMPLER:
+            case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+            case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+            case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+            case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+                typeSize = sizeof(VkDescriptorImageInfo);
+                break;
+            case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+            case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+            case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+            case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+                typeSize = sizeof(VkDescriptorBufferInfo);
+                break;
+            case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+            case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+                typeSize = sizeof(VkBufferView);
+                break;
+            default:
+                break;
+        }
+
+        entry.stride = typeSize;
+        entries.push_back(entry);
+
+        currentOffset += typeSize * binding.descriptorCount;
+    }
+
+    if (entries.empty()) return;
+
+    VkDescriptorUpdateTemplateCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO;
+    createInfo.descriptorUpdateEntryCount = static_cast<uint32_t>(entries.size());
+    createInfo.pDescriptorUpdateEntries = entries.data();
+    createInfo.templateType = VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET;
+    createInfo.descriptorSetLayout = m_DescriptorSetLayouts[layoutIndex];
+    createInfo.pipelineBindPoint = static_cast<VkPipelineBindPoint>(m_BindPoint);
+    // Remove PIPELINE_LAYOUT assumption if possible, or we need the pipeline layout.
+    // For VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET, pipelineLayout is optional (ignored) 
+    // IF we don't use PUSH_DESCRIPTORS. Check spec. 
+    // Spec: "If templateType is VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET, pipelineLayout is ignored." -> Good.
+    createInfo.pipelineLayout = VK_NULL_HANDLE; 
+    createInfo.set = layoutIndex; // This is ignored if type is DESCRIPTOR_SET? No, wait.
+    // For TYPE_DESCRIPTOR_SET, `set` is the set number in the layout? 
+    // "set is the set number of the descriptor set in the pipeline layout" - used if templateType is PUSH_DESCRIPTORS?
+    // Wait, for regular descriptor sets, the template is created against a specific DescriptorSetLayout.
+    // The `set` parameter in CreateInfo is "The set number of the descriptor set in the pipeline layout that will be updated"
+    // It says "allocation of the descriptor set...". 
+    // Actually, `descriptorSetLayout` is the handle. `set` is the index.
+    // It seems `set` IS used to verify consistency or for push descriptors?
+    // "If templateType is VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET, ... set is the set number ..."
+    // So we should pass layoutIndex.
+    createInfo.set = layoutIndex;
+
+    if (vkCreateDescriptorUpdateTemplate(static_cast<VkDevice>(m_Device->GetHandle()), &createInfo, nullptr, &m_DescriptorUpdateTemplates[layoutIndex]) != VK_SUCCESS)
+    {
+        LOG_ERROR("[RHIVkGPUPipelineStateObject::BuildDescriptorUpdateTemplate] Failed to create descriptor update template for set " + std::to_string(layoutIndex));
+    }
 }
 
 } // namespace ArisenEngine::RHI
