@@ -323,7 +323,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::Begin(UInt32 frameIndex, UInt32 comm
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::End()
 {
-    ASSERT(m_WaitSemaphores.size() == m_WaitStages.size());
+// ASSERT(m_WaitSemaphores.size() == m_WaitStages.size()); // Removed
     
     if (vkEndCommandBuffer(m_VkCommandBuffer) != VK_SUCCESS)
     {
@@ -661,49 +661,7 @@ void RHIVkCommandBuffer::BindVertexBuffers(RHIBufferHandle buffer, UInt64 offset
     CaptureResource(buffer);
 }
 
-void RHIVkCommandBuffer::WaitSemaphore(RHISemaphoreHandle semaphore, EPipelineStageFlag stage)
-{
-    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
-    auto* sem = vkDevice->GetSemaphorePool()->Get(semaphore);
-    if (!sem) return;
-
-    m_WaitSemaphores.emplace_back(sem->semaphore);
-    m_WaitStages.emplace_back(static_cast<VkPipelineStageFlags>(stage));
-}
-
-const VkSemaphore* RHIVkCommandBuffer::GetWaitSemaphores() const
-{
-    return m_WaitSemaphores.data();
-}
-
-UInt32 RHIVkCommandBuffer::GetWaitSemaphoresCount() const
-{
-    return m_WaitSemaphores.size();
-}
-
-void RHIVkCommandBuffer::SignalSemaphore(RHISemaphoreHandle semaphore)
-{
-    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
-    auto* sem = vkDevice->GetSemaphorePool()->Get(semaphore);
-    if (!sem) return;
-
-    m_SignalSemaphores.emplace_back(sem->semaphore);
-}
-
-const VkSemaphore* RHIVkCommandBuffer::GetSignalSemaphores() const
-{
-    return m_SignalSemaphores.data();
-}
-
-UInt32 RHIVkCommandBuffer::GetSignalSemaphoresCount() const
-{
-    return m_SignalSemaphores.size();
-}
-
-const VkPipelineStageFlags* RHIVkCommandBuffer::GetWaitStageMask() const
-{
-    return m_WaitStages.data();
-}
+// Removed legacy WaitSemaphore/SignalSemaphore/Getters
 
 void RHIVkCommandBuffer::CopyBuffer(RHIBufferHandle src, UInt64 srcOffset,
                                                        RHIBufferHandle dst, UInt64 dstOffset, UInt64 size)
@@ -840,9 +798,9 @@ void RHIVkCommandBuffer::ResetInternal()
 {
     if (GetState() == ECommandBufferState::Initial) return;
 
-    m_WaitSemaphores.clear();
-    m_SignalSemaphores.clear();
-    m_WaitStages.clear();
+    // m_WaitSemaphores.clear();
+    // m_SignalSemaphores.clear();
+    // m_WaitStages.clear();
     m_VkBeginInfo = {};
     m_TrackedDescriptorPools.clear();
     

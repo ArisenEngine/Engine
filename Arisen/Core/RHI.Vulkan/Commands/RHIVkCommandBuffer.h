@@ -68,9 +68,6 @@ public:
   void BindIndexBuffer(RHIBufferHandle indexBuffer, UInt64 offset,
                        EIndexType type) override;
 
-  void WaitSemaphore(RHISemaphoreHandle semaphore,
-                     EPipelineStageFlag stage) override;
-  void SignalSemaphore(RHISemaphoreHandle semaphore) override;
   void CopyBuffer(RHIBufferHandle src, UInt64 srcOffset,
                   RHIBufferHandle dst, UInt64 dstOffset,
                   UInt64 size) override;
@@ -111,11 +108,6 @@ public:
     private:
         friend class RHIVkQueue;
         // Vulkan only
-        const VkSemaphore *GetWaitSemaphores() const;
-        UInt32 GetWaitSemaphoresCount() const;
-        const VkSemaphore *GetSignalSemaphores() const;
-        UInt32 GetSignalSemaphoresCount() const;
-        const VkPipelineStageFlags *GetWaitStageMask() const;
         VkFence GetSubmissionFence() const;
 
 protected:
@@ -130,10 +122,6 @@ private:
   std::optional<VkBuffer> m_IndexBuffer;
   std::optional<UInt64> m_IndexOffset;
   std::optional<EIndexType> m_IndexType;
-
-  Containers::Vector<VkSemaphore> m_WaitSemaphores;
-  Containers::Vector<VkSemaphore> m_SignalSemaphores;
-  Containers::Vector<VkPipelineStageFlags> m_WaitStages;
 
   VkCommandBufferBeginInfo m_VkBeginInfo{};
   // Fence ownership is separated from command buffer (owned by

@@ -172,8 +172,9 @@ namespace ArisenEngine::RHI
         virtual void BindVertexBuffers(RHIBufferHandle buffer, UInt64 offset) = 0;
         virtual void BindIndexBuffer(RHIBufferHandle indexBuffer, UInt64 offset, EIndexType type) = 0;
         
-        virtual void WaitSemaphore(RHISemaphoreHandle semaphore, EPipelineStageFlag stage) = 0;
-        virtual void SignalSemaphore(RHISemaphoreHandle semaphore) = 0;
+        // Synchronization moved to RHISubmitDescriptor
+        // virtual void WaitSemaphore(RHISemaphoreHandle semaphore, EPipelineStageFlag stage) = 0;
+        // virtual void SignalSemaphore(RHISemaphoreHandle semaphore) = 0;
 
         virtual void CopyBuffer(RHIBufferHandle src, UInt64 srcOffset, RHIBufferHandle dst, UInt64 dstOffset, UInt64 size) = 0;
         
