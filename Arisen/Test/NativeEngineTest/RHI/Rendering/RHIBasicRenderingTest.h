@@ -16,7 +16,6 @@ namespace ArisenEngine::Testing
         RHI_ImageViewHandle m_DepthView = 0;
         RHI_ImageHandle m_Texture = 0;
         RHI_SamplerHandle m_Sampler = 0;
-        RHI_SubpassHandle m_Subpass = 0;
         
         RHI_ImageHandle m_MSAAColorImage = 0;
         RHI_ImageViewHandle m_MSAAColorView = 0;
@@ -163,56 +162,6 @@ namespace ArisenEngine::Testing
 
         void InitRenderContext()
         {
-            // MSAA Color attachment (Attachment 0)
-            RHI_RenderPass_AddAttachmentAction(m_Device, m_RenderPass,
-                RHI::FORMAT_B8G8R8A8_SRGB,
-                m_SampleCount,
-                RHI::ATTACHMENT_LOAD_OP_CLEAR,
-                RHI::ATTACHMENT_STORE_OP_DONT_CARE,
-                RHI::ATTACHMENT_LOAD_OP_DONT_CARE,
-                RHI::ATTACHMENT_STORE_OP_DONT_CARE,
-                RHI::IMAGE_LAYOUT_UNDEFINED,
-                RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-            // Swapchain Resolve target (Attachment 1)
-            RHI_RenderPass_AddAttachmentAction(m_Device, m_RenderPass,
-                RHI::FORMAT_B8G8R8A8_SRGB,
-                RHI::SAMPLE_COUNT_1_BIT,
-                RHI::ATTACHMENT_LOAD_OP_DONT_CARE,
-                RHI::ATTACHMENT_STORE_OP_STORE,
-                RHI::ATTACHMENT_LOAD_OP_DONT_CARE,
-                RHI::ATTACHMENT_STORE_OP_DONT_CARE,
-                RHI::IMAGE_LAYOUT_UNDEFINED,
-                RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-            // MSAA Depth attachment (Attachment 2)
-            RHI_RenderPass_AddAttachmentAction(m_Device, m_RenderPass,
-                RHI::FORMAT_D32_SFLOAT,
-                m_SampleCount,
-                RHI::ATTACHMENT_LOAD_OP_CLEAR,
-                RHI::ATTACHMENT_STORE_OP_DONT_CARE,
-                RHI::ATTACHMENT_LOAD_OP_DONT_CARE,
-                RHI::ATTACHMENT_STORE_OP_DONT_CARE,
-                RHI::IMAGE_LAYOUT_UNDEFINED,
-                RHI::IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-
-            m_Subpass = RHI_RenderPass_AddSubPass(m_Device, m_RenderPass);
-            RHI_Subpass_SetBindPoint(m_Subpass, RHI::PIPELINE_BIND_POINT_GRAPHICS);
-            RHI_Subpass_AddColorReference(m_Subpass, 0, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            RHI_Subpass_SetResolveReference(m_Subpass, 1, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            RHI_Subpass_SetDepthStencilReference(m_Subpass, 2, RHI::IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-
-            RHI_Subpass_SetDependency(m_Subpass, u32Invalid,
-                RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | RHI::PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | RHI::PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                RHI::ACCESS_COLOR_ATTACHMENT_WRITE_BIT | RHI::ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-                RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | RHI::PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | RHI::PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                RHI::ACCESS_COLOR_ATTACHMENT_WRITE_BIT | RHI::ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, 0);
-
-            for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
-            {
-                RHI_RenderPass_Alloc(m_Device, m_RenderPass, i);
-            }
-
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
                 Containers::Vector<RHI::EDescriptorType> types = { RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, RHI::DESCRIPTOR_TYPE_SAMPLED_IMAGE, RHI::DESCRIPTOR_TYPE_SAMPLER };
@@ -273,10 +222,10 @@ namespace ArisenEngine::Testing
 
             RHI_PSO_SetDynamicStateMask(m_Pso, RHI::DYNAMIC_STATE_VIEWPORT_BIT | RHI::DYNAMIC_STATE_SCISSOR_BIT);
 
+            Containers::Vector<RHI::EFormat> colorFormats = { RHI::FORMAT_B8G8R8A8_SRGB };
+            RHI_PSO_SetRenderingFormats(m_Pso, &colorFormats, RHI::FORMAT_D32_SFLOAT, RHI::FORMAT_UNDEFINED);
+
             m_Pipeline = RHI_PipelineManager_GetGraphicsPipeline(pm, m_Pso);
-            for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i) {
-                RHI_Pipeline_AllocGraphics(m_Device, m_Pipeline, i, m_Subpass);
-            }
         }
 
         void UpdateUniformBuffer()
@@ -328,34 +277,62 @@ namespace ArisenEngine::Testing
             if (colorBuffer)
             {
                 auto colorView = RHI_SwapChain_GetImageView(m_SwapChain, currentIndex);
-                RHI_RenderPass_Alloc(m_Device, m_RenderPass, currentIndex);
-                RHI_FrameBuffer_SetAttachment(m_Device, m_FrameBuffer, currentIndex, m_MSAAColorView, m_RenderPass, 0);
-                RHI_FrameBuffer_SetAttachment(m_Device, m_FrameBuffer, currentIndex, colorView, m_RenderPass, 1);
-                RHI_FrameBuffer_SetAttachment(m_Device, m_FrameBuffer, currentIndex, m_DepthView, m_RenderPass, 2);
+                RHI::RHIImageHandle colorImage = *reinterpret_cast<RHI::RHIImageHandle*>(&colorBuffer);
 
-                RHI::RHIClearValue clearValues[3];
-                clearValues[0].color[0] = 0.0f;
-                clearValues[0].color[1] = 0.0f;
-                clearValues[0].color[2] = 0.2f;
-                clearValues[0].color[3] = 1.0f;
-                clearValues[1].color[0] = 0.0f;
-                clearValues[1].color[1] = 0.0f;
-                clearValues[1].color[2] = 0.2f;
-                clearValues[1].color[3] = 1.0f;
-                clearValues[2].depthStencil.depth = 1.0f;
-                clearValues[2].depthStencil.stencil = 0;
+                // Transition swapchain image: UNDEFINED -> COLOR_ATTACHMENT_OPTIMAL
+                {
+                    RHI::RHIImageMemoryBarrier barrier = {};
+                    barrier.srcAccess = RHI::ACCESS_NONE;
+                    barrier.dstAccess = RHI::ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                    barrier.oldLayout = RHI::IMAGE_LAYOUT_UNDEFINED;
+                    barrier.newLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                    barrier.srcQueueFamilyIndex = 0xFFFFFFFF;
+                    barrier.dstQueueFamilyIndex = 0xFFFFFFFF;
+                    barrier.image = colorImage;
+                    barrier.subresourceRange = { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+                    barrier.srcStageMask = RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                    barrier.dstStageMask = RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
-                RHI::RenderPassBeginDesc rpBegin = {
-                    *reinterpret_cast<RHI::RHIRenderPassHandle*>(&m_RenderPass),
-                    *reinterpret_cast<RHI::RHIFrameBufferHandle*>(&m_FrameBuffer),
-                    RHI::SUBPASS_CONTENTS_INLINE,
-                    3,
-                    clearValues
-                };
+                    Containers::Vector<RHI::RHIImageMemoryBarrier> barriers = { barrier };
+                    RHI_Cmd_PipelineBarrier_Image(cmd, RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, &barriers);
+                }
 
-                RHI_Cmd_BeginRenderPass(cmd, &rpBegin);
+                RHI::RHIRenderingAttachmentInfo colorAttachment {};
+                colorAttachment.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&m_MSAAColorView);
+                colorAttachment.imageLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                colorAttachment.loadOp = RHI::ATTACHMENT_LOAD_OP_CLEAR;
+                colorAttachment.storeOp = RHI::ATTACHMENT_STORE_OP_DONT_CARE;
+                colorAttachment.clearValue.float32[0] = 0.0f;
+                colorAttachment.clearValue.float32[1] = 0.0f;
+                colorAttachment.clearValue.float32[2] = 0.2f;
+                colorAttachment.clearValue.float32[3] = 1.0f;
+
+                RHI::RHIRenderingAttachmentInfo resolveAttachment {};
+                resolveAttachment.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&colorView);
+                resolveAttachment.imageLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                resolveAttachment.loadOp = RHI::ATTACHMENT_LOAD_OP_DONT_CARE;
+                resolveAttachment.storeOp = RHI::ATTACHMENT_STORE_OP_STORE;
+
+                RHI::RHIRenderingAttachmentInfo depthAttachment {};
+                depthAttachment.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&m_DepthView);
+                depthAttachment.imageLayout = RHI::IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                depthAttachment.loadOp = RHI::ATTACHMENT_LOAD_OP_CLEAR;
+                depthAttachment.storeOp = RHI::ATTACHMENT_STORE_OP_DONT_CARE;
+                depthAttachment.clearValue.float32[0] = 1.0f;
+                depthAttachment.clearValue.float32[1] = 0;
+
                 UInt32 width = HAL::GetWindowWidth(m_WindowId);
                 UInt32 height = HAL::GetWindowHeight(m_WindowId);
+
+                RHI::RHIRenderingInfo renderInfo {};
+                renderInfo.RHIRenderArea = { 0, 0, width, height };
+                renderInfo.layerCount = 1;
+                renderInfo.colorAttachmentCount = 1;
+                renderInfo.pColorAttachments = &colorAttachment;
+                renderInfo.pResolveAttachments = &resolveAttachment;
+                renderInfo.pDepthAttachment = &depthAttachment;
+
+                RHI_Cmd_BeginRendering(cmd, &renderInfo);
                 RHI_Cmd_BindPipeline(cmd, m_Pipeline);
                 RHI_Cmd_SetViewport(cmd, 0, 0, (float)width, (float)height, 0, 1);
                 RHI_Cmd_SetScissor(cmd, 0, 0, width, height);
@@ -369,7 +346,25 @@ namespace ArisenEngine::Testing
                     RHI_Cmd_BindDescriptorSet_FromPool(cmd, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[currentIndex], setIdx);
                     RHI_Cmd_DrawIndexed(cmd, prim.indexCount, 1, prim.firstIndex, 0, 0, 0);
                 }
-                RHI_Cmd_EndRenderPass(cmd);
+                RHI_Cmd_EndRendering(cmd);
+
+                // Transition swapchain image: COLOR_ATTACHMENT_OPTIMAL -> PRESENT_SRC_KHR
+                {
+                    RHI::RHIImageMemoryBarrier barrier = {};
+                    barrier.srcAccess = RHI::ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                    barrier.dstAccess = RHI::ACCESS_NONE;
+                    barrier.oldLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                    barrier.newLayout = RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR;
+                    barrier.srcQueueFamilyIndex = 0xFFFFFFFF;
+                    barrier.dstQueueFamilyIndex = 0xFFFFFFFF;
+                    barrier.image = colorImage;
+                    barrier.subresourceRange = { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+                    barrier.srcStageMask = RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                    barrier.dstStageMask = RHI::PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+
+                    Containers::Vector<RHI::RHIImageMemoryBarrier> barriers = { barrier };
+                    RHI_Cmd_PipelineBarrier_Image(cmd, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, RHI::PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, &barriers);
+                }
             }
 
             RHI_Cmd_End(cmd);

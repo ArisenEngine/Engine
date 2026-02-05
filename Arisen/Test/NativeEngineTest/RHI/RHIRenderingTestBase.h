@@ -53,8 +53,6 @@ namespace ArisenEngine::Testing
     {
     protected:
         RHI_CommandBufferPoolHandle m_CmdPool = 0;
-        RHI_RenderPassHandle m_RenderPass = 0;
-        RHI_FrameBufferHandle m_FrameBuffer = 0;
         RHI_DescriptorPoolHandle m_DescriptorPool = 0;
         
         RHI_SurfaceHandle m_Surface = 0;

@@ -28,6 +28,10 @@ namespace ArisenEngine::RHI
         {
             return m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight];
         }
+        VkPipeline GetVkPipeline(UInt32 frameIndex) const
+        {
+            return m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight];
+        }
     private:
 
         void FreePipelineLayout(UInt32 frameIndex);

@@ -203,9 +203,6 @@ namespace ArisenEngine::Testing
             RHI_PSO_BuildDescriptorSetLayout(m_ComputePso);
             
             m_ComputePipeline = RHI_PipelineManager_GetGraphicsPipeline(pm, m_ComputePso);
-            for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i) {
-                RHI_Pipeline_AllocCompute(m_Device, m_ComputePipeline, i);
-            }
 
             // Graphics Pipeline
             m_GraphicsPso = RHI_PipelineManager_CreatePSO(pm);
@@ -243,9 +240,6 @@ namespace ArisenEngine::Testing
             RHI_PSO_SetRenderingFormats(m_GraphicsPso, &colorFormats, RHI::FORMAT_UNDEFINED, RHI::FORMAT_UNDEFINED);
 
             m_GraphicsPipeline = RHI_PipelineManager_GetGraphicsPipeline(pm, m_GraphicsPso);
-            for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i) {
-                RHI_Pipeline_AllocGraphics(m_Device, m_GraphicsPipeline, i, nullptr); 
-            }
         }
 
         void UpdateUniformBuffer()
@@ -332,9 +326,10 @@ namespace ArisenEngine::Testing
 
             // Graphics Render
             // Acquire the image
-            RHI_SwapChain_BeginFrame(m_SwapChain, currentIndex);
+            auto colorBuffer = RHI_SwapChain_BeginFrame(m_SwapChain, currentIndex);
             
             auto colorView = RHI_SwapChain_GetImageView(m_SwapChain, currentIndex);
+            RHI::RHIImageHandle colorImage = *reinterpret_cast<RHI::RHIImageHandle*>(&colorBuffer);
 
             RHI::RHIRenderingInfo renderInfo = {};
             renderInfo.RHIRenderArea = { 0, 0, HAL::GetWindowWidth(m_WindowId), HAL::GetWindowHeight(m_WindowId) };
@@ -361,7 +356,7 @@ namespace ArisenEngine::Testing
                 barrier.newLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                 barrier.srcQueueFamilyIndex = 0xFFFFFFFF;
                 barrier.dstQueueFamilyIndex = 0xFFFFFFFF;
-                barrier.image = *reinterpret_cast<RHI::RHIImageHandle*>(&colorView);
+                barrier.image = colorImage;
                 barrier.subresourceRange = { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
                 barrier.srcStageMask = RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT;
                 barrier.dstStageMask = RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -387,7 +382,7 @@ namespace ArisenEngine::Testing
                 barrier.newLayout = RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR;
                 barrier.srcQueueFamilyIndex = 0xFFFFFFFF;
                 barrier.dstQueueFamilyIndex = 0xFFFFFFFF;
-                barrier.image = *reinterpret_cast<RHI::RHIImageHandle*>(&colorView);
+                barrier.image = colorImage;
                 barrier.subresourceRange = { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
                 barrier.srcStageMask = RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
                 barrier.dstStageMask = RHI::PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;

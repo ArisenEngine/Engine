@@ -18,37 +18,11 @@ namespace ArisenEngine::RHI
         ~RHIVkFrameBuffer() noexcept override;
 
         void* GetHandle(UInt32 currentFrameIndex) override;
-        void SetAttachment(UInt32 frameIndex, RHIImageViewHandle imageView, RHIRenderPass* renderPass) override;
-        void SetAttachment(UInt32 frameIndex, RHIImageViewHandle imageView, RHIRenderPass* renderPass, UInt32 index) override;
-        
-        // Extended for multi-attachment caching
-        void SetAttachments(UInt32 frameIndex, const Containers::Vector<RHIImageViewHandle>& imageViews, RHIRenderPass* renderPass) override;
-
         EFormat GetAttachFormat() override;
     private:
-        void FreeFrameBuffer(UInt32 currentFrameIndex);
-        void FreeAllFrameBuffers();
-
-    private:
-        struct FramebufferCacheKey {
-            VkRenderPass renderPass;
-            Containers::Vector<VkImageView> attachments;
-            UInt32 width;
-            UInt32 height;
-            UInt32 layers;
-
-            bool operator<(const FramebufferCacheKey& other) const {
-                return std::tie(renderPass, attachments, width, height, layers) <
-                       std::tie(other.renderPass, other.attachments, other.width, other.height, other.layers);
-            }
-        };
-
-        Containers::Vector<VkFramebuffer> m_VkFrameBuffers;
         RHIVkDevice* m_Device;
+        Containers::Vector<VkFramebuffer> m_VkFrameBuffers;
         RHIImageViewHandle m_ImageView {RHIImageViewHandle::Invalid()};
-        std::map<FramebufferCacheKey, VkFramebuffer> m_FramebufferCache;
-        Containers::Map<UInt32, Containers::Vector<RHIImageViewHandle>> m_PendingAttachments;
-        Containers::Map<UInt32, RHIRenderPass*> m_PendingRenderPasses;
     };
 }
 
