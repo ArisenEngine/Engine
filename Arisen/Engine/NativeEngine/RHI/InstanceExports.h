@@ -9,12 +9,12 @@ typedef void* RHI_InstanceHandle;
 typedef void* RHI_DeviceHandle;
 
 extern "C" ENGINE_DLL RHI_InstanceHandle RHI_CreateInstance(const ArisenEngine::RHI::RHIInstanceInfo* info);
-extern "C" ENGINE_DLL void RHI_DestroyInstance(RHI_InstanceHandle instance);
+extern "C" ENGINE_DLL void RHI_Instance_Release(RHI_InstanceHandle instance);
 
 extern "C" ENGINE_DLL void RHI_Instance_InitLogicDevices(RHI_InstanceHandle instance);
 extern "C" ENGINE_DLL void RHI_Instance_PickPhysicalDevice(RHI_InstanceHandle instance, bool considerSurface);
 extern "C" ENGINE_DLL void RHI_Instance_CreateSurface(RHI_InstanceHandle instance, unsigned int windowId);
-extern "C" ENGINE_DLL void RHI_Instance_DestroySurface(RHI_InstanceHandle instance, unsigned int windowId);
+extern "C" ENGINE_DLL void RHI_Instance_ReleaseSurface(RHI_InstanceHandle instance, unsigned int windowId);
 extern "C" ENGINE_DLL void RHI_Instance_SetResolution(RHI_InstanceHandle instance, unsigned int windowId, unsigned int width, unsigned int height);
 extern "C" ENGINE_DLL unsigned int RHI_Instance_GetMaxFramesInFlight(RHI_InstanceHandle instance);
 extern "C" ENGINE_DLL bool RHI_Instance_IsPhysicalDeviceAvailable(RHI_InstanceHandle instance);

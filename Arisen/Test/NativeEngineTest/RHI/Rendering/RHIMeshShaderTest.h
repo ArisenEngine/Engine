@@ -103,7 +103,7 @@ namespace ArisenEngine::Testing
             if (m_MeshProgram) RHI_Device_ReleaseGPUProgram(m_Device, m_MeshProgram);
             if (m_FragProgram) RHI_Device_ReleaseGPUProgram(m_Device, m_FragProgram);
 
-            if (m_MeshPso) RHI_PSO_Destroy(m_MeshPso);
+            if (m_MeshPso) RHI_PSO_Release(m_MeshPso);
 
             RHIRenderingTestBase::TeardownTest();
         }
@@ -239,7 +239,7 @@ namespace ArisenEngine::Testing
             auto surface = RHI_Instance_GetSurface(m_Instance, m_WindowId);
             auto swapchain = RHI_Surface_GetSwapChain(surface);
             
-            RHI_SwapChain_AquireCurrentImage(swapchain, currentIndex);
+            RHI_SwapChain_AcquireCurrentImage(swapchain, currentIndex);
             auto colorView = RHI_SwapChain_GetImageView(swapchain, currentIndex);
 
             RHI::RHIRenderingInfo renderInfo = {};

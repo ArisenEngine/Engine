@@ -142,8 +142,8 @@ namespace ArisenEngine::Testing
             for (auto& ub : m_UboBuffers) if (ub) RHI_Device_ReleaseBuffer(m_Device, ub);
             if (m_HsProgram) RHI_Device_ReleaseGPUProgram(m_Device, m_HsProgram);
             if (m_DsProgram) RHI_Device_ReleaseGPUProgram(m_Device, m_DsProgram);
-            if (m_Pso) RHI_PSO_Destroy(m_Pso);
-            if (m_WireframePso) RHI_PSO_Destroy(m_WireframePso);
+            if (m_Pso) RHI_PSO_Release(m_Pso);
+            if (m_WireframePso) RHI_PSO_Release(m_WireframePso);
 
             m_Model.Release(m_Device);
             RHIRenderingTestBase::TeardownTest();
@@ -370,7 +370,7 @@ namespace ArisenEngine::Testing
 
             auto surface = RHI_Instance_GetSurface(m_Instance, m_WindowId);
             auto swapchain = RHI_Surface_GetSwapChain(surface);
-            auto colorBuffer = RHI_SwapChain_AquireCurrentImage(swapchain, currentIndex);
+            auto colorBuffer = RHI_SwapChain_AcquireCurrentImage(swapchain, currentIndex);
             
             if (colorBuffer)
             {

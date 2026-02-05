@@ -105,8 +105,8 @@ namespace ArisenEngine::Testing
             if (m_VertProgram) RHI_Device_ReleaseGPUProgram(m_Device, m_VertProgram);
             if (m_FragProgram) RHI_Device_ReleaseGPUProgram(m_Device, m_FragProgram);
 
-            if (m_ComputePso) RHI_PSO_Destroy(m_ComputePso);
-            if (m_GraphicsPso) RHI_PSO_Destroy(m_GraphicsPso);
+            if (m_ComputePso) RHI_PSO_Release(m_ComputePso);
+            if (m_GraphicsPso) RHI_PSO_Release(m_GraphicsPso);
 
             RHIRenderingTestBase::TeardownTest();
         }
@@ -335,7 +335,7 @@ namespace ArisenEngine::Testing
             auto swapchain = RHI_Surface_GetSwapChain(surface);
             
             // Acquire the image
-            RHI_SwapChain_AquireCurrentImage(swapchain, currentIndex);
+            RHI_SwapChain_AcquireCurrentImage(swapchain, currentIndex);
             
             auto colorView = RHI_SwapChain_GetImageView(swapchain, currentIndex);
 
