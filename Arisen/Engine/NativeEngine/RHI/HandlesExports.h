@@ -21,6 +21,7 @@ namespace ArisenEngine { namespace RHI { class ImageView; } }
 
 /** @ownership Owned - Caller must release via RHI_Device_ReleaseBuffer */
 extern "C" ENGINE_DLL RHI_BufferHandle RHI_Device_CreateBuffer(RHI_DeviceHandle device, const ArisenEngine::RHI::RHIBufferDescriptor* desc, const char* name);
+extern "C" ENGINE_DLL void RHI_Device_BatchCreateBuffers(RHI_DeviceHandle device, unsigned int count, const ArisenEngine::RHI::RHIBufferDescriptor* descs, const char** names, RHI_BufferHandle* outHandles);
 extern "C" ENGINE_DLL void RHI_Device_ReleaseBuffer(RHI_DeviceHandle device, RHI_BufferHandle buffer);
 
 extern "C" ENGINE_DLL void RHI_Buffer_MemoryCopy(RHI_DeviceHandle device, RHI_BufferHandle buffer, const void* src, unsigned long long size, unsigned long long offset);

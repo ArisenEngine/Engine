@@ -8,6 +8,7 @@
 #include "RHI/Unit/RHISyncTest.h"
 #include "RHI/Unit/RHIBindlessTest.h"
 #include "RHI/Unit/RHIMultiThreadedTest.h"
+#include "RHI/Unit/RHIBatchApiTest.h"
 #include "RHI/Rendering/RHIMeshShaderTest.h"
 #include "RHI/Rendering/RHIGeometryShaderTest.h"
 #include "RHI/Rendering/RHITessellationShaderTest.h"
@@ -38,6 +39,7 @@ int main(int argc, char** argv)
     TestRunner::RegisterTest<RHIBindlessTest>();
     TestRunner::RegisterTest<RHISyncTest>();
     TestRunner::RegisterTest<RHIMultiThreadedTest>();
+    TestRunner::RegisterTest<RHIBatchApiTest>();
     TestRunner::RegisterTest<RHIBasicRenderingTest>();
     TestRunner::RegisterTest<RHIGPUParticleTest>();
     TestRunner::RegisterTest<RHIMeshShaderTest>();

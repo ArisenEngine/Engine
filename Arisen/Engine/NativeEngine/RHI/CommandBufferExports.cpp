@@ -191,6 +191,22 @@ extern "C" ENGINE_DLL void RHI_Cmd_PipelineBarrier_Buffer(RHI_CommandBufferHandl
     c->PipelineBarrier(static_cast<RHI::EPipelineStageFlag>(srcStage), static_cast<RHI::EPipelineStageFlag>(dstStage), dependency, std::move(none1), std::move(none2), std::move(*bufferBarriers));
 }
 
+extern "C" ENGINE_DLL void RHI_Cmd_BatchPipelineBarrier(RHI_CommandBufferHandle cmd, unsigned int srcStage, unsigned int dstStage, unsigned int dependency, Containers::Vector<RHI::RHIMemoryBarrier>* memoryBarriers, Containers::Vector<RHI::RHIImageMemoryBarrier>* imageBarriers, Containers::Vector<RHI::RHIBufferMemoryBarrier>* bufferBarriers)
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c == nullptr) return;
+
+    Containers::Vector<RHI::RHIMemoryBarrier> m;
+    Containers::Vector<RHI::RHIImageMemoryBarrier> i;
+    Containers::Vector<RHI::RHIBufferMemoryBarrier> b;
+
+    if (memoryBarriers) m = std::move(*memoryBarriers);
+    if (imageBarriers) i = std::move(*imageBarriers);
+    if (bufferBarriers) b = std::move(*bufferBarriers);
+
+    c->PipelineBarrier(static_cast<RHI::EPipelineStageFlag>(srcStage), static_cast<RHI::EPipelineStageFlag>(dstStage), dependency, std::move(m), std::move(i), std::move(b));
+}
+
 extern "C" ENGINE_DLL void RHI_Cmd_WaitSemaphore(RHI_CommandBufferHandle cmd, RHI_SemaphoreHandle semaphore, unsigned int stageFlags)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);

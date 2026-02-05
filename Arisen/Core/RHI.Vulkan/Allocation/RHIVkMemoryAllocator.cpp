@@ -31,13 +31,10 @@ namespace ArisenEngine::RHI
 
     bool RHIVkMemoryAllocator::AllocateBufferMemory(VkBuffer buffer, VmaMemoryUsage usage, VmaAllocation* outAllocation)
     {
-        VkMemoryRequirements memReq;
-        vkGetBufferMemoryRequirements(static_cast<VkDevice>(m_Device->GetHandle()), buffer, &memReq);
-
         VmaAllocationCreateInfo allocInfo = {};
         allocInfo.usage = usage;
         
-        if (vmaAllocateMemory(m_VmaAllocator, &memReq, &allocInfo, outAllocation, nullptr) != VK_SUCCESS)
+        if (vmaAllocateMemoryForBuffer(m_VmaAllocator, buffer, &allocInfo, outAllocation, nullptr) != VK_SUCCESS)
         {
             return false;
         }
@@ -46,13 +43,10 @@ namespace ArisenEngine::RHI
 
     bool RHIVkMemoryAllocator::AllocateImageMemory(VkImage image, VmaMemoryUsage usage, VmaAllocation* outAllocation)
     {
-        VkMemoryRequirements memReq;
-        vkGetImageMemoryRequirements(static_cast<VkDevice>(m_Device->GetHandle()), image, &memReq);
-
         VmaAllocationCreateInfo allocInfo = {};
         allocInfo.usage = usage;
         
-        if (vmaAllocateMemory(m_VmaAllocator, &memReq, &allocInfo, outAllocation, nullptr) != VK_SUCCESS)
+        if (vmaAllocateMemoryForImage(m_VmaAllocator, image, &allocInfo, outAllocation, nullptr) != VK_SUCCESS)
         {
             return false;
         }

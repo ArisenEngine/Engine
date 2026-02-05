@@ -86,6 +86,27 @@ extern "C" ENGINE_DLL void RHI_PSO_UpdateDescriptorSet_Images(RHI_PSOHandle pso,
     s->UpdateDescriptorSet(layoutIndex, binding, std::move(*images));
 }
 
+extern "C" ENGINE_DLL void RHI_PSO_BatchUpdateDescriptors(RHI_PSOHandle pso, unsigned int count, const RHI_DescriptorUpdateEntry* entries)
+{
+    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
+    if (s == nullptr || entries == nullptr) return;
+
+    for (unsigned int i = 0; i < count; ++i)
+    {
+        const auto& entry = entries[i];
+        if (entry.bufferHandles != nullptr)
+        {
+            auto buffers = *entry.bufferHandles;
+            s->UpdateDescriptorSet(entry.layoutIndex, entry.binding, std::move(buffers));
+        }
+        else if (entry.imageInfos != nullptr)
+        {
+            auto images = *entry.imageInfos;
+            s->UpdateDescriptorSet(entry.layoutIndex, entry.binding, std::move(images));
+        }
+    }
+}
+
 extern "C" ENGINE_DLL void RHI_PSO_BuildDescriptorSetLayout(RHI_PSOHandle pso)
 {
     auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
