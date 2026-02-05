@@ -3,6 +3,8 @@
 #include "RHI/Descriptors/RHIDescriptorPool.h"
 #include "RHI/Resources/RHIDeferredDeletionQueue.h"
 #include <mutex>
+#include <unordered_map>
+#include <vector>
 #include "RHI/Descriptors/RHIDescriptorUpdateInfo.h"
 
 namespace ArisenEngine::RHI
@@ -20,6 +22,8 @@ namespace ArisenEngine::RHI
         UInt32 maxSets {0};
         //sets list
         Containers::Vector<std::shared_ptr<RHIDescriptorSet>> sets;
+
+        std::unordered_map<VkDescriptorSetLayout, std::vector<VkDescriptorSet>> freeSets;
         
     } RHIVkDescriptorSetsHolder;
     
@@ -31,8 +35,8 @@ namespace ArisenEngine::RHI
         virtual ~RHIVkDescriptorPool() override;
         /// 
         /// @param types 总的类型数组，包括所有Set
-        /// @param counts 所有Set每种类型的总个�?
-        /// @param maxSets 最多允许Set�?
+        /// @param counts 所有Set每种类型的总个?
+        /// @param maxSets 最多允许Set?
         /// @return 
         UInt32 AddPool(Containers::Vector<EDescriptorType> types, Containers::Vector<UInt32> counts, UInt32 maxSets) override;
         bool ResetPool(UInt32 poolId) override;
@@ -61,7 +65,3 @@ namespace ArisenEngine::RHI
         std::mutex m_Mutex;
     };
 }
-
-
-
-
