@@ -4,7 +4,7 @@
 #include "../../Core/Core.RHI/RHI/Pipeline/RHIPipeline.h"
 #include "../../Core/Core.RHI/RHI/Pipeline/RHIPipelineState.h"
 
-#include "RHIHandleExports.h"
+#include "RHITypesExports.h"
 
 /** @ownership Borrowed - Managed by Device */
 extern "C" ENGINE_DLL RHI_PipelineManagerHandle RHI_Device_GetPipelineManager(RHI_DeviceHandle device);
@@ -18,13 +18,8 @@ extern "C" ENGINE_DLL void RHI_PSO_AddVertexBindingDescription(RHI_PSOHandle pso
 extern "C" ENGINE_DLL void RHI_PSO_AddVertexInputAttributeDescription(RHI_PSOHandle pso, unsigned int location, unsigned int binding, ArisenEngine::RHI::EFormat format, unsigned int offset);
 extern "C" ENGINE_DLL void RHI_PSO_ClearDescriptorSetLayoutBindings(RHI_PSOHandle pso);
 
-struct RHI_DescriptorUpdateEntry
-{
-    unsigned int layoutIndex;
-    unsigned int binding;
-    const ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIBufferHandle>* bufferHandles;
-    const ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIDescriptorImageInfo>* imageInfos;
-};
+// RHI_DescriptorUpdateEntry now defined in Core.RHI/RHI/Descriptors/RHIDescriptorUpdateInfo.h
+using RHI_DescriptorUpdateEntry = ArisenEngine::RHI::RHIDescriptorUpdateEntry;
 
 extern "C" ENGINE_DLL void RHI_PSO_UpdateDescriptorSet_Buffers(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIBufferHandle>* buffers);
 extern "C" ENGINE_DLL void RHI_PSO_UpdateDescriptorSet_Images(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIDescriptorImageInfo>* images);

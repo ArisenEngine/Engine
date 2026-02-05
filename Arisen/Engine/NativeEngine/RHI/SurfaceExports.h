@@ -2,7 +2,7 @@
 #include "EngineCommon.h"
 
 #include "../../Core/Core.RHI/RHI/Presentation/RHISwapChain.h"
-#include "RHIHandleExports.h"
+#include "RHITypesExports.h"
 
 /** @ownership Borrowed - Managed by Instance */
 extern "C" ENGINE_DLL RHI_SurfaceHandle RHI_Instance_GetSurface(RHI_InstanceHandle instance, unsigned int windowId);

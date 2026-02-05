@@ -2,7 +2,7 @@
 #include "EngineCommon.h"
 #include "../../Core/Core.RHI/RHI/Commands/RHICommandBuffer.h"
 
-#include "RHIHandleExports.h"
+#include "RHITypesExports.h"
 
 /** @ownership Owned - Caller must release via RHI_Device_ReleaseCommandBufferPool */
 extern "C" ENGINE_DLL RHI_CommandBufferPoolHandle RHI_Device_CreateCommandBufferPool(RHI_DeviceHandle device);

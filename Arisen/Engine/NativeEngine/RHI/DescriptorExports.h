@@ -3,7 +3,7 @@
 #include "../../Core/Core.RHI/RHI/Descriptors/RHIDescriptorPool.h"
 #include "../../Core/Core.RHI/RHI/Descriptors/RHIDescriptorSet.h"
 
-#include "RHIHandleExports.h"
+#include "RHITypesExports.h"
 
 /** @ownership Borrowed - Managed by Device */
 extern "C" ENGINE_DLL RHI_DescriptorPoolHandle RHI_Device_GetDescriptorPool(RHI_DeviceHandle device);

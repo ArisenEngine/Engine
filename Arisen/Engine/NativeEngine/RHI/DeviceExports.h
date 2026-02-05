@@ -5,7 +5,7 @@
 #include "../../Core/Core.RHI/RHI/Samplers/RHISampler.h"
 #include "../../Core/Core.RHI/RHI/Core/RHICommon.h"
 
-#include "RHIHandleExports.h"
+#include "RHITypesExports.h"
 
 // Explicitly use void* and PODs to avoid typedef/namespace issues in extern C
 

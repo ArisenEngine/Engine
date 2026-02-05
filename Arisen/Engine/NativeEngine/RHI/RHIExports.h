@@ -5,7 +5,7 @@
 
 extern "C" ENGINE_DLL void RHI_SetGraphicsAPI(ArisenEngine::RHI::GraphicsAPI api);
 
-#include "RHIHandleExports.h"
+#include "RHITypesExports.h"
 
 // Keep only API selector here; detailed per-class exports live in dedicated files
 
