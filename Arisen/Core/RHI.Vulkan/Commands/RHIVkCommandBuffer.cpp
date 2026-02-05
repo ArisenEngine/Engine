@@ -435,8 +435,22 @@ void RHIVkCommandBuffer::BindPipeline(RHIPipelineHandle pipelineHandle)
 
     RHIPipeline* pipeline = p->pipeline;
     m_CurrentPipeline = pipeline;
+
+    auto* vkPipeline = static_cast<RHIVkGPUPipeline*>(pipeline);
+    if (vkPipeline->GetVkPipeline(frameIndex) == VK_NULL_HANDLE)
+    {
+        if (pipeline->GetBindPoint() == PIPELINE_BIND_POINT_GRAPHICS)
+        {
+            vkPipeline->AllocGraphicPipeline(frameIndex, nullptr);
+        }
+        else
+        {
+            vkPipeline->AllocComputePipeline(frameIndex);
+        }
+    }
+
     ::vkCmdBindPipeline(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(pipeline->GetBindPoint()),
-        static_cast<VkPipeline>(pipeline->GetGraphicsPipeline(frameIndex)));
+        static_cast<VkPipeline>(vkPipeline->GetVkPipeline(frameIndex)));
 
     // Bind Global Bindless Descriptor Set (Set 3)
     auto* bindlessManager = vkDevice->GetBindlessManager();

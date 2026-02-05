@@ -30,33 +30,6 @@ Target: Build a **Stateless**, **Handle-based**, **Highly Parallel**, and **C# I
 
 ---
 
-## 2. Phase 2: API Cleanup & Batch Operations (当前优先)
-
-**Goal**: 统一命名、完善错误处理、提供批量 API 支持高效 P/Invoke。
-
-### 2.1 Export API 规范化
-- [ ] **命名统一**
-    - [ ] 统一使用 `RHI_Cmd_*` 前缀
-    - [ ] 修复拼写错误 `AquireCurrentImage` → `AcquireCurrentImage`
-    - [ ] 统一 `Create`/`Release` 配对（移除 `Destroy`）
-- [ ] **生命周期约定**
-    - [ ] `Create*` = Owned (需 Release)
-    - [ ] `Get*/Acquire*` = Borrowed (不需 Release)
-    - [ ] 添加 `@ownership` 文档注释
-- [ ] **错误处理**
-    - [ ] 实现 `RHI_GetLastError()` / `RHI_GetLastErrorMessage()`
-
-### 2.2 批量操作 API
-- [ ] `RHI_PSO_BatchUpdateDescriptors` - 批量 Descriptor 更新
-- [ ] `RHI_Device_BatchCreateBuffers` - 批量资源创建
-- [ ] `RHI_Cmd_BatchPipelineBarrier` - 批量 Barrier
-
-### 2.3 接口简化
-- [ ] 移除 `frameIndex` 冗余传递（在 `Begin` 时绑定）
-- [ ] 添加 `RHI_SwapChain_BeginFrame` / `EndFrame` 简化
-
----
-
 ## 3. Phase 3: Performance & Stability
 
 **Goal**: 提升性能，确保高并发稳定性。

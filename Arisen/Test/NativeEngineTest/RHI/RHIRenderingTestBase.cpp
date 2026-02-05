@@ -17,8 +17,6 @@ namespace ArisenEngine::Testing
     void RHIRenderingTestBase::InitCommonResources()
     {
         m_CmdPool = RHI_Device_CreateCommandBufferPool(m_Device);
-        m_RenderPass = RHI_Device_CreateRenderPass(m_Device);
-        m_FrameBuffer = RHI_Device_GetFrameBuffer(m_Device);
         m_DescriptorPool = RHI_Device_GetDescriptorPool(m_Device);
 
         m_Surface = RHI_Instance_GetSurface(m_Instance, m_WindowId);
@@ -183,15 +181,11 @@ namespace ArisenEngine::Testing
             if (m_VertProgram) RHI_Device_ReleaseGPUProgram(m_Device, m_VertProgram);
             if (m_FragProgram) RHI_Device_ReleaseGPUProgram(m_Device, m_FragProgram);
             
-            if (m_RenderPass) RHI_Device_ReleaseRenderPass(m_Device, m_RenderPass);
             if (m_CmdPool) RHI_Device_ReleaseCommandBufferPool(m_Device, m_CmdPool);
-            if (m_FrameBuffer) RHI_Device_ReleaseFrameBuffer(m_Device, m_FrameBuffer);
             
             m_VertProgram = 0;
             m_FragProgram = 0;
-            m_RenderPass = 0;
             m_CmdPool = 0;
-            m_FrameBuffer = 0;
             m_Surface = 0;
             m_SwapChain = 0;
         }

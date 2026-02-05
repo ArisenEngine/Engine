@@ -102,11 +102,7 @@ void ArisenEngine::RHI::RHIVkGPUSubPass::RemovePreserve(UInt32 index)
 
 void ArisenEngine::RHI::RHIVkGPUSubPass::ResizePreserve()
 {
-    m_PreserveAttachments.resize(static_cast<std::vector<unsigned>::size_type>(m_OwnerPass->GetAttachmentCount()));
-    for(int i = 0; i < m_PreserveAttachments.size(); ++i)
-    {
-        m_PreserveAttachments[i] = i;
-    }
+    // Legacy: ResizePreserve is no longer used in the modernized RHI path.
 }
 
 bool ArisenEngine::RHI::RHIVkGPUSubPass::IsInsidePreserve(UInt32 index)

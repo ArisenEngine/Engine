@@ -19,22 +19,6 @@ namespace ArisenEngine::RHI
         VIRTUAL_DECONSTRUCTOR(RHIRenderPass)
         virtual void* GetHandle(UInt32 frameIndex) = 0;
 
-        virtual void AddAttachmentAction(
-            EFormat format,
-            ESampleCountFlagBits sample,
-            EAttachmentLoadOp colorLoadOp, EAttachmentStoreOp colorStoreOp,
-            EAttachmentLoadOp stencilLoadOp, EAttachmentStoreOp stencilStoreOp,
-            EImageLayout initialLayout, EImageLayout finalLayout
-        ) = 0;
-
-        virtual UInt32 GetAttachmentCount() = 0;
-
-        virtual RHISubPass* AddSubPass() = 0;
-        virtual UInt32 GetSubPassCount() = 0;
-        virtual void AllocRenderPass(UInt32 frameIndex) = 0;
-        virtual void FreeRenderPass(UInt32 frameIndex) = 0;
-        virtual void FreeAllRenderPasses() = 0;
-        
     protected:
         UInt32 m_MaxFramesInFlight;
     };
