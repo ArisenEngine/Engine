@@ -33,12 +33,12 @@ extern "C" ENGINE_DLL RHIDeviceLimits RHI_Device_GetDeviceLimits(RHI_DeviceHandl
     return dev->GetDeviceLimits();
 }
 
-extern "C" ENGINE_DLL unsigned long long RHI_Device_Submit(RHI_DeviceHandle handle, RHI_CommandBufferHandle cmd, unsigned int frameIndex)
+extern "C" ENGINE_DLL unsigned long long RHI_Device_Submit(RHI_DeviceHandle handle, RHI_CommandBufferHandle cmd, const struct RHISubmitDescriptor* descriptor)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(handle);
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
     if (dev == nullptr || c == nullptr) return 0;
-    return dev->Submit(c, frameIndex);
+    return dev->Submit(c, reinterpret_cast<const RHI::RHISubmitDescriptor*>(descriptor));
 }
 
 // Update removed

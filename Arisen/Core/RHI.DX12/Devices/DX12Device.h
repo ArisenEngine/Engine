@@ -16,7 +16,7 @@ namespace ArisenEngine::RHI
 		RHIFactory* GetFactory() const override { return nullptr; }
 		RHIPipelineCache* GetPipelineCache() const override { return nullptr; }
 		RHIDescriptorPool* GetDescriptorPool() const override { return nullptr; }
-		RHIGpuTicket Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex) override { (void)commandBuffer; (void)frameIndex; return 0; }
+		RHIGpuTicket Submit(RHICommandBuffer* commandBuffer, const struct RHISubmitDescriptor* descriptor = nullptr) override { (void)commandBuffer; (void)descriptor; return 0; }
 		UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) override { (void)typeFilter; (void)properties; return 0; }
 		void SetResolution(UInt32 width, UInt32 height) override { (void)width; (void)height; }
 		UInt32 GetMaxFramesInFlight() const override { return 1; }

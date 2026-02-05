@@ -59,7 +59,7 @@ namespace ArisenEngine::RHI
 
         virtual class RHIMemoryAllocator* GetMemoryAllocator() const = 0;
 
-        virtual RHIGpuTicket Submit(RHICommandBuffer* commandBuffer, UInt32 frameIndex) = 0;
+        virtual RHIGpuTicket Submit(RHICommandBuffer* commandBuffer, const struct RHISubmitDescriptor* descriptor = nullptr) = 0;
 
         // Optional per-frame update hook for GPU completion polling / automatic GC.
         // Default: no-op.
