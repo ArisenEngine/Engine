@@ -489,6 +489,20 @@ void RHIVkCommandBuffer::BindDescriptorSets(EPipelineBindPoint bindPoint,
         dynamicOffsetCount, pDynamicOffsets);
 }
 
+void RHIVkCommandBuffer::PushConstants(UInt32 offset, UInt32 size, const void* data, UInt32 stageFlags)
+{
+    UInt32 frameIndex = GetCurrentFrameIndex();
+    if (m_CurrentPipeline == nullptr)
+    {
+        LOG_FATAL("[RHIVkCommandBuffer::PushConstants] pipeline is null, should binding pipeline first.");
+        return;
+    }
+
+    RHIVkGPUPipeline* pipeline = static_cast<RHIVkGPUPipeline*>(m_CurrentPipeline);
+    ::vkCmdPushConstants(m_VkCommandBuffer, pipeline->GetPipelineLayout(frameIndex),
+        static_cast<VkShaderStageFlags>(stageFlags), offset, size, data);
+}
+
 void RHIVkCommandBuffer::CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst,
             EImageLayout dstImageLayout, Containers::Vector<RHIBufferImageCopy>&& regions)
 {

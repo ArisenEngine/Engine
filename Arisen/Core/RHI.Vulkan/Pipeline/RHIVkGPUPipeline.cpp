@@ -266,7 +266,7 @@ void RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex, RHISubPass* subPa
 
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    if (vkCreateGraphicsPipelines(m_VkDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS)
+    if (vkCreateGraphicsPipelines(m_VkDevice, static_cast<RHIVkGPUPipelineManager*>(m_Device->GetPipelineCache())->GetVkPipelineCache(), 1, &pipelineInfo, nullptr, &m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocPipeline]: failed to create GPU pipeline!");
     }
@@ -302,7 +302,7 @@ void RHIVkGPUPipeline::AllocComputePipeline(UInt32 frameIndex)
     }
     pipelineInfo.stage = vkPso->m_PipelineStageCreateInfos[0];
 
-    if (vkCreateComputePipelines(m_VkDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS)
+    if (vkCreateComputePipelines(m_VkDevice, static_cast<RHIVkGPUPipelineManager*>(m_Device->GetPipelineCache())->GetVkPipelineCache(), 1, &pipelineInfo, nullptr, &m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocComputePipeline]: failed to create compute pipeline!");
     }

@@ -236,6 +236,22 @@ extern "C" ENGINE_DLL bool RHI_Device_AttachProgramByteCode(RHI_DeviceHandle dev
     return dev->GetFactory()->AttachProgramByteCode(h, std::move(copy));
 }
 
+extern "C" ENGINE_DLL void RHI_GPUProgram_SetSpecializationConstant(RHI_DeviceHandle device, RHI_GPUProgramHandle program, unsigned int constantID, unsigned int size, const void* data)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || program == 0 || data == nullptr) return;
+    auto h = *reinterpret_cast<RHI::RHIShaderProgramHandle*>(&program);
+
+    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
+    if (vkDev)
+    {
+        auto* p = RHI::RHINativeBridge::GetGPUProgramItem(vkDev, h);
+        if (p && p->program) {
+            p->program->SetSpecializationConstant(constantID, size, data);
+        }
+    }
+}
+
 extern "C" ENGINE_DLL RHI_RenderPassHandle RHI_Device_CreateRenderPass(RHI_DeviceHandle device)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);

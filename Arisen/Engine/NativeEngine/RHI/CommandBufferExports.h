@@ -18,6 +18,8 @@ extern "C" ENGINE_DLL void RHI_Cmd_BeginRenderPass(RHI_CommandBufferHandle cmd, 
 extern "C" ENGINE_DLL void RHI_Cmd_EndRenderPass(RHI_CommandBufferHandle cmd);
 extern "C" ENGINE_DLL void RHI_Cmd_SetViewport(RHI_CommandBufferHandle cmd, float x, float y, float width, float height, float minDepth, float maxDepth);
 extern "C" ENGINE_DLL void RHI_Cmd_SetScissor(RHI_CommandBufferHandle cmd, unsigned int offsetX, unsigned int offsetY, unsigned int width, unsigned int height);
+extern "C" ENGINE_DLL void RHI_Cmd_PushConstants(RHI_CommandBufferHandle cmd, unsigned int offset, unsigned int size, const void* data, unsigned int stageFlags);
+
 extern "C" ENGINE_DLL void RHI_Cmd_Draw(RHI_CommandBufferHandle cmd, unsigned int vertexCount, unsigned int instanceCount, unsigned int firstVertex, unsigned int firstInstance, unsigned int firstBinding);
 extern "C" ENGINE_DLL void RHI_Cmd_DrawIndexed(RHI_CommandBufferHandle cmd, unsigned int indexCount, unsigned int instanceCount, unsigned int firstIndex, unsigned int vertexOffset, unsigned int firstInstance, unsigned int firstBinding);
 extern "C" ENGINE_DLL void RHI_Cmd_DrawMeshTasks(RHI_CommandBufferHandle cmd, unsigned int groupCountX, unsigned int groupCountY, unsigned int groupCountZ);

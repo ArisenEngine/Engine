@@ -103,6 +103,13 @@ extern "C" ENGINE_DLL void RHI_Cmd_SetScissor(RHI_CommandBufferHandle cmd, unsig
     c->SetScissor(offsetX, offsetY, width, height);
 }
 
+extern "C" ENGINE_DLL void RHI_Cmd_PushConstants(RHI_CommandBufferHandle cmd, unsigned int offset, unsigned int size, const void* data, unsigned int stageFlags)
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c == nullptr) return;
+    c->PushConstants(offset, size, data, stageFlags);
+}
+
 extern "C" ENGINE_DLL void RHI_Cmd_Draw(RHI_CommandBufferHandle cmd, unsigned int vertexCount, unsigned int instanceCount, unsigned int firstVertex, unsigned int firstInstance, unsigned int firstBinding)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);

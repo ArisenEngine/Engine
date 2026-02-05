@@ -59,6 +59,50 @@ void ArisenEngine::RHI::RHIVkGPUProgram::DestroyHandle()
     LOG_DEBUG("## Destory Vulkan Shader Module. ##");
 }
 
+void* ArisenEngine::RHI::RHIVkGPUProgram::GetSpecializationInfo()
+{
+    if (m_MapEntries.empty()) return nullptr;
+
+    m_VkSpecializationInfo.mapEntryCount = static_cast<uint32_t>(m_MapEntries.size());
+    m_VkSpecializationInfo.pMapEntries = m_MapEntries.data();
+    m_VkSpecializationInfo.dataSize = m_DataBuffer.size();
+    m_VkSpecializationInfo.pData = m_DataBuffer.data();
+
+    return &m_VkSpecializationInfo;
+}
+
+void ArisenEngine::RHI::RHIVkGPUProgram::SetSpecializationConstant(UInt32 constantID, UInt32 size, const void* data)
+{
+    // Check if constantID already exists
+    for (size_t i = 0; i < m_MapEntries.size(); ++i)
+    {
+        if (m_MapEntries[i].constantID == constantID)
+        {
+            // Update existing entry
+            if (m_MapEntries[i].size == size)
+            {
+                std::memcpy(m_DataBuffer.data() + m_MapEntries[i].offset, data, size);
+            }
+            else
+            {
+                LOG_ERROR("[RHIVkGPUProgram::SetSpecializationConstant]: size mismatch for constantID " + std::to_string(constantID));
+            }
+            return;
+        }
+    }
+
+    // Add new entry
+    VkSpecializationMapEntry entry {};
+    entry.constantID = constantID;
+    entry.offset = static_cast<uint32_t>(m_DataBuffer.size());
+    entry.size = size;
+    m_MapEntries.emplace_back(entry);
+
+    size_t oldSize = m_DataBuffer.size();
+    m_DataBuffer.resize(oldSize + size);
+    std::memcpy(m_DataBuffer.data() + oldSize, data, size);
+}
+
 
 
 
