@@ -57,6 +57,9 @@ namespace ArisenEngine::Testing
         RHI_FrameBufferHandle m_FrameBuffer = 0;
         RHI_DescriptorPoolHandle m_DescriptorPool = 0;
         
+        RHI_SurfaceHandle m_Surface = 0;
+        RHI_SwapChainHandle m_SwapChain = 0;
+        
         RHI_GPUProgramHandle m_VertProgram = 0;
         RHI_GPUProgramHandle m_FragProgram = 0;
         

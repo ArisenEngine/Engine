@@ -331,13 +331,10 @@ namespace ArisenEngine::Testing
             RHI_Cmd_PipelineBarrier_Buffer(cmd, RHI::PIPELINE_STAGE_COMPUTE_SHADER_BIT, RHI::PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, &barriers);
 
             // Graphics Render
-            auto surface = RHI_Instance_GetSurface(m_Instance, m_WindowId);
-            auto swapchain = RHI_Surface_GetSwapChain(surface);
-            
             // Acquire the image
-            RHI_SwapChain_BeginFrame(swapchain, currentIndex);
+            RHI_SwapChain_BeginFrame(m_SwapChain, currentIndex);
             
-            auto colorView = RHI_SwapChain_GetImageView(swapchain, currentIndex);
+            auto colorView = RHI_SwapChain_GetImageView(m_SwapChain, currentIndex);
 
             RHI::RHIRenderingInfo renderInfo = {};
             renderInfo.RHIRenderArea = { 0, 0, HAL::GetWindowWidth(m_WindowId), HAL::GetWindowHeight(m_WindowId) };
@@ -400,14 +397,11 @@ namespace ArisenEngine::Testing
             }
 
             // Sync
-            auto imageAvailableSem = RHI_SwapChain_GetImageAvailableSemaphore(swapchain, currentIndex);
-            auto renderFinishedSem = RHI_SwapChain_GetRenderFinishSemaphore(swapchain, currentIndex);
-            RHI_Cmd_WaitSemaphore(cmd, imageAvailableSem, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-            RHI_Cmd_SignalSemaphore(cmd, renderFinishedSem);
+
 
             RHI_Cmd_End(cmd);
             m_FrameTickets[currentIndex] = RHI_Device_Submit(m_Device, cmd, currentIndex);
-            RHI_SwapChain_EndFrame(swapchain, currentIndex);
+            RHI_SwapChain_EndFrame(m_SwapChain, currentIndex);
             RHI_Device_ReleaseCommandBuffer(m_Device, m_CmdPool, currentIndex, cmd);
         }
     };

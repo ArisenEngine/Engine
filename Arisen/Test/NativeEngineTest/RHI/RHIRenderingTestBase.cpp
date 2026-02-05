@@ -21,6 +21,9 @@ namespace ArisenEngine::Testing
         m_FrameBuffer = RHI_Device_GetFrameBuffer(m_Device);
         m_DescriptorPool = RHI_Device_GetDescriptorPool(m_Device);
 
+        m_Surface = RHI_Instance_GetSurface(m_Instance, m_WindowId);
+        m_SwapChain = RHI_Surface_GetSwapChain(m_Surface);
+
         for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
         {
             m_FrameTickets.emplace_back(0);
@@ -189,6 +192,8 @@ namespace ArisenEngine::Testing
             m_RenderPass = 0;
             m_CmdPool = 0;
             m_FrameBuffer = 0;
+            m_Surface = 0;
+            m_SwapChain = 0;
         }
     }
 }
