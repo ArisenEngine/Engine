@@ -31,6 +31,11 @@ namespace ArisenEngine::Testing
 
             InitCommonResources();
             InitShaderProgram(L"StandardTest");
+
+            // Enable color tint via specialization constant (ID 0)
+            unsigned int enableTint = 1;
+            RHI_GPUProgram_SetSpecializationConstant(m_Device, m_FragProgram, 0, sizeof(unsigned int), &enableTint);
+
             CreateResources();
             InitRenderContext();
             CreatePipeline();
@@ -339,6 +344,9 @@ namespace ArisenEngine::Testing
                 
                 RHI_Cmd_BindVertexBuffers(cmd, m_Model.vertexBuffer, 0);
                 RHI_Cmd_BindIndexBuffer(cmd, m_Model.indexBuffer, 0, RHI::INDEX_TYPE_UINT32);
+
+                glm::vec4 tintColor = glm::vec4(1.0f, 0.8f, 0.6f, 1.0f); // Warm tint
+                RHI_Cmd_PushConstants(cmd, 0, sizeof(glm::vec4), &tintColor, static_cast<RHI::EShaderStage>(RHI::SHADER_STAGE_FRAGMENT_BIT | RHI::SHADER_STAGE_VERTEX_BIT));
 
                 for (const auto& prim : m_Model.primitives)
                 {

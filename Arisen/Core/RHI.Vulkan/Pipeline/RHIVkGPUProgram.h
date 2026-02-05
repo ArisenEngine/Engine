@@ -17,7 +17,8 @@ namespace ArisenEngine::RHI
 
         // TODO:
         UInt32 GetShaderStageCreateFlags() override { return 0; }
-        void* GetSpecializationInfo() override { return nullptr; }
+        void* GetSpecializationInfo() override;
+        void SetSpecializationConstant(UInt32 constantID, UInt32 size, const void* data) override;
         const RHIShaderReflectionData& GetReflectionData() const { return m_ReflectionData; }
 
     protected:
@@ -27,6 +28,11 @@ namespace ArisenEngine::RHI
         VkDevice m_VkDevice;
         VkShaderModule m_VkShaderModule;
         RHIShaderReflectionData m_ReflectionData;
+
+        // Specialization Constants
+        VkSpecializationInfo m_VkSpecializationInfo {};
+        Containers::Vector<VkSpecializationMapEntry> m_MapEntries;
+        Containers::Vector<UInt8> m_DataBuffer;
     };
 }
 

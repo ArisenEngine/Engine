@@ -16,6 +16,8 @@ namespace ArisenEngine::RHI
         virtual bool AttachProgramByteCode(RHIShaderProgramDesc&& desc) = 0;
         virtual UInt32 GetShaderStageCreateFlags() = 0;
         virtual void* GetSpecializationInfo() = 0;
+        virtual void SetSpecializationConstant(UInt32 constantID, UInt32 size, const void* data) = 0;
+        void SetSpecializationConstant(UInt32 constantID, UInt32 value) { SetSpecializationConstant(constantID, sizeof(UInt32), &value); }
 
     public:
         const EShaderStage GetShaderState() const { return m_Stage; }

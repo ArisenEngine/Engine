@@ -62,6 +62,7 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseSampler(RHI_DeviceHandle device, RH
 extern "C" ENGINE_DLL RHI_GPUProgramHandle RHI_Device_CreateGPUProgram(RHI_DeviceHandle device);
 extern "C" ENGINE_DLL void RHI_Device_ReleaseGPUProgram(RHI_DeviceHandle device, RHI_GPUProgramHandle program);
 extern "C" ENGINE_DLL bool RHI_Device_AttachProgramByteCode(RHI_DeviceHandle device, RHI_GPUProgramHandle program, const ArisenEngine::RHI::RHIShaderProgramDesc* desc);
+extern "C" ENGINE_DLL void RHI_GPUProgram_SetSpecializationConstant(RHI_DeviceHandle device, RHI_GPUProgramHandle program, unsigned int constantID, unsigned int size, const void* data);
 
 // ============================================================================
 // RenderPass Handles

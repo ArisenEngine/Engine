@@ -1,34 +1,4 @@
-# Arisen Vulkan RHI Modernization Roadmap
 
-Target: Build a **Stateless**, **Handle-based**, **Highly Parallel**, and **C# Interop Friendly** high-performance rendering backend.
-
----
-
-## 0. Core Design Principles
-
-*   **Handle-Based Architecture**: All resources are referenced via 64-bit POD handles (`Index + Generation`), solving virtual table overhead and cross-language lifecycle issues.
-*   **Lock-Free Multi-Threading**: Core hot paths (handle allocation, command recording) must use atomic operations and Thread-Local Storage (TLS) to ensure multi-core scalability.
-*   **API Purity & Interop**: Keep interfaces blittable/flat. RHI 提供能力，不做复杂决策。
-*   **Modern Features First**: Default to Synchronization 2.0, Dynamic Rendering, and Bindless. No legacy baggage.
-*   **Layer Separation**: RHI 保持纯粹薄封装，Material/RenderGraph 等语义抽象交由 C# 上层实现。
-
----
-
-## 1. Phase 1: Handle & Interop Polish ✅ (已完成)
-
-**Goal**: Finalize the transition from "Object/Pointer" to "Data/Handle" ensuring complete safety across the C# boundary.
-
-- [x] **Handle Infrastructure**
-    - [x] `RHIHandle<T>` POD structure (32-bit Index + 32-bit Generation).
-    - [x] Basic `RHIResourcePool` implementation (Lock-Free Atomic Stack).
-- [x] **Interop Layer Cleanup**
-    - [x] Remove deprecated/stub functions.
-    - [x] All APIs accept `RHIHandle` types instead of `void*`.
-- [x] **Thread-Local Command Management**
-    - [x] TLS Command Pools with per-thread `VkCommandPool`.
-    - [x] Submit-based recycling via `RHIGpuTicket` tracking.
-
----
 
 ## 3. Phase 3: Performance & Stability
 

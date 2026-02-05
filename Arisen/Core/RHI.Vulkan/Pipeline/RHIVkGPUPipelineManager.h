@@ -17,12 +17,19 @@ namespace ArisenEngine::RHI
 
         RHIPipelineHandle GetGraphicsPipeline(RHIPipelineState* pso) override;
         std::unique_ptr<RHIPipelineState> GetPipelineState() override;
+
+        VkPipelineCache GetVkPipelineCache() const { return m_VkPipelineCache; }
+
     private:
+        void LoadPipelineCache();
+        void SavePipelineCache();
         
         RHIVkDevice* m_Device;
         Containers::Map<UInt32, std::unique_ptr<RHIPipeline>> m_GPUPipelines;
         Containers::Map<UInt32, RHIPipelineHandle> m_PipelineHandles;
 
+        VkPipelineCache m_VkPipelineCache = VK_NULL_HANDLE;
+        String m_CacheFilePath = "viewport_pso_cache.bin";
     };
 }
 

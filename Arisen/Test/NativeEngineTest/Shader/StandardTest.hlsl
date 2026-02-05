@@ -1,3 +1,11 @@
+[[vk::constant_id(0)]] const bool ENABLE_COLOR_TINT = false;
+
+[[vk::push_constant]]
+struct
+{
+    float4 tintColor;
+} PushConsts;
+
 struct Attribute
 {
     float3 positionOS : POSITION0;
@@ -39,6 +47,13 @@ float4 Frag(Varying input) : SV_Target
 {
     float4 texColor = tex.SampleBias(sam, input.uv, mipmapBias);
     float4 color = texColor;
+
+    // Use specialization constant and push constant
+    if (ENABLE_COLOR_TINT)
+    {
+        color *= PushConsts.tintColor;
+    }
+
     // Simple NdotL for better visualization
     float3 lightDir = normalize(float3(1.0, 1.0, 1.0));
     float ndotl = max(dot(normalize(input.normalWS), lightDir), 0.2);
