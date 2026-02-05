@@ -675,24 +675,8 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
         m_FrameSync->Drain(m_GraphicsQueue.get());
     }
 
-    // 3. Destroy the Resource Registry first to ensure all remaining resources are enqueued for deferred destruction.
-    // This triggers ~RHIResourceRegistry() which enqueues everything that wasn't explicitly released.
-    m_ResourceRegistry.reset();
-    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Resource Registry destroyed, remaining resources enqueued");
-
-    // 4. Flush all deferred deletions now that we know the GPU is idle and all tickets are completed.
-    if (m_DeferredDeletion)
-    {
-        LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Flushing deferred deletions");
-        constexpr RHIGpuTicket kAll = ~static_cast<RHIGpuTicket>(0);
-
-        m_DeferredDeletion->Flush(RHIQueueType::Graphics, kAll);
-        m_DeferredDeletion->Flush(RHIQueueType::Compute, kAll);
-        m_DeferredDeletion->Flush(RHIQueueType::Transfer, kAll);
-        m_DeferredDeletion->Flush(RHIQueueType::Present, kAll);
-    }
-
-    // 5. Destroy managers that might rely on the device still being alive
+    // 3. Destroy managers that might rely on the device still being alive.
+    // This may explicitly release some resources.
     LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Deleting managers");
     if (m_GPUPipelineManager)
     {
@@ -710,28 +694,53 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
         m_DescriptorPool = nullptr;
     }
 
+    // 4. Shut down the Resource Registry to enqueue all remaining resources for deferred destruction.
+    // We keep the registry alive (m_ResourceRegistry != null) until after the final flush,
+    // because items' destructors might call Release* during the flush.
+    if (m_ResourceRegistry)
+    {
+        m_ResourceRegistry->Shutdown();
+        LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Resource Registry shut down, remaining resources enqueued");
+    }
+
+    // 5. Flush all deferred deletions now that we know the GPU is idle and all tickets are completed.
+    if (m_DeferredDeletion)
+    {
+        LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Flushing deferred deletions");
+        constexpr RHIGpuTicket kAll = ~static_cast<RHIGpuTicket>(0);
+
+        m_DeferredDeletion->Flush(RHIQueueType::Graphics, kAll);
+        m_DeferredDeletion->Flush(RHIQueueType::Compute, kAll);
+        m_DeferredDeletion->Flush(RHIQueueType::Transfer, kAll);
+        m_DeferredDeletion->Flush(RHIQueueType::Present, kAll);
+    }
+
+    // 6. Now safe to destroy the registry object and memory allocator
+    m_ResourceRegistry.reset();
+    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Resource Registry reset");
+
     // IMPORTANT: Memory allocator must be deleted AFTER all resources that might use it are flushed.
     if (m_MemoryAllocator)
     {
         delete m_MemoryAllocator;
         m_MemoryAllocator = nullptr;
+        LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_MemoryAllocator deleted");
     }
-    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_MemoryAllocator deleted");
 
     if (m_Factory)
     {
         delete m_Factory;
         m_Factory = nullptr;
+        LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_Factory deleted");
     }
-    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_Factory deleted");
 
-    // 5. Clean up sync and queue objects
+    // 7. Clean up sync and queue objects
     m_FrameSync.reset();
     m_GraphicsQueue.reset();
     m_ComputeQueue.reset();
     LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Sync and Queue objects reset");
 
-    // 6. Finally destroy the Vulkan device
+    // 8. Finally destroy the Vulkan device
     if (m_VkDevice != VK_NULL_HANDLE)
     {
         vkDestroyDevice(m_VkDevice, nullptr);
