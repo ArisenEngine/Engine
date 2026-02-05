@@ -41,14 +41,7 @@ extern "C" ENGINE_DLL void RHI_SwapChain_CreateWithDesc(RHI_SwapChainHandle swap
     sc->CreateSwapChainWithDesc(std::move(copy));
 }
 
-extern "C" ENGINE_DLL void RHI_SwapChain_Present(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
-{
-    auto* sc = reinterpret_cast<RHI::RHISwapChain*>(swapchain);
-    if (sc == nullptr) return;
-    sc->Present(frameIndex);
-}
-
-extern "C" ENGINE_DLL RHI_ImageHandle RHI_SwapChain_AcquireCurrentImage(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
+extern "C" ENGINE_DLL RHI_ImageHandle RHI_SwapChain_BeginFrame(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
 {
     auto* sc = reinterpret_cast<RHI::RHISwapChain*>(swapchain);
     if (sc == nullptr) 
@@ -56,12 +49,31 @@ extern "C" ENGINE_DLL RHI_ImageHandle RHI_SwapChain_AcquireCurrentImage(RHI_Swap
         RHI::SetLastError(RHI_ERROR_INVALID_HANDLE, "SwapChain handle is null");
         return 0;
     }
-    auto val = sc->AcquireCurrentImage(frameIndex);
+    auto val = sc->BeginFrame(frameIndex);
     if (!val.IsValid())
     {
-        RHI::SetLastError(RHI_ERROR_DEVICE_LOST, "Failed to acquire next image from swapchain");
+        RHI::SetLastError(RHI_ERROR_DEVICE_LOST, "Failed to begin frame from swapchain");
     }
     return *reinterpret_cast<RHI_ImageHandle*>(&val);
+}
+
+extern "C" ENGINE_DLL void RHI_SwapChain_EndFrame(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
+{
+    auto* sc = reinterpret_cast<RHI::RHISwapChain*>(swapchain);
+    if (sc)
+    {
+        sc->EndFrame(frameIndex);
+    }
+}
+
+extern "C" ENGINE_DLL RHI_ImageHandle RHI_SwapChain_AcquireCurrentImage(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
+{
+    return RHI_SwapChain_BeginFrame(swapchain, frameIndex);
+}
+
+extern "C" ENGINE_DLL void RHI_SwapChain_Present(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
+{
+    RHI_SwapChain_EndFrame(swapchain, frameIndex);
 }
 
 extern "C" ENGINE_DLL RHI_SemaphoreHandle RHI_SwapChain_GetImageAvailableSemaphore(RHI_SwapChainHandle swapchain, unsigned int frameIndex)

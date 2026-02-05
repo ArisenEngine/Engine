@@ -58,9 +58,10 @@ m_OwnerThreadId(std::this_thread::get_id())
 }
 
 
-void RHIVkCommandBuffer::BeginRenderPass(UInt32 frameIndex, RenderPassBeginDesc&& desc)
+void RHIVkCommandBuffer::BeginRenderPass(RenderPassBeginDesc&& desc)
 {
     ASSERT(GetState() == ECommandBufferState::Recording);
+    UInt32 frameIndex = GetCurrentFrameIndex();
     
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* rp = vkDevice->GetRenderPassPool()->Get(desc.renderPass);
@@ -298,14 +299,16 @@ check_mem:
     return;
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::Begin(UInt32 frameIndex)
+void ArisenEngine::RHI::RHIVkCommandBuffer::Begin()
 {
-    Begin(frameIndex, 0);
+    // If Begin() is called without frameIndex, we assume it's already set or not needed for this buffer
+    Begin(GetCurrentFrameIndex(), 0);
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::Begin(UInt32 frameIndex, UInt32 commandBufferUsage)
 {
     ASSERT(GetState() == ECommandBufferState::Initial);
+    SetCurrentFrameIndex(frameIndex);
 
     m_VkBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     m_VkBeginInfo.flags = commandBufferUsage;
@@ -423,8 +426,9 @@ void RHIVkCommandBuffer::SetStencilOp(UInt32 faceMask, EStencilOp failOp, EStenc
         static_cast<VkStencilOp>(depthFailOp), static_cast<VkCompareOp>(compareOp));
 }
 
-void RHIVkCommandBuffer::BindPipeline(UInt32 frameIndex, RHIPipelineHandle pipelineHandle)
+void RHIVkCommandBuffer::BindPipeline(RHIPipelineHandle pipelineHandle)
 {
+    UInt32 frameIndex = GetCurrentFrameIndex();
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* p = vkDevice->GetPipelinePool()->Get(pipelineHandle);
     if (!p || !p->pipeline) return;
@@ -446,9 +450,10 @@ void RHIVkCommandBuffer::BindPipeline(UInt32 frameIndex, RHIPipelineHandle pipel
     }
 }
 
-void RHIVkCommandBuffer::BindDescriptorSets(UInt32 frameIndex, EPipelineBindPoint bindPoint,
+void RHIVkCommandBuffer::BindDescriptorSets(EPipelineBindPoint bindPoint,
     UInt32 firstSet, Containers::Vector<std::shared_ptr<RHIDescriptorSet>>& descriptorsets, UInt32 dynamicOffsetCount, const UInt32* pDynamicOffsets)
 {
+    UInt32 frameIndex = GetCurrentFrameIndex();
     if (m_CurrentPipeline == nullptr)
     {
         LOG_FATAL("[RHIVkCommandBuffer::BindDescriptorSets] pipeline is null, should binding pipeline first.");

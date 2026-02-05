@@ -41,11 +41,21 @@ namespace ArisenEngine::RHI
         VIRTUAL_DECONSTRUCTOR(RHISwapChain)
         virtual void* GetHandle() const = 0;
         virtual void CreateSwapChainWithDesc(RHISwapChainDescriptor desc) = 0;
+
+        virtual RHIImageHandle BeginFrame(UInt32 frameIndex) = 0;
+        virtual void EndFrame(UInt32 frameIndex) = 0;
+
+        [[deprecated("Use BeginFrame instead")]]
         virtual RHISemaphoreHandle GetImageAvailableSemaphore(UInt32 frameIndex) const = 0;
+        [[deprecated("Use EndFrame instead")]]
         virtual RHISemaphoreHandle GetRenderFinishSemaphore(UInt32 frameIndex) const  = 0;
+        [[deprecated("Use BeginFrame instead")]]
         virtual RHIImageHandle AcquireCurrentImage(UInt32 frameIndex) = 0;
+        [[deprecated("Use BeginFrame or manual tracking instead")]]
         virtual RHIImageViewHandle GetImageView(UInt32 frameIndex) const = 0;
+        [[deprecated("Use EndFrame instead")]]
         virtual void Present(UInt32 frameIndex) = 0;
+
         virtual void Cleanup() = 0;
     protected:
         UInt32 m_MaxFramesInFlight;

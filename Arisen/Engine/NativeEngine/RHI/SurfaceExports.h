@@ -11,9 +11,14 @@ extern "C" ENGINE_DLL void RHI_Instance_UpdateSurfaceCapabilities(RHI_InstanceHa
 /** @ownership Borrowed - Managed by Surface */
 extern "C" ENGINE_DLL RHI_SwapChainHandle RHI_Surface_GetSwapChain(RHI_SurfaceHandle surface);
 extern "C" ENGINE_DLL void RHI_SwapChain_CreateWithDesc(RHI_SwapChainHandle swapchain, ArisenEngine::RHI::RHISwapChainDescriptor* desc);
+/** @deprecated Use RHI_SwapChain_EndFrame instead */
 extern "C" ENGINE_DLL void RHI_SwapChain_Present(RHI_SwapChainHandle swapchain, unsigned int frameIndex);
 
 /** @ownership Borrowed - Image owned by SwapChain; do NOT release manually */
+extern "C" ENGINE_DLL RHI_ImageHandle RHI_SwapChain_BeginFrame(RHI_SwapChainHandle swapchain, unsigned int frameIndex);
+extern "C" ENGINE_DLL void RHI_SwapChain_EndFrame(RHI_SwapChainHandle swapchain, unsigned int frameIndex);
+
+/** @deprecated Use RHI_SwapChain_BeginFrame instead */
 extern "C" ENGINE_DLL RHI_ImageHandle RHI_SwapChain_AcquireCurrentImage(RHI_SwapChainHandle swapchain, unsigned int frameIndex);
 
 /** @ownership Borrowed - Semaphores managed by SwapChain */

@@ -27,10 +27,10 @@ public:
   RHIVkCommandBuffer(RHIVkDevice *device, RHIVkCommandBufferPool *pool);
 
 
-  void BeginRenderPass(UInt32 frameIndex, RenderPassBeginDesc &&desc) override;
+  void BeginRenderPass(RenderPassBeginDesc &&desc) override;
   void EndRenderPass() override;
-  void Begin(UInt32 frameIndex) override;
-  void Begin(UInt32 frameIndex, UInt32 commandBufferUsage) override;
+  void Begin() override;
+  void Begin(UInt32 frameIndex, UInt32 commandBufferUsage = 0) override;
   void End() override;
 
   void BeginRendering(const RHIRenderingInfo &info) override;
@@ -55,7 +55,7 @@ public:
   void SetStencilTestEnable(bool enable) override;
   void SetStencilOp(UInt32 faceMask, EStencilOp failOp, EStencilOp passOp, EStencilOp depthFailOp, ECompareOp compareOp) override;
 
-  void BindPipeline(UInt32 frameIndex, RHIPipelineHandle pipeline) override;
+  void BindPipeline(RHIPipelineHandle pipeline) override;
 
   void Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex,
             UInt32 firstInstance, UInt32 firstBinding) override;
@@ -76,7 +76,7 @@ public:
                   UInt64 size) override;
 
   void BindDescriptorSets(
-      UInt32 frameIndex, EPipelineBindPoint bindPoint, UInt32 firstSet,
+      EPipelineBindPoint bindPoint, UInt32 firstSet,
       Containers::Vector<std::shared_ptr<RHIDescriptorSet>> &descriptorsets,
       UInt32 dynamicOffsetCount, const UInt32 *pDynamicOffsets) override;
   void TrackDescriptorPoolUse(RHIDescriptorPool *pool, UInt32 poolId) override;

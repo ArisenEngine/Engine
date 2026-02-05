@@ -239,7 +239,7 @@ namespace ArisenEngine::Testing
             auto surface = RHI_Instance_GetSurface(m_Instance, m_WindowId);
             auto swapchain = RHI_Surface_GetSwapChain(surface);
             
-            RHI_SwapChain_AcquireCurrentImage(swapchain, currentIndex);
+            RHI_SwapChain_BeginFrame(swapchain, currentIndex);
             auto colorView = RHI_SwapChain_GetImageView(swapchain, currentIndex);
 
             RHI::RHIRenderingInfo renderInfo = {};
@@ -277,10 +277,10 @@ namespace ArisenEngine::Testing
             }
 
             RHI_Cmd_BeginRendering(cmd, &renderInfo);
-            RHI_Cmd_BindPipeline(cmd, currentIndex, m_MeshPipeline);
+            RHI_Cmd_BindPipeline(cmd, m_MeshPipeline);
             RHI_Cmd_SetViewport(cmd, 0, 0, (float)renderInfo.RHIRenderArea.width, (float)renderInfo.RHIRenderArea.height, 0, 1);
             RHI_Cmd_SetScissor(cmd, 0, 0, renderInfo.RHIRenderArea.width, renderInfo.RHIRenderArea.height);
-            RHI_Cmd_BindDescriptorSets_FromPool(cmd, currentIndex, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[currentIndex]);
+            RHI_Cmd_BindDescriptorSets_FromPool(cmd, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[currentIndex]);
             
             // Draw 10 rings/groups of tasks
             RHI_Cmd_DrawMeshTasks(cmd, 10, 1, 1);
@@ -313,7 +313,7 @@ namespace ArisenEngine::Testing
 
             RHI_Cmd_End(cmd);
             m_FrameTickets[currentIndex] = RHI_Device_Submit(m_Device, cmd, currentIndex);
-            RHI_SwapChain_Present(swapchain, currentIndex);
+            RHI_SwapChain_EndFrame(swapchain, currentIndex);
             RHI_Device_ReleaseCommandBuffer(m_Device, m_CmdPool, currentIndex, cmd);
         }
     };

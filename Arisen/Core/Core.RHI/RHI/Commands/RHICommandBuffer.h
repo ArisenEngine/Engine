@@ -136,14 +136,14 @@ namespace ArisenEngine::RHI
         const bool ReadyForSubmit() const;
 
         // Command Interface
-        virtual void BeginRenderPass(UInt32 frameIndex, RenderPassBeginDesc&& desc) = 0;
+        virtual void BeginRenderPass(RenderPassBeginDesc&& desc) = 0;
         virtual void EndRenderPass() = 0;
 
         virtual void BeginRendering(const RHIRenderingInfo& info) = 0;
         virtual void EndRendering() = 0;
         
-        virtual void Begin(UInt32 frameIndex) = 0;
-        virtual void Begin(UInt32 frameIndex, UInt32 commandBufferUsage) = 0;
+        virtual void Begin() = 0;
+        virtual void Begin(UInt32 frameIndex, UInt32 commandBufferUsage = 0) = 0;
         virtual void End() = 0;
         
         virtual void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height, Float32 minDepth, Float32 maxDepth) = 0;
@@ -164,7 +164,7 @@ namespace ArisenEngine::RHI
         virtual void SetStencilTestEnable(bool enable) = 0;
         virtual void SetStencilOp(UInt32 faceMask, EStencilOp failOp, EStencilOp passOp, EStencilOp depthFailOp, ECompareOp compareOp) = 0;
 
-        virtual void BindPipeline(UInt32 frameIndex, RHIPipelineHandle pipeline) = 0;
+        virtual void BindPipeline(RHIPipelineHandle pipeline) = 0;
         virtual void Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding) = 0;
         virtual void DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 firstIndex, UInt32 vertexOffset, UInt32 firstInstance,  UInt32 firstBinding) = 0;
         virtual void DrawMeshTasks(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ) = 0;
@@ -177,7 +177,7 @@ namespace ArisenEngine::RHI
 
         virtual void CopyBuffer(RHIBufferHandle src, UInt64 srcOffset, RHIBufferHandle dst, UInt64 dstOffset, UInt64 size) = 0;
         
-        virtual void BindDescriptorSets(UInt32 frameIndex, EPipelineBindPoint bindPoint,
+        virtual void BindDescriptorSets(EPipelineBindPoint bindPoint,
     UInt32 firstSet, Containers::Vector<std::shared_ptr<RHIDescriptorSet>>& descriptorsets, UInt32 dynamicOffsetCount, const UInt32* pDynamicOffsets) = 0;
 
         virtual void CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst,
@@ -240,18 +240,21 @@ namespace ArisenEngine::RHI
         friend class RHIVkQueue; // Added for tracking access
         virtual void ResetInternal() = 0;
 
-    private:
-        RHICommandBufferPool* m_CommandBufferPool;
-        RHIDevice* m_Device;
-        ECommandBufferState m_State;
-        RHIGpuTicket m_LatestSubmitTicket { 0 };
-        
     protected:
         // Protected accessors for members needed by derived classes if any
         RHICommandBufferPool* GetPool() const { return m_CommandBufferPool; }
         RHIDevice* GetDevice() const { return m_Device; }
         ECommandBufferState GetState() const { return m_State; }
         void SetState(ECommandBufferState state) { m_State = state; }
+        UInt32 GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
+        void SetCurrentFrameIndex(UInt32 index) { m_CurrentFrameIndex = index; }
+
+    private:
+        RHICommandBufferPool* m_CommandBufferPool;
+        RHIDevice* m_Device;
+        ECommandBufferState m_State;
+        RHIGpuTicket m_LatestSubmitTicket { 0 };
+        UInt32 m_CurrentFrameIndex { 0 };
     };
 
     inline const bool RHICommandBuffer::ReadyForSubmit() const

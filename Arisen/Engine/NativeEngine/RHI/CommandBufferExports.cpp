@@ -73,13 +73,13 @@ extern "C" ENGINE_DLL void RHI_Cmd_End(RHI_CommandBufferHandle cmd)
     c->End();
 }
 
-extern "C" ENGINE_DLL void RHI_Cmd_BeginRenderPass(RHI_CommandBufferHandle cmd, unsigned int frameIndex, RHI::RenderPassBeginDesc* desc)
+extern "C" ENGINE_DLL void RHI_Cmd_BeginRenderPass(RHI_CommandBufferHandle cmd, RHI::RenderPassBeginDesc* desc)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
     if (c == nullptr || desc == nullptr) return;
     // Both RHI::RenderPassBeginDesc and the pointers in it are now POD handles if we updated the struct in RHICommandBuffer.h
     RHI::RenderPassBeginDesc copy = *desc;
-    c->BeginRenderPass(frameIndex, std::move(copy));
+    c->BeginRenderPass(std::move(copy));
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_EndRenderPass(RHI_CommandBufferHandle cmd)
@@ -131,12 +131,12 @@ extern "C" ENGINE_DLL void RHI_Cmd_Dispatch(RHI_CommandBufferHandle cmd, unsigne
     c->Dispatch(groupCountX, groupCountY, groupCountZ);
 }
 
-extern "C" ENGINE_DLL void RHI_Cmd_BindPipeline(RHI_CommandBufferHandle cmd, unsigned int frameIndex, RHI_PipelineHandle pipeline)
+extern "C" ENGINE_DLL void RHI_Cmd_BindPipeline(RHI_CommandBufferHandle cmd, RHI_PipelineHandle pipeline)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
     if (c == nullptr || pipeline == 0) return;
     auto h = *reinterpret_cast<RHI::RHIPipelineHandle*>(&pipeline);
-    c->BindPipeline(frameIndex, h);
+    c->BindPipeline(h);
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_BindVertexBuffers(RHI_CommandBufferHandle cmd, RHI_BufferHandle buffer, unsigned long long offset)
@@ -251,17 +251,17 @@ extern "C" ENGINE_DLL void RHI_Cmd_EndRendering(RHI_CommandBufferHandle cmd)
     }
 }
 
-extern "C" ENGINE_DLL void RHI_Cmd_BindDescriptorSets_FromPool(RHI_CommandBufferHandle cmd, unsigned int frameIndex, RHI::EPipelineBindPoint bindPoint, unsigned int firstSet, RHI_DescriptorPoolHandle pool, unsigned int poolId)
+extern "C" ENGINE_DLL void RHI_Cmd_BindDescriptorSets_FromPool(RHI_CommandBufferHandle cmd, RHI::EPipelineBindPoint bindPoint, unsigned int firstSet, RHI_DescriptorPoolHandle pool, unsigned int poolId)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
     auto* p = reinterpret_cast<RHI::RHIDescriptorPool*>(pool);
     if (c == nullptr || p == nullptr) return;
     auto& sets = p->GetDescriptorSets(poolId);
-    c->BindDescriptorSets(frameIndex, bindPoint, firstSet, const_cast<Containers::Vector<std::shared_ptr<RHI::RHIDescriptorSet>>&>(sets), 0, nullptr);
+    c->BindDescriptorSets(bindPoint, firstSet, const_cast<Containers::Vector<std::shared_ptr<RHI::RHIDescriptorSet>>&>(sets), 0, nullptr);
     c->TrackDescriptorPoolUse(p, poolId);
 }
 
-extern "C" ENGINE_DLL void RHI_Cmd_BindDescriptorSet_FromPool(RHI_CommandBufferHandle cmd, unsigned int frameIndex, RHI::EPipelineBindPoint bindPoint, unsigned int firstSet, RHI_DescriptorPoolHandle pool, unsigned int poolId, unsigned int setIndex)
+extern "C" ENGINE_DLL void RHI_Cmd_BindDescriptorSet_FromPool(RHI_CommandBufferHandle cmd, RHI::EPipelineBindPoint bindPoint, unsigned int firstSet, RHI_DescriptorPoolHandle pool, unsigned int poolId, unsigned int setIndex)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
     auto* p = reinterpret_cast<RHI::RHIDescriptorPool*>(pool);
@@ -271,7 +271,7 @@ extern "C" ENGINE_DLL void RHI_Cmd_BindDescriptorSet_FromPool(RHI_CommandBufferH
     
     Containers::Vector<std::shared_ptr<RHI::RHIDescriptorSet>> singleSet;
     singleSet.push_back(sets[setIndex]);
-    c->BindDescriptorSets(frameIndex, bindPoint, firstSet, singleSet, 0, nullptr);
+    c->BindDescriptorSets(bindPoint, firstSet, singleSet, 0, nullptr);
     c->TrackDescriptorPoolUse(p, poolId);
 }
 
