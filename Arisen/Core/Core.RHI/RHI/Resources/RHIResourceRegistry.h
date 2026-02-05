@@ -20,6 +20,15 @@ public:
       : m_DeletionQueue(deletionQueue) {}
 
   ~RHIResourceRegistry() {
+    Shutdown();
+  }
+
+  /**
+   * @brief Shuts down the registry by enqueuing all remaining resources for destruction.
+   * This is safe to call multiple times and ensures the registry remains valid for
+   * lookup/release calls that might happen during the subsequent flush of the enqueued items.
+   */
+  void Shutdown() {
     std::lock_guard<std::mutex> lock(m_Mutex);
     for (size_t i = 0; i < m_Entries.size(); ++i) {
       auto &e = m_Entries[i];
@@ -29,6 +38,7 @@ public:
         m_DeletionQueue->Enqueue(RHIQueueType::Graphics, 0, e.item);
         e.refCount = 0;
         e.item = {};
+        e.generation++; // Invalidate existing handles
       }
     }
   }
