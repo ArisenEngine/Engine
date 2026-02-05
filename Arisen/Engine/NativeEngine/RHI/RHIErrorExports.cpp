@@ -52,7 +52,7 @@ extern "C" ENGINE_DLL void RHI_ClearError()
 // Internal function for other RHI modules to set errors
 namespace ArisenEngine::RHI
 {
-    void SetLastError(RHI_ErrorCode code, const char* message = nullptr)
+    void SetLastError(RHI_ErrorCode code, const char* message)
     {
         s_LastError = code;
         if (message)

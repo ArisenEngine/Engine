@@ -3,6 +3,7 @@
 #include "../../Core/RHI.Vulkan/Core/RHIVkDevice.h"
 #include "../../Core/RHI.Vulkan/Presentation/RHIVkSwapChain.h"
 #include "RHINativeBridge.h"
+#include "RHIErrorInternal.h"
 #include <unordered_map>
 #include <mutex>
 
@@ -50,8 +51,16 @@ extern "C" ENGINE_DLL void RHI_SwapChain_Present(RHI_SwapChainHandle swapchain, 
 extern "C" ENGINE_DLL RHI_ImageHandle RHI_SwapChain_AcquireCurrentImage(RHI_SwapChainHandle swapchain, unsigned int frameIndex)
 {
     auto* sc = reinterpret_cast<RHI::RHISwapChain*>(swapchain);
-    if (sc == nullptr) return 0;
-    auto val = sc->AquireCurrentImage(frameIndex);
+    if (sc == nullptr) 
+    {
+        RHI::SetLastError(RHI_ERROR_INVALID_HANDLE, "SwapChain handle is null");
+        return 0;
+    }
+    auto val = sc->AcquireCurrentImage(frameIndex);
+    if (!val.IsValid())
+    {
+        RHI::SetLastError(RHI_ERROR_DEVICE_LOST, "Failed to acquire next image from swapchain");
+    }
     return *reinterpret_cast<RHI_ImageHandle*>(&val);
 }
 
