@@ -49,6 +49,9 @@ namespace ArisenEngine::RHI
         
         virtual void* GetHandle() const = 0;
         virtual void DeviceWaitIdle() const = 0;
+        virtual void* GetGraphicsQueue() = 0;
+        virtual void* GetComputeQueue() = 0;
+        virtual void* GetPresentQueue() = 0;
         virtual void GraphicQueueWaitIdle() const = 0;
 
         virtual RHIFactory* GetFactory() const = 0;

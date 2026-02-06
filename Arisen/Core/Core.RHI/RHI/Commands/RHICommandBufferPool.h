@@ -18,22 +18,24 @@ namespace ArisenEngine::RHI
         }
 
 
-        virtual RHICommandBuffer* GetCommandBuffer(UInt32 currentFrameIndex)
+        virtual RHICommandBuffer* GetCommandBuffer(UInt32 currentFrameIndex, ECommandBufferLevel level = COMMAND_BUFFER_LEVEL_PRIMARY)
         {
             (void)currentFrameIndex;
             std::lock_guard<std::mutex> lock(m_BuffersMutex);
 
+            auto& freeList = (level == COMMAND_BUFFER_LEVEL_PRIMARY) ? m_FreePrimaryCommandBuffers : m_FreeSecondaryCommandBuffers;
+
             // Fetch any buffer from the free list. 
-            // Buffers only enter m_FreeCommandBuffers via deferred release, so they are guaranteed GPU-safe.
-            if (!m_FreeCommandBuffers.empty())
+            // Buffers only enter the free lists via deferred release, so they are guaranteed GPU-safe.
+            if (!freeList.empty())
             {
-                RHICommandBuffer* commandBuffer = m_FreeCommandBuffers.back();
-                m_FreeCommandBuffers.pop_back();
+                RHICommandBuffer* commandBuffer = freeList.back();
+                freeList.pop_back();
                 return commandBuffer;
             }
             
             // If empty, always create new to avoid CPU stalls.
-            return CreateCommandBuffer();
+            return CreateCommandBuffer(level);
         }
         
         struct CommandBufferRecycler {
@@ -67,21 +69,24 @@ namespace ArisenEngine::RHI
     protected:
         virtual void InternalRecycle(RHICommandBuffer* commandBuffer)
         {
-             std::lock_guard<std::mutex> lock(m_BuffersMutex);
-             commandBuffer->ResetInternal();
-             m_FreeCommandBuffers.emplace_back(commandBuffer);
+            if (!commandBuffer) return;
+            std::lock_guard<std::mutex> lock(m_BuffersMutex);
+            if (commandBuffer->GetLevel() == COMMAND_BUFFER_LEVEL_PRIMARY)
+                m_FreePrimaryCommandBuffers.push_back(commandBuffer);
+            else
+                m_FreeSecondaryCommandBuffers.push_back(commandBuffer);
         }
-        virtual RHICommandBuffer* CreateCommandBuffer() = 0;
+        virtual RHICommandBuffer* CreateCommandBuffer(ECommandBufferLevel level) = 0;
         
     private:
         RHIDevice* m_Device;
-        Containers::Vector<RHICommandBuffer*> m_FreeCommandBuffers;
+        Containers::Vector<RHICommandBuffer*> m_FreePrimaryCommandBuffers;
+        Containers::Vector<RHICommandBuffer*> m_FreeSecondaryCommandBuffers;
         UInt32 m_MaxFramesInFlight;
         std::mutex m_BuffersMutex;
 
     protected:
         RHIDevice* GetDevice() const { return m_Device; }
-        Containers::Vector<RHICommandBuffer*>& GetFreeBuffers() { return m_FreeCommandBuffers; }
         std::mutex& GetBuffersMutex() { return m_BuffersMutex; }
     };
 

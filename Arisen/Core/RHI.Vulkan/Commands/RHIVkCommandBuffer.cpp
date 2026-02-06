@@ -31,8 +31,8 @@ RHIVkCommandBuffer::~RHIVkCommandBuffer() noexcept
     }
 }
 
-RHIVkCommandBuffer::RHIVkCommandBuffer(RHIVkDevice* device, RHIVkCommandBufferPool* pool)
-: RHICommandBuffer(device, pool),
+RHIVkCommandBuffer::RHIVkCommandBuffer(RHIVkDevice* device, RHIVkCommandBufferPool* pool, ECommandBufferLevel level)
+: RHICommandBuffer(device, pool, level),
 m_OwnerThreadId(std::this_thread::get_id())
 {
     m_VkDevice = static_cast<VkDevice>(device->GetHandle());
@@ -43,8 +43,7 @@ m_OwnerThreadId(std::this_thread::get_id())
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.commandPool = m_VkCommandPool;
-        // todo 
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.level = (level == COMMAND_BUFFER_LEVEL_PRIMARY) ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
         allocInfo.commandBufferCount = 1;
 
         // todo: separate alloc memory and free memory
@@ -302,16 +301,53 @@ check_mem:
 void ArisenEngine::RHI::RHIVkCommandBuffer::Begin()
 {
     // If Begin() is called without frameIndex, we assume it's already set or not needed for this buffer
-    Begin(GetCurrentFrameIndex(), 0);
+    Begin(GetCurrentFrameIndex(), 0, nullptr);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBuffer::Begin(UInt32 frameIndex, UInt32 commandBufferUsage)
+void ArisenEngine::RHI::RHIVkCommandBuffer::Begin(UInt32 frameIndex, UInt32 commandBufferUsage, const RHICommandBufferInheritanceInfo* pInheritanceInfo)
 {
     ASSERT(GetState() == ECommandBufferState::Initial);
     SetCurrentFrameIndex(frameIndex);
 
+    VkCommandBufferInheritanceInfo inheritanceInfo{};
+    if (GetLevel() == COMMAND_BUFFER_LEVEL_SECONDARY && pInheritanceInfo)
+    {
+        inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+        auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
+        
+        if (pInheritanceInfo->renderPass.IsValid())
+        {
+            auto* rp = vkDevice->GetRenderPassPool()->Get(pInheritanceInfo->renderPass);
+            if (rp)
+            {
+                auto* rpObj = static_cast<RHIVkGPURenderPass*>(rp->renderPassObj);
+                inheritanceInfo.renderPass = rpObj ? static_cast<VkRenderPass>(rpObj->GetHandle(frameIndex)) : rp->renderPass;
+            }
+        }
+        
+        inheritanceInfo.subpass = pInheritanceInfo->subpass;
+        
+        if (pInheritanceInfo->frameBuffer.IsValid())
+        {
+            auto* fb = vkDevice->GetFrameBufferPool()->Get(pInheritanceInfo->frameBuffer);
+            if (fb)
+            {
+                auto* fbObj = static_cast<RHIVkFrameBuffer*>(fb->frameBufferObj);
+                inheritanceInfo.framebuffer = fbObj ? static_cast<VkFramebuffer>(fbObj->GetHandle(frameIndex)) : fb->framebuffer;
+            }
+        }
+        
+        if (pInheritanceInfo->occlusionQueryEnable)
+        {
+            inheritanceInfo.occlusionQueryEnable = VK_TRUE;
+            inheritanceInfo.queryFlags = pInheritanceInfo->occlusionQueryFlags;
+        }
+        inheritanceInfo.pipelineStatistics = pInheritanceInfo->pipelineStatistics;
+    }
+
     m_VkBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     m_VkBeginInfo.flags = commandBufferUsage;
+    m_VkBeginInfo.pInheritanceInfo = (GetLevel() == COMMAND_BUFFER_LEVEL_SECONDARY && pInheritanceInfo) ? &inheritanceInfo : nullptr;
 
     if (vkBeginCommandBuffer(m_VkCommandBuffer, &m_VkBeginInfo) != VK_SUCCESS)
     {
@@ -331,6 +367,27 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::End()
     }
     
     SetState(ECommandBufferState::Executable);
+}
+
+void ArisenEngine::RHI::RHIVkCommandBuffer::ExecuteCommands(Containers::Vector<RHICommandBuffer*>&& secondaryBuffers)
+{
+    ASSERT(GetState() == ECommandBufferState::Recording || GetState() == ECommandBufferState::RecordingPass);
+    ASSERT(GetLevel() == COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    m_VkSecondaryCommandBuffers.clear();
+    m_VkSecondaryCommandBuffers.reserve(secondaryBuffers.size());
+    for (auto* buf : secondaryBuffers)
+    {
+        ASSERT(buf->GetLevel() == COMMAND_BUFFER_LEVEL_SECONDARY);
+        ASSERT(buf->ReadyForSubmit());
+        auto* vkBuf = static_cast<RHIVkCommandBuffer*>(buf);
+        m_VkSecondaryCommandBuffers.push_back(vkBuf->m_VkCommandBuffer);
+    }
+
+    if (!m_VkSecondaryCommandBuffers.empty())
+    {
+        ::vkCmdExecuteCommands(m_VkCommandBuffer, static_cast<uint32_t>(m_VkSecondaryCommandBuffers.size()), m_VkSecondaryCommandBuffers.data());
+    }
 }
 
 void ArisenEngine::RHI::RHIVkCommandBuffer::SetViewport(Float32 x, Float32 y, Float32 width, Float32 height, Float32 minDepth, Float32 maxDepth)
@@ -658,6 +715,26 @@ void RHIVkCommandBuffer::DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UI
     }
 
     ::vkCmdDrawIndexed(m_VkCommandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+}
+
+void RHIVkCommandBuffer::DrawIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 drawCount, UInt32 stride)
+{
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
+    auto* buf = vkDevice->GetBufferPool()->Get(buffer);
+    if (!buf) return;
+
+    ::vkCmdDrawIndirect(m_VkCommandBuffer, buf->buffer, offset, drawCount, stride);
+    CaptureResource(buffer);
+}
+
+void RHIVkCommandBuffer::DrawIndexedIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 drawCount, UInt32 stride)
+{
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
+    auto* buf = vkDevice->GetBufferPool()->Get(buffer);
+    if (!buf) return;
+
+    ::vkCmdDrawIndexedIndirect(m_VkCommandBuffer, buf->buffer, offset, drawCount, stride);
+    CaptureResource(buffer);
 }
 
 void RHIVkCommandBuffer::Dispatch(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ)

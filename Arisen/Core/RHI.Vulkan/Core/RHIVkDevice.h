@@ -56,6 +56,9 @@ namespace ArisenEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkDevice)
         ~RHIVkDevice() noexcept override;
         void* GetHandle() const override { return m_VkDevice; }
+        void* GetGraphicsQueue() override { return m_VkGraphicQueue; }
+        void* GetComputeQueue() override { return m_VkComputeQueue; }
+        void* GetPresentQueue() override { return m_VkPresentQueue; }
         RHIVkDevice(RHIInstance* instance, RHISurface* surface, VkQueue graphicQueue, VkQueue presentQueue, VkQueue computeQueue,
                     VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties, UInt32 graphicsFamilyIndex, UInt32 computeFamilyIndex);
 

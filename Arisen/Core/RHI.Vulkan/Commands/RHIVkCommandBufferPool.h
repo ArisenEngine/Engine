@@ -42,12 +42,12 @@ namespace ArisenEngine::RHI
         ~RHIVkCommandBufferPool() noexcept override;
 
 
-        RHICommandBuffer* GetCommandBuffer(UInt32 currentFrameIndex) override;
+        RHICommandBuffer* GetCommandBuffer(UInt32 currentFrameIndex, ECommandBufferLevel level = COMMAND_BUFFER_LEVEL_PRIMARY) override;
         void ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBuffer* commandBuffer) override;
 
     private:
         void FlushPendingBuffers(ThreadLocalFreeList* tlsList);
-        RHICommandBuffer* CreateCommandBuffer() override;
+        RHICommandBuffer *CreateCommandBuffer(ECommandBufferLevel level) override;
         VkCommandPool AcquireThreadCommandPool();
 
         void InternalRecycle(RHICommandBuffer* commandBuffer) override;
