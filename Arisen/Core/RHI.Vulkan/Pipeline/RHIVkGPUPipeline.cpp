@@ -37,6 +37,12 @@ void* RHIVkGPUPipeline::GetGraphicsPipeline(UInt32 frameIndex)
     return m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight];
 }
 
+void* RHIVkGPUPipeline::GetComputePipeline(UInt32 frameIndex)
+{
+    ASSERT(m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE);
+    return m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight];
+}
+
 void RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex, RHISubPass* subPass)
 {
     FreePipeline(frameIndex);

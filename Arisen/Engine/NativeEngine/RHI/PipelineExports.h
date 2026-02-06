@@ -35,6 +35,7 @@ extern "C" ENGINE_DLL void RHI_PSO_SetTessellationState(RHI_PSOHandle pso, const
 extern "C" ENGINE_DLL void RHI_PSO_SetDynamicStateMask(RHI_PSOHandle pso, ArisenEngine::UInt64 mask);
 extern "C" ENGINE_DLL void RHI_PSO_SetRenderingFormats(RHI_PSOHandle pso, ArisenEngine::Containers::Vector<ArisenEngine::RHI::EFormat>* colorFormats, ArisenEngine::RHI::EFormat depthFormat, ArisenEngine::RHI::EFormat stencilFormat);
 extern "C" ENGINE_DLL RHI_PipelineHandle RHI_PipelineManager_GetGraphicsPipeline(RHI_PipelineManagerHandle pm, RHI_PSOHandle pso);
+extern "C" ENGINE_DLL RHI_PipelineHandle RHI_PipelineManager_GetComputePipeline(RHI_PipelineManagerHandle pm, RHI_PSOHandle pso);
 
 
 // Moved to SurfaceExports: RHI_FrameBuffer_SetAttachment

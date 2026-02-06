@@ -28,16 +28,32 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseCommandBufferPool(RHI_DeviceHandle 
 extern "C" ENGINE_DLL RHI_CommandBufferHandle RHI_Device_GetCommandBuffer(RHI_DeviceHandle device, RHI_CommandBufferPoolHandle pool, unsigned int currentFrameIndex)
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
-    if (dev == nullptr) return nullptr;
+    if (dev == nullptr) return 0;
     
     auto h = *reinterpret_cast<RHI::RHICommandBufferPoolHandle*>(&pool);
     auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
-    if (!vkDev) return nullptr;
+    if (!vkDev) return 0;
 
     auto* item = RHI::RHINativeBridge::GetCommandBufferPoolItem(vkDev, h);
-    if (!item || !item->pool) return nullptr;
+    if (!item || !item->pool) return 0;
     
     auto* raw = item->pool->GetCommandBuffer(currentFrameIndex);
+    return reinterpret_cast<RHI_CommandBufferHandle>(raw);
+}
+
+extern "C" ENGINE_DLL RHI_CommandBufferHandle RHI_Device_GetSecondaryCommandBuffer(RHI_DeviceHandle device, RHI_CommandBufferPoolHandle pool, unsigned int currentFrameIndex)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr) return 0;
+    
+    auto h = *reinterpret_cast<RHI::RHICommandBufferPoolHandle*>(&pool);
+    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
+    if (!vkDev) return 0;
+
+    auto* item = RHI::RHINativeBridge::GetCommandBufferPoolItem(vkDev, h);
+    if (!item || !item->pool) return 0;
+    
+    auto* raw = item->pool->GetCommandBuffer(currentFrameIndex, RHI::COMMAND_BUFFER_LEVEL_SECONDARY);
     return reinterpret_cast<RHI_CommandBufferHandle>(raw);
 }
 
@@ -61,9 +77,19 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseCommandBuffer(RHI_DeviceHandle devi
 
 extern "C" ENGINE_DLL void RHI_Cmd_Begin(RHI_CommandBufferHandle cmd, unsigned int frameIndex, unsigned int usageFlags)
 {
-    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
-    if (c == nullptr) return;
-    c->Begin(frameIndex, usageFlags);
+    auto* commandBuffer = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (commandBuffer)
+    {
+        if (commandBuffer->GetLevel() == RHI::ECommandBufferLevel::COMMAND_BUFFER_LEVEL_SECONDARY)
+        {
+            RHI::RHICommandBufferInheritanceInfo inheritanceInfo = {};
+            commandBuffer->Begin(frameIndex, usageFlags, &inheritanceInfo);
+        }
+        else
+        {
+            commandBuffer->Begin(frameIndex, usageFlags, nullptr);
+        }
+    }
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_End(RHI_CommandBufferHandle cmd)
@@ -71,6 +97,19 @@ extern "C" ENGINE_DLL void RHI_Cmd_End(RHI_CommandBufferHandle cmd)
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
     if (c == nullptr) return;
     c->End();
+}
+
+extern "C" ENGINE_DLL void RHI_Cmd_ExecuteCommands(RHI_CommandBufferHandle cmd, ArisenEngine::Containers::Vector<RHI_CommandBufferHandle>* secondaryBuffers)
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c == nullptr || secondaryBuffers == nullptr) return;
+
+    ArisenEngine::Containers::Vector<RHI::RHICommandBuffer*> buffers;
+    for (auto h : *secondaryBuffers)
+    {
+        if (h) buffers.push_back(reinterpret_cast<RHI::RHICommandBuffer*>(h));
+    }
+    c->ExecuteCommands(std::move(buffers));
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_BeginRenderPass(RHI_CommandBufferHandle cmd, RHI::RenderPassBeginDesc* desc)
@@ -136,6 +175,22 @@ extern "C" ENGINE_DLL void RHI_Cmd_Dispatch(RHI_CommandBufferHandle cmd, unsigne
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
     if (c == nullptr) return;
     c->Dispatch(groupCountX, groupCountY, groupCountZ);
+}
+
+extern "C" ENGINE_DLL void RHI_Cmd_DrawIndirect(RHI_CommandBufferHandle cmd, RHI_BufferHandle buffer, unsigned long long offset, unsigned int drawCount, unsigned int stride)
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c == nullptr || buffer == 0) return;
+    auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
+    c->DrawIndirect(h, offset, drawCount, stride);
+}
+
+extern "C" ENGINE_DLL void RHI_Cmd_DrawIndexedIndirect(RHI_CommandBufferHandle cmd, RHI_BufferHandle buffer, unsigned long long offset, unsigned int drawCount, unsigned int stride)
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c == nullptr || buffer == 0) return;
+    auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
+    c->DrawIndexedIndirect(h, offset, drawCount, stride);
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_BindPipeline(RHI_CommandBufferHandle cmd, RHI_PipelineHandle pipeline)

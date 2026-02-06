@@ -32,6 +32,7 @@ namespace ArisenEngine::RHI
         RHIPipelineCache(UInt32 maxFramesInFlight);
         virtual ~RHIPipelineCache() noexcept = default;
         virtual RHIPipelineHandle GetGraphicsPipeline(RHIPipelineState* pso) = 0;
+        virtual RHIPipelineHandle GetComputePipeline(RHIPipelineState* pso) = 0;
 
         virtual std::unique_ptr<RHIPipelineState> GetPipelineState() = 0;
     protected:

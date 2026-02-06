@@ -16,6 +16,7 @@ namespace ArisenEngine::RHI
         ~RHIVkGPUPipelineManager() noexcept override;
 
         RHIPipelineHandle GetGraphicsPipeline(RHIPipelineState* pso) override;
+        RHIPipelineHandle GetComputePipeline(RHIPipelineState* pso) override;
         std::unique_ptr<RHIPipelineState> GetPipelineState() override;
 
         VkPipelineCache GetVkPipelineCache() const { return m_VkPipelineCache; }

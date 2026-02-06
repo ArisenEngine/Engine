@@ -10,10 +10,12 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseCommandBufferPool(RHI_DeviceHandle 
 
 /** @ownership Borrowed - Buffer managed by pool; do NOT release manually */
 extern "C" ENGINE_DLL RHI_CommandBufferHandle RHI_Device_GetCommandBuffer(RHI_DeviceHandle device, RHI_CommandBufferPoolHandle pool, unsigned int currentFrameIndex);
+extern "C" ENGINE_DLL RHI_CommandBufferHandle RHI_Device_GetSecondaryCommandBuffer(RHI_DeviceHandle device, RHI_CommandBufferPoolHandle pool, unsigned int currentFrameIndex);
 extern "C" ENGINE_DLL void RHI_Device_ReleaseCommandBuffer(RHI_DeviceHandle device, RHI_CommandBufferPoolHandle pool, unsigned int currentFrameIndex, RHI_CommandBufferHandle cmd);
 
 extern "C" ENGINE_DLL void RHI_Cmd_Begin(RHI_CommandBufferHandle cmd, unsigned int frameIndex, unsigned int usageFlags = 0);
 extern "C" ENGINE_DLL void RHI_Cmd_End(RHI_CommandBufferHandle cmd);
+extern "C" ENGINE_DLL void RHI_Cmd_ExecuteCommands(RHI_CommandBufferHandle cmd, ArisenEngine::Containers::Vector<RHI_CommandBufferHandle>* secondaryBuffers);
 extern "C" ENGINE_DLL void RHI_Cmd_BeginRenderPass(RHI_CommandBufferHandle cmd, ArisenEngine::RHI::RenderPassBeginDesc* desc);
 extern "C" ENGINE_DLL void RHI_Cmd_EndRenderPass(RHI_CommandBufferHandle cmd);
 extern "C" ENGINE_DLL void RHI_Cmd_SetViewport(RHI_CommandBufferHandle cmd, float x, float y, float width, float height, float minDepth, float maxDepth);
@@ -24,6 +26,9 @@ extern "C" ENGINE_DLL void RHI_Cmd_Draw(RHI_CommandBufferHandle cmd, unsigned in
 extern "C" ENGINE_DLL void RHI_Cmd_DrawIndexed(RHI_CommandBufferHandle cmd, unsigned int indexCount, unsigned int instanceCount, unsigned int firstIndex, unsigned int vertexOffset, unsigned int firstInstance, unsigned int firstBinding);
 extern "C" ENGINE_DLL void RHI_Cmd_DrawMeshTasks(RHI_CommandBufferHandle cmd, unsigned int groupCountX, unsigned int groupCountY, unsigned int groupCountZ);
 extern "C" ENGINE_DLL void RHI_Cmd_Dispatch(RHI_CommandBufferHandle cmd, unsigned int groupCountX, unsigned int groupCountY, unsigned int groupCountZ);
+
+extern "C" ENGINE_DLL void RHI_Cmd_DrawIndirect(RHI_CommandBufferHandle cmd, RHI_BufferHandle buffer, unsigned long long offset, unsigned int drawCount, unsigned int stride);
+extern "C" ENGINE_DLL void RHI_Cmd_DrawIndexedIndirect(RHI_CommandBufferHandle cmd, RHI_BufferHandle buffer, unsigned long long offset, unsigned int drawCount, unsigned int stride);
 
 // Added exports for VulkanTest refactor
 extern "C" ENGINE_DLL void RHI_Cmd_BindPipeline(RHI_CommandBufferHandle cmd, RHI_PipelineHandle pipeline);

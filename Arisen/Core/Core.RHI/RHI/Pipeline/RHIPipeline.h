@@ -14,6 +14,7 @@ namespace ArisenEngine::RHI
         virtual ~RHIPipeline() noexcept = default;
 
         virtual void* GetGraphicsPipeline(UInt32 frameIndex) = 0;
+        virtual void* GetComputePipeline(UInt32 frameIndex) = 0;
         
         virtual void AllocGraphicPipeline(UInt32 frameIndex, RHISubPass* subPass) = 0;
         virtual void AllocComputePipeline(UInt32 frameIndex) = 0;
