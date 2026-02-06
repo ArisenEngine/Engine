@@ -569,6 +569,41 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
+    // Enumerate supported device extensions
+    uint32_t extensionCount = 0;
+    vkEnumerateDeviceExtensionProperties(m_CurrentPhysicsDevice, nullptr, &extensionCount, nullptr);
+    Containers::Vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(m_CurrentPhysicsDevice, nullptr, &extensionCount, availableExtensions.data());
+
+    Containers::Vector<const char*> enabledExtensions;
+    for (const char* extensionName : VkDeviceExtensionNames)
+    {
+        // Skip swapchain if headless
+        if (windowId == ~0u && strcmp(extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0)
+        {
+            continue;
+        }
+
+        bool found = false;
+        for (const auto& ext : availableExtensions)
+        {
+            if (strcmp(extensionName, ext.extensionName) == 0)
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (found)
+        {
+            enabledExtensions.push_back(extensionName);
+        }
+        else
+        {
+            LOG_WARN(String::Format("[RHIVkInstance::CreateLogicDevice]: device extension not supported: %s", extensionName));
+        }
+    }
+
     // Set Device Features
     VkPhysicalDeviceFeatures features{};
     features.samplerAnisotropy = VK_TRUE;
@@ -598,13 +633,27 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     vulkan13Features.dynamicRendering = VK_TRUE;
     vulkan13Features.shaderDemoteToHelperInvocation = VK_TRUE;
 
-    VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures{};
-    meshShaderFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT;
-    meshShaderFeatures.meshShader = VK_TRUE;
-    meshShaderFeatures.taskShader = VK_TRUE;
-
     vulkan12Features.pNext = &vulkan13Features;
-    vulkan13Features.pNext = &meshShaderFeatures;
+    void* pNextChain = &vulkan12Features;
+
+    VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures{};
+    bool meshShaderSupported = false;
+    for (const auto& ext : availableExtensions)
+    {
+        if (strcmp(VK_EXT_MESH_SHADER_EXTENSION_NAME, ext.extensionName) == 0)
+        {
+            meshShaderSupported = true;
+            break;
+        }
+    }
+
+    if (meshShaderSupported)
+    {
+        meshShaderFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT;
+        meshShaderFeatures.meshShader = VK_TRUE;
+        meshShaderFeatures.taskShader = VK_TRUE;
+        vulkan13Features.pNext = &meshShaderFeatures;
+    }
     
     // Device Create Info
     VkDeviceCreateInfo createInfo{};
@@ -614,10 +663,10 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 
     createInfo.pEnabledFeatures = &features;
-    createInfo.pNext = &vulkan12Features;
+    createInfo.pNext = pNextChain;
 
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(VkDeviceExtensionNames.size());
-    createInfo.ppEnabledExtensionNames = VkDeviceExtensionNames.data();
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(enabledExtensions.size());
+    createInfo.ppEnabledExtensionNames = enabledExtensions.data();
 
     if (IsEnableValidation())
     {

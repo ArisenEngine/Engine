@@ -95,6 +95,7 @@ namespace ArisenEngine::RHI
     private:
         RHIVkBindlessManager* GetBindlessManager() const { return m_BindlessManager; }
         UInt32 GetGraphicsFamilyIndex() const { return m_GraphicsFamilyIndex; }
+        UInt32 GetComputeFamilyIndex() const { return m_ComputeFamilyIndex; }
         std::mutex& GetSubmitMutex() { return m_SubmitMutex; }
 
         UInt32 GetCurrentFrameIndex() const { return m_CurrentFrameIndex.load(std::memory_order_acquire); }

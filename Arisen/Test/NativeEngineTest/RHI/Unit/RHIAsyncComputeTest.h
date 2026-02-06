@@ -33,7 +33,7 @@ namespace ArisenEngine::Testing
         bool SetupTest() override
         {
             HAL::InitDXC();
-            m_CommandPool = RHI_Device_CreateCommandBufferPool(m_Device);
+            m_CommandPool = RHI_Device_CreateCommandBufferPool_Type(m_Device, 1); // 1 = Compute
             m_DescriptorPool = RHI_Device_GetDescriptorPool(m_Device);
 
             // 1. Compile and Create Compute Program

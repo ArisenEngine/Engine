@@ -719,6 +719,11 @@ void RHIVkCommandBuffer::DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UI
 
 void RHIVkCommandBuffer::DrawIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 drawCount, UInt32 stride)
 {
+    if (m_VertexBuffers.size() > 0)
+    {
+        ::vkCmdBindVertexBuffers(m_VkCommandBuffer, 0, m_VertexBuffers.size(), m_VertexBuffers.data(), m_VertexBindingOffsets.data());
+    }
+
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* buf = vkDevice->GetBufferPool()->Get(buffer);
     if (!buf) return;
@@ -729,6 +734,16 @@ void RHIVkCommandBuffer::DrawIndirect(RHIBufferHandle buffer, UInt64 offset, UIn
 
 void RHIVkCommandBuffer::DrawIndexedIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 drawCount, UInt32 stride)
 {
+    if (m_VertexBuffers.size() > 0)
+    {
+        ::vkCmdBindVertexBuffers(m_VkCommandBuffer, 0, m_VertexBuffers.size(), m_VertexBuffers.data(), m_VertexBindingOffsets.data());
+    }
+
+    if (m_IndexBuffer.has_value())
+    {
+        ::vkCmdBindIndexBuffer(m_VkCommandBuffer, m_IndexBuffer.value(), m_IndexOffset.value(), static_cast<VkIndexType>(m_IndexType.value()));
+    }
+
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     auto* buf = vkDevice->GetBufferPool()->Get(buffer);
     if (!buf) return;

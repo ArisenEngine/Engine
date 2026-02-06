@@ -11,9 +11,14 @@ using namespace ArisenEngine;
 
 extern "C" ENGINE_DLL RHI_CommandBufferPoolHandle RHI_Device_CreateCommandBufferPool(RHI_DeviceHandle device)
 {
+    return RHI_Device_CreateCommandBufferPool_Type(device, 0); // Default to Graphics
+}
+
+extern "C" ENGINE_DLL RHI_CommandBufferPoolHandle RHI_Device_CreateCommandBufferPool_Type(RHI_DeviceHandle device, unsigned int queueType)
+{
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return 0;
-    auto handle = dev->GetFactory()->CreateCommandBufferPool();
+    auto handle = dev->GetFactory()->CreateCommandBufferPool(static_cast<RHI::RHIQueueType>(queueType));
     return *reinterpret_cast<unsigned long long*>(&handle);
 }
 

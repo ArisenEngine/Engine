@@ -48,13 +48,13 @@ namespace ArisenEngine::RHI
         return false;
     }
 
-    RHICommandBufferPoolHandle RHIVkFactory::CreateCommandBufferPool()
+    RHICommandBufferPoolHandle RHIVkFactory::CreateCommandBufferPool(RHIQueueType poolQueueType)
     {
-        return m_Device->GetCommandBufferPoolPool()->Allocate([this](RHIVkCommandBufferPoolItem* item)
+        return m_Device->GetCommandBufferPoolPool()->Allocate([this, poolQueueType](RHIVkCommandBufferPoolItem* item)
         {
             *item = RHIVkCommandBufferPoolItem();
             item->pool = new RHIVkCommandBufferPool(
-                m_Device, m_Device->GetInstance()->GetMaxFramesInFlight());
+                m_Device, m_Device->GetInstance()->GetMaxFramesInFlight(), poolQueueType);
 
             struct DeferredCmdPool
             {
