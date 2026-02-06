@@ -193,6 +193,15 @@ extern "C" ENGINE_DLL RHI_PipelineHandle RHI_PipelineManager_GetGraphicsPipeline
     return *reinterpret_cast<unsigned long long*>(&handle);
 }
 
+extern "C" ENGINE_DLL RHI_PipelineHandle RHI_PipelineManager_GetComputePipeline(RHI_PipelineManagerHandle pm, RHI_PSOHandle pso)
+{
+    auto* mgr = reinterpret_cast<RHI::RHIPipelineCache*>(pm);
+    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
+    if (mgr == nullptr || s == nullptr) return 0;
+    auto handle = mgr->GetComputePipeline(s);
+    return *reinterpret_cast<unsigned long long*>(&handle);
+}
+
 // Moved to SurfaceExports: RHI_FrameBuffer_SetAttachment
 
 // Moved to HandlesExports: ReleaseRenderPass

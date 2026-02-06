@@ -61,6 +61,12 @@ ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager:
     }
 }
 
+ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager::GetComputePipeline(RHIPipelineState* pso)
+{
+     // Implementation is same as Graphics for and based on PSO hash
+     return GetGraphicsPipeline(pso);
+}
+
 std::unique_ptr<ArisenEngine::RHI::RHIPipelineState> ArisenEngine::RHI::RHIVkGPUPipelineManager::GetPipelineState()
 {
     return std::make_unique<RHIVkGPUPipelineStateObject>(m_Device);

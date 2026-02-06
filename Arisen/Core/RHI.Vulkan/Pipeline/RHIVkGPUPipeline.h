@@ -14,6 +14,7 @@ namespace ArisenEngine::RHI
         ~RHIVkGPUPipeline() noexcept override;
         RHIVkGPUPipeline(RHIVkDevice* device, RHIPipelineState* pipelineStateObject, UInt32 maxFramesInFlight);
         void* GetGraphicsPipeline(UInt32 frameIndex) override;
+        void* GetComputePipeline(UInt32 frameIndex) override;
 
         void AllocGraphicPipeline(UInt32 frameIndex, RHISubPass* subPass) override;
         void AllocComputePipeline(UInt32 frameIndex) override;

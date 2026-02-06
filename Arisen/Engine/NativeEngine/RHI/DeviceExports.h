@@ -18,8 +18,10 @@ extern "C" ENGINE_DLL RHIDeviceLimits RHI_Device_GetDeviceLimits(RHI_DeviceHandl
 
 /** @ownership Borrowed - CommandBuffer handle returned to pool after submit by internal logic (caller should release if Pool-based) */
 extern "C" ENGINE_DLL unsigned long long RHI_Device_Submit(RHI_DeviceHandle device, RHI_CommandBufferHandle cmd, const struct RHISubmitDescriptor* descriptor);
+extern "C" ENGINE_DLL unsigned long long RHI_Device_SubmitCompute(RHI_DeviceHandle device, RHI_CommandBufferHandle cmd, const struct RHISubmitDescriptor* descriptor);
 // extern "C" ENGINE_DLL void RHI_Device_Update(RHI_DeviceHandle device); // Removed
 extern "C" ENGINE_DLL void RHI_Device_WaitQueueTicket(RHI_DeviceHandle device, unsigned long long ticket);
+extern "C" ENGINE_DLL void RHI_Device_WaitComputeQueueTicket(RHI_DeviceHandle device, unsigned long long ticket);
 
 // Moved to HandlesExports: CreateSampler
 

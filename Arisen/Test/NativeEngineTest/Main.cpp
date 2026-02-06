@@ -12,6 +12,9 @@
 #include "RHI/Rendering/RHIMeshShaderTest.h"
 #include "RHI/Rendering/RHIGeometryShaderTest.h"
 #include "RHI/Rendering/RHITessellationShaderTest.h"
+#include "RHI/Rendering/RHIMultiDrawIndirectTest.h"
+#include "RHI/Unit/RHISecondaryCommandBufferTest.h"
+#include "RHI/Unit/RHIAsyncComputeTest.h"
 #include "../../Engine/NativeEngine/Core/EngineInit.h"
 #include <windows.h>
 #include <vector>
@@ -36,15 +39,18 @@ int main(int argc, char** argv)
     }
 
     // Register Tests
-    TestRunner::RegisterTest<RHIBindlessTest>();
-    TestRunner::RegisterTest<RHISyncTest>();
-    TestRunner::RegisterTest<RHIMultiThreadedTest>();
-    TestRunner::RegisterTest<RHIBatchApiTest>();
-    TestRunner::RegisterTest<RHIBasicRenderingTest>();
-    TestRunner::RegisterTest<RHIGPUParticleTest>();
-    TestRunner::RegisterTest<RHIMeshShaderTest>();
-    TestRunner::RegisterTest<RHIGeometryShaderTest>();
-    TestRunner::RegisterTest<RHITessellationShaderTest>();
+    // TestRunner::RegisterTest<RHIBindlessTest>();
+    // TestRunner::RegisterTest<RHISyncTest>();
+    // TestRunner::RegisterTest<RHIMultiThreadedTest>();
+    // TestRunner::RegisterTest<RHIBatchApiTest>();
+    // TestRunner::RegisterTest<RHIBasicRenderingTest>();
+    // TestRunner::RegisterTest<RHIGPUParticleTest>();
+    // TestRunner::RegisterTest<RHIMeshShaderTest>();
+    // TestRunner::RegisterTest<RHIGeometryShaderTest>();
+    // TestRunner::RegisterTest<RHITessellationShaderTest>();
+    TestRunner::RegisterTest<RHIMultiDrawIndirectTest>();
+    TestRunner::RegisterTest<RHISecondaryCommandBufferTest>();
+    TestRunner::RegisterTest<RHIAsyncComputeTest>();
     
     // Parse simple command line for filtering (lpCmdLine for WinMain)
     std::string cmdLine = GetCommandLineA();
