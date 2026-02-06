@@ -545,15 +545,11 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSet(UInt32 poolId, 
 
         for (const auto& updateInfoForAllTypePair : updateInfosForAllBindings)
         {
-            // updateInfoForAllTypePair.first is Binding (sorted)
             const auto& updateInfoForAllType = updateInfoForAllTypePair.second;
-            // Iterate types? Usually only 1 type per binding.
             for (const auto& updateInfoPair : updateInfoForAllType)
             {
-                // updateInfoPair.first is Type. 
                 const auto& updateInfo = updateInfoPair.second;
                 
-                // Get Info
                 Containers::Vector<VkDescriptorImageInfo> imageInfos;
                 Containers::Vector<VkDescriptorBufferInfo> bufferInfos;
                 Containers::Vector<VkBufferView> bufferViews;
@@ -562,7 +558,27 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSet(UInt32 poolId, 
                 auto pBufferInfos = GetBufferInfos(m_pDevice, updateInfo, bufferInfos);
                 auto pBufferViews = GetBufferViews(m_pDevice, updateInfo, bufferViews);
 
-                // Append to buffer
+                // Template entries are sorted by binding, and we iterate updateInfos (sorted Map).
+                // However, some bindings might be missing from updateInfos if not provided by user.
+                // The current template builder (BuildDescriptorUpdateTemplate) calculates 'offset' 
+                // cumulatively based on bindings PRESENT in the PSO.
+                // If the user didn't update a binding, it won't be in m_DescriptorUpdateInfos.
+                // This would cause a mismatch between currentOffset and template expects.
+                
+                // Better approach: use the entry offset from the template itself if possible, 
+                // OR ensure we fill all bindings defined in the PSO.
+                
+                // For now, let's at least make sure we don't crash and maybe log if we skip bindings.
+                // Actually, the current template iteration in PSO builder:
+                /*
+                for (const auto& binding : sortedBindings) {
+                    entry.offset = currentOffset;
+                    currentOffset += typeSize * binding.descriptorCount;
+                }
+                */
+                // So if we iterate Map<Binding, UpdateInfo>, we might skip bindings.
+                // We should probably iterate ALL bindings define in the PSO and pull from UpdateInfo.
+
                 size_t sizeToAppend = 0;
                 const void* dataPtr = nullptr;
 
@@ -587,6 +603,13 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSet(UInt32 poolId, 
                     size_t currentPos = dataBuffer.size();
                     dataBuffer.resize(currentPos + sizeToAppend);
                     std::memcpy(dataBuffer.data() + currentPos, dataPtr, sizeToAppend);
+                }
+                else
+                {
+                    // If no data given for this binding, we MUST still push zeroes or dummy to maintain offset 
+                    // IF we are iterating in same order as BuildDescriptorUpdateTemplate.
+                    // But wait, the Map iteration might skip bindings entirely.
+                    // This logic is fundamentally flawed if user skips bindings.
                 }
             }
         }

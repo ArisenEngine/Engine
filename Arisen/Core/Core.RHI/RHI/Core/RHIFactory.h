@@ -4,6 +4,7 @@
 #include "../Handles/RHIHandle.h"
 #include <string>
 #include "../Descriptors/RHIResourceDescriptors.h"
+#include "../Queues/RHIQueueType.h"
 
 namespace ArisenEngine::RHI
 {
@@ -24,7 +25,7 @@ namespace ArisenEngine::RHI
         virtual void ReleaseGPUProgram(RHIShaderProgramHandle handle) = 0;
         virtual bool AttachProgramByteCode(RHIShaderProgramHandle handle, RHIShaderProgramDesc&& desc) = 0;
 
-        virtual RHICommandBufferPoolHandle CreateCommandBufferPool() = 0;
+        virtual RHICommandBufferPoolHandle CreateCommandBufferPool(RHIQueueType queueType = RHIQueueType::Graphics) = 0;
         virtual void ReleaseCommandBufferPool(RHICommandBufferPoolHandle handle) = 0;
 
         virtual RHIRenderPassHandle CreateRenderPass() = 0;

@@ -16,7 +16,7 @@ namespace ArisenEngine::RHI
         void ReleaseGPUProgram(RHIShaderProgramHandle handle) override;
         bool AttachProgramByteCode(RHIShaderProgramHandle handle, RHIShaderProgramDesc&& desc) override;
 
-        RHICommandBufferPoolHandle CreateCommandBufferPool() override;
+        RHICommandBufferPoolHandle CreateCommandBufferPool(RHIQueueType queueType = RHIQueueType::Graphics) override;
         void ReleaseCommandBufferPool(RHICommandBufferPoolHandle handle) override;
 
         RHIRenderPassHandle CreateRenderPass() override;

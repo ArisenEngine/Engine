@@ -170,9 +170,11 @@ namespace ArisenEngine::Testing
         {
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
-                Containers::Vector<RHI::EDescriptorType> types = { RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER };
-                Containers::Vector<UInt32> counts = { 1 };
-                m_DescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &types, &counts, 1));
+                Containers::Vector<RHI::EDescriptorType> types = { RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, RHI::DESCRIPTOR_TYPE_SAMPLED_IMAGE, RHI::DESCRIPTOR_TYPE_SAMPLER };
+                UInt32 matCount = (UInt32)m_Model.materials.size();
+                if (matCount == 0) matCount = 1;
+                Containers::Vector<UInt32> counts = { matCount, matCount, matCount };
+                m_DescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &types, &counts, matCount));
             }
         }
 
@@ -251,8 +253,28 @@ namespace ArisenEngine::Testing
             auto cmd = RHI_Device_GetCommandBuffer(m_Device, m_CmdPool, currentIndex);
 
             RHI_DescriptorPool_Reset(m_DescriptorPool, m_DescriptorPoolIds[currentIndex]);
+            
+            // Provide valid handles even if MultiDrawIndirect uses a single set for now
+            // StandardTest.hlsl expects bindings 0, 1, 2
             Containers::Vector<RHI::RHIBufferHandle> ubos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[currentIndex]) };
             RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 0, &ubos);
+
+            if (!m_Model.materials.empty())
+            {
+                auto& mat = m_Model.materials[0];
+                RHI::RHIDescriptorImageInfo texInfo = {};
+                texInfo.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&mat.baseColorView);
+                texInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                Containers::Vector<RHI::RHIDescriptorImageInfo> texInfos = { texInfo };
+                RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 1, &texInfos);
+
+                RHI::RHIDescriptorImageInfo samInfo = {};
+                samInfo.sampler = *reinterpret_cast<RHI::RHISamplerHandle*>(&mat.sampler);
+                samInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                Containers::Vector<RHI::RHIDescriptorImageInfo> samInfos = { samInfo };
+                RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 2, &samInfos);
+            }
+
             UInt32 setIdx = RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[currentIndex], 0, m_Pso);
             RHI_DescriptorPool_UpdateDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[currentIndex], setIdx, m_Pso);
 
@@ -319,7 +341,7 @@ namespace ArisenEngine::Testing
                 RHI_Cmd_BindPipeline(cmd, m_Pipeline);
                 RHI_Cmd_SetViewport(cmd, 0, 0, (float)width, (float)height, 0, 1);
                 RHI_Cmd_SetScissor(cmd, 0, 0, width, height);
-                
+
                 RHI_Cmd_BindVertexBuffers(cmd, m_Model.vertexBuffer, 0);
                 RHI_Cmd_BindIndexBuffer(cmd, m_Model.indexBuffer, 0, RHI::INDEX_TYPE_UINT32);
 

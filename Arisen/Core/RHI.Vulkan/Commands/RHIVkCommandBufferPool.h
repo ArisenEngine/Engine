@@ -5,6 +5,7 @@
 #include <mutex>
 #include <thread>
 #include "Threadable/ThreadLocalCache.h"
+#include "RHI/Queues/RHIQueueType.h"
 
 
 namespace ArisenEngine::RHI
@@ -38,7 +39,7 @@ namespace ArisenEngine::RHI
 
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkCommandBufferPool)
-        RHIVkCommandBufferPool(RHIVkDevice* device, UInt32 maxFramesInFlight);
+        RHIVkCommandBufferPool(RHIVkDevice* device, UInt32 maxFramesInFlight, RHIQueueType queueType = RHIQueueType::Graphics);
         ~RHIVkCommandBufferPool() noexcept override;
 
 
@@ -56,6 +57,7 @@ namespace ArisenEngine::RHI
         Containers::Map<std::thread::id, VkCommandPool> m_ThreadPools;
         Containers::Map<std::thread::id, Containers::Vector<RHICommandBuffer*>> m_ThreadFreeBuffers;
         Containers::Vector<RHICommandBufferHandle> m_OwnedHandles;
+        RHIQueueType m_QueueType;
         std::mutex m_PoolsMutex;
 
         friend class RHIVkCommandBuffer;

@@ -7,8 +7,9 @@
 
 using namespace ArisenEngine::RHI;
 
-ArisenEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* device, UInt32 maxFramesInFlight)
-: RHICommandBufferPool(device, maxFramesInFlight)
+ArisenEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* device, UInt32 maxFramesInFlight, RHIQueueType queueType)
+: RHICommandBufferPool(device, maxFramesInFlight),
+m_QueueType(queueType)
 {
     m_VkDevice = static_cast<VkDevice>(device->GetHandle());
     
@@ -17,6 +18,12 @@ ArisenEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* d
 
 ArisenEngine::RHI::RHIVkCommandBufferPool::~RHIVkCommandBufferPool() noexcept
 {
+    // Clear the thread-local cache for the current thread.
+    // While this only clears it for the thread destroying the pool, address reuse 
+    // is most dangerous on the main thread where pools are typically created/destroyed.
+    using PoolCache = ThreadLocalCache<RHIVkCommandBufferPool, VkCommandPool, struct PoolTag>;
+    PoolCache::Clear();
+
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
    
     for (auto handle : m_OwnedHandles)
@@ -171,7 +178,15 @@ VkCommandPool ArisenEngine::RHI::RHIVkCommandBufferPool::AcquireThreadCommandPoo
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    poolInfo.queueFamilyIndex = vkDevice->GetGraphicsFamilyIndex();
+    
+    if (m_QueueType == RHIQueueType::Compute)
+    {
+        poolInfo.queueFamilyIndex = vkDevice->GetComputeFamilyIndex();
+    }
+    else
+    {
+        poolInfo.queueFamilyIndex = vkDevice->GetGraphicsFamilyIndex();
+    }
 
     if (vkCreateCommandPool(m_VkDevice, &poolInfo, nullptr, &pool) != VK_SUCCESS)
     {
