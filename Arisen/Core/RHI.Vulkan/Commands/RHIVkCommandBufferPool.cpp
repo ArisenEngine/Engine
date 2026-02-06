@@ -38,43 +38,13 @@ ArisenEngine::RHI::RHIVkCommandBufferPool::~RHIVkCommandBufferPool() noexcept
     }
 }
 
-ArisenEngine::RHI::RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::GetCommandBuffer(UInt32 currentFrameIndex)
+RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::GetCommandBuffer(UInt32 currentFrameIndex, ECommandBufferLevel level)
 {
-    ThreadLocalFreeList* tlsList = nullptr;
-    using FreeListCache = ThreadLocalCache<RHIVkCommandBufferPool, ThreadLocalFreeList*, struct FreeListTag>;
-    
-    if (FreeListCache::Get(this, tlsList) && tlsList)
-    {
-        FlushPendingBuffers(tlsList);
-        if (!tlsList->freeBuffers.empty())
-        {
-            RHICommandBuffer* commandBuffer = tlsList->freeBuffers.back();
-            tlsList->freeBuffers.pop_back();
-            return commandBuffer;
-        }
-    }
-
-    // fallback to locked map or base class
-    {
-        std::lock_guard<std::mutex> lock(m_PoolsMutex);
-        auto& freeList = m_ThreadFreeBuffers[std::this_thread::get_id()];
-        if (!freeList.empty())
-        {
-            RHICommandBuffer* commandBuffer = freeList.back();
-            freeList.pop_back();
-            
-            // update TLS cache for next time
-            if (!tlsList)
-            {
-                tlsList = new ThreadLocalFreeList(); 
-                FreeListCache::Set(this, tlsList);
-            }
-            return commandBuffer;
-        }
-    }
-
-    return CreateCommandBuffer();
+    // The base class RHICommandBufferPool handles the m_FreePrimaryCommandBuffers and m_FreeSecondaryCommandBuffers
+    // which are populated by InternalRecycle.
+    return RHICommandBufferPool::GetCommandBuffer(currentFrameIndex, level);
 }
+
 
 void ArisenEngine::RHI::RHIVkCommandBufferPool::ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBuffer* commandBuffer)
 {
@@ -147,15 +117,15 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::InternalRecycle(RHICommandBuffer
     m_ThreadFreeBuffers[ownerId].emplace_back(commandBuffer);
 }
 
-ArisenEngine::RHI::RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::CreateCommandBuffer()
+ArisenEngine::RHI::RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::CreateCommandBuffer(ECommandBufferLevel level)
 {
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     ASSERT(vkDevice != nullptr);
     
-    RHICommandBufferHandle handle = vkDevice->GetCommandBufferPool()->Allocate([this, vkDevice](RHIVkCommandBufferItem* item)
+    RHICommandBufferHandle handle = vkDevice->GetCommandBufferPool()->Allocate([this, vkDevice, level](RHIVkCommandBufferItem* item)
     {
         *item = RHIVkCommandBufferItem();
-        item->commandBuffer = new RHIVkCommandBuffer(vkDevice, this);
+        item->commandBuffer = new RHIVkCommandBuffer(vkDevice, this, level);
         
         // Register for deferred deletion (of the C++ object)
         struct DeferredCmdBuffer

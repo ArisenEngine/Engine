@@ -1,12 +1,5 @@
 
 
-## 3. Phase 3: Performance & Stability
-
-**Goal**: 提升性能，确保高并发稳定性。
-
-### 3.2 Descriptor 优化
-- [ ] **Update Template**: 使用 `vkUpdateDescriptorSetWithTemplate`
-- [ ] **预分配策略**: 减少每帧重分配开销
 
 ### 3.3 命令录制
 - [ ] **Secondary Command Buffer**: 细粒度多线程录制

@@ -550,32 +550,32 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
 
     // Queue Create Info 
     Containers::Vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    
-    Containers::Set<uint32_t> uniqueQueueFamilies;
-    if (indices.graphicsFamily.has_value()) uniqueQueueFamilies.insert(indices.graphicsFamily.value());
-    if (indices.presentFamily.has_value()) uniqueQueueFamilies.insert(indices.presentFamily.value());
-    if (indices.computeFamily.has_value()) uniqueQueueFamilies.insert(indices.computeFamily.value());
+    Containers::Set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(),
+                                              indices.presentFamily.value()};
+    if (indices.computeFamily.has_value()) {
+        uniqueQueueFamilies.insert(indices.computeFamily.value());
+    }
 
     float queuePriority = 1.0f;
-    for (uint32_t queueFamily : uniqueQueueFamilies)
-    {
+    for (uint32_t queueFamily : uniqueQueueFamilies) {
         VkDeviceQueueCreateInfo queueCreateInfo{};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueCreateInfo.queueFamilyIndex = queueFamily;
-        // If compute family is same as graphics, we still only need 1 queue for now 
-        // OR we could request 2 if they are same family but different indices? 
-        // Usually we just use different family if available.
-        queueCreateInfo.queueCount = 1; 
-        queueCreateInfo.pQueuePriorities = &queuePriority;
+        // If compute family is same as graphics, we still want a separate queue handle if possible
+        queueCreateInfo.queueCount = (queueFamily == indices.graphicsFamily.value() && indices.computeFamily.has_value() && indices.computeFamily.value() == queueFamily) ? 2 : 1;
+        
+        static float priorities[2] = { 1.0f, 1.0f };
+        queueCreateInfo.pQueuePriorities = priorities;
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
     // Set Device Features
-    VkPhysicalDeviceFeatures deviceFeatures{};
-    deviceFeatures.samplerAnisotropy = VK_TRUE;
-    deviceFeatures.geometryShader = VK_TRUE;
-    deviceFeatures.tessellationShader = VK_TRUE;
-    deviceFeatures.fillModeNonSolid = VK_TRUE;
+    VkPhysicalDeviceFeatures features{};
+    features.samplerAnisotropy = VK_TRUE;
+    features.geometryShader = VK_TRUE;
+    features.tessellationShader = VK_TRUE;
+    features.fillModeNonSolid = VK_TRUE;
+    features.multiDrawIndirect = VK_TRUE; // Enabled Multi-Draw Indirect
 
     VkPhysicalDeviceVulkan12Features vulkan12Features{};
     vulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
@@ -613,7 +613,7 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 
-    createInfo.pEnabledFeatures = &deviceFeatures;
+    createInfo.pEnabledFeatures = &features;
     createInfo.pNext = &vulkan12Features;
 
     createInfo.enabledExtensionCount = static_cast<uint32_t>(VkDeviceExtensionNames.size());
@@ -651,7 +651,8 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     VkQueue computeQueue = VK_NULL_HANDLE;
     if (indices.computeFamily.has_value())
     {
-        vkGetDeviceQueue(device, indices.computeFamily.value(), 0, &computeQueue);
+        uint32_t queueIndex = (indices.computeFamily.value() == indices.graphicsFamily.value()) ? 1 : 0;
+        vkGetDeviceQueue(device, indices.computeFamily.value(), queueIndex, &computeQueue);
     }
 
     VkPhysicalDeviceMemoryProperties memoryProperties;

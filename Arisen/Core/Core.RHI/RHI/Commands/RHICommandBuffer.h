@@ -9,6 +9,7 @@
 #include "RHI/Enums/Pipeline/EPipelineStageFlag.h"
 #include "RHI/Enums/Subpass/EDependencyFlag.h"
 #include "RHI/Enums/Subpass/ESubpassContents.h"
+#include "RHI/Enums/Pipeline/ECommandBufferLevel.h"
 #include "RHI/Commands/RHIBufferImageCopy.h"
 #include "RHI/Sync/RHIBufferMemoryBarrier.h"
 #include "RHI/Sync/RHIImageMemoryBarrier.h"
@@ -94,6 +95,16 @@ namespace ArisenEngine::RHI
             UInt32 height;
         } RHIRenderArea;
     };
+
+    struct RHICommandBufferInheritanceInfo
+    {
+        RHIRenderPassHandle renderPass;
+        UInt32 subpass;
+        RHIFrameBufferHandle frameBuffer;
+        bool occlusionQueryEnable = false;
+        UInt32 occlusionQueryFlags = 0;
+        UInt32 pipelineStatistics;
+    };
     
     
     class RHICommandBuffer
@@ -111,8 +122,8 @@ namespace ArisenEngine::RHI
         
         NO_COPY_NO_MOVE_NO_DEFAULT(RHICommandBuffer)
 
-        RHICommandBuffer(RHIDevice* device, RHICommandBufferPool* pool):
-        m_CommandBufferPool(pool), m_Device(device), m_State(ECommandBufferState::Initial)
+        RHICommandBuffer(RHIDevice* device, RHICommandBufferPool* pool, ECommandBufferLevel level = COMMAND_BUFFER_LEVEL_PRIMARY):
+        m_CommandBufferPool(pool), m_Device(device), m_State(ECommandBufferState::Initial), m_Level(level)
         {
             
         }
@@ -143,8 +154,10 @@ namespace ArisenEngine::RHI
         virtual void EndRendering() = 0;
         
         virtual void Begin() = 0;
-        virtual void Begin(UInt32 frameIndex, UInt32 commandBufferUsage = 0) = 0;
+        virtual void Begin(UInt32 frameIndex, UInt32 commandBufferUsage = 0, const RHICommandBufferInheritanceInfo* pInheritanceInfo = nullptr) = 0;
         virtual void End() = 0;
+
+        virtual void ExecuteCommands(Containers::Vector<RHICommandBuffer*>&& secondaryBuffers) = 0;
         
         virtual void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height, Float32 minDepth, Float32 maxDepth) = 0;
         virtual void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height) = 0;
@@ -167,6 +180,8 @@ namespace ArisenEngine::RHI
         virtual void BindPipeline(RHIPipelineHandle pipeline) = 0;
         virtual void Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding) = 0;
         virtual void DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 firstIndex, UInt32 vertexOffset, UInt32 firstInstance,  UInt32 firstBinding) = 0;
+        virtual void DrawIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 drawCount, UInt32 stride) = 0;
+        virtual void DrawIndexedIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 drawCount, UInt32 stride) = 0;
         virtual void DrawMeshTasks(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ) = 0;
         virtual void Dispatch(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ) = 0;
         virtual void BindVertexBuffers(RHIBufferHandle buffer, UInt64 offset) = 0;
@@ -249,6 +264,8 @@ namespace ArisenEngine::RHI
         RHIDevice* GetDevice() const { return m_Device; }
         ECommandBufferState GetState() const { return m_State; }
         void SetState(ECommandBufferState state) { m_State = state; }
+    public:
+        ECommandBufferLevel GetLevel() const { return m_Level; }
         
         void SetCurrentFrameIndex(UInt32 index) { m_CurrentFrameIndex = index; }
 
@@ -259,6 +276,7 @@ namespace ArisenEngine::RHI
         RHICommandBufferPool* m_CommandBufferPool;
         RHIDevice* m_Device;
         ECommandBufferState m_State;
+        ECommandBufferLevel m_Level;
         RHIGpuTicket m_LatestSubmitTicket { 0 };
         UInt32 m_CurrentFrameIndex { 0 };
     };

@@ -24,14 +24,16 @@ class RHIVkCommandBuffer final : public RHICommandBuffer {
 public:
   NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkCommandBuffer)
   ~RHIVkCommandBuffer() noexcept override;
-  RHIVkCommandBuffer(RHIVkDevice *device, RHIVkCommandBufferPool *pool);
+  RHIVkCommandBuffer(RHIVkDevice *device, RHIVkCommandBufferPool *pool, ECommandBufferLevel level = COMMAND_BUFFER_LEVEL_PRIMARY);
 
 
   void BeginRenderPass(RenderPassBeginDesc &&desc) override;
   void EndRenderPass() override;
   void Begin() override;
-  void Begin(UInt32 frameIndex, UInt32 commandBufferUsage = 0) override;
+  void Begin(UInt32 frameIndex, UInt32 commandBufferUsage = 0, const RHICommandBufferInheritanceInfo* pInheritanceInfo = nullptr) override;
   void End() override;
+
+  void ExecuteCommands(Containers::Vector<RHICommandBuffer*>&& secondaryBuffers) override;
 
   void BeginRendering(const RHIRenderingInfo &info) override;
   void EndRendering() override;
@@ -62,6 +64,8 @@ public:
   void DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 firstIndex,
                    UInt32 vertexOffset, UInt32 firstInstance,
                    UInt32 firstBinding) override;
+  void DrawIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 drawCount, UInt32 stride) override;
+  void DrawIndexedIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 drawCount, UInt32 stride) override;
   void Dispatch(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ) override;
   void DrawMeshTasks(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ) override;
   void BindVertexBuffers(RHIBufferHandle buffers, UInt64 offset) override;
@@ -139,6 +143,7 @@ private:
 
   // Cached vectors for other commands
   Containers::Vector<VkDescriptorSet> m_VkDescriptorSets{};
+  Containers::Vector<VkCommandBuffer> m_VkSecondaryCommandBuffers{};
   Containers::Vector<VkBufferImageCopy> m_VkBufferImageCopies{};
 
   RHIPipeline *m_CurrentPipeline{nullptr};
