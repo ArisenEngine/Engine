@@ -10,10 +10,12 @@
 #include "RHI/Core/RHIInspector.h"
 
 namespace ArisenEngine::RHI
-
 {
     class RHISampler;
     struct RHISamplerDesc;
+    struct RHIAccelerationStructureBuildGeometryInfo;
+    struct RHIAccelerationStructureBuildSizesInfo;
+    enum class ERHIAccelerationStructureType;
 }
 
 namespace ArisenEngine::RHI
@@ -138,8 +140,14 @@ namespace ArisenEngine::RHI
         virtual void ReleaseRenderPass(RHIRenderPassHandle handle) = 0;
         virtual void ReleaseFrameBuffer(RHIFrameBufferHandle handle) = 0;
         virtual void ReleasePipeline(RHIPipelineHandle handle) = 0;
+        virtual void ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle) = 0;
         
     public:
+        virtual void GetAccelerationStructureBuildSizes(const RHIAccelerationStructureBuildGeometryInfo& buildInfo, const UInt32* pMaxPrimitiveCounts, RHIAccelerationStructureBuildSizesInfo* pSizeInfo) = 0;
+        virtual bool AllocAccelerationStructure(RHIAccelerationStructureHandle handle, ERHIAccelerationStructureType type, UInt64 size, RHIBufferHandle buffer, UInt64 offset) = 0;
+        virtual UInt64 GetAccelerationStructureDeviceAddress(RHIAccelerationStructureHandle handle) = 0;
+        virtual void GetRayTracingShaderGroupHandles(RHIPipelineHandle pipeline, UInt32 firstGroup, UInt32 groupCount, UInt64 size, void* pData) = 0;
+
         virtual bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle, RHIRenderPassHandle renderPassHandle) = 0;
         virtual void WaitFence(RHIFenceHandle handle) = 0;
         virtual void ResetFence(RHIFenceHandle handle) = 0;

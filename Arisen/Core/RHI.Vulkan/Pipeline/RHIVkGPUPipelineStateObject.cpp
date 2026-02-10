@@ -131,6 +131,8 @@ void RHIVkGPUPipelineStateObject::Clear()
     m_ColorAttachmentFormats.clear();
     m_DepthAttachmentFormat = VK_FORMAT_UNDEFINED;
     m_StencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+    m_RayTracingShaderGroups.clear();
+    m_MaxRecursionDepth = 1;
     SetDynamicStateMask(0);
 }
 
@@ -565,6 +567,19 @@ void RHIVkGPUPipelineStateObject::BuildDescriptorUpdateTemplate(UInt32 layoutInd
     {
         LOG_ERROR("[RHIVkGPUPipelineStateObject::BuildDescriptorUpdateTemplate] Failed to create descriptor update template for set " + std::to_string(layoutIndex));
     }
+}
+
+void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddRayTracingShaderGroup(const RHIRayTracingShaderGroup& group)
+{
+    VkRayTracingShaderGroupCreateInfoKHR vkGroup{};
+    vkGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+    vkGroup.type = (VkRayTracingShaderGroupTypeKHR)group.type;
+    vkGroup.generalShader = group.generalShaderIndex;
+    vkGroup.closestHitShader = group.closestHitShaderIndex;
+    vkGroup.anyHitShader = group.anyHitShaderIndex;
+    vkGroup.intersectionShader = group.intersectionShaderIndex;
+    
+    m_RayTracingShaderGroups.emplace_back(vkGroup);
 }
 
 } // namespace ArisenEngine::RHI

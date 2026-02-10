@@ -18,6 +18,7 @@ namespace ArisenEngine::RHI
         
         virtual void AllocGraphicPipeline(UInt32 frameIndex, RHISubPass* subPass) = 0;
         virtual void AllocComputePipeline(UInt32 frameIndex) = 0;
+        virtual void AllocRayTracingPipeline(UInt32 frameIndex) = 0;
         virtual const EPipelineBindPoint GetBindPoint() const = 0;
         
         virtual void BindPipelineStateObject(RHIPipelineState* pso) = 0;

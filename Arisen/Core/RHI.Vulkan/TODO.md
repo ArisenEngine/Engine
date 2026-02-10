@@ -1,18 +1,4 @@
 
-
-- [ ] **RHI Inspector**: 查看 Handle 计数和内存使用
-
----
-
-## 5. Phase 5: Advanced Features (长期计划)
-
-**Goal**: 现代 GPU 高级特性支持。
-
-### 5.1 已完成
-- [x] Tessellation Shaders
-- [x] Geometry Shaders
-- [x] Mesh Shaders (`VK_EXT_mesh_shader`)
-
 ### 5.2 待实现
 - [ ] **Ray Tracing**
     - [ ] 加速结构 (BLAS/TLAS) 构建

@@ -422,6 +422,31 @@ const VkBufferView* ArisenEngine::RHI::RHIVkDescriptorPool::GetBufferViews(Arise
     return results.data();
 }
 
+const VkAccelerationStructureKHR* ArisenEngine::RHI::RHIVkDescriptorPool::GetAccelerationStructureInfos(ArisenEngine::RHI::RHIVkDevice* device, const ArisenEngine::RHI::RHIDescriptorUpdateInfo& updateInfo,
+    ArisenEngine::Containers::Vector<VkAccelerationStructureKHR>& results)
+{
+    if (updateInfo.accelerationStructureHandles.size() <= 0)
+    {
+        return nullptr;
+    }
+    
+    results.clear();
+    for (int i = 0; i < updateInfo.accelerationStructureHandles.size(); ++i)
+    {
+        auto handle = updateInfo.accelerationStructureHandles[i];
+        auto* item = device->GetAccelerationStructurePool()->Get(handle);
+        if (item)
+        {
+            results.emplace_back(item->accelerationStructure);
+        }
+        else
+        {
+            results.emplace_back(VK_NULL_HANDLE);
+        }
+    }
+    return results.data();
+}
+
 void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId, RHIPipelineState* pso)
 {
     if (poolId >= m_DescriptorSetsHolder.size())
@@ -442,18 +467,14 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId,
     Containers::Vector<Containers::Vector<VkDescriptorImageInfo>> imageInfos;
     Containers::Vector<Containers::Vector<VkDescriptorBufferInfo>> bufferInfos;
     Containers::Vector<Containers::Vector<VkBufferView>> bufferViews;
+    Containers::Vector<Containers::Vector<VkAccelerationStructureKHR>> asInfos;
+    Containers::Vector<VkWriteDescriptorSetAccelerationStructureKHR> asWrites;
 
     RHIVkGPUPipelineStateObject* vkPipelineStateObject = static_cast<RHIVkGPUPipelineStateObject*>(pso);
 
-    // NOTE: keep logging minimal; this runs per-frame in some tests.
-    
     for (UInt32 i = 0; i < descriptorSets.size(); ++i)
     {
         auto descriptorSet = descriptorSets[i].get();
-        if (descriptorSet == nullptr)
-        {
-            LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSets] descriptorSet is null for poolId: " + std::to_string(poolId));
-        }
         VkDescriptorSet dstSet = static_cast<VkDescriptorSet>(descriptorSet->GetHandle());
         UInt32 layoutIndex = descriptorSet->GetLayoutIndex();
         const auto& updateInfosForAllBindings = vkPipelineStateObject->GetDescriptorUpdateInfos(layoutIndex);
@@ -465,34 +486,33 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId,
                 imageInfos.emplace_back();
                 bufferInfos.emplace_back();
                 bufferViews.emplace_back();
+                asInfos.emplace_back();
                 
                 const auto& updateInfo = updateInfoPair.second;
                 auto pImageInfos = GetImageInfos(m_pDevice, updateInfo, imageInfos.back());
                 auto pBufferInfos = GetBufferInfos(m_pDevice, updateInfo, bufferInfos.back());
                 auto pBufferViews = GetBufferViews(m_pDevice, updateInfo, bufferViews.back());
+                auto pAsInfos = GetAccelerationStructureInfos(m_pDevice, updateInfo, asInfos.back());
 
-                // Validate we have backing arrays for the descriptor type to avoid UB inside vkUpdateDescriptorSets.
                 const auto type = updateInfo.type;
-                if (type == DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
-                    type == DESCRIPTOR_TYPE_STORAGE_BUFFER ||
-                    type == DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ||
-                    type == DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
-                {
-                    if (pBufferInfos == nullptr || bufferInfos.back().size() != updateInfo.descriptorCount)
-                    {
-                        LOG_FATAL_AND_THROW("[RHIVkDescriptorPool::UpdateDescriptorSets] buffer descriptor missing infos: binding=" +
-                            std::to_string(updateInfo.binding) + ", count=" + std::to_string(updateInfo.descriptorCount) +
-                            ", provided=" + std::to_string(bufferInfos.back().size()));
-                    }
-                }
                 auto writeDescriptorSet = WriteDescriptorSet(
                    dstSet, updateInfo.binding, 0, updateInfo.descriptorCount, 
                    static_cast<VkDescriptorType>(updateInfo.type),
-                   // TODO: add type validation to figure out whether it can be nullptr
                    pImageInfos,
                    pBufferInfos,
                    pBufferViews);
                 
+                if (type == DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+                {
+                    VkWriteDescriptorSetAccelerationStructureKHR asWrite{};
+                    asWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+                    asWrite.accelerationStructureCount = updateInfo.descriptorCount;
+                    asWrite.pAccelerationStructures = pAsInfos;
+                    asWrites.push_back(asWrite);
+                    // Use index to point to the stable vector storage
+                    writeDescriptorSet.pNext = &asWrites.back();
+                }
+
                 descriptorWrites.push_back(writeDescriptorSet);
             }
         }
@@ -501,7 +521,6 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId,
     vkUpdateDescriptorSets(static_cast<VkDevice>(m_pDevice->GetHandle()),
         descriptorWrites.size(), descriptorWrites.data(),
         0, nullptr);
-    
 }
 
 void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSet(UInt32 poolId, UInt32 setIndex,

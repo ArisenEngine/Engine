@@ -27,7 +27,8 @@ namespace ArisenEngine::RHI
         // DescriptorWrite 
         Containers::Vector<RHIDescriptorImageInfo>          imageInfo;
         Containers::Vector<RHIBufferHandle>                 bufferHandles;
-        Containers::Vector<RHIImageViewHandle>              texelBufferViews; // Assuming texel buffers are treated as image views or similar handle
+        Containers::Vector<RHIImageViewHandle>              texelBufferViews; 
+        Containers::Vector<RHIAccelerationStructureHandle>  accelerationStructureHandles;
         
     } RHIDescriptorUpdateInfo;
 
@@ -37,5 +38,6 @@ namespace ArisenEngine::RHI
         UInt32 binding;
         const Containers::Vector<RHIBufferHandle>* bufferHandles;
         const Containers::Vector<RHIDescriptorImageInfo>* imageInfos;
+        const Containers::Vector<RHIAccelerationStructureHandle>* accelerationStructureHandles;
     };
 }

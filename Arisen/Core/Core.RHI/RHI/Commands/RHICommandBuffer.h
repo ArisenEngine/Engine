@@ -26,6 +26,26 @@ namespace ArisenEngine::RHI
     class RHIDescriptorSet;
     class RHIFence;
     class RHIDescriptorPool;
+    struct RHIAccelerationStructureBuildGeometryInfo;
+    struct RHIAccelerationStructureBuildRangeInfo;
+    
+    struct RHIDeviceAddressRegion
+    {
+        UInt64 deviceAddress{ 0 };
+        UInt64 stride{ 0 };
+        UInt64 size{ 0 };
+    };
+
+    struct RHITraceRaysDescriptor
+    {
+        RHIDeviceAddressRegion raygenShaderRecord;
+        RHIDeviceAddressRegion missShaderTable;
+        RHIDeviceAddressRegion hitShaderTable;
+        RHIDeviceAddressRegion callableShaderTable;
+        UInt32 width{ 1 };
+        UInt32 height{ 1 };
+        UInt32 depth{ 1 };
+    };
 }
 
 namespace ArisenEngine::RHI
@@ -217,6 +237,10 @@ namespace ArisenEngine::RHI
         virtual void TransitionImageLayout(RHIImageHandle image, EImageLayout oldLayout, EImageLayout targetLayout) = 0;
 
         virtual void GenerateMipmaps(RHIImageHandle image) = 0;
+        
+        // Ray Tracing
+        virtual void BuildAccelerationStructures(UInt32 infoCount, const RHIAccelerationStructureBuildGeometryInfo* pInfos, const RHIAccelerationStructureBuildRangeInfo* const* ppBuildRangeInfos) = 0;
+        virtual void TraceRays(const RHITraceRaysDescriptor& desc) = 0;
 
         // Debug Markers
         virtual void BeginDebugLabel(const char* label, const Float32 color[4]) = 0;

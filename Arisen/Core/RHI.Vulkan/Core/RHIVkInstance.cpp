@@ -654,6 +654,29 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
         meshShaderFeatures.taskShader = VK_TRUE;
         vulkan13Features.pNext = &meshShaderFeatures;
     }
+
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR asFeatures{};
+    asFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+    asFeatures.accelerationStructure = VK_TRUE;
+
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeatures{};
+    rtPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+    rtPipelineFeatures.rayTracingPipeline = VK_TRUE;
+
+    VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures{};
+    rayQueryFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+    rayQueryFeatures.rayQuery = VK_TRUE;
+
+    // Chain RT features
+    if (meshShaderSupported) {
+        meshShaderFeatures.pNext = &asFeatures;
+    } else {
+        vulkan13Features.pNext = &asFeatures;
+    }
+    asFeatures.pNext = &rtPipelineFeatures;
+    rtPipelineFeatures.pNext = &rayQueryFeatures;
+
+    vulkan12Features.bufferDeviceAddress = VK_TRUE; // Required for AS
     
     // Device Create Info
     VkDeviceCreateInfo createInfo{};

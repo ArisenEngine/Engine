@@ -180,6 +180,18 @@ struct RHIVkCommandBufferItem {
     RHIResourceHandle registryHandle;
 };
 
+/**
+ * @brief Internal Vulkan implementation data for an Acceleration Structure.
+ */
+struct RHIVkAccelerationStructurePoolItem {
+    VkAccelerationStructureKHR accelerationStructure{VK_NULL_HANDLE};
+    RHIBufferHandle bufferHandle; // The buffer backing this AS
+    UInt64 deviceAddress{0};
+    UInt64 size{0};
+    String name{"Anonymous"};
+    RHIResourceHandle registryHandle;
+};
+
 } // namespace ArisenEngine::RHI
 
 

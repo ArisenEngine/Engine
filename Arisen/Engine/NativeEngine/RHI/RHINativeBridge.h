@@ -67,6 +67,12 @@ namespace ArisenEngine::RHI
         {
             return device->GetFrameBufferPool()->Get(handle);
         }
+
+        // Acceleration Structure
+        static RHIVkAccelerationStructurePoolItem* GetAccelerationStructureItem(RHIVkDevice* device, RHIAccelerationStructureHandle handle)
+        {
+            return device->GetAccelerationStructurePool()->Get(handle);
+        }
     };
 }
 
