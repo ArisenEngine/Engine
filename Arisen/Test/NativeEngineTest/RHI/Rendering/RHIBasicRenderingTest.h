@@ -282,25 +282,10 @@ namespace ArisenEngine::Testing
             if (colorBuffer)
             {
                 auto colorView = RHI_SwapChain_GetImageView(m_SwapChain, currentIndex);
-                RHI::RHIImageHandle colorImage = *reinterpret_cast<RHI::RHIImageHandle*>(&colorBuffer);
+
 
                 // Transition swapchain image: UNDEFINED -> COLOR_ATTACHMENT_OPTIMAL
-                {
-                    RHI::RHIImageMemoryBarrier barrier = {};
-                    barrier.srcAccess = RHI::ACCESS_NONE;
-                    barrier.dstAccess = RHI::ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-                    barrier.oldLayout = RHI::IMAGE_LAYOUT_UNDEFINED;
-                    barrier.newLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                    barrier.srcQueueFamilyIndex = 0xFFFFFFFF;
-                    barrier.dstQueueFamilyIndex = 0xFFFFFFFF;
-                    barrier.image = colorImage;
-                    barrier.subresourceRange = { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-                    barrier.srcStageMask = RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                    barrier.dstStageMask = RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-                    Containers::Vector<RHI::RHIImageMemoryBarrier> barriers = { barrier };
-                    RHI_Cmd_PipelineBarrier_Image(cmd, RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, &barriers);
-                }
+                RHI_Cmd_TransitionImageLayout(cmd, colorBuffer, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
                 RHI::RHIRenderingAttachmentInfo colorAttachment {};
                 colorAttachment.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&m_MSAAColorView);
@@ -357,22 +342,7 @@ namespace ArisenEngine::Testing
                 RHI_Cmd_EndRendering(cmd);
 
                 // Transition swapchain image: COLOR_ATTACHMENT_OPTIMAL -> PRESENT_SRC_KHR
-                {
-                    RHI::RHIImageMemoryBarrier barrier = {};
-                    barrier.srcAccess = RHI::ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-                    barrier.dstAccess = RHI::ACCESS_NONE;
-                    barrier.oldLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                    barrier.newLayout = RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR;
-                    barrier.srcQueueFamilyIndex = 0xFFFFFFFF;
-                    barrier.dstQueueFamilyIndex = 0xFFFFFFFF;
-                    barrier.image = colorImage;
-                    barrier.subresourceRange = { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-                    barrier.srcStageMask = RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                    barrier.dstStageMask = RHI::PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-
-                    Containers::Vector<RHI::RHIImageMemoryBarrier> barriers = { barrier };
-                    RHI_Cmd_PipelineBarrier_Image(cmd, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, RHI::PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, &barriers);
-                }
+                RHI_Cmd_TransitionImageLayout(cmd, colorBuffer, RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR);
             }
 
             RHI_Cmd_End(cmd);

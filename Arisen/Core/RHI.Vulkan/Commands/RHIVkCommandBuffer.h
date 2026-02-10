@@ -112,6 +112,9 @@ public:
                        const RHIBufferMemoryBarrier *pBufferMemoryBarriers,
                        UInt32 bufferMemoryBarrierCount) override;
 
+  void TransitionImageLayout(RHIImageHandle image, EImageLayout targetLayout) override;
+  void TransitionImageLayout(RHIImageHandle image, EImageLayout oldLayout, EImageLayout targetLayout) override;
+
   void GenerateMipmaps(RHIImageHandle image) override;
 
   // Debug Markers

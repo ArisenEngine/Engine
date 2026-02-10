@@ -506,6 +506,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImage(RHIImageHandle handle, RHIImageD
     image->width = desc.width;
     image->height = desc.height;
     image->mipLevels = desc.mipLevels;
+    image->currentLayout = static_cast<VkImageLayout>(desc.imageLayout);
     image->needDestroy = true;
 
     // Register for deferred deletion using a shared state object

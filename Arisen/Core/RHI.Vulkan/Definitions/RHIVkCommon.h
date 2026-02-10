@@ -3,6 +3,10 @@
 #include "./Base/FoundationMinimal.h"
 #include <vulkan/vulkan_core.h>
 
+#ifdef _DEBUG
+#define RHI_VALIDATION
+#endif
+
 #ifdef RHIVULKAN_EXPORTS
 
 #define RHI_VULKAN_DLL   __declspec( dllexport )

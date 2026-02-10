@@ -592,6 +592,70 @@ void RHIVkCommandBuffer::CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHa
     CaptureResource(dst);
 }
 
+void RHIVkCommandBuffer::TransitionImageLayout(RHIImageHandle image, EImageLayout targetLayout)
+{
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
+    auto* img = vkDevice->GetImagePool()->Get(image);
+    if (!img) return;
+
+    TransitionImageLayout(image, static_cast<EImageLayout>(img->currentLayout), targetLayout);
+}
+
+void RHIVkCommandBuffer::TransitionImageLayout(RHIImageHandle image, EImageLayout oldLayout, EImageLayout targetLayout)
+{
+    if (oldLayout == targetLayout) return;
+
+    RHIImageMemoryBarrier barrier{};
+    barrier.image = image;
+    barrier.oldLayout = oldLayout;
+    barrier.newLayout = targetLayout;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.subresourceRange = { IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }; // Default to color, 1 level, 1 layer
+
+    // Automatic inference of stages and access masks
+    barrier.srcStageMask = PIPELINE_STAGE_ALL_COMMANDS_BIT;
+    barrier.dstStageMask = PIPELINE_STAGE_ALL_COMMANDS_BIT;
+    barrier.srcAccess = static_cast<EAccessFlag>(ACCESS_MEMORY_READ_BIT | ACCESS_MEMORY_WRITE_BIT);
+    barrier.dstAccess = static_cast<EAccessFlag>(ACCESS_MEMORY_READ_BIT | ACCESS_MEMORY_WRITE_BIT);
+
+    // Common transition refinements
+    if (oldLayout == IMAGE_LAYOUT_UNDEFINED)
+    {
+        barrier.srcStageMask = PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        barrier.srcAccess = ACCESS_NONE;
+    }
+
+    if (targetLayout == IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+    {
+        barrier.dstStageMask = PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        barrier.dstAccess = ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    }
+    else if (targetLayout == IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+    {
+        barrier.dstStageMask = static_cast<EPipelineStageFlag>(PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+        barrier.dstAccess = ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        barrier.subresourceRange.aspectMask = IMAGE_ASPECT_DEPTH_BIT;
+    }
+    else if (targetLayout == IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    {
+        barrier.dstStageMask = PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        barrier.dstAccess = ACCESS_SHADER_READ_BIT;
+    }
+    else if (targetLayout == IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+    {
+        barrier.dstStageMask = PIPELINE_STAGE_TRANSFER_BIT;
+        barrier.dstAccess = ACCESS_TRANSFER_WRITE_BIT;
+    }
+    else if (targetLayout == IMAGE_LAYOUT_PRESENT_SRC_KHR)
+    {
+        barrier.dstStageMask = PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        barrier.dstAccess = ACCESS_NONE;
+    }
+
+    PipelineBarrier(barrier.srcStageMask, barrier.dstStageMask, 0, &barrier, 1);
+}
+
 void RHIVkCommandBuffer::PipelineBarrier(
     EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
     const RHIMemoryBarrier* pMemoryBarriers, UInt32 memoryBarrierCount,
@@ -644,6 +708,14 @@ void RHIVkCommandBuffer::PipelineBarrier(
         auto* img = vkDevice->GetImagePool()->Get(barrier.image);
         if (!img) continue;
 
+#ifdef RHI_VALIDATION
+        if (barrier.oldLayout != IMAGE_LAYOUT_UNDEFINED && img->currentLayout != static_cast<VkImageLayout>(barrier.oldLayout))
+        {
+            LOG_WARNF("[RHIVkCommandBuffer::PipelineBarrier]: Layout mismatch for image! Tracked: {0}, Provided OldLayout: {1}", 
+                (int)img->currentLayout, (int)barrier.oldLayout);
+        }
+#endif
+
         m_VkImageMemoryBarriers.emplace_back(ImageMemoryBarrier2(
             MapPipelineStageFlags2(barrier.srcStageMask != PIPELINE_STAGE_NONE ? barrier.srcStageMask : srcStage),
             MapAccessFlags2(barrier.srcAccess),
@@ -652,6 +724,9 @@ void RHIVkCommandBuffer::PipelineBarrier(
             barrier.srcQueueFamilyIndex, barrier.dstQueueFamilyIndex,
             barrier.oldLayout, barrier.newLayout, img->image,
             barrier.subresourceRange));
+
+        // Update tracked layout
+        img->currentLayout = static_cast<VkImageLayout>(barrier.newLayout);
 
         CaptureResource(barrier.image);
     }
@@ -839,6 +914,9 @@ void RHIVkCommandBuffer::GenerateMipmaps(RHIImageHandle image) {
       barrier.subresourceRange = {IMAGE_ASPECT_COLOR_BIT, i - 1, 1, 0, 1};
       barrier.srcStageMask = PIPELINE_STAGE_TRANSFER_BIT;
       barrier.dstStageMask = PIPELINE_STAGE_TRANSFER_BIT;
+      #ifdef RHI_VALIDATION
+      img->currentLayout = static_cast<VkImageLayout>(barrier.oldLayout);
+      #endif
       PipelineBarrier(PIPELINE_STAGE_TRANSFER_BIT, PIPELINE_STAGE_TRANSFER_BIT, 0, &barrier, 1);
     }
 
@@ -886,6 +964,9 @@ void RHIVkCommandBuffer::GenerateMipmaps(RHIImageHandle image) {
       barrier.subresourceRange = {IMAGE_ASPECT_COLOR_BIT, i - 1, 1, 0, 1};
       barrier.srcStageMask = PIPELINE_STAGE_TRANSFER_BIT;
       barrier.dstStageMask = PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+      #ifdef RHI_VALIDATION
+      img->currentLayout = static_cast<VkImageLayout>(barrier.oldLayout);
+      #endif
       PipelineBarrier(PIPELINE_STAGE_TRANSFER_BIT, PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, &barrier, 1);
     }
 
@@ -904,6 +985,9 @@ void RHIVkCommandBuffer::GenerateMipmaps(RHIImageHandle image) {
       barrier.subresourceRange = {IMAGE_ASPECT_COLOR_BIT, mipLevels - 1, 1, 0, 1};
       barrier.srcStageMask = PIPELINE_STAGE_TRANSFER_BIT;
       barrier.dstStageMask = PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+      #ifdef RHI_VALIDATION
+      img->currentLayout = static_cast<VkImageLayout>(barrier.oldLayout);
+      #endif
       PipelineBarrier(PIPELINE_STAGE_TRANSFER_BIT, PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, &barrier, 1);
   }
   CaptureResource(image);

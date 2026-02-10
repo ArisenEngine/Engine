@@ -213,6 +213,9 @@ namespace ArisenEngine::RHI
         virtual void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
             const RHIBufferMemoryBarrier* pBufferMemoryBarriers, UInt32 bufferMemoryBarrierCount) = 0;
 
+        virtual void TransitionImageLayout(RHIImageHandle image, EImageLayout targetLayout) = 0;
+        virtual void TransitionImageLayout(RHIImageHandle image, EImageLayout oldLayout, EImageLayout targetLayout) = 0;
+
         virtual void GenerateMipmaps(RHIImageHandle image) = 0;
 
         // Debug Markers

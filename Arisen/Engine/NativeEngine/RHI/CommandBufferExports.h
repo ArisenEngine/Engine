@@ -41,6 +41,8 @@ extern "C" ENGINE_DLL void RHI_Cmd_PipelineBarrier_Image(RHI_CommandBufferHandle
 extern "C" ENGINE_DLL void RHI_Cmd_PipelineBarrier_Buffer(RHI_CommandBufferHandle cmd, unsigned int srcStage, unsigned int dstStage, unsigned int dependency, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIBufferMemoryBarrier>* bufferBarriers);
 extern "C" ENGINE_DLL void RHI_Cmd_BatchPipelineBarrier(RHI_CommandBufferHandle cmd, unsigned int srcStage, unsigned int dstStage, unsigned int dependency, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIMemoryBarrier>* memoryBarriers, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIImageMemoryBarrier>* imageBarriers, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIBufferMemoryBarrier>* bufferBarriers);
 extern "C" ENGINE_DLL void RHI_Cmd_GenerateMipmaps(RHI_CommandBufferHandle cmd, RHI_ImageHandle image);
+extern "C" ENGINE_DLL void RHI_Cmd_TransitionImageLayout(RHI_CommandBufferHandle cmd, RHI_ImageHandle image, ArisenEngine::RHI::EImageLayout targetLayout);
+extern "C" ENGINE_DLL void RHI_Cmd_TransitionImageLayout_Full(RHI_CommandBufferHandle cmd, RHI_ImageHandle image, ArisenEngine::RHI::EImageLayout oldLayout, ArisenEngine::RHI::EImageLayout targetLayout);
 extern "C" ENGINE_DLL void RHI_Cmd_BeginRendering(RHI_CommandBufferHandle cmd, ArisenEngine::RHI::RHIRenderingInfo* info);
 extern "C" ENGINE_DLL void RHI_Cmd_EndRendering(RHI_CommandBufferHandle cmd);
 
