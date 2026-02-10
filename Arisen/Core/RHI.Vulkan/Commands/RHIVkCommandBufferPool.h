@@ -25,10 +25,18 @@ namespace ArisenEngine::RHI
     class RHIVkCommandBufferPool final : public RHICommandBufferPool
     {
     private:
-        struct ThreadLocalFreeList {
-             Containers::Vector<RHICommandBuffer*> freeBuffers;
+        struct ThreadSlot {
+             // Tier 1: Thread-local free list
+             Containers::Vector<RHICommandBuffer*> freePrimaryBuffers;
+             Containers::Vector<RHICommandBuffer*> freeSecondaryBuffers;
              Containers::Vector<std::pair<RHIGpuTicket, RHICommandBuffer*>> pendingBuffers;
-             bool registeredCleanup = false;
+             
+             // Tier 2: Mailbox for cross-thread recycling
+             Containers::LockFreeStack<RHICommandBuffer*> mailbox;
+             
+             // Resource ownership
+             VkCommandPool commandPool = VK_NULL_HANDLE;
+             std::atomic<bool> initialized{false};
         };
 
     public:
@@ -41,22 +49,21 @@ namespace ArisenEngine::RHI
         void ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBuffer* commandBuffer) override;
 
     private:
-        void FlushPendingBuffers(ThreadLocalFreeList* tlsList);
-        void ConsumeMailbox(ThreadLocalFreeList* tlsList);
+        void FlushPendingBuffers(ThreadSlot& slot);
+        void ConsumeMailbox(ThreadSlot& slot);
 
         RHICommandBuffer *CreateCommandBuffer(ECommandBufferLevel level) override;
-        VkCommandPool AcquireThreadCommandPool();
+        ThreadSlot& GetCurrentThreadSlot();
 
         void InternalRecycle(RHICommandBuffer* commandBuffer) override;
 
         VkDevice m_VkDevice;
         
-        // Mailboxes for cross-thread recycling. One per thread index.
-        static constexpr size_t MAX_THREADS = 128;
-        Containers::LockFreeStack<RHICommandBuffer*> m_Mailboxes[MAX_THREADS];
+        // Fixed-size slots for bounded resource management
+        static constexpr size_t MAX_THREADS = ThreadRegistry::MAX_THREADS;
+        ThreadSlot m_Slots[MAX_THREADS];
 
-        // Global pools and handles for cleanup
-        Containers::Map<std::thread::id, VkCommandPool> m_ThreadPools;
+        // Global storage for long-term resource management and cleanup
         Containers::Vector<RHICommandBufferHandle> m_OwnedHandles;
         
         RHIQueueType m_QueueType;

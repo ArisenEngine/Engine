@@ -18,12 +18,6 @@ m_QueueType(queueType)
 
 ArisenEngine::RHI::RHIVkCommandBufferPool::~RHIVkCommandBufferPool() noexcept
 {
-    // Clear the thread-local cache for the current thread.
-    // While this only clears it for the thread destroying the pool, address reuse 
-    // is most dangerous on the main thread where pools are typically created/destroyed.
-    using PoolCache = ThreadLocalCache<RHIVkCommandBufferPool, VkCommandPool, struct PoolTag>;
-    PoolCache::Clear();
-
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
    
     for (auto handle : m_OwnedHandles)
@@ -32,35 +26,32 @@ ArisenEngine::RHI::RHIVkCommandBufferPool::~RHIVkCommandBufferPool() noexcept
     }
     m_OwnedHandles.clear();
 
+    for (size_t i = 0; i < MAX_THREADS; ++i)
     {
-        std::lock_guard<std::mutex> lock(m_PoolsMutex);
-        for (auto& [threadId, pool] : m_ThreadPools)
+        auto& slot = m_Slots[i];
+        if (slot.commandPool != VK_NULL_HANDLE)
         {
-            if (pool != VK_NULL_HANDLE)
-            {
-                vkDestroyCommandPool(m_VkDevice, pool, nullptr);
-            }
+            vkDestroyCommandPool(m_VkDevice, slot.commandPool, nullptr);
+            slot.commandPool = VK_NULL_HANDLE;
         }
-        m_ThreadPools.clear();
     }
 }
 
 RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::GetCommandBuffer(UInt32 currentFrameIndex, ECommandBufferLevel level)
 {
-    // Ensure this thread has its TLS set up and mailbox consumed
-    ThreadLocalFreeList* tlsList = nullptr;
-    using FreeListCache = ThreadLocalCache<RHIVkCommandBufferPool, ThreadLocalFreeList*, struct FreeListTag>;
-    
-    if (!FreeListCache::Get(this, tlsList) || !tlsList)
+    auto& slot = GetCurrentThreadSlot();
+    FlushPendingBuffers(slot);
+    ConsumeMailbox(slot);
+
+    // Prefer TLS first
+    auto& freeList = (level == COMMAND_BUFFER_LEVEL_PRIMARY) ? slot.freePrimaryBuffers : slot.freeSecondaryBuffers;
+    if (!freeList.empty())
     {
-        tlsList = new ThreadLocalFreeList(); 
-        FreeListCache::Set(this, tlsList);
+        auto* cmd = freeList.back();
+        freeList.pop_back();
+        return cmd;
     }
 
-    ConsumeMailbox(tlsList);
-
-    // The base class RHICommandBufferPool handles the m_FreePrimaryCommandBuffers and m_FreeSecondaryCommandBuffers
-    // which are populated by InternalRecycle in the global context, but here we prefer TLS first.
     return RHICommandBufferPool::GetCommandBuffer(currentFrameIndex, level);
 }
 
@@ -78,37 +69,28 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::ReleaseCommandBuffer(UInt32 curr
     }
 
     // Otherwise, defer recycling to the current thread's pending list.
-    ThreadLocalFreeList* tlsList = nullptr;
-    using FreeListCache = ThreadLocalCache<RHIVkCommandBufferPool, ThreadLocalFreeList*, struct FreeListTag>;
-    
-    if (!FreeListCache::Get(this, tlsList) || !tlsList)
-    {
-        tlsList = new ThreadLocalFreeList(); 
-        FreeListCache::Set(this, tlsList);
-    }
-    
-    tlsList->pendingBuffers.emplace_back(ticket, commandBuffer);
+    auto& slot = GetCurrentThreadSlot();
+    slot.pendingBuffers.emplace_back(ticket, commandBuffer);
 }
 
-void ArisenEngine::RHI::RHIVkCommandBufferPool::FlushPendingBuffers(ThreadLocalFreeList* tlsList)
+void ArisenEngine::RHI::RHIVkCommandBufferPool::FlushPendingBuffers(ThreadSlot& slot)
 {
-    if (!tlsList) return;
-
     // First, consume any buffers returned from other threads to this thread's mailbox
-    ConsumeMailbox(tlsList);
+    ConsumeMailbox(slot);
 
-    if (tlsList->pendingBuffers.empty()) return;
+    if (slot.pendingBuffers.empty()) return;
 
     auto completed = GetDevice()->GetCompletedSubmitTicket();
     
-    for (auto it = tlsList->pendingBuffers.begin(); it != tlsList->pendingBuffers.end(); )
+    for (auto it = slot.pendingBuffers.begin(); it != slot.pendingBuffers.end(); )
     {
         if (completed >= it->first)
         {
             auto* cmd = it->second;
             cmd->ResetInternal();
-            tlsList->freeBuffers.push_back(cmd);
-            it = tlsList->pendingBuffers.erase(it);
+            auto& freeList = (cmd->GetLevel() == COMMAND_BUFFER_LEVEL_PRIMARY) ? slot.freePrimaryBuffers : slot.freeSecondaryBuffers;
+            freeList.push_back(cmd);
+            it = slot.pendingBuffers.erase(it);
         }
         else
         {
@@ -117,16 +99,16 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::FlushPendingBuffers(ThreadLocalF
     }
 }
 
-void ArisenEngine::RHI::RHIVkCommandBufferPool::ConsumeMailbox(ThreadLocalFreeList* tlsList)
+void ArisenEngine::RHI::RHIVkCommandBufferPool::ConsumeMailbox(ThreadSlot& slot)
 {
-    size_t threadIdx = ThreadRegistry::GetThreadIndex();
     RHICommandBuffer* cmd = nullptr;
-    while (m_Mailboxes[threadIdx].TryPop(cmd))
+    while (slot.mailbox.TryPop(cmd))
     {
         if (cmd)
         {
             cmd->ResetInternal();
-            tlsList->freeBuffers.push_back(cmd);
+            auto& freeList = (cmd->GetLevel() == COMMAND_BUFFER_LEVEL_PRIMARY) ? slot.freePrimaryBuffers : slot.freeSecondaryBuffers;
+            freeList.push_back(cmd);
         }
     }
 }
@@ -136,30 +118,25 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::InternalRecycle(RHICommandBuffer
     commandBuffer->ResetInternal();
 
     auto* vkCmd = static_cast<RHIVkCommandBuffer*>(commandBuffer);
-    std::thread::id ownerId = vkCmd->m_OwnerThreadId;
     size_t ownerThreadIdx = vkCmd->m_OwnerThreadIndex;
 
     // Optimization: If we're on the same thread as the owner, 
     // we can bypass the mailbox and put it straight into TLS free list.
-    if (ownerId == std::this_thread::get_id())
+    if (ownerThreadIdx == ThreadRegistry::GetThreadIndex())
     {
-        ThreadLocalFreeList* tlsList = nullptr;
-        using FreeListCache = ThreadLocalCache<RHIVkCommandBufferPool, ThreadLocalFreeList*, struct FreeListTag>;
-        if (FreeListCache::Get(this, tlsList) && tlsList)
-        {
-            tlsList->freeBuffers.push_back(commandBuffer);
-            return;
-        }
+        auto& slot = m_Slots[ownerThreadIdx];
+        auto& freeList = (commandBuffer->GetLevel() == COMMAND_BUFFER_LEVEL_PRIMARY) ? slot.freePrimaryBuffers : slot.freeSecondaryBuffers;
+        freeList.push_back(commandBuffer);
+        return;
     }
 
     // Cross-thread recycling: Push to the owner's mailbox using lock-free stack
     if (ownerThreadIdx < MAX_THREADS)
     {
-        m_Mailboxes[ownerThreadIdx].Push(commandBuffer);
+        m_Slots[ownerThreadIdx].mailbox.Push(commandBuffer);
     }
     else
     {
-        // Fallback or error: Thread index out of range
         LOG_ERROR("[RHIVkCommandBufferPool::InternalRecycle]: Thread index out of range!");
     }
 }
@@ -192,91 +169,36 @@ ArisenEngine::RHI::RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::
     return rawPtr;
 }
 
-VkCommandPool ArisenEngine::RHI::RHIVkCommandBufferPool::AcquireThreadCommandPool()
+RHIVkCommandBufferPool::ThreadSlot& ArisenEngine::RHI::RHIVkCommandBufferPool::GetCurrentThreadSlot()
 {
-    VkCommandPool pool = VK_NULL_HANDLE;
-    using PoolCache = ThreadLocalCache<RHIVkCommandBufferPool, VkCommandPool, struct PoolTag>;
+    size_t threadIdx = ThreadRegistry::GetThreadIndex();
+    auto& slot = m_Slots[threadIdx];
 
-    if (PoolCache::Get(this, pool))
+    bool expected = false;
+    if (slot.initialized.compare_exchange_strong(expected, true))
     {
-        return pool;
+        auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
+
+        VkCommandPoolCreateInfo poolInfo{};
+        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+        
+        if (m_QueueType == RHIQueueType::Compute)
+        {
+            poolInfo.queueFamilyIndex = vkDevice->GetComputeFamilyIndex();
+        }
+        else
+        {
+            poolInfo.queueFamilyIndex = vkDevice->GetGraphicsFamilyIndex();
+        }
+
+        if (vkCreateCommandPool(m_VkDevice, &poolInfo, nullptr, &slot.commandPool) != VK_SUCCESS)
+        {
+            LOG_FATAL_AND_THROW("[RHIVkCommandBufferPool::GetCurrentThreadSlot]: failed to create command pool for thread!");
+        }
     }
 
-    std::thread::id threadId = std::this_thread::get_id();
-
-    // Setup TLS cleanup registration if not already done for this thread
-    ThreadLocalFreeList* tlsList = nullptr;
-    using FreeListCache = ThreadLocalCache<RHIVkCommandBufferPool, ThreadLocalFreeList*, struct FreeListTag>;
-    if (!FreeListCache::Get(this, tlsList) || !tlsList)
-    {
-        tlsList = new ThreadLocalFreeList();
-        FreeListCache::Set(this, tlsList);
-    }
-
-    if (!tlsList->registeredCleanup)
-    {
-        ThreadRegistry::RegisterOnExit([this, threadId, tlsList]() {
-            // This lambda runs when the thread exits
-            VkCommandPool threadPool = VK_NULL_HANDLE;
-            {
-                std::lock_guard<std::mutex> lock(m_PoolsMutex);
-                auto it = m_ThreadPools.find(threadId);
-                if (it != m_ThreadPools.end())
-                {
-                    threadPool = it->second;
-                    m_ThreadPools.erase(it);
-                }
-            }
-
-            if (threadPool != VK_NULL_HANDLE)
-            {
-                vkDestroyCommandPool(m_VkDevice, threadPool, nullptr);
-            }
-
-            // Clean up the ThreadLocalFreeList object itself
-            delete tlsList;
-            
-            // Clear the TLS caches for this thread
-            using FreeListCacheInner = ThreadLocalCache<RHIVkCommandBufferPool, ThreadLocalFreeList*, struct FreeListTag>;
-            using PoolCacheInner = ThreadLocalCache<RHIVkCommandBufferPool, VkCommandPool, struct PoolTag>;
-            FreeListCacheInner::Clear();
-            PoolCacheInner::Clear();
-        });
-        tlsList->registeredCleanup = true;
-    }
-
-    std::lock_guard<std::mutex> lock(m_PoolsMutex);
-    auto it = m_ThreadPools.find(threadId);
-    if (it != m_ThreadPools.end())
-    {
-        pool = it->second;
-        PoolCache::Set(this, pool);
-        return pool;
-    }
-
-    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
-
-    VkCommandPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    
-    if (m_QueueType == RHIQueueType::Compute)
-    {
-        poolInfo.queueFamilyIndex = vkDevice->GetComputeFamilyIndex();
-    }
-    else
-    {
-        poolInfo.queueFamilyIndex = vkDevice->GetGraphicsFamilyIndex();
-    }
-
-    if (vkCreateCommandPool(m_VkDevice, &poolInfo, nullptr, &pool) != VK_SUCCESS)
-    {
-        LOG_FATAL_AND_THROW("[RHIVkCommandBufferPool::AcquireThreadCommandPool]: failed to create command pool for thread!");
-    }
-
-    m_ThreadPools[threadId] = pool;
-    PoolCache::Set(this, pool);
-    return pool;
+    return slot;
 }
 
 

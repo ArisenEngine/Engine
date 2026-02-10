@@ -1,14 +1,4 @@
 
-
-
-
-
-### 3.4 基础设施健壮性
-- [ ] **Thread Pool Cleanup**: 短生命周期线程的资源回收
-- [ ] **Lock-Free Recycling**: 跨线程命令缓冲回收
-
----
-
 ## 4. Phase 4: Debug & Tooling
 
 **Goal**: 完善调试支持和开发工具。
