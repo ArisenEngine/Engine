@@ -1,7 +1,12 @@
 #define VMA_IMPLEMENTATION
 #include "Allocation/RHIVkMemoryAllocator.h"
 #include "Core/RHIVkDevice.h"
+#define VMA_IMPLEMENTATION
+#include "Allocation/RHIVkMemoryAllocator.h"
+#include "Core/RHIVkDevice.h"
 #include "Logger/Logger.h"
+#include "../../Core.RHI/RHI/Core/RHIInspector.h"
+
 
 namespace ArisenEngine::RHI
 {
@@ -41,12 +46,15 @@ namespace ArisenEngine::RHI
         }
         if (vmaBindBufferMemory(m_VmaAllocator, *outAllocation, buffer) != VK_SUCCESS) return false;
 
+#if ARISEN_RHI__RESOURCE_INSPECTOR
         if (m_MemoryCounter)
         {
             VmaAllocationInfo info;
             vmaGetAllocationInfo(m_VmaAllocator, *outAllocation, &info);
             m_MemoryCounter->fetch_add(info.size, std::memory_order_relaxed);
         }
+#endif
+
         return true;
     }
 
@@ -62,12 +70,15 @@ namespace ArisenEngine::RHI
         }
         if (vmaBindImageMemory(m_VmaAllocator, *outAllocation, image) != VK_SUCCESS) return false;
 
+#if ARISEN_RHI__RESOURCE_INSPECTOR
         if (m_MemoryCounter)
         {
             VmaAllocationInfo info;
             vmaGetAllocationInfo(m_VmaAllocator, *outAllocation, &info);
             m_MemoryCounter->fetch_add(info.size, std::memory_order_relaxed);
         }
+#endif
+
         return true;
     }
 
@@ -76,12 +87,15 @@ namespace ArisenEngine::RHI
     {
         if (allocation != VK_NULL_HANDLE)
         {
+#if ARISEN_RHI__RESOURCE_INSPECTOR
             if (m_MemoryCounter)
             {
                 VmaAllocationInfo info;
                 vmaGetAllocationInfo(m_VmaAllocator, allocation, &info);
                 m_MemoryCounter->fetch_sub(info.size, std::memory_order_relaxed);
             }
+#endif
+
             vmaFreeMemory(m_VmaAllocator, allocation);
         }
 

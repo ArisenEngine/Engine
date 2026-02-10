@@ -1,5 +1,7 @@
 #include <iostream>
+#include <string>
 #include "../RHITestBase.h"
+
 
 
 
@@ -39,7 +41,11 @@ namespace ArisenEngine::Testing
             UInt32 initialBufferCount = initialStats.bufferCount.load();
             UInt64 initialMemory = initialStats.totalVideoMemoryAllocated.load();
 
-            LOG_INFO("Initial Buffer Count: {}, Memory: {} bytes", initialBufferCount, initialMemory);
+            std::string initMsg = "Initial Buffer Count: " + std::to_string(initialBufferCount) + ", Memory: " + std::to_string(initialMemory) + " bytes";
+            LOG_INFO(initMsg.c_str());
+
+
+
 
             // 1. Allocate a buffer
 
@@ -60,20 +66,28 @@ namespace ArisenEngine::Testing
             UInt32 midBufferCount = midStats.bufferCount.load();
             UInt64 midMemory = midStats.totalVideoMemoryAllocated.load();
             
-            outFile << "DEBUG: After Alloc - Buffer Count: " << midBufferCount << ", Memory: " << midMemory << std::endl;
-            // LOG_INFO("After Alloc - Buffer Count: {}, Memory: {} bytes", midBufferCount, midMemory);
+            std::string midMsg = "After Alloc - Buffer Count: " + std::to_string(midBufferCount) + ", Memory: " + std::to_string(midMemory) + " bytes";
+            LOG_INFO(midMsg.c_str());
+
+
+
 
 
 
             if (midBufferCount != initialBufferCount + 1)
             {
-                LOG_ERROR("Buffer count did not increase! Expected {}, got {}", initialBufferCount + 1, midBufferCount);
+                std::string errMsg = "Buffer count did not increase! Expected " + std::to_string(initialBufferCount + 1) + ", got " + std::to_string(midBufferCount);
+                LOG_ERROR(errMsg.c_str());
+
+
                 return false;
             }
 
             if (midMemory <= initialMemory)
             {
-                 LOG_ERROR("Memory usage did not increase! Expected > {}, got {}", initialMemory, midMemory);
+                 std::string errMsg = "Memory usage did not increase! Expected > " + std::to_string(initialMemory) + ", got " + std::to_string(midMemory);
+                 LOG_ERROR(errMsg.c_str());
+
                  return false;
             }
 
@@ -89,12 +103,19 @@ namespace ArisenEngine::Testing
             UInt32 finalBufferCount = endStats.bufferCount.load();
             UInt64 finalMemory = endStats.totalVideoMemoryAllocated.load();
 
-            LOG_INFO("After Release - Buffer Count: {}, Memory: {} bytes", finalBufferCount, finalMemory);
+            std::string finalMsg = "After Release - Buffer Count: " + std::to_string(finalBufferCount) + ", Memory: " + std::to_string(finalMemory) + " bytes";
+            LOG_INFO(finalMsg.c_str());
+
+
+
 
             if (finalBufferCount != initialBufferCount)
 
             {
-                LOG_ERROR("Buffer count did not return to initial! Expected {}, got {}", initialBufferCount, finalBufferCount);
+                std::string errMsg = "Buffer count did not return to initial! Expected " + std::to_string(initialBufferCount) + ", got " + std::to_string(finalBufferCount);
+                LOG_ERROR(errMsg.c_str());
+
+
                 return false;
             }
 

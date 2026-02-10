@@ -12,7 +12,17 @@
 #include "Descriptors/RHIVkBindlessManager.h"
 #include "RenderPass/RHIVkGPURenderPass.h"
 #include "Commands/RHIVkCommandBuffer.h"
+#include "Commands/RHIVkCommandBuffer.h"
+#include "../../Core.RHI/RHI/Core/RHIInspector.h"
+
 using namespace ArisenEngine::RHI;
+
+#if ARISEN_RHI__RESOURCE_INSPECTOR
+    #define RHI_STATS_PTR(x) (&(x))
+#else
+    #define RHI_STATS_PTR(x) (nullptr)
+#endif
+
 
 
 ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* surface, VkQueue graphicQueue,
@@ -41,7 +51,8 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
 
     auto* vkInstance = static_cast<RHIVkInstance*>(m_Instance);
     m_MemoryAllocator = new RHIVkMemoryAllocator(this, vkInstance->GetVkInstance(), vkInstance->GetPhysicalDevice(),
-                                                 m_VkDevice, VK_API_VERSION_1_2, &m_Stats.totalVideoMemoryAllocated);
+                                                 m_VkDevice, VK_API_VERSION_1_2, RHI_STATS_PTR(m_Stats.totalVideoMemoryAllocated));
+
 
 
     m_BindlessManager = new RHIVkBindlessManager(this);
@@ -62,20 +73,23 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
     const UInt32 maxFramesInFlight = m_Instance->GetMaxFramesInFlight();
     m_FrameSync = std::make_unique<FrameSyncTracker>(maxFramesInFlight);
 
-    m_BufferPool = std::make_unique<RHIResourcePool<RHIBufferHandle, RHIVkBufferPoolItem>>(&m_Stats.bufferCount);
-    m_ImagePool = std::make_unique<RHIResourcePool<RHIImageHandle, RHIVkImagePoolItem>>(&m_Stats.imageCount);
-    m_ImageViewPool = std::make_unique<RHIResourcePool<RHIImageViewHandle, RHIVkImageViewPoolItem>>(&m_Stats.imageViewCount);
-    m_SamplerPool = std::make_unique<RHIResourcePool<RHISamplerHandle, RHIVkSamplerPoolItem>>(&m_Stats.samplerCount);
-    m_RenderPassPool = std::make_unique<RHIResourcePool<RHIRenderPassHandle, RHIVkRenderPassPoolItem>>(&m_Stats.renderPassCount);
-    m_FrameBufferPool = std::make_unique<RHIResourcePool<RHIFrameBufferHandle, RHIVkFrameBufferPoolItem>>(&m_Stats.frameBufferCount);
-    m_SemaphorePool = std::make_unique<RHIResourcePool<RHISemaphoreHandle, RHIVkSemaphorePoolItem>>(&m_Stats.synchronizationCount);
-    m_PipelinePool = std::make_unique<RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>>(&m_Stats.pipelineCount);
-    m_FencePool = std::make_unique<RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>>(&m_Stats.synchronizationCount);
-    m_GPUProgramPool = std::make_unique<RHIResourcePool<RHIShaderProgramHandle, RHIVkGPUProgramPoolItem>>(&m_Stats.shaderProgramCount);
+    m_BufferPool = std::make_unique<RHIResourcePool<RHIBufferHandle, RHIVkBufferPoolItem>>(RHI_STATS_PTR(m_Stats.bufferCount));
+    m_ImagePool = std::make_unique<RHIResourcePool<RHIImageHandle, RHIVkImagePoolItem>>(RHI_STATS_PTR(m_Stats.imageCount));
+    m_ImageViewPool = std::make_unique<RHIResourcePool<RHIImageViewHandle, RHIVkImageViewPoolItem>>(RHI_STATS_PTR(m_Stats.imageViewCount));
+    m_SamplerPool = std::make_unique<RHIResourcePool<RHISamplerHandle, RHIVkSamplerPoolItem>>(RHI_STATS_PTR(m_Stats.samplerCount));
+    m_RenderPassPool = std::make_unique<RHIResourcePool<RHIRenderPassHandle, RHIVkRenderPassPoolItem>>(RHI_STATS_PTR(m_Stats.renderPassCount));
+    m_FrameBufferPool = std::make_unique<RHIResourcePool<RHIFrameBufferHandle, RHIVkFrameBufferPoolItem>>(RHI_STATS_PTR(m_Stats.frameBufferCount));
+    m_SemaphorePool = std::make_unique<RHIResourcePool<RHISemaphoreHandle, RHIVkSemaphorePoolItem>>(RHI_STATS_PTR(m_Stats.synchronizationCount));
+    m_PipelinePool = std::make_unique<RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>>(RHI_STATS_PTR(m_Stats.pipelineCount));
+    m_FencePool = std::make_unique<RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>>(RHI_STATS_PTR(m_Stats.synchronizationCount));
+    m_GPUProgramPool = std::make_unique<RHIResourcePool<RHIShaderProgramHandle, RHIVkGPUProgramPoolItem>>(RHI_STATS_PTR(m_Stats.shaderProgramCount));
     m_CommandBufferPoolPool = std::make_unique<RHIResourcePool<
         RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>>();
     m_CommandBufferPool = std::make_unique<RHIResourcePool<
-        RHICommandBufferHandle, RHIVkCommandBufferItem>>(&m_Stats.commandBufferCount);
+        RHICommandBufferHandle, RHIVkCommandBufferItem>>(RHI_STATS_PTR(m_Stats.commandBufferCount));
+
+#undef RHI_STATS_PTR
+
 
 }
 

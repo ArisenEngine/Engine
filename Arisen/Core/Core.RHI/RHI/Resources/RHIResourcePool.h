@@ -3,9 +3,14 @@
 #include "Base/FoundationMinimal.h"
 #include "Containers/Containers.h"
 #include "../Handles/RHIHandle.h"
+#include "Base/FoundationMinimal.h"
+#include "Containers/Containers.h"
+#include "../Handles/RHIHandle.h"
 #include "Concurrency/AtomicStack.h"
+#include "../Core/RHIInspector.h"
 #include <atomic>
 #include <mutex>
+
 
 namespace ArisenEngine {
 namespace RHI {
@@ -86,10 +91,13 @@ public:
     handle.index = index;
     handle.generation = newGen;
 
+#if ARISEN_RHI__RESOURCE_INSPECTOR
     if (m_TrackingCounter)
     {
         m_TrackingCounter->fetch_add(1, std::memory_order_relaxed);
     }
+#endif
+
 
     return handle;
 
@@ -138,10 +146,13 @@ public:
       // or the next Allocate(initFn) will overwrite it.
       m_FreeStack.Push(handle.index, &entry->nextFreeIndex);
 
+#if ARISEN_RHI__RESOURCE_INSPECTOR
       if (m_TrackingCounter)
       {
           m_TrackingCounter->fetch_sub(1, std::memory_order_relaxed);
       }
+#endif
+
 
       return &entry->resource;
 
