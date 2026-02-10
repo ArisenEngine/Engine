@@ -45,6 +45,7 @@ namespace ArisenEngine::RHI
     public:
         friend class RHIVkFactory;
         friend class RHIVkCommandBuffer; // Needs pool access
+        friend class RHIVkGPUPipeline; // Needs device function pointers
         friend class RHIVkDescriptorPool; // Needs pool access
         friend class RHIVkBindlessManager; // Needs pool access
         friend class RHIVkGPURenderPass; // Might need access
@@ -251,6 +252,11 @@ namespace ArisenEngine::RHI
         RHIResourcePool<RHICommandBufferHandle, RHIVkCommandBufferItem>* GetCommandBufferPool() const
         {
             return m_CommandBufferPool.get();
+        }
+
+        RHIResourcePool<RHIAccelerationStructureHandle, RHIVkAccelerationStructurePoolItem>* GetAccelerationStructurePool() const
+        {
+            return m_AccelerationStructurePool.get();
         }
 
     public:

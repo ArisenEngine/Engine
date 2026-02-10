@@ -19,6 +19,7 @@ namespace ArisenEngine::RHI
         friend class RHIVkGPUPipeline;
         friend class RHIVkDescriptorPool;
     public:
+        friend class RHIVkGPUPipeline;
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkGPUPipelineStateObject)
         ~RHIVkGPUPipelineStateObject() noexcept override;
         RHIVkGPUPipelineStateObject(RHIVkDevice* device);

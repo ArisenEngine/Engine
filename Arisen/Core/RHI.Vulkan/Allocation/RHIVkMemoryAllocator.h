@@ -23,6 +23,7 @@ namespace ArisenEngine::RHI
         bool AllocateBufferMemory(VkBuffer buffer, VmaMemoryUsage usage, VmaAllocation* outAllocation);
         bool AllocateImageMemory(VkImage image, VmaMemoryUsage usage, VmaAllocation* outAllocation);
         void FreeMemory(VmaAllocation allocation);
+        UInt64 GetDeviceAddress(VkBuffer buffer);
 
     private:
         VmaAllocator m_VmaAllocator{ VK_NULL_HANDLE };

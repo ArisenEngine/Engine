@@ -26,4 +26,5 @@ typedef unsigned long long RHI_PipelineHandle;
 typedef unsigned long long RHI_FenceHandle;
 typedef unsigned long long RHI_GPUProgramHandle;
 typedef unsigned long long RHI_CommandBufferPoolHandle;
+typedef unsigned long long RHI_AccelerationStructureHandle;
 

@@ -215,7 +215,7 @@ extern "C" ENGINE_DLL RHI_PipelineHandle RHI_PipelineManager_GetRayTracingPipeli
     return *reinterpret_cast<unsigned long long*>(&handle);
 }
 
-extern "C" ENGINE_DLL void RHI_PSO_AddRayTracingShaderGroup(RHI_PSOHandle pso, const ArisenEngine::RHI::RHIRacingShaderGroup* group)
+extern "C" ENGINE_DLL void RHI_PSO_AddRayTracingShaderGroup(RHI_PSOHandle pso, const ArisenEngine::RHI::RHIRayTracingShaderGroup* group)
 {
     auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
     if (s && group) s->AddRayTracingShaderGroup(*group);

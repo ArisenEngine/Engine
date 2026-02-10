@@ -140,9 +140,8 @@ namespace ArisenEngine::RHI
         virtual void ReleaseRenderPass(RHIRenderPassHandle handle) = 0;
         virtual void ReleaseFrameBuffer(RHIFrameBufferHandle handle) = 0;
         virtual void ReleasePipeline(RHIPipelineHandle handle) = 0;
-        virtual void ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle) = 0;
-        
     public:
+        virtual void ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle) = 0;
         virtual void GetAccelerationStructureBuildSizes(const RHIAccelerationStructureBuildGeometryInfo& buildInfo, const UInt32* pMaxPrimitiveCounts, RHIAccelerationStructureBuildSizesInfo* pSizeInfo) = 0;
         virtual bool AllocAccelerationStructure(RHIAccelerationStructureHandle handle, ERHIAccelerationStructureType type, UInt64 size, RHIBufferHandle buffer, UInt64 offset) = 0;
         virtual UInt64 GetAccelerationStructureDeviceAddress(RHIAccelerationStructureHandle handle) = 0;

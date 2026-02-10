@@ -1160,8 +1160,8 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BuildAccelerationStructures(UInt32 i
 
         CaptureResource(rhiInfo.scratchData);
         // Track the AS handles? We don't have a CaptureResource for AS yet, but we should.
-        if (rhiInfo.dstAccelerationStructure.IsValid()) m_TrackedResourceHandles.emplace_back(dstAS->registryHandle);
-        if (rhiInfo.srcAccelerationStructure.IsValid()) m_TrackedResourceHandles.emplace_back(srcAS->registryHandle);
+        if (dstAS) m_TrackedResourceHandles.push_back(dstAS->registryHandle);
+        if (srcAS) m_TrackedResourceHandles.push_back(srcAS->registryHandle);
     }
 
     Containers::Vector<const VkAccelerationStructureBuildRangeInfoKHR*> vkRangeInfoPtrs;

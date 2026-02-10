@@ -6,6 +6,8 @@
 #include "RHI/Enums/RayTracing/ERHIAccelerationStructureGeometryFlag.h"
 #include "RHI/Enums/RayTracing/ERHIAccelerationStructureInstanceFlag.h"
 #include "RHI/Handles/RHIHandle.h"
+#include "RHI/Enums/Image/EFormat.h"
+#include "RHI/Enums/Pipeline/EIndexType.h"
 
 namespace ArisenEngine::RHI
 {
