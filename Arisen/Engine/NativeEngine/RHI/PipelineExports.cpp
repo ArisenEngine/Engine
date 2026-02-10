@@ -202,6 +202,31 @@ extern "C" ENGINE_DLL RHI_PipelineHandle RHI_PipelineManager_GetComputePipeline(
     return *reinterpret_cast<unsigned long long*>(&handle);
 }
 
+extern "C" ENGINE_DLL RHI_PipelineHandle RHI_PipelineManager_GetRayTracingPipeline(RHI_PipelineManagerHandle pm, RHI_PSOHandle pso)
+{
+    auto* mgr = reinterpret_cast<RHI::RHIPipelineCache*>(pm);
+    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
+    if (mgr == nullptr || s == nullptr) return 0;
+    
+    // Assuming GetRayTracingPipeline exists in RHIPipelineCache or similar logic.
+    // If not, we might need to add it to RHIPipelineCache/RHIVkGPUPipelineManager.
+    // Given the pattern, let's assume it's there or we should add it.
+    auto handle = mgr->GetRayTracingPipeline(s);
+    return *reinterpret_cast<unsigned long long*>(&handle);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_AddRayTracingShaderGroup(RHI_PSOHandle pso, const ArisenEngine::RHI::RHIRacingShaderGroup* group)
+{
+    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
+    if (s && group) s->AddRayTracingShaderGroup(*group);
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_SetMaxRecursionDepth(RHI_PSOHandle pso, unsigned int depth)
+{
+    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
+    if (s) s->SetMaxRecursionDepth(depth);
+}
+
 // Moved to SurfaceExports: RHI_FrameBuffer_SetAttachment
 
 // Moved to HandlesExports: ReleaseRenderPass

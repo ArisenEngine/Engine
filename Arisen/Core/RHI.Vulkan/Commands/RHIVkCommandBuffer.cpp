@@ -501,9 +501,13 @@ void RHIVkCommandBuffer::BindPipeline(RHIPipelineHandle pipelineHandle)
         {
             vkPipeline->AllocGraphicPipeline(frameIndex, nullptr);
         }
-        else
+        else if (pipeline->GetBindPoint() == PIPELINE_BIND_POINT_COMPUTE)
         {
             vkPipeline->AllocComputePipeline(frameIndex);
+        }
+        else if (pipeline->GetBindPoint() == PIPELINE_BIND_POINT_RAY_TRACING_KHR)
+        {
+            vkPipeline->AllocRayTracingPipeline(frameIndex);
         }
     }
 
@@ -1080,3 +1084,120 @@ void RHIVkCommandBuffer::ResetInternal()
 
 } // namespace ArisenEngine::RHI
 
+void ArisenEngine::RHI::RHIVkCommandBuffer::BuildAccelerationStructures(UInt32 infoCount, const RHIAccelerationStructureBuildGeometryInfo* pInfos, const RHIAccelerationStructureBuildRangeInfo* const* ppBuildRangeInfos)
+{
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
+    if (!vkDevice->vkCmdBuildAccelerationStructuresKHR) return;
+
+    Containers::Vector<VkAccelerationStructureBuildGeometryInfoKHR> vkInfos;
+    vkInfos.reserve(infoCount);
+    
+    // We need to keep the geometry arrays alive during the call
+    Containers::Vector<Containers::Vector<VkAccelerationStructureGeometryKHR>> vkGeometriesPerInfo;
+    vkGeometriesPerInfo.reserve(infoCount);
+
+    for (UInt32 i = 0; i < infoCount; ++i)
+    {
+        const auto& rhiInfo = pInfos[i];
+        
+        VkAccelerationStructureBuildGeometryInfoKHR vkInfo{};
+        vkInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+        vkInfo.type = (VkAccelerationStructureTypeKHR)rhiInfo.type;
+        vkInfo.flags = (VkBuildAccelerationStructureFlagsKHR)rhiInfo.flags;
+        vkInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+        
+        auto* dstAS = vkDevice->m_AccelerationStructurePool->Get(rhiInfo.dstAccelerationStructure);
+        if (dstAS) vkInfo.dstAccelerationStructure = dstAS->accelerationStructure;
+
+        auto* srcAS = vkDevice->m_AccelerationStructurePool->Get(rhiInfo.srcAccelerationStructure);
+        if (srcAS) vkInfo.srcAccelerationStructure = srcAS->accelerationStructure;
+
+        auto* scratchBuf = vkDevice->m_BufferPool->Get(rhiInfo.scratchData);
+        if (scratchBuf) vkInfo.scratchData.deviceAddress = vkDevice->m_MemoryAllocator->GetDeviceAddress(scratchBuf->buffer);
+
+        vkInfo.geometryCount = rhiInfo.geometryCount;
+        
+        Containers::Vector<VkAccelerationStructureGeometryKHR> vkGeometries;
+        vkGeometries.reserve(rhiInfo.geometryCount);
+        for (UInt32 j = 0; j < rhiInfo.geometryCount; ++j)
+        {
+            const auto& rhiGeom = rhiInfo.pGeometries[j];
+            VkAccelerationStructureGeometryKHR vkGeom{};
+            vkGeom.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+            vkGeom.geometryType = (VkGeometryTypeKHR)rhiGeom.type;
+            vkGeom.flags = (VkGeometryFlagsKHR)rhiGeom.flags;
+            
+            if (rhiGeom.type == ERHIAccelerationStructureGeometryType::Triangles)
+            {
+                vkGeom.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+                vkGeom.geometry.triangles.vertexFormat = (VkFormat)rhiGeom.triangles.vertexFormat;
+                vkGeom.geometry.triangles.vertexData.deviceAddress = rhiGeom.triangles.vertexData;
+                vkGeom.geometry.triangles.vertexStride = rhiGeom.triangles.vertexStride;
+                vkGeom.geometry.triangles.maxVertex = rhiGeom.triangles.maxVertex;
+                vkGeom.geometry.triangles.indexType = (VkIndexType)rhiGeom.triangles.indexType;
+                vkGeom.geometry.triangles.indexData.deviceAddress = rhiGeom.triangles.indexData;
+                vkGeom.geometry.triangles.transformData.deviceAddress = rhiGeom.triangles.transformData;
+            }
+            else if (rhiGeom.type == ERHIAccelerationStructureGeometryType::AABBs)
+            {
+                vkGeom.geometry.aabbs.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR;
+                vkGeom.geometry.aabbs.data.deviceAddress = rhiGeom.aabbs.data;
+                vkGeom.geometry.aabbs.stride = rhiGeom.aabbs.stride;
+            }
+            else if (rhiGeom.type == ERHIAccelerationStructureGeometryType::Instances)
+            {
+                vkGeom.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+                vkGeom.geometry.instances.arrayOfPointers = rhiGeom.instances.arrayOfPointers ? VK_TRUE : VK_FALSE;
+                vkGeom.geometry.instances.data.deviceAddress = rhiGeom.instances.data;
+            }
+            
+            vkGeometries.emplace_back(vkGeom);
+        }
+        
+        vkGeometriesPerInfo.emplace_back(std::move(vkGeometries));
+        vkInfo.pGeometries = vkGeometriesPerInfo.back().data();
+        vkInfos.emplace_back(vkInfo);
+
+        CaptureResource(rhiInfo.scratchData);
+        // Track the AS handles? We don't have a CaptureResource for AS yet, but we should.
+        if (rhiInfo.dstAccelerationStructure.IsValid()) m_TrackedResourceHandles.emplace_back(dstAS->registryHandle);
+        if (rhiInfo.srcAccelerationStructure.IsValid()) m_TrackedResourceHandles.emplace_back(srcAS->registryHandle);
+    }
+
+    Containers::Vector<const VkAccelerationStructureBuildRangeInfoKHR*> vkRangeInfoPtrs;
+    vkRangeInfoPtrs.reserve(infoCount);
+    for (UInt32 i = 0; i < infoCount; ++i)
+    {
+        vkRangeInfoPtrs.push_back(reinterpret_cast<const VkAccelerationStructureBuildRangeInfoKHR*>(ppBuildRangeInfos[i]));
+    }
+
+    vkDevice->vkCmdBuildAccelerationStructuresKHR(m_VkCommandBuffer, infoCount, vkInfos.data(), vkRangeInfoPtrs.data());
+}
+
+void ArisenEngine::RHI::RHIVkCommandBuffer::TraceRays(const RHITraceRaysDescriptor& desc)
+{
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
+    if (!vkDevice->vkCmdTraceRaysKHR) return;
+
+    VkStridedDeviceAddressRegionKHR raygenRegion{};
+    raygenRegion.deviceAddress = desc.raygenShaderRecord.deviceAddress;
+    raygenRegion.stride = desc.raygenShaderRecord.stride;
+    raygenRegion.size = desc.raygenShaderRecord.size;
+
+    VkStridedDeviceAddressRegionKHR missRegion{};
+    missRegion.deviceAddress = desc.missShaderTable.deviceAddress;
+    missRegion.stride = desc.missShaderTable.stride;
+    missRegion.size = desc.missShaderTable.size;
+
+    VkStridedDeviceAddressRegionKHR hitRegion{};
+    hitRegion.deviceAddress = desc.hitShaderTable.deviceAddress;
+    hitRegion.stride = desc.hitShaderTable.stride;
+    hitRegion.size = desc.hitShaderTable.size;
+
+    VkStridedDeviceAddressRegionKHR callableRegion{};
+    callableRegion.deviceAddress = desc.callableShaderTable.deviceAddress;
+    callableRegion.stride = desc.callableShaderTable.stride;
+    callableRegion.size = desc.callableShaderTable.size;
+
+    vkDevice->vkCmdTraceRaysKHR(m_VkCommandBuffer, &raygenRegion, &missRegion, &hitRegion, &callableRegion, desc.width, desc.height, desc.depth);
+}

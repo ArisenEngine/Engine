@@ -12,7 +12,7 @@
 #include "RHI/Enums/Pipeline/EFrontFace.h"
 #include "RHI/Enums/Pipeline/EPrimitiveTopology.h"
 #include "RHI/Enums/Sampler/ECompareOp.h"
-#include "RHI/Pipeline/RHIDepthStencilState.h"
+#include "RHI/Resources/RHIAccelerationStructure.h"
 #include <thread>
 
 
@@ -116,6 +116,9 @@ public:
   void TransitionImageLayout(RHIImageHandle image, EImageLayout oldLayout, EImageLayout targetLayout) override;
 
   void GenerateMipmaps(RHIImageHandle image) override;
+
+  // Ray Tracing
+  void BuildAccelerationStructures(UInt32 infoCount, const RHIAccelerationStructureBuildGeometryInfo* pInfos, const RHIAccelerationStructureBuildRangeInfo* const* ppBuildRangeInfos) override;
 
   // Debug Markers
   void BeginDebugLabel(const char* label, const Float32 color[4]) override;

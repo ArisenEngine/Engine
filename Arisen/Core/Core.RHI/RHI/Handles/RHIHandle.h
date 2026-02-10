@@ -38,6 +38,7 @@ struct RHIRenderPassTag {};
 struct RHIFrameBufferTag {};
 struct RHIShaderProgramTag {};
 struct RHICommandBufferPoolTag {};
+struct RHIAccelerationStructureTag {};
 
 using RHIBufferHandle = RHIHandle<RHIBufferTag>;
 using RHIImageHandle = RHIHandle<RHIImageTag>;
@@ -53,6 +54,7 @@ using RHIRenderPassHandle = RHIHandle<RHIRenderPassTag>;
 using RHIFrameBufferHandle = RHIHandle<RHIFrameBufferTag>;
 using RHIShaderProgramHandle = RHIHandle<RHIShaderProgramTag>;
 using RHICommandBufferPoolHandle = RHIHandle<RHICommandBufferPoolTag>;
+using RHIAccelerationStructureHandle = RHIHandle<RHIAccelerationStructureTag>;
 struct RHIResourceTag {};
 using RHIResourceHandle = RHIHandle<RHIResourceTag>;
 } // namespace RHI

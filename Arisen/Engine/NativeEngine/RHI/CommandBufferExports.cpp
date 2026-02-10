@@ -369,4 +369,16 @@ extern "C" ENGINE_DLL void RHI_Cmd_BindDescriptorSet_FromPool(RHI_CommandBufferH
     c->TrackDescriptorPoolUse(p, poolId);
 }
 
+extern "C" ENGINE_DLL void RHI_Cmd_BuildAccelerationStructures(RHI_CommandBufferHandle cmd, unsigned int infoCount, const ArisenEngine::RHI::RHIAccelerationStructureBuildGeometryInfo* pInfos, const ArisenEngine::RHI::RHIAccelerationStructureBuildRangeInfo* const* ppBuildRangeInfos)
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c) c->BuildAccelerationStructures(infoCount, pInfos, ppBuildRangeInfos);
+}
+
+extern "C" ENGINE_DLL void RHI_Cmd_TraceRays(RHI_CommandBufferHandle cmd, const ArisenEngine::RHI::RHITraceRaysDescriptor* desc)
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c && desc) c->TraceRays(*desc);
+}
+
 

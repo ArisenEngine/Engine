@@ -35,6 +35,7 @@ namespace ArisenEngine::RHI
     struct RHIVkSemaphorePoolItem;
     struct RHIVkPipelinePoolItem;
     struct RHIVkFencePoolItem;
+    struct RHIVkAccelerationStructurePoolItem;
 }
 
 namespace ArisenEngine::RHI
@@ -156,6 +157,7 @@ namespace ArisenEngine::RHI
         std::unique_ptr<RHIResourcePool<RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>>
         m_CommandBufferPoolPool;
         std::unique_ptr<RHIResourcePool<RHICommandBufferHandle, RHIVkCommandBufferItem>> m_CommandBufferPool;
+        std::unique_ptr<RHIResourcePool<RHIAccelerationStructureHandle, RHIVkAccelerationStructurePoolItem>> m_AccelerationStructurePool;
 
     public:
         // Handle-based operations
@@ -191,6 +193,15 @@ namespace ArisenEngine::RHI
                               RHIRenderPassHandle renderPassHandle) override;
         void WaitFence(RHIFenceHandle handle) override;
         void ResetFence(RHIFenceHandle handle) override;
+
+        // Acceleration Structure
+        void GetAccelerationStructureBuildSizes(const RHIAccelerationStructureBuildGeometryInfo& buildInfo, const UInt32* pMaxPrimitiveCounts, RHIAccelerationStructureBuildSizesInfo* pSizeInfo) override;
+        bool AllocAccelerationStructure(RHIAccelerationStructureHandle handle, ERHIAccelerationStructureType type, UInt64 size, RHIBufferHandle buffer, UInt64 offset) override;
+        UInt64 GetAccelerationStructureDeviceAddress(RHIAccelerationStructureHandle handle) override;
+
+        void GetRayTracingShaderGroupHandles(RHIPipelineHandle pipeline, UInt32 firstGroup, UInt32 groupCount, UInt64 size, void* pData) override;
+
+        void ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle) override;
 
     public:
         // Pool Accessors (Restricted)
@@ -257,6 +268,16 @@ namespace ArisenEngine::RHI
         PFN_vkCmdEndDebugUtilsLabelEXT vkCmdEndDebugUtilsLabelEXT = nullptr;
         PFN_vkCmdInsertDebugUtilsLabelEXT vkCmdInsertDebugUtilsLabelEXT = nullptr;
 
+        // Ray Tracing
+        PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR = nullptr;
+        PFN_vkDestroyAccelerationStructureKHR vkDestroyAccelerationStructureKHR = nullptr;
+        PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR = nullptr;
+        PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR = nullptr;
+        PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR = nullptr;
+        PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR = nullptr;
+        PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR = nullptr;
+        PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR = nullptr;
+
     private:
         // Internal low-level destruction (Vulkan/Memory only, via Registry)
         void FreeBufferInternal(RHIBufferHandle handle);
@@ -268,6 +289,7 @@ namespace ArisenEngine::RHI
         void FreeRenderPassInternal(RHIRenderPassHandle handle);
         void FreeFrameBufferInternal(RHIFrameBufferHandle handle);
         void FreePipelineInternal(RHIPipelineHandle handle);
+        void FreeAccelerationStructureInternal(RHIAccelerationStructureHandle handle);
     };
 }
 

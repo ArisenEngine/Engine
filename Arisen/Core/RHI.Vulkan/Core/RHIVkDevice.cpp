@@ -1,5 +1,7 @@
 #include "Core/RHIVkDevice.h"
 
+#include "Resources/RHIVkAccelerationStructure.h"
+#include "RHI/Resources/RHIAccelerationStructure.h"
 #include "Core/RHIVkFactory.h"
 #include "Logger/Logger.h"
 #include "Windowing/RenderWindowAPI.h"
@@ -49,6 +51,16 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
     vkCmdEndDebugUtilsLabelEXT = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdEndDebugUtilsLabelEXT");
     vkCmdInsertDebugUtilsLabelEXT = (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdInsertDebugUtilsLabelEXT");
 
+    // RT Function Pointers
+    vkCreateAccelerationStructureKHR = (PFN_vkCreateAccelerationStructureKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCreateAccelerationStructureKHR");
+    vkDestroyAccelerationStructureKHR = (PFN_vkDestroyAccelerationStructureKHR)vkGetDeviceProcAddr(m_VkDevice, "vkDestroyAccelerationStructureKHR");
+    vkGetAccelerationStructureBuildSizesKHR = (PFN_vkGetAccelerationStructureBuildSizesKHR)vkGetDeviceProcAddr(m_VkDevice, "vkGetAccelerationStructureBuildSizesKHR");
+    vkGetAccelerationStructureDeviceAddressKHR = (PFN_vkGetAccelerationStructureDeviceAddressKHR)vkGetDeviceProcAddr(m_VkDevice, "vkGetAccelerationStructureDeviceAddressKHR");
+    vkCmdBuildAccelerationStructuresKHR = (PFN_vkCmdBuildAccelerationStructuresKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCmdBuildAccelerationStructuresKHR");
+    vkCmdTraceRaysKHR = (PFN_vkCmdTraceRaysKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCmdTraceRaysKHR");
+    vkCreateRayTracingPipelinesKHR = (PFN_vkCreateRayTracingPipelinesKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCreateRayTracingPipelinesKHR");
+    vkGetRayTracingShaderGroupHandlesKHR = (PFN_vkGetRayTracingShaderGroupHandlesKHR)vkGetDeviceProcAddr(m_VkDevice, "vkGetRayTracingShaderGroupHandlesKHR");
+
     auto* vkInstance = static_cast<RHIVkInstance*>(m_Instance);
     m_MemoryAllocator = new RHIVkMemoryAllocator(this, vkInstance->GetVkInstance(), vkInstance->GetPhysicalDevice(),
                                                  m_VkDevice, VK_API_VERSION_1_2, RHI_STATS_PTR(m_Stats.totalVideoMemoryAllocated));
@@ -87,11 +99,12 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
         RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>>();
     m_CommandBufferPool = std::make_unique<RHIResourcePool<
         RHICommandBufferHandle, RHIVkCommandBufferItem>>(RHI_STATS_PTR(m_Stats.commandBufferCount));
+    m_AccelerationStructurePool = std::make_unique<RHIResourcePool<RHIAccelerationStructureHandle, RHIVkAccelerationStructurePoolItem>>();
+    std::cout << "[DEBUG] RHIVkDevice::RHIVkDevice END" << std::endl;
+}
 
 #undef RHI_STATS_PTR
 
-
-}
 
 ArisenEngine::RHI::RHIFactory* ArisenEngine::RHI::RHIVkDevice::GetFactory() const
 {
@@ -1004,6 +1017,112 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseCommandBuffer(RHICommandBufferHandle
     }
 }
 
+void ArisenEngine::RHI::RHIVkDevice::GetAccelerationStructureBuildSizes(const RHIAccelerationStructureBuildGeometryInfo& buildInfo, const UInt32* pMaxPrimitiveCounts, RHIAccelerationStructureBuildSizesInfo* pSizeInfo)
+{
+    if (!vkGetAccelerationStructureBuildSizesKHR) return;
 
+    // Convert RHI info to Vulkan info
+    // This is a simplified version, ideally we need a full converter
+    VkAccelerationStructureBuildGeometryInfoKHR vkBuildInfo{};
+    vkBuildInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    vkBuildInfo.type = (VkAccelerationStructureTypeKHR)buildInfo.type;
+    vkBuildInfo.flags = (VkBuildAccelerationStructureFlagsKHR)buildInfo.flags;
+    vkBuildInfo.geometryCount = buildInfo.geometryCount;
+    
+    // We would need to convert geometries here too if we were doing a full build size query
+    // For now, let's assume the caller provides correct types that match Vulkan enums
+    
+    VkAccelerationStructureBuildSizesInfoKHR vkSizeInfo{};
+    vkSizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+    
+    vkGetAccelerationStructureBuildSizesKHR(m_VkDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &vkBuildInfo, pMaxPrimitiveCounts, &vkSizeInfo);
+    
+    pSizeInfo->accelerationStructureSize = vkSizeInfo.accelerationStructureSize;
+    pSizeInfo->updateScratchSize = vkSizeInfo.updateScratchSize;
+    pSizeInfo->buildScratchSize = vkSizeInfo.buildScratchSize;
+}
 
+bool ArisenEngine::RHI::RHIVkDevice::AllocAccelerationStructure(RHIAccelerationStructureHandle handle, ERHIAccelerationStructureType type, UInt64 size, RHIBufferHandle buffer, UInt64 offset)
+{
+    if (!vkCreateAccelerationStructureKHR) return false;
 
+    auto* asItem = m_AccelerationStructurePool->Allocate(handle);
+    if (!asItem) return false;
+
+    auto* bufItem = m_BufferPool->Get(buffer);
+    if (!bufItem) return false;
+
+    VkAccelerationStructureCreateInfoKHR createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+    createInfo.buffer = bufItem->buffer;
+    createInfo.offset = offset;
+    createInfo.size = size;
+    createInfo.type = (VkAccelerationStructureTypeKHR)type;
+
+    VkAccelerationStructureKHR vkAS;
+    if (vkCreateAccelerationStructureKHR(m_VkDevice, &createInfo, nullptr, &vkAS) != VK_SUCCESS)
+    {
+        m_AccelerationStructurePool->Deallocate(handle);
+        return false;
+    }
+
+    VkAccelerationStructureDeviceAddressInfoKHR addressInfo{};
+    addressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
+    addressInfo.accelerationStructure = vkAS;
+    
+    asItem->accelerationStructure = vkAS;
+    asItem->bufferHandle = buffer;
+    asItem->size = size;
+    asItem->deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(m_VkDevice, &addressInfo);
+
+    auto deferred = [this, handle]() { FreeAccelerationStructureInternal(handle); };
+    asItem->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(deferred));
+
+    return true;
+}
+
+void ArisenEngine::RHI::RHIVkDevice::ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle)
+{
+    auto* item = m_AccelerationStructurePool->Get(handle);
+    if (item)
+    {
+        if (item->registryHandle.IsValid())
+            m_ResourceRegistry->Release(item->registryHandle, RHIQueueType::Graphics,
+                                        GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+
+        if (!m_AccelerationStructurePool->Deallocate(handle))
+        {
+            LOG_WARN("[RHIVkDevice::ReleaseAccelerationStructure]: Failed to deallocate handle (invalid or stale)!");
+        }
+    }
+}
+
+UInt64 ArisenEngine::RHI::RHIVkDevice::GetAccelerationStructureDeviceAddress(RHIAccelerationStructureHandle handle)
+{
+    auto* item = m_AccelerationStructurePool->Get(handle);
+    return item ? item->deviceAddress : 0;
+}
+
+void ArisenEngine::RHI::RHIVkDevice::GetRayTracingShaderGroupHandles(RHIPipelineHandle pipeline, UInt32 firstGroup, UInt32 groupCount, UInt64 size, void* pData)
+{
+    if (!vkGetRayTracingShaderGroupHandlesKHR) return;
+
+    auto* p = m_PipelinePool->Get(pipeline);
+    if (!p || !p->pipeline) return;
+
+    auto* vkPipeline = static_cast<RHIVkGPUPipeline*>(p->pipeline);
+    // Use frame 0 or current frame? Pipelines are usually the same across frames if not changed.
+    VkPipeline handle = vkPipeline->GetVkPipeline(0); 
+
+    vkGetRayTracingShaderGroupHandlesKHR(m_VkDevice, handle, firstGroup, groupCount, (size_t)size, pData);
+}
+
+void ArisenEngine::RHI::RHIVkDevice::FreeAccelerationStructureInternal(RHIAccelerationStructureHandle handle)
+{
+     auto* item = m_AccelerationStructurePool->Get(handle);
+     if (item && item->accelerationStructure != VK_NULL_HANDLE)
+     {
+         vkDestroyAccelerationStructureKHR(m_VkDevice, item->accelerationStructure, nullptr);
+         item->accelerationStructure = VK_NULL_HANDLE;
+     }
+}

@@ -20,6 +20,22 @@
 
 namespace ArisenEngine::RHI
 {
+    enum class ERHIRayTracingShaderGroupType
+    {
+        General = 0,
+        TrianglesHitGroup = 1,
+        ProceduralHitGroup = 2
+    };
+
+    struct RHIRayTracingShaderGroup
+    {
+        ERHIRayTracingShaderGroupType type;
+        UInt32 generalShaderIndex = 0xFFFFFFFF;
+        UInt32 closestHitShaderIndex = 0xFFFFFFFF;
+        UInt32 anyHitShaderIndex = 0xFFFFFFFF;
+        UInt32 intersectionShaderIndex = 0xFFFFFFFF;
+    };
+}
     class RHIPipelineState
     {
         friend class RHIPipeline;
@@ -49,6 +65,10 @@ namespace ArisenEngine::RHI
         virtual void BuildDescriptorSetLayout() = 0;
 
         virtual bool IsMeshPipeline() const = 0;
+        virtual bool IsRayTracingPipeline() const = 0;
+
+        virtual void AddRayTracingShaderGroup(const RHIRayTracingShaderGroup& group) = 0;
+        virtual void SetMaxRecursionDepth(UInt32 depth) = 0;
 
         virtual const UInt32 GetHash() const = 0;
 

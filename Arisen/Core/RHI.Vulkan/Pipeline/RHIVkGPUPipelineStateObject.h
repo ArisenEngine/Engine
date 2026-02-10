@@ -32,8 +32,10 @@ namespace ArisenEngine::RHI
         void Clear() override;
 
         bool IsMeshPipeline() const override;
+        bool IsRayTracingPipeline() const override { return m_BindPoint == EPipelineBindPoint::PIPELINE_BIND_POINT_RAY_TRACING_KHR; }
 
-        // Vertex
+        void AddRayTracingShaderGroup(const RHIRayTracingShaderGroup& group) override;
+        void SetMaxRecursionDepth(UInt32 depth) override { m_MaxRecursionDepth = depth; }
         void AddVertexInputAttributeDescription(UInt32 location, UInt32 binding, EFormat format, UInt32 offset) override;
         void AddVertexBindingDescription(UInt32 binding, UInt32 stride, EVertexInputRate inputRate) override;
         void ClearVertexInputDescriptions() override;
@@ -104,6 +106,10 @@ namespace ArisenEngine::RHI
 
         // push constants
         Containers::Vector<VkPushConstantRange> m_PushConstantRanges {};
+
+        // ray tracing
+        Containers::Vector<VkRayTracingShaderGroupCreateInfoKHR> m_RayTracingShaderGroups {};
+        UInt32 m_MaxRecursionDepth = 1;
 
     public:
         const Containers::Vector<VkPushConstantRange>& GetPushConstantRanges() const { return m_PushConstantRanges; }

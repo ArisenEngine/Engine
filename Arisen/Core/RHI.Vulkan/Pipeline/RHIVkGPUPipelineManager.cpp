@@ -67,6 +67,11 @@ ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager:
      return GetGraphicsPipeline(pso);
 }
 
+ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager::GetRayTracingPipeline(RHIPipelineState* pso)
+{
+     return GetGraphicsPipeline(pso);
+}
+
 std::unique_ptr<ArisenEngine::RHI::RHIPipelineState> ArisenEngine::RHI::RHIVkGPUPipelineManager::GetPipelineState()
 {
     return std::make_unique<RHIVkGPUPipelineStateObject>(m_Device);

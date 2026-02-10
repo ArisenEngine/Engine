@@ -314,6 +314,40 @@ void RHIVkGPUPipeline::AllocComputePipeline(UInt32 frameIndex)
     }
 }
 
+void RHIVkGPUPipeline::AllocRayTracingPipeline(UInt32 frameIndex)
+{
+    FreePipeline(frameIndex);
+    FreePipelineLayout(frameIndex);
+
+    auto* vkPso = static_cast<RHIVkGPUPipelineStateObject*>(m_PipelineStateObject);
+    
+    // Create Layout
+    VkPipelineLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    layoutInfo.setLayoutCount = vkPso->GetDescriptorSetLayoutCount();
+    layoutInfo.pSetLayouts = vkPso->GetDescriptorSetLayouts();
+    layoutInfo.pushConstantRangeCount = static_cast<uint32_t>(vkPso->GetPushConstantRanges().size());
+    layoutInfo.pPushConstantRanges = vkPso->GetPushConstantRanges().data();
+
+    if (vkCreatePipelineLayout(m_VkDevice, &layoutInfo, nullptr, &m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS) {
+        LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocRayTracingPipeline]: failed to create pipeline layout!");
+    }
+
+    VkRayTracingPipelineCreateInfoKHR pipelineInfo{};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
+    pipelineInfo.layout = m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight];
+    pipelineInfo.stageCount = vkPso->GetStageCount();
+    pipelineInfo.pStages = vkPso->GetStageCreateInfos();
+    pipelineInfo.groupCount = static_cast<uint32_t>(vkPso->m_RayTracingShaderGroups.size());
+    pipelineInfo.pGroups = vkPso->m_RayTracingShaderGroups.data();
+    pipelineInfo.maxPipelineRayRecursionDepth = vkPso->m_MaxRecursionDepth;
+
+    if (m_Device->vkCreateRayTracingPipelinesKHR(m_VkDevice, VK_NULL_HANDLE, static_cast<RHIVkGPUPipelineManager*>(m_Device->GetPipelineCache())->GetVkPipelineCache(), 1, &pipelineInfo, nullptr, &m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocRayTracingPipeline]: failed to create Ray Tracing pipeline!");
+    }
+}
+
 const EPipelineBindPoint RHIVkGPUPipeline::GetBindPoint() const
 {
     return m_PipelineStateObject->GetBindPoint();

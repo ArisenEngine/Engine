@@ -36,6 +36,10 @@ extern "C" ENGINE_DLL void RHI_PSO_SetDynamicStateMask(RHI_PSOHandle pso, Arisen
 extern "C" ENGINE_DLL void RHI_PSO_SetRenderingFormats(RHI_PSOHandle pso, ArisenEngine::Containers::Vector<ArisenEngine::RHI::EFormat>* colorFormats, ArisenEngine::RHI::EFormat depthFormat, ArisenEngine::RHI::EFormat stencilFormat);
 extern "C" ENGINE_DLL RHI_PipelineHandle RHI_PipelineManager_GetGraphicsPipeline(RHI_PipelineManagerHandle pm, RHI_PSOHandle pso);
 extern "C" ENGINE_DLL RHI_PipelineHandle RHI_PipelineManager_GetComputePipeline(RHI_PipelineManagerHandle pm, RHI_PSOHandle pso);
+extern "C" ENGINE_DLL RHI_PipelineHandle RHI_PipelineManager_GetRayTracingPipeline(RHI_PipelineManagerHandle pm, RHI_PSOHandle pso);
+
+extern "C" ENGINE_DLL void RHI_PSO_AddRayTracingShaderGroup(RHI_PSOHandle pso, const ArisenEngine::RHI::RHIRayTracingShaderGroup* group);
+extern "C" ENGINE_DLL void RHI_PSO_SetMaxRecursionDepth(RHI_PSOHandle pso, unsigned int depth);
 
 
 // Moved to SurfaceExports: RHI_FrameBuffer_SetAttachment

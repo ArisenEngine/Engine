@@ -33,6 +33,7 @@ namespace ArisenEngine::RHI
         virtual ~RHIPipelineCache() noexcept = default;
         virtual RHIPipelineHandle GetGraphicsPipeline(RHIPipelineState* pso) = 0;
         virtual RHIPipelineHandle GetComputePipeline(RHIPipelineState* pso) = 0;
+        virtual RHIPipelineHandle GetRayTracingPipeline(RHIPipelineState* pso) = 0;
 
         virtual std::unique_ptr<RHIPipelineState> GetPipelineState() = 0;
     protected:

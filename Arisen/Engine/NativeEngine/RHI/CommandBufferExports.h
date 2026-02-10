@@ -43,8 +43,10 @@ extern "C" ENGINE_DLL void RHI_Cmd_BatchPipelineBarrier(RHI_CommandBufferHandle 
 extern "C" ENGINE_DLL void RHI_Cmd_GenerateMipmaps(RHI_CommandBufferHandle cmd, RHI_ImageHandle image);
 extern "C" ENGINE_DLL void RHI_Cmd_TransitionImageLayout(RHI_CommandBufferHandle cmd, RHI_ImageHandle image, ArisenEngine::RHI::EImageLayout targetLayout);
 extern "C" ENGINE_DLL void RHI_Cmd_TransitionImageLayout_Full(RHI_CommandBufferHandle cmd, RHI_ImageHandle image, ArisenEngine::RHI::EImageLayout oldLayout, ArisenEngine::RHI::EImageLayout targetLayout);
-extern "C" ENGINE_DLL void RHI_Cmd_BeginRendering(RHI_CommandBufferHandle cmd, ArisenEngine::RHI::RHIRenderingInfo* info);
 extern "C" ENGINE_DLL void RHI_Cmd_EndRendering(RHI_CommandBufferHandle cmd);
+
+extern "C" ENGINE_DLL void RHI_Cmd_BuildAccelerationStructures(RHI_CommandBufferHandle cmd, unsigned int infoCount, const ArisenEngine::RHI::RHIAccelerationStructureBuildGeometryInfo* pInfos, const ArisenEngine::RHI::RHIAccelerationStructureBuildRangeInfo* const* ppBuildRangeInfos);
+extern "C" ENGINE_DLL void RHI_Cmd_TraceRays(RHI_CommandBufferHandle cmd, const ArisenEngine::RHI::RHITraceRaysDescriptor* desc);
 
 extern "C" ENGINE_DLL void RHI_Cmd_BeginDebugLabel(RHI_CommandBufferHandle cmd, const char* label, const float color[4]);
 extern "C" ENGINE_DLL void RHI_Cmd_EndDebugLabel(RHI_CommandBufferHandle cmd);

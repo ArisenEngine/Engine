@@ -54,6 +54,7 @@ namespace ArisenEngine::RHI
         static const VkDescriptorImageInfo* GetImageInfos(RHIVkDevice* device, const RHIDescriptorUpdateInfo& updateInfo, ArisenEngine::Containers::Vector<VkDescriptorImageInfo>& results);
         static const VkDescriptorBufferInfo* GetBufferInfos(RHIVkDevice* device, const RHIDescriptorUpdateInfo& updateInfo, ArisenEngine::Containers::Vector<VkDescriptorBufferInfo>& results);
         static const VkBufferView* GetBufferViews(RHIVkDevice* device, const RHIDescriptorUpdateInfo& updateInfo, ArisenEngine::Containers::Vector<VkBufferView>& results);
+        static const VkAccelerationStructureKHR* GetAccelerationStructureInfos(RHIVkDevice* device, const RHIDescriptorUpdateInfo& updateInfo, ArisenEngine::Containers::Vector<VkAccelerationStructureKHR>& results);
 
     private:
         
