@@ -33,7 +33,8 @@ RHIVkCommandBuffer::~RHIVkCommandBuffer() noexcept
 
 RHIVkCommandBuffer::RHIVkCommandBuffer(RHIVkDevice* device, RHIVkCommandBufferPool* pool, ECommandBufferLevel level)
 : RHICommandBuffer(device, pool, level),
-m_OwnerThreadId(std::this_thread::get_id())
+m_OwnerThreadId(std::this_thread::get_id()),
+m_OwnerThreadIndex(ThreadRegistry::GetThreadIndex())
 {
     m_VkDevice = static_cast<VkDevice>(device->GetHandle());
     m_VkCommandPool = pool->AcquireThreadCommandPool();

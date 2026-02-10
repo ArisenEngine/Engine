@@ -1,10 +1,7 @@
 
 
 
-### 3.3 命令录制
-- [ ] **Secondary Command Buffer**: 细粒度多线程录制
-- [ ] **Multi-Draw Indirect**: 批量绘制支持
-- [ ] **Async Compute Queue**: 独立计算队列
+
 
 ### 3.4 基础设施健壮性
 - [ ] **Thread Pool Cleanup**: 短生命周期线程的资源回收

@@ -156,6 +156,7 @@ private:
   Containers::Vector<RHIResourceHandle> m_TrackedResourceHandles;
 
   std::thread::id m_OwnerThreadId;
+  size_t m_OwnerThreadIndex;
 
   friend class RHIVkCommandBufferPool;
   friend class RHIVkQueue;
