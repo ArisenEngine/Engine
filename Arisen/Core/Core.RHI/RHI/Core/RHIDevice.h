@@ -7,8 +7,10 @@
 #include "RHI/Queues/RHIQueue.h"
 #include "RHI/Handles/RHIHandle.h"
 #include "RHI/Descriptors/RHIResourceDescriptors.h"
+#include "RHI/Core/RHIInspector.h"
 
 namespace ArisenEngine::RHI
+
 {
     class RHISampler;
     struct RHISamplerDesc;
@@ -88,8 +90,10 @@ namespace ArisenEngine::RHI
 
         virtual void SetResolution(UInt32 width, UInt32 height) = 0;
 
+        virtual const RHIResourceStats& GetResourceStats() const = 0;
 
         const RHIDeviceLimits GetDeviceLimits() const
+
         {
             return m_DeviceLimits;
         }

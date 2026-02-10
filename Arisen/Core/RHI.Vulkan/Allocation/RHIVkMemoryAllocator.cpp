@@ -5,9 +5,10 @@
 
 namespace ArisenEngine::RHI
 {
-    RHIVkMemoryAllocator::RHIVkMemoryAllocator(RHIVkDevice* device, VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice vkDevice, uint32_t vulkanApiVersion)
-        : m_Device(device)
+    RHIVkMemoryAllocator::RHIVkMemoryAllocator(RHIVkDevice* device, VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice vkDevice, uint32_t vulkanApiVersion, std::atomic<UInt64>* memoryCounter)
+        : m_Device(device), m_MemoryCounter(memoryCounter)
     {
+
         VmaAllocatorCreateInfo allocatorInfo = {};
         allocatorInfo.vulkanApiVersion = vulkanApiVersion;
         allocatorInfo.physicalDevice = physicalDevice;
@@ -38,8 +39,17 @@ namespace ArisenEngine::RHI
         {
             return false;
         }
-        return vmaBindBufferMemory(m_VmaAllocator, *outAllocation, buffer) == VK_SUCCESS;
+        if (vmaBindBufferMemory(m_VmaAllocator, *outAllocation, buffer) != VK_SUCCESS) return false;
+
+        if (m_MemoryCounter)
+        {
+            VmaAllocationInfo info;
+            vmaGetAllocationInfo(m_VmaAllocator, *outAllocation, &info);
+            m_MemoryCounter->fetch_add(info.size, std::memory_order_relaxed);
+        }
+        return true;
     }
+
 
     bool RHIVkMemoryAllocator::AllocateImageMemory(VkImage image, VmaMemoryUsage usage, VmaAllocation* outAllocation)
     {
@@ -50,15 +60,31 @@ namespace ArisenEngine::RHI
         {
             return false;
         }
-        return vmaBindImageMemory(m_VmaAllocator, *outAllocation, image) == VK_SUCCESS;
+        if (vmaBindImageMemory(m_VmaAllocator, *outAllocation, image) != VK_SUCCESS) return false;
+
+        if (m_MemoryCounter)
+        {
+            VmaAllocationInfo info;
+            vmaGetAllocationInfo(m_VmaAllocator, *outAllocation, &info);
+            m_MemoryCounter->fetch_add(info.size, std::memory_order_relaxed);
+        }
+        return true;
     }
+
 
     void RHIVkMemoryAllocator::FreeMemory(VmaAllocation allocation)
     {
         if (allocation != VK_NULL_HANDLE)
         {
+            if (m_MemoryCounter)
+            {
+                VmaAllocationInfo info;
+                vmaGetAllocationInfo(m_VmaAllocator, allocation, &info);
+                m_MemoryCounter->fetch_sub(info.size, std::memory_order_relaxed);
+            }
             vmaFreeMemory(m_VmaAllocator, allocation);
         }
+
     }
 }
 
