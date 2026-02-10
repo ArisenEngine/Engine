@@ -1,12 +1,14 @@
 #include "RHIErrorExports.h"
 #include <thread>
-#include <string>
+#include "Base/FoundationMinimal.h"
+
+using namespace ArisenEngine;
 
 namespace
 {
     // Thread-local error storage
     thread_local RHI_ErrorCode s_LastError = RHI_ERROR_NONE;
-    thread_local std::string s_LastErrorMessage;
+    thread_local String s_LastErrorMessage;
 
     // Error code to message mapping
     const char* GetErrorString(RHI_ErrorCode code)
@@ -36,7 +38,7 @@ extern "C" ENGINE_DLL RHI_ErrorCode RHI_GetLastError()
 
 extern "C" ENGINE_DLL const char* RHI_GetLastErrorMessage()
 {
-    if (s_LastErrorMessage.empty() && s_LastError != RHI_ERROR_NONE)
+    if (s_LastErrorMessage.IsEmpty() && s_LastError != RHI_ERROR_NONE)
     {
         return GetErrorString(s_LastError);
     }
@@ -46,7 +48,7 @@ extern "C" ENGINE_DLL const char* RHI_GetLastErrorMessage()
 extern "C" ENGINE_DLL void RHI_ClearError()
 {
     s_LastError = RHI_ERROR_NONE;
-    s_LastErrorMessage.clear();
+    s_LastErrorMessage.Clear();
 }
 
 // Internal function for other RHI modules to set errors

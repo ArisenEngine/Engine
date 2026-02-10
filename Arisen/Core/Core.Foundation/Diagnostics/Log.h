@@ -2,6 +2,7 @@
 
 #include "../Base/BasicMacros.h"
 #include "../Base/StandardHeaders.h"
+#include "../String/String.h"
 #include "ILogHandler.h"
 
 namespace ArisenEngine::Diagnostics
@@ -76,20 +77,20 @@ namespace ArisenEngine::Diagnostics
 
     private:
         template<typename T>
-        static void InternalLogTyped(LogLevel level, const T& msg, const std::source_location& loc, const char* thread_name) {
+        static void InternalLogTyped(ArisenEngine::LogLevel level, const T& msg, const std::source_location& loc, const char* thread_name) {
             if constexpr (std::is_convertible_v<T, const char*>) {
                 InternalLog(level, static_cast<const char*>(msg), loc, thread_name);
             } else if constexpr (requires { msg.c_str(); }) {
                 InternalLog(level, msg.c_str(), loc, thread_name);
             } else {
-                std::string s = std::format("{}", msg);
+                ArisenEngine::String s = std::format("{}", msg);
                 InternalLog(level, s.c_str(), loc, thread_name);
             }
         }
 
         template<typename... Args>
-        static void LogFormat(LogLevel level, std::format_string<Args...> fmt, std::source_location loc, Args&&... args) {
-            std::string msg = std::format(fmt, std::forward<Args>(args)...);
+        static void LogFormat(ArisenEngine::LogLevel level, auto fmt, std::source_location loc, Args&&... args) {
+            ArisenEngine::String msg = std::format(fmt, std::forward<Args>(args)...);
             InternalLog(level, msg.c_str(), loc);
         }
 
@@ -132,15 +133,25 @@ namespace ArisenEngine::Diagnostics
 #define LOG_FATAL_AND_THROW_F(fmt, ...)                            \
     do                                                             \
     {                                                              \
-        std::string _msg = std::format(fmt, __VA_ARGS__);           \
-        ArisenEngine::Diagnostics::Log::Fatal(_msg.c_str());                    \
-        throw std::runtime_error(_msg);                            \
+        String _msg = String::Format(fmt, __VA_ARGS__);            \
+        ArisenEngine::Diagnostics::Log::Fatal(_msg.c_str());       \
+        throw std::runtime_error(_msg.c_str());                    \
     } while (0)
 
 #define LOG_ERROR_AND_THROW_F(fmt, ...)                            \
     do                                                             \
     {                                                              \
-        std::string _msg = std::format(fmt, __VA_ARGS__);           \
-        ArisenEngine::Diagnostics::Log::Error(_msg.c_str());                    \
-        throw std::runtime_error(_msg);                            \
+        String _msg = String::Format(fmt, __VA_ARGS__);            \
+        ArisenEngine::Diagnostics::Log::Error(_msg.c_str());       \
+        throw std::runtime_error(_msg.c_str());                    \
     } while (0)
+ 
+/**
+ * @brief Specialization for std::format support of engine String.
+ */
+template <>
+struct std::formatter<ArisenEngine::String> : std::formatter<std::string_view> {
+    auto format(const ArisenEngine::String& s, format_context& ctx) const {
+        return std::formatter<std::string_view>::format(static_cast<std::string_view>(s), ctx);
+    }
+};

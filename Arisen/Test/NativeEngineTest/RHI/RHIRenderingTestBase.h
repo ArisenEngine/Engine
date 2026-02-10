@@ -4,7 +4,7 @@
 #include <chrono>
 #include <iostream>
 #include <filesystem>
-#include <string>
+#include "Base/FoundationMinimal.h"
 
 // RHI Includes
 #include "RHI/Enums/Pipeline/EAccessFlag.h"
@@ -74,12 +74,12 @@ namespace ArisenEngine::Testing
 
     protected:
         void InitCommonResources();
-        void InitShaderProgram(const std::wstring& shaderName);
+        void InitShaderProgram(const String& shaderName);
         void TeardownCommonResources();
         
         void UploadImage(RHI_ImageHandle textureHandle, UInt64 imageSize, void* data, UInt32 texWidth, UInt32 texHeight, RHI::EImageLayout finalLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         
         // Helper to get shader environment string
-        std::wstring GetShaderEnvString();
+        String GetShaderEnvString();
     };
 }

@@ -92,10 +92,10 @@ namespace ArisenEngine::Core
          */
         static LONG WINAPI ArisenUnhandledExceptionFilter(EXCEPTION_POINTERS* ep)
         {
-            std::string msg = "Unknown SEH Exception";
+            String msg = "Unknown SEH Exception";
             if (ep && ep->ExceptionRecord)
             {
-                msg = std::format("Unhandled Exception: 0x{:08X} at address 0x{:P}", 
+                msg = String::Format("Unhandled Exception: 0x%08X at address 0x%P", 
                     ep->ExceptionRecord->ExceptionCode, ep->ExceptionRecord->ExceptionAddress);
             }
             ArisenEngine::ReportAssertionFailure("SEH Exception", "Unknown", 0, "ArisenUnhandledExceptionFilter", msg.c_str());

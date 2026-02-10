@@ -1,4 +1,5 @@
 #include "Assertion.h"
+#include "String/String.h"
 #include "../Diagnostics/Log.h"
 #include <cstdio>
 #include <format>
@@ -48,19 +49,19 @@ namespace ArisenEngine
 
     void ReportAssertionFailure(const char* condition, const char* file, int line, const char* function, const char* msg)
     {
-        std::string errorMessage = std::format("Assertion Failed: ({})\nFile: {}\nLine: {}\nFunction: {}", 
+        String errorMessage = String::Format("Assertion Failed: (%s)\nFile: %s\nLine: %d\nFunction: %s", 
                                              condition, file, line, function);
         
         if (msg)
         {
-            errorMessage += std::format("\nMessage: {}", msg);
+            errorMessage += String::Format("\nMessage: %s", msg);
         }
 
 #if HAS_STACKTRACE
         try {
             auto trace = std::stacktrace::current();
             errorMessage += "\nStacktrace:\n";
-            errorMessage += std::to_string(trace);
+            errorMessage += std::to_string(trace).c_str();
         } catch (...) {}
 #elif defined(_WIN32)
         errorMessage += "\nStacktrace (Windows):\n";
@@ -82,18 +83,18 @@ namespace ArisenEngine
                 DWORD displacement;
                 if (SymGetLineFromAddr64(process, (DWORD64)(stack[i]), &displacement, &line))
                 {
-                    errorMessage += std::format("{}: {}() - {}:{}\n", 
+                    errorMessage += String::Format("%u: %s() - %s:%u\n", 
                         i, symbol->Name, line.FileName, line.LineNumber);
                 }
                 else
                 {
-                    errorMessage += std::format("{}: {}() - 0x{:X}\n", 
+                    errorMessage += String::Format("%u: %s() - 0x%llX\n", 
                         i, symbol->Name, symbol->Address);
                 }
             }
             else
             {
-                errorMessage += std::format("{}: 0x{:X}\n", i, (uintptr_t)stack[i]);
+                errorMessage += String::Format("%u: 0x%p\n", i, stack[i]);
             }
         }
 #endif

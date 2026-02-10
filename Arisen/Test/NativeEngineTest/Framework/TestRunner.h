@@ -1,9 +1,9 @@
 #pragma once
 
-#include <string>
 #include <vector>
 #include <functional>
 #include <memory>
+#include "Base/FoundationMinimal.h"
 #include "Logger/Logger.h"
 
 namespace ArisenEngine::Testing
@@ -68,9 +68,9 @@ namespace ArisenEngine::Testing
     public:
         struct TestResult
         {
-            std::string testName;
+            String testName;
             bool passed;
-            std::string errorMessage;
+            String errorMessage;
         };
 
         /**
@@ -108,10 +108,10 @@ namespace ArisenEngine::Testing
         /**
          * @brief Run a specific test by name.
          */
-        static std::vector<TestResult> RunTestByName(const std::string& name)
+        static std::vector<TestResult> RunTestByName(const String& name)
         {
             return RunWithFilter([&name](const ITest& test) {
-                return std::string(test.GetName()) == name;
+                return name == test.GetName();
             });
         }
 
@@ -133,12 +133,12 @@ namespace ArisenEngine::Testing
                 TestResult result{ test->GetName(), false, "" };
                 try
                 {
-                    LOG_INFO((std::string("[TEST] Starting: ") + test->GetName()).c_str());
+                    LOG_INFO((String("[TEST] Starting: ") + test->GetName()).c_str());
 
                     if (!test->Setup())
                     {
                         result.errorMessage = "Setup failed";
-                        LOG_ERROR((std::string("[FAILED] ") + test->GetName() + " - Setup failed").c_str());
+                        LOG_ERROR((String("[FAILED] ") + test->GetName() + " - Setup failed").c_str());
                     }
                     else
                     {
@@ -147,11 +147,11 @@ namespace ArisenEngine::Testing
 
                         if (result.passed)
                         {
-                            LOG_INFO((std::string("[PASSED] ") + test->GetName()).c_str());
+                            LOG_INFO((String("[PASSED] ") + test->GetName()).c_str());
                         }
                         else
                         {
-                            LOG_ERROR((std::string("[FAILED] ") + test->GetName() + " - Test logic failed").c_str());
+                            LOG_ERROR((String("[FAILED] ") + test->GetName() + " - Test logic failed").c_str());
                             result.errorMessage = "Test logic failed";
                         }
                     }
@@ -160,13 +160,13 @@ namespace ArisenEngine::Testing
                 {
                     result.passed = false;
                     result.errorMessage = ex.what();
-                    LOG_ERROR((std::string("[FAILED] ") + test->GetName() + " - Exception: " + ex.what()).c_str());
+                    LOG_ERROR((String("[FAILED] ") + test->GetName() + " - Exception: " + ex.what()).c_str());
                 }
                 catch (...)
                 {
                     result.passed = false;
                     result.errorMessage = "Unknown exception";
-                    LOG_ERROR((std::string("[FAILED] ") + test->GetName() + " - Unknown exception").c_str());
+                    LOG_ERROR((String("[FAILED] ") + test->GetName() + " - Unknown exception").c_str());
                 }
 
                 results.push_back(result);
@@ -182,7 +182,7 @@ namespace ArisenEngine::Testing
                 size_t passed = 0;
                 for (const auto& r : results) { if (r.passed) ++passed; }
                 LOG_INFO("=== Test Summary ===");
-                LOG_INFO(("Total: " + std::to_string(results.size()) + " | Passed: " + std::to_string(passed) + " | Failed: " + std::to_string(results.size() - passed)).c_str());
+                LOG_INFO(String::Format("Total: %zu | Passed: %zu | Failed: %zu", results.size(), passed, results.size() - passed).c_str());
             }
             
             // Critical: Ensure all logs are flushed before possible exit/crash

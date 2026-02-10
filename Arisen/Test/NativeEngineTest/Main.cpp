@@ -19,7 +19,7 @@
 #include "../../Engine/NativeEngine/Core/EngineInit.h"
 #include <windows.h>
 #include <vector>
-#include <string>
+#include "Base/FoundationMinimal.h"
 
 using namespace ArisenEngine::Testing;
 
@@ -55,14 +55,14 @@ int main(int argc, char** argv)
     TestRunner::RegisterTest<RHIDebugTest>();
     
     // Parse simple command line for filtering (lpCmdLine for WinMain)
-    std::string cmdLine = GetCommandLineA();
+    ArisenEngine::String cmdLine = GetCommandLineA();
     
     // Run tests based on command line or run all by default
-    if (cmdLine.find("--unit") != std::string::npos)
+    if (cmdLine.Contains("--unit"))
     {
         TestRunner::RunByCategory(TestCategory::Unit);
     }
-    else if (cmdLine.find("--rendering") != std::string::npos)
+    else if (cmdLine.Contains("--rendering"))
     {
         TestRunner::RunByCategory(TestCategory::Rendering);
     }

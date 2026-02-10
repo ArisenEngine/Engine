@@ -4,6 +4,7 @@
 
 namespace ArisenEngine::Testing
 {
+    using namespace ArisenEngine;
     class RHIMeshShaderTest : public RHIRenderingTestBase
     {
     private:
@@ -18,7 +19,7 @@ namespace ArisenEngine::Testing
 
         RHI_GPUProgramHandle CreateProgram(const std::wstring& shaderName, RHI::EShaderStage stageFlag, const char* entryPoint, const Containers::Vector<String>& defines = {})
         {
-            std::wstring envStr = GetShaderEnvString();
+            std::wstring envStr = GetShaderEnvString().ToWString();
             
             namespace fs = std::filesystem;
             wchar_t exePathW[MAX_PATH]{};
