@@ -22,14 +22,21 @@ public:
   struct PoolEntry {
     TResource resource;
     std::atomic<UInt32> generation{0};
+
     uint32_t nextFreeIndex{0}; // Used by AtomicStack
   };
+
+  std::atomic<UInt32>* m_TrackingCounter{nullptr};
+
 
   static constexpr uint32_t BlockSize = 1024;
   static constexpr uint32_t MaxBlocks = 1024; // ~1M entries total
 
-  explicit RHIResourcePool(size_t initialCapacity = 1024) {
+  explicit RHIResourcePool(std::atomic<UInt32>* trackingCounter = nullptr, size_t initialCapacity = 1024) 
+ 
+      : m_TrackingCounter(trackingCounter) {
     uint32_t numBlocksNeeded = static_cast<uint32_t>((initialCapacity + BlockSize - 1) / BlockSize);
+
     for (uint32_t i = 0; i < numBlocksNeeded; ++i) {
         Grow();
     }
@@ -78,7 +85,14 @@ public:
     THandle handle;
     handle.index = index;
     handle.generation = newGen;
+
+    if (m_TrackingCounter)
+    {
+        m_TrackingCounter->fetch_add(1, std::memory_order_relaxed);
+    }
+
     return handle;
+
   }
 
   /**
@@ -123,7 +137,14 @@ public:
       // Note: We don't reset the resource here; the caller is expected to do it
       // or the next Allocate(initFn) will overwrite it.
       m_FreeStack.Push(handle.index, &entry->nextFreeIndex);
+
+      if (m_TrackingCounter)
+      {
+          m_TrackingCounter->fetch_sub(1, std::memory_order_relaxed);
+      }
+
       return &entry->resource;
+
     }
 
     return nullptr;

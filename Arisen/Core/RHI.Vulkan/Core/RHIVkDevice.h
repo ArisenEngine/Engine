@@ -15,8 +15,10 @@
 #include <functional>
 #include "RenderPass/RHIVkGPURenderPass.h"
 #include "RHI/Sync/FrameSyncTracker.h"
+#include "RHI/Core/RHIInspector.h"
 
 namespace ArisenEngine::RHI
+
 {
     class RHIVkCommandBufferPool;
     class RHIVkDeferredDeletion;
@@ -73,7 +75,10 @@ namespace ArisenEngine::RHI
             return m_GPUPipelineManager;
         }
 
+        const RHIResourceStats& GetResourceStats() const override { return m_Stats; }
+
         RHIDescriptorPool* GetDescriptorPool() const override
+
         {
             return m_DescriptorPool;
         }
@@ -125,9 +130,11 @@ namespace ArisenEngine::RHI
         UInt32 m_ComputeFamilyIndex;
         VkPhysicalDeviceMemoryProperties m_VkPhysicalDeviceMemoryProperties;
         std::mutex m_SubmitMutex;
-
+        
+        RHIResourceStats m_Stats;
 
         std::unique_ptr<IRHIDeferredDeletionQueue> m_DeferredDeletion;
+
         std::unique_ptr<RHIResourceRegistry> m_ResourceRegistry;
         std::atomic<UInt32> m_CurrentFrameIndex{0};
         std::unique_ptr<RHIQueue> m_GraphicsQueue;

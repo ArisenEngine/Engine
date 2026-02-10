@@ -2,8 +2,10 @@
 #include "RHI/Allocation/RHIMemoryAllocator.h"
 #include <vma/vk_mem_alloc.h>
 #include "vulkan_core.h"
+#include <atomic>
 
 namespace ArisenEngine::RHI
+
 {
     class RHIVkDevice;
 
@@ -11,8 +13,9 @@ namespace ArisenEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkMemoryAllocator)
-        explicit RHIVkMemoryAllocator(RHIVkDevice* device, VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice vkDevice, uint32_t vulkanApiVersion);
+        explicit RHIVkMemoryAllocator(RHIVkDevice* device, VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice vkDevice, uint32_t vulkanApiVersion, std::atomic<UInt64>* memoryCounter = nullptr);
         ~RHIVkMemoryAllocator() noexcept override;
+
 
         void* GetHandle() const override { return m_VmaAllocator; }
         VmaAllocator GetVmaAllocator() const { return m_VmaAllocator; }
@@ -24,7 +27,9 @@ namespace ArisenEngine::RHI
     private:
         VmaAllocator m_VmaAllocator{ VK_NULL_HANDLE };
         RHIVkDevice* m_Device;
+        std::atomic<UInt64>* m_MemoryCounter{nullptr};
     };
+
 }
 
 

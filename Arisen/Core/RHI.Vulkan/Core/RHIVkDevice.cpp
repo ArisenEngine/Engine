@@ -41,7 +41,8 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
 
     auto* vkInstance = static_cast<RHIVkInstance*>(m_Instance);
     m_MemoryAllocator = new RHIVkMemoryAllocator(this, vkInstance->GetVkInstance(), vkInstance->GetPhysicalDevice(),
-                                                 m_VkDevice, VK_API_VERSION_1_2);
+                                                 m_VkDevice, VK_API_VERSION_1_2, &m_Stats.totalVideoMemoryAllocated);
+
 
     m_BindlessManager = new RHIVkBindlessManager(this);
     m_BindlessManager->Initialize();
@@ -61,20 +62,21 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
     const UInt32 maxFramesInFlight = m_Instance->GetMaxFramesInFlight();
     m_FrameSync = std::make_unique<FrameSyncTracker>(maxFramesInFlight);
 
-    m_BufferPool = std::make_unique<RHIResourcePool<RHIBufferHandle, RHIVkBufferPoolItem>>();
-    m_ImagePool = std::make_unique<RHIResourcePool<RHIImageHandle, RHIVkImagePoolItem>>();
-    m_ImageViewPool = std::make_unique<RHIResourcePool<RHIImageViewHandle, RHIVkImageViewPoolItem>>();
-    m_SamplerPool = std::make_unique<RHIResourcePool<RHISamplerHandle, RHIVkSamplerPoolItem>>();
-    m_RenderPassPool = std::make_unique<RHIResourcePool<RHIRenderPassHandle, RHIVkRenderPassPoolItem>>();
-    m_FrameBufferPool = std::make_unique<RHIResourcePool<RHIFrameBufferHandle, RHIVkFrameBufferPoolItem>>();
-    m_SemaphorePool = std::make_unique<RHIResourcePool<RHISemaphoreHandle, RHIVkSemaphorePoolItem>>();
-    m_PipelinePool = std::make_unique<RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>>();
-    m_FencePool = std::make_unique<RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>>();
-    m_GPUProgramPool = std::make_unique<RHIResourcePool<RHIShaderProgramHandle, RHIVkGPUProgramPoolItem>>();
+    m_BufferPool = std::make_unique<RHIResourcePool<RHIBufferHandle, RHIVkBufferPoolItem>>(&m_Stats.bufferCount);
+    m_ImagePool = std::make_unique<RHIResourcePool<RHIImageHandle, RHIVkImagePoolItem>>(&m_Stats.imageCount);
+    m_ImageViewPool = std::make_unique<RHIResourcePool<RHIImageViewHandle, RHIVkImageViewPoolItem>>(&m_Stats.imageViewCount);
+    m_SamplerPool = std::make_unique<RHIResourcePool<RHISamplerHandle, RHIVkSamplerPoolItem>>(&m_Stats.samplerCount);
+    m_RenderPassPool = std::make_unique<RHIResourcePool<RHIRenderPassHandle, RHIVkRenderPassPoolItem>>(&m_Stats.renderPassCount);
+    m_FrameBufferPool = std::make_unique<RHIResourcePool<RHIFrameBufferHandle, RHIVkFrameBufferPoolItem>>(&m_Stats.frameBufferCount);
+    m_SemaphorePool = std::make_unique<RHIResourcePool<RHISemaphoreHandle, RHIVkSemaphorePoolItem>>(&m_Stats.synchronizationCount);
+    m_PipelinePool = std::make_unique<RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>>(&m_Stats.pipelineCount);
+    m_FencePool = std::make_unique<RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>>(&m_Stats.synchronizationCount);
+    m_GPUProgramPool = std::make_unique<RHIResourcePool<RHIShaderProgramHandle, RHIVkGPUProgramPoolItem>>(&m_Stats.shaderProgramCount);
     m_CommandBufferPoolPool = std::make_unique<RHIResourcePool<
         RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>>();
     m_CommandBufferPool = std::make_unique<RHIResourcePool<
-        RHICommandBufferHandle, RHIVkCommandBufferItem>>();
+        RHICommandBufferHandle, RHIVkCommandBufferItem>>(&m_Stats.commandBufferCount);
+
 }
 
 ArisenEngine::RHI::RHIFactory* ArisenEngine::RHI::RHIVkDevice::GetFactory() const

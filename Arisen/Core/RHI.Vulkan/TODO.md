@@ -1,8 +1,5 @@
 
 
-- [ ] **Barrier 辅助工具**
-    - [ ] `TransitionImageLayout` 简化常见 Transition
-    - [ ] `RHI_VALIDATION` 模式下的资源状态验证
 - [ ] **RHI Inspector**: 查看 Handle 计数和内存使用
 
 ---

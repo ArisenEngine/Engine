@@ -16,7 +16,9 @@
 #include "RHI/Unit/RHISecondaryCommandBufferTest.h"
 #include "RHI/Unit/RHIAsyncComputeTest.h"
 #include "RHI/Unit/RHIDebugTest.h"
+#include "RHI/Unit/RHIInspectorTest.h"
 #include "../../Engine/NativeEngine/Core/EngineInit.h"
+
 #include <windows.h>
 #include <vector>
 #include "Base/FoundationMinimal.h"
@@ -53,6 +55,8 @@ int main(int argc, char** argv)
     TestRunner::RegisterTest<RHISecondaryCommandBufferTest>();
     TestRunner::RegisterTest<RHIAsyncComputeTest>();
     TestRunner::RegisterTest<RHIDebugTest>();
+    TestRunner::RegisterTest<RHIInspectorTest>();
+
     
     // Parse simple command line for filtering (lpCmdLine for WinMain)
     ArisenEngine::String cmdLine = GetCommandLineA();
