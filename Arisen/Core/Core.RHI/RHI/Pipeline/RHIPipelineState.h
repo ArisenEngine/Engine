@@ -36,6 +36,9 @@ namespace ArisenEngine::RHI
         UInt32 intersectionShaderIndex = 0xFFFFFFFF;
     };
 }
+
+namespace ArisenEngine::RHI
+{
     class RHIPipelineState
     {
         friend class RHIPipeline;

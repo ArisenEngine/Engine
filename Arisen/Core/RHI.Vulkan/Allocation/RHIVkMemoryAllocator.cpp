@@ -100,6 +100,14 @@ namespace ArisenEngine::RHI
         }
 
     }
+
+    UInt64 RHIVkMemoryAllocator::GetDeviceAddress(VkBuffer buffer)
+    {
+        VkBufferDeviceAddressInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+        info.buffer = buffer;
+        return vkGetBufferDeviceAddress((VkDevice)m_Device->GetHandle(), &info);
+    }
 }
 
 

@@ -14,6 +14,8 @@
 #include "Descriptors/RHIVkBindlessManager.h"
 #include "RenderPass/RHIVkGPURenderPass.h"
 #include "Commands/RHIVkCommandBuffer.h"
+#include "Pipeline/RHIVkGPUPipeline.h"
+#include "Pipeline/RHIVkGPUPipelineStateObject.h"
 #include "Commands/RHIVkCommandBuffer.h"
 #include "../../Core.RHI/RHI/Core/RHIInspector.h"
 
@@ -362,7 +364,7 @@ void ArisenEngine::RHI::RHIVkDevice::SetObjectName(ERHIObjectType type, UInt64 h
         {
             auto* c = reinterpret_cast<RHIVkCommandBuffer*>(handle);
             if (c) {
-                nameInfo.objectHandle = (UInt64)static_cast<VkCommandBuffer>(c->GetHandle());
+                nameInfo.objectHandle = (UInt64)reinterpret_cast<uintptr_t>(c->GetHandle());
                 nameInfo.objectType = VK_OBJECT_TYPE_COMMAND_BUFFER;
             }
         }
@@ -1046,7 +1048,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocAccelerationStructure(RHIAccelerationS
 {
     if (!vkCreateAccelerationStructureKHR) return false;
 
-    auto* asItem = m_AccelerationStructurePool->Allocate(handle);
+    auto* asItem = m_AccelerationStructurePool->Get(handle);
     if (!asItem) return false;
 
     auto* bufItem = m_BufferPool->Get(buffer);
@@ -1075,8 +1077,13 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocAccelerationStructure(RHIAccelerationS
     asItem->size = size;
     asItem->deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(m_VkDevice, &addressInfo);
 
-    auto deferred = [this, handle]() { FreeAccelerationStructureInternal(handle); };
-    asItem->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(deferred));
+    struct DeferredASDeletion
+    {
+        RHIVkDevice* device;
+        RHIAccelerationStructureHandle handle;
+        ~DeferredASDeletion() { device->FreeAccelerationStructureInternal(handle); }
+    };
+    asItem->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(new DeferredASDeletion{this, handle}));
 
     return true;
 }
@@ -1097,7 +1104,7 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseAccelerationStructure(RHIAcceleratio
     }
 }
 
-UInt64 ArisenEngine::RHI::RHIVkDevice::GetAccelerationStructureDeviceAddress(RHIAccelerationStructureHandle handle)
+ArisenEngine::UInt64 ArisenEngine::RHI::RHIVkDevice::GetAccelerationStructureDeviceAddress(RHIAccelerationStructureHandle handle)
 {
     auto* item = m_AccelerationStructurePool->Get(handle);
     return item ? item->deviceAddress : 0;

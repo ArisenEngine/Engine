@@ -119,6 +119,7 @@ public:
 
   // Ray Tracing
   void BuildAccelerationStructures(UInt32 infoCount, const RHIAccelerationStructureBuildGeometryInfo* pInfos, const RHIAccelerationStructureBuildRangeInfo* const* ppBuildRangeInfos) override;
+  void TraceRays(const RHITraceRaysDescriptor& desc) override;
 
   // Debug Markers
   void BeginDebugLabel(const char* label, const Float32 color[4]) override;
