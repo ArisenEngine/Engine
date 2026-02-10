@@ -1,12 +1,5 @@
 
-## 4. Phase 4: Debug & Tooling
 
-**Goal**: 完善调试支持和开发工具。
-
-- [ ] **资源命名**: `RHI_SetObjectName()` 支持 RenderDoc/PIX
-- [ ] **GPU 调试标记**
-    - [ ] `RHI_Cmd_BeginDebugLabel` / `EndDebugLabel`
-    - [ ] `RHI_Cmd_InsertDebugMarker`
 - [ ] **Barrier 辅助工具**
     - [ ] `TransitionImageLayout` 简化常见 Transition
     - [ ] `RHI_VALIDATION` 模式下的资源状态验证

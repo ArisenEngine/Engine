@@ -288,6 +288,22 @@ extern "C" ENGINE_DLL void RHI_Cmd_GenerateMipmaps(RHI_CommandBufferHandle cmd, 
     c->GenerateMipmaps(h);
 }
 
+extern "C" ENGINE_DLL void RHI_Cmd_TransitionImageLayout(RHI_CommandBufferHandle cmd, RHI_ImageHandle image, RHI::EImageLayout targetLayout)
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c == nullptr || image == 0) return;
+    auto h = *reinterpret_cast<RHI::RHIImageHandle*>(&image);
+    c->TransitionImageLayout(h, targetLayout);
+}
+
+extern "C" ENGINE_DLL void RHI_Cmd_TransitionImageLayout_Full(RHI_CommandBufferHandle cmd, RHI_ImageHandle image, RHI::EImageLayout oldLayout, RHI::EImageLayout targetLayout)
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c == nullptr || image == 0) return;
+    auto h = *reinterpret_cast<RHI::RHIImageHandle*>(&image);
+    c->TransitionImageLayout(h, oldLayout, targetLayout);
+}
+
 
 
 extern "C" ENGINE_DLL void RHI_Cmd_BeginRendering(RHI_CommandBufferHandle cmd, ArisenEngine::RHI::RHIRenderingInfo* info)

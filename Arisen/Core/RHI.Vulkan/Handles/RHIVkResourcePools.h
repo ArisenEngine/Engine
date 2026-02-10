@@ -78,6 +78,7 @@ struct RHIVkImagePoolItem {
     UInt32 mipLevels{1};
     String name{"Anonymous"};
     bool needDestroy{false};
+    VkImageLayout currentLayout{VK_IMAGE_LAYOUT_UNDEFINED};
     RHIResourceHandle registryHandle;
 };
 
