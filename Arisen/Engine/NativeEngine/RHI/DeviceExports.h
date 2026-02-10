@@ -23,5 +23,7 @@ extern "C" ENGINE_DLL unsigned long long RHI_Device_SubmitCompute(RHI_DeviceHand
 extern "C" ENGINE_DLL void RHI_Device_WaitQueueTicket(RHI_DeviceHandle device, unsigned long long ticket);
 extern "C" ENGINE_DLL void RHI_Device_WaitComputeQueueTicket(RHI_DeviceHandle device, unsigned long long ticket);
 
+extern "C" ENGINE_DLL void RHI_Device_SetObjectName(RHI_DeviceHandle device, ArisenEngine::RHI::ERHIObjectType type, unsigned long long handle, const char* name);
+
 // Moved to HandlesExports: CreateSampler
 

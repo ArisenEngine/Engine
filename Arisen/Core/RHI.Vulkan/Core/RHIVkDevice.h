@@ -92,6 +92,9 @@ namespace ArisenEngine::RHI
         UInt32 RegisterBindlessResource(RHIBufferHandle buffer) override;
         UInt32 RegisterBindlessResource(RHISamplerHandle sampler) override;
 
+        // Debug & Naming
+        void SetObjectName(ERHIObjectType type, UInt64 handle, const char* name) override;
+
     private:
         RHIVkBindlessManager* GetBindlessManager() const { return m_BindlessManager; }
         UInt32 GetGraphicsFamilyIndex() const { return m_GraphicsFamilyIndex; }
@@ -240,6 +243,12 @@ namespace ArisenEngine::RHI
         PFN_vkCmdEndRenderingKHR vkCmdEndRenderingKHR = nullptr;
         PFN_vkCmdPipelineBarrier2KHR vkCmdPipelineBarrier2KHR = nullptr;
         PFN_vkCmdDrawMeshTasksEXT vkCmdDrawMeshTasksEXT = nullptr;
+
+        // Debug Utils
+        PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = nullptr;
+        PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabelEXT = nullptr;
+        PFN_vkCmdEndDebugUtilsLabelEXT vkCmdEndDebugUtilsLabelEXT = nullptr;
+        PFN_vkCmdInsertDebugUtilsLabelEXT vkCmdInsertDebugUtilsLabelEXT = nullptr;
 
     private:
         // Internal low-level destruction (Vulkan/Memory only, via Registry)

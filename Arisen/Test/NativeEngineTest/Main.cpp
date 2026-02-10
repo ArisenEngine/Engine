@@ -15,6 +15,7 @@
 #include "RHI/Rendering/RHIMultiDrawIndirectTest.h"
 #include "RHI/Unit/RHISecondaryCommandBufferTest.h"
 #include "RHI/Unit/RHIAsyncComputeTest.h"
+#include "RHI/Unit/RHIDebugTest.h"
 #include "../../Engine/NativeEngine/Core/EngineInit.h"
 #include <windows.h>
 #include <vector>
@@ -51,6 +52,7 @@ int main(int argc, char** argv)
     TestRunner::RegisterTest<RHIMultiDrawIndirectTest>();
     TestRunner::RegisterTest<RHISecondaryCommandBufferTest>();
     TestRunner::RegisterTest<RHIAsyncComputeTest>();
+    TestRunner::RegisterTest<RHIDebugTest>();
     
     // Parse simple command line for filtering (lpCmdLine for WinMain)
     std::string cmdLine = GetCommandLineA();

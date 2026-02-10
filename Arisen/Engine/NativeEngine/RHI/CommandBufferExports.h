@@ -40,12 +40,13 @@ extern "C" ENGINE_DLL void RHI_Cmd_CopyBufferToImage(RHI_CommandBufferHandle cmd
 extern "C" ENGINE_DLL void RHI_Cmd_PipelineBarrier_Image(RHI_CommandBufferHandle cmd, unsigned int srcStage, unsigned int dstStage, unsigned int dependency, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIImageMemoryBarrier>* imageBarriers);
 extern "C" ENGINE_DLL void RHI_Cmd_PipelineBarrier_Buffer(RHI_CommandBufferHandle cmd, unsigned int srcStage, unsigned int dstStage, unsigned int dependency, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIBufferMemoryBarrier>* bufferBarriers);
 extern "C" ENGINE_DLL void RHI_Cmd_BatchPipelineBarrier(RHI_CommandBufferHandle cmd, unsigned int srcStage, unsigned int dstStage, unsigned int dependency, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIMemoryBarrier>* memoryBarriers, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIImageMemoryBarrier>* imageBarriers, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIBufferMemoryBarrier>* bufferBarriers);
-extern "C" ENGINE_DLL void RHI_Cmd_WaitSemaphore(RHI_CommandBufferHandle cmd, RHI_SemaphoreHandle semaphore, unsigned int stageFlags);
-extern "C" ENGINE_DLL void RHI_Cmd_SignalSemaphore(RHI_CommandBufferHandle cmd, RHI_SemaphoreHandle semaphore);
 extern "C" ENGINE_DLL void RHI_Cmd_GenerateMipmaps(RHI_CommandBufferHandle cmd, RHI_ImageHandle image);
-
 extern "C" ENGINE_DLL void RHI_Cmd_BeginRendering(RHI_CommandBufferHandle cmd, ArisenEngine::RHI::RHIRenderingInfo* info);
 extern "C" ENGINE_DLL void RHI_Cmd_EndRendering(RHI_CommandBufferHandle cmd);
+
+extern "C" ENGINE_DLL void RHI_Cmd_BeginDebugLabel(RHI_CommandBufferHandle cmd, const char* label, const float color[4]);
+extern "C" ENGINE_DLL void RHI_Cmd_EndDebugLabel(RHI_CommandBufferHandle cmd);
+extern "C" ENGINE_DLL void RHI_Cmd_InsertDebugMarker(RHI_CommandBufferHandle cmd, const char* label, const float color[4]);
 
 // Bind descriptor sets using all sets from a pool/poolId
 extern "C" ENGINE_DLL void RHI_Cmd_BindDescriptorSets_FromPool(RHI_CommandBufferHandle cmd, ArisenEngine::RHI::EPipelineBindPoint bindPoint, unsigned int firstSet, RHI_DescriptorPoolHandle pool, unsigned int poolId);

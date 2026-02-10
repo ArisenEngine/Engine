@@ -909,6 +909,47 @@ void RHIVkCommandBuffer::GenerateMipmaps(RHIImageHandle image) {
   CaptureResource(image);
 }
 
+void RHIVkCommandBuffer::BeginDebugLabel(const char* label, const Float32 color[4])
+{
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
+    if (vkDevice->vkCmdBeginDebugUtilsLabelEXT)
+    {
+        VkDebugUtilsLabelEXT labelInfo{};
+        labelInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+        labelInfo.pLabelName = label;
+        if (color)
+        {
+            memcpy(labelInfo.color, color, sizeof(float) * 4);
+        }
+        vkDevice->vkCmdBeginDebugUtilsLabelEXT(m_VkCommandBuffer, &labelInfo);
+    }
+}
+
+void RHIVkCommandBuffer::EndDebugLabel()
+{
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
+    if (vkDevice->vkCmdEndDebugUtilsLabelEXT)
+    {
+        vkDevice->vkCmdEndDebugUtilsLabelEXT(m_VkCommandBuffer);
+    }
+}
+
+void RHIVkCommandBuffer::InsertDebugMarker(const char* label, const Float32 color[4])
+{
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
+    if (vkDevice->vkCmdInsertDebugUtilsLabelEXT)
+    {
+        VkDebugUtilsLabelEXT labelInfo{};
+        labelInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+        labelInfo.pLabelName = label;
+        if (color)
+        {
+            memcpy(labelInfo.color, color, sizeof(float) * 4);
+        }
+        vkDevice->vkCmdInsertDebugUtilsLabelEXT(m_VkCommandBuffer, &labelInfo);
+    }
+}
+
 VkFence RHIVkCommandBuffer::GetSubmissionFence() const
 {
     // Fence ownership is separated from command buffer. Queue/device owns synchronization.

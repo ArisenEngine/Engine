@@ -90,6 +90,7 @@ struct RHIVkImageViewPoolItem {
     EFormat format{EFormat::FORMAT_UNDEFINED};
     UInt32 width{0};
     UInt32 height{0};
+    std::string name{"Anonymous"};
     RHIResourceHandle registryHandle;
 };
 

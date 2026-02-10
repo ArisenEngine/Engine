@@ -12,6 +12,25 @@ namespace ArisenEngine::RHI
         const char* name;
         EShaderStage stage;
     } RHIShaderProgramDesc;
+
+    enum class ERHIObjectType
+    {
+        Buffer,
+        Image,
+        ImageView,
+        Sampler,
+        RenderPass,
+        FrameBuffer,
+        Semaphore,
+        Fence,
+        GPUPipeline,
+        GPUProgram,
+        CommandBuffer,
+        CommandBufferPool,
+        DescriptorPool,
+        DescriptorSet,
+        Unknown
+    };
     
 }
 
