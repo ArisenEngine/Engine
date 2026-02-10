@@ -4,6 +4,7 @@
 
 namespace ArisenEngine::Testing
 {
+    using namespace ArisenEngine;
     class RHITessellationShaderTest : public RHIRenderingTestBase
     {
     private:
@@ -43,7 +44,7 @@ namespace ArisenEngine::Testing
 
             InitCommonResources();
             
-            auto shaderEnv = GetShaderEnvString();
+            auto shaderEnv = GetShaderEnvString().ToWString();
 
             namespace fs = std::filesystem;
             wchar_t exePathW[MAX_PATH]{};

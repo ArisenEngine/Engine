@@ -63,7 +63,7 @@ namespace ArisenEngine::RHI
         
         /// \brief used for DXC args
         /// \return api env value
-        virtual std::wstring GetEnvString() const = 0;
+        virtual String GetEnvString() const = 0;
 
         virtual void CreateSurface(UInt32 windowId) = 0;
         virtual void DestroySurface(UInt32 windowId) = 0;

@@ -28,37 +28,35 @@ namespace ArisenEngine::Testing
         }
     }
 
-    std::wstring RHIRenderingTestBase::GetShaderEnvString()
+    String RHIRenderingTestBase::GetShaderEnvString()
     {
-        std::wstring envStr;
         unsigned int len = RHI_Instance_GetEnvStringW(this->m_Instance, nullptr, 0);
-        if (len > 0)
+        if (len > 1)
         {
-            envStr.resize(len ? (len - 1) : 0);
-            if (len > 1)
-            {
-                RHI_Instance_GetEnvStringW(this->m_Instance, envStr.data(), len);
-            }
+            std::vector<wchar_t> envStr(len);
+            RHI_Instance_GetEnvStringW(this->m_Instance, envStr.data(), len);
+            return String(envStr.data());
         }
-        return envStr;
+        return String("");
     }
 
-    void RHIRenderingTestBase::InitShaderProgram(const std::wstring& shaderName)
+    void RHIRenderingTestBase::InitShaderProgram(const String& shaderName)
     {
-        std::wstring envStr = GetShaderEnvString();
+        String envStr = GetShaderEnvString();
         
         namespace fs = std::filesystem;
         wchar_t exePathW[MAX_PATH]{};
         GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
         auto exeDir = fs::path(exePathW).parent_path();
-        auto currentPath = exeDir.generic_wstring() + L"\\Shader";
-        auto path = currentPath + L"\\" + shaderName + L".hlsl";
+        String currentPath = exeDir.generic_wstring().c_str();
+        currentPath += "\\Shader";
+        String path = currentPath + "\\" + shaderName + ".hlsl";
 
         // Vertex Shader
         HAL::ShaderCompileParams vertexParams
         {
-            path, L"Vert", L"6_0", L"-spirv", envStr, L"0", RHI::EProgramStage::Vertex,
-            {}, {}, currentPath + L"\\" + shaderName + L".vert.spirv", true
+            path, L"Vert", L"6_0", L"-spirv", envStr.ToWString(), L"0", RHI::EProgramStage::Vertex,
+            {}, {}, (currentPath + "\\" + shaderName + ".vert.spirv").ToWString(), true
         };
 
         HAL::ShaderCompilerOutput outputVertex;
@@ -70,8 +68,7 @@ namespace ArisenEngine::Testing
 
         m_VertProgram = RHI_Device_CreateGPUProgram(m_Device);
         {
-            std::string nameStr = String::WStringToString(path);
-            RHI::RHIShaderProgramDesc desc = { outputVertex.codeSize, outputVertex.codePointer, "Vert", nameStr.c_str(), RHI::SHADER_STAGE_VERTEX_BIT };
+            RHI::RHIShaderProgramDesc desc = { outputVertex.codeSize, outputVertex.codePointer, "Vert", path.c_str(), RHI::SHADER_STAGE_VERTEX_BIT };
             RHI_Device_AttachProgramByteCode(m_Device, m_VertProgram, &desc);
         }
         if (outputVertex.codePointer) std::free(outputVertex.codePointer);
@@ -79,8 +76,8 @@ namespace ArisenEngine::Testing
         // Fragment Shader
         HAL::ShaderCompileParams fragmentParams
         {
-            path, L"Frag", L"6_0", L"-spirv", envStr, L"0", RHI::EProgramStage::Fragment,
-            {}, {}, currentPath + L"\\" + shaderName + L".frag.spirv", true
+            path, L"Frag", L"6_0", L"-spirv", envStr.ToWString(), L"0", RHI::EProgramStage::Fragment,
+            {}, {}, (currentPath + "\\" + shaderName + ".frag.spirv").ToWString(), true
         };
 
         HAL::ShaderCompilerOutput outputFragment;
@@ -92,8 +89,7 @@ namespace ArisenEngine::Testing
 
         m_FragProgram = RHI_Device_CreateGPUProgram(m_Device);
         {
-            std::string nameStr = String::WStringToString(path);
-            RHI::RHIShaderProgramDesc desc = { outputFragment.codeSize, outputFragment.codePointer, "Frag", nameStr.c_str(), RHI::SHADER_STAGE_FRAGMENT_BIT };
+            RHI::RHIShaderProgramDesc desc = { outputFragment.codeSize, outputFragment.codePointer, "Frag", path.c_str(), RHI::SHADER_STAGE_FRAGMENT_BIT };
             RHI_Device_AttachProgramByteCode(m_Device, m_FragProgram, &desc);
         }
         if (outputFragment.codePointer) std::free(outputFragment.codePointer);

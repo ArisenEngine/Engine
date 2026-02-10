@@ -125,14 +125,17 @@ extern "C" ENGINE_DLL unsigned int RHI_Instance_GetEnvStringW(RHI_InstanceHandle
 {
     auto* inst = reinterpret_cast<RHI::RHIInstance*>(instance);
     if (inst == nullptr) return 0;
-    auto w = inst->GetEnvString();
-    unsigned int needed = static_cast<unsigned int>(w.size() + 1);
+    auto w = inst->GetEnvString().ToWString();
+    unsigned int needed = static_cast<unsigned int>(w.length() + 1);
     if (buffer == nullptr || bufferLen == 0)
     {
         return needed;
     }
     unsigned int copyLen = (needed <= bufferLen) ? needed : bufferLen;
-    wcsncpy_s(buffer, bufferLen, w.c_str(), copyLen - 1);
+    if (copyLen > 1)
+    {
+        wcsncpy_s(buffer, bufferLen, w.c_str(), copyLen - 1);
+    }
     buffer[copyLen - 1] = L'\0';
     return needed;
 }

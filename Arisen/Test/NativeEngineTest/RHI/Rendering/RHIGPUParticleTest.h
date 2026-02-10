@@ -4,6 +4,7 @@
 
 namespace ArisenEngine::Testing
 {
+    using namespace ArisenEngine;
     struct Particle {
         glm::vec4 position; // xyz, w = life
         glm::vec4 velocity; // xyz, w = maxLife
@@ -30,7 +31,7 @@ namespace ArisenEngine::Testing
 
         RHI_GPUProgramHandle CreateProgram(const std::wstring& shaderName, RHI::EShaderStage stageFlag, const char* entryPoint)
         {
-            std::wstring envStr = GetShaderEnvString();
+            std::wstring envStr = GetShaderEnvString().ToWString();
             
             namespace fs = std::filesystem;
             wchar_t exePathW[MAX_PATH]{};

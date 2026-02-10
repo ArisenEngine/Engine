@@ -1,5 +1,4 @@
 #pragma once
-#include <string>
 #include <vulkan/vulkan.h>
 #include "Definitions/RHIVkCommon.h"
 #include "RHI/Core/RHIInstance.h"
@@ -36,12 +35,9 @@ namespace ArisenEngine::RHI
         EFormat GetSuitableSwapChainFormat(UInt32 windowId) override;
         EPresentMode GetSuitablePresentMode(UInt32 windowId) override;
         
-        std::wstring GetEnvString() const override
+        String GetEnvString() const override
         {
-            return std::wstring(
-                L"vulkan"
-                + std::to_wstring(m_VulkanVersion.major)
-                + L"." + std::to_wstring(m_VulkanVersion.minor));
+            return String::Format("vulkan%d.%d", m_VulkanVersion.major, m_VulkanVersion.minor);
         };
         
         VkInstance GetVkInstance() const { return m_VkInstance; }

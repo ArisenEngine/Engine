@@ -15,15 +15,15 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <string>
 #include <vector>
+#include "Base/FoundationMinimal.h"
 
 
 namespace ArisenEngine::Testing
 {
     struct VertexAttributeDesc
     {
-        std::string name;
+        String name;
         RHI::EFormat format;
         UInt32 offset;
         UInt32 location;
@@ -192,7 +192,7 @@ namespace ArisenEngine::Testing
 
         virtual void RenderFrame() {};
 
-        GLTFModel LoadGLTF(const std::string& path);
+        GLTFModel LoadGLTF(const String& path);
 
         /**
          * @brief Initialize RHI instance with default settings.

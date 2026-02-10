@@ -1,4 +1,7 @@
 #include "String.h"
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include <cstdarg>
 #include <cwchar>
 #include <algorithm>
@@ -57,6 +60,12 @@ namespace ArisenEngine
     {
         if (wstr.empty()) return "";
         
+#ifdef _WIN32
+        int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
+        std::string strTo(size_needed, 0);
+        WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
+        return strTo;
+#else
         std::mbstate_t state = std::mbstate_t();
         const wchar_t* src = wstr.data();
         size_t len = 0;
@@ -73,12 +82,19 @@ namespace ArisenEngine
         }
         
         return std::string(dst.begin(), dst.end());
+#endif
     }
 
     std::wstring String::StringToWString(const std::string& str)
     {
         if (str.empty()) return L"";
 
+#ifdef _WIN32
+        int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+        std::wstring wstrTo(size_needed, 0);
+        MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
+        return wstrTo;
+#else
         std::mbstate_t state = std::mbstate_t();
         const char* src = str.data();
         size_t len = 0;
@@ -94,6 +110,7 @@ namespace ArisenEngine
         }
 
         return std::wstring(dst.begin(), dst.end());
+#endif
     }
 
     String String::Format(const char* format, ...)

@@ -22,7 +22,7 @@ using namespace ArisenEngine;
 
 namespace ArisenEngine::Testing
 {
-    GLTFModel RHITestBase::LoadGLTF(const std::string& path)
+    GLTFModel RHITestBase::LoadGLTF(const String& path)
     {
         cgltf_options options = {};
         cgltf_data* data = nullptr;
@@ -47,7 +47,7 @@ namespace ArisenEngine::Testing
 
         GLTFModel model;
 
-        std::filesystem::path modelPath(path);
+        std::filesystem::path modelPath(path.c_str());
         std::filesystem::path modelDir = modelPath.parent_path();
 
         // Helper for image uploading and mipmap generation
@@ -110,7 +110,7 @@ namespace ArisenEngine::Testing
                 cgltf_texture* tex = mat.pbr_metallic_roughness.base_color_texture.texture;
                 if (tex->image && tex->image->uri)
                 {
-                    auto texPath = (modelDir / tex->image->uri).string();
+                    String texPath = (modelDir / tex->image->uri).string().c_str();
                     int tw, th, tc;
                     stbi_uc* pixels = stbi_load(texPath.c_str(), &tw, &th, &tc, STBI_rgb_alpha);
                     if (pixels)
@@ -142,7 +142,7 @@ namespace ArisenEngine::Testing
                     }
                     else
                     {
-                        LOG_ERRORF("Failed to load texture: {0}", texPath);
+                        LOG_ERRORF("Failed to load texture: {0}", texPath.c_str());
                     }
                 }
             }

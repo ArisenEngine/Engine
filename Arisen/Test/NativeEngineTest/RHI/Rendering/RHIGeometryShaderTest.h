@@ -4,6 +4,7 @@
 
 namespace ArisenEngine::Testing
 {
+    using namespace ArisenEngine;
     class RHIGeometryShaderTest : public RHIRenderingTestBase
     {
     private:
@@ -27,7 +28,7 @@ namespace ArisenEngine::Testing
             InitCommonResources();
             
             // Override programs to include GS
-            auto shaderEnv = GetShaderEnvString();
+            auto shaderEnv = GetShaderEnvString().ToWString();
 
             namespace fs = std::filesystem;
             wchar_t exePathW[MAX_PATH]{};

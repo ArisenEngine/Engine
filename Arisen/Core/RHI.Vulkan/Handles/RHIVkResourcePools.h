@@ -5,7 +5,7 @@
 #include "RHI/Enums/Memory/ESharingMode.h"
 #include "RHI/Enums/Image/EFormat.h"
 #include "RHI/Handles/RHIHandle.h"
-#include <string>
+#include "Base/FoundationMinimal.h"
 
 namespace ArisenEngine::RHI {
 
@@ -42,7 +42,7 @@ struct RHIVkBufferPoolItem {
     UInt64 size{0};
     UInt64 offset{0};
     UInt64 range{0};
-    std::string name{"Anonymous"};
+    String name{"Anonymous"};
     RHIResourceHandle registryHandle; 
 };
 
@@ -76,7 +76,7 @@ struct RHIVkImagePoolItem {
     UInt32 width{0};
     UInt32 height{0};
     UInt32 mipLevels{1};
-    std::string name{"Anonymous"};
+    String name{"Anonymous"};
     bool needDestroy{false};
     RHIResourceHandle registryHandle;
 };
@@ -90,7 +90,7 @@ struct RHIVkImageViewPoolItem {
     EFormat format{EFormat::FORMAT_UNDEFINED};
     UInt32 width{0};
     UInt32 height{0};
-    std::string name{"Anonymous"};
+    String name{"Anonymous"};
     RHIResourceHandle registryHandle;
 };
 
@@ -99,7 +99,7 @@ struct RHIVkImageViewPoolItem {
  */
 struct RHIVkSamplerPoolItem {
     VkSampler sampler{VK_NULL_HANDLE};
-    std::string name{"Anonymous"};
+    String name{"Anonymous"};
     RHIResourceHandle registryHandle;
 };
 
@@ -109,7 +109,7 @@ struct RHIVkSamplerPoolItem {
 struct RHIVkRenderPassPoolItem {
     VkRenderPass renderPass{VK_NULL_HANDLE};
     void* renderPassObj{nullptr}; // Pointer to RHIRenderPass if needed
-    std::string name{"Anonymous"};
+    String name{"Anonymous"};
     RHIResourceHandle registryHandle;
 };
 
@@ -121,7 +121,7 @@ struct RHIVkFrameBufferPoolItem {
     void* frameBufferObj{nullptr};
     UInt32 width{0};
     UInt32 height{0};
-    std::string name{"Anonymous"};
+    String name{"Anonymous"};
     RHIResourceHandle registryHandle;
 };
 
@@ -130,7 +130,7 @@ struct RHIVkFrameBufferPoolItem {
  */
 struct RHIVkSemaphorePoolItem {
     VkSemaphore semaphore{VK_NULL_HANDLE};
-    std::string name{"Anonymous"};
+    String name{"Anonymous"};
     RHIResourceHandle registryHandle;
 };
 
@@ -139,7 +139,7 @@ struct RHIVkSemaphorePoolItem {
  */
 struct RHIVkPipelinePoolItem {
     RHIPipeline* pipeline{nullptr}; 
-    std::string name{"Anonymous"};
+    String name{"Anonymous"};
     RHIResourceHandle registryHandle;
 };
 
@@ -148,7 +148,7 @@ struct RHIVkPipelinePoolItem {
  */
 struct RHIVkFencePoolItem {
     VkFence fence{VK_NULL_HANDLE};
-    std::string name{"Anonymous"};
+    String name{"Anonymous"};
     RHIResourceHandle registryHandle;
 };
 
@@ -166,7 +166,7 @@ struct RHIVkGPUProgramPoolItem {
  */
 struct RHIVkCommandBufferPoolItem {
     RHICommandBufferPool* pool{nullptr};
-    std::string name{"Anonymous"};
+    String name{"Anonymous"};
     RHIResourceHandle registryHandle;
 };
 
@@ -175,7 +175,7 @@ struct RHIVkCommandBufferPoolItem {
  */
 struct RHIVkCommandBufferItem {
     class RHIVkCommandBuffer* commandBuffer{nullptr};
-    std::string name{"Anonymous"};
+    String name{"Anonymous"};
     RHIResourceHandle registryHandle;
 };
 

@@ -138,7 +138,7 @@ namespace ArisenEngine::HAL
             ComPtr<IDxcBlobEncoding> errorBlob;
             if (result && SUCCEEDED(result->GetErrorBuffer(&errorBlob)) && errorBlob)
             {
-                output.msgOut = String(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()));
+                output.msgOut = std::string(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()), errorBlob->GetBufferSize());
                 LOG_ERROR("[CompileShaderFromFile] Shader compilation failed: " + output.msgOut);
             }
             else
