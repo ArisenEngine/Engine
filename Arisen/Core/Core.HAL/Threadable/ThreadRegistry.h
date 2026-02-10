@@ -49,26 +49,28 @@ namespace ArisenEngine
             }
         };
 
+        struct RegistryState {
+            bool usedIndices[MAX_THREADS] = {false};
+            size_t lastAssigned = 0;
+            std::mutex mutex;
+        };
+
+        static RegistryState& GetState() {
+            static RegistryState state;
+            return state;
+        }
+
         static size_t AssignThreadIndex()
         {
-            static std::atomic<uint64_t> s_usedMask{0};
-            static std::mutex s_mutex;
-            
-            // Note: We use a simple bitmask for up to 64 threads for speed, 
-            // but can expand to a larger pool if needed. 
-            // For now, let's use a simpler atomic increment with recycling if we want to support 128.
-            
-            static std::atomic<size_t> s_nextIndex{0};
-            static bool s_freeIndices[MAX_THREADS] = {false};
-            
-            std::lock_guard<std::mutex> lock(s_mutex);
+            auto& state = GetState();
+            std::lock_guard<std::mutex> lock(state.mutex);
             for (size_t i = 0; i < MAX_THREADS; ++i)
             {
-                size_t idx = (s_nextIndex + i) % MAX_THREADS;
-                if (!s_freeIndices[idx])
+                size_t idx = (state.lastAssigned + i) % MAX_THREADS;
+                if (!state.usedIndices[idx])
                 {
-                    s_freeIndices[idx] = true;
-                    s_nextIndex = (idx + 1) % MAX_THREADS;
+                    state.usedIndices[idx] = true;
+                    state.lastAssigned = (idx + 1) % MAX_THREADS;
                     return idx;
                 }
             }
@@ -79,11 +81,10 @@ namespace ArisenEngine
 
         static void ReleaseThreadIndex(size_t index)
         {
-            static std::mutex s_mutex;
-            std::lock_guard<std::mutex> lock(s_mutex);
-            // In a real implementation, we'd mark s_freeIndices[index] = false;
-            // But we need to be careful with static initialization order.
-            // For now, let's just use a simple static array.
+            if (index >= MAX_THREADS) return;
+            auto& state = GetState();
+            std::lock_guard<std::mutex> lock(state.mutex);
+            state.usedIndices[index] = false;
         }
     };
 }

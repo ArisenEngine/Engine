@@ -37,7 +37,7 @@ m_OwnerThreadId(std::this_thread::get_id()),
 m_OwnerThreadIndex(ThreadRegistry::GetThreadIndex())
 {
     m_VkDevice = static_cast<VkDevice>(device->GetHandle());
-    m_VkCommandPool = pool->AcquireThreadCommandPool();
+    m_VkCommandPool = pool->GetCurrentThreadSlot().commandPool;
 
     // Alloc Memory
     {
