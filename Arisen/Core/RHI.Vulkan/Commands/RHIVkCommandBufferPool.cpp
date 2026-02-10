@@ -47,8 +47,20 @@ ArisenEngine::RHI::RHIVkCommandBufferPool::~RHIVkCommandBufferPool() noexcept
 
 RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::GetCommandBuffer(UInt32 currentFrameIndex, ECommandBufferLevel level)
 {
+    // Ensure this thread has its TLS set up and mailbox consumed
+    ThreadLocalFreeList* tlsList = nullptr;
+    using FreeListCache = ThreadLocalCache<RHIVkCommandBufferPool, ThreadLocalFreeList*, struct FreeListTag>;
+    
+    if (!FreeListCache::Get(this, tlsList) || !tlsList)
+    {
+        tlsList = new ThreadLocalFreeList(); 
+        FreeListCache::Set(this, tlsList);
+    }
+
+    ConsumeMailbox(tlsList);
+
     // The base class RHICommandBufferPool handles the m_FreePrimaryCommandBuffers and m_FreeSecondaryCommandBuffers
-    // which are populated by InternalRecycle.
+    // which are populated by InternalRecycle in the global context, but here we prefer TLS first.
     return RHICommandBufferPool::GetCommandBuffer(currentFrameIndex, level);
 }
 
@@ -80,7 +92,12 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::ReleaseCommandBuffer(UInt32 curr
 
 void ArisenEngine::RHI::RHIVkCommandBufferPool::FlushPendingBuffers(ThreadLocalFreeList* tlsList)
 {
-    if (!tlsList || tlsList->pendingBuffers.empty()) return;
+    if (!tlsList) return;
+
+    // First, consume any buffers returned from other threads to this thread's mailbox
+    ConsumeMailbox(tlsList);
+
+    if (tlsList->pendingBuffers.empty()) return;
 
     auto completed = GetDevice()->GetCompletedSubmitTicket();
     
@@ -100,15 +117,30 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::FlushPendingBuffers(ThreadLocalF
     }
 }
 
+void ArisenEngine::RHI::RHIVkCommandBufferPool::ConsumeMailbox(ThreadLocalFreeList* tlsList)
+{
+    size_t threadIdx = ThreadRegistry::GetThreadIndex();
+    RHICommandBuffer* cmd = nullptr;
+    while (m_Mailboxes[threadIdx].TryPop(cmd))
+    {
+        if (cmd)
+        {
+            cmd->ResetInternal();
+            tlsList->freeBuffers.push_back(cmd);
+        }
+    }
+}
+
 void ArisenEngine::RHI::RHIVkCommandBufferPool::InternalRecycle(RHICommandBuffer* commandBuffer)
 {
     commandBuffer->ResetInternal();
 
     auto* vkCmd = static_cast<RHIVkCommandBuffer*>(commandBuffer);
     std::thread::id ownerId = vkCmd->m_OwnerThreadId;
+    size_t ownerThreadIdx = vkCmd->m_OwnerThreadIndex;
 
     // Optimization: If we're on the same thread as the owner, 
-    // we can bypass the global lock and put it straight into TLS free list.
+    // we can bypass the mailbox and put it straight into TLS free list.
     if (ownerId == std::this_thread::get_id())
     {
         ThreadLocalFreeList* tlsList = nullptr;
@@ -120,8 +152,16 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::InternalRecycle(RHICommandBuffer
         }
     }
 
-    std::lock_guard<std::mutex> lock(m_PoolsMutex);
-    m_ThreadFreeBuffers[ownerId].emplace_back(commandBuffer);
+    // Cross-thread recycling: Push to the owner's mailbox using lock-free stack
+    if (ownerThreadIdx < MAX_THREADS)
+    {
+        m_Mailboxes[ownerThreadIdx].Push(commandBuffer);
+    }
+    else
+    {
+        // Fallback or error: Thread index out of range
+        LOG_ERROR("[RHIVkCommandBufferPool::InternalRecycle]: Thread index out of range!");
+    }
 }
 
 ArisenEngine::RHI::RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::CreateCommandBuffer(ECommandBufferLevel level)
@@ -163,6 +203,47 @@ VkCommandPool ArisenEngine::RHI::RHIVkCommandBufferPool::AcquireThreadCommandPoo
     }
 
     std::thread::id threadId = std::this_thread::get_id();
+
+    // Setup TLS cleanup registration if not already done for this thread
+    ThreadLocalFreeList* tlsList = nullptr;
+    using FreeListCache = ThreadLocalCache<RHIVkCommandBufferPool, ThreadLocalFreeList*, struct FreeListTag>;
+    if (!FreeListCache::Get(this, tlsList) || !tlsList)
+    {
+        tlsList = new ThreadLocalFreeList();
+        FreeListCache::Set(this, tlsList);
+    }
+
+    if (!tlsList->registeredCleanup)
+    {
+        ThreadRegistry::RegisterOnExit([this, threadId, tlsList]() {
+            // This lambda runs when the thread exits
+            VkCommandPool threadPool = VK_NULL_HANDLE;
+            {
+                std::lock_guard<std::mutex> lock(m_PoolsMutex);
+                auto it = m_ThreadPools.find(threadId);
+                if (it != m_ThreadPools.end())
+                {
+                    threadPool = it->second;
+                    m_ThreadPools.erase(it);
+                }
+            }
+
+            if (threadPool != VK_NULL_HANDLE)
+            {
+                vkDestroyCommandPool(m_VkDevice, threadPool, nullptr);
+            }
+
+            // Clean up the ThreadLocalFreeList object itself
+            delete tlsList;
+            
+            // Clear the TLS caches for this thread
+            using FreeListCacheInner = ThreadLocalCache<RHIVkCommandBufferPool, ThreadLocalFreeList*, struct FreeListTag>;
+            using PoolCacheInner = ThreadLocalCache<RHIVkCommandBufferPool, VkCommandPool, struct PoolTag>;
+            FreeListCacheInner::Clear();
+            PoolCacheInner::Clear();
+        });
+        tlsList->registeredCleanup = true;
+    }
 
     std::lock_guard<std::mutex> lock(m_PoolsMutex);
     auto it = m_ThreadPools.find(threadId);

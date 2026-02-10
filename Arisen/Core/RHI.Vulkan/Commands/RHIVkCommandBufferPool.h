@@ -5,6 +5,8 @@
 #include <mutex>
 #include <thread>
 #include "Threadable/ThreadLocalCache.h"
+#include "Threadable/ThreadRegistry.h"
+#include "Containers/LockFreeStack.h"
 #include "RHI/Queues/RHIQueueType.h"
 
 
@@ -15,19 +17,10 @@ namespace ArisenEngine::RHI
 
     
     /**
-     * @brief RHIVkCommandBufferPool manages Vulkan command buffers using a two-tier caching system:
+     * @brief RHIVkCommandBufferPool manages Vulkan command buffers using a three-tier caching system:
      *        1. Thread-local cache (FreeListCache) for zero-lock same-thread recycling.
-     *        2. Global map (m_ThreadFreeBuffers) as a "mailbox" for cross-thread recycling.
-     * 
-     * TODO: Future Performance Optimizations:
-     * 1. [Lock-Free Mailbox]: Replace m_ThreadFreeBuffers with a per-thread MPSC lock-free stack 
-     *    to eliminate mutex contention during InternalRecycle (cross-thread return).
-     * 2. [Avoid Map Lookup]: Use a unique thread index and a fixed-size array instead of 
-     *    std::map<std::thread::id, ...> to eliminate hash/lookup overhead in GetCommandBuffer.
-     * 3. [Pool Reset]: Implement vkResetCommandPool optimization if command buffer usage 
-     *    follows strict frame-based lifecycles.
-     * 4. [TLS Cleanup]: Implement a ThreadRegistry to properly delete ThreadLocalFreeList 
-     *    objects when threads terminate to avoid minor memory leaks.
+     *        2. Lock-free Mailboxes for efficient cross-thread recycling without mutex contention.
+     *        3. Global storage for long-term resource management and cleanup.
      */
     class RHIVkCommandBufferPool final : public RHICommandBufferPool
     {
@@ -35,6 +28,7 @@ namespace ArisenEngine::RHI
         struct ThreadLocalFreeList {
              Containers::Vector<RHICommandBuffer*> freeBuffers;
              Containers::Vector<std::pair<RHIGpuTicket, RHICommandBuffer*>> pendingBuffers;
+             bool registeredCleanup = false;
         };
 
     public:
@@ -48,15 +42,23 @@ namespace ArisenEngine::RHI
 
     private:
         void FlushPendingBuffers(ThreadLocalFreeList* tlsList);
+        void ConsumeMailbox(ThreadLocalFreeList* tlsList);
+
         RHICommandBuffer *CreateCommandBuffer(ECommandBufferLevel level) override;
         VkCommandPool AcquireThreadCommandPool();
 
         void InternalRecycle(RHICommandBuffer* commandBuffer) override;
 
         VkDevice m_VkDevice;
+        
+        // Mailboxes for cross-thread recycling. One per thread index.
+        static constexpr size_t MAX_THREADS = 128;
+        Containers::LockFreeStack<RHICommandBuffer*> m_Mailboxes[MAX_THREADS];
+
+        // Global pools and handles for cleanup
         Containers::Map<std::thread::id, VkCommandPool> m_ThreadPools;
-        Containers::Map<std::thread::id, Containers::Vector<RHICommandBuffer*>> m_ThreadFreeBuffers;
         Containers::Vector<RHICommandBufferHandle> m_OwnedHandles;
+        
         RHIQueueType m_QueueType;
         std::mutex m_PoolsMutex;
 
