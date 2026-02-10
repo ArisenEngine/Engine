@@ -82,5 +82,12 @@ extern "C" ENGINE_DLL void RHI_Device_WaitComputeQueueTicket(RHI_DeviceHandle ha
     }
 }
 
+extern "C" ENGINE_DLL void RHI_Device_SetObjectName(RHI_DeviceHandle handle, RHI::ERHIObjectType type, unsigned long long resourceHandle, const char* name)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(handle);
+    if (dev == nullptr || name == nullptr) return;
+    dev->SetObjectName(type, resourceHandle, name);
+}
+
 // Moved to HandlesExports: CreateSampler
 

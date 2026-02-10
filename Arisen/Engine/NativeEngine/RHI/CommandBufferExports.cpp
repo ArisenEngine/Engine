@@ -308,6 +308,27 @@ extern "C" ENGINE_DLL void RHI_Cmd_EndRendering(RHI_CommandBufferHandle cmd)
     }
 }
 
+extern "C" ENGINE_DLL void RHI_Cmd_BeginDebugLabel(RHI_CommandBufferHandle cmd, const char* label, const float color[4])
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c == nullptr) return;
+    c->BeginDebugLabel(label, color);
+}
+
+extern "C" ENGINE_DLL void RHI_Cmd_EndDebugLabel(RHI_CommandBufferHandle cmd)
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c == nullptr) return;
+    c->EndDebugLabel();
+}
+
+extern "C" ENGINE_DLL void RHI_Cmd_InsertDebugMarker(RHI_CommandBufferHandle cmd, const char* label, const float color[4])
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c == nullptr) return;
+    c->InsertDebugMarker(label, color);
+}
+
 extern "C" ENGINE_DLL void RHI_Cmd_BindDescriptorSets_FromPool(RHI_CommandBufferHandle cmd, RHI::EPipelineBindPoint bindPoint, unsigned int firstSet, RHI_DescriptorPoolHandle pool, unsigned int poolId)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);

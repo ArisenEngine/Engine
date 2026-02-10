@@ -139,6 +139,8 @@ namespace ArisenEngine::RHI
             return m_CommandBufferPool;
         };
 
+        virtual void* GetHandle() const = 0;
+
     protected:
         void SetLatestSubmitTicket(RHIGpuTicket id) { m_LatestSubmitTicket = id; }
         RHIGpuTicket GetLatestSubmitTicket() const { return m_LatestSubmitTicket; }
@@ -212,6 +214,11 @@ namespace ArisenEngine::RHI
             const RHIBufferMemoryBarrier* pBufferMemoryBarriers, UInt32 bufferMemoryBarrierCount) = 0;
 
         virtual void GenerateMipmaps(RHIImageHandle image) = 0;
+
+        // Debug Markers
+        virtual void BeginDebugLabel(const char* label, const Float32 color[4]) = 0;
+        virtual void EndDebugLabel() = 0;
+        virtual void InsertDebugMarker(const char* label, const Float32 color[4]) = 0;
 
         // Vector-based overloads (delegating to pointer-based ones)
         void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,

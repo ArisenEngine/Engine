@@ -99,6 +99,9 @@ namespace ArisenEngine::RHI
         virtual UInt32 RegisterBindlessResource(RHIBufferHandle buffer) { (void)buffer; return 0xFFFFFFFF; }
         virtual UInt32 RegisterBindlessResource(RHISamplerHandle sampler) { (void)sampler; return 0xFFFFFFFF; }
 
+        // Debug & Naming
+        virtual void SetObjectName(ERHIObjectType type, UInt64 handle, const char* name) { (void)type; (void)handle; (void)name; }
+
     protected:
         friend class RHIFactory;
 

@@ -25,6 +25,8 @@ public:
   NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkCommandBuffer)
   ~RHIVkCommandBuffer() noexcept override;
   RHIVkCommandBuffer(RHIVkDevice *device, RHIVkCommandBufferPool *pool, ECommandBufferLevel level = COMMAND_BUFFER_LEVEL_PRIMARY);
+  
+  void* GetHandle() const override { return m_VkCommandBuffer; }
 
 
   void BeginRenderPass(RenderPassBeginDesc &&desc) override;
@@ -111,6 +113,11 @@ public:
                        UInt32 bufferMemoryBarrierCount) override;
 
   void GenerateMipmaps(RHIImageHandle image) override;
+
+  // Debug Markers
+  void BeginDebugLabel(const char* label, const Float32 color[4]) override;
+  void EndDebugLabel() override;
+  void InsertDebugMarker(const char* label, const Float32 color[4]) override;
 
     private:
         friend class RHIVkQueue;

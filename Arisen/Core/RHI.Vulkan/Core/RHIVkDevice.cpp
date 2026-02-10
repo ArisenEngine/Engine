@@ -11,6 +11,7 @@
 #include "Utils/RHIVkInitializer.h"
 #include "Descriptors/RHIVkBindlessManager.h"
 #include "RenderPass/RHIVkGPURenderPass.h"
+#include "Commands/RHIVkCommandBuffer.h"
 using namespace ArisenEngine::RHI;
 
 
@@ -31,6 +32,12 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
     vkCmdBeginRenderingKHR = (PFN_vkCmdBeginRenderingKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCmdBeginRenderingKHR");
     vkCmdEndRenderingKHR = (PFN_vkCmdEndRenderingKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCmdEndRenderingKHR");
     vkCmdDrawMeshTasksEXT = (PFN_vkCmdDrawMeshTasksEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdDrawMeshTasksEXT");
+
+    // Debug Utils
+    vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetDeviceProcAddr(m_VkDevice, "vkSetDebugUtilsObjectNameEXT");
+    vkCmdBeginDebugUtilsLabelEXT = (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdBeginDebugUtilsLabelEXT");
+    vkCmdEndDebugUtilsLabelEXT = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdEndDebugUtilsLabelEXT");
+    vkCmdInsertDebugUtilsLabelEXT = (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdInsertDebugUtilsLabelEXT");
 
     auto* vkInstance = static_cast<RHIVkInstance*>(m_Instance);
     m_MemoryAllocator = new RHIVkMemoryAllocator(this, vkInstance->GetVkInstance(), vkInstance->GetPhysicalDevice(),
@@ -227,6 +234,120 @@ ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDevice::RegisterBindlessResource(RH
 ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDevice::RegisterBindlessResource(RHISamplerHandle sampler)
 {
     return m_BindlessManager->RegisterSampler(sampler);
+}
+
+void ArisenEngine::RHI::RHIVkDevice::SetObjectName(ERHIObjectType type, UInt64 handle, const char* name)
+{
+    if (vkSetDebugUtilsObjectNameEXT == nullptr) return;
+
+    VkDebugUtilsObjectNameInfoEXT nameInfo{};
+    nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+    nameInfo.pObjectName = name;
+    nameInfo.objectHandle = handle;
+
+    switch (type)
+    {
+    case ERHIObjectType::Buffer: 
+        {
+            auto h = *reinterpret_cast<RHIBufferHandle*>(&handle);
+            auto* item = m_BufferPool->Get(h);
+            if (item) {
+                nameInfo.objectHandle = (UInt64)item->buffer;
+                nameInfo.objectType = VK_OBJECT_TYPE_BUFFER;
+                item->name = name;
+            }
+        }
+        break;
+    case ERHIObjectType::Image:
+        {
+            auto h = *reinterpret_cast<RHIImageHandle*>(&handle);
+            auto* item = m_ImagePool->Get(h);
+            if (item) {
+                nameInfo.objectHandle = (UInt64)item->image;
+                nameInfo.objectType = VK_OBJECT_TYPE_IMAGE;
+                item->name = name;
+            }
+        }
+        break;
+    case ERHIObjectType::ImageView:
+        {
+            auto h = *reinterpret_cast<RHIImageViewHandle*>(&handle);
+            auto* item = m_ImageViewPool->Get(h);
+            if (item) {
+                nameInfo.objectHandle = (UInt64)item->view;
+                nameInfo.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+                item->name = name;
+            }
+        }
+        break;
+    case ERHIObjectType::Sampler:
+        {
+            auto h = *reinterpret_cast<RHISamplerHandle*>(&handle);
+            auto* item = m_SamplerPool->Get(h);
+            if (item) {
+                nameInfo.objectHandle = (UInt64)item->sampler;
+                nameInfo.objectType = VK_OBJECT_TYPE_SAMPLER;
+                item->name = name;
+            }
+        }
+        break;
+    case ERHIObjectType::RenderPass:
+        {
+            auto h = *reinterpret_cast<RHIRenderPassHandle*>(&handle);
+            auto* item = m_RenderPassPool->Get(h);
+            if (item) {
+                nameInfo.objectHandle = (UInt64)item->renderPass;
+                nameInfo.objectType = VK_OBJECT_TYPE_RENDER_PASS;
+                item->name = name;
+            }
+        }
+        break;
+    case ERHIObjectType::FrameBuffer:
+        {
+            auto h = *reinterpret_cast<RHIFrameBufferHandle*>(&handle);
+            auto* item = m_FrameBufferPool->Get(h);
+            if (item) {
+                nameInfo.objectHandle = (UInt64)item->framebuffer;
+                nameInfo.objectType = VK_OBJECT_TYPE_FRAMEBUFFER;
+                item->name = name;
+            }
+        }
+        break;
+    case ERHIObjectType::Semaphore: nameInfo.objectType = VK_OBJECT_TYPE_SEMAPHORE; break;
+    case ERHIObjectType::Fence: nameInfo.objectType = VK_OBJECT_TYPE_FENCE; break;
+    case ERHIObjectType::GPUPipeline: 
+        {
+            auto h = *reinterpret_cast<RHIPipelineHandle*>(&handle);
+            auto* item = m_PipelinePool->Get(h);
+            if (item) {
+                // In RHIVkGPUPipeline, there are multiple pipelines per frame, but we can name the base one or others
+                // For simplicity, we just use the first available or provided handle
+                nameInfo.objectHandle = handle; // Fallback if handle is already a raw handle
+                nameInfo.objectType = VK_OBJECT_TYPE_PIPELINE;
+                item->name = name;
+            }
+        }
+        break;
+    case ERHIObjectType::GPUProgram: nameInfo.objectType = VK_OBJECT_TYPE_SHADER_MODULE; break;
+    case ERHIObjectType::CommandBuffer: 
+        {
+            auto* c = reinterpret_cast<RHIVkCommandBuffer*>(handle);
+            if (c) {
+                nameInfo.objectHandle = (UInt64)static_cast<VkCommandBuffer>(c->GetHandle());
+                nameInfo.objectType = VK_OBJECT_TYPE_COMMAND_BUFFER;
+            }
+        }
+        break;
+    case ERHIObjectType::CommandBufferPool: nameInfo.objectType = VK_OBJECT_TYPE_COMMAND_POOL; break;
+    case ERHIObjectType::DescriptorPool: nameInfo.objectType = VK_OBJECT_TYPE_DESCRIPTOR_POOL; break;
+    case ERHIObjectType::DescriptorSet: nameInfo.objectType = VK_OBJECT_TYPE_DESCRIPTOR_SET; break;
+    default: nameInfo.objectType = VK_OBJECT_TYPE_UNKNOWN; break;
+    }
+
+    if (nameInfo.objectType != VK_OBJECT_TYPE_UNKNOWN)
+    {
+        vkSetDebugUtilsObjectNameEXT(m_VkDevice, &nameInfo);
+    }
 }
 
 // --- Handle-based Buffer Operations ---
