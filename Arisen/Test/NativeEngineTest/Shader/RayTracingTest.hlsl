@@ -58,7 +58,7 @@ float GeometrySmith(float3 N, float3 V, float3 L, float roughness)
     return ggx1 * ggx2;
 }
 
-[shader("raygen")]
+[shader("raygeneration")]
 void RayGen()
 {
     uint3 launchID = DispatchRaysIndex();
@@ -110,7 +110,7 @@ void ClosestHit(inout RayPayload payload, in BuiltInTriangleIntersectionAttribut
     // We will improve this by passing vertex buffers later.
     
     float3 V = -WorldRayDirection();
-    float3 L = normalize(lightPos - WorldRayPosition());
+    float3 L = normalize(lightPos - WorldRayOrigin());
     float3 H = normalize(V + L);
 
     float3 baseColor = float3(0.8, 0.8, 0.8);

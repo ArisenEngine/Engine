@@ -438,9 +438,11 @@ const VkAccelerationStructureKHR* ArisenEngine::RHI::RHIVkDescriptorPool::GetAcc
         if (item)
         {
             results.emplace_back(item->accelerationStructure);
+            LOG_ERROR("[RHIVkDescriptorPool::GetAccelerationStructureInfos] Handle: " + std::to_string(handle.index) + ", VkHandle: " + std::to_string((UInt64)item->accelerationStructure));
         }
         else
         {
+            LOG_ERROR("[RHIVkDescriptorPool::GetAccelerationStructureInfos] Invalid AS Handle: " + std::to_string(handle.index));
             results.emplace_back(VK_NULL_HANDLE);
         }
     }
@@ -549,7 +551,8 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSet(UInt32 poolId, 
     RHIVkGPUPipelineStateObject* vkPipelineStateObject = static_cast<RHIVkGPUPipelineStateObject*>(pso);
     VkDescriptorUpdateTemplate templateHandle = vkPipelineStateObject->GetVkDescriptorUpdateTemplate(layoutIndex);
 
-    if (templateHandle != VK_NULL_HANDLE)
+    if (templateHandle != VK_NULL_HANDLE && false) // DEBUG: Disable template update to test fallback path
+
     {
         // Use Template Update
         const auto& updateInfosForAllBindings = vkPipelineStateObject->GetDescriptorUpdateInfos(layoutIndex);
@@ -576,6 +579,9 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSet(UInt32 poolId, 
                 auto pImageInfos = GetImageInfos(m_pDevice, updateInfo, imageInfos);
                 auto pBufferInfos = GetBufferInfos(m_pDevice, updateInfo, bufferInfos);
                 auto pBufferViews = GetBufferViews(m_pDevice, updateInfo, bufferViews);
+                
+                Containers::Vector<VkAccelerationStructureKHR> asInfoVec;
+                auto pAsData = GetAccelerationStructureInfos(m_pDevice, updateInfo, asInfoVec);
 
                 // Template entries are sorted by binding, and we iterate updateInfos (sorted Map).
                 // However, some bindings might be missing from updateInfos if not provided by user.
@@ -616,6 +622,11 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSet(UInt32 poolId, 
                     sizeToAppend = bufferViews.size() * sizeof(VkBufferView);
                     dataPtr = bufferViews.data();
                 }
+                else if (pAsData)
+                {
+                    sizeToAppend = asInfoVec.size() * sizeof(VkAccelerationStructureKHR);
+                    dataPtr = asInfoVec.data();
+                }
 
                 if (sizeToAppend > 0 && dataPtr)
                 {
@@ -648,6 +659,8 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSet(UInt32 poolId, 
     Containers::Vector<Containers::Vector<VkDescriptorImageInfo>> imageInfos;
     Containers::Vector<Containers::Vector<VkDescriptorBufferInfo>> bufferInfos;
     Containers::Vector<Containers::Vector<VkBufferView>> bufferViews;
+    Containers::Vector<Containers::Vector<VkAccelerationStructureKHR>> asInfos;
+    Containers::Vector<VkWriteDescriptorSetAccelerationStructureKHR> asWrites;
 
     const auto& updateInfosForAllBindings = vkPipelineStateObject->GetDescriptorUpdateInfos(layoutIndex);
     
@@ -664,6 +677,9 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSet(UInt32 poolId, 
             auto pImageInfos = GetImageInfos(m_pDevice, updateInfo, imageInfos.back());
             auto pBufferInfos = GetBufferInfos(m_pDevice, updateInfo, bufferInfos.back());
             auto pBufferViews = GetBufferViews(m_pDevice, updateInfo, bufferViews.back());
+            
+            asInfos.emplace_back();
+            auto pAsInfos = GetAccelerationStructureInfos(m_pDevice, updateInfo, asInfos.back());
 
             const auto type = updateInfo.type;
             if (type == DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
@@ -684,6 +700,16 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSet(UInt32 poolId, 
                pImageInfos,
                pBufferInfos,
                pBufferViews);
+            
+            if (updateInfo.type == DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+            {
+                VkWriteDescriptorSetAccelerationStructureKHR asWrite{};
+                asWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+                asWrite.accelerationStructureCount = updateInfo.descriptorCount;
+                asWrite.pAccelerationStructures = pAsInfos;
+                asWrites.push_back(asWrite);
+                writeDescriptorSet.pNext = &asWrites.back();
+            }
             
             descriptorWrites.push_back(writeDescriptorSet);
         }

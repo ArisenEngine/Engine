@@ -40,22 +40,32 @@ void RHIVkGPUPipelineStateObject::AddProgram(RHIShaderProgramHandle handle)
     shaderStageCreateInfo.module = static_cast<VkShaderModule>(program->GetHandle());
     shaderStageCreateInfo.pName = program->GetEntry();
     shaderStageCreateInfo.pSpecializationInfo = static_cast<const VkSpecializationInfo*>(program->GetSpecializationInfo());
-    auto it = m_PipelineStageCreateInfos.begin();
-    for(;it != m_PipelineStageCreateInfos.end(); ++it)
+
+    // For ray tracing pipelines, preserve insertion order since shader groups
+    // reference stages by index. Sorting would break the group-to-stage mapping.
+    if (m_BindPoint == EPipelineBindPoint::PIPELINE_BIND_POINT_RAY_TRACING_KHR)
     {
-        if (it->stage == shaderStageCreateInfo.stage)
-        {
-            LOG_ERROR("[RHIVkGPUPipeline::AddProgram]: pipeline stage duplicated, shader name:  " + program->GetName());
-            continue;
-        }
-
-        if (it->stage > shaderStageCreateInfo.stage)
-        {
-            break;
-        }
+        m_PipelineStageCreateInfos.push_back(shaderStageCreateInfo);
     }
+    else
+    {
+        auto it = m_PipelineStageCreateInfos.begin();
+        for(;it != m_PipelineStageCreateInfos.end(); ++it)
+        {
+            if (it->stage == shaderStageCreateInfo.stage)
+            {
+                LOG_ERROR("[RHIVkGPUPipeline::AddProgram]: pipeline stage duplicated, shader name:  " + program->GetName());
+                continue;
+            }
 
-    m_PipelineStageCreateInfos.insert(it, shaderStageCreateInfo);
+            if (it->stage > shaderStageCreateInfo.stage)
+            {
+                break;
+            }
+        }
+
+        m_PipelineStageCreateInfos.insert(it, shaderStageCreateInfo);
+    }
 
     // Merge Reflection Data
     auto vkProgram = static_cast<RHIVkGPUProgram*>(program);
@@ -552,6 +562,9 @@ void RHIVkGPUPipelineStateObject::BuildDescriptorUpdateTemplate(UInt32 layoutInd
             case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
             case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
                 typeSize = sizeof(VkBufferView);
+                break;
+            case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+                typeSize = sizeof(VkAccelerationStructureKHR);
                 break;
             default:
                 break;

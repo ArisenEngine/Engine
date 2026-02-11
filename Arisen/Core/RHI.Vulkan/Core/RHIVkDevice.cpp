@@ -1067,13 +1067,56 @@ void ArisenEngine::RHI::RHIVkDevice::GetAccelerationStructureBuildSizes(const RH
     vkBuildInfo.flags = (VkBuildAccelerationStructureFlagsKHR)buildInfo.flags;
     vkBuildInfo.geometryCount = buildInfo.geometryCount;
     
-    // We would need to convert geometries here too if we were doing a full build size query
-    // For now, let's assume the caller provides correct types that match Vulkan enums
+    // Convert geometries if necessary
+    Containers::Vector<VkAccelerationStructureGeometryKHR> vkGeometries;
+    if (buildInfo.pGeometries && buildInfo.geometryCount > 0)
+    {
+        vkGeometries.reserve(buildInfo.geometryCount);
+        for (UInt32 i = 0; i < buildInfo.geometryCount; ++i)
+        {
+            const auto& rhiGeom = buildInfo.pGeometries[i];
+            VkAccelerationStructureGeometryKHR vkGeom{};
+            vkGeom.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+            vkGeom.geometryType = (VkGeometryTypeKHR)rhiGeom.type;
+            vkGeom.flags = (VkGeometryFlagsKHR)rhiGeom.flags;
+
+            if (rhiGeom.type == ERHIAccelerationStructureGeometryType::Triangles)
+            {
+                vkGeom.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+                vkGeom.geometry.triangles.vertexFormat = (VkFormat)rhiGeom.triangles.vertexFormat;
+                vkGeom.geometry.triangles.vertexData.deviceAddress = rhiGeom.triangles.vertexData;
+                vkGeom.geometry.triangles.vertexStride = rhiGeom.triangles.vertexStride;
+                vkGeom.geometry.triangles.maxVertex = rhiGeom.triangles.maxVertex;
+                vkGeom.geometry.triangles.indexType = (VkIndexType)rhiGeom.triangles.indexType;
+                vkGeom.geometry.triangles.indexData.deviceAddress = rhiGeom.triangles.indexData;
+                vkGeom.geometry.triangles.transformData.deviceAddress = rhiGeom.triangles.transformData;
+            }
+            else if (rhiGeom.type == ERHIAccelerationStructureGeometryType::AABBs)
+            {
+                vkGeom.geometry.aabbs.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR;
+                vkGeom.geometry.aabbs.data.deviceAddress = rhiGeom.aabbs.data;
+                vkGeom.geometry.aabbs.stride = rhiGeom.aabbs.stride;
+            }
+            else if (rhiGeom.type == ERHIAccelerationStructureGeometryType::Instances)
+            {
+                vkGeom.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+                vkGeom.geometry.instances.arrayOfPointers = rhiGeom.instances.arrayOfPointers ? VK_TRUE : VK_FALSE;
+                vkGeom.geometry.instances.data.deviceAddress = rhiGeom.instances.data;
+            }
+            vkGeometries.push_back(vkGeom);
+        }
+    }
+
+    if (!vkGeometries.empty())
+    {
+        vkBuildInfo.pGeometries = vkGeometries.data();
+    }
     
     VkAccelerationStructureBuildSizesInfoKHR vkSizeInfo{};
     vkSizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
     
     vkGetAccelerationStructureBuildSizesKHR(m_VkDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &vkBuildInfo, pMaxPrimitiveCounts, &vkSizeInfo);
+
     
     pSizeInfo->accelerationStructureSize = vkSizeInfo.accelerationStructureSize;
     pSizeInfo->updateScratchSize = vkSizeInfo.updateScratchSize;
@@ -1113,6 +1156,8 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocAccelerationStructure(RHIAccelerationS
     asItem->size = size;
     asItem->deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(m_VkDevice, &addressInfo);
 
+    std::cout << "[RHIVkDevice::AllocAccelerationStructure] Created AS Handle: " << handle.index << ", VkHandle: " << (UInt64)vkAS << ", Address: " << asItem->deviceAddress << std::endl;
+
     struct DeferredASDeletion
     {
         RHIVkDevice* device;
@@ -1126,6 +1171,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocAccelerationStructure(RHIAccelerationS
 
 void ArisenEngine::RHI::RHIVkDevice::ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle)
 {
+    LOG_ERROR("[RHIVkDevice::ReleaseAccelerationStructure] Releasing Handle: " + std::to_string(handle.index));
     auto* item = m_AccelerationStructurePool->Get(handle);
     if (item)
     {
@@ -1154,14 +1200,27 @@ void ArisenEngine::RHI::RHIVkDevice::GetRayTracingShaderGroupHandles(RHIPipeline
     if (!p || !p->pipeline) return;
 
     auto* vkPipeline = static_cast<RHIVkGPUPipeline*>(p->pipeline);
-    // Use frame 0 or current frame? Pipelines are usually the same across frames if not changed.
-    VkPipeline handle = vkPipeline->GetVkPipeline(0); 
+    
+    // Ensure pipeline is allocated for frame 0 (typical for SBT creation outside main loop)
+    VkPipeline handle = vkPipeline->GetVkPipeline(0);
+    if (handle == VK_NULL_HANDLE)
+    {
+        vkPipeline->AllocRayTracingPipeline(0);
+        handle = vkPipeline->GetVkPipeline(0);
+    }
+
+    if (handle == VK_NULL_HANDLE) {
+        LOG_ERROR("[RHIVkDevice::GetRayTracingShaderGroupHandles]: Pipeline allocation failed!");
+        return;
+    }
 
     vkGetRayTracingShaderGroupHandlesKHR(m_VkDevice, handle, firstGroup, groupCount, (size_t)size, pData);
+
 }
 
 void ArisenEngine::RHI::RHIVkDevice::FreeAccelerationStructureInternal(RHIAccelerationStructureHandle handle)
 {
+     LOG_ERROR("[RHIVkDevice::FreeAccelerationStructureInternal] Freeing Handle: " + std::to_string(handle.index));
      auto* item = m_AccelerationStructurePool->Get(handle);
      if (item && item->accelerationStructure != VK_NULL_HANDLE)
      {

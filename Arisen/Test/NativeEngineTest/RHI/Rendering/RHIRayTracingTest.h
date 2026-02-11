@@ -114,6 +114,8 @@ namespace ArisenEngine::Testing
             imgDesc.arrayLayers = 1;
             imgDesc.format = RHI::FORMAT_B8G8R8A8_UNORM;
             imgDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
+            imgDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
+            imgDesc.sharingMode = RHI::SHARING_MODE_EXCLUSIVE;
             imgDesc.usage = RHI::IMAGE_USAGE_STORAGE_BIT | RHI::IMAGE_USAGE_TRANSFER_SRC_BIT;
             imgDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             m_StorageImage = RHI_Device_CreateImage(m_Device, &imgDesc, "RT Storage Image");
@@ -215,7 +217,18 @@ namespace ArisenEngine::Testing
             tlasBufDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             m_TlasBuffer = RHI_Device_CreateBuffer(m_Device, &tlasBufDesc, "TLAS Buffer");
             
-            RHI_Device_AllocAccelerationStructure(m_Device, m_Tlas, (UInt32)tlasInfo.type, tlasSizes.accelerationStructureSize, m_TlasBuffer, 0);
+            LOG_ERROR("Allocating TLAS. Size: " + std::to_string(tlasSizes.accelerationStructureSize));
+            if (!RHI_Device_AllocAccelerationStructure(m_Device, m_Tlas, (UInt32)tlasInfo.type, tlasSizes.accelerationStructureSize, m_TlasBuffer, 0))
+            {
+                LOG_ERROR("Failed to Alloc TLAS! (RHI_Device_AllocAccelerationStructure returned false)");
+            }
+            else
+            {
+                LOG_ERROR("Alloc TLAS Success.");
+            }
+            UInt64 tlasAddr = RHI_Device_GetAccelerationStructureDeviceAddress(m_Device, m_Tlas);
+            LOG_ERROR("TLAS Device Address: " + std::to_string(tlasAddr));
+
 
             // 3. Scratch Buffer
             RHI::RHIBufferDescriptor scratchDesc{};
@@ -271,9 +284,10 @@ namespace ArisenEngine::Testing
             m_Pso = RHI_PipelineManager_CreatePSO(pm);
             RHI_PSO_SetBindPoint(m_Pso, RHI::PIPELINE_BIND_POINT_RAY_TRACING_KHR);
 
-            auto rgen = CompileShader(L"RayTracingTest", "RayGen", "lib_6_3");
-            auto rmiss = CompileShader(L"RayTracingTest", "Miss", "lib_6_3");
-            auto rchit = CompileShader(L"RayTracingTest", "ClosestHit", "lib_6_3");
+            // Use specific profiles to ensure proper reflection of stage flags
+            auto rgen = CompileShader(L"RayTracingTest", "RayGen", "6_3");
+            auto rmiss = CompileShader(L"RayTracingTest", "Miss", "6_3");
+            auto rchit = CompileShader(L"RayTracingTest", "ClosestHit", "6_3");
 
             RHI_PSO_AddProgram(m_Pso, rgen);
             RHI_PSO_AddProgram(m_Pso, rmiss);
@@ -298,6 +312,11 @@ namespace ArisenEngine::Testing
             RHI_PSO_SetMaxRecursionDepth(m_Pso, 1);
 
             // Descriptors
+            if (!m_Tlas)
+            {
+                LOG_ERROR("TLAS handle is invalid (0) in CreatePipeline!");
+            }
+
             Containers::Vector<RHI_AccelerationStructureHandle> tlasses = { m_Tlas };
             RHI_PSO_UpdateDescriptorSet_AccelerationStructures(m_Pso, 0, 0, &tlasses);
             
@@ -312,15 +331,29 @@ namespace ArisenEngine::Testing
             RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 2, &ubos);
 
             RHI_PSO_BuildDescriptorSetLayout(m_Pso);
+
+            // Initialize descriptor pools for each frame in flight
+            for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
+            {
+                Containers::Vector<RHI::EDescriptorType> types = {
+                    RHI::DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
+                    RHI::DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                    RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER
+                };
+                Containers::Vector<UInt32> counts = { 1, 1, 1 };
+                m_DescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &types, &counts, 1));
+            }
+
             m_Pipeline = RHI_PipelineManager_GetRayTracingPipeline(pm, m_Pso);
         }
 
+
         void CreateSBT()
         {
-            // Simplified SBT: 3 groups, each 32 bytes (or handle size)
-            // Need to get handle size from device, but usually 32 is enough padding.
-            UInt32 handleSize = 32; // Placeholder, should be queried
-            UInt32 sbtSize = handleSize * 3;
+            // SBT must be aligned to shaderGroupBaseAlignment (usually 64 bytes)
+            UInt32 handleSize = 32;          // Size of the shader group handle (device property, usually 32)
+            UInt32 groupStride = 64;         // Stride must be aligned to shaderGroupBaseAlignment
+            UInt32 sbtSize = groupStride * 3;
 
             RHI::RHIBufferDescriptor sbtDesc{};
             sbtDesc.size = sbtSize;
@@ -329,7 +362,17 @@ namespace ArisenEngine::Testing
             m_SbtBuffer = RHI_Device_CreateBuffer(m_Device, &sbtDesc, "SBT Buffer");
 
             uint8_t* pSbtData = (uint8_t*)RHI_Buffer_Map(m_Device, m_SbtBuffer);
-            RHI_Device_GetRayTracingShaderGroupHandles(m_Device, m_Pipeline, 0, 3, sbtSize, pSbtData);
+            
+            // Get handles in a temp buffer
+            std::vector<uint8_t> tempHandles(handleSize * 3);
+            RHI_Device_GetRayTracingShaderGroupHandles(m_Device, m_Pipeline, 0, 3, tempHandles.size(), tempHandles.data());
+            
+            // Write to SBT with alignment padding
+            std::memset(pSbtData, 0, sbtSize);
+            std::memcpy(pSbtData + 0 * groupStride, tempHandles.data() + 0 * handleSize, handleSize);
+            std::memcpy(pSbtData + 1 * groupStride, tempHandles.data() + 1 * handleSize, handleSize);
+            std::memcpy(pSbtData + 2 * groupStride, tempHandles.data() + 2 * handleSize, handleSize);
+
             RHI_Buffer_Unmap(m_Device, m_SbtBuffer);
         }
 
@@ -368,14 +411,25 @@ namespace ArisenEngine::Testing
             RHI_Cmd_BindPipeline(cmd, m_Pipeline);
             RHI_Cmd_BindDescriptorSet_FromPool(cmd, RHI::PIPELINE_BIND_POINT_RAY_TRACING_KHR, 0, m_DescriptorPool, poolId, setIdx);
 
+            if (m_Tlas == 0)
+            {
+               LOG_ERROR("TLAS handle is 0 in RecordAndSubmit!");
+            }
+
+
             UInt32 width = HAL::GetWindowWidth(m_WindowId);
             UInt32 height = HAL::GetWindowHeight(m_WindowId);
 
+            // Barrier: Transition Storage Image to GENERAL
+            RHI_Cmd_TransitionImageLayout(cmd, m_StorageImage, RHI::IMAGE_LAYOUT_GENERAL);
+
             RHI::RHITraceRaysDescriptor traceDesc{};
             UInt64 sbtAddr = RHI_Buffer_GetDeviceAddress(m_Device, m_SbtBuffer);
-            traceDesc.raygenShaderRecord = { sbtAddr, 32, 32 };
-            traceDesc.missShaderTable = { sbtAddr + 32, 32, 32 };
-            traceDesc.hitShaderTable = { sbtAddr + 64, 32, 32 };
+            UInt32 groupStride = 64;
+
+            traceDesc.raygenShaderRecord = { sbtAddr + 0 * groupStride, groupStride, groupStride };
+            traceDesc.missShaderTable = { sbtAddr + 1 * groupStride, groupStride, groupStride };
+            traceDesc.hitShaderTable = { sbtAddr + 2 * groupStride, groupStride, groupStride };
             traceDesc.width = width;
             traceDesc.height = height;
             traceDesc.depth = 1;
@@ -386,6 +440,7 @@ namespace ArisenEngine::Testing
             auto colorBuffer = RHI_SwapChain_BeginFrame(m_SwapChain, currentIndex);
             if (colorBuffer)
             {
+                // Barrier: Transition Storage Image to TRANSFER_SRC
                 RHI_Cmd_TransitionImageLayout(cmd, m_StorageImage, RHI::IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
                 RHI_Cmd_TransitionImageLayout(cmd, colorBuffer, RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
                 
@@ -428,7 +483,7 @@ namespace ArisenEngine::Testing
             HAL::ShaderCompileParams params{};
             params.input = path;
             params.entry = entry;
-            params.shaderModel = profile; // e.g. "lib_6_3"
+            params.shaderModel = profile; // Utilizes the specific profile passed (e.g. "raygeneration_6_3")
             params.target = L"-spirv";
             params.targetEnv = L"vulkan1.2";
             params.optimizeLevel = L"0";

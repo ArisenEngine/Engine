@@ -12,6 +12,7 @@ namespace ArisenEngine::RHI
         ~RHIVkSpirvReflectionService() override = default;
 
         bool Reflect(const void* spirvCode, size_t size, RHIShaderReflectionData& outData) override;
+        bool ReflectEntryPoint(const void* spirvCode, size_t size, const char* entryPoint, RHIShaderReflectionData& outData);
 
     private:
         EDescriptorType MapSpirvTypeToDescriptorType(const spirv_cross::Compiler& compiler, const spirv_cross::Resource& resource);

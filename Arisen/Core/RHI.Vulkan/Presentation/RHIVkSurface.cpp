@@ -80,7 +80,7 @@ void RHI::RHIVkSurface::InitSwapChain()
     desc.height = height;
     desc.imageCount = imageCount;
     desc.imageArrayLayers = 1;
-    desc.imageUsageFlagBits = IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    desc.imageUsageFlagBits = IMAGE_USAGE_COLOR_ATTACHMENT_BIT | IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT;
     desc.queueFamilyIndexCount = queueFamilyIndexCount;
     desc.colorFormat = static_cast<EFormat>(formats.format);
     desc.colorSpace = static_cast<EColorSpace>(formats.colorSpace);
