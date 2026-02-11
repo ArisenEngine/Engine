@@ -65,8 +65,10 @@ void RayGen()
     uint3 launchSize = DispatchRaysDimensions();
 
     float2 d = (((float2)launchID.xy + 0.5f) / (float2)launchSize.xy) * 2.f - 1.f;
+    d.y = -d.y; // Flip Y for Vulkan/DXC convention
 
     float4 target = mul(projInverse, float4(d.x, d.y, 1, 1));
+    target.xyz /= target.w;
     float3 rayDir = mul(viewInverse, float4(normalize(target.xyz), 0)).xyz;
     float3 rayOrigin = viewInverse[3].xyz;
 
@@ -91,26 +93,26 @@ void Miss(inout RayPayload payload)
 {
     float3 rayDir = WorldRayDirection();
     float t = 0.5 * (rayDir.y + 1.0);
-    payload.color = (1.0 - t) * float3(1.0, 1.0, 1.0) + t * float3(0.5, 0.7, 1.0);
+    // Invert the gradient logic so blue is top, white is bottom
+    payload.color = t * float3(0.5, 0.7, 1.0) + (1.0 - t) * float3(1.0, 1.0, 1.0);
     payload.hit = false;
 }
 
 [shader("closesthit")]
 void ClosestHit(inout RayPayload payload, in BuiltInTriangleIntersectionAttributes attr)
 {
-    float3 worldNormal = WorldRayDirection(); // Placeholder, need actual normal
-    // In a real hit shader, we would fetch vertex data here.
-    // To keep it simple for the first test, use a procedural normal or constant for now,
-    // or pass vertex buffers.
+    float3 worldNormal = WorldRayDirection(); // Placeholder, still fake normal for now
+    
+    float3 worldHitPos = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
     
     // For now, let's just use the barycentrics to show something.
     float3 barycentrics = float3(1.0 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
     
     float3 N = normalize(cross(WorldRayDirection(), float3(0, 1, 0))); // Very fake normal
-    // We will improve this by passing vertex buffers later.
-    
+    if (length(N) < 0.001) N = float3(0, 1, 0); 
+
     float3 V = -WorldRayDirection();
-    float3 L = normalize(lightPos - WorldRayOrigin());
+    float3 L = normalize(lightPos - worldHitPos);
     float3 H = normalize(V + L);
 
     float3 baseColor = float3(0.8, 0.8, 0.8);

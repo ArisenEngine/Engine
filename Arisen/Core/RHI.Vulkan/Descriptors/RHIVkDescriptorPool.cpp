@@ -438,7 +438,7 @@ const VkAccelerationStructureKHR* ArisenEngine::RHI::RHIVkDescriptorPool::GetAcc
         if (item)
         {
             results.emplace_back(item->accelerationStructure);
-            LOG_ERROR("[RHIVkDescriptorPool::GetAccelerationStructureInfos] Handle: " + std::to_string(handle.index) + ", VkHandle: " + std::to_string((UInt64)item->accelerationStructure));
+            // LOG_DEBUG("[RHIVkDescriptorPool::GetAccelerationStructureInfos] Handle: " + std::to_string(handle.index) + ", VkHandle: " + std::to_string((UInt64)item->accelerationStructure));
         }
         else
         {
@@ -473,6 +473,21 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId,
     Containers::Vector<VkWriteDescriptorSetAccelerationStructureKHR> asWrites;
 
     RHIVkGPUPipelineStateObject* vkPipelineStateObject = static_cast<RHIVkGPUPipelineStateObject*>(pso);
+
+    // Pre-calculate the number of AS writes to avoid vector reallocations invalidating pNext pointers
+    UInt32 totalAsWrites = 0;
+    for (UInt32 i = 0; i < descriptorSets.size(); ++i)
+    {
+        UInt32 layoutIndex = descriptorSets[i]->GetLayoutIndex();
+        for (const auto& updateInfosForAllBindings : vkPipelineStateObject->GetDescriptorUpdateInfos(layoutIndex))
+        {
+            for (const auto& updateInfoPair : updateInfosForAllBindings.second)
+            {
+                if (updateInfoPair.second.type == DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR) totalAsWrites++;
+            }
+        }
+    }
+    asWrites.reserve(totalAsWrites);
 
     for (UInt32 i = 0; i < descriptorSets.size(); ++i)
     {
@@ -511,7 +526,7 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId,
                     asWrite.accelerationStructureCount = updateInfo.descriptorCount;
                     asWrite.pAccelerationStructures = pAsInfos;
                     asWrites.push_back(asWrite);
-                    // Use index to point to the stable vector storage
+                    // Standard stable reference now as vector is reserved
                     writeDescriptorSet.pNext = &asWrites.back();
                 }
 
@@ -664,6 +679,15 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSet(UInt32 poolId, 
 
     const auto& updateInfosForAllBindings = vkPipelineStateObject->GetDescriptorUpdateInfos(layoutIndex);
     
+    // Pre-calculate AS writes for stability
+    UInt32 totalAsWrites = 0;
+    for (const auto& b : updateInfosForAllBindings) {
+        for (const auto& t : b.second) {
+            if (t.second.type == DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR) totalAsWrites++;
+        }
+    }
+    asWrites.reserve(totalAsWrites);
+
     for (const auto& updateInfoForAllTypePair : updateInfosForAllBindings)
     {
         const auto& updateInfoForAllType = updateInfoForAllTypePair.second;
