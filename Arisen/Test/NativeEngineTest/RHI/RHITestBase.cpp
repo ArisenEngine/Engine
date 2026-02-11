@@ -329,7 +329,7 @@ namespace ArisenEngine::Testing
         RHI::RHIBufferDescriptor vbDesc{};
         vbDesc.createFlagBits = 0;
         vbDesc.size = sizeof(GLTFVertex) * vertices.size();
-        vbDesc.usage = RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        vbDesc.usage = RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | RHI::BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
         vbDesc.sharingMode = RHI::SHARING_MODE_EXCLUSIVE;
         vbDesc.queueFamilyIndexCount = 0;
         vbDesc.pQueueFamilyIndices = nullptr;
@@ -340,7 +340,7 @@ namespace ArisenEngine::Testing
         RHI::RHIBufferDescriptor ibDesc{};
         ibDesc.createFlagBits = 0;
         ibDesc.size = sizeof(uint32_t) * indices.size();
-        ibDesc.usage = RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_INDEX_BUFFER_BIT;
+        ibDesc.usage = RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_INDEX_BUFFER_BIT | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | RHI::BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
         ibDesc.sharingMode = RHI::SHARING_MODE_EXCLUSIVE;
         ibDesc.queueFamilyIndexCount = 0;
         ibDesc.pQueueFamilyIndices = nullptr;

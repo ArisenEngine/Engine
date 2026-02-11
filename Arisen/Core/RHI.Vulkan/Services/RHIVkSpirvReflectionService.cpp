@@ -7,6 +7,11 @@ namespace ArisenEngine::RHI
 {
     bool RHIVkSpirvReflectionService::Reflect(const void* spirvCode, size_t size, RHIShaderReflectionData& outData)
     {
+        return ReflectEntryPoint(spirvCode, size, nullptr, outData);
+    }
+
+    bool RHIVkSpirvReflectionService::ReflectEntryPoint(const void* spirvCode, size_t size, const char* entryPoint, RHIShaderReflectionData& outData)
+    {
         if (!spirvCode || size == 0)
         {
             LOG_ERROR("[RHIVkSpirvReflectionService::Reflect] Invalid SPIR-V code.");
@@ -16,7 +21,14 @@ namespace ArisenEngine::RHI
         // Check if size is a multiple of 4 (required by SPIRV-Cross / SPIR-V spec)
         if (size % 4 != 0)
         {
-            LOG_ERROR("[RHIVkSpirvReflectionService::Reflect] SPIR-V size must be a multiple of 4.");
+            LOG_ERROR("[RHIVkSpirvReflectionService::ReflectEntryPoint] Invalid SPIR-V code.");
+            return false;
+        }
+
+        // Check if size is a multiple of 4 (required by SPIRV-Cross / SPIR-V spec)
+        if (size % 4 != 0)
+        {
+            LOG_ERROR("[RHIVkSpirvReflectionService::ReflectEntryPoint] SPIR-V size must be a multiple of 4.");
             return false;
         }
 
@@ -26,6 +38,27 @@ namespace ArisenEngine::RHI
             std::vector<uint32_t> spirv(codePtr, codePtr + (size / 4));
 
             spirv_cross::Compiler compiler(std::move(spirv));
+
+            if (entryPoint && *entryPoint)
+            {
+                auto entryPoints = compiler.get_entry_points_and_stages();
+                bool found = false;
+                for (const auto& ep : entryPoints)
+                {
+                    if (ep.name == entryPoint)
+                    {
+                        compiler.set_entry_point(entryPoint, ep.execution_model);
+                        found = true;
+                        break;
+                    }
+                }
+                
+                if (!found)
+                {
+                     LOG_WARN(String::Format("[RHIVkSpirvReflectionService::ReflectEntryPoint] Entry point '%s' not found in SPIR-V.", entryPoint));
+                }
+            }
+
             spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 
             // Set execution model stage

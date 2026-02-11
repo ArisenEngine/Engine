@@ -41,7 +41,7 @@ bool ArisenEngine::RHI::RHIVkGPUProgram::AttachProgramByteCode(RHIShaderProgramD
 
     // Perform reflection
     RHIVkSpirvReflectionService reflectionService;
-    if (!reflectionService.Reflect(desc.byteCode, desc.codeSize, m_ReflectionData))
+    if (!reflectionService.ReflectEntryPoint(desc.byteCode, desc.codeSize, desc.entry, m_ReflectionData))
     {
         LOG_WARN("[RHIVkGPUProgram::AttachProgramByteCode]: Failed to reflect shader resources for: " + m_Name);
         // We warn but do not fail, as the shader module is valid. 
