@@ -773,6 +773,8 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     vkGetPhysicalDeviceProperties(m_CurrentPhysicsDevice, &physicalProperties);
     {
         logicalDevice->m_DeviceLimits.sampler.maxSamplerAnisotropy = physicalProperties.limits.maxSamplerAnisotropy;
+        // Check if Ray Tracing Pipeline extension was successfully enabled
+        logicalDevice->m_DeviceLimits.rayTracingSupported = isExtensionEnabled(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME) ? 1 : 0;
     }
     
     LOG_INFO(String::Format("[RHIVkInstance::CreateLogicDevice]: Create Logical Device for surface %d", windowId));

@@ -52,12 +52,12 @@ int main(int argc, char** argv)
     // TestRunner::RegisterTest<RHIMeshShaderTest>();
     // TestRunner::RegisterTest<RHIGeometryShaderTest>();
     // TestRunner::RegisterTest<RHITessellationShaderTest>();
-    TestRunner::RegisterTest<RHIMultiDrawIndirectTest>();
+    // TestRunner::RegisterTest<RHIMultiDrawIndirectTest>();
     // TestRunner::RegisterTest<RHISecondaryCommandBufferTest>();
     // TestRunner::RegisterTest<RHIAsyncComputeTest>();
     // TestRunner::RegisterTest<RHIDebugTest>();
     // TestRunner::RegisterTest<RHIInspectorTest>();
-    // TestRunner::RegisterTest<RHIRayTracingTest>();
+    TestRunner::RegisterTest<RHIRayTracingTest>();
 
     
     // Parse simple command line for filtering (lpCmdLine for WinMain)
