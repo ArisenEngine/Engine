@@ -179,6 +179,7 @@ private:
 private:
   void CaptureResource(RHIBufferHandle buffer);
   void CaptureResource(RHIImageHandle image);
+  void CaptureResource(RHIAccelerationStructureHandle handle);
 
   const Containers::Vector<RHIResourceHandle>& GetTrackedResourceHandles() const {
     return m_TrackedResourceHandles;
