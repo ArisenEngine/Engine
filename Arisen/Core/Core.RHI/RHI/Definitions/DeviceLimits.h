@@ -10,6 +10,6 @@ typedef struct RHISamplerLimits
 typedef struct RHIDeviceLimits
 {
     RHISamplerLimits sampler;
-    
+    int rayTracingSupported;
 } RHIDeviceLimits;
 

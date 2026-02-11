@@ -26,7 +26,7 @@ namespace ArisenEngine::Testing
         RHI_ImageViewHandle m_StorageImageView = 0;
         
         RHI_BufferHandle m_MaterialBuffer = 0;
-        RHI_BufferHandle m_PrimitiveBuffer = 0;
+        RHI_BufferHandle m_TriangleMaterialBuffer = 0;
         Containers::Vector<RHI_ImageViewHandle> m_ModelTextures;
         RHI_SamplerHandle m_DefaultSampler = 0;
 
@@ -49,13 +49,6 @@ namespace ArisenEngine::Testing
             int padding;
         };
 
-        struct PrimitiveData
-        {
-            int materialIndex;
-            int indexOffset;
-            int indexCount;
-            int vertexOffset;
-        };
 
     public:
         const char* GetName() const override { return "RayTracingTest"; }
@@ -64,6 +57,13 @@ namespace ArisenEngine::Testing
         bool SetupTest() override
         {
             if (!RHIRenderingTestBase::SetupTest()) return false;
+
+            auto limits = RHI_Device_GetDeviceLimits(m_Device);
+            if (!limits.rayTracingSupported)
+            {
+                LOG_WARN("Ray Tracing extension not supported or enabled, skipping test.");
+                return false; // Gracefully skip
+            }
 
             InitCommonResources();
             
@@ -94,7 +94,7 @@ namespace ArisenEngine::Testing
             if (m_Pso) RHI_PSO_Release(m_Pso);
             
             if (m_MaterialBuffer) RHI_Device_ReleaseBuffer(m_Device, m_MaterialBuffer);
-            if (m_PrimitiveBuffer) RHI_Device_ReleaseBuffer(m_Device, m_PrimitiveBuffer);
+            if (m_TriangleMaterialBuffer) RHI_Device_ReleaseBuffer(m_Device, m_TriangleMaterialBuffer);
             if (m_DefaultSampler) RHI_Device_ReleaseSampler(m_Device, m_DefaultSampler);
 
             m_Model.Release(m_Device);
@@ -177,16 +177,6 @@ namespace ArisenEngine::Testing
                 m_ModelTextures.push_back(mat.baseColorView);
             }
 
-            Containers::Vector<PrimitiveData> primData;
-            for (auto& prim : m_Model.primitives)
-            {
-                PrimitiveData pd{};
-                pd.materialIndex = prim.materialIndex;
-                pd.indexOffset = prim.firstIndex;
-                pd.indexCount = prim.indexCount;
-                pd.vertexOffset = 0;
-                primData.push_back(pd);
-            }
 
             RHI::RHIBufferDescriptor matBufDesc{};
             matBufDesc.size = matData.size() * sizeof(MaterialData);
@@ -195,12 +185,23 @@ namespace ArisenEngine::Testing
             m_MaterialBuffer = RHI_Device_CreateBuffer(m_Device, &matBufDesc, "Material Buffer");
             RHI_Buffer_MemoryCopy(m_Device, m_MaterialBuffer, matData.data(), matBufDesc.size, 0);
 
-            RHI::RHIBufferDescriptor primBufDesc{};
-            primBufDesc.size = primData.size() * sizeof(PrimitiveData);
-            primBufDesc.usage = RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-            primBufDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
-            m_PrimitiveBuffer = RHI_Device_CreateBuffer(m_Device, &primBufDesc, "Primitive Buffer");
-            RHI_Buffer_MemoryCopy(m_Device, m_PrimitiveBuffer, primData.data(), primBufDesc.size, 0);
+            // Per-Triangle Material Index Buffer
+            Containers::Vector<UInt32> triangleMaterialIndices;
+            for (const auto& prim : m_Model.primitives)
+            {
+                UInt32 triangleCount = prim.indexCount / 3;
+                for (UInt32 k = 0; k < triangleCount; ++k)
+                {
+                    triangleMaterialIndices.push_back((UInt32)prim.materialIndex);
+                }
+            }
+
+            RHI::RHIBufferDescriptor triBufDesc{};
+            triBufDesc.size = triangleMaterialIndices.size() * sizeof(UInt32);
+            triBufDesc.usage = RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+            triBufDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            m_TriangleMaterialBuffer = RHI_Device_CreateBuffer(m_Device, &triBufDesc, "Triangle Material Buffer");
+            RHI_Buffer_MemoryCopy(m_Device, m_TriangleMaterialBuffer, triangleMaterialIndices.data(), triBufDesc.size, 0);
 
             m_CameraPos = glm::vec3(0.0f, 1.0f, 0.0f);
             m_CameraRot = glm::vec3(0.0f, -glm::half_pi<float>(), 0.0f); // Face forward (adjust if needed)
@@ -429,7 +430,7 @@ namespace ArisenEngine::Testing
             Containers::Vector<RHI_BufferHandle> mb = { m_MaterialBuffer };
             RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 5, &mb);
 
-            Containers::Vector<RHI_BufferHandle> pb = { m_PrimitiveBuffer };
+            Containers::Vector<RHI_BufferHandle> pb = { m_TriangleMaterialBuffer };
             RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 6, &pb);
 
             // Fill texture array (exactly 100 as in shader)
@@ -566,7 +567,7 @@ namespace ArisenEngine::Testing
             traceDesc.hitShaderTable = { sbtAddr + 2 * groupStride, groupStride, groupStride };
             traceDesc.width = width;
             traceDesc.height = height;
-            traceDesc.depth = 1;
+            traceDesc.depth = 20;
 
             RHI_Cmd_TraceRays(cmd, &traceDesc);
 
