@@ -11,6 +11,12 @@ namespace ArisenEngine::Testing
         uint32_t firstInstance;
     };
 
+    struct MaterialGroup {
+        SInt32 materialIndex;
+        UInt32 commandOffset;
+        UInt32 commandCount;
+    };
+
     class RHIMultiDrawIndirectTest : public RHIRenderingTestBase
     {
     private:
@@ -26,6 +32,7 @@ namespace ArisenEngine::Testing
         RHI::ESampleCountFlagBits m_SampleCount = RHI::SAMPLE_COUNT_4_BIT;
 
         Containers::Vector<RHIDrawIndexedIndirectCommand> m_IndirectCommands;
+        Containers::Vector<MaterialGroup> m_MaterialGroups;
 
     public:
         const char* GetName() const override { return "MultiDrawIndirectTest"; }
@@ -89,16 +96,35 @@ namespace ArisenEngine::Testing
             std::filesystem::path sponzaPath = exeDir / "Assets" / "glTF-Sample-Models" / "2.0" / "Sponza" / "glTF" / "Sponza.gltf";
             m_Model = LoadGLTF(sponzaPath.string());
 
-            // Prepare Indirect Commands
-            for (const auto& prim : m_Model.primitives)
+            // Group Primitives by Material
+            Containers::Map<SInt32, Containers::Vector<UInt32>> primsByMat;
+            for (UInt32 i = 0; i < (UInt32)m_Model.primitives.size(); ++i)
             {
-                RHIDrawIndexedIndirectCommand cmd = {};
-                cmd.indexCount = prim.indexCount;
-                cmd.instanceCount = 1;
-                cmd.firstIndex = prim.firstIndex;
-                cmd.vertexOffset = 0;
-                cmd.firstInstance = 0;
-                m_IndirectCommands.push_back(cmd);
+                primsByMat[m_Model.primitives[i].materialIndex].push_back(i);
+            }
+
+            // Prepare Indirect Commands Reordered by Material
+            m_IndirectCommands.clear();
+            m_MaterialGroups.clear();
+            for (auto& pair : primsByMat)
+            {
+                MaterialGroup group;
+                group.materialIndex = pair.first;
+                group.commandOffset = (UInt32)m_IndirectCommands.size();
+                group.commandCount = (UInt32)pair.second.size();
+                m_MaterialGroups.push_back(group);
+
+                for (UInt32 primIdx : pair.second)
+                {
+                    const auto& prim = m_Model.primitives[primIdx];
+                    RHIDrawIndexedIndirectCommand cmd = {};
+                    cmd.indexCount = prim.indexCount;
+                    cmd.instanceCount = 1;
+                    cmd.firstIndex = prim.firstIndex;
+                    cmd.vertexOffset = 0;
+                    cmd.firstInstance = 0;
+                    m_IndirectCommands.push_back(cmd);
+                }
             }
 
             // Create Indirect Buffer
@@ -254,14 +280,13 @@ namespace ArisenEngine::Testing
 
             RHI_DescriptorPool_Reset(m_DescriptorPool, m_DescriptorPoolIds[currentIndex]);
             
-            // Provide valid handles even if MultiDrawIndirect uses a single set for now
-            // StandardTest.hlsl expects bindings 0, 1, 2
-            Containers::Vector<RHI_BufferHandle> ubos = { m_UboBuffer[currentIndex] };
-            RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 0, &ubos);
-
-            if (!m_Model.materials.empty())
+            Containers::Vector<UInt32> setIndices;
+            for (UInt32 i = 0; i < (UInt32)m_Model.materials.size(); ++i)
             {
-                auto& mat = m_Model.materials[0];
+                auto& mat = m_Model.materials[i];
+                Containers::Vector<RHI_BufferHandle> ubos = { m_UboBuffer[currentIndex] };
+                RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 0, &ubos);
+
                 RHI::RHIDescriptorImageInfo texInfo = {};
                 texInfo.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&mat.baseColorView);
                 texInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -273,10 +298,10 @@ namespace ArisenEngine::Testing
                 samInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                 Containers::Vector<RHI::RHIDescriptorImageInfo> samInfos = { samInfo };
                 RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 2, &samInfos);
-            }
 
-            UInt32 setIdx = RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[currentIndex], 0, m_Pso);
-            RHI_DescriptorPool_UpdateDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[currentIndex], setIdx, m_Pso);
+                setIndices.push_back(RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[currentIndex], 0, m_Pso));
+                RHI_DescriptorPool_UpdateDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[currentIndex], setIndices.back(), m_Pso);
+            }
 
             RHI_Cmd_Begin(cmd, currentIndex, 0);
 
@@ -284,24 +309,10 @@ namespace ArisenEngine::Testing
             if (colorBuffer)
             {
                 auto colorView = RHI_SwapChain_GetImageView(m_SwapChain, currentIndex);
-                RHI::RHIImageHandle colorImage = *reinterpret_cast<RHI::RHIImageHandle*>(&colorBuffer);
+                // RHI::RHIImageHandle colorImage = *reinterpret_cast<RHI::RHIImageHandle*>(&colorBuffer);
 
                 // Transition swapchain image
-                {
-                    RHI::RHIImageMemoryBarrier barrier = {};
-                    barrier.srcAccess = RHI::ACCESS_NONE;
-                    barrier.dstAccess = RHI::ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-                    barrier.oldLayout = RHI::IMAGE_LAYOUT_UNDEFINED;
-                    barrier.newLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                    barrier.srcQueueFamilyIndex = 0xFFFFFFFF;
-                    barrier.dstQueueFamilyIndex = 0xFFFFFFFF;
-                    barrier.image = colorImage;
-                    barrier.subresourceRange = { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-                    barrier.srcStageMask = RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                    barrier.dstStageMask = RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                    Containers::Vector<RHI::RHIImageMemoryBarrier> barriers = { barrier };
-                    RHI_Cmd_PipelineBarrier_Image(cmd, RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, &barriers);
-                }
+                RHI_Cmd_TransitionImageLayout(cmd, colorBuffer, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
                 RHI::RHIRenderingAttachmentInfo colorAttachment {};
                 colorAttachment.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&m_MSAAColorView);
@@ -348,28 +359,19 @@ namespace ArisenEngine::Testing
                 glm::vec4 tintColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
                 RHI_Cmd_PushConstants(cmd, 0, sizeof(glm::vec4), &tintColor, static_cast<RHI::EShaderStage>(RHI::SHADER_STAGE_FRAGMENT_BIT | RHI::SHADER_STAGE_VERTEX_BIT));
 
-                RHI_Cmd_BindDescriptorSet_FromPool(cmd, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[currentIndex], setIdx);
-                
-                // MULTI-DRAW INDIRECT CALL
-                RHI_Cmd_DrawIndexedIndirect(cmd, m_IndirectBuffer, 0, (UInt32)m_IndirectCommands.size(), sizeof(RHIDrawIndexedIndirectCommand));
+                // DRAW EACH MATERIAL GROUP
+                for (const auto& group : m_MaterialGroups)
+                {
+                    UInt32 setIdx = group.materialIndex >= 0 ? setIndices[group.materialIndex] : 0;
+                    RHI_Cmd_BindDescriptorSet_FromPool(cmd, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[currentIndex], setIdx);
+                    
+                    RHI_Cmd_DrawIndexedIndirect(cmd, m_IndirectBuffer, group.commandOffset * sizeof(RHIDrawIndexedIndirectCommand), group.commandCount, sizeof(RHIDrawIndexedIndirectCommand));
+                }
 
                 RHI_Cmd_EndRendering(cmd);
 
                 // Transition swapchain image to PRESENT
-                {
-                    RHI::RHIImageMemoryBarrier barrier = {};
-                    barrier.srcAccess = RHI::ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-                    barrier.dstAccess = RHI::ACCESS_NONE;
-                    barrier.oldLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                    barrier.newLayout = RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR;
-                    barrier.srcQueueFamilyIndex = 0xFFFFFFFF; barrier.dstQueueFamilyIndex = 0xFFFFFFFF;
-                    barrier.image = colorImage;
-                    barrier.subresourceRange = { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-                    barrier.srcStageMask = RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                    barrier.dstStageMask = RHI::PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-                    Containers::Vector<RHI::RHIImageMemoryBarrier> barriers = { barrier };
-                    RHI_Cmd_PipelineBarrier_Image(cmd, RHI::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, RHI::PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, &barriers);
-                }
+                RHI_Cmd_TransitionImageLayout(cmd, colorBuffer, RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR);
             }
 
             RHI_Cmd_End(cmd);
