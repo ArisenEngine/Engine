@@ -134,7 +134,7 @@ namespace ArisenEngine::Testing
 
         void UpdateCamera(float deltaTime)
         {
-            float speed = 1.0f * deltaTime; // Adjusted for 0.7 unit scale model
+            float speed = 10.0f * deltaTime; // Increased from 1.0f for larger models
             if (m_Keys[VK_SHIFT]) speed *= 20.0f;       // Turbo
             if (m_Keys[VK_CONTROL]) speed *= 0.1f;    // Precision
 
@@ -142,7 +142,7 @@ namespace ArisenEngine::Testing
             if (m_Keys['W'] || m_Keys['S'] || m_Keys['A'] || m_Keys['D'])
             {
                 static int moveLogCount = 0;
-                if (++moveLogCount % 60 == 0) LOG_INFOF("Movement key currently held. Total moves detected: {0}", moveLogCount);
+                if (++moveLogCount % 30 == 0) LOG_INFOF("Movement key held. Pos: ({0}, {1}, {2})", m_CameraPos.x, m_CameraPos.y, m_CameraPos.z);
             }
 
             glm::vec3 forward;
