@@ -1220,7 +1220,6 @@ void ArisenEngine::RHI::RHIVkDevice::GetRayTracingShaderGroupHandles(RHIPipeline
 
 void ArisenEngine::RHI::RHIVkDevice::FreeAccelerationStructureInternal(RHIAccelerationStructureHandle handle)
 {
-     LOG_ERROR("[RHIVkDevice::FreeAccelerationStructureInternal] Freeing Handle: " + std::to_string(handle.index));
      auto* item = m_AccelerationStructurePool->Get(handle);
      if (item && item->accelerationStructure != VK_NULL_HANDLE)
      {
