@@ -6,6 +6,31 @@ struct RayPayload
     bool hit;
 };
 
+struct GLTFVertex
+{
+    float3 pos;
+    float3 normal;
+    float2 uv;
+    float4 color;
+};
+
+struct MaterialData
+{
+    float4 baseColorFactor;
+    int baseColorTextureIndex;
+    float metallicFactor;
+    float roughnessFactor;
+    int padding;
+};
+
+struct PrimitiveData
+{
+    int materialIndex;
+    int indexOffset;
+    int indexCount;
+    int vertexOffset;
+};
+
 RaytracingAccelerationStructure Scene : register(t0, space0);
 RWTexture2D<float4> RenderTarget : register(u1, space0);
 
@@ -14,8 +39,15 @@ cbuffer CameraBuffer : register(b2, space0)
     float4x4 viewInverse;
     float4x4 projInverse;
     float3 lightPos;
-    float padding;
+    int frameCount;
 };
+
+StructuredBuffer<GLTFVertex> Vertices : register(t3, space0);
+StructuredBuffer<uint> Indices : register(t4, space0);
+StructuredBuffer<MaterialData> Materials : register(t5, space0);
+StructuredBuffer<PrimitiveData> Primitives : register(t6, space0);
+Texture2D ModelTextures[] : register(t7, space0);
+SamplerState DefaultSampler : register(s8, space0);
 
 // Simple PBR functions
 float3 FresnelSchlick(float cosTheta, float3 F0)
@@ -65,7 +97,7 @@ void RayGen()
     uint3 launchSize = DispatchRaysDimensions();
 
     float2 d = (((float2)launchID.xy + 0.5f) / (float2)launchSize.xy) * 2.f - 1.f;
-    d.y = -d.y; // Flip Y for Vulkan/DXC convention
+    // d.y = -d.y; // Removed: Fixed vertical flip by removing double flip
 
     float4 target = mul(projInverse, float4(d.x, d.y, 1, 1));
     target.xyz /= target.w;
@@ -93,23 +125,51 @@ void Miss(inout RayPayload payload)
 {
     float3 rayDir = WorldRayDirection();
     float t = 0.5 * (rayDir.y + 1.0);
-    // Diagnostic Miss Color: High contrast Magenta to White gradient
-    payload.color = t * float3(1.0, 0.0, 1.0) + (1.0 - t) * float3(1.0, 1.0, 1.0);
+    payload.color = t * float3(0.5, 0.7, 1.0) + (1.0 - t) * float3(1.0, 1.0, 1.0);
     payload.hit = false;
 }
 
 [shader("closesthit")]
 void ClosestHit(inout RayPayload payload, in BuiltInTriangleIntersectionAttributes attr)
 {
-    // Color triangles by PrimitiveIndex to distinguish between model parts and individual pieces
     uint primIndex = PrimitiveIndex();
-    float3 rcolor = float3(
-        (float)((primIndex * 23) % 255) / 255.0,
-        (float)((primIndex * 57) % 255) / 255.0,
-        (float)((primIndex * 113) % 255) / 255.0
-    );
-
+    uint instIndex = InstanceIndex();
+    
+    PrimitiveData prim = Primitives[primIndex];
+    MaterialData mat = Materials[prim.materialIndex];
+    
+    // Fetch indices
+    uint i0 = Indices[prim.indexOffset + PrimitiveIndex() * 3 + 0];
+    uint i1 = Indices[prim.indexOffset + PrimitiveIndex() * 3 + 1];
+    uint i2 = Indices[prim.indexOffset + PrimitiveIndex() * 3 + 2];
+    
+    GLTFVertex v0 = Vertices[i0];
+    GLTFVertex v1 = Vertices[i1];
+    GLTFVertex v2 = Vertices[i2];
+    
     float3 barycentrics = float3(1.0 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
-    payload.color = rcolor * (0.8 + 0.2 * barycentrics.x); 
+    
+    float2 uv = v0.uv * barycentrics.x + v1.uv * barycentrics.y + v2.uv * barycentrics.z;
+    float3 normal = normalize(v0.normal * barycentrics.x + v1.normal * barycentrics.y + v2.normal * barycentrics.z);
+    float3 worldPos = v0.pos * barycentrics.x + v1.pos * barycentrics.y + v2.pos * barycentrics.z;
+    
+    float4 baseColor = mat.baseColorFactor;
+    if (mat.baseColorTextureIndex >= 0)
+    {
+        baseColor *= ModelTextures[mat.baseColorTextureIndex].SampleLevel(DefaultSampler, uv, 0);
+    }
+    
+    // Simple Lighting
+    float3 L = normalize(lightPos - worldPos);
+    float3 V = normalize(WorldRayOrigin() - worldPos);
+    float3 H = normalize(V + L);
+    
+    float nDotL = max(dot(normal, L), 0.0);
+    float3 diffuse = baseColor.rgb * nDotL;
+    
+    // Ambient
+    float3 ambient = baseColor.rgb * 0.1;
+    
+    payload.color = ambient + diffuse;
     payload.hit = true;
 }

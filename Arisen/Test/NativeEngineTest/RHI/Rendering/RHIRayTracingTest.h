@@ -25,6 +25,10 @@ namespace ArisenEngine::Testing
         RHI_ImageHandle m_StorageImage = 0;
         RHI_ImageViewHandle m_StorageImageView = 0;
         
+        RHI_BufferHandle m_MaterialBuffer = 0;
+        RHI_BufferHandle m_PrimitiveBuffer = 0;
+        Containers::Vector<RHI_ImageViewHandle> m_ModelTextures;
+
         Containers::Vector<RHI_BufferHandle> m_CameraBuffers;
         
         struct CameraData
@@ -32,7 +36,24 @@ namespace ArisenEngine::Testing
             glm::mat4 viewInverse;
             glm::mat4 projInverse;
             glm::vec3 lightPos;
-            float padding;
+            int frameCount;
+        };
+
+        struct MaterialData
+        {
+            glm::vec4 baseColorFactor;
+            int baseColorTextureIndex;
+            float metallicFactor;
+            float roughnessFactor;
+            int padding;
+        };
+
+        struct PrimitiveData
+        {
+            int materialIndex;
+            int indexOffset;
+            int indexCount;
+            int vertexOffset;
         };
 
     public:
@@ -71,6 +92,9 @@ namespace ArisenEngine::Testing
             
             if (m_Pso) RHI_PSO_Release(m_Pso);
             
+            if (m_MaterialBuffer) RHI_Device_ReleaseBuffer(m_Device, m_MaterialBuffer);
+            if (m_PrimitiveBuffer) RHI_Device_ReleaseBuffer(m_Device, m_PrimitiveBuffer);
+
             m_Model.Release(m_Device);
             TeardownCommonResources();
             RHIRenderingTestBase::TeardownTest();
@@ -137,8 +161,47 @@ namespace ArisenEngine::Testing
                 m_CameraBuffers.push_back(RHI_Device_CreateBuffer(m_Device, &cbDesc, "Camera CB"));
             }
 
-            m_CameraPos = glm::vec3(0.0f, 2.0f, 0.0f);
-            m_CameraRot = glm::vec3(0.0f, 0.0f, 0.0f); // Look down the hall
+            // Material and Primitive Data
+            m_ModelTextures.clear();
+            Containers::Vector<MaterialData> matData;
+            for (auto& mat : m_Model.materials)
+            {
+                MaterialData md{};
+                md.baseColorFactor = glm::vec4(1.0f);
+                md.baseColorTextureIndex = (int)m_ModelTextures.size();
+                md.metallicFactor = 0.0f;
+                md.roughnessFactor = 1.0f;
+                matData.push_back(md);
+                m_ModelTextures.push_back(mat.baseColorView);
+            }
+
+            Containers::Vector<PrimitiveData> primData;
+            for (auto& prim : m_Model.primitives)
+            {
+                PrimitiveData pd{};
+                pd.materialIndex = prim.materialIndex;
+                pd.indexOffset = prim.firstIndex;
+                pd.indexCount = prim.indexCount;
+                pd.vertexOffset = 0;
+                primData.push_back(pd);
+            }
+
+            RHI::RHIBufferDescriptor matBufDesc{};
+            matBufDesc.size = matData.size() * sizeof(MaterialData);
+            matBufDesc.usage = RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+            matBufDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            m_MaterialBuffer = RHI_Device_CreateBuffer(m_Device, &matBufDesc, "Material Buffer");
+            RHI_Buffer_MemoryCopy(m_Device, m_MaterialBuffer, matData.data(), matBufDesc.size, 0);
+
+            RHI::RHIBufferDescriptor primBufDesc{};
+            primBufDesc.size = primData.size() * sizeof(PrimitiveData);
+            primBufDesc.usage = RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+            primBufDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            m_PrimitiveBuffer = RHI_Device_CreateBuffer(m_Device, &primBufDesc, "Primitive Buffer");
+            RHI_Buffer_MemoryCopy(m_Device, m_PrimitiveBuffer, primData.data(), primBufDesc.size, 0);
+
+            m_CameraPos = glm::vec3(0.0f, 1.0f, 0.0f);
+            m_CameraRot = glm::vec3(0.0f, -glm::half_pi<float>(), 0.0f); // Face forward (adjust if needed)
             LOG_INFOF("Camera initialized at ({0}, {1}, {2})", m_CameraPos.x, m_CameraPos.y, m_CameraPos.z);
         }
 
@@ -341,6 +404,29 @@ namespace ArisenEngine::Testing
             Containers::Vector<RHI_BufferHandle> ubos = { m_CameraBuffers[0] };
             RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 2, &ubos);
 
+            Containers::Vector<RHI_BufferHandle> vb = { m_Model.vertexBuffer };
+            RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 3, &vb);
+            
+            Containers::Vector<RHI_BufferHandle> ib = { m_Model.indexBuffer };
+            RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 4, &ib);
+
+            Containers::Vector<RHI_BufferHandle> mb = { m_MaterialBuffer };
+            RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 5, &mb);
+
+            Containers::Vector<RHI_BufferHandle> pb = { m_PrimitiveBuffer };
+            RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 6, &pb);
+
+            Containers::Vector<RHI::RHIDescriptorImageInfo> modelTextures;
+            modelTextures.reserve(m_ModelTextures.size());
+            for (auto& texView : m_ModelTextures)
+            {
+                RHI::RHIDescriptorImageInfo info{};
+                info.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&texView);
+                info.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                modelTextures.push_back(info);
+            }
+            RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 7, &modelTextures);
+
             RHI_PSO_BuildDescriptorSetLayout(m_Pso);
 
             // Initialize descriptor pools for each frame in flight
@@ -349,9 +435,14 @@ namespace ArisenEngine::Testing
                 Containers::Vector<RHI::EDescriptorType> types = {
                     RHI::DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
                     RHI::DESCRIPTOR_TYPE_STORAGE_IMAGE,
-                    RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER
+                    RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                    RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, // VB
+                    RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, // IB
+                    RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, // Mat
+                    RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, // Prim
+                    RHI::DESCRIPTOR_TYPE_SAMPLED_IMAGE    // Textures
                 };
-                Containers::Vector<UInt32> counts = { 1, 1, 1 };
+                Containers::Vector<UInt32> counts = { 1, 1, 1, 1, 1, 1, 1, (UInt32)m_ModelTextures.size() };
                 m_DescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &types, &counts, 1));
             }
 
@@ -397,6 +488,7 @@ namespace ArisenEngine::Testing
             data.viewInverse = glm::inverse(GetViewMatrix());
             data.projInverse = glm::inverse(GetProjectionMatrix(width / height));
             data.lightPos = glm::vec3(2.0f, 5.0f, 2.0f);
+            data.frameCount = (int)m_FrameIndex;
             
             RHI_Buffer_MemoryCopy(m_Device, m_CameraBuffers[GetCurrentFrameIndex()], &data, sizeof(CameraData), 0);
         }
