@@ -46,7 +46,7 @@ StructuredBuffer<GLTFVertex> Vertices : register(t3, space0);
 StructuredBuffer<uint> Indices : register(t4, space0);
 StructuredBuffer<MaterialData> Materials : register(t5, space0);
 StructuredBuffer<PrimitiveData> Primitives : register(t6, space0);
-Texture2D ModelTextures[] : register(t7, space0);
+Texture2D ModelTextures[100] : register(t7, space0);
 SamplerState DefaultSampler : register(s8, space0);
 
 // Simple PBR functions

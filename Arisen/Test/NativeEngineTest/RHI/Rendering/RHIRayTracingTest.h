@@ -28,6 +28,7 @@ namespace ArisenEngine::Testing
         RHI_BufferHandle m_MaterialBuffer = 0;
         RHI_BufferHandle m_PrimitiveBuffer = 0;
         Containers::Vector<RHI_ImageViewHandle> m_ModelTextures;
+        RHI_SamplerHandle m_DefaultSampler = 0;
 
         Containers::Vector<RHI_BufferHandle> m_CameraBuffers;
         
@@ -94,6 +95,7 @@ namespace ArisenEngine::Testing
             
             if (m_MaterialBuffer) RHI_Device_ReleaseBuffer(m_Device, m_MaterialBuffer);
             if (m_PrimitiveBuffer) RHI_Device_ReleaseBuffer(m_Device, m_PrimitiveBuffer);
+            if (m_DefaultSampler) RHI_Device_ReleaseSampler(m_Device, m_DefaultSampler);
 
             m_Model.Release(m_Device);
             TeardownCommonResources();
@@ -202,6 +204,18 @@ namespace ArisenEngine::Testing
 
             m_CameraPos = glm::vec3(0.0f, 1.0f, 0.0f);
             m_CameraRot = glm::vec3(0.0f, -glm::half_pi<float>(), 0.0f); // Face forward (adjust if needed)
+
+            // Default Sampler
+            RHI::RHISamplerDesc sampDesc = {};
+            sampDesc.magFilter = RHI::FILTER_LINEAR;
+            sampDesc.minFilter = RHI::FILTER_LINEAR;
+            sampDesc.mipmapMode = RHI::SAMPLER_MIPMAP_MODE_LINEAR;
+            sampDesc.maxLod = 16.0f;
+            sampDesc.addressModeU = RHI::SAMPLER_ADDRESS_MODE_REPEAT;
+            sampDesc.addressModeV = RHI::SAMPLER_ADDRESS_MODE_REPEAT;
+            sampDesc.addressModeW = RHI::SAMPLER_ADDRESS_MODE_REPEAT;
+            m_DefaultSampler = RHI_Device_CreateSampler(m_Device, &sampDesc);
+
             LOG_INFOF("Camera initialized at ({0}, {1}, {2})", m_CameraPos.x, m_CameraPos.y, m_CameraPos.z);
         }
 
@@ -385,7 +399,9 @@ namespace ArisenEngine::Testing
 
             RHI_PSO_SetMaxRecursionDepth(m_Pso, 1);
 
-            // Descriptors
+            // Descriptors Layout are automatically handled via shader reflection in RHI_PSO_AddProgram
+
+            // Update descriptors for initial setup (needed for reflector/builder if it's dynamic)
             if (!m_Tlas)
             {
                 LOG_ERROR("TLAS handle is invalid (0) in CreatePipeline!");
@@ -416,18 +432,32 @@ namespace ArisenEngine::Testing
             Containers::Vector<RHI_BufferHandle> pb = { m_PrimitiveBuffer };
             RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 6, &pb);
 
+            // Fill texture array (exactly 100 as in shader)
             Containers::Vector<RHI::RHIDescriptorImageInfo> modelTextures;
-            modelTextures.reserve(m_ModelTextures.size());
-            for (auto& texView : m_ModelTextures)
+            modelTextures.resize(100);
+            for (UInt32 i = 0; i < 100; ++i)
             {
-                RHI::RHIDescriptorImageInfo info{};
-                info.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&texView);
-                info.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                modelTextures.push_back(info);
+                if (i < m_ModelTextures.size())
+                {
+                    modelTextures[i].imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&m_ModelTextures[i]);
+                }
+                else if (!m_ModelTextures.empty())
+                {
+                    modelTextures[i].imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&m_ModelTextures[0]);
+                }
+                modelTextures[i].imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             }
             RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 7, &modelTextures);
 
+            Containers::Vector<RHI::RHIDescriptorImageInfo> defaultSamplers;
+            RHI::RHIDescriptorImageInfo samplerInfo{};
+            samplerInfo.sampler = *reinterpret_cast<RHI::RHISamplerHandle*>(&m_DefaultSampler);
+            defaultSamplers.push_back(samplerInfo);
+            RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 8, &defaultSamplers);
+
             RHI_PSO_BuildDescriptorSetLayout(m_Pso);
+
+            LOG_INFOF("RayTracing DescriptorPool: {0} textures", m_ModelTextures.size());
 
             // Initialize descriptor pools for each frame in flight
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
@@ -440,9 +470,10 @@ namespace ArisenEngine::Testing
                     RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, // IB
                     RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, // Mat
                     RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, // Prim
-                    RHI::DESCRIPTOR_TYPE_SAMPLED_IMAGE    // Textures
+                    RHI::DESCRIPTOR_TYPE_SAMPLED_IMAGE,   // Textures
+                    RHI::DESCRIPTOR_TYPE_SAMPLER          // DefaultSampler
                 };
-                Containers::Vector<UInt32> counts = { 1, 1, 1, 1, 1, 1, 1, (UInt32)m_ModelTextures.size() };
+                Containers::Vector<UInt32> counts = { 1, 1, 1, 1, 1, 1, 1, 100, 1 };
                 m_DescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &types, &counts, 1));
             }
 
