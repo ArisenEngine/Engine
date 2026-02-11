@@ -45,6 +45,8 @@ namespace ArisenEngine::Testing
         std::vector<GLTFVertex> vertices;
         std::vector<uint32_t> indices;
 
+        glm::vec3 minBound(1e10f), maxBound(-1e10f);
+
         GLTFModel model;
 
         std::filesystem::path modelPath(path.c_str());
@@ -233,6 +235,9 @@ namespace ArisenEngine::Testing
                         glm::vec3 localPos;
                         cgltf_accessor_read_float(pos_accessor, v, &localPos.x, 3);
                         vertex.pos = glm::vec3(worldTransform * glm::vec4(localPos, 1.0f));
+                        
+                        minBound = glm::min(minBound, vertex.pos);
+                        maxBound = glm::max(maxBound, vertex.pos);
 
                         if (normal_accessor) {
                             glm::vec3 localNormal;
@@ -320,10 +325,12 @@ namespace ArisenEngine::Testing
         }
 
 
+        model.vertexCount = (UInt32)vertices.size();
         model.indexCount = (UInt32)indices.size();
         
         LOG_INFOF("Loaded GLTF: {0}. Vertices: {1}, Indices: {2}, Primitives: {3}, Materials: {4}", 
             path, vertices.size(), indices.size(), model.primitives.size(), model.materials.size());
+        LOG_INFOF("Model Bounds: Min({0},{1},{2}), Max({3},{4},{5})", minBound.x, minBound.y, minBound.z, maxBound.x, maxBound.y, maxBound.z);
 
         // Create RHI Buffers
         RHI::RHIBufferDescriptor vbDesc{};

@@ -93,51 +93,23 @@ void Miss(inout RayPayload payload)
 {
     float3 rayDir = WorldRayDirection();
     float t = 0.5 * (rayDir.y + 1.0);
-    // Invert the gradient logic so blue is top, white is bottom
-    payload.color = t * float3(0.5, 0.7, 1.0) + (1.0 - t) * float3(1.0, 1.0, 1.0);
+    // Diagnostic Miss Color: High contrast Magenta to White gradient
+    payload.color = t * float3(1.0, 0.0, 1.0) + (1.0 - t) * float3(1.0, 1.0, 1.0);
     payload.hit = false;
 }
 
 [shader("closesthit")]
 void ClosestHit(inout RayPayload payload, in BuiltInTriangleIntersectionAttributes attr)
 {
-    float3 worldNormal = WorldRayDirection(); // Placeholder, still fake normal for now
-    
-    float3 worldHitPos = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
-    
-    // For now, let's just use the barycentrics to show something.
+    // Color triangles by PrimitiveIndex to distinguish between model parts and individual pieces
+    uint primIndex = PrimitiveIndex();
+    float3 rcolor = float3(
+        (float)((primIndex * 23) % 255) / 255.0,
+        (float)((primIndex * 57) % 255) / 255.0,
+        (float)((primIndex * 113) % 255) / 255.0
+    );
+
     float3 barycentrics = float3(1.0 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
-    
-    float3 N = normalize(cross(WorldRayDirection(), float3(0, 1, 0))); // Very fake normal
-    if (length(N) < 0.001) N = float3(0, 1, 0); 
-
-    float3 V = -WorldRayDirection();
-    float3 L = normalize(lightPos - worldHitPos);
-    float3 H = normalize(V + L);
-
-    float3 baseColor = float3(0.8, 0.8, 0.8);
-    float metallic = 0.5;
-    float roughness = 0.2;
-
-    float3 F0 = float3(0.04, 0.04, 0.04);
-    F0 = lerp(F0, baseColor, metallic);
-
-    // BRDF
-    float NDF = DistributionGGX(N, H, roughness);
-    float G = GeometrySmith(N, V, L, roughness);
-    float3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
-
-    float3 numerator = NDF * G * F;
-    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
-    float3 specular = numerator / denominator;
-
-    float3 kS = F;
-    float3 kD = float3(1.0, 1.0, 1.0) - kS;
-    kD *= 1.0 - metallic;
-
-    float nDotL = max(dot(N, L), 0.0);
-    float3 ambient = float3(0.03, 0.03, 0.03) * baseColor;
-    
-    payload.color = (kD * baseColor / 3.14159 + specular) * nDotL + ambient;
+    payload.color = rcolor * (0.8 + 0.2 * barycentrics.x); 
     payload.hit = true;
 }
