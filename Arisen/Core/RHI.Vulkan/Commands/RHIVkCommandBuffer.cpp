@@ -299,6 +299,27 @@ check_mem:
     return;
 }
 
+void RHIVkCommandBuffer::CaptureResource(RHIAccelerationStructureHandle handle)
+{
+    if (!handle.IsValid()) return;
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
+    auto* as = vkDevice->m_AccelerationStructurePool->Get(handle);
+    if (!as) return;
+
+    auto regHandle = as->registryHandle;
+    
+    for (const auto& h : m_TrackedResourceHandles)
+    {
+        if (h.index == regHandle.index && h.generation == regHandle.generation) return;
+    }
+
+    if (regHandle.IsValid())
+    {
+        m_TrackedResourceHandles.emplace_back(regHandle);
+        vkDevice->GetResourceRegistry()->Retain(regHandle);
+    }
+}
+
 void ArisenEngine::RHI::RHIVkCommandBuffer::Begin()
 {
     // If Begin() is called without frameIndex, we assume it's already set or not needed for this buffer
@@ -1186,9 +1207,8 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::BuildAccelerationStructures(UInt32 i
         vkInfos.emplace_back(vkInfo);
 
         CaptureResource(rhiInfo.scratchData);
-        // Track the AS handles? We don't have a CaptureResource for AS yet, but we should.
-        if (dstAS) m_TrackedResourceHandles.push_back(dstAS->registryHandle);
-        if (srcAS) m_TrackedResourceHandles.push_back(srcAS->registryHandle);
+        if (dstAS) CaptureResource(rhiInfo.dstAccelerationStructure);
+        if (srcAS) CaptureResource(rhiInfo.srcAccelerationStructure);
     }
 
     Containers::Vector<const VkAccelerationStructureBuildRangeInfoKHR*> vkRangeInfoPtrs;

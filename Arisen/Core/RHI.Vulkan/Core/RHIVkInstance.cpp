@@ -667,6 +667,26 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     rayQueryFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
     rayQueryFeatures.rayQuery = VK_TRUE;
 
+    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features{};
+    bool robustness2Supported = false;
+    for (const char* extName : enabledExtensions)
+    {
+        if (strcmp(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME, extName) == 0)
+        {
+            robustness2Supported = true;
+            break;
+        }
+    }
+
+    // for now in development, we don't enable this feature to prevent from hiding some issues
+    // but in production, it should be enabled.
+    if (false)
+    {
+        robustness2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
+        robustness2Features.nullDescriptor = VK_TRUE;
+        rayQueryFeatures.pNext = &robustness2Features;
+    }
+
     // Chain RT features
     if (meshShaderSupported) {
         meshShaderFeatures.pNext = &asFeatures;
