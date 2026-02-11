@@ -341,7 +341,8 @@ void RHIVkGPUPipelineStateObject::InternalAddDescriptorSetLayoutBinding(UInt32 l
 
 void RHIVkGPUPipelineStateObject::InternalAddDescriptorUpdateInfo(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
             UInt32 descriptorCount, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos,
-            const Containers::Vector<RHIBufferHandle>&& bufferHandles, const Containers::Vector<RHIImageViewHandle>&& bufferViews)
+            const Containers::Vector<RHIBufferHandle>&& bufferHandles, const Containers::Vector<RHIImageViewHandle>&& bufferViews,
+            const Containers::Vector<RHIAccelerationStructureHandle>&& accelerationStructureHandles)
 {
     if (!m_DescriptorUpdateInfos.contains(layoutIndex))
     {
@@ -361,6 +362,7 @@ void RHIVkGPUPipelineStateObject::InternalAddDescriptorUpdateInfo(UInt32 layoutI
             imageInfos,
             bufferHandles,
             bufferViews,
+            accelerationStructureHandles
         });
 }
 
@@ -384,7 +386,7 @@ void RHIVkGPUPipelineStateObject::UpdateDescriptorSet(UInt32 layoutIndex, UInt32
     
     if (type != EDescriptorType::DESCRIPTOR_TYPE_MAX_ENUM)
     {
-        InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, count, std::move(imageInfos), {}, {});
+        InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, count, std::move(imageInfos), {}, {}, {});
     }
 }
 
@@ -408,7 +410,7 @@ void RHIVkGPUPipelineStateObject::UpdateDescriptorSet(UInt32 layoutIndex, UInt32
     
     if (type != EDescriptorType::DESCRIPTOR_TYPE_MAX_ENUM)
     {
-        InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, count, {}, std::move(bufferHandles), {});
+        InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, count, {}, std::move(bufferHandles), {}, {});
     }
 }
 
@@ -432,7 +434,31 @@ void RHIVkGPUPipelineStateObject::UpdateDescriptorSet(UInt32 layoutIndex, UInt32
     
     if (type != EDescriptorType::DESCRIPTOR_TYPE_MAX_ENUM)
     {
-        InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, count, {}, {}, std::move(texelBufferViews));
+        InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, count, {}, {}, std::move(texelBufferViews), {});
+    }
+}
+
+void RHIVkGPUPipelineStateObject::UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding,
+    const Containers::Vector<RHIAccelerationStructureHandle>&& accelerationStructureHandles)
+{
+    if (!m_DescriptorSetLayoutBindings.contains(layoutIndex)) return;
+    
+    EDescriptorType type = EDescriptorType::DESCRIPTOR_TYPE_MAX_ENUM;
+    UInt32 count = 0;
+    
+    for (const auto& b : m_DescriptorSetLayoutBindings[layoutIndex])
+    {
+        if (b.binding == binding)
+        {
+            type = static_cast<EDescriptorType>(b.descriptorType);
+            count = b.descriptorCount;
+            break;
+        }
+    }
+    
+    if (type != EDescriptorType::DESCRIPTOR_TYPE_MAX_ENUM)
+    {
+        InternalAddDescriptorUpdateInfo(layoutIndex, binding, type, count, {}, {}, {}, std::move(accelerationStructureHandles));
     }
 }
 

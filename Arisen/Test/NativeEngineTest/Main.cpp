@@ -17,6 +17,7 @@
 #include "RHI/Unit/RHIAsyncComputeTest.h"
 #include "RHI/Unit/RHIDebugTest.h"
 #include "RHI/Unit/RHIInspectorTest.h"
+#include "RHI/Rendering/RHIRayTracingTest.h"
 #include "../../Engine/NativeEngine/Core/EngineInit.h"
 
 #include <windows.h>
@@ -56,6 +57,7 @@ int main(int argc, char** argv)
     TestRunner::RegisterTest<RHIAsyncComputeTest>();
     TestRunner::RegisterTest<RHIDebugTest>();
     TestRunner::RegisterTest<RHIInspectorTest>();
+    TestRunner::RegisterTest<RHIRayTracingTest>();
 
     
     // Parse simple command line for filtering (lpCmdLine for WinMain)

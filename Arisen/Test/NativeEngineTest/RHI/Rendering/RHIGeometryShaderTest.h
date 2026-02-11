@@ -331,7 +331,7 @@ namespace ArisenEngine::Testing
                 {
                     auto& mat = m_Model.materials[prim.materialIndex >= 0 ? prim.materialIndex : 0];
                     
-                    Containers::Vector<RHI::RHIBufferHandle> ubos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffers[currentIndex]) };
+                    Containers::Vector<RHI_BufferHandle> ubos = { m_UboBuffers[currentIndex] };
                     RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 0, &ubos);
 
                     RHI::RHIDescriptorImageInfo texInfo = {};

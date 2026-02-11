@@ -118,9 +118,12 @@ namespace ArisenEngine::RHI
         
     public:
         virtual void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0) {}
+        virtual void* MapBuffer(RHIBufferHandle handle) { return nullptr; }
+        virtual void UnmapBuffer(RHIBufferHandle handle) {}
         virtual UInt64 GetBufferSize(RHIBufferHandle handle) { return 0ULL; }
         virtual UInt64 GetBufferOffset(RHIBufferHandle handle) { return 0ULL; }
         virtual UInt64 GetBufferRange(RHIBufferHandle handle) { return 0ULL; }
+        virtual UInt64 GetBufferDeviceAddress(RHIBufferHandle handle) { return 0ULL; }
 
     protected:
         virtual bool AllocImage(RHIImageHandle handle, RHIImageDescriptor&& desc) { return false; }

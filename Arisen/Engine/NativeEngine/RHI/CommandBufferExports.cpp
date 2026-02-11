@@ -240,6 +240,15 @@ extern "C" ENGINE_DLL void RHI_Cmd_CopyBufferToImage(RHI_CommandBufferHandle cmd
     c->CopyBufferToImage(sh, dh, dstLayout, std::move(*regions));
 }
 
+extern "C" ENGINE_DLL void RHI_Cmd_CopyImage(RHI_CommandBufferHandle cmd, RHI_ImageHandle src, RHI::EImageLayout srcLayout, RHI_ImageHandle dst, RHI::EImageLayout dstLayout, unsigned int regionCount, const RHI::RHIImageCopy* pRegions)
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c == nullptr || src == 0 || dst == 0 || pRegions == nullptr) return;
+    auto sh = *reinterpret_cast<RHI::RHIImageHandle*>(&src);
+    auto dh = *reinterpret_cast<RHI::RHIImageHandle*>(&dst);
+    c->CopyImage(sh, srcLayout, dh, dstLayout, regionCount, pRegions);
+}
+
 extern "C" ENGINE_DLL void RHI_Cmd_PipelineBarrier_Image(RHI_CommandBufferHandle cmd, unsigned int srcStage, unsigned int dstStage, unsigned int dependency, Containers::Vector<RHI::RHIImageMemoryBarrier>* imageBarriers)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
@@ -256,6 +265,13 @@ extern "C" ENGINE_DLL void RHI_Cmd_PipelineBarrier_Buffer(RHI_CommandBufferHandl
     Containers::Vector<RHI::RHIMemoryBarrier> none1; none1.resize(0);
     Containers::Vector<RHI::RHIImageMemoryBarrier> none2; none2.resize(0);
     c->PipelineBarrier(static_cast<RHI::EPipelineStageFlag>(srcStage), static_cast<RHI::EPipelineStageFlag>(dstStage), dependency, std::move(none1), std::move(none2), std::move(*bufferBarriers));
+}
+
+extern "C" ENGINE_DLL void RHI_Cmd_PipelineBarrier_Memory(RHI_CommandBufferHandle cmd, unsigned int srcStage, unsigned int dstStage, unsigned int dependency, unsigned int memoryBarrierCount, const ArisenEngine::RHI::RHIMemoryBarrier* pMemoryBarriers)
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c == nullptr) return;
+    c->PipelineBarrier(static_cast<RHI::EPipelineStageFlag>(srcStage), static_cast<RHI::EPipelineStageFlag>(dstStage), dependency, pMemoryBarriers, memoryBarrierCount);
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_BatchPipelineBarrier(RHI_CommandBufferHandle cmd, unsigned int srcStage, unsigned int dstStage, unsigned int dependency, Containers::Vector<RHI::RHIMemoryBarrier>* memoryBarriers, Containers::Vector<RHI::RHIImageMemoryBarrier>* imageBarriers, Containers::Vector<RHI::RHIBufferMemoryBarrier>* bufferBarriers)

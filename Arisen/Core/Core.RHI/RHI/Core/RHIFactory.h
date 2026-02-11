@@ -51,6 +51,9 @@ namespace ArisenEngine::RHI
 
         virtual RHIFenceHandle CreateFence(bool signaled = false) = 0;
         virtual void ReleaseFence(RHIFenceHandle fence) = 0;
+
+        virtual RHIAccelerationStructureHandle CreateAccelerationStructure(const String& name = "Anonymous") = 0;
+        virtual void ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle) = 0;
     };
 }
 

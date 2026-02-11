@@ -72,11 +72,16 @@ extern "C" ENGINE_DLL void RHI_PSO_ClearDescriptorSetLayoutBindings(RHI_PSOHandl
 
 
 
-extern "C" ENGINE_DLL void RHI_PSO_UpdateDescriptorSet_Buffers(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, Containers::Vector<RHI::RHIBufferHandle>* buffers)
+extern "C" ENGINE_DLL void RHI_PSO_UpdateDescriptorSet_Buffers(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, Containers::Vector<RHI_BufferHandle>* buffers)
 {
     auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
     if (s == nullptr || buffers == nullptr) return;
-    s->UpdateDescriptorSet(layoutIndex, binding, std::move(*buffers));
+    
+    Containers::Vector<RHI::RHIBufferHandle> internalBuffers;
+    internalBuffers.reserve(buffers->size());
+    for (auto h : *buffers) internalBuffers.push_back(*reinterpret_cast<RHI::RHIBufferHandle*>(&h));
+    
+    s->UpdateDescriptorSet(layoutIndex, binding, std::move(internalBuffers));
 }
 
 extern "C" ENGINE_DLL void RHI_PSO_UpdateDescriptorSet_Images(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, Containers::Vector<RHI::RHIDescriptorImageInfo>* images)
@@ -84,6 +89,18 @@ extern "C" ENGINE_DLL void RHI_PSO_UpdateDescriptorSet_Images(RHI_PSOHandle pso,
     auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
     if (s == nullptr || images == nullptr) return;
     s->UpdateDescriptorSet(layoutIndex, binding, std::move(*images));
+}
+
+extern "C" ENGINE_DLL void RHI_PSO_UpdateDescriptorSet_AccelerationStructures(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, Containers::Vector<RHI_AccelerationStructureHandle>* accelerationStructures)
+{
+    auto* s = reinterpret_cast<RHI::RHIPipelineState*>(pso);
+    if (s == nullptr || accelerationStructures == nullptr) return;
+    
+    Containers::Vector<RHI::RHIAccelerationStructureHandle> internalAS;
+    internalAS.reserve(accelerationStructures->size());
+    for (auto h : *accelerationStructures) internalAS.push_back(*reinterpret_cast<RHI::RHIAccelerationStructureHandle*>(&h));
+    
+    s->UpdateDescriptorSet(layoutIndex, binding, std::move(internalAS));
 }
 
 extern "C" ENGINE_DLL void RHI_PSO_BatchUpdateDescriptors(RHI_PSOHandle pso, unsigned int count, const RHI_DescriptorUpdateEntry* entries)
@@ -103,6 +120,11 @@ extern "C" ENGINE_DLL void RHI_PSO_BatchUpdateDescriptors(RHI_PSOHandle pso, uns
         {
             auto images = *entry.imageInfos;
             s->UpdateDescriptorSet(entry.layoutIndex, entry.binding, std::move(images));
+        }
+        else if (entry.accelerationStructureHandles != nullptr)
+        {
+            auto as = *entry.accelerationStructureHandles;
+            s->UpdateDescriptorSet(entry.layoutIndex, entry.binding, std::move(as));
         }
     }
 }

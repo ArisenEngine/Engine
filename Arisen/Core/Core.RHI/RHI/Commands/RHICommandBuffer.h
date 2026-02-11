@@ -14,6 +14,7 @@
 #include "RHI/Sync/RHIBufferMemoryBarrier.h"
 #include "RHI/Sync/RHIImageMemoryBarrier.h"
 #include "RHI/Sync/RHIMemoryBarrier.h"
+#include "RHI/Commands/RHIImageCopy.h"
 #include "RHI/Enums/Pipeline/ECullMode.h"
 #include "RHI/Enums/Pipeline/EFrontFace.h"
 #include "RHI/Enums/Pipeline/EPrimitiveTopology.h"
@@ -235,6 +236,8 @@ namespace ArisenEngine::RHI
 
         virtual void TransitionImageLayout(RHIImageHandle image, EImageLayout targetLayout) = 0;
         virtual void TransitionImageLayout(RHIImageHandle image, EImageLayout oldLayout, EImageLayout targetLayout) = 0;
+
+        virtual void CopyImage(RHIImageHandle src, EImageLayout srcLayout, RHIImageHandle dst, EImageLayout dstLayout, UInt32 regionCount, const RHIImageCopy* pRegions) = 0;
 
         virtual void GenerateMipmaps(RHIImageHandle image) = 0;
         

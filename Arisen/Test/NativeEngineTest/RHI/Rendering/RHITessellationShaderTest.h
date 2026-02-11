@@ -421,7 +421,7 @@ namespace ArisenEngine::Testing
                 RHI_Cmd_BindVertexBuffers(cmd, m_Model.vertexBuffer, 0);
                 RHI_Cmd_BindIndexBuffer(cmd, m_Model.indexBuffer, 0, RHI::INDEX_TYPE_UINT32);
 
-                Containers::Vector<RHI::RHIBufferHandle> ubos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffers[currentIndex]) };
+                Containers::Vector<RHI_BufferHandle> ubos = { m_UboBuffers[currentIndex] };
                 RHI_PSO_UpdateDescriptorSet_Buffers(m_ShowWireframe ? m_WireframePso : m_Pso, 0, 0, &ubos);
 
                 UInt32 setIdx = RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[0], 0, m_ShowWireframe ? m_WireframePso : m_Pso);

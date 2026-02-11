@@ -222,7 +222,7 @@ namespace ArisenEngine::Testing
             {
                 RHI_DescriptorPool_Reset(m_DescriptorPool, m_DescriptorPoolIds[currentIndex]);
                 
-                Containers::Vector<RHI::RHIBufferHandle> ubos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[currentIndex]) };
+                Containers::Vector<RHI_BufferHandle> ubos = { m_UboBuffer[currentIndex] };
                 RHI_PSO_UpdateDescriptorSet_Buffers(m_MeshPso, 0, 0, &ubos);
                 
                 UInt32 setIdx = RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[currentIndex], 0, m_MeshPso);

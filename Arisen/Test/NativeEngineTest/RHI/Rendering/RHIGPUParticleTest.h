@@ -283,20 +283,20 @@ namespace ArisenEngine::Testing
                 RHI_DescriptorPool_Reset(m_DescriptorPool, m_ComputeDescriptorPoolIds[currentIndex]);
                 RHI_DescriptorPool_Reset(m_DescriptorPool, m_GraphicsDescriptorPoolIds[currentIndex]);
 
-                Containers::Vector<RHI::RHIBufferHandle> pBuffers = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_ParticleBuffer) };
+                Containers::Vector<RHI_BufferHandle> pBuffers = { m_ParticleBuffer };
                 RHI_PSO_UpdateDescriptorSet_Buffers(m_ComputePso, 0, 0, &pBuffers);
                 
-                Containers::Vector<RHI::RHIBufferHandle> ubos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[currentIndex]) };
+                Containers::Vector<RHI_BufferHandle> ubos = { m_UboBuffer[currentIndex] };
                 RHI_PSO_UpdateDescriptorSet_Buffers(m_ComputePso, 0, 1, &ubos);
                 
                 UInt32 setIdx = RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, m_ComputeDescriptorPoolIds[currentIndex], 0, m_ComputePso);
                 RHI_DescriptorPool_UpdateDescriptorSet(m_DescriptorPool, m_ComputeDescriptorPoolIds[currentIndex], setIdx, m_ComputePso);
             }
             {
-                Containers::Vector<RHI::RHIBufferHandle> pBuffers = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_ParticleBuffer) };
+                Containers::Vector<RHI_BufferHandle> pBuffers = { m_ParticleBuffer };
                 RHI_PSO_UpdateDescriptorSet_Buffers(m_GraphicsPso, 0, 0, &pBuffers);
                 
-                Containers::Vector<RHI::RHIBufferHandle> ubos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[currentIndex]) };
+                Containers::Vector<RHI_BufferHandle> ubos = { m_UboBuffer[currentIndex] };
                 RHI_PSO_UpdateDescriptorSet_Buffers(m_GraphicsPso, 0, 1, &ubos);
                 
                 UInt32 setIdx = RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, m_GraphicsDescriptorPoolIds[currentIndex], 0, m_GraphicsPso);

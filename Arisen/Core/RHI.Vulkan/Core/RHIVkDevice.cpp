@@ -58,6 +58,10 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
     vkDestroyAccelerationStructureKHR = (PFN_vkDestroyAccelerationStructureKHR)vkGetDeviceProcAddr(m_VkDevice, "vkDestroyAccelerationStructureKHR");
     vkGetAccelerationStructureBuildSizesKHR = (PFN_vkGetAccelerationStructureBuildSizesKHR)vkGetDeviceProcAddr(m_VkDevice, "vkGetAccelerationStructureBuildSizesKHR");
     vkGetAccelerationStructureDeviceAddressKHR = (PFN_vkGetAccelerationStructureDeviceAddressKHR)vkGetDeviceProcAddr(m_VkDevice, "vkGetAccelerationStructureDeviceAddressKHR");
+    vkGetBufferDeviceAddressKHR = (PFN_vkGetBufferDeviceAddressKHR)vkGetDeviceProcAddr(m_VkDevice, "vkGetBufferDeviceAddressKHR");
+    if (vkGetBufferDeviceAddressKHR == nullptr) {
+        vkGetBufferDeviceAddressKHR = (PFN_vkGetBufferDeviceAddressKHR)vkGetDeviceProcAddr(m_VkDevice, "vkGetBufferDeviceAddress");
+    }
     vkCmdBuildAccelerationStructuresKHR = (PFN_vkCmdBuildAccelerationStructuresKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCmdBuildAccelerationStructuresKHR");
     vkCmdTraceRaysKHR = (PFN_vkCmdTraceRaysKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCmdTraceRaysKHR");
     vkCreateRayTracingPipelinesKHR = (PFN_vkCreateRayTracingPipelinesKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCreateRayTracingPipelinesKHR");
@@ -495,6 +499,27 @@ void ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopy(RHIBufferHandle handle, co
     }
 }
 
+void* ArisenEngine::RHI::RHIVkDevice::MapBuffer(RHIBufferHandle handle)
+{
+    auto* buffer = m_BufferPool->Get(handle);
+    if (!buffer || buffer->allocation == VK_NULL_HANDLE) return nullptr;
+
+    void* mappedData = nullptr;
+    if (vmaMapMemory(m_MemoryAllocator->GetVmaAllocator(), buffer->allocation, &mappedData) == VK_SUCCESS)
+    {
+        return mappedData;
+    }
+    return nullptr;
+}
+
+void ArisenEngine::RHI::RHIVkDevice::UnmapBuffer(RHIBufferHandle handle)
+{
+    auto* buffer = m_BufferPool->Get(handle);
+    if (!buffer || buffer->allocation == VK_NULL_HANDLE) return;
+
+    vmaUnmapMemory(m_MemoryAllocator->GetVmaAllocator(), buffer->allocation);
+}
+
 ArisenEngine::UInt64 ArisenEngine::RHI::RHIVkDevice::GetBufferSize(RHIBufferHandle handle)
 {
     auto* buffer = m_BufferPool->Get(handle);
@@ -511,6 +536,17 @@ ArisenEngine::UInt64 ArisenEngine::RHI::RHIVkDevice::GetBufferRange(RHIBufferHan
 {
     auto* buffer = m_BufferPool->Get(handle);
     return buffer ? buffer->range : 0ULL;
+}
+
+ArisenEngine::UInt64 ArisenEngine::RHI::RHIVkDevice::GetBufferDeviceAddress(RHIBufferHandle handle)
+{
+    auto* buffer = m_BufferPool->Get(handle);
+    if (!buffer || buffer->buffer == VK_NULL_HANDLE || !vkGetBufferDeviceAddressKHR) return 0ULL;
+
+    VkBufferDeviceAddressInfoKHR addressInfo{};
+    addressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR;
+    addressInfo.buffer = buffer->buffer;
+    return vkGetBufferDeviceAddressKHR(m_VkDevice, &addressInfo);
 }
 
 bool ArisenEngine::RHI::RHIVkDevice::AllocImage(RHIImageHandle handle, RHIImageDescriptor&& desc)
