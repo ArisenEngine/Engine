@@ -13,12 +13,20 @@ bool CheckDeviceExtensionSupport(VkPhysicalDevice device)
     ArisenEngine::Containers::Vector<VkExtensionProperties> availableExtensions(extensionCount);
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
 
-    ArisenEngine::Containers::Set<String> requiredExtensions(ArisenEngine::RHI::VkDeviceExtensionNames.begin(),
-        ArisenEngine::RHI::VkDeviceExtensionNames.end());
+    ArisenEngine::Containers::Set<String> requiredExtensions(ArisenEngine::RHI::VkMandatoryDeviceExtensionNames.begin(),
+        ArisenEngine::RHI::VkMandatoryDeviceExtensionNames.end());
 
     for (const auto& extension : availableExtensions)
     {
         requiredExtensions.erase(extension.extensionName);
+    }
+
+    if (!requiredExtensions.empty())
+    {
+        for (const auto& ext : requiredExtensions)
+        {
+            LOG_WARN(String::Format("[CheckDeviceExtensionSupport]: Mandatory extension not supported: %s", ext.c_str()));
+        }
     }
     
     return requiredExtensions.empty();
@@ -576,33 +584,42 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     vkEnumerateDeviceExtensionProperties(m_CurrentPhysicsDevice, nullptr, &extensionCount, availableExtensions.data());
 
     Containers::Vector<const char*> enabledExtensions;
-    for (const char* extensionName : VkDeviceExtensionNames)
-    {
-        // Skip swapchain if headless
-        if (windowId == ~0u && strcmp(extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0)
+    auto checkAndEnable = [&](const Containers::Vector<const char*>& extensionList, bool mandatory) {
+        for (const char* extensionName : extensionList)
         {
-            continue;
-        }
-
-        bool found = false;
-        for (const auto& ext : availableExtensions)
-        {
-            if (strcmp(extensionName, ext.extensionName) == 0)
+            // Skip swapchain if headless
+            if (windowId == ~0u && strcmp(extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0)
             {
-                found = true;
-                break;
+                continue;
+            }
+
+            bool found = false;
+            for (const auto& ext : availableExtensions)
+            {
+                if (strcmp(extensionName, ext.extensionName) == 0)
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (found)
+            {
+                enabledExtensions.push_back(extensionName);
+            }
+            else if (mandatory)
+            {
+                LOG_WARN(String::Format("[RHIVkInstance::CreateLogicDevice]: mandatory device extension not supported: %s", extensionName));
+            }
+            else
+            {
+                LOG_INFO(String::Format("[RHIVkInstance::CreateLogicDevice]: optional device extension not supported: %s", extensionName));
             }
         }
+    };
 
-        if (found)
-        {
-            enabledExtensions.push_back(extensionName);
-        }
-        else
-        {
-            LOG_WARN(String::Format("[RHIVkInstance::CreateLogicDevice]: device extension not supported: %s", extensionName));
-        }
-    }
+    checkAndEnable(VkMandatoryDeviceExtensionNames, true);
+    checkAndEnable(VkOptionalDeviceExtensionNames, false);
 
     // Set Device Features
     VkPhysicalDeviceFeatures features{};
@@ -636,67 +653,68 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     vulkan12Features.pNext = &vulkan13Features;
     void* pNextChain = &vulkan12Features;
 
-    VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures{};
-    bool meshShaderSupported = false;
-    for (const auto& ext : availableExtensions)
-    {
-        if (strcmp(VK_EXT_MESH_SHADER_EXTENSION_NAME, ext.extensionName) == 0)
-        {
-            meshShaderSupported = true;
-            break;
+    auto isExtensionEnabled = [&](const char* name) {
+        for (const char* ext : enabledExtensions) {
+            if (strcmp(ext, name) == 0) return true;
         }
-    }
+        return false;
+    };
 
-    if (meshShaderSupported)
+    // Chain extensions starting from Vulkan 1.3 features
+    void** lastPNext = &vulkan13Features.pNext;
+
+    VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures{};
+    if (isExtensionEnabled(VK_EXT_MESH_SHADER_EXTENSION_NAME))
     {
         meshShaderFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT;
         meshShaderFeatures.meshShader = VK_TRUE;
         meshShaderFeatures.taskShader = VK_TRUE;
-        vulkan13Features.pNext = &meshShaderFeatures;
+        *lastPNext = &meshShaderFeatures;
+        lastPNext = &meshShaderFeatures.pNext;
     }
 
     VkPhysicalDeviceAccelerationStructureFeaturesKHR asFeatures{};
-    asFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
-    asFeatures.accelerationStructure = VK_TRUE;
-
-    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeatures{};
-    rtPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
-    rtPipelineFeatures.rayTracingPipeline = VK_TRUE;
-
-    VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures{};
-    rayQueryFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
-    rayQueryFeatures.rayQuery = VK_TRUE;
-
-    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features{};
-    bool robustness2Supported = false;
-    for (const char* extName : enabledExtensions)
+    if (isExtensionEnabled(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME))
     {
-        if (strcmp(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME, extName) == 0)
-        {
-            robustness2Supported = true;
-            break;
-        }
+        asFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+        asFeatures.accelerationStructure = VK_TRUE;
+        *lastPNext = &asFeatures;
+        lastPNext = &asFeatures.pNext;
     }
 
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeatures{};
+    if (isExtensionEnabled(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME))
+    {
+        rtPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+        rtPipelineFeatures.rayTracingPipeline = VK_TRUE;
+        *lastPNext = &rtPipelineFeatures;
+        lastPNext = &rtPipelineFeatures.pNext;
+    }
+
+    VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures{};
+    if (isExtensionEnabled(VK_KHR_RAY_QUERY_EXTENSION_NAME))
+    {
+        rayQueryFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+        rayQueryFeatures.rayQuery = VK_TRUE;
+        *lastPNext = &rayQueryFeatures;
+        lastPNext = &rayQueryFeatures.pNext;
+    }
+
+    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features{};
     // for now in development, we don't enable this feature to prevent from hiding some issues
     // but in production, it should be enabled.
-    if (false)
+    if (false && isExtensionEnabled(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME))
     {
         robustness2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
         robustness2Features.nullDescriptor = VK_TRUE;
-        rayQueryFeatures.pNext = &robustness2Features;
+        *lastPNext = &robustness2Features;
+        lastPNext = &robustness2Features.pNext;
     }
 
-    // Chain RT features
-    if (meshShaderSupported) {
-        meshShaderFeatures.pNext = &asFeatures;
-    } else {
-        vulkan13Features.pNext = &asFeatures;
-    }
-    asFeatures.pNext = &rtPipelineFeatures;
-    rtPipelineFeatures.pNext = &rayQueryFeatures;
+    *lastPNext = nullptr;
 
-    vulkan12Features.bufferDeviceAddress = VK_TRUE; // Required for AS
+    vulkan12Features.bufferDeviceAddress = isExtensionEnabled(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+
     
     // Device Create Info
     VkDeviceCreateInfo createInfo{};
