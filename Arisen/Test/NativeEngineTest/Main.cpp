@@ -41,8 +41,7 @@ int main(int argc, char** argv)
     {
         return -1;
     }
-    LOG_ERROR("ANTIGRAVITY: Main Start");
-
+    
     // Register Tests
     // TestRunner::RegisterTest<RHIBindlessTest>();
     // TestRunner::RegisterTest<RHISyncTest>();

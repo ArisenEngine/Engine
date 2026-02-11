@@ -217,17 +217,16 @@ namespace ArisenEngine::Testing
             tlasBufDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             m_TlasBuffer = RHI_Device_CreateBuffer(m_Device, &tlasBufDesc, "TLAS Buffer");
             
-            LOG_ERROR("Allocating TLAS. Size: " + std::to_string(tlasSizes.accelerationStructureSize));
             if (!RHI_Device_AllocAccelerationStructure(m_Device, m_Tlas, (UInt32)tlasInfo.type, tlasSizes.accelerationStructureSize, m_TlasBuffer, 0))
             {
                 LOG_ERROR("Failed to Alloc TLAS! (RHI_Device_AllocAccelerationStructure returned false)");
             }
             else
             {
-                LOG_ERROR("Alloc TLAS Success.");
+                LOG_INFO("Alloc TLAS Success.");
             }
             UInt64 tlasAddr = RHI_Device_GetAccelerationStructureDeviceAddress(m_Device, m_Tlas);
-            LOG_ERROR("TLAS Device Address: " + std::to_string(tlasAddr));
+            LOG_INFO("TLAS Device Address: " + std::to_string(tlasAddr));
 
 
             // 3. Scratch Buffer
