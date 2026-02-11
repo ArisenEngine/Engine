@@ -98,7 +98,7 @@ namespace ArisenEngine::Testing
             GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
             auto exeDir = std::filesystem::path(exePathW).parent_path();
             
-            std::filesystem::path modelPath = exeDir / "Assets" / "glTF-Sample-Models" / "2.0" / "ABeautifulGame" / "glTF" / "ABeautifulGame.gltf";
+            std::filesystem::path modelPath = exeDir / "Assets" / "glTF-Sample-Models" / "2.0" / "Sponza" / "glTF" / "Sponza.gltf";
             m_Model = LoadGLTF(modelPath.string());
 
             UInt32 width = HAL::GetWindowWidth(m_WindowId);
@@ -137,8 +137,9 @@ namespace ArisenEngine::Testing
                 m_CameraBuffers.push_back(RHI_Device_CreateBuffer(m_Device, &cbDesc, "Camera CB"));
             }
 
-            m_CameraPos = glm::vec3(0.0f, 0.5f, 1.5f);
-            m_CameraRot = glm::vec3(0.0f, 0.0f, 0.0f);
+            m_CameraPos = glm::vec3(0.0f, 2.0f, 0.0f);
+            m_CameraRot = glm::vec3(0.0f, 0.0f, 0.0f); // Look down the hall
+            LOG_INFOF("Camera initialized at ({0}, {1}, {2})", m_CameraPos.x, m_CameraPos.y, m_CameraPos.z);
         }
 
         void BuildAccelerationStructures()
@@ -160,9 +161,20 @@ namespace ArisenEngine::Testing
             blasInfo.geometryCount = 1;
             blasInfo.pGeometries = &geom;
 
+            LOG_INFOF("Building BLAS for model: {0} vertices, {1} indices", m_Model.vertexCount, m_Model.indexCount);
+
             UInt32 maxPrimCount = m_Model.indexCount / 3;
             RHI::RHIAccelerationStructureBuildSizesInfo blasSizes{};
             RHI_Device_GetAccelerationStructureBuildSizes(m_Device, &blasInfo, &maxPrimCount, &blasSizes);
+
+            if (blasSizes.accelerationStructureSize == 0)
+            {
+                LOG_ERROR("BLAS build size is 0! Check model data.");
+            }
+            else
+            {
+                LOG_INFOF("BLAS Build Sizes: AS={0}, Scratch={1}", blasSizes.accelerationStructureSize, blasSizes.buildScratchSize);
+            }
 
             m_Blas = RHI_Device_CreateAccelerationStructure(m_Device, "BLAS");
             
