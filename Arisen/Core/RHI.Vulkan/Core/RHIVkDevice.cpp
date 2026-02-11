@@ -1171,7 +1171,6 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocAccelerationStructure(RHIAccelerationS
 
 void ArisenEngine::RHI::RHIVkDevice::ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle)
 {
-    LOG_ERROR("[RHIVkDevice::ReleaseAccelerationStructure] Releasing Handle: " + std::to_string(handle.index));
     auto* item = m_AccelerationStructurePool->Get(handle);
     if (item)
     {
