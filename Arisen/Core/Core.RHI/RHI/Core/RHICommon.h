@@ -13,6 +13,16 @@ namespace ArisenEngine::RHI
         EShaderStage stage;
     } RHIShaderProgramDesc;
 
+    struct RHIOffset3D
+    {
+        SInt32 x; SInt32 y; SInt32 z;
+    };
+
+    struct RHIExtent3D
+    {
+        UInt32 width; UInt32 height; UInt32 depth;
+    };
+
     enum class ERHIObjectType
     {
         Buffer,

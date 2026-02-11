@@ -214,8 +214,8 @@ namespace ArisenEngine::Testing
             cb.attachments.push_back(blendAttachment);
             RHI_PSO_SetColorBlendState(m_Pso, &cb);
 
-            Containers::Vector<RHI::RHIBufferHandle> buffers;
-            buffers.push_back(*reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[0]));
+            Containers::Vector<RHI_BufferHandle> buffers;
+            buffers.push_back(m_UboBuffer[0]);
             RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 0, &buffers);
 
             RHI_PSO_BuildDescriptorSetLayout(m_Pso);
@@ -256,7 +256,7 @@ namespace ArisenEngine::Testing
             
             // Provide valid handles even if MultiDrawIndirect uses a single set for now
             // StandardTest.hlsl expects bindings 0, 1, 2
-            Containers::Vector<RHI::RHIBufferHandle> ubos = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_UboBuffer[currentIndex]) };
+            Containers::Vector<RHI_BufferHandle> ubos = { m_UboBuffer[currentIndex] };
             RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 0, &ubos);
 
             if (!m_Model.materials.empty())

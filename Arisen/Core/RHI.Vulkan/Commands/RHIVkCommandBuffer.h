@@ -115,6 +115,8 @@ public:
   void TransitionImageLayout(RHIImageHandle image, EImageLayout targetLayout) override;
   void TransitionImageLayout(RHIImageHandle image, EImageLayout oldLayout, EImageLayout targetLayout) override;
 
+  void CopyImage(RHIImageHandle src, EImageLayout srcLayout, RHIImageHandle dst, EImageLayout dstLayout, UInt32 regionCount, const RHIImageCopy* pRegions) override;
+
   void GenerateMipmaps(RHIImageHandle image) override;
 
   // Ray Tracing

@@ -1,4 +1,5 @@
 #pragma once
+#include "../../Core.RHI/RHI/Core/RHICommon.h"
 #include "RHI/Enums/Pipeline/EDescriptorType.h"
 #include "RHI/Enums/Image/EImageTiling.h"
 #include "RHI/Enums/Image/EImageType.h"
@@ -200,6 +201,34 @@ namespace ArisenEngine::RHI
         imageCopy.imageExtent.height = height;
         imageCopy.imageExtent.depth = depth;
       
+        return imageCopy;
+    }
+
+    inline VkImageCopy ImageCopyRegion(
+        RHIImageSubresourceLayers srcSubresource,
+        RHIOffset3D srcOffset,
+        RHIImageSubresourceLayers dstSubresource,
+        RHIOffset3D dstOffset,
+        RHIExtent3D extent)
+    {
+        VK_STRUCT_INITIALIZE(VkImageCopy, imageCopy)
+        imageCopy.srcSubresource.aspectMask = static_cast<VkImageAspectFlags>(srcSubresource.aspectMask);
+        imageCopy.srcSubresource.mipLevel = static_cast<uint32_t>(srcSubresource.mipLevel);
+        imageCopy.srcSubresource.baseArrayLayer = static_cast<uint32_t>(srcSubresource.baseArrayLayer);
+        imageCopy.srcSubresource.layerCount = static_cast<uint32_t>(srcSubresource.layerCount);
+        imageCopy.srcOffset.x = srcOffset.x;
+        imageCopy.srcOffset.y = srcOffset.y;
+        imageCopy.srcOffset.z = srcOffset.z;
+        imageCopy.dstSubresource.aspectMask = static_cast<VkImageAspectFlags>(dstSubresource.aspectMask);
+        imageCopy.dstSubresource.mipLevel = static_cast<uint32_t>(dstSubresource.mipLevel);
+        imageCopy.dstSubresource.baseArrayLayer = static_cast<uint32_t>(dstSubresource.baseArrayLayer);
+        imageCopy.dstSubresource.layerCount = static_cast<uint32_t>(dstSubresource.layerCount);
+        imageCopy.dstOffset.x = dstOffset.x;
+        imageCopy.dstOffset.y = dstOffset.y;
+        imageCopy.dstOffset.z = dstOffset.z;
+        imageCopy.extent.width = extent.width;
+        imageCopy.extent.height = extent.height;
+        imageCopy.extent.depth = extent.depth;
         return imageCopy;
     }
 

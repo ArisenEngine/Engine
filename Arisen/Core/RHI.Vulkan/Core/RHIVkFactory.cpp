@@ -320,6 +320,20 @@ namespace ArisenEngine::RHI
     {
         m_Device->ReleaseFence(fenceHandle);
     }
+
+    RHIAccelerationStructureHandle RHIVkFactory::CreateAccelerationStructure(const String& name)
+    {
+        return m_Device->GetAccelerationStructurePool()->Allocate([&name](RHIVkAccelerationStructurePoolItem* item)
+        {
+            *item = RHIVkAccelerationStructurePoolItem();
+            item->name = name;
+        });
+    }
+
+    void RHIVkFactory::ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle)
+    {
+        m_Device->ReleaseAccelerationStructure(handle);
+    }
 }
 
 

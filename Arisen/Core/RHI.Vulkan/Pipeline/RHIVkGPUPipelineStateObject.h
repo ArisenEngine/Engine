@@ -45,6 +45,7 @@ namespace ArisenEngine::RHI
         void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos) override;
         void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIBufferHandle>&& bufferHandles) override;
         void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIImageViewHandle>&& texelBufferViews) override;
+        void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIAccelerationStructureHandle>&& accelerationStructureHandles) override;
         
         void BuildDescriptorSetLayout() override;
 
@@ -127,7 +128,8 @@ namespace ArisenEngine::RHI
 
         void InternalAddDescriptorUpdateInfo(UInt32 layoutIndex, UInt32 binding, EDescriptorType type,
             UInt32 descriptorCount, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos,
-            const Containers::Vector<RHIBufferHandle>&& bufferHandles, const Containers::Vector<RHIImageViewHandle>&& bufferViews);
+            const Containers::Vector<RHIBufferHandle>&& bufferHandles, const Containers::Vector<RHIImageViewHandle>&& bufferViews,
+            const Containers::Vector<RHIAccelerationStructureHandle>&& accelerationStructureHandles);
     };
 }
 

@@ -11,6 +11,21 @@
 
 namespace ArisenEngine::RHI
 {
+    struct RHITransformMatrix
+    {
+        float matrix[3][4];
+    };
+
+    struct RHIAccelerationStructureInstance
+    {
+        RHITransformMatrix transform;
+        UInt32 instanceCustomIndex : 24;
+        UInt32 mask : 8;
+        UInt32 instanceShaderBindingTableRecordOffset : 24;
+        ERHIAccelerationStructureInstanceFlags flags : 8;
+        UInt64 accelerationStructureReference;
+    };
+
     struct RHIAccelerationStructureGeometryTrianglesData
     {
         EFormat vertexFormat;

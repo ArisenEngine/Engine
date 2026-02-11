@@ -596,6 +596,33 @@ void RHIVkCommandBuffer::CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHa
     CaptureResource(dst);
 }
 
+void RHIVkCommandBuffer::CopyImage(RHIImageHandle src, EImageLayout srcLayout, RHIImageHandle dst, EImageLayout dstLayout, UInt32 regionCount, const RHIImageCopy* pRegions)
+{
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
+    auto* srcImg = vkDevice->GetImagePool()->Get(src);
+    auto* dstImg = vkDevice->GetImagePool()->Get(dst);
+
+    if (!srcImg || !dstImg || !pRegions) return;
+
+    Containers::Vector<VkImageCopy> vkRegions;
+    vkRegions.reserve(regionCount);
+    for (UInt32 i = 0; i < regionCount; ++i)
+    {
+        vkRegions.emplace_back(ImageCopyRegion(
+            pRegions[i].srcSubresource, pRegions[i].srcOffset,
+            pRegions[i].dstSubresource, pRegions[i].dstOffset,
+            pRegions[i].extent));
+    }
+
+    ::vkCmdCopyImage(m_VkCommandBuffer,
+        srcImg->image, static_cast<VkImageLayout>(srcLayout),
+        dstImg->image, static_cast<VkImageLayout>(dstLayout),
+        regionCount, vkRegions.data());
+
+    CaptureResource(src);
+    CaptureResource(dst);
+}
+
 void RHIVkCommandBuffer::TransitionImageLayout(RHIImageHandle image, EImageLayout targetLayout)
 {
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());

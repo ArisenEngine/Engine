@@ -89,8 +89,8 @@ namespace ArisenEngine::Testing
             RHI_PSO_SetBindPoint(m_Pso, RHI::PIPELINE_BIND_POINT_COMPUTE);
             RHI_PSO_AddProgram(m_Pso, m_ComputeProgram);
 
-            Containers::Vector<RHI::RHIBufferHandle> inputs = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_InputBuffer) };
-            Containers::Vector<RHI::RHIBufferHandle> outputs = { *reinterpret_cast<RHI::RHIBufferHandle*>(&m_OutputBuffer) };
+            Containers::Vector<RHI_BufferHandle> inputs = { m_InputBuffer };
+            Containers::Vector<RHI_BufferHandle> outputs = { m_OutputBuffer };
             RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 0, &inputs);
             RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 1, &outputs);
             

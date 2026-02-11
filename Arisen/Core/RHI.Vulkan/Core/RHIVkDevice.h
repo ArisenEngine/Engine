@@ -167,9 +167,12 @@ namespace ArisenEngine::RHI
         bool AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits) override;
         void ReleaseBuffer(RHIBufferHandle handle) override;
         void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0) override;
+        void* MapBuffer(RHIBufferHandle handle) override;
+        void UnmapBuffer(RHIBufferHandle handle) override;
         UInt64 GetBufferSize(RHIBufferHandle handle) override;
         UInt64 GetBufferOffset(RHIBufferHandle handle) override;
         UInt64 GetBufferRange(RHIBufferHandle handle) override;
+        UInt64 GetBufferDeviceAddress(RHIBufferHandle handle) override;
 
         bool AllocImage(RHIImageHandle handle, RHIImageDescriptor&& desc) override;
         bool AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits) override;
@@ -279,6 +282,7 @@ namespace ArisenEngine::RHI
         PFN_vkDestroyAccelerationStructureKHR vkDestroyAccelerationStructureKHR = nullptr;
         PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR = nullptr;
         PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR = nullptr;
+        PFN_vkGetBufferDeviceAddressKHR vkGetBufferDeviceAddressKHR = nullptr;
         PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR = nullptr;
         PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR = nullptr;
         PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR = nullptr;

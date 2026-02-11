@@ -21,8 +21,9 @@ extern "C" ENGINE_DLL void RHI_PSO_ClearDescriptorSetLayoutBindings(RHI_PSOHandl
 // RHI_DescriptorUpdateEntry now defined in Core.RHI/RHI/Descriptors/RHIDescriptorUpdateInfo.h
 using RHI_DescriptorUpdateEntry = ArisenEngine::RHI::RHIDescriptorUpdateEntry;
 
-extern "C" ENGINE_DLL void RHI_PSO_UpdateDescriptorSet_Buffers(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIBufferHandle>* buffers);
+extern "C" ENGINE_DLL void RHI_PSO_UpdateDescriptorSet_Buffers(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, ArisenEngine::Containers::Vector<RHI_BufferHandle>* buffers);
 extern "C" ENGINE_DLL void RHI_PSO_UpdateDescriptorSet_Images(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, ArisenEngine::Containers::Vector<ArisenEngine::RHI::RHIDescriptorImageInfo>* images);
+extern "C" ENGINE_DLL void RHI_PSO_UpdateDescriptorSet_AccelerationStructures(RHI_PSOHandle pso, unsigned int layoutIndex, unsigned int binding, ArisenEngine::Containers::Vector<RHI_AccelerationStructureHandle>* accelerationStructures);
 extern "C" ENGINE_DLL void RHI_PSO_BatchUpdateDescriptors(RHI_PSOHandle pso, unsigned int count, const RHI_DescriptorUpdateEntry* entries);
 extern "C" ENGINE_DLL void RHI_PSO_BuildDescriptorSetLayout(RHI_PSOHandle pso);
 extern "C" ENGINE_DLL void RHI_PSO_SetBindPoint(RHI_PSOHandle pso, ArisenEngine::RHI::EPipelineBindPoint bindPoint);

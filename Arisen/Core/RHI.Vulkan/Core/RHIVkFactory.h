@@ -43,6 +43,9 @@ namespace ArisenEngine::RHI
         RHIFenceHandle CreateFence(bool signaled = false) override;
         void ReleaseFence(RHIFenceHandle fence) override;
 
+        RHIAccelerationStructureHandle CreateAccelerationStructure(const String& name = "Anonymous") override;
+        void ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle) override;
+
     private:
         RHIVkDevice* m_Device;
     };

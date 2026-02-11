@@ -1,7 +1,15 @@
 #include "RayTracingExports.h"
 #include "RHINativeBridge.h"
+#include "../../Core/Core.RHI/RHI/Core/RHIFactory.h"
 
 using namespace ArisenEngine::RHI;
+
+extern "C" RHI_AccelerationStructureHandle RHI_Device_CreateAccelerationStructure(RHI_DeviceHandle device, const char* name)
+{
+    if (!device) return 0;
+    auto h = static_cast<RHIDevice*>(device)->GetFactory()->CreateAccelerationStructure(name != nullptr ? name : "Anonymous");
+    return *reinterpret_cast<RHI_AccelerationStructureHandle*>(&h);
+}
 
 extern "C" void RHI_Device_GetAccelerationStructureBuildSizes(RHI_DeviceHandle device, const RHIAccelerationStructureBuildGeometryInfo* buildInfo, const unsigned int* pMaxPrimitiveCounts, RHIAccelerationStructureBuildSizesInfo* pSizeInfo)
 {
@@ -18,7 +26,8 @@ extern "C" bool RHI_Device_AllocAccelerationStructure(RHI_DeviceHandle device, R
 extern "C" void RHI_Device_ReleaseAccelerationStructure(RHI_DeviceHandle device, RHI_AccelerationStructureHandle handle)
 {
     if (!device) return;
-    static_cast<RHIDevice*>(device)->ReleaseAccelerationStructure(*reinterpret_cast<RHIAccelerationStructureHandle*>(&handle));
+    auto h = *reinterpret_cast<RHIAccelerationStructureHandle*>(&handle);
+    static_cast<RHIDevice*>(device)->GetFactory()->ReleaseAccelerationStructure(h);
 }
 
 extern "C" unsigned long long RHI_Device_GetAccelerationStructureDeviceAddress(RHI_DeviceHandle device, RHI_AccelerationStructureHandle handle)

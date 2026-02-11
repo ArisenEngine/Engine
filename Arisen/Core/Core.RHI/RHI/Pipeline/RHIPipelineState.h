@@ -64,6 +64,7 @@ namespace ArisenEngine::RHI
         virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos) = 0;
         virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIBufferHandle>&& bufferHandles) = 0;
         virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIImageViewHandle>&& texelBufferViews) = 0;
+        virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIAccelerationStructureHandle>&& accelerationStructureHandles) = 0;
 
         virtual void BuildDescriptorSetLayout() = 0;
 

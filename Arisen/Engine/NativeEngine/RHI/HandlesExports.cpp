@@ -66,6 +66,22 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseBuffer(RHI_DeviceHandle device, RHI
     dev->GetFactory()->ReleaseBuffer(h);
 }
 
+extern "C" ENGINE_DLL void* RHI_Buffer_Map(RHI_DeviceHandle device, RHI_BufferHandle buffer)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || buffer == 0) return nullptr;
+    auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
+    return dev->MapBuffer(h);
+}
+
+extern "C" ENGINE_DLL void RHI_Buffer_Unmap(RHI_DeviceHandle device, RHI_BufferHandle buffer)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || buffer == 0) return;
+    auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
+    dev->UnmapBuffer(h);
+}
+
 // Internalized or deprecated
 
 
@@ -99,6 +115,14 @@ extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Range(RHI_DeviceHandle devic
     if (dev == nullptr || buffer == 0) return 0ULL;
     auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
     return dev->GetBufferRange(h);
+}
+
+extern "C" ENGINE_DLL unsigned long long RHI_Buffer_GetDeviceAddress(RHI_DeviceHandle device, RHI_BufferHandle buffer)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || buffer == 0) return 0ULL;
+    auto h = *reinterpret_cast<RHI::RHIBufferHandle*>(&buffer);
+    return dev->GetBufferDeviceAddress(h);
 }
 
 extern "C" ENGINE_DLL RHI_ImageHandle RHI_Device_CreateImage(RHI_DeviceHandle device, const ArisenEngine::RHI::RHIImageDescriptor* desc, const char* name)
