@@ -306,9 +306,9 @@ namespace ArisenEngine::Testing
                 RHI::RHIAccelerationStructureGeometryData geom{};
                 geom.type = RHI::ERHIAccelerationStructureGeometryType::Triangles;
                 geom.flags = RHI::AS_GEOMETRY_OPAQUE_BIT;
-                geom.triangles.vertexFormat = RHI::FORMAT_R32G32B32_SFLOAT;
+                geom.triangles.vertexFormat = RHI::FORMAT_R32G32B32A32_SFLOAT;
                 geom.triangles.vertexData = RHI_Buffer_GetDeviceAddress(m_Device, m_Model.vertexBuffer);
-                geom.triangles.vertexStride = sizeof(GLTFVertex);
+                geom.triangles.vertexStride = sizeof(GLTFVertex); // 64 bytes
                 geom.triangles.maxVertex = (UInt32)m_Model.vertexCount;
                 geom.triangles.indexType = RHI::INDEX_TYPE_UINT32;
                 geom.triangles.indexData = RHI_Buffer_GetDeviceAddress(m_Device, m_Model.indexBuffer);

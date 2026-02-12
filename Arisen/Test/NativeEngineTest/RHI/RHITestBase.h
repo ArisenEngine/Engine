@@ -37,9 +37,10 @@ namespace ArisenEngine::Testing
 
     struct GLTFVertex
     {
-        glm::vec3 pos;
-        glm::vec3 normal;
+        glm::vec4 pos;    // w is unused
+        glm::vec4 normal; // w is unused
         glm::vec2 uv;
+        glm::vec2 padding;
         glm::vec4 color;
     };
 

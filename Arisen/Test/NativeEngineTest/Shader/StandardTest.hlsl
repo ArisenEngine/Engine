@@ -8,8 +8,8 @@ struct
 
 struct Attribute
 {
-    float3 positionOS : POSITION0;
-    float3 normalOS : NORMAL0;
+    float4 positionOS : POSITION0;
+    float4 normalOS : NORMAL0;
     float2 uv : TEXCOORD0;
     float4 color : COLOR0;
 };
@@ -36,9 +36,9 @@ SamplerState sam : register(s2, space0);
 Varying Vert(Attribute input)
 {
     Varying output = (Varying)0;
-    output.positionCS = mul(projection, mul(view, mul(model, float4(input.positionOS, 1.0))));
+    output.positionCS = mul(projection, mul(view, mul(model, float4(input.positionOS.xyz, 1.0))));
     output.uv = input.uv;
-    output.normalWS = mul((float3x3)model, input.normalOS);
+    output.normalWS = mul((float3x3)model, input.normalOS.xyz);
     output.color = input.color;
     return output;
 }
