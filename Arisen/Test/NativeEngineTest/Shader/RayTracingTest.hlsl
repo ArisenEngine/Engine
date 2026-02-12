@@ -57,6 +57,44 @@ Texture2D ModelTextures[100] : register(t7, space0);
 SamplerState DefaultSampler : register(s8, space0);
 RWTexture2D<float4> AccumulationTarget : register(u9, space0);
 
+const static float PI = 3.1415926535f;
+
+// --- PBR Helpers ---
+float D_GGX(float3 N, float3 H, float roughness)
+{
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH * NdotH;
+    float num = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+    return num / max(denom, 0.0001);
+}
+
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r * r) / 8.0;
+    float num = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+    return num / denom;
+}
+
+float G_Smith(float3 N, float3 V, float3 L, float roughness)
+{
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+    return ggx1 * ggx2;
+}
+
+float3 F_Schlick(float cosTheta, float3 F0)
+{
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
 // --- Random Helpers ---
 uint PCGHash(uint seed)
 {
@@ -69,6 +107,17 @@ float RandomFloat(inout uint seed)
 {
     seed = PCGHash(seed);
     return (seed & 0xFFFFFFu) / 16777216.0f;
+}
+
+// --- Tonemapping Helpers ---
+float3 ACESFilm(float3 x)
+{
+    float a = 2.51f;
+    float b = 0.03f;
+    float c = 2.43f;
+    float d = 0.59f;
+    float e = 0.14f;
+    return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
 }
 
 [shader("raygeneration")]
@@ -111,7 +160,8 @@ void RayGen()
     AccumulationTarget[launchID.xy] = float4(accumulatedColor, 1.0);
     
     // Tonemapping and SRGB
-    float3 finalColor = pow(max(accumulatedColor, 0.0), 1.0 / 2.2);
+    float3 finalColor = ACESFilm(accumulatedColor);
+    finalColor = pow(finalColor, 1.0 / 2.2);
 
     RenderTarget[launchID.xy] = float4(finalColor, 1.0);
 }
@@ -119,7 +169,10 @@ void RayGen()
 [shader("miss")]
 void Miss(inout RayPayloadFixed payload)
 {
-    payload.radiance = float3(0.1, 0.12, 0.15); 
+    float3 rayDir = WorldRayDirection();
+    float t = 0.5 * (rayDir.y + 1.0);
+    float3 skyColor = lerp(float3(1.0, 1.0, 1.0), float3(0.5, 0.7, 1.0), t);
+    payload.radiance = skyColor * 0.5; // Scale down for a more natural look
 }
 
 [shader("closesthit")]
@@ -144,12 +197,61 @@ void ClosestHit(inout RayPayloadFixed payload, in BuiltInTriangleIntersectionAtt
     
     float3 bary = float3(1.0 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
     float2 uv = v0.uv * bary.x + v1.uv * bary.y + v2.uv * bary.z;
-    
+    float3 normalOS = normalize(v0.normal.xyz * bary.x + v1.normal.xyz * bary.y + v2.normal.xyz * bary.z);
+    float3 normalWS = normalize(mul((float3x3)ObjectToWorld3x4(), normalOS));
+
     float4 baseColor = mat.baseColorFactor;
     if (mat.baseColorTextureIndex >= 0)
     {
         baseColor *= ModelTextures[mat.baseColorTextureIndex].SampleLevel(DefaultSampler, uv, 0);
     }
 
-    payload.radiance = baseColor.rgb;
+    float3 worldPos = WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
+    float3 V = normalize(WorldRayOrigin() - worldPos);
+    float3 N = normalWS;
+
+    float roughness = mat.roughnessFactor;
+    float metallic = mat.metallicFactor;
+
+    float3 F0 = float3(0.04, 0.04, 0.04);
+    F0 = lerp(F0, baseColor.rgb, metallic);
+
+    float3 Lo = float3(0, 0, 0);
+    for (int i = 0; i < numPointLights; ++i)
+    {
+        float3 lightPos = pointLights[i].posRange.xyz;
+        float range = pointLights[i].posRange.w;
+        float3 lightColor = pointLights[i].colorInt.xyz;
+        float intensity = pointLights[i].colorInt.w;
+
+        float3 L = normalize(lightPos - worldPos);
+        float3 H = normalize(V + L);
+
+        float distance = length(lightPos - worldPos);
+        float attenuation = 1.0 / (distance * distance);
+        // Range-based attenuation (simplified glTF/standard match)
+        attenuation *= pow(max(0.0, 1.0 - pow(distance / range, 4.0)), 2.0);
+        float3 radiance = lightColor * intensity * attenuation;
+
+        // Cook-Torrance BRDF
+        float NDF = D_GGX(N, H, roughness);
+        float G = G_Smith(N, V, L, roughness);
+        float3 F = F_Schlick(max(dot(H, V), 0.0), F0);
+
+        float3 kS = F;
+        float3 kD = float3(1.0, 1.0, 1.0) - kS;
+        kD *= 1.0 - metallic;
+
+        float3 numerator = NDF * G * F;
+        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+        float3 specular = numerator / denominator;
+
+        float NdotL = max(dot(N, L), 0.0);
+        Lo += (kD * baseColor.rgb / PI + specular) * radiance * NdotL;
+    }
+
+    // Ambient/Background (very simple)
+    float3 ambient = float3(0.03, 0.03, 0.03) * baseColor.rgb;
+    
+    payload.radiance = ambient + Lo;
 }
