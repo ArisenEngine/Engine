@@ -132,7 +132,7 @@ void ClosestHit(inout RayPayloadFixed payload, in BuiltInTriangleIntersectionAtt
     uint matIndex = sub.materialIndex;
     uint baseIndex = sub.firstIndex;
     
-    MaterialData mat = Materials[min(matIndex, 100)];
+    MaterialData mat = Materials[matIndex];
     
     uint i0 = Indices[baseIndex + triIndex * 3 + 0];
     uint i1 = Indices[baseIndex + triIndex * 3 + 1];
@@ -145,7 +145,11 @@ void ClosestHit(inout RayPayloadFixed payload, in BuiltInTriangleIntersectionAtt
     float3 bary = float3(1.0 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
     float2 uv = v0.uv * bary.x + v1.uv * bary.y + v2.uv * bary.z;
     
-    // Display raw UVs for verification
-    // Note: uv.y = 1.0 - uv.y; // Keep or remove based on previous test result
-    payload.radiance = float3(uv.x, uv.y, 0.0);
+    float4 baseColor = mat.baseColorFactor;
+    if (mat.baseColorTextureIndex >= 0)
+    {
+        baseColor *= ModelTextures[mat.baseColorTextureIndex].SampleLevel(DefaultSampler, uv, 0);
+    }
+
+    payload.radiance = baseColor.rgb;
 }
