@@ -292,3 +292,26 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseRenderPass(RHI_DeviceHandle device,
     dev->GetFactory()->ReleaseRenderPass(h);
 }
 
+extern "C" ENGINE_DLL RHI_SemaphoreHandle RHI_Device_CreateSemaphore(RHI_DeviceHandle device)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr) return 0ULL;
+    auto h = dev->GetFactory()->CreateSemaphore();
+    return *reinterpret_cast<unsigned long long*>(&h);
+}
+
+extern "C" ENGINE_DLL RHI_SemaphoreHandle RHI_Device_CreateTimelineSemaphore(RHI_DeviceHandle device, unsigned long long initialValue)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr) return 0ULL;
+    auto h = dev->GetFactory()->CreateTimelineSemaphore(initialValue);
+    return *reinterpret_cast<unsigned long long*>(&h);
+}
+
+extern "C" ENGINE_DLL void RHI_Device_ReleaseSemaphore(RHI_DeviceHandle device, RHI_SemaphoreHandle sem)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || sem == 0) return;
+    auto h = *reinterpret_cast<RHI::RHISemaphoreHandle*>(&sem);
+    dev->GetFactory()->ReleaseSemaphore(h);
+}

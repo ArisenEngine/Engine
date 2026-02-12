@@ -1,5 +1,4 @@
 
-- [ ] **Variable Rate Shading**: `VK_KHR_fragment_shading_rate`
 - [ ] **GPU Timeline Semaphores**: 更精细的同步控制
 - [ ] **Transient Resource Aliasing**: VMA 内存别名优化
 

@@ -47,6 +47,7 @@ namespace ArisenEngine::RHI
         virtual void ReleaseSampler(RHISamplerHandle sampler) = 0;
 
         virtual RHISemaphoreHandle CreateSemaphore() = 0;
+        virtual RHISemaphoreHandle CreateTimelineSemaphore(uint64_t initialValue = 0) = 0;
         virtual void ReleaseSemaphore(RHISemaphoreHandle semaphore) = 0;
 
         virtual RHIFenceHandle CreateFence(bool signaled = false) = 0;

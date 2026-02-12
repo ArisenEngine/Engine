@@ -75,3 +75,13 @@ extern "C" ENGINE_DLL void RHI_GPUProgram_SetSpecializationConstant(RHI_DeviceHa
 extern "C" ENGINE_DLL RHI_RenderPassHandle RHI_Device_CreateRenderPass(RHI_DeviceHandle device);
 extern "C" ENGINE_DLL void RHI_Device_ReleaseRenderPass(RHI_DeviceHandle device, RHI_RenderPassHandle rp);
 
+// ============================================================================
+// Semaphore Handles
+// ============================================================================
+
+/** @ownership Owned - Caller must release via RHI_Device_ReleaseSemaphore */
+extern "C" ENGINE_DLL RHI_SemaphoreHandle RHI_Device_CreateSemaphore(RHI_DeviceHandle device);
+/** @ownership Owned - Caller must release via RHI_Device_ReleaseSemaphore */
+extern "C" ENGINE_DLL RHI_SemaphoreHandle RHI_Device_CreateTimelineSemaphore(RHI_DeviceHandle device, unsigned long long initialValue);
+extern "C" ENGINE_DLL void RHI_Device_ReleaseSemaphore(RHI_DeviceHandle device, RHI_SemaphoreHandle sem);
+

@@ -38,6 +38,7 @@ namespace ArisenEngine::RHI
         void ReleaseSampler(RHISamplerHandle sampler) override;
 
         RHISemaphoreHandle CreateSemaphore() override;
+        RHISemaphoreHandle CreateTimelineSemaphore(uint64_t initialValue = 0) override;
         void ReleaseSemaphore(RHISemaphoreHandle semaphore) override;
 
         RHIFenceHandle CreateFence(bool signaled = false) override;

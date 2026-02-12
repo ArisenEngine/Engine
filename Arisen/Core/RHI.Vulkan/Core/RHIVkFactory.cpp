@@ -274,6 +274,48 @@ namespace ArisenEngine::RHI
         });
     }
 
+    RHISemaphoreHandle RHIVkFactory::CreateTimelineSemaphore(uint64_t initialValue)
+    {
+        return m_Device->GetSemaphorePool()->Allocate([this, initialValue](RHIVkSemaphorePoolItem* sem)
+        {
+            *sem = RHIVkSemaphorePoolItem();
+            VkSemaphoreTypeCreateInfo typeInfo{};
+            typeInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+            typeInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+            typeInfo.initialValue = initialValue;
+
+            VkSemaphoreCreateInfo createInfo{};
+            createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+            createInfo.pNext = &typeInfo;
+
+            if (vkCreateSemaphore(static_cast<VkDevice>(m_Device->GetHandle()),
+                                  &createInfo, nullptr,
+                                  &sem->semaphore) != VK_SUCCESS)
+            {
+                LOG_ERROR("[RHIVkFactory::CreateTimelineSemaphore]: failed to create timeline semaphore!");
+            }
+
+            struct DeferredVkSemaphore
+            {
+                VkDevice device;
+                VkSemaphore semaphore;
+
+                ~DeferredVkSemaphore()
+                {
+                    if (device != VK_NULL_HANDLE && semaphore != VK_NULL_HANDLE)
+                    {
+                        vkDestroySemaphore(device, semaphore, nullptr);
+                    }
+                }
+            };
+            auto* deferred = new DeferredVkSemaphore{
+                static_cast<VkDevice>(m_Device->GetHandle()), sem->semaphore
+            };
+            sem->registryHandle = m_Device->GetResourceRegistry()->Create(
+                MakeDeferredDeleteItem(deferred));
+        });
+    }
+
     void RHIVkFactory::ReleaseSemaphore(RHISemaphoreHandle semaphoreHandle)
     {
         m_Device->ReleaseSemaphore(semaphoreHandle);
