@@ -8,6 +8,7 @@
 #include "RHI/RenderPass/RHISubPass.h"
 
 #include <fstream>
+#include "PlatformPath.h"
 
 ArisenEngine::RHI::RHIVkGPUPipelineManager::RHIVkGPUPipelineManager(RHIVkDevice* device, UInt32 maxFramesInFlight): RHIPipelineCache(maxFramesInFlight),
 m_Device(device)
@@ -82,7 +83,8 @@ void ArisenEngine::RHI::RHIVkGPUPipelineManager::LoadPipelineCache()
     VkDevice vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
     Containers::Vector<char> cacheData;
 
-    std::ifstream file(m_CacheFilePath.c_str(), std::ios::binary | std::ios::ate);
+    String cachePath = HAL::PlatformPath::GetExecutableDirectory() + "/" + m_PipelineCacheFileName;
+    std::ifstream file(cachePath.c_str(), std::ios::binary | std::ios::ate);
     if (file.is_open())
     {
         std::streamsize size = file.tellg();
@@ -119,7 +121,8 @@ void ArisenEngine::RHI::RHIVkGPUPipelineManager::SavePipelineCache()
         Containers::Vector<char> cacheData(cacheSize);
         if (vkGetPipelineCacheData(vkDevice, m_VkPipelineCache, &cacheSize, cacheData.data()) == VK_SUCCESS)
         {
-            std::ofstream file(m_CacheFilePath.c_str(), std::ios::binary);
+            String cachePath = HAL::PlatformPath::GetExecutableDirectory() + "/" + m_PipelineCacheFileName;
+            std::ofstream file(cachePath.c_str(), std::ios::binary);
             if (file.is_open())
             {
                 file.write(cacheData.data(), cacheSize);
