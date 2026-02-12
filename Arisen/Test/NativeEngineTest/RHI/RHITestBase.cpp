@@ -102,10 +102,24 @@ namespace ArisenEngine::Testing
         };
 
         // Load Materials
+        std::map<std::string, RHI_ImageHandle> textureCache;
+        std::map<std::string, RHI_ImageViewHandle> textureViewCache;
+        
         for (cgltf_size i = 0; i < data->materials_count; ++i)
         {
             cgltf_material& mat = data->materials[i];
             GLTFMaterial gMat;
+            
+            // Read base color factor
+            if (mat.has_pbr_metallic_roughness)
+            {
+                gMat.baseColorFactor = glm::vec4(
+                    mat.pbr_metallic_roughness.base_color_factor[0],
+                    mat.pbr_metallic_roughness.base_color_factor[1],
+                    mat.pbr_metallic_roughness.base_color_factor[2],
+                    mat.pbr_metallic_roughness.base_color_factor[3]
+                );
+            }
             
             if (mat.has_pbr_metallic_roughness && mat.pbr_metallic_roughness.base_color_texture.texture)
             {
@@ -113,38 +127,52 @@ namespace ArisenEngine::Testing
                 if (tex->image && tex->image->uri)
                 {
                     String texPath = (modelDir / tex->image->uri).string().c_str();
-                    int tw, th, tc;
-                    stbi_uc* pixels = stbi_load(texPath.c_str(), &tw, &th, &tc, STBI_rgb_alpha);
-                    if (pixels)
+                    
+                    // Check cache to avoid duplicate texture creation
+                    if (textureCache.find(texPath.c_str()) != textureCache.end())
                     {
-                        RHI::RHIImageDescriptor texDesc = {};
-                        texDesc.imageType = RHI::IMAGE_TYPE_2D;
-                        texDesc.width = (UInt32)tw;
-                        texDesc.height = (UInt32)th;
-                        texDesc.depth = 1;
-                        texDesc.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(tw, th)))) + 1;
-                        texDesc.arrayLayers = 1;
-                        texDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
-                        texDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
-                        texDesc.usage = RHI::IMAGE_USAGE_TRANSFER_SRC_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT | RHI::IMAGE_USAGE_SAMPLED_BIT;
-                        texDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
-                        texDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-                        gMat.baseColorTexture = RHI_Device_CreateImage(m_Device, &texDesc, tex->image->uri);
-
-                        RHI::RHIImageViewDesc viewDesc = {};
-                        viewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
-                        viewDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
-                        viewDesc.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
-                        viewDesc.levelCount = texDesc.mipLevels;
-                        viewDesc.layerCount = 1;
-                        gMat.baseColorView = RHI_Image_AddImageView(m_Device, gMat.baseColorTexture, &viewDesc);
-
-                        uploadAndMipmap(gMat.baseColorTexture, tw, th, pixels, texDesc.mipLevels);
-                        stbi_image_free(pixels);
+                        gMat.baseColorTexture = textureCache[texPath.c_str()];
+                        gMat.baseColorView = textureViewCache[texPath.c_str()];
                     }
                     else
                     {
-                        LOG_ERRORF("Failed to load texture: {0}", texPath.c_str());
+                        int tw, th, tc;
+                        stbi_uc* pixels = stbi_load(texPath.c_str(), &tw, &th, &tc, STBI_rgb_alpha);
+                        if (pixels)
+                        {
+                            RHI::RHIImageDescriptor texDesc = {};
+                            texDesc.imageType = RHI::IMAGE_TYPE_2D;
+                            texDesc.width = (UInt32)tw;
+                            texDesc.height = (UInt32)th;
+                            texDesc.depth = 1;
+                            texDesc.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(tw, th)))) + 1;
+                            texDesc.arrayLayers = 1;
+                            texDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
+                            texDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
+                            texDesc.usage = RHI::IMAGE_USAGE_TRANSFER_SRC_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT | RHI::IMAGE_USAGE_SAMPLED_BIT;
+                            texDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
+                            texDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+                            gMat.baseColorTexture = RHI_Device_CreateImage(m_Device, &texDesc, tex->image->uri);
+
+                            RHI::RHIImageViewDesc viewDesc = {};
+                            viewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
+                            viewDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
+                            viewDesc.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
+                            viewDesc.levelCount = texDesc.mipLevels;
+                            viewDesc.layerCount = 1;
+                            gMat.baseColorView = RHI_Image_AddImageView(m_Device, gMat.baseColorTexture, &viewDesc);
+
+                            uploadAndMipmap(gMat.baseColorTexture, tw, th, pixels, texDesc.mipLevels);
+                            stbi_image_free(pixels);
+                            
+                            // Add to cache
+                            textureCache[texPath.c_str()] = gMat.baseColorTexture;
+                            textureViewCache[texPath.c_str()] = gMat.baseColorView;
+                        }
+                        else
+                        {
+                            LOG_ERRORF("Failed to load texture: {0}", texPath.c_str());
+                        }
                     }
                 }
             }
