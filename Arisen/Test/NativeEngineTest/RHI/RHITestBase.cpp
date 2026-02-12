@@ -262,15 +262,15 @@ namespace ArisenEngine::Testing
 
                         glm::vec3 localPos;
                         cgltf_accessor_read_float(pos_accessor, v, &localPos.x, 3);
-                        vertex.pos = glm::vec3(worldTransform * glm::vec4(localPos, 1.0f));
+                        vertex.pos = worldTransform * glm::vec4(localPos, 1.0f);
                         
-                        minBound = glm::min(minBound, vertex.pos);
-                        maxBound = glm::max(maxBound, vertex.pos);
+                        minBound = glm::min(minBound, glm::vec3(vertex.pos));
+                        maxBound = glm::max(maxBound, glm::vec3(vertex.pos));
 
                         if (normal_accessor) {
                             glm::vec3 localNormal;
                             cgltf_accessor_read_float(normal_accessor, v, &localNormal.x, 3);
-                            vertex.normal = glm::normalize(glm::vec3(worldTransform * glm::vec4(localNormal, 0.0f)));
+                            vertex.normal = glm::vec4(glm::normalize(glm::vec3(worldTransform * glm::vec4(localNormal, 0.0f))), 0.0f);
                         }
                         if (uv_accessor) cgltf_accessor_read_float(uv_accessor, v, &vertex.uv.x, 2);
                         if (color_accessor) cgltf_accessor_read_float(color_accessor, v, &vertex.color.x, 4);
@@ -280,8 +280,8 @@ namespace ArisenEngine::Testing
                     if (model.layout.attributes.empty())
                     {
                         model.layout.stride = sizeof(GLTFVertex);
-                        model.layout.attributes.push_back({"POSITION0", RHI::FORMAT_R32G32B32_SFLOAT, (uint32_t)offsetof(GLTFVertex, pos), 0});
-                        model.layout.attributes.push_back({"NORMAL0", RHI::FORMAT_R32G32B32_SFLOAT, (uint32_t)offsetof(GLTFVertex, normal), 1});
+                        model.layout.attributes.push_back({"POSITION0", RHI::FORMAT_R32G32B32A32_SFLOAT, (uint32_t)offsetof(GLTFVertex, pos), 0});
+                        model.layout.attributes.push_back({"NORMAL0", RHI::FORMAT_R32G32B32A32_SFLOAT, (uint32_t)offsetof(GLTFVertex, normal), 1});
                         model.layout.attributes.push_back({"TEXCOORD0", RHI::FORMAT_R32G32_SFLOAT, (uint32_t)offsetof(GLTFVertex, uv), 2});
                         model.layout.attributes.push_back({"COLOR0", RHI::FORMAT_R32G32B32A32_SFLOAT, (uint32_t)offsetof(GLTFVertex, color), 3});
                     }

@@ -7,9 +7,10 @@ struct RayPayloadFixed
 
 struct GLTFVertex
 {
-    float3 pos;
-    float3 normal;
+    float4 pos;
+    float4 normal;
     float2 uv;
+    float2 padding;
     float4 color;
 };
 
