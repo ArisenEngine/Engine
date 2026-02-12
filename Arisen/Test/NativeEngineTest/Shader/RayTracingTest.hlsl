@@ -113,16 +113,26 @@ float RandomFloat(inout uint seed)
 
 float3 RandomInUnitSphere(inout uint seed)
 {
-    while (true)
+    for (int i = 0; i < 16; ++i)
     {
         float3 p = float3(RandomFloat(seed), RandomFloat(seed), RandomFloat(seed)) * 2.0 - 1.0;
         if (dot(p, p) < 1.0) return p;
     }
+    return float3(0, 1, 0); // Fallback
 }
 
 float3 RandomUnitVector(inout uint seed)
 {
-    return normalize(RandomInUnitSphere(seed));
+    float3 p = RandomInUnitSphere(seed);
+    float d2 = dot(p, p);
+    if (d2 < 0.0001f) return float3(0, 1, 0);
+    return p / sqrt(d2);
+}
+
+bool IsNearZero(float3 v)
+{
+    const float s = 1e-8;
+    return (abs(v.x) < s) && (abs(v.y) < s) && (abs(v.z) < s);
 }
 
 // --- Shaders ---
@@ -179,10 +189,19 @@ void RayGen()
     float3 finalColor = payload.radiance;
     if (frameCount > 0)
     {
-        float3 prevColor = AccumulationTarget[launchID.xy].rgb;
-        finalColor = lerp(prevColor, finalColor, 1.0f / (float)(frameCount + 1));
+        float4 prevSample = AccumulationTarget[launchID.xy];
+        float3 prevColor = prevSample.rgb;
+        
+        // Stabilize: if prevColor is NaN or extreme, ignore it
+        if (any(isnan(prevColor)) || any(isinf(prevColor))) prevColor = finalColor;
+
+        float weight = 1.0f / (float)(frameCount + 1);
+        finalColor = lerp(prevColor, finalColor, weight);
     }
     
+    // Guard against NaNs in final result
+    if (any(isnan(finalColor)) || any(isinf(finalColor))) finalColor = float3(0, 0, 0);
+
     AccumulationTarget[launchID.xy] = float4(finalColor, 1.0);
 
     // Final Post-processing
@@ -222,51 +241,50 @@ void ClosestHit(inout RayPayloadFixed payload, in BuiltInTriangleIntersectionAtt
     uint matIndex = TriangleMaterialIndices[triIndex];
     MaterialData mat = Materials[matIndex];
     
+    // --- Improved Interpolation & Offsetting ---
     uint i0 = Indices[triIndex * 3 + 0];
     uint i1 = Indices[triIndex * 3 + 1];
     uint i2 = Indices[triIndex * 3 + 2];
-    
     GLTFVertex v0 = Vertices[i0];
     GLTFVertex v1 = Vertices[i1];
     GLTFVertex v2 = Vertices[i2];
     
-    float2 uv = v0.uv * (1.0 - attr.barycentrics.x - attr.barycentrics.y) + v1.uv * attr.barycentrics.x + v2.uv * attr.barycentrics.y;
-    float3 N = normalize(v0.normal * (1.0 - attr.barycentrics.x - attr.barycentrics.y) + v1.normal * attr.barycentrics.x + v2.normal * attr.barycentrics.y);
+    float3 bary = float3(1.0 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
+    float2 uv = v0.uv * bary.x + v1.uv * bary.y + v2.uv * bary.z;
+    float3 N = normalize(v0.normal * bary.x + v1.normal * bary.y + v2.normal * bary.z);
     float3 worldPos = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
     
+    // Geometric normal for robust offsetting to fix antifacet (shadow acne)
+    float3 geoN = normalize(cross(v1.pos - v0.pos, v2.pos - v0.pos));
+    if (dot(geoN, -WorldRayDirection()) < 0) geoN = -geoN; // Ray side
+
     float4 baseColor = mat.baseColorFactor;
     if (mat.baseColorTextureIndex >= 0)
     {
         baseColor *= ModelTextures[mat.baseColorTextureIndex].SampleLevel(DefaultSampler, uv, 0);
     }
     
-    float3 albedo = baseColor.rgb;
-    if (mat.baseColorTextureIndex >= 0)
-    {
-        albedo = SRGBToLinear(albedo);
-    }
+    // Consistent linearization of all albedo data
+    float3 albedo = pow(max(baseColor.rgb, 0.0), 2.2f);
     
     float metallic = mat.metallicFactor;
     float roughness = mat.roughnessFactor;
     float3 V = -WorldRayDirection();
 
-    // --- Direct Lighting (NEE) for Point Lights ---
-    for (int i = 0; i < numPointLights; ++i)
-    {
-        PointLight light = pointLights[i];
-        float3 lightDir = light.posRange.xyz - worldPos;
-        float dist = length(lightDir);
-        lightDir /= dist;
+    const float PI = 3.14159265f;
 
-        float dotNL = max(dot(N, lightDir), 0.0);
+    // --- Direct Lighting (NEE) for Sun ---
+    {
+        float3 sunDir = normalize(lightPosAndFrameCount.xyz);
+        float3 sunColor = float3(15.0, 10.0, 5.0);
+        float dotNL = max(dot(N, sunDir), 0.0);
         if (dotNL > 0)
         {
-            // Shadow Ray
             RayDesc shadowRay;
-            shadowRay.Origin = worldPos + N * 0.001f;
-            shadowRay.Direction = lightDir;
-            shadowRay.TMin = 0.001f;
-            shadowRay.TMax = dist - 0.001f;
+            shadowRay.Origin = worldPos + geoN * 0.05f; // Stronger bias with geoN
+            shadowRay.Direction = sunDir;
+            shadowRay.TMin = 0.0f;
+            shadowRay.TMax = 10000.0f;
 
             ShadowPayload sPayload;
             sPayload.hit = true;
@@ -274,34 +292,60 @@ void ClosestHit(inout RayPayloadFixed payload, in BuiltInTriangleIntersectionAtt
 
             if (!sPayload.hit)
             {
-                float attenuation = light.colorInt.w / (dist * dist + 1.0);
-                payload.radiance += payload.throughput * albedo * light.colorInt.xyz * dotNL * attenuation;
+                // Lambertian BRDF is albedo/PI
+                payload.radiance += payload.throughput * (albedo / PI) * sunColor * dotNL;
             }
         }
     }
 
-    // Mapping to "One Weekend" materials
-    bool isMetal = metallic > 0.5;
+    // --- Direct Lighting (NEE) for Point Lights ---
+    for (int i = 0; i < numPointLights; ++i)
+    {
+        PointLight light = pointLights[i];
+        float3 lightDir = light.posRange.xyz - worldPos;
+        float d2 = dot(lightDir, lightDir);
+        float dist = sqrt(d2);
+        lightDir /= dist;
 
+        float dotNL = max(dot(N, lightDir), 0.0);
+        if (dotNL > 0)
+        {
+            RayDesc shadowRay;
+            shadowRay.Origin = worldPos + geoN * 0.05f; 
+            shadowRay.Direction = lightDir;
+            shadowRay.TMin = 0.0f;
+            shadowRay.TMax = dist - 0.05f;
+
+            ShadowPayload sPayload;
+            sPayload.hit = true;
+            TraceRay(Scene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER | RAY_FLAG_FORCE_OPAQUE, 0xFF, 0, 1, 1, shadowRay, sPayload);
+
+            if (!sPayload.hit)
+            {
+                float attenuation = light.colorInt.w / (d2 + 1.0);
+                payload.radiance += payload.throughput * (albedo / PI) * light.colorInt.xyz * dotNL * attenuation;
+            }
+        }
+    }
+
+    // --- Path Scattering ---
+    bool isMetal = metallic > 0.5;
     if (isMetal)
     {
-        // Metal: reflection + fuzz
         float3 reflected = reflect(WorldRayDirection(), N);
         payload.nextDirection = normalize(reflected + roughness * RandomInUnitSphere(payload.seed));
         payload.throughput *= albedo;
-        
-        // Ensure the reflected ray is above the surface
-        if (dot(payload.nextDirection, N) <= 0)
-        {
-            payload.depth = -1;
-        }
     }
     else
     {
-        // Lambertian: p + n + random_unit_vector
-        payload.nextDirection = normalize(N + RandomUnitVector(payload.seed));
-        payload.throughput *= albedo;
+        // For Lambertian, PDF = cos(theta)/PI
+        // BRDF = albedo/PI
+        // weight = BRDF * cos(theta) / PDF = (albedo/PI) * cos(theta) / (cos(theta)/PI) = albedo
+        float3 scatterDir = N + RandomUnitVector(payload.seed);
+        if (IsNearZero(scatterDir)) scatterDir = N;
+        payload.nextDirection = normalize(scatterDir);
+        payload.throughput *= albedo; 
     }
     
-    payload.nextOrigin = worldPos + N * 0.0001f;
+    payload.nextOrigin = worldPos + geoN * 0.05f;
 }
