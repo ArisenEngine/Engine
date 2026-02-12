@@ -66,6 +66,12 @@ namespace ArisenEngine::Testing
         };
 
 
+        struct SubmeshData
+        {
+            UInt32 materialIndex;
+            UInt32 firstIndex;
+        };
+
     public:
         const char* GetName() const override { return "RayTracingTest"; }
         TestCategory GetCategory() const override { return TestCategory::Rendering; }
@@ -248,23 +254,23 @@ namespace ArisenEngine::Testing
             RHI_Device_ReleaseCommandBufferPool(m_Device, cmdPool);
             RHI_Device_ReleaseBuffer(m_Device, stagingBuffer);
 
-            // Per-Triangle Material Index Buffer
-            Containers::Vector<UInt32> triangleMaterialIndices;
-            for (const auto& prim : m_Model.primitives)
+            // Per-Submesh Data Buffer
+            Containers::Vector<SubmeshData> submeshData;
+            LOG_INFOF("Populating SubmeshData for {0} primitives...", m_Model.primitives.size());
+            for (size_t i = 0; i < m_Model.primitives.size(); ++i)
             {
-                UInt32 triangleCount = prim.indexCount / 3;
-                for (UInt32 k = 0; k < triangleCount; ++k)
-                {
-                    triangleMaterialIndices.push_back((UInt32)prim.materialIndex);
-                }
+                const auto& prim = m_Model.primitives[i];
+                submeshData.push_back({ (UInt32)prim.materialIndex, prim.firstIndex });
             }
 
             RHI::RHIBufferDescriptor triBufDesc{};
-            triBufDesc.size = triangleMaterialIndices.size() * sizeof(UInt32);
+            triBufDesc.size = submeshData.size() * sizeof(SubmeshData);
             triBufDesc.usage = RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
             triBufDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
-            m_TriangleMaterialBuffer = RHI_Device_CreateBuffer(m_Device, &triBufDesc, "Triangle Material Buffer");
-            RHI_Buffer_MemoryCopy(m_Device, m_TriangleMaterialBuffer, triangleMaterialIndices.data(), triBufDesc.size, 0);
+            m_TriangleMaterialBuffer = RHI_Device_CreateBuffer(m_Device, &triBufDesc, "Submesh Data Buffer");
+            RHI_Buffer_MemoryCopy(m_Device, m_TriangleMaterialBuffer, submeshData.data(), triBufDesc.size, 0);
+
+            LOG_INFOF("Total unique textures loaded: {0}", m_ModelTextures.size());
 
             m_CameraPos = glm::vec3(0.0f, 5.0f, 10.0f);
             m_CameraRot = glm::vec3(0.0f, -glm::half_pi<float>(), 0.0f); // Face forward (adjust if needed)
@@ -288,27 +294,45 @@ namespace ArisenEngine::Testing
         void BuildAccelerationStructures()
         {
             // 1. BLAS
-            RHI::RHIAccelerationStructureGeometryData geom{};
-            geom.type = RHI::ERHIAccelerationStructureGeometryType::Triangles;
-            geom.flags = RHI::AS_GEOMETRY_OPAQUE_BIT;
-            geom.triangles.vertexFormat = RHI::FORMAT_R32G32B32_SFLOAT;
-            geom.triangles.vertexData = RHI_Buffer_GetDeviceAddress(m_Device, m_Model.vertexBuffer);
-            geom.triangles.vertexStride = sizeof(GLTFVertex);
-            geom.triangles.maxVertex = (UInt32)m_Model.vertexCount;
-            geom.triangles.indexType = RHI::INDEX_TYPE_UINT32;
-            geom.triangles.indexData = RHI_Buffer_GetDeviceAddress(m_Device, m_Model.indexBuffer);
+            // We now use multiple geometries (one per primitive) to allow robust material lookup via GeometryIndex()
+            Containers::Vector<RHI::RHIAccelerationStructureGeometryData> geometries;
+            Containers::Vector<UInt32> maxPrimCounts;
+            Containers::Vector<RHI::RHIAccelerationStructureBuildRangeInfo> buildRanges;
+
+            for (const auto& prim : m_Model.primitives)
+            {
+                RHI::RHIAccelerationStructureGeometryData geom{};
+                geom.type = RHI::ERHIAccelerationStructureGeometryType::Triangles;
+                geom.flags = RHI::AS_GEOMETRY_OPAQUE_BIT;
+                geom.triangles.vertexFormat = RHI::FORMAT_R32G32B32_SFLOAT;
+                geom.triangles.vertexData = RHI_Buffer_GetDeviceAddress(m_Device, m_Model.vertexBuffer);
+                geom.triangles.vertexStride = sizeof(GLTFVertex);
+                geom.triangles.maxVertex = (UInt32)m_Model.vertexCount;
+                geom.triangles.indexType = RHI::INDEX_TYPE_UINT32;
+                geom.triangles.indexData = RHI_Buffer_GetDeviceAddress(m_Device, m_Model.indexBuffer);
+                geometries.push_back(geom);
+
+                maxPrimCounts.push_back(prim.indexCount / 3);
+
+                RHI::RHIAccelerationStructureBuildRangeInfo range{};
+                range.primitiveCount = prim.indexCount / 3;
+                range.primitiveOffset = prim.firstIndex * sizeof(UInt32);
+                range.firstVertex = 0;
+                range.transformOffset = 0;
+                buildRanges.push_back(range);
+            }
             
             RHI::RHIAccelerationStructureBuildGeometryInfo blasInfo{};
             blasInfo.type = RHI::ERHIAccelerationStructureType::BottomLevel;
             blasInfo.flags = RHI::AS_BUILD_PREFER_FAST_TRACE_BIT;
-            blasInfo.geometryCount = 1;
-            blasInfo.pGeometries = &geom;
+            blasInfo.geometryCount = (UInt32)geometries.size();
+            blasInfo.pGeometries = geometries.data();
 
-            LOG_INFOF("Building BLAS for model: {0} vertices, {1} indices", m_Model.vertexCount, m_Model.indexCount);
+            LOG_INFOF("Building BLAS for model: {0} vertices, {1} indices, {2} geometries", 
+                m_Model.vertexCount, m_Model.indexCount, geometries.size());
 
-            UInt32 maxPrimCount = m_Model.indexCount / 3;
             RHI::RHIAccelerationStructureBuildSizesInfo blasSizes{};
-            RHI_Device_GetAccelerationStructureBuildSizes(m_Device, &blasInfo, &maxPrimCount, &blasSizes);
+            RHI_Device_GetAccelerationStructureBuildSizes(m_Device, &blasInfo, maxPrimCounts.data(), &blasSizes);
 
             if (blasSizes.accelerationStructureSize == 0)
             {
@@ -399,13 +423,8 @@ namespace ArisenEngine::Testing
             blasInfo.dstAccelerationStructure = *reinterpret_cast<RHI::RHIAccelerationStructureHandle*>(&m_Blas);
             blasInfo.scratchData = *reinterpret_cast<RHI::RHIBufferHandle*>(&m_ScratchBuffer);
             
-            RHI::RHIAccelerationStructureBuildRangeInfo blasRange{};
-            blasRange.primitiveCount = maxPrimCount;
-            blasRange.primitiveOffset = 0;
-            blasRange.firstVertex = 0;
-            blasRange.transformOffset = 0;
-            const RHI::RHIAccelerationStructureBuildRangeInfo* pBlasRange = &blasRange;
-            RHI_Cmd_BuildAccelerationStructures(cmd, 1, &blasInfo, &pBlasRange);
+            const RHI::RHIAccelerationStructureBuildRangeInfo* pBlasRanges = buildRanges.data();
+            RHI_Cmd_BuildAccelerationStructures(cmd, 1, &blasInfo, &pBlasRanges);
 
             // Barrier between BLAS and TLAS
             RHI::RHIMemoryBarrier barrier{};
