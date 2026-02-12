@@ -2,17 +2,7 @@
 struct RayPayloadFixed
 {
     float3 radiance;
-    float3 throughput;
-    float3 nextOrigin;
-    float3 nextDirection;
-    float3 albedoDebug;
     uint seed;
-    int depth;
-};
-
-struct ShadowPayload
-{
-    bool hit;
 };
 
 struct GLTFVertex
@@ -52,7 +42,7 @@ cbuffer CameraBuffer : register(b2, space0)
 {
     float4x4 viewInverse;
     float4x4 projInverse;
-    float4 lightPosAndFrameCount;
+    float4 lightPosAndFrameCount; 
     PointLight pointLights[8];
     int numPointLights;
     int padding[3];
@@ -66,13 +56,31 @@ Texture2D ModelTextures[100] : register(t7, space0);
 SamplerState DefaultSampler : register(s8, space0);
 RWTexture2D<float4> AccumulationTarget : register(u9, space0);
 
+// --- Random Helpers ---
+uint PCGHash(uint seed)
+{
+    uint state = seed * 747796405u + 2891336453u;
+    uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+    return (word >> 22u) ^ word;
+}
+
+float RandomFloat(inout uint seed)
+{
+    seed = PCGHash(seed);
+    return (seed & 0xFFFFFFu) / 16777216.0f;
+}
+
 [shader("raygeneration")]
 void RayGen()
 {
     uint3 launchID = DispatchRaysIndex();
     uint3 launchSize = DispatchRaysDimensions();
     
-    float2 d = (((float2)launchID.xy + 0.5f) / (float2)launchSize.xy) * 2.f - 1.f;
+    int frameCount = (int)lightPosAndFrameCount.w;
+    uint seed = PCGHash(launchID.y * launchSize.x + launchID.x + PCGHash((uint)frameCount));
+
+    float2 jitter = float2(RandomFloat(seed), RandomFloat(seed)) - 0.5f;
+    float2 d = (((float2)launchID.xy + 0.5f + jitter) / (float2)launchSize.xy) * 2.f - 1.f;
 
     float4 target = mul(projInverse, float4(d.x, d.y, 1, 1));
     target.xyz /= target.w;
@@ -81,23 +89,36 @@ void RayGen()
 
     RayPayloadFixed payload;
     payload.radiance = float3(0, 0, 0);
+    payload.seed = seed;
 
     RayDesc ray;
     ray.Origin = rayOrigin;
     ray.Direction = rayDir;
-    ray.TMin = 0.001;
+    ray.TMin = 0.01; // Increased TMin to prevent precision noise/rings
     ray.TMax = 10000.0;
 
     TraceRay(Scene, RAY_FLAG_FORCE_OPAQUE, 0xFF, 0, 0, 0, ray, payload);
 
-    // Simple raw output for verification
-    RenderTarget[launchID.xy] = float4(payload.radiance, 1.0);
+    float3 currentRadiance = payload.radiance;
+    
+    float3 accumulatedColor = currentRadiance;
+    if (frameCount > 0)
+    {
+        float3 prevColor = AccumulationTarget[launchID.xy].rgb;
+        accumulatedColor = lerp(prevColor, currentRadiance, 1.0 / (float(frameCount) + 1.0));
+    }
+    AccumulationTarget[launchID.xy] = float4(accumulatedColor, 1.0);
+    
+    // Tonemapping and SRGB
+    float3 finalColor = pow(max(accumulatedColor, 0.0), 1.0 / 2.2);
+
+    RenderTarget[launchID.xy] = float4(finalColor, 1.0);
 }
 
 [shader("miss")]
 void Miss(inout RayPayloadFixed payload)
 {
-    payload.radiance = float3(0.1, 0.1, 0.1); // Dark gray background
+    payload.radiance = float3(0.1, 0.12, 0.15); 
 }
 
 [shader("closesthit")]
@@ -120,13 +141,10 @@ void ClosestHit(inout RayPayloadFixed payload, in BuiltInTriangleIntersectionAtt
     GLTFVertex v1 = Vertices[i1];
     GLTFVertex v2 = Vertices[i2];
     
-    float2 uv = v0.uv * (1.0 - attr.barycentrics.x - attr.barycentrics.y) + v1.uv * attr.barycentrics.x + v2.uv * attr.barycentrics.y;
+    float3 bary = float3(1.0 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
+    float2 uv = v0.uv * bary.x + v1.uv * bary.y + v2.uv * bary.z;
     
-    float4 baseColor = mat.baseColorFactor;
-    if (mat.baseColorTextureIndex >= 0 && mat.baseColorTextureIndex < 100)
-    {
-        baseColor *= ModelTextures[mat.baseColorTextureIndex].SampleLevel(DefaultSampler, uv, 0);
-    }
-    
-    payload.radiance = baseColor.rgb;
+    // Display raw UVs for verification
+    // Note: uv.y = 1.0 - uv.y; // Keep or remove based on previous test result
+    payload.radiance = float3(uv.x, uv.y, 0.0);
 }
