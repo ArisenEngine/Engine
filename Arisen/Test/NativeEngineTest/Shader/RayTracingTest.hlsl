@@ -5,6 +5,11 @@ struct RayPayloadFixed
     uint seed;
 };
 
+struct ShadowPayload
+{
+    bool hit;
+};
+
 struct GLTFVertex
 {
     float4 pos;
@@ -175,6 +180,12 @@ void Miss(inout RayPayloadFixed payload)
     payload.radiance = skyColor * 0.5; // Scale down for a more natural look
 }
 
+[shader("miss")]
+void ShadowMiss(inout ShadowPayload payload)
+{
+    payload.hit = false;
+}
+
 [shader("closesthit")]
 void ClosestHit(inout RayPayloadFixed payload, in BuiltInTriangleIntersectionAttributes attr)
 {
@@ -232,6 +243,28 @@ void ClosestHit(inout RayPayloadFixed payload, in BuiltInTriangleIntersectionAtt
         // Range-based attenuation (simplified glTF/standard match)
         attenuation *= pow(max(0.0, 1.0 - pow(distance / range, 4.0)), 2.0);
         float3 radiance = lightColor * intensity * attenuation;
+
+        // Shadow ray
+        float3 shadowRayOrigin = worldPos + N * 0.001; // Offset to avoid self-intersection
+        float3 shadowRayDir = L;
+        
+        RayDesc shadowRay;
+        shadowRay.Origin = shadowRayOrigin;
+        shadowRay.Direction = shadowRayDir;
+        shadowRay.TMin = 0.001;
+        shadowRay.TMax = distance - 0.001;
+
+        ShadowPayload shadowPayload;
+        shadowPayload.hit = true; // Assume hit until Miss shader sets it to false
+
+        TraceRay(Scene, 
+                 RAY_FLAG_FORCE_OPAQUE | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, 
+                 0xFF, 0, 0, 1, shadowRay, shadowPayload);
+
+        if (shadowPayload.hit)
+        {
+            radiance = float3(0, 0, 0);
+        }
 
         // Cook-Torrance BRDF
         float NDF = D_GGX(N, H, roughness);
