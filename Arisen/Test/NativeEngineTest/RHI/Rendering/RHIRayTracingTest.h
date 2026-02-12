@@ -564,9 +564,8 @@ namespace ArisenEngine::Testing
                 m_PrevCameraRot = m_CameraRot;
             }
 
-            m_AccumulatedFrames = m_AccumulatedFrames % 8;
-
-            data.lightPosAndFrameCount = glm::vec4(2.0f, 5.0f, 2.0f, (float)m_AccumulatedFrames++);
+            data.lightPosAndFrameCount = glm::vec4(2.0f, 5.0f, 2.0f, (float)m_AccumulatedFrames);
+            m_AccumulatedFrames++;
             
             RHI_Buffer_MemoryCopy(m_Device, m_CameraBuffers[GetCurrentFrameIndex()], &data, sizeof(CameraData), 0);
         }
