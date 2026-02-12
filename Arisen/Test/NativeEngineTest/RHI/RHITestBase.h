@@ -168,7 +168,7 @@ namespace ArisenEngine::Testing
             {
                 float sensitivity = 0.005f;
                 m_CameraRot.y += m_MouseDX * sensitivity;
-                m_CameraRot.x += m_MouseDY * sensitivity;
+                m_CameraRot.x -= m_MouseDY * sensitivity;
                 
                 // Clamp pitch
                 m_CameraRot.x = glm::clamp(m_CameraRot.x, -glm::half_pi<float>() + 0.01f, glm::half_pi<float>() - 0.01f);
