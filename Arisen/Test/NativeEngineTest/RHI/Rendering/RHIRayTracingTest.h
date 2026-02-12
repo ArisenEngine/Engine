@@ -629,7 +629,7 @@ namespace ArisenEngine::Testing
 
             CameraData data;
             data.viewInverse = glm::inverse(GetViewMatrix());
-            data.projInverse = glm::inverse(GetProjectionMatrix(width / height));
+            data.projInverse = glm::inverse(GetProjectionMatrix((float)width / (float)height));
             // Camera movement detection with epsilon
             float epsilon = 0.0001f;
             bool cameraMoved = glm::distance(m_CameraPos, m_PrevCameraPos) > epsilon || 

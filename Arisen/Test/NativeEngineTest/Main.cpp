@@ -48,7 +48,7 @@ int main(int argc, char** argv)
     // TestRunner::RegisterTest<RHISyncTest>();
     // TestRunner::RegisterTest<RHIMultiThreadedTest>();
     // TestRunner::RegisterTest<RHIBatchApiTest>();
-    // TestRunner::RegisterTest<RHIBasicRenderingTest>();
+    TestRunner::RegisterTest<RHIBasicRenderingTest>();
     // TestRunner::RegisterTest<RHIGPUParticleTest>();
     // TestRunner::RegisterTest<RHIMeshShaderTest>();
     // TestRunner::RegisterTest<RHIGeometryShaderTest>();
