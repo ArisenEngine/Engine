@@ -36,6 +36,7 @@ struct SubmeshData
 {
     uint materialIndex;
     uint firstIndex;
+    uint2 padding;
 };
 
 RaytracingAccelerationStructure Scene : register(t0, space0);
@@ -177,7 +178,7 @@ void RayGen()
     ray.TMin = 0.001;
     ray.TMax = 10000.0;
 
-    TraceRay(Scene, RAY_FLAG_FORCE_OPAQUE, 0xFF, 0, 1, 0, ray, payload);
+    TraceRay(Scene, RAY_FLAG_FORCE_OPAQUE, 0xFF, 0, 0, 0, ray, payload);
 
     float3 finalColor = payload.radiance;
     
@@ -216,6 +217,9 @@ void ClosestHit(inout RayPayloadFixed payload, in BuiltInTriangleIntersectionAtt
     uint matIndex = sub.materialIndex;
     uint baseIndex = sub.firstIndex;
     
+    // DEBUG: Visualize matIndex overflow (Yellow)
+    if (matIndex > 1000) { payload.radiance = float3(1.0, 1.0, 0.0); return; }
+    
     MaterialData mat = Materials[min(matIndex, 100)];
     
     // Use baseIndex to access the correct part of the global index buffer
@@ -230,6 +234,10 @@ void ClosestHit(inout RayPayloadFixed payload, in BuiltInTriangleIntersectionAtt
     float2 uv = v0.uv * (1.0 - attr.barycentrics.x - attr.barycentrics.y) + v1.uv * attr.barycentrics.x + v2.uv * attr.barycentrics.y;
     
     float4 baseColor = mat.baseColorFactor;
+    
+    // DEBUG: Identify if the material data itself is zeroed out
+    if (length(baseColor.rgb) < 0.001) { payload.radiance = float3(0.0, 0.0, 1.0); return; }
+    
     if (mat.baseColorTextureIndex >= 0 && mat.baseColorTextureIndex < 100)
     {
         baseColor *= ModelTextures[mat.baseColorTextureIndex].SampleLevel(DefaultSampler, uv, 0);
