@@ -80,7 +80,7 @@ float Halton(uint index, uint base)
 
 float2 GetHaltonJitter(uint index)
 {
-    return float2(Halton(index, 2), Halton(index, 3));
+    return float2(Halton(index, 8), Halton(index, 8));
 }
 
 void Onb(float3 n, out float3 b1, out float3 b2)
@@ -182,7 +182,7 @@ void RayGen()
     if (frameCount > 0)
     {
         float3 prevColor = AccumulationTarget[launchID.xy].rgb;
-        finalColor = lerp(prevColor, finalColor, 1.0f / (float)(frameCount + 1));
+        finalColor = lerp(prevColor, finalColor, 1.0f / 8.0f);
     }
     else
     {

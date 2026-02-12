@@ -564,11 +564,7 @@ namespace ArisenEngine::Testing
                 m_PrevCameraRot = m_CameraRot;
             }
 
-            // Cap accumulation to prevent precision issues
-            if (m_AccumulatedFrames > 4096)
-            {
-                m_AccumulatedFrames = 4096;
-            }
+            m_AccumulatedFrames = m_AccumulatedFrames % 8;
 
             data.lightPosAndFrameCount = glm::vec4(2.0f, 5.0f, 2.0f, (float)m_AccumulatedFrames++);
             
