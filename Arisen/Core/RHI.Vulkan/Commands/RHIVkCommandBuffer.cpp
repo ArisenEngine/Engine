@@ -426,7 +426,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::SetViewport(Float32 x, Float32 y, Fl
 {
     const VkViewport viewport
    {
-       x, y, width, height
+       x, y, width, height, 0.0f, 1.0f
    };
     vkCmdSetViewport(m_VkCommandBuffer, 0, 1, &viewport);
 }
@@ -435,7 +435,7 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::SetScissor(UInt32 offsetX, UInt32 of
 {
     const VkRect2D scissor =
     {
-        {0, 0}, {width, height}
+        { (int32_t)offsetX, (int32_t)offsetY }, {width, height}
     };
 
     vkCmdSetScissor(m_VkCommandBuffer, 0, 1, &scissor);
