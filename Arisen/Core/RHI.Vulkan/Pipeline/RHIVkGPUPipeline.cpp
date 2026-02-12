@@ -163,6 +163,7 @@ void RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex, RHISubPass* subPa
     if (mask & DYNAMIC_STATE_DEPTH_COMPARE_OP_BIT) dynamicStates.push_back(VK_DYNAMIC_STATE_DEPTH_COMPARE_OP);
     if (mask & DYNAMIC_STATE_STENCIL_TEST_ENABLE_BIT) dynamicStates.push_back(VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE);
     if (mask & DYNAMIC_STATE_STENCIL_OP_BIT) dynamicStates.push_back(VK_DYNAMIC_STATE_STENCIL_OP);
+    if (mask & DYNAMIC_STATE_FRAGMENT_SHADING_RATE_BIT) dynamicStates.push_back(VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR);
 
     VkPipelineDynamicStateCreateInfo dynamicStatesInfo {};
     dynamicStatesInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;

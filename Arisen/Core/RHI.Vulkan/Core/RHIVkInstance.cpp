@@ -711,6 +711,17 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
         lastPNext = &robustness2Features.pNext;
     }
 
+    VkPhysicalDeviceFragmentShadingRateFeaturesKHR shadingRateFeatures{};
+    if (isExtensionEnabled(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME))
+    {
+        shadingRateFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR;
+        shadingRateFeatures.attachmentFragmentShadingRate = VK_TRUE; // Enable attachment-based VRS
+        shadingRateFeatures.primitiveFragmentShadingRate = VK_TRUE;  // Enable primitive-based VRS
+        shadingRateFeatures.pipelineFragmentShadingRate = VK_TRUE;   // Enable pipeline-based VRS
+        *lastPNext = &shadingRateFeatures;
+        lastPNext = &shadingRateFeatures.pNext;
+    }
+
     *lastPNext = nullptr;
 
     vulkan12Features.bufferDeviceAddress = isExtensionEnabled(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);

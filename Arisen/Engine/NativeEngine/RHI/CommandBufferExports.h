@@ -50,6 +50,7 @@ extern "C" ENGINE_DLL void RHI_Cmd_EndRendering(RHI_CommandBufferHandle cmd);
 
 extern "C" ENGINE_DLL void RHI_Cmd_BuildAccelerationStructures(RHI_CommandBufferHandle cmd, unsigned int infoCount, const ArisenEngine::RHI::RHIAccelerationStructureBuildGeometryInfo* pInfos, const ArisenEngine::RHI::RHIAccelerationStructureBuildRangeInfo* const* ppBuildRangeInfos);
 extern "C" ENGINE_DLL void RHI_Cmd_TraceRays(RHI_CommandBufferHandle cmd, const ArisenEngine::RHI::RHITraceRaysDescriptor* desc);
+extern "C" ENGINE_DLL void RHI_Cmd_SetFragmentShadingRate(RHI_CommandBufferHandle cmd, ArisenEngine::RHI::EShadingRate rate, ArisenEngine::RHI::EShadingRateCombiner combinerOp[2]);
 
 extern "C" ENGINE_DLL void RHI_Cmd_BeginDebugLabel(RHI_CommandBufferHandle cmd, const char* label, const float color[4]);
 extern "C" ENGINE_DLL void RHI_Cmd_EndDebugLabel(RHI_CommandBufferHandle cmd);
