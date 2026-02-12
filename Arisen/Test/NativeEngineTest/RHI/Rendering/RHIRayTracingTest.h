@@ -575,20 +575,20 @@ namespace ArisenEngine::Testing
 
             data.lightPosAndFrameCount = glm::vec4(10.0f, 40.0f, 10.0f, (float)m_AccumulatedFrames);
             
-            // Set up some point lights in Sponza
+            // Set up some point lights in Sponza with MUCH higher intensity
             data.numPointLights = 4;
             // 1. Center low
-            data.pointLights[0].posRange = glm::vec4(0.0f, 2.0f, 0.0f, 20.0f);
-            data.pointLights[0].colorInt = glm::vec4(1.0f, 0.8f, 0.6f, 50.0f);
+            data.pointLights[0].posRange = glm::vec4(0.0f, 2.0f, 0.0f, 50.0f);
+            data.pointLights[0].colorInt = glm::vec4(1.0f, 0.9f, 0.8f, 500.0f);
             // 2. Left corridor
-            data.pointLights[1].posRange = glm::vec4(-10.0f, 5.0f, 0.0f, 15.0f);
-            data.pointLights[1].colorInt = glm::vec4(1.0f, 0.5f, 0.3f, 40.0f);
+            data.pointLights[1].posRange = glm::vec4(-10.0f, 5.0f, 2.0f, 40.0f);
+            data.pointLights[1].colorInt = glm::vec4(1.0f, 0.8f, 0.6f, 400.0f);
             // 3. Right corridor
-            data.pointLights[2].posRange = glm::vec4(10.0f, 5.0f, 0.0f, 15.0f);
-            data.pointLights[2].colorInt = glm::vec4(0.3f, 0.5f, 1.0f, 40.0f);
+            data.pointLights[2].posRange = glm::vec4(10.0f, 5.0f, 2.0f, 40.0f);
+            data.pointLights[2].colorInt = glm::vec4(0.8f, 0.9f, 1.0f, 400.0f);
             // 4. Far end
-            data.pointLights[3].posRange = glm::vec4(0.0f, 5.0f, -15.0f, 15.0f);
-            data.pointLights[3].colorInt = glm::vec4(0.5f, 1.0f, 0.5f, 40.0f);
+            data.pointLights[3].posRange = glm::vec4(0.0f, 5.0f, -15.0f, 40.0f);
+            data.pointLights[3].colorInt = glm::vec4(0.8f, 1.0f, 0.8f, 400.0f);
 
             m_AccumulatedFrames++;
             
