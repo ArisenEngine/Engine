@@ -36,9 +36,15 @@ namespace ArisenEngine::Testing
         {
             glm::mat4 viewInverse;
             glm::mat4 projInverse;
-            glm::vec3 lightPos;
-            int frameCount;
+            glm::vec4 lightPosAndFrameCount; // xyz: lightPos, w: frameCount
         };
+
+        RHI_ImageHandle m_AccumulationImage = 0;
+        RHI_ImageViewHandle m_AccumulationImageView = 0;
+        UInt32 m_AccumulatedFrames = 0;
+        
+        glm::vec3 m_PrevCameraPos = glm::vec3(0.0f);
+        glm::vec3 m_PrevCameraRot = glm::vec3(0.0f);
 
         struct MaterialData
         {
@@ -90,6 +96,7 @@ namespace ArisenEngine::Testing
             if (m_Tlas) RHI_Device_ReleaseAccelerationStructure(m_Device, m_Tlas);
             
             if (m_StorageImage) RHI_Device_ReleaseImage(m_Device, m_StorageImage);
+            if (m_AccumulationImage) RHI_Device_ReleaseImage(m_Device, m_AccumulationImage);
             
             if (m_Pso) RHI_PSO_Release(m_Pso);
             
@@ -154,6 +161,14 @@ namespace ArisenEngine::Testing
             viewDesc.layerCount = 1;
             m_StorageImageView = RHI_Image_AddImageView(m_Device, m_StorageImage, &viewDesc);
 
+            // Accumulation Image (32-bit float for high precision)
+            imgDesc.format = RHI::FORMAT_R32G32B32A32_SFLOAT;
+            imgDesc.usage = RHI::IMAGE_USAGE_STORAGE_BIT | RHI::IMAGE_USAGE_TRANSFER_SRC_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT;
+            m_AccumulationImage = RHI_Device_CreateImage(m_Device, &imgDesc, "RT Accumulation Image");
+
+            viewDesc.format = RHI::FORMAT_R32G32B32A32_SFLOAT;
+            m_AccumulationImageView = RHI_Image_AddImageView(m_Device, m_AccumulationImage, &viewDesc);
+
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
                 RHI::RHIBufferDescriptor cbDesc = {};
@@ -203,8 +218,10 @@ namespace ArisenEngine::Testing
             m_TriangleMaterialBuffer = RHI_Device_CreateBuffer(m_Device, &triBufDesc, "Triangle Material Buffer");
             RHI_Buffer_MemoryCopy(m_Device, m_TriangleMaterialBuffer, triangleMaterialIndices.data(), triBufDesc.size, 0);
 
-            m_CameraPos = glm::vec3(0.0f, 1.0f, 0.0f);
+            m_CameraPos = glm::vec3(0.0f, 5.0f, 10.0f);
             m_CameraRot = glm::vec3(0.0f, -glm::half_pi<float>(), 0.0f); // Face forward (adjust if needed)
+            m_PrevCameraPos = m_CameraPos;
+            m_PrevCameraRot = m_CameraRot;
 
             // Default Sampler
             RHI::RHISamplerDesc sampDesc = {};
@@ -376,10 +393,12 @@ namespace ArisenEngine::Testing
             // Use specific profiles to ensure proper reflection of stage flags
             auto rgen = CompileShader(L"RayTracingTest", "RayGen", "6_3");
             auto rmiss = CompileShader(L"RayTracingTest", "Miss", "6_3");
+            auto rsmiss = CompileShader(L"RayTracingTest", "ShadowMiss", "6_3");
             auto rchit = CompileShader(L"RayTracingTest", "ClosestHit", "6_3");
 
             RHI_PSO_AddProgram(m_Pso, rgen);
             RHI_PSO_AddProgram(m_Pso, rmiss);
+            RHI_PSO_AddProgram(m_Pso, rsmiss);
             RHI_PSO_AddProgram(m_Pso, rchit);
 
             // Groups
@@ -393,12 +412,17 @@ namespace ArisenEngine::Testing
             missGroup.generalShaderIndex = 1;
             RHI_PSO_AddRayTracingShaderGroup(m_Pso, &missGroup);
 
+            RHI::RHIRayTracingShaderGroup smissGroup{};
+            smissGroup.type = RHI::ERHIRayTracingShaderGroupType::General;
+            smissGroup.generalShaderIndex = 2;
+            RHI_PSO_AddRayTracingShaderGroup(m_Pso, &smissGroup);
+
             RHI::RHIRayTracingShaderGroup hitGroup{};
             hitGroup.type = RHI::ERHIRayTracingShaderGroupType::TrianglesHitGroup;
-            hitGroup.closestHitShaderIndex = 2;
+            hitGroup.closestHitShaderIndex = 3;
             RHI_PSO_AddRayTracingShaderGroup(m_Pso, &hitGroup);
 
-            RHI_PSO_SetMaxRecursionDepth(m_Pso, 1);
+            RHI_PSO_SetMaxRecursionDepth(m_Pso, 2); // Increased to 2 for shadow rays in ClosestHit
 
             // Descriptors Layout are automatically handled via shader reflection in RHI_PSO_AddProgram
 
@@ -418,6 +442,13 @@ namespace ArisenEngine::Testing
             images.push_back(storageInfo);
             RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 1, &images);
             
+            images.clear();
+            RHI::RHIDescriptorImageInfo accumInfo{};
+            accumInfo.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&m_AccumulationImageView);
+            accumInfo.imageLayout = RHI::IMAGE_LAYOUT_GENERAL;
+            images.push_back(accumInfo);
+            RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 9, &images);
+
             Containers::Vector<RHI_BufferHandle> ubos = { m_CameraBuffers[0] };
             RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 2, &ubos);
 
@@ -472,9 +503,10 @@ namespace ArisenEngine::Testing
                     RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, // Mat
                     RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, // Prim
                     RHI::DESCRIPTOR_TYPE_SAMPLED_IMAGE,   // Textures
-                    RHI::DESCRIPTOR_TYPE_SAMPLER          // DefaultSampler
+                    RHI::DESCRIPTOR_TYPE_SAMPLER,         // DefaultSampler
+                    RHI::DESCRIPTOR_TYPE_STORAGE_IMAGE    // Accumulation
                 };
-                Containers::Vector<UInt32> counts = { 1, 1, 1, 1, 1, 1, 1, 100, 1 };
+                Containers::Vector<UInt32> counts = { 1, 1, 1, 1, 1, 1, 1, 100, 1, 1 };
                 m_DescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &types, &counts, 1));
             }
 
@@ -487,7 +519,7 @@ namespace ArisenEngine::Testing
             // SBT must be aligned to shaderGroupBaseAlignment (usually 64 bytes)
             UInt32 handleSize = 32;          // Size of the shader group handle (device property, usually 32)
             UInt32 groupStride = 64;         // Stride must be aligned to shaderGroupBaseAlignment
-            UInt32 sbtSize = groupStride * 3;
+            UInt32 sbtSize = groupStride * 4;
 
             RHI::RHIBufferDescriptor sbtDesc{};
             sbtDesc.size = sbtSize;
@@ -498,14 +530,15 @@ namespace ArisenEngine::Testing
             uint8_t* pSbtData = (uint8_t*)RHI_Buffer_Map(m_Device, m_SbtBuffer);
             
             // Get handles in a temp buffer
-            std::vector<uint8_t> tempHandles(handleSize * 3);
-            RHI_Device_GetRayTracingShaderGroupHandles(m_Device, m_Pipeline, 0, 3, tempHandles.size(), tempHandles.data());
+            std::vector<uint8_t> tempHandles(handleSize * 4);
+            RHI_Device_GetRayTracingShaderGroupHandles(m_Device, m_Pipeline, 0, 4, tempHandles.size(), tempHandles.data());
             
             // Write to SBT with alignment padding
             std::memset(pSbtData, 0, sbtSize);
-            std::memcpy(pSbtData + 0 * groupStride, tempHandles.data() + 0 * handleSize, handleSize);
-            std::memcpy(pSbtData + 1 * groupStride, tempHandles.data() + 1 * handleSize, handleSize);
-            std::memcpy(pSbtData + 2 * groupStride, tempHandles.data() + 2 * handleSize, handleSize);
+            std::memcpy(pSbtData + 0 * groupStride, tempHandles.data() + 0 * handleSize, handleSize); // RayGen
+            std::memcpy(pSbtData + 1 * groupStride, tempHandles.data() + 1 * handleSize, handleSize); // Miss
+            std::memcpy(pSbtData + 2 * groupStride, tempHandles.data() + 2 * handleSize, handleSize); // ShadowMiss
+            std::memcpy(pSbtData + 3 * groupStride, tempHandles.data() + 3 * handleSize, handleSize); // ClosestHit
 
             RHI_Buffer_Unmap(m_Device, m_SbtBuffer);
         }
@@ -519,8 +552,15 @@ namespace ArisenEngine::Testing
             CameraData data;
             data.viewInverse = glm::inverse(GetViewMatrix());
             data.projInverse = glm::inverse(GetProjectionMatrix(width / height));
-            data.lightPos = glm::vec3(2.0f, 5.0f, 2.0f);
-            data.frameCount = (int)m_FrameIndex;
+            // Camera movement detection
+            if (m_CameraPos != m_PrevCameraPos || m_CameraRot != m_PrevCameraRot)
+            {
+                m_AccumulatedFrames = 0;
+                m_PrevCameraPos = m_CameraPos;
+                m_PrevCameraRot = m_CameraRot;
+            }
+
+            data.lightPosAndFrameCount = glm::vec4(2.0f, 5.0f, 2.0f, (float)m_AccumulatedFrames++);
             
             RHI_Buffer_MemoryCopy(m_Device, m_CameraBuffers[GetCurrentFrameIndex()], &data, sizeof(CameraData), 0);
         }
@@ -555,19 +595,39 @@ namespace ArisenEngine::Testing
             UInt32 width = HAL::GetWindowWidth(m_WindowId);
             UInt32 height = HAL::GetWindowHeight(m_WindowId);
 
-            // Barrier: Transition Storage Image to GENERAL
             RHI_Cmd_TransitionImageLayout(cmd, m_StorageImage, RHI::IMAGE_LAYOUT_GENERAL);
+            RHI_Cmd_TransitionImageLayout(cmd, m_AccumulationImage, RHI::IMAGE_LAYOUT_GENERAL);
+            
+            RHI::RHIImageMemoryBarrier accumBarrier{};
+            accumBarrier.image = *reinterpret_cast<RHI::RHIImageHandle*>(&m_AccumulationImage);
+            accumBarrier.srcAccess = RHI::ACCESS_SHADER_WRITE_BIT;
+            accumBarrier.dstAccess = RHI::ACCESS_SHADER_READ_BIT;
+            accumBarrier.oldLayout = RHI::IMAGE_LAYOUT_GENERAL;
+            accumBarrier.newLayout = RHI::IMAGE_LAYOUT_GENERAL;
+            accumBarrier.srcQueueFamilyIndex = 0x7FFFFFFF;
+            accumBarrier.dstQueueFamilyIndex = 0x7FFFFFFF;
+            accumBarrier.subresourceRange.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
+            accumBarrier.subresourceRange.baseMipLevel = 0;
+            accumBarrier.subresourceRange.levelCount = 1;
+            accumBarrier.subresourceRange.baseArrayLayer = 0;
+            accumBarrier.subresourceRange.layerCount = 1;
+            accumBarrier.srcStageMask = RHI::PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+            accumBarrier.dstStageMask = RHI::PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+            
+            Containers::Vector<RHI::RHIImageMemoryBarrier> accumBarriers;
+            accumBarriers.push_back(accumBarrier);
+            RHI_Cmd_PipelineBarrier_Image(cmd, (UInt32)RHI::PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, (UInt32)RHI::PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, 0, &accumBarriers);
 
             RHI::RHITraceRaysDescriptor traceDesc{};
             UInt64 sbtAddr = RHI_Buffer_GetDeviceAddress(m_Device, m_SbtBuffer);
             UInt32 groupStride = 64;
 
             traceDesc.raygenShaderRecord = { sbtAddr + 0 * groupStride, groupStride, groupStride };
-            traceDesc.missShaderTable = { sbtAddr + 1 * groupStride, groupStride, groupStride };
-            traceDesc.hitShaderTable = { sbtAddr + 2 * groupStride, groupStride, groupStride };
+            traceDesc.missShaderTable = { sbtAddr + 1 * groupStride, groupStride, 2 * groupStride };
+            traceDesc.hitShaderTable = { sbtAddr + 3 * groupStride, groupStride, groupStride };
             traceDesc.width = width;
             traceDesc.height = height;
-            traceDesc.depth = 20;
+            traceDesc.depth = 1;
 
             RHI_Cmd_TraceRays(cmd, &traceDesc);
 
