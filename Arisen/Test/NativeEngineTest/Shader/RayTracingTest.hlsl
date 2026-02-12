@@ -32,6 +32,12 @@ struct MaterialData
     int padding;
 };
 
+struct SubmeshData
+{
+    uint materialIndex;
+    uint firstIndex;
+};
+
 RaytracingAccelerationStructure Scene : register(t0, space0);
 RWTexture2D<float4> RenderTarget : register(u1, space0);
 
@@ -54,7 +60,7 @@ cbuffer CameraBuffer : register(b2, space0)
 StructuredBuffer<GLTFVertex> Vertices : register(t3, space0);
 StructuredBuffer<uint> Indices : register(t4, space0);
 StructuredBuffer<MaterialData> Materials : register(t5, space0);
-StructuredBuffer<uint> TriangleMaterialIndices : register(t6, space0);
+StructuredBuffer<SubmeshData> SubmeshInfo : register(t6, space0);
 Texture2D ModelTextures[100] : register(t7, space0);
 SamplerState DefaultSampler : register(s8, space0);
 RWTexture2D<float4> AccumulationTarget : register(u9, space0);
@@ -203,33 +209,32 @@ void ShadowMiss(inout ShadowPayload payload)
 [shader("closesthit")]
 void ClosestHit(inout RayPayloadFixed payload, in BuiltInTriangleIntersectionAttributes attr)
 {
+    uint geomIndex = GeometryIndex();
     uint triIndex = PrimitiveIndex();
-    uint matIndex = TriangleMaterialIndices[triIndex];
-    MaterialData mat = Materials[matIndex];
     
-    // --- Interpolate vertex attributes ---
-    uint i0 = Indices[triIndex * 3 + 0];
-    uint i1 = Indices[triIndex * 3 + 1];
-    uint i2 = Indices[triIndex * 3 + 2];
+    SubmeshData sub = SubmeshInfo[geomIndex];
+    uint matIndex = sub.materialIndex;
+    uint baseIndex = sub.firstIndex;
+    
+    MaterialData mat = Materials[min(matIndex, 100)];
+    
+    // Use baseIndex to access the correct part of the global index buffer
+    uint i0 = Indices[baseIndex + triIndex * 3 + 0];
+    uint i1 = Indices[baseIndex + triIndex * 3 + 1];
+    uint i2 = Indices[baseIndex + triIndex * 3 + 2];
+    
     GLTFVertex v0 = Vertices[i0];
     GLTFVertex v1 = Vertices[i1];
     GLTFVertex v2 = Vertices[i2];
     
-    float3 bary = float3(1.0 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
-    float2 uv = v0.uv * bary.x + v1.uv * bary.y + v2.uv * bary.z;
+    float2 uv = v0.uv * (1.0 - attr.barycentrics.x - attr.barycentrics.y) + v1.uv * attr.barycentrics.x + v2.uv * attr.barycentrics.y;
     
-    // --- Sample texture ---
-    float3 color = mat.baseColorFactor.rgb;
-    if (mat.baseColorTextureIndex >= 0)
+    float4 baseColor = mat.baseColorFactor;
+    if (mat.baseColorTextureIndex >= 0 && mat.baseColorTextureIndex < 100)
     {
-        float4 texColor = ModelTextures[NonUniformResourceIndex(mat.baseColorTextureIndex)].SampleLevel(DefaultSampler, uv, 0);
-        color = texColor.rgb;
+        baseColor *= ModelTextures[mat.baseColorTextureIndex].SampleLevel(DefaultSampler, uv, 0);
     }
     
-    // --- Direct color output (no lighting, no bounces) ---
-    payload.radiance = color;
-    payload.albedoDebug = color;
-    
-    // No further bounces for debugging
+    payload.radiance = baseColor.rgb;
     payload.depth = -1;
 }
