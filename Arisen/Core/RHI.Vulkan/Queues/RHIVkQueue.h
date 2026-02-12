@@ -31,7 +31,9 @@ namespace ArisenEngine::RHI
         RHIGpuTicket SubmitWithFence(RHICommandBuffer* commandBuffer, VkFence fence, bool ownedFence = false, 
             const Containers::Vector<VkSemaphore>& extraWaitSems = {}, 
             const Containers::Vector<VkPipelineStageFlags>& extraWaitStages = {}, 
-            const Containers::Vector<VkSemaphore>& extraSignalSems = {});
+            const Containers::Vector<uint64_t>& extraWaitValues = {},
+            const Containers::Vector<VkSemaphore>& extraSignalSems = {},
+            const Containers::Vector<uint64_t>& extraSignalValues = {});
 
         // Poll GPU completion and flush deferred deletions up to completed submitID.
         void Update() override;

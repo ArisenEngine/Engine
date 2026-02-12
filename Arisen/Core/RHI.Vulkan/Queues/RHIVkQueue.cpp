@@ -51,7 +51,9 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommand
 
     Containers::Vector<VkSemaphore> waitSems;
     Containers::Vector<VkPipelineStageFlags> waitStages;
+    Containers::Vector<uint64_t> waitValues;
     Containers::Vector<VkSemaphore> signalSems;
+    Containers::Vector<uint64_t> signalValues;
 
     if (descriptor)
     {
@@ -67,6 +69,7 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommand
                 if (semItem) {
                     waitSems.push_back(semItem->semaphore);
                     waitStages.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+                    waitValues.push_back(0);
                 }
             }
         }
@@ -79,6 +82,7 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommand
                 auto* semItem = vkDevice->GetSemaphorePool()->Get(semHandle);
                 if (semItem) {
                     signalSems.push_back(semItem->semaphore);
+                    signalValues.push_back(0);
                 }
             }
         }
@@ -89,7 +93,8 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommand
              auto* semItem = vkDevice->GetSemaphorePool()->Get(descriptor->pWaitSemaphores[i]);
              if (semItem) {
                  waitSems.push_back(semItem->semaphore);
-                 waitStages.push_back(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT); // Default conservative stage
+                 waitStages.push_back(descriptor->pWaitDstStageMask ? descriptor->pWaitDstStageMask[i] : VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+                 waitValues.push_back(descriptor->pWaitValues ? descriptor->pWaitValues[i] : 0);
              }
         }
         
@@ -98,17 +103,20 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommand
              auto* semItem = vkDevice->GetSemaphorePool()->Get(descriptor->pSignalSemaphores[i]);
              if (semItem) {
                  signalSems.push_back(semItem->semaphore);
+                 signalValues.push_back(descriptor->pSignalValues ? descriptor->pSignalValues[i] : 0);
              }
         }
     }
 
-    return SubmitWithFence(commandBuffer, VK_NULL_HANDLE, false, waitSems, waitStages, signalSems);
+    return SubmitWithFence(commandBuffer, VK_NULL_HANDLE, false, waitSems, waitStages, waitValues, signalSems, signalValues);
 }
 
 ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(RHICommandBuffer* commandBuffer, VkFence fence, bool ownedFence,
     const Containers::Vector<VkSemaphore>& extraWaitSems, 
     const Containers::Vector<VkPipelineStageFlags>& extraWaitStages, 
-    const Containers::Vector<VkSemaphore>& extraSignalSems)
+    const Containers::Vector<uint64_t>& extraWaitValues,
+    const Containers::Vector<VkSemaphore>& extraSignalSems,
+    const Containers::Vector<uint64_t>& extraSignalValues)
 {
     ASSERT(commandBuffer && commandBuffer->ReadyForSubmit());
     (void)ownedFence;
@@ -136,7 +144,7 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     for(size_t i=0; i<extraWaitSems.size(); ++i) {
         waitSemaphores.push_back(extraWaitSems[i]);
         waitDstStageMask.push_back(extraWaitStages[i]);
-        waitValues.push_back(0);
+        waitValues.push_back(extraWaitValues.size() > i ? extraWaitValues[i] : 0);
     }
     
     submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
@@ -159,9 +167,9 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     // if (vkCmd->GetSignalSemaphoresCount() > 0) ... (Removed)
     
     // Add Extra signals
-    for(const auto& s : extraSignalSems) {
-        signalSemaphores.emplace_back(s);
-        signalValues.emplace_back(0);
+    for(size_t i=0; i<extraSignalSems.size(); ++i) {
+        signalSemaphores.emplace_back(extraSignalSems[i]);
+        signalValues.emplace_back(extraSignalValues.size() > i ? extraSignalValues[i] : 0);
     }
 
     submitInfo.signalSemaphoreCount = static_cast<UInt32>(signalSemaphores.size());

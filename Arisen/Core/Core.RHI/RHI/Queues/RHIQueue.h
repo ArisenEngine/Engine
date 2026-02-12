@@ -22,9 +22,11 @@ namespace ArisenEngine::RHI
         // Explicit semaphores (optional, for Async Compute / non-swapchain sync)
         RHISemaphoreHandle* pWaitSemaphores = nullptr;
         const UInt32* pWaitDstStageMask = nullptr; // EPipelineStageFlag bits
+        const uint64_t* pWaitValues = nullptr; // Optional: Timeline wait values
         UInt32 waitSemaphoreCount = 0;
         
         RHISemaphoreHandle* pSignalSemaphores = nullptr;
+        const uint64_t* pSignalValues = nullptr; // Optional: Timeline signal values
         UInt32 signalSemaphoreCount = 0;
     };
 

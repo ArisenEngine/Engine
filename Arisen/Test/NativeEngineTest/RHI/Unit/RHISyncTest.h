@@ -79,6 +79,65 @@ namespace ArisenEngine::Testing
 
             LOG_INFO("Synchronization barrier submitted and verified.");
 
+            LOG_INFO("Running Timeline Semaphore Test...");
+            RHI_SemaphoreHandle timelineSem = RHI_Device_CreateTimelineSemaphore(m_Device, 0);
+            if (timelineSem == 0) {
+                LOG_ERROR("Failed to create timeline semaphore!");
+                return false;
+            }
+
+            LOG_INFO("CPU Signal timeline semaphore to 1...");
+            RHI_Semaphore_SignalValue(m_Device, timelineSem, 1);
+            
+            unsigned long long val = RHI_Semaphore_GetValue(m_Device, timelineSem);
+            LOG_INFOF("Current timeline value: {}", val);
+            if (val != 1) {
+                LOG_ERRORF("Timeline value mismatch! Expected 1, got {}", val);
+                return false;
+            }
+
+            LOG_INFO("CPU Wait for timeline value 1...");
+            RHI_Semaphore_WaitValue(m_Device, timelineSem, 1);
+
+            // Test GPU wait and signal
+            LOG_INFO("Testing GPU wait and signal with timeline semaphore...");
+            RHI_CommandBufferHandle timelineCmd = RHI_Device_GetCommandBuffer(m_Device, m_CommandPool, 0);
+            RHI_Cmd_Begin(timelineCmd, 0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+            // (Dummy work)
+            RHI_Cmd_End(timelineCmd);
+
+            RHI::RHISubmitDescriptor submitDesc{};
+            RHI::RHISemaphoreHandle waitSemHandle = *reinterpret_cast<RHI::RHISemaphoreHandle*>(&timelineSem);
+            uint64_t waitVal = 1;
+            uint64_t signalVal = 2;
+
+            submitDesc.pWaitSemaphores = &waitSemHandle;
+            submitDesc.pWaitValues = &waitVal;
+            submitDesc.waitSemaphoreCount = 1;
+            
+            submitDesc.pSignalSemaphores = &waitSemHandle;
+            submitDesc.pSignalValues = &signalVal;
+            submitDesc.signalSemaphoreCount = 1;
+
+            LOG_INFO("Submitting command buffer that waits for value 1 and signals value 2...");
+            RHI_Device_Submit(m_Device, timelineCmd, reinterpret_cast<const struct RHISubmitDescriptor*>(&submitDesc));
+
+            LOG_INFO("CPU Waiting for timeline value 2 (GPU signal)...");
+            RHI_Semaphore_WaitValue(m_Device, timelineSem, 2);
+            
+            val = RHI_Semaphore_GetValue(m_Device, timelineSem);
+            LOG_INFOF("Final timeline value: {}", val);
+            if (val != 2) {
+                LOG_ERRORF("Timeline value mismatch after GPU signal! Expected 2, got {}", val);
+                return false;
+            }
+
+            LOG_INFO("Timeline semaphore test passed.");
+
+            // Cleanup
+            RHI_Device_ReleaseSemaphore(m_Device, timelineSem);
+            RHI_Device_ReleaseCommandBuffer(m_Device, m_CommandPool, 0, timelineCmd);
+
             // Cleanup
             LOG_INFO("Releasing image...");
             RHI_Device_ReleaseImage(m_Device, testImage);
