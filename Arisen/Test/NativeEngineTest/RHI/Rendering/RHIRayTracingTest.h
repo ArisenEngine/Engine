@@ -463,10 +463,12 @@ namespace ArisenEngine::Testing
             auto rgen = CompileShader(L"RayTracingTest", "RayGen", "6_3");
             auto rmiss = CompileShader(L"RayTracingTest", "Miss", "6_3");
             auto rchit = CompileShader(L"RayTracingTest", "ClosestHit", "6_3");
+            auto smiss = CompileShader(L"RayTracingTest", "ShadowMiss", "6_3");
 
             RHI_PSO_AddProgram(m_Pso, rgen);
             RHI_PSO_AddProgram(m_Pso, rmiss);
             RHI_PSO_AddProgram(m_Pso, rchit);
+            RHI_PSO_AddProgram(m_Pso, smiss);
 
             // Groups
             RHI::RHIRayTracingShaderGroup rgenGroup{};
@@ -483,6 +485,11 @@ namespace ArisenEngine::Testing
             hitGroup.type = RHI::ERHIRayTracingShaderGroupType::TrianglesHitGroup;
             hitGroup.closestHitShaderIndex = 2;
             RHI_PSO_AddRayTracingShaderGroup(m_Pso, &hitGroup);
+
+            RHI::RHIRayTracingShaderGroup shadowMissGroup{};
+            shadowMissGroup.type = RHI::ERHIRayTracingShaderGroupType::General;
+            shadowMissGroup.generalShaderIndex = 3;
+            RHI_PSO_AddRayTracingShaderGroup(m_Pso, &shadowMissGroup);
 
             RHI_PSO_SetMaxRecursionDepth(m_Pso, 2); // Increased to 2 for shadow rays in ClosestHit
 
@@ -598,7 +605,7 @@ namespace ArisenEngine::Testing
             // SBT must be aligned to shaderGroupBaseAlignment (usually 64 bytes)
             UInt32 handleSize = 32;          // Size of the shader group handle (device property, usually 32)
             UInt32 groupStride = 64;         // Stride must be aligned to shaderGroupBaseAlignment
-            UInt32 sbtSize = groupStride * 3;
+            UInt32 sbtSize = groupStride * 4;
 
             RHI::RHIBufferDescriptor sbtDesc{};
             sbtDesc.size = sbtSize;
@@ -609,14 +616,18 @@ namespace ArisenEngine::Testing
             uint8_t* pSbtData = (uint8_t*)RHI_Buffer_Map(m_Device, m_SbtBuffer);
             
             // Get handles in a temp buffer
-            std::vector<uint8_t> tempHandles(handleSize * 3);
-            RHI_Device_GetRayTracingShaderGroupHandles(m_Device, m_Pipeline, 0, 3, tempHandles.size(), tempHandles.data());
+            std::vector<uint8_t> tempHandles(handleSize * 4);
+            RHI_Device_GetRayTracingShaderGroupHandles(m_Device, m_Pipeline, 0, 4, tempHandles.size(), tempHandles.data());
             
             // Write to SBT with alignment padding
+            // Layout: RayGen, Miss, Hit, ShadowMiss (as added above)
+            // Wait, I added them in order: RayGen(0), Miss(1), Hit(2), ShadowMiss(3).
+            // So indices are 0, 1, 2, 3.
             std::memset(pSbtData, 0, sbtSize);
             std::memcpy(pSbtData + 0 * groupStride, tempHandles.data() + 0 * handleSize, handleSize); // RayGen
             std::memcpy(pSbtData + 1 * groupStride, tempHandles.data() + 1 * handleSize, handleSize); // Miss
-            std::memcpy(pSbtData + 2 * groupStride, tempHandles.data() + 2 * handleSize, handleSize); // ClosestHit
+            std::memcpy(pSbtData + 2 * groupStride, tempHandles.data() + 3 * handleSize, handleSize); // ShadowMiss (Handle index 3)
+            std::memcpy(pSbtData + 3 * groupStride, tempHandles.data() + 2 * handleSize, handleSize); // ClosestHit (Handle index 2)
 
             RHI_Buffer_Unmap(m_Device, m_SbtBuffer);
         }
@@ -648,16 +659,16 @@ namespace ArisenEngine::Testing
             data.numPointLights = 4;
             // 1. Center low
             data.pointLights[0].posRange = glm::vec4(0.0f, 2.0f, 0.0f, 50.0f);
-            data.pointLights[0].colorInt = glm::vec4(1.0f, 0.9f, 0.8f, 500.0f);
+            data.pointLights[0].colorInt = glm::vec4(1.0f, 0.9f, 0.8f, 100.0f);
             // 2. Left corridor
             data.pointLights[1].posRange = glm::vec4(-10.0f, 5.0f, 2.0f, 40.0f);
-            data.pointLights[1].colorInt = glm::vec4(1.0f, 0.8f, 0.6f, 400.0f);
+            data.pointLights[1].colorInt = glm::vec4(1.0f, 0.8f, 0.6f, 80.0f);
             // 3. Right corridor
             data.pointLights[2].posRange = glm::vec4(10.0f, 5.0f, 2.0f, 40.0f);
-            data.pointLights[2].colorInt = glm::vec4(0.8f, 0.9f, 1.0f, 400.0f);
+            data.pointLights[2].colorInt = glm::vec4(0.8f, 0.9f, 1.0f, 80.0f);
             // 4. Far end
             data.pointLights[3].posRange = glm::vec4(0.0f, 5.0f, -15.0f, 40.0f);
-            data.pointLights[3].colorInt = glm::vec4(0.8f, 1.0f, 0.8f, 400.0f);
+            data.pointLights[3].colorInt = glm::vec4(0.8f, 1.0f, 0.8f, 80.0f);
 
             m_AccumulatedFrames++;
             
@@ -732,8 +743,8 @@ namespace ArisenEngine::Testing
             UInt32 groupStride = 64;
 
             traceDesc.raygenShaderRecord = { sbtAddr + 0 * groupStride, groupStride, groupStride };
-            traceDesc.missShaderTable = { sbtAddr + 1 * groupStride, groupStride, groupStride };
-            traceDesc.hitShaderTable = { sbtAddr + 2 * groupStride, groupStride, groupStride };
+            traceDesc.missShaderTable = { sbtAddr + 1 * groupStride, groupStride, 2 * groupStride };
+            traceDesc.hitShaderTable = { sbtAddr + 3 * groupStride, groupStride, groupStride };
             traceDesc.width = width;
             traceDesc.height = height;
             traceDesc.depth = 1;
