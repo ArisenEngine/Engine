@@ -31,7 +31,7 @@ namespace ArisenEngine::RHI
         Containers::Map<UInt32, RHIPipelineHandle> m_PipelineHandles;
 
         VkPipelineCache m_VkPipelineCache = VK_NULL_HANDLE;
-        String m_CacheFilePath = "viewport_pso_cache.bin";
+        String m_PipelineCacheFileName = "viewport_pso_cache.bin";
     };
 }
 
