@@ -34,11 +34,20 @@ struct MaterialData
 RaytracingAccelerationStructure Scene : register(t0, space0);
 RWTexture2D<float4> RenderTarget : register(u1, space0);
 
+struct PointLight
+{
+    float4 posRange;   // xyz: pos, w: range
+    float4 colorInt;   // xyz: color, w: intensity
+};
+
 cbuffer CameraBuffer : register(b2, space0)
 {
     float4x4 viewInverse;
     float4x4 projInverse;
-    float4 lightPosAndFrameCount; // xyz: lightPos, w: frameCount
+    float4 lightPosAndFrameCount; // xyz: sunPos, w: frameCount
+    PointLight pointLights[8];
+    int numPointLights;
+    int padding[3];
 };
 
 StructuredBuffer<GLTFVertex> Vertices : register(t3, space0);
@@ -50,6 +59,44 @@ SamplerState DefaultSampler : register(s8, space0);
 RWTexture2D<float4> AccumulationTarget : register(u9, space0);
 
 // --- Utilities ---
+
+float3 LessThan(float3 f, float value)
+{
+    return float3(
+        (f.x < value) ? 1.0f : 0.0f,
+        (f.y < value) ? 1.0f : 0.0f,
+        (f.z < value) ? 1.0f : 0.0f);
+}
+
+float3 LinearToSRGB(float3 rgb)
+{
+    rgb = clamp(rgb, 0.0f, 1.0f);
+    return lerp(
+        pow(rgb, float3(1.0f / 2.4f, 1.0f / 2.4f, 1.0f / 2.4f)) * 1.055f - 0.055f,
+        rgb * 12.92f,
+        LessThan(rgb, 0.0031308f)
+    );
+}
+
+float3 SRGBToLinear(float3 rgb)
+{
+    rgb = clamp(rgb, 0.0f, 1.0f);
+    return lerp(
+        pow((rgb + 0.055f) / 1.055f, float3(2.4f, 2.4f, 2.4f)),
+        rgb / 12.92f,
+        LessThan(rgb, 0.04045f)
+    );
+}
+
+float3 ACESToneMapping(float3 x)
+{
+    float a = 2.51f;
+    float b = 0.03f;
+    float c = 2.43f;
+    float d = 0.59f;
+    float e = 0.14f;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0f, 1.0f);
+}
 
 uint PCGHash(uint seed)
 {
@@ -137,7 +184,12 @@ void RayGen()
     }
     
     AccumulationTarget[launchID.xy] = float4(finalColor, 1.0);
-    RenderTarget[launchID.xy] = float4(finalColor, 1.0);
+
+    // Final Post-processing
+    float3 postProcessed = ACESToneMapping(finalColor);
+    postProcessed = LinearToSRGB(postProcessed);
+    
+    RenderTarget[launchID.xy] = float4(postProcessed, 1.0);
 }
 
 [shader("miss")]
@@ -189,9 +241,44 @@ void ClosestHit(inout RayPayloadFixed payload, in BuiltInTriangleIntersectionAtt
     }
     
     float3 albedo = baseColor.rgb;
+    if (mat.baseColorTextureIndex >= 0)
+    {
+        albedo = SRGBToLinear(albedo);
+    }
+    
     float metallic = mat.metallicFactor;
     float roughness = mat.roughnessFactor;
     float3 V = -WorldRayDirection();
+
+    // --- Direct Lighting (NEE) for Point Lights ---
+    for (int i = 0; i < numPointLights; ++i)
+    {
+        PointLight light = pointLights[i];
+        float3 lightDir = light.posRange.xyz - worldPos;
+        float dist = length(lightDir);
+        lightDir /= dist;
+
+        float dotNL = max(dot(N, lightDir), 0.0);
+        if (dotNL > 0)
+        {
+            // Shadow Ray
+            RayDesc shadowRay;
+            shadowRay.Origin = worldPos + N * 0.001f;
+            shadowRay.Direction = lightDir;
+            shadowRay.TMin = 0.001f;
+            shadowRay.TMax = dist - 0.001f;
+
+            ShadowPayload sPayload;
+            sPayload.hit = true;
+            TraceRay(Scene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER | RAY_FLAG_FORCE_OPAQUE, 0xFF, 0, 1, 1, shadowRay, sPayload);
+
+            if (!sPayload.hit)
+            {
+                float attenuation = light.colorInt.w / (dist * dist + 1.0);
+                payload.radiance += payload.throughput * albedo * light.colorInt.xyz * dotNL * attenuation;
+            }
+        }
+    }
 
     // Mapping to "One Weekend" materials
     bool isMetal = metallic > 0.5;

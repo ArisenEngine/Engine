@@ -32,11 +32,20 @@ namespace ArisenEngine::Testing
 
         Containers::Vector<RHI_BufferHandle> m_CameraBuffers;
         
+        struct PointLight
+        {
+            glm::vec4 posRange;   // xyz: pos, w: range
+            glm::vec4 colorInt;   // xyz: color, w: intensity
+        };
+
         struct CameraData
         {
             glm::mat4 viewInverse;
             glm::mat4 projInverse;
-            glm::vec4 lightPosAndFrameCount; // xyz: lightPos, w: frameCount
+            glm::vec4 lightPosAndFrameCount; // xyz: sunPos, w: frameCount
+            PointLight pointLights[8];
+            int numPointLights;
+            int padding[3];
         };
 
         RHI_ImageHandle m_AccumulationImage = 0;
@@ -564,7 +573,23 @@ namespace ArisenEngine::Testing
                 m_PrevCameraRot = m_CameraRot;
             }
 
-            data.lightPosAndFrameCount = glm::vec4(2.0f, 5.0f, 2.0f, (float)m_AccumulatedFrames);
+            data.lightPosAndFrameCount = glm::vec4(10.0f, 40.0f, 10.0f, (float)m_AccumulatedFrames);
+            
+            // Set up some point lights in Sponza
+            data.numPointLights = 4;
+            // 1. Center low
+            data.pointLights[0].posRange = glm::vec4(0.0f, 2.0f, 0.0f, 20.0f);
+            data.pointLights[0].colorInt = glm::vec4(1.0f, 0.8f, 0.6f, 50.0f);
+            // 2. Left corridor
+            data.pointLights[1].posRange = glm::vec4(-10.0f, 5.0f, 0.0f, 15.0f);
+            data.pointLights[1].colorInt = glm::vec4(1.0f, 0.5f, 0.3f, 40.0f);
+            // 3. Right corridor
+            data.pointLights[2].posRange = glm::vec4(10.0f, 5.0f, 0.0f, 15.0f);
+            data.pointLights[2].colorInt = glm::vec4(0.3f, 0.5f, 1.0f, 40.0f);
+            // 4. Far end
+            data.pointLights[3].posRange = glm::vec4(0.0f, 5.0f, -15.0f, 15.0f);
+            data.pointLights[3].colorInt = glm::vec4(0.5f, 1.0f, 0.5f, 40.0f);
+
             m_AccumulatedFrames++;
             
             RHI_Buffer_MemoryCopy(m_Device, m_CameraBuffers[GetCurrentFrameIndex()], &data, sizeof(CameraData), 0);
