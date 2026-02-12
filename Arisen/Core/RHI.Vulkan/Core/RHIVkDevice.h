@@ -288,6 +288,9 @@ namespace ArisenEngine::RHI
         PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR = nullptr;
         PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR = nullptr;
 
+        // VRS
+        PFN_vkCmdSetFragmentShadingRateKHR vkCmdSetFragmentShadingRateKHR = nullptr;
+
     private:
         // Internal low-level destruction (Vulkan/Memory only, via Registry)
         void FreeBufferInternal(RHIBufferHandle handle);

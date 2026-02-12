@@ -87,6 +87,7 @@ namespace ArisenEngine::RHI
         DYNAMIC_STATE_DEPTH_COMPARE_OP_BIT = 1ULL << 14,
         DYNAMIC_STATE_STENCIL_TEST_ENABLE_BIT = 1ULL << 15,
         DYNAMIC_STATE_STENCIL_OP_BIT = 1ULL << 16,
+        DYNAMIC_STATE_FRAGMENT_SHADING_RATE_BIT = 1ULL << 17,
         // Add more as needed
     };
 }

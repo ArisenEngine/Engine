@@ -20,6 +20,8 @@
 #include "RHI/Enums/Pipeline/EPrimitiveTopology.h"
 #include "RHI/Enums/Sampler/ECompareOp.h"
 #include "RHI/Pipeline/RHIDepthStencilState.h"
+#include "RHI/Enums/Pipeline/EShadingRate.h"
+#include "RHI/Enums/Pipeline/EShadingRateCombiner.h"
 #include "../Handles/RHIHandle.h"
 
 namespace ArisenEngine::RHI
@@ -244,6 +246,8 @@ namespace ArisenEngine::RHI
         // Ray Tracing
         virtual void BuildAccelerationStructures(UInt32 infoCount, const RHIAccelerationStructureBuildGeometryInfo* pInfos, const RHIAccelerationStructureBuildRangeInfo* const* ppBuildRangeInfos) = 0;
         virtual void TraceRays(const RHITraceRaysDescriptor& desc) = 0;
+
+        virtual void SetFragmentShadingRate(EShadingRate rate, EShadingRateCombiner combinerOp[2]) = 0;
 
         // Debug Markers
         virtual void BeginDebugLabel(const char* label, const Float32 color[4]) = 0;

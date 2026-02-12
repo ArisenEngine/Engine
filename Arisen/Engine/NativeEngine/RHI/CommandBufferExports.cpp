@@ -397,4 +397,10 @@ extern "C" ENGINE_DLL void RHI_Cmd_TraceRays(RHI_CommandBufferHandle cmd, const 
     if (c && desc) c->TraceRays(*desc);
 }
 
+extern "C" ENGINE_DLL void RHI_Cmd_SetFragmentShadingRate(RHI_CommandBufferHandle cmd, ArisenEngine::RHI::EShadingRate rate, ArisenEngine::RHI::EShadingRateCombiner combinerOp[2])
+{
+    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    if (c) c->SetFragmentShadingRate(rate, combinerOp);
+}
+
 

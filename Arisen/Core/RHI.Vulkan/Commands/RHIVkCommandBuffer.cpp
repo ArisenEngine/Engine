@@ -1248,3 +1248,28 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::TraceRays(const RHITraceRaysDescript
 
     vkDevice->vkCmdTraceRaysKHR(m_VkCommandBuffer, &raygenRegion, &missRegion, &hitRegion, &callableRegion, desc.width, desc.height, desc.depth);
 }
+
+void ArisenEngine::RHI::RHIVkCommandBuffer::SetFragmentShadingRate(EShadingRate rate, EShadingRateCombiner combinerOp[2])
+{
+    auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
+    if (!vkDevice->vkCmdSetFragmentShadingRateKHR) return;
+
+    VkExtent2D shadingRate = { 1, 1 };
+    switch (rate)
+    {
+    case EShadingRate::Rate1x1: shadingRate = { 1, 1 }; break;
+    case EShadingRate::Rate1x2: shadingRate = { 1, 2 }; break;
+    case EShadingRate::Rate2x1: shadingRate = { 2, 1 }; break;
+    case EShadingRate::Rate2x2: shadingRate = { 2, 2 }; break;
+    case EShadingRate::Rate2x4: shadingRate = { 2, 4 }; break;
+    case EShadingRate::Rate4x2: shadingRate = { 4, 2 }; break;
+    case EShadingRate::Rate4x4: shadingRate = { 4, 4 }; break;
+    default: shadingRate = { 1, 1 }; break;
+    }
+
+    VkFragmentShadingRateCombinerOpKHR combiners[2];
+    combiners[0] = static_cast<VkFragmentShadingRateCombinerOpKHR>(combinerOp[0]);
+    combiners[1] = static_cast<VkFragmentShadingRateCombinerOpKHR>(combinerOp[1]);
+
+    vkDevice->vkCmdSetFragmentShadingRateKHR(m_VkCommandBuffer, &shadingRate, combiners);
+}

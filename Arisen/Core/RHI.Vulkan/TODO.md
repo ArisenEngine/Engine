@@ -1,9 +1,4 @@
 
-### 5.2 待实现
-- [ ] **Ray Tracing**
-    - [ ] 加速结构 (BLAS/TLAS) 构建
-    - [ ] RT Pipeline 支持
-    - [ ] Ray Query (Inline Ray Tracing)
 - [ ] **Variable Rate Shading**: `VK_KHR_fragment_shading_rate`
 - [ ] **GPU Timeline Semaphores**: 更精细的同步控制
 - [ ] **Transient Resource Aliasing**: VMA 内存别名优化
