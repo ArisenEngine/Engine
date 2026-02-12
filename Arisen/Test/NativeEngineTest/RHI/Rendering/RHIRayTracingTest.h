@@ -552,12 +552,22 @@ namespace ArisenEngine::Testing
             CameraData data;
             data.viewInverse = glm::inverse(GetViewMatrix());
             data.projInverse = glm::inverse(GetProjectionMatrix(width / height));
-            // Camera movement detection
-            if (m_CameraPos != m_PrevCameraPos || m_CameraRot != m_PrevCameraRot)
+            // Camera movement detection with epsilon
+            float epsilon = 0.0001f;
+            bool cameraMoved = glm::distance(m_CameraPos, m_PrevCameraPos) > epsilon || 
+                               glm::distance(m_CameraRot, m_PrevCameraRot) > epsilon;
+
+            if (cameraMoved)
             {
                 m_AccumulatedFrames = 0;
                 m_PrevCameraPos = m_CameraPos;
                 m_PrevCameraRot = m_CameraRot;
+            }
+
+            // Cap accumulation to prevent precision issues
+            if (m_AccumulatedFrames > 4096)
+            {
+                m_AccumulatedFrames = 4096;
             }
 
             data.lightPosAndFrameCount = glm::vec4(2.0f, 5.0f, 2.0f, (float)m_AccumulatedFrames++);
@@ -617,6 +627,18 @@ namespace ArisenEngine::Testing
             Containers::Vector<RHI::RHIImageMemoryBarrier> accumBarriers;
             accumBarriers.push_back(accumBarrier);
             RHI_Cmd_PipelineBarrier_Image(cmd, (UInt32)RHI::PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, (UInt32)RHI::PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, 0, &accumBarriers);
+
+            // If we are accumulating, we need to ensure THE ENTIRE previous frame's work on this image is done.
+            // In a multi-frame-in-flight scenario, we might need a more robust sync if we want to avoid bubbles,
+            // but for this test, waiting for the previous frame's ticket is the simplest fix for the race.
+            if (m_AccumulatedFrames > 1)
+            {
+                UInt32 prevIndex = (currentIndex + m_MaxFramesInFlight - 1) % m_MaxFramesInFlight;
+                if (m_FrameTickets[prevIndex] > 0)
+                {
+                    RHI_Device_WaitQueueTicket(m_Device, m_FrameTickets[prevIndex]);
+                }
+            }
 
             RHI::RHITraceRaysDescriptor traceDesc{};
             UInt64 sbtAddr = RHI_Buffer_GetDeviceAddress(m_Device, m_SbtBuffer);
