@@ -45,7 +45,6 @@ Varying Vert(Attribute input)
 
 float4 Frag(Varying input) : SV_Target
 {
-    return float4(input.uv, 0, 1);
     float4 texColor = tex.SampleBias(sam, input.uv, mipmapBias);
     float4 color = texColor;
 
