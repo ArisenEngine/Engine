@@ -45,6 +45,7 @@ namespace ArisenEngine::Testing
 
     struct GLTFMaterial
     {
+        glm::vec4 baseColorFactor = glm::vec4(1.0f);
         RHI_ImageHandle baseColorTexture = 0;
         RHI_ImageViewHandle baseColorView = 0;
         RHI_SamplerHandle sampler = 0;

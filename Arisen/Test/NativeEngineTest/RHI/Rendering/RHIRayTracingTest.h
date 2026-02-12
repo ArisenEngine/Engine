@@ -31,6 +31,7 @@ namespace ArisenEngine::Testing
         RHI_SamplerHandle m_DefaultSampler = 0;
 
         Containers::Vector<RHI_BufferHandle> m_CameraBuffers;
+        Containers::Vector<UInt32> m_DescriptorSetIndices;
         
         struct PointLight
         {
@@ -193,21 +194,59 @@ namespace ArisenEngine::Testing
             for (auto& mat : m_Model.materials)
             {
                 MaterialData md{};
-                md.baseColorFactor = glm::vec4(1.0f);
-                md.baseColorTextureIndex = (int)m_ModelTextures.size();
+                md.baseColorFactor = mat.baseColorFactor;
+                
+                // Only add texture if valid and we have space in the shader array
+                if (mat.baseColorView != 0 && m_ModelTextures.size() < 100)
+                {
+                    md.baseColorTextureIndex = (int)m_ModelTextures.size();
+                    m_ModelTextures.push_back(mat.baseColorView);
+                }
+                else
+                {
+                    md.baseColorTextureIndex = -1;
+                    if (mat.baseColorView != 0)
+                    {
+                        LOG_WARN("Material texture skipped due to limit (100).");
+                    }
+                }
+
                 md.metallicFactor = 0.0f;
                 md.roughnessFactor = 1.0f;
                 matData.push_back(md);
-                m_ModelTextures.push_back(mat.baseColorView);
+                
+                LOG_INFOF("Material {0}: baseColorFactor=({1},{2},{3},{4}), texIdx={5}", 
+                    matData.size() - 1,
+                    md.baseColorFactor.r, md.baseColorFactor.g, md.baseColorFactor.b, md.baseColorFactor.a,
+                    md.baseColorTextureIndex);
             }
 
 
             RHI::RHIBufferDescriptor matBufDesc{};
             matBufDesc.size = matData.size() * sizeof(MaterialData);
-            matBufDesc.usage = RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-            matBufDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            matBufDesc.usage = RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | RHI::BUFFER_USAGE_TRANSFER_DST_BIT;
+            matBufDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             m_MaterialBuffer = RHI_Device_CreateBuffer(m_Device, &matBufDesc, "Material Buffer");
-            RHI_Buffer_MemoryCopy(m_Device, m_MaterialBuffer, matData.data(), matBufDesc.size, 0);
+            
+            // Create staging buffer for upload
+            RHI::RHIBufferDescriptor stagingDesc{};
+            stagingDesc.size = matBufDesc.size;
+            stagingDesc.usage = RHI::BUFFER_USAGE_TRANSFER_SRC_BIT;
+            stagingDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            auto stagingBuffer = RHI_Device_CreateBuffer(m_Device, &stagingDesc, "Material Staging Buffer");
+            RHI_Buffer_MemoryCopy(m_Device, stagingBuffer, matData.data(), stagingDesc.size, 0);
+            
+            // Copy from staging to device local buffer
+            auto cmdPool = RHI_Device_CreateCommandBufferPool(m_Device);
+            auto cmd = RHI_Device_GetCommandBuffer(m_Device, cmdPool, 0);
+            RHI_Cmd_Begin(cmd, 0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+            RHI_Cmd_CopyBuffer(cmd, stagingBuffer, m_MaterialBuffer, 0, 0, matBufDesc.size);
+            RHI_Cmd_End(cmd);
+            RHI_Device_Submit(m_Device, cmd, 0);
+            RHI_Device_WaitIdle(m_Device);
+            RHI_Device_ReleaseCommandBuffer(m_Device, cmdPool, 0, cmd);
+            RHI_Device_ReleaseCommandBufferPool(m_Device, cmdPool);
+            RHI_Device_ReleaseBuffer(m_Device, stagingBuffer);
 
             // Per-Triangle Material Index Buffer
             Containers::Vector<UInt32> triangleMaterialIndices;
@@ -519,6 +558,23 @@ namespace ArisenEngine::Testing
                 m_DescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &types, &counts, 1));
             }
 
+            // Pre-allocate descriptor sets for each frame
+            m_DescriptorSetIndices.resize(m_MaxFramesInFlight);
+            for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
+            {
+                UInt32 poolId = m_DescriptorPoolIds[i];
+                
+                // Update camera buffer for this frame
+                Containers::Vector<RHI_BufferHandle> ubos = { m_CameraBuffers[i] };
+                RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 2, &ubos);
+                
+                // Allocate descriptor set
+                m_DescriptorSetIndices[i] = RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, poolId, 0, m_Pso);
+                
+                // Update all descriptors (must update ALL resources including textures!)
+                RHI_DescriptorPool_UpdateDescriptorSet(m_DescriptorPool, poolId, m_DescriptorSetIndices[i], m_Pso);
+            }
+
             m_Pipeline = RHI_PipelineManager_GetRayTracingPipeline(pm, m_Pso);
         }
 
@@ -602,15 +658,13 @@ namespace ArisenEngine::Testing
             
             RHI_Cmd_Begin(cmd, currentIndex, 0);
 
-            // Update descriptors for current frame
+            // Update camera buffer for current frame
             Containers::Vector<RHI_BufferHandle> ubos = { m_CameraBuffers[currentIndex] };
             RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 2, &ubos);
             
-            // Re-allocate or re-update descriptor set if necessary, 
-            // but for RT let's assume we can reuse/rebake
+            // Update the pre-allocated descriptor set
             UInt32 poolId = m_DescriptorPoolIds[currentIndex];
-            RHI_DescriptorPool_Reset(m_DescriptorPool, poolId);
-            UInt32 setIdx = RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, poolId, 0, m_Pso);
+            UInt32 setIdx = m_DescriptorSetIndices[currentIndex];
             RHI_DescriptorPool_UpdateDescriptorSet(m_DescriptorPool, poolId, setIdx, m_Pso);
 
             RHI_Cmd_BindPipeline(cmd, m_Pipeline);
