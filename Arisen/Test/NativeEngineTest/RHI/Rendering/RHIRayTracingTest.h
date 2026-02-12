@@ -65,12 +65,14 @@ namespace ArisenEngine::Testing
             int padding;
         };
 
-
         struct SubmeshData
         {
             UInt32 materialIndex;
             UInt32 firstIndex;
+            UInt32 padding[2];
         };
+
+
 
     public:
         const char* GetName() const override { return "RayTracingTest"; }
@@ -246,7 +248,7 @@ namespace ArisenEngine::Testing
             auto cmdPool = RHI_Device_CreateCommandBufferPool(m_Device);
             auto cmd = RHI_Device_GetCommandBuffer(m_Device, cmdPool, 0);
             RHI_Cmd_Begin(cmd, 0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-            RHI_Cmd_CopyBuffer(cmd, stagingBuffer, m_MaterialBuffer, 0, 0, matBufDesc.size);
+            RHI_Cmd_CopyBuffer(cmd, stagingBuffer, 0, m_MaterialBuffer, 0, matBufDesc.size);
             RHI_Cmd_End(cmd);
             RHI_Device_Submit(m_Device, cmd, 0);
             RHI_Device_WaitIdle(m_Device);
@@ -260,7 +262,7 @@ namespace ArisenEngine::Testing
             for (size_t i = 0; i < m_Model.primitives.size(); ++i)
             {
                 const auto& prim = m_Model.primitives[i];
-                submeshData.push_back({ (UInt32)prim.materialIndex, prim.firstIndex });
+                submeshData.push_back({ (UInt32)prim.materialIndex, prim.firstIndex, {0, 0} });
             }
 
             RHI::RHIBufferDescriptor triBufDesc{};
