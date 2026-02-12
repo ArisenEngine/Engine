@@ -462,12 +462,10 @@ namespace ArisenEngine::Testing
             // Use specific profiles to ensure proper reflection of stage flags
             auto rgen = CompileShader(L"RayTracingTest", "RayGen", "6_3");
             auto rmiss = CompileShader(L"RayTracingTest", "Miss", "6_3");
-            auto rsmiss = CompileShader(L"RayTracingTest", "ShadowMiss", "6_3");
             auto rchit = CompileShader(L"RayTracingTest", "ClosestHit", "6_3");
 
             RHI_PSO_AddProgram(m_Pso, rgen);
             RHI_PSO_AddProgram(m_Pso, rmiss);
-            RHI_PSO_AddProgram(m_Pso, rsmiss);
             RHI_PSO_AddProgram(m_Pso, rchit);
 
             // Groups
@@ -481,14 +479,9 @@ namespace ArisenEngine::Testing
             missGroup.generalShaderIndex = 1;
             RHI_PSO_AddRayTracingShaderGroup(m_Pso, &missGroup);
 
-            RHI::RHIRayTracingShaderGroup smissGroup{};
-            smissGroup.type = RHI::ERHIRayTracingShaderGroupType::General;
-            smissGroup.generalShaderIndex = 2;
-            RHI_PSO_AddRayTracingShaderGroup(m_Pso, &smissGroup);
-
             RHI::RHIRayTracingShaderGroup hitGroup{};
             hitGroup.type = RHI::ERHIRayTracingShaderGroupType::TrianglesHitGroup;
-            hitGroup.closestHitShaderIndex = 3;
+            hitGroup.closestHitShaderIndex = 2;
             RHI_PSO_AddRayTracingShaderGroup(m_Pso, &hitGroup);
 
             RHI_PSO_SetMaxRecursionDepth(m_Pso, 2); // Increased to 2 for shadow rays in ClosestHit
@@ -605,7 +598,7 @@ namespace ArisenEngine::Testing
             // SBT must be aligned to shaderGroupBaseAlignment (usually 64 bytes)
             UInt32 handleSize = 32;          // Size of the shader group handle (device property, usually 32)
             UInt32 groupStride = 64;         // Stride must be aligned to shaderGroupBaseAlignment
-            UInt32 sbtSize = groupStride * 4;
+            UInt32 sbtSize = groupStride * 3;
 
             RHI::RHIBufferDescriptor sbtDesc{};
             sbtDesc.size = sbtSize;
@@ -616,15 +609,14 @@ namespace ArisenEngine::Testing
             uint8_t* pSbtData = (uint8_t*)RHI_Buffer_Map(m_Device, m_SbtBuffer);
             
             // Get handles in a temp buffer
-            std::vector<uint8_t> tempHandles(handleSize * 4);
-            RHI_Device_GetRayTracingShaderGroupHandles(m_Device, m_Pipeline, 0, 4, tempHandles.size(), tempHandles.data());
+            std::vector<uint8_t> tempHandles(handleSize * 3);
+            RHI_Device_GetRayTracingShaderGroupHandles(m_Device, m_Pipeline, 0, 3, tempHandles.size(), tempHandles.data());
             
             // Write to SBT with alignment padding
             std::memset(pSbtData, 0, sbtSize);
             std::memcpy(pSbtData + 0 * groupStride, tempHandles.data() + 0 * handleSize, handleSize); // RayGen
             std::memcpy(pSbtData + 1 * groupStride, tempHandles.data() + 1 * handleSize, handleSize); // Miss
-            std::memcpy(pSbtData + 2 * groupStride, tempHandles.data() + 2 * handleSize, handleSize); // ShadowMiss
-            std::memcpy(pSbtData + 3 * groupStride, tempHandles.data() + 3 * handleSize, handleSize); // ClosestHit
+            std::memcpy(pSbtData + 2 * groupStride, tempHandles.data() + 2 * handleSize, handleSize); // ClosestHit
 
             RHI_Buffer_Unmap(m_Device, m_SbtBuffer);
         }
@@ -740,8 +732,8 @@ namespace ArisenEngine::Testing
             UInt32 groupStride = 64;
 
             traceDesc.raygenShaderRecord = { sbtAddr + 0 * groupStride, groupStride, groupStride };
-            traceDesc.missShaderTable = { sbtAddr + 1 * groupStride, groupStride, 2 * groupStride };
-            traceDesc.hitShaderTable = { sbtAddr + 3 * groupStride, groupStride, groupStride };
+            traceDesc.missShaderTable = { sbtAddr + 1 * groupStride, groupStride, groupStride };
+            traceDesc.hitShaderTable = { sbtAddr + 2 * groupStride, groupStride, groupStride };
             traceDesc.width = width;
             traceDesc.height = height;
             traceDesc.depth = 1;
