@@ -182,7 +182,7 @@ void RayGen()
     if (frameCount > 0)
     {
         float3 prevColor = AccumulationTarget[launchID.xy].rgb;
-        finalColor = lerp(prevColor, finalColor, 1.0f / 8.0f);
+        finalColor = lerp(prevColor, finalColor, 1.0f / (float)(frameCount + 1));
     }
     else
     {
