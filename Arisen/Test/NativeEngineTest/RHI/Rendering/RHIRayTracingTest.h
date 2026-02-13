@@ -152,8 +152,7 @@ namespace ArisenEngine::Testing
         {
             if (width == 0 || height == 0) return;
 
-            RHI_Device_WaitIdle(m_Device);
-
+            m_AccumulatedFrames = 0;
             if (m_StorageImageView) RHI_Device_ReleaseImageView(m_Device, m_StorageImageView);
             if (m_StorageImage) RHI_Device_ReleaseImage(m_Device, m_StorageImage);
             if (m_AccumulationImageView) RHI_Device_ReleaseImageView(m_Device, m_AccumulationImageView);

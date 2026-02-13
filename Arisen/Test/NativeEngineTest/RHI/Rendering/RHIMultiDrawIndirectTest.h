@@ -93,8 +93,6 @@ namespace ArisenEngine::Testing
         {
             if (width == 0 || height == 0) return;
 
-            RHI_Device_WaitIdle(m_Device);
-
             if (m_DepthView) RHI_Device_ReleaseImageView(m_Device, m_DepthView);
             if (m_DepthImage) RHI_Device_ReleaseImage(m_Device, m_DepthImage);
             if (m_MSAAColorView) RHI_Device_ReleaseImageView(m_Device, m_MSAAColorView);
