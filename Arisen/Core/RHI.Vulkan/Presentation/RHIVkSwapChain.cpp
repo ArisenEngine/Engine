@@ -31,6 +31,10 @@ ArisenEngine::RHI::RHIVkSwapChain::~RHIVkSwapChain() noexcept
 
     m_Surface = nullptr;
     
+    // Release semaphores here as they persist across SwapChain recreation
+    auto* factory = m_Device->GetFactory();
+    for (auto h : m_ImageAvailableSemaphores) factory->ReleaseSemaphore(h);
+    for (auto h : m_RenderFinishSemaphores) factory->ReleaseSemaphore(h);
     m_ImageAvailableSemaphores.clear();
     m_RenderFinishSemaphores.clear();
     
@@ -63,6 +67,12 @@ void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(RHISwapChainDesc
     createInfo.presentMode = static_cast<VkPresentModeKHR>(m_Desc.presentMode);
     createInfo.clipped = static_cast<VkBool32>(m_Desc.clipped);
     createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+    // Zero-Stall: Check if we have an old swapchain passed via customData
+    if (m_Desc.customData.has_value())
+    {
+        createInfo.oldSwapchain = (VkSwapchainKHR)m_Desc.customData.value();
+    }
 
     if (vkCreateSwapchainKHR(m_VkDevice, &createInfo, nullptr, &m_VkSwapChain) != VK_SUCCESS)
     {
@@ -182,10 +192,8 @@ void ArisenEngine::RHI::RHIVkSwapChain::Cleanup()
     m_ImageHandles.clear();
     m_ImageViewHandles.clear();
 
-    for (auto h : m_ImageAvailableSemaphores) factory->ReleaseSemaphore(h);
-    for (auto h : m_RenderFinishSemaphores) factory->ReleaseSemaphore(h);
-    m_ImageAvailableSemaphores.clear();
-    m_RenderFinishSemaphores.clear();
+    // Do NOT destroy semaphores here. They are reused across Valid/Recreated swapchains.
+    // They should be destroyed in Destructor.
 
     if (m_VkSwapChain != VK_NULL_HANDLE && m_VkDevice != VK_NULL_HANDLE)
     {
@@ -226,13 +234,29 @@ void ArisenEngine::RHI::RHIVkSwapChain::RecreateSwapChainIfNeeded()
         return;
     }
     
-    m_Device->DeviceWaitIdle();
+    // Zero-Stall: Do NOT wait idle.
+    // m_Device->DeviceWaitIdle();
+
+    VkSwapchainKHR oldSwapchain = m_VkSwapChain;
+    m_VkSwapChain = VK_NULL_HANDLE; // Prevent Cleanup from destroying the old swapchain immediately
 
     Cleanup();
 
+    // Pass old swapchain to Create functions
+    m_Desc.customData = (void*)oldSwapchain;
     CreateSwapChainWithDesc(m_Desc);
+    m_Desc.customData.reset(); // Clear after use
+
+    // Defer destroy oldSwapchain
+    auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
+    // Use the latest ticket from graphics queue as synchronization point
+    // This ensures that we only destroy the old swapchain after all commands submitted UP TO NOW have finished.
+    // Add delay to ensure presentation engine is done with the old swapchain
+    auto ticket = vkDevice->GetQueue(RHIQueueType::Graphics)->GetLatestTicket() + m_Device->GetMaxFramesInFlight();
+    vkDevice->EnqueueDeferredDestroy(ticket, 
+        [dev = m_VkDevice, sw = oldSwapchain]() { 
+            // LOG_INFO("[RHIVkSwapChain] Destroying Old Swapchain (Deferred)");
+            vkDestroySwapchainKHR(dev, sw, nullptr); 
+        });
 }
-
-
-
 

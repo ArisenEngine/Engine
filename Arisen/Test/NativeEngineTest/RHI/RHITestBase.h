@@ -297,12 +297,32 @@ namespace ArisenEngine::Testing
             return 0;
         }
 
+        static void OnWindowResizing(HWND hwnd, UInt32 width, UInt32 height)
+        {
+            RHITestBase* test = (RHITestBase*)HAL::GetWindowUserData(HAL::GetWindowId(hwnd));
+            if (test && test->m_Device)
+            {
+                // LOG_INFOF("Window Resizing: %dx%d", width, height);
+                RHI_Device_SetResolution(test->m_Device, width, height);
+            }
+        }
+
+        static void OnWindowResizeFinished(HWND hwnd, UInt32 width, UInt32 height)
+        {
+            RHITestBase* test = (RHITestBase*)HAL::GetWindowUserData(HAL::GetWindowId(hwnd));
+            if (test && test->m_Device)
+            {
+                LOG_INFOF("Window Resize Finished: %dx%d", width, height);
+                RHI_Device_SetResolution(test->m_Device, width, height);
+            }
+        }
+
         /**
          * @brief Create a render window.
          */
         bool CreateAppWindow(UInt32 width = 1280, UInt32 height = 720)
         {
-            m_WindowId = HAL::CreateRenderWindow(nullptr, TestWndProc, width, height);
+            m_WindowId = HAL::CreateRenderWindowWithResizeCallback(nullptr, TestWndProc, OnWindowResizeFinished, OnWindowResizing, width, height);
             if (m_WindowId != ~0u)
             {
                 HAL::SetWindowUserData(m_WindowId, this);
