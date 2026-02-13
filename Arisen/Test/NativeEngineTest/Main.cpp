@@ -9,6 +9,7 @@
 #include "RHI/Unit/RHIBindlessTest.h"
 #include "RHI/Unit/RHIMultiThreadedTest.h"
 #include "RHI/Unit/RHIBatchApiTest.h"
+#include "RHI/Unit/RHIMemoryAliasingTest.h"
 #include "RHI/Rendering/RHIMeshShaderTest.h"
 #include "RHI/Rendering/RHIGeometryShaderTest.h"
 #include "RHI/Rendering/RHITessellationShaderTest.h"
@@ -60,6 +61,7 @@ int main(int argc, char** argv)
     TestRunner::RegisterTest<RHIInspectorTest>();
     TestRunner::RegisterTest<RHIRayTracingTest>();
     TestRunner::RegisterTest<RHIVRSShadingRateTest>();
+    TestRunner::RegisterTest<RHIMemoryAliasingTest>();
 
     
     // Parse simple command line for filtering (lpCmdLine for WinMain)

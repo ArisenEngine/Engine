@@ -22,6 +22,9 @@ namespace ArisenEngine::RHI
         
         bool AllocateBufferMemory(VkBuffer buffer, VmaMemoryUsage usage, VmaAllocation* outAllocation);
         bool AllocateImageMemory(VkImage image, VmaMemoryUsage usage, VmaAllocation* outAllocation);
+        bool AllocateMemory(UInt64 size, VmaMemoryUsage usage, VmaAllocation* outAllocation);
+        bool BindBufferMemory(VkBuffer buffer, VmaAllocation allocation, UInt64 offset = 0);
+        bool BindImageMemory(VkImage image, VmaAllocation allocation, UInt64 offset = 0);
         void FreeMemory(VmaAllocation allocation);
         UInt64 GetDeviceAddress(VkBuffer buffer);
 

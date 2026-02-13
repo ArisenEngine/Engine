@@ -315,3 +315,42 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseSemaphore(RHI_DeviceHandle device, 
     auto h = *reinterpret_cast<RHI::RHISemaphoreHandle*>(&sem);
     dev->GetFactory()->ReleaseSemaphore(h);
 }
+
+extern "C" ENGINE_DLL RHI_MemoryPoolHandle RHI_Device_CreateMemoryPool(RHI_DeviceHandle device, unsigned long long size, unsigned int usageBits)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr) return 0ULL;
+    auto h = dev->GetFactory()->CreateMemoryPool(size, usageBits);
+    return *reinterpret_cast<unsigned long long*>(&h);
+}
+
+extern "C" ENGINE_DLL void RHI_Device_ReleaseMemoryPool(RHI_DeviceHandle device, RHI_MemoryPoolHandle pool)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || pool == 0) return;
+    auto h = *reinterpret_cast<RHI::RHIMemoryPoolHandle*>(&pool);
+    dev->GetFactory()->ReleaseMemoryPool(h);
+}
+
+extern "C" ENGINE_DLL RHI_BufferHandle RHI_Device_CreateBufferAliased(RHI_DeviceHandle device, const ArisenEngine::RHI::RHIBufferDescriptor* desc, RHI_MemoryPoolHandle pool, unsigned long long offset, const char* name)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || desc == nullptr || pool == 0) return 0ULL;
+    auto hPool = *reinterpret_cast<RHI::RHIMemoryPoolHandle*>(&pool);
+    
+    RHI::RHIBufferDescriptor copy = *desc;
+    auto handle = dev->GetFactory()->CreateBufferAliased(std::move(copy), hPool, offset, name != nullptr ? name : "Anonymous");
+    return *reinterpret_cast<unsigned long long*>(&handle);
+}
+
+extern "C" ENGINE_DLL RHI_ImageHandle RHI_Device_CreateImageAliased(RHI_DeviceHandle device, const ArisenEngine::RHI::RHIImageDescriptor* desc, RHI_MemoryPoolHandle pool, unsigned long long offset, const char* name)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || desc == nullptr || pool == 0) return 0ULL;
+    auto hPool = *reinterpret_cast<RHI::RHIMemoryPoolHandle*>(&pool);
+    
+    RHI::RHIImageDescriptor copy = *desc;
+    auto handle = dev->GetFactory()->CreateImageAliased(std::move(copy), hPool, offset, name != nullptr ? name : "Anonymous");
+    return *reinterpret_cast<unsigned long long*>(&handle);
+}
+

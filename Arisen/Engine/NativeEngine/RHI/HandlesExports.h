@@ -26,6 +26,8 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseBuffer(RHI_DeviceHandle device, RHI
 extern "C" ENGINE_DLL void* RHI_Buffer_Map(RHI_DeviceHandle device, RHI_BufferHandle buffer);
 extern "C" ENGINE_DLL void RHI_Buffer_Unmap(RHI_DeviceHandle device, RHI_BufferHandle buffer);
 
+extern "C" ENGINE_DLL RHI_BufferHandle RHI_Device_CreateBufferAliased(RHI_DeviceHandle device, const ArisenEngine::RHI::RHIBufferDescriptor* desc, RHI_MemoryPoolHandle pool, unsigned long long offset, const char* name);
+
 extern "C" ENGINE_DLL void RHI_Buffer_MemoryCopy(RHI_DeviceHandle device, RHI_BufferHandle buffer, const void* src, unsigned long long size, unsigned long long offset);
 extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Size(RHI_DeviceHandle device, RHI_BufferHandle buffer);
 extern "C" ENGINE_DLL unsigned long long RHI_Buffer_Offset(RHI_DeviceHandle device, RHI_BufferHandle buffer);
@@ -49,6 +51,8 @@ extern "C" ENGINE_DLL unsigned int RHI_ImageView_GetHeight(RHI_DeviceHandle devi
 /** @ownership Borrowed - View lifetime managed by parent image */
 extern "C" ENGINE_DLL RHI_ImageViewHandle RHI_Image_GetView(RHI_DeviceHandle device, RHI_ImageHandle image);
 
+extern "C" ENGINE_DLL RHI_ImageHandle RHI_Device_CreateImageAliased(RHI_DeviceHandle device, const ArisenEngine::RHI::RHIImageDescriptor* desc, RHI_MemoryPoolHandle pool, unsigned long long offset, const char* name);
+
 // ============================================================================
 // Sampler Handles
 // ============================================================================
@@ -56,6 +60,14 @@ extern "C" ENGINE_DLL RHI_ImageViewHandle RHI_Image_GetView(RHI_DeviceHandle dev
 /** @ownership Owned - Caller must release via RHI_Device_ReleaseSampler */
 extern "C" ENGINE_DLL RHI_SamplerHandle RHI_Device_CreateSampler(RHI_DeviceHandle device, const ArisenEngine::RHI::RHISamplerDesc* desc);
 extern "C" ENGINE_DLL void RHI_Device_ReleaseSampler(RHI_DeviceHandle device, RHI_SamplerHandle sampler);
+
+// ============================================================================
+// MemoryPool Handles
+// ============================================================================
+
+/** @ownership Owned - Caller must release via RHI_Device_ReleaseMemoryPool */
+extern "C" ENGINE_DLL RHI_MemoryPoolHandle RHI_Device_CreateMemoryPool(RHI_DeviceHandle device, unsigned long long size, unsigned int usageBits);
+extern "C" ENGINE_DLL void RHI_Device_ReleaseMemoryPool(RHI_DeviceHandle device, RHI_MemoryPoolHandle pool);
 
 // ============================================================================
 // Shader Program Handles
