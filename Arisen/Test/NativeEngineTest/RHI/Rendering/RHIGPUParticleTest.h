@@ -130,7 +130,6 @@ namespace ArisenEngine::Testing
         void OnResize(UInt32 width, UInt32 height) override
         {
             if (width == 0 || height == 0) return;
-            RHI_Device_WaitIdle(m_Device);
         }
 
     private:

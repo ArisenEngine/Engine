@@ -9,6 +9,12 @@
 
 // Explicitly use void* and PODs to avoid typedef/namespace issues in extern C
 
+/** 
+ * @warning [Zero-Stall] DO NOT use this for normal resource management (like OnResize).
+ * It will cause a total pipeline stall and degrade performance.
+ * Use for engine shutdown or massive state reset only.
+ * For resource management, use deferred deletion or fine-grained sync via RHI_Device_WaitQueueTicket.
+ */
 extern "C" ENGINE_DLL void RHI_Device_WaitIdle(RHI_DeviceHandle device);
 extern "C" ENGINE_DLL void RHI_Device_GraphicQueueWaitIdle(RHI_DeviceHandle device);
 
