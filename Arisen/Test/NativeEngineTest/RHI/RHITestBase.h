@@ -306,6 +306,7 @@ namespace ArisenEngine::Testing
                 // LOG_INFOF("Window Resizing: %dx%d", width, height);
                 RHI_Device_SetResolution(test->m_Device, width, height);
                 test->OnResize(width, height);
+                test->RenderFrame();
             }
         }
 
@@ -317,6 +318,7 @@ namespace ArisenEngine::Testing
                 LOG_INFOF("Window Resize Finished: %dx%d", width, height);
                 RHI_Device_SetResolution(test->m_Device, width, height);
                 test->OnResize(width, height);
+                test->RenderFrame();
             }
         }
 
