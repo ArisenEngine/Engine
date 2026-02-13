@@ -25,16 +25,16 @@ namespace ArisenEngine::HAL
 
         UInt32 CreateRenderWindow(WindowHandle host, WindowProc callback, SInt32 width, SInt32 height)
         {
-            WindowInitInfo info{ callback, nullptr, host, nullptr, nullptr, CW_USEDEFAULT, CW_USEDEFAULT, width, height };
+            WindowInitInfo info{ callback, nullptr, nullptr, host, nullptr, nullptr, CW_USEDEFAULT, CW_USEDEFAULT, width, height };
             RenderWindow surface{ CreateNewWindow(&info) };
             ASSERT(surface.window.IsValid());
             renderWindows[surface.window.ID()] = surface;
             return surface.window.ID();
         }
 
-        UInt32 CreateRenderWindowWithResizeCallback(WindowHandle host, WindowProc callback, WindowExitResize resizeCallback, SInt32 width, SInt32 height)
+        UInt32 CreateRenderWindowWithResizeCallback(WindowHandle host, WindowProc callback, WindowExitResize resizeCallback, WindowResize resizingCallback, SInt32 width, SInt32 height)
         {
-            WindowInitInfo info{ callback, resizeCallback, host, nullptr, nullptr, CW_USEDEFAULT, CW_USEDEFAULT, width, height };
+            WindowInitInfo info{ callback, resizeCallback, resizingCallback, host, nullptr, nullptr, CW_USEDEFAULT, CW_USEDEFAULT, width, height };
             RenderWindow surface{ CreateNewWindow(&info) };
             ASSERT(surface.window.IsValid());
             renderWindows[surface.window.ID()] = surface;
@@ -79,6 +79,11 @@ namespace ArisenEngine::HAL
         void SetWindowResizeCallback(UInt32 windowId, WindowExitResize callback)
         {
             SetWindowResizeCallbackInternal(static_cast<WindowID>(windowId), callback);
+        }
+
+        void SetWindowResizingCallback(UInt32 windowId, WindowResize callback)
+        {
+            SetWindowResizingCallbackInternal(static_cast<WindowID>(windowId), callback);
         }
     }
 }

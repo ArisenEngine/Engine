@@ -14,6 +14,8 @@ namespace ArisenEngine::HAL {
 
 		HAL_DLL void SetWindowResizeCallbackInternal(WindowID id, WindowExitResize callback);
 
+		HAL_DLL void SetWindowResizingCallbackInternal(WindowID id, WindowResize callback);
+
 		HAL_DLL void* GetWindowUserData(WindowID id);
 
 		HAL_DLL void SetWindowUserData(WindowID id, void* data);

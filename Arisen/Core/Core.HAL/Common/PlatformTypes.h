@@ -14,12 +14,14 @@ namespace ArisenEngine::HAL
 
 	using WindowProc = LRESULT(*)(HWND, UINT, WPARAM, LPARAM);
 	using WindowExitResize = void(*)(HWND, UInt32, UInt32);
+	using WindowResize = void(*)(HWND, UInt32, UInt32);
 	using WindowHandle = HWND;
 
 	struct WindowInitInfo
 	{
 		WindowProc         callback{ nullptr };
 		WindowExitResize   resizeCallback {nullptr};
+		WindowResize       resizingCallback{ nullptr };
 		WindowHandle       parent{ nullptr };
 		const wchar_t*     caption{ nullptr };
 		void*              userData{ nullptr };
@@ -34,12 +36,14 @@ namespace ArisenEngine::HAL
     // Generic definitions for other platforms
     using WindowProc = void*;
     using WindowExitResize = void*;
+    using WindowResize = void*;
     using WindowHandle = void*;
 
 	struct WindowInitInfo
 	{
 		WindowProc         callback{ nullptr };
 		WindowExitResize   resizeCallback {nullptr};
+		WindowResize       resizingCallback{ nullptr };
 		WindowHandle       parent{ nullptr };
 		const wchar_t*     caption{ nullptr };
 		void*              userData{ nullptr };

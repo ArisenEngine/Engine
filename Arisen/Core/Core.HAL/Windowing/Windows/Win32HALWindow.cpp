@@ -22,6 +22,7 @@ namespace ArisenEngine::HAL
 	{
 	#define WINDOW_PROC_CALLBACK 0
     #define WINDOW_RESIZE_CALLBACK sizeof(WindowProc)
+    #define WINDOW_RESIZING_CALLBACK (sizeof(WindowProc) + sizeof(WindowExitResize))
 		
 		struct WindowInfo
 		{
@@ -134,6 +135,14 @@ namespace ArisenEngine::HAL
 						area.top = 0;
 						area.right = width;
 						area.bottom = height;
+						
+						// Call Resizing Callback
+						LONG_PTR longPtr{ GetWindowLongPtr(hwnd, WINDOW_RESIZING_CALLBACK) };
+						if (longPtr)
+						{
+							((WindowResize)longPtr)(hwnd, width, height);
+						}
+
 						LOG_DEBUGF("[Win32HALWindow]: WM_SIZE handled. ID={0} Addr={1} FullScreen={2} Area: {3} {4} {5} {6}", 
 							(unsigned)GetWindowID(hwnd), (void*)info, (int)info->isFullScreen, area.left, area.top, area.right, area.bottom);
 					}
@@ -166,10 +175,22 @@ namespace ArisenEngine::HAL
 							: info->clientArea.bottom - info->clientArea.top;
 						((WindowExitResize)longPtr)(hwnd, width, height);
 					}
+					
+					// Fix for sticky mouse after resize
+					ReleaseCapture();
 				}
 				break;
 
 			case WM_SYSCOMMAND:
+				// Safeguard: If entering a move/size loop, ensure we release capture so the system can take over.
+				if ((wparam & 0xFFF0) == SC_MOVE || (wparam & 0xFFF0) == SC_SIZE)
+				{
+					if (GetCapture() == hwnd)
+					{
+						ReleaseCapture();
+					}
+				}
+
 				if (wparam == SC_RESTORE)
 				{
 					info = GetInfoFromHandle(hwnd);
@@ -300,6 +321,7 @@ namespace ArisenEngine::HAL
 		{
 			WindowProc callback{ initInfo ? initInfo->callback : nullptr };
 			WindowExitResize resizeCallback{ initInfo ? initInfo->resizeCallback : nullptr };
+			WindowResize resizingCallback{ initInfo ? initInfo->resizingCallback : nullptr };
 			WindowHandle parent{ initInfo ? initInfo->parent : nullptr };
 
 			// set up window class
@@ -309,7 +331,7 @@ namespace ArisenEngine::HAL
 			wc.style = CS_HREDRAW | CS_VREDRAW;
 			wc.lpfnWndProc = InternalWindowProc;
 			wc.cbClsExtra = 0;
-			wc.cbWndExtra = sizeof(WindowProc) + sizeof(WindowExitResize);
+			wc.cbWndExtra = sizeof(WindowProc) + sizeof(WindowExitResize) + sizeof(WindowResize);
 			wc.hInstance = 0;
 			wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
 			wc.hCursor = LoadCursor(NULL, IDC_ARROW);
@@ -367,6 +389,8 @@ namespace ArisenEngine::HAL
 
 				if (resizeCallback) SetWindowLongPtr(info.hwnd, WINDOW_RESIZE_CALLBACK, (LONG_PTR)resizeCallback);
 
+				if (resizingCallback) SetWindowLongPtr(info.hwnd, WINDOW_RESIZING_CALLBACK, (LONG_PTR)resizingCallback);
+
 				assert(GetLastError() == 0);
 
 				ShowWindow(info.hwnd, SW_NORMAL);
@@ -400,6 +424,15 @@ namespace ArisenEngine::HAL
 			if (info)
 			{
 				SetWindowLongPtr(info->hwnd, WINDOW_RESIZE_CALLBACK, (LONG_PTR)callback);
+			}
+		}
+
+		HAL_DLL void SetWindowResizingCallbackInternal(WindowID id, WindowResize callback)
+		{
+			WindowInfo* info{ GetInfoFromId(id) };
+			if (info)
+			{
+				SetWindowLongPtr(info->hwnd, WINDOW_RESIZING_CALLBACK, (LONG_PTR)callback);
 			}
 		}
 
