@@ -49,6 +49,14 @@ Build a high-performance, future-proof engine with a **modern C++ RHI** and a **
         *   **New State**: P/Invoke $\to$ `virtual` call (via VTable offset).
         *   **Conclusion**: The automated approach removes the intermediate C-wrapper function call, potentially **improving** performance. The VTable lookup cost is identical in both scenarios because the RHI design itself is polymorphic.
 
+
+5.  **Logic Migration Strategy (Addressing Embedded Logic)**
+    *   **Concern**: C-exports often contain logic (e.g., `RHI_Cmd_Begin` handling `InheritanceInfo` for secondary buffers).
+    *   **Solution**:
+        *   **Move "Safety" Logic to C++**: If a check is critical (like "Secondary buffers *must* have inheritance"), put it inside `RHICommandBuffer::Begin`. This makes the C++ API safer for all users.
+        *   **Move "Convenience" Logic to C#**: Use C# **Extension Methods** or **Partial Classes** to restore helper overloads.
+        *   **Marshalling**: CppSharp handles `std::vector` $\leftrightarrow$ `List<T>` marshalling automatically, removing the need for manual loops found in `PipelineExports.cpp`.
+
 ## 🚀 Phase 3: C# Core & Framework
 **Goal**: Establish the "Data-Oriented" entry point and game loop in C#.
 
