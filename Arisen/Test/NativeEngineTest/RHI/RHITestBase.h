@@ -129,6 +129,7 @@ namespace ArisenEngine::Testing
         float m_MouseX = 0.0f, m_MouseY = 0.0f;
         float m_MouseDX = 0.0f, m_MouseDY = 0.0f;
         bool m_MouseButtons[3] = { false }; // 0: Left, 1: Right, 2: Middle
+        POINT m_DragStartCursorPos{ 0, 0 };
 
         // Camera state
         glm::vec3 m_CameraPos = glm::vec3(0.0f, 1.0f, 5.0f);
@@ -257,14 +258,14 @@ namespace ArisenEngine::Testing
             case WM_RBUTTONDOWN: 
                 if (test) {
                     test->m_MouseButtons[1] = true; 
-                    SetCapture(hwnd);
+                    GetCursorPos(&test->m_DragStartCursorPos);
                     ShowCursor(FALSE);
                 }
                 return 0;
             case WM_RBUTTONUP:   
                 if (test) {
                     test->m_MouseButtons[1] = false; 
-                    ReleaseCapture();
+                    SetCursorPos(test->m_DragStartCursorPos.x, test->m_DragStartCursorPos.y);
                     ShowCursor(TRUE);
                 }
                 return 0;
@@ -273,16 +274,27 @@ namespace ArisenEngine::Testing
             case WM_MOUSEMOVE:
                 if (test)
                 {
-                    float x = (float)LOWORD(lParam);
-                    float y = (float)HIWORD(lParam);
-                    test->m_MouseDX += x - test->m_MouseX;
-                    test->m_MouseDY += y - test->m_MouseY;
-                    test->m_MouseX = x;
-                    test->m_MouseY = y;
+                    if (test->m_MouseButtons[1])
+                    {
+                         POINT currentPos;
+                         GetCursorPos(&currentPos);
+                         test->m_MouseDX += (float)(currentPos.x - test->m_DragStartCursorPos.x);
+                         test->m_MouseDY += (float)(currentPos.y - test->m_DragStartCursorPos.y);
+                         SetCursorPos(test->m_DragStartCursorPos.x, test->m_DragStartCursorPos.y);
+                    }
+                    else
+                    {
+                        float x = (float)LOWORD(lParam);
+                        float y = (float)HIWORD(lParam);
+                        test->m_MouseDX += x - test->m_MouseX;
+                        test->m_MouseDY += y - test->m_MouseY;
+                        test->m_MouseX = x;
+                        test->m_MouseY = y;
+                    }
                 }
                 return 0;
             }
-            return DefWindowProc(hwnd, msg, wParam, lParam);
+            return 0;
         }
 
         /**
