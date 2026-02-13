@@ -201,6 +201,7 @@ namespace ArisenEngine::Testing
 
 
         virtual void RenderFrame() {};
+        virtual void OnResize(UInt32 width, UInt32 height) {}
 
         GLTFModel LoadGLTF(const String& path);
 
@@ -304,6 +305,7 @@ namespace ArisenEngine::Testing
             {
                 // LOG_INFOF("Window Resizing: %dx%d", width, height);
                 RHI_Device_SetResolution(test->m_Device, width, height);
+                test->OnResize(width, height);
             }
         }
 
@@ -314,6 +316,7 @@ namespace ArisenEngine::Testing
             {
                 LOG_INFOF("Window Resize Finished: %dx%d", width, height);
                 RHI_Device_SetResolution(test->m_Device, width, height);
+                test->OnResize(width, height);
             }
         }
 
