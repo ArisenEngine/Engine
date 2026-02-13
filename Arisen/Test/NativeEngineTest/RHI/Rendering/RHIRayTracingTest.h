@@ -4,6 +4,8 @@
 #include "../../../Engine/NativeEngine/RHI/RayTracingExports.h"
 #include "RHI/Resources/RHIAccelerationStructure.h"
 
+#include "Logger/Logger.h"
+
 namespace ArisenEngine::Testing
 {
     class RHIRayTracingTest : public RHIRenderingTestBase
@@ -808,6 +810,9 @@ namespace ArisenEngine::Testing
             if (!HAL::CompileShaderFromFile(std::move(params), output) || output.codePointer == nullptr || output.codeSize == 0)
             {
                 LOG_ERRORF("Failed to compile shader: {0} {1}", name.c_str(), entry.c_str());
+                LOG_ERROR(output.msgOut.c_str());
+                Diagnostics::Log::Error("Shader compilation failed. Flushing...");
+                Diagnostics::Logger::Shutdown(); // Forced flush and shut down to ensure logs are on disk
                 return 0;
             }
 

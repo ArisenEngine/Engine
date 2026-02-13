@@ -2,7 +2,11 @@
 struct RayPayloadFixed
 {
     float3 radiance;
+    float3 throughput;
+    float3 nextOrigin;
+    float3 nextDir;
     uint seed;
+    bool stop;
 };
 
 struct ShadowPayload
@@ -114,6 +118,29 @@ float RandomFloat(inout uint seed)
     return (seed & 0xFFFFFFu) / 16777216.0f;
 }
 
+// --- Sampling Helpers ---
+float3 SampleHemisphere(float3 N, inout uint seed)
+{
+    float r1 = RandomFloat(seed);
+    float r2 = RandomFloat(seed);
+    
+    float phi = 2.0 * PI * r1;
+    float cosTheta = sqrt(1.0 - r2);
+    float sinTheta = sqrt(r2);
+    
+    float3 localDir;
+    localDir.x = cos(phi) * sinTheta;
+    localDir.y = sin(phi) * sinTheta;
+    localDir.z = cosTheta;
+    
+    // TBN basis
+    float3 up = abs(N.z) < 0.999 ? float3(0, 0, 1) : float3(1, 0, 0);
+    float3 tangent = normalize(cross(up, N));
+    float3 bitangent = cross(N, tangent);
+    
+    return tangent * localDir.x + bitangent * localDir.y + N * localDir.z;
+}
+
 // --- Tonemapping Helpers ---
 float3 ACESFilm(float3 x)
 {
@@ -142,19 +169,38 @@ void RayGen()
     float3 rayDir = mul(viewInverse, float4(normalize(target.xyz), 0)).xyz;
     float3 rayOrigin = viewInverse[3].xyz;
 
-    RayPayloadFixed payload;
-    payload.radiance = float3(0, 0, 0);
-    payload.seed = seed;
-
+    float3 totalRadiance = 0;
+    float3 currentThroughput = 1;
+    
     RayDesc ray;
     ray.Origin = rayOrigin;
     ray.Direction = rayDir;
-    ray.TMin = 0.01; // Increased TMin to prevent precision noise/rings
+    ray.TMin = 0.001;
     ray.TMax = 10000.0;
 
-    TraceRay(Scene, RAY_FLAG_FORCE_OPAQUE, 0xFF, 0, 0, 0, ray, payload);
+    for (int bounce = 0; bounce < 4; ++bounce)
+    {
+        RayPayloadFixed payload;
+        payload.radiance = 0;
+        payload.throughput = 1;
+        payload.stop = true;
+        payload.seed = seed;
 
-    float3 currentRadiance = payload.radiance;
+        TraceRay(Scene, RAY_FLAG_FORCE_OPAQUE, 0xFF, 0, 0, 0, ray, payload);
+        
+        totalRadiance += payload.radiance * currentThroughput;
+        currentThroughput *= payload.throughput;
+        seed = payload.seed;
+
+        if (payload.stop)
+            break;
+
+        ray.Origin = payload.nextOrigin;
+        ray.Direction = payload.nextDir;
+        ray.TMin = 0.001;
+    }
+
+    float3 currentRadiance = totalRadiance;
     
     float3 accumulatedColor = currentRadiance;
     if (frameCount > 0)
@@ -178,6 +224,7 @@ void Miss(inout RayPayloadFixed payload)
     float t = 0.5 * (rayDir.y + 1.0);
     float3 skyColor = lerp(float3(1.0, 1.0, 1.0), float3(0.5, 0.7, 1.0), t);
     payload.radiance = skyColor * 0.5; // Scale down for a more natural look
+    payload.stop = true;
 }
 
 [shader("miss")]
@@ -227,6 +274,7 @@ void ClosestHit(inout RayPayloadFixed payload, in BuiltInTriangleIntersectionAtt
     float3 F0 = float3(0.04, 0.04, 0.04);
     F0 = lerp(F0, baseColor.rgb, metallic);
 
+    // --- Direct Lighting (Next Event Estimation) ---
     float3 Lo = float3(0, 0, 0);
     for (int i = 0; i < numPointLights; ++i)
     {
@@ -240,12 +288,11 @@ void ClosestHit(inout RayPayloadFixed payload, in BuiltInTriangleIntersectionAtt
 
         float distance = length(lightPos - worldPos);
         float attenuation = 1.0 / (distance * distance);
-        // Range-based attenuation (simplified glTF/standard match)
         attenuation *= pow(max(0.0, 1.0 - pow(distance / range, 4.0)), 2.0);
-        float3 radiance = lightColor * intensity * attenuation;
+        float3 lightRadiance = lightColor * intensity * attenuation;
 
         // Shadow ray
-        float3 shadowRayOrigin = worldPos + N * 0.001; // Offset to avoid self-intersection
+        float3 shadowRayOrigin = worldPos + N * 0.001;
         float3 shadowRayDir = L;
         
         RayDesc shadowRay;
@@ -255,36 +302,56 @@ void ClosestHit(inout RayPayloadFixed payload, in BuiltInTriangleIntersectionAtt
         shadowRay.TMax = distance - 0.001;
 
         ShadowPayload shadowPayload;
-        shadowPayload.hit = true; // Assume hit until Miss shader sets it to false
+        shadowPayload.hit = true; 
 
         TraceRay(Scene, 
                  RAY_FLAG_FORCE_OPAQUE | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, 
                  0xFF, 0, 0, 1, shadowRay, shadowPayload);
 
-        if (shadowPayload.hit)
+        if (!shadowPayload.hit)
         {
-            radiance = float3(0, 0, 0);
+            float NDF = D_GGX(N, H, roughness);
+            float G = G_Smith(N, V, L, roughness);
+            float3 F = F_Schlick(max(dot(H, V), 0.0), F0);
+
+            float3 kS = F;
+            float3 kD = float3(1.0, 1.0, 1.0) - kS;
+            kD *= 1.0 - metallic;
+
+            float3 numerator = NDF * G * F;
+            float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+            float3 specular = numerator / denominator;
+
+            float NdotL = max(dot(N, L), 0.0);
+            Lo += (kD * baseColor.rgb / PI + specular) * lightRadiance * NdotL;
         }
-
-        // Cook-Torrance BRDF
-        float NDF = D_GGX(N, H, roughness);
-        float G = G_Smith(N, V, L, roughness);
-        float3 F = F_Schlick(max(dot(H, V), 0.0), F0);
-
-        float3 kS = F;
-        float3 kD = float3(1.0, 1.0, 1.0) - kS;
-        kD *= 1.0 - metallic;
-
-        float3 numerator = NDF * G * F;
-        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
-        float3 specular = numerator / denominator;
-
-        float NdotL = max(dot(N, L), 0.0);
-        Lo += (kD * baseColor.rgb / PI + specular) * radiance * NdotL;
     }
 
-    // Ambient/Background (very simple)
-    float3 ambient = float3(0.03, 0.03, 0.03) * baseColor.rgb;
+    payload.radiance = Lo;
+
+    // --- Indirect Lighting (Path Continuation) ---
+    float r = RandomFloat(payload.seed);
+    float3 kS = F_Schlick(max(dot(N, V), 0.0), F0);
+    float specProbability = (metallic + (1.0 - metallic) * dot(kS, float3(0.33, 0.33, 0.33)));
     
-    payload.radiance = ambient + Lo;
+    if (r < specProbability)
+    {
+        // Specular reflection (pure reflection for now, can add roughness later)
+        payload.nextDir = reflect(-V, N);
+        payload.throughput = F_Schlick(max(dot(N, payload.nextDir), 0.0), F0);
+        // Divide by probability
+        payload.throughput /= specProbability;
+    }
+    else
+    {
+        // Diffuse bounce
+        payload.nextDir = SampleHemisphere(N, payload.seed);
+        float3 kD = (float3(1.0, 1.0, 1.0) - kS) * (1.0 - metallic);
+        payload.throughput = kD * baseColor.rgb; // (kD * alb / PI) * cosL / (cosL / PI) = kD * alb
+        // Divide by probability
+        payload.throughput /= (1.0 - specProbability);
+    }
+    
+    payload.nextOrigin = worldPos + N * 0.001;
+    payload.stop = false;
 }

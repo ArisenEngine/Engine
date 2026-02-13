@@ -72,8 +72,14 @@ namespace ArisenEngine::Diagnostics
             auto async_file = spdlog::basic_logger_mt<spdlog::async_factory>("log", log_file, true);
             spdlog::set_default_logger(async_file);
 
-            spdlog::flush_every(std::chrono::seconds(3));
-            spdlog::flush_on(spdlog::level::info);
+#if _DEBUG
+            spdlog::flush_every(std::chrono::seconds(1));
+            spdlog::flush_on(spdlog::level::err);
+#else
+            // Production: Minimize I/O impact. Rely on OS page cache and fatal crash handling.
+            spdlog::flush_every(std::chrono::seconds(5));
+            spdlog::flush_on(spdlog::level::critical);
+#endif
             
 #if _DEBUG
             spdlog::set_level(spdlog::level::trace);

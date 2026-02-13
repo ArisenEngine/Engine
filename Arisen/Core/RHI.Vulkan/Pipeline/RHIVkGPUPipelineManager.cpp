@@ -70,7 +70,25 @@ ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager:
 
 ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager::GetRayTracingPipeline(RHIPipelineState* pso)
 {
-     return GetGraphicsPipeline(pso);
+    auto hash = pso->GetHash();
+    if (!m_GPUPipelines.contains(hash))
+    {
+        auto pipeline = std::make_unique<RHIVkGPUPipeline>(m_Device, pso, m_MaxFramesInFlight);
+        auto* rawPtr = pipeline.get();
+        m_GPUPipelines.emplace(hash, std::move(pipeline));
+        
+        auto handle = m_Device->GetPipelinePool()->Allocate([rawPtr](RHIVkPipelinePoolItem* item) {
+            *item = RHIVkPipelinePoolItem();
+            item->pipeline = rawPtr;
+        });
+        m_PipelineHandles.emplace(hash, handle);
+        return handle;
+    }
+    else
+    {
+        m_GPUPipelines[hash].get()->BindPipelineStateObject(pso);
+        return m_PipelineHandles[hash];
+    }
 }
 
 std::unique_ptr<ArisenEngine::RHI::RHIPipelineState> ArisenEngine::RHI::RHIVkGPUPipelineManager::GetPipelineState()
