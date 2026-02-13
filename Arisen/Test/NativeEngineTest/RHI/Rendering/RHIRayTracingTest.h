@@ -45,6 +45,7 @@ namespace ArisenEngine::Testing
         {
             glm::mat4 viewInverse;
             glm::mat4 projInverse;
+            glm::vec4 cameraPos;             // xyz: pos, w: unused
             glm::vec4 lightPosAndFrameCount; // xyz: sunPos, w: frameCount
             PointLight pointLights[8];
             int numPointLights;
@@ -655,6 +656,7 @@ namespace ArisenEngine::Testing
                 m_PrevCameraRot = m_CameraRot;
             }
 
+            data.cameraPos = glm::vec4(m_CameraPos, 1.0f);
             data.lightPosAndFrameCount = glm::vec4(10.0f, 40.0f, 10.0f, (float)m_AccumulatedFrames);
             
             // Set up some point lights in Sponza with MUCH higher intensity
