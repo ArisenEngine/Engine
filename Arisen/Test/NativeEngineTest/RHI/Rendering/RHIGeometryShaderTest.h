@@ -103,7 +103,8 @@ namespace ArisenEngine::Testing
             RHI_Device_AttachProgramByteCode(m_Device, m_FragProgram, &psDesc);
             if (psOut.codePointer) std::free(psOut.codePointer);
 
-            CreateResources();
+            CreateCommonResources();
+            CreateSizeDependentResources();
             InitRenderContext();
             CreatePipeline();
 
@@ -112,6 +113,7 @@ namespace ArisenEngine::Testing
 
         void TeardownTest() override
         {
+            if (m_DepthView) RHI_Device_ReleaseImageView(m_Device, m_DepthView);
             if (m_DepthImage) RHI_Device_ReleaseImage(m_Device, m_DepthImage);
             for (auto& ub : m_UboBuffers)
             {
@@ -140,8 +142,23 @@ namespace ArisenEngine::Testing
             NextFrame();
         }
 
+        void OnResize(UInt32 width, UInt32 height) override
+        {
+            if (width == 0 || height == 0) return;
+
+            RHI_Device_WaitIdle(m_Device);
+
+            if (m_DepthView) RHI_Device_ReleaseImageView(m_Device, m_DepthView);
+            if (m_DepthImage) RHI_Device_ReleaseImage(m_Device, m_DepthImage);
+
+            m_DepthView = 0;
+            m_DepthImage = 0;
+
+            CreateSizeDependentResources();
+        }
+
     private:
-        void CreateResources()
+        void CreateCommonResources()
         {
             wchar_t exePathW[MAX_PATH]{};
             GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
@@ -160,8 +177,19 @@ namespace ArisenEngine::Testing
                 m_UboBuffers.push_back(RHI_Device_CreateBuffer(m_Device, &ubDesc, "UBO"));
             }
 
+            m_CameraPos = glm::vec3(0.0f, 1.0f, 3.0f);
+        }
+
+        void CreateSizeDependentResources()
+        {
             UInt32 width = HAL::GetWindowWidth(m_WindowId);
             UInt32 height = HAL::GetWindowHeight(m_WindowId);
+
+            if (width == 0 || height == 0)
+            {
+                width = 1280;
+                height = 720;
+            }
 
             // Depth Image
             RHI::RHIImageDescriptor dimgDesc = {};
@@ -187,9 +215,9 @@ namespace ArisenEngine::Testing
             dviewDesc.width = width;
             dviewDesc.height = height;
             m_DepthView = RHI_Image_AddImageView(m_Device, m_DepthImage, &dviewDesc);
-
-            m_CameraPos = glm::vec3(0.0f, 1.0f, 3.0f);
         }
+
+    private:
 
         void InitRenderContext()
         {

@@ -38,7 +38,8 @@ namespace ArisenEngine::Testing
             std::filesystem::path modelPath = exeDir / "Assets" / "glTF-Sample-Models" / "2.0" / "Sponza" / "glTF" / "Sponza.gltf";
             m_Model = LoadGLTF(modelPath.string());
 
-            CreateResources();
+            CreateCommonResources();
+            CreateSizeDependentResources();
             CreatePipeline();
 
             m_CameraPos = glm::vec3(0.0f, 1.5f, 5.0f);
@@ -49,8 +50,12 @@ namespace ArisenEngine::Testing
 
         void TeardownTest() override
         {
+            if (m_DepthView) RHI_Device_ReleaseImageView(m_Device, m_DepthView);
             if (m_DepthImage) RHI_Device_ReleaseImage(m_Device, m_DepthImage);
-            for (auto& ubo : m_UboBuffers) RHI_Device_ReleaseBuffer(m_Device, ubo);
+            for (auto& ubo : m_UboBuffers) 
+            {
+                if (ubo) RHI_Device_ReleaseBuffer(m_Device, ubo);
+            }
             if (m_Pso) RHI_PSO_Release(m_Pso);
 
             RHIRenderingTestBase::TeardownTest();
@@ -70,8 +75,23 @@ namespace ArisenEngine::Testing
             NextFrame();
         }
 
+        void OnResize(UInt32 width, UInt32 height) override
+        {
+            if (width == 0 || height == 0) return;
+
+            RHI_Device_WaitIdle(m_Device);
+
+            if (m_DepthView) RHI_Device_ReleaseImageView(m_Device, m_DepthView);
+            if (m_DepthImage) RHI_Device_ReleaseImage(m_Device, m_DepthImage);
+
+            m_DepthView = 0;
+            m_DepthImage = 0;
+
+            CreateSizeDependentResources();
+        }
+
     private:
-        void CreateResources()
+        void CreateCommonResources()
         {
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
@@ -81,9 +101,18 @@ namespace ArisenEngine::Testing
                 uboDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
                 m_UboBuffers.push_back(RHI_Device_CreateBuffer(m_Device, &uboDesc, "VRS_UBO"));
             }
+        }
 
+        void CreateSizeDependentResources()
+        {
             UInt32 width = HAL::GetWindowWidth(m_WindowId);
             UInt32 height = HAL::GetWindowHeight(m_WindowId);
+
+            if (width == 0 || height == 0)
+            {
+                width = 1280;
+                height = 720;
+            }
 
             // Depth Image
             RHI::RHIImageDescriptor dimgDesc = {};

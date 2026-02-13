@@ -20,7 +20,6 @@
 #include "RHI/Unit/RHIInspectorTest.h"
 #include "RHI/Rendering/RHIRayTracingTest.h"
 #include "RHI/Rendering/RHIVRSShadingRateTest.h"
-#include "RHI/Unit/RHIResizeStressTest.h"
 #include "../../Engine/NativeEngine/Core/EngineInit.h"
 
 #include <windows.h>
@@ -50,7 +49,7 @@ int main(int argc, char** argv)
     // TestRunner::RegisterTest<RHISyncTest>();
     // TestRunner::RegisterTest<RHIMultiThreadedTest>();
     // TestRunner::RegisterTest<RHIBatchApiTest>();
-    TestRunner::RegisterTest<RHIBasicRenderingTest>();
+    // TestRunner::RegisterTest<RHIBasicRenderingTest>();
     // TestRunner::RegisterTest<RHIGPUParticleTest>();
     // TestRunner::RegisterTest<RHIMeshShaderTest>();
     // TestRunner::RegisterTest<RHIGeometryShaderTest>();
@@ -60,10 +59,9 @@ int main(int argc, char** argv)
     // TestRunner::RegisterTest<RHIAsyncComputeTest>();
     // TestRunner::RegisterTest<RHIDebugTest>();
     // TestRunner::RegisterTest<RHIInspectorTest>();
-    // TestRunner::RegisterTest<RHIRayTracingTest>();
+    TestRunner::RegisterTest<RHIRayTracingTest>();
     // TestRunner::RegisterTest<RHIVRSShadingRateTest>();
     // TestRunner::RegisterTest<RHIMemoryAliasingTest>();
-    // TestRunner::RegisterTest<RHIResizeStressTest>();
 
     
     // Parse simple command line for filtering (lpCmdLine for WinMain)

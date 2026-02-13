@@ -96,8 +96,9 @@ namespace ArisenEngine::Testing
             
             // Check RT support (implied by API existence, but in a real engine we'd check features)
             
-            CreateResources();
+            CreateCommonResources();
             BuildAccelerationStructures();
+            CreateSizeDependentResources();
             CreatePipeline();
             CreateSBT();
 
@@ -116,7 +117,9 @@ namespace ArisenEngine::Testing
             if (m_Blas) RHI_Device_ReleaseAccelerationStructure(m_Device, m_Blas);
             if (m_Tlas) RHI_Device_ReleaseAccelerationStructure(m_Device, m_Tlas);
             
+            if (m_StorageImageView) RHI_Device_ReleaseImageView(m_Device, m_StorageImageView);
             if (m_StorageImage) RHI_Device_ReleaseImage(m_Device, m_StorageImage);
+            if (m_AccumulationImageView) RHI_Device_ReleaseImageView(m_Device, m_AccumulationImageView);
             if (m_AccumulationImage) RHI_Device_ReleaseImage(m_Device, m_AccumulationImage);
             
             if (m_Pso) RHI_PSO_Release(m_Pso);
@@ -145,8 +148,45 @@ namespace ArisenEngine::Testing
             NextFrame();
         }
 
+        void OnResize(UInt32 width, UInt32 height) override
+        {
+            if (width == 0 || height == 0) return;
+
+            RHI_Device_WaitIdle(m_Device);
+
+            if (m_StorageImageView) RHI_Device_ReleaseImageView(m_Device, m_StorageImageView);
+            if (m_StorageImage) RHI_Device_ReleaseImage(m_Device, m_StorageImage);
+            if (m_AccumulationImageView) RHI_Device_ReleaseImageView(m_Device, m_AccumulationImageView);
+            if (m_AccumulationImage) RHI_Device_ReleaseImage(m_Device, m_AccumulationImage);
+
+            m_StorageImageView = 0;
+            m_StorageImage = 0;
+            m_AccumulationImageView = 0;
+            m_AccumulationImage = 0;
+
+            CreateSizeDependentResources();
+
+            // Update descriptors for images in PSO
+            if (m_Pso)
+            {
+                Containers::Vector<RHI::RHIDescriptorImageInfo> images;
+                RHI::RHIDescriptorImageInfo storageInfo{};
+                storageInfo.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&m_StorageImageView);
+                storageInfo.imageLayout = RHI::IMAGE_LAYOUT_GENERAL;
+                images.push_back(storageInfo);
+                RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 1, &images);
+
+                images.clear();
+                RHI::RHIDescriptorImageInfo accumInfo{};
+                accumInfo.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&m_AccumulationImageView);
+                accumInfo.imageLayout = RHI::IMAGE_LAYOUT_GENERAL;
+                images.push_back(accumInfo);
+                RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 9, &images);
+            }
+        }
+
     private:
-        void CreateResources()
+        void CreateCommonResources()
         {
             wchar_t exePathW[MAX_PATH]{};
             GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
@@ -154,41 +194,6 @@ namespace ArisenEngine::Testing
             
             std::filesystem::path modelPath = exeDir / "Assets" / "glTF-Sample-Models" / "2.0" / "Sponza" / "glTF" / "Sponza.gltf";
             m_Model = LoadGLTF(modelPath.string());
-
-            UInt32 width = HAL::GetWindowWidth(m_WindowId);
-            UInt32 height = HAL::GetWindowHeight(m_WindowId);
-
-            // Storage Image for RT output
-            RHI::RHIImageDescriptor imgDesc = {};
-            imgDesc.imageType = RHI::IMAGE_TYPE_2D;
-            imgDesc.width = width;
-            imgDesc.height = height;
-            imgDesc.depth = 1;
-            imgDesc.mipLevels = 1;
-            imgDesc.arrayLayers = 1;
-            imgDesc.format = RHI::FORMAT_B8G8R8A8_UNORM;
-            imgDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
-            imgDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
-            imgDesc.sharingMode = RHI::SHARING_MODE_EXCLUSIVE;
-            imgDesc.usage = RHI::IMAGE_USAGE_STORAGE_BIT | RHI::IMAGE_USAGE_TRANSFER_SRC_BIT;
-            imgDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            m_StorageImage = RHI_Device_CreateImage(m_Device, &imgDesc, "RT Storage Image");
-
-            RHI::RHIImageViewDesc viewDesc = {};
-            viewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
-            viewDesc.format = RHI::FORMAT_B8G8R8A8_UNORM;
-            viewDesc.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
-            viewDesc.levelCount = 1;
-            viewDesc.layerCount = 1;
-            m_StorageImageView = RHI_Image_AddImageView(m_Device, m_StorageImage, &viewDesc);
-
-            // Accumulation Image (32-bit float for high precision)
-            imgDesc.format = RHI::FORMAT_R32G32B32A32_SFLOAT;
-            imgDesc.usage = RHI::IMAGE_USAGE_STORAGE_BIT | RHI::IMAGE_USAGE_TRANSFER_SRC_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT;
-            m_AccumulationImage = RHI_Device_CreateImage(m_Device, &imgDesc, "RT Accumulation Image");
-
-            viewDesc.format = RHI::FORMAT_R32G32B32A32_SFLOAT;
-            m_AccumulationImageView = RHI_Image_AddImageView(m_Device, m_AccumulationImage, &viewDesc);
 
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
@@ -294,6 +299,51 @@ namespace ArisenEngine::Testing
             m_DefaultSampler = RHI_Device_CreateSampler(m_Device, &sampDesc);
 
             LOG_INFOF("Camera initialized at ({0}, {1}, {2})", m_CameraPos.x, m_CameraPos.y, m_CameraPos.z);
+        }
+
+        void CreateSizeDependentResources()
+        {
+            UInt32 width = HAL::GetWindowWidth(m_WindowId);
+            UInt32 height = HAL::GetWindowHeight(m_WindowId);
+
+            if (width == 0 || height == 0)
+            {
+                width = 1280;
+                height = 720;
+            }
+
+            // Storage Image for RT output
+            RHI::RHIImageDescriptor imgDesc = {};
+            imgDesc.imageType = RHI::IMAGE_TYPE_2D;
+            imgDesc.width = width;
+            imgDesc.height = height;
+            imgDesc.depth = 1;
+            imgDesc.mipLevels = 1;
+            imgDesc.arrayLayers = 1;
+            imgDesc.format = RHI::FORMAT_B8G8R8A8_UNORM;
+            imgDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
+            imgDesc.usage = RHI::IMAGE_USAGE_STORAGE_BIT | RHI::IMAGE_USAGE_TRANSFER_SRC_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT;
+            imgDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
+            imgDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            m_StorageImage = RHI_Device_CreateImage(m_Device, &imgDesc, "RT Storage Image");
+
+            RHI::RHIImageViewDesc viewDesc = {};
+            viewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
+            viewDesc.format = RHI::FORMAT_B8G8R8A8_UNORM;
+            viewDesc.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
+            viewDesc.levelCount = 1;
+            viewDesc.layerCount = 1;
+            viewDesc.width = width;
+            viewDesc.height = height;
+            m_StorageImageView = RHI_Image_AddImageView(m_Device, m_StorageImage, &viewDesc);
+
+            // Accumulation Image (32-bit float for high precision)
+            imgDesc.format = RHI::FORMAT_R32G32B32A32_SFLOAT;
+            imgDesc.usage = RHI::IMAGE_USAGE_STORAGE_BIT | RHI::IMAGE_USAGE_TRANSFER_SRC_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT;
+            m_AccumulationImage = RHI_Device_CreateImage(m_Device, &imgDesc, "RT Accumulation Image");
+
+            viewDesc.format = RHI::FORMAT_R32G32B32A32_SFLOAT;
+            m_AccumulationImageView = RHI_Image_AddImageView(m_Device, m_AccumulationImage, &viewDesc);
         }
 
         void BuildAccelerationStructures()
