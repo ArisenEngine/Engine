@@ -165,6 +165,15 @@ ArisenEngine::RHI::RHIImageHandle ArisenEngine::RHI::RHIVkSwapChain::AcquireCurr
     uint32_t imageIndex_local = 0;
     VkResult result = vkAcquireNextImageKHR(m_VkDevice, m_VkSwapChain, UINT64_MAX, vkSem,
                               VK_NULL_HANDLE, &imageIndex_local);
+    
+    if (result == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        // LOG_INFO("[RHIVkSwapChain::AcquireCurrentImage]: Out of date, triggering recreation");
+        // We can't easily trigger recreation here without risk of recursion or synchronization issues in the middle of BeginFrame.
+        // But we must signal that acquisition failed.
+        return RHIImageHandle::Invalid();
+    }
+    
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     {
         String msg = String::Format("[RHIVkSwapChain::AcquireCurrentImage]: failed to acquire next image (frame %d) result: %d", frameIndex, result);
@@ -241,6 +250,9 @@ void ArisenEngine::RHI::RHIVkSwapChain::RecreateSwapChainIfNeeded()
     m_VkSwapChain = VK_NULL_HANDLE; // Prevent Cleanup from destroying the old swapchain immediately
 
     Cleanup();
+
+    // Reset acquired indices to prevent using stale indices from the old swapchain
+    for (auto& idx : m_AcquiredImageIndices) idx = 0;
 
     // Pass old swapchain to Create functions
     m_Desc.customData = (void*)oldSwapchain;

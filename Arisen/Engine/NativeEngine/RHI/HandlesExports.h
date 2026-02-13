@@ -41,6 +41,7 @@ extern "C" ENGINE_DLL unsigned long long RHI_Buffer_GetDeviceAddress(RHI_DeviceH
 /** @ownership Owned - Caller must release via RHI_Device_ReleaseImage */
 extern "C" ENGINE_DLL RHI_ImageHandle RHI_Device_CreateImage(RHI_DeviceHandle device, const ArisenEngine::RHI::RHIImageDescriptor* desc, const char* name);
 extern "C" ENGINE_DLL void RHI_Device_ReleaseImage(RHI_DeviceHandle device, RHI_ImageHandle image);
+extern "C" ENGINE_DLL void RHI_Device_ReleaseImageView(RHI_DeviceHandle device, RHI_ImageViewHandle view);
 
 /** @ownership Borrowed - View lifetime managed by parent image */
 extern "C" ENGINE_DLL RHI_ImageViewHandle RHI_Image_AddImageView(RHI_DeviceHandle device, RHI_ImageHandle image, const ArisenEngine::RHI::RHIImageViewDesc* desc);

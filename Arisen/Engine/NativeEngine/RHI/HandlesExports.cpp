@@ -155,6 +155,14 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseImage(RHI_DeviceHandle device, RHI_
     dev->GetFactory()->ReleaseImage(h);
 }
 
+extern "C" ENGINE_DLL void RHI_Device_ReleaseImageView(RHI_DeviceHandle device, RHI_ImageViewHandle view)
+{
+    auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
+    if (dev == nullptr || view == 0) return;
+    auto h = *reinterpret_cast<RHI::RHIImageViewHandle*>(&view);
+    dev->GetFactory()->ReleaseImageView(h);
+}
+
 // Internalized or deprecated
 
 

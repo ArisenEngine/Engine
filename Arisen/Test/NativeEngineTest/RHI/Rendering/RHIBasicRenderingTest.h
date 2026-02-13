@@ -36,11 +36,35 @@ namespace ArisenEngine::Testing
             unsigned int enableTint = 1;
             RHI_GPUProgram_SetSpecializationConstant(m_Device, m_FragProgram, 0, sizeof(unsigned int), &enableTint);
 
-            CreateResources();
+            CreateCommonResources();
+            CreateSizeDependentResources();
             InitRenderContext();
             CreatePipeline();
 
             return true;
+        }
+
+        void OnResize(UInt32 width, UInt32 height) override
+        {
+            if (width == 0 || height == 0) return;
+
+            RHI_Device_WaitIdle(m_Device);
+
+            // Release old size-dependent resources
+            if (m_DepthView) RHI_Device_ReleaseImageView(m_Device, m_DepthView);
+            if (m_DepthImage) RHI_Device_ReleaseImage(m_Device, m_DepthImage);
+            if (m_MSAAColorView) RHI_Device_ReleaseImageView(m_Device, m_MSAAColorView);
+            if (m_MSAAColorImage) RHI_Device_ReleaseImage(m_Device, m_MSAAColorImage);
+
+            m_DepthView = 0;
+            m_DepthImage = 0;
+            m_MSAAColorView = 0;
+            m_MSAAColorImage = 0;
+
+            CreateSizeDependentResources();
+            
+            // Re-update PSO descriptor set if needed (not strictly needed here as we use dynamic rendering and the views are updated in RecordAndSubmit)
+            // But if we had static framebuffers they'd need recreation too.
         }
 
         void TeardownTest() override
@@ -79,7 +103,7 @@ namespace ArisenEngine::Testing
         }
 
     private:
-        void CreateResources()
+        void CreateCommonResources()
         {
             wchar_t exePathW[MAX_PATH]{};
             GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
@@ -97,17 +121,24 @@ namespace ArisenEngine::Testing
                 m_UboBuffer.push_back(RHI_Device_CreateBuffer(m_Device, &ubDesc, "UBO"));
             }
 
+            // Set a better camera position for Sponza
+            m_CameraPos = glm::vec3(0.0f, 1.0f, 0.0f);
+            m_CameraRot = glm::vec3(0.0f, 0.0f, 0.0f);
+        }
+
+        void CreateSizeDependentResources()
+        {
             UInt32 width = HAL::GetWindowWidth(m_WindowId);
             UInt32 height = HAL::GetWindowHeight(m_WindowId);
 
             if (width == 0 || height == 0)
             {
-                LOG_WARNF("[RHIBasicRenderingTest]: Window dimensions are zero ({0}x{1}) during CreateResources. Falling back to 1280x720.", width, height);
+                LOG_WARNF("[RHIBasicRenderingTest]: Window dimensions are zero ({0}x{1}) during CreateSizeDependentResources. Falling back to 1280x720.", width, height);
                 width = 1280;
                 height = 720;
             }
 
-            LOG_INFOF("[RHIBasicRenderingTest]: CreateResources Window Size: {0}x{1} (ID={2})", width, height, (unsigned)m_WindowId);
+            LOG_INFOF("[RHIBasicRenderingTest]: CreateSizeDependentResources Window Size: {0}x{1} (ID={2})", width, height, (unsigned)m_WindowId);
 
             // Depth Image
             RHI::RHIImageDescriptor dimgDesc = {};
@@ -158,10 +189,6 @@ namespace ArisenEngine::Testing
             msaaViewDesc.width = width;
             msaaViewDesc.height = height;
             m_MSAAColorView = RHI_Image_AddImageView(m_Device, m_MSAAColorImage, &msaaViewDesc);
-
-            // Set a better camera position for Sponza
-            m_CameraPos = glm::vec3(0.0f, 1.0f, 0.0f);
-            m_CameraRot = glm::vec3(0.0f, 0.0f, 0.0f);
         }
 
 
