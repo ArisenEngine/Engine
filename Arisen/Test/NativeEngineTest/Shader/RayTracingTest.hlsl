@@ -50,8 +50,9 @@ struct PointLight
 
 cbuffer CameraBuffer : register(b2, space0)
 {
-    float4x4 viewInverse;
-    float4x4 projInverse;
+    column_major float4x4 viewInverse;
+    column_major float4x4 projInverse;
+    float4 cameraPos;
     float4 lightPosAndFrameCount; 
     PointLight pointLights[8];
     int numPointLights;
@@ -167,7 +168,7 @@ void RayGen()
     float4 target = mul(projInverse, float4(d.x, d.y, 1, 1));
     target.xyz /= target.w;
     float3 rayDir = mul(viewInverse, float4(normalize(target.xyz), 0)).xyz;
-    float3 rayOrigin = viewInverse[3].xyz;
+    float3 rayOrigin = cameraPos.xyz;
 
     float3 totalRadiance = 0;
     float3 currentThroughput = 1;
