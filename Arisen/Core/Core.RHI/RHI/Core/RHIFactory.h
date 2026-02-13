@@ -40,6 +40,12 @@ namespace ArisenEngine::RHI
         virtual RHIImageHandle CreateImage(RHIImageDescriptor&& desc, const String& name = "Anonymous") = 0;
         virtual void ReleaseImage(RHIImageHandle imageHandle) = 0;
 
+        virtual RHIMemoryPoolHandle CreateMemoryPool(UInt64 size, UInt32 usageBits) = 0;
+        virtual void ReleaseMemoryPool(RHIMemoryPoolHandle handle) = 0;
+
+        virtual RHIBufferHandle CreateBufferAliased(RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset, const String& name = "Anonymous") = 0;
+        virtual RHIImageHandle CreateImageAliased(RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset, const String& name = "Anonymous") = 0;
+
         virtual RHIImageViewHandle CreateImageView(RHIImageHandle image, RHIImageViewDesc&& desc) = 0;
         virtual void ReleaseImageView(RHIImageViewHandle imageView) = 0;
 

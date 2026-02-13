@@ -36,6 +36,7 @@ namespace ArisenEngine::RHI
     struct RHIVkPipelinePoolItem;
     struct RHIVkFencePoolItem;
     struct RHIVkAccelerationStructurePoolItem;
+    struct RHIVkMemoryPoolPoolItem;
 }
 
 namespace ArisenEngine::RHI
@@ -146,6 +147,7 @@ namespace ArisenEngine::RHI
         // Specialized resource pools for handle-based architecture
         std::unique_ptr<RHIResourcePool<RHIBufferHandle, RHIVkBufferPoolItem>> m_BufferPool;
         std::unique_ptr<RHIResourcePool<RHIImageHandle, RHIVkImagePoolItem>> m_ImagePool;
+        std::unique_ptr<RHIResourcePool<RHIMemoryPoolHandle, RHIVkMemoryPoolPoolItem>> m_MemoryPoolPool;
         std::unique_ptr<RHIResourcePool<RHIImageViewHandle, RHIVkImageViewPoolItem>> m_ImageViewPool;
         std::unique_ptr<RHIResourcePool<RHISamplerHandle, RHIVkSamplerPoolItem>> m_SamplerPool;
         std::unique_ptr<RHIResourcePool<RHIRenderPassHandle, RHIVkRenderPassPoolItem>> m_RenderPassPool;
@@ -177,6 +179,12 @@ namespace ArisenEngine::RHI
         bool AllocImage(RHIImageHandle handle, RHIImageDescriptor&& desc) override;
         bool AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits) override;
         void ReleaseImage(RHIImageHandle handle) override;
+
+        bool AllocMemoryPool(RHIMemoryPoolHandle handle, UInt64 size, UInt32 usageBits) override;
+        void ReleaseMemoryPool(RHIMemoryPoolHandle handle) override;
+
+        bool AllocBufferAliased(RHIBufferHandle handle, RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset) override;
+        bool AllocImageAliased(RHIImageHandle handle, RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset) override;
 
         bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, RHIImageViewDesc&& desc) override;
         void ReleaseImageView(RHIImageViewHandle handle) override;
@@ -262,6 +270,11 @@ namespace ArisenEngine::RHI
             return m_AccelerationStructurePool.get();
         }
 
+        RHIResourcePool<RHIMemoryPoolHandle, RHIVkMemoryPoolPoolItem>* GetMemoryPoolPool() const
+        {
+            return m_MemoryPoolPool.get();
+        }
+
     public:
 
     private:
@@ -303,6 +316,7 @@ namespace ArisenEngine::RHI
         void FreeFrameBufferInternal(RHIFrameBufferHandle handle);
         void FreePipelineInternal(RHIPipelineHandle handle);
         void FreeAccelerationStructureInternal(RHIAccelerationStructureHandle handle);
+        void FreeMemoryPoolInternal(RHIMemoryPoolHandle handle);
     };
 }
 

@@ -130,6 +130,12 @@ namespace ArisenEngine::RHI
         virtual bool AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits) { return false; }
         virtual void ReleaseImage(RHIImageHandle handle) {}
 
+        virtual bool AllocMemoryPool(RHIMemoryPoolHandle handle, UInt64 size, UInt32 usageBits) { return false; }
+        virtual void ReleaseMemoryPool(RHIMemoryPoolHandle handle) {}
+
+        virtual bool AllocBufferAliased(RHIBufferHandle handle, RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset) { return false; }
+        virtual bool AllocImageAliased(RHIImageHandle handle, RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset) { return false; }
+
         virtual bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, RHIImageViewDesc&& desc) { return false; }
         virtual void ReleaseImageView(RHIImageViewHandle handle) = 0;
 

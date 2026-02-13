@@ -31,6 +31,12 @@ namespace ArisenEngine::RHI
         RHIImageHandle CreateImage(RHIImageDescriptor&& desc, const String& name = "Anonymous") override;
         void ReleaseImage(RHIImageHandle imageHandle) override;
 
+        RHIMemoryPoolHandle CreateMemoryPool(UInt64 size, UInt32 usageBits) override;
+        void ReleaseMemoryPool(RHIMemoryPoolHandle handle) override;
+
+        RHIBufferHandle CreateBufferAliased(RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset, const String& name = "Anonymous") override;
+        RHIImageHandle CreateImageAliased(RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset, const String& name = "Anonymous") override;
+
         RHIImageViewHandle CreateImageView(RHIImageHandle image, RHIImageViewDesc&& desc) override;
         void ReleaseImageView(RHIImageViewHandle imageView) override;
 

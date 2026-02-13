@@ -376,7 +376,63 @@ namespace ArisenEngine::RHI
     {
         m_Device->ReleaseAccelerationStructure(handle);
     }
+
+    RHIMemoryPoolHandle RHIVkFactory::CreateMemoryPool(UInt64 size, UInt32 usageBits)
+    {
+        auto handle = m_Device->GetMemoryPoolPool()->Allocate([](RHIVkMemoryPoolPoolItem* item)
+        {
+            *item = RHIVkMemoryPoolPoolItem();
+        });
+
+        if (!m_Device->AllocMemoryPool(handle, size, usageBits))
+        {
+            m_Device->ReleaseMemoryPool(handle);
+            return RHIMemoryPoolHandle::Invalid();
+        }
+
+        return handle;
+    }
+
+    void RHIVkFactory::ReleaseMemoryPool(RHIMemoryPoolHandle handle)
+    {
+        m_Device->ReleaseMemoryPool(handle);
+    }
+
+    RHIBufferHandle RHIVkFactory::CreateBufferAliased(RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset, const String& name)
+    {
+        auto handle = m_Device->GetBufferPool()->Allocate([&name](RHIVkBufferPoolItem* item)
+        {
+            *item = RHIVkBufferPoolItem();
+            item->name = name;
+        });
+
+        if (!m_Device->AllocBufferAliased(handle, std::move(desc), pool, offset))
+        {
+            m_Device->ReleaseBuffer(handle);
+            return RHIBufferHandle::Invalid();
+        }
+
+        return handle;
+    }
+
+    RHIImageHandle RHIVkFactory::CreateImageAliased(RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset, const String& name)
+    {
+        auto handle = m_Device->GetImagePool()->Allocate([&name](RHIVkImagePoolItem* item)
+        {
+            *item = RHIVkImagePoolItem();
+            item->name = name;
+        });
+
+        if (!m_Device->AllocImageAliased(handle, std::move(desc), pool, offset))
+        {
+            m_Device->ReleaseImage(handle);
+            return RHIImageHandle::Invalid();
+        }
+
+        return handle;
+    }
 }
+
 
 
 

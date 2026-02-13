@@ -66,6 +66,32 @@ struct RHIVkImageState {
 };
 
 /**
+ * @brief Shared state for a Vulkan Memory Pool (VMA Allocation used as a pool).
+ */
+struct RHIVkMemoryPoolState {
+    VmaAllocator allocator{VK_NULL_HANDLE};
+    VmaAllocation allocation{VK_NULL_HANDLE};
+    UInt64 size{0};
+
+    ~RHIVkMemoryPoolState() {
+        if (allocator != VK_NULL_HANDLE && allocation != VK_NULL_HANDLE) {
+            vmaFreeMemory(allocator, allocation);
+        }
+    }
+};
+
+/**
+ * @brief Internal Vulkan implementation data for a Memory Pool.
+ */
+struct RHIVkMemoryPoolPoolItem {
+    RHIVkMemoryPoolState* state{nullptr};
+    VmaAllocation allocation{VK_NULL_HANDLE};
+    UInt64 size{0};
+    String name{"Anonymous"};
+    RHIResourceHandle registryHandle;
+};
+
+/**
  * @brief Internal Vulkan implementation data for an Image.
  */
 struct RHIVkImagePoolItem {

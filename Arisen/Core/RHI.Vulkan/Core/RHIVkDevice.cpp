@@ -109,6 +109,7 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
     m_CommandBufferPool = std::make_unique<RHIResourcePool<
         RHICommandBufferHandle, RHIVkCommandBufferItem>>(RHI_STATS_PTR(m_Stats.commandBufferCount));
     m_AccelerationStructurePool = std::make_unique<RHIResourcePool<RHIAccelerationStructureHandle, RHIVkAccelerationStructurePoolItem>>();
+    m_MemoryPoolPool = std::make_unique<RHIResourcePool<RHIMemoryPoolHandle, RHIVkMemoryPoolPoolItem>>();
     std::cout << "[DEBUG] RHIVkDevice::RHIVkDevice END" << std::endl;
 }
 
@@ -1229,3 +1230,149 @@ void ArisenEngine::RHI::RHIVkDevice::FreeAccelerationStructureInternal(RHIAccele
          item->accelerationStructure = VK_NULL_HANDLE;
      }
 }
+
+bool ArisenEngine::RHI::RHIVkDevice::AllocMemoryPool(RHIMemoryPoolHandle handle, UInt64 size, UInt32 usageBits)
+{
+    auto* poolItem = m_MemoryPoolPool->Get(handle);
+    if (!poolItem) return false;
+
+    VmaMemoryUsage usage = VMA_MEMORY_USAGE_AUTO;
+    if (usageBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+    {
+        usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    }
+
+    VmaAllocation allocation = VK_NULL_HANDLE;
+    if (!m_MemoryAllocator->AllocateMemory(size, usage, &allocation))
+    {
+        return false;
+    }
+
+    poolItem->state = new RHIVkMemoryPoolState();
+    poolItem->state->allocator = m_MemoryAllocator->GetVmaAllocator();
+    poolItem->state->allocation = allocation;
+    poolItem->state->size = size;
+    poolItem->allocation = allocation;
+    poolItem->size = size;
+
+    poolItem->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(poolItem->state));
+
+    return true;
+}
+
+void ArisenEngine::RHI::RHIVkDevice::ReleaseMemoryPool(RHIMemoryPoolHandle handle)
+{
+    FreeMemoryPoolInternal(handle);
+    if (!m_MemoryPoolPool->Deallocate(handle))
+    {
+        LOG_WARN("[RHIVkDevice::ReleaseMemoryPool]: Failed to deallocate handle!");
+    }
+}
+
+void ArisenEngine::RHI::RHIVkDevice::FreeMemoryPoolInternal(RHIMemoryPoolHandle handle)
+{
+    auto* poolItem = m_MemoryPoolPool->Get(handle);
+    if (poolItem && poolItem->registryHandle.IsValid())
+    {
+        m_ResourceRegistry->Release(poolItem->registryHandle, RHIQueueType::Graphics,
+                                    GetQueue(RHIQueueType::Graphics)->GetLatestTicket());
+        poolItem->state = nullptr;
+        poolItem->allocation = VK_NULL_HANDLE;
+        poolItem->registryHandle = RHIResourceHandle::Invalid();
+    }
+}
+
+bool ArisenEngine::RHI::RHIVkDevice::AllocBufferAliased(RHIBufferHandle handle, RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset)
+{
+    auto* buffer = m_BufferPool->Get(handle);
+    auto* poolItem = m_MemoryPoolPool->Get(pool);
+    if (!buffer || !poolItem || poolItem->allocation == VK_NULL_HANDLE) return false;
+
+    auto bufferInfo = BufferCreateInfo(
+        desc.createFlagBits,
+        desc.size,
+        desc.usage,
+        desc.sharingMode,
+        desc.queueFamilyIndexCount,
+        (const uint32_t*)desc.pQueueFamilyIndices);
+
+    buffer->size = desc.size;
+    buffer->range = desc.size;
+    buffer->offset = offset;
+
+    if (vkCreateBuffer(m_VkDevice, &bufferInfo, nullptr, &buffer->buffer) != VK_SUCCESS)
+    {
+        LOG_ERROR("[RHIVkDevice::AllocBufferAliased]: failed to create buffer!");
+        return false;
+    }
+
+    if (!m_MemoryAllocator->BindBufferMemory(buffer->buffer, poolItem->allocation, offset))
+    {
+        vkDestroyBuffer(m_VkDevice, buffer->buffer, nullptr);
+        buffer->buffer = VK_NULL_HANDLE;
+        return false;
+    }
+
+    // Register for deferred deletion (buffer only, memory is shared)
+    struct AliasedBufferState {
+        VkDevice device;
+        VkBuffer buffer;
+        ~AliasedBufferState() { if (device && buffer) vkDestroyBuffer(device, buffer, nullptr); }
+    };
+    auto* state = new AliasedBufferState{m_VkDevice, buffer->buffer};
+    buffer->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(state));
+    buffer->state = nullptr; // Important: we don't own the memory allocation here
+    buffer->allocation = poolItem->allocation;
+
+    return true;
+}
+
+bool ArisenEngine::RHI::RHIVkDevice::AllocImageAliased(RHIImageHandle handle, RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset)
+{
+    auto* image = m_ImagePool->Get(handle);
+    auto* poolItem = m_MemoryPoolPool->Get(pool);
+    if (!image || !poolItem || poolItem->allocation == VK_NULL_HANDLE) return false;
+
+    auto imageInfo = ImageCreateInfo(
+        desc.imageType,
+        desc.width, desc.height, desc.depth,
+        desc.mipLevels, desc.arrayLayers,
+        desc.format, desc.tiling,
+        desc.imageLayout, desc.usage,
+        desc.sampleCount, desc.sharingMode,
+        desc.queueFamilyIndexCount,
+        (const uint32_t*)desc.pQueueFamilyIndices);
+
+    if (vkCreateImage(m_VkDevice, &imageInfo, nullptr, &image->image) != VK_SUCCESS)
+    {
+        LOG_ERROR("[RHIVkDevice::AllocImageAliased]: failed to create image!");
+        return false;
+    }
+
+    if (!m_MemoryAllocator->BindImageMemory(image->image, poolItem->allocation, offset))
+    {
+        vkDestroyImage(m_VkDevice, image->image, nullptr);
+        image->image = VK_NULL_HANDLE;
+        return false;
+    }
+
+    image->width = desc.width;
+    image->height = desc.height;
+    image->mipLevels = desc.mipLevels;
+    image->currentLayout = static_cast<VkImageLayout>(desc.imageLayout);
+    image->needDestroy = true;
+
+    // Register for deferred deletion (image only, memory is shared)
+    struct AliasedImageState {
+        VkDevice device;
+        VkImage image;
+        ~AliasedImageState() { if (device && image) vkDestroyImage(device, image, nullptr); }
+    };
+    auto* state = new AliasedImageState{m_VkDevice, image->image};
+    image->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(state));
+    image->state = nullptr; // Important: we don't own the memory allocation here
+    image->allocation = poolItem->allocation;
+
+    return true;
+}
+

@@ -83,6 +83,40 @@ namespace ArisenEngine::RHI
         return true;
     }
 
+    bool RHIVkMemoryAllocator::AllocateMemory(UInt64 size, VmaMemoryUsage usage, VmaAllocation* outAllocation)
+    {
+        VmaAllocationCreateInfo allocInfo = {};
+        allocInfo.usage = usage;
+        
+        VkMemoryRequirements memReq = {};
+        memReq.size = size;
+        memReq.alignment = 1; // Minimum alignment
+        memReq.memoryTypeBits = 0xFFFFFFFF; // Any type
+
+        if (vmaAllocateMemory(m_VmaAllocator, &memReq, &allocInfo, outAllocation, nullptr) != VK_SUCCESS)
+        {
+            return false;
+        }
+
+#if ARISEN_RHI__RESOURCE_INSPECTOR
+        if (m_MemoryCounter)
+        {
+            m_MemoryCounter->fetch_add(size, std::memory_order_relaxed);
+        }
+#endif
+        return true;
+    }
+
+    bool RHIVkMemoryAllocator::BindBufferMemory(VkBuffer buffer, VmaAllocation allocation, UInt64 offset)
+    {
+        return vmaBindBufferMemory2(m_VmaAllocator, allocation, offset, buffer, nullptr) == VK_SUCCESS;
+    }
+
+    bool RHIVkMemoryAllocator::BindImageMemory(VkImage image, VmaAllocation allocation, UInt64 offset)
+    {
+        return vmaBindImageMemory2(m_VmaAllocator, allocation, offset, image, nullptr) == VK_SUCCESS;
+    }
+
 
     void RHIVkMemoryAllocator::FreeMemory(VmaAllocation allocation)
     {
