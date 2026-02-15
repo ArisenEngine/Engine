@@ -60,6 +60,8 @@ namespace ArisenEngine::RHI
 {
     class RHIPipeline;
     class RHIDevice;
+    class RHIDescriptorSet;
+    class RHIDescriptorPool;
     class RHICommandBufferPool;
     class RHIFrameBuffer;
     class RHIViewport;
@@ -220,6 +222,9 @@ namespace ArisenEngine::RHI
         
         virtual void BindDescriptorSets(EPipelineBindPoint bindPoint,
     UInt32 firstSet, Containers::Vector<std::shared_ptr<RHIDescriptorSet>>& descriptorsets, UInt32 dynamicOffsetCount, const UInt32* pDynamicOffsets) = 0;
+
+        virtual void BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPool* pool, UInt32 poolId) = 0;
+        virtual void BindDescriptorSet(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPool* pool, UInt32 poolId, UInt32 setIndex) = 0;
 
         virtual void PushConstants(UInt32 offset, UInt32 size, const void* data, UInt32 stageFlags) = 0;
 

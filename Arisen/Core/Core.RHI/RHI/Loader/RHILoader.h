@@ -1,5 +1,5 @@
 #pragma once
-#include "CoreRHICommon.h"
+#include "../Definitions/CoreRHICommon.h"
 #include "RHI/Definitions/GraphicsAPI.h"
 #include "RHI/Core/RHIInstance.h"
 
@@ -8,7 +8,7 @@ namespace ArisenEngine::RHI
     /**
      * @brief Responsible for loading and unloading RHI implementations (DLLs).
      */
-    class CORE_RHI_DLL RHILoader
+    class RHI_DLL RHILoader
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHILoader)

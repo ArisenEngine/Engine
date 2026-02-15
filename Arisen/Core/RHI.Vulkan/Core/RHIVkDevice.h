@@ -90,6 +90,7 @@ namespace ArisenEngine::RHI
 
         RHIGpuTicket Submit(RHICommandBuffer* commandBuffer, const RHISubmitDescriptor* descriptor = nullptr) override;
         RHIQueue* GetQueue(RHIQueueType type) override;
+        RHICommandBufferPool* GetCommandBufferPool(RHICommandBufferPoolHandle handle) override;
         void DeferredDelete(RHIQueueType queue, RHIGpuTicket ticket, RHIDeferredDeleteItem item) override;
         UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) override;
 

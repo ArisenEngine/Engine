@@ -7,7 +7,7 @@
 
 using namespace ArisenEngine;
 
-#include "RHINativeBridge.h"
+using namespace ArisenEngine;
 
 extern "C" ENGINE_DLL RHI_CommandBufferPoolHandle RHI_Device_CreateCommandBufferPool(RHI_DeviceHandle device)
 {
@@ -36,13 +36,10 @@ extern "C" ENGINE_DLL RHI_CommandBufferHandle RHI_Device_GetCommandBuffer(RHI_De
     if (dev == nullptr) return 0;
     
     auto h = *reinterpret_cast<RHI::RHICommandBufferPoolHandle*>(&pool);
-    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
-    if (!vkDev) return 0;
+    auto* p = dev->GetCommandBufferPool(h);
+    if (!p) return 0;
 
-    auto* item = RHI::RHINativeBridge::GetCommandBufferPoolItem(vkDev, h);
-    if (!item || !item->pool) return 0;
-    
-    auto* raw = item->pool->GetCommandBuffer(currentFrameIndex);
+    auto* raw = p->GetCommandBuffer(currentFrameIndex);
     return reinterpret_cast<RHI_CommandBufferHandle>(raw);
 }
 
@@ -52,13 +49,10 @@ extern "C" ENGINE_DLL RHI_CommandBufferHandle RHI_Device_GetSecondaryCommandBuff
     if (dev == nullptr) return 0;
     
     auto h = *reinterpret_cast<RHI::RHICommandBufferPoolHandle*>(&pool);
-    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
-    if (!vkDev) return 0;
+    auto* p = dev->GetCommandBufferPool(h);
+    if (!p) return 0;
 
-    auto* item = RHI::RHINativeBridge::GetCommandBufferPoolItem(vkDev, h);
-    if (!item || !item->pool) return 0;
-    
-    auto* raw = item->pool->GetCommandBuffer(currentFrameIndex, RHI::COMMAND_BUFFER_LEVEL_SECONDARY);
+    auto* raw = p->GetCommandBuffer(currentFrameIndex, RHI::COMMAND_BUFFER_LEVEL_SECONDARY);
     return reinterpret_cast<RHI_CommandBufferHandle>(raw);
 }
 
@@ -66,18 +60,13 @@ extern "C" ENGINE_DLL void RHI_Device_ReleaseCommandBuffer(RHI_DeviceHandle devi
 {
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr) return;
-    
-    auto h = *reinterpret_cast<RHI::RHICommandBufferPoolHandle*>(&pool);
-    auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
-    
-    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
-    if (!vkDev || !c) return;
 
-    auto* item = RHI::RHINativeBridge::GetCommandBufferPoolItem(vkDev, h);
-    if (item && item->pool)
-    {
-        item->pool->ReleaseCommandBuffer(currentFrameIndex, c);
-    }
+    auto h = *reinterpret_cast<RHI::RHICommandBufferPoolHandle*>(&pool);
+    auto* p = dev->GetCommandBufferPool(h);
+    if (!p) return;
+
+    auto* commandBuffer = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
+    p->ReleaseCommandBuffer(currentFrameIndex, commandBuffer);
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_Begin(RHI_CommandBufferHandle cmd, unsigned int frameIndex, unsigned int usageFlags)
@@ -85,15 +74,7 @@ extern "C" ENGINE_DLL void RHI_Cmd_Begin(RHI_CommandBufferHandle cmd, unsigned i
     auto* commandBuffer = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
     if (commandBuffer)
     {
-        if (commandBuffer->GetLevel() == RHI::ECommandBufferLevel::COMMAND_BUFFER_LEVEL_SECONDARY)
-        {
-            RHI::RHICommandBufferInheritanceInfo inheritanceInfo = {};
-            commandBuffer->Begin(frameIndex, usageFlags, &inheritanceInfo);
-        }
-        else
-        {
-            commandBuffer->Begin(frameIndex, usageFlags, nullptr);
-        }
+        commandBuffer->Begin(frameIndex, usageFlags, nullptr);
     }
 }
 
@@ -365,26 +346,21 @@ extern "C" ENGINE_DLL void RHI_Cmd_BindDescriptorSets_FromPool(RHI_CommandBuffer
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
     auto* p = reinterpret_cast<RHI::RHIDescriptorPool*>(pool);
-    if (c == nullptr || p == nullptr) return;
-    auto& sets = p->GetDescriptorSets(poolId);
-    c->BindDescriptorSets(bindPoint, firstSet, const_cast<Containers::Vector<std::shared_ptr<RHI::RHIDescriptorSet>>&>(sets), 0, nullptr);
-    c->TrackDescriptorPoolUse(p, poolId);
+    if (c && p)
+    {
+        c->BindDescriptorSets(bindPoint, firstSet, p, poolId);
+    }
 }
 
 extern "C" ENGINE_DLL void RHI_Cmd_BindDescriptorSet_FromPool(RHI_CommandBufferHandle cmd, RHI::EPipelineBindPoint bindPoint, unsigned int firstSet, RHI_DescriptorPoolHandle pool, unsigned int poolId, unsigned int setIndex)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);
     auto* p = reinterpret_cast<RHI::RHIDescriptorPool*>(pool);
-    if (c == nullptr || p == nullptr) return;
-    auto& sets = p->GetDescriptorSets(poolId);
-    if (setIndex >= sets.size()) return;
-    
-    Containers::Vector<std::shared_ptr<RHI::RHIDescriptorSet>> singleSet;
-    singleSet.push_back(sets[setIndex]);
-    c->BindDescriptorSets(bindPoint, firstSet, singleSet, 0, nullptr);
-    c->TrackDescriptorPoolUse(p, poolId);
+    if (c && p)
+    {
+        c->BindDescriptorSet(bindPoint, firstSet, p, poolId, setIndex);
+    }
 }
-
 extern "C" ENGINE_DLL void RHI_Cmd_BuildAccelerationStructures(RHI_CommandBufferHandle cmd, unsigned int infoCount, const ArisenEngine::RHI::RHIAccelerationStructureBuildGeometryInfo* pInfos, const ArisenEngine::RHI::RHIAccelerationStructureBuildRangeInfo* const* ppBuildRangeInfos)
 {
     auto* c = reinterpret_cast<RHI::RHICommandBuffer*>(cmd);

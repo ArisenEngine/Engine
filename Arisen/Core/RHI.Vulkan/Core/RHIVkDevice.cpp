@@ -215,7 +215,7 @@ void ArisenEngine::RHI::RHIVkDevice::WaitQueueTicket(RHIGpuTicket ticket)
 }
 
 
-ArisenEngine::RHI::RHIQueue* ArisenEngine::RHI::RHIVkDevice::GetQueue(RHIQueueType type)
+RHIQueue* ArisenEngine::RHI::RHIVkDevice::GetQueue(RHIQueueType type)
 {
     if (type == RHIQueueType::Graphics)
     {
@@ -226,6 +226,12 @@ ArisenEngine::RHI::RHIQueue* ArisenEngine::RHI::RHIVkDevice::GetQueue(RHIQueueTy
         return m_ComputeQueue.get();
     }
     return nullptr;
+}
+
+RHICommandBufferPool* ArisenEngine::RHI::RHIVkDevice::GetCommandBufferPool(RHICommandBufferPoolHandle handle)
+{
+    auto* item = m_CommandBufferPoolPool->Get(handle);
+    return item ? item->pool : nullptr;
 }
 
 void ArisenEngine::RHI::RHIVkDevice::DeferredDelete(RHIQueueType queue, RHIGpuTicket ticket, RHIDeferredDeleteItem item)

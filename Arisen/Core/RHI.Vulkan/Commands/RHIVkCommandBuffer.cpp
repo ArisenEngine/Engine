@@ -332,14 +332,21 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::Begin(UInt32 frameIndex, UInt32 comm
     SetCurrentFrameIndex(frameIndex);
 
     VkCommandBufferInheritanceInfo inheritanceInfo{};
-    if (GetLevel() == COMMAND_BUFFER_LEVEL_SECONDARY && pInheritanceInfo)
+    const RHICommandBufferInheritanceInfo* actualInheritanceInfo = pInheritanceInfo;
+    RHICommandBufferInheritanceInfo defaultInheritanceInfo{};
+    if (GetLevel() == COMMAND_BUFFER_LEVEL_SECONDARY && !actualInheritanceInfo)
+    {
+        actualInheritanceInfo = &defaultInheritanceInfo;
+    }
+
+    if (GetLevel() == COMMAND_BUFFER_LEVEL_SECONDARY && actualInheritanceInfo)
     {
         inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
         auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
         
-        if (pInheritanceInfo->renderPass.IsValid())
+        if (actualInheritanceInfo->renderPass.IsValid())
         {
-            auto* rp = vkDevice->GetRenderPassPool()->Get(pInheritanceInfo->renderPass);
+            auto* rp = vkDevice->GetRenderPassPool()->Get(actualInheritanceInfo->renderPass);
             if (rp)
             {
                 auto* rpObj = static_cast<RHIVkGPURenderPass*>(rp->renderPassObj);
@@ -347,11 +354,11 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::Begin(UInt32 frameIndex, UInt32 comm
             }
         }
         
-        inheritanceInfo.subpass = pInheritanceInfo->subpass;
+        inheritanceInfo.subpass = actualInheritanceInfo->subpass;
         
-        if (pInheritanceInfo->frameBuffer.IsValid())
+        if (actualInheritanceInfo->frameBuffer.IsValid())
         {
-            auto* fb = vkDevice->GetFrameBufferPool()->Get(pInheritanceInfo->frameBuffer);
+            auto* fb = vkDevice->GetFrameBufferPool()->Get(actualInheritanceInfo->frameBuffer);
             if (fb)
             {
                 auto* fbObj = static_cast<RHIVkFrameBuffer*>(fb->frameBufferObj);
@@ -359,17 +366,17 @@ void ArisenEngine::RHI::RHIVkCommandBuffer::Begin(UInt32 frameIndex, UInt32 comm
             }
         }
         
-        if (pInheritanceInfo->occlusionQueryEnable)
+        if (actualInheritanceInfo->occlusionQueryEnable)
         {
             inheritanceInfo.occlusionQueryEnable = VK_TRUE;
-            inheritanceInfo.queryFlags = pInheritanceInfo->occlusionQueryFlags;
+            inheritanceInfo.queryFlags = actualInheritanceInfo->occlusionQueryFlags;
         }
-        inheritanceInfo.pipelineStatistics = pInheritanceInfo->pipelineStatistics;
+        inheritanceInfo.pipelineStatistics = actualInheritanceInfo->pipelineStatistics;
     }
 
     m_VkBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     m_VkBeginInfo.flags = commandBufferUsage;
-    m_VkBeginInfo.pInheritanceInfo = (GetLevel() == COMMAND_BUFFER_LEVEL_SECONDARY && pInheritanceInfo) ? &inheritanceInfo : nullptr;
+    m_VkBeginInfo.pInheritanceInfo = (GetLevel() == COMMAND_BUFFER_LEVEL_SECONDARY && actualInheritanceInfo) ? &inheritanceInfo : nullptr;
 
     if (vkBeginCommandBuffer(m_VkCommandBuffer, &m_VkBeginInfo) != VK_SUCCESS)
     {
@@ -570,6 +577,26 @@ void RHIVkCommandBuffer::BindDescriptorSets(EPipelineBindPoint bindPoint,
         firstSet, static_cast<uint32_t>(m_VkDescriptorSets.size()),
         m_VkDescriptorSets.data(),
         dynamicOffsetCount, pDynamicOffsets);
+}
+
+void RHIVkCommandBuffer::BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPool* pool, UInt32 poolId)
+{
+    if (pool == nullptr) return;
+    auto& sets = pool->GetDescriptorSets(poolId);
+    BindDescriptorSets(bindPoint, firstSet, const_cast<Containers::Vector<std::shared_ptr<RHIDescriptorSet>>&>(sets), 0, nullptr);
+    TrackDescriptorPoolUse(pool, poolId);
+}
+
+void RHIVkCommandBuffer::BindDescriptorSet(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPool* pool, UInt32 poolId, UInt32 setIndex)
+{
+    if (pool == nullptr) return;
+    auto& sets = pool->GetDescriptorSets(poolId);
+    if (setIndex >= sets.size()) return;
+
+    Containers::Vector<std::shared_ptr<RHIDescriptorSet>> singleSet;
+    singleSet.push_back(sets[setIndex]);
+    BindDescriptorSets(bindPoint, firstSet, singleSet, 0, nullptr);
+    TrackDescriptorPoolUse(pool, poolId);
 }
 
 void RHIVkCommandBuffer::PushConstants(UInt32 offset, UInt32 size, const void* data, UInt32 stageFlags)
