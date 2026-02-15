@@ -1,6 +1,8 @@
 #include "DescriptorExports.h"
 #include "HandlesExports.h"
 #include "../../Core/Core.RHI/RHI/Core/RHIDevice.h"
+#include "../../Core/Core.RHI/RHI/Descriptors/RHIDescriptorPool.h"
+#include "../../Core/Core.RHI/RHI/Pipeline/RHIPipelineState.h"
 
 using namespace ArisenEngine;
 

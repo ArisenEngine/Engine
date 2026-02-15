@@ -162,6 +162,17 @@ namespace ArisenEngine::RHI
         virtual void WaitFence(RHIFenceHandle handle) = 0;
         virtual void ResetFence(RHIFenceHandle handle) = 0;
 
+        // Viewport & Scissor metadata (if needed, but usually set via Cmd)
+        virtual RHI::EFormat GetImageViewFormat(RHIImageViewHandle handle) = 0;
+        virtual UInt32 GetImageViewWidth(RHIImageViewHandle handle) = 0;
+        virtual UInt32 GetImageViewHeight(RHIImageViewHandle handle) = 0;
+
+        virtual void SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size, const void* data) = 0;
+
+        virtual void WaitSemaphoreValue(RHISemaphoreHandle handle, UInt64 value) = 0;
+        virtual void SignalSemaphoreValue(RHISemaphoreHandle handle, UInt64 value) = 0;
+        virtual UInt64 GetSemaphoreValue(RHISemaphoreHandle handle) = 0;
+
     protected:
         
     protected:

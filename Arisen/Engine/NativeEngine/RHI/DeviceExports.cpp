@@ -1,5 +1,7 @@
 #include "DeviceExports.h"
 #include "../../Core/Core.RHI/RHI/Core/RHIFactory.h"
+#include "../../Core/Core.RHI/RHI/Core/RHIDevice.h"
+#include "../../Core/Core.RHI/RHI/Queues/RHIQueue.h"
 
 using namespace ArisenEngine;
 

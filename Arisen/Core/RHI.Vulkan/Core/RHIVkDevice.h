@@ -213,8 +213,17 @@ namespace ArisenEngine::RHI
         UInt64 GetAccelerationStructureDeviceAddress(RHIAccelerationStructureHandle handle) override;
 
         void GetRayTracingShaderGroupHandles(RHIPipelineHandle pipeline, UInt32 firstGroup, UInt32 groupCount, UInt64 size, void* pData) override;
-
         void ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle) override;
+
+        RHI::EFormat GetImageViewFormat(RHIImageViewHandle handle) override;
+        UInt32 GetImageViewWidth(RHIImageViewHandle handle) override;
+        UInt32 GetImageViewHeight(RHIImageViewHandle handle) override;
+
+        void SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size, const void* data) override;
+
+        void WaitSemaphoreValue(RHISemaphoreHandle handle, UInt64 value) override;
+        void SignalSemaphoreValue(RHISemaphoreHandle handle, UInt64 value) override;
+        UInt64 GetSemaphoreValue(RHISemaphoreHandle handle) override;
 
     public:
         // Pool Accessors (Restricted)

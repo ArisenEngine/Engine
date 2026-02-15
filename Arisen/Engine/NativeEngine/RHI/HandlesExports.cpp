@@ -183,12 +183,7 @@ extern "C" ENGINE_DLL RHI::EFormat RHI_ImageView_GetFormat(RHI_DeviceHandle devi
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr || view == 0) return RHI::EFormat::FORMAT_UNDEFINED;
     auto h = *reinterpret_cast<RHI::RHIImageViewHandle*>(&view);
-    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
-    if (vkDev) {
-        auto* v = RHI::RHINativeBridge::GetImageViewItem(vkDev, h);
-        return v ? v->format : RHI::EFormat::FORMAT_UNDEFINED;
-    }
-    return RHI::EFormat::FORMAT_UNDEFINED;
+    return dev->GetImageViewFormat(h);
 }
 
 extern "C" ENGINE_DLL unsigned int RHI_ImageView_GetWidth(RHI_DeviceHandle device, RHI_ImageViewHandle view)
@@ -196,12 +191,7 @@ extern "C" ENGINE_DLL unsigned int RHI_ImageView_GetWidth(RHI_DeviceHandle devic
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr || view == 0) return 0;
     auto h = *reinterpret_cast<RHI::RHIImageViewHandle*>(&view);
-    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
-    if (vkDev) {
-        auto* v = RHI::RHINativeBridge::GetImageViewItem(vkDev, h);
-        return v ? v->width : 0;
-    }
-    return 0;
+    return dev->GetImageViewWidth(h);
 }
 
 extern "C" ENGINE_DLL unsigned int RHI_ImageView_GetHeight(RHI_DeviceHandle device, RHI_ImageViewHandle view)
@@ -209,12 +199,7 @@ extern "C" ENGINE_DLL unsigned int RHI_ImageView_GetHeight(RHI_DeviceHandle devi
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr || view == 0) return 0;
     auto h = *reinterpret_cast<RHI::RHIImageViewHandle*>(&view);
-    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
-    if (vkDev) {
-        auto* v = RHI::RHINativeBridge::GetImageViewItem(vkDev, h);
-        return v ? v->height : 0;
-    }
-    return 0;
+    return dev->GetImageViewHeight(h);
 }
 
 extern "C" ENGINE_DLL RHI_ImageViewHandle RHI_Image_GetView(RHI_DeviceHandle device, RHI_ImageHandle image)
@@ -273,15 +258,7 @@ extern "C" ENGINE_DLL void RHI_GPUProgram_SetSpecializationConstant(RHI_DeviceHa
     auto* dev = reinterpret_cast<RHI::RHIDevice*>(device);
     if (dev == nullptr || program == 0 || data == nullptr) return;
     auto h = *reinterpret_cast<RHI::RHIShaderProgramHandle*>(&program);
-
-    auto* vkDev = dynamic_cast<RHI::RHIVkDevice*>(dev);
-    if (vkDev)
-    {
-        auto* p = RHI::RHINativeBridge::GetGPUProgramItem(vkDev, h);
-        if (p && p->program) {
-            p->program->SetSpecializationConstant(constantID, size, data);
-        }
-    }
+    dev->SetGPUProgramSpecializationConstant(h, constantID, size, data);
 }
 
 extern "C" ENGINE_DLL RHI_RenderPassHandle RHI_Device_CreateRenderPass(RHI_DeviceHandle device)

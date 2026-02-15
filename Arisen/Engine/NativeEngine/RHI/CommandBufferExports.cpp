@@ -2,8 +2,8 @@
 #include "../../Core/Core.RHI/RHI/Core/RHIFactory.h"
 #include "../../Core/Core.RHI/RHI/Commands/RHICommandBufferPool.h"
 #include "../../Core/Core.RHI/RHI/Core/RHIDevice.h"
-#include "../../Core/RHI.Vulkan/Core/RHIVkDevice.h"
 #include "../../Core/Core.RHI/RHI/Handles/RHIHandle.h"
+#include "../../Core/Core.RHI/RHI/Commands/RHICommandBuffer.h"
 
 using namespace ArisenEngine;
 
