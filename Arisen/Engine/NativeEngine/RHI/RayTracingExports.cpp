@@ -1,6 +1,6 @@
 #include "RayTracingExports.h"
-#include "RHINativeBridge.h"
 #include "../../Core/Core.RHI/RHI/Core/RHIFactory.h"
+#include "../../Core/Core.RHI/RHI/Core/RHIDevice.h"
 
 using namespace ArisenEngine::RHI;
 

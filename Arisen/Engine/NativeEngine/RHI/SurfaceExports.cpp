@@ -1,9 +1,9 @@
 #include "SurfaceExports.h"
-#include "../../Core/Core.RHI/RHI/Core/RHIFactory.h"
-#include "../../Core/RHI.Vulkan/Core/RHIVkDevice.h"
-#include "../../Core/RHI.Vulkan/Presentation/RHIVkSwapChain.h"
-#include "RHINativeBridge.h"
 #include "RHIErrorInternal.h"
+#include "../../Core/Core.RHI/RHI/Core/RHIFactory.h"
+#include "../../Core/Core.RHI/RHI/Core/RHIDevice.h"
+#include "../../Core/Core.RHI/RHI/Presentation/RHISurface.h"
+#include "../../Core/Core.RHI/RHI/Presentation/RHISwapChain.h"
 #include <unordered_map>
 #include <mutex>
 

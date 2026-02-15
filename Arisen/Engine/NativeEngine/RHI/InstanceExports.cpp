@@ -2,6 +2,9 @@
 #include "RHILoader.h"
 #include "Logger/Logger.h"
 #include "RHIErrorInternal.h"
+#include "../../Core/Core.RHI/RHI/Core/RHIInstance.h"
+#include "../../Core/Core.RHI/RHI/Presentation/RHISurface.h"
+#include "../../Core/Core.RHI/RHI/Presentation/RHISwapChain.h"
 
 using namespace ArisenEngine;
 

@@ -1382,3 +1382,69 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImageAliased(RHIImageHandle handle, RH
     return true;
 }
 
+
+namespace ArisenEngine::RHI
+{
+    EFormat RHIVkDevice::GetImageViewFormat(RHIImageViewHandle handle)
+    {
+        auto* item = m_ImageViewPool->Get(handle);
+        return item ? item->format : EFormat::FORMAT_UNDEFINED;
+    }
+
+    UInt32 RHIVkDevice::GetImageViewWidth(RHIImageViewHandle handle)
+    {
+        auto* item = m_ImageViewPool->Get(handle);
+        return item ? item->width : 0U;
+    }
+
+    UInt32 RHIVkDevice::GetImageViewHeight(RHIImageViewHandle handle)
+    {
+        auto* item = m_ImageViewPool->Get(handle);
+        return item ? item->height : 0U;
+    }
+
+    void RHIVkDevice::SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size, const void* data)
+    {
+        auto* p = m_GPUProgramPool->Get(handle);
+        if (p && p->program) {
+            p->program->SetSpecializationConstant(constantID, size, data);
+        }
+    }
+
+    void RHIVkDevice::WaitSemaphoreValue(RHISemaphoreHandle handle, UInt64 value)
+    {
+        auto* item = m_SemaphorePool->Get(handle);
+        if (item && item->semaphore != VK_NULL_HANDLE) {
+            VkSemaphoreWaitInfo waitInfo{};
+            waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+            waitInfo.semaphoreCount = 1;
+            waitInfo.pSemaphores = &item->semaphore;
+            waitInfo.pValues = &value;
+            vkWaitSemaphores(m_VkDevice, &waitInfo, UINT64_MAX);
+        }
+    }
+
+    void RHIVkDevice::SignalSemaphoreValue(RHISemaphoreHandle handle, UInt64 value)
+    {
+        auto* item = m_SemaphorePool->Get(handle);
+        if (item && item->semaphore != VK_NULL_HANDLE) {
+            VkSemaphoreSignalInfo signalInfo{};
+            signalInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO;
+            signalInfo.semaphore = item->semaphore;
+            signalInfo.value = value;
+            vkSignalSemaphore(m_VkDevice, &signalInfo);
+        }
+    }
+
+    UInt64 RHIVkDevice::GetSemaphoreValue(RHISemaphoreHandle handle)
+    {
+        auto* item = m_SemaphorePool->Get(handle);
+        if (item && item->semaphore != VK_NULL_HANDLE) {
+            uint64_t val = 0;
+            vkGetSemaphoreCounterValue(m_VkDevice, item->semaphore, &val);
+            return val;
+        }
+        return 0;
+    }
+}
+

@@ -1,12 +1,9 @@
 #include "PipelineExports.h"
+#include "RHIErrorInternal.h"
 #include "../../Core/Core.RHI/RHI/Core/RHIFactory.h"
 #include "../../Core/Core.RHI/RHI/Pipeline/RHIPipelineCache.h"
 #include "../../Core/Core.RHI/RHI/RenderPass/RHISubPass.h"
-#include "../../Core/RHI.Vulkan/Core/RHIVkDevice.h"
-#include <unordered_map>
-#include <unordered_map>
-#include <mutex>
-#include "RHINativeBridge.h"
+#include "../../Core/Core.RHI/RHI/Core/RHIDevice.h"
 
 using namespace ArisenEngine;
 
