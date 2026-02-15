@@ -52,11 +52,11 @@ target_include_directories(NativeEngineTest PRIVATE
     ${CMAKE_SOURCE_DIR}/Core/Core.HAL
     ${CMAKE_SOURCE_DIR}/Core/Core.RHI
     ${CMAKE_SOURCE_DIR}/Core/Core.ShaderCompiler
-    ${CMAKE_SOURCE_DIR}/Engine/NativeEngine
+
     )  
 
 set_target_properties(NativeEngineTest PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
-target_link_libraries(NativeEngineTest PRIVATE Profiler Core.Foundation Core.Diagnostic Core.HAL Core.RHI Core.ShaderCompiler RHI.Vulkan NativeEngine)
+target_link_libraries(NativeEngineTest PRIVATE Profiler Core.Foundation Core.Diagnostic Core.HAL Core.RHI Core.ShaderCompiler RHI.Vulkan)

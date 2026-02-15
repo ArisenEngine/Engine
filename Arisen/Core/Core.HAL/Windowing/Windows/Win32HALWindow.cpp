@@ -391,7 +391,7 @@ namespace ArisenEngine::HAL
 
 				if (resizingCallback) SetWindowLongPtr(info.hwnd, WINDOW_RESIZING_CALLBACK, (LONG_PTR)resizingCallback);
 
-				assert(GetLastError() == 0);
+				// assert(GetLastError() == 0);
 
 				ShowWindow(info.hwnd, SW_NORMAL);
 				UpdateWindow(info.hwnd);

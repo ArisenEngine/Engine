@@ -1,14 +1,12 @@
 #pragma once
 
 #include "Framework/TestRunner.h"
-#include "RHI/RHILoader.h"
+#include "RHI/Loader/RHILoader.h"
 #include "RHI/Core/RHIInstance.h"
+#include "RHI/Core/RHIDevice.h"
+#include "RHI/Core/RHIFactory.h"
 #include "Windowing/RenderWindowAPI.h"
 #include "Common/PlatformTypes.h"
-#include "../../../Engine/NativeEngine/RHI/InstanceExports.h"
-#include "../../../Engine/NativeEngine/RHI/RHIExports.h"
-#include "../../../Engine/NativeEngine/RHI/DeviceExports.h"
-#include "../../../Engine/NativeEngine/RHI/HandlesExports.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -47,9 +45,9 @@ namespace ArisenEngine::Testing
     struct GLTFMaterial
     {
         glm::vec4 baseColorFactor = glm::vec4(1.0f);
-        RHI_ImageHandle baseColorTexture = 0;
-        RHI_ImageViewHandle baseColorView = 0;
-        RHI_SamplerHandle sampler = 0;
+        RHI::RHIImageHandle baseColorTexture;
+        RHI::RHIImageViewHandle baseColorView;
+        RHI::RHISamplerHandle sampler;
     };
 
     struct GLTFPrimitive
@@ -61,8 +59,8 @@ namespace ArisenEngine::Testing
 
     struct GLTFModel
     {
-        RHI_BufferHandle vertexBuffer = 0;
-        RHI_BufferHandle indexBuffer = 0;
+        RHI::RHIBufferHandle vertexBuffer;
+        RHI::RHIBufferHandle indexBuffer;
         UInt32 vertexCount = 0;
         UInt32 indexCount = 0;
         VertexLayout layout;
@@ -70,18 +68,18 @@ namespace ArisenEngine::Testing
         Containers::Vector<GLTFPrimitive> primitives;
         Containers::Vector<GLTFMaterial> materials;
         
-        void Release(RHI_DeviceHandle device)
+        void Release(RHI::RHIDevice* device)
         {
-            if (vertexBuffer) RHI_Device_ReleaseBuffer(device, vertexBuffer);
-            if (indexCount > 0 && indexBuffer) RHI_Device_ReleaseBuffer(device, indexBuffer);
-            vertexBuffer = 0;
-            indexBuffer = 0;
+            if (vertexBuffer.IsValid()) device->GetFactory()->ReleaseBuffer(vertexBuffer);
+            if (indexCount > 0 && indexBuffer.IsValid()) device->GetFactory()->ReleaseBuffer(indexBuffer);
+            vertexBuffer = {};
+            indexBuffer = {};
             indexCount = 0;
 
             for (auto& mat : materials)
             {
-                if (mat.baseColorTexture) RHI_Device_ReleaseImage(device, mat.baseColorTexture);
-                if (mat.sampler) RHI_Device_ReleaseSampler(device, mat.sampler);
+                if (mat.baseColorTexture.IsValid()) device->GetFactory()->ReleaseImage(mat.baseColorTexture);
+                if (mat.sampler.IsValid()) device->GetFactory()->ReleaseSampler(mat.sampler);
             }
             materials.clear();
             primitives.clear();
@@ -118,8 +116,8 @@ namespace ArisenEngine::Testing
         double fps = 0.0;
         Float32 s_FrameTimeSpacing = 0.0;
         
-        RHI_InstanceHandle m_Instance = nullptr;
-        RHI_DeviceHandle m_Device = nullptr;
+        RHI::RHIInstance* m_Instance = nullptr;
+        RHI::RHIDevice* m_Device = nullptr;
         UInt32 m_WindowId = ~0u;
         UInt32 m_MaxFramesInFlight = 2;
         UInt32 m_FrameIndex = 0;
@@ -220,8 +218,8 @@ namespace ArisenEngine::Testing
                 2            // Max frames in flight
             };
 
-            RHI_SetGraphicsAPI(RHI::GraphicsAPI::Vulkan);
-            m_Instance = RHI_CreateInstance(&appInfo);
+            RHI::RHILoader::SetCurrentGraphicsAPI(RHI::GraphicsAPI::Vulkan);
+            m_Instance = RHI::RHILoader::CreateInstance(std::move(appInfo));
             
             if (!m_Instance)
             {
@@ -229,7 +227,7 @@ namespace ArisenEngine::Testing
                 return false;
             }
 
-            m_MaxFramesInFlight = RHI_Instance_GetMaxFramesInFlight(m_Instance);
+            m_MaxFramesInFlight = m_Instance->GetMaxFramesInFlight();
             return true;
         }
 
@@ -304,7 +302,8 @@ namespace ArisenEngine::Testing
             if (test && test->m_Device)
             {
                 // LOG_INFOF("Window Resizing: %dx%d", width, height);
-                RHI_Device_SetResolution(test->m_Device, width, height);
+                test->m_Instance->SetResolution(HAL::GetWindowId(hwnd), width, height);
+                test->m_Device->SetResolution(width, height);
                 test->OnResize(width, height);
                 test->RenderFrame();
             }
@@ -316,7 +315,8 @@ namespace ArisenEngine::Testing
             if (test && test->m_Device)
             {
                 LOG_INFOF("Window Resize Finished: %dx%d", width, height);
-                RHI_Device_SetResolution(test->m_Device, width, height);
+                test->m_Instance->SetResolution(HAL::GetWindowId(hwnd), width, height);
+                test->m_Device->SetResolution(width, height);
                 test->OnResize(width, height);
                 test->RenderFrame();
             }
@@ -354,22 +354,24 @@ namespace ArisenEngine::Testing
                     LOG_ERROR("Window not initialized for non-headless test");
                     return false;
                 }
-                RHI_Instance_CreateSurface(m_Instance, m_WindowId);
+                m_Instance->CreateSurface(m_WindowId);
             }
 
-            RHI_Instance_PickPhysicalDevice(m_Instance, !IsHeadless());
-            RHI_Instance_InitLogicDevices(m_Instance);
+            m_Instance->PickPhysicalDevice(!IsHeadless());
+            m_Instance->InitLogicDevices();
 
             if (!IsHeadless())
             {
-                m_Device = RHI_Instance_GetLogicalDevice(m_Instance, m_WindowId);
+                m_Instance->CreateLogicDevice(m_WindowId);
+                m_Device = m_Instance->GetLogicalDevice(m_WindowId);
             }
             else
             {
                 // For headless, we might need a way to get a device without a window.
                 // Assuming RHI_Instance_GetLogicalDevice(m_Instance, ~0u) or similar works, 
                 // but usually the first device is fine.
-                m_Device = RHI_Instance_GetLogicalDevice(m_Instance, ~0u);
+                m_Instance->CreateLogicDevice(~0u);
+                m_Device = m_Instance->GetLogicalDevice(~0u);
             }
 
             lastTime = Clock::now();
@@ -474,7 +476,7 @@ namespace ArisenEngine::Testing
 
             if (m_Instance)
             {
-                RHI_Instance_Release(m_Instance);
+                RHI::RHILoader::Dispose();
                 m_Instance = nullptr;
             }
 

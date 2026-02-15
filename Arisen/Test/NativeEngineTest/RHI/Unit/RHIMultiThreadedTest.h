@@ -3,8 +3,12 @@
 #include <thread>
 #include <vector>
 #include <atomic>
-#include "../../Engine/NativeEngine/RHI/CommandBufferExports.h"
-#include "../../Engine/NativeEngine/RHI/DeviceExports.h"
+#include "RHI/Core/RHIDevice.h"
+#include "RHI/Core/RHIFactory.h"
+#include "RHI/Commands/RHICommandBuffer.h"
+#include "RHI/Commands/RHICommandBufferPool.h"
+#include "RHI/Queues/RHIQueueType.h"
+
 
 namespace ArisenEngine::Testing
 {
@@ -20,8 +24,8 @@ namespace ArisenEngine::Testing
 
         bool SetupTest() override
         {
-            m_CommandPool = RHI_Device_CreateCommandBufferPool(m_Device);
-            return m_CommandPool != 0;
+            m_CommandPool = m_Device->GetFactory()->CreateCommandBufferPool(RHI::RHIQueueType::Graphics);
+            return m_CommandPool.IsValid();
         }
 
         bool Run() override
@@ -34,22 +38,23 @@ namespace ArisenEngine::Testing
             for (int f = 0; f < numFrames; ++f)
             {
                 std::vector<std::thread> threads;
-                std::vector<RHI_CommandBufferHandle> cmdBuffers(numThreads);
+                std::vector<RHI::RHICommandBuffer*> cmdBuffers(numThreads);
 
                 for (int i = 0; i < numThreads; ++i)
                 {
                     threads.emplace_back([&, i, f]() {
                         // This should trigger the TLS Command Pool logic in RHIVkCommandBufferPool
-                        RHI_CommandBufferHandle cmd = RHI_Device_GetCommandBuffer(m_Device, m_CommandPool, f);
+                        auto pool = m_Device->GetCommandBufferPool(m_CommandPool);
+                        auto cmd = pool->GetCommandBuffer(f);
                         cmdBuffers[i] = cmd;
 
-                        RHI_Cmd_Begin(cmd, f, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+                        cmd->Begin(f, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
                         
                         // Fake recording work to stress the pool and internal structures
-                        RHI_Cmd_SetViewport(cmd, 0, 0, 1280, 720, 0, 1);
-                        RHI_Cmd_SetScissor(cmd, 0, 0, 1280, 720);
+                        cmd->SetViewport(0, 0, 1280, 720, 0, 1);
+                        cmd->SetScissor(0, 0, 1280, 720);
                         
-                        RHI_Cmd_End(cmd);
+                        cmd->End();
                     });
                 }
 
@@ -60,21 +65,16 @@ namespace ArisenEngine::Testing
                 // Submit recorded buffers
                 for (int i = 0; i < numThreads; ++i)
                 {
-                    RHI::RHISubmitDescriptor submitDesc = {};
-                // If this test renders to swapchain, we need it. 
-                // However, unit tests usually don't have m_SwapChain unless derived from RHIRenderingTestBase.
-                // Assuming this is offscreen or simple submit.
-                
-                    RHI_Device_Submit(m_Device, cmdBuffers[i], reinterpret_cast<const ::RHISubmitDescriptor*>(&submitDesc));
+                    m_Device->Submit(cmdBuffers[i]);
                 }
 
                 // Wait for GPU to finish work so we can safely recycle/destroy
-                RHI_Device_WaitIdle(m_Device);
+                m_Device->DeviceWaitIdle();
 
                 // Release (Recycle) command buffers
                 for (int i = 0; i < numThreads; ++i)
                 {
-                    RHI_Device_ReleaseCommandBuffer(m_Device, m_CommandPool, f, cmdBuffers[i]);
+                    m_Device->GetCommandBufferPool(m_CommandPool)->ReleaseCommandBuffer(f, cmdBuffers[i]);
                 }
             }
 
@@ -84,14 +84,14 @@ namespace ArisenEngine::Testing
 
         void TeardownTest() override
         {
-            if (m_CommandPool)
+            if (m_CommandPool.IsValid())
             {
-                RHI_Device_ReleaseCommandBufferPool(m_Device, m_CommandPool);
-                m_CommandPool = 0;
+                m_Device->GetFactory()->ReleaseCommandBufferPool(m_CommandPool);
+                m_CommandPool = {};
             }
         }
 
     private:
-        RHI_CommandBufferPoolHandle m_CommandPool = 0;
+        RHI::RHICommandBufferPoolHandle m_CommandPool;
     };
 }

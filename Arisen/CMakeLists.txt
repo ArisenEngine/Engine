@@ -159,7 +159,7 @@ add_subdirectory(Core/Core.RHI)
 add_subdirectory(Core/Core.ShaderCompiler)
 add_subdirectory(Core/RHI.DX12)
 add_subdirectory(Core/RHI.Vulkan)
-add_subdirectory(Engine/NativeEngine)
+
 
 if("${TARGET}" STREQUAL "NativeEngineTest")
     add_subdirectory(Test/NativeEngineTest)
@@ -196,7 +196,7 @@ add_custom_target(BuildBindingGenerator
 add_dependencies(BuildBindingGenerator Core.Foundation)
 add_dependencies(BuildBindingGenerator Core.Diagnostic)
 add_dependencies(BuildBindingGenerator Core.HAL)
-add_dependencies(BuildBindingGenerator NativeEngine)
+
 set_target_properties(BuildBindingGenerator PROPERTIES FOLDER "CMakeProcess")
 
     # Generate auto binding

@@ -1,8 +1,11 @@
 #pragma once
 #include "../RHITestBase.h"
-#include "../../../Engine/NativeEngine/RHI/HandlesExports.h"
-#include "../../../Engine/NativeEngine/RHI/CommandBufferExports.h"
-#include "../../../Engine/NativeEngine/RHI/DeviceExports.h"
+#include "RHI/Core/RHIDevice.h"
+#include "RHI/Core/RHIFactory.h"
+#include "RHI/Commands/RHICommandBuffer.h"
+#include "RHI/Commands/RHICommandBufferPool.h"
+#include "RHI/Queues/RHIQueueType.h"
+
 
 namespace ArisenEngine::Testing
 {
@@ -15,8 +18,8 @@ namespace ArisenEngine::Testing
 
         bool SetupTest() override
         {
-            m_CommandPool = RHI_Device_CreateCommandBufferPool(m_Device);
-            return m_CommandPool != 0;
+            m_CommandPool = m_Device->GetFactory()->CreateCommandBufferPool(RHI::RHIQueueType::Graphics);
+            return m_CommandPool.IsValid();
         }
 
         bool Run() override
@@ -26,49 +29,49 @@ namespace ArisenEngine::Testing
             // 1. Test Resource Naming
             LOG_INFO("Testing RHI_Device_SetObjectName...");
             ArisenEngine::RHI::RHIBufferDescriptor bufferDesc{ 0, 1024, RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT, RHI::SHARING_MODE_EXCLUSIVE, 0, nullptr, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT };
-            RHI_BufferHandle buffer = RHI_Device_CreateBuffer(m_Device, &bufferDesc, "DebugBufferInitial");
+            RHI::RHIBufferHandle buffer = m_Device->GetFactory()->CreateBuffer(std::move(bufferDesc), "DebugBufferInitial");
             
-            if (buffer == 0)
+            if (!buffer.IsValid())
             {
                 LOG_ERROR("Buffer creation failed!");
                 return false;
             }
 
             LOG_INFO("Setting buffer name to 'TestBuffer'...");
-            RHI_Device_SetObjectName(m_Device, RHI::ERHIObjectType::Buffer, buffer, "TestBuffer");
+            m_Device->SetObjectName(RHI::ERHIObjectType::Buffer, *reinterpret_cast<UInt64*>(&buffer), "TestBuffer");
 
             // 2. Test Debug Labels and Markers
             LOG_INFO("Testing Debug Labels and Markers...");
-            RHI_CommandBufferHandle cmd = RHI_Device_GetCommandBuffer(m_Device, m_CommandPool, 0);
-            RHI_Cmd_Begin(cmd, 0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+            auto cmd = m_Device->GetCommandBufferPool(m_CommandPool)->GetCommandBuffer(0);
+            cmd->Begin(RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
             float red[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
             float green[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
             float blue[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
 
-            RHI_Cmd_BeginDebugLabel(cmd, "Render Loop", red);
-            RHI_Cmd_InsertDebugMarker(cmd, "Start Frame", green);
+            cmd->BeginDebugLabel("Render Loop", red);
+            cmd->InsertDebugMarker("Start Frame", green);
             
             // Nested labels
-            RHI_Cmd_BeginDebugLabel(cmd, "Geometry Pass", blue);
-            RHI_Cmd_InsertDebugMarker(cmd, "Draw Mesh", nullptr);
-            RHI_Cmd_EndDebugLabel(cmd); // End Geometry Pass
+            cmd->BeginDebugLabel("Geometry Pass", blue);
+            cmd->InsertDebugMarker("Draw Mesh", nullptr);
+            cmd->EndDebugLabel(); // End Geometry Pass
 
-            RHI_Cmd_EndDebugLabel(cmd); // End Render Loop
+            cmd->EndDebugLabel(); // End Render Loop
 
-            RHI_Cmd_End(cmd);
+            cmd->End();
             
             // 3. Submit
             LOG_INFO("Submitting command buffer with debug markers...");
-            RHI::RHISubmitDescriptor submitDesc{};
-            RHI_Device_Submit(m_Device, cmd, reinterpret_cast<const struct RHISubmitDescriptor*>(&submitDesc));
+            RHI::RHISubmitDescriptor submitDesc = {};
+            m_Device->Submit(cmd, &submitDesc);
             
-            RHI_Device_GraphicQueueWaitIdle(m_Device);
+            m_Device->GraphicQueueWaitIdle();
             LOG_INFO("Submission completed.");
 
             // Cleanup
-            RHI_Device_ReleaseBuffer(m_Device, buffer);
-            RHI_Device_ReleaseCommandBuffer(m_Device, m_CommandPool, 0, cmd);
+            m_Device->GetFactory()->ReleaseBuffer(buffer);
+            m_Device->GetCommandBufferPool(m_CommandPool)->ReleaseCommandBuffer(0, cmd);
 
             LOG_INFO("RHI Debug Markers and Naming Test completed successfully.");
             return true;
@@ -76,14 +79,14 @@ namespace ArisenEngine::Testing
 
         void TeardownTest() override
         {
-            if (m_CommandPool)
+            if (m_CommandPool.IsValid())
             {
-                RHI_Device_ReleaseCommandBufferPool(m_Device, m_CommandPool);
-                m_CommandPool = 0;
+                m_Device->GetFactory()->ReleaseCommandBufferPool(m_CommandPool);
+                m_CommandPool = {};
             }
         }
 
     private:
-        RHI_CommandBufferPoolHandle m_CommandPool = 0;
+        RHI::RHICommandBufferPoolHandle m_CommandPool;
     };
 }

@@ -1,7 +1,7 @@
 #pragma once
 #include "../RHITestBase.h"
-#include "../../../Engine/NativeEngine/RHI/HandlesExports.h"
-#include "../../../Engine/NativeEngine/RHI/DeviceExports.h"
+#include "RHI/Core/RHIDevice.h"
+#include "RHI/Core/RHIFactory.h"
 
 namespace ArisenEngine::Testing
 {
@@ -23,8 +23,8 @@ namespace ArisenEngine::Testing
 
             // 1. Create a memory pool
             const UInt64 poolSize = 1024 * 1024; // 1MB
-            RHI_MemoryPoolHandle pool = RHI_Device_CreateMemoryPool(m_Device, poolSize, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-            if (pool == 0)
+            RHI::RHIMemoryPoolHandle pool = m_Device->GetFactory()->CreateMemoryPool(poolSize, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            if (!pool.IsValid())
             {
                 LOG_ERROR("Failed to create memory pool!");
                 return false;
@@ -38,15 +38,14 @@ namespace ArisenEngine::Testing
             bufferDesc.sharingMode = RHI::SHARING_MODE_EXCLUSIVE;
 
             // Buffer 1 at offset 0
-            RHI_BufferHandle buffer1 = RHI_Device_CreateBufferAliased(m_Device, &bufferDesc, pool, 0, "AliasedBuffer1");
-            // Buffer 2 at offset 256KB (overlapping or separate, both test the aliasing logic)
-            // Let's make them separate for simple verification but in the same pool
-            RHI_BufferHandle buffer2 = RHI_Device_CreateBufferAliased(m_Device, &bufferDesc, pool, 256 * 1024, "AliasedBuffer2");
+            auto buffer1 = m_Device->GetFactory()->CreateBufferAliased(ArisenEngine::RHI::RHIBufferDescriptor(bufferDesc), pool, 0, "AliasedBuffer1");
+            // Buffer 2 at offset 256KB
+            auto buffer2 = m_Device->GetFactory()->CreateBufferAliased(ArisenEngine::RHI::RHIBufferDescriptor(bufferDesc), pool, 256 * 1024, "AliasedBuffer2");
 
-            if (buffer1 == 0 || buffer2 == 0)
+            if (!buffer1.IsValid() || !buffer2.IsValid())
             {
                 LOG_ERROR("Failed to create aliased buffers!");
-                RHI_Device_ReleaseMemoryPool(m_Device, pool);
+                m_Device->GetFactory()->ReleaseMemoryPool(pool);
                 return false;
             }
             LOG_INFO("Aliased buffers created successfully.");
@@ -67,23 +66,23 @@ namespace ArisenEngine::Testing
             imageDesc.sharingMode = RHI::SHARING_MODE_EXCLUSIVE;
 
             // Image 1 at offset 0 (aliases with Buffer 1)
-            RHI_ImageHandle image1 = RHI_Device_CreateImageAliased(m_Device, &imageDesc, pool, 0, "AliasedImage1");
+            auto image1 = m_Device->GetFactory()->CreateImageAliased(std::move(imageDesc), pool, 0, "AliasedImage1");
 
-            if (image1 == 0)
+            if (!image1.IsValid())
             {
                 LOG_ERROR("Failed to create aliased image!");
-                RHI_Device_ReleaseBuffer(m_Device, buffer1);
-                RHI_Device_ReleaseBuffer(m_Device, buffer2);
-                RHI_Device_ReleaseMemoryPool(m_Device, pool);
+                m_Device->GetFactory()->ReleaseBuffer(buffer1);
+                m_Device->GetFactory()->ReleaseBuffer(buffer2);
+                m_Device->GetFactory()->ReleaseMemoryPool(pool);
                 return false;
             }
             LOG_INFO("Aliased image created successfully.");
 
             // Cleanup
-            RHI_Device_ReleaseImage(m_Device, image1);
-            RHI_Device_ReleaseBuffer(m_Device, buffer1);
-            RHI_Device_ReleaseBuffer(m_Device, buffer2);
-            RHI_Device_ReleaseMemoryPool(m_Device, pool);
+            m_Device->GetFactory()->ReleaseImage(image1);
+            m_Device->GetFactory()->ReleaseBuffer(buffer1);
+            m_Device->GetFactory()->ReleaseBuffer(buffer2);
+            m_Device->GetFactory()->ReleaseMemoryPool(pool);
 
             LOG_INFO("Memory Aliasing Test completed successfully.");
             return true;
