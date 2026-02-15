@@ -13,6 +13,7 @@ namespace ArisenEngine::RHI
 {
     class RHISampler;
     struct RHISamplerDesc;
+    class RHICommandBufferPool;
     struct RHIAccelerationStructureBuildGeometryInfo;
     struct RHIAccelerationStructureBuildSizesInfo;
     enum class ERHIAccelerationStructureType;
@@ -78,6 +79,7 @@ namespace ArisenEngine::RHI
         // Optional: expose backend queues (graphics/compute/transfer/present).
         // Backends may return nullptr for unsupported queues.
         virtual RHIQueue* GetQueue(RHIQueueType type) { (void)type; return nullptr; }
+        virtual RHICommandBufferPool* GetCommandBufferPool(RHICommandBufferPoolHandle handle) { (void)handle; return nullptr; }
 
         // Queue-scoped deferred delete helper. Backends can override to route to their deletion queue.
         // Default is immediate delete (safe for non-GPU objects).

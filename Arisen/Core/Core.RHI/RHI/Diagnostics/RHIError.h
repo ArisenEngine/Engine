@@ -1,5 +1,5 @@
 #pragma once
-#include "CoreRHICommon.h"
+#include "../Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI
 {
@@ -24,22 +24,22 @@ namespace ArisenEngine::RHI
     /**
      * @brief Get the last error code from the current thread.
      */
-    CORE_RHI_DLL EErrorCode GetLastError();
+    RHI_DLL EErrorCode GetLastError();
 
     /**
      * @brief Get a human-readable message for the last error.
      */
-    CORE_RHI_DLL const char* GetLastErrorMessage();
+    RHI_DLL const char* GetLastErrorMessage();
 
     /**
      * @brief Clear the current thread's error state.
      */
-    CORE_RHI_DLL void ClearError();
+    RHI_DLL void ClearError();
 
     /**
      * @brief Set the last error for the current thread.
      * @internal This should only be called by RHI implementations.
      */
-    CORE_RHI_DLL void SetLastError(EErrorCode code, const char* message = nullptr);
+    RHI_DLL void SetLastError(EErrorCode code, const char* message = nullptr);
 
 } // namespace ArisenEngine::RHI

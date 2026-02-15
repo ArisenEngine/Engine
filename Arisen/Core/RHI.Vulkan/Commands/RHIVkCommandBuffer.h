@@ -83,6 +83,9 @@ public:
       Containers::Vector<std::shared_ptr<RHIDescriptorSet>> &descriptorsets,
       UInt32 dynamicOffsetCount, const UInt32 *pDynamicOffsets) override;
   
+  void BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPool* pool, UInt32 poolId) override;
+  void BindDescriptorSet(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPool* pool, UInt32 poolId, UInt32 setIndex) override;
+  
   void PushConstants(UInt32 offset, UInt32 size, const void* data, UInt32 stageFlags) override;
 
   void TrackDescriptorPoolUse(RHIDescriptorPool *pool, UInt32 poolId) override;
