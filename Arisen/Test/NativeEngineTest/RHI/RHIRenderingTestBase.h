@@ -27,16 +27,12 @@
 #include "RHI/Pipeline/RHIPipelineState.h"
 #include "RHI/RenderPass/RHISubPass.h"
 
-// Engine Exports
-#include "../../../Engine/NativeEngine/RHI/RHIExports.h"
-#include "../../../Engine/NativeEngine/RHI/InstanceExports.h"
-#include "../../../Engine/NativeEngine/RHI/DeviceExports.h"
-#include "../../../Engine/NativeEngine/RHI/SurfaceExports.h"
-#include "../../../Engine/NativeEngine/RHI/HandlesExports.h"
-#include "../../../Engine/NativeEngine/RHI/CommandBufferExports.h"
-#include "../../../Engine/NativeEngine/RHI/PipelineExports.h"
-#include "../../../Engine/NativeEngine/RHI/DescriptorExports.h"
-#include "../../../Engine/NativeEngine/RHI/SyncExports.h"
+#include "RHI/Descriptors/RHIDescriptorPool.h"
+#include "RHI/Presentation/RHISwapChain.h"
+#include "RHI/Core/RHIInstance.h"
+#include "RHI/Core/RHIDevice.h"
+#include "RHI/Core/RHIFactory.h"
+
 #include "ShaderCompiler/ShaderCompilerAPI.h"
 
 // Third Party
@@ -52,17 +48,17 @@ namespace ArisenEngine::Testing
     class RHIRenderingTestBase : public RHITestBase
     {
     protected:
-        RHI_CommandBufferPoolHandle m_CmdPool = 0;
-        RHI_DescriptorPoolHandle m_DescriptorPool = 0;
+        RHI::RHICommandBufferPoolHandle m_CmdPool;
+        RHI::RHIDescriptorPool* m_DescriptorPool = nullptr;
         
-        RHI_SurfaceHandle m_Surface = 0;
-        RHI_SwapChainHandle m_SwapChain = 0;
+        RHI::RHISurface* m_Surface = nullptr;
+        RHI::RHISwapChain* m_SwapChain = nullptr;
         
-        RHI_GPUProgramHandle m_VertProgram = 0;
-        RHI_GPUProgramHandle m_FragProgram = 0;
+        RHI::RHIShaderProgramHandle m_VertProgram;
+        RHI::RHIShaderProgramHandle m_FragProgram;
         
         Containers::Vector<UInt32> m_DescriptorPoolIds;
-        Containers::Vector<UInt64> m_FrameTickets;
+        Containers::Vector<RHI::RHIGpuTicket> m_FrameTickets;
         
         GLTFModel m_Model;
 
@@ -77,7 +73,7 @@ namespace ArisenEngine::Testing
         void InitShaderProgram(const String& shaderName);
         void TeardownCommonResources();
         
-        void UploadImage(RHI_ImageHandle textureHandle, UInt64 imageSize, void* data, UInt32 texWidth, UInt32 texHeight, RHI::EImageLayout finalLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        void UploadImage(RHI::RHIImageHandle textureHandle, UInt64 imageSize, void* data, UInt32 texWidth, UInt32 texHeight, RHI::EImageLayout finalLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         
         // Helper to get shader environment string
         String GetShaderEnvString();

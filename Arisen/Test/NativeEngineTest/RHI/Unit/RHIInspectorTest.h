@@ -5,9 +5,8 @@
 
 
 
-#include "../../../Engine/NativeEngine/RHI/HandlesExports.h"
-#include "../../../Engine/NativeEngine/RHI/CommandBufferExports.h"
-#include "../../../Engine/NativeEngine/RHI/DeviceExports.h"
+#include "RHI/Core/RHIDevice.h"
+#include "RHI/Core/RHIFactory.h"
 #include "../../../../Core/Core.RHI/RHI/Core/RHIDevice.h"
 #include "RHI/Core/RHIInspector.h"
 
@@ -33,7 +32,7 @@ namespace ArisenEngine::Testing
 
 
 
-            auto* device = reinterpret_cast<ArisenEngine::RHI::RHIDevice*>(m_Device);
+            auto* device = m_Device;
             if (!device) return false;
 
             const ArisenEngine::RHI::RHIResourceStats& initialStats = device->GetResourceStats();
@@ -52,9 +51,9 @@ namespace ArisenEngine::Testing
 
 
             ArisenEngine::RHI::RHIBufferDescriptor bufferDesc{ 0, 1024, RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT, RHI::SHARING_MODE_EXCLUSIVE, 0, nullptr, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT };
-            RHI_BufferHandle buffer = RHI_Device_CreateBuffer(m_Device, &bufferDesc, "InspectorTestBuffer");
+            RHI::RHIBufferHandle buffer = m_Device->GetFactory()->CreateBuffer(std::move(bufferDesc), "InspectorTestBuffer");
 
-            if (buffer == 0)
+            if (!buffer.IsValid())
             {
                 LOG_ERROR("Buffer creation failed!");
                 return false;
@@ -92,7 +91,7 @@ namespace ArisenEngine::Testing
             }
 
             // 2. Release buffer
-            RHI_Device_ReleaseBuffer(m_Device, buffer);
+            m_Device->GetFactory()->ReleaseBuffer(buffer);
 
             // Verify count decreased (might need to check deferred deletion if applicable, but handle count should perform immediate decrement in pool deallocate?)
             // RHIResourcePool decrements in Deallocate. Device::ReleaseBuffer calls ReleaseBufferInternal then Deallocate.

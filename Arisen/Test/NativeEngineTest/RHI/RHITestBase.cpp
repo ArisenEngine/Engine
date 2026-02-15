@@ -5,17 +5,21 @@
 #include "RHITestBase.h"
 #include <iostream>
 #include <filesystem>
-#include "../../../Engine/NativeEngine/RHI/HandlesExports.h"
-#include "../../../Engine/NativeEngine/RHI/DeviceExports.h"
-#include "../../../Engine/NativeEngine/RHI/CommandBufferExports.h"
-#include "../../../Engine/NativeEngine/RHI/SyncExports.h"
 #include "RHI/Enums/Buffer/EBufferUsage.h"
 #include "RHI/Enums/Memory/EMemoryPropertyFlagBits.h"
 #include "RHI/Enums/Memory/ESharingMode.h"
 #include "RHI/Enums/Pipeline/ECommandBufferUsageFlagBits.h"
+#include "RHI/Commands/RHICommandBuffer.h"
+#include "RHI/Queues/RHIQueueType.h"
+#include "RHI/Core/RHIFactory.h"
+#include "RHI/Sync/RHIImageMemoryBarrier.h"
+#include "RHI/Diagnostics/RHIError.h"
+#include "RHI/Samplers/RHISampler.h"
+#include "RHI/Commands/RHICommandBufferPool.h"
 #include <functional>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <map>
 
 
 using namespace ArisenEngine;
@@ -53,17 +57,20 @@ namespace ArisenEngine::Testing
         std::filesystem::path modelDir = modelPath.parent_path();
 
         // Helper for image uploading and mipmap generation
-        auto uploadAndMipmap = [&](RHI_ImageHandle texture, UInt32 width, UInt32 height, void* data, UInt32 mipLevels) {
-            RHI::RHIBufferDescriptor tsb{
-                0, (UInt64)width * height * 4, RHI::BUFFER_USAGE_TRANSFER_SRC_BIT, RHI::SHARING_MODE_EXCLUSIVE,
-                0, nullptr, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT
-            };
-            auto stagingBuffer = RHI_Device_CreateBuffer(m_Device, &tsb, "Texture Staging Buffer");
-            RHI_Buffer_MemoryCopy(m_Device, stagingBuffer, data, (UInt64)width * height * 4, 0);
+        auto uploadAndMipmap = [&](RHI::RHIImageHandle texture, UInt32 width, UInt32 height, void* data, UInt32 mipLevels) {
+            // Create staging buffer
+            UInt32 size = width * height * 4;
+            RHI::RHIBufferDescriptor stagingDesc{ 0, size, RHI::BUFFER_USAGE_TRANSFER_SRC_BIT, RHI::SHARING_MODE_EXCLUSIVE, 0, nullptr, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT };
+            RHI::RHIBufferHandle stagingBuffer = m_Device->GetFactory()->CreateBuffer(std::move(stagingDesc), "Texture Staging Buffer");
+            
+            void* mapped = m_Device->MapBuffer(stagingBuffer);
+            memcpy(mapped, data, size);
+            m_Device->UnmapBuffer(stagingBuffer);
 
-            auto cmdPool = RHI_Device_CreateCommandBufferPool(m_Device);
-            auto cmd = RHI_Device_GetCommandBuffer(m_Device, cmdPool, 0);
-            RHI_Cmd_Begin(cmd, 0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+            auto cmdPool = m_Device->GetFactory()->CreateCommandBufferPool(RHI::RHIQueueType::Graphics);
+            auto cmd = m_Device->GetCommandBufferPool(cmdPool)->GetCommandBuffer(0);
+            
+            cmd->Begin(RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
             
             // Transition to DST
             {
@@ -72,38 +79,45 @@ namespace ArisenEngine::Testing
                 barrier.dstAccess = RHI::ACCESS_TRANSFER_WRITE_BIT;
                 barrier.oldLayout = RHI::IMAGE_LAYOUT_UNDEFINED;
                 barrier.newLayout = RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-                barrier.image = *reinterpret_cast<RHI::RHIImageHandle*>(&texture);
+                barrier.image = texture;
                 barrier.subresourceRange = { RHI::IMAGE_ASPECT_COLOR_BIT, 0, mipLevels, 0, 1 };
                 barrier.srcStageMask = RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT;
                 barrier.dstStageMask = RHI::PIPELINE_STAGE_TRANSFER_BIT;
 
                 Containers::Vector<RHI::RHIImageMemoryBarrier> barriers { barrier };
-                RHI_Cmd_PipelineBarrier_Image(cmd, RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT, RHI::PIPELINE_STAGE_TRANSFER_BIT, 0, &barriers);
+                cmd->PipelineBarrier(RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT, RHI::PIPELINE_STAGE_TRANSFER_BIT, 0, std::move(barriers));
             }
 
             // Copy
             {
-                Containers::Vector<RHI::RHIBufferImageCopy> regions{
-                    { 0, 0, 0, { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 }, 0, 0, 0, width, height, 1 }
-                };
-                RHI_Cmd_CopyBufferToImage(cmd, stagingBuffer, texture, RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &regions);
+                RHI::RHIBufferImageCopy region{};
+                region.bufferOffset = 0;
+                region.bufferRowLength = 0;
+                region.bufferImageHeight = 0;
+                region.imageSubresource = { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+                region.offsetX = 0; region.offsetY = 0; region.offsetZ = 0;
+                region.width = width; region.height = height; region.depth = 1;
+
+                Containers::Vector<RHI::RHIBufferImageCopy> regions;
+                regions.push_back(region);
+                cmd->CopyBufferToImage(stagingBuffer, texture, RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, std::move(regions));
             }
 
             // Generate Mipmaps
-            RHI_Cmd_GenerateMipmaps(cmd, texture);
+            cmd->GenerateMipmaps(texture);
 
-            RHI_Cmd_End(cmd);
-            RHI_Device_Submit(m_Device, cmd, 0);
-            RHI_Device_WaitIdle(m_Device);
+            cmd->End();
+            m_Device->Submit(cmd);
+            m_Device->DeviceWaitIdle();
 
-            RHI_Device_ReleaseBuffer(m_Device, stagingBuffer);
-            RHI_Device_ReleaseCommandBuffer(m_Device, cmdPool, 0, cmd);
-            RHI_Device_ReleaseCommandBufferPool(m_Device, cmdPool);
+            m_Device->GetFactory()->ReleaseBuffer(stagingBuffer);
+            m_Device->GetCommandBufferPool(cmdPool)->ReleaseCommandBuffer(0, cmd);
+            m_Device->GetFactory()->ReleaseCommandBufferPool(cmdPool);
         };
 
         // Load Materials
-        std::map<std::string, RHI_ImageHandle> textureCache;
-        std::map<std::string, RHI_ImageViewHandle> textureViewCache;
+        std::map<std::string, RHI::RHIImageHandle> textureCache;
+        std::map<std::string, RHI::RHIImageViewHandle> textureViewCache;
         
         for (cgltf_size i = 0; i < data->materials_count; ++i)
         {
@@ -152,7 +166,7 @@ namespace ArisenEngine::Testing
                             texDesc.usage = RHI::IMAGE_USAGE_TRANSFER_SRC_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT | RHI::IMAGE_USAGE_SAMPLED_BIT;
                             texDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
                             texDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-                            gMat.baseColorTexture = RHI_Device_CreateImage(m_Device, &texDesc, tex->image->uri);
+                            gMat.baseColorTexture = m_Device->GetFactory()->CreateImage(std::move(texDesc), tex->image->uri);
 
                             RHI::RHIImageViewDesc viewDesc = {};
                             viewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
@@ -160,7 +174,7 @@ namespace ArisenEngine::Testing
                             viewDesc.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
                             viewDesc.levelCount = texDesc.mipLevels;
                             viewDesc.layerCount = 1;
-                            gMat.baseColorView = RHI_Image_AddImageView(m_Device, gMat.baseColorTexture, &viewDesc);
+                            gMat.baseColorView = m_Device->GetFactory()->CreateImageView(gMat.baseColorTexture, std::move(viewDesc));
 
                             uploadAndMipmap(gMat.baseColorTexture, tw, th, pixels, texDesc.mipLevels);
                             stbi_image_free(pixels);
@@ -178,7 +192,7 @@ namespace ArisenEngine::Testing
             }
 
             // Create Fallback if loading failed
-            if (!gMat.baseColorTexture)
+            if (!gMat.baseColorTexture.IsValid())
             {
                 UInt32 white = 0xFFFFFFFF;
                 RHI::RHIImageDescriptor texDesc = {};
@@ -193,7 +207,7 @@ namespace ArisenEngine::Testing
                 texDesc.usage = RHI::IMAGE_USAGE_TRANSFER_SRC_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT | RHI::IMAGE_USAGE_SAMPLED_BIT;
                 texDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
                 texDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-                gMat.baseColorTexture = RHI_Device_CreateImage(m_Device, &texDesc, "Fallback White");
+                gMat.baseColorTexture = m_Device->GetFactory()->CreateImage(std::move(texDesc), "Fallback White");
 
                 RHI::RHIImageViewDesc viewDesc = {};
                 viewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
@@ -201,7 +215,7 @@ namespace ArisenEngine::Testing
                 viewDesc.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
                 viewDesc.levelCount = 1;
                 viewDesc.layerCount = 1;
-                gMat.baseColorView = RHI_Image_AddImageView(m_Device, gMat.baseColorTexture, &viewDesc);
+                gMat.baseColorView = m_Device->GetFactory()->CreateImageView(gMat.baseColorTexture, std::move(viewDesc));
                 
                 uploadAndMipmap(gMat.baseColorTexture, 1, 1, &white, 1);
             }
@@ -215,7 +229,7 @@ namespace ArisenEngine::Testing
             sampDesc.addressModeU = RHI::SAMPLER_ADDRESS_MODE_REPEAT;
             sampDesc.addressModeV = RHI::SAMPLER_ADDRESS_MODE_REPEAT;
             sampDesc.addressModeW = RHI::SAMPLER_ADDRESS_MODE_REPEAT;
-            gMat.sampler = RHI_Device_CreateSampler(m_Device, &sampDesc);
+            gMat.sampler = m_Device->GetFactory()->CreateSampler(std::move(sampDesc));
 
             model.materials.push_back(gMat);
         }
@@ -370,7 +384,7 @@ namespace ArisenEngine::Testing
         vbDesc.pQueueFamilyIndices = nullptr;
         vbDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         
-        model.vertexBuffer = RHI_Device_CreateBuffer(m_Device, &vbDesc, "GLTF Vertex Buffer");
+        model.vertexBuffer = m_Device->GetFactory()->CreateBuffer(std::move(vbDesc), "GLTF Vertex Buffer");
 
         RHI::RHIBufferDescriptor ibDesc{};
         ibDesc.createFlagBits = 0;
@@ -381,7 +395,7 @@ namespace ArisenEngine::Testing
         ibDesc.pQueueFamilyIndices = nullptr;
         ibDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         
-        model.indexBuffer = RHI_Device_CreateBuffer(m_Device, &ibDesc, "GLTF Index Buffer");
+        model.indexBuffer = m_Device->GetFactory()->CreateBuffer(std::move(ibDesc), "GLTF Index Buffer");
 
         // Upload data using staging buffers
         RHI::RHIBufferDescriptor vsb{};
@@ -393,8 +407,8 @@ namespace ArisenEngine::Testing
         vsb.pQueueFamilyIndices = nullptr;
         vsb.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
         
-        auto vStaging = RHI_Device_CreateBuffer(m_Device, &vsb, "GLTF Vertex Staging");
-        RHI_Buffer_MemoryCopy(m_Device, vStaging, vertices.data(), vbDesc.size, 0);
+        auto vStaging = m_Device->GetFactory()->CreateBuffer(std::move(vsb), "GLTF Vertex Staging");
+        m_Device->BufferMemoryCopy(vStaging, vertices.data(), vbDesc.size, 0);
 
         RHI::RHIBufferDescriptor isb{};
         isb.createFlagBits = 0;
@@ -405,23 +419,26 @@ namespace ArisenEngine::Testing
         isb.pQueueFamilyIndices = nullptr;
         isb.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
         
-        auto iStaging = RHI_Device_CreateBuffer(m_Device, &isb, "GLTF Index Staging");
-        RHI_Buffer_MemoryCopy(m_Device, iStaging, indices.data(), ibDesc.size, 0);
+        auto iStaging = m_Device->GetFactory()->CreateBuffer(std::move(isb), "GLTF Index Staging");
+        m_Device->BufferMemoryCopy(iStaging, indices.data(), ibDesc.size, 0);
 
-        auto cmdPool = RHI_Device_CreateCommandBufferPool(m_Device);
-        auto cmd = RHI_Device_GetCommandBuffer(m_Device, cmdPool, 0);
-        RHI_Cmd_Begin(cmd, 0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-        RHI_Cmd_CopyBuffer(cmd, vStaging, 0, model.vertexBuffer, 0, vbDesc.size);
-        RHI_Cmd_CopyBuffer(cmd, iStaging, 0, model.indexBuffer, 0, ibDesc.size);
-        RHI_Cmd_End(cmd);
+        auto cmdPool = m_Device->GetFactory()->CreateCommandBufferPool(RHI::RHIQueueType::Graphics);
+        auto cmd = m_Device->GetCommandBufferPool(cmdPool)->GetCommandBuffer(0);
+
+        cmd->Begin(RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        cmd->CopyBuffer(vStaging, 0, model.vertexBuffer, 0, vbDesc.size);
+        cmd->CopyBuffer(iStaging, 0, model.indexBuffer, 0, ibDesc.size);
+        cmd->End();
         
-        RHI_Device_Submit(m_Device, cmd, 0);
-        RHI_Device_WaitIdle(m_Device);
+        m_Device->Submit(cmd);
+        m_Device->DeviceWaitIdle();
 
-        RHI_Device_ReleaseBuffer(m_Device, vStaging);
-        RHI_Device_ReleaseBuffer(m_Device, iStaging);
-        RHI_Device_ReleaseCommandBuffer(m_Device, cmdPool, 0, cmd);
-        RHI_Device_ReleaseCommandBufferPool(m_Device, cmdPool);
+        m_Device->GetFactory()->ReleaseBuffer(vStaging);
+        m_Device->GetFactory()->ReleaseBuffer(iStaging);
+        m_Device->GetFactory()->ReleaseCommandBufferPool(cmdPool);
+        // Note: cmd is implicitly released when pool is released, or we can release explicitly.
+        // But since we release pool immediately, we can skip specific release or do it correctly:
+        // m_Device->GetCommandBufferPool(cmdPool)->ReleaseCommandBuffer(0, cmd);
 
         cgltf_free(data);
         return model;

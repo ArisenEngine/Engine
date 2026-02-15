@@ -1,9 +1,13 @@
 #pragma once
 #include "../RHITestBase.h"
-#include "../../../Engine/NativeEngine/RHI/HandlesExports.h"
-#include "../../../Engine/NativeEngine/RHI/PipelineExports.h"
-#include "../../../Engine/NativeEngine/RHI/CommandBufferExports.h"
-#include "../../../Engine/NativeEngine/RHI/DeviceExports.h"
+#include "RHI/Core/RHIDevice.h"
+#include "RHI/Core/RHIFactory.h"
+#include "RHI/Pipeline/RHIPipelineCache.h"
+#include "RHI/Commands/RHICommandBuffer.h"
+#include "RHI/Commands/RHICommandBufferPool.h"
+#include "RHI/Queues/RHIQueueType.h"
+
+#include "RHI/Pipeline/RHIPipelineState.h"
 
 namespace ArisenEngine::Testing
 {
@@ -16,53 +20,42 @@ namespace ArisenEngine::Testing
 
         bool SetupTest() override
         {
-            m_CommandPool = RHI_Device_CreateCommandBufferPool(m_Device);
-            return m_CommandPool != 0;
+            m_CommandPool = m_Device->GetFactory()->CreateCommandBufferPool(RHI::RHIQueueType::Graphics);
+            return m_CommandPool.IsValid();
         }
 
         bool Run() override
         {
             LOG_INFO("Running Batch API Test...");
 
-            // 1. Test RHI_Device_BatchCreateBuffers
-            LOG_INFO("Testing RHI_Device_BatchCreateBuffers...");
+            // 1. Create Buffers
+            LOG_INFO("Creating Buffers...");
             ArisenEngine::RHI::RHIBufferDescriptor desc1{ 0, 1024, RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT, RHI::SHARING_MODE_EXCLUSIVE, 0, nullptr, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT };
             ArisenEngine::RHI::RHIBufferDescriptor desc2{ 0, 2048, RHI::BUFFER_USAGE_INDEX_BUFFER_BIT, RHI::SHARING_MODE_EXCLUSIVE, 0, nullptr, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT };
             
-            ArisenEngine::RHI::RHIBufferDescriptor descs[] = { desc1, desc2 };
-            const char* names[] = { "BatchBuffer1", "BatchBuffer2" };
-            RHI_BufferHandle handles[2] = { 0, 0 };
+            RHI::RHIBufferHandle handles[2];
+            handles[0] = m_Device->GetFactory()->CreateBuffer(std::move(desc1), "BatchBuffer1");
+            handles[1] = m_Device->GetFactory()->CreateBuffer(std::move(desc2), "BatchBuffer2");
 
-            RHI_Device_BatchCreateBuffers(m_Device, 2, descs, names, handles);
-
-            if (handles[0] == 0 || handles[1] == 0)
+            if (!handles[0].IsValid() || !handles[1].IsValid())
             {
-                LOG_ERROR("Batch buffer creation failed!");
+                LOG_ERROR("Buffer creation failed!");
                 return false;
             }
-            LOG_INFO("Batch buffer creation successful.");
+            LOG_INFO("Buffer creation successful.");
 
-            // 2. Test RHI_PSO_BatchUpdateDescriptors
-            LOG_INFO("Testing RHI_PSO_BatchUpdateDescriptors...");
-            RHI_PSOHandle pso = RHI_PipelineManager_CreatePSO(RHI_Device_GetPipelineManager(m_Device));
+            // 2. Test Descriptor updates
+            LOG_INFO("Testing Manual Descriptor Updates...");
+            auto pso = m_Device->GetPipelineCache()->GetPipelineState();
             
-            Containers::Vector<RHI::RHIBufferHandle> bufferVector1;
-            bufferVector1.push_back(*reinterpret_cast<RHI::RHIBufferHandle*>(&handles[0]));
-            
-            Containers::Vector<RHI::RHIBufferHandle> bufferVector2;
-            bufferVector2.push_back(*reinterpret_cast<RHI::RHIBufferHandle*>(&handles[1]));
+            pso->UpdateDescriptorSet(0, 0, Containers::Vector<RHI::RHIBufferHandle>{ handles[0] });
+            pso->UpdateDescriptorSet(0, 1, Containers::Vector<RHI::RHIBufferHandle>{ handles[1] });
+            LOG_INFO("Descriptor update called.");
 
-            RHI_DescriptorUpdateEntry entries[2];
-            entries[0] = { 0, 0, &bufferVector1, nullptr };
-            entries[1] = { 0, 1, &bufferVector2, nullptr };
-
-            RHI_PSO_BatchUpdateDescriptors(pso, 2, entries);
-            LOG_INFO("Batch descriptor update called.");
-
-            // 3. Test RHI_Cmd_BatchPipelineBarrier
-            LOG_INFO("Testing RHI_Cmd_BatchPipelineBarrier...");
-            RHI_CommandBufferHandle cmd = RHI_Device_GetCommandBuffer(m_Device, m_CommandPool, 0);
-            RHI_Cmd_Begin(cmd, 0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+            // 3. Test Pipeline Barrier
+            LOG_INFO("Testing Pipeline Barrier...");
+            auto cmd = m_Device->GetCommandBufferPool(m_CommandPool)->GetCommandBuffer(0);
+            cmd->Begin(RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
             Containers::Vector<RHI::RHIBufferMemoryBarrier> bufferBarriers;
             bufferBarriers.push_back({
@@ -70,24 +63,23 @@ namespace ArisenEngine::Testing
                 RHI::ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
                 u32Invalid,
                 u32Invalid,
-                *reinterpret_cast<RHI::RHIBufferHandle*>(&handles[0]),
+                handles[0],
                 RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                 RHI::PIPELINE_STAGE_VERTEX_INPUT_BIT
             });
 
-            RHI_Cmd_BatchPipelineBarrier(cmd,
+            cmd->PipelineBarrier(
                 RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                 RHI::PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                0, nullptr, nullptr, &bufferBarriers);
+                0, std::move(bufferBarriers));
 
-            RHI_Cmd_End(cmd);
-            LOG_INFO("Batch pipeline barrier recorded.");
+            cmd->End();
+            LOG_INFO("Pipeline barrier recorded.");
 
             // Cleanup
-            RHI_PSO_Release(pso);
-            RHI_Device_ReleaseBuffer(m_Device, handles[0]);
-            RHI_Device_ReleaseBuffer(m_Device, handles[1]);
-            RHI_Device_ReleaseCommandBuffer(m_Device, m_CommandPool, 0, cmd);
+            m_Device->GetFactory()->ReleaseBuffer(handles[0]);
+            m_Device->GetFactory()->ReleaseBuffer(handles[1]);
+            m_Device->GetCommandBufferPool(m_CommandPool)->ReleaseCommandBuffer(0, cmd);
 
             LOG_INFO("Batch API Test completed successfully.");
             return true;
@@ -95,14 +87,14 @@ namespace ArisenEngine::Testing
 
         void TeardownTest() override
         {
-            if (m_CommandPool)
+            if (m_CommandPool.IsValid())
             {
-                RHI_Device_ReleaseCommandBufferPool(m_Device, m_CommandPool);
-                m_CommandPool = 0;
+                m_Device->GetFactory()->ReleaseCommandBufferPool(m_CommandPool);
+                m_CommandPool = {};
             }
         }
 
     private:
-        RHI_CommandBufferPoolHandle m_CommandPool = 0;
+        RHI::RHICommandBufferPoolHandle m_CommandPool;
     };
 }

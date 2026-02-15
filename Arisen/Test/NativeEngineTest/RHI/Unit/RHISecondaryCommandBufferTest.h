@@ -1,7 +1,11 @@
 #pragma once
 #include "../RHITestBase.h"
-#include "../../Engine/NativeEngine/RHI/CommandBufferExports.h"
-#include "../../Engine/NativeEngine/RHI/DeviceExports.h"
+#include "RHI/Core/RHIDevice.h"
+#include "RHI/Core/RHIFactory.h"
+#include "RHI/Commands/RHICommandBuffer.h"
+#include "RHI/Commands/RHICommandBufferPool.h"
+#include "RHI/Queues/RHIQueueType.h"
+
 
 namespace ArisenEngine::Testing
 {
@@ -17,8 +21,8 @@ namespace ArisenEngine::Testing
 
         bool SetupTest() override
         {
-            m_CommandPool = RHI_Device_CreateCommandBufferPool(m_Device);
-            return m_CommandPool != 0;
+            m_CommandPool = m_Device->GetFactory()->CreateCommandBufferPool(RHI::RHIQueueType::Graphics);
+            return m_CommandPool.IsValid();
         }
 
         bool Run() override
@@ -29,33 +33,32 @@ namespace ArisenEngine::Testing
             for (int f = 0; f < numFrames; ++f)
             {
                 // 1. Get Primary and Secondary Command Buffers
-                RHI_CommandBufferHandle primaryCmd = RHI_Device_GetCommandBuffer(m_Device, m_CommandPool, f);
-                RHI_CommandBufferHandle secondaryCmd = RHI_Device_GetSecondaryCommandBuffer(m_Device, m_CommandPool, f);
+                auto pool = m_Device->GetCommandBufferPool(m_CommandPool);
+                auto primaryCmd = pool->GetCommandBuffer(f, RHI::ECommandBufferLevel::COMMAND_BUFFER_LEVEL_PRIMARY);
+                auto secondaryCmd = pool->GetCommandBuffer(f, RHI::ECommandBufferLevel::COMMAND_BUFFER_LEVEL_SECONDARY);
 
                 // 2. Record Secondary Command Buffer
-                // Secondary buffers need inheritance info if they were used in a render pass, 
-                // but since this is a unit test without a render pass, we use default.
-                RHI_Cmd_Begin(secondaryCmd, f, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-                RHI_Cmd_SetViewport(secondaryCmd, 0, 0, 1920, 1080, 0, 1);
-                RHI_Cmd_SetScissor(secondaryCmd, 0, 0, 1920, 1080);
-                RHI_Cmd_End(secondaryCmd);
+                secondaryCmd->Begin(f, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+                secondaryCmd->SetViewport(0, 0, 1920, 1080, 0, 1);
+                secondaryCmd->SetScissor(0, 0, 1920, 1080);
+                secondaryCmd->End();
 
                 // 3. Record Primary Command Buffer and Execute Secondary
-                RHI_Cmd_Begin(primaryCmd, f, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+                primaryCmd->Begin(f, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
                 
-                Containers::Vector<RHI_CommandBufferHandle> secondaryBuffers = { secondaryCmd };
-                RHI_Cmd_ExecuteCommands(primaryCmd, &secondaryBuffers);
+                Containers::Vector<RHI::RHICommandBuffer*> secondaryBuffers = { secondaryCmd };
+                primaryCmd->ExecuteCommands(std::move(secondaryBuffers));
                 
-                RHI_Cmd_End(primaryCmd);
+                primaryCmd->End();
 
                 // 4. Submit Primary
                 RHI::RHISubmitDescriptor submitDesc = {};
-                RHI_Device_Submit(m_Device, primaryCmd, reinterpret_cast<const ::RHISubmitDescriptor*>(&submitDesc));
+                m_Device->Submit(primaryCmd, &submitDesc);
 
                 // 5. Wait and Recycle
-                RHI_Device_WaitIdle(m_Device);
-                RHI_Device_ReleaseCommandBuffer(m_Device, m_CommandPool, f, primaryCmd);
-                RHI_Device_ReleaseCommandBuffer(m_Device, m_CommandPool, f, secondaryCmd);
+                m_Device->DeviceWaitIdle();
+                pool->ReleaseCommandBuffer(f, primaryCmd);
+                pool->ReleaseCommandBuffer(f, secondaryCmd);
 
                 LOG_INFO(String::Format("Frame %d completed.", f));
             }
@@ -66,14 +69,14 @@ namespace ArisenEngine::Testing
 
         void TeardownTest() override
         {
-            if (m_CommandPool)
+            if (m_CommandPool.IsValid())
             {
-                RHI_Device_ReleaseCommandBufferPool(m_Device, m_CommandPool);
-                m_CommandPool = 0;
+                m_Device->GetFactory()->ReleaseCommandBufferPool(m_CommandPool);
+                m_CommandPool = {};
             }
         }
 
     private:
-        RHI_CommandBufferPoolHandle m_CommandPool = 0;
+        RHI::RHICommandBufferPoolHandle m_CommandPool;
     };
 }

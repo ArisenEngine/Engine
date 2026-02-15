@@ -1,9 +1,13 @@
 #pragma once
 #include "../RHITestBase.h"
 #include "RHI/Sync/RHIImageMemoryBarrier.h"
-#include "../../Engine/NativeEngine/RHI/SyncExports.h"
-#include "../../Engine/NativeEngine/RHI/CommandBufferExports.h"
-#include "../../Engine/NativeEngine/RHI/DeviceExports.h"
+#include "RHI/Commands/RHICommandBuffer.h"
+#include "RHI/Core/RHIDevice.h"
+#include "RHI/Core/RHIFactory.h"
+#include "RHI/Commands/RHICommandBufferPool.h"
+#include "RHI/Queues/RHIQueueType.h"
+
+#include "RHI/Core/RHIDevice.h"
 
 namespace ArisenEngine::Testing
 {
@@ -19,8 +23,8 @@ namespace ArisenEngine::Testing
 
         bool SetupTest() override
         {
-            m_CommandPool = RHI_Device_CreateCommandBufferPool(m_Device);
-            return m_CommandPool != 0;
+            m_CommandPool = m_Device->GetFactory()->CreateCommandBufferPool(RHI::RHIQueueType::Graphics);
+            return m_CommandPool.IsValid();
         }
 
         bool Run() override
@@ -38,12 +42,12 @@ namespace ArisenEngine::Testing
                 RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             };
             LOG_INFO("Creating image...");
-            RHI_ImageHandle testImage = RHI_Device_CreateImage(m_Device, &desc, "SyncTestImage");
+            RHI::RHIImageHandle testImage = m_Device->GetFactory()->CreateImage(std::move(desc), "SyncTestImage");
 
             LOG_INFO("Getting command buffer...");
-            RHI_CommandBufferHandle cmd = RHI_Device_GetCommandBuffer(m_Device, m_CommandPool, 0);
+            auto cmd = m_Device->GetCommandBufferPool(m_CommandPool)->GetCommandBuffer(0);
             LOG_INFO("Beginning command buffer...");
-            RHI_Cmd_Begin(cmd, 0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+            cmd->Begin(RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
             // Test Image Barrier (Undefined -> Transfer Dst)
             Containers::Vector<RHI::RHIImageMemoryBarrier> imageBarriers = {
@@ -54,7 +58,7 @@ namespace ArisenEngine::Testing
                     RHI::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     u32Invalid,
                     u32Invalid,
-                    *reinterpret_cast<RHI::RHIImageHandle*>(&testImage),
+                    testImage,
                     { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 },
                     RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                     RHI::PIPELINE_STAGE_TRANSFER_BIT
@@ -62,34 +66,34 @@ namespace ArisenEngine::Testing
             };
 
             LOG_INFO("Adding pipeline barrier...");
-            // Using the new Sync 2.0 API (internally) via the existing export
-            RHI_Cmd_PipelineBarrier_Image(cmd, 
+            // Using the new Sync 2.0 API directly
+            cmd->PipelineBarrier( 
                 RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT, 
                 RHI::PIPELINE_STAGE_TRANSFER_BIT, 
-                0, &imageBarriers);
+                0, std::move(imageBarriers));
 
             LOG_INFO("Ending command buffer...");
-            RHI_Cmd_End(cmd);
+            cmd->End();
 
             LOG_INFO("Submitting command buffer...");
-            RHI_Device_Submit(m_Device, cmd, 0);
+            m_Device->Submit(cmd);
 
             LOG_INFO("Waiting for device idle...");
-            RHI_Device_WaitIdle(m_Device);
+            m_Device->DeviceWaitIdle();
 
             LOG_INFO("Synchronization barrier submitted and verified.");
 
             LOG_INFO("Running Timeline Semaphore Test...");
-            RHI_SemaphoreHandle timelineSem = RHI_Device_CreateTimelineSemaphore(m_Device, 0);
-            if (timelineSem == 0) {
+            RHI::RHISemaphoreHandle timelineSem = m_Device->GetFactory()->CreateTimelineSemaphore(0);
+            if (!timelineSem.IsValid()) {
                 LOG_ERROR("Failed to create timeline semaphore!");
                 return false;
             }
 
             LOG_INFO("CPU Signal timeline semaphore to 1...");
-            RHI_Semaphore_SignalValue(m_Device, timelineSem, 1);
+            m_Device->SignalSemaphoreValue(timelineSem, 1);
             
-            unsigned long long val = RHI_Semaphore_GetValue(m_Device, timelineSem);
+            unsigned long long val = m_Device->GetSemaphoreValue(timelineSem);
             LOG_INFOF("Current timeline value: {}", val);
             if (val != 1) {
                 LOG_ERRORF("Timeline value mismatch! Expected 1, got {}", val);
@@ -97,17 +101,17 @@ namespace ArisenEngine::Testing
             }
 
             LOG_INFO("CPU Wait for timeline value 1...");
-            RHI_Semaphore_WaitValue(m_Device, timelineSem, 1);
+            m_Device->WaitSemaphoreValue(timelineSem, 1);
 
             // Test GPU wait and signal
             LOG_INFO("Testing GPU wait and signal with timeline semaphore...");
-            RHI_CommandBufferHandle timelineCmd = RHI_Device_GetCommandBuffer(m_Device, m_CommandPool, 0);
-            RHI_Cmd_Begin(timelineCmd, 0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+            auto timelineCmd = m_Device->GetCommandBufferPool(m_CommandPool)->GetCommandBuffer(0);
+            timelineCmd->Begin(RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
             // (Dummy work)
-            RHI_Cmd_End(timelineCmd);
+            timelineCmd->End();
 
             RHI::RHISubmitDescriptor submitDesc{};
-            RHI::RHISemaphoreHandle waitSemHandle = *reinterpret_cast<RHI::RHISemaphoreHandle*>(&timelineSem);
+            RHI::RHISemaphoreHandle waitSemHandle = timelineSem;
             uint64_t waitVal = 1;
             uint64_t signalVal = 2;
 
@@ -120,12 +124,12 @@ namespace ArisenEngine::Testing
             submitDesc.signalSemaphoreCount = 1;
 
             LOG_INFO("Submitting command buffer that waits for value 1 and signals value 2...");
-            RHI_Device_Submit(m_Device, timelineCmd, reinterpret_cast<const struct RHISubmitDescriptor*>(&submitDesc));
+            m_Device->Submit(timelineCmd, &submitDesc);
 
             LOG_INFO("CPU Waiting for timeline value 2 (GPU signal)...");
-            RHI_Semaphore_WaitValue(m_Device, timelineSem, 2);
+            m_Device->WaitSemaphoreValue(timelineSem, 2);
             
-            val = RHI_Semaphore_GetValue(m_Device, timelineSem);
+            val = m_Device->GetSemaphoreValue(timelineSem);
             LOG_INFOF("Final timeline value: {}", val);
             if (val != 2) {
                 LOG_ERRORF("Timeline value mismatch after GPU signal! Expected 2, got {}", val);
@@ -135,28 +139,28 @@ namespace ArisenEngine::Testing
             LOG_INFO("Timeline semaphore test passed.");
 
             // Cleanup
-            RHI_Device_ReleaseSemaphore(m_Device, timelineSem);
-            RHI_Device_ReleaseCommandBuffer(m_Device, m_CommandPool, 0, timelineCmd);
+            m_Device->GetFactory()->ReleaseSemaphore(timelineSem);
+            m_Device->GetCommandBufferPool(m_CommandPool)->ReleaseCommandBuffer(0, timelineCmd);
 
             // Cleanup
             LOG_INFO("Releasing image...");
-            RHI_Device_ReleaseImage(m_Device, testImage);
+            m_Device->GetFactory()->ReleaseImage(testImage);
             LOG_INFO("Releasing command buffer...");
-            RHI_Device_ReleaseCommandBuffer(m_Device, m_CommandPool, 0, cmd);
+            m_Device->GetCommandBufferPool(m_CommandPool)->ReleaseCommandBuffer(0, cmd);
 
             return true;
         }
 
         void TeardownTest() override
         {
-            if (m_CommandPool)
+            if (m_CommandPool.IsValid())
             {
-                RHI_Device_ReleaseCommandBufferPool(m_Device, m_CommandPool);
-                m_CommandPool = 0;
+                m_Device->GetFactory()->ReleaseCommandBufferPool(m_CommandPool);
+                m_CommandPool = {};
             }
         }
 
     private:
-        RHI_CommandBufferPoolHandle m_CommandPool = 0;
+        RHI::RHICommandBufferPoolHandle m_CommandPool;
     };
 }

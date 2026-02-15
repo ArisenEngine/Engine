@@ -1,14 +1,26 @@
 #pragma once
+
 #include "../RHIRenderingTestBase.h"
+#include <memory>
+#include "RHI/Core/RHIDevice.h"
+#include "RHI/Core/RHIFactory.h"
+#include "RHI/Commands/RHICommandBuffer.h"
+#include "RHI/Commands/RHICommandBufferPool.h"
+#include "RHI/Presentation/RHISwapChain.h"
+
+#include "RHI/Pipeline/RHIPipelineCache.h"
+#include "RHI/Pipeline/RHIPipelineState.h"
+#include "RHI/Descriptors/RHIDescriptorPool.h"
 
 namespace ArisenEngine::Testing
 {
-    struct RHIDrawIndexedIndirectCommand {
-        uint32_t indexCount;
-        uint32_t instanceCount;
-        uint32_t firstIndex;
-        int32_t vertexOffset;
-        uint32_t firstInstance;
+    using namespace ArisenEngine;
+    struct IndirectCommand {
+        UInt32 indexCount;
+        UInt32 instanceCount;
+        UInt32 firstIndex;
+        SInt32 vertexOffset;
+        UInt32 firstInstance;
     };
 
     struct MaterialGroup {
@@ -20,18 +32,19 @@ namespace ArisenEngine::Testing
     class RHIMultiDrawIndirectTest : public RHIRenderingTestBase
     {
     private:
-        RHI_PSOHandle m_Pso = nullptr;
-        RHI_PipelineHandle m_Pipeline = 0;
-        Containers::Vector<RHI_BufferHandle> m_UboBuffer;
-        RHI_BufferHandle m_IndirectBuffer = 0;
+        std::unique_ptr<RHI::RHIPipelineState> m_Pso;
+        RHI::RHIPipelineHandle m_Pipeline;
+        Containers::Vector<RHI::RHIBufferHandle> m_UboBuffer;
+        RHI::RHIBufferHandle m_IndirectBuffer;
+        RHI::RHIBufferHandle m_CountBuffer;
         
-        RHI_ImageHandle m_DepthImage = 0;
-        RHI_ImageViewHandle m_DepthView = 0;
-        RHI_ImageHandle m_MSAAColorImage = 0;
-        RHI_ImageViewHandle m_MSAAColorView = 0;
+        RHI::RHIImageHandle m_DepthImage;
+        RHI::RHIImageViewHandle m_DepthView;
+        RHI::RHIImageHandle m_MSAAColorImage;
+        RHI::RHIImageViewHandle m_MSAAColorView;
         RHI::ESampleCountFlagBits m_SampleCount = RHI::SAMPLE_COUNT_4_BIT;
 
-        Containers::Vector<RHIDrawIndexedIndirectCommand> m_IndirectCommands;
+        Containers::Vector<IndirectCommand> m_IndirectCommands;
         Containers::Vector<MaterialGroup> m_MaterialGroups;
 
     public:
@@ -55,19 +68,19 @@ namespace ArisenEngine::Testing
 
         void TeardownTest() override
         {
-            if (m_IndirectBuffer) RHI_Device_ReleaseBuffer(m_Device, m_IndirectBuffer);
-            if (m_DepthView) RHI_Device_ReleaseImageView(m_Device, m_DepthView);
-            if (m_DepthImage) RHI_Device_ReleaseImage(m_Device, m_DepthImage);
-            if (m_MSAAColorView) RHI_Device_ReleaseImageView(m_Device, m_MSAAColorView);
-            if (m_MSAAColorImage) RHI_Device_ReleaseImage(m_Device, m_MSAAColorImage);
+            if (m_IndirectBuffer.IsValid()) m_Device->GetFactory()->ReleaseBuffer(m_IndirectBuffer);
+            if (m_DepthView.IsValid()) m_Device->GetFactory()->ReleaseImageView(m_DepthView);
+            if (m_DepthImage.IsValid()) m_Device->GetFactory()->ReleaseImage(m_DepthImage);
+            if (m_MSAAColorView.IsValid()) m_Device->GetFactory()->ReleaseImageView(m_MSAAColorView);
+            if (m_MSAAColorImage.IsValid()) m_Device->GetFactory()->ReleaseImage(m_MSAAColorImage);
 
             for (auto& ub : m_UboBuffer)
             {
-                if (ub) RHI_Device_ReleaseBuffer(m_Device, ub);
+                if (ub.IsValid()) m_Device->GetFactory()->ReleaseBuffer(ub);
             }
             m_UboBuffer.clear();
 
-            if (m_Pso) RHI_PSO_Release(m_Pso);
+            m_Pso.reset();
             
             m_Model.Release(m_Device);
 
@@ -80,7 +93,7 @@ namespace ArisenEngine::Testing
             auto currentIndex = GetCurrentFrameIndex();
             if (m_FrameTickets[currentIndex] > 0)
             {
-                RHI_Device_WaitQueueTicket(m_Device, m_FrameTickets[currentIndex]);
+                m_Device->WaitQueueTicket(m_FrameTickets[currentIndex]);
             }
 
             UpdateUniformBuffer();
@@ -93,15 +106,15 @@ namespace ArisenEngine::Testing
         {
             if (width == 0 || height == 0) return;
 
-            if (m_DepthView) RHI_Device_ReleaseImageView(m_Device, m_DepthView);
-            if (m_DepthImage) RHI_Device_ReleaseImage(m_Device, m_DepthImage);
-            if (m_MSAAColorView) RHI_Device_ReleaseImageView(m_Device, m_MSAAColorView);
-            if (m_MSAAColorImage) RHI_Device_ReleaseImage(m_Device, m_MSAAColorImage);
+            if (m_DepthView.IsValid()) m_Device->GetFactory()->ReleaseImageView(m_DepthView);
+            if (m_DepthImage.IsValid()) m_Device->GetFactory()->ReleaseImage(m_DepthImage);
+            if (m_MSAAColorView.IsValid()) m_Device->GetFactory()->ReleaseImageView(m_MSAAColorView);
+            if (m_MSAAColorImage.IsValid()) m_Device->GetFactory()->ReleaseImage(m_MSAAColorImage);
 
-            m_DepthView = 0;
-            m_DepthImage = 0;
-            m_MSAAColorView = 0;
-            m_MSAAColorImage = 0;
+            m_DepthView = {};
+            m_DepthImage = {};
+            m_MSAAColorView = {};
+            m_MSAAColorImage = {};
 
             CreateSizeDependentResources();
         }
@@ -137,7 +150,7 @@ namespace ArisenEngine::Testing
                 for (UInt32 primIdx : pair.second)
                 {
                     const auto& prim = m_Model.primitives[primIdx];
-                    RHIDrawIndexedIndirectCommand cmd = {};
+                    IndirectCommand cmd = {};
                     cmd.indexCount = prim.indexCount;
                     cmd.instanceCount = 1;
                     cmd.firstIndex = prim.firstIndex;
@@ -149,12 +162,21 @@ namespace ArisenEngine::Testing
 
             // Create Indirect Buffer
             RHI::RHIBufferDescriptor indirectDesc = {};
-            indirectDesc.size = m_IndirectCommands.size() * sizeof(RHIDrawIndexedIndirectCommand);
+            indirectDesc.size = m_IndirectCommands.size() * sizeof(IndirectCommand);
             indirectDesc.usage = RHI::BUFFER_USAGE_INDIRECT_BUFFER_BIT | RHI::BUFFER_USAGE_TRANSFER_DST_BIT;
             indirectDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
-            m_IndirectBuffer = RHI_Device_CreateBuffer(m_Device, &indirectDesc, "IndirectBuffer");
+            m_IndirectBuffer = m_Device->GetFactory()->CreateBuffer(std::move(indirectDesc), "IndirectBuffer");
             
-            RHI_Buffer_MemoryCopy(m_Device, m_IndirectBuffer, m_IndirectCommands.data(), indirectDesc.size, 0);
+            m_Device->BufferMemoryCopy(m_IndirectBuffer, m_IndirectCommands.data(), m_IndirectCommands.size() * sizeof(IndirectCommand), 0);
+            
+            // Count Buffer
+            UInt32 count = (UInt32)m_IndirectCommands.size(); // Assuming count should be the number of indirect commands
+            RHI::RHIBufferDescriptor countDesc = {};
+            countDesc.size = sizeof(UInt32);
+            countDesc.usage = RHI::BUFFER_USAGE_INDIRECT_BUFFER_BIT | RHI::BUFFER_USAGE_TRANSFER_DST_BIT;
+            countDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            m_CountBuffer = m_Device->GetFactory()->CreateBuffer(std::move(countDesc), "CountBuffer");
+            m_Device->BufferMemoryCopy(m_CountBuffer, &count, sizeof(UInt32), 0);
 
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
@@ -162,7 +184,7 @@ namespace ArisenEngine::Testing
                 ubDesc.size = sizeof(UniformBufferObject);
                 ubDesc.usage = RHI::BUFFER_USAGE_UNIFORM_BUFFER_BIT;
                 ubDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
-                m_UboBuffer.push_back(RHI_Device_CreateBuffer(m_Device, &ubDesc, "UBO"));
+                m_UboBuffer.push_back(m_Device->GetFactory()->CreateBuffer(std::move(ubDesc), "UBO"));
             }
 
             m_CameraPos = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -190,7 +212,7 @@ namespace ArisenEngine::Testing
             dimgDesc.usage = RHI::IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
             dimgDesc.sampleCount = m_SampleCount;
             dimgDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            m_DepthImage = RHI_Device_CreateImage(m_Device, &dimgDesc, "DepthBuffer");
+            m_DepthImage = m_Device->GetFactory()->CreateImage(std::move(dimgDesc), "DepthBuffer");
 
             RHI::RHIImageViewDesc dviewDesc = {};
             dviewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
@@ -198,7 +220,7 @@ namespace ArisenEngine::Testing
             dviewDesc.aspectMask = RHI::IMAGE_ASPECT_DEPTH_BIT;
             dviewDesc.levelCount = 1; dviewDesc.layerCount = 1;
             dviewDesc.width = width; dviewDesc.height = height;
-            m_DepthView = RHI_Image_AddImageView(m_Device, m_DepthImage, &dviewDesc);
+            m_DepthView = m_Device->GetFactory()->CreateImageView(m_DepthImage, std::move(dviewDesc));
 
             // MSAA Color Image
             RHI::RHIImageDescriptor msaaDesc = {};
@@ -210,7 +232,7 @@ namespace ArisenEngine::Testing
             msaaDesc.usage = RHI::IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | RHI::IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
             msaaDesc.sampleCount = m_SampleCount;
             msaaDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            m_MSAAColorImage = RHI_Device_CreateImage(m_Device, &msaaDesc, "MSAAColorBuffer");
+            m_MSAAColorImage = m_Device->GetFactory()->CreateImage(std::move(msaaDesc), "MSAAColorBuffer");
 
             RHI::RHIImageViewDesc msaaViewDesc = {};
             msaaViewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
@@ -218,7 +240,7 @@ namespace ArisenEngine::Testing
             msaaViewDesc.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
             msaaViewDesc.levelCount = 1; msaaViewDesc.layerCount = 1;
             msaaViewDesc.width = width; msaaViewDesc.height = height;
-            m_MSAAColorView = RHI_Image_AddImageView(m_Device, m_MSAAColorImage, &msaaViewDesc);
+            m_MSAAColorView = m_Device->GetFactory()->CreateImageView(m_MSAAColorImage, std::move(msaaViewDesc));
         }
 
     private:
@@ -231,64 +253,62 @@ namespace ArisenEngine::Testing
                 UInt32 matCount = (UInt32)m_Model.materials.size();
                 if (matCount == 0) matCount = 1;
                 Containers::Vector<UInt32> counts = { matCount, matCount, matCount };
-                m_DescriptorPoolIds.push_back(RHI_DescriptorPool_AddPool(m_DescriptorPool, &types, &counts, matCount));
+                m_DescriptorPoolIds.push_back(m_DescriptorPool->AddPool(types, counts, matCount));
             }
         }
 
         void CreatePipeline()
         {
-            auto pm = RHI_Device_GetPipelineManager(m_Device);
-            m_Pso = RHI_PipelineManager_CreatePSO(pm);
+            auto pm = m_Device->GetPipelineCache();
+            m_Pso = pm->GetPipelineState();
 
-            RHI_PSO_AddProgram(m_Pso, m_VertProgram);
-            RHI_PSO_AddProgram(m_Pso, m_FragProgram);
+            m_Pso->AddProgram(m_VertProgram);
+            m_Pso->AddProgram(m_FragProgram);
 
-            RHI_PSO_AddVertexBindingDescription(m_Pso, 0, m_Model.layout.stride, RHI::VERTEX_INPUT_RATE_VERTEX);
+            m_Pso->AddVertexBindingDescription(0, m_Model.layout.stride, RHI::VERTEX_INPUT_RATE_VERTEX);
             for (const auto& attr : m_Model.layout.attributes)
             {
-                RHI_PSO_AddVertexInputAttributeDescription(m_Pso, attr.location, 0, attr.format, attr.offset);
+                m_Pso->AddVertexInputAttributeDescription(attr.location, 0, attr.format, attr.offset);
             }
 
             RHI::RHIInputAssemblyState ia{};
             ia.topology = RHI::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-            RHI_PSO_SetInputAssemblyState(m_Pso, &ia);
+            m_Pso->SetInputAssemblyState(ia);
 
             RHI::RHIRasterizationState rs{};
             rs.cullMode = RHI::CULL_MODE_NONE;
             rs.frontFace = RHI::FRONT_FACE_COUNTER_CLOCKWISE;
             rs.polygonMode = RHI::EPOLYGON_MODE_FILL;
             rs.lineWidth = 1.0f;
-            RHI_PSO_SetRasterizationState(m_Pso, &rs);
+            m_Pso->SetRasterizationState(rs);
 
             RHI::RHIMultisampleState ms{};
             ms.rasterizationSamples = m_SampleCount;
-            RHI_PSO_SetMultisampleState(m_Pso, &ms);
+            m_Pso->SetMultisampleState(ms);
 
             RHI::RHIColorBlendState cb{};
             RHI::RHIColorBlendAttachmentState blendAttachment{};
             blendAttachment.blendEnable = false;
             blendAttachment.colorWriteMask = RHI::COLOR_COMPONENT_R_BIT | RHI::COLOR_COMPONENT_G_BIT | RHI::COLOR_COMPONENT_B_BIT | RHI::COLOR_COMPONENT_A_BIT;
             cb.attachments.push_back(blendAttachment);
-            RHI_PSO_SetColorBlendState(m_Pso, &cb);
+            m_Pso->SetColorBlendState(cb);
 
-            Containers::Vector<RHI_BufferHandle> buffers;
-            buffers.push_back(m_UboBuffer[0]);
-            RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 0, &buffers);
+            m_Pso->UpdateDescriptorSet(0, 0, Containers::Vector<RHI::RHIBufferHandle>{ m_UboBuffer[0] });
 
-            RHI_PSO_BuildDescriptorSetLayout(m_Pso);
+            m_Pso->BuildDescriptorSetLayout();
 
             RHI::RHIDepthStencilState ds{};
             ds.depthTestEnable = true;
             ds.depthWriteEnable = true;
             ds.depthCompareOp = RHI::COMPARE_OP_LESS;
-            RHI_PSO_SetDepthStencilState(m_Pso, &ds);
+            m_Pso->SetDepthStencilState(ds);
 
-            RHI_PSO_SetDynamicStateMask(m_Pso, RHI::DYNAMIC_STATE_VIEWPORT_BIT | RHI::DYNAMIC_STATE_SCISSOR_BIT);
+            m_Pso->SetDynamicStateMask(RHI::DYNAMIC_STATE_VIEWPORT_BIT | RHI::DYNAMIC_STATE_SCISSOR_BIT);
 
             Containers::Vector<RHI::EFormat> colorFormats = { RHI::FORMAT_B8G8R8A8_SRGB };
-            RHI_PSO_SetRenderingFormats(m_Pso, &colorFormats, RHI::FORMAT_D32_SFLOAT, RHI::FORMAT_UNDEFINED);
+            m_Pso->SetRenderingFormats(colorFormats, RHI::FORMAT_D32_SFLOAT, RHI::FORMAT_UNDEFINED);
 
-            m_Pipeline = RHI_PipelineManager_GetGraphicsPipeline(pm, m_Pso);
+            m_Pipeline = pm->GetGraphicsPipeline(m_Pso.get());
         }
 
         void UpdateUniformBuffer()
@@ -301,52 +321,50 @@ namespace ArisenEngine::Testing
             float height = (float)HAL::GetWindowHeight(m_WindowId);
             ubo.projection = GetProjectionMatrix(width / height);
             ubo.mipmapBias = 0.0f;
-            RHI_Buffer_MemoryCopy(m_Device, m_UboBuffer[GetCurrentFrameIndex()], &ubo, sizeof(UniformBufferObject), 0);
+            m_Device->BufferMemoryCopy(m_UboBuffer[GetCurrentFrameIndex()], &ubo, sizeof(UniformBufferObject), 0);
         }
 
         void RecordAndSubmit()
         {
             auto currentIndex = GetCurrentFrameIndex();
-            auto cmd = RHI_Device_GetCommandBuffer(m_Device, m_CmdPool, currentIndex);
-
-            RHI_DescriptorPool_Reset(m_DescriptorPool, m_DescriptorPoolIds[currentIndex]);
+            auto pool = m_Device->GetCommandBufferPool(m_CmdPool);
+            auto cmd = pool->GetCommandBuffer(currentIndex);
+            
+            m_DescriptorPool->ResetPool(m_DescriptorPoolIds[currentIndex]);
             
             Containers::Vector<UInt32> setIndices;
             for (UInt32 i = 0; i < (UInt32)m_Model.materials.size(); ++i)
             {
                 auto& mat = m_Model.materials[i];
-                Containers::Vector<RHI_BufferHandle> ubos = { m_UboBuffer[currentIndex] };
-                RHI_PSO_UpdateDescriptorSet_Buffers(m_Pso, 0, 0, &ubos);
+                m_Pso->UpdateDescriptorSet(0, 0, Containers::Vector<RHI::RHIBufferHandle>{ m_UboBuffer[currentIndex] });
 
                 RHI::RHIDescriptorImageInfo texInfo = {};
-                texInfo.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&mat.baseColorView);
+                texInfo.imageView = mat.baseColorView;
                 texInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                Containers::Vector<RHI::RHIDescriptorImageInfo> texInfos = { texInfo };
-                RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 1, &texInfos);
+                m_Pso->UpdateDescriptorSet(0, 1, Containers::Vector<RHI::RHIDescriptorImageInfo>{ texInfo });
 
                 RHI::RHIDescriptorImageInfo samInfo = {};
-                samInfo.sampler = *reinterpret_cast<RHI::RHISamplerHandle*>(&mat.sampler);
+                samInfo.sampler = mat.sampler;
                 samInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                Containers::Vector<RHI::RHIDescriptorImageInfo> samInfos = { samInfo };
-                RHI_PSO_UpdateDescriptorSet_Images(m_Pso, 0, 2, &samInfos);
+                m_Pso->UpdateDescriptorSet(0, 2, Containers::Vector<RHI::RHIDescriptorImageInfo>{ samInfo });
 
-                setIndices.push_back(RHI_DescriptorPool_AllocDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[currentIndex], 0, m_Pso));
-                RHI_DescriptorPool_UpdateDescriptorSet(m_DescriptorPool, m_DescriptorPoolIds[currentIndex], setIndices.back(), m_Pso);
+                UInt32 setIdx = m_DescriptorPool->AllocDescriptorSet(m_DescriptorPoolIds[currentIndex], (UInt32)0, (RHI::RHIPipelineState*)m_Pso.get());
+                m_DescriptorPool->UpdateDescriptorSet(m_DescriptorPoolIds[currentIndex], setIdx, m_Pso.get());
+                setIndices.push_back(setIdx);
             }
 
-            RHI_Cmd_Begin(cmd, currentIndex, 0);
+            cmd->Begin(currentIndex, 0);
 
-            auto colorBuffer = RHI_SwapChain_BeginFrame(m_SwapChain, currentIndex);
-            if (colorBuffer)
+            auto colorBuffer = m_SwapChain->BeginFrame(currentIndex);
+            if (colorBuffer.IsValid())
             {
-                auto colorView = RHI_SwapChain_GetImageView(m_SwapChain, currentIndex);
-                // RHI::RHIImageHandle colorImage = *reinterpret_cast<RHI::RHIImageHandle*>(&colorBuffer);
+                auto colorView = m_SwapChain->GetImageView(currentIndex);
 
                 // Transition swapchain image
-                RHI_Cmd_TransitionImageLayout(cmd, colorBuffer, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+                cmd->TransitionImageLayout(colorBuffer, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
                 RHI::RHIRenderingAttachmentInfo colorAttachment {};
-                colorAttachment.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&m_MSAAColorView);
+                colorAttachment.imageView = m_MSAAColorView;
                 colorAttachment.imageLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                 colorAttachment.loadOp = RHI::ATTACHMENT_LOAD_OP_CLEAR;
                 colorAttachment.storeOp = RHI::ATTACHMENT_STORE_OP_DONT_CARE;
@@ -356,13 +374,13 @@ namespace ArisenEngine::Testing
                 colorAttachment.clearValue.float32[3] = 1.0f;
 
                 RHI::RHIRenderingAttachmentInfo resolveAttachment {};
-                resolveAttachment.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&colorView);
+                resolveAttachment.imageView = colorView;
                 resolveAttachment.imageLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                 resolveAttachment.loadOp = RHI::ATTACHMENT_LOAD_OP_DONT_CARE;
                 resolveAttachment.storeOp = RHI::ATTACHMENT_STORE_OP_STORE;
 
                 RHI::RHIRenderingAttachmentInfo depthAttachment {};
-                depthAttachment.imageView = *reinterpret_cast<RHI::RHIImageViewHandle*>(&m_DepthView);
+                depthAttachment.imageView = m_DepthView;
                 depthAttachment.imageLayout = RHI::IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
                 depthAttachment.loadOp = RHI::ATTACHMENT_LOAD_OP_CLEAR;
                 depthAttachment.storeOp = RHI::ATTACHMENT_STORE_OP_DONT_CARE;
@@ -379,41 +397,41 @@ namespace ArisenEngine::Testing
                 renderInfo.pResolveAttachments = &resolveAttachment;
                 renderInfo.pDepthAttachment = &depthAttachment;
 
-                RHI_Cmd_BeginRendering(cmd, &renderInfo);
-                RHI_Cmd_BindPipeline(cmd, m_Pipeline);
-                RHI_Cmd_SetViewport(cmd, 0, 0, (float)width, (float)height, 0, 1);
-                RHI_Cmd_SetScissor(cmd, 0, 0, width, height);
+                cmd->BeginRendering(renderInfo);
+                cmd->BindPipeline(m_Pipeline);
+                cmd->SetViewport(0, 0, (float)width, (float)height, 0, 1);
+                cmd->SetScissor(0, 0, width, height);
 
-                RHI_Cmd_BindVertexBuffers(cmd, m_Model.vertexBuffer, 0);
-                RHI_Cmd_BindIndexBuffer(cmd, m_Model.indexBuffer, 0, RHI::INDEX_TYPE_UINT32);
+                cmd->BindVertexBuffers(m_Model.vertexBuffer, 0);
+                cmd->BindIndexBuffer(m_Model.indexBuffer, 0, RHI::INDEX_TYPE_UINT32);
 
                 glm::vec4 tintColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-                RHI_Cmd_PushConstants(cmd, 0, sizeof(glm::vec4), &tintColor, static_cast<RHI::EShaderStage>(RHI::SHADER_STAGE_FRAGMENT_BIT | RHI::SHADER_STAGE_VERTEX_BIT));
+                cmd->PushConstants(0, sizeof(glm::vec4), &tintColor, static_cast<UInt32>(RHI::SHADER_STAGE_FRAGMENT_BIT | RHI::SHADER_STAGE_VERTEX_BIT));
 
                 // DRAW EACH MATERIAL GROUP
                 for (const auto& group : m_MaterialGroups)
                 {
                     UInt32 setIdx = group.materialIndex >= 0 ? setIndices[group.materialIndex] : 0;
-                    RHI_Cmd_BindDescriptorSet_FromPool(cmd, RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[currentIndex], setIdx);
+                    cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[currentIndex], setIdx);
                     
-                    RHI_Cmd_DrawIndexedIndirect(cmd, m_IndirectBuffer, group.commandOffset * sizeof(RHIDrawIndexedIndirectCommand), group.commandCount, sizeof(RHIDrawIndexedIndirectCommand));
+                    cmd->DrawIndexedIndirect(m_IndirectBuffer, group.commandOffset * sizeof(IndirectCommand), group.commandCount, sizeof(IndirectCommand));
                 }
 
-                RHI_Cmd_EndRendering(cmd);
+                cmd->EndRendering();
 
                 // Transition swapchain image to PRESENT
-                RHI_Cmd_TransitionImageLayout(cmd, colorBuffer, RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR);
+                cmd->TransitionImageLayout(colorBuffer, RHI::IMAGE_LAYOUT_PRESENT_SRC_KHR);
             }
 
-            RHI_Cmd_End(cmd);
+            cmd->End();
 
             RHI::RHISubmitDescriptor submitDesc = {};
-            submitDesc.WaitSwapChain = reinterpret_cast<RHI::RHISwapChain*>(m_SwapChain);
-            submitDesc.SignalSwapChain = reinterpret_cast<RHI::RHISwapChain*>(m_SwapChain);
+            submitDesc.WaitSwapChain = m_SwapChain;
+            submitDesc.SignalSwapChain = m_SwapChain;
             
-            m_FrameTickets[currentIndex] = RHI_Device_Submit(m_Device, cmd, reinterpret_cast<const ::RHISubmitDescriptor*>(&submitDesc));
-            RHI_SwapChain_EndFrame(m_SwapChain, currentIndex);
-            RHI_Device_ReleaseCommandBuffer(m_Device, m_CmdPool, currentIndex, cmd);
+            m_FrameTickets[currentIndex] = m_Device->Submit(cmd, &submitDesc);
+            m_SwapChain->EndFrame(currentIndex);
+            pool->ReleaseCommandBuffer(currentIndex, cmd);
         }
     };
 }

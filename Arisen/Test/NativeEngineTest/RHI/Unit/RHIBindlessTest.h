@@ -1,8 +1,7 @@
 #pragma once
 #include "../RHITestBase.h"
-#include "../../Engine/NativeEngine/RHI/DescriptorExports.h"
-#include "../../Engine/NativeEngine/RHI/HandlesExports.h"
-#include "../../Engine/NativeEngine/RHI/DeviceExports.h"
+#include "RHI/Core/RHIDevice.h"
+#include "RHI/Core/RHIFactory.h"
 
 namespace ArisenEngine::Testing
 {
@@ -27,14 +26,14 @@ namespace ArisenEngine::Testing
                 0, nullptr,
                 RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             };
-            RHI_BufferHandle testBuffer = RHI_Device_CreateBuffer(m_Device, &bufDesc, "BindlessTestBuffer");
+            RHI::RHIBufferHandle testBuffer = m_Device->GetFactory()->CreateBuffer(std::move(bufDesc), "BindlessTestBuffer");
 
             // 2. Register with Bindless Manager
-            UInt32 bufferIndex = RHI_Device_BindlessRegisterBuffer(m_Device, testBuffer);
+            UInt32 bufferIndex = m_Device->RegisterBindlessResource(testBuffer);
             if (bufferIndex == 0xFFFFFFFF)
             {
                 LOG_ERROR("Failed to register buffer with Bindless Manager");
-                RHI_Device_ReleaseBuffer(m_Device, testBuffer);
+                m_Device->GetFactory()->ReleaseBuffer(testBuffer);
                 return false;
             }
             LOG_INFO("Buffer registered at bindless index: " + std::to_string(bufferIndex));
@@ -47,31 +46,31 @@ namespace ArisenEngine::Testing
                 0, nullptr,
                 RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             };
-            RHI_ImageHandle testImage = RHI_Device_CreateImage(m_Device, &imgDesc, "BindlessTestImage");
+            RHI::RHIImageHandle testImage = m_Device->GetFactory()->CreateImage(std::move(imgDesc), "BindlessTestImage");
 
             // Create a view for registration
             RHI::RHIImageViewDesc viewDesc{ RHI::IMAGE_VIEW_TYPE_2D, RHI::FORMAT_R8G8B8A8_UNORM, RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
             viewDesc.width = 256;
             viewDesc.height = 256;
-            RHI_ImageViewHandle testView = RHI_Image_AddImageView(m_Device, testImage, &viewDesc);
+            RHI::RHIImageViewHandle testView = m_Device->GetFactory()->CreateImageView(testImage, std::move(viewDesc));
 
             // 4. Register image (using the view handle, not the image handle)
-            UInt32 imageIndex = RHI_Device_BindlessRegisterImage(m_Device, testView);
+            UInt32 imageIndex = m_Device->RegisterBindlessResource(testView);
             if (imageIndex == 0xFFFFFFFF)
             {
                 LOG_ERROR("Failed to register image with Bindless Manager");
-                RHI_Device_ReleaseImage(m_Device, testImage);
-                RHI_Device_ReleaseBuffer(m_Device, testBuffer);
+                m_Device->GetFactory()->ReleaseImage(testImage);
+                m_Device->GetFactory()->ReleaseBuffer(testBuffer);
                 return false;
             }
             LOG_INFO("Image registered at bindless index: " + std::to_string(imageIndex));
 
             // Wait for all operations to complete before cleanup
-            RHI_Device_WaitIdle(m_Device);
+            m_Device->DeviceWaitIdle();
 
             // Cleanup
-            RHI_Device_ReleaseImage(m_Device, testImage);
-            RHI_Device_ReleaseBuffer(m_Device, testBuffer);
+            m_Device->GetFactory()->ReleaseImage(testImage);
+            m_Device->GetFactory()->ReleaseBuffer(testBuffer);
 
             LOG_INFO("Bindless Resource Test Passed.");
             return true;

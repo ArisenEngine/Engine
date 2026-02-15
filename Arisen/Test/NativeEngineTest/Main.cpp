@@ -20,7 +20,7 @@
 #include "RHI/Unit/RHIInspectorTest.h"
 #include "RHI/Rendering/RHIRayTracingTest.h"
 #include "RHI/Rendering/RHIVRSShadingRateTest.h"
-#include "../../Engine/NativeEngine/Core/EngineInit.h"
+#include "../../Core/Core.HAL/Common/EngineInit.h"
 
 #include <windows.h>
 #include <vector>
