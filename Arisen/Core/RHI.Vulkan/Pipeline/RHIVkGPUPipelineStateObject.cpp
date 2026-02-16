@@ -8,6 +8,8 @@
 #include "Utils/RHIVkInitializer.h"
 #include "Descriptors/RHIVkBindlessManager.h"
 #include "Handles/RHIVkResourcePools.h"
+#include "Descriptors/RHIVkBindlessDescriptorTable.h"
+#include "Descriptors/RHIVkDescriptorHeap.h"
 
 namespace ArisenEngine::RHI
 {
@@ -186,7 +188,15 @@ void RHIVkGPUPipelineStateObject::BuildDescriptorSetLayout()
     ClearDescriptorSetLayouts();
 
     auto vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
-    VkDescriptorSetLayout bindlessLayout = m_Device->GetBindlessManager()->GetDescriptorSetLayout();
+    VkDescriptorSetLayout bindlessLayout = VK_NULL_HANDLE;
+    if (m_BindlessTable)
+    {
+        bindlessLayout = static_cast<RHIVkDescriptorHeap*>(m_BindlessTable->GetHeap())->GetVkDescriptorSetLayout();
+    }
+    else
+    {
+        bindlessLayout = m_Device->GetBindlessManager()->GetDescriptorSetLayout();
+    }
 
     // Loop through all defined sets
     // We expect sets to be relatively contiguous
@@ -283,7 +293,15 @@ UInt32 RHIVkGPUPipelineStateObject::GetDescriptorSetLayoutCount() const
 void RHIVkGPUPipelineStateObject::ClearDescriptorSetLayouts()
 {
     auto vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
-    VkDescriptorSetLayout bindlessLayout = m_Device->GetBindlessManager()->GetDescriptorSetLayout();
+    VkDescriptorSetLayout bindlessLayout = VK_NULL_HANDLE;
+    if (m_BindlessTable)
+    {
+        bindlessLayout = static_cast<RHIVkDescriptorHeap*>(m_BindlessTable->GetHeap())->GetVkDescriptorSetLayout();
+    }
+    else
+    {
+        bindlessLayout = m_Device->GetBindlessManager()->GetDescriptorSetLayout();
+    }
 
     for (VkDescriptorSetLayout descriptorSetLayout : m_DescriptorSetLayouts)
     {
@@ -619,6 +637,16 @@ void ArisenEngine::RHI::RHIVkGPUPipelineStateObject::AddRayTracingShaderGroup(co
     vkGroup.intersectionShader = group.intersectionShaderIndex;
     
     m_RayTracingShaderGroups.emplace_back(vkGroup);
+}
+
+void RHIVkGPUPipelineStateObject::SetBindlessDescriptorTable(RHIBindlessDescriptorTable* table)
+{
+    m_BindlessTable = static_cast<RHIVkBindlessDescriptorTable*>(table);
+}
+
+RHIBindlessDescriptorTable* RHIVkGPUPipelineStateObject::GetBindlessTable() const
+{
+    return m_BindlessTable;
 }
 
 } // namespace ArisenEngine::RHI

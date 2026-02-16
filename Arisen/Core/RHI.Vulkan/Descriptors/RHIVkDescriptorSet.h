@@ -12,8 +12,15 @@ namespace ArisenEngine::RHI
         RHIVkDescriptorSet(RHIDescriptorPool* RHIDescriptorPool, UInt32 layoutIndex, VkDescriptorSet vkDescriptorSet);
         virtual ~RHIVkDescriptorSet() override;
         void* GetHandle() override;
+
+        bool IsBindless() const override { return !m_BindlessIndices.empty(); }
+        const Containers::Vector<UInt32>& GetBindlessIndices() const override { return m_BindlessIndices; }
+
+        void SetBindlessIndices(const Containers::Vector<UInt32>& indices) { m_BindlessIndices = indices; }
+
     private:
         VkDescriptorSet m_DescriptorSet;
+        Containers::Vector<UInt32> m_BindlessIndices;
     };
 }
 

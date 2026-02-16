@@ -12,6 +12,8 @@
 #include "RHI/Sync/RHIMemoryBarrier.h"
 #include "Concurrency/SyncScope.h"
 #include "Allocation/RHIVkMemoryAllocator.h"
+#include "Descriptors/RHIVkBindlessDescriptorTable.h"
+#include "Descriptors/RHIVkDescriptorHeap.h"
 
 
 namespace ArisenEngine::RHI
@@ -546,13 +548,29 @@ void RHIVkCommandBuffer::BindPipeline(RHIPipelineHandle pipelineHandle)
         static_cast<VkPipeline>(vkPipeline->GetVkPipeline(frameIndex)));
 
     // Bind Global Bindless Descriptor Set (Set 3)
-    auto* bindlessManager = vkDevice->GetBindlessManager();
-    if (bindlessManager)
+    // Bind Global Bindless Descriptor Set (Set 3)
+    VkDescriptorSet bindlessSet = VK_NULL_HANDLE;
+    auto* pso = static_cast<RHIVkGPUPipelineStateObject*>(vkPipeline->GetPipelineStateObject());
+    
+    if (pso->GetBindlessTable())
     {
-        VkDescriptorSet bindlessSet = bindlessManager->GetDescriptorSet();
-        auto* vkPipeline = static_cast<RHIVkGPUPipeline*>(pipeline);
+        auto* table = static_cast<RHIVkBindlessDescriptorTable*>(pso->GetBindlessTable());
+        bindlessSet = static_cast<RHIVkDescriptorHeap*>(table->GetHeap())->GetVkDescriptorSet();
+    }
+    else
+    {
+        auto* bindlessManager = vkDevice->GetBindlessManager();
+        if (bindlessManager)
+        {
+            bindlessSet = bindlessManager->GetDescriptorSet();
+        }
+    }
+
+    if (bindlessSet != VK_NULL_HANDLE)
+    {
+        VkPipelineLayout layout = vkPipeline->GetPipelineLayout(frameIndex);
         ::vkCmdBindDescriptorSets(m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(pipeline->GetBindPoint()),
-            vkPipeline->GetPipelineLayout(frameIndex),
+            layout,
             3, 1, &bindlessSet, 0, nullptr);
     }
 }

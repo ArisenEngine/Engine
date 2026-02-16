@@ -23,6 +23,13 @@ namespace ArisenEngine::RHI
 
         virtual void* GetHandle() = 0;
 
+        virtual bool IsBindless() const { return false; }
+        virtual const Containers::Vector<UInt32>& GetBindlessIndices() const 
+        { 
+            static Containers::Vector<UInt32> empty; 
+            return empty; 
+        }
+
     public:
      
         RHIDescriptorPool* GetDescriptorPool() { return m_DescriptorPool; }
