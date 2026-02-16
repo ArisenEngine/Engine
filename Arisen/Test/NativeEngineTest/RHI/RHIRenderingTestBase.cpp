@@ -100,7 +100,8 @@ namespace ArisenEngine::Testing
         auto pool = m_Device->GetCommandBufferPool(m_CmdPool);
         // Assuming 0 is a valid index for a one-time command buffer
         UInt32 currentIndex = 0; 
-        auto cmd = pool->GetCommandBuffer(currentIndex);
+        auto cmdHandle = pool->GetCommandBuffer(currentIndex);
+        auto cmd = m_Device->GetCommandBuffer(cmdHandle);
     
         // Begin
         cmd->Begin(currentIndex, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -153,11 +154,11 @@ namespace ArisenEngine::Testing
         }
 
         cmd->End();
-        m_Device->Submit(cmd);
+        m_Device->Submit(cmdHandle);
         m_Device->DeviceWaitIdle();
 
         m_Device->GetFactory()->ReleaseBuffer(stagingBuffer);
-        m_Device->GetCommandBufferPool(m_CmdPool)->ReleaseCommandBuffer(0, cmd);
+        m_Device->GetCommandBufferPool(m_CmdPool)->ReleaseCommandBuffer(0, cmdHandle);
     }
 
     void RHIRenderingTestBase::TeardownCommonResources()

@@ -68,7 +68,8 @@ namespace ArisenEngine::Testing
             m_Device->UnmapBuffer(stagingBuffer);
 
             auto cmdPool = m_Device->GetFactory()->CreateCommandBufferPool(RHI::RHIQueueType::Graphics);
-            auto cmd = m_Device->GetCommandBufferPool(cmdPool)->GetCommandBuffer(0);
+            auto cmdHandle = m_Device->GetCommandBufferPool(cmdPool)->GetCommandBuffer(0);
+            auto cmd = m_Device->GetCommandBuffer(cmdHandle);
             
             cmd->Begin(RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
             
@@ -107,11 +108,11 @@ namespace ArisenEngine::Testing
             cmd->GenerateMipmaps(texture);
 
             cmd->End();
-            m_Device->Submit(cmd);
+            m_Device->Submit(cmdHandle);
             m_Device->DeviceWaitIdle();
 
             m_Device->GetFactory()->ReleaseBuffer(stagingBuffer);
-            m_Device->GetCommandBufferPool(cmdPool)->ReleaseCommandBuffer(0, cmd);
+            m_Device->GetCommandBufferPool(cmdPool)->ReleaseCommandBuffer(0, cmdHandle);
             m_Device->GetFactory()->ReleaseCommandBufferPool(cmdPool);
         };
 
@@ -423,14 +424,15 @@ namespace ArisenEngine::Testing
         m_Device->BufferMemoryCopy(iStaging, indices.data(), ibDesc.size, 0);
 
         auto cmdPool = m_Device->GetFactory()->CreateCommandBufferPool(RHI::RHIQueueType::Graphics);
-        auto cmd = m_Device->GetCommandBufferPool(cmdPool)->GetCommandBuffer(0);
+        auto cmdHandle = m_Device->GetCommandBufferPool(cmdPool)->GetCommandBuffer(0);
+        auto cmd = m_Device->GetCommandBuffer(cmdHandle);
 
         cmd->Begin(RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         cmd->CopyBuffer(vStaging, 0, model.vertexBuffer, 0, vbDesc.size);
         cmd->CopyBuffer(iStaging, 0, model.indexBuffer, 0, ibDesc.size);
         cmd->End();
         
-        m_Device->Submit(cmd);
+        m_Device->Submit(cmdHandle);
         m_Device->DeviceWaitIdle();
 
         m_Device->GetFactory()->ReleaseBuffer(vStaging);

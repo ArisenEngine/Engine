@@ -41,7 +41,7 @@ namespace ArisenEngine::RHI
         virtual RHIQueueType GetType() const = 0;
 
         // Returns a ticket assigned to this submission.
-        virtual RHIGpuTicket Submit(RHICommandBuffer* commandBuffer, const RHISubmitDescriptor* descriptor = nullptr) = 0;
+        virtual RHIGpuTicket Submit(RHICommandBufferHandle commandBuffer, const RHISubmitDescriptor* descriptor = nullptr) = 0;
 
         // Poll completion and advance completed ticket.
         virtual void Update() = 0;

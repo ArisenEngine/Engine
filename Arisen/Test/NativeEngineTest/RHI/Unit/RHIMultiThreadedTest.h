@@ -38,15 +38,16 @@ namespace ArisenEngine::Testing
             for (int f = 0; f < numFrames; ++f)
             {
                 std::vector<std::thread> threads;
-                std::vector<RHI::RHICommandBuffer*> cmdBuffers(numThreads);
+                std::vector<RHI::RHICommandBufferHandle> cmdHandles(numThreads);
 
                 for (int i = 0; i < numThreads; ++i)
                 {
                     threads.emplace_back([&, i, f]() {
                         // This should trigger the TLS Command Pool logic in RHIVkCommandBufferPool
                         auto pool = m_Device->GetCommandBufferPool(m_CommandPool);
-                        auto cmd = pool->GetCommandBuffer(f);
-                        cmdBuffers[i] = cmd;
+                        auto cmdHandle = pool->GetCommandBuffer(f);
+                        cmdHandles[i] = cmdHandle;
+                        auto cmd = m_Device->GetCommandBuffer(cmdHandle);
 
                         cmd->Begin(f, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
                         
@@ -65,7 +66,7 @@ namespace ArisenEngine::Testing
                 // Submit recorded buffers
                 for (int i = 0; i < numThreads; ++i)
                 {
-                    m_Device->Submit(cmdBuffers[i]);
+                    m_Device->Submit(cmdHandles[i]);
                 }
 
                 // Wait for GPU to finish work so we can safely recycle/destroy
@@ -74,7 +75,7 @@ namespace ArisenEngine::Testing
                 // Release (Recycle) command buffers
                 for (int i = 0; i < numThreads; ++i)
                 {
-                    m_Device->GetCommandBufferPool(m_CommandPool)->ReleaseCommandBuffer(f, cmdBuffers[i]);
+                    m_Device->GetCommandBufferPool(m_CommandPool)->ReleaseCommandBuffer(f, cmdHandles[i]);
                 }
             }
 

@@ -18,70 +18,71 @@ namespace ArisenEngine::RHI
         }
 
 
-        virtual RHICommandBuffer* GetCommandBuffer(UInt32 currentFrameIndex, ECommandBufferLevel level = COMMAND_BUFFER_LEVEL_PRIMARY)
+        virtual RHICommandBufferHandle GetCommandBuffer(UInt32 currentFrameIndex, ECommandBufferLevel level = COMMAND_BUFFER_LEVEL_PRIMARY)
         {
             (void)currentFrameIndex;
             std::lock_guard<std::mutex> lock(m_BuffersMutex);
 
             auto& freeList = (level == COMMAND_BUFFER_LEVEL_PRIMARY) ? m_FreePrimaryCommandBuffers : m_FreeSecondaryCommandBuffers;
 
-            // Fetch any buffer from the free list. 
-            // Buffers only enter the free lists via deferred release, so they are guaranteed GPU-safe.
             if (!freeList.empty())
             {
-                RHICommandBuffer* commandBuffer = freeList.back();
+                RHICommandBufferHandle handle = freeList.back();
                 freeList.pop_back();
-                return commandBuffer;
+                return handle;
             }
             
-            // If empty, always create new to avoid CPU stalls.
             return CreateCommandBuffer(level);
         }
         
         struct CommandBufferRecycler {
             RHICommandBufferPool* pool;
-            RHICommandBuffer* buffer;
+            RHICommandBufferHandle handle;
             ~CommandBufferRecycler() {
-                if (pool && buffer) {
-                    pool->InternalRecycle(buffer);
+                if (pool && handle.IsValid()) {
+                    pool->InternalRecycle(handle);
                 }
             }
         };
 
-        virtual void ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBuffer* commandBuffer)
+        virtual void ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBufferHandle handle)
         {
             (void)currentFrameIndex;
+            auto* commandBuffer = m_Device->GetCommandBuffer(handle);
+            if (!commandBuffer) return;
+
             auto ticket = commandBuffer->GetLatestSubmitTicket();
             
-            // If the GPU is already done with it, recycle immediately.
             if (m_Device->GetCompletedSubmitTicket() >= ticket)
             {
-                InternalRecycle(commandBuffer);
+                InternalRecycle(handle);
             }
             else
             {
-                // Otherwise, defer recycling until the GPU ticket is reached.
                 m_Device->DeferredDelete(RHIQueueType::Graphics, static_cast<RHIGpuTicket>(ticket), 
-                    MakeDeferredDeleteItem(new CommandBufferRecycler{this, commandBuffer}));
+                    MakeDeferredDeleteItem(new CommandBufferRecycler{this, handle}));
             }
         }
 
     protected:
-        virtual void InternalRecycle(RHICommandBuffer* commandBuffer)
+        virtual void InternalRecycle(RHICommandBufferHandle handle)
         {
-            if (!commandBuffer) return;
+            if (!handle.IsValid()) return;
             std::lock_guard<std::mutex> lock(m_BuffersMutex);
+            auto* commandBuffer = m_Device->GetCommandBuffer(handle);
+            if (!commandBuffer) return;
+
             if (commandBuffer->GetLevel() == COMMAND_BUFFER_LEVEL_PRIMARY)
-                m_FreePrimaryCommandBuffers.push_back(commandBuffer);
+                m_FreePrimaryCommandBuffers.push_back(handle);
             else
-                m_FreeSecondaryCommandBuffers.push_back(commandBuffer);
+                m_FreeSecondaryCommandBuffers.push_back(handle);
         }
-        virtual RHICommandBuffer* CreateCommandBuffer(ECommandBufferLevel level) = 0;
+        virtual RHICommandBufferHandle CreateCommandBuffer(ECommandBufferLevel level) = 0;
         
     private:
         RHIDevice* m_Device;
-        Containers::Vector<RHICommandBuffer*> m_FreePrimaryCommandBuffers;
-        Containers::Vector<RHICommandBuffer*> m_FreeSecondaryCommandBuffers;
+        Containers::Vector<RHICommandBufferHandle> m_FreePrimaryCommandBuffers;
+        Containers::Vector<RHICommandBufferHandle> m_FreeSecondaryCommandBuffers;
         UInt32 m_MaxFramesInFlight;
         std::mutex m_BuffersMutex;
 

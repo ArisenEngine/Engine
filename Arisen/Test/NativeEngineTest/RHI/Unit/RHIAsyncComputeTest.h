@@ -114,7 +114,8 @@ namespace ArisenEngine::Testing
         {
             LOG_INFO("Running Async Compute Test...");
 
-            auto cmd = m_Device->GetCommandBufferPool(m_CommandPool)->GetCommandBuffer(0);
+            auto cmdHandle = m_Device->GetCommandBufferPool(m_CommandPool)->GetCommandBuffer(0);
+            auto cmd = m_Device->GetCommandBuffer(cmdHandle);
             
             m_DescriptorPool->ResetPool(m_PoolId);
             UInt32 setIdx = m_DescriptorPool->AllocDescriptorSet(m_PoolId, (UInt32)0, (RHI::RHIPipelineState*)m_Pso.get());
@@ -134,7 +135,7 @@ namespace ArisenEngine::Testing
                  return false;
             }
             RHI::RHISubmitDescriptor submitDesc = {};
-            auto ticket = queue->Submit(cmd, &submitDesc);
+            auto ticket = queue->Submit(cmdHandle, &submitDesc);
 
             LOG_INFO("Waiting for Compute Ticket...");
             queue->WaitForTicket(ticket);

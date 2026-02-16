@@ -37,7 +37,7 @@ ArisenEngine::RHI::RHIVkCommandBufferPool::~RHIVkCommandBufferPool() noexcept
     }
 }
 
-RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::GetCommandBuffer(UInt32 currentFrameIndex, ECommandBufferLevel level)
+RHICommandBufferHandle ArisenEngine::RHI::RHIVkCommandBufferPool::GetCommandBuffer(UInt32 currentFrameIndex, ECommandBufferLevel level)
 {
     auto& slot = GetCurrentThreadSlot();
     FlushPendingBuffers(slot);
@@ -49,22 +49,25 @@ RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::GetCommandBuffer(UI
     {
         auto* cmd = freeList.back();
         freeList.pop_back();
-        return cmd;
+        return cmd->GetRHIHandle();
     }
 
     return RHICommandBufferPool::GetCommandBuffer(currentFrameIndex, level);
 }
 
 
-void ArisenEngine::RHI::RHIVkCommandBufferPool::ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBuffer* commandBuffer)
+void ArisenEngine::RHI::RHIVkCommandBufferPool::ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBufferHandle handle)
 {
     (void)currentFrameIndex;
+    auto* commandBuffer = static_cast<RHIVkDevice*>(GetDevice())->GetCommandBuffer(handle);
+    if (!commandBuffer) return;
+
     auto ticket = commandBuffer->GetLatestSubmitTicket();
     
     // Check if the GPU is already done with it.
     if (GetDevice()->GetCompletedSubmitTicket() >= ticket)
     {
-        InternalRecycle(commandBuffer);
+        InternalRecycle(handle);
         return;
     }
 
@@ -113,8 +116,11 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::ConsumeMailbox(ThreadSlot& slot)
     }
 }
 
-void ArisenEngine::RHI::RHIVkCommandBufferPool::InternalRecycle(RHICommandBuffer* commandBuffer)
+void ArisenEngine::RHI::RHIVkCommandBufferPool::InternalRecycle(RHICommandBufferHandle handle)
 {
+    auto* commandBuffer = static_cast<RHIVkDevice*>(GetDevice())->GetCommandBuffer(handle);
+    if (!commandBuffer) return;
+
     commandBuffer->ResetInternal();
 
     auto* vkCmd = static_cast<RHIVkCommandBuffer*>(commandBuffer);
@@ -135,13 +141,9 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::InternalRecycle(RHICommandBuffer
     {
         m_Slots[ownerThreadIdx].mailbox.Push(commandBuffer);
     }
-    else
-    {
-        LOG_ERROR("[RHIVkCommandBufferPool::InternalRecycle]: Thread index out of range!");
-    }
 }
 
-ArisenEngine::RHI::RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::CreateCommandBuffer(ECommandBufferLevel level)
+ArisenEngine::RHI::RHICommandBufferHandle ArisenEngine::RHI::RHIVkCommandBufferPool::CreateCommandBuffer(ECommandBufferLevel level)
 {
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     ASSERT(vkDevice != nullptr);
@@ -151,7 +153,7 @@ ArisenEngine::RHI::RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::
         *item = RHIVkCommandBufferItem();
         item->commandBuffer = new RHIVkCommandBuffer(vkDevice, this, level);
         
-        // Register for deferred deletion (of the C++ object)
+        // Register for deferred deletion
         struct DeferredCmdBuffer
         {
             RHIVkCommandBuffer* buffer;
@@ -162,11 +164,11 @@ ArisenEngine::RHI::RHICommandBuffer* ArisenEngine::RHI::RHIVkCommandBufferPool::
     });
 
     auto* item = vkDevice->GetCommandBufferPool()->Get(handle);
-    RHICommandBuffer* rawPtr = item->commandBuffer;
+    item->commandBuffer->SetRHIHandle(handle);
 
     std::lock_guard<std::mutex> lock(m_PoolsMutex); 
     m_OwnedHandles.emplace_back(handle);
-    return rawPtr;
+    return handle;
 }
 
 RHIVkCommandBufferPool::ThreadSlot& ArisenEngine::RHI::RHIVkCommandBufferPool::GetCurrentThreadSlot()

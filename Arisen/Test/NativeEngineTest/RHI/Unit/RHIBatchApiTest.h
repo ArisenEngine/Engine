@@ -54,7 +54,8 @@ namespace ArisenEngine::Testing
 
             // 3. Test Pipeline Barrier
             LOG_INFO("Testing Pipeline Barrier...");
-            auto cmd = m_Device->GetCommandBufferPool(m_CommandPool)->GetCommandBuffer(0);
+            auto cmdHandle = m_Device->GetCommandBufferPool(m_CommandPool)->GetCommandBuffer(0);
+            auto cmd = m_Device->GetCommandBuffer(cmdHandle);
             cmd->Begin(RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
             Containers::Vector<RHI::RHIBufferMemoryBarrier> bufferBarriers;
@@ -79,7 +80,7 @@ namespace ArisenEngine::Testing
             // Cleanup
             m_Device->GetFactory()->ReleaseBuffer(handles[0]);
             m_Device->GetFactory()->ReleaseBuffer(handles[1]);
-            m_Device->GetCommandBufferPool(m_CommandPool)->ReleaseCommandBuffer(0, cmd);
+            m_Device->GetCommandBufferPool(m_CommandPool)->ReleaseCommandBuffer(0, cmdHandle);
 
             LOG_INFO("Batch API Test completed successfully.");
             return true;

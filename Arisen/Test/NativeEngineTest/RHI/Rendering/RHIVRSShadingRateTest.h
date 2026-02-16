@@ -250,7 +250,8 @@ namespace ArisenEngine::Testing
         {
             auto currentIndex = GetCurrentFrameIndex();
             auto pool = m_Device->GetCommandBufferPool(m_CmdPool);
-            auto cmd = pool->GetCommandBuffer(currentIndex);
+            auto cmdHandle = pool->GetCommandBuffer(currentIndex);
+            auto cmd = m_Device->GetCommandBuffer(cmdHandle);
 
             UInt32 poolId = m_DescriptorPoolIds[currentIndex];
             m_DescriptorPool->ResetPool(poolId);
@@ -350,9 +351,9 @@ namespace ArisenEngine::Testing
             submitDesc.WaitSwapChain = m_SwapChain;
             submitDesc.SignalSwapChain = m_SwapChain;
             
-            m_FrameTickets[currentIndex] = m_Device->Submit(cmd, &submitDesc);
+            m_FrameTickets[currentIndex] = m_Device->Submit(cmdHandle, &submitDesc);
             m_SwapChain->EndFrame(currentIndex);
-            pool->ReleaseCommandBuffer(currentIndex, cmd);
+            pool->ReleaseCommandBuffer(currentIndex, cmdHandle);
         }
 
     };

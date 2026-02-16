@@ -11,22 +11,6 @@
 
 namespace ArisenEngine::RHI
 {
-    class RHISampler;
-    struct RHISamplerDesc;
-    class RHICommandBufferPool;
-    struct RHIAccelerationStructureBuildGeometryInfo;
-    struct RHIAccelerationStructureBuildSizesInfo;
-    enum class ERHIAccelerationStructureType;
-}
-
-namespace ArisenEngine::RHI
-{
-    class RHICommandBuffer;
-    class RHIShaderProgram;
-}
-
-namespace ArisenEngine::RHI
-{
     class RHIPipelineCache;
     class RHIInstance;
     class RHISurface;
@@ -34,9 +18,51 @@ namespace ArisenEngine::RHI
     class RHIRenderPass;
     class RHIFrameBuffer;
     class RHIFence;
-    
-    
     class RHIFactory;
+    class RHIMemoryAllocator;
+
+    enum class ERHIAccelerationStructureType;
+    struct RHIAccelerationStructureBuildGeometryInfo;
+    struct RHIAccelerationStructureBuildSizesInfo;
+
+    /**
+     * @brief Internal interface for RHI backends.
+     * Contains methods that should not be exposed directly to the user.
+     */
+    class IRHIBackend
+    {
+    public:
+        virtual ~IRHIBackend() = default;
+
+        // Internal Allocation / Release (Moved from RHIDevice)
+        virtual bool AllocBuffer(RHIBufferHandle handle, RHIBufferDescriptor&& desc) = 0;
+        virtual bool AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits) = 0;
+        virtual void ReleaseBuffer(RHIBufferHandle handle) = 0;
+
+        virtual bool AllocImage(RHIImageHandle handle, RHIImageDescriptor&& desc) = 0;
+        virtual bool AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits) = 0;
+        virtual void ReleaseImage(RHIImageHandle handle) = 0;
+
+        virtual bool AllocMemoryPool(RHIMemoryPoolHandle handle, UInt64 size, UInt32 usageBits) = 0;
+        virtual void ReleaseMemoryPool(RHIMemoryPoolHandle handle) = 0;
+
+        virtual bool AllocBufferAliased(RHIBufferHandle handle, RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset) = 0;
+        virtual bool AllocImageAliased(RHIImageHandle handle, RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset) = 0;
+
+        virtual bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, RHIImageViewDesc&& desc) = 0;
+        virtual void ReleaseImageView(RHIImageViewHandle handle) = 0;
+
+        virtual void ReleaseSampler(RHISamplerHandle handle) = 0;
+        virtual void ReleaseSemaphore(RHISemaphoreHandle handle) = 0;
+        virtual void ReleaseFence(RHIFenceHandle handle) = 0;
+        virtual void ReleaseRenderPass(RHIRenderPassHandle handle) = 0;
+        virtual void ReleaseFrameBuffer(RHIFrameBufferHandle handle) = 0;
+        virtual void ReleasePipeline(RHIPipelineHandle handle) = 0;
+        
+        virtual void ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle) = 0;
+        virtual bool AllocAccelerationStructure(RHIAccelerationStructureHandle handle, ERHIAccelerationStructureType type, UInt64 size, RHIBufferHandle buffer, UInt64 offset) = 0;
+        virtual bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle, RHIRenderPassHandle renderPassHandle) = 0;
+    };
 
     class RHIDevice
     {
@@ -65,9 +91,12 @@ namespace ArisenEngine::RHI
 
         virtual RHIDescriptorPool* GetDescriptorPool() const = 0;
 
-        virtual class RHIMemoryAllocator* GetMemoryAllocator() const = 0;
+        virtual RHIMemoryAllocator* GetMemoryAllocator() const = 0;
 
-        virtual RHIGpuTicket Submit(RHICommandBuffer* commandBuffer, const struct RHISubmitDescriptor* descriptor = nullptr) = 0;
+        virtual RHIGpuTicket Submit(RHICommandBufferHandle commandBuffer, const struct RHISubmitDescriptor* descriptor = nullptr) = 0;
+
+        // Handle Resolution
+        virtual RHICommandBuffer* GetCommandBuffer(RHICommandBufferHandle handle) = 0;
 
         // Optional per-frame update hook for GPU completion polling / automatic GC.
         // Default: no-op.
@@ -110,55 +139,23 @@ namespace ArisenEngine::RHI
         // Debug & Naming
         virtual void SetObjectName(ERHIObjectType type, UInt64 handle, const char* name) { (void)type; (void)handle; (void)name; }
 
-    protected:
-        friend class RHIFactory;
-
-        // Handle-based operations
-        virtual bool AllocBuffer(RHIBufferHandle handle, RHIBufferDescriptor&& desc) { return false; }
-        virtual bool AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits) { return false; }
-        virtual void ReleaseBuffer(RHIBufferHandle handle) {}
-        
-    public:
-        virtual void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0) {}
-        virtual void* MapBuffer(RHIBufferHandle handle) { return nullptr; }
-        virtual void UnmapBuffer(RHIBufferHandle handle) {}
-        virtual UInt64 GetBufferSize(RHIBufferHandle handle) { return 0ULL; }
-        virtual UInt64 GetBufferOffset(RHIBufferHandle handle) { return 0ULL; }
-        virtual UInt64 GetBufferRange(RHIBufferHandle handle) { return 0ULL; }
-        virtual UInt64 GetBufferDeviceAddress(RHIBufferHandle handle) { return 0ULL; }
-
-    protected:
-        virtual bool AllocImage(RHIImageHandle handle, RHIImageDescriptor&& desc) { return false; }
-        virtual bool AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits) { return false; }
-        virtual void ReleaseImage(RHIImageHandle handle) {}
-
-        virtual bool AllocMemoryPool(RHIMemoryPoolHandle handle, UInt64 size, UInt32 usageBits) { return false; }
-        virtual void ReleaseMemoryPool(RHIMemoryPoolHandle handle) {}
-
-        virtual bool AllocBufferAliased(RHIBufferHandle handle, RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset) { return false; }
-        virtual bool AllocImageAliased(RHIImageHandle handle, RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset) { return false; }
-
-        virtual bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, RHIImageViewDesc&& desc) { return false; }
-        virtual void ReleaseImageView(RHIImageViewHandle handle) = 0;
+        // Buffer Utilities
+        virtual void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0) = 0;
+        virtual void* MapBuffer(RHIBufferHandle handle) = 0;
+        virtual void UnmapBuffer(RHIBufferHandle handle) = 0;
+        virtual UInt64 GetBufferSize(RHIBufferHandle handle) = 0;
+        virtual UInt64 GetBufferOffset(RHIBufferHandle handle) = 0;
+        virtual UInt64 GetBufferRange(RHIBufferHandle handle) = 0;
+        virtual UInt64 GetBufferDeviceAddress(RHIBufferHandle handle) = 0;
 
     public:
         virtual RHIImageViewHandle FindImageViewForImage(RHIImageHandle imageHandle) = 0;
 
-    protected:
-        virtual void ReleaseSampler(RHISamplerHandle handle) = 0;
-        virtual void ReleaseSemaphore(RHISemaphoreHandle handle) = 0;
-        virtual void ReleaseFence(RHIFenceHandle handle) = 0;
-        virtual void ReleaseRenderPass(RHIRenderPassHandle handle) = 0;
-        virtual void ReleaseFrameBuffer(RHIFrameBufferHandle handle) = 0;
-        virtual void ReleasePipeline(RHIPipelineHandle handle) = 0;
     public:
-        virtual void ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle) = 0;
         virtual void GetAccelerationStructureBuildSizes(const RHIAccelerationStructureBuildGeometryInfo& buildInfo, const UInt32* pMaxPrimitiveCounts, RHIAccelerationStructureBuildSizesInfo* pSizeInfo) = 0;
-        virtual bool AllocAccelerationStructure(RHIAccelerationStructureHandle handle, ERHIAccelerationStructureType type, UInt64 size, RHIBufferHandle buffer, UInt64 offset) = 0;
         virtual UInt64 GetAccelerationStructureDeviceAddress(RHIAccelerationStructureHandle handle) = 0;
         virtual void GetRayTracingShaderGroupHandles(RHIPipelineHandle pipeline, UInt32 firstGroup, UInt32 groupCount, UInt64 size, void* pData) = 0;
 
-        virtual bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle, RHIRenderPassHandle renderPassHandle) = 0;
         virtual void WaitFence(RHIFenceHandle handle) = 0;
         virtual void ResetFence(RHIFenceHandle handle) = 0;
 
