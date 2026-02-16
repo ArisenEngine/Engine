@@ -36,7 +36,9 @@ namespace ArisenEngine::RHI
     struct RHIVkPipelinePoolItem;
     struct RHIVkFencePoolItem;
     struct RHIVkAccelerationStructurePoolItem;
+    struct RHIVkAccelerationStructurePoolItem;
     struct RHIVkMemoryPoolPoolItem;
+    struct RHIVkExecutor;
 }
 
 namespace ArisenEngine::RHI
@@ -56,7 +58,9 @@ namespace ArisenEngine::RHI
         friend class RHIVkGPUPipelineStateObject; // Needs program pool access
         friend class RHINativeBridge; // Bridge for NativeExports
         friend class RHIVkCommandBufferPool; // Needs family index
+        friend class RHIVkCommandBufferPool; // Needs family index
         friend class RHIVkQueue; // Needs family index
+        friend struct RHIVkExecutor; // Needs access to cached function pointers
 
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkDevice)
         ~RHIVkDevice() noexcept override;
@@ -323,6 +327,16 @@ namespace ArisenEngine::RHI
 
         // VRS
         PFN_vkCmdSetFragmentShadingRateKHR vkCmdSetFragmentShadingRateKHR = nullptr;
+
+        // Dynamic State (Extended)
+        PFN_vkCmdSetCullModeEXT vkCmdSetCullModeEXT = nullptr;
+        PFN_vkCmdSetFrontFaceEXT vkCmdSetFrontFaceEXT = nullptr;
+        PFN_vkCmdSetPrimitiveTopologyEXT vkCmdSetPrimitiveTopologyEXT = nullptr;
+        PFN_vkCmdSetDepthTestEnableEXT vkCmdSetDepthTestEnableEXT = nullptr;
+        PFN_vkCmdSetDepthWriteEnableEXT vkCmdSetDepthWriteEnableEXT = nullptr;
+        PFN_vkCmdSetDepthCompareOpEXT vkCmdSetDepthCompareOpEXT = nullptr;
+        PFN_vkCmdSetStencilTestEnableEXT vkCmdSetStencilTestEnableEXT = nullptr;
+        PFN_vkCmdSetStencilOpEXT vkCmdSetStencilOpEXT = nullptr;
 
     private:
         // Internal low-level destruction (Vulkan/Memory only, via Registry)

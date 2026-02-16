@@ -5,12 +5,13 @@
 #include "RHI/Enums/Image/ESampleCountFlagBits.h"
 #include "RHI/Enums/Image/EFormat.h"
 #include "RHI/Enums/Image/EImageLayout.h"
+#include "RHI/Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI
 {
     class RHISubPass;
 
-    class RHIRenderPass
+    class RHI_DLL RHIRenderPass
     {
         
     public:
@@ -23,9 +24,5 @@ namespace ArisenEngine::RHI
         UInt32 m_MaxFramesInFlight;
     };
 
-    inline RHIRenderPass::RHIRenderPass(UInt32 maxFramesInFlight):m_MaxFramesInFlight(maxFramesInFlight)
-    {
-            
-    }
 }
 

@@ -2,20 +2,18 @@
 #include "RHICommandBuffer.h"
 #include "Base/FoundationMinimal.h"
 #include "RHI/Core/RHIDevice.h"
+#include "RHI/Definitions/CoreRHICommon.h"
 #include <mutex>
 
 namespace ArisenEngine::RHI
 {
     class RHICommandBuffer;
-    class RHICommandBufferPool
+    class RHI_DLL RHICommandBufferPool
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHICommandBufferPool)
-        RHICommandBufferPool(RHIDevice* device, UInt32 maxFramesInFlight);;
-        virtual ~RHICommandBufferPool()
-        {
-            m_Device = nullptr;
-        }
+        RHICommandBufferPool(RHIDevice* device, UInt32 maxFramesInFlight);
+        virtual ~RHICommandBufferPool();
 
 
         virtual RHICommandBufferHandle GetCommandBuffer(UInt32 currentFrameIndex, ECommandBufferLevel level = COMMAND_BUFFER_LEVEL_PRIMARY)
@@ -87,13 +85,9 @@ namespace ArisenEngine::RHI
         std::mutex m_BuffersMutex;
 
     protected:
-        RHIDevice* GetDevice() const { return m_Device; }
+        RHIDevice* GetDevice() const;
         std::mutex& GetBuffersMutex() { return m_BuffersMutex; }
     };
 
-    inline RHICommandBufferPool::RHICommandBufferPool(RHIDevice* device, UInt32 maxFramesInFlight):
-        m_Device(device), m_MaxFramesInFlight(maxFramesInFlight)
-    {
-    }
 }
 

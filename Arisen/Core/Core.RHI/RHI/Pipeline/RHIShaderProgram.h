@@ -2,17 +2,18 @@
 #include "Base/FoundationMinimal.h"
 #include "../Core/RHICommon.h"
 #include "RHI/Enums/Pipeline/EShaderStage.h"
+#include "RHI/Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI
 {
-    class RHIShaderProgram
+    class RHI_DLL RHIShaderProgram
     {
     public:
-        RHIShaderProgram() = default;
+        RHIShaderProgram();
         NO_COPY_NO_MOVE(RHIShaderProgram)
-        VIRTUAL_DECONSTRUCTOR(RHIShaderProgram)
+        virtual ~RHIShaderProgram() noexcept;
         virtual void* GetHandle() const = 0;
-        const char* GetEntry() const { return m_Entry.c_str(); }
+        const char* GetEntry() const;
         virtual bool AttachProgramByteCode(RHIShaderProgramDesc&& desc) = 0;
         virtual UInt32 GetShaderStageCreateFlags() = 0;
         virtual void* GetSpecializationInfo() = 0;
@@ -20,8 +21,8 @@ namespace ArisenEngine::RHI
         void SetSpecializationConstant(UInt32 constantID, UInt32 value) { SetSpecializationConstant(constantID, sizeof(UInt32), &value); }
 
     public:
-        const EShaderStage GetShaderState() const { return m_Stage; }
-        const String& GetName() const { return m_Name; }
+        const EShaderStage GetShaderState() const;
+        const String& GetName() const;
 
     
     protected:    

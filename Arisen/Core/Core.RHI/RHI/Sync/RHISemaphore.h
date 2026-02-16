@@ -1,14 +1,15 @@
 #pragma once
 #include "Concurrency/Semaphore.h"
+#include "RHI/Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI
 {
-    class RHISemaphore : public Concurrency::Semaphore
+    class RHI_DLL RHISemaphore : public Concurrency::Semaphore
     {
     public:
         NO_COPY_NO_MOVE(RHISemaphore)
-        RHISemaphore() = default;
-        ~RHISemaphore() noexcept override = default;
+        RHISemaphore();
+        ~RHISemaphore() noexcept override;
 
         void* GetHandle() override = 0;
         void Wait() override = 0;

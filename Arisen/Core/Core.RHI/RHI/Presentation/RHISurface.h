@@ -2,19 +2,16 @@
 #include "RHISwapChain.h"
 #include "Base/FoundationMinimal.h"
 #include "../Core/RHIInstance.h"
+#include "RHI/Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI 
 {
-	class RHISurface 
+	class RHI_DLL RHISurface 
 	{
 	public:
 		NO_COPY_NO_MOVE_NO_DEFAULT(RHISurface)
-		virtual ~RHISurface() noexcept
-		{
-			m_RenderWindowId = InvalidID;
-			m_Instance = nullptr;
-		}
-		explicit RHISurface(UInt32&& id, RHIInstance* instance): m_RenderWindowId(id), m_Instance(instance) { };
+		virtual ~RHISurface() noexcept;
+		explicit RHISurface(UInt32&& id, RHIInstance* instance);
 		virtual void* GetHandle() const = 0;
 		virtual void InitSwapChain() = 0;
 

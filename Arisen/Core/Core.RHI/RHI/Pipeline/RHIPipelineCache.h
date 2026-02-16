@@ -5,6 +5,7 @@
 #include "Base/FoundationMinimal.h"
 #include "RHI/Enums/Pipeline/EDynamicState.h"
 #include "RHI/Enums/Pipeline/EPrimitiveTopology.h"
+#include "RHI/Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI
 {
@@ -24,7 +25,7 @@ namespace ArisenEngine::RHI
         std::optional<SpecializationInfoDesc> specializationInfo;
     };
     
-    class RHIPipelineCache
+    class RHI_DLL RHIPipelineCache
     {
     public:
         
@@ -40,9 +41,5 @@ namespace ArisenEngine::RHI
         UInt32 m_MaxFramesInFlight;
     };
 
-    inline RHIPipelineCache::RHIPipelineCache(UInt32 maxFramesInFlight):m_MaxFramesInFlight(maxFramesInFlight)
-    {
-            
-    }
 }
 

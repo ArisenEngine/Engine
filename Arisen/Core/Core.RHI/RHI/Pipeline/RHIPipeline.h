@@ -1,11 +1,12 @@
 ﻿#pragma once
 #include "RHIPipelineState.h"
 #include "RHI/Enums/Pipeline/EPipelineBindPoint.h"
+#include "RHI/Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI
 {
     class RHISubPass;
-    class RHIPipeline
+    class RHI_DLL RHIPipeline
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIPipeline)
@@ -27,8 +28,4 @@ namespace ArisenEngine::RHI
         UInt32 m_MaxFramesInFlight;
     };
 
-    inline RHIPipeline::RHIPipeline(UInt32 maxFramesInFlight):m_MaxFramesInFlight(maxFramesInFlight)
-    {
-            
-    }
 }
