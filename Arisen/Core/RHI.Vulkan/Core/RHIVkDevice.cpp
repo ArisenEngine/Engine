@@ -530,11 +530,111 @@ void ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopy(RHIBufferHandle handle, co
     auto* buffer = m_BufferPool->Get(handle);
     if (!buffer || buffer->allocation == VK_NULL_HANDLE) return;
 
-    void* mappedData;
-    if (vmaMapMemory(m_MemoryAllocator->GetVmaAllocator(), buffer->allocation, &mappedData) == VK_SUCCESS)
+    // Check if the memory is host visible
+    VmaAllocationInfo allocInfo;
+    vmaGetAllocationInfo(m_MemoryAllocator->GetVmaAllocator(), buffer->allocation, &allocInfo);
+    VkMemoryPropertyFlags memFlags = m_VkPhysicalDeviceMemoryProperties.memoryTypes[allocInfo.memoryType].propertyFlags;
+
+    if (memFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
     {
-        memcpy((uint8_t*)mappedData + offset, src, size);
-        vmaUnmapMemory(m_MemoryAllocator->GetVmaAllocator(), buffer->allocation);
+        // Direct mapping possible
+        void* mappedData;
+        if (vmaMapMemory(m_MemoryAllocator->GetVmaAllocator(), buffer->allocation, &mappedData) == VK_SUCCESS)
+        {
+            memcpy((uint8_t*)mappedData + offset, src, size);
+            vmaUnmapMemory(m_MemoryAllocator->GetVmaAllocator(), buffer->allocation);
+        }
+    }
+    else
+    {
+        // Staging Buffer Fallback
+        // 1. Create Staging Buffer (Host Visible)
+        auto stagingHandle = m_BufferPool->Allocate([](RHIVkBufferPoolItem*){});
+        RHIBufferDescriptor stagingDesc{};
+        stagingDesc.size = size;
+        stagingDesc.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT; 
+        stagingDesc.memoryUsage = ERHIMemoryUsage::Upload; // CPU_TO_GPU
+        stagingDesc.sharingMode = ESharingMode::SHARING_MODE_EXCLUSIVE;
+
+        if (!AllocBuffer(stagingHandle, std::move(stagingDesc)) || !AllocBufferDeviceMemory(stagingHandle))
+        {
+            LOG_ERROR("[RHIVkDevice::BufferMemoryCopy]: Failed to create staging buffer!");
+            m_BufferPool->Deallocate(stagingHandle);
+            return;
+        }
+
+        // 2. Copy data to Staging Buffer
+        void* stagingData = MapBuffer(stagingHandle);
+        if (stagingData)
+        {
+            memcpy(stagingData, src, size);
+            UnmapBuffer(stagingHandle);
+        }
+        else
+        {
+            LOG_ERROR("[RHIVkDevice::BufferMemoryCopy]: Failed to map staging buffer!");
+            ReleaseBuffer(stagingHandle);
+            return;
+        }
+
+        // 3. Record & Submit Copy Command
+        // Create transient command pool
+        VkCommandPoolCreateInfo poolInfo{};
+        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+        poolInfo.queueFamilyIndex = m_GraphicsFamilyIndex;
+
+        VkCommandPool cmdPool;
+        if (vkCreateCommandPool(m_VkDevice, &poolInfo, nullptr, &cmdPool) != VK_SUCCESS)
+        {
+            LOG_ERROR("[RHIVkDevice::BufferMemoryCopy]: Failed to create transient command pool!");
+            ReleaseBuffer(stagingHandle);
+            return;
+        }
+
+        VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandPool = cmdPool;
+        allocInfo.commandBufferCount = 1;
+
+        VkCommandBuffer cmdBuffer;
+        if (vkAllocateCommandBuffers(m_VkDevice, &allocInfo, &cmdBuffer) != VK_SUCCESS)
+        {
+            LOG_ERROR("[RHIVkDevice::BufferMemoryCopy]: Failed to allocate command buffer!");
+            vkDestroyCommandPool(m_VkDevice, cmdPool, nullptr);
+            ReleaseBuffer(stagingHandle);
+            return;
+        }
+
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        vkBeginCommandBuffer(cmdBuffer, &beginInfo);
+
+        VkBufferCopy copyRegion{};
+        copyRegion.srcOffset = 0;
+        copyRegion.dstOffset = offset;
+        copyRegion.size = size;
+
+        auto* stagingBufferItem = m_BufferPool->Get(stagingHandle);
+        vkCmdCopyBuffer(cmdBuffer, stagingBufferItem->buffer, buffer->buffer, 1, &copyRegion);
+
+        vkEndCommandBuffer(cmdBuffer);
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &cmdBuffer;
+
+        // Submit to graphics queue and wait
+        vkQueueSubmit(m_VkGraphicQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(m_VkGraphicQueue);
+
+        // Cleanup
+        vkDestroyCommandPool(m_VkDevice, cmdPool, nullptr);
+        ReleaseBuffer(stagingHandle);
     }
 }
 

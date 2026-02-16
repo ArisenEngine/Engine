@@ -19,8 +19,7 @@ namespace ArisenEngine::RHI
         allocatorInfo.physicalDevice = physicalDevice;
         allocatorInfo.device = vkDevice;
         allocatorInfo.instance = instance;
-        // allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
-        allocatorInfo.flags = 0;
+        allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 
         if (vmaCreateAllocator(&allocatorInfo, &m_VmaAllocator) != VK_SUCCESS)
         {
