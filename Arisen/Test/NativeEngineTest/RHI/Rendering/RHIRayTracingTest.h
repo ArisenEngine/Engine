@@ -399,7 +399,12 @@ namespace ArisenEngine::Testing
             blasBufDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             m_BlasBuffer = factory->CreateBuffer(std::move(blasBufDesc), "BLAS Buffer");
             
-            reinterpret_cast<RHI::IRHIBackend*>(m_Device)->AllocAccelerationStructure(m_Blas, blasInfo.type, blasSizes.accelerationStructureSize, m_BlasBuffer, 0);
+            auto* backend = dynamic_cast<RHI::IRHIBackend*>(m_Device);
+             if (!backend || !backend->AllocAccelerationStructure(m_Blas, blasInfo.type, blasSizes.accelerationStructureSize, m_BlasBuffer, 0))
+            {
+                LOG_ERROR("Failed to allocate BLAS!");
+                return;
+            }
 
             // 2. TLAS
             RHI::RHIAccelerationStructureInstance instance{};
@@ -443,7 +448,18 @@ namespace ArisenEngine::Testing
             m_TlasBuffer = factory->CreateBuffer(std::move(tlasBufDesc), "TLAS Buffer");
             m_Tlas = factory->CreateAccelerationStructure("TLAS");
 
-            reinterpret_cast<RHI::IRHIBackend*>(m_Device)->AllocAccelerationStructure(m_Tlas, RHI::ERHIAccelerationStructureType::TopLevel, tlasSizes.accelerationStructureSize, m_TlasBuffer, 0);
+            auto* backendTlas = dynamic_cast<RHI::IRHIBackend*>(m_Device);
+            if (!backendTlas)
+            {
+                LOG_ERROR("Device is not a valid RHI backend!");
+                return;
+            }
+
+            if (!backendTlas->AllocAccelerationStructure(m_Tlas, RHI::ERHIAccelerationStructureType::TopLevel, tlasSizes.accelerationStructureSize, m_TlasBuffer, 0))
+            {
+                LOG_ERROR("Failed to allocate TLAS!");
+                return;
+            }
 
             // 3. Scratch Buffer
             RHI::RHIBufferDescriptor scratchDesc{};

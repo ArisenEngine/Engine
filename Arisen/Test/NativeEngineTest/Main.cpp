@@ -68,17 +68,28 @@ int main(int argc, char** argv)
     ArisenEngine::String cmdLine = GetCommandLineA();
     
     // Run tests based on command line or run all by default
-    if (cmdLine.Contains("--unit"))
+    try 
     {
-        TestRunner::RunByCategory(TestCategory::Unit);
+        if (cmdLine.Contains("--unit"))
+        {
+            TestRunner::RunByCategory(TestCategory::Unit);
+        }
+        else if (cmdLine.Contains("--rendering"))
+        {
+            TestRunner::RunByCategory(TestCategory::Rendering);
+        }
+        else
+        {
+            TestRunner::RunAllTests();
+        }
     }
-    else if (cmdLine.Contains("--rendering"))
+    catch (const std::exception& e)
     {
-        TestRunner::RunByCategory(TestCategory::Rendering);
+        LOG_ERRORF("Unhandled exception in main: {0}", e.what());
     }
-    else
+    catch (...)
     {
-        TestRunner::RunAllTests();
+        LOG_ERROR("Unknown unhandled exception in main");
     }
 
     // Centralized Engine Shutdown

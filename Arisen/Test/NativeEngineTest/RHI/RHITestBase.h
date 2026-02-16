@@ -300,7 +300,7 @@ namespace ArisenEngine::Testing
         static void OnWindowResizing(HWND hwnd, UInt32 width, UInt32 height)
         {
             RHITestBase* test = (RHITestBase*)HAL::GetWindowUserData(HAL::GetWindowId(hwnd));
-            if (test && test->m_Device)
+            if (test && test->m_Device && width > 0 && height > 0)
             {
                 // LOG_INFOF("Window Resizing: %dx%d", width, height);
                 test->m_Instance->SetResolution(HAL::GetWindowId(hwnd), width, height);
@@ -313,7 +313,7 @@ namespace ArisenEngine::Testing
         static void OnWindowResizeFinished(HWND hwnd, UInt32 width, UInt32 height)
         {
             RHITestBase* test = (RHITestBase*)HAL::GetWindowUserData(HAL::GetWindowId(hwnd));
-            if (test && test->m_Device)
+            if (test && test->m_Device && width > 0 && height > 0)
             {
                 LOG_INFOF("Window Resize Finished: %dx%d", width, height);
                 test->m_Instance->SetResolution(HAL::GetWindowId(hwnd), width, height);
