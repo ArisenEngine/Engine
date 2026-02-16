@@ -123,7 +123,7 @@ namespace ArisenEngine::Testing
             std::vector<TestResult> results;
             auto& registry = GetRegistry();
 
-            LOG_INFO("=== Starting Test Batch ===");
+            LOG_INFO(String::Format("=== Starting Test Batch (Total registered: %zu) ===", registry.size()).c_str());
             
             for (auto& factory : registry)
             {
@@ -185,9 +185,6 @@ namespace ArisenEngine::Testing
                 LOG_INFO(String::Format("Total: %zu | Passed: %zu | Failed: %zu", results.size(), passed, results.size() - passed).c_str());
             }
             
-            // Critical: Ensure all logs are flushed before possible exit/crash
-            ArisenEngine::Diagnostics::Logger::Shutdown();
-
             return results;
         }
 

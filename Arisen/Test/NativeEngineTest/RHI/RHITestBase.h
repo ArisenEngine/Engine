@@ -14,6 +14,7 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
+#include <memory>
 #include "Base/FoundationMinimal.h"
 
 
@@ -116,7 +117,7 @@ namespace ArisenEngine::Testing
         double fps = 0.0;
         Float32 s_FrameTimeSpacing = 0.0;
         
-        RHI::RHIInstance* m_Instance = nullptr;
+        std::unique_ptr<RHI::RHIInstance> m_Instance;
         RHI::RHIDevice* m_Device = nullptr;
         UInt32 m_WindowId = ~0u;
         UInt32 m_MaxFramesInFlight = 2;
@@ -219,7 +220,7 @@ namespace ArisenEngine::Testing
             };
 
             RHI::RHILoader::SetCurrentGraphicsAPI(RHI::GraphicsAPI::Vulkan);
-            m_Instance = RHI::RHILoader::CreateInstance(std::move(appInfo));
+            m_Instance.reset(RHI::RHILoader::CreateInstance(std::move(appInfo)));
             
             if (!m_Instance)
             {
@@ -476,8 +477,7 @@ namespace ArisenEngine::Testing
 
             if (m_Instance)
             {
-                RHI::RHILoader::Dispose();
-                m_Instance = nullptr;
+                m_Instance.reset();
             }
 
             if (m_WindowId != ~0u)

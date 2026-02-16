@@ -120,7 +120,7 @@ namespace ArisenEngine::Testing
             UInt32 setIdx = m_DescriptorPool->AllocDescriptorSet(m_PoolId, (UInt32)0, (RHI::RHIPipelineState*)m_Pso.get());
             m_DescriptorPool->UpdateDescriptorSet(m_PoolId, setIdx, m_Pso.get());
 
-            cmd->Begin(RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+            cmd->Begin(0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
             cmd->BindPipeline(m_Pipeline);
             cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_COMPUTE, 0, m_DescriptorPool, m_PoolId, setIdx);
             cmd->Dispatch(4, 1, 1); // 4 * 256 = 1024
@@ -149,6 +149,8 @@ namespace ArisenEngine::Testing
             if (m_OutputBuffer.IsValid()) m_Device->GetFactory()->ReleaseBuffer(m_OutputBuffer);
             if (m_ComputeProgram.IsValid()) m_Device->GetFactory()->ReleaseGPUProgram(m_ComputeProgram);
             if (m_CommandPool.IsValid()) m_Device->GetFactory()->ReleaseCommandBufferPool(m_CommandPool);
+            
+            m_Pso.reset();
         }
     };
 }

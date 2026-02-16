@@ -435,18 +435,21 @@ namespace ArisenEngine::Testing
             RHI::RHIAccelerationStructureBuildSizesInfo tlasSizes{};
             m_Device->GetAccelerationStructureBuildSizes(tlasInfo, &maxInstanceCount, &tlasSizes);
 
-            m_TlasBuffer = factory->CreateBuffer(RHI::RHIBufferDescriptor{ (UInt32)tlasSizes.accelerationStructureSize, RHI::BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT }, "TLAS Buffer");
+            RHI::RHIBufferDescriptor tlasBufDesc{};
+            tlasBufDesc.size = (UInt32)tlasSizes.accelerationStructureSize;
+            tlasBufDesc.usage = RHI::BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+            tlasBufDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            m_TlasBuffer = factory->CreateBuffer(std::move(tlasBufDesc), "TLAS Buffer");
             m_Tlas = factory->CreateAccelerationStructure("TLAS");
 
             m_Device->AllocAccelerationStructure(m_Tlas, RHI::ERHIAccelerationStructureType::TopLevel, tlasSizes.accelerationStructureSize, m_TlasBuffer, 0);
 
             // 3. Scratch Buffer
-            // The scratch buffer was already allocated for BLAS, ensure it's large enough for TLAS too.
-            // RHI::RHIBufferDescriptor scratchDesc{};
-            // scratchDesc.size = (std::max)(blasSizes.buildScratchSize, tlasSizes.buildScratchSize);
-            // scratchDesc.usage = RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-            // scratchDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            // m_ScratchBuffer = factory->CreateBuffer(std::move(scratchDesc), "AS Scratch Buffer");
+            RHI::RHIBufferDescriptor scratchDesc{};
+            scratchDesc.size = (UInt32)(std::max)(blasSizes.buildScratchSize, tlasSizes.buildScratchSize);
+            scratchDesc.usage = RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+            scratchDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            m_ScratchBuffer = factory->CreateBuffer(std::move(scratchDesc), "AS Scratch Buffer");
 
             // 4. Build Commands
             auto pool = m_Device->GetCommandBufferPool(m_CmdPool);
