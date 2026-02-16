@@ -1047,6 +1047,7 @@ VkFence RHIVkCommandBuffer::GetSubmissionFence() const
 void RHIVkCommandBuffer::ResetInternal()
 {
     m_IsCompiled = false;
+    SetCurrentFrameIndex(0);
     m_CommandStream.clear();
     if (GetState() == ECommandBufferState::Initial) return;
 
