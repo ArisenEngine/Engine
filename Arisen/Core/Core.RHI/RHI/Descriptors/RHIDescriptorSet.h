@@ -1,6 +1,7 @@
 #pragma once
 #include "RHIDescriptorPool.h"
 #include "../Core/RHICommon.h"
+#include "RHI/Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI
 {
@@ -10,16 +11,12 @@ namespace ArisenEngine::RHI
 
 namespace ArisenEngine::RHI
 {
-    class RHIDescriptorSet
+    class RHI_DLL RHIDescriptorSet
     {
     public:
-        RHIDescriptorSet(RHIDescriptorPool* descriptorPool, UInt32 layoutIndex):
-        m_DescriptorPool(descriptorPool), m_LayoutIndex(layoutIndex)
-        {
-            
-        }
+        RHIDescriptorSet(RHIDescriptorPool* descriptorPool, UInt32 layoutIndex);
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIDescriptorSet)
-        VIRTUAL_DECONSTRUCTOR(RHIDescriptorSet)
+        virtual ~RHIDescriptorSet() noexcept;
 
         virtual void* GetHandle() = 0;
 

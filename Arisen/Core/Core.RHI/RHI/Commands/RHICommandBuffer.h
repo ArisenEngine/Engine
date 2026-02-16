@@ -23,6 +23,8 @@
 #include "RHI/Enums/Pipeline/EShadingRate.h"
 #include "RHI/Enums/Pipeline/EShadingRateCombiner.h"
 #include "../Handles/RHIHandle.h"
+#include "RHI/Definitions/CoreRHICommon.h"
+#include "RHICommandDefs.h"
 
 namespace ArisenEngine::RHI
 {
@@ -32,23 +34,7 @@ namespace ArisenEngine::RHI
     struct RHIAccelerationStructureBuildGeometryInfo;
     struct RHIAccelerationStructureBuildRangeInfo;
     
-    struct RHIDeviceAddressRegion
-    {
-        UInt64 deviceAddress{ 0 };
-        UInt64 stride{ 0 };
-        UInt64 size{ 0 };
-    };
 
-    struct RHITraceRaysDescriptor
-    {
-        RHIDeviceAddressRegion raygenShaderRecord;
-        RHIDeviceAddressRegion missShaderTable;
-        RHIDeviceAddressRegion hitShaderTable;
-        RHIDeviceAddressRegion callableShaderTable;
-        UInt32 width{ 1 };
-        UInt32 height{ 1 };
-        UInt32 depth{ 1 };
-    };
 }
 
 namespace ArisenEngine::RHI
@@ -132,7 +118,7 @@ namespace ArisenEngine::RHI
     };
     
     
-    class RHICommandBuffer
+    class RHI_DLL RHICommandBuffer
     {
        
         
@@ -147,17 +133,8 @@ namespace ArisenEngine::RHI
         
         NO_COPY_NO_MOVE_NO_DEFAULT(RHICommandBuffer)
 
-        RHICommandBuffer(RHIDevice* device, RHICommandBufferPool* pool, ECommandBufferLevel level = COMMAND_BUFFER_LEVEL_PRIMARY):
-        m_CommandBufferPool(pool), m_Device(device), m_State(ECommandBufferState::Initial), m_Level(level)
-        {
-            
-        }
-        
-        virtual ~RHICommandBuffer()
-        {
-            m_CommandBufferPool = nullptr;
-            m_Device = nullptr;
-        }
+        RHICommandBuffer(RHIDevice* device, RHICommandBufferPool* pool, ECommandBufferLevel level = COMMAND_BUFFER_LEVEL_PRIMARY);
+        virtual ~RHICommandBuffer() noexcept;
         
         RHICommandBufferPool* GetOwner() const
         {
@@ -176,90 +153,91 @@ namespace ArisenEngine::RHI
         const bool ReadyForSubmit() const;
 
         // Command Interface
-        virtual void BeginRenderPass(RenderPassBeginDesc&& desc) = 0;
-        virtual void EndRenderPass() = 0;
+        // Command Interface
+        void BeginRenderPass(RenderPassBeginDesc&& desc);
+        void EndRenderPass();
 
-        virtual void BeginRendering(const RHIRenderingInfo& info) = 0;
-        virtual void EndRendering() = 0;
+        void BeginRendering(const RHIRenderingInfo& info);
+        void EndRendering();
         
-        virtual void Begin() = 0;
-        virtual void Begin(UInt32 frameIndex, UInt32 commandBufferUsage = 0, const RHICommandBufferInheritanceInfo* pInheritanceInfo = nullptr) = 0;
-        virtual void End() = 0;
+        void Begin();
+        void Begin(UInt32 frameIndex, UInt32 commandBufferUsage = 0, const RHICommandBufferInheritanceInfo* pInheritanceInfo = nullptr);
+        void End();
 
-        virtual void ExecuteCommands(Containers::Vector<RHICommandBuffer*>&& secondaryBuffers) = 0;
+        void ExecuteCommands(Containers::Vector<RHICommandBuffer*>&& secondaryBuffers);
         
-        virtual void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height, Float32 minDepth, Float32 maxDepth) = 0;
-        virtual void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height) = 0;
-        virtual void SetScissor(UInt32 offsetX, UInt32 offsetY, UInt32 width, UInt32 height) = 0;
-        virtual void SetLineWidth(Float32 lineWidth) = 0;
-        virtual void SetDepthBias(Float32 depthBiasConstantFactor, Float32 depthBiasClamp, Float32 depthBiasSlopeFactor) = 0;
-        virtual void SetBlendConstants(const Float32 blendConstants[4]) = 0;
-        virtual void SetStencilReference(UInt32 faceMask, UInt32 reference) = 0;
+        void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height, Float32 minDepth, Float32 maxDepth);
+        void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height);
+        void SetScissor(UInt32 offsetX, UInt32 offsetY, UInt32 width, UInt32 height);
+        void SetLineWidth(Float32 lineWidth);
+        void SetDepthBias(Float32 depthBiasConstantFactor, Float32 depthBiasClamp, Float32 depthBiasSlopeFactor);
+        void SetBlendConstants(const Float32 blendConstants[4]);
+        void SetStencilReference(UInt32 faceMask, UInt32 reference);
         
         // Extended dynamic states (Modern RHI)
-        virtual void SetCullMode(ECullModeFlagBits cullMode) = 0;
-        virtual void SetFrontFace(EFrontFace frontFace) = 0;
-        virtual void SetPrimitiveTopology(EPrimitiveTopology topology) = 0;
-        virtual void SetDepthTestEnable(bool enable) = 0;
-        virtual void SetDepthWriteEnable(bool enable) = 0;
-        virtual void SetDepthCompareOp(ECompareOp depthCompareOp) = 0;
-        virtual void SetStencilTestEnable(bool enable) = 0;
-        virtual void SetStencilOp(UInt32 faceMask, EStencilOp failOp, EStencilOp passOp, EStencilOp depthFailOp, ECompareOp compareOp) = 0;
+        void SetCullMode(ECullModeFlagBits cullMode);
+        void SetFrontFace(EFrontFace frontFace);
+        void SetPrimitiveTopology(EPrimitiveTopology topology);
+        void SetDepthTestEnable(bool enable);
+        void SetDepthWriteEnable(bool enable);
+        void SetDepthCompareOp(ECompareOp depthCompareOp);
+        void SetStencilTestEnable(bool enable);
+        void SetStencilOp(UInt32 faceMask, EStencilOp failOp, EStencilOp passOp, EStencilOp depthFailOp, ECompareOp compareOp);
 
-        virtual void BindPipeline(RHIPipelineHandle pipeline) = 0;
-        virtual void Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding) = 0;
-        virtual void DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 firstIndex, UInt32 vertexOffset, UInt32 firstInstance,  UInt32 firstBinding) = 0;
-        virtual void DrawIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 drawCount, UInt32 stride) = 0;
-        virtual void DrawIndexedIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 drawCount, UInt32 stride) = 0;
-        virtual void DrawMeshTasks(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ) = 0;
-        virtual void Dispatch(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ) = 0;
-        virtual void BindVertexBuffers(RHIBufferHandle buffer, UInt64 offset) = 0;
-        virtual void BindIndexBuffer(RHIBufferHandle indexBuffer, UInt64 offset, EIndexType type) = 0;
+        void BindPipeline(RHIPipelineHandle pipeline);
+        void Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding);
+        void DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 firstIndex, UInt32 vertexOffset, UInt32 firstInstance,  UInt32 firstBinding);
+        void DrawIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 drawCount, UInt32 stride);
+        void DrawIndexedIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 drawCount, UInt32 stride);
+        void DrawMeshTasks(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ);
+        void Dispatch(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ);
+        void BindVertexBuffers(RHIBufferHandle buffer, UInt64 offset);
+        void BindIndexBuffer(RHIBufferHandle indexBuffer, UInt64 offset, EIndexType type);
         
         // Synchronization moved to RHISubmitDescriptor
         // virtual void WaitSemaphore(RHISemaphoreHandle semaphore, EPipelineStageFlag stage) = 0;
         // virtual void SignalSemaphore(RHISemaphoreHandle semaphore) = 0;
 
-        virtual void CopyBuffer(RHIBufferHandle src, UInt64 srcOffset, RHIBufferHandle dst, UInt64 dstOffset, UInt64 size) = 0;
+        void CopyBuffer(RHIBufferHandle src, UInt64 srcOffset, RHIBufferHandle dst, UInt64 dstOffset, UInt64 size);
         
-        virtual void BindDescriptorSets(EPipelineBindPoint bindPoint,
-    UInt32 firstSet, Containers::Vector<std::shared_ptr<RHIDescriptorSet>>& descriptorsets, UInt32 dynamicOffsetCount, const UInt32* pDynamicOffsets) = 0;
+        void BindDescriptorSets(EPipelineBindPoint bindPoint,
+    UInt32 firstSet, Containers::Vector<std::shared_ptr<RHIDescriptorSet>>& descriptorsets, UInt32 dynamicOffsetCount, const UInt32* pDynamicOffsets);
 
-        virtual void BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPool* pool, UInt32 poolId) = 0;
-        virtual void BindDescriptorSet(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPool* pool, UInt32 poolId, UInt32 setIndex) = 0;
+        void BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPool* pool, UInt32 poolId);
+        void BindDescriptorSet(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPool* pool, UInt32 poolId, UInt32 setIndex);
 
-        virtual void PushConstants(UInt32 offset, UInt32 size, const void* data, UInt32 stageFlags) = 0;
+        void PushConstants(UInt32 offset, UInt32 size, const void* data, UInt32 stageFlags);
 
-        virtual void CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst,
-            EImageLayout dstImageLayout, Containers::Vector<RHIBufferImageCopy>&& regions) = 0;
-        virtual void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
+        void CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst,
+            EImageLayout dstImageLayout, Containers::Vector<RHIBufferImageCopy>&& regions);
+        void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
             const RHIMemoryBarrier* pMemoryBarriers, UInt32 memoryBarrierCount,
             const RHIImageMemoryBarrier* pImageMemoryBarriers, UInt32 imageMemoryBarrierCount,
-            const RHIBufferMemoryBarrier* pBufferMemoryBarriers, UInt32 bufferMemoryBarrierCount) = 0;
-        virtual void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
-            const RHIMemoryBarrier* pMemoryBarriers, UInt32 memoryBarrierCount) = 0;
-        virtual void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
-            const RHIImageMemoryBarrier* pImageMemoryBarriers, UInt32 imageMemoryBarrierCount) = 0;
-        virtual void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
-            const RHIBufferMemoryBarrier* pBufferMemoryBarriers, UInt32 bufferMemoryBarrierCount) = 0;
+            const RHIBufferMemoryBarrier* pBufferMemoryBarriers, UInt32 bufferMemoryBarrierCount);
+        void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
+            const RHIMemoryBarrier* pMemoryBarriers, UInt32 memoryBarrierCount);
+        void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
+            const RHIImageMemoryBarrier* pImageMemoryBarriers, UInt32 imageMemoryBarrierCount);
+        void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
+            const RHIBufferMemoryBarrier* pBufferMemoryBarriers, UInt32 bufferMemoryBarrierCount);
 
-        virtual void TransitionImageLayout(RHIImageHandle image, EImageLayout targetLayout) = 0;
-        virtual void TransitionImageLayout(RHIImageHandle image, EImageLayout oldLayout, EImageLayout targetLayout) = 0;
+        void TransitionImageLayout(RHIImageHandle image, EImageLayout targetLayout);
+        void TransitionImageLayout(RHIImageHandle image, EImageLayout oldLayout, EImageLayout targetLayout);
 
-        virtual void CopyImage(RHIImageHandle src, EImageLayout srcLayout, RHIImageHandle dst, EImageLayout dstLayout, UInt32 regionCount, const RHIImageCopy* pRegions) = 0;
+        void CopyImage(RHIImageHandle src, EImageLayout srcLayout, RHIImageHandle dst, EImageLayout dstLayout, UInt32 regionCount, const RHIImageCopy* pRegions);
 
-        virtual void GenerateMipmaps(RHIImageHandle image) = 0;
+        void GenerateMipmaps(RHIImageHandle image);
         
         // Ray Tracing
-        virtual void BuildAccelerationStructures(UInt32 infoCount, const RHIAccelerationStructureBuildGeometryInfo* pInfos, const RHIAccelerationStructureBuildRangeInfo* const* ppBuildRangeInfos) = 0;
-        virtual void TraceRays(const RHITraceRaysDescriptor& desc) = 0;
+        void BuildAccelerationStructures(UInt32 infoCount, const RHIAccelerationStructureBuildGeometryInfo* pInfos, const RHIAccelerationStructureBuildRangeInfo* const* ppBuildRangeInfos);
+        void TraceRays(const RHITraceRaysDescriptor& desc);
 
-        virtual void SetFragmentShadingRate(EShadingRate rate, EShadingRateCombiner combinerOp[2]) = 0;
+        void SetFragmentShadingRate(EShadingRate rate, EShadingRateCombiner combinerOp[2]);
 
         // Debug Markers
-        virtual void BeginDebugLabel(const char* label, const Float32 color[4]) = 0;
-        virtual void EndDebugLabel() = 0;
-        virtual void InsertDebugMarker(const char* label, const Float32 color[4]) = 0;
+        void BeginDebugLabel(const char* label, const Float32 color[4]);
+        void EndDebugLabel();
+        void InsertDebugMarker(const char* label, const Float32 color[4]);
 
         // Vector-based overloads (delegating to pointer-based ones)
         void PipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
@@ -295,10 +273,320 @@ namespace ArisenEngine::RHI
         // Default: no-op.
         virtual void TrackDescriptorPoolUse(RHIDescriptorPool* pool, UInt32 poolId)
         {
-            (void)pool;
-            (void)poolId;
+            RecordCommand<RHICmdTrackDescriptorPoolUse>(ERHICommandType::TrackDescriptorPoolUse, { pool, poolId });
         }
+
+    public:
+        template<typename Executor>
+        void Replay(Executor& executor)
+        {
+            size_t offset = 0;
+            while (offset < m_CommandStream.size())
+            {
+                const RHICmdHeader* header = reinterpret_cast<const RHICmdHeader*>(&m_CommandStream[offset]);
+                offset += sizeof(RHICmdHeader);
+
+                switch (header->type)
+                {
+                    case ERHICommandType::BeginRenderPass:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdBeginRenderPass*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdBeginRenderPass);
+                        const auto* clearValues = reinterpret_cast<const RHIClearValue*>(&m_CommandStream[offset]);
+                        offset += cmd->clearValueCount * sizeof(RHIClearValue);
+                        
+                        RenderPassBeginDesc desc;
+                        desc.renderPass = cmd->renderPass;
+                        desc.frameBuffer = cmd->frameBuffer;
+                        desc.subpassContents = cmd->subpassContents;
+                        desc.clearValueCount = cmd->clearValueCount;
+                        desc.pClearValues = clearValues;
+                        executor.BeginRenderPass(std::move(desc));
+                        break;
+                    }
+                    case ERHICommandType::EndRenderPass:
+                    {
+                        executor.EndRenderPass();
+                        break;
+                    }
+                    case ERHICommandType::BeginRendering:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdBeginRendering*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdBeginRendering);
+                        const auto* info = reinterpret_cast<const RHIRenderingInfo*>(&m_CommandStream[offset]);
+                        offset += cmd->dynamicSize;
+                        executor.BeginRendering(*info);
+                        break;
+                    }
+                    case ERHICommandType::EndRendering:
+                    {
+                        executor.EndRendering();
+                        break;
+                    }
+                    case ERHICommandType::Begin:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdBegin*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdBegin);
+                        const RHICommandBufferInheritanceInfo* pInheritanceInfo = nullptr;
+                        if (cmd->hasInheritanceInfo)
+                        {
+                            pInheritanceInfo = reinterpret_cast<const RHICommandBufferInheritanceInfo*>(&m_CommandStream[offset]);
+                            offset += sizeof(RHICommandBufferInheritanceInfo);
+                        }
+                        executor.Begin(cmd->frameIndex, cmd->commandBufferUsage, pInheritanceInfo);
+                        break;
+                    }
+                    case ERHICommandType::End:
+                    {
+                        executor.End();
+                        break;
+                    }
+                    case ERHICommandType::BindPipeline:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdBindPipeline*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdBindPipeline);
+                        executor.BindPipeline(cmd->pipeline);
+                        break;
+                    }
+                    case ERHICommandType::Draw:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdDraw*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdDraw);
+                        executor.Draw(cmd->vertexCount, cmd->instanceCount, cmd->firstVertex, cmd->firstInstance, cmd->firstBinding);
+                        break;
+                    }
+                    case ERHICommandType::DrawIndexed:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdDrawIndexed*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdDrawIndexed);
+                        executor.DrawIndexed(cmd->indexCount, cmd->instanceCount, cmd->firstIndex, cmd->vertexOffset, cmd->firstInstance, cmd->firstBinding);
+                        break;
+                    }
+                    case ERHICommandType::DrawIndirect:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdDrawIndirect*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdDrawIndirect);
+                        executor.DrawIndirect(cmd->buffer, cmd->offset, cmd->drawCount, cmd->stride);
+                        break;
+                    }
+                    case ERHICommandType::DrawIndexedIndirect:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdDrawIndexedIndirect*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdDrawIndexedIndirect);
+                        executor.DrawIndexedIndirect(cmd->buffer, cmd->offset, cmd->drawCount, cmd->stride);
+                        break;
+                    }
+                    case ERHICommandType::Dispatch:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdDispatch*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdDispatch);
+                        executor.Dispatch(cmd->groupCountX, cmd->groupCountY, cmd->groupCountZ);
+                        break;
+                    }
+                    case ERHICommandType::DrawMeshTasks:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdDrawMeshTasks*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdDrawMeshTasks);
+                        executor.DrawMeshTasks(cmd->groupCountX, cmd->groupCountY, cmd->groupCountZ);
+                        break;
+                    }
+                    case ERHICommandType::BindVertexBuffers:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdBindVertexBuffers*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdBindVertexBuffers);
+                        executor.BindVertexBuffers(cmd->buffer, cmd->offset);
+                        break;
+                    }
+// Replay member fixes
+                    case ERHICommandType::BindIndexBuffer:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdBindIndexBuffer*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdBindIndexBuffer);
+                        executor.BindIndexBuffer(cmd->indexBuffer, cmd->offset, cmd->type);
+                        break;
+                    }
+                    case ERHICommandType::BindDescriptorSets:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdBindDescriptorSetsPool*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdBindDescriptorSetsPool);
+                        executor.BindDescriptorSets(cmd->bindPoint, cmd->firstSet, cmd->pool, cmd->poolId, cmd->setIndex, cmd->isSingleSet);
+                        break;
+                    }
+                    // ...
+                    case ERHICommandType::TraceRays:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdTraceRays*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdTraceRays);
+                        executor.TraceRays(cmd->desc);
+                        break;
+                    }
+                    case ERHICommandType::SetFragmentShadingRate:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdSetFragmentShadingRate*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdSetFragmentShadingRate);
+                        EShadingRateCombiner combiners[2] = { cmd->combinerOp[0], cmd->combinerOp[1] };
+                        executor.SetFragmentShadingRate(cmd->rate, combiners);
+                        break;
+                    }
+                    // Debug
+                    case ERHICommandType::BeginDebugLabel:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdBeginDebugLabel*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdBeginDebugLabel);
+                        const char* label = reinterpret_cast<const char*>(&m_CommandStream[offset]);
+                        offset += cmd->labelLen;
+                        executor.BeginDebugLabel(label, cmd->color);
+                        break;
+                    }
+                    case ERHICommandType::InsertDebugMarker:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdInsertDebugMarker*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdInsertDebugMarker);
+                        const char* label = reinterpret_cast<const char*>(&m_CommandStream[offset]);
+                        offset += cmd->labelLen;
+                        executor.InsertDebugMarker(label, cmd->color);
+                        break;
+                    }
+                    // Dynamic States
+                    case ERHICommandType::SetViewport:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdSetViewport*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdSetViewport);
+                        executor.SetViewport(cmd->x, cmd->y, cmd->width, cmd->height, cmd->minDepth, cmd->maxDepth);
+                        break;
+                    }
+                    case ERHICommandType::SetScissor:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdSetScissor*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdSetScissor);
+                        executor.SetScissor(cmd->offsetX, cmd->offsetY, cmd->width, cmd->height);
+                        break;
+                    }
+                    case ERHICommandType::SetLineWidth:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdSetLineWidth*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdSetLineWidth);
+                        executor.SetLineWidth(cmd->lineWidth);
+                        break;
+                    }
+                    case ERHICommandType::SetDepthBias:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdSetDepthBias*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdSetDepthBias);
+                        executor.SetDepthBias(cmd->depthBiasConstantFactor, cmd->depthBiasClamp, cmd->depthBiasSlopeFactor);
+                        break;
+                    }
+                    case ERHICommandType::SetBlendConstants:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdSetBlendConstants*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdSetBlendConstants);
+                        executor.SetBlendConstants(cmd->blendConstants);
+                        break;
+                    }
+                    case ERHICommandType::SetStencilReference:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdSetStencilReference*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdSetStencilReference);
+                        executor.SetStencilReference(cmd->faceMask, cmd->reference);
+                        break;
+                    }
+                    case ERHICommandType::SetCullMode:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdSetCullMode*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdSetCullMode);
+                        executor.SetCullMode(cmd->cullMode);
+                        break;
+                    }
+                    case ERHICommandType::SetFrontFace:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdSetFrontFace*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdSetFrontFace);
+                        executor.SetFrontFace(cmd->frontFace);
+                        break;
+                    }
+                    case ERHICommandType::SetPrimitiveTopology:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdSetPrimitiveTopology*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdSetPrimitiveTopology);
+                        executor.SetPrimitiveTopology(cmd->topology);
+                        break;
+                    }
+                    case ERHICommandType::SetDepthTestEnable:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdSetDepthTestEnable*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdSetDepthTestEnable);
+                        executor.SetDepthTestEnable(cmd->enable);
+                        break;
+                    }
+                    case ERHICommandType::SetDepthWriteEnable:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdSetDepthWriteEnable*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdSetDepthWriteEnable);
+                        executor.SetDepthWriteEnable(cmd->enable);
+                        break;
+                    }
+                    case ERHICommandType::SetDepthCompareOp:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdSetDepthCompareOp*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdSetDepthCompareOp);
+                        executor.SetDepthCompareOp(cmd->depthCompareOp);
+                        break;
+                    }
+                    case ERHICommandType::SetStencilTestEnable:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdSetStencilTestEnable*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdSetStencilTestEnable);
+                        executor.SetStencilTestEnable(cmd->enable);
+                        break;
+                    }
+                    case ERHICommandType::SetStencilOp:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdSetStencilOp*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdSetStencilOp);
+                        executor.SetStencilOp(cmd->faceMask, cmd->failOp, cmd->passOp, cmd->depthFailOp, cmd->compareOp);
+                        break;
+                    }
+                    default:
+                        // Unknown command, skip or break
+                        break;
+                }
+            }
+        }
+
     protected:
+        Containers::Vector<UInt8> m_CommandStream;
+
+        template<typename T>
+        void RecordCommand(ERHICommandType type, const T& command)
+        {
+            const size_t headerSize = sizeof(RHICmdHeader);
+            const size_t cmdSize = sizeof(T);
+            size_t currentSize = m_CommandStream.size();
+            m_CommandStream.resize(currentSize + headerSize + cmdSize);
+            
+            RHICmdHeader header{type};
+            std::memcpy(&m_CommandStream[currentSize], &header, headerSize);
+            std::memcpy(&m_CommandStream[currentSize + headerSize], &command, cmdSize);
+        }
+
+        // Overload for variable size data
+        template<typename T>
+        void RecordCommand(ERHICommandType type, const T& command, const void* extraData, size_t extraSize)
+        {
+             const size_t headerSize = sizeof(RHICmdHeader);
+            const size_t cmdSize = sizeof(T);
+            size_t currentSize = m_CommandStream.size();
+            m_CommandStream.resize(currentSize + headerSize + cmdSize + extraSize);
+            
+            RHICmdHeader header{type};
+            std::memcpy(&m_CommandStream[currentSize], &header, headerSize);
+            std::memcpy(&m_CommandStream[currentSize + headerSize], &command, cmdSize);
+            if (extraSize > 0)
+            {
+                std::memcpy(&m_CommandStream[currentSize + headerSize + cmdSize], extraData, extraSize);
+            }
+        }
+
 
     protected:
         friend class RHICommandBufferPool;

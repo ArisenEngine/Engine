@@ -1,6 +1,7 @@
 #pragma once
 #include "Base/FoundationMinimal.h"
 #include "RHI/Handles/RHIHandle.h"
+#include "RHI/Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI
 {
@@ -13,7 +14,7 @@ namespace ArisenEngine::RHI
         NUM_TYPES
     };
 
-    class RHIDescriptorHeap
+    class RHI_DLL RHIDescriptorHeap
     {
     public:
         virtual ~RHIDescriptorHeap() = default;

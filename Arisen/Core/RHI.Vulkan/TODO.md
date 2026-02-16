@@ -22,12 +22,12 @@
     - [x] Remove Vulkan-specific memory flags from public descriptors.
 
 ## Phase 3: Bindless Descriptor Optimization
-- [ ] **Implement Global Descriptor Heap**
-    - [ ] Abstract a `RHIDescriptorHeap` that manages a large range of descriptors.
-- [ ] **Shift to Bindless-First Approach**
-    - [ ] Refactor `DescriptorSet` logic to treat them as views into the global heap.
-    - [ ] Update PSO to utilize permanent descriptor allocations where possible.
-    - [ ] Move descriptor binding out of the PSO and into `RHIBindlessDescriptorTable`.
+- [x] **Implement Global Descriptor Heap**
+    - [x] Abstract a `RHIDescriptorHeap` that manages a large range of descriptors.
+- [x] **Shift to Bindless-First Approach**
+    - [x] Refactor `DescriptorSet` logic to treat them as views into the global heap.
+    - [x] Update PSO to utilize permanent descriptor allocations where possible.
+    - [x] Move descriptor binding out of the PSO and into `RHIBindlessDescriptorTable`.
 
 ## Phase 4: Data-Oriented Command Recording
 - [ ] **Command Stream Architecture**

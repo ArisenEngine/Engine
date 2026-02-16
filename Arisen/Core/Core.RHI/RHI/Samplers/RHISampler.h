@@ -6,6 +6,7 @@
 #include "RHI/Enums/Sampler/EFilter.h"
 #include "RHI/Enums/Sampler/ESamplerAddressMode.h"
 #include "RHI/Enums/Sampler/ESamplerMipmapMode.h"
+#include "RHI/Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI
 {
@@ -28,12 +29,12 @@ namespace ArisenEngine::RHI
         bool unnormalizedCoordinates;
     } RHISamplerDesc;
     
-    class RHISampler
+    class RHI_DLL RHISampler
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHISampler)
-        VIRTUAL_DECONSTRUCTOR(RHISampler)
-        RHISampler(RHIDevice* device):m_Device(device){};
+        virtual ~RHISampler() noexcept;
+        RHISampler(RHIDevice* device);
         virtual void* GetHandle() const = 0;
         RHIDevice* GetDevice() const
         {

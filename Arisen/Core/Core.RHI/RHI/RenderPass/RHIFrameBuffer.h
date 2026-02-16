@@ -2,6 +2,7 @@
 #include "Base/FoundationMinimal.h"
 #include "RHIRenderPass.h"
 #include "../Handles/RHIHandle.h"
+#include "RHI/Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI
 {
@@ -25,7 +26,7 @@ namespace ArisenEngine::RHI
         
     } RHIRenderArea;
     
-    class RHIFrameBuffer
+    class RHI_DLL RHIFrameBuffer
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIFrameBuffer)
@@ -39,8 +40,5 @@ namespace ArisenEngine::RHI
         UInt32 m_MaxFramesInFlight;
     };
 
-    inline RHIFrameBuffer::RHIFrameBuffer(UInt32 maxFramesInFlight): m_RenderArea(), m_MaxFramesInFlight(maxFramesInFlight)
-    {
-    }
 }
 

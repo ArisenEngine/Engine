@@ -6,6 +6,7 @@
 #include "RHI/Definitions/DeviceLimits.h"
 #include "RHI/Queues/RHIQueue.h"
 #include "RHI/Handles/RHIHandle.h"
+#include "RHI/Definitions/CoreRHICommon.h"
 #include "RHI/Descriptors/RHIResourceDescriptors.h"
 #include "RHI/Core/RHIInspector.h"
 #include "RHI/Descriptors/RHIDescriptorHeap.h"
@@ -67,7 +68,7 @@ namespace ArisenEngine::RHI
         virtual bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle, RHIRenderPassHandle renderPassHandle) = 0;
     };
 
-    class RHIDevice
+    class RHI_DLL RHIDevice
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIDevice)

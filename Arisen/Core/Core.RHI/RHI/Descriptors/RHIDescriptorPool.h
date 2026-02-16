@@ -2,6 +2,7 @@
 #include "RHIDescriptorSet.h"
 #include "Base/FoundationMinimal.h"
 #include "../Enums/Pipeline/EDescriptorType.h"
+#include "RHI/Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI
 {
@@ -11,11 +12,11 @@ namespace ArisenEngine::RHI
 namespace ArisenEngine::RHI
 {
     
-    class RHIDescriptorPool
+    class RHI_DLL RHIDescriptorPool
     {
     public:
         NO_COPY_NO_MOVE(RHIDescriptorPool)
-        RHIDescriptorPool() = default;
+        RHIDescriptorPool();
         VIRTUAL_DECONSTRUCTOR(RHIDescriptorPool)
 
         virtual UInt32 AddPool(Containers::Vector<EDescriptorType> types, Containers::Vector<UInt32> counts, UInt32 maxSets) = 0;

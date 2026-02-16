@@ -2,10 +2,11 @@
 #include "Base/FoundationMinimal.h"
 #include "RHI/Handles/RHIHandle.h"
 #include "RHI/Descriptors/RHIDescriptorHeap.h"
+#include "RHI/Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI
 {
-    class RHIBindlessDescriptorTable
+    class RHI_DLL RHIBindlessDescriptorTable
     {
     public:
         virtual ~RHIBindlessDescriptorTable() = default;

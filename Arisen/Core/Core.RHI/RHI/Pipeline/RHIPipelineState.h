@@ -17,6 +17,7 @@
 #include "RHI/Handles/RHIHandle.h"
 #include "RHIDepthStencilState.h"
 #include "RHIPipelineStates.h"
+#include "RHI/Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI
 {
@@ -39,13 +40,13 @@ namespace ArisenEngine::RHI
 
 namespace ArisenEngine::RHI
 {
-    class RHIPipelineState
+    class RHI_DLL RHIPipelineState
     {
         friend class RHIPipeline;
     public:
         NO_COPY_NO_MOVE(RHIPipelineState)
-        RHIPipelineState() = default;
-        virtual ~RHIPipelineState() noexcept {}
+        RHIPipelineState();
+        virtual ~RHIPipelineState() noexcept;
 
         virtual void AddProgram(RHIShaderProgramHandle handle) = 0;
         virtual void ClearAllPrograms() = 0;
@@ -81,25 +82,25 @@ namespace ArisenEngine::RHI
     public:
         // Structured State Setters
         void SetInputAssemblyState(const RHIInputAssemblyState& state) { m_InputAssemblyState = state; }
-        const RHIInputAssemblyState& GetInputAssemblyState() const { return m_InputAssemblyState; }
+        const RHIInputAssemblyState& GetInputAssemblyState() const;
 
         virtual void SetTessellationState(const RHITessellationState& state) = 0;
         virtual const RHITessellationState& GetTessellationState() const = 0;
 
         void SetRasterizationState(const RHIRasterizationState& state) { m_RasterizationState = state; }
-        const RHIRasterizationState& GetRasterizationState() const { return m_RasterizationState; }
+        const RHIRasterizationState& GetRasterizationState() const;
 
         void SetMultisampleState(const RHIMultisampleState& state) { m_MultisampleState = state; }
-        const RHIMultisampleState& GetMultisampleState() const { return m_MultisampleState; }
+        const RHIMultisampleState& GetMultisampleState() const;
 
         void SetDepthStencilState(const RHIDepthStencilState& state) { m_DepthStencilState = state; }
-        const RHIDepthStencilState& GetDepthStencilState() const { return m_DepthStencilState; }
+        const RHIDepthStencilState& GetDepthStencilState() const;
 
         virtual void SetColorBlendState(const RHIColorBlendState& state) = 0;
         virtual const RHIColorBlendState& GetColorBlendState() const = 0;
 
-        void SetDynamicStateMask(UInt64 mask) { m_DynamicStateMask = mask; }
-        UInt64 GetDynamicStateMask() const { return m_DynamicStateMask; }
+        void SetDynamicStateMask(UInt64 mask);
+        UInt64 GetDynamicStateMask() const;
 
         virtual void SetRenderingFormats(const Containers::Vector<EFormat>& colorFormats, EFormat depthFormat, EFormat stencilFormat) = 0;
 

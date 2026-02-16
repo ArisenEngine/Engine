@@ -5,6 +5,7 @@
 #include "RHI/Queues/RHIQueueType.h"
 
 #include "RHI/Handles/RHIHandle.h" // Needed for RHISemaphoreHandle
+#include "RHI/Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI
 {
@@ -33,10 +34,10 @@ namespace ArisenEngine::RHI
     // RHI-level queue abstraction:
     // - Submit produces a monotonic ticket (submitID / fenceValue / completion serial)
     // - Update advances completed ticket and may trigger automatic GC
-    class RHIQueue
+    class RHI_DLL RHIQueue
     {
     public:
-        virtual ~RHIQueue() = default;
+        virtual ~RHIQueue();
 
         virtual RHIQueueType GetType() const = 0;
 
