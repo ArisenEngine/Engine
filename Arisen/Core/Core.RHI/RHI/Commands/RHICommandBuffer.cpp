@@ -60,12 +60,14 @@ namespace ArisenEngine::RHI
 
     void RHICommandBuffer::Begin()
     {
+        SetCurrentFrameIndex(0);
         RecordCommand(ERHICommandType::Begin, RHICmdBegin{ 0, 0, false });
         m_State = ECommandBufferState::Recording;
     }
 
     void RHICommandBuffer::Begin(UInt32 frameIndex, UInt32 commandBufferUsage, const RHICommandBufferInheritanceInfo* pInheritanceInfo)
     {
+        SetCurrentFrameIndex(frameIndex);
         bool hasInheritance = (pInheritanceInfo != nullptr);
         RecordCommand(ERHICommandType::Begin, RHICmdBegin{ frameIndex, commandBufferUsage, hasInheritance }, 
             pInheritanceInfo, hasInheritance ? sizeof(RHICommandBufferInheritanceInfo) : 0);
