@@ -1046,6 +1046,8 @@ VkFence RHIVkCommandBuffer::GetSubmissionFence() const
 
 void RHIVkCommandBuffer::ResetInternal()
 {
+    m_IsCompiled = false;
+    m_CommandStream.clear();
     if (GetState() == ECommandBufferState::Initial) return;
 
     // m_WaitSemaphores.clear();
@@ -1336,6 +1338,7 @@ void RHIVkCommandBuffer::Compile()
 {
     RHIVkExecutor executor(this);
     Replay(executor);
+    m_IsCompiled = true;
 }
 
 } // namespace ArisenEngine::RHI

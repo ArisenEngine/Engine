@@ -124,6 +124,10 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     (void)ownedFence;
 
     RHIVkCommandBuffer* vkCmd = static_cast<RHIVkCommandBuffer*>(pCmd);
+    if (!vkCmd->IsCompiled())
+    {
+        vkCmd->Compile();
+    }
 
     // Timeline signal value
     const auto submitTicket = m_LatestTicket.fetch_add(1, std::memory_order_acq_rel) + 1;
