@@ -90,6 +90,10 @@ namespace ArisenEngine::RHI
 
         RHIGpuTicket Submit(RHICommandBufferHandle commandBuffer, const RHISubmitDescriptor* descriptor = nullptr) override;
         
+        // Descriptor Heap & Bindless Table
+        RHIDescriptorHeap* CreateDescriptorHeap(EDescriptorHeapType type, UInt32 descriptorCount) override;
+        RHIBindlessDescriptorTable* CreateBindlessDescriptorTable(RHIDescriptorHeap* heap) override;
+
         RHICommandBuffer* GetCommandBuffer(RHICommandBufferHandle handle) override
         {
             auto* item = m_CommandBufferPool->Get(handle);

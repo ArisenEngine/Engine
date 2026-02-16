@@ -113,7 +113,11 @@ namespace ArisenEngine::RHI
         Containers::Vector<VkRayTracingShaderGroupCreateInfoKHR> m_RayTracingShaderGroups {};
         UInt32 m_MaxRecursionDepth = 1;
 
+        class RHIVkBindlessDescriptorTable* m_BindlessTable = nullptr;
+
     public:
+        void SetBindlessDescriptorTable(RHIBindlessDescriptorTable* table) override;
+        RHIBindlessDescriptorTable* GetBindlessTable() const;
         const Containers::Vector<VkPushConstantRange>& GetPushConstantRanges() const { return m_PushConstantRanges; }
         
         // Internal helpers for pipeline creation

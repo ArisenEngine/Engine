@@ -8,6 +8,8 @@
 #include "RHI/Handles/RHIHandle.h"
 #include "RHI/Descriptors/RHIResourceDescriptors.h"
 #include "RHI/Core/RHIInspector.h"
+#include "RHI/Descriptors/RHIDescriptorHeap.h"
+#include "RHI/Descriptors/RHIBindlessDescriptorTable.h"
 
 namespace ArisenEngine::RHI
 {
@@ -95,6 +97,10 @@ namespace ArisenEngine::RHI
         virtual RHIMemoryAllocator* GetMemoryAllocator() const = 0;
 
         virtual RHIGpuTicket Submit(RHICommandBufferHandle commandBuffer, const struct RHISubmitDescriptor* descriptor = nullptr) = 0;
+
+        // Descriptor Heap & Bindless Table
+        virtual RHIDescriptorHeap* CreateDescriptorHeap(EDescriptorHeapType type, UInt32 descriptorCount) = 0;
+        virtual RHIBindlessDescriptorTable* CreateBindlessDescriptorTable(RHIDescriptorHeap* heap) = 0;
 
         // Handle Resolution
         virtual RHICommandBuffer* GetCommandBuffer(RHICommandBufferHandle handle) = 0;

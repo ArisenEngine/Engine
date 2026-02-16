@@ -18,6 +18,8 @@
 #include "Pipeline/RHIVkGPUPipelineStateObject.h"
 #include "Commands/RHIVkCommandBuffer.h"
 #include "../../Core.RHI/RHI/Core/RHIInspector.h"
+#include "Descriptors/RHIVkDescriptorHeap.h"
+#include "Descriptors/RHIVkBindlessDescriptorTable.h"
 
 using namespace ArisenEngine::RHI;
 
@@ -1476,6 +1478,16 @@ namespace ArisenEngine::RHI
             return val;
         }
         return 0;
+    }
+
+    RHIDescriptorHeap* RHIVkDevice::CreateDescriptorHeap(EDescriptorHeapType type, UInt32 descriptorCount)
+    {
+        return new RHIVkDescriptorHeap(this, type, descriptorCount);
+    }
+
+    RHIBindlessDescriptorTable* RHIVkDevice::CreateBindlessDescriptorTable(RHIDescriptorHeap* heap)
+    {
+        return new RHIVkBindlessDescriptorTable(this, static_cast<RHIVkDescriptorHeap*>(heap));
     }
 }
 

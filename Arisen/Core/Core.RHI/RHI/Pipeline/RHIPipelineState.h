@@ -60,6 +60,8 @@ namespace ArisenEngine::RHI
         virtual void ClearVertexInputDescriptions() = 0;
         virtual void ClearDescriptorSetLayoutBindings() = 0;
 
+        virtual void SetBindlessDescriptorTable(class RHIBindlessDescriptorTable* table) = 0;
+
         // Resource Binding (Auto-Layout compatible)
         virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos) = 0;
         virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIBufferHandle>&& bufferHandles) = 0;
