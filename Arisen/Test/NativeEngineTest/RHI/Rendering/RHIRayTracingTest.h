@@ -202,7 +202,7 @@ namespace ArisenEngine::Testing
                 RHI::RHIBufferDescriptor cbDesc = {};
                 cbDesc.size = sizeof(CameraData);
                 cbDesc.usage = RHI::BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-                cbDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+                cbDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
                 m_CameraBuffers.push_back(factory->CreateBuffer(std::move(cbDesc), "Camera CB"));
             }
 
@@ -232,14 +232,14 @@ namespace ArisenEngine::Testing
             RHI::RHIBufferDescriptor matBufDesc{};
             matBufDesc.size = matData.size() * sizeof(MaterialData);
             matBufDesc.usage = RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | RHI::BUFFER_USAGE_TRANSFER_DST_BIT;
-            matBufDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            matBufDesc.memoryUsage = RHI::ERHIMemoryUsage::GpuOnly;
             m_MaterialBuffer = factory->CreateBuffer(std::move(matBufDesc), "Material Buffer");
             
             // Create staging buffer for upload
             RHI::RHIBufferDescriptor stagingDesc{};
             stagingDesc.size = matData.size() * sizeof(MaterialData);
             stagingDesc.usage = RHI::BUFFER_USAGE_TRANSFER_SRC_BIT;
-            stagingDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            stagingDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
             auto stagingBuffer = factory->CreateBuffer(std::move(stagingDesc), "Material Staging Buffer");
             m_Device->BufferMemoryCopy(stagingBuffer, matData.data(), matData.size() * sizeof(MaterialData), 0);
             
@@ -267,7 +267,7 @@ namespace ArisenEngine::Testing
             RHI::RHIBufferDescriptor triBufDesc{};
             triBufDesc.size = submeshData.size() * sizeof(SubmeshData);
             triBufDesc.usage = RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-            triBufDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            triBufDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
             m_TriangleMaterialBuffer = factory->CreateBuffer(std::move(triBufDesc), "Submesh Data Buffer");
             m_Device->BufferMemoryCopy(m_TriangleMaterialBuffer, submeshData.data(), submeshData.size() * sizeof(SubmeshData), 0);
 
@@ -312,7 +312,7 @@ namespace ArisenEngine::Testing
             imgDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
             imgDesc.usage = RHI::IMAGE_USAGE_STORAGE_BIT | RHI::IMAGE_USAGE_TRANSFER_SRC_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT;
             imgDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
-            imgDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            imgDesc.memoryUsage = RHI::ERHIMemoryUsage::GpuOnly;
             m_StorageImage = factory->CreateImage(std::move(imgDesc), "RT Storage Image");
 
             RHI::RHIImageViewDesc viewDesc = {};
@@ -337,7 +337,7 @@ namespace ArisenEngine::Testing
             accDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
             accDesc.usage = RHI::IMAGE_USAGE_STORAGE_BIT | RHI::IMAGE_USAGE_TRANSFER_SRC_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT;
             accDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
-            accDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            accDesc.memoryUsage = RHI::ERHIMemoryUsage::GpuOnly;
             m_AccumulationImage = factory->CreateImage(std::move(accDesc), "RT Accumulation Image");
 
             RHI::RHIImageViewDesc accViewDesc = {};
@@ -396,7 +396,7 @@ namespace ArisenEngine::Testing
             RHI::RHIBufferDescriptor blasBufDesc{};
             blasBufDesc.size = (UInt32)blasSizes.accelerationStructureSize;
             blasBufDesc.usage = RHI::BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-            blasBufDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            blasBufDesc.memoryUsage = RHI::ERHIMemoryUsage::GpuOnly;
             m_BlasBuffer = factory->CreateBuffer(std::move(blasBufDesc), "BLAS Buffer");
             
             auto* backend = dynamic_cast<RHI::IRHIBackend*>(m_Device);
@@ -422,7 +422,7 @@ namespace ArisenEngine::Testing
             RHI::RHIBufferDescriptor instBufDesc{};
             instBufDesc.size = sizeof(instance);
             instBufDesc.usage = RHI::BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-            instBufDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            instBufDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
             m_InstanceBuffer = factory->CreateBuffer(std::move(instBufDesc), "Instance Buffer");
             m_Device->BufferMemoryCopy(m_InstanceBuffer, &instance, sizeof(instance), 0);
 
@@ -444,7 +444,7 @@ namespace ArisenEngine::Testing
             RHI::RHIBufferDescriptor tlasBufDesc{};
             tlasBufDesc.size = (UInt32)tlasSizes.accelerationStructureSize;
             tlasBufDesc.usage = RHI::BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-            tlasBufDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            tlasBufDesc.memoryUsage = RHI::ERHIMemoryUsage::GpuOnly;
             m_TlasBuffer = factory->CreateBuffer(std::move(tlasBufDesc), "TLAS Buffer");
             m_Tlas = factory->CreateAccelerationStructure("TLAS");
 
@@ -465,7 +465,7 @@ namespace ArisenEngine::Testing
             RHI::RHIBufferDescriptor scratchDesc{};
             scratchDesc.size = (UInt32)(std::max)(blasSizes.buildScratchSize, tlasSizes.buildScratchSize);
             scratchDesc.usage = RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-            scratchDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            scratchDesc.memoryUsage = RHI::ERHIMemoryUsage::GpuOnly;
             m_ScratchBuffer = factory->CreateBuffer(std::move(scratchDesc), "AS Scratch Buffer");
 
             // 4. Build Commands
@@ -619,7 +619,7 @@ namespace ArisenEngine::Testing
             sbtSize = groupStride * 4;
             sbtDesc.size = sbtSize;
             sbtDesc.usage = RHI::BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-            sbtDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            sbtDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
             m_SbtBuffer = m_Device->GetFactory()->CreateBuffer(std::move(sbtDesc), "SBT Buffer");
 
             uint8_t* pSbtData = (uint8_t*)m_Device->MapBuffer(m_SbtBuffer);

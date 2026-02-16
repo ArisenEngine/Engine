@@ -36,10 +36,10 @@ namespace ArisenEngine::RHI
 
 		// IRHIBackend implementation
 		bool AllocBuffer(RHIBufferHandle handle, RHIBufferDescriptor&& desc) override { (void)handle; (void)desc; return false; }
-		bool AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits) override { (void)handle; (void)memoryPropertiesBits; return false; }
+		bool AllocBufferDeviceMemory(RHIBufferHandle handle) override { (void)handle; return false; }
 		void ReleaseBuffer(RHIBufferHandle handle) override { (void)handle; }
 		bool AllocImage(RHIImageHandle handle, RHIImageDescriptor&& desc) override { (void)handle; (void)desc; return false; }
-		bool AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits) override { (void)handle; (void)memoryPropertiesBits; return false; }
+		bool AllocImageDeviceMemory(RHIImageHandle handle) override { (void)handle; return false; }
 		void ReleaseImage(RHIImageHandle handle) override { (void)handle; }
 		bool AllocMemoryPool(RHIMemoryPoolHandle handle, UInt64 size, UInt32 usageBits) override { (void)handle; (void)size; (void)usageBits; return false; }
 		void ReleaseMemoryPool(RHIMemoryPoolHandle handle) override { (void)handle; }

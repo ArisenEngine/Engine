@@ -173,7 +173,7 @@ namespace ArisenEngine::RHI
         // Handle-based operations
     private:
         bool AllocBuffer(RHIBufferHandle handle, RHIBufferDescriptor&& desc) override;
-        bool AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits) override;
+        bool AllocBufferDeviceMemory(RHIBufferHandle handle) override;
         void ReleaseBuffer(RHIBufferHandle handle) override;
         void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0) override;
         void* MapBuffer(RHIBufferHandle handle) override;
@@ -184,7 +184,7 @@ namespace ArisenEngine::RHI
         UInt64 GetBufferDeviceAddress(RHIBufferHandle handle) override;
 
         bool AllocImage(RHIImageHandle handle, RHIImageDescriptor&& desc) override;
-        bool AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits) override;
+        bool AllocImageDeviceMemory(RHIImageHandle handle) override;
         void ReleaseImage(RHIImageHandle handle) override;
 
         bool AllocMemoryPool(RHIMemoryPoolHandle handle, UInt64 size, UInt32 usageBits) override;

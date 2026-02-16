@@ -111,7 +111,7 @@ namespace ArisenEngine::Testing
                 RHI::RHIBufferDescriptor uboDesc = {};
                 uboDesc.size = sizeof(UniformBufferObject);
                 uboDesc.usage = RHI::BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-                uboDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+                uboDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
                 m_UboBuffers.push_back(factory->CreateBuffer(std::move(uboDesc), "VRS_UBO"));
             }
         }
@@ -140,7 +140,7 @@ namespace ArisenEngine::Testing
             dimgDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
             dimgDesc.usage = RHI::IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
             dimgDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
-            dimgDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            dimgDesc.memoryUsage = RHI::ERHIMemoryUsage::GpuOnly;
             m_DepthImage = factory->CreateImage(std::move(dimgDesc), "VRS_DepthBuffer");
 
             RHI::RHIImageViewDesc dviewDesc = {};

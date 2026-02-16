@@ -39,7 +39,7 @@ namespace ArisenEngine::Testing
                 RHI::IMAGE_USAGE_SAMPLED_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT,
                 RHI::SAMPLE_COUNT_1_BIT, RHI::SHARING_MODE_EXCLUSIVE,
                 0, nullptr,
-                RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+                RHI::ERHIMemoryUsage::GpuOnly
             };
             LOG_INFO("Creating image...");
             RHI::RHIImageHandle testImage = m_Device->GetFactory()->CreateImage(std::move(desc), "SyncTestImage");

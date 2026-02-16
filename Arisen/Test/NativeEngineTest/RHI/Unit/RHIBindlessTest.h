@@ -24,7 +24,7 @@ namespace ArisenEngine::Testing
                 RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT,
                 RHI::SHARING_MODE_EXCLUSIVE,
                 0, nullptr,
-                RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+                RHI::ERHIMemoryUsage::GpuOnly
             };
             RHI::RHIBufferHandle testBuffer = m_Device->GetFactory()->CreateBuffer(std::move(bufDesc), "BindlessTestBuffer");
 
@@ -44,7 +44,7 @@ namespace ArisenEngine::Testing
                 RHI::IMAGE_LAYOUT_UNDEFINED, RHI::IMAGE_USAGE_SAMPLED_BIT,
                 RHI::SAMPLE_COUNT_1_BIT, RHI::SHARING_MODE_EXCLUSIVE,
                 0, nullptr,
-                RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+                RHI::ERHIMemoryUsage::GpuOnly
             };
             RHI::RHIImageHandle testImage = m_Device->GetFactory()->CreateImage(std::move(imgDesc), "BindlessTestImage");
 

@@ -4,7 +4,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Collect code files
-collect_sources(ALL_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR})
+# Collect code files
+file(GLOB_RECURSE ALL_SOURCE_FILES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 
 # Collect shader and asset files to include in SLN
 file(GLOB_RECURSE SHADER_FILES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Shader/*")
@@ -43,16 +44,17 @@ target_include_directories(NativeEngineTest PUBLIC
 )
 
 target_include_directories(NativeEngineTest PRIVATE
-    ${CMAKE_SOURCE_DIR}/3rdparty/cgltf
-    ${CMAKE_SOURCE_DIR}/3rdparty/image
-    ${CMAKE_SOURCE_DIR}/3rdparty/vulkan/Include
-    ${CMAKE_SOURCE_DIR}/Tools/Profiler
-    ${CMAKE_SOURCE_DIR}/Core/Core.Foundation
-    ${CMAKE_SOURCE_DIR}/Core/Core.Diagnostic
-    ${CMAKE_SOURCE_DIR}/Core/Core.HAL
-    ${CMAKE_SOURCE_DIR}/Core/Core.RHI
-    ${CMAKE_SOURCE_DIR}/Core/Core.ShaderCompiler
-
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/cgltf
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/image
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/vulkan/Include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../Tools/Profiler
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Core.Foundation
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Core.Diagnostic
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Core.HAL
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Core.RHI
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Core.ShaderCompiler
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/RHI.Vulkan
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/glm
     )  
 
 set_target_properties(NativeEngineTest PROPERTIES

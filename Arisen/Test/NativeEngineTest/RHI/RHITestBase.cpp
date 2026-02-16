@@ -60,7 +60,7 @@ namespace ArisenEngine::Testing
         auto uploadAndMipmap = [&](RHI::RHIImageHandle texture, UInt32 width, UInt32 height, void* data, UInt32 mipLevels) {
             // Create staging buffer
             UInt32 size = width * height * 4;
-            RHI::RHIBufferDescriptor stagingDesc{ 0, size, RHI::BUFFER_USAGE_TRANSFER_SRC_BIT, RHI::SHARING_MODE_EXCLUSIVE, 0, nullptr, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT };
+            RHI::RHIBufferDescriptor stagingDesc{ 0, size, RHI::BUFFER_USAGE_TRANSFER_SRC_BIT, RHI::SHARING_MODE_EXCLUSIVE, 0, nullptr, RHI::ERHIMemoryUsage::Upload };
             RHI::RHIBufferHandle stagingBuffer = m_Device->GetFactory()->CreateBuffer(std::move(stagingDesc), "Texture Staging Buffer");
             
             void* mapped = m_Device->MapBuffer(stagingBuffer);
@@ -166,7 +166,7 @@ namespace ArisenEngine::Testing
                             texDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
                             texDesc.usage = RHI::IMAGE_USAGE_TRANSFER_SRC_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT | RHI::IMAGE_USAGE_SAMPLED_BIT;
                             texDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
-                            texDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+                            texDesc.memoryUsage = RHI::ERHIMemoryUsage::GpuOnly;
                             gMat.baseColorTexture = m_Device->GetFactory()->CreateImage(std::move(texDesc), tex->image->uri);
 
                             RHI::RHIImageViewDesc viewDesc = {};
@@ -207,7 +207,7 @@ namespace ArisenEngine::Testing
                 texDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
                 texDesc.usage = RHI::IMAGE_USAGE_TRANSFER_SRC_BIT | RHI::IMAGE_USAGE_TRANSFER_DST_BIT | RHI::IMAGE_USAGE_SAMPLED_BIT;
                 texDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
-                texDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+                texDesc.memoryUsage = RHI::ERHIMemoryUsage::GpuOnly;
                 gMat.baseColorTexture = m_Device->GetFactory()->CreateImage(std::move(texDesc), "Fallback White");
 
                 RHI::RHIImageViewDesc viewDesc = {};
@@ -379,22 +379,22 @@ namespace ArisenEngine::Testing
         RHI::RHIBufferDescriptor vbDesc{};
         vbDesc.createFlagBits = 0;
         vbDesc.size = sizeof(GLTFVertex) * vertices.size();
-        vbDesc.usage = RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT | RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | RHI::BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+        vbDesc.usage = RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT | RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT;
         vbDesc.sharingMode = RHI::SHARING_MODE_EXCLUSIVE;
         vbDesc.queueFamilyIndexCount = 0;
         vbDesc.pQueueFamilyIndices = nullptr;
-        vbDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        vbDesc.memoryUsage = RHI::ERHIMemoryUsage::GpuOnly;
         
         model.vertexBuffer = m_Device->GetFactory()->CreateBuffer(std::move(vbDesc), "GLTF Vertex Buffer");
 
         RHI::RHIBufferDescriptor ibDesc{};
         ibDesc.createFlagBits = 0;
         ibDesc.size = sizeof(uint32_t) * indices.size();
-        ibDesc.usage = RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_INDEX_BUFFER_BIT | RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | RHI::BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+        ibDesc.usage = RHI::BUFFER_USAGE_TRANSFER_DST_BIT | RHI::BUFFER_USAGE_INDEX_BUFFER_BIT | RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT;
         ibDesc.sharingMode = RHI::SHARING_MODE_EXCLUSIVE;
         ibDesc.queueFamilyIndexCount = 0;
         ibDesc.pQueueFamilyIndices = nullptr;
-        ibDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        ibDesc.memoryUsage = RHI::ERHIMemoryUsage::GpuOnly;
         
         model.indexBuffer = m_Device->GetFactory()->CreateBuffer(std::move(ibDesc), "GLTF Index Buffer");
 
@@ -406,7 +406,7 @@ namespace ArisenEngine::Testing
         vsb.sharingMode = RHI::SHARING_MODE_EXCLUSIVE;
         vsb.queueFamilyIndexCount = 0;
         vsb.pQueueFamilyIndices = nullptr;
-        vsb.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        vsb.memoryUsage = RHI::ERHIMemoryUsage::Upload;
         
         auto vStaging = m_Device->GetFactory()->CreateBuffer(std::move(vsb), "GLTF Vertex Staging");
         m_Device->BufferMemoryCopy(vStaging, vertices.data(), vbDesc.size, 0);
@@ -418,7 +418,7 @@ namespace ArisenEngine::Testing
         isb.sharingMode = RHI::SHARING_MODE_EXCLUSIVE;
         isb.queueFamilyIndexCount = 0;
         isb.pQueueFamilyIndices = nullptr;
-        isb.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        isb.memoryUsage = RHI::ERHIMemoryUsage::Upload;
         
         auto iStaging = m_Device->GetFactory()->CreateBuffer(std::move(isb), "GLTF Index Staging");
         m_Device->BufferMemoryCopy(iStaging, indices.data(), ibDesc.size, 0);

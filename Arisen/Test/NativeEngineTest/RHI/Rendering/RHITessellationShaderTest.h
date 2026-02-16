@@ -216,14 +216,14 @@ namespace ArisenEngine::Testing
             RHI::RHIBufferDescriptor vbDesc = {};
             vbDesc.size = vertices.size() * sizeof(Vertex);
             vbDesc.usage = RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT;
-            vbDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            vbDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
             m_Model.vertexBuffer = factory->CreateBuffer(std::move(vbDesc), "PatchVB");
             m_Device->BufferMemoryCopy(m_Model.vertexBuffer, vertices.data(), vertices.size() * sizeof(Vertex), 0);
 
             RHI::RHIBufferDescriptor ibDesc = {};
             ibDesc.size = indices.size() * sizeof(UInt32);
             ibDesc.usage = RHI::BUFFER_USAGE_INDEX_BUFFER_BIT;
-            ibDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            ibDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
             m_Model.indexBuffer = factory->CreateBuffer(std::move(ibDesc), "PatchIB");
             m_Device->BufferMemoryCopy(m_Model.indexBuffer, indices.data(), indices.size() * sizeof(UInt32), 0);
 
@@ -236,7 +236,7 @@ namespace ArisenEngine::Testing
                 RHI::RHIBufferDescriptor ubDesc = {};
                 ubDesc.size = sizeof(TessellationUBO);
                 ubDesc.usage = RHI::BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-                ubDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+                ubDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
                 m_UboBuffers.push_back(factory->CreateBuffer(std::move(ubDesc), "TessUBO"));
             }
 
@@ -263,7 +263,7 @@ namespace ArisenEngine::Testing
             dimgDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
             dimgDesc.usage = RHI::IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
             dimgDesc.sampleCount = RHI::SAMPLE_COUNT_1_BIT;
-            dimgDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            dimgDesc.memoryUsage = RHI::ERHIMemoryUsage::GpuOnly;
             m_DepthImage = factory->CreateImage(std::move(dimgDesc), "DepthBuffer");
 
             RHI::RHIImageViewDesc dviewDesc = {};

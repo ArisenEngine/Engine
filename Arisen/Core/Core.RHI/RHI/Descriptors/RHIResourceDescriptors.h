@@ -8,6 +8,7 @@
 #include "RHI/Enums/Memory/ESharingMode.h"
 #include "RHI/Enums/Image/EImageViewType.h"
 #include "RHI/Enums/Image/EFormat.h"
+#include "RHI/Enums/Memory/ERHIMemoryUsage.h"
 #include <optional>
 
 namespace ArisenEngine::RHI {
@@ -19,7 +20,7 @@ struct RHIBufferDescriptor {
     ESharingMode sharingMode;
     UInt32 queueFamilyIndexCount;
     const void* pQueueFamilyIndices;
-    UInt32 memoryPropertyFlags; // Added for One-Stop creation
+    ERHIMemoryUsage memoryUsage;
 };
 
 struct RHIImageDescriptor {
@@ -37,7 +38,7 @@ struct RHIImageDescriptor {
     ESharingMode sharingMode;
     UInt32 queueFamilyIndexCount;
     const void* pQueueFamilyIndices;
-    UInt32 memoryPropertyFlags; // Added for One-Stop creation
+    ERHIMemoryUsage memoryUsage;
 };
 
 struct RHIImageViewDesc {

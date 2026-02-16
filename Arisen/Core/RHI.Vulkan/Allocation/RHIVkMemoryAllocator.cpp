@@ -19,7 +19,8 @@ namespace ArisenEngine::RHI
         allocatorInfo.physicalDevice = physicalDevice;
         allocatorInfo.device = vkDevice;
         allocatorInfo.instance = instance;
-        allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+        // allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+        allocatorInfo.flags = 0;
 
         if (vmaCreateAllocator(&allocatorInfo, &m_VmaAllocator) != VK_SUCCESS)
         {
@@ -36,16 +37,26 @@ namespace ArisenEngine::RHI
         }
     }
 
+#include <iostream>
     bool RHIVkMemoryAllocator::AllocateBufferMemory(VkBuffer buffer, VmaMemoryUsage usage, VmaAllocation* outAllocation)
     {
+        std::cout << "AllocateBufferMemory Called. Buffer: " << (void*)buffer << " Usage: " << (int)usage << std::endl;
         VmaAllocationCreateInfo allocInfo = {};
         allocInfo.usage = usage;
         
-        if (vmaAllocateMemoryForBuffer(m_VmaAllocator, buffer, &allocInfo, outAllocation, nullptr) != VK_SUCCESS)
+        VkResult result = vmaAllocateMemoryForBuffer(m_VmaAllocator, buffer, &allocInfo, outAllocation, nullptr);
+    if (result != VK_SUCCESS)
+    {
+        std::cout << "vmaAllocateMemoryForBuffer failed! Result: " << result << " Usage: " << (int)usage << std::endl;
+        LOG_ERRORF("[RHIVkMemoryAllocator]: vmaAllocateMemoryForBuffer failed! Result: {0}, Usage: {1}", (int)result, (int)usage);
+        return false;
+    }
+        if (vmaBindBufferMemory(m_VmaAllocator, *outAllocation, buffer) != VK_SUCCESS) 
         {
+            std::cout << "vmaBindBufferMemory failed!" << std::endl;
+            LOG_ERROR("[RHIVkMemoryAllocator]: vmaBindBufferMemory failed!");
             return false;
         }
-        if (vmaBindBufferMemory(m_VmaAllocator, *outAllocation, buffer) != VK_SUCCESS) return false;
 
 #if ARISEN_RHI__RESOURCE_INSPECTOR
         if (m_MemoryCounter)

@@ -418,7 +418,8 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocBuffer(RHIBufferHandle handle, RHIBuff
 
     if (vkCreateBuffer(m_VkDevice, &bufferInfo, nullptr, &buffer->buffer) != VK_SUCCESS)
     {
-        LOG_ERROR("[RHIVkDevice::AllocBuffer]: failed to create buffer!");
+        std::cout << "AllocBuffer FAILED to create buffer! Size: " << desc.size << " Usage: " << (int)desc.usage << std::endl;
+        LOG_ERRORF("[RHIVkDevice::AllocBuffer]: failed to create buffer! Size: {0}, Usage: {1}, Sharing: {2}", (UInt64)desc.size, (UInt32)desc.usage, (UInt32)desc.sharingMode);
         return false;
     }
 
@@ -427,30 +428,42 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocBuffer(RHIBufferHandle handle, RHIBuff
     buffer->state->device = m_VkDevice;
     buffer->state->buffer = buffer->buffer;
     buffer->state->allocator = m_MemoryAllocator->GetVmaAllocator();
+    buffer->memoryUsage = desc.memoryUsage;
 
     buffer->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(buffer->state));
 
     return true;
 }
 
-bool ArisenEngine::RHI::RHIVkDevice::AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits)
+bool ArisenEngine::RHI::RHIVkDevice::AllocBufferDeviceMemory(RHIBufferHandle handle)
 {
     auto* buffer = m_BufferPool->Get(handle);
     if (!buffer || buffer->buffer == VK_NULL_HANDLE || !buffer->state) return false;
 
     VmaMemoryUsage usage = VMA_MEMORY_USAGE_AUTO;
-    if (memoryPropertiesBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+    // Map ERHIMemoryUsage to VMA usage
+    switch (buffer->memoryUsage)
     {
+    case ERHIMemoryUsage::GpuOnly:
         usage = VMA_MEMORY_USAGE_GPU_ONLY;
-    }
-    else if (memoryPropertiesBits & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
-    {
-        usage = VMA_MEMORY_USAGE_CPU_ONLY;
+        break;
+    case ERHIMemoryUsage::Upload:
+        usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+        break;
+    case ERHIMemoryUsage::Readback:
+        usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
+        break;
+    case ERHIMemoryUsage::Transient:
+        usage = VMA_MEMORY_USAGE_CPU_TO_GPU; // Or AUTO_PREFER_HOST depending on needs
+        break;
     }
 
     VmaAllocation newAlloc = VK_NULL_HANDLE;
+#include <iostream>
     if (!m_MemoryAllocator->AllocateBufferMemory(buffer->buffer, usage, &newAlloc))
     {
+        std::cout << "AllocBufferDeviceMemory FAILED for buffer " << handle.index << " Usage: " << (int)buffer->memoryUsage << std::endl;
+        LOG_ERRORF("[RHIVkDevice::AllocBufferDeviceMemory]: Failed to allocate memory for buffer {0}. Usage: {1}", (UInt64)handle.index, (int)buffer->memoryUsage);
         return false;
     }
 
@@ -594,21 +607,34 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImage(RHIImageHandle handle, RHIImageD
     image->state->device = m_VkDevice;
     image->state->image = image->image;
     image->state->allocator = m_MemoryAllocator->GetVmaAllocator();
+    image->memoryUsage = desc.memoryUsage;
 
     image->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(image->state));
 
     return true;
 }
 
-bool ArisenEngine::RHI::RHIVkDevice::AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits)
+bool ArisenEngine::RHI::RHIVkDevice::AllocImageDeviceMemory(RHIImageHandle handle)
 {
     auto* image = m_ImagePool->Get(handle);
     if (!image || image->image == VK_NULL_HANDLE || !image->state) return false;
 
     VmaMemoryUsage usage = VMA_MEMORY_USAGE_AUTO;
-    if (memoryPropertiesBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+    // Map ERHIMemoryUsage to VMA usage
+    switch (image->memoryUsage)
     {
+    case ERHIMemoryUsage::GpuOnly:
         usage = VMA_MEMORY_USAGE_GPU_ONLY;
+        break;
+    case ERHIMemoryUsage::Upload:
+        usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+        break;
+    case ERHIMemoryUsage::Readback:
+        usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
+        break;
+    case ERHIMemoryUsage::Transient:
+        usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+        break;
     }
 
     VmaAllocation newAlloc = VK_NULL_HANDLE;

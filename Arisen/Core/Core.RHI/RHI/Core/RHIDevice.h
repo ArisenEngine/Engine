@@ -35,12 +35,13 @@ namespace ArisenEngine::RHI
         virtual ~IRHIBackend() = default;
 
         // Internal Allocation / Release (Moved from RHIDevice)
+        // Internal Allocation / Release (Moved from RHIDevice)
         virtual bool AllocBuffer(RHIBufferHandle handle, RHIBufferDescriptor&& desc) = 0;
-        virtual bool AllocBufferDeviceMemory(RHIBufferHandle handle, UInt32 memoryPropertiesBits) = 0;
+        virtual bool AllocBufferDeviceMemory(RHIBufferHandle handle) = 0;
         virtual void ReleaseBuffer(RHIBufferHandle handle) = 0;
 
         virtual bool AllocImage(RHIImageHandle handle, RHIImageDescriptor&& desc) = 0;
-        virtual bool AllocImageDeviceMemory(RHIImageHandle handle, UInt32 memoryPropertiesBits) = 0;
+        virtual bool AllocImageDeviceMemory(RHIImageHandle handle) = 0;
         virtual void ReleaseImage(RHIImageHandle handle) = 0;
 
         virtual bool AllocMemoryPool(RHIMemoryPoolHandle handle, UInt64 size, UInt32 usageBits) = 0;

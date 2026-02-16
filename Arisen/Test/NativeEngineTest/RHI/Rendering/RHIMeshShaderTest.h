@@ -152,7 +152,7 @@ namespace ArisenEngine::Testing
                 RHI::RHIBufferDescriptor ubDesc = {};
                 ubDesc.size = 256; // Padded MeshUBO size
                 ubDesc.usage = RHI::BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-                ubDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+                ubDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
                 m_UboBuffer.push_back(m_Device->GetFactory()->CreateBuffer(std::move(ubDesc), "MeshUBO"));
             }
 

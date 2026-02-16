@@ -77,7 +77,7 @@ namespace ArisenEngine::Testing
             RHI::RHIBufferDescriptor bufDesc = {};
             bufDesc.size = bufferSize;
             bufDesc.usage = RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT;
-            bufDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            bufDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
             
             m_InputBuffer = m_Device->GetFactory()->CreateBuffer(std::move(bufDesc), "InputBuffer");
             m_OutputBuffer = m_Device->GetFactory()->CreateBuffer(std::move(bufDesc), "OutputBuffer");
