@@ -21,29 +21,36 @@ namespace ArisenEngine::RHI
 
     void RHICommandBuffer::BeginRendering(const RHIRenderingInfo& info)
     {
-        // Calculate size of variable data
-        UInt32 dynamicSize = sizeof(RHIRenderingInfo); 
-        // Note: RHIRenderingInfo has pointers. Shallow copy is dangerous if the pointers point to stack data that expires.
-        // "info" is passed by reference, typically lives on stack. 
-        // We must serialize the data structures pointed to by info.
-        // For simplicity in this first pass, let's assume valid pointers or that we need a deep serialization strategy.
-        // HOWEVER, standard Vulkan RenderingInfo structs often point to array of attachments.
-        // We should serialize the attachments.
+        // Deep serialization for RenderingInfo
+        size_t colorSize = info.colorAttachmentCount * sizeof(RHIRenderingAttachmentInfo);
+        size_t resolveSize = (info.pResolveAttachments != nullptr) ? (info.colorAttachmentCount * sizeof(RHIRenderingAttachmentInfo)) : 0;
+        size_t depthSize = (info.pDepthAttachment != nullptr) ? sizeof(RHIRenderingAttachmentInfo) : 0;
+        size_t stencilSize = (info.pStencilAttachment != nullptr) ? sizeof(RHIRenderingAttachmentInfo) : 0;
         
-        // Let's implement a simplified version that assumes flat struct for now or fix later.
-        // Actually, let's just record the struct. If it contains pointers, we are in trouble if they expire.
-        // But usually RenderingInfo uses handles (wrappers).
-        // Let's check RHIRenderingInfo definition.
-        // struct RHIRenderingInfo { const RHIRenderingAttachmentInfo* pColorAttachments; ... }
-        // Yes, it has pointers.
-        // We need to implement a specialized serializer for this.
+        UInt32 dynamicSize = static_cast<UInt32>(sizeof(RHIRenderingInfo) + colorSize + resolveSize + depthSize + stencilSize);
+
+        // Calculate total size: Header + RHICmdBeginRendering + serialized data
+        const size_t headerSize = sizeof(RHICmdHeader);
+        const size_t cmdSize = sizeof(RHICmdBeginRendering);
+        size_t currentSize = m_CommandStream.size();
+        m_CommandStream.resize(currentSize + headerSize + cmdSize + dynamicSize);
         
-        // For now, let's stub it with just recording the command and see if we can get away with it 
-        // (if the user ensures lifetime, which they probably don't).
-        // Correct way: Serialize attachments into the stream.
+        RHICmdHeader header{ ERHICommandType::BeginRendering };
+        RHICmdBeginRendering cmd{ dynamicSize };
         
-        // Placeholder complexity: 
-        RecordCommand(ERHICommandType::BeginRendering, RHICmdBeginRendering{ dynamicSize }, &info, dynamicSize);
+        uint8_t* ptr = m_CommandStream.data() + currentSize;
+        std::memcpy(ptr, &header, headerSize); ptr += headerSize;
+        std::memcpy(ptr, &cmd, cmdSize); ptr += cmdSize;
+        
+        // Copy the base info struct (pointers will be invalid but we'll fix them on Replay)
+        uint8_t* infoBasePtr = ptr;
+        std::memcpy(ptr, &info, sizeof(RHIRenderingInfo)); ptr += sizeof(RHIRenderingInfo);
+        
+        // Copy Attachment Arrays
+        if (colorSize)   { std::memcpy(ptr, info.pColorAttachments, colorSize); ptr += colorSize; }
+        if (resolveSize) { std::memcpy(ptr, info.pResolveAttachments, resolveSize); ptr += resolveSize; }
+        if (depthSize)   { std::memcpy(ptr, info.pDepthAttachment, depthSize); ptr += depthSize; }
+        if (stencilSize) { std::memcpy(ptr, info.pStencilAttachment, stencilSize); ptr += stencilSize; }
     }
 
     void RHICommandBuffer::EndRendering()
@@ -275,7 +282,9 @@ namespace ArisenEngine::RHI
     void RHICommandBuffer::BeginDebugLabel(const char* label, const Float32 color[4])
     {
         UInt32 len = (UInt32)strlen(label) + 1;
-        RecordCommand(ERHICommandType::BeginDebugLabel, RHICmdBeginDebugLabel{ {color[0], color[1], color[2], color[3]}, len }, label, len);
+        Float32 defaultColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+        const Float32* pColor = color ? color : defaultColor;
+        RecordCommand(ERHICommandType::BeginDebugLabel, RHICmdBeginDebugLabel{ {pColor[0], pColor[1], pColor[2], pColor[3]}, len }, label, len);
     }
 
     void RHICommandBuffer::EndDebugLabel()
@@ -286,7 +295,9 @@ namespace ArisenEngine::RHI
     void RHICommandBuffer::InsertDebugMarker(const char* label, const Float32 color[4])
     {
         UInt32 len = (UInt32)strlen(label) + 1;
-        RecordCommand(ERHICommandType::InsertDebugMarker, RHICmdInsertDebugMarker{ {color[0], color[1], color[2], color[3]}, len }, label, len);
+        Float32 defaultColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+        const Float32* pColor = color ? color : defaultColor;
+        RecordCommand(ERHICommandType::InsertDebugMarker, RHICmdInsertDebugMarker{ {pColor[0], pColor[1], pColor[2], pColor[3]}, len }, label, len);
     }
     
     // PipelineBarrier requires special handling for 3 vectors.
@@ -310,7 +321,7 @@ namespace ArisenEngine::RHI
         RHICmdHeader header{ERHICommandType::PipelineBarrier};
         RHICmdPipelineBarrier cmd{ srcStage, dstStage, dependency, memoryBarrierCount, imageMemoryBarrierCount, bufferMemoryBarrierCount };
         
-        uint8_t* ptr = &m_CommandStream[currentSize];
+        uint8_t* ptr = m_CommandStream.data() + currentSize;
         std::memcpy(ptr, &header, headerSize); ptr += headerSize;
         std::memcpy(ptr, &cmd, cmdSize); ptr += cmdSize;
         if (memSize) { std::memcpy(ptr, pMemoryBarriers, memSize); ptr += memSize; }

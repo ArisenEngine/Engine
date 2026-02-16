@@ -283,16 +283,16 @@ namespace ArisenEngine::RHI
             size_t offset = 0;
             while (offset < m_CommandStream.size())
             {
-                const RHICmdHeader* header = reinterpret_cast<const RHICmdHeader*>(&m_CommandStream[offset]);
+                const RHICmdHeader* header = reinterpret_cast<const RHICmdHeader*>(m_CommandStream.data() + offset);
                 offset += sizeof(RHICmdHeader);
 
                 switch (header->type)
                 {
                     case ERHICommandType::BeginRenderPass:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdBeginRenderPass*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdBeginRenderPass*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdBeginRenderPass);
-                        const auto* clearValues = reinterpret_cast<const RHIClearValue*>(&m_CommandStream[offset]);
+                        const auto* clearValues = reinterpret_cast<const RHIClearValue*>(m_CommandStream.data() + offset);
                         offset += cmd->clearValueCount * sizeof(RHIClearValue);
                         
                         RenderPassBeginDesc desc;
@@ -306,31 +306,61 @@ namespace ArisenEngine::RHI
                     }
                     case ERHICommandType::EndRenderPass:
                     {
+                        offset += sizeof(RHICmdEndRenderPass);
                         executor.EndRenderPass();
                         break;
                     }
                     case ERHICommandType::BeginRendering:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdBeginRendering*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdBeginRendering*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdBeginRendering);
-                        const auto* info = reinterpret_cast<const RHIRenderingInfo*>(&m_CommandStream[offset]);
-                        offset += cmd->dynamicSize;
-                        executor.BeginRendering(*info);
+                        
+                        // Copy to stack to fix pointers
+                        RHIRenderingInfo info = *reinterpret_cast<const RHIRenderingInfo*>(m_CommandStream.data() + offset);
+                        offset += sizeof(RHIRenderingInfo);
+                        
+                        // Reconstruct pointers pointing into the stream
+                        if (info.colorAttachmentCount > 0)
+                        {
+                            info.pColorAttachments = reinterpret_cast<const RHIRenderingAttachmentInfo*>(m_CommandStream.data() + offset);
+                            offset += info.colorAttachmentCount * sizeof(RHIRenderingAttachmentInfo);
+                        }
+                        
+                        if (info.pResolveAttachments != nullptr)
+                        {
+                            info.pResolveAttachments = reinterpret_cast<const RHIRenderingAttachmentInfo*>(m_CommandStream.data() + offset);
+                            offset += info.colorAttachmentCount * sizeof(RHIRenderingAttachmentInfo);
+                        }
+                        
+                        if (info.pDepthAttachment != nullptr)
+                        {
+                            info.pDepthAttachment = reinterpret_cast<const RHIRenderingAttachmentInfo*>(m_CommandStream.data() + offset);
+                            offset += sizeof(RHIRenderingAttachmentInfo);
+                        }
+                        
+                        if (info.pStencilAttachment != nullptr)
+                        {
+                            info.pStencilAttachment = reinterpret_cast<const RHIRenderingAttachmentInfo*>(m_CommandStream.data() + offset);
+                            offset += sizeof(RHIRenderingAttachmentInfo);
+                        }
+                        
+                        executor.BeginRendering(info);
                         break;
                     }
                     case ERHICommandType::EndRendering:
                     {
+                        offset += sizeof(RHICmdEndRendering);
                         executor.EndRendering();
                         break;
                     }
                     case ERHICommandType::Begin:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdBegin*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdBegin*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdBegin);
                         const RHICommandBufferInheritanceInfo* pInheritanceInfo = nullptr;
                         if (cmd->hasInheritanceInfo)
                         {
-                            pInheritanceInfo = reinterpret_cast<const RHICommandBufferInheritanceInfo*>(&m_CommandStream[offset]);
+                            pInheritanceInfo = reinterpret_cast<const RHICommandBufferInheritanceInfo*>(m_CommandStream.data() + offset);
                             offset += sizeof(RHICommandBufferInheritanceInfo);
                         }
                         executor.Begin(cmd->frameIndex, cmd->commandBufferUsage, pInheritanceInfo);
@@ -338,61 +368,62 @@ namespace ArisenEngine::RHI
                     }
                     case ERHICommandType::End:
                     {
+                        offset += sizeof(RHICmdEnd);
                         executor.End();
                         break;
                     }
                     case ERHICommandType::BindPipeline:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdBindPipeline*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdBindPipeline*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdBindPipeline);
                         executor.BindPipeline(cmd->pipeline);
                         break;
                     }
                     case ERHICommandType::Draw:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdDraw*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdDraw*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdDraw);
                         executor.Draw(cmd->vertexCount, cmd->instanceCount, cmd->firstVertex, cmd->firstInstance, cmd->firstBinding);
                         break;
                     }
                     case ERHICommandType::DrawIndexed:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdDrawIndexed*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdDrawIndexed*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdDrawIndexed);
                         executor.DrawIndexed(cmd->indexCount, cmd->instanceCount, cmd->firstIndex, cmd->vertexOffset, cmd->firstInstance, cmd->firstBinding);
                         break;
                     }
                     case ERHICommandType::DrawIndirect:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdDrawIndirect*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdDrawIndirect*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdDrawIndirect);
                         executor.DrawIndirect(cmd->buffer, cmd->offset, cmd->drawCount, cmd->stride);
                         break;
                     }
                     case ERHICommandType::DrawIndexedIndirect:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdDrawIndexedIndirect*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdDrawIndexedIndirect*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdDrawIndexedIndirect);
                         executor.DrawIndexedIndirect(cmd->buffer, cmd->offset, cmd->drawCount, cmd->stride);
                         break;
                     }
                     case ERHICommandType::Dispatch:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdDispatch*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdDispatch*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdDispatch);
                         executor.Dispatch(cmd->groupCountX, cmd->groupCountY, cmd->groupCountZ);
                         break;
                     }
                     case ERHICommandType::DrawMeshTasks:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdDrawMeshTasks*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdDrawMeshTasks*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdDrawMeshTasks);
                         executor.DrawMeshTasks(cmd->groupCountX, cmd->groupCountY, cmd->groupCountZ);
                         break;
                     }
                     case ERHICommandType::BindVertexBuffers:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdBindVertexBuffers*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdBindVertexBuffers*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdBindVertexBuffers);
                         executor.BindVertexBuffers(cmd->buffer, cmd->offset);
                         break;
@@ -400,29 +431,96 @@ namespace ArisenEngine::RHI
 // Replay member fixes
                     case ERHICommandType::BindIndexBuffer:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdBindIndexBuffer*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdBindIndexBuffer*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdBindIndexBuffer);
                         executor.BindIndexBuffer(cmd->indexBuffer, cmd->offset, cmd->type);
                         break;
                     }
                     case ERHICommandType::BindDescriptorSets:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdBindDescriptorSetsPool*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdBindDescriptorSetsPool*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdBindDescriptorSetsPool);
                         executor.BindDescriptorSets(cmd->bindPoint, cmd->firstSet, cmd->pool, cmd->poolId, cmd->setIndex, cmd->isSingleSet);
                         break;
                     }
-                    // ...
+                    case ERHICommandType::CopyBuffer:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdCopyBuffer*>(m_CommandStream.data() + offset);
+                        offset += sizeof(RHICmdCopyBuffer);
+                        executor.CopyBuffer(cmd->src, cmd->srcOffset, cmd->dst, cmd->dstOffset, cmd->size);
+                        break;
+                    }
+                    case ERHICommandType::PushConstants:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdPushConstants*>(m_CommandStream.data() + offset);
+                        offset += sizeof(RHICmdPushConstants);
+                        const void* pData = m_CommandStream.data() + offset;
+                        offset += cmd->size;
+                        executor.PushConstants(cmd->offset, cmd->size, pData, cmd->stageFlags);
+                        break;
+                    }
+                    case ERHICommandType::CopyBufferToImage:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdCopyBufferToImage*>(m_CommandStream.data() + offset);
+                        offset += sizeof(RHICmdCopyBufferToImage);
+                        const auto* pRegions = reinterpret_cast<const RHIBufferImageCopy*>(m_CommandStream.data() + offset);
+                        offset += cmd->regionCount * sizeof(RHIBufferImageCopy);
+                        executor.CopyBufferToImage(cmd->srcBuffer, cmd->dst, cmd->dstImageLayout, cmd->regionCount, pRegions);
+                        break;
+                    }
+                    case ERHICommandType::PipelineBarrier:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdPipelineBarrier*>(m_CommandStream.data() + offset);
+                        offset += sizeof(RHICmdPipelineBarrier);
+                        const auto* pMem = reinterpret_cast<const RHIMemoryBarrier*>(m_CommandStream.data() + offset);
+                        offset += cmd->memoryBarrierCount * sizeof(RHIMemoryBarrier);
+                        const auto* pImg = reinterpret_cast<const RHIImageMemoryBarrier*>(m_CommandStream.data() + offset);
+                        offset += cmd->imageMemoryBarrierCount * sizeof(RHIImageMemoryBarrier);
+                        const auto* pBuf = reinterpret_cast<const RHIBufferMemoryBarrier*>(m_CommandStream.data() + offset);
+                        offset += cmd->bufferMemoryBarrierCount * sizeof(RHIBufferMemoryBarrier);
+                        executor.PipelineBarrier(*cmd, pMem, pImg, pBuf);
+                        break;
+                    }
+                    case ERHICommandType::TransitionImageLayout:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdTransitionImageLayout*>(m_CommandStream.data() + offset);
+                        offset += sizeof(RHICmdTransitionImageLayout);
+                        executor.TransitionImageLayout(cmd->image, cmd->oldLayout, cmd->targetLayout);
+                        break;
+                    }
+                    case ERHICommandType::CopyImage:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdCopyImage*>(m_CommandStream.data() + offset);
+                        offset += sizeof(RHICmdCopyImage);
+                        const auto* pRegions = reinterpret_cast<const RHIImageCopy*>(m_CommandStream.data() + offset);
+                        offset += cmd->regionCount * sizeof(RHIImageCopy);
+                        executor.CopyImage(cmd->src, cmd->srcLayout, cmd->dst, cmd->dstLayout, cmd->regionCount, pRegions);
+                        break;
+                    }
+                    case ERHICommandType::GenerateMipmaps:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdGenerateMipmaps*>(m_CommandStream.data() + offset);
+                        offset += sizeof(RHICmdGenerateMipmaps);
+                        executor.GenerateMipmaps(cmd->image);
+                        break;
+                    }
+                    case ERHICommandType::BuildAccelerationStructures:
+                    {
+                         const auto* cmd = reinterpret_cast<const RHICmdBuildAccelerationStructures*>(m_CommandStream.data() + offset);
+                         offset += sizeof(RHICmdBuildAccelerationStructures);
+                         // TODO: Full serialization if needed.
+                         break;
+                    }
                     case ERHICommandType::TraceRays:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdTraceRays*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdTraceRays*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdTraceRays);
                         executor.TraceRays(cmd->desc);
                         break;
                     }
                     case ERHICommandType::SetFragmentShadingRate:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdSetFragmentShadingRate*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdSetFragmentShadingRate*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdSetFragmentShadingRate);
                         EShadingRateCombiner combiners[2] = { cmd->combinerOp[0], cmd->combinerOp[1] };
                         executor.SetFragmentShadingRate(cmd->rate, combiners);
@@ -431,18 +529,24 @@ namespace ArisenEngine::RHI
                     // Debug
                     case ERHICommandType::BeginDebugLabel:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdBeginDebugLabel*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdBeginDebugLabel*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdBeginDebugLabel);
-                        const char* label = reinterpret_cast<const char*>(&m_CommandStream[offset]);
+                        const char* label = reinterpret_cast<const char*>(m_CommandStream.data() + offset);
                         offset += cmd->labelLen;
                         executor.BeginDebugLabel(label, cmd->color);
                         break;
                     }
+                    case ERHICommandType::EndDebugLabel:
+                    {
+                        offset += sizeof(RHICmdEndDebugLabel);
+                        executor.EndDebugLabel();
+                        break;
+                    }
                     case ERHICommandType::InsertDebugMarker:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdInsertDebugMarker*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdInsertDebugMarker*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdInsertDebugMarker);
-                        const char* label = reinterpret_cast<const char*>(&m_CommandStream[offset]);
+                        const char* label = reinterpret_cast<const char*>(m_CommandStream.data() + offset);
                         offset += cmd->labelLen;
                         executor.InsertDebugMarker(label, cmd->color);
                         break;
@@ -450,77 +554,77 @@ namespace ArisenEngine::RHI
                     // Dynamic States
                     case ERHICommandType::SetViewport:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdSetViewport*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdSetViewport*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdSetViewport);
                         executor.SetViewport(cmd->x, cmd->y, cmd->width, cmd->height, cmd->minDepth, cmd->maxDepth);
                         break;
                     }
                     case ERHICommandType::SetScissor:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdSetScissor*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdSetScissor*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdSetScissor);
                         executor.SetScissor(cmd->offsetX, cmd->offsetY, cmd->width, cmd->height);
                         break;
                     }
                     case ERHICommandType::SetLineWidth:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdSetLineWidth*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdSetLineWidth*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdSetLineWidth);
                         executor.SetLineWidth(cmd->lineWidth);
                         break;
                     }
                     case ERHICommandType::SetDepthBias:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdSetDepthBias*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdSetDepthBias*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdSetDepthBias);
                         executor.SetDepthBias(cmd->depthBiasConstantFactor, cmd->depthBiasClamp, cmd->depthBiasSlopeFactor);
                         break;
                     }
                     case ERHICommandType::SetBlendConstants:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdSetBlendConstants*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdSetBlendConstants*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdSetBlendConstants);
                         executor.SetBlendConstants(cmd->blendConstants);
                         break;
                     }
                     case ERHICommandType::SetStencilReference:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdSetStencilReference*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdSetStencilReference*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdSetStencilReference);
                         executor.SetStencilReference(cmd->faceMask, cmd->reference);
                         break;
                     }
                     case ERHICommandType::SetCullMode:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdSetCullMode*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdSetCullMode*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdSetCullMode);
                         executor.SetCullMode(cmd->cullMode);
                         break;
                     }
                     case ERHICommandType::SetFrontFace:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdSetFrontFace*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdSetFrontFace*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdSetFrontFace);
                         executor.SetFrontFace(cmd->frontFace);
                         break;
                     }
                     case ERHICommandType::SetPrimitiveTopology:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdSetPrimitiveTopology*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdSetPrimitiveTopology*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdSetPrimitiveTopology);
                         executor.SetPrimitiveTopology(cmd->topology);
                         break;
                     }
                     case ERHICommandType::SetDepthTestEnable:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdSetDepthTestEnable*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdSetDepthTestEnable*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdSetDepthTestEnable);
                         executor.SetDepthTestEnable(cmd->enable);
                         break;
                     }
                     case ERHICommandType::SetDepthWriteEnable:
                     {
-                        const auto* cmd = reinterpret_cast<const RHICmdSetDepthWriteEnable*>(&m_CommandStream[offset]);
+                        const auto* cmd = reinterpret_cast<const RHICmdSetDepthWriteEnable*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdSetDepthWriteEnable);
                         executor.SetDepthWriteEnable(cmd->enable);
                         break;
@@ -546,6 +650,13 @@ namespace ArisenEngine::RHI
                         executor.SetStencilOp(cmd->faceMask, cmd->failOp, cmd->passOp, cmd->depthFailOp, cmd->compareOp);
                         break;
                     }
+                    case ERHICommandType::TrackDescriptorPoolUse:
+                    {
+                        const auto* cmd = reinterpret_cast<const RHICmdTrackDescriptorPoolUse*>(&m_CommandStream[offset]);
+                        offset += sizeof(RHICmdTrackDescriptorPoolUse);
+                        executor.TrackDescriptorPoolUse(cmd->pool, cmd->poolId);
+                        break;
+                    }
                     default:
                         // Unknown command, skip or break
                         break;
@@ -565,8 +676,8 @@ namespace ArisenEngine::RHI
             m_CommandStream.resize(currentSize + headerSize + cmdSize);
             
             RHICmdHeader header{type};
-            std::memcpy(&m_CommandStream[currentSize], &header, headerSize);
-            std::memcpy(&m_CommandStream[currentSize + headerSize], &command, cmdSize);
+            std::memcpy(m_CommandStream.data() + currentSize, &header, headerSize);
+            std::memcpy(m_CommandStream.data() + currentSize + headerSize, &command, cmdSize);
         }
 
         // Overload for variable size data
@@ -579,11 +690,12 @@ namespace ArisenEngine::RHI
             m_CommandStream.resize(currentSize + headerSize + cmdSize + extraSize);
             
             RHICmdHeader header{type};
-            std::memcpy(&m_CommandStream[currentSize], &header, headerSize);
-            std::memcpy(&m_CommandStream[currentSize + headerSize], &command, cmdSize);
+            std::memcpy(m_CommandStream.data() + currentSize, &header, headerSize);
+            std::memcpy(m_CommandStream.data() + currentSize + headerSize, &command, cmdSize);
+            
             if (extraSize > 0)
             {
-                std::memcpy(&m_CommandStream[currentSize + headerSize + cmdSize], extraData, extraSize);
+                std::memcpy(m_CommandStream.data() + currentSize + headerSize + cmdSize, extraData, extraSize);
             }
         }
 

@@ -37,6 +37,7 @@ namespace ArisenEngine
             RHIVkDevice* GetVkDevice() const;
 
             void Compile();
+            bool IsCompiled() const { return m_IsCompiled; }
 
         protected:
             void ResetInternal() override;
@@ -45,6 +46,7 @@ namespace ArisenEngine
             VkCommandBuffer m_VkCommandBuffer;
             VkCommandPool m_VkCommandPool;
             VkDevice m_VkDevice;
+            bool m_IsCompiled{ false };
             Containers::Vector<VkBuffer> m_VertexBuffers;
             Containers::Vector<UInt64> m_VertexBindingOffsets;
             std::optional<VkBuffer> m_IndexBuffer;
