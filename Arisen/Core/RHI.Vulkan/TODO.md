@@ -14,12 +14,12 @@
     - [x] Replace `RHIPipelineState*` and `RHIPipeline*` usage in `NativeEngineTest` and core with handles.
 
 ## Phase 2: Memory Management Abstraction
-- [ ] **High-Level Memory Usage Enums**
-    - [ ] Create `ERHIMemoryUsage` with values: `GpuOnly`, `Upload`, `Readback`, `Transient`.
-    - [ ] Update `RHIBufferDescriptor` and `RHIImageDescriptor` to use `ERHIMemoryUsage`.
-- [ ] **Encapsulate Memory Property Flags**
-    - [ ] Move `memoryPropertyFlags` and `typeFilter` logic entirely into the backend implementation.
-    - [ ] Remove Vulkan-specific memory flags from public descriptors.
+- [x] **High-Level Memory Usage Enums**
+    - [x] Create `ERHIMemoryUsage` with values: `GpuOnly`, `Upload`, `Readback`, `Transient`.
+    - [x] Update `RHIBufferDescriptor` and `RHIImageDescriptor` to use `ERHIMemoryUsage`.
+- [x] **Encapsulate Memory Property Flags**
+    - [x] Move `memoryPropertyFlags` and `typeFilter` logic entirely into the backend implementation.
+    - [x] Remove Vulkan-specific memory flags from public descriptors.
 
 ## Phase 3: Bindless Descriptor Optimization
 - [ ] **Implement Global Descriptor Heap**
