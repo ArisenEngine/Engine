@@ -92,7 +92,7 @@ namespace ArisenEngine::Testing
     {
         RHI::RHIBufferDescriptor tsb{
             0, imageSize, RHI::BUFFER_USAGE_TRANSFER_SRC_BIT, RHI::SHARING_MODE_EXCLUSIVE,
-            0, nullptr, RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT
+            0, nullptr, RHI::ERHIMemoryUsage::Upload
         };
         auto stagingBuffer = m_Device->GetFactory()->CreateBuffer(std::move(tsb), "Texture Staging Buffer");
         m_Device->BufferMemoryCopy(stagingBuffer, data, imageSize, 0);

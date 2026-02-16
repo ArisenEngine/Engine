@@ -30,8 +30,8 @@ namespace ArisenEngine::Testing
 
             // 1. Create Buffers
             LOG_INFO("Creating Buffers...");
-            ArisenEngine::RHI::RHIBufferDescriptor desc1{ 0, 1024, RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT, RHI::SHARING_MODE_EXCLUSIVE, 0, nullptr, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT };
-            ArisenEngine::RHI::RHIBufferDescriptor desc2{ 0, 2048, RHI::BUFFER_USAGE_INDEX_BUFFER_BIT, RHI::SHARING_MODE_EXCLUSIVE, 0, nullptr, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT };
+            ArisenEngine::RHI::RHIBufferDescriptor desc1{ 0, 1024, RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT, RHI::SHARING_MODE_EXCLUSIVE, 0, nullptr, RHI::ERHIMemoryUsage::GpuOnly };
+            ArisenEngine::RHI::RHIBufferDescriptor desc2{ 0, 2048, RHI::BUFFER_USAGE_INDEX_BUFFER_BIT, RHI::SHARING_MODE_EXCLUSIVE, 0, nullptr, RHI::ERHIMemoryUsage::GpuOnly };
             
             RHI::RHIBufferHandle handles[2];
             handles[0] = m_Device->GetFactory()->CreateBuffer(std::move(desc1), "BatchBuffer1");

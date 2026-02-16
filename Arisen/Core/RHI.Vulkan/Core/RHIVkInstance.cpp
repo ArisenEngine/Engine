@@ -724,7 +724,8 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
 
     *lastPNext = nullptr;
 
-    vulkan12Features.bufferDeviceAddress = isExtensionEnabled(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+    // Buffer Device Address is core in Vulkan 1.2, so we enable it directly if we are targeting 1.2+
+    vulkan12Features.bufferDeviceAddress = VK_TRUE;
 
     
     // Device Create Info

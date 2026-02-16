@@ -149,7 +149,7 @@ namespace ArisenEngine::Testing
             RHI::RHIBufferDescriptor pDesc = {};
             pDesc.size = m_ParticleCount * sizeof(Particle);
             pDesc.usage = RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI::BUFFER_USAGE_TRANSFER_DST_BIT;
-            pDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            pDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
             m_ParticleBuffer = m_Device->GetFactory()->CreateBuffer(std::move(pDesc), "ParticleBuffer");
 
             // Init particles
@@ -176,7 +176,7 @@ namespace ArisenEngine::Testing
                 RHI::RHIBufferDescriptor ubDesc = {};
                 ubDesc.size = 256; // Padded for safety or use correct struct size
                 ubDesc.usage = RHI::BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-                ubDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI::MEMORY_PROPERTY_HOST_COHERENT_BIT;
+                ubDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
                 m_UboBuffer.push_back(m_Device->GetFactory()->CreateBuffer(std::move(ubDesc), "UBO"));
             }
 

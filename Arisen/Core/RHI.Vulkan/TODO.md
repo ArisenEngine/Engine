@@ -1,17 +1,17 @@
 # RHI Evolution TODO List
 
 ## Phase 1: Interface Refinement & Handle Standardization (CORE)
-- [ ] **Standardize Command Buffer on Handles**
-    - [ ] Introduce `RHICommandBufferHandle` in `RHIHandle.h`.
-    - [ ] Update `RHICommandBufferPool` to return handles.
-    - [ ] Update `RHIDevice::Submit` to consume handles instead of raw pointers.
-    - [ ] Update all command recording methods to be handle-based internally.
-- [ ] **Interface Segregation for RHIDevice**
-    - [ ] Extract `IResourceFactory` (Creation/Deletion).
-    - [ ] Extract `ICommandQueue` (Submission/Sync).
-    - [ ] Move internal `Alloc/Release` methods to a private `Backend` interface or hide them from the public header.
-- [ ] **Standardize PSO and Pipelines on Handles**
-    - [ ] Replace `RHIPipelineState*` and `RHIPipeline*` usage in `NativeEngineTest` and core with handles.
+- [x] **Standardize Command Buffer on Handles**
+    - [x] Introduce `RHICommandBufferHandle` in `RHIHandle.h`.
+    - [x] Update `RHICommandBufferPool` to return handles.
+    - [x] Update `RHIDevice::Submit` to consume handles instead of raw pointers.
+    - [x] Update all command recording methods to be handle-based internally.
+- [x] **Interface Segregation for RHIDevice**
+    - [x] Extract `IResourceFactory` (Creation/Deletion).
+    - [x] Extract `ICommandQueue` (Submission/Sync).
+    - [x] Move internal `Alloc/Release` methods to a private `Backend` interface or hide them from the public header.
+- [x] **Standardize PSO and Pipelines on Handles**
+    - [x] Replace `RHIPipelineState*` and `RHIPipeline*` usage in `NativeEngineTest` and core with handles.
 
 ## Phase 2: Memory Management Abstraction
 - [ ] **High-Level Memory Usage Enums**

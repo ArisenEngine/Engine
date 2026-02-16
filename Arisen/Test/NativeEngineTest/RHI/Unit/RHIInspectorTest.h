@@ -50,7 +50,7 @@ namespace ArisenEngine::Testing
 
 
 
-            ArisenEngine::RHI::RHIBufferDescriptor bufferDesc{ 0, 1024, RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT, RHI::SHARING_MODE_EXCLUSIVE, 0, nullptr, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT };
+            ArisenEngine::RHI::RHIBufferDescriptor bufferDesc{ 0, 1024, RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT, RHI::SHARING_MODE_EXCLUSIVE, 0, nullptr, RHI::ERHIMemoryUsage::GpuOnly };
             RHI::RHIBufferHandle buffer = m_Device->GetFactory()->CreateBuffer(std::move(bufferDesc), "InspectorTestBuffer");
 
             if (!buffer.IsValid())

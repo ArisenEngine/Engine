@@ -159,8 +159,6 @@ private:
   Containers::Vector<VkBufferMemoryBarrier2KHR> m_VkBufferMemoryBarriers{};
   Containers::Vector<VkImageMemoryBarrier2KHR> m_VkImageMemoryBarriers{};
   Containers::Vector<VkRenderingAttachmentInfoKHR> m_VkColorAttachments{};
-  VkRenderingAttachmentInfoKHR m_VkDepthAttachment{};
-  VkRenderingAttachmentInfoKHR m_VkStencilAttachment{};
 
   // Cached vectors for other commands
   Containers::Vector<VkDescriptorSet> m_VkDescriptorSets{};

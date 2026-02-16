@@ -4,6 +4,7 @@
 #include <vma/vk_mem_alloc.h>
 #include "RHI/Enums/Memory/ESharingMode.h"
 #include "RHI/Enums/Image/EFormat.h"
+#include "RHI/Enums/Memory/ERHIMemoryUsage.h"
 #include "RHI/Handles/RHIHandle.h"
 #include "Base/FoundationMinimal.h"
 
@@ -43,6 +44,7 @@ struct RHIVkBufferPoolItem {
     UInt64 offset{0};
     UInt64 range{0};
     String name{"Anonymous"};
+    ERHIMemoryUsage memoryUsage;
     RHIResourceHandle registryHandle; 
 };
 
@@ -105,6 +107,7 @@ struct RHIVkImagePoolItem {
     String name{"Anonymous"};
     bool needDestroy{false};
     VkImageLayout currentLayout{VK_IMAGE_LAYOUT_UNDEFINED};
+    ERHIMemoryUsage memoryUsage;
     RHIResourceHandle registryHandle;
 };
 

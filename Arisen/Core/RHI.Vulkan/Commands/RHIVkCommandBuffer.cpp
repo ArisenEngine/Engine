@@ -140,15 +140,24 @@ void RHIVkCommandBuffer::BeginRendering(const RHIRenderingInfo& info)
     for (UInt32 i = 0; i < info.colorAttachmentCount; ++i)
     {
         const auto& att = info.pColorAttachments[i];
-        auto* view = vkDevice->GetImageViewPool()->Get(att.imageView);
-        if (!view) continue;
    
         VkRenderingAttachmentInfoKHR vkAtt{};
         vkAtt.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-        vkAtt.imageView = view->view;
         vkAtt.imageLayout = static_cast<VkImageLayout>(att.imageLayout);
         vkAtt.loadOp = static_cast<VkAttachmentLoadOp>(att.loadOp);
         vkAtt.storeOp = static_cast<VkAttachmentStoreOp>(att.storeOp);
+
+        auto* view = vkDevice->GetImageViewPool()->Get(att.imageView);
+        if (view)
+        {
+            vkAtt.imageView = view->view;
+        }
+        else
+        {
+            // If view is invalid, we must still push an entry to keep indices aligned.
+            // VK_NULL_HANDLE for imageView means the attachment is ignored.
+            vkAtt.imageView = VK_NULL_HANDLE;
+        }
         
         // Copy clear value
         std::memcpy(&vkAtt.clearValue, &att.clearValue, sizeof(VkClearValue));
@@ -167,45 +176,39 @@ void RHIVkCommandBuffer::BeginRendering(const RHIRenderingInfo& info)
         m_VkColorAttachments.emplace_back(vkAtt);
     }
 
+    VkRenderingAttachmentInfoKHR depthAttachment{};
     if (info.pDepthAttachment != nullptr)
     {
         const auto& att = *info.pDepthAttachment;
         auto* view = vkDevice->GetImageViewPool()->Get(att.imageView);
         if (view) {
-            m_VkDepthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-            m_VkDepthAttachment.imageView = view->view;
-            m_VkDepthAttachment.imageLayout = static_cast<VkImageLayout>(att.imageLayout);
-            m_VkDepthAttachment.loadOp = static_cast<VkAttachmentLoadOp>(att.loadOp);
-            m_VkDepthAttachment.storeOp = static_cast<VkAttachmentStoreOp>(att.storeOp);
-            std::memcpy(&m_VkDepthAttachment.clearValue, &att.clearValue, sizeof(VkClearValue));
+            depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+            depthAttachment.imageView = view->view;
+            depthAttachment.imageLayout = static_cast<VkImageLayout>(att.imageLayout);
+            depthAttachment.loadOp = static_cast<VkAttachmentLoadOp>(att.loadOp);
+            depthAttachment.storeOp = static_cast<VkAttachmentStoreOp>(att.storeOp);
+            std::memcpy(&depthAttachment.clearValue, &att.clearValue, sizeof(VkClearValue));
+            vkInfo.pDepthAttachment = &depthAttachment;
         }
     }
 
+    VkRenderingAttachmentInfoKHR stencilAttachment{};
     if (info.pStencilAttachment != nullptr)
     {
         const auto& att = *info.pStencilAttachment;
         auto* view = vkDevice->GetImageViewPool()->Get(att.imageView);
         if (view) {
-            m_VkStencilAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-            m_VkStencilAttachment.imageView = view->view;
-            m_VkStencilAttachment.imageLayout = static_cast<VkImageLayout>(att.imageLayout);
-            m_VkStencilAttachment.loadOp = static_cast<VkAttachmentLoadOp>(att.loadOp);
-            m_VkStencilAttachment.storeOp = static_cast<VkAttachmentStoreOp>(att.storeOp);
-            std::memcpy(&m_VkStencilAttachment.clearValue, &att.clearValue, sizeof(VkClearValue));
+            stencilAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+            stencilAttachment.imageView = view->view;
+            stencilAttachment.imageLayout = static_cast<VkImageLayout>(att.imageLayout);
+            stencilAttachment.loadOp = static_cast<VkAttachmentLoadOp>(att.loadOp);
+            stencilAttachment.storeOp = static_cast<VkAttachmentStoreOp>(att.storeOp);
+            std::memcpy(&stencilAttachment.clearValue, &att.clearValue, sizeof(VkClearValue));
+            vkInfo.pStencilAttachment = &stencilAttachment;
         }
     }
 
     vkInfo.pColorAttachments = m_VkColorAttachments.data();
-    
-    if (info.pDepthAttachment != nullptr)
-    {
-        vkInfo.pDepthAttachment = &m_VkDepthAttachment;
-    }
-
-    if (info.pStencilAttachment != nullptr)
-    {
-        vkInfo.pStencilAttachment = &m_VkStencilAttachment;
-    }
 
     if (vkDevice->vkCmdBeginRenderingKHR)
     {
