@@ -92,7 +92,8 @@ namespace ArisenEngine::RHI
         
         RHICommandBuffer* GetCommandBuffer(RHICommandBufferHandle handle) override
         {
-            return (RHICommandBuffer*)m_CommandBufferPool->Get(handle);
+            auto* item = m_CommandBufferPool->Get(handle);
+            return item ? (RHICommandBuffer*)item->commandBuffer : nullptr;
         }
         RHIQueue* GetQueue(RHIQueueType type) override;
         RHICommandBufferPool* GetCommandBufferPool(RHICommandBufferPoolHandle handle) override;

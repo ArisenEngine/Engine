@@ -128,13 +128,15 @@ namespace ArisenEngine::RHI
             item->name = name;
         });
 
+        const UInt32 memoryFlags = desc.memoryPropertyFlags;
+
         if (!m_Device->AllocBuffer(handle, std::move(desc)))
         {
             m_Device->ReleaseBuffer(handle);
             return ArisenEngine::RHI::RHIBufferHandle::Invalid();
         }
 
-        if (!m_Device->AllocBufferDeviceMemory(handle, desc.memoryPropertyFlags))
+        if (!m_Device->AllocBufferDeviceMemory(handle, memoryFlags))
         {
             m_Device->ReleaseBuffer(handle);
             return ArisenEngine::RHI::RHIBufferHandle::Invalid();

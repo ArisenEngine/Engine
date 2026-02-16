@@ -119,8 +119,21 @@ namespace ArisenEngine::Core
         /**
          * @brief Handler for signals (SIGABRT, SIGSEGV, etc).
          */
-        static void ArisenOnSignal(int)
+        static void ArisenOnSignal(int sig)
         {
+            const char* sigName = "Unknown";
+            switch (sig)
+            {
+                case SIGABRT: sigName = "SIGABRT (Abort)"; break;
+                case SIGSEGV: sigName = "SIGSEGV (Segmentation Fault)"; break;
+                case SIGILL:  sigName = "SIGILL (Illegal Instruction)"; break;
+                case SIGFPE:  sigName = "SIGFPE (Floating Point Exception)"; break;
+            }
+
+            // Attempt to log the signal before shutting down
+            ArisenEngine::ReportAssertionFailure("Signal received", "Unknown", 0, "ArisenOnSignal", 
+                std::format("Engine received signal: {0} ({1})", sigName, sig).c_str());
+
             Shutdown();
 #ifdef _WIN64
             ::ExitProcess(3);

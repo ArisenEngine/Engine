@@ -1154,8 +1154,10 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocAccelerationStructure(RHIAccelerationS
     createInfo.type = (VkAccelerationStructureTypeKHR)type;
 
     VkAccelerationStructureKHR vkAS;
-    if (vkCreateAccelerationStructureKHR(m_VkDevice, &createInfo, nullptr, &vkAS) != VK_SUCCESS)
+    VkResult result = vkCreateAccelerationStructureKHR(m_VkDevice, &createInfo, nullptr, &vkAS);
+    if (result != VK_SUCCESS)
     {
+        LOG_ERROR_AND_THROW(String::Format("[RHIVkDevice::AllocAccelerationStructure]: failed to create acceleration structure! Result: %d", result));
         m_AccelerationStructurePool->Deallocate(handle);
         return false;
     }
