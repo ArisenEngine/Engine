@@ -43,7 +43,7 @@ namespace ArisenEngine::Testing
             // 2. Test Debug Labels and Markers
             LOG_INFO("Testing Debug Labels and Markers...");
             auto cmd = m_Device->GetCommandBufferPool(m_CommandPool)->GetCommandBuffer(0);
-            cmd->Begin(RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+            cmd->Begin(0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
             float red[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
             float green[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
