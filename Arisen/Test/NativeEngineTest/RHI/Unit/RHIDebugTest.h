@@ -42,7 +42,8 @@ namespace ArisenEngine::Testing
 
             // 2. Test Debug Labels and Markers
             LOG_INFO("Testing Debug Labels and Markers...");
-            auto cmd = m_Device->GetCommandBufferPool(m_CommandPool)->GetCommandBuffer(0);
+            auto cmdHandle = m_Device->GetCommandBufferPool(m_CommandPool)->GetCommandBuffer(0);
+            auto cmd = m_Device->GetCommandBuffer(cmdHandle);
             cmd->Begin(0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
             float red[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
@@ -64,14 +65,14 @@ namespace ArisenEngine::Testing
             // 3. Submit
             LOG_INFO("Submitting command buffer with debug markers...");
             RHI::RHISubmitDescriptor submitDesc = {};
-            m_Device->Submit(cmd, &submitDesc);
+            m_Device->Submit(cmdHandle, &submitDesc);
             
             m_Device->GraphicQueueWaitIdle();
             LOG_INFO("Submission completed.");
 
             // Cleanup
             m_Device->GetFactory()->ReleaseBuffer(buffer);
-            m_Device->GetCommandBufferPool(m_CommandPool)->ReleaseCommandBuffer(0, cmd);
+            m_Device->GetCommandBufferPool(m_CommandPool)->ReleaseCommandBuffer(0, cmdHandle);
 
             LOG_INFO("RHI Debug Markers and Naming Test completed successfully.");
             return true;

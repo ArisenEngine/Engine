@@ -45,17 +45,17 @@ namespace ArisenEngine::RHI
         ~RHIVkCommandBufferPool() noexcept override;
 
 
-        RHICommandBuffer* GetCommandBuffer(UInt32 currentFrameIndex, ECommandBufferLevel level = COMMAND_BUFFER_LEVEL_PRIMARY) override;
-        void ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBuffer* commandBuffer) override;
+        RHICommandBufferHandle GetCommandBuffer(UInt32 currentFrameIndex, ECommandBufferLevel level = COMMAND_BUFFER_LEVEL_PRIMARY) override;
+        void ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBufferHandle handle) override;
 
     private:
         void FlushPendingBuffers(ThreadSlot& slot);
         void ConsumeMailbox(ThreadSlot& slot);
 
-        RHICommandBuffer *CreateCommandBuffer(ECommandBufferLevel level) override;
+        RHICommandBufferHandle CreateCommandBuffer(ECommandBufferLevel level) override;
         ThreadSlot& GetCurrentThreadSlot();
 
-        void InternalRecycle(RHICommandBuffer* commandBuffer) override;
+        void InternalRecycle(RHICommandBufferHandle handle) override;
 
         VkDevice m_VkDevice;
         

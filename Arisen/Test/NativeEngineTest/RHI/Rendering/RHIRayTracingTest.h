@@ -245,14 +245,15 @@ namespace ArisenEngine::Testing
             
             // Copy from staging to device local buffer
             auto pool = m_Device->GetCommandBufferPool(m_CmdPool);
-            auto cmd = pool->GetCommandBuffer(0);
+            auto cmdHandle = pool->GetCommandBuffer(0);
+            auto cmd = m_Device->GetCommandBuffer(cmdHandle);
             
             cmd->Begin(0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
             cmd->CopyBuffer(stagingBuffer, 0, m_MaterialBuffer, 0, matData.size() * sizeof(MaterialData));
             cmd->End();
-            m_Device->Submit(cmd);
+            m_Device->Submit(cmdHandle);
             m_Device->DeviceWaitIdle();
-            pool->ReleaseCommandBuffer(0, cmd);
+            pool->ReleaseCommandBuffer(0, cmdHandle);
             factory->ReleaseBuffer(stagingBuffer);
 
             // Per-Submesh Data Buffer
@@ -398,7 +399,7 @@ namespace ArisenEngine::Testing
             blasBufDesc.memoryPropertyFlags = RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             m_BlasBuffer = factory->CreateBuffer(std::move(blasBufDesc), "BLAS Buffer");
             
-            m_Device->AllocAccelerationStructure(m_Blas, blasInfo.type, blasSizes.accelerationStructureSize, m_BlasBuffer, 0);
+            reinterpret_cast<RHI::IRHIBackend*>(m_Device)->AllocAccelerationStructure(m_Blas, blasInfo.type, blasSizes.accelerationStructureSize, m_BlasBuffer, 0);
 
             // 2. TLAS
             RHI::RHIAccelerationStructureInstance instance{};
@@ -442,7 +443,7 @@ namespace ArisenEngine::Testing
             m_TlasBuffer = factory->CreateBuffer(std::move(tlasBufDesc), "TLAS Buffer");
             m_Tlas = factory->CreateAccelerationStructure("TLAS");
 
-            m_Device->AllocAccelerationStructure(m_Tlas, RHI::ERHIAccelerationStructureType::TopLevel, tlasSizes.accelerationStructureSize, m_TlasBuffer, 0);
+            reinterpret_cast<RHI::IRHIBackend*>(m_Device)->AllocAccelerationStructure(m_Tlas, RHI::ERHIAccelerationStructureType::TopLevel, tlasSizes.accelerationStructureSize, m_TlasBuffer, 0);
 
             // 3. Scratch Buffer
             RHI::RHIBufferDescriptor scratchDesc{};
@@ -453,7 +454,8 @@ namespace ArisenEngine::Testing
 
             // 4. Build Commands
             auto pool = m_Device->GetCommandBufferPool(m_CmdPool);
-            auto cmd = pool->GetCommandBuffer(0);
+            auto cmdHandle = pool->GetCommandBuffer(0);
+            auto cmd = m_Device->GetCommandBuffer(cmdHandle);
             cmd->Begin(0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
             
             blasInfo.dstAccelerationStructure = m_Blas;
@@ -481,9 +483,9 @@ namespace ArisenEngine::Testing
 
             cmd->End();
             RHI::RHISubmitDescriptor submitDesc = {};
-            m_Device->Submit(cmd, &submitDesc);
+            m_Device->Submit(cmdHandle, &submitDesc);
             m_Device->DeviceWaitIdle();
-            pool->ReleaseCommandBuffer(0, cmd);
+            pool->ReleaseCommandBuffer(0, cmdHandle);
         }
 
         void CreatePipeline()
@@ -660,7 +662,8 @@ namespace ArisenEngine::Testing
         {
             auto currentIndex = GetCurrentFrameIndex();
             auto pool = m_Device->GetCommandBufferPool(m_CmdPool);
-            auto cmd = pool->GetCommandBuffer(currentIndex);
+            auto cmdHandle = pool->GetCommandBuffer(currentIndex);
+            auto cmd = m_Device->GetCommandBuffer(cmdHandle);
             
             cmd->Begin(currentIndex, 0);
 
@@ -734,10 +737,10 @@ namespace ArisenEngine::Testing
             RHI::RHISubmitDescriptor submitDesc = {};
             submitDesc.WaitSwapChain = m_SwapChain;
             submitDesc.SignalSwapChain = m_SwapChain;
-            m_FrameTickets[currentIndex] = m_Device->Submit(cmd, &submitDesc);
+            m_FrameTickets[currentIndex] = m_Device->Submit(cmdHandle, &submitDesc);
             
             m_SwapChain->EndFrame(currentIndex);
-            pool->ReleaseCommandBuffer(currentIndex, cmd);
+            pool->ReleaseCommandBuffer(currentIndex, cmdHandle);
         }
 
         RHI::RHIShaderProgramHandle CompileShader(const String& name, const String& entry, const String& profile)

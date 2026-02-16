@@ -41,7 +41,7 @@ namespace ArisenEngine::RHI
 
 namespace ArisenEngine::RHI
 {
-    class RHIVkDevice final : public RHIDevice
+    class RHIVkDevice final : public RHIDevice, public IRHIBackend
     {
     public:
         friend class RHIVkFactory;
@@ -88,7 +88,12 @@ namespace ArisenEngine::RHI
 
         RHIMemoryAllocator* GetMemoryAllocator() const override;
 
-        RHIGpuTicket Submit(RHICommandBuffer* commandBuffer, const RHISubmitDescriptor* descriptor = nullptr) override;
+        RHIGpuTicket Submit(RHICommandBufferHandle commandBuffer, const RHISubmitDescriptor* descriptor = nullptr) override;
+        
+        RHICommandBuffer* GetCommandBuffer(RHICommandBufferHandle handle) override
+        {
+            return (RHICommandBuffer*)m_CommandBufferPool->Get(handle);
+        }
         RHIQueue* GetQueue(RHIQueueType type) override;
         RHICommandBufferPool* GetCommandBufferPool(RHICommandBufferPoolHandle handle) override;
         void DeferredDelete(RHIQueueType queue, RHIGpuTicket ticket, RHIDeferredDeleteItem item) override;

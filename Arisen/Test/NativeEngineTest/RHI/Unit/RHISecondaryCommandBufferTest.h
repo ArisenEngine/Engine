@@ -34,8 +34,10 @@ namespace ArisenEngine::Testing
             {
                 // 1. Get Primary and Secondary Command Buffers
                 auto pool = m_Device->GetCommandBufferPool(m_CommandPool);
-                auto primaryCmd = pool->GetCommandBuffer(f, RHI::ECommandBufferLevel::COMMAND_BUFFER_LEVEL_PRIMARY);
-                auto secondaryCmd = pool->GetCommandBuffer(f, RHI::ECommandBufferLevel::COMMAND_BUFFER_LEVEL_SECONDARY);
+                auto primaryCmdHandle = pool->GetCommandBuffer(f, RHI::ECommandBufferLevel::COMMAND_BUFFER_LEVEL_PRIMARY);
+                auto secondaryCmdHandle = pool->GetCommandBuffer(f, RHI::ECommandBufferLevel::COMMAND_BUFFER_LEVEL_SECONDARY);
+                auto primaryCmd = m_Device->GetCommandBuffer(primaryCmdHandle);
+                auto secondaryCmd = m_Device->GetCommandBuffer(secondaryCmdHandle);
 
                 // 2. Record Secondary Command Buffer
                 secondaryCmd->Begin(f, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -53,12 +55,12 @@ namespace ArisenEngine::Testing
 
                 // 4. Submit Primary
                 RHI::RHISubmitDescriptor submitDesc = {};
-                m_Device->Submit(primaryCmd, &submitDesc);
+                m_Device->Submit(primaryCmdHandle, &submitDesc);
 
                 // 5. Wait and Recycle
                 m_Device->DeviceWaitIdle();
-                pool->ReleaseCommandBuffer(f, primaryCmd);
-                pool->ReleaseCommandBuffer(f, secondaryCmd);
+                pool->ReleaseCommandBuffer(f, primaryCmdHandle);
+                pool->ReleaseCommandBuffer(f, secondaryCmdHandle);
 
                 LOG_INFO(String::Format("Frame %d completed.", f));
             }

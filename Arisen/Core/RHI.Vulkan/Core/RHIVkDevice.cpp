@@ -82,12 +82,12 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
     m_Factory = new RHIVkFactory(this);
     m_DeferredDeletion = std::make_unique<RHIVkDeferredDeletion>(m_Instance->GetMaxFramesInFlight());
     m_ResourceRegistry = std::make_unique<RHIResourceRegistry>(m_DeferredDeletion.get());
-    m_GraphicsQueue = std::make_unique<RHIVkQueue>(m_VkDevice, m_VkGraphicQueue, RHIQueueType::Graphics,
+    m_GraphicsQueue = std::make_unique<RHIVkQueue>(this, m_VkDevice, m_VkGraphicQueue, RHIQueueType::Graphics,
                                                    m_DeferredDeletion.get(), m_ResourceRegistry.get());
     
     if (m_VkComputeQueue != VK_NULL_HANDLE)
     {
-        m_ComputeQueue = std::make_unique<RHIVkQueue>(m_VkDevice, m_VkComputeQueue, RHIQueueType::Compute,
+        m_ComputeQueue = std::make_unique<RHIVkQueue>(this, m_VkDevice, m_VkComputeQueue, RHIQueueType::Compute,
                                                        m_DeferredDeletion.get(), m_ResourceRegistry.get());
     }
 
@@ -177,8 +177,11 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::GetCompletedSubm
 }
 
 
-RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuffer, const RHISubmitDescriptor* descriptor)
+RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBufferHandle handle, const RHISubmitDescriptor* descriptor)
 {
+    auto* commandBuffer = GetCommandBuffer(handle);
+    if (!commandBuffer) return 0;
+    
     ASSERT(commandBuffer->ReadyForSubmit());
 
     UInt32 frameIndex = commandBuffer->GetCurrentFrameIndex();
@@ -190,7 +193,7 @@ RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBuffer* commandBuf
         RHIGpuTicket submitTicket = 0;
         
         // Always verify valid descriptor pass-through
-        submitTicket = m_GraphicsQueue->Submit(commandBuffer, descriptor);
+        submitTicket = m_GraphicsQueue->Submit(handle, descriptor);
 
         if (m_FrameSync)
         {

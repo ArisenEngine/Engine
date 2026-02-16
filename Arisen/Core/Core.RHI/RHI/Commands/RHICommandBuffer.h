@@ -165,6 +165,8 @@ namespace ArisenEngine::RHI
         };
 
         virtual void* GetHandle() const = 0;
+        virtual RHICommandBufferHandle GetRHIHandle() const { return m_Handle; }
+        virtual void SetRHIHandle(RHICommandBufferHandle handle) { m_Handle = handle; }
 
     protected:
         void SetLatestSubmitTicket(RHIGpuTicket id) { m_LatestSubmitTicket = id; }
@@ -325,6 +327,7 @@ namespace ArisenEngine::RHI
         ECommandBufferLevel m_Level;
         RHIGpuTicket m_LatestSubmitTicket { 0 };
         UInt32 m_CurrentFrameIndex { 0 };
+        RHICommandBufferHandle m_Handle;
     };
 
     inline const bool RHICommandBuffer::ReadyForSubmit() const

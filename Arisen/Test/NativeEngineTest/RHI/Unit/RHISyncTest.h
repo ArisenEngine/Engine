@@ -45,7 +45,8 @@ namespace ArisenEngine::Testing
             RHI::RHIImageHandle testImage = m_Device->GetFactory()->CreateImage(std::move(desc), "SyncTestImage");
 
             LOG_INFO("Getting command buffer...");
-            auto cmd = m_Device->GetCommandBufferPool(m_CommandPool)->GetCommandBuffer(0);
+            auto cmdHandle = m_Device->GetCommandBufferPool(m_CommandPool)->GetCommandBuffer(0);
+            auto cmd = m_Device->GetCommandBuffer(cmdHandle);
             LOG_INFO("Beginning command buffer...");
             cmd->Begin(RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
@@ -76,7 +77,7 @@ namespace ArisenEngine::Testing
             cmd->End();
 
             LOG_INFO("Submitting command buffer...");
-            m_Device->Submit(cmd);
+            m_Device->Submit(cmdHandle);
 
             LOG_INFO("Waiting for device idle...");
             m_Device->DeviceWaitIdle();
@@ -105,7 +106,8 @@ namespace ArisenEngine::Testing
 
             // Test GPU wait and signal
             LOG_INFO("Testing GPU wait and signal with timeline semaphore...");
-            auto timelineCmd = m_Device->GetCommandBufferPool(m_CommandPool)->GetCommandBuffer(0);
+            auto timelineCmdHandle = m_Device->GetCommandBufferPool(m_CommandPool)->GetCommandBuffer(0);
+            auto timelineCmd = m_Device->GetCommandBuffer(timelineCmdHandle);
             timelineCmd->Begin(RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
             // (Dummy work)
             timelineCmd->End();
@@ -124,7 +126,7 @@ namespace ArisenEngine::Testing
             submitDesc.signalSemaphoreCount = 1;
 
             LOG_INFO("Submitting command buffer that waits for value 1 and signals value 2...");
-            m_Device->Submit(timelineCmd, &submitDesc);
+            m_Device->Submit(timelineCmdHandle, &submitDesc);
 
             LOG_INFO("CPU Waiting for timeline value 2 (GPU signal)...");
             m_Device->WaitSemaphoreValue(timelineSem, 2);
@@ -140,13 +142,13 @@ namespace ArisenEngine::Testing
 
             // Cleanup
             m_Device->GetFactory()->ReleaseSemaphore(timelineSem);
-            m_Device->GetCommandBufferPool(m_CommandPool)->ReleaseCommandBuffer(0, timelineCmd);
+            m_Device->GetCommandBufferPool(m_CommandPool)->ReleaseCommandBuffer(0, timelineCmdHandle);
 
             // Cleanup
             LOG_INFO("Releasing image...");
             m_Device->GetFactory()->ReleaseImage(testImage);
             LOG_INFO("Releasing command buffer...");
-            m_Device->GetCommandBufferPool(m_CommandPool)->ReleaseCommandBuffer(0, cmd);
+            m_Device->GetCommandBufferPool(m_CommandPool)->ReleaseCommandBuffer(0, cmdHandle);
 
             return true;
         }

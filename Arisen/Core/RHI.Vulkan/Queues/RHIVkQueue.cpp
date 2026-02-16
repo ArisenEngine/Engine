@@ -5,8 +5,8 @@
 #include "Commands/RHIVkCommandBuffer.h"
 #include "Descriptors/RHIVkDescriptorPool.h"
 
-ArisenEngine::RHI::RHIVkQueue::RHIVkQueue(VkDevice device, VkQueue queue, RHIQueueType type, IRHIDeferredDeletionQueue* deferredDeletionQueue, RHIResourceRegistry* resourceRegistry)
-    : m_Device(device), m_Queue(queue), m_Type(type), m_DeferredDeletion(deferredDeletionQueue), m_ResourceRegistry(resourceRegistry)
+ArisenEngine::RHI::RHIVkQueue::RHIVkQueue(RHIVkDevice* rhiDevice, VkDevice device, VkQueue queue, RHIQueueType type, IRHIDeferredDeletionQueue* deferredDeletionQueue, RHIResourceRegistry* resourceRegistry)
+    : m_RHIDevice(rhiDevice), m_Device(device), m_Queue(queue), m_Type(type), m_DeferredDeletion(deferredDeletionQueue), m_ResourceRegistry(resourceRegistry)
 {
     CreateTimelineSemaphore();
 }
@@ -45,8 +45,9 @@ void ArisenEngine::RHI::RHIVkQueue::CreateTimelineSemaphore()
 
 #include "Presentation/RHIVkSwapChain.h"
 
-ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommandBuffer* commandBuffer, const RHISubmitDescriptor* descriptor)
+ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommandBufferHandle handle, const RHISubmitDescriptor* descriptor)
 {
+    auto* commandBuffer = m_RHIDevice->GetCommandBuffer(handle);
     ASSERT(commandBuffer && commandBuffer->ReadyForSubmit());
 
     Containers::Vector<VkSemaphore> waitSems;
@@ -57,8 +58,8 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommand
 
     if (descriptor)
     {
-        auto* vkDevice = static_cast<RHIVkDevice*>(static_cast<RHIVkCommandBuffer*>(commandBuffer)->GetDevice());
-        UInt32 frameIndex = static_cast<RHIVkCommandBuffer*>(commandBuffer)->GetCurrentFrameIndex();
+        auto* vkDevice = m_RHIDevice;
+        UInt32 frameIndex = commandBuffer->GetCurrentFrameIndex();
 
         if (descriptor->WaitSwapChain)
         {
@@ -108,20 +109,21 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommand
         }
     }
 
-    return SubmitWithFence(commandBuffer, VK_NULL_HANDLE, false, waitSems, waitStages, waitValues, signalSems, signalValues);
+    return SubmitWithFence(handle, VK_NULL_HANDLE, false, waitSems, waitStages, waitValues, signalSems, signalValues);
 }
 
-ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(RHICommandBuffer* commandBuffer, VkFence fence, bool ownedFence,
+ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(RHICommandBufferHandle handle, VkFence fence, bool ownedFence,
     const Containers::Vector<VkSemaphore>& extraWaitSems, 
     const Containers::Vector<VkPipelineStageFlags>& extraWaitStages, 
     const Containers::Vector<uint64_t>& extraWaitValues,
     const Containers::Vector<VkSemaphore>& extraSignalSems,
     const Containers::Vector<uint64_t>& extraSignalValues)
 {
-    ASSERT(commandBuffer && commandBuffer->ReadyForSubmit());
+    RHICommandBuffer* pCmd = m_RHIDevice->GetCommandBuffer(handle);
+    ASSERT(pCmd && pCmd->ReadyForSubmit());
     (void)ownedFence;
 
-    auto* vkCmd = static_cast<RHIVkCommandBuffer*>(commandBuffer);
+    RHIVkCommandBuffer* vkCmd = static_cast<RHIVkCommandBuffer*>(pCmd);
 
     // Timeline signal value
     const auto submitTicket = m_LatestTicket.fetch_add(1, std::memory_order_acq_rel) + 1;
@@ -187,10 +189,10 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     // m_LatestTicket already updated via fetch_add above.
 
     // Mark descriptor pools used by this submission so ResetPool can be GPU-safe.
-    for (const auto& t : vkCmd->GetTrackedDescriptorPools())
+    for (const auto& trackedPool : vkCmd->GetTrackedDescriptorPools())
     {
-        auto* p = static_cast<RHIVkDescriptorPool*>(t.pool);
-        p->MarkPoolUsed(t.poolId, m_Type, submitTicket);
+        auto* pPool = static_cast<RHIVkDescriptorPool*>(trackedPool.pool);
+        pPool->MarkPoolUsed(trackedPool.poolId, m_Type, submitTicket);
     }
     vkCmd->ClearTrackedDescriptorPools();
 
@@ -198,9 +200,9 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     // They will be destroyed only when the GPU work (ticket) is completed.
     if (m_ResourceRegistry)
     {
-        for (auto h : vkCmd->GetTrackedResourceHandles())
+        for (RHIResourceHandle trackedHandle : vkCmd->GetTrackedResourceHandles())
         {
-            m_ResourceRegistry->Release(h, m_Type, submitTicket);
+            m_ResourceRegistry->Release(trackedHandle, m_Type, submitTicket);
         }
     }
     vkCmd->ClearTrackedResourceHandles();

@@ -12,6 +12,7 @@
 
 namespace ArisenEngine::RHI
 {
+    class RHIVkDevice;
     // Per-queue submit sequencing and GPU completion tracking.
     // Uses timeline semaphores for CPU<->GPU synchronization.
     class RHIVkQueue final : public RHIQueue
@@ -19,16 +20,16 @@ namespace ArisenEngine::RHI
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkQueue)
 
-        RHIVkQueue(VkDevice device, VkQueue queue, RHIQueueType type, IRHIDeferredDeletionQueue* deferredDeletionQueue, RHIResourceRegistry* resourceRegistry);
+        RHIVkQueue(RHIVkDevice* rhiDevice, VkDevice device, VkQueue queue, RHIQueueType type, IRHIDeferredDeletionQueue* deferredDeletionQueue, RHIResourceRegistry* resourceRegistry);
         ~RHIVkQueue() noexcept;
 
         RHIQueueType GetType() const override { return m_Type; }
 
         // Returns the submitID assigned to this submission.
-        RHIGpuTicket Submit(RHICommandBuffer* commandBuffer, const RHISubmitDescriptor* descriptor = nullptr) override;
+        RHIGpuTicket Submit(RHICommandBufferHandle commandBuffer, const RHISubmitDescriptor* descriptor = nullptr) override;
 
         // Legacy path: fence argument is ignored when using timeline semaphores.
-        RHIGpuTicket SubmitWithFence(RHICommandBuffer* commandBuffer, VkFence fence, bool ownedFence = false, 
+        RHIGpuTicket SubmitWithFence(RHICommandBufferHandle commandBuffer, VkFence fence, bool ownedFence = false, 
             const Containers::Vector<VkSemaphore>& extraWaitSems = {}, 
             const Containers::Vector<VkPipelineStageFlags>& extraWaitStages = {}, 
             const Containers::Vector<uint64_t>& extraWaitValues = {},
@@ -53,6 +54,7 @@ namespace ArisenEngine::RHI
     private:
         void CreateTimelineSemaphore();
 
+        RHIVkDevice* m_RHIDevice { nullptr };
         VkDevice m_Device { VK_NULL_HANDLE };
         VkQueue m_Queue { VK_NULL_HANDLE };
         RHIQueueType m_Type { RHIQueueType::Graphics };
