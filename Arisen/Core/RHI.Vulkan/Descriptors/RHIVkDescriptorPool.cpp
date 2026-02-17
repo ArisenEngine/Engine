@@ -521,6 +521,13 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSets(UInt32 poolId,
                 
                 if (type == DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
                 {
+                    if (pAsInfos && updateInfo.descriptorCount > 0) {
+                        for(uint32_t k=0; k<updateInfo.descriptorCount; ++k) {
+                            if (pAsInfos[k] == VK_NULL_HANDLE) {
+                                LOG_ERRORF("[RHIVkDescriptorPool::UpdateDescriptorSets] AS Update Binding {0} Index {1} Is VK_NULL_HANDLE!", updateInfo.binding, k);
+                            }
+                        }
+                    }
                     VkWriteDescriptorSetAccelerationStructureKHR asWrite{};
                     asWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
                     asWrite.accelerationStructureCount = updateInfo.descriptorCount;
@@ -727,6 +734,13 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::UpdateDescriptorSet(UInt32 poolId, 
             
             if (updateInfo.type == DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
             {
+                if (pAsInfos && updateInfo.descriptorCount > 0) {
+                    for(uint32_t k=0; k<updateInfo.descriptorCount; ++k) {
+                        if (pAsInfos[k] == VK_NULL_HANDLE) {
+                            LOG_ERRORF("[RHIVkDescriptorPool::UpdateDescriptorSet] AS Update Binding {0} Index {1} Is VK_NULL_HANDLE!", updateInfo.binding, k);
+                        }
+                    }
+                }
                 VkWriteDescriptorSetAccelerationStructureKHR asWrite{};
                 asWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
                 asWrite.accelerationStructureCount = updateInfo.descriptorCount;
