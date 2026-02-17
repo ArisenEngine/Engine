@@ -453,7 +453,11 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocBufferDeviceMemory(RHIBufferHandle han
     auto* buffer = m_BufferPool->Get(handle);
     if (!buffer || buffer->buffer == VK_NULL_HANDLE || !buffer->state) return false;
 
-    VmaMemoryUsage usage = VMA_MEMORY_USAGE_AUTO;
+    // NOTE: We use explicit VMA_MEMORY_USAGE_* flags (like GPU_ONLY) instead of VMA_MEMORY_USAGE_AUTO*
+    // because VMA_MEMORY_USAGE_AUTO* requires additional alignment/usage information when used with 
+    // low-level allocation functions like vmaAllocateMemoryForBuffer, which can trigger assertions 
+    // if not provided correctly. Explicit flags are safer for manual allocations.
+    VmaMemoryUsage usage = VMA_MEMORY_USAGE_GPU_ONLY;
     // Map ERHIMemoryUsage to VMA usage
     switch (buffer->memoryUsage)
     {
@@ -467,7 +471,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocBufferDeviceMemory(RHIBufferHandle han
         usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
         break;
     case ERHIMemoryUsage::Transient:
-        usage = VMA_MEMORY_USAGE_CPU_TO_GPU; // Or AUTO_PREFER_HOST depending on needs
+        usage = VMA_MEMORY_USAGE_CPU_TO_GPU; 
         break;
     }
 
@@ -680,12 +684,28 @@ ArisenEngine::UInt64 ArisenEngine::RHI::RHIVkDevice::GetBufferRange(RHIBufferHan
 ArisenEngine::UInt64 ArisenEngine::RHI::RHIVkDevice::GetBufferDeviceAddress(RHIBufferHandle handle)
 {
     auto* buffer = m_BufferPool->Get(handle);
-    if (!buffer || buffer->buffer == VK_NULL_HANDLE || !vkGetBufferDeviceAddressKHR) return 0ULL;
+    if (!buffer)
+    {
+        LOG_ERRORF("[RHIVkDevice::GetBufferDeviceAddress]: Invalid buffer handle {0}", (UInt64)handle.index);
+        return 0ULL;
+    }
+    if (buffer->buffer == VK_NULL_HANDLE)
+    {
+         LOG_ERRORF("[RHIVkDevice::GetBufferDeviceAddress]: Buffer {0} has VK_NULL_HANDLE", (UInt64)handle.index);
+         return 0ULL;
+    }
+    
+    if (!vkGetBufferDeviceAddressKHR) return 0ULL;
 
     VkBufferDeviceAddressInfoKHR addressInfo{};
     addressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR;
     addressInfo.buffer = buffer->buffer;
-    return vkGetBufferDeviceAddressKHR(m_VkDevice, &addressInfo);
+    UInt64 addr = vkGetBufferDeviceAddressKHR(m_VkDevice, &addressInfo);
+    if (addr == 0)
+    {
+         LOG_ERRORF("[RHIVkDevice::GetBufferDeviceAddress]: Returned 0 for buffer {0}", (UInt64)handle.index);
+    }
+    return addr;
 }
 
 bool ArisenEngine::RHI::RHIVkDevice::AllocImage(RHIImageHandle handle, RHIImageDescriptor&& desc)
@@ -732,7 +752,8 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImageDeviceMemory(RHIImageHandle handl
     auto* image = m_ImagePool->Get(handle);
     if (!image || image->image == VK_NULL_HANDLE || !image->state) return false;
 
-    VmaMemoryUsage usage = VMA_MEMORY_USAGE_AUTO;
+    // NOTE: Use explicit VMA_MEMORY_USAGE_* flags to avoid assertions in manual allocation paths.
+    VmaMemoryUsage usage = VMA_MEMORY_USAGE_GPU_ONLY;
     // Map ERHIMemoryUsage to VMA usage
     switch (image->memoryUsage)
     {
@@ -747,6 +768,9 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImageDeviceMemory(RHIImageHandle handl
         break;
     case ERHIMemoryUsage::Transient:
         usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+        break;
+    default:
+        LOG_WARN("[RHIVkDevice::AllocImageDeviceMemory]: Unknown memory usage type, defaulting to GPU_ONLY");
         break;
     }
 
@@ -1342,7 +1366,16 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseAccelerationStructure(RHIAcceleratio
 ArisenEngine::UInt64 ArisenEngine::RHI::RHIVkDevice::GetAccelerationStructureDeviceAddress(RHIAccelerationStructureHandle handle)
 {
     auto* item = m_AccelerationStructurePool->Get(handle);
-    return item ? item->deviceAddress : 0;
+    if (!item)
+    {
+        LOG_ERRORF("[RHIVkDevice::GetAccelerationStructureDeviceAddress]: Invalid AS handle {0}", (UInt64)handle.index);
+        return 0;
+    }
+    if (item->deviceAddress == 0)
+    {
+        LOG_ERRORF("[RHIVkDevice::GetAccelerationStructureDeviceAddress]: AS {0} has 0 device address", (UInt64)handle.index);
+    }
+    return item->deviceAddress;
 }
 
 void ArisenEngine::RHI::RHIVkDevice::GetRayTracingShaderGroupHandles(RHIPipelineHandle pipeline, UInt32 firstGroup, UInt32 groupCount, UInt64 size, void* pData)
