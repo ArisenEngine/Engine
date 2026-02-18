@@ -1338,6 +1338,9 @@ void RHIVkExecutor::SetStencilOp(UInt32 faceMask, EStencilOp failOp, EStencilOp 
 
 void RHIVkCommandBuffer::Compile()
 {
+    // TODO (Phase 4 Optimization): Implement explicit command grouping/sorting here 
+    // to improve instruction cache locality and reduce state transitions.
+    // This could involve a pre-scan of the command stream to bucket similar commands.
     RHIVkExecutor executor(this);
     Replay(executor);
     m_IsCompiled = true;
