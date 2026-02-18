@@ -45,23 +45,23 @@ int main(int argc, char** argv)
     }
     
     // Register Tests
-    // TestRunner::RegisterTest<RHIBindlessTest>();
-    // TestRunner::RegisterTest<RHISyncTest>();
-    // TestRunner::RegisterTest<RHIMultiThreadedTest>();
-    // TestRunner::RegisterTest<RHIBatchApiTest>();
-    // TestRunner::RegisterTest<RHIBasicRenderingTest>();
-    // TestRunner::RegisterTest<RHIGPUParticleTest>();
-    // TestRunner::RegisterTest<RHIMeshShaderTest>();
-    // TestRunner::RegisterTest<RHIGeometryShaderTest>();
-    // TestRunner::RegisterTest<RHITessellationShaderTest>();
-    // TestRunner::RegisterTest<RHIMultiDrawIndirectTest>();
-    // TestRunner::RegisterTest<RHISecondaryCommandBufferTest>();
-    // TestRunner::RegisterTest<RHIAsyncComputeTest>();
-    // TestRunner::RegisterTest<RHIDebugTest>();
-    // TestRunner::RegisterTest<RHIInspectorTest>();
+    TestRunner::RegisterTest<RHIBindlessTest>();
+    TestRunner::RegisterTest<RHISyncTest>();
+    TestRunner::RegisterTest<RHIMultiThreadedTest>();
+    TestRunner::RegisterTest<RHIBatchApiTest>();
+    TestRunner::RegisterTest<RHIBasicRenderingTest>();
+    TestRunner::RegisterTest<RHIGPUParticleTest>();
+    TestRunner::RegisterTest<RHIMeshShaderTest>();
+    TestRunner::RegisterTest<RHIGeometryShaderTest>();
+    TestRunner::RegisterTest<RHITessellationShaderTest>();
+    TestRunner::RegisterTest<RHIMultiDrawIndirectTest>();
+    TestRunner::RegisterTest<RHISecondaryCommandBufferTest>();
+    TestRunner::RegisterTest<RHIAsyncComputeTest>();
+    TestRunner::RegisterTest<RHIDebugTest>();
+    TestRunner::RegisterTest<RHIInspectorTest>();
     TestRunner::RegisterTest<RHIRayTracingTest>();
-    // TestRunner::RegisterTest<RHIVRSShadingRateTest>();
-    // TestRunner::RegisterTest<RHIMemoryAliasingTest>();
+    TestRunner::RegisterTest<RHIVRSShadingRateTest>();
+    TestRunner::RegisterTest<RHIMemoryAliasingTest>();
 
     
     // Parse simple command line for filtering (lpCmdLine for WinMain)
