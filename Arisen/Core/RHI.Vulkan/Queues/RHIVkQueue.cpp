@@ -195,8 +195,11 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     // Mark descriptor pools used by this submission so ResetPool can be GPU-safe.
     for (const auto& trackedPool : vkCmd->GetTrackedDescriptorPools())
     {
-        auto* pPool = static_cast<RHIVkDescriptorPool*>(trackedPool.pool);
-        pPool->MarkPoolUsed(trackedPool.poolId, m_Type, submitTicket);
+        auto* poolItem = m_RHIDevice->GetDescriptorPoolPool()->Get(trackedPool.poolHandle);
+        if (poolItem && poolItem->pool)
+        {
+            static_cast<RHIVkDescriptorPool*>(poolItem->pool)->MarkPoolUsed(trackedPool.poolId, m_Type, submitTicket);
+        }
     }
     vkCmd->ClearTrackedDescriptorPools();
 

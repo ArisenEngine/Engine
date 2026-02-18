@@ -30,6 +30,7 @@ namespace ArisenEngine::Testing
         std::unique_ptr<RHI::RHIPipelineState> m_Pso;
 
         RHI::RHIDescriptorPool* m_DescriptorPool = nullptr;
+        RHI::RHIDescriptorPoolHandle m_DescriptorPoolHandle;
         UInt32 m_PoolId = 0;
 
     public:
@@ -42,6 +43,7 @@ namespace ArisenEngine::Testing
             HAL::InitDXC();
             m_CommandPool = m_Device->GetFactory()->CreateCommandBufferPool(RHI::RHIQueueType::Compute);
             m_DescriptorPool = m_Device->GetDescriptorPool();
+            m_DescriptorPoolHandle = m_Device->GetDescriptorPoolHandle();
 
             // 1. Compile and Create Compute Program
             namespace fs = std::filesystem;
@@ -123,7 +125,7 @@ namespace ArisenEngine::Testing
 
             cmd->Begin(0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
             cmd->BindPipeline(m_Pipeline);
-            cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_COMPUTE, 0, m_DescriptorPool, m_PoolId, setIdx);
+            cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_COMPUTE, 0, m_DescriptorPoolHandle, m_PoolId, setIdx);
             cmd->Dispatch(4, 1, 1); // 4 * 256 = 1024
             cmd->End();
 

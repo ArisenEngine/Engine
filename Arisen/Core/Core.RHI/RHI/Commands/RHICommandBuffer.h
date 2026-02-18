@@ -203,8 +203,8 @@ namespace ArisenEngine::RHI
         void BindDescriptorSets(EPipelineBindPoint bindPoint,
     UInt32 firstSet, Containers::Vector<std::shared_ptr<RHIDescriptorSet>>& descriptorsets, UInt32 dynamicOffsetCount, const UInt32* pDynamicOffsets);
 
-        void BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPool* pool, UInt32 poolId);
-        void BindDescriptorSet(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPool* pool, UInt32 poolId, UInt32 setIndex);
+        void BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPoolHandle poolHandle, UInt32 poolId);
+        void BindDescriptorSet(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPoolHandle poolHandle, UInt32 poolId, UInt32 setIndex);
 
         void PushConstants(UInt32 offset, UInt32 size, const void* data, UInt32 stageFlags);
 
@@ -271,9 +271,9 @@ namespace ArisenEngine::RHI
 
         // Optional hook: allow the backend to track per-submit resource usage (descriptor pools, etc).
         // Default: no-op.
-        virtual void TrackDescriptorPoolUse(RHIDescriptorPool* pool, UInt32 poolId)
+        virtual void TrackDescriptorPoolUse(RHIDescriptorPoolHandle poolHandle, UInt32 poolId)
         {
-            RecordCommand<RHICmdTrackDescriptorPoolUse>(ERHICommandType::TrackDescriptorPoolUse, { pool, poolId });
+            RecordCommand<RHICmdTrackDescriptorPoolUse>(ERHICommandType::TrackDescriptorPoolUse, { poolHandle, poolId });
         }
 
     public:
@@ -446,7 +446,7 @@ namespace ArisenEngine::RHI
                     {
                         const auto* cmd = reinterpret_cast<const RHICmdBindDescriptorSetsPool*>(m_CommandStream.data() + offset);
                         offset += sizeof(RHICmdBindDescriptorSetsPool);
-                        executor.BindDescriptorSets(cmd->bindPoint, cmd->firstSet, cmd->pool, cmd->poolId, cmd->setIndex, cmd->isSingleSet);
+                        executor.BindDescriptorSets(cmd->bindPoint, cmd->firstSet, cmd->poolHandle, cmd->poolId, cmd->setIndex, cmd->isSingleSet);
                         break;
                     }
                     case ERHICommandType::CopyBuffer:
@@ -685,7 +685,7 @@ namespace ArisenEngine::RHI
                     {
                         const auto* cmd = reinterpret_cast<const RHICmdTrackDescriptorPoolUse*>(&m_CommandStream[offset]);
                         offset += sizeof(RHICmdTrackDescriptorPoolUse);
-                        executor.TrackDescriptorPoolUse(cmd->pool, cmd->poolId);
+                        executor.TrackDescriptorPoolUse(cmd->poolHandle, cmd->poolId);
                         break;
                     }
                     default:

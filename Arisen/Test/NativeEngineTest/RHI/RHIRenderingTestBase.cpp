@@ -18,6 +18,7 @@ namespace ArisenEngine::Testing
     {
         m_CmdPool = m_Device->GetFactory()->CreateCommandBufferPool(RHI::RHIQueueType::Graphics);
         m_DescriptorPool = m_Device->GetDescriptorPool();
+        m_DescriptorPoolHandle = m_Device->GetDescriptorPoolHandle();
 
         m_Surface = &m_Instance->GetSurface(m_WindowId);
         m_SwapChain = m_Surface->GetSwapChain();

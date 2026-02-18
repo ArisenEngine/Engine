@@ -221,14 +221,14 @@ namespace ArisenEngine::RHI
         // Assume simplified usage or just ignore for now if not used in core path (Bindless uses other overload).
     }
 
-    void RHICommandBuffer::BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPool* pool, UInt32 poolId)
+    void RHICommandBuffer::BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPoolHandle poolHandle, UInt32 poolId)
     {
-        RecordCommand(ERHICommandType::BindDescriptorSets, RHICmdBindDescriptorSetsPool{ bindPoint, firstSet, pool, poolId, 0, false });
+        RecordCommand(ERHICommandType::BindDescriptorSets, RHICmdBindDescriptorSetsPool{ bindPoint, firstSet, poolHandle, poolId, 0, false });
     }
 
-    void RHICommandBuffer::BindDescriptorSet(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPool* pool, UInt32 poolId, UInt32 setIndex)
+    void RHICommandBuffer::BindDescriptorSet(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPoolHandle poolHandle, UInt32 poolId, UInt32 setIndex)
     {
-        RecordCommand(ERHICommandType::BindDescriptorSets, RHICmdBindDescriptorSetsPool{ bindPoint, firstSet, pool, poolId, setIndex, true });
+        RecordCommand(ERHICommandType::BindDescriptorSets, RHICmdBindDescriptorSetsPool{ bindPoint, firstSet, poolHandle, poolId, setIndex, true });
     }
 
     void RHICommandBuffer::PushConstants(UInt32 offset, UInt32 size, const void* data, UInt32 stageFlags)

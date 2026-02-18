@@ -74,7 +74,7 @@ namespace ArisenEngine
 
             struct TrackedPoolUse
             {
-                RHIDescriptorPool* pool{ nullptr };
+                RHIDescriptorPoolHandle poolHandle;
                 UInt32 poolId{ 0 };
             };
             Containers::Vector<TrackedPoolUse> m_TrackedDescriptorPools;

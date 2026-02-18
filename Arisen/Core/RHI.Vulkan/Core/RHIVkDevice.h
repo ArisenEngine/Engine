@@ -41,6 +41,7 @@ namespace ArisenEngine::RHI
     struct RHIVkAccelerationStructurePoolItem;
     struct RHIVkAccelerationStructurePoolItem;  // TODO: 重复，删除此行
     struct RHIVkMemoryPoolPoolItem;
+    struct RHIVkDescriptorPoolPoolItem;
     struct RHIVkExecutor;
 }
 
@@ -93,10 +94,10 @@ namespace ArisenEngine::RHI
         const RHIResourceStats& GetResourceStats() const override { return m_Stats; }
 
         RHIDescriptorPool* GetDescriptorPool() const override
-
         {
             return m_DescriptorPool;
         }
+        RHIDescriptorPoolHandle GetDescriptorPoolHandle() const override { return m_DescriptorPoolHandle; }
 
         RHIMemoryAllocator* GetMemoryAllocator() const override;
 
@@ -145,6 +146,7 @@ namespace ArisenEngine::RHI
         friend class RHIVkInstance;
         RHIVkGPUPipelineManager* m_GPUPipelineManager;
         RHIVkDescriptorPool* m_DescriptorPool;
+        RHIDescriptorPoolHandle m_DescriptorPoolHandle;
         RHIVkMemoryAllocator* m_MemoryAllocator;
         RHIVkBindlessManager* m_BindlessManager;
         RHIVkFactory* m_Factory;
@@ -184,6 +186,7 @@ namespace ArisenEngine::RHI
         m_CommandBufferPoolPool;
         std::unique_ptr<RHIResourcePool<RHICommandBufferHandle, RHIVkCommandBufferItem>> m_CommandBufferPool;
         std::unique_ptr<RHIResourcePool<RHIAccelerationStructureHandle, RHIVkAccelerationStructurePoolItem>> m_AccelerationStructurePool;
+        std::unique_ptr<RHIResourcePool<RHIDescriptorPoolHandle, RHIVkDescriptorPoolPoolItem>> m_DescriptorPoolPool;
 
     // TODO(Design-P2): public: 立即跟随 private: 段，导致内外部接口边界模糊。
     // 考虑将 Pool Accessor 统一为一个 internal 访问级别，通过内部接口类暴露。
@@ -308,6 +311,14 @@ namespace ArisenEngine::RHI
         {
             return m_MemoryPoolPool.get();
         }
+
+        RHIResourcePool<RHIDescriptorPoolHandle, RHIVkDescriptorPoolPoolItem>* GetDescriptorPoolPool() const
+        {
+            return m_DescriptorPoolPool.get();
+        }
+
+
+
 
     public:
 

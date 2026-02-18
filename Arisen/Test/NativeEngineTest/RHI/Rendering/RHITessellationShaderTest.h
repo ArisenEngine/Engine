@@ -424,7 +424,7 @@ namespace ArisenEngine::Testing
                 cmd->SetScissor(0, 0, renderInfo.RHIRenderArea.width, renderInfo.RHIRenderArea.height);
                 cmd->BindVertexBuffers(m_Model.vertexBuffer, 0);
                 cmd->BindIndexBuffer(m_Model.indexBuffer, 0, RHI::INDEX_TYPE_UINT32);
-                cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[0], setIdx);
+                cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPoolHandle, m_DescriptorPoolIds[0], setIdx);
                 cmd->DrawIndexed(m_Model.indexCount, 1, 0, 0, 0, 0);
                 cmd->EndRendering();
 

@@ -49,7 +49,7 @@ namespace ArisenEngine::RHI
         void BindVertexBuffers(RHIBufferHandle buffers, UInt64 offset);
         void BindIndexBuffer(RHIBufferHandle indexBuffer, UInt64 offset, EIndexType type);
         void CopyBuffer(RHIBufferHandle src, UInt64 srcOffset, RHIBufferHandle dst, UInt64 dstOffset, UInt64 size);
-        void BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPool* pool, UInt32 poolId, UInt32 setIndex, bool singleSet);
+        void BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPoolHandle poolHandle, UInt32 poolId, UInt32 setIndex, bool singleSet);
         void PushConstants(UInt32 offset, UInt32 size, const void* data, UInt32 stageFlags);
         void CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst, EImageLayout dstImageLayout, UInt32 regionCount, const RHIBufferImageCopy* regions);
         void PipelineBarrier(const RHICmdPipelineBarrier& cmd, const RHIMemoryBarrier* pMem, const RHIImageMemoryBarrier* pImg, const RHIBufferMemoryBarrier* pBuf);
@@ -62,7 +62,7 @@ namespace ArisenEngine::RHI
         void BeginDebugLabel(const char* label, const Float32 color[4]);
         void EndDebugLabel();
         void InsertDebugMarker(const char* label, const Float32 color[4]);
-        void TrackDescriptorPoolUse(RHIDescriptorPool* pool, UInt32 poolId);
+        void TrackDescriptorPoolUse(RHIDescriptorPoolHandle poolHandle, UInt32 poolId);
 
         // Dynamic State
         void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height, Float32 minDepth, Float32 maxDepth);
@@ -480,9 +480,15 @@ void RHIVkExecutor::BindPipeline(RHIPipelineHandle pipelineHandle)
     }
 }
 
-void RHIVkExecutor::BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPool* pool, UInt32 poolId, UInt32 setIndex, bool singleSet)
+void RHIVkExecutor::BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPoolHandle poolHandle, UInt32 poolId, UInt32 setIndex, bool singleSet)
 {
+    auto* vkDevice = cmd->GetVkDevice();
+    auto* poolItem = vkDevice->GetDescriptorPoolPool()->Get(poolHandle);
+    if (poolItem == nullptr) return;
+
+    RHIDescriptorPool* pool = poolItem->pool;
     if (pool == nullptr) return;
+
     
     UInt32 frameIndex = cmd->GetCurrentFrameIndex();
     if (cmd->m_CurrentPipeline == nullptr)
@@ -512,26 +518,17 @@ void RHIVkExecutor::BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firs
     
     if (!cmd->m_VkDescriptorSets.empty())
     {
-         ::vkCmdBindDescriptorSets(cmd->m_VkCommandBuffer, static_cast<VkPipelineBindPoint>(bindPoint),
+        ::vkCmdBindDescriptorSets(cmd->m_VkCommandBuffer, 
+            static_cast<VkPipelineBindPoint>(bindPoint),
             pipeline->GetPipelineLayout(frameIndex),
-            firstSet, static_cast<uint32_t>(cmd->m_VkDescriptorSets.size()),
+            firstSet, 
+            static_cast<uint32_t>(cmd->m_VkDescriptorSets.size()),
             cmd->m_VkDescriptorSets.data(),
-            0, nullptr); // Dynamic offsets not supported in this pool path yet?
+            0, 
+            nullptr);
     }
     
-    // We don't need to call TrackDescriptorPoolUse here because it's recorded separately in the stream if needed?
-    // Wait, the original code called TrackDescriptorPoolUse.
-    // If I record the command, I should also track it during replay OR during recording.
-    // In RHICommandBuffer.h, I record BindDescriptorSets AND TrackDescriptorPoolUse commands?
-    // No, I added TrackDescriptorPoolUse as a command.
-    // But `RHICommandBuffer::BindDescriptorSets` implementation only records `BindDescriptorSets`.
-    // It doesn't record `TrackDescriptorPoolUse`.
-    // The original code called explicit `TrackDescriptorPoolUse`.
-    // So the Recorder probably should handle tracking?
-    // Or the Executor handles it?
-    // If Executor handles it, it just adds to `m_TrackedDescriptorPools`.
-    // Let's call `TrackDescriptorPoolUse` here.
-    TrackDescriptorPoolUse(pool, poolId);
+    this->TrackDescriptorPoolUse(poolHandle, poolId);
 }
 
 // Removing the raw pointer overload since it is deprecated in this path
@@ -1229,14 +1226,14 @@ void RHIVkExecutor::SetFragmentShadingRate(EShadingRate rate, EShadingRateCombin
     vkDevice->vkCmdSetFragmentShadingRateKHR(cmd->m_VkCommandBuffer, &shadingRate, combiners);
 }
 
-void RHIVkExecutor::TrackDescriptorPoolUse(RHIDescriptorPool* pool, UInt32 poolId)
+void RHIVkExecutor::TrackDescriptorPoolUse(RHIDescriptorPoolHandle poolHandle, UInt32 poolId)
 {
     // Simple linear search to avoid duplicates
     for (const auto& p : cmd->m_TrackedDescriptorPools)
     {
-        if (p.pool == pool) return;
+        if (p.poolHandle == poolHandle) return;
     }
-    cmd->m_TrackedDescriptorPools.push_back({ pool, poolId });
+    cmd->m_TrackedDescriptorPools.push_back({ poolHandle, poolId });
 }
 
 void RHIVkExecutor::SetViewport(Float32 x, Float32 y, Float32 width, Float32 height, Float32 minDepth, Float32 maxDepth)

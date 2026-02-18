@@ -413,7 +413,7 @@ namespace ArisenEngine::Testing
                 for (const auto& group : m_MaterialGroups)
                 {
                     UInt32 setIdx = group.materialIndex >= 0 ? setIndices[group.materialIndex] : 0;
-                    cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[currentIndex], setIdx);
+                    cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPoolHandle, m_DescriptorPoolIds[currentIndex], setIdx);
                     
                     cmd->DrawIndexedIndirect(m_IndirectBuffer, group.commandOffset * sizeof(IndirectCommand), group.commandCount, sizeof(IndirectCommand));
                 }

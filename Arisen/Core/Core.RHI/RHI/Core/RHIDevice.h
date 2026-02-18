@@ -98,6 +98,7 @@ namespace ArisenEngine::RHI
         virtual RHIPipelineCache* GetPipelineCache() const = 0;
 
         virtual RHIDescriptorPool* GetDescriptorPool() const = 0;
+        virtual RHIDescriptorPoolHandle GetDescriptorPoolHandle() const = 0;
 
         virtual RHIMemoryAllocator* GetMemoryAllocator() const = 0;
 
