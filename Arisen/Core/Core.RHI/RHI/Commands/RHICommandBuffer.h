@@ -508,7 +508,32 @@ namespace ArisenEngine::RHI
                     {
                          const auto* cmd = reinterpret_cast<const RHICmdBuildAccelerationStructures*>(m_CommandStream.data() + offset);
                          offset += sizeof(RHICmdBuildAccelerationStructures);
-                         // TODO: Full serialization if needed.
+                         
+                         const uint8_t* dataStart = m_CommandStream.data() + offset;
+                         const uint8_t* currentPtr = dataStart;
+
+                         Containers::Vector<RHIAccelerationStructureBuildGeometryInfo> infos;
+                         infos.resize(cmd->infoCount);
+                         Containers::Vector<const RHIAccelerationStructureBuildRangeInfo*> rangePtrs;
+                         rangePtrs.resize(cmd->infoCount);
+
+                         for (UInt32 i = 0; i < cmd->infoCount; ++i)
+                         {
+                             // Reconstruct Info
+                             std::memcpy(&infos[i], currentPtr, sizeof(RHIAccelerationStructureBuildGeometryInfo));
+                             currentPtr += sizeof(RHIAccelerationStructureBuildGeometryInfo);
+
+                             // Patch Geometry Pointer
+                             infos[i].pGeometries = reinterpret_cast<const RHIAccelerationStructureGeometryData*>(currentPtr);
+                             currentPtr += infos[i].geometryCount * sizeof(RHIAccelerationStructureGeometryData);
+
+                             // Patch Range Pointer
+                             rangePtrs[i] = reinterpret_cast<const RHIAccelerationStructureBuildRangeInfo*>(currentPtr);
+                             currentPtr += infos[i].geometryCount * sizeof(RHIAccelerationStructureBuildRangeInfo);
+                         }
+
+                         executor.BuildAccelerationStructures(cmd->infoCount, infos.data(), rangePtrs.data());
+                         offset += cmd->totalDataSize;
                          break;
                     }
                     case ERHICommandType::TraceRays:
