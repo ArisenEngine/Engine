@@ -276,7 +276,7 @@ namespace ArisenEngine::Testing
                 cmd->BindPipeline(m_MeshPipeline);
                 cmd->SetViewport(0, 0, (float)renderInfo.RHIRenderArea.width, (float)renderInfo.RHIRenderArea.height, 0, 1);
                 cmd->SetScissor(0, 0, renderInfo.RHIRenderArea.width, renderInfo.RHIRenderArea.height);
-                cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[currentIndex], 0);
+                cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPoolHandle, m_DescriptorPoolIds[currentIndex], 0);
                 
                 // Draw 10 rings/groups of tasks
                 cmd->DrawMeshTasks(10, 1, 1);

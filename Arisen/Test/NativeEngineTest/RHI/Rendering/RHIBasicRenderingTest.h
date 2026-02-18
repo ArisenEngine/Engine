@@ -360,7 +360,7 @@ namespace ArisenEngine::Testing
                 for (const auto& prim : m_Model.primitives)
                 {
                     UInt32 setIdx = prim.materialIndex >= 0 ? (UInt32)prim.materialIndex : 0;
-                    cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[currentIndex], setIdx);
+                    cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPoolHandle, m_DescriptorPoolIds[currentIndex], setIdx);
                     cmd->DrawIndexed(prim.indexCount, 1, prim.firstIndex, 0, 0, 0);
                 }
                 cmd->EndRendering();

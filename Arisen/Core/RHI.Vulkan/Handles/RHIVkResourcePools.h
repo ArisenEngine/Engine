@@ -13,6 +13,7 @@ namespace ArisenEngine::RHI {
 class RHIPipeline;
 class RHIShaderProgram;
 class RHICommandBufferPool;
+class RHIDescriptorPool;
 
 /**
  * @brief Shared state for a Vulkan Buffer and its memory.
@@ -217,6 +218,15 @@ struct RHIVkAccelerationStructurePoolItem {
     RHIBufferHandle bufferHandle; // The buffer backing this AS
     UInt64 deviceAddress{0};
     UInt64 size{0};
+    String name{"Anonymous"};
+    RHIResourceHandle registryHandle;
+};
+
+/**
+ * @brief Internal Vulkan implementation data for a Descriptor Pool (handle-based).
+ */
+struct RHIVkDescriptorPoolPoolItem {
+    RHIDescriptorPool* pool{nullptr};
     String name{"Anonymous"};
     RHIResourceHandle registryHandle;
 };

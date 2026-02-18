@@ -687,7 +687,7 @@ namespace ArisenEngine::Testing
             m_DescriptorPool->UpdateDescriptorSet(m_DescriptorPoolIds[currentIndex], m_DescriptorSetIndices[currentIndex], m_Pso.get());
 
             cmd->BindPipeline(m_Pipeline);
-            cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_RAY_TRACING_KHR, 0, m_DescriptorPool, m_DescriptorPoolIds[currentIndex], 0);
+            cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_RAY_TRACING_KHR, 0, m_DescriptorPoolHandle, m_DescriptorPoolIds[currentIndex], 0);
 
             UInt32 width = HAL::GetWindowWidth(m_WindowId);
             UInt32 height = HAL::GetWindowHeight(m_WindowId);

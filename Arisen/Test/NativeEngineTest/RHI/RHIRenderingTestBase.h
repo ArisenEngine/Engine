@@ -50,6 +50,7 @@ namespace ArisenEngine::Testing
     protected:
         RHI::RHICommandBufferPoolHandle m_CmdPool;
         RHI::RHIDescriptorPool* m_DescriptorPool = nullptr;
+        RHI::RHIDescriptorPoolHandle m_DescriptorPoolHandle;
         
         RHI::RHISurface* m_Surface = nullptr;
         RHI::RHISwapChain* m_SwapChain = nullptr;

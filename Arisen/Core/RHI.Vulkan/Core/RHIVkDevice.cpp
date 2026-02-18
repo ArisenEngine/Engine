@@ -117,11 +117,16 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
     m_PipelinePool = std::make_unique<RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>>(RHI_STATS_PTR(m_Stats.pipelineCount));
     m_FencePool = std::make_unique<RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>>(RHI_STATS_PTR(m_Stats.synchronizationCount));
     m_GPUProgramPool = std::make_unique<RHIResourcePool<RHIShaderProgramHandle, RHIVkGPUProgramPoolItem>>(RHI_STATS_PTR(m_Stats.shaderProgramCount));
-    m_CommandBufferPoolPool = std::make_unique<RHIResourcePool<
-        RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>>();
-    m_CommandBufferPool = std::make_unique<RHIResourcePool<
-        RHICommandBufferHandle, RHIVkCommandBufferItem>>(RHI_STATS_PTR(m_Stats.commandBufferCount));
+    m_CommandBufferPoolPool = std::make_unique<RHIResourcePool<RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>>();
+    m_CommandBufferPool = std::make_unique<RHIResourcePool<RHICommandBufferHandle, RHIVkCommandBufferItem>>(RHI_STATS_PTR(m_Stats.commandBufferCount));
     m_AccelerationStructurePool = std::make_unique<RHIResourcePool<RHIAccelerationStructureHandle, RHIVkAccelerationStructurePoolItem>>();
+    m_DescriptorPoolPool = std::make_unique<RHIResourcePool<RHIDescriptorPoolHandle, RHIVkDescriptorPoolPoolItem>>();
+
+    // Register default descriptor pool
+    m_DescriptorPoolHandle = m_DescriptorPoolPool->Allocate([&](auto* item) {
+        item->pool = m_DescriptorPool;
+        item->name = "DefaultDescriptorPool";
+    });
     m_MemoryPoolPool = std::make_unique<RHIResourcePool<RHIMemoryPoolHandle, RHIVkMemoryPoolPoolItem>>();
     std::cout << "[DEBUG] RHIVkDevice::RHIVkDevice END" << std::endl;
 }

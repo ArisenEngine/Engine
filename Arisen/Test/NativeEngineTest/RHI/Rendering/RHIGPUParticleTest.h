@@ -310,7 +310,7 @@ namespace ArisenEngine::Testing
 
             // Compute Update
             cmd->BindPipeline(m_ComputePipeline);
-            cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_COMPUTE, 0, m_DescriptorPool, m_ComputeDescriptorPoolIds[currentIndex], 0);
+            cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_COMPUTE, 0, m_DescriptorPoolHandle, m_ComputeDescriptorPoolIds[currentIndex], 0);
             cmd->Dispatch((m_ParticleCount + 255) / 256, 1, 1);
 
             // Barrier: Compute Write -> Vertex Read
@@ -354,7 +354,7 @@ namespace ArisenEngine::Testing
                 cmd->BindPipeline(m_GraphicsPipeline);
                 cmd->SetViewport(0, 0, (float)renderInfo.RHIRenderArea.width, (float)renderInfo.RHIRenderArea.height, 0, 1);
                 cmd->SetScissor(0, 0, renderInfo.RHIRenderArea.width, renderInfo.RHIRenderArea.height);
-                cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_GraphicsDescriptorPoolIds[currentIndex], 0);
+                cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPoolHandle, m_GraphicsDescriptorPoolIds[currentIndex], 0);
                 cmd->Draw(m_ParticleCount, 1, 0, 0, 0);
                 cmd->EndRendering();
 

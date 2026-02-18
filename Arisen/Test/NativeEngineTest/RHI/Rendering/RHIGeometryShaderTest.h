@@ -370,7 +370,7 @@ namespace ArisenEngine::Testing
                     m_DescriptorPool->UpdateDescriptorSet(m_DescriptorPoolIds[0], setIdx, m_Pso.get());
 
 
-                    cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPool, m_DescriptorPoolIds[0], setIdx);
+                    cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPoolHandle, m_DescriptorPoolIds[0], setIdx);
                     cmd->DrawIndexed(prim.indexCount, 1, prim.firstIndex, 0, 0, 0);
                 }
 
