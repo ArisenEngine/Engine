@@ -12,6 +12,7 @@ namespace ArisenEngine::RHI
 {
     class RHIRenderPass;
 
+    // CppSharp-P0 RESOLVED: std::optional fields replaced with POD sentinel values.
     typedef struct RHISubpassDescription
     {
         EPipelineBindPoint bindPoint;
@@ -19,11 +20,11 @@ namespace ArisenEngine::RHI
         void* colorReferences;
         UInt32 preserveCount;
         void* preserves;
-        std::optional<UInt32> inputRefCount;
-        std::optional<void*> inputReferences;
-        std::optional<void*> resolveReference;
-        std::optional<void*> depthStencilReference;
-        std::optional<UInt32> flag;
+        UInt32 inputRefCount = 0;
+        void* inputReferences = nullptr;
+        void* resolveReference = nullptr;
+        void* depthStencilReference = nullptr;
+        UInt32 flag = 0;
         
     } RHISubpassDescription;
 
@@ -97,4 +98,3 @@ namespace ArisenEngine::RHI
         
     };
 }
-
