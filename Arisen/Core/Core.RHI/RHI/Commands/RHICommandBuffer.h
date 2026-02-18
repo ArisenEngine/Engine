@@ -277,6 +277,12 @@ namespace ArisenEngine::RHI
         }
 
     public:
+        // TODO(Perf-P2): Replay<Executor> 模板在公共头文件中展开了 ~400 行代码。
+        // 每个包含此头文件的 TU 都会重新实例化这个巨型 switch。建议：
+        // 方案A: 移至 RHICommandBuffer.inl 仅在后端 .cpp 中 include（推荐）。
+        // 方案B: 用虚函数 + visitor 模式替代模板，但会增加虚调用开销。
+        // TODO(CppSharp-P1): CppSharp 无法处理 C++ 模板方法。Replay 不应导出。
+        // 确保 CppSharp 配置中通过 IgnoreClassMethodWithName 跳过此方法。
         template<typename Executor>
         void Replay(Executor& executor)
         {
@@ -726,6 +732,9 @@ namespace ArisenEngine::RHI
 
 
     protected:
+        // TODO(CppSharp-P1): friend class RHIVkCommandBufferPool / RHIVkQueue 是后端类型，
+        // 不应出现在抽象 Core.RHI 头文件中。CppSharp 解析此头文件时会尝试解析这些类型。
+        // 方案: 使用 protected virtual 方法替代 friend 访问，或在后端 .cpp 中使用 static_cast。
         friend class RHICommandBufferPool;
         friend class RHIVkCommandBufferPool;
         friend class RHIVkQueue; // Added for tracking access
@@ -737,6 +746,8 @@ namespace ArisenEngine::RHI
         RHIDevice* GetDevice() const { return m_Device; }
         ECommandBufferState GetState() const { return m_State; }
         void SetState(ECommandBufferState state) { m_State = state; }
+    // TODO(Interface-P2): 访问控制段混乱。多个 public:/protected: 段交替出现 (L279, L728, L734, L740, L745)。
+    // 建议统一为: public → protected → private 各一个段，按职责分组方法。
     public:
         ECommandBufferLevel GetLevel() const { return m_Level; }
         

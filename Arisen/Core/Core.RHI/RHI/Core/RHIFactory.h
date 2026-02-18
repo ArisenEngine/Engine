@@ -16,6 +16,11 @@ namespace ArisenEngine::RHI
     struct RenderPassDescriptor; // Assuming this exists or will be added
     struct RHIFrameBufferDescriptor; // Assuming this exists or will be added
 
+    // TODO(CppSharp-P1): RHIFactory 缺少 RHI_DLL 导出宏。虽然通过 RHIDevice::GetFactory() 间接访问，
+    // 但 CppSharp 需要看到此类才能生成正确的绑定。考虑添加 RHI_DLL 或通过 opaque handle 暴露。
+    // TODO(Interface-P1): 考虑将 RHIFactory 扩展为 RHIResourceManager，整合目前分散在
+    // RHIDevice 中的 Buffer/Image 操作方法 (BufferMemoryCopy, MapBuffer, GetBufferSize 等)。
+    // 使资源的 Create/Release/Query/Map 全部通过同一接口完成。
     class RHIFactory
     {
     public:

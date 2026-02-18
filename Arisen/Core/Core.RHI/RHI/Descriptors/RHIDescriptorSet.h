@@ -18,7 +18,7 @@ namespace ArisenEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIDescriptorSet)
         virtual ~RHIDescriptorSet() noexcept;
 
-        virtual void* GetHandle() = 0;
+        // TODO(CppSharp-P0): GetHandle() \u8fd4\u56de void*\uff0c\u6cc4\u6f0f VkDescriptorSet\u3002\u5e94\u79fb\u81f3\u540e\u7aef\u3002\r\n        virtual void* GetHandle() = 0;
 
         virtual bool IsBindless() const { return false; }
         virtual const Containers::Vector<UInt32>& GetBindlessIndices() const 

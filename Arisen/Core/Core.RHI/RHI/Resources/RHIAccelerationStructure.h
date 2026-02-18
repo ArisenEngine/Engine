@@ -91,7 +91,7 @@ namespace ArisenEngine::RHI
     {
     public:
         virtual ~RHIAccelerationStructure() = default;
-        virtual void* GetHandle() const = 0;
+        // TODO(CppSharp-P0): GetHandle() \u8fd4\u56de void*\uff0c\u6cc4\u6f0f VkAccelerationStructureKHR\u3002\u5e94\u79fb\u81f3\u540e\u7aef\u3002\r\n        virtual void* GetHandle() const = 0;
         virtual UInt64 GetDeviceAddress() const = 0;
     };
 }
