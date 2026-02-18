@@ -22,7 +22,7 @@ namespace ArisenEngine::RHI
         virtual EDescriptorHeapType GetType() const = 0;
         virtual UInt32 GetDescriptorSize() const = 0;
         virtual UInt32 GetCapacity() const = 0;
-        virtual void* GetNativeHandle() const = 0;
+        // TODO(CppSharp-P0): GetNativeHandle() \u8fd4\u56de void*\uff0c\u5e94\u79fb\u81f3\u540e\u7aef\u6216\u5220\u9664\u3002\r\n        virtual void* GetNativeHandle() const = 0;
         
         // Allocate a range of descriptors. Returns the index of the first descriptor.
         virtual UInt32 Allocate(UInt32 count) = 0;

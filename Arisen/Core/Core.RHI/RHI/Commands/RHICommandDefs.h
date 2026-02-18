@@ -303,11 +303,15 @@ namespace ArisenEngine::RHI
     };
 
     // For the pool-based bind (bindless optimization)
+    // TODO(CppSharp-P0): RHICmdBindDescriptorSetsPool 包含 RHIDescriptorPool* 原始指针。
+    // 这违反了 POD 命令流设计原则：指针在跨帧/跨线程序列化时不安全。
+    // 方案: 替换为 UInt32 descriptorPoolIndex 或新增 RHIDescriptorPoolHandle 句柄类型。
+    // 这也是 CppSharp 导出的阻碍 — C# 端无法安全持有原始 C++ 指针。
     struct RHICmdBindDescriptorSetsPool
     {
         EPipelineBindPoint bindPoint;
         UInt32 firstSet;
-        RHIDescriptorPool* pool;
+        RHIDescriptorPool* pool;  // TODO: 替换为 handle 或 index
         UInt32 poolId;
         UInt32 setIndex; // Used for BindDescriptorSet (singular)
         bool isSingleSet; // Differentiates Transmit vs TransmitOne
@@ -403,9 +407,11 @@ namespace ArisenEngine::RHI
         // Followed by label string
     };
     
+    // TODO(CppSharp-P0): 与 RHICmdBindDescriptorSetsPool 相同的原始指针问题。
+    // RHIDescriptorPool* 应替换为 handle 或 index，以满足 POD 序列化和 CppSharp 要求。
     struct RHICmdTrackDescriptorPoolUse
     {
-        RHIDescriptorPool* pool;
+        RHIDescriptorPool* pool;  // TODO: 替换为 handle 或 index
         UInt32 poolId;
     };
 

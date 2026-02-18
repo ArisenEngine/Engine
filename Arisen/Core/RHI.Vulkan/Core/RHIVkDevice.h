@@ -20,12 +20,15 @@
 namespace ArisenEngine::RHI
 
 {
+    // TODO(Cleanup-P2): 重复前向声明:
+    // - RHIVkBindlessManager 声明了两次 (L26 和 L28)
+    // - RHIVkAccelerationStructurePoolItem 声明了两次 (L38 和 L39)
     class RHIVkCommandBufferPool;
     class RHIVkDeferredDeletion;
     class RHIQueue;
     class RHIVkBindlessManager;
     class RHIVkMemoryAllocator;
-    class RHIVkBindlessManager; // Forward decl
+    class RHIVkBindlessManager; // Forward decl  // TODO: 重复，删除此行
     struct RHIVkBufferPoolItem;
     struct RHIVkImagePoolItem;
     struct RHIVkImageViewPoolItem;
@@ -36,13 +39,18 @@ namespace ArisenEngine::RHI
     struct RHIVkPipelinePoolItem;
     struct RHIVkFencePoolItem;
     struct RHIVkAccelerationStructurePoolItem;
-    struct RHIVkAccelerationStructurePoolItem;
+    struct RHIVkAccelerationStructurePoolItem;  // TODO: 重复，删除此行
     struct RHIVkMemoryPoolPoolItem;
     struct RHIVkExecutor;
 }
 
 namespace ArisenEngine::RHI
 {
+    // TODO(Design-P1): RHIVkDevice 拥有 15+ friend 类，耦合过重。
+    // 建议方案:
+    // 1) 将 Pool Accessor 方法提取为内部接口 (IRHIVkDeviceInternal)
+    // 2) 用 accessor 方法替代 friend 访问，仅在同一 DLL 内可见
+    // 3) 至少合并重复的 friend 声明 (RHIVkCommandBufferPool 出现两次)
     class RHIVkDevice final : public RHIDevice, public IRHIBackend
     {
     public:
@@ -57,8 +65,8 @@ namespace ArisenEngine::RHI
         friend class RHIVkGPUPipelineManager; // Needs pool access
         friend class RHIVkGPUPipelineStateObject; // Needs program pool access
         friend class RHINativeBridge; // Bridge for NativeExports
-        friend class RHIVkCommandBufferPool; // Needs family index
-        friend class RHIVkCommandBufferPool; // Needs family index
+        friend class RHIVkCommandBufferPool; // Needs family index  // TODO: 重复声明，删除一个
+        friend class RHIVkCommandBufferPool; // Needs family index  // TODO: 重复声明，删除此行
         friend class RHIVkQueue; // Needs family index
         friend struct RHIVkExecutor; // Needs access to cached function pointers
 
@@ -177,6 +185,8 @@ namespace ArisenEngine::RHI
         std::unique_ptr<RHIResourcePool<RHICommandBufferHandle, RHIVkCommandBufferItem>> m_CommandBufferPool;
         std::unique_ptr<RHIResourcePool<RHIAccelerationStructureHandle, RHIVkAccelerationStructurePoolItem>> m_AccelerationStructurePool;
 
+    // TODO(Design-P2): public: 立即跟随 private: 段，导致内外部接口边界模糊。
+    // 考虑将 Pool Accessor 统一为一个 internal 访问级别，通过内部接口类暴露。
     public:
         // Handle-based operations
     private:
