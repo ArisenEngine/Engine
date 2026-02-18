@@ -69,9 +69,9 @@ void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(RHISwapChainDesc
     createInfo.oldSwapchain = VK_NULL_HANDLE;
 
     // Zero-Stall: Check if we have an old swapchain passed via customData
-    if (m_Desc.customData.has_value())
+    if (m_Desc.customData != nullptr)
     {
-        createInfo.oldSwapchain = (VkSwapchainKHR)m_Desc.customData.value();
+        createInfo.oldSwapchain = (VkSwapchainKHR)m_Desc.customData;
     }
 
     if (vkCreateSwapchainKHR(m_VkDevice, &createInfo, nullptr, &m_VkSwapChain) != VK_SUCCESS)
@@ -257,7 +257,7 @@ void ArisenEngine::RHI::RHIVkSwapChain::RecreateSwapChainIfNeeded()
     // Pass old swapchain to Create functions
     m_Desc.customData = (void*)oldSwapchain;
     CreateSwapChainWithDesc(m_Desc);
-    m_Desc.customData.reset(); // Clear after use
+    m_Desc.customData = nullptr; // Clear after use
 
     // Defer destroy oldSwapchain
     auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);

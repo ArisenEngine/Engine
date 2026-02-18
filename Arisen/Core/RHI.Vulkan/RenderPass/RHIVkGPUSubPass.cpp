@@ -73,7 +73,7 @@ ArisenEngine::RHI::RHISubpassDescription ArisenEngine::RHI::RHIVkGPUSubPass::Get
 
     if (m_InputReferences.size() > 0)
     {
-        description.inputRefCount = static_cast<const std::optional<UInt32>&>(m_InputReferences.size());
+        description.inputRefCount = static_cast<UInt32>(m_InputReferences.size());
         description.inputReferences = m_InputReferences.data();
     }
 

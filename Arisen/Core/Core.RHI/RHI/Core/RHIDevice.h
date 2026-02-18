@@ -85,13 +85,9 @@ namespace ArisenEngine::RHI
         RHIInstance* GetInstance() const { return m_Instance; }
         virtual UInt32 GetMaxFramesInFlight() const = 0;
         
-        // TODO(CppSharp-P0): 消除 void* 返回类型。GetHandle() 应移至 IRHIBackend 或改为不导出。
-        // 上层管线不应直接访问 VkDevice/ID3D12Device，所有操作应通过 RHIDevice 的类型安全方法完成。
+        // CppSharp: exclude from binding — backend-only void* accessors.
         virtual void* GetHandle() const = 0;
         virtual void DeviceWaitIdle() const = 0;
-        // TODO(CppSharp-P0): GetGraphicsQueue/GetComputeQueue/GetPresentQueue 返回 void* 泄漏了后端队列对象。
-        // 方案A: 移至 IRHIBackend（推荐）— 上层通过 RHIQueue* GetQueue(RHIQueueType) 获取。
-        // 方案B: 改为 RHIQueueHandle 类型安全句柄。
         virtual void* GetGraphicsQueue() = 0;
         virtual void* GetComputeQueue() = 0;
         virtual void* GetPresentQueue() = 0;
@@ -135,9 +131,6 @@ namespace ArisenEngine::RHI
             if (item.deleter && item.ptr) item.deleter(item.ptr);
         }
 
-        // TODO(CppSharp-P1): FindMemoryType 是后端细节，上层不应调用。移至 IRHIBackend。
-        // 上层通过 ERHIMemoryUsage 枚举指定内存意图，后端自行选择 memoryType。
-        virtual UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) = 0;
 
         virtual void SetResolution(UInt32 width, UInt32 height) = 0;
 
@@ -159,12 +152,7 @@ namespace ArisenEngine::RHI
         // Debug & Naming
         virtual void SetObjectName(ERHIObjectType type, UInt64 handle, const char* name) { (void)type; (void)handle; (void)name; }
 
-        // Buffer Utilities
-        // TODO(Interface-P1): 以下 Buffer 操作方法应提取为独立的 IRHIBufferOps 接口或移入 RHIFactory。
-        // RHIDevice 作为 God-class 拥有 50+ 方法，职责过重。BufferMemoryCopy/Map/Unmap 是资源操作，
-        // 而非设备级操作。建议 RHIFactory 扩展为 RHIResourceManager，整合 Create/Release/Map/Copy。
-        // TODO(CppSharp-P0): MapBuffer 返回 void*，CppSharp 需要用 IntPtr 包装。
-        // 考虑改为 bool MapBuffer(handle, void** ppData) 或提供 typed MapBuffer<T>()。
+        // CppSharp: exclude from binding — backend-only void* accessors.
         virtual void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0) = 0;
         virtual void* MapBuffer(RHIBufferHandle handle) = 0;
         virtual void UnmapBuffer(RHIBufferHandle handle) = 0;
@@ -204,7 +192,8 @@ namespace ArisenEngine::RHI
         virtual UInt64 GetSemaphoreValue(RHISemaphoreHandle handle) = 0;
 
     protected:
-        
+        virtual UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) = 0;
+
         RHIInstance* m_Instance;
         RHISurface* m_Surface;
         RHIDeviceLimits m_DeviceLimits;

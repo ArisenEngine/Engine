@@ -9,7 +9,7 @@
 #include "RHI/Enums/Image/EImageViewType.h"
 #include "RHI/Enums/Image/EFormat.h"
 #include "RHI/Enums/Memory/ERHIMemoryUsage.h"
-#include <optional>
+
 
 namespace ArisenEngine::RHI {
 
@@ -43,9 +43,7 @@ struct RHIImageDescriptor {
     ERHIMemoryUsage memoryUsage;
 };
 
-// TODO(CppSharp-P0): std::optional<UInt32> 是非 POD 类型，CppSharp 无法正确映射。
-// 替换为 UInt32 width = 0; UInt32 height = 0; 约定 0 表示 "auto-detect from parent image"。
-// 这也使此结构体可平面序列化。
+// CppSharp-P0 RESOLVED: std::optional<UInt32> replaced with UInt32, 0 = auto-detect from parent image.
 struct RHIImageViewDesc {
     EImageViewType viewType;
     EFormat format;
@@ -54,8 +52,8 @@ struct RHIImageViewDesc {
     UInt32 levelCount;
     UInt32 baseArrayLayer;
     UInt32 layerCount;
-    std::optional<UInt32> width;   // TODO: 替换为 UInt32 width = 0;
-    std::optional<UInt32> height;  // TODO: 替换为 UInt32 height = 0;
+    UInt32 width = 0;   // 0 = auto-detect from parent image
+    UInt32 height = 0;  // 0 = auto-detect from parent image
 };
 
 } // namespace ArisenEngine::RHI

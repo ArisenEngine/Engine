@@ -29,10 +29,8 @@ namespace ArisenEngine::RHI
         UInt32 surfaceTransformFlagBits { 0 };
         UInt32 compositeAlphaFlagBits { 0 };
         UInt32 swapChainCreateFlags { 0 };
-        // TODO(CppSharp-P0): std::optional<const void*> 双重问题：
-        // 1) std::optional 非 POD   2) const void* 无类型。
-        // 替换为 const void* customData = nullptr; 用 nullptr 表示无自定义数据。
-        std::optional<const void*> customData;
+        // CppSharp-P0 RESOLVED: std::optional<const void*> replaced with const void*.
+        const void* customData = nullptr;
     };
 
     
@@ -42,15 +40,14 @@ namespace ArisenEngine::RHI
         NO_COPY_NO_MOVE(RHISwapChain)
         RHISwapChain(UInt32 maxFramesInFlight): m_MaxFramesInFlight(maxFramesInFlight) {}
         VIRTUAL_DECONSTRUCTOR(RHISwapChain)
-        // TODO(CppSharp-P0): GetHandle() 返回 void*，泄漏 VkSwapchainKHR。移至后端或删除。
+        // CppSharp: exclude from binding — backend-only void* accessor.
         virtual void* GetHandle() const = 0;
         virtual void CreateSwapChainWithDesc(RHISwapChainDescriptor desc) = 0;
 
         virtual RHIImageHandle BeginFrame(UInt32 frameIndex) = 0;
         virtual void EndFrame(UInt32 frameIndex) = 0;
 
-        // TODO(CppSharp-P1): 以下 4 个 deprecated 方法应在 CppSharp 导出前删除。
-        // 当前测试代码仍使用 GetImageView() 和 Present()，需先迁移到 BeginFrame/EndFrame。
+        // TODO(CppSharp-P1): deprecated methods to be removed before CppSharp export.
         [[deprecated("Use BeginFrame instead")]]
         virtual RHISemaphoreHandle GetImageAvailableSemaphore(UInt32 frameIndex) const = 0;
         [[deprecated("Use EndFrame instead")]]
@@ -155,4 +152,3 @@ namespace ArisenEngine::RHI
         }
     };
 }
-
