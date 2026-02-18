@@ -1,9 +1,6 @@
 #define VMA_IMPLEMENTATION
 #include "Allocation/RHIVkMemoryAllocator.h"
 #include "Core/RHIVkDevice.h"
-#define VMA_IMPLEMENTATION
-#include "Allocation/RHIVkMemoryAllocator.h"
-#include "Core/RHIVkDevice.h"
 #include "Logger/Logger.h"
 #include "../../Core.RHI/RHI/Core/RHIInspector.h"
 

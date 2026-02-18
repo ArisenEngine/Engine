@@ -1173,6 +1173,7 @@ void RHIVkExecutor::BuildAccelerationStructures(UInt32 infoCount, const RHIAccel
     }
 
     vkDevice->vkCmdBuildAccelerationStructuresKHR(cmd->m_VkCommandBuffer, infoCount, vkInfos.data(), vkRangeInfoPtrs.data());
+    LOG_DEBUGF("Built {0} acceleration structures", infoCount);
 }
 
 void RHIVkExecutor::TraceRays(const RHITraceRaysDescriptor& desc)

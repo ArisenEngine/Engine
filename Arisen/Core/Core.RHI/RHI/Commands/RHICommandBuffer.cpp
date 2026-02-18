@@ -267,8 +267,43 @@ namespace ArisenEngine::RHI
     
     void RHICommandBuffer::BuildAccelerationStructures(UInt32 infoCount, const RHIAccelerationStructureBuildGeometryInfo* pInfos, const RHIAccelerationStructureBuildRangeInfo* const* ppBuildRangeInfos)
     {
-        // Complex serialization needed. Stub for now.
-        RecordCommand(ERHICommandType::BuildAccelerationStructures, RHICmdBuildAccelerationStructures{ infoCount, 0 });
+        // Calculate total size for serialization
+        size_t totalSize = 0;
+        for (UInt32 i = 0; i < infoCount; ++i)
+        {
+            totalSize += sizeof(RHIAccelerationStructureBuildGeometryInfo);
+            totalSize += pInfos[i].geometryCount * sizeof(RHIAccelerationStructureGeometryData);
+            totalSize += pInfos[i].geometryCount * sizeof(RHIAccelerationStructureBuildRangeInfo);
+        }
+
+        const size_t headerSize = sizeof(RHICmdHeader);
+        const size_t cmdSize = sizeof(RHICmdBuildAccelerationStructures);
+        size_t currentSize = m_CommandStream.size();
+        m_CommandStream.resize(currentSize + headerSize + cmdSize + totalSize);
+
+        RHICmdHeader header{ ERHICommandType::BuildAccelerationStructures };
+        RHICmdBuildAccelerationStructures cmd{ infoCount, (UInt32)totalSize };
+
+        uint8_t* ptr = m_CommandStream.data() + currentSize;
+        std::memcpy(ptr, &header, headerSize); ptr += headerSize;
+        std::memcpy(ptr, &cmd, cmdSize); ptr += cmdSize;
+
+        for (UInt32 i = 0; i < infoCount; ++i)
+        {
+            // Copy Info
+            std::memcpy(ptr, &pInfos[i], sizeof(RHIAccelerationStructureBuildGeometryInfo));
+            ptr += sizeof(RHIAccelerationStructureBuildGeometryInfo);
+
+            // Copy Geometries
+            size_t geomsSize = pInfos[i].geometryCount * sizeof(RHIAccelerationStructureGeometryData);
+            std::memcpy(ptr, pInfos[i].pGeometries, geomsSize);
+            ptr += geomsSize;
+
+            // Copy Ranges
+            size_t rangesSize = pInfos[i].geometryCount * sizeof(RHIAccelerationStructureBuildRangeInfo);
+            std::memcpy(ptr, ppBuildRangeInfos[i], rangesSize);
+            ptr += rangesSize;
+        }
     }
     
     void RHICommandBuffer::TraceRays(const RHITraceRaysDescriptor& desc)
