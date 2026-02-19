@@ -431,6 +431,81 @@ namespace ArisenEngine::RHI
 
         return handle;
     }
+
+    void RHIVkFactory::BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset)
+    {
+        m_Device->BufferMemoryCopy(handle, src, size, offset);
+    }
+
+    void* RHIVkFactory::MapBuffer(RHIBufferHandle handle)
+    {
+        return m_Device->MapBuffer(handle);
+    }
+
+    void RHIVkFactory::UnmapBuffer(RHIBufferHandle handle)
+    {
+        m_Device->UnmapBuffer(handle);
+    }
+
+    UInt64 RHIVkFactory::GetBufferSize(RHIBufferHandle handle)
+    {
+        return m_Device->GetBufferSize(handle);
+    }
+
+    UInt64 RHIVkFactory::GetBufferOffset(RHIBufferHandle handle)
+    {
+        return m_Device->GetBufferOffset(handle);
+    }
+
+    UInt64 RHIVkFactory::GetBufferRange(RHIBufferHandle handle)
+    {
+        return m_Device->GetBufferRange(handle);
+    }
+
+    UInt64 RHIVkFactory::GetBufferDeviceAddress(RHIBufferHandle handle)
+    {
+        return m_Device->GetBufferDeviceAddress(handle);
+    }
+
+    RHIImageViewHandle RHIVkFactory::FindImageViewForImage(RHIImageHandle imageHandle)
+    {
+        return m_Device->FindImageViewForImage(imageHandle);
+    }
+
+    EFormat RHIVkFactory::GetImageViewFormat(RHIImageViewHandle handle)
+    {
+        return m_Device->GetImageViewFormat(handle);
+    }
+
+    UInt32 RHIVkFactory::GetImageViewWidth(RHIImageViewHandle handle)
+    {
+        return m_Device->GetImageViewWidth(handle);
+    }
+
+    UInt32 RHIVkFactory::GetImageViewHeight(RHIImageViewHandle handle)
+    {
+        return m_Device->GetImageViewHeight(handle);
+    }
+
+    void RHIVkFactory::SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size, const void* data)
+    {
+        m_Device->SetGPUProgramSpecializationConstant(handle, constantID, size, data);
+    }
+
+    UInt32 RHIVkFactory::RegisterBindlessResource(RHIImageViewHandle image)
+    {
+        return m_Device->RegisterBindlessResource(image);
+    }
+
+    UInt32 RHIVkFactory::RegisterBindlessResource(RHIBufferHandle buffer)
+    {
+        return m_Device->RegisterBindlessResource(buffer);
+    }
+
+    UInt32 RHIVkFactory::RegisterBindlessResource(RHISamplerHandle sampler)
+    {
+        return m_Device->RegisterBindlessResource(sampler);
+    }
 }
 
 

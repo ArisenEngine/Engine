@@ -167,7 +167,7 @@ namespace ArisenEngine::Testing
             indirectDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
             m_IndirectBuffer = m_Device->GetFactory()->CreateBuffer(std::move(indirectDesc), "IndirectBuffer");
             
-            m_Device->BufferMemoryCopy(m_IndirectBuffer, m_IndirectCommands.data(), m_IndirectCommands.size() * sizeof(IndirectCommand), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_IndirectBuffer, m_IndirectCommands.data(), m_IndirectCommands.size() * sizeof(IndirectCommand), 0);
             
             // Count Buffer
             UInt32 count = (UInt32)m_IndirectCommands.size(); // Assuming count should be the number of indirect commands
@@ -176,7 +176,7 @@ namespace ArisenEngine::Testing
             countDesc.usage = RHI::BUFFER_USAGE_INDIRECT_BUFFER_BIT | RHI::BUFFER_USAGE_TRANSFER_DST_BIT;
             countDesc.memoryUsage = RHI::ERHIMemoryUsage::GpuOnly;
             m_CountBuffer = m_Device->GetFactory()->CreateBuffer(std::move(countDesc), "CountBuffer");
-            m_Device->BufferMemoryCopy(m_CountBuffer, &count, sizeof(UInt32), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_CountBuffer, &count, sizeof(UInt32), 0);
 
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
@@ -321,7 +321,7 @@ namespace ArisenEngine::Testing
             float height = (float)HAL::GetWindowHeight(m_WindowId);
             ubo.projection = GetProjectionMatrix(width / height);
             ubo.mipmapBias = 0.0f;
-            m_Device->BufferMemoryCopy(m_UboBuffer[GetCurrentFrameIndex()], &ubo, sizeof(UniformBufferObject), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_UboBuffer[GetCurrentFrameIndex()], &ubo, sizeof(UniformBufferObject), 0);
         }
 
         void RecordAndSubmit()

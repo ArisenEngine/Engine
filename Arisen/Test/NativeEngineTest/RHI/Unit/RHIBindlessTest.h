@@ -29,7 +29,7 @@ namespace ArisenEngine::Testing
             RHI::RHIBufferHandle testBuffer = m_Device->GetFactory()->CreateBuffer(std::move(bufDesc), "BindlessTestBuffer");
 
             // 2. Register with Bindless Manager
-            UInt32 bufferIndex = m_Device->RegisterBindlessResource(testBuffer);
+            UInt32 bufferIndex = m_Device->GetFactory()->RegisterBindlessResource(testBuffer);
             if (bufferIndex == 0xFFFFFFFF)
             {
                 LOG_ERROR("Failed to register buffer with Bindless Manager");
@@ -55,7 +55,7 @@ namespace ArisenEngine::Testing
             RHI::RHIImageViewHandle testView = m_Device->GetFactory()->CreateImageView(testImage, std::move(viewDesc));
 
             // 4. Register image (using the view handle, not the image handle)
-            UInt32 imageIndex = m_Device->RegisterBindlessResource(testView);
+            UInt32 imageIndex = m_Device->GetFactory()->RegisterBindlessResource(testView);
             if (imageIndex == 0xFFFFFFFF)
             {
                 LOG_ERROR("Failed to register image with Bindless Manager");

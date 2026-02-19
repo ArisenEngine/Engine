@@ -53,6 +53,25 @@ namespace ArisenEngine::RHI
         RHIAccelerationStructureHandle CreateAccelerationStructure(const String& name = "Anonymous") override;
         void ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle) override;
 
+        // Resource management and query methods
+        void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0) override;
+        void* MapBuffer(RHIBufferHandle handle) override;
+        void UnmapBuffer(RHIBufferHandle handle) override;
+        UInt64 GetBufferSize(RHIBufferHandle handle) override;
+        UInt64 GetBufferOffset(RHIBufferHandle handle) override;
+        UInt64 GetBufferRange(RHIBufferHandle handle) override;
+        UInt64 GetBufferDeviceAddress(RHIBufferHandle handle) override;
+        RHIImageViewHandle FindImageViewForImage(RHIImageHandle imageHandle) override;
+        EFormat GetImageViewFormat(RHIImageViewHandle handle) override;
+        UInt32 GetImageViewWidth(RHIImageViewHandle handle) override;
+        UInt32 GetImageViewHeight(RHIImageViewHandle handle) override;
+
+        void SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size, const void* data) override;
+        
+        UInt32 RegisterBindlessResource(RHIImageViewHandle image) override;
+        UInt32 RegisterBindlessResource(RHIBufferHandle buffer) override;
+        UInt32 RegisterBindlessResource(RHISamplerHandle sampler) override;
+
     private:
         RHIVkDevice* m_Device;
     };

@@ -66,6 +66,27 @@ namespace ArisenEngine::RHI
 
         virtual RHIAccelerationStructureHandle CreateAccelerationStructure(const String& name = "Anonymous") = 0;
         virtual void ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle) = 0;
+
+        // Resource Management (Moved from RHIDevice)
+        virtual void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0) = 0;
+        virtual void* MapBuffer(RHIBufferHandle handle) = 0;
+        virtual void UnmapBuffer(RHIBufferHandle handle) = 0;
+        virtual UInt64 GetBufferSize(RHIBufferHandle handle) = 0;
+        virtual UInt64 GetBufferOffset(RHIBufferHandle handle) = 0;
+        virtual UInt64 GetBufferRange(RHIBufferHandle handle) = 0;
+        virtual UInt64 GetBufferDeviceAddress(RHIBufferHandle handle) = 0;
+
+        // Resource Queries
+        virtual RHIImageViewHandle FindImageViewForImage(RHIImageHandle image) = 0;
+        virtual EFormat GetImageViewFormat(RHIImageViewHandle handle) = 0;
+        virtual UInt32 GetImageViewWidth(RHIImageViewHandle handle) = 0;
+        virtual UInt32 GetImageViewHeight(RHIImageViewHandle handle) = 0;
+
+        virtual void SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size, const void* data) = 0;
+        
+        virtual UInt32 RegisterBindlessResource(RHIImageViewHandle image) = 0;
+        virtual UInt32 RegisterBindlessResource(RHIBufferHandle buffer) = 0;
+        virtual UInt32 RegisterBindlessResource(RHISamplerHandle sampler) = 0;
     };
 }
 

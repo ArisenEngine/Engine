@@ -63,9 +63,9 @@ namespace ArisenEngine::Testing
             RHI::RHIBufferDescriptor stagingDesc{ 0, size, RHI::BUFFER_USAGE_TRANSFER_SRC_BIT, RHI::SHARING_MODE_EXCLUSIVE, 0, nullptr, RHI::ERHIMemoryUsage::Upload };
             RHI::RHIBufferHandle stagingBuffer = m_Device->GetFactory()->CreateBuffer(std::move(stagingDesc), "Texture Staging Buffer");
             
-            void* mapped = m_Device->MapBuffer(stagingBuffer);
+            void* mapped = m_Device->GetFactory()->MapBuffer(stagingBuffer);
             memcpy(mapped, data, size);
-            m_Device->UnmapBuffer(stagingBuffer);
+            m_Device->GetFactory()->UnmapBuffer(stagingBuffer);
 
             auto cmdPool = m_Device->GetFactory()->CreateCommandBufferPool(RHI::RHIQueueType::Graphics);
             auto cmdHandle = m_Device->GetCommandBufferPool(cmdPool)->GetCommandBuffer(0);
@@ -160,7 +160,7 @@ namespace ArisenEngine::Testing
                             texDesc.width = (UInt32)tw;
                             texDesc.height = (UInt32)th;
                             texDesc.depth = 1;
-                            texDesc.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(tw, th)))) + 1;
+                            texDesc.mipLevels = static_cast<uint32_t>(std::floor(std::log2((std::max)(tw, th)))) + 1;
                             texDesc.arrayLayers = 1;
                             texDesc.format = RHI::FORMAT_R8G8B8A8_SRGB;
                             texDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
@@ -409,7 +409,7 @@ namespace ArisenEngine::Testing
         vsb.memoryUsage = RHI::ERHIMemoryUsage::Upload;
         
         auto vStaging = m_Device->GetFactory()->CreateBuffer(std::move(vsb), "GLTF Vertex Staging");
-        m_Device->BufferMemoryCopy(vStaging, vertices.data(), vbDesc.size, 0);
+        m_Device->GetFactory()->BufferMemoryCopy(vStaging, vertices.data(), vbDesc.size, 0);
 
         RHI::RHIBufferDescriptor isb{};
         isb.createFlagBits = 0;
@@ -421,7 +421,7 @@ namespace ArisenEngine::Testing
         isb.memoryUsage = RHI::ERHIMemoryUsage::Upload;
         
         auto iStaging = m_Device->GetFactory()->CreateBuffer(std::move(isb), "GLTF Index Staging");
-        m_Device->BufferMemoryCopy(iStaging, indices.data(), ibDesc.size, 0);
+        m_Device->GetFactory()->BufferMemoryCopy(iStaging, indices.data(), ibDesc.size, 0);
 
         auto cmdPool = m_Device->GetFactory()->CreateCommandBufferPool(RHI::RHIQueueType::Graphics);
         auto cmdHandle = m_Device->GetCommandBufferPool(cmdPool)->GetCommandBuffer(0);

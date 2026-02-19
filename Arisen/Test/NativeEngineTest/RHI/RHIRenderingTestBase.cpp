@@ -96,7 +96,7 @@ namespace ArisenEngine::Testing
             0, nullptr, RHI::ERHIMemoryUsage::Upload
         };
         auto stagingBuffer = m_Device->GetFactory()->CreateBuffer(std::move(tsb), "Texture Staging Buffer");
-        m_Device->BufferMemoryCopy(stagingBuffer, data, imageSize, 0);
+        m_Device->GetFactory()->BufferMemoryCopy(stagingBuffer, data, imageSize, 0);
 
         auto pool = m_Device->GetCommandBufferPool(m_CmdPool);
         // Assuming 0 is a valid index for a one-time command buffer

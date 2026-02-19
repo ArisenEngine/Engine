@@ -16,19 +16,16 @@
 #include "RenderPass/RHIVkGPURenderPass.h"
 #include "RHI/Sync/FrameSyncTracker.h"
 #include "RHI/Core/RHIInspector.h"
+#include "RHI/Sync/RHISyncPrimitive.h"
+#include "RHI/Core/RayTracingExtension.h"
 
 namespace ArisenEngine::RHI
-
 {
-    // TODO(Cleanup-P2): 重复前向声明:
-    // - RHIVkBindlessManager 声明了两次 (L26 和 L28)
-    // - RHIVkAccelerationStructurePoolItem 声明了两次 (L38 和 L39)
     class RHIVkCommandBufferPool;
     class RHIVkDeferredDeletion;
     class RHIQueue;
     class RHIVkBindlessManager;
     class RHIVkMemoryAllocator;
-    class RHIVkBindlessManager; // Forward decl  // TODO: 重复，删除此行
     struct RHIVkBufferPoolItem;
     struct RHIVkImagePoolItem;
     struct RHIVkImageViewPoolItem;
@@ -39,7 +36,6 @@ namespace ArisenEngine::RHI
     struct RHIVkPipelinePoolItem;
     struct RHIVkFencePoolItem;
     struct RHIVkAccelerationStructurePoolItem;
-    struct RHIVkAccelerationStructurePoolItem;  // TODO: 重复，删除此行
     struct RHIVkMemoryPoolPoolItem;
     struct RHIVkDescriptorPoolPoolItem;
     struct RHIVkExecutor;
@@ -47,12 +43,7 @@ namespace ArisenEngine::RHI
 
 namespace ArisenEngine::RHI
 {
-    // TODO(Design-P1): RHIVkDevice 拥有 15+ friend 类，耦合过重。
-    // 建议方案:
-    // 1) 将 Pool Accessor 方法提取为内部接口 (IRHIVkDeviceInternal)
-    // 2) 用 accessor 方法替代 friend 访问，仅在同一 DLL 内可见
-    // 3) 至少合并重复的 friend 声明 (RHIVkCommandBufferPool 出现两次)
-    class RHIVkDevice final : public RHIDevice, public IRHIBackend
+    class RHIVkDevice final : public RHIDevice, public IRHIBackend, public RHISyncPrimitive, public RayTracingExtension
     {
     public:
         friend class RHIVkFactory;
@@ -66,8 +57,7 @@ namespace ArisenEngine::RHI
         friend class RHIVkGPUPipelineManager; // Needs pool access
         friend class RHIVkGPUPipelineStateObject; // Needs program pool access
         friend class RHINativeBridge; // Bridge for NativeExports
-        friend class RHIVkCommandBufferPool; // Needs family index  // TODO: 重复声明，删除一个
-        friend class RHIVkCommandBufferPool; // Needs family index  // TODO: 重复声明，删除此行
+        friend class RHIVkCommandBufferPool; // Needs family index
         friend class RHIVkQueue; // Needs family index
         friend struct RHIVkExecutor; // Needs access to cached function pointers
 
@@ -84,6 +74,8 @@ namespace ArisenEngine::RHI
         void GraphicQueueWaitIdle() const override;
 
         RHIFactory* GetFactory() const override;
+        RHISyncPrimitive* GetSync() const override { return const_cast<RHIVkDevice*>(this); }
+        RayTracingExtension* GetRayTracing() const override { return const_cast<RHIVkDevice*>(this); }
         UInt32 GetMaxFramesInFlight() const override;
 
         RHIPipelineCache* GetPipelineCache() const override
@@ -120,9 +112,9 @@ namespace ArisenEngine::RHI
         void SetResolution(UInt32 width, UInt32 height) override;
 
 
-        virtual UInt32 RegisterBindlessResource(RHIImageViewHandle image) override;
-        UInt32 RegisterBindlessResource(RHIBufferHandle buffer) override;
-        UInt32 RegisterBindlessResource(RHISamplerHandle sampler) override;
+        UInt32 RegisterBindlessResource(RHIImageViewHandle image);
+        UInt32 RegisterBindlessResource(RHIBufferHandle buffer);
+        UInt32 RegisterBindlessResource(RHISamplerHandle sampler);
 
         // Debug & Naming
         void SetObjectName(ERHIObjectType type, UInt64 handle, const char* name) override;
@@ -196,13 +188,13 @@ namespace ArisenEngine::RHI
         bool AllocBuffer(RHIBufferHandle handle, RHIBufferDescriptor&& desc) override;
         bool AllocBufferDeviceMemory(RHIBufferHandle handle) override;
         void ReleaseBuffer(RHIBufferHandle handle) override;
-        void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0) override;
-        void* MapBuffer(RHIBufferHandle handle) override;
-        void UnmapBuffer(RHIBufferHandle handle) override;
-        UInt64 GetBufferSize(RHIBufferHandle handle) override;
-        UInt64 GetBufferOffset(RHIBufferHandle handle) override;
-        UInt64 GetBufferRange(RHIBufferHandle handle) override;
-        UInt64 GetBufferDeviceAddress(RHIBufferHandle handle) override;
+        void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0);
+        void* MapBuffer(RHIBufferHandle handle);
+        void UnmapBuffer(RHIBufferHandle handle);
+        UInt64 GetBufferSize(RHIBufferHandle handle);
+        UInt64 GetBufferOffset(RHIBufferHandle handle);
+        UInt64 GetBufferRange(RHIBufferHandle handle);
+        UInt64 GetBufferDeviceAddress(RHIBufferHandle handle);
 
         bool AllocImage(RHIImageHandle handle, RHIImageDescriptor&& desc) override;
         bool AllocImageDeviceMemory(RHIImageHandle handle) override;
@@ -216,7 +208,12 @@ namespace ArisenEngine::RHI
 
         bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, RHIImageViewDesc&& desc) override;
         void ReleaseImageView(RHIImageViewHandle handle) override;
-        RHIImageViewHandle FindImageViewForImage(RHIImageHandle imageHandle) override;
+        void ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle) override;
+        bool AllocAccelerationStructure(RHIAccelerationStructureHandle handle, ERHIAccelerationStructureType type, UInt64 size, RHIBufferHandle buffer, UInt64 offset) override;
+        RHIImageViewHandle FindImageViewForImage(RHIImageHandle imageHandle);
+        EFormat GetImageViewFormat(RHIImageViewHandle handle);
+        UInt32 GetImageViewWidth(RHIImageViewHandle handle);
+        UInt32 GetImageViewHeight(RHIImageViewHandle handle);
 
         void ReleaseSampler(RHISamplerHandle handle) override;
         void ReleaseSemaphore(RHISemaphoreHandle handle) override;
@@ -231,26 +228,19 @@ namespace ArisenEngine::RHI
 
         bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle,
                               RHIRenderPassHandle renderPassHandle) override;
+        // RHISyncPrimitive implementation
         void WaitFence(RHIFenceHandle handle) override;
         void ResetFence(RHIFenceHandle handle) override;
-
-        // Acceleration Structure
-        void GetAccelerationStructureBuildSizes(const RHIAccelerationStructureBuildGeometryInfo& buildInfo, const UInt32* pMaxPrimitiveCounts, RHIAccelerationStructureBuildSizesInfo* pSizeInfo) override;
-        bool AllocAccelerationStructure(RHIAccelerationStructureHandle handle, ERHIAccelerationStructureType type, UInt64 size, RHIBufferHandle buffer, UInt64 offset) override;
-        UInt64 GetAccelerationStructureDeviceAddress(RHIAccelerationStructureHandle handle) override;
-
-        void GetRayTracingShaderGroupHandles(RHIPipelineHandle pipeline, UInt32 firstGroup, UInt32 groupCount, UInt64 size, void* pData) override;
-        void ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle) override;
-
-        RHI::EFormat GetImageViewFormat(RHIImageViewHandle handle) override;
-        UInt32 GetImageViewWidth(RHIImageViewHandle handle) override;
-        UInt32 GetImageViewHeight(RHIImageViewHandle handle) override;
-
-        void SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size, const void* data) override;
-
         void WaitSemaphoreValue(RHISemaphoreHandle handle, UInt64 value) override;
         void SignalSemaphoreValue(RHISemaphoreHandle handle, UInt64 value) override;
         UInt64 GetSemaphoreValue(RHISemaphoreHandle handle) override;
+
+        // RayTracingExtension implementation
+        void GetAccelerationStructureBuildSizes(const RHIAccelerationStructureBuildGeometryInfo& buildInfo, const UInt32* pMaxPrimitiveCounts, RHIAccelerationStructureBuildSizesInfo* pSizeInfo) override;
+        UInt64 GetAccelerationStructureDeviceAddress(RHIAccelerationStructureHandle handle) override;
+        void GetRayTracingShaderGroupHandles(RHIPipelineHandle pipeline, UInt32 firstGroup, UInt32 groupCount, UInt64 size, void* pData) override;
+
+        void SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size, const void* data);
 
     public:
         // Pool Accessors (Restricted)

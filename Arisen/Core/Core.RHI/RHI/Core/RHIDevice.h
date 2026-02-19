@@ -8,6 +8,9 @@
 #include "RHI/Handles/RHIHandle.h"
 #include "RHI/Definitions/CoreRHICommon.h"
 #include "RHI/Descriptors/RHIResourceDescriptors.h"
+#include "RHIFactory.h"
+#include "RayTracingExtension.h"
+#include "../Sync/RHISyncPrimitive.h"
 #include "RHI/Core/RHIInspector.h"
 #include "RHI/Descriptors/RHIDescriptorHeap.h"
 #include "RHI/Descriptors/RHIBindlessDescriptorTable.h"
@@ -94,6 +97,8 @@ namespace ArisenEngine::RHI
         virtual void GraphicQueueWaitIdle() const = 0;
 
         virtual RHIFactory* GetFactory() const = 0;
+        virtual RHISyncPrimitive* GetSync() const = 0;
+        virtual RayTracingExtension* GetRayTracing() const = 0;
 
         virtual RHIPipelineCache* GetPipelineCache() const = 0;
 
@@ -134,6 +139,7 @@ namespace ArisenEngine::RHI
 
 
         virtual void SetResolution(UInt32 width, UInt32 height) = 0;
+        virtual void SetObjectName(ERHIObjectType type, UInt64 handle, const char* name) = 0;
 
         virtual const RHIResourceStats& GetResourceStats() const = 0;
 
@@ -143,55 +149,8 @@ namespace ArisenEngine::RHI
             return m_DeviceLimits;
         }
 
-        // Bindless Resource Support
-        // TODO(Interface-P1): RegisterBindlessResource 系列方法应移至 RHIBindlessDescriptorTable 类。
-        // RHIDevice 不应直接管理 bindless 索引分配，应由 BindlessTable 统一管理。
-        virtual UInt32 RegisterBindlessResource(RHIImageViewHandle image) { (void)image; return 0xFFFFFFFF; }
-        virtual UInt32 RegisterBindlessResource(RHIBufferHandle buffer) { (void)buffer; return 0xFFFFFFFF; }
-        virtual UInt32 RegisterBindlessResource(RHISamplerHandle sampler) { (void)sampler; return 0xFFFFFFFF; }
-
-        // Debug & Naming
-        virtual void SetObjectName(ERHIObjectType type, UInt64 handle, const char* name) { (void)type; (void)handle; (void)name; }
-
-        // CppSharp: exclude from binding — backend-only void* accessors.
-        virtual void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0) = 0;
-        virtual void* MapBuffer(RHIBufferHandle handle) = 0;
-        virtual void UnmapBuffer(RHIBufferHandle handle) = 0;
-        virtual UInt64 GetBufferSize(RHIBufferHandle handle) = 0;
-        virtual UInt64 GetBufferOffset(RHIBufferHandle handle) = 0;
-        virtual UInt64 GetBufferRange(RHIBufferHandle handle) = 0;
-        virtual UInt64 GetBufferDeviceAddress(RHIBufferHandle handle) = 0;
 
     public:
-        // TODO(Interface-P2): FindImageViewForImage 应移至 RHIFactory，它是资源查询而非设备操作。
-        virtual RHIImageViewHandle FindImageViewForImage(RHIImageHandle imageHandle) = 0;
-
-    public:
-        // TODO(Interface-P1): 光线追踪查询方法应提取为 IRHIRayTracingOps 接口。
-        // 不是所有硬件都支持 RT，将这些方法留在 RHIDevice 基类中增加了接口面积。
-        // 建议: auto* rtOps = device->QueryInterface<IRHIRayTracingOps>(); 按需获取。
-        // TODO(CppSharp-P0): GetRayTracingShaderGroupHandles 的 void* pData 参数需要类型化。
-        virtual void GetAccelerationStructureBuildSizes(const RHIAccelerationStructureBuildGeometryInfo& buildInfo, const UInt32* pMaxPrimitiveCounts, RHIAccelerationStructureBuildSizesInfo* pSizeInfo) = 0;
-        virtual UInt64 GetAccelerationStructureDeviceAddress(RHIAccelerationStructureHandle handle) = 0;
-        virtual void GetRayTracingShaderGroupHandles(RHIPipelineHandle pipeline, UInt32 firstGroup, UInt32 groupCount, UInt64 size, void* pData) = 0;
-
-        // TODO(Interface-P2): Fence/Semaphore 操作应考虑移至 RHIQueue 或独立的 IRHISyncOps。
-        // 当前 WaitFence/ResetFence/WaitSemaphoreValue 等分散在 RHIDevice 中，语义上属于同步子系统。
-        virtual void WaitFence(RHIFenceHandle handle) = 0;
-        virtual void ResetFence(RHIFenceHandle handle) = 0;
-
-        // TODO(Interface-P2): ImageView 查询方法应移至 RHIFactory 或新增 RHIImageViewInfo 查询结构。
-        // 统一为: RHIImageViewInfo GetImageViewInfo(RHIImageViewHandle) 返回一个POD结构体。
-        virtual RHI::EFormat GetImageViewFormat(RHIImageViewHandle handle) = 0;
-        virtual UInt32 GetImageViewWidth(RHIImageViewHandle handle) = 0;
-        virtual UInt32 GetImageViewHeight(RHIImageViewHandle handle) = 0;
-
-        virtual void SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size, const void* data) = 0;
-
-        virtual void WaitSemaphoreValue(RHISemaphoreHandle handle, UInt64 value) = 0;
-        virtual void SignalSemaphoreValue(RHISemaphoreHandle handle, UInt64 value) = 0;
-        virtual UInt64 GetSemaphoreValue(RHISemaphoreHandle handle) = 0;
-
     protected:
         virtual UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) = 0;
 

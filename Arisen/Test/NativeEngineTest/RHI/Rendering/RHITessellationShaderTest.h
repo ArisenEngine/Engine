@@ -218,14 +218,14 @@ namespace ArisenEngine::Testing
             vbDesc.usage = RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT;
             vbDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
             m_Model.vertexBuffer = factory->CreateBuffer(std::move(vbDesc), "PatchVB");
-            m_Device->BufferMemoryCopy(m_Model.vertexBuffer, vertices.data(), vertices.size() * sizeof(Vertex), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_Model.vertexBuffer, vertices.data(), vertices.size() * sizeof(Vertex), 0);
 
             RHI::RHIBufferDescriptor ibDesc = {};
             ibDesc.size = indices.size() * sizeof(UInt32);
             ibDesc.usage = RHI::BUFFER_USAGE_INDEX_BUFFER_BIT;
             ibDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
             m_Model.indexBuffer = factory->CreateBuffer(std::move(ibDesc), "PatchIB");
-            m_Device->BufferMemoryCopy(m_Model.indexBuffer, indices.data(), indices.size() * sizeof(UInt32), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_Model.indexBuffer, indices.data(), indices.size() * sizeof(UInt32), 0);
 
             m_Model.layout.stride = sizeof(Vertex);
             m_Model.layout.attributes.push_back({ "pos", RHI::FORMAT_R32G32B32_SFLOAT, 0, 0 });
@@ -366,7 +366,7 @@ namespace ArisenEngine::Testing
             ubo.waveAmplitude = 0.5f;
             ubo.waveFrequency = 2.0f;
             
-            m_Device->BufferMemoryCopy(m_UboBuffers[GetCurrentFrameIndex()], &ubo, sizeof(TessellationUBO), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_UboBuffers[GetCurrentFrameIndex()], &ubo, sizeof(TessellationUBO), 0);
         }
 
         void RecordAndSubmit()

@@ -168,7 +168,7 @@ namespace ArisenEngine::Testing
                     p.position.w                    // maxLife = initial life
                 );
             }
-            m_Device->BufferMemoryCopy(m_ParticleBuffer, particles.data(), m_ParticleCount * sizeof(Particle), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_ParticleBuffer, particles.data(), m_ParticleCount * sizeof(Particle), 0);
 
             // UBO
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
@@ -276,7 +276,7 @@ namespace ArisenEngine::Testing
             fireUbo.time = time;
             fireUbo.deltaTime = (float)frameTime;
             
-            m_Device->BufferMemoryCopy(m_UboBuffer[GetCurrentFrameIndex()], &fireUbo, sizeof(FireUBO), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_UboBuffer[GetCurrentFrameIndex()], &fireUbo, sizeof(FireUBO), 0);
         }
 
         void RecordAndSubmit()

@@ -8,7 +8,7 @@ Build a high-performance, future-proof engine with a **modern C++ RHI**, a **Dat
 ## 📅 Phase 1: RHI Stabilization & Core Infrastructure (P0 - Immediate)
 **Goal**: Finalize Vulkan RHI fundamentals and establish profiling based on Tier 1 Fixes.
 
-1.  **RHI Interface Refinement**
+1.  **RHI Interface Refinement** 【Done】
     *   **Action**: Segregate `RHIDevice` into `RHIFactory`, `RHISyncPrimitive`, and `RayTracingExtension`.
     *   **Action**: Move `RHICommandBuffer::Replay` logic to `.cpp` to optimize build times.
 2.  **PSO Caching & Stability**

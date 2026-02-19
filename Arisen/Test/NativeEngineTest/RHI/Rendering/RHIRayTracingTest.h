@@ -241,7 +241,7 @@ namespace ArisenEngine::Testing
             stagingDesc.usage = RHI::BUFFER_USAGE_TRANSFER_SRC_BIT;
             stagingDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
             auto stagingBuffer = factory->CreateBuffer(std::move(stagingDesc), "Material Staging Buffer");
-            m_Device->BufferMemoryCopy(stagingBuffer, matData.data(), matData.size() * sizeof(MaterialData), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(stagingBuffer, matData.data(), matData.size() * sizeof(MaterialData), 0);
             
             // Copy from staging to device local buffer
             auto pool = m_Device->GetCommandBufferPool(m_CmdPool);
@@ -269,7 +269,7 @@ namespace ArisenEngine::Testing
             triBufDesc.usage = RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
             triBufDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
             m_TriangleMaterialBuffer = factory->CreateBuffer(std::move(triBufDesc), "Submesh Data Buffer");
-            m_Device->BufferMemoryCopy(m_TriangleMaterialBuffer, submeshData.data(), submeshData.size() * sizeof(SubmeshData), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_TriangleMaterialBuffer, submeshData.data(), submeshData.size() * sizeof(SubmeshData), 0);
 
             m_CameraPos = glm::vec3(0.0f, 5.0f, 10.0f);
             m_CameraRot = glm::vec3(0.0f, -glm::half_pi<float>(), 0.0f); 
@@ -354,6 +354,7 @@ namespace ArisenEngine::Testing
         void BuildAccelerationStructures()
         {
             auto factory = m_Device->GetFactory();
+            RHI::RHIAccelerationStructureBuildSizesInfo blasSizes{};
             // 1. BLAS
             Containers::Vector<RHI::RHIAccelerationStructureGeometryData> geometries;
             Containers::Vector<UInt32> maxPrimCounts;
@@ -365,11 +366,11 @@ namespace ArisenEngine::Testing
                 geom.type = RHI::ERHIAccelerationStructureGeometryType::Triangles;
                 geom.flags = RHI::AS_GEOMETRY_OPAQUE_BIT;
                 geom.triangles.vertexFormat = RHI::FORMAT_R32G32B32_SFLOAT;
-                geom.triangles.vertexData = m_Device->GetBufferDeviceAddress(m_Model.vertexBuffer);
+                geom.triangles.vertexData = m_Device->GetFactory()->GetBufferDeviceAddress(m_Model.vertexBuffer);
                 geom.triangles.vertexStride = sizeof(GLTFVertex); 
                 geom.triangles.maxVertex = (UInt32)m_Model.vertexCount;
                 geom.triangles.indexType = RHI::INDEX_TYPE_UINT32;
-                geom.triangles.indexData = m_Device->GetBufferDeviceAddress(m_Model.indexBuffer);
+                geom.triangles.indexData = m_Device->GetFactory()->GetBufferDeviceAddress(m_Model.indexBuffer);
                 geometries.push_back(geom);
 
                 maxPrimCounts.push_back(prim.indexCount / 3);
@@ -388,8 +389,8 @@ namespace ArisenEngine::Testing
             blasInfo.geometryCount = (UInt32)geometries.size();
             blasInfo.pGeometries = geometries.data();
 
-            RHI::RHIAccelerationStructureBuildSizesInfo blasSizes{};
-            m_Device->GetAccelerationStructureBuildSizes(blasInfo, maxPrimCounts.data(), &blasSizes);
+            blasSizes.accelerationStructureSize = 0; // Initialize
+            m_Device->GetRayTracing()->GetAccelerationStructureBuildSizes(blasInfo, maxPrimCounts.data(), &blasSizes);
 
             m_Blas = factory->CreateAccelerationStructure("BLAS");
             
@@ -417,19 +418,19 @@ namespace ArisenEngine::Testing
             instance.mask = 0xFF;
             instance.instanceShaderBindingTableRecordOffset = 0;
             instance.flags = RHI::AS_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT;
-            instance.accelerationStructureReference = m_Device->GetAccelerationStructureDeviceAddress(m_Blas);
+            instance.accelerationStructureReference = m_Device->GetRayTracing()->GetAccelerationStructureDeviceAddress(m_Blas);
 
             RHI::RHIBufferDescriptor instBufDesc{};
             instBufDesc.size = sizeof(instance);
             instBufDesc.usage = RHI::BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
             instBufDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
             m_InstanceBuffer = factory->CreateBuffer(std::move(instBufDesc), "Instance Buffer");
-            m_Device->BufferMemoryCopy(m_InstanceBuffer, &instance, sizeof(instance), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_InstanceBuffer, &instance, sizeof(instance), 0);
 
             RHI::RHIAccelerationStructureGeometryData tlasGeom{};
             tlasGeom.type = RHI::ERHIAccelerationStructureGeometryType::Instances;
             tlasGeom.instances.arrayOfPointers = false;
-            tlasGeom.instances.data = m_Device->GetBufferDeviceAddress(m_InstanceBuffer);
+            tlasGeom.instances.data = m_Device->GetFactory()->GetBufferDeviceAddress(m_InstanceBuffer);
 
             RHI::RHIAccelerationStructureBuildGeometryInfo tlasInfo{};
             tlasInfo.type = RHI::ERHIAccelerationStructureType::TopLevel;
@@ -439,7 +440,7 @@ namespace ArisenEngine::Testing
 
             UInt32 maxInstanceCount = 1;
             RHI::RHIAccelerationStructureBuildSizesInfo tlasSizes{};
-            m_Device->GetAccelerationStructureBuildSizes(tlasInfo, &maxInstanceCount, &tlasSizes);
+            m_Device->GetRayTracing()->GetAccelerationStructureBuildSizes(tlasInfo, &maxInstanceCount, &tlasSizes);
 
             RHI::RHIBufferDescriptor tlasBufDesc{};
             tlasBufDesc.size = (UInt32)tlasSizes.accelerationStructureSize;
@@ -463,7 +464,7 @@ namespace ArisenEngine::Testing
 
             // 3. Scratch Buffer
             RHI::RHIBufferDescriptor scratchDesc{};
-            scratchDesc.size = (UInt32)(std::max)(blasSizes.buildScratchSize, tlasSizes.buildScratchSize);
+            scratchDesc.size = (std::max<UInt64>)(blasSizes.buildScratchSize, tlasSizes.buildScratchSize);
             scratchDesc.usage = RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI::BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
             scratchDesc.memoryUsage = RHI::ERHIMemoryUsage::GpuOnly;
             m_ScratchBuffer = factory->CreateBuffer(std::move(scratchDesc), "AS Scratch Buffer");
@@ -622,10 +623,10 @@ namespace ArisenEngine::Testing
             sbtDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
             m_SbtBuffer = m_Device->GetFactory()->CreateBuffer(std::move(sbtDesc), "SBT Buffer");
 
-            uint8_t* pSbtData = (uint8_t*)m_Device->MapBuffer(m_SbtBuffer);
+            uint8_t* pSbtData = (uint8_t*)m_Device->GetFactory()->MapBuffer(m_SbtBuffer);
             
             std::vector<uint8_t> tempHandles(handleSize * 4);
-            m_Device->GetRayTracingShaderGroupHandles(m_Pipeline, 0, 4, tempHandles.size(), tempHandles.data());
+            m_Device->GetRayTracing()->GetRayTracingShaderGroupHandles(m_Pipeline, 0, 4, tempHandles.size(), tempHandles.data());
             
             std::memset(pSbtData, 0, sbtSize);
             std::memcpy(pSbtData + 0 * groupStride, tempHandles.data() + 0 * handleSize, handleSize); // RayGen
@@ -633,7 +634,7 @@ namespace ArisenEngine::Testing
             std::memcpy(pSbtData + 2 * groupStride, tempHandles.data() + 3 * handleSize, handleSize); // ShadowMiss (Handle index 3)
             std::memcpy(pSbtData + 3 * groupStride, tempHandles.data() + 2 * handleSize, handleSize); // ClosestHit (Handle index 2)
 
-            m_Device->UnmapBuffer(m_SbtBuffer);
+            m_Device->GetFactory()->UnmapBuffer(m_SbtBuffer);
         }
 
         void UpdateCameraData()
@@ -671,7 +672,7 @@ namespace ArisenEngine::Testing
 
             m_AccumulatedFrames++;
             
-            m_Device->BufferMemoryCopy(m_CameraBuffers[GetCurrentFrameIndex()], &data, sizeof(CameraData), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_CameraBuffers[GetCurrentFrameIndex()], &data, sizeof(CameraData), 0);
         }
 
         void RecordAndSubmit()
@@ -719,7 +720,7 @@ namespace ArisenEngine::Testing
             }
 
             RHI::RHITraceRaysDescriptor traceDesc{};
-            UInt64 sbtAddr = m_Device->GetBufferDeviceAddress(m_SbtBuffer);
+            UInt64 sbtAddr = m_Device->GetFactory()->GetBufferDeviceAddress(m_SbtBuffer);
             UInt32 groupStride = 64;
 
             traceDesc.raygenShaderRecord = { sbtAddr + 0 * groupStride, groupStride, groupStride };

@@ -1569,20 +1569,20 @@ namespace ArisenEngine::RHI
 {
     EFormat RHIVkDevice::GetImageViewFormat(RHIImageViewHandle handle)
     {
-        auto* item = m_ImageViewPool->Get(handle);
-        return item ? item->format : EFormat::FORMAT_UNDEFINED;
+        auto* pItem = m_ImageViewPool->Get(handle);
+        return pItem ? pItem->format : EFormat::FORMAT_UNDEFINED;
     }
 
     UInt32 RHIVkDevice::GetImageViewWidth(RHIImageViewHandle handle)
     {
-        auto* item = m_ImageViewPool->Get(handle);
-        return item ? item->width : 0U;
+        auto* pItem = m_ImageViewPool->Get(handle);
+        return pItem ? pItem->width : 0U;
     }
 
     UInt32 RHIVkDevice::GetImageViewHeight(RHIImageViewHandle handle)
     {
-        auto* item = m_ImageViewPool->Get(handle);
-        return item ? item->height : 0U;
+        auto* pItem = m_ImageViewPool->Get(handle);
+        return pItem ? pItem->height : 0U;
     }
 
     void RHIVkDevice::SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size, const void* data)

@@ -291,7 +291,7 @@ namespace ArisenEngine::Testing
             ubo.projection = GetProjectionMatrix(width / height);
             ubo.mipmapBias = 0.0f;
             
-            m_Device->BufferMemoryCopy(m_UboBuffers[GetCurrentFrameIndex()], &ubo, sizeof(UniformBufferObject), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_UboBuffers[GetCurrentFrameIndex()], &ubo, sizeof(UniformBufferObject), 0);
         }
 
         void RecordAndSubmit()
