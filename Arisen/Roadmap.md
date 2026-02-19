@@ -11,7 +11,7 @@ Build a high-performance, future-proof engine with a **modern C++ RHI**, a **Dat
 1.  **RHI Interface Refinement** 【Done】
     *   **Action**: Segregate `RHIDevice` into `RHIFactory`, `RHISyncPrimitive`, and `RayTracingExtension`.
     *   **Action**: Move `RHICommandBuffer::Replay` logic to `.cpp` to optimize build times.
-2.  **PSO Caching & Stability**
+2.  **PSO Caching & Stability** 【Done】
     *   **Action**: Implement a **Global PSO Cache**. Decouple `VkPipeline` from `frameIndex`.
     *   **Action**: Solve remaining Vulkan validation errors in the `RayTracing` and `NativeEngine` tests.
 3.  **Tracy Profiler Integration**

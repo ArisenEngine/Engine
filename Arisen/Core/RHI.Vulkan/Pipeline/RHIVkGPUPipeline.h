@@ -26,16 +26,11 @@ namespace ArisenEngine::RHI
         {
             return m_PipelineStateObject;
         }
-        VkPipelineLayout GetPipelineLayout(UINT32 frameIndex) const
-        {
-            return m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight];
-        }
-        VkPipeline GetVkPipeline(UInt32 frameIndex) const
-        {
-            return m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight];
-        }
-    private:
 
+        VkPipelineLayout GetPipelineLayout(UInt32 frameIndex) const;
+        VkPipeline GetVkPipeline(UInt32 frameIndex) const;
+        
+    private:
         void FreePipelineLayout(UInt32 frameIndex);
         void FreePipeline(UInt32 frameIndex);
 
@@ -51,8 +46,6 @@ namespace ArisenEngine::RHI
         
         // graphics pipeline
         RHIPipelineState* m_PipelineStateObject;
-        Containers::Vector<VkPipeline> m_VkGraphicPipelines;
-        Containers::Vector<VkPipelineLayout> m_VkGraphicsPipelineLayouts;
-
+        
     };
 }
