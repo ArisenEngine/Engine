@@ -4,6 +4,7 @@
 #include "RHI/Commands/RHICommandBuffer.h"
 #include "Commands/RHIVkCommandBuffer.h"
 #include "Descriptors/RHIVkDescriptorPool.h"
+#include "Profiler.h"
 
 ArisenEngine::RHI::RHIVkQueue::RHIVkQueue(RHIVkDevice* rhiDevice, VkDevice device, VkQueue queue, RHIQueueType type, IRHIDeferredDeletionQueue* deferredDeletionQueue, RHIResourceRegistry* resourceRegistry)
     : m_RHIDevice(rhiDevice), m_Device(device), m_Queue(queue), m_Type(type), m_DeferredDeletion(deferredDeletionQueue), m_ResourceRegistry(resourceRegistry)
@@ -119,6 +120,7 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     const Containers::Vector<VkSemaphore>& extraSignalSems,
     const Containers::Vector<uint64_t>& extraSignalValues)
 {
+    ARISEN_PROFILE_ZONE("RHI::VulkanQueueSubmit");
     RHICommandBuffer* pCmd = m_RHIDevice->GetCommandBuffer(handle);
     ASSERT(pCmd && pCmd->ReadyForSubmit());
     (void)ownedFence;

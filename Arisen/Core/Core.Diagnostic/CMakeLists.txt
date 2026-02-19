@@ -20,6 +20,10 @@ target_include_directories(Core.Diagnostic PUBLIC
 
 target_compile_definitions(Core.Diagnostic PRIVATE COREDIAGNOSTIC_EXPORTS)
 
+if(ARISEN_PROFILER_ENABLED)
+    target_link_libraries(Core.Diagnostic PUBLIC TracyClient)
+endif()
+
 target_link_libraries(Core.Diagnostic PRIVATE spdlog Core.Foundation)
 
 set_target_properties(Core.Diagnostic PROPERTIES FOLDER "Core")

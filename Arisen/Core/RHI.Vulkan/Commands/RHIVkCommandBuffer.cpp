@@ -19,6 +19,7 @@
 #include "Presentation/RHIVkFrameBuffer.h"
 #include "RenderPass/RHIVkGPURenderPass.h"
 #include "RHI/Commands/IRHICommandExecutor.h"
+#include "Profiler.h"
 
 namespace ArisenEngine::RHI
 {
@@ -138,6 +139,7 @@ m_OwnerThreadIndex(ThreadRegistry::GetThreadIndex())
 
 void RHIVkExecutor::BeginRenderPass(RenderPassBeginDesc&& desc)
 {
+    ARISEN_PROFILE_ZONE("Vk::BeginRenderPass");
     UInt32 frameIndex = cmd->GetCurrentFrameIndex();
     
     auto* vkDevice = cmd->GetVkDevice();
@@ -196,6 +198,7 @@ void RHIVkExecutor::EndRenderPass()
 
 void RHIVkExecutor::BeginRendering(const RHIRenderingInfo& info)
 {
+    ARISEN_PROFILE_ZONE("Vk::BeginRendering");
     VkRenderingInfoKHR vkInfo = {};
     vkInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
     vkInfo.renderArea.offset = { info.RHIRenderArea.x, info.RHIRenderArea.y };
@@ -426,6 +429,7 @@ void RHIVkCommandBuffer::CaptureResource(RHIAccelerationStructureHandle handle)
 
 void RHIVkExecutor::BindPipeline(RHIPipelineHandle pipelineHandle)
 {
+    ARISEN_PROFILE_ZONE("Vk::BindPipeline");
     UInt32 frameIndex = cmd->GetCurrentFrameIndex();
     auto* vkDevice = cmd->GetVkDevice();
     auto* p = vkDevice->GetPipelinePool()->Get(pipelineHandle);
@@ -774,6 +778,7 @@ void RHIVkExecutor::TransitionImageLayout(RHIImageHandle image, EImageLayout old
 
 void RHIVkExecutor::Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding)
 {
+    ARISEN_PROFILE_ZONE("Vk::Draw");
     if (cmd->m_VertexBuffers.size() > 0)
     {
         ::vkCmdBindVertexBuffers(cmd->m_VkCommandBuffer, firstBinding, cmd->m_VertexBuffers.size(), cmd->m_VertexBuffers.data(), cmd->m_VertexBindingOffsets.data());
@@ -783,6 +788,7 @@ void RHIVkExecutor::Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstV
 
 void RHIVkExecutor::DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 firstIndex, UInt32 vertexOffset, UInt32 firstInstance,  UInt32 firstBinding)
 {
+    ARISEN_PROFILE_ZONE("Vk::DrawIndexed");
     if (cmd->m_VertexBuffers.size() > 0)
     {
         ::vkCmdBindVertexBuffers(cmd->m_VkCommandBuffer, firstBinding, cmd->m_VertexBuffers.size(), cmd->m_VertexBuffers.data(), cmd->m_VertexBindingOffsets.data());

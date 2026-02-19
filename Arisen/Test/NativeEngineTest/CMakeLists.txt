@@ -47,7 +47,6 @@ target_include_directories(NativeEngineTest PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/cgltf
     ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/image
     ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/vulkan/Include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../Tools/Profiler
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Core.Foundation
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Core.Diagnostic
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Core.HAL
@@ -61,4 +60,4 @@ set_target_properties(NativeEngineTest PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
-target_link_libraries(NativeEngineTest PRIVATE Profiler Core.Foundation Core.Diagnostic Core.HAL Core.RHI Core.ShaderCompiler RHI.Vulkan)
+target_link_libraries(NativeEngineTest PRIVATE Core.Foundation Core.HAL Core.RHI Core.ShaderCompiler RHI.Vulkan)
