@@ -88,6 +88,7 @@ namespace ArisenEngine::RHI
 
     void RHICommandBuffer::Begin(UInt32 frameIndex, UInt32 commandBufferUsage, const RHICommandBufferInheritanceInfo* pInheritanceInfo)
     {
+        SetCurrentFrameIndex(frameIndex);
         RHICmdBegin cmd{ frameIndex, commandBufferUsage, pInheritanceInfo != nullptr };
         if (pInheritanceInfo)
         {
@@ -386,7 +387,15 @@ namespace ArisenEngine::RHI
     {
         UInt32 len = (UInt32)std::strlen(label) + 1;
         RHICmdBeginDebugLabel cmd;
-        std::memcpy(cmd.color, color, sizeof(float) * 4);
+        if (color)
+        {
+            std::memcpy(cmd.color, color, sizeof(float) * 4);
+        }
+        else
+        {
+            float defaultColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+            std::memcpy(cmd.color, defaultColor, sizeof(float) * 4);
+        }
         cmd.labelLen = len;
         RecordCommand<RHICmdBeginDebugLabel>(ERHICommandType::BeginDebugLabel, cmd, label, len);
     }
@@ -400,7 +409,15 @@ namespace ArisenEngine::RHI
     {
         UInt32 len = (UInt32)std::strlen(label) + 1;
         RHICmdInsertDebugMarker cmd;
-        std::memcpy(cmd.color, color, sizeof(float) * 4);
+        if (color)
+        {
+            std::memcpy(cmd.color, color, sizeof(float) * 4);
+        }
+        else
+        {
+            float defaultColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+            std::memcpy(cmd.color, defaultColor, sizeof(float) * 4);
+        }
         cmd.labelLen = len;
         RecordCommand<RHICmdInsertDebugMarker>(ERHICommandType::InsertDebugMarker, cmd, label, len);
     }
