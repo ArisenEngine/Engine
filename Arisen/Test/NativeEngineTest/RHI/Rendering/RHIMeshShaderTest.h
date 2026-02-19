@@ -224,7 +224,7 @@ namespace ArisenEngine::Testing
             ubo.projection = GetProjectionMatrix(width / height);
             ubo.time = time;
             
-            m_Device->BufferMemoryCopy(m_UboBuffer[GetCurrentFrameIndex()], &ubo, sizeof(MeshUBO), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_UboBuffer[GetCurrentFrameIndex()], &ubo, sizeof(MeshUBO), 0);
         }
 
         void RecordAndSubmit()

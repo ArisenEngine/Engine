@@ -42,7 +42,7 @@ namespace ArisenEngine::Testing
 
             // Enable color tint via specialization constant (ID 0)
             unsigned int enableTint = 1;
-            m_Device->SetGPUProgramSpecializationConstant(m_FragProgram, 0, sizeof(unsigned int), &enableTint);
+            m_Device->GetFactory()->SetGPUProgramSpecializationConstant(m_FragProgram, 0, sizeof(unsigned int), &enableTint);
 
             CreateCommonResources();
             CreateSizeDependentResources();
@@ -269,7 +269,7 @@ namespace ArisenEngine::Testing
             float height = (float)HAL::GetWindowHeight(m_WindowId);
             ubo.projection = GetProjectionMatrix(width / height);
             ubo.mipmapBias = 0.0f; // Default No bias
-            m_Device->BufferMemoryCopy(m_UboBuffer[GetCurrentFrameIndex()], &ubo, sizeof(UniformBufferObject), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_UboBuffer[GetCurrentFrameIndex()], &ubo, sizeof(UniformBufferObject), 0);
         }
 
         void RecordAndSubmit()

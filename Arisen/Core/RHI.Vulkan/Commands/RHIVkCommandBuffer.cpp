@@ -18,6 +18,7 @@
 #include "RHI/Commands/RHICommandDefs.h"
 #include "Presentation/RHIVkFrameBuffer.h"
 #include "RenderPass/RHIVkGPURenderPass.h"
+#include "RHI/Commands/IRHICommandExecutor.h"
 
 namespace ArisenEngine::RHI
 {
@@ -26,59 +27,59 @@ namespace ArisenEngine::RHI
     using UInt64 = uint64_t;
     using Float32 = float;
 
-    struct RHIVkExecutor
+    struct RHIVkExecutor : public IRHICommandExecutor
     {
         RHIVkCommandBuffer* cmd;
         RHIVkExecutor(RHIVkCommandBuffer* c) : cmd(c) {}
 
         // Methods will be defined below
-        void BeginRenderPass(RenderPassBeginDesc&& desc);
-        void EndRenderPass();
-        void BeginRendering(const RHIRenderingInfo& info);
-        void EndRendering();
-        void Begin(UInt32 frameIndex, UInt32 commandBufferUsage, const RHICommandBufferInheritanceInfo* pInheritanceInfo);
-        void End();
-        // Add other methods as needed
-        void BindPipeline(RHIPipelineHandle pipeline);
-        void Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding);
-        void DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 firstIndex, UInt32 vertexOffset, UInt32 firstInstance, UInt32 firstBinding);
-        void DrawIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 drawCount, UInt32 stride);
-        void DrawIndexedIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 drawCount, UInt32 stride);
-        void Dispatch(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ);
-        void DrawMeshTasks(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ);
-        void BindVertexBuffers(RHIBufferHandle buffers, UInt64 offset);
-        void BindIndexBuffer(RHIBufferHandle indexBuffer, UInt64 offset, EIndexType type);
-        void CopyBuffer(RHIBufferHandle src, UInt64 srcOffset, RHIBufferHandle dst, UInt64 dstOffset, UInt64 size);
-        void BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPoolHandle poolHandle, UInt32 poolId, UInt32 setIndex, bool singleSet);
-        void PushConstants(UInt32 offset, UInt32 size, const void* data, UInt32 stageFlags);
-        void CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst, EImageLayout dstImageLayout, UInt32 regionCount, const RHIBufferImageCopy* regions);
-        void PipelineBarrier(const RHICmdPipelineBarrier& cmd, const RHIMemoryBarrier* pMem, const RHIImageMemoryBarrier* pImg, const RHIBufferMemoryBarrier* pBuf);
-        void TransitionImageLayout(RHIImageHandle image, EImageLayout oldLayout, EImageLayout targetLayout);
-        void CopyImage(RHIImageHandle src, EImageLayout srcLayout, RHIImageHandle dst, EImageLayout dstLayout, UInt32 regionCount, const RHIImageCopy* pRegions);
-        void GenerateMipmaps(RHIImageHandle image);
-        void BuildAccelerationStructures(UInt32 infoCount, const RHIAccelerationStructureBuildGeometryInfo* pInfos, const RHIAccelerationStructureBuildRangeInfo* const* ppBuildRangeInfos);
-        void TraceRays(const RHITraceRaysDescriptor& desc);
-        void SetFragmentShadingRate(EShadingRate rate, EShadingRateCombiner combinerOp[2]);
-        void BeginDebugLabel(const char* label, const Float32 color[4]);
-        void EndDebugLabel();
-        void InsertDebugMarker(const char* label, const Float32 color[4]);
-        void TrackDescriptorPoolUse(RHIDescriptorPoolHandle poolHandle, UInt32 poolId);
+        void BeginRenderPass(RenderPassBeginDesc&& desc) override;
+        void EndRenderPass() override;
+        void BeginRendering(const RHIRenderingInfo& info) override;
+        void EndRendering() override;
+        void Begin(UInt32 frameIndex, UInt32 commandBufferUsage, const RHICommandBufferInheritanceInfo* pInheritanceInfo) override;
+        void End() override;
+        
+        void BindPipeline(RHIPipelineHandle pipeline) override;
+        void Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding) override;
+        void DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 firstIndex, UInt32 vertexOffset, UInt32 firstInstance, UInt32 firstBinding) override;
+        void DrawIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 drawCount, UInt32 stride) override;
+        void DrawIndexedIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 drawCount, UInt32 stride) override;
+        void Dispatch(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ) override;
+        void DrawMeshTasks(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ) override;
+        void BindVertexBuffers(RHIBufferHandle buffer, UInt64 offset) override;
+        void BindIndexBuffer(RHIBufferHandle indexBuffer, UInt64 offset, EIndexType type) override;
+        void CopyBuffer(RHIBufferHandle src, UInt64 srcOffset, RHIBufferHandle dst, UInt64 dstOffset, UInt64 size) override;
+        void BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPoolHandle poolHandle, UInt32 poolId, UInt32 setIndex, bool isSingleSet) override;
+        void PushConstants(UInt32 offset, UInt32 size, const void* data, UInt32 stageFlags) override;
+        void CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst, EImageLayout dstImageLayout, UInt32 regionCount, const RHIBufferImageCopy* pRegions) override;
+        void PipelineBarrier(const RHICmdPipelineBarrier& cmd, const RHIMemoryBarrier* pMem, const RHIImageMemoryBarrier* pImg, const RHIBufferMemoryBarrier* pBuf) override;
+        void TransitionImageLayout(RHIImageHandle image, EImageLayout oldLayout, EImageLayout targetLayout) override;
+        void CopyImage(RHIImageHandle src, EImageLayout srcLayout, RHIImageHandle dst, EImageLayout dstLayout, UInt32 regionCount, const RHIImageCopy* pRegions) override;
+        void GenerateMipmaps(RHIImageHandle image) override;
+        void BuildAccelerationStructures(UInt32 infoCount, const RHIAccelerationStructureBuildGeometryInfo* pInfos, const RHIAccelerationStructureBuildRangeInfo* const* ppBuildRangeInfos) override;
+        void TraceRays(const RHITraceRaysDescriptor& desc) override;
+        void SetFragmentShadingRate(EShadingRate rate, EShadingRateCombiner combinerOp[2]) override;
+        void BeginDebugLabel(const char* label, const Float32 color[4]) override;
+        void EndDebugLabel() override;
+        void InsertDebugMarker(const char* label, const Float32 color[4]) override;
+        void TrackDescriptorPoolUse(RHIDescriptorPoolHandle poolHandle, UInt32 poolId) override;
 
         // Dynamic State
-        void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height, Float32 minDepth, Float32 maxDepth);
-        void SetScissor(UInt32 offsetX, UInt32 offsetY, UInt32 width, UInt32 height);
-        void SetLineWidth(Float32 lineWidth);
-        void SetDepthBias(Float32 depthBiasConstantFactor, Float32 depthBiasClamp, Float32 depthBiasSlopeFactor);
-        void SetBlendConstants(const Float32 blendConstants[4]);
-        void SetStencilReference(UInt32 faceMask, UInt32 reference);
-        void SetCullMode(ECullModeFlagBits cullMode);
-        void SetFrontFace(EFrontFace frontFace);
-        void SetPrimitiveTopology(EPrimitiveTopology topology);
-        void SetDepthTestEnable(bool enable);
-        void SetDepthWriteEnable(bool enable);
-        void SetDepthCompareOp(ECompareOp depthCompareOp);
-        void SetStencilTestEnable(bool enable);
-        void SetStencilOp(UInt32 faceMask, EStencilOp failOp, EStencilOp passOp, EStencilOp depthFailOp, ECompareOp compareOp);
+        void SetViewport(Float32 x, Float32 y, Float32 width, Float32 height, Float32 minDepth, Float32 maxDepth) override;
+        void SetScissor(UInt32 offsetX, UInt32 offsetY, UInt32 width, UInt32 height) override;
+        void SetLineWidth(Float32 lineWidth) override;
+        void SetDepthBias(Float32 depthBiasConstantFactor, Float32 depthBiasClamp, Float32 depthBiasSlopeFactor) override;
+        void SetBlendConstants(const Float32 blendConstants[4]) override;
+        void SetStencilReference(UInt32 faceMask, UInt32 reference) override;
+        void SetCullMode(ECullModeFlagBits cullMode) override;
+        void SetFrontFace(EFrontFace frontFace) override;
+        void SetPrimitiveTopology(EPrimitiveTopology topology) override;
+        void SetDepthTestEnable(bool enable) override;
+        void SetDepthWriteEnable(bool enable) override;
+        void SetDepthCompareOp(ECompareOp depthCompareOp) override;
+        void SetStencilTestEnable(bool enable) override;
+        void SetStencilOp(UInt32 faceMask, EStencilOp failOp, EStencilOp passOp, EStencilOp depthFailOp, ECompareOp compareOp) override;
         
         // Internal helper
         void DoPipelineBarrier(EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,

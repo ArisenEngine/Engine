@@ -92,9 +92,9 @@ namespace ArisenEngine::Testing
             }
 
             LOG_INFO("CPU Signal timeline semaphore to 1...");
-            m_Device->SignalSemaphoreValue(timelineSem, 1);
+            m_Device->GetSync()->SignalSemaphoreValue(timelineSem, 1);
             
-            unsigned long long val = m_Device->GetSemaphoreValue(timelineSem);
+            unsigned long long val = m_Device->GetSync()->GetSemaphoreValue(timelineSem);
             LOG_INFOF("Current timeline value: {}", val);
             if (val != 1) {
                 LOG_ERRORF("Timeline value mismatch! Expected 1, got {}", val);
@@ -102,7 +102,7 @@ namespace ArisenEngine::Testing
             }
 
             LOG_INFO("CPU Wait for timeline value 1...");
-            m_Device->WaitSemaphoreValue(timelineSem, 1);
+            m_Device->GetSync()->WaitSemaphoreValue(timelineSem, 1);
 
             // Test GPU wait and signal
             LOG_INFO("Testing GPU wait and signal with timeline semaphore...");
@@ -129,9 +129,9 @@ namespace ArisenEngine::Testing
             m_Device->Submit(timelineCmdHandle, &submitDesc);
 
             LOG_INFO("CPU Waiting for timeline value 2 (GPU signal)...");
-            m_Device->WaitSemaphoreValue(timelineSem, 2);
+            m_Device->GetSync()->WaitSemaphoreValue(timelineSem, 2);
             
-            val = m_Device->GetSemaphoreValue(timelineSem);
+            val = m_Device->GetSync()->GetSemaphoreValue(timelineSem);
             LOG_INFOF("Final timeline value: {}", val);
             if (val != 2) {
                 LOG_ERRORF("Timeline value mismatch after GPU signal! Expected 2, got {}", val);

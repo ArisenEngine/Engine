@@ -25,16 +25,6 @@ namespace ArisenEngine::RHI
     RHIMemoryAllocator::RHIMemoryAllocator() = default;
     RHIMemoryAllocator::~RHIMemoryAllocator() noexcept = default;
 
-    // RHICommandBuffer
-    RHICommandBuffer::RHICommandBuffer(RHIDevice* device, RHICommandBufferPool* pool, ECommandBufferLevel level) :
-        m_CommandBufferPool(pool), m_Device(device), m_State(ECommandBufferState::Initial), m_Level(level)
-    {
-    }
-    RHICommandBuffer::~RHICommandBuffer() noexcept
-    {
-        m_CommandBufferPool = nullptr;
-        m_Device = nullptr;
-    }
 
     // RHICommandBufferPool
     RHICommandBufferPool::RHICommandBufferPool(RHIDevice* device, UInt32 maxFramesInFlight) :

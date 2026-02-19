@@ -243,7 +243,7 @@ namespace ArisenEngine::Testing
             ubo.view = GetViewMatrix();
             ubo.proj = GetProjectionMatrix((float)width / (float)height);
 
-            m_Device->BufferMemoryCopy(m_UboBuffers[GetCurrentFrameIndex()], &ubo, sizeof(UniformBufferObject), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_UboBuffers[GetCurrentFrameIndex()], &ubo, sizeof(UniformBufferObject), 0);
         }
 
         void RecordAndSubmit()

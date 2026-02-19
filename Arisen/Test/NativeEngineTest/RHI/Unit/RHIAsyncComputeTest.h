@@ -86,7 +86,7 @@ namespace ArisenEngine::Testing
 
             std::vector<uint32_t> inputData(elementCount);
             for(uint32_t i=0; i<elementCount; ++i) inputData[i] = i;
-            m_Device->BufferMemoryCopy(m_InputBuffer, inputData.data(), bufferSize, 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_InputBuffer, inputData.data(), bufferSize, 0);
 
             // 3. Setup Pipeline and Descriptors
             auto pm = m_Device->GetPipelineCache();

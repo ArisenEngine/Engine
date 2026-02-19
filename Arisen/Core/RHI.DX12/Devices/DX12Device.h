@@ -14,26 +14,26 @@ namespace ArisenEngine::RHI
 		void DeviceWaitIdle() const override {}
 		void GraphicQueueWaitIdle() const override {}
 		RHIFactory* GetFactory() const override { return nullptr; }
+		RHISyncPrimitive* GetSync() const override { return nullptr; }
+		RayTracingExtension* GetRayTracing() const override { return nullptr; }
 		RHIPipelineCache* GetPipelineCache() const override { return nullptr; }
 		RHIDescriptorPool* GetDescriptorPool() const override { return nullptr; }
+		RHIDescriptorPoolHandle GetDescriptorPoolHandle() const override { return RHIDescriptorPoolHandle::Invalid(); }
 		RHIGpuTicket Submit(RHICommandBufferHandle commandBuffer, const struct RHISubmitDescriptor* descriptor = nullptr) override { (void)commandBuffer; (void)descriptor; return 0; }
 		UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) override { (void)typeFilter; (void)properties; return 0; }
 		void SetResolution(UInt32 width, UInt32 height) override { (void)width; (void)height; }
+		void SetObjectName(ERHIObjectType type, UInt64 handle, const char* name) override { (void)type; (void)handle; (void)name; }
 		UInt32 GetMaxFramesInFlight() const override { return 1; }
-// Stubs for missing pure virtuals
-		class RHIMemoryAllocator* GetMemoryAllocator() const override { return nullptr; }
-		void ReleaseImageView(RHIImageViewHandle handle) override { (void)handle; }
-		RHIImageViewHandle FindImageViewForImage(RHIImageHandle imageHandle) override { (void)imageHandle; return RHIImageViewHandle::Invalid(); }
-		void ReleaseSampler(RHISamplerHandle handle) override { (void)handle; }
-		void ReleaseSemaphore(RHISemaphoreHandle handle) override { (void)handle; }
-		void ReleaseFence(RHIFenceHandle handle) override { (void)handle; }
-		void ReleaseRenderPass(RHIRenderPassHandle handle) override { (void)handle; }
-		void ReleaseFrameBuffer(RHIFrameBufferHandle handle) override { (void)handle; }
-		void ReleasePipeline(RHIPipelineHandle handle) override { (void)handle; }
-		bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle, RHIRenderPassHandle renderPassHandle) override { (void)handle; (void)frameIndex; (void)viewHandle; (void)renderPassHandle; return false; }
-		void WaitFence(RHIFenceHandle handle) override { (void)handle; }
-		void ResetFence(RHIFenceHandle handle) override { (void)handle; }
+		
+		void* GetGraphicsQueue() override { return nullptr; }
+		void* GetComputeQueue() override { return nullptr; }
+		void* GetPresentQueue() override { return nullptr; }
+		RHICommandBuffer* GetCommandBuffer(RHICommandBufferHandle handle) override { (void)handle; return nullptr; }
+		const RHIResourceStats& GetResourceStats() const override { static RHIResourceStats stats; return stats; }
 
+		// Stubs for missing pure virtuals
+		class RHIMemoryAllocator* GetMemoryAllocator() const override { return nullptr; }
+		
 		// IRHIBackend implementation
 		bool AllocBuffer(RHIBufferHandle handle, RHIBufferDescriptor&& desc) override { (void)handle; (void)desc; return false; }
 		bool AllocBufferDeviceMemory(RHIBufferHandle handle) override { (void)handle; return false; }
@@ -46,27 +46,22 @@ namespace ArisenEngine::RHI
 		bool AllocBufferAliased(RHIBufferHandle handle, RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset) override { (void)handle; (void)desc; (void)pool; (void)offset; return false; }
 		bool AllocImageAliased(RHIImageHandle handle, RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset) override { (void)handle; (void)desc; (void)pool; (void)offset; return false; }
 		bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, RHIImageViewDesc&& desc) override { (void)handle; (void)imageHandle; (void)desc; return false; }
-		
-		// Buffer utilities in RHIDevice
-		void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0) override { (void)handle; (void)src; (void)size; (void)offset; }
-		void* MapBuffer(RHIBufferHandle handle) override { (void)handle; return nullptr; }
-		void UnmapBuffer(RHIBufferHandle handle) override { (void)handle; }
-		UInt64 GetBufferSize(RHIBufferHandle handle) override { (void)handle; return 0; }
-		UInt64 GetBufferOffset(RHIBufferHandle handle) override { (void)handle; return 0; }
-		UInt64 GetBufferRange(RHIBufferHandle handle) override { (void)handle; return 0; }
-		UInt64 GetBufferDeviceAddress(RHIBufferHandle handle) override { (void)handle; return 0; }
+		void ReleaseImageView(RHIImageViewHandle handle) override { (void)handle; }
+		void ReleaseSampler(RHISamplerHandle handle) override { (void)handle; }
+		void ReleaseSemaphore(RHISemaphoreHandle handle) override { (void)handle; }
+		void ReleaseFence(RHIFenceHandle handle) override { (void)handle; }
+		void ReleaseRenderPass(RHIRenderPassHandle handle) override { (void)handle; }
+		void ReleaseFrameBuffer(RHIFrameBufferHandle handle) override { (void)handle; }
+		void ReleasePipeline(RHIPipelineHandle handle) override { (void)handle; }
+		void ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle) override { (void)handle; }
+		bool AllocAccelerationStructure(RHIAccelerationStructureHandle handle, ERHIAccelerationStructureType type, UInt64 size, RHIBufferHandle buffer, UInt64 offset) override { (void)handle; (void)type; (void)size; (void)buffer; (void)offset; return false; }
+		bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle, RHIRenderPassHandle renderPassHandle) override { (void)handle; (void)frameIndex; (void)viewHandle; (void)renderPassHandle; return false; }
 
-		RHI::EFormat GetImageViewFormat(RHIImageViewHandle handle) override { (void)handle; return RHI::FORMAT_UNDEFINED; }
-		UInt32 GetImageViewWidth(RHIImageViewHandle handle) override { (void)handle; return 0; }
-		UInt32 GetImageViewHeight(RHIImageViewHandle handle) override { (void)handle; return 0; }
-		void SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size, const void* data) override { (void)handle; (void)constantID; (void)size; (void)data; }
-		void WaitSemaphoreValue(RHISemaphoreHandle handle, UInt64 value) override { (void)handle; (void)value; }
-		void SignalSemaphoreValue(RHISemaphoreHandle handle, UInt64 value) override { (void)handle; (void)value; }
-		UInt64 GetSemaphoreValue(RHISemaphoreHandle handle) override { (void)handle; return 0; }
+		// Descriptor Heap & Bindless Table
+		RHIDescriptorHeap* CreateDescriptorHeap(EDescriptorHeapType type, UInt32 descriptorCount) override { (void)type; (void)descriptorCount; return nullptr; }
+		RHIBindlessDescriptorTable* CreateBindlessDescriptorTable(RHIDescriptorHeap* heap) override { (void)heap; return nullptr; }
 	};
 
 }
 
 extern "C" RHI_DX12_DLL ArisenEngine::RHI::RHIDevice * CreateDevice();
-
-
