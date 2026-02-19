@@ -9,10 +9,12 @@
 
 #include <fstream>
 #include "PlatformPath.h"
+#include "Pipeline/RHIVkPSOCache.h"
 
 ArisenEngine::RHI::RHIVkGPUPipelineManager::RHIVkGPUPipelineManager(RHIVkDevice* device, UInt32 maxFramesInFlight): RHIPipelineCache(maxFramesInFlight),
 m_Device(device)
 {
+    m_PSOCache = std::make_unique<RHIVkPSOCache>(m_Device);
     LoadPipelineCache();
 }
 

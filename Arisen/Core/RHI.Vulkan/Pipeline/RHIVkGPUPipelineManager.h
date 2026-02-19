@@ -21,6 +21,7 @@ namespace ArisenEngine::RHI
         std::unique_ptr<RHIPipelineState> GetPipelineState() override;
 
         VkPipelineCache GetVkPipelineCache() const { return m_VkPipelineCache; }
+        class RHIVkPSOCache* GetPSOCache() const { return m_PSOCache.get(); }
 
     private:
         void LoadPipelineCache();
@@ -31,6 +32,7 @@ namespace ArisenEngine::RHI
         Containers::Map<UInt32, RHIPipelineHandle> m_PipelineHandles;
 
         VkPipelineCache m_VkPipelineCache = VK_NULL_HANDLE;
+        std::unique_ptr<class RHIVkPSOCache> m_PSOCache;
         String m_PipelineCacheFileName = "viewport_pso_cache.bin";
     };
 }

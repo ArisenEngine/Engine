@@ -1,6 +1,7 @@
 #include "Pipeline/RHIVkGPUPipeline.h"
 
 #include "Pipeline/RHIVkGPUPipelineStateObject.h"
+#include "Pipeline/RHIVkPSOCache.h"
 #include "RHI/Pipeline/RHIPipelineState.h"
 #include "Core/RHIVkDevice.h"
 
@@ -20,41 +21,91 @@ RHIVkGPUPipeline::~RHIVkGPUPipeline() noexcept
 }
 
 RHIVkGPUPipeline::RHIVkGPUPipeline(RHIVkDevice* device, RHIPipelineState* pso, UInt32 maxFramesInFlight):
-RHIPipeline(maxFramesInFlight), m_Device(device), m_VkDevice(static_cast<VkDevice>(device->GetHandle())), m_PipelineStateObject(pso)
+RHIPipeline(maxFramesInFlight), m_Device(device), m_VkDevice(static_cast<VkDevice>(device->GetHandle())), m_PipelineStateObject(pso), m_SubPass(nullptr)
 {
-    m_VkGraphicPipelines.resize(maxFramesInFlight);
-    m_VkGraphicsPipelineLayouts.resize(maxFramesInFlight);
-    for(int i = 0; i < maxFramesInFlight; ++i)
+}
+
+VkPipelineLayout RHIVkGPUPipeline::GetPipelineLayout(UInt32 frameIndex) const
+{
+    auto* vkPSO = static_cast<RHIVkGPUPipelineStateObject*>(m_PipelineStateObject);
+    auto* cache = static_cast<RHIVkGPUPipelineManager*>(m_Device->GetPipelineCache())->GetPSOCache();
+    return cache->GetLayout(vkPSO->GetHash());
+}
+
+VkPipeline RHIVkGPUPipeline::GetVkPipeline(UInt32 frameIndex) const
+{
+    // Need to cast away const for GetGraphics/Compute pipeline as they might need better access but we can stay const here by calling them directly or using cache
+    auto* vkPSO = static_cast<RHIVkGPUPipelineStateObject*>(m_PipelineStateObject);
+    RHIVkPSOCacheKey key;
+    key.psoHash = vkPSO->GetHash();
+    if (m_SubPass)
     {
-        m_VkGraphicPipelines[i] = VK_NULL_HANDLE;
-        m_VkGraphicsPipelineLayouts[i] = VK_NULL_HANDLE;
+        key.renderPass = static_cast<VkRenderPass>(m_SubPass->GetOwner()->GetHandle(frameIndex));
+        key.subpassIndex = m_SubPass->GetIndex();
     }
+    else
+    {
+        key.renderPass = VK_NULL_HANDLE;
+        key.subpassIndex = 0;
+    }
+
+    auto* cache = static_cast<RHIVkGPUPipelineManager*>(m_Device->GetPipelineCache())->GetPSOCache();
+    return cache->GetPipeline(key);
 }
 
 void* RHIVkGPUPipeline::GetGraphicsPipeline(UInt32 frameIndex)
 {
-    ASSERT(m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE);
-    return m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight];
+    auto* vkPSO = static_cast<RHIVkGPUPipelineStateObject*>(m_PipelineStateObject);
+    RHIVkPSOCacheKey key;
+    key.psoHash = vkPSO->GetHash();
+    if (m_SubPass)
+    {
+        key.renderPass = static_cast<VkRenderPass>(m_SubPass->GetOwner()->GetHandle(frameIndex));
+        key.subpassIndex = m_SubPass->GetIndex();
+    }
+    else
+    {
+        key.renderPass = VK_NULL_HANDLE;
+        key.subpassIndex = 0;
+    }
+
+    auto* cache = static_cast<RHIVkGPUPipelineManager*>(m_Device->GetPipelineCache())->GetPSOCache();
+    VkPipeline pipeline = cache->GetPipeline(key);
+    
+    // If not found, we might need to allocate it here if it wasn't pre-allocated, 
+    // but the current architecture seems to expect Alloc to be called.
+    // For safety, let's assert it exists or call Alloc if we had enough info.
+    ASSERT(pipeline != VK_NULL_HANDLE);
+    return pipeline;
 }
 
 void* RHIVkGPUPipeline::GetComputePipeline(UInt32 frameIndex)
 {
-    ASSERT(m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE);
-    return m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight];
+    // Compute pipelines don't have render passes
+    auto* vkPSO = static_cast<RHIVkGPUPipelineStateObject*>(m_PipelineStateObject);
+    RHIVkPSOCacheKey key;
+    key.psoHash = vkPSO->GetHash();
+    key.renderPass = VK_NULL_HANDLE;
+    key.subpassIndex = 0;
+
+    auto* cache = static_cast<RHIVkGPUPipelineManager*>(m_Device->GetPipelineCache())->GetPSOCache();
+    VkPipeline pipeline = cache->GetPipeline(key);
+    ASSERT(pipeline != VK_NULL_HANDLE);
+    return pipeline;
 }
 
 void RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex, RHISubPass* subPass)
 {
-    FreePipeline(frameIndex);
-    FreePipelineLayout(frameIndex);
-
     m_SubPass = subPass;
     ASSERT(m_PipelineStateObject != nullptr);
     
     auto* vkPSO = static_cast<RHIVkGPUPipelineStateObject*>(m_PipelineStateObject);
+    auto* cache = static_cast<RHIVkGPUPipelineManager*>(m_Device->GetPipelineCache())->GetPSOCache();
     
+    // 1. Get or Create Layout
+    VkPipelineLayout layout = cache->GetLayout(vkPSO->GetHash());
+    if (layout == VK_NULL_HANDLE)
     {
-        // Create Pipeline Layout
         VkPipelineLayoutCreateInfo pipelineLayoutInfo {};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = vkPSO->GetDescriptorSetLayoutCount();
@@ -62,12 +113,32 @@ void RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex, RHISubPass* subPa
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(vkPSO->GetPushConstantRanges().size());
         pipelineLayoutInfo.pPushConstantRanges = vkPSO->GetPushConstantRanges().data();
 
-        if (vkCreatePipelineLayout(m_VkDevice, &pipelineLayoutInfo,
-            nullptr, &m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS)
+        if (vkCreatePipelineLayout(m_VkDevice, &pipelineLayoutInfo, nullptr, &layout) != VK_SUCCESS)
         {
-            LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocVkPipeline]: failed to create pipeline layout!");
+            LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocGraphicPipeline]: failed to create pipeline layout!");
         }
+        cache->StoreLayout(vkPSO->GetHash(), layout);
     }
+
+    // 2. Build Cache Key for Pipeline
+    RHIVkPSOCacheKey key;
+    key.psoHash = vkPSO->GetHash();
+    if (subPass)
+    {
+        key.renderPass = static_cast<VkRenderPass>(subPass->GetOwner()->GetHandle(frameIndex));
+        key.subpassIndex = subPass->GetIndex();
+    }
+    else
+    {
+        key.renderPass = VK_NULL_HANDLE;
+        key.subpassIndex = 0;
+    }
+
+    // 3. Check Cache
+    VkPipeline pipeline = cache->GetPipeline(key);
+    if (pipeline != VK_NULL_HANDLE) return;
+
+    // 4. Create Pipeline if not found
     
     // Vertex input info
     VkPipelineVertexInputStateCreateInfo vertexInputInfo {};
@@ -221,7 +292,7 @@ void RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex, RHISubPass* subPa
     pipelineInfo.pDepthStencilState = &depthStencilInfo;
     pipelineInfo.pColorBlendState = &blendState;
     pipelineInfo.pDynamicState = &dynamicStatesInfo;
-    pipelineInfo.layout = m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight];
+    pipelineInfo.layout = layout;
     
     // Tessellation state
     const auto& tess = vkPSO->GetTessellationState();
@@ -257,7 +328,7 @@ void RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex, RHISubPass* subPa
             vkPSO->FillRenderingCreateInfo(renderingInfo);
             pipelineInfo.pNext = &renderingInfo;
             pipelineInfo.renderPass = VK_NULL_HANDLE;
-            pipelineInfo.subpass = 0; // ignored when renderPass is NULL
+            pipelineInfo.subpass = 0; 
         }
         else
         {
@@ -266,87 +337,119 @@ void RHIVkGPUPipeline::AllocGraphicPipeline(UInt32 frameIndex, RHISubPass* subPa
     }
     else
     {
-        pipelineInfo.renderPass = static_cast<VkRenderPass>(subPass->GetOwner()->GetHandle(frameIndex));
-        pipelineInfo.subpass = subPass->GetIndex();
+        pipelineInfo.renderPass = key.renderPass;
+        pipelineInfo.subpass = key.subpassIndex;
         pipelineInfo.pNext = nullptr;
     }
 
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    if (vkCreateGraphicsPipelines(m_VkDevice, static_cast<RHIVkGPUPipelineManager*>(m_Device->GetPipelineCache())->GetVkPipelineCache(), 1, &pipelineInfo, nullptr, &m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS)
+    if (vkCreateGraphicsPipelines(m_VkDevice, static_cast<RHIVkGPUPipelineManager*>(m_Device->GetPipelineCache())->GetVkPipelineCache(), 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocPipeline]: failed to create GPU pipeline!");
     }
+    cache->StorePipeline(key, pipeline);
 }
 
 void RHIVkGPUPipeline::AllocComputePipeline(UInt32 frameIndex)
 {
-    FreePipeline(frameIndex);
-    FreePipelineLayout(frameIndex);
-
+    m_SubPass = nullptr;
     auto* vkPso = static_cast<RHIVkGPUPipelineStateObject*>(m_PipelineStateObject);
+    auto* cache = static_cast<RHIVkGPUPipelineManager*>(m_Device->GetPipelineCache())->GetPSOCache();
     
-    // Create Layout
-    VkPipelineLayoutCreateInfo layoutInfo{};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    layoutInfo.setLayoutCount = vkPso->GetDescriptorSetLayoutCount();
-    layoutInfo.pSetLayouts = vkPso->GetDescriptorSetLayouts();
-    layoutInfo.pushConstantRangeCount = static_cast<uint32_t>(vkPso->GetPushConstantRanges().size());
-    layoutInfo.pPushConstantRanges = vkPso->GetPushConstantRanges().data();
+    // 1. Get or Create Layout
+    VkPipelineLayout layout = cache->GetLayout(vkPso->GetHash());
+    if (layout == VK_NULL_HANDLE)
+    {
+        VkPipelineLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        layoutInfo.setLayoutCount = vkPso->GetDescriptorSetLayoutCount();
+        layoutInfo.pSetLayouts = vkPso->GetDescriptorSetLayouts();
+        layoutInfo.pushConstantRangeCount = static_cast<uint32_t>(vkPso->GetPushConstantRanges().size());
+        layoutInfo.pPushConstantRanges = vkPso->GetPushConstantRanges().data();
 
-    if (vkCreatePipelineLayout(m_VkDevice, &layoutInfo, nullptr, &m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS) {
-        LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocComputePipeline]: failed to create pipeline layout!");
+        if (vkCreatePipelineLayout(m_VkDevice, &layoutInfo, nullptr, &layout) != VK_SUCCESS) {
+            LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocComputePipeline]: failed to create pipeline layout!");
+        }
+        cache->StoreLayout(vkPso->GetHash(), layout);
     }
 
+    // 2. Build Cache Key
+    RHIVkPSOCacheKey key;
+    key.psoHash = vkPso->GetHash();
+    key.renderPass = VK_NULL_HANDLE;
+    key.subpassIndex = 0;
+
+    // 3. Check Cache
+    VkPipeline pipeline = cache->GetPipeline(key);
+    if (pipeline != VK_NULL_HANDLE) return;
+
+    // 4. Create Compute Pipeline
     VkComputePipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-    pipelineInfo.layout = m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight];
+    pipelineInfo.layout = layout;
     
-    // Compute stage is in m_PipelineStageCreateInfos[0]
     if (vkPso->m_PipelineStageCreateInfos.empty())
     {
         LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocComputePipeline]: No shader stages found in PSO!");
     }
     pipelineInfo.stage = vkPso->m_PipelineStageCreateInfos[0];
 
-    if (vkCreateComputePipelines(m_VkDevice, static_cast<RHIVkGPUPipelineManager*>(m_Device->GetPipelineCache())->GetVkPipelineCache(), 1, &pipelineInfo, nullptr, &m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS)
+    if (vkCreateComputePipelines(m_VkDevice, static_cast<RHIVkGPUPipelineManager*>(m_Device->GetPipelineCache())->GetVkPipelineCache(), 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocComputePipeline]: failed to create compute pipeline!");
     }
+    cache->StorePipeline(key, pipeline);
 }
 
 void RHIVkGPUPipeline::AllocRayTracingPipeline(UInt32 frameIndex)
 {
-    FreePipeline(frameIndex);
-    FreePipelineLayout(frameIndex);
-
+    m_SubPass = nullptr;
     auto* vkPso = static_cast<RHIVkGPUPipelineStateObject*>(m_PipelineStateObject);
+    auto* cache = static_cast<RHIVkGPUPipelineManager*>(m_Device->GetPipelineCache())->GetPSOCache();
     
-    // Create Layout
-    VkPipelineLayoutCreateInfo layoutInfo{};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    layoutInfo.setLayoutCount = vkPso->GetDescriptorSetLayoutCount();
-    layoutInfo.pSetLayouts = vkPso->GetDescriptorSetLayouts();
-    layoutInfo.pushConstantRangeCount = static_cast<uint32_t>(vkPso->GetPushConstantRanges().size());
-    layoutInfo.pPushConstantRanges = vkPso->GetPushConstantRanges().data();
+    // 1. Get or Create Layout
+    VkPipelineLayout layout = cache->GetLayout(vkPso->GetHash());
+    if (layout == VK_NULL_HANDLE)
+    {
+        VkPipelineLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        layoutInfo.setLayoutCount = vkPso->GetDescriptorSetLayoutCount();
+        layoutInfo.pSetLayouts = vkPso->GetDescriptorSetLayouts();
+        layoutInfo.pushConstantRangeCount = static_cast<uint32_t>(vkPso->GetPushConstantRanges().size());
+        layoutInfo.pPushConstantRanges = vkPso->GetPushConstantRanges().data();
 
-    if (vkCreatePipelineLayout(m_VkDevice, &layoutInfo, nullptr, &m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS) {
-        LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocRayTracingPipeline]: failed to create pipeline layout!");
+        if (vkCreatePipelineLayout(m_VkDevice, &layoutInfo, nullptr, &layout) != VK_SUCCESS) {
+            LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocRayTracingPipeline]: failed to create pipeline layout!");
+        }
+        cache->StoreLayout(vkPso->GetHash(), layout);
     }
 
+    // 2. Build Cache Key
+    RHIVkPSOCacheKey key;
+    key.psoHash = vkPso->GetHash();
+    key.renderPass = VK_NULL_HANDLE;
+    key.subpassIndex = 0;
+
+    // 3. Check Cache
+    VkPipeline pipeline = cache->GetPipeline(key);
+    if (pipeline != VK_NULL_HANDLE) return;
+
+    // 4. Create Ray Tracing Pipeline
     VkRayTracingPipelineCreateInfoKHR pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
-    pipelineInfo.layout = m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight];
+    pipelineInfo.layout = layout;
     pipelineInfo.stageCount = vkPso->GetStageCount();
     pipelineInfo.pStages = vkPso->GetStageCreateInfos();
     pipelineInfo.groupCount = static_cast<uint32_t>(vkPso->m_RayTracingShaderGroups.size());
     pipelineInfo.pGroups = vkPso->m_RayTracingShaderGroups.data();
     pipelineInfo.maxPipelineRayRecursionDepth = vkPso->m_MaxRecursionDepth;
 
-    if (m_Device->vkCreateRayTracingPipelinesKHR(m_VkDevice, VK_NULL_HANDLE, static_cast<RHIVkGPUPipelineManager*>(m_Device->GetPipelineCache())->GetVkPipelineCache(), 1, &pipelineInfo, nullptr, &m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight]) != VK_SUCCESS)
+    if (m_Device->vkCreateRayTracingPipelinesKHR(m_VkDevice, VK_NULL_HANDLE, static_cast<RHIVkGPUPipelineManager*>(m_Device->GetPipelineCache())->GetVkPipelineCache(), 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("[RHIVkGPUPipeline::AllocRayTracingPipeline]: failed to create Ray Tracing pipeline!");
     }
+    cache->StorePipeline(key, pipeline);
 }
 
 const EPipelineBindPoint RHIVkGPUPipeline::GetBindPoint() const
@@ -356,22 +459,10 @@ const EPipelineBindPoint RHIVkGPUPipeline::GetBindPoint() const
 
 void RHIVkGPUPipeline::FreePipelineLayout(UInt32 frameIndex)
 {
-    if (m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE)
-    {
-        vkDestroyPipelineLayout(m_VkDevice, m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight], nullptr);
-        LOG_DEBUG("## Destroy Vulkan Pipeline Layout ##");
-        m_VkGraphicsPipelineLayouts[frameIndex % m_MaxFramesInFlight] = VK_NULL_HANDLE;
-    }
 }
 
 void RHIVkGPUPipeline::FreePipeline(UInt32 frameIndex)
 {
-    if (m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight] != VK_NULL_HANDLE)
-    {
-        vkDestroyPipeline(m_VkDevice, m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight], nullptr);
-        LOG_DEBUG("## Destroy Vulkan Graphic Pipeline ##");
-        m_VkGraphicPipelines[frameIndex % m_MaxFramesInFlight] = VK_NULL_HANDLE;
-    }
 }
 
 void RHIVkGPUPipeline::BindPipelineStateObject(RHIPipelineState* pso)
@@ -381,30 +472,10 @@ void RHIVkGPUPipeline::BindPipelineStateObject(RHIPipelineState* pso)
 
 void RHIVkGPUPipeline::FreeAllPipelineLayouts()
 {
-    for(int i = 0; i < m_MaxFramesInFlight; ++i)
-    {
-        if (m_VkGraphicsPipelineLayouts[i] != VK_NULL_HANDLE)
-        {
-            vkDestroyPipelineLayout(m_VkDevice, m_VkGraphicsPipelineLayouts[i], nullptr);
-            m_VkGraphicsPipelineLayouts[i] = VK_NULL_HANDLE;
-        }
-    }
-    LOG_DEBUG("## Destroy All Vulkan Pipeline Layouts ##");
-    m_VkGraphicsPipelineLayouts.clear();
 }
 
 void RHIVkGPUPipeline::FreeAllPipelines()
 {
-    for(int i = 0; i < m_MaxFramesInFlight; ++i)
-    {
-        if (m_VkGraphicPipelines[i] != VK_NULL_HANDLE)
-        {
-            vkDestroyPipeline(m_VkDevice, m_VkGraphicPipelines[i], nullptr);
-            m_VkGraphicPipelines[i] = VK_NULL_HANDLE;
-        }
-    }
-    LOG_DEBUG("## Destroy All Vulkan Pipelines ##");
-    m_VkGraphicPipelines.clear();
 }
 
 } // namespace ArisenEngine::RHI
