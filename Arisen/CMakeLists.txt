@@ -144,11 +144,20 @@ message(STATUS "Unified binary output dir: ${OUTPUT_DIR}")
 # Add C++ submodules and third-party libraries
 
 # 配置 tracy 作为动态库
-set(TRACY_STATIC OFF CACHE BOOL "" FORCE)
-set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
-add_subdirectory(3rdparty/tracy)
-set_target_properties(TracyClient PROPERTIES FOLDER "3rdparty")
-add_subdirectory(Tools/Profiler)
+option(ARISEN_ENABLE_PROFILER "Enable Tracy Profiler" ON)
+
+if(ARISEN_ENABLE_PROFILER)
+    set(ARISEN_PROFILER_ENABLED ON)
+    set(TRACY_ENABLE ON CACHE BOOL "" FORCE)
+    set(TRACY_STATIC OFF CACHE BOOL "" FORCE)
+    set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+    add_subdirectory(3rdparty/tracy)
+    set_target_properties(TracyClient PROPERTIES FOLDER "3rdparty")
+    add_compile_definitions(ARISEN_PROFILER_ENABLED=1)
+else()
+    set(ARISEN_PROFILER_ENABLED OFF)
+    add_compile_definitions(ARISEN_PROFILER_ENABLED=0)
+endif()
 
 add_subdirectory(Core/Core.Foundation)
 add_subdirectory(3rdparty/spdlog)

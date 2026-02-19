@@ -17,6 +17,6 @@ target_include_directories(Core.Foundation PUBLIC
 
 target_compile_definitions(Core.Foundation PRIVATE COREFOUNDATION_EXPORTS)
 
-target_link_libraries(Core.Foundation PRIVATE Profiler)
+# No private dependencies for Core.Foundation
 
 set_target_properties(Core.Foundation PROPERTIES FOLDER "Core")

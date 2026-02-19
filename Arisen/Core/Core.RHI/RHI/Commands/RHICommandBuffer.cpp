@@ -3,6 +3,7 @@
 #include "RHI/Core/RHIDevice.h"
 #include "RHI/Commands/RHICommandBufferPool.h"
 #include "Logger/Logger.h"
+#include "Profiler.h"
 
 namespace ArisenEngine::RHI
 {
@@ -99,10 +100,12 @@ namespace ArisenEngine::RHI
             RecordCommand<RHICmdBegin>(ERHICommandType::Begin, cmd);
         }
         m_State = ECommandBufferState::Recording;
+        ARISEN_PROFILE_ZONE("RHI::CommandBufferRecording");
     }
 
     void RHICommandBuffer::End()
     {
+        ARISEN_PROFILE_ZONE("RHI::CommandBufferRecordingEnd");
         RecordCommand<RHICmdEnd>(ERHICommandType::End, {});
         m_State = ECommandBufferState::Executable;
     }
@@ -434,6 +437,7 @@ namespace ArisenEngine::RHI
 
     void RHICommandBuffer::Replay(IRHICommandExecutor& executor)
     {
+        ARISEN_PROFILE_ZONE("RHI::CommandBufferReplay");
         size_t offset = 0;
         while (offset < m_CommandStream.size())
         {
