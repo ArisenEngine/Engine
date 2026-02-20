@@ -14,7 +14,7 @@ Build a high-performance, future-proof engine with a **modern C++ RHI**, a **Dat
 2.  **PSO Caching & Stability** 【Done】
     *   **Action**: Implement a **Global PSO Cache**. Decouple `VkPipeline` from `frameIndex`.
     *   **Action**: Solve remaining Vulkan validation errors in the `RayTracing` and `NativeEngine` tests.
-3.  **Tracy Profiler Integration**
+3.  **Tracy Profiler Integration** 【Done】
     *   **Action**: Establish `Core.Diagnostic` for instrumentation wrappers.
     *   **Action**: Instrument RHI CommandBuffer recording and execution.
 

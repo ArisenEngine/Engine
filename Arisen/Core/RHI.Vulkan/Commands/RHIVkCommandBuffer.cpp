@@ -339,13 +339,14 @@ void RHIVkExecutor::Begin(UInt32 frameIndex, UInt32 commandBufferUsage, const RH
     }
 }
 
-void RHIVkExecutor::End()
-{
-    if (::vkEndCommandBuffer(cmd->m_VkCommandBuffer) != VK_SUCCESS)
+    void RHIVkExecutor::End()
     {
-        LOG_FATAL("[RHIVkCommandBuffer::End]: failed to record command buffer!");
+        ARISEN_PROFILE_ZONE("Vk::End");
+        if (::vkEndCommandBuffer(cmd->m_VkCommandBuffer) != VK_SUCCESS)
+        {
+            LOG_FATAL("[RHIVkCommandBuffer::End]: failed to record command buffer!");
+        }
     }
-}
 
 
 
@@ -540,88 +541,92 @@ void RHIVkExecutor::BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firs
 
 
 
-void RHIVkExecutor::PushConstants(UInt32 offset, UInt32 size, const void* data, UInt32 stageFlags)
-{
-    UInt32 frameIndex = cmd->GetCurrentFrameIndex();
-    if (cmd->m_CurrentPipeline == nullptr)
+    void RHIVkExecutor::PushConstants(UInt32 offset, UInt32 size, const void* data, UInt32 stageFlags)
     {
-        LOG_FATAL("[RHIVkCommandBuffer::PushConstants] pipeline is null, should binding pipeline first.");
-        return;
+        ARISEN_PROFILE_ZONE("Vk::PushConstants");
+        UInt32 frameIndex = cmd->GetCurrentFrameIndex();
+        if (cmd->m_CurrentPipeline == nullptr)
+        {
+            LOG_FATAL("[RHIVkCommandBuffer::PushConstants] pipeline is null, should binding pipeline first.");
+            return;
+        }
+
+        RHIVkGPUPipeline* pipeline = static_cast<RHIVkGPUPipeline*>(cmd->m_CurrentPipeline);
+        ::vkCmdPushConstants(cmd->m_VkCommandBuffer, pipeline->GetPipelineLayout(frameIndex),
+            static_cast<VkShaderStageFlags>(stageFlags), offset, size, data);
     }
 
-    RHIVkGPUPipeline* pipeline = static_cast<RHIVkGPUPipeline*>(cmd->m_CurrentPipeline);
-    ::vkCmdPushConstants(cmd->m_VkCommandBuffer, pipeline->GetPipelineLayout(frameIndex),
-        static_cast<VkShaderStageFlags>(stageFlags), offset, size, data);
-}
-
-void RHIVkExecutor::CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst,
-            EImageLayout dstImageLayout, UInt32 regionCount, const RHIBufferImageCopy* regions)
-{
-    auto* vkDevice = cmd->GetVkDevice();
-    auto* srcBuf = vkDevice->GetBufferPool()->Get(srcBuffer);
-    auto* dstImg = vkDevice->GetImagePool()->Get(dst);
-
-    if (!srcBuf || !dstImg || !regions) return;
-
-    cmd->m_VkBufferImageCopies.clear();
-    cmd->m_VkBufferImageCopies.reserve(regionCount);
-    for (UInt32 i = 0; i < regionCount; ++i)
+    void RHIVkExecutor::CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst,
+                EImageLayout dstImageLayout, UInt32 regionCount, const RHIBufferImageCopy* regions)
     {
-        auto regionInfo = regions[i];
-        cmd->m_VkBufferImageCopies.emplace_back(BufferImageCopyRegion(regionInfo.bufferOffset,
-        regionInfo.bufferRowLength,
-        regionInfo.bufferImageHeight,
-        regionInfo.imageSubresource,
-        regionInfo.offsetX, regionInfo.offsetY, regionInfo.offsetZ,
-        regionInfo.width, regionInfo.height, regionInfo.depth));
-    }
-    
-    ::vkCmdCopyBufferToImage(cmd->m_VkCommandBuffer,
-        srcBuf->buffer, dstImg->image,
-        static_cast<VkImageLayout>(dstImageLayout), static_cast<uint32_t>(cmd->m_VkBufferImageCopies.size()), cmd->m_VkBufferImageCopies.data()
-        );
-    
-    cmd->CaptureResource(srcBuffer);
-    cmd->CaptureResource(dst);
-}
+        ARISEN_PROFILE_ZONE("Vk::CopyBufferToImage");
+        auto* vkDevice = cmd->GetVkDevice();
+        auto* srcBuf = vkDevice->GetBufferPool()->Get(srcBuffer);
+        auto* dstImg = vkDevice->GetImagePool()->Get(dst);
 
+        if (!srcBuf || !dstImg || !regions) return;
 
-void RHIVkExecutor::CopyImage(RHIImageHandle src, EImageLayout srcLayout, RHIImageHandle dst, EImageLayout dstLayout, UInt32 regionCount, const RHIImageCopy* pRegions)
-{
-    auto* vkDevice = cmd->GetVkDevice();
-    auto* srcImg = vkDevice->GetImagePool()->Get(src);
-    auto* dstImg = vkDevice->GetImagePool()->Get(dst);
-
-    if (!srcImg || !dstImg || !pRegions) return;
-
-    Containers::Vector<VkImageCopy> vkRegions;
-    vkRegions.reserve(regionCount);
-    for (UInt32 i = 0; i < regionCount; ++i)
-    {
-        vkRegions.emplace_back(ImageCopyRegion(
-            pRegions[i].srcSubresource, pRegions[i].srcOffset,
-            pRegions[i].dstSubresource, pRegions[i].dstOffset,
-            pRegions[i].extent));
+        cmd->m_VkBufferImageCopies.clear();
+        cmd->m_VkBufferImageCopies.reserve(regionCount);
+        for (UInt32 i = 0; i < regionCount; ++i)
+        {
+            auto regionInfo = regions[i];
+            cmd->m_VkBufferImageCopies.emplace_back(BufferImageCopyRegion(regionInfo.bufferOffset,
+            regionInfo.bufferRowLength,
+            regionInfo.bufferImageHeight,
+            regionInfo.imageSubresource,
+            regionInfo.offsetX, regionInfo.offsetY, regionInfo.offsetZ,
+            regionInfo.width, regionInfo.height, regionInfo.depth));
+        }
+        
+        ::vkCmdCopyBufferToImage(cmd->m_VkCommandBuffer,
+            srcBuf->buffer, dstImg->image,
+            static_cast<VkImageLayout>(dstImageLayout), static_cast<uint32_t>(cmd->m_VkBufferImageCopies.size()), cmd->m_VkBufferImageCopies.data()
+            );
+        
+        cmd->CaptureResource(srcBuffer);
+        cmd->CaptureResource(dst);
     }
 
-    ::vkCmdCopyImage(cmd->m_VkCommandBuffer,
-        srcImg->image, static_cast<VkImageLayout>(srcLayout),
-        dstImg->image, static_cast<VkImageLayout>(dstLayout),
-        regionCount, vkRegions.data());
 
-    cmd->CaptureResource(dst);
-}
+    void RHIVkExecutor::CopyImage(RHIImageHandle src, EImageLayout srcLayout, RHIImageHandle dst, EImageLayout dstLayout, UInt32 regionCount, const RHIImageCopy* pRegions)
+    {
+        ARISEN_PROFILE_ZONE("Vk::CopyImage");
+        auto* vkDevice = cmd->GetVkDevice();
+        auto* srcImg = vkDevice->GetImagePool()->Get(src);
+        auto* dstImg = vkDevice->GetImagePool()->Get(dst);
+
+        if (!srcImg || !dstImg || !pRegions) return;
+
+        Containers::Vector<VkImageCopy> vkRegions;
+        vkRegions.reserve(regionCount);
+        for (UInt32 i = 0; i < regionCount; ++i)
+        {
+            vkRegions.emplace_back(ImageCopyRegion(
+                pRegions[i].srcSubresource, pRegions[i].srcOffset,
+                pRegions[i].dstSubresource, pRegions[i].dstOffset,
+                pRegions[i].extent));
+        }
+
+        ::vkCmdCopyImage(cmd->m_VkCommandBuffer,
+            srcImg->image, static_cast<VkImageLayout>(srcLayout),
+            dstImg->image, static_cast<VkImageLayout>(dstLayout),
+            regionCount, vkRegions.data());
+
+        cmd->CaptureResource(dst);
+    }
 
 
-void ArisenEngine::RHI::RHIVkExecutor::DoPipelineBarrier(
-    EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
-    const RHIMemoryBarrier* pMemoryBarriers, UInt32 memoryBarrierCount,
-    const RHIImageMemoryBarrier* pImageMemoryBarriers, UInt32 imageMemoryBarrierCount,
-    const RHIBufferMemoryBarrier* pBufferMemoryBarriers, UInt32 bufferMemoryBarrierCount)
-{
-    cmd->m_VkMemoryBarriers.clear();
-    cmd->m_VkMemoryBarriers.reserve(memoryBarrierCount);
-    cmd->m_VkBufferMemoryBarriers.clear();
+    void ArisenEngine::RHI::RHIVkExecutor::DoPipelineBarrier(
+        EPipelineStageFlag srcStage, EPipelineStageFlag dstStage, UInt32 dependency,
+        const RHIMemoryBarrier* pMemoryBarriers, UInt32 memoryBarrierCount,
+        const RHIImageMemoryBarrier* pImageMemoryBarriers, UInt32 imageMemoryBarrierCount,
+        const RHIBufferMemoryBarrier* pBufferMemoryBarriers, UInt32 bufferMemoryBarrierCount)
+    {
+        ARISEN_PROFILE_ZONE("Vk::PipelineBarrier");
+        cmd->m_VkMemoryBarriers.clear();
+        cmd->m_VkMemoryBarriers.reserve(memoryBarrierCount);
+        cmd->m_VkBufferMemoryBarriers.clear();
     cmd->m_VkBufferMemoryBarriers.reserve(bufferMemoryBarrierCount);
     cmd->m_VkImageMemoryBarriers.clear();
     cmd->m_VkImageMemoryBarriers.reserve(imageMemoryBarrierCount);
@@ -1090,10 +1095,11 @@ void RHIVkCommandBuffer::ResetInternal()
     SetState(ECommandBufferState::Initial);
 }
 
-void RHIVkExecutor::BuildAccelerationStructures(UInt32 infoCount, const RHIAccelerationStructureBuildGeometryInfo* pInfos, const RHIAccelerationStructureBuildRangeInfo* const* ppBuildRangeInfos)
-{
-    auto* vkDevice = static_cast<RHIVkDevice*>(cmd->GetDevice());
-    if (!vkDevice->vkCmdBuildAccelerationStructuresKHR) return;
+    void RHIVkExecutor::BuildAccelerationStructures(UInt32 infoCount, const RHIAccelerationStructureBuildGeometryInfo* pInfos, const RHIAccelerationStructureBuildRangeInfo* const* ppBuildRangeInfos)
+    {
+        ARISEN_PROFILE_ZONE("Vk::BuildAccelerationStructures");
+        auto* vkDevice = static_cast<RHIVkDevice*>(cmd->GetDevice());
+        if (!vkDevice->vkCmdBuildAccelerationStructuresKHR) return;
 
     Containers::Vector<VkAccelerationStructureBuildGeometryInfoKHR> vkInfos;
     vkInfos.reserve(infoCount);
@@ -1180,10 +1186,11 @@ void RHIVkExecutor::BuildAccelerationStructures(UInt32 infoCount, const RHIAccel
     LOG_DEBUGF("Built {0} acceleration structures", infoCount);
 }
 
-void RHIVkExecutor::TraceRays(const RHITraceRaysDescriptor& desc)
-{
-    auto* vkDevice = static_cast<RHIVkDevice*>(cmd->GetDevice());
-    if (!vkDevice->vkCmdTraceRaysKHR) return;
+    void RHIVkExecutor::TraceRays(const RHITraceRaysDescriptor& desc)
+    {
+        ARISEN_PROFILE_ZONE("Vk::TraceRays");
+        auto* vkDevice = static_cast<RHIVkDevice*>(cmd->GetDevice());
+        if (!vkDevice->vkCmdTraceRaysKHR) return;
 
     VkStridedDeviceAddressRegionKHR raygenRegion{};
     raygenRegion.deviceAddress = desc.raygenShaderRecord.deviceAddress;
