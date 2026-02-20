@@ -18,6 +18,7 @@ namespace ArisenEngine::RHI
 
     void RHICommandBuffer::BeginRenderPass(RenderPassBeginDesc&& desc)
     {
+        ARISEN_PROFILE_ZONE("RHI::BeginRenderPass");
         RecordCommand<RHICmdBeginRenderPass>(ERHICommandType::BeginRenderPass, 
             { desc.renderPass, desc.frameBuffer, desc.subpassContents, desc.clearValueCount }, 
             desc.pClearValues, desc.clearValueCount * sizeof(RHIClearValue));
@@ -25,11 +26,13 @@ namespace ArisenEngine::RHI
 
     void RHICommandBuffer::EndRenderPass()
     {
+        ARISEN_PROFILE_ZONE("RHI::EndRenderPass");
         RecordCommand<RHICmdEndRenderPass>(ERHICommandType::EndRenderPass, {});
     }
 
     void RHICommandBuffer::BeginRendering(const RHIRenderingInfo& info)
     {
+        ARISEN_PROFILE_ZONE("RHI::BeginRendering");
         // RenderingInfo has nested pointers. We need to serialize everything.
         size_t totalExtraSize = sizeof(RHIRenderingInfo);
         totalExtraSize += info.colorAttachmentCount * sizeof(RHIRenderingAttachmentInfo);
@@ -79,6 +82,7 @@ namespace ArisenEngine::RHI
 
     void RHICommandBuffer::EndRendering()
     {
+        ARISEN_PROFILE_ZONE("RHI::EndRendering");
         RecordCommand<RHICmdEndRendering>(ERHICommandType::EndRendering, {});
     }
 
@@ -189,16 +193,19 @@ namespace ArisenEngine::RHI
 
     void RHICommandBuffer::BindPipeline(RHIPipelineHandle pipeline)
     {
+        ARISEN_PROFILE_ZONE("RHI::BindPipeline");
         RecordCommand<RHICmdBindPipeline>(ERHICommandType::BindPipeline, { pipeline });
     }
 
     void RHICommandBuffer::Draw(UInt32 vertexCount, UInt32 instanceCount, UInt32 firstVertex, UInt32 firstInstance, UInt32 firstBinding)
     {
+        ARISEN_PROFILE_ZONE("RHI::Draw");
         RecordCommand<RHICmdDraw>(ERHICommandType::Draw, { vertexCount, instanceCount, firstVertex, firstInstance, firstBinding });
     }
 
     void RHICommandBuffer::DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 firstIndex, UInt32 vertexOffset, UInt32 firstInstance, UInt32 firstBinding)
     {
+        ARISEN_PROFILE_ZONE("RHI::DrawIndexed");
         RecordCommand<RHICmdDrawIndexed>(ERHICommandType::DrawIndexed, { indexCount, instanceCount, firstIndex, vertexOffset, firstInstance, firstBinding });
     }
 
@@ -219,6 +226,7 @@ namespace ArisenEngine::RHI
 
     void RHICommandBuffer::Dispatch(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ)
     {
+        ARISEN_PROFILE_ZONE("RHI::Dispatch");
         RecordCommand<RHICmdDispatch>(ERHICommandType::Dispatch, { groupCountX, groupCountY, groupCountZ });
     }
 
@@ -264,6 +272,7 @@ namespace ArisenEngine::RHI
         const RHIImageMemoryBarrier* pImageMemoryBarriers, UInt32 imageMemoryBarrierCount,
         const RHIBufferMemoryBarrier* pBufferMemoryBarriers, UInt32 bufferMemoryBarrierCount)
     {
+        ARISEN_PROFILE_ZONE("RHI::PipelineBarrier");
         RHICmdPipelineBarrier cmd{ srcStage, dstStage, dependency, memoryBarrierCount, imageMemoryBarrierCount, bufferMemoryBarrierCount };
         
         const size_t headerSize = sizeof(RHICmdHeader);
@@ -374,6 +383,7 @@ namespace ArisenEngine::RHI
 
     void RHICommandBuffer::TraceRays(const RHITraceRaysDescriptor& desc)
     {
+        ARISEN_PROFILE_ZONE("RHI::TraceRays");
         RecordCommand<RHICmdTraceRays>(ERHICommandType::TraceRays, { desc });
     }
 

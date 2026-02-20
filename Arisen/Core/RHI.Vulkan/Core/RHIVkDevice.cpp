@@ -20,6 +20,7 @@
 #include "../../Core.RHI/RHI/Core/RHIInspector.h"
 #include "Descriptors/RHIVkDescriptorHeap.h"
 #include "Descriptors/RHIVkBindlessDescriptorTable.h"
+#include "Profiler.h"
 
 using namespace ArisenEngine::RHI;
 
@@ -149,10 +150,11 @@ ArisenEngine::RHI::RHIMemoryAllocator* ArisenEngine::RHI::RHIVkDevice::GetMemory
     return m_MemoryAllocator;
 }
 
-void ArisenEngine::RHI::RHIVkDevice::DeviceWaitIdle() const
-{
-    vkDeviceWaitIdle(m_VkDevice);
-}
+    void ArisenEngine::RHI::RHIVkDevice::DeviceWaitIdle() const
+    {
+        ARISEN_PROFILE_ZONE("Vk::DeviceWaitIdle");
+        vkDeviceWaitIdle(m_VkDevice);
+    }
 
 void ArisenEngine::RHI::RHIVkDevice::GraphicQueueWaitIdle() const
 {
@@ -195,14 +197,15 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::GetCompletedSubm
 }
 
 
-RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBufferHandle handle, const RHISubmitDescriptor* descriptor)
-{
-    auto* commandBuffer = GetCommandBuffer(handle);
-    if (!commandBuffer) return 0;
-    
-    ASSERT(commandBuffer->ReadyForSubmit());
+    RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBufferHandle handle, const RHISubmitDescriptor* descriptor)
+    {
+        ARISEN_PROFILE_ZONE("Vk::Submit");
+        auto* commandBuffer = GetCommandBuffer(handle);
+        if (!commandBuffer) return 0;
+        
+        ASSERT(commandBuffer->ReadyForSubmit());
 
-    UInt32 frameIndex = commandBuffer->GetCurrentFrameIndex();
+        UInt32 frameIndex = commandBuffer->GetCurrentFrameIndex();
 
     std::lock_guard<std::mutex> lock(m_SubmitMutex);
     m_CurrentFrameIndex.store(frameIndex, std::memory_order_release);
@@ -418,18 +421,19 @@ void ArisenEngine::RHI::RHIVkDevice::SetObjectName(ERHIObjectType type, UInt64 h
 
 // --- Handle-based Buffer Operations ---
 
-bool ArisenEngine::RHI::RHIVkDevice::AllocBuffer(RHIBufferHandle handle, RHIBufferDescriptor&& desc)
-{
-    auto* buffer = m_BufferPool->Get(handle);
-    if (!buffer) return false;
+    bool ArisenEngine::RHI::RHIVkDevice::AllocBuffer(RHIBufferHandle handle, RHIBufferDescriptor&& desc)
+    {
+        ARISEN_PROFILE_ZONE("Vk::AllocBuffer");
+        auto* buffer = m_BufferPool->Get(handle);
+        if (!buffer) return false;
 
-    auto bufferInfo = BufferCreateInfo(
-        desc.createFlagBits,
-        desc.size,
-        desc.usage,
-        desc.sharingMode,
-        desc.queueFamilyIndexCount,
-        (const uint32_t*)desc.pQueueFamilyIndices);
+        auto bufferInfo = BufferCreateInfo(
+            desc.createFlagBits,
+            desc.size,
+            desc.usage,
+            desc.sharingMode,
+            desc.queueFamilyIndexCount,
+            (const uint32_t*)desc.pQueueFamilyIndices);
 
     buffer->size = desc.size;
     buffer->range = desc.size;
@@ -453,10 +457,11 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocBuffer(RHIBufferHandle handle, RHIBuff
     return true;
 }
 
-bool ArisenEngine::RHI::RHIVkDevice::AllocBufferDeviceMemory(RHIBufferHandle handle)
-{
-    auto* buffer = m_BufferPool->Get(handle);
-    if (!buffer || buffer->buffer == VK_NULL_HANDLE || !buffer->state) return false;
+    bool ArisenEngine::RHI::RHIVkDevice::AllocBufferDeviceMemory(RHIBufferHandle handle)
+    {
+        ARISEN_PROFILE_ZONE("Vk::AllocBufferMemory");
+        auto* buffer = m_BufferPool->Get(handle);
+        if (!buffer || buffer->buffer == VK_NULL_HANDLE || !buffer->state) return false;
 
     // NOTE: We use explicit VMA_MEMORY_USAGE_* flags (like GPU_ONLY) instead of VMA_MEMORY_USAGE_AUTO*
     // because VMA_MEMORY_USAGE_AUTO* requires additional alignment/usage information when used with 
@@ -713,20 +718,21 @@ ArisenEngine::UInt64 ArisenEngine::RHI::RHIVkDevice::GetBufferDeviceAddress(RHIB
     return addr;
 }
 
-bool ArisenEngine::RHI::RHIVkDevice::AllocImage(RHIImageHandle handle, RHIImageDescriptor&& desc)
-{
-    auto* image = m_ImagePool->Get(handle);
-    if (!image) return false;
+    bool ArisenEngine::RHI::RHIVkDevice::AllocImage(RHIImageHandle handle, RHIImageDescriptor&& desc)
+    {
+        ARISEN_PROFILE_ZONE("Vk::AllocImage");
+        auto* image = m_ImagePool->Get(handle);
+        if (!image) return false;
 
-    auto imageInfo = ImageCreateInfo(
-        desc.imageType,
-        desc.width, desc.height, desc.depth,
-        desc.mipLevels, desc.arrayLayers,
-        desc.format, desc.tiling,
-        desc.imageLayout, desc.usage,
-        desc.sampleCount, desc.sharingMode,
-        desc.queueFamilyIndexCount,
-        (const uint32_t*)desc.pQueueFamilyIndices);
+        auto imageInfo = ImageCreateInfo(
+            desc.imageType,
+            desc.width, desc.height, desc.depth,
+            desc.mipLevels, desc.arrayLayers,
+            desc.format, desc.tiling,
+            desc.imageLayout, desc.usage,
+            desc.sampleCount, desc.sharingMode,
+            desc.queueFamilyIndexCount,
+            (const uint32_t*)desc.pQueueFamilyIndices);
 
     if (vkCreateImage(m_VkDevice, &imageInfo, nullptr, &image->image) != VK_SUCCESS)
     {
@@ -752,10 +758,11 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImage(RHIImageHandle handle, RHIImageD
     return true;
 }
 
-bool ArisenEngine::RHI::RHIVkDevice::AllocImageDeviceMemory(RHIImageHandle handle)
-{
-    auto* image = m_ImagePool->Get(handle);
-    if (!image || image->image == VK_NULL_HANDLE || !image->state) return false;
+    bool ArisenEngine::RHI::RHIVkDevice::AllocImageDeviceMemory(RHIImageHandle handle)
+    {
+        ARISEN_PROFILE_ZONE("Vk::AllocImageMemory");
+        auto* image = m_ImagePool->Get(handle);
+        if (!image || image->image == VK_NULL_HANDLE || !image->state) return false;
 
     // NOTE: Use explicit VMA_MEMORY_USAGE_* flags to avoid assertions in manual allocation paths.
     VmaMemoryUsage usage = VMA_MEMORY_USAGE_GPU_ONLY;
