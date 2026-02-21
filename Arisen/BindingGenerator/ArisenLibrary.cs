@@ -15,6 +15,8 @@ public abstract class ArisenLibrary : ILibrary
         options.Verbose = true;
         options.CheckSymbols = false;
         options.Compilation.DebugMode = true;
+        
+        // All cleanup will be handled manually in Preprocess due to CppSharp version differences.
 
         var parserOptions = driver.ParserOptions;
         parserOptions.Setup(TargetPlatform.Windows);
