@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using CppSharp;
 using BindingGenerator.Modules;
 
@@ -12,35 +13,98 @@ internal static class Program
     {
         ParseArguments(args);
 
-        Console.WriteLine($"Source: {GlobalConfig.s_SourceCode}");
-        Console.WriteLine($"Output: {GlobalConfig.s_Output}");
-        Console.WriteLine($"Library: {GlobalConfig.s_LibraryPath}");
-
         if (string.IsNullOrEmpty(GlobalConfig.s_SourceCode) || string.IsNullOrEmpty(GlobalConfig.s_Output))
         {
             Console.WriteLine("Missing required arguments: --source_code and --output");
             return;
         }
 
-        // Clean output directory
         var finalOutputDir = Path.Combine(GlobalConfig.s_Output, GlobalConfig.s_ProjectName);
         if (Directory.Exists(finalOutputDir))
         {
-            DeleteDirectory(finalOutputDir, new List<string>(), new List<string>());
+            DeleteDirectory(finalOutputDir);
         }
 
-        // Execute Modules
-        var modules = new List<ILibrary>
-        {
-            new CoreModule(),
-            new PlatformModule(),
-            new DebuggerModule()
-        };
+        Console.WriteLine("Generating unified bindings...");
+        ConsoleDriver.Run(new ArisenUnifiedLibrary());
 
-        foreach (var module in modules)
+        Console.WriteLine("Patching DllImport names...");
+        PatchDllImports(finalOutputDir);
+
+        Console.WriteLine("Generating AutoBinding.csproj...");
+        GenerateProjectFile(finalOutputDir);
+    }
+
+    static void GenerateProjectFile(string outputDir)
+    {
+        if (!Directory.Exists(outputDir))
         {
-            Console.WriteLine($"Generating binding for {module.GetType().Name}...");
-            ConsoleDriver.Run(module);
+            Directory.CreateDirectory(outputDir);
+        }
+
+        var projPath = Path.Combine(outputDir, "AutoBinding.csproj");
+        var content = @"<Project Sdk=""Microsoft.NET.Sdk"">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <BaseOutputPath>..\..\x64\</BaseOutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include=""AutoBinding.csproj"" />
+    <Reference Include=""CppSharp.Runtime"">
+      <HintPath>..\..\3rdparty\CppSharp\CppSharp.Runtime.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove=""ArisenNative-symbols.cpp"" />
+    <Compile Remove=""Std-symbols.cpp"" />
+  </ItemGroup>
+
+</Project>
+";
+        File.WriteAllText(projPath, content);
+    }
+
+    static void PatchDllImports(string rootDir)
+    {
+        if (!Directory.Exists(rootDir)) return;
+
+        var files = Directory.GetFiles(rootDir, "*.cs", SearchOption.AllDirectories);
+        foreach (var file in files)
+        {
+            var content = File.ReadAllText(file);
+            var relativePath = Path.GetRelativePath(rootDir, file).Replace("\\", "/");
+
+            string dllName = "Core.Foundation.dll"; // Default
+
+            var fileName = Path.GetFileName(file);
+            if (fileName == "Logger.cs" || fileName == "Log.cs") 
+                dllName = "Core.Diagnostic.dll";
+            else if (fileName == "EngineInit.cs" || fileName == "RenderWindowAPI.h" || fileName == "RenderWindowAPI.cs") 
+                dllName = "Core.HAL.dll";
+            else if (fileName == "RHIHandle.cs") 
+                dllName = "Core.RHI.dll";
+            else if (fileName == "ShaderCompilerAPI.cs") 
+                dllName = "Core.ShaderCompiler.dll";
+            else if (fileName == "Assertion.cs" || fileName == "ILogHandler.cs" || fileName == "String.cs" || fileName == "Std.cs")
+                dllName = "Core.Foundation.dll";
+
+            // Replace DllImport("ArisenNative" ...) with the correct DLL name
+            var patchedContent = content.Replace("DllImport(\"ArisenNative\"", $"DllImport(\"{dllName}\"");
+            
+            if (content != patchedContent)
+            {
+                File.WriteAllText(file, patchedContent);
+                Console.WriteLine($"Patched {relativePath} -> {dllName}");
+            }
         }
     }
 
@@ -57,18 +121,22 @@ internal static class Program
         }
     }
 
-    static void DeleteDirectory(string directoryPath, List<string> skipFolders, List<string> excludedExtensions)
+    static void DeleteDirectory(string directoryPath)
     {
         if (!Directory.Exists(directoryPath)) return;
+
         foreach (var file in Directory.GetFiles(directoryPath))
         {
-            if (!excludedExtensions.Contains(Path.GetExtension(file)))
-                File.Delete(file);
+            File.Delete(file);
         }
+
         foreach (var dir in Directory.GetDirectories(directoryPath))
         {
-            if (!skipFolders.Contains(Path.GetFileName(dir)))
-                DeleteDirectory(dir, skipFolders, excludedExtensions);
+            var dirName = Path.GetFileName(dir);
+            if (dirName == "bin" || dirName == "obj")
+                continue;
+
+            Directory.Delete(dir, true);
         }
     }
 }

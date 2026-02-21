@@ -6,20 +6,18 @@ using BindingGenerator.Passes;
 
 namespace BindingGenerator.Modules;
 
-public class PlatformModule : ArisenLibrary
+public class HALModule : ArisenLibrary
 {
-    public override string GetLibraryName() => "Core.Platform";
+    public override string GetLibraryName() => "Core.HAL";
 
     public override void SetupModule(Driver driver)
     {
         var options = driver.Options;
-        options.OutputDir = Path.Combine(GlobalConfig.s_Output, GlobalConfig.s_ProjectName, "NativePlatform");
-        
         var module = options.AddModule(GetLibraryName());
-        module.OutputNamespace = GlobalConfig.GetNamespace("NativePlatform");
+        module.OutputNamespace = GlobalConfig.GetNamespace("NativeHAL");
         
+        module.Headers.Add(@"Common/EngineInit.h");
         module.Headers.Add(@"Windowing/RenderWindowAPI.h");
-        module.Headers.Add(@"ShaderCompiler/ShaderCompilerAPI.h");
         
         module.LibraryDirs.Add(GlobalConfig.s_LibraryPath);
     }
@@ -28,8 +26,8 @@ public class PlatformModule : ArisenLibrary
     {
         foreach (var unit in ctx.TranslationUnits)
         {
-            if (unit.IsSystemHeader) continue;
-            unit.Ignore = false;
+            if (unit.FileName.Contains("EngineInit.h") || unit.FileName.Contains("RenderWindowAPI.h"))
+                unit.Ignore = false;
         }
     }
 
