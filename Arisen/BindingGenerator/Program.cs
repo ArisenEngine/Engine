@@ -1,13 +1,50 @@
-﻿// Program.cs
-
-using BindingGenerator.Debugger;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using CppSharp;
+using BindingGenerator.Modules;
 
 namespace BindingGenerator;
 
 internal static class Program
 {
     static void Main(string[] args)
+    {
+        ParseArguments(args);
+
+        Console.WriteLine($"Source: {GlobalConfig.s_SourceCode}");
+        Console.WriteLine($"Output: {GlobalConfig.s_Output}");
+        Console.WriteLine($"Library: {GlobalConfig.s_LibraryPath}");
+
+        if (string.IsNullOrEmpty(GlobalConfig.s_SourceCode) || string.IsNullOrEmpty(GlobalConfig.s_Output))
+        {
+            Console.WriteLine("Missing required arguments: --source_code and --output");
+            return;
+        }
+
+        // Clean output directory
+        var finalOutputDir = Path.Combine(GlobalConfig.s_Output, GlobalConfig.s_ProjectName);
+        if (Directory.Exists(finalOutputDir))
+        {
+            DeleteDirectory(finalOutputDir, new List<string>(), new List<string>());
+        }
+
+        // Execute Modules
+        var modules = new List<ILibrary>
+        {
+            new CoreModule(),
+            new PlatformModule(),
+            new DebuggerModule()
+        };
+
+        foreach (var module in modules)
+        {
+            Console.WriteLine($"Generating binding for {module.GetType().Name}...");
+            ConsoleDriver.Run(module);
+        }
+    }
+
+    static void ParseArguments(string[] args)
     {
         for (int i = 0; i < args.Length; i++)
         {
@@ -18,44 +55,20 @@ internal static class Program
             else if (args[i] == "--library" && i + 1 < args.Length)
                 GlobalConfig.s_LibraryPath = args[i + 1];
         }
-
-        Console.WriteLine($"Start Generate Binding, source code root : {GlobalConfig.s_SourceCode} , output root : {GlobalConfig.s_Output}, library : {GlobalConfig.s_LibraryPath}");
-
-        DeleteDirectory(
-            Path.GetFullPath(Path.Combine(GlobalConfig.s_Output, GlobalConfig.s_ProjectName)),
-            new List<string>() { "obj" }, new List<string>() { ".csproj" , ".gitignore"});
-        
-        // Generate both modules with distinct namespaces
-        ConsoleDriver.Run(new DebuggerLibrary());
-        ConsoleDriver.Run(new PlatformLibrary());
     }
 
     static void DeleteDirectory(string directoryPath, List<string> skipFolders, List<string> excludedExtensions)
     {
-        var directoryInfo = new DirectoryInfo(directoryPath);
-        if (skipFolders.Contains(directoryInfo.Name))
-            return;
-
-        bool hasSkipFile = false;
-        var files = Directory.GetFiles(directoryPath);
-        foreach (var file in files)
+        if (!Directory.Exists(directoryPath)) return;
+        foreach (var file in Directory.GetFiles(directoryPath))
         {
-            var fileInfo = new FileInfo(file);
-            if (excludedExtensions.Count > 0 && excludedExtensions.Contains(fileInfo.Extension))
-            {
-                hasSkipFile = true;
-                continue;
-            }
-
-            File.Delete(file);
+            if (!excludedExtensions.Contains(Path.GetExtension(file)))
+                File.Delete(file);
         }
-
-        foreach (var directory in Directory.GetDirectories(directoryPath))
+        foreach (var dir in Directory.GetDirectories(directoryPath))
         {
-            DeleteDirectory(directory, skipFolders, excludedExtensions);
+            if (!skipFolders.Contains(Path.GetFileName(dir)))
+                DeleteDirectory(dir, skipFolders, excludedExtensions);
         }
-
-        if (!hasSkipFile)
-            Directory.Delete(directoryPath);
     }
 }

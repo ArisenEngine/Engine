@@ -22,6 +22,7 @@ internal static class ArisenInstance
         bool isInitializeDone = true;
         
         isInitializeDone &= Logger.Initialize(ArisenApplication.s_IsInEditor);
+        isInitializeDone &= Bootstrap.Initialize();
 
         if (isInitializeDone)
         {
