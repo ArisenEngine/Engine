@@ -29,6 +29,19 @@ public abstract class ArisenLibrary : ILibrary
         parserOptions.AddDefines("_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH");
         parserOptions.AddDefines("ARISEN_AUTOBINDING=1");
         parserOptions.AddDefines("_XM_NO_INTRINSICS_");
+        
+        // Define exports to make symbols bindable
+        parserOptions.AddDefines("COREFOUNDATION_EXPORTS");
+        parserOptions.AddDefines("COREDIAGNOSTIC_EXPORTS");
+        parserOptions.AddDefines("COREHAL_EXPORTS");
+        parserOptions.AddDefines("CORE_RHI_EXPORTS");
+        parserOptions.AddDefines("CORE_SHADERCOMPILER_EXPORTS");
+
+        parserOptions.AddDefines("FOUNDATION_DLL=__declspec(dllexport)");
+        parserOptions.AddDefines("DIAGNOSTIC_DLL=__declspec(dllexport)");
+        parserOptions.AddDefines("HAL_DLL=__declspec(dllexport)");
+        parserOptions.AddDefines("RHI_DLL=__declspec(dllexport)");
+        parserOptions.AddDefines("SHADER_COMPILER_DLL=__declspec(dllexport)");
 
         try { parserOptions.AddArguments("-std=c++23"); } catch { }
 

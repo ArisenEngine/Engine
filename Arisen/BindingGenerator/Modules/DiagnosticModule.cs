@@ -5,17 +5,15 @@ using CppSharp.Generators;
 
 namespace BindingGenerator.Modules;
 
-public class DebuggerModule : ArisenLibrary
+public class DiagnosticModule : ArisenLibrary
 {
-    public override string GetLibraryName() => "Core.Debugger";
+    public override string GetLibraryName() => "Core.Diagnostic";
 
     public override void SetupModule(Driver driver)
     {
         var options = driver.Options;
-        options.OutputDir = Path.Combine(GlobalConfig.s_Output, GlobalConfig.s_ProjectName, "NativeDebugger");
-        
         var module = options.AddModule(GetLibraryName());
-        module.OutputNamespace = GlobalConfig.GetNamespace("NativeDebugger");
+        module.OutputNamespace = GlobalConfig.GetNamespace("NativeDiagnostic");
         
         module.Headers.Add(@"Logger/Logger.h");
         
@@ -26,8 +24,8 @@ public class DebuggerModule : ArisenLibrary
     {
         foreach (var unit in ctx.TranslationUnits)
         {
-            if (unit.IsSystemHeader) continue;
-            unit.Ignore = false;
+            if (unit.FileName.Contains("Logger.h"))
+                unit.Ignore = false;
         }
     }
 }
