@@ -28,8 +28,10 @@ namespace ArisenEngine::RHI
          */
         static void Dispose();
 
+#ifndef ARISEN_AUTOBINDING
     private:
         static inline GraphicsAPI _api_type { GraphicsAPI::None };
         static inline void* _rhi_dll { nullptr }; // Using void* to avoid including Windows.h in public header
+#endif
     };
 } // namespace ArisenEngine::RHI
