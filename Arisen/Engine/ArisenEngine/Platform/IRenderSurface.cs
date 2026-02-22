@@ -1,8 +1,7 @@
-﻿namespace ArisenEngine.HAL;
+namespace ArisenEngine.Platform;
 
-internal interface IRenderSurface
+public interface IRenderSurface
 {
-    
     public IntPtr GetHandle();
     public void OnCreate();
     public void OnResizing();

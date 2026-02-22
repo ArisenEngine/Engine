@@ -1,21 +1,15 @@
 using System.Runtime.InteropServices;
-using ArisenEngine.Rendering;
-using Logger = ArisenEngine.Debugger.Logger;
+using ArisenEngine.Core.Diagnostics;
 
-namespace ArisenEngine.HAL;
+namespace ArisenEngine.Platform.Desktop;
 
 internal sealed class WindowsMessageHandle : MessageHandler
 {
-    
-    public WindowsMessageHandle(): base()
-    {
-       
-    }
+    public WindowsMessageHandle() : base() { }
 
     public override bool NextFrame()
     {
         Win32Native.NativeMessage msg;
-        
         bool isAlive = true;
         
         while (Win32Native.PeekMessage(out msg, IntPtr.Zero, 0, 0, Win32Native.PM_REMOVE) != 0)
@@ -24,7 +18,7 @@ internal sealed class WindowsMessageHandle : MessageHandler
             {
                 isAlive = false;
             }
-            else if (msg.msg == 0x0012) // WM_QUIT
+            else if (msg.msg == Win32Native.WM_QUIT)
             {
                 isAlive = false;
             }

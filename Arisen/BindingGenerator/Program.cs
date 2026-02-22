@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using CppSharp;
 using BindingGenerator.Modules;
@@ -28,6 +29,28 @@ internal static class Program
         Console.WriteLine("Generating unified bindings...");
         ConsoleDriver.Run(new ArisenUnifiedLibrary());
 
+        // Verify that CppSharp actually generated output
+        var csFiles = Directory.Exists(finalOutputDir)
+            ? Directory.GetFiles(finalOutputDir, "*.cs", SearchOption.AllDirectories)
+                .Where(f => !f.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar)
+                         && !f.Contains(Path.DirectorySeparatorChar + "bin" + Path.DirectorySeparatorChar))
+                .ToArray()
+            : Array.Empty<string>();
+
+        if (csFiles.Length == 0)
+        {
+            Console.Error.WriteLine("========================================");
+            Console.Error.WriteLine("ERROR: CppSharp produced no .cs files!");
+            Console.Error.WriteLine("Possible causes:");
+            Console.Error.WriteLine("  - MSVC environment not initialized (VCToolsInstallDir, WindowsSdkDir missing)");
+            Console.Error.WriteLine("  - Header include paths are incorrect");
+            Console.Error.WriteLine($"  - Output dir: {finalOutputDir}");
+            Console.Error.WriteLine($"  - Source dir:  {GlobalConfig.s_SourceCode}");
+            Console.Error.WriteLine("========================================");
+            Environment.Exit(1);
+        }
+
+        Console.WriteLine($"CppSharp generated {csFiles.Length} .cs file(s).");
         Console.WriteLine("Post-processing generated code...");
         PostProcessGeneratedCode(finalOutputDir);
 
@@ -57,10 +80,7 @@ internal static class Program
 
   <ItemGroup>
     <None Include=""AutoBinding.csproj"" />
-    <Reference Include=""CppSharp.Runtime"">
-      <HintPath>..\..\3rdparty\CppSharp\CppSharp.Runtime.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
+    <PackageReference Include=""CppSharp"" Version=""1.1.5.3168"" />
   </ItemGroup>
 
   <ItemGroup>
@@ -104,8 +124,16 @@ internal static class Program
             patchedContent = patchedContent.Replace("public partial struct __Internal", "internal partial struct __Internal");
 
             // 3. Hide CppSharp noise from IntelliSense
+            patchedContent = patchedContent.Replace("public __IntPtr __Instance { get; protected set; }", "internal __IntPtr __Instance { get; private protected set; }");
+            patchedContent = patchedContent.Replace("internal __IntPtr __Instance { get; protected set; }", "internal __IntPtr __Instance { get; private protected set; }");
             patchedContent = patchedContent.Replace("public __IntPtr __Instance", "internal __IntPtr __Instance");
-            patchedContent = patchedContent.Replace("public void Dispose()", "internal void Dispose()");
+            // Keep public void Dispose() to avoid breaking IDisposable
+            
+            // Fix special case for RHILoader static Dispose vs instance Dispose conflict
+            if (fileName == "RHILoader.cs")
+            {
+                patchedContent = patchedContent.Replace("public static void Dispose()", "public static void Unload()");
+            }
 
             // 5. Remove redundant "Tag" classes (they are just markers and add 1000s of lines of noise)
             patchedContent = Regex.Replace(patchedContent, 
@@ -113,12 +141,58 @@ internal static class Program
                 "", RegexOptions.Singleline);
 
             // 6. Cleanup the deep namespace prefixes
-            patchedContent = patchedContent.Replace("global::ArisenBinding.ArisenEngine.", "ArisenBinding.");
-            patchedContent = patchedContent.Replace("ArisenBinding.ArisenEngine.", "ArisenBinding.");
+            // Unified replacement for ArisenEngine -> Arisen
+            patchedContent = patchedContent.Replace("global::ArisenBinding.ArisenEngine.", "ArisenBinding.Arisen.");
+            patchedContent = patchedContent.Replace("ArisenBinding.ArisenEngine.", "ArisenBinding.Arisen.");
             patchedContent = patchedContent.Replace("namespace ArisenEngine", "namespace Arisen");
+
+            // Explicitly map nested namespaces that should be under Arisen
+            patchedContent = patchedContent.Replace("ArisenBinding.RHI.", "ArisenBinding.Arisen.RHI.");
+            patchedContent = patchedContent.Replace("ArisenBinding.HAL.", "ArisenBinding.Arisen.HAL.");
+            patchedContent = patchedContent.Replace("ArisenBinding.Logger.", "ArisenBinding.Arisen.Logger.");
+            patchedContent = patchedContent.Replace("ArisenBinding.Assertion.", "ArisenBinding.Arisen.Assertion.");
+            
+            // Delegates and some global types stay under ArisenBinding directly
+            // So we just remove the global:: prefix for them
             patchedContent = patchedContent.Replace("global::ArisenBinding.", "ArisenBinding.");
-            patchedContent = patchedContent.Replace("ArisenBinding.RHI.", "RHI.");
             patchedContent = patchedContent.Replace("global::System.", "System.");
+            
+            // Fix any accidental double Arisen introduced by overlapping replacements
+            patchedContent = patchedContent.Replace("ArisenBinding.Arisen.Arisen.", "ArisenBinding.Arisen.");
+            
+            // Fix occasional cases where ArisenEngine escaped replacement
+            patchedContent = patchedContent.Replace("ArisenEngine.RHI", "Arisen.RHI");
+            patchedContent = patchedContent.Replace("ArisenEngine.HAL", "Arisen.HAL");
+            
+            // Map ArisenBinding.Arisen.String to string
+            patchedContent = patchedContent.Replace("ArisenBinding.Arisen.String", "string");
+            
+            // Fix invalid 'new string.__Internal()' created by the above replacement
+            // In these cases, it's likely a return-by-value string being marshaled.
+            // But since we mapped ArisenEngine::String to C# string, CppSharp gets confused.
+            // For now, nuke the 'new string.__Internal()' line and replace it with IntPtr.Zero
+            patchedContent = patchedContent.Replace("var ___ret = new string.__Internal();", "var ___ret = System.IntPtr.Zero;");
+            patchedContent = patchedContent.Replace("*(string*) @return", "*(System.IntPtr*) @return");
+            patchedContent = patchedContent.Replace("new IntPtr(&___ret)", "___ret");
+            
+            // Emergency fix for broken UTF8Marshaller calls in generated code
+            patchedContent = patchedContent.Replace("UTF8Marshaller.InternalMarshalToNative", "UTF8Marshaller.UTF8ToNative");
+            patchedContent = patchedContent.Replace("UTF8Marshaller.InternalMarshalToManaged", "UTF8Marshaller.NativeToUTF8");
+
+            // 7. Remove weird Std namespace blocks at the end of files (noise from ignored STL types)
+            // Replace any internal use of Std types with IntPtr to avoid compilation errors
+            patchedContent = Regex.Replace(patchedContent, @"global::Std\.\w+\.__Internal\w*", "global::System.IntPtr");
+            patchedContent = Regex.Replace(patchedContent, @"Std\.\w+\.__Internal\w*", "global::System.IntPtr");
+            patchedContent = Regex.Replace(patchedContent, @"global::Std\.\w+", "global::System.IntPtr");
+            patchedContent = Regex.Replace(patchedContent, @"Std\.\w+", "global::System.IntPtr");
+            
+            // Fix EProgramStage namespace mapping if it's being used from RHI
+            patchedContent = patchedContent.Replace("ArisenBinding.EProgramStage", "ArisenBinding.Arisen.RHI.EProgramStage");
+            
+            // Nuke all namespace Std blocks (including nested ones)
+            patchedContent = Regex.Replace(patchedContent, @"namespace Std\s+\{.*?\r?\n\}", "", RegexOptions.Singleline);
+            // Catch any multi-level ones
+            patchedContent = Regex.Replace(patchedContent, @"namespace Std\s+\{.*?\n\s+\}\r?\n?\}", "", RegexOptions.Singleline);
 
             // 7. Remove redundant pragmas and noise
             patchedContent = patchedContent.Replace("#pragma warning disable CS0109 // Member does not hide an inherited member; new keyword is not required", "");

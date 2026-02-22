@@ -8,6 +8,15 @@ set "EXIT_CODE=0"
 set "STEP_INDEX=0"
 set "STEP_TOTAL=5"
 
+set "SCRIPT_DIR=%~dp0"
+if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+
+call "%SCRIPT_DIR%\setup-env.bat"
+if errorlevel 1 (
+    echo ERROR: setup-env failed.
+    exit /b 1
+)
+
 REM === 配置部分 ===
 set TARGET=Editor
 set PLATFORM=Windows

@@ -1,31 +1,26 @@
-﻿using System.Runtime.InteropServices;
-using ArisenEngine.Debugger;
+using System.Runtime.InteropServices;
+using ArisenEngine.Core.Diagnostics;
 using ArisenEngine.Rendering;
 
-namespace ArisenEngine.HAL;
+namespace ArisenEngine.Platform.Desktop;
 
 internal class WindowsProcHandler : WindowProcessor
 {
     private Win32Native.WndProc m_WndProc;
-    
     private delegate void ResizeCallback(IntPtr hwnd, int width, int height);
-    
     private ResizeCallback m_ResizeCallback;
     
-    internal WindowsProcHandler(RenderSurface renderSurface): base(renderSurface)
+    internal WindowsProcHandler(RenderSurface renderSurface) : base(renderSurface)
     {
         m_WndProc = WindowProc;
         m_ResizeCallback = OnResizeDone;
-        
         m_ProcPtr = Marshal.GetFunctionPointerForDelegate(m_WndProc);
-     
         m_ResizeCallbackPtr = Marshal.GetFunctionPointerForDelegate(m_ResizeCallback);
-        
     }
 
     private void OnResizeDone(IntPtr hwnd, int width, int height)
     {
-        Console.WriteLine($"OnResizeDone hwnd:{hwnd}, width:{width}, height:{height}");
+        // Console.WriteLine($"OnResizeDone hwnd:{hwnd}, width:{width}, height:{height}");
     }
     
     private IntPtr WindowProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam)
@@ -52,21 +47,9 @@ internal class WindowsProcHandler : WindowProcessor
         return IntPtr.Zero;
     }
 
-    protected override void OnResizing()
-    {
-        m_RenderSurface.OnResizing();
-    }
-
-    protected override void OnResized()
-    {
-       // TODO: fix callback not trigger bug
-       m_RenderSurface.OnResized();
-    }
-
-    protected override void OnCreate()
-    {
-        m_RenderSurface.OnCreate();
-    }
+    protected override void OnResizing() => m_RenderSurface.OnResizing();
+    protected override void OnResized() => m_RenderSurface.OnResized();
+    protected override void OnCreate() => m_RenderSurface.OnCreate();
 
     protected override void OnDestroy()
     { 
@@ -77,6 +60,5 @@ internal class WindowsProcHandler : WindowProcessor
     protected override void OnClose()
     {
         Logger.Log(" Windows Proc : OnClose ");
-        // m_RenderSurface.DisposeSurface();
     }
 }
