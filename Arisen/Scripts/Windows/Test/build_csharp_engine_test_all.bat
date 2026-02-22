@@ -27,6 +27,7 @@ set "ROOT_DIR=%SCRIPT_DIR%\..\..\.."
 for %%I in ("%ROOT_DIR%") do set "ROOT_DIR=%%~fI"
 
 set "ENV_DIR=%SCRIPT_DIR%\.."
+set "ORIGINAL_SCRIPT_DIR=%SCRIPT_DIR%"
 if exist "%ENV_DIR%\setup-env.bat" (
     call "%ENV_DIR%\setup-env.bat"
     if errorlevel 1 (
@@ -34,6 +35,7 @@ if exist "%ENV_DIR%\setup-env.bat" (
         exit /b 1
     )
 )
+set "SCRIPT_DIR=%ORIGINAL_SCRIPT_DIR%"
 
 set VS_BUILD_DIR=%ROOT_DIR%\Projects\VisualStudio\CSharpEngineTest
 if not exist "%VS_BUILD_DIR%" mkdir "%VS_BUILD_DIR%"

@@ -18,11 +18,11 @@ public class StdStringTypeMap : TypeMap
     public override void CSharpMarshalToNative(CSharpMarshalContext ctx)
     {
         // Use UTF8Marshaller for std::string
-        ctx.Return.Write($"CppSharp.Runtime.UTF8Marshaller.UTF8ToNative({ctx.Parameter.Name})");
+        ctx.Return.Write($"Arisen.Native.UTF8Marshaller.UTF8ToNative({ctx.Parameter.Name})");
     }
 
     public override void CSharpMarshalToManaged(CSharpMarshalContext ctx)
     {
-        ctx.Return.Write($"CppSharp.Runtime.UTF8Marshaller.NativeToUTF8({ctx.ReturnVarName})");
+        ctx.Return.Write($"Arisen.Native.UTF8Marshaller.NativeToUTF8({ctx.ReturnVarName})");
     }
 }
