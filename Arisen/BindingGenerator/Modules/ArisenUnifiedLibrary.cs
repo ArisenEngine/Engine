@@ -21,16 +21,48 @@ public class ArisenUnifiedLibrary : ArisenLibrary
         var module = options.AddModule(GetLibraryName());
         module.OutputNamespace = "ArisenBinding"; 
         
-        // Add all headers
-        module.Headers.Add(@"Base/Assertion.h");
-        module.Headers.Add(@"Logger/Logger.h");
-        module.Headers.Add(@"Common/EngineInit.h");
-        module.Headers.Add(@"Windowing/RenderWindowAPI.h");
-        module.Headers.Add(@"RHI/Handles/RHIHandle.h");
-        module.Headers.Add(@"RHI/Loader/RHILoader.h");
-        module.Headers.Add(@"RHI/Core/RHIDevice.h");
-        module.Headers.Add(@"RHI/Core/RHIInstance.h");
-        module.Headers.Add(@"ShaderCompiler/ShaderCompilerAPI.h");
+        // Include directories for both CppSharp module header lookup and Clang parsing
+        var includeDirs = new[]
+        {
+            Path.GetFullPath(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.Foundation")),
+            Path.GetFullPath(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.HAL")),
+            Path.GetFullPath(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.HAL", "Windowing")),
+            Path.GetFullPath(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.Diagnostic")),
+            Path.GetFullPath(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.RHI")),
+            Path.GetFullPath(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.RHI", "RHI")),
+            Path.GetFullPath(Path.Combine(GlobalConfig.s_SourceCode, "Core", "Core.ShaderCompiler")),
+        };
+
+        foreach (var dir in includeDirs)
+        {
+            module.IncludeDirs.Add(dir);
+            Console.WriteLine($"  [IncludeDir] {dir} (exists: {Directory.Exists(dir)})");
+        }
+
+        // Map each header to the include dir it belongs to, using relative paths
+        var headerEntries = new (string relPath, string includeDir)[]
+        {
+            ("Base/Assertion.h",              includeDirs[0]), // Core.Foundation
+            ("Logger/Logger.h",               includeDirs[3]), // Core.Diagnostic
+            ("Common/EngineInit.h",           includeDirs[1]), // Core.HAL
+            ("Windowing/RenderWindowAPI.h",   includeDirs[1]), // Core.HAL
+            ("RHI/Handles/RHIHandle.h",       includeDirs[4]), // Core.RHI
+            ("RHI/Loader/RHILoader.h",        includeDirs[4]), // Core.RHI
+            ("RHI/Definitions/DeviceLimits.h",includeDirs[4]), // Core.RHI
+            ("RHI/Core/RHIDevice.h",          includeDirs[4]), // Core.RHI
+            ("RHI/Core/RHIInstance.h",         includeDirs[4]), // Core.RHI
+            ("RHI/Enums/Pipeline/EProgramStage.h", includeDirs[4]), // Core.RHI
+            ("ShaderCompiler/ShaderCompilerAPI.h", includeDirs[6]), // Core.ShaderCompiler
+        };
+
+        Console.WriteLine("  Header file verification:");
+        foreach (var (relPath, includeDir) in headerEntries)
+        {
+            var fullPath = Path.GetFullPath(Path.Combine(includeDir, relPath));
+            var exists = File.Exists(fullPath);
+            Console.WriteLine($"    {relPath} -> {fullPath} (exists: {exists})");
+            module.Headers.Add(relPath);
+        }
 
         module.LibraryDirs.Add(GlobalConfig.s_LibraryPath);
     }
@@ -53,6 +85,8 @@ public class ArisenUnifiedLibrary : ArisenLibrary
                 fileName == "RHILoader.h" ||
                 fileName == "RHIDevice.h" ||
                 fileName == "RHIInstance.h" ||
+                fileName == "EProgramStage.h" ||
+                fileName == "DeviceLimits.h" ||
                 fileName == "ShaderCompilerAPI.h")
             {
                 unit.Ignore = false;

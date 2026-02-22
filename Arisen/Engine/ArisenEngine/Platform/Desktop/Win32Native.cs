@@ -1,12 +1,9 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
-namespace ArisenEngine.HAL;
+namespace ArisenEngine.Platform.Desktop;
 
 internal static class Win32Native
 {
-    /// <summary>
-    /// Internal class to interact with Native Message
-    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     internal struct NativeMessage
     {
@@ -59,11 +56,7 @@ internal static class Win32Native
 
     public static IntPtr GetWindowLong(IntPtr hWnd, WindowLongType index)
     {
-        if (IntPtr.Size == 4)
-        {
-            return GetWindowLong32(hWnd, index);
-        }
-
+        if (IntPtr.Size == 4) return GetWindowLong32(hWnd, index);
         return GetWindowLong64(hWnd, index);
     }
 
@@ -78,11 +71,7 @@ internal static class Win32Native
 
     public static IntPtr SetWindowLong(IntPtr hwnd, WindowLongType index, IntPtr wndProcPtr)
     {
-        if (IntPtr.Size == 4)
-        {
-            return SetWindowLong32(hwnd, index, wndProcPtr);
-        }
-
+        if (IntPtr.Size == 4) return SetWindowLong32(hwnd, index, wndProcPtr);
         return SetWindowLongPtr64(hwnd, index, wndProcPtr);
     }
 
@@ -116,16 +105,13 @@ internal static class Win32Native
     public static extern int CoInitialize(IntPtr pvReserved);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    public static extern bool PeekMessage(out NativeMessage lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax,
-        uint wRemoveMsg);
+    public static extern bool PeekMessage(out NativeMessage lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax, uint wRemoveMsg);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    public static extern sbyte GetMessage(out NativeMessage lpMsg, IntPtr hWnd, uint wMsgFilterMin,
-        uint wMsgFilterMax);
+    public static extern sbyte GetMessage(out NativeMessage lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax);
 
     [DllImport("user32.dll", EntryPoint = "PeekMessage")]
-    public static extern int PeekMessage(out NativeMessage lpMsg, IntPtr hWnd, int wMsgFilterMin, int wMsgFilterMax,
-        int wRemoveMsg);
+    public static extern int PeekMessage(out NativeMessage lpMsg, IntPtr hWnd, int wMsgFilterMin, int wMsgFilterMax, int wRemoveMsg);
 
     [DllImport("user32.dll", EntryPoint = "GetMessage")]
     public static extern int GetMessage(out NativeMessage lpMsg, IntPtr hWnd, int wMsgFilterMin, int wMsgFilterMax);
@@ -155,42 +141,12 @@ internal static class Win32Native
     public static extern int ImmGetCompositionString(IntPtr himc, int dwIndex, IntPtr buf, int bufLen);
 
     public const int GCS_COMPSTR = 0x0008;
-
     public const int WM_QUIT = 0x0012;
     public const int WM_DESTROY = 0x0002;
     public const int WM_SIZE = 0x0005;
-    public const int WM_ACTIVATEAPP = 0x001C;
-    public const int WM_POWERBROADCAST = 0x0218;
-    public const int WM_MENUCHAR = 0x0120;
     public const int WM_SYSCOMMAND = 0x0112;
-    public const int WM_KEYDOWN = 0x100;
-    public const int WM_KEYUP = 0x101;
-    public const int WM_CHAR = 0x102;
-    public const int WM_SYSKEYDOWN = 0x104;
-    public const int WM_SYSKEYUP = 0x105;
-    public const int WM_DEVICECHANGE = 0x0219;
-    public const int WM_INPUTLANGCHANGE = 0x0051;
-    public const int WM_IME_CHAR = 0x0286;
-    public const int WM_IME_COMPOSITION = 0x010F;
-    public const int WM_IME_COMPOSITIONFULL = 0x0284;
-    public const int WM_IME_CONTROL = 0x0283;
-    public const int WM_IME_ENDCOMPOSITION = 0x010E;
-    public const int WM_IME_KEYDOWN = 0x0290;
-    public const int WM_IME_KEYLAST = 0x010F;
-    public const int WM_IME_KEYUP = 0x0291;
-    public const int WM_IME_NOTIFY = 0x0282;
-    public const int WM_IME_REQUEST = 0x0288;
-    public const int WM_IME_SELECT = 0x0285;
-    public const int WM_IME_SETCONTEXT = 0x0281;
-    public const int WM_IME_STARTCOMPOSITION = 0x010D;
     public const int WM_PAINT = 0x000F;
-    public const int WM_NCPAINT = 0x0085;
-
     public const int PM_REMOVE = 0x0001;
     public const int WM_EXITSIZEMOVE = 0x0232;
-
-    public const int SIZE_MAXIMIZED = 2;
-
-
     public const int SC_CLOSE = 0xF060;
 }

@@ -2,33 +2,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	 
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <BaseOutputPath>..\..\x64\</BaseOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-	<PlatformTarget>x64</PlatformTarget>
-	<RootNamespace>ArisenEngine</RootNamespace>
-	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>x64</PlatformTarget>
+    <RootNamespace>ArisenEngine</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\AutoBinding\AutoBinding.csproj" />
     <ProjectReference Include="..\..\Serialization\Serialization\Serialization.csproj" />
-  </ItemGroup>
-<PropertyGroup>
-  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-  <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-</PropertyGroup>
-  <ItemGroup>
-    <Folder Include="HAL\Android\" />
-    <Folder Include="HAL\IOS\" />
-    <Folder Include="HAL\PS5\" />
-    <Folder Include="HAL\Switch\" />
-    <Folder Include="HAL\XBox\" />
-    <Folder Include="Serialization\Meta\" />
-    <Folder Include="Hook\" />
   </ItemGroup>
 
   <ItemGroup>

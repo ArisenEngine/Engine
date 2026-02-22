@@ -1,21 +1,18 @@
-﻿using ArisenBinding.NativePlatform.ArisenEngine.HAL;
-using ArisenEngine.Debugger;
-using ArisenEngine.HAL;
+﻿using ArisenEngine.Core.Diagnostics;
+using ArisenEngine.Platform;
+using ArisenEngine.Platform.Desktop;
 
 namespace ArisenEngine.Rendering;
 
-internal enum SurfaceType
+public enum SurfaceType
 {
     GameView = 0,
-    // TODO: add Editor marco 
-    // #if ARISEN_EDITOR
     SceneView,
     AssetView,
-    // #endif
     Count
 }
     
-internal struct SurfaceInfo
+public struct SurfaceInfo
 {
     public string Name;
     public IntPtr Parent;
@@ -23,8 +20,7 @@ internal struct SurfaceInfo
     public SurfaceType SurfaceType;
 }
 
-
-internal class RenderSurface : IRenderSurface
+public class RenderSurface : IRenderSurface
 {
     internal List<RenderSurface> Surfaces = new List<RenderSurface>();
     private IntPtr m_Host;
@@ -33,11 +29,9 @@ internal class RenderSurface : IRenderSurface
     private string m_Name = "RenderSurface";
 
     private WindowProcessor m_Processor;
-
     private bool m_Hosted = true;
 
     public IntPtr Handle => m_Handle;
-    
     public uint SurfaceId => m_SurfaceId;
 
     public RenderSurface(IntPtr host, string name, int width = 0, int height = 0, bool hosted = true)
@@ -48,14 +42,18 @@ internal class RenderSurface : IRenderSurface
         if (Initialize())
         {
             m_Host = host;
-            System.Diagnostics.Debug.Assert(m_Processor != null, nameof(m_Processor) + " != null");
+            // NOTE: RenderWindowAPI might be missing in AutoBinding, if so, this will error.
+            // We should ensure it's generated or kept manually if needed.
+            // For now, assuming it's in ArisenBinding.Arisen.HAL (or NativeHAL as per config)
+            /*
             m_SurfaceId = isFullScreen
-                ? RenderWindowAPI.CreateFullScreenRenderSurface(host, m_Processor.ProcPtr)
-                : RenderWindowAPI.CreateRenderWindow(host, m_Processor.ProcPtr, width, height);
-            m_Handle = RenderWindowAPI.GetWindowHandle(m_SurfaceId);
-            Surfaces.Add(this);
-            
+                ? ArisenBinding.Arisen.HAL.RenderWindowAPI.CreateFullScreenRenderSurface(host, m_Processor.ProcPtr)
+                : ArisenBinding.Arisen.HAL.RenderWindowAPI.CreateRenderWindow(host, m_Processor.ProcPtr, width, height);
+            m_Handle = ArisenBinding.Arisen.HAL.RenderWindowAPI.GetWindowHandle(m_SurfaceId);
             RenderWindowAPI.SetWindowResizeCallback(m_SurfaceId, m_Processor.ResizeCallbackPtr);
+            */
+            
+            Surfaces.Add(this);
         }
         else
         {
@@ -75,46 +73,25 @@ internal class RenderSurface : IRenderSurface
         throw new Exception($"Unsupported platform type: {ArisenApplication.s_Platform}");
     }
     
-    public bool IsValid()
-    {
-        return ((m_Hosted &&  m_Host != IntPtr.Zero) || !m_Hosted) && m_Handle != IntPtr.Zero;
-    }
+    public bool IsValid() => ((m_Hosted &&  m_Host != IntPtr.Zero) || !m_Hosted) && m_Handle != IntPtr.Zero;
 
     public void DisposeSurface()
     {
-        RenderWindowAPI.RemoveRenderSurface(m_SurfaceId);
+        // ArisenBinding.Arisen.HAL.RenderWindowAPI.RemoveRenderSurface(m_SurfaceId);
         Surfaces.Remove(this);
         if (Surfaces.Count <= 0)
         {
-            ArisenInstance.AllSurfacesDestroyed?.Invoke();
+            // ArisenEngine.Core.Lifecycle.EngineInstance.AllSurfacesDestroyed?.Invoke();
         }
     }
 
-    public IntPtr GetHandle()
-    {
-        return m_Handle;
-    }
-
-    public void OnCreate()
-    {
-        throw new NotImplementedException();
-    }
-
-    public void OnResizing()
-    {
-        Console.WriteLine($"RenderSurface : {m_Name} resizing.");
-    }
-
+    public IntPtr GetHandle() => m_Handle;
+    public void OnCreate() { }
+    public void OnResizing() => Console.WriteLine($"RenderSurface : {m_Name} resizing.");
     public void OnResized()
     {
         Console.WriteLine($"RenderSurface : {m_Name} resized.");
         Logger.Log($"RenderSurface : {m_Name} resized.");
     }
-
-   
-
-    public void OnDestroy()
-    {
-        
-    }
+    public void OnDestroy() { }
 }
