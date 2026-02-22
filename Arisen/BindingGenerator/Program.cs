@@ -142,15 +142,20 @@ internal static class Program
 
             // 6. Cleanup the deep namespace prefixes
             // Unified replacement for ArisenEngine -> Arisen
-            patchedContent = patchedContent.Replace("global::ArisenBinding.ArisenEngine.", "ArisenBinding.Arisen.");
-            patchedContent = patchedContent.Replace("ArisenBinding.ArisenEngine.", "ArisenBinding.Arisen.");
-            patchedContent = patchedContent.Replace("namespace ArisenEngine", "namespace Arisen");
+            patchedContent = patchedContent.Replace("global::ArisenBinding.ArisenEngine.", "Arisen.Native.");
+            patchedContent = patchedContent.Replace("ArisenBinding.ArisenEngine.", "Arisen.Native.");
+            patchedContent = patchedContent.Replace("namespace ArisenEngine", "namespace Native"); // Note: usually nested in ArisenBinding
+            patchedContent = patchedContent.Replace("namespace ArisenBinding", "namespace Arisen");
 
-            // Explicitly map nested namespaces that should be under Arisen
-            patchedContent = patchedContent.Replace("ArisenBinding.RHI.", "ArisenBinding.Arisen.RHI.");
-            patchedContent = patchedContent.Replace("ArisenBinding.HAL.", "ArisenBinding.Arisen.HAL.");
-            patchedContent = patchedContent.Replace("ArisenBinding.Logger.", "ArisenBinding.Arisen.Logger.");
-            patchedContent = patchedContent.Replace("ArisenBinding.Assertion.", "ArisenBinding.Arisen.Assertion.");
+            // Explicitly map nested namespaces that should be under Arisen.Native
+            patchedContent = patchedContent.Replace("ArisenBinding.RHI.", "Arisen.Native.RHI.");
+            patchedContent = patchedContent.Replace("ArisenBinding.HAL.", "Arisen.Native.HAL.");
+            patchedContent = patchedContent.Replace("ArisenBinding.Logger.", "Arisen.Native.Diagnostics."); // Map Logger to Diagnostics
+            patchedContent = patchedContent.Replace("ArisenBinding.Assertion.", "Arisen.Native.Assertion.");
+            
+            // Map the old ArisenBinding prefix to Arisen.Native
+            patchedContent = patchedContent.Replace("ArisenBinding.Arisen.", "Arisen.Native.");
+            patchedContent = patchedContent.Replace("ArisenBinding.", "Arisen.Native.");
             
             // Delegates and some global types stay under ArisenBinding directly
             // So we just remove the global:: prefix for them
@@ -176,8 +181,16 @@ internal static class Program
             patchedContent = patchedContent.Replace("new IntPtr(&___ret)", "___ret");
             
             // Emergency fix for broken UTF8Marshaller calls in generated code
-            patchedContent = patchedContent.Replace("UTF8Marshaller.InternalMarshalToNative", "UTF8Marshaller.UTF8ToNative");
-            patchedContent = patchedContent.Replace("UTF8Marshaller.InternalMarshalToManaged", "UTF8Marshaller.NativeToUTF8");
+            patchedContent = patchedContent.Replace("CppSharp.Runtime.UTF8Marshaller.InternalMarshalToNative", "Arisen.Native.UTF8Marshaller.UTF8ToNative");
+            patchedContent = patchedContent.Replace("CppSharp.Runtime.UTF8Marshaller.InternalMarshalToManaged", "Arisen.Native.UTF8Marshaller.NativeToUTF8");
+            patchedContent = patchedContent.Replace("CppSharp.Runtime.UTF8Marshaller.NativeToUTF8", "Arisen.Native.UTF8Marshaller.NativeToUTF8");
+            patchedContent = patchedContent.Replace("CppSharp.Runtime.UTF8Marshaller.UTF8ToNative", "Arisen.Native.UTF8Marshaller.UTF8ToNative");
+            patchedContent = patchedContent.Replace("UTF8Marshaller.InternalMarshalToNative", "Arisen.Native.UTF8Marshaller.UTF8ToNative");
+            patchedContent = patchedContent.Replace("UTF8Marshaller.InternalMarshalToManaged", "Arisen.Native.UTF8Marshaller.NativeToUTF8");
+            patchedContent = patchedContent.Replace("UTF8Marshaller.", "Arisen.Native.UTF8Marshaller.");
+
+            // Fix GetDeviceLimits pointer conversion
+            patchedContent = patchedContent.Replace(".GetDeviceLimits(__Instance, ___ret)", ".GetDeviceLimits(__Instance, new __IntPtr(&___ret))");
 
             // 7. Remove weird Std namespace blocks at the end of files (noise from ignored STL types)
             // Replace any internal use of Std types with IntPtr to avoid compilation errors
@@ -226,6 +239,48 @@ internal static class Program
                 Console.WriteLine($"Post-processed {relativePath} (DLL: {dllName})");
             }
         }
+
+        // Generate UTF8Marshaller.cs
+        GenerateMarshaller(rootDir);
+    }
+
+    static void GenerateMarshaller(string outputDir)
+    {
+        var path = Path.Combine(outputDir, "UTF8Marshaller.cs");
+        var content = @"using System;
+using System.Runtime.InteropServices;
+using System.Text;
+
+namespace Arisen.Native
+{
+    public static class UTF8Marshaller
+    {
+        public static string NativeToUTF8(IntPtr nativePtr)
+        {
+            if (nativePtr == IntPtr.Zero) return string.Empty;
+            return Marshal.PtrToStringUTF8(nativePtr) ?? string.Empty;
+        }
+
+        public static unsafe string NativeToUTF8(IntPtr* nativePtr)
+        {
+            if (nativePtr == null || *nativePtr == IntPtr.Zero) return string.Empty;
+            return Marshal.PtrToStringUTF8(*nativePtr) ?? string.Empty;
+        }
+
+        public static IntPtr UTF8ToNative(string str)
+        {
+            if (str == null) return IntPtr.Zero;
+            byte[] bytes = Encoding.UTF8.GetBytes(str);
+            IntPtr ptr = Marshal.AllocHGlobal(bytes.Length + 1);
+            Marshal.Copy(bytes, 0, ptr, bytes.Length);
+            Marshal.WriteByte(ptr, bytes.Length, 0);
+            return ptr;
+        }
+    }
+}
+";
+        File.WriteAllText(path, content);
+        Console.WriteLine("Generated UTF8Marshaller.cs");
     }
 
     static void ParseArguments(string[] args)

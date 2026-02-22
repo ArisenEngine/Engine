@@ -2,7 +2,7 @@ using System.Diagnostics;
 using ArisenEngine.Core.Diagnostics;
 using ArisenEngine.Platform;
 using ArisenEngine.Rendering;
-using ArisenBinding.Arisen.Core;
+using Arisen.Native.Core;
 
 namespace ArisenEngine.Core.Lifecycle;
 
@@ -33,7 +33,7 @@ internal static class EngineInstance
                     break;
                 default:
                     isInitializeDone = false;
-                    // ArisenBinding.Arisen.Core.Logger could be used here if needed
+                    // Arisen.Native.Diagnostics.Logger could be used here if needed
                     break;
             }
         }
@@ -64,7 +64,7 @@ internal static class EngineInstance
     {
         if (m_RenderSurfaces.TryGetValue(host, out var surface))
         {
-            // RenderWindowAPI.ResizeRenderSurface(surface.Surface.SurfaceId, (uint)width, (uint)height);
+            NativeHAL.RenderWindowAPI.ResizeRenderSurface(surface.Surface.SurfaceId, (uint)width, (uint)height);
         }
     }
 

@@ -28,7 +28,7 @@ namespace ArisenEngine.ShaderLab
 
         public static CompileResult Compile(
             string inputPath,
-            ArisenBinding.NativePlatform.ArisenEngine.RHI.ProgramStage stage,
+            NativeRHI.EProgramStage stage,
             CompileOptions options)
         {
             unsafe
@@ -78,7 +78,7 @@ namespace ArisenEngine.ShaderLab
                     bool ok;
                     if (defAlloc.Length == 0 && incAlloc.Length == 0)
                     {
-                        ok = ArisenBinding.NativePlatform.ArisenEngine.HAL.ShaderCompilerAPI.CompileShaderFromFileSimple(
+                        ok = NativeHAL.ShaderCompilerAPI.CompileShaderFromFileSimple(
                             inputPath,
                             stage,
                             options.Entry ?? "main",
@@ -96,7 +96,7 @@ namespace ArisenEngine.ShaderLab
                         fixed (IntPtr* pDef = defAlloc.Length > 0 ? defAlloc : new IntPtr[1])
                         fixed (IntPtr* pInc = incAlloc.Length > 0 ? incAlloc : new IntPtr[1])
                         {
-                            ok = ArisenBinding.NativePlatform.ArisenEngine.HAL.ShaderCompilerAPI.CompileShaderFromFileSimple(
+                            ok = NativeHAL.ShaderCompilerAPI.CompileShaderFromFileSimple(
                                 inputPath,
                                 stage,
                                 options.Entry ?? "main",
@@ -150,14 +150,14 @@ namespace ArisenEngine.ShaderLab
         private static void EnsureDxcInitialized()
         {
             if (s_DxcInitialized) return;
-            ArisenBinding.NativePlatform.ArisenEngine.HAL.ShaderCompilerAPI.InitDXC();
+            NativeHAL.ShaderCompilerAPI.InitDXC();
             s_DxcInitialized = true;
         }
 
         public static void ReleaseDXC()
         {
             if (!s_DxcInitialized) return;
-            ArisenBinding.NativePlatform.ArisenEngine.HAL.ShaderCompilerAPI.ReleaseDXC();
+            NativeHAL.ShaderCompilerAPI.ReleaseDXC();
             s_DxcInitialized = false;
         }
     }

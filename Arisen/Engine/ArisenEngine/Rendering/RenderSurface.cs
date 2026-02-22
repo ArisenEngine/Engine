@@ -1,6 +1,6 @@
-﻿using ArisenEngine.Core.Diagnostics;
-using ArisenEngine.Platform;
+﻿using ArisenEngine.Platform;
 using ArisenEngine.Platform.Desktop;
+using ArisenEngine.Core.RHI;
 
 namespace ArisenEngine.Rendering;
 
@@ -42,16 +42,24 @@ public class RenderSurface : IRenderSurface
         if (Initialize())
         {
             m_Host = host;
-            // NOTE: RenderWindowAPI might be missing in AutoBinding, if so, this will error.
-            // We should ensure it's generated or kept manually if needed.
-            // For now, assuming it's in ArisenBinding.Arisen.HAL (or NativeHAL as per config)
-            /*
             m_SurfaceId = isFullScreen
-                ? ArisenBinding.Arisen.HAL.RenderWindowAPI.CreateFullScreenRenderSurface(host, m_Processor.ProcPtr)
-                : ArisenBinding.Arisen.HAL.RenderWindowAPI.CreateRenderWindow(host, m_Processor.ProcPtr, width, height);
-            m_Handle = ArisenBinding.Arisen.HAL.RenderWindowAPI.GetWindowHandle(m_SurfaceId);
-            RenderWindowAPI.SetWindowResizeCallback(m_SurfaceId, m_Processor.ResizeCallbackPtr);
-            */
+                ? NativeHAL.RenderWindowAPI.CreateFullScreenRenderSurface(host, m_Processor.ProcPtr)
+                : NativeHAL.RenderWindowAPI.CreateRenderWindow(host, m_Processor.ProcPtr, width, height);
+            
+            m_Handle = NativeHAL.RenderWindowAPI.GetWindowHandle(m_SurfaceId);
+            NativeHAL.RenderWindowAPI.SetWindowResizeCallback(m_SurfaceId, m_Processor.ResizeCallbackPtr);
+
+            // Create Logic Device for this surface if instance is ready
+            var instance = Graphics.Instance;
+            if (instance != null)
+            {
+                instance.CreateLogicDevice(m_SurfaceId);
+                var device = instance.GetLogicalDevice(m_SurfaceId);
+                if (device != null)
+                {
+                    Graphics.SetLogicDevice(device);
+                }
+            }
             
             Surfaces.Add(this);
         }
@@ -77,7 +85,7 @@ public class RenderSurface : IRenderSurface
 
     public void DisposeSurface()
     {
-        // ArisenBinding.Arisen.HAL.RenderWindowAPI.RemoveRenderSurface(m_SurfaceId);
+        NativeHAL.RenderWindowAPI.RemoveRenderSurface(m_SurfaceId);
         Surfaces.Remove(this);
         if (Surfaces.Count <= 0)
         {

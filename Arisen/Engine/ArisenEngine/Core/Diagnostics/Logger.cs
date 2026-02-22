@@ -1,11 +1,11 @@
 using System.Diagnostics;
-using ArisenBinding.Arisen.Diagnostics;
+using Arisen.Native.Diagnostics;
 
 namespace ArisenEngine.Core.Diagnostics;
 
 public static class Logger
 {
-    private static LogCallback? m_ReceiveLog;
+    private static NativeDiagnostics.LogCallback? m_ReceiveLog;
 
     internal static void RecordLog(uint type, string msg, string threadName, string trace)
     {
@@ -19,7 +19,7 @@ public static class Logger
     
     static Logger()
     {
-        m_ReceiveLog = new LogCallback(RecordLog);
+        m_ReceiveLog = new NativeDiagnostics.LogCallback(RecordLog);
     }
     
     public enum LogLevel
@@ -59,7 +59,7 @@ public static class Logger
 
     public static void Dispose()
     {
-        ArisenBinding.Arisen.Diagnostics.Logger.Shutdown();
+        NativeLogger.Shutdown();
     }
 
     [Conditional("DEBUG")]
@@ -72,7 +72,7 @@ public static class Logger
     {
         if (!condition)
         {
-            ArisenBinding.Arisen.Assertion.ReportAssertionFailure("condition", file, line, function, message);
+            Arisen.Native.Assertion.ReportAssertionFailure("condition", file, line, function, message);
             // Optionally also trigger a C# break if the native one doesn't stop execution
             System.Diagnostics.Debug.Assert(condition, message);
         }
@@ -89,9 +89,15 @@ public static class Logger
     {
         string trace = Environment.StackTrace;
         string threadName = Thread.CurrentThread.Name ?? "MainThread";
-        // NOTE: If native Logger doesn't have direct Log methods, we should add them via partial or PInvoke
-        // For now, assume they exist or will be added to AutoBinding.
-        // ArisenBinding.Arisen.Diagnostics.Logger.Instance.Log(msg.ToString(), threadName, trace);
+        
+        // Use the native logger instance
+        var instance = NativeLogger.Instance;
+        if (instance != null)
+        {
+            // Native Logger.h has: virtual void Log(LogLevel level, const char* msg, const char* threadName = nullptr, const char* trace = nullptr) = 0;
+            // The binding generator should have generated a Log method.
+            instance.Log((uint)level, msg.ToString() ?? "", threadName, trace);
+        }
     }
 
     public static void Clear()
@@ -101,12 +107,12 @@ public static class Logger
 
     public static bool Initialize(bool bindCallback = false)
     {
-        var instance = ArisenBinding.Arisen.Diagnostics.Logger.Instance;
-        if (bindCallback && m_ReceiveLog != null)
+        var instance = NativeLogger.Instance;
+        if (bindCallback && m_ReceiveLog != null && instance != null)
         {
             instance.BindCallback(m_ReceiveLog);
         }
         
-        return instance.Initialize();
+        return instance?.Initialize() ?? false;
     }
 }

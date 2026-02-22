@@ -87,6 +87,9 @@ public class ArisenUnifiedLibrary : ArisenLibrary
                 fileName == "RHIInstance.h" ||
                 fileName == "EProgramStage.h" ||
                 fileName == "DeviceLimits.h" ||
+                fileName == "GraphicsAPI.h" ||
+                fileName == "EPresentMode.h" ||
+                fileName == "EFormat.h" ||
                 fileName == "ShaderCompilerAPI.h")
             {
                 unit.Ignore = false;
