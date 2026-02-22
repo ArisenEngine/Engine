@@ -15,8 +15,8 @@ if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
 call "%SCRIPT_DIR%\setup-env.bat"
 if errorlevel 1 exit /b 1
 
-set "TARGET=BindingGenerator"
-set "PLATFORM=Windows"
+set "ARISEN_TARGET=BindingGenerator"
+set "ARISEN_PLATFORM=Windows"
 set "ROOT_DIR=%SCRIPT_DIR%\..\.."
 
 REM 规范路径转换（绝对路径）
@@ -29,8 +29,8 @@ set "LOG_FILE=%VS_BUILD_DIR%\build.log"
 echo === Binding Generator Build Log === > "%LOG_FILE%"
 
 echo [1/3] Configuring CMake...
-echo [RUN] cmake -S "%ROOT_DIR%" -B "%VS_BUILD_DIR%" -DTARGET="%TARGET%" -DPLATFORM="%PLATFORM%" -G "Visual Studio 17 2022" -A x64 >> "%LOG_FILE%"
-cmake -S "%ROOT_DIR%" -B "%VS_BUILD_DIR%" -DTARGET="%TARGET%" -DPLATFORM="%PLATFORM%" -G "Visual Studio 17 2022" -A x64 >> "%LOG_FILE%" 2>&1
+echo [RUN] cmake -S "%ROOT_DIR%" -B "%VS_BUILD_DIR%" -DTARGET="%ARISEN_TARGET%" -DPLATFORM="%ARISEN_PLATFORM%" -G "Visual Studio 17 2022" -A x64 >> "%LOG_FILE%"
+cmake -S "%ROOT_DIR%" -B "%VS_BUILD_DIR%" -DTARGET="%ARISEN_TARGET%" -DPLATFORM="%ARISEN_PLATFORM%" -G "Visual Studio 17 2022" -A x64 >> "%LOG_FILE%" 2>&1
 if errorlevel 1 goto :fail
 
 echo [2/3] Building and Running GenerateAutoBinding (Debug)...
