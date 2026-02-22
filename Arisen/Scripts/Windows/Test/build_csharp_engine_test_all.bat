@@ -19,8 +19,8 @@ if /i "%~1"=="--no-pause" (
     shift /1
 )
 
-set TARGET=CSharpEngineTest
-set PLATFORM=Windows
+set ARISEN_TARGET=CSharpEngineTest
+set ARISEN_PLATFORM=Windows
 set "SCRIPT_DIR=%~dp0"
 if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
 set "ROOT_DIR=%SCRIPT_DIR%\..\..\.."
@@ -45,7 +45,7 @@ echo === Configuring and Building All Configurations ===
 REM 1. Configure
 set /a STEP_INDEX+=1
 echo [%STEP_INDEX%/%STEP_TOTAL%] Configuring CMake (multi-config solution)
-call :run cmake -S "%ROOT_DIR%" -B "%VS_BUILD_DIR%" -DTARGET="CSharpEngineTest" -DPLATFORM="Windows" -G "Visual Studio 17 2022" -A x64
+call :run cmake -S "%ROOT_DIR%" -B "%VS_BUILD_DIR%" -DTARGET="%ARISEN_TARGET%" -DPLATFORM="%ARISEN_PLATFORM%" -G "Visual Studio 17 2022" -A x64
 if errorlevel 1 goto :fail
 
 REM 2. Add C# Projects
