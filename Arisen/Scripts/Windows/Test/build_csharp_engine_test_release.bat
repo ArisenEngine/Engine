@@ -40,9 +40,9 @@ set "SCRIPT_DIR=%ORIGINAL_SCRIPT_DIR%"
 set VS_BUILD_DIR=%ROOT_DIR%\Projects\VisualStudio\CSharpEngineTest
 if not exist "%VS_BUILD_DIR%" mkdir "%VS_BUILD_DIR%"
 set "LOG_FILE=%VS_BUILD_DIR%\build.log"
-echo === CSharpEngineTest Build Log (Debug Only) === > "%LOG_FILE%"
+echo === CSharpEngineTest Build Log (Release Only) === > "%LOG_FILE%"
 
-echo === Configuring and Building Debug Configuration ===
+echo === Configuring and Building Release Configuration ===
 
 REM 1. Configure
 set /a STEP_INDEX+=1
@@ -77,7 +77,7 @@ goto :cleanup
 
 :cleanup
 if "%EXIT_CODE%"=="0" (
-    echo === Debug build succeeded ===
+    echo === Release build succeeded ===
 ) else (
     echo Script aborted with exit code %EXIT_CODE%.
 )
