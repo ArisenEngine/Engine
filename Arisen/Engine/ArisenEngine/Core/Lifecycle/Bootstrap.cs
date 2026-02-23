@@ -22,7 +22,7 @@ public static class Bootstrap
 
                 // Initialize Graphics RHI (Default to Vulkan for now, or read from config)
                 // TODO: Load from configuration
-                if (Graphics.Initialize(ArisenEngine.Core.RHI.GraphicsAPI.Vulkan, validationLayer: true))
+                if (RHISystem.Initialize(ArisenEngine.Core.RHI.GraphicsAPI.Vulkan, validationLayer: true))
                 {
                     m_IsInitialized = true;
                     return true;
@@ -44,7 +44,7 @@ public static class Bootstrap
 
         try
         {
-            Graphics.Shutdown();
+            RHISystem.Shutdown();
             Arisen.Native.Core.EngineInit.Shutdown();
             m_IsInitialized = false;
         }

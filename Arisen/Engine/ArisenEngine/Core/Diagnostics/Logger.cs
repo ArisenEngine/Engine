@@ -94,9 +94,21 @@ public static class Logger
         var instance = NativeLogger.Instance;
         if (instance != null)
         {
-            // Native Logger.h has: virtual void Log(LogLevel level, const char* msg, const char* threadName = nullptr, const char* trace = nullptr) = 0;
-            // The binding generator should have generated a Log method.
-            instance.Log((uint)level, msg.ToString() ?? "", threadName, trace);
+            // Map engine LogLevel to native LogLevel
+            var nativeLevel = level switch
+            {
+                LogLevel.Trace => Arisen.Native.LogLevel.Trace,
+                LogLevel.Log => Arisen.Native.LogLevel.Debug,
+                LogLevel.Info => Arisen.Native.LogLevel.Info,
+                LogLevel.Warning => Arisen.Native.LogLevel.Warning,
+                LogLevel.Error => Arisen.Native.LogLevel.Error,
+                LogLevel.Fatal => Arisen.Native.LogLevel.Fatal,
+                _ => Arisen.Native.LogLevel.Info
+            };
+
+            // Use an empty source location for now
+            using var location = new Arisen.Native.LogSourceLocation();
+            instance.Log(nativeLevel, msg.ToString() ?? "", location, threadName);
         }
     }
 

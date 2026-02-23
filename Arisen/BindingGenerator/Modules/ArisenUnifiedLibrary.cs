@@ -43,6 +43,7 @@ public class ArisenUnifiedLibrary : ArisenLibrary
         var headerEntries = new (string relPath, string includeDir)[]
         {
             ("Base/Assertion.h",              includeDirs[0]), // Core.Foundation
+            ("Diagnostics/ILogHandler.h",     includeDirs[0]), // Core.Foundation
             ("Logger/Logger.h",               includeDirs[3]), // Core.Diagnostic
             ("Common/EngineInit.h",           includeDirs[1]), // Core.HAL
             ("Windowing/RenderWindowAPI.h",   includeDirs[1]), // Core.HAL
@@ -53,6 +54,7 @@ public class ArisenUnifiedLibrary : ArisenLibrary
             ("RHI/Core/RHIInstance.h",         includeDirs[4]), // Core.RHI
             ("RHI/Enums/Pipeline/EProgramStage.h", includeDirs[4]), // Core.RHI
             ("ShaderCompiler/ShaderCompilerAPI.h", includeDirs[6]), // Core.ShaderCompiler
+            ("ShaderCompiler/CoreShaderCompilerCommon.h", includeDirs[6]), // Core.ShaderCompiler
         };
 
         Console.WriteLine("  Header file verification:");
@@ -75,9 +77,12 @@ public class ArisenUnifiedLibrary : ArisenLibrary
         {
             if (unit.IsSystemHeader) continue;
 
-            // Only generate code for our primary headers
             var fileName = Path.GetFileName(unit.FileName);
-            if (fileName == "Assertion.h" || 
+            var isModuleUnit = string.IsNullOrEmpty(fileName) || fileName == "ArisenNative" || fileName == "ArisenNative.cs";
+            
+            if (isModuleUnit || 
+                fileName == "Assertion.h" || 
+                fileName == "ILogHandler.h" || 
                 fileName == "Logger.h" || 
                 fileName == "EngineInit.h" || 
                 fileName == "RenderWindowAPI.h" || 
@@ -90,13 +95,13 @@ public class ArisenUnifiedLibrary : ArisenLibrary
                 fileName == "GraphicsAPI.h" ||
                 fileName == "EPresentMode.h" ||
                 fileName == "EFormat.h" ||
-                fileName == "ShaderCompilerAPI.h")
+                fileName == "ShaderCompilerAPI.h" ||
+                fileName == "CoreShaderCompilerCommon.h")
             {
                 unit.Ignore = false;
             }
             else if (!unit.IsSystemHeader)
             {
-                // Aggressively ignore anything else that's not our primary headers
                 unit.Ignore = true;
             }
 
