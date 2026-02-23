@@ -327,6 +327,22 @@ elseif(${TARGET} STREQUAL "CSharpEngineTest")
     endif()
     set_target_properties(CopyShaderLabRes PROPERTIES FOLDER "CMakeProcess")
 
+    # Shared Assets and Shader for test
+    set(SHARED_ASSETS_DIR "${CMAKE_SOURCE_DIR}/Test/Assets")
+    set(SHARED_SHADER_DIR "${CMAKE_SOURCE_DIR}/Test/Shader")
+    set(SHARED_ASSETS_DEST "${OUTPUT_DIR}/Assets")
+    set(SHARED_SHADER_DEST "${OUTPUT_DIR}/Shader")
+
+    add_custom_target(CopySharedTestResources
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${SHARED_ASSETS_DEST}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${SHARED_SHADER_DEST}"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${SHARED_ASSETS_DIR}" "${SHARED_ASSETS_DEST}"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${SHARED_SHADER_DIR}" "${SHARED_SHADER_DEST}"
+        COMMENT "Copy shared test assets and shaders"
+        USES_TERMINAL
+    )
+    set_target_properties(CopySharedTestResources PROPERTIES FOLDER "CMakeProcess")
+
     add_custom_target(BuildCSharpEngineTest ALL
     COMMAND dotnet build ${ARISEN_ENGINE_TEST_PROJ} --configuration $<CONFIG>
     WORKING_DIRECTORY ${ARISEN_ENGINE_TEST_PROJ_DIR}
@@ -337,6 +353,7 @@ elseif(${TARGET} STREQUAL "CSharpEngineTest")
     )
     add_dependencies(BuildCSharpEngineTest BuildArisenEngine)
     add_dependencies(BuildCSharpEngineTest CopyShaderLabRes)
+    add_dependencies(BuildCSharpEngineTest CopySharedTestResources)
     set_target_properties(BuildCSharpEngineTest PROPERTIES FOLDER "CMakeProcess")
 elseif(${TARGET} STREQUAL "BindingGenerator")
     message(STATUS "Configuring for Standalone Binding Generation")
