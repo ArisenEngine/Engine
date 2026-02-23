@@ -9,7 +9,7 @@ public enum GraphicsAPI
     DX12 = 2
 }
 
-public static class Graphics
+public static class RHISystem
 {
     private static NativeRHI.RHIInstance? m_Instance;
     private static NativeRHI.RHIDevice? m_Device;
@@ -27,20 +27,20 @@ public static class Graphics
             // 2. Create Instance Info
             var info = new NativeRHI.RHIInstanceInfo
             {
-                name = appName,
-                engineName = "ArisenEngine",
-                validationLayer = validationLayer,
-                variant = 0, major = 1, minor = 3, patch = 0, // Vulkan 1.3
-                appMajor = 1, appMinor = 0, appPatch = 0,
-                engineMajor = 1, engineMinor = 0, enginePatch = 0,
-                maxFramesInFlight = 2
+                Name = appName,
+                EngineName = "ArisenEngine",
+                ValidationLayer = validationLayer,
+                Variant = 0, Major = 1, Minor = 3, Patch = 0, // Vulkan 1.3
+                AppMajor = 1, AppMinor = 0, AppPatch = 0,
+                EngineMajor = 1, EngineMinor = 0, EnginePatch = 0,
+                MaxFramesInFlight = 2
             };
 
             // 3. Create Instance
             m_Instance = NativeRHI.RHILoader.CreateInstance(info);
             if (m_Instance == null)
             {
-                Diagnostics.Logger.Error($"[Graphics] Failed to create RHI instance for {api}");
+                Diagnostics.Logger.Error($"[RHISystem] Failed to create RHI instance for {api}");
                 return false;
             }
 
@@ -48,12 +48,12 @@ public static class Graphics
             m_Instance.PickPhysicalDevice(false);
             m_Instance.InitLogicDevices();
 
-            Diagnostics.Logger.Info($"[Graphics] Successfully initialized {api} RHI");
+            Diagnostics.Logger.Info($"[RHISystem] Successfully initialized {api} RHI");
             return true;
         }
         catch (Exception e)
         {
-            Diagnostics.Logger.Error($"[Graphics] Exception during initialization: {e.Message}");
+            Diagnostics.Logger.Error($"[RHISystem] Exception during initialization: {e.Message}");
             return false;
         }
     }
@@ -63,7 +63,7 @@ public static class Graphics
         m_Device = null;
         m_Instance = null;
         NativeRHI.RHILoader.Unload();
-        Diagnostics.Logger.Info("[Graphics] RHI Shutdown completed");
+        Diagnostics.Logger.Info("[RHISystem] RHI Shutdown completed");
     }
 
     internal static void SetLogicDevice(NativeRHI.RHIDevice device)

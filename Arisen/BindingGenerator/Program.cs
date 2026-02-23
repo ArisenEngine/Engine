@@ -135,52 +135,74 @@ internal static class Program
                 patchedContent = patchedContent.Replace("public static void Dispose()", "public static void Unload()");
             }
 
-            // 5. Remove redundant "Tag" classes (they are just markers and add 1000s of lines of noise)
-            patchedContent = Regex.Replace(patchedContent, 
-                @"    public unsafe partial class \w+Tag : IDisposable\s+\{.*?internal protected virtual void Dispose\(bool disposing, bool callNativeDtor \)\s+\{.*?\}\s+\}", 
-                "", RegexOptions.Singleline);
 
             // 6. Cleanup the deep namespace prefixes
-            // Unified replacement for ArisenEngine -> Arisen
+            // Step 1: Unified root namespace
+            patchedContent = patchedContent.Replace("namespace ArisenBinding", "namespace Arisen.Native");
+            patchedContent = patchedContent.Replace("namespace ArisenEngine", "namespace Arisen.Native");
+            patchedContent = patchedContent.Replace("namespace Native", "namespace Arisen.Native");
+
+            // Step 2: Balanced-brace flattener for nested namespaces
+            // We turn: namespace Arisen.Native { namespace Sub { ... } } -> namespace Arisen.Native.Sub { ... }
+            bool changed = true;
+            while (changed)
+            {
+                changed = false;
+                // .NET Balanced Groups Regex to find a nested namespace block and its matching braces
+                var pattern = @"(namespace\s+Arisen\.Native[\w\.]*)\s*\{\s*namespace\s+([\w\.]+)\s*\{((?>[^{}]+|(?<open>{)|(?<-open>}))*)\}\s*\}";
+                patchedContent = Regex.Replace(patchedContent, pattern, (m) => {
+                    var ns1 = m.Groups[1].Value.Trim();
+                    var ns2 = m.Groups[2].Value.Trim();
+                    var inner = m.Groups[3].Value;
+                    changed = true;
+                    if (ns2 == "Arisen.Native" || ns2 == "Native" || ns2 == "ArisenEngine")
+                        return $"{ns1} {{{inner}}}";
+                    return $"{ns1}.{ns2} {{{inner}}}";
+                }, RegexOptions.Singleline);
+            }
+
+            // Step 3: Global type reference cleanup
             patchedContent = patchedContent.Replace("global::ArisenBinding.ArisenEngine.", "Arisen.Native.");
             patchedContent = patchedContent.Replace("ArisenBinding.ArisenEngine.", "Arisen.Native.");
-            patchedContent = patchedContent.Replace("namespace ArisenEngine", "namespace Native"); // Note: usually nested in ArisenBinding
-            patchedContent = patchedContent.Replace("namespace ArisenBinding", "namespace Arisen");
-
-            // Explicitly map nested namespaces that should be under Arisen.Native
-            patchedContent = patchedContent.Replace("ArisenBinding.RHI.", "Arisen.Native.RHI.");
-            patchedContent = patchedContent.Replace("ArisenBinding.HAL.", "Arisen.Native.HAL.");
-            patchedContent = patchedContent.Replace("ArisenBinding.Logger.", "Arisen.Native.Diagnostics."); // Map Logger to Diagnostics
-            patchedContent = patchedContent.Replace("ArisenBinding.Assertion.", "Arisen.Native.Assertion.");
-            
-            // Map the old ArisenBinding prefix to Arisen.Native
+            patchedContent = patchedContent.Replace("global::ArisenBinding.Arisen.", "Arisen.Native.");
             patchedContent = patchedContent.Replace("ArisenBinding.Arisen.", "Arisen.Native.");
+            patchedContent = patchedContent.Replace("global::ArisenBinding.", "Arisen.Native.");
             patchedContent = patchedContent.Replace("ArisenBinding.", "Arisen.Native.");
-            
-            // Delegates and some global types stay under ArisenBinding directly
-            // So we just remove the global:: prefix for them
-            patchedContent = patchedContent.Replace("global::ArisenBinding.", "ArisenBinding.");
-            patchedContent = patchedContent.Replace("global::System.", "System.");
-            
-            // Fix any accidental double Arisen introduced by overlapping replacements
-            patchedContent = patchedContent.Replace("ArisenBinding.Arisen.Arisen.", "ArisenBinding.Arisen.");
-            
-            // Fix occasional cases where ArisenEngine escaped replacement
-            patchedContent = patchedContent.Replace("ArisenEngine.RHI", "Arisen.RHI");
-            patchedContent = patchedContent.Replace("ArisenEngine.HAL", "Arisen.HAL");
-            
-            // Map ArisenBinding.Arisen.String to string
+
+            // Handle underscore-based names in delegates (CppSharp style)
+            patchedContent = patchedContent.Replace("ArisenBinding_ArisenEngine_", "Arisen_Native_");
+            patchedContent = patchedContent.Replace("ArisenBinding_Arisen_", "Arisen_Native_");
+            patchedContent = patchedContent.Replace("ArisenBinding_", "Arisen_Native_");
+
+            // Step 4: Fix __Internal references in Internal subclasses — scoped to each class body only
+            // IMPORTANT: We must NOT do global String.Replace here, as that would corrupt
+            // unrelated classes in the same file (e.g. LogSourceLocation, RHIInstanceInfo).
+            // Instead, use balanced-brace regex to find each *Internal class body and replace only within it.
+            patchedContent = Regex.Replace(patchedContent,
+                @"(public\s+unsafe\s+partial\s+class\s+(\w+)Internal\s*:\s*([\w\.]+)\.(\w+)[^{]*\{)((?>[^{}]+|(?<open>\{)|(?<-open>\}))*)(\})",
+                m => {
+                    string baseClassName = m.Groups[4].Value;
+                    string body = m.Groups[5].Value;
+                    body = body.Replace("(__Internal*)", $"({baseClassName}.__Internal*)");
+                    body = body.Replace("sizeof(__Internal)", $"sizeof({baseClassName}.__Internal)");
+                    body = body.Replace("new __Internal()", $"new {baseClassName}.__Internal()");
+                    body = body.Replace("(__Internal native", $"({baseClassName}.__Internal native");
+                    return m.Groups[1].Value + body + m.Groups[6].Value;
+                }, RegexOptions.Singleline);
+
+            // Step 5: Marshalling and specific type fixes
             patchedContent = patchedContent.Replace("ArisenBinding.Arisen.String", "string");
-            
-            // Fix invalid 'new string.__Internal()' created by the above replacement
-            // In these cases, it's likely a return-by-value string being marshaled.
-            // But since we mapped ArisenEngine::String to C# string, CppSharp gets confused.
-            // For now, nuke the 'new string.__Internal()' line and replace it with IntPtr.Zero
+            patchedContent = patchedContent.Replace("new Arisen.Native.String.__Internal()", "System.IntPtr.Zero");
+            patchedContent = patchedContent.Replace("Arisen.Native.String", "string");
             patchedContent = patchedContent.Replace("var ___ret = new string.__Internal();", "var ___ret = System.IntPtr.Zero;");
             patchedContent = patchedContent.Replace("*(string*) @return", "*(System.IntPtr*) @return");
             patchedContent = patchedContent.Replace("new IntPtr(&___ret)", "___ret");
             
-            // Emergency fix for broken UTF8Marshaller calls in generated code
+            // Fix string fields in __Internal structs — C++ std::string/ArisenEngine::String
+            // fields are native pointers, not managed C# strings
+            patchedContent = Regex.Replace(patchedContent, 
+                @"(internal\s+)string(\s+\w+;)", "$1__IntPtr$2");
+            
             patchedContent = patchedContent.Replace("CppSharp.Runtime.UTF8Marshaller.InternalMarshalToNative", "Arisen.Native.UTF8Marshaller.UTF8ToNative");
             patchedContent = patchedContent.Replace("CppSharp.Runtime.UTF8Marshaller.InternalMarshalToManaged", "Arisen.Native.UTF8Marshaller.NativeToUTF8");
             patchedContent = patchedContent.Replace("CppSharp.Runtime.UTF8Marshaller.NativeToUTF8", "Arisen.Native.UTF8Marshaller.NativeToUTF8");
@@ -189,8 +211,14 @@ internal static class Program
             patchedContent = patchedContent.Replace("UTF8Marshaller.InternalMarshalToManaged", "Arisen.Native.UTF8Marshaller.NativeToUTF8");
             patchedContent = patchedContent.Replace("UTF8Marshaller.", "Arisen.Native.UTF8Marshaller.");
 
-            // Fix GetDeviceLimits pointer conversion
             patchedContent = patchedContent.Replace(".GetDeviceLimits(__Instance, ___ret)", ".GetDeviceLimits(__Instance, new __IntPtr(&___ret))");
+
+            // Final redundant prefix cleanup (must be last!)
+            patchedContent = patchedContent.Replace("Arisen.Native.Arisen.Native.", "Arisen.Native.");
+            patchedContent = patchedContent.Replace("Arisen.Native.ArisenEngine.", "Arisen.Native.");
+            patchedContent = patchedContent.Replace("Arisen.Native.Native.", "Arisen.Native.");
+            patchedContent = patchedContent.Replace("Arisen.Native..", "Arisen.Native.");
+            patchedContent = Regex.Replace(patchedContent, @"(Arisen\.Native\.){2,}", "Arisen.Native.");
 
             // 7. Remove weird Std namespace blocks at the end of files (noise from ignored STL types)
             // Replace any internal use of Std types with IntPtr to avoid compilation errors
@@ -222,8 +250,46 @@ internal static class Program
                 public bool IsValid => Index != 0xFFFFFFFFu;
                 public static RHIHandle Invalid => new RHIHandle { Index = 0xFFFFFFFFu, Generation = 0 };
             }";
-                // Target the empty RHI namespace block
-                patchedContent = Regex.Replace(patchedContent, @"namespace RHI\s+\{\s+\}", "namespace RHI\r\n        {" + rhiHandleStruct + "\r\n        }");
+                // Target the Arisen.Native.RHI namespace block (safe for both flattened and original)
+                patchedContent = patchedContent.Replace("namespace Arisen.Native.RHI {", "namespace Arisen.Native.RHI\r\n    {" + rhiHandleStruct);
+                patchedContent = patchedContent.Replace("namespace Arisen.Native.RHI\n{", "namespace Arisen.Native.RHI\n    {" + rhiHandleStruct);
+                patchedContent = patchedContent.Replace("namespace RHI\r\n        {", "namespace RHI\r\n        {" + rhiHandleStruct);
+            }
+
+            // 8b. Inject missing uint32_t properties into RHIInstanceInfo
+            // CppSharp ignored these because it couldn't resolve uint32_t properties,
+            // but the __Internal struct already has the fields.
+            if (fileName == "RHIInstance.cs")
+            {
+                var uint32Props = new[] {
+                    ("variant", "Variant"),
+                    ("major", "Major"),
+                    ("minor", "Minor"),
+                    ("patch", "Patch"),
+                    ("appMajor", "AppMajor"),
+                    ("appMinor", "AppMinor"),
+                    ("appPatch", "AppPatch"),
+                    ("engineMajor", "EngineMajor"),
+                    ("engineMinor", "EngineMinor"),
+                    ("enginePatch", "EnginePatch"),
+                    ("maxFramesInFlight", "MaxFramesInFlight")
+                };
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine();
+                foreach (var (field, prop) in uint32Props)
+                {
+                    sb.AppendLine($"                public uint {prop}");
+                    sb.AppendLine( "                {");
+                    sb.AppendLine($"                    get {{ return ((__Internal*)__Instance)->{field}; }}");
+                    sb.AppendLine($"                    set {{ ((__Internal*)__Instance)->{field} = value; }}");
+                    sb.AppendLine( "                }");
+                    sb.AppendLine();
+                }
+                // Inject before the closing brace of ValidationLayer property's class
+                // The pattern: the closing "}" of the ValidationLayer property set block, followed by class close
+                patchedContent = patchedContent.Replace(
+                    "                    ((__Internal*)__Instance)->validationLayer = (byte) (value ? 1 : 0);\r\n                    }\r\n                }\r\n            }",
+                    "                    ((__Internal*)__Instance)->validationLayer = (byte) (value ? 1 : 0);\r\n                    }\r\n                }\r\n" + sb.ToString() + "            }");
             }
 
             // 9. Cleanup empty namespace blocks (including Std)
@@ -242,6 +308,10 @@ internal static class Program
 
         // Generate UTF8Marshaller.cs
         GenerateMarshaller(rootDir);
+
+        // Generate RenderWindowAPI.cs — manual P/Invoke wrapper because CppSharp
+        // cannot process extern "C" free functions with Windows-specific types (HWND, WindowProc)
+        GenerateRenderWindowAPI(rootDir);
     }
 
     static void GenerateMarshaller(string outputDir)
@@ -281,6 +351,71 @@ namespace Arisen.Native
 ";
         File.WriteAllText(path, content);
         Console.WriteLine("Generated UTF8Marshaller.cs");
+    }
+
+    static void GenerateRenderWindowAPI(string outputDir)
+    {
+        var path = Path.Combine(outputDir, "RenderWindowAPI.cs");
+        var content = @"// ----------------------------------------------------------------------------
+// Manual P/Invoke wrapper for RenderWindowAPI
+// CppSharp cannot generate this because the C++ header uses extern ""C"" free
+// functions with Windows-specific types (HWND, WindowProc) that fail AST resolution.
+// ----------------------------------------------------------------------------
+using System;
+using System.Runtime.InteropServices;
+using System.Security;
+using __CallingConvention = global::System.Runtime.InteropServices.CallingConvention;
+
+namespace Arisen.Native.HAL
+{
+    public static class RenderWindowAPI
+    {
+        private const string DllName = ""Core.HAL.dll"";
+
+        [SuppressUnmanagedCodeSecurity, DllImport(DllName, CallingConvention = __CallingConvention.Cdecl)]
+        public static extern uint CreateFullScreenRenderSurface(IntPtr host, IntPtr callback);
+
+        [SuppressUnmanagedCodeSecurity, DllImport(DllName, CallingConvention = __CallingConvention.Cdecl)]
+        public static extern uint CreateRenderWindow(IntPtr host, IntPtr callback, int width, int height);
+
+        [SuppressUnmanagedCodeSecurity, DllImport(DllName, CallingConvention = __CallingConvention.Cdecl)]
+        public static extern uint CreateRenderWindowWithResizeCallback(
+            IntPtr host, IntPtr callback, IntPtr resizeCallback, IntPtr resizingCallback, int width, int height);
+
+        [SuppressUnmanagedCodeSecurity, DllImport(DllName, CallingConvention = __CallingConvention.Cdecl)]
+        public static extern void RemoveRenderSurface(uint id);
+
+        [SuppressUnmanagedCodeSecurity, DllImport(DllName, CallingConvention = __CallingConvention.Cdecl)]
+        public static extern void ResizeRenderSurface(uint id, uint width, uint height);
+
+        [SuppressUnmanagedCodeSecurity, DllImport(DllName, CallingConvention = __CallingConvention.Cdecl)]
+        public static extern IntPtr GetWindowHandle(uint id);
+
+        [SuppressUnmanagedCodeSecurity, DllImport(DllName, CallingConvention = __CallingConvention.Cdecl)]
+        public static extern uint GetWindowWidth(uint id);
+
+        [SuppressUnmanagedCodeSecurity, DllImport(DllName, CallingConvention = __CallingConvention.Cdecl)]
+        public static extern uint GetWindowHeight(uint id);
+
+        [SuppressUnmanagedCodeSecurity, DllImport(DllName, CallingConvention = __CallingConvention.Cdecl)]
+        public static extern uint GetWindowId(IntPtr handle);
+
+        [SuppressUnmanagedCodeSecurity, DllImport(DllName, CallingConvention = __CallingConvention.Cdecl)]
+        public static extern void SetWindowResizeCallback(uint windowId, IntPtr callback);
+
+        [SuppressUnmanagedCodeSecurity, DllImport(DllName, CallingConvention = __CallingConvention.Cdecl)]
+        public static extern void SetWindowResizingCallback(uint windowId, IntPtr callback);
+
+        [SuppressUnmanagedCodeSecurity, DllImport(DllName, CallingConvention = __CallingConvention.Cdecl)]
+        public static extern IntPtr GetWindowUserData(uint windowId);
+
+        [SuppressUnmanagedCodeSecurity, DllImport(DllName, CallingConvention = __CallingConvention.Cdecl)]
+        public static extern void SetWindowUserData(uint windowId, IntPtr data);
+    }
+}
+";
+        File.WriteAllText(path, content);
+        Console.WriteLine("Generated RenderWindowAPI.cs");
     }
 
     static void ParseArguments(string[] args)

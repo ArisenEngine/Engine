@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using StageEnum = ArisenBinding.NativePlatform.ArisenEngine.RHI.ProgramStage;
+using StageEnum = Arisen.Native.RHI.EProgramStage;
 
 namespace ArisenEngineTest.Shaders;
 

@@ -1,6 +1,9 @@
 ﻿using ArisenEngine.Platform;
 using ArisenEngine.Platform.Desktop;
 using ArisenEngine.Core.RHI;
+using ArisenEngine.Core.Lifecycle;
+using ArisenEngine.Core.Diagnostics;
+using ArisenEngine.Core.RHI;
 
 namespace ArisenEngine.Rendering;
 
@@ -49,17 +52,17 @@ public class RenderSurface : IRenderSurface
             m_Handle = NativeHAL.RenderWindowAPI.GetWindowHandle(m_SurfaceId);
             NativeHAL.RenderWindowAPI.SetWindowResizeCallback(m_SurfaceId, m_Processor.ResizeCallbackPtr);
 
-            // Create Logic Device for this surface if instance is ready
-            var instance = Graphics.Instance;
-            if (instance != null)
-            {
-                instance.CreateLogicDevice(m_SurfaceId);
-                var device = instance.GetLogicalDevice(m_SurfaceId);
-                if (device != null)
-                {
-                    Graphics.SetLogicDevice(device);
-                }
-            }
+            // TODO: Per-surface device creation — CreateLogicDevice and GetLogicalDevice
+            // are pure virtual methods in C++ RHIInstance that CppSharp cannot bind.
+            // Device creation is handled by Graphics.Initialize() → InitLogicDevices() instead.
+            // var instance = RHIGraphics.Instance;
+            // if (instance != null)
+            // {
+            //     instance.CreateLogicDevice(m_SurfaceId);
+            //     var device = instance.GetLogicalDevice(m_SurfaceId);
+            //     if (device != null)
+            //         RHIGraphics.SetLogicDevice(device);
+            // }
             
             Surfaces.Add(this);
         }

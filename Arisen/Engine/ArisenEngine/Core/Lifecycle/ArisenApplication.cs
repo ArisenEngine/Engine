@@ -1,4 +1,5 @@
 using ArisenEngine.Core.Lifecycle;
+using ArisenEngine.Rendering;
 
 namespace ArisenEngine.Core.Lifecycle;
 
@@ -43,13 +44,13 @@ public class ArisenApplication
     
     public static int Run(int width, int height, string name = "")
     {
-        EngineInstance.RegisterSurface(name, width, height);
+        EngineInstance.RegisterSurface(IntPtr.Zero, name, SurfaceType.GameView, width, height);
         return EngineInstance.Run(name);
     }
     
     public static int Run(string name = "")
     {
-        EngineInstance.RegisterSurface(name);
+        EngineInstance.RegisterSurface(IntPtr.Zero, name, SurfaceType.GameView);
         return EngineInstance.Run(name);
     }
 
