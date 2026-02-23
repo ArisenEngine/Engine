@@ -46,6 +46,7 @@ for %%I in ("%ROOT_DIR%") do set "ROOT_DIR=%%~fI"
 
 REM ==== Prepare environment (compiler/linker/Ninja/RC) ====
 set "ENV_DIR=%SCRIPT_DIR%\.."
+set "ORIGINAL_SCRIPT_DIR=%SCRIPT_DIR%"
 if exist "%ENV_DIR%\setup-env.bat" (
     call "%ENV_DIR%\setup-env.bat"
     if errorlevel 1 (
@@ -60,6 +61,7 @@ if exist "%ENV_DIR%\setup-env.bat" (
 ) else (
     echo WARNING: setup-env.bat not found at %ENV_DIR%
 )
+set "SCRIPT_DIR=%ORIGINAL_SCRIPT_DIR%"
 
 REM Toolchain info (for diagnostics)
 echo CMake Program: %CMAKE_MAKE_PROGRAM%
