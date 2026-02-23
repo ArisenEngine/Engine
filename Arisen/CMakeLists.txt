@@ -306,42 +306,19 @@ elseif(${TARGET} STREQUAL "CSharpEngineTest")
     set(ARISEN_ENGINE_TEST_PROJ ${CMAKE_SOURCE_DIR}/Test/CSharpEngineTest/CSharpEngineTest.csproj)
     set(ARISEN_ENGINE_TEST_PROJ_DIR ${CMAKE_SOURCE_DIR}/Test/CSharpEngineTest/)
 
-    # Copy shader resources for test if present; otherwise create an empty dir to avoid build failure
-    set(SHADER_LAB_RES "${CMAKE_SOURCE_DIR}/Test/CSharpEngineTest/ShaderLabRes")
-    set(SHADER_LAB_RES_DEST "${OUTPUT_DIR}/ShaderLabRes")
-
-    if(EXISTS "${SHADER_LAB_RES}")
-        add_custom_target(CopyShaderLabRes
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADER_LAB_RES_DEST}"
-            COMMAND ${CMAKE_COMMAND} -E copy_directory "${SHADER_LAB_RES}" "${SHADER_LAB_RES_DEST}"
-            COMMENT "Copy shader lab res"
-            USES_TERMINAL
-        )
-    else()
-        message(WARNING "ShaderLabRes not found at ${SHADER_LAB_RES}. Creating empty destination.")
-        add_custom_target(CopyShaderLabRes
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADER_LAB_RES_DEST}"
-            COMMENT "Create empty ShaderLabRes destination"
-            USES_TERMINAL
-        )
-    endif()
-    set_target_properties(CopyShaderLabRes PROPERTIES FOLDER "CMakeProcess")
-
-    # Shared Assets and Shader for test
     set(SHARED_ASSETS_DIR "${CMAKE_SOURCE_DIR}/Test/Assets")
     set(SHARED_SHADER_DIR "${CMAKE_SOURCE_DIR}/Test/Shader")
-    set(SHARED_ASSETS_DEST "${OUTPUT_DIR}/Assets")
-    set(SHARED_SHADER_DEST "${OUTPUT_DIR}/Shader")
 
-    add_custom_target(CopySharedTestResources
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${SHARED_ASSETS_DEST}"
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${SHARED_SHADER_DEST}"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${SHARED_ASSETS_DIR}" "${SHARED_ASSETS_DEST}"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${SHARED_SHADER_DIR}" "${SHARED_SHADER_DEST}"
-        COMMENT "Copy shared test assets and shaders"
-        USES_TERMINAL
-    )
-    set_target_properties(CopySharedTestResources PROPERTIES FOLDER "CMakeProcess")
+    # Include resources in SLN
+    file(GLOB_RECURSE SHADER_FILES CONFIGURE_DEPENDS "${SHARED_SHADER_DIR}/*")
+    file(GLOB_RECURSE ASSET_FILES CONFIGURE_DEPENDS "${SHARED_ASSETS_DIR}/*")
+    set_source_files_properties(${SHADER_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+    set_source_files_properties(${ASSET_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+    source_group(TREE "${SHARED_SHADER_DIR}" PREFIX "Shader" FILES ${SHADER_FILES})
+    source_group(TREE "${SHARED_ASSETS_DIR}" PREFIX "Assets" FILES ${ASSET_FILES})
+
+    add_custom_target(TestResources SOURCES ${SHADER_FILES} ${ASSET_FILES})
+    set_target_properties(TestResources PROPERTIES FOLDER "Resources")
 
     add_custom_target(BuildCSharpEngineTest ALL
     COMMAND dotnet build ${ARISEN_ENGINE_TEST_PROJ} --configuration $<CONFIG>
@@ -352,8 +329,6 @@ elseif(${TARGET} STREQUAL "CSharpEngineTest")
     USES_TERMINAL
     )
     add_dependencies(BuildCSharpEngineTest BuildArisenEngine)
-    add_dependencies(BuildCSharpEngineTest CopyShaderLabRes)
-    add_dependencies(BuildCSharpEngineTest CopySharedTestResources)
     set_target_properties(BuildCSharpEngineTest PROPERTIES FOLDER "CMakeProcess")
 elseif(${TARGET} STREQUAL "BindingGenerator")
     message(STATUS "Configuring for Standalone Binding Generation")

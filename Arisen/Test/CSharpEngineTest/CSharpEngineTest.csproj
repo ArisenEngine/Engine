@@ -17,6 +17,21 @@
       <ProjectReference Include="..\..\Engine\ArisenEngine\ArisenEngine.csproj" />
 </ItemGroup>
 
+<ItemGroup>
+    <None Include="..\Assets\**\*.*">
+        <Link>Assets\%(RecursiveDir)%(FileName)%(Extension)</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\Shader\**\*.*">
+        <Link>Shader\%(RecursiveDir)%(FileName)%(Extension)</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="ShaderLabRes\**\*.*">
+        <Link>ShaderLabRes\%(RecursiveDir)%(FileName)%(Extension)</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+</ItemGroup>
+
 <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
 <OutputPath>..\..\Projects\VisualStudio\CSharpEngineTest\Outputs\Debug\</OutputPath>
 </PropertyGroup>
