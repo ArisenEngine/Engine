@@ -188,8 +188,8 @@ set(BINDING_GENERATOR_EXE ${OUTPUT_DIR}/Generator)
 set(AUTO_BINDING_DIR ${CMAKE_SOURCE_DIR}/AutoBinding)
 set(AUTO_BINDING_PROJ ${AUTO_BINDING_DIR}/AutoBinding.csproj)
 
-set(ARISEN_ENGINE_PROJ ${CMAKE_SOURCE_DIR}/Engine/ArisenEngine/ArisenEngine.csproj)
-set(ARISEN_ENGINE_PROJ_DIR ${CMAKE_SOURCE_DIR}/Engine/ArisenEngine/)
+set(ARISEN_ENGINE_PROJ ${CMAKE_SOURCE_DIR}/Engine/ArisenEngine.csproj)
+set(ARISEN_ENGINE_PROJ_DIR ${CMAKE_SOURCE_DIR}/Engine/)
 
     # Build C# projects
 add_custom_target(BuildBindingGenerator
