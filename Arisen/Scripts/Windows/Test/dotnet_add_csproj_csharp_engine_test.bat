@@ -47,7 +47,7 @@ if exist "%SLN_PATH%" (
     for %%I in ("!SCRIPT_DIR!\..\..\..\BindingGenerator\BindingGenerator.csproj") do set "BINDING_GENERATOR=%%~fI"
     for %%I in ("!SCRIPT_DIR!\..\..\..\AutoBinding\AutoBinding.csproj") do set "AUTO_BINDING=%%~fI"
     for %%I in ("!SCRIPT_DIR!\..\..\..\Serialization\Serialization\Serialization.csproj") do set "SERIALIZATION=%%~fI"
-    for %%I in ("!SCRIPT_DIR!\..\..\..\Engine\ArisenEngine\ArisenEngine.csproj") do set "ARISEN_ENGINE=%%~fI"
+    for %%I in ("!SCRIPT_DIR!\..\..\..\Engine\ArisenEngine.csproj") do set "ARISEN_ENGINE=%%~fI"
     for %%I in ("!SCRIPT_DIR!\..\..\..\Test\CSharpEngineTest\CSharpEngineTest.csproj") do set "ARISEN_ENGINE_TEST=%%~fI"
 
     echo SLN_PATH: !SLN_PATH!
@@ -101,7 +101,7 @@ if exist "%SLN_PATH%" (
         goto :cleanup
     )
     if not exist "!ARISEN_ENGINE!" (
-        echo ERROR: Missing project ^(ArisenEngine^) at !SCRIPT_DIR!\..\..\..\Engine\ArisenEngine\ArisenEngine.csproj
+        echo ERROR: Missing project ^(ArisenEngine^) at !SCRIPT_DIR!\..\..\..\Engine\ArisenEngine.csproj
         set "EXIT_CODE=1"
         goto :cleanup
     )
@@ -124,7 +124,7 @@ if exist "%SLN_PATH%" (
     set "REL_BINDING_GENERATOR=..\..\..\BindingGenerator\BindingGenerator.csproj"
     set "REL_AUTO_BINDING=..\..\..\AutoBinding\AutoBinding.csproj"
     set "REL_SERIALIZATION=..\..\..\Serialization\Serialization\Serialization.csproj"
-    set "REL_ARISEN_ENGINE=..\..\..\Engine\ArisenEngine\ArisenEngine.csproj"
+    set "REL_ARISEN_ENGINE=..\..\..\Engine\ArisenEngine.csproj"
     set "REL_ARISEN_ENGINE_TEST=..\..\..\Test\CSharpEngineTest\CSharpEngineTest.csproj"
 
     echo Adding !REL_BINDING_GENERATOR! to !SLN_FILE! (--in-root)
