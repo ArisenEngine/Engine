@@ -2,10 +2,10 @@ using System.Runtime.InteropServices;
 
 namespace ArisenEngine.Platform.Desktop;
 
-internal static class Win32Native
+public static class Win32Native
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal struct NativeMessage
+    public struct NativeMessage
     {
         public IntPtr handle;
         public uint msg;
@@ -16,20 +16,20 @@ internal static class Win32Native
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct POINT
+    public struct POINT
     {
         public int X;
         public int Y;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct RECT
+    public struct RECT
     {
         public int Left, Top, Right, Bottom;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct PAINTSTRUCT
+    public struct PAINTSTRUCT
     {
         public IntPtr Hdc;
         public bool Erase;

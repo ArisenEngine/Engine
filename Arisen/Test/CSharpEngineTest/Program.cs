@@ -1,10 +1,21 @@
+using ArisenEngine.Core.Diagnostics;
+using CSharpEngineTest.Framework;
+using CSharpEngineTest.RHI.Rendering;
 
-using ArisenEngineTest.Shaders;
+Logger.Initialize();
+Logger.Log("###### Start C# Engine RHI Test ######");
 
-ArisenEngine.Core.Diagnostics.Logger.Initialize();
-ArisenEngine.Core.Diagnostics.Logger.Log("###### Start Shader Lab Test ######");
-ShaderProcessor.ParseShader("ShaderLabRes/Packages/com.unity.render-pipelines.universal/Shaders", "SimpleLit.shader");
-ShaderProcessor.ParseShader("ShaderLabRes/Packages/com.unity.render-pipelines.universal/Shaders", "Lit.shader");
-ArisenEngine.Core.Diagnostics.Logger.Log("###### End Shader Lab Test ######");
+TestRunner.RegisterTest<RHIBasicTriangleTest>();
 
-ArisenEngine.Core.Diagnostics.Logger.Dispose();
+try 
+{
+    TestRunner.RunAllTests();
+}
+catch (Exception ex)
+{
+    Logger.Error($"Unhandled exception in TestRunner: {ex.Message}");
+    Logger.Error(ex.StackTrace ?? "");
+}
+
+Logger.Log("###### End C# Engine RHI Test ######");
+Logger.Dispose();

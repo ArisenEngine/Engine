@@ -107,6 +107,7 @@ namespace ArisenEngine::HAL
 			{
 				WindowInfo* winInfo = GetInfoFromHandle(hwnd);
 				if (winInfo) winInfo->isClosed = true;
+				PostQuitMessage(0);
 				break;
 			}
 			
