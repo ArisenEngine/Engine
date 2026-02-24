@@ -14,7 +14,7 @@
   <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
 </PropertyGroup>
 <ItemGroup>
-      <ProjectReference Include="..\..\Engine\ArisenEngine\ArisenEngine.csproj" />
+      <ProjectReference Include="..\..\Engine\ArisenEngine.csproj" />
 </ItemGroup>
 
 <ItemGroup>
