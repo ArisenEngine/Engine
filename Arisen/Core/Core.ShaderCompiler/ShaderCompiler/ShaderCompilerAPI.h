@@ -6,6 +6,10 @@
 #include <wrl/client.h>  // Replace CComPtr with Microsoft WRL smart pointer
 #include "CoreShaderCompilerCommon.h"
 #include "../Core.HAL/CoreHALCommon.h"
+
+ARISEN_BIND_MODULE("Core.ShaderCompiler.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.ShaderCompiler")
+
 #include "Logger/Logger.h"
 #include "RHI/Enums/Pipeline/EProgramStage.h"
 #include <fstream>

@@ -2,13 +2,6 @@ using Arisen.Native.RHI;
 
 namespace ArisenEngine.Core.RHI;
 
-public enum GraphicsAPI
-{
-    None = 0,
-    Vulkan = 1,
-    DX12 = 2
-}
-
 public static class RHISystem
 {
     private static NativeRHI.RHIInstance? m_Instance;
@@ -17,12 +10,12 @@ public static class RHISystem
     public static NativeRHI.RHIInstance? Instance => m_Instance;
     public static NativeRHI.RHIDevice? Device => m_Device;
 
-    public static bool Initialize(GraphicsAPI api, string appName = "ArisenApp", bool validationLayer = false)
+    public static bool Initialize(NativeRHI.GraphicsAPI api, string appName = "ArisenApp", bool validationLayer = false)
     {
         try
         {
             // 1. Set the graphics API
-            NativeRHI.RHILoader.SetCurrentGraphicsAPI((NativeRHI.GraphicsAPI)api);
+            NativeRHI.RHILoader.SetCurrentGraphicsAPI(api);
 
             // 2. Create Instance Info
             var info = new NativeRHI.RHIInstanceInfo

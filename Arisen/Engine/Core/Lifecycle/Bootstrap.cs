@@ -22,7 +22,7 @@ public static class Bootstrap
 
                 // Initialize Graphics RHI (Default to Vulkan for now, or read from config)
                 // TODO: Load from configuration
-                if (RHISystem.Initialize(ArisenEngine.Core.RHI.GraphicsAPI.Vulkan, validationLayer: true))
+                if (RHISystem.Initialize(Arisen.Native.RHI.GraphicsAPI.Vulkan, validationLayer: true))
                 {
                     m_IsInitialized = true;
                     return true;
