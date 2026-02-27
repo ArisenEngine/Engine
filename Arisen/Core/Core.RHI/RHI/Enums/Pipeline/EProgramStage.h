@@ -1,8 +1,12 @@
 #pragma once
+#include "Base/BindingMacros.h"
 
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 namespace ArisenEngine::RHI
 {
     // For DXC 
+    ARISEN_BIND_ENUM(EProgramStage)
     typedef enum EProgramStage
     {
         Vertex = 0,

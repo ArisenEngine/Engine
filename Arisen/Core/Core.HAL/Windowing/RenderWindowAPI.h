@@ -2,6 +2,8 @@
 #include "../CoreHALCommon.h"
 #include "../Common/PlatformTypes.h"
 
+ARISEN_BIND_MODULE("Core.HAL.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.HAL")
 namespace ArisenEngine::HAL
 {
     extern "C"

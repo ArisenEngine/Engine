@@ -101,6 +101,7 @@ internal static class EngineInstance
         {
             while (m_IsRunning)
             {
+                Time.Update();
                 if (m_MessageHandler != null)
                 {
                     while (m_MessageHandler.NextFrame())
