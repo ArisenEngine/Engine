@@ -1,8 +1,13 @@
 #pragma once
 #include <cstdint>
+#include "Base/BindingMacros.h"
+
+ARISEN_BIND_MODULE("Core.Diagnostic.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.Diagnostics")
 
 namespace ArisenEngine
 {
+    ARISEN_BIND_ENUM(LogLevel)
     enum class LogLevel : uint8_t
     {
         Trace = 0x01,
@@ -13,6 +18,7 @@ namespace ArisenEngine
         Fatal = 0x20
     };
 
+    ARISEN_BIND_STRUCT(LogSourceLocation)
     struct LogSourceLocation
     {
         const char* file;

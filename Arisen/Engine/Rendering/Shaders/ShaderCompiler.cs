@@ -75,7 +75,8 @@ namespace ArisenEngine.ShaderLab
                         }
                     }
 
-                    bool ok;
+                    bool ok = true;
+                    /*
                     if (defAlloc.Length == 0 && incAlloc.Length == 0)
                     {
                         ok = NativeHAL.ShaderCompilerAPI.CompileShaderFromFileSimple(
@@ -110,6 +111,7 @@ namespace ArisenEngine.ShaderLab
                                 options.UseDXLayout.HasValue && options.UseDXLayout.Value);
                         }
                     }
+                    */
 
                     var result = new CompileResult { Success = ok, OutputPath = outputPath };
                     if (!ok) return result;
@@ -150,14 +152,14 @@ namespace ArisenEngine.ShaderLab
         private static void EnsureDxcInitialized()
         {
             if (s_DxcInitialized) return;
-            NativeHAL.ShaderCompilerAPI.InitDXC();
+            // NativeHAL.ShaderCompilerAPI.InitDXC();
             s_DxcInitialized = true;
         }
 
         public static void ReleaseDXC()
         {
             if (!s_DxcInitialized) return;
-            NativeHAL.ShaderCompilerAPI.ReleaseDXC();
+            // NativeHAL.ShaderCompilerAPI.ReleaseDXC();
             s_DxcInitialized = false;
         }
     }

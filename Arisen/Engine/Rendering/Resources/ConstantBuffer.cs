@@ -21,18 +21,14 @@ public class ConstantBuffer : IDisposable
         var device = RHISystem.Device;
         if (device == null) throw new Exception("RHI Device not initialized");
 
-        var factory = device.Factory;
+        var factory = device.GetFactory();
         
-        // RHIBufferDescriptor expects UInt64 for size
-        var desc = new RHIBufferDescriptor
-        {
-            Size = (ulong)m_Size,
-            Usage = (uint)EBufferUsageFlagBits.BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            SharingMode = ESharingMode.SHARING_MODE_EXCLUSIVE,
-            MemoryUsage = ERHIMemoryUsage.Upload // Host visible and coherent for constant buffers
-        };
-
-        m_Handle = factory.CreateBuffer(desc, m_Name);
+        m_Handle = factory.CreateBuffer(
+            (ulong)m_Size, 
+            (uint)EBufferUsageFlagBits.BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+            ESharingMode.SHARING_MODE_EXCLUSIVE, 
+            ERHIMemoryUsage.Upload, 
+            m_Name);
     }
 
     public unsafe void UpdateData<T>(T data) where T : struct
@@ -43,7 +39,7 @@ public class ConstantBuffer : IDisposable
         var device = RHISystem.Device;
         if (device == null) return;
 
-        var factory = device.Factory;
+        var factory = device.GetFactory();
         
         void* ptr = factory.MapBuffer(m_Handle).ToPointer();
         Marshal.StructureToPtr(data, (IntPtr)ptr, false);
@@ -57,7 +53,7 @@ public class ConstantBuffer : IDisposable
             var device = RHISystem.Device;
             if (device != null)
             {
-                device.Factory.ReleaseBuffer(m_Handle);
+                device.GetFactory().ReleaseBuffer(m_Handle);
             }
             m_Handle = RHIBufferHandle.Invalid;
         }

@@ -45,12 +45,14 @@ public class RenderSurface : IRenderSurface
         if (Initialize())
         {
             m_Host = host;
+/*
             m_SurfaceId = isFullScreen
                 ? NativeHAL.RenderWindowAPI.CreateFullScreenRenderSurface(host, m_Processor.ProcPtr)
                 : NativeHAL.RenderWindowAPI.CreateRenderWindow(host, m_Processor.ProcPtr, width, height);
             
             m_Handle = NativeHAL.RenderWindowAPI.GetWindowHandle(m_SurfaceId);
             NativeHAL.RenderWindowAPI.SetWindowResizeCallback(m_SurfaceId, m_Processor.ResizeCallbackPtr);
+*/
 
             // TODO: Per-surface device creation — CreateLogicDevice and GetLogicalDevice
             // are pure virtual methods in C++ RHIInstance that CppSharp cannot bind.
@@ -88,7 +90,7 @@ public class RenderSurface : IRenderSurface
 
     public void DisposeSurface()
     {
-        NativeHAL.RenderWindowAPI.RemoveRenderSurface(m_SurfaceId);
+        // NativeHAL.RenderWindowAPI.RemoveRenderSurface(m_SurfaceId);
         Surfaces.Remove(this);
         if (Surfaces.Count <= 0)
         {

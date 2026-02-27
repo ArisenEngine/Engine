@@ -48,9 +48,9 @@ public class Camera
                 Mathf.Deg2Rad * Rotation.Z
             );
             
-            Vector3 forward = Vector3.Transform(Vector3.Forward, rotation);
+            Vector3 forward = Vector3.Transform(MathExtensions.Forward, rotation);
             Vector3 target = Position + forward;
-            Vector3 up = Vector3.Transform(Vector3.Up, rotation);
+            Vector3 up = Vector3.Transform(MathExtensions.Up, rotation);
             
             return Matrix4x4.CreateLookAt(Position, target, up);
         }

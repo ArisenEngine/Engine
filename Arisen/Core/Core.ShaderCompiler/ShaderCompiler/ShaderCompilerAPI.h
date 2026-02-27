@@ -1,4 +1,5 @@
 #pragma once
+#include "Base/BindingMacros.h"
 #include <windows.h>
 #include "DxcCompat.h"
 #include <initguid.h>
