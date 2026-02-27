@@ -2,7 +2,7 @@ using System.Diagnostics;
 using ArisenEngine.Core.Diagnostics;
 using ArisenEngine.Platform;
 using ArisenEngine.Rendering;
-using Arisen.Native.Core;
+// using Arisen.Native.Core;
 
 namespace ArisenEngine.Core.Lifecycle;
 
@@ -20,7 +20,8 @@ internal static class EngineInstance
     private static bool Initialize()
     {
         // EngineInit.Initialize() covers logger and other core native systems
-        bool isInitializeDone = Bootstrap.Initialize();
+        // bool isInitializeDone = Bootstrap.Initialize();
+        bool isInitializeDone = true;
 
         if (isInitializeDone)
         {
@@ -64,7 +65,7 @@ internal static class EngineInstance
     {
         if (m_RenderSurfaces.TryGetValue(host, out var surface))
         {
-            NativeHAL.RenderWindowAPI.ResizeRenderSurface(surface.Surface.SurfaceId, (uint)width, (uint)height);
+            // NativeHAL.RenderWindowAPI.ResizeRenderSurface(surface.Surface.SurfaceId, (uint)width, (uint)height);
         }
     }
 

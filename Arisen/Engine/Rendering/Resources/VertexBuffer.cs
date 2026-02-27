@@ -27,17 +27,14 @@ public class VertexBuffer : IDisposable
         var device = RHISystem.Device;
         if (device == null) throw new Exception("RHI Device not initialized");
 
-        var factory = device.Factory;
+        var factory = device.GetFactory();
         
-        var desc = new RHIBufferDescriptor
-        {
-            Size = (ulong)m_Size,
-            Usage = (uint)EBufferUsageFlagBits.BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            SharingMode = ESharingMode.SHARING_MODE_EXCLUSIVE,
-            MemoryUsage = ERHIMemoryUsage.Upload // Simplified to Upload for tests, normally should be GpuOnly
-        };
-
-        m_Handle = factory.CreateBuffer(desc, m_Name);
+        m_Handle = factory.CreateBuffer(
+            (ulong)m_Size, 
+            (uint)EBufferUsageFlagBits.BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+            ESharingMode.SHARING_MODE_EXCLUSIVE, 
+            ERHIMemoryUsage.Upload, 
+            m_Name);
     }
 
     public unsafe void SetData<T>(T[] data) where T : struct
@@ -49,7 +46,7 @@ public class VertexBuffer : IDisposable
         var device = RHISystem.Device;
         if (device == null) return;
 
-        var factory = device.Factory;
+        var factory = device.GetFactory();
         
         void* ptr = factory.MapBuffer(m_Handle).ToPointer();
         
@@ -74,7 +71,7 @@ public class VertexBuffer : IDisposable
             var device = RHISystem.Device;
             if (device != null)
             {
-                device.Factory.ReleaseBuffer(m_Handle);
+                device.GetFactory().ReleaseBuffer(m_Handle);
             }
             m_Handle = RHIBufferHandle.Invalid;
         }

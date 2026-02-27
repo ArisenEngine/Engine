@@ -6,8 +6,8 @@ namespace ArisenEngine.Rendering;
 
 public enum IndexType
 {
-    Uint16 = EFormat.FORMAT_R16_UINT,
-    Uint32 = EFormat.FORMAT_R32_UINT
+    Uint16 = (int)EFormat.FORMAT_R16_UINT,
+    Uint32 = (int)EFormat.FORMAT_R32_UINT
 }
 
 public class IndexBuffer : IDisposable
@@ -34,17 +34,14 @@ public class IndexBuffer : IDisposable
         var device = RHISystem.Device;
         if (device == null) throw new Exception("RHI Device not initialized");
 
-        var factory = device.Factory;
+        var factory = device.GetFactory();
         
-        var desc = new RHIBufferDescriptor
-        {
-            Size = (ulong)m_Size,
-            Usage = (uint)EBufferUsageFlagBits.BUFFER_USAGE_INDEX_BUFFER_BIT,
-            SharingMode = ESharingMode.SHARING_MODE_EXCLUSIVE,
-            MemoryUsage = ERHIMemoryUsage.Upload
-        };
-
-        m_Handle = factory.CreateBuffer(desc, m_Name);
+        m_Handle = factory.CreateBuffer(
+            (ulong)m_Size, 
+            (uint)EBufferUsageFlagBits.BUFFER_USAGE_INDEX_BUFFER_BIT, 
+            ESharingMode.SHARING_MODE_EXCLUSIVE, 
+            ERHIMemoryUsage.Upload, 
+            m_Name);
     }
 
     public unsafe void SetData<T>(T[] data) where T : struct
@@ -56,7 +53,7 @@ public class IndexBuffer : IDisposable
         var device = RHISystem.Device;
         if (device == null) return;
 
-        var factory = device.Factory;
+        var factory = device.GetFactory();
         
         void* ptr = factory.MapBuffer(m_Handle).ToPointer();
         
@@ -80,7 +77,7 @@ public class IndexBuffer : IDisposable
             var device = RHISystem.Device;
             if (device != null)
             {
-                device.Factory.ReleaseBuffer(m_Handle);
+                device.GetFactory().ReleaseBuffer(m_Handle);
             }
             m_Handle = RHIBufferHandle.Invalid;
         }

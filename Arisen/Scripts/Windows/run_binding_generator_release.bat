@@ -42,7 +42,7 @@ echo [3/3] Verifying generated output...
 set "BINDING_OUTPUT_DIR=%ROOT_DIR%\AutoBinding"
 set "CS_COUNT=0"
 if exist "%BINDING_OUTPUT_DIR%" (
-    for %%F in ("%BINDING_OUTPUT_DIR%\*.cs") do set /a CS_COUNT+=1
+    for /r "%BINDING_OUTPUT_DIR%" %%F in (*.cs) do set /a CS_COUNT+=1
 )
 
 if "%CS_COUNT%" == "0" goto :fail

@@ -1,4 +1,5 @@
 #pragma once
+#include "Base/BindingMacros.h"
 #include "../CoreHALCommon.h"
 #include "../Common/PlatformTypes.h"
 

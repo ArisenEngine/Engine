@@ -199,3 +199,34 @@ namespace ArisenEngine::Diagnostics
         }
     }
 } // namespace ArisenEngine::Diagnostics
+
+#include "LoggerAPI.h"
+
+namespace ArisenEngine::Diagnostics
+{
+    void Logger_Log(LogLevel level, const char* msg, const LogSourceLocation* location, const char* thread_name)
+    {
+        if (location)
+            Logger::GetInstance().Log(level, msg, *location, thread_name);
+    }
+
+    void Logger_SetServerityLevel(LogLevel level)
+    {
+        Logger::GetInstance().SetServerityLevel(level);
+    }
+
+    void Logger_BindCallback(void* callback)
+    {
+        Logger::GetInstance().BindCallback(reinterpret_cast<LogCallback>(callback));
+    }
+
+    bool Logger_Initialize(bool bindCallback)
+    {
+        return Logger::GetInstance().Initialize();
+    }
+
+    void Logger_Shutdown()
+    {
+        Logger::Shutdown();
+    }
+}

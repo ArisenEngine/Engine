@@ -1,11 +1,15 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Arisen.Native.Diagnostics;
 
 namespace ArisenEngine.Core.Diagnostics;
 
 public static class Logger
 {
-    private static NativeDiagnostics.LogCallback? m_ReceiveLog;
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void LogCallback(uint type, [MarshalAs(UnmanagedType.LPUTF8Str)] string msg, [MarshalAs(UnmanagedType.LPUTF8Str)] string threadName, [MarshalAs(UnmanagedType.LPUTF8Str)] string trace);
+
+    private static LogCallback? m_ReceiveLog;
 
     internal static void RecordLog(uint type, string msg, string threadName, string trace)
     {
@@ -19,7 +23,7 @@ public static class Logger
     
     static Logger()
     {
-        m_ReceiveLog = new NativeDiagnostics.LogCallback(RecordLog);
+        m_ReceiveLog = new LogCallback(RecordLog);
     }
     
     public enum LogLevel
@@ -59,7 +63,7 @@ public static class Logger
 
     public static void Dispose()
     {
-        NativeLogger.Shutdown();
+        LoggerAPI.Logger_Shutdown();
     }
 
     [Conditional("DEBUG")]
@@ -72,8 +76,7 @@ public static class Logger
     {
         if (!condition)
         {
-            Arisen.Native.Assertion.ReportAssertionFailure("condition", file, line, function, message);
-            // Optionally also trigger a C# break if the native one doesn't stop execution
+            // Optional: Call native assert if available in the future
             System.Diagnostics.Debug.Assert(condition, message);
         }
     }
@@ -87,29 +90,26 @@ public static class Logger
 
     private static void WriteLog(LogLevel level, object msg)
     {
-        string trace = Environment.StackTrace;
         string threadName = Thread.CurrentThread.Name ?? "MainThread";
         
-        // Use the native logger instance
-        var instance = NativeLogger.Instance;
-        if (instance != null)
+        // Map engine LogLevel to native LogLevel
+        var nativeLevel = level switch
         {
-            // Map engine LogLevel to native LogLevel
-            var nativeLevel = level switch
-            {
-                LogLevel.Trace => Arisen.Native.LogLevel.Trace,
-                LogLevel.Log => Arisen.Native.LogLevel.Debug,
-                LogLevel.Info => Arisen.Native.LogLevel.Info,
-                LogLevel.Warning => Arisen.Native.LogLevel.Warning,
-                LogLevel.Error => Arisen.Native.LogLevel.Error,
-                LogLevel.Fatal => Arisen.Native.LogLevel.Fatal,
-                _ => Arisen.Native.LogLevel.Info
-            };
+            LogLevel.Trace => Arisen.Native.Diagnostics.LogLevel.Trace,
+            LogLevel.Log => Arisen.Native.Diagnostics.LogLevel.Debug,
+            LogLevel.Info => Arisen.Native.Diagnostics.LogLevel.Info,
+            LogLevel.Warning => Arisen.Native.Diagnostics.LogLevel.Warning,
+            LogLevel.Error => Arisen.Native.Diagnostics.LogLevel.Error,
+            LogLevel.Fatal => Arisen.Native.Diagnostics.LogLevel.Fatal,
+            _ => Arisen.Native.Diagnostics.LogLevel.Info
+        };
 
-            // Use an empty source location for now
-            using var location = new Arisen.Native.LogSourceLocation();
-            instance.Log(nativeLevel, msg.ToString() ?? "", location, threadName);
-        }
+        // For now, location info is empty strings as they are harder to pass from C# easily without overhead
+        // But we could use [CallerFilePath] etc. if needed later.
+        LoggerAPI.Logger_Log(nativeLevel, msg.ToString() ?? "", IntPtr.Zero, threadName);
+        
+        // Also keep Console.WriteLine for now as a fallback/easier debugging
+        Console.WriteLine($"[{level}] {msg}");
     }
 
     public static void Clear()
@@ -119,12 +119,13 @@ public static class Logger
 
     public static bool Initialize(bool bindCallback = false)
     {
-        var instance = NativeLogger.Instance;
-        if (bindCallback && m_ReceiveLog != null && instance != null)
+        bool ok = LoggerAPI.Logger_Initialize(bindCallback);
+        if (bindCallback && m_ReceiveLog != null && ok)
         {
-            instance.BindCallback(m_ReceiveLog);
+            var ptr = Marshal.GetFunctionPointerForDelegate(m_ReceiveLog);
+            LoggerAPI.Logger_BindCallback(ptr);
         }
         
-        return instance?.Initialize() ?? false;
+        return ok;
     }
 }
