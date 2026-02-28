@@ -222,6 +222,7 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
 
 void ArisenEngine::RHI::RHIVkQueue::Update()
 {
+    ARISEN_PROFILE_ZONE("RHI::VulkanQueueUpdate");
     if (m_TimelineSemaphore == VK_NULL_HANDLE)
     {
         return;
@@ -241,6 +242,7 @@ void ArisenEngine::RHI::RHIVkQueue::Update()
 
 void ArisenEngine::RHI::RHIVkQueue::WaitForTicket(RHIGpuTicket ticket)
 {
+    ARISEN_PROFILE_ZONE("RHI::VulkanQueueWait");
     if (ticket == 0)
     {
         return;

@@ -43,7 +43,7 @@ ArisenEngine::RHI::RHIVkSwapChain::~RHIVkSwapChain() noexcept
 
 void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(RHISwapChainDescriptor desc)
 {
-    
+    ARISEN_PROFILE_ZONE("RHI::VulkanCreateSwapChain");
     m_Desc = desc;
     
     VkSwapchainCreateInfoKHR createInfo{};
@@ -157,6 +157,7 @@ ArisenEngine::RHI::RHIImageViewHandle ArisenEngine::RHI::RHIVkSwapChain::GetImag
 
 ArisenEngine::RHI::RHIImageHandle ArisenEngine::RHI::RHIVkSwapChain::AcquireCurrentImage(UInt32 frameIndex)
 {
+    ARISEN_PROFILE_ZONE("RHI::VulkanAcquireImage");
     auto currentFrame = frameIndex % m_MaxFramesInFlight;
     auto hSem = m_ImageAvailableSemaphores[currentFrame];
     auto* semItem = static_cast<RHIVkDevice*>(m_Device)->GetSemaphorePool()->Get(hSem);
@@ -213,6 +214,7 @@ void ArisenEngine::RHI::RHIVkSwapChain::Cleanup()
 
 void ArisenEngine::RHI::RHIVkSwapChain::Present(UInt32 frameIndex)
 {
+    ARISEN_PROFILE_ZONE("RHI::VulkanPresent");
     auto currentFrame = frameIndex % m_MaxFramesInFlight;
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -237,6 +239,7 @@ void ArisenEngine::RHI::RHIVkSwapChain::Present(UInt32 frameIndex)
 
 void ArisenEngine::RHI::RHIVkSwapChain::RecreateSwapChainIfNeeded()
 {
+    ARISEN_PROFILE_ZONE("RHI::VulkanRecreateSwapChain");
     if (m_VkSurface == VK_NULL_HANDLE || m_VkSwapChain == VK_NULL_HANDLE)
     {
         // currently we not init a swap chain 

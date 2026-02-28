@@ -16,6 +16,7 @@ namespace ArisenEngine::RHI
 
     RHIShaderProgramHandle RHIVkFactory::CreateGPUProgram()
     {
+        ARISEN_PROFILE_ZONE("RHI::CreateGPUProgram");
         return m_Device->GetGPUProgramPool()->Allocate([this](RHIVkGPUProgramPoolItem* item)
         {
             // Reset item to default state
@@ -40,6 +41,7 @@ namespace ArisenEngine::RHI
 
     bool RHIVkFactory::AttachProgramByteCode(RHIShaderProgramHandle handle, RHIShaderProgramDesc&& desc)
     {
+        ARISEN_PROFILE_ZONE("RHI::AttachProgramByteCode");
         auto* item = m_Device->GetGPUProgramPool()->Get(handle);
         if (item && item->program)
         {
@@ -50,6 +52,7 @@ namespace ArisenEngine::RHI
 
     RHICommandBufferPoolHandle RHIVkFactory::CreateCommandBufferPool(RHIQueueType poolQueueType)
     {
+        ARISEN_PROFILE_ZONE("RHI::CreateCommandBufferPool");
         return m_Device->GetCommandBufferPoolPool()->Allocate([this, poolQueueType](RHIVkCommandBufferPoolItem* item)
         {
             *item = RHIVkCommandBufferPoolItem();
@@ -73,6 +76,7 @@ namespace ArisenEngine::RHI
 
     RHIRenderPassHandle RHIVkFactory::CreateRenderPass()
     {
+        ARISEN_PROFILE_ZONE("RHI::CreateRenderPass");
         return m_Device->GetRenderPassPool()->Allocate([this](RHIVkRenderPassPoolItem* rp)
         {
             *rp = RHIVkRenderPassPoolItem();
@@ -97,6 +101,7 @@ namespace ArisenEngine::RHI
 
     RHIFrameBufferHandle RHIVkFactory::CreateFrameBuffer()
     {
+        ARISEN_PROFILE_ZONE("RHI::CreateFrameBuffer");
         return m_Device->GetFrameBufferPool()->Allocate([this](RHIVkFrameBufferPoolItem* fb)
         {
             *fb = RHIVkFrameBufferPoolItem();
@@ -122,6 +127,7 @@ namespace ArisenEngine::RHI
     ArisenEngine::RHI::RHIBufferHandle ArisenEngine::RHI::RHIVkFactory::CreateBuffer(
         ArisenEngine::RHI::RHIBufferDescriptor&& desc, const String& name)
     {
+        ARISEN_PROFILE_ZONE("RHI::CreateBuffer");
         auto handle = m_Device->GetBufferPool()->Allocate([&name](ArisenEngine::RHI::RHIVkBufferPoolItem* item)
         {
             *item = ArisenEngine::RHI::RHIVkBufferPoolItem();
@@ -151,6 +157,7 @@ namespace ArisenEngine::RHI
     ArisenEngine::RHI::RHIImageHandle ArisenEngine::RHI::RHIVkFactory::CreateImage(
         ArisenEngine::RHI::RHIImageDescriptor&& desc, const String& name)
     {
+        ARISEN_PROFILE_ZONE("RHI::CreateImage");
         auto handle = m_Device->GetImagePool()->Allocate([&name](ArisenEngine::RHI::RHIVkImagePoolItem* item)
         {
             *item = ArisenEngine::RHI::RHIVkImagePoolItem();
@@ -180,6 +187,7 @@ namespace ArisenEngine::RHI
     ArisenEngine::RHI::RHIImageViewHandle ArisenEngine::RHI::RHIVkFactory::CreateImageView(
         ArisenEngine::RHI::RHIImageHandle imageHandle, ArisenEngine::RHI::RHIImageViewDesc&& desc)
     {
+        ARISEN_PROFILE_ZONE("RHI::CreateImageView");
         auto handle = m_Device->GetImageViewPool()->Allocate([](ArisenEngine::RHI::RHIVkImageViewPoolItem* item)
         {
             *item = ArisenEngine::RHI::RHIVkImageViewPoolItem();
@@ -202,6 +210,7 @@ namespace ArisenEngine::RHI
         return m_Device->GetSamplerPool()->Allocate([this, &desc](RHIVkSamplerPoolItem* sampler)
         {
             *sampler = RHIVkSamplerPoolItem();
+            ARISEN_PROFILE_ZONE("Vk::CreateSampler");
             auto samplerInfo = SamplerCreateInfo(std::move(desc));
             if (vkCreateSampler(static_cast<VkDevice>(m_Device->GetHandle()),
                                 &samplerInfo, nullptr,
@@ -242,6 +251,7 @@ namespace ArisenEngine::RHI
         return m_Device->GetSemaphorePool()->Allocate([this](RHIVkSemaphorePoolItem* sem)
         {
             *sem = RHIVkSemaphorePoolItem();
+            ARISEN_PROFILE_ZONE("Vk::CreateSemaphore");
             VkSemaphoreCreateInfo createInfo{};
             createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -279,6 +289,7 @@ namespace ArisenEngine::RHI
         return m_Device->GetSemaphorePool()->Allocate([this, initialValue](RHIVkSemaphorePoolItem* sem)
         {
             *sem = RHIVkSemaphorePoolItem();
+            ARISEN_PROFILE_ZONE("Vk::CreateTimelineSemaphore");
             VkSemaphoreTypeCreateInfo typeInfo{};
             typeInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
             typeInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
@@ -326,6 +337,7 @@ namespace ArisenEngine::RHI
         return m_Device->GetFencePool()->Allocate([this, signaled](RHIVkFencePoolItem* fence)
         {
             *fence = RHIVkFencePoolItem();
+            ARISEN_PROFILE_ZONE("Vk::CreateFence");
             VkFenceCreateInfo createInfo{};
             createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
             if (signaled)
@@ -379,6 +391,7 @@ namespace ArisenEngine::RHI
 
     RHIMemoryPoolHandle RHIVkFactory::CreateMemoryPool(UInt64 size, UInt32 usageBits)
     {
+        ARISEN_PROFILE_ZONE("RHI::CreateMemoryPool");
         auto handle = m_Device->GetMemoryPoolPool()->Allocate([](RHIVkMemoryPoolPoolItem* item)
         {
             *item = RHIVkMemoryPoolPoolItem();
@@ -400,6 +413,7 @@ namespace ArisenEngine::RHI
 
     RHIBufferHandle RHIVkFactory::CreateBufferAliased(RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset, const String& name)
     {
+        ARISEN_PROFILE_ZONE("RHI::CreateBufferAliased");
         auto handle = m_Device->GetBufferPool()->Allocate([&name](RHIVkBufferPoolItem* item)
         {
             *item = RHIVkBufferPoolItem();
@@ -417,6 +431,7 @@ namespace ArisenEngine::RHI
 
     RHIImageHandle RHIVkFactory::CreateImageAliased(RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset, const String& name)
     {
+        ARISEN_PROFILE_ZONE("RHI::CreateImageAliased");
         auto handle = m_Device->GetImagePool()->Allocate([&name](RHIVkImagePoolItem* item)
         {
             *item = RHIVkImagePoolItem();

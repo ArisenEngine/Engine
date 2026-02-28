@@ -40,6 +40,7 @@ ArisenEngine::RHI::RHIVkGPUPipelineManager::~RHIVkGPUPipelineManager() noexcept
 
 ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager::GetGraphicsPipeline(RHIPipelineState* pso)
 {
+    ARISEN_PROFILE_ZONE("RHI::GetGraphicsPipeline");
     auto hash = pso->GetHash();
     if (!m_GPUPipelines.contains(hash))
     {
@@ -72,6 +73,7 @@ ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager:
 
 ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager::GetRayTracingPipeline(RHIPipelineState* pso)
 {
+    ARISEN_PROFILE_ZONE("RHI::GetRayTracingPipeline");
     auto hash = pso->GetHash();
     if (!m_GPUPipelines.contains(hash))
     {
@@ -100,6 +102,7 @@ std::unique_ptr<ArisenEngine::RHI::RHIPipelineState> ArisenEngine::RHI::RHIVkGPU
 
 void ArisenEngine::RHI::RHIVkGPUPipelineManager::LoadPipelineCache()
 {
+    ARISEN_PROFILE_ZONE("RHI::LoadPipelineCache");
     VkDevice vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
     Containers::Vector<char> cacheData;
 
@@ -130,6 +133,7 @@ void ArisenEngine::RHI::RHIVkGPUPipelineManager::LoadPipelineCache()
 
 void ArisenEngine::RHI::RHIVkGPUPipelineManager::SavePipelineCache()
 {
+    ARISEN_PROFILE_ZONE("RHI::SavePipelineCache");
     if (m_VkPipelineCache == VK_NULL_HANDLE) return;
 
     VkDevice vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
