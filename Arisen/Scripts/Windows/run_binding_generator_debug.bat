@@ -8,6 +8,12 @@ REM =========================================================================
 set "DOTNET_CLI_UI_LANGUAGE=en-US"
 set "VSLANG=1033"
 
+if /i "%~1"=="--no-pause" (
+    set "ARISEN_NO_PAUSE=1"
+    shift /1
+)
+
+
 echo === Initializing MSVC Environment ===
 set "SCRIPT_DIR=%~dp0"
 if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
@@ -50,7 +56,7 @@ if "%CS_COUNT%" == "0" goto :fail
 echo Generated %CS_COUNT% C# binding file(s) in AutoBinding.
 echo === Binding generation succeeded ===
 echo.
-pause
+if not defined ARISEN_NO_PAUSE pause
 exit /b 0
 
 :fail
@@ -59,5 +65,5 @@ echo ============================================================
 echo   PROCESS FAILED. Showing last 50 lines from log:
 echo ============================================================
 powershell -NoProfile -Command "Get-Content -LiteralPath '%LOG_FILE%' -Tail 50"
-pause
+if not defined ARISEN_NO_PAUSE pause
 exit /b 1

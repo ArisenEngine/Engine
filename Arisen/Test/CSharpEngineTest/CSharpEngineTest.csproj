@@ -40,4 +40,12 @@
 <PropertyGroup Condition="'$(Configuration)' == 'Release'">
 <OutputPath>..\..\Projects\VisualStudio\CSharpEngineTest\Outputs\Release\</OutputPath>
 </PropertyGroup>
+
+  <Target Name="GenerateBindings" BeforeTargets="BeforeBuild">
+    <PropertyGroup>
+      <BindingGeneratorScript Condition="'$(Configuration)' == 'Debug'">run_binding_generator_debug.bat</BindingGeneratorScript>
+      <BindingGeneratorScript Condition="'$(Configuration)' == 'Release'">run_binding_generator_release.bat</BindingGeneratorScript>
+    </PropertyGroup>
+    <Exec Command="call &quot;$(MSBuildProjectDirectory)\..\..\Scripts\Windows\$(BindingGeneratorScript)&quot; --no-pause" />
+  </Target>
 </Project>
