@@ -5,6 +5,7 @@ using Arisen.Native.RHI;
 using Arisen.Native.HAL;
 using ArisenEngine.Core.Diagnostics;
 using ArisenEngine.Platform.Desktop;
+using ArisenEngine.Core.RHI;
 
 namespace CSharpEngineTest.Framework
 {

@@ -8,7 +8,9 @@
         <Nullable>enable</Nullable>
         <AssemblyName>CSharpEngineTest</AssemblyName>
         <RootNamespace>CSharpEngineTest</RootNamespace>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath></PropertyGroup>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    </PropertyGroup>
 <PropertyGroup>
   <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>

@@ -132,8 +132,8 @@ internal static class Program
         // Bridges have their own metadata in the BEGIN_BRIDGE macro
         var bridgeBlocks = ParseBridgeBlocks(content);
 
-        // If neither module metadata nor bridge blocks are found, skip
-        if (string.IsNullOrEmpty(dllName) && bridgeBlocks.Count == 0)
+        // If neither module metadata nor bridge blocks are found, check if we have a namespace for enums/structs
+        if (string.IsNullOrEmpty(dllName) && bridgeBlocks.Count == 0 && string.IsNullOrEmpty(csNamespace))
             return results;
 
         var subDir = !string.IsNullOrEmpty(csNamespace) ? GetSubDirFromNamespace(csNamespace) : "";
@@ -402,25 +402,21 @@ internal static class Program
     {
         var results = new List<StructInfo>();
 
-        var pattern = @"ARISEN_BIND_STRUCT\s*\(\s*(\w+)\s*\)\s*(?:typedef\s+)?struct\s+(\w+)\s*\{([^}]+)\}";
+        var pattern = @"ARISEN_BIND_STRUCT\s*\(\s*(\w+)\s*\)\s*(?:typedef\s+)?struct\s+(\w+)\s*\{(.*?)[\r\n]+\s*\}\s*;";
         foreach (Match m in Regex.Matches(content, pattern, RegexOptions.Singleline))
         {
             var name = m.Groups[2].Value;
             var body = m.Groups[3].Value;
 
             var fields = new List<(string, string)>();
-            foreach (var line in body.Split('\n'))
+            // Use Singleline to allow matching across lines in the body
+            var fieldPattern = @"((?:const\s+)?[\w:\*]+(?:\s+const)?)\s+([\w]+)[^;]*;";
+            var resultsInBody = Regex.Matches(body, fieldPattern, RegexOptions.Singleline);
+            foreach (Match fieldMatch in resultsInBody)
             {
-                var trimmed = line.Trim();
-                if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith("//") || trimmed.StartsWith("static_assert"))
-                    continue;
-
-                // Match: Type fieldName; or Type fieldName = default;
-                var fieldMatch = Regex.Match(trimmed, @"^([\w:]+(?:\s*\*)?)\s+(\w+)\s*(?:\{[^}]*\})?\s*(?:=[^;]*)?\s*;");
-                if (fieldMatch.Success)
-                {
-                    fields.Add((fieldMatch.Groups[1].Value.Trim(), fieldMatch.Groups[2].Value.Trim()));
-                }
+                var type = fieldMatch.Groups[1].Value.Trim();
+                var fieldName = fieldMatch.Groups[2].Value.Trim();
+                fields.Add((type, fieldName));
             }
 
             results.Add(new StructInfo(name, fields));
@@ -521,20 +517,22 @@ internal static class Program
             var p = param.Trim();
             if (string.IsNullOrWhiteSpace(p)) continue;
 
-            // Handle "const Type* name", "Type name", "Type* name", etc.
+            // Handle default values: Type x = 0 or Type x { 0 }
+            // We want to stop at the first space before the name, but default values can have spaces too.
+            // Let's strip default values first.
+            if (p.Contains('='))
+                p = p[..p.IndexOf('=')].Trim();
+            
+            // Handle { nullptr } etc.
+            if (p.Contains('{'))
+                p = p[..p.IndexOf('{')].Trim();
+
             // Find the last word as the parameter name
             var lastSpace = p.LastIndexOf(' ');
             if (lastSpace < 0) continue;
 
             var type = p[..lastSpace].Trim();
-
             var name = p[(lastSpace + 1)..].Trim();
-
-            // Handle default values: int x = 0 -> x
-            if (name.Contains('='))
-            {
-                name = name[..name.IndexOf('=')].Trim();
-            }
 
             // Handle namespace-qualified types: RHI::EProgramStage → EProgramStage
             if (type.Contains("::"))
@@ -636,6 +634,7 @@ internal static class Program
         ["const wchar_t*"]  = "string",
         ["char*"]           = "IntPtr",
         ["wchar_t*"]        = "IntPtr",
+        ["WindowID"]        = "uint",
     };
 
     // Platform-specific type aliases (HAL types → IntPtr)
@@ -648,7 +647,17 @@ internal static class Program
     static string MapType(string cppType)
     {
         var normalized = cppType.Trim();
-        
+
+        // 1. Try full match first (important for "const char*" → string)
+        if (s_TypeMap.TryGetValue(normalized, out var mappedFull))
+            return mappedFull;
+
+        // 2. Strip const from start and end
+        if (normalized.StartsWith("const "))
+            normalized = normalized[6..].Trim();
+        if (normalized.EndsWith(" const"))
+            normalized = normalized[..^6].Trim();
+
         // Handle namespace-qualified types: ArisenEngine::Float32 → Float32
         if (normalized.Contains("::"))
         {
@@ -664,14 +673,18 @@ internal static class Program
         if (s_OpaquePointerTypes.Contains(normalized))
             return "IntPtr";
 
+        // Manually map Window to uint (it's a wrapper for WindowID)
+        if (normalized == "Window")
+            return "uint";
+
         // Any pointer type → IntPtr
-        if (normalized.EndsWith("*"))
+        if (normalized.Contains("*"))
             return "IntPtr";
 
-        // Const reference to known type
-        if (normalized.StartsWith("const ") && normalized.EndsWith("&"))
+        // Reference to known type
+        if (normalized.EndsWith("&"))
         {
-            var inner = normalized[6..^1].Trim();
+            var inner = normalized[..^1].Trim();
             if (s_TypeMap.TryGetValue(inner, out var innerMapped))
                 return innerMapped;
         }
