@@ -7,35 +7,55 @@ namespace CSharpEngineTest.RHI.Rendering
 {
     public class RHIBasicTriangleTest : RHIRenderingTestBase
     {
-        public override string GetName() => "BasicTriangleTest";
+        public override string GetName() => "RHIBasicTriangleTest";
 
         protected override bool SetupTest()
         {
-            base.SetupTest();
+            if (!base.SetupTest()) return false;
+            
             Logger.Log("Setting up RHIBasicTriangleTest");
+            
+            // Note: Full pipeline/renderpass setup would go here.
+            // For now, we'll implement the frame loop leveraging the new wrappers.
             return true;
         }
 
         protected override void RenderFrame()
         {
-            if (_device == null || !_cmdPool.IsValid) return;
+            if (_device == null || _swapChain == null || !_cmdPool.IsValid) return;
 
-            // Simple rendering flow: Allocate Command Buffer, Begin, End, Submit
+            // 1. Begin Frame (Acquire Image)
+            uint frameIndex = GetCurrentFrameIndex();
+            var backBuffer = _swapChain.BeginFrame(frameIndex);
+            if (!backBuffer.IsValid) return;
+
+            // 2. Record Commands
             var pool = _device.GetCommandBufferPool(_cmdPool);
-            var cmdHandle = pool.GetCommandBuffer(GetCurrentFrameIndex());
+            var cmdHandle = pool.GetCommandBuffer(frameIndex);
             var cmd = _device.GetCommandBuffer(cmdHandle);
 
             cmd.Begin();
-            // Since we don't have a full Swapchain / RenderPass setup, we just submit an empty command buffer
-            // to verify RHI command submission pipeline is working.
+            
+            // Transition backbuffer to color attachment
+            cmd.TransitionImageLayout(backBuffer, EImageLayout.IMAGE_LAYOUT_UNDEFINED, EImageLayout.IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+            // TODO: cmd.BeginRenderPass(...);
+            // TODO: cmd.BindPipeline(...);
+            // TODO: cmd.Draw(3, 1, 0, 0);
+            // TODO: cmd.EndRenderPass();
+
+            // Transition backbuffer to present
+            cmd.TransitionImageLayout(backBuffer, EImageLayout.IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, EImageLayout.IMAGE_LAYOUT_PRESENT_SRC_KHR);
+            
             cmd.End();
 
-            ulong ticket = _device.Submit(cmd);
+            // 3. Submit and Present
+            ulong ticket = _device.Submit(cmd, waitSC: _swapChain, signalSC: _swapChain);
             _device.WaitQueueTicket(ticket);
-
-            pool.ReleaseCommandBuffer(GetCurrentFrameIndex(), cmdHandle);
             
-            // Console.WriteLine($"Rendering frame {_frameIndex} successful");
+            _swapChain.EndFrame(frameIndex);
+
+            pool.ReleaseCommandBuffer(frameIndex, cmdHandle);
         }
 
         protected override void TeardownTest()

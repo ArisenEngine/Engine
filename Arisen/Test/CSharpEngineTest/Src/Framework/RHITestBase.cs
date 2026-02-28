@@ -151,13 +151,11 @@ namespace CSharpEngineTest.Framework
             }
 
             _instance.PickPhysicalDevice(!IsHeadless());
-            _instance.InitLogicDevices();
-            _instance.CreateLogicDevice(_windowId);
+            // _instance.InitLogicDevices(); // Now called internally or optional
+            _device = _instance.CreateDevice(_windowId);
 
-            _device = _instance.GetLogicalDevice(_windowId);
             if (_device != null)
             {
-                ArisenEngine.Core.RHI.RHISystem.SetLogicDevice(_device);
                 return true;
             }
             return false; 

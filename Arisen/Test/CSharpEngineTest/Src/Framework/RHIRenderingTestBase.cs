@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Arisen.Native.RHI;
 using Arisen.Native.HAL;
 using ArisenEngine.Core.Diagnostics;
+using ArisenEngine.Core.RHI;
 
 namespace CSharpEngineTest.Framework
 {
@@ -10,14 +11,14 @@ namespace CSharpEngineTest.Framework
     {
         protected RHICommandBufferPoolHandle _cmdPool;
         // protected RHIDescriptorPool _descriptorPool;
-        // protected RHISwapChain _swapChain;
+        protected RHISwapChain? _swapChain;
 
         public override TestCategory GetCategory() => TestCategory.Rendering;
 
         protected override bool SetupTest()
         {
+            _swapChain = _device?.GetSurface().GetSwapChain();
             InitCommonResources();
-            // InitShaderProgram(L"StandardTest"); 
             return true;
         }
 

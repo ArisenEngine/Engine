@@ -37,11 +37,13 @@ RHI_DLL void RHIInstance_SetResolution(RHIInstance* inst, uint32_t windowId, uin
 
 RHI_DLL void* RHIInstance_GetLogicalDevice(RHIInstance* inst, uint32_t windowId)
 {
+    // windowId is now optional or 0 for main device
     return static_cast<void*>(inst->GetLogicalDevice(windowId));
 }
 
 RHI_DLL void RHIInstance_CreateLogicDevice(RHIInstance* inst, uint32_t windowId)
 {
+    // windowId 0 can be used for a default/main device
     inst->CreateLogicDevice(windowId);
 }
 

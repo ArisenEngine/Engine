@@ -1,4 +1,5 @@
 using Arisen.Native.RHI;
+using System.Runtime.InteropServices;
 
 namespace ArisenEngine.Core.RHI;
 
@@ -42,13 +43,39 @@ public class RHIDevice
         return new RHICommandBufferPool(poolPtr, handle);
     }
 
-    public ulong Submit(RHICommandBuffer cb)
+    public ulong Submit(RHICommandBuffer cb, RHISwapChain waitSC = null, RHISwapChain signalSC = null)
     {
-        return RHIDeviceAPI.RHIDevice_Submit(Handle, cb.RHIHandle.Index, cb.RHIHandle.Generation);
+        if (waitSC == null && signalSC == null)
+        {
+            return RHIDeviceAPI.RHIDevice_Submit(Handle, cb.RHIHandle.Index, cb.RHIHandle.Generation, IntPtr.Zero);
+        }
+
+        var desc = new RHISubmitDescriptor_Bridge
+        {
+            WaitSwapChain = waitSC?.Handle ?? IntPtr.Zero,
+            SignalSwapChain = signalSC?.Handle ?? IntPtr.Zero
+        };
+
+        IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf(desc));
+        try
+        {
+            Marshal.StructureToPtr(desc, ptr, false);
+            return RHISyncAPI.RHIDevice_Submit(Handle, cb.RHIHandle.Index, cb.RHIHandle.Generation, ptr);
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(ptr);
+        }
     }
 
     public void WaitQueueTicket(ulong ticket)
     {
         RHIDeviceAPI.RHIDevice_WaitQueueTicket(Handle, ticket);
+    }
+
+    public RHISurface GetSurface()
+    {
+        var surfacePtr = RHIDeviceAPI.RHIDevice_GetSurface(Handle);
+        return new RHISurface(surfacePtr);
     }
 }

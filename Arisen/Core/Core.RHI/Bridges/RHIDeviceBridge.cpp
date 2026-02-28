@@ -13,6 +13,16 @@ ARISEN_BIND_BEGIN_BRIDGE("RHIDevice", "Core.RHI.dll", "Arisen.Native.RHI")
 
 extern "C" {
 
+struct RHISubmitDescriptor_Bridge
+{
+    RHISwapChain* waitSwapChain = nullptr;
+    RHISwapChain* signalSwapChain = nullptr;
+    const uint64_t* pWaitSemaphores = nullptr;
+    uint32_t waitSemaphoreCount = 0;
+    const uint64_t* pSignalSemaphores = nullptr;
+    uint32_t signalSemaphoreCount = 0;
+};
+
 RHI_DLL void RHIDevice_DeviceWaitIdle(RHIDevice* dev)
 {
     dev->DeviceWaitIdle();
@@ -79,17 +89,32 @@ RHI_DLL void RHIDevice_WaitQueueTicket(RHIDevice* dev, uint64_t ticket)
     dev->WaitQueueTicket(ticket);
 }
 
-RHI_DLL uint64_t RHIDevice_Submit(RHIDevice* dev, uint32_t index, uint32_t generation)
+RHI_DLL uint64_t RHIDevice_Submit(RHIDevice* dev, uint32_t index, uint32_t generation, RHISubmitDescriptor_Bridge* bridgeDesc)
 {
     RHICommandBufferHandle handle;
     handle.index = index;
     handle.generation = generation;
+
+    if (bridgeDesc) {
+        RHISubmitDescriptor desc;
+        desc.WaitSwapChain = bridgeDesc->waitSwapChain;
+        desc.SignalSwapChain = bridgeDesc->signalSwapChain;
+        // Simplified handling: we only support swapchain sync for now in this bridge
+        // If we need explicit semaphores, we'd need more complex mapping
+        return dev->Submit(handle, &desc);
+    }
+
     return dev->Submit(handle);
 }
 
 RHI_DLL void* RHIDevice_GetPipelineCache(RHIDevice* dev)
 {
     return static_cast<void*>(dev->GetPipelineCache());
+}
+
+RHI_DLL void* RHIDevice_GetSurface(RHIDevice* dev)
+{
+    return static_cast<void*>(dev->GetSurface());
 }
 
 } // extern "C"
