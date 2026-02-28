@@ -1,3 +1,4 @@
+using ArisenEngine.Core.Diagnostics;
 using ArisenEngine.Core.Lifecycle;
 
 namespace ArisenEngine.Rendering;
@@ -10,10 +11,12 @@ public class RenderSubsystem : ITickableSubsystem
 
     public void Initialize()
     {
+        using var _ = Profiler.Zone("RenderSubsystem.Initialize");
     }
 
     public void Tick(float deltaTime)
     {
+        using var _ = Profiler.Zone("RenderSubsystem.Tick");
         RenderPipelineManager.DoRenderLoop(Graphics.currentRenderPipelineAsset);
     }
 
