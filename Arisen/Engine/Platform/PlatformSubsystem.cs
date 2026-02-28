@@ -1,3 +1,4 @@
+using ArisenEngine.Core.Diagnostics;
 using ArisenEngine.Core.Lifecycle;
 
 namespace ArisenEngine.Platform;
@@ -11,6 +12,7 @@ public class PlatformSubsystem : ITickableSubsystem
 
     public void Initialize()
     {
+        using var _ = Profiler.Zone("PlatformSubsystem.Initialize");
         switch (ArisenApplication.s_Platform)
         {
             case RuntimePlatform.Windows:
@@ -21,6 +23,7 @@ public class PlatformSubsystem : ITickableSubsystem
 
     public void Tick(float deltaTime)
     {
+        using var _ = Profiler.Zone("PlatformSubsystem.Tick");
         if (m_MessageHandler != null)
         {
             if (!m_MessageHandler.NextFrame())

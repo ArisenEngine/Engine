@@ -35,6 +35,7 @@ public sealed class EngineKernel : IDisposable
 
     public void Initialize(EngineConfig config)
     {
+        using var _ = Profiler.Zone("EngineKernel.Initialize");
         Config = config;
         Logger.Log("[EngineKernel] Initializing...");
         
@@ -52,6 +53,7 @@ public sealed class EngineKernel : IDisposable
 
     private void TransitionTo(EnginePhase phase)
     {
+        using var _ = Profiler.Zone($"EngineKernel.TransitionTo({phase})");
         m_CurrentPhase = phase;
         Logger.Log($"[EngineKernel] Transitioning to phase: {phase}");
 
@@ -67,6 +69,7 @@ public sealed class EngineKernel : IDisposable
 
     public int Run()
     {
+        using var _ = Profiler.Zone("EngineKernel.Run");
         if (!m_IsRunning) 
         {
             Initialize(Config ?? new EngineConfig());
@@ -76,10 +79,14 @@ public sealed class EngineKernel : IDisposable
 
         while (m_IsRunning)
         {
-            Time.Update();
-            float deltaTime = Time.deltaTime;
+            Profiler.FrameMark();
+            using (Profiler.Zone("EngineKernel.Update"))
+            {
+                Time.Update();
+                float deltaTime = Time.deltaTime;
             
-            frameScheduler.ExecuteFrame(deltaTime, m_Subsystems);
+                frameScheduler.ExecuteFrame(deltaTime, m_Subsystems);
+            }
         }
         
         return 0;
@@ -92,6 +99,7 @@ public sealed class EngineKernel : IDisposable
 
     public void Shutdown()
     {
+        using var _ = Profiler.Zone("EngineKernel.Shutdown");
         if (m_CurrentPhase == EnginePhase.Shutdown || m_CurrentPhase == EnginePhase.PreShutdown)
             return;
 

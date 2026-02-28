@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ArisenEngine.Core.Diagnostics;
 using ArisenEngine.Platform;
 using ArisenEngine.Rendering;
 
@@ -13,6 +14,7 @@ internal static class EngineInstance
 
     internal static void RegisterSurface(IntPtr host, string name, SurfaceType surfaceType, int width = 0, int height = 0)
     {
+        using var _ = Profiler.Zone("EngineInstance.RegisterSurface");
         if (!m_RenderSurfaces.ContainsKey(host))
         {
             var surface = new RenderSurface(host, name, width, height);
