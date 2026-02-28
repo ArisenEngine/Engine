@@ -24,10 +24,10 @@ public class VertexBuffer : IDisposable
         m_Size = count * stride;
         m_Name = name;
         
-        var device = RHISystem.Device;
-        if (device == null) throw new Exception("RHI Device not initialized");
+        var device = RHISystem.PrimaryDevice;
+        if (!device.HasValue) throw new Exception("RHI Device not initialized");
 
-        var factory = device.GetFactory();
+        var factory = device.Value.GetFactory();
         
         m_Handle = factory.CreateBuffer(
             (ulong)m_Size, 
@@ -43,10 +43,10 @@ public class VertexBuffer : IDisposable
         int totalSize = elementSize * data.Length;
         if (totalSize > m_Size) throw new Exception("Data size exceeds buffer size");
 
-        var device = RHISystem.Device;
-        if (device == null) return;
+        var device = RHISystem.PrimaryDevice;
+        if (!device.HasValue) return;
 
-        var factory = device.GetFactory();
+        var factory = device.Value.GetFactory();
         
         void* ptr = factory.MapBuffer(m_Handle).ToPointer();
         
@@ -68,10 +68,10 @@ public class VertexBuffer : IDisposable
     {
         if (m_Handle.IsValid)
         {
-            var device = RHISystem.Device;
-            if (device != null)
+            var device = RHISystem.PrimaryDevice;
+            if (device.HasValue)
             {
-                device.GetFactory().ReleaseBuffer(m_Handle);
+                device.Value.GetFactory().ReleaseBuffer(m_Handle);
             }
             m_Handle = RHIBufferHandle.Invalid;
         }

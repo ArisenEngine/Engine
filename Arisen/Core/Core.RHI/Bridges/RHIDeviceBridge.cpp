@@ -13,6 +13,7 @@ ARISEN_BIND_BEGIN_BRIDGE("RHIDevice", "Core.RHI.dll", "Arisen.Native.RHI")
 
 extern "C" {
 
+ARISEN_BIND_STRUCT(RHISubmitDescriptor_Bridge)
 struct RHISubmitDescriptor_Bridge
 {
     RHISwapChain* waitSwapChain = nullptr;

@@ -2,9 +2,11 @@ using Arisen.Native.RHI;
 
 namespace ArisenEngine.Core.RHI;
 
-public class RHIInstance : IDisposable
+public readonly struct RHIInstance
 {
     internal IntPtr Handle { get; }
+
+    public bool IsValid => Handle != IntPtr.Zero;
 
     public RHIInstance(IntPtr handle)
     {
@@ -30,15 +32,12 @@ public class RHIInstance : IDisposable
     /// Creates a logic device for the picked physical device.
     /// In the future, this might allow selecting a specific physical device.
     /// </summary>
-    public RHIDevice CreateDevice(uint windowId = 0)
+    internal RHIDevice CreateDevice(uint windowId = 0)
     {
         RHIInstanceAPI.RHIInstance_CreateLogicDevice(Handle, windowId);
         var deviceHandle = RHIInstanceAPI.RHIInstance_GetLogicalDevice(Handle, windowId);
         return new RHIDevice(deviceHandle);
     }
-
-    [Obsolete("Use CreateDevice instead")]
-    public void CreateLogicDevice(uint windowId) => RHIInstanceAPI.RHIInstance_CreateLogicDevice(Handle, windowId);
 
     [Obsolete("Use CreateDevice instead")]
     public RHIDevice GetLogicalDevice(uint windowId)
@@ -47,8 +46,4 @@ public class RHIInstance : IDisposable
         return new RHIDevice(deviceHandle);
     }
 
-    public void Dispose()
-    {
-        // Placeholder for instance cleanup if needed
-    }
 }

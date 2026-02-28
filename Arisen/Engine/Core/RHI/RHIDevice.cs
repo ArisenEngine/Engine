@@ -3,9 +3,11 @@ using System.Runtime.InteropServices;
 
 namespace ArisenEngine.Core.RHI;
 
-public class RHIDevice
+public readonly struct RHIDevice
 {
     internal IntPtr Handle { get; }
+
+    public bool IsValid => Handle != IntPtr.Zero;
 
     public RHIPipelineCache PipelineCache => new RHIPipelineCache(RHIDeviceAPI.RHIDevice_GetPipelineCache(Handle));
 
@@ -31,40 +33,33 @@ public class RHIDevice
         RHIDeviceAPI.RHIDevice_DeviceWaitIdle(Handle);
     }
 
-    public RHICommandBuffer GetCommandBuffer(RHICommandBufferHandle handle)
-    {
-        var cbPtr = RHIDeviceAPI.RHIDevice_GetCommandBuffer(Handle, handle.Index, handle.Generation);
-        return new RHICommandBuffer(cbPtr, handle);
-    }
-
     public RHICommandBufferPool GetCommandBufferPool(RHICommandBufferPoolHandle handle)
     {
         var poolPtr = RHIDeviceAPI.RHIDevice_GetCommandBufferPool(Handle, handle.Index, handle.Generation);
         return new RHICommandBufferPool(poolPtr, handle);
     }
 
-    public ulong Submit(RHICommandBuffer cb, RHISwapChain waitSC = null, RHISwapChain signalSC = null)
+    public ulong Submit(RHICommandBuffer cb, RHISwapChain? waitSC = null, RHISwapChain? signalSC = null)
     {
-        if (waitSC == null && signalSC == null)
+        if (!waitSC.HasValue && !signalSC.HasValue)
         {
             return RHIDeviceAPI.RHIDevice_Submit(Handle, cb.RHIHandle.Index, cb.RHIHandle.Generation, IntPtr.Zero);
         }
 
-        var desc = new RHISubmitDescriptor_Bridge
+        // We temporarily pass the desc as an array of 6 ulongs/IntPtrs which represents the struct layout
+        // in C++: RHISwapChain*, RHISwapChain*, const uint64_t*, uint32_t, const uint64_t*, uint32_t
+        // This avoids heap allocations until the struct auto-generator is fully implemented.
+        unsafe
         {
-            WaitSwapChain = waitSC?.Handle ?? IntPtr.Zero,
-            SignalSwapChain = signalSC?.Handle ?? IntPtr.Zero
-        };
-
-        IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf(desc));
-        try
-        {
-            Marshal.StructureToPtr(desc, ptr, false);
-            return RHISyncAPI.RHIDevice_Submit(Handle, cb.RHIHandle.Index, cb.RHIHandle.Generation, ptr);
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(ptr);
+            IntPtr* descArray = stackalloc IntPtr[6];
+            descArray[0] = waitSC?.Handle ?? IntPtr.Zero;
+            descArray[1] = signalSC?.Handle ?? IntPtr.Zero;
+            descArray[2] = IntPtr.Zero;
+            descArray[3] = IntPtr.Zero; // 0 count
+            descArray[4] = IntPtr.Zero;
+            descArray[5] = IntPtr.Zero; // 0 count
+            
+            return RHIDeviceAPI.RHIDevice_Submit(Handle, cb.RHIHandle.Index, cb.RHIHandle.Generation, (IntPtr)descArray);
         }
     }
 

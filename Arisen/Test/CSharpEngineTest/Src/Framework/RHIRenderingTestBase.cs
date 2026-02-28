@@ -9,7 +9,7 @@ namespace CSharpEngineTest.Framework
 {
     public abstract class RHIRenderingTestBase : RHITestBase
     {
-        protected RHICommandBufferPoolHandle _cmdPool;
+        protected RHICommandBufferPool? _cmdPool;
         // protected RHIDescriptorPool _descriptorPool;
         protected RHISwapChain? _swapChain;
 
@@ -26,16 +26,15 @@ namespace CSharpEngineTest.Framework
         {
             if (_device == null) return;
 
-            var factory = _device.GetFactory();
+            var factory = _device.Value.GetFactory();
             _cmdPool = factory.CreateCommandBufferPool(Arisen.Native.RHI.RHIQueueType.Graphics);
         }
 
         protected override void TeardownTest()
         {
-            if (_device != null && _cmdPool.IsValid)
+            if (_cmdPool != null)
             {
-                _device.GetFactory().ReleaseCommandBufferPool(_cmdPool);
-                _cmdPool = RHICommandBufferPoolHandle.Invalid;
+                _cmdPool = null;
             }
         }
     }
