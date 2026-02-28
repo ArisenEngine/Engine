@@ -206,8 +206,9 @@ namespace ArisenEngine::Diagnostics
 {
     void Logger_Log(LogLevel level, const char* msg, const LogSourceLocation* location, const char* thread_name)
     {
-        if (location)
-            Logger::GetInstance().Log(level, msg, *location, thread_name);
+        LogSourceLocation default_loc = { "Unknown", "Unknown", 0 };
+        const LogSourceLocation* loc_to_use = location ? location : &default_loc;
+        Logger::GetInstance().Log(level, msg, *loc_to_use, thread_name);
     }
 
     void Logger_SetServerityLevel(LogLevel level)
