@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Arisen.Native.RHI;
 
 namespace ArisenEngine.Core.RHI;
@@ -5,7 +6,7 @@ namespace ArisenEngine.Core.RHI;
 public static class RHISystem
 {
     private static RHIInstance? m_Instance;
-    private static readonly Dictionary<uint, RHIDevice> m_DeviceWrappers = new();
+    private static readonly ConcurrentDictionary<uint, RHIDevice> m_DeviceWrappers = new();
     private static uint? m_PrimaryWindowId;
 
     public static RHIInstance? Instance => m_Instance;
@@ -19,7 +20,7 @@ public static class RHISystem
             return cachedDevice;
 
         var device = m_Instance.Value.CreateDevice(windowId);
-        m_DeviceWrappers[windowId] = device;
+        m_DeviceWrappers.TryAdd(windowId, device);
 
         if (m_PrimaryWindowId == null && windowId != uint.MaxValue)
             m_PrimaryWindowId = windowId;
