@@ -8,7 +8,7 @@ using CSharpEngineTest.Core.Lifecycle;
 Logger.Initialize();
 Logger.Log("###### Start C# Engine RHI Test ######");
 
-// TestRunner.RegisterTest<RHIBasicTriangleTest>();
+TestRunner.RegisterTest<RHIBasicTriangleTest>();
 TestRunner.RegisterTest<GraphTests>();
 TestRunner.RegisterTest<MemoryTests>();
 TestRunner.RegisterTest<LifecycleTests>();

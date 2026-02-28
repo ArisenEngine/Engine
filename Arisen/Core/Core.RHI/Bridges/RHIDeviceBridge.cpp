@@ -61,6 +61,14 @@ RHI_DLL void* RHIDevice_GetCommandBuffer(RHIDevice* dev, uint32_t index, uint32_
     return static_cast<void*>(dev->GetCommandBuffer(handle));
 }
 
+RHI_DLL void* RHIDevice_GetCommandBufferPool(RHIDevice* dev, uint32_t index, uint32_t generation)
+{
+    RHICommandBufferPoolHandle handle;
+    handle.index = index;
+    handle.generation = generation;
+    return static_cast<void*>(dev->GetCommandBufferPool(handle));
+}
+
 RHI_DLL uint64_t RHIDevice_GetCompletedSubmitTicket(RHIDevice* dev)
 {
     return dev->GetCompletedSubmitTicket();

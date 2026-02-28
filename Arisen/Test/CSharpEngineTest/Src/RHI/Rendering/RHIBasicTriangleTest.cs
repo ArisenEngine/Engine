@@ -18,11 +18,24 @@ namespace CSharpEngineTest.RHI.Rendering
 
         protected override void RenderFrame()
         {
-            // For the first run, let's just log and clear the screen if we can get the swapchain working
-            // Since we need to implement more of RHIRenderingTestBase (CmdPool, Swapchain creation), 
-            // the first goal is to see the window and the loop running.
+            if (_device == null || !_cmdPool.IsValid) return;
+
+            // Simple rendering flow: Allocate Command Buffer, Begin, End, Submit
+            var pool = _device.GetCommandBufferPool(_cmdPool);
+            var cmdHandle = pool.GetCommandBuffer(GetCurrentFrameIndex());
+            var cmd = _device.GetCommandBuffer(cmdHandle);
+
+            cmd.Begin();
+            // Since we don't have a full Swapchain / RenderPass setup, we just submit an empty command buffer
+            // to verify RHI command submission pipeline is working.
+            cmd.End();
+
+            ulong ticket = _device.Submit(cmd);
+            _device.WaitQueueTicket(ticket);
+
+            pool.ReleaseCommandBuffer(GetCurrentFrameIndex(), cmdHandle);
             
-            // Console.WriteLine($"Rendering frame {_frameIndex}");
+            // Console.WriteLine($"Rendering frame {_frameIndex} successful");
         }
 
         protected override void TeardownTest()

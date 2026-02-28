@@ -36,8 +36,19 @@ public class RHIDevice
         return new RHICommandBuffer(cbPtr, handle);
     }
 
+    public RHICommandBufferPool GetCommandBufferPool(RHICommandBufferPoolHandle handle)
+    {
+        var poolPtr = RHIDeviceAPI.RHIDevice_GetCommandBufferPool(Handle, handle.Index, handle.Generation);
+        return new RHICommandBufferPool(poolPtr, handle);
+    }
+
     public ulong Submit(RHICommandBuffer cb)
     {
         return RHIDeviceAPI.RHIDevice_Submit(Handle, cb.RHIHandle.Index, cb.RHIHandle.Generation);
+    }
+
+    public void WaitQueueTicket(ulong ticket)
+    {
+        RHIDeviceAPI.RHIDevice_WaitQueueTicket(Handle, ticket);
     }
 }
