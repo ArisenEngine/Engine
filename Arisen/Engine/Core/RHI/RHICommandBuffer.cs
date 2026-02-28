@@ -6,24 +6,18 @@ namespace ArisenEngine.Core.RHI;
 [StructLayout(LayoutKind.Explicit, Size = 16)]
 public struct RHIClearValue
 {
-    [FieldOffset(0)]
-    public float R;
-    [FieldOffset(4)]
-    public float G;
-    [FieldOffset(8)]
-    public float B;
-    [FieldOffset(12)]
-    public float A;
+    [FieldOffset(0)] public float R;
+    [FieldOffset(4)] public float G;
+    [FieldOffset(8)] public float B;
+    [FieldOffset(12)] public float A;
 
-    [FieldOffset(0)]
-    public float Depth;
-    [FieldOffset(4)]
-    public uint Stencil;
+    [FieldOffset(0)] public float Depth;
+    [FieldOffset(4)] public uint Stencil;
 
-    public static RHIClearValue Color(float r, float g, float b, float a) 
+    public static RHIClearValue Color(float r, float g, float b, float a)
         => new RHIClearValue { R = r, G = g, B = b, A = a };
-    
-    public static RHIClearValue DepthStencil(float depth, uint stencil) 
+
+    public static RHIClearValue DepthStencil(float depth, uint stencil)
         => new RHIClearValue { Depth = depth, Stencil = stencil };
 }
 
@@ -33,7 +27,7 @@ public readonly struct RHICommandBuffer
 
     internal IntPtr NativePtr { get; }
     public RHICommandBufferHandle RHIHandle { get; }
-    
+
     public bool IsValid => NativePtr != IntPtr.Zero;
 
     internal RHICommandBuffer(uint frameIndex, IntPtr nativePtr, RHICommandBufferHandle handle)
@@ -53,11 +47,13 @@ public readonly struct RHICommandBuffer
         RHICommandBufferAPI.RHICommandBuffer_End(NativePtr);
     }
 
-    public unsafe void BeginRenderPass(RHIRenderPassHandle renderPass, RHIFrameBufferHandle frameBuffer, ESubpassContents contents, RHIClearValue[] clearValues)
+    public unsafe void BeginRenderPass(RHIRenderPassHandle renderPass, RHIFrameBufferHandle frameBuffer,
+        ESubpassContents contents, RHIClearValue[] clearValues)
     {
         fixed (RHIClearValue* pValues = clearValues)
         {
-            RHICommandBufferAPI.RHICommandBuffer_BeginRenderPass(NativePtr, renderPass, frameBuffer, (int)contents, (uint)clearValues.Length, (IntPtr)pValues);
+            RHICommandBufferAPI.RHICommandBuffer_BeginRenderPass(NativePtr, renderPass, frameBuffer, (int)contents,
+                (uint)clearValues.Length, (IntPtr)pValues);
         }
     }
 
@@ -91,14 +87,18 @@ public readonly struct RHICommandBuffer
         RHICommandBufferAPI.RHICommandBuffer_BindIndexBuffer(NativePtr, buffer, offset, (int)indexType);
     }
 
-    public void Draw(uint vertexCount, uint instanceCount = 1, uint firstVertex = 0, uint firstInstance = 0, uint firstBinding = 0)
+    public void Draw(uint vertexCount, uint instanceCount = 1, uint firstVertex = 0, uint firstInstance = 0,
+        uint firstBinding = 0)
     {
-        RHICommandBufferAPI.RHICommandBuffer_Draw(NativePtr, vertexCount, instanceCount, firstVertex, firstInstance, firstBinding);
+        RHICommandBufferAPI.RHICommandBuffer_Draw(NativePtr, vertexCount, instanceCount, firstVertex, firstInstance,
+            firstBinding);
     }
 
-    public void DrawIndexed(uint indexCount, uint instanceCount = 1, uint firstIndex = 0, int vertexOffset = 0, uint firstInstance = 0, uint firstBinding = 0)
+    public void DrawIndexed(uint indexCount, uint instanceCount = 1, uint firstIndex = 0, int vertexOffset = 0,
+        uint firstInstance = 0, uint firstBinding = 0)
     {
-        RHICommandBufferAPI.RHICommandBuffer_DrawIndexed(NativePtr, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance, firstBinding);
+        RHICommandBufferAPI.RHICommandBuffer_DrawIndexed(NativePtr, indexCount, instanceCount, firstIndex, vertexOffset,
+            firstInstance, firstBinding);
     }
 
     public void TransitionImageLayout(RHIImageHandle image, EImageLayout targetLayout)
@@ -108,12 +108,15 @@ public readonly struct RHICommandBuffer
 
     public void TransitionImageLayout(RHIImageHandle image, EImageLayout oldLayout, EImageLayout targetLayout)
     {
-        RHICommandBufferAPI.RHICommandBuffer_TransitionImageLayoutExplicit(NativePtr, image, (int)oldLayout, (int)targetLayout);
+        RHICommandBufferAPI.RHICommandBuffer_TransitionImageLayoutExplicit(NativePtr, image, (int)oldLayout,
+            (int)targetLayout);
     }
 
-    public void BindDescriptorSets(EPipelineBindPoint bindPoint, uint firstSet, RHIDescriptorPoolHandle poolHandle, uint poolId)
+    public void BindDescriptorSets(EPipelineBindPoint bindPoint, uint firstSet, RHIDescriptorPoolHandle poolHandle,
+        uint poolId)
     {
-        RHICommandBufferAPI.RHICommandBuffer_BindDescriptorSets(NativePtr, (int)bindPoint, firstSet, poolHandle, poolId);
+        RHICommandBufferAPI.RHICommandBuffer_BindDescriptorSets(NativePtr, (int)bindPoint, firstSet, poolHandle,
+            poolId);
     }
 
     public unsafe void PushConstants(uint offset, uint size, IntPtr data, uint stageFlags)
@@ -125,5 +128,4 @@ public readonly struct RHICommandBuffer
     {
         RHICommandBufferAPI.RHICommandBuffer_CopyBuffer(NativePtr, src, srcOffset, dst, dstOffset, size);
     }
-
 }

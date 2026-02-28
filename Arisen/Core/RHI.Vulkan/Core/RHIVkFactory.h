@@ -34,8 +34,10 @@ namespace ArisenEngine::RHI
         RHIMemoryPoolHandle CreateMemoryPool(UInt64 size, UInt32 usageBits) override;
         void ReleaseMemoryPool(RHIMemoryPoolHandle handle) override;
 
-        RHIBufferHandle CreateBufferAliased(RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset, const String& name = "Anonymous") override;
-        RHIImageHandle CreateImageAliased(RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset, const String& name = "Anonymous") override;
+        RHIBufferHandle CreateBufferAliased(RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset,
+                                            const String& name = "Anonymous") override;
+        RHIImageHandle CreateImageAliased(RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset,
+                                          const String& name = "Anonymous") override;
 
         RHIImageViewHandle CreateImageView(RHIImageHandle image, RHIImageViewDesc&& desc) override;
         void ReleaseImageView(RHIImageViewHandle imageView) override;
@@ -66,8 +68,9 @@ namespace ArisenEngine::RHI
         UInt32 GetImageViewWidth(RHIImageViewHandle handle) override;
         UInt32 GetImageViewHeight(RHIImageViewHandle handle) override;
 
-        void SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size, const void* data) override;
-        
+        void SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size,
+                                                 const void* data) override;
+
         UInt32 RegisterBindlessResource(RHIImageViewHandle image) override;
         UInt32 RegisterBindlessResource(RHIBufferHandle buffer) override;
         UInt32 RegisterBindlessResource(RHISamplerHandle sampler) override;
@@ -76,7 +79,3 @@ namespace ArisenEngine::RHI
         RHIVkDevice* m_Device;
     };
 }
-
-
-
-

@@ -16,7 +16,7 @@ namespace Serialization
 
             StreamWriter streamWriter = File.CreateText(fi.FullName);
             Serializer serializer = new Serializer();
-            
+
             if (serializableObject is ISerializationCallbackReceiver)
             {
                 (serializableObject as ISerializationCallbackReceiver)?.OnBeforeSerialize();
@@ -42,7 +42,7 @@ namespace Serialization
                 {
                     (result as ISerializationCallbackReceiver)?.OnAfterDeserialize();
                 }
-                    
+
                 return result;
             }
 
@@ -50,12 +50,12 @@ namespace Serialization
             Deserializer serializer = new Deserializer();
             T serializableObject = serializer.Deserialize<T>(streamReader);
             streamReader.Close();
-           
+
             if (serializableObject is ISerializationCallbackReceiver)
             {
                 (serializableObject as ISerializationCallbackReceiver)?.OnAfterDeserialize();
             }
-            
+
             return serializableObject;
         }
     }

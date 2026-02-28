@@ -3,9 +3,11 @@
 
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+
 namespace ArisenEngine::RHI
 {
     ARISEN_BIND_ENUM(EImageTiling)
+
     typedef enum EImageTiling
     {
         IMAGE_TILING_OPTIMAL = 0,

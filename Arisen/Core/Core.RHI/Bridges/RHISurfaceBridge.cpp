@@ -8,7 +8,6 @@ using namespace ArisenEngine::RHI;
 ARISEN_BIND_BEGIN_BRIDGE("RHISurface", "Core.RHI.dll", "Arisen.Native.RHI")
 
 extern "C" {
-
 RHI_DLL void RHISurface_InitSwapChain(RHISurface* surface)
 {
     if (!surface) return;
@@ -17,7 +16,8 @@ RHI_DLL void RHISurface_InitSwapChain(RHISurface* surface)
 
 RHI_DLL void* RHISurface_GetSwapChain(RHISurface* surface)
 {
-    if (!surface) {
+    if (!surface)
+    {
         printf("[DEBUG] RHISurface_GetSwapChain: surface is NULL!\n");
         return nullptr;
     }
@@ -25,7 +25,6 @@ RHI_DLL void* RHISurface_GetSwapChain(RHISurface* surface)
     printf("[DEBUG] RHISurface_GetSwapChain: surface=%p, swapchain=%p\n", surface, sc);
     return sc;
 }
-
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()

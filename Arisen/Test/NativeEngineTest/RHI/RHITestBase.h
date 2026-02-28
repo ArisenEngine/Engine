@@ -36,7 +36,7 @@ namespace ArisenEngine::Testing
 
     struct GLTFVertex
     {
-        glm::vec4 pos;    // w is unused
+        glm::vec4 pos; // w is unused
         glm::vec4 normal; // w is unused
         glm::vec2 uv;
         glm::vec2 padding;
@@ -68,7 +68,7 @@ namespace ArisenEngine::Testing
 
         Containers::Vector<GLTFPrimitive> primitives;
         Containers::Vector<GLTFMaterial> materials;
-        
+
         void Release(RHI::RHIDevice* device)
         {
             if (vertexBuffer.IsValid()) device->GetFactory()->ReleaseBuffer(vertexBuffer);
@@ -116,7 +116,7 @@ namespace ArisenEngine::Testing
         double frameTime = 0.0;
         double fps = 0.0;
         Float32 s_FrameTimeSpacing = 0.0;
-        
+
         std::unique_ptr<RHI::RHIInstance> m_Instance;
         RHI::RHIDevice* m_Device = nullptr;
         UInt32 m_WindowId = ~0u;
@@ -124,11 +124,11 @@ namespace ArisenEngine::Testing
         UInt32 m_FrameIndex = 0;
 
         // Input state
-        bool m_Keys[256] = { false };
+        bool m_Keys[256] = {false};
         float m_MouseX = 0.0f, m_MouseY = 0.0f;
         float m_MouseDX = 0.0f, m_MouseDY = 0.0f;
-        bool m_MouseButtons[3] = { false }; // 0: Left, 1: Right, 2: Middle
-        POINT m_DragStartCursorPos{ 0, 0 };
+        bool m_MouseButtons[3] = {false}; // 0: Left, 1: Right, 2: Middle
+        POINT m_DragStartCursorPos{0, 0};
 
         // Camera state
         glm::vec3 m_CameraPos = glm::vec3(0.0f, 1.0f, 5.0f);
@@ -137,14 +137,15 @@ namespace ArisenEngine::Testing
         void UpdateCamera(float deltaTime)
         {
             float speed = 10.0f * deltaTime; // Increased from 1.0f for larger models
-            if (m_Keys[VK_SHIFT]) speed *= 20.0f;       // Turbo
-            if (m_Keys[VK_CONTROL]) speed *= 0.1f;    // Precision
+            if (m_Keys[VK_SHIFT]) speed *= 20.0f; // Turbo
+            if (m_Keys[VK_CONTROL]) speed *= 0.1f; // Precision
 
             // Debug movement keys
             if (m_Keys['W'] || m_Keys['S'] || m_Keys['A'] || m_Keys['D'])
             {
                 static int moveLogCount = 0;
-                if (++moveLogCount % 30 == 0) LOG_INFOF("Movement key held. Pos: ({0}, {1}, {2})", m_CameraPos.x, m_CameraPos.y, m_CameraPos.z);
+                if (++moveLogCount % 30 == 0)
+                    LOG_INFOF("Movement key held. Pos: ({0}, {1}, {2})", m_CameraPos.x, m_CameraPos.y, m_CameraPos.z);
             }
 
             glm::vec3 forward;
@@ -166,14 +167,15 @@ namespace ArisenEngine::Testing
             if (m_Keys['Q']) m_CameraPos -= glm::vec3(0, 1, 0) * speed;
 
             // Only rotate if RMB is held
-            if (m_MouseButtons[1]) 
+            if (m_MouseButtons[1])
             {
                 float sensitivity = 0.005f;
                 m_CameraRot.y += m_MouseDX * sensitivity;
                 m_CameraRot.x -= m_MouseDY * sensitivity;
-                
+
                 // Clamp pitch
-                m_CameraRot.x = glm::clamp(m_CameraRot.x, -glm::half_pi<float>() + 0.01f, glm::half_pi<float>() - 0.01f);
+                m_CameraRot.x = glm::clamp(m_CameraRot.x, -glm::half_pi<float>() + 0.01f,
+                                           glm::half_pi<float>() - 0.01f);
             }
         }
 
@@ -199,8 +201,13 @@ namespace ArisenEngine::Testing
         virtual bool IsHeadless() const { return false; }
 
 
-        virtual void RenderFrame() {};
-        virtual void OnResize(UInt32 width, UInt32 height) {}
+        virtual void RenderFrame()
+        {
+        };
+
+        virtual void OnResize(UInt32 width, UInt32 height)
+        {
+        }
 
         GLTFModel LoadGLTF(const String& path);
 
@@ -212,16 +219,16 @@ namespace ArisenEngine::Testing
             RHI::RHIInstanceInfo appInfo{
                 appName,
                 "Arisen Engine",
-                true,  // Enable validation layers for unit tests to catch issues
-                0, 1, 3, 0,  // Vulkan 1.3
-                1, 0, 0,     // App version
-                1, 0, 0,     // Engine version
-                2            // Max frames in flight
+                true, // Enable validation layers for unit tests to catch issues
+                0, 1, 3, 0, // Vulkan 1.3
+                1, 0, 0, // App version
+                1, 0, 0, // Engine version
+                2 // Max frames in flight
             };
 
             RHI::RHILoader::SetCurrentGraphicsAPI(RHI::GraphicsAPI::Vulkan);
             m_Instance.reset(RHI::RHILoader::CreateInstance(std::move(appInfo)));
-            
+
             if (!m_Instance)
             {
                 LOG_ERROR("Failed to create RHI instance");
@@ -253,34 +260,40 @@ namespace ArisenEngine::Testing
             case WM_KEYUP:
                 if (test) test->m_Keys[wParam & 0xFF] = false;
                 return 0;
-            case WM_LBUTTONDOWN: if (test) test->m_MouseButtons[0] = true; return 0;
-            case WM_LBUTTONUP:   if (test) test->m_MouseButtons[0] = false; return 0;
-            case WM_RBUTTONDOWN: 
-                if (test) {
-                    test->m_MouseButtons[1] = true; 
+            case WM_LBUTTONDOWN: if (test) test->m_MouseButtons[0] = true;
+                return 0;
+            case WM_LBUTTONUP: if (test) test->m_MouseButtons[0] = false;
+                return 0;
+            case WM_RBUTTONDOWN:
+                if (test)
+                {
+                    test->m_MouseButtons[1] = true;
                     GetCursorPos(&test->m_DragStartCursorPos);
                     ShowCursor(FALSE);
                 }
                 return 0;
-            case WM_RBUTTONUP:   
-                if (test) {
-                    test->m_MouseButtons[1] = false; 
+            case WM_RBUTTONUP:
+                if (test)
+                {
+                    test->m_MouseButtons[1] = false;
                     SetCursorPos(test->m_DragStartCursorPos.x, test->m_DragStartCursorPos.y);
                     ShowCursor(TRUE);
                 }
                 return 0;
-            case WM_MBUTTONDOWN: if (test) test->m_MouseButtons[2] = true; return 0;
-            case WM_MBUTTONUP:   if (test) test->m_MouseButtons[2] = false; return 0;
+            case WM_MBUTTONDOWN: if (test) test->m_MouseButtons[2] = true;
+                return 0;
+            case WM_MBUTTONUP: if (test) test->m_MouseButtons[2] = false;
+                return 0;
             case WM_MOUSEMOVE:
                 if (test)
                 {
                     if (test->m_MouseButtons[1])
                     {
-                         POINT currentPos;
-                         GetCursorPos(&currentPos);
-                         test->m_MouseDX += (float)(currentPos.x - test->m_DragStartCursorPos.x);
-                         test->m_MouseDY += (float)(currentPos.y - test->m_DragStartCursorPos.y);
-                         SetCursorPos(test->m_DragStartCursorPos.x, test->m_DragStartCursorPos.y);
+                        POINT currentPos;
+                        GetCursorPos(&currentPos);
+                        test->m_MouseDX += (float)(currentPos.x - test->m_DragStartCursorPos.x);
+                        test->m_MouseDY += (float)(currentPos.y - test->m_DragStartCursorPos.y);
+                        SetCursorPos(test->m_DragStartCursorPos.x, test->m_DragStartCursorPos.y);
                     }
                     else
                     {
@@ -328,7 +341,8 @@ namespace ArisenEngine::Testing
          */
         bool CreateAppWindow(UInt32 width = 1280, UInt32 height = 720)
         {
-            m_WindowId = HAL::CreateRenderWindowWithResizeCallback(nullptr, TestWndProc, OnWindowResizeFinished, OnWindowResizing, width, height);
+            m_WindowId = HAL::CreateRenderWindowWithResizeCallback(nullptr, TestWndProc, OnWindowResizeFinished,
+                                                                   OnWindowResizing, width, height);
             if (m_WindowId != ~0u)
             {
                 HAL::SetWindowUserData(m_WindowId, this);
@@ -383,7 +397,7 @@ namespace ArisenEngine::Testing
         {
             MSG msg{};
             bool isRunning = true;
-            
+
             while (isRunning)
             {
                 m_MouseDX = 0;
@@ -404,9 +418,9 @@ namespace ArisenEngine::Testing
                 RenderFrame();
             }
 
-            return true;    
+            return true;
         }
-        
+
         /**
          * @brief Advance to the next frame.
          */
@@ -425,7 +439,7 @@ namespace ArisenEngine::Testing
             if (s_FrameTimeSpacing >= 1.0)
             {
                 s_FrameTimeSpacing = 0.0;
-                std::cout << "FPS:" << fps << ", Delta Time:"<< frameTime << std::endl;
+                std::cout << "FPS:" << fps << ", Delta Time:" << frameTime << std::endl;
             }
         }
 
@@ -495,7 +509,8 @@ namespace ArisenEngine::Testing
         /**
          * @brief Test-specific teardown. Override in derived classes.
          */
-        virtual void TeardownTest() {}
+        virtual void TeardownTest()
+        {
+        }
     };
 }
-

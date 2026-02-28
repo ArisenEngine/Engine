@@ -7,6 +7,7 @@
 #endif
 
 extern "C" DIAGNOSTIC_DLL void dummy_core_diagnostic_function();
+
 inline void dummy_core_diagnostic_function()
 {
 }

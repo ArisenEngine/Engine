@@ -28,9 +28,13 @@ namespace ArisenEngine::Testing
 
             // 1. Test Resource Naming
             LOG_INFO("Testing RHI_Device_SetObjectName...");
-            ArisenEngine::RHI::RHIBufferDescriptor bufferDesc{ 0, 1024, RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT, RHI::SHARING_MODE_EXCLUSIVE, 0, nullptr, RHI::ERHIMemoryUsage::GpuOnly };
-            RHI::RHIBufferHandle buffer = m_Device->GetFactory()->CreateBuffer(std::move(bufferDesc), "DebugBufferInitial");
-            
+            ArisenEngine::RHI::RHIBufferDescriptor bufferDesc{
+                0, 1024, RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT, RHI::SHARING_MODE_EXCLUSIVE, 0, nullptr,
+                RHI::ERHIMemoryUsage::GpuOnly
+            };
+            RHI::RHIBufferHandle buffer = m_Device->GetFactory()->CreateBuffer(
+                std::move(bufferDesc), "DebugBufferInitial");
+
             if (!buffer.IsValid())
             {
                 LOG_ERROR("Buffer creation failed!");
@@ -46,13 +50,13 @@ namespace ArisenEngine::Testing
             auto cmd = m_Device->GetCommandBuffer(cmdHandle);
             cmd->Begin(0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-            float red[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
-            float green[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
-            float blue[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
+            float red[4] = {1.0f, 0.0f, 0.0f, 1.0f};
+            float green[4] = {0.0f, 1.0f, 0.0f, 1.0f};
+            float blue[4] = {0.0f, 0.0f, 1.0f, 1.0f};
 
             cmd->BeginDebugLabel("Render Loop", red);
             cmd->InsertDebugMarker("Start Frame", green);
-            
+
             // Nested labels
             cmd->BeginDebugLabel("Geometry Pass", blue);
             cmd->InsertDebugMarker("Draw Mesh", nullptr);
@@ -61,12 +65,12 @@ namespace ArisenEngine::Testing
             cmd->EndDebugLabel(); // End Render Loop
 
             cmd->End();
-            
+
             // 3. Submit
             LOG_INFO("Submitting command buffer with debug markers...");
             RHI::RHISubmitDescriptor submitDesc = {};
             m_Device->Submit(cmdHandle, &submitDesc);
-            
+
             m_Device->GraphicQueueWaitIdle();
             LOG_INFO("Submission completed.");
 

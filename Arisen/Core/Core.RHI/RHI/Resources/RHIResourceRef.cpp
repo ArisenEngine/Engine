@@ -53,4 +53,3 @@ void ArisenEngine::RHI::RHIResourceRef::Release(RHIQueueType queue, RHIGpuTicket
     m_Registry->Release(m_Handle, queue, ticket);
     ResetNoRelease();
 }
-

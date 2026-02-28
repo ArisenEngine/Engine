@@ -10,6 +10,7 @@
 namespace ArisenEngine::RHI
 {
     class RHIVkDevice;
+
     class RHIVkFrameBuffer final : public RHIFrameBuffer
     {
     public:
@@ -19,13 +20,10 @@ namespace ArisenEngine::RHI
 
         void* GetHandle(UInt32 currentFrameIndex) override;
         EFormat GetAttachFormat() override;
+
     private:
         RHIVkDevice* m_Device;
         Containers::Vector<VkFramebuffer> m_VkFrameBuffers;
-        RHIImageViewHandle m_ImageView {RHIImageViewHandle::Invalid()};
+        RHIImageViewHandle m_ImageView{RHIImageViewHandle::Invalid()};
     };
 }
-
-
-
-

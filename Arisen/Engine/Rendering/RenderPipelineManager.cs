@@ -1,12 +1,11 @@
-
 namespace ArisenEngine.Rendering;
 
 public static class RenderPipelineManager
 {
     static RenderPipelineAsset s_CurrentPipelineAsset;
-    
+
     public static RenderPipeline currentPipeline { get; private set; }
-    
+
     public static event Action<Camera[]> beginFrameRendering;
     public static event Action<Camera> beginCameraRendering;
     public static event Action<Camera[]> endFrameRendering;
@@ -14,7 +13,6 @@ public static class RenderPipelineManager
 
     static void PrepareRenderPipeline(RenderPipelineAsset pipelineAsset)
     {
-        
         if (!ReferenceEquals(s_CurrentPipelineAsset, pipelineAsset))
         {
             // Required because when switching to a RenderPipeline asset for the first time
@@ -23,8 +21,8 @@ public static class RenderPipelineManager
             CleanupRenderPipeline();
             s_CurrentPipelineAsset = pipelineAsset;
         }
-        
-        
+
+
         if (s_CurrentPipelineAsset != null
             && (currentPipeline == null || currentPipeline.disposed))
         {
@@ -33,9 +31,8 @@ public static class RenderPipelineManager
     }
 
     #region Internal Part
-    
 
-    internal static void BeginFrameRendering( Camera[] cameras)
+    internal static void BeginFrameRendering(Camera[] cameras)
     {
         beginFrameRendering?.Invoke(cameras);
     }
@@ -45,7 +42,7 @@ public static class RenderPipelineManager
         beginCameraRendering?.Invoke(camera);
     }
 
-    internal static void EndFrameRendering( Camera[] cameras)
+    internal static void EndFrameRendering(Camera[] cameras)
     {
         endFrameRendering?.Invoke(cameras);
     }
@@ -58,16 +55,16 @@ public static class RenderPipelineManager
     internal static void DoRenderLoop(RenderPipelineAsset pipe)
     {
         PrepareRenderPipeline(pipe);
-        
+
         if (currentPipeline == null)
         {
-           // Logger.Warning("Current render pipeline is null");
+            // Logger.Warning("Current render pipeline is null");
             return;
         }
-        
+
         currentPipeline.InternalRender();
     }
-    
+
     internal static void CleanupRenderPipeline()
     {
         if (currentPipeline != null && !currentPipeline.disposed)

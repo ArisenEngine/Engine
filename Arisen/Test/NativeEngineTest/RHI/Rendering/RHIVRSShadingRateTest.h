@@ -15,18 +15,20 @@
 namespace ArisenEngine::Testing
 {
     using namespace ArisenEngine;
+
     class RHIVRSShadingRateTest : public RHIRenderingTestBase
     {
     private:
         std::unique_ptr<RHI::RHIPipelineState> m_Pso;
         RHI::RHIPipelineHandle m_Pipeline;
-        
+
         struct UniformBufferObject
         {
             glm::mat4 model;
             glm::mat4 view;
             glm::mat4 proj;
         };
+
         Containers::Vector<RHI::RHIBufferHandle> m_UboBuffers;
 
         RHI::RHIImageHandle m_DepthImage;
@@ -47,7 +49,8 @@ namespace ArisenEngine::Testing
             wchar_t exePathW[MAX_PATH]{};
             GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
             auto exeDir = std::filesystem::path(exePathW).parent_path();
-            std::filesystem::path modelPath = exeDir / "Assets" / "glTF-Sample-Models" / "2.0" / "Sponza" / "glTF" / "Sponza.gltf";
+            std::filesystem::path modelPath = exeDir / "Assets" / "glTF-Sample-Models" / "2.0" / "Sponza" / "glTF" /
+                "Sponza.gltf";
             m_Model = LoadGLTF(modelPath.string());
 
             CreateCommonResources();
@@ -65,7 +68,7 @@ namespace ArisenEngine::Testing
             auto factory = m_Device->GetFactory();
             if (m_DepthView.IsValid()) factory->ReleaseImageView(m_DepthView);
             if (m_DepthImage.IsValid()) factory->ReleaseImage(m_DepthImage);
-            for (auto& ubo : m_UboBuffers) 
+            for (auto& ubo : m_UboBuffers)
             {
                 if (ubo.IsValid()) factory->ReleaseBuffer(ubo);
             }
@@ -166,7 +169,8 @@ namespace ArisenEngine::Testing
             m_Pso->AddVertexInputAttributeDescription(0, 0, RHI::FORMAT_R32G32B32_SFLOAT, offsetof(GLTFVertex, pos));
             m_Pso->AddVertexInputAttributeDescription(1, 0, RHI::FORMAT_R32G32B32_SFLOAT, offsetof(GLTFVertex, normal));
             m_Pso->AddVertexInputAttributeDescription(2, 0, RHI::FORMAT_R32G32_SFLOAT, offsetof(GLTFVertex, uv));
-            m_Pso->AddVertexInputAttributeDescription(3, 0, RHI::FORMAT_R32G32B32A32_SFLOAT, offsetof(GLTFVertex, color));
+            m_Pso->AddVertexInputAttributeDescription(3, 0, RHI::FORMAT_R32G32B32A32_SFLOAT,
+                                                      offsetof(GLTFVertex, color));
 
             RHI::RHIInputAssemblyState ia{};
             ia.topology = RHI::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -191,16 +195,19 @@ namespace ArisenEngine::Testing
             RHI::RHIColorBlendState cb{};
             RHI::RHIColorBlendAttachmentState blendAttachment{};
             blendAttachment.blendEnable = false;
-            blendAttachment.colorWriteMask = RHI::COLOR_COMPONENT_R_BIT | RHI::COLOR_COMPONENT_G_BIT | RHI::COLOR_COMPONENT_B_BIT | RHI::COLOR_COMPONENT_A_BIT;
+            blendAttachment.colorWriteMask = RHI::COLOR_COMPONENT_R_BIT | RHI::COLOR_COMPONENT_G_BIT |
+                RHI::COLOR_COMPONENT_B_BIT | RHI::COLOR_COMPONENT_A_BIT;
             cb.attachments.push_back(blendAttachment);
             m_Pso->SetColorBlendState(cb);
 
-            m_Pso->SetDynamicStateMask(RHI::DYNAMIC_STATE_VIEWPORT_BIT | RHI::DYNAMIC_STATE_SCISSOR_BIT | RHI::DYNAMIC_STATE_FRAGMENT_SHADING_RATE_BIT);
+            m_Pso->SetDynamicStateMask(
+                RHI::DYNAMIC_STATE_VIEWPORT_BIT | RHI::DYNAMIC_STATE_SCISSOR_BIT |
+                RHI::DYNAMIC_STATE_FRAGMENT_SHADING_RATE_BIT);
 
-            Containers::Vector<RHI::EFormat> colorFormats = { RHI::FORMAT_B8G8R8A8_SRGB };
+            Containers::Vector<RHI::EFormat> colorFormats = {RHI::FORMAT_B8G8R8A8_SRGB};
             m_Pso->SetRenderingFormats(colorFormats, RHI::FORMAT_D32_SFLOAT, RHI::FORMAT_UNDEFINED);
 
-            m_Pso->UpdateDescriptorSet(0, 0, { m_UboBuffers[0] });
+            m_Pso->UpdateDescriptorSet(0, 0, {m_UboBuffers[0]});
 
             if (!m_Model.materials.empty())
             {
@@ -208,11 +215,11 @@ namespace ArisenEngine::Testing
                 RHI::RHIDescriptorImageInfo imgInfo{};
                 imgInfo.imageView = mat.baseColorView;
                 imgInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                m_Pso->UpdateDescriptorSet(0, 1, { imgInfo });
+                m_Pso->UpdateDescriptorSet(0, 1, {imgInfo});
 
                 RHI::RHIDescriptorImageInfo samplerInfo{};
                 samplerInfo.sampler = mat.sampler;
-                m_Pso->UpdateDescriptorSet(0, 2, { samplerInfo });
+                m_Pso->UpdateDescriptorSet(0, 2, {samplerInfo});
             }
 
             m_Pso->BuildDescriptorSetLayout();
@@ -222,11 +229,11 @@ namespace ArisenEngine::Testing
 
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
-                m_DescriptorPoolIds.push_back(m_DescriptorPool->AddPool({ 
-                    RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                    RHI::DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-                    RHI::DESCRIPTOR_TYPE_SAMPLER
-                }, { matCount, matCount, matCount }, matCount));
+                m_DescriptorPoolIds.push_back(m_DescriptorPool->AddPool({
+                                                                            RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                                            RHI::DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                                                                            RHI::DESCRIPTOR_TYPE_SAMPLER
+                                                                        }, {matCount, matCount, matCount}, matCount));
             }
 
             m_Pipeline = cache->GetGraphicsPipeline(m_Pso.get());
@@ -243,7 +250,8 @@ namespace ArisenEngine::Testing
             ubo.view = GetViewMatrix();
             ubo.proj = GetProjectionMatrix((float)width / (float)height);
 
-            m_Device->GetFactory()->BufferMemoryCopy(m_UboBuffers[GetCurrentFrameIndex()], &ubo, sizeof(UniformBufferObject), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_UboBuffers[GetCurrentFrameIndex()], &ubo,
+                                                     sizeof(UniformBufferObject), 0);
         }
 
         void RecordAndSubmit()
@@ -255,23 +263,24 @@ namespace ArisenEngine::Testing
 
             UInt32 poolId = m_DescriptorPoolIds[currentIndex];
             m_DescriptorPool->ResetPool(poolId);
-            
+
             Containers::Vector<UInt32> setIndices;
             for (UInt32 i = 0; i < (UInt32)m_Model.materials.size(); ++i)
             {
                 auto& mat = m_Model.materials[i];
-                m_Pso->UpdateDescriptorSet(0, 0, { m_UboBuffers[currentIndex] });
+                m_Pso->UpdateDescriptorSet(0, 0, {m_UboBuffers[currentIndex]});
 
                 RHI::RHIDescriptorImageInfo texInfo = {};
                 texInfo.imageView = mat.baseColorView;
                 texInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                m_Pso->UpdateDescriptorSet(0, 1, { texInfo });
+                m_Pso->UpdateDescriptorSet(0, 1, {texInfo});
 
                 RHI::RHIDescriptorImageInfo samInfo = {};
                 samInfo.sampler = mat.sampler;
-                m_Pso->UpdateDescriptorSet(0, 2, { samInfo });
+                m_Pso->UpdateDescriptorSet(0, 2, {samInfo});
 
-                UInt32 setIdx = m_DescriptorPool->AllocDescriptorSet(poolId, (UInt32)0, (RHI::RHIPipelineState*)m_Pso.get());
+                UInt32 setIdx = m_DescriptorPool->AllocDescriptorSet(poolId, (UInt32)0,
+                                                                     (RHI::RHIPipelineState*)m_Pso.get());
                 m_DescriptorPool->UpdateDescriptorSet(poolId, setIdx, m_Pso.get());
                 setIndices.push_back(setIdx);
             }
@@ -284,7 +293,7 @@ namespace ArisenEngine::Testing
                 auto colorView = m_SwapChain->GetImageView(currentIndex);
                 cmd->TransitionImageLayout(colorBuffer, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-                RHI::RHIRenderingAttachmentInfo colorAttachment {};
+                RHI::RHIRenderingAttachmentInfo colorAttachment{};
                 colorAttachment.imageView = colorView;
                 colorAttachment.imageLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                 colorAttachment.loadOp = RHI::ATTACHMENT_LOAD_OP_CLEAR;
@@ -294,7 +303,7 @@ namespace ArisenEngine::Testing
                 colorAttachment.clearValue.float32[2] = 0.05f;
                 colorAttachment.clearValue.float32[3] = 1.0f;
 
-                RHI::RHIRenderingAttachmentInfo depthAttachment {};
+                RHI::RHIRenderingAttachmentInfo depthAttachment{};
                 depthAttachment.imageView = m_DepthView;
                 depthAttachment.imageLayout = RHI::IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
                 depthAttachment.loadOp = RHI::ATTACHMENT_LOAD_OP_CLEAR;
@@ -304,8 +313,8 @@ namespace ArisenEngine::Testing
                 UInt32 width = HAL::GetWindowWidth(m_WindowId);
                 UInt32 height = HAL::GetWindowHeight(m_WindowId);
 
-                RHI::RHIRenderingInfo renderInfo {};
-                renderInfo.RHIRenderArea = { 0, 0, width, height };
+                RHI::RHIRenderingInfo renderInfo{};
+                renderInfo.RHIRenderArea = {0, 0, width, height};
                 renderInfo.layerCount = 1;
                 renderInfo.colorAttachmentCount = 1;
                 renderInfo.pColorAttachments = &colorAttachment;
@@ -313,7 +322,7 @@ namespace ArisenEngine::Testing
 
                 cmd->BeginRendering(renderInfo);
                 cmd->BindPipeline(m_Pipeline);
-                
+
                 cmd->BindVertexBuffers(m_Model.vertexBuffer, 0);
                 cmd->BindIndexBuffer(m_Model.indexBuffer, 0, RHI::INDEX_TYPE_UINT32);
 
@@ -322,21 +331,24 @@ namespace ArisenEngine::Testing
                     RHI::EShadingRate::Rate2x2,
                     RHI::EShadingRate::Rate4x4
                 };
-                RHI::EShadingRateCombiner combiners[2] = { RHI::EShadingRateCombiner::Keep, RHI::EShadingRateCombiner::Keep };
+                RHI::EShadingRateCombiner combiners[2] = {
+                    RHI::EShadingRateCombiner::Keep, RHI::EShadingRateCombiner::Keep
+                };
 
                 for (int i = 0; i < 3; ++i)
                 {
                     float quadWidth = (float)width / 3.0f;
                     float xPos = i * quadWidth;
-                    
+
                     cmd->SetViewport(xPos, 0, quadWidth, (float)height, 0, 1);
                     cmd->SetScissor((UInt32)xPos, 0, (UInt32)quadWidth, height);
                     cmd->SetFragmentShadingRate(rates[i], combiners);
-                    
+
                     for (const auto& prim : m_Model.primitives)
                     {
                         UInt32 setIdx = prim.materialIndex >= 0 ? setIndices[prim.materialIndex] : 0;
-                        cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPoolHandle, poolId, setIdx);
+                        cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPoolHandle, poolId,
+                                               setIdx);
                         cmd->DrawIndexed(prim.indexCount, 1, prim.firstIndex, 0, 0, 0);
                     }
                 }
@@ -350,11 +362,10 @@ namespace ArisenEngine::Testing
             RHI::RHISubmitDescriptor submitDesc = {};
             submitDesc.WaitSwapChain = m_SwapChain;
             submitDesc.SignalSwapChain = m_SwapChain;
-            
+
             m_FrameTickets[currentIndex] = m_Device->Submit(cmdHandle, &submitDesc);
             m_SwapChain->EndFrame(currentIndex);
             pool->ReleaseCommandBuffer(currentIndex, cmdHandle);
         }
-
     };
 }

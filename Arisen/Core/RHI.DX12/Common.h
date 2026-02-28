@@ -13,6 +13,7 @@
 #endif
 
 extern "C" RHI_DX12_DLL void dummy_dx12_function();
+
 inline void dummy_dx12_function()
 {
     //

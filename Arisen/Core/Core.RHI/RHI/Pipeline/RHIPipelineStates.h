@@ -64,7 +64,7 @@ namespace ArisenEngine::RHI
         bool logicOpEnable = false;
         ELogicOp logicOp = LOGIC_OP_COPY;
         Containers::Vector<RHIColorBlendAttachmentState> attachments;
-        float blendConstants[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+        float blendConstants[4] = {0.0f, 0.0f, 0.0f, 0.0f};
     };
 
     // Bitmask for dynamic states

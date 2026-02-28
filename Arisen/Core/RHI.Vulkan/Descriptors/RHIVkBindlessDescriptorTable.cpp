@@ -6,12 +6,10 @@ namespace ArisenEngine::RHI
     RHIVkBindlessDescriptorTable::RHIVkBindlessDescriptorTable(RHIVkDevice* device, RHIVkDescriptorHeap* heap)
         : m_Device(device), m_Heap(heap)
     {
-        
     }
 
     RHIVkBindlessDescriptorTable::~RHIVkBindlessDescriptorTable()
     {
-        
     }
 
     void RHIVkBindlessDescriptorTable::SetDescriptorHeap(RHIDescriptorHeap* heap)
@@ -23,7 +21,7 @@ namespace ArisenEngine::RHI
     {
         // TODO: Update the descriptor set at 'index' with the resource info.
         // This requires casting resource handle to VkImageView / VkBufferView and calling vkUpdateDescriptorSets
-        
+
         // This is a placeholder logic.
         // In a real implementation we need to know the type of the resource and the type of the heap to create correct WriteDescriptorSet.
     }

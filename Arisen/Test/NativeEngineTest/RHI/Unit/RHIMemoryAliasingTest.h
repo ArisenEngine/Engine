@@ -23,7 +23,8 @@ namespace ArisenEngine::Testing
 
             // 1. Create a memory pool
             const UInt64 poolSize = 1024 * 1024; // 1MB
-            RHI::RHIMemoryPoolHandle pool = m_Device->GetFactory()->CreateMemoryPool(poolSize, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            RHI::RHIMemoryPoolHandle pool = m_Device->GetFactory()->CreateMemoryPool(
+                poolSize, RHI::MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
             if (!pool.IsValid())
             {
                 LOG_ERROR("Failed to create memory pool!");
@@ -38,9 +39,11 @@ namespace ArisenEngine::Testing
             bufferDesc.sharingMode = RHI::SHARING_MODE_EXCLUSIVE;
 
             // Buffer 1 at offset 0
-            auto buffer1 = m_Device->GetFactory()->CreateBufferAliased(ArisenEngine::RHI::RHIBufferDescriptor(bufferDesc), pool, 0, "AliasedBuffer1");
+            auto buffer1 = m_Device->GetFactory()->CreateBufferAliased(
+                ArisenEngine::RHI::RHIBufferDescriptor(bufferDesc), pool, 0, "AliasedBuffer1");
             // Buffer 2 at offset 256KB
-            auto buffer2 = m_Device->GetFactory()->CreateBufferAliased(ArisenEngine::RHI::RHIBufferDescriptor(bufferDesc), pool, 256 * 1024, "AliasedBuffer2");
+            auto buffer2 = m_Device->GetFactory()->CreateBufferAliased(
+                ArisenEngine::RHI::RHIBufferDescriptor(bufferDesc), pool, 256 * 1024, "AliasedBuffer2");
 
             if (!buffer1.IsValid() || !buffer2.IsValid())
             {
@@ -91,6 +94,7 @@ namespace ArisenEngine::Testing
         void TeardownTest() override
         {
         }
+
     private:
     };
 }

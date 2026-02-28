@@ -6,6 +6,7 @@
 namespace ArisenEngine::RHI
 {
     class RHISubPass;
+
     class RHI_DLL RHIPipeline
     {
     public:
@@ -22,12 +23,11 @@ namespace ArisenEngine::RHI
         virtual void AllocComputePipeline(UInt32 frameIndex) = 0;
         virtual void AllocRayTracingPipeline(UInt32 frameIndex) = 0;
         virtual const EPipelineBindPoint GetBindPoint() const = 0;
-        
+
         virtual void BindPipelineStateObject(RHIPipelineState* pso) = 0;
         virtual RHIPipelineState* GetPipelineStateObject() const = 0;
 
     protected:
         UInt32 m_MaxFramesInFlight;
     };
-
 }

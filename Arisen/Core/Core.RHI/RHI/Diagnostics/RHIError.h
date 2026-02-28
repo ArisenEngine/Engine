@@ -8,17 +8,17 @@ namespace ArisenEngine::RHI
      */
     enum class EErrorCode
     {
-        None = 0,                        ///< No error
-        OutOfMemory = 1,                 ///< Memory allocation failed
-        InvalidHandle = 2,              ///< Invalid resource handle
-        DeviceLost = 3,                 ///< GPU device was lost
-        ValidationFailed = 4,           ///< Validation layer error
-        InitializationFailed = 5,       ///< RHI initialization failed
-        ShaderCompilationFailed = 6,    ///< Shader compilation error
-        PipelineCreationFailed = 7,     ///< Pipeline creation error
-        InvalidParameter = 8,           ///< Invalid function parameter
-        UnsupportedFeature = 9,         ///< Feature not supported
-        Unknown = 99                     ///< Unknown error
+        None = 0, ///< No error
+        OutOfMemory = 1, ///< Memory allocation failed
+        InvalidHandle = 2, ///< Invalid resource handle
+        DeviceLost = 3, ///< GPU device was lost
+        ValidationFailed = 4, ///< Validation layer error
+        InitializationFailed = 5, ///< RHI initialization failed
+        ShaderCompilationFailed = 6, ///< Shader compilation error
+        PipelineCreationFailed = 7, ///< Pipeline creation error
+        InvalidParameter = 8, ///< Invalid function parameter
+        UnsupportedFeature = 9, ///< Feature not supported
+        Unknown = 99 ///< Unknown error
     };
 
     /**
@@ -41,5 +41,4 @@ namespace ArisenEngine::RHI
      * @internal This should only be called by RHI implementations.
      */
     RHI_DLL void SetLastError(EErrorCode code, const char* message = nullptr);
-
 } // namespace ArisenEngine::RHI

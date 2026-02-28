@@ -4,10 +4,13 @@
 
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+
 namespace ArisenEngine::RHI
 {
     ARISEN_BIND_ENUM(EImageAspectFlagBits)
-    typedef enum EImageAspectFlagBits {
+
+    typedef enum EImageAspectFlagBits
+    {
         IMAGE_ASPECT_COLOR_BIT = 0x00000001,
         IMAGE_ASPECT_DEPTH_BIT = 0x00000002,
         IMAGE_ASPECT_STENCIL_BIT = 0x00000004,

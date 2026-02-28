@@ -78,7 +78,9 @@ public class LifecycleTests : ITest
         return true;
     }
 
-    public void Teardown() { }
+    public void Teardown()
+    {
+    }
 
     public bool Run()
     {
@@ -89,21 +91,21 @@ public class LifecycleTests : ITest
     {
         Logger.Log("Testing Phase Transitions...");
         var kernel = EngineKernel.Instance;
-        
+
         var sub1 = new MockSubsystem1("Pre", 0, EnginePhase.PreInit);
         var sub2 = new MockSubsystem2("Main", 0, EnginePhase.Init);
-        
+
         kernel.RegisterSubsystem(sub1);
         kernel.RegisterSubsystem(sub2);
-        
+
         kernel.Initialize(new EngineConfig { AppName = "Test" });
-        
+
         bool success = sub1.Initialized && sub2.Initialized && kernel.CurrentPhase == EnginePhase.Running;
-        
+
         kernel.Shutdown();
-        
+
         success &= sub1.ShutdownCalled && sub2.ShutdownCalled && kernel.CurrentPhase == EnginePhase.Shutdown;
-        
+
         return success;
     }
 
@@ -111,7 +113,7 @@ public class LifecycleTests : ITest
     {
         Logger.Log("Testing Priority Order...");
         MockSubsystem1.ExecutionLog.Clear();
-        
+
         // Let's check if the order was Pre then Main
         if (MockSubsystem1.ExecutionLog.IndexOf("Init:Pre") > MockSubsystem1.ExecutionLog.IndexOf("Init:Main"))
         {

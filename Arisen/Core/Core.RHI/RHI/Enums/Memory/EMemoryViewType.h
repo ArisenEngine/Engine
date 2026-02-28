@@ -4,9 +4,11 @@
 
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+
 namespace ArisenEngine::RHI
 {
     ARISEN_BIND_ENUM(MemoryViewType)
+
     typedef enum MemoryViewType
     {
         IMAGE_MEMORY_VIEW_TYPE = 0x00000001,

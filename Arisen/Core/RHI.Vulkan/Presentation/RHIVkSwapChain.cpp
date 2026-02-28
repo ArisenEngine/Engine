@@ -8,12 +8,12 @@ using namespace ArisenEngine;
 #include "RHI/Enums/Image/ECompositeAlphaFlagBits.h"
 #include "RHI/Enums/Image/EImageAspectFlagBits.h"
 
-ArisenEngine::RHI::RHIVkSwapChain::RHIVkSwapChain(RHIDevice* device, const RHIVkSurface* surface, UInt32 maxFramesInFlight):
-RHISwapChain(maxFramesInFlight), m_Device(device), m_VkDevice(static_cast<VkDevice>(
-            m_Device->GetHandle())),
-m_VkSurface(static_cast<VkSurfaceKHR>(surface->GetHandle())), m_Surface(surface)
+ArisenEngine::RHI::RHIVkSwapChain::RHIVkSwapChain(RHIDevice* device, const RHIVkSurface* surface,
+                                                  UInt32 maxFramesInFlight):
+    RHISwapChain(maxFramesInFlight), m_Device(device), m_VkDevice(static_cast<VkDevice>(
+        m_Device->GetHandle())),
+    m_VkSurface(static_cast<VkSurfaceKHR>(surface->GetHandle())), m_Surface(surface)
 {
-    
     auto* factory = m_Device->GetFactory();
     for (int i = 0; i < (int)m_MaxFramesInFlight; ++i)
     {
@@ -31,14 +31,14 @@ ArisenEngine::RHI::RHIVkSwapChain::~RHIVkSwapChain() noexcept
     LOG_INFO("[RHIVkSwapChain::~RHIVkSwapChain]: ~RHIVkSwapChain");
 
     m_Surface = nullptr;
-    
+
     // Release semaphores here as they persist across SwapChain recreation
     auto* factory = m_Device->GetFactory();
     for (auto h : m_ImageAvailableSemaphores) factory->ReleaseSemaphore(h);
     for (auto h : m_RenderFinishSemaphores) factory->ReleaseSemaphore(h);
     m_ImageAvailableSemaphores.clear();
     m_RenderFinishSemaphores.clear();
-    
+
     Cleanup();
 }
 
@@ -46,7 +46,7 @@ void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(RHISwapChainDesc
 {
     ARISEN_PROFILE_ZONE("RHI::VulkanCreateSwapChain");
     m_Desc = desc;
-    
+
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.pNext = VK_NULL_HANDLE;
@@ -54,14 +54,16 @@ void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(RHISwapChainDesc
     createInfo.surface = m_VkSurface;
     createInfo.minImageCount = m_Desc.imageCount;
     createInfo.imageFormat = static_cast<VkFormat>(m_Desc.colorFormat);
-    createInfo.imageColorSpace = static_cast<VkColorSpaceKHR>( m_Desc.colorSpace);
-    createInfo.imageExtent = { m_Desc.width,  m_Desc.height};
-    createInfo.imageArrayLayers =  m_Desc.imageArrayLayers;
-    createInfo.imageUsage =  m_Desc.imageUsageFlagBits;
+    createInfo.imageColorSpace = static_cast<VkColorSpaceKHR>(m_Desc.colorSpace);
+    createInfo.imageExtent = {m_Desc.width, m_Desc.height};
+    createInfo.imageArrayLayers = m_Desc.imageArrayLayers;
+    createInfo.imageUsage = m_Desc.imageUsageFlagBits;
     createInfo.imageSharingMode = static_cast<VkSharingMode>(m_Desc.sharingMode);
     createInfo.queueFamilyIndexCount = m_Desc.queueFamilyIndexCount;
     auto queueSurfaceFamilyIndices = m_Surface->GetQueueFamilyIndices();
-    uint32_t queueFamilyIndices[] = {queueSurfaceFamilyIndices.graphicsFamily.value(), queueSurfaceFamilyIndices.presentFamily.value()};
+    uint32_t queueFamilyIndices[] = {
+        queueSurfaceFamilyIndices.graphicsFamily.value(), queueSurfaceFamilyIndices.presentFamily.value()
+    };
     createInfo.pQueueFamilyIndices = queueFamilyIndices;
     createInfo.preTransform = static_cast<VkSurfaceTransformFlagBitsKHR>(m_Desc.surfaceTransformFlagBits);
     createInfo.compositeAlpha = static_cast<VkCompositeAlphaFlagBitsKHR>(m_Desc.compositeAlphaFlagBits);
@@ -89,7 +91,7 @@ void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(RHISwapChainDesc
     {
         LOG_FATAL_AND_THROW("[RHIVkSwapChain::CreateSwapChainWithDesc]: failed to query image count !");
     }
-    
+
     m_ImageHandles.resize(actualImageCount);
     m_ImageViewHandles.resize(actualImageCount);
     images.resize(actualImageCount);
@@ -98,19 +100,21 @@ void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc(RHISwapChainDesc
     {
         LOG_FATAL_AND_THROW("[RHIVkSwapChain::CreateSwapChainWithDesc]: failed to query images !");
     }
-    
+
     auto* factory = m_Device->GetFactory();
     auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
 
     for (int i = 0; i < images.size(); ++i)
     {
         // For RHISwapChain images, we manually allocate a handle since they are not created via factory
-        m_ImageHandles[i] = vkDevice->GetImagePool()->Allocate([&images, i, this](RHIVkImagePoolItem* imageItem) {
+        m_ImageHandles[i] = vkDevice->GetImagePool()->Allocate([&images, i, this](RHIVkImagePoolItem* imageItem)
+        {
             *imageItem = RHIVkImagePoolItem();
             imageItem->image = images[i];
             imageItem->width = m_Desc.width;
             imageItem->height = m_Desc.height;
-            std::cout << "[RHIVkSwapChain] Setting image pool width=" << m_Desc.width << " height=" << m_Desc.height << std::endl;
+            std::cout << "[RHIVkSwapChain] Setting image pool width=" << m_Desc.width << " height=" << m_Desc.height <<
+                std::endl;
             imageItem->name = String::Format("SwapChainImage_%d", i);
             imageItem->needDestroy = false; // RHISwapChain owns these images
         });
@@ -140,12 +144,14 @@ void ArisenEngine::RHI::RHIVkSwapChain::EndFrame(UInt32 frameIndex)
     Present(frameIndex);
 }
 
-ArisenEngine::RHI::RHISemaphoreHandle ArisenEngine::RHI::RHIVkSwapChain::GetImageAvailableSemaphore(UInt32 currentFrame) const
+ArisenEngine::RHI::RHISemaphoreHandle ArisenEngine::RHI::RHIVkSwapChain::GetImageAvailableSemaphore(
+    UInt32 currentFrame) const
 {
     return m_ImageAvailableSemaphores[currentFrame % m_MaxFramesInFlight];
 }
 
-ArisenEngine::RHI::RHISemaphoreHandle ArisenEngine::RHI::RHIVkSwapChain::GetRenderFinishSemaphore(UInt32 currentFrame) const
+ArisenEngine::RHI::RHISemaphoreHandle ArisenEngine::RHI::RHIVkSwapChain::GetRenderFinishSemaphore(
+    UInt32 currentFrame) const
 {
     return m_RenderFinishSemaphores[currentFrame % m_MaxFramesInFlight];
 }
@@ -166,8 +172,8 @@ ArisenEngine::RHI::RHIImageHandle ArisenEngine::RHI::RHIVkSwapChain::AcquireCurr
 
     uint32_t imageIndex_local = 0;
     VkResult result = vkAcquireNextImageKHR(m_VkDevice, m_VkSwapChain, UINT64_MAX, vkSem,
-                              VK_NULL_HANDLE, &imageIndex_local);
-    
+                                            VK_NULL_HANDLE, &imageIndex_local);
+
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         // LOG_INFO("[RHIVkSwapChain::AcquireCurrentImage]: Out of date, triggering recreation");
@@ -175,10 +181,12 @@ ArisenEngine::RHI::RHIImageHandle ArisenEngine::RHI::RHIVkSwapChain::AcquireCurr
         // But we must signal that acquisition failed.
         return RHIImageHandle::Invalid();
     }
-    
+
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     {
-        String msg = String::Format("[RHIVkSwapChain::AcquireCurrentImage]: failed to acquire next image (frame %d) result: %d", frameIndex, result);
+        String msg = String::Format(
+            "[RHIVkSwapChain::AcquireCurrentImage]: failed to acquire next image (frame %d) result: %d", frameIndex,
+            result);
         LOG_ERROR(msg);
         return RHIImageHandle::Invalid();
     }
@@ -191,10 +199,12 @@ void ArisenEngine::RHI::RHIVkSwapChain::Cleanup()
     auto* factory = m_Device->GetFactory();
     auto* vkDevice = static_cast<RHIVkDevice*>(m_Device);
 
-    for (auto h : m_ImageViewHandles) {
+    for (auto h : m_ImageViewHandles)
+    {
         factory->ReleaseImageView(h);
     }
-    for (auto h : m_ImageHandles) {
+    for (auto h : m_ImageHandles)
+    {
         // RHISwapChain images are not created via Factory, so we should not call factory->ReleaseImage(h) 
         // if it tries to do full liberation. However, our ReleaseImage in factory calls Device::ReleaseImage.
         // For RHISwapChain images, needDestroy is false, so it's safe.
@@ -226,7 +236,7 @@ void ArisenEngine::RHI::RHIVkSwapChain::Present(UInt32 frameIndex)
     const VkSemaphore semaphore = semItem ? semItem->semaphore : VK_NULL_HANDLE;
     presentInfo.pWaitSemaphores = &semaphore;
 
-    VkSwapchainKHR swapChains[] = { m_VkSwapChain };
+    VkSwapchainKHR swapChains[] = {m_VkSwapChain};
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
 
@@ -246,7 +256,7 @@ void ArisenEngine::RHI::RHIVkSwapChain::RecreateSwapChainIfNeeded()
         // currently we not init a swap chain 
         return;
     }
-    
+
     // Zero-Stall: Do NOT wait idle.
     // m_Device->DeviceWaitIdle();
 
@@ -269,10 +279,10 @@ void ArisenEngine::RHI::RHIVkSwapChain::RecreateSwapChainIfNeeded()
     // This ensures that we only destroy the old swapchain after all commands submitted UP TO NOW have finished.
     // Add delay to ensure presentation engine is done with the old swapchain
     auto ticket = vkDevice->GetQueue(RHIQueueType::Graphics)->GetLatestTicket() + m_Device->GetMaxFramesInFlight();
-    vkDevice->EnqueueDeferredDestroy(ticket, 
-        [dev = m_VkDevice, sw = oldSwapchain]() { 
-            // LOG_INFO("[RHIVkSwapChain] Destroying Old Swapchain (Deferred)");
-            vkDestroySwapchainKHR(dev, sw, nullptr); 
-        });
+    vkDevice->EnqueueDeferredDestroy(ticket,
+                                     [dev = m_VkDevice, sw = oldSwapchain]()
+                                     {
+                                         // LOG_INFO("[RHIVkSwapChain] Destroying Old Swapchain (Deferred)");
+                                         vkDestroySwapchainKHR(dev, sw, nullptr);
+                                     });
 }
-

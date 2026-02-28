@@ -24,9 +24,9 @@ namespace ArisenEngine::RHI
 {
     struct RHIDeviceAddressRegion
     {
-        UInt64 deviceAddress{ 0 };
-        UInt64 stride{ 0 };
-        UInt64 size{ 0 };
+        UInt64 deviceAddress{0};
+        UInt64 stride{0};
+        UInt64 size{0};
     };
 
     struct RHITraceRaysDescriptor
@@ -35,9 +35,9 @@ namespace ArisenEngine::RHI
         RHIDeviceAddressRegion missShaderTable;
         RHIDeviceAddressRegion hitShaderTable;
         RHIDeviceAddressRegion callableShaderTable;
-        UInt32 width{ 1 };
-        UInt32 height{ 1 };
-        UInt32 depth{ 1 };
+        UInt32 width{1};
+        UInt32 height{1};
+        UInt32 depth{1};
     };
 
     enum class ERHICommandType : UInt8
@@ -87,7 +87,7 @@ namespace ArisenEngine::RHI
         EndDebugLabel,
         InsertDebugMarker,
         TrackDescriptorPoolUse,
-        
+
         // Count
         Count
     };
@@ -111,7 +111,9 @@ namespace ArisenEngine::RHI
         // For now, let's assume we copy the clear values into the stream after this struct.
     };
 
-    struct RHICmdEndRenderPass {};
+    struct RHICmdEndRenderPass
+    {
+    };
 
     struct RHICmdBeginRendering
     {
@@ -121,7 +123,9 @@ namespace ArisenEngine::RHI
         UInt32 dynamicSize; // Size of variable data following this command
     };
 
-    struct RHICmdEndRendering {};
+    struct RHICmdEndRendering
+    {
+    };
 
     struct RHICmdBegin
     {
@@ -130,7 +134,9 @@ namespace ArisenEngine::RHI
         bool hasInheritanceInfo; // If true, InheritanceInfo follows
     };
 
-    struct RHICmdEnd {};
+    struct RHICmdEnd
+    {
+    };
 
     struct RHICmdExecuteCommands
     {
@@ -394,7 +400,9 @@ namespace ArisenEngine::RHI
         // Followed by label string (null terminated or length based)
     };
 
-    struct RHICmdEndDebugLabel {};
+    struct RHICmdEndDebugLabel
+    {
+    };
 
     struct RHICmdInsertDebugMarker
     {
@@ -402,11 +410,10 @@ namespace ArisenEngine::RHI
         UInt32 labelLen;
         // Followed by label string
     };
-    
+
     struct RHICmdTrackDescriptorPoolUse
     {
         RHIDescriptorPoolHandle poolHandle;
         UInt32 poolId;
     };
-
 } // namespace ArisenEngine::RHI

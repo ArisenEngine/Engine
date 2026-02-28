@@ -8,10 +8,11 @@
 
 namespace ArisenEngine::RHI
 {
-    RHIVkMemoryAllocator::RHIVkMemoryAllocator(RHIVkDevice* device, VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice vkDevice, uint32_t vulkanApiVersion, std::atomic<UInt64>* memoryCounter)
+    RHIVkMemoryAllocator::RHIVkMemoryAllocator(RHIVkDevice* device, VkInstance instance,
+                                               VkPhysicalDevice physicalDevice, VkDevice vkDevice,
+                                               uint32_t vulkanApiVersion, std::atomic<UInt64>* memoryCounter)
         : m_Device(device), m_MemoryCounter(memoryCounter)
     {
-
         VmaAllocatorCreateInfo allocatorInfo = {};
         allocatorInfo.vulkanApiVersion = vulkanApiVersion;
         allocatorInfo.physicalDevice = physicalDevice;
@@ -35,21 +36,24 @@ namespace ArisenEngine::RHI
     }
 
 #include <iostream>
+
     bool RHIVkMemoryAllocator::AllocateBufferMemory(VkBuffer buffer, VmaMemoryUsage usage, VmaAllocation* outAllocation)
-{
-    ARISEN_PROFILE_ZONE("Vk::VMA_AllocBufferMemory");
-    std::cout << "AllocateBufferMemory Called. Buffer: " << (void*)buffer << " Usage: " << (int)usage << std::endl;
+    {
+        ARISEN_PROFILE_ZONE("Vk::VMA_AllocBufferMemory");
+        std::cout << "AllocateBufferMemory Called. Buffer: " << (void*)buffer << " Usage: " << (int)usage << std::endl;
         VmaAllocationCreateInfo allocInfo = {};
         allocInfo.usage = usage;
-        
+
         VkResult result = vmaAllocateMemoryForBuffer(m_VmaAllocator, buffer, &allocInfo, outAllocation, nullptr);
-    if (result != VK_SUCCESS)
-    {
-        std::cout << "vmaAllocateMemoryForBuffer failed! Result: " << result << " Usage: " << (int)usage << std::endl;
-        LOG_ERRORF("[RHIVkMemoryAllocator]: vmaAllocateMemoryForBuffer failed! Result: {0}, Usage: {1}", (int)result, (int)usage);
-        return false;
-    }
-        if (vmaBindBufferMemory(m_VmaAllocator, *outAllocation, buffer) != VK_SUCCESS) 
+        if (result != VK_SUCCESS)
+        {
+            std::cout << "vmaAllocateMemoryForBuffer failed! Result: " << result << " Usage: " << (int)usage <<
+                std::endl;
+            LOG_ERRORF("[RHIVkMemoryAllocator]: vmaAllocateMemoryForBuffer failed! Result: {0}, Usage: {1}",
+                       (int)result, (int)usage);
+            return false;
+        }
+        if (vmaBindBufferMemory(m_VmaAllocator, *outAllocation, buffer) != VK_SUCCESS)
         {
             std::cout << "vmaBindBufferMemory failed!" << std::endl;
             LOG_ERROR("[RHIVkMemoryAllocator]: vmaBindBufferMemory failed!");
@@ -70,11 +74,11 @@ namespace ArisenEngine::RHI
 
 
     bool RHIVkMemoryAllocator::AllocateImageMemory(VkImage image, VmaMemoryUsage usage, VmaAllocation* outAllocation)
-{
-    ARISEN_PROFILE_ZONE("Vk::VMA_AllocImageMemory");
-    VmaAllocationCreateInfo allocInfo = {};
+    {
+        ARISEN_PROFILE_ZONE("Vk::VMA_AllocImageMemory");
+        VmaAllocationCreateInfo allocInfo = {};
         allocInfo.usage = usage;
-        
+
         if (vmaAllocateMemoryForImage(m_VmaAllocator, image, &allocInfo, outAllocation, nullptr) != VK_SUCCESS)
         {
             return false;
@@ -94,11 +98,11 @@ namespace ArisenEngine::RHI
     }
 
     bool RHIVkMemoryAllocator::AllocateMemory(UInt64 size, VmaMemoryUsage usage, VmaAllocation* outAllocation)
-{
-    ARISEN_PROFILE_ZONE("Vk::VMA_AllocMemory");
-    VmaAllocationCreateInfo allocInfo = {};
+    {
+        ARISEN_PROFILE_ZONE("Vk::VMA_AllocMemory");
+        VmaAllocationCreateInfo allocInfo = {};
         allocInfo.usage = usage;
-        
+
         VkMemoryRequirements memReq = {};
         memReq.size = size;
         memReq.alignment = 1; // Minimum alignment
@@ -144,7 +148,6 @@ namespace ArisenEngine::RHI
 
             vmaFreeMemory(m_VmaAllocator, allocation);
         }
-
     }
 
     UInt64 RHIVkMemoryAllocator::GetDeviceAddress(VkBuffer buffer)
@@ -155,7 +158,3 @@ namespace ArisenEngine::RHI
         return vkGetBufferDeviceAddress((VkDevice)m_Device->GetHandle(), &info);
     }
 }
-
-
-
-

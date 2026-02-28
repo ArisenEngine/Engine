@@ -43,6 +43,7 @@ namespace ArisenEngine::RHI
     class RHI_DLL RHIPipelineState
     {
         friend class RHIPipeline;
+
     public:
         NO_COPY_NO_MOVE(RHIPipelineState)
         RHIPipelineState();
@@ -55,8 +56,9 @@ namespace ArisenEngine::RHI
         virtual const EPipelineBindPoint GetBindPoint() const = 0;
 
         virtual void Clear() = 0;
-        
-        virtual void AddVertexInputAttributeDescription(UInt32 location, UInt32 binding, EFormat format, UInt32 offset) = 0;
+
+        virtual void AddVertexInputAttributeDescription(UInt32 location, UInt32 binding, EFormat format, UInt32 offset)
+        = 0;
         virtual void AddVertexBindingDescription(UInt32 binding, UInt32 stride, EVertexInputRate inputRate) = 0;
         virtual void ClearVertexInputDescriptions() = 0;
         virtual void ClearDescriptorSetLayoutBindings() = 0;
@@ -64,10 +66,15 @@ namespace ArisenEngine::RHI
         virtual void SetBindlessDescriptorTable(class RHIBindlessDescriptorTable* table) = 0;
 
         // Resource Binding (Auto-Layout compatible)
-        virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos) = 0;
-        virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIBufferHandle>&& bufferHandles) = 0;
-        virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIImageViewHandle>&& texelBufferViews) = 0;
-        virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding, const Containers::Vector<RHIAccelerationStructureHandle>&& accelerationStructureHandles) = 0;
+        virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding,
+                                         const Containers::Vector<RHIDescriptorImageInfo>&& imageInfos) = 0;
+        virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding,
+                                         const Containers::Vector<RHIBufferHandle>&& bufferHandles) = 0;
+        virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding,
+                                         const Containers::Vector<RHIImageViewHandle>&& texelBufferViews) = 0;
+        virtual void UpdateDescriptorSet(UInt32 layoutIndex, UInt32 binding,
+                                         const Containers::Vector<RHIAccelerationStructureHandle>&&
+                                         accelerationStructureHandles) = 0;
 
         virtual void BuildDescriptorSetLayout() = 0;
 
@@ -102,14 +109,14 @@ namespace ArisenEngine::RHI
         void SetDynamicStateMask(UInt64 mask);
         UInt64 GetDynamicStateMask() const;
 
-        virtual void SetRenderingFormats(const Containers::Vector<EFormat>& colorFormats, EFormat depthFormat, EFormat stencilFormat) = 0;
+        virtual void SetRenderingFormats(const Containers::Vector<EFormat>& colorFormats, EFormat depthFormat,
+                                         EFormat stencilFormat) = 0;
 
     private:
         RHIInputAssemblyState m_InputAssemblyState;
         RHIRasterizationState m_RasterizationState;
         RHIMultisampleState m_MultisampleState;
         RHIDepthStencilState m_DepthStencilState;
-        UInt64 m_DynamicStateMask { 0 };
+        UInt64 m_DynamicStateMask{0};
     };
 }
-

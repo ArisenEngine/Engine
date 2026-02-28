@@ -6,6 +6,5 @@ namespace ArisenEngine::RHI
     class RHI_DLL RHIPipelineBarrier
     {
     public:
-    
     };
 }

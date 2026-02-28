@@ -8,13 +8,21 @@
 
 namespace ArisenEngine
 {
-    String::String(const char* str) : m_Data(str ? str : "") {}
+    String::String(const char* str) : m_Data(str ? str : "")
+    {
+    }
 
-    String::String(const wchar_t* wstr) : m_Data(WStringToString(wstr ? wstr : L"")) {}
+    String::String(const wchar_t* wstr) : m_Data(WStringToString(wstr ? wstr : L""))
+    {
+    }
 
-    String::String(const std::string& str) : m_Data(str) {}
+    String::String(const std::string& str) : m_Data(str)
+    {
+    }
 
-    String::String(const std::wstring& wstr) : m_Data(WStringToString(wstr)) {}
+    String::String(const std::wstring& wstr) : m_Data(WStringToString(wstr))
+    {
+    }
 
     String& String::operator=(const char* str)
     {
@@ -59,7 +67,7 @@ namespace ArisenEngine
     std::string String::WStringToString(const std::wstring& wstr)
     {
         if (wstr.empty()) return "";
-        
+
 #ifdef _WIN32
         int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
         std::string strTo(size_needed, 0);
@@ -156,10 +164,12 @@ namespace ArisenEngine
     String String::Trim() const
     {
         std::string s = m_Data;
-        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch)
+        {
             return !std::isspace(ch);
         }));
-        s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+        s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch)
+        {
             return !std::isspace(ch);
         }).base(), s.end());
         return String(s);

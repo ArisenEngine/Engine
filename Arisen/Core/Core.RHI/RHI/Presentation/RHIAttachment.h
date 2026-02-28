@@ -21,7 +21,7 @@ namespace ArisenEngine::RHI
         EImageLayout initialLayout;
         EImageLayout finalLayout;
     };
-    
+
     class RHIAttachment
     {
     public:
@@ -31,4 +31,3 @@ namespace ArisenEngine::RHI
         virtual void* GetAttachmentReference() = 0;
     };
 }
-

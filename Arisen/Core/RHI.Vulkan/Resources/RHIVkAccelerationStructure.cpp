@@ -3,7 +3,8 @@
 
 namespace ArisenEngine::RHI
 {
-    RHIVkAccelerationStructure::RHIVkAccelerationStructure(RHIVkDevice* device, VkAccelerationStructureKHR handle, UInt64 size, UInt64 address)
+    RHIVkAccelerationStructure::RHIVkAccelerationStructure(RHIVkDevice* device, VkAccelerationStructureKHR handle,
+                                                           UInt64 size, UInt64 address)
         : m_Device(device), m_Handle(handle), m_Size(size), m_DeviceAddress(address)
     {
     }

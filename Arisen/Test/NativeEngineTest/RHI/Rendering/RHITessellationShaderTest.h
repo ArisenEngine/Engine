@@ -15,10 +15,12 @@
 namespace ArisenEngine::Testing
 {
     using namespace ArisenEngine;
+
     class RHITessellationShaderTest : public RHIRenderingTestBase
     {
     private:
-        struct TessellationUBO {
+        struct TessellationUBO
+        {
             glm::mat4 model;
             glm::mat4 view;
             glm::mat4 projection;
@@ -32,9 +34,9 @@ namespace ArisenEngine::Testing
         std::unique_ptr<RHI::RHIPipelineState> m_WireframePso;
         RHI::RHIPipelineHandle m_Pipeline;
         RHI::RHIPipelineHandle m_WireframePipeline;
-        
+
         Containers::Vector<RHI::RHIBufferHandle> m_UboBuffers;
-        
+
         RHI::RHIShaderProgramHandle m_HsProgram;
         RHI::RHIShaderProgramHandle m_DsProgram;
 
@@ -54,7 +56,7 @@ namespace ArisenEngine::Testing
             RHIRenderingTestBase::SetupTest();
 
             InitCommonResources();
-            
+
             auto shaderEnv = GetShaderEnvString().ToWString();
 
             namespace fs = std::filesystem;
@@ -62,7 +64,7 @@ namespace ArisenEngine::Testing
             GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
             auto exeDir = fs::path(exePathW).parent_path();
             auto shaderPath = (exeDir / L"Shader" / L"TessellationShaderTest.hlsl").wstring();
-            
+
             auto factory = m_Device->GetFactory();
             // VS
             HAL::ShaderCompileParams vsParams;
@@ -74,7 +76,9 @@ namespace ArisenEngine::Testing
             if (HAL::CompileShaderFromFile(std::move(vsParams), vsOut) && vsOut.codeSize > 0)
             {
                 m_VertProgram = factory->CreateGPUProgram();
-                RHI::RHIShaderProgramDesc vsDesc = { vsOut.codeSize, vsOut.codePointer, "vs_main", "Tess_VS", RHI::SHADER_STAGE_VERTEX_BIT };
+                RHI::RHIShaderProgramDesc vsDesc = {
+                    vsOut.codeSize, vsOut.codePointer, "vs_main", "Tess_VS", RHI::SHADER_STAGE_VERTEX_BIT
+                };
                 factory->AttachProgramByteCode(m_VertProgram, std::move(vsDesc));
                 if (vsOut.codePointer) std::free(vsOut.codePointer);
             }
@@ -89,7 +93,9 @@ namespace ArisenEngine::Testing
             if (HAL::CompileShaderFromFile(std::move(hsParams), hsOut) && hsOut.codeSize > 0)
             {
                 m_HsProgram = factory->CreateGPUProgram();
-                RHI::RHIShaderProgramDesc hsDesc = { hsOut.codeSize, hsOut.codePointer, "hs_main", "Tess_HS", RHI::SHADER_STAGE_TESSELLATION_CONTROL_BIT };
+                RHI::RHIShaderProgramDesc hsDesc = {
+                    hsOut.codeSize, hsOut.codePointer, "hs_main", "Tess_HS", RHI::SHADER_STAGE_TESSELLATION_CONTROL_BIT
+                };
                 factory->AttachProgramByteCode(m_HsProgram, std::move(hsDesc));
                 if (hsOut.codePointer) std::free(hsOut.codePointer);
             }
@@ -104,7 +110,10 @@ namespace ArisenEngine::Testing
             if (HAL::CompileShaderFromFile(std::move(dsParams), dsOut) && dsOut.codeSize > 0)
             {
                 m_DsProgram = factory->CreateGPUProgram();
-                RHI::RHIShaderProgramDesc dsDesc = { dsOut.codeSize, dsOut.codePointer, "ds_main", "Tess_DS", RHI::SHADER_STAGE_TESSELLATION_EVALUATION_BIT };
+                RHI::RHIShaderProgramDesc dsDesc = {
+                    dsOut.codeSize, dsOut.codePointer, "ds_main", "Tess_DS",
+                    RHI::SHADER_STAGE_TESSELLATION_EVALUATION_BIT
+                };
                 factory->AttachProgramByteCode(m_DsProgram, std::move(dsDesc));
                 if (dsOut.codePointer) std::free(dsOut.codePointer);
             }
@@ -119,7 +128,9 @@ namespace ArisenEngine::Testing
             if (HAL::CompileShaderFromFile(std::move(psParams), psOut) && psOut.codeSize > 0)
             {
                 m_FragProgram = factory->CreateGPUProgram();
-                RHI::RHIShaderProgramDesc psDesc = { psOut.codeSize, psOut.codePointer, "ps_main", "Tess_PS", RHI::SHADER_STAGE_FRAGMENT_BIT };
+                RHI::RHIShaderProgramDesc psDesc = {
+                    psOut.codeSize, psOut.codePointer, "ps_main", "Tess_PS", RHI::SHADER_STAGE_FRAGMENT_BIT
+                };
                 factory->AttachProgramByteCode(m_FragProgram, std::move(psDesc));
                 if (psOut.codePointer) std::free(psOut.codePointer);
             }
@@ -140,7 +151,7 @@ namespace ArisenEngine::Testing
             for (auto& ub : m_UboBuffers) if (ub.IsValid()) factory->ReleaseBuffer(ub);
             if (m_HsProgram.IsValid()) factory->ReleaseGPUProgram(m_HsProgram);
             if (m_DsProgram.IsValid()) factory->ReleaseGPUProgram(m_DsProgram);
-            
+
             m_Pso.reset();
             m_WireframePso.reset();
 
@@ -180,7 +191,8 @@ namespace ArisenEngine::Testing
     private:
         void CreateCommonResources()
         {
-            struct Vertex {
+            struct Vertex
+            {
                 glm::vec3 pos;
                 glm::vec2 uv;
             };
@@ -190,16 +202,20 @@ namespace ArisenEngine::Testing
             Containers::Vector<Vertex> vertices;
             Containers::Vector<UInt32> indices;
 
-            for (int y = 0; y < gridDim; ++y) {
-                for (int x = 0; x < gridDim; ++x) {
+            for (int y = 0; y < gridDim; ++y)
+            {
+                for (int x = 0; x < gridDim; ++x)
+                {
                     float xPos = (x / (float)gridDim) * size - size * 0.5f;
                     float yPos = (y / (float)gridDim) * size - size * 0.5f;
                     float step = size / (float)gridDim;
 
-                    vertices.push_back({ {xPos, 0, yPos}, {x / (float)gridDim, y / (float)gridDim} });
-                    vertices.push_back({ {xPos + step, 0, yPos}, {(x + 1) / (float)gridDim, y / (float)gridDim} });
-                    vertices.push_back({ {xPos + step, 0, yPos + step}, {(x + 1) / (float)gridDim, (y + 1) / (float)gridDim} });
-                    vertices.push_back({ {xPos, 0, yPos + step}, {x / (float)gridDim, (y + 1) / (float)gridDim} });
+                    vertices.push_back({{xPos, 0, yPos}, {x / (float)gridDim, y / (float)gridDim}});
+                    vertices.push_back({{xPos + step, 0, yPos}, {(x + 1) / (float)gridDim, y / (float)gridDim}});
+                    vertices.push_back({
+                        {xPos + step, 0, yPos + step}, {(x + 1) / (float)gridDim, (y + 1) / (float)gridDim}
+                    });
+                    vertices.push_back({{xPos, 0, yPos + step}, {x / (float)gridDim, (y + 1) / (float)gridDim}});
 
                     UInt32 base = (y * gridDim + x) * 4;
                     indices.push_back(base);
@@ -218,18 +234,20 @@ namespace ArisenEngine::Testing
             vbDesc.usage = RHI::BUFFER_USAGE_VERTEX_BUFFER_BIT;
             vbDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
             m_Model.vertexBuffer = factory->CreateBuffer(std::move(vbDesc), "PatchVB");
-            m_Device->GetFactory()->BufferMemoryCopy(m_Model.vertexBuffer, vertices.data(), vertices.size() * sizeof(Vertex), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_Model.vertexBuffer, vertices.data(),
+                                                     vertices.size() * sizeof(Vertex), 0);
 
             RHI::RHIBufferDescriptor ibDesc = {};
             ibDesc.size = indices.size() * sizeof(UInt32);
             ibDesc.usage = RHI::BUFFER_USAGE_INDEX_BUFFER_BIT;
             ibDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
             m_Model.indexBuffer = factory->CreateBuffer(std::move(ibDesc), "PatchIB");
-            m_Device->GetFactory()->BufferMemoryCopy(m_Model.indexBuffer, indices.data(), indices.size() * sizeof(UInt32), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_Model.indexBuffer, indices.data(),
+                                                     indices.size() * sizeof(UInt32), 0);
 
             m_Model.layout.stride = sizeof(Vertex);
-            m_Model.layout.attributes.push_back({ "pos", RHI::FORMAT_R32G32B32_SFLOAT, 0, 0 });
-            m_Model.layout.attributes.push_back({ "uv", RHI::FORMAT_R32G32_SFLOAT, sizeof(glm::vec3), 1 });
+            m_Model.layout.attributes.push_back({"pos", RHI::FORMAT_R32G32B32_SFLOAT, 0, 0});
+            m_Model.layout.attributes.push_back({"uv", RHI::FORMAT_R32G32_SFLOAT, sizeof(glm::vec3), 1});
 
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
@@ -257,8 +275,11 @@ namespace ArisenEngine::Testing
             auto factory = m_Device->GetFactory();
             RHI::RHIImageDescriptor dimgDesc = {};
             dimgDesc.imageType = RHI::IMAGE_TYPE_2D;
-            dimgDesc.width = width; dimgDesc.height = height; dimgDesc.depth = 1;
-            dimgDesc.mipLevels = 1; dimgDesc.arrayLayers = 1;
+            dimgDesc.width = width;
+            dimgDesc.height = height;
+            dimgDesc.depth = 1;
+            dimgDesc.mipLevels = 1;
+            dimgDesc.arrayLayers = 1;
             dimgDesc.format = RHI::FORMAT_D32_SFLOAT;
             dimgDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
             dimgDesc.usage = RHI::IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
@@ -270,16 +291,17 @@ namespace ArisenEngine::Testing
             dviewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
             dviewDesc.format = RHI::FORMAT_D32_SFLOAT;
             dviewDesc.aspectMask = RHI::IMAGE_ASPECT_DEPTH_BIT;
-            dviewDesc.levelCount = 1; dviewDesc.layerCount = 1;
-            dviewDesc.width = width; dviewDesc.height = height;
+            dviewDesc.levelCount = 1;
+            dviewDesc.layerCount = 1;
+            dviewDesc.width = width;
+            dviewDesc.height = height;
             m_DepthView = factory->CreateImageView(m_DepthImage, std::move(dviewDesc));
         }
 
     private:
-
         void InitRenderContext()
         {
-            m_DescriptorPoolIds.push_back(m_DescriptorPool->AddPool({ RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER }, { 1 }, 1));
+            m_DescriptorPoolIds.push_back(m_DescriptorPool->AddPool({RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER}, {1}, 1));
         }
 
         void CreatePipelines()
@@ -290,7 +312,7 @@ namespace ArisenEngine::Testing
             m_Pso->AddProgram(m_HsProgram);
             m_Pso->AddProgram(m_DsProgram);
             m_Pso->AddProgram(m_FragProgram);
-            
+
             m_Pso->AddVertexBindingDescription(0, m_Model.layout.stride, RHI::VERTEX_INPUT_RATE_VERTEX);
             m_Pso->AddVertexInputAttributeDescription(0, 0, RHI::FORMAT_R32G32B32_SFLOAT, 0);
             m_Pso->AddVertexInputAttributeDescription(1, 0, RHI::FORMAT_R32G32_SFLOAT, sizeof(glm::vec3));
@@ -319,15 +341,16 @@ namespace ArisenEngine::Testing
             m_Pso->SetDynamicStateMask(RHI::DYNAMIC_STATE_VIEWPORT_BIT | RHI::DYNAMIC_STATE_SCISSOR_BIT);
 
             RHI::RHIDepthStencilState ds{};
-            ds.depthTestEnable = true; ds.depthWriteEnable = true;
+            ds.depthTestEnable = true;
+            ds.depthWriteEnable = true;
             ds.depthCompareOp = RHI::COMPARE_OP_LESS;
             m_Pso->SetDepthStencilState(ds);
 
-            Containers::Vector<RHI::EFormat> colorFormats = { RHI::FORMAT_B8G8R8A8_SRGB };
+            Containers::Vector<RHI::EFormat> colorFormats = {RHI::FORMAT_B8G8R8A8_SRGB};
             m_Pso->SetRenderingFormats(colorFormats, RHI::FORMAT_D32_SFLOAT, RHI::FORMAT_UNDEFINED);
 
             m_Pipeline = cache->GetGraphicsPipeline(m_Pso.get());
-            
+
             // Wireframe PSO
             m_WireframePso = cache->GetPipelineState();
             m_WireframePso->AddProgram(m_VertProgram);
@@ -362,11 +385,12 @@ namespace ArisenEngine::Testing
             float height = (float)HAL::GetWindowHeight(m_WindowId);
             ubo.projection = GetProjectionMatrix(width / height);
             ubo.time = m_AccumulatedTime;
-            ubo.tessLevel = 32.0f; 
+            ubo.tessLevel = 32.0f;
             ubo.waveAmplitude = 0.5f;
             ubo.waveFrequency = 2.0f;
-            
-            m_Device->GetFactory()->BufferMemoryCopy(m_UboBuffers[GetCurrentFrameIndex()], &ubo, sizeof(TessellationUBO), 0);
+
+            m_Device->GetFactory()->BufferMemoryCopy(m_UboBuffers[GetCurrentFrameIndex()], &ubo,
+                                                     sizeof(TessellationUBO), 0);
         }
 
         void RecordAndSubmit()
@@ -377,13 +401,14 @@ namespace ArisenEngine::Testing
             auto cmd = m_Device->GetCommandBuffer(cmdHandle);
 
             m_DescriptorPool->ResetPool(m_DescriptorPoolIds[0]);
-            
+
             auto activePso = m_ShowWireframe ? m_WireframePso.get() : m_Pso.get();
             auto activePipeline = m_ShowWireframe ? m_WireframePipeline : m_Pipeline;
 
-            activePso->UpdateDescriptorSet(0, 0, Containers::Vector<RHI::RHIBufferHandle>{ m_UboBuffers[currentIndex] });
-            
-            UInt32 setIdx = m_DescriptorPool->AllocDescriptorSet(m_DescriptorPoolIds[0], (UInt32)0, (RHI::RHIPipelineState*)activePso);
+            activePso->UpdateDescriptorSet(0, 0, Containers::Vector<RHI::RHIBufferHandle>{m_UboBuffers[currentIndex]});
+
+            UInt32 setIdx = m_DescriptorPool->AllocDescriptorSet(m_DescriptorPoolIds[0], (UInt32)0,
+                                                                 (RHI::RHIPipelineState*)activePso);
             m_DescriptorPool->UpdateDescriptorSet(m_DescriptorPoolIds[0], setIdx, activePso);
 
             cmd->Begin(currentIndex, 0);
@@ -393,8 +418,8 @@ namespace ArisenEngine::Testing
             {
                 auto colorView = m_SwapChain->GetImageView(currentIndex);
                 cmd->TransitionImageLayout(colorBuffer, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-                
-                RHI::RHIRenderingAttachmentInfo colorAttachment {};
+
+                RHI::RHIRenderingAttachmentInfo colorAttachment{};
                 colorAttachment.imageView = colorView;
                 colorAttachment.imageLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                 colorAttachment.loadOp = RHI::ATTACHMENT_LOAD_OP_CLEAR;
@@ -404,15 +429,17 @@ namespace ArisenEngine::Testing
                 colorAttachment.clearValue.float32[2] = 0.1f;
                 colorAttachment.clearValue.float32[3] = 1.0f;
 
-                RHI::RHIRenderingAttachmentInfo depthAttachment {};
+                RHI::RHIRenderingAttachmentInfo depthAttachment{};
                 depthAttachment.imageView = m_DepthView;
                 depthAttachment.imageLayout = RHI::IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
                 depthAttachment.loadOp = RHI::ATTACHMENT_LOAD_OP_CLEAR;
                 depthAttachment.storeOp = RHI::ATTACHMENT_STORE_OP_DONT_CARE;
                 depthAttachment.clearValue.float32[0] = 1.0f;
 
-                RHI::RHIRenderingInfo renderInfo {};
-                renderInfo.RHIRenderArea = { 0, 0, (UInt32)HAL::GetWindowWidth(m_WindowId), (UInt32)HAL::GetWindowHeight(m_WindowId) };
+                RHI::RHIRenderingInfo renderInfo{};
+                renderInfo.RHIRenderArea = {
+                    0, 0, (UInt32)HAL::GetWindowWidth(m_WindowId), (UInt32)HAL::GetWindowHeight(m_WindowId)
+                };
                 renderInfo.layerCount = 1;
                 renderInfo.colorAttachmentCount = 1;
                 renderInfo.pColorAttachments = &colorAttachment;
@@ -420,11 +447,13 @@ namespace ArisenEngine::Testing
 
                 cmd->BeginRendering(renderInfo);
                 cmd->BindPipeline(activePipeline);
-                cmd->SetViewport(0, 0, (float)renderInfo.RHIRenderArea.width, (float)renderInfo.RHIRenderArea.height, 0, 1);
+                cmd->SetViewport(0, 0, (float)renderInfo.RHIRenderArea.width, (float)renderInfo.RHIRenderArea.height, 0,
+                                 1);
                 cmd->SetScissor(0, 0, renderInfo.RHIRenderArea.width, renderInfo.RHIRenderArea.height);
                 cmd->BindVertexBuffers(m_Model.vertexBuffer, 0);
                 cmd->BindIndexBuffer(m_Model.indexBuffer, 0, RHI::INDEX_TYPE_UINT32);
-                cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPoolHandle, m_DescriptorPoolIds[0], setIdx);
+                cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPoolHandle,
+                                       m_DescriptorPoolIds[0], setIdx);
                 cmd->DrawIndexed(m_Model.indexCount, 1, 0, 0, 0, 0);
                 cmd->EndRendering();
 
@@ -437,7 +466,7 @@ namespace ArisenEngine::Testing
             submitDesc.WaitSwapChain = m_SwapChain;
             submitDesc.SignalSwapChain = m_SwapChain;
             m_FrameTickets[currentIndex] = m_Device->Submit(cmdHandle, &submitDesc);
-            
+
             m_SwapChain->EndFrame(currentIndex);
             pool->ReleaseCommandBuffer(currentIndex, cmdHandle);
         }

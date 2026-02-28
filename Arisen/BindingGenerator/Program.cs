@@ -51,8 +51,8 @@ internal static class Program
         var headers = Directory.GetFiles(s_SourceCode, "*.h", SearchOption.AllDirectories)
             .Concat(Directory.GetFiles(s_SourceCode, "*.cpp", SearchOption.AllDirectories))
             .Where(f => !f.Contains(Path.DirectorySeparatorChar + "bin" + Path.DirectorySeparatorChar)
-                     && !f.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar)
-                     && !f.Contains(Path.DirectorySeparatorChar + "3rdparty" + Path.DirectorySeparatorChar))
+                        && !f.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar)
+                        && !f.Contains(Path.DirectorySeparatorChar + "3rdparty" + Path.DirectorySeparatorChar))
             .ToList();
 
         Console.WriteLine($"Scanning {headers.Count} source files...");

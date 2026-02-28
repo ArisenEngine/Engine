@@ -8,6 +8,5 @@ namespace ArisenEngine::RHI
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIViewport)
         VIRTUAL_DECONSTRUCTOR(RHIViewport)
-        
     };
 }

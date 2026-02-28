@@ -29,7 +29,7 @@ public class MemoryTests : ITest
     {
         Logger.Log("Testing NativeArray...");
         using var array = new NativeArray<int>(100);
-        
+
         if (array.Length != 100) return false;
 
         for (int i = 0; i < 100; i++) array[i] = i * 2;
@@ -49,7 +49,7 @@ public class MemoryTests : ITest
     {
         Logger.Log("Testing FrameArena...");
         var arena = MemoryManager.FrameArena;
-        
+
         // 1. Basic allocation
         var span1 = arena.Alloc<int>(10);
         if (span1.Length != 10) return false;

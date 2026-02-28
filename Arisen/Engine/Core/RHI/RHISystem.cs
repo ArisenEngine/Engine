@@ -28,7 +28,8 @@ public static class RHISystem
         return device;
     }
 
-    public static RHIDevice? PrimaryDevice => m_PrimaryWindowId.HasValue ? GetOrCreateDevice(m_PrimaryWindowId.Value) : null;
+    public static RHIDevice? PrimaryDevice =>
+        m_PrimaryWindowId.HasValue ? GetOrCreateDevice(m_PrimaryWindowId.Value) : null;
 
     public static bool Initialize(GraphicsAPI api, string appName = "ArisenApp", bool validationLayer = false)
     {
@@ -41,9 +42,9 @@ public static class RHISystem
             var instHandle = RHILoaderAPI.RHILoader_CreateInstance(
                 appName, "ArisenEngine", validationLayer ? 1 : 0,
                 0, 1, 3, 0, // Variant, Major, Minor, Patch (Vulkan 1.3)
-                1, 0, 0,    // App version
-                1, 0, 0,    // Engine version
-                2           // Max frames in flight
+                1, 0, 0, // App version
+                1, 0, 0, // Engine version
+                2 // Max frames in flight
             );
 
             if (instHandle == IntPtr.Zero)
@@ -69,6 +70,7 @@ public static class RHISystem
         {
             m_Instance = null;
         }
+
         RHILoaderAPI.RHILoader_Dispose();
     }
 }

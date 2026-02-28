@@ -8,6 +8,7 @@ ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 namespace ArisenEngine::RHI
 {
     ARISEN_BIND_ENUM(RHIQueueType)
+
     enum class RHIQueueType : UInt8
     {
         Graphics,
@@ -16,5 +17,3 @@ namespace ArisenEngine::RHI
         Present,
     };
 }
-
-

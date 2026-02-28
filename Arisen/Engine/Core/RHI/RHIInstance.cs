@@ -45,5 +45,4 @@ public readonly struct RHIInstance
         var deviceHandle = RHIInstanceAPI.RHIInstance_GetLogicalDevice(Handle, windowId);
         return new RHIDevice(deviceHandle);
     }
-
 }

@@ -3,10 +3,13 @@
 
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+
 namespace ArisenEngine::RHI
 {
     ARISEN_BIND_ENUM(ECompareOp)
-    typedef enum ECompareOp {
+
+    typedef enum ECompareOp
+    {
         COMPARE_OP_NEVER = 0,
         COMPARE_OP_LESS = 1,
         COMPARE_OP_EQUAL = 2,

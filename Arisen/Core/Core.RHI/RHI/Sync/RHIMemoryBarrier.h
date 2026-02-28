@@ -10,6 +10,5 @@ namespace ArisenEngine::RHI
         EAccessFlag dstAccessMask;
         EPipelineStageFlag srcStageMask;
         EPipelineStageFlag dstStageMask;
-        
     } RHIMemoryBarrier;
 }

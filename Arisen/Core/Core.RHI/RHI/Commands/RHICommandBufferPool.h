@@ -8,6 +8,7 @@
 namespace ArisenEngine::RHI
 {
     class RHICommandBuffer;
+
     class RHI_DLL RHICommandBufferPool
     {
     public:
@@ -16,12 +17,15 @@ namespace ArisenEngine::RHI
         virtual ~RHICommandBufferPool();
 
 
-        virtual RHICommandBufferHandle GetCommandBuffer(UInt32 currentFrameIndex, ECommandBufferLevel level = COMMAND_BUFFER_LEVEL_PRIMARY)
+        virtual RHICommandBufferHandle GetCommandBuffer(UInt32 currentFrameIndex,
+                                                        ECommandBufferLevel level = COMMAND_BUFFER_LEVEL_PRIMARY)
         {
             (void)currentFrameIndex;
             std::lock_guard<std::mutex> lock(m_BuffersMutex);
 
-            auto& freeList = (level == COMMAND_BUFFER_LEVEL_PRIMARY) ? m_FreePrimaryCommandBuffers : m_FreeSecondaryCommandBuffers;
+            auto& freeList = (level == COMMAND_BUFFER_LEVEL_PRIMARY)
+                                 ? m_FreePrimaryCommandBuffers
+                                 : m_FreeSecondaryCommandBuffers;
 
             if (!freeList.empty())
             {
@@ -29,15 +33,19 @@ namespace ArisenEngine::RHI
                 freeList.pop_back();
                 return handle;
             }
-            
+
             return CreateCommandBuffer(level);
         }
-        
-        struct CommandBufferRecycler {
+
+        struct CommandBufferRecycler
+        {
             RHICommandBufferPool* pool;
             RHICommandBufferHandle handle;
-            ~CommandBufferRecycler() {
-                if (pool && handle.IsValid()) {
+
+            ~CommandBufferRecycler()
+            {
+                if (pool && handle.IsValid())
+                {
                     pool->InternalRecycle(handle);
                 }
             }
@@ -50,15 +58,15 @@ namespace ArisenEngine::RHI
             if (!commandBuffer) return;
 
             auto ticket = commandBuffer->GetLatestSubmitTicket();
-            
+
             if (m_Device->GetCompletedSubmitTicket() >= ticket)
             {
                 InternalRecycle(handle);
             }
             else
             {
-                m_Device->DeferredDelete(RHIQueueType::Graphics, static_cast<RHIGpuTicket>(ticket), 
-                    MakeDeferredDeleteItem(new CommandBufferRecycler{this, handle}));
+                m_Device->DeferredDelete(RHIQueueType::Graphics, static_cast<RHIGpuTicket>(ticket),
+                                         MakeDeferredDeleteItem(new CommandBufferRecycler{this, handle}));
             }
         }
 
@@ -75,8 +83,9 @@ namespace ArisenEngine::RHI
             else
                 m_FreeSecondaryCommandBuffers.push_back(handle);
         }
+
         virtual RHICommandBufferHandle CreateCommandBuffer(ECommandBufferLevel level) = 0;
-        
+
     private:
         RHIDevice* m_Device;
         Containers::Vector<RHICommandBufferHandle> m_FreePrimaryCommandBuffers;
@@ -88,6 +97,4 @@ namespace ArisenEngine::RHI
         RHIDevice* GetDevice() const;
         std::mutex& GetBuffersMutex() { return m_BuffersMutex; }
     };
-
 }
-

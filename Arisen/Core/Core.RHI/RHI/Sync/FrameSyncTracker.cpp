@@ -1,5 +1,5 @@
-
 #include "FrameSyncTracker.h"
+
 ArisenEngine::RHI::FrameSyncTracker::FrameSyncTracker(UInt32 maxFramesInFlight)
 {
     m_FrameCount = maxFramesInFlight;
@@ -49,7 +49,7 @@ void ArisenEngine::RHI::FrameSyncTracker::Drain(RHIQueue* queue)
         const auto t = m_FrameLatestSubmitTicket[i].load(std::memory_order_acquire);
         if (t > maxTarget) maxTarget = t;
     }
-    
+
     if (maxTarget == 0)
     {
         return;

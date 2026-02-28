@@ -15,7 +15,9 @@
 namespace ArisenEngine::Testing
 {
     using namespace ArisenEngine;
-    struct IndirectCommand {
+
+    struct IndirectCommand
+    {
         UInt32 indexCount;
         UInt32 instanceCount;
         UInt32 firstIndex;
@@ -23,7 +25,8 @@ namespace ArisenEngine::Testing
         UInt32 firstInstance;
     };
 
-    struct MaterialGroup {
+    struct MaterialGroup
+    {
         SInt32 materialIndex;
         UInt32 commandOffset;
         UInt32 commandCount;
@@ -37,7 +40,7 @@ namespace ArisenEngine::Testing
         Containers::Vector<RHI::RHIBufferHandle> m_UboBuffer;
         RHI::RHIBufferHandle m_IndirectBuffer;
         RHI::RHIBufferHandle m_CountBuffer;
-        
+
         RHI::RHIImageHandle m_DepthImage;
         RHI::RHIImageViewHandle m_DepthView;
         RHI::RHIImageHandle m_MSAAColorImage;
@@ -81,7 +84,7 @@ namespace ArisenEngine::Testing
             m_UboBuffer.clear();
 
             m_Pso.reset();
-            
+
             m_Model.Release(m_Device);
 
             RHIRenderingTestBase::TeardownTest();
@@ -125,8 +128,9 @@ namespace ArisenEngine::Testing
             wchar_t exePathW[MAX_PATH]{};
             GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
             auto exeDir = std::filesystem::path(exePathW).parent_path();
-            
-            std::filesystem::path sponzaPath = exeDir / "Assets" / "glTF-Sample-Models" / "2.0" / "Sponza" / "glTF" / "Sponza.gltf";
+
+            std::filesystem::path sponzaPath = exeDir / "Assets" / "glTF-Sample-Models" / "2.0" / "Sponza" / "glTF" /
+                "Sponza.gltf";
             m_Model = LoadGLTF(sponzaPath.string());
 
             // Group Primitives by Material
@@ -166,11 +170,13 @@ namespace ArisenEngine::Testing
             indirectDesc.usage = RHI::BUFFER_USAGE_INDIRECT_BUFFER_BIT | RHI::BUFFER_USAGE_TRANSFER_DST_BIT;
             indirectDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
             m_IndirectBuffer = m_Device->GetFactory()->CreateBuffer(std::move(indirectDesc), "IndirectBuffer");
-            
-            m_Device->GetFactory()->BufferMemoryCopy(m_IndirectBuffer, m_IndirectCommands.data(), m_IndirectCommands.size() * sizeof(IndirectCommand), 0);
-            
+
+            m_Device->GetFactory()->BufferMemoryCopy(m_IndirectBuffer, m_IndirectCommands.data(),
+                                                     m_IndirectCommands.size() * sizeof(IndirectCommand), 0);
+
             // Count Buffer
-            UInt32 count = (UInt32)m_IndirectCommands.size(); // Assuming count should be the number of indirect commands
+            UInt32 count = (UInt32)m_IndirectCommands.size();
+            // Assuming count should be the number of indirect commands
             RHI::RHIBufferDescriptor countDesc = {};
             countDesc.size = sizeof(UInt32);
             countDesc.usage = RHI::BUFFER_USAGE_INDIRECT_BUFFER_BIT | RHI::BUFFER_USAGE_TRANSFER_DST_BIT;
@@ -205,8 +211,11 @@ namespace ArisenEngine::Testing
             // Depth Image
             RHI::RHIImageDescriptor dimgDesc = {};
             dimgDesc.imageType = RHI::IMAGE_TYPE_2D;
-            dimgDesc.width = width; dimgDesc.height = height; dimgDesc.depth = 1;
-            dimgDesc.mipLevels = 1; dimgDesc.arrayLayers = 1;
+            dimgDesc.width = width;
+            dimgDesc.height = height;
+            dimgDesc.depth = 1;
+            dimgDesc.mipLevels = 1;
+            dimgDesc.arrayLayers = 1;
             dimgDesc.format = RHI::FORMAT_D32_SFLOAT;
             dimgDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
             dimgDesc.usage = RHI::IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
@@ -218,15 +227,20 @@ namespace ArisenEngine::Testing
             dviewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
             dviewDesc.format = RHI::FORMAT_D32_SFLOAT;
             dviewDesc.aspectMask = RHI::IMAGE_ASPECT_DEPTH_BIT;
-            dviewDesc.levelCount = 1; dviewDesc.layerCount = 1;
-            dviewDesc.width = width; dviewDesc.height = height;
+            dviewDesc.levelCount = 1;
+            dviewDesc.layerCount = 1;
+            dviewDesc.width = width;
+            dviewDesc.height = height;
             m_DepthView = m_Device->GetFactory()->CreateImageView(m_DepthImage, std::move(dviewDesc));
 
             // MSAA Color Image
             RHI::RHIImageDescriptor msaaDesc = {};
             msaaDesc.imageType = RHI::IMAGE_TYPE_2D;
-            msaaDesc.width = width; msaaDesc.height = height; msaaDesc.depth = 1;
-            msaaDesc.mipLevels = 1; msaaDesc.arrayLayers = 1;
+            msaaDesc.width = width;
+            msaaDesc.height = height;
+            msaaDesc.depth = 1;
+            msaaDesc.mipLevels = 1;
+            msaaDesc.arrayLayers = 1;
             msaaDesc.format = RHI::FORMAT_B8G8R8A8_SRGB;
             msaaDesc.tiling = RHI::IMAGE_TILING_OPTIMAL;
             msaaDesc.usage = RHI::IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | RHI::IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -238,21 +252,25 @@ namespace ArisenEngine::Testing
             msaaViewDesc.viewType = RHI::IMAGE_VIEW_TYPE_2D;
             msaaViewDesc.format = RHI::FORMAT_B8G8R8A8_SRGB;
             msaaViewDesc.aspectMask = RHI::IMAGE_ASPECT_COLOR_BIT;
-            msaaViewDesc.levelCount = 1; msaaViewDesc.layerCount = 1;
-            msaaViewDesc.width = width; msaaViewDesc.height = height;
+            msaaViewDesc.levelCount = 1;
+            msaaViewDesc.layerCount = 1;
+            msaaViewDesc.width = width;
+            msaaViewDesc.height = height;
             m_MSAAColorView = m_Device->GetFactory()->CreateImageView(m_MSAAColorImage, std::move(msaaViewDesc));
         }
 
     private:
-
         void InitRenderContext()
         {
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
-                Containers::Vector<RHI::EDescriptorType> types = { RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, RHI::DESCRIPTOR_TYPE_SAMPLED_IMAGE, RHI::DESCRIPTOR_TYPE_SAMPLER };
+                Containers::Vector<RHI::EDescriptorType> types = {
+                    RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER, RHI::DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                    RHI::DESCRIPTOR_TYPE_SAMPLER
+                };
                 UInt32 matCount = (UInt32)m_Model.materials.size();
                 if (matCount == 0) matCount = 1;
-                Containers::Vector<UInt32> counts = { matCount, matCount, matCount };
+                Containers::Vector<UInt32> counts = {matCount, matCount, matCount};
                 m_DescriptorPoolIds.push_back(m_DescriptorPool->AddPool(types, counts, matCount));
             }
         }
@@ -289,11 +307,12 @@ namespace ArisenEngine::Testing
             RHI::RHIColorBlendState cb{};
             RHI::RHIColorBlendAttachmentState blendAttachment{};
             blendAttachment.blendEnable = false;
-            blendAttachment.colorWriteMask = RHI::COLOR_COMPONENT_R_BIT | RHI::COLOR_COMPONENT_G_BIT | RHI::COLOR_COMPONENT_B_BIT | RHI::COLOR_COMPONENT_A_BIT;
+            blendAttachment.colorWriteMask = RHI::COLOR_COMPONENT_R_BIT | RHI::COLOR_COMPONENT_G_BIT |
+                RHI::COLOR_COMPONENT_B_BIT | RHI::COLOR_COMPONENT_A_BIT;
             cb.attachments.push_back(blendAttachment);
             m_Pso->SetColorBlendState(cb);
 
-            m_Pso->UpdateDescriptorSet(0, 0, Containers::Vector<RHI::RHIBufferHandle>{ m_UboBuffer[0] });
+            m_Pso->UpdateDescriptorSet(0, 0, Containers::Vector<RHI::RHIBufferHandle>{m_UboBuffer[0]});
 
             m_Pso->BuildDescriptorSetLayout();
 
@@ -305,7 +324,7 @@ namespace ArisenEngine::Testing
 
             m_Pso->SetDynamicStateMask(RHI::DYNAMIC_STATE_VIEWPORT_BIT | RHI::DYNAMIC_STATE_SCISSOR_BIT);
 
-            Containers::Vector<RHI::EFormat> colorFormats = { RHI::FORMAT_B8G8R8A8_SRGB };
+            Containers::Vector<RHI::EFormat> colorFormats = {RHI::FORMAT_B8G8R8A8_SRGB};
             m_Pso->SetRenderingFormats(colorFormats, RHI::FORMAT_D32_SFLOAT, RHI::FORMAT_UNDEFINED);
 
             m_Pipeline = pm->GetGraphicsPipeline(m_Pso.get());
@@ -321,7 +340,8 @@ namespace ArisenEngine::Testing
             float height = (float)HAL::GetWindowHeight(m_WindowId);
             ubo.projection = GetProjectionMatrix(width / height);
             ubo.mipmapBias = 0.0f;
-            m_Device->GetFactory()->BufferMemoryCopy(m_UboBuffer[GetCurrentFrameIndex()], &ubo, sizeof(UniformBufferObject), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_UboBuffer[GetCurrentFrameIndex()], &ubo,
+                                                     sizeof(UniformBufferObject), 0);
         }
 
         void RecordAndSubmit()
@@ -330,26 +350,27 @@ namespace ArisenEngine::Testing
             auto pool = m_Device->GetCommandBufferPool(m_CmdPool);
             auto cmdHandle = pool->GetCommandBuffer(currentIndex);
             auto cmd = m_Device->GetCommandBuffer(cmdHandle);
-            
+
             m_DescriptorPool->ResetPool(m_DescriptorPoolIds[currentIndex]);
-            
+
             Containers::Vector<UInt32> setIndices;
             for (UInt32 i = 0; i < (UInt32)m_Model.materials.size(); ++i)
             {
                 auto& mat = m_Model.materials[i];
-                m_Pso->UpdateDescriptorSet(0, 0, Containers::Vector<RHI::RHIBufferHandle>{ m_UboBuffer[currentIndex] });
+                m_Pso->UpdateDescriptorSet(0, 0, Containers::Vector<RHI::RHIBufferHandle>{m_UboBuffer[currentIndex]});
 
                 RHI::RHIDescriptorImageInfo texInfo = {};
                 texInfo.imageView = mat.baseColorView;
                 texInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                m_Pso->UpdateDescriptorSet(0, 1, Containers::Vector<RHI::RHIDescriptorImageInfo>{ texInfo });
+                m_Pso->UpdateDescriptorSet(0, 1, Containers::Vector<RHI::RHIDescriptorImageInfo>{texInfo});
 
                 RHI::RHIDescriptorImageInfo samInfo = {};
                 samInfo.sampler = mat.sampler;
                 samInfo.imageLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                m_Pso->UpdateDescriptorSet(0, 2, Containers::Vector<RHI::RHIDescriptorImageInfo>{ samInfo });
+                m_Pso->UpdateDescriptorSet(0, 2, Containers::Vector<RHI::RHIDescriptorImageInfo>{samInfo});
 
-                UInt32 setIdx = m_DescriptorPool->AllocDescriptorSet(m_DescriptorPoolIds[currentIndex], (UInt32)0, (RHI::RHIPipelineState*)m_Pso.get());
+                UInt32 setIdx = m_DescriptorPool->AllocDescriptorSet(m_DescriptorPoolIds[currentIndex], (UInt32)0,
+                                                                     (RHI::RHIPipelineState*)m_Pso.get());
                 m_DescriptorPool->UpdateDescriptorSet(m_DescriptorPoolIds[currentIndex], setIdx, m_Pso.get());
                 setIndices.push_back(setIdx);
             }
@@ -364,7 +385,7 @@ namespace ArisenEngine::Testing
                 // Transition swapchain image
                 cmd->TransitionImageLayout(colorBuffer, RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-                RHI::RHIRenderingAttachmentInfo colorAttachment {};
+                RHI::RHIRenderingAttachmentInfo colorAttachment{};
                 colorAttachment.imageView = m_MSAAColorView;
                 colorAttachment.imageLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                 colorAttachment.loadOp = RHI::ATTACHMENT_LOAD_OP_CLEAR;
@@ -374,13 +395,13 @@ namespace ArisenEngine::Testing
                 colorAttachment.clearValue.float32[2] = 0.2f;
                 colorAttachment.clearValue.float32[3] = 1.0f;
 
-                RHI::RHIRenderingAttachmentInfo resolveAttachment {};
+                RHI::RHIRenderingAttachmentInfo resolveAttachment{};
                 resolveAttachment.imageView = colorView;
                 resolveAttachment.imageLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                 resolveAttachment.loadOp = RHI::ATTACHMENT_LOAD_OP_DONT_CARE;
                 resolveAttachment.storeOp = RHI::ATTACHMENT_STORE_OP_STORE;
 
-                RHI::RHIRenderingAttachmentInfo depthAttachment {};
+                RHI::RHIRenderingAttachmentInfo depthAttachment{};
                 depthAttachment.imageView = m_DepthView;
                 depthAttachment.imageLayout = RHI::IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
                 depthAttachment.loadOp = RHI::ATTACHMENT_LOAD_OP_CLEAR;
@@ -390,8 +411,8 @@ namespace ArisenEngine::Testing
                 UInt32 width = HAL::GetWindowWidth(m_WindowId);
                 UInt32 height = HAL::GetWindowHeight(m_WindowId);
 
-                RHI::RHIRenderingInfo renderInfo {};
-                renderInfo.RHIRenderArea = { 0, 0, width, height };
+                RHI::RHIRenderingInfo renderInfo{};
+                renderInfo.RHIRenderArea = {0, 0, width, height};
                 renderInfo.layerCount = 1;
                 renderInfo.colorAttachmentCount = 1;
                 renderInfo.pColorAttachments = &colorAttachment;
@@ -407,15 +428,18 @@ namespace ArisenEngine::Testing
                 cmd->BindIndexBuffer(m_Model.indexBuffer, 0, RHI::INDEX_TYPE_UINT32);
 
                 glm::vec4 tintColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-                cmd->PushConstants(0, sizeof(glm::vec4), &tintColor, static_cast<UInt32>(RHI::SHADER_STAGE_FRAGMENT_BIT | RHI::SHADER_STAGE_VERTEX_BIT));
+                cmd->PushConstants(0, sizeof(glm::vec4), &tintColor,
+                                   static_cast<UInt32>(RHI::SHADER_STAGE_FRAGMENT_BIT | RHI::SHADER_STAGE_VERTEX_BIT));
 
                 // DRAW EACH MATERIAL GROUP
                 for (const auto& group : m_MaterialGroups)
                 {
                     UInt32 setIdx = group.materialIndex >= 0 ? setIndices[group.materialIndex] : 0;
-                    cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPoolHandle, m_DescriptorPoolIds[currentIndex], setIdx);
-                    
-                    cmd->DrawIndexedIndirect(m_IndirectBuffer, group.commandOffset * sizeof(IndirectCommand), group.commandCount, sizeof(IndirectCommand));
+                    cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPoolHandle,
+                                           m_DescriptorPoolIds[currentIndex], setIdx);
+
+                    cmd->DrawIndexedIndirect(m_IndirectBuffer, group.commandOffset * sizeof(IndirectCommand),
+                                             group.commandCount, sizeof(IndirectCommand));
                 }
 
                 cmd->EndRendering();
@@ -429,7 +453,7 @@ namespace ArisenEngine::Testing
             RHI::RHISubmitDescriptor submitDesc = {};
             submitDesc.WaitSwapChain = m_SwapChain;
             submitDesc.SignalSwapChain = m_SwapChain;
-            
+
             m_FrameTickets[currentIndex] = m_Device->Submit(cmdHandle, &submitDesc);
             m_SwapChain->EndFrame(currentIndex);
             pool->ReleaseCommandBuffer(currentIndex, cmdHandle);

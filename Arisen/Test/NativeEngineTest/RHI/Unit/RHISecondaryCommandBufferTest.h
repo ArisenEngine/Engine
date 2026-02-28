@@ -34,8 +34,10 @@ namespace ArisenEngine::Testing
             {
                 // 1. Get Primary and Secondary Command Buffers
                 auto pool = m_Device->GetCommandBufferPool(m_CommandPool);
-                auto primaryCmdHandle = pool->GetCommandBuffer(f, RHI::ECommandBufferLevel::COMMAND_BUFFER_LEVEL_PRIMARY);
-                auto secondaryCmdHandle = pool->GetCommandBuffer(f, RHI::ECommandBufferLevel::COMMAND_BUFFER_LEVEL_SECONDARY);
+                auto primaryCmdHandle = pool->GetCommandBuffer(
+                    f, RHI::ECommandBufferLevel::COMMAND_BUFFER_LEVEL_PRIMARY);
+                auto secondaryCmdHandle = pool->GetCommandBuffer(
+                    f, RHI::ECommandBufferLevel::COMMAND_BUFFER_LEVEL_SECONDARY);
                 auto primaryCmd = m_Device->GetCommandBuffer(primaryCmdHandle);
                 auto secondaryCmd = m_Device->GetCommandBuffer(secondaryCmdHandle);
 
@@ -47,10 +49,10 @@ namespace ArisenEngine::Testing
 
                 // 3. Record Primary Command Buffer and Execute Secondary
                 primaryCmd->Begin(f, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-                
-                Containers::Vector<RHI::RHICommandBuffer*> secondaryBuffers = { secondaryCmd };
+
+                Containers::Vector<RHI::RHICommandBuffer*> secondaryBuffers = {secondaryCmd};
                 primaryCmd->ExecuteCommands(std::move(secondaryBuffers));
-                
+
                 primaryCmd->End();
 
                 // 4. Submit Primary

@@ -12,8 +12,10 @@ namespace ArisenEngine::RHI
         ~RHIFence() noexcept override;
 
         void* GetHandle() override { return nullptr; }
-        bool Lock() override  { return true; }
-        void Unlock() override { }
+        bool Lock() override { return true; }
+
+        void Unlock() override
+        {
+        }
     };
 }
-

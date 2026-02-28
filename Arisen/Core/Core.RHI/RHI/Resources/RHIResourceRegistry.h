@@ -8,133 +8,152 @@
 
 #include <mutex>
 
-namespace ArisenEngine::RHI {
-// Backend-agnostic registry:
-// - generation guards against use-after-free
-// - refCount is protected by a mutex (simple and portable)
-// - destruction is routed through IRHIDeferredDeletionQueue (GPU-safe)
-class RHIResourceRegistry final {
-public:
-  NO_COPY_NO_MOVE_NO_DEFAULT(RHIResourceRegistry)
-  explicit RHIResourceRegistry(IRHIDeferredDeletionQueue *deletionQueue)
-      : m_DeletionQueue(deletionQueue) {}
-
-  ~RHIResourceRegistry() {
-    Shutdown();
-  }
-
-  /**
-   * @brief Shuts down the registry by enqueuing all remaining resources for destruction.
-   * This is safe to call multiple times and ensures the registry remains valid for
-   * lookup/release calls that might happen during the subsequent flush of the enqueued items.
-   */
-  void Shutdown() {
-    std::lock_guard<std::mutex> lock(m_Mutex);
-    for (size_t i = 0; i < m_Entries.size(); ++i) {
-      auto &e = m_Entries[i];
-      if (e.refCount > 0 && e.item.ptr && e.item.deleter && m_DeletionQueue) {
-        // GPU is usually idle during registry destruction (shutdown), 
-        // so we can use a ticket of 0.
-        m_DeletionQueue->Enqueue(RHIQueueType::Graphics, 0, e.item);
-        e.refCount = 0;
-        e.item = {};
-        e.generation++; // Invalidate existing handles
-      }
-    }
-  }
-
-  // Create a new entry with refCount=1.
-  // item is the object + deleter; backend-specific cleanup should live in the
-  // object's destructor.
-  RHIResourceHandle Create(RHIDeferredDeleteItem item) {
-    std::lock_guard<std::mutex> lock(m_Mutex);
-
-    UInt32 idx = 0;
-    if (!m_FreeList.empty()) {
-      idx = m_FreeList.back();
-      m_FreeList.pop_back();
-    } else {
-      idx = static_cast<UInt32>(m_Entries.size());
-      m_Entries.emplace_back();
-    }
-
-    auto &e = m_Entries[idx];
-    e.refCount = 1;
-    e.item = item;
-    e.maxTicket = 0;
-    return RHIResourceHandle{idx, e.generation};
-  }
-
-  bool Retain(RHIResourceHandle h) {
-    std::lock_guard<std::mutex> lock(m_Mutex);
-    if (!ValidateUnlocked(h))
-      return false;
-    m_Entries[h.index].refCount += 1;
-    return true;
-  }
-
-  void Release(RHIResourceHandle h, RHIQueueType queue, RHIGpuTicket ticket) {
-    RHIDeferredDeleteItem item{};
-    RHIGpuTicket finalTicket = 0;
+namespace ArisenEngine::RHI
+{
+    // Backend-agnostic registry:
+    // - generation guards against use-after-free
+    // - refCount is protected by a mutex (simple and portable)
+    // - destruction is routed through IRHIDeferredDeletionQueue (GPU-safe)
+    class RHIResourceRegistry final
     {
-      std::lock_guard<std::mutex> lock(m_Mutex);
-      if (!ValidateUnlocked(h))
-        return;
+    public:
+        NO_COPY_NO_MOVE_NO_DEFAULT(RHIResourceRegistry)
 
-      auto &e = m_Entries[h.index];
-      if (ticket > e.maxTicket)
-        e.maxTicket = ticket;
+        explicit RHIResourceRegistry(IRHIDeferredDeletionQueue* deletionQueue)
+            : m_DeletionQueue(deletionQueue)
+        {
+        }
 
-      if (e.refCount > 1) {
-        e.refCount -= 1;
-        return;
-      }
+        ~RHIResourceRegistry()
+        {
+            Shutdown();
+        }
 
-      // last ref
-      item = e.item;
-      finalTicket = e.maxTicket;
-      e.item = {};
-      e.refCount = 0;
-      e.generation += 1;
-      e.maxTicket = 0;
-      m_FreeList.emplace_back(h.index);
-    }
+        /**
+         * @brief Shuts down the registry by enqueuing all remaining resources for destruction.
+         * This is safe to call multiple times and ensures the registry remains valid for
+         * lookup/release calls that might happen during the subsequent flush of the enqueued items.
+         */
+        void Shutdown()
+        {
+            std::lock_guard<std::mutex> lock(m_Mutex);
+            for (size_t i = 0; i < m_Entries.size(); ++i)
+            {
+                auto& e = m_Entries[i];
+                if (e.refCount > 0 && e.item.ptr && e.item.deleter && m_DeletionQueue)
+                {
+                    // GPU is usually idle during registry destruction (shutdown), 
+                    // so we can use a ticket of 0.
+                    m_DeletionQueue->Enqueue(RHIQueueType::Graphics, 0, e.item);
+                    e.refCount = 0;
+                    e.item = {};
+                    e.generation++; // Invalidate existing handles
+                }
+            }
+        }
 
-    if (item.ptr && item.deleter && m_DeletionQueue) {
-      m_DeletionQueue->Enqueue(queue, finalTicket, item);
-    }
-  }
+        // Create a new entry with refCount=1.
+        // item is the object + deleter; backend-specific cleanup should live in the
+        // object's destructor.
+        RHIResourceHandle Create(RHIDeferredDeleteItem item)
+        {
+            std::lock_guard<std::mutex> lock(m_Mutex);
 
-  bool IsAlive(RHIResourceHandle h) const {
-    std::lock_guard<std::mutex> lock(m_Mutex);
-    return ValidateUnlocked(h);
-  }
+            UInt32 idx = 0;
+            if (!m_FreeList.empty())
+            {
+                idx = m_FreeList.back();
+                m_FreeList.pop_back();
+            }
+            else
+            {
+                idx = static_cast<UInt32>(m_Entries.size());
+                m_Entries.emplace_back();
+            }
 
-private:
-  struct Entry {
-    UInt32 refCount{0};
-    UInt32 generation{1};
-    RHIDeferredDeleteItem item;
-    RHIGpuTicket maxTicket{0};
-  };
+            auto& e = m_Entries[idx];
+            e.refCount = 1;
+            e.item = item;
+            e.maxTicket = 0;
+            return RHIResourceHandle{idx, e.generation};
+        }
 
-  bool ValidateUnlocked(RHIResourceHandle h) const {
-    if (!h.IsValid())
-      return false;
-    if (h.index >= m_Entries.size())
-      return false;
-    const auto &e = m_Entries[h.index];
-    if (e.generation != h.generation)
-      return false;
-    if (e.refCount == 0)
-      return false;
-    return true;
-  }
+        bool Retain(RHIResourceHandle h)
+        {
+            std::lock_guard<std::mutex> lock(m_Mutex);
+            if (!ValidateUnlocked(h))
+                return false;
+            m_Entries[h.index].refCount += 1;
+            return true;
+        }
 
-  IRHIDeferredDeletionQueue *m_DeletionQueue{nullptr};
-  mutable std::mutex m_Mutex;
-  Containers::Vector<Entry> m_Entries;
-  Containers::Vector<UInt32> m_FreeList;
-};
+        void Release(RHIResourceHandle h, RHIQueueType queue, RHIGpuTicket ticket)
+        {
+            RHIDeferredDeleteItem item{};
+            RHIGpuTicket finalTicket = 0;
+            {
+                std::lock_guard<std::mutex> lock(m_Mutex);
+                if (!ValidateUnlocked(h))
+                    return;
+
+                auto& e = m_Entries[h.index];
+                if (ticket > e.maxTicket)
+                    e.maxTicket = ticket;
+
+                if (e.refCount > 1)
+                {
+                    e.refCount -= 1;
+                    return;
+                }
+
+                // last ref
+                item = e.item;
+                finalTicket = e.maxTicket;
+                e.item = {};
+                e.refCount = 0;
+                e.generation += 1;
+                e.maxTicket = 0;
+                m_FreeList.emplace_back(h.index);
+            }
+
+            if (item.ptr && item.deleter && m_DeletionQueue)
+            {
+                m_DeletionQueue->Enqueue(queue, finalTicket, item);
+            }
+        }
+
+        bool IsAlive(RHIResourceHandle h) const
+        {
+            std::lock_guard<std::mutex> lock(m_Mutex);
+            return ValidateUnlocked(h);
+        }
+
+    private:
+        struct Entry
+        {
+            UInt32 refCount{0};
+            UInt32 generation{1};
+            RHIDeferredDeleteItem item;
+            RHIGpuTicket maxTicket{0};
+        };
+
+        bool ValidateUnlocked(RHIResourceHandle h) const
+        {
+            if (!h.IsValid())
+                return false;
+            if (h.index >= m_Entries.size())
+                return false;
+            const auto& e = m_Entries[h.index];
+            if (e.generation != h.generation)
+                return false;
+            if (e.refCount == 0)
+                return false;
+            return true;
+        }
+
+        IRHIDeferredDeletionQueue* m_DeletionQueue{nullptr};
+        mutable std::mutex m_Mutex;
+        Containers::Vector<Entry> m_Entries;
+        Containers::Vector<UInt32> m_FreeList;
+    };
 } // namespace ArisenEngine::RHI
-

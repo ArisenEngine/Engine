@@ -23,10 +23,10 @@ namespace ArisenEngine::Testing
         RHI::RHICommandBufferPoolHandle m_CommandPool;
         RHI::RHIShaderProgramHandle m_ComputeProgram;
         RHI::RHIPipelineHandle m_Pipeline;
-        
+
         RHI::RHIBufferHandle m_InputBuffer;
         RHI::RHIBufferHandle m_OutputBuffer;
-        
+
         std::unique_ptr<RHI::RHIPipelineState> m_Pso;
 
         RHI::RHIDescriptorPool* m_DescriptorPool = nullptr;
@@ -56,36 +56,39 @@ namespace ArisenEngine::Testing
             String envStr = m_Instance->GetEnvString();
             std::wstring envStrW = envStr.ToWString();
 
-            HAL::ShaderCompileParams params {
+            HAL::ShaderCompileParams params{
                 shaderPath, L"CSMain", L"6_0", L"-spirv", envStrW, L"0", RHI::EProgramStage::Compute,
                 {}, {}, currentPath + L"\\AsyncComputeTest.comp.spirv", true
             };
 
             HAL::ShaderCompilerOutput output;
-            if (!HAL::CompileShaderFromFile(std::move(params), output) || !output.codePointer) {
+            if (!HAL::CompileShaderFromFile(std::move(params), output) || !output.codePointer)
+            {
                 LOG_ERROR("Compute shader compilation failed.");
                 return false;
             }
 
             m_ComputeProgram = m_Device->GetFactory()->CreateGPUProgram();
-            RHI::RHIShaderProgramDesc progDesc = { output.codeSize, output.codePointer, "CSMain", "AsyncComputeTest", RHI::SHADER_STAGE_COMPUTE_BIT };
+            RHI::RHIShaderProgramDesc progDesc = {
+                output.codeSize, output.codePointer, "CSMain", "AsyncComputeTest", RHI::SHADER_STAGE_COMPUTE_BIT
+            };
             m_Device->GetFactory()->AttachProgramByteCode(m_ComputeProgram, std::move(progDesc));
             std::free(output.codePointer);
 
             // 2. Create Buffers
             const uint32_t elementCount = 1024;
             const uint32_t bufferSize = elementCount * sizeof(uint32_t);
-            
+
             RHI::RHIBufferDescriptor bufDesc = {};
             bufDesc.size = bufferSize;
             bufDesc.usage = RHI::BUFFER_USAGE_STORAGE_BUFFER_BIT;
             bufDesc.memoryUsage = RHI::ERHIMemoryUsage::Upload;
-            
+
             m_InputBuffer = m_Device->GetFactory()->CreateBuffer(std::move(bufDesc), "InputBuffer");
             m_OutputBuffer = m_Device->GetFactory()->CreateBuffer(std::move(bufDesc), "OutputBuffer");
 
             std::vector<uint32_t> inputData(elementCount);
-            for(uint32_t i=0; i<elementCount; ++i) inputData[i] = i;
+            for (uint32_t i = 0; i < elementCount; ++i) inputData[i] = i;
             m_Device->GetFactory()->BufferMemoryCopy(m_InputBuffer, inputData.data(), bufferSize, 0);
 
             // 3. Setup Pipeline and Descriptors
@@ -94,19 +97,21 @@ namespace ArisenEngine::Testing
             m_Pso->SetBindPoint(RHI::PIPELINE_BIND_POINT_COMPUTE);
             m_Pso->AddProgram(m_ComputeProgram);
 
-            Containers::Vector<RHI::RHIBufferHandle> inputs = { m_InputBuffer };
-            Containers::Vector<RHI::RHIBufferHandle> outputs = { m_OutputBuffer };
+            Containers::Vector<RHI::RHIBufferHandle> inputs = {m_InputBuffer};
+            Containers::Vector<RHI::RHIBufferHandle> outputs = {m_OutputBuffer};
             m_Pso->UpdateDescriptorSet(0, 0, std::move(inputs));
             m_Pso->UpdateDescriptorSet(0, 1, std::move(outputs));
-            
+
             m_Pso->BuildDescriptorSetLayout();
             m_Pipeline = pm->GetComputePipeline(m_Pso.get()); // Assuming this calls GetComputePipeline? 
             // Step 399 showed: m_Pipeline = pm->GetComputePipeline(pso.get());
             // Need to verify GetComputePipeline signature. Assuming OK.
             m_Pipeline = pm->GetComputePipeline(m_Pso.get());
 
-            Containers::Vector<RHI::EDescriptorType> types = { RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER };
-            Containers::Vector<UInt32> counts = { 1, 1 };
+            Containers::Vector<RHI::EDescriptorType> types = {
+                RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER
+            };
+            Containers::Vector<UInt32> counts = {1, 1};
             m_PoolId = m_DescriptorPool->AddPool(types, counts, 1);
 
             return true;
@@ -118,9 +123,10 @@ namespace ArisenEngine::Testing
 
             auto cmdHandle = m_Device->GetCommandBufferPool(m_CommandPool)->GetCommandBuffer(0);
             auto cmd = m_Device->GetCommandBuffer(cmdHandle);
-            
+
             m_DescriptorPool->ResetPool(m_PoolId);
-            UInt32 setIdx = m_DescriptorPool->AllocDescriptorSet(m_PoolId, (UInt32)0, (RHI::RHIPipelineState*)m_Pso.get());
+            UInt32 setIdx = m_DescriptorPool->AllocDescriptorSet(m_PoolId, (UInt32)0,
+                                                                 (RHI::RHIPipelineState*)m_Pso.get());
             m_DescriptorPool->UpdateDescriptorSet(m_PoolId, setIdx, m_Pso.get());
 
             cmd->Begin(0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -132,9 +138,10 @@ namespace ArisenEngine::Testing
             // SUBMIT TO COMPUTE QUEUE
             LOG_INFO("Submitting to Compute Queue...");
             auto queue = m_Device->GetQueue(RHI::RHIQueueType::Compute);
-            if (!queue) {
-                 LOG_ERROR("Compute queue not available!");
-                 return false;
+            if (!queue)
+            {
+                LOG_ERROR("Compute queue not available!");
+                return false;
             }
             RHI::RHISubmitDescriptor submitDesc = {};
             auto ticket = queue->Submit(cmdHandle, &submitDesc);
@@ -152,7 +159,7 @@ namespace ArisenEngine::Testing
             if (m_OutputBuffer.IsValid()) m_Device->GetFactory()->ReleaseBuffer(m_OutputBuffer);
             if (m_ComputeProgram.IsValid()) m_Device->GetFactory()->ReleaseGPUProgram(m_ComputeProgram);
             if (m_CommandPool.IsValid()) m_Device->GetFactory()->ReleaseCommandBufferPool(m_CommandPool);
-            
+
             m_Pso.reset();
         }
     };

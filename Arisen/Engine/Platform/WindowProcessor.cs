@@ -5,17 +5,18 @@ namespace ArisenEngine.Platform;
 public abstract class WindowProcessor
 {
     protected RenderSurface m_RenderSurface;
+
     internal WindowProcessor(RenderSurface renderSurface)
     {
         m_RenderSurface = renderSurface;
     }
-    
+
     protected IntPtr m_ProcPtr;
     public IntPtr ProcPtr => m_ProcPtr;
 
     protected IntPtr m_ResizeCallbackPtr;
     public IntPtr ResizeCallbackPtr => m_ResizeCallbackPtr;
-    
+
     protected abstract void OnResizing();
     protected abstract void OnResized();
     protected abstract void OnCreate();

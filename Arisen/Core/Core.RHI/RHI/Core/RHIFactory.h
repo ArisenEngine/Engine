@@ -48,8 +48,10 @@ namespace ArisenEngine::RHI
         virtual RHIMemoryPoolHandle CreateMemoryPool(UInt64 size, UInt32 usageBits) = 0;
         virtual void ReleaseMemoryPool(RHIMemoryPoolHandle handle) = 0;
 
-        virtual RHIBufferHandle CreateBufferAliased(RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset, const String& name = "Anonymous") = 0;
-        virtual RHIImageHandle CreateImageAliased(RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset, const String& name = "Anonymous") = 0;
+        virtual RHIBufferHandle CreateBufferAliased(RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset,
+                                                    const String& name = "Anonymous") = 0;
+        virtual RHIImageHandle CreateImageAliased(RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset,
+                                                  const String& name = "Anonymous") = 0;
 
         virtual RHIImageViewHandle CreateImageView(RHIImageHandle image, RHIImageViewDesc&& desc) = 0;
         virtual void ReleaseImageView(RHIImageViewHandle imageView) = 0;
@@ -82,11 +84,11 @@ namespace ArisenEngine::RHI
         virtual UInt32 GetImageViewWidth(RHIImageViewHandle handle) = 0;
         virtual UInt32 GetImageViewHeight(RHIImageViewHandle handle) = 0;
 
-        virtual void SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size, const void* data) = 0;
-        
+        virtual void SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size,
+                                                         const void* data) = 0;
+
         virtual UInt32 RegisterBindlessResource(RHIImageViewHandle image) = 0;
         virtual UInt32 RegisterBindlessResource(RHIBufferHandle buffer) = 0;
         virtual UInt32 RegisterBindlessResource(RHISamplerHandle sampler) = 0;
     };
 }
-

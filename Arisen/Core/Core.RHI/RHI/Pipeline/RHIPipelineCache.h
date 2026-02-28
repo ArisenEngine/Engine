@@ -14,9 +14,8 @@ namespace ArisenEngine::RHI
     // TODO
     struct SpecializationInfoDesc
     {
-        
     };
-    
+
     struct PipelineShaderStageDesc
     {
         UInt32 flag;
@@ -24,11 +23,10 @@ namespace ArisenEngine::RHI
         RHIShaderProgram& program;
         std::optional<SpecializationInfoDesc> specializationInfo;
     };
-    
+
     class RHI_DLL RHIPipelineCache
     {
     public:
-        
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIPipelineCache)
         RHIPipelineCache(UInt32 maxFramesInFlight);
         virtual ~RHIPipelineCache() noexcept = default;
@@ -37,9 +35,8 @@ namespace ArisenEngine::RHI
         virtual RHIPipelineHandle GetRayTracingPipeline(RHIPipelineState* pso) = 0;
 
         virtual std::unique_ptr<RHIPipelineState> GetPipelineState() = 0;
+
     protected:
         UInt32 m_MaxFramesInFlight;
     };
-
 }
-

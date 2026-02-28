@@ -4,10 +4,13 @@
 
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+
 namespace ArisenEngine::RHI
 {
     ARISEN_BIND_ENUM(CompositeAlphaFlagBits)
-    typedef enum CompositeAlphaFlagBits {
+
+    typedef enum CompositeAlphaFlagBits
+    {
         COMPOSITE_ALPHA_OPAQUE_BIT = 0x00000001,
         COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT = 0x00000002,
         COMPOSITE_ALPHA_POST_MULTIPLIED_BIT = 0x00000004,

@@ -95,7 +95,8 @@ public static class GraphCompiler
         return false;
     }
 
-    private static bool IsCyclicUtil(uint nodeId, HashSet<uint> visited, HashSet<uint> recursionStack, Dictionary<uint, List<uint>> adjacency)
+    private static bool IsCyclicUtil(uint nodeId, HashSet<uint> visited, HashSet<uint> recursionStack,
+        Dictionary<uint, List<uint>> adjacency)
     {
         if (recursionStack.Contains(nodeId)) return true;
         if (visited.Contains(nodeId)) return false;

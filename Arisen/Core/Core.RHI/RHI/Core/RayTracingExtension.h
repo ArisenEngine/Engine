@@ -16,17 +16,17 @@ namespace ArisenEngine::RHI
         virtual ~RayTracingExtension() = default;
 
         virtual void GetAccelerationStructureBuildSizes(
-            const RHIAccelerationStructureBuildGeometryInfo& buildInfo, 
-            const UInt32* pMaxPrimitiveCounts, 
+            const RHIAccelerationStructureBuildGeometryInfo& buildInfo,
+            const UInt32* pMaxPrimitiveCounts,
             RHIAccelerationStructureBuildSizesInfo* pSizeInfo) = 0;
 
         virtual UInt64 GetAccelerationStructureDeviceAddress(RHIAccelerationStructureHandle handle) = 0;
 
         virtual void GetRayTracingShaderGroupHandles(
-            RHIPipelineHandle pipeline, 
-            UInt32 firstGroup, 
-            UInt32 groupCount, 
-            UInt64 size, 
+            RHIPipelineHandle pipeline,
+            UInt32 firstGroup,
+            UInt32 groupCount,
+            UInt64 size,
             void* pData) = 0;
     };
 }

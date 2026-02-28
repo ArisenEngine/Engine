@@ -36,6 +36,7 @@ namespace ArisenEngine
         struct ThreadExitHook
         {
             std::vector<std::function<void()>> callbacks;
+
             ~ThreadExitHook()
             {
                 // Execute callbacks in reverse order
@@ -43,19 +44,21 @@ namespace ArisenEngine
                 {
                     if (*it) (*it)();
                 }
-                
+
                 // Return the thread index to the pool
                 ReleaseThreadIndex(ThreadRegistry::GetThreadIndex());
             }
         };
 
-        struct RegistryState {
+        struct RegistryState
+        {
             bool usedIndices[MAX_THREADS] = {false};
             size_t lastAssigned = 0;
             std::mutex mutex;
         };
 
-        static RegistryState& GetState() {
+        static RegistryState& GetState()
+        {
             static RegistryState state;
             return state;
         }
@@ -74,9 +77,9 @@ namespace ArisenEngine
                     return idx;
                 }
             }
-            
+
             // Fallback: This should ideally never happen in a well-behaved engine
-            return 0; 
+            return 0;
         }
 
         static void ReleaseThreadIndex(size_t index)

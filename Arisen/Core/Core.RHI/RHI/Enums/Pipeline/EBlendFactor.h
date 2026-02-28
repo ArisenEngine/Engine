@@ -3,10 +3,13 @@
 
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+
 namespace ArisenEngine::RHI
 {
     ARISEN_BIND_ENUM(EBlendFactor)
-    typedef enum EBlendFactor {
+
+    typedef enum EBlendFactor
+    {
         BLEND_FACTOR_ZERO = 0,
         BLEND_FACTOR_ONE = 1,
         BLEND_FACTOR_SRC_COLOR = 2,

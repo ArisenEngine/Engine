@@ -22,4 +22,3 @@ namespace ArisenEngine::RHI
         virtual bool IsTimeline() const = 0;
     };
 }
-

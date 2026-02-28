@@ -23,7 +23,8 @@ public static class BindingParser
         }
 
         // Pattern 2: typedef enum Name { ... } Name; (C-style, used by all RHI enums)
-        var pattern2 = @"ARISEN_BIND_ENUM\s*\(\s*(\w+)\s*\)\s*(?:///[^\n]*\n\s*)?typedef\s+enum\s+(\w+)\s*\{([^}]+)\}\s*\w+\s*;";
+        var pattern2 =
+            @"ARISEN_BIND_ENUM\s*\(\s*(\w+)\s*\)\s*(?:///[^\n]*\n\s*)?typedef\s+enum\s+(\w+)\s*\{([^}]+)\}\s*\w+\s*;";
         foreach (Match m in Regex.Matches(content, pattern2, RegexOptions.Singleline))
         {
             var name = m.Groups[2].Value;
@@ -65,6 +66,7 @@ public static class BindingParser
                 values.Add((trimmed, null));
             }
         }
+
         return values;
     }
 
@@ -105,6 +107,7 @@ public static class BindingParser
         {
             results.Add(m.Groups[1].Value);
         }
+
         return results.Distinct().ToList();
     }
 
@@ -200,7 +203,7 @@ public static class BindingParser
             // Handle default values: Type x = 0 or Type x { 0 }
             if (p.Contains('='))
                 p = p[..p.IndexOf('=')].Trim();
-            
+
             if (p.Contains('{'))
                 p = p[..p.IndexOf('{')].Trim();
 
@@ -236,7 +239,8 @@ public static class BindingParser
     {
         var results = new List<BridgeBlock>();
 
-        var pattern = @"ARISEN_BIND_BEGIN_BRIDGE\s*\(\s*""([^""]*)""\s*,\s*""([^""]*)""\s*,\s*""([^""]*)""\s*\)(.*?)ARISEN_BIND_END_BRIDGE\s*\(\s*\)";
+        var pattern =
+            @"ARISEN_BIND_BEGIN_BRIDGE\s*\(\s*""([^""]*)""\s*,\s*""([^""]*)""\s*,\s*""([^""]*)""\s*\)(.*?)ARISEN_BIND_END_BRIDGE\s*\(\s*\)";
         foreach (Match m in Regex.Matches(content, pattern, RegexOptions.Singleline))
         {
             var className = m.Groups[1].Value;

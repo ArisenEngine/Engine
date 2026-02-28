@@ -6,40 +6,45 @@
 #include "RHIDeferredDeletionQueue.h"
 
 
-namespace ArisenEngine::RHI {
-class RHIResourceRegistry;
+namespace ArisenEngine::RHI
+{
+    class RHIResourceRegistry;
 
-// Small RAII wrapper for registry-backed resources.
-// Explicit Release(ticket) is required to route destruction through the
-// deferred deletion queue.
-class RHIResourceRef final {
-public:
-  RHIResourceRef() = default;
-  RHIResourceRef(RHIResourceRegistry *registry, RHIResourceHandle handle)
-      : m_Registry(registry), m_Handle(handle) {}
+    // Small RAII wrapper for registry-backed resources.
+    // Explicit Release(ticket) is required to route destruction through the
+    // deferred deletion queue.
+    class RHIResourceRef final
+    {
+    public:
+        RHIResourceRef() = default;
 
-  ~RHIResourceRef() = default;
+        RHIResourceRef(RHIResourceRegistry* registry, RHIResourceHandle handle)
+            : m_Registry(registry), m_Handle(handle)
+        {
+        }
 
-  RHIResourceRef(const RHIResourceRef &other);
-  RHIResourceRef &operator=(const RHIResourceRef &other);
+        ~RHIResourceRef() = default;
 
-  RHIResourceRef(RHIResourceRef &&other) noexcept;
-  RHIResourceRef &operator=(RHIResourceRef &&other) noexcept;
+        RHIResourceRef(const RHIResourceRef& other);
+        RHIResourceRef& operator=(const RHIResourceRef& other);
 
-  [[nodiscard]] bool IsValid() const { return m_Handle.IsValid(); }
-  [[nodiscard]] RHIResourceHandle Get() const { return m_Handle; }
+        RHIResourceRef(RHIResourceRef&& other) noexcept;
+        RHIResourceRef& operator=(RHIResourceRef&& other) noexcept;
 
-  void Release(RHIGpuTicket ticket);
-  void Release(RHIQueueType queue, RHIGpuTicket ticket);
+        [[nodiscard]] bool IsValid() const { return m_Handle.IsValid(); }
+        [[nodiscard]] RHIResourceHandle Get() const { return m_Handle; }
 
-private:
-  void ResetNoRelease() {
-    m_Registry = nullptr;
-    m_Handle = RHIResourceHandle::Invalid();
-  }
+        void Release(RHIGpuTicket ticket);
+        void Release(RHIQueueType queue, RHIGpuTicket ticket);
 
-  RHIResourceRegistry *m_Registry{nullptr};
-  RHIResourceHandle m_Handle{};
-};
+    private:
+        void ResetNoRelease()
+        {
+            m_Registry = nullptr;
+            m_Handle = RHIResourceHandle::Invalid();
+        }
+
+        RHIResourceRegistry* m_Registry{nullptr};
+        RHIResourceHandle m_Handle{};
+    };
 } // namespace ArisenEngine::RHI
-

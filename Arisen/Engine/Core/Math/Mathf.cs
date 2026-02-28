@@ -14,7 +14,7 @@ public static class Mathf
     public static float Abs(float f) => MathF.Abs(f);
     public static float Min(float a, float b) => MathF.Min(a, b);
     public static float Max(float a, float b) => MathF.Max(a, b);
-    
+
     public static float Clamp(float value, float min, float max)
     {
         if (value < min) value = min;

@@ -5,8 +5,8 @@
 #include <windows.h>
 #endif
 
-namespace ArisenEngine::Concurrency::Containers {
-    
+namespace ArisenEngine::Concurrency::Containers
+{
     MPSCQueueNodePool& GetGlobalMPSCQueueNodePool() noexcept
     {
         static MPSCQueueNodePool s_Pool;
@@ -118,7 +118,7 @@ namespace ArisenEngine::Concurrency::Containers {
             _tail = next;
             return next;
         }
-        
+
         // If tail == head, it's either really empty or a producer is currently Enqueuing (between exchange and store).
         // TryDequeue returns nullptr in both cases to remain non-blocking.
         return nullptr;
@@ -131,7 +131,8 @@ namespace ArisenEngine::Concurrency::Containers {
         return tail == _head.load(std::memory_order_acquire);
     }
 
-    std::size_t IntrusiveMPSCQueue::DequeueAll(MPSCQueueNode*& first, MPSCQueueNode*& last, std::size_t maxCount) noexcept
+    std::size_t IntrusiveMPSCQueue::DequeueAll(MPSCQueueNode*& first, MPSCQueueNode*& last,
+                                               std::size_t maxCount) noexcept
     {
         first = nullptr;
         last = nullptr;

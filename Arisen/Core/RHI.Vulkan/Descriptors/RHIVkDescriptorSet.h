@@ -23,8 +23,3 @@ namespace ArisenEngine::RHI
         Containers::Vector<UInt32> m_BindlessIndices;
     };
 }
-
-
-
-
-

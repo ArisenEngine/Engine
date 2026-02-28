@@ -22,14 +22,14 @@ public class ArisenApplication
     {
         EngineInstance.AllSurfacesDestroyed += OnSurfacesAllClosed;
     }
-    
+
     private static void OnSurfacesAllClosed()
     {
         // Handle all surfaces closed
     }
-    
+
     #region Internal
-    
+
     internal static string s_StartupPath = string.Empty;
     internal static string s_DataPath = string.Empty;
     internal static string s_ProjectRoot = string.Empty;
@@ -40,14 +40,14 @@ public class ArisenApplication
 
     #endregion
 
-    #region Public 
-    
+    #region Public
+
     public static int Run(int width, int height, string name = "")
     {
         EngineInstance.RegisterSurface(IntPtr.Zero, name, SurfaceType.GameView, width, height);
         return EngineInstance.Run(name);
     }
-    
+
     public static int Run(string name = "")
     {
         EngineInstance.RegisterSurface(IntPtr.Zero, name, SurfaceType.GameView);

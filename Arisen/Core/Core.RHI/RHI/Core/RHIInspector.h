@@ -4,11 +4,11 @@
 #include <atomic>
 
 #ifndef ARISEN_RHI__RESOURCE_INSPECTOR
-    #ifdef _DEBUG
-        #define ARISEN_RHI__RESOURCE_INSPECTOR 1
-    #else
+#ifdef _DEBUG
+#define ARISEN_RHI__RESOURCE_INSPECTOR 1
+#else
         #define ARISEN_RHI__RESOURCE_INSPECTOR 0
-    #endif
+#endif
 #endif
 
 namespace ArisenEngine::RHI

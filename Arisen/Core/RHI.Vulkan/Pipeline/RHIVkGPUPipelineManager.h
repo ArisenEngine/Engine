@@ -9,7 +9,6 @@ namespace ArisenEngine::RHI
 
     class RHIVkGPUPipelineManager final : public RHIPipelineCache
     {
-
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkGPUPipelineManager);
         RHIVkGPUPipelineManager(RHIVkDevice* device, UInt32 maxFramesInFlight);
@@ -26,7 +25,7 @@ namespace ArisenEngine::RHI
     private:
         void LoadPipelineCache();
         void SavePipelineCache();
-        
+
         RHIVkDevice* m_Device;
         Containers::Map<UInt32, std::unique_ptr<RHIPipeline>> m_GPUPipelines;
         Containers::Map<UInt32, RHIPipelineHandle> m_PipelineHandles;
@@ -36,7 +35,3 @@ namespace ArisenEngine::RHI
         String m_PipelineCacheFileName = "viewport_pso_cache.bin";
     };
 }
-
-
-
-

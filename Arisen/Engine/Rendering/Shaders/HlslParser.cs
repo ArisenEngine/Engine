@@ -28,7 +28,8 @@ public class HlslParser
     private void Expect(TokenType type, string text = null)
     {
         if (m_Current.type != type || (text != null && m_Current.text != text))
-            throw new Exception($"Expected {type} '{text}', got {m_Current.type} '{m_Current.text}' at line {m_Current.line}");
+            throw new Exception(
+                $"Expected {type} '{text}', got {m_Current.type} '{m_Current.text}' at line {m_Current.line}");
         NextToken();
     }
 

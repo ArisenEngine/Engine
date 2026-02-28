@@ -4,18 +4,20 @@
 #include "../Enums/Pipeline/EAccessFlag.h"
 #include "../Enums/Image/EImageLayout.h"
 #include "../Enums/Pipeline/EPipelineStageFlag.h"
+
 namespace ArisenEngine::RHI
 {
-    typedef struct RHIImageMemoryBarrier {
-        EAccessFlag               srcAccess;
-        EAccessFlag               dstAccess;
-        EImageLayout              oldLayout;
-        EImageLayout              newLayout;
-        UInt32                    srcQueueFamilyIndex;
-        UInt32                    dstQueueFamilyIndex;
-        RHIImageHandle            image;
-        RHIImageSubresourceRange  subresourceRange;
-        EPipelineStageFlag        srcStageMask;
-        EPipelineStageFlag        dstStageMask;
+    typedef struct RHIImageMemoryBarrier
+    {
+        EAccessFlag srcAccess;
+        EAccessFlag dstAccess;
+        EImageLayout oldLayout;
+        EImageLayout newLayout;
+        UInt32 srcQueueFamilyIndex;
+        UInt32 dstQueueFamilyIndex;
+        RHIImageHandle image;
+        RHIImageSubresourceRange subresourceRange;
+        EPipelineStageFlag srcStageMask;
+        EPipelineStageFlag dstStageMask;
     } RHIImageMemoryBarrier;
 }

@@ -19,7 +19,7 @@ namespace ArisenEngine::Diagnostics
         {
             ___tracy_emit_zone_name(ctx, name, std::strlen(name));
         }
-        return { ctx.id, ctx.active };
+        return {ctx.id, ctx.active};
 #else
         return { 0, 0 };
 #endif
@@ -28,7 +28,7 @@ namespace ArisenEngine::Diagnostics
     void Profiler_EndZone(ProfilerZoneContext ctx)
     {
 #if ARISEN_PROFILER_ENABLED
-        TracyCZoneCtx tracy_ctx = { ctx.id, ctx.active };
+        TracyCZoneCtx tracy_ctx = {ctx.id, ctx.active};
         ___tracy_emit_zone_end(tracy_ctx);
 #endif
     }

@@ -19,36 +19,37 @@ ArisenEngine::RHI::RHIVkSurface::~RHIVkSurface() noexcept
 }
 
 ArisenEngine::RHI::RHIVkSurface::RHIVkSurface(UInt32&& id, RHIInstance* instance):
-RHISurface(std::move(id), instance), m_SwapChainSupportDetail({}), m_SwapChain(nullptr)
+    RHISurface(std::move(id), instance), m_SwapChainSupportDetail({}), m_SwapChain(nullptr)
 {
     VkWin32SurfaceCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
     createInfo.hwnd = HAL::GetWindowHandle(id);
     createInfo.hinstance = GetModuleHandle(nullptr);
-    
-    if (vkCreateWin32SurfaceKHR(static_cast<VkInstance>(m_Instance->GetHandle()), &createInfo, nullptr, &m_VkSurface) != VK_SUCCESS)
+
+    if (vkCreateWin32SurfaceKHR(static_cast<VkInstance>(m_Instance->GetHandle()), &createInfo, nullptr, &m_VkSurface) !=
+        VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("[RHIVkSurface::RHIVkSurface]: failed to create window surface!");
     }
-
 }
 
 void RHI::RHIVkSurface::InitSwapChain()
 {
     LOG_DEBUG("[RHIVkSurface::InitSwapChain]: InitSwapChain");
-    
+
     if (m_VkSurface == VK_NULL_HANDLE)
     {
         LOG_FATAL_AND_THROW("[RHIVkSurface::InitSwapChain]: Should init VkSurfachKHR first.");
     }
-    
+
     auto rhiInstance = static_cast<RHIVkInstance*>(m_Instance);
     m_SwapChain = new RHIVkSwapChain(rhiInstance->GetLogicalDevice(std::move(m_RenderWindowId)),
-        this, rhiInstance->GetMaxFramesInFlight());
+                                     this, rhiInstance->GetMaxFramesInFlight());
     auto width = HAL::GetWindowWidth(m_RenderWindowId);
     auto height = HAL::GetWindowHeight(m_RenderWindowId);
-    
-    LOG_INFOF("[RHIVkSurface::InitSwapChain]: WindowID={0} HALWidth={1} HALHeight={2}", m_RenderWindowId, width, height);
+
+    LOG_INFOF("[RHIVkSurface::InitSwapChain]: WindowID={0} HALWidth={1} HALHeight={2}", m_RenderWindowId, width,
+              height);
     m_SwapChain->SetResolution(width, height);
 
     auto imageCount = m_SwapChainSupportDetail.capabilities.minImageCount + 1;
@@ -60,8 +61,10 @@ void RHI::RHIVkSurface::InitSwapChain()
 
     auto formats = GetDefaultSurfaceFormat();
     auto presentMode = GetDefaultSwapPresentMode();
-    width = std::clamp(width, m_SwapChainSupportDetail.capabilities.minImageExtent.width, m_SwapChainSupportDetail.capabilities.maxImageExtent.width);
-    height = std::clamp(height, m_SwapChainSupportDetail.capabilities.minImageExtent.height, m_SwapChainSupportDetail.capabilities.maxImageExtent.height);
+    width = std::clamp(width, m_SwapChainSupportDetail.capabilities.minImageExtent.width,
+                       m_SwapChainSupportDetail.capabilities.maxImageExtent.width);
+    height = std::clamp(height, m_SwapChainSupportDetail.capabilities.minImageExtent.height,
+                        m_SwapChainSupportDetail.capabilities.maxImageExtent.height);
 
     UInt32 queueFamilyIndexCount;
     ESharingMode sharingMode;
@@ -69,18 +72,20 @@ void RHI::RHIVkSurface::InitSwapChain()
     {
         sharingMode = SHARING_MODE_CONCURRENT;
         queueFamilyIndexCount = 2;
-       
-    } else {
+    }
+    else
+    {
         sharingMode = SHARING_MODE_EXCLUSIVE;
         queueFamilyIndexCount = 0; // Optional
     }
-    
-    RHISwapChainDescriptor desc {};
+
+    RHISwapChainDescriptor desc{};
     desc.width = width;
     desc.height = height;
     desc.imageCount = imageCount;
     desc.imageArrayLayers = 1;
-    desc.imageUsageFlagBits = IMAGE_USAGE_COLOR_ATTACHMENT_BIT | IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT;
+    desc.imageUsageFlagBits = IMAGE_USAGE_COLOR_ATTACHMENT_BIT | IMAGE_USAGE_TRANSFER_SRC_BIT |
+        IMAGE_USAGE_TRANSFER_DST_BIT;
     desc.queueFamilyIndexCount = queueFamilyIndexCount;
     desc.colorFormat = static_cast<EFormat>(formats.format);
     desc.colorSpace = static_cast<EColorSpace>(formats.colorSpace);
@@ -89,7 +94,7 @@ void RHI::RHIVkSurface::InitSwapChain()
     desc.clipped = true;
     desc.surfaceTransformFlagBits = static_cast<UInt32>(m_SwapChainSupportDetail.capabilities.currentTransform);
     desc.compositeAlphaFlagBits = COMPOSITE_ALPHA_OPAQUE_BIT;
-   
+
     m_SwapChain->CreateSwapChainWithDesc(desc);
 }
 
@@ -102,12 +107,13 @@ VkSurfaceFormatKHR RHI::RHIVkSurface::GetDefaultSurfaceFormat()
 {
     for (const auto& availableFormat : m_SwapChainSupportDetail.formats)
     {
-        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace ==
+            VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
         {
             return availableFormat;
         }
     }
-    
+
     return m_SwapChainSupportDetail.formats[0];
 }
 
@@ -120,10 +126,6 @@ VkPresentModeKHR RHI::RHIVkSurface::GetDefaultSwapPresentMode()
             return availablePresentMode;
         }
     }
-    
+
     return VK_PRESENT_MODE_FIFO_KHR;
 }
-
-
-
-

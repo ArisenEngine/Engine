@@ -1,4 +1,3 @@
-
 using System.Runtime.InteropServices;
 
 namespace ArisenEngine.ShaderLab
@@ -121,7 +120,9 @@ namespace ArisenEngine.ShaderLab
                         if (File.Exists(outputPath))
                             result.Code = File.ReadAllBytes(outputPath);
                     }
-                    catch { }
+                    catch
+                    {
+                    }
 
                     return result;
                 }
@@ -130,11 +131,16 @@ namespace ArisenEngine.ShaderLab
                     // free unmanaged string buffers
                     if (defAlloc.Length > 0)
                     {
-                        for (int i = 0; i < defAlloc.Length; i++) if (defAlloc[i] != IntPtr.Zero) Marshal.FreeHGlobal(defAlloc[i]);
+                        for (int i = 0; i < defAlloc.Length; i++)
+                            if (defAlloc[i] != IntPtr.Zero)
+                                Marshal.FreeHGlobal(defAlloc[i]);
                     }
+
                     if (incAlloc.Length > 0)
                     {
-                        for (int i = 0; i < incAlloc.Length; i++) if (incAlloc[i] != IntPtr.Zero) Marshal.FreeHGlobal(incAlloc[i]);
+                        for (int i = 0; i < incAlloc.Length; i++)
+                            if (incAlloc[i] != IntPtr.Zero)
+                                Marshal.FreeHGlobal(incAlloc[i]);
                     }
                 }
             }
@@ -149,6 +155,7 @@ namespace ArisenEngine.ShaderLab
         }
 
         private static bool s_DxcInitialized;
+
         private static void EnsureDxcInitialized()
         {
             if (s_DxcInitialized) return;
@@ -164,5 +171,3 @@ namespace ArisenEngine.ShaderLab
         }
     }
 }
-
-

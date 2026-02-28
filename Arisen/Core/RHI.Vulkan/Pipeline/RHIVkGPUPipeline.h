@@ -6,7 +6,7 @@
 namespace ArisenEngine::RHI
 {
     class RHIPipelineState;
-    
+
     class RHIVkGPUPipeline final : public RHIPipeline
     {
     public:
@@ -22,6 +22,7 @@ namespace ArisenEngine::RHI
 
         const EPipelineBindPoint GetBindPoint() const override;
         void BindPipelineStateObject(RHIPipelineState* pso) override;
+
         RHIPipelineState* GetPipelineStateObject() const override
         {
             return m_PipelineStateObject;
@@ -29,23 +30,22 @@ namespace ArisenEngine::RHI
 
         VkPipelineLayout GetPipelineLayout(UInt32 frameIndex) const;
         VkPipeline GetVkPipeline(UInt32 frameIndex) const;
-        
+
     private:
         void FreePipelineLayout(UInt32 frameIndex);
         void FreePipeline(UInt32 frameIndex);
 
         void FreeAllPipelineLayouts();
         void FreeAllPipelines();
-        
+
         // device
         VkDevice m_VkDevice;
         RHIVkDevice* m_Device;
 
         // subPass
         RHISubPass* m_SubPass;
-        
+
         // graphics pipeline
         RHIPipelineState* m_PipelineStateObject;
-        
     };
 }

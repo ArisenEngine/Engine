@@ -21,7 +21,3 @@ void* ArisenEngine::RHI::RHIVkSampler::GetHandle() const
 {
     return m_Sampler;
 }
-
-
-
-

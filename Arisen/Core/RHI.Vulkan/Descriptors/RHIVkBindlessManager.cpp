@@ -27,7 +27,7 @@ namespace ArisenEngine::RHI
 
         // 1. Create Descriptor Set Layout
         Containers::Vector<VkDescriptorSetLayoutBinding> bindings;
-        
+
         // Bindless Image
         VkDescriptorSetLayoutBinding imageBinding{};
         imageBinding.binding = IMAGE_BINDING;
@@ -65,7 +65,8 @@ namespace ArisenEngine::RHI
         VkDescriptorBindingFlags bindingFlags[3] = {
             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
-            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT
+            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT |
+            VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT
         };
 
         VkDescriptorSetLayoutBindingFlagsCreateInfo layoutBindingFlags{};
@@ -102,7 +103,8 @@ namespace ArisenEngine::RHI
 
         // 3. Allocate Descriptor Set
         VkDescriptorSetVariableDescriptorCountAllocateInfo variableDescriptorCountAllocInfo{};
-        variableDescriptorCountAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
+        variableDescriptorCountAllocInfo.sType =
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
         uint32_t variableDescriptorCount = 10000;
         variableDescriptorCountAllocInfo.descriptorSetCount = 1;
         variableDescriptorCountAllocInfo.pDescriptorCounts = &variableDescriptorCount;
@@ -146,9 +148,9 @@ namespace ArisenEngine::RHI
         auto* imageViewItem = m_Device->GetImageViewPool()->Get(image);
         if (!imageViewItem)
         {
-             LOG_ERROR("[RHIVkBindlessManager::RegisterImage]: Invalid ImageViewHandle!");
-             ReleaseIndex(m_ImageFreeList, index);
-             return 0xFFFFFFFF;
+            LOG_ERROR("[RHIVkBindlessManager::RegisterImage]: Invalid ImageViewHandle!");
+            ReleaseIndex(m_ImageFreeList, index);
+            return 0xFFFFFFFF;
         }
 
         VkDescriptorImageInfo imageInfo{};
@@ -179,9 +181,9 @@ namespace ArisenEngine::RHI
         auto* samplerItem = m_Device->GetSamplerPool()->Get(sampler);
         if (!samplerItem)
         {
-             LOG_ERROR("[RHIVkBindlessManager::RegisterSampler]: Invalid SamplerHandle!");
-             ReleaseIndex(m_SamplerFreeList, index);
-             return 0xFFFFFFFF;
+            LOG_ERROR("[RHIVkBindlessManager::RegisterSampler]: Invalid SamplerHandle!");
+            ReleaseIndex(m_SamplerFreeList, index);
+            return 0xFFFFFFFF;
         }
 
         VkDescriptorImageInfo samplerInfo{};
@@ -210,9 +212,9 @@ namespace ArisenEngine::RHI
         auto* bufferItem = m_Device->GetBufferPool()->Get(buffer);
         if (!bufferItem)
         {
-             LOG_ERROR("[RHIVkBindlessManager::RegisterBuffer]: Invalid BufferHandle!");
-             ReleaseIndex(m_BufferFreeList, index);
-             return 0xFFFFFFFF;
+            LOG_ERROR("[RHIVkBindlessManager::RegisterBuffer]: Invalid BufferHandle!");
+            ReleaseIndex(m_BufferFreeList, index);
+            return 0xFFFFFFFF;
         }
 
         VkDescriptorBufferInfo bufferInfo{};
@@ -273,7 +275,3 @@ namespace ArisenEngine::RHI
         list.freeIndices.push_back(index);
     }
 }
-
-
-
-

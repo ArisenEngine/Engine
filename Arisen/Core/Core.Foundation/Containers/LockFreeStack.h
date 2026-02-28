@@ -22,10 +22,13 @@ namespace ArisenEngine::Containers
 
     public:
         LockFreeStack() = default;
+
         ~LockFreeStack()
         {
             T value;
-            while (TryPop(value)) { }
+            while (TryPop(value))
+            {
+            }
         }
 
         NO_COPY_NO_MOVE(LockFreeStack)
@@ -37,9 +40,9 @@ namespace ArisenEngine::Containers
         {
             Node* newNode = new Node{value, nullptr};
             newNode->next = m_Head.load(std::memory_order_relaxed);
-            while (!m_Head.compare_exchange_weak(newNode->next, newNode, 
-                                                std::memory_order_release, 
-                                                std::memory_order_relaxed))
+            while (!m_Head.compare_exchange_weak(newNode->next, newNode,
+                                                 std::memory_order_release,
+                                                 std::memory_order_relaxed))
             {
                 // Retry until successful
             }
@@ -51,9 +54,9 @@ namespace ArisenEngine::Containers
         bool TryPop(T& outValue)
         {
             Node* oldHead = m_Head.load(std::memory_order_acquire);
-            while (oldHead && !m_Head.compare_exchange_weak(oldHead, oldHead->next, 
-                                                           std::memory_order_release, 
-                                                           std::memory_order_relaxed))
+            while (oldHead && !m_Head.compare_exchange_weak(oldHead, oldHead->next,
+                                                            std::memory_order_release,
+                                                            std::memory_order_relaxed))
             {
                 // Retry until successful or empty
             }

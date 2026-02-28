@@ -10,8 +10,8 @@
 #include <sstream>
 
 #if defined(__has_include) && __has_include(<stacktrace>) && __cpp_lib_stacktrace >= 202011
-    #define HAS_STD_STACKTRACE 1
-    #include <stacktrace>
+#define HAS_STD_STACKTRACE 1
+#include <stacktrace>
 #else
     #define HAS_STD_STACKTRACE 0
 #endif
@@ -26,10 +26,13 @@ namespace ArisenEngine::Diagnostics
 #if HAS_STD_STACKTRACE
         std::stringstream trace_stream;
         auto trace = std::stacktrace::current();
-        for (size_t i = 1; i < trace.size(); ++i) { 
+        for (size_t i = 1; i < trace.size(); ++i)
+        {
             const auto& entry = trace[i];
-            if (!entry.description().empty() || !entry.source_file().empty()) {
-                trace_stream << i << "> " << entry.source_file() << "(" << entry.source_line() << "): " << entry.description() << "\n";
+            if (!entry.description().empty() || !entry.source_file().empty())
+            {
+                trace_stream << i << "> " << entry.source_file() << "(" << entry.source_line() << "): " << entry.
+                    description() << "\n";
             }
         }
         return String(trace_stream.str());
@@ -66,7 +69,7 @@ namespace ArisenEngine::Diagnostics
             const auto log_file = (log_dir / "log.log").string();
 
             constexpr size_t queue_size = 8192;
-            constexpr size_t num_threads = 1;  
+            constexpr size_t num_threads = 1;
             spdlog::init_thread_pool(queue_size, num_threads);
 
             auto async_file = spdlog::basic_logger_mt<spdlog::async_factory>("log", log_file, true);
@@ -80,24 +83,24 @@ namespace ArisenEngine::Diagnostics
             spdlog::flush_every(std::chrono::seconds(5));
             spdlog::flush_on(spdlog::level::critical);
 #endif
-            
+
 #if _DEBUG
             spdlog::set_level(spdlog::level::trace);
 #else
             spdlog::set_level(spdlog::level::info);
 #endif
-            
+
             spdlog::set_pattern("[%Y-%m-%d %T.%e][process %p][thread %t][%l] %v");
 
             // Register with Foundation Bridge
             ArisenEngine::Diagnostics::Log::SetHandler(this);
         }
-        catch (const spdlog::spdlog_ex &ex)	
+        catch (const spdlog::spdlog_ex& ex)
         {
             std::printf("Log initialization failed: %s\n", ex.what());
             return false;
         }
-        
+
         m_IsInitialize = true;
         return true;
     }
@@ -155,13 +158,23 @@ namespace ArisenEngine::Diagnostics
         bool needs_trace = false;
         switch (level)
         {
-        case LogLevel::Trace:   spd_level = spdlog::level::trace; break;
-        case LogLevel::Debug:   spd_level = spdlog::level::debug; break;
-        case LogLevel::Info:    spd_level = spdlog::level::info; break;
-        case LogLevel::Warning: spd_level = spdlog::level::warn; needs_trace = true; break;
-        case LogLevel::Error:   spd_level = spdlog::level::err; needs_trace = true; break;
-        case LogLevel::Fatal:   spd_level = spdlog::level::critical; needs_trace = true; break;
-        default: spd_level = spdlog::level::info; break;
+        case LogLevel::Trace: spd_level = spdlog::level::trace;
+            break;
+        case LogLevel::Debug: spd_level = spdlog::level::debug;
+            break;
+        case LogLevel::Info: spd_level = spdlog::level::info;
+            break;
+        case LogLevel::Warning: spd_level = spdlog::level::warn;
+            needs_trace = true;
+            break;
+        case LogLevel::Error: spd_level = spdlog::level::err;
+            needs_trace = true;
+            break;
+        case LogLevel::Fatal: spd_level = spdlog::level::critical;
+            needs_trace = true;
+            break;
+        default: spd_level = spdlog::level::info;
+            break;
         }
 
         String full_msg = msg ? msg : "";
@@ -176,7 +189,7 @@ namespace ArisenEngine::Diagnostics
         }
 
         spdlog::source_loc loc(location.file, static_cast<int>(location.line), location.function);
-        
+
         // Use spdlog's native logging with source location
         if (auto logger = spdlog::default_logger())
         {
@@ -187,14 +200,17 @@ namespace ArisenEngine::Diagnostics
         {
             // For callback, we still provide a thread ID string if not provided
             String tid;
-            if (thread_name) {
+            if (thread_name)
+            {
                 tid = thread_name;
-            } else {
+            }
+            else
+            {
                 std::stringstream ss;
                 ss << std::this_thread::get_id();
                 tid = ss.str().c_str();
             }
-            
+
             m_LogCallback(static_cast<UInt32>(level), tid.c_str(), msg ? msg : "", trace.c_str());
         }
     }
@@ -206,7 +222,7 @@ namespace ArisenEngine::Diagnostics
 {
     void Logger_Log(LogLevel level, const char* msg, const LogSourceLocation* location, const char* thread_name)
     {
-        LogSourceLocation default_loc = { "Unknown", "Unknown", 0 };
+        LogSourceLocation default_loc = {"Unknown", "Unknown", 0};
         const LogSourceLocation* loc_to_use = location ? location : &default_loc;
         Logger::GetInstance().Log(level, msg, *loc_to_use, thread_name);
     }

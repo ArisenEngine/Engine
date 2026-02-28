@@ -6,10 +6,7 @@ namespace ArisenEngine::RHI
     class RHIDebugMessenger
     {
     public:
-        
-    private:
-        
-    };
-    
-}
 
+    private:
+    };
+}

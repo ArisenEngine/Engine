@@ -11,25 +11,23 @@ namespace ArisenEngine::RHI
 
     typedef struct RHIDescriptorImageInfo
     {
-        RHISamplerHandle        sampler;
-        RHIImageViewHandle      imageView;
-        EImageLayout   imageLayout;
-        
+        RHISamplerHandle sampler;
+        RHIImageViewHandle imageView;
+        EImageLayout imageLayout;
     } RHIDescriptorImageInfo;
-    
+
     typedef struct RHIDescriptorUpdateInfo
     {
         //layout binding
         UInt32 binding;
         EDescriptorType type;
         UInt32 descriptorCount;
-        
+
         // DescriptorWrite 
-        Containers::Vector<RHIDescriptorImageInfo>          imageInfo;
-        Containers::Vector<RHIBufferHandle>                 bufferHandles;
-        Containers::Vector<RHIImageViewHandle>              texelBufferViews; 
-        Containers::Vector<RHIAccelerationStructureHandle>  accelerationStructureHandles;
-        
+        Containers::Vector<RHIDescriptorImageInfo> imageInfo;
+        Containers::Vector<RHIBufferHandle> bufferHandles;
+        Containers::Vector<RHIImageViewHandle> texelBufferViews;
+        Containers::Vector<RHIAccelerationStructureHandle> accelerationStructureHandles;
     } RHIDescriptorUpdateInfo;
 
     struct RHIDescriptorUpdateEntry

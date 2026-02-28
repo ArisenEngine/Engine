@@ -3,7 +3,7 @@
 #include "Logger/Logger.h"
 
 ArisenEngine::RHI::RHIVkGPUSubPass::RHIVkGPUSubPass(RHIVkGPURenderPass* renderPass, UInt32 index):
-RHISubPass(renderPass), m_Index(index)
+    RHISubPass(renderPass), m_Index(index)
 {
     ClearAll();
     ResizePreserve();
@@ -58,13 +58,13 @@ void ArisenEngine::RHI::RHIVkGPUSubPass::ClearAll()
     m_ColorReferences.clear();
     m_InputReferences.clear();
 
-    m_ResolveReference = { u32Invalid };
-    m_DepthStencilReference = { u32Invalid };
+    m_ResolveReference = {u32Invalid};
+    m_DepthStencilReference = {u32Invalid};
 }
 
 ArisenEngine::RHI::RHISubpassDescription ArisenEngine::RHI::RHIVkGPUSubPass::GetDescriptions()
 {
-    RHISubpassDescription description {};
+    RHISubpassDescription description{};
     description.bindPoint = GetBindPoint();
     description.colorRefCount = static_cast<UInt32>(m_ColorReferences.size());
     description.colorReferences = m_ColorReferences.data();
@@ -87,7 +87,7 @@ ArisenEngine::RHI::RHISubpassDescription ArisenEngine::RHI::RHIVkGPUSubPass::Get
         description.depthStencilReference = &m_DepthStencilReference;
     }
     description.flag = GetSubPassDescriptionFlag();
-    
+
     return description;
 }
 
@@ -97,7 +97,7 @@ void ArisenEngine::RHI::RHIVkGPUSubPass::RemovePreserve(UInt32 index)
     if (it != m_PreserveAttachments.end())
     {
         m_PreserveAttachments.erase(it);
-    } 
+    }
 }
 
 void ArisenEngine::RHI::RHIVkGPUSubPass::ResizePreserve()
@@ -110,9 +110,3 @@ bool ArisenEngine::RHI::RHIVkGPUSubPass::IsInsidePreserve(UInt32 index)
     const auto it = std::ranges::find(m_PreserveAttachments, index);
     return it != m_PreserveAttachments.end();
 }
-
-
-
-
-
-

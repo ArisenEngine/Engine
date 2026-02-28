@@ -6,7 +6,7 @@
 namespace ArisenEngine::RHI
 {
     class RHIVkSurface;
-    
+
     class RHIVkSwapChain final : public RHISwapChain
     {
     public:
@@ -24,11 +24,12 @@ namespace ArisenEngine::RHI
         RHIImageViewHandle GetImageView(UInt32 frameIndex) const override;
         void Cleanup() override;
         void Present(UInt32 frameIndex) override;
+
     protected:
         void RecreateSwapChainIfNeeded() override;
+
     private:
-        
-        VkSwapchainKHR m_VkSwapChain { VK_NULL_HANDLE };
+        VkSwapchainKHR m_VkSwapChain{VK_NULL_HANDLE};
         RHIDevice* m_Device;
         VkDevice m_VkDevice;
         VkSurfaceKHR m_VkSurface;
@@ -42,7 +43,3 @@ namespace ArisenEngine::RHI
         VkQueue m_VkPresentQueue;
     };
 }
-
-
-
-

@@ -1,9 +1,8 @@
-﻿
-using System.Text;
+﻿using System.Text;
 
 namespace ArisenEngine.FileSystem
 {
-    public  static partial class FileSystemUtilities
+    public static partial class FileSystemUtilities
     {
         /// <summary>
         /// Copy directory recursively, while overrideAction returns true means that user want to hanle files fully by self 
@@ -11,12 +10,14 @@ namespace ArisenEngine.FileSystem
         /// <param name="sourceDir"></param>
         /// <param name="destinationDir"></param>
         /// <param name="overrideAction"></param>
-        public static void CopyDirectoryRecursively(string sourceDir, string destinationDir, Func<FileInfo, DirectoryInfo, DirectoryInfo, bool>? overrideAction)
+        public static void CopyDirectoryRecursively(string sourceDir, string destinationDir,
+            Func<FileInfo, DirectoryInfo, DirectoryInfo, bool>? overrideAction)
         {
             CopyDirectory(sourceDir, destinationDir, overrideAction);
         }
 
-        public static void CopyDirectory(string sourceDir, string destinationDir, Func<FileInfo, DirectoryInfo, DirectoryInfo, bool>? overrideAction, bool recursive = true)
+        public static void CopyDirectory(string sourceDir, string destinationDir,
+            Func<FileInfo, DirectoryInfo, DirectoryInfo, bool>? overrideAction, bool recursive = true)
         {
             // Get information about the source directory
             var dir = new DirectoryInfo(sourceDir);
@@ -64,9 +65,10 @@ namespace ArisenEngine.FileSystem
                 }
             }
         }
-        
-        
+
+
         static ReaderWriterLock locker = new ReaderWriterLock();
+
         public static void AppendTextToFile(string text, string fileFullPath)
         {
             // Use Encoding.UTF8 or another encoding based on your requirements
@@ -85,8 +87,6 @@ namespace ArisenEngine.FileSystem
                 {
                     sw.WriteLine(text);
                 }
-                
-                
             }
             catch (Exception e)
             {
@@ -122,15 +122,16 @@ namespace ArisenEngine.FileSystem
 
             return size;
         }
-        
-        public static void DeleteDirectory(string directoryPath, List<string> skipFolders, List<string> excludedExtensions)
+
+        public static void DeleteDirectory(string directoryPath, List<string> skipFolders,
+            List<string> excludedExtensions)
         {
             var directoryInfo = new DirectoryInfo(directoryPath);
             if (skipFolders.Contains(directoryInfo.Name))
             {
                 return;
             }
-    
+
             bool hasSkipFile = false;
             foreach (var file in Directory.GetFiles(directoryPath))
             {
@@ -140,22 +141,21 @@ namespace ArisenEngine.FileSystem
                     hasSkipFile = true;
                     continue;
                 }
-                
+
                 File.Delete(file);
             }
-            
+
             foreach (var directory in Directory.GetDirectories(directoryPath))
             {
                 DeleteDirectory(directory, skipFolders, excludedExtensions);
             }
-    
+
             if (hasSkipFile)
             {
                 return;
             }
 
             Directory.Delete(directoryPath);
-            
         }
     }
 }

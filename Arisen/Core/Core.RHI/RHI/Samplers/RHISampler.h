@@ -28,7 +28,7 @@ namespace ArisenEngine::RHI
         EBorderColor borderColor;
         bool unnormalizedCoordinates;
     } RHISamplerDesc;
-    
+
     class RHI_DLL RHISampler
     {
     public:
@@ -37,10 +37,12 @@ namespace ArisenEngine::RHI
         RHISampler(RHIDevice* device);
         // CppSharp: exclude from binding — backend-only void* accessor.
         virtual void* GetHandle() const = 0;
+
         RHIDevice* GetDevice() const
         {
             return m_Device;
         }
+
     private:
         RHIDevice* m_Device;
     };

@@ -412,7 +412,8 @@ namespace ArisenEngine::RHI
         m_Device->ReleaseMemoryPool(handle);
     }
 
-    RHIBufferHandle RHIVkFactory::CreateBufferAliased(RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset, const String& name)
+    RHIBufferHandle RHIVkFactory::CreateBufferAliased(RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool,
+                                                      UInt64 offset, const String& name)
     {
         ARISEN_PROFILE_ZONE("RHI::CreateBufferAliased");
         auto handle = m_Device->GetBufferPool()->Allocate([&name](RHIVkBufferPoolItem* item)
@@ -430,7 +431,8 @@ namespace ArisenEngine::RHI
         return handle;
     }
 
-    RHIImageHandle RHIVkFactory::CreateImageAliased(RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset, const String& name)
+    RHIImageHandle RHIVkFactory::CreateImageAliased(RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset,
+                                                    const String& name)
     {
         ARISEN_PROFILE_ZONE("RHI::CreateImageAliased");
         auto handle = m_Device->GetImagePool()->Allocate([&name](RHIVkImagePoolItem* item)
@@ -503,7 +505,8 @@ namespace ArisenEngine::RHI
         return m_Device->GetImageViewHeight(handle);
     }
 
-    void RHIVkFactory::SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size, const void* data)
+    void RHIVkFactory::SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID,
+                                                           UInt32 size, const void* data)
     {
         m_Device->SetGPUProgramSpecializationConstant(handle, constantID, size, data);
     }
@@ -523,8 +526,3 @@ namespace ArisenEngine::RHI
         return m_Device->RegisterBindlessResource(sampler);
     }
 }
-
-
-
-
-

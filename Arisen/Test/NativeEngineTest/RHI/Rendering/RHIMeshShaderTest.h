@@ -15,31 +15,34 @@
 namespace ArisenEngine::Testing
 {
     using namespace ArisenEngine;
+
     class RHIMeshShaderTest : public RHIRenderingTestBase
     {
     private:
         std::unique_ptr<RHI::RHIPipelineState> m_MeshPso;
         RHI::RHIPipelineHandle m_MeshPipeline;
-        
+
         Containers::Vector<RHI::RHIBufferHandle> m_UboBuffer;
         Containers::Vector<UInt32> m_DescriptorPoolIds;
-        
+
         RHI::RHIShaderProgramHandle m_MeshProgram;
         RHI::RHIShaderProgramHandle m_FragProgram;
 
-// ... (omitting helper methods for brevity if possible, or just replacing the whole class/file content if easier, 
-// but replace_file_content works best on chunks. I'll do chunked replacements)
+        // ... (omitting helper methods for brevity if possible, or just replacing the whole class/file content if easier, 
+        // but replace_file_content works best on chunks. I'll do chunked replacements)
 
 
-        RHI::RHIShaderProgramHandle CreateProgram(const std::wstring& shaderName, RHI::EShaderStage stageFlag, const char* entryPoint, const Containers::Vector<String>& defines = {})
+        RHI::RHIShaderProgramHandle CreateProgram(const std::wstring& shaderName, RHI::EShaderStage stageFlag,
+                                                  const char* entryPoint,
+                                                  const Containers::Vector<String>& defines = {})
         {
             std::wstring envStr = GetShaderEnvString().ToWString();
-            
+
             namespace fs = std::filesystem;
             wchar_t exePathW[MAX_PATH]{};
             GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
             auto exeDir = fs::path(exePathW).parent_path();
-            
+
             // Search in source directory relative to engine root (common in dev builds)
             auto shaderPath = exeDir / L"../../Arisen/Test/NativeEngineTest/Shader" / (shaderName + L".hlsl");
             if (!fs::exists(shaderPath))
@@ -69,16 +72,21 @@ namespace ArisenEngine::Testing
             params.useDXLayout = true;
 
             HAL::ShaderCompilerOutput output;
-            if (!HAL::CompileShaderFromFile(std::move(params), output) || output.codePointer == nullptr || output.codeSize == 0)
+            if (!HAL::CompileShaderFromFile(std::move(params), output) || output.codePointer == nullptr || output.
+                codeSize == 0)
             {
-                LOG_ERROR((std::string("Shader compilation failed for ") + entryPoint + ": " + output.msgOut.c_str()).c_str());
+                LOG_ERROR(
+                    (std::string("Shader compilation failed for ") + entryPoint + ": " + output.msgOut.c_str()).c_str(
+                    ));
                 return {};
             }
 
             auto program = m_Device->GetFactory()->CreateGPUProgram();
             {
                 std::string nameStr = String::WStringToString(path);
-                RHI::RHIShaderProgramDesc desc = { output.codeSize, output.codePointer, entryPoint, nameStr.c_str(), stageFlag };
+                RHI::RHIShaderProgramDesc desc = {
+                    output.codeSize, output.codePointer, entryPoint, nameStr.c_str(), stageFlag
+                };
                 m_Device->GetFactory()->AttachProgramByteCode(program, std::move(desc));
             }
             if (output.codePointer) std::free(output.codePointer);
@@ -94,10 +102,11 @@ namespace ArisenEngine::Testing
             RHIRenderingTestBase::SetupTest();
 
             InitCommonResources();
-            
+
             // Programs
-            m_MeshProgram = CreateProgram(L"MeshShaderTest", RHI::SHADER_STAGE_MESH_BIT_EXT, "MSMain", { L"MESH_STAGE" });
-            m_FragProgram = CreateProgram(L"MeshShaderTest", RHI::SHADER_STAGE_FRAGMENT_BIT, "PSMain", { L"PIXEL_STAGE" });
+            m_MeshProgram = CreateProgram(L"MeshShaderTest", RHI::SHADER_STAGE_MESH_BIT_EXT, "MSMain", {L"MESH_STAGE"});
+            m_FragProgram = CreateProgram(L"MeshShaderTest", RHI::SHADER_STAGE_FRAGMENT_BIT, "PSMain",
+                                          {L"PIXEL_STAGE"});
 
             if (!m_MeshProgram.IsValid() || !m_FragProgram.IsValid())
             {
@@ -114,7 +123,7 @@ namespace ArisenEngine::Testing
         void TeardownTest() override
         {
             for (auto& ub : m_UboBuffer) if (ub.IsValid()) m_Device->GetFactory()->ReleaseBuffer(ub);
-            
+
             if (m_MeshProgram.IsValid()) m_Device->GetFactory()->ReleaseGPUProgram(m_MeshProgram);
             if (m_FragProgram.IsValid()) m_Device->GetFactory()->ReleaseGPUProgram(m_FragProgram);
 
@@ -160,8 +169,8 @@ namespace ArisenEngine::Testing
             m_DescriptorPoolIds.clear();
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
-                Containers::Vector<RHI::EDescriptorType> types = { RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER };
-                Containers::Vector<UInt32> counts = { 128 };
+                Containers::Vector<RHI::EDescriptorType> types = {RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER};
+                Containers::Vector<UInt32> counts = {128};
                 m_DescriptorPoolIds.push_back(m_DescriptorPool->AddPool(types, counts, 128));
             }
         }
@@ -174,7 +183,7 @@ namespace ArisenEngine::Testing
             m_MeshPso = pm->GetPipelineState();
             m_MeshPso->AddProgram(m_MeshProgram);
             m_MeshPso->AddProgram(m_FragProgram);
-            
+
             m_MeshPso->SetBindPoint(RHI::PIPELINE_BIND_POINT_GRAPHICS);
 
             RHI::RHIInputAssemblyState ia{};
@@ -194,8 +203,8 @@ namespace ArisenEngine::Testing
 
             m_MeshPso->BuildDescriptorSetLayout();
             m_MeshPso->SetDynamicStateMask(RHI::DYNAMIC_STATE_VIEWPORT_BIT | RHI::DYNAMIC_STATE_SCISSOR_BIT);
-            
-            Containers::Vector<RHI::EFormat> colorFormats = { RHI::FORMAT_B8G8R8A8_SRGB };
+
+            Containers::Vector<RHI::EFormat> colorFormats = {RHI::FORMAT_B8G8R8A8_SRGB};
             m_MeshPso->SetRenderingFormats(colorFormats, RHI::FORMAT_UNDEFINED, RHI::FORMAT_UNDEFINED);
             m_MeshPipeline = pm->GetGraphicsPipeline(m_MeshPso.get());
         }
@@ -205,39 +214,42 @@ namespace ArisenEngine::Testing
             UpdateCamera((float)frameTime);
             float width = (float)HAL::GetWindowWidth(m_WindowId);
             float height = (float)HAL::GetWindowHeight(m_WindowId);
-            
+
             static auto startTime = std::chrono::high_resolution_clock::now();
             auto currentTime = std::chrono::high_resolution_clock::now();
             float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-            
-            struct MeshUBO {
+
+            struct MeshUBO
+            {
                 glm::mat4 model;
                 glm::mat4 view;
                 glm::mat4 projection;
                 float time;
                 float padding[3];
             };
-            
+
             MeshUBO ubo;
             ubo.model = glm::rotate(glm::mat4(1.0f), time * 0.5f, glm::vec3(0, 1, 0));
             ubo.view = GetViewMatrix();
             ubo.projection = GetProjectionMatrix(width / height);
             ubo.time = time;
-            
+
             m_Device->GetFactory()->BufferMemoryCopy(m_UboBuffer[GetCurrentFrameIndex()], &ubo, sizeof(MeshUBO), 0);
         }
 
         void RecordAndSubmit()
         {
             auto currentIndex = GetCurrentFrameIndex();
-            
+
             // Update Descriptors
             {
                 m_DescriptorPool->ResetPool(m_DescriptorPoolIds[currentIndex]);
-                
-                m_MeshPso->UpdateDescriptorSet(0, 0, Containers::Vector<RHI::RHIBufferHandle>{ m_UboBuffer[currentIndex] });
-                
-                UInt32 setIdx = m_DescriptorPool->AllocDescriptorSet(m_DescriptorPoolIds[currentIndex], (UInt32)0, (RHI::RHIPipelineState*)m_MeshPso.get());
+
+                m_MeshPso->UpdateDescriptorSet(
+                    0, 0, Containers::Vector<RHI::RHIBufferHandle>{m_UboBuffer[currentIndex]});
+
+                UInt32 setIdx = m_DescriptorPool->AllocDescriptorSet(m_DescriptorPoolIds[currentIndex], (UInt32)0,
+                                                                     (RHI::RHIPipelineState*)m_MeshPso.get());
                 m_DescriptorPool->UpdateDescriptorSet(m_DescriptorPoolIds[currentIndex], setIdx, m_MeshPso.get());
             }
 
@@ -254,10 +266,10 @@ namespace ArisenEngine::Testing
                 auto colorView = m_SwapChain->GetImageView(currentIndex);
 
                 RHI::RHIRenderingInfo renderInfo = {};
-                renderInfo.RHIRenderArea = { 0, 0, HAL::GetWindowWidth(m_WindowId), HAL::GetWindowHeight(m_WindowId) };
+                renderInfo.RHIRenderArea = {0, 0, HAL::GetWindowWidth(m_WindowId), HAL::GetWindowHeight(m_WindowId)};
                 renderInfo.layerCount = 1;
                 renderInfo.colorAttachmentCount = 1;
-                
+
                 RHI::RHIRenderingAttachmentInfo att = {};
                 att.imageView = colorView;
                 att.imageLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -274,13 +286,15 @@ namespace ArisenEngine::Testing
 
                 cmd->BeginRendering(renderInfo);
                 cmd->BindPipeline(m_MeshPipeline);
-                cmd->SetViewport(0, 0, (float)renderInfo.RHIRenderArea.width, (float)renderInfo.RHIRenderArea.height, 0, 1);
+                cmd->SetViewport(0, 0, (float)renderInfo.RHIRenderArea.width, (float)renderInfo.RHIRenderArea.height, 0,
+                                 1);
                 cmd->SetScissor(0, 0, renderInfo.RHIRenderArea.width, renderInfo.RHIRenderArea.height);
-                cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPoolHandle, m_DescriptorPoolIds[currentIndex], 0);
-                
+                cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPoolHandle,
+                                       m_DescriptorPoolIds[currentIndex], 0);
+
                 // Draw 10 rings/groups of tasks
                 cmd->DrawMeshTasks(10, 1, 1);
-                
+
                 cmd->EndRendering();
 
                 // Transition: COLOR_ATTACHMENT_OPTIMAL -> PRESENT_SRC_KHR

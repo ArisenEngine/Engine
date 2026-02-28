@@ -37,7 +37,7 @@ namespace ArisenEngine
         bool operator==(const String& other) const { return m_Data == other.m_Data; }
         bool operator!=(const String& other) const { return m_Data != other.m_Data; }
         bool operator<(const String& other) const { return m_Data < other.m_Data; }
-        
+
         String operator+(const String& other) const;
         String& operator+=(const String& other);
 

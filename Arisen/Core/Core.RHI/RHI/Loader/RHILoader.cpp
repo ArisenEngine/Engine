@@ -72,22 +72,24 @@ namespace ArisenEngine::RHI
         // Load symbols for the module
         DWORD64 moduleBase = (DWORD64)_rhi_dll;
         if (SymLoadModuleEx(
-                process,
-                nullptr,
-                dllPath,
-                nullptr,
-                moduleBase,
-                0,
-                nullptr,
-                0))
+            process,
+            nullptr,
+            dllPath,
+            nullptr,
+            moduleBase,
+            0,
+            nullptr,
+            0))
         {
             LOG_INFO(String::Format("[RHILoader::SetCurrentGraphicsAPI] %s Symbols loaded.", dllPath));
             SymRefreshModuleList(process);
 
-            IMAGEHLP_MODULE64 moduleInfo = { sizeof(IMAGEHLP_MODULE64) };
+            IMAGEHLP_MODULE64 moduleInfo = {sizeof(IMAGEHLP_MODULE64)};
             if (SymGetModuleInfo64(process, moduleBase, &moduleInfo))
             {
-                LOG_INFO(String::Format("Loaded symbols: %s, Loaded PDB Name: %s", moduleInfo.LoadedImageName, moduleInfo.LoadedPdbName));
+                LOG_INFO(
+                    String::Format("Loaded symbols: %s, Loaded PDB Name: %s", moduleInfo.LoadedImageName, moduleInfo.
+                        LoadedPdbName));
             }
         }
         else
@@ -104,7 +106,7 @@ namespace ArisenEngine::RHI
             throw std::exception("RHI dll not loaded!");
         }
 
-        typedef RHIInstance* (__fastcall* InstanceCreate)(RHIInstanceInfo&& app_info);
+        typedef RHIInstance* (__fastcall*InstanceCreate)(RHIInstanceInfo&& app_info);
         InstanceCreate createInstance = (InstanceCreate)GetProcAddress((HMODULE)_rhi_dll, "CreateInstance");
 
         if (!createInstance)

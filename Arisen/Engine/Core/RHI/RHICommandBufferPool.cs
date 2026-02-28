@@ -18,12 +18,14 @@ public readonly struct RHICommandBufferPool
         RHIHandle = rhiHandle;
     }
 
-    public unsafe RHICommandBuffer GetCommandBuffer(uint currentFrameIndex, ECommandBufferLevel level = ECommandBufferLevel.COMMAND_BUFFER_LEVEL_PRIMARY)
+    public unsafe RHICommandBuffer GetCommandBuffer(uint currentFrameIndex,
+        ECommandBufferLevel level = ECommandBufferLevel.COMMAND_BUFFER_LEVEL_PRIMARY)
     {
         uint index = 0;
         uint gen = 0;
-        RHICommandBufferPoolAPI.RHICommandBufferPool_GetCommandBuffer(Handle, currentFrameIndex, (int)level, (IntPtr)(&index), (IntPtr)(&gen));
-        
+        RHICommandBufferPoolAPI.RHICommandBufferPool_GetCommandBuffer(Handle, currentFrameIndex, (int)level,
+            (IntPtr)(&index), (IntPtr)(&gen));
+
         var handle = new RHICommandBufferHandle { Index = index, Generation = gen };
         var cmdPtr = RHIDeviceAPI.RHIDevice_GetCommandBuffer(DeviceHandle, index, gen);
         return new RHICommandBuffer(currentFrameIndex, cmdPtr, handle);
@@ -31,6 +33,7 @@ public readonly struct RHICommandBufferPool
 
     public void ReleaseCommandBuffer(uint currentFrameIndex, RHICommandBufferHandle cbHandle)
     {
-        RHICommandBufferPoolAPI.RHICommandBufferPool_ReleaseCommandBuffer(Handle, currentFrameIndex, cbHandle.Index, cbHandle.Generation);
+        RHICommandBufferPoolAPI.RHICommandBufferPool_ReleaseCommandBuffer(Handle, currentFrameIndex, cbHandle.Index,
+            cbHandle.Generation);
     }
 }

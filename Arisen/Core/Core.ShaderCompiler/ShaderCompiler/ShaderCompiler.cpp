@@ -67,8 +67,10 @@ namespace ArisenEngine::HAL
 
         std::vector<std::wstring> wArguments;
         wArguments.push_back(params.input.ToWString());
-        wArguments.push_back(L"-E"); wArguments.push_back(params.entry.ToWString());
-        wArguments.push_back(L"-T"); wArguments.push_back(stage.ToWString());
+        wArguments.push_back(L"-E");
+        wArguments.push_back(params.entry.ToWString());
+        wArguments.push_back(L"-T");
+        wArguments.push_back(stage.ToWString());
         wArguments.push_back(params.target.ToWString());
         wArguments.push_back(env.ToWString());
         wArguments.push_back(optimize.ToWString());
@@ -138,7 +140,8 @@ namespace ArisenEngine::HAL
             ComPtr<IDxcBlobEncoding> errorBlob;
             if (result && SUCCEEDED(result->GetErrorBuffer(&errorBlob)) && errorBlob)
             {
-                output.msgOut = std::string(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()), errorBlob->GetBufferSize());
+                output.msgOut = std::string(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()),
+                                            errorBlob->GetBufferSize());
                 LOG_ERROR("[CompileShaderFromFile] Shader compilation failed: " + output.msgOut);
             }
             else
@@ -169,7 +172,7 @@ namespace ArisenEngine::HAL
             fs::path outputPath(params.output.value().ToWString());
             std::ofstream outFile(outputPath, std::ios::binary);
 
-            if (!outFile) 
+            if (!outFile)
             {
                 LOG_ERROR("Failed to open: " + params.output.value());
                 return false;
@@ -177,8 +180,8 @@ namespace ArisenEngine::HAL
 
             if (outFile.is_open())
             {
-                outFile.write(reinterpret_cast<const char*>(shaderCode->GetBufferPointer()), 
-                static_cast<std::streamsize>(shaderCode->GetBufferSize()));
+                outFile.write(reinterpret_cast<const char*>(shaderCode->GetBufferPointer()),
+                              static_cast<std::streamsize>(shaderCode->GetBufferSize()));
                 outFile.close();
                 LOG_DEBUG("[CompileShaderFromFile] Shader bytecode written to: " + params.output.value());
             }
