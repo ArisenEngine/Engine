@@ -309,6 +309,7 @@ void RHIVkExecutor::EndRendering()
 
 void RHIVkExecutor::Begin(UInt32 frameIndex, UInt32 commandBufferUsage, const RHICommandBufferInheritanceInfo* pInheritanceInfo)
 {
+    ARISEN_PROFILE_ZONE("Vk::Begin");
     cmd->SetCurrentFrameIndex(frameIndex);
 
     VkCommandBufferBeginInfo beginInfo{};
@@ -488,6 +489,7 @@ void RHIVkExecutor::BindPipeline(RHIPipelineHandle pipelineHandle)
 
 void RHIVkExecutor::BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPoolHandle poolHandle, UInt32 poolId, UInt32 setIndex, bool singleSet)
 {
+    ARISEN_PROFILE_ZONE("Vk::BindDescriptorSets");
     auto* vkDevice = cmd->GetVkDevice();
     auto* poolItem = vkDevice->GetDescriptorPoolPool()->Get(poolHandle);
     if (poolItem == nullptr) return;
@@ -810,6 +812,7 @@ void RHIVkExecutor::DrawIndexed(UInt32 indexCount, UInt32 instanceCount, UInt32 
 
 void RHIVkExecutor::DrawIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 drawCount, UInt32 stride)
 {
+    ARISEN_PROFILE_ZONE("Vk::DrawIndirect");
     if (cmd->m_VertexBuffers.size() > 0)
     {
         ::vkCmdBindVertexBuffers(cmd->m_VkCommandBuffer, 0, cmd->m_VertexBuffers.size(), cmd->m_VertexBuffers.data(), cmd->m_VertexBindingOffsets.data());
@@ -825,6 +828,7 @@ void RHIVkExecutor::DrawIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 d
 
 void RHIVkExecutor::DrawIndexedIndirect(RHIBufferHandle buffer, UInt64 offset, UInt32 drawCount, UInt32 stride)
 {
+    ARISEN_PROFILE_ZONE("Vk::DrawIndexedIndirect");
     if (cmd->m_VertexBuffers.size() > 0)
     {
         ::vkCmdBindVertexBuffers(cmd->m_VkCommandBuffer, 0, cmd->m_VertexBuffers.size(), cmd->m_VertexBuffers.data(), cmd->m_VertexBindingOffsets.data());
@@ -845,11 +849,13 @@ void RHIVkExecutor::DrawIndexedIndirect(RHIBufferHandle buffer, UInt64 offset, U
 
 void RHIVkExecutor::Dispatch(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ)
 {
+    ARISEN_PROFILE_ZONE("Vk::Dispatch");
     ::vkCmdDispatch(cmd->m_VkCommandBuffer, groupCountX, groupCountY, groupCountZ);
 }
 
 void RHIVkExecutor::DrawMeshTasks(UInt32 groupCountX, UInt32 groupCountY, UInt32 groupCountZ)
 {
+    ARISEN_PROFILE_ZONE("Vk::DrawMeshTasks");
     auto* vkDevice = static_cast<RHIVkDevice*>(cmd->GetDevice());
     if (vkDevice->vkCmdDrawMeshTasksEXT)
     {
@@ -863,6 +869,7 @@ void RHIVkExecutor::DrawMeshTasks(UInt32 groupCountX, UInt32 groupCountY, UInt32
 
 void RHIVkExecutor::BindVertexBuffers(RHIBufferHandle buffer, UInt64 offset)
 {
+    ARISEN_PROFILE_ZONE("Vk::BindVertexBuffers");
     auto* vkDevice = static_cast<RHIVkDevice*>(cmd->GetDevice());
     auto* buf = vkDevice->GetBufferPool()->Get(buffer);
     if (!buf) return;
@@ -876,6 +883,7 @@ void RHIVkExecutor::BindVertexBuffers(RHIBufferHandle buffer, UInt64 offset)
 void RHIVkExecutor::CopyBuffer(RHIBufferHandle src, UInt64 srcOffset,
                                                        RHIBufferHandle dst, UInt64 dstOffset, UInt64 size)
 {
+    ARISEN_PROFILE_ZONE("Vk::CopyBuffer");
     auto* vkDevice = static_cast<RHIVkDevice*>(cmd->GetDevice());
     auto* srcBuf = vkDevice->GetBufferPool()->Get(src);
     auto* dstBuf = vkDevice->GetBufferPool()->Get(dst);
@@ -894,6 +902,7 @@ void RHIVkExecutor::CopyBuffer(RHIBufferHandle src, UInt64 srcOffset,
 
 void RHIVkExecutor::BindIndexBuffer(RHIBufferHandle indexBuffer, UInt64 offset, EIndexType type)
 { 
+    ARISEN_PROFILE_ZONE("Vk::BindIndexBuffer");
     auto* vkDevice = static_cast<RHIVkDevice*>(cmd->GetDevice());
     auto* buf = vkDevice->GetBufferPool()->Get(indexBuffer);
     if (!buf) return;
@@ -906,6 +915,7 @@ void RHIVkExecutor::BindIndexBuffer(RHIBufferHandle indexBuffer, UInt64 offset, 
 
 
 void RHIVkExecutor::GenerateMipmaps(RHIImageHandle image) {
+  ARISEN_PROFILE_ZONE("Vk::GenerateMipmaps");
   if (!image.IsValid()) return;
   auto *vkDevice = static_cast<RHIVkDevice *>(cmd->GetDevice());
   auto *img = vkDevice->GetImagePool()->Get(image);

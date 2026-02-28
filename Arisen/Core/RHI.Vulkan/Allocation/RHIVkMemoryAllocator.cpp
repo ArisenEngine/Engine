@@ -35,8 +35,9 @@ namespace ArisenEngine::RHI
 
 #include <iostream>
     bool RHIVkMemoryAllocator::AllocateBufferMemory(VkBuffer buffer, VmaMemoryUsage usage, VmaAllocation* outAllocation)
-    {
-        std::cout << "AllocateBufferMemory Called. Buffer: " << (void*)buffer << " Usage: " << (int)usage << std::endl;
+{
+    ARISEN_PROFILE_ZONE("Vk::VMA_AllocBufferMemory");
+    std::cout << "AllocateBufferMemory Called. Buffer: " << (void*)buffer << " Usage: " << (int)usage << std::endl;
         VmaAllocationCreateInfo allocInfo = {};
         allocInfo.usage = usage;
         
@@ -68,8 +69,9 @@ namespace ArisenEngine::RHI
 
 
     bool RHIVkMemoryAllocator::AllocateImageMemory(VkImage image, VmaMemoryUsage usage, VmaAllocation* outAllocation)
-    {
-        VmaAllocationCreateInfo allocInfo = {};
+{
+    ARISEN_PROFILE_ZONE("Vk::VMA_AllocImageMemory");
+    VmaAllocationCreateInfo allocInfo = {};
         allocInfo.usage = usage;
         
         if (vmaAllocateMemoryForImage(m_VmaAllocator, image, &allocInfo, outAllocation, nullptr) != VK_SUCCESS)
@@ -91,8 +93,9 @@ namespace ArisenEngine::RHI
     }
 
     bool RHIVkMemoryAllocator::AllocateMemory(UInt64 size, VmaMemoryUsage usage, VmaAllocation* outAllocation)
-    {
-        VmaAllocationCreateInfo allocInfo = {};
+{
+    ARISEN_PROFILE_ZONE("Vk::VMA_AllocMemory");
+    VmaAllocationCreateInfo allocInfo = {};
         allocInfo.usage = usage;
         
         VkMemoryRequirements memReq = {};

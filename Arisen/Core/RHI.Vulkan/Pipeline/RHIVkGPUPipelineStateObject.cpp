@@ -22,11 +22,13 @@ RHIVkGPUPipelineStateObject::~RHIVkGPUPipelineStateObject() noexcept
 
 RHIVkGPUPipelineStateObject::RHIVkGPUPipelineStateObject(RHIVkDevice* device): RHIPipelineState(), m_Device(device)
 {
+    ARISEN_PROFILE_ZONE("RHI::VulkanPSOCreate");
     LOG_DEBUG("[RHIVkGPUPipelineStateObject::RHIVkGPUPipelineStateObject]: PSO Create.");
 }
 
 void RHIVkGPUPipelineStateObject::AddProgram(RHIShaderProgramHandle handle)
 {
+    ARISEN_PROFILE_ZONE("RHI::VulkanPSOAddProgram");
     auto* item = m_Device->GetGPUProgramPool()->Get(handle);
     if (!item || !item->program)
     {
@@ -185,6 +187,7 @@ void RHIVkGPUPipelineStateObject::ClearDescriptorSetLayoutBindings()
 // TODO: cache descriptor set layout
 void RHIVkGPUPipelineStateObject::BuildDescriptorSetLayout()
 {
+    ARISEN_PROFILE_ZONE("RHI::VulkanPSOBuildDescriptorSetLayout");
     ClearDescriptorSetLayouts();
 
     auto vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
@@ -532,6 +535,7 @@ VkDescriptorUpdateTemplate RHIVkGPUPipelineStateObject::GetVkDescriptorUpdateTem
 
 void RHIVkGPUPipelineStateObject::BuildDescriptorUpdateTemplate(UInt32 layoutIndex)
 {
+    ARISEN_PROFILE_ZONE("RHI::VulkanPSOBuildDescriptorUpdateTemplate");
     if (!m_DescriptorSetLayoutBindings.contains(layoutIndex)) return;
     
     const auto& bindings = m_DescriptorSetLayoutBindings[layoutIndex];

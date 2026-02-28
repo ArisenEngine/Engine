@@ -39,6 +39,7 @@ ArisenEngine::RHI::RHIVkCommandBufferPool::~RHIVkCommandBufferPool() noexcept
 
 RHICommandBufferHandle ArisenEngine::RHI::RHIVkCommandBufferPool::GetCommandBuffer(UInt32 currentFrameIndex, ECommandBufferLevel level)
 {
+    ARISEN_PROFILE_ZONE("Vk::PoolGetCommandBuffer");
     auto& slot = GetCurrentThreadSlot();
     FlushPendingBuffers(slot);
     ConsumeMailbox(slot);
@@ -145,6 +146,7 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::InternalRecycle(RHICommandBuffer
 
 ArisenEngine::RHI::RHICommandBufferHandle ArisenEngine::RHI::RHIVkCommandBufferPool::CreateCommandBuffer(ECommandBufferLevel level)
 {
+    ARISEN_PROFILE_ZONE("Vk::PoolCreateCommandBuffer");
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     ASSERT(vkDevice != nullptr);
     

@@ -541,6 +541,7 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseBuffer(RHIBufferHandle handle)
 
 void ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset)
 {
+    ARISEN_PROFILE_ZONE("Vk::BufferMemoryCopy");
     auto* buffer = m_BufferPool->Get(handle);
     if (!buffer || buffer->allocation == VK_NULL_HANDLE) return;
 
@@ -654,6 +655,7 @@ void ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopy(RHIBufferHandle handle, co
 
 void* ArisenEngine::RHI::RHIVkDevice::MapBuffer(RHIBufferHandle handle)
 {
+    ARISEN_PROFILE_ZONE("Vk::MapBuffer");
     auto* buffer = m_BufferPool->Get(handle);
     if (!buffer || buffer->allocation == VK_NULL_HANDLE) return nullptr;
 
@@ -667,6 +669,7 @@ void* ArisenEngine::RHI::RHIVkDevice::MapBuffer(RHIBufferHandle handle)
 
 void ArisenEngine::RHI::RHIVkDevice::UnmapBuffer(RHIBufferHandle handle)
 {
+    ARISEN_PROFILE_ZONE("Vk::UnmapBuffer");
     auto* buffer = m_BufferPool->Get(handle);
     if (!buffer || buffer->allocation == VK_NULL_HANDLE) return;
 
@@ -840,6 +843,7 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseImage(RHIImageHandle handle)
 bool ArisenEngine::RHI::RHIVkDevice::AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle,
                                                     RHIImageViewDesc&& desc)
 {
+    ARISEN_PROFILE_ZONE("Vk::AllocImageView");
     auto* viewItem = m_ImageViewPool->Get(handle);
     auto* imageItem = m_ImagePool->Get(imageHandle);
     if (!viewItem || !imageItem || imageItem->image == VK_NULL_HANDLE) return false;
@@ -1129,6 +1133,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocFrameBuffer(RHIFrameBufferHandle handl
                                                       RHIImageViewHandle viewHandle,
                                                       RHIRenderPassHandle renderPassHandle)
 {
+    ARISEN_PROFILE_ZONE("Vk::AllocFrameBuffer");
     auto* fbItem = m_FrameBufferPool->Get(handle);
     auto* viewItem = m_ImageViewPool->Get(viewHandle);
     auto* rpItem = m_RenderPassPool->Get(renderPassHandle);
@@ -1313,6 +1318,7 @@ void ArisenEngine::RHI::RHIVkDevice::GetAccelerationStructureBuildSizes(const RH
 
 bool ArisenEngine::RHI::RHIVkDevice::AllocAccelerationStructure(RHIAccelerationStructureHandle handle, ERHIAccelerationStructureType type, UInt64 size, RHIBufferHandle buffer, UInt64 offset)
 {
+    ARISEN_PROFILE_ZONE("Vk::AllocAccelerationStructure");
     if (!vkCreateAccelerationStructureKHR) return false;
 
     auto* asItem = m_AccelerationStructurePool->Get(handle);
@@ -1479,6 +1485,7 @@ void ArisenEngine::RHI::RHIVkDevice::FreeMemoryPoolInternal(RHIMemoryPoolHandle 
 
 bool ArisenEngine::RHI::RHIVkDevice::AllocBufferAliased(RHIBufferHandle handle, RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset)
 {
+    ARISEN_PROFILE_ZONE("Vk::AllocBufferAliased");
     auto* buffer = m_BufferPool->Get(handle);
     auto* poolItem = m_MemoryPoolPool->Get(pool);
     if (!buffer || !poolItem || poolItem->allocation == VK_NULL_HANDLE) return false;
@@ -1524,6 +1531,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocBufferAliased(RHIBufferHandle handle, 
 
 bool ArisenEngine::RHI::RHIVkDevice::AllocImageAliased(RHIImageHandle handle, RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset)
 {
+    ARISEN_PROFILE_ZONE("Vk::AllocImageAliased");
     auto* image = m_ImagePool->Get(handle);
     auto* poolItem = m_MemoryPoolPool->Get(pool);
     if (!image || !poolItem || poolItem->allocation == VK_NULL_HANDLE) return false;
@@ -1602,6 +1610,7 @@ namespace ArisenEngine::RHI
 
     void RHIVkDevice::WaitSemaphoreValue(RHISemaphoreHandle handle, UInt64 value)
     {
+        ARISEN_PROFILE_ZONE("Vk::WaitSemaphoreValue");
         auto* item = m_SemaphorePool->Get(handle);
         if (item && item->semaphore != VK_NULL_HANDLE) {
             VkSemaphoreWaitInfo waitInfo{};
@@ -1615,6 +1624,7 @@ namespace ArisenEngine::RHI
 
     void RHIVkDevice::SignalSemaphoreValue(RHISemaphoreHandle handle, UInt64 value)
     {
+        ARISEN_PROFILE_ZONE("Vk::SignalSemaphoreValue");
         auto* item = m_SemaphorePool->Get(handle);
         if (item && item->semaphore != VK_NULL_HANDLE) {
             VkSemaphoreSignalInfo signalInfo{};
