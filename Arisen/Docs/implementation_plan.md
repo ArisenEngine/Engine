@@ -480,7 +480,7 @@ Engine/
 ### Phase A — Foundation（对应 Roadmap Phase 2）
 - [x] RHI 绑定已基本完成
 - [x] 实现 `EngineKernel` + 新 Lifecycle 流程
-- [ ] implement Profiler binding and inject Profiler mark into key places 
+- [x] implement Profiler binding and inject Profiler mark into key places 
 - [ ] 实现 `JobSystem`（基于 `ThreadPool` 或自定义 Worker）  
 - [ ] 实现 `FrameArena` + `NativeArray<T>`
 - [ ] 修复 code review 中的严重和中等问题
