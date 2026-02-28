@@ -60,7 +60,7 @@ namespace ArisenEngine::Testing
                     u32Invalid,
                     u32Invalid,
                     testImage,
-                    { RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 },
+                    {RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
                     RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                     RHI::PIPELINE_STAGE_TRANSFER_BIT
                 }
@@ -68,9 +68,9 @@ namespace ArisenEngine::Testing
 
             LOG_INFO("Adding pipeline barrier...");
             // Using the new Sync 2.0 API directly
-            cmd->PipelineBarrier( 
-                RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT, 
-                RHI::PIPELINE_STAGE_TRANSFER_BIT, 
+            cmd->PipelineBarrier(
+                RHI::PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                RHI::PIPELINE_STAGE_TRANSFER_BIT,
                 0, std::move(imageBarriers));
 
             LOG_INFO("Ending command buffer...");
@@ -86,17 +86,19 @@ namespace ArisenEngine::Testing
 
             LOG_INFO("Running Timeline Semaphore Test...");
             RHI::RHISemaphoreHandle timelineSem = m_Device->GetFactory()->CreateTimelineSemaphore(0);
-            if (!timelineSem.IsValid()) {
+            if (!timelineSem.IsValid())
+            {
                 LOG_ERROR("Failed to create timeline semaphore!");
                 return false;
             }
 
             LOG_INFO("CPU Signal timeline semaphore to 1...");
             m_Device->GetSync()->SignalSemaphoreValue(timelineSem, 1);
-            
+
             unsigned long long val = m_Device->GetSync()->GetSemaphoreValue(timelineSem);
             LOG_INFOF("Current timeline value: {}", val);
-            if (val != 1) {
+            if (val != 1)
+            {
                 LOG_ERRORF("Timeline value mismatch! Expected 1, got {}", val);
                 return false;
             }
@@ -120,7 +122,7 @@ namespace ArisenEngine::Testing
             submitDesc.pWaitSemaphores = &waitSemHandle;
             submitDesc.pWaitValues = &waitVal;
             submitDesc.waitSemaphoreCount = 1;
-            
+
             submitDesc.pSignalSemaphores = &waitSemHandle;
             submitDesc.pSignalValues = &signalVal;
             submitDesc.signalSemaphoreCount = 1;
@@ -130,10 +132,11 @@ namespace ArisenEngine::Testing
 
             LOG_INFO("CPU Waiting for timeline value 2 (GPU signal)...");
             m_Device->GetSync()->WaitSemaphoreValue(timelineSem, 2);
-            
+
             val = m_Device->GetSync()->GetSemaphoreValue(timelineSem);
             LOG_INFOF("Final timeline value: {}", val);
-            if (val != 2) {
+            if (val != 2)
+            {
                 LOG_ERRORF("Timeline value mismatch after GPU signal! Expected 2, got {}", val);
                 return false;
             }

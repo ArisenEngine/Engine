@@ -10,7 +10,8 @@ namespace ArisenEngine::RHI
         return ReflectEntryPoint(spirvCode, size, nullptr, outData);
     }
 
-    bool RHIVkSpirvReflectionService::ReflectEntryPoint(const void* spirvCode, size_t size, const char* entryPoint, RHIShaderReflectionData& outData)
+    bool RHIVkSpirvReflectionService::ReflectEntryPoint(const void* spirvCode, size_t size, const char* entryPoint,
+                                                        RHIShaderReflectionData& outData)
     {
         if (!spirvCode || size == 0)
         {
@@ -52,10 +53,13 @@ namespace ArisenEngine::RHI
                         break;
                     }
                 }
-                
+
                 if (!found)
                 {
-                     LOG_WARN(String::Format("[RHIVkSpirvReflectionService::ReflectEntryPoint] Entry point '%s' not found in SPIR-V.", entryPoint));
+                    LOG_WARN(
+                        String::Format(
+                            "[RHIVkSpirvReflectionService::ReflectEntryPoint] Entry point '%s' not found in SPIR-V.",
+                            entryPoint));
                 }
             }
 
@@ -66,7 +70,8 @@ namespace ArisenEngine::RHI
             outData.Stage = MapSpirvExecutionModelToProgramStage(model);
             UInt32 stageBit = MapSpirvExecutionModelToStage(model);
 
-            auto processResources = [&](const spirv_cross::SmallVector<spirv_cross::Resource>& resourceList, EDescriptorType defaultType)
+            auto processResources = [&](const spirv_cross::SmallVector<spirv_cross::Resource>& resourceList,
+                                        EDescriptorType defaultType)
             {
                 for (const auto& res : resourceList)
                 {
@@ -74,13 +79,13 @@ namespace ArisenEngine::RHI
                     binding.Name = res.name;
                     binding.Set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
                     binding.Binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-                    
+
                     const auto& type = compiler.get_type(res.type_id);
                     // Handle array size
                     if (!type.array.empty())
                     {
                         // For now support 1D array
-                         binding.Count = type.array[0];
+                        binding.Count = type.array[0];
                     }
                     else
                     {
@@ -92,13 +97,13 @@ namespace ArisenEngine::RHI
                     // Determine descriptor type dynamically or use default
                     if (defaultType == EDescriptorType::DESCRIPTOR_TYPE_MAX_ENUM)
                     {
-                         binding.DescriptorType = MapSpirvTypeToDescriptorType(compiler, res);
+                        binding.DescriptorType = MapSpirvTypeToDescriptorType(compiler, res);
                     }
                     else
                     {
                         binding.DescriptorType = defaultType;
                     }
-                    
+
                     outData.ResourceBindings.push_back(binding);
                 }
             };
@@ -108,10 +113,11 @@ namespace ArisenEngine::RHI
             processResources(resources.storage_buffers, EDescriptorType::DESCRIPTOR_TYPE_STORAGE_BUFFER);
             processResources(resources.separate_images, EDescriptorType::DESCRIPTOR_TYPE_SAMPLED_IMAGE);
             processResources(resources.separate_samplers, EDescriptorType::DESCRIPTOR_TYPE_SAMPLER);
-            processResources(resources.sampled_images, EDescriptorType::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); 
-            processResources(resources.storage_images, EDescriptorType::DESCRIPTOR_TYPE_STORAGE_IMAGE); 
+            processResources(resources.sampled_images, EDescriptorType::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            processResources(resources.storage_images, EDescriptorType::DESCRIPTOR_TYPE_STORAGE_IMAGE);
             processResources(resources.subpass_inputs, EDescriptorType::DESCRIPTOR_TYPE_INPUT_ATTACHMENT);
-            processResources(resources.acceleration_structures, EDescriptorType::DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+            processResources(resources.acceleration_structures,
+                             EDescriptorType::DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
 
             // Push Constants
             for (const auto& res : resources.push_constant_buffers)
@@ -119,7 +125,7 @@ namespace ArisenEngine::RHI
                 const auto& type = compiler.get_type(res.type_id);
                 // Get the struct size
                 size_t structSize = compiler.get_declared_struct_size(type);
-                
+
                 RHIPushConstantRange range{};
                 range.Name = res.name;
                 range.Offset = 0; // Usually 0 for the block, unless manually offset
@@ -138,11 +144,12 @@ namespace ArisenEngine::RHI
         return true;
     }
 
-    EDescriptorType RHIVkSpirvReflectionService::MapSpirvTypeToDescriptorType(const spirv_cross::Compiler& compiler, const spirv_cross::Resource& resource)
+    EDescriptorType RHIVkSpirvReflectionService::MapSpirvTypeToDescriptorType(
+        const spirv_cross::Compiler& compiler, const spirv_cross::Resource& resource)
     {
         // Fallback or complex logic if needed. 
         // For now, most types are passed explicitly in processResources.
-        return EDescriptorType::DESCRIPTOR_TYPE_UNIFORM_BUFFER; 
+        return EDescriptorType::DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     }
 
     UInt32 RHIVkSpirvReflectionService::MapSpirvExecutionModelToStage(spv::ExecutionModel model)
@@ -179,7 +186,7 @@ namespace ArisenEngine::RHI
         case spv::ExecutionModelGeometry: return EProgramStage::Geometry;
         case spv::ExecutionModelFragment: return EProgramStage::Fragment;
         case spv::ExecutionModelGLCompute: return EProgramStage::Compute;
-        case spv::ExecutionModelTaskEXT: 
+        case spv::ExecutionModelTaskEXT:
         case spv::ExecutionModelTaskNV: return EProgramStage::Amplification;
         case spv::ExecutionModelMeshEXT:
         case spv::ExecutionModelMeshNV: return EProgramStage::Mesh;
@@ -193,7 +200,3 @@ namespace ArisenEngine::RHI
         }
     }
 }
-
-
-
-

@@ -12,8 +12,8 @@ using namespace ArisenEngine::RHI;
 ARISEN_BIND_BEGIN_BRIDGE("RHIDevice", "Core.RHI.dll", "Arisen.Native.RHI")
 
 extern "C" {
-
 ARISEN_BIND_STRUCT(RHISubmitDescriptor_Bridge)
+
 struct RHISubmitDescriptor_Bridge
 {
     RHISwapChain* waitSwapChain = nullptr;
@@ -90,13 +90,15 @@ RHI_DLL void RHIDevice_WaitQueueTicket(RHIDevice* dev, uint64_t ticket)
     dev->WaitQueueTicket(ticket);
 }
 
-RHI_DLL uint64_t RHIDevice_Submit(RHIDevice* dev, uint32_t index, uint32_t generation, RHISubmitDescriptor_Bridge* bridgeDesc)
+RHI_DLL uint64_t RHIDevice_Submit(RHIDevice* dev, uint32_t index, uint32_t generation,
+                                  RHISubmitDescriptor_Bridge* bridgeDesc)
 {
     RHICommandBufferHandle handle;
     handle.index = index;
     handle.generation = generation;
 
-    if (bridgeDesc) {
+    if (bridgeDesc)
+    {
         RHISubmitDescriptor desc;
         desc.WaitSwapChain = bridgeDesc->waitSwapChain;
         desc.SignalSwapChain = bridgeDesc->signalSwapChain;
@@ -117,7 +119,6 @@ RHI_DLL void* RHIDevice_GetSurface(RHIDevice* dev)
 {
     return static_cast<void*>(dev->GetSurface());
 }
-
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()

@@ -53,6 +53,7 @@ namespace ArisenEngine::RHI
     {
         ERHIAccelerationStructureGeometryType type;
         ERHIAccelerationStructureGeometryFlags flags;
+
         union
         {
             RHIAccelerationStructureGeometryTrianglesData triangles;

@@ -4,7 +4,7 @@
 namespace
 {
     using namespace ArisenEngine::RHI;
-    
+
     // Thread-local error storage
     thread_local EErrorCode s_LastError = EErrorCode::None;
     thread_local ArisenEngine::String s_LastErrorMessage;
@@ -14,18 +14,18 @@ namespace
     {
         switch (code)
         {
-            case EErrorCode::None:                    return "";
-            case EErrorCode::OutOfMemory:             return "Out of memory";
-            case EErrorCode::InvalidHandle:            return "Invalid resource handle";
-            case EErrorCode::DeviceLost:               return "GPU device was lost";
-            case EErrorCode::ValidationFailed:         return "Validation layer error";
-            case EErrorCode::InitializationFailed:     return "RHI initialization failed";
-            case EErrorCode::ShaderCompilationFailed: return "Shader compilation failed";
-            case EErrorCode::PipelineCreationFailed:  return "Pipeline creation error";
-            case EErrorCode::InvalidParameter:         return "Invalid function parameter";
-            case EErrorCode::UnsupportedFeature:       return "Feature not supported";
-            case EErrorCode::Unknown:                   return "Unknown error";
-            default:                                  return "Unknown error code";
+        case EErrorCode::None: return "";
+        case EErrorCode::OutOfMemory: return "Out of memory";
+        case EErrorCode::InvalidHandle: return "Invalid resource handle";
+        case EErrorCode::DeviceLost: return "GPU device was lost";
+        case EErrorCode::ValidationFailed: return "Validation layer error";
+        case EErrorCode::InitializationFailed: return "RHI initialization failed";
+        case EErrorCode::ShaderCompilationFailed: return "Shader compilation failed";
+        case EErrorCode::PipelineCreationFailed: return "Pipeline creation error";
+        case EErrorCode::InvalidParameter: return "Invalid function parameter";
+        case EErrorCode::UnsupportedFeature: return "Feature not supported";
+        case EErrorCode::Unknown: return "Unknown error";
+        default: return "Unknown error code";
         }
     }
 } // anonymous namespace

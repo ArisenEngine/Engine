@@ -31,6 +31,7 @@ namespace ArisenEngine::RHI
         m_Device(device), m_MaxFramesInFlight(maxFramesInFlight)
     {
     }
+
     RHICommandBufferPool::~RHICommandBufferPool() = default;
 
     // RHIPipeline
@@ -55,6 +56,7 @@ namespace ArisenEngine::RHI
     RHISurface::RHISurface(UInt32&& id, RHIInstance* instance) : m_RenderWindowId(id), m_Instance(instance)
     {
     }
+
     RHISurface::~RHISurface() noexcept
     {
         m_RenderWindowId = InvalidID;
@@ -65,6 +67,7 @@ namespace ArisenEngine::RHI
     RHISampler::RHISampler(RHIDevice* device) : m_Device(device)
     {
     }
+
     RHISampler::~RHISampler() noexcept = default;
 
     // RHIFence
@@ -104,6 +107,7 @@ namespace ArisenEngine::RHI
         m_DescriptorPool(descriptorPool), m_LayoutIndex(layoutIndex)
     {
     }
+
     RHIDescriptorSet::~RHIDescriptorSet() noexcept = default;
 
     // RHIQueue

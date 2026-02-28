@@ -7,9 +7,11 @@ namespace ArisenEngine.Platform.Desktop;
 internal class WindowsProcHandler : WindowProcessor
 {
     private Win32Native.WndProc m_WndProc;
+
     private delegate void ResizeCallback(IntPtr hwnd, int width, int height);
+
     private ResizeCallback m_ResizeCallback;
-    
+
     internal WindowsProcHandler(RenderSurface renderSurface) : base(renderSurface)
     {
         m_WndProc = WindowProc;
@@ -22,7 +24,7 @@ internal class WindowsProcHandler : WindowProcessor
     {
         // Console.WriteLine($"OnResizeDone hwnd:{hwnd}, width:{width}, height:{height}");
     }
-    
+
     private IntPtr WindowProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam)
     {
         switch (msg)
@@ -32,6 +34,7 @@ internal class WindowsProcHandler : WindowProcessor
                 {
                     OnClose();
                 }
+
                 break;
             case Win32Native.WM_SIZE:
                 OnResizing();
@@ -44,6 +47,7 @@ internal class WindowsProcHandler : WindowProcessor
                 OnDestroy();
                 break;
         }
+
         return IntPtr.Zero;
     }
 
@@ -52,8 +56,8 @@ internal class WindowsProcHandler : WindowProcessor
     protected override void OnCreate() => m_RenderSurface.OnCreate();
 
     protected override void OnDestroy()
-    { 
-        Logger.Log(" Windows Proc : OnDestroy "); 
+    {
+        Logger.Log(" Windows Proc : OnDestroy ");
         m_RenderSurface.OnDestroy();
     }
 

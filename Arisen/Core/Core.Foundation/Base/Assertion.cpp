@@ -4,20 +4,20 @@
 #include <cstdio>
 #include <format>
 #ifdef _WIN32
-    #include <crtdbg.h>
+#include <crtdbg.h>
 #endif
 
 #if defined(__has_include) && __has_include(<stacktrace>) && __cpp_lib_stacktrace >= 202011
-    #include <stacktrace>
-    #define HAS_STACKTRACE 1
+#include <stacktrace>
+#define HAS_STACKTRACE 1
 #else
     #define HAS_STACKTRACE 0
 #endif
 
 #ifdef _WIN32
-    #include <Windows.h>
-    #include <DbgHelp.h>
-    #pragma comment(lib, "Dbghelp.lib")
+#include <Windows.h>
+#include <DbgHelp.h>
+#pragma comment(lib, "Dbghelp.lib")
 #endif
 
 namespace ArisenEngine
@@ -27,7 +27,7 @@ namespace ArisenEngine
     {
         // reportType can be _CRT_WARN, _CRT_ERROR, or _CRT_ASSERT
         // message contains the assertion text
-        
+
         static bool isHandling = false;
         if (isHandling) return 0; // Avoid recursion
         isHandling = true;
@@ -38,31 +38,36 @@ namespace ArisenEngine
         else if (reportType == _CRT_ASSERT) typeStr = "CRT Assert";
 
         ReportAssertionFailure(message, "Unknown", 0, typeStr, "Caught by CRT Report Hook");
-        
+
         isHandling = false;
 
         // Return 0 to allow the default reporting to continue (display dialog)
         // Return 1 if we've handled it and want to skip the dialog (but usually we want the dialog for debugging)
-        return 0; 
+        return 0;
     }
 #endif
 
-    void ReportAssertionFailure(const char* condition, const char* file, int line, const char* function, const char* msg)
+    void ReportAssertionFailure(const char* condition, const char* file, int line, const char* function,
+                                const char* msg)
     {
-        String errorMessage = String::Format("Assertion Failed: (%s)\nFile: %s\nLine: %d\nFunction: %s", 
+        String errorMessage = String::Format("Assertion Failed: (%s)\nFile: %s\nLine: %d\nFunction: %s",
                                              condition, file, line, function);
-        
+
         if (msg)
         {
             errorMessage += String::Format("\nMessage: %s", msg);
         }
 
 #if HAS_STACKTRACE
-        try {
+        try
+        {
             auto trace = std::stacktrace::current();
             errorMessage += "\nStacktrace:\n";
             errorMessage += std::to_string(trace).c_str();
-        } catch (...) {}
+        }
+        catch (...)
+        {
+        }
 #elif defined(_WIN32)
         errorMessage += "\nStacktrace (Windows):\n";
         void* stack[64];

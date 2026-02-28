@@ -3,9 +3,11 @@
 
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+
 namespace ArisenEngine::RHI
 {
     ARISEN_BIND_ENUM(EShaderStage)
+
     // VkShaderStageFlagBits
     typedef enum EShaderStage
     {
@@ -36,7 +38,5 @@ namespace ArisenEngine::RHI
         SHADER_STAGE_TASK_BIT_NV = SHADER_STAGE_TASK_BIT_EXT,
         SHADER_STAGE_MESH_BIT_NV = SHADER_STAGE_MESH_BIT_EXT,
         SHADER_STAGE_MAX_ENUM = 0x7FFFFFFF
-        
     } EShaderStage;
-    
 }

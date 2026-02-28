@@ -4,11 +4,14 @@
 
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+
 namespace ArisenEngine::RHI
 {
     ARISEN_BIND_ENUM(EAccessFlag)
+
     // can be multiple bits
-    typedef enum EAccessFlag {
+    typedef enum EAccessFlag
+    {
         ACCESS_INDIRECT_COMMAND_READ_BIT = 0x00000001,
         ACCESS_INDEX_READ_BIT = 0x00000002,
         ACCESS_VERTEX_ATTRIBUTE_READ_BIT = 0x00000004,
@@ -43,5 +46,5 @@ namespace ArisenEngine::RHI
         ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV = ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
         ACCESS_NONE_KHR = ACCESS_NONE,
         ACCESS_FLAG_BITS_MAX_ENUM = 0x7FFFFFFE
-} EAccessFlag;
+    } EAccessFlag;
 }

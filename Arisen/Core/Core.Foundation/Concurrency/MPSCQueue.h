@@ -15,16 +15,23 @@ namespace ArisenEngine::Concurrency::Containers
     {
         friend class MPSCQueueNodePool;
         friend class IntrusiveMPSCQueue;
+
     public:
-        MPSCQueueNode() noexcept : _next(nullptr) {}
-        
+        MPSCQueueNode() noexcept : _next(nullptr)
+        {
+        }
+
         MPSCQueueNode* Next() const noexcept { return _next.load(std::memory_order_acquire); }
-        
+
         // Link this node to the next one. Returns the next node.
-        MPSCQueueNode* Link(MPSCQueueNode* next) noexcept { _next.store(next, std::memory_order_release); return next; }
-        
+        MPSCQueueNode* Link(MPSCQueueNode* next) noexcept
+        {
+            _next.store(next, std::memory_order_release);
+            return next;
+        }
+
         // Generic data storage for intrusive use.
-        void* data[3] = { nullptr, nullptr, nullptr };
+        void* data[3] = {nullptr, nullptr, nullptr};
 
         // Helper to acquire/recycle from/to a pool.
         static MPSCQueueNode* Acquire(MPSCQueueNodePool& pool) noexcept;
@@ -41,7 +48,10 @@ namespace ArisenEngine::Concurrency::Containers
     class FOUNDATION_DLL MPSCQueueNodePool
     {
     public:
-        MPSCQueueNodePool() noexcept : _freeHead(nullptr) {}
+        MPSCQueueNodePool() noexcept : _freeHead(nullptr)
+        {
+        }
+
         ~MPSCQueueNodePool();
         NO_COPY_NO_MOVE(MPSCQueueNodePool)
 
@@ -85,15 +95,21 @@ namespace ArisenEngine::Concurrency::Containers
         bool Empty() const noexcept;
 
         // Batch dequeue
-        std::size_t DequeueAll(MPSCQueueNode*& first, MPSCQueueNode*& last, std::size_t maxCount = (std::size_t)-1) noexcept;
+        std::size_t DequeueAll(MPSCQueueNode*& first, MPSCQueueNode*& last,
+                               std::size_t maxCount = (std::size_t)-1) noexcept;
 
-        void ConfigureSpin(unsigned maxSpins, bool yieldOnSpin) noexcept { _spinMax = maxSpins; _yieldOnSpin = yieldOnSpin; }
-        void SetPauseHook(void(*hook)()) noexcept { _pauseHook = hook; }
+        void ConfigureSpin(unsigned maxSpins, bool yieldOnSpin) noexcept
+        {
+            _spinMax = maxSpins;
+            _yieldOnSpin = yieldOnSpin;
+        }
+
+        void SetPauseHook(void (*hook)()) noexcept { _pauseHook = hook; }
 
         template <class F>
         void Drain(F&& fn)
         {
-            for (MPSCQueueNode* n; (n = Dequeue()) != nullptr; )
+            for (MPSCQueueNode* n; (n = Dequeue()) != nullptr;)
             {
                 fn(n);
             }
@@ -101,8 +117,8 @@ namespace ArisenEngine::Concurrency::Containers
 
     private:
         MPSCQueueNode _stub;
-        std::atomic<MPSCQueueNode*> _head{ nullptr };
-        MPSCQueueNode* _tail{ nullptr };
+        std::atomic<MPSCQueueNode*> _head{nullptr};
+        MPSCQueueNode* _tail{nullptr};
 
         unsigned _spinMax = 0;
         bool _yieldOnSpin = true;
@@ -112,12 +128,13 @@ namespace ArisenEngine::Concurrency::Containers
     /**
      * @brief A templated wrapper around IntrusiveMPSCQueue for convenience.
      */
-    template<typename T>
+    template <typename T>
     class TMPSCQueue
     {
     public:
         TMPSCQueue() = default;
-        ~TMPSCQueue() 
+
+        ~TMPSCQueue()
         {
             T* item;
             while ((item = Dequeue()) != nullptr)
@@ -129,8 +146,14 @@ namespace ArisenEngine::Concurrency::Containers
         struct Node : public MPSCQueueNode
         {
             T value;
-            Node(T&& v) : value(std::move(v)) {}
-            Node(const T& v) : value(v) {}
+
+            Node(T&& v) : value(std::move(v))
+            {
+            }
+
+            Node(const T& v) : value(v)
+            {
+            }
         };
 
         void Enqueue(T&& value)

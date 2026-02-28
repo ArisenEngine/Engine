@@ -1,4 +1,3 @@
-
 #include "Utils/RHIVkDeferredDeletion.h"
 #include "Logger/Logger.h"
 #include <iostream>
@@ -8,7 +7,8 @@ ArisenEngine::RHI::RHIVkDeferredDeletion::RHIVkDeferredDeletion(UInt32 maxFrames
 {
 }
 
-void ArisenEngine::RHI::RHIVkDeferredDeletion::Enqueue(RHIQueueType queue, RHIGpuTicket ticket, RHIDeferredDeleteItem item)
+void ArisenEngine::RHI::RHIVkDeferredDeletion::Enqueue(RHIQueueType queue, RHIGpuTicket ticket,
+                                                       RHIDeferredDeleteItem item)
 {
     {
         std::lock_guard<std::mutex> lock(m_Mutex);
@@ -39,15 +39,10 @@ void ArisenEngine::RHI::RHIVkDeferredDeletion::Flush(RHIQueueType queue, RHIGpuT
     int runCount = 0;
     for (auto& item : toRun)
     {
-        if (item.deleter && item.ptr) 
+        if (item.deleter && item.ptr)
         {
             item.deleter(item.ptr);
         }
         runCount++;
     }
 }
-
-
-
-
-

@@ -29,12 +29,12 @@ public class VertexBuffer : IDisposable
         m_Name = name;
 
         var factory = m_Device.GetFactory();
-        
+
         m_Handle = factory.CreateBuffer(
-            (ulong)m_Size, 
-            (uint)EBufferUsageFlagBits.BUFFER_USAGE_VERTEX_BUFFER_BIT, 
-            ESharingMode.SHARING_MODE_EXCLUSIVE, 
-            ERHIMemoryUsage.Upload, 
+            (ulong)m_Size,
+            (uint)EBufferUsageFlagBits.BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            ESharingMode.SHARING_MODE_EXCLUSIVE,
+            ERHIMemoryUsage.Upload,
             m_Name);
     }
 
@@ -45,9 +45,9 @@ public class VertexBuffer : IDisposable
         if (totalSize > m_Size) throw new Exception("Data size exceeds buffer size");
 
         var factory = m_Device.GetFactory();
-        
+
         void* ptr = factory.MapBuffer(m_Handle).ToPointer();
-        
+
         // Manual copy for simplicity, can be optimized
         GCHandle pin = GCHandle.Alloc(data, GCHandleType.Pinned);
         try

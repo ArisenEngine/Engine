@@ -3,10 +3,13 @@
 
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+
 namespace ArisenEngine::RHI
 {
     ARISEN_BIND_ENUM(EBorderColor)
-    typedef enum EBorderColor {
+
+    typedef enum EBorderColor
+    {
         BORDER_COLOR_FLOAT_TRANSPARENT_BLACK = 0,
         BORDER_COLOR_INT_TRANSPARENT_BLACK = 1,
         BORDER_COLOR_FLOAT_OPAQUE_BLACK = 2,

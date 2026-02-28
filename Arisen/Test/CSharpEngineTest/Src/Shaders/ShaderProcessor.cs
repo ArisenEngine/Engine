@@ -48,25 +48,35 @@ public class ShaderProcessor
                         try
                         {
                             var abs = Path.IsPathRooted(inc) ? inc : Path.GetFullPath(Path.Combine(shaderDir, inc));
-                            if (!string.IsNullOrWhiteSpace(abs)) { includeDirs.Add(abs); hasRoot = true; }
+                            if (!string.IsNullOrWhiteSpace(abs))
+                            {
+                                includeDirs.Add(abs);
+                                hasRoot = true;
+                            }
                         }
-                        catch { }
+                        catch
+                        {
+                        }
                     }
+
                     if (!hasRoot)
                     {
                         includeDirs.Add(shaderDir);
                     }
 
                     // Create an HLSL file alongside the original shader to keep relative includes stable
-                    var tempHlsl = Path.Combine(shaderDir, $"{Path.GetFileNameWithoutExtension(fileName)}_sub{si}_pass{pi}.hlsl");
+                    var tempHlsl = Path.Combine(shaderDir,
+                        $"{Path.GetFileNameWithoutExtension(fileName)}_sub{si}_pass{pi}.hlsl");
                     File.WriteAllText(tempHlsl, pass.hlslCode);
 
                     // Stages to compile for this pass
                     var stageToEntry = new List<(StageEnum stage, string entry, string tag)>();
+
                     void addIf(string? entry, StageEnum stage, string tag)
                     {
                         if (!string.IsNullOrWhiteSpace(entry)) stageToEntry.Add((stage, entry!, tag));
                     }
+
                     // Prefer explicit entries; also check parsed passStages map
                     addIf(pass.vertexEntry, StageEnum.Vertex, "vs");
                     addIf(pass.fragmentEntry, StageEnum.Fragment, "ps");
@@ -94,7 +104,8 @@ public class ShaderProcessor
 
                     foreach (var (stage, entry, tag) in stageToEntry)
                     {
-                        var outSpv = Path.Combine(shaderDir, $"{Path.GetFileNameWithoutExtension(fileName)}_sub{si}_pass{pi}_{tag}.spv");
+                        var outSpv = Path.Combine(shaderDir,
+                            $"{Path.GetFileNameWithoutExtension(fileName)}_sub{si}_pass{pi}_{tag}.spv");
                         var options = new ShaderCompiler.CompileOptions
                         {
                             Entry = entry,

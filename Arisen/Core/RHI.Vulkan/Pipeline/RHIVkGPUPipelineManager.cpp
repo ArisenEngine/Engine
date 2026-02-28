@@ -12,8 +12,9 @@
 #include "PlatformPath.h"
 #include "Pipeline/RHIVkPSOCache.h"
 
-ArisenEngine::RHI::RHIVkGPUPipelineManager::RHIVkGPUPipelineManager(RHIVkDevice* device, UInt32 maxFramesInFlight): RHIPipelineCache(maxFramesInFlight),
-m_Device(device)
+ArisenEngine::RHI::RHIVkGPUPipelineManager::RHIVkGPUPipelineManager(RHIVkDevice* device, UInt32 maxFramesInFlight):
+    RHIPipelineCache(maxFramesInFlight),
+    m_Device(device)
 {
     m_PSOCache = std::make_unique<RHIVkPSOCache>(m_Device);
     LoadPipelineCache();
@@ -22,7 +23,7 @@ m_Device(device)
 ArisenEngine::RHI::RHIVkGPUPipelineManager::~RHIVkGPUPipelineManager() noexcept
 {
     LOG_DEBUG("[RHIVkGPUPipelineManager::~RHIVkGPUPipelineManager]: ~RHIVkGPUPipelineManager");
-    
+
     SavePipelineCache();
 
     if (m_VkPipelineCache != VK_NULL_HANDLE)
@@ -39,7 +40,8 @@ ArisenEngine::RHI::RHIVkGPUPipelineManager::~RHIVkGPUPipelineManager() noexcept
     m_PipelineHandles.clear();
 }
 
-ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager::GetGraphicsPipeline(RHIPipelineState* pso)
+ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager::GetGraphicsPipeline(
+    RHIPipelineState* pso)
 {
     ARISEN_PROFILE_ZONE("RHI::GetGraphicsPipeline");
     auto hash = pso->GetHash();
@@ -48,11 +50,12 @@ ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager:
         auto pipeline = std::make_unique<RHIVkGPUPipeline>(m_Device, pso, m_MaxFramesInFlight);
         auto* rawPtr = pipeline.get();
         m_GPUPipelines.emplace(hash, std::move(pipeline));
-        
+
         // Not using deferred destroy here as Manager owns the unique_ptr and pool just stores observation
         // Actually, if we use handles, we should be careful about ownership.
         // For now, let's say the Pool observation is valid as long as m_GPUPipelines has it.
-        auto handle = m_Device->GetPipelinePool()->Allocate([rawPtr](RHIVkPipelinePoolItem* item) {
+        auto handle = m_Device->GetPipelinePool()->Allocate([rawPtr](RHIVkPipelinePoolItem* item)
+        {
             *item = RHIVkPipelinePoolItem();
             item->pipeline = rawPtr;
         });
@@ -66,13 +69,15 @@ ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager:
     }
 }
 
-ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager::GetComputePipeline(RHIPipelineState* pso)
+ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager::GetComputePipeline(
+    RHIPipelineState* pso)
 {
-     // Implementation is same as Graphics for and based on PSO hash
-     return GetGraphicsPipeline(pso);
+    // Implementation is same as Graphics for and based on PSO hash
+    return GetGraphicsPipeline(pso);
 }
 
-ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager::GetRayTracingPipeline(RHIPipelineState* pso)
+ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager::GetRayTracingPipeline(
+    RHIPipelineState* pso)
 {
     ARISEN_PROFILE_ZONE("RHI::GetRayTracingPipeline");
     auto hash = pso->GetHash();
@@ -81,8 +86,9 @@ ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager:
         auto pipeline = std::make_unique<RHIVkGPUPipeline>(m_Device, pso, m_MaxFramesInFlight);
         auto* rawPtr = pipeline.get();
         m_GPUPipelines.emplace(hash, std::move(pipeline));
-        
-        auto handle = m_Device->GetPipelinePool()->Allocate([rawPtr](RHIVkPipelinePoolItem* item) {
+
+        auto handle = m_Device->GetPipelinePool()->Allocate([rawPtr](RHIVkPipelinePoolItem* item)
+        {
             *item = RHIVkPipelinePoolItem();
             item->pipeline = rawPtr;
         });
@@ -121,7 +127,7 @@ void ArisenEngine::RHI::RHIVkGPUPipelineManager::LoadPipelineCache()
         file.close();
     }
 
-    VkPipelineCacheCreateInfo cacheCreateInfo {};
+    VkPipelineCacheCreateInfo cacheCreateInfo{};
     cacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
     cacheCreateInfo.initialDataSize = cacheData.size();
     cacheCreateInfo.pInitialData = cacheData.data();
@@ -152,13 +158,9 @@ void ArisenEngine::RHI::RHIVkGPUPipelineManager::SavePipelineCache()
             {
                 file.write(cacheData.data(), cacheSize);
                 file.close();
-                LOG_INFO("[RHIVkGPUPipelineManager]: Saved PSO cache to disk (" + std::to_string(cacheSize) + " bytes)");
+                LOG_INFO(
+                    "[RHIVkGPUPipelineManager]: Saved PSO cache to disk (" + std::to_string(cacheSize) + " bytes)");
             }
         }
     }
 }
-
-
-
-
-

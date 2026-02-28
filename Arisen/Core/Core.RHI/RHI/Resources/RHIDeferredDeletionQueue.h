@@ -18,8 +18,8 @@ namespace ArisenEngine::RHI
     // - deleter: function pointer (no captures)
     struct RHIDeferredDeleteItem final
     {
-        void* ptr { nullptr };
-        void (*deleter)(void*) { nullptr };
+        void* ptr{nullptr};
+        void (*deleter)(void*){nullptr};
     };
 
     template <typename T>
@@ -27,7 +27,8 @@ namespace ArisenEngine::RHI
     {
         return RHIDeferredDeleteItem{
             p,
-            +[](void* x) {
+            +[](void* x)
+            {
                 delete static_cast<T*>(x);
             },
         };
@@ -47,5 +48,3 @@ namespace ArisenEngine::RHI
         virtual void Flush(RHIQueueType queue, RHIGpuTicket ticket) = 0;
     };
 }
-
-

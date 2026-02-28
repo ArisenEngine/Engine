@@ -67,8 +67,10 @@ namespace ArisenEngine::RHI
         void* GetGraphicsQueue() override { return m_VkGraphicQueue; }
         void* GetComputeQueue() override { return m_VkComputeQueue; }
         void* GetPresentQueue() override { return m_VkPresentQueue; }
-        RHIVkDevice(RHIInstance* instance, RHISurface* surface, VkQueue graphicQueue, VkQueue presentQueue, VkQueue computeQueue,
-                    VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties, UInt32 graphicsFamilyIndex, UInt32 computeFamilyIndex);
+        RHIVkDevice(RHIInstance* instance, RHISurface* surface, VkQueue graphicQueue, VkQueue presentQueue,
+                    VkQueue computeQueue,
+                    VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties, UInt32 graphicsFamilyIndex,
+                    UInt32 computeFamilyIndex);
 
         void DeviceWaitIdle() const override;
         void GraphicQueueWaitIdle() const override;
@@ -89,12 +91,14 @@ namespace ArisenEngine::RHI
         {
             return m_DescriptorPool;
         }
+
         RHIDescriptorPoolHandle GetDescriptorPoolHandle() const override { return m_DescriptorPoolHandle; }
 
         RHIMemoryAllocator* GetMemoryAllocator() const override;
 
-        RHIGpuTicket Submit(RHICommandBufferHandle commandBuffer, const RHISubmitDescriptor* descriptor = nullptr) override;
-        
+        RHIGpuTicket Submit(RHICommandBufferHandle commandBuffer,
+                            const RHISubmitDescriptor* descriptor = nullptr) override;
+
         // Descriptor Heap & Bindless Table
         RHIDescriptorHeap* CreateDescriptorHeap(EDescriptorHeapType type, UInt32 descriptorCount) override;
         RHIBindlessDescriptorTable* CreateBindlessDescriptorTable(RHIDescriptorHeap* heap) override;
@@ -104,6 +108,7 @@ namespace ArisenEngine::RHI
             auto* item = m_CommandBufferPool->Get(handle);
             return item ? (RHICommandBuffer*)item->commandBuffer : nullptr;
         }
+
         RHIQueue* GetQueue(RHIQueueType type) override;
         RHICommandBufferPool* GetCommandBufferPool(RHICommandBufferPoolHandle handle) override;
         void DeferredDelete(RHIQueueType queue, RHIGpuTicket ticket, RHIDeferredDeleteItem item) override;
@@ -125,7 +130,6 @@ namespace ArisenEngine::RHI
         UInt32 GetComputeFamilyIndex() const { return m_ComputeFamilyIndex; }
         std::mutex& GetSubmitMutex() { return m_SubmitMutex; }
 
-        UInt32 GetCurrentFrameIndex() const { return m_CurrentFrameIndex.load(std::memory_order_acquire); }
         RHIGpuTicket GetCompletedSubmitTicket() const override;
         void WaitQueueTicket(RHIGpuTicket ticket) override;
 
@@ -150,13 +154,12 @@ namespace ArisenEngine::RHI
         UInt32 m_ComputeFamilyIndex;
         VkPhysicalDeviceMemoryProperties m_VkPhysicalDeviceMemoryProperties;
         std::mutex m_SubmitMutex;
-        
+
         RHIResourceStats m_Stats;
 
         std::unique_ptr<IRHIDeferredDeletionQueue> m_DeferredDeletion;
 
         std::unique_ptr<RHIResourceRegistry> m_ResourceRegistry;
-        std::atomic<UInt32> m_CurrentFrameIndex{0};
         std::unique_ptr<RHIQueue> m_GraphicsQueue;
         std::unique_ptr<RHIQueue> m_ComputeQueue;
         std::unique_ptr<FrameSyncTracker> m_FrameSync;
@@ -177,11 +180,12 @@ namespace ArisenEngine::RHI
         std::unique_ptr<RHIResourcePool<RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>>
         m_CommandBufferPoolPool;
         std::unique_ptr<RHIResourcePool<RHICommandBufferHandle, RHIVkCommandBufferItem>> m_CommandBufferPool;
-        std::unique_ptr<RHIResourcePool<RHIAccelerationStructureHandle, RHIVkAccelerationStructurePoolItem>> m_AccelerationStructurePool;
+        std::unique_ptr<RHIResourcePool<RHIAccelerationStructureHandle, RHIVkAccelerationStructurePoolItem>>
+        m_AccelerationStructurePool;
         std::unique_ptr<RHIResourcePool<RHIDescriptorPoolHandle, RHIVkDescriptorPoolPoolItem>> m_DescriptorPoolPool;
 
-    // TODO(Design-P2): public: 立即跟随 private: 段，导致内外部接口边界模糊。
-    // 考虑将 Pool Accessor 统一为一个 internal 访问级别，通过内部接口类暴露。
+        // TODO(Design-P2): public: 立即跟随 private: 段，导致内外部接口边界模糊。
+        // 考虑将 Pool Accessor 统一为一个 internal 访问级别，通过内部接口类暴露。
     public:
         // Handle-based operations
     private:
@@ -203,13 +207,16 @@ namespace ArisenEngine::RHI
         bool AllocMemoryPool(RHIMemoryPoolHandle handle, UInt64 size, UInt32 usageBits) override;
         void ReleaseMemoryPool(RHIMemoryPoolHandle handle) override;
 
-        bool AllocBufferAliased(RHIBufferHandle handle, RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset) override;
-        bool AllocImageAliased(RHIImageHandle handle, RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset) override;
+        bool AllocBufferAliased(RHIBufferHandle handle, RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool,
+                                UInt64 offset) override;
+        bool AllocImageAliased(RHIImageHandle handle, RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool,
+                               UInt64 offset) override;
 
         bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, RHIImageViewDesc&& desc) override;
         void ReleaseImageView(RHIImageViewHandle handle) override;
         void ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle) override;
-        bool AllocAccelerationStructure(RHIAccelerationStructureHandle handle, ERHIAccelerationStructureType type, UInt64 size, RHIBufferHandle buffer, UInt64 offset) override;
+        bool AllocAccelerationStructure(RHIAccelerationStructureHandle handle, ERHIAccelerationStructureType type,
+                                        UInt64 size, RHIBufferHandle buffer, UInt64 offset) override;
         RHIImageViewHandle FindImageViewForImage(RHIImageHandle imageHandle);
         EFormat GetImageViewFormat(RHIImageViewHandle handle);
         UInt32 GetImageViewWidth(RHIImageViewHandle handle);
@@ -236,11 +243,15 @@ namespace ArisenEngine::RHI
         UInt64 GetSemaphoreValue(RHISemaphoreHandle handle) override;
 
         // RayTracingExtension implementation
-        void GetAccelerationStructureBuildSizes(const RHIAccelerationStructureBuildGeometryInfo& buildInfo, const UInt32* pMaxPrimitiveCounts, RHIAccelerationStructureBuildSizesInfo* pSizeInfo) override;
+        void GetAccelerationStructureBuildSizes(const RHIAccelerationStructureBuildGeometryInfo& buildInfo,
+                                                const UInt32* pMaxPrimitiveCounts,
+                                                RHIAccelerationStructureBuildSizesInfo* pSizeInfo) override;
         UInt64 GetAccelerationStructureDeviceAddress(RHIAccelerationStructureHandle handle) override;
-        void GetRayTracingShaderGroupHandles(RHIPipelineHandle pipeline, UInt32 firstGroup, UInt32 groupCount, UInt64 size, void* pData) override;
+        void GetRayTracingShaderGroupHandles(RHIPipelineHandle pipeline, UInt32 firstGroup, UInt32 groupCount,
+                                             UInt64 size, void* pData) override;
 
-        void SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size, const void* data);
+        void SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size,
+                                                 const void* data);
 
     public:
         // Pool Accessors (Restricted)
@@ -292,7 +303,8 @@ namespace ArisenEngine::RHI
             return m_CommandBufferPool.get();
         }
 
-        RHIResourcePool<RHIAccelerationStructureHandle, RHIVkAccelerationStructurePoolItem>* GetAccelerationStructurePool() const
+        RHIResourcePool<RHIAccelerationStructureHandle, RHIVkAccelerationStructurePoolItem>*
+        GetAccelerationStructurePool() const
         {
             return m_AccelerationStructurePool.get();
         }
@@ -306,9 +318,6 @@ namespace ArisenEngine::RHI
         {
             return m_DescriptorPoolPool.get();
         }
-
-
-
 
     public:
 
@@ -364,7 +373,3 @@ namespace ArisenEngine::RHI
         void FreeMemoryPoolInternal(RHIMemoryPoolHandle handle);
     };
 }
-
-
-
-

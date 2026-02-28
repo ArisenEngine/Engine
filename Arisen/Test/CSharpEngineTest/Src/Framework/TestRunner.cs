@@ -85,7 +85,9 @@ namespace CSharpEngineTest.Framework
             else
             {
                 int passed = 0;
-                foreach (var r in results) if (r.Passed) passed++;
+                foreach (var r in results)
+                    if (r.Passed)
+                        passed++;
                 Logger.Log("=== Test Summary ===");
                 Logger.Log($"Total: {results.Count} | Passed: {passed} | Failed: {results.Count - passed}");
             }

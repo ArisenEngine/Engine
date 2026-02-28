@@ -23,6 +23,7 @@ public class Graph<TNode> where TNode : GraphNode
             m_Edges.RemoveAll(e => e.SourceNodeId == nodeId || e.TargetNodeId == nodeId);
             return true;
         }
+
         return false;
     }
 
@@ -48,7 +49,8 @@ public class Graph<TNode> where TNode : GraphNode
         if (dstPortDef.Capacity == PortCapacity.Single)
         {
             if (m_Edges.Any(e => e.TargetNodeId == dstNodeId && e.TargetPortIndex == dstPortIndex))
-                throw new InvalidOperationException($"Input port {dstPortIndex} of node {dstNodeId} is already connected and has Single capacity");
+                throw new InvalidOperationException(
+                    $"Input port {dstPortIndex} of node {dstNodeId} is already connected and has Single capacity");
         }
 
         var edge = new GraphEdge(srcNodeId, srcPortIndex, dstNodeId, dstPortIndex);

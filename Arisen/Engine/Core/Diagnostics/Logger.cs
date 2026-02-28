@@ -8,7 +8,8 @@ namespace ArisenEngine.Core.Diagnostics;
 public static class Logger
 {
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void LogCallback(uint type, [MarshalAs(UnmanagedType.LPUTF8Str)] string msg, [MarshalAs(UnmanagedType.LPUTF8Str)] string threadName, [MarshalAs(UnmanagedType.LPUTF8Str)] string trace);
+    public delegate void LogCallback(uint type, [MarshalAs(UnmanagedType.LPUTF8Str)] string msg,
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string threadName, [MarshalAs(UnmanagedType.LPUTF8Str)] string trace);
 
     private static LogCallback? m_ReceiveLog;
 
@@ -16,17 +17,14 @@ public static class Logger
     {
         var message = new LogMessage((LogLevel)type, msg, "0", threadName, DateTime.Now, trace);
 
-        Task.Run(() =>
-        {
-            MessageAdded?.Invoke(message);
-        });
+        Task.Run(() => { MessageAdded?.Invoke(message); });
     }
-    
+
     static Logger()
     {
         m_ReceiveLog = new LogCallback(RecordLog);
     }
-    
+
     public enum LogLevel
     {
         Trace = 0x01,
@@ -46,9 +44,12 @@ public static class Logger
         public string ThreadName { get; }
         public string StackTrace { get; } = string.Empty;
 
-        public string FullLogString => $"[{Time}] [{LogLevel}] [ThreadId:{ThreadId}, ThreadName:{ThreadName}] \nMessage: {Message} \n" + (LogLevel == LogLevel.Log ? "" : StackTrace);
-       
-        internal LogMessage(LogLevel logLevel, string msg, string threadId, string threadName, DateTime time, string stackTrace)
+        public string FullLogString =>
+            $"[{Time}] [{LogLevel}] [ThreadId:{ThreadId}, ThreadName:{ThreadName}] \nMessage: {Message} \n" +
+            (LogLevel == LogLevel.Log ? "" : StackTrace);
+
+        internal LogMessage(LogLevel logLevel, string msg, string threadId, string threadName, DateTime time,
+            string stackTrace)
         {
             Time = time;
             LogLevel = logLevel;
@@ -69,11 +70,14 @@ public static class Logger
 
     [Conditional("DEBUG")]
     public static void Assert(
-        bool condition, 
-        string message = "", 
-        [System.Runtime.CompilerServices.CallerFilePath] string file = "",
-        [System.Runtime.CompilerServices.CallerLineNumber] int line = 0,
-        [System.Runtime.CompilerServices.CallerMemberName] string function = "")
+        bool condition,
+        string message = "",
+        [System.Runtime.CompilerServices.CallerFilePath]
+        string file = "",
+        [System.Runtime.CompilerServices.CallerLineNumber]
+        int line = 0,
+        [System.Runtime.CompilerServices.CallerMemberName]
+        string function = "")
     {
         if (!condition)
         {
@@ -81,39 +85,59 @@ public static class Logger
             System.Diagnostics.Debug.Assert(condition, message);
         }
     }
-    
-    public static void Log(object msg,
-        [System.Runtime.CompilerServices.CallerFilePath] string file = "",
-        [System.Runtime.CompilerServices.CallerLineNumber] int line = 0,
-        [System.Runtime.CompilerServices.CallerMemberName] string function = "") => WriteLog(LogLevel.Log, msg, file, line, function);
-    
-    public static void Info(object msg,
-        [System.Runtime.CompilerServices.CallerFilePath] string file = "",
-        [System.Runtime.CompilerServices.CallerLineNumber] int line = 0,
-        [System.Runtime.CompilerServices.CallerMemberName] string function = "") => WriteLog(LogLevel.Info, msg, file, line, function);
-    
-    public static void Trace(object msg,
-        [System.Runtime.CompilerServices.CallerFilePath] string file = "",
-        [System.Runtime.CompilerServices.CallerLineNumber] int line = 0,
-        [System.Runtime.CompilerServices.CallerMemberName] string function = "") => WriteLog(LogLevel.Trace, msg, file, line, function);
-        
-    public static void Warning(object msg,
-        [System.Runtime.CompilerServices.CallerFilePath] string file = "",
-        [System.Runtime.CompilerServices.CallerLineNumber] int line = 0,
-        [System.Runtime.CompilerServices.CallerMemberName] string function = "") => WriteLog(LogLevel.Warning, msg, file, line, function);
-        
-    public static void Error(object msg,
-        [System.Runtime.CompilerServices.CallerFilePath] string file = "",
-        [System.Runtime.CompilerServices.CallerLineNumber] int line = 0,
-        [System.Runtime.CompilerServices.CallerMemberName] string function = "") => WriteLog(LogLevel.Error, msg, file, line, function);
-        
-    public static void Fatal(object msg,
-        [System.Runtime.CompilerServices.CallerFilePath] string file = "",
-        [System.Runtime.CompilerServices.CallerLineNumber] int line = 0,
-        [System.Runtime.CompilerServices.CallerMemberName] string function = "") => WriteLog(LogLevel.Fatal, msg, file, line, function);
 
-    [SuppressUnmanagedCodeSecurity, DllImport("Core.Diagnostic.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "Logger_Log")]
-    private static extern unsafe void Logger_Log_Internal(Arisen.Native.Diagnostics.LogLevel level, byte* msg, LogSourceLocationNative* location, byte* thread_name);
+    public static void Log(object msg,
+        [System.Runtime.CompilerServices.CallerFilePath]
+        string file = "",
+        [System.Runtime.CompilerServices.CallerLineNumber]
+        int line = 0,
+        [System.Runtime.CompilerServices.CallerMemberName]
+        string function = "") => WriteLog(LogLevel.Log, msg, file, line, function);
+
+    public static void Info(object msg,
+        [System.Runtime.CompilerServices.CallerFilePath]
+        string file = "",
+        [System.Runtime.CompilerServices.CallerLineNumber]
+        int line = 0,
+        [System.Runtime.CompilerServices.CallerMemberName]
+        string function = "") => WriteLog(LogLevel.Info, msg, file, line, function);
+
+    public static void Trace(object msg,
+        [System.Runtime.CompilerServices.CallerFilePath]
+        string file = "",
+        [System.Runtime.CompilerServices.CallerLineNumber]
+        int line = 0,
+        [System.Runtime.CompilerServices.CallerMemberName]
+        string function = "") => WriteLog(LogLevel.Trace, msg, file, line, function);
+
+    public static void Warning(object msg,
+        [System.Runtime.CompilerServices.CallerFilePath]
+        string file = "",
+        [System.Runtime.CompilerServices.CallerLineNumber]
+        int line = 0,
+        [System.Runtime.CompilerServices.CallerMemberName]
+        string function = "") => WriteLog(LogLevel.Warning, msg, file, line, function);
+
+    public static void Error(object msg,
+        [System.Runtime.CompilerServices.CallerFilePath]
+        string file = "",
+        [System.Runtime.CompilerServices.CallerLineNumber]
+        int line = 0,
+        [System.Runtime.CompilerServices.CallerMemberName]
+        string function = "") => WriteLog(LogLevel.Error, msg, file, line, function);
+
+    public static void Fatal(object msg,
+        [System.Runtime.CompilerServices.CallerFilePath]
+        string file = "",
+        [System.Runtime.CompilerServices.CallerLineNumber]
+        int line = 0,
+        [System.Runtime.CompilerServices.CallerMemberName]
+        string function = "") => WriteLog(LogLevel.Fatal, msg, file, line, function);
+
+    [SuppressUnmanagedCodeSecurity,
+     DllImport("Core.Diagnostic.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "Logger_Log")]
+    private static extern unsafe void Logger_Log_Internal(Arisen.Native.Diagnostics.LogLevel level, byte* msg,
+        LogSourceLocationNative* location, byte* thread_name);
 
     private struct LogSourceLocationNative
     {
@@ -125,7 +149,7 @@ public static class Logger
     private static unsafe void WriteLog(LogLevel level, object msg, string file, int line, string function)
     {
         string threadName = Thread.CurrentThread.Name ?? "MainThread";
-        
+
         // Map engine LogLevel to native LogLevel
         var nativeLevel = level switch
         {
@@ -151,8 +175,8 @@ public static class Logger
         const int MaxStackAllocSize = 2048;
 
         byte[]? msgBuffer = null;
-        Span<byte> msgSpan = msgLen <= MaxStackAllocSize 
-            ? stackalloc byte[msgLen] 
+        Span<byte> msgSpan = msgLen <= MaxStackAllocSize
+            ? stackalloc byte[msgLen]
             : (msgBuffer = System.Buffers.ArrayPool<byte>.Shared.Rent(msgLen));
 
         Span<byte> fileSpan = stackalloc byte[fileLen];
@@ -194,7 +218,7 @@ public static class Logger
                 System.Buffers.ArrayPool<byte>.Shared.Return(msgBuffer);
             }
         }
-        
+
         // Also keep Console.WriteLine for now as a fallback/easier debugging
         Console.WriteLine($"[{level}] {msgStr}");
     }
@@ -212,7 +236,7 @@ public static class Logger
             var ptr = Marshal.GetFunctionPointerForDelegate(m_ReceiveLog);
             LoggerAPI.Logger_BindCallback(ptr);
         }
-        
+
         return ok;
     }
 }

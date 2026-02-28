@@ -14,7 +14,7 @@ ArisenEngine::RHI::RHIVkSemaphore::RHIVkSemaphore(VkDevice device, bool isTimeli
 {
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    
+
     VkSemaphoreTypeCreateInfo typeInfo{};
     if (isTimeline)
     {
@@ -63,7 +63,3 @@ uint64_t ArisenEngine::RHI::RHIVkSemaphore::GetValue()
     vkGetSemaphoreCounterValue(m_VkDevice, m_VkSemaphore, &value);
     return value;
 }
-
-
-
-

@@ -18,9 +18,9 @@
 #endif
 
 extern "C" RHI_VULKAN_DLL void dummy_vulkan_function();
+
 inline void dummy_vulkan_function()
 {
-    
 }
 
 namespace ArisenEngine::RHI
@@ -50,7 +50,7 @@ namespace ArisenEngine::RHI
     {
         "VK_LAYER_KHRONOS_validation"
     };
-    
+
 
     // device extensions
     static ArisenEngine::Containers::Vector<const char*> VkMandatoryDeviceExtensionNames
@@ -83,9 +83,3 @@ namespace ArisenEngine::RHI
         "VK_KHR_surface"
     };
 }
-
-
-
-
-
-

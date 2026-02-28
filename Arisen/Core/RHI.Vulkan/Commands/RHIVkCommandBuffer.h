@@ -30,7 +30,8 @@ namespace ArisenEngine
         public:
             NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkCommandBuffer)
             ~RHIVkCommandBuffer() noexcept override;
-            RHIVkCommandBuffer(RHIVkDevice* device, RHIVkCommandBufferPool* pool, ECommandBufferLevel level = COMMAND_BUFFER_LEVEL_PRIMARY);
+            RHIVkCommandBuffer(RHIVkDevice* device, RHIVkCommandBufferPool* pool,
+                               ECommandBufferLevel level = COMMAND_BUFFER_LEVEL_PRIMARY);
 
             void* GetHandle() const override { return m_VkCommandBuffer; }
 
@@ -46,7 +47,7 @@ namespace ArisenEngine
             VkCommandBuffer m_VkCommandBuffer;
             VkCommandPool m_VkCommandPool;
             VkDevice m_VkDevice;
-            bool m_IsCompiled{ false };
+            bool m_IsCompiled{false};
             Containers::Vector<VkBuffer> m_VertexBuffers;
             Containers::Vector<UInt64> m_VertexBindingOffsets;
             std::optional<VkBuffer> m_IndexBuffer;
@@ -56,7 +57,7 @@ namespace ArisenEngine
             VkCommandBufferBeginInfo m_VkBeginInfo{};
             // Fence ownership is separated from command buffer (owned by
             // queue/device/pool).
-            
+
             // Vulkan only
             VkFence GetSubmissionFence() const;
 
@@ -70,13 +71,14 @@ namespace ArisenEngine
             Containers::Vector<VkCommandBuffer> m_VkSecondaryCommandBuffers{};
             Containers::Vector<VkBufferImageCopy> m_VkBufferImageCopies{};
 
-            RHIPipeline* m_CurrentPipeline{ nullptr };
+            RHIPipeline* m_CurrentPipeline{nullptr};
 
             struct TrackedPoolUse
             {
                 RHIDescriptorPoolHandle poolHandle;
-                UInt32 poolId{ 0 };
+                UInt32 poolId{0};
             };
+
             Containers::Vector<TrackedPoolUse> m_TrackedDescriptorPools;
             Containers::Vector<RHIResourceHandle> m_TrackedResourceHandles;
 
@@ -96,12 +98,14 @@ namespace ArisenEngine
             {
                 return m_TrackedResourceHandles;
             }
+
             void ClearTrackedResourceHandles() { m_TrackedResourceHandles.clear(); }
 
             const Containers::Vector<TrackedPoolUse>& GetTrackedDescriptorPools() const
             {
                 return m_TrackedDescriptorPools;
             }
+
             void ClearTrackedDescriptorPools() { m_TrackedDescriptorPools.clear(); }
         };
     }

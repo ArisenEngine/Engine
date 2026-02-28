@@ -21,14 +21,8 @@ namespace ArisenEngine::RHI
         void Flush(RHIQueueType queue, RHIGpuTicket ticket) override;
 
     private:
-        UInt32 m_MaxFramesInFlight {0}; // kept for future ring-based strategies / diagnostics
+        UInt32 m_MaxFramesInFlight{0}; // kept for future ring-based strategies / diagnostics
         std::map<RHIQueueType, std::map<RHIGpuTicket, Containers::Vector<RHIDeferredDeleteItem>>> m_Pending;
         std::mutex m_Mutex;
     };
 }
-
-
-
-
-
-

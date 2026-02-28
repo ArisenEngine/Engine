@@ -9,7 +9,6 @@ using namespace ArisenEngine::RHI;
 ARISEN_BIND_BEGIN_BRIDGE("RHIInstance", "Core.RHI.dll", "Arisen.Native.RHI")
 
 extern "C" {
-
 RHI_DLL void RHIInstance_PickPhysicalDevice(RHIInstance* inst, int considerSurface)
 {
     inst->PickPhysicalDevice(considerSurface != 0);
@@ -96,7 +95,6 @@ RHI_DLL int RHIInstance_GetSuitablePresentMode(RHIInstance* inst, uint32_t windo
 {
     return static_cast<int>(inst->GetSuitablePresentMode(windowId));
 }
-
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()

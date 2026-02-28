@@ -7,6 +7,7 @@
 #endif
 
 extern "C" HAL_DLL void dummy_core_hal_function();
+
 inline void dummy_core_hal_function()
 {
 }

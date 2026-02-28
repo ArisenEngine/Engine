@@ -16,7 +16,8 @@ public sealed class GraphExecutor<TNode> where TNode : GraphNode
     /// <summary>
     /// Executes nodes one by one in topological order.
     /// </summary>
-    public void ExecuteSequential(CompiledGraph<TNode> compiled, IGraphExecutionPolicy<TNode> policy, IGraphExecutionContext? context = null)
+    public void ExecuteSequential(CompiledGraph<TNode> compiled, IGraphExecutionPolicy<TNode> policy,
+        IGraphExecutionContext? context = null)
     {
         foreach (var node in compiled.SortedNodes)
         {
@@ -28,7 +29,8 @@ public sealed class GraphExecutor<TNode> where TNode : GraphNode
     /// Executes nodes in parallel layer by layer.
     /// Nodes in the same layer are executed concurrently using Task.Run.
     /// </summary>
-    public async Task ExecuteParallelAsync(CompiledGraph<TNode> compiled, IGraphExecutionPolicy<TNode> policy, IGraphExecutionContext? context = null)
+    public async Task ExecuteParallelAsync(CompiledGraph<TNode> compiled, IGraphExecutionPolicy<TNode> policy,
+        IGraphExecutionContext? context = null)
     {
         foreach (var layer in compiled.ParallelLayers)
         {
@@ -38,6 +40,7 @@ public sealed class GraphExecutor<TNode> where TNode : GraphNode
                 var node = layer[i];
                 tasks[i] = Task.Run(() => policy.Execute(node, context));
             }
+
             await Task.WhenAll(tasks);
         }
     }
@@ -45,7 +48,8 @@ public sealed class GraphExecutor<TNode> where TNode : GraphNode
     /// <summary>
     /// Executes nodes in parallel layer by layer using policy's Async methods.
     /// </summary>
-    public async Task ExecuteParallelCustomAsync(CompiledGraph<TNode> compiled, IGraphExecutionPolicy<TNode> policy, IGraphExecutionContext? context = null)
+    public async Task ExecuteParallelCustomAsync(CompiledGraph<TNode> compiled, IGraphExecutionPolicy<TNode> policy,
+        IGraphExecutionContext? context = null)
     {
         foreach (var layer in compiled.ParallelLayers)
         {
@@ -54,6 +58,7 @@ public sealed class GraphExecutor<TNode> where TNode : GraphNode
             {
                 tasks[i] = policy.ExecuteAsync(layer[i], context);
             }
+
             await Task.WhenAll(tasks);
         }
     }

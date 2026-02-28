@@ -3,10 +3,13 @@
 
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+
 namespace ArisenEngine::RHI
 {
     ARISEN_BIND_ENUM(EBlendOp)
-    typedef enum EBlendOp {
+
+    typedef enum EBlendOp
+    {
         BLEND_OP_ADD = 0,
         BLEND_OP_SUBTRACT = 1,
         BLEND_OP_REVERSE_SUBTRACT = 2,

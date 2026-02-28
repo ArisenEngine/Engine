@@ -24,7 +24,7 @@ public unsafe sealed class FrameArena
     public Span<T> Alloc<T>(int count) where T : unmanaged
     {
         nuint size = (nuint)count * (nuint)sizeof(T);
-        
+
         // Alignment (assume 16-byte alignment for common data)
         nuint alignment = 16;
         nuint currentPtr = (nuint)m_Buffer + m_Offset;

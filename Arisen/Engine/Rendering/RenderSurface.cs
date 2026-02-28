@@ -14,7 +14,7 @@ public enum SurfaceType
     AssetView,
     Count
 }
-    
+
 public struct SurfaceInfo
 {
     public string Name;
@@ -49,7 +49,7 @@ public class RenderSurface : IRenderSurface
             m_SurfaceId = isFullScreen
                 ? NativeHAL.RenderWindowAPI.CreateFullScreenRenderSurface(host, m_Processor.ProcPtr)
                 : NativeHAL.RenderWindowAPI.CreateRenderWindow(host, m_Processor.ProcPtr, width, height);
-            
+
             m_Handle = NativeHAL.RenderWindowAPI.GetWindowHandle(m_SurfaceId);
             NativeHAL.RenderWindowAPI.SetWindowResizeCallback(m_SurfaceId, m_Processor.ResizeCallbackPtr);
 */
@@ -65,7 +65,7 @@ public class RenderSurface : IRenderSurface
             //     if (device != null)
             //         RHIGraphics.SetLogicDevice(device);
             // }
-            
+
             Surfaces.Add(this);
         }
         else
@@ -73,7 +73,7 @@ public class RenderSurface : IRenderSurface
             throw new Exception("Render Surface init failed.");
         }
     }
-    
+
     private bool Initialize()
     {
         switch (ArisenApplication.s_Platform)
@@ -85,8 +85,8 @@ public class RenderSurface : IRenderSurface
 
         throw new Exception($"Unsupported platform type: {ArisenApplication.s_Platform}");
     }
-    
-    public bool IsValid() => ((m_Hosted &&  m_Host != IntPtr.Zero) || !m_Hosted) && m_Handle != IntPtr.Zero;
+
+    public bool IsValid() => ((m_Hosted && m_Host != IntPtr.Zero) || !m_Hosted) && m_Handle != IntPtr.Zero;
 
     public void DisposeSurface()
     {
@@ -99,12 +99,20 @@ public class RenderSurface : IRenderSurface
     }
 
     public IntPtr GetHandle() => m_Handle;
-    public void OnCreate() { }
+
+    public void OnCreate()
+    {
+    }
+
     public void OnResizing() => Console.WriteLine($"RenderSurface : {m_Name} resizing.");
+
     public void OnResized()
     {
         Console.WriteLine($"RenderSurface : {m_Name} resized.");
         Logger.Log($"RenderSurface : {m_Name} resized.");
     }
-    public void OnDestroy() { }
+
+    public void OnDestroy()
+    {
+    }
 }

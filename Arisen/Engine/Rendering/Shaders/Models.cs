@@ -12,13 +12,12 @@ public enum PassStage
     Domain,
 }
 
-
 public class RenderStateValue
 {
     public string stateName; // "Blend", "ZTest" ...
     public bool isReference;
     public string referenceName; // 如果是引用
-    
+
     public enum ValueKind
     {
         None,
@@ -89,9 +88,9 @@ public class RenderStates
 public class ShaderLabShader
 {
     public string name;
-    public List<Property> properties = new ();
-    public List<SubShader> subShaders = new ();
-    public List<IncludedHLSL> includedHLSLs = new ();
+    public List<Property> properties = new();
+    public List<SubShader> subShaders = new();
+    public List<IncludedHLSL> includedHLSLs = new();
 }
 
 public class Property
@@ -104,10 +103,12 @@ public class Property
 
 public class SubShader
 {
-    public List<Pass> passes = new ();
-    public List<string> tags = new ();
+    public List<Pass> passes = new();
+
+    public List<string> tags = new();
+
     // HLSLINCLUDE blocks defined at SubShader scope; their code should be prepended to each pass within this SubShader
-    public List<string> includeHlslCodes = new ();
+    public List<string> includeHlslCodes = new();
 }
 
 public class IncludedHLSL
@@ -120,15 +121,21 @@ public class IncludedHLSL
 public class Pass
 {
     public string name;
+
     public string tagsRaw;
+
     // 解析后的标签字典（例如 { "LightMode": "ForwardBase" }）
-    public Dictionary<string, string> tags = new ();
+    public Dictionary<string, string> tags = new();
+
     // 渲染状态集合
-    public RenderStates states = new ();
+    public RenderStates states = new();
+
     // 程序块中的HLSL源码（HLSLPROGRAM..ENDHLSL），用于工具链落地及编译
     public string hlslCode;
+
     // 从代码与指令解析出的包含文件清单（行内 #include / include_with_pragmas 提取的相对路径）
-    public List<string> includedHLSLs = new ();
+    public List<string> includedHLSLs = new();
+
     // Pragma 信息
     public string target; // ps_6_8 / vs_6_8 等
     public string vertexEntry;
@@ -136,11 +143,11 @@ public class Pass
     public string geometryEntry;
     public string hullEntry;
     public string domainEntry;
-    public List<string> multiCompile = new ();
-    public List<string> shaderFeature = new ();
-    public List<HlslStruct> hlslStructs = new ();
-    public List<HlslVariable> variables = new ();
-    public Dictionary<PassStage, string> passStages = new ();
+    public List<string> multiCompile = new();
+    public List<string> shaderFeature = new();
+    public List<HlslStruct> hlslStructs = new();
+    public List<HlslVariable> variables = new();
+    public Dictionary<PassStage, string> passStages = new();
 }
 
 public class HlslStruct
@@ -161,4 +168,3 @@ public class HlslVariable
     public string name;
     public string register; // 如 : register(t0)
 }
-

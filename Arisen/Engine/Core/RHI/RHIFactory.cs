@@ -16,12 +16,14 @@ public readonly struct RHIFactory
         DeviceHandle = deviceHandle;
     }
 
-    public unsafe RHIBufferHandle CreateBuffer(ulong size, uint usage, ESharingMode sharingMode, ERHIMemoryUsage memoryUsage, string name)
+    public unsafe RHIBufferHandle CreateBuffer(ulong size, uint usage, ESharingMode sharingMode,
+        ERHIMemoryUsage memoryUsage, string name)
     {
         uint index = 0;
         uint gen = 0;
-        
-        RHIFactoryAPI.RHIFactory_CreateBuffer(Handle, 0, size, usage, (int)sharingMode, 0, (int)memoryUsage, name, (IntPtr)(&index), (IntPtr)(&gen));
+
+        RHIFactoryAPI.RHIFactory_CreateBuffer(Handle, 0, size, usage, (int)sharingMode, 0, (int)memoryUsage, name,
+            (IntPtr)(&index), (IntPtr)(&gen));
 
         return new RHIBufferHandle { Index = index, Generation = gen };
     }
@@ -31,13 +33,15 @@ public readonly struct RHIFactory
         RHIFactoryAPI.RHIFactory_ReleaseBuffer(Handle, handle.Index, handle.Generation);
     }
 
-    public unsafe RHIImageHandle CreateImage(uint width, uint height, uint depth, uint mipLevels, uint arrayLayers, EFormat format, string name)
+    public unsafe RHIImageHandle CreateImage(uint width, uint height, uint depth, uint mipLevels, uint arrayLayers,
+        EFormat format, string name)
     {
         uint index = 0;
         uint gen = 0;
 
         // imageType 1 = 2D, tiling 0 = Optimal, layout 0 = Undefined, samples 1 = 1x
-        RHIFactoryAPI.RHIFactory_CreateImage(Handle, 1, width, height, depth, mipLevels, arrayLayers, (int)format, 0, 0, 0, 1, 0, 0, name, (IntPtr)(&index), (IntPtr)(&gen));
+        RHIFactoryAPI.RHIFactory_CreateImage(Handle, 1, width, height, depth, mipLevels, arrayLayers, (int)format, 0, 0,
+            0, 1, 0, 0, name, (IntPtr)(&index), (IntPtr)(&gen));
 
         return new RHIImageHandle { Index = index, Generation = gen };
     }
@@ -62,7 +66,7 @@ public readonly struct RHIFactory
         uint index = 0;
         uint gen = 0;
         RHIFactoryAPI.RHIFactory_CreateCommandBufferPool(Handle, (int)queueType, (IntPtr)(&index), (IntPtr)(&gen));
-        
+
         var poolHandle = new RHICommandBufferPoolHandle { Index = index, Generation = gen };
         var poolPtr = RHIDeviceAPI.RHIDevice_GetCommandBufferPool(DeviceHandle, index, gen);
         return new RHICommandBufferPool(poolPtr, DeviceHandle, poolHandle);
@@ -89,11 +93,14 @@ public readonly struct RHIFactory
         return new RHIFrameBufferHandle { Index = index, Generation = gen };
     }
 
-    public unsafe RHISamplerHandle CreateSampler(EFilter magFilter, EFilter minFilter, ESamplerMipmapMode mipmapMode, ESamplerAddressMode addressMode)
+    public unsafe RHISamplerHandle CreateSampler(EFilter magFilter, EFilter minFilter, ESamplerMipmapMode mipmapMode,
+        ESamplerAddressMode addressMode)
     {
         uint index = 0;
         uint gen = 0;
-        RHIFactoryAPI.RHIFactory_CreateSampler(Handle, (int)magFilter, (int)minFilter, (int)mipmapMode, (int)addressMode, (int)addressMode, (int)addressMode, 0, 0, 1.0f, 0, 0, 0, 1.0f, 0, (IntPtr)(&index), (IntPtr)(&gen));
+        RHIFactoryAPI.RHIFactory_CreateSampler(Handle, (int)magFilter, (int)minFilter, (int)mipmapMode,
+            (int)addressMode, (int)addressMode, (int)addressMode, 0, 0, 1.0f, 0, 0, 0, 1.0f, 0, (IntPtr)(&index),
+            (IntPtr)(&gen));
         return new RHISamplerHandle { Index = index, Generation = gen };
     }
 
@@ -111,9 +118,9 @@ public readonly struct RHIFactory
         {
             fixed (byte* pCode = code)
             {
-                return RHIFactoryAPI.RHIFactory_AttachProgramByteCode(Handle, handle.Index, handle.Generation, stage, (IntPtr)pCode, (ulong)code.Length, entryPoint) != 0;
+                return RHIFactoryAPI.RHIFactory_AttachProgramByteCode(Handle, handle.Index, handle.Generation, stage,
+                    (IntPtr)pCode, (ulong)code.Length, entryPoint) != 0;
             }
         }
     }
-
 }

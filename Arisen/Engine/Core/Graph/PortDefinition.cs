@@ -1,7 +1,16 @@
 namespace ArisenEngine.Core.Graph;
 
-public enum PortDirection { Input, Output }
-public enum PortCapacity { Single, Multi }
+public enum PortDirection
+{
+    Input,
+    Output
+}
+
+public enum PortCapacity
+{
+    Single,
+    Multi
+}
 
 public sealed class PortDefinition
 {
@@ -10,7 +19,8 @@ public sealed class PortDefinition
     public PortDirection Direction { get; }
     public PortCapacity Capacity { get; }
 
-    public PortDefinition(string name, Type dataType, PortDirection direction, PortCapacity capacity = PortCapacity.Multi)
+    public PortDefinition(string name, Type dataType, PortDirection direction,
+        PortCapacity capacity = PortCapacity.Multi)
     {
         Name = name;
         DataType = dataType;

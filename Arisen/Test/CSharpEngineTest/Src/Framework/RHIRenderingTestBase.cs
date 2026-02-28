@@ -10,6 +10,7 @@ namespace CSharpEngineTest.Framework
     public abstract class RHIRenderingTestBase : RHITestBase
     {
         protected RHICommandBufferPool? _cmdPool;
+
         // protected RHIDescriptorPool _descriptorPool;
         protected RHISwapChain? _swapChain;
 

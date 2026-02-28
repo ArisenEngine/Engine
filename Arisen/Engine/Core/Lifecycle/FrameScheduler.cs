@@ -15,7 +15,7 @@ internal sealed class FrameScheduler
         {
             subsystem.Tick(deltaTime);
         }
-        
+
         // TODO: Frame end flush, deferred actions, etc.
     }
 }

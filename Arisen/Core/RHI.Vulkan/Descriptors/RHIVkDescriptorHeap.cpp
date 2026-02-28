@@ -9,17 +9,17 @@ namespace ArisenEngine::RHI
     {
         // 1. Create Descriptor Pool
         VkDescriptorPoolSize poolSizes[] = {
-            { VK_DESCRIPTOR_TYPE_SAMPLER, descriptorLimit },
-            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, descriptorLimit },
-            { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, descriptorLimit },
-            { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, descriptorLimit },
-            { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, descriptorLimit },
-            { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, descriptorLimit },
-            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorLimit },
-            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, descriptorLimit },
-            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, descriptorLimit },
-            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, descriptorLimit },
-            { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, descriptorLimit }
+            {VK_DESCRIPTOR_TYPE_SAMPLER, descriptorLimit},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, descriptorLimit},
+            {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, descriptorLimit},
+            {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, descriptorLimit},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, descriptorLimit},
+            {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, descriptorLimit},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorLimit},
+            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, descriptorLimit},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, descriptorLimit},
+            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, descriptorLimit},
+            {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, descriptorLimit}
         };
 
         VkDescriptorPoolCreateInfo poolInfo{};
@@ -29,7 +29,8 @@ namespace ArisenEngine::RHI
         poolInfo.poolSizeCount = std::size(poolSizes);
         poolInfo.pPoolSizes = poolSizes;
 
-        if (vkCreateDescriptorPool(static_cast<VkDevice>(m_Device->GetHandle()), &poolInfo, nullptr, &m_Pool) != VK_SUCCESS)
+        if (vkCreateDescriptorPool(static_cast<VkDevice>(m_Device->GetHandle()), &poolInfo, nullptr, &m_Pool) !=
+            VK_SUCCESS)
         {
             std::cerr << "Failed to create bindless descriptor pool!" << std::endl;
         }
@@ -37,7 +38,7 @@ namespace ArisenEngine::RHI
         // 2. Create Descriptor Set Layout
         // For bindless, we usually have a single binding that is an array of size 'descriptorLimit'
         // with VARIABLE_DESCRIPTOR_COUNT and PARTIALLY_BOUND flags.
-        
+
         VkDescriptorSetLayoutBinding binding{};
         binding.binding = 0;
         binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE; // Defaulting to sampled image for now
@@ -45,7 +46,7 @@ namespace ArisenEngine::RHI
         // For simplicity, let's assume this heap is for a specific type or we just use one huge binding per type?
         // Actually, 'EDescriptorHeapType' suggests we segregate by type (CBV_SRV_UAV, SAMPLER).
         // So validation:
-        
+
         if (type == EDescriptorHeapType::SAMPLER)
             binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
         else if (type == EDescriptorHeapType::CBV_SRV_UAV)
@@ -59,7 +60,8 @@ namespace ArisenEngine::RHI
         binding.stageFlags = VK_SHADER_STAGE_ALL;
         binding.pImmutableSamplers = nullptr;
 
-        VkDescriptorBindingFlags bindingFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
+        VkDescriptorBindingFlags bindingFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
+            VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
 
         VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo{};
         bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
@@ -73,9 +75,10 @@ namespace ArisenEngine::RHI
         layoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
         layoutInfo.pNext = &bindingFlagsInfo;
 
-        if (vkCreateDescriptorSetLayout(static_cast<VkDevice>(m_Device->GetHandle()), &layoutInfo, nullptr, &m_Layout) != VK_SUCCESS)
+        if (vkCreateDescriptorSetLayout(static_cast<VkDevice>(m_Device->GetHandle()), &layoutInfo, nullptr, &m_Layout)
+            != VK_SUCCESS)
         {
-             std::cerr << "Failed to create bindless descriptor set layout!" << std::endl;
+            std::cerr << "Failed to create bindless descriptor set layout!" << std::endl;
         }
 
         // 3. Allocate Descriptor Set
@@ -85,7 +88,8 @@ namespace ArisenEngine::RHI
         allocInfo.descriptorSetCount = 1;
         allocInfo.pSetLayouts = &m_Layout;
 
-        if (vkAllocateDescriptorSets(static_cast<VkDevice>(m_Device->GetHandle()), &allocInfo, &m_DescriptorSet) != VK_SUCCESS)
+        if (vkAllocateDescriptorSets(static_cast<VkDevice>(m_Device->GetHandle()), &allocInfo, &m_DescriptorSet) !=
+            VK_SUCCESS)
         {
             std::cerr << "Failed to allocate bindless descriptor set!" << std::endl;
         }
@@ -108,27 +112,27 @@ namespace ArisenEngine::RHI
             // Try to reuse freed intervals?
             if (!m_FreeIntervals.empty())
             {
-                 // Check head of queue
-                 auto& interval = m_FreeIntervals.front();
-                 if (interval.second >= count)
-                 {
-                     UInt32 offset = interval.first;
-                     // Update interval
-                     if (interval.second > count)
-                     {
-                         interval.first += count;
-                         interval.second -= count;
-                     } 
-                     else 
-                     {
-                         m_FreeIntervals.pop();
-                     }
-                     return offset;
-                 }
+                // Check head of queue
+                auto& interval = m_FreeIntervals.front();
+                if (interval.second >= count)
+                {
+                    UInt32 offset = interval.first;
+                    // Update interval
+                    if (interval.second > count)
+                    {
+                        interval.first += count;
+                        interval.second -= count;
+                    }
+                    else
+                    {
+                        m_FreeIntervals.pop();
+                    }
+                    return offset;
+                }
             }
             return 0xFFFFFFFF; // OOM
         }
-        
+
         UInt32 offset = m_CurrentOffset;
         m_CurrentOffset += count;
         return offset;

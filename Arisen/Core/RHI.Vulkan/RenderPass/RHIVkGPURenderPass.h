@@ -15,6 +15,7 @@
 namespace ArisenEngine::RHI
 {
     class RHIVkDevice;
+
     class RHIVkGPURenderPass final : public RHIRenderPass
     {
     public:
@@ -33,8 +34,3 @@ namespace ArisenEngine::RHI
         Containers::Vector<VkRenderPass> m_VkRenderPasses;
     };
 }
-
-
-
-
-

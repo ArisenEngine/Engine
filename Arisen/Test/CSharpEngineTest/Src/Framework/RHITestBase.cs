@@ -64,19 +64,19 @@ namespace CSharpEngineTest.Framework
                 RenderWindowAPI.RemoveRenderSurface(_windowId);
                 _windowId = uint.MaxValue;
             }
-            
+
             RHISystem.Shutdown();
         }
 
         public virtual bool Run()
         {
             bool isRunning = true;
-            
+
             _stopwatch.Start();
             _lastTicks = _stopwatch.ElapsedTicks;
 
             Win32Native.NativeMessage msg;
-            
+
             while (isRunning)
             {
                 while (Win32Native.PeekMessage(out msg, IntPtr.Zero, 0, 0, Win32Native.PM_REMOVE) != 0)
@@ -86,12 +86,13 @@ namespace CSharpEngineTest.Framework
                         isRunning = false;
                         break;
                     }
+
                     Win32Native.TranslateMessage(ref msg);
                     Win32Native.DispatchMessage(ref msg);
                 }
 
                 if (!isRunning) break;
-                
+
                 RenderFrame();
                 NextFrame();
             }
@@ -101,9 +102,18 @@ namespace CSharpEngineTest.Framework
 
         protected virtual bool IsHeadless() => false;
         protected virtual bool SetupTest() => true;
-        protected virtual void TeardownTest() { }
-        protected virtual void RenderFrame() { }
-        protected virtual void OnResize(uint width, uint height) { }
+
+        protected virtual void TeardownTest()
+        {
+        }
+
+        protected virtual void RenderFrame()
+        {
+        }
+
+        protected virtual void OnResize(uint width, uint height)
+        {
+        }
 
         private bool InitializeRHI(string appName)
         {
@@ -150,13 +160,14 @@ namespace CSharpEngineTest.Framework
             {
                 return true;
             }
-            return false; 
+
+            return false;
         }
 
         protected void NextFrame()
         {
             _frameIndex++;
-            
+
             long currentTicks = _stopwatch.ElapsedTicks;
             double deltaSeconds = (double)(currentTicks - _lastTicks) / Stopwatch.Frequency;
             _lastTicks = currentTicks;

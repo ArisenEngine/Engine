@@ -9,10 +9,11 @@ namespace ArisenEngine.Core.Lifecycle;
 internal static class EngineInstance
 {
     internal static Action AllSurfacesDestroyed;
-    
+
     private static Dictionary<IntPtr, SurfaceInfo> m_RenderSurfaces = new Dictionary<IntPtr, SurfaceInfo>();
 
-    internal static void RegisterSurface(IntPtr host, string name, SurfaceType surfaceType, int width = 0, int height = 0)
+    internal static void RegisterSurface(IntPtr host, string name, SurfaceType surfaceType, int width = 0,
+        int height = 0)
     {
         using var _ = Profiler.Zone("EngineInstance.RegisterSurface");
         if (!m_RenderSurfaces.ContainsKey(host))
@@ -25,7 +26,7 @@ internal static class EngineInstance
                 Surface = surface,
                 SurfaceType = surfaceType
             });
-            
+
             return;
         }
 
@@ -46,10 +47,10 @@ internal static class EngineInstance
         {
             surfaceInfo.Surface.DisposeSurface();
             m_RenderSurfaces.Remove(host);
-            
+
             return;
         }
-        
+
         throw new Exception($"Surface of host {host} not exists");
     }
 
@@ -59,14 +60,14 @@ internal static class EngineInstance
         {
             AppName = instanceName
         };
-        
+
         // Register early subsystems
         EngineKernel.Instance.RegisterSubsystem(new PlatformSubsystem());
         EngineKernel.Instance.RegisterSubsystem(new RenderSubsystem());
 
         // Initialize Native Logger/Core here if needed
         // Bootstrap.Initialize(); 
-        
+
         var errorCode = 0;
         try
         {

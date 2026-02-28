@@ -56,8 +56,10 @@ namespace ArisenEngine::RHI
         virtual bool AllocMemoryPool(RHIMemoryPoolHandle handle, UInt64 size, UInt32 usageBits) = 0;
         virtual void ReleaseMemoryPool(RHIMemoryPoolHandle handle) = 0;
 
-        virtual bool AllocBufferAliased(RHIBufferHandle handle, RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset) = 0;
-        virtual bool AllocImageAliased(RHIImageHandle handle, RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset) = 0;
+        virtual bool AllocBufferAliased(RHIBufferHandle handle, RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool,
+                                        UInt64 offset) = 0;
+        virtual bool AllocImageAliased(RHIImageHandle handle, RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool,
+                                       UInt64 offset) = 0;
 
         virtual bool AllocImageView(RHIImageViewHandle handle, RHIImageHandle imageHandle, RHIImageViewDesc&& desc) = 0;
         virtual void ReleaseImageView(RHIImageViewHandle handle) = 0;
@@ -68,16 +70,20 @@ namespace ArisenEngine::RHI
         virtual void ReleaseRenderPass(RHIRenderPassHandle handle) = 0;
         virtual void ReleaseFrameBuffer(RHIFrameBufferHandle handle) = 0;
         virtual void ReleasePipeline(RHIPipelineHandle handle) = 0;
-        
+
         virtual void ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle) = 0;
-        virtual bool AllocAccelerationStructure(RHIAccelerationStructureHandle handle, ERHIAccelerationStructureType type, UInt64 size, RHIBufferHandle buffer, UInt64 offset) = 0;
-        virtual bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle, RHIRenderPassHandle renderPassHandle) = 0;
+        virtual bool AllocAccelerationStructure(RHIAccelerationStructureHandle handle,
+                                                ERHIAccelerationStructureType type, UInt64 size, RHIBufferHandle buffer,
+                                                UInt64 offset) = 0;
+        virtual bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle,
+                                      RHIRenderPassHandle renderPassHandle) = 0;
     };
 
     class RHI_DLL RHIDevice
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIDevice)
+
         virtual ~RHIDevice() noexcept
         {
             m_Instance = nullptr;
@@ -87,7 +93,7 @@ namespace ArisenEngine::RHI
         RHISurface* GetSurface() const { return m_Surface; }
         RHIInstance* GetInstance() const { return m_Instance; }
         virtual UInt32 GetMaxFramesInFlight() const = 0;
-        
+
         // CppSharp: exclude from binding — backend-only void* accessors.
         virtual void* GetHandle() const = 0;
         virtual void DeviceWaitIdle() const = 0;
@@ -107,7 +113,8 @@ namespace ArisenEngine::RHI
 
         virtual RHIMemoryAllocator* GetMemoryAllocator() const = 0;
 
-        virtual RHIGpuTicket Submit(RHICommandBufferHandle commandBuffer, const struct RHISubmitDescriptor* descriptor = nullptr) = 0;
+        virtual RHIGpuTicket Submit(RHICommandBufferHandle commandBuffer,
+                                    const struct RHISubmitDescriptor* descriptor = nullptr) = 0;
 
         // Descriptor Heap & Bindless Table
         virtual RHIDescriptorHeap* CreateDescriptorHeap(EDescriptorHeapType type, UInt32 descriptorCount) = 0;
@@ -125,8 +132,17 @@ namespace ArisenEngine::RHI
 
         // Optional: expose backend queues (graphics/compute/transfer/present).
         // Backends may return nullptr for unsupported queues.
-        virtual RHIQueue* GetQueue(RHIQueueType type) { (void)type; return nullptr; }
-        virtual RHICommandBufferPool* GetCommandBufferPool(RHICommandBufferPoolHandle handle) { (void)handle; return nullptr; }
+        virtual RHIQueue* GetQueue(RHIQueueType type)
+        {
+            (void)type;
+            return nullptr;
+        }
+
+        virtual RHICommandBufferPool* GetCommandBufferPool(RHICommandBufferPoolHandle handle)
+        {
+            (void)handle;
+            return nullptr;
+        }
 
         // Queue-scoped deferred delete helper. Backends can override to route to their deletion queue.
         // Default is immediate delete (safe for non-GPU objects).
@@ -149,7 +165,6 @@ namespace ArisenEngine::RHI
             return m_DeviceLimits;
         }
 
-
     public:
     protected:
         virtual UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) = 0;
@@ -157,9 +172,11 @@ namespace ArisenEngine::RHI
         RHIInstance* m_Instance;
         RHISurface* m_Surface;
         RHIDeviceLimits m_DeviceLimits;
-        RHIDevice(RHIInstance* instance, RHISurface* surface): m_Instance(instance), m_Surface(surface) {}
+
+        RHIDevice(RHIInstance* instance, RHISurface* surface): m_Instance(instance), m_Surface(surface)
+        {
+        }
+
     private:
-        
     };
 }
-

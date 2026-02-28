@@ -8,29 +8,31 @@ using System.Text.RegularExpressions;
 
 public enum TokenType
 {
-    Identifier,             // 变量名、关键词等（如 Blend, _SrcBlend）
-    IntegerLiteral,         // 整数，如 0, 1, 255
-    FloatLiteral,           // 浮点数，如 1.0, .5, 2.75
-    StringLiteral,          // 字符串（如 "MyTexture"）
-    Symbol,                 // 符号（如 {}, (), [], =, ; 等）
+    Identifier, // 变量名、关键词等（如 Blend, _SrcBlend）
+    IntegerLiteral, // 整数，如 0, 1, 255
+    FloatLiteral, // 浮点数，如 1.0, .5, 2.75
+    StringLiteral, // 字符串（如 "MyTexture"）
+    Symbol, // 符号（如 {}, (), [], =, ; 等）
 
-    PreprocessorDirective,  // 预处理指令（如 #include, #pragma）
-    
-    CommentLine,            // 单行注释（如 // 注释）
-    CommentBlock,           // 多行注释（如 /* 注释 */）
+    PreprocessorDirective, // 预处理指令（如 #include, #pragma）
 
-    EndOfFile               // 文件结尾标志
+    CommentLine, // 单行注释（如 // 注释）
+    CommentBlock, // 多行注释（如 /* 注释 */）
+
+    EndOfFile // 文件结尾标志
 }
 
 public class Token
 {
     public TokenType type;
     public string text;
+
     public int line;
+
     // 起始字符索引与长度，用于基于源文本的区间切片
     public int start;
     public int length;
-    public override string ToString() =>  $"{line}: {type} => {text}";
+    public override string ToString() => $"{line}: {type} => {text}";
 }
 
 public class Lexer
@@ -40,7 +42,7 @@ public class Lexer
         + @"|(?<comment>//[^\r\n]*|/\*.*?\*/)"
         + @"|(?<preprocessor>#[^\r\n]+)"
         + @"|(?<string>""([^""\\]|\\.)*"")"
-        + @"|(?<float>\d+\.\d+|\.\d+)"       // 放在 int 前
+        + @"|(?<float>\d+\.\d+|\.\d+)" // 放在 int 前
         + @"|(?<int>\d+)"
         + @"|(?<identifier>[A-Za-z_][A-Za-z0-9_]*)"
         + @"|(?<symbol>[{}()\[\];:,<>.+\-*/=%&|^!~?])"
@@ -91,37 +93,57 @@ public class Lexer
             else if (match.Groups["comment"].Success)
             {
                 var type = value.StartsWith("//") ? TokenType.CommentLine : TokenType.CommentBlock;
-                m_Tokens.Add(new Token { type = type, text = value, line = _line, start = m_Position, length = value.Length });
+                m_Tokens.Add(new Token
+                    { type = type, text = value, line = _line, start = m_Position, length = value.Length });
                 _line += CountNewlines(value);
             }
             else if (match.Groups["preprocessor"].Success)
             {
-                m_Tokens.Add(new Token { type = TokenType.PreprocessorDirective, text = value.Trim(), line = _line, start = m_Position, length = value.Length });
+                m_Tokens.Add(new Token
+                {
+                    type = TokenType.PreprocessorDirective, text = value.Trim(), line = _line, start = m_Position,
+                    length = value.Length
+                });
                 _line += CountNewlines(value);
             }
             else if (match.Groups["string"].Success)
             {
-                m_Tokens.Add(new Token { type = TokenType.StringLiteral, text = value, line = _line, start = m_Position, length = value.Length });
+                m_Tokens.Add(new Token
+                {
+                    type = TokenType.StringLiteral, text = value, line = _line, start = m_Position,
+                    length = value.Length
+                });
                 _line += CountNewlines(value);
             }
             else if (match.Groups["float"].Success)
             {
-                m_Tokens.Add(new Token { type = TokenType.FloatLiteral, text = value, line = _line, start = m_Position, length = value.Length });
+                m_Tokens.Add(new Token
+                {
+                    type = TokenType.FloatLiteral, text = value, line = _line, start = m_Position, length = value.Length
+                });
                 _line += CountNewlines(value);
             }
             else if (match.Groups["int"].Success)
             {
-                m_Tokens.Add(new Token { type = TokenType.IntegerLiteral, text = value, line = _line, start = m_Position, length = value.Length });
+                m_Tokens.Add(new Token
+                {
+                    type = TokenType.IntegerLiteral, text = value, line = _line, start = m_Position,
+                    length = value.Length
+                });
                 _line += CountNewlines(value);
             }
             else if (match.Groups["identifier"].Success)
             {
-                m_Tokens.Add(new Token { type = TokenType.Identifier, text = value, line = _line, start = m_Position, length = value.Length });
+                m_Tokens.Add(new Token
+                {
+                    type = TokenType.Identifier, text = value, line = _line, start = m_Position, length = value.Length
+                });
                 _line += CountNewlines(value);
             }
             else if (match.Groups["symbol"].Success)
             {
-                m_Tokens.Add(new Token { type = TokenType.Symbol, text = value, line = _line, start = m_Position, length = value.Length });
+                m_Tokens.Add(new Token
+                    { type = TokenType.Symbol, text = value, line = _line, start = m_Position, length = value.Length });
                 _line += CountNewlines(value);
             }
             else
@@ -133,11 +155,12 @@ public class Lexer
             m_Position += value.Length;
         }
 
-        m_Tokens.Add(new Token { type = TokenType.EndOfFile, text = "<EOF>", line = _line + 1, start = k_Input.Length, length = 0 });
-        
+        m_Tokens.Add(new Token
+            { type = TokenType.EndOfFile, text = "<EOF>", line = _line + 1, start = k_Input.Length, length = 0 });
+
         // TODO: 测试用
-        RemovePropertiesBlock(); 
-        
+        RemovePropertiesBlock();
+
         Serialization.SerializationUtil.Serialize(m_Tokens, "tokens.token");
     }
 
@@ -224,5 +247,4 @@ public class Lexer
             Logger.Error($"Expected token {type} '{text}', got {t.type} '{t.text}' at line {t.line}");
         return t;
     }
-    
 }

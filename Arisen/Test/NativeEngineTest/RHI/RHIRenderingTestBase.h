@@ -51,16 +51,16 @@ namespace ArisenEngine::Testing
         RHI::RHICommandBufferPoolHandle m_CmdPool;
         RHI::RHIDescriptorPool* m_DescriptorPool = nullptr;
         RHI::RHIDescriptorPoolHandle m_DescriptorPoolHandle;
-        
+
         RHI::RHISurface* m_Surface = nullptr;
         RHI::RHISwapChain* m_SwapChain = nullptr;
-        
+
         RHI::RHIShaderProgramHandle m_VertProgram;
         RHI::RHIShaderProgramHandle m_FragProgram;
-        
+
         Containers::Vector<UInt32> m_DescriptorPoolIds;
         Containers::Vector<RHI::RHIGpuTicket> m_FrameTickets;
-        
+
         GLTFModel m_Model;
 
     public:
@@ -73,9 +73,10 @@ namespace ArisenEngine::Testing
         void InitCommonResources();
         void InitShaderProgram(const String& shaderName);
         void TeardownCommonResources();
-        
-        void UploadImage(RHI::RHIImageHandle textureHandle, UInt64 imageSize, void* data, UInt32 texWidth, UInt32 texHeight, RHI::EImageLayout finalLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        
+
+        void UploadImage(RHI::RHIImageHandle textureHandle, UInt64 imageSize, void* data, UInt32 texWidth,
+                         UInt32 texHeight, RHI::EImageLayout finalLayout = RHI::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
         // Helper to get shader environment string
         String GetShaderEnvString();
     };

@@ -68,7 +68,7 @@ namespace ArisenEngine::RHI
             }
         }
         m_Layouts.clear();
-        
+
         LOG_DEBUG("[RHIVkPSOCache]: Cleared all cached pipelines and layouts.");
     }
 }

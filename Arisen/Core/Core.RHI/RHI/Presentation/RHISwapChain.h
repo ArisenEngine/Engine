@@ -14,31 +14,35 @@ namespace ArisenEngine::RHI
 
     struct RHISwapChainDescriptor
     {
-        UInt32 width { 0 }, height { 0 }, imageCount { 1 };
+        UInt32 width{0}, height{0}, imageCount{1};
         /// specific image layer, should be always 1, unless in VR
-        UInt32 imageArrayLayers { 1 };
-        UInt32 imageUsageFlagBits { 0 };
-        UInt32 queueFamilyIndexCount {2};
-        
-        EFormat colorFormat { FORMAT_R8G8B8_SRGB };
-        EColorSpace colorSpace { COLOR_SPACE_SRGB_NONLINEAR };
-        ESharingMode sharingMode { SHARING_MODE_CONCURRENT };
-        EPresentMode presentMode { PRESENT_MODE_FIFO };
-        
-        bool clipped { true };
-        UInt32 surfaceTransformFlagBits { 0 };
-        UInt32 compositeAlphaFlagBits { 0 };
-        UInt32 swapChainCreateFlags { 0 };
+        UInt32 imageArrayLayers{1};
+        UInt32 imageUsageFlagBits{0};
+        UInt32 queueFamilyIndexCount{2};
+
+        EFormat colorFormat{FORMAT_R8G8B8_SRGB};
+        EColorSpace colorSpace{COLOR_SPACE_SRGB_NONLINEAR};
+        ESharingMode sharingMode{SHARING_MODE_CONCURRENT};
+        EPresentMode presentMode{PRESENT_MODE_FIFO};
+
+        bool clipped{true};
+        UInt32 surfaceTransformFlagBits{0};
+        UInt32 compositeAlphaFlagBits{0};
+        UInt32 swapChainCreateFlags{0};
         // CppSharp-P0 RESOLVED: std::optional<const void*> replaced with const void*.
         const void* customData = nullptr;
     };
 
-    
+
     class RHISwapChain
     {
     public:
         NO_COPY_NO_MOVE(RHISwapChain)
-        RHISwapChain(UInt32 maxFramesInFlight): m_MaxFramesInFlight(maxFramesInFlight) {}
+
+        RHISwapChain(UInt32 maxFramesInFlight): m_MaxFramesInFlight(maxFramesInFlight)
+        {
+        }
+
         VIRTUAL_DECONSTRUCTOR(RHISwapChain)
         // CppSharp: exclude from binding — backend-only void* accessor.
         virtual void* GetHandle() const = 0;
@@ -51,7 +55,7 @@ namespace ArisenEngine::RHI
         [[deprecated("Use BeginFrame instead")]]
         virtual RHISemaphoreHandle GetImageAvailableSemaphore(UInt32 frameIndex) const = 0;
         [[deprecated("Use EndFrame instead")]]
-        virtual RHISemaphoreHandle GetRenderFinishSemaphore(UInt32 frameIndex) const  = 0;
+        virtual RHISemaphoreHandle GetRenderFinishSemaphore(UInt32 frameIndex) const = 0;
         [[deprecated("Use BeginFrame instead")]]
         virtual RHIImageHandle AcquireCurrentImage(UInt32 frameIndex) = 0;
         [[deprecated("Use BeginFrame or manual tracking instead")]]
@@ -60,6 +64,7 @@ namespace ArisenEngine::RHI
         virtual void Present(UInt32 frameIndex) = 0;
 
         virtual void Cleanup() = 0;
+
     protected:
         UInt32 m_MaxFramesInFlight;
         RHISwapChainDescriptor m_Desc;
@@ -78,7 +83,7 @@ namespace ArisenEngine::RHI
 
             RecreateSwapChainIfNeeded();
         }
-        
+
         void SetImageCount(UInt32 count)
         {
             if (count == m_Desc.imageCount)
@@ -90,7 +95,7 @@ namespace ArisenEngine::RHI
 
             RecreateSwapChainIfNeeded();
         }
-        
+
         void SetImageArrayLayers(UInt32 layers)
         {
             if (m_Desc.imageArrayLayers == layers)
@@ -99,10 +104,10 @@ namespace ArisenEngine::RHI
             }
 
             m_Desc.imageArrayLayers = layers;
-            
+
             RecreateSwapChainIfNeeded();
         }
-        
+
         void SetImageFormat(EFormat format)
         {
             if (format == m_Desc.colorFormat)
@@ -113,7 +118,7 @@ namespace ArisenEngine::RHI
             m_Desc.colorFormat = format;
             RecreateSwapChainIfNeeded();
         }
-        
+
         void SetColorSpace(EColorSpace colorSpace)
         {
             if (m_Desc.colorSpace == colorSpace)
@@ -121,17 +126,17 @@ namespace ArisenEngine::RHI
                 return;
             }
 
-           m_Desc.colorSpace = colorSpace;
+            m_Desc.colorSpace = colorSpace;
             RecreateSwapChainIfNeeded();
         }
-        
+
         void SetImageUsage(UInt32 usage)
         {
             if (usage == m_Desc.imageUsageFlagBits)
             {
                 return;
             }
-            
+
             m_Desc.imageUsageFlagBits = usage;
             RecreateSwapChainIfNeeded();
         }

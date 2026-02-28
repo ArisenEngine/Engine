@@ -7,7 +7,7 @@ ArisenEngine::RHI::RHIVkFence::RHIVkFence(VkDevice device) : RHIFence(), m_VkDev
     VkFenceCreateInfo fenceInfo{};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-    
+
     if (vkCreateFence(device, &fenceInfo, nullptr, &m_VkFence) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("[RHIVkFence::RHIVkFence]: failed to create synchronization objects for a frame!");
@@ -30,7 +30,3 @@ void ArisenEngine::RHI::RHIVkFence::Unlock()
 {
     vkResetFences(m_VkDevice, 1, &m_VkFence);
 }
-
-
-
-

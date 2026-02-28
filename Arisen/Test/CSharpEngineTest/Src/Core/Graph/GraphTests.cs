@@ -10,7 +10,7 @@ public class GraphTests : ITest
     {
         public bool Executed { get; set; }
         public int ExecutionOrder { get; set; }
-        
+
         public TestNode(string name)
         {
             Name = name;
@@ -41,7 +41,10 @@ public class GraphTests : ITest
     public TestCategory GetCategory() => TestCategory.Framework; // Assuming Framework fits
 
     public bool Setup() => true;
-    public void Teardown() { }
+
+    public void Teardown()
+    {
+    }
 
     public bool Run()
     {
@@ -85,13 +88,13 @@ public class GraphTests : ITest
         var graph = new Graph<TestNode>();
         var a = graph.AddNode(new TestNode("A"));
         var b = graph.AddNode(new TestNode("B"));
-        
+
         graph.Connect(a.Id, 0, b.Id, 0);
         graph.Connect(b.Id, 0, a.Id, 0);
 
         bool hasCycle = GraphCompiler.HasCycle(graph);
         if (!hasCycle) Logger.Error("Cycle detection failed - should have detected a cycle!");
-        
+
         try
         {
             GraphCompiler.Compile(graph);
@@ -111,14 +114,14 @@ public class GraphTests : ITest
         Logger.Log("Testing Parallel Execution Layers...");
         var graph = new Graph<TestNode>();
         var root = graph.AddNode(new TestNode("Root"));
-        
+
         // Root -> [A, B, C, D] -> End
         var nodes = new List<TestNode>();
-        for(int i=0; i<4; i++) nodes.Add(graph.AddNode(new TestNode($"Parallel_{i}")));
-        
+        for (int i = 0; i < 4; i++) nodes.Add(graph.AddNode(new TestNode($"Parallel_{i}")));
+
         var end = graph.AddNode(new TestNode("End"));
 
-        foreach(var n in nodes)
+        foreach (var n in nodes)
         {
             graph.Connect(root.Id, 0, n.Id, 0);
             graph.Connect(n.Id, 0, end.Id, 0);

@@ -4,9 +4,11 @@
 
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+
 namespace ArisenEngine::RHI
 {
     ARISEN_BIND_ENUM(EPipelineStageFlagBits)
+
     // can be multiple bits
     typedef enum EPipelineStageFlag
     {
@@ -44,5 +46,5 @@ namespace ArisenEngine::RHI
         PIPELINE_STAGE_MESH_SHADER_BIT_NV = PIPELINE_STAGE_MESH_SHADER_BIT_EXT,
         PIPELINE_STAGE_NONE_KHR = PIPELINE_STAGE_NONE,
         PIPELINE_STAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
-} EPipelineStageFlagBits;
+    } EPipelineStageFlagBits;
 }

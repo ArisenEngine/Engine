@@ -15,16 +15,18 @@ public sealed class EngineKernel : IDisposable
     public EnginePhase CurrentPhase => m_CurrentPhase;
     public EngineConfig Config { get; private set; }
 
-    private EngineKernel() { }
+    private EngineKernel()
+    {
+    }
 
     public void RegisterSubsystem<T>(T subsystem) where T : class, IEngineSubsystem
     {
         if (m_CurrentPhase != EnginePhase.None)
             throw new InvalidOperationException("Cannot register subsystems after initialization has started");
-        
+
         if (m_Subsystems.Any(s => s is T))
             throw new InvalidOperationException($"Subsystem of type {typeof(T).Name} is already registered.");
-            
+
         m_Subsystems.Add(subsystem);
     }
 
@@ -38,14 +40,14 @@ public sealed class EngineKernel : IDisposable
         using var _ = Profiler.Zone("EngineKernel.Initialize");
         Config = config;
         Logger.Log("[EngineKernel] Initializing...");
-        
+
         // Sort subsystems by priority
         m_Subsystems.Sort((a, b) => a.Priority.CompareTo(b.Priority));
 
         TransitionTo(EnginePhase.PreInit);
         TransitionTo(EnginePhase.Init);
         TransitionTo(EnginePhase.PostInit);
-        
+
         m_IsRunning = true;
         m_CurrentPhase = EnginePhase.Running;
         Logger.Log("[EngineKernel] Engine is now Running.");
@@ -70,11 +72,11 @@ public sealed class EngineKernel : IDisposable
     public int Run()
     {
         using var _ = Profiler.Zone("EngineKernel.Run");
-        if (!m_IsRunning) 
+        if (!m_IsRunning)
         {
             Initialize(Config ?? new EngineConfig());
         }
-        
+
         var frameScheduler = new FrameScheduler();
 
         while (m_IsRunning)
@@ -84,11 +86,11 @@ public sealed class EngineKernel : IDisposable
             {
                 Time.Update();
                 float deltaTime = Time.deltaTime;
-            
+
                 frameScheduler.ExecuteFrame(deltaTime, m_Subsystems);
             }
         }
-        
+
         return 0;
     }
 
@@ -105,10 +107,10 @@ public sealed class EngineKernel : IDisposable
 
         Logger.Log("[EngineKernel] Shutting down...");
         m_CurrentPhase = EnginePhase.PreShutdown;
-        
+
         // Shutdown in reverse priority order
         var reversedSubsystems = m_Subsystems.AsEnumerable().Reverse().ToList();
-        
+
         foreach (var subsystem in reversedSubsystems)
         {
             Logger.Log($"  [Subsystem] Shutting down: {subsystem.GetType().Name}");

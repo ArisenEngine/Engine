@@ -23,7 +23,7 @@ namespace std { using experimental::optional; }
 // Fallback to satisfy parser when neither optional header is present
 namespace std { template <class T> class optional; }
 #endif
-#include <cstring> 
+#include <cstring>
 #include <string>
 #include <vector>
 #if __has_include(<filesystem>)
@@ -62,7 +62,7 @@ namespace ArisenEngine::HAL
 #else
 #define STAGE_PREFIX_ENUM(e) s_Stages[static_cast<uint32_t>(e)]
 #endif
-    #if !defined(ARISEN_AUTOBINDING)
+#if !defined(ARISEN_AUTOBINDING)
     static String s_Stages[RHI::STAGE_MAX] =
     {
         L"vs_",
@@ -75,7 +75,7 @@ namespace ArisenEngine::HAL
         L"as_",
         L"ms_"
     };
-    #endif
+#endif
 
     struct ShaderCompilerOutput
     {
@@ -87,12 +87,12 @@ namespace ArisenEngine::HAL
 
     struct ShaderCompileParams
     {
-        String input{ L"" };
-        String entry{ L"main" };
-        String shaderModel{ L"6_4" };
-        String target{ L"-spirv" };
+        String input{L""};
+        String entry{L"main"};
+        String shaderModel{L"6_4"};
+        String target{L"-spirv"};
         String targetEnv;
-        String optimizeLevel{ L"0" };
+        String optimizeLevel{L"0"};
         RHI::EProgramStage stage;
 
         std::vector<String> defines;
@@ -106,7 +106,8 @@ namespace ArisenEngine::HAL
 
     extern "C" SHADERCOMPILER_DLL void ReleaseDXC();
 
-    extern "C" SHADERCOMPILER_DLL bool CompileShaderFromFile(ShaderCompileParams&& params, ShaderCompilerOutput& output);
+    extern "C" SHADERCOMPILER_DLL bool
+    CompileShaderFromFile(ShaderCompileParams&& params, ShaderCompilerOutput& output);
 
     // A simpler C ABI for managed callers: avoids constructing STL containers from C# side
     extern "C" SHADERCOMPILER_DLL bool CompileShaderFromFileSimple(

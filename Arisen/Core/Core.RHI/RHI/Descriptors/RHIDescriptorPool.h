@@ -11,7 +11,6 @@ namespace ArisenEngine::RHI
 
 namespace ArisenEngine::RHI
 {
-    
     class RHI_DLL RHIDescriptorPool
     {
     public:
@@ -19,7 +18,8 @@ namespace ArisenEngine::RHI
         RHIDescriptorPool();
         VIRTUAL_DECONSTRUCTOR(RHIDescriptorPool)
 
-        virtual UInt32 AddPool(Containers::Vector<EDescriptorType> types, Containers::Vector<UInt32> counts, UInt32 maxSets) = 0;
+        virtual UInt32 AddPool(Containers::Vector<EDescriptorType> types, Containers::Vector<UInt32> counts,
+                               UInt32 maxSets) = 0;
         virtual bool ResetPool(UInt32 poolId) = 0;
         virtual UInt32 AllocDescriptorSet(UInt32 poolId, UInt32 layoutIndex, RHIPipelineState* pso) = 0;
         virtual RHIDescriptorSet* GetDescriptorSet(UInt32 poolId, UInt32 setIndex) = 0;
@@ -28,4 +28,3 @@ namespace ArisenEngine::RHI
         virtual void UpdateDescriptorSet(UInt32 poolId, UInt32 setIndex, RHIPipelineState* pso) = 0;
     };
 }
-

@@ -11,13 +11,9 @@ namespace ArisenEngine::RHI
         RHIVkSampler(RHIDevice* device, RHISamplerDesc&& desc);
         virtual ~RHIVkSampler();
         void* GetHandle() const override;
+
     private:
         VkSampler m_Sampler;
         VkDevice m_VkDevice;
     };
 }
-
-
-
-
-

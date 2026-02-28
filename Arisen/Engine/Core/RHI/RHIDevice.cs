@@ -58,8 +58,9 @@ public readonly struct RHIDevice
             descArray[3] = IntPtr.Zero; // 0 count
             descArray[4] = IntPtr.Zero;
             descArray[5] = IntPtr.Zero; // 0 count
-            
-            return RHIDeviceAPI.RHIDevice_Submit(Handle, cb.RHIHandle.Index, cb.RHIHandle.Generation, (IntPtr)descArray);
+
+            return RHIDeviceAPI.RHIDevice_Submit(Handle, cb.RHIHandle.Index, cb.RHIHandle.Generation,
+                (IntPtr)descArray);
         }
     }
 

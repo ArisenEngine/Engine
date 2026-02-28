@@ -15,7 +15,9 @@
 namespace ArisenEngine::Testing
 {
     using namespace ArisenEngine;
-    struct Particle {
+
+    struct Particle
+    {
         glm::vec4 position; // xyz, w = life
         glm::vec4 velocity; // xyz, w = maxLife
     };
@@ -25,24 +27,25 @@ namespace ArisenEngine::Testing
     private:
         std::unique_ptr<RHI::RHIPipelineState> m_ComputePso;
         RHI::RHIPipelineHandle m_ComputePipeline;
-        
+
         std::unique_ptr<RHI::RHIPipelineState> m_GraphicsPso;
         RHI::RHIPipelineHandle m_GraphicsPipeline;
 
         RHI::RHIBufferHandle m_ParticleBuffer;
         Containers::Vector<RHI::RHIBufferHandle> m_UboBuffer;
-        
+
         Containers::Vector<UInt32> m_ComputeDescriptorPoolIds;
         Containers::Vector<UInt32> m_GraphicsDescriptorPoolIds;
-        
+
         RHI::RHIShaderProgramHandle m_ComputeProgram;
-        
+
         const UInt32 m_ParticleCount = 1000000;
 
-        RHI::RHIShaderProgramHandle CreateProgram(const std::wstring& shaderName, RHI::EShaderStage stageFlag, const char* entryPoint)
+        RHI::RHIShaderProgramHandle CreateProgram(const std::wstring& shaderName, RHI::EShaderStage stageFlag,
+                                                  const char* entryPoint)
         {
             std::wstring envStr = GetShaderEnvString().ToWString();
-            
+
             namespace fs = std::filesystem;
             wchar_t exePathW[MAX_PATH]{};
             GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
@@ -70,16 +73,21 @@ namespace ArisenEngine::Testing
             params.useDXLayout = true;
 
             HAL::ShaderCompilerOutput output;
-            if (!HAL::CompileShaderFromFile(std::move(params), output) || output.codePointer == nullptr || output.codeSize == 0)
+            if (!HAL::CompileShaderFromFile(std::move(params), output) || output.codePointer == nullptr || output.
+                codeSize == 0)
             {
-                LOG_ERROR((std::string("Shader compilation failed for ") + entryPoint + ": " + output.msgOut.c_str()).c_str());
+                LOG_ERROR(
+                    (std::string("Shader compilation failed for ") + entryPoint + ": " + output.msgOut.c_str()).c_str(
+                    ));
                 return {};
             }
 
             auto program = m_Device->GetFactory()->CreateGPUProgram();
             {
                 std::string nameStr = String::WStringToString(path);
-                RHI::RHIShaderProgramDesc desc = { output.codeSize, output.codePointer, entryPoint, nameStr.c_str(), stageFlag };
+                RHI::RHIShaderProgramDesc desc = {
+                    output.codeSize, output.codePointer, entryPoint, nameStr.c_str(), stageFlag
+                };
                 m_Device->GetFactory()->AttachProgramByteCode(program, std::move(desc));
             }
             if (output.codePointer) std::free(output.codePointer);
@@ -95,7 +103,7 @@ namespace ArisenEngine::Testing
             RHIRenderingTestBase::SetupTest();
 
             InitCommonResources();
-            
+
             // Programs
             m_ComputeProgram = CreateProgram(L"GPUParticle", RHI::SHADER_STAGE_COMPUTE_BIT, "CSMain");
             m_VertProgram = CreateProgram(L"GPUParticle", RHI::SHADER_STAGE_VERTEX_BIT, "VSMain");
@@ -111,7 +119,7 @@ namespace ArisenEngine::Testing
         {
             if (m_ParticleBuffer.IsValid()) m_Device->GetFactory()->ReleaseBuffer(m_ParticleBuffer);
             for (auto& ub : m_UboBuffer) if (ub.IsValid()) m_Device->GetFactory()->ReleaseBuffer(ub);
-            
+
             if (m_ComputeProgram.IsValid()) m_Device->GetFactory()->ReleaseGPUProgram(m_ComputeProgram);
             if (m_VertProgram.IsValid()) m_Device->GetFactory()->ReleaseGPUProgram(m_VertProgram);
             if (m_FragProgram.IsValid()) m_Device->GetFactory()->ReleaseGPUProgram(m_FragProgram);
@@ -154,21 +162,23 @@ namespace ArisenEngine::Testing
 
             // Init particles
             Containers::Vector<Particle> particles(m_ParticleCount);
-            for (auto& p : particles) {
+            for (auto& p : particles)
+            {
                 p.position = glm::vec4(
-                    (rand() % 200 - 100) / 100.0f,  // x: -1 to 1
+                    (rand() % 200 - 100) / 100.0f, // x: -1 to 1
                     (rand() % 100) / 100.0f - 2.0f, // y: starts low
-                    (rand() % 200 - 100) / 100.0f,  // z: -1 to 1
-                    (rand() % 1000) / 100.0f        // life
+                    (rand() % 200 - 100) / 100.0f, // z: -1 to 1
+                    (rand() % 1000) / 100.0f // life
                 );
                 p.velocity = glm::vec4(
-                    (rand() % 40 - 20) / 100.0f,    // vx
-                    (rand() % 100 + 50) / 100.0f,   // vy: upward
-                    (rand() % 40 - 20) / 100.0f,    // vz
-                    p.position.w                    // maxLife = initial life
+                    (rand() % 40 - 20) / 100.0f, // vx
+                    (rand() % 100 + 50) / 100.0f, // vy: upward
+                    (rand() % 40 - 20) / 100.0f, // vz
+                    p.position.w // maxLife = initial life
                 );
             }
-            m_Device->GetFactory()->BufferMemoryCopy(m_ParticleBuffer, particles.data(), m_ParticleCount * sizeof(Particle), 0);
+            m_Device->GetFactory()->BufferMemoryCopy(m_ParticleBuffer, particles.data(),
+                                                     m_ParticleCount * sizeof(Particle), 0);
 
             // UBO
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
@@ -186,13 +196,17 @@ namespace ArisenEngine::Testing
             for (UInt32 i = 0; i < m_MaxFramesInFlight; ++i)
             {
                 // Compute Pool Family
-                Containers::Vector<RHI::EDescriptorType> cTypes = { RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER };
-                Containers::Vector<UInt32> cCounts = { 128, 128 };
+                Containers::Vector<RHI::EDescriptorType> cTypes = {
+                    RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER
+                };
+                Containers::Vector<UInt32> cCounts = {128, 128};
                 m_ComputeDescriptorPoolIds.push_back(m_DescriptorPool->AddPool(cTypes, cCounts, 128));
-                
+
                 // Graphics Pool Family
-                Containers::Vector<RHI::EDescriptorType> gTypes = { RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER };
-                Containers::Vector<UInt32> gCounts = { 128, 128 };
+                Containers::Vector<RHI::EDescriptorType> gTypes = {
+                    RHI::DESCRIPTOR_TYPE_STORAGE_BUFFER, RHI::DESCRIPTOR_TYPE_UNIFORM_BUFFER
+                };
+                Containers::Vector<UInt32> gCounts = {128, 128};
                 m_GraphicsDescriptorPoolIds.push_back(m_DescriptorPool->AddPool(gTypes, gCounts, 128));
             }
         }
@@ -205,16 +219,16 @@ namespace ArisenEngine::Testing
             m_ComputePso = pm->GetPipelineState();
             m_ComputePso->SetBindPoint(RHI::PIPELINE_BIND_POINT_COMPUTE);
             m_ComputePso->AddProgram(m_ComputeProgram);
-            
+
             m_ComputePso->BuildDescriptorSetLayout();
-            
+
             m_ComputePipeline = pm->GetComputePipeline(m_ComputePso.get());
 
             // Graphics Pipeline
             m_GraphicsPso = pm->GetPipelineState();
             m_GraphicsPso->AddProgram(m_VertProgram);
             m_GraphicsPso->AddProgram(m_FragProgram);
-            
+
             m_GraphicsPso->SetBindPoint(RHI::PIPELINE_BIND_POINT_GRAPHICS);
 
             RHI::RHIInputAssemblyState ia{};
@@ -242,7 +256,7 @@ namespace ArisenEngine::Testing
             m_GraphicsPso->BuildDescriptorSetLayout();
             m_GraphicsPso->SetDynamicStateMask(RHI::DYNAMIC_STATE_VIEWPORT_BIT | RHI::DYNAMIC_STATE_SCISSOR_BIT);
 
-            Containers::Vector<RHI::EFormat> colorFormats = { RHI::FORMAT_B8G8R8A8_SRGB };
+            Containers::Vector<RHI::EFormat> colorFormats = {RHI::FORMAT_B8G8R8A8_SRGB};
             m_GraphicsPso->SetRenderingFormats(colorFormats, RHI::FORMAT_UNDEFINED, RHI::FORMAT_UNDEFINED);
 
             m_GraphicsPipeline = pm->GetGraphicsPipeline(m_GraphicsPso.get());
@@ -253,12 +267,13 @@ namespace ArisenEngine::Testing
             UpdateCamera((float)frameTime);
             float width = (float)HAL::GetWindowWidth(m_WindowId);
             float height = (float)HAL::GetWindowHeight(m_WindowId);
-            
+
             static auto startTime = std::chrono::high_resolution_clock::now();
             auto currentTime = std::chrono::high_resolution_clock::now();
             float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-            
-            struct FireUBO {
+
+            struct FireUBO
+            {
                 glm::mat4 model;
                 glm::mat4 view;
                 glm::mat4 projection;
@@ -267,7 +282,7 @@ namespace ArisenEngine::Testing
                 float deltaTime;
                 float padding;
             };
-            
+
             FireUBO fireUbo;
             fireUbo.model = glm::mat4(1.0f);
             fireUbo.view = GetViewMatrix();
@@ -275,31 +290,41 @@ namespace ArisenEngine::Testing
             fireUbo.mipmapBias = 0.0f;
             fireUbo.time = time;
             fireUbo.deltaTime = (float)frameTime;
-            
+
             m_Device->GetFactory()->BufferMemoryCopy(m_UboBuffer[GetCurrentFrameIndex()], &fireUbo, sizeof(FireUBO), 0);
         }
 
         void RecordAndSubmit()
         {
             auto currentIndex = GetCurrentFrameIndex();
-            
+
             // Update Descriptors
             {
                 m_DescriptorPool->ResetPool(m_ComputeDescriptorPoolIds[currentIndex]);
                 m_DescriptorPool->ResetPool(m_GraphicsDescriptorPoolIds[currentIndex]);
 
-                m_ComputePso->UpdateDescriptorSet(0, 0, Containers::Vector<RHI::RHIBufferHandle>{ m_ParticleBuffer });
-                m_ComputePso->UpdateDescriptorSet(0, 1, Containers::Vector<RHI::RHIBufferHandle>{ m_UboBuffer[currentIndex] });
-                
-                UInt32 setIdx = m_DescriptorPool->AllocDescriptorSet(m_ComputeDescriptorPoolIds[currentIndex], (UInt32)0, (RHI::RHIPipelineState*)m_ComputePso.get());
-                m_DescriptorPool->UpdateDescriptorSet(m_ComputeDescriptorPoolIds[currentIndex], setIdx, m_ComputePso.get());
+                m_ComputePso->UpdateDescriptorSet(0, 0, Containers::Vector<RHI::RHIBufferHandle>{m_ParticleBuffer});
+                m_ComputePso->UpdateDescriptorSet(0, 1, Containers::Vector<RHI::RHIBufferHandle>{
+                                                      m_UboBuffer[currentIndex]
+                                                  });
+
+                UInt32 setIdx = m_DescriptorPool->AllocDescriptorSet(m_ComputeDescriptorPoolIds[currentIndex],
+                                                                     (UInt32)0,
+                                                                     (RHI::RHIPipelineState*)m_ComputePso.get());
+                m_DescriptorPool->UpdateDescriptorSet(m_ComputeDescriptorPoolIds[currentIndex], setIdx,
+                                                      m_ComputePso.get());
             }
             {
-                m_GraphicsPso->UpdateDescriptorSet(0, 0, Containers::Vector<RHI::RHIBufferHandle>{ m_ParticleBuffer });
-                m_GraphicsPso->UpdateDescriptorSet(0, 1, Containers::Vector<RHI::RHIBufferHandle>{ m_UboBuffer[currentIndex] });
-                
-                UInt32 setIdx = m_DescriptorPool->AllocDescriptorSet(m_GraphicsDescriptorPoolIds[currentIndex], (UInt32)0, (RHI::RHIPipelineState*)m_GraphicsPso.get());
-                m_DescriptorPool->UpdateDescriptorSet(m_GraphicsDescriptorPoolIds[currentIndex], setIdx, m_GraphicsPso.get());
+                m_GraphicsPso->UpdateDescriptorSet(0, 0, Containers::Vector<RHI::RHIBufferHandle>{m_ParticleBuffer});
+                m_GraphicsPso->UpdateDescriptorSet(0, 1, Containers::Vector<RHI::RHIBufferHandle>{
+                                                       m_UboBuffer[currentIndex]
+                                                   });
+
+                UInt32 setIdx = m_DescriptorPool->AllocDescriptorSet(m_GraphicsDescriptorPoolIds[currentIndex],
+                                                                     (UInt32)0,
+                                                                     (RHI::RHIPipelineState*)m_GraphicsPso.get());
+                m_DescriptorPool->UpdateDescriptorSet(m_GraphicsDescriptorPoolIds[currentIndex], setIdx,
+                                                      m_GraphicsPso.get());
             }
 
             auto pool = m_Device->GetCommandBufferPool(m_CmdPool);
@@ -310,7 +335,8 @@ namespace ArisenEngine::Testing
 
             // Compute Update
             cmd->BindPipeline(m_ComputePipeline);
-            cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_COMPUTE, 0, m_DescriptorPoolHandle, m_ComputeDescriptorPoolIds[currentIndex], 0);
+            cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_COMPUTE, 0, m_DescriptorPoolHandle,
+                                   m_ComputeDescriptorPoolIds[currentIndex], 0);
             cmd->Dispatch((m_ParticleCount + 255) / 256, 1, 1);
 
             // Barrier: Compute Write -> Vertex Read
@@ -322,8 +348,9 @@ namespace ArisenEngine::Testing
             barrier.dstStageMask = RHI::PIPELINE_STAGE_VERTEX_SHADER_BIT;
             barrier.srcQueueFamilyIndex = 0xFFFFFFFF;
             barrier.dstQueueFamilyIndex = 0xFFFFFFFF;
-            
-            cmd->PipelineBarrier(RHI::PIPELINE_STAGE_COMPUTE_SHADER_BIT, RHI::PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, &barrier, 1);
+
+            cmd->PipelineBarrier(RHI::PIPELINE_STAGE_COMPUTE_SHADER_BIT, RHI::PIPELINE_STAGE_VERTEX_SHADER_BIT, 0,
+                                 &barrier, 1);
 
             // Graphics Render
             auto colorBuffer = m_SwapChain->BeginFrame(currentIndex);
@@ -332,10 +359,10 @@ namespace ArisenEngine::Testing
                 auto colorView = m_SwapChain->GetImageView(currentIndex);
 
                 RHI::RHIRenderingInfo renderInfo = {};
-                renderInfo.RHIRenderArea = { 0, 0, HAL::GetWindowWidth(m_WindowId), HAL::GetWindowHeight(m_WindowId) };
+                renderInfo.RHIRenderArea = {0, 0, HAL::GetWindowWidth(m_WindowId), HAL::GetWindowHeight(m_WindowId)};
                 renderInfo.layerCount = 1;
                 renderInfo.colorAttachmentCount = 1;
-                
+
                 RHI::RHIRenderingAttachmentInfo att = {};
                 att.imageView = colorView;
                 att.imageLayout = RHI::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -352,9 +379,11 @@ namespace ArisenEngine::Testing
 
                 cmd->BeginRendering(renderInfo);
                 cmd->BindPipeline(m_GraphicsPipeline);
-                cmd->SetViewport(0, 0, (float)renderInfo.RHIRenderArea.width, (float)renderInfo.RHIRenderArea.height, 0, 1);
+                cmd->SetViewport(0, 0, (float)renderInfo.RHIRenderArea.width, (float)renderInfo.RHIRenderArea.height, 0,
+                                 1);
                 cmd->SetScissor(0, 0, renderInfo.RHIRenderArea.width, renderInfo.RHIRenderArea.height);
-                cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPoolHandle, m_GraphicsDescriptorPoolIds[currentIndex], 0);
+                cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_GRAPHICS, 0, m_DescriptorPoolHandle,
+                                       m_GraphicsDescriptorPoolIds[currentIndex], 0);
                 cmd->Draw(m_ParticleCount, 1, 0, 0, 0);
                 cmd->EndRendering();
 

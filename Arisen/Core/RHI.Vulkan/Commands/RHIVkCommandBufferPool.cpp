@@ -8,19 +8,20 @@
 
 using namespace ArisenEngine::RHI;
 
-ArisenEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* device, UInt32 maxFramesInFlight, RHIQueueType queueType)
-: RHICommandBufferPool(device, maxFramesInFlight),
-m_QueueType(queueType)
+ArisenEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* device, UInt32 maxFramesInFlight,
+                                                                  RHIQueueType queueType)
+    : RHICommandBufferPool(device, maxFramesInFlight),
+      m_QueueType(queueType)
 {
     m_VkDevice = static_cast<VkDevice>(device->GetHandle());
-    
+
     (void)maxFramesInFlight;
 }
 
 ArisenEngine::RHI::RHIVkCommandBufferPool::~RHIVkCommandBufferPool() noexcept
 {
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
-   
+
     for (auto handle : m_OwnedHandles)
     {
         vkDevice->ReleaseCommandBuffer(handle);
@@ -38,7 +39,8 @@ ArisenEngine::RHI::RHIVkCommandBufferPool::~RHIVkCommandBufferPool() noexcept
     }
 }
 
-RHICommandBufferHandle ArisenEngine::RHI::RHIVkCommandBufferPool::GetCommandBuffer(UInt32 currentFrameIndex, ECommandBufferLevel level)
+RHICommandBufferHandle ArisenEngine::RHI::RHIVkCommandBufferPool::GetCommandBuffer(
+    UInt32 currentFrameIndex, ECommandBufferLevel level)
 {
     ARISEN_PROFILE_ZONE("Vk::PoolGetCommandBuffer");
     auto& slot = GetCurrentThreadSlot();
@@ -58,14 +60,15 @@ RHICommandBufferHandle ArisenEngine::RHI::RHIVkCommandBufferPool::GetCommandBuff
 }
 
 
-void ArisenEngine::RHI::RHIVkCommandBufferPool::ReleaseCommandBuffer(UInt32 currentFrameIndex, RHICommandBufferHandle handle)
+void ArisenEngine::RHI::RHIVkCommandBufferPool::ReleaseCommandBuffer(UInt32 currentFrameIndex,
+                                                                     RHICommandBufferHandle handle)
 {
     (void)currentFrameIndex;
     auto* commandBuffer = static_cast<RHIVkDevice*>(GetDevice())->GetCommandBuffer(handle);
     if (!commandBuffer) return;
 
     auto ticket = commandBuffer->GetLatestSubmitTicket();
-    
+
     // Check if the GPU is already done with it.
     if (GetDevice()->GetCompletedSubmitTicket() >= ticket)
     {
@@ -86,14 +89,16 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::FlushPendingBuffers(ThreadSlot& 
     if (slot.pendingBuffers.empty()) return;
 
     auto completed = GetDevice()->GetCompletedSubmitTicket();
-    
-    for (auto it = slot.pendingBuffers.begin(); it != slot.pendingBuffers.end(); )
+
+    for (auto it = slot.pendingBuffers.begin(); it != slot.pendingBuffers.end();)
     {
         if (completed >= it->first)
         {
             auto* cmd = it->second;
             cmd->ResetInternal();
-            auto& freeList = (cmd->GetLevel() == COMMAND_BUFFER_LEVEL_PRIMARY) ? slot.freePrimaryBuffers : slot.freeSecondaryBuffers;
+            auto& freeList = (cmd->GetLevel() == COMMAND_BUFFER_LEVEL_PRIMARY)
+                                 ? slot.freePrimaryBuffers
+                                 : slot.freeSecondaryBuffers;
             freeList.push_back(cmd);
             it = slot.pendingBuffers.erase(it);
         }
@@ -112,7 +117,9 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::ConsumeMailbox(ThreadSlot& slot)
         if (cmd)
         {
             cmd->ResetInternal();
-            auto& freeList = (cmd->GetLevel() == COMMAND_BUFFER_LEVEL_PRIMARY) ? slot.freePrimaryBuffers : slot.freeSecondaryBuffers;
+            auto& freeList = (cmd->GetLevel() == COMMAND_BUFFER_LEVEL_PRIMARY)
+                                 ? slot.freePrimaryBuffers
+                                 : slot.freeSecondaryBuffers;
             freeList.push_back(cmd);
         }
     }
@@ -133,7 +140,9 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::InternalRecycle(RHICommandBuffer
     if (ownerThreadIdx == ThreadRegistry::GetThreadIndex())
     {
         auto& slot = m_Slots[ownerThreadIdx];
-        auto& freeList = (commandBuffer->GetLevel() == COMMAND_BUFFER_LEVEL_PRIMARY) ? slot.freePrimaryBuffers : slot.freeSecondaryBuffers;
+        auto& freeList = (commandBuffer->GetLevel() == COMMAND_BUFFER_LEVEL_PRIMARY)
+                             ? slot.freePrimaryBuffers
+                             : slot.freeSecondaryBuffers;
         freeList.push_back(commandBuffer);
         return;
     }
@@ -145,31 +154,33 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::InternalRecycle(RHICommandBuffer
     }
 }
 
-ArisenEngine::RHI::RHICommandBufferHandle ArisenEngine::RHI::RHIVkCommandBufferPool::CreateCommandBuffer(ECommandBufferLevel level)
+ArisenEngine::RHI::RHICommandBufferHandle ArisenEngine::RHI::RHIVkCommandBufferPool::CreateCommandBuffer(
+    ECommandBufferLevel level)
 {
     ARISEN_PROFILE_ZONE("Vk::PoolCreateCommandBuffer");
     auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
     ASSERT(vkDevice != nullptr);
-    
-    RHICommandBufferHandle handle = vkDevice->GetCommandBufferPool()->Allocate([this, vkDevice, level](RHIVkCommandBufferItem* item)
-    {
-        *item = RHIVkCommandBufferItem();
-        item->commandBuffer = new RHIVkCommandBuffer(vkDevice, this, level);
-        
-        // Register for deferred deletion
-        struct DeferredCmdBuffer
+
+    RHICommandBufferHandle handle = vkDevice->GetCommandBufferPool()->Allocate(
+        [this, vkDevice, level](RHIVkCommandBufferItem* item)
         {
-            RHIVkCommandBuffer* buffer;
-            ~DeferredCmdBuffer() { delete buffer; }
-        };
-        item->registryHandle = vkDevice->GetResourceRegistry()->Create(
-            MakeDeferredDeleteItem(new DeferredCmdBuffer{item->commandBuffer}));
-    });
+            *item = RHIVkCommandBufferItem();
+            item->commandBuffer = new RHIVkCommandBuffer(vkDevice, this, level);
+
+            // Register for deferred deletion
+            struct DeferredCmdBuffer
+            {
+                RHIVkCommandBuffer* buffer;
+                ~DeferredCmdBuffer() { delete buffer; }
+            };
+            item->registryHandle = vkDevice->GetResourceRegistry()->Create(
+                MakeDeferredDeleteItem(new DeferredCmdBuffer{item->commandBuffer}));
+        });
 
     auto* item = vkDevice->GetCommandBufferPool()->Get(handle);
     item->commandBuffer->SetRHIHandle(handle);
 
-    std::lock_guard<std::mutex> lock(m_PoolsMutex); 
+    std::lock_guard<std::mutex> lock(m_PoolsMutex);
     m_OwnedHandles.emplace_back(handle);
     return handle;
 }
@@ -187,7 +198,7 @@ RHIVkCommandBufferPool::ThreadSlot& ArisenEngine::RHI::RHIVkCommandBufferPool::G
         VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-        
+
         if (m_QueueType == RHIQueueType::Compute)
         {
             poolInfo.queueFamilyIndex = vkDevice->GetComputeFamilyIndex();
@@ -199,13 +210,10 @@ RHIVkCommandBufferPool::ThreadSlot& ArisenEngine::RHI::RHIVkCommandBufferPool::G
 
         if (vkCreateCommandPool(m_VkDevice, &poolInfo, nullptr, &slot.commandPool) != VK_SUCCESS)
         {
-            LOG_FATAL_AND_THROW("[RHIVkCommandBufferPool::GetCurrentThreadSlot]: failed to create command pool for thread!");
+            LOG_FATAL_AND_THROW(
+                "[RHIVkCommandBufferPool::GetCurrentThreadSlot]: failed to create command pool for thread!");
         }
     }
 
     return slot;
 }
-
-
-
-

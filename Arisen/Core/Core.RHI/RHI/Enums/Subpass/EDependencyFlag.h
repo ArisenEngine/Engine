@@ -3,12 +3,14 @@
 
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+
 namespace ArisenEngine::RHI
 {
     ARISEN_BIND_ENUM(EDependencyFlagBits)
+
     // can be multiple bits
     typedef enum EDependencyFlagBits
-     {  
+    {
         DEPENDENCY_BY_REGION_BIT = 0x00000001,
         DEPENDENCY_DEVICE_GROUP_BIT = 0x00000004,
         DEPENDENCY_VIEW_LOCAL_BIT = 0x00000002,

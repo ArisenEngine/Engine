@@ -9,7 +9,8 @@ namespace BindingGenerator.Generator;
 
 public static class CSharpGenerator
 {
-    public static List<(string FileName, string Content, string SubDir)> ProcessHeader(string content, string headerPath, string generationTime)
+    public static List<(string FileName, string Content, string SubDir)> ProcessHeader(string content,
+        string headerPath, string generationTime)
     {
         var results = new List<(string, string, string)>();
 
@@ -47,6 +48,7 @@ public static class CSharpGenerator
                     else
                         sb.AppendLine($"        {name},");
                 }
+
                 sb.AppendLine("    }");
                 sb.AppendLine("}");
 
@@ -73,6 +75,7 @@ public static class CSharpGenerator
                     var csName = StringUtils.ToPascalCase(name);
                     sb.AppendLine($"        public {csType} {csName};");
                 }
+
                 sb.AppendLine("    }");
                 sb.AppendLine("}");
 
@@ -99,7 +102,8 @@ public static class CSharpGenerator
                     sb.AppendLine("        public uint Index;");
                     sb.AppendLine("        public uint Generation;");
                     sb.AppendLine("        public bool IsValid => Index != 0xFFFFFFFFu;");
-                    sb.AppendLine($"        public static readonly {handleName} Invalid = new {handleName} {{ Index = 0xFFFFFFFF, Generation = 0 }};");
+                    sb.AppendLine(
+                        $"        public static readonly {handleName} Invalid = new {handleName} {{ Index = 0xFFFFFFFF, Generation = 0 }};");
                     sb.AppendLine("    }");
                     sb.AppendLine();
                 }
@@ -200,6 +204,7 @@ public static class CSharpGenerator
                 return ""; // keep at root for backward compatibility
             return last;
         }
+
         return "";
     }
 
@@ -218,7 +223,8 @@ public static class CSharpGenerator
                 csParams.Add($"{csType} {name}");
         }
 
-        sb.AppendLine($"        [SuppressUnmanagedCodeSecurity, DllImport({dllConst}, CallingConvention = CallingConvention.Cdecl)]");
+        sb.AppendLine(
+            $"        [SuppressUnmanagedCodeSecurity, DllImport({dllConst}, CallingConvention = CallingConvention.Cdecl)]");
         sb.AppendLine($"        public static extern {csReturnType} {func.Name}({string.Join(", ", csParams)});");
         sb.AppendLine();
     }

@@ -18,18 +18,20 @@ namespace ArisenEngine::RHI
         virtual UInt32 GetShaderStageCreateFlags() = 0;
         virtual void* GetSpecializationInfo() = 0;
         virtual void SetSpecializationConstant(UInt32 constantID, UInt32 size, const void* data) = 0;
-        void SetSpecializationConstant(UInt32 constantID, UInt32 value) { SetSpecializationConstant(constantID, sizeof(UInt32), &value); }
+
+        void SetSpecializationConstant(UInt32 constantID, UInt32 value)
+        {
+            SetSpecializationConstant(constantID, sizeof(UInt32), &value);
+        }
 
     public:
         const EShaderStage GetShaderState() const;
         const String& GetName() const;
 
-    
-    protected:    
+    protected:
         virtual void DestroyHandle() = 0;
         EShaderStage m_Stage;
-        String m_Entry {};
-        String m_Name {};
+        String m_Entry{};
+        String m_Name{};
     };
 }
-

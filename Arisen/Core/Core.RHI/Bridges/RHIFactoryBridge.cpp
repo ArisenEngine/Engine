@@ -12,7 +12,7 @@ using namespace ArisenEngine::RHI;
 ARISEN_BIND_BEGIN_BRIDGE("RHIFactory", "Core.RHI.dll", "Arisen.Native.RHI")
 
 // Helper: construct a typed handle from (index, generation) pair
-template<typename T>
+template <typename T>
 static inline RHIHandle<T> MakeHandle(uint32_t index, uint32_t generation)
 {
     RHIHandle<T> h;
@@ -22,16 +22,15 @@ static inline RHIHandle<T> MakeHandle(uint32_t index, uint32_t generation)
 }
 
 extern "C" {
-
 // ============================================================================
 // Buffer
 // ============================================================================
 
 RHI_DLL void RHIFactory_CreateBuffer(RHIFactory* f,
-    uint32_t createFlagBits, uint64_t size, uint32_t usage,
-    int sharingMode, uint32_t queueFamilyIndexCount,
-    int memoryUsage, const char* name,
-    uint32_t* outIndex, uint32_t* outGeneration)
+                                     uint32_t createFlagBits, uint64_t size, uint32_t usage,
+                                     int sharingMode, uint32_t queueFamilyIndexCount,
+                                     int memoryUsage, const char* name,
+                                     uint32_t* outIndex, uint32_t* outGeneration)
 {
     RHIBufferDescriptor desc{};
     desc.createFlagBits = createFlagBits;
@@ -52,7 +51,7 @@ RHI_DLL void RHIFactory_ReleaseBuffer(RHIFactory* f, uint32_t index, uint32_t ge
 }
 
 RHI_DLL void RHIFactory_BufferMemoryCopy(RHIFactory* f, uint32_t index, uint32_t generation,
-    const void* src, uint64_t size, uint64_t offset)
+                                         const void* src, uint64_t size, uint64_t offset)
 {
     f->BufferMemoryCopy(MakeHandle<RHIBufferTag>(index, generation), src, size, offset);
 }
@@ -82,11 +81,11 @@ RHI_DLL uint64_t RHIFactory_GetBufferDeviceAddress(RHIFactory* f, uint32_t index
 // ============================================================================
 
 RHI_DLL void RHIFactory_CreateImage(RHIFactory* f,
-    int imageType, uint32_t width, uint32_t height, uint32_t depth,
-    uint32_t mipLevels, uint32_t arrayLayers, int format, int tiling,
-    int imageLayout, uint32_t usage, int sampleCount, int sharingMode,
-    int memoryUsage, const char* name,
-    uint32_t* outIndex, uint32_t* outGeneration)
+                                    int imageType, uint32_t width, uint32_t height, uint32_t depth,
+                                    uint32_t mipLevels, uint32_t arrayLayers, int format, int tiling,
+                                    int imageLayout, uint32_t usage, int sampleCount, int sharingMode,
+                                    int memoryUsage, const char* name,
+                                    uint32_t* outIndex, uint32_t* outGeneration)
 {
     RHIImageDescriptor desc{};
     desc.imageType = static_cast<EImageType>(imageType);
@@ -119,11 +118,11 @@ RHI_DLL void RHIFactory_ReleaseImage(RHIFactory* f, uint32_t index, uint32_t gen
 // ============================================================================
 
 RHI_DLL void RHIFactory_CreateImageView(RHIFactory* f,
-    uint32_t imageIndex, uint32_t imageGeneration,
-    int viewType, int format, uint32_t aspectMask,
-    uint32_t baseMipLevel, uint32_t levelCount,
-    uint32_t baseArrayLayer, uint32_t layerCount,
-    uint32_t* outIndex, uint32_t* outGeneration)
+                                        uint32_t imageIndex, uint32_t imageGeneration,
+                                        int viewType, int format, uint32_t aspectMask,
+                                        uint32_t baseMipLevel, uint32_t levelCount,
+                                        uint32_t baseArrayLayer, uint32_t layerCount,
+                                        uint32_t* outIndex, uint32_t* outGeneration)
 {
     RHIImageViewDesc desc{};
     desc.viewType = static_cast<EImageViewType>(viewType);
@@ -148,11 +147,11 @@ RHI_DLL void RHIFactory_ReleaseImageView(RHIFactory* f, uint32_t index, uint32_t
 // ============================================================================
 
 RHI_DLL void RHIFactory_CreateSampler(RHIFactory* f,
-    int magFilter, int minFilter, int mipmapMode,
-    int addressModeU, int addressModeV, int addressModeW,
-    float mipLodBias, int anisotropyEnable, float maxAnisotropy,
-    int compareEnable, int compareOp, float minLod, float maxLod, int borderColor,
-    uint32_t* outIndex, uint32_t* outGeneration)
+                                      int magFilter, int minFilter, int mipmapMode,
+                                      int addressModeU, int addressModeV, int addressModeW,
+                                      float mipLodBias, int anisotropyEnable, float maxAnisotropy,
+                                      int compareEnable, int compareOp, float minLod, float maxLod, int borderColor,
+                                      uint32_t* outIndex, uint32_t* outGeneration)
 {
     RHISamplerDesc desc{};
     desc.magFilter = static_cast<EFilter>(magFilter);
@@ -242,7 +241,7 @@ RHI_DLL void RHIFactory_ReleaseFrameBuffer(RHIFactory* f, uint32_t index, uint32
 // ============================================================================
 
 RHI_DLL void RHIFactory_CreateCommandBufferPool(RHIFactory* f, int queueType,
-    uint32_t* outIndex, uint32_t* outGeneration)
+                                                uint32_t* outIndex, uint32_t* outGeneration)
 {
     auto handle = f->CreateCommandBufferPool(static_cast<RHIQueueType>(queueType));
     *outIndex = handle.index;
@@ -290,7 +289,7 @@ RHI_DLL void RHIFactory_ReleaseGPUProgram(RHIFactory* f, uint32_t index, uint32_
 }
 
 RHI_DLL int RHIFactory_AttachProgramByteCode(RHIFactory* f, uint32_t index, uint32_t generation,
-    int stage, const void* code, uint64_t size, const char* entryPoint)
+                                             int stage, const void* code, uint64_t size, const char* entryPoint)
 {
     RHIShaderProgramDesc desc{};
     desc.stage = static_cast<EShaderStage>(stage);
@@ -313,7 +312,6 @@ RHI_DLL uint32_t RHIFactory_RegisterBindlessResourceBuffer(RHIFactory* f, uint32
 {
     return f->RegisterBindlessResource(MakeHandle<RHIBufferTag>(index, generation));
 }
-
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()

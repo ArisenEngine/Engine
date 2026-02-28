@@ -14,7 +14,7 @@ bool CheckDeviceExtensionSupport(VkPhysicalDevice device)
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
 
     ArisenEngine::Containers::Set<String> requiredExtensions(ArisenEngine::RHI::VkMandatoryDeviceExtensionNames.begin(),
-        ArisenEngine::RHI::VkMandatoryDeviceExtensionNames.end());
+                                                             ArisenEngine::RHI::VkMandatoryDeviceExtensionNames.end());
 
     for (const auto& extension : availableExtensions)
     {
@@ -25,20 +25,21 @@ bool CheckDeviceExtensionSupport(VkPhysicalDevice device)
     {
         for (const auto& ext : requiredExtensions)
         {
-            LOG_WARN(String::Format("[CheckDeviceExtensionSupport]: Mandatory extension not supported: %s", ext.c_str()));
+            LOG_WARN(
+                String::Format("[CheckDeviceExtensionSupport]: Mandatory extension not supported: %s", ext.c_str()));
         }
     }
-    
+
     return requiredExtensions.empty();
 }
 
-int RateDeviceSuitability(VkPhysicalDevice device) {
-    
+int RateDeviceSuitability(VkPhysicalDevice device)
+{
     VkPhysicalDeviceProperties deviceProperties;
     VkPhysicalDeviceFeatures deviceFeatures;
     vkGetPhysicalDeviceProperties(device, &deviceProperties);
     vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
-    
+
     int score = 0;
 
     // Discrete GPUs have a significant performance advantage
@@ -47,7 +48,7 @@ int RateDeviceSuitability(VkPhysicalDevice device) {
         score += 1000;
     }
 
-    
+
     // Maximum possible size of textures affects graphics quality
     score += deviceProperties.limits.maxImageDimension2D;
     score += deviceProperties.limits.maxViewports;
@@ -69,7 +70,7 @@ int RateDeviceSuitability(VkPhysicalDevice device) {
     {
         return 0;
     }
-    
+
     return score;
 }
 
@@ -96,7 +97,9 @@ bool CheckValidationLayerSupport()
 
         if (!layerFound)
         {
-            LOG_INFO(String::Format("[RHIVkInstance::CheckValidationLayerSupport]: ValidationLayer not found: %s", layerName));
+            LOG_INFO(
+                String::Format("[RHIVkInstance::CheckValidationLayerSupport]: ValidationLayer not found: %s", layerName
+                ));
             return false;
         }
     }
@@ -117,8 +120,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
         return VK_FALSE;
     }
 
-    std::cout<<pCallbackData->pMessage<<std::endl;
-    
+    std::cout << pCallbackData->pMessage << std::endl;
+
     if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
     {
         LOG_ERROR(String::Format(" ######### vk message error: %s", pCallbackData->pMessage));
@@ -170,7 +173,7 @@ ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(RHIInstanceInfo&& app_info): RHI
     }
 
     m_EnableValidation = app_info.validationLayer;
-    m_VulkanVersion = { app_info.variant, app_info.major, app_info.minor };
+    m_VulkanVersion = {app_info.variant, app_info.major, app_info.minor};
 
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -233,8 +236,10 @@ ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(RHIInstanceInfo&& app_info): RHI
         // Only use layer settings if the extension is supported by the instance
         if (layerSettingsSupported)
         {
-            layerSettings[0] = { validationLayerName, "report_flags", VK_LAYER_SETTING_TYPE_STRING_EXT, 1, &reportFlagsValue };
-            layerSettings[1] = { validationLayerName, "validate_sync", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &syncVal };
+            layerSettings[0] = {
+                validationLayerName, "report_flags", VK_LAYER_SETTING_TYPE_STRING_EXT, 1, &reportFlagsValue
+            };
+            layerSettings[1] = {validationLayerName, "validate_sync", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &syncVal};
 
             settingsCreateInfo.sType = VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT;
             settingsCreateInfo.pNext = &debugCreateInfo;
@@ -245,7 +250,8 @@ ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(RHIInstanceInfo&& app_info): RHI
         }
         else
         {
-            LOG_INFO("[RHIVkInstance::RHIVkInstance]: VK_EXT_layer_settings not supported, using standard debug messenger fallback.");
+            LOG_INFO(
+                "[RHIVkInstance::RHIVkInstance]: VK_EXT_layer_settings not supported, using standard debug messenger fallback.");
         }
 
         // Extensions Slot 
@@ -270,7 +276,9 @@ ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(RHIInstanceInfo&& app_info): RHI
                 // Silence warning for optional extensions
                 if (strcmp(extensionName, VK_EXT_LAYER_SETTINGS_EXTENSION_NAME) != 0)
                 {
-                    LOG_WARN(String::Format("[RHIVkInstance::RHIVkInstance]: instance extension not supported: %s", extensionName));
+                    LOG_WARN(
+                        String::Format("[RHIVkInstance::RHIVkInstance]: instance extension not supported: %s",
+                            extensionName));
                 }
             }
         }
@@ -308,11 +316,11 @@ ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(RHIInstanceInfo&& app_info): RHI
     VkResult result = vkCreateInstance(&createInfo, nullptr, &m_VkInstance);
     if (result != VK_SUCCESS)
     {
-        LOG_FATAL_AND_THROW(String::Format("[RHIVkInstance::RHIVkInstance]: failed to create instance! VkResult: %d", (int)result));
+        LOG_FATAL_AND_THROW(
+            String::Format("[RHIVkInstance::RHIVkInstance]: failed to create instance! VkResult: %d", (int)result));
     }
 
     SetupDebugMessager();
-    
 }
 
 VkResult CreateDebugUtilsMessengerEXT(
@@ -337,31 +345,29 @@ VkResult CreateDebugUtilsMessengerEXT(
 
 ArisenEngine::RHI::VkQueueFamilyIndices ArisenEngine::RHI::RHIVkInstance::FindQueueFamilies(VkSurfaceKHR surface)
 {
-
     if (m_CurrentPhysicsDevice == VK_NULL_HANDLE)
     {
         LOG_FATAL_AND_THROW("[RHIVkInstance::FindQueueFamilies]: Physical device invalid!");
     }
 
     ArisenEngine::RHI::VkQueueFamilyIndices indices;
-    
+
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(m_CurrentPhysicsDevice,
-        &queueFamilyCount, nullptr);
+                                             &queueFamilyCount, nullptr);
 
     ArisenEngine::Containers::Vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(m_CurrentPhysicsDevice, &queueFamilyCount,
-        queueFamilies.data());
+                                             queueFamilies.data());
 
     int i = 0;
     for (const auto& queueFamily : queueFamilies)
     {
-
         if (indices.IsComplete())
         {
             break;
         }
-        
+
         if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {
             indices.graphicsFamily = i;
@@ -394,9 +400,9 @@ ArisenEngine::RHI::VkQueueFamilyIndices ArisenEngine::RHI::RHIVkInstance::FindQu
             // For headless, we just need a valid index, but presentFamily won't be used for presentation.
             // We can leave it empty or set it to graphicsFamily. 
             // In RHIVkInstance::CreateLogicDevice, it uses uniqueQueueFamilies.
-            indices.presentFamily = i; 
+            indices.presentFamily = i;
         }
-        
+
         ++i;
     }
 
@@ -407,16 +413,16 @@ const ArisenEngine::RHI::VkSwapChainSupportDetail ArisenEngine::RHI::RHIVkInstan
 GetSwapChainSupportDetails(UInt32 windowId)
 {
     ASSERT(m_Surfaces[windowId] && m_Surfaces[windowId].get());
-    
+
     RHIVkSurface* surface = m_Surfaces[windowId].get();
-    
+
     return surface->GetSwapChainSupportDetail();
 }
 
 const ArisenEngine::RHI::VkSwapChainSupportDetail ArisenEngine::RHI::RHIVkInstance::QuerySwapChainSupport(
     const VkSurfaceKHR surface) const
 {
-    ArisenEngine::RHI::VkSwapChainSupportDetail details {};
+    ArisenEngine::RHI::VkSwapChainSupportDetail details{};
 
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_CurrentPhysicsDevice, surface, &details.capabilities);
 
@@ -435,9 +441,10 @@ const ArisenEngine::RHI::VkSwapChainSupportDetail ArisenEngine::RHI::RHIVkInstan
     if (presentModeCount != 0)
     {
         details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(m_CurrentPhysicsDevice, surface, &presentModeCount, details.presentModes.data());
+        vkGetPhysicalDeviceSurfacePresentModesKHR(m_CurrentPhysicsDevice, surface, &presentModeCount,
+                                                  details.presentModes.data());
     }
-    
+
     return details;
 }
 
@@ -447,10 +454,10 @@ void ArisenEngine::RHI::RHIVkInstance::SetupDebugMessager()
     {
         return;
     }
-    
+
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     PopulateDebugMessengerCreateInfo(createInfo);
-    
+
     if (CreateDebugUtilsMessengerEXT(m_VkInstance, &createInfo, nullptr, &m_VkDebugMessenger) != VK_SUCCESS)
     {
         LOG_FATAL_AND_THROW("[RHIVkInstance::SetupDebugMessager]: failed to set up debug messenger!");
@@ -489,12 +496,12 @@ void ArisenEngine::RHI::RHIVkInstance::CreateSurface(UInt32 windowId)
 
 void ArisenEngine::RHI::RHIVkInstance::DestroySurface(UInt32 windowId)
 {
-   auto it = m_Surfaces.find(windowId);
-   if (it != m_Surfaces.end())
-   {
-       it->second.reset();
-       m_Surfaces.erase(it);
-   }
+    auto it = m_Surfaces.find(windowId);
+    if (it != m_Surfaces.end())
+    {
+        it->second.reset();
+        m_Surfaces.erase(it);
+    }
 }
 
 ArisenEngine::RHI::RHISurface& ArisenEngine::RHI::RHIVkInstance::GetSurface(UInt32 windowId)
@@ -506,17 +513,17 @@ ArisenEngine::RHI::RHISurface& ArisenEngine::RHI::RHIVkInstance::GetSurface(UInt
 
 bool ArisenEngine::RHI::RHIVkInstance::IsSupportLinearColorSpace(UInt32 windowId)
 {
-   
     auto& supportDetail = GetSwapChainSupportDetails(windowId);
 
     for (const auto& availableFormat : supportDetail.formats)
     {
-        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace ==
+            VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
         {
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -541,14 +548,17 @@ void ArisenEngine::RHI::RHIVkInstance::SetCurrentPresentMode(UInt32 windowId, EP
 
 void ArisenEngine::RHI::RHIVkInstance::SetResolution(UInt32 windowId, UInt32 width, UInt32 height)
 {
-   // TODO: 
+    // TODO: 
 }
 
 void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
 {
     if (m_LogicalDevices.find(windowId) != m_LogicalDevices.end())
     {
-        LOG_WARN(String::Format("[RHIVkInstance::CreateLogicDevice]: Logical device for windowId %u already exists, skipping creation.", windowId));
+        LOG_WARN(
+            String::Format(
+                "[RHIVkInstance::CreateLogicDevice]: Logical device for windowId %u already exists, skipping creation.",
+                windowId));
         return;
     }
 
@@ -564,21 +574,28 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
 
     // Queue Create Info 
     Containers::Vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    Containers::Set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(),
-                                              indices.presentFamily.value()};
-    if (indices.computeFamily.has_value()) {
+    Containers::Set<uint32_t> uniqueQueueFamilies = {
+        indices.graphicsFamily.value(),
+        indices.presentFamily.value()
+    };
+    if (indices.computeFamily.has_value())
+    {
         uniqueQueueFamilies.insert(indices.computeFamily.value());
     }
 
     float queuePriority = 1.0f;
-    for (uint32_t queueFamily : uniqueQueueFamilies) {
+    for (uint32_t queueFamily : uniqueQueueFamilies)
+    {
         VkDeviceQueueCreateInfo queueCreateInfo{};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueCreateInfo.queueFamilyIndex = queueFamily;
         // If compute family is same as graphics, we still want a separate queue handle if possible
-        queueCreateInfo.queueCount = (queueFamily == indices.graphicsFamily.value() && indices.computeFamily.has_value() && indices.computeFamily.value() == queueFamily) ? 2 : 1;
-        
-        static float priorities[2] = { 1.0f, 1.0f };
+        queueCreateInfo.queueCount = (queueFamily == indices.graphicsFamily.value() && indices.computeFamily.has_value()
+                                         && indices.computeFamily.value() == queueFamily)
+                                         ? 2
+                                         : 1;
+
+        static float priorities[2] = {1.0f, 1.0f};
         queueCreateInfo.pQueuePriorities = priorities;
         queueCreateInfos.push_back(queueCreateInfo);
     }
@@ -590,7 +607,8 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     vkEnumerateDeviceExtensionProperties(m_CurrentPhysicsDevice, nullptr, &extensionCount, availableExtensions.data());
 
     Containers::Vector<const char*> enabledExtensions;
-    auto checkAndEnable = [&](const Containers::Vector<const char*>& extensionList, bool mandatory) {
+    auto checkAndEnable = [&](const Containers::Vector<const char*>& extensionList, bool mandatory)
+    {
         for (const char* extensionName : extensionList)
         {
             // Skip swapchain if headless
@@ -615,11 +633,15 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
             }
             else if (mandatory)
             {
-                LOG_WARN(String::Format("[RHIVkInstance::CreateLogicDevice]: mandatory device extension not supported: %s", extensionName));
+                LOG_WARN(
+                    String::Format("[RHIVkInstance::CreateLogicDevice]: mandatory device extension not supported: %s",
+                        extensionName));
             }
             else
             {
-                LOG_INFO(String::Format("[RHIVkInstance::CreateLogicDevice]: optional device extension not supported: %s", extensionName));
+                LOG_INFO(
+                    String::Format("[RHIVkInstance::CreateLogicDevice]: optional device extension not supported: %s",
+                        extensionName));
             }
         }
     };
@@ -659,8 +681,10 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     vulkan12Features.pNext = &vulkan13Features;
     void* pNextChain = &vulkan12Features;
 
-    auto isExtensionEnabled = [&](const char* name) {
-        for (const char* ext : enabledExtensions) {
+    auto isExtensionEnabled = [&](const char* name)
+    {
+        for (const char* ext : enabledExtensions)
+        {
             if (strcmp(ext, name) == 0) return true;
         }
         return false;
@@ -722,8 +746,8 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     {
         shadingRateFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR;
         shadingRateFeatures.attachmentFragmentShadingRate = VK_TRUE; // Enable attachment-based VRS
-        shadingRateFeatures.primitiveFragmentShadingRate = VK_TRUE;  // Enable primitive-based VRS
-        shadingRateFeatures.pipelineFragmentShadingRate = VK_TRUE;   // Enable pipeline-based VRS
+        shadingRateFeatures.primitiveFragmentShadingRate = VK_TRUE; // Enable primitive-based VRS
+        shadingRateFeatures.pipelineFragmentShadingRate = VK_TRUE; // Enable pipeline-based VRS
         *lastPNext = &shadingRateFeatures;
         lastPNext = &shadingRateFeatures.pNext;
     }
@@ -733,7 +757,7 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     // Buffer Device Address is core in Vulkan 1.2, so we enable it directly if we are targeting 1.2+
     vulkan12Features.bufferDeviceAddress = VK_TRUE;
 
-    
+
     // Device Create Info
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -761,7 +785,9 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     VkResult res = vkCreateDevice(m_CurrentPhysicsDevice, &createInfo, nullptr, &device);
     if (res != VK_SUCCESS)
     {
-        LOG_FATAL_AND_THROW(String::Format("[RHIVkInstance::CreateLogicDevice]: failed to create logical device! VkResult: %d", (int)res));
+        LOG_FATAL_AND_THROW(
+            String::Format("[RHIVkInstance::CreateLogicDevice]: failed to create logical device! VkResult: %d", (int)res
+            ));
     }
 
     VkQueue graphicQueue = VK_NULL_HANDLE;
@@ -769,7 +795,7 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     {
         vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicQueue);
     }
-    
+
     VkQueue presentQueue = VK_NULL_HANDLE;
     if (windowId != ~0u && indices.presentFamily.has_value())
     {
@@ -786,19 +812,25 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(m_CurrentPhysicsDevice, &memoryProperties);
 
-    auto logicalDevice = std::make_unique<RHIVkDevice>(this, rhiSurface, graphicQueue, presentQueue, computeQueue, device, memoryProperties, indices.graphicsFamily.value(), indices.computeFamily.value_or(0));
-    VkPhysicalDeviceProperties physicalProperties {};
+    auto logicalDevice = std::make_unique<RHIVkDevice>(this, rhiSurface, graphicQueue, presentQueue, computeQueue,
+                                                       device, memoryProperties, indices.graphicsFamily.value(),
+                                                       indices.computeFamily.value_or(0));
+    VkPhysicalDeviceProperties physicalProperties{};
     vkGetPhysicalDeviceProperties(m_CurrentPhysicsDevice, &physicalProperties);
     {
         logicalDevice->m_DeviceLimits.sampler.maxSamplerAnisotropy = physicalProperties.limits.maxSamplerAnisotropy;
         // Check if Ray Tracing Pipeline extension was successfully enabled
-        logicalDevice->m_DeviceLimits.rayTracingSupported = isExtensionEnabled(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME) ? 1 : 0;
+        logicalDevice->m_DeviceLimits.rayTracingSupported = isExtensionEnabled(
+                                                                VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
+                                                                ? 1
+                                                                : 0;
     }
-    
+
     LOG_INFO(String::Format("[RHIVkInstance::CreateLogicDevice]: Create Logical Device for surface %d", windowId));
     m_LogicalDevices.insert(
-        {    windowId,
-             std::move(logicalDevice)
+        {
+            windowId,
+            std::move(logicalDevice)
         });
 }
 
@@ -849,7 +881,7 @@ ArisenEngine::RHI::EPresentMode ArisenEngine::RHI::RHIVkInstance::GetSuitablePre
 void ArisenEngine::RHI::RHIVkInstance::UpdateSurfaceCapabilities(RHISurface* surface)
 {
     auto vkSurface = static_cast<VkSurfaceKHR>(
-           surface->GetHandle());
+        surface->GetHandle());
     auto swapChainSupportDetail = QuerySwapChainSupport(vkSurface);
 
     RHIVkSurface* rhiSurface = static_cast<RHIVkSurface*>(surface);
@@ -861,7 +893,7 @@ void ArisenEngine::RHI::RHIVkInstance::CheckSwapChainCapabilities()
     for (auto& surfacePair : m_Surfaces)
     {
         auto windowId = surfacePair.first;
-        
+
         if (surfacePair.second.get() == nullptr)
         {
             LOG_WARN(String::Format(" window: {%d}'s surface is nullptr!", windowId));
@@ -886,13 +918,15 @@ ArisenEngine::RHI::RHIInstance* CreateInstance(ArisenEngine::RHI::RHIInstanceInf
 ArisenEngine::RHI::RHIVkInstance::~RHIVkInstance() noexcept
 {
     LOG_INFO("[RHIVkInstance::~RHIVkInstance]: Start Destroying Vulkan Instance");
-    
+
     // Explicitly wait for all devices to be idle before cleanup to avoid hangs
     for (auto& pair : m_LogicalDevices)
     {
         if (pair.second)
         {
-            LOG_INFO(String::Format("[RHIVkInstance::~RHIVkInstance]: Waiting for Logical Device (surface %d) to idle", pair.first));
+            LOG_INFO(
+                String::Format("[RHIVkInstance::~RHIVkInstance]: Waiting for Logical Device (surface %d) to idle", pair.
+                    first));
             auto* vkDevice = static_cast<RHIVkDevice*>(pair.second.get());
             if (vkDevice->GetHandle())
             {
@@ -906,10 +940,10 @@ ArisenEngine::RHI::RHIVkInstance::~RHIVkInstance() noexcept
 
     LOG_INFO("[RHIVkInstance::~RHIVkInstance]: Clearing Logical Devices");
     m_LogicalDevices.clear();
-    
+
     LOG_INFO("[RHIVkInstance::~RHIVkInstance]: Disposing Debug Messenger");
     DisposeDebugMessager();
-    
+
     LOG_INFO("[RHIVkInstance::~RHIVkInstance]: Calling vkDestroyInstance");
     if (m_VkInstance != VK_NULL_HANDLE)
     {
@@ -923,7 +957,8 @@ void ArisenEngine::RHI::RHIVkInstance::InitLogicDevices()
 {
     if (!IsPhysicalDeviceAvailable())
     {
-        LOG_FATAL_AND_THROW("[RHIVkInstance::InitLogicDevices]: Should pick a physical device first before init logical devices");
+        LOG_FATAL_AND_THROW(
+            "[RHIVkInstance::InitLogicDevices]: Should pick a physical device first before init logical devices");
     }
 
     if (!IsSurfacesAvailable())
@@ -932,22 +967,22 @@ void ArisenEngine::RHI::RHIVkInstance::InitLogicDevices()
         CreateLogicDevice(~0u);
         return;
     }
-    
-    
+
+
     for (auto& surfacePair : m_Surfaces)
     {
         auto windowId = surfacePair.first;
-        
+
         if (surfacePair.second.get() == nullptr)
         {
             LOG_WARN(String::Format("[RHIVkInstance::InitLogicDevices]: window: {%d}'s surface is nullptr!", windowId));
             continue;
         }
-        
+
         CreateLogicDevice(windowId);
         surfacePair.second.get()->InitSwapChain();
     }
-    
+
     LOG_INFO("[RHIVkInstance::InitLogicDevices]: All Logical Devices Init! ");
 }
 
@@ -958,17 +993,17 @@ void ArisenEngine::RHI::RHIVkInstance::PickPhysicalDevice(bool considerSurface)
     // However, for now, we just pick the best device.
 
     // TODO: pick device by surface ?
-   
+
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(m_VkInstance, &deviceCount, nullptr);
 
-    if (deviceCount == 0) 
+    if (deviceCount == 0)
     {
         LOG_FATAL_AND_THROW("[RHIVkInstance::PickPhysicalDevice]: failed to find GPUs with Vulkan support!");
     }
-    
+
     LOG_DEBUG(String::Format("[RHIVkInstance::PickPhysicalDevice]: Device Count: %d", deviceCount));
-    
+
     Containers::Vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(m_VkInstance, &deviceCount, devices.data());
 
@@ -979,7 +1014,7 @@ void ArisenEngine::RHI::RHIVkInstance::PickPhysicalDevice(bool considerSurface)
     {
         VkPhysicalDeviceProperties deviceProperties;
         vkGetPhysicalDeviceProperties(device, &deviceProperties);
-        
+
         int score = RateDeviceSuitability(device);
         candidates.insert(std::make_pair(score, device));
     }
@@ -993,27 +1028,19 @@ void ArisenEngine::RHI::RHIVkInstance::PickPhysicalDevice(bool considerSurface)
     {
         LOG_FATAL_AND_THROW("[RHIVkDevice::PickPhysicalDevice]: failed to find a suitable GPU!");
     }
-    
+
     vkGetPhysicalDeviceProperties(m_CurrentPhysicsDevice, &m_DeviceProperties);
-    
-    LOG_DEBUG(String::Format("[RHIVkDevice::PickPhysicalDevice]: Picked gpu device : %s", m_DeviceProperties.deviceName));
+
+    LOG_DEBUG(
+        String::Format("[RHIVkDevice::PickPhysicalDevice]: Picked gpu device : %s", m_DeviceProperties.deviceName));
 
 
     // initialize limit info
     {
         // sampler 
         m_DeviceLimits.sampler.maxSamplerAnisotropy = m_DeviceProperties.limits.maxSamplerAnisotropy;
-        
     }
     // TODO: configurable physical device
     // TODO: if current physical device not adequate suitable swap chain, should repick one
     CheckSwapChainCapabilities();
 }
-
-
-
-
-
-
-
-

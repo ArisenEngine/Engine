@@ -4,9 +4,11 @@
 
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+
 namespace ArisenEngine::RHI
 {
     ARISEN_BIND_ENUM(ERHIAccelerationStructureBuildFlagBits)
+
     enum ERHIAccelerationStructureBuildFlagBits : UInt32
     {
         AS_BUILD_ALLOW_UPDATE_BIT = 0x00000001,
@@ -15,5 +17,6 @@ namespace ArisenEngine::RHI
         AS_BUILD_PREFER_FAST_BUILD_BIT = 0x00000008,
         AS_BUILD_MIN_OVERLAP_BIT = 0x00000010,
     };
+
     typedef UInt32 ERHIAccelerationStructureBuildFlags;
 }

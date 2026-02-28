@@ -8,7 +8,6 @@ using namespace ArisenEngine::RHI;
 ARISEN_BIND_BEGIN_BRIDGE("RHIPipeline", "Core.RHI.dll", "Arisen.Native.RHI")
 
 extern "C" {
-
 RHI_DLL void* RHIPipelineCache_GetGraphicsPipeline(RHIPipelineCache* cache, RHIPipelineState* pso)
 {
     RHIPipelineHandle handle = cache->GetGraphicsPipeline(pso);
@@ -56,17 +55,19 @@ RHI_DLL void RHIPipelineState_SetRasterizationState(RHIPipelineState* pso, int p
     pso->SetRasterizationState(state);
 }
 
-RHI_DLL void RHIPipelineState_SetColorBlendState(RHIPipelineState* pso, int blendEnable, int srcColor, int dstColor, int colorOp)
+RHI_DLL void RHIPipelineState_SetColorBlendState(RHIPipelineState* pso, int blendEnable, int srcColor, int dstColor,
+                                                 int colorOp)
 {
     RHIColorBlendState state{};
     // This is simplified, real implementation should take more parameters
     pso->SetColorBlendState(state);
 }
 
-RHI_DLL void RHIPipelineState_SetRenderingFormats(RHIPipelineState* pso, const int* colorFormats, uint32_t colorCount, int depthFormat)
+RHI_DLL void RHIPipelineState_SetRenderingFormats(RHIPipelineState* pso, const int* colorFormats, uint32_t colorCount,
+                                                  int depthFormat)
 {
     ArisenEngine::Containers::Vector<EFormat> formats;
-    for(uint32_t i=0; i<colorCount; ++i) formats.push_back(static_cast<EFormat>(colorFormats[i]));
+    for (uint32_t i = 0; i < colorCount; ++i) formats.push_back(static_cast<EFormat>(colorFormats[i]));
     pso->SetRenderingFormats(formats, static_cast<EFormat>(depthFormat), EFormat::FORMAT_UNDEFINED);
 }
 
@@ -74,7 +75,6 @@ RHI_DLL void RHIPipelineState_Delete(RHIPipelineState* pso)
 {
     delete pso;
 }
-
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()

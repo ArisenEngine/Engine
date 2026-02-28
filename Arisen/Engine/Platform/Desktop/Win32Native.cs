@@ -105,13 +105,15 @@ public static class Win32Native
     public static extern int CoInitialize(IntPtr pvReserved);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    public static extern bool PeekMessage(out NativeMessage lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax, uint wRemoveMsg);
+    public static extern bool PeekMessage(out NativeMessage lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax,
+        uint wRemoveMsg);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern sbyte GetMessage(out NativeMessage lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax);
 
     [DllImport("user32.dll", EntryPoint = "PeekMessage")]
-    public static extern int PeekMessage(out NativeMessage lpMsg, IntPtr hWnd, int wMsgFilterMin, int wMsgFilterMax, int wRemoveMsg);
+    public static extern int PeekMessage(out NativeMessage lpMsg, IntPtr hWnd, int wMsgFilterMin, int wMsgFilterMax,
+        int wRemoveMsg);
 
     [DllImport("user32.dll", EntryPoint = "GetMessage")]
     public static extern int GetMessage(out NativeMessage lpMsg, IntPtr hWnd, int wMsgFilterMin, int wMsgFilterMax);
@@ -121,7 +123,7 @@ public static class Win32Native
 
     [DllImport("user32.dll", EntryPoint = "DispatchMessage", CharSet = CharSet.Unicode)]
     public static extern int DispatchMessage(ref NativeMessage lpMsg);
-    
+
     [DllImport("user32.dll", EntryPoint = "PostQuitMessage", CharSet = CharSet.Unicode)]
     public static extern void PostQuitMessage(int nExitCode);
 

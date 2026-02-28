@@ -3,10 +3,13 @@
 
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+
 namespace ArisenEngine::RHI
 {
     ARISEN_BIND_ENUM(EMemoryPropertyFlagBits)
-    typedef enum EMemoryPropertyFlagBits {
+
+    typedef enum EMemoryPropertyFlagBits
+    {
         MEMORY_PROPERTY_DEVICE_LOCAL_BIT = 0x00000001,
         MEMORY_PROPERTY_HOST_VISIBLE_BIT = 0x00000002,
         MEMORY_PROPERTY_HOST_COHERENT_BIT = 0x00000004,
@@ -18,5 +21,4 @@ namespace ArisenEngine::RHI
         MEMORY_PROPERTY_RDMA_CAPABLE_BIT_NV = 0x00000100,
         MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
     } EMemoryPropertyFlagBits;
-    
 }

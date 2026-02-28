@@ -28,4 +28,3 @@ namespace ArisenEngine::RHI
         UInt32 m_FrameCount = 0;
     };
 }
-

@@ -27,14 +27,16 @@ public readonly struct RHIPipelineState
 
     public void SetRasterizationState(EPolygonMode polygonMode, ECullModeFlagBits cullMode, EFrontFace frontFace)
     {
-        RHIPipelineAPI.RHIPipelineState_SetRasterizationState(NativePtr, (int)polygonMode, (int)cullMode, (int)frontFace);
+        RHIPipelineAPI.RHIPipelineState_SetRasterizationState(NativePtr, (int)polygonMode, (int)cullMode,
+            (int)frontFace);
     }
 
     public unsafe void SetRenderingFormats(EFormat[] colorFormats, EFormat depthFormat)
     {
         fixed (EFormat* pFormats = colorFormats)
         {
-            RHIPipelineAPI.RHIPipelineState_SetRenderingFormats(NativePtr, (IntPtr)pFormats, (uint)colorFormats.Length, (int)depthFormat);
+            RHIPipelineAPI.RHIPipelineState_SetRenderingFormats(NativePtr, (IntPtr)pFormats, (uint)colorFormats.Length,
+                (int)depthFormat);
         }
     }
 

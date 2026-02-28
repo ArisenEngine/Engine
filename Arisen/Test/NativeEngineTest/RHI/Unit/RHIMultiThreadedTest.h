@@ -34,7 +34,7 @@ namespace ArisenEngine::Testing
 
             const int numThreads = 8;
             const int numFrames = 10;
-            
+
             for (int f = 0; f < numFrames; ++f)
             {
                 std::vector<std::thread> threads;
@@ -42,7 +42,8 @@ namespace ArisenEngine::Testing
 
                 for (int i = 0; i < numThreads; ++i)
                 {
-                    threads.emplace_back([&, i, f]() {
+                    threads.emplace_back([&, i, f]()
+                    {
                         // This should trigger the TLS Command Pool logic in RHIVkCommandBufferPool
                         auto pool = m_Device->GetCommandBufferPool(m_CommandPool);
                         auto cmdHandle = pool->GetCommandBuffer(f);
@@ -50,18 +51,20 @@ namespace ArisenEngine::Testing
                         auto cmd = m_Device->GetCommandBuffer(cmdHandle);
 
                         cmd->Begin(f, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-                        
+
                         // Fake recording work to stress the pool and internal structures
                         cmd->SetViewport(0, 0, 1280, 720, 0, 1);
                         cmd->SetScissor(0, 0, 1280, 720);
-                        
+
                         cmd->End();
                     });
                 }
 
                 for (auto& t : threads) t.join();
 
-                LOG_INFO(String::Format("Frame %d: All threads finished recording. Submitting %d buffers...", f, numThreads));
+                LOG_INFO(
+                    String::Format("Frame %d: All threads finished recording. Submitting %d buffers...", f, numThreads
+                    ));
 
                 // Submit recorded buffers
                 for (int i = 0; i < numThreads; ++i)

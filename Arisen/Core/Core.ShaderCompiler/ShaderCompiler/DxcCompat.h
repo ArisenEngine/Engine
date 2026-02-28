@@ -2,44 +2,44 @@
 
 #ifndef _MSC_VER
 
-    #ifndef _Maybenull_
+#ifndef _Maybenull_
     #define _Maybenull_
-    #endif
+#endif
 
-    #ifndef _Check_return_
+#ifndef _Check_return_
     #define _Check_return_
-    #endif
+#endif
 
-    #ifndef _In_
+#ifndef _In_
     #define _In_
-    #endif
+#endif
 
-    #ifndef _Out_
+#ifndef _Out_
     #define _Out_
-    #endif
+#endif
 
-    #ifndef _COM_Outptr_
+#ifndef _COM_Outptr_
     #define _COM_Outptr_
-    #endif
+#endif
 
-    #ifndef _Outptr_result_maybenull_
+#ifndef _Outptr_result_maybenull_
     #define _Outptr_result_maybenull_
-    #endif
+#endif
 
-    #ifndef _Pre_defensive_
+#ifndef _Pre_defensive_
     #define _Pre_defensive_
-    #endif
+#endif
 
-    #ifndef _In_opt_
+#ifndef _In_opt_
     #define _In_opt_
-    #endif
+#endif
 
-    #ifndef _In_z_
+#ifndef _In_z_
     #define _In_z_
-    #endif
+#endif
 
-    #ifndef __CRT_UUID_DECL
+#ifndef __CRT_UUID_DECL
     #define __CRT_UUID_DECL
-    #endif
-    
+#endif
+
 #endif

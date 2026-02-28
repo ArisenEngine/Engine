@@ -26,7 +26,8 @@ namespace ArisenEngine::Testing
                 0, nullptr,
                 RHI::ERHIMemoryUsage::GpuOnly
             };
-            RHI::RHIBufferHandle testBuffer = m_Device->GetFactory()->CreateBuffer(std::move(bufDesc), "BindlessTestBuffer");
+            RHI::RHIBufferHandle testBuffer = m_Device->GetFactory()->CreateBuffer(
+                std::move(bufDesc), "BindlessTestBuffer");
 
             // 2. Register with Bindless Manager
             UInt32 bufferIndex = m_Device->GetFactory()->RegisterBindlessResource(testBuffer);
@@ -46,10 +47,13 @@ namespace ArisenEngine::Testing
                 0, nullptr,
                 RHI::ERHIMemoryUsage::GpuOnly
             };
-            RHI::RHIImageHandle testImage = m_Device->GetFactory()->CreateImage(std::move(imgDesc), "BindlessTestImage");
+            RHI::RHIImageHandle testImage = m_Device->GetFactory()->
+                                                      CreateImage(std::move(imgDesc), "BindlessTestImage");
 
             // Create a view for registration
-            RHI::RHIImageViewDesc viewDesc{ RHI::IMAGE_VIEW_TYPE_2D, RHI::FORMAT_R8G8B8A8_UNORM, RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+            RHI::RHIImageViewDesc viewDesc{
+                RHI::IMAGE_VIEW_TYPE_2D, RHI::FORMAT_R8G8B8A8_UNORM, RHI::IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1
+            };
             viewDesc.width = 256;
             viewDesc.height = 256;
             RHI::RHIImageViewHandle testView = m_Device->GetFactory()->CreateImageView(testImage, std::move(viewDesc));

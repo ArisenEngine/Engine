@@ -27,26 +27,31 @@ public class Mesh : IDisposable
             m_VertexBuffer?.Dispose();
             m_VertexBuffer = new VertexBuffer(m_Device, (uint)vertices.Length, stride, $"{m_Name}_VB");
         }
+
         m_VertexBuffer.SetData(vertices);
     }
 
     public void SetIndices(uint[] indices)
     {
-        if (m_IndexBuffer == null || m_IndexBuffer.Count != (uint)indices.Length || m_IndexBuffer.IndexType != IndexType.Uint32)
+        if (m_IndexBuffer == null || m_IndexBuffer.Count != (uint)indices.Length ||
+            m_IndexBuffer.IndexType != IndexType.Uint32)
         {
             m_IndexBuffer?.Dispose();
             m_IndexBuffer = new IndexBuffer(m_Device, (uint)indices.Length, IndexType.Uint32, $"{m_Name}_IB");
         }
+
         m_IndexBuffer.SetData(indices);
     }
 
     public void SetIndices(ushort[] indices)
     {
-        if (m_IndexBuffer == null || m_IndexBuffer.Count != (uint)indices.Length || m_IndexBuffer.IndexType != IndexType.Uint16)
+        if (m_IndexBuffer == null || m_IndexBuffer.Count != (uint)indices.Length ||
+            m_IndexBuffer.IndexType != IndexType.Uint16)
         {
             m_IndexBuffer?.Dispose();
             m_IndexBuffer = new IndexBuffer(m_Device, (uint)indices.Length, IndexType.Uint16, $"{m_Name}_IB");
         }
+
         m_IndexBuffer.SetData(indices);
     }
 

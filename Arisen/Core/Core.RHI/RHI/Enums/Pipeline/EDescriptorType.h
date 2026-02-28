@@ -3,10 +3,13 @@
 
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+
 namespace ArisenEngine::RHI
 {
     ARISEN_BIND_ENUM(EDescriptorType)
-    typedef enum EDescriptorType {
+
+    typedef enum EDescriptorType
+    {
         DESCRIPTOR_TYPE_SAMPLER = 0,
         DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER = 1,
         DESCRIPTOR_TYPE_SAMPLED_IMAGE = 2,

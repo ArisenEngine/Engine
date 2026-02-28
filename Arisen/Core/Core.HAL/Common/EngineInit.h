@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Logger/Logger.h"
-#include "CoreDiagnosticCommon.h" 
+#include "CoreDiagnosticCommon.h"
 #include <cstdlib>
 #include <csignal>
 #include <exception>
@@ -38,10 +38,10 @@ namespace ArisenEngine::Core
             {
                 return false;
             }
-            
+
             // Diagnostics::Log::SetHandler matches the original code, assuming Log class is available via headers
             // Ensure necessary headers are included if Log is verified to exist in Core.Diagnostic
-            
+
             ArisenEngine::InitAssertionSystem();
 
             SetupCrashHandlers();
@@ -75,15 +75,16 @@ namespace ArisenEngine::Core
 #endif
             // Standard C++ exception handling
             std::set_terminate(ArisenOnTerminate);
-            
+
             // Signal handlers
             signal(SIGABRT, ArisenOnSignal);
             signal(SIGSEGV, ArisenOnSignal);
             signal(SIGILL, ArisenOnSignal);
             signal(SIGFPE, ArisenOnSignal);
-            
+
             // atexit handler for normal termination
-            std::atexit([]() {
+            std::atexit([]()
+            {
                 Shutdown();
             });
         }
@@ -97,10 +98,11 @@ namespace ArisenEngine::Core
             String msg = "Unknown SEH Exception";
             if (ep && ep->ExceptionRecord)
             {
-                msg = String::Format("Unhandled Exception: 0x%08X at address 0x%P", 
-                    ep->ExceptionRecord->ExceptionCode, ep->ExceptionRecord->ExceptionAddress);
+                msg = String::Format("Unhandled Exception: 0x%08X at address 0x%P",
+                                     ep->ExceptionRecord->ExceptionCode, ep->ExceptionRecord->ExceptionAddress);
             }
-            ArisenEngine::ReportAssertionFailure("SEH Exception", "Unknown", 0, "ArisenUnhandledExceptionFilter", msg.c_str());
+            ArisenEngine::ReportAssertionFailure("SEH Exception", "Unknown", 0, "ArisenUnhandledExceptionFilter",
+                                                 msg.c_str());
             Shutdown();
             return EXCEPTION_EXECUTE_HANDLER;
         }
@@ -111,7 +113,8 @@ namespace ArisenEngine::Core
          */
         static void ArisenOnTerminate()
         {
-            ArisenEngine::ReportAssertionFailure("std::terminate", "Unknown", 0, "ArisenOnTerminate", "Engine terminated abnormally");
+            ArisenEngine::ReportAssertionFailure("std::terminate", "Unknown", 0, "ArisenOnTerminate",
+                                                 "Engine terminated abnormally");
             Shutdown();
             std::abort();
         }
@@ -124,15 +127,20 @@ namespace ArisenEngine::Core
             const char* sigName = "Unknown";
             switch (sig)
             {
-                case SIGABRT: sigName = "SIGABRT (Abort)"; break;
-                case SIGSEGV: sigName = "SIGSEGV (Segmentation Fault)"; break;
-                case SIGILL:  sigName = "SIGILL (Illegal Instruction)"; break;
-                case SIGFPE:  sigName = "SIGFPE (Floating Point Exception)"; break;
+            case SIGABRT: sigName = "SIGABRT (Abort)";
+                break;
+            case SIGSEGV: sigName = "SIGSEGV (Segmentation Fault)";
+                break;
+            case SIGILL: sigName = "SIGILL (Illegal Instruction)";
+                break;
+            case SIGFPE: sigName = "SIGFPE (Floating Point Exception)";
+                break;
             }
 
             // Attempt to log the signal before shutting down
-            ArisenEngine::ReportAssertionFailure("Signal received", "Unknown", 0, "ArisenOnSignal", 
-                std::format("Engine received signal: {0} ({1})", sigName, sig).c_str());
+            ArisenEngine::ReportAssertionFailure("Signal received", "Unknown", 0, "ArisenOnSignal",
+                                                 std::format("Engine received signal: {0} ({1})", sigName,
+                                                             sig).c_str());
 
             Shutdown();
 #ifdef _WIN64

@@ -25,19 +25,20 @@
 using namespace ArisenEngine::RHI;
 
 #if ARISEN_RHI__RESOURCE_INSPECTOR
-    #define RHI_STATS_PTR(x) (&(x))
+#define RHI_STATS_PTR(x) (&(x))
 #else
     #define RHI_STATS_PTR(x) (nullptr)
 #endif
-
 
 
 ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* surface, VkQueue graphicQueue,
                                             VkQueue presentQueue, VkQueue computeQueue, VkDevice device,
                                             VkPhysicalDeviceMemoryProperties memoryProperties,
                                             UInt32 graphicsFamilyIndex, UInt32 computeFamilyIndex)
-    : RHIDevice(instance, surface), m_VkGraphicQueue(graphicQueue), m_VkPresentQueue(presentQueue), m_VkComputeQueue(computeQueue), m_VkDevice(device),
-      m_GraphicsFamilyIndex(graphicsFamilyIndex), m_ComputeFamilyIndex(computeFamilyIndex), m_VkPhysicalDeviceMemoryProperties(memoryProperties)
+    : RHIDevice(instance, surface), m_VkGraphicQueue(graphicQueue), m_VkPresentQueue(presentQueue),
+      m_VkComputeQueue(computeQueue), m_VkDevice(device),
+      m_GraphicsFamilyIndex(graphicsFamilyIndex), m_ComputeFamilyIndex(computeFamilyIndex),
+      m_VkPhysicalDeviceMemoryProperties(memoryProperties)
 {
     std::cout << "[DEBUG] RHIVkDevice::RHIVkDevice START" << std::endl;
     m_GPUPipelineManager = new RHIVkGPUPipelineManager(this, m_Instance->GetMaxFramesInFlight());
@@ -51,43 +52,63 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
     vkCmdDrawMeshTasksEXT = (PFN_vkCmdDrawMeshTasksEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdDrawMeshTasksEXT");
 
     // Debug Utils
-    vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetDeviceProcAddr(m_VkDevice, "vkSetDebugUtilsObjectNameEXT");
-    vkCmdBeginDebugUtilsLabelEXT = (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdBeginDebugUtilsLabelEXT");
-    vkCmdEndDebugUtilsLabelEXT = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdEndDebugUtilsLabelEXT");
-    vkCmdInsertDebugUtilsLabelEXT = (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdInsertDebugUtilsLabelEXT");
+    vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetDeviceProcAddr(
+        m_VkDevice, "vkSetDebugUtilsObjectNameEXT");
+    vkCmdBeginDebugUtilsLabelEXT = (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetDeviceProcAddr(
+        m_VkDevice, "vkCmdBeginDebugUtilsLabelEXT");
+    vkCmdEndDebugUtilsLabelEXT = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetDeviceProcAddr(
+        m_VkDevice, "vkCmdEndDebugUtilsLabelEXT");
+    vkCmdInsertDebugUtilsLabelEXT = (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetDeviceProcAddr(
+        m_VkDevice, "vkCmdInsertDebugUtilsLabelEXT");
 
     // RT Function Pointers
-    vkCreateAccelerationStructureKHR = (PFN_vkCreateAccelerationStructureKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCreateAccelerationStructureKHR");
-    vkDestroyAccelerationStructureKHR = (PFN_vkDestroyAccelerationStructureKHR)vkGetDeviceProcAddr(m_VkDevice, "vkDestroyAccelerationStructureKHR");
-    vkGetAccelerationStructureBuildSizesKHR = (PFN_vkGetAccelerationStructureBuildSizesKHR)vkGetDeviceProcAddr(m_VkDevice, "vkGetAccelerationStructureBuildSizesKHR");
-    vkGetAccelerationStructureDeviceAddressKHR = (PFN_vkGetAccelerationStructureDeviceAddressKHR)vkGetDeviceProcAddr(m_VkDevice, "vkGetAccelerationStructureDeviceAddressKHR");
-    vkGetBufferDeviceAddressKHR = (PFN_vkGetBufferDeviceAddressKHR)vkGetDeviceProcAddr(m_VkDevice, "vkGetBufferDeviceAddressKHR");
-    if (vkGetBufferDeviceAddressKHR == nullptr) {
-        vkGetBufferDeviceAddressKHR = (PFN_vkGetBufferDeviceAddressKHR)vkGetDeviceProcAddr(m_VkDevice, "vkGetBufferDeviceAddress");
+    vkCreateAccelerationStructureKHR = (PFN_vkCreateAccelerationStructureKHR)vkGetDeviceProcAddr(
+        m_VkDevice, "vkCreateAccelerationStructureKHR");
+    vkDestroyAccelerationStructureKHR = (PFN_vkDestroyAccelerationStructureKHR)vkGetDeviceProcAddr(
+        m_VkDevice, "vkDestroyAccelerationStructureKHR");
+    vkGetAccelerationStructureBuildSizesKHR = (PFN_vkGetAccelerationStructureBuildSizesKHR)vkGetDeviceProcAddr(
+        m_VkDevice, "vkGetAccelerationStructureBuildSizesKHR");
+    vkGetAccelerationStructureDeviceAddressKHR = (PFN_vkGetAccelerationStructureDeviceAddressKHR)vkGetDeviceProcAddr(
+        m_VkDevice, "vkGetAccelerationStructureDeviceAddressKHR");
+    vkGetBufferDeviceAddressKHR = (PFN_vkGetBufferDeviceAddressKHR)vkGetDeviceProcAddr(
+        m_VkDevice, "vkGetBufferDeviceAddressKHR");
+    if (vkGetBufferDeviceAddressKHR == nullptr)
+    {
+        vkGetBufferDeviceAddressKHR = (PFN_vkGetBufferDeviceAddressKHR)vkGetDeviceProcAddr(
+            m_VkDevice, "vkGetBufferDeviceAddress");
     }
-    vkCmdBuildAccelerationStructuresKHR = (PFN_vkCmdBuildAccelerationStructuresKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCmdBuildAccelerationStructuresKHR");
+    vkCmdBuildAccelerationStructuresKHR = (PFN_vkCmdBuildAccelerationStructuresKHR)vkGetDeviceProcAddr(
+        m_VkDevice, "vkCmdBuildAccelerationStructuresKHR");
     vkCmdTraceRaysKHR = (PFN_vkCmdTraceRaysKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCmdTraceRaysKHR");
-    vkCreateRayTracingPipelinesKHR = (PFN_vkCreateRayTracingPipelinesKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCreateRayTracingPipelinesKHR");
-    vkGetRayTracingShaderGroupHandlesKHR = (PFN_vkGetRayTracingShaderGroupHandlesKHR)vkGetDeviceProcAddr(m_VkDevice, "vkGetRayTracingShaderGroupHandlesKHR");
-    
+    vkCreateRayTracingPipelinesKHR = (PFN_vkCreateRayTracingPipelinesKHR)vkGetDeviceProcAddr(
+        m_VkDevice, "vkCreateRayTracingPipelinesKHR");
+    vkGetRayTracingShaderGroupHandlesKHR = (PFN_vkGetRayTracingShaderGroupHandlesKHR)vkGetDeviceProcAddr(
+        m_VkDevice, "vkGetRayTracingShaderGroupHandlesKHR");
+
     // VRS
     // VRS
-    vkCmdSetFragmentShadingRateKHR = (PFN_vkCmdSetFragmentShadingRateKHR)vkGetDeviceProcAddr(m_VkDevice, "vkCmdSetFragmentShadingRateKHR");
+    vkCmdSetFragmentShadingRateKHR = (PFN_vkCmdSetFragmentShadingRateKHR)vkGetDeviceProcAddr(
+        m_VkDevice, "vkCmdSetFragmentShadingRateKHR");
 
     // Dynamic State
     vkCmdSetCullModeEXT = (PFN_vkCmdSetCullModeEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdSetCullModeEXT");
     vkCmdSetFrontFaceEXT = (PFN_vkCmdSetFrontFaceEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdSetFrontFaceEXT");
-    vkCmdSetPrimitiveTopologyEXT = (PFN_vkCmdSetPrimitiveTopologyEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdSetPrimitiveTopologyEXT");
-    vkCmdSetDepthTestEnableEXT = (PFN_vkCmdSetDepthTestEnableEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdSetDepthTestEnableEXT");
-    vkCmdSetDepthWriteEnableEXT = (PFN_vkCmdSetDepthWriteEnableEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdSetDepthWriteEnableEXT");
-    vkCmdSetDepthCompareOpEXT = (PFN_vkCmdSetDepthCompareOpEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdSetDepthCompareOpEXT");
-    vkCmdSetStencilTestEnableEXT = (PFN_vkCmdSetStencilTestEnableEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdSetStencilTestEnableEXT");
+    vkCmdSetPrimitiveTopologyEXT = (PFN_vkCmdSetPrimitiveTopologyEXT)vkGetDeviceProcAddr(
+        m_VkDevice, "vkCmdSetPrimitiveTopologyEXT");
+    vkCmdSetDepthTestEnableEXT = (PFN_vkCmdSetDepthTestEnableEXT)vkGetDeviceProcAddr(
+        m_VkDevice, "vkCmdSetDepthTestEnableEXT");
+    vkCmdSetDepthWriteEnableEXT = (PFN_vkCmdSetDepthWriteEnableEXT)vkGetDeviceProcAddr(
+        m_VkDevice, "vkCmdSetDepthWriteEnableEXT");
+    vkCmdSetDepthCompareOpEXT = (PFN_vkCmdSetDepthCompareOpEXT)vkGetDeviceProcAddr(
+        m_VkDevice, "vkCmdSetDepthCompareOpEXT");
+    vkCmdSetStencilTestEnableEXT = (PFN_vkCmdSetStencilTestEnableEXT)vkGetDeviceProcAddr(
+        m_VkDevice, "vkCmdSetStencilTestEnableEXT");
     vkCmdSetStencilOpEXT = (PFN_vkCmdSetStencilOpEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdSetStencilOpEXT");
 
     auto* vkInstance = static_cast<RHIVkInstance*>(m_Instance);
     m_MemoryAllocator = new RHIVkMemoryAllocator(this, vkInstance->GetVkInstance(), vkInstance->GetPhysicalDevice(),
-                                                 m_VkDevice, VK_API_VERSION_1_2, RHI_STATS_PTR(m_Stats.totalVideoMemoryAllocated));
-
+                                                 m_VkDevice, VK_API_VERSION_1_2,
+                                                 RHI_STATS_PTR(m_Stats.totalVideoMemoryAllocated));
 
 
     m_BindlessManager = new RHIVkBindlessManager(this);
@@ -98,33 +119,47 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
     m_ResourceRegistry = std::make_unique<RHIResourceRegistry>(m_DeferredDeletion.get());
     m_GraphicsQueue = std::make_unique<RHIVkQueue>(this, m_VkDevice, m_VkGraphicQueue, RHIQueueType::Graphics,
                                                    m_DeferredDeletion.get(), m_ResourceRegistry.get());
-    
+
     if (m_VkComputeQueue != VK_NULL_HANDLE)
     {
         m_ComputeQueue = std::make_unique<RHIVkQueue>(this, m_VkDevice, m_VkComputeQueue, RHIQueueType::Compute,
-                                                       m_DeferredDeletion.get(), m_ResourceRegistry.get());
+                                                      m_DeferredDeletion.get(), m_ResourceRegistry.get());
     }
 
     const UInt32 maxFramesInFlight = m_Instance->GetMaxFramesInFlight();
     m_FrameSync = std::make_unique<FrameSyncTracker>(maxFramesInFlight);
 
-    m_BufferPool = std::make_unique<RHIResourcePool<RHIBufferHandle, RHIVkBufferPoolItem>>(RHI_STATS_PTR(m_Stats.bufferCount));
-    m_ImagePool = std::make_unique<RHIResourcePool<RHIImageHandle, RHIVkImagePoolItem>>(RHI_STATS_PTR(m_Stats.imageCount));
-    m_ImageViewPool = std::make_unique<RHIResourcePool<RHIImageViewHandle, RHIVkImageViewPoolItem>>(RHI_STATS_PTR(m_Stats.imageViewCount));
-    m_SamplerPool = std::make_unique<RHIResourcePool<RHISamplerHandle, RHIVkSamplerPoolItem>>(RHI_STATS_PTR(m_Stats.samplerCount));
-    m_RenderPassPool = std::make_unique<RHIResourcePool<RHIRenderPassHandle, RHIVkRenderPassPoolItem>>(RHI_STATS_PTR(m_Stats.renderPassCount));
-    m_FrameBufferPool = std::make_unique<RHIResourcePool<RHIFrameBufferHandle, RHIVkFrameBufferPoolItem>>(RHI_STATS_PTR(m_Stats.frameBufferCount));
-    m_SemaphorePool = std::make_unique<RHIResourcePool<RHISemaphoreHandle, RHIVkSemaphorePoolItem>>(RHI_STATS_PTR(m_Stats.synchronizationCount));
-    m_PipelinePool = std::make_unique<RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>>(RHI_STATS_PTR(m_Stats.pipelineCount));
-    m_FencePool = std::make_unique<RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>>(RHI_STATS_PTR(m_Stats.synchronizationCount));
-    m_GPUProgramPool = std::make_unique<RHIResourcePool<RHIShaderProgramHandle, RHIVkGPUProgramPoolItem>>(RHI_STATS_PTR(m_Stats.shaderProgramCount));
-    m_CommandBufferPoolPool = std::make_unique<RHIResourcePool<RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>>();
-    m_CommandBufferPool = std::make_unique<RHIResourcePool<RHICommandBufferHandle, RHIVkCommandBufferItem>>(RHI_STATS_PTR(m_Stats.commandBufferCount));
-    m_AccelerationStructurePool = std::make_unique<RHIResourcePool<RHIAccelerationStructureHandle, RHIVkAccelerationStructurePoolItem>>();
+    m_BufferPool = std::make_unique<RHIResourcePool<RHIBufferHandle, RHIVkBufferPoolItem>>(
+        RHI_STATS_PTR(m_Stats.bufferCount));
+    m_ImagePool = std::make_unique<RHIResourcePool<RHIImageHandle, RHIVkImagePoolItem>>(
+        RHI_STATS_PTR(m_Stats.imageCount));
+    m_ImageViewPool = std::make_unique<RHIResourcePool<RHIImageViewHandle, RHIVkImageViewPoolItem>>(
+        RHI_STATS_PTR(m_Stats.imageViewCount));
+    m_SamplerPool = std::make_unique<RHIResourcePool<RHISamplerHandle, RHIVkSamplerPoolItem>>(
+        RHI_STATS_PTR(m_Stats.samplerCount));
+    m_RenderPassPool = std::make_unique<RHIResourcePool<RHIRenderPassHandle, RHIVkRenderPassPoolItem>>(
+        RHI_STATS_PTR(m_Stats.renderPassCount));
+    m_FrameBufferPool = std::make_unique<RHIResourcePool<RHIFrameBufferHandle, RHIVkFrameBufferPoolItem>>(
+        RHI_STATS_PTR(m_Stats.frameBufferCount));
+    m_SemaphorePool = std::make_unique<RHIResourcePool<RHISemaphoreHandle, RHIVkSemaphorePoolItem>>(
+        RHI_STATS_PTR(m_Stats.synchronizationCount));
+    m_PipelinePool = std::make_unique<RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>>(
+        RHI_STATS_PTR(m_Stats.pipelineCount));
+    m_FencePool = std::make_unique<RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>>(
+        RHI_STATS_PTR(m_Stats.synchronizationCount));
+    m_GPUProgramPool = std::make_unique<RHIResourcePool<RHIShaderProgramHandle, RHIVkGPUProgramPoolItem>>(
+        RHI_STATS_PTR(m_Stats.shaderProgramCount));
+    m_CommandBufferPoolPool = std::make_unique<RHIResourcePool<
+        RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>>();
+    m_CommandBufferPool = std::make_unique<RHIResourcePool<RHICommandBufferHandle, RHIVkCommandBufferItem>>(
+        RHI_STATS_PTR(m_Stats.commandBufferCount));
+    m_AccelerationStructurePool = std::make_unique<RHIResourcePool<
+        RHIAccelerationStructureHandle, RHIVkAccelerationStructurePoolItem>>();
     m_DescriptorPoolPool = std::make_unique<RHIResourcePool<RHIDescriptorPoolHandle, RHIVkDescriptorPoolPoolItem>>();
 
     // Register default descriptor pool
-    m_DescriptorPoolHandle = m_DescriptorPoolPool->Allocate([&](auto* item) {
+    m_DescriptorPoolHandle = m_DescriptorPoolPool->Allocate([&](auto* item)
+    {
         item->pool = m_DescriptorPool;
         item->name = "DefaultDescriptorPool";
     });
@@ -150,11 +185,11 @@ ArisenEngine::RHI::RHIMemoryAllocator* ArisenEngine::RHI::RHIVkDevice::GetMemory
     return m_MemoryAllocator;
 }
 
-    void ArisenEngine::RHI::RHIVkDevice::DeviceWaitIdle() const
-    {
-        ARISEN_PROFILE_ZONE("Vk::DeviceWaitIdle");
-        vkDeviceWaitIdle(m_VkDevice);
-    }
+void ArisenEngine::RHI::RHIVkDevice::DeviceWaitIdle() const
+{
+    ARISEN_PROFILE_ZONE("Vk::DeviceWaitIdle");
+    vkDeviceWaitIdle(m_VkDevice);
+}
 
 void ArisenEngine::RHI::RHIVkDevice::GraphicQueueWaitIdle() const
 {
@@ -197,22 +232,22 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::GetCompletedSubm
 }
 
 
-    RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBufferHandle handle, const RHISubmitDescriptor* descriptor)
-    {
-        ARISEN_PROFILE_ZONE("Vk::Submit");
-        auto* commandBuffer = GetCommandBuffer(handle);
-        if (!commandBuffer) return 0;
-        
-        ASSERT(commandBuffer->ReadyForSubmit());
+RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::Submit(RHICommandBufferHandle handle,
+                                                    const RHISubmitDescriptor* descriptor)
+{
+    ARISEN_PROFILE_ZONE("Vk::Submit");
+    auto* commandBuffer = GetCommandBuffer(handle);
+    if (!commandBuffer) return 0;
 
-        UInt32 frameIndex = commandBuffer->GetCurrentFrameIndex();
+    ASSERT(commandBuffer->ReadyForSubmit());
+
+    UInt32 frameIndex = commandBuffer->GetCurrentFrameIndex();
 
     std::lock_guard<std::mutex> lock(m_SubmitMutex);
-    m_CurrentFrameIndex.store(frameIndex, std::memory_order_release);
     if (m_GraphicsQueue)
     {
         RHIGpuTicket submitTicket = 0;
-        
+
         // Always verify valid descriptor pass-through
         submitTicket = m_GraphicsQueue->Submit(handle, descriptor);
 
@@ -316,11 +351,12 @@ void ArisenEngine::RHI::RHIVkDevice::SetObjectName(ERHIObjectType type, UInt64 h
 
     switch (type)
     {
-    case ERHIObjectType::Buffer: 
+    case ERHIObjectType::Buffer:
         {
             auto h = *reinterpret_cast<RHIBufferHandle*>(&handle);
             auto* item = m_BufferPool->Get(h);
-            if (item) {
+            if (item)
+            {
                 nameInfo.objectHandle = (UInt64)item->buffer;
                 nameInfo.objectType = VK_OBJECT_TYPE_BUFFER;
                 item->name = name;
@@ -331,7 +367,8 @@ void ArisenEngine::RHI::RHIVkDevice::SetObjectName(ERHIObjectType type, UInt64 h
         {
             auto h = *reinterpret_cast<RHIImageHandle*>(&handle);
             auto* item = m_ImagePool->Get(h);
-            if (item) {
+            if (item)
+            {
                 nameInfo.objectHandle = (UInt64)item->image;
                 nameInfo.objectType = VK_OBJECT_TYPE_IMAGE;
                 item->name = name;
@@ -342,7 +379,8 @@ void ArisenEngine::RHI::RHIVkDevice::SetObjectName(ERHIObjectType type, UInt64 h
         {
             auto h = *reinterpret_cast<RHIImageViewHandle*>(&handle);
             auto* item = m_ImageViewPool->Get(h);
-            if (item) {
+            if (item)
+            {
                 nameInfo.objectHandle = (UInt64)item->view;
                 nameInfo.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
                 item->name = name;
@@ -353,7 +391,8 @@ void ArisenEngine::RHI::RHIVkDevice::SetObjectName(ERHIObjectType type, UInt64 h
         {
             auto h = *reinterpret_cast<RHISamplerHandle*>(&handle);
             auto* item = m_SamplerPool->Get(h);
-            if (item) {
+            if (item)
+            {
                 nameInfo.objectHandle = (UInt64)item->sampler;
                 nameInfo.objectType = VK_OBJECT_TYPE_SAMPLER;
                 item->name = name;
@@ -364,7 +403,8 @@ void ArisenEngine::RHI::RHIVkDevice::SetObjectName(ERHIObjectType type, UInt64 h
         {
             auto h = *reinterpret_cast<RHIRenderPassHandle*>(&handle);
             auto* item = m_RenderPassPool->Get(h);
-            if (item) {
+            if (item)
+            {
                 nameInfo.objectHandle = (UInt64)item->renderPass;
                 nameInfo.objectType = VK_OBJECT_TYPE_RENDER_PASS;
                 item->name = name;
@@ -375,20 +415,24 @@ void ArisenEngine::RHI::RHIVkDevice::SetObjectName(ERHIObjectType type, UInt64 h
         {
             auto h = *reinterpret_cast<RHIFrameBufferHandle*>(&handle);
             auto* item = m_FrameBufferPool->Get(h);
-            if (item) {
+            if (item)
+            {
                 nameInfo.objectHandle = (UInt64)item->framebuffer;
                 nameInfo.objectType = VK_OBJECT_TYPE_FRAMEBUFFER;
                 item->name = name;
             }
         }
         break;
-    case ERHIObjectType::Semaphore: nameInfo.objectType = VK_OBJECT_TYPE_SEMAPHORE; break;
-    case ERHIObjectType::Fence: nameInfo.objectType = VK_OBJECT_TYPE_FENCE; break;
-    case ERHIObjectType::GPUPipeline: 
+    case ERHIObjectType::Semaphore: nameInfo.objectType = VK_OBJECT_TYPE_SEMAPHORE;
+        break;
+    case ERHIObjectType::Fence: nameInfo.objectType = VK_OBJECT_TYPE_FENCE;
+        break;
+    case ERHIObjectType::GPUPipeline:
         {
             auto h = *reinterpret_cast<RHIPipelineHandle*>(&handle);
             auto* item = m_PipelinePool->Get(h);
-            if (item) {
+            if (item)
+            {
                 // In RHIVkGPUPipeline, there are multiple pipelines per frame, but we can name the base one or others
                 // For simplicity, we just use the first available or provided handle
                 nameInfo.objectHandle = handle; // Fallback if handle is already a raw handle
@@ -397,20 +441,26 @@ void ArisenEngine::RHI::RHIVkDevice::SetObjectName(ERHIObjectType type, UInt64 h
             }
         }
         break;
-    case ERHIObjectType::GPUProgram: nameInfo.objectType = VK_OBJECT_TYPE_SHADER_MODULE; break;
-    case ERHIObjectType::CommandBuffer: 
+    case ERHIObjectType::GPUProgram: nameInfo.objectType = VK_OBJECT_TYPE_SHADER_MODULE;
+        break;
+    case ERHIObjectType::CommandBuffer:
         {
             auto* c = reinterpret_cast<RHIVkCommandBuffer*>(handle);
-            if (c) {
+            if (c)
+            {
                 nameInfo.objectHandle = (UInt64)reinterpret_cast<uintptr_t>(c->GetHandle());
                 nameInfo.objectType = VK_OBJECT_TYPE_COMMAND_BUFFER;
             }
         }
         break;
-    case ERHIObjectType::CommandBufferPool: nameInfo.objectType = VK_OBJECT_TYPE_COMMAND_POOL; break;
-    case ERHIObjectType::DescriptorPool: nameInfo.objectType = VK_OBJECT_TYPE_DESCRIPTOR_POOL; break;
-    case ERHIObjectType::DescriptorSet: nameInfo.objectType = VK_OBJECT_TYPE_DESCRIPTOR_SET; break;
-    default: nameInfo.objectType = VK_OBJECT_TYPE_UNKNOWN; break;
+    case ERHIObjectType::CommandBufferPool: nameInfo.objectType = VK_OBJECT_TYPE_COMMAND_POOL;
+        break;
+    case ERHIObjectType::DescriptorPool: nameInfo.objectType = VK_OBJECT_TYPE_DESCRIPTOR_POOL;
+        break;
+    case ERHIObjectType::DescriptorSet: nameInfo.objectType = VK_OBJECT_TYPE_DESCRIPTOR_SET;
+        break;
+    default: nameInfo.objectType = VK_OBJECT_TYPE_UNKNOWN;
+        break;
     }
 
     if (nameInfo.objectType != VK_OBJECT_TYPE_UNKNOWN)
@@ -421,27 +471,29 @@ void ArisenEngine::RHI::RHIVkDevice::SetObjectName(ERHIObjectType type, UInt64 h
 
 // --- Handle-based Buffer Operations ---
 
-    bool ArisenEngine::RHI::RHIVkDevice::AllocBuffer(RHIBufferHandle handle, RHIBufferDescriptor&& desc)
-    {
-        ARISEN_PROFILE_ZONE("Vk::AllocBuffer");
-        auto* buffer = m_BufferPool->Get(handle);
-        if (!buffer) return false;
+bool ArisenEngine::RHI::RHIVkDevice::AllocBuffer(RHIBufferHandle handle, RHIBufferDescriptor&& desc)
+{
+    ARISEN_PROFILE_ZONE("Vk::AllocBuffer");
+    auto* buffer = m_BufferPool->Get(handle);
+    if (!buffer) return false;
 
-        auto bufferInfo = BufferCreateInfo(
-            desc.createFlagBits,
-            desc.size,
-            desc.usage,
-            desc.sharingMode,
-            desc.queueFamilyIndexCount,
-            (const uint32_t*)desc.pQueueFamilyIndices);
+    auto bufferInfo = BufferCreateInfo(
+        desc.createFlagBits,
+        desc.size,
+        desc.usage,
+        desc.sharingMode,
+        desc.queueFamilyIndexCount,
+        (const uint32_t*)desc.pQueueFamilyIndices);
 
     buffer->size = desc.size;
     buffer->range = desc.size;
 
     if (vkCreateBuffer(m_VkDevice, &bufferInfo, nullptr, &buffer->buffer) != VK_SUCCESS)
     {
-        std::cout << "AllocBuffer FAILED to create buffer! Size: " << desc.size << " Usage: " << (int)desc.usage << std::endl;
-        LOG_ERRORF("[RHIVkDevice::AllocBuffer]: failed to create buffer! Size: {0}, Usage: {1}, Sharing: {2}", (UInt64)desc.size, (UInt32)desc.usage, (UInt32)desc.sharingMode);
+        std::cout << "AllocBuffer FAILED to create buffer! Size: " << desc.size << " Usage: " << (int)desc.usage <<
+            std::endl;
+        LOG_ERRORF("[RHIVkDevice::AllocBuffer]: failed to create buffer! Size: {0}, Usage: {1}, Sharing: {2}",
+                   (UInt64)desc.size, (UInt32)desc.usage, (UInt32)desc.sharingMode);
         return false;
     }
 
@@ -457,11 +509,11 @@ void ArisenEngine::RHI::RHIVkDevice::SetObjectName(ERHIObjectType type, UInt64 h
     return true;
 }
 
-    bool ArisenEngine::RHI::RHIVkDevice::AllocBufferDeviceMemory(RHIBufferHandle handle)
-    {
-        ARISEN_PROFILE_ZONE("Vk::AllocBufferMemory");
-        auto* buffer = m_BufferPool->Get(handle);
-        if (!buffer || buffer->buffer == VK_NULL_HANDLE || !buffer->state) return false;
+bool ArisenEngine::RHI::RHIVkDevice::AllocBufferDeviceMemory(RHIBufferHandle handle)
+{
+    ARISEN_PROFILE_ZONE("Vk::AllocBufferMemory");
+    auto* buffer = m_BufferPool->Get(handle);
+    if (!buffer || buffer->buffer == VK_NULL_HANDLE || !buffer->state) return false;
 
     // NOTE: We use explicit VMA_MEMORY_USAGE_* flags (like GPU_ONLY) instead of VMA_MEMORY_USAGE_AUTO*
     // because VMA_MEMORY_USAGE_AUTO* requires additional alignment/usage information when used with 
@@ -481,7 +533,7 @@ void ArisenEngine::RHI::RHIVkDevice::SetObjectName(ERHIObjectType type, UInt64 h
         usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
         break;
     case ERHIMemoryUsage::Transient:
-        usage = VMA_MEMORY_USAGE_CPU_TO_GPU; 
+        usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
         break;
     }
 
@@ -489,8 +541,10 @@ void ArisenEngine::RHI::RHIVkDevice::SetObjectName(ERHIObjectType type, UInt64 h
 #include <iostream>
     if (!m_MemoryAllocator->AllocateBufferMemory(buffer->buffer, usage, &newAlloc))
     {
-        std::cout << "AllocBufferDeviceMemory FAILED for buffer " << handle.index << " Usage: " << (int)buffer->memoryUsage << std::endl;
-        LOG_ERRORF("[RHIVkDevice::AllocBufferDeviceMemory]: Failed to allocate memory for buffer {0}. Usage: {1}", (UInt64)handle.index, (int)buffer->memoryUsage);
+        std::cout << "AllocBufferDeviceMemory FAILED for buffer " << handle.index << " Usage: " << (int)buffer->
+            memoryUsage << std::endl;
+        LOG_ERRORF("[RHIVkDevice::AllocBufferDeviceMemory]: Failed to allocate memory for buffer {0}. Usage: {1}",
+                   (UInt64)handle.index, (int)buffer->memoryUsage);
         return false;
     }
 
@@ -539,7 +593,8 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseBuffer(RHIBufferHandle handle)
     }
 }
 
-void ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset)
+void ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size,
+                                                      UInt64 offset)
 {
     ARISEN_PROFILE_ZONE("Vk::BufferMemoryCopy");
     auto* buffer = m_BufferPool->Get(handle);
@@ -564,10 +619,12 @@ void ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopy(RHIBufferHandle handle, co
     {
         // Staging Buffer Fallback
         // 1. Create Staging Buffer (Host Visible)
-        auto stagingHandle = m_BufferPool->Allocate([](RHIVkBufferPoolItem*){});
+        auto stagingHandle = m_BufferPool->Allocate([](RHIVkBufferPoolItem*)
+        {
+        });
         RHIBufferDescriptor stagingDesc{};
         stagingDesc.size = size;
-        stagingDesc.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT; 
+        stagingDesc.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         stagingDesc.memoryUsage = ERHIMemoryUsage::Upload; // CPU_TO_GPU
         stagingDesc.sharingMode = ESharingMode::SHARING_MODE_EXCLUSIVE;
 
@@ -704,10 +761,10 @@ ArisenEngine::UInt64 ArisenEngine::RHI::RHIVkDevice::GetBufferDeviceAddress(RHIB
     }
     if (buffer->buffer == VK_NULL_HANDLE)
     {
-         LOG_ERRORF("[RHIVkDevice::GetBufferDeviceAddress]: Buffer {0} has VK_NULL_HANDLE", (UInt64)handle.index);
-         return 0ULL;
+        LOG_ERRORF("[RHIVkDevice::GetBufferDeviceAddress]: Buffer {0} has VK_NULL_HANDLE", (UInt64)handle.index);
+        return 0ULL;
     }
-    
+
     if (!vkGetBufferDeviceAddressKHR) return 0ULL;
 
     VkBufferDeviceAddressInfoKHR addressInfo{};
@@ -716,26 +773,26 @@ ArisenEngine::UInt64 ArisenEngine::RHI::RHIVkDevice::GetBufferDeviceAddress(RHIB
     UInt64 addr = vkGetBufferDeviceAddressKHR(m_VkDevice, &addressInfo);
     if (addr == 0)
     {
-         LOG_ERRORF("[RHIVkDevice::GetBufferDeviceAddress]: Returned 0 for buffer {0}", (UInt64)handle.index);
+        LOG_ERRORF("[RHIVkDevice::GetBufferDeviceAddress]: Returned 0 for buffer {0}", (UInt64)handle.index);
     }
     return addr;
 }
 
-    bool ArisenEngine::RHI::RHIVkDevice::AllocImage(RHIImageHandle handle, RHIImageDescriptor&& desc)
-    {
-        ARISEN_PROFILE_ZONE("Vk::AllocImage");
-        auto* image = m_ImagePool->Get(handle);
-        if (!image) return false;
+bool ArisenEngine::RHI::RHIVkDevice::AllocImage(RHIImageHandle handle, RHIImageDescriptor&& desc)
+{
+    ARISEN_PROFILE_ZONE("Vk::AllocImage");
+    auto* image = m_ImagePool->Get(handle);
+    if (!image) return false;
 
-        auto imageInfo = ImageCreateInfo(
-            desc.imageType,
-            desc.width, desc.height, desc.depth,
-            desc.mipLevels, desc.arrayLayers,
-            desc.format, desc.tiling,
-            desc.imageLayout, desc.usage,
-            desc.sampleCount, desc.sharingMode,
-            desc.queueFamilyIndexCount,
-            (const uint32_t*)desc.pQueueFamilyIndices);
+    auto imageInfo = ImageCreateInfo(
+        desc.imageType,
+        desc.width, desc.height, desc.depth,
+        desc.mipLevels, desc.arrayLayers,
+        desc.format, desc.tiling,
+        desc.imageLayout, desc.usage,
+        desc.sampleCount, desc.sharingMode,
+        desc.queueFamilyIndexCount,
+        (const uint32_t*)desc.pQueueFamilyIndices);
 
     if (vkCreateImage(m_VkDevice, &imageInfo, nullptr, &image->image) != VK_SUCCESS)
     {
@@ -761,11 +818,11 @@ ArisenEngine::UInt64 ArisenEngine::RHI::RHIVkDevice::GetBufferDeviceAddress(RHIB
     return true;
 }
 
-    bool ArisenEngine::RHI::RHIVkDevice::AllocImageDeviceMemory(RHIImageHandle handle)
-    {
-        ARISEN_PROFILE_ZONE("Vk::AllocImageMemory");
-        auto* image = m_ImagePool->Get(handle);
-        if (!image || image->image == VK_NULL_HANDLE || !image->state) return false;
+bool ArisenEngine::RHI::RHIVkDevice::AllocImageDeviceMemory(RHIImageHandle handle)
+{
+    ARISEN_PROFILE_ZONE("Vk::AllocImageMemory");
+    auto* image = m_ImagePool->Get(handle);
+    if (!image || image->image == VK_NULL_HANDLE || !image->state) return false;
 
     // NOTE: Use explicit VMA_MEMORY_USAGE_* flags to avoid assertions in manual allocation paths.
     VmaMemoryUsage usage = VMA_MEMORY_USAGE_GPU_ONLY;
@@ -1232,6 +1289,7 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseCommandBufferPool(RHICommandBufferPo
         }
     }
 }
+
 void ArisenEngine::RHI::RHIVkDevice::ReleaseCommandBuffer(RHICommandBufferHandle handle)
 {
     auto* item = m_CommandBufferPool->Get(handle);
@@ -1248,7 +1306,9 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseCommandBuffer(RHICommandBufferHandle
     }
 }
 
-void ArisenEngine::RHI::RHIVkDevice::GetAccelerationStructureBuildSizes(const RHIAccelerationStructureBuildGeometryInfo& buildInfo, const UInt32* pMaxPrimitiveCounts, RHIAccelerationStructureBuildSizesInfo* pSizeInfo)
+void ArisenEngine::RHI::RHIVkDevice::GetAccelerationStructureBuildSizes(
+    const RHIAccelerationStructureBuildGeometryInfo& buildInfo, const UInt32* pMaxPrimitiveCounts,
+    RHIAccelerationStructureBuildSizesInfo* pSizeInfo)
 {
     if (!vkGetAccelerationStructureBuildSizesKHR) return;
 
@@ -1259,7 +1319,7 @@ void ArisenEngine::RHI::RHIVkDevice::GetAccelerationStructureBuildSizes(const RH
     vkBuildInfo.type = (VkAccelerationStructureTypeKHR)buildInfo.type;
     vkBuildInfo.flags = (VkBuildAccelerationStructureFlagsKHR)buildInfo.flags;
     vkBuildInfo.geometryCount = buildInfo.geometryCount;
-    
+
     // Convert geometries if necessary
     Containers::Vector<VkAccelerationStructureGeometryKHR> vkGeometries;
     if (buildInfo.pGeometries && buildInfo.geometryCount > 0)
@@ -1304,19 +1364,22 @@ void ArisenEngine::RHI::RHIVkDevice::GetAccelerationStructureBuildSizes(const RH
     {
         vkBuildInfo.pGeometries = vkGeometries.data();
     }
-    
+
     VkAccelerationStructureBuildSizesInfoKHR vkSizeInfo{};
     vkSizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
-    
-    vkGetAccelerationStructureBuildSizesKHR(m_VkDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &vkBuildInfo, pMaxPrimitiveCounts, &vkSizeInfo);
 
-    
+    vkGetAccelerationStructureBuildSizesKHR(m_VkDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &vkBuildInfo,
+                                            pMaxPrimitiveCounts, &vkSizeInfo);
+
+
     pSizeInfo->accelerationStructureSize = vkSizeInfo.accelerationStructureSize;
     pSizeInfo->updateScratchSize = vkSizeInfo.updateScratchSize;
     pSizeInfo->buildScratchSize = vkSizeInfo.buildScratchSize;
 }
 
-bool ArisenEngine::RHI::RHIVkDevice::AllocAccelerationStructure(RHIAccelerationStructureHandle handle, ERHIAccelerationStructureType type, UInt64 size, RHIBufferHandle buffer, UInt64 offset)
+bool ArisenEngine::RHI::RHIVkDevice::AllocAccelerationStructure(RHIAccelerationStructureHandle handle,
+                                                                ERHIAccelerationStructureType type, UInt64 size,
+                                                                RHIBufferHandle buffer, UInt64 offset)
 {
     ARISEN_PROFILE_ZONE("Vk::AllocAccelerationStructure");
     if (!vkCreateAccelerationStructureKHR) return false;
@@ -1338,7 +1401,10 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocAccelerationStructure(RHIAccelerationS
     VkResult result = vkCreateAccelerationStructureKHR(m_VkDevice, &createInfo, nullptr, &vkAS);
     if (result != VK_SUCCESS)
     {
-        LOG_ERROR_AND_THROW(String::Format("[RHIVkDevice::AllocAccelerationStructure]: failed to create acceleration structure! Result: %d", result));
+        LOG_ERROR_AND_THROW(
+            String::Format(
+                "[RHIVkDevice::AllocAccelerationStructure]: failed to create acceleration structure! Result: %d", result
+            ));
         m_AccelerationStructurePool->Deallocate(handle);
         return false;
     }
@@ -1346,13 +1412,14 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocAccelerationStructure(RHIAccelerationS
     VkAccelerationStructureDeviceAddressInfoKHR addressInfo{};
     addressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
     addressInfo.accelerationStructure = vkAS;
-    
+
     asItem->accelerationStructure = vkAS;
     asItem->bufferHandle = buffer;
     asItem->size = size;
     asItem->deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(m_VkDevice, &addressInfo);
 
-    std::cout << "[RHIVkDevice::AllocAccelerationStructure] Created AS Handle: " << handle.index << ", VkHandle: " << (UInt64)vkAS << ", Address: " << asItem->deviceAddress << std::endl;
+    std::cout << "[RHIVkDevice::AllocAccelerationStructure] Created AS Handle: " << handle.index << ", VkHandle: " << (
+        UInt64)vkAS << ", Address: " << asItem->deviceAddress << std::endl;
 
     struct DeferredASDeletion
     {
@@ -1381,7 +1448,8 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseAccelerationStructure(RHIAcceleratio
     }
 }
 
-ArisenEngine::UInt64 ArisenEngine::RHI::RHIVkDevice::GetAccelerationStructureDeviceAddress(RHIAccelerationStructureHandle handle)
+ArisenEngine::UInt64 ArisenEngine::RHI::RHIVkDevice::GetAccelerationStructureDeviceAddress(
+    RHIAccelerationStructureHandle handle)
 {
     auto* item = m_AccelerationStructurePool->Get(handle);
     if (!item)
@@ -1391,12 +1459,14 @@ ArisenEngine::UInt64 ArisenEngine::RHI::RHIVkDevice::GetAccelerationStructureDev
     }
     if (item->deviceAddress == 0)
     {
-        LOG_ERRORF("[RHIVkDevice::GetAccelerationStructureDeviceAddress]: AS {0} has 0 device address", (UInt64)handle.index);
+        LOG_ERRORF("[RHIVkDevice::GetAccelerationStructureDeviceAddress]: AS {0} has 0 device address",
+                   (UInt64)handle.index);
     }
     return item->deviceAddress;
 }
 
-void ArisenEngine::RHI::RHIVkDevice::GetRayTracingShaderGroupHandles(RHIPipelineHandle pipeline, UInt32 firstGroup, UInt32 groupCount, UInt64 size, void* pData)
+void ArisenEngine::RHI::RHIVkDevice::GetRayTracingShaderGroupHandles(RHIPipelineHandle pipeline, UInt32 firstGroup,
+                                                                     UInt32 groupCount, UInt64 size, void* pData)
 {
     if (!vkGetRayTracingShaderGroupHandlesKHR) return;
 
@@ -1404,7 +1474,7 @@ void ArisenEngine::RHI::RHIVkDevice::GetRayTracingShaderGroupHandles(RHIPipeline
     if (!p || !p->pipeline) return;
 
     auto* vkPipeline = static_cast<RHIVkGPUPipeline*>(p->pipeline);
-    
+
     // Ensure pipeline is allocated for frame 0 (typical for SBT creation outside main loop)
     VkPipeline handle = vkPipeline->GetVkPipeline(0);
     if (handle == VK_NULL_HANDLE)
@@ -1413,23 +1483,23 @@ void ArisenEngine::RHI::RHIVkDevice::GetRayTracingShaderGroupHandles(RHIPipeline
         handle = vkPipeline->GetVkPipeline(0);
     }
 
-    if (handle == VK_NULL_HANDLE) {
+    if (handle == VK_NULL_HANDLE)
+    {
         LOG_ERROR("[RHIVkDevice::GetRayTracingShaderGroupHandles]: Pipeline allocation failed!");
         return;
     }
 
     vkGetRayTracingShaderGroupHandlesKHR(m_VkDevice, handle, firstGroup, groupCount, (size_t)size, pData);
-
 }
 
 void ArisenEngine::RHI::RHIVkDevice::FreeAccelerationStructureInternal(RHIAccelerationStructureHandle handle)
 {
-     auto* item = m_AccelerationStructurePool->Get(handle);
-     if (item && item->accelerationStructure != VK_NULL_HANDLE)
-     {
-         vkDestroyAccelerationStructureKHR(m_VkDevice, item->accelerationStructure, nullptr);
-         item->accelerationStructure = VK_NULL_HANDLE;
-     }
+    auto* item = m_AccelerationStructurePool->Get(handle);
+    if (item && item->accelerationStructure != VK_NULL_HANDLE)
+    {
+        vkDestroyAccelerationStructureKHR(m_VkDevice, item->accelerationStructure, nullptr);
+        item->accelerationStructure = VK_NULL_HANDLE;
+    }
 }
 
 bool ArisenEngine::RHI::RHIVkDevice::AllocMemoryPool(RHIMemoryPoolHandle handle, UInt64 size, UInt32 usageBits)
@@ -1483,7 +1553,8 @@ void ArisenEngine::RHI::RHIVkDevice::FreeMemoryPoolInternal(RHIMemoryPoolHandle 
     }
 }
 
-bool ArisenEngine::RHI::RHIVkDevice::AllocBufferAliased(RHIBufferHandle handle, RHIBufferDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset)
+bool ArisenEngine::RHI::RHIVkDevice::AllocBufferAliased(RHIBufferHandle handle, RHIBufferDescriptor&& desc,
+                                                        RHIMemoryPoolHandle pool, UInt64 offset)
 {
     ARISEN_PROFILE_ZONE("Vk::AllocBufferAliased");
     auto* buffer = m_BufferPool->Get(handle);
@@ -1516,7 +1587,8 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocBufferAliased(RHIBufferHandle handle, 
     }
 
     // Register for deferred deletion (buffer only, memory is shared)
-    struct AliasedBufferState {
+    struct AliasedBufferState
+    {
         VkDevice device;
         VkBuffer buffer;
         ~AliasedBufferState() { if (device && buffer) vkDestroyBuffer(device, buffer, nullptr); }
@@ -1529,7 +1601,8 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocBufferAliased(RHIBufferHandle handle, 
     return true;
 }
 
-bool ArisenEngine::RHI::RHIVkDevice::AllocImageAliased(RHIImageHandle handle, RHIImageDescriptor&& desc, RHIMemoryPoolHandle pool, UInt64 offset)
+bool ArisenEngine::RHI::RHIVkDevice::AllocImageAliased(RHIImageHandle handle, RHIImageDescriptor&& desc,
+                                                       RHIMemoryPoolHandle pool, UInt64 offset)
 {
     ARISEN_PROFILE_ZONE("Vk::AllocImageAliased");
     auto* image = m_ImagePool->Get(handle);
@@ -1566,7 +1639,8 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocImageAliased(RHIImageHandle handle, RH
     image->needDestroy = true;
 
     // Register for deferred deletion (image only, memory is shared)
-    struct AliasedImageState {
+    struct AliasedImageState
+    {
         VkDevice device;
         VkImage image;
         ~AliasedImageState() { if (device && image) vkDestroyImage(device, image, nullptr); }
@@ -1600,10 +1674,12 @@ namespace ArisenEngine::RHI
         return pItem ? pItem->height : 0U;
     }
 
-    void RHIVkDevice::SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size, const void* data)
+    void RHIVkDevice::SetGPUProgramSpecializationConstant(RHIShaderProgramHandle handle, UInt32 constantID, UInt32 size,
+                                                          const void* data)
     {
         auto* p = m_GPUProgramPool->Get(handle);
-        if (p && p->program) {
+        if (p && p->program)
+        {
             p->program->SetSpecializationConstant(constantID, size, data);
         }
     }
@@ -1612,7 +1688,8 @@ namespace ArisenEngine::RHI
     {
         ARISEN_PROFILE_ZONE("Vk::WaitSemaphoreValue");
         auto* item = m_SemaphorePool->Get(handle);
-        if (item && item->semaphore != VK_NULL_HANDLE) {
+        if (item && item->semaphore != VK_NULL_HANDLE)
+        {
             VkSemaphoreWaitInfo waitInfo{};
             waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
             waitInfo.semaphoreCount = 1;
@@ -1626,7 +1703,8 @@ namespace ArisenEngine::RHI
     {
         ARISEN_PROFILE_ZONE("Vk::SignalSemaphoreValue");
         auto* item = m_SemaphorePool->Get(handle);
-        if (item && item->semaphore != VK_NULL_HANDLE) {
+        if (item && item->semaphore != VK_NULL_HANDLE)
+        {
             VkSemaphoreSignalInfo signalInfo{};
             signalInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO;
             signalInfo.semaphore = item->semaphore;
@@ -1638,7 +1716,8 @@ namespace ArisenEngine::RHI
     UInt64 RHIVkDevice::GetSemaphoreValue(RHISemaphoreHandle handle)
     {
         auto* item = m_SemaphorePool->Get(handle);
-        if (item && item->semaphore != VK_NULL_HANDLE) {
+        if (item && item->semaphore != VK_NULL_HANDLE)
+        {
             uint64_t val = 0;
             vkGetSemaphoreCounterValue(m_VkDevice, item->semaphore, &val);
             return val;
@@ -1656,4 +1735,3 @@ namespace ArisenEngine::RHI
         return new RHIVkBindlessDescriptorTable(this, static_cast<RHIVkDescriptorHeap*>(heap));
     }
 }
-

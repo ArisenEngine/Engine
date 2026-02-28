@@ -26,7 +26,8 @@ public class IndexBuffer : IDisposable
 
     private bool m_Disposed = false;
 
-    public IndexBuffer(RHIDevice device, uint count, IndexType indexType = IndexType.Uint32, string name = "IndexBuffer")
+    public IndexBuffer(RHIDevice device, uint count, IndexType indexType = IndexType.Uint32,
+        string name = "IndexBuffer")
     {
         m_Device = device;
         m_Count = count;
@@ -36,12 +37,12 @@ public class IndexBuffer : IDisposable
         m_Name = name;
 
         var factory = m_Device.GetFactory();
-        
+
         m_Handle = factory.CreateBuffer(
-            (ulong)m_Size, 
-            (uint)EBufferUsageFlagBits.BUFFER_USAGE_INDEX_BUFFER_BIT, 
-            ESharingMode.SHARING_MODE_EXCLUSIVE, 
-            ERHIMemoryUsage.Upload, 
+            (ulong)m_Size,
+            (uint)EBufferUsageFlagBits.BUFFER_USAGE_INDEX_BUFFER_BIT,
+            ESharingMode.SHARING_MODE_EXCLUSIVE,
+            ERHIMemoryUsage.Upload,
             m_Name);
     }
 
@@ -52,9 +53,9 @@ public class IndexBuffer : IDisposable
         if (totalSize > m_Size) throw new Exception("Data size exceeds buffer size");
 
         var factory = m_Device.GetFactory();
-        
+
         void* ptr = factory.MapBuffer(m_Handle).ToPointer();
-        
+
         GCHandle pin = GCHandle.Alloc(data, GCHandleType.Pinned);
         try
         {

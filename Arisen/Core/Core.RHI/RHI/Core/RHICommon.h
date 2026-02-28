@@ -15,12 +15,16 @@ namespace ArisenEngine::RHI
 
     struct RHIOffset3D
     {
-        SInt32 x; SInt32 y; SInt32 z;
+        SInt32 x;
+        SInt32 y;
+        SInt32 z;
     };
 
     struct RHIExtent3D
     {
-        UInt32 width; UInt32 height; UInt32 depth;
+        UInt32 width;
+        UInt32 height;
+        UInt32 depth;
     };
 
     enum class ERHIObjectType
@@ -41,6 +45,4 @@ namespace ArisenEngine::RHI
         DescriptorSet,
         Unknown
     };
-    
 }
-

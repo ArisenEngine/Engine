@@ -10,7 +10,6 @@ using namespace ArisenEngine::RHI;
 ARISEN_BIND_BEGIN_BRIDGE("RHILoader", "Core.RHI.dll", "Arisen.Native.RHI")
 
 extern "C" {
-
 RHI_DLL void RHILoader_SetCurrentGraphicsAPI(int apiType)
 {
     RHILoader::SetCurrentGraphicsAPI(static_cast<GraphicsAPI>(apiType));
@@ -45,7 +44,6 @@ RHI_DLL void RHILoader_Dispose()
 {
     RHILoader::Dispose();
 }
-
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()

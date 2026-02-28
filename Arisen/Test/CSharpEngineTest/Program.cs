@@ -13,7 +13,7 @@ TestRunner.RegisterTest<GraphTests>();
 TestRunner.RegisterTest<MemoryTests>();
 TestRunner.RegisterTest<LifecycleTests>();
 
-try 
+try
 {
     TestRunner.RunAllTests();
 }

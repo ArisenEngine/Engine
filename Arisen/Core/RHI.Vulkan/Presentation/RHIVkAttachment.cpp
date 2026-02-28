@@ -8,9 +8,4 @@ ArisenEngine::RHI::RHIVkAttachment::RHIVkAttachment(RHIAttachmentDesc&& desc) : 
 
 ArisenEngine::RHI::RHIVkAttachment::~RHIVkAttachment() noexcept
 {
-    
 }
-
-
-
-

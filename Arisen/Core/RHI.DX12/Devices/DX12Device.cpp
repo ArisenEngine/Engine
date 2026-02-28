@@ -4,5 +4,3 @@ ArisenEngine::RHI::RHIDevice* CreateDevice()
 {
     return nullptr;
 }
-
-

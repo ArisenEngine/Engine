@@ -48,7 +48,7 @@ public class ShaderLabParser
             if (Match(TokenType.Identifier, "Shader"))
             {
                 ProcessShader(shader);
-            } 
+            }
             else if (Match(TokenType.CommentLine) || Match(TokenType.CommentBlock))
             {
                 Next();
@@ -74,12 +74,14 @@ public class ShaderLabParser
                 if (!string.IsNullOrWhiteSpace(contentRoot))
                 {
                     foreach (var sub in shader.subShaders)
-                        foreach (var p in sub.passes)
-                            p.includedHLSLs = new List<string> { contentRoot };
+                    foreach (var p in sub.passes)
+                        p.includedHLSLs = new List<string> { contentRoot };
                 }
             }
         }
-        catch { }
+        catch
+        {
+        }
 
         return shader;
     }
@@ -122,14 +124,17 @@ public class ShaderLabParser
                         Logger.Error("Unexpected EOF while parsing HLSLINCLUDE block");
                         break;
                     }
+
                     if (Match(TokenType.PreprocessorDirective))
                     {
                         var directiveTok = Next();
                         m_Preprocessor.ProcessDirective(directiveTok.text);
                         continue;
                     }
+
                     Next();
                 }
+
                 var endTok = Expect(TokenType.Identifier, "ENDHLSL");
                 int sliceEnd = endTok.start;
                 includedHlsl.hlslCode = m_Lexer.Slice(sliceStart, sliceEnd);
@@ -140,7 +145,7 @@ public class ShaderLabParser
                 // 引擎外的编辑器扩展字段，不参与运行时解析，跳过
                 Next();
                 if (Match(TokenType.StringLiteral) || Match(TokenType.Identifier))
-                Next();
+                    Next();
             }
             else if (Match(TokenType.Identifier, "Fallback") || Match(TokenType.Identifier, "FallBack"))
             {
@@ -151,6 +156,7 @@ public class ShaderLabParser
                 {
                     fb = Next().text.Trim('"');
                 }
+
                 Logger.Info($"Get Fallback Info:{fb}");
                 continue;
             }
@@ -164,6 +170,7 @@ public class ShaderLabParser
                 break;
             }
         }
+
         Expect(TokenType.Symbol, "}");
     }
 
@@ -237,14 +244,17 @@ public class ShaderLabParser
                         Logger.Error("Unexpected EOF while parsing SubShader HLSLINCLUDE block");
                         break;
                     }
+
                     if (Match(TokenType.PreprocessorDirective))
                     {
                         var directiveTok = Next();
                         m_Preprocessor.ProcessDirective(directiveTok.text);
                         continue;
                     }
+
                     Next();
                 }
+
                 var endTok = Expect(TokenType.Identifier, "ENDHLSL");
                 int sliceEnd = endTok.start;
                 var code = m_Lexer.Slice(sliceStart, sliceEnd);
@@ -299,7 +309,11 @@ public class ShaderLabParser
                 if (Match(TokenType.Identifier) || Match(TokenType.Symbol, "["))
                 {
                     var _ = ParseRenderStateFactor();
-                    if (Match(TokenType.Symbol, ",")) { Next(); _ = ParseRenderStateFactor(); }
+                    if (Match(TokenType.Symbol, ","))
+                    {
+                        Next();
+                        _ = ParseRenderStateFactor();
+                    }
                 }
             }
             else if (Match(TokenType.Identifier, "ZWrite"))
@@ -337,10 +351,15 @@ public class ShaderLabParser
                 // SubShader 级别：仅解析并跳过
                 // Offset a,b 或 [_Factor],[_Units]
                 Next();
-                if (Match(TokenType.Symbol, "[") || Match(TokenType.Identifier) || Match(TokenType.IntegerLiteral) || Match(TokenType.FloatLiteral))
+                if (Match(TokenType.Symbol, "[") || Match(TokenType.Identifier) || Match(TokenType.IntegerLiteral) ||
+                    Match(TokenType.FloatLiteral))
                 {
                     var _ = ParseRenderStateFactor();
-                    if (Match(TokenType.Symbol, ",")) { Next(); _ = ParseRenderStateFactor(); }
+                    if (Match(TokenType.Symbol, ","))
+                    {
+                        Next();
+                        _ = ParseRenderStateFactor();
+                    }
                 }
             }
             else if (Match(TokenType.Identifier, "ColorMask"))
@@ -360,8 +379,8 @@ public class ShaderLabParser
                 Logger.Info($"[ShaderLabParser] Skip token at SubShader: {Current.text} line {Current.line}");
                 Next();
             }
-            
         }
+
         return subShader;
     }
 
@@ -380,7 +399,7 @@ public class ShaderLabParser
                 referenceName = identifierToken.text
             };
         }
-        
+
         // 直接关键字，如 One, SrcAlpha, Zero
         var valueToken = Next();
 
@@ -413,11 +432,12 @@ public class ShaderLabParser
                 kind = RenderStateValue.ValueKind.Int
             };
         }
-        
-        Logger.Error($"[ShaderLabParser] Unexpected token type: {valueToken.type}, value: {valueToken.text}, line {Current.line}");
+
+        Logger.Error(
+            $"[ShaderLabParser] Unexpected token type: {valueToken.type}, value: {valueToken.text}, line {Current.line}");
         return null;
     }
-    
+
     private Pass ParsePass()
     {
         // 解析 Pass 块
@@ -445,6 +465,7 @@ public class ShaderLabParser
                 {
                     pass.name = Match(TokenType.StringLiteral) ? Next().text.Trim('"') : Next().text;
                 }
+
                 continue;
             }
 
@@ -472,7 +493,9 @@ public class ShaderLabParser
                     srcAlpha = ParseRenderStateFactor();
                     dstAlpha = ParseRenderStateFactor();
                 }
-                pass.states.Blend = new BlendState { SrcColor = srcColor, DstColor = dstColor, SrcAlpha = srcAlpha, DstAlpha = dstAlpha };
+
+                pass.states.Blend = new BlendState
+                    { SrcColor = srcColor, DstColor = dstColor, SrcAlpha = srcAlpha, DstAlpha = dstAlpha };
                 continue;
             }
 
@@ -556,6 +579,7 @@ public class ShaderLabParser
                                     var dir = ExtractIncludeParentDir(path);
                                     if (!string.IsNullOrEmpty(dir)) pass.includedHLSLs.Add(dir);
                                 }
+
                                 removed.Add((directiveTok.start, directiveTok.start + directiveTok.length));
                             }
                             else if (directive.StartsWith("#include "))
@@ -570,10 +594,13 @@ public class ShaderLabParser
                                 // 因此这里不将其移除
                             }
                         }
+
                         continue;
                     }
+
                     Next();
                 }
+
                 var endTok = Expect(TokenType.Identifier, "ENDHLSL");
                 int sliceEnd = endTok.start;
                 var raw = m_Lexer.Slice(sliceStart, sliceEnd);
@@ -587,6 +614,7 @@ public class ShaderLabParser
                     foreach (var incCode in _lastParsedSubShader.includeHlslCodes)
                         sb.AppendLine(incCode);
                 }
+
                 // Inline pass-level previously captured include code if any existed at root shader (global HLSLINCLUDE)
                 // Note: shader.includedHLSLs 保持原样，不在此处内联
                 sb.Append(body);
@@ -632,6 +660,7 @@ public class ShaderLabParser
                 Next();
             }
         }
+
         return dict;
     }
 
@@ -652,6 +681,7 @@ public class ShaderLabParser
                 else if (tok.text == "}") depth--;
             }
         }
+
         return sb.ToString();
     }
 
@@ -705,12 +735,14 @@ public class ShaderLabParser
             int quoteEnd = directive.IndexOf('"', quoteStart + 1);
             if (quoteEnd > quoteStart) return directive.Substring(quoteStart + 1, quoteEnd - quoteStart - 1);
         }
+
         int lt = directive.IndexOf('<');
         if (lt >= 0)
         {
             int gt = directive.IndexOf('>', lt + 1);
             if (gt > lt) return directive.Substring(lt + 1, gt - lt - 1);
         }
+
         return string.Empty;
     }
 
@@ -748,7 +780,10 @@ public class ShaderLabParser
                 }
             }
         }
-        catch { }
+        catch
+        {
+        }
+
         try
         {
             var anchor = includeParents
@@ -767,7 +802,10 @@ public class ShaderLabParser
                 }
             }
         }
-        catch { }
+        catch
+        {
+        }
+
         return null;
     }
 
@@ -833,14 +871,14 @@ public class ShaderLabParser
             }
             else
             {
-                Logger.Error($"[ShaderLabParser] Unexpected identifier: {Current.text} in HLSL Block at line {Current.line}");
+                Logger.Error(
+                    $"[ShaderLabParser] Unexpected identifier: {Current.text} in HLSL Block at line {Current.line}");
                 break;
             }
 
-            Next(); 
+            Next();
         }
-        
-        Next(); 
-        
+
+        Next();
     }
 }

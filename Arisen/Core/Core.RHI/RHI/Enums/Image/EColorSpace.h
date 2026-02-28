@@ -4,10 +4,13 @@
 
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+
 namespace ArisenEngine::RHI
 {
     ARISEN_BIND_ENUM(EColorSpace)
-    typedef enum EColorSpace {
+
+    typedef enum EColorSpace
+    {
         COLOR_SPACE_SRGB_NONLINEAR = 0,
         COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT = 1000104001,
         COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT = 1000104002,
@@ -27,7 +30,5 @@ namespace ArisenEngine::RHI
         COLORSPACE_SRGB_NONLINEAR = COLOR_SPACE_SRGB_NONLINEAR,
         COLOR_SPACE_DCI_P3_LINEAR_EXT = COLOR_SPACE_DISPLAY_P3_LINEAR_EXT,
         COLOR_SPACE_MAX_ENUM = 0x7FFFFFFF
-        
     } EColorSpace;
-    
 }

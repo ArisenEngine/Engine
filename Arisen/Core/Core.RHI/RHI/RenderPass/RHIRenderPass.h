@@ -13,7 +13,6 @@ namespace ArisenEngine::RHI
 
     class RHI_DLL RHIRenderPass
     {
-        
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIRenderPass)
         RHIRenderPass(UInt32 maxFramesInFlight);
@@ -23,6 +22,4 @@ namespace ArisenEngine::RHI
     protected:
         UInt32 m_MaxFramesInFlight;
     };
-
 }
-

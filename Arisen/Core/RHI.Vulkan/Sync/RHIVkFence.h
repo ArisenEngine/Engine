@@ -5,6 +5,7 @@
 namespace ArisenEngine::RHI
 {
     class RHIFence;
+
     class RHIVkFence final : public RHIFence
     {
     public:
@@ -14,12 +15,9 @@ namespace ArisenEngine::RHI
         void* GetHandle() override { return m_VkFence; }
         bool Lock() override;
         void Unlock() override;
+
     private:
         VkFence m_VkFence;
         VkDevice m_VkDevice;
     };
 }
-
-
-
-

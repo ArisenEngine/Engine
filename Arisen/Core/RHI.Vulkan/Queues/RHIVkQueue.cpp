@@ -6,8 +6,11 @@
 #include "Descriptors/RHIVkDescriptorPool.h"
 #include "Profiler.h"
 
-ArisenEngine::RHI::RHIVkQueue::RHIVkQueue(RHIVkDevice* rhiDevice, VkDevice device, VkQueue queue, RHIQueueType type, IRHIDeferredDeletionQueue* deferredDeletionQueue, RHIResourceRegistry* resourceRegistry)
-    : m_RHIDevice(rhiDevice), m_Device(device), m_Queue(queue), m_Type(type), m_DeferredDeletion(deferredDeletionQueue), m_ResourceRegistry(resourceRegistry)
+ArisenEngine::RHI::RHIVkQueue::RHIVkQueue(RHIVkDevice* rhiDevice, VkDevice device, VkQueue queue, RHIQueueType type,
+                                          IRHIDeferredDeletionQueue* deferredDeletionQueue,
+                                          RHIResourceRegistry* resourceRegistry)
+    : m_RHIDevice(rhiDevice), m_Device(device), m_Queue(queue), m_Type(type), m_DeferredDeletion(deferredDeletionQueue),
+      m_ResourceRegistry(resourceRegistry)
 {
     CreateTimelineSemaphore();
 }
@@ -46,7 +49,8 @@ void ArisenEngine::RHI::RHIVkQueue::CreateTimelineSemaphore()
 
 #include "Presentation/RHIVkSwapChain.h"
 
-ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommandBufferHandle handle, const RHISubmitDescriptor* descriptor)
+ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommandBufferHandle handle,
+                                                                      const RHISubmitDescriptor* descriptor)
 {
     auto* commandBuffer = m_RHIDevice->GetCommandBuffer(handle);
     ASSERT(commandBuffer && commandBuffer->ReadyForSubmit());
@@ -64,11 +68,13 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommand
 
         if (descriptor->WaitSwapChain)
         {
-            auto semHandle = static_cast<RHIVkSwapChain*>(descriptor->WaitSwapChain)->GetImageAvailableSemaphore(frameIndex);
+            auto semHandle = static_cast<RHIVkSwapChain*>(descriptor->WaitSwapChain)->GetImageAvailableSemaphore(
+                frameIndex);
             if (semHandle.IsValid())
             {
                 auto* semItem = vkDevice->GetSemaphorePool()->Get(semHandle);
-                if (semItem) {
+                if (semItem)
+                {
                     waitSems.push_back(semItem->semaphore);
                     waitStages.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
                     waitValues.push_back(0);
@@ -78,44 +84,51 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommand
 
         if (descriptor->SignalSwapChain)
         {
-            auto semHandle = static_cast<RHIVkSwapChain*>(descriptor->SignalSwapChain)->GetRenderFinishSemaphore(frameIndex);
+            auto semHandle = static_cast<RHIVkSwapChain*>(descriptor->SignalSwapChain)->GetRenderFinishSemaphore(
+                frameIndex);
             if (semHandle.IsValid())
             {
                 auto* semItem = vkDevice->GetSemaphorePool()->Get(semHandle);
-                if (semItem) {
+                if (semItem)
+                {
                     signalSems.push_back(semItem->semaphore);
                     signalValues.push_back(0);
                 }
             }
         }
-        
+
         // Handle explicit semaphores
         for (UInt32 i = 0; i < descriptor->waitSemaphoreCount; ++i)
         {
-             auto* semItem = vkDevice->GetSemaphorePool()->Get(descriptor->pWaitSemaphores[i]);
-             if (semItem) {
-                 waitSems.push_back(semItem->semaphore);
-                 waitStages.push_back(descriptor->pWaitDstStageMask ? descriptor->pWaitDstStageMask[i] : VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
-                 waitValues.push_back(descriptor->pWaitValues ? descriptor->pWaitValues[i] : 0);
-             }
+            auto* semItem = vkDevice->GetSemaphorePool()->Get(descriptor->pWaitSemaphores[i]);
+            if (semItem)
+            {
+                waitSems.push_back(semItem->semaphore);
+                waitStages.push_back(descriptor->pWaitDstStageMask
+                                         ? descriptor->pWaitDstStageMask[i]
+                                         : VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+                waitValues.push_back(descriptor->pWaitValues ? descriptor->pWaitValues[i] : 0);
+            }
         }
-        
+
         for (UInt32 i = 0; i < descriptor->signalSemaphoreCount; ++i)
         {
-             auto* semItem = vkDevice->GetSemaphorePool()->Get(descriptor->pSignalSemaphores[i]);
-             if (semItem) {
-                 signalSems.push_back(semItem->semaphore);
-                 signalValues.push_back(descriptor->pSignalValues ? descriptor->pSignalValues[i] : 0);
-             }
+            auto* semItem = vkDevice->GetSemaphorePool()->Get(descriptor->pSignalSemaphores[i]);
+            if (semItem)
+            {
+                signalSems.push_back(semItem->semaphore);
+                signalValues.push_back(descriptor->pSignalValues ? descriptor->pSignalValues[i] : 0);
+            }
         }
     }
 
     return SubmitWithFence(handle, VK_NULL_HANDLE, false, waitSems, waitStages, waitValues, signalSems, signalValues);
 }
 
-ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(RHICommandBufferHandle handle, VkFence fence, bool ownedFence,
-    const Containers::Vector<VkSemaphore>& extraWaitSems, 
-    const Containers::Vector<VkPipelineStageFlags>& extraWaitStages, 
+ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(
+    RHICommandBufferHandle handle, VkFence fence, bool ownedFence,
+    const Containers::Vector<VkSemaphore>& extraWaitSems,
+    const Containers::Vector<VkPipelineStageFlags>& extraWaitStages,
     const Containers::Vector<uint64_t>& extraWaitValues,
     const Containers::Vector<VkSemaphore>& extraSignalSems,
     const Containers::Vector<uint64_t>& extraSignalValues)
@@ -147,18 +160,19 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
 
     // Add CommandBuffer Internal waits (Removed: Sync moved to Descriptor)
     // if (vkCmd->GetWaitSemaphoresCount() > 0) ...
-    
+
     // Add Extra waits
-    for(size_t i=0; i<extraWaitSems.size(); ++i) {
+    for (size_t i = 0; i < extraWaitSems.size(); ++i)
+    {
         waitSemaphores.push_back(extraWaitSems[i]);
         waitDstStageMask.push_back(extraWaitStages[i]);
         waitValues.push_back(extraWaitValues.size() > i ? extraWaitValues[i] : 0);
     }
-    
+
     submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
     submitInfo.pWaitSemaphores = waitSemaphores.data();
     submitInfo.pWaitDstStageMask = waitDstStageMask.data();
-    
+
     timelineInfo.waitSemaphoreValueCount = submitInfo.waitSemaphoreCount;
     timelineInfo.pWaitSemaphoreValues = waitValues.data();
 
@@ -173,16 +187,17 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(R
     signalValues.emplace_back(submitTicket);
 
     // if (vkCmd->GetSignalSemaphoresCount() > 0) ... (Removed)
-    
+
     // Add Extra signals
-    for(size_t i=0; i<extraSignalSems.size(); ++i) {
+    for (size_t i = 0; i < extraSignalSems.size(); ++i)
+    {
         signalSemaphores.emplace_back(extraSignalSems[i]);
         signalValues.emplace_back(extraSignalValues.size() > i ? extraSignalValues[i] : 0);
     }
 
     submitInfo.signalSemaphoreCount = static_cast<UInt32>(signalSemaphores.size());
     submitInfo.pSignalSemaphores = signalSemaphores.data();
-    
+
     timelineInfo.signalSemaphoreValueCount = static_cast<uint32_t>(signalValues.size());
     timelineInfo.pSignalSemaphoreValues = signalValues.data();
 
@@ -249,7 +264,7 @@ void ArisenEngine::RHI::RHIVkQueue::WaitForTicket(RHIGpuTicket ticket)
     }
 
     Update();
-    
+
     if (GetCompletedTicket() >= ticket)
     {
         return;
@@ -267,12 +282,9 @@ void ArisenEngine::RHI::RHIVkQueue::WaitForTicket(RHIGpuTicket ticket)
     waitInfo.pValues = &ticket;
 
     VkResult res = vkWaitSemaphores(m_Device, &waitInfo, UINT64_MAX);
-    if (res != VK_SUCCESS) {
+    if (res != VK_SUCCESS)
+    {
         LOG_ERROR(String::Format("[RHIVkQueue::WaitForTicket]: vkWaitSemaphores failed! VkResult: %d", (int)res));
     }
     Update();
 }
-
-
-
-

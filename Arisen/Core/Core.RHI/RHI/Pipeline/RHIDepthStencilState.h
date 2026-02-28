@@ -42,14 +42,14 @@ namespace ArisenEngine::RHI
 
         RHIDepthStencilState()
             : depthTestEnable(false)
-            , depthWriteEnable(false)
-            , depthCompareOp(COMPARE_OP_LESS)
-            , depthBoundsTestEnable(false)
-            , stencilTestEnable(false)
-            , front{ STENCIL_OP_KEEP, STENCIL_OP_KEEP, STENCIL_OP_KEEP, COMPARE_OP_ALWAYS, 0xFF, 0xFF, 0 }
-            , back{ STENCIL_OP_KEEP, STENCIL_OP_KEEP, STENCIL_OP_KEEP, COMPARE_OP_ALWAYS, 0xFF, 0xFF, 0 }
-            , minDepthBounds(0.0f)
-            , maxDepthBounds(1.0f)
+              , depthWriteEnable(false)
+              , depthCompareOp(COMPARE_OP_LESS)
+              , depthBoundsTestEnable(false)
+              , stencilTestEnable(false)
+              , front{STENCIL_OP_KEEP, STENCIL_OP_KEEP, STENCIL_OP_KEEP, COMPARE_OP_ALWAYS, 0xFF, 0xFF, 0}
+              , back{STENCIL_OP_KEEP, STENCIL_OP_KEEP, STENCIL_OP_KEEP, COMPARE_OP_ALWAYS, 0xFF, 0xFF, 0}
+              , minDepthBounds(0.0f)
+              , maxDepthBounds(1.0f)
         {
         }
     };

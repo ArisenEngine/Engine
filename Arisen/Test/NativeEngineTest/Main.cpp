@@ -43,7 +43,7 @@ int main(int argc, char** argv)
     {
         return -1;
     }
-    
+
     // Register Tests
     TestRunner::RegisterTest<RHIBindlessTest>();
     TestRunner::RegisterTest<RHISyncTest>();
@@ -63,12 +63,12 @@ int main(int argc, char** argv)
     TestRunner::RegisterTest<RHIVRSShadingRateTest>();
     TestRunner::RegisterTest<RHIMemoryAliasingTest>();
 
-    
+
     // Parse simple command line for filtering (lpCmdLine for WinMain)
     ArisenEngine::String cmdLine = GetCommandLineA();
-    
+
     // Run tests based on command line or run all by default
-    try 
+    try
     {
         if (cmdLine.Contains("--unit"))
         {

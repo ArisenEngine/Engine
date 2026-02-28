@@ -61,7 +61,3 @@ namespace ArisenEngine::RHI
         static constexpr UInt32 BUFFER_BINDING = 2;
     };
 }
-
-
-
-

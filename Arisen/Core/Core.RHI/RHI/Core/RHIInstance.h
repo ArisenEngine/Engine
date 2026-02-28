@@ -17,7 +17,6 @@ namespace ArisenEngine::RHI
 
 namespace ArisenEngine::RHI
 {
-    
     struct RHIInstanceInfo
     {
         /** app name */
@@ -34,7 +33,7 @@ namespace ArisenEngine::RHI
         UInt32 engineMajor, engineMinor, enginePatch;
         UInt32 maxFramesInFlight;
     };
-    
+
     class RHI_DLL RHIInstance
     {
     public:
@@ -42,7 +41,7 @@ namespace ArisenEngine::RHI
         VIRTUAL_DECONSTRUCTOR(RHIInstance)
 
         explicit RHIInstance(RHIInstanceInfo&& instance_info): m_DeviceLimits(),
-                                                         m_MaxFramesInFlight(instance_info.maxFramesInFlight)
+                                                               m_MaxFramesInFlight(instance_info.maxFramesInFlight)
         {
         }
 
@@ -60,7 +59,7 @@ namespace ArisenEngine::RHI
         virtual void SetCurrentPresentMode(UInt32 windowId, EPresentMode mode) = 0;
         virtual EFormat GetSuitableSwapChainFormat(UInt32 windowId) = 0;
         virtual EPresentMode GetSuitablePresentMode(UInt32 windowId) = 0;
-        
+
         /// \brief used for DXC args
         /// \return api env value
         virtual String GetEnvString() const = 0;
@@ -74,7 +73,7 @@ namespace ArisenEngine::RHI
 
         virtual bool IsPhysicalDeviceAvailable() const = 0;
         virtual bool IsSurfacesAvailable() const = 0;
-        
+
         virtual void CreateLogicDevice(UInt32 windowId) = 0;
         virtual RHIDevice* GetLogicalDevice(UInt32 windowId) = 0;
 
@@ -91,12 +90,9 @@ namespace ArisenEngine::RHI
         }
 
     protected:
-        
         RHIDeviceLimits m_DeviceLimits;
         UInt32 m_MaxFramesInFlight;
-        bool m_EnableValidation { false };
+        bool m_EnableValidation{false};
         virtual void CheckSwapChainCapabilities() = 0;
     };
 }
-
-

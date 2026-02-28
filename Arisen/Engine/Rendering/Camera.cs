@@ -26,7 +26,8 @@ public class Camera
         {
             if (ProjectionType == CameraProjectionType.Perspective)
             {
-                return Matrix4x4.CreatePerspectiveFieldOfView(Mathf.Deg2Rad * FieldOfView, AspectRatio, NearClip, FarClip);
+                return Matrix4x4.CreatePerspectiveFieldOfView(Mathf.Deg2Rad * FieldOfView, AspectRatio, NearClip,
+                    FarClip);
             }
             else
             {
@@ -47,11 +48,11 @@ public class Camera
                 Mathf.Deg2Rad * Rotation.X,
                 Mathf.Deg2Rad * Rotation.Z
             );
-            
+
             Vector3 forward = Vector3.Transform(MathExtensions.Forward, rotation);
             Vector3 target = Position + forward;
             Vector3 up = Vector3.Transform(MathExtensions.Up, rotation);
-            
+
             return Matrix4x4.CreateLookAt(Position, target, up);
         }
     }

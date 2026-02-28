@@ -4,10 +4,13 @@
 
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+
 namespace ArisenEngine::RHI
 {
     ARISEN_BIND_ENUM(EDynamicPipelineState)
-    typedef enum EDynamicPipelineState {
+
+    typedef enum EDynamicPipelineState
+    {
         DYNAMIC_STATE_VIEWPORT = 0,
         DYNAMIC_STATE_SCISSOR = 1,
         DYNAMIC_STATE_LINE_WIDTH = 2,
@@ -96,5 +99,5 @@ namespace ArisenEngine::RHI
         DYNAMIC_STATE_DEPTH_BIAS_ENABLE_EXT = DYNAMIC_STATE_DEPTH_BIAS_ENABLE,
         DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE_EXT = DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE,
         DYNAMIC_STATE_MAX_ENUM = 0x7FFFFFFF
-} EDynamicPipelineState;
+    } EDynamicPipelineState;
 }

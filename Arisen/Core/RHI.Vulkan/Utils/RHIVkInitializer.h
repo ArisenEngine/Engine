@@ -15,6 +15,7 @@
 // #include "RHI/Handles/ImageHandle.h"
 
 #define VK_STRUCT_INITIALIZE(type, name) type name ##{##};
+
 //
 namespace ArisenEngine::RHI
 {
@@ -26,7 +27,8 @@ namespace ArisenEngine::RHI
     /// @param pImmutableSamplers
     /// @return 
     inline VkDescriptorSetLayoutBinding DescriptorSetLayoutBinding(uint32_t binding, VkDescriptorType type,
-        uint32_t count, VkShaderStageFlags stage, const VkSampler* pImmutableSamplers)
+                                                                   uint32_t count, VkShaderStageFlags stage,
+                                                                   const VkSampler* pImmutableSamplers)
     {
         VK_STRUCT_INITIALIZE(VkDescriptorSetLayoutBinding, layoutBinding)
         layoutBinding.binding = binding;
@@ -34,12 +36,13 @@ namespace ArisenEngine::RHI
         layoutBinding.descriptorCount = count;
         layoutBinding.stageFlags = stage;
         layoutBinding.pImmutableSamplers = pImmutableSamplers;
-        
+
         return layoutBinding;
     }
 
-    
-    inline VkDescriptorSetLayoutCreateInfo DescriptorSetLayoutCreateInfo(uint32_t bindingCount, const VkDescriptorSetLayoutBinding* pBindings)
+
+    inline VkDescriptorSetLayoutCreateInfo DescriptorSetLayoutCreateInfo(
+        uint32_t bindingCount, const VkDescriptorSetLayoutBinding* pBindings)
     {
         VK_STRUCT_INITIALIZE(VkDescriptorSetLayoutCreateInfo, layoutInfo)
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -58,7 +61,8 @@ namespace ArisenEngine::RHI
         return poolSize;
     }
 
-    inline VkDescriptorPoolCreateInfo DescriptorPoolCreateInfo(UInt32 poolSizeCount, const VkDescriptorPoolSize* poolSize, UInt32 maxSets)
+    inline VkDescriptorPoolCreateInfo DescriptorPoolCreateInfo(UInt32 poolSizeCount,
+                                                               const VkDescriptorPoolSize* poolSize, UInt32 maxSets)
     {
         VK_STRUCT_INITIALIZE(VkDescriptorPoolCreateInfo, poolInfo)
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -84,7 +88,8 @@ namespace ArisenEngine::RHI
 
     inline VkWriteDescriptorSet WriteDescriptorSet(
         VkDescriptorSet dstSet, UInt32 dstBinding, UInt32 dstArrayElement, UInt32 descriptorCount,
-        VkDescriptorType descriptorType, const VkDescriptorImageInfo* pImageInfo, const VkDescriptorBufferInfo* pBufferInfo,
+        VkDescriptorType descriptorType, const VkDescriptorImageInfo* pImageInfo,
+        const VkDescriptorBufferInfo* pBufferInfo,
         const VkBufferView* pTexelBufferView)
     {
         VK_STRUCT_INITIALIZE(VkWriteDescriptorSet, descriptorWrite)
@@ -100,7 +105,8 @@ namespace ArisenEngine::RHI
         return descriptorWrite;
     }
 
-    inline VkDescriptorImageInfo DescriptorImageInfo(VkSampler sampler, VkImageView imageView, VkImageLayout imageLayout)
+    inline VkDescriptorImageInfo DescriptorImageInfo(VkSampler sampler, VkImageView imageView,
+                                                     VkImageLayout imageLayout)
     {
         VkDescriptorImageInfo descriptorImageInfo
         {
@@ -124,7 +130,7 @@ namespace ArisenEngine::RHI
 
     inline VkBufferCreateInfo BufferCreateInfo(
         UInt32 createFlagBits,
-        UInt64 size, 
+        UInt64 size,
         UInt32 usage,
         ESharingMode sharingMode,
         UInt32 queueFamilyIndexCount,
@@ -174,7 +180,7 @@ namespace ArisenEngine::RHI
             imageInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndexCount);
             imageInfo.pQueueFamilyIndices = static_cast<const uint32_t*>(pQueueFamilyIndices);
         }
-        
+
         return imageInfo;
     }
 
@@ -183,8 +189,8 @@ namespace ArisenEngine::RHI
         UInt32 bufferRowLength,
         UInt32 bufferImageHeight,
         RHIImageSubresourceLayers imageSubresource,
-    SInt32 offsetX, SInt32 offsetY, SInt32 offsetZ,
-    UInt32 width, UInt32 height, UInt32 depth)
+        SInt32 offsetX, SInt32 offsetY, SInt32 offsetZ,
+        UInt32 width, UInt32 height, UInt32 depth)
     {
         VK_STRUCT_INITIALIZE(VkBufferImageCopy, imageCopy)
         imageCopy.bufferOffset = static_cast<VkDeviceSize>(bufferOffset);
@@ -200,7 +206,7 @@ namespace ArisenEngine::RHI
         imageCopy.imageExtent.width = width;
         imageCopy.imageExtent.height = height;
         imageCopy.imageExtent.depth = depth;
-      
+
         return imageCopy;
     }
 
@@ -332,7 +338,7 @@ namespace ArisenEngine::RHI
         barrier.buffer = buffer;
         barrier.offset = offset;
         barrier.size = size;
-        
+
         return barrier;
     }
 
@@ -357,7 +363,7 @@ namespace ArisenEngine::RHI
         barrier.subresourceRange.levelCount = subResourceRange.levelCount;
         barrier.subresourceRange.baseArrayLayer = subResourceRange.baseArrayLayer;
         barrier.subresourceRange.layerCount = subResourceRange.layerCount;
-        
+
         return barrier;
     }
 
@@ -368,20 +374,24 @@ namespace ArisenEngine::RHI
         if (flags & PIPELINE_STAGE_DRAW_INDIRECT_BIT) flags2 |= VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT_KHR;
         if (flags & PIPELINE_STAGE_VERTEX_INPUT_BIT) flags2 |= VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT_KHR;
         if (flags & PIPELINE_STAGE_VERTEX_SHADER_BIT) flags2 |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT_KHR;
-        if (flags & PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT) flags2 |= VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT_KHR;
-        if (flags & PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT) flags2 |= VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT_KHR;
+        if (flags & PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT) flags2 |=
+            VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT_KHR;
+        if (flags & PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT) flags2 |=
+            VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT_KHR;
         if (flags & PIPELINE_STAGE_GEOMETRY_SHADER_BIT) flags2 |= VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT_KHR;
         if (flags & PIPELINE_STAGE_FRAGMENT_SHADER_BIT) flags2 |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT_KHR;
         if (flags & PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT) flags2 |= VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT_KHR;
         if (flags & PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT) flags2 |= VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT_KHR;
-        if (flags & PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT) flags2 |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR;
+        if (flags & PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT) flags2 |=
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR;
         if (flags & PIPELINE_STAGE_COMPUTE_SHADER_BIT) flags2 |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR;
         if (flags & PIPELINE_STAGE_TRANSFER_BIT) flags2 |= VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT_KHR;
         if (flags & PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT) flags2 |= VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR;
         if (flags & PIPELINE_STAGE_HOST_BIT) flags2 |= VK_PIPELINE_STAGE_2_HOST_BIT_KHR;
         if (flags & PIPELINE_STAGE_ALL_GRAPHICS_BIT) flags2 |= VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT_KHR;
         if (flags & PIPELINE_STAGE_ALL_COMMANDS_BIT) flags2 |= VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR;
-        if (flags & PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR) flags2 |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+        if (flags & PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR) flags2 |=
+            VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
         if (flags & PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR) flags2 |= VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
         if (flags & PIPELINE_STAGE_TASK_SHADER_BIT_EXT) flags2 |= VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT;
         if (flags & PIPELINE_STAGE_MESH_SHADER_BIT_EXT) flags2 |= VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT;
@@ -401,17 +411,21 @@ namespace ArisenEngine::RHI
         if (flags & ACCESS_SHADER_WRITE_BIT) flags2 |= VK_ACCESS_2_SHADER_WRITE_BIT_KHR;
         if (flags & ACCESS_COLOR_ATTACHMENT_READ_BIT) flags2 |= VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT_KHR;
         if (flags & ACCESS_COLOR_ATTACHMENT_WRITE_BIT) flags2 |= VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR;
-        if (flags & ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT) flags2 |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT_KHR;
-        if (flags & ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT) flags2 |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT_KHR;
+        if (flags & ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT) flags2 |=
+            VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT_KHR;
+        if (flags & ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT) flags2 |=
+            VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT_KHR;
         if (flags & ACCESS_TRANSFER_READ_BIT) flags2 |= VK_ACCESS_2_TRANSFER_READ_BIT_KHR;
         if (flags & ACCESS_TRANSFER_WRITE_BIT) flags2 |= VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR;
         if (flags & ACCESS_HOST_READ_BIT) flags2 |= VK_ACCESS_2_HOST_READ_BIT_KHR;
         if (flags & ACCESS_HOST_WRITE_BIT) flags2 |= VK_ACCESS_2_HOST_WRITE_BIT_KHR;
         if (flags & ACCESS_MEMORY_READ_BIT) flags2 |= VK_ACCESS_2_MEMORY_READ_BIT_KHR;
         if (flags & ACCESS_MEMORY_WRITE_BIT) flags2 |= VK_ACCESS_2_MEMORY_WRITE_BIT_KHR;
-        if (flags & ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR) flags2 |= VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR;
-        if (flags & ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR) flags2 |= VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
-        
+        if (flags & ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR) flags2 |=
+            VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+        if (flags & ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR) flags2 |=
+            VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+
         return flags2;
     }
 
@@ -437,8 +451,9 @@ namespace ArisenEngine::RHI
         return samplerCreateInfo;
     }
 
-    inline VkImageViewCreateInfo ImageViewCreateInfo(VkImage image, EImageViewType viewType, EFormat format, 
-        UInt32 aspectMask, UInt32 baseMipLevel, UInt32 levelCount, UInt32 baseArrayLayer, UInt32 layerCount)
+    inline VkImageViewCreateInfo ImageViewCreateInfo(VkImage image, EImageViewType viewType, EFormat format,
+                                                     UInt32 aspectMask, UInt32 baseMipLevel, UInt32 levelCount,
+                                                     UInt32 baseArrayLayer, UInt32 layerCount)
     {
         VK_STRUCT_INITIALIZE(VkImageViewCreateInfo, viewInfo)
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -453,7 +468,3 @@ namespace ArisenEngine::RHI
         return viewInfo;
     }
 }
-
-
-
-

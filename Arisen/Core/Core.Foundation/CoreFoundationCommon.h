@@ -7,6 +7,7 @@
 #endif
 
 extern "C" FOUNDATION_DLL void dummy_core_foundation_function();
+
 inline void dummy_core_foundation_function()
 {
 }

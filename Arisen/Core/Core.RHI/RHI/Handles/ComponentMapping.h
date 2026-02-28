@@ -3,10 +3,11 @@
 
 namespace ArisenEngine::RHI
 {
-    typedef struct ComponentMapping {
-        ComponentSwizzle    r;
-        ComponentSwizzle    g;
-        ComponentSwizzle    b;
-        ComponentSwizzle    a;
+    typedef struct ComponentMapping
+    {
+        ComponentSwizzle r;
+        ComponentSwizzle g;
+        ComponentSwizzle b;
+        ComponentSwizzle a;
     } ComponentMapping;
 }

@@ -13,10 +13,10 @@ namespace ArisenEngine::Testing
      */
     enum class TestCategory
     {
-        Unit,        // Logic and resource creation (no rendering/swapchain)
-        Rendering,   // Full rendering flow including window and swapchain
+        Unit, // Logic and resource creation (no rendering/swapchain)
+        Rendering, // Full rendering flow including window and swapchain
         Performance, // Benchmarking specific operations
-        Misc         // Other tests
+        Misc // Other tests
     };
 
     /**
@@ -76,12 +76,13 @@ namespace ArisenEngine::Testing
         /**
          * @brief Register a test for execution.
          */
-        template<typename T>
+        template <typename T>
         static void RegisterTest()
         {
             static_assert(std::is_base_of<ITest, T>::value, "T must inherit from ITest");
-            
-            GetRegistry().push_back([]() -> std::unique_ptr<ITest> {
+
+            GetRegistry().push_back([]() -> std::unique_ptr<ITest>
+            {
                 return std::make_unique<T>();
             });
         }
@@ -100,8 +101,9 @@ namespace ArisenEngine::Testing
          */
         static std::vector<TestResult> RunByCategory(TestCategory category)
         {
-            return RunWithFilter([category](const ITest& test) { 
-                return test.GetCategory() == category; 
+            return RunWithFilter([category](const ITest& test)
+            {
+                return test.GetCategory() == category;
             });
         }
 
@@ -110,7 +112,8 @@ namespace ArisenEngine::Testing
          */
         static std::vector<TestResult> RunTestByName(const String& name)
         {
-            return RunWithFilter([&name](const ITest& test) {
+            return RunWithFilter([&name](const ITest& test)
+            {
                 return name == test.GetName();
             });
         }
@@ -124,13 +127,13 @@ namespace ArisenEngine::Testing
             auto& registry = GetRegistry();
 
             LOG_INFO(String::Format("=== Starting Test Batch (Total registered: %zu) ===", registry.size()).c_str());
-            
+
             for (auto& factory : registry)
             {
                 auto test = factory();
                 if (!filter(*test)) continue;
 
-                TestResult result{ test->GetName(), false, "" };
+                TestResult result{test->GetName(), false, ""};
                 try
                 {
                     LOG_INFO((String("[TEST] Starting: ") + test->GetName()).c_str());
@@ -182,9 +185,11 @@ namespace ArisenEngine::Testing
                 size_t passed = 0;
                 for (const auto& r : results) { if (r.passed) ++passed; }
                 LOG_INFO("=== Test Summary ===");
-                LOG_INFO(String::Format("Total: %zu | Passed: %zu | Failed: %zu", results.size(), passed, results.size() - passed).c_str());
+                LOG_INFO(
+                    String::Format("Total: %zu | Passed: %zu | Failed: %zu", results.size(), passed, results.size() -
+                        passed).c_str());
             }
-            
+
             return results;
         }
 

@@ -17,7 +17,7 @@ namespace ArisenEngine::RHI
     // Descriptor for submission synchronization
     struct RHISubmitDescriptor
     {
-        class RHISwapChain* WaitSwapChain = nullptr;   // Optional: Waits for local frame's ImageAvailable
+        class RHISwapChain* WaitSwapChain = nullptr; // Optional: Waits for local frame's ImageAvailable
         class RHISwapChain* SignalSwapChain = nullptr; // Optional: Signals local frame's RenderFinished
 
         // Explicit semaphores (optional, for Async Compute / non-swapchain sync)
@@ -25,7 +25,7 @@ namespace ArisenEngine::RHI
         const UInt32* pWaitDstStageMask = nullptr; // EPipelineStageFlag bits
         const uint64_t* pWaitValues = nullptr; // Optional: Timeline wait values
         UInt32 waitSemaphoreCount = 0;
-        
+
         RHISemaphoreHandle* pSignalSemaphores = nullptr;
         const uint64_t* pSignalValues = nullptr; // Optional: Timeline signal values
         UInt32 signalSemaphoreCount = 0;
@@ -42,7 +42,8 @@ namespace ArisenEngine::RHI
         virtual RHIQueueType GetType() const = 0;
 
         // Returns a ticket assigned to this submission.
-        virtual RHIGpuTicket Submit(RHICommandBufferHandle commandBuffer, const RHISubmitDescriptor* descriptor = nullptr) = 0;
+        virtual RHIGpuTicket Submit(RHICommandBufferHandle commandBuffer,
+                                    const RHISubmitDescriptor* descriptor = nullptr) = 0;
 
         // Poll completion and advance completed ticket.
         virtual void Update() = 0;
@@ -64,5 +65,3 @@ namespace ArisenEngine::RHI
         }
     };
 }
-
-
