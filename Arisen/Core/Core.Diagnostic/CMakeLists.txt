@@ -16,6 +16,7 @@ target_include_directories(Core.Diagnostic PRIVATE
 
 target_include_directories(Core.Diagnostic PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/Profiler
 )
 
 target_compile_definitions(Core.Diagnostic PRIVATE COREDIAGNOSTIC_EXPORTS)

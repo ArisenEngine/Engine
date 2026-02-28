@@ -6,7 +6,9 @@
 
 #if ARISEN_PROFILER_ENABLED
 
+#ifndef TRACY_ENABLE
 #define TRACY_ENABLE
+#endif
 #include <tracy/Tracy.hpp>
 
 /**
