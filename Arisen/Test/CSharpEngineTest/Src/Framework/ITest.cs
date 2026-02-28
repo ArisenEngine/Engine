@@ -5,7 +5,9 @@ namespace CSharpEngineTest.Framework
         Unit,
         Rendering,
         Performance,
-        Misc
+        Misc,
+        Graphics,
+        Framework
     }
 
     public interface ITest
