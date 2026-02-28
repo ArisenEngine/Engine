@@ -1,8 +1,12 @@
 #pragma once
+#include "Base/BindingMacros.h"
 #include "Base/FoundationMinimal.h"
 
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 namespace ArisenEngine::RHI
 {
+    ARISEN_BIND_ENUM(EShadingRateCombiner)
     /**
      * @brief Combiner operations for Variable Rate Shading (VRS).
      * Specifies how the pipeline shading rate, primitive shading rate, and attachment shading rate are combined.

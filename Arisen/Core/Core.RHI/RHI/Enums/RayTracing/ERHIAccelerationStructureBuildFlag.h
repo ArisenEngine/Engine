@@ -1,8 +1,12 @@
 #pragma once
+#include "Base/BindingMacros.h"
 #include "Base/FoundationMinimal.h"
 
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 namespace ArisenEngine::RHI
 {
+    ARISEN_BIND_ENUM(ERHIAccelerationStructureBuildFlagBits)
     enum ERHIAccelerationStructureBuildFlagBits : UInt32
     {
         AS_BUILD_ALLOW_UPDATE_BIT = 0x00000001,

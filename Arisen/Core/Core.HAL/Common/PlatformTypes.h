@@ -1,5 +1,9 @@
 #pragma once
 #include "Base/FoundationMinimal.h"
+#include "Base/BindingMacros.h"
+
+ARISEN_BIND_MODULE("Core.HAL.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.HAL")
 
 namespace ArisenEngine::HAL
 {
@@ -17,6 +21,7 @@ namespace ArisenEngine::HAL
 	using WindowResize = void(*)(HWND, UInt32, UInt32);
 	using WindowHandle = HWND;
 
+    ARISEN_BIND_STRUCT(WindowInitInfo)
 	struct WindowInitInfo
 	{
 		WindowProc         callback{ nullptr };

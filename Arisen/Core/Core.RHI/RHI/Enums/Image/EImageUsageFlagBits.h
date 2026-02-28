@@ -1,7 +1,12 @@
+#include "Base/BindingMacros.h"
+
 #pragma once
 
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 namespace ArisenEngine::RHI
 {
+    ARISEN_BIND_ENUM(EImageUsageFlagBits)
 typedef enum EImageUsageFlagBits
 {
     IMAGE_USAGE_TRANSFER_SRC_BIT = 0x00000001,

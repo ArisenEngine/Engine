@@ -1,7 +1,12 @@
 ﻿#pragma once
 
+#include "Base/BindingMacros.h"
+
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 namespace ArisenEngine::RHI
 {
+    ARISEN_BIND_ENUM(EImageViewType)
     typedef enum EImageViewType {
         IMAGE_VIEW_TYPE_1D = 0,
         IMAGE_VIEW_TYPE_2D = 1,

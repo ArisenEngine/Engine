@@ -1,0 +1,80 @@
+#include "RHI/Pipeline/RHIPipeline.h"
+#include "RHI/Pipeline/RHIPipelineCache.h"
+#include "RHI/Pipeline/RHIPipelineState.h"
+#include "Base/BindingMacros.h"
+
+using namespace ArisenEngine::RHI;
+
+ARISEN_BIND_BEGIN_BRIDGE("RHIPipeline", "Core.RHI.dll", "Arisen.Native.RHI")
+
+extern "C" {
+
+RHI_DLL void* RHIPipelineCache_GetGraphicsPipeline(RHIPipelineCache* cache, RHIPipelineState* pso)
+{
+    RHIPipelineHandle handle = cache->GetGraphicsPipeline(pso);
+    uint64_t result = 0;
+    std::memcpy(&result, &handle, sizeof(handle));
+    return (void*)result;
+}
+
+RHI_DLL void* RHIPipelineCache_GetPipelineState(RHIPipelineCache* cache)
+{
+    return cache->GetPipelineState().release();
+}
+
+RHI_DLL void RHIPipelineState_AddProgram(RHIPipelineState* pso, uint32_t index, uint32_t generation)
+{
+    RHIShaderProgramHandle handle;
+    handle.index = index;
+    handle.generation = generation;
+    pso->AddProgram(handle);
+}
+
+RHI_DLL void RHIPipelineState_SetBindPoint(RHIPipelineState* pso, int bindPoint)
+{
+    pso->SetBindPoint(static_cast<EPipelineBindPoint>(bindPoint));
+}
+
+RHI_DLL void RHIPipelineState_SetInputAssemblyState(RHIPipelineState* pso, int topology, int primitiveRestart)
+{
+    RHIInputAssemblyState state{};
+    state.topology = static_cast<EPrimitiveTopology>(topology);
+    state.primitiveRestartEnable = primitiveRestart != 0;
+    pso->SetInputAssemblyState(state);
+}
+
+RHI_DLL void RHIPipelineState_SetRasterizationState(RHIPipelineState* pso, int polygonMode, int cullMode, int frontFace)
+{
+    RHIRasterizationState state{};
+    state.polygonMode = static_cast<EPolygonMode>(polygonMode);
+    state.cullMode = static_cast<ECullModeFlagBits>(cullMode);
+    state.frontFace = static_cast<EFrontFace>(frontFace);
+    state.depthClampEnable = false;
+    state.rasterizerDiscardEnable = false;
+    state.depthBiasEnable = false;
+    state.lineWidth = 1.0f;
+    pso->SetRasterizationState(state);
+}
+
+RHI_DLL void RHIPipelineState_SetColorBlendState(RHIPipelineState* pso, int blendEnable, int srcColor, int dstColor, int colorOp)
+{
+    RHIColorBlendState state{};
+    // This is simplified, real implementation should take more parameters
+    pso->SetColorBlendState(state);
+}
+
+RHI_DLL void RHIPipelineState_SetRenderingFormats(RHIPipelineState* pso, const int* colorFormats, uint32_t colorCount, int depthFormat)
+{
+    ArisenEngine::Containers::Vector<EFormat> formats;
+    for(uint32_t i=0; i<colorCount; ++i) formats.push_back(static_cast<EFormat>(colorFormats[i]));
+    pso->SetRenderingFormats(formats, static_cast<EFormat>(depthFormat), EFormat::FORMAT_UNDEFINED);
+}
+
+RHI_DLL void RHIPipelineState_Delete(RHIPipelineState* pso)
+{
+    delete pso;
+}
+
+} // extern "C"
+
+ARISEN_BIND_END_BRIDGE()

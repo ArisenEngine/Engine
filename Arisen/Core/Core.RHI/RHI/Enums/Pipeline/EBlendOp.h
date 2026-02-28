@@ -1,6 +1,11 @@
 ﻿#pragma once
+#include "Base/BindingMacros.h"
+
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 namespace ArisenEngine::RHI
 {
+    ARISEN_BIND_ENUM(EBlendOp)
     typedef enum EBlendOp {
         BLEND_OP_ADD = 0,
         BLEND_OP_SUBTRACT = 1,
@@ -54,5 +59,5 @@ namespace ArisenEngine::RHI
         BLEND_OP_GREEN_EXT = 1000148044,
         BLEND_OP_BLUE_EXT = 1000148045,
         BLEND_OP_MAX_ENUM = 0x7FFFFFFF
-} EBlendOp;
+    } EBlendOp;
 }

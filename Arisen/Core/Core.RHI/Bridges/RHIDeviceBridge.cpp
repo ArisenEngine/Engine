@@ -71,6 +71,19 @@ RHI_DLL void RHIDevice_WaitQueueTicket(RHIDevice* dev, uint64_t ticket)
     dev->WaitQueueTicket(ticket);
 }
 
+RHI_DLL uint64_t RHIDevice_Submit(RHIDevice* dev, uint32_t index, uint32_t generation)
+{
+    RHICommandBufferHandle handle;
+    handle.index = index;
+    handle.generation = generation;
+    return dev->Submit(handle);
+}
+
+RHI_DLL void* RHIDevice_GetPipelineCache(RHIDevice* dev)
+{
+    return static_cast<void*>(dev->GetPipelineCache());
+}
+
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()

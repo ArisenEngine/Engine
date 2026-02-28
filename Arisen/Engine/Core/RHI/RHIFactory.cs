@@ -52,4 +52,55 @@ public class RHIFactory
     {
         RHIFactoryAPI.RHIFactory_UnmapBuffer(Handle, handle.Index, handle.Generation);
     }
+
+    public unsafe RHICommandBufferPoolHandle CreateCommandBufferPool(RHIQueueType queueType)
+    {
+        uint index = 0;
+        uint gen = 0;
+        RHIFactoryAPI.RHIFactory_CreateCommandBufferPool(Handle, (int)queueType, (IntPtr)(&index), (IntPtr)(&gen));
+        return new RHICommandBufferPoolHandle { Index = index, Generation = gen };
+    }
+
+    public unsafe RHIRenderPassHandle CreateRenderPass()
+    {
+        uint index = 0;
+        uint gen = 0;
+        RHIFactoryAPI.RHIFactory_CreateRenderPass(Handle, (IntPtr)(&index), (IntPtr)(&gen));
+        return new RHIRenderPassHandle { Index = index, Generation = gen };
+    }
+
+    public unsafe RHIFrameBufferHandle CreateFrameBuffer()
+    {
+        uint index = 0;
+        uint gen = 0;
+        RHIFactoryAPI.RHIFactory_CreateFrameBuffer(Handle, (IntPtr)(&index), (IntPtr)(&gen));
+        return new RHIFrameBufferHandle { Index = index, Generation = gen };
+    }
+
+    public unsafe RHISamplerHandle CreateSampler(EFilter magFilter, EFilter minFilter, ESamplerMipmapMode mipmapMode, ESamplerAddressMode addressMode)
+    {
+        uint index = 0;
+        uint gen = 0;
+        RHIFactoryAPI.RHIFactory_CreateSampler(Handle, (int)magFilter, (int)minFilter, (int)mipmapMode, (int)addressMode, (int)addressMode, (int)addressMode, 0, 0, 1.0f, 0, 0, 0, 1.0f, 0, (IntPtr)(&index), (IntPtr)(&gen));
+        return new RHISamplerHandle { Index = index, Generation = gen };
+    }
+
+    public unsafe RHIShaderProgramHandle CreateGPUProgram()
+    {
+        uint index = 0;
+        uint gen = 0;
+        RHIFactoryAPI.RHIFactory_CreateGPUProgram(Handle, (IntPtr)(&index), (IntPtr)(&gen));
+        return new RHIShaderProgramHandle { Index = index, Generation = gen };
+    }
+
+    public bool AttachProgramByteCode(RHIShaderProgramHandle handle, int stage, byte[] code, string entryPoint)
+    {
+        unsafe
+        {
+            fixed (byte* pCode = code)
+            {
+                return RHIFactoryAPI.RHIFactory_AttachProgramByteCode(Handle, handle.Index, handle.Generation, stage, (IntPtr)pCode, (ulong)code.Length, entryPoint) != 0;
+            }
+        }
+    }
 }

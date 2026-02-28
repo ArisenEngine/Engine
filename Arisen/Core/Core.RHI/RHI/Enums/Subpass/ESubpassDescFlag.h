@@ -1,7 +1,11 @@
 #pragma once
+#include "Base/BindingMacros.h"
 
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 namespace ArisenEngine::RHI
 {
+    ARISEN_BIND_ENUM(ESubpassDescriptionFlag)
     typedef enum ESubpassDescriptionFlag
     {
         SUBPASS_DESCRIPTION_PER_VIEW_ATTRIBUTES_BIT_NVX = 0x00000001,

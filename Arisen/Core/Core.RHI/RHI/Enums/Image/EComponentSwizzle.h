@@ -1,7 +1,12 @@
 ﻿#pragma once
 
+#include "Base/BindingMacros.h"
+
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 namespace ArisenEngine::RHI
 {
+    ARISEN_BIND_ENUM(ComponentSwizzle)
     typedef enum ComponentSwizzle {
         COMPONENT_SWIZZLE_IDENTITY = 0,
         COMPONENT_SWIZZLE_ZERO = 1,

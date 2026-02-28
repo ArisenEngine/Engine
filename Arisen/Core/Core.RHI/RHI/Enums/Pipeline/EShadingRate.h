@@ -1,8 +1,12 @@
 #pragma once
+#include "Base/BindingMacros.h"
 #include "Base/FoundationMinimal.h"
 
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 namespace ArisenEngine::RHI
 {
+    ARISEN_BIND_ENUM(EShadingRate)
     /**
      * @brief Fragment shading rates for Variable Rate Shading (VRS).
      * Maps directly to VkExtent2D for fragment shading rate.

@@ -1,6 +1,11 @@
 #pragma once
+#include "Base/BindingMacros.h"
+
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 namespace ArisenEngine::RHI
 {
+    ARISEN_BIND_ENUM(ESamplerAddressMode)
     typedef enum ESamplerAddressMode {
         SAMPLER_ADDRESS_MODE_REPEAT = 0,
         SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT = 1,

@@ -1,6 +1,11 @@
 ﻿#pragma once
+#include "Base/BindingMacros.h"
+
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 namespace ArisenEngine::RHI
 {
+    ARISEN_BIND_ENUM(ELogicOp)
     typedef enum ELogicOp {
         LOGIC_OP_CLEAR = 0,
         LOGIC_OP_AND = 1,
