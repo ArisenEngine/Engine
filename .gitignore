@@ -20,3 +20,4 @@ Scripts/Windows/tools/*
 *.vcxitems
 *.vcxitems.filters
 
+vk_validation.log
