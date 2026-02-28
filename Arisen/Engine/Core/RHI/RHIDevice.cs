@@ -19,7 +19,7 @@ public readonly struct RHIDevice
     public RHIFactory GetFactory()
     {
         var factoryHandle = RHIDeviceAPI.RHIDevice_GetFactory(Handle);
-        return new RHIFactory(factoryHandle);
+        return new RHIFactory(factoryHandle, Handle);
     }
 
     public RHIInstance GetInstance()
@@ -36,7 +36,7 @@ public readonly struct RHIDevice
     public RHICommandBufferPool GetCommandBufferPool(RHICommandBufferPoolHandle handle)
     {
         var poolPtr = RHIDeviceAPI.RHIDevice_GetCommandBufferPool(Handle, handle.Index, handle.Generation);
-        return new RHICommandBufferPool(poolPtr, handle);
+        return new RHICommandBufferPool(poolPtr, Handle, handle);
     }
 
     public ulong Submit(RHICommandBuffer cb, RHISwapChain? waitSC = null, RHISwapChain? signalSC = null)

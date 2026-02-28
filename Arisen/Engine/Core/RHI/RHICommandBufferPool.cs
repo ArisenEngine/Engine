@@ -6,13 +6,15 @@ namespace ArisenEngine.Core.RHI;
 public readonly struct RHICommandBufferPool
 {
     internal IntPtr Handle { get; }
+    internal IntPtr DeviceHandle { get; }
     public RHICommandBufferPoolHandle RHIHandle { get; }
 
     public bool IsValid => Handle != IntPtr.Zero;
 
-    internal RHICommandBufferPool(IntPtr handle, RHICommandBufferPoolHandle rhiHandle)
+    internal RHICommandBufferPool(IntPtr handle, IntPtr deviceHandle, RHICommandBufferPoolHandle rhiHandle)
     {
         Handle = handle;
+        DeviceHandle = deviceHandle;
         RHIHandle = rhiHandle;
     }
 
@@ -23,7 +25,7 @@ public readonly struct RHICommandBufferPool
         RHICommandBufferPoolAPI.RHICommandBufferPool_GetCommandBuffer(Handle, currentFrameIndex, (int)level, (IntPtr)(&index), (IntPtr)(&gen));
         
         var handle = new RHICommandBufferHandle { Index = index, Generation = gen };
-        var cmdPtr = RHIDeviceAPI.RHIDevice_GetCommandBuffer(RHISystem.PrimaryDevice!.Value.Handle, index, gen);
+        var cmdPtr = RHIDeviceAPI.RHIDevice_GetCommandBuffer(DeviceHandle, index, gen);
         return new RHICommandBuffer(currentFrameIndex, cmdPtr, handle);
     }
 

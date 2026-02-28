@@ -12,6 +12,7 @@ public enum IndexType
 
 public class IndexBuffer : IDisposable
 {
+    private RHIDevice m_Device;
     private RHIBufferHandle m_Handle;
     private uint m_Size;
     private uint m_Count;
@@ -23,18 +24,18 @@ public class IndexBuffer : IDisposable
     public uint Count => m_Count;
     public IndexType IndexType => m_IndexType;
 
-    public IndexBuffer(uint count, IndexType indexType = IndexType.Uint32, string name = "IndexBuffer")
+    private bool m_Disposed = false;
+
+    public IndexBuffer(RHIDevice device, uint count, IndexType indexType = IndexType.Uint32, string name = "IndexBuffer")
     {
+        m_Device = device;
         m_Count = count;
         m_IndexType = indexType;
         uint stride = (indexType == IndexType.Uint32) ? 4u : 2u;
         m_Size = count * stride;
         m_Name = name;
-        
-        var device = RHISystem.PrimaryDevice;
-        if (!device.HasValue) throw new Exception("RHI Device not initialized");
 
-        var factory = device.Value.GetFactory();
+        var factory = m_Device.GetFactory();
         
         m_Handle = factory.CreateBuffer(
             (ulong)m_Size, 
@@ -50,10 +51,7 @@ public class IndexBuffer : IDisposable
         int totalSize = elementSize * data.Length;
         if (totalSize > m_Size) throw new Exception("Data size exceeds buffer size");
 
-        var device = RHISystem.PrimaryDevice;
-        if (!device.HasValue) return;
-
-        var factory = device.Value.GetFactory();
+        var factory = m_Device.GetFactory();
         
         void* ptr = factory.MapBuffer(m_Handle).ToPointer();
         
@@ -70,16 +68,27 @@ public class IndexBuffer : IDisposable
         factory.UnmapBuffer(m_Handle);
     }
 
+    ~IndexBuffer()
+    {
+        Dispose(false);
+    }
+
     public void Dispose()
     {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (m_Disposed) return;
+
         if (m_Handle.IsValid)
         {
-            var device = RHISystem.PrimaryDevice;
-            if (device.HasValue)
-            {
-                device.Value.GetFactory().ReleaseBuffer(m_Handle);
-            }
+            m_Device.GetFactory().ReleaseBuffer(m_Handle);
             m_Handle = RHIBufferHandle.Invalid;
         }
+
+        m_Disposed = true;
     }
 }
