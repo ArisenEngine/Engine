@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security;
 using Arisen.Native.Diagnostics;
 
 namespace ArisenEngine.Core.Diagnostics;
@@ -81,14 +82,47 @@ public static class Logger
         }
     }
     
-    public static void Log(object msg) => WriteLog(LogLevel.Log, msg);
-    public static void Info(object msg) => WriteLog(LogLevel.Info, msg);
-    public static void Trace(object msg) => WriteLog(LogLevel.Trace, msg);
-    public static void Warning(object msg) => WriteLog(LogLevel.Warning, msg);
-    public static void Error(object msg) => WriteLog(LogLevel.Error, msg);
-    public static void Fatal(object msg) => WriteLog(LogLevel.Fatal, msg);
+    public static void Log(object msg,
+        [System.Runtime.CompilerServices.CallerFilePath] string file = "",
+        [System.Runtime.CompilerServices.CallerLineNumber] int line = 0,
+        [System.Runtime.CompilerServices.CallerMemberName] string function = "") => WriteLog(LogLevel.Log, msg, file, line, function);
+    
+    public static void Info(object msg,
+        [System.Runtime.CompilerServices.CallerFilePath] string file = "",
+        [System.Runtime.CompilerServices.CallerLineNumber] int line = 0,
+        [System.Runtime.CompilerServices.CallerMemberName] string function = "") => WriteLog(LogLevel.Info, msg, file, line, function);
+    
+    public static void Trace(object msg,
+        [System.Runtime.CompilerServices.CallerFilePath] string file = "",
+        [System.Runtime.CompilerServices.CallerLineNumber] int line = 0,
+        [System.Runtime.CompilerServices.CallerMemberName] string function = "") => WriteLog(LogLevel.Trace, msg, file, line, function);
+        
+    public static void Warning(object msg,
+        [System.Runtime.CompilerServices.CallerFilePath] string file = "",
+        [System.Runtime.CompilerServices.CallerLineNumber] int line = 0,
+        [System.Runtime.CompilerServices.CallerMemberName] string function = "") => WriteLog(LogLevel.Warning, msg, file, line, function);
+        
+    public static void Error(object msg,
+        [System.Runtime.CompilerServices.CallerFilePath] string file = "",
+        [System.Runtime.CompilerServices.CallerLineNumber] int line = 0,
+        [System.Runtime.CompilerServices.CallerMemberName] string function = "") => WriteLog(LogLevel.Error, msg, file, line, function);
+        
+    public static void Fatal(object msg,
+        [System.Runtime.CompilerServices.CallerFilePath] string file = "",
+        [System.Runtime.CompilerServices.CallerLineNumber] int line = 0,
+        [System.Runtime.CompilerServices.CallerMemberName] string function = "") => WriteLog(LogLevel.Fatal, msg, file, line, function);
 
-    private static void WriteLog(LogLevel level, object msg)
+    [SuppressUnmanagedCodeSecurity, DllImport("Core.Diagnostic.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "Logger_Log")]
+    private static extern unsafe void Logger_Log_Internal(Arisen.Native.Diagnostics.LogLevel level, byte* msg, LogSourceLocationNative* location, byte* thread_name);
+
+    private struct LogSourceLocationNative
+    {
+        public unsafe byte* File;
+        public unsafe byte* Function;
+        public uint Line;
+    }
+
+    private static unsafe void WriteLog(LogLevel level, object msg, string file, int line, string function)
     {
         string threadName = Thread.CurrentThread.Name ?? "MainThread";
         
@@ -104,12 +138,65 @@ public static class Logger
             _ => Arisen.Native.Diagnostics.LogLevel.Info
         };
 
-        // For now, location info is empty strings as they are harder to pass from C# easily without overhead
-        // But we could use [CallerFilePath] etc. if needed later.
-        LoggerAPI.Logger_Log(nativeLevel, msg.ToString() ?? "", IntPtr.Zero, threadName);
+        string msgStr = msg?.ToString() ?? string.Empty;
+
+        // Calculate needed byte lengths (UTF8 encoding might take up to 3 bytes per char, but we check accurately)
+        int msgLen = System.Text.Encoding.UTF8.GetMaxByteCount(msgStr.Length);
+        int fileLen = System.Text.Encoding.UTF8.GetMaxByteCount(file.Length);
+        int funcLen = System.Text.Encoding.UTF8.GetMaxByteCount(function.Length);
+        int threadLen = System.Text.Encoding.UTF8.GetMaxByteCount(threadName.Length);
+
+        // For string lengths under safe limits, use stackalloc. Otherwise use ArrayPool.
+        // limit stack alloc to 2048 bytes for message. File/func/thread should never exceed limits.
+        const int MaxStackAllocSize = 2048;
+
+        byte[]? msgBuffer = null;
+        Span<byte> msgSpan = msgLen <= MaxStackAllocSize 
+            ? stackalloc byte[msgLen] 
+            : (msgBuffer = System.Buffers.ArrayPool<byte>.Shared.Rent(msgLen));
+
+        Span<byte> fileSpan = stackalloc byte[fileLen];
+        Span<byte> funcSpan = stackalloc byte[funcLen];
+        Span<byte> threadSpan = stackalloc byte[threadLen];
+
+        try
+        {
+            // Encode strings to UTF8. Note: GetBytes writes the bytes to the span and returns the actual length.
+            // We need to null-terminate the strings for C++
+            int actualMsgLen = System.Text.Encoding.UTF8.GetBytes(msgStr, msgSpan);
+            msgSpan[actualMsgLen] = 0; // Null terminator
+
+            int actualFileLen = System.Text.Encoding.UTF8.GetBytes(file, fileSpan);
+            fileSpan[actualFileLen] = 0;
+
+            int actualFuncLen = System.Text.Encoding.UTF8.GetBytes(function, funcSpan);
+            funcSpan[actualFuncLen] = 0;
+
+            int actualThreadLen = System.Text.Encoding.UTF8.GetBytes(threadName, threadSpan);
+            threadSpan[actualThreadLen] = 0;
+
+            fixed (byte* pMsg = msgSpan, pFile = fileSpan, pFunc = funcSpan, pThread = threadSpan)
+            {
+                var loc = new LogSourceLocationNative
+                {
+                    File = pFile,
+                    Function = pFunc,
+                    Line = (uint)line
+                };
+
+                Logger_Log_Internal(nativeLevel, pMsg, &loc, pThread);
+            }
+        }
+        finally
+        {
+            if (msgBuffer != null)
+            {
+                System.Buffers.ArrayPool<byte>.Shared.Return(msgBuffer);
+            }
+        }
         
         // Also keep Console.WriteLine for now as a fallback/easier debugging
-        Console.WriteLine($"[{level}] {msg}");
+        Console.WriteLine($"[{level}] {msgStr}");
     }
 
     public static void Clear()
