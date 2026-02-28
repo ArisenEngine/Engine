@@ -1,7 +1,12 @@
 ﻿#pragma once
 
+#include "Base/BindingMacros.h"
+
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 namespace ArisenEngine::RHI
 {
+    ARISEN_BIND_ENUM(EPolygonMode)
     typedef enum EPolygonMode {
         EPOLYGON_MODE_FILL = 0,
         EPOLYGON_MODE_LINE = 1,

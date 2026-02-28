@@ -1,7 +1,11 @@
 #pragma once
+#include "Base/BindingMacros.h"
 
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 namespace ArisenEngine::RHI
 {
+    ARISEN_BIND_ENUM(EBufferCreateFlagBits)
     typedef enum EBufferCreateFlagBits {
         BUFFER_CREATE_SPARSE_BINDING_BIT = 0x00000001,
         BUFFER_CREATE_SPARSE_RESIDENCY_BIT = 0x00000002,

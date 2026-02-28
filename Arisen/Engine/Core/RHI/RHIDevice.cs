@@ -6,6 +6,8 @@ public class RHIDevice
 {
     internal IntPtr Handle { get; }
 
+    public RHIPipelineCache PipelineCache => new RHIPipelineCache(RHIDeviceAPI.RHIDevice_GetPipelineCache(Handle));
+
     public RHIDevice(IntPtr handle)
     {
         Handle = handle;
@@ -26,5 +28,16 @@ public class RHIDevice
     public void WaitIdle()
     {
         RHIDeviceAPI.RHIDevice_DeviceWaitIdle(Handle);
+    }
+
+    public RHICommandBuffer GetCommandBuffer(RHICommandBufferHandle handle)
+    {
+        var cbPtr = RHIDeviceAPI.RHIDevice_GetCommandBuffer(Handle, handle.Index, handle.Generation);
+        return new RHICommandBuffer(cbPtr, handle);
+    }
+
+    public ulong Submit(RHICommandBuffer cb)
+    {
+        return RHIDeviceAPI.RHIDevice_Submit(Handle, cb.RHIHandle.Index, cb.RHIHandle.Generation);
     }
 }

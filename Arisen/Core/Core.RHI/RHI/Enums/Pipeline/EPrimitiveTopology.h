@@ -1,7 +1,11 @@
 #pragma once
+#include "Base/BindingMacros.h"
 
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 namespace ArisenEngine::RHI
 {
+    ARISEN_BIND_ENUM(EPrimitiveTopology)
     typedef enum EPrimitiveTopology {
         PRIMITIVE_TOPOLOGY_POINT_LIST = 0,
         PRIMITIVE_TOPOLOGY_LINE_LIST = 1,

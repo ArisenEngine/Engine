@@ -7,6 +7,7 @@ ARISEN_BIND_MODULE("Core.HAL.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.HAL")
 namespace ArisenEngine::HAL
 {
+    ARISEN_BIND_BEGIN_BRIDGE("RenderWindow", "Core.HAL.dll", "Arisen.Native.HAL")
     extern "C"
     {
         HAL_DLL UInt32 CreateFullScreenRenderSurface(WindowHandle host, WindowProc callback);
@@ -23,4 +24,5 @@ namespace ArisenEngine::HAL
         HAL_DLL void* GetWindowUserData(UInt32 windowId);
         HAL_DLL void SetWindowUserData(UInt32 windowId, void* data);
     }
+    ARISEN_BIND_END_BRIDGE()
 }

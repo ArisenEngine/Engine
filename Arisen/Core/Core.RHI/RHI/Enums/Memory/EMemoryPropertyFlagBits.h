@@ -1,6 +1,11 @@
 ﻿#pragma once
+#include "Base/BindingMacros.h"
+
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 namespace ArisenEngine::RHI
 {
+    ARISEN_BIND_ENUM(EMemoryPropertyFlagBits)
     typedef enum EMemoryPropertyFlagBits {
         MEMORY_PROPERTY_DEVICE_LOCAL_BIT = 0x00000001,
         MEMORY_PROPERTY_HOST_VISIBLE_BIT = 0x00000002,

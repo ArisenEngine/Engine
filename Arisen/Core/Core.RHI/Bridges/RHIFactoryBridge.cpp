@@ -3,6 +3,8 @@
 #include "RHI/Definitions/CoreRHICommon.h"
 #include "RHI/Handles/RHIHandle.h"
 #include "RHI/Descriptors/RHIResourceDescriptors.h"
+#include "RHI/Samplers/RHISampler.h"
+#include "RHI/Core/RHICommon.h"
 #include "Base/BindingMacros.h"
 
 using namespace ArisenEngine::RHI;
@@ -145,6 +147,35 @@ RHI_DLL void RHIFactory_ReleaseImageView(RHIFactory* f, uint32_t index, uint32_t
 // Sampler
 // ============================================================================
 
+RHI_DLL void RHIFactory_CreateSampler(RHIFactory* f,
+    int magFilter, int minFilter, int mipmapMode,
+    int addressModeU, int addressModeV, int addressModeW,
+    float mipLodBias, int anisotropyEnable, float maxAnisotropy,
+    int compareEnable, int compareOp, float minLod, float maxLod, int borderColor,
+    uint32_t* outIndex, uint32_t* outGeneration)
+{
+    RHISamplerDesc desc{};
+    desc.magFilter = static_cast<EFilter>(magFilter);
+    desc.minFilter = static_cast<EFilter>(minFilter);
+    desc.mipmapMode = static_cast<ESamplerMipmapMode>(mipmapMode);
+    desc.addressModeU = static_cast<ESamplerAddressMode>(addressModeU);
+    desc.addressModeV = static_cast<ESamplerAddressMode>(addressModeV);
+    desc.addressModeW = static_cast<ESamplerAddressMode>(addressModeW);
+    desc.mipLodBias = mipLodBias;
+    desc.anisotropyEnable = anisotropyEnable != 0;
+    desc.maxAnisotropy = maxAnisotropy;
+    desc.compareEnable = compareEnable != 0;
+    desc.compareOp = static_cast<ECompareOp>(compareOp);
+    desc.minLod = minLod;
+    desc.maxLod = maxLod;
+    desc.borderColor = static_cast<EBorderColor>(borderColor);
+    desc.unnormalizedCoordinates = false;
+
+    auto handle = f->CreateSampler(std::move(desc));
+    *outIndex = handle.index;
+    *outGeneration = handle.generation;
+}
+
 RHI_DLL void RHIFactory_ReleaseSampler(RHIFactory* f, uint32_t index, uint32_t generation)
 {
     f->ReleaseSampler(MakeHandle<RHISamplerTag>(index, generation));
@@ -240,6 +271,47 @@ RHI_DLL uint32_t RHIFactory_GetImageViewWidth(RHIFactory* f, uint32_t index, uin
 RHI_DLL uint32_t RHIFactory_GetImageViewHeight(RHIFactory* f, uint32_t index, uint32_t generation)
 {
     return f->GetImageViewHeight(MakeHandle<RHIImageViewTag>(index, generation));
+}
+
+// ============================================================================
+// Shader Program
+// ============================================================================
+
+RHI_DLL void RHIFactory_CreateGPUProgram(RHIFactory* f, uint32_t* outIndex, uint32_t* outGeneration)
+{
+    auto handle = f->CreateGPUProgram();
+    *outIndex = handle.index;
+    *outGeneration = handle.generation;
+}
+
+RHI_DLL void RHIFactory_ReleaseGPUProgram(RHIFactory* f, uint32_t index, uint32_t generation)
+{
+    f->ReleaseGPUProgram(MakeHandle<RHIShaderProgramTag>(index, generation));
+}
+
+RHI_DLL int RHIFactory_AttachProgramByteCode(RHIFactory* f, uint32_t index, uint32_t generation,
+    int stage, const void* code, uint64_t size, const char* entryPoint)
+{
+    RHIShaderProgramDesc desc{};
+    desc.stage = static_cast<EShaderStage>(stage);
+    desc.byteCode = const_cast<void*>(code);
+    desc.codeSize = size;
+    desc.entry = entryPoint ? entryPoint : "main";
+    return f->AttachProgramByteCode(MakeHandle<RHIShaderProgramTag>(index, generation), std::move(desc)) ? 1 : 0;
+}
+
+// ============================================================================
+// Bindless
+// ============================================================================
+
+RHI_DLL uint32_t RHIFactory_RegisterBindlessResourceImage(RHIFactory* f, uint32_t index, uint32_t generation)
+{
+    return f->RegisterBindlessResource(MakeHandle<RHIImageViewTag>(index, generation));
+}
+
+RHI_DLL uint32_t RHIFactory_RegisterBindlessResourceBuffer(RHIFactory* f, uint32_t index, uint32_t generation)
+{
+    return f->RegisterBindlessResource(MakeHandle<RHIBufferTag>(index, generation));
 }
 
 } // extern "C"

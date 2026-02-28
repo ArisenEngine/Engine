@@ -1,6 +1,11 @@
 ﻿#pragma once
+#include "Base/BindingMacros.h"
+
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 namespace ArisenEngine::RHI
 {
+    ARISEN_BIND_ENUM(ECullModeFlagBits)
     typedef enum ECullModeFlagBits {
         CULL_MODE_NONE = 0,
         CULL_MODE_FRONT_BIT = 0x00000001,

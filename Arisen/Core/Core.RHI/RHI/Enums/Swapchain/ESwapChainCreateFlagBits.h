@@ -1,7 +1,11 @@
 ﻿#pragma once
+#include "Base/BindingMacros.h"
 
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 namespace ArisenEngine::RHI
 {
+    ARISEN_BIND_ENUM(SwapchainCreateFlagBits)
     typedef enum SwapchainCreateFlagBits {
         SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT = 0x00000001,
         SWAPCHAIN_CREATE_PROTECTED_BIT = 0x00000002,
