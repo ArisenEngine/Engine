@@ -6,12 +6,14 @@ namespace ArisenEngine.Core.RHI;
 public readonly struct RHIFactory
 {
     internal IntPtr Handle { get; }
+    internal IntPtr DeviceHandle { get; }
 
     public bool IsValid => Handle != IntPtr.Zero;
 
-    public RHIFactory(IntPtr handle)
+    public RHIFactory(IntPtr handle, IntPtr deviceHandle)
     {
         Handle = handle;
+        DeviceHandle = deviceHandle;
     }
 
     public unsafe RHIBufferHandle CreateBuffer(ulong size, uint usage, ESharingMode sharingMode, ERHIMemoryUsage memoryUsage, string name)
@@ -62,8 +64,8 @@ public readonly struct RHIFactory
         RHIFactoryAPI.RHIFactory_CreateCommandBufferPool(Handle, (int)queueType, (IntPtr)(&index), (IntPtr)(&gen));
         
         var poolHandle = new RHICommandBufferPoolHandle { Index = index, Generation = gen };
-        var poolPtr = RHIDeviceAPI.RHIDevice_GetCommandBufferPool(RHISystem.PrimaryDevice!.Value.Handle, index, gen);
-        return new RHICommandBufferPool(poolPtr, poolHandle);
+        var poolPtr = RHIDeviceAPI.RHIDevice_GetCommandBufferPool(DeviceHandle, index, gen);
+        return new RHICommandBufferPool(poolPtr, DeviceHandle, poolHandle);
     }
 
     public void ReleaseCommandBufferPool(RHICommandBufferPoolHandle handle)

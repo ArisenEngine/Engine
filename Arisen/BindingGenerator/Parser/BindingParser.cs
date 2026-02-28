@@ -105,7 +105,7 @@ public static class BindingParser
         {
             results.Add(m.Groups[1].Value);
         }
-        return results;
+        return results.Distinct().ToList();
     }
 
     // --- Extern "C" Function Parser ---
