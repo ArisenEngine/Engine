@@ -1,5 +1,6 @@
 #include "Pipeline/RHIVkGPUPipelineManager.h"
 #include "Pipeline/RHIVkGPUPipeline.h"
+#include "Profiler.h"
 #include "Pipeline/RHIVkGPUPipelineStateObject.h"
 #include "Core/RHIVkDevice.h"
 #include "Logger/Logger.h"

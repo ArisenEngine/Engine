@@ -154,9 +154,11 @@ if(ARISEN_ENABLE_PROFILER)
     add_subdirectory(3rdparty/tracy)
     set_target_properties(TracyClient PROPERTIES FOLDER "3rdparty")
     add_compile_definitions(ARISEN_PROFILER_ENABLED=1)
+    set(DOTNET_PROFILER_ARG "-p:DefineConstants=ARISEN_PROFILER_ENABLED")
 else()
     set(ARISEN_PROFILER_ENABLED OFF)
     add_compile_definitions(ARISEN_PROFILER_ENABLED=0)
+    set(DOTNET_PROFILER_ARG "")
 endif()
 
 add_subdirectory(Core/Core.Foundation)
@@ -197,6 +199,7 @@ add_custom_target(BuildBindingGenerator
         dotnet build "${BINDING_GENERATOR_PROJ}"
         --configuration $<CONFIG>
         --output "${BINDING_GENERATOR_EXE}"
+        ${DOTNET_PROFILER_ARG}
     WORKING_DIRECTORY ${BINDING_GENERATOR_DIR}
     COMMENT "Building Binding Generator"
     VERBATIM
@@ -225,7 +228,7 @@ add_dependencies(GenerateAutoBinding BuildBindingGenerator)
 set_target_properties(GenerateAutoBinding PROPERTIES FOLDER "CMakeProcess")
 
 add_custom_target(BuildAutoBinding
-    COMMAND dotnet build ${AUTO_BINDING_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}"
+    COMMAND dotnet build ${AUTO_BINDING_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
     WORKING_DIRECTORY ${AUTO_BINDING_DIR}
     COMMENT "Building AutoBinding Project"
     DEPENDS ${AUTO_BINDING_PROJ}
@@ -236,7 +239,7 @@ add_dependencies(BuildAutoBinding GenerateAutoBinding)
 set_target_properties(BuildAutoBinding PROPERTIES FOLDER "CMakeProcess")
 
 add_custom_target(BuildArisenEngine
-    COMMAND dotnet build ${ARISEN_ENGINE_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}"
+    COMMAND dotnet build ${ARISEN_ENGINE_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
     WORKING_DIRECTORY ${ARISEN_ENGINE_PROJ_DIR}
     COMMENT "Building Arisen Engine"
     DEPENDS "AutoBinding.dll"
@@ -259,7 +262,7 @@ if(${TARGET} STREQUAL "Editor")
     set(ARISEN_EDITOR_DESKTOP_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor.Desktop/)
 
     add_custom_target(BuildArisenEditor
-    COMMAND dotnet build ${ARISEN_EDITOR_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}"
+    COMMAND dotnet build ${ARISEN_EDITOR_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
     WORKING_DIRECTORY ${ARISEN_EDITOR_PROJ_DIR}
     COMMENT "Building Arisen Editor"
     DEPENDS "ArisenEngine.dll"
@@ -270,7 +273,7 @@ if(${TARGET} STREQUAL "Editor")
     set_target_properties(BuildArisenEditor PROPERTIES FOLDER "CMakeProcess")
 
     add_custom_target(BuildArisenEditorShell
-    COMMAND dotnet build ${ARISEN_EDITOR_SHELL_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}"
+    COMMAND dotnet build ${ARISEN_EDITOR_SHELL_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
     WORKING_DIRECTORY ${ARISEN_EDITOR_SHELL_PROJ_DIR}
     COMMENT "Building Arisen Editor Shell"
     DEPENDS "ArisenEditor.dll"
@@ -282,7 +285,7 @@ if(${TARGET} STREQUAL "Editor")
 
 
     add_custom_target(BuildArisenEditorDesktop ALL
-    COMMAND dotnet build ${ARISEN_EDITOR_DESKTOP_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}"
+    COMMAND dotnet build ${ARISEN_EDITOR_DESKTOP_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
     WORKING_DIRECTORY ${ARISEN_EDITOR_DESKTOP_PROJ_DIR}
     COMMENT "Building Arisen Editor Desktop"
     DEPENDS "ArisenEditorShell.dll"
@@ -321,7 +324,7 @@ elseif(${TARGET} STREQUAL "CSharpEngineTest")
     set_target_properties(TestResources PROPERTIES FOLDER "Resources")
 
     add_custom_target(BuildCSharpEngineTest ALL
-    COMMAND dotnet build ${ARISEN_ENGINE_TEST_PROJ} --configuration $<CONFIG>
+    COMMAND dotnet build ${ARISEN_ENGINE_TEST_PROJ} --configuration $<CONFIG> ${DOTNET_PROFILER_ARG}
     WORKING_DIRECTORY ${ARISEN_ENGINE_TEST_PROJ_DIR}
     COMMENT "Building Arisen Engine Test"
     DEPENDS "ArisenEngine.dll"

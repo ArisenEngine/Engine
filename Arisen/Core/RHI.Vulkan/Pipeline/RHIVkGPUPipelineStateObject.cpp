@@ -10,6 +10,7 @@
 #include "Handles/RHIVkResourcePools.h"
 #include "Descriptors/RHIVkBindlessDescriptorTable.h"
 #include "Descriptors/RHIVkDescriptorHeap.h"
+#include "Profiler.h"
 
 namespace ArisenEngine::RHI
 {

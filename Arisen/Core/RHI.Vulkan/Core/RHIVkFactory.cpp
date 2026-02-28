@@ -1,4 +1,5 @@
 #include "Core/RHIVkFactory.h"
+#include "Profiler.h"
 #include "Core/RHIVkDevice.h"
 #include "Pipeline/RHIVkGPUProgram.h"
 #include "Commands/RHIVkCommandBufferPool.h"

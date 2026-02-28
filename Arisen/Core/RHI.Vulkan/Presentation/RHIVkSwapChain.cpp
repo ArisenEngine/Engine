@@ -1,4 +1,5 @@
 #include "Presentation/RHIVkSwapChain.h"
+#include "Profiler.h"
 
 using namespace ArisenEngine;
 #include "Logger/Logger.h"
