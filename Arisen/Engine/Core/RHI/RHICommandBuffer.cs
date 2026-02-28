@@ -45,7 +45,7 @@ public readonly struct RHICommandBuffer
 
     public void Begin()
     {
-        RHICommandBufferAPI.RHICommandBuffer_Begin(NativePtr);
+        RHICommandBufferAPI.RHICommandBuffer_Begin(NativePtr, _frameIndex);
     }
 
     public void End()

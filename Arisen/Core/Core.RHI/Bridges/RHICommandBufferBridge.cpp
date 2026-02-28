@@ -7,9 +7,9 @@ ARISEN_BIND_BEGIN_BRIDGE("RHICommandBuffer", "Core.RHI.dll", "Arisen.Native.RHI"
 
 extern "C" {
 
-RHI_DLL void RHICommandBuffer_Begin(RHICommandBuffer* cb)
+RHI_DLL void RHICommandBuffer_Begin(RHICommandBuffer* cb, uint32_t frameIndex)
 {
-    cb->Begin();
+    cb->Begin(frameIndex, 0, nullptr);
 }
 
 RHI_DLL void RHICommandBuffer_End(RHICommandBuffer* cb)

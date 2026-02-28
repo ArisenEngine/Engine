@@ -86,11 +86,6 @@ namespace ArisenEngine::RHI
         RecordCommand<RHICmdEndRendering>(ERHICommandType::EndRendering, {});
     }
 
-    void RHICommandBuffer::Begin()
-    {
-        Begin(0, 0, nullptr);
-    }
-
     void RHICommandBuffer::Begin(UInt32 frameIndex, UInt32 commandBufferUsage, const RHICommandBufferInheritanceInfo* pInheritanceInfo)
     {
         SetCurrentFrameIndex(frameIndex);
