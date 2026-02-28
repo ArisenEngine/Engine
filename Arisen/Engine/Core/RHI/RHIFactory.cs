@@ -61,6 +61,11 @@ public class RHIFactory
         return new RHICommandBufferPoolHandle { Index = index, Generation = gen };
     }
 
+    public void ReleaseCommandBufferPool(RHICommandBufferPoolHandle handle)
+    {
+        RHIFactoryAPI.RHIFactory_ReleaseCommandBufferPool(Handle, handle.Index, handle.Generation);
+    }
+
     public unsafe RHIRenderPassHandle CreateRenderPass()
     {
         uint index = 0;

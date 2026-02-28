@@ -8,8 +8,7 @@ namespace CSharpEngineTest.Framework
 {
     public abstract class RHIRenderingTestBase : RHITestBase
     {
-        // Placeholder for Vulkan/Native resources
-        // protected RHICommandBufferPool _cmdPool;
+        protected RHICommandBufferPoolHandle _cmdPool;
         // protected RHIDescriptorPool _descriptorPool;
         // protected RHISwapChain _swapChain;
 
@@ -26,13 +25,17 @@ namespace CSharpEngineTest.Framework
         {
             if (_device == null) return;
 
-            // Logic to create command pool, swapchain etc.
-            // Native: m_CmdPool = m_Device->CreateCommandBufferPool(RHI::COMMAND_BUFFER_TYPE_GRAPHICS);
+            var factory = _device.GetFactory();
+            _cmdPool = factory.CreateCommandBufferPool(Arisen.Native.RHI.RHIQueueType.Graphics);
         }
 
         protected override void TeardownTest()
         {
-            // Release resources
+            if (_device != null && _cmdPool.IsValid)
+            {
+                _device.GetFactory().ReleaseCommandBufferPool(_cmdPool);
+                _cmdPool = RHICommandBufferPoolHandle.Invalid;
+            }
         }
     }
 }

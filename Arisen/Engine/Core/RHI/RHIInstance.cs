@@ -21,6 +21,16 @@ public class RHIInstance : IDisposable
         RHIInstanceAPI.RHIInstance_InitLogicDevices(Handle);
     }
 
+    public void CreateSurface(uint windowId)
+    {
+        RHIInstanceAPI.RHIInstance_CreateSurface(Handle, windowId);
+    }
+
+    public void CreateLogicDevice(uint windowId)
+    {
+        RHIInstanceAPI.RHIInstance_CreateLogicDevice(Handle, windowId);
+    }
+
     public RHIDevice GetLogicalDevice(uint windowId)
     {
         var deviceHandle = RHIInstanceAPI.RHIInstance_GetLogicalDevice(Handle, windowId);

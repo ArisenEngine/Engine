@@ -61,7 +61,7 @@ public static class RHISystem
         // Diagnostics.Logger.Info("[RHISystem] RHI Shutdown completed");
     }
 
-    internal static void SetLogicDevice(RHIDevice device)
+    public static void SetLogicDevice(RHIDevice device)
     {
         m_Device = device;
     }

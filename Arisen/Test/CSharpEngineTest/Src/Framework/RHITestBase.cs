@@ -147,17 +147,20 @@ namespace CSharpEngineTest.Framework
             if (!IsHeadless())
             {
                 if (_windowId == uint.MaxValue) return false;
-                // _instance.CreateSurface(_windowId); // Check if this is bound
+                _instance.CreateSurface(_windowId);
             }
 
             _instance.PickPhysicalDevice(!IsHeadless());
             _instance.InitLogicDevices();
+            _instance.CreateLogicDevice(_windowId);
 
-            // Native: m_Instance->CreateLogicDevice(m_WindowId);
-            // Check RHIDevice creation in bindings.
-            
-            // For now, let's look at RHIDevice.cs to see how to get the device
-            return true; 
+            _device = _instance.GetLogicalDevice(_windowId);
+            if (_device != null)
+            {
+                ArisenEngine.Core.RHI.RHISystem.SetLogicDevice(_device);
+                return true;
+            }
+            return false; 
         }
 
         protected void NextFrame()
