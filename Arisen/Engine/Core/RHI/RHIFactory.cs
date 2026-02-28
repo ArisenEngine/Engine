@@ -3,9 +3,11 @@ using System.Runtime.InteropServices;
 
 namespace ArisenEngine.Core.RHI;
 
-public class RHIFactory
+public readonly struct RHIFactory
 {
     internal IntPtr Handle { get; }
+
+    public bool IsValid => Handle != IntPtr.Zero;
 
     public RHIFactory(IntPtr handle)
     {
@@ -53,12 +55,15 @@ public class RHIFactory
         RHIFactoryAPI.RHIFactory_UnmapBuffer(Handle, handle.Index, handle.Generation);
     }
 
-    public unsafe RHICommandBufferPoolHandle CreateCommandBufferPool(RHIQueueType queueType)
+    public unsafe RHICommandBufferPool CreateCommandBufferPool(RHIQueueType queueType)
     {
         uint index = 0;
         uint gen = 0;
         RHIFactoryAPI.RHIFactory_CreateCommandBufferPool(Handle, (int)queueType, (IntPtr)(&index), (IntPtr)(&gen));
-        return new RHICommandBufferPoolHandle { Index = index, Generation = gen };
+        
+        var poolHandle = new RHICommandBufferPoolHandle { Index = index, Generation = gen };
+        var poolPtr = RHIDeviceAPI.RHIDevice_GetCommandBufferPool(RHISystem.PrimaryDevice!.Value.Handle, index, gen);
+        return new RHICommandBufferPool(poolPtr, poolHandle);
     }
 
     public void ReleaseCommandBufferPool(RHICommandBufferPoolHandle handle)
@@ -108,4 +113,5 @@ public class RHIFactory
             }
         }
     }
+
 }

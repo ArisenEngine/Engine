@@ -13,7 +13,7 @@ public class RHISurface
 
     public RHISwapChain GetSwapChain()
     {
-        RHISyncAPI.RHISurface_InitSwapChain(Handle);
+        RHISurfaceAPI.RHISurface_InitSwapChain(Handle);
         var scHandle = RHISurfaceAPI.RHISurface_GetSwapChain(Handle);
         return new RHISwapChain(scHandle);
     }

@@ -27,13 +27,18 @@ public struct RHIClearValue
         => new RHIClearValue { Depth = depth, Stencil = stencil };
 }
 
-public class RHICommandBuffer
+public readonly struct RHICommandBuffer
 {
+    private readonly uint _frameIndex;
+
     internal IntPtr NativePtr { get; }
     public RHICommandBufferHandle RHIHandle { get; }
+    
+    public bool IsValid => NativePtr != IntPtr.Zero;
 
-    internal RHICommandBuffer(IntPtr nativePtr, RHICommandBufferHandle handle)
+    internal RHICommandBuffer(uint frameIndex, IntPtr nativePtr, RHICommandBufferHandle handle)
     {
+        _frameIndex = frameIndex;
         NativePtr = nativePtr;
         RHIHandle = handle;
     }
@@ -120,4 +125,5 @@ public class RHICommandBuffer
     {
         RHICommandBufferAPI.RHICommandBuffer_CopyBuffer(NativePtr, src, srcOffset, dst, dstOffset, size);
     }
+
 }

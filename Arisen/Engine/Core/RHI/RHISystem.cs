@@ -5,10 +5,29 @@ namespace ArisenEngine.Core.RHI;
 public static class RHISystem
 {
     private static RHIInstance? m_Instance;
-    private static RHIDevice? m_Device;
+    private static readonly Dictionary<uint, RHIDevice> m_DeviceWrappers = new();
+    private static uint? m_PrimaryWindowId;
 
     public static RHIInstance? Instance => m_Instance;
-    public static RHIDevice? Device => m_Device;
+
+    public static RHIDevice GetOrCreateDevice(uint windowId)
+    {
+        if (m_Instance == null)
+            throw new InvalidOperationException("RHISystem must be initialized before creating devices.");
+
+        if (m_DeviceWrappers.TryGetValue(windowId, out var cachedDevice))
+            return cachedDevice;
+
+        var device = m_Instance.Value.CreateDevice(windowId);
+        m_DeviceWrappers[windowId] = device;
+
+        if (m_PrimaryWindowId == null && windowId != uint.MaxValue)
+            m_PrimaryWindowId = windowId;
+
+        return device;
+    }
+
+    public static RHIDevice? PrimaryDevice => m_PrimaryWindowId.HasValue ? GetOrCreateDevice(m_PrimaryWindowId.Value) : null;
 
     public static bool Initialize(GraphicsAPI api, string appName = "ArisenApp", bool validationLayer = false)
     {
@@ -31,11 +50,7 @@ public static class RHISystem
 
             m_Instance = new RHIInstance(instHandle);
 
-            // 3. Initialization logic
-            m_Instance.PickPhysicalDevice(false);
-            // We can choose to initialize a default device here if needed,
-            // or let the user/test framework do it via Instance.CreateDevice().
-            
+            // 3. Defer Physical Device picking until Surface is created (handled by user/test framework).
             return true;
         }
         catch (Exception)
@@ -46,10 +61,11 @@ public static class RHISystem
 
     public static void Shutdown()
     {
-        m_Device = null;
+        m_DeviceWrappers.Clear();
+        m_PrimaryWindowId = null;
+
         if (m_Instance != null)
         {
-            m_Instance.Dispose();
             m_Instance = null;
         }
         RHILoaderAPI.RHILoader_Dispose();

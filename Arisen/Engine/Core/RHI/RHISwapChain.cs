@@ -2,9 +2,11 @@ using Arisen.Native.RHI;
 
 namespace ArisenEngine.Core.RHI;
 
-public class RHISwapChain
+public readonly struct RHISwapChain
 {
     internal IntPtr Handle { get; }
+
+    public bool IsValid => Handle != IntPtr.Zero;
 
     public RHISwapChain(IntPtr handle)
     {

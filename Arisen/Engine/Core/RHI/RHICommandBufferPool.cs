@@ -3,10 +3,12 @@ using System;
 
 namespace ArisenEngine.Core.RHI;
 
-public class RHICommandBufferPool
+public readonly struct RHICommandBufferPool
 {
     internal IntPtr Handle { get; }
     public RHICommandBufferPoolHandle RHIHandle { get; }
+
+    public bool IsValid => Handle != IntPtr.Zero;
 
     internal RHICommandBufferPool(IntPtr handle, RHICommandBufferPoolHandle rhiHandle)
     {
@@ -14,12 +16,15 @@ public class RHICommandBufferPool
         RHIHandle = rhiHandle;
     }
 
-    public unsafe RHICommandBufferHandle GetCommandBuffer(uint currentFrameIndex, ECommandBufferLevel level = ECommandBufferLevel.COMMAND_BUFFER_LEVEL_PRIMARY)
+    public unsafe RHICommandBuffer GetCommandBuffer(uint currentFrameIndex, ECommandBufferLevel level = ECommandBufferLevel.COMMAND_BUFFER_LEVEL_PRIMARY)
     {
         uint index = 0;
         uint gen = 0;
         RHICommandBufferPoolAPI.RHICommandBufferPool_GetCommandBuffer(Handle, currentFrameIndex, (int)level, (IntPtr)(&index), (IntPtr)(&gen));
-        return new RHICommandBufferHandle { Index = index, Generation = gen };
+        
+        var handle = new RHICommandBufferHandle { Index = index, Generation = gen };
+        var cmdPtr = RHIDeviceAPI.RHIDevice_GetCommandBuffer(RHISystem.PrimaryDevice!.Value.Handle, index, gen);
+        return new RHICommandBuffer(currentFrameIndex, cmdPtr, handle);
     }
 
     public void ReleaseCommandBuffer(uint currentFrameIndex, RHICommandBufferHandle cbHandle)

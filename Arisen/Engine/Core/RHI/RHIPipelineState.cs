@@ -3,9 +3,11 @@ using System.Runtime.InteropServices;
 
 namespace ArisenEngine.Core.RHI;
 
-public class RHIPipelineState : IDisposable
+public readonly struct RHIPipelineState
 {
     internal IntPtr NativePtr { get; }
+    public bool IsValid => NativePtr != IntPtr.Zero;
+
     internal RHIPipelineState(IntPtr ptr) => NativePtr = ptr;
 
     public void AddProgram(RHIShaderProgramHandle handle)
@@ -36,14 +38,8 @@ public class RHIPipelineState : IDisposable
         }
     }
 
-    public void Dispose()
+    public void Release()
     {
         RHIPipelineAPI.RHIPipelineState_Delete(NativePtr);
-        GC.SuppressFinalize(this);
-    }
-
-    ~RHIPipelineState()
-    {
-        // Note: Real implementation should be careful about disposing native objects on finalizer thread
     }
 }

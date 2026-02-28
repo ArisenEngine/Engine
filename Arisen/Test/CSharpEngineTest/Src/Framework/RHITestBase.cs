@@ -56,7 +56,6 @@ namespace CSharpEngineTest.Framework
 
             if (_instance != null)
             {
-                _instance.Dispose();
                 _instance = null;
             }
 
@@ -66,7 +65,7 @@ namespace CSharpEngineTest.Framework
                 _windowId = uint.MaxValue;
             }
             
-            RHILoader.Unload();
+            RHISystem.Shutdown();
         }
 
         public virtual bool Run()
@@ -108,27 +107,19 @@ namespace CSharpEngineTest.Framework
 
         private bool InitializeRHI(string appName)
         {
-            var appInfo = new RHIInstanceInfo
+            if (!RHISystem.Initialize(GraphicsAPI.Vulkan, appName, true))
             {
-                Name = appName,
-                EngineName = "Arisen Engine",
-                ValidationLayer = true,
-                Major = 1, Minor = 3, Patch = 0, // Vulkan 1.3
-                AppMajor = 1, AppMinor = 0, AppPatch = 0,
-                EngineMajor = 1, EngineMinor = 0, EnginePatch = 0,
-                MaxFramesInFlight = 2
-            };
+                Logger.Error("Failed to initialize RHISystem");
+                return false;
+            }
 
-            RHILoader.SetCurrentGraphicsAPI(GraphicsAPI.Vulkan);
-            _instance = RHILoader.CreateInstance(appInfo);
-
-            if (_instance == null)
+            _instance = RHISystem.Instance;
+            if (!_instance.HasValue)
             {
                 Logger.Error("Failed to create RHI instance");
                 return false;
             }
 
-            // _maxFramesInFlight = _instance.MaxFramesInFlight; // Native has GetMaxFramesInFlight, check binding
             return true;
         }
 
@@ -147,12 +138,13 @@ namespace CSharpEngineTest.Framework
             if (!IsHeadless())
             {
                 if (_windowId == uint.MaxValue) return false;
-                _instance.CreateSurface(_windowId);
+                RHISystem.Instance!.Value.CreateSurface(_windowId);
             }
 
-            _instance.PickPhysicalDevice(!IsHeadless());
-            // _instance.InitLogicDevices(); // Now called internally or optional
-            _device = _instance.CreateDevice(_windowId);
+            RHISystem.Instance!.Value.PickPhysicalDevice(!IsHeadless());
+            // Devices are now centrally managed by RHISystem. Assuming RHISystem sets m_Instance before this.
+            // If not, we use the instance we created.
+            _device = RHISystem.GetOrCreateDevice(_windowId);
 
             if (_device != null)
             {
