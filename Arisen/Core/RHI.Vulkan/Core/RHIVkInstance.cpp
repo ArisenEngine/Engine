@@ -546,6 +546,12 @@ void ArisenEngine::RHI::RHIVkInstance::SetResolution(UInt32 windowId, UInt32 wid
 
 void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
 {
+    if (m_LogicalDevices.find(windowId) != m_LogicalDevices.end())
+    {
+        LOG_WARN(String::Format("[RHIVkInstance::CreateLogicDevice]: Logical device for windowId %u already exists, skipping creation.", windowId));
+        return;
+    }
+
     RHISurface* rhiSurface = nullptr;
     VkSurfaceKHR vkSurface = VK_NULL_HANDLE;
     if (windowId != ~0u)
