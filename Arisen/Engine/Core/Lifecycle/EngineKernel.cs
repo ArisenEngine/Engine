@@ -1,4 +1,5 @@
 using ArisenEngine.Core.Diagnostics;
+using System.Linq;
 
 namespace ArisenEngine.Core.Lifecycle;
 
@@ -12,19 +13,29 @@ public sealed class EngineKernel : IDisposable
     private bool m_IsRunning = false;
 
     public EnginePhase CurrentPhase => m_CurrentPhase;
+    public EngineConfig Config { get; private set; }
 
     private EngineKernel() { }
 
-    public void RegisterSubsystem(IEngineSubsystem subsystem)
+    public void RegisterSubsystem<T>(T subsystem) where T : class, IEngineSubsystem
     {
         if (m_CurrentPhase != EnginePhase.None)
             throw new InvalidOperationException("Cannot register subsystems after initialization has started");
         
+        if (m_Subsystems.Any(s => s is T))
+            throw new InvalidOperationException($"Subsystem of type {typeof(T).Name} is already registered.");
+            
         m_Subsystems.Add(subsystem);
     }
 
-    public void Initialize()
+    public T GetSubsystem<T>() where T : class, IEngineSubsystem
     {
+        return m_Subsystems.OfType<T>().FirstOrDefault();
+    }
+
+    public void Initialize(EngineConfig config)
+    {
+        Config = config;
         Logger.Log("[EngineKernel] Initializing...");
         
         // Sort subsystems by priority
@@ -54,16 +65,36 @@ public sealed class EngineKernel : IDisposable
         }
     }
 
-    public void Run()
+    public int Run()
     {
-        if (!m_IsRunning) Initialize();
+        if (!m_IsRunning) 
+        {
+            Initialize(Config ?? new EngineConfig());
+        }
         
-        // Simplified loop for now (real one will be in ArisenApplication)
-        // while (m_IsRunning) { ... }
+        var frameScheduler = new FrameScheduler();
+
+        while (m_IsRunning)
+        {
+            Time.Update();
+            float deltaTime = Time.deltaTime;
+            
+            frameScheduler.ExecuteFrame(deltaTime, m_Subsystems);
+        }
+        
+        return 0;
+    }
+
+    public void RequestShutdown()
+    {
+        m_IsRunning = false;
     }
 
     public void Shutdown()
     {
+        if (m_CurrentPhase == EnginePhase.Shutdown || m_CurrentPhase == EnginePhase.PreShutdown)
+            return;
+
         Logger.Log("[EngineKernel] Shutting down...");
         m_CurrentPhase = EnginePhase.PreShutdown;
         
@@ -77,7 +108,6 @@ public sealed class EngineKernel : IDisposable
         }
 
         m_CurrentPhase = EnginePhase.Shutdown;
-        m_IsRunning = false;
         Logger.Log("[EngineKernel] Shutdown complete.");
     }
 
