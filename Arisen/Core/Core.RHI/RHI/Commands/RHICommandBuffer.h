@@ -160,7 +160,6 @@ namespace ArisenEngine::RHI
         void BeginRendering(const RHIRenderingInfo& info);
         void EndRendering();
         
-        void Begin();
         void Begin(UInt32 frameIndex, UInt32 commandBufferUsage = 0, const RHICommandBufferInheritanceInfo* pInheritanceInfo = nullptr);
         void End();
 
