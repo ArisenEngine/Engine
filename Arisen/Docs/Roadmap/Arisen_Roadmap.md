@@ -1,44 +1,118 @@
 # Arisen Engine Roadmap
 
-This document outlines the strategic phases for developing Arisen. The ultimate goal is to build a high-performance, future-proof engine featuring a modern C++ RHI backend, a data-oriented C# core, an automated binding layer, and a robust Avalonia-based Editor.
+This document serves as the master progression tracker for Arisen. The ultimate goal is to build a high-performance, future-proof engine featuring a modern C++ RHI backend, a data-oriented C# core, an automated binding layer, and a robust Avalonia-based Editor.
 
-*Our core philosophy for development: "Engine Kernel first, Editor Minimum Viable Ecosystem second, then full data-driven synchronization."*
+*Core Philosophy: "Engine Kernel first, Editor Minimum Viable Ecosystem second, then full data-driven synchronization."*
 
 ---
 
 ## 📅 Phase 1: Robust Foundation & Capabilities (Immediate Objective)
 **Goal:** Stabilize the foundation systems and abstract RHI hardware capabilities robustly before building complex logic.
 
-- **RHI Capability System:** Implement a feature querying structure (`RHICapabilities`) to dynamically detect device support (e.g., Dynamic Rendering, Descriptor Indexing, max attachments).
-- **Vulkan Extensions & Fallbacks:** Move away from hardcoded initialization. Integrate feature toggles (via configurations) for Validation Layers and explicit Device Extensions parsing.
-- **Diagnostics Validation:** Ensure Tracy profiler integration spans fully across native commands and C# lifecycle markers. Achieve zero Vulkan Validation Errors in tests.
+> 👉 **[View Phase 1 Detailed Implementation Plan](file:///d:/EngineSource/ArisenEngine/Engine/Arisen/Docs/Roadmap/Phase1_Foundation.md)**
+
+### 1.1 RHI Capability System
+- [ ] Define `RHICapabilities` C++ structure.
+- [ ] Query and populate physical device capabilities during Vulkan initialization (e.g., `maxDescriptorSets`, `timestampComputeAndGraphics`).
+- [ ] Implement query for `VK_KHR_dynamic_rendering` support.
+- [ ] Expose capability queries via `AutoBinding` to the C# Engine.
+
+### 1.2 Vulkan Extensions & Graceful Fallbacks
+- [ ] Refactor `VulkanInit` to accept a settings struct instead of hardcoded strings.
+- [ ] Conditionally load Validation Layers based on build flags or configuration.
+- [ ] Extract Device Extensions loading into an extensible configuration list.
+
+### 1.3 Diagnostics & Profiling Validation
+- [ ] Ensure Tracy profiler context propagates perfectly across C++ Vulkan commands.
+- [ ] Plumb C# `Profiler.BeginSample()` down to Tracy C++ macros.
+- [ ] **Milestone Validation**: Run `NativeEngineTest` and confirm 0 Vulkan Validation Errors and a clean Tracy timeline.
+
+---
 
 ## 📅 Phase 2: Engine Kernel & Lifecycle (Mid-Term Run)
 **Goal:** Prove the C# Engine Architecture can orchestrate a full game loop smoothly using a Job-based design.
 
-- **Lifecycle Orchestration (`EngineKernel`):** Complete the implementation of the phased startup/shutdown subsystem. Integrate Subsystem initialization priorities.
-- **Memory & Allocation Strategy:** Implement zero-allocation C# recording for frames using custom memory variants (e.g., `FrameArena`, `NativePool`, `NativeArray`).
-- **Basic Render Pipeline:** Achieve a successful Triangle/Model render driven exclusively by C# orchestrating the C++ RHI bindings without Editor interference.
+> 👉 **[View Phase 2 Detailed Implementation Plan](file:///d:/EngineSource/ArisenEngine/Engine/Arisen/Docs/Roadmap/Phase2_Kernel.md)**
+
+### 2.1 The Kernel Orchestrator
+- [ ] Define `EnginePhase` enum (`PreInit`, `Init`, `PostInit`, `Running`, `Shutdown`).
+- [ ] Implement `IEngineSubsystem` with initialization priorities.
+- [ ] Build `EngineKernel` to iterate phases and boot subsystems systematically.
+
+### 2.2 Memory Strategy
+- [ ] Implement `FrameArena` allocator for per-frame C# allocations (zero GC).
+- [ ] Implement `NativeArray<T>` wrapper for unmanaged arrays passed to C++.
+- [ ] Refactor C# RHI Command recording to use `FrameArena`.
+
+### 2.3 The "Hello World" Render Loop
+- [ ] Setup a basic `RenderPipeline` subsystem in C# that requests RHI buffers and issues draws.
+- [ ] Remove hardcoded test logic from main; make it data-driven via a temporary scene loader.
+- [ ] **Milestone Validation**: Execute the Engine exe directly and render a rotating textured model without any memory leaks upon shutdown.
+
+---
 
 ## 📅 Phase 3: High-Throughput RHI Evolution (Advanced Graphics)
 **Goal:** Break the single GraphicQueue limitation and embrace GPU-driven rendering techniques.
 
-- **Multi-Queue RHI Abstraction:** Introduce dedicated `TransferQueue` (for background asynchronous asset uploading) and `ComputeQueue` (for compute shader culling and simulation).
-- **Queue Synchronization:** Develop comprehensive `RHISemaphore` and `RHIFence` abstractions capable of scaling with asynchronous queues.
-- **Next-Gen Deskriptors:** Migrate to Descriptor Buffers (`VK_EXT_descriptor_buffer`) and a Bindless pipeline.
+> 👉 **[View Phase 3 Detailed Implementation Plan](file:///d:/EngineSource/ArisenEngine/Engine/Arisen/Docs/Roadmap/Phase3_RHI_Evolution.md)**
+
+### 3.1 Multi-Queue RHI Abstraction
+- [ ] Abstract `Submit` to specify Queue Types (`Graphics`, `Compute`, `Transfer`).
+- [ ] Acquire hardware Queue Families properly during `RHIDevice` init.
+- [ ] Expose Queue-specific Submits to `AutoBinding`.
+
+### 3.2 Advanced Queue Synchronization
+- [ ] Implement `RHISemaphore` (Timeline Semaphores preferred if supported).
+- [ ] Implement `RHIFence` wrapper for Queue-to-CPU stalls.
+- [ ] Bind execution barriers to allow `TransferQueue` texture uploads to synchronize with `GraphicsQueue` rendering.
+
+### 3.3 Next-Gen Deskriptors
+- [ ] Investigate and wire up `VK_EXT_descriptor_buffer` feature.
+- [ ] Fallback: Implement a descriptor set caching mechanism if the buffer extension is unsupported.
+
+---
 
 ## 📅 Phase 4: Editor MVE (Minimum Viable Editor)
 **Goal:** Verify the full data loop: **UI -> Serialization -> C# Engine -> C++ RHI**.
 
-- **Viewport Integration:** Embed the C++ RHI rendering output directly into an Avalonia window control inside `ArisenEditor.Desktop`.
-- **Property Shell:** Build a simple property explorer plugin inside `ArisenEditorShell`. Verify that changing a C# configuration value in Avalonia updates the engine render immediately.
-- **Serialization V1:** Move past the "temporary" serialization system to a stable configuration format (e.g., JSON or robust internal format) to load basic entities.
+> 👉 **[View Phase 4 Detailed Implementation Plan](file:///d:/EngineSource/ArisenEngine/Engine/Arisen/Docs/Roadmap/Phase4_Editor_MVE.md)**
+
+### 4.1 Shell & Viewport Integration
+- [ ] Setup `ArisenEditorShell` as the host Avalonia Window.
+- [ ] Create an Avalonia custom control (`NativeControlHost`) that receives a Native Window Handle (HWND/X11).
+- [ ] Bind the RHI Swapchain to render into the Avalonia HWND seamlessly.
+
+### 4.2 Property Synchronization
+- [ ] Create a basic Reflection-based Property Gridd in Avalonia.
+- [ ] Connect Avalonia UI actions to Engine configuration properties (e.g., Clear Color changing).
+- [ ] **Milestone Validation**: Dragging a color slider in the Editor updates the game viewport in less than 16ms with zero stutter.
+
+### 4.3 Serialization V1
+- [ ] Introduce a simple JSON or YAML deserializer (like `System.Text.Json`).
+- [ ] Automatically load Engine config and standard assets at boot.
+
+---
 
 ## 📅 Phase 5: The Data-Driven Synchronicity
 **Goal:** Simultaneous and rigorous advancement of Engine logic and Editor tooling.
 
-- **Entity Component System (ECS):** Replace monolithic logic with a chunked memory Archetype system for performance and multi-threaded scaling.
-- **Render Graph Integration:** Instead of manual barriers and transient memory bindings, implement a DAG Render Graph system that resolves hardware dependencies automatically based on Pass layout declarations.
-- **Resource Pipeline:** Multi-threaded asset importing (e.g., parsing glTF files dynamically from the Editor and streaming them via the Transfer Queue).
+> 👉 **[View Phase 5 Detailed Implementation Plan](file:///d:/EngineSource/ArisenEngine/Engine/Arisen/Docs/Roadmap/Phase5_Data_Driven.md)**
 
-*(This roadmap is a living document and will evolve as requirements pivot.)*
+### 5.1 C# Entity Component System (ECS)
+- [ ] Build `Archetype` memory chunk allocator.
+- [ ] Implement `IComponentData` strict structs.
+- [ ] Refactor game update logic into `SystemBase` classes.
+
+### 5.2 Declarative Render Graph
+- [ ] Replace imperative RHI calls with a DAG builder (`RenderGraphBuilder`).
+- [ ] Implement logic to automatically inject Memory Barriers based on Pass inputs/outputs.
+- [ ] Implement Transient resource aliasing pool.
+
+### 5.3 Streaming Content Pipeline
+- [ ] Integrate a runtime `glTF` loader in C# (e.g., `SharpGLTF`).
+- [ ] Upload parsed binary mesh data using the new `TransferQueue`.
+- [ ] Introduce a hot-reloading asset registry for shaders and scripts.
+
+---
+
+*(This roadmap is a living document and should be updated as milestones are conquered or priorities shift.)*
