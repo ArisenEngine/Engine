@@ -249,6 +249,32 @@ add_custom_target(BuildArisenEngine
 add_dependencies(BuildArisenEngine BuildAutoBinding)
 set_target_properties(BuildArisenEngine PROPERTIES FOLDER "CMakeProcess")
 
+# Builtin Packages
+set(BUILTIN_PACKAGES_DIR ${CMAKE_SOURCE_DIR}/Packages/Builtin)
+file(GLOB_RECURSE BUILTIN_PACKAGES_PROJS CONFIGURE_DEPENDS "${BUILTIN_PACKAGES_DIR}/*.csproj")
+
+add_custom_target(BuildBuiltinPackages
+    COMMAND ${CMAKE_COMMAND} -E echo "Building Builtin Packages..."
+)
+
+foreach(PROJ_PATH IN LISTS BUILTIN_PACKAGES_PROJS)
+    get_filename_component(PROJ_NAME ${PROJ_PATH} NAME_WE)
+    set(TARGET_NAME "BuildPackage_${PROJ_NAME}")
+    
+    add_custom_target(${TARGET_NAME}
+        COMMAND dotnet build "${PROJ_PATH}" --configuration $<CONFIG> ${DOTNET_PROFILER_ARG}
+        WORKING_DIRECTORY "${BUILTIN_PACKAGES_DIR}"
+        COMMENT "Building Package: ${PROJ_NAME}"
+        VERBATIM
+        USES_TERMINAL
+    )
+    add_dependencies(${TARGET_NAME} BuildArisenEngine)
+    add_dependencies(BuildBuiltinPackages ${TARGET_NAME})
+    set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "CMakeProcess/Packages")
+endforeach()
+
+set_target_properties(BuildBuiltinPackages PROPERTIES FOLDER "CMakeProcess")
+
 endif()
 
 # Final target setup (Editor, Players, Tests)
@@ -332,6 +358,7 @@ elseif(${TARGET} STREQUAL "CSharpEngineTest")
     USES_TERMINAL
     )
     add_dependencies(BuildCSharpEngineTest BuildArisenEngine)
+    add_dependencies(BuildCSharpEngineTest BuildBuiltinPackages)
     set_target_properties(BuildCSharpEngineTest PROPERTIES FOLDER "CMakeProcess")
 elseif(${TARGET} STREQUAL "BindingGenerator")
     message(STATUS "Configuring for Standalone Binding Generation")
