@@ -65,6 +65,7 @@ internal static class EngineInstance
 
         // Register early subsystems
         EngineKernel.Instance.RegisterSubsystem(new PlatformSubsystem());
+        EngineKernel.Instance.RegisterSubsystem(new PackageSubsystem());
         EngineKernel.Instance.RegisterSubsystem(new RenderSubsystem());
 
         // Initialize RHI and native core
@@ -73,9 +74,19 @@ internal static class EngineInstance
             return -1;
         }
 
-        // Set default render pipeline (Simulating package loading for Phase 2)
-        // In the future, this will be loaded via a Project Setting or Package Manager
-        Graphics.SetCurrentRenderPipeline(new ForwardRenderPipelineAsset());
+        // Use PackageSubsystem to resolve the default render pipeline
+        var packageSubsystem = EngineKernel.Instance.GetSubsystem<PackageSubsystem>();
+        var defaultForwardRP = packageSubsystem?.GetPackageEntry<RenderPipelineAsset>("com.arisen.builtin.forward-rp");
+
+        if (defaultForwardRP != null)
+        {
+            Graphics.SetCurrentRenderPipeline(defaultForwardRP);
+            Logger.Log("[EngineInstance] Successfully loaded Fallback ForwardRP from PackageSubsystem");
+        }
+        else
+        {
+            Logger.Warning("[EngineInstance] Failed to find default RenderPipeline package. Rendering might be disabled.");
+        }
 
         var errorCode = 0;
         try

@@ -205,6 +205,7 @@ PublishScripts/
 # and except Builtin engine packages
 !**/[Pp]ackages/Builtin/
 !**/[Pp]ackages/Builtin/**
+!**/Engine/Core/[Pp]ackages/**
 # Uncomment if necessary however generally it will be regenerated when needed
 #!**/[Pp]ackages/repositories.config
 # NuGet v3's project.json files produces more ignorable files

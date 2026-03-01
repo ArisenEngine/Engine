@@ -15,6 +15,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Update="Packages\**\package.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Arisen.Native.RHI" Version="1.0.0" />
     <ProjectReference Include="..\AutoBinding\AutoBinding.csproj" />
     <ProjectReference Include="..\Serialization\Serialization\Serialization.csproj" />
   </ItemGroup>

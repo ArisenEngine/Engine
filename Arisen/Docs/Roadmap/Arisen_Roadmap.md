@@ -29,8 +29,16 @@ This document serves as the master progression tracker for Arisen. The ultimate 
 
 ---
 
-## 📅 Phase 2: Engine Kernel & Lifecycle (Mid-Term Run)
-**Goal:** Prove the C# Engine Architecture can orchestrate a full game loop smoothly using a Job-based design.
+##- [x] **Phase 2: Engine Kernel & Lifecycle [DONE]**
+    - Orchestration of Phased Boot (Init, Tick, Shutdown).
+    - Zero-GC Memory Strategy (`FrameArena`).
+    - Basic Render Subsystem & SRP Foundation.
+
+- [ ] **Phase 2.5: Modern Package & DLC Architecture**
+    - Dynamic Package Discovery & loading (`AssemblyLoadContext`).
+    - Manifest-based Metadata (`package.json`).
+    - Hot-loading potential & DLC path mapping.
+    - Extension Points (Registering Subsystems/Pipelines via Packages).
 
 > 👉 **[View Phase 2 Detailed Implementation Plan](file:///d:/EngineSource/ArisenEngine/Engine/Arisen/Docs/Roadmap/Phase2_Kernel.md)**
 
