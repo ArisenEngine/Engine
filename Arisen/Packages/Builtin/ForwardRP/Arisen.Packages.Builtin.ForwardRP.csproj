@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- We want this to land in the engine's output directory under a specific subfolder -->
+    <OutputPath>..\..\..\x64\Engine\Packages\Builtin\ForwardRP\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <PlatformTarget>x64</PlatformTarget>
+    <RootNamespace>ArisenEngine.Rendering</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Engine\ArisenEngine.csproj" />
+    <ProjectReference Include="..\..\..\AutoBinding\AutoBinding.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="package.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

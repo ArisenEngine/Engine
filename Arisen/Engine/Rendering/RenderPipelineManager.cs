@@ -52,18 +52,18 @@ public static class RenderPipelineManager
         endCameraRendering?.Invoke(camera);
     }
 
-    internal static void DoRenderLoop(RenderPipelineAsset pipe)
-    {
-        PrepareRenderPipeline(pipe);
-
-        if (currentPipeline == null)
-        {
-            // Logger.Warning("Current render pipeline is null");
-            return;
-        }
-
-        currentPipeline.InternalRender();
-    }
+    // internal static void DoRenderLoop(RenderPipelineAsset pipe)
+    // {
+    //     PrepareRenderPipeline(pipe);
+    //
+    //     if (currentPipeline == null)
+    //     {
+    //         // Logger.Warning("Current render pipeline is null");
+    //         return;
+    //     }
+    //
+    //     currentPipeline.InternalRender();
+    // }
 
     internal static void CleanupRenderPipeline()
     {

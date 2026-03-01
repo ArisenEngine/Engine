@@ -142,6 +142,10 @@ if exist "%SLN_PATH%" (
     echo Adding !REL_ARISEN_ENGINE_TEST! to !SLN_FILE! (--in-root)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_ENGINE_TEST!"
 
+    set "REL_FORWARD_RP=..\..\..\Packages\Builtin\ForwardRP\Arisen.Packages.Builtin.ForwardRP.csproj"
+    echo Adding !REL_FORWARD_RP! to !SLN_FILE! (--in-root)
+    dotnet sln "!SLN_FILE!" add --in-root "!REL_FORWARD_RP!"
+
     popd
 ) else (
     echo Solution file not found: %SLN_PATH%
