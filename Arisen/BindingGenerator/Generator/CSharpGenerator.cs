@@ -132,7 +132,6 @@ public static class CSharpGenerator
                 sb.AppendLine($"namespace {block.Namespace}");
                 sb.AppendLine("{");
                 sb.AppendLine("    using Arisen.Native.RHI;");
-                sb.AppendLine("    using Arisen.Native.ShaderCompiler;");
                 sb.AppendLine();
                 sb.AppendLine($"    public static class {block.ClassName}API");
                 sb.AppendLine("    {");

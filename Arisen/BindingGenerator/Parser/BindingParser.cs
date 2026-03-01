@@ -50,20 +50,33 @@ public static class BindingParser
     private static List<(string Name, string? Value)> ParseEnumBody(string body)
     {
         var values = new List<(string, string?)>();
+        var seenNames = new HashSet<string>();
+
         foreach (var line in body.Split('\n'))
         {
             var trimmed = line.Trim().TrimEnd(',').Trim();
             if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith("//") || trimmed.StartsWith("#"))
                 continue;
 
+            string name;
+            string? val = null;
+
             if (trimmed.Contains('='))
             {
                 var parts = trimmed.Split('=', 2);
-                values.Add((parts[0].Trim(), parts[1].Trim()));
+                name = parts[0].Trim();
+                val = parts[1].Trim();
+                if (string.IsNullOrWhiteSpace(val)) val = null;
             }
             else
             {
-                values.Add((trimmed, null));
+                name = trimmed;
+            }
+
+            if (!seenNames.Contains(name))
+            {
+                seenNames.Add(name);
+                values.Add((name, val));
             }
         }
 
@@ -226,6 +239,17 @@ public static class BindingParser
             {
                 type += "*";
                 name = name[1..];
+            }
+
+            // Handle C-style array: "Type name[4]"
+            if (name.EndsWith("]"))
+            {
+                var bracketIdx = name.IndexOf('[');
+                if (bracketIdx != -1)
+                {
+                    type += name[bracketIdx..];
+                    name = name[..bracketIdx].Trim();
+                }
             }
 
             parameters.Add((type, name));
