@@ -119,6 +119,21 @@ RHI_DLL void RHICommandBuffer_CopyBuffer(RHICommandBuffer* cb, RHIBufferHandle s
 {
     cb->CopyBuffer(src, srcOffset, dst, dstOffset, size);
 }
+
+RHI_DLL void RHICommandBuffer_BeginDebugLabel(RHICommandBuffer* cb, const char* label, const float color[4])
+{
+    cb->BeginDebugLabel(label, color);
+}
+
+RHI_DLL void RHICommandBuffer_EndDebugLabel(RHICommandBuffer* cb)
+{
+    cb->EndDebugLabel();
+}
+
+RHI_DLL void RHICommandBuffer_InsertDebugMarker(RHICommandBuffer* cb, const char* label, const float color[4])
+{
+    cb->InsertDebugMarker(label, color);
+}
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()

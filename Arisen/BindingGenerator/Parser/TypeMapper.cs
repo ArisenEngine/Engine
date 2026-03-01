@@ -49,11 +49,25 @@ public static class TypeMapper
     {
         var normalized = cppType.Trim();
 
-        // 1. Try full match first (important for "const char*" → string)
-        if (s_TypeMap.TryGetValue(normalized, out var mappedFull))
-            return mappedFull;
+        // 1. Extract array bounds (e.g. `float[4]` or `const float color[4]`)
+        bool isArray = false;
+        if (normalized.EndsWith("]"))
+        {
+            var openBracket = normalized.LastIndexOf('[');
+            if (openBracket != -1)
+            {
+                isArray = true;
+                normalized = normalized[..openBracket].Trim();
+            }
+        }
 
-        // 2. Strip const from start and end
+        // 2. Try full match first (important for "const char*" → string)
+        if (s_TypeMap.TryGetValue(normalized, out var mappedFull))
+        {
+            return isArray ? mappedFull + "[]" : mappedFull;
+        }
+
+        // 3. Strip const from start and end
         if (normalized.StartsWith("const "))
             normalized = normalized[6..].Trim();
         if (normalized.EndsWith(" const"))
@@ -66,36 +80,54 @@ public static class TypeMapper
             normalized = normalized[(lastColons + 2)..].Trim();
         }
 
+        string mappedLocal;
+
         // Direct match
-        if (s_TypeMap.TryGetValue(normalized, out var mapped))
-            return mapped;
-
+        if (s_TypeMap.TryGetValue(normalized, out mappedLocal))
+        {
+            // Already handled in Step 2, but just in case of normalized changes
+        }
         // Opaque pointer types
-        if (s_OpaquePointerTypes.Contains(normalized))
-            return "IntPtr";
-
+        else if (s_OpaquePointerTypes.Contains(normalized))
+        {
+            mappedLocal = "IntPtr";
+        }
         // Manually map Window to uint (it's a wrapper for WindowID)
-        if (normalized == "Window")
-            return "uint";
-
+        else if (normalized == "Window")
+        {
+            mappedLocal = "uint";
+        }
         // Any pointer type → IntPtr
-        if (normalized.Contains("*"))
-            return "IntPtr";
-
+        else if (normalized.Contains("*"))
+        {
+            mappedLocal = "IntPtr";
+        }
         // Reference to known type
-        if (normalized.EndsWith("&"))
+        else if (normalized.EndsWith("&"))
         {
             var inner = normalized[..^1].Trim();
             if (s_TypeMap.TryGetValue(inner, out var innerMapped))
-                return innerMapped;
+                mappedLocal = innerMapped;
+            else
+                mappedLocal = inner;
+        }
+        // RHIHandleInterop → RHIHandle
+        else if (normalized == "RHIHandleInterop")
+        {
+            mappedLocal = "RHIHandle";
+        }
+        else
+        {
+            // Enum types - pass through (they'll be defined in their own files)
+            mappedLocal = normalized;
         }
 
-        // RHIHandleInterop → RHIHandle
-        if (normalized == "RHIHandleInterop")
-            return "RHIHandle";
+        if (isArray)
+        {
+            mappedLocal += "[]";
+        }
 
-        // Enum types - pass through (they'll be defined in their own files)
-        return normalized;
+        return mappedLocal;
     }
 
     public static string MapEnumBaseType(string cppBaseType)

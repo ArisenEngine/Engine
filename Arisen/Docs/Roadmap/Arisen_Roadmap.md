@@ -6,26 +6,26 @@ This document serves as the master progression tracker for Arisen. The ultimate 
 
 ---
 
-## 📅 Phase 1: Robust Foundation & Capabilities (Immediate Objective)
+## 📅 Phase 1: Robust Foundation & Capabilities (Completed)
 **Goal:** Stabilize the foundation systems and abstract RHI hardware capabilities robustly before building complex logic.
 
 > 👉 **[View Phase 1 Detailed Implementation Plan](file:///d:/EngineSource/ArisenEngine/Engine/Arisen/Docs/Roadmap/Phase1_Foundation.md)**
 
 ### 1.1 RHI Capability System
-- [ ] Define `RHICapabilities` C++ structure.
-- [ ] Query and populate physical device capabilities during Vulkan initialization (e.g., `maxDescriptorSets`, `timestampComputeAndGraphics`).
-- [ ] Implement query for `VK_KHR_dynamic_rendering` support.
-- [ ] Expose capability queries via `AutoBinding` to the C# Engine.
+- [x] Define `RHICapabilities` C++ structure.
+- [x] Query and populate physical device capabilities during Vulkan initialization (e.g., `maxDescriptorSets`, `timestampComputeAndGraphics`).
+- [x] Implement query for `VK_KHR_dynamic_rendering` support.
+- [x] Expose capability queries via `AutoBinding` to the C# Engine.
 
 ### 1.2 Vulkan Extensions & Graceful Fallbacks
-- [ ] Refactor `VulkanInit` to accept a settings struct instead of hardcoded strings.
-- [ ] Conditionally load Validation Layers based on build flags or configuration.
-- [ ] Extract Device Extensions loading into an extensible configuration list.
+- [x] Refactor `VulkanInit` to accept a settings struct instead of hardcoded strings.
+- [x] Conditionally load Validation Layers based on build flags or configuration.
+- [x] Extract Device Extensions loading into an extensible configuration list.
 
 ### 1.3 Diagnostics & Profiling Validation
-- [ ] Ensure Tracy profiler context propagates perfectly across C++ Vulkan commands.
-- [ ] Plumb C# `Profiler.BeginSample()` down to Tracy C++ macros.
-- [ ] **Milestone Validation**: Run `NativeEngineTest` and confirm 0 Vulkan Validation Errors and a clean Tracy timeline.
+- [x] Ensure Tracy profiler context propagates perfectly across C++ Vulkan commands.
+- [x] Plumb C# `Profiler.BeginSample()` down to Tracy C++ macros.
+- [x] **Milestone Validation**: Run `NativeEngineTest` and confirm 0 Vulkan Validation Errors and a clean Tracy timeline.
 
 ---
 
