@@ -16,6 +16,6 @@
         <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     </PropertyGroup>
 
-    <!-- No external dependencies needed — pure text scanning -->
+    
 
-</Project>
+<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>..\Projects\VisualStudio\CSharpEngineTest\Outputs\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>..\Projects\VisualStudio\CSharpEngineTest\Outputs\Release\</OutputPath></PropertyGroup></Project>

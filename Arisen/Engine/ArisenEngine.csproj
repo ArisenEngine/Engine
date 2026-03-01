@@ -36,4 +36,4 @@
       <_Parameter1>ArisenEditor</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
-</Project>
+<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>..\Projects\VisualStudio\CSharpEngineTest\Outputs\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>..\Projects\VisualStudio\CSharpEngineTest\Outputs\Release\</OutputPath></PropertyGroup></Project>

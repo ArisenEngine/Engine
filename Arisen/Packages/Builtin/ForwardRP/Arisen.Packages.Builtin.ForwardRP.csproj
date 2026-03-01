@@ -1,10 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <!-- We want this to land in the engine's output directory under a specific subfolder -->
+    
     <OutputPath>..\..\..\x64\Engine\Packages\Builtin\ForwardRP\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <PlatformTarget>x64</PlatformTarget>
@@ -12,8 +13,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Engine\ArisenEngine.csproj" />
-    <ProjectReference Include="..\..\..\AutoBinding\AutoBinding.csproj" />
+    <ProjectReference Include="..\..\..\Engine\ArisenEngine.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\AutoBinding\AutoBinding.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Serialization\Serialization\Serialization.csproj">
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -22,4 +30,4 @@
     </None>
   </ItemGroup>
 
-</Project>
+<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>..\..\..\Projects\VisualStudio\CSharpEngineTest\Outputs\Debug\Packages\Builtin\ForwardRP\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>..\..\..\Projects\VisualStudio\CSharpEngineTest\Outputs\Release\Packages\Builtin\ForwardRP\</OutputPath></PropertyGroup></Project>
