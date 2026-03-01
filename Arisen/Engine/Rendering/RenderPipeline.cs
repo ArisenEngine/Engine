@@ -5,9 +5,9 @@ public abstract class RenderPipeline : IDisposable
     internal bool disposed;
 
     /// <summary>
-    /// TODO: add cameras as parameters
+    /// Entry point for the render pipeline to execute its drawing logic.
     /// </summary>
-    protected abstract void Render();
+    protected abstract void Render(RenderContext context, Camera[] cameras);
 
     protected abstract void OnDisposed();
 
@@ -17,8 +17,8 @@ public abstract class RenderPipeline : IDisposable
         disposed = true;
     }
 
-    internal void InternalRender()
+    internal void InternalRender(RenderContext context, Camera[] cameras)
     {
-        Render();
+        Render(context, cameras);
     }
 }

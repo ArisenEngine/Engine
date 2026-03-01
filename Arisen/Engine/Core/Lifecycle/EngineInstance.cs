@@ -12,6 +12,8 @@ internal static class EngineInstance
 
     private static Dictionary<IntPtr, SurfaceInfo> m_RenderSurfaces = new Dictionary<IntPtr, SurfaceInfo>();
 
+    internal static IEnumerable<SurfaceInfo> GetActiveSurfaces() => m_RenderSurfaces.Values;
+
     internal static void RegisterSurface(IntPtr host, string name, SurfaceType surfaceType, int width = 0,
         int height = 0)
     {
@@ -65,8 +67,14 @@ internal static class EngineInstance
         EngineKernel.Instance.RegisterSubsystem(new PlatformSubsystem());
         EngineKernel.Instance.RegisterSubsystem(new RenderSubsystem());
 
-        // Initialize Native Logger/Core here if needed
-        // Bootstrap.Initialize(); 
+        // Initialize RHI and native core
+        if (!Bootstrap.Initialize())
+        {
+            return -1;
+        }
+
+        // Set default render pipeline
+        Graphics.SetCurrentRenderPipeline(new ForwardRenderPipelineAsset());
 
         var errorCode = 0;
         try

@@ -7,10 +7,9 @@ public static class RHISystem
 {
     private static RHIInstance? m_Instance;
     private static readonly ConcurrentDictionary<uint, RHIDevice> m_DeviceWrappers = new();
-    private static uint? m_PrimaryWindowId;
+    private static bool m_PhysicalDevicePicked = false;
 
     public static RHIInstance? Instance => m_Instance;
-
     public static RHIDevice GetOrCreateDevice(uint windowId)
     {
         if (m_Instance == null)
@@ -19,17 +18,17 @@ public static class RHISystem
         if (m_DeviceWrappers.TryGetValue(windowId, out var cachedDevice))
             return cachedDevice;
 
+        if (!m_PhysicalDevicePicked)
+        {
+            m_Instance.Value.PickPhysicalDevice(true);
+            m_PhysicalDevicePicked = true;
+        }
+
         var device = m_Instance.Value.CreateDevice(windowId);
         m_DeviceWrappers.TryAdd(windowId, device);
 
-        if (m_PrimaryWindowId == null && windowId != uint.MaxValue)
-            m_PrimaryWindowId = windowId;
-
         return device;
     }
-
-    public static RHIDevice? PrimaryDevice =>
-        m_PrimaryWindowId.HasValue ? GetOrCreateDevice(m_PrimaryWindowId.Value) : null;
 
     public static bool Initialize(GraphicsAPI api, string appName = "ArisenApp", bool validationLayer = false)
     {
@@ -64,7 +63,6 @@ public static class RHISystem
     public static void Shutdown()
     {
         m_DeviceWrappers.Clear();
-        m_PrimaryWindowId = null;
 
         if (m_Instance != null)
         {
