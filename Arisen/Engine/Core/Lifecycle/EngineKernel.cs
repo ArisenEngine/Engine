@@ -14,6 +14,7 @@ public sealed class EngineKernel : IDisposable
 
     public EnginePhase CurrentPhase => m_CurrentPhase;
     public EngineConfig Config { get; private set; }
+    public uint CurrentFrameIndex { get; private set; } = 0;
 
     private EngineKernel()
     {
@@ -89,6 +90,10 @@ public sealed class EngineKernel : IDisposable
 
                 frameScheduler.ExecuteFrame(deltaTime, m_Subsystems);
             }
+
+            // End of frame cleanup
+            ArisenEngine.Core.Memory.FrameArena.Instance.Reset();
+            CurrentFrameIndex++;
         }
 
         return 0;

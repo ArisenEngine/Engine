@@ -11,6 +11,9 @@ public unsafe sealed class FrameArena
     private readonly nuint m_Capacity;
     private nuint m_Offset;
 
+    private static readonly Lazy<FrameArena> s_Instance = new(() => new FrameArena(128)); // 128MB default
+    public static FrameArena Instance => s_Instance.Value;
+
     public FrameArena(uint capacityInMB)
     {
         m_Capacity = (nuint)capacityInMB * 1024 * 1024;
@@ -32,7 +35,7 @@ public unsafe sealed class FrameArena
         nuint newOffset = alignedPtr - (nuint)m_Buffer + size;
 
         if (newOffset > m_Capacity)
-            throw new OutOfMemoryException("FrameArena capacity exceeded!");
+            throw new OutOfMemoryException($"FrameArena capacity exceeded! Requested {size} bytes, but only {m_Capacity - m_Offset} remains.");
 
         m_Offset = newOffset;
         return new Span<T>((void*)alignedPtr, count);
