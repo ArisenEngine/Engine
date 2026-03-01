@@ -12,6 +12,19 @@ namespace ArisenEngine::RHI
 
 namespace ArisenEngine::RHI
 {
+    struct VulkanInitSettings
+    {
+        Containers::Vector<const char*> validationLayers;
+        Containers::Vector<const char*> instanceExtensions;
+        Containers::Vector<const char*> mandatoryDeviceExtensions;
+        Containers::Vector<const char*> optionalDeviceExtensions;
+        
+        static VulkanInitSettings GetDefault();
+    };
+}
+
+namespace ArisenEngine::RHI
+{
     struct VulkanVersion
     {
         UInt32 variant, major, minor;
@@ -62,6 +75,7 @@ namespace ArisenEngine::RHI
         void CheckSwapChainCapabilities() override;
 
     private:
+        VulkanInitSettings m_Settings;
         VkInstance m_VkInstance;
         // devices
         VkPhysicalDevice m_CurrentPhysicsDevice{VK_NULL_HANDLE};
