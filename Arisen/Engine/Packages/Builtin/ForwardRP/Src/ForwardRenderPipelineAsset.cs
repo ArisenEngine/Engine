@@ -1,7 +1,10 @@
 using ArisenEngine.Core.Diagnostics;
 
+using ArisenEngine.Core.Packages;
+
 namespace ArisenEngine.Rendering;
 
+[ArisenPackage("com.arisen.builtin.forward-rp")]
 public class ForwardRenderPipelineAsset : RenderPipelineAsset
 {
     protected override RenderPipeline CreatePipeline()

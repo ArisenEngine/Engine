@@ -1,0 +1,10 @@
+{
+  "id": "com.arisen.builtin.forward-rp",
+  "name": "Arisen Forward RP",
+  "version": "1.0.0",
+  "description": "Builtin Forward Rendering Pipeline for Arisen Engine",
+  "entryAssembly": "ArisenEngine.dll",
+  "entryClass": "ArisenEngine.Rendering.ForwardRenderPipelineAsset",
+  "author": "Arisen Team",
+  "tags": ["rendering", "builtin"]
+}
