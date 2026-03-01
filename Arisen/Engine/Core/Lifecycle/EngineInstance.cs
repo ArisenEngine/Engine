@@ -73,7 +73,8 @@ internal static class EngineInstance
             return -1;
         }
 
-        // Set default render pipeline
+        // Set default render pipeline (Simulating package loading for Phase 2)
+        // In the future, this will be loaded via a Project Setting or Package Manager
         Graphics.SetCurrentRenderPipeline(new ForwardRenderPipelineAsset());
 
         var errorCode = 0;
