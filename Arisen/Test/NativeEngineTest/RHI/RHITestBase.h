@@ -377,15 +377,10 @@ namespace ArisenEngine::Testing
 
             if (!IsHeadless())
             {
-                m_Instance->CreateLogicDevice(m_WindowId);
                 m_Device = m_Instance->GetLogicalDevice(m_WindowId);
             }
             else
             {
-                // For headless, we might need a way to get a device without a window.
-                // Assuming RHI_Instance_GetLogicalDevice(m_Instance, ~0u) or similar works, 
-                // but usually the first device is fine.
-                m_Instance->CreateLogicDevice(~0u);
                 m_Device = m_Instance->GetLogicalDevice(~0u);
             }
 
