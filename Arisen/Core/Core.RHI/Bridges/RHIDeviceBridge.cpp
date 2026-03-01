@@ -59,9 +59,9 @@ RHI_DLL void RHIDevice_SetObjectName(RHIDevice* dev, int objectType, uint64_t ha
     dev->SetObjectName(static_cast<ERHIObjectType>(objectType), handle, name);
 }
 
-RHI_DLL void RHIDevice_GetDeviceLimits(RHIDevice* dev, RHIDeviceLimits* outLimits)
+RHI_DLL void RHIDevice_GetCapabilities(RHIDevice* dev, RHICapabilities* outCapabilities)
 {
-    *outLimits = dev->GetDeviceLimits();
+    *outCapabilities = dev->GetCapabilities();
 }
 
 RHI_DLL void* RHIDevice_GetCommandBuffer(RHIDevice* dev, uint32_t index, uint32_t generation)

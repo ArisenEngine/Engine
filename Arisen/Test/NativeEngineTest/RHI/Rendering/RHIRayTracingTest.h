@@ -91,8 +91,8 @@ namespace ArisenEngine::Testing
         {
             if (!RHIRenderingTestBase::SetupTest()) return false;
 
-            auto limits = m_Device->GetDeviceLimits();
-            if (!limits.rayTracingSupported)
+            auto caps = m_Device->GetCapabilities();
+            if (!caps.rayTracingSupported)
             {
                 LOG_WARN("Ray Tracing extension not supported or enabled, skipping test.");
                 return false;

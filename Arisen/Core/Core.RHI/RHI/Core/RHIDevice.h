@@ -3,7 +3,7 @@
 #include "RHICommon.h"
 #include "RHI/Enums/Memory/EMemoryPropertyFlagBits.h"
 #include "RHI/Descriptors/RHIDescriptorPool.h"
-#include "RHI/Definitions/DeviceLimits.h"
+#include "RHI/Definitions/RHICapabilities.h"
 #include "RHI/Queues/RHIQueue.h"
 #include "RHI/Handles/RHIHandle.h"
 #include "RHI/Definitions/CoreRHICommon.h"
@@ -159,10 +159,10 @@ namespace ArisenEngine::RHI
 
         virtual const RHIResourceStats& GetResourceStats() const = 0;
 
-        const RHIDeviceLimits GetDeviceLimits() const
+        const RHICapabilities GetCapabilities() const
 
         {
-            return m_DeviceLimits;
+            return m_Capabilities;
         }
 
     public:
@@ -171,7 +171,7 @@ namespace ArisenEngine::RHI
 
         RHIInstance* m_Instance;
         RHISurface* m_Surface;
-        RHIDeviceLimits m_DeviceLimits;
+        RHICapabilities m_Capabilities;
 
         RHIDevice(RHIInstance* instance, RHISurface* surface): m_Instance(instance), m_Surface(surface)
         {

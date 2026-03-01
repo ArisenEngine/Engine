@@ -1,5 +1,5 @@
 #pragma once
-#include "../Definitions/DeviceLimits.h"
+#include "../Definitions/RHICapabilities.h"
 #include "Base/FoundationMinimal.h"
 #include "Base/PrimitiveTypes.h"
 #include "RHIDevice.h"
@@ -40,7 +40,7 @@ namespace ArisenEngine::RHI
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIInstance)
         VIRTUAL_DECONSTRUCTOR(RHIInstance)
 
-        explicit RHIInstance(RHIInstanceInfo&& instance_info): m_DeviceLimits(),
+        explicit RHIInstance(RHIInstanceInfo&& instance_info): m_Capabilities(),
                                                                m_MaxFramesInFlight(instance_info.maxFramesInFlight)
         {
         }
@@ -84,13 +84,13 @@ namespace ArisenEngine::RHI
             return m_MaxFramesInFlight;
         }
 
-        inline RHIDeviceLimits GetDeviceLimits() const
+        inline RHICapabilities GetCapabilities() const
         {
-            return m_DeviceLimits;
+            return m_Capabilities;
         }
 
     protected:
-        RHIDeviceLimits m_DeviceLimits;
+        RHICapabilities m_Capabilities;
         UInt32 m_MaxFramesInFlight;
         bool m_EnableValidation{false};
         virtual void CheckSwapChainCapabilities() = 0;

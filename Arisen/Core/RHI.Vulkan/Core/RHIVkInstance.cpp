@@ -3,8 +3,41 @@ using namespace ArisenEngine;
 #include <vulkan/vulkan_core.h>
 #include "Pipeline/RHIVkGPUProgram.h"
 #include "Windowing/RenderWindowAPI.h"
+#include "Windowing/RenderWindowAPI.h"
 
-
+namespace ArisenEngine::RHI
+{
+    VulkanInitSettings VulkanInitSettings::GetDefault()
+    {
+        VulkanInitSettings settings;
+        settings.validationLayers = { "VK_LAYER_KHRONOS_validation" };
+        settings.instanceExtensions = {
+            VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+            VK_EXT_LAYER_SETTINGS_EXTENSION_NAME,
+            "VK_KHR_win32_surface",
+            "VK_KHR_surface"
+        };
+        settings.mandatoryDeviceExtensions = {
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+            VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
+            VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+            VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+            VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME
+        };
+        settings.optionalDeviceExtensions = {
+            VK_EXT_MESH_SHADER_EXTENSION_NAME,
+            VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+            VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+            VK_KHR_RAY_QUERY_EXTENSION_NAME,
+            VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+            VK_EXT_ROBUSTNESS_2_EXTENSION_NAME,
+            VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME,
+            VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,
+            VK_KHR_MAINTENANCE_2_EXTENSION_NAME
+        };
+        return settings;
+    }
+}
 bool CheckDeviceExtensionSupport(VkPhysicalDevice device)
 {
     uint32_t extensionCount;
@@ -13,8 +46,9 @@ bool CheckDeviceExtensionSupport(VkPhysicalDevice device)
     ArisenEngine::Containers::Vector<VkExtensionProperties> availableExtensions(extensionCount);
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
 
-    ArisenEngine::Containers::Set<String> requiredExtensions(ArisenEngine::RHI::VkMandatoryDeviceExtensionNames.begin(),
-                                                             ArisenEngine::RHI::VkMandatoryDeviceExtensionNames.end());
+    const auto& mandatoryExtensions = ArisenEngine::RHI::VulkanInitSettings::GetDefault().mandatoryDeviceExtensions;
+    ArisenEngine::Containers::Set<String> requiredExtensions(mandatoryExtensions.begin(),
+                                                             mandatoryExtensions.end());
 
     for (const auto& extension : availableExtensions)
     {
@@ -82,7 +116,8 @@ bool CheckValidationLayerSupport()
     std::vector<VkLayerProperties> availableLayers(layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-    for (const char* layerName : ArisenEngine::RHI::VkValidationLayers)
+    const auto& valLayers = ArisenEngine::RHI::VulkanInitSettings::GetDefault().validationLayers;
+    for (const char* layerName : valLayers)
     {
         bool layerFound = false;
 
@@ -167,6 +202,8 @@ ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(RHIInstanceInfo&& app_info): RHI
     // Environment variable manipulation removed. We now filter non-actionable warnings 
     // in the DebugCallback for a cleaner approach that doesn't affect global state.
 
+    m_Settings = VulkanInitSettings::GetDefault();
+
     if (app_info.validationLayer && !CheckValidationLayerSupport())
     {
         LOG_FATAL_AND_THROW("[RHIVkInstance::RHIVkInstance]: validation layers requested, but not available!");
@@ -211,8 +248,8 @@ ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(RHIInstanceInfo&& app_info): RHI
 
     if (app_info.validationLayer)
     {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(VkValidationLayers.size());
-        createInfo.ppEnabledLayerNames = VkValidationLayers.data();
+        createInfo.enabledLayerCount = static_cast<uint32_t>(m_Settings.validationLayers.size());
+        createInfo.ppEnabledLayerNames = m_Settings.validationLayers.data();
 
         // Configuration for validation layer settings
         static const char* validationLayerName = "VK_LAYER_KHRONOS_validation";
@@ -255,7 +292,7 @@ ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(RHIInstanceInfo&& app_info): RHI
         }
 
         // Extensions Slot 
-        for (const char* extensionName : VkInstanceExtensionNames)
+        for (const char* extensionName : m_Settings.instanceExtensions)
         {
             bool found = false;
             for (const auto& ext : extensions)
@@ -292,7 +329,7 @@ ArisenEngine::RHI::RHIVkInstance::RHIVkInstance(RHIInstanceInfo&& app_info): RHI
         createInfo.pNext = nullptr;
 
         // Extensions Slot for non-validation case
-        for (const char* extensionName : VkInstanceExtensionNames)
+        for (const char* extensionName : m_Settings.instanceExtensions)
         {
             // Skip validation layer settings extension if validation is off
             if (strcmp(extensionName, VK_EXT_LAYER_SETTINGS_EXTENSION_NAME) == 0) continue;
@@ -646,8 +683,8 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
         }
     };
 
-    checkAndEnable(VkMandatoryDeviceExtensionNames, true);
-    checkAndEnable(VkOptionalDeviceExtensionNames, false);
+    checkAndEnable(m_Settings.mandatoryDeviceExtensions, true);
+    checkAndEnable(m_Settings.optionalDeviceExtensions, false);
 
     // Set Device Features
     VkPhysicalDeviceFeatures features{};
@@ -773,8 +810,8 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
 
     if (IsEnableValidation())
     {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(VkValidationLayers.size());
-        createInfo.ppEnabledLayerNames = VkValidationLayers.data();
+        createInfo.enabledLayerCount = static_cast<uint32_t>(m_Settings.validationLayers.size());
+        createInfo.ppEnabledLayerNames = m_Settings.validationLayers.data();
     }
     else
     {
@@ -818,12 +855,16 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     VkPhysicalDeviceProperties physicalProperties{};
     vkGetPhysicalDeviceProperties(m_CurrentPhysicsDevice, &physicalProperties);
     {
-        logicalDevice->m_DeviceLimits.sampler.maxSamplerAnisotropy = physicalProperties.limits.maxSamplerAnisotropy;
+        logicalDevice->m_Capabilities.maxSamplerAnisotropy = physicalProperties.limits.maxSamplerAnisotropy;
         // Check if Ray Tracing Pipeline extension was successfully enabled
-        logicalDevice->m_DeviceLimits.rayTracingSupported = isExtensionEnabled(
+        logicalDevice->m_Capabilities.rayTracingSupported = isExtensionEnabled(
                                                                 VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
                                                                 ? 1
                                                                 : 0;
+
+        logicalDevice->m_Capabilities.supportsDynamicRendering = isExtensionEnabled(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME) ? 1 : 0;
+        logicalDevice->m_Capabilities.maxDescriptorSets = physicalProperties.limits.maxBoundDescriptorSets;
+        logicalDevice->m_Capabilities.timestampComputeAndGraphics = physicalProperties.limits.timestampComputeAndGraphics;
     }
 
     LOG_INFO(String::Format("[RHIVkInstance::CreateLogicDevice]: Create Logical Device for surface %d", windowId));
@@ -1038,7 +1079,7 @@ void ArisenEngine::RHI::RHIVkInstance::PickPhysicalDevice(bool considerSurface)
     // initialize limit info
     {
         // sampler 
-        m_DeviceLimits.sampler.maxSamplerAnisotropy = m_DeviceProperties.limits.maxSamplerAnisotropy;
+        m_Capabilities.maxSamplerAnisotropy = m_DeviceProperties.limits.maxSamplerAnisotropy;
     }
     // TODO: configurable physical device
     // TODO: if current physical device not adequate suitable swap chain, should repick one

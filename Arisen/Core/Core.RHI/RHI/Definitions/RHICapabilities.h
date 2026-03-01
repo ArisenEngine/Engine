@@ -5,17 +5,13 @@
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 
-ARISEN_BIND_STRUCT(RHISamplerLimits)
+ARISEN_BIND_STRUCT(RHICapabilities)
 
-typedef struct RHISamplerLimits
+typedef struct RHICapabilities
 {
     ArisenEngine::Float32 maxSamplerAnisotropy;
-} RHISamplerLimits;
-
-ARISEN_BIND_STRUCT(RHIDeviceLimits)
-
-typedef struct RHIDeviceLimits
-{
-    RHISamplerLimits sampler;
+    ArisenEngine::UInt32 maxDescriptorSets;
     int rayTracingSupported;
-} RHIDeviceLimits;
+    int supportsDynamicRendering;
+    int timestampComputeAndGraphics;
+} RHICapabilities;
