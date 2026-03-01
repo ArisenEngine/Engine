@@ -1,4 +1,5 @@
 using Arisen.Native.RHI;
+using ArisenEngine.Core.RHI;
 using ArisenEngine.Core.Memory;
 
 namespace ArisenEngine.Rendering;

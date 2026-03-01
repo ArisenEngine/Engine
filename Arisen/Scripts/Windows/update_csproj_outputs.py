@@ -43,13 +43,31 @@ def ensure_framework_flag(tree):
 def update_output_path(csproj_path, sln_dir, base_output):
     base_output_abs = os.path.abspath(base_output)
     csproj_dir = os.path.dirname(os.path.abspath(csproj_path))
+    csproj_name = os.path.basename(csproj_path)
 
-    # Output 相对于 csproj 的相对路径
-    output_rel = os.path.relpath(base_output_abs, csproj_dir)
+    # Detect if it's a package and determine its category
+    package_category = None
+    package_name = None
+    
+    parts = csproj_path.replace("\\", "/").split("/")
+    if "Packages" in parts:
+        pkg_idx = parts.index("Packages")
+        if pkg_idx + 2 < len(parts):
+            package_category = parts[pkg_idx + 1] # e.g., "Builtin"
+            package_name = parts[pkg_idx + 2]     # e.g., "ForwardRP"
 
     tree = ET.parse(csproj_path)
-    ensure_property_group_with_output(tree, "Debug", os.path.join(output_rel, "Debug") + os.sep)
-    ensure_property_group_with_output(tree, "Release", os.path.join(output_rel, "Release") + os.sep)
+
+    configs = ["Debug", "Release"]
+    for config in configs:
+        target_output = os.path.join(base_output_abs, config)
+        if package_category and package_name:
+            target_output = os.path.join(target_output, "Packages", package_category, package_name)
+        
+        # Output 相对于 csproj 的相对路径
+        output_rel = os.path.relpath(target_output, csproj_dir)
+        ensure_property_group_with_output(tree, config, output_rel + os.sep)
+
     ensure_framework_flag(tree)
     tree.write(csproj_path, encoding="utf-8", xml_declaration=True)
 

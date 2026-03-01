@@ -16,7 +16,8 @@ public class PackageSubsystem : IEngineSubsystem
     };
 
     public string Name => "PackageSubsystem";
-    public EnginePhase InitPhase => EnginePhase.Setup;
+    public int Priority => 10;
+    public EnginePhase InitPhase => EnginePhase.Init;
 
     public void Initialize()
     {
@@ -24,21 +25,21 @@ public class PackageSubsystem : IEngineSubsystem
         
         string baseDir = AppContext.BaseDirectory;
         
-        // 1. Builtin Packages (typically inside the Engine folder)
-        m_CategorySearchPaths[PackageSource.Builtin].Add(Path.Combine(baseDir, "Engine/Packages"));
-        
-        // 2. User Project Packages
-        m_CategorySearchPaths[PackageSource.UserProject].Add(Path.Combine(baseDir, "Packages"));
-        
-        // 3. External / DLC / Workshop
+        // Simplified: Scanning organized Packages directory in the output
+        string packagesRoot = Path.Combine(baseDir, "Packages");
+        m_CategorySearchPaths[PackageSource.Builtin].Add(Path.Combine(packagesRoot, "Builtin"));
+        m_CategorySearchPaths[PackageSource.UserProject].Add(Path.Combine(packagesRoot, "UserProject"));
+        m_CategorySearchPaths[PackageSource.External].Add(Path.Combine(packagesRoot, "External"));
         m_CategorySearchPaths[PackageSource.External].Add(Path.Combine(baseDir, "DLC"));
-        m_CategorySearchPaths[PackageSource.External].Add(Path.Combine(baseDir, "Workshop"));
 
         DiscoverAndLoadPackages();
     }
 
     private void DiscoverAndLoadPackages()
     {
+        var manifests = new List<(string ManifestPath, PackageSource Source, PackageManifest Manifest)>();
+
+        // Pass 1: Scan all manifests
         foreach (var category in m_CategorySearchPaths)
         {
             var source = category.Key;
@@ -46,36 +47,97 @@ public class PackageSubsystem : IEngineSubsystem
             {
                 if (!Directory.Exists(path)) continue;
 
-                Logger.Log($"[PackageSubsystem] Scanning {source}: {path}");
                 var directories = Directory.GetDirectories(path, "*", SearchOption.AllDirectories);
                 foreach (var dir in directories)
                 {
                     string manifestPath = Path.Combine(dir, "package.json");
                     if (File.Exists(manifestPath))
                     {
-                        LoadPackageFromManifest(manifestPath, source);
+                        var manifest = TryReadManifest(manifestPath);
+                        if (manifest != null)
+                        {
+                            manifests.Add((manifestPath, source, manifest));
+                        }
                     }
                 }
             }
         }
+
+        // Pass 2: Sort and Load
+        var sortedManifests = SortManifestsByDependency(manifests);
+        foreach (var item in sortedManifests)
+        {
+            LoadPackage(item.ManifestPath, item.Source, item.Manifest);
+        }
     }
 
-    private void LoadPackageFromManifest(string manifestPath, PackageSource source)
+    private PackageManifest? TryReadManifest(string path)
     {
         try
         {
-            string json = File.ReadAllText(manifestPath);
+            string json = File.ReadAllText(path);
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var manifest = JsonSerializer.Deserialize<PackageManifest>(json, options);
+            return JsonSerializer.Deserialize<PackageManifest>(json, options);
+        }
+        catch (Exception e)
+        {
+            Logger.Error($"[PackageSubsystem] Failed to read manifest at {path}: {e.Message}");
+            return null;
+        }
+    }
 
-            if (manifest == null || string.IsNullOrEmpty(manifest.Id)) return;
+    private List<(string ManifestPath, PackageSource Source, PackageManifest Manifest)> SortManifestsByDependency(
+        List<(string ManifestPath, PackageSource Source, PackageManifest Manifest)> manifests)
+    {
+        // Simple topological sort
+        var result = new List<(string ManifestPath, PackageSource Source, PackageManifest Manifest)>();
+        var visited = new HashSet<string>();
+        var map = manifests.ToDictionary(x => x.Manifest.Id);
 
-            Logger.Log($"[PackageSubsystem] Loading Package: {manifest.Name} ({manifest.Id})");
+        void Visit(string id)
+        {
+            if (visited.Contains(id)) return;
+            if (!map.TryGetValue(id, out var item)) return;
 
+            visited.Add(id);
+            if (item.Manifest.Dependencies != null)
+            {
+                foreach (var depId in item.Manifest.Dependencies.Keys)
+                {
+                    Visit(depId);
+                }
+            }
+            result.Add(item);
+        }
+
+        foreach (var m in manifests)
+        {
+            Visit(m.Manifest.Id);
+        }
+
+        return result;
+    }
+
+    private void LoadPackage(string manifestPath, PackageSource source, PackageManifest manifest)
+    {
+        if (m_LoadedPackages.ContainsKey(manifest.Id)) return;
+
+        // Verify Engine Version
+        if (!string.IsNullOrEmpty(manifest.EngineVersion))
+        {
+            if (EngineVersion.TryParse(manifest.EngineVersion, out var required) &&
+                EngineVersion.Current < required)
+            {
+                Logger.Warning($"[PackageSubsystem] Package {manifest.Id} requires Engine {required}, but current is {EngineVersion.Current}. Skipping.");
+                return;
+            }
+        }
+
+        Logger.Log($"[PackageSubsystem] Loading Package: {manifest.Name} ({manifest.Id})");
+
+        try
+        {
             string rootPath = Path.GetDirectoryName(manifestPath)!;
-            
-            // For now, if it's "ArisenEngine.dll", we assume it's already loaded or in the same folder.
-            // In a real DLC scenario, we would use PackageLoadContext to load a specific separate DLL.
             Assembly? assembly;
             if (manifest.EntryAssembly == "ArisenEngine.dll")
             {
@@ -90,15 +152,11 @@ public class PackageSubsystem : IEngineSubsystem
 
             if (assembly == null) return;
 
-            // Instantiate the entry class if specified
             object? entryInstance = null;
             if (!string.IsNullOrEmpty(manifest.EntryClass))
             {
                 var type = assembly.GetType(manifest.EntryClass);
-                if (type != null)
-                {
-                    entryInstance = Activator.CreateInstance(type);
-                }
+                if (type != null) entryInstance = Activator.CreateInstance(type);
             }
 
             var packageInfo = new ArisenPackageInfo
@@ -108,6 +166,8 @@ public class PackageSubsystem : IEngineSubsystem
                 Version = manifest.Version,
                 RootPath = rootPath,
                 Source = source,
+                EngineVersion = manifest.EngineVersion,
+                Dependencies = manifest.Dependencies ?? new(),
                 Assembly = assembly,
                 EntryInstance = entryInstance
             };
@@ -116,7 +176,7 @@ public class PackageSubsystem : IEngineSubsystem
         }
         catch (Exception e)
         {
-            Logger.Error($"[PackageSubsystem] Failed to load package at {manifestPath}: {e.Message}");
+            Logger.Error($"[PackageSubsystem] Error loading package {manifest.Id}: {e.Message}");
         }
     }
 
@@ -138,7 +198,6 @@ public class PackageSubsystem : IEngineSubsystem
 
     public void Dispose() => Shutdown();
 
-    // Internal class for manifest deserialization
     private class PackageManifest
     {
         public string Id { get; set; } = string.Empty;
@@ -146,5 +205,7 @@ public class PackageSubsystem : IEngineSubsystem
         public string Version { get; set; } = string.Empty;
         public string EntryAssembly { get; set; } = string.Empty;
         public string EntryClass { get; set; } = string.Empty;
+        public string EngineVersion { get; set; } = string.Empty;
+        public Dictionary<string, string>? Dependencies { get; set; }
     }
 }
