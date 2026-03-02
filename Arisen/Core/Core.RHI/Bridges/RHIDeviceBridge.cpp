@@ -82,12 +82,14 @@ RHI_DLL void* RHIDevice_GetCommandBufferPool(RHIDevice* dev, uint32_t index, uin
 
 RHI_DLL uint64_t RHIDevice_GetCompletedSubmitTicket(RHIDevice* dev)
 {
-    return dev->GetCompletedSubmitTicket();
+    auto* queue = dev->GetQueue(RHIQueueType::Graphics);
+    return queue ? queue->GetCompletedTicket() : 0;
 }
 
 RHI_DLL void RHIDevice_WaitQueueTicket(RHIDevice* dev, uint64_t ticket)
 {
-    dev->WaitQueueTicket(ticket);
+    auto* queue = dev->GetQueue(RHIQueueType::Graphics);
+    if (queue) queue->WaitForTicket(ticket);
 }
 
 RHI_DLL uint64_t RHIDevice_Submit(RHIDevice* dev, uint32_t index, uint32_t generation,
@@ -97,17 +99,18 @@ RHI_DLL uint64_t RHIDevice_Submit(RHIDevice* dev, uint32_t index, uint32_t gener
     handle.index = index;
     handle.generation = generation;
 
+    auto* queue = dev->GetQueue(RHIQueueType::Graphics);
+    if (!queue) return 0;
+
     if (bridgeDesc)
     {
         RHISubmitDescriptor desc;
         desc.WaitSwapChain = bridgeDesc->waitSwapChain;
         desc.SignalSwapChain = bridgeDesc->signalSwapChain;
-        // Simplified handling: we only support swapchain sync for now in this bridge
-        // If we need explicit semaphores, we'd need more complex mapping
-        return dev->Submit(handle, &desc);
+        return queue->Submit(handle, &desc);
     }
 
-    return dev->Submit(handle);
+    return queue->Submit(handle);
 }
  
 RHI_DLL void* RHIDevice_GetQueue(RHIDevice* dev, int queueType)

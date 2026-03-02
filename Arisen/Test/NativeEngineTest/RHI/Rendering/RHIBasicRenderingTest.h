@@ -95,10 +95,7 @@ namespace ArisenEngine::Testing
         void RenderFrame() override
         {
             auto currentIndex = GetCurrentFrameIndex();
-            if (m_FrameTickets[currentIndex] > 0)
-            {
-                m_Device->WaitQueueTicket(m_FrameTickets[currentIndex]);
-            }
+                m_Device->GetQueue(RHI::RHIQueueType::Graphics)->WaitForTicket(m_FrameTickets[currentIndex]);
 
             UpdateUniformBuffer();
             RecordAndSubmit();
@@ -387,7 +384,7 @@ namespace ArisenEngine::Testing
             submitDesc.WaitSwapChain = m_SwapChain;
             submitDesc.SignalSwapChain = m_SwapChain;
 
-            m_FrameTickets[currentIndex] = m_Device->Submit(cmdHandle, &submitDesc);
+            m_FrameTickets[currentIndex] = m_Device->GetQueue(RHI::RHIQueueType::Graphics)->Submit(cmdHandle, &submitDesc);
             m_SwapChain->EndFrame(currentIndex);
             m_Device->GetCommandBufferPool(m_CmdPool)->ReleaseCommandBuffer(0, cmdHandle);
         }

@@ -113,8 +113,6 @@ namespace ArisenEngine::RHI
 
         virtual RHIMemoryAllocator* GetMemoryAllocator() const = 0;
 
-        virtual RHIGpuTicket Submit(RHICommandBufferHandle commandBuffer,
-                                    const struct RHISubmitDescriptor* descriptor = nullptr) = 0;
 
         // Descriptor Heap & Bindless Table
         virtual RHIDescriptorHeap* CreateDescriptorHeap(EDescriptorHeapType type, UInt32 descriptorCount) = 0;
@@ -127,8 +125,6 @@ namespace ArisenEngine::RHI
         // Default: no-op.
         // virtual void Update() {}  <-- REMOVED per user request (redundant)
 
-        virtual RHIGpuTicket GetCompletedSubmitTicket() const { return 0; }
-        virtual void WaitQueueTicket(RHIGpuTicket ticket) { (void)ticket; }
 
         // Optional: expose backend queues (graphics/compute/transfer/present).
         // Backends may return nullptr for unsupported queues.
@@ -146,10 +142,9 @@ namespace ArisenEngine::RHI
 
         // Queue-scoped deferred delete helper. Backends can override to route to their deletion queue.
         // Default is immediate delete (safe for non-GPU objects).
-        virtual void DeferredDelete(RHIQueueType queue, RHIGpuTicket ticket, RHIDeferredDeleteItem item)
+        virtual void DeferredDelete(const RHIDeletionDependencies& deps, RHIDeferredDeleteItem item)
         {
-            (void)queue;
-            (void)ticket;
+            (void)deps;
             if (item.deleter && item.ptr) item.deleter(item.ptr);
         }
 

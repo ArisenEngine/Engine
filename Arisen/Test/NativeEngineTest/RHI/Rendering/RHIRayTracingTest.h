@@ -144,7 +144,7 @@ namespace ArisenEngine::Testing
             auto currentIndex = GetCurrentFrameIndex();
             if (m_FrameTickets[currentIndex] > 0)
             {
-                m_Device->WaitQueueTicket(m_FrameTickets[currentIndex]);
+                m_Device->GetQueue(RHI::RHIQueueType::Graphics)->WaitForTicket(m_FrameTickets[currentIndex]);
             }
 
             UpdateCameraData();
@@ -254,7 +254,7 @@ namespace ArisenEngine::Testing
             cmd->Begin(0, RHI::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
             cmd->CopyBuffer(stagingBuffer, 0, m_MaterialBuffer, 0, matData.size() * sizeof(MaterialData));
             cmd->End();
-            m_Device->Submit(cmdHandle);
+            m_Device->GetQueue(RHI::RHIQueueType::Graphics)->Submit(cmdHandle);
             m_Device->DeviceWaitIdle();
             pool->ReleaseCommandBuffer(0, cmdHandle);
             factory->ReleaseBuffer(stagingBuffer);
@@ -513,7 +513,7 @@ namespace ArisenEngine::Testing
 
             cmd->End();
             RHI::RHISubmitDescriptor submitDesc = {};
-            m_Device->Submit(cmdHandle, &submitDesc);
+            m_Device->GetQueue(RHI::RHIQueueType::Graphics)->Submit(cmdHandle, &submitDesc);
             m_Device->DeviceWaitIdle();
             pool->ReleaseCommandBuffer(0, cmdHandle);
         }
@@ -737,7 +737,7 @@ namespace ArisenEngine::Testing
                 UInt32 prevIndex = (currentIndex + m_MaxFramesInFlight - 1) % m_MaxFramesInFlight;
                 if (m_FrameTickets[prevIndex] > 0)
                 {
-                    m_Device->WaitQueueTicket(m_FrameTickets[prevIndex]);
+                    m_Device->GetQueue(RHI::RHIQueueType::Graphics)->WaitForTicket(m_FrameTickets[prevIndex]);
                 }
             }
 
@@ -777,7 +777,7 @@ namespace ArisenEngine::Testing
             RHI::RHISubmitDescriptor submitDesc = {};
             submitDesc.WaitSwapChain = m_SwapChain;
             submitDesc.SignalSwapChain = m_SwapChain;
-            m_FrameTickets[currentIndex] = m_Device->Submit(cmdHandle, &submitDesc);
+            m_FrameTickets[currentIndex] = m_Device->GetQueue(RHI::RHIQueueType::Graphics)->Submit(cmdHandle, &submitDesc);
 
             m_SwapChain->EndFrame(currentIndex);
             pool->ReleaseCommandBuffer(currentIndex, cmdHandle);

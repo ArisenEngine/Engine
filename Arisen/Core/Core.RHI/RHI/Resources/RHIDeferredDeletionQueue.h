@@ -13,9 +13,38 @@ namespace ArisenEngine::RHI
     // - Metal can map to commandBuffer completion serial
     using RHIGpuTicket = UInt64;
 
-    // A type-erased delete item. This is intentionally C-FFI friendly:
-    // - ptr: object pointer
-    // - deleter: function pointer (no captures)
+    // Set of tickets across different queue types that must be satisfied 
+    // before a resource can be safely destroyed.
+    struct RHIDeletionDependencies final
+    {
+        RHIGpuTicket tickets[4]{0, 0, 0, 0}; // Index matches RHIQueueType enum values
+
+        void Update(RHIQueueType queue, RHIGpuTicket ticket)
+        {
+            auto idx = static_cast<UInt32>(queue);
+            if (idx < 4 && ticket > tickets[idx])
+            {
+                tickets[idx] = ticket;
+            }
+        }
+
+        bool IsSatisfied(RHIQueueType queue, RHIGpuTicket completedTicket) const
+        {
+            auto idx = static_cast<UInt32>(queue);
+            return idx >= 4 || completedTicket >= tickets[idx];
+        }
+
+        bool IsFullySatisfied(const RHIGpuTicket* completedTickets) const
+        {
+            for (int i = 0; i < 4; ++i)
+            {
+                if (completedTickets[i] < tickets[i]) return false;
+            }
+            return true;
+        }
+    };
+
+    // A type-erased delete item.
     struct RHIDeferredDeleteItem final
     {
         void* ptr{nullptr};
@@ -39,12 +68,10 @@ namespace ArisenEngine::RHI
     public:
         virtual ~IRHIDeferredDeletionQueue() = default;
 
-        // Enqueue an object to delete when it's safe (based on ticket).
-        virtual void Enqueue(RHIQueueType queue, RHIGpuTicket ticket, RHIDeferredDeleteItem item) = 0;
+        // Enqueue an object to delete when all its dependencies are satisfied.
+        virtual void Enqueue(const RHIDeletionDependencies& deps, RHIDeferredDeleteItem item) = 0;
 
-        // Flush all work that is known-safe up to the given ticket.
-        // Implementations may treat this as "flush bucket(ticket)" (frame index),
-        // or "flush <= ticket" (monotonic fences).
+        // Flush all work that is known-safe for a specific queue's progress.
         virtual void Flush(RHIQueueType queue, RHIGpuTicket ticket) = 0;
     };
 }

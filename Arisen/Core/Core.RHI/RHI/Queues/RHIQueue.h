@@ -54,6 +54,9 @@ namespace ArisenEngine::RHI
         // Useful for scheduling deferred deletion at "everything submitted so far must be complete".
         virtual RHIGpuTicket GetLatestTicket() const = 0;
 
+        // Block until the queue is idle.
+        virtual void WaitIdle() = 0;
+
         // Block until the specified ticket is completed.
         // Default implementation polls Update without sleeping.
         virtual void WaitForTicket(RHIGpuTicket ticket)

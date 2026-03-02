@@ -69,7 +69,7 @@ namespace ArisenEngine::Testing
             // 3. Submit
             LOG_INFO("Submitting command buffer with debug markers...");
             RHI::RHISubmitDescriptor submitDesc = {};
-            m_Device->Submit(cmdHandle, &submitDesc);
+            m_Device->GetQueue(RHI::RHIQueueType::Graphics)->Submit(cmdHandle, &submitDesc);
 
             m_Device->GraphicQueueWaitIdle();
             LOG_INFO("Submission completed.");

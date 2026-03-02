@@ -20,6 +20,8 @@
 #include "RHI/Unit/RHIInspectorTest.h"
 #include "RHI/Rendering/RHIRayTracingTest.h"
 #include "RHI/Rendering/RHIVRSShadingRateTest.h"
+#include "RHI/Unit/RHIMultiQueueNativeTest.h"
+#include "RHI/Unit/RHIMultiQueueResourceDisposalTest.h"
 #include "../../Core/Core.HAL/Common/EngineInit.h"
 
 #include <windows.h>
@@ -62,6 +64,8 @@ int main(int argc, char** argv)
     TestRunner::RegisterTest<RHIRayTracingTest>();
     TestRunner::RegisterTest<RHIVRSShadingRateTest>();
     TestRunner::RegisterTest<RHIMemoryAliasingTest>();
+    TestRunner::RegisterTest<RHIMultiQueueNativeTest>();
+    TestRunner::RegisterTest<RHIMultiQueueResourceDisposalTest>();
 
 
     // Parse simple command line for filtering (lpCmdLine for WinMain)

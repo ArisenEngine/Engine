@@ -77,7 +77,7 @@ ArisenEngine::UInt32 ArisenEngine::RHI::RHIVkDescriptorPool::AddPool(Containers:
     }
 
     m_DescriptorSetsHolder.emplace_back(descriptorSetsHolder);
-    m_PoolLatestTicket.emplace_back(0);
+    m_PoolLatestTicket.emplace_back(RHIDeletionDependencies{});
     m_PoolOutstandingRotations.emplace_back(0);
 
     return m_DescriptorSetsHolder.size() - 1;
@@ -104,10 +104,19 @@ bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
     // Non-blocking, GPU-safe reset strategy:
     // - If GPU has finished using this poolId (completed >= latestTicket), we can vkResetDescriptorPool immediately.
     // - Otherwise, rotate to a fresh VkDescriptorPool for this poolId and defer-destroy the old pool at latestTicket.
-    const auto latestTicket = (poolId < m_PoolLatestTicket.size()) ? m_PoolLatestTicket[poolId] : 0;
-    auto* q = m_pDevice ? m_pDevice->GetQueue(RHIQueueType::Graphics) : nullptr;
-    const auto completed = q ? q->GetCompletedTicket() : latestTicket;
-    const bool canResetNow = (latestTicket == 0) || (completed >= latestTicket);
+    const auto& latestDeps = (poolId < m_PoolLatestTicket.size()) ? m_PoolLatestTicket[poolId] : RHIDeletionDependencies{};
+    
+    bool canResetNow = true;
+    for (int i = 0; i < 4; ++i)
+    {
+        if (latestDeps.tickets[i] == 0) continue;
+        auto* queue = m_pDevice->GetQueue((RHIQueueType)i);
+        if (!queue || queue->GetCompletedTicket() < latestDeps.tickets[i])
+        {
+            canResetNow = false;
+            break;
+        }
+    }
 
     if (!canResetNow)
     {
@@ -118,15 +127,16 @@ bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
                                        : 0;
         const UInt32 maxOutstanding = 8; // heuristic; future: tie to maxFramesInFlight
 
-        if (outstanding >= maxOutstanding && q)
+        if (outstanding >= maxOutstanding)
         {
             lock.unlock();
-
-            // Use hardware wait instead of busy loop
-            q->WaitForTicket(latestTicket);
-
+            for (int i = 0; i < 4; ++i)
+            {
+                if (latestDeps.tickets[i] == 0) continue;
+                auto* queue = m_pDevice->GetQueue((RHIQueueType)i);
+                if (queue) queue->WaitForTicket(latestDeps.tickets[i]);
+            }
             lock.lock();
-            // Re-read holder after waiting.
             pool = holder.RHIDescriptorPool;
         }
         else
@@ -155,7 +165,7 @@ bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
                     poolId,
                 };
                 if (poolId < m_PoolOutstandingRotations.size()) m_PoolOutstandingRotations[poolId] += 1;
-                m_pDevice->DeferredDelete(RHIQueueType::Graphics, latestTicket, MakeDeferredDeleteItem(deferred));
+                m_pDevice->DeferredDelete(latestDeps, MakeDeferredDeleteItem(deferred));
             }
             else
             {
@@ -163,7 +173,7 @@ bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
             }
 
             holder.RHIDescriptorPool = newPool;
-            m_PoolLatestTicket[poolId] = 0;
+            m_PoolLatestTicket[poolId] = RHIDeletionDependencies{};
             holder.sets.clear();
             holder.freeSets.clear(); // Clear free sets derived from old pool
             return true;
@@ -179,7 +189,7 @@ bool ArisenEngine::RHI::RHIVkDescriptorPool::ResetPool(UInt32 poolId)
         return false;
     }
 
-    m_PoolLatestTicket[poolId] = 0;
+    m_PoolLatestTicket[poolId] = RHIDeletionDependencies{};
     holder.sets.clear();
     holder.freeSets.clear();
 
@@ -196,11 +206,15 @@ void ArisenEngine::RHI::RHIVkDescriptorPool::OnDeferredPoolDestroyed(UInt32 pool
 void ArisenEngine::RHI::RHIVkDescriptorPool::MarkPoolUsed(UInt32 poolId, RHIQueueType queue, RHIGpuTicket ticket)
 {
     std::lock_guard<std::mutex> lock(m_Mutex);
-    (void)queue; // current impl is per-device graphics queue
     if (poolId >= m_PoolLatestTicket.size()) return;
-    if (ticket > m_PoolLatestTicket[poolId])
+    auto& deps = m_PoolLatestTicket[poolId];
+    int queueIdx = (int)queue;
+    if (queueIdx >= 0 && queueIdx < 4)
     {
-        m_PoolLatestTicket[poolId] = ticket;
+        if (ticket > deps.tickets[queueIdx])
+        {
+            deps.tickets[queueIdx] = ticket;
+        }
     }
 }
 

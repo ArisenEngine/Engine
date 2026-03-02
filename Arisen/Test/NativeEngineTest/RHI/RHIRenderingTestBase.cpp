@@ -173,7 +173,7 @@ namespace ArisenEngine::Testing
         }
 
         cmd->End();
-        m_Device->Submit(cmdHandle);
+        m_Device->GetQueue(RHI::RHIQueueType::Graphics)->Submit(cmdHandle);
         m_Device->DeviceWaitIdle();
 
         m_Device->GetFactory()->ReleaseBuffer(stagingBuffer);

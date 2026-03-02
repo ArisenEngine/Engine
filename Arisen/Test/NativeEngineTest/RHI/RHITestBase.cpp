@@ -120,7 +120,7 @@ namespace ArisenEngine::Testing
             cmd->GenerateMipmaps(texture);
 
             cmd->End();
-            m_Device->Submit(cmdHandle);
+            m_Device->GetQueue(RHI::RHIQueueType::Graphics)->Submit(cmdHandle);
             m_Device->DeviceWaitIdle();
 
             m_Device->GetFactory()->ReleaseBuffer(stagingBuffer);
@@ -466,7 +466,7 @@ namespace ArisenEngine::Testing
         cmd->CopyBuffer(iStaging, 0, model.indexBuffer, 0, ibDesc.size);
         cmd->End();
 
-        m_Device->Submit(cmdHandle);
+        m_Device->GetQueue(RHI::RHIQueueType::Graphics)->Submit(cmdHandle);
         m_Device->DeviceWaitIdle();
 
         m_Device->GetFactory()->ReleaseBuffer(vStaging);

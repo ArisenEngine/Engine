@@ -30,13 +30,6 @@ namespace ArisenEngine::RHI
         RHIDescriptorPool* GetDescriptorPool() const override { return nullptr; }
         RHIDescriptorPoolHandle GetDescriptorPoolHandle() const override { return RHIDescriptorPoolHandle::Invalid(); }
 
-        RHIGpuTicket Submit(RHICommandBufferHandle commandBuffer,
-                            const struct RHISubmitDescriptor* descriptor = nullptr) override
-        {
-            (void)commandBuffer;
-            (void)descriptor;
-            return 0;
-        }
 
         UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) override
         {
