@@ -6,13 +6,15 @@ namespace CSharpEngineTest.Core.Lifecycle;
 
 public class LifecycleTests : ITest
 {
+    // Shared execution log across all mock subsystems
+    private static readonly List<string> s_ExecutionLog = new();
+
     private class MockSubsystem1 : IEngineSubsystem
     {
         public int Priority { get; }
         public EnginePhase InitPhase { get; }
         public bool Initialized { get; private set; }
         public bool ShutdownCalled { get; private set; }
-        public static List<string> ExecutionLog { get; } = new();
 
         private readonly string m_Name;
 
@@ -26,13 +28,13 @@ public class LifecycleTests : ITest
         public void Initialize()
         {
             Initialized = true;
-            ExecutionLog.Add($"Init:{m_Name}");
+            s_ExecutionLog.Add($"Init:{m_Name}");
         }
 
         public void Shutdown()
         {
             ShutdownCalled = true;
-            ExecutionLog.Add($"Shutdown:{m_Name}");
+            s_ExecutionLog.Add($"Shutdown:{m_Name}");
         }
 
         public void Dispose() => Shutdown();
@@ -57,13 +59,44 @@ public class LifecycleTests : ITest
         public void Initialize()
         {
             Initialized = true;
-            MockSubsystem1.ExecutionLog.Add($"Init:{m_Name}");
+            s_ExecutionLog.Add($"Init:{m_Name}");
         }
 
         public void Shutdown()
         {
             ShutdownCalled = true;
-            MockSubsystem1.ExecutionLog.Add($"Shutdown:{m_Name}");
+            s_ExecutionLog.Add($"Shutdown:{m_Name}");
+        }
+
+        public void Dispose() => Shutdown();
+    }
+
+    private class MockSubsystem3 : IEngineSubsystem
+    {
+        public int Priority { get; }
+        public EnginePhase InitPhase { get; }
+        public bool Initialized { get; private set; }
+        public bool ShutdownCalled { get; private set; }
+
+        private readonly string m_Name;
+
+        public MockSubsystem3(string name, int priority, EnginePhase phase)
+        {
+            m_Name = name;
+            Priority = priority;
+            InitPhase = phase;
+        }
+
+        public void Initialize()
+        {
+            Initialized = true;
+            s_ExecutionLog.Add($"Init:{m_Name}");
+        }
+
+        public void Shutdown()
+        {
+            ShutdownCalled = true;
+            s_ExecutionLog.Add($"Shutdown:{m_Name}");
         }
 
         public void Dispose() => Shutdown();
@@ -75,7 +108,7 @@ public class LifecycleTests : ITest
     public bool Setup()
     {
         EngineKernel.Instance.Reset();
-        MockSubsystem1.ExecutionLog.Clear();
+        s_ExecutionLog.Clear();
         return true;
     }
 
@@ -117,15 +150,16 @@ public class LifecycleTests : ITest
     {
         Logger.Log("Testing Priority Order...");
         EngineKernel.Instance.Reset();
-        MockSubsystem1.ExecutionLog.Clear();
+        s_ExecutionLog.Clear();
 
         var kernel = EngineKernel.Instance;
 
-        // Register with intentionally out-of-order priorities
+        // Use three distinct types to satisfy the one-per-type registration constraint
         var high = new MockSubsystem1("HighPri", 100, EnginePhase.Init);
-        var low = new MockSubsystem1("LowPri", 0, EnginePhase.Init);
-        var mid = new MockSubsystem1("MidPri", 50, EnginePhase.Init);
+        var low = new MockSubsystem2("LowPri", 0, EnginePhase.Init);
+        var mid = new MockSubsystem3("MidPri", 50, EnginePhase.Init);
 
+        // Register intentionally out-of-order
         kernel.RegisterSubsystem(high);
         kernel.RegisterSubsystem(low);
         kernel.RegisterSubsystem(mid);
@@ -133,9 +167,9 @@ public class LifecycleTests : ITest
         kernel.Initialize(new EngineConfig { AppName = "PriorityTest" });
 
         // Priority sort: 0 (LowPri) < 50 (MidPri) < 100 (HighPri)
-        int idxLow = MockSubsystem1.ExecutionLog.IndexOf("Init:LowPri");
-        int idxMid = MockSubsystem1.ExecutionLog.IndexOf("Init:MidPri");
-        int idxHigh = MockSubsystem1.ExecutionLog.IndexOf("Init:HighPri");
+        int idxLow = s_ExecutionLog.IndexOf("Init:LowPri");
+        int idxMid = s_ExecutionLog.IndexOf("Init:MidPri");
+        int idxHigh = s_ExecutionLog.IndexOf("Init:HighPri");
 
         if (idxLow < 0 || idxMid < 0 || idxHigh < 0)
         {
@@ -179,27 +213,28 @@ public class LifecycleTests : ITest
     {
         Logger.Log("Testing Shutdown Reverse Order...");
         EngineKernel.Instance.Reset();
-        MockSubsystem1.ExecutionLog.Clear();
+        s_ExecutionLog.Clear();
 
         var kernel = EngineKernel.Instance;
 
+        // Use three distinct types to satisfy the one-per-type registration constraint
         var low = new MockSubsystem1("Low", 0, EnginePhase.Init);
-        var mid = new MockSubsystem1("Mid", 50, EnginePhase.Init);
-        var high = new MockSubsystem1("High", 100, EnginePhase.Init);
+        var mid = new MockSubsystem2("Mid", 50, EnginePhase.Init);
+        var high = new MockSubsystem3("High", 100, EnginePhase.Init);
 
         kernel.RegisterSubsystem(low);
         kernel.RegisterSubsystem(mid);
         kernel.RegisterSubsystem(high);
 
         kernel.Initialize(new EngineConfig { AppName = "ShutdownTest" });
-        MockSubsystem1.ExecutionLog.Clear(); // Clear init logs, only track shutdown
+        s_ExecutionLog.Clear(); // Clear init logs, only track shutdown
 
         kernel.Shutdown();
 
         // Shutdown should be in reverse priority order: High(100) → Mid(50) → Low(0)
-        int idxHigh = MockSubsystem1.ExecutionLog.IndexOf("Shutdown:High");
-        int idxMid = MockSubsystem1.ExecutionLog.IndexOf("Shutdown:Mid");
-        int idxLow = MockSubsystem1.ExecutionLog.IndexOf("Shutdown:Low");
+        int idxHigh = s_ExecutionLog.IndexOf("Shutdown:High");
+        int idxMid = s_ExecutionLog.IndexOf("Shutdown:Mid");
+        int idxLow = s_ExecutionLog.IndexOf("Shutdown:Low");
 
         if (idxHigh < 0 || idxMid < 0 || idxLow < 0)
         {
