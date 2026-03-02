@@ -59,8 +59,22 @@ RHI_DLL void RHIPipelineState_SetColorBlendState(RHIPipelineState* pso, int blen
                                                  int colorOp)
 {
     RHIColorBlendState state{};
-    // This is simplified, real implementation should take more parameters
+    RHIColorBlendAttachmentState attachment{};
+    attachment.blendEnable = blendEnable != 0;
+    attachment.srcColorBlendFactor = static_cast<EBlendFactor>(srcColor);
+    attachment.dstColorBlendFactor = static_cast<EBlendFactor>(dstColor);
+    attachment.colorBlendOp = static_cast<EBlendOp>(colorOp);
+    attachment.srcAlphaBlendFactor = static_cast<EBlendFactor>(srcColor);
+    attachment.dstAlphaBlendFactor = static_cast<EBlendFactor>(dstColor);
+    attachment.alphaBlendOp = static_cast<EBlendOp>(colorOp);
+    attachment.colorWriteMask = 0xF; // RGBA
+    state.attachments.push_back(attachment);
     pso->SetColorBlendState(state);
+}
+
+RHI_DLL void RHIPipelineState_SetDynamicStateMask(RHIPipelineState* pso, uint64_t mask)
+{
+    pso->SetDynamicStateMask(mask);
 }
 
 RHI_DLL void RHIPipelineState_SetRenderingFormats(RHIPipelineState* pso, const int* colorFormats, uint32_t colorCount,

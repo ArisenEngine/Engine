@@ -23,4 +23,10 @@ public readonly struct RHISwapChain
     {
         RHISwapChainAPI.RHISwapChain_EndFrame(Handle, frameIndex);
     }
+
+    public RHIImageViewHandle GetImageView(uint frameIndex)
+    {
+        ulong handleValue = RHISwapChainAPI.RHISwapChain_GetImageView(Handle, frameIndex);
+        return new RHIImageViewHandle { Index = (uint)(handleValue & 0xFFFFFFFF), Generation = (uint)(handleValue >> 32) };
+    }
 }

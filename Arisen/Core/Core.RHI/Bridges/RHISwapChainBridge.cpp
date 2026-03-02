@@ -28,6 +28,13 @@ RHI_DLL void RHISwapChain_EndFrame(SwapChain* swapChain, uint32_t frameIndex)
     if (!swapChain) return;
     swapChain->EndFrame(frameIndex);
 }
+
+RHI_DLL uint64_t RHISwapChain_GetImageView(SwapChain* swapChain, uint32_t frameIndex)
+{
+    if (!swapChain) return 0;
+    auto handle = swapChain->GetImageView(frameIndex);
+    return *reinterpret_cast<uint64_t*>(&handle);
+}
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()

@@ -1,12 +1,21 @@
 using System;
+using System.IO;
 using Arisen.Native.RHI;
 using ArisenEngine.Core.Diagnostics;
+using ArisenEngine.Core.RHI;
+using ArisenEngine.ShaderLab;
 using CSharpEngineTest.Framework;
 
 namespace CSharpEngineTest.RHI.Rendering
 {
     public class RHIBasicTriangleTest : RHIRenderingTestBase
     {
+        private RHIPipelineHandle _pipeline;
+        private RHIPipelineState _pso;
+        private RHIShaderProgramHandle _vsProgram;
+        private RHIShaderProgramHandle _psProgram;
+        private bool _pipelineReady;
+
         public override string GetName() => "RHIBasicTriangleTest";
 
         protected override bool SetupTest()
@@ -15,19 +24,135 @@ namespace CSharpEngineTest.RHI.Rendering
 
             Logger.Log("Setting up RHIBasicTriangleTest");
 
-            // Note: Full pipeline/renderpass setup would go here.
-            // For now, we'll implement the frame loop leveraging the new wrappers.
+            if (!_device.HasValue) return false;
+
+            var factory = _device.Value.GetFactory();
+            var pipelineCache = _device.Value.PipelineCache;
+
+            // --- Compile Shaders ---
+            string baseDir = AppContext.BaseDirectory;
+            string shaderPath = Path.Combine(baseDir, "Shader", "TriangleShader.hlsl");
+
+            if (!File.Exists(shaderPath))
+            {
+                Logger.Error($"Shader file not found: {shaderPath}");
+                return false;
+            }
+
+            Logger.Log($"Compiling vertex shader from: {shaderPath}");
+            var compileOpts = new ShaderCompiler.CompileOptions
+            {
+                Entry = "MainVS",
+                ShaderModel = "6_4",
+                Target = "-spirv",
+                TargetEnv = "vulkan1.2",
+                OptimizeLevel = "0"
+            };
+            ShaderCompiler.CompileResult vsResult;
+            try
+            {
+                vsResult = ShaderCompiler.Compile(shaderPath, EProgramStage.Vertex, compileOpts);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Vertex shader compilation threw exception: {ex.GetType().Name}: {ex.Message}");
+                return false;
+            }
+            if (!vsResult.Success || vsResult.Code.Length == 0)
+            {
+                Logger.Error($"Failed to compile vertex shader! Success={vsResult.Success}, CodeLen={vsResult.Code.Length}, Msg={vsResult.Message}, OutputPath={vsResult.OutputPath}");
+                return false;
+            }
+            Logger.Log($"Vertex shader compiled: {vsResult.Code.Length} bytes");
+
+            Logger.Log("Compiling fragment shader...");
+            compileOpts.Entry = "MainPS";
+            var psResult = ShaderCompiler.Compile(shaderPath, EProgramStage.Fragment, compileOpts);
+            if (!psResult.Success || psResult.Code.Length == 0)
+            {
+                Logger.Error("Failed to compile fragment shader!");
+                return false;
+            }
+            Logger.Log($"Fragment shader compiled: {psResult.Code.Length} bytes");
+
+            // --- Create GPU Programs ---
+            _vsProgram = factory.CreateGPUProgram();
+            _psProgram = factory.CreateGPUProgram();
+
+            if (!_vsProgram.IsValid || !_psProgram.IsValid)
+            {
+                Logger.Error("Failed to create GPU programs!");
+                return false;
+            }
+
+            // Attach SPIR-V bytecodes — EShaderStage flag bits: Vertex=0x1, Fragment=0x10
+            const int SHADER_STAGE_VERTEX_BIT = 0x00000001;
+            const int SHADER_STAGE_FRAGMENT_BIT = 0x00000010;
+            bool vsAttached = factory.AttachProgramByteCode(_vsProgram, SHADER_STAGE_VERTEX_BIT, vsResult.Code, "MainVS");
+            bool psAttached = factory.AttachProgramByteCode(_psProgram, SHADER_STAGE_FRAGMENT_BIT, psResult.Code, "MainPS");
+
+            if (!vsAttached || !psAttached)
+            {
+                Logger.Error($"Failed to attach shader bytecodes! VS={vsAttached}, PS={psAttached}");
+                return false;
+            }
+            Logger.Log("Shader programs created and bytecodes attached.");
+
+            // --- Create Pipeline State ---
+            _pso = pipelineCache.GetPipelineState();
+            if (!_pso.IsValid)
+            {
+                Logger.Error("Failed to create pipeline state!");
+                return false;
+            }
+
+            _pso.AddProgram(_vsProgram);
+            _pso.AddProgram(_psProgram);
+            _pso.SetBindPoint(EPipelineBindPoint.PIPELINE_BIND_POINT_GRAPHICS);
+            _pso.SetInputAssemblyState(EPrimitiveTopology.PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+            _pso.SetRasterizationState(
+                EPolygonMode.EPOLYGON_MODE_FILL,
+                ECullModeFlagBits.CULL_MODE_BACK_BIT,
+                EFrontFace.FRONT_FACE_COUNTER_CLOCKWISE);
+
+            // Use actual swapchain format to avoid validation errors (UNORM vs SRGB)
+            var swapChainFormat = factory.GetImageViewFormat(_swapChain.Value.GetImageView(0));
+            _pso.SetRenderingFormats(new[] { swapChainFormat }, EFormat.FORMAT_UNDEFINED);
+            Logger.Log($"Pipeline rendering format set to: {swapChainFormat}");
+
+            // Color blend — disable blending, just write through
+            _pso.SetColorBlendState(blendEnable: false);
+
+            // Dynamic viewport/scissor — set via cmd.SetViewport/SetScissor per frame
+            const ulong DYNAMIC_STATE_VIEWPORT_BIT = 1UL << 0;
+            const ulong DYNAMIC_STATE_SCISSOR_BIT = 1UL << 1;
+            _pso.SetDynamicStateMask(DYNAMIC_STATE_VIEWPORT_BIT | DYNAMIC_STATE_SCISSOR_BIT);
+
+            // Get compiled pipeline
+            _pipeline = pipelineCache.GetGraphicsPipeline(_pso);
+            if (!_pipeline.IsValid)
+            {
+                Logger.Error("Failed to create graphics pipeline!");
+                return false;
+            }
+            Logger.Log("Graphics pipeline created successfully.");
+
+            _pipelineReady = true;
             return true;
         }
 
         protected override void RenderFrame()
         {
             if (!_device.HasValue || !_swapChain.HasValue || !_cmdPool.HasValue) return;
+            if (!_pipelineReady) return;
 
             // 1. Begin Frame (Acquire Image)
             uint frameIndex = GetCurrentFrameIndex();
             var backBuffer = _swapChain.Value.BeginFrame(frameIndex);
             if (!backBuffer.IsValid) return;
+
+            // Get the image view for the current swapchain image
+            var imageView = _swapChain.Value.GetImageView(frameIndex);
 
             // 2. Record Commands
             var pool = _cmdPool.Value;
@@ -39,10 +164,22 @@ namespace CSharpEngineTest.RHI.Rendering
             cmd.TransitionImageLayout(backBuffer, EImageLayout.IMAGE_LAYOUT_UNDEFINED,
                 EImageLayout.IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-            // TODO: cmd.BeginRenderPass(...);
-            // TODO: cmd.BindPipeline(...);
-            // TODO: cmd.Draw(3, 1, 0, 0);
-            // TODO: cmd.EndRenderPass();
+            // Begin dynamic rendering with clear to dark blue
+            cmd.BeginRendering(imageView,
+                EImageLayout.IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                0,  // loadOp: LOAD_OP_CLEAR = 0 (from Vulkan spec)
+                0,  // storeOp: STORE_OP_STORE = 0
+                0.0f, 0.0f, 0.2f, 1.0f,  // dark blue clear color
+                0, 0, 1200, 800);          // render area
+
+            cmd.BindPipeline(_pipeline);
+            cmd.SetViewport(0, 0, 1200, 800);
+            cmd.SetScissor(0, 0, 1200, 800);
+
+            // Draw triangle — 3 vertices hardcoded in shader via SV_VertexID
+            cmd.Draw(3, 1, 0, 0);
+
+            cmd.EndRendering();
 
             // Transition backbuffer to present
             cmd.TransitionImageLayout(backBuffer, EImageLayout.IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -62,6 +199,21 @@ namespace CSharpEngineTest.RHI.Rendering
         protected override void TeardownTest()
         {
             Logger.Log("Tearing down RHIBasicTriangleTest");
+
+            if (_device.HasValue)
+            {
+                var factory = _device.Value.GetFactory();
+                if (_vsProgram.IsValid) factory.ReleaseGPUProgram(_vsProgram);
+                if (_psProgram.IsValid) factory.ReleaseGPUProgram(_psProgram);
+            }
+
+            if (_pso.IsValid)
+            {
+                _pso.Release();
+            }
+
+            ShaderCompiler.ReleaseDXC();
+
             base.TeardownTest();
         }
     }

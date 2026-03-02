@@ -134,6 +134,42 @@ RHI_DLL void RHICommandBuffer_InsertDebugMarker(RHICommandBuffer* cb, const char
 {
     cb->InsertDebugMarker(label, color);
 }
+
+RHI_DLL void RHICommandBuffer_BeginRendering(RHICommandBuffer* cb,
+    uint32_t imgViewIdx, uint32_t imgViewGen,
+    int imageLayout, int loadOp, int storeOp,
+    float clearR, float clearG, float clearB, float clearA,
+    int32_t x, int32_t y, uint32_t width, uint32_t height)
+{
+    RHIRenderingAttachmentInfo colorAttachment{};
+    colorAttachment.imageView = { imgViewIdx, imgViewGen };
+    colorAttachment.imageLayout = static_cast<EImageLayout>(imageLayout);
+    colorAttachment.loadOp = static_cast<EAttachmentLoadOp>(loadOp);
+    colorAttachment.storeOp = static_cast<EAttachmentStoreOp>(storeOp);
+    colorAttachment.clearValue.float32[0] = clearR;
+    colorAttachment.clearValue.float32[1] = clearG;
+    colorAttachment.clearValue.float32[2] = clearB;
+    colorAttachment.clearValue.float32[3] = clearA;
+
+    RHIRenderingInfo info{};
+    info.pColorAttachments = &colorAttachment;
+    info.colorAttachmentCount = 1;
+    info.pResolveAttachments = nullptr;
+    info.pDepthAttachment = nullptr;
+    info.pStencilAttachment = nullptr;
+    info.layerCount = 1;
+    info.RHIRenderArea.x = x;
+    info.RHIRenderArea.y = y;
+    info.RHIRenderArea.width = width;
+    info.RHIRenderArea.height = height;
+
+    cb->BeginRendering(info);
+}
+
+RHI_DLL void RHICommandBuffer_EndRendering(RHICommandBuffer* cb)
+{
+    cb->EndRendering();
+}
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()

@@ -112,6 +112,16 @@ public readonly struct RHIFactory
         return new RHIShaderProgramHandle { Index = index, Generation = gen };
     }
 
+    public void ReleaseGPUProgram(RHIShaderProgramHandle handle)
+    {
+        RHIFactoryAPI.RHIFactory_ReleaseGPUProgram(Handle, handle.Index, handle.Generation);
+    }
+
+    public EFormat GetImageViewFormat(RHIImageViewHandle handle)
+    {
+        return (EFormat)RHIFactoryAPI.RHIFactory_GetImageViewFormat(Handle, handle.Index, handle.Generation);
+    }
+
     public bool AttachProgramByteCode(RHIShaderProgramHandle handle, int stage, byte[] code, string entryPoint)
     {
         unsafe
