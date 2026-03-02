@@ -242,10 +242,7 @@ void ArisenEngine::RHI::RHIVkSwapChain::Present(UInt32 frameIndex)
 
     presentInfo.pImageIndices = &m_AcquiredImageIndices[currentFrame];
 
-    {
-        std::lock_guard<std::mutex> lock(static_cast<RHIVkDevice*>(m_Device)->GetSubmitMutex());
-        vkQueuePresentKHR(m_VkPresentQueue, &presentInfo);
-    }
+    vkQueuePresentKHR(m_VkPresentQueue, &presentInfo);
 }
 
 void ArisenEngine::RHI::RHIVkSwapChain::RecreateSwapChainIfNeeded()
@@ -278,8 +275,11 @@ void ArisenEngine::RHI::RHIVkSwapChain::RecreateSwapChainIfNeeded()
     // Use the latest ticket from graphics queue as synchronization point
     // This ensures that we only destroy the old swapchain after all commands submitted UP TO NOW have finished.
     // Add delay to ensure presentation engine is done with the old swapchain
-    auto ticket = vkDevice->GetQueue(RHIQueueType::Graphics)->GetLatestTicket() + m_Device->GetMaxFramesInFlight();
-    vkDevice->EnqueueDeferredDestroy(ticket,
+    auto* graphicsQueue = vkDevice->GetQueue(RHIQueueType::Graphics);
+    auto ticket = graphicsQueue ? graphicsQueue->GetLatestTicket() + m_Device->GetMaxFramesInFlight() : m_Device->GetMaxFramesInFlight();
+    RHIDeletionDependencies deps;
+    deps.tickets[(int)RHIQueueType::Graphics] = ticket;
+    vkDevice->EnqueueDeferredDestroy(deps,
                                      [dev = m_VkDevice, sw = oldSwapchain]()
                                      {
                                          // LOG_INFO("[RHIVkSwapChain] Destroying Old Swapchain (Deferred)");

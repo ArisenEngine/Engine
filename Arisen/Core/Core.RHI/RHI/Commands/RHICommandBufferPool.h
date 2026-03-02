@@ -13,7 +13,7 @@ namespace ArisenEngine::RHI
     {
     public:
         NO_COPY_NO_MOVE_NO_DEFAULT(RHICommandBufferPool)
-        RHICommandBufferPool(RHIDevice* device, UInt32 maxFramesInFlight);
+        RHICommandBufferPool(RHIDevice* device, UInt32 maxFramesInFlight, RHIQueueType queueType = RHIQueueType::Graphics);
         virtual ~RHICommandBufferPool();
 
 
@@ -58,15 +58,17 @@ namespace ArisenEngine::RHI
             if (!commandBuffer) return;
 
             auto ticket = commandBuffer->GetLatestSubmitTicket();
+            auto* queue = m_Device->GetQueue(m_QueueType);
 
-            if (m_Device->GetCompletedSubmitTicket() >= ticket)
+            if (!queue || queue->GetCompletedTicket() >= ticket)
             {
                 InternalRecycle(handle);
             }
             else
             {
-                m_Device->DeferredDelete(RHIQueueType::Graphics, static_cast<RHIGpuTicket>(ticket),
-                                         MakeDeferredDeleteItem(new CommandBufferRecycler{this, handle}));
+                RHIDeletionDependencies deps;
+                deps.tickets[(int)m_QueueType] = ticket;
+                m_Device->DeferredDelete(deps, MakeDeferredDeleteItem(new CommandBufferRecycler{this, handle}));
             }
         }
 
@@ -91,6 +93,7 @@ namespace ArisenEngine::RHI
         Containers::Vector<RHICommandBufferHandle> m_FreePrimaryCommandBuffers;
         Containers::Vector<RHICommandBufferHandle> m_FreeSecondaryCommandBuffers;
         UInt32 m_MaxFramesInFlight;
+        RHIQueueType m_QueueType;
         std::mutex m_BuffersMutex;
 
     protected:

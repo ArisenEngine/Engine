@@ -69,7 +69,7 @@ namespace ArisenEngine::RHI
         RHIVkDevice* m_pDevice = nullptr;
         // poolId - layoutIndex - Array of sets
         ArisenEngine::Containers::Vector<RHIVkDescriptorSetsHolder> m_DescriptorSetsHolder{};
-        ArisenEngine::Containers::Vector<RHIGpuTicket> m_PoolLatestTicket{};
+        ArisenEngine::Containers::Vector<RHIDeletionDependencies> m_PoolLatestTicket{};
         ArisenEngine::Containers::Vector<UInt32> m_PoolOutstandingRotations{};
         std::mutex m_Mutex;
     };

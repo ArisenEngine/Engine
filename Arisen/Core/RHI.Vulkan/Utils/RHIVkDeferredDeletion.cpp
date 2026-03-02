@@ -7,13 +7,11 @@ ArisenEngine::RHI::RHIVkDeferredDeletion::RHIVkDeferredDeletion(UInt32 maxFrames
 {
 }
 
-void ArisenEngine::RHI::RHIVkDeferredDeletion::Enqueue(RHIQueueType queue, RHIGpuTicket ticket,
+void ArisenEngine::RHI::RHIVkDeferredDeletion::Enqueue(const RHIDeletionDependencies& deps,
                                                        RHIDeferredDeleteItem item)
 {
-    {
-        std::lock_guard<std::mutex> lock(m_Mutex);
-        m_Pending[queue][ticket].emplace_back(item);
-    }
+    std::lock_guard<std::mutex> lock(m_Mutex);
+    m_Pending.push_back({ deps, item });
 }
 
 void ArisenEngine::RHI::RHIVkDeferredDeletion::Flush(RHIQueueType queue, RHIGpuTicket ticket)
@@ -21,28 +19,34 @@ void ArisenEngine::RHI::RHIVkDeferredDeletion::Flush(RHIQueueType queue, RHIGpuT
     Containers::Vector<RHIDeferredDeleteItem> toRun;
     {
         std::lock_guard<std::mutex> lock(m_Mutex);
-        auto& pending = m_Pending[queue];
-        auto it = pending.begin();
-        int count = 0;
-        while (it != pending.end() && it->first <= ticket)
+        
+        // Update completed tracking for this queue
+        auto idx = static_cast<UInt32>(queue);
+        if (idx < 4 && ticket > m_CompletedTickets[idx])
         {
-            auto& bucket = it->second;
-            for (auto& item : bucket)
+            m_CompletedTickets[idx] = ticket;
+        }
+
+        // Check which items are fully satisfied
+        for (auto it = m_Pending.begin(); it != m_Pending.end(); )
+        {
+            if (it->deps.IsFullySatisfied(m_CompletedTickets))
             {
-                toRun.emplace_back(item);
+                toRun.push_back(it->item);
+                it = m_Pending.erase(it);
             }
-            it = pending.erase(it);
-            count++;
+            else
+            {
+                ++it;
+            }
         }
     }
 
-    int runCount = 0;
     for (auto& item : toRun)
     {
         if (item.deleter && item.ptr)
         {
             item.deleter(item.ptr);
         }
-        runCount++;
     }
 }

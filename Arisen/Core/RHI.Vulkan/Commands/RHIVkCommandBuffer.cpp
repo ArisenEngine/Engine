@@ -115,7 +115,7 @@ namespace ArisenEngine::RHI
         {
             for (auto h : m_TrackedResourceHandles)
             {
-                registry->Release(h, RHIQueueType::Graphics, 0);
+                registry->Release(h);
             }
         }
     }
@@ -1141,7 +1141,7 @@ namespace ArisenEngine::RHI
         {
             for (auto h : m_TrackedResourceHandles)
             {
-                registry->Release(h, RHIQueueType::Graphics, 0);
+                registry->Release(h);
             }
         }
         m_TrackedResourceHandles.clear();

@@ -69,7 +69,7 @@ namespace ArisenEngine::Testing
                 // Submit recorded buffers
                 for (int i = 0; i < numThreads; ++i)
                 {
-                    m_Device->Submit(cmdHandles[i]);
+                    m_Device->GetQueue(RHI::RHIQueueType::Graphics)->Submit(cmdHandles[i]);
                 }
 
                 // Wait for GPU to finish work so we can safely recycle/destroy

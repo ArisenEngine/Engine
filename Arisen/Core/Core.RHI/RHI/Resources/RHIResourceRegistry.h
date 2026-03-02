@@ -42,9 +42,10 @@ namespace ArisenEngine::RHI
                 auto& e = m_Entries[i];
                 if (e.refCount > 0 && e.item.ptr && e.item.deleter && m_DeletionQueue)
                 {
-                    // GPU is usually idle during registry destruction (shutdown), 
-                    // so we can use a ticket of 0.
-                    m_DeletionQueue->Enqueue(RHIQueueType::Graphics, 0, e.item);
+                    // Full shutdown: all dependencies are considered satisfied (0) or 
+                    // we expect the GPU to be idle.
+                    RHIDeletionDependencies deps;
+                    m_DeletionQueue->Enqueue(deps, e.item);
                     e.refCount = 0;
                     e.item = {};
                     e.generation++; // Invalidate existing handles
@@ -53,8 +54,6 @@ namespace ArisenEngine::RHI
         }
 
         // Create a new entry with refCount=1.
-        // item is the object + deleter; backend-specific cleanup should live in the
-        // object's destructor.
         RHIResourceHandle Create(RHIDeferredDeleteItem item)
         {
             std::lock_guard<std::mutex> lock(m_Mutex);
@@ -74,7 +73,7 @@ namespace ArisenEngine::RHI
             auto& e = m_Entries[idx];
             e.refCount = 1;
             e.item = item;
-            e.maxTicket = 0;
+            for (int i = 0; i < 4; ++i) e.maxTickets[i] = 0;
             return RHIResourceHandle{idx, e.generation};
         }
 
@@ -87,18 +86,31 @@ namespace ArisenEngine::RHI
             return true;
         }
 
-        void Release(RHIResourceHandle h, RHIQueueType queue, RHIGpuTicket ticket)
+        // Record resource usage on a specific queue.
+        void UpdateTicket(RHIResourceHandle h, RHIQueueType queue, RHIGpuTicket ticket)
+        {
+            std::lock_guard<std::mutex> lock(m_Mutex);
+            if (!ValidateUnlocked(h))
+                return;
+
+            auto& e = m_Entries[h.index];
+            auto idx = static_cast<UInt32>(queue);
+            if (idx < 4 && ticket > e.maxTickets[idx])
+            {
+                e.maxTickets[idx] = ticket;
+            }
+        }
+
+        void Release(RHIResourceHandle h)
         {
             RHIDeferredDeleteItem item{};
-            RHIGpuTicket finalTicket = 0;
+            RHIDeletionDependencies finalDeps;
             {
                 std::lock_guard<std::mutex> lock(m_Mutex);
                 if (!ValidateUnlocked(h))
                     return;
 
                 auto& e = m_Entries[h.index];
-                if (ticket > e.maxTicket)
-                    e.maxTicket = ticket;
 
                 if (e.refCount > 1)
                 {
@@ -108,17 +120,20 @@ namespace ArisenEngine::RHI
 
                 // last ref
                 item = e.item;
-                finalTicket = e.maxTicket;
+                for (int i = 0; i < 4; ++i)
+                {
+                    finalDeps.tickets[i] = e.maxTickets[i];
+                    e.maxTickets[i] = 0;
+                }
                 e.item = {};
                 e.refCount = 0;
                 e.generation += 1;
-                e.maxTicket = 0;
                 m_FreeList.emplace_back(h.index);
             }
 
             if (item.ptr && item.deleter && m_DeletionQueue)
             {
-                m_DeletionQueue->Enqueue(queue, finalTicket, item);
+                m_DeletionQueue->Enqueue(finalDeps, item);
             }
         }
 
@@ -128,13 +143,25 @@ namespace ArisenEngine::RHI
             return ValidateUnlocked(h);
         }
 
+        RHIDeletionDependencies GetTickets(RHIResourceHandle h) const
+        {
+            RHIDeletionDependencies deps;
+            std::lock_guard<std::mutex> lock(m_Mutex);
+            if (ValidateUnlocked(h))
+            {
+                const auto& e = m_Entries[h.index];
+                for (int i = 0; i < 4; ++i) deps.tickets[i] = e.maxTickets[i];
+            }
+            return deps;
+        }
+
     private:
         struct Entry
         {
             UInt32 refCount{0};
             UInt32 generation{1};
             RHIDeferredDeleteItem item;
-            RHIGpuTicket maxTicket{0};
+            RHIGpuTicket maxTickets[4]{0, 0, 0, 0};
         };
 
         bool ValidateUnlocked(RHIResourceHandle h) const

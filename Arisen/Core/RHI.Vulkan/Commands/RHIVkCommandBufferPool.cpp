@@ -10,8 +10,7 @@ using namespace ArisenEngine::RHI;
 
 ArisenEngine::RHI::RHIVkCommandBufferPool::RHIVkCommandBufferPool(RHIVkDevice* device, UInt32 maxFramesInFlight,
                                                                   RHIQueueType queueType)
-    : RHICommandBufferPool(device, maxFramesInFlight),
-      m_QueueType(queueType)
+    : RHICommandBufferPool(device, maxFramesInFlight, queueType)
 {
     m_VkDevice = static_cast<VkDevice>(device->GetHandle());
 
@@ -68,9 +67,10 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::ReleaseCommandBuffer(UInt32 curr
     if (!commandBuffer) return;
 
     auto ticket = commandBuffer->GetLatestSubmitTicket();
+    auto* queue = GetDevice()->GetQueue(m_QueueType);
 
     // Check if the GPU is already done with it.
-    if (GetDevice()->GetCompletedSubmitTicket() >= ticket)
+    if (!queue || queue->GetCompletedTicket() >= ticket)
     {
         InternalRecycle(handle);
         return;
@@ -88,7 +88,8 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::FlushPendingBuffers(ThreadSlot& 
 
     if (slot.pendingBuffers.empty()) return;
 
-    auto completed = GetDevice()->GetCompletedSubmitTicket();
+    auto* queue = GetDevice()->GetQueue(m_QueueType);
+    auto completed = queue ? queue->GetCompletedTicket() : 0;
 
     for (auto it = slot.pendingBuffers.begin(); it != slot.pendingBuffers.end();)
     {

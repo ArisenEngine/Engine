@@ -34,8 +34,7 @@ namespace ArisenEngine::RHI
         [[nodiscard]] bool IsValid() const { return m_Handle.IsValid(); }
         [[nodiscard]] RHIResourceHandle Get() const { return m_Handle; }
 
-        void Release(RHIGpuTicket ticket);
-        void Release(RHIQueueType queue, RHIGpuTicket ticket);
+        void Release();
 
     private:
         void ResetNoRelease()

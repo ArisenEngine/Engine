@@ -77,7 +77,7 @@ namespace ArisenEngine::Testing
             cmd->End();
 
             LOG_INFO("Submitting command buffer...");
-            m_Device->Submit(cmdHandle);
+            m_Device->GetQueue(RHI::RHIQueueType::Graphics)->Submit(cmdHandle);
 
             LOG_INFO("Waiting for device idle...");
             m_Device->DeviceWaitIdle();
@@ -128,7 +128,7 @@ namespace ArisenEngine::Testing
             submitDesc.signalSemaphoreCount = 1;
 
             LOG_INFO("Submitting command buffer that waits for value 1 and signals value 2...");
-            m_Device->Submit(timelineCmdHandle, &submitDesc);
+            m_Device->GetQueue(RHI::RHIQueueType::Graphics)->Submit(timelineCmdHandle, &submitDesc);
 
             LOG_INFO("CPU Waiting for timeline value 2 (GPU signal)...");
             m_Device->GetSync()->WaitSemaphoreValue(timelineSem, 2);

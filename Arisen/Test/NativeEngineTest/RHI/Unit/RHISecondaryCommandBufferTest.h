@@ -57,7 +57,7 @@ namespace ArisenEngine::Testing
 
                 // 4. Submit Primary
                 RHI::RHISubmitDescriptor submitDesc = {};
-                m_Device->Submit(primaryCmdHandle, &submitDesc);
+                m_Device->GetQueue(RHI::RHIQueueType::Graphics)->Submit(primaryCmdHandle, &submitDesc);
 
                 // 5. Wait and Recycle
                 m_Device->DeviceWaitIdle();

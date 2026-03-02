@@ -134,6 +134,7 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(
     const Containers::Vector<uint64_t>& extraSignalValues)
 {
     ARISEN_PROFILE_ZONE("RHI::VulkanQueueSubmit");
+    std::lock_guard<std::mutex> lock(m_SubmitMutex);
     RHICommandBuffer* pCmd = m_RHIDevice->GetCommandBuffer(handle);
     ASSERT(pCmd && pCmd->ReadyForSubmit());
     (void)ownedFence;
@@ -226,7 +227,9 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(
     {
         for (RHIResourceHandle trackedHandle : vkCmd->GetTrackedResourceHandles())
         {
-            m_ResourceRegistry->Release(trackedHandle, m_Type, submitTicket);
+            // Stamp usage of this resource on this queue
+            m_ResourceRegistry->UpdateTicket(trackedHandle, m_Type, submitTicket);
+            m_ResourceRegistry->Release(trackedHandle);
         }
     }
     vkCmd->ClearTrackedResourceHandles();
@@ -252,6 +255,15 @@ void ArisenEngine::RHI::RHIVkQueue::Update()
     if (m_DeferredDeletion)
     {
         m_DeferredDeletion->Flush(m_Type, m_CompletedSubmitTicket.load(std::memory_order_acquire));
+    }
+}
+
+void ArisenEngine::RHI::RHIVkQueue::WaitIdle()
+{
+    ARISEN_PROFILE_ZONE("RHI::VulkanQueueWaitIdle");
+    if (m_Queue != VK_NULL_HANDLE)
+    {
+        vkQueueWaitIdle(m_Queue);
     }
 }
 

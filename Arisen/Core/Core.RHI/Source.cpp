@@ -27,8 +27,8 @@ namespace ArisenEngine::RHI
 
 
     // RHICommandBufferPool
-    RHICommandBufferPool::RHICommandBufferPool(RHIDevice* device, UInt32 maxFramesInFlight) :
-        m_Device(device), m_MaxFramesInFlight(maxFramesInFlight)
+    RHICommandBufferPool::RHICommandBufferPool(RHIDevice* device, UInt32 maxFramesInFlight, RHIQueueType queueType) :
+        m_Device(device), m_MaxFramesInFlight(maxFramesInFlight), m_QueueType(queueType)
     {
     }
 

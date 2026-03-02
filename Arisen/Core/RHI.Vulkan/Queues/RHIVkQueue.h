@@ -25,6 +25,7 @@ namespace ArisenEngine::RHI
         ~RHIVkQueue() noexcept;
 
         RHIQueueType GetType() const override { return m_Type; }
+        VkQueue GetVkQueue() const { return m_Queue; }
 
         // Returns the submitID assigned to this submission.
         RHIGpuTicket Submit(RHICommandBufferHandle commandBuffer,
@@ -51,6 +52,7 @@ namespace ArisenEngine::RHI
             return m_LatestTicket.load(std::memory_order_acquire);
         }
 
+        void WaitIdle() override;
         void WaitForTicket(RHIGpuTicket ticket) override;
 
     private:
@@ -64,6 +66,7 @@ namespace ArisenEngine::RHI
         RHIResourceRegistry* m_ResourceRegistry{nullptr}; // not owned
 
         VkSemaphore m_TimelineSemaphore{VK_NULL_HANDLE};
+        std::mutex m_SubmitMutex;
 
         std::atomic<RHIGpuTicket> m_LatestTicket{0};
         std::atomic<RHIGpuTicket> m_CompletedSubmitTicket{0};

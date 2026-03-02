@@ -138,7 +138,7 @@ namespace ArisenEngine::Testing
             auto currentIndex = GetCurrentFrameIndex();
             if (m_FrameTickets[currentIndex] > 0)
             {
-                m_Device->WaitQueueTicket(m_FrameTickets[currentIndex]);
+                m_Device->GetQueue(RHI::RHIQueueType::Graphics)->WaitForTicket(m_FrameTickets[currentIndex]);
             }
 
             UpdateUniformBuffer();
@@ -307,7 +307,7 @@ namespace ArisenEngine::Testing
             submitDesc.WaitSwapChain = m_SwapChain;
             submitDesc.SignalSwapChain = m_SwapChain;
 
-            m_FrameTickets[currentIndex] = m_Device->Submit(cmdHandle, &submitDesc);
+            m_FrameTickets[currentIndex] = m_Device->GetQueue(RHI::RHIQueueType::Graphics)->Submit(cmdHandle, &submitDesc);
             m_SwapChain->EndFrame(currentIndex);
             pool->ReleaseCommandBuffer(currentIndex, cmdHandle);
         }

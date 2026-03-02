@@ -42,14 +42,9 @@ ArisenEngine::RHI::RHIResourceRef& ArisenEngine::RHI::RHIResourceRef::operator=(
     return *this;
 }
 
-void ArisenEngine::RHI::RHIResourceRef::Release(RHIGpuTicket ticket)
-{
-    Release(RHIQueueType::Graphics, ticket);
-}
-
-void ArisenEngine::RHI::RHIResourceRef::Release(RHIQueueType queue, RHIGpuTicket ticket)
+void ArisenEngine::RHI::RHIResourceRef::Release()
 {
     if (!m_Registry || !m_Handle.IsValid()) return;
-    m_Registry->Release(m_Handle, queue, ticket);
+    m_Registry->Release(m_Handle);
     ResetNoRelease();
 }

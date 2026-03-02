@@ -3,7 +3,7 @@
 #include "RHI/Core/RHIDevice.h"
 #include "RHI/Resources/RHIDeferredDeletionQueue.h"
 #include "RHI/Resources/RHIResourceRegistry.h"
-#include "Presentation/RHIVkSurface.h"
+#include "Definitions/RHIVkCommon.h"
 #include "Commands/RHIVkCommandBufferPool.h"
 #include "Pipeline/RHIVkGPUPipelineManager.h"
 #include "Pipeline/RHIVkGPUProgram.h"
@@ -43,7 +43,7 @@ namespace ArisenEngine::RHI
 
 namespace ArisenEngine::RHI
 {
-    class RHIVkDevice final : public RHIDevice, public IRHIBackend, public RHISyncPrimitive, public RayTracingExtension
+    class RHI_VULKAN_DLL RHIVkDevice final : public RHIDevice, public IRHIBackend, public RHISyncPrimitive, public RayTracingExtension
     {
     public:
         friend class RHIVkFactory;
@@ -96,8 +96,6 @@ namespace ArisenEngine::RHI
 
         RHIMemoryAllocator* GetMemoryAllocator() const override;
 
-        RHIGpuTicket Submit(RHICommandBufferHandle commandBuffer,
-                            const RHISubmitDescriptor* descriptor = nullptr) override;
 
         // Descriptor Heap & Bindless Table
         RHIDescriptorHeap* CreateDescriptorHeap(EDescriptorHeapType type, UInt32 descriptorCount) override;
@@ -111,7 +109,7 @@ namespace ArisenEngine::RHI
 
         RHIQueue* GetQueue(RHIQueueType type) override;
         RHICommandBufferPool* GetCommandBufferPool(RHICommandBufferPoolHandle handle) override;
-        void DeferredDelete(RHIQueueType queue, RHIGpuTicket ticket, RHIDeferredDeleteItem item) override;
+        void DeferredDelete(const RHIDeletionDependencies& deps, RHIDeferredDeleteItem item) override;
         UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) override;
 
         void SetResolution(UInt32 width, UInt32 height) override;
@@ -128,15 +126,12 @@ namespace ArisenEngine::RHI
         RHIVkBindlessManager* GetBindlessManager() const { return m_BindlessManager; }
         UInt32 GetGraphicsFamilyIndex() const { return m_GraphicsFamilyIndex; }
         UInt32 GetComputeFamilyIndex() const { return m_ComputeFamilyIndex; }
-        std::mutex& GetSubmitMutex() { return m_SubmitMutex; }
 
-        RHIGpuTicket GetCompletedSubmitTicket() const override;
-        void WaitQueueTicket(RHIGpuTicket ticket) override;
 
     private:
         // Internal methods hidden from public interface
-        void EnqueueDeferredDestroy(RHIGpuTicket ticket, RHIDeferredDeleteItem item);
-        void EnqueueDeferredDestroy(RHIGpuTicket ticket, std::function<void()>&& fn);
+        void EnqueueDeferredDestroy(const RHIDeletionDependencies& deps, RHIDeferredDeleteItem item);
+        void EnqueueDeferredDestroy(const RHIDeletionDependencies& deps, std::function<void()>&& fn);
         RHIResourceRegistry* GetResourceRegistry() const { return m_ResourceRegistry.get(); } // Made private
 
         friend class RHIVkInstance;
@@ -153,7 +148,6 @@ namespace ArisenEngine::RHI
         UInt32 m_GraphicsFamilyIndex;
         UInt32 m_ComputeFamilyIndex;
         VkPhysicalDeviceMemoryProperties m_VkPhysicalDeviceMemoryProperties;
-        std::mutex m_SubmitMutex;
 
         RHIResourceStats m_Stats;
 
