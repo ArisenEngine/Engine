@@ -111,7 +111,7 @@ namespace CSharpEngineTest.RHI.Rendering
             _pso.SetRasterizationState(
                 EPolygonMode.EPOLYGON_MODE_FILL,
                 ECullModeFlagBits.CULL_MODE_BACK_BIT,
-                EFrontFace.FRONT_FACE_COUNTER_CLOCKWISE);
+                EFrontFace.FRONT_FACE_CLOCKWISE);
 
             // Use actual swapchain format to avoid validation errors (UNORM vs SRGB)
             var swapChainFormat = factory.GetImageViewFormat(_swapChain.Value.GetImageView(0));
