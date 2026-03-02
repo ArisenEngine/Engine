@@ -135,6 +135,18 @@ RHI_DLL void RHICommandBuffer_InsertDebugMarker(RHICommandBuffer* cb, const char
     cb->InsertDebugMarker(label, color);
 }
 
+RHI_DLL void RHICommandBuffer_Dispatch(RHICommandBuffer* cb, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+{
+    cb->Dispatch(groupCountX, groupCountY, groupCountZ);
+}
+
+RHI_DLL void RHICommandBuffer_BindDescriptorSet(RHICommandBuffer* cb, int bindPoint, uint32_t firstSet, RHIDescriptorPoolHandle poolHandle, uint32_t poolId, uint32_t setIdx)
+{
+    // The native BindDescriptorSets signature varies, but RHIAsyncComputeTest.h uses:
+    // cmd->BindDescriptorSet(RHI::PIPELINE_BIND_POINT_COMPUTE, 0, m_DescriptorPoolHandle, m_PoolId, setIdx);
+    cb->BindDescriptorSet(static_cast<EPipelineBindPoint>(bindPoint), firstSet, poolHandle, poolId, setIdx);
+}
+
 RHI_DLL void RHICommandBuffer_BeginRendering(RHICommandBuffer* cb,
     uint32_t imgViewIdx, uint32_t imgViewGen,
     int imageLayout, int loadOp, int storeOp,

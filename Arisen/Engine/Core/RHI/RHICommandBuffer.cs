@@ -145,4 +145,14 @@ public readonly struct RHICommandBuffer
     {
         RHICommandBufferAPI.RHICommandBuffer_CopyBuffer(NativePtr, src, srcOffset, dst, dstOffset, size);
     }
+
+    public void Dispatch(uint groupCountX, uint groupCountY, uint groupCountZ)
+    {
+        RHICommandBufferAPI.RHICommandBuffer_Dispatch(NativePtr, groupCountX, groupCountY, groupCountZ);
+    }
+
+    public void BindDescriptorSet(EPipelineBindPoint bindPoint, uint firstSet, RHIDescriptorPoolHandle poolHandle, uint poolId, uint setIdx)
+    {
+        RHICommandBufferAPI.RHICommandBuffer_BindDescriptorSet(NativePtr, (int)bindPoint, firstSet, poolHandle, poolId, setIdx);
+    }
 }

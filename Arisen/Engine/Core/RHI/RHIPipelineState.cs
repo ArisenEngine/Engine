@@ -56,4 +56,27 @@ public readonly struct RHIPipelineState
     {
         RHIPipelineAPI.RHIPipelineState_Delete(NativePtr);
     }
+
+    public unsafe void UpdateDescriptorSet(uint layoutIndex, uint binding, RHIBufferHandle[] bufferHandles)
+    {
+        uint[] indices = new uint[bufferHandles.Length];
+        uint[] generations = new uint[bufferHandles.Length];
+        for (int i = 0; i < bufferHandles.Length; i++)
+        {
+            indices[i] = bufferHandles[i].Index;
+            generations[i] = bufferHandles[i].Generation;
+        }
+
+        fixed (uint* pIndices = indices)
+        fixed (uint* pGenerations = generations)
+        {
+            RHIPipelineAPI.RHIPipelineState_UpdateDescriptorSetBuffer(NativePtr, layoutIndex, binding, (IntPtr)pIndices,
+                (IntPtr)pGenerations, (uint)bufferHandles.Length);
+        }
+    }
+
+    public void BuildDescriptorSetLayout()
+    {
+        RHIPipelineAPI.RHIPipelineState_BuildDescriptorSetLayout(NativePtr);
+    }
 }

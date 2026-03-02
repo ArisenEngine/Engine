@@ -109,6 +109,11 @@ RHI_DLL uint64_t RHIDevice_Submit(RHIDevice* dev, uint32_t index, uint32_t gener
 
     return dev->Submit(handle);
 }
+ 
+RHI_DLL void* RHIDevice_GetQueue(RHIDevice* dev, int queueType)
+{
+    return static_cast<void*>(dev->GetQueue(static_cast<RHIQueueType>(queueType)));
+}
 
 RHI_DLL void* RHIDevice_GetPipelineCache(RHIDevice* dev)
 {

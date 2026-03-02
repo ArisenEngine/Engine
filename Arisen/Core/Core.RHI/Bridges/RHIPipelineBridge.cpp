@@ -16,6 +16,14 @@ RHI_DLL void* RHIPipelineCache_GetGraphicsPipeline(RHIPipelineCache* cache, RHIP
     return (void*)result;
 }
 
+RHI_DLL void* RHIPipelineCache_GetComputePipeline(RHIPipelineCache* cache, RHIPipelineState* pso)
+{
+    RHIPipelineHandle handle = cache->GetComputePipeline(pso);
+    uint64_t result = 0;
+    std::memcpy(&result, &handle, sizeof(handle));
+    return (void*)result;
+}
+
 RHI_DLL void* RHIPipelineCache_GetPipelineState(RHIPipelineCache* cache)
 {
     return cache->GetPipelineState().release();
@@ -83,6 +91,26 @@ RHI_DLL void RHIPipelineState_SetRenderingFormats(RHIPipelineState* pso, const i
     ArisenEngine::Containers::Vector<EFormat> formats;
     for (uint32_t i = 0; i < colorCount; ++i) formats.push_back(static_cast<EFormat>(colorFormats[i]));
     pso->SetRenderingFormats(formats, static_cast<EFormat>(depthFormat), EFormat::FORMAT_UNDEFINED);
+}
+
+RHI_DLL void RHIPipelineState_UpdateDescriptorSetBuffer(RHIPipelineState* pso, uint32_t layoutIndex, uint32_t binding,
+                                                        const uint32_t* indices, const uint32_t* generations,
+                                                        uint32_t count)
+{
+    ArisenEngine::Containers::Vector<RHIBufferHandle> buffers;
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        RHIBufferHandle h;
+        h.index = indices[i];
+        h.generation = generations[i];
+        buffers.push_back(h);
+    }
+    pso->UpdateDescriptorSet(layoutIndex, binding, std::move(buffers));
+}
+
+RHI_DLL void RHIPipelineState_BuildDescriptorSetLayout(RHIPipelineState* pso)
+{
+    pso->BuildDescriptorSetLayout();
 }
 
 RHI_DLL void RHIPipelineState_Delete(RHIPipelineState* pso)
