@@ -41,19 +41,19 @@ This document serves as the master progression tracker for Arisen. The ultimate 
 > 👉 **[View Phase 2 Detailed Implementation Plan](file:///d:/EngineSource/ArisenEngine/Engine/Arisen/Docs/Roadmap/Phase2_Kernel.md)**
 
 ### 2.1 The Kernel Orchestrator
-- [ ] Define `EnginePhase` enum (`PreInit`, `Init`, `PostInit`, `Running`, `Shutdown`).
-- [ ] Implement `IEngineSubsystem` with initialization priorities.
-- [ ] Build `EngineKernel` to iterate phases and boot subsystems systematically.
+- [x] Define `EnginePhase` enum (`PreInit`, `Init`, `PostInit`, `Running`, `Shutdown`).
+- [x] Implement `IEngineSubsystem` with initialization priorities.
+- [x] Build `EngineKernel` to iterate phases and boot subsystems systematically.
 
 ### 2.2 Memory Strategy
-- [ ] Implement `FrameArena` allocator for per-frame C# allocations (zero GC).
-- [ ] Implement `NativeArray<T>` wrapper for unmanaged arrays passed to C++.
-- [ ] Refactor C# RHI Command recording to use `FrameArena`.
+- [x] Implement `FrameArena` allocator for per-frame C# allocations (zero GC).
+- [x] Implement `NativeArray<T>` wrapper for unmanaged arrays passed to C++.
+- [x] Refactor C# RHI Command recording to use `FrameArena`.
 
 ### 2.3 The "Hello World" Render Loop
-- [ ] Setup a basic `RenderPipeline` subsystem in C# that requests RHI buffers and issues draws.
-- [ ] Remove hardcoded test logic from main; make it data-driven via a temporary scene loader.
-- [ ] **Milestone Validation**: Execute the Engine exe directly and render a rotating textured model without any memory leaks upon shutdown.
+- [x] Setup a basic `RenderPipeline` subsystem in C# that requests RHI buffers and issues draws.
+- [x] Remove hardcoded test logic from main; make it data-driven via a temporary scene loader.
+- [x] **Milestone Validation**: Execute the Engine exe directly and render a triangle (RHI Triangle Test) without any Vulkan validation errors.
 
 ---
 

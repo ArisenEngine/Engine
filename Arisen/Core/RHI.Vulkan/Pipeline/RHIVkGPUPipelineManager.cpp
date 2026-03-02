@@ -44,6 +44,7 @@ ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager:
     RHIPipelineState* pso)
 {
     ARISEN_PROFILE_ZONE("RHI::GetGraphicsPipeline");
+    static_cast<RHIVkGPUPipelineStateObject*>(pso)->BuildDescriptorSetLayout();
     auto hash = pso->GetHash();
     if (!m_GPUPipelines.contains(hash))
     {
@@ -80,6 +81,7 @@ ArisenEngine::RHI::RHIPipelineHandle ArisenEngine::RHI::RHIVkGPUPipelineManager:
     RHIPipelineState* pso)
 {
     ARISEN_PROFILE_ZONE("RHI::GetRayTracingPipeline");
+    static_cast<RHIVkGPUPipelineStateObject*>(pso)->BuildDescriptorSetLayout();
     auto hash = pso->GetHash();
     if (!m_GPUPipelines.contains(hash))
     {

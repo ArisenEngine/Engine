@@ -40,6 +40,16 @@ public readonly struct RHIPipelineState
         }
     }
 
+    public void SetColorBlendState(bool blendEnable = false, int srcColor = 0, int dstColor = 0, int colorOp = 0)
+    {
+        RHIPipelineAPI.RHIPipelineState_SetColorBlendState(NativePtr, blendEnable ? 1 : 0, srcColor, dstColor, colorOp);
+    }
+
+    public void SetDynamicStateMask(ulong mask)
+    {
+        RHIPipelineAPI.RHIPipelineState_SetDynamicStateMask(NativePtr, mask);
+    }
+
     public void Release()
     {
         RHIPipelineAPI.RHIPipelineState_Delete(NativePtr);

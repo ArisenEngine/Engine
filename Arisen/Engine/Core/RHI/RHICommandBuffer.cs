@@ -62,6 +62,23 @@ public readonly struct RHICommandBuffer
         RHICommandBufferAPI.RHICommandBuffer_EndRenderPass(NativePtr);
     }
 
+    public void BeginRendering(RHIImageViewHandle colorImageView, EImageLayout imageLayout,
+        int loadOp, int storeOp,
+        float clearR, float clearG, float clearB, float clearA,
+        int x, int y, uint width, uint height)
+    {
+        RHICommandBufferAPI.RHICommandBuffer_BeginRendering(NativePtr,
+            colorImageView.Index, colorImageView.Generation,
+            (int)imageLayout, loadOp, storeOp,
+            clearR, clearG, clearB, clearA,
+            x, y, width, height);
+    }
+
+    public void EndRendering()
+    {
+        RHICommandBufferAPI.RHICommandBuffer_EndRendering(NativePtr);
+    }
+
     public void BindPipeline(RHIPipelineHandle pipeline)
     {
         RHICommandBufferAPI.RHICommandBuffer_BindPipeline(NativePtr, pipeline);

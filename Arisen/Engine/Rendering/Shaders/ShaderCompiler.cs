@@ -74,11 +74,10 @@ namespace ArisenEngine.ShaderLab
                         }
                     }
 
-                    bool ok = true;
-                    /*
+                    bool ok;
                     if (defAlloc.Length == 0 && incAlloc.Length == 0)
                     {
-                        ok = NativeHAL.ShaderCompilerAPI.CompileShaderFromFileSimple(
+                        ok = Arisen.Native.ShaderCompiler.ShaderCompilerAPI.CompileShaderFromFileSimple(
                             inputPath,
                             stage,
                             options.Entry ?? "main",
@@ -86,8 +85,8 @@ namespace ArisenEngine.ShaderLab
                             options.Target ?? "-spirv",
                             options.TargetEnv ?? string.Empty,
                             options.OptimizeLevel ?? "0",
-                            (char**)IntPtr.Zero, 0,
-                            (char**)IntPtr.Zero, 0,
+                            IntPtr.Zero, 0,
+                            IntPtr.Zero, 0,
                             string.IsNullOrWhiteSpace(outputPath) ? null : outputPath,
                             options.UseDXLayout.HasValue && options.UseDXLayout.Value);
                     }
@@ -96,7 +95,7 @@ namespace ArisenEngine.ShaderLab
                         fixed (IntPtr* pDef = defAlloc.Length > 0 ? defAlloc : new IntPtr[1])
                         fixed (IntPtr* pInc = incAlloc.Length > 0 ? incAlloc : new IntPtr[1])
                         {
-                            ok = NativeHAL.ShaderCompilerAPI.CompileShaderFromFileSimple(
+                            ok = Arisen.Native.ShaderCompiler.ShaderCompilerAPI.CompileShaderFromFileSimple(
                                 inputPath,
                                 stage,
                                 options.Entry ?? "main",
@@ -104,13 +103,12 @@ namespace ArisenEngine.ShaderLab
                                 options.Target ?? "-spirv",
                                 options.TargetEnv ?? string.Empty,
                                 options.OptimizeLevel ?? "0",
-                                defAlloc.Length > 0 ? (char**)pDef : (char**)IntPtr.Zero, defines.Count,
-                                incAlloc.Length > 0 ? (char**)pInc : (char**)IntPtr.Zero, includes.Count,
+                                defAlloc.Length > 0 ? (IntPtr)pDef : IntPtr.Zero, defines.Count,
+                                incAlloc.Length > 0 ? (IntPtr)pInc : IntPtr.Zero, includes.Count,
                                 string.IsNullOrWhiteSpace(outputPath) ? null : outputPath,
                                 options.UseDXLayout.HasValue && options.UseDXLayout.Value);
                         }
                     }
-                    */
 
                     var result = new CompileResult { Success = ok, OutputPath = outputPath };
                     if (!ok) return result;
@@ -159,14 +157,14 @@ namespace ArisenEngine.ShaderLab
         private static void EnsureDxcInitialized()
         {
             if (s_DxcInitialized) return;
-            // NativeHAL.ShaderCompilerAPI.InitDXC();
+            Arisen.Native.ShaderCompiler.ShaderCompilerAPI.InitDXC();
             s_DxcInitialized = true;
         }
 
         public static void ReleaseDXC()
         {
             if (!s_DxcInitialized) return;
-            // NativeHAL.ShaderCompilerAPI.ReleaseDXC();
+            Arisen.Native.ShaderCompiler.ShaderCompilerAPI.ReleaseDXC();
             s_DxcInitialized = false;
         }
     }
