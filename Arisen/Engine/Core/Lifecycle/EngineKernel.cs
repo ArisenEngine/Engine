@@ -22,6 +22,12 @@ public sealed class EngineKernel : IDisposable
 
     public void Reset()
     {
+        // Properly shutdown subsystems before clearing to avoid resource leaks
+        if (m_CurrentPhase != EnginePhase.None && m_CurrentPhase != EnginePhase.Shutdown)
+        {
+            Shutdown();
+        }
+
         m_Subsystems.Clear();
         m_CurrentPhase = EnginePhase.None;
         m_IsRunning = false;

@@ -27,7 +27,9 @@ public class PackageSystemTests : ITest
 
     public bool Run()
     {
-        return TestForwardRPLoading();
+        return TestForwardRPLoading()
+            && TestPackageCount()
+            && TestGetPackageEntryTyped();
     }
 
     private bool TestForwardRPLoading()
@@ -72,6 +74,49 @@ public class PackageSystemTests : ITest
             return false;
         }
 
+        return true;
+    }
+
+    private bool TestPackageCount()
+    {
+        Logger.Log("Testing Package Count...");
+        var packageSubsystem = EngineKernel.Instance.GetSubsystem<PackageSubsystem>();
+        if (packageSubsystem == null)
+        {
+            Logger.Error("PackageSubsystem not found!");
+            return false;
+        }
+
+        int count = packageSubsystem.GetAllPackages().Count();
+        if (count < 1)
+        {
+            Logger.Error($"Expected at least 1 package, got {count}");
+            return false;
+        }
+
+        Logger.Log($"Package count: {count} (at least 1 builtin package found)");
+        return true;
+    }
+
+    private bool TestGetPackageEntryTyped()
+    {
+        Logger.Log("Testing GetPackageEntry<T>...");
+        var packageSubsystem = EngineKernel.Instance.GetSubsystem<PackageSubsystem>();
+        if (packageSubsystem == null)
+        {
+            Logger.Error("PackageSubsystem not found!");
+            return false;
+        }
+
+        // Try to get a non-existent package — should return null
+        var nonExistent = packageSubsystem.GetPackageEntry<object>("com.arisen.nonexistent");
+        if (nonExistent != null)
+        {
+            Logger.Error("GetPackageEntry returned non-null for a non-existent package ID!");
+            return false;
+        }
+
+        Logger.Log("GetPackageEntry<T> correctly returns null for unknown package IDs.");
         return true;
     }
 }
