@@ -8,6 +8,7 @@ namespace ArisenEngine.Core.Packages;
 public class PackageSubsystem : IEngineSubsystem
 {
     private readonly Dictionary<string, ArisenPackageInfo> m_LoadedPackages = new();
+    private readonly List<PackageLoadContext> m_LoadContexts = new();
     private readonly Dictionary<PackageSource, List<string>> m_CategorySearchPaths = new()
     {
         { PackageSource.Builtin, new List<string>() },
@@ -147,6 +148,7 @@ public class PackageSubsystem : IEngineSubsystem
             {
                 string assemblyPath = Path.Combine(rootPath, manifest.EntryAssembly);
                 var loadContext = new PackageLoadContext(assemblyPath);
+                m_LoadContexts.Add(loadContext);
                 assembly = loadContext.LoadFromAssemblyPath(assemblyPath);
             }
 
@@ -194,6 +196,13 @@ public class PackageSubsystem : IEngineSubsystem
     public void Shutdown()
     {
         m_LoadedPackages.Clear();
+
+        // Unload collectible AssemblyLoadContexts to allow GC of loaded assemblies
+        foreach (var context in m_LoadContexts)
+        {
+            context.Unload();
+        }
+        m_LoadContexts.Clear();
     }
 
     public void Dispose() => Shutdown();

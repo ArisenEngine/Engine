@@ -27,14 +27,12 @@ This document serves as the master progression tracker for Arisen. The ultimate 
 - [x] Plumb C# `Profiler.BeginSample()` down to Tracy C++ macros.
 - [x] **Milestone Validation**: Run `NativeEngineTest` and confirm 0 Vulkan Validation Errors and a clean Tracy timeline.
 
----
-
 ##- [x] **Phase 2: Engine Kernel & Lifecycle [DONE]**
     - Orchestration of Phased Boot (Init, Tick, Shutdown).
     - Zero-GC Memory Strategy (`FrameArena`).
     - Basic Render Subsystem & SRP Foundation.
 
-- [ ] **Phase 2.5: Modern Package & DLC Architecture**
+- [x] **Phase 2.5: Modern Package & DLC Architecture**
     - Dynamic Package Discovery & loading (`AssemblyLoadContext`).
     - Manifest-based Metadata (`package.json`).
     - Hot-loading potential & DLC path mapping.
