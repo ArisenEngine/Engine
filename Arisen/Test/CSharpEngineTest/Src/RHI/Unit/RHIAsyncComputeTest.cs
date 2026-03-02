@@ -14,6 +14,8 @@ namespace CSharpEngineTest.RHI.Unit
         private RHIShaderProgramHandle _computeProgram;
         private RHIPipelineHandle _pipeline;
         private RHIPipelineState _pso;
+        private uint _poolId;
+
 
         private RHIBufferHandle _inputBuffer;
         private RHIBufferHandle _outputBuffer;
@@ -76,9 +78,9 @@ namespace CSharpEngineTest.RHI.Unit
             const uint elementCount = 1024;
             const uint bufferSize = elementCount * sizeof(uint);
 
-            // usage bits: STORAGE_BUFFER = 0x00000080
-            _inputBuffer = factory.CreateBuffer(bufferSize, 0x00000080, ESharingMode.SHARING_MODE_EXCLUSIVE, ERHIMemoryUsage.Upload, "InputBuffer");
-            _outputBuffer = factory.CreateBuffer(bufferSize, 0x00000080, ESharingMode.SHARING_MODE_EXCLUSIVE, ERHIMemoryUsage.Upload, "OutputBuffer");
+            // usage bits: STORAGE_BUFFER = 0x20
+            _inputBuffer = factory.CreateBuffer(bufferSize, (uint)EBufferUsageFlagBits.BUFFER_USAGE_STORAGE_BUFFER_BIT, ESharingMode.SHARING_MODE_EXCLUSIVE, ERHIMemoryUsage.Upload, "InputBuffer");
+            _outputBuffer = factory.CreateBuffer(bufferSize, (uint)EBufferUsageFlagBits.BUFFER_USAGE_STORAGE_BUFFER_BIT, ESharingMode.SHARING_MODE_EXCLUSIVE, ERHIMemoryUsage.Upload, "OutputBuffer");
 
             if (!_inputBuffer.IsValid || !_outputBuffer.IsValid)
             {
@@ -113,6 +115,12 @@ namespace CSharpEngineTest.RHI.Unit
                 return false;
             }
 
+            // 5. Initialize Descriptor Pool
+            var descriptorPool = _device.Value.DescriptorPool;
+            var types = new[] { EDescriptorType.DESCRIPTOR_TYPE_STORAGE_BUFFER, EDescriptorType.DESCRIPTOR_TYPE_STORAGE_BUFFER };
+            var counts = new uint[] { 1, 1 };
+            _poolId = descriptorPool.AddPool(types, counts, 1);
+
             return true;
         }
 
@@ -122,19 +130,18 @@ namespace CSharpEngineTest.RHI.Unit
 
             Logger.Log("Running Async Compute Test...");
 
-            // Get Command Buffer from Compute Pool
+            // 1. Prepare descriptors
+            var descriptorPool = _device.Value.DescriptorPool;
+            descriptorPool.ResetPool(_poolId);
+            uint setIdx = descriptorPool.AllocDescriptorSet(_poolId, 0, _pso);
+            descriptorPool.UpdateDescriptorSet(_poolId, setIdx, _pso);
+
+            // 2. Record Commands
             var cmd = _commandPool.GetCommandBuffer(0);
 
             cmd.Begin();
             cmd.BindPipeline(_pipeline);
-            // Note: BindDescriptorSet is not yet fully bridged for this manual flow in RHITestBase runner, 
-            // but the PSO Update/Build handle layouts. 
-            // In C++ test, it calls BindDescriptorSet. 
-            // Wait, I haven't bridged BindDescriptorSet for the "Automatic" layout yet in CommandBuffer.
-            // Let's check if the bridge for BindDescriptorSet exists.
-            
-            // In RHIBasicTriangleTest, we don't bind descriptors because it's hardcoded.
-            // For compute, we NEED descriptors.
+            cmd.BindDescriptorSet(EPipelineBindPoint.PIPELINE_BIND_POINT_COMPUTE, 0, _device.Value.DescriptorPoolHandle, _poolId, setIdx);
             
             cmd.Dispatch(4, 1, 1); // 4 * 256 = 1024
             cmd.End();

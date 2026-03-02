@@ -69,8 +69,11 @@ namespace ArisenEngine::RHI
             LOG_DEBUG("Symbols initialized successfully.");
         }
 
-        // Load symbols for the module
+        // Unload previous symbols for this module if they exist (to handle reloads)
         DWORD64 moduleBase = (DWORD64)_rhi_dll;
+        SymUnloadModule64(process, moduleBase);
+
+        // Load symbols for the module
         if (SymLoadModuleEx(
             process,
             nullptr,
