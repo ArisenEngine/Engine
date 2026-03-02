@@ -15,6 +15,13 @@ public class RHIPipelineCache
         return *(RHIPipelineHandle*)(&u);
     }
 
+    public unsafe RHIPipelineHandle GetComputePipeline(RHIPipelineState pso)
+    {
+        IntPtr result = RHIPipelineAPI.RHIPipelineCache_GetComputePipeline(NativePtr, pso.NativePtr);
+        ulong u = (ulong)result;
+        return *(RHIPipelineHandle*)(&u);
+    }
+
     public RHIPipelineState GetPipelineState()
     {
         IntPtr ptr = RHIPipelineAPI.RHIPipelineCache_GetPipelineState(NativePtr);

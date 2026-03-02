@@ -39,6 +39,12 @@ public readonly struct RHIDevice
         return new RHICommandBufferPool(poolPtr, Handle, handle);
     }
 
+    public RHIQueue GetQueue(RHIQueueType queueType)
+    {
+        var queuePtr = RHIDeviceAPI.RHIDevice_GetQueue(Handle, (int)queueType);
+        return new RHIQueue(queuePtr);
+    }
+
     public unsafe ulong Submit(RHICommandBuffer cb, RHISwapChain? waitSC = null, RHISwapChain? signalSC = null)
     {
         if (!waitSC.HasValue && !signalSC.HasValue)
