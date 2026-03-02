@@ -134,12 +134,12 @@ public static class TypeMapper
     {
         return cppBaseType switch
         {
-            "uint32_t" => "uint",
-            "uint16_t" => "ushort",
-            "uint8_t" => "byte",
-            "int32_t" => "int",
-            "int16_t" => "short",
-            "int8_t" => "sbyte",
+            "uint32_t" or "UInt32" => "uint",
+            "uint16_t" or "UInt16" => "ushort",
+            "uint8_t" or "UInt8" => "byte",
+            "int32_t" or "SInt32" => "int",
+            "int16_t" or "SInt16" => "short",
+            "int8_t" or "SInt8" => "sbyte",
             _ => "uint"
         };
     }

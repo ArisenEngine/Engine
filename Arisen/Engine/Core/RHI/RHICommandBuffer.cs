@@ -63,13 +63,13 @@ public readonly struct RHICommandBuffer
     }
 
     public void BeginRendering(RHIImageViewHandle colorImageView, EImageLayout imageLayout,
-        int loadOp, int storeOp,
+        EAttachmentLoadOp loadOp, EAttachmentStoreOp storeOp,
         float clearR, float clearG, float clearB, float clearA,
         int x, int y, uint width, uint height)
     {
         RHICommandBufferAPI.RHICommandBuffer_BeginRendering(NativePtr,
             colorImageView.Index, colorImageView.Generation,
-            (int)imageLayout, loadOp, storeOp,
+            (int)imageLayout, (int)loadOp, (int)storeOp,
             clearR, clearG, clearB, clearA,
             x, y, width, height);
     }
@@ -136,9 +136,9 @@ public readonly struct RHICommandBuffer
             poolId);
     }
 
-    public unsafe void PushConstants(uint offset, uint size, IntPtr data, uint stageFlags)
+    public unsafe void PushConstants(uint offset, uint size, IntPtr data, EShaderStage stageFlags)
     {
-        RHICommandBufferAPI.RHICommandBuffer_PushConstants(NativePtr, offset, size, data, stageFlags);
+        RHICommandBufferAPI.RHICommandBuffer_PushConstants(NativePtr, offset, size, data, (uint)stageFlags);
     }
 
     public void CopyBuffer(RHIBufferHandle src, ulong srcOffset, RHIBufferHandle dst, ulong dstOffset, ulong size)

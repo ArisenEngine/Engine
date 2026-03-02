@@ -12,8 +12,8 @@ public static class BindingParser
     {
         var results = new List<EnumInfo>();
 
-        // Pattern 1: enum class Name : Type { ... };
-        var pattern1 = @"ARISEN_BIND_ENUM\s*\(\s*(\w+)\s*\)\s*enum\s+class\s+(\w+)\s*:\s*(\w+)\s*\{([^}]+)\}";
+        // Pattern 1: ARISEN_BIND_ENUM(Name) [optional comments/newlines] enum class Name : Type { ... };
+        var pattern1 = @"ARISEN_BIND_ENUM\s*\(\s*(\w+)\s*\)\s*(?:/\*.*?\*/|//[^\n]*\n|\s)*enum\s+class\s+(\w+)\s*:\s*(\w+)\s*\{([^}]+)\}";
         foreach (Match m in Regex.Matches(content, pattern1, RegexOptions.Singleline))
         {
             var name = m.Groups[2].Value;
@@ -22,19 +22,19 @@ public static class BindingParser
             results.Add(new EnumInfo(name, baseType, ParseEnumBody(body)));
         }
 
-        // Pattern 2: typedef enum Name { ... } Name; (C-style, used by all RHI enums)
+        // Pattern 2: ARISEN_BIND_ENUM(Name) [optional comments/newlines] typedef enum Name { ... } Name; OR typedef enum { ... } Name;
         var pattern2 =
-            @"ARISEN_BIND_ENUM\s*\(\s*(\w+)\s*\)\s*(?:///[^\n]*\n\s*)?typedef\s+enum\s+(\w+)\s*\{([^}]+)\}\s*\w+\s*;";
+            @"ARISEN_BIND_ENUM\s*\(\s*(\w+)\s*\)\s*(?:/\*.*?\*/|//[^\n]*\n|\s)*typedef\s+enum\s*(\s+\w+)?\s*\{([^}]+)\}\s*(\w+)\s*;";
         foreach (Match m in Regex.Matches(content, pattern2, RegexOptions.Singleline))
         {
-            var name = m.Groups[2].Value;
+            var name = m.Groups[4].Value;
             var body = m.Groups[3].Value;
             // C-style enums default to int, but Vulkan values fit in uint
             results.Add(new EnumInfo(name, "int", ParseEnumBody(body)));
         }
 
-        // Pattern 3: enum class Name { ... }; (no explicit base type)
-        var pattern3 = @"ARISEN_BIND_ENUM\s*\(\s*(\w+)\s*\)\s*enum\s+class\s+(\w+)\s*\{([^}]+)\}";
+        // Pattern 3: ARISEN_BIND_ENUM(Name) [optional comments/newlines] enum class Name { ... }; (no explicit base type)
+        var pattern3 = @"ARISEN_BIND_ENUM\s*\(\s*(\w+)\s*\)\s*(?:/\*.*?\*/|//[^\n]*\n|\s)*enum\s+class\s+(\w+)\s*\{([^}]+)\}";
         foreach (Match m in Regex.Matches(content, pattern3, RegexOptions.Singleline))
         {
             var name = m.Groups[2].Value;
@@ -88,11 +88,19 @@ public static class BindingParser
     {
         var results = new List<StructInfo>();
 
-        var pattern = @"ARISEN_BIND_STRUCT\s*\(\s*(\w+)\s*\)\s*(?:typedef\s+)?struct\s+(\w+)\s*\{(.*?)[\r\n]+\s*\}\s*;";
+        // Support both:
+        // ARISEN_BIND_STRUCT(Name) struct Name { ... };
+        // ARISEN_BIND_STRUCT(Name) typedef struct { ... } Name;
+        var pattern = @"ARISEN_BIND_STRUCT\s*\(\s*(\w+)\s*\)\s*(?:/\*.*?\*/|//[^\n]*\n|\s)*(?:typedef\s+)?struct\s*(\s+\w+)?\s*\{(.*?)\}\s*(\w+)?\s*;";
         foreach (Match m in Regex.Matches(content, pattern, RegexOptions.Singleline))
         {
-            var name = m.Groups[2].Value;
+            var macroName = m.Groups[1].Value;
+            var structName = m.Groups[2].Value.Trim();
             var body = m.Groups[3].Value;
+            var typedefName = m.Groups[4].Value.Trim();
+
+            var finalName = string.IsNullOrEmpty(typedefName) ? structName : typedefName;
+            if (string.IsNullOrEmpty(finalName)) finalName = macroName;
 
             var fields = new List<(string, string)>();
             // Use Singleline to allow matching across lines in the body
@@ -105,7 +113,7 @@ public static class BindingParser
                 fields.Add((type, fieldName));
             }
 
-            results.Add(new StructInfo(name, fields));
+            results.Add(new StructInfo(finalName, fields));
         }
 
         return results;

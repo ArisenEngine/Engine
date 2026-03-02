@@ -22,6 +22,12 @@ public static class CSharpGenerator
         // Bridges have their own metadata in the BEGIN_BRIDGE macro
         var bridgeBlocks = BindingParser.ParseBridgeBlocks(content);
 
+        // If csNamespace is empty but we have bridge blocks, use the namespace from the first block
+        if (string.IsNullOrEmpty(csNamespace) && bridgeBlocks.Count > 0)
+        {
+            csNamespace = bridgeBlocks[0].Namespace;
+        }
+
         // If neither module metadata nor bridge blocks are found, check if we have a namespace for enums/structs
         if (string.IsNullOrEmpty(dllName) && bridgeBlocks.Count == 0 && string.IsNullOrEmpty(csNamespace))
             return results;
