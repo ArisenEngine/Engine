@@ -74,6 +74,7 @@ public class LifecycleTests : ITest
 
     public bool Setup()
     {
+        EngineKernel.Instance.Reset();
         MockSubsystem1.ExecutionLog.Clear();
         return true;
     }
