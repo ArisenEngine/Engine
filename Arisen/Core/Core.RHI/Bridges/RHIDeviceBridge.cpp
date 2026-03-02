@@ -124,6 +124,17 @@ RHI_DLL void* RHIDevice_GetSurface(RHIDevice* dev)
 {
     return static_cast<void*>(dev->GetSurface());
 }
+
+RHI_DLL void* RHIDevice_GetDescriptorPool(RHIDevice* dev)
+{
+    return static_cast<void*>(dev->GetDescriptorPool());
+}
+
+RHI_DLL uint64_t RHIDevice_GetDescriptorPoolHandle(RHIDevice* dev)
+{
+    RHIDescriptorPoolHandle handle = dev->GetDescriptorPoolHandle();
+    return *reinterpret_cast<uint64_t*>(&handle);
+}
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()

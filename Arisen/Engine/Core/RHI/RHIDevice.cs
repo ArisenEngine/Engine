@@ -11,6 +11,17 @@ public readonly struct RHIDevice
 
     public RHIPipelineCache PipelineCache => new RHIPipelineCache(RHIDeviceAPI.RHIDevice_GetPipelineCache(Handle));
 
+    public RHIDescriptorPool DescriptorPool => new RHIDescriptorPool(RHIDeviceAPI.RHIDevice_GetDescriptorPool(Handle));
+
+    public unsafe RHIDescriptorPoolHandle DescriptorPoolHandle
+    {
+        get
+        {
+            ulong packed = RHIDeviceAPI.RHIDevice_GetDescriptorPoolHandle(Handle);
+            return *(RHIDescriptorPoolHandle*)&packed;
+        }
+    }
+
     public RHIDevice(IntPtr handle)
     {
         Handle = handle;
