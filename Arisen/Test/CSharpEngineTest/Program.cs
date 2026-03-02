@@ -4,6 +4,7 @@ using CSharpEngineTest.RHI.Rendering;
 using CSharpEngineTest.Core.Graph;
 using CSharpEngineTest.Core.Memory;
 using CSharpEngineTest.Core.Lifecycle;
+using CSharpEngineTest.Core.Packages;
 
 Logger.Initialize();
 Logger.Log("###### Start C# Engine RHI Test ######");
@@ -12,6 +13,7 @@ TestRunner.RegisterTest<RHIBasicTriangleTest>();
 TestRunner.RegisterTest<GraphTests>();
 TestRunner.RegisterTest<MemoryTests>();
 TestRunner.RegisterTest<LifecycleTests>();
+TestRunner.RegisterTest<PackageSystemTests>();
 
 try
 {

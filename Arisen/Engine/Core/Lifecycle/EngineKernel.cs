@@ -20,6 +20,15 @@ public sealed class EngineKernel : IDisposable
     {
     }
 
+    public void Reset()
+    {
+        m_Subsystems.Clear();
+        m_CurrentPhase = EnginePhase.None;
+        m_IsRunning = false;
+        Config = null;
+        CurrentFrameIndex = 0;
+    }
+
     public void RegisterSubsystem<T>(T subsystem) where T : class, IEngineSubsystem
     {
         if (m_CurrentPhase != EnginePhase.None)

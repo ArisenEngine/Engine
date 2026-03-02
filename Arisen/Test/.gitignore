@@ -442,16 +442,5 @@ $RECYCLE.BIN/
 .idea/
 *.sln.iml
 
-##
-## Visual Studio Code
-##
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!/ArisenEngineTest/ShaderLabRes/
-!/ArisenEngineTest/ShaderLabRes/Packages/
-!/ArisenEngineTest/ShaderLabRes/Packages/com.unity.render-pipelines.core/ShaderLibrary/**
-!/ArisenEngineTest/ShaderLabRes/Packages/com.unity.render-pipelines.universal/**
-!/ArisenEngineTest/ShaderLabRes/Packages/com.unity.render-pipelines.universal-config/**
+
+!CSharpEngineTest/Src/Core/Packages/*
