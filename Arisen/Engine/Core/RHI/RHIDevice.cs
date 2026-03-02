@@ -39,29 +39,25 @@ public readonly struct RHIDevice
         return new RHICommandBufferPool(poolPtr, Handle, handle);
     }
 
-    public ulong Submit(RHICommandBuffer cb, RHISwapChain? waitSC = null, RHISwapChain? signalSC = null)
+    public unsafe ulong Submit(RHICommandBuffer cb, RHISwapChain? waitSC = null, RHISwapChain? signalSC = null)
     {
         if (!waitSC.HasValue && !signalSC.HasValue)
         {
             return RHIDeviceAPI.RHIDevice_Submit(Handle, cb.RHIHandle.Index, cb.RHIHandle.Generation, IntPtr.Zero);
         }
 
-        // We temporarily pass the desc as an array of 6 ulongs/IntPtrs which represents the struct layout
-        // in C++: RHISwapChain*, RHISwapChain*, const uint64_t*, uint32_t, const uint64_t*, uint32_t
-        // This avoids heap allocations until the struct auto-generator is fully implemented.
-        unsafe
+        var bridgeDesc = new RHISubmitDescriptor_Bridge
         {
-            IntPtr* descArray = stackalloc IntPtr[6];
-            descArray[0] = waitSC?.Handle ?? IntPtr.Zero;
-            descArray[1] = signalSC?.Handle ?? IntPtr.Zero;
-            descArray[2] = IntPtr.Zero;
-            descArray[3] = IntPtr.Zero; // 0 count
-            descArray[4] = IntPtr.Zero;
-            descArray[5] = IntPtr.Zero; // 0 count
+            WaitSwapChain = waitSC?.Handle ?? IntPtr.Zero,
+            SignalSwapChain = signalSC?.Handle ?? IntPtr.Zero,
+            PWaitSemaphores = IntPtr.Zero,
+            WaitSemaphoreCount = 0,
+            PSignalSemaphores = IntPtr.Zero,
+            SignalSemaphoreCount = 0
+        };
 
-            return RHIDeviceAPI.RHIDevice_Submit(Handle, cb.RHIHandle.Index, cb.RHIHandle.Generation,
-                (IntPtr)descArray);
-        }
+        return RHIDeviceAPI.RHIDevice_Submit(Handle, cb.RHIHandle.Index, cb.RHIHandle.Generation,
+            (IntPtr)(&bridgeDesc));
     }
 
     public void WaitQueueTicket(ulong ticket)

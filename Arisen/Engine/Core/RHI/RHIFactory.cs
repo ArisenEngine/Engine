@@ -122,13 +122,13 @@ public readonly struct RHIFactory
         return (EFormat)RHIFactoryAPI.RHIFactory_GetImageViewFormat(Handle, handle.Index, handle.Generation);
     }
 
-    public bool AttachProgramByteCode(RHIShaderProgramHandle handle, int stage, byte[] code, string entryPoint)
+    public bool AttachProgramByteCode(RHIShaderProgramHandle handle, EShaderStage stage, byte[] code, string entryPoint)
     {
         unsafe
         {
             fixed (byte* pCode = code)
             {
-                return RHIFactoryAPI.RHIFactory_AttachProgramByteCode(Handle, handle.Index, handle.Generation, stage,
+                return RHIFactoryAPI.RHIFactory_AttachProgramByteCode(Handle, handle.Index, handle.Generation, (int)stage,
                     (IntPtr)pCode, (ulong)code.Length, entryPoint) != 0;
             }
         }

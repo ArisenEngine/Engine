@@ -85,11 +85,9 @@ namespace CSharpEngineTest.RHI.Rendering
                 return false;
             }
 
-            // Attach SPIR-V bytecodes — EShaderStage flag bits: Vertex=0x1, Fragment=0x10
-            const int SHADER_STAGE_VERTEX_BIT = 0x00000001;
-            const int SHADER_STAGE_FRAGMENT_BIT = 0x00000010;
-            bool vsAttached = factory.AttachProgramByteCode(_vsProgram, SHADER_STAGE_VERTEX_BIT, vsResult.Code, "MainVS");
-            bool psAttached = factory.AttachProgramByteCode(_psProgram, SHADER_STAGE_FRAGMENT_BIT, psResult.Code, "MainPS");
+            // Attach SPIR-V bytecodes
+            bool vsAttached = factory.AttachProgramByteCode(_vsProgram, EShaderStage.SHADER_STAGE_VERTEX_BIT, vsResult.Code, "MainVS");
+            bool psAttached = factory.AttachProgramByteCode(_psProgram, EShaderStage.SHADER_STAGE_FRAGMENT_BIT, psResult.Code, "MainPS");
 
             if (!vsAttached || !psAttached)
             {
@@ -124,9 +122,8 @@ namespace CSharpEngineTest.RHI.Rendering
             _pso.SetColorBlendState(blendEnable: false);
 
             // Dynamic viewport/scissor — set via cmd.SetViewport/SetScissor per frame
-            const ulong DYNAMIC_STATE_VIEWPORT_BIT = 1UL << 0;
-            const ulong DYNAMIC_STATE_SCISSOR_BIT = 1UL << 1;
-            _pso.SetDynamicStateMask(DYNAMIC_STATE_VIEWPORT_BIT | DYNAMIC_STATE_SCISSOR_BIT);
+            _pso.SetDynamicStateMask((1UL << (int)EDynamicPipelineState.DYNAMIC_STATE_VIEWPORT) |
+                                     (1UL << (int)EDynamicPipelineState.DYNAMIC_STATE_SCISSOR));
 
             // Get compiled pipeline
             _pipeline = pipelineCache.GetGraphicsPipeline(_pso);
@@ -167,8 +164,8 @@ namespace CSharpEngineTest.RHI.Rendering
             // Begin dynamic rendering with clear to dark blue
             cmd.BeginRendering(imageView,
                 EImageLayout.IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                0,  // loadOp: LOAD_OP_CLEAR = 0 (from Vulkan spec)
-                0,  // storeOp: STORE_OP_STORE = 0
+                EAttachmentLoadOp.ATTACHMENT_LOAD_OP_CLEAR,
+                EAttachmentStoreOp.ATTACHMENT_STORE_OP_STORE,
                 0.0f, 0.0f, 0.2f, 1.0f,  // dark blue clear color
                 0, 0, 1200, 800);          // render area
 
