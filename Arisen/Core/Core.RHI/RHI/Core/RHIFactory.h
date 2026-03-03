@@ -1,10 +1,12 @@
 #pragma once
 #include "Base/FoundationMinimal.h"
+#include "Base/BindingMacros.h"
 #include "../Core/RHICommon.h"
 #include "../Handles/RHIHandle.h"
 #include <string>
 #include "../Descriptors/RHIResourceDescriptors.h"
 #include "../Queues/RHIQueueType.h"
+#include "../Resources/RHIDeferredDeletionQueue.h" // RHIGpuTicket
 
 namespace ArisenEngine::RHI
 {
@@ -71,6 +73,17 @@ namespace ArisenEngine::RHI
 
         // Resource Management (Moved from RHIDevice)
         virtual void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0) = 0;
+
+        // Async transfer API — enqueues a copy and returns a ticket for later synchronization.
+        // Caller must call FlushTransfers() or WaitForTicket() before using the buffer.
+        virtual RHIGpuTicket BufferMemoryCopyAsync(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0) = 0;
+
+        // Submit all pending async transfers. Returns the flush ticket (0 if nothing pending).
+        virtual RHIGpuTicket FlushTransfers() = 0;
+
+        // Poll GPU completion and reclaim staging memory. Call once per frame.
+        virtual void UpdateTransfers() = 0;
+
         virtual void* MapBuffer(RHIBufferHandle handle) = 0;
         virtual void UnmapBuffer(RHIBufferHandle handle) = 0;
         virtual UInt64 GetBufferSize(RHIBufferHandle handle) = 0;

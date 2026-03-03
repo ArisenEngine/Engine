@@ -26,6 +26,8 @@ namespace ArisenEngine::RHI
     class RHIQueue;
     class RHIVkBindlessManager;
     class RHIVkMemoryAllocator;
+    class RHIVkTransferManager;
+    struct RHITransferManagerConfig;
     struct RHIVkBufferPoolItem;
     struct RHIVkImagePoolItem;
     struct RHIVkImageViewPoolItem;
@@ -60,6 +62,7 @@ namespace ArisenEngine::RHI
         friend class RHIVkCommandBufferPool; // Needs family index
         friend class RHIVkQueue; // Needs family index
         friend struct RHIVkExecutor; // Needs access to cached function pointers
+        friend class RHIVkTransferManager; // Needs queue family indices and pools
 
         NO_COPY_NO_MOVE_NO_DEFAULT(RHIVkDevice)
         ~RHIVkDevice() noexcept override;
@@ -129,6 +132,7 @@ namespace ArisenEngine::RHI
     private:
         RHIVkBindlessManager* GetBindlessManager() const { return m_BindlessManager; }
         UInt32 GetGraphicsFamilyIndex() const { return m_GraphicsFamilyIndex; }
+        UInt32 GetTransferFamilyIndex() const { return m_TransferFamilyIndex; }
         UInt32 GetComputeFamilyIndex() const { return m_ComputeFamilyIndex; }
 
 
@@ -166,6 +170,7 @@ namespace ArisenEngine::RHI
         std::unique_ptr<RHIQueue> m_TransferQueue;
         std::unique_ptr<RHIQueue> m_PresentQueue;
         std::unique_ptr<FrameSyncTracker> m_FrameSync;
+        std::unique_ptr<RHIVkTransferManager> m_TransferManager;
 
         // Specialized resource pools for handle-based architecture
         std::unique_ptr<RHIResourcePool<RHIBufferHandle, RHIVkBufferPoolItem>> m_BufferPool;
@@ -196,6 +201,9 @@ namespace ArisenEngine::RHI
         bool AllocBufferDeviceMemory(RHIBufferHandle handle) override;
         void ReleaseBuffer(RHIBufferHandle handle) override;
         void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0);
+        RHIGpuTicket BufferMemoryCopyAsync(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0);
+        RHIGpuTicket FlushTransfers();
+        void UpdateTransfers();
         void* MapBuffer(RHIBufferHandle handle);
         void UnmapBuffer(RHIBufferHandle handle);
         UInt64 GetBufferSize(RHIBufferHandle handle);
