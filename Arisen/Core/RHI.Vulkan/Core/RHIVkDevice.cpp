@@ -32,12 +32,14 @@ using namespace ArisenEngine::RHI;
 
 
 ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* surface, VkQueue graphicQueue,
-                                            VkQueue presentQueue, VkQueue computeQueue, VkDevice device,
-                                            VkPhysicalDeviceMemoryProperties memoryProperties,
-                                            UInt32 graphicsFamilyIndex, UInt32 computeFamilyIndex)
+                                            VkQueue presentQueue, VkQueue computeQueue, VkQueue transferQueue,
+                                            VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties,
+                                            UInt32 graphicsFamilyIndex, UInt32 computeFamilyIndex, UInt32 transferFamilyIndex,
+                                            UInt32 presentFamilyIndex)
     : RHIDevice(instance, surface), m_VkGraphicQueue(graphicQueue), m_VkPresentQueue(presentQueue),
-      m_VkComputeQueue(computeQueue), m_VkDevice(device),
+      m_VkComputeQueue(computeQueue), m_VkTransferQueue(transferQueue), m_VkDevice(device),
       m_GraphicsFamilyIndex(graphicsFamilyIndex), m_ComputeFamilyIndex(computeFamilyIndex),
+      m_TransferFamilyIndex(transferFamilyIndex), m_PresentFamilyIndex(presentFamilyIndex),
       m_VkPhysicalDeviceMemoryProperties(memoryProperties)
 {
     std::cout << "[DEBUG] RHIVkDevice::RHIVkDevice START" << std::endl;
@@ -126,6 +128,18 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
                                                       m_DeferredDeletion.get(), m_ResourceRegistry.get());
     }
 
+    if (m_VkTransferQueue != VK_NULL_HANDLE)
+    {
+        m_TransferQueue = std::make_unique<RHIVkQueue>(this, m_VkDevice, m_VkTransferQueue, RHIQueueType::Transfer,
+                                                       m_DeferredDeletion.get(), m_ResourceRegistry.get());
+    }
+
+    if (m_VkPresentQueue != VK_NULL_HANDLE)
+    {
+        m_PresentQueue = std::make_unique<RHIVkQueue>(this, m_VkDevice, m_VkPresentQueue, RHIQueueType::Present,
+                                                      m_DeferredDeletion.get(), m_ResourceRegistry.get());
+    }
+
     const UInt32 maxFramesInFlight = m_Instance->GetMaxFramesInFlight();
     m_FrameSync = std::make_unique<FrameSyncTracker>(maxFramesInFlight);
 
@@ -187,15 +201,43 @@ ArisenEngine::RHI::RHIMemoryAllocator* ArisenEngine::RHI::RHIVkDevice::GetMemory
 
 void ArisenEngine::RHI::RHIVkDevice::DeviceWaitIdle() const
 {
-    ARISEN_PROFILE_ZONE("Vk::DeviceWaitIdle");
     vkDeviceWaitIdle(m_VkDevice);
 }
-
 void ArisenEngine::RHI::RHIVkDevice::GraphicQueueWaitIdle() const
 {
-    if (m_GraphicsQueue)
+    if (m_GraphicsQueue) m_GraphicsQueue->WaitIdle();
+}
+void ArisenEngine::RHI::RHIVkDevice::ComputeQueueWaitIdle() const
+{
+    if (m_ComputeQueue) m_ComputeQueue->WaitIdle();
+}
+void ArisenEngine::RHI::RHIVkDevice::TransferQueueWaitIdle() const
+{
+    if (m_TransferQueue) m_TransferQueue->WaitIdle();
+}
+void ArisenEngine::RHI::RHIVkDevice::PresentQueueWaitIdle() const
+{
+    if (m_PresentQueue) m_PresentQueue->WaitIdle();
+}
+void ArisenEngine::RHI::RHIVkDevice::QueueWaitIdle(RHIQueueType type) const
+{
+    switch (type)
     {
-        m_GraphicsQueue->WaitIdle();
+    case RHIQueueType::Graphics:
+        GraphicQueueWaitIdle();
+        break;
+    case RHIQueueType::Compute:
+        ComputeQueueWaitIdle();
+        break;
+    case RHIQueueType::Transfer:
+        TransferQueueWaitIdle();
+        break;
+    case RHIQueueType::Present:
+        PresentQueueWaitIdle();
+        break;
+    default:
+        DeviceWaitIdle();
+        break;
     }
 }
 
@@ -248,6 +290,14 @@ RHIQueue* ArisenEngine::RHI::RHIVkDevice::GetQueue(RHIQueueType type)
     else if (type == RHIQueueType::Compute)
     {
         return m_ComputeQueue.get();
+    }
+    else if (type == RHIQueueType::Transfer)
+    {
+        return m_TransferQueue.get();
+    }
+    else if (type == RHIQueueType::Present)
+    {
+        return m_PresentQueue.get();
     }
     return nullptr;
 }
@@ -546,6 +596,7 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseBuffer(RHIBufferHandle handle)
     }
 }
 
+// TODO: optimize synchronization
 void ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size,
                                                       UInt64 offset)
 {
@@ -607,7 +658,7 @@ void ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopy(RHIBufferHandle handle, co
         VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-        poolInfo.queueFamilyIndex = m_GraphicsFamilyIndex;
+        poolInfo.queueFamilyIndex = (m_TransferQueue) ? m_TransferFamilyIndex : m_GraphicsFamilyIndex;
 
         VkCommandPool cmdPool;
         if (vkCreateCommandPool(m_VkDevice, &poolInfo, nullptr, &cmdPool) != VK_SUCCESS)
@@ -653,11 +704,30 @@ void ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopy(RHIBufferHandle handle, co
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &cmdBuffer;
 
-        // Submit to graphics queue and wait
-        if (m_GraphicsQueue)
+        // Use a fence for targeted synchronization instead of WaitIdle
+        VkFenceCreateInfo fenceInfo{};
+        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        VkFence fence;
+        if (vkCreateFence(m_VkDevice, &fenceInfo, nullptr, &fence) == VK_SUCCESS)
         {
-            vkQueueSubmit(static_cast<RHIVkQueue*>(m_GraphicsQueue.get())->GetVkQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-            m_GraphicsQueue->WaitIdle();
+            auto* transferQueue = static_cast<RHIVkQueue*>(GetQueue(RHIQueueType::Transfer));
+            if (transferQueue)
+            {
+                vkQueueSubmit(transferQueue->GetVkQueue(), 1, &submitInfo, fence);
+                vkWaitForFences(m_VkDevice, 1, &fence, VK_TRUE, UINT64_MAX);
+            }
+            vkDestroyFence(m_VkDevice, fence, nullptr);
+        }
+        else
+        {
+            LOG_ERROR("[RHIVkDevice::BufferMemoryCopy]: Failed to create fence!");
+            // Fallback to heavy WaitIdle if fence fails
+            auto* transferQueue = static_cast<RHIVkQueue*>(GetQueue(RHIQueueType::Transfer));
+            if (transferQueue)
+            {
+                vkQueueSubmit(transferQueue->GetVkQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+                transferQueue->WaitIdle();
+            }
         }
 
         // Cleanup
@@ -1120,10 +1190,21 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
         LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_Factory deleted");
     }
 
-    // 7. Clean up sync and queue objects
+    if (m_GraphicsQueue)
+        m_GraphicsQueue->WaitIdle();
+    if (m_ComputeQueue)
+        m_ComputeQueue->WaitIdle();
+    if (m_TransferQueue)
+        m_TransferQueue->WaitIdle();
+    if (m_PresentQueue)
+        m_PresentQueue->WaitIdle();
+
     m_FrameSync.reset();
+
     m_GraphicsQueue.reset();
     m_ComputeQueue.reset();
+    m_TransferQueue.reset();
+    m_PresentQueue.reset();
     LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Sync and Queue objects reset");
 
     // 8. Finally destroy the Vulkan device

@@ -101,6 +101,10 @@ namespace ArisenEngine::RHI
         virtual void* GetComputeQueue() = 0;
         virtual void* GetPresentQueue() = 0;
         virtual void GraphicQueueWaitIdle() const = 0;
+        virtual void ComputeQueueWaitIdle() const = 0;
+        virtual void TransferQueueWaitIdle() const = 0;
+        virtual void PresentQueueWaitIdle() const = 0;
+        virtual void QueueWaitIdle(RHIQueueType type) const = 0;
 
         virtual RHIFactory* GetFactory() const = 0;
         virtual RHISyncPrimitive* GetSync() const = 0;

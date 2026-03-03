@@ -249,6 +249,11 @@ namespace ArisenEngine::Testing
             switch (msg)
             {
             case WM_CLOSE:
+                if (test && test->m_Device)
+                {
+                    test->m_Device->GraphicQueueWaitIdle();
+                    test->m_Device->PresentQueueWaitIdle();
+                }
                 DestroyWindow(hwnd);
                 return 0;
             case WM_DESTROY:

@@ -68,12 +68,16 @@ namespace ArisenEngine::RHI
         void* GetComputeQueue() override { return m_VkComputeQueue; }
         void* GetPresentQueue() override { return m_VkPresentQueue; }
         RHIVkDevice(RHIInstance* instance, RHISurface* surface, VkQueue graphicQueue, VkQueue presentQueue,
-                    VkQueue computeQueue,
+                    VkQueue computeQueue, VkQueue transferQueue,
                     VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties, UInt32 graphicsFamilyIndex,
-                    UInt32 computeFamilyIndex);
+                    UInt32 computeFamilyIndex, UInt32 transferFamilyIndex, UInt32 presentFamilyIndex);
 
         void DeviceWaitIdle() const override;
         void GraphicQueueWaitIdle() const override;
+        void ComputeQueueWaitIdle() const override;
+        void TransferQueueWaitIdle() const override;
+        void PresentQueueWaitIdle() const override;
+        void QueueWaitIdle(RHIQueueType type) const override;
 
         RHIFactory* GetFactory() const override;
         RHISyncPrimitive* GetSync() const override { return const_cast<RHIVkDevice*>(this); }
@@ -144,9 +148,12 @@ namespace ArisenEngine::RHI
         VkQueue m_VkGraphicQueue;
         VkQueue m_VkPresentQueue;
         VkQueue m_VkComputeQueue;
+        VkQueue m_VkTransferQueue;
         VkDevice m_VkDevice;
         UInt32 m_GraphicsFamilyIndex;
         UInt32 m_ComputeFamilyIndex;
+        UInt32 m_TransferFamilyIndex;
+        UInt32 m_PresentFamilyIndex;
         VkPhysicalDeviceMemoryProperties m_VkPhysicalDeviceMemoryProperties;
 
         RHIResourceStats m_Stats;
@@ -156,6 +163,8 @@ namespace ArisenEngine::RHI
         std::unique_ptr<RHIResourceRegistry> m_ResourceRegistry;
         std::unique_ptr<RHIQueue> m_GraphicsQueue;
         std::unique_ptr<RHIQueue> m_ComputeQueue;
+        std::unique_ptr<RHIQueue> m_TransferQueue;
+        std::unique_ptr<RHIQueue> m_PresentQueue;
         std::unique_ptr<FrameSyncTracker> m_FrameSync;
 
         // Specialized resource pools for handle-based architecture

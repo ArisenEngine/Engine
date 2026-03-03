@@ -422,6 +422,18 @@ ArisenEngine::RHI::VkQueueFamilyIndices ArisenEngine::RHI::RHIVkInstance::FindQu
             }
         }
 
+        if (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT)
+        {
+            if (!(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) && !(queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT))
+            {
+                indices.transferFamily = i; // dedicated transfer preferred
+            }
+            else if (!indices.transferFamily.has_value())
+            {
+                indices.transferFamily = i;
+            }
+        }
+
         if (surface != VK_NULL_HANDLE)
         {
             VkBool32 presentSupport = false;
@@ -619,6 +631,10 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
     {
         uniqueQueueFamilies.insert(indices.computeFamily.value());
     }
+    if (indices.transferFamily.has_value())
+    {
+        uniqueQueueFamilies.insert(indices.transferFamily.value());
+    }
 
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies)
@@ -626,13 +642,18 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
         VkDeviceQueueCreateInfo queueCreateInfo{};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueCreateInfo.queueFamilyIndex = queueFamily;
-        // If compute family is same as graphics, we still want a separate queue handle if possible
-        queueCreateInfo.queueCount = (queueFamily == indices.graphicsFamily.value() && indices.computeFamily.has_value()
-                                         && indices.computeFamily.value() == queueFamily)
-                                         ? 2
-                                         : 1;
+        
+        uint32_t queueCount = 0;
+        if (indices.graphicsFamily.value() == queueFamily) queueCount++;
+        if (indices.computeFamily.has_value() && indices.computeFamily.value() == queueFamily) queueCount++;
+        if (indices.transferFamily.has_value() && indices.transferFamily.value() == queueFamily) queueCount++;
+        
+        // Ensure at least 1 queue if it's uniquely the present family (though present usually shares with graphics)
+        if (queueCount == 0 && indices.presentFamily.value() == queueFamily) queueCount = 1;
 
-        static float priorities[2] = {1.0f, 1.0f};
+        queueCreateInfo.queueCount = (std::max)(1u, queueCount);
+
+        static float priorities[3] = {1.0f, 1.0f, 1.0f};
         queueCreateInfo.pQueuePriorities = priorities;
         queueCreateInfos.push_back(queueCreateInfo);
     }
@@ -670,13 +691,13 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
             }
             else if (mandatory)
             {
-                LOG_WARN(
+        LOG_WARN(
                     String::Format("[RHIVkInstance::CreateLogicDevice]: mandatory device extension not supported: %s",
                         extensionName));
             }
             else
             {
-                LOG_INFO(
+        LOG_INFO(
                     String::Format("[RHIVkInstance::CreateLogicDevice]: optional device extension not supported: %s",
                         extensionName));
             }
@@ -846,12 +867,30 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
         vkGetDeviceQueue(device, indices.computeFamily.value(), queueIndex, &computeQueue);
     }
 
+    VkQueue transferQueue = VK_NULL_HANDLE;
+    if (indices.transferFamily.has_value())
+    {
+        uint32_t queueIndex = 0;
+        if (indices.transferFamily.value() == indices.graphicsFamily.value())
+        {
+            queueIndex = (indices.computeFamily.has_value() && indices.computeFamily.value() == indices.graphicsFamily.value()) ? 2 : 1;
+        }
+        else if (indices.computeFamily.has_value() && indices.transferFamily.value() == indices.computeFamily.value())
+        {
+            queueIndex = 1;
+        }
+        vkGetDeviceQueue(device, indices.transferFamily.value(), queueIndex, &transferQueue);
+    }
+
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(m_CurrentPhysicsDevice, &memoryProperties);
 
     auto logicalDevice = std::make_unique<RHIVkDevice>(this, rhiSurface, graphicQueue, presentQueue, computeQueue,
-                                                       device, memoryProperties, indices.graphicsFamily.value(),
-                                                       indices.computeFamily.value_or(0));
+                                                       transferQueue, device, memoryProperties,
+                                                       indices.graphicsFamily.value(),
+                                                       indices.computeFamily.value_or(0),
+                                                       indices.transferFamily.value_or(0),
+                                                       indices.presentFamily.value_or(0));
     VkPhysicalDeviceProperties physicalProperties{};
     vkGetPhysicalDeviceProperties(m_CurrentPhysicsDevice, &physicalProperties);
     {
