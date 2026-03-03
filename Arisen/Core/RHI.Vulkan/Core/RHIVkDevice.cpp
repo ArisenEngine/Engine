@@ -1107,6 +1107,14 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
         m_DescriptorPool = nullptr;
     }
 
+    // Explicitly destroy TransferManager before MemoryAllocator is destroyed,
+    // so staging buffer VMA allocations are freed while the allocator is still valid.
+    if (m_TransferManager)
+    {
+        m_TransferManager.reset();
+        LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_TransferManager reset");
+    }
+
     // 4. Shut down the Resource Registry to enqueue all remaining resources for deferred destruction.
     // We keep the registry alive (m_ResourceRegistry != null) until after the final flush,
     // because items' destructors might call Release* during the flush.

@@ -3,8 +3,12 @@
 #include "Base/FoundationMinimal.h"
 #include "RHI/Resources/RHIDeferredDeletionQueue.h" // RHIGpuTicket
 
+// Renamed GetFreeSpace to GetAvailableSpace to avoid Windows macro collisions
+
 #include <optional>
 #include <vector>
+
+#include "RHI/Definitions/CoreRHICommon.h"
 
 namespace ArisenEngine::RHI
 {
@@ -17,7 +21,7 @@ namespace ArisenEngine::RHI
      * Designed to be composed into backend-specific staging buffers
      * (e.g., RHIVkStagingRingBuffer wraps a VkBuffer + RingAllocator).
      */
-    class RingAllocator
+    class RHI_DLL RingAllocator
     {
     public:
         explicit RingAllocator(UInt64 capacity);
@@ -48,9 +52,9 @@ namespace ArisenEngine::RHI
          */
         void ReclaimUpTo(RHIGpuTicket completedTicket);
 
-        UInt64 GetCapacity() const { return m_Capacity; }
-        UInt64 GetUsedSpace() const { return m_UsedSpace; }
-        UInt64 GetFreeSpace() const { return m_Capacity - m_UsedSpace; }
+        UInt64 GetCapacity() const;
+        UInt64 GetUsedSpace() const;
+        UInt64 GetAvailableSpace() const;
 
     private:
         static UInt64 AlignUp(UInt64 value, UInt64 alignment);

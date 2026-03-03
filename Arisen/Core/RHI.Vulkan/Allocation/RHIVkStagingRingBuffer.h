@@ -48,7 +48,7 @@ namespace ArisenEngine::RHI
         void ReclaimUpTo(RHIGpuTicket completedTicket) { m_RingAllocator.ReclaimUpTo(completedTicket); }
 
         UInt64 GetCapacity() const { return m_RingAllocator.GetCapacity(); }
-        UInt64 GetFreeSpace() const { return m_RingAllocator.GetFreeSpace(); }
+        UInt64 GetAvailableSpace() const { return m_RingAllocator.GetAvailableSpace(); }
 
     private:
         VkDevice m_Device{VK_NULL_HANDLE};
