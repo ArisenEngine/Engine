@@ -1127,14 +1127,9 @@ namespace ArisenEngine::RHI
         m_IsCompiled = false;
         SetCurrentFrameIndex(0);
         m_CommandStream.clear();
-        if (GetState() == ECommandBufferState::Initial) return;
+        SetLatestSubmitTicket(0);
 
-        // m_WaitSemaphores.clear();
-        // m_SignalSemaphores.clear();
-        // m_WaitStages.clear();
-        m_VkBeginInfo = {};
-        m_TrackedDescriptorPools.clear();
-
+        // Always clear tracked resources when resetting
         auto* vkDevice = static_cast<RHIVkDevice*>(GetDevice());
         auto* registry = vkDevice->GetResourceRegistry();
         if (registry)
@@ -1145,6 +1140,11 @@ namespace ArisenEngine::RHI
             }
         }
         m_TrackedResourceHandles.clear();
+        m_TrackedDescriptorPools.clear();
+
+        if (GetState() == ECommandBufferState::Initial) return;
+
+        m_VkBeginInfo = {};
 
         m_VertexBuffers.clear();
         m_VertexBindingOffsets.clear();
@@ -1156,7 +1156,6 @@ namespace ArisenEngine::RHI
         m_VkColorAttachments.clear();
         m_VkDescriptorSets.clear();
         m_VkBufferImageCopies.clear();
-
 
         m_CurrentPipeline = nullptr;
 

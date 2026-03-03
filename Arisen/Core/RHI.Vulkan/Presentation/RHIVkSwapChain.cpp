@@ -39,6 +39,14 @@ ArisenEngine::RHI::RHIVkSwapChain::~RHIVkSwapChain() noexcept
     m_ImageAvailableSemaphores.clear();
     m_RenderFinishSemaphores.clear();
 
+    // Safety wait to ensure GPU is not using the swapchain
+    // TODO: maybe we dont need to WaitForDevice,    // Targeted wait for presentation related work
+    if (m_Device)
+    {
+        m_Device->GraphicQueueWaitIdle();
+        m_Device->PresentQueueWaitIdle();
+    }
+
     Cleanup();
 }
 

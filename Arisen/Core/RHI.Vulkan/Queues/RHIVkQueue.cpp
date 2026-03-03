@@ -203,8 +203,12 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(
     timelineInfo.pSignalSemaphoreValues = signalValues.data();
 
 
+    vkCmd->SetLatestSubmitTicket(submitTicket);
+
     if (vkQueueSubmit(m_Queue, 1, &submitInfo, fence) != VK_SUCCESS)
     {
+        // If submission fails, we should clear the ticket.
+        vkCmd->SetLatestSubmitTicket(0);
         LOG_FATAL_AND_THROW("[RHIVkQueue::Submit]: failed to submit command buffer!");
     }
 

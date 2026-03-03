@@ -1,5 +1,6 @@
 #include "Commands/RHIVkCommandBufferPool.h"
 #include "Profiler.h"
+#include "Logger/Logger.h"
 
 #include "Commands/RHIVkCommandBuffer.h"
 #include "Core/RHIVkDevice.h"
@@ -89,6 +90,7 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::FlushPendingBuffers(ThreadSlot& 
     if (slot.pendingBuffers.empty()) return;
 
     auto* queue = GetDevice()->GetQueue(m_QueueType);
+    if (queue) queue->Update();
     auto completed = queue ? queue->GetCompletedTicket() : 0;
 
     for (auto it = slot.pendingBuffers.begin(); it != slot.pendingBuffers.end();)
@@ -130,6 +132,17 @@ void ArisenEngine::RHI::RHIVkCommandBufferPool::InternalRecycle(RHICommandBuffer
 {
     auto* commandBuffer = static_cast<RHIVkDevice*>(GetDevice())->GetCommandBuffer(handle);
     if (!commandBuffer) return;
+
+    auto ticket = commandBuffer->GetLatestSubmitTicket();
+    auto* queue = GetDevice()->GetQueue(m_QueueType);
+
+    if (queue && queue->GetCompletedTicket() < ticket)
+    {
+        // LOG_WARN("[RHIVkCommandBufferPool::InternalRecycle]: Command buffer is still pending on GPU! Deferring recycle.");
+        auto& slot = GetCurrentThreadSlot();
+        slot.pendingBuffers.emplace_back(ticket, commandBuffer);
+        return;
+    }
 
     commandBuffer->ResetInternal();
 

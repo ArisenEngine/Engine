@@ -38,6 +38,7 @@ namespace ArisenEngine::RHI
         std::optional<uint32_t> graphicsFamily;
         std::optional<uint32_t> presentFamily;
         std::optional<uint32_t> computeFamily;
+        std::optional<uint32_t> transferFamily;
 
         bool IsComplete() const
         {

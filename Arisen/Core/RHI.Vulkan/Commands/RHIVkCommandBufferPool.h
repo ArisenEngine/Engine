@@ -69,7 +69,6 @@ namespace ArisenEngine::RHI
         // Global storage for long-term resource management and cleanup
         Containers::Vector<RHICommandBufferHandle> m_OwnedHandles;
 
-        RHIQueueType m_QueueType;
         std::mutex m_PoolsMutex;
 
         friend class RHIVkCommandBuffer;

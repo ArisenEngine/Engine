@@ -88,12 +88,14 @@ namespace ArisenEngine::RHI
 
         virtual RHICommandBufferHandle CreateCommandBuffer(ECommandBufferLevel level) = 0;
 
-    private:
+    protected:
         RHIDevice* m_Device;
+        RHIQueueType m_QueueType;
+
+    private:
         Containers::Vector<RHICommandBufferHandle> m_FreePrimaryCommandBuffers;
         Containers::Vector<RHICommandBufferHandle> m_FreeSecondaryCommandBuffers;
         UInt32 m_MaxFramesInFlight;
-        RHIQueueType m_QueueType;
         std::mutex m_BuffersMutex;
 
     protected:
