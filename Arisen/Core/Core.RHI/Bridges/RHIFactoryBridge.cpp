@@ -312,6 +312,27 @@ RHI_DLL uint32_t RHIFactory_RegisterBindlessResourceBuffer(RHIFactory* f, uint32
 {
     return f->RegisterBindlessResource(MakeHandle<RHIBufferTag>(index, generation));
 }
+
+// ============================================================================
+// Async Transfer API
+// ============================================================================
+
+RHI_DLL uint64_t RHIFactory_BufferMemoryCopyAsync(RHIFactory* f, uint32_t index, uint32_t generation,
+                                                   const void* src, uint64_t size, uint64_t offset)
+{
+    return f->BufferMemoryCopyAsync(MakeHandle<RHIBufferTag>(index, generation), src, size, offset);
+}
+
+RHI_DLL uint64_t RHIFactory_FlushTransfers(RHIFactory* f)
+{
+    return f->FlushTransfers();
+}
+
+RHI_DLL void RHIFactory_UpdateTransfers(RHIFactory* f)
+{
+    f->UpdateTransfers();
+}
+
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()

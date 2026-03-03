@@ -57,6 +57,9 @@ namespace ArisenEngine::RHI
 
         // Resource management and query methods
         void BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0) override;
+        RHIGpuTicket BufferMemoryCopyAsync(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset = 0) override;
+        RHIGpuTicket FlushTransfers() override;
+        void UpdateTransfers() override;
         void* MapBuffer(RHIBufferHandle handle) override;
         void UnmapBuffer(RHIBufferHandle handle) override;
         UInt64 GetBufferSize(RHIBufferHandle handle) override;

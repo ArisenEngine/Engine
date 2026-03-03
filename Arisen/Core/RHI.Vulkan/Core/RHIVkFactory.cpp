@@ -455,6 +455,21 @@ namespace ArisenEngine::RHI
         m_Device->BufferMemoryCopy(handle, src, size, offset);
     }
 
+    RHIGpuTicket RHIVkFactory::BufferMemoryCopyAsync(RHIBufferHandle handle, const void* src, UInt64 size, UInt64 offset)
+    {
+        return m_Device->BufferMemoryCopyAsync(handle, src, size, offset);
+    }
+
+    RHIGpuTicket RHIVkFactory::FlushTransfers()
+    {
+        return m_Device->FlushTransfers();
+    }
+
+    void RHIVkFactory::UpdateTransfers()
+    {
+        m_Device->UpdateTransfers();
+    }
+
     void* RHIVkFactory::MapBuffer(RHIBufferHandle handle)
     {
         return m_Device->MapBuffer(handle);

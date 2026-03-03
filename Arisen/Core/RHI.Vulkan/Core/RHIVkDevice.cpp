@@ -5,6 +5,7 @@
 #include "Core/RHIVkFactory.h"
 #include "Logger/Logger.h"
 #include "Windowing/RenderWindowAPI.h"
+#include "Services/RHIVkTransferManager.h"
 #include "Utils/RHIVkDeferredDeletion.h"
 #include "Queues/RHIVkQueue.h"
 #include "Handles/RHIVkResourcePools.h"
@@ -178,6 +179,10 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
         item->name = "DefaultDescriptorPool";
     });
     m_MemoryPoolPool = std::make_unique<RHIResourcePool<RHIMemoryPoolHandle, RHIVkMemoryPoolPoolItem>>();
+
+    // Initialize TransferManager after queues and allocator are ready
+    m_TransferManager = std::make_unique<RHIVkTransferManager>(this);
+
     std::cout << "[DEBUG] RHIVkDevice::RHIVkDevice END" << std::endl;
 }
 
@@ -541,7 +546,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocBufferDeviceMemory(RHIBufferHandle han
     }
 
     VmaAllocation newAlloc = VK_NULL_HANDLE;
-#include <iostream>
+
     if (!m_MemoryAllocator->AllocateBufferMemory(buffer->buffer, usage, &newAlloc))
     {
         std::cout << "AllocBufferDeviceMemory FAILED for buffer " << handle.index << " Usage: " << (int)buffer->
@@ -596,7 +601,7 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseBuffer(RHIBufferHandle handle)
     }
 }
 
-// TODO: optimize synchronization
+// Optimized synchronization: uses TransferManager for batched, ring-buffer-backed staging.
 void ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopy(RHIBufferHandle handle, const void* src, UInt64 size,
                                                       UInt64 offset)
 {
@@ -616,124 +621,76 @@ void ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopy(RHIBufferHandle handle, co
         if (vmaMapMemory(m_MemoryAllocator->GetVmaAllocator(), buffer->allocation, &mappedData) == VK_SUCCESS)
         {
             memcpy((uint8_t*)mappedData + offset, src, size);
+
+            // Flush for non-coherent memory to ensure GPU visibility
+            if (!(memFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+            {
+                vmaFlushAllocation(m_MemoryAllocator->GetVmaAllocator(),
+                                   buffer->allocation, offset, size);
+            }
+
             vmaUnmapMemory(m_MemoryAllocator->GetVmaAllocator(), buffer->allocation);
         }
     }
     else
     {
-        // Staging Buffer Fallback
-        // 1. Create Staging Buffer (Host Visible)
-        auto stagingHandle = m_BufferPool->Allocate([](RHIVkBufferPoolItem*)
+        // Device-local: use TransferManager (ring-buffer staging + batched submit)
+        m_TransferManager->EnqueueBufferCopy(buffer->buffer, src, size, offset);
+        RHIGpuTicket ticket = m_TransferManager->Flush();
+        if (ticket > 0)
         {
-        });
-        RHIBufferDescriptor stagingDesc{};
-        stagingDesc.size = size;
-        stagingDesc.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        stagingDesc.memoryUsage = ERHIMemoryUsage::Upload; // CPU_TO_GPU
-        stagingDesc.sharingMode = ESharingMode::SHARING_MODE_EXCLUSIVE;
-
-        if (!AllocBuffer(stagingHandle, std::move(stagingDesc)) || !AllocBufferDeviceMemory(stagingHandle))
-        {
-            LOG_ERROR("[RHIVkDevice::BufferMemoryCopy]: Failed to create staging buffer!");
-            m_BufferPool->Deallocate(stagingHandle);
-            return;
+            m_TransferManager->WaitForTicket(ticket);
         }
-
-        // 2. Copy data to Staging Buffer
-        void* stagingData = MapBuffer(stagingHandle);
-        if (stagingData)
-        {
-            memcpy(stagingData, src, size);
-            UnmapBuffer(stagingHandle);
-        }
-        else
-        {
-            LOG_ERROR("[RHIVkDevice::BufferMemoryCopy]: Failed to map staging buffer!");
-            ReleaseBuffer(stagingHandle);
-            return;
-        }
-
-        // 3. Record & Submit Copy Command
-        // Create transient command pool
-        VkCommandPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-        poolInfo.queueFamilyIndex = (m_TransferQueue) ? m_TransferFamilyIndex : m_GraphicsFamilyIndex;
-
-        VkCommandPool cmdPool;
-        if (vkCreateCommandPool(m_VkDevice, &poolInfo, nullptr, &cmdPool) != VK_SUCCESS)
-        {
-            LOG_ERROR("[RHIVkDevice::BufferMemoryCopy]: Failed to create transient command pool!");
-            ReleaseBuffer(stagingHandle);
-            return;
-        }
-
-        VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = cmdPool;
-        allocInfo.commandBufferCount = 1;
-
-        VkCommandBuffer cmdBuffer;
-        if (vkAllocateCommandBuffers(m_VkDevice, &allocInfo, &cmdBuffer) != VK_SUCCESS)
-        {
-            LOG_ERROR("[RHIVkDevice::BufferMemoryCopy]: Failed to allocate command buffer!");
-            vkDestroyCommandPool(m_VkDevice, cmdPool, nullptr);
-            ReleaseBuffer(stagingHandle);
-            return;
-        }
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-        vkBeginCommandBuffer(cmdBuffer, &beginInfo);
-
-        VkBufferCopy copyRegion{};
-        copyRegion.srcOffset = 0;
-        copyRegion.dstOffset = offset;
-        copyRegion.size = size;
-
-        auto* stagingBufferItem = m_BufferPool->Get(stagingHandle);
-        vkCmdCopyBuffer(cmdBuffer, stagingBufferItem->buffer, buffer->buffer, 1, &copyRegion);
-
-        vkEndCommandBuffer(cmdBuffer);
-
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &cmdBuffer;
-
-        // Use a fence for targeted synchronization instead of WaitIdle
-        VkFenceCreateInfo fenceInfo{};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        VkFence fence;
-        if (vkCreateFence(m_VkDevice, &fenceInfo, nullptr, &fence) == VK_SUCCESS)
-        {
-            auto* transferQueue = static_cast<RHIVkQueue*>(GetQueue(RHIQueueType::Transfer));
-            if (transferQueue)
-            {
-                vkQueueSubmit(transferQueue->GetVkQueue(), 1, &submitInfo, fence);
-                vkWaitForFences(m_VkDevice, 1, &fence, VK_TRUE, UINT64_MAX);
-            }
-            vkDestroyFence(m_VkDevice, fence, nullptr);
-        }
-        else
-        {
-            LOG_ERROR("[RHIVkDevice::BufferMemoryCopy]: Failed to create fence!");
-            // Fallback to heavy WaitIdle if fence fails
-            auto* transferQueue = static_cast<RHIVkQueue*>(GetQueue(RHIQueueType::Transfer));
-            if (transferQueue)
-            {
-                vkQueueSubmit(transferQueue->GetVkQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-                transferQueue->WaitIdle();
-            }
-        }
-
-        // Cleanup
-        vkDestroyCommandPool(m_VkDevice, cmdPool, nullptr);
-        ReleaseBuffer(stagingHandle);
     }
+}
+
+RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopyAsync(RHIBufferHandle handle, const void* src,
+                                                                    UInt64 size, UInt64 offset)
+{
+    ARISEN_PROFILE_ZONE("Vk::BufferMemoryCopyAsync");
+    auto* buffer = m_BufferPool->Get(handle);
+    if (!buffer || buffer->allocation == VK_NULL_HANDLE) return 0;
+
+    // Check if the memory is host visible
+    VmaAllocationInfo allocInfo;
+    vmaGetAllocationInfo(m_MemoryAllocator->GetVmaAllocator(), buffer->allocation, &allocInfo);
+    VkMemoryPropertyFlags memFlags = m_VkPhysicalDeviceMemoryProperties.memoryTypes[allocInfo.memoryType].propertyFlags;
+
+    if (memFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+    {
+        // Direct mapping — inherently synchronous, no ticket needed
+        void* mappedData;
+        if (vmaMapMemory(m_MemoryAllocator->GetVmaAllocator(), buffer->allocation, &mappedData) == VK_SUCCESS)
+        {
+            memcpy((uint8_t*)mappedData + offset, src, size);
+
+            if (!(memFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+            {
+                vmaFlushAllocation(m_MemoryAllocator->GetVmaAllocator(),
+                                   buffer->allocation, offset, size);
+            }
+
+            vmaUnmapMemory(m_MemoryAllocator->GetVmaAllocator(), buffer->allocation);
+        }
+        return 0; // No GPU work needed
+    }
+    else
+    {
+        // Device-local: enqueue via TransferManager and flush (non-blocking return)
+        // TODO(Transfer-P2): Add queue ownership transfer barriers here
+        m_TransferManager->EnqueueBufferCopy(buffer->buffer, src, size, offset);
+        return m_TransferManager->Flush();
+    }
+}
+
+RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::FlushTransfers()
+{
+    return m_TransferManager->Flush();
+}
+
+void ArisenEngine::RHI::RHIVkDevice::UpdateTransfers()
+{
+    m_TransferManager->Update();
 }
 
 void* ArisenEngine::RHI::RHIVkDevice::MapBuffer(RHIBufferHandle handle)
