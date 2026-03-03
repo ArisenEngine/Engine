@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+using namespace ArisenEngine;
 using namespace ArisenEngine::RHI;
 
 RingAllocator::RingAllocator(UInt64 capacity)
@@ -13,6 +14,10 @@ UInt64 RingAllocator::AlignUp(UInt64 value, UInt64 alignment)
 {
     return (value + alignment - 1) & ~(alignment - 1);
 }
+
+UInt64 RingAllocator::GetCapacity() const { return m_Capacity; }
+UInt64 RingAllocator::GetUsedSpace() const { return m_UsedSpace; }
+UInt64 RingAllocator::GetAvailableSpace() const { return m_Capacity - m_UsedSpace; }
 
 std::optional<RingAllocator::Allocation> RingAllocator::Allocate(UInt64 size, UInt64 alignment)
 {
@@ -33,7 +38,7 @@ std::optional<RingAllocator::Allocation> RingAllocator::Allocate(UInt64 size, UI
         alignedOffset = AlignUp(0, alignment);
         totalSize = wastedTail + alignedOffset + size;
 
-        if (totalSize > GetFreeSpace())
+        if (totalSize > GetAvailableSpace())
         {
             return std::nullopt; // Not enough space even after wrap
         }
@@ -43,7 +48,7 @@ std::optional<RingAllocator::Allocation> RingAllocator::Allocate(UInt64 size, UI
         return Allocation{alignedOffset, size};
     }
 
-    if (totalSize > GetFreeSpace())
+    if (totalSize > GetAvailableSpace())
     {
         return std::nullopt; // Ring is full
     }
