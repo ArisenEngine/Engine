@@ -21,3 +21,12 @@
 [submodule "Arisen/Test/NativeEngineTest/Assets/glTF-Sample-Models"]
 	path = Arisen/Test/Assets/glTF-Sample-Models
 	url = https://github.com/KhronosGroup/glTF-Sample-Models.git
+[submodule "Arisen/External/ArisenNodeCanvas"]
+	path = Arisen/External/ArisenNodeCanvas
+	url = https://github.com/eatdreamcat/ArisenNodeCanvas.git
+[submodule "Arisen/External/ArisenDAG"]
+	path = Arisen/External/ArisenDAG
+	url = https://github.com/eatdreamcat/ArisenDAG.git
+[submodule "Arisen/External/ArisenEditorFramework"]
+	path = Arisen/External/ArisenEditorFramework
+	url = https://github.com/eatdreamcat/ArisenEditorFramework.git
