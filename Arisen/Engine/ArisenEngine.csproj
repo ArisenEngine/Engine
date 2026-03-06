@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\AutoBinding\AutoBinding.csproj" />
     <ProjectReference Include="..\Serialization\Serialization\Serialization.csproj" />
+    <ProjectReference Include="..\External\ArisenDAG\ArisenDAG.csproj" />
   </ItemGroup>
 
   <ItemGroup>
