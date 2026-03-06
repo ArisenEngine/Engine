@@ -251,8 +251,7 @@ namespace ArisenEngine::Testing
             case WM_CLOSE:
                 if (test && test->m_Device)
                 {
-                    test->m_Device->GraphicQueueWaitIdle();
-                    test->m_Device->PresentQueueWaitIdle();
+                    test->m_Device->DeviceWaitIdle();
                 }
                 DestroyWindow(hwnd);
                 return 0;
@@ -312,7 +311,7 @@ namespace ArisenEngine::Testing
                 }
                 return 0;
             }
-            return 0;
+            return DefWindowProc(hwnd, msg, wParam, lParam);
         }
 
         static void OnWindowResizing(HWND hwnd, UInt32 width, UInt32 height)

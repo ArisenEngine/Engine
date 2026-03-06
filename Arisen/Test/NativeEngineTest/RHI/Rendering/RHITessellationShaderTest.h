@@ -145,6 +145,8 @@ namespace ArisenEngine::Testing
 
         void TeardownTest() override
         {
+            if (m_Device) m_Device->DeviceWaitIdle();
+
             auto factory = m_Device->GetFactory();
             if (m_DepthView.IsValid()) factory->ReleaseImageView(m_DepthView);
             if (m_DepthImage.IsValid()) factory->ReleaseImage(m_DepthImage);
