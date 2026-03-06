@@ -1101,11 +1101,6 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
         delete m_BindlessManager;
         m_BindlessManager = nullptr;
     }
-    if (m_DescriptorPool)
-    {
-        delete m_DescriptorPool;
-        m_DescriptorPool = nullptr;
-    }
 
     // Explicitly destroy TransferManager before MemoryAllocator is destroyed,
     // so staging buffer VMA allocations are freed while the allocator is still valid.
@@ -1125,6 +1120,10 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
     }
 
     // 5. Flush all deferred deletions now that we know the GPU is idle and all tickets are completed.
+    //    IMPORTANT: m_DescriptorPool must still be alive here because deferred descriptor pool
+    //    rotation callbacks (DeferredVkDescriptorPoolWithCallback) call back into it via
+    //    OnDeferredPoolDestroyed(). Deleting m_DescriptorPool before this flush would cause
+    //    a use-after-free / hang on the mutex of a destroyed object.
     if (m_DeferredDeletion)
     {
         LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Flushing deferred deletions");
@@ -1134,6 +1133,13 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
         m_DeferredDeletion->Flush(RHIQueueType::Compute, kAll);
         m_DeferredDeletion->Flush(RHIQueueType::Transfer, kAll);
         m_DeferredDeletion->Flush(RHIQueueType::Present, kAll);
+    }
+
+    // 6. Now safe to destroy DescriptorPool (after deferred callbacks have completed)
+    if (m_DescriptorPool)
+    {
+        delete m_DescriptorPool;
+        m_DescriptorPool = nullptr;
     }
 
     // 6. Now safe to destroy the registry object and memory allocator
