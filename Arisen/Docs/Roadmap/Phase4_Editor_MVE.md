@@ -29,3 +29,13 @@ Basic project setting persistence.
 1. **Text Serialization:**
    - **Path**: `d:\EngineSource\ArisenEngine\Engine\Arisen\Serialization\`.
    - Implement basic `Project.json` parsing. Ensure the EngineKernel loads this file during `PostInit` before firing the first frame.
+
+## 4.4 Editor Infrastructure & Graphing
+Adopt shared infrastructure to accelerate the construction of engine editor tools.
+
+**Implementation Steps:**
+1. **Adopt Extensible Frameworks:**
+   - Leverage **`ArisenEditorFramework`** to construct the base architecture of the editor, mirroring the systems built for Arisen Studio.
+2. **Visual Graph Editing:**
+   - Integrate **`ArisenDAG`** as the general backend logic for node graphs.
+   - Utilize **`ArisenNodeCanvas`** for rendering node-based editors, enabling features such as an upcoming RenderGraph designer or visual scripting.

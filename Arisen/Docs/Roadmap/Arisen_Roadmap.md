@@ -97,6 +97,10 @@ This document serves as the master progression tracker for Arisen. The ultimate 
 - [ ] Introduce a simple JSON or YAML deserializer (like `System.Text.Json`).
 - [ ] Automatically load Engine config and standard assets at boot.
 
+### 4.4 Editor Infrastructure & Graphing
+- [ ] Integrate **`ArisenEditorFramework`** to serve as the baseline library for editor structure, sharing foundations with Arisen Studio.
+- [ ] Introduce **`ArisenDAG`** and **`ArisenNodeCanvas`** to enable visual node-based editing (e.g., for RenderGraph or Behavior Trees).
+
 ---
 
 ## 📅 Phase 5: The Data-Driven Synchronicity

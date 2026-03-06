@@ -38,6 +38,12 @@ The toolkit and IDE for the engine, built using the modern, cross-platform UI fr
 - **`ArisenEditor`**: Common editor utilities, property inspectors, and engine viewports.
 - **`ArisenEditor.Desktop`**: The entry point executable for the Windows/Desktop platform.
 
+### 5. External Submodules (`External`)
+Shared libraries and infrastructure components utilized across multiple projects, including Arisen Engine and Arisen Studio (an AI studio tool).
+- **`ArisenDAG`**: A general GraphSystem used across different tools.
+- **`ArisenEditorFramework`**: Fundamental editor infrastructure that serves as a base library for the GameEngineEditor and other user extensions. Also used in Arisen Studio.
+- **`ArisenNodeCanvas`**: A UI framework used to display and edit the graph system, leveraged by multiple projects.
+
 ## Documentation Navigation
 
 This documentation folder is split into several categories for easy navigation:
