@@ -22,28 +22,30 @@ ArisenEngine::RHI::RHIVkQueue::~RHIVkQueue() noexcept
     {
         vkQueueWaitIdle(m_Queue);
     }
-    if (m_TimelineSemaphore != VK_NULL_HANDLE)
+    if (m_TimelineSemaphoreHandle.IsValid())
     {
-        vkDestroySemaphore(m_Device, m_TimelineSemaphore, nullptr);
+        m_RHIDevice->GetFactory()->ReleaseSemaphore(m_TimelineSemaphoreHandle);
+        m_TimelineSemaphoreHandle = RHISemaphoreHandle::Invalid();
         m_TimelineSemaphore = VK_NULL_HANDLE;
     }
 }
 
 void ArisenEngine::RHI::RHIVkQueue::CreateTimelineSemaphore()
 {
-    VkSemaphoreTypeCreateInfo typeInfo{};
-    typeInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
-    typeInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
-    typeInfo.initialValue = 0;
-
-    VkSemaphoreCreateInfo semaphoreInfo{};
-    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    semaphoreInfo.pNext = &typeInfo;
-
-    VkResult result = vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &m_TimelineSemaphore);
-    if (result != VK_SUCCESS)
+    m_TimelineSemaphoreHandle = m_RHIDevice->GetFactory()->CreateTimelineSemaphore(0);
+    if (!m_TimelineSemaphoreHandle.IsValid())
     {
-        LOG_FATAL_AND_THROW("[RHIVkQueue]: failed to create timeline semaphore!");
+        LOG_FATAL_AND_THROW("[RHIVkQueue]: failed to create timeline semaphore from factory!");
+    }
+
+    auto* semItem = m_RHIDevice->GetSemaphorePool()->Get(m_TimelineSemaphoreHandle);
+    if (semItem && semItem->semaphore != VK_NULL_HANDLE)
+    {
+        m_TimelineSemaphore = semItem->semaphore;
+    }
+    else
+    {
+        LOG_FATAL_AND_THROW("[RHIVkQueue]: timeline semaphore has invalid raw handle!");
     }
 }
 
@@ -52,8 +54,17 @@ void ArisenEngine::RHI::RHIVkQueue::CreateTimelineSemaphore()
 ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommandBufferHandle handle,
                                                                       const RHISubmitDescriptor* descriptor)
 {
+    ARISEN_PROFILE_ZONE("RHI::VulkanQueueSubmit");
+    std::lock_guard<std::mutex> lock(m_SubmitMutex);
+
     auto* commandBuffer = m_RHIDevice->GetCommandBuffer(handle);
     ASSERT(commandBuffer && commandBuffer->ReadyForSubmit());
+
+    RHIVkCommandBuffer* vkCmd = static_cast<RHIVkCommandBuffer*>(commandBuffer);
+    if (!vkCmd->IsCompiled())
+    {
+        vkCmd->Compile();
+    }
 
     Containers::Vector<VkSemaphore> waitSems;
     Containers::Vector<VkPipelineStageFlags> waitStages;
@@ -122,30 +133,6 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::Submit(RHICommand
         }
     }
 
-    return SubmitWithFence(handle, VK_NULL_HANDLE, false, waitSems, waitStages, waitValues, signalSems, signalValues);
-}
-
-ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(
-    RHICommandBufferHandle handle, VkFence fence, bool ownedFence,
-    const Containers::Vector<VkSemaphore>& extraWaitSems,
-    const Containers::Vector<VkPipelineStageFlags>& extraWaitStages,
-    const Containers::Vector<uint64_t>& extraWaitValues,
-    const Containers::Vector<VkSemaphore>& extraSignalSems,
-    const Containers::Vector<uint64_t>& extraSignalValues)
-{
-    ARISEN_PROFILE_ZONE("RHI::VulkanQueueSubmit");
-    std::lock_guard<std::mutex> lock(m_SubmitMutex);
-    RHICommandBuffer* pCmd = m_RHIDevice->GetCommandBuffer(handle);
-    ASSERT(pCmd && pCmd->ReadyForSubmit());
-    (void)ownedFence;
-
-    RHIVkCommandBuffer* vkCmd = static_cast<RHIVkCommandBuffer*>(pCmd);
-    if (!vkCmd->IsCompiled())
-    {
-        vkCmd->Compile();
-    }
-
-    // Timeline signal value
     const auto submitTicket = m_LatestTicket.fetch_add(1, std::memory_order_acq_rel) + 1;
 
     VkTimelineSemaphoreSubmitInfo timelineInfo{};
@@ -155,64 +142,33 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.pNext = &timelineInfo;
 
-    Containers::Vector<VkSemaphore> waitSemaphores;
-    Containers::Vector<VkPipelineStageFlags> waitDstStageMask;
-    Containers::Vector<uint64_t> waitValues;
-
-    // Add CommandBuffer Internal waits (Removed: Sync moved to Descriptor)
-    // if (vkCmd->GetWaitSemaphoresCount() > 0) ...
-
-    // Add Extra waits
-    for (size_t i = 0; i < extraWaitSems.size(); ++i)
-    {
-        waitSemaphores.push_back(extraWaitSems[i]);
-        waitDstStageMask.push_back(extraWaitStages[i]);
-        waitValues.push_back(extraWaitValues.size() > i ? extraWaitValues[i] : 0);
-    }
-
-    submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
-    submitInfo.pWaitSemaphores = waitSemaphores.data();
-    submitInfo.pWaitDstStageMask = waitDstStageMask.data();
+    submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSems.size());
+    submitInfo.pWaitSemaphores = waitSems.data();
+    submitInfo.pWaitDstStageMask = waitStages.data();
 
     timelineInfo.waitSemaphoreValueCount = submitInfo.waitSemaphoreCount;
     timelineInfo.pWaitSemaphoreValues = waitValues.data();
 
-
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &vkCmd->m_VkCommandBuffer;
 
-    Containers::Vector<VkSemaphore> signalSemaphores;
-    Containers::Vector<uint64_t> signalValues;
+    signalSems.push_back(m_TimelineSemaphore);
+    signalValues.push_back(submitTicket);
 
-    signalSemaphores.emplace_back(m_TimelineSemaphore);
-    signalValues.emplace_back(submitTicket);
-
-    // if (vkCmd->GetSignalSemaphoresCount() > 0) ... (Removed)
-
-    // Add Extra signals
-    for (size_t i = 0; i < extraSignalSems.size(); ++i)
-    {
-        signalSemaphores.emplace_back(extraSignalSems[i]);
-        signalValues.emplace_back(extraSignalValues.size() > i ? extraSignalValues[i] : 0);
-    }
-
-    submitInfo.signalSemaphoreCount = static_cast<UInt32>(signalSemaphores.size());
-    submitInfo.pSignalSemaphores = signalSemaphores.data();
+    submitInfo.signalSemaphoreCount = static_cast<UInt32>(signalSems.size());
+    submitInfo.pSignalSemaphores = signalSems.data();
 
     timelineInfo.signalSemaphoreValueCount = static_cast<uint32_t>(signalValues.size());
     timelineInfo.pSignalSemaphoreValues = signalValues.data();
 
-
     vkCmd->SetLatestSubmitTicket(submitTicket);
 
-    if (vkQueueSubmit(m_Queue, 1, &submitInfo, fence) != VK_SUCCESS)
+    if (vkQueueSubmit(m_Queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
     {
         // If submission fails, we should clear the ticket.
         vkCmd->SetLatestSubmitTicket(0);
         LOG_FATAL_AND_THROW("[RHIVkQueue::Submit]: failed to submit command buffer!");
     }
-
-    // m_LatestTicket already updated via fetch_add above.
 
     // Mark descriptor pools used by this submission so ResetPool can be GPU-safe.
     for (const auto& trackedPool : vkCmd->GetTrackedDescriptorPools())
@@ -238,56 +194,6 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(
     }
     vkCmd->ClearTrackedResourceHandles();
     vkCmd->SetLatestSubmitTicket(submitTicket);
-
-    return submitTicket;
-}
-
-ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitRaw(
-    VkCommandBuffer commandBuffer,
-    const Containers::Vector<VkSemaphore>& waitSems,
-    const Containers::Vector<VkPipelineStageFlags>& waitStages,
-    const Containers::Vector<uint64_t>& waitValues,
-    const Containers::Vector<VkSemaphore>& signalSems,
-    const Containers::Vector<uint64_t>& signalValues)
-{
-    ARISEN_PROFILE_ZONE("RHI::VulkanQueueSubmitRaw");
-    std::lock_guard<std::mutex> lock(m_SubmitMutex);
-
-    const auto submitTicket = m_LatestTicket.fetch_add(1, std::memory_order_acq_rel) + 1;
-
-    VkTimelineSemaphoreSubmitInfo timelineInfo{};
-    timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.pNext = &timelineInfo;
-
-    submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSems.size());
-    submitInfo.pWaitSemaphores = waitSems.data();
-    submitInfo.pWaitDstStageMask = waitStages.data();
-
-    timelineInfo.waitSemaphoreValueCount = submitInfo.waitSemaphoreCount;
-    timelineInfo.pWaitSemaphoreValues = waitValues.data();
-
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
-
-    Containers::Vector<VkSemaphore> fullSignalSems = signalSems;
-    Containers::Vector<uint64_t> fullSignalValues = signalValues;
-
-    fullSignalSems.push_back(m_TimelineSemaphore);
-    fullSignalValues.push_back(submitTicket);
-
-    submitInfo.signalSemaphoreCount = static_cast<uint32_t>(fullSignalSems.size());
-    submitInfo.pSignalSemaphores = fullSignalSems.data();
-
-    timelineInfo.signalSemaphoreValueCount = static_cast<uint32_t>(fullSignalValues.size());
-    timelineInfo.pSignalSemaphoreValues = fullSignalValues.data();
-
-    if (vkQueueSubmit(m_Queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
-    {
-        LOG_FATAL_AND_THROW("[RHIVkQueue::SubmitRaw]: failed to submit raw command buffer!");
-    }
 
     return submitTicket;
 }
