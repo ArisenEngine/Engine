@@ -24,6 +24,29 @@ public partial class MainWindow : Window
         }
         
         _mockWindow = new MockCustomWindow { Id = "MockWindow1", Title = "Test Tool" };
+        
+        // Subscribe to engine logger
+        ArisenEngine.Core.Diagnostics.Logger.MessageAdded += OnLogMessageAdded;
+    }
+
+    private void OnLogMessageAdded(ArisenEngine.Core.Diagnostics.Logger.LogMessage msg)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            var consoleOutput = this.FindControl<TextBlock>("ConsoleOutput");
+            if (consoleOutput != null)
+            {
+                string colorHex = msg.LogLevel switch
+                {
+                    ArisenEngine.Core.Diagnostics.Logger.LogLevel.Error or ArisenEngine.Core.Diagnostics.Logger.LogLevel.Fatal => "#FF5555",
+                    ArisenEngine.Core.Diagnostics.Logger.LogLevel.Warning => "#FFB86C",
+                    _ => "#CCCCCC"
+                };
+                
+                // Simple append for testing purposes. In a real engine, use an AvaloniaList and ItemsControl virtualization.
+                consoleOutput.Text += $"[{msg.Time:HH:mm:ss}] [{msg.LogLevel}] {msg.Message}\n";
+            }
+        });
     }
 
     private void OpenToolBtn_Click(object? sender, RoutedEventArgs e)

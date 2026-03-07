@@ -14,16 +14,45 @@ class Program
     public static void Main(string[] args)
     {
         Thread.CurrentThread.Name = "MainThread";
-        Setup();
         
-        BuildAvaloniaApp()
-            .StartWithClassicDesktopLifetime(args);
+        // Setup global exception handling for non-UI threads
+        AppDomain.CurrentDomain.UnhandledException += (s, e) => 
+        {
+            Logger.Fatal($"Unhandled Exception: {e.ExceptionObject}");
+            // Ensure logs are flushed on fatal exit
+            Logger.Dispose();
+        };
+        
+        TaskScheduler.UnobservedTaskException += (s, e) => 
+        {
+            Logger.Fatal($"Unobserved Task Exception: {e.Exception}");
+            e.SetObserved();
+        };
+
+        try
+        {
+            Setup();
+            
+            Logger.Info("EditorTest application started.");
+            
+            BuildAvaloniaApp()
+                .StartWithClassicDesktopLifetime(args);
+        }
+        finally
+        {
+            Logger.Info("EditorTest application shutting down.");
+            Bootstrap.Shutdown();
+            Logger.Dispose();
+        }
     }
 
     static void Setup()
     {
-        // Initialize Logger with editor flag
-        Logger.Initialize(true);
+        // Centralized Engine Initialization (Logger + Graphics RHI)
+        if (!Bootstrap.Initialize())
+        {
+            Console.WriteLine("[EditorTest] Failed to initialize engine via Bootstrap.");
+        }
         
         // Setup installation root
         string? installRoot = Environment.GetEnvironmentVariable("ARISEN_ENGINE_ROOT", EnvironmentVariableTarget.User);
