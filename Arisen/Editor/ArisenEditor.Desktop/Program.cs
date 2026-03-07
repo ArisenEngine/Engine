@@ -4,7 +4,9 @@ using ArisenEditor.GameDev;
 using Avalonia;
 using Avalonia.ReactiveUI;
 using ArisenEngine;
-using ArisenEngine.Debugger;
+using ArisenEngine.Core.Diagnostics;
+using ArisenEngine.Core.Lifecycle;
+using ArisenEngine.Core.Diagnostics;
 
 namespace ArisenEditor.Desktop.Desktop;
 

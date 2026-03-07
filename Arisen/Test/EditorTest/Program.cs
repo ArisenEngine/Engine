@@ -1,12 +1,10 @@
 using System;
 using System.Threading;
-using ArisenEditor.GameDev;
 using Avalonia;
 using Avalonia.ReactiveUI;
 using ArisenEngine;
 using ArisenEngine.Core.Diagnostics;
 using ArisenEngine.Core.Lifecycle;
-using ArisenEditor;
 
 namespace EditorTest;
 
@@ -42,7 +40,6 @@ class Program
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
-            .WithInterFont()
             .LogToTrace()
             .UseReactiveUI();
 }
