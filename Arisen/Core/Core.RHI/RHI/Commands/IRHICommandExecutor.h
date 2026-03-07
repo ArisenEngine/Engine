@@ -53,6 +53,10 @@ namespace ArisenEngine::RHI
         virtual void BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firstSet,
                                         RHIDescriptorPoolHandle poolHandle, UInt32 poolId, UInt32 setIndex,
                                         bool isSingleSet) = 0;
+        virtual void BindDescriptorBuffers(UInt32 bufferCount, const RHIBufferHandle* pBuffers) = 0;
+        virtual void SetDescriptorBufferOffsets(EPipelineBindPoint bindPoint, RHIPipelineHandle pipeline,
+                                                UInt32 firstSet, UInt32 setCount, const UInt32* pIndices,
+                                                const UInt64* pOffsets) = 0;
         virtual void PushConstants(UInt32 offset, UInt32 size, const void* data, UInt32 stageFlags) = 0;
         virtual void CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst, EImageLayout dstImageLayout,
                                        UInt32 regionCount, const RHIBufferImageCopy* pRegions) = 0;

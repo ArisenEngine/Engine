@@ -16,7 +16,7 @@
 #include "RHI/RenderPass/RHIFrameBuffer.h"
 #include "RHI/RenderPass/RHIRenderPass.h"
 #include "RHI/Samplers/RHISampler.h"
-#include "RHI/Sync/RHIFence.h"
+
 #include "RHI/Sync/RHISemaphore.h"
 
 namespace ArisenEngine::RHI
@@ -70,9 +70,7 @@ namespace ArisenEngine::RHI
 
     RHISampler::~RHISampler() noexcept = default;
 
-    // RHIFence
-    RHIFence::RHIFence() = default;
-    RHIFence::~RHIFence() noexcept = default;
+
 
     // RHISemaphore
     RHISemaphore::RHISemaphore() = default;

@@ -88,6 +88,16 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
     vkGetRayTracingShaderGroupHandlesKHR = (PFN_vkGetRayTracingShaderGroupHandlesKHR)vkGetDeviceProcAddr(
         m_VkDevice, "vkGetRayTracingShaderGroupHandlesKHR");
 
+    // Descriptor Buffers
+    if (m_Capabilities.supportDescriptorBuffer)
+    {
+        vkGetDescriptorSetLayoutSizeEXT = (PFN_vkGetDescriptorSetLayoutSizeEXT)vkGetDeviceProcAddr(m_VkDevice, "vkGetDescriptorSetLayoutSizeEXT");
+        vkGetDescriptorSetLayoutBindingOffsetEXT = (PFN_vkGetDescriptorSetLayoutBindingOffsetEXT)vkGetDeviceProcAddr(m_VkDevice, "vkGetDescriptorSetLayoutBindingOffsetEXT");
+        vkGetDescriptorEXT = (PFN_vkGetDescriptorEXT)vkGetDeviceProcAddr(m_VkDevice, "vkGetDescriptorEXT");
+        vkCmdBindDescriptorBuffersEXT = (PFN_vkCmdBindDescriptorBuffersEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdBindDescriptorBuffersEXT");
+        vkCmdSetDescriptorBufferOffsetsEXT = (PFN_vkCmdSetDescriptorBufferOffsetsEXT)vkGetDeviceProcAddr(m_VkDevice, "vkCmdSetDescriptorBufferOffsetsEXT");
+    }
+
     // VRS
     // VRS
     vkCmdSetFragmentShadingRateKHR = (PFN_vkCmdSetFragmentShadingRateKHR)vkGetDeviceProcAddr(
@@ -137,8 +147,6 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
         RHI_STATS_PTR(m_Stats.synchronizationCount));
     m_PipelinePool = std::make_unique<RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>>(
         RHI_STATS_PTR(m_Stats.pipelineCount));
-    m_FencePool = std::make_unique<RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>>(
-        RHI_STATS_PTR(m_Stats.synchronizationCount));
     m_GPUProgramPool = std::make_unique<RHIResourcePool<RHIShaderProgramHandle, RHIVkGPUProgramPoolItem>>(
         RHI_STATS_PTR(m_Stats.shaderProgramCount));
     m_CommandBufferPoolPool = std::make_unique<RHIResourcePool<
@@ -520,7 +528,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocBuffer(RHIBufferHandle handle, RHIBuff
     buffer->state->buffer = buffer->buffer;
     buffer->state->allocator = m_MemoryAllocator->GetVmaAllocator();
     buffer->memoryUsage = desc.memoryUsage;
-
+    buffer->usage = desc.usage;
     buffer->registryHandle = m_ResourceRegistry->Create(MakeDeferredDeleteItem(buffer->state));
 
     return true;
@@ -1003,25 +1011,7 @@ void ArisenEngine::RHI::RHIVkDevice::ReleaseSemaphore(
     }
 }
 
-void ArisenEngine::RHI::RHIVkDevice::FreeFenceInternal(RHIFenceHandle handle)
-{
-    auto* f = m_FencePool->Get(handle);
-    if (f && f->fence != VK_NULL_HANDLE)
-    {
-        m_ResourceRegistry->Release(f->registryHandle);
-        f->fence = VK_NULL_HANDLE;
-        f->registryHandle = RHIResourceHandle::Invalid();
-    }
-}
 
-void ArisenEngine::RHI::RHIVkDevice::ReleaseFence(RHIFenceHandle handle)
-{
-    FreeFenceInternal(handle);
-    if (!m_FencePool->Deallocate(handle))
-    {
-        LOG_WARN("[RHIVkDevice::ReleaseFence]: Failed to deallocate handle (invalid or stale)!");
-    }
-}
 
 void ArisenEngine::RHI::RHIVkDevice::FreeRenderPassInternal(RHIRenderPassHandle handle)
 {
@@ -1253,23 +1243,7 @@ bool ArisenEngine::RHI::RHIVkDevice::AllocFrameBuffer(RHIFrameBufferHandle handl
     return true;
 }
 
-void ArisenEngine::RHI::RHIVkDevice::WaitFence(RHIFenceHandle handle)
-{
-    auto* f = m_FencePool->Get(handle);
-    if (f && f->fence != VK_NULL_HANDLE)
-    {
-        vkWaitForFences(m_VkDevice, 1, &f->fence, VK_TRUE, UINT64_MAX);
-    }
-}
 
-void ArisenEngine::RHI::RHIVkDevice::ResetFence(RHIFenceHandle handle)
-{
-    auto* f = m_FencePool->Get(handle);
-    if (f && f->fence != VK_NULL_HANDLE)
-    {
-        vkResetFences(m_VkDevice, 1, &f->fence);
-    }
-}
 
 void ArisenEngine::RHI::RHIVkDevice::ReleaseGPUProgram(RHIShaderProgramHandle handle)
 {

@@ -88,6 +88,9 @@ namespace ArisenEngine::RHI
         InsertDebugMarker,
         TrackDescriptorPoolUse,
 
+        BindDescriptorBuffers,
+        SetDescriptorBufferOffsets,
+
         // Count
         Count
     };
@@ -415,5 +418,22 @@ namespace ArisenEngine::RHI
     {
         RHIDescriptorPoolHandle poolHandle;
         UInt32 poolId;
+    };
+
+    struct RHICmdBindDescriptorBuffers
+    {
+        UInt32 bufferCount;
+        // Followed by bufferCount * RHIBufferHandle
+    };
+
+    struct RHICmdSetDescriptorBufferOffsets
+    {
+        EPipelineBindPoint bindPoint;
+        RHIPipelineHandle pipeline;
+        UInt32 firstSet;
+        UInt32 setCount;
+        // Followed by:
+        // - setCount * UInt32 (bufferIndices)
+        // - setCount * UInt64 (offsets)
     };
 } // namespace ArisenEngine::RHI

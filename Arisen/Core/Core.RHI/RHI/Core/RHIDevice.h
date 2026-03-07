@@ -23,7 +23,7 @@ namespace ArisenEngine::RHI
     class RHICommandBufferPool;
     class RHIRenderPass;
     class RHIFrameBuffer;
-    class RHIFence;
+
     class RHIFactory;
     class RHIMemoryAllocator;
 
@@ -66,7 +66,7 @@ namespace ArisenEngine::RHI
 
         virtual void ReleaseSampler(RHISamplerHandle handle) = 0;
         virtual void ReleaseSemaphore(RHISemaphoreHandle handle) = 0;
-        virtual void ReleaseFence(RHIFenceHandle handle) = 0;
+
         virtual void ReleaseRenderPass(RHIRenderPassHandle handle) = 0;
         virtual void ReleaseFrameBuffer(RHIFrameBufferHandle handle) = 0;
         virtual void ReleasePipeline(RHIPipelineHandle handle) = 0;

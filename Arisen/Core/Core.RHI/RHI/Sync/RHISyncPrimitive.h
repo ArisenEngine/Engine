@@ -12,9 +12,6 @@ namespace ArisenEngine::RHI
     public:
         virtual ~RHISyncPrimitive() = default;
 
-        // Binary Sync (Fences)
-        virtual void WaitFence(RHIFenceHandle handle) = 0;
-        virtual void ResetFence(RHIFenceHandle handle) = 0;
 
         // Timeline Sync (Semaphores)
         virtual void WaitSemaphoreValue(RHISemaphoreHandle handle, UInt64 value) = 0;

@@ -143,8 +143,7 @@ namespace ArisenEngine::RHI
 
         void ReleaseImageView(RHIImageViewHandle handle) override { (void)handle; }
         void ReleaseSampler(RHISamplerHandle handle) override { (void)handle; }
-        void ReleaseSemaphore(RHISemaphoreHandle handle) override { (void)handle; }
-        void ReleaseFence(RHIFenceHandle handle) override { (void)handle; }
+
         void ReleaseRenderPass(RHIRenderPassHandle handle) override { (void)handle; }
         void ReleaseFrameBuffer(RHIFrameBufferHandle handle) override { (void)handle; }
         void ReleasePipeline(RHIPipelineHandle handle) override { (void)handle; }

@@ -69,6 +69,7 @@ namespace ArisenEngine
 
             // Cached vectors for other commands
             Containers::Vector<VkDescriptorSet> m_VkDescriptorSets{};
+            Containers::Vector<VkDescriptorBufferBindingInfoEXT> m_VkDescriptorBufferBindingInfos{};
             Containers::Vector<VkCommandBuffer> m_VkSecondaryCommandBuffers{};
             Containers::Vector<VkBufferImageCopy> m_VkBufferImageCopies{};
 

@@ -126,4 +126,5 @@ typedef struct RHICapabilities
     ArisenEngine::UInt64 optimalBufferCopyOffsetAlignment;
     ArisenEngine::UInt64 optimalBufferCopyRowPitchAlignment;
     ArisenEngine::UInt64 nonCoherentAtomSize;
+    int supportDescriptorBuffer;
 } RHICapabilities;
