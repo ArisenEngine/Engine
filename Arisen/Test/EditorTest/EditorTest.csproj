@@ -32,7 +32,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Engine\ArisenEngine.csproj" />
-    <ProjectReference Include="..\..\Editor\ArisenEditor\ArisenEditor.csproj" />
     <ProjectReference Include="..\..\External\ArisenEditorFramework\ArisenEditorFramework.csproj" />
   </ItemGroup>
 

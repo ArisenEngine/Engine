@@ -59,9 +59,10 @@ if __name__ == "__main__":
         "Binding": ["BindingGenerator", "AutoBinding"],
         "Editor": [
             "ArisenEditor", "ArisenEditor.Desktop", "ArisenEditorShell",
-            "Avalonia.", "Dock."
+            "Avalonia.", "Dock.", "ArisenEditorFramework"
         ],
-        "Runtime": ["ArisenEngine"]
+        "Runtime": ["ArisenEngine"],
+        "Test": ["EditorTest", "CSharpEngineTest"]
     }
 
     if len(sys.argv) < 2:
