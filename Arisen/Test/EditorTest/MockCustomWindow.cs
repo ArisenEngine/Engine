@@ -10,18 +10,22 @@ public class MockCustomWindow : IEditorWindow
     public string Id { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
 
-    private readonly TextBox _textBox;
-    private readonly StackPanel _panel;
+    public string Text { get; set; } = string.Empty;
 
     public MockCustomWindow()
     {
-        _textBox = new TextBox 
+    }
+
+    public object GetContent()
+    {
+        var textBox = new TextBox 
         { 
             Watermark = "Type something, then click simulate hot reload...",
-            Margin = new Avalonia.Thickness(0, 10, 0, 0)
+            Margin = new Avalonia.Thickness(0, 10, 0, 0),
+            [!TextBox.TextProperty] = new Avalonia.Data.Binding(nameof(Text)) { Source = this, Mode = Avalonia.Data.BindingMode.TwoWay }
         };
         
-        _panel = new StackPanel
+        return new StackPanel
         {
             Margin = new Avalonia.Thickness(10),
             Children = 
@@ -32,23 +36,18 @@ public class MockCustomWindow : IEditorWindow
                     TextWrapping = TextWrapping.Wrap, 
                     Foreground = Brushes.Gray 
                 },
-                _textBox
+                textBox
             }
         };
     }
 
-    public object GetContent()
-    {
-        return _panel;
-    }
-
     public string SerializeState()
     {
-        return _textBox.Text ?? string.Empty;
+        return Text;
     }
 
     public void DeserializeState(string state)
     {
-        _textBox.Text = state;
+        Text = state;
     }
 }

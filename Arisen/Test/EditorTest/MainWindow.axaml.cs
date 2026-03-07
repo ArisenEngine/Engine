@@ -7,15 +7,33 @@ namespace EditorTest;
 
 public partial class MainWindow : Window
 {
+    public static MainWindow? Instance { get; private set; }
+    public LayoutManager? LayoutManager => _layoutManager;
+
     private LayoutManager? _layoutManager;
     private MockCustomWindow? _mockWindow;
 
     public MainWindow()
     {
+        Instance = this;
         InitializeComponent();
         
         _layoutManager = new LayoutManager();
         _layoutManager.Initialize();
+        
+        // Register the "Standard" Unity-like tools
+        // We use the same IDs as in ArisenDockFactory.CreateLayout()
+        var hierarchy = new HierarchyWindow();
+        var inspector = new InspectorWindow();
+        var console = new ConsoleWindow();
+        var viewport = new ViewportWindow();
+        var toolbar = new ToolbarWindow();
+
+        // Register them so LayoutManager knows about them for ViewLocator lookups
+        // Note: These are created once and kept alive.
+        _layoutManager.RestoreCustomWindows(
+            new List<IEditorWindow> { hierarchy, inspector, console, viewport, toolbar }, 
+            new Dictionary<string, string>());
         
         var dockControl = this.FindControl<Dock.Avalonia.Controls.DockControl>("MainDockControl");
         if (dockControl != null)
@@ -24,32 +42,9 @@ public partial class MainWindow : Window
         }
         
         _mockWindow = new MockCustomWindow { Id = "MockWindow1", Title = "Test Tool" };
-        
-        // Subscribe to engine logger
-        ArisenEngine.Core.Diagnostics.Logger.MessageAdded += OnLogMessageAdded;
     }
 
-    private void OnLogMessageAdded(ArisenEngine.Core.Diagnostics.Logger.LogMessage msg)
-    {
-        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-        {
-            var consoleOutput = this.FindControl<TextBlock>("ConsoleOutput");
-            if (consoleOutput != null)
-            {
-                string colorHex = msg.LogLevel switch
-                {
-                    ArisenEngine.Core.Diagnostics.Logger.LogLevel.Error or ArisenEngine.Core.Diagnostics.Logger.LogLevel.Fatal => "#FF5555",
-                    ArisenEngine.Core.Diagnostics.Logger.LogLevel.Warning => "#FFB86C",
-                    _ => "#CCCCCC"
-                };
-                
-                // Simple append for testing purposes. In a real engine, use an AvaloniaList and ItemsControl virtualization.
-                consoleOutput.Text += $"[{msg.Time:HH:mm:ss}] [{msg.LogLevel}] {msg.Message}\n";
-            }
-        });
-    }
-
-    private void OpenToolBtn_Click(object? sender, RoutedEventArgs e)
+    public void OpenTool()
     {
         if (_mockWindow != null)
         {
@@ -57,7 +52,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void HotReloadBtn_Click(object? sender, RoutedEventArgs e)
+    public void SimulateHotReload()
     {
         if (_layoutManager == null || _mockWindow == null) return;
 
@@ -67,16 +62,18 @@ public partial class MainWindow : Window
         // 2. Serialize full docking layout
         var layoutData = _layoutManager.SaveLayout();
         
-        // 3. Simulate ALC unloading by dropping the old instance
-        _layoutManager.CloseWindow(_mockWindow);
-        _mockWindow = null;
-        
         // --- Imagine ALC Unload / Build / Reload here ---
-        
-        // 4. Instantiate NEW mock window
+        // For testing we just simulate the state restore process.
+
+        // 3. Create NEW instances (normally this would be done by the new ALC loading)
         _mockWindow = new MockCustomWindow { Id = "MockWindow1", Title = "Test Tool" };
-        
-        // 5. Restore full layout data first
+        var hierarchy = new HierarchyWindow();
+        var inspector = new InspectorWindow();
+        var console = new ConsoleWindow();
+        var viewport = new ViewportWindow();
+        var toolbar = new ToolbarWindow();
+
+        // 4. Restore full layout data first
         _layoutManager.LoadLayout(layoutData);
         var dockControl = this.FindControl<Dock.Avalonia.Controls.DockControl>("MainDockControl");
         if (dockControl != null)
@@ -84,7 +81,9 @@ public partial class MainWindow : Window
             dockControl.Layout = _layoutManager.Layout;
         }
         
-        // 6. Push state into new instances & Bind
-        _layoutManager.RestoreCustomWindows(new List<IEditorWindow> { _mockWindow }, states);
+        // 5. Push state into new instances & Bind
+        _layoutManager.RestoreCustomWindows(
+            new List<IEditorWindow> { hierarchy, inspector, console, viewport, toolbar, _mockWindow }, 
+            states);
     }
 }
