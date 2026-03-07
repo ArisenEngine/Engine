@@ -120,29 +120,6 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
     m_Factory = new RHIVkFactory(this);
     m_DeferredDeletion = std::make_unique<RHIVkDeferredDeletion>(m_Instance->GetMaxFramesInFlight());
     m_ResourceRegistry = std::make_unique<RHIResourceRegistry>(m_DeferredDeletion.get());
-    m_GraphicsQueue = std::make_unique<RHIVkQueue>(this, m_VkDevice, m_VkGraphicQueue, RHIQueueType::Graphics,
-                                                   m_DeferredDeletion.get(), m_ResourceRegistry.get());
-
-    if (m_VkComputeQueue != VK_NULL_HANDLE)
-    {
-        m_ComputeQueue = std::make_unique<RHIVkQueue>(this, m_VkDevice, m_VkComputeQueue, RHIQueueType::Compute,
-                                                      m_DeferredDeletion.get(), m_ResourceRegistry.get());
-    }
-
-    if (m_VkTransferQueue != VK_NULL_HANDLE)
-    {
-        m_TransferQueue = std::make_unique<RHIVkQueue>(this, m_VkDevice, m_VkTransferQueue, RHIQueueType::Transfer,
-                                                       m_DeferredDeletion.get(), m_ResourceRegistry.get());
-    }
-
-    if (m_VkPresentQueue != VK_NULL_HANDLE)
-    {
-        m_PresentQueue = std::make_unique<RHIVkQueue>(this, m_VkDevice, m_VkPresentQueue, RHIQueueType::Present,
-                                                      m_DeferredDeletion.get(), m_ResourceRegistry.get());
-    }
-
-    const UInt32 maxFramesInFlight = m_Instance->GetMaxFramesInFlight();
-    m_FrameSync = std::make_unique<FrameSyncTracker>(maxFramesInFlight);
 
     m_BufferPool = std::make_unique<RHIResourcePool<RHIBufferHandle, RHIVkBufferPoolItem>>(
         RHI_STATS_PTR(m_Stats.bufferCount));
@@ -179,6 +156,29 @@ ArisenEngine::RHI::RHIVkDevice::RHIVkDevice(RHIInstance* instance, RHISurface* s
         item->name = "DefaultDescriptorPool";
     });
     m_MemoryPoolPool = std::make_unique<RHIResourcePool<RHIMemoryPoolHandle, RHIVkMemoryPoolPoolItem>>();
+    m_GraphicsQueue = std::make_unique<RHIVkQueue>(this, m_VkDevice, m_VkGraphicQueue, RHIQueueType::Graphics,
+                                                   m_DeferredDeletion.get(), m_ResourceRegistry.get());
+
+    if (m_VkComputeQueue != VK_NULL_HANDLE)
+    {
+        m_ComputeQueue = std::make_unique<RHIVkQueue>(this, m_VkDevice, m_VkComputeQueue, RHIQueueType::Compute,
+                                                      m_DeferredDeletion.get(), m_ResourceRegistry.get());
+    }
+
+    if (m_VkTransferQueue != VK_NULL_HANDLE)
+    {
+        m_TransferQueue = std::make_unique<RHIVkQueue>(this, m_VkDevice, m_VkTransferQueue, RHIQueueType::Transfer,
+                                                       m_DeferredDeletion.get(), m_ResourceRegistry.get());
+    }
+
+    if (m_VkPresentQueue != VK_NULL_HANDLE)
+    {
+        m_PresentQueue = std::make_unique<RHIVkQueue>(this, m_VkDevice, m_VkPresentQueue, RHIQueueType::Present,
+                                                      m_DeferredDeletion.get(), m_ResourceRegistry.get());
+    }
+
+    const UInt32 maxFramesInFlight = m_Instance->GetMaxFramesInFlight();
+    m_FrameSync = std::make_unique<FrameSyncTracker>(maxFramesInFlight);
 
     // Initialize TransferManager after queues and allocator are ready
     m_TransferManager = std::make_unique<RHIVkTransferManager>(this);
@@ -1119,9 +1119,30 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
         LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_TransferManager reset");
     }
 
+    // Wait for queues to be idle before destroying anything
+    if (m_GraphicsQueue)
+        m_GraphicsQueue->WaitIdle();
+    if (m_ComputeQueue)
+        m_ComputeQueue->WaitIdle();
+    if (m_TransferQueue)
+        m_TransferQueue->WaitIdle();
+    if (m_PresentQueue)
+        m_PresentQueue->WaitIdle();
+
+    m_FrameSync.reset();
+
+    // Destroy transfer manager before queues (as it depends on queues and command pools)
+    m_TransferManager.reset();
+
+    // Destroy queues before factory and resource registry, because queue destructors
+    // call m_Factory->ReleaseSemaphore(...) and need the registry/allocator alive.
+    m_GraphicsQueue.reset();
+    m_ComputeQueue.reset();
+    m_TransferQueue.reset();
+    m_PresentQueue.reset();
+    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: TransferManager, Sync and Queue objects reset");
+
     // 4. Shut down the Resource Registry to enqueue all remaining resources for deferred destruction.
-    // We keep the registry alive (m_ResourceRegistry != null) until after the final flush,
-    // because items' destructors might call Release* during the flush.
     if (m_ResourceRegistry)
     {
         m_ResourceRegistry->Shutdown();
@@ -1129,10 +1150,6 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
     }
 
     // 5. Flush all deferred deletions now that we know the GPU is idle and all tickets are completed.
-    //    IMPORTANT: m_DescriptorPool must still be alive here because deferred descriptor pool
-    //    rotation callbacks (DeferredVkDescriptorPoolWithCallback) call back into it via
-    //    OnDeferredPoolDestroyed(). Deleting m_DescriptorPool before this flush would cause
-    //    a use-after-free / hang on the mutex of a destroyed object.
     if (m_DeferredDeletion)
     {
         LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Flushing deferred deletions");
@@ -1151,7 +1168,7 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
         m_DescriptorPool = nullptr;
     }
 
-    // 6. Now safe to destroy the registry object and memory allocator
+    // 7. Now safe to destroy the registry object and memory allocator
     m_ResourceRegistry.reset();
     LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Resource Registry reset");
 
@@ -1169,23 +1186,6 @@ ArisenEngine::RHI::RHIVkDevice::~RHIVkDevice() noexcept
         m_Factory = nullptr;
         LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: m_Factory deleted");
     }
-
-    if (m_GraphicsQueue)
-        m_GraphicsQueue->WaitIdle();
-    if (m_ComputeQueue)
-        m_ComputeQueue->WaitIdle();
-    if (m_TransferQueue)
-        m_TransferQueue->WaitIdle();
-    if (m_PresentQueue)
-        m_PresentQueue->WaitIdle();
-
-    m_FrameSync.reset();
-
-    m_GraphicsQueue.reset();
-    m_ComputeQueue.reset();
-    m_TransferQueue.reset();
-    m_PresentQueue.reset();
-    LOG_DEBUG("[RHIVkDevice::~RHIVkDevice]: Sync and Queue objects reset");
 
     // 8. Finally destroy the Vulkan device
     if (m_VkDevice != VK_NULL_HANDLE)

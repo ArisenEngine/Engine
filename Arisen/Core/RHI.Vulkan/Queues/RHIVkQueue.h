@@ -31,24 +31,8 @@ namespace ArisenEngine::RHI
         RHIGpuTicket Submit(RHICommandBufferHandle commandBuffer,
                             const RHISubmitDescriptor* descriptor = nullptr) override;
 
-        // Legacy path: fence argument is ignored when using timeline semaphores.
-        RHIGpuTicket SubmitWithFence(RHICommandBufferHandle commandBuffer, VkFence fence, bool ownedFence = false,
-                                     const Containers::Vector<VkSemaphore>& extraWaitSems = {},
-                                     const Containers::Vector<VkPipelineStageFlags>& extraWaitStages = {},
-                                     const Containers::Vector<uint64_t>& extraWaitValues = {},
-                                     const Containers::Vector<VkSemaphore>& extraSignalSems = {},
-                                     const Containers::Vector<uint64_t>& extraSignalValues = {});
-
-        // Submits a raw Vulkan command buffer using timeline semaphores.
-        RHIGpuTicket SubmitRaw(VkCommandBuffer commandBuffer,
-                               const Containers::Vector<VkSemaphore>& waitSems = {},
-                               const Containers::Vector<VkPipelineStageFlags>& waitStages = {},
-                               const Containers::Vector<uint64_t>& waitValues = {},
-                               const Containers::Vector<VkSemaphore>& signalSems = {},
-                               const Containers::Vector<uint64_t>& signalValues = {});
-
         // Expose timeline semaphore for cross-queue synchronization
-        VkSemaphore GetTimelineSemaphore() const { return m_TimelineSemaphore; }
+        RHISemaphoreHandle GetTimelineSemaphoreHandle() const { return m_TimelineSemaphoreHandle; }
 
         // Poll GPU completion and flush deferred deletions up to completed submitID.
         void Update() override;
@@ -76,7 +60,9 @@ namespace ArisenEngine::RHI
         IRHIDeferredDeletionQueue* m_DeferredDeletion{nullptr}; // not owned
         RHIResourceRegistry* m_ResourceRegistry{nullptr}; // not owned
 
-        VkSemaphore m_TimelineSemaphore{VK_NULL_HANDLE};
+        RHISemaphoreHandle m_TimelineSemaphoreHandle;
+        VkSemaphore m_TimelineSemaphore{VK_NULL_HANDLE}; // Cache the raw handle internally
+
         std::mutex m_SubmitMutex;
 
         std::atomic<RHIGpuTicket> m_LatestTicket{0};

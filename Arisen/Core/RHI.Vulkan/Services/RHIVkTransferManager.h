@@ -4,6 +4,7 @@
 #include "RHI/Resources/RHIDeferredDeletionQueue.h" // RHIGpuTicket
 #include <vulkan/vulkan_core.h>
 #include <memory>
+#include "RHI/Handles/RHIHandle.h"
 #include <vector>
 #include <unordered_map>
 
@@ -78,13 +79,12 @@ namespace ArisenEngine::RHI
         std::unique_ptr<RHIVkStagingRingBuffer> m_RingBuffer;
 
         // Persistent command pool for transfer operations
-        VkCommandPool m_CommandPool{VK_NULL_HANDLE};
-        VkCommandBuffer m_CommandBuffer{VK_NULL_HANDLE};
+        RHICommandBufferPoolHandle m_TransferCommandPool;
+        RHICommandBufferHandle m_CurrentCommandBuffer;
         bool m_CommandBufferRecording{false};
 
-        // Command pools and buffers for target queue acquire barriers
-        std::unordered_map<uint32_t, VkCommandPool> m_AcquireCommandPools;
-        std::unordered_map<uint32_t, VkCommandBuffer> m_AcquireCommandBuffers;
+        // Command pools for target queue acquire barriers
+        std::unordered_map<uint32_t, RHICommandBufferPoolHandle> m_AcquireCommandPools;
 
         struct PendingCopy
         {

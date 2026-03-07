@@ -5,8 +5,12 @@
 #include "Queues/RHIVkQueue.h"
 #include "Logger/Logger.h"
 #include "Profiler.h"
-
+#include "Commands/RHIVkCommandBuffer.h"
+#include "RHI/Commands/RHICommandBufferPool.h"
+#include "RHI/Handles/RHIHandle.h"
 #include <cstring>
+#include <unordered_map>
+#include <vector>
 
 using namespace ArisenEngine;
 using namespace ArisenEngine::RHI;
@@ -30,29 +34,12 @@ RHIVkTransferManager::RHIVkTransferManager(RHIVkDevice* device, const RHITransfe
         config.ringBufferCapacity);
 
     // Create persistent command pool for transfer operations
-    VkCommandPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = (device->GetQueue(RHIQueueType::Transfer))
-                                    ? device->GetTransferFamilyIndex()
-                                    : device->GetGraphicsFamilyIndex();
-
-    VkDevice vkDevice = static_cast<VkDevice>(device->GetHandle());
-    if (vkCreateCommandPool(vkDevice, &poolInfo, nullptr, &m_CommandPool) != VK_SUCCESS)
+    m_TransferCommandPool = device->GetFactory()->CreateCommandBufferPool(
+        m_TransferQueue ? m_TransferQueue->GetType() : RHIQueueType::Graphics);
+    
+    if (!m_TransferCommandPool.IsValid())
     {
-        LOG_FATAL_AND_THROW("[RHIVkTransferManager]: Failed to create transfer command pool!");
-    }
-
-    // Pre-allocate a single command buffer
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = m_CommandPool;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = 1;
-
-    if (vkAllocateCommandBuffers(vkDevice, &allocInfo, &m_CommandBuffer) != VK_SUCCESS)
-    {
-        LOG_FATAL_AND_THROW("[RHIVkTransferManager]: Failed to allocate transfer command buffer!");
+        LOG_FATAL_AND_THROW("[RHIVkTransferManager]: Failed to create transfer command pool via factory!");
     }
 
     LOG_INFO("[RHIVkTransferManager]: Initialized transfer manager.");
@@ -67,22 +54,20 @@ RHIVkTransferManager::~RHIVkTransferManager()
         m_TransferQueue->WaitIdle();
     }
 
-    if (m_CommandPool != VK_NULL_HANDLE)
+    if (m_TransferCommandPool.IsValid())
     {
-        vkDestroyCommandPool(vkDevice, m_CommandPool, nullptr);
-        m_CommandPool = VK_NULL_HANDLE;
-        m_CommandBuffer = VK_NULL_HANDLE; // implicitly freed with pool
+        m_Device->GetFactory()->ReleaseCommandBufferPool(m_TransferCommandPool);
+        m_TransferCommandPool.index = 0xFFFFFFFFu;
     }
 
-    for (auto& [familyIndex, pool] : m_AcquireCommandPools)
+    for (auto& [type, poolHandle] : m_AcquireCommandPools)
     {
-        if (pool != VK_NULL_HANDLE)
+        if (poolHandle.IsValid())
         {
-            vkDestroyCommandPool(vkDevice, pool, nullptr);
+            m_Device->GetFactory()->ReleaseCommandBufferPool(poolHandle);
         }
     }
     m_AcquireCommandPools.clear();
-    m_AcquireCommandBuffers.clear();
 
     m_RingBuffer.reset();
 }
@@ -94,18 +79,21 @@ void RHIVkTransferManager::EnsureCommandBufferReady()
         return;
     }
 
-    VkDevice vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
-    vkResetCommandPool(vkDevice, m_CommandPool, 0);
+    auto* pool = m_Device->GetCommandBufferPool(m_TransferCommandPool);
+    if (!pool)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkTransferManager]: Invalid transfer command pool!");
+    }
 
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    m_CurrentCommandBuffer = pool->GetCommandBuffer(0);
+    auto* commandBuffer = m_Device->GetCommandBuffer(m_CurrentCommandBuffer);
 
-    if (vkBeginCommandBuffer(m_CommandBuffer, &beginInfo) != VK_SUCCESS)
+    if (!commandBuffer)
     {
         LOG_ERROR("[RHIVkTransferManager]: Failed to begin transfer command buffer!");
         return;
     }
+    commandBuffer->Begin(true);
 
     m_CommandBufferRecording = true;
 }
@@ -176,9 +164,16 @@ RHIGpuTicket RHIVkTransferManager::Flush()
                                   ? m_Device->GetTransferFamilyIndex()
                                   : m_Device->GetGraphicsFamilyIndex();
 
+    auto* commandBuffer = m_Device->GetCommandBuffer(m_CurrentCommandBuffer);
+    if (!commandBuffer) return 0;
+    
+    // Get the internal Vulkan command buffer for manual copies inside the abstraction if needed
+    auto* vkCmd = static_cast<RHIVkCommandBuffer*>(commandBuffer);
+    VkCommandBuffer rawCmdBuf = (VkCommandBuffer)vkCmd->GetHandle();
+
     for (const auto& copy : m_PendingCopies)
     {
-        vkCmdCopyBuffer(m_CommandBuffer, copy.srcBuffer, copy.dstBuffer, 1, &copy.region);
+        vkCmdCopyBuffer(rawCmdBuf, copy.srcBuffer, copy.dstBuffer, 1, &copy.region);
 
         if (copy.dstQueueFamilyIndex != ~0u && copy.dstQueueFamilyIndex != transferFamily)
         {
@@ -205,29 +200,25 @@ RHIGpuTicket RHIVkTransferManager::Flush()
         depInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
         depInfo.bufferMemoryBarrierCount = static_cast<uint32_t>(releaseBarriers.size());
         depInfo.pBufferMemoryBarriers = releaseBarriers.data();
-        m_Device->vkCmdPipelineBarrier2KHR(m_CommandBuffer, &depInfo);
+        m_Device->vkCmdPipelineBarrier2KHR(rawCmdBuf, &depInfo);
     }
 
-    if (vkEndCommandBuffer(m_CommandBuffer) != VK_SUCCESS)
-    {
-        LOG_ERROR("[RHIVkTransferManager]: Failed to end transfer command buffer!");
-        m_PendingCopies.clear();
-        m_CommandBufferRecording = false;
-        return 0;
-    }
+    commandBuffer->End();
 
     m_CommandBufferRecording = false;
 
-    // Submit via raw VkQueueSubmit using our new SubmitRaw which handles numeric tickets
-    // and timeline semaphores natively.
-    RHIGpuTicket ticket = m_TransferQueue->SubmitRaw(m_CommandBuffer);
+    RHIGpuTicket ticket = m_TransferQueue->Submit(m_CurrentCommandBuffer, nullptr);
+    
+    // Recycle safely
+    m_Device->GetCommandBufferPool(m_TransferCommandPool)->ReleaseCommandBuffer(0, m_CurrentCommandBuffer);
+    m_CurrentCommandBuffer.index = 0xFFFFFFFFu;
+
     m_RingBuffer->MarkTicket(ticket);
     m_PendingCopies.clear();
 
     // If there were any acquire barriers needed, submit them to their respective target Queues asynchronously.
     if (!acquireBarriers.empty())
     {
-        VkDevice vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
         std::unordered_map<uint32_t, std::vector<VkBufferMemoryBarrier2>> barriersByFamily;
         for (const auto& barrier : acquireBarriers)
         {
@@ -238,50 +229,52 @@ RHIGpuTicket RHIVkTransferManager::Flush()
         {
             auto* targetQueue = static_cast<RHIVkQueue*>(m_Device->GetQueueByFamilyIndex(familyIndex));
             if (!targetQueue) continue;
+            
+            RHIQueueType targetType = targetQueue->GetType();
+            uint32_t typeKey = static_cast<uint32_t>(targetType);
 
-            if (m_AcquireCommandPools.find(familyIndex) == m_AcquireCommandPools.end())
+            if (m_AcquireCommandPools.find(typeKey) == m_AcquireCommandPools.end())
             {
-                VkCommandPoolCreateInfo poolInfo{};
-                poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-                poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-                poolInfo.queueFamilyIndex = familyIndex;
-
-                vkCreateCommandPool(vkDevice, &poolInfo, nullptr, &m_AcquireCommandPools[familyIndex]);
-
-                VkCommandBufferAllocateInfo allocInfo{};
-                allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-                allocInfo.commandPool = m_AcquireCommandPools[familyIndex];
-                allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-                allocInfo.commandBufferCount = 1;
-
-                vkAllocateCommandBuffers(vkDevice, &allocInfo, &m_AcquireCommandBuffers[familyIndex]);
+                m_AcquireCommandPools[typeKey] = m_Device->GetFactory()->CreateCommandBufferPool(targetType);
             }
 
-            VkCommandPool pool = m_AcquireCommandPools[familyIndex];
-            VkCommandBuffer cmdBuffer = m_AcquireCommandBuffers[familyIndex];
+            auto acquirePoolHandle = m_AcquireCommandPools[typeKey];
+            auto* acquirePool = m_Device->GetCommandBufferPool(acquirePoolHandle);
+            if (!acquirePool) continue;
 
-            vkResetCommandPool(vkDevice, pool, 0);
+            auto acquireCmdHandle = acquirePool->GetCommandBuffer(0);
+            auto* acquireCmd = m_Device->GetCommandBuffer(acquireCmdHandle);
 
-            VkCommandBufferBeginInfo beginInfo{};
-            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+            if (acquireCmd)
+            {
+                acquireCmd->Begin(true);
+                auto* vkAcquireCmd = static_cast<RHIVkCommandBuffer*>(acquireCmd);
+                VkCommandBuffer rawAcquireCmdBuf = (VkCommandBuffer)vkAcquireCmd->GetHandle();
 
-            vkBeginCommandBuffer(cmdBuffer, &beginInfo);
+                VkDependencyInfo depInfo{};
+                depInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+                depInfo.bufferMemoryBarrierCount = static_cast<uint32_t>(barriers.size());
+                depInfo.pBufferMemoryBarriers = barriers.data();
+                m_Device->vkCmdPipelineBarrier2KHR(rawAcquireCmdBuf, &depInfo);
 
-            VkDependencyInfo depInfo{};
-            depInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-            depInfo.bufferMemoryBarrierCount = static_cast<uint32_t>(barriers.size());
-            depInfo.pBufferMemoryBarriers = barriers.data();
-            m_Device->vkCmdPipelineBarrier2KHR(cmdBuffer, &depInfo);
+                acquireCmd->End();
 
-            vkEndCommandBuffer(cmdBuffer);
+                // Setup dependency waiting for the transfer via the transfer queue's timeline semaphore
+                RHISubmitDescriptor waitDesc{};
+                RHISemaphoreHandle transferSem = m_TransferQueue->GetTimelineSemaphoreHandle();
+                const VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+                const uint64_t waitVal = ticket;
 
-            // Submit to target queue, waiting on the transfer queue's timeline semaphore
-            targetQueue->SubmitRaw(cmdBuffer,
-                { m_TransferQueue->GetTimelineSemaphore() },
-                { VK_PIPELINE_STAGE_ALL_COMMANDS_BIT },
-                { ticket }
-            );
+                waitDesc.pWaitSemaphores = &transferSem;
+                waitDesc.pWaitDstStageMask = &waitStage;
+                waitDesc.pWaitValues = &waitVal;
+                waitDesc.waitSemaphoreCount = 1;
+
+                targetQueue->Submit(acquireCmdHandle, &waitDesc);
+
+                // Release to recycle later
+                acquirePool->ReleaseCommandBuffer(0, acquireCmdHandle);
+            }
         }
     }
 
