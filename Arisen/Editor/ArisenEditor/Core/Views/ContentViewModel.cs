@@ -11,6 +11,8 @@ using Avalonia.Controls.Selection;
 using ArisenEngine;
 using ReactiveUI;
 
+using ArisenEngine.Core.Lifecycle;
+
 namespace ArisenEditor.ViewModels;
 
 internal class ContentViewModel : BaseToolViewModel

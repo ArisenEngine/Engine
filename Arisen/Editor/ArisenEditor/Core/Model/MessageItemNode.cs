@@ -1,7 +1,7 @@
 using System;
 using System.Diagnostics;
 using Avalonia.Media;
-using ArisenEngine.Debugger;
+using ArisenEngine.Core.Diagnostics;
 
 namespace ArisenEditor.Models;
 

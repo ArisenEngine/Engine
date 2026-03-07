@@ -30,13 +30,13 @@ public class ArisenApplication
 
     #region Internal
 
-    internal static string s_StartupPath = string.Empty;
-    internal static string s_DataPath = string.Empty;
-    internal static string s_ProjectRoot = string.Empty;
-    internal static string s_ProjectName = string.Empty;
-    internal static bool s_IsRunning = false;
-    internal static bool s_IsInEditor = false;
-    internal static RuntimePlatform s_Platform = RuntimePlatform.Windows;
+    public static string s_StartupPath = string.Empty;
+    public static string s_DataPath = string.Empty;
+    public static string s_ProjectRoot = string.Empty;
+    public static string s_ProjectName = string.Empty;
+    public static bool s_IsRunning = false;
+    public static bool s_IsInEditor = false;
+    public static RuntimePlatform s_Platform = RuntimePlatform.Windows;
 
     #endregion
 
@@ -52,6 +52,16 @@ public class ArisenApplication
     {
         EngineInstance.RegisterSurface(IntPtr.Zero, name, SurfaceType.GameView);
         return EngineInstance.Run(name);
+    }
+
+    public static void RegisterSurface(IntPtr host, string name, SurfaceType surfaceType, int width = 0, int height = 0)
+    {
+        EngineInstance.RegisterSurface(host, name, surfaceType, width, height);
+    }
+
+    public static void UnregisterSurface(IntPtr host)
+    {
+        EngineInstance.UnregisterSurface(host);
     }
 
     public static void Exit()

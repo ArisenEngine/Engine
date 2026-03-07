@@ -4,6 +4,7 @@ using ArisenEditor.Utilities;
 using ArisenEditor.ViewModels.Startup;
 using ArisenEditor.Windows;
 using ArisenEngine;
+using ArisenEngine.Core.Lifecycle;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -12,7 +13,7 @@ using Avalonia.Threading;
 
 namespace ArisenEditor.Core.Views;
 
-using Logger = ArisenEngine.Debugger.Logger;
+using Logger = ArisenEngine.Core.Diagnostics.Logger;
 internal partial class MainEditorHostView : Window
 {
     private ArisenFileSystemWatcher m_FileSystemWatcher;
@@ -33,7 +34,7 @@ internal partial class MainEditorHostView : Window
         
         Dispatcher.UIThread.InvokeAsync(() =>
         {
-            if (ArisenInstance.Run("Arisen Instance (Attach to Editor)") != 0)
+            if (ArisenApplication.Run("Arisen Instance (Attach to Editor)") != 0)
             {
                 Logger.Error("Arisen instance run error.");
             }
@@ -55,7 +56,7 @@ internal partial class MainEditorHostView : Window
         Logger.Log("Close Editor Window.");
         m_FileSystemWatcher.Dispose();
         m_FileSystemWatcher = null;
-        ArisenInstance.End();
+        ArisenApplication.Exit();
             
         if (App.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

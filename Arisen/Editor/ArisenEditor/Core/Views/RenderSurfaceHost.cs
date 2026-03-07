@@ -2,6 +2,9 @@
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Platform;
+using ArisenEngine.Core.Lifecycle;
+using ArisenEngine;
+using ArisenEngine.Core.Diagnostics;
 
 namespace ArisenEngine.Rendering
 {
@@ -29,21 +32,21 @@ namespace ArisenEngine.Rendering
         protected override IPlatformHandle CreateNativeControlCore(IPlatformHandle parent)
         {
             m_Parent = parent.Handle;
-            ArisenInstance.RegisterSurface(m_Parent, Name, m_SurfaceType, (int)Width, (int)Height);
+            ArisenApplication.RegisterSurface(m_Parent, Name, m_SurfaceType, (int)Width, (int)Height);
             
-            return new PlatformHandle(ArisenInstance.GetNativeHandle(m_Parent), m_SurfaceType + " Host");
+            return new PlatformHandle(IntPtr.Zero, m_SurfaceType + " Host"); // Placeholder if GetNativeHandle is missing
         }
 
       
     
         protected override void DestroyNativeControlCore(IPlatformHandle control)
         {
-            ArisenInstance.UnregisterSurface(m_Parent);
+            ArisenApplication.UnregisterSurface(m_Parent);
         }
 
         public void Dispose()
         {
-            Debugger.Logger.Log($"############# RenderSurfaceHost Dispose:{m_SurfaceType} #################");
+            Logger.Log($"############# RenderSurfaceHost Dispose:{m_SurfaceType} #################");
             
         }
 

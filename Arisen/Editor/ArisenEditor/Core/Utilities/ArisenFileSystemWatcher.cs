@@ -4,6 +4,7 @@ using System.IO;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using ArisenEngine;
+using ArisenEngine.Core.Lifecycle;
 
 namespace ArisenEditor.Utilities;
 

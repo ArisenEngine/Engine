@@ -151,6 +151,7 @@
     <ProjectReference Include="..\..\3rdparty\Ava.Dock\src\Dock.Model.ReactiveUI\Dock.Model.ReactiveUI.csproj" />
     <ProjectReference Include="..\..\3rdparty\Ava.Dock\src\Dock.Serializer\Dock.Serializer.csproj" />
     <ProjectReference Include="..\..\Engine\ArisenEngine.csproj" />
+    <ProjectReference Include="..\..\External\ArisenEditorFramework\ArisenEditorFramework.csproj" />
     <ProjectReference Include="..\..\Serialization\Serialization\Serialization.csproj" />
   </ItemGroup>
 
@@ -166,4 +167,4 @@
       <UpToDateCheckInput Remove="Public\Views\TestView.axaml" />
     </ItemGroup>
 
-</Project>
+<PropertyGroup Condition="'$(Configuration)' == 'Debug'"><OutputPath>..\..\Projects\VisualStudio\EditorTest\Outputs\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition="'$(Configuration)' == 'Release'"><OutputPath>..\..\Projects\VisualStudio\EditorTest\Outputs\Release\</OutputPath></PropertyGroup></Project>

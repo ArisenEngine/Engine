@@ -23,7 +23,7 @@ if(NOT DEFINED PLATFORM)
     message(FATAL_ERROR "Please specify -DPLATFORM=[Windows|Android|Linux|Apple].")
 endif()
 
-if(${TARGET} STREQUAL "CSharpEngineTest" OR ${TARGET} STREQUAL "NativeEngineTest")
+if(${TARGET} STREQUAL "CSharpEngineTest" OR ${TARGET} STREQUAL "NativeEngineTest" OR ${TARGET} STREQUAL "EditorTest")
 project(${TARGET} LANGUAGES CXX)
 else()
 project("Arisen${TARGET}" LANGUAGES CXX)
@@ -291,53 +291,61 @@ set_target_properties(BuildBuiltinPackages PROPERTIES FOLDER "CMakeProcess")
 endif()
 
 # Final target setup (Editor, Players, Tests)
-if(${TARGET} STREQUAL "Editor")
-    
     set(ARISEN_EDITOR_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor/ArisenEditor.csproj)
     set(ARISEN_EDITOR_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor/)
-    set(ARISEN_EDITOR_SHELL_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenEditorShell/ArisenEditorShell.csproj)
-    set(ARISEN_EDITOR_SHELL_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenEditorShell/)
+    set(ARISEN_EDITOR_FRAMEWORK_PROJ ${CMAKE_SOURCE_DIR}/External/ArisenEditorFramework/ArisenEditorFramework.csproj)
+    set(ARISEN_EDITOR_FRAMEWORK_PROJ_DIR ${CMAKE_SOURCE_DIR}/External/ArisenEditorFramework/)
     set(ARISEN_EDITOR_DESKTOP_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor.Desktop/ArisenEditor.Desktop.csproj)
     set(ARISEN_EDITOR_DESKTOP_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor.Desktop/)
+
+    add_custom_target(BuildArisenEditorFramework
+    COMMAND dotnet build ${ARISEN_EDITOR_FRAMEWORK_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
+    WORKING_DIRECTORY ${ARISEN_EDITOR_FRAMEWORK_PROJ_DIR}
+    COMMENT "Building Arisen Editor Framework"
+    VERBATIM
+    USES_TERMINAL
+    )
+    set_target_properties(BuildArisenEditorFramework PROPERTIES FOLDER "CMakeProcess")
 
     add_custom_target(BuildArisenEditor
     COMMAND dotnet build ${ARISEN_EDITOR_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
     WORKING_DIRECTORY ${ARISEN_EDITOR_PROJ_DIR}
     COMMENT "Building Arisen Editor"
-    DEPENDS "ArisenEngine.dll"
+    DEPENDS "ArisenEngine.dll" "ArisenEditorFramework.dll"
     VERBATIM
     USES_TERMINAL
     )
-    add_dependencies(BuildArisenEditor BuildArisenEngine)
+    add_dependencies(BuildArisenEditor BuildArisenEngine BuildArisenEditorFramework)
     set_target_properties(BuildArisenEditor PROPERTIES FOLDER "CMakeProcess")
 
-    add_custom_target(BuildArisenEditorShell
-    COMMAND dotnet build ${ARISEN_EDITOR_SHELL_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
-    WORKING_DIRECTORY ${ARISEN_EDITOR_SHELL_PROJ_DIR}
-    COMMENT "Building Arisen Editor Shell"
-    DEPENDS "ArisenEditor.dll"
-    VERBATIM
-    USES_TERMINAL
-    )
-    add_dependencies(BuildArisenEditorShell BuildArisenEditor)
-    set_target_properties(BuildArisenEditorShell PROPERTIES FOLDER "CMakeProcess")
+add_custom_target(BuildArisenEditorDesktop ALL
+COMMAND dotnet build ${ARISEN_EDITOR_DESKTOP_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
+WORKING_DIRECTORY ${ARISEN_EDITOR_DESKTOP_PROJ_DIR}
+COMMENT "Building Arisen Editor Desktop"
+DEPENDS "ArisenEditor.dll"
+VERBATIM
+USES_TERMINAL
+)
+add_dependencies(BuildArisenEditorDesktop BuildArisenEditor)
+set_target_properties(BuildArisenEditorDesktop PROPERTIES FOLDER "CMakeProcess")
 
+set(ARISEN_EDITOR_TEST_PROJ ${CMAKE_SOURCE_DIR}/Test/EditorTest/EditorTest.csproj)
+set(ARISEN_EDITOR_TEST_PROJ_DIR ${CMAKE_SOURCE_DIR}/Test/EditorTest/)
 
-    add_custom_target(BuildArisenEditorDesktop ALL
-    COMMAND dotnet build ${ARISEN_EDITOR_DESKTOP_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
-    WORKING_DIRECTORY ${ARISEN_EDITOR_DESKTOP_PROJ_DIR}
-    COMMENT "Building Arisen Editor Desktop"
-    DEPENDS "ArisenEditorShell.dll"
-    VERBATIM
-    USES_TERMINAL
-    )
-    add_dependencies(BuildArisenEditorDesktop BuildArisenEditorShell)
-    set_target_properties(BuildArisenEditorDesktop PROPERTIES FOLDER "CMakeProcess")
-    
+add_custom_target(BuildEditorTest
+COMMAND dotnet build ${ARISEN_EDITOR_TEST_PROJ} --configuration $<CONFIG> ${DOTNET_PROFILER_ARG}
+WORKING_DIRECTORY ${ARISEN_EDITOR_TEST_PROJ_DIR}
+COMMENT "Building Arisen Editor Test"
+DEPENDS "ArisenEditor.dll"
+VERBATIM
+USES_TERMINAL
+)
+add_dependencies(BuildEditorTest BuildArisenEditor)
+set_target_properties(BuildEditorTest PROPERTIES FOLDER "CMakeProcess")
 
-    string(TIMESTAMP END_TIME "%s")
-    math(EXPR ELAPSED_TIME "${END_TIME} - ${START_TIME}")
-    message(STATUS "\\033[32m Configure success. Elapsed time: ${ELAPSED_TIME} seconds \\033[0m")
+if(${TARGET} STREQUAL "Editor")
+    # Alredy added above as part of common logic if needed
+    message(STATUS "Configuring for Editor")
 elseif(${TARGET} STREQUAL "WindowsPlayerSupport")
     # Add your platform player support setup here
 
@@ -373,6 +381,10 @@ elseif(${TARGET} STREQUAL "CSharpEngineTest")
     add_dependencies(BuildCSharpEngineTest BuildArisenEngine)
     add_dependencies(BuildCSharpEngineTest BuildBuiltinPackages)
     set_target_properties(BuildCSharpEngineTest PROPERTIES FOLDER "CMakeProcess")
+elseif(${TARGET} STREQUAL "EditorTest")
+    message(STATUS "Configuring for EditorTest")
+    add_custom_target(BuildEditorTestAll ALL)
+    add_dependencies(BuildEditorTestAll BuildEditorTest)
 elseif(${TARGET} STREQUAL "BindingGenerator")
     message(STATUS "Configuring for Standalone Binding Generation")
 else()

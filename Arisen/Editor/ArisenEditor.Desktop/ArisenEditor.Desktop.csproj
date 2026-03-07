@@ -31,6 +31,7 @@
     <PackageReference Include="Avalonia.Desktop" Version="11.2.4" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ArisenEditorShell\ArisenEditorShell.csproj" />
+    <ProjectReference Include="..\ArisenEditor\ArisenEditor.csproj" />
+    <ProjectReference Include="..\..\External\ArisenEditorFramework\ArisenEditorFramework.csproj" />
   </ItemGroup>
 </Project>
