@@ -1,20 +1,13 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:dock="clr-namespace:Dock.Avalonia.Controls;assembly=Dock.Avalonia"
+        xmlns:local="clr-namespace:EditorTest"
         x:Class="EditorTest.MainWindow"
         Title="Dockable System Hot Reload Test" Width="1024" Height="768">
-  <Grid RowDefinitions="Auto,*">
-    <StackPanel Orientation="Horizontal" Spacing="8" Margin="8">
-        <Button x:Name="OpenToolBtn" Content="Open Custom Tool" Click="OpenToolBtn_Click" />
-        <Button x:Name="HotReloadBtn" Content="Simulate Hot Reload Sequence" Click="HotReloadBtn_Click" Background="#4CAF50" Foreground="White" />
-    </StackPanel>
-    <Grid Grid.Row="1" RowDefinitions="*,150">
-        <dock:DockControl x:Name="MainDockControl" />
-        
-        <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" VerticalAlignment="Top" Background="Gray"/>
-        <ScrollViewer Grid.Row="1" Margin="0,5,0,0" Background="#1E1E1E">
-            <TextBlock x:Name="ConsoleOutput" Foreground="#CCCCCC" FontFamily="Consolas" TextWrapping="Wrap" Margin="5" />
-        </ScrollViewer>
-    </Grid>
+  <Window.DataTemplates>
+      <local:EditorTestViewLocator />
+  </Window.DataTemplates>
+  <Grid>
+      <dock:DockControl x:Name="MainDockControl" />
   </Grid>
 </Window>
