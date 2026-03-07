@@ -5,6 +5,7 @@
 #include <vulkan/vulkan_core.h>
 #include <memory>
 #include <vector>
+#include <unordered_map>
 
 namespace ArisenEngine::RHI
 {
@@ -49,7 +50,7 @@ namespace ArisenEngine::RHI
          * Does NOT submit to the GPU yet — call Flush() after batching.
          */
         void EnqueueBufferCopy(VkBuffer dstBuffer, const void* srcData,
-                               UInt64 size, UInt64 dstOffset);
+                               UInt64 size, UInt64 dstOffset, uint32_t dstQueueFamilyIndex = ~0u);
 
         /**
          * @brief Submit all pending copies as a single command buffer to the transfer queue.
@@ -81,11 +82,16 @@ namespace ArisenEngine::RHI
         VkCommandBuffer m_CommandBuffer{VK_NULL_HANDLE};
         bool m_CommandBufferRecording{false};
 
+        // Command pools and buffers for target queue acquire barriers
+        std::unordered_map<uint32_t, VkCommandPool> m_AcquireCommandPools;
+        std::unordered_map<uint32_t, VkCommandBuffer> m_AcquireCommandBuffers;
+
         struct PendingCopy
         {
             VkBuffer srcBuffer;   // ring buffer
             VkBuffer dstBuffer;
             VkBufferCopy region;
+            uint32_t dstQueueFamilyIndex;
         };
 
         std::vector<PendingCopy> m_PendingCopies;

@@ -242,6 +242,56 @@ ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitWithFence(
     return submitTicket;
 }
 
+ArisenEngine::RHI::RHIGpuTicket ArisenEngine::RHI::RHIVkQueue::SubmitRaw(
+    VkCommandBuffer commandBuffer,
+    const Containers::Vector<VkSemaphore>& waitSems,
+    const Containers::Vector<VkPipelineStageFlags>& waitStages,
+    const Containers::Vector<uint64_t>& waitValues,
+    const Containers::Vector<VkSemaphore>& signalSems,
+    const Containers::Vector<uint64_t>& signalValues)
+{
+    ARISEN_PROFILE_ZONE("RHI::VulkanQueueSubmitRaw");
+    std::lock_guard<std::mutex> lock(m_SubmitMutex);
+
+    const auto submitTicket = m_LatestTicket.fetch_add(1, std::memory_order_acq_rel) + 1;
+
+    VkTimelineSemaphoreSubmitInfo timelineInfo{};
+    timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.pNext = &timelineInfo;
+
+    submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSems.size());
+    submitInfo.pWaitSemaphores = waitSems.data();
+    submitInfo.pWaitDstStageMask = waitStages.data();
+
+    timelineInfo.waitSemaphoreValueCount = submitInfo.waitSemaphoreCount;
+    timelineInfo.pWaitSemaphoreValues = waitValues.data();
+
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    Containers::Vector<VkSemaphore> fullSignalSems = signalSems;
+    Containers::Vector<uint64_t> fullSignalValues = signalValues;
+
+    fullSignalSems.push_back(m_TimelineSemaphore);
+    fullSignalValues.push_back(submitTicket);
+
+    submitInfo.signalSemaphoreCount = static_cast<uint32_t>(fullSignalSems.size());
+    submitInfo.pSignalSemaphores = fullSignalSems.data();
+
+    timelineInfo.signalSemaphoreValueCount = static_cast<uint32_t>(fullSignalValues.size());
+    timelineInfo.pSignalSemaphoreValues = fullSignalValues.data();
+
+    if (vkQueueSubmit(m_Queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+    {
+        LOG_FATAL_AND_THROW("[RHIVkQueue::SubmitRaw]: failed to submit raw command buffer!");
+    }
+
+    return submitTicket;
+}
+
 void ArisenEngine::RHI::RHIVkQueue::Update()
 {
     ARISEN_PROFILE_ZONE("RHI::VulkanQueueUpdate");

@@ -39,6 +39,17 @@ namespace ArisenEngine::RHI
                                      const Containers::Vector<VkSemaphore>& extraSignalSems = {},
                                      const Containers::Vector<uint64_t>& extraSignalValues = {});
 
+        // Submits a raw Vulkan command buffer using timeline semaphores.
+        RHIGpuTicket SubmitRaw(VkCommandBuffer commandBuffer,
+                               const Containers::Vector<VkSemaphore>& waitSems = {},
+                               const Containers::Vector<VkPipelineStageFlags>& waitStages = {},
+                               const Containers::Vector<uint64_t>& waitValues = {},
+                               const Containers::Vector<VkSemaphore>& signalSems = {},
+                               const Containers::Vector<uint64_t>& signalValues = {});
+
+        // Expose timeline semaphore for cross-queue synchronization
+        VkSemaphore GetTimelineSemaphore() const { return m_TimelineSemaphore; }
+
         // Poll GPU completion and flush deferred deletions up to completed submitID.
         void Update() override;
 

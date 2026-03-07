@@ -74,6 +74,16 @@ RHIVkTransferManager::~RHIVkTransferManager()
         m_CommandBuffer = VK_NULL_HANDLE; // implicitly freed with pool
     }
 
+    for (auto& [familyIndex, pool] : m_AcquireCommandPools)
+    {
+        if (pool != VK_NULL_HANDLE)
+        {
+            vkDestroyCommandPool(vkDevice, pool, nullptr);
+        }
+    }
+    m_AcquireCommandPools.clear();
+    m_AcquireCommandBuffers.clear();
+
     m_RingBuffer.reset();
 }
 
@@ -101,7 +111,7 @@ void RHIVkTransferManager::EnsureCommandBufferReady()
 }
 
 void RHIVkTransferManager::EnqueueBufferCopy(VkBuffer dstBuffer, const void* srcData,
-                                              UInt64 size, UInt64 dstOffset)
+                                              UInt64 size, UInt64 dstOffset, uint32_t dstQueueFamilyIndex)
 {
     ARISEN_PROFILE_ZONE("TransferManager::EnqueueBufferCopy");
 
@@ -146,7 +156,7 @@ void RHIVkTransferManager::EnqueueBufferCopy(VkBuffer dstBuffer, const void* src
     copyRegion.dstOffset = dstOffset;
     copyRegion.size = size;
 
-    m_PendingCopies.push_back({staging->buffer, dstBuffer, copyRegion});
+    m_PendingCopies.push_back({staging->buffer, dstBuffer, copyRegion, dstQueueFamilyIndex});
 }
 
 RHIGpuTicket RHIVkTransferManager::Flush()
@@ -159,16 +169,44 @@ RHIGpuTicket RHIVkTransferManager::Flush()
     }
 
     // Record all pending copy commands
+    std::vector<VkBufferMemoryBarrier2> releaseBarriers;
+    std::vector<VkBufferMemoryBarrier2> acquireBarriers;
+
+    uint32_t transferFamily = (m_Device->GetQueue(RHIQueueType::Transfer))
+                                  ? m_Device->GetTransferFamilyIndex()
+                                  : m_Device->GetGraphicsFamilyIndex();
+
     for (const auto& copy : m_PendingCopies)
     {
         vkCmdCopyBuffer(m_CommandBuffer, copy.srcBuffer, copy.dstBuffer, 1, &copy.region);
+
+        if (copy.dstQueueFamilyIndex != ~0u && copy.dstQueueFamilyIndex != transferFamily)
+        {
+            VkBufferMemoryBarrier2 barrier{};
+            barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+            barrier.srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+            barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+            barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT; 
+            barrier.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT;
+            barrier.srcQueueFamilyIndex = transferFamily;
+            barrier.dstQueueFamilyIndex = copy.dstQueueFamilyIndex;
+            barrier.buffer = copy.dstBuffer;
+            barrier.offset = 0;
+            barrier.size = VK_WHOLE_SIZE;
+
+            releaseBarriers.push_back(barrier);
+            acquireBarriers.push_back(barrier);
+        }
     }
 
-    // TODO(Transfer-P2): Insert queue ownership transfer barriers here when
-    // transfer and graphics queue families differ. Each destination buffer
-    // needs a VK_PIPELINE_STAGE_TRANSFER_BIT → VK_PIPELINE_STAGE_TRANSFER_BIT
-    // release barrier on the transfer queue, and a matching acquire barrier
-    // on the graphics queue before first use.
+    if (!releaseBarriers.empty())
+    {
+        VkDependencyInfo depInfo{};
+        depInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+        depInfo.bufferMemoryBarrierCount = static_cast<uint32_t>(releaseBarriers.size());
+        depInfo.pBufferMemoryBarriers = releaseBarriers.data();
+        m_Device->vkCmdPipelineBarrier2KHR(m_CommandBuffer, &depInfo);
+    }
 
     if (vkEndCommandBuffer(m_CommandBuffer) != VK_SUCCESS)
     {
@@ -180,60 +218,72 @@ RHIGpuTicket RHIVkTransferManager::Flush()
 
     m_CommandBufferRecording = false;
 
-    // Submit via raw VkQueueSubmit since the transfer manager uses its own
-    // command buffer (not an RHIVkCommandBuffer with tracked resources).
-    // We still use the queue's timeline semaphore for synchronization.
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &m_CommandBuffer;
-
-    // Use the queue's timeline semaphore for ticketing
-    RHIGpuTicket ticket = m_TransferQueue->GetLatestTicket() + 1;
-
-    VkTimelineSemaphoreSubmitInfo timelineInfo{};
-    timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
-
-    // We don't directly access the queue's internal semaphore, so we
-    // submit without timeline and use WaitIdle as fallback.
-    // This is safe because the TransferManager is the only user of this
-    // command pool/buffer pair.
-    VkFenceCreateInfo fenceInfo{};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-
-    VkDevice vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
-    VkFence fence;
-    if (vkCreateFence(vkDevice, &fenceInfo, nullptr, &fence) != VK_SUCCESS)
-    {
-        LOG_ERROR("[RHIVkTransferManager]: Failed to create flush fence!");
-        m_PendingCopies.clear();
-        return 0;
-    }
-
-    VkResult submitResult = vkQueueSubmit(m_TransferQueue->GetVkQueue(), 1, &submitInfo, fence);
-    if (submitResult != VK_SUCCESS)
-    {
-        LOG_ERROR("[RHIVkTransferManager]: Failed to submit transfer command buffer!");
-        vkDestroyFence(vkDevice, fence, nullptr);
-        m_PendingCopies.clear();
-        return 0;
-    }
-
-    // Store fence for WaitForTicket — for now we use a simple blocking approach.
-    // The ticket is synthetic (monotonic counter) for ring buffer reclamation.
-    static RHIGpuTicket s_TransferTicketCounter = 0;
-    ticket = ++s_TransferTicketCounter;
-
+    // Submit via raw VkQueueSubmit using our new SubmitRaw which handles numeric tickets
+    // and timeline semaphores natively.
+    RHIGpuTicket ticket = m_TransferQueue->SubmitRaw(m_CommandBuffer);
     m_RingBuffer->MarkTicket(ticket);
     m_PendingCopies.clear();
 
-    // Wait for fence immediately and destroy it (synchronous flush for now).
-    // TODO(Transfer-P3): Track fences per-ticket for true async support.
-    vkWaitForFences(vkDevice, 1, &fence, VK_TRUE, UINT64_MAX);
-    vkDestroyFence(vkDevice, fence, nullptr);
+    // If there were any acquire barriers needed, submit them to their respective target Queues asynchronously.
+    if (!acquireBarriers.empty())
+    {
+        VkDevice vkDevice = static_cast<VkDevice>(m_Device->GetHandle());
+        std::unordered_map<uint32_t, std::vector<VkBufferMemoryBarrier2>> barriersByFamily;
+        for (const auto& barrier : acquireBarriers)
+        {
+            barriersByFamily[barrier.dstQueueFamilyIndex].push_back(barrier);
+        }
 
-    // Reclaim immediately after sync flush
-    m_RingBuffer->ReclaimUpTo(ticket);
+        for (const auto& [familyIndex, barriers] : barriersByFamily)
+        {
+            auto* targetQueue = static_cast<RHIVkQueue*>(m_Device->GetQueueByFamilyIndex(familyIndex));
+            if (!targetQueue) continue;
+
+            if (m_AcquireCommandPools.find(familyIndex) == m_AcquireCommandPools.end())
+            {
+                VkCommandPoolCreateInfo poolInfo{};
+                poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+                poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+                poolInfo.queueFamilyIndex = familyIndex;
+
+                vkCreateCommandPool(vkDevice, &poolInfo, nullptr, &m_AcquireCommandPools[familyIndex]);
+
+                VkCommandBufferAllocateInfo allocInfo{};
+                allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+                allocInfo.commandPool = m_AcquireCommandPools[familyIndex];
+                allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+                allocInfo.commandBufferCount = 1;
+
+                vkAllocateCommandBuffers(vkDevice, &allocInfo, &m_AcquireCommandBuffers[familyIndex]);
+            }
+
+            VkCommandPool pool = m_AcquireCommandPools[familyIndex];
+            VkCommandBuffer cmdBuffer = m_AcquireCommandBuffers[familyIndex];
+
+            vkResetCommandPool(vkDevice, pool, 0);
+
+            VkCommandBufferBeginInfo beginInfo{};
+            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+            vkBeginCommandBuffer(cmdBuffer, &beginInfo);
+
+            VkDependencyInfo depInfo{};
+            depInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            depInfo.bufferMemoryBarrierCount = static_cast<uint32_t>(barriers.size());
+            depInfo.pBufferMemoryBarriers = barriers.data();
+            m_Device->vkCmdPipelineBarrier2KHR(cmdBuffer, &depInfo);
+
+            vkEndCommandBuffer(cmdBuffer);
+
+            // Submit to target queue, waiting on the transfer queue's timeline semaphore
+            targetQueue->SubmitRaw(cmdBuffer,
+                { m_TransferQueue->GetTimelineSemaphore() },
+                { VK_PIPELINE_STAGE_ALL_COMMANDS_BIT },
+                { ticket }
+            );
+        }
+    }
 
     return ticket;
 }
@@ -241,16 +291,19 @@ RHIGpuTicket RHIVkTransferManager::Flush()
 void RHIVkTransferManager::WaitForTicket(RHIGpuTicket ticket)
 {
     ARISEN_PROFILE_ZONE("TransferManager::WaitForTicket");
-    // Current implementation: Flush() already waits synchronously.
-    // TODO(Transfer-P3): When async fence tracking is added, wait on the
-    // specific fence associated with this ticket.
-    (void)ticket;
+    if (m_TransferQueue)
+    {
+        m_TransferQueue->WaitForTicket(ticket);
+    }
 }
 
 void RHIVkTransferManager::Update()
 {
     ARISEN_PROFILE_ZONE("TransferManager::Update");
-    // Current implementation: Flush() already reclaims synchronously.
-    // TODO(Transfer-P3): When async fence tracking is added, poll fence
-    // completion and call m_RingBuffer->ReclaimUpTo(completedTicket).
+    if (m_TransferQueue)
+    {
+        m_TransferQueue->Update();
+        RHIGpuTicket completedTicket = m_TransferQueue->GetCompletedTicket();
+        m_RingBuffer->ReclaimUpTo(completedTicket);
+    }
 }

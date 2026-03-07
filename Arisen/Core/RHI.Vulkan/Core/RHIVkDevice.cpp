@@ -306,6 +306,15 @@ RHIQueue* ArisenEngine::RHI::RHIVkDevice::GetQueue(RHIQueueType type)
     }
     return nullptr;
 }
+
+RHIQueue* ArisenEngine::RHI::RHIVkDevice::GetQueueByFamilyIndex(UInt32 familyIndex)
+{
+    if (familyIndex == m_GraphicsFamilyIndex) return m_GraphicsQueue.get();
+    if (familyIndex == m_ComputeFamilyIndex) return m_ComputeQueue.get();
+    if (familyIndex == m_TransferFamilyIndex) return m_TransferQueue.get();
+    if (familyIndex == m_PresentFamilyIndex) return m_PresentQueue.get();
+    return nullptr;
+}
 RHICommandBufferPool* ArisenEngine::RHI::RHIVkDevice::GetCommandBufferPool(RHICommandBufferPoolHandle handle)
 {
     auto* item = m_CommandBufferPoolPool->Get(handle);
@@ -635,7 +644,7 @@ void ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopy(RHIBufferHandle handle, co
     else
     {
         // Device-local: use TransferManager (ring-buffer staging + batched submit)
-        m_TransferManager->EnqueueBufferCopy(buffer->buffer, src, size, offset);
+        m_TransferManager->EnqueueBufferCopy(buffer->buffer, src, size, offset, m_GraphicsFamilyIndex);
         RHIGpuTicket ticket = m_TransferManager->Flush();
         if (ticket > 0)
         {
@@ -677,8 +686,8 @@ RHIGpuTicket ArisenEngine::RHI::RHIVkDevice::BufferMemoryCopyAsync(RHIBufferHand
     else
     {
         // Device-local: enqueue via TransferManager and flush (non-blocking return)
-        // TODO(Transfer-P2): Add queue ownership transfer barriers here
-        m_TransferManager->EnqueueBufferCopy(buffer->buffer, src, size, offset);
+        // Issue ownership transfer to the immediate Graphics Queue for usage
+        m_TransferManager->EnqueueBufferCopy(buffer->buffer, src, size, offset, m_GraphicsFamilyIndex);
         return m_TransferManager->Flush();
     }
 }
