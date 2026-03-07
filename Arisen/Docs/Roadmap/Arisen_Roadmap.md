@@ -63,18 +63,18 @@ This document serves as the master progression tracker for Arisen. The ultimate 
 > 👉 **[View Phase 3 Detailed Implementation Plan](file:///d:/EngineSource/ArisenEngine/Engine/Arisen/Docs/Roadmap/Phase3_RHI_Evolution.md)**
 
 ### 3.1 Multi-Queue RHI Abstraction
-- [ ] Abstract `Submit` to specify Queue Types (`Graphics`, `Compute`, `Transfer`).
-- [ ] Acquire hardware Queue Families properly during `RHIDevice` init.
-- [ ] Expose Queue-specific Submits to `AutoBinding`.
+- [x] Abstract `Submit` to specify Queue Types (`Graphics`, `Compute`, `Transfer`).
+- [x] Acquire hardware Queue Families properly during `RHIDevice` init.
+- [x] Expose Queue-specific Submits to `AutoBinding`.
 
 ### 3.2 Advanced Queue Synchronization
-- [ ] Implement `RHISemaphore` (Timeline Semaphores preferred if supported).
-- [ ] Implement `RHIFence` wrapper for Queue-to-CPU stalls.
-- [ ] Bind execution barriers to allow `TransferQueue` texture uploads to synchronize with `GraphicsQueue` rendering.
+- [x] Implement modern synchronization (Timeline Semaphores).
+- [x] Remove legacy `RHIFence` wrapper to simplify RHI logic.
+- [x] Bind execution barriers to allow `TransferQueue` texture uploads to synchronize with `GraphicsQueue` rendering.
 
-### 3.3 Next-Gen Deskriptors
-- [ ] Investigate and wire up `VK_EXT_descriptor_buffer` feature.
-- [ ] Fallback: Implement a descriptor set caching mechanism if the buffer extension is unsupported.
+### 3.3 Next-Gen Descriptors
+- [x] Implement `VK_EXT_descriptor_buffer` support.
+- [x] Implement fallback mechanisms for unsupported descriptor buffer situations.
 
 ---
 

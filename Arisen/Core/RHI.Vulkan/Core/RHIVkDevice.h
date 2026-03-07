@@ -36,7 +36,7 @@ namespace ArisenEngine::RHI
     struct RHIVkFrameBufferPoolItem;
     struct RHIVkSemaphorePoolItem;
     struct RHIVkPipelinePoolItem;
-    struct RHIVkFencePoolItem;
+
     struct RHIVkAccelerationStructurePoolItem;
     struct RHIVkMemoryPoolPoolItem;
     struct RHIVkDescriptorPoolPoolItem;
@@ -183,7 +183,7 @@ namespace ArisenEngine::RHI
         std::unique_ptr<RHIResourcePool<RHIFrameBufferHandle, RHIVkFrameBufferPoolItem>> m_FrameBufferPool;
         std::unique_ptr<RHIResourcePool<RHISemaphoreHandle, RHIVkSemaphorePoolItem>> m_SemaphorePool;
         std::unique_ptr<RHIResourcePool<RHIPipelineHandle, RHIVkPipelinePoolItem>> m_PipelinePool;
-        std::unique_ptr<RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>> m_FencePool;
+
 
         std::unique_ptr<RHIResourcePool<RHIShaderProgramHandle, RHIVkGPUProgramPoolItem>> m_GPUProgramPool;
         std::unique_ptr<RHIResourcePool<RHICommandBufferPoolHandle, RHIVkCommandBufferPoolItem>>
@@ -236,7 +236,7 @@ namespace ArisenEngine::RHI
 
         void ReleaseSampler(RHISamplerHandle handle) override;
         void ReleaseSemaphore(RHISemaphoreHandle handle) override;
-        void ReleaseFence(RHIFenceHandle handle) override;
+
         void ReleaseRenderPass(RHIRenderPassHandle handle) override;
         void ReleaseFrameBuffer(RHIFrameBufferHandle handle) override;
         void ReleasePipeline(RHIPipelineHandle handle) override;
@@ -248,8 +248,7 @@ namespace ArisenEngine::RHI
         bool AllocFrameBuffer(RHIFrameBufferHandle handle, UInt32 frameIndex, RHIImageViewHandle viewHandle,
                               RHIRenderPassHandle renderPassHandle) override;
         // RHISyncPrimitive implementation
-        void WaitFence(RHIFenceHandle handle) override;
-        void ResetFence(RHIFenceHandle handle) override;
+
         void WaitSemaphoreValue(RHISemaphoreHandle handle, UInt64 value) override;
         void SignalSemaphoreValue(RHISemaphoreHandle handle, UInt64 value) override;
         UInt64 GetSemaphoreValue(RHISemaphoreHandle handle) override;
@@ -298,7 +297,7 @@ namespace ArisenEngine::RHI
             return m_PipelinePool.get();
         }
 
-        RHIResourcePool<RHIFenceHandle, RHIVkFencePoolItem>* GetFencePool() const { return m_FencePool.get(); }
+
 
         RHIResourcePool<RHIShaderProgramHandle, RHIVkGPUProgramPoolItem>* GetGPUProgramPool() const
         {
@@ -357,6 +356,13 @@ namespace ArisenEngine::RHI
         PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR = nullptr;
         PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR = nullptr;
 
+        // Descriptor Buffers
+        PFN_vkGetDescriptorSetLayoutSizeEXT vkGetDescriptorSetLayoutSizeEXT = nullptr;
+        PFN_vkGetDescriptorSetLayoutBindingOffsetEXT vkGetDescriptorSetLayoutBindingOffsetEXT = nullptr;
+        PFN_vkGetDescriptorEXT vkGetDescriptorEXT = nullptr;
+        PFN_vkCmdBindDescriptorBuffersEXT vkCmdBindDescriptorBuffersEXT = nullptr;
+        PFN_vkCmdSetDescriptorBufferOffsetsEXT vkCmdSetDescriptorBufferOffsetsEXT = nullptr;
+
         // VRS
         PFN_vkCmdSetFragmentShadingRateKHR vkCmdSetFragmentShadingRateKHR = nullptr;
 
@@ -377,7 +383,7 @@ namespace ArisenEngine::RHI
         void FreeImageViewInternal(RHIImageViewHandle handle);
         void FreeSamplerInternal(RHISamplerHandle handle);
         void FreeSemaphoreInternal(RHISemaphoreHandle handle);
-        void FreeFenceInternal(RHIFenceHandle handle);
+
         void FreeRenderPassInternal(RHIRenderPassHandle handle);
         void FreeFrameBufferInternal(RHIFrameBufferHandle handle);
         void FreePipelineInternal(RHIPipelineHandle handle);

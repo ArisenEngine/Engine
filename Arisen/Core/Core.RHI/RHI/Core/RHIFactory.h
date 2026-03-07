@@ -65,8 +65,7 @@ namespace ArisenEngine::RHI
         virtual RHISemaphoreHandle CreateTimelineSemaphore(uint64_t initialValue = 0) = 0;
         virtual void ReleaseSemaphore(RHISemaphoreHandle semaphore) = 0;
 
-        virtual RHIFenceHandle CreateFence(bool signaled = false) = 0;
-        virtual void ReleaseFence(RHIFenceHandle fence) = 0;
+
 
         virtual RHIAccelerationStructureHandle CreateAccelerationStructure(const String& name = "Anonymous") = 0;
         virtual void ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle) = 0;

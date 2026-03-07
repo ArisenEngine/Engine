@@ -1,4 +1,5 @@
 #include "RHIVkCommandBuffer.h"
+#include "RHI/Enums/Buffer/EBufferUsage.h"
 
 #include "Commands/RHIVkCommandBufferPool.h"
 #include "Core/RHIVkDevice.h"
@@ -60,6 +61,10 @@ namespace ArisenEngine::RHI
                         UInt64 size) override;
         void BindDescriptorSets(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPoolHandle poolHandle,
                                 UInt32 poolId, UInt32 setIndex, bool isSingleSet) override;
+        void BindDescriptorBuffers(UInt32 bufferCount, const RHIBufferHandle* pBuffers) override;
+        void SetDescriptorBufferOffsets(EPipelineBindPoint bindPoint, RHIPipelineHandle pipeline,
+                                        UInt32 firstSet, UInt32 setCount, const UInt32* pIndices,
+                                        const UInt64* pOffsets) override;
         void PushConstants(UInt32 offset, UInt32 size, const void* data, UInt32 stageFlags) override;
         void CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst, EImageLayout dstImageLayout,
                                UInt32 regionCount, const RHIBufferImageCopy* pRegions) override;
@@ -570,6 +575,74 @@ namespace ArisenEngine::RHI
 
     // Removing the raw pointer overload since it is deprecated in this path
 
+
+    void RHIVkExecutor::BindDescriptorBuffers(UInt32 bufferCount, const RHIBufferHandle* pBuffers)
+    {
+        ARISEN_PROFILE_ZONE("Vk::BindDescriptorBuffers");
+        auto* vkDevice = cmd->GetVkDevice();
+        if (!vkDevice->GetCapabilities().supportDescriptorBuffer) return;
+
+        cmd->m_VkDescriptorBufferBindingInfos.clear();
+        cmd->m_VkDescriptorBufferBindingInfos.reserve(bufferCount);
+
+        for (UInt32 i = 0; i < bufferCount; ++i)
+        {
+            auto* buf = vkDevice->GetBufferPool()->Get(pBuffers[i]);
+            if (buf)
+            {
+                VkDescriptorBufferBindingInfoEXT info{};
+                info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT;
+                info.address = vkDevice->GetFactory()->GetBufferDeviceAddress(pBuffers[i]);
+                info.usage = 0;
+
+                // Map RHI usage bits to Vulkan extension bits
+                if (buf->usage & (UInt32)BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT)
+                    info.usage |= VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT;
+                if (buf->usage & (UInt32)BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT)
+                    info.usage |= VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT;
+
+                cmd->m_VkDescriptorBufferBindingInfos.emplace_back(info);
+            }
+            cmd->CaptureResource(pBuffers[i]);
+        }
+
+        if (!cmd->m_VkDescriptorBufferBindingInfos.empty() && vkDevice->vkCmdBindDescriptorBuffersEXT)
+        {
+            vkDevice->vkCmdBindDescriptorBuffersEXT(cmd->m_VkCommandBuffer,
+                                                    (uint32_t)cmd->m_VkDescriptorBufferBindingInfos.size(),
+                                                    cmd->m_VkDescriptorBufferBindingInfos.data());
+        }
+    }
+
+    void RHIVkExecutor::SetDescriptorBufferOffsets(EPipelineBindPoint bindPoint, RHIPipelineHandle pipelineHandle,
+                                                   UInt32 firstSet, UInt32 setCount, const UInt32* pIndices,
+                                                   const UInt64* pOffsets)
+    {
+        ARISEN_PROFILE_ZONE("Vk::SetDescriptorBufferOffsets");
+        auto* vkDevice = cmd->GetVkDevice();
+        if (!vkDevice->GetCapabilities().supportDescriptorBuffer) return;
+
+        VkPipelineLayout vkLayout = VK_NULL_HANDLE;
+        if (pipelineHandle.IsValid())
+        {
+            auto* p = vkDevice->GetPipelinePool()->Get(pipelineHandle);
+            if (p && p->pipeline)
+            {
+                vkLayout = static_cast<RHIVkGPUPipeline*>(p->pipeline)->GetPipelineLayout(cmd->GetCurrentFrameIndex());
+            }
+        }
+        else if (cmd->m_CurrentPipeline)
+        {
+            vkLayout = static_cast<RHIVkGPUPipeline*>(cmd->m_CurrentPipeline)->GetPipelineLayout(
+                cmd->GetCurrentFrameIndex());
+        }
+
+        if (vkLayout != VK_NULL_HANDLE && vkDevice->vkCmdSetDescriptorBufferOffsetsEXT)
+        {
+            vkDevice->vkCmdSetDescriptorBufferOffsetsEXT(cmd->m_VkCommandBuffer, (VkPipelineBindPoint)bindPoint,
+                                                         vkLayout, firstSet, setCount, pIndices, pOffsets);
+        }
+    }
 
     void RHIVkExecutor::PushConstants(UInt32 offset, UInt32 size, const void* data, UInt32 stageFlags)
     {

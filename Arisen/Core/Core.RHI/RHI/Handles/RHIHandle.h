@@ -64,9 +64,7 @@ namespace ArisenEngine
         {
         };
 
-        struct RHIFenceTag
-        {
-        };
+
 
         struct RHISemaphoreTag
         {
@@ -116,8 +114,7 @@ namespace ArisenEngine
         using RHICommandBufferHandle = RHIHandle<RHICommandBufferTag>;
         ARISEN_BIND_HANDLE(RHIDescriptorSetHandle)
         using RHIDescriptorSetHandle = RHIHandle<RHIDescriptorSetTag>;
-        ARISEN_BIND_HANDLE(RHIFenceHandle)
-        using RHIFenceHandle = RHIHandle<RHIFenceTag>;
+
         ARISEN_BIND_HANDLE(RHISemaphoreHandle)
         using RHISemaphoreHandle = RHIHandle<RHISemaphoreTag>;
         ARISEN_BIND_HANDLE(RHIRenderPassHandle)

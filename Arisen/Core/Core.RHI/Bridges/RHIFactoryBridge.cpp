@@ -196,17 +196,7 @@ RHI_DLL void RHIFactory_ReleaseSemaphore(RHIFactory* f, uint32_t index, uint32_t
     f->ReleaseSemaphore(MakeHandle<RHISemaphoreTag>(index, generation));
 }
 
-RHI_DLL void RHIFactory_CreateFence(RHIFactory* f, int signaled, uint32_t* outIndex, uint32_t* outGeneration)
-{
-    auto handle = f->CreateFence(signaled != 0);
-    *outIndex = handle.index;
-    *outGeneration = handle.generation;
-}
 
-RHI_DLL void RHIFactory_ReleaseFence(RHIFactory* f, uint32_t index, uint32_t generation)
-{
-    f->ReleaseFence(MakeHandle<RHIFenceTag>(index, generation));
-}
 
 // ============================================================================
 // RenderPass / FrameBuffer

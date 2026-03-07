@@ -29,7 +29,7 @@
 namespace ArisenEngine::RHI
 {
     class RHIDescriptorSet;
-    class RHIFence;
+
     class RHIDescriptorPool;
     struct RHIAccelerationStructureBuildGeometryInfo;
     struct RHIAccelerationStructureBuildRangeInfo;
@@ -212,6 +212,11 @@ namespace ArisenEngine::RHI
                                 UInt32 poolId);
         void BindDescriptorSet(EPipelineBindPoint bindPoint, UInt32 firstSet, RHIDescriptorPoolHandle poolHandle,
                                UInt32 poolId, UInt32 setIndex);
+
+        void BindDescriptorBuffers(Containers::Vector<RHIBufferHandle>&& buffers);
+        void SetDescriptorBufferOffsets(EPipelineBindPoint bindPoint, RHIPipelineHandle pipeline, UInt32 firstSet,
+                                        Containers::Vector<UInt32>&& bufferIndices,
+                                        Containers::Vector<UInt64>&& offsets);
 
         void PushConstants(UInt32 offset, UInt32 size, const void* data, UInt32 stageFlags);
 

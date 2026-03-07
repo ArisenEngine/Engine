@@ -279,6 +279,40 @@ namespace ArisenEngine::RHI
         RecordCommand<RHICmdPushConstants>(ERHICommandType::PushConstants, {offset, size, stageFlags}, data, size);
     }
 
+    void RHICommandBuffer::BindDescriptorBuffers(Containers::Vector<RHIBufferHandle>&& buffers)
+    {
+        RecordCommand<RHICmdBindDescriptorBuffers>(ERHICommandType::BindDescriptorBuffers, {(UInt32)buffers.size()},
+                                                   buffers.data(), buffers.size() * sizeof(RHIBufferHandle));
+    }
+
+    void RHICommandBuffer::SetDescriptorBufferOffsets(EPipelineBindPoint bindPoint, RHIPipelineHandle pipeline,
+                                                      UInt32 firstSet,
+                                                      Containers::Vector<UInt32>&& bufferIndices,
+                                                      Containers::Vector<UInt64>&& offsets)
+    {
+        UInt32 setCount = (UInt32)bufferIndices.size();
+        RHICmdSetDescriptorBufferOffsets cmd{bindPoint, pipeline, firstSet, setCount};
+
+        const size_t headerSize = sizeof(RHICmdHeader);
+        const size_t cmdSize = sizeof(RHICmdSetDescriptorBufferOffsets);
+        const size_t extraSize = (setCount * sizeof(UInt32)) + (setCount * sizeof(UInt64));
+
+        size_t currentSize = m_CommandStream.size();
+        m_CommandStream.resize(currentSize + headerSize + cmdSize + extraSize);
+
+        RHICmdHeader header{ERHICommandType::SetDescriptorBufferOffsets};
+        std::memcpy(m_CommandStream.data() + currentSize, &header, headerSize);
+        std::memcpy(m_CommandStream.data() + currentSize + headerSize, &cmd, cmdSize);
+
+        uint8_t* pDest = m_CommandStream.data() + currentSize + headerSize + cmdSize;
+        if (setCount > 0)
+        {
+            std::memcpy(pDest, bufferIndices.data(), setCount * sizeof(UInt32));
+            pDest += setCount * sizeof(UInt32);
+            std::memcpy(pDest, offsets.data(), setCount * sizeof(UInt64));
+        }
+    }
+
     void RHICommandBuffer::CopyBufferToImage(RHIBufferHandle srcBuffer, RHIImageHandle dst, EImageLayout dstImageLayout,
                                              Containers::Vector<RHIBufferImageCopy>&& regions)
     {
@@ -659,6 +693,31 @@ namespace ArisenEngine::RHI
                     offset += sizeof(RHICmdBindDescriptorSetsPool);
                     executor.BindDescriptorSets(cmd->bindPoint, cmd->firstSet, cmd->poolHandle, cmd->poolId,
                                                 cmd->setIndex, cmd->isSingleSet);
+                    break;
+                }
+            case ERHICommandType::BindDescriptorBuffers:
+                {
+                    const auto* cmd = reinterpret_cast<const RHICmdBindDescriptorBuffers*>(m_CommandStream.data() +
+                        offset);
+                    offset += sizeof(RHICmdBindDescriptorBuffers);
+                    const auto* pBuffers = reinterpret_cast<const RHIBufferHandle*>(m_CommandStream.data() + offset);
+                    offset += cmd->bufferCount * sizeof(RHIBufferHandle);
+
+                    executor.BindDescriptorBuffers(cmd->bufferCount, pBuffers);
+                    break;
+                }
+            case ERHICommandType::SetDescriptorBufferOffsets:
+                {
+                    const auto* cmd = reinterpret_cast<const RHICmdSetDescriptorBufferOffsets*>(m_CommandStream.data() +
+                        offset);
+                    offset += sizeof(RHICmdSetDescriptorBufferOffsets);
+                    const auto* pIndices = reinterpret_cast<const UInt32*>(m_CommandStream.data() + offset);
+                    offset += cmd->setCount * sizeof(UInt32);
+                    const auto* pOffsets = reinterpret_cast<const UInt64*>(m_CommandStream.data() + offset);
+                    offset += cmd->setCount * sizeof(UInt64);
+
+                    executor.SetDescriptorBufferOffsets(cmd->bindPoint, cmd->pipeline, cmd->firstSet, cmd->setCount,
+                                                        pIndices, pOffsets);
                     break;
                 }
             case ERHICommandType::CopyBuffer:

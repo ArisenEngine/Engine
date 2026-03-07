@@ -32,8 +32,8 @@ namespace ArisenEngine::RHI
             VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
             VK_EXT_ROBUSTNESS_2_EXTENSION_NAME,
             VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME,
-            VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,
-            VK_KHR_MAINTENANCE_2_EXTENSION_NAME
+            VK_KHR_MAINTENANCE_2_EXTENSION_NAME,
+            VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME
         };
         return settings;
     }
@@ -826,6 +826,15 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
         lastPNext = &shadingRateFeatures.pNext;
     }
 
+    VkPhysicalDeviceDescriptorBufferFeaturesEXT descriptorBufferFeatures{};
+    if (isExtensionEnabled(VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME))
+    {
+        descriptorBufferFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT;
+        descriptorBufferFeatures.descriptorBuffer = VK_TRUE;
+        *lastPNext = &descriptorBufferFeatures;
+        lastPNext = &descriptorBufferFeatures.pNext;
+    }
+
     *lastPNext = nullptr;
 
     // Buffer Device Address is core in Vulkan 1.2, so we enable it directly if we are targeting 1.2+
@@ -1027,6 +1036,7 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
         logicalDevice->m_Capabilities.optimalBufferCopyOffsetAlignment = physicalProperties.limits.optimalBufferCopyOffsetAlignment;
         logicalDevice->m_Capabilities.optimalBufferCopyRowPitchAlignment = physicalProperties.limits.optimalBufferCopyRowPitchAlignment;
         logicalDevice->m_Capabilities.nonCoherentAtomSize = physicalProperties.limits.nonCoherentAtomSize;
+        logicalDevice->m_Capabilities.supportDescriptorBuffer = isExtensionEnabled(VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME) ? 1 : 0;
     }
 
     LOG_INFO(String::Format("[RHIVkInstance::CreateLogicDevice]: Create Logical Device for surface %d", windowId));

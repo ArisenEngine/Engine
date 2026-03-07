@@ -333,48 +333,7 @@ namespace ArisenEngine::RHI
         m_Device->ReleaseSemaphore(semaphoreHandle);
     }
 
-    RHIFenceHandle RHIVkFactory::CreateFence(bool signaled)
-    {
-        return m_Device->GetFencePool()->Allocate([this, signaled](RHIVkFencePoolItem* fence)
-        {
-            *fence = RHIVkFencePoolItem();
-            ARISEN_PROFILE_ZONE("Vk::CreateFence");
-            VkFenceCreateInfo createInfo{};
-            createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-            if (signaled)
-                createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-            if (vkCreateFence(static_cast<VkDevice>(m_Device->GetHandle()),
-                              &createInfo, nullptr, &fence->fence) != VK_SUCCESS)
-            {
-                LOG_ERROR("[RHIVkFactory::CreateFence]: failed to create fence!");
-            }
-
-            struct DeferredVkFence
-            {
-                VkDevice device;
-                VkFence fence;
-
-                ~DeferredVkFence()
-                {
-                    if (device != VK_NULL_HANDLE && fence != VK_NULL_HANDLE)
-                    {
-                        vkDestroyFence(device, fence, nullptr);
-                    }
-                }
-            };
-            auto* deferred = new DeferredVkFence{
-                static_cast<VkDevice>(m_Device->GetHandle()), fence->fence
-            };
-            fence->registryHandle = m_Device->GetResourceRegistry()->Create(
-                MakeDeferredDeleteItem(deferred));
-        });
-    }
-
-    void RHIVkFactory::ReleaseFence(RHIFenceHandle fenceHandle)
-    {
-        m_Device->ReleaseFence(fenceHandle);
-    }
 
     RHIAccelerationStructureHandle RHIVkFactory::CreateAccelerationStructure(const String& name)
     {

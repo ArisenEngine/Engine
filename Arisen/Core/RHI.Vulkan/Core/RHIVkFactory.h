@@ -49,8 +49,7 @@ namespace ArisenEngine::RHI
         RHISemaphoreHandle CreateTimelineSemaphore(uint64_t initialValue = 0) override;
         void ReleaseSemaphore(RHISemaphoreHandle semaphore) override;
 
-        RHIFenceHandle CreateFence(bool signaled = false) override;
-        void ReleaseFence(RHIFenceHandle fence) override;
+
 
         RHIAccelerationStructureHandle CreateAccelerationStructure(const String& name = "Anonymous") override;
         void ReleaseAccelerationStructure(RHIAccelerationStructureHandle handle) override;

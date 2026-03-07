@@ -51,6 +51,7 @@ namespace ArisenEngine::RHI
         UInt64 range{0};
         String name{"Anonymous"};
         ERHIMemoryUsage memoryUsage;
+        UInt32 usage{0};
         RHIResourceHandle registryHandle;
     };
 
