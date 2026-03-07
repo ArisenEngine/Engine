@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Input;
 using ArisenEditor.ViewModels;
+using ArisenEngine.Core.Diagnostics;
 
 namespace ArisenEngine.Views.Rendering
 {
@@ -123,7 +124,7 @@ namespace ArisenEngine.Views.Rendering
         protected override void OnGotFocus(GotFocusEventArgs e)
         {
             base.OnGotFocus(e);
-            Debugger.Logger.Log($"Focus on :{Name}");
+            Logger.Log($"Focus on :{Name}");
         }
 
         protected override void OnSizeChanged(SizeChangedEventArgs e)

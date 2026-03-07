@@ -4,7 +4,7 @@ using ArisenEditor.Models;
 using Avalonia.Data.Converters;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
-using LogLevel = ArisenEngine.Debugger.Logger.LogLevel;
+using LogLevel = ArisenEngine.Core.Diagnostics.Logger.LogLevel;
 
 namespace ArisenEditor.Converters;
 

@@ -1,6 +1,7 @@
 
 using System;
 using System.Diagnostics;
+using ArisenEngine.Core.Lifecycle;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -14,7 +15,7 @@ using ReactiveUI;
 
 namespace ArisenEditor
 {
-    internal partial class App : Application
+    public partial class App : Application
     {
         internal static ThemeManager? ThemeManager;
         public override void Initialize()

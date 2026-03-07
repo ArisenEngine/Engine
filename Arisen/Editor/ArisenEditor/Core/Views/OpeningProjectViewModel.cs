@@ -10,6 +10,8 @@ using ArisenEngine;
 using Avalonia.ReactiveUI;
 using ReactiveUI;
 
+using ArisenEngine.Core.Lifecycle;
+
 namespace ArisenEditor.ViewModels.Startup
 {
     public class OpeningProjectViewModel : StartupSubViewBaseViewModel

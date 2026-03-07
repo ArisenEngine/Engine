@@ -6,6 +6,8 @@ using ArisenEditor.Models;
 using ArisenEngine;
 using Dock.Model.ReactiveUI.Controls;
 
+using ArisenEngine.Core.Lifecycle;
+
 namespace ArisenEditor.ViewModels;
 
 internal class HierarchyViewModel : BaseToolViewModel, IHierarchyViewModel<SceneTreeNode>

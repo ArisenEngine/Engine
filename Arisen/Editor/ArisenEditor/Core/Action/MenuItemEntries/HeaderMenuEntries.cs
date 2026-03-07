@@ -4,6 +4,7 @@ using ArisenEditor.Attributes;
 using ArisenEditor.GameDev;
 using ArisenEditor.Utilities;
 using ArisenEngine;
+using ArisenEngine.Core.Lifecycle;
 
 namespace ArisenEditor.Internal.MenuItemEntries;
 
@@ -16,6 +17,7 @@ internal partial class HeaderMenuEntries
     {
         Task.Run(()=> {
 
+            ArisenApplication.Exit();
             ProjectSolution.OpenVisualStudio(Path.Combine(ArisenApplication.s_ProjectRoot, ArisenApplication.s_ProjectName + @".sln"));
 
         });

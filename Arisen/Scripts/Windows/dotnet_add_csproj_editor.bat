@@ -43,7 +43,7 @@ if exist "%SLN_PATH%" (
     for %%I in ("%SCRIPT_DIR%\..\..\External\ArisenDAG\ArisenDAG.csproj") do set "ARISEN_DAG=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\Engine\ArisenEngine.csproj") do set "ARISEN_ENGINE=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\Editor\ArisenEditor\ArisenEditor.csproj") do set "ARISEN_EDITOR=%%~fI"
-    for %%I in ("%SCRIPT_DIR%\..\..\Editor\ArisenEditorShell\ArisenEditorShell.csproj") do set "ARISEN_EDITOR_SHELL=%%~fI"
+    for %%I in ("%SCRIPT_DIR%\..\..\External\ArisenEditorFramework\ArisenEditorFramework.csproj") do set "ARISEN_EDITOR_FRAMEWORK=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\Editor\ArisenEditor.Desktop\ArisenEditor.Desktop.csproj") do set "ARISEN_EDITOR_DESKTOP=%%~fI"
     REM Avalonia Dock set - correct paths
     for %%I in ("%SCRIPT_DIR%\..\..\3rdparty\Ava.Dock\src\Avalonia.Controls.ProportionalStackPanel\Avalonia.Controls.ProportionalStackPanel.csproj") do set "AVA_ProportionalStack=%%~fI"
@@ -65,11 +65,11 @@ if exist "%SLN_PATH%" (
     echo ARISEN_DAG: !ARISEN_DAG!
     echo ARISEN_ENGINE: !ARISEN_ENGINE!
     echo ARISEN_EDITOR: !ARISEN_EDITOR!
-    echo ARISEN_EDITOR_SHELL: !ARISEN_EDITOR_SHELL!
+    echo ARISEN_EDITOR_FRAMEWORK: !ARISEN_EDITOR_FRAMEWORK!
     echo ARISEN_EDITOR_DESKTOP: !ARISEN_EDITOR_DESKTOP!
 
     REM Basic existence checks
-    for %%V in (BINDING_GENERATOR AUTO_BINDING SERIALIZATION ARISEN_DAG ARISEN_ENGINE ARISEN_EDITOR ARISEN_EDITOR_SHELL ARISEN_EDITOR_DESKTOP) do (
+    for %%V in (BINDING_GENERATOR AUTO_BINDING SERIALIZATION ARISEN_DAG ARISEN_ENGINE ARISEN_EDITOR ARISEN_EDITOR_FRAMEWORK ARISEN_EDITOR_DESKTOP) do (
         if "!%%V!"=="" (
             echo ERROR: Path for %%V is empty.
             set "EXIT_CODE=1"
@@ -97,7 +97,7 @@ if exist "%SLN_PATH%" (
     set "REL_ARISEN_DAG=..\..\..\External\ArisenDAG\ArisenDAG.csproj"
     set "REL_ARISEN_ENGINE=..\..\..\Engine\ArisenEngine.csproj"
     set "REL_ARISEN_EDITOR=..\..\..\Editor\ArisenEditor\ArisenEditor.csproj"
-    set "REL_ARISEN_EDITOR_SHELL=..\..\..\Editor\ArisenEditorShell\ArisenEditorShell.csproj"
+    set "REL_ARISEN_EDITOR_FRAMEWORK=..\..\..\External\ArisenEditorFramework\ArisenEditorFramework.csproj"
     set "REL_ARISEN_EDITOR_DESKTOP=..\..\..\Editor\ArisenEditor.Desktop\ArisenEditor.Desktop.csproj"
 
     echo Adding !REL_BINDING_GENERATOR! to !SLN_FILE! (--in-root)
@@ -118,8 +118,8 @@ if exist "%SLN_PATH%" (
     echo Adding !REL_ARISEN_EDITOR! to !SLN_FILE! (--in-root)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_EDITOR!"
 
-    echo Adding !REL_ARISEN_EDITOR_SHELL! to !SLN_FILE! (--in-root)
-    dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_EDITOR_SHELL!"
+    echo Adding !REL_ARISEN_EDITOR_FRAMEWORK! to !SLN_FILE! (--in-root)
+    dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_EDITOR_FRAMEWORK!"
 
     echo Adding !REL_ARISEN_EDITOR_DESKTOP! to !SLN_FILE! (--in-root)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_EDITOR_DESKTOP!"

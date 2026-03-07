@@ -1,4 +1,5 @@
 using System;
+using ArisenEngine.Core.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Dock.Model.Core;
