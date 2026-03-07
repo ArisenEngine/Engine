@@ -115,6 +115,7 @@ namespace ArisenEngine::RHI
         }
 
         RHIQueue* GetQueue(RHIQueueType type) override;
+        RHIQueue* GetQueueByFamilyIndex(UInt32 familyIndex);
         RHICommandBufferPool* GetCommandBufferPool(RHICommandBufferPoolHandle handle) override;
         void DeferredDelete(const RHIDeletionDependencies& deps, RHIDeferredDeleteItem item) override;
         UInt32 FindMemoryType(UInt32 typeFilter, UInt32 properties) override;

@@ -621,6 +621,12 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
 
     VkQueueFamilyIndices indices = FindQueueFamilies(vkSurface);
 
+    // Enumerate Queue Families to get real hardware limits
+    uint32_t queueFamilyPropCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(m_CurrentPhysicsDevice, &queueFamilyPropCount, nullptr);
+    Containers::Vector<VkQueueFamilyProperties> queueFamilyProps(queueFamilyPropCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(m_CurrentPhysicsDevice, &queueFamilyPropCount, queueFamilyProps.data());
+
     // Queue Create Info 
     Containers::Vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     Containers::Set<uint32_t> uniqueQueueFamilies = {
@@ -636,22 +642,32 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
         uniqueQueueFamilies.insert(indices.transferFamily.value());
     }
 
+    // Keep track of how many queues we actually request per family to assign correct indices later
+    Containers::Map<uint32_t, uint32_t> requestedQueueCounts;
+
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies)
     {
+        uint32_t maxQueues = queueFamily < queueFamilyProps.size() ? queueFamilyProps[queueFamily].queueCount : 1;
+        
+        uint32_t desiredQueueCount = 0;
+        if (indices.graphicsFamily.value() == queueFamily) desiredQueueCount++;
+        if (indices.computeFamily.has_value() && indices.computeFamily.value() == queueFamily) desiredQueueCount++;
+        if (indices.transferFamily.has_value() && indices.transferFamily.value() == queueFamily) desiredQueueCount++;
+        
+        // Ensure at least 1 queue if it's uniquely the present family (though present usually shares with graphics)
+        if (desiredQueueCount == 0 && indices.presentFamily.value() == queueFamily) desiredQueueCount = 1;
+
+        // Clamp to physically supported limits
+        uint32_t actualQueueCount = (std::min)(desiredQueueCount, maxQueues);
+        actualQueueCount = (std::max)(1u, actualQueueCount);
+
+        requestedQueueCounts[queueFamily] = actualQueueCount;
+
         VkDeviceQueueCreateInfo queueCreateInfo{};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueCreateInfo.queueFamilyIndex = queueFamily;
-        
-        uint32_t queueCount = 0;
-        if (indices.graphicsFamily.value() == queueFamily) queueCount++;
-        if (indices.computeFamily.has_value() && indices.computeFamily.value() == queueFamily) queueCount++;
-        if (indices.transferFamily.has_value() && indices.transferFamily.value() == queueFamily) queueCount++;
-        
-        // Ensure at least 1 queue if it's uniquely the present family (though present usually shares with graphics)
-        if (queueCount == 0 && indices.presentFamily.value() == queueFamily) queueCount = 1;
-
-        queueCreateInfo.queueCount = (std::max)(1u, queueCount);
+        queueCreateInfo.queueCount = actualQueueCount;
 
         static float priorities[3] = {1.0f, 1.0f, 1.0f};
         queueCreateInfo.pQueuePriorities = priorities;
@@ -848,38 +864,38 @@ void ArisenEngine::RHI::RHIVkInstance::CreateLogicDevice(UInt32 windowId)
             ));
     }
 
+    Containers::Map<uint32_t, uint32_t> nextQueueIndex;
+    auto getNextQueueIndex = [&](uint32_t family) -> uint32_t {
+        uint32_t requested = requestedQueueCounts[family];
+        uint32_t currentIndex = nextQueueIndex[family];
+        uint32_t indexToUse = (std::min)(currentIndex, requested > 0 ? requested - 1 : 0);
+        nextQueueIndex[family]++;
+        return indexToUse;
+    };
+
     VkQueue graphicQueue = VK_NULL_HANDLE;
     if (indices.graphicsFamily.has_value())
     {
-        vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicQueue);
+        vkGetDeviceQueue(device, indices.graphicsFamily.value(), getNextQueueIndex(indices.graphicsFamily.value()), &graphicQueue);
     }
 
     VkQueue presentQueue = VK_NULL_HANDLE;
     if (windowId != ~0u && indices.presentFamily.has_value())
     {
-        vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+        // For present queue, it generally shares exactly with graphics, but we just want one and any valid one usually works
+        vkGetDeviceQueue(device, indices.presentFamily.value(), getNextQueueIndex(indices.presentFamily.value()), &presentQueue);
     }
 
     VkQueue computeQueue = VK_NULL_HANDLE;
     if (indices.computeFamily.has_value())
     {
-        uint32_t queueIndex = (indices.computeFamily.value() == indices.graphicsFamily.value()) ? 1 : 0;
-        vkGetDeviceQueue(device, indices.computeFamily.value(), queueIndex, &computeQueue);
+        vkGetDeviceQueue(device, indices.computeFamily.value(), getNextQueueIndex(indices.computeFamily.value()), &computeQueue);
     }
 
     VkQueue transferQueue = VK_NULL_HANDLE;
     if (indices.transferFamily.has_value())
     {
-        uint32_t queueIndex = 0;
-        if (indices.transferFamily.value() == indices.graphicsFamily.value())
-        {
-            queueIndex = (indices.computeFamily.has_value() && indices.computeFamily.value() == indices.graphicsFamily.value()) ? 2 : 1;
-        }
-        else if (indices.computeFamily.has_value() && indices.transferFamily.value() == indices.computeFamily.value())
-        {
-            queueIndex = 1;
-        }
-        vkGetDeviceQueue(device, indices.transferFamily.value(), queueIndex, &transferQueue);
+        vkGetDeviceQueue(device, indices.transferFamily.value(), getNextQueueIndex(indices.transferFamily.value()), &transferQueue);
     }
 
     VkPhysicalDeviceMemoryProperties memoryProperties;
