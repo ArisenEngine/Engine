@@ -35,7 +35,7 @@ public static class Logger
         Fatal = 0x20
     }
 
-    internal class LogMessage
+    public class LogMessage
     {
         public DateTime Time { get; }
         public LogLevel LogLevel { get; }
@@ -60,8 +60,8 @@ public static class Logger
         }
     }
 
-    internal static Action<LogMessage>? MessageAdded;
-    internal static Action? MessageCleared;
+    public static Action<LogMessage>? MessageAdded;
+    public static Action? MessageCleared;
 
     public static void Dispose()
     {
