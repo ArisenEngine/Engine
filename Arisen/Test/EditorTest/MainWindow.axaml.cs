@@ -19,6 +19,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         
         _layoutManager = new LayoutManager();
+        _layoutManager.LayoutRefresh += UpdateLayout;
         _layoutManager.Initialize();
         
         // Register the "Standard" Unity-like tools
@@ -85,5 +86,14 @@ public partial class MainWindow : Window
         _layoutManager.RestoreCustomWindows(
             new List<IEditorWindow> { hierarchy, inspector, console, viewport, toolbar, _mockWindow }, 
             states);
+    }
+
+    public void UpdateLayout(Dock.Model.Controls.IRootDock layout)
+    {
+        var dockControl = this.FindControl<Dock.Avalonia.Controls.DockControl>("MainDockControl");
+        if (dockControl != null)
+        {
+            dockControl.Layout = layout;
+        }
     }
 }
