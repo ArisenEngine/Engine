@@ -64,12 +64,22 @@ public class HierarchyWindow : IEditorWindow
         var mesh1 = new ArisenEditorFramework.Hierarchy.HierarchyItemViewModel { Name = "Terrain Mesh", Parent = environmentNode };
         var mesh2 = new ArisenEditorFramework.Hierarchy.HierarchyItemViewModel { Name = "Water Plane", Parent = environmentNode };
 
+        // Add Test Case Object
+        var testCase = new InspectorTestObject();
+        var testCaseNode = new ArisenEditorFramework.Hierarchy.HierarchyItemViewModel 
+        { 
+            Name = "Inspector Test Object", 
+            Tag = testCase, 
+            Parent = rootItem 
+        };
+
         environmentNode.Children.Add(mesh1);
         environmentNode.Children.Add(mesh2);
         
         rootItem.Children.Add(cameraItem);
         rootItem.Children.Add(lightItem);
         rootItem.Children.Add(environmentNode);
+        rootItem.Children.Add(testCaseNode);
 
         ViewModel.Items.Add(rootItem);
     }
@@ -100,7 +110,9 @@ public class InspectorWindow : IEditorWindow
         // Listen to the Hierarchy selection changes
         HierarchyWindow.GlobalSelectionChanged += (sender, item) => 
         {
-            _viewModel.TargetObject = item;
+            // If the item has a Tag (our test object), inspect the Tag. 
+            // Otherwise inspect the ViewModel itself (default behavior).
+            _viewModel.TargetObject = item?.Tag ?? item;
         };
     }
 
