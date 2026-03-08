@@ -17,6 +17,7 @@
 </PropertyGroup>
 <ItemGroup>
       <ProjectReference Include="..\..\Engine\ArisenEngine.csproj" />
+      <ProjectReference Include="..\..\External\ArisenDAG\ArisenDAG.csproj" />
 </ItemGroup>
 
 <ItemGroup>

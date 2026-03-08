@@ -41,7 +41,7 @@ class Program
         finally
         {
             Logger.Info("EditorTest application shutting down.");
-            Bootstrap.Shutdown();
+            NativeRuntime.Shutdown();
             Logger.Dispose();
         }
     }
@@ -49,9 +49,9 @@ class Program
     static void Setup()
     {
         // Centralized Engine Initialization (Logger + Graphics RHI)
-        if (!Bootstrap.Initialize())
+        if (!NativeRuntime.Initialize())
         {
-            Console.WriteLine("[EditorTest] Failed to initialize engine via Bootstrap.");
+            Console.WriteLine("[EditorTest] Failed to initialize engine via NativeRuntime.");
         }
         
         // Setup installation root
