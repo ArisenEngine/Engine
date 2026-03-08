@@ -38,7 +38,7 @@ public class RenderSubsystem : ITickableSubsystem
         if (m_CurrentPipeline == null) return;
 
         // 2. Prepare Context and Render per Surface
-        foreach (var surfaceInfo in EngineInstance.GetActiveSurfaces())
+        foreach (var surfaceInfo in ArisenApplication.GetActiveSurfaces())
         {
             var surface = surfaceInfo.Surface;
             var device = RHISystem.GetOrCreateDevice(surface.SurfaceId);

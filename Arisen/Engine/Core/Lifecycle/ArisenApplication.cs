@@ -1,5 +1,9 @@
-using ArisenEngine.Core.Lifecycle;
+using System;
+using System.Collections.Generic;
+using ArisenEngine.Core.Diagnostics;
+using ArisenEngine.Platform;
 using ArisenEngine.Rendering;
+using ArisenEngine.Core.Packages;
 
 namespace ArisenEngine.Core.Lifecycle;
 
@@ -18,9 +22,13 @@ public enum RuntimePlatform
 
 public class ArisenApplication
 {
+    public static Action AllSurfacesDestroyed;
+
+    private static Dictionary<IntPtr, SurfaceInfo> m_RenderSurfaces = new Dictionary<IntPtr, SurfaceInfo>();
+
     static ArisenApplication()
     {
-        EngineInstance.AllSurfacesDestroyed += OnSurfacesAllClosed;
+        AllSurfacesDestroyed += OnSurfacesAllClosed;
     }
 
     private static void OnSurfacesAllClosed()
@@ -38,35 +46,121 @@ public class ArisenApplication
     public static bool s_IsInEditor = false;
     public static RuntimePlatform s_Platform = RuntimePlatform.Windows;
 
+    internal static IEnumerable<SurfaceInfo> GetActiveSurfaces() => m_RenderSurfaces.Values;
+
     #endregion
 
     #region Public
 
     public static int Run(int width, int height, string name = "")
     {
-        EngineInstance.RegisterSurface(IntPtr.Zero, name, SurfaceType.GameView, width, height);
-        return EngineInstance.Run(name);
+        RegisterSurface(IntPtr.Zero, name, SurfaceType.GameView, width, height);
+        return Run(name);
     }
 
     public static int Run(string name = "")
     {
-        EngineInstance.RegisterSurface(IntPtr.Zero, name, SurfaceType.GameView);
-        return EngineInstance.Run(name);
+        var config = new EngineConfig
+        {
+            AppName = name
+        };
+
+        // Register early subsystems
+        EngineKernel.Instance.RegisterSubsystem(new PlatformSubsystem());
+        EngineKernel.Instance.RegisterSubsystem(new PackageSubsystem());
+        EngineKernel.Instance.RegisterSubsystem(new RenderSubsystem());
+
+        // Initialize RHI and native core
+        if (!NativeRuntime.Initialize())
+        {
+            return -1;
+        }
+
+        // Use PackageSubsystem to resolve the default render pipeline
+        var packageSubsystem = EngineKernel.Instance.GetSubsystem<PackageSubsystem>();
+        var defaultForwardRP = packageSubsystem?.GetPackageEntry<RenderPipelineAsset>("com.arisen.builtin.forward-rp");
+
+        if (defaultForwardRP != null)
+        {
+            Graphics.SetCurrentRenderPipeline(defaultForwardRP);
+            Logger.Log("[ArisenApplication] Successfully loaded Fallback ForwardRP from PackageSubsystem");
+        }
+        else
+        {
+            Logger.Warning("[ArisenApplication] Failed to find default RenderPipeline package. Rendering might be disabled.");
+        }
+
+        var errorCode = 0;
+        try
+        {
+            EngineKernel.Instance.Initialize(config);
+            s_IsRunning = true;
+            errorCode = EngineKernel.Instance.Run();
+        }
+        catch (Exception e)
+        {
+            // Logger.Error(e.Message);
+            errorCode = -1;
+        }
+        finally
+        {
+            s_IsRunning = false;
+            Dispose();
+        }
+
+        return errorCode;
     }
 
     public static void RegisterSurface(IntPtr host, string name, SurfaceType surfaceType, int width = 0, int height = 0)
     {
-        EngineInstance.RegisterSurface(host, name, surfaceType, width, height);
+        using var _ = Profiler.Zone("ArisenApplication.RegisterSurface");
+        if (!m_RenderSurfaces.ContainsKey(host))
+        {
+            var surface = new RenderSurface(host, name, width, height);
+            m_RenderSurfaces.Add(host, new SurfaceInfo()
+            {
+                Name = name,
+                Parent = host,
+                Surface = surface,
+                SurfaceType = surfaceType
+            });
+
+            return;
+        }
+
+        throw new Exception($"Same host : {host} already added");
+    }
+
+    public static void ResizeSurface(IntPtr host, int width, int height)
+    {
+        if (m_RenderSurfaces.TryGetValue(host, out var surface))
+        {
+            // NativeHAL.RenderWindowAPI.ResizeRenderSurface(surface.Surface.SurfaceId, (uint)width, (uint)height);
+        }
     }
 
     public static void UnregisterSurface(IntPtr host)
     {
-        EngineInstance.UnregisterSurface(host);
+        if (m_RenderSurfaces.TryGetValue(host, out var surfaceInfo))
+        {
+            surfaceInfo.Surface.DisposeSurface();
+            m_RenderSurfaces.Remove(host);
+
+            return;
+        }
+
+        throw new Exception($"Surface of host {host} not exists");
     }
 
     public static void Exit()
     {
-        EngineInstance.End();
+        EngineKernel.Instance.RequestShutdown();
+    }
+
+    private static void Dispose()
+    {
+        EngineKernel.Instance.Dispose();
+        NativeRuntime.Shutdown();
     }
 
     #endregion

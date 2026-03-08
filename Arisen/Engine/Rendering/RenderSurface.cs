@@ -94,7 +94,7 @@ public class RenderSurface : IRenderSurface
         Surfaces.Remove(this);
         if (Surfaces.Count <= 0)
         {
-            // ArisenEngine.Core.Lifecycle.EngineInstance.AllSurfacesDestroyed?.Invoke();
+            // ArisenEngine.Core.Lifecycle.ArisenApplication.AllSurfacesDestroyed?.Invoke();
         }
     }
 

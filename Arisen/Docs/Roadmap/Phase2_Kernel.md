@@ -7,7 +7,7 @@ To move away from monolithic loops, we need a phased Bootloader.
 
 **Implementation Steps:**
 1. **Define `EnginePhase` and Subsystems:**
-   - **Path**: `d:\EngineSource\ArisenEngine\Engine\Arisen\Engine\Core\Lifecycle\EngineKernel.cs` (or `EngineInstance.cs`).
+   - **Path**: `d:\EngineSource\ArisenEngine\Engine\Arisen\Engine\Core\Lifecycle\EngineKernel.cs` (or `ArisenApplication.cs`).
    - Enums: `PreInit`, `Init`, `PostInit`, `Running`, `Shutdown`.
    - Interface: `IEngineSubsystem` with `Initialize()`, `Shutdown()`, and `int Priority`.
 2. **Implement Boot Sequence:**
@@ -34,5 +34,5 @@ Drive raw C++ RHI classes purely via C# execution.
    - **Path**: `d:\EngineSource\ArisenEngine\Engine\Arisen\Engine\Rendering\RenderPipeline.cs`.
    - Implement `Render()` function: acquires Swapchain image, begins command recording, binds a basic PSO, calls `Draw`, and submits to the RHI.
 2. **Execution Test:**
-   - Modify the main C# entry point (`Bootstrap.cs` or `Program.cs`) to loop the render pipeline without crashing.
+   - Modify the main C# entry point (`NativeRuntime.cs` or `Program.cs`) to loop the render pipeline without crashing.
    - Monitor memory usage to secure zero leaks upon Application Shutdown.

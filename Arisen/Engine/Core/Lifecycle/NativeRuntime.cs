@@ -4,7 +4,7 @@ using ArisenEngine.Core.RHI;
 
 namespace ArisenEngine.Core.Lifecycle;
 
-public static class Bootstrap
+public static class NativeRuntime
 {
     private static bool m_IsInitialized = false;
 
@@ -30,7 +30,7 @@ public static class Bootstrap
         catch (Exception e)
         {
             // Fallback to console if logger is not ready, but usually EngineInit handles logger
-            Console.WriteLine($"[Bootstrap] Failed to initialize native engine: {e.Message}");
+            Console.WriteLine($"[NativeRuntime] Failed to initialize native engine: {e.Message}");
         }
 
         return false;
@@ -48,7 +48,7 @@ public static class Bootstrap
         }
         catch (Exception e)
         {
-            Console.WriteLine($"[Bootstrap] Error during native engine shutdown: {e.Message}");
+            Console.WriteLine($"[NativeRuntime] Error during native engine shutdown: {e.Message}");
         }
     }
 }
