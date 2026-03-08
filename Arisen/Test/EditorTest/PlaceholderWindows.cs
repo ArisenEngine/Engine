@@ -132,5 +132,41 @@ public class ViewportWindow : PlaceholderWindow
 {
     public override string Id => "Viewport";
     public override string Title => "Viewport";
-    public ViewportWindow() : base("3D Game Engine Viewport", Colors.Black) { }
+    public ViewportWindow() : base("3D Viewport / Scene View", Color.FromRgb(40, 40, 40)) { }
+}
+
+public class AssetBrowserWindow : IEditorWindow
+{
+    public string Id => "Assets";
+    public string Title => "Asset Browser";
+    
+    private readonly ArisenEditorFramework.Assets.AssetBrowserViewModel _viewModel;
+
+    public AssetBrowserWindow()
+    {
+        // For testing, just point to the engine source directory or a dummy one
+        string dummyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestAssets");
+        if (!Directory.Exists(dummyPath))
+        {
+            Directory.CreateDirectory(dummyPath);
+            Directory.CreateDirectory(Path.Combine(dummyPath, "Models"));
+            Directory.CreateDirectory(Path.Combine(dummyPath, "Textures"));
+            Directory.CreateDirectory(Path.Combine(dummyPath, "Materials"));
+            File.WriteAllText(Path.Combine(dummyPath, "Scene.xml"), "<Scene/>");
+            File.WriteAllText(Path.Combine(dummyPath, "Models", "Cube.fbx"), "binary data");
+        }
+        
+        _viewModel = new ArisenEditorFramework.Assets.AssetBrowserViewModel(dummyPath);
+    }
+
+    public object GetContent()
+    {
+        return new ArisenEditorFramework.Assets.AssetBrowserControl
+        {
+            DataContext = _viewModel
+        };
+    }
+    
+    public string SerializeState() => "{}";
+    public void DeserializeState(string state) { }
 }
