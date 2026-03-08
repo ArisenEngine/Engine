@@ -38,18 +38,82 @@ public abstract class PlaceholderWindow : IEditorWindow
     public void DeserializeState(string state) { }
 }
 
-public class HierarchyWindow : PlaceholderWindow
+public class HierarchyWindow : IEditorWindow
 {
-    public override string Id => "Hierarchy";
-    public override string Title => "Hierarchy";
-    public HierarchyWindow() : base("Scene Hierarchy View", Color.FromRgb(45, 45, 48)) { }
+    public string Id => "Hierarchy";
+    public string Title => "Hierarchy";
+    
+    public ArisenEditorFramework.Hierarchy.HierarchyViewModel ViewModel { get; }
+    
+    // Quick static event to share selection in this sandbox environment
+    public static event System.EventHandler<ArisenEditorFramework.Hierarchy.IHierarchyItem?>? GlobalSelectionChanged;
+
+    public HierarchyWindow()
+    {
+        ViewModel = new ArisenEditorFramework.Hierarchy.HierarchyViewModel();
+        
+        ViewModel.SelectedItemChanged += (sender, item) => GlobalSelectionChanged?.Invoke(this, item);
+        
+        // Populate dummy scene data
+        var rootItem = new ArisenEditorFramework.Hierarchy.HierarchyItemViewModel { Name = "Scene Root", IsExpanded = true };
+        
+        var cameraItem = new ArisenEditorFramework.Hierarchy.HierarchyItemViewModel { Name = "Main Camera", Parent = rootItem };
+        var lightItem = new ArisenEditorFramework.Hierarchy.HierarchyItemViewModel { Name = "Directional Light", Parent = rootItem };
+        var environmentNode = new ArisenEditorFramework.Hierarchy.HierarchyItemViewModel { Name = "Environment", Parent = rootItem, IsExpanded = true };
+        
+        var mesh1 = new ArisenEditorFramework.Hierarchy.HierarchyItemViewModel { Name = "Terrain Mesh", Parent = environmentNode };
+        var mesh2 = new ArisenEditorFramework.Hierarchy.HierarchyItemViewModel { Name = "Water Plane", Parent = environmentNode };
+
+        environmentNode.Children.Add(mesh1);
+        environmentNode.Children.Add(mesh2);
+        
+        rootItem.Children.Add(cameraItem);
+        rootItem.Children.Add(lightItem);
+        rootItem.Children.Add(environmentNode);
+
+        ViewModel.Items.Add(rootItem);
+    }
+
+    public object GetContent()
+    {
+        return new ArisenEditorFramework.Hierarchy.HierarchyControl
+        {
+            DataContext = ViewModel
+        };
+    }
+    
+    public string SerializeState() => "{}";
+    public void DeserializeState(string state) { }
 }
 
-public class InspectorWindow : PlaceholderWindow
+public class InspectorWindow : IEditorWindow
 {
-    public override string Id => "Inspector";
-    public override string Title => "Inspector";
-    public InspectorWindow() : base("Inspector / properties", Color.FromRgb(30, 30, 30)) { }
+    public string Id => "Inspector";
+    public string Title => "Inspector";
+    
+    private readonly ArisenEditorFramework.Inspector.InspectorViewModel _viewModel;
+
+    public InspectorWindow() 
+    {
+        _viewModel = new ArisenEditorFramework.Inspector.InspectorViewModel();
+        
+        // Listen to the Hierarchy selection changes
+        HierarchyWindow.GlobalSelectionChanged += (sender, item) => 
+        {
+            _viewModel.TargetObject = item;
+        };
+    }
+
+    public object GetContent()
+    {
+        return new ArisenEditorFramework.Inspector.InspectorControl
+        {
+            DataContext = _viewModel
+        };
+    }
+    
+    public string SerializeState() => "{}";
+    public void DeserializeState(string state) { }
 }
 
 public class ViewportWindow : PlaceholderWindow
