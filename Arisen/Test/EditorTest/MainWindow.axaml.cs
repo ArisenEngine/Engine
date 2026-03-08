@@ -29,11 +29,12 @@ public partial class MainWindow : Window
         var console = new ConsoleWindow();
         var viewport = new ViewportWindow();
         var toolbar = new ToolbarWindow();
+        var assetBrowser = new AssetBrowserWindow();
 
         // Register them so LayoutManager knows about them for ViewLocator lookups
         // Note: These are created once and kept alive.
         _layoutManager.RestoreCustomWindows(
-            new List<IEditorWindow> { hierarchy, inspector, console, viewport, toolbar }, 
+            new List<IEditorWindow> { hierarchy, inspector, console, viewport, toolbar, assetBrowser }, 
             new Dictionary<string, string>());
         
         var dockControl = this.FindControl<Dock.Avalonia.Controls.DockControl>("MainDockControl");
@@ -73,6 +74,7 @@ public partial class MainWindow : Window
         var console = new ConsoleWindow();
         var viewport = new ViewportWindow();
         var toolbar = new ToolbarWindow();
+        var assetBrowser = new AssetBrowserWindow();
 
         // 4. Restore full layout data first
         _layoutManager.LoadLayout(layoutData);
@@ -84,7 +86,7 @@ public partial class MainWindow : Window
         
         // 5. Push state into new instances & Bind
         _layoutManager.RestoreCustomWindows(
-            new List<IEditorWindow> { hierarchy, inspector, console, viewport, toolbar, _mockWindow }, 
+            new List<IEditorWindow> { hierarchy, inspector, console, viewport, toolbar, _mockWindow, assetBrowser }, 
             states);
     }
 
