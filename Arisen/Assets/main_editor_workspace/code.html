@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Avalonia Engine - Main Editor Workspace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "panel-dark": "#181e2a",
+                        "border-dark": "#282e39",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        body {
+            font-family: "Space Grotesk", sans-serif;
+            overflow: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            font-size: 20px;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #282e39;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #135bec;
+        }
+        .transform-input-group:focus-within {
+            @apply ring-1 ring-primary/50 border-primary/50;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-200 h-screen flex flex-col">
+<header class="flex items-center justify-between border-b border-solid border-border-dark px-4 py-1.5 bg-background-light dark:bg-background-dark z-50">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2.5">
+<div class="size-6 bg-primary flex items-center justify-center rounded">
+<span class="material-symbols-outlined text-white text-lg">view_in_ar</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-sm font-bold tracking-tight">Avalonia Engine</h2>
+</div>
+<nav class="flex items-center gap-4">
+<a class="hover:text-primary transition-colors text-xs font-medium" href="#">File</a>
+<a class="hover:text-primary transition-colors text-xs font-medium" href="#">Edit</a>
+<a class="hover:text-primary transition-colors text-xs font-medium" href="#">Assets</a>
+<a class="hover:text-primary transition-colors text-xs font-medium" href="#">GameObject</a>
+<a class="hover:text-primary transition-colors text-xs font-medium" href="#">Component</a>
+<a class="hover:text-primary transition-colors text-xs font-medium" href="#">Window</a>
+<a class="hover:text-primary transition-colors text-xs font-medium" href="#">Help</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center bg-panel-dark border border-border-dark rounded px-2 py-0.5">
+<span class="material-symbols-outlined text-slate-400 text-sm">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-xs w-48 placeholder:text-slate-500" placeholder="Search components..."/>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1.5 hover:bg-border-dark rounded transition-colors">
+<span class="material-symbols-outlined text-slate-400">notifications</span>
+</button>
+<button class="p-1.5 hover:bg-border-dark rounded transition-colors">
+<span class="material-symbols-outlined text-slate-400">settings</span>
+</button>
+<div class="w-px h-4 bg-border-dark mx-1"></div>
+<div class="size-6 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
+<span class="material-symbols-outlined text-primary text-sm">person</span>
+</div>
+</div>
+</div>
+</header>
+<div class="flex items-center justify-between px-4 py-1 border-b border-border-dark bg-background-light dark:bg-background-dark/50">
+<div class="flex items-center gap-1">
+<button class="p-1.5 text-slate-400 hover:text-white hover:bg-border-dark rounded">
+<span class="material-symbols-outlined">open_with</span>
+</button>
+<button class="p-1.5 text-primary bg-primary/10 rounded border border-primary/20">
+<span class="material-symbols-outlined">rotate_right</span>
+</button>
+<button class="p-1.5 text-slate-400 hover:text-white hover:bg-border-dark rounded">
+<span class="material-symbols-outlined">straighten</span>
+</button>
+<div class="w-px h-6 bg-border-dark mx-2"></div>
+<button class="p-1.5 text-slate-400 hover:text-white hover:bg-border-dark rounded">
+<span class="material-symbols-outlined">public</span>
+</button>
+<button class="p-1.5 text-slate-400 hover:text-white hover:bg-border-dark rounded">
+<span class="material-symbols-outlined">grid_4x4</span>
+</button>
+</div>
+<div class="flex items-center bg-panel-dark/80 rounded-lg border border-border-dark px-1">
+<button class="p-1.5 text-slate-400 hover:text-green-500 transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">play_arrow</span>
+</button>
+<button class="p-1.5 text-slate-400 hover:text-blue-500 transition-colors">
+<span class="material-symbols-outlined">pause</span>
+</button>
+<button class="p-1.5 text-slate-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined">stop</span>
+</button>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-2 px-3 py-1 bg-panel-dark rounded border border-border-dark">
+<span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Layers</span>
+<span class="text-xs font-medium">Default</span>
+<span class="material-symbols-outlined text-xs">expand_more</span>
+</div>
+<button class="flex items-center gap-2 px-3 py-1 bg-primary hover:bg-primary/90 rounded text-white text-xs font-bold transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1">humerus</span>
+            Build
+        </button>
+</div>
+</div>
+<main class="flex-1 flex overflow-hidden">
+<aside class="w-64 border-r border-border-dark flex flex-col bg-background-light dark:bg-background-dark">
+<div class="p-3 border-b border-border-dark flex items-center justify-between">
+<span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Hierarchy</span>
+<span class="material-symbols-outlined text-sm text-slate-500 hover:text-white cursor-pointer">add</span>
+</div>
+<div class="p-2">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2 top-1.5 text-sm text-slate-500">search</span>
+<input class="w-full bg-panel-dark border-none rounded text-xs pl-8 py-1.5 focus:ring-1 focus:ring-primary/50" placeholder="Filter objects..." type="text"/>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar p-1">
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-2 px-2 py-1.5 hover:bg-border-dark rounded text-xs text-slate-400 cursor-pointer">
+<span class="material-symbols-outlined text-sm">videocam</span>
+                    Main Camera
+                </div>
+<div class="flex items-center gap-2 px-2 py-1.5 hover:bg-border-dark rounded text-xs text-slate-400 cursor-pointer">
+<span class="material-symbols-outlined text-sm">light_mode</span>
+                    Directional Light
+                </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2 px-2 py-1.5 bg-primary/20 text-white rounded text-xs cursor-pointer border-l-2 border-primary">
+<span class="material-symbols-outlined text-sm text-primary">person</span>
+                        Player_Character
+                        <span class="material-symbols-outlined text-xs ml-auto opacity-50">visibility</span>
+</div>
+<div class="ml-4 pl-2 border-l border-border-dark mt-0.5 flex flex-col gap-0.5">
+<div class="flex items-center gap-2 px-2 py-1 hover:bg-border-dark rounded text-[11px] text-slate-400 cursor-pointer">
+<span class="material-symbols-outlined text-xs">skeleton</span>
+                            Character_Rig
+                        </div>
+<div class="flex items-center gap-2 px-2 py-1 hover:bg-border-dark rounded text-[11px] text-slate-400 cursor-pointer">
+<span class="material-symbols-outlined text-xs">category</span>
+                            Collider_Volume
+                        </div>
+</div>
+</div>
+<div class="flex items-center gap-2 px-2 py-1.5 hover:bg-border-dark rounded text-xs text-slate-400 cursor-pointer">
+<span class="material-symbols-outlined text-sm">folder_open</span>
+                    Environment
+                    <span class="material-symbols-outlined text-xs ml-auto rotate-90">chevron_right</span>
+</div>
+<div class="flex items-center gap-2 px-2 py-1.5 hover:bg-border-dark rounded text-xs text-slate-400 cursor-pointer">
+<span class="material-symbols-outlined text-sm">settings_input_component</span>
+                    Global_PostProcess
+                </div>
+</div>
+</div>
+</aside>
+<section class="flex-1 flex flex-col bg-[#0a0f18] relative group">
+<div class="absolute top-2 left-2 right-2 flex justify-between items-center z-10 pointer-events-none">
+<div class="flex gap-1 pointer-events-auto">
+<div class="bg-black/40 backdrop-blur-md px-2 py-1 rounded text-[10px] font-bold text-white/70 border border-white/5 flex items-center gap-2">
+<span>Perspective</span>
+<div class="w-px h-2 bg-white/20"></div>
+<span>Lit</span>
+</div>
+</div>
+<div class="bg-black/40 backdrop-blur-md px-2 py-1 rounded text-[10px] font-bold text-white/70 border border-white/5 pointer-events-auto">
+                60.0 FPS
+            </div>
+</div>
+<div class="flex-1 w-full h-full relative overflow-hidden bg-gradient-to-b from-[#1a202c] to-[#0a0f18] flex items-center justify-center">
+<div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0); background-size: 40px 40px;"></div>
+<div class="w-[800px] h-[400px] border-t border-white/10" style="transform: perspective(1000px) rotateX(60deg); background-image: linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 40px 40px;"></div>
+<div class="absolute w-32 h-64 border-2 border-primary/40 bg-primary/10 rounded flex items-center justify-center transform hover:scale-105 transition-transform">
+<div class="absolute -top-12 left-1/2 -translate-x-1/2 flex flex-col items-center">
+<div class="bg-primary text-[10px] px-2 py-0.5 rounded text-white font-bold whitespace-nowrap">Player_Character</div>
+<div class="w-0.5 h-4 bg-primary"></div>
+</div>
+<div class="relative size-full">
+<div class="absolute top-1/2 left-1/2 w-16 h-0.5 bg-red-500 -translate-y-1/2 origin-left"></div>
+<div class="absolute top-1/2 left-1/2 h-16 w-0.5 bg-green-500 -translate-x-1/2 origin-bottom bottom-1/2"></div>
+<div class="absolute top-1/2 left-1/2 w-16 h-0.5 bg-blue-500 -translate-y-1/2 origin-left rotate-45"></div>
+</div>
+</div>
+</div>
+<div class="h-64 border-t border-border-dark flex flex-col bg-background-light dark:bg-background-dark">
+<div class="flex border-b border-border-dark bg-background-dark/30">
+<button class="px-4 py-2 border-b-2 border-primary text-xs font-bold text-white bg-panel-dark">Project</button>
+<button class="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-300">Console</button>
+<button class="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-300">Animation</button>
+<button class="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-300">Profiler</button>
+<div class="ml-auto flex items-center px-4 gap-2">
+<span class="material-symbols-outlined text-sm text-slate-500">tune</span>
+<span class="material-symbols-outlined text-sm text-slate-500">more_vert</span>
+</div>
+</div>
+<div class="flex-1 flex overflow-hidden">
+<div class="w-48 border-r border-border-dark p-2 overflow-y-auto custom-scrollbar">
+<div class="flex items-center gap-2 p-1.5 hover:bg-border-dark rounded text-xs cursor-pointer">
+<span class="material-symbols-outlined text-sm text-yellow-500" style="font-variation-settings: 'FILL' 1">folder</span> Assets
+                    </div>
+<div class="ml-4">
+<div class="flex items-center gap-2 p-1.5 hover:bg-border-dark rounded text-xs cursor-pointer">
+<span class="material-symbols-outlined text-sm text-slate-500">folder</span> Materials
+                        </div>
+<div class="flex items-center gap-2 p-1.5 hover:bg-border-dark rounded text-xs cursor-pointer">
+<span class="material-symbols-outlined text-sm text-slate-500">folder</span> Prefabs
+                        </div>
+<div class="flex items-center gap-2 p-1.5 bg-primary/10 text-primary rounded text-xs cursor-pointer">
+<span class="material-symbols-outlined text-sm text-primary" style="font-variation-settings: 'FILL' 1">folder_open</span> Scripts
+                        </div>
+<div class="flex items-center gap-2 p-1.5 hover:bg-border-dark rounded text-xs cursor-pointer">
+<span class="material-symbols-outlined text-sm text-slate-500">folder</span> Textures
+                        </div>
+</div>
+</div>
+<div class="flex-1 p-4 grid grid-cols-6 gap-4 overflow-y-auto custom-scrollbar content-start">
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="size-16 bg-panel-dark border border-border-dark rounded group-hover:border-primary flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-3xl text-slate-400 group-hover:text-primary">description</span>
+</div>
+<span class="text-[10px] text-slate-400 group-hover:text-white text-center truncate w-full">PlayerController.cs</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="size-16 bg-panel-dark border border-border-dark rounded group-hover:border-primary flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-3xl text-slate-400 group-hover:text-primary">description</span>
+</div>
+<span class="text-[10px] text-slate-400 group-hover:text-white text-center truncate w-full">InputManager.cs</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<aside class="w-80 border-l border-border-dark flex flex-col bg-background-light dark:bg-background-dark overflow-y-auto custom-scrollbar">
+<div class="p-3 border-b border-border-dark flex items-center justify-between sticky top-0 bg-background-dark z-10">
+<span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Inspector</span>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-sm text-slate-500 hover:text-white cursor-pointer">lock_open</span>
+<span class="material-symbols-outlined text-sm text-slate-500 hover:text-white cursor-pointer">settings</span>
+</div>
+</div>
+<div class="p-4 border-b border-border-dark">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded bg-primary/20 flex items-center justify-center border border-primary/30">
+<span class="material-symbols-outlined text-primary">person</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-2">
+<input checked="" class="size-3 rounded border-border-dark bg-panel-dark text-primary focus:ring-0" type="checkbox"/>
+<input class="bg-transparent border-none p-0 focus:ring-0 text-sm font-bold w-full" type="text" value="Player_Character"/>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-[10px] px-1.5 py-0.5 bg-border-dark rounded text-slate-400">Static</span>
+<span class="text-[10px] px-1.5 py-0.5 bg-border-dark rounded text-slate-400">Tag: Player</span>
+</div>
+</div>
+</div>
+</div>
+<div class="border-b border-border-dark">
+<div class="flex items-center gap-2 px-3 py-1.5 bg-panel-dark/50 hover:bg-panel-dark cursor-pointer transition-colors group">
+<span class="material-symbols-outlined text-xs text-slate-500 group-hover:text-slate-300">expand_more</span>
+<span class="material-symbols-outlined text-sm text-slate-400 group-hover:text-white">aspect_ratio</span>
+<span class="text-[11px] font-bold uppercase tracking-wider">Transform</span>
+<span class="material-symbols-outlined text-xs text-slate-600 ml-auto hover:text-slate-300">more_vert</span>
+</div>
+<div class="p-3 space-y-2">
+<div class="flex items-center h-6">
+<span class="text-[10px] w-16 text-slate-400 font-medium">Position</span>
+<div class="flex flex-1 gap-1">
+<div class="transform-input-group flex-1 flex items-center bg-background-dark/60 border border-border-dark rounded transition-all">
+<span class="w-1 h-full bg-red-500/80 rounded-l-[1px]"></span>
+<span class="text-[9px] px-1 text-red-500/80 font-bold select-none">X</span>
+<input class="w-full bg-transparent border-none text-[10px] py-0 px-1 focus:ring-0 text-right pr-2 text-slate-200" type="text" value="0.00"/>
+</div>
+<div class="transform-input-group flex-1 flex items-center bg-background-dark/60 border border-border-dark rounded transition-all">
+<span class="w-1 h-full bg-green-500/80 rounded-l-[1px]"></span>
+<span class="text-[9px] px-1 text-green-500/80 font-bold select-none">Y</span>
+<input class="w-full bg-transparent border-none text-[10px] py-0 px-1 focus:ring-0 text-right pr-2 text-slate-200" type="text" value="1.20"/>
+</div>
+<div class="transform-input-group flex-1 flex items-center bg-background-dark/60 border border-border-dark rounded transition-all">
+<span class="w-1 h-full bg-blue-500/80 rounded-l-[1px]"></span>
+<span class="text-[9px] px-1 text-blue-500/80 font-bold select-none">Z</span>
+<input class="w-full bg-transparent border-none text-[10px] py-0 px-1 focus:ring-0 text-right pr-2 text-slate-200" type="text" value="-5.40"/>
+</div>
+</div>
+</div>
+<div class="flex items-center h-6">
+<span class="text-[10px] w-16 text-slate-400 font-medium">Rotation</span>
+<div class="flex flex-1 gap-1">
+<div class="transform-input-group flex-1 flex items-center bg-background-dark/60 border border-border-dark rounded transition-all">
+<span class="w-1 h-full bg-red-500/80 rounded-l-[1px]"></span>
+<span class="text-[9px] px-1 text-red-500/80 font-bold select-none">X</span>
+<input class="w-full bg-transparent border-none text-[10px] py-0 px-1 focus:ring-0 text-right pr-2 text-slate-200" type="text" value="0.0"/>
+</div>
+<div class="transform-input-group flex-1 flex items-center bg-background-dark/60 border border-border-dark rounded transition-all">
+<span class="w-1 h-full bg-green-500/80 rounded-l-[1px]"></span>
+<span class="text-[9px] px-1 text-green-500/80 font-bold select-none">Y</span>
+<input class="w-full bg-transparent border-none text-[10px] py-0 px-1 focus:ring-0 text-right pr-2 text-slate-200" type="text" value="0.0"/>
+</div>
+<div class="transform-input-group flex-1 flex items-center bg-background-dark/60 border border-border-dark rounded transition-all">
+<span class="w-1 h-full bg-blue-500/80 rounded-l-[1px]"></span>
+<span class="text-[9px] px-1 text-blue-500/80 font-bold select-none">Z</span>
+<input class="w-full bg-transparent border-none text-[10px] py-0 px-1 focus:ring-0 text-right pr-2 text-slate-200" type="text" value="0.0"/>
+</div>
+</div>
+</div>
+<div class="flex items-center h-6">
+<span class="text-[10px] w-16 text-slate-400 font-medium">Scale</span>
+<div class="flex flex-1 gap-1">
+<div class="transform-input-group flex-1 flex items-center bg-background-dark/60 border border-border-dark rounded transition-all">
+<span class="w-1 h-full bg-red-500/80 rounded-l-[1px]"></span>
+<span class="text-[9px] px-1 text-red-500/80 font-bold select-none">X</span>
+<input class="w-full bg-transparent border-none text-[10px] py-0 px-1 focus:ring-0 text-right pr-2 text-slate-200" type="text" value="1.0"/>
+</div>
+<div class="transform-input-group flex-1 flex items-center bg-background-dark/60 border border-border-dark rounded transition-all">
+<span class="w-1 h-full bg-green-500/80 rounded-l-[1px]"></span>
+<span class="text-[9px] px-1 text-green-500/80 font-bold select-none">Y</span>
+<input class="w-full bg-transparent border-none text-[10px] py-0 px-1 focus:ring-0 text-right pr-2 text-slate-200" type="text" value="1.0"/>
+</div>
+<div class="transform-input-group flex-1 flex items-center bg-background-dark/60 border border-border-dark rounded transition-all">
+<span class="w-1 h-full bg-blue-500/80 rounded-l-[1px]"></span>
+<span class="text-[9px] px-1 text-blue-500/80 font-bold select-none">Z</span>
+<input class="w-full bg-transparent border-none text-[10px] py-0 px-1 focus:ring-0 text-right pr-2 text-slate-200" type="text" value="1.0"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="border-b border-border-dark">
+<div class="flex items-center gap-2 px-3 py-2 bg-panel-dark/50 hover:bg-panel-dark cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-sm text-slate-500">expand_more</span>
+<span class="material-symbols-outlined text-sm text-slate-400">grid_on</span>
+<span class="text-xs font-bold uppercase tracking-wider">Mesh Renderer</span>
+<input checked="" class="size-3 rounded border-border-dark bg-panel-dark text-primary focus:ring-0 ml-auto" type="checkbox"/>
+</div>
+<div class="p-3 space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-[10px] text-slate-500 font-medium">Cast Shadows</span>
+<div class="flex items-center gap-2 px-2 py-0.5 bg-background-dark/60 rounded border border-border-dark">
+<span class="text-[10px]">On</span>
+<span class="material-symbols-outlined text-[14px] text-slate-500">expand_more</span>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-[10px] text-slate-500 font-medium">Materials</span>
+<div class="flex-1 ml-4 h-6 bg-background-dark/60 border border-border-dark rounded flex items-center px-2 group hover:border-slate-600 transition-colors cursor-pointer">
+<span class="text-[10px] text-slate-400 group-hover:text-slate-200">M_Player_Armor</span>
+<span class="material-symbols-outlined text-[14px] text-slate-600 ml-auto">radio_button_checked</span>
+</div>
+</div>
+</div>
+</div>
+<div class="border-b border-border-dark">
+<div class="flex items-center gap-2 px-3 py-2 bg-panel-dark/50 hover:bg-panel-dark cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-sm text-slate-500">expand_more</span>
+<span class="material-symbols-outlined text-sm text-primary">description</span>
+<span class="text-xs font-bold uppercase tracking-wider">Player Controller</span>
+<input checked="" class="size-3 rounded border-border-dark bg-panel-dark text-primary focus:ring-0 ml-auto" type="checkbox"/>
+</div>
+<div class="p-3 space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-[10px] text-slate-500 font-medium">Movement Speed</span>
+<input class="w-24 h-1 bg-border-dark accent-primary rounded-lg appearance-none cursor-pointer" type="range"/>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-[10px] text-slate-500 font-medium">Jump Force</span>
+<div class="w-16 bg-background-dark/60 border border-border-dark rounded px-1 flex items-center">
+<input class="w-full bg-transparent border-none text-[10px] py-0.5 focus:ring-0 text-right pr-1" type="text" value="15.5"/>
+</div>
+</div>
+</div>
+</div>
+<div class="p-6">
+<button class="w-full py-2 bg-border-dark hover:bg-primary/20 hover:text-primary border border-white/5 rounded text-xs font-bold transition-all uppercase tracking-widest">
+                Add Component
+            </button>
+</div>
+</aside>
+</main>
+<footer class="h-6 border-t border-border-dark bg-background-light dark:bg-background-dark flex items-center justify-between px-3 text-[10px] font-medium text-slate-500">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5 text-primary">
+<span class="size-2 rounded-full bg-primary animate-pulse"></span>
+            Engine Ready
+        </div>
+<div class="w-px h-3 bg-border-dark"></div>
+<div class="flex gap-2">
+<div>Pos: <span class="text-slate-300">0.0, 1.2, -5.4</span></div>
+<div>Rot: <span class="text-slate-300">0.0, 0.0, 0.0</span></div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div>AvaloniaUI 11.0.5</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">storage</span>
+<span>2.4 GB / 16 GB</span>
+</div>
+</div>
+</footer>
+
+</body></html>

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asset Browser - EngineEditor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "charcoal-800": "#1a1f2b",
+                        "charcoal-900": "#111318",
+                        "border-subtle": "#282e39"
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+            font-size: 20px;
+        }
+        .fill-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+        /* Custom minimalist scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #282e39;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b4354;
+        }
+        .data-grid-row:hover {
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+        .data-grid-row.selected {
+            background-color: rgba(19, 91, 236, 0.15);
+            border-left: 2px solid #135bec;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-white overflow-hidden">
+<div class="flex flex-col h-screen">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-border-subtle bg-charcoal-900 px-6 py-2 shrink-0">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3 text-white">
+<div class="size-6 text-primary">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M12.0799 24L4 19.2479L9.95537 8.75216L18.04 13.4961L18.0446 4H29.9554L29.96 13.4961L38.0446 8.75216L44 19.2479L35.92 24L44 28.7521L38.0446 39.2479L29.96 34.5039L29.9554 44H18.0446L18.04 34.5039L9.95537 39.2479L4 28.7521L12.0799 24Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-white text-md font-bold leading-tight tracking-tight">EngineEditor</h2>
+</div>
+<nav class="flex items-center gap-6">
+<a class="text-gray-400 hover:text-white text-xs font-medium transition-colors" href="#">File</a>
+<a class="text-gray-400 hover:text-white text-xs font-medium transition-colors" href="#">Edit</a>
+<a class="text-gray-400 hover:text-white text-xs font-medium transition-colors" href="#">View</a>
+<a class="text-gray-400 hover:text-white text-xs font-medium transition-colors" href="#">Build</a>
+<a class="text-gray-400 hover:text-white text-xs font-medium transition-colors" href="#">Tools</a>
+<a class="text-gray-400 hover:text-white text-xs font-medium transition-colors" href="#">Help</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center bg-charcoal-800 rounded-lg px-3 py-1.5 gap-2 border border-border-subtle w-64">
+<span class="material-symbols-outlined text-gray-400 !text-sm">search</span>
+<input class="bg-transparent border-none focus:ring-0 p-0 text-xs w-full placeholder-gray-500" placeholder="Search assets..." type="text"/>
+</div>
+<div class="flex items-center gap-1 border-l border-border-subtle pl-4 ml-2">
+<button class="p-1.5 hover:bg-charcoal-800 rounded text-gray-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-1.5 hover:bg-charcoal-800 rounded text-gray-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="size-7 bg-primary rounded-full flex items-center justify-center text-[10px] font-bold ml-2">JD</div>
+</div>
+</div>
+</header>
+<!-- Main Workspace -->
+<div class="flex flex-1 overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="w-64 bg-charcoal-900 border-r border-border-subtle flex flex-col shrink-0">
+<div class="p-4 border-b border-border-subtle flex items-center justify-between">
+<span class="text-xs font-bold uppercase tracking-widest text-gray-500">Content Browser</span>
+<button class="text-gray-500 hover:text-white"><span class="material-symbols-outlined !text-sm">add_box</span></button>
+</div>
+<div class="flex-1 overflow-y-auto p-2 space-y-1">
+<div class="flex items-center gap-2 px-2 py-1.5 rounded bg-primary/20 text-white cursor-pointer">
+<span class="material-symbols-outlined !text-sm">keyboard_arrow_down</span>
+<span class="material-symbols-outlined fill-icon text-yellow-500 !text-lg">folder</span>
+<span class="text-xs font-medium">Content</span>
+</div>
+<div class="ml-4 space-y-1">
+<div class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-charcoal-800 text-gray-400 cursor-pointer transition-colors">
+<span class="material-symbols-outlined !text-sm">keyboard_arrow_right</span>
+<span class="material-symbols-outlined fill-icon text-gray-500 !text-lg">folder</span>
+<span class="text-xs font-medium">Animations</span>
+</div>
+<div class="flex items-center gap-2 px-2 py-1.5 rounded bg-charcoal-800/50 text-white cursor-pointer">
+<span class="material-symbols-outlined !text-sm">keyboard_arrow_down</span>
+<span class="material-symbols-outlined fill-icon text-yellow-600 !text-lg">folder</span>
+<span class="text-xs font-medium">Characters</span>
+</div>
+<div class="ml-4 space-y-1">
+<div class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-charcoal-800 text-gray-400 cursor-pointer">
+<span class="material-symbols-outlined !text-sm">keyboard_arrow_right</span>
+<span class="material-symbols-outlined fill-icon text-gray-600 !text-lg">folder</span>
+<span class="text-xs font-medium">NPCs</span>
+</div>
+<div class="flex items-center gap-2 px-2 py-1.5 rounded bg-primary/10 text-white border-l-2 border-primary cursor-pointer">
+<span class="material-symbols-outlined !text-sm">keyboard_arrow_down</span>
+<span class="material-symbols-outlined fill-icon text-yellow-500 !text-lg">folder</span>
+<span class="text-xs font-medium">Player</span>
+</div>
+</div>
+<div class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-charcoal-800 text-gray-400 cursor-pointer">
+<span class="material-symbols-outlined !text-sm">keyboard_arrow_right</span>
+<span class="material-symbols-outlined fill-icon text-gray-500 !text-lg">folder</span>
+<span class="text-xs font-medium">Environments</span>
+</div>
+<div class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-charcoal-800 text-gray-400 cursor-pointer">
+<span class="material-symbols-outlined !text-sm">keyboard_arrow_right</span>
+<span class="material-symbols-outlined fill-icon text-gray-500 !text-lg">folder</span>
+<span class="text-xs font-medium">Materials</span>
+</div>
+<div class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-charcoal-800 text-gray-400 cursor-pointer">
+<span class="material-symbols-outlined !text-sm">keyboard_arrow_right</span>
+<span class="material-symbols-outlined fill-icon text-gray-500 !text-lg">folder</span>
+<span class="text-xs font-medium">Shaders</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col bg-background-dark overflow-hidden">
+<!-- Toolbar Area -->
+<div class="flex items-center justify-between px-4 py-2 bg-charcoal-900/50 border-b border-border-subtle shrink-0">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1">
+<button class="p-1 hover:bg-charcoal-800 rounded text-gray-400"><span class="material-symbols-outlined">arrow_back</span></button>
+<button class="p-1 hover:bg-charcoal-800 rounded text-gray-400"><span class="material-symbols-outlined">arrow_forward</span></button>
+<button class="p-1 hover:bg-charcoal-800 rounded text-gray-400"><span class="material-symbols-outlined">arrow_upward</span></button>
+</div>
+<div class="flex items-center gap-1 text-[11px] font-medium text-gray-500">
+<a class="hover:text-primary" href="#">Content</a>
+<span>/</span>
+<a class="hover:text-primary" href="#">Characters</a>
+<span>/</span>
+<span class="text-gray-300">Player</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex bg-charcoal-900 rounded p-0.5 border border-border-subtle">
+<button class="px-2 py-1 rounded-sm text-gray-500 hover:text-white"><span class="material-symbols-outlined !text-sm">grid_view</span></button>
+<button class="px-2 py-1 rounded-sm bg-primary text-white"><span class="material-symbols-outlined !text-sm">list</span></button>
+<button class="px-2 py-1 rounded-sm text-gray-500 hover:text-white"><span class="material-symbols-outlined !text-sm">view_module</span></button>
+</div>
+<button class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors">
+<span class="material-symbols-outlined !text-sm">upload</span>
+                            Import Asset
+                        </button>
+</div>
+</div>
+<!-- Data Grid -->
+<div class="flex-1 overflow-auto">
+<table class="w-full text-left border-collapse min-w-[800px]">
+<thead class="sticky top-0 bg-charcoal-900 z-10">
+<tr class="text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-border-subtle">
+<th class="px-4 py-2 hover:bg-charcoal-800 cursor-pointer group">
+<div class="flex items-center gap-2">
+                                        Name
+                                        <span class="material-symbols-outlined !text-xs opacity-0 group-hover:opacity-100">arrow_downward</span>
+</div>
+</th>
+<th class="px-4 py-2 border-l border-border-subtle hover:bg-charcoal-800 cursor-pointer group">
+<div class="flex items-center gap-2">
+                                        Type
+                                        <span class="material-symbols-outlined !text-xs opacity-0 group-hover:opacity-100">swap_vert</span>
+</div>
+</th>
+<th class="px-4 py-2 border-l border-border-subtle hover:bg-charcoal-800 cursor-pointer group">
+<div class="flex items-center gap-2">
+                                        Date Modified
+                                        <span class="material-symbols-outlined !text-xs opacity-0 group-hover:opacity-100">swap_vert</span>
+</div>
+</th>
+<th class="px-4 py-2 border-l border-border-subtle hover:bg-charcoal-800 cursor-pointer group text-right">
+<div class="flex items-center justify-end gap-2">
+                                        Size
+                                        <span class="material-symbols-outlined !text-xs opacity-0 group-hover:opacity-100">swap_vert</span>
+</div>
+</th>
+</tr>
+</thead>
+<tbody class="text-xs font-medium">
+<!-- Row 1: Selected -->
+<tr class="data-grid-row selected border-b border-border-subtle group cursor-default">
+<td class="px-4 py-2.5 flex items-center gap-3">
+<span class="material-symbols-outlined text-cyan-500 !text-xl">view_in_ar</span>
+<span class="text-white">Player_Base_Mesh.fbx</span>
+</td>
+<td class="px-4 py-2.5 text-gray-400">Static Mesh</td>
+<td class="px-4 py-2.5 text-gray-400">Oct 24, 2023 14:22</td>
+<td class="px-4 py-2.5 text-gray-400 text-right font-mono">12.4 MB</td>
+</tr>
+<!-- Row 2 -->
+<tr class="data-grid-row border-b border-border-subtle group cursor-default">
+<td class="px-4 py-2.5 flex items-center gap-3">
+<span class="material-symbols-outlined text-purple-500 !text-xl">image</span>
+<span class="text-gray-200">Player_Albedo_4K.tga</span>
+</td>
+<td class="px-4 py-2.5 text-gray-400">Texture 2D</td>
+<td class="px-4 py-2.5 text-gray-400">Oct 24, 2023 09:15</td>
+<td class="px-4 py-2.5 text-gray-400 text-right font-mono">64.0 MB</td>
+</tr>
+<!-- Row 3 -->
+<tr class="data-grid-row border-b border-border-subtle group cursor-default">
+<td class="px-4 py-2.5 flex items-center gap-3">
+<span class="material-symbols-outlined text-purple-500 !text-xl">image</span>
+<span class="text-gray-200">Player_Normal_4K.tga</span>
+</td>
+<td class="px-4 py-2.5 text-gray-400">Texture 2D</td>
+<td class="px-4 py-2.5 text-gray-400">Oct 24, 2023 09:16</td>
+<td class="px-4 py-2.5 text-gray-400 text-right font-mono">42.8 MB</td>
+</tr>
+<!-- Row 4 -->
+<tr class="data-grid-row border-b border-border-subtle group cursor-default">
+<td class="px-4 py-2.5 flex items-center gap-3">
+<span class="material-symbols-outlined text-emerald-500 !text-xl">terminal</span>
+<span class="text-gray-200">PlayerController.cs</span>
+</td>
+<td class="px-4 py-2.5 text-gray-400">C# Script</td>
+<td class="px-4 py-2.5 text-gray-400">Oct 25, 2023 11:45</td>
+<td class="px-4 py-2.5 text-gray-400 text-right font-mono">18.2 KB</td>
+</tr>
+<!-- Row 5 -->
+<tr class="data-grid-row border-b border-border-subtle group cursor-default">
+<td class="px-4 py-2.5 flex items-center gap-3">
+<span class="material-symbols-outlined text-blue-400 !text-xl">animation</span>
+<span class="text-gray-200">Player_Idle_Anim.uasset</span>
+</td>
+<td class="px-4 py-2.5 text-gray-400">Animation Sequence</td>
+<td class="px-4 py-2.5 text-gray-400">Oct 22, 2023 18:03</td>
+<td class="px-4 py-2.5 text-gray-400 text-right font-mono">2.1 MB</td>
+</tr>
+<!-- Row 6 -->
+<tr class="data-grid-row border-b border-border-subtle group cursor-default">
+<td class="px-4 py-2.5 flex items-center gap-3">
+<span class="material-symbols-outlined text-amber-500 !text-xl">texture</span>
+<span class="text-gray-200">M_Player_Cloth.mat</span>
+</td>
+<td class="px-4 py-2.5 text-gray-400">Material</td>
+<td class="px-4 py-2.5 text-gray-400">Oct 23, 2023 10:30</td>
+<td class="px-4 py-2.5 text-gray-400 text-right font-mono">144 KB</td>
+</tr>
+<!-- Row 7 -->
+<tr class="data-grid-row border-b border-border-subtle group cursor-default">
+<td class="px-4 py-2.5 flex items-center gap-3">
+<span class="material-symbols-outlined text-rose-500 !text-xl">audio_file</span>
+<span class="text-gray-200">Footstep_Concrete.wav</span>
+</td>
+<td class="px-4 py-2.5 text-gray-400">Audio Wave</td>
+<td class="px-4 py-2.5 text-gray-400">Oct 20, 2023 15:12</td>
+<td class="px-4 py-2.5 text-gray-400 text-right font-mono">1.2 MB</td>
+</tr>
+<!-- Row 8 -->
+<tr class="data-grid-row border-b border-border-subtle group cursor-default">
+<td class="px-4 py-2.5 flex items-center gap-3">
+<span class="material-symbols-outlined text-emerald-500 !text-xl">terminal</span>
+<span class="text-gray-200">InputHandler.cs</span>
+</td>
+<td class="px-4 py-2.5 text-gray-400">C# Script</td>
+<td class="px-4 py-2.5 text-gray-400">Oct 25, 2023 08:30</td>
+<td class="px-4 py-2.5 text-gray-400 text-right font-mono">8.4 KB</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Footer / Status Bar -->
+<footer class="h-8 bg-charcoal-900 border-t border-border-subtle flex items-center justify-between px-4 text-[10px] text-gray-500 shrink-0">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span>Engine Ready</span>
+</div>
+<div class="h-3 w-px bg-border-subtle"></div>
+<span>8 Items in /Content/Characters/Player</span>
+</div>
+<div class="flex items-center gap-4">
+<span>FPS: 120</span>
+<span>Mem: 4.2 GB</span>
+<div class="h-3 w-px bg-border-subtle"></div>
+<span class="text-gray-400">v1.2.0-alpha (Build 4209)</span>
+</div>
+</footer>
+</main>
+<!-- Right Inspector Sidebar (Minimally visible) -->
+<aside class="w-72 bg-charcoal-900 border-l border-border-subtle flex flex-col shrink-0">
+<div class="p-4 border-b border-border-subtle">
+<span class="text-xs font-bold uppercase tracking-widest text-gray-500">Inspector</span>
+</div>
+<div class="p-4 space-y-6">
+<div class="space-y-4">
+<div class="text-center">
+<div class="w-32 h-32 mx-auto bg-charcoal-800 rounded flex items-center justify-center border border-border-subtle mb-3">
+<span class="material-symbols-outlined !text-5xl text-gray-600">view_in_ar</span>
+</div>
+<h3 class="text-sm font-bold truncate">Player_Base_Mesh.fbx</h3>
+<p class="text-[10px] text-gray-500">Last Modified: 2 mins ago</p>
+</div>
+<div class="space-y-3 pt-4 border-t border-border-subtle">
+<div class="flex justify-between items-center text-xs">
+<span class="text-gray-500">LOD Levels</span>
+<span class="text-gray-200">4</span>
+</div>
+<div class="flex justify-between items-center text-xs">
+<span class="text-gray-500">Vertex Count</span>
+<span class="text-gray-200">12,402</span>
+</div>
+<div class="flex justify-between items-center text-xs">
+<span class="text-gray-500">Triangle Count</span>
+<span class="text-gray-200">24,804</span>
+</div>
+<div class="flex justify-between items-center text-xs">
+<span class="text-gray-500">Materials</span>
+<span class="text-gray-200">2 Slots</span>
+</div>
+</div>
+<div class="pt-4">
+<button class="w-full bg-charcoal-800 border border-border-subtle hover:bg-charcoal-700 text-white text-xs py-2 rounded transition-colors mb-2">
+                                Re-import Asset
+                            </button>
+<button class="w-full border border-primary/40 hover:border-primary text-primary text-xs py-2 rounded transition-colors">
+                                Edit Blueprint
+                            </button>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</div>
+</body></html>

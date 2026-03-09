@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Avalonia Engine | Launch Hub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#0f1117",
+                        "surface-dark": "#1a1e26",
+                        "border-dark": "#282e39",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #282e39;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-border-dark px-6 py-3 bg-white dark:bg-background-dark z-10 sticky top-0">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3">
+<div class="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-2xl">rocket_launch</span>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-tight">Avalonia Engine</h2>
+</div>
+<div class="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-surface-dark rounded-lg px-2 py-1">
+<span class="material-symbols-outlined text-slate-400 text-[20px] ml-1">search</span>
+<input class="w-64 border-none bg-transparent focus:ring-0 text-sm placeholder:text-slate-500" placeholder="Search engine tools..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden lg:flex items-center gap-6 mr-4">
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Documentation</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Community</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Asset Store</a>
+</div>
+<button class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span class="text-sm font-bold">New Project</span>
+</button>
+<div class="size-9 rounded-full bg-slate-200 dark:bg-surface-dark border border-slate-300 dark:border-border-dark flex items-center justify-center overflow-hidden">
+<img alt="User Profile" class="size-full object-cover" data-alt="Portrait of a professional game developer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSHxB6Y6oIT8-vDbmUs4UKVS5RkwRLbdoiE_jWyXhCzZe4aZRHNy73_SbJzXvHAD0LOlbdi47z4gdUUSdUTEfGd6jV_6ANaq9Yd1G0Qdko36qzp3rryPfvuxBPrHT7kT_PvL2dwNo-aZHmxZJIUpuHc6KgcJOgUntYBxBFFmbhaHgXOWd4oxnKpJ8mgX-wwAfo4jmQWSeEuEhR8GCI3kfVjE3sqynZqH3GkooqDB0I6NUBYF1ktm5hNIwutbFWC-BPVEhSoHRGnonK"/>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="w-64 border-r border-slate-200 dark:border-border-dark flex flex-col justify-between p-4 bg-white dark:bg-background-dark">
+<div class="flex flex-col gap-6">
+<div>
+<p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3 px-3">Main Menu</p>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary group" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+<span class="text-sm font-semibold">Projects</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-surface-dark transition-all" href="#">
+<span class="material-symbols-outlined">school</span>
+<span class="text-sm font-medium">Learning</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-surface-dark transition-all" href="#">
+<span class="material-symbols-outlined">shopping_cart</span>
+<span class="text-sm font-medium">Marketplace</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-surface-dark transition-all" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="text-sm font-medium">Templates</span>
+</a>
+</nav>
+</div>
+<div>
+<p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3 px-3">Resources</p>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-surface-dark transition-all" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="text-sm font-medium">Release Notes</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-surface-dark transition-all" href="#">
+<span class="material-symbols-outlined">forum</span>
+<span class="text-sm font-medium">Feedback</span>
+</a>
+</nav>
+</div>
+</div>
+<div class="flex flex-col gap-4 border-t border-slate-200 dark:border-border-dark pt-4">
+<div class="flex items-center gap-3 px-3">
+<div class="size-2 rounded-full bg-green-500 animate-pulse"></div>
+<div class="flex flex-col">
+<p class="text-xs font-semibold">v4.2.0 Stable</p>
+<p class="text-[10px] text-slate-500">Up to date</p>
+</div>
+</div>
+<button class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-surface-dark transition-all">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto custom-scrollbar p-8">
+<div class="max-w-6xl mx-auto">
+<!-- Breadcrumbs & Header -->
+<div class="flex flex-col gap-4 mb-8">
+<div class="flex items-center gap-2 text-sm text-slate-500 font-medium">
+<a class="hover:text-primary transition-colors" href="#">Projects</a>
+<span>/</span>
+<span class="text-slate-900 dark:text-white">Recent Projects</span>
+</div>
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-2">My Projects</h1>
+<p class="text-slate-500 max-w-lg">Manage your active workspace. You have 12 active projects across 3 different engine versions.</p>
+</div>
+<div class="flex items-center gap-2 bg-slate-100 dark:bg-surface-dark p-1 rounded-lg">
+<button class="p-1.5 rounded-md bg-white dark:bg-border-dark shadow-sm text-slate-900 dark:text-white">
+<span class="material-symbols-outlined">grid_view</span>
+</button>
+<button class="p-1.5 rounded-md text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+<span class="material-symbols-outlined">list</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Grid of Project Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<!-- Card 1 -->
+<div class="group bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl overflow-hidden hover:border-primary/50 transition-all hover:shadow-xl hover:shadow-primary/5 cursor-pointer">
+<div class="aspect-video relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+<div class="absolute top-2 right-2 z-20">
+<span class="bg-primary px-2 py-0.5 rounded text-[10px] font-bold text-white">4.2.0</span>
+</div>
+<img alt="Cyberpunk Cityscape" class="size-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Cyberpunk neon city street at night" src="https://lh3.googleusercontent.com/aida-public/AB6AXuADbnDboc5XDSU5a8Ce4HKITdUlN2CIPi-6KB4EiDmzVqaJbReBeD_9gzpMGiLfL41QZOs8DQ0ouLY3IFDRZTIfHRVcEmRAoSTY3QRhU5go-SXAC1CfYAnfj2mryQRLxTASTbW5KmfEUhYQ1AdFc7vjGOmKnz5F9jh0rHOXz7PaVDiQvwIBGmuPewZDYjypVpl7MzuSnBfhPwF-nQNz38w0H_1LCoA4o5tdfsivRzAu5LaUN1AnFSw3DbsSQFJIRSauXQaOn9yPZQU9"/>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-bold text-slate-900 dark:text-white truncate">Neon Overdrive</h3>
+<button class="material-symbols-outlined text-slate-400 hover:text-white text-[20px]">more_vert</button>
+</div>
+<p class="text-xs text-slate-500 truncate mb-4">C:/Users/Dev/Projects/Neon_OD</p>
+<div class="flex items-center justify-between mt-auto">
+<span class="text-[10px] font-medium text-slate-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">history</span> 2h ago
+                                </span>
+<div class="flex -space-x-2">
+<div class="size-5 rounded-full border-2 border-white dark:border-surface-dark bg-slate-300"></div>
+<div class="size-5 rounded-full border-2 border-white dark:border-surface-dark bg-slate-400"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="group bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl overflow-hidden hover:border-primary/50 transition-all hover:shadow-xl hover:shadow-primary/5 cursor-pointer">
+<div class="aspect-video relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+<div class="absolute top-2 right-2 z-20">
+<span class="bg-slate-500 px-2 py-0.5 rounded text-[10px] font-bold text-white">4.1.8</span>
+</div>
+<img alt="Space Station" class="size-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Cinematic view of a futuristic space station orbiting a planet" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRnkTJURvyGweV0N3Hvhc7jXgjZVtCTJw8ocm7iVRiCQ1dyqnplUi3itqDPdDxnOHoo1BEg20-H9ELjBW_Ql5qjBfWCE0JS2w7AFfbGSRl9zqPwtVpv4jdzdoLOjnha4pf5RntG3S30M-8Xq_lcuRwDvCo2XOosgOEAFAheyG3zLKuLKi99eP71u3PHjCFkon_Stq0CS1godEFvr6YKHpdPCFWF0hOCT5T7Dnd3IacMlHyMIREC9YV2mNMDx7Fq9ZHYkerNK62qAm2"/>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-bold text-slate-900 dark:text-white truncate">Void Horizon</h3>
+<button class="material-symbols-outlined text-slate-400 hover:text-white text-[20px]">more_vert</button>
+</div>
+<p class="text-xs text-slate-500 truncate mb-4">D:/Avalonia/Void_Horizon</p>
+<div class="flex items-center justify-between mt-auto">
+<span class="text-[10px] font-medium text-slate-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">history</span> Yesterday
+                                </span>
+<div class="flex -space-x-2">
+<div class="size-5 rounded-full border-2 border-white dark:border-surface-dark bg-blue-400"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="group bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl overflow-hidden hover:border-primary/50 transition-all hover:shadow-xl hover:shadow-primary/5 cursor-pointer">
+<div class="aspect-video relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+<div class="absolute top-2 right-2 z-20">
+<span class="bg-primary px-2 py-0.5 rounded text-[10px] font-bold text-white">4.2.0</span>
+</div>
+<img alt="Mystic Forest" class="size-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Dense mystic forest with ethereal light rays" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTbW00QHmjcau2TlEorGq8zRRSSawzKXdRxeslEeXFhblaQZS62ZcrbOZv1oYGm07MGLsfZbP_YWuwd3vMZx4y0FGZeUoTtc1jGTdDHNjL2Yxe1Lk3AgtqWwIhisH_YgSMIf7cjbLV3lEyR58WkJfbXW_wnNSiHJgbfPuLEPLaGOj-lCe6FlJiISgqQqSt4HOtHgISh8aB-GR3HZGgucSchl4TN2huMe3GeXnkeCvqUwTJuFNhcrbr8ofJOYxzG2QFo8IbKcQRhG99"/>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-bold text-slate-900 dark:text-white truncate">Everglade RPG</h3>
+<button class="material-symbols-outlined text-slate-400 hover:text-white text-[20px]">more_vert</button>
+</div>
+<p class="text-xs text-slate-500 truncate mb-4">C:/Projects/Everglade</p>
+<div class="flex items-center justify-between mt-auto">
+<span class="text-[10px] font-medium text-slate-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">history</span> 3 days ago
+                                </span>
+<div class="flex -space-x-2">
+<div class="size-5 rounded-full border-2 border-white dark:border-surface-dark bg-green-400"></div>
+<div class="size-5 rounded-full border-2 border-white dark:border-surface-dark bg-indigo-400"></div>
+<div class="size-5 rounded-full border-2 border-white dark:border-surface-dark bg-red-400"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 4 (Empty/Add New) -->
+<div class="group bg-slate-50 dark:bg-surface-dark/40 border-2 border-dashed border-slate-200 dark:border-border-dark rounded-xl overflow-hidden hover:border-primary/50 transition-all flex flex-col items-center justify-center p-6 text-center cursor-pointer">
+<div class="size-12 rounded-full bg-slate-200 dark:bg-border-dark flex items-center justify-center text-slate-500 group-hover:bg-primary group-hover:text-white transition-all mb-4">
+<span class="material-symbols-outlined text-3xl">add</span>
+</div>
+<p class="text-sm font-bold text-slate-900 dark:text-white">Create New</p>
+<p class="text-[11px] text-slate-500 mt-1">Start from a template or blank project</p>
+</div>
+<!-- Card 5 -->
+<div class="group bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl overflow-hidden hover:border-primary/50 transition-all hover:shadow-xl hover:shadow-primary/5 cursor-pointer">
+<div class="aspect-video relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+<div class="absolute top-2 right-2 z-20">
+<span class="bg-primary px-2 py-0.5 rounded text-[10px] font-bold text-white">4.2.0</span>
+</div>
+<img alt="Abstract Tech" class="size-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Abstract blue digital network and data visualization" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAT6hWg3rmF5oSNHhSf5VuBycIrQbqF0o4cjyeDujq2Xxj6XNzxwpSeDxqTlTIUVCzt6HhlrRx-3yQkj8IRSZTCQ0g6tyJxbpeNc-FLEj21iTjaMXiuXF35tVTFx_HAmkmP3Gjjq22mHrJR9FWJVlCQZsM7kM4BMFna7P-p3NPC7XW8u3I_d1bC8oB3FfsUIXAKsP-f7LsswGwejQS8CFvfFNYvgQRtEUW4yFafvlfJnHy0k8HjT9XFIWKeqRPDmrNy38rb4hji2pg3"/>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-bold text-slate-900 dark:text-white truncate">Data Runner</h3>
+<button class="material-symbols-outlined text-slate-400 hover:text-white text-[20px]">more_vert</button>
+</div>
+<p class="text-xs text-slate-500 truncate mb-4">C:/Users/Dev/Workspace/Runner</p>
+<div class="flex items-center justify-between mt-auto">
+<span class="text-[10px] font-medium text-slate-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">history</span> 1 week ago
+                                </span>
+</div>
+</div>
+</div>
+<!-- Card 6 -->
+<div class="group bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl overflow-hidden hover:border-primary/50 transition-all hover:shadow-xl hover:shadow-primary/5 cursor-pointer">
+<div class="aspect-video relative overflow-hidden text-slate-600">
+<div class="absolute inset-0 bg-slate-200 dark:bg-border-dark flex items-center justify-center">
+<span class="material-symbols-outlined text-4xl opacity-20">image</span>
+</div>
+<div class="absolute top-2 right-2 z-20">
+<span class="bg-amber-500 px-2 py-0.5 rounded text-[10px] font-bold text-white">BETA</span>
+</div>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-bold text-slate-900 dark:text-white truncate">Untiled Project</h3>
+<button class="material-symbols-outlined text-slate-400 hover:text-white text-[20px]">more_vert</button>
+</div>
+<p class="text-xs text-slate-500 truncate mb-4">C:/Projects/Untitled_1</p>
+<div class="flex items-center justify-between mt-auto">
+<span class="text-[10px] font-medium text-slate-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">history</span> Oct 12, 2023
+                                </span>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Section in Main -->
+<div class="mt-12 p-6 bg-primary/5 dark:bg-surface-dark border border-primary/20 dark:border-border-dark rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="size-12 bg-primary/20 rounded-lg flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl">lightbulb</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white">Learn the Basics</h4>
+<p class="text-sm text-slate-500">New to Avalonia? Check our interactive scene tutorial.</p>
+</div>
+</div>
+<button class="px-4 py-2 text-sm font-bold text-primary hover:bg-primary/10 rounded-lg transition-colors">
+                        Explore Docs
+                    </button>
+</div>
+</div>
+</main>
+</div>
+</body></html>

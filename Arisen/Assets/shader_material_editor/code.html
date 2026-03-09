@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Shader Material Editor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "node-purple": "#a855f7",
+                        "node-teal": "#14b8a6",
+                        "node-orange": "#f97316",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .node-grid {
+            background-image: radial-gradient(circle, #282e39 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .bezier-path {
+            stroke-dasharray: 4;
+            stroke-width: 2;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-white selection:bg-primary/30">
+<div class="flex h-screen flex-col overflow-hidden">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between border-b border-solid border-[#282e39] bg-[#111318] px-6 py-2 shrink-0">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center size-8 rounded bg-primary text-white">
+<span class="material-symbols-outlined text-lg">category</span>
+</div>
+<div class="flex flex-col">
+<h2 class="text-sm font-bold leading-tight tracking-tight">Shader Editor</h2>
+<p class="text-[10px] text-[#9da6b9] uppercase tracking-widest font-medium">Professional Suite v2.4</p>
+</div>
+</div>
+<div class="h-6 w-[1px] bg-[#282e39]"></div>
+<nav class="flex items-center gap-6">
+<a class="text-xs font-medium text-[#9da6b9] hover:text-white transition-colors" href="#">File</a>
+<a class="text-xs font-medium text-[#9da6b9] hover:text-white transition-colors" href="#">Edit</a>
+<a class="text-xs font-medium text-[#9da6b9] hover:text-white transition-colors" href="#">View</a>
+<a class="text-xs font-medium text-[#9da6b9] hover:text-white transition-colors" href="#">Compile</a>
+</nav>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex bg-[#282e39] rounded-lg p-1">
+<button class="p-1.5 text-white hover:bg-[#111318] rounded transition-all">
+<span class="material-symbols-outlined text-[20px]">play_arrow</span>
+</button>
+<button class="p-1.5 text-white hover:bg-[#111318] rounded transition-all">
+<span class="material-symbols-outlined text-[20px]">save</span>
+</button>
+<button class="p-1.5 text-white hover:bg-[#111318] rounded transition-all">
+<span class="material-symbols-outlined text-[20px]">share</span>
+</button>
+</div>
+<button class="flex min-w-[120px] cursor-pointer items-center justify-center rounded-lg h-9 px-4 bg-primary text-white text-xs font-bold transition-all hover:brightness-110">
+<span class="truncate">Compile Material</span>
+</button>
+<button class="flex size-9 cursor-pointer items-center justify-center rounded-lg bg-[#282e39] text-white hover:bg-[#343b48] transition-all">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</header>
+<!-- Main Workspace -->
+<main class="flex flex-1 overflow-hidden">
+<!-- Left: 3D Preview Panel -->
+<div class="w-80 border-r border-[#282e39] flex flex-col bg-[#111318] shrink-0">
+<div class="flex items-center justify-between px-4 py-3 border-b border-[#282e39]">
+<h3 class="text-xs font-bold uppercase tracking-wider text-[#9da6b9]">3D Preview</h3>
+<span class="material-symbols-outlined text-sm text-[#9da6b9] cursor-pointer">close_fullscreen</span>
+</div>
+<div class="relative flex-1 p-4">
+<!-- 3D Viewport Placeholder -->
+<div class="relative w-full h-full rounded-xl overflow-hidden bg-gradient-to-br from-[#1c212b] to-[#0a0d14] border border-[#282e39] group">
+<div class="absolute inset-0 flex items-center justify-center">
+<!-- Sphere Graphic Simulation -->
+<div class="size-48 rounded-full bg-gradient-to-tr from-[#1a1a1a] via-[#4a4a4a] to-[#8a8a8a] shadow-[inset_-20px_-20px_50px_rgba(0,0,0,0.8),0_0_40px_rgba(0,0,0,0.4)] relative border border-white/10 overflow-hidden" data-alt="Metallic rusted sphere preview in 3D viewport" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAxf2Sa2J4VgRi0lHrE2mMVUc9EO82C-UWbpGELTiHkAp3k5Huyn_70iAp3TCkuqA_tCQSbPw0AGfah4KulkkIMTgYH92P19O-NC7sfQTqcPmttCIL3578cWhGA82oSpSnVWWbUx39GjoRqmRzTtwTrRy7jVa6LI43kNmmEzVm3ywRd_eMT48XtSS33DXB2V-qd6tt2rkvR9PTK_eRrpgXKZtyRqJ55yZaDbjoML1pw6MK2E-FnZcl_RSkfPVTX__QcHaEQydA3L5Li'); background-size: cover; background-blend-mode: overlay;">
+<div class="absolute inset-0 bg-primary/10 mix-blend-color"></div>
+</div>
+</div>
+<!-- Floating Primitive Selector -->
+<div class="absolute top-4 left-1/2 -translate-x-1/2 bg-[#111318]/80 backdrop-blur-md border border-[#282e39] rounded-lg p-1 flex gap-1 shadow-2xl">
+<button class="size-8 flex items-center justify-center rounded bg-primary text-white">
+<span class="material-symbols-outlined text-[18px]">globe</span>
+</button>
+<button class="size-8 flex items-center justify-center rounded hover:bg-[#282e39] text-[#9da6b9]">
+<span class="material-symbols-outlined text-[18px]">square</span>
+</button>
+<button class="size-8 flex items-center justify-center rounded hover:bg-[#282e39] text-[#9da6b9]">
+<span class="material-symbols-outlined text-[18px]">square</span>
+</button>
+</div>
+<!-- Reset View Button -->
+<button class="absolute bottom-4 right-4 bg-[#111318]/80 backdrop-blur-md border border-[#282e39] rounded-lg px-3 py-1.5 flex items-center gap-2 text-[11px] font-bold text-white hover:bg-primary transition-all">
+<span class="material-symbols-outlined text-[16px]">refresh</span>
+                            RESET
+                        </button>
+</div>
+</div>
+<!-- Mini Stats Panel -->
+<div class="px-4 py-3 bg-[#0a0d14] border-t border-[#282e39]">
+<div class="flex flex-col gap-1">
+<div class="flex justify-between text-[10px] text-[#9da6b9]">
+<span>Resolution:</span>
+<span class="text-white">1024 x 1024</span>
+</div>
+<div class="flex justify-between text-[10px] text-[#9da6b9]">
+<span>Render API:</span>
+<span class="text-white">Vulkan 1.3</span>
+</div>
+<div class="flex justify-between text-[10px] text-[#9da6b9]">
+<span>Frametime:</span>
+<span class="text-teal-400">1.2ms</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Center: Node Graph Area -->
+<div class="flex-1 relative bg-[#0a0d14] overflow-hidden node-grid cursor-grab active:cursor-grabbing">
+<!-- Graph Header -->
+<div class="absolute top-4 left-4 z-10 flex items-center gap-2 bg-[#111318]/90 backdrop-blur border border-[#282e39] px-3 py-2 rounded-lg">
+<span class="material-symbols-outlined text-sm text-primary">account_tree</span>
+<h2 class="text-xs font-bold text-white tracking-wide">rust_metal_pbr.shader</h2>
+</div>
+<!-- Bezier Connections (SVG Overlay Simulation) -->
+<svg class="absolute inset-0 pointer-events-none w-full h-full">
+<!-- Texture -> PBR Master -->
+<path class="opacity-60" d="M 450 300 C 500 300, 500 350, 550 350" fill="transparent" stroke="#14b8a6" stroke-width="2"></path>
+<!-- Color Tint -> PBR Master -->
+<path class="opacity-60" d="M 450 480 C 500 480, 500 380, 550 380" fill="transparent" stroke="#f97316" stroke-width="2"></path>
+<!-- PBR Master -> Output -->
+<path class="opacity-80" d="M 750 350 C 800 350, 800 350, 850 350" fill="transparent" stroke="#a855f7" stroke-width="3"></path>
+</svg>
+<!-- Nodes -->
+<div class="absolute inset-0 p-20">
+<!-- Texture Sample Node -->
+<div class="absolute left-[180px] top-[240px] w-64 bg-[#111318] rounded-lg border border-primary shadow-2xl overflow-hidden ring-4 ring-primary/10">
+<div class="bg-node-teal px-3 py-1.5 flex justify-between items-center">
+<span class="text-[11px] font-bold text-black uppercase tracking-tighter">Texture Sample</span>
+<span class="material-symbols-outlined text-[14px] text-black">image</span>
+</div>
+<div class="p-3 space-y-3">
+<div class="h-24 w-full bg-black/50 rounded flex items-center justify-center overflow-hidden border border-[#282e39]">
+<div class="w-full h-full bg-cover bg-center opacity-70" data-alt="Rust texture preview inside node" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDLz8RBwF8xeopkuaX-H_H6ArIJaZhbxx1Kk0_faMIn0o6sVM3q1nvENmeyPAD4SFgaBcq5WrGCpZy-upEUUiDzP0Q5u3yLTqcXTdg8Ell8c2dEJ6rmAmu2xiZMnTVfb6eze2jribVua6zXQ55oznGscDLTWLCFSAROCCK8ArDQWYGCruM1444AN5UeA6szSP2UGpNTSKlTuqsjL1FuwKKABV7I1mfG0iHhAtSPRWtMfbsQQ3eEBbFFixM5FdhnsYMfChE0uH4DILMF');"></div>
+</div>
+<div class="flex justify-between items-center text-[10px] text-[#9da6b9]">
+<div class="flex items-center gap-2">
+<div class="size-2 rounded-full bg-node-teal"></div>
+<span>UV</span>
+</div>
+<div class="flex items-center gap-2">
+<span>RGBA</span>
+<div class="size-2 rounded-full bg-node-teal"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Color Tint Node -->
+<div class="absolute left-[200px] top-[450px] w-56 bg-[#111318] rounded-lg border border-[#282e39] shadow-xl overflow-hidden">
+<div class="bg-node-orange px-3 py-1.5 flex justify-between items-center">
+<span class="text-[11px] font-bold text-black uppercase tracking-tighter">Color Tint</span>
+<span class="material-symbols-outlined text-[14px] text-black">palette</span>
+</div>
+<div class="p-3">
+<div class="flex justify-between items-center mb-4">
+<div class="size-10 bg-orange-600 rounded-md border border-white/20"></div>
+<div class="text-[10px] text-white">#DD6B20</div>
+</div>
+<div class="flex justify-end items-center text-[10px] text-[#9da6b9]">
+<div class="flex items-center gap-2">
+<span>Color (V3)</span>
+<div class="size-2 rounded-full bg-node-orange"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- PBR Master Node -->
+<div class="absolute left-[520px] top-[280px] w-64 bg-[#111318] rounded-lg border border-[#282e39] shadow-2xl overflow-hidden">
+<div class="bg-node-purple px-3 py-1.5 flex justify-between items-center">
+<span class="text-[11px] font-bold text-black uppercase tracking-tighter">PBR Master</span>
+<span class="material-symbols-outlined text-[14px] text-black">layers</span>
+</div>
+<div class="p-3 space-y-2">
+<div class="flex items-center gap-3 text-[10px] text-[#9da6b9]">
+<div class="size-2 rounded-full bg-white"></div>
+<span>Albedo</span>
+</div>
+<div class="flex items-center gap-3 text-[10px] text-[#9da6b9]">
+<div class="size-2 rounded-full bg-node-teal"></div>
+<span>Normal Map</span>
+</div>
+<div class="flex items-center gap-3 text-[10px] text-[#9da6b9]">
+<div class="size-2 rounded-full bg-node-orange"></div>
+<span>Metallic</span>
+</div>
+<div class="flex items-center gap-3 text-[10px] text-[#9da6b9]">
+<div class="size-2 rounded-full bg-node-orange"></div>
+<span>Roughness</span>
+</div>
+<div class="border-t border-[#282e39] mt-2 pt-2 flex justify-end">
+<div class="flex items-center gap-2 text-[10px] text-[#9da6b9]">
+<span>Output</span>
+<div class="size-2 rounded-full bg-node-purple"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Material Output Node -->
+<div class="absolute left-[850px] top-[320px] w-48 bg-[#111318] rounded-lg border-2 border-primary/40 shadow-2xl overflow-hidden">
+<div class="bg-primary px-3 py-1.5 flex justify-between items-center">
+<span class="text-[11px] font-bold text-white uppercase tracking-tighter">Material Output</span>
+<span class="material-symbols-outlined text-[14px] text-white">output</span>
+</div>
+<div class="p-3">
+<div class="flex items-center gap-3 text-[10px] text-white">
+<div class="size-2 rounded-full bg-node-purple"></div>
+<span>Shader Source</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Navigation Controls -->
+<div class="absolute bottom-4 left-4 flex gap-2">
+<div class="flex bg-[#111318]/90 backdrop-blur border border-[#282e39] rounded-lg p-1">
+<button class="p-1.5 text-[#9da6b9] hover:text-white"><span class="material-symbols-outlined text-sm">zoom_in</span></button>
+<button class="p-1.5 text-[#9da6b9] hover:text-white"><span class="material-symbols-outlined text-sm">zoom_out</span></button>
+<div class="w-[1px] bg-[#282e39] mx-1"></div>
+<button class="p-1.5 text-[#9da6b9] hover:text-white"><span class="material-symbols-outlined text-sm">center_focus_strong</span></button>
+</div>
+</div>
+</div>
+<!-- Right: Property Inspector Sidebar -->
+<div class="w-72 border-l border-[#282e39] flex flex-col bg-[#111318] shrink-0">
+<div class="flex items-center justify-between px-4 py-3 border-b border-[#282e39]">
+<h3 class="text-xs font-bold uppercase tracking-wider text-[#9da6b9]">Properties</h3>
+<span class="material-symbols-outlined text-sm text-[#9da6b9]">info</span>
+</div>
+<div class="flex-1 overflow-y-auto p-4 space-y-6">
+<!-- Selection Header -->
+<div class="flex items-center gap-3 mb-6">
+<div class="size-8 rounded bg-node-teal flex items-center justify-center">
+<span class="material-symbols-outlined text-black text-lg">image</span>
+</div>
+<div>
+<h4 class="text-xs font-bold">Texture Sample</h4>
+<p class="text-[10px] text-[#9da6b9]">ID: node_tex_4492</p>
+</div>
+</div>
+<!-- Settings Sections -->
+<div class="space-y-4">
+<div class="space-y-3">
+<label class="text-[10px] font-bold text-[#9da6b9] uppercase tracking-wide">Input Texture</label>
+<div class="flex gap-2">
+<div class="flex-1 bg-[#0a0d14] border border-[#282e39] rounded px-3 py-1.5 text-[10px] text-white overflow-hidden text-ellipsis whitespace-nowrap">
+                                    /assets/rust_d.png
+                                </div>
+<button class="bg-[#282e39] px-2 rounded hover:bg-[#343b48]">
+<span class="material-symbols-outlined text-sm">folder_open</span>
+</button>
+</div>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between">
+<label class="text-[10px] font-bold text-[#9da6b9] uppercase tracking-wide">Roughness</label>
+<span class="text-[10px] text-primary">0.82</span>
+</div>
+<input class="w-full h-1 bg-[#282e39] rounded-lg appearance-none cursor-pointer accent-primary" type="range" value="82"/>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between">
+<label class="text-[10px] font-bold text-[#9da6b9] uppercase tracking-wide">Metallic</label>
+<span class="text-[10px] text-primary">0.45</span>
+</div>
+<input class="w-full h-1 bg-[#282e39] rounded-lg appearance-none cursor-pointer accent-primary" type="range" value="45"/>
+</div>
+<div class="space-y-3">
+<label class="text-[10px] font-bold text-[#9da6b9] uppercase tracking-wide">Filter Mode</label>
+<select class="w-full bg-[#0a0d14] border border-[#282e39] rounded px-3 py-1.5 text-[10px] text-white focus:ring-1 focus:ring-primary focus:outline-none appearance-none">
+<option>Bilinear</option>
+<option>Trilinear</option>
+<option>Anisotropic 8x</option>
+<option>Point (Nearest)</option>
+</select>
+</div>
+<div class="pt-4 border-t border-[#282e39]">
+<label class="flex items-center gap-3 cursor-pointer group">
+<div class="size-4 rounded border border-[#282e39] flex items-center justify-center group-hover:border-primary transition-all">
+<div class="size-2 bg-primary rounded-sm"></div>
+</div>
+<span class="text-[10px] font-bold text-white uppercase">Enable Mipmaps</span>
+</label>
+</div>
+</div>
+</div>
+<!-- Footer Inspector Stats -->
+<div class="p-4 border-t border-[#282e39] bg-[#0a0d14]">
+<button class="w-full py-2 bg-primary/10 border border-primary/30 text-primary text-[10px] font-bold uppercase rounded-lg hover:bg-primary/20 transition-all">
+                        Reset to Defaults
+                    </button>
+</div>
+</div>
+</main>
+<!-- Status Bar -->
+<footer class="h-6 border-t border-[#282e39] bg-[#111318] px-4 flex items-center justify-between text-[10px] text-[#9da6b9] shrink-0">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5">
+<div class="size-2 rounded-full bg-teal-500 shadow-[0_0_8px_rgba(20,184,166,0.4)]"></div>
+<span class="font-medium text-white">Renderer Ready</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">grid_view</span>
+<span>Nodes: 4</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<span>Memory: 142.4 MB</span>
+<span class="text-white bg-primary/20 px-2 rounded">GLSL 4.60</span>
+</div>
+</footer>
+</div>
+</body></html>

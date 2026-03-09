@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Space Grotesk', sans-serif; }
+        .asset-card:hover .action-overlay { opacity: 1; }
+        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<!-- Main App Container -->
+<div class="flex flex-col h-screen overflow-hidden">
+<!-- TopNavBar Component -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 px-6 py-3 bg-white dark:bg-[#111318] z-10">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-primary">
+<div class="size-8 flex items-center justify-center bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined text-primary" style="font-size: 24px;">deployed_code</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">Avalonia Engine</h2>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">File</a>
+<a class="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">Edit</a>
+<a class="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">Assets</a>
+<a class="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">Window</a>
+<a class="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">Help</a>
+</nav>
+</div>
+<div class="flex flex-1 justify-end gap-4 max-w-2xl">
+<label class="flex flex-col min-w-40 h-9 flex-1 max-w-md">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full overflow-hidden border border-slate-200 dark:border-slate-700">
+<div class="text-slate-400 flex bg-slate-50 dark:bg-slate-800 items-center justify-center px-3">
+<span class="material-symbols-outlined" style="font-size: 18px;">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 border-none bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-500 px-2 text-sm focus:ring-0 focus:outline-none" placeholder="Search Assets (Ctrl+P)" value=""/>
+</div>
+</label>
+<div class="flex gap-2">
+<button class="flex items-center justify-center rounded-lg h-9 w-9 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-300" style="font-size: 20px;">settings</span>
+</button>
+<button class="flex items-center justify-center rounded-lg h-9 w-9 bg-primary text-white hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined" style="font-size: 20px;">account_circle</span>
+</button>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar Component -->
+<aside class="w-64 flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111318] flex flex-col p-4">
+<div class="mb-6 px-2">
+<h1 class="text-slate-900 dark:text-white text-sm font-bold uppercase tracking-wider mb-1">Project Explorer</h1>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-mono">v4.2.0-stable</p>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
+<span class="material-symbols-outlined" style="font-size: 20px;">account_tree</span>
+<p class="text-sm font-medium">Hierarchy</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary cursor-pointer">
+<span class="material-symbols-outlined" style="font-size: 20px; font-variation-settings: 'FILL' 1;">folder_open</span>
+<p class="text-sm font-bold">Project Assets</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
+<span class="material-symbols-outlined" style="font-size: 20px;">terminal</span>
+<p class="text-sm font-medium">Console</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
+<span class="material-symbols-outlined" style="font-size: 20px;">info</span>
+<p class="text-sm font-medium">Inspector</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
+<span class="material-symbols-outlined" style="font-size: 20px;">rocket_launch</span>
+<p class="text-sm font-medium">Build Settings</p>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto bg-slate-50 dark:bg-background-dark p-8">
+<div class="max-w-6xl mx-auto">
+<!-- PageHeading Component -->
+<div class="flex flex-wrap items-end justify-between gap-4 mb-8">
+<div class="flex flex-col gap-2">
+<p class="text-slate-900 dark:text-white text-4xl font-black leading-tight tracking-tight">Icon Library</p>
+<p class="text-slate-500 dark:text-slate-400 text-lg max-w-xl">Standardized high-DPI asset icons for modern AvaloniaUI game engine applications.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center justify-center gap-2 rounded-lg h-11 px-6 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-bold hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors border border-slate-300 dark:border-slate-700">
+<span class="material-symbols-outlined" style="font-size: 20px;">upload</span>
+<span>Import</span>
+</button>
+<button class="flex items-center justify-center gap-2 rounded-lg h-11 px-6 bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined" style="font-size: 20px;">add</span>
+<span>Add New Asset</span>
+</button>
+</div>
+</div>
+<!-- Chips Component -->
+<div class="flex gap-3 mb-8 flex-wrap">
+<button class="flex h-9 items-center justify-center gap-x-2 rounded-full bg-primary px-5 text-white shadow-md">
+<p class="text-sm font-bold">All Assets</p>
+</button>
+<button class="flex h-9 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-slate-800 px-5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+<p class="text-sm font-medium">3D Models</p>
+</button>
+<button class="flex h-9 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-slate-800 px-5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+<p class="text-sm font-medium">Scripts</p>
+</button>
+<button class="flex h-9 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-slate-800 px-5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+<p class="text-sm font-medium">Materials</p>
+</button>
+<button class="flex h-9 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-slate-800 px-5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+<p class="text-sm font-medium">Audio</p>
+</button>
+</div>
+<!-- ImageGrid / Asset Gallery -->
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+<!-- 3D Model Asset -->
+<div class="asset-card relative flex flex-col gap-3 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 hover:border-primary transition-all group cursor-pointer shadow-sm hover:shadow-xl hover:shadow-primary/5">
+<div class="w-full aspect-square rounded-lg flex items-center justify-center bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 relative overflow-hidden">
+<div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(#135bec 1px, transparent 1px); background-size: 16px 16px;"></div>
+<span class="material-symbols-outlined text-primary" style="font-size: 80px; font-variation-settings: 'wght' 200;">view_in_ar</span>
+<div class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider">FBX</div>
+</div>
+<div>
+<p class="text-slate-900 dark:text-white text-base font-bold leading-normal truncate">PlayerCharacter.fbx</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">3D Model • 2.4 MB</p>
+</div>
+<div class="h-1 w-full bg-primary/30 rounded-full mt-1 overflow-hidden">
+<div class="h-full bg-primary w-[80%]"></div>
+</div>
+</div>
+<!-- C# Script Asset -->
+<div class="asset-card relative flex flex-col gap-3 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 hover:border-green-500 transition-all group cursor-pointer shadow-sm">
+<div class="w-full aspect-square rounded-lg flex items-center justify-center bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 relative">
+<div class="absolute inset-0 opacity-5 bg-green-500"></div>
+<span class="material-symbols-outlined text-green-500" style="font-size: 80px; font-variation-settings: 'wght' 200;">code</span>
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-3 ml-4 text-green-500 font-bold text-xl">#</div>
+</div>
+<div>
+<p class="text-slate-900 dark:text-white text-base font-bold leading-normal truncate">MovementSystem.cs</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">C# Script • 12 KB</p>
+</div>
+<div class="h-1 w-full bg-green-500/30 rounded-full mt-1"></div>
+</div>
+<!-- Material Asset -->
+<div class="asset-card relative flex flex-col gap-3 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 hover:border-purple-500 transition-all group cursor-pointer shadow-sm">
+<div class="w-full aspect-square rounded-lg flex items-center justify-center bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-transparent"></div>
+<div class="w-24 h-24 rounded-full bg-gradient-to-tr from-purple-900 via-purple-500 to-white shadow-inner flex items-center justify-center">
+<div class="w-20 h-20 rounded-full bg-purple-600/20 backdrop-blur-sm"></div>
+</div>
+<span class="material-symbols-outlined absolute top-2 right-2 text-purple-400" style="font-size: 20px;">texture</span>
+</div>
+<div>
+<p class="text-slate-900 dark:text-white text-base font-bold leading-normal truncate">ChromeReflective.mat</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Material • Physically Based</p>
+</div>
+<div class="h-1 w-full bg-purple-500/30 rounded-full mt-1"></div>
+</div>
+<!-- Folder Asset -->
+<div class="asset-card relative flex flex-col gap-3 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 hover:border-yellow-500 transition-all group cursor-pointer shadow-sm">
+<div class="w-full aspect-square rounded-lg flex items-center justify-center bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 relative">
+<div class="absolute inset-0 opacity-5 bg-yellow-500"></div>
+<span class="material-symbols-outlined text-yellow-500" style="font-size: 90px; font-variation-settings: 'FILL' 1;">folder</span>
+</div>
+<div>
+<p class="text-slate-900 dark:text-white text-base font-bold leading-normal truncate">Environment_Pack_01</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Folder • 14 Items</p>
+</div>
+<div class="h-1 w-full bg-yellow-500/30 rounded-full mt-1"></div>
+</div>
+<!-- Texture Asset -->
+<div class="asset-card relative flex flex-col gap-3 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 hover:border-sky-500 transition-all group cursor-pointer shadow-sm">
+<div class="w-full aspect-square rounded-lg bg-center bg-no-repeat bg-cover border border-slate-100 dark:border-slate-800 relative" data-alt="Abstract colorful landscape thumbnail" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCG0r3zRc6BdXT7WMVozYlZcPxgv1QNlWmMrFkrFfeTd1hVBBvoaRxVt2W8ah2XICzajK5Nm0oNYnSMlPfmIHg8T_cMNYL70JQiy4xDWyIXVYbeTGokQCjCjWCEk8gldKoMBQQskX7GnPiy0iOXkZ4XOeMRYsei0CDDZeJ-QOzWuRNU-aD1CT6KlHLMYV8h83ar_wiVcS3D3QUYk2bCN5n4pRFkKuYuKwAiNpw5On62mWUvuW59QcWEkCMXNPofPgzozxdomTnaAl_t");'>
+<div class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/60 text-white text-[10px] font-bold">2048 x 2048</div>
+</div>
+<div>
+<p class="text-slate-900 dark:text-white text-base font-bold leading-normal truncate">LushGrass_Diffuse.png</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Texture • PNG</p>
+</div>
+<div class="h-1 w-full bg-sky-500/30 rounded-full mt-1"></div>
+</div>
+<!-- Scene Asset -->
+<div class="asset-card relative flex flex-col gap-3 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 hover:border-orange-500 transition-all group cursor-pointer shadow-sm">
+<div class="w-full aspect-square rounded-lg flex items-center justify-center bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 relative">
+<span class="material-symbols-outlined text-orange-500" style="font-size: 70px;">landscape</span>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="border-2 border-orange-500/20 w-32 h-20 rounded-sm flex items-center justify-center">
+<span class="material-symbols-outlined text-orange-500/40" style="font-size: 32px;">photo_camera</span>
+</div>
+</div>
+</div>
+<div>
+<p class="text-slate-900 dark:text-white text-base font-bold leading-normal truncate">Level_01_Forest.scene</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Scene • Build Index: 0</p>
+</div>
+<div class="h-1 w-full bg-orange-500/30 rounded-full mt-1"></div>
+</div>
+<!-- Audio Asset -->
+<div class="asset-card relative flex flex-col gap-3 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 hover:border-pink-500 transition-all group cursor-pointer shadow-sm">
+<div class="w-full aspect-square rounded-lg flex items-center justify-center bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 relative">
+<div class="flex items-end gap-1">
+<div class="w-1.5 h-6 bg-pink-500 rounded-full"></div>
+<div class="w-1.5 h-12 bg-pink-500 rounded-full"></div>
+<div class="w-1.5 h-16 bg-pink-500 rounded-full"></div>
+<div class="w-1.5 h-10 bg-pink-500 rounded-full"></div>
+<div class="w-1.5 h-14 bg-pink-500 rounded-full"></div>
+<div class="w-1.5 h-8 bg-pink-500 rounded-full"></div>
+</div>
+</div>
+<div>
+<p class="text-slate-900 dark:text-white text-base font-bold leading-normal truncate">Ambient_Forest_Loop.wav</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Audio • 03:42</p>
+</div>
+<div class="h-1 w-full bg-pink-500/30 rounded-full mt-1"></div>
+</div>
+<!-- Animation Asset -->
+<div class="asset-card relative flex flex-col gap-3 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 hover:border-indigo-500 transition-all group cursor-pointer shadow-sm">
+<div class="w-full aspect-square rounded-lg flex items-center justify-center bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 relative">
+<div class="absolute inset-0 bg-indigo-500/5"></div>
+<span class="material-symbols-outlined text-indigo-500" style="font-size: 70px;">directions_run</span>
+<div class="absolute bottom-4 left-0 right-0 flex justify-center gap-1 opacity-40">
+<div class="w-2 h-2 rounded-full bg-indigo-500"></div>
+<div class="w-2 h-2 rounded-full bg-indigo-500/50"></div>
+<div class="w-2 h-2 rounded-full bg-indigo-500/50"></div>
+<div class="w-2 h-2 rounded-full bg-indigo-500/50"></div>
+</div>
+</div>
+<div>
+<p class="text-slate-900 dark:text-white text-base font-bold leading-normal truncate">Player_Run_Cycle.anim</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Animation • 24 Frames</p>
+</div>
+<div class="h-1 w-full bg-indigo-500/30 rounded-full mt-1"></div>
+</div>
+</div>
+</div>
+</main>
+<!-- Inspector Sidebar -->
+<aside class="w-80 flex-shrink-0 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111318] flex flex-col overflow-y-auto">
+<div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+<h3 class="text-slate-900 dark:text-white font-bold text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-size: 18px;">description</span>
+                        Asset Details
+                    </h3>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+</button>
+</div>
+<div class="p-6">
+<div class="flex flex-col gap-6">
+<div class="flex flex-col gap-4 items-center">
+<div class="w-32 h-32 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center border border-slate-100 dark:border-slate-800">
+<span class="material-symbols-outlined text-slate-300" style="font-size: 64px;">image_not_supported</span>
+</div>
+<div class="text-center">
+<p class="text-slate-400 text-sm">Select an asset to view its properties and technical metadata.</p>
+</div>
+</div>
+<div class="space-y-4">
+<div class="space-y-1">
+<label class="text-[10px] font-bold uppercase text-slate-500 tracking-wider">File Name</label>
+<div class="bg-slate-50 dark:bg-slate-800 p-2 rounded text-sm text-slate-400 italic">None selected</div>
+</div>
+<div class="space-y-1">
+<label class="text-[10px] font-bold uppercase text-slate-500 tracking-wider">File Path</label>
+<div class="bg-slate-50 dark:bg-slate-800 p-2 rounded text-sm text-slate-400 italic">.../Assets/</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1">
+<label class="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Size</label>
+<div class="bg-slate-50 dark:bg-slate-800 p-2 rounded text-sm text-slate-400">0 KB</div>
+</div>
+<div class="space-y-1">
+<label class="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Extension</label>
+<div class="bg-slate-50 dark:bg-slate-800 p-2 rounded text-sm text-slate-400">-</div>
+</div>
+</div>
+</div>
+<div class="pt-6 border-t border-slate-200 dark:border-slate-800">
+<button class="w-full h-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-sm font-bold opacity-50 cursor-not-allowed">
+                                Edit Settings
+                            </button>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</div>
+</body></html>
