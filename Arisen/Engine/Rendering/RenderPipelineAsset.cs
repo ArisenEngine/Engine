@@ -1,5 +1,5 @@
 using ArisenEngine.Core.Diagnostics;
-using Serialization.Interface;
+using ArisenEngine.Core.Serialization;
 
 namespace ArisenEngine.Rendering;
 

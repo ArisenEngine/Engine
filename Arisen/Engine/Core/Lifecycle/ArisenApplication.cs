@@ -67,6 +67,7 @@ public class ArisenApplication
 
         // Register early subsystems
         EngineKernel.Instance.RegisterSubsystem(new PlatformSubsystem());
+        EngineKernel.Instance.RegisterSubsystem(new ProjectSubsystem());
         EngineKernel.Instance.RegisterSubsystem(new PackageSubsystem());
         EngineKernel.Instance.RegisterSubsystem(new RenderSubsystem());
 

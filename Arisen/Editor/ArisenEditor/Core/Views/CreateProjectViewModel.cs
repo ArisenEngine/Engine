@@ -3,7 +3,7 @@ using ReactiveUI;
 using System;
 using System.IO;
 using System.Linq;
-using Serialization;
+using ArisenEngine.Core.Serialization;
 using System.Diagnostics;
 using System.Reactive.Linq;
 using ArisenEditor.GameDev;

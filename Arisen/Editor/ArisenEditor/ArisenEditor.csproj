@@ -152,7 +152,6 @@
     <ProjectReference Include="..\..\3rdparty\Ava.Dock\src\Dock.Serializer\Dock.Serializer.csproj" />
     <ProjectReference Include="..\..\Engine\ArisenEngine.csproj" />
     <ProjectReference Include="..\..\External\ArisenEditorFramework\ArisenEditorFramework.csproj" />
-    <ProjectReference Include="..\..\Serialization\Serialization\Serialization.csproj" />
   </ItemGroup>
 
     <ItemGroup>

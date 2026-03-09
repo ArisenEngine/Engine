@@ -38,13 +38,12 @@ if exist "%SLN_PATH%" (
     REM Resolve absolute project paths
     for %%I in ("%SCRIPT_DIR%\..\..\..\BindingGenerator\BindingGenerator.csproj") do set "BINDING_GENERATOR=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\..\AutoBinding\AutoBinding.csproj") do set "AUTO_BINDING=%%~fI"
-    for %%I in ("%SCRIPT_DIR%\..\..\..\Serialization\Serialization\Serialization.csproj") do set "SERIALIZATION=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\..\Engine\ArisenEngine.csproj") do set "ARISEN_ENGINE=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\..\Editor\ArisenEditor\ArisenEditor.csproj") do set "ARISEN_EDITOR=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\..\External\ArisenEditorFramework\ArisenEditorFramework.csproj") do set "ARISEN_EDITOR_FRAMEWORK=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\..\Test\EditorTest\EditorTest.csproj") do set "EDITOR_TEST=%%~fI"
 
-    for %%V in (BINDING_GENERATOR AUTO_BINDING SERIALIZATION ARISEN_ENGINE ARISEN_EDITOR ARISEN_EDITOR_FRAMEWORK EDITOR_TEST) do (
+    for %%V in (BINDING_GENERATOR AUTO_BINDING ARISEN_ENGINE ARISEN_EDITOR ARISEN_EDITOR_FRAMEWORK EDITOR_TEST) do (
         if "!%%V!"=="" (
             echo ERROR: Path for %%V is empty.
             set "EXIT_CODE=1"
@@ -67,7 +66,6 @@ if exist "%SLN_PATH%" (
     REM Relative paths for portability
     set "REL_BINDING_GENERATOR=..\..\..\BindingGenerator\BindingGenerator.csproj"
     set "REL_AUTO_BINDING=..\..\..\AutoBinding\AutoBinding.csproj"
-    set "REL_SERIALIZATION=..\..\..\Serialization\Serialization\Serialization.csproj"
     set "REL_ARISEN_ENGINE=..\..\..\Engine\ArisenEngine.csproj"
     set "REL_ARISEN_EDITOR=..\..\..\Editor\ArisenEditor\ArisenEditor.csproj"
     set "REL_ARISEN_EDITOR_FRAMEWORK=..\..\..\External\ArisenEditorFramework\ArisenEditorFramework.csproj"
@@ -75,7 +73,6 @@ if exist "%SLN_PATH%" (
 
     dotnet sln "!SLN_FILE!" add --in-root "!REL_BINDING_GENERATOR!"
     dotnet sln "!SLN_FILE!" add --in-root "!REL_AUTO_BINDING!"
-    dotnet sln "!SLN_FILE!" add --in-root "!REL_SERIALIZATION!"
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_ENGINE!"
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_EDITOR!"
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_EDITOR_FRAMEWORK!"
