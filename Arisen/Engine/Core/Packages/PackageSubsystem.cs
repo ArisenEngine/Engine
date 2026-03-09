@@ -192,7 +192,7 @@ public class PackageSubsystem : IEngineSubsystem
 
         try
         {
-            string rootPath = Path.GetDirectoryName(manifestPath)!;
+            string rootPath = Path.GetFullPath(Path.GetDirectoryName(manifestPath)!);
             Assembly? assembly;
             if (manifest.EntryAssembly == "ArisenEngine.dll")
             {
