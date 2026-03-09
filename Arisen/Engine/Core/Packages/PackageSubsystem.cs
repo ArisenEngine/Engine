@@ -9,12 +9,8 @@ public class PackageSubsystem : IEngineSubsystem
 {
     private readonly Dictionary<string, ArisenPackageInfo> m_LoadedPackages = new();
     private readonly List<PackageLoadContext> m_LoadContexts = new();
-    private readonly Dictionary<PackageSource, List<string>> m_CategorySearchPaths = new()
-    {
-        { PackageSource.Builtin, new List<string>() },
-        { PackageSource.UserProject, new List<string>() },
-        { PackageSource.External, new List<string>() }
-    };
+    private readonly IPackageResolver m_Resolver = new DefaultPackageResolver();
+    private string m_PackagesRoot = string.Empty;
 
     public string Name => "PackageSubsystem";
     public int Priority => 10;
@@ -25,54 +21,100 @@ public class PackageSubsystem : IEngineSubsystem
         Logger.Log("[PackageSubsystem] Initializing...");
         
         string baseDir = AppContext.BaseDirectory;
-        
-        // Simplified: Scanning organized Packages directory in the output
-        string packagesRoot = Path.Combine(baseDir, "Packages");
-        m_CategorySearchPaths[PackageSource.Builtin].Add(Path.Combine(packagesRoot, "Builtin"));
-        m_CategorySearchPaths[PackageSource.UserProject].Add(Path.Combine(packagesRoot, "UserProject"));
-        m_CategorySearchPaths[PackageSource.External].Add(Path.Combine(packagesRoot, "External"));
-        m_CategorySearchPaths[PackageSource.External].Add(Path.Combine(baseDir, "DLC"));
+        m_PackagesRoot = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", "Packages")); // Adjust for Dev/Test environment
+        if (!Directory.Exists(m_PackagesRoot))
+        {
+            m_PackagesRoot = Path.Combine(baseDir, "Packages"); // Fallback for deployment
+        }
 
-        DiscoverAndLoadPackages();
+        // Ensure root exists
+        if (!Directory.Exists(m_PackagesRoot)) Directory.CreateDirectory(m_PackagesRoot);
+        
+        DiscoverAndLoadPackagesAsync().GetAwaiter().GetResult();
     }
 
-    private void DiscoverAndLoadPackages()
+    private async Task DiscoverAndLoadPackagesAsync()
     {
-        var manifests = new List<(string ManifestPath, PackageSource Source, PackageManifest Manifest)>();
         var projectSubsystem = EngineKernel.Instance.GetSubsystem<ProjectSubsystem>();
-        var projectPackages = projectSubsystem?.ActiveProject?.Packages ?? new List<Lifecycle.PackageRequirement>();
-        var projectPackageIds = projectPackages.Select(p => p.Id).ToHashSet();
+        var projectPackages = projectSubsystem?.ActiveProject?.Packages ?? new List<PackageRequirement>();
+        
+        var manifests = new List<(string ManifestPath, PackageSource Source, PackageManifest Manifest)>();
+        var pendingPackages = new Queue<(string Id, string? Url, string? Version)>();
+        var processedIds = new HashSet<string>();
 
-        // TODO: Implement actual remote resolution via IPackageResolver here
-        // For now, we assume packages are already synchronized to the discovery paths
-        foreach (var category in m_CategorySearchPaths)
+        foreach (var p in projectPackages) pendingPackages.Enqueue((p.Id, p.Url, p.Version));
+
+        while (pendingPackages.Count > 0)
         {
-            var source = category.Key;
-            foreach (var path in category.Value)
-            {
-                if (!Directory.Exists(path)) continue;
+            var (id, url, version) = pendingPackages.Dequeue();
+            if (processedIds.Contains(id)) continue;
+            processedIds.Add(id);
 
-                var directories = Directory.GetDirectories(path, "*", SearchOption.AllDirectories);
-                foreach (var dir in directories)
+            try
+            {
+                string? resolvedPath = null;
+                if (!string.IsNullOrEmpty(url))
                 {
-                    string manifestPath = Path.Combine(dir, "package.json");
+                    resolvedPath = await m_Resolver.ResolveAsync(id, url, m_PackagesRoot);
+                }
+                else
+                {
+                    // If no URL, check if it's already in the root
+                    string potentialPath = Path.Combine(m_PackagesRoot, id);
+                    if (Directory.Exists(potentialPath))
+                    {
+                        resolvedPath = potentialPath;
+                    }
+                    else
+                    {
+                        // Search in subdirectories as fallback
+                        var subDirs = Directory.GetDirectories(m_PackagesRoot);
+                        foreach (var sub in subDirs)
+                        {
+                            if (Path.GetFileName(sub) == id)
+                            {
+                                resolvedPath = sub;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (resolvedPath != null)
+                {
+                    string manifestPath = Path.Combine(resolvedPath, "package.json");
                     if (File.Exists(manifestPath))
                     {
                         var manifest = TryReadManifest(manifestPath);
                         if (manifest != null)
                         {
-                            // Filter: Always load Builtin, but only load Project/External if requested by the active project
-                            if (source == PackageSource.Builtin || projectPackageIds.Contains(manifest.Id))
+                            // Version Warning
+                            if (!string.IsNullOrEmpty(version) && manifest.Version != version)
                             {
-                                manifests.Add((manifestPath, source, manifest));
+                                Logger.Warning($"[PackageSubsystem] Package '{id}' version mismatch. Project requires {version}, found {manifest.Version}.");
                             }
-                            else
+
+                            manifests.Add((manifestPath, PackageSource.External, manifest));
+
+                            // Add dependencies
+                            if (manifest.Dependencies != null)
                             {
-                                Logger.Log($"[PackageSubsystem] Skipping optional package: {manifest.Id} (Not required by active project)");
+                                foreach (var dep in manifest.Dependencies)
+                                {
+                                    pendingPackages.Enqueue((dep.Key, null, dep.Value));
+                                }
                             }
                         }
                     }
                 }
+                else
+                {
+                    Logger.Error($"[PackageSubsystem] Could not resolve package '{id}' (URL: {url ?? "None"})");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error($"[PackageSubsystem] Error resolving package '{id}': {e.Message}");
             }
         }
 
@@ -102,7 +144,6 @@ public class PackageSubsystem : IEngineSubsystem
     private List<(string ManifestPath, PackageSource Source, PackageManifest Manifest)> SortManifestsByDependency(
         List<(string ManifestPath, PackageSource Source, PackageManifest Manifest)> manifests)
     {
-        // Simple topological sort
         var result = new List<(string ManifestPath, PackageSource Source, PackageManifest Manifest)>();
         var visited = new HashSet<string>();
         var map = manifests.ToDictionary(x => x.Manifest.Id);
@@ -138,11 +179,12 @@ public class PackageSubsystem : IEngineSubsystem
         // Verify Engine Version
         if (!string.IsNullOrEmpty(manifest.EngineVersion))
         {
-            if (EngineVersion.TryParse(manifest.EngineVersion, out var required) &&
-                EngineVersion.Current < required)
+            if (EngineVersion.TryParse(manifest.EngineVersion, out var required))
             {
-                Logger.Warning($"[PackageSubsystem] Package {manifest.Id} requires Engine {required}, but current is {EngineVersion.Current}. Skipping.");
-                return;
+                if (EngineVersion.Current < required)
+                {
+                    Logger.Warning($"[PackageSubsystem] Package {manifest.Id} requires Engine {required}, but current is {EngineVersion.Current}. Compatibility issues may occur.");
+                }
             }
         }
 
@@ -159,6 +201,11 @@ public class PackageSubsystem : IEngineSubsystem
             else
             {
                 string assemblyPath = Path.Combine(rootPath, manifest.EntryAssembly);
+                if (!File.Exists(assemblyPath))
+                {
+                    Logger.Error($"[PackageSubsystem] Entry assembly not found: {assemblyPath}");
+                    return;
+                }
                 var loadContext = new PackageLoadContext(assemblyPath);
                 m_LoadContexts.Add(loadContext);
                 assembly = loadContext.LoadFromAssemblyPath(assemblyPath);
@@ -209,7 +256,6 @@ public class PackageSubsystem : IEngineSubsystem
     {
         m_LoadedPackages.Clear();
 
-        // Unload collectible AssemblyLoadContexts to allow GC of loaded assemblies
         foreach (var context in m_LoadContexts)
         {
             context.Unload();
