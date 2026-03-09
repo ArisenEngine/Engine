@@ -298,6 +298,7 @@ endif()
     set(ARISEN_EDITOR_DESKTOP_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor.Desktop/ArisenEditor.Desktop.csproj)
     set(ARISEN_EDITOR_DESKTOP_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor.Desktop/)
 
+if(${TARGET} STREQUAL "Editor" OR ${TARGET} STREQUAL "EditorTest")
     add_custom_target(BuildArisenEditorFramework
     COMMAND dotnet build ${ARISEN_EDITOR_FRAMEWORK_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
     WORKING_DIRECTORY ${ARISEN_EDITOR_FRAMEWORK_PROJ_DIR}
@@ -318,30 +319,37 @@ endif()
     add_dependencies(BuildArisenEditor BuildArisenEngine BuildArisenEditorFramework)
     set_target_properties(BuildArisenEditor PROPERTIES FOLDER "CMakeProcess")
 
-add_custom_target(BuildArisenEditorDesktop ALL
-COMMAND dotnet build ${ARISEN_EDITOR_DESKTOP_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
-WORKING_DIRECTORY ${ARISEN_EDITOR_DESKTOP_PROJ_DIR}
-COMMENT "Building Arisen Editor Desktop"
-DEPENDS "ArisenEditor.dll"
-VERBATIM
-USES_TERMINAL
-)
-add_dependencies(BuildArisenEditorDesktop BuildArisenEditor)
-set_target_properties(BuildArisenEditorDesktop PROPERTIES FOLDER "CMakeProcess")
+    if(${TARGET} STREQUAL "Editor")
+        set(EDITOR_DESKTOP_ALL "ALL")
+    else()
+        set(EDITOR_DESKTOP_ALL "")
+    endif()
 
-set(ARISEN_EDITOR_TEST_PROJ ${CMAKE_SOURCE_DIR}/Test/EditorTest/EditorTest.csproj)
-set(ARISEN_EDITOR_TEST_PROJ_DIR ${CMAKE_SOURCE_DIR}/Test/EditorTest/)
+    add_custom_target(BuildArisenEditorDesktop ${EDITOR_DESKTOP_ALL}
+    COMMAND dotnet build ${ARISEN_EDITOR_DESKTOP_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
+    WORKING_DIRECTORY ${ARISEN_EDITOR_DESKTOP_PROJ_DIR}
+    COMMENT "Building Arisen Editor Desktop"
+    DEPENDS "ArisenEditor.dll"
+    VERBATIM
+    USES_TERMINAL
+    )
+    add_dependencies(BuildArisenEditorDesktop BuildArisenEditor)
+    set_target_properties(BuildArisenEditorDesktop PROPERTIES FOLDER "CMakeProcess")
 
-add_custom_target(BuildEditorTest
-COMMAND dotnet build ${ARISEN_EDITOR_TEST_PROJ} --configuration $<CONFIG> ${DOTNET_PROFILER_ARG}
-WORKING_DIRECTORY ${ARISEN_EDITOR_TEST_PROJ_DIR}
-COMMENT "Building Arisen Editor Test"
-DEPENDS "ArisenEditor.dll"
-VERBATIM
-USES_TERMINAL
-)
-add_dependencies(BuildEditorTest BuildArisenEditor)
-set_target_properties(BuildEditorTest PROPERTIES FOLDER "CMakeProcess")
+    set(ARISEN_EDITOR_TEST_PROJ ${CMAKE_SOURCE_DIR}/Test/EditorTest/EditorTest.csproj)
+    set(ARISEN_EDITOR_TEST_PROJ_DIR ${CMAKE_SOURCE_DIR}/Test/EditorTest/)
+
+    add_custom_target(BuildEditorTest
+    COMMAND dotnet build ${ARISEN_EDITOR_TEST_PROJ} --configuration $<CONFIG> ${DOTNET_PROFILER_ARG}
+    WORKING_DIRECTORY ${ARISEN_EDITOR_TEST_PROJ_DIR}
+    COMMENT "Building Arisen Editor Test"
+    DEPENDS "ArisenEditor.dll"
+    VERBATIM
+    USES_TERMINAL
+    )
+    add_dependencies(BuildEditorTest BuildArisenEditor)
+    set_target_properties(BuildEditorTest PROPERTIES FOLDER "CMakeProcess")
+endif()
 
 if(${TARGET} STREQUAL "Editor")
     # Alredy added above as part of common logic if needed
