@@ -21,3 +21,4 @@ Scripts/Windows/tools/*
 *.vcxitems.filters
 
 vk_validation.log
+*.csproj.user
