@@ -1,4 +1,5 @@
 using ArisenEngine.ShaderLab;
+using ArisenEngine.Core.Serialization;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,7 +21,7 @@ public class ShaderProcessor
             var metaPath = Path.Combine(path, fileName + ".yaml");
             var shaderDir = Path.GetDirectoryName(fullPath) ?? path;
             // Serialize after parser's internal rewrite so YAML contains absolute content root
-            Serialization.SerializationUtil.Serialize(shaderLabShader, metaPath);
+            ArisenEngine.Core.Serialization.SerializationUtil.Serialize(shaderLabShader, metaPath);
             Console.WriteLine($"Parse shader:{fileName}, output:{metaPath}");
             for (int si = 0; si < shaderLabShader.subShaders.Count; si++)
             {

@@ -107,9 +107,9 @@ exit /b 0
 echo [RUN] %*
 >> "%LOG_FILE%" echo [RUN] %*
 %* >> "%LOG_FILE%" 2>&1
-set "RC=%ERRORLEVEL%"
-if not "%RC%"=="0" (
-    echo Command failed with exit code %RC%. Showing last 120 lines from log:
+set "_EXIT_CODE=%ERRORLEVEL%"
+if not "%_EXIT_CODE%"=="0" (
+    echo Command failed with exit code %_EXIT_CODE%. Showing last 120 lines from log:
     powershell -NoProfile -Command "Get-Content -LiteralPath '%LOG_FILE%' -Tail 120"
 )
-exit /b %RC%
+exit /b %_EXIT_CODE%
