@@ -3,6 +3,9 @@ using ArisenEngine.Core.Diagnostics;
 using ArisenEngine.Core.Packages;
 using CSharpEngineTest.Framework;
 using System.Linq;
+using System;
+using System.IO;
+using System.Text.Json;
 
 namespace CSharpEngineTest.Core.Packages;
 
@@ -34,7 +37,7 @@ public class PackageSystemTests : ITest
         };
 
         // Create the mock project file
-        string json = JsonSerializer.Serialize(projectManifest);
+        string json = System.Text.Json.JsonSerializer.Serialize(projectManifest);
         File.WriteAllText(projectFile, json);
 
         kernel.RegisterSubsystem(new ProjectSubsystem());

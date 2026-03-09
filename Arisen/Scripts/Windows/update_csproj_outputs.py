@@ -52,17 +52,26 @@ def update_output_path(csproj_path, sln_dir, base_output):
     parts = csproj_path.replace("\\", "/").split("/")
     if "Packages" in parts:
         pkg_idx = parts.index("Packages")
-        if pkg_idx + 2 < len(parts):
-            package_category = parts[pkg_idx + 1] # e.g., "Builtin"
-            package_name = parts[pkg_idx + 2]     # e.g., "ForwardRP"
+        if pkg_idx + 1 < len(parts):
+            # The next part is the package folder name (e.g., com.arisen.generic-renderpipeline)
+            package_name = parts[pkg_idx + 1]
+            package_category = "" # No category for root packages
+            
+            # If there's another level (like old Builtin/ForwardRP), handle it
+            if pkg_idx + 2 < len(parts) and parts[pkg_idx + 2].lower().endswith(".csproj") == False:
+                 package_category = parts[pkg_idx + 1]
+                 package_name = parts[pkg_idx + 2]
 
     tree = ET.parse(csproj_path)
 
     configs = ["Debug", "Release"]
     for config in configs:
         target_output = os.path.join(base_output_abs, config)
-        if package_category and package_name:
-            target_output = os.path.join(target_output, "Packages", package_category, package_name)
+        if package_name:
+            if package_category:
+                target_output = os.path.join(target_output, "Packages", package_category, package_name)
+            else:
+                target_output = os.path.join(target_output, "Packages", package_name)
         
         # Output 相对于 csproj 的相对路径
         output_rel = os.path.relpath(target_output, csproj_dir)
