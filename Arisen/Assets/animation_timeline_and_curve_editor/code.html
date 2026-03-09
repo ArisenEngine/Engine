@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Animation Timeline &amp; Curve Editor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "panel-dark": "#161c2a",
+                        "border-dark": "#282e39"
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .timeline-grid {
+            background-size: 40px 100%;
+            background-image: linear-gradient(to right, #282e39 1px, transparent 1px);
+        }
+        .graph-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, #1d2433 1px, transparent 1px),
+                              linear-gradient(to bottom, #1d2433 1px, transparent 1px);
+        }
+        .scrubber-line {
+            left: 180px; /* Example frame 45 position */
+        }
+        .diamond-key {
+            transform: rotate(45deg);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-white selection:bg-primary/30">
+<div class="flex h-screen flex-col overflow-hidden">
+<!-- Top Navigation Bar -->
+<header class="flex h-12 items-center justify-between border-b border-border-dark bg-panel-dark px-4 shrink-0">
+<div class="flex items-center gap-4">
+<div class="text-primary">
+<span class="material-symbols-outlined text-2xl">motion_photos_on</span>
+</div>
+<h2 class="text-sm font-bold tracking-tight">GameEngine Editor <span class="text-white/40 font-normal ml-2">/ Animation</span></h2>
+</div>
+<div class="flex items-center gap-6">
+<nav class="flex items-center gap-4 text-xs font-medium text-white/70">
+<a class="hover:text-white transition-colors" href="#">File</a>
+<a class="hover:text-white transition-colors" href="#">Edit</a>
+<a class="hover:text-white transition-colors" href="#">View</a>
+<a class="hover:text-white transition-colors" href="#">Window</a>
+</nav>
+<div class="h-4 w-px bg-border-dark"></div>
+<div class="flex gap-2">
+<button class="flex h-8 w-8 items-center justify-center rounded bg-border-dark hover:bg-white/10">
+<span class="material-symbols-outlined text-sm">settings</span>
+</button>
+<button class="flex h-8 w-8 items-center justify-center rounded bg-border-dark hover:bg-white/10">
+<span class="material-symbols-outlined text-sm">person</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Workspace -->
+<main class="flex flex-1 overflow-hidden">
+<!-- Left Sidebar: Properties -->
+<aside class="w-64 border-r border-border-dark bg-background-dark flex flex-col shrink-0">
+<div class="p-4 border-b border-border-dark">
+<h3 class="text-xs font-bold uppercase tracking-widest text-white/50">Animated Properties</h3>
+<p class="text-sm font-medium mt-1 truncate">Player_Main_Character</p>
+</div>
+<div class="flex-1 overflow-y-auto py-2">
+<!-- Property Group -->
+<div class="px-2">
+<div class="flex items-center gap-2 px-2 py-1 text-xs font-semibold text-white/40">
+<span class="material-symbols-outlined text-[14px]">expand_more</span>
+<span>Transform</span>
+</div>
+<div class="space-y-0.5 mt-1">
+<div class="flex items-center justify-between group px-3 py-1.5 rounded bg-primary/10 border-l-2 border-primary">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-sm text-red-500">fiber_manual_record</span>
+<span class="text-xs font-medium truncate">Position.X</span>
+</div>
+<div class="flex gap-2 opacity-60 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[16px] cursor-pointer hover:text-white">visibility</span>
+<span class="material-symbols-outlined text-[16px] cursor-pointer hover:text-white">lock_open</span>
+</div>
+</div>
+<div class="flex items-center justify-between group px-3 py-1.5 rounded hover:bg-white/5">
+<div class="flex items-center gap-2 overflow-hidden text-white/70">
+<span class="material-symbols-outlined text-sm text-green-500">fiber_manual_record</span>
+<span class="text-xs font-medium truncate">Position.Y</span>
+</div>
+<div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[16px] cursor-pointer">visibility</span>
+<span class="material-symbols-outlined text-[16px] cursor-pointer">lock_open</span>
+</div>
+</div>
+<div class="flex items-center justify-between group px-3 py-1.5 rounded hover:bg-white/5">
+<div class="flex items-center gap-2 overflow-hidden text-white/70">
+<span class="material-symbols-outlined text-sm text-blue-500">fiber_manual_record</span>
+<span class="text-xs font-medium truncate">Position.Z</span>
+</div>
+<div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[16px] cursor-pointer">visibility</span>
+<span class="material-symbols-outlined text-[16px] cursor-pointer">lock_open</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Another Property Group -->
+<div class="px-2 mt-4">
+<div class="flex items-center gap-2 px-2 py-1 text-xs font-semibold text-white/40">
+<span class="material-symbols-outlined text-[14px]">expand_more</span>
+<span>Rotation</span>
+</div>
+<div class="flex items-center justify-between group px-3 py-1.5 rounded hover:bg-white/5">
+<div class="flex items-center gap-2 overflow-hidden text-white/70">
+<span class="material-symbols-outlined text-sm text-yellow-500">fiber_manual_record</span>
+<span class="text-xs font-medium truncate">Rotation.Quat</span>
+</div>
+<div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[16px] cursor-pointer">visibility</span>
+<span class="material-symbols-outlined text-[16px] cursor-pointer">lock</span>
+</div>
+</div>
+</div>
+</div>
+<div class="p-3 border-t border-border-dark">
+<button class="w-full flex items-center justify-center gap-2 py-2 border border-dashed border-border-dark rounded text-xs text-white/40 hover:text-white hover:border-white/20 transition-all">
+<span class="material-symbols-outlined text-[14px]">add_circle</span>
+                        Add Property
+                    </button>
+</div>
+</aside>
+<!-- Center Content: Canvas -->
+<section class="flex-1 flex flex-col bg-panel-dark overflow-hidden relative">
+<!-- Inner Toolbar -->
+<div class="flex h-12 items-center justify-between border-b border-border-dark bg-background-dark/50 px-4 shrink-0">
+<div class="flex items-center gap-1">
+<button class="p-1.5 text-white/60 hover:text-white hover:bg-white/5 rounded transition-all">
+<span class="material-symbols-outlined text-[20px]">first_page</span>
+</button>
+<button class="p-1.5 text-white/60 hover:text-white hover:bg-white/5 rounded transition-all">
+<span class="material-symbols-outlined text-[20px]">skip_previous</span>
+</button>
+<button class="mx-1 h-8 w-8 flex items-center justify-center rounded-full bg-primary hover:bg-primary/80 transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-[20px] fill-1">play_arrow</span>
+</button>
+<button class="p-1.5 text-white/60 hover:text-white hover:bg-white/5 rounded transition-all">
+<span class="material-symbols-outlined text-[20px]">skip_next</span>
+</button>
+<button class="p-1.5 text-white/60 hover:text-white hover:bg-white/5 rounded transition-all">
+<span class="material-symbols-outlined text-[20px]">last_page</span>
+</button>
+<div class="w-px h-4 bg-border-dark mx-2"></div>
+<button class="p-1.5 text-white/60 hover:text-white hover:bg-white/5 rounded transition-all">
+<span class="material-symbols-outlined text-[20px]">repeat</span>
+</button>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 bg-background-dark rounded px-2 py-1 border border-border-dark">
+<span class="text-[10px] font-bold text-white/40 uppercase">Frame</span>
+<span class="text-sm font-bold text-primary tabular-nums">45</span>
+</div>
+<div class="flex items-center gap-2 bg-background-dark rounded px-2 py-1 border border-border-dark">
+<span class="text-[10px] font-bold text-white/40 uppercase">FPS</span>
+<span class="text-sm font-bold text-white tabular-nums">60</span>
+</div>
+<button class="flex items-center gap-2 h-8 px-3 rounded bg-red-600/10 text-red-500 border border-red-500/20 hover:bg-red-600/20 transition-all">
+<span class="material-symbols-outlined text-[16px] fill-1">fiber_manual_record</span>
+<span class="text-xs font-bold uppercase tracking-tight">Record</span>
+</button>
+</div>
+</div>
+<!-- Tabs -->
+<div class="flex border-b border-border-dark bg-background-dark/30 shrink-0">
+<button class="px-6 py-2.5 text-xs font-bold text-white/40 hover:text-white transition-all border-b-2 border-transparent">
+                        Dope Sheet
+                    </button>
+<button class="px-6 py-2.5 text-xs font-bold text-white border-b-2 border-primary bg-primary/5">
+                        Curve Editor
+                    </button>
+</div>
+<!-- Canvas: Curve Editor -->
+<div class="flex-1 relative overflow-hidden graph-grid">
+<!-- Vertical Ruler / Scrubber -->
+<div class="absolute inset-y-0 scrubber-line w-px bg-primary z-10 shadow-[0_0_8px_rgba(19,91,236,0.6)]">
+<div class="absolute -top-1 -left-1.5 w-3 h-3 bg-primary rounded-full border-2 border-white/20"></div>
+<div class="absolute top-2 left-2 bg-primary text-[10px] px-1 rounded font-bold">45</div>
+</div>
+<!-- SVG Curve Area -->
+<div class="absolute inset-0 p-8">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 1000 400">
+<!-- Horizontal Lines (Values) -->
+<line stroke="#282e39" stroke-width="1" x1="0" x2="1000" y1="350" y2="350"></line>
+<line stroke="#282e39" stroke-width="1" x1="0" x2="1000" y1="200" y2="200"></line>
+<line stroke="#282e39" stroke-width="1" x1="0" x2="1000" y1="50" y2="50"></line>
+<!-- X Axis Curve (Red) -->
+<path d="M 0,350 C 150,350 250,50 400,50 S 650,200 1000,200" fill="none" stroke="#ef4444" stroke-width="2"></path>
+<!-- Y Axis Curve (Green) -->
+<path d="M 0,200 C 100,200 300,380 500,380 S 800,50 1000,50" fill="none" stroke="#22c55e" stroke-width="2"></path>
+<!-- Z Axis Curve (Blue) -->
+<path d="M 0,50 C 200,50 400,150 600,150 S 800,300 1000,300" fill="none" opacity="0.4" stroke="#3b82f6" stroke-width="2"></path>
+<!-- Keyframe Handle for X-Axis at Frame 45 -->
+<g transform="translate(400, 50)">
+<line stroke="white" stroke-width="1" x1="-40" x2="40" y1="0" y2="0"></line>
+<circle cx="-40" cy="0" fill="white" r="3"></circle>
+<circle cx="40" cy="0" fill="white" r="3"></circle>
+<rect fill="white" height="8" transform="rotate(45)" width="8" x="-4" y="-4"></rect>
+</g>
+</svg>
+</div>
+<!-- Frames labels footer -->
+<div class="absolute bottom-0 left-0 right-0 h-8 border-t border-border-dark bg-background-dark/80 flex items-center justify-between px-10 text-[10px] font-bold text-white/30 tracking-widest uppercase">
+<span>0</span>
+<span>20</span>
+<span>40</span>
+<span class="text-primary font-black">60</span>
+<span>80</span>
+<span>100</span>
+<span>120</span>
+<span>140</span>
+<span>160</span>
+</div>
+</div>
+</section>
+<!-- Right Sidebar: Inspector -->
+<aside class="w-64 border-l border-border-dark bg-background-dark flex flex-col shrink-0">
+<div class="p-4 border-b border-border-dark">
+<h3 class="text-xs font-bold uppercase tracking-widest text-white/50">Keyframe Inspector</h3>
+</div>
+<div class="p-4 space-y-6">
+<!-- Keyframe Info -->
+<div class="space-y-4">
+<div class="space-y-1.5">
+<label class="text-[10px] font-bold uppercase text-white/40">Time (Frame)</label>
+<div class="flex items-center gap-2 group">
+<input class="w-full bg-border-dark border-none rounded text-xs font-medium focus:ring-1 focus:ring-primary py-1.5" type="number" value="45"/>
+<span class="material-symbols-outlined text-sm text-white/20 group-hover:text-white/60 cursor-move">drag_handle</span>
+</div>
+</div>
+<div class="space-y-1.5">
+<label class="text-[10px] font-bold uppercase text-white/40">Value</label>
+<div class="flex items-center gap-2 group">
+<input class="w-full bg-border-dark border-none rounded text-xs font-medium focus:ring-1 focus:ring-primary py-1.5" step="0.001" type="number" value="12.450"/>
+<span class="material-symbols-outlined text-sm text-white/20 group-hover:text-white/60 cursor-move">drag_handle</span>
+</div>
+</div>
+</div>
+<div class="h-px bg-border-dark"></div>
+<!-- Interpolation -->
+<div class="space-y-4">
+<div class="space-y-2">
+<label class="text-[10px] font-bold uppercase text-white/40">Interpolation Type</label>
+<div class="grid grid-cols-2 gap-2">
+<button class="flex items-center justify-center gap-2 p-2 rounded bg-primary text-white text-[10px] font-bold uppercase transition-all">
+<span class="material-symbols-outlined text-[14px]">auto_graph</span>
+                                    Bezier
+                                </button>
+<button class="flex items-center justify-center gap-2 p-2 rounded bg-border-dark hover:bg-white/10 text-white/60 text-[10px] font-bold uppercase transition-all">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+                                    Linear
+                                </button>
+<button class="flex items-center justify-center gap-2 p-2 rounded bg-border-dark hover:bg-white/10 text-white/60 text-[10px] font-bold uppercase transition-all">
+<span class="material-symbols-outlined text-[14px]">reorder</span>
+                                    Step
+                                </button>
+<button class="flex items-center justify-center gap-2 p-2 rounded bg-border-dark hover:bg-white/10 text-white/60 text-[10px] font-bold uppercase transition-all">
+<span class="material-symbols-outlined text-[14px]">insights</span>
+                                    Auto
+                                </button>
+</div>
+</div>
+</div>
+<!-- Tangents -->
+<div class="space-y-4 pt-2">
+<div class="flex items-center justify-between">
+<label class="text-[10px] font-bold uppercase text-white/40">Linked Tangents</label>
+<button class="w-8 h-4 rounded-full bg-primary relative">
+<div class="absolute right-1 top-0.5 w-3 h-3 bg-white rounded-full"></div>
+</button>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1.5">
+<label class="text-[10px] font-bold uppercase text-white/40">In Weight</label>
+<input class="w-full bg-border-dark border-none rounded text-xs font-medium py-1.5 opacity-50" type="text" value="0.33"/>
+</div>
+<div class="space-y-1.5">
+<label class="text-[10px] font-bold uppercase text-white/40">Out Weight</label>
+<input class="w-full bg-border-dark border-none rounded text-xs font-medium py-1.5" type="text" value="0.33"/>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-auto p-4 border-t border-border-dark bg-background-dark/50">
+<button class="w-full py-2 bg-white/5 hover:bg-white/10 rounded text-xs font-bold uppercase tracking-widest text-white/80 transition-all">
+                        Remove Keyframe
+                    </button>
+</div>
+</aside>
+</main>
+<!-- Status Bar -->
+<footer class="h-6 bg-primary flex items-center justify-between px-3 shrink-0">
+<div class="flex items-center gap-4 text-[10px] font-bold text-white uppercase tracking-tighter">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">info</span> Animation Ready</span>
+<span>Layers: 3</span>
+<span>Active Track: Transform.Position.X</span>
+</div>
+<div class="flex items-center gap-4 text-[10px] font-bold text-white/80">
+<span>Memory: 124MB</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">bolt</span> Latency: 2ms</span>
+</div>
+</footer>
+</div>
+</body></html>

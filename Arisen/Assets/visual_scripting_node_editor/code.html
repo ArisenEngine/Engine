@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Visual Scripting Node Editor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .node-grid {
+            background-image: radial-gradient(circle, #282e39 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .bezier-path {
+            stroke: #135bec;
+            stroke-width: 2;
+            fill: none;
+            filter: drop-shadow(0 0 2px rgba(19, 91, 236, 0.4));
+        }
+        .execution-path {
+            stroke: #ffffff;
+            stroke-width: 3;
+        }
+        .pin-execution {
+            clip-path: polygon(0% 0%, 70% 0%, 100% 50%, 70% 100%, 0% 100%);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-white overflow-hidden h-screen flex flex-col">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-[#282e39] bg-background-dark px-6 py-3 z-50">
+<div class="flex items-center gap-4 text-white">
+<div class="size-6 text-primary">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M36.7273 44C33.9891 44 31.6043 39.8386 30.3636 33.69C29.123 39.8386 26.7382 44 24 44C21.2618 44 18.877 39.8386 17.6364 33.69C16.3957 39.8386 14.0109 44 11.2727 44C7.25611 44 4 35.0457 4 24C4 12.9543 7.25611 4 11.2727 4C14.0109 4 16.3957 8.16144 17.6364 14.31C18.877 8.16144 21.2618 4 24 4C26.7382 4 29.123 8.16144 30.3636 14.31C31.6043 8.16144 33.9891 4 36.7273 4C40.7439 4 44 12.9543 44 24C44 35.0457 40.7439 44 36.7273 44Z" fill="currentColor"></path>
+</svg>
+</div>
+<h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">Visual Scripting Editor</h2>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<nav class="flex items-center gap-6 mr-6">
+<a class="text-gray-400 hover:text-white text-sm font-medium transition-colors" href="#">File</a>
+<a class="text-gray-400 hover:text-white text-sm font-medium transition-colors" href="#">Edit</a>
+<a class="text-gray-400 hover:text-white text-sm font-medium transition-colors" href="#">Graph</a>
+<a class="text-gray-400 hover:text-white text-sm font-medium transition-colors" href="#">Window</a>
+</nav>
+<div class="flex gap-2">
+<button class="flex min-w-[100px] cursor-pointer items-center justify-center rounded-lg h-9 px-4 bg-primary text-white text-sm font-bold transition-all hover:brightness-110">
+<span class="material-symbols-outlined text-sm mr-2">memory</span> Compile
+                </button>
+<button class="flex min-w-[80px] cursor-pointer items-center justify-center rounded-lg h-9 px-4 bg-[#282e39] text-white text-sm font-bold hover:bg-[#343b48]">
+                    Save
+                </button>
+<div class="h-9 w-[1px] bg-[#282e39] mx-1"></div>
+<button class="flex items-center justify-center rounded-lg h-9 w-9 bg-[#282e39] text-green-500 hover:bg-[#343b48]">
+<span class="material-symbols-outlined">play_arrow</span>
+</button>
+<button class="flex items-center justify-center rounded-lg h-9 w-9 bg-[#282e39] text-white hover:bg-[#343b48]">
+<span class="material-symbols-outlined">pause</span>
+</button>
+<button class="flex items-center justify-center rounded-lg h-9 w-9 bg-[#282e39] text-red-500 hover:bg-[#343b48]">
+<span class="material-symbols-outlined">stop</span>
+</button>
+</div>
+<div class="bg-primary/20 rounded-full p-1 ml-4 border border-primary/30">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-8" data-alt="Developer profile avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuABNdRvjlgUIIfWunPH6B8DpH72610NmxQi26XIVisD37S_7ZWgunm3kT-RwUApC526_Tto_Q6kACM6na_LRfUYA9IOHc3RXeXZ4m5XPr8AHQ1ZwNF5k3xWcTsb6gjudt4-6pvK-2f7Y_avyxdfgKtc13OIFHrVXjCnIPhhjmU2JyH3u13m6PctjTIZqXaMRLwVNR82uAxL-jN_o-CRo_QcG5ALXMYii3eLfdddTkfPKAdgDyczIRzvSKHPDli_R_wmVNGTB9i7TNA8");'></div>
+</div>
+</div>
+</header>
+<!-- Toolbar -->
+<div class="flex items-center justify-between px-6 py-2 bg-[#161b26] border-b border-[#282e39] z-40">
+<div class="flex gap-1">
+<button class="p-2 text-primary bg-primary/10 rounded">
+<span class="material-symbols-outlined">near_me</span>
+</button>
+<button class="p-2 text-gray-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">pan_tool</span>
+</button>
+<button class="p-2 text-gray-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">zoom_in</span>
+</button>
+<button class="p-2 text-gray-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">zoom_out</span>
+</button>
+<div class="w-[1px] h-6 bg-[#282e39] mx-2 self-center"></div>
+<button class="p-2 text-gray-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">grid_4x4</span>
+</button>
+<button class="p-2 text-gray-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">center_focus_strong</span>
+</button>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-xs text-gray-500 font-medium uppercase tracking-widest">Blueprint: PlayerCharacter_Controller</span>
+<button class="flex items-center justify-center rounded-lg h-9 bg-primary/20 text-primary border border-primary/30 gap-2 px-4 hover:bg-primary/30 transition-all">
+<span class="material-symbols-outlined text-sm">bug_report</span>
+<span class="text-sm font-bold">Debug Mode</span>
+</button>
+</div>
+</div>
+<!-- Main Editor Canvas -->
+<main class="flex-1 relative overflow-hidden node-grid cursor-grab active:cursor-grabbing">
+<!-- SVG Layer for Bezier Connections -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none z-10">
+<!-- Connection 1: Event Tick to Set Transform -->
+<path class="execution-path" d="M380 200 C450 200, 500 250, 600 250" fill="none" stroke="white" stroke-width="2"></path>
+<!-- Connection 2: Vector Math to Set Transform -->
+<path class="bezier-path" d="M380 435 C450 435, 500 340, 600 340" fill="none" stroke="#135bec" stroke-width="2"></path>
+<!-- Connection 3: Input Action to Vector Math -->
+<path class="bezier-path" d="M380 560 C420 560, 420 460, 460 460" fill="none" stroke="#fbbf24" stroke-width="2"></path>
+</svg>
+<!-- Node 1: Event Tick (Red) -->
+<div class="absolute left-100 top-40 w-72 bg-[#1e2430] border border-[#282e39] rounded-lg shadow-2xl z-20 overflow-hidden ring-1 ring-white/5" style="left: 100px; top: 150px;">
+<div class="bg-red-600/80 px-4 py-2 border-b border-red-500/30 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-white text-lg">schedule</span>
+<span class="text-sm font-bold text-white uppercase tracking-wide">Event Tick</span>
+</div>
+</div>
+<div class="p-3 space-y-2">
+<div class="flex items-center justify-between text-[11px] text-gray-400 mb-1">
+<span>Executes every frame</span>
+</div>
+<div class="flex justify-end items-center gap-2">
+<span class="text-[11px] font-bold text-white uppercase">Exec</span>
+<div class="w-3 h-3 bg-white pin-execution"></div>
+</div>
+</div>
+</div>
+<!-- Node 2: Vector Math (Green) -->
+<div class="absolute w-64 bg-[#1e2430] border border-[#282e39] rounded-lg shadow-2xl z-20 overflow-hidden ring-1 ring-white/5" style="left: 460px; top: 380px;">
+<div class="bg-emerald-600/80 px-4 py-2 border-b border-emerald-500/30 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-white text-lg">calculate</span>
+<span class="text-sm font-bold text-white uppercase tracking-wide">Vector Add</span>
+</div>
+</div>
+<div class="p-3 space-y-4">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+<span class="text-[11px] font-bold text-gray-300">A</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[11px] font-bold text-gray-300">Result</span>
+<div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+</div>
+</div>
+<div class="flex justify-start items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+<span class="text-[11px] font-bold text-gray-300">B</span>
+</div>
+</div>
+</div>
+<!-- Node 3: Set Transform (Blue) -->
+<div class="absolute w-80 bg-[#1e2430] border border-primary/40 rounded-lg shadow-[0_0_20px_rgba(19,91,236,0.2)] z-30 overflow-hidden ring-1 ring-primary/50" style="left: 600px; top: 200px;">
+<div class="bg-primary px-4 py-2 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-white text-lg">open_with</span>
+<span class="text-sm font-bold text-white uppercase tracking-wide">Set Actor Transform</span>
+</div>
+<span class="material-symbols-outlined text-white/50 text-xs">lock</span>
+</div>
+<div class="p-4 space-y-4">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 bg-white pin-execution"></div>
+<span class="text-[11px] font-bold text-white uppercase">In</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[11px] font-bold text-white uppercase">Out</span>
+<div class="w-3 h-3 bg-white pin-execution"></div>
+</div>
+</div>
+<div class="space-y-3">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+<span class="text-[11px] text-gray-300">Target</span>
+<span class="text-[10px] text-primary ml-auto font-mono">Self</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+<span class="text-[11px] text-gray-300">New Transform</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Node 4: Input Action (Amber) -->
+<div class="absolute w-64 bg-[#1e2430] border border-[#282e39] rounded-lg shadow-2xl z-20 overflow-hidden ring-1 ring-white/5" style="left: 120px; top: 500px;">
+<div class="bg-amber-600/80 px-4 py-2 border-b border-amber-500/30 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-white text-lg">videogame_asset</span>
+<span class="text-sm font-bold text-white uppercase tracking-wide">Input Axis Move</span>
+</div>
+</div>
+<div class="p-3 space-y-3">
+<div class="flex justify-end items-center gap-2">
+<span class="text-[11px] font-bold text-gray-300">Axis Value</span>
+<div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+</div>
+</div>
+</div>
+<!-- Add Node Context Menu -->
+<div class="absolute right-10 top-10 w-64 bg-[#161b26]/95 backdrop-blur-md border border-[#282e39] rounded-xl shadow-2xl z-40 overflow-hidden">
+<div class="p-3 border-b border-[#282e39]">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2 top-1.5 text-gray-500 text-sm">search</span>
+<input class="w-full bg-[#1e2430] border-none text-xs rounded-lg pl-8 py-1.5 focus:ring-1 focus:ring-primary placeholder-gray-600" placeholder="Search actions..." type="text"/>
+</div>
+</div>
+<div class="max-h-[300px] overflow-y-auto py-1">
+<div class="px-4 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Favorites</div>
+<div class="px-4 py-1.5 hover:bg-primary/20 cursor-pointer flex items-center gap-3 group">
+<span class="material-symbols-outlined text-sm text-red-500">schedule</span>
+<span class="text-xs text-gray-300 group-hover:text-white">Event Tick</span>
+</div>
+<div class="px-4 py-1.5 hover:bg-primary/20 cursor-pointer flex items-center gap-3 group">
+<span class="material-symbols-outlined text-sm text-emerald-500">calculate</span>
+<span class="text-xs text-gray-300 group-hover:text-white">Vector Add</span>
+</div>
+<div class="h-[1px] bg-[#282e39] my-1"></div>
+<div class="px-4 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Categories</div>
+<div class="px-4 py-1.5 hover:bg-[#282e39] cursor-pointer flex items-center justify-between group">
+<span class="text-xs text-gray-300 group-hover:text-white">Variables</span>
+<span class="material-symbols-outlined text-xs text-gray-600">chevron_right</span>
+</div>
+<div class="px-4 py-1.5 hover:bg-[#282e39] cursor-pointer flex items-center justify-between group">
+<span class="text-xs text-gray-300 group-hover:text-white">Math</span>
+<span class="material-symbols-outlined text-xs text-gray-600">chevron_right</span>
+</div>
+<div class="px-4 py-1.5 hover:bg-[#282e39] cursor-pointer flex items-center justify-between group">
+<span class="text-xs text-gray-300 group-hover:text-white">Transformation</span>
+<span class="material-symbols-outlined text-xs text-gray-600">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Mini-map -->
+<div class="absolute bottom-6 right-6 w-56 h-36 bg-[#161b26]/80 backdrop-blur border border-[#282e39] rounded-lg shadow-xl overflow-hidden pointer-events-none border-dashed p-1">
+<div class="w-full h-full relative node-grid opacity-30 rounded-md">
+<!-- Mini Abstract Shapes representing nodes -->
+<div class="absolute w-8 h-4 bg-red-600/40 rounded-[2px]" style="left: 20px; top: 30px;"></div>
+<div class="absolute w-10 h-6 bg-primary/40 rounded-[2px]" style="left: 80px; top: 40px;"></div>
+<div class="absolute w-8 h-5 bg-emerald-600/40 rounded-[2px]" style="left: 60px; top: 80px;"></div>
+<div class="absolute w-8 h-4 bg-amber-600/40 rounded-[2px]" style="left: 30px; top: 100px;"></div>
+<!-- Viewport Indicator -->
+<div class="absolute border border-primary/60 bg-primary/5 w-40 h-28" style="left: 10px; top: 10px;"></div>
+</div>
+<div class="absolute bottom-1 right-2 text-[9px] text-gray-500 font-bold uppercase tracking-tighter">Mini Map</div>
+</div>
+</main>
+<!-- Footer Status Bar -->
+<footer class="h-8 bg-[#101622] border-t border-[#282e39] flex items-center justify-between px-4 z-50">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5">
+<div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+<span class="text-[10px] text-gray-400 font-medium">Editor Connected</span>
+</div>
+<span class="text-[10px] text-gray-600">|</span>
+<span class="text-[10px] text-gray-400">Last Compiled: 2m ago</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-[10px] text-gray-400 font-mono">X: 1240.5 Y: -432.2</span>
+<div class="flex items-center gap-1">
+<span class="text-[10px] text-gray-400">Zoom:</span>
+<span class="text-[10px] text-white font-bold">100%</span>
+</div>
+</div>
+</footer>
+</body></html>
