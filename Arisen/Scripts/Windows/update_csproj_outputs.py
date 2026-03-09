@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 import xml.etree.ElementTree as ET
 import xml.dom.minidom as minidom
 
@@ -101,6 +102,115 @@ def update_output_path(csproj_path, sln_name, base_output):
     with open(user_file, "w", encoding="utf-8") as f:
         f.write(xml_str)
 
+def inject_sln_dependencies(sln_path):
+    if not os.path.exists(sln_path):
+        return
+
+    with open(sln_path, "r", encoding="utf-8-sig") as f:
+        lines = f.readlines()
+
+    native_guids = []
+    managed_projects = [] # List of (line_index, guid)
+
+    # Regex for Project blocks
+    # Project("{TYPE_GUID}") = "Name", "Path", "{ID_GUID}"
+    proj_regex = re.compile(r'^Project\("\{([A-F0-9\-]+)\}"\) = "([^"]+)", "([^"]+)", "\{([A-F0-9\-]+)\}"')
+
+    for i, line in enumerate(lines):
+        match = proj_regex.match(line.strip())
+        if match:
+            type_guid = match.group(1).upper()
+            proj_name = match.group(2)
+            proj_path = match.group(3)
+            proj_guid = match.group(4).upper()
+
+            # Native C++: 8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942
+            if type_guid == "8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942":
+                # Skip helper targets if any, or just include all native ones
+                if not proj_name.startswith("Build") and proj_name not in ["ZERO_CHECK", "ALL_BUILD", "INSTALL"]:
+                    native_guids.append(proj_guid)
+            
+            # Managed C#: FAE04EC0-301F-11D3-BF4B-00C04F79EFBC
+            if type_guid == "FAE04EC0-301F-11D3-BF4B-00C04F79EFBC":
+                managed_projects.append((i, proj_guid))
+
+    if not native_guids:
+        return
+
+    new_lines = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        new_lines.append(line)
+        
+        # Check if this line is a managed Project start
+        match = proj_regex.match(line.strip())
+        if match and match.group(1).upper() == "FAE04EC0-301F-11D3-BF4B-00C04F79EFBC":
+            managed_guid = match.group(4).upper()
+            
+            # Look ahead for EndProject
+            found_end = False
+            j = i + 1
+            has_deps = False
+            while j < len(lines) and not lines[j].strip().startswith("Project("):
+                if "ProjectSection(ProjectDependencies)" in lines[j]:
+                    has_deps = True
+                if lines[j].strip() == "EndProject":
+                    found_end = True
+                    break
+                j += 1
+            
+            if found_end and not has_deps:
+                # Inject dependencies before EndProject
+                # Go back one line if it's j
+                insert_idx = j
+                dep_block = ["\tProjectSection(ProjectDependencies) = postProject\n"]
+                for g in native_guids:
+                    dep_block.append(f"\t\t{{{g}}} = {{{g}}}\n")
+                dep_block.append("\tEndProjectSection\n")
+                
+                # Insert dependency block before EndProject (lines[j])
+                # We need to slice new_lines carefully or just wait and use a different approach
+                # Since we already appended line i, we just continue
+                pass 
+            
+            if found_end and not has_deps:
+                # We will handle the insertion in a second pass for simplicity or refine this one
+                pass
+
+        i += 1
+    
+    # Second pass approach is safer for line manipulation
+    final_output = []
+    skip_until_endproject = False # In case we want to REPLACE existing deps
+    
+    for i, line in enumerate(lines):
+        match = proj_regex.match(line.strip())
+        if match and match.group(1).upper() == "FAE04EC0-301F-11D3-BF4B-00C04F79EFBC":
+            # Managed project
+            final_output.append(line)
+            
+            # Check if it already has deps
+            has_deps = False
+            j = i + 1
+            while j < len(lines) and not lines[j].strip().startswith("Project("):
+                if "ProjectSection(ProjectDependencies)" in lines[j]:
+                    has_deps = True
+                if lines[j].strip() == "EndProject":
+                    break
+                j += 1
+            
+            if not has_deps:
+                final_output.append("\tProjectSection(ProjectDependencies) = postProject\n")
+                for g in native_guids:
+                    final_output.append(f"\t\t{{{g}}} = {{{g}}}\n")
+                final_output.append("\tEndProjectSection\n")
+        else:
+            final_output.append(line)
+
+    with open(sln_path, "w", encoding="utf-8-sig") as f:
+        f.writelines(final_output)
+
 def extract_csproj_paths_from_sln(sln_path):
     csproj_paths = []
     if not os.path.exists(sln_path):
@@ -132,5 +242,8 @@ for csproj in csproj_files:
         update_output_path(csproj, sln_name, output_base)
     else:
         print(f"Warning: .csproj not found: {csproj}")
+
+print(f"Injecting dependencies into {sln_file} ...")
+inject_sln_dependencies(sln_file)
 
 print("Done.")
