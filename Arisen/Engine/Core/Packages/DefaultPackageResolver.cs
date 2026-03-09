@@ -43,8 +43,9 @@ public class DefaultPackageResolver : IPackageResolver
 
         if (Directory.Exists(path))
         {
-            Logger.Log($"[PackageResolver] Using local directory: {path}");
-            return path;
+            string fullPath = Path.GetFullPath(path);
+            Logger.Log($"[PackageResolver] Using local directory: {fullPath}");
+            return fullPath;
         }
 
         if (File.Exists(path) && (path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)))
