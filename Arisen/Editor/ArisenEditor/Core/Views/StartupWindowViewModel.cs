@@ -9,7 +9,7 @@ using Avalonia.Controls;
 using Avalonia.ReactiveUI;
 using MsBox.Avalonia.ViewModels.Commands;
 using ReactiveUI;
-using Serialization;
+using ArisenEngine.Core.Serialization;
 
 namespace ArisenEditor.ViewModels.Startup
 {

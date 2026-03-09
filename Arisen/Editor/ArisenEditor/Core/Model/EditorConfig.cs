@@ -1,4 +1,4 @@
-﻿using Serialization.Interface;
+﻿using ArisenEngine.Core.Serialization;
 using System;
 using System.Collections.Generic;
 using YamlDotNet.Serialization;

@@ -46,14 +46,12 @@ if exist "%SLN_PATH%" (
     REM Resolve absolute paths to project files
     for %%I in ("!SCRIPT_DIR!\..\..\..\BindingGenerator\BindingGenerator.csproj") do set "BINDING_GENERATOR=%%~fI"
     for %%I in ("!SCRIPT_DIR!\..\..\..\AutoBinding\AutoBinding.csproj") do set "AUTO_BINDING=%%~fI"
-    for %%I in ("!SCRIPT_DIR!\..\..\..\Serialization\Serialization\Serialization.csproj") do set "SERIALIZATION=%%~fI"
     for %%I in ("!SCRIPT_DIR!\..\..\..\Engine\ArisenEngine.csproj") do set "ARISEN_ENGINE=%%~fI"
     for %%I in ("!SCRIPT_DIR!\..\..\..\Test\CSharpEngineTest\CSharpEngineTest.csproj") do set "ARISEN_ENGINE_TEST=%%~fI"
 
     echo SLN_PATH: !SLN_PATH!
     echo BINDING_GENERATOR: !BINDING_GENERATOR!
     echo AUTO_BINDING: !AUTO_BINDING!
-    echo SERIALIZATION: !SERIALIZATION!
     echo ARISEN_ENGINE: !ARISEN_ENGINE!
     echo ARISEN_ENGINE_TEST: !ARISEN_ENGINE_TEST!
 
@@ -68,8 +66,8 @@ if exist "%SLN_PATH%" (
         set "EXIT_CODE=1"
         goto :cleanup
     )
-    if "!SERIALIZATION!"=="" (
-        echo ERROR: SERIALIZATION path is empty.
+    if "!AUTO_BINDING!"=="" (
+        echo ERROR: AUTO_BINDING path is empty.
         set "EXIT_CODE=1"
         goto :cleanup
     )
@@ -95,8 +93,8 @@ if exist "%SLN_PATH%" (
         set "EXIT_CODE=1"
         goto :cleanup
     )
-    if not exist "!SERIALIZATION!" (
-        echo ERROR: Missing project ^(Serialization^) at !SCRIPT_DIR!\..\..\..\Serialization\Serialization\Serialization.csproj
+    if not exist "!AUTO_BINDING!" (
+        echo ERROR: Missing project ^(AutoBinding^) at !SCRIPT_DIR!\..\..\..\AutoBinding\AutoBinding.csproj
         set "EXIT_CODE=1"
         goto :cleanup
     )
@@ -123,7 +121,6 @@ if exist "%SLN_PATH%" (
     REM Use relative paths so the solution stays portable
     set "REL_BINDING_GENERATOR=..\..\..\BindingGenerator\BindingGenerator.csproj"
     set "REL_AUTO_BINDING=..\..\..\AutoBinding\AutoBinding.csproj"
-    set "REL_SERIALIZATION=..\..\..\Serialization\Serialization\Serialization.csproj"
     set "REL_ARISEN_ENGINE=..\..\..\Engine\ArisenEngine.csproj"
     set "REL_ARISEN_ENGINE_TEST=..\..\..\Test\CSharpEngineTest\CSharpEngineTest.csproj"
 
@@ -133,8 +130,8 @@ if exist "%SLN_PATH%" (
     echo Adding !REL_AUTO_BINDING! to !SLN_FILE! (--in-root)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_AUTO_BINDING!"
 
-    echo Adding !REL_SERIALIZATION! to !SLN_FILE! (--in-root)
-    dotnet sln "!SLN_FILE!" add --in-root "!REL_SERIALIZATION!"
+    echo Adding !REL_AUTO_BINDING! to !SLN_FILE! (--in-root)
+    dotnet sln "!SLN_FILE!" add --in-root "!REL_AUTO_BINDING!"
 
     echo Adding !REL_ARISEN_ENGINE! to !SLN_FILE! (--in-root)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_ENGINE!"

@@ -39,8 +39,12 @@ public class PackageSubsystem : IEngineSubsystem
     private void DiscoverAndLoadPackages()
     {
         var manifests = new List<(string ManifestPath, PackageSource Source, PackageManifest Manifest)>();
+        var projectSubsystem = EngineKernel.Instance.GetSubsystem<ProjectSubsystem>();
+        var projectPackages = projectSubsystem?.ActiveProject?.Packages ?? new List<Lifecycle.PackageRequirement>();
+        var projectPackageIds = projectPackages.Select(p => p.Id).ToHashSet();
 
-        // Pass 1: Scan all manifests
+        // TODO: Implement actual remote resolution via IPackageResolver here
+        // For now, we assume packages are already synchronized to the discovery paths
         foreach (var category in m_CategorySearchPaths)
         {
             var source = category.Key;
@@ -57,7 +61,15 @@ public class PackageSubsystem : IEngineSubsystem
                         var manifest = TryReadManifest(manifestPath);
                         if (manifest != null)
                         {
-                            manifests.Add((manifestPath, source, manifest));
+                            // Filter: Always load Builtin, but only load Project/External if requested by the active project
+                            if (source == PackageSource.Builtin || projectPackageIds.Contains(manifest.Id))
+                            {
+                                manifests.Add((manifestPath, source, manifest));
+                            }
+                            else
+                            {
+                                Logger.Log($"[PackageSubsystem] Skipping optional package: {manifest.Id} (Not required by active project)");
+                            }
                         }
                     }
                 }

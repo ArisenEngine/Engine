@@ -1,4 +1,5 @@
 using ArisenEngine.Core.Diagnostics;
+using ArisenEngine.Core.Serialization;
 
 namespace ArisenEngine.ShaderLab;
 
@@ -161,7 +162,7 @@ public class Lexer
         // TODO: 测试用
         RemovePropertiesBlock();
 
-        Serialization.SerializationUtil.Serialize(m_Tokens, "tokens.token");
+        SerializationUtil.Serialize(m_Tokens, "tokens.token");
     }
 
     private void RemovePropertiesBlock()

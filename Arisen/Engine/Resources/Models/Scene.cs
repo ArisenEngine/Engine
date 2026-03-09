@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Serialization.Interface;
+using ArisenEngine.Core.Serialization;
 
 namespace ArisenEngine.Models
 {

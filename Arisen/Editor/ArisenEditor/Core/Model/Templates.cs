@@ -1,5 +1,5 @@
 ﻿
-using Serialization.Interface;
+using ArisenEngine.Core.Serialization;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;

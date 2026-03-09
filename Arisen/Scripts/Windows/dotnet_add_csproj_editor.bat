@@ -39,7 +39,6 @@ if exist "%SLN_PATH%" (
     REM Resolve absolute project paths
     for %%I in ("%SCRIPT_DIR%\..\..\BindingGenerator\BindingGenerator.csproj") do set "BINDING_GENERATOR=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\AutoBinding\AutoBinding.csproj") do set "AUTO_BINDING=%%~fI"
-    for %%I in ("%SCRIPT_DIR%\..\..\Serialization\Serialization\Serialization.csproj") do set "SERIALIZATION=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\External\ArisenDAG\ArisenDAG.csproj") do set "ARISEN_DAG=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\Engine\ArisenEngine.csproj") do set "ARISEN_ENGINE=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\Editor\ArisenEditor\ArisenEditor.csproj") do set "ARISEN_EDITOR=%%~fI"
@@ -61,7 +60,6 @@ if exist "%SLN_PATH%" (
     echo SLN_PATH: !SLN_PATH!
     echo BINDING_GENERATOR: !BINDING_GENERATOR!
     echo AUTO_BINDING: !AUTO_BINDING!
-    echo SERIALIZATION: !SERIALIZATION!
     echo ARISEN_DAG: !ARISEN_DAG!
     echo ARISEN_ENGINE: !ARISEN_ENGINE!
     echo ARISEN_EDITOR: !ARISEN_EDITOR!
@@ -69,7 +67,7 @@ if exist "%SLN_PATH%" (
     echo ARISEN_EDITOR_DESKTOP: !ARISEN_EDITOR_DESKTOP!
 
     REM Basic existence checks
-    for %%V in (BINDING_GENERATOR AUTO_BINDING SERIALIZATION ARISEN_DAG ARISEN_ENGINE ARISEN_EDITOR ARISEN_EDITOR_FRAMEWORK ARISEN_EDITOR_DESKTOP) do (
+    for %%V in (BINDING_GENERATOR AUTO_BINDING ARISEN_DAG ARISEN_ENGINE ARISEN_EDITOR ARISEN_EDITOR_FRAMEWORK ARISEN_EDITOR_DESKTOP) do (
         if "!%%V!"=="" (
             echo ERROR: Path for %%V is empty.
             set "EXIT_CODE=1"
@@ -93,7 +91,6 @@ if exist "%SLN_PATH%" (
     REM Relative paths for portability
     set "REL_BINDING_GENERATOR=..\..\..\BindingGenerator\BindingGenerator.csproj"
     set "REL_AUTO_BINDING=..\..\..\AutoBinding\AutoBinding.csproj"
-    set "REL_SERIALIZATION=..\..\..\Serialization\Serialization\Serialization.csproj"
     set "REL_ARISEN_DAG=..\..\..\External\ArisenDAG\ArisenDAG.csproj"
     set "REL_ARISEN_ENGINE=..\..\..\Engine\ArisenEngine.csproj"
     set "REL_ARISEN_EDITOR=..\..\..\Editor\ArisenEditor\ArisenEditor.csproj"
@@ -105,9 +102,6 @@ if exist "%SLN_PATH%" (
 
     echo Adding !REL_AUTO_BINDING! to !SLN_FILE! (--in-root)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_AUTO_BINDING!"
-
-    echo Adding !REL_SERIALIZATION! to !SLN_FILE! (--in-root)
-    dotnet sln "!SLN_FILE!" add --in-root "!REL_SERIALIZATION!"
 
     echo Adding !REL_ARISEN_DAG! to !SLN_FILE! (--in-root)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_DAG!"
