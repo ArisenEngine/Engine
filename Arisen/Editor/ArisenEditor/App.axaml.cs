@@ -123,7 +123,10 @@ namespace ArisenEditor
                 });
             };
 
-            var context = await bootstrapper.RunAsync(projectPath);
+            var context = await bootstrapper.RunAsync(projectPath, step =>
+            {
+                Logger.Log($"Bootstrapper::Execute {step.Name}");
+            });
 
             if (context.Success)
             {
