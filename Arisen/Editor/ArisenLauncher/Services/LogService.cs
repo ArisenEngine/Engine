@@ -18,14 +18,7 @@ public class LogService
 
     public LogService()
     {
-        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        string logDir = Path.Combine(appData, "ArisenEngine");
-        
-        if (!Directory.Exists(logDir))
-        {
-            Directory.CreateDirectory(logDir);
-        }
-
+        string logDir = AppContext.BaseDirectory;
         _logFilePath = Path.Combine(logDir, "launcher.log");
         
         // Start fresh log session
