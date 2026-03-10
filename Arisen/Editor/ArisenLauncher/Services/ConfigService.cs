@@ -30,8 +30,7 @@ public class ConfigService
     public ConfigService(LogService logService)
     {
         _logService = logService;
-        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        _settingsPath = Path.Combine(appData, "ArisenEngine", "launcher_settings.json");
+        _settingsPath = Path.Combine(AppContext.BaseDirectory, "launcher_settings.json");
         Load();
     }
 

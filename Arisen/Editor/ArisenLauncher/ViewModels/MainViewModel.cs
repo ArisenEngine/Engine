@@ -1,5 +1,7 @@
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using ArisenLauncher.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -16,8 +18,15 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _statusText = "Ready";
 
+    [ObservableProperty]
+    private EngineInstance? _selectedEngine;
+
     public ObservableCollection<EngineInstance> Engines { get; } = new();
     public ObservableCollection<string> RecentProjects { get; } = new();
+
+    // UI Communication Events
+    public event Action<bool>? RequestWindowStateChange; // true = show, false = minimize
+    public Func<Task<string?>>? RequestFolderPickerAsync;
 
     public MainViewModel(
         ConfigService configService, 
@@ -29,6 +38,9 @@ public partial class MainViewModel : ObservableObject
         _discoveryService = discoveryService;
         _processService = processService;
         _logService = logService;
+
+        _processService.AllInstancesClosed += OnAllInstancesClosed;
+        _processService.ProcessStarted += OnProcessStarted;
 
         _logService.Info("MainViewModel initialized.");
         LoadData();
@@ -50,35 +62,74 @@ public partial class MainViewModel : ObservableObject
             Engines.Add(engine);
         }
 
+        // Restore selection
+        if (!string.IsNullOrEmpty(_configService.Settings.LastUsedEngineId))
+        {
+            SelectedEngine = Engines.FirstOrDefault(e => e.Id == _configService.Settings.LastUsedEngineId);
+        }
+        
+        if (SelectedEngine == null && Engines.Count > 0)
+        {
+            SelectedEngine = Engines[0];
+        }
+
         RecentProjects.Clear();
         foreach (var proj in _configService.Settings.RecentProjects)
         {
             RecentProjects.Add(proj);
         }
         
-        _logService.Info($"UI Refreshed: {Engines.Count} engines, {RecentProjects.Count} projects found.");
+        _logService.Info($"UI Refreshed: {Engines.Count} engines, {RecentProjects.Count} projects found. Selected: {SelectedEngine?.Version}");
+    }
+
+    partial void OnSelectedEngineChanged(EngineInstance? value)
+    {
+        if (value != null && _configService.Settings.LastUsedEngineId != value.Id)
+        {
+            _configService.Settings.LastUsedEngineId = value.Id;
+            _configService.Save();
+        }
+    }
+
+    private void OnProcessStarted()
+    {
+        _logService.Info("Editor started, minimizing launcher.");
+        RequestWindowStateChange?.Invoke(false);
+    }
+
+    private void OnAllInstancesClosed()
+    {
+        _logService.Info("No more editors running, restoring launcher.");
+        RequestWindowStateChange?.Invoke(true);
     }
 
     [RelayCommand]
-    private void AddEngine(string path)
+    private async Task AddEngine()
     {
-        _logService.Info($"Manually adding engine from path: {path}");
-        if (_discoveryService.ValidateAndAdd(path, "Manual"))
+        if (RequestFolderPickerAsync != null)
         {
-            StatusText = "Engine added successfully.";
-            RefreshLists();
-        }
-        else
-        {
-            _logService.Warning($"Failed to validate engine folder: {path}");
-            StatusText = "Invalid engine folder.";
+            string? path = await RequestFolderPickerAsync();
+            if (!string.IsNullOrEmpty(path))
+            {
+                _logService.Info($"User selected engine folder: {path}");
+                if (_discoveryService.ValidateAndAdd(path, "Manual", isManual: true))
+                {
+                    StatusText = "Engine added successfully.";
+                    RefreshLists();
+                }
+                else
+                {
+                    _logService.Warning($"Failed to validate engine folder: {path}");
+                    StatusText = "Invalid engine folder. Ensure ArisenEngine.dll is present.";
+                }
+            }
         }
     }
 
     [RelayCommand]
     private void LaunchProject(string projectPath)
     {
-        var engine = _configService.Settings.EngineVersions.FirstOrDefault();
+        var engine = SelectedEngine;
         if (engine != null)
         {
             _processService.LaunchEditor(engine, projectPath);

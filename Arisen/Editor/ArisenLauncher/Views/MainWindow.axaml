@@ -39,7 +39,7 @@
                    
                    <!-- Engine Version Selector -->
                    <ComboBox ItemsSource="{Binding Engines}" 
-                             SelectedItem="{Binding Engines[0]}"
+                             SelectedItem="{Binding SelectedEngine}"
                              Background="Transparent" BorderThickness="0"
                              HorizontalAlignment="Stretch" Margin="8,0">
                        <ComboBox.ItemTemplate>

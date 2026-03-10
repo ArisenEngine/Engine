@@ -1,16 +1,31 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace ArisenLauncher.Services;
 
 public class LauncherProcessService
 {
     private readonly LogService _logService;
+    private readonly List<Process> _activeProcesses = new();
+    private readonly object _lock = new();
+
+    public event Action? AllInstancesClosed;
+    public event Action? ProcessStarted;
 
     public LauncherProcessService(LogService logService)
     {
         _logService = logService;
+    }
+
+    public int ActiveInstanceCount
+    {
+        get
+        {
+            lock (_lock) return _activeProcesses.Count;
+        }
     }
 
     public void LaunchEditor(EngineInstance engine, string? projectPath = null)
@@ -38,19 +53,42 @@ public class LauncherProcessService
             var process = Process.Start(startInfo);
             if (process != null)
             {
-                _logService.Info($"Editor launched successfully (PID: {process.Id})");
+                lock (_lock)
+                {
+                    _activeProcesses.Add(process);
+                }
                 
-                // Monitor process in background
+                _logService.Info($"Editor launched successfully (PID: {process.Id}). Active instances: {ActiveInstanceCount}");
+                ProcessStarted?.Invoke();
+
                 process.EnableRaisingEvents = true;
                 process.Exited += (s, e) =>
                 {
-                    if (process.ExitCode != 0)
+                    bool lastOne = false;
+                    lock (_lock)
                     {
-                        _logService.Critical($"Editor process exited with error code: {process.ExitCode}");
+                        if (_activeProcesses.Remove(process))
+                        {
+                            if (process.ExitCode != 0)
+                            {
+                                _logService.Critical($"Editor (PID: {process.Id}) exited with error code: {process.ExitCode}");
+                            }
+                            else
+                            {
+                                _logService.Info($"Editor (PID: {process.Id}) exited normally.");
+                            }
+                            
+                            if (_activeProcesses.Count == 0)
+                            {
+                                lastOne = true;
+                            }
+                        }
                     }
-                    else
+
+                    if (lastOne)
                     {
-                        _logService.Info("Editor process exited normally.");
+                        _logService.Info("All Editor instances closed. Triggering restore.");
+                        AllInstancesClosed?.Invoke();
                     }
                 };
             }
