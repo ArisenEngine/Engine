@@ -44,6 +44,8 @@ if exist "%SLN_PATH%" (
     for %%I in ("%SCRIPT_DIR%\..\..\Editor\ArisenEditor\ArisenEditor.csproj") do set "ARISEN_EDITOR=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\External\ArisenEditorFramework\ArisenEditorFramework.csproj") do set "ARISEN_EDITOR_FRAMEWORK=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\Editor\ArisenEditor.Desktop\ArisenEditor.Desktop.csproj") do set "ARISEN_EDITOR_DESKTOP=%%~fI"
+    for %%I in ("%SCRIPT_DIR%\..\..\Editor\ArisenLauncher\ArisenLauncher.csproj") do set "ARISEN_LAUNCHER=%%~fI"
+    for %%I in ("%SCRIPT_DIR%\..\..\Editor\ArisenLauncher.Desktop\ArisenLauncher.Desktop.csproj") do set "ARISEN_LAUNCHER_DESKTOP=%%~fI"
     REM Avalonia Dock set - correct paths
     for %%I in ("%SCRIPT_DIR%\..\..\3rdparty\Ava.Dock\src\Avalonia.Controls.ProportionalStackPanel\Avalonia.Controls.ProportionalStackPanel.csproj") do set "AVA_ProportionalStack=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\3rdparty\Ava.Dock\src\Avalonia.Controls.Recycling\Avalonia.Controls.Recycling.csproj") do set "AVA_Recycling=%%~fI"
@@ -67,7 +69,7 @@ if exist "%SLN_PATH%" (
     echo ARISEN_EDITOR_DESKTOP: !ARISEN_EDITOR_DESKTOP!
 
     REM Basic existence checks
-    for %%V in (BINDING_GENERATOR AUTO_BINDING ARISEN_DAG ARISEN_ENGINE ARISEN_EDITOR ARISEN_EDITOR_FRAMEWORK ARISEN_EDITOR_DESKTOP) do (
+    for %%V in (BINDING_GENERATOR AUTO_BINDING ARISEN_DAG ARISEN_ENGINE ARISEN_EDITOR ARISEN_EDITOR_FRAMEWORK ARISEN_EDITOR_DESKTOP ARISEN_LAUNCHER ARISEN_LAUNCHER_DESKTOP) do (
         if "!%%V!"=="" (
             echo ERROR: Path for %%V is empty.
             set "EXIT_CODE=1"
@@ -96,6 +98,8 @@ if exist "%SLN_PATH%" (
     set "REL_ARISEN_EDITOR=..\..\..\Editor\ArisenEditor\ArisenEditor.csproj"
     set "REL_ARISEN_EDITOR_FRAMEWORK=..\..\..\External\ArisenEditorFramework\ArisenEditorFramework.csproj"
     set "REL_ARISEN_EDITOR_DESKTOP=..\..\..\Editor\ArisenEditor.Desktop\ArisenEditor.Desktop.csproj"
+    set "REL_ARISEN_LAUNCHER=..\..\..\Editor\ArisenLauncher\ArisenLauncher.csproj"
+    set "REL_ARISEN_LAUNCHER_DESKTOP=..\..\..\Editor\ArisenLauncher.Desktop\ArisenLauncher.Desktop.csproj"
 
     echo Adding !REL_BINDING_GENERATOR! to !SLN_FILE! (--in-root)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_BINDING_GENERATOR!"
@@ -117,6 +121,12 @@ if exist "%SLN_PATH%" (
 
     echo Adding !REL_ARISEN_EDITOR_DESKTOP! to !SLN_FILE! (--in-root)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_EDITOR_DESKTOP!"
+
+    echo Adding !REL_ARISEN_LAUNCHER! to !SLN_FILE! (--in-root)
+    dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_LAUNCHER!"
+
+    echo Adding !REL_ARISEN_LAUNCHER_DESKTOP! to !SLN_FILE! (--in-root)
+    dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_LAUNCHER_DESKTOP!"
 
     REM Avalonia Dock projects are optional; add if exist
     for %%P in ("%AVA_ProportionalStack%" "%AVA_Recycling%" "%AVA_RecyclingModel%" "%AVA_MarkupExt%" "%AVA_DockAvalonia%" "%AVA_DockModel%" "%AVA_DockModelAvalonia%" "%AVA_DockModelMvvm%" "%AVA_DockModelReactiveUI%" "%AVA_DockSerializer%" "%AVA_DockSettings%") do (
