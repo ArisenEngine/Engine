@@ -7,7 +7,7 @@ namespace ArisenEditor.Core.Views;
 
 internal class MainEditorHostViewModel : ReactiveObject
 {
-    private readonly DockFactory m_DockFactory = new DockFactory();
+    private readonly ArisenEditorFramework.Docking.LayoutManager m_LayoutManager;
     private IRootDock? m_Layout;
     
     public IRootDock? Layout
@@ -16,16 +16,16 @@ internal class MainEditorHostViewModel : ReactiveObject
         set { this.RaiseAndSetIfChanged(ref m_Layout, value); }
     }
 
-    public string ProjectName => EditorProjectContext.Instance.CurrentProject.Name;
-    public string ProjectPath => EditorProjectContext.Instance.CurrentProject.ProjectPath;
+    public string ProjectName => ArisenEditor.Core.EditorProjectContext.Instance.CurrentProject.Name;
+    public string ProjectPath => ArisenEditor.Core.EditorProjectContext.Instance.CurrentProject.ProjectPath;
     
     internal MainEditorHostViewModel()
     {
-        Layout = m_DockFactory.CreateLayout();
-        if (Layout is { } root)
-        {
-            m_DockFactory.InitLayout(root);
-        }
+        m_LayoutManager = new ArisenEditorFramework.Docking.LayoutManager();
+        m_LayoutManager.Initialize();
+        Layout = m_LayoutManager.Layout;
+        
+        m_LayoutManager.LayoutRefresh += (newLayout) => { Layout = newLayout; };
     }
     
     public void CloseLayout()

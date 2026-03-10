@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 
 using ArisenEditorFramework.Core;
+using ArisenLauncher.Models;
 
 namespace ArisenLauncher.Services;
 
@@ -19,14 +20,14 @@ public class ProjectService
         _configService = configService;
     }
 
-    public ProjectMetadata? LoadProject(string projectPath)
+    public LauncherProjectMetadata? LoadProject(string projectPath)
     {
         if (!File.Exists(projectPath)) return null;
 
         try
         {
             string json = File.ReadAllText(projectPath);
-            var metadata = JsonSerializer.Deserialize<ProjectMetadata>(json);
+            var metadata = JsonSerializer.Deserialize<LauncherProjectMetadata>(json);
             if (metadata != null)
             {
                 metadata.ProjectPath = projectPath;
@@ -66,7 +67,7 @@ public class ProjectService
             }
 
             string projectFile = Path.Combine(folderPath, $"{name}.arisenproj");
-            var metadata = new ProjectMetadata
+            var metadata = new LauncherProjectMetadata
             {
                 Name = name,
                 EngineVersionId = engine.Id,

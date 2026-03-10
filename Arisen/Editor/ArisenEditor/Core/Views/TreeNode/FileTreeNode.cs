@@ -50,10 +50,10 @@ internal class FileTreeNode : TreeNodeBase
 
         }
         
-        ArisenFileSystemWatcher.Changed += OnChanged;
-        ArisenFileSystemWatcher.Created += OnCreated;
-        ArisenFileSystemWatcher.Deleted += OnDeleted;
-        ArisenFileSystemWatcher.Renamed += OnRenamed;
+        ArisenEditorFramework.Utilities.ArisenFileSystemWatcher.Changed += OnChanged;
+        ArisenEditorFramework.Utilities.ArisenFileSystemWatcher.Created += OnCreated;
+        ArisenEditorFramework.Utilities.ArisenFileSystemWatcher.Deleted += OnDeleted;
+        ArisenEditorFramework.Utilities.ArisenFileSystemWatcher.Renamed += OnRenamed;
 
         return result;
     }
@@ -196,7 +196,7 @@ internal class FileTreeNode : TreeNodeBase
             {
                 Name = m_UndoName;
                 Path = oldPath;
-                var _ = MessageBoxUtility.ShowMessageBoxStandard("Rename failed", $"{e.Message}");
+                var _ = ArisenEditorFramework.Utilities.MessageBoxUtility.ShowMessageBoxStandard("Rename failed", $"{e.Message}");
             }
         }
 

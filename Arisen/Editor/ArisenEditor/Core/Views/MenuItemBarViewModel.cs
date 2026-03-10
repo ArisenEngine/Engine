@@ -1,6 +1,7 @@
-using ArisenEditor.Utilities;
+using ArisenEditorFramework.Utilities;
 using Avalonia.Controls;
 using ReactiveUI;
+using System.Reflection;
 
 namespace ArisenEditor.Core.Views;
 
@@ -16,6 +17,6 @@ internal class MenuItemBarViewModel : ReactiveObject
     
     public MenuItemBarViewModel()
     {
-        Menu = ControlsFactory.CreateMenu(ControlsFactory.MenuType.Header);
+        Menu = ControlsFactory.CreateMenu(Assembly.GetExecutingAssembly(), ControlsFactory.MenuType.Header);
     }
 }

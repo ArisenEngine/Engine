@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using ArisenLauncher.Services;
 using ArisenEditorFramework.Core;
+using ArisenLauncher.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -24,7 +25,7 @@ public partial class MainViewModel : ObservableObject
     private EngineInstance? _selectedEngine;
 
     public ObservableCollection<EngineInstance> Engines { get; } = new();
-    public ObservableCollection<ProjectMetadata> RecentProjects { get; } = new();
+    public ObservableCollection<LauncherProjectMetadata> RecentProjects { get; } = new();
 
     // UI Communication Events
     public event Action<bool>? RequestWindowStateChange; // true = show, false = minimize
@@ -168,7 +169,7 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void LaunchProject(ProjectMetadata project)
+    private void LaunchProject(LauncherProjectMetadata project)
     {
         var engine = SelectedEngine;
         if (engine != null)
