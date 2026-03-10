@@ -1,9 +1,10 @@
-using ArisenEditor.Utilities;
+using ArisenEditorFramework.Utilities;
 using ArisenEditor.ViewModels;
 using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using System.Reflection;
 
 namespace ArisenEditor.Views;
 
@@ -29,7 +30,7 @@ public partial class ContentView : UserControl
         FolderTree.Bind(TreeDataGrid.SourceProperty, new Binding(nameof(m_ViewModel.FolderSource)));
         
         // Assets Tree
-        ContentTree.ContextMenu = ControlsFactory.CreateContextMenu(ControlsFactory.MenuType.Project);
+        ContentTree.ContextMenu = ControlsFactory.CreateContextMenu(Assembly.GetExecutingAssembly(), ControlsFactory.MenuType.Project);
 
         ContentTree.DataContext = m_ViewModel;
         ContentTree.Bind(TreeDataGrid.SourceProperty, new Binding(nameof(m_ViewModel.ContentSource)));
@@ -48,7 +49,7 @@ public partial class ContentView : UserControl
     {
         if (args != null && args.Row != null && args.Row.ContextMenu == null)
         {
-            args.Row.ContextMenu = ControlsFactory.CreateContextMenu(ControlsFactory.MenuType.Project);
+            args.Row.ContextMenu = ControlsFactory.CreateContextMenu(Assembly.GetExecutingAssembly(), ControlsFactory.MenuType.Project);
         }
     }
         

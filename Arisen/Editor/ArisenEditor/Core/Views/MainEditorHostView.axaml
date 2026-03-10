@@ -16,16 +16,80 @@
         </view:MainEditorHostViewModel>
         </Design.DataContext>
         
-        <Grid RowDefinitions="Auto, 1000, Auto">
-                <StackPanel Orientation="Vertical">
-                        <view:MenuItemBarView>
-                        </view:MenuItemBarView>
-                        <view:ToolBarView>
-                        </view:ToolBarView>
+    <Grid RowDefinitions="Auto, Auto, *, Auto" Background="#101622">
+        <!-- Header -->
+        <Border BorderBrush="#282e39" BorderThickness="0,0,0,1" Padding="12,6" Background="#101622">
+            <Grid ColumnDefinitions="Auto, *, Auto">
+                <StackPanel Orientation="Horizontal" Spacing="20">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Border Background="#135bec" Width="24" Height="24" CornerRadius="4">
+                            <Path Data="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Path.RenderTransform>
+                                    <ScaleTransform ScaleX="0.6" ScaleY="0.6" />
+                                </Path.RenderTransform>
+                            </Path>
+                        </Border>
+                        <TextBlock Text="Arisen Engine" Foreground="White" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <view:MenuItemBarView VerticalAlignment="Center" />
                 </StackPanel>
-                <controls:DockControl Grid.Row="1" Margin="1" Layout="{Binding Layout}"></controls:DockControl>
-                <StackPanel Grid.Row="2" Orientation="Horizontal">
-                        
+                
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="15">
+                    <Border Background="#181e2a" BorderBrush="#282e39" BorderThickness="1" CornerRadius="4" Padding="8,2">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                             <Path Data="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" Fill="#5c6b89" VerticalAlignment="Center">
+                                 <Path.RenderTransform>
+                                     <ScaleTransform ScaleX="0.5" ScaleY="0.5" />
+                                 </Path.RenderTransform>
+                             </Path>
+                             <TextBox Background="Transparent" BorderThickness="0" Watermark="Search components..." FontSize="12" Width="150" />
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
-        </Grid>
+            </Grid>
+        </Border>
+
+        <!-- Toolbar -->
+        <Border Grid.Row="1" BorderBrush="#282e39" BorderThickness="0,0,0,1" Padding="12,4" Background="#101622">
+            <Grid ColumnDefinitions="Auto, *, Auto">
+                <view:ToolBarView />
+                
+                <Border Grid.Column="1" HorizontalAlignment="Center" Background="#181e2a" CornerRadius="8" BorderBrush="#282e39" BorderThickness="1" Padding="4">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="▶" Foreground="#5c6b89" Background="Transparent" Padding="8,4" />
+                        <Button Content="⏸" Foreground="#5c6b89" Background="Transparent" Padding="8,4" />
+                        <Button Content="■" Foreground="#5c6b89" Background="Transparent" Padding="8,4" />
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+                    <Button Content="Build" Background="#135bec" Foreground="White" FontSize="12" FontWeight="Bold" Padding="12,4" CornerRadius="4" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Workspace -->
+        <controls:DockControl Grid.Row="2" Margin="1" Layout="{Binding Layout}"></controls:DockControl>
+
+        <!-- Footer -->
+        <Border Grid.Row="3" Height="24" BorderBrush="#282e39" BorderThickness="0,1,0,0" Background="#101622" Padding="12,0">
+            <Grid ColumnDefinitions="Auto, *, Auto">
+                <StackPanel Orientation="Horizontal" Spacing="15">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Ellipse Width="8" Height="8" Fill="#135bec" VerticalAlignment="Center" />
+                        <TextBlock Text="Engine Ready" Foreground="#135bec" FontSize="10" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <Separator Width="1" Height="12" Background="#282e39" />
+                    <TextBlock Text="AvaloniaUI 11.2.4" Foreground="#5c6b89" FontSize="10" VerticalAlignment="Center" />
+                </StackPanel>
+                
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="15">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <TextBlock Text="Storage:" Foreground="#5c6b89" FontSize="10" VerticalAlignment="Center" />
+                        <TextBlock Text="2.4 GB / 16 GB" Foreground="White" FontSize="10" VerticalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
 </Window>

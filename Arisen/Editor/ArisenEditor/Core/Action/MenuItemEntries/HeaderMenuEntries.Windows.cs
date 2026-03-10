@@ -1,4 +1,4 @@
-using ArisenEditor.Attributes;
+using ArisenEditorFramework.Attributes;
 
 namespace ArisenEditor.Internal.MenuItemEntries;
 

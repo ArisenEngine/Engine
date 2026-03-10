@@ -8,7 +8,11 @@ using Avalonia.Markup.Xaml;
 using System.Threading.Tasks;
 using ArisenEditor.Core.Views;
 using ArisenEditor.Themes;
-using ArisenEditorFramework.Core;
+using ArisenEditor.Core.Models;
+using ArisenEditor.Core.Lifecycle.BootSteps;
+using ArisenEditorFramework.Lifecycle;
+using ArisenEditorFramework.Utilities;
+using ArisenEditorFramework.UI.Common;
 using ArisenEditor.ViewModels;
 using Avalonia.Controls;
 using ArisenEngine;
@@ -53,7 +57,7 @@ namespace ArisenEditor
 
                 if (!string.IsNullOrEmpty(projectPath) && File.Exists(projectPath))
                 {
-                    LoadProjectAndLaunch(desktop, projectPath);
+                    _ = ExecuteBootstrapSequence(desktop, projectPath);
                 }
                 else
                 {
@@ -67,24 +71,10 @@ namespace ArisenEditor
 
         private async Task ShowPickerAndLaunch(IClassicDesktopStyleApplicationLifetime desktop)
         {
-            // We need a temporary window to host the picker and act as MainWindow
-            var tempWindow = new Window 
-            { 
-                Width = 1, 
-                Height = 1, 
-                WindowState = WindowState.Minimized, 
-                ShowInTaskbar = false,
-                SystemDecorations = SystemDecorations.None,
-                Opacity = 0
-            };
-            
-            // Set this as MainWindow so utilities can find it
-            desktop.MainWindow = tempWindow;
-            tempWindow.Show();
-            
+            // Use native folder picker for project selection
             try 
             {
-                var paths = await ArisenEditor.Utilities.FileSystemUtilities.BrowserDirectory("Select Arisen Project Folder");
+                var paths = await ArisenEditorFramework.Utilities.FileSystemUtilities.BrowserDirectory("Select Arisen Project Folder");
                 if (paths == null || paths.Count == 0)
                 {
                     desktop.Shutdown();
@@ -96,53 +86,81 @@ namespace ArisenEditor
 
                 if (projectFiles.Length == 0)
                 {
-                    await ArisenEditor.Utilities.MessageBoxUtility.ShowMessageBoxStandard("Error", "No .arisenproj file found in the selected folder.");
+                    await ArisenEditorFramework.Utilities.MessageBoxUtility.ShowMessageBoxStandard("Error", "No .arisenproj file found in the selected folder.");
                     desktop.Shutdown();
                     return;
                 }
 
-                // If multiple, just take the first one for now
                 string projectPath = projectFiles[0];
-                LoadProjectAndLaunch(desktop, projectPath);
-                
-                // Close temp window after real one is shown
-                tempWindow.Close();
+                await ExecuteBootstrapSequence(desktop, projectPath);
             }
             catch (Exception ex)
             {
-                await ArisenEditor.Utilities.MessageBoxUtility.ShowMessageBoxStandard("Error", $"An error occurred during project selection: {ex.Message}");
+                await ArisenEditorFramework.Utilities.MessageBoxUtility.ShowMessageBoxStandard("Error", $"An error occurred during project selection: {ex.Message}");
                 desktop.Shutdown();
             }
         }
 
-        private void LoadProjectAndLaunch(IClassicDesktopStyleApplicationLifetime desktop, string projectPath)
+        private async Task ExecuteBootstrapSequence(IClassicDesktopStyleApplicationLifetime desktop, string projectPath)
         {
-            try 
+            var loadingWindow = new LoadingWindow();
+            desktop.MainWindow = loadingWindow;
+            loadingWindow.Show();
+
+            var bootstrapper = new Bootstrapper();
+            bootstrapper.AddStep(new EnvironmentValidationStep());
+            bootstrapper.AddStep(new ProjectSynthesisStep());
+            bootstrapper.AddStep(new DependencyConvergenceStep());
+            bootstrapper.AddStep(new DataFabricStep());
+            bootstrapper.AddStep(new HardwareWarmupStep());
+            bootstrapper.AddStep(new StateReconstructionStep());
+            bootstrapper.AddStep(new ExecutionHandoverStep());
+
+            bootstrapper.ProgressChanged += (stage, status, progress) => {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                    var stageText = loadingWindow.FindControl<TextBlock>("StageText");
+                    var statusText = loadingWindow.FindControl<TextBlock>("StatusText");
+                    var progressBar = loadingWindow.FindControl<ArisenEditorFramework.UI.Controls.LoadingBar>("ProgressBar");
+
+                    if (stageText != null) stageText.Text = stage;
+                    if (statusText != null) statusText.Text = status;
+                    if (progressBar != null) progressBar.Progress = progress;
+                });
+            };
+
+            var context = await bootstrapper.RunAsync(projectPath);
+
+            if (context.Success)
             {
-                // This is a simplified initialization. In a full system, 
-                // we'd use a ProjectService to load the metadata.
-                var metadata = new ProjectMetadata 
-                { 
-                    Name = Path.GetFileNameWithoutExtension(projectPath),
-                    ProjectPath = projectPath 
-                };
-                
-                ArisenEditor.Core.EditorProjectContext.Initialize(metadata);
-                
-                var viewModel = new MainEditorHostViewModel();
-                desktop.MainWindow = new Window
-                {
-                    Title = $"Arisen Editor - {metadata.Name}",
-                    Content = new MainDockView { DataContext = viewModel },
-                    WindowStartupLocation = WindowStartupLocation.CenterScreen
-                };
-                desktop.MainWindow.Show();
+                LaunchEditor(desktop, projectPath);
+                loadingWindow.Close();
             }
-            catch (Exception ex)
+            else
             {
-                Console.WriteLine($"Failed to launch editor: {ex.Message}");
+                await ArisenEditorFramework.Utilities.MessageBoxUtility.ShowMessageBoxStandard("Bootstrap Failed", context.ErrorMessage);
                 desktop.Shutdown();
             }
+        }
+
+        private void LaunchEditor(IClassicDesktopStyleApplicationLifetime desktop, string projectPath)
+        {
+            var metadata = new EngineProjectMetadata 
+            { 
+                Name = Path.GetFileNameWithoutExtension(projectPath),
+                ProjectPath = projectPath 
+            };
+            
+            ArisenEditor.Core.EditorProjectContext.Initialize(metadata);
+            
+            var viewModel = new MainEditorHostViewModel();
+            desktop.MainWindow = new Window
+            {
+                Title = $"Arisen Editor - {metadata.Name}",
+                Content = new MainDockView { DataContext = viewModel },
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                WindowState = WindowState.Maximized
+            };
+            desktop.MainWindow.Show();
         }
 
         public object CreateView(Window window)

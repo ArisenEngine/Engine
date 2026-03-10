@@ -7,6 +7,7 @@ using ArisenEngine.FileSystem;
 using Avalonia;
 using System.Reflection;
 using ArisenEditorFramework.Core;
+using ArisenEditor.Core.Models;
 
 namespace ArisenEditor.GameDev
 {
@@ -174,7 +175,7 @@ namespace ArisenEditor.GameDev
             return false;
         }
 
-        internal static void CreateProjectSolution(ProjectMetadata template, string newProjectPath, string newProjectName)
+        internal static void CreateProjectSolution(ProjectMetadataBase template, string newProjectPath, string newProjectName)
         {
             // For templates, ProjectPath might be the folder containing the template files
             var sourcePath = Path.GetDirectoryName(template.ProjectPath) ?? template.ProjectPath;
@@ -191,7 +192,7 @@ namespace ArisenEditor.GameDev
         /// Validation a project
         /// </summary>
         /// <returns></returns>
-        internal static bool ProjectValidation(ProjectMetadata project)
+        internal static bool ProjectValidation(ProjectMetadataBase project)
         {
             string projectDir = Path.GetDirectoryName(project.ProjectPath) ?? string.Empty;
             if (string.IsNullOrEmpty(projectDir) || !Directory.Exists(projectDir))

@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using ArisenEditor.Utilities;
+using ArisenEditorFramework.Utilities;
 using ArisenEngine;
 using ArisenEngine.Core.Lifecycle;
 using Avalonia;
@@ -26,7 +26,7 @@ internal partial class MainEditorHostView : Window
         Title = ArisenApplication.s_ProjectName;
             
         // File Watcher
-        m_FileSystemWatcher = new ArisenFileSystemWatcher();
+        m_FileSystemWatcher = new ArisenFileSystemWatcher(ArisenApplication.s_DataPath);
         
         Dispatcher.UIThread.InvokeAsync(() =>
         {

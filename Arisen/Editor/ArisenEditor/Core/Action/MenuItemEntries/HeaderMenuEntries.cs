@@ -1,6 +1,6 @@
 using System.IO;
 using System.Threading.Tasks;
-using ArisenEditor.Attributes;
+using ArisenEditorFramework.Attributes;
 using ArisenEditor.GameDev;
 using ArisenEditor.Utilities;
 using ArisenEngine;
