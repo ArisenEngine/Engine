@@ -15,6 +15,9 @@ internal class MainEditorHostViewModel : ReactiveObject
         get => m_Layout;
         set { this.RaiseAndSetIfChanged(ref m_Layout, value); }
     }
+
+    public string ProjectName => EditorProjectContext.Instance.CurrentProject.Name;
+    public string ProjectPath => EditorProjectContext.Instance.CurrentProject.ProjectPath;
     
     internal MainEditorHostViewModel()
     {

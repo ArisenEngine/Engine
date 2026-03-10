@@ -101,31 +101,31 @@ if exist "%SLN_PATH%" (
     set "REL_ARISEN_LAUNCHER=..\..\..\Editor\ArisenLauncher\ArisenLauncher.csproj"
     set "REL_ARISEN_LAUNCHER_DESKTOP=..\..\..\Editor\ArisenLauncher.Desktop\ArisenLauncher.Desktop.csproj"
 
-    echo Adding !REL_BINDING_GENERATOR! to !SLN_FILE! (--in-root)
+    echo Adding !REL_BINDING_GENERATOR! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_BINDING_GENERATOR!"
 
-    echo Adding !REL_AUTO_BINDING! to !SLN_FILE! (--in-root)
+    echo Adding !REL_AUTO_BINDING! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_AUTO_BINDING!"
 
-    echo Adding !REL_ARISEN_DAG! to !SLN_FILE! (--in-root)
+    echo Adding !REL_ARISEN_DAG! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_DAG!"
 
-    echo Adding !REL_ARISEN_ENGINE! to !SLN_FILE! (--in-root)
+    echo Adding !REL_ARISEN_ENGINE! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_ENGINE!"
 
-    echo Adding !REL_ARISEN_EDITOR! to !SLN_FILE! (--in-root)
+    echo Adding !REL_ARISEN_EDITOR! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_EDITOR!"
 
-    echo Adding !REL_ARISEN_EDITOR_FRAMEWORK! to !SLN_FILE! (--in-root)
+    echo Adding !REL_ARISEN_EDITOR_FRAMEWORK! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_EDITOR_FRAMEWORK!"
 
-    echo Adding !REL_ARISEN_EDITOR_DESKTOP! to !SLN_FILE! (--in-root)
+    echo Adding !REL_ARISEN_EDITOR_DESKTOP! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_EDITOR_DESKTOP!"
 
-    echo Adding !REL_ARISEN_LAUNCHER! to !SLN_FILE! (--in-root)
+    echo Adding !REL_ARISEN_LAUNCHER! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_LAUNCHER!"
 
-    echo Adding !REL_ARISEN_LAUNCHER_DESKTOP! to !SLN_FILE! (--in-root)
+    echo Adding !REL_ARISEN_LAUNCHER_DESKTOP! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_LAUNCHER_DESKTOP!"
 
     REM Avalonia Dock projects are optional; add if exist
@@ -135,7 +135,7 @@ if exist "%SLN_PATH%" (
                 set "PROJ_NAME=%%~nQ"
                 set "REL_AVA=..\..\..\3rdparty\Ava.Dock\src\!PROJ_NAME!\!PROJ_NAME!.csproj"
             )
-            echo Adding !REL_AVA! to !SLN_FILE! (--in-root)
+            echo Adding !REL_AVA! to !SLN_FILE! (^--in-root^)
             dotnet sln "!SLN_FILE!" add --in-root "!REL_AVA!"
         )
     )

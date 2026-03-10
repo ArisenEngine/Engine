@@ -81,35 +81,8 @@
 		  <DependentUpon>AssetsHierarchyView.axaml</DependentUpon>
 		  <SubType>Code</SubType>
 		</Compile>
-		<None Update="Templates\Empty Project\Packages\manifest.json">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
 		<Compile Update="Core\Views\MenuItemBarView.axaml.cs">
 		  <DependentUpon>MenuItemBar.axaml</DependentUpon>
-		  <SubType>Code</SubType>
-		</Compile>
-		<Compile Update="Core\Views\CreateProjectView.axaml.cs">
-		  <DependentUpon>CreateProjectPage.axaml</DependentUpon>
-		  <SubType>Code</SubType>
-		</Compile>
-		<Compile Update="Core\Views\OpeningProjectView.axaml.cs">
-		  <DependentUpon>OpeningProjectPage.axaml</DependentUpon>
-		  <SubType>Code</SubType>
-		</Compile>
-		<Compile Update="Core\Views\ProjectListView.axaml.cs">
-		  <DependentUpon>ProjectListView.axaml</DependentUpon>
-		  <SubType>Code</SubType>
-		</Compile>
-		<Compile Update="Core\Views\OpeningWindowView.axaml.cs">
-		  <DependentUpon>OpeningWindow.axaml</DependentUpon>
-		  <SubType>Code</SubType>
-		</Compile>
-		<Compile Update="Core\Views\Splash.axaml.cs">
-		  <DependentUpon>Splash.axaml</DependentUpon>
-		  <SubType>Code</SubType>
-		</Compile>
-		<Compile Update="Core\Views\StartupWindowView.axaml.cs">
-		  <DependentUpon>StartupWindow.axaml</DependentUpon>
 		  <SubType>Code</SubType>
 		</Compile>
 		<Compile Update="Core\Views\ConsoleView.axaml.cs">

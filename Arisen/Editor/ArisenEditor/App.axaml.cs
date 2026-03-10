@@ -8,10 +8,12 @@ using Avalonia.Markup.Xaml;
 using System.Threading.Tasks;
 using ArisenEditor.Core.Views;
 using ArisenEditor.Themes;
-using ArisenEditor.ViewModels.Startup;
+using ArisenEditorFramework.Core;
+using ArisenEditor.ViewModels;
 using Avalonia.Controls;
 using ArisenEngine;
 using ReactiveUI;
+using System.IO;
 
 namespace ArisenEditor
 {
@@ -25,7 +27,7 @@ namespace ArisenEditor
             AvaloniaXamlLoader.Load(this);
         }
 
-        public override async void OnFrameworkInitializationCompleted()
+        public override void OnFrameworkInitializationCompleted()
         {
             if (OperatingSystem.IsWindows())
             {
@@ -36,47 +38,61 @@ namespace ArisenEditor
                 ArisenApplication.s_Platform = RuntimePlatform.MacOS;
             }
 
-            EnterNormally();
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                string[] args = Environment.GetCommandLineArgs();
+                string? projectPath = null;
+                for (int i = 0; i < args.Length; i++)
+                {
+                    if (args[i] == "-project" && i + 1 < args.Length)
+                    {
+                        projectPath = args[i + 1];
+                        break;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(projectPath) && File.Exists(projectPath))
+                {
+                    LoadProjectAndLaunch(desktop, projectPath);
+                }
+                else
+                {
+                    // Fallback to a default or show error
+                    Console.WriteLine("No valid project path provided via -project argument.");
+                    desktop.Shutdown();
+                }
+            }
             
             base.OnFrameworkInitializationCompleted();
         }
 
-        private async void EnterNormally()
+        private void LoadProjectAndLaunch(IClassicDesktopStyleApplicationLifetime desktop, string projectPath)
         {
-            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            try 
             {
-                desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-                
-                var mainWindowViewModel = new StartupWindowViewModel();
-                var splashWindow = new Splash();
-                desktop.MainWindow = splashWindow;
-                splashWindow.Show();
-
-                int resultCode = await mainWindowViewModel.LoadEditorConfigAsync();
-                if ( resultCode != 0 ) {
-
-                    splashWindow.Close();
-                    base.OnFrameworkInitializationCompleted();
-
-                    System.Environment.Exit( resultCode );
-
-                    return;
-                }
-
-               
-                await Task.Delay( 1000 );
-
-                var mainWindow = new Windows.StartupWindowView()
-                {
-                    DataContext = mainWindowViewModel
+                // This is a simplified initialization. In a full system, 
+                // we'd use a ProjectService to load the metadata.
+                var metadata = new ProjectMetadata 
+                { 
+                    Name = Path.GetFileNameWithoutExtension(projectPath),
+                    ProjectPath = projectPath 
                 };
-
-                desktop.MainWindow = mainWindow;
                 
-                mainWindow.Show();
-
-                splashWindow.Close();
-
+                ArisenEditor.Core.EditorProjectContext.Initialize(metadata);
+                
+                var viewModel = new MainEditorHostViewModel();
+                desktop.MainWindow = new Window
+                {
+                    Title = $"Arisen Editor - {metadata.Name}",
+                    Content = new MainDockView { DataContext = viewModel },
+                    WindowStartupLocation = WindowStartupLocation.CenterScreen
+                };
+                desktop.MainWindow.Show();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to launch editor: {ex.Message}");
+                desktop.Shutdown();
             }
         }
 

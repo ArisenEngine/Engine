@@ -23,13 +23,7 @@ public partial class NewProjectViewModel : ObservableObject
     [ObservableProperty]
     private string? _selectedTemplate = "Blank Project";
 
-    public ObservableCollection<string> Templates { get; } = new() 
-    { 
-        "Blank Project", 
-        "3D Core", 
-        "2D Lite", 
-        "Raytracing Starter" 
-    };
+    public ObservableCollection<string> Templates { get; } = new();
 
     public event Action<bool>? RequestClose;
     public Func<Task<string?>>? RequestFolderPickerAsync;
@@ -41,6 +35,33 @@ public partial class NewProjectViewModel : ObservableObject
         _engine = engine;
         
         _projectLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ArisenProjects");
+        
+        LoadTemplates();
+    }
+
+    private void LoadTemplates()
+    {
+        try
+        {
+            Templates.Clear();
+            string templatesPath = Path.Combine(_engine.InstallPath, "Templates");
+            if (Directory.Exists(templatesPath))
+            {
+                foreach (var dir in Directory.GetDirectories(templatesPath))
+                {
+                    Templates.Add(Path.GetFileName(dir));
+                }
+            }
+
+            if (Templates.Count > 0)
+            {
+                SelectedTemplate = Templates[0];
+            }
+        }
+        catch (Exception ex)
+        {
+            _logService.Error("Failed to load templates.", ex);
+        }
     }
 
     [RelayCommand]
@@ -60,9 +81,9 @@ public partial class NewProjectViewModel : ObservableObject
     private void Create()
     {
         string fullPath = Path.Combine(ProjectLocation, ProjectName);
-        _logService.Info($"Creating new project: {ProjectName} at {fullPath}");
+        _logService.Info($"Creating new project: {ProjectName} at {fullPath} with template {SelectedTemplate}");
         
-        if (_projectService.CreateProject(fullPath, ProjectName, _engine))
+        if (_projectService.CreateProject(fullPath, ProjectName, _engine, SelectedTemplate))
         {
             RequestClose?.Invoke(true);
         }

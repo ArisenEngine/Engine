@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:ArisenLauncher.ViewModels"
         xmlns:services="using:ArisenLauncher.Services"
+        xmlns:framework="using:ArisenEditorFramework.Core"
         x:Class="ArisenLauncher.Views.MainWindow"
         x:Name="Root"
         x:DataType="vm:MainViewModel"
@@ -107,7 +108,7 @@
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="services:ProjectMetadata">
+                            <DataTemplate x:DataType="framework:ProjectMetadata">
                                 <Button Command="{Binding #Root.((vm:MainViewModel)DataContext).LaunchProjectCommand}" 
                                         CommandParameter="{Binding}"
                                         Background="Transparent" Padding="0" Margin="0,0,16,16">
