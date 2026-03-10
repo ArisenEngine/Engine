@@ -140,6 +140,9 @@ if exist "%SLN_PATH%" (
         )
     )
 
+    echo Updating OutputPath for all projects in solution...
+    python "!SCRIPT_DIR!\update_csproj_outputs.py" "!SLN_PATH!" "!PROJ_OUTPUTS!"
+
     popd
 ) else (
     echo Solution file not found: %SLN_PATH%
