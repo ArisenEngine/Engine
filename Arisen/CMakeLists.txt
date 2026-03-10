@@ -298,6 +298,11 @@ endif()
     set(ARISEN_EDITOR_DESKTOP_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor.Desktop/ArisenEditor.Desktop.csproj)
     set(ARISEN_EDITOR_DESKTOP_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenEditor.Desktop/)
 
+    set(ARISEN_LAUNCHER_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenLauncher/ArisenLauncher.csproj)
+    set(ARISEN_LAUNCHER_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenLauncher/)
+    set(ARISEN_LAUNCHER_DESKTOP_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenLauncher.Desktop/ArisenLauncher.Desktop.csproj)
+    set(ARISEN_LAUNCHER_DESKTOP_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenLauncher.Desktop/)
+
 if(${TARGET} STREQUAL "Editor" OR ${TARGET} STREQUAL "EditorTest")
     add_custom_target(BuildArisenEditorFramework
     COMMAND dotnet build ${ARISEN_EDITOR_FRAMEWORK_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
@@ -349,6 +354,29 @@ if(${TARGET} STREQUAL "Editor" OR ${TARGET} STREQUAL "EditorTest")
     )
     add_dependencies(BuildEditorTest BuildArisenEditor)
     set_target_properties(BuildEditorTest PROPERTIES FOLDER "CMakeProcess")
+
+    # Launcher
+    add_custom_target(BuildArisenLauncher
+    COMMAND dotnet build ${ARISEN_LAUNCHER_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
+    WORKING_DIRECTORY ${ARISEN_LAUNCHER_PROJ_DIR}
+    COMMENT "Building Arisen Launcher"
+    DEPENDS "ArisenEditorFramework.dll"
+    VERBATIM
+    USES_TERMINAL
+    )
+    add_dependencies(BuildArisenLauncher BuildArisenEditorFramework)
+    set_target_properties(BuildArisenLauncher PROPERTIES FOLDER "CMakeProcess")
+
+    add_custom_target(BuildArisenLauncherDesktop ALL
+    COMMAND dotnet build ${ARISEN_LAUNCHER_DESKTOP_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
+    WORKING_DIRECTORY ${ARISEN_LAUNCHER_DESKTOP_PROJ_DIR}
+    COMMENT "Building Arisen Launcher Desktop"
+    DEPENDS "ArisenLauncher.dll"
+    VERBATIM
+    USES_TERMINAL
+    )
+    add_dependencies(BuildArisenLauncherDesktop BuildArisenLauncher)
+    set_target_properties(BuildArisenLauncherDesktop PROPERTIES FOLDER "CMakeProcess")
 endif()
 
 if(${TARGET} STREQUAL "Editor")

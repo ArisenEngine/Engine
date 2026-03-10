@@ -1,0 +1,127 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ArisenLauncher.Views.MainWindow"
+        Title="Avalonia Engine | Launch Hub"
+        Width="1200" Height="800"
+        WindowStartupLocation="CenterScreen"
+        Background="#0f1117"
+        Foreground="#f1f5f9"
+        FontFamily="Inter, Space Grotesk">
+    
+    <Grid ColumnDefinitions="260, *">
+        <!-- Sidebar -->
+        <Border Grid.Column="0" Background="#1a1e26" BorderBrush="#282e39" BorderThickness="0,0,1,0">
+            <DockPanel Margin="16">
+                <!-- Branding -->
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="12" Margin="0,0,0,32">
+                    <Border Width="32" Height="32" Background="#135bec" CornerRadius="8">
+                        <Path Fill="White" Data="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z" Stretch="Uniform" Margin="6"/>
+                    </Border>
+                    <TextBlock Text="Avalonia Engine" FontWeight="Bold" FontSize="18" VerticalAlignment="Center"/>
+                </StackPanel>
+                
+                <!-- Navigation -->
+                <StackPanel DockPanel.Dock="Top" Spacing="4">
+                    <TextBlock Text="MAIN MENU" IsVisible="True" FontSize="10" FontWeight="Bold" Foreground="#64748b" Margin="12,0,0,8"/>
+                    <Button Classes="NavItemActive" Content="Projects"/>
+                    <Button Classes="NavItem" Content="Learning"/>
+                    <Button Classes="NavItem" Content="Marketplace"/>
+                    <Button Classes="NavItem" Content="Templates"/>
+                </StackPanel>
+                
+                <!-- Bottom Profile/Settings -->
+                <StackPanel DockPanel.Dock="Bottom" Spacing="12">
+                   <Border Height="1" Background="#282e39" Margin="0,0,0,12"/>
+                   <StackPanel Orientation="Horizontal" Spacing="12" Margin="12,0">
+                       <Border Width="8" Height="8" Background="#22c55e" CornerRadius="4" VerticalAlignment="Center"/>
+                       <StackPanel>
+                           <TextBlock Text="v4.2.0 Stable" FontSize="11" FontWeight="SemiBold"/>
+                           <TextBlock Text="Up to date" FontSize="10" Foreground="#64748b"/>
+                       </StackPanel>
+                   </StackPanel>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Main Content -->
+        <Grid Grid.Column="1" RowDefinitions="Auto, *">
+            <!-- Header -->
+            <Border Grid.Row="0" Height="64" BorderBrush="#282e39" BorderThickness="0,0,0,1" Padding="24,0">
+                <DockPanel VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="Projects" Foreground="#64748b" FontSize="13" VerticalAlignment="Center"/>
+                        <TextBlock Text="/" Foreground="#64748b" VerticalAlignment="Center"/>
+                        <TextBlock Text="Recent Projects" Foreground="White" FontSize="13" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="12">
+                        <Button Background="#135bec" Foreground="White" Padding="16,8" CornerRadius="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="+" FontWeight="Bold"/>
+                                <TextBlock Text="New Project" FontWeight="Bold" FontSize="13"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Scrollable Content -->
+            <ScrollViewer Grid.Row="1" Padding="48">
+                <StackPanel Spacing="32">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="My Projects" FontSize="32" FontWeight="Bold" Foreground="White"/>
+                        <TextBlock Text="Manage your active workspace. You have 12 active projects across 3 different engine versions."
+                                   Foreground="#64748b" FontSize="14"/>
+                    </StackPanel>
+
+                    <!-- Projects Grid (Simplified Placeholder) -->
+                    <UniformGrid Columns="3">
+                        <Border Margin="0,0,16,16" Background="#1a1e26" CornerRadius="12" BorderBrush="#282e39" BorderThickness="1">
+                            <StackPanel>
+                                <Border Height="120" Background="#334155" CornerRadius="12,12,0,0"/>
+                                <StackPanel Margin="16">
+                                    <TextBlock Text="Neon Overdrive" FontWeight="Bold" Margin="0,0,0,4"/>
+                                    <TextBlock Text="C:/Users/Dev/Projects/Neon_OD" FontSize="11" Foreground="#64748b"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        
+                        <Border Margin="16,0,0,16" Background="#0f1117" CornerRadius="12" BorderBrush="#282e39" BorderThickness="2">
+                           <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
+                               <Border Background="#282e39" Width="48" Height="48" CornerRadius="24">
+                                   <TextBlock Text="+" Foreground="#64748b" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                               </Border>
+                               <TextBlock Text="Create New" FontWeight="Bold" HorizontalAlignment="Center"/>
+                           </StackPanel>
+                        </Border>
+                    </UniformGrid>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+
+    <Window.Styles>
+        <Style Selector="Button.NavItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#94a3b8"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+        </Style>
+        <Style Selector="Button.NavItem:hover">
+            <Setter Property="Background" Value="#282e39"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.NavItemActive">
+            <Setter Property="Background" Value="#135bec20"/>
+            <Setter Property="Foreground" Value="#135bec"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+    </Window.Styles>
+</Window>

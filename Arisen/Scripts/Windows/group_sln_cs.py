@@ -59,6 +59,7 @@ if __name__ == "__main__":
         "Binding": ["BindingGenerator", "AutoBinding"],
         "Editor": [
             "ArisenEditor", "ArisenEditor.Desktop", "ArisenEditorShell",
+            "ArisenLauncher", "ArisenLauncher.Desktop",
             "Avalonia.", "Dock.", "ArisenEditorFramework"
         ],
         "Runtime": ["ArisenEngine"],
