@@ -22,23 +22,32 @@ public class EngineInstance
 
 public class ConfigService
 {
-    private static readonly string AppDataPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
-        "ArisenEngine", "launcher_settings.json");
+    private readonly LogService _logService;
+    private readonly string _settingsPath;
 
     public LauncherSettings Settings { get; private set; } = new();
 
+    public ConfigService(LogService logService)
+    {
+        _logService = logService;
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        _settingsPath = Path.Combine(appData, "ArisenEngine", "launcher_settings.json");
+        Load();
+    }
+
     public void Load()
     {
-        if (File.Exists(AppDataPath))
+        if (File.Exists(_settingsPath))
         {
             try
             {
-                string json = File.ReadAllText(AppDataPath);
+                string json = File.ReadAllText(_settingsPath);
                 Settings = JsonSerializer.Deserialize<LauncherSettings>(json) ?? new();
+                _logService.Info($"Configuration loaded from {_settingsPath}");
             }
-            catch
+            catch (Exception ex)
             {
+                _logService.Error("Failed to load launcher settings.", ex);
                 Settings = new();
             }
         }
@@ -46,10 +55,18 @@ public class ConfigService
 
     public void Save()
     {
-        string dir = Path.GetDirectoryName(AppDataPath)!;
-        if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+        try
+        {
+            string dir = Path.GetDirectoryName(_settingsPath)!;
+            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
-        string json = JsonSerializer.Serialize(Settings, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(AppDataPath, json);
+            string json = JsonSerializer.Serialize(Settings, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(_settingsPath, json);
+            _logService.Info($"Configuration saved to {_settingsPath}");
+        }
+        catch (Exception ex)
+        {
+            _logService.Error("Failed to save launcher settings.", ex);
+        }
     }
 }
