@@ -103,30 +103,39 @@ if exist "%SLN_PATH%" (
 
     echo Adding !REL_BINDING_GENERATOR! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_BINDING_GENERATOR!"
+    if errorlevel 1 ( set "EXIT_CODE=1" & goto :cleanup )
 
     echo Adding !REL_AUTO_BINDING! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_AUTO_BINDING!"
+    if errorlevel 1 ( set "EXIT_CODE=1" & goto :cleanup )
 
     echo Adding !REL_ARISEN_DAG! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_DAG!"
+    if errorlevel 1 ( set "EXIT_CODE=1" & goto :cleanup )
 
     echo Adding !REL_ARISEN_ENGINE! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_ENGINE!"
+    if errorlevel 1 ( set "EXIT_CODE=1" & goto :cleanup )
 
     echo Adding !REL_ARISEN_EDITOR! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_EDITOR!"
+    if errorlevel 1 ( set "EXIT_CODE=1" & goto :cleanup )
 
     echo Adding !REL_ARISEN_EDITOR_FRAMEWORK! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_EDITOR_FRAMEWORK!"
+    if errorlevel 1 ( set "EXIT_CODE=1" & goto :cleanup )
 
     echo Adding !REL_ARISEN_EDITOR_DESKTOP! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_EDITOR_DESKTOP!"
+    if errorlevel 1 ( set "EXIT_CODE=1" & goto :cleanup )
 
     echo Adding !REL_ARISEN_LAUNCHER! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_LAUNCHER!"
+    if errorlevel 1 ( set "EXIT_CODE=1" & goto :cleanup )
 
     echo Adding !REL_ARISEN_LAUNCHER_DESKTOP! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_LAUNCHER_DESKTOP!"
+    if errorlevel 1 ( set "EXIT_CODE=1" & goto :cleanup )
 
     REM Avalonia Dock projects are optional; add if exist
     for %%P in ("%AVA_ProportionalStack%" "%AVA_Recycling%" "%AVA_RecyclingModel%" "%AVA_MarkupExt%" "%AVA_DockAvalonia%" "%AVA_DockModel%" "%AVA_DockModelAvalonia%" "%AVA_DockModelMvvm%" "%AVA_DockModelReactiveUI%" "%AVA_DockSerializer%" "%AVA_DockSettings%") do (
@@ -137,6 +146,7 @@ if exist "%SLN_PATH%" (
             )
             echo Adding !REL_AVA! to !SLN_FILE! (^--in-root^)
             dotnet sln "!SLN_FILE!" add --in-root "!REL_AVA!"
+            if errorlevel 1 ( set "EXIT_CODE=1" & goto :cleanup )
         )
     )
 

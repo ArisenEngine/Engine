@@ -10,6 +10,14 @@ set "STEP_TOTAL=5"
 
 set "SCRIPT_DIR=%~dp0"
 if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+set "ROOT_DIR=%SCRIPT_DIR%\..\.."
+for %%I in ("%ROOT_DIR%") do set "ROOT_DIR=%%~fI"
+
+REM ==== 0. 终止占用进程 ====
+echo === Cleaning up background processes ===
+taskkill /F /IM ArisenEditor.Desktop.exe /T >nul 2>&1
+taskkill /F /IM ArisenLauncher.Desktop.exe /T >nul 2>&1
+taskkill /F /IM dotnet.exe /T >nul 2>&1
 
 call "%SCRIPT_DIR%\setup-env.bat"
 if errorlevel 1 (
@@ -18,16 +26,8 @@ if errorlevel 1 (
 )
 
 REM === 配置部分 ===
-set TARGET=Editor
-set PLATFORM=Windows
-
-REM 根目录
-set SCRIPT_DIR=%~dp0
-set SCRIPT_DIR=!SCRIPT_DIR:~0,-1!
-set ROOT_DIR=!SCRIPT_DIR!\..\..
-
-REM 规范路径转换（绝对路径）
-for %%I in ("!ROOT_DIR!") do set "ROOT_DIR=%%~fI"
+set "TARGET=Editor"
+set "PLATFORM=Windows"
 
 REM ==== 1. 创建构建目录（如果不存在）====
 set VS_BUILD_DIR=!ROOT_DIR!\Projects\VisualStudio\Editor
