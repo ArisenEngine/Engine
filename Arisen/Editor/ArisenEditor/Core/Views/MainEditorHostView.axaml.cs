@@ -1,13 +1,9 @@
-
 using System.Threading.Tasks;
 using ArisenEditor.Utilities;
-using ArisenEditor.ViewModels.Startup;
-using ArisenEditor.Windows;
 using ArisenEngine;
 using ArisenEngine.Core.Lifecycle;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 
@@ -43,13 +39,6 @@ internal partial class MainEditorHostView : Window
         
     }
     
-    // TODO: remove this
-    private async Task<int> LoadEditorConfigAsync(StartupWindowViewModel startupWindowViewModel)
-    {
-        int code = await startupWindowViewModel.LoadEditorConfigAsync();
-        return code;
-    }
-
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
@@ -57,25 +46,5 @@ internal partial class MainEditorHostView : Window
         m_FileSystemWatcher.Dispose();
         m_FileSystemWatcher = null;
         ArisenApplication.Exit();
-            
-        if (App.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-        {
-            var mainWindowViewModel = new StartupWindowViewModel();
-
-            int resultCode = LoadEditorConfigAsync(mainWindowViewModel).Result;
-            if (resultCode != 0)
-            {
-                App.Shutdown(desktop);
-
-                return;
-            }
-
-            desktop.MainWindow = new StartupWindowView()
-            {
-                DataContext = mainWindowViewModel
-            };
-
-            desktop.MainWindow.Show();
-        }
     }
 }

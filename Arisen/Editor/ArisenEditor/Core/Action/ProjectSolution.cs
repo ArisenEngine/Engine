@@ -6,7 +6,7 @@ using System.IO;
 using ArisenEngine.FileSystem;
 using Avalonia;
 using System.Reflection;
-using ArisenEditor.Models.Startup;
+using ArisenEditorFramework.Core;
 
 namespace ArisenEditor.GameDev
 {
@@ -174,9 +174,10 @@ namespace ArisenEditor.GameDev
             return false;
         }
 
-        internal static void CreateProjectSolution(ProjectInfo template, string newProjectPath, string newProjectName)
+        internal static void CreateProjectSolution(ProjectMetadata template, string newProjectPath, string newProjectName)
         {
-            var sourcePath = Path.Combine (template.ProjectPath, template.ProjectName);
+            // For templates, ProjectPath might be the folder containing the template files
+            var sourcePath = Path.GetDirectoryName(template.ProjectPath) ?? template.ProjectPath;
             var fullPath = Path.Combine(newProjectPath, newProjectName);
             FileSystemUtilities.CopyDirectoryRecursively(sourcePath, fullPath, HandleFiles);
         }
@@ -190,32 +191,27 @@ namespace ArisenEditor.GameDev
         /// Validation a project
         /// </summary>
         /// <returns></returns>
-        internal static bool ProjectValidation(ProjectInfo project)
+        internal static bool ProjectValidation(ProjectMetadata project)
         {
-            if (!Directory.Exists(project.ProjectPath))
+            string projectDir = Path.GetDirectoryName(project.ProjectPath) ?? string.Empty;
+            if (string.IsNullOrEmpty(projectDir) || !Directory.Exists(projectDir))
             {
                 return false;
             }
 
-            var projectRoot = Path.Combine(project.ProjectPath, project.ProjectName);
-            if (!Directory.Exists(projectRoot))
-            {
-                return false;
-            }
-
-            var slnFile = new FileInfo(Path.Combine(projectRoot, project.ProjectName + @".sln"));
+            var slnFile = new FileInfo(Path.Combine(projectDir, project.Name + @".sln"));
             if (!slnFile.Exists)
             {
                 return false;
             }
 
-            var runtimeProj = new FileInfo(Path.Combine(projectRoot, @"Assembly-Runtime.csproj"));
+            var runtimeProj = new FileInfo(Path.Combine(projectDir, @"Assembly-Runtime.csproj"));
             if (!runtimeProj.Exists)
             {
                 return false;
             }
 
-            var editorProj = new FileInfo(Path.Combine(projectRoot, @"Assembly-Editor.csproj"));
+            var editorProj = new FileInfo(Path.Combine(projectDir, @"Assembly-Editor.csproj"));
             if (!editorProj.Exists)
             {
                 return false;
