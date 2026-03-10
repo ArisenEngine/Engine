@@ -14,7 +14,13 @@ namespace ArisenEditor.Utilities
         {
             if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                var topLevel = TopLevel.GetTopLevel(desktop.MainWindow);
+                var topLevel = (desktop.MainWindow != null) ? TopLevel.GetTopLevel(desktop.MainWindow) : null;
+                
+                // If topLevel is null, we can try to find any other window
+                if (topLevel == null && desktop.Windows.Count > 0)
+                {
+                    topLevel = TopLevel.GetTopLevel(desktop.Windows[0]);
+                }
 
                 if (topLevel != null)
                 {
@@ -29,7 +35,7 @@ namespace ArisenEditor.Utilities
                         var pathList = new List<string>();
                         foreach (var item in location)
                         {
-                            pathList.Add(item.Path.AbsolutePath.Replace('/', Path.DirectorySeparatorChar));
+                            pathList.Add(item.Path.LocalPath);
                         }
                         
                         return pathList;
