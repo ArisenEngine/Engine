@@ -11,6 +11,7 @@ public partial class MainViewModel : ObservableObject
     private readonly ConfigService _configService;
     private readonly EngineDiscoveryService _discoveryService;
     private readonly LauncherProcessService _processService;
+    private readonly LogService _logService;
 
     [ObservableProperty]
     private string _statusText = "Ready";
@@ -21,12 +22,15 @@ public partial class MainViewModel : ObservableObject
     public MainViewModel(
         ConfigService configService, 
         EngineDiscoveryService discoveryService, 
-        LauncherProcessService processService)
+        LauncherProcessService processService,
+        LogService logService)
     {
         _configService = configService;
         _discoveryService = discoveryService;
         _processService = processService;
+        _logService = logService;
 
+        _logService.Info("MainViewModel initialized.");
         LoadData();
     }
 
@@ -51,11 +55,14 @@ public partial class MainViewModel : ObservableObject
         {
             RecentProjects.Add(proj);
         }
+        
+        _logService.Info($"UI Refreshed: {Engines.Count} engines, {RecentProjects.Count} projects found.");
     }
 
     [RelayCommand]
     private void AddEngine(string path)
     {
+        _logService.Info($"Manually adding engine from path: {path}");
         if (_discoveryService.ValidateAndAdd(path, "Manual"))
         {
             StatusText = "Engine added successfully.";
@@ -63,6 +70,7 @@ public partial class MainViewModel : ObservableObject
         }
         else
         {
+            _logService.Warning($"Failed to validate engine folder: {path}");
             StatusText = "Invalid engine folder.";
         }
     }
@@ -74,6 +82,11 @@ public partial class MainViewModel : ObservableObject
         if (engine != null)
         {
             _processService.LaunchEditor(engine, projectPath);
+        }
+        else
+        {
+            _logService.Error("Cannot launch project: No engine version selected.");
+            StatusText = "Error: No engine selected.";
         }
     }
 }

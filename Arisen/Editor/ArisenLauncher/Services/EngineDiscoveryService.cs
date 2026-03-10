@@ -7,14 +7,17 @@ namespace ArisenLauncher.Services;
 public class EngineDiscoveryService
 {
     private readonly ConfigService m_ConfigService;
+    private readonly LogService m_LogService;
 
-    public EngineDiscoveryService(ConfigService configService)
+    public EngineDiscoveryService(ConfigService configService, LogService logService)
     {
         m_ConfigService = configService;
+        m_LogService = logService;
     }
 
     public void Discover()
     {
+        m_LogService.Info("Starting engine discovery...");
         // 1. Check current directory (for development)
         string baseDir = AppContext.BaseDirectory;
         ValidateAndAdd(baseDir, "Dev Local");
