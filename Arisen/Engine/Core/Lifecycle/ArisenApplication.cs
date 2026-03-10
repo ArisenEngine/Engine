@@ -106,7 +106,7 @@ public class ArisenApplication
         finally
         {
             s_IsRunning = false;
-            Dispose();
+            ShutdownEngine();
         }
 
         return errorCode;
@@ -158,7 +158,7 @@ public class ArisenApplication
         EngineKernel.Instance.RequestShutdown();
     }
 
-    private static void Dispose()
+    public static void ShutdownEngine()
     {
         EngineKernel.Instance.Dispose();
         NativeRuntime.Shutdown();

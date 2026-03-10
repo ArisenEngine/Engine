@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using ArisenEngine.Core.Lifecycle;
+using ArisenEngine.Core.Diagnostics;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -44,6 +45,8 @@ namespace ArisenEditor
 
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
+                desktop.Exit += (sender, args) => ArisenEngine.Core.Lifecycle.ArisenApplication.ShutdownEngine();
+
                 string[] args = Environment.GetCommandLineArgs();
                 string? projectPath = null;
                 for (int i = 0; i < args.Length; i++)
@@ -72,33 +75,25 @@ namespace ArisenEditor
         private async Task ShowPickerAndLaunch(IClassicDesktopStyleApplicationLifetime desktop)
         {
             // Use native folder picker for project selection
-            try 
+            var paths = await ArisenEditorFramework.Utilities.FileSystemUtilities.BrowserDirectory("Select Arisen Project Folder");
+            if (paths == null || paths.Count == 0)
             {
-                var paths = await ArisenEditorFramework.Utilities.FileSystemUtilities.BrowserDirectory("Select Arisen Project Folder");
-                if (paths == null || paths.Count == 0)
-                {
-                    desktop.Shutdown();
-                    return;
-                }
-
-                string selectedFolder = paths[0];
-                string[] projectFiles = Directory.GetFiles(selectedFolder, "*.arisenproj");
-
-                if (projectFiles.Length == 0)
-                {
-                    await ArisenEditorFramework.Utilities.MessageBoxUtility.ShowMessageBoxStandard("Error", "No .arisenproj file found in the selected folder.");
-                    desktop.Shutdown();
-                    return;
-                }
-
-                string projectPath = projectFiles[0];
-                await ExecuteBootstrapSequence(desktop, projectPath);
-            }
-            catch (Exception ex)
-            {
-                await ArisenEditorFramework.Utilities.MessageBoxUtility.ShowMessageBoxStandard("Error", $"An error occurred during project selection: {ex.Message}");
                 desktop.Shutdown();
+                return;
             }
+
+            string selectedFolder = paths[0];
+            string[] projectFiles = Directory.GetFiles(selectedFolder, "*.arisenproj");
+
+            if (projectFiles.Length == 0)
+            {
+                await ArisenEditorFramework.Utilities.MessageBoxUtility.ShowMessageBoxStandard("Error", "No .arisenproj file found in the selected folder.");
+                desktop.Shutdown();
+                return;
+            }
+
+            string projectPath = projectFiles[0];
+            await ExecuteBootstrapSequence(desktop, projectPath);
         }
 
         private async Task ExecuteBootstrapSequence(IClassicDesktopStyleApplicationLifetime desktop, string projectPath)
@@ -137,6 +132,11 @@ namespace ArisenEditor
             }
             else
             {
+                Logger.Error($"[Bootstrap] Failed: {context.ErrorMessage}");
+                loadingWindow.Close();
+                
+                // Delay slightly to ensure window is closed and main loop handles it
+                await Task.Delay(100); 
                 await ArisenEditorFramework.Utilities.MessageBoxUtility.ShowMessageBoxStandard("Bootstrap Failed", context.ErrorMessage);
                 desktop.Shutdown();
             }
