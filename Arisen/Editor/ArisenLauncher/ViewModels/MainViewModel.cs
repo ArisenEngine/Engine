@@ -13,6 +13,7 @@ public partial class MainViewModel : ObservableObject
     private readonly ConfigService _configService;
     private readonly EngineDiscoveryService _discoveryService;
     private readonly LauncherProcessService _processService;
+    private readonly ProjectService _projectService;
     private readonly LogService _logService;
 
     [ObservableProperty]
@@ -22,27 +23,31 @@ public partial class MainViewModel : ObservableObject
     private EngineInstance? _selectedEngine;
 
     public ObservableCollection<EngineInstance> Engines { get; } = new();
-    public ObservableCollection<string> RecentProjects { get; } = new();
+    public ObservableCollection<ProjectMetadata> RecentProjects { get; } = new();
 
     // UI Communication Events
     public event Action<bool>? RequestWindowStateChange; // true = show, false = minimize
     public Func<Task<string?>>? RequestFolderPickerAsync;
+    public Func<Task<string?>>? RequestFilePickerAsync; // For .arisenproj
+    public Func<EngineInstance, Task<bool>>? RequestNewProjectWizardAsync;
 
     public MainViewModel(
         ConfigService configService, 
         EngineDiscoveryService discoveryService, 
         LauncherProcessService processService,
+        ProjectService projectService,
         LogService logService)
     {
         _configService = configService;
         _discoveryService = discoveryService;
         _processService = processService;
+        _projectService = projectService;
         _logService = logService;
 
         _processService.AllInstancesClosed += OnAllInstancesClosed;
         _processService.ProcessStarted += OnProcessStarted;
 
-        _logService.Info("MainViewModel initialized.");
+        _logService.Info("MainViewModel initialized with ProjectService.");
         LoadData();
     }
 
@@ -74,12 +79,20 @@ public partial class MainViewModel : ObservableObject
         }
 
         RecentProjects.Clear();
-        foreach (var proj in _configService.Settings.RecentProjects)
+        foreach (var projPath in _configService.Settings.RecentProjects)
         {
-            RecentProjects.Add(proj);
+            var metadata = _projectService.LoadProject(projPath);
+            if (metadata != null)
+            {
+                RecentProjects.Add(metadata);
+            }
+            else
+            {
+                _logService.Warning($"Project file missing or invalid: {projPath}");
+            }
         }
         
-        _logService.Info($"UI Refreshed: {Engines.Count} engines, {RecentProjects.Count} projects found. Selected: {SelectedEngine?.Version}");
+        _logService.Info($"UI Refreshed: {Engines.Count} engines, {RecentProjects.Count} valid projects found. Selected: {SelectedEngine?.Version}");
     }
 
     partial void OnSelectedEngineChanged(EngineInstance? value)
@@ -101,6 +114,33 @@ public partial class MainViewModel : ObservableObject
     {
         _logService.Info("No more editors running, restoring launcher.");
         RequestWindowStateChange?.Invoke(true);
+    }
+
+    [RelayCommand]
+    private async Task BrowseProject()
+    {
+        if (RequestFilePickerAsync != null)
+        {
+            string? path = await RequestFilePickerAsync();
+            if (!string.IsNullOrEmpty(path))
+            {
+                _logService.Info($"User browsed for project: {path}");
+                var metadata = _projectService.LoadProject(path);
+                if (metadata != null)
+                {
+                    if (!_configService.Settings.RecentProjects.Contains(path))
+                    {
+                        _configService.Settings.RecentProjects.Insert(0, path);
+                        _configService.Save();
+                    }
+                    RefreshLists();
+                }
+                else
+                {
+                    StatusText = "Invalid project file selected.";
+                }
+            }
+        }
     }
 
     [RelayCommand]
@@ -127,17 +167,43 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void LaunchProject(string projectPath)
+    private void LaunchProject(ProjectMetadata project)
     {
         var engine = SelectedEngine;
         if (engine != null)
         {
-            _processService.LaunchEditor(engine, projectPath);
+            _processService.LaunchEditor(engine, project.ProjectPath);
         }
         else
         {
             _logService.Error("Cannot launch project: No engine version selected.");
             StatusText = "Error: No engine selected.";
         }
+    }
+
+    [RelayCommand]
+    private async Task NewProject()
+    {
+        var engine = SelectedEngine;
+        if (engine == null)
+        {
+            StatusText = "Error: No engine selected for new project.";
+            return;
+        }
+
+        if (RequestNewProjectWizardAsync != null)
+        {
+            bool success = await RequestNewProjectWizardAsync(engine);
+            if (success)
+            {
+                StatusText = "Project created successfully.";
+                RefreshLists();
+            }
+        }
+    }
+
+    public NewProjectViewModel CreateNewProjectViewModel(EngineInstance engine)
+    {
+        return new NewProjectViewModel(_projectService, _logService, engine);
     }
 }

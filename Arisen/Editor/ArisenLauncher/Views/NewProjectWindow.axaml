@@ -1,0 +1,67 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ArisenLauncher.ViewModels"
+        x:Class="ArisenLauncher.Views.NewProjectWindow"
+        x:DataType="vm:NewProjectViewModel"
+        Title="Create New Project"
+        Width="800" Height="500"
+        WindowStartupLocation="CenterOwner"
+        Background="#1a1e26"
+        Foreground="White"
+        CanResize="False">
+    
+    <Grid ColumnDefinitions="200, *">
+        <!-- Template Selection (Sidebar) -->
+        <Border Grid.Column="0" Background="#14171d" BorderBrush="#282e39" BorderThickness="0,0,1,0">
+            <Border Padding="16">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="TEMPLATES" FontSize="10" FontWeight="Bold" Foreground="#64748b" Margin="0,0,0,8"/>
+                    <ListBox ItemsSource="{Binding Templates}" SelectedItem="{Binding SelectedTemplate}"
+                             Background="Transparent" BorderThickness="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" FontSize="12" Margin="4"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- Configuration Area -->
+        <Border Grid.Column="1" Padding="32">
+            <StackPanel Spacing="24">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Project Details" FontSize="20" FontWeight="Bold"/>
+                    <TextBlock Text="Configure your project name and storage location." Foreground="#64748b" FontSize="12"/>
+                </StackPanel>
+
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Project Name" FontSize="12" FontWeight="SemiBold" Foreground="#94a3b8"/>
+                    <TextBox Text="{Binding ProjectName}" Watermark="Enter project name..."
+                             Background="#0f1117" BorderBrush="#282e39"/>
+                </StackPanel>
+
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Project Location" FontSize="12" FontWeight="SemiBold" Foreground="#94a3b8"/>
+                    <Grid ColumnDefinitions="*, Auto">
+                        <TextBox Grid.Column="0" Text="{Binding ProjectLocation}" IsReadOnly="True"
+                                 Background="#0f1117" BorderBrush="#282e39"/>
+                        <Button Grid.Column="1" Command="{Binding BrowseLocationCommand}" 
+                                Content="Browse..." Margin="8,0,0,0" Padding="12,4"/>
+                    </Grid>
+                </StackPanel>
+
+                <!-- Lower Action Buttons -->
+                <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,32,0,0">
+                    <Button Command="{Binding CancelCommand}" Content="Cancel" 
+                            Background="Transparent" BorderBrush="#282e39" BorderThickness="1" 
+                            Padding="24,8" CornerRadius="8"/>
+                    <Button Command="{Binding CreateCommand}" Content="Create" 
+                            Background="#135bec" Foreground="White" 
+                            Padding="24,8" CornerRadius="8" FontWeight="Bold"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

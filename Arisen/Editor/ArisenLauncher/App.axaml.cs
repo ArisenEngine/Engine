@@ -33,8 +33,9 @@ public partial class App : Application
                 var config = new ConfigService(log);
                 var discovery = new EngineDiscoveryService(config, log);
                 var process = new LauncherProcessService(log);
+                var project = new ProjectService(log, config);
                 
-                var vm = new MainViewModel(config, discovery, process, log);
+                var vm = new MainViewModel(config, discovery, process, project, log);
                 
                 desktop.MainWindow = new MainWindow
                 {
