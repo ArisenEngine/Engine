@@ -19,15 +19,55 @@ class Program
     public static void Main(string[] args)
     {
         Thread.CurrentThread.Name = "MainThread";
-        Setup();
         
-        BuildAvaloniaApp()
-            .StartWithClassicDesktopLifetime(args);
+        // Setup global exception handling
+        AppDomain.CurrentDomain.UnhandledException += (sender, e) => HandleGlobalException(e.ExceptionObject as Exception);
+        System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (sender, e) => 
+        {
+            HandleGlobalException(e.Exception);
+            e.SetObserved();
+        };
+
+        try
+        {
+            Setup();
+            BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        }
+        catch (Exception ex)
+        {
+            HandleGlobalException(ex);
+        }
+        finally
+        {
+            Logger.Dispose();
+        }
+    }
+
+    private static void HandleGlobalException(Exception? ex)
+    {
+        if (ex == null) return;
+        
+        // Ensure log is recorded
+        Logger.Error($"[GlobalException] {ex.Message}\n{ex.StackTrace}");
+        
+        // Show fatal error message box
+        // We can't use MessageBoxUtility here because it might depend on Avalonia state that is already broken
+        var box = MsBox.Avalonia.MessageBoxManager.GetMessageBoxStandard("Fatal Error", 
+            $"A fatal error occurred and the application must close.\n\nError: {ex.Message}\n\nPlease check logs for details.");
+        
+        // StartWithClassicDesktopLifetime might not have started or might be crashing, 
+        // using ShowAsync() and potentially waiting a bit.
+        box.ShowAsync().Wait(2000);
+        
+        // Final flush
+        Logger.Dispose();
+        Environment.Exit(1);
     }
 
     static void Setup()
     {
-        Logger.Initialize(ArisenApplication.s_IsInEditor);
+        ArisenApplication.s_IsInEditor = true;
+        Logger.Initialize(true);
         ProjectSolution.InstallationRoot = Environment.GetEnvironmentVariable(ProjectSolution.INSTALLATION_ENV_VARIABLE, EnvironmentVariableTarget.User);
         if (ProjectSolution.InstallationRoot == null)
         {
@@ -38,7 +78,6 @@ class Program
         
         ArisenApplication.s_Platform = RuntimePlatform.Windows;
         ArisenApplication.s_StartupPath = ProjectSolution.InstallationRoot;
-        ArisenApplication.s_IsInEditor = true;
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
