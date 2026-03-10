@@ -1,6 +1,10 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ArisenLauncher.ViewModels"
+        xmlns:services="using:ArisenLauncher.Services"
         x:Class="ArisenLauncher.Views.MainWindow"
+        x:Name="Root"
+        x:DataType="vm:MainViewModel"
         Title="Avalonia Engine | Launch Hub"
         Width="1200" Height="800"
         WindowStartupLocation="CenterScreen"
@@ -32,13 +36,28 @@
                 <!-- Bottom Profile/Settings -->
                 <StackPanel DockPanel.Dock="Bottom" Spacing="12">
                    <Border Height="1" Background="#282e39" Margin="0,0,0,12"/>
-                   <StackPanel Orientation="Horizontal" Spacing="12" Margin="12,0">
-                       <Border Width="8" Height="8" Background="#22c55e" CornerRadius="4" VerticalAlignment="Center"/>
-                       <StackPanel>
-                           <TextBlock Text="v4.2.0 Stable" FontSize="11" FontWeight="SemiBold"/>
-                           <TextBlock Text="Up to date" FontSize="10" Foreground="#64748b"/>
-                       </StackPanel>
-                   </StackPanel>
+                   
+                   <!-- Engine Version Selector -->
+                   <ComboBox ItemsSource="{Binding Engines}" 
+                             SelectedItem="{Binding Engines[0]}"
+                             Background="Transparent" BorderThickness="0"
+                             HorizontalAlignment="Stretch" Margin="8,0">
+                       <ComboBox.ItemTemplate>
+                           <DataTemplate x:DataType="services:EngineInstance">
+                               <StackPanel Orientation="Horizontal" Spacing="12">
+                                   <Border Width="8" Height="8" Background="#22c55e" CornerRadius="4" VerticalAlignment="Center"/>
+                                   <StackPanel>
+                                       <TextBlock Text="{Binding Version}" FontSize="11" FontWeight="SemiBold"/>
+                                       <TextBlock Text="{Binding InstallPath}" FontSize="9" Foreground="#64748b"/>
+                                   </StackPanel>
+                               </StackPanel>
+                           </DataTemplate>
+                       </ComboBox.ItemTemplate>
+                   </ComboBox>
+
+                   <Button Content="+ Add Engine" 
+                           Command="{Binding AddEngineCommand}"
+                           Classes="NavItem" Margin="12,0" FontSize="11"/>
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -55,6 +74,7 @@
                     </StackPanel>
                     
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" FontSize="12" Foreground="#64748b" Margin="0,0,16,0"/>
                         <Button Background="#135bec" Foreground="White" Padding="16,8" CornerRadius="8">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <TextBlock Text="+" FontWeight="Bold"/>
@@ -70,23 +90,41 @@
                 <StackPanel Spacing="32">
                     <StackPanel Spacing="8">
                         <TextBlock Text="My Projects" FontSize="32" FontWeight="Bold" Foreground="White"/>
-                        <TextBlock Text="Manage your active workspace. You have 12 active projects across 3 different engine versions."
+                        <TextBlock Text="Manage your active workspace. Choose a project to start editing."
                                    Foreground="#64748b" FontSize="14"/>
                     </StackPanel>
 
-                    <!-- Projects Grid (Simplified Placeholder) -->
-                    <UniformGrid Columns="3">
-                        <Border Margin="0,0,16,16" Background="#1a1e26" CornerRadius="12" BorderBrush="#282e39" BorderThickness="1">
-                            <StackPanel>
-                                <Border Height="120" Background="#334155" CornerRadius="12,12,0,0"/>
-                                <StackPanel Margin="16">
-                                    <TextBlock Text="Neon Overdrive" FontWeight="Bold" Margin="0,0,0,4"/>
-                                    <TextBlock Text="C:/Users/Dev/Projects/Neon_OD" FontSize="11" Foreground="#64748b"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </Border>
-                        
-                        <Border Margin="16,0,0,16" Background="#0f1117" CornerRadius="12" BorderBrush="#282e39" BorderThickness="2">
+                    <!-- Projects Grid -->
+                    <ItemsControl ItemsSource="{Binding RecentProjects}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="3"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <Button Command="{Binding #Root.((vm:MainViewModel)DataContext).LaunchProjectCommand}" 
+                                        CommandParameter="{Binding}"
+                                        Background="Transparent" Padding="0" Margin="0,0,16,16">
+                                    <Border Background="#1a1e26" CornerRadius="12" BorderBrush="#282e39" BorderThickness="1">
+                                        <StackPanel>
+                                            <Border Height="120" Background="#334155" CornerRadius="12,12,0,0">
+                                                <TextBlock Text="Arisen" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.2" FontSize="48" FontWeight="Bold"/>
+                                            </Border>
+                                            <StackPanel Margin="16">
+                                                <TextBlock Text="{Binding}" FontWeight="Bold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="Recent Project" FontSize="11" Foreground="#64748b"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Create New Card (Always at end) -->
+                    <Button Width="300" Height="180" HorizontalAlignment="Left" Background="Transparent" Padding="0">
+                        <Border Background="#0f1117" CornerRadius="12" BorderBrush="#282e39" BorderThickness="2">
                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
                                <Border Background="#282e39" Width="48" Height="48" CornerRadius="24">
                                    <TextBlock Text="+" Foreground="#64748b" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -94,7 +132,7 @@
                                <TextBlock Text="Create New" FontWeight="Bold" HorizontalAlignment="Center"/>
                            </StackPanel>
                         </Border>
-                    </UniformGrid>
+                    </Button>
                 </StackPanel>
             </ScrollViewer>
         </Grid>
