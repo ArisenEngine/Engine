@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using ArisenEditorFramework.Hierarchy;
 using Avalonia.Media.Imaging;
 using ArisenEditor.Models;
 
@@ -9,50 +10,59 @@ namespace ArisenEditor.ViewModels;
 
 internal class SceneTreeNode : TreeNodeBase
 {
+    private bool m_IsLoaded = false;
+
     internal SceneTreeNode(string name, string path, bool isBranch, bool isRoot = false) : base(name, path, isBranch, isRoot, false)
     {
-        
+        if (isBranch)
+        {
+            // Add a placeholder to show the expansion arrow if it's a branch
+            // In a real implementation, we would check if it actually has children
+        }
     }
 
-    private ObservableCollection<SceneTreeNode> m_Children;
-    private ObservableCollection<SceneTreeNode> LoadChildren()
+    private void LoadChildren()
     {
-        if (!IsBranch)
-        {
-            throw new NotSupportedException();
-        }
+        if (!IsBranch || m_IsLoaded) return;
+        
+        Children.Clear();
         
         var options = new EnumerationOptions
         {
             IgnoreInaccessible = true ,
             AttributesToSkip = FileAttributes.Hidden | FileAttributes.System
         };
-        var result = new ObservableCollection<SceneTreeNode>();
 
-        foreach (var d in Directory.EnumerateDirectories(Path, "*", options))
+        try
         {
-            var name = d.Split(System.IO.Path.DirectorySeparatorChar)[^1];
-            result.Add(new SceneTreeNode(name, d, true, false));
+            if (Directory.Exists(Path))
+            {
+                foreach (var d in Directory.EnumerateDirectories(Path, "*", options))
+                {
+                    var name = d.Split(System.IO.Path.DirectorySeparatorChar)[^1];
+                    var newNode = new SceneTreeNode(name, d, true, false) { Parent = this };
+                    Children.Add(newNode);
+                }
+            }
         }
-      
-        return result;
+        catch (Exception ex)
+        {
+            ArisenEngine.Core.Diagnostics.Logger.Error($"Failed to load children for {Path}: {ex.Message}");
+        }
+        
+        m_IsLoaded = true;
     }
+
+    public override bool HasChildren => IsBranch;
     
-    public override IReadOnlyList<SceneTreeNode> Children<SceneTreeNode>()
+    // We handle expansion trigger separately or via a property change
+    protected override void OnBeginEdit()
     {
-        if (m_Children == null)
-        {
-            m_Children = LoadChildren();
-        }
-
-        return (IReadOnlyList<SceneTreeNode>) m_Children;
+        base.OnBeginEdit();
     }
 
-    public override bool HasChildren => true;
-    
     protected override string LeafIconPath => "avares://ArisenEditor/Assets/Icons/entity-icon.png";
     protected override string BranchIconPath => "avares://ArisenEditor/Assets/Icons/entity-icon.png";
     protected override string BranchOpenIconPath => "avares://ArisenEditor/Assets/Icons/entity-icon.png";
     protected override string RootIconPath => "avares://ArisenEditor/Assets/Icons/clapperboard.png";
-    
 }

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.IO;
 using System.Reactive.Linq;
 using ArisenEditor.Utilities;
+using ArisenEditorFramework.Hierarchy;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 
@@ -12,12 +14,19 @@ namespace ArisenEditor.ViewModels;
 internal class FileTreeNode : TreeNodeBase
 {
     private string? m_UndoName;
+    private bool m_IsLoaded = false;
+
     internal FileTreeNode(string name, string path, bool isBranch, bool isRoot = false, bool isImmutable = false) : base(name, path, isBranch, isRoot, isImmutable)
     {
         if (isBranch)
         {
             Size = ArisenEngine.FileSystem.FileSystemUtilities.GetFolderSize(path);
             Modified = new DirectoryInfo(path).LastWriteTimeUtc;
+            // Placeholder for expansion
+            if (Directory.Exists(path) && Directory.EnumerateFileSystemEntries(path).Any())
+            {
+                 // Children.Add(null!); // We'll trigger load on expansion
+            }
         }
         else
         {
@@ -27,27 +36,32 @@ internal class FileTreeNode : TreeNodeBase
         }
     }
 
-    private ObservableCollection<FileTreeNode>? m_Children;
-    
-    private ObservableCollection<FileTreeNode> LoadChildren()
+    private void LoadChildren()
     {
-        if (!IsBranch)
-        {
-            throw new NotSupportedException();
-        }
+        if (!IsBranch || m_IsLoaded) return;
+        
+        Children.Clear();
         
         var options = new EnumerationOptions
         {
             IgnoreInaccessible = true ,
             AttributesToSkip = FileAttributes.Hidden | FileAttributes.System
         };
-        var result = new ObservableCollection<FileTreeNode>();
 
-        foreach (var fullPath in Directory.EnumerateDirectories(Path, "*", options))
+        try
         {
-            var name = fullPath.Split(System.IO.Path.DirectorySeparatorChar)[^1];
-            result.Add(new FileTreeNode(name, fullPath, true, false));
-
+            if (Directory.Exists(Path))
+            {
+                foreach (var fullPath in Directory.EnumerateDirectories(Path, "*", options))
+                {
+                    var name = fullPath.Split(System.IO.Path.DirectorySeparatorChar)[^1];
+                    Children.Add(new FileTreeNode(name, fullPath, true, false) { Parent = this });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+             ArisenEngine.Core.Diagnostics.Logger.Error($"Failed to load children for {Path}: {ex.Message}");
         }
         
         var watcher = ArisenEditorFramework.Utilities.ArisenFileSystemWatcher.Current;
@@ -59,34 +73,37 @@ internal class FileTreeNode : TreeNodeBase
             watcher.Renamed += OnRenamed;
         }
 
-        return result;
+        m_IsLoaded = true;
     }
 
-    public override IReadOnlyList<FolderTreeNode> Children<FolderTreeNode>()
+    public override bool HasChildren => IsBranch;
+
+    // Trigger lazy load on expansion
+    public new bool IsExpanded
     {
-        if (m_Children == null)
+        get => base.IsExpanded;
+        set
         {
-            m_Children = LoadChildren();
+            if (value && !m_IsLoaded)
+            {
+                LoadChildren();
+            }
+            base.IsExpanded = value;
         }
-        return (IReadOnlyList<FolderTreeNode>)m_Children;
     }
-
-    public override bool HasChildren => Children<FileTreeNode>().Count > 0;
 
     protected override string LeafIconPath => "avares://ArisenEditor/Assets/Icons/file.png";
     protected override string BranchIconPath => "avares://ArisenEditor/Assets/Icons/folder.png";
     protected override string BranchOpenIconPath => "avares://ArisenEditor/Assets/Icons/folder-open.png";
     protected override string RootIconPath => "avares://ArisenEditor/Assets/Icons/AssetsRoot.png";
 
-    
-
     private void OnChanged(object sender, FileSystemEventArgs e)
     {
         if (e.ChangeType == WatcherChangeTypes.Changed && File.Exists(e.FullPath))
         {
-            foreach (var child in m_Children!)
+            foreach (var childObj in Children)
             {
-                if (child.Path == e.FullPath)
+                if (childObj is FileTreeNode child && child.Path == e.FullPath)
                 {
                     if (child.IsBranch)
                     {
@@ -122,30 +139,18 @@ internal class FileTreeNode : TreeNodeBase
                 name,
                 e.FullPath,
                 true,
-                false);
-            m_Children.Add(node);
-            if (m_Children.Count == 1)
-            {
-                // first add child, force refresh the expander
-                // TODO: this is a bug
-                this.IsExpanded = true;
-                this.IsExpanded = false;
-            }
+                false) { Parent = this };
+            Children.Add(node);
         }
     }
 
     private void OnDeleted(object sender, FileSystemEventArgs e)
     {
-        for (var i = 0; i < m_Children!.Count; ++i)
+        for (var i = 0; i < Children.Count; ++i)
         {
-            if (m_Children[i].Path == e.FullPath)
+            if (Children[i] is FileTreeNode child && child.Path == e.FullPath)
             {
-                m_Children.RemoveAt(i);
-                if (m_Children.Count <= 0)
-                { 
-                    this.IsExpanded = true;
-                    this.IsExpanded = false;
-                }
+                Children.RemoveAt(i);
                 break;
             }
         }
@@ -153,9 +158,9 @@ internal class FileTreeNode : TreeNodeBase
 
     private void OnRenamed(object sender, RenamedEventArgs e)
     {
-        foreach (var child in m_Children!)
+        foreach (var childObj in Children)
         {
-            if (child.Path == e.OldFullPath)
+            if (childObj is FileTreeNode child && child.Path == e.OldFullPath)
             {
                 child.Path = e.FullPath;
                 child.Name = e.Name.Split(System.IO.Path.DirectorySeparatorChar)[^1] ?? child.Name;
@@ -188,7 +193,7 @@ internal class FileTreeNode : TreeNodeBase
                 Path = Path.Replace(m_UndoName, Name);
                 if (IsBranch)
                 {
-                    var dir = new DirectoryInfo(Path);
+                    var dir = new DirectoryInfo(oldPath);
                     dir.MoveTo(Path);
                 }
                 else

@@ -10,14 +10,19 @@ using Avalonia.Controls.Models.TreeDataGrid;
 using Avalonia.Controls.Selection;
 using ArisenEngine;
 using ReactiveUI;
-
 using ArisenEngine.Core.Lifecycle;
+using ArisenEditorFramework.Core;
+using ArisenEditor.Views;
 
 namespace ArisenEditor.ViewModels;
 
-internal class ContentViewModel : BaseToolViewModel
+internal class ContentViewModel : EditorPanelBase
 {
     private string m_AssetsSearchText = String.Empty;
+
+    public override string Title => "Content";
+    public override string Id => "ContentViewModel";
+    public override object Content => new ContentView { DataContext = this };
 
     internal string AssetsSearchText
     {
@@ -27,8 +32,6 @@ internal class ContentViewModel : BaseToolViewModel
 
     internal ContentViewModel()
     {
-        Id = "ContentViewModel";
-        Title = "Content";
         InitializeFolderSource();
         InitializeAssetsSource();
     }
@@ -56,7 +59,7 @@ internal class ContentViewModel : BaseToolViewModel
                             IsTextSearchEnabled = true,
                             TextSearchValueSelector = x => x.Name
                         }),
-                    x => x.Children<FileTreeNode>(),
+                    x => x.Children.OfType<FileTreeNode>(),
                     x => x.HasChildren,
                     x => x.IsExpanded
                 ),
@@ -110,7 +113,7 @@ internal class ContentViewModel : BaseToolViewModel
         
         m_FolderSelections = FolderSource.RowSelection.SelectedItems.ToArray();
 
-        Content.Clear();
+        AssetsItems.Clear();
         foreach (var folderSelection  in FolderSelections)
         {
             var folders = Directory.EnumerateDirectories(folderSelection.Path, "*", SearchOption.TopDirectoryOnly);
@@ -118,17 +121,17 @@ internal class ContentViewModel : BaseToolViewModel
             foreach (var folder in folders)
             {
                 var folderName = folder.Split(Path.DirectorySeparatorChar)[^1];
-                Content.Add(new FileTreeNode(folderName, folder, true));
+                AssetsItems.Add(new FileTreeNode(folderName, folder, true));
             }
             
             foreach (var file in files)
             {
                 var fileName = file.Split(Path.DirectorySeparatorChar)[^1];
-                Content.Add(new FileTreeNode(fileName, file, false));
+                AssetsItems.Add(new FileTreeNode(fileName, file, false));
             }
         }
         
-        ContentSource.Items = Content;
+        ContentSource.Items = AssetsItems;
     }
 
     #endregion
@@ -136,18 +139,18 @@ internal class ContentViewModel : BaseToolViewModel
 
     #region Assets Part
 
-    // TODO: figure out why if dont add a default FileTreeNode, the AssetsView will not auto refresh when selection changed
-    private ObservableCollection<FileTreeNode> m_Content = new ObservableCollection<FileTreeNode>()
+    // Renamed from 'Content' to 'AssetsItems' to avoid conflict with EditorPanelBase.Content
+    private ObservableCollection<FileTreeNode> m_AssetsItems = new ObservableCollection<FileTreeNode>()
     {
         new FileTreeNode("Content", Path.Combine(ArisenApplication.s_ProjectRoot, "Content"), true, isRoot: true, true)
     };
 
-    private ObservableCollection<FileTreeNode> Content
+    private ObservableCollection<FileTreeNode> AssetsItems
     {
-        get => m_Content;
+        get => m_AssetsItems;
         set
         {
-            this.RaiseAndSetIfChanged(ref m_Content, value);
+            this.RaiseAndSetIfChanged(ref m_AssetsItems, value);
         }
     }
     public FlatTreeDataGridSource<FileTreeNode> ContentSource { get; set; }
@@ -199,8 +202,7 @@ internal class ContentViewModel : BaseToolViewModel
 
         ContentSource.RowSelection.SelectionChanged += AssetsSelectionChanged;
 
-        var rows = ContentSource.Rows;
-        ContentSource.Items = Content;
+        ContentSource.Items = AssetsItems;
         
     }
 

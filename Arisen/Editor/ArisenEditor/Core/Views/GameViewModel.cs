@@ -3,17 +3,23 @@ using System.Collections.ObjectModel;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using ArisenEditor.Extensions.GameView;
+using ArisenEditor.Views;
+using ArisenEditorFramework.Core;
 using Avalonia;
 using Avalonia.Controls;
 using ReactiveUI;
 
 namespace ArisenEditor.ViewModels;
 
-internal class GameViewModel : BaseDocumentViewModel
+internal class GameViewModel : EditorPanelBase
 {
     private ObservableCollection<GameViewResolutionConfig> m_GameViewResolutionConfigs = new();
     private readonly CompositeDisposable m_Disposables = new(); // 统一管理所有的订阅
     
+    public override string Title => "Game";
+    public override string Id => "GameView";
+    public override object Content => new GameView { DataContext = this };
+
     public ObservableCollection<GameViewResolutionConfig> GameViewResolutionConfigs
     {
         get => m_GameViewResolutionConfigs;
@@ -45,9 +51,6 @@ internal class GameViewModel : BaseDocumentViewModel
     
     internal GameViewModel()
     {
-        Id = "GameView";
-        Title = "Game";
-        
         this.WhenAnyValue(x => x.SelectedResolution)
             .Where(res => res != null)
             .Subscribe(OnResolutionConfigChanged).DisposeWith(m_Disposables);

@@ -19,9 +19,14 @@ internal class MainEditorHostViewModel : ReactiveObject
     public string ProjectName => ArisenEditor.Core.EditorProjectContext.Instance.CurrentProject.Name;
     public string ProjectPath => ArisenEditor.Core.EditorProjectContext.Instance.CurrentProject.ProjectPath;
     
-    internal MainEditorHostViewModel()
+    internal MainEditorHostViewModel(ArisenEditorFramework.Core.IPanelFactory? panelFactory = null)
     {
         m_LayoutManager = new ArisenEditorFramework.Docking.LayoutManager();
+        if (panelFactory != null)
+        {
+            m_LayoutManager.PanelFactory = panelFactory;
+        }
+        
         m_LayoutManager.Initialize();
         Layout = m_LayoutManager.Layout;
         
