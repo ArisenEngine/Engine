@@ -1,14 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Windows.Input;
+using ArisenEditorFramework.Hierarchy;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using ReactiveUI;
 
 namespace ArisenEditor.ViewModels;
 
-internal abstract class TreeNodeBase : ReactiveObject, IEditableObject
+internal abstract class TreeNodeBase : ReactiveObject, IHierarchyItem, IEditableObject
 {
     private bool m_IsExpanded;
 
@@ -17,6 +20,38 @@ internal abstract class TreeNodeBase : ReactiveObject, IEditableObject
         get => m_IsExpanded;
         set { this.RaiseAndSetIfChanged(ref m_IsExpanded, value && HasChildren); }
     }
+
+    private bool m_IsSelected;
+    public bool IsSelected
+    {
+        get => m_IsSelected;
+        set => this.RaiseAndSetIfChanged(ref m_IsSelected, value);
+    }
+
+    private bool m_IsEditing;
+    public bool IsEditing
+    {
+        get => m_IsEditing;
+        set => this.RaiseAndSetIfChanged(ref m_IsEditing, value);
+    }
+
+    public bool IsLeaf => !IsBranch;
+
+    public object? Tag { get; set; }
+
+    private IHierarchyItem? m_Parent;
+    public IHierarchyItem? Parent
+    {
+        get => m_Parent;
+        set => this.RaiseAndSetIfChanged(ref m_Parent, value);
+    }
+
+    private ObservableCollection<IHierarchyItem> m_Children = new();
+    public ObservableCollection<IHierarchyItem> Children => m_Children;
+
+    public ICommand? BeginRenameCommand { get; protected set; }
+    public ICommand? EndRenameCommand { get; protected set; }
+    public ICommand? DeleteCommand { get; protected set; }
 
     private bool m_AllowDrag = true;
 
@@ -94,80 +129,34 @@ internal abstract class TreeNodeBase : ReactiveObject, IEditableObject
         set => this.RaiseAndSetIfChanged(ref m_Modified, value);
     }
 
-    public abstract IReadOnlyList<T> Children<T>() where T : TreeNodeBase;
-
     public abstract bool HasChildren { get; }
 
-    private Bitmap m_LeafIcon;
-
-    public Bitmap LeafIcon
+    private Bitmap? m_Icon;
+    public Bitmap? Icon
     {
         get
         {
-            if (m_LeafIcon == null)
+            if (m_Icon == null)
             {
-                using (var fileStream = AssetLoader.Open(new Uri(LeafIconPath)))
+                string path = IsRoot ? RootIconPath : (IsBranch ? (IsExpanded ? BranchOpenIconPath : BranchIconPath) : LeafIconPath);
+                if (!string.IsNullOrEmpty(path))
                 {
-                    m_LeafIcon = new Bitmap(fileStream);
+                    try
+                    {
+                        using (var fileStream = AssetLoader.Open(new Uri(path)))
+                        {
+                            m_Icon = new Bitmap(fileStream);
+                        }
+                    }
+                    catch
+                    {
+                        // Fallback or log error
+                    }
                 }
             }
-
-            return m_LeafIcon;
+            return m_Icon;
         }
-    }
-
-    private Bitmap m_BranchIcon;
-
-    public Bitmap BranchIcon
-    {
-        get
-        {
-            if (m_BranchIcon == null)
-            {
-                using (var fileStream = AssetLoader.Open(new Uri(BranchIconPath)))
-                {
-                    m_BranchIcon = new Bitmap(fileStream);
-                }
-            }
-
-            return m_BranchIcon;
-        }
-    }
-
-    private Bitmap m_BranchOpenIcon;
-
-    public Bitmap BranchOpenIcon
-    {
-        get
-        {
-            if (m_BranchOpenIcon == null)
-            {
-                using (var fileStream = AssetLoader.Open(new Uri(BranchOpenIconPath)))
-                {
-                    m_BranchOpenIcon = new Bitmap(fileStream);
-                }
-            }
-
-            return m_BranchOpenIcon;
-        }
-    }
-
-    private Bitmap m_RootIcon;
-
-    public Bitmap RootIcon
-    {
-        get
-        {
-            if (m_RootIcon == null)
-            {
-                using (var fileStream = AssetLoader.Open(new Uri(RootIconPath)))
-                {
-                    m_RootIcon = new Bitmap(fileStream);
-                }
-            }
-
-            return m_RootIcon;
-        }
+        set => this.RaiseAndSetIfChanged(ref m_Icon, value);
     }
 
     protected virtual string LeafIconPath => "";
@@ -189,7 +178,13 @@ internal abstract class TreeNodeBase : ReactiveObject, IEditableObject
         m_IsExpanded = isRoot;
         IsBranch = isBranch;
         m_IsImmutable = isImmutable;
+
+        BeginRenameCommand = ReactiveCommand.Create(() => IsEditing = true);
+        EndRenameCommand = ReactiveCommand.Create(() => IsEditing = false);
     }
+
+    public virtual bool CanAcceptDrop(IHierarchyItem sourceItem) => AllowDrop;
+    public virtual void AcceptDrop(IHierarchyItem sourceItem) { }
 
     #region Sort
 
@@ -264,4 +259,4 @@ internal abstract class TreeNodeBase : ReactiveObject, IEditableObject
     }
 
     #endregion
-}
+}

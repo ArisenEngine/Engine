@@ -5,6 +5,8 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Windows.Input;
 using ArisenEditor.Models;
+using ArisenEditor.Views;
+using ArisenEditorFramework.Core;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using DynamicData;
@@ -16,8 +18,12 @@ using ReactiveUI;
 namespace ArisenEditor.ViewModels;
 using LogMessage = Logger.LogMessage;
 using LogLevel = Logger.LogLevel;
-public class ConsoleViewModel : BaseToolViewModel, IDisposable
+public class ConsoleViewModel : EditorPanelBase, IDisposable
 {
+    public override string Title => "Console";
+    public override string Id => "Console";
+    public override object Content => new ConsoleView { DataContext = this };
+
     private ReadOnlyObservableCollection<MessageItemNode> m_Messages;
     
 
@@ -246,8 +252,9 @@ public class ConsoleViewModel : BaseToolViewModel, IDisposable
     }
 
 
-    public void Dispose()
+    public override void Dispose()
     {
+        base.Dispose();
         m_SourceList.Dispose();
         m_Disposable.Dispose();
         m_CountChanged.Dispose();

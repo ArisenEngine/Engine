@@ -15,6 +15,7 @@ using ArisenEditorFramework.Lifecycle;
 using ArisenEditorFramework.Utilities;
 using ArisenEditorFramework.UI.Common;
 using ArisenEditor.ViewModels;
+using ArisenEditor.Core.Factory;
 using Avalonia.Controls;
 using ArisenEngine;
 using ReactiveUI;
@@ -214,7 +215,10 @@ namespace ArisenEditor
             
             Core.EditorProjectContext.Initialize(metadata);
             
-            var viewModel = new MainEditorHostViewModel();
+            var panelFactory = new ArisenPanelFactory();
+            panelFactory.Initialize();
+            
+            var viewModel = new MainEditorHostViewModel(panelFactory);
             desktop.MainWindow = new Window
             {
                 Title = $"Arisen Editor - {metadata.Name}",

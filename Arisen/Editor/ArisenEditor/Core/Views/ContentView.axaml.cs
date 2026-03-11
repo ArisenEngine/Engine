@@ -14,14 +14,13 @@ public partial class ContentView : UserControl
     public ContentView()
     {
         InitializeComponent();
-        m_ViewModel = new ContentViewModel();
-        DataContext = m_ViewModel;
     }
     
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-        
+        m_ViewModel = DataContext as ContentViewModel;
+        if (m_ViewModel == null) return;
         // Folder Tree
         FolderTree.RowPrepared += OnFolderTreeRowPrepared;
         FolderTree.RowClearing += OnFolderTreeRowClearing;
