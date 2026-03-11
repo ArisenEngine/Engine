@@ -47,6 +47,6 @@ internal partial class MainEditorHostView : Window
         ArisenFileSystemWatcher.Current = null;
         m_FileSystemWatcher.Dispose();
         m_FileSystemWatcher = null;
-        ArisenApplication.Exit();
+        ArisenApplication.RequestExit();
     }
 }

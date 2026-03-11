@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using ArisenEditor.GameDev;
 using Avalonia;
@@ -40,6 +40,10 @@ class Program
         finally
         {
             Logger.Dispose();
+
+            // Force the OS to tear down the process. This avoids zombie processes 
+            // caused by C++ native threads or unmanaged background C# tasks.
+            Environment.Exit(Environment.ExitCode);
         }
     }
 
