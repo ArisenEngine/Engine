@@ -50,10 +50,14 @@ internal class FileTreeNode : TreeNodeBase
 
         }
         
-        ArisenEditorFramework.Utilities.ArisenFileSystemWatcher.Changed += OnChanged;
-        ArisenEditorFramework.Utilities.ArisenFileSystemWatcher.Created += OnCreated;
-        ArisenEditorFramework.Utilities.ArisenFileSystemWatcher.Deleted += OnDeleted;
-        ArisenEditorFramework.Utilities.ArisenFileSystemWatcher.Renamed += OnRenamed;
+        var watcher = ArisenEditorFramework.Utilities.ArisenFileSystemWatcher.Current;
+        if (watcher != null)
+        {
+            watcher.Changed += OnChanged;
+            watcher.Created += OnCreated;
+            watcher.Deleted += OnDeleted;
+            watcher.Renamed += OnRenamed;
+        }
 
         return result;
     }

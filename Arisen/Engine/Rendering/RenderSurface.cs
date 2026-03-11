@@ -1,9 +1,8 @@
-﻿using ArisenEngine.Platform;
+using ArisenEngine.Platform;
 using ArisenEngine.Platform.Desktop;
 using ArisenEngine.Core.RHI;
 using ArisenEngine.Core.Lifecycle;
 using ArisenEngine.Core.Diagnostics;
-using ArisenEngine.Core.RHI;
 
 namespace ArisenEngine.Rendering;
 

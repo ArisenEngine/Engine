@@ -60,12 +60,38 @@ namespace ArisenEditor
 
                 if (!string.IsNullOrEmpty(projectPath) && File.Exists(projectPath))
                 {
-                    _ = ExecuteBootstrapSequence(desktop, projectPath);
+                    Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
+                    {
+                        try
+                        {
+                            await ExecuteBootstrapSequence(desktop, projectPath);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Error($"[Startup] Unhandled exception: {ex}");
+                            await MessageBoxUtility.ShowMessageBoxStandard("Fatal Error", 
+                                $"An unexpected error occurred during startup:\n{ex.Message}");
+                            desktop.Shutdown();
+                        }
+                    });
                 }
                 else
                 {
                     // Use Post to ensure we've entered the main loop before showing UI
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = ShowPickerAndLaunch(desktop));
+                    Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
+                    {
+                        try
+                        {
+                            await ShowPickerAndLaunch(desktop);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Error($"[Startup] Unhandled exception: {ex}");
+                            await MessageBoxUtility.ShowMessageBoxStandard("Fatal Error", 
+                                $"An unexpected error occurred during startup:\n{ex.Message}");
+                            desktop.Shutdown();
+                        }
+                    });
                 }
             }
             
@@ -74,26 +100,44 @@ namespace ArisenEditor
 
         private async Task ShowPickerAndLaunch(IClassicDesktopStyleApplicationLifetime desktop)
         {
-            // Use native folder picker for project selection
-            var paths = await ArisenEditorFramework.Utilities.FileSystemUtilities.BrowserDirectory("Select Arisen Project Folder");
-            if (paths == null || paths.Count == 0)
+            // Retry loop: if the folder picker is dismissed (e.g. clicking outside), 
+            // re-show it instead of leaving the app in an unrecoverable state.
+            const int maxRetries = 10;
+            
+            for (int attempt = 0; attempt < maxRetries; attempt++)
             {
-                desktop.Shutdown();
+                var paths = await FileSystemUtilities.BrowserDirectory("Select Arisen Project Folder");
+                if (paths == null || paths.Count == 0)
+                {
+                    // Picker was dismissed — ask the user if they want to try again or quit
+                    // On first few attempts, just re-show silently
+                    if (attempt >= 2)
+                    {
+                        // After 3 dismissals, confirm the user actually wants to quit
+                        desktop.Shutdown();
+                        return;
+                    }
+                    continue;
+                }
+
+                string selectedFolder = paths[0];
+                string[] projectFiles = Directory.GetFiles(selectedFolder, "*.arisenproj");
+
+                if (projectFiles.Length == 0)
+                {
+                    await MessageBoxUtility.ShowMessageBoxStandard("Error", 
+                        "No .arisenproj file found in the selected folder.\nPlease select a valid Arisen project folder.");
+                    // Don't shutdown — let the user pick again
+                    continue;
+                }
+
+                string projectPath = projectFiles[0];
+                await ExecuteBootstrapSequence(desktop, projectPath);
                 return;
             }
-
-            string selectedFolder = paths[0];
-            string[] projectFiles = Directory.GetFiles(selectedFolder, "*.arisenproj");
-
-            if (projectFiles.Length == 0)
-            {
-                await ArisenEditorFramework.Utilities.MessageBoxUtility.ShowMessageBoxStandard("Error", "No .arisenproj file found in the selected folder.");
-                desktop.Shutdown();
-                return;
-            }
-
-            string projectPath = projectFiles[0];
-            await ExecuteBootstrapSequence(desktop, projectPath);
+            
+            // Exhausted retries
+            desktop.Shutdown();
         }
 
         private async Task ExecuteBootstrapSequence(IClassicDesktopStyleApplicationLifetime desktop, string projectPath)
@@ -113,6 +157,7 @@ namespace ArisenEditor
 
             bootstrapper.ProgressChanged += (stage, status, progress) => {
                 Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                    Logger.Log($"Bootstrapper::Execute {stage}, status: {status}, progress: {progress}");
                     var stageText = loadingWindow.FindControl<TextBlock>("StageText");
                     var statusText = loadingWindow.FindControl<TextBlock>("StatusText");
                     var progressBar = loadingWindow.FindControl<ArisenEditorFramework.UI.Controls.LoadingBar>("ProgressBar");
@@ -123,10 +168,7 @@ namespace ArisenEditor
                 });
             };
 
-            var context = await bootstrapper.RunAsync(projectPath, step =>
-            {
-                Logger.Log($"Bootstrapper::Execute {step.Name}");
-            });
+            var context = await bootstrapper.RunAsync(projectPath);
 
             if (context.Success)
             {
@@ -136,11 +178,13 @@ namespace ArisenEditor
             else
             {
                 Logger.Error($"[Bootstrap] Failed: {context.ErrorMessage}");
-                loadingWindow.Close();
                 
-                // Delay slightly to ensure window is closed and main loop handles it
-                await Task.Delay(100); 
-                await ArisenEditorFramework.Utilities.MessageBoxUtility.ShowMessageBoxStandard("Bootstrap Failed", context.ErrorMessage);
+                // Show the error message BEFORE closing the loading window, using it as owner.
+                // This ensures the message box always has a valid parent window.
+                await MessageBoxUtility.ShowMessageBoxStandard(loadingWindow, 
+                    "Bootstrap Failed", context.ErrorMessage ?? "An unknown error occurred during bootstrap.");
+                
+                loadingWindow.Close();
                 desktop.Shutdown();
             }
         }
@@ -153,7 +197,7 @@ namespace ArisenEditor
                 ProjectPath = projectPath 
             };
             
-            ArisenEditor.Core.EditorProjectContext.Initialize(metadata);
+            Core.EditorProjectContext.Initialize(metadata);
             
             var viewModel = new MainEditorHostViewModel();
             desktop.MainWindow = new Window
@@ -165,11 +209,6 @@ namespace ArisenEditor
             };
             desktop.MainWindow.Show();
         }
-
-        public object CreateView(Window window)
-        {
-            throw new System.NotImplementedException();
-        }
         
         private static bool IsProduction()
         {
@@ -178,12 +217,6 @@ namespace ArisenEditor
 #else
         return true;
 #endif
-        }
-
-        public static void Shutdown(IClassicDesktopStyleApplicationLifetime desktop)
-        {
-            // ArisenInstance.DisposeLogger();
-            desktop.Shutdown();
         }
     }
 }

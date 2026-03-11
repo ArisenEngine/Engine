@@ -12,7 +12,6 @@ public class ShaderLabParser
 {
     private Lexer m_Lexer;
     private Preprocessor m_Preprocessor;
-    private bool m_HasErrors = false;
     private SubShader _lastParsedSubShader = null;
     private readonly string m_BaseDir = string.Empty;
 

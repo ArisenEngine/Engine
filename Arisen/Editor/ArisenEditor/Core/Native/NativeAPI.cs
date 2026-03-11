@@ -4,10 +4,12 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 
-namespace AvaloniaLib.Native
+namespace ArisenEditor.Core.Native
 {
-    internal static class NativeAPI
+    [SupportedOSPlatform("windows")]
+    public static class NativeAPI
     {
         // TODO: to make api platform agnostic
 
