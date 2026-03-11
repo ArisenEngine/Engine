@@ -63,9 +63,12 @@ public static class Logger
     public static Action<LogMessage>? MessageAdded;
     public static Action? MessageCleared;
 
-    public static void Dispose()
+    public static bool IsInitialized { get; private set; }
+
+    internal static void Dispose()
     {
         LoggerAPI.Logger_Shutdown();
+        IsInitialized = false;
     }
 
     [Conditional("DEBUG")]
@@ -239,6 +242,8 @@ public static class Logger
 
     public static bool Initialize(bool bindCallback = false)
     {
+        if (IsInitialized) return true;
+        
         bool ok = LoggerAPI.Logger_Initialize(bindCallback);
         if (bindCallback && m_ReceiveLog != null && ok)
         {
@@ -246,6 +251,7 @@ public static class Logger
             LoggerAPI.Logger_BindCallback(ptr);
         }
 
+        IsInitialized = ok;
         return ok;
     }
 }

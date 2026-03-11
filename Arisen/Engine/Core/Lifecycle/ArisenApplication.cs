@@ -58,12 +58,17 @@ public class ArisenApplication
         return Run(name);
     }
 
-    public static int Run(string name = "")
+    public static bool InitializeLogging(bool bindCallback = false)
     {
-        var config = new EngineConfig
+        return Logger.Initialize(bindCallback);
+    }
+
+    public static bool InitializeEngine(EngineConfig config)
+    {
+        if (!Logger.IsInitialized)
         {
-            AppName = name
-        };
+            InitializeLogging(false);
+        }
 
         // Register early subsystems
         EngineKernel.Instance.RegisterSubsystem(new PlatformSubsystem());
@@ -74,7 +79,7 @@ public class ArisenApplication
         // Initialize RHI and native core
         if (!NativeRuntime.Initialize())
         {
-            return -1;
+            return false;
         }
 
         // Use PackageSubsystem to resolve the default render pipeline
@@ -91,10 +96,25 @@ public class ArisenApplication
             Logger.Warning("[ArisenApplication] Failed to find default RenderPipeline package. Rendering might be disabled.");
         }
 
+        EngineKernel.Instance.Initialize(config);
+        return true;
+    }
+
+    public static int Run(string name = "")
+    {
+        var config = new EngineConfig
+        {
+            AppName = name
+        };
+
+        if (!InitializeEngine(config))
+        {
+            return -1;
+        }
+
         var errorCode = 0;
         try
         {
-            EngineKernel.Instance.Initialize(config);
             s_IsRunning = true;
             errorCode = EngineKernel.Instance.Run();
         }
