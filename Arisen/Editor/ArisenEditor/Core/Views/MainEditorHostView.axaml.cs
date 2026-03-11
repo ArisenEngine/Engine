@@ -9,7 +9,8 @@ using Avalonia.Threading;
 
 namespace ArisenEditor.Core.Views;
 
-using Logger = ArisenEngine.Core.Diagnostics.Logger;
+using ArisenEngine.Core.Diagnostics;
+using ArisenEditor.Core.Services;
 internal partial class MainEditorHostView : Window
 {
     private ArisenFileSystemWatcher m_FileSystemWatcher;
@@ -33,7 +34,7 @@ internal partial class MainEditorHostView : Window
         {
             if (ArisenApplication.Run("Arisen Instance (Attach to Editor)") != 0)
             {
-                Logger.Error("Arisen instance run error.");
+                EditorLog.Error("Arisen instance run error.");
             }
                 
         });
@@ -43,8 +44,8 @@ internal partial class MainEditorHostView : Window
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
-        Logger.Log("Close Editor Window.");
-        ArisenFileSystemWatcher.Current = null;
+        EditorLog.Log("Close Editor Window.");
+        ArisenEngine.Core.Lifecycle.ArisenApplication.ShutdownEngine();
         m_FileSystemWatcher.Dispose();
         m_FileSystemWatcher = null;
         ArisenApplication.RequestExit();

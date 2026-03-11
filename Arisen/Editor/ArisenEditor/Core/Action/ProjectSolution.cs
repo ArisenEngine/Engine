@@ -13,10 +13,8 @@ namespace ArisenEditor.GameDev
 {
     public static partial class ProjectSolution
     {
-        public static string INSTALLATION_ENV_VARIABLE = "ARISEN_INSTALL_ROOT";
+        public static string INSTALLATION_ENV_VARIABLE = "ARISEN_ENGINE_ROOT";
         public static string InstallationRoot = string.Empty;
-        
-        
         // private static readonly string k_TemplateSuffix = @".template";
         private static readonly string k_Sln = @".sln";
         private static readonly string k_Csproj = @".csproj";

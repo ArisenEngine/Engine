@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Platform;
 using ArisenEngine.Core.Lifecycle;
 using ArisenEngine;
 using ArisenEngine.Core.Diagnostics;
+using ArisenEditor.Core.Services;
 
 namespace ArisenEngine.Rendering
 {
@@ -46,8 +47,7 @@ namespace ArisenEngine.Rendering
 
         public void Dispose()
         {
-            Logger.Log($"############# RenderSurfaceHost Dispose:{m_SurfaceType} #################");
-            
+            EditorLog.Log($"############# RenderSurfaceHost Dispose:{m_SurfaceType} #################");
         }
 
         public void Resize(int width, int height)

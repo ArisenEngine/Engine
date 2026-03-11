@@ -11,6 +11,9 @@ using Avalonia.Controls;
 using Avalonia.Threading;
 using DynamicData;
 using DynamicData.Binding;
+using System.Collections.Generic;
+using ArisenEditor.Core.Services;
+using ArisenEditor.Models;
 using ArisenEngine.Core.Diagnostics;
 using Avalonia.ReactiveUI;
 using ReactiveUI;
@@ -38,8 +41,8 @@ public class ConsoleViewModel : EditorPanelBase, IDisposable
                 return new ReadOnlyObservableCollection<MessageItemNode>(
                     new ObservableCollection<MessageItemNode>()
                     {
-                        new MessageItemNode(new LogMessage(LogLevel.Error, " In design mode.", "000", "DesignMode", DateTime.Now, "trace")),
-                        new MessageItemNode(new LogMessage(LogLevel.Error, " In design mode.", "000", "DesignMode", DateTime.Now, "trace")),
+                        new MessageItemNode(new LogMessage(LogLevel.Error, " In design mode.", "000", "DesignMode", DateTime.Now, "trace"), LogSource.Editor),
+                        new MessageItemNode(new LogMessage(LogLevel.Error, " In design mode.", "000", "DesignMode", DateTime.Now, "trace"), LogSource.Player),
                     });
             }
             return m_Messages;
@@ -109,6 +112,20 @@ public class ConsoleViewModel : EditorPanelBase, IDisposable
         }
     }
 
+    private bool m_ShowPlayerLogs = true;
+    public bool ShowPlayerLogs
+    {
+        get => m_ShowPlayerLogs;
+        set => this.RaiseAndSetIfChanged(ref m_ShowPlayerLogs, value);
+    }
+
+    private bool m_ShowEditorLogs = true;
+    public bool ShowEditorLogs
+    {
+        get => m_ShowEditorLogs;
+        set => this.RaiseAndSetIfChanged(ref m_ShowEditorLogs, value);
+    }
+
     private MessageItemNode m_SelectedItem;
 
     internal MessageItemNode SelectedItem
@@ -164,11 +181,11 @@ public class ConsoleViewModel : EditorPanelBase, IDisposable
         }
     }
 
-    internal void OnAddMessage(LogMessage message)
+    internal void OnAddMessage(LogMessage message, LogSource source = LogSource.Player)
     {
         Dispatcher.UIThread.InvokeAsync(() =>
         {
-            m_SourceList.Add(new MessageItemNode(message));
+            m_SourceList.Add(new MessageItemNode(message, source));
             
         }, DispatcherPriority.Background);
     }
@@ -200,10 +217,14 @@ public class ConsoleViewModel : EditorPanelBase, IDisposable
                 nameof(WarningChecked),
                 nameof(ErrorChecked),
                 nameof(ThreadChecked),
-                nameof(SearchText)
+                nameof(SearchText),
+                nameof(ShowPlayerLogs),
+                nameof(ShowEditorLogs)
                 )
             .Subscribe(_ => filter.OnNext(Filter))
             .DisposeWith(m_Disposable);
+        
+        EditorLogService.MessageAdded += OnEditorMessageAdded;
     }
 
     public void Clear()
@@ -213,6 +234,9 @@ public class ConsoleViewModel : EditorPanelBase, IDisposable
     
     private bool Filter(MessageItemNode messageItemNodes)
     {
+        if (!ShowPlayerLogs && messageItemNodes.Source == LogSource.Player) return false;
+        if (!ShowEditorLogs && messageItemNodes.Source == LogSource.Editor) return false;
+
         bool typeFilter = true;
 
         if (!ErrorChecked)
@@ -255,8 +279,11 @@ public class ConsoleViewModel : EditorPanelBase, IDisposable
     public override void Dispose()
     {
         base.Dispose();
+        EditorLogService.MessageAdded -= OnEditorMessageAdded;
         m_SourceList.Dispose();
         m_Disposable.Dispose();
         m_CountChanged.Dispose();
     }
+
+    private void OnEditorMessageAdded(Logger.LogMessage msg) => OnAddMessage(msg, LogSource.Editor);
 }

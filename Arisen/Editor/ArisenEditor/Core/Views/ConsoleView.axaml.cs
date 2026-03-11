@@ -37,8 +37,8 @@ internal partial class ConsoleView : UserControl
         m_ViewModel = DataContext as ConsoleViewModel;
         m_ViewModel?.Clear();
         
-        Logger.MessageAdded += OnLogMessageAdd;
-        Logger.MessageCleared += OnLogMessageCleared;
+        ArisenEngine.Core.Diagnostics.Logger.MessageAdded += OnLogMessageAdd;
+        ArisenEngine.Core.Diagnostics.Logger.MessageCleared += OnLogMessageCleared;
 
         #region Test
 
@@ -87,8 +87,8 @@ internal partial class ConsoleView : UserControl
     {
         base.OnUnloaded(e);
         
-        Logger.MessageAdded -= OnLogMessageAdd;
-        Logger.MessageCleared -= OnLogMessageCleared;
+        ArisenEngine.Core.Diagnostics.Logger.MessageAdded -= OnLogMessageAdd;
+        ArisenEngine.Core.Diagnostics.Logger.MessageCleared -= OnLogMessageCleared;
         m_ViewModel?.Dispose();
     }
 

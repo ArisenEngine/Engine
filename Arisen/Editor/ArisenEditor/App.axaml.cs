@@ -20,6 +20,7 @@ using Avalonia.Controls;
 using ArisenEngine;
 using ReactiveUI;
 using System.IO;
+using ArisenEditor.Core.Services;
 
 namespace ArisenEditor
 {
@@ -73,7 +74,7 @@ namespace ArisenEditor
                         }
                         catch (Exception ex)
                         {
-                            Logger.Error($"[Startup] Unhandled exception: {ex}");
+                            EditorLog.Error($"[Startup] Unhandled exception: {ex}");
                             await MessageBoxUtility.ShowMessageBoxStandard("Fatal Error", 
                                 $"An unexpected error occurred during startup:\n{ex.Message}");
                             desktop.Shutdown();
@@ -91,7 +92,7 @@ namespace ArisenEditor
                         }
                         catch (Exception ex)
                         {
-                            Logger.Error($"[Startup] Unhandled exception: {ex}");
+                            EditorLog.Error($"[Startup] Unhandled exception: {ex}");
                             await MessageBoxUtility.ShowMessageBoxStandard("Fatal Error", 
                                 $"An unexpected error occurred during startup:\n{ex.Message}");
                             desktop.Shutdown();
@@ -173,7 +174,7 @@ namespace ArisenEditor
 
             bootstrapper.ProgressChanged += (stage, status, progress) => {
                 Avalonia.Threading.Dispatcher.UIThread.Post(() => {
-                    Logger.Log($"Bootstrapper::Execute {stage}, status: {status}, progress: {progress}");
+                    EditorLog.Log($"Bootstrapper::Execute {stage}, status: {status}, progress: {progress}");
                     var stageText = loadingWindow.FindControl<TextBlock>("StageText");
                     var statusText = loadingWindow.FindControl<TextBlock>("StatusText");
                     var progressBar = loadingWindow.FindControl<ArisenEditorFramework.UI.Controls.LoadingBar>("ProgressBar");
@@ -193,7 +194,7 @@ namespace ArisenEditor
             }
             else
             {
-                Logger.Error($"[Bootstrap] Failed: {context.ErrorMessage}");
+                EditorLog.Error($"[Bootstrap] Failed: {context.ErrorMessage}");
                 
                 // Show the error message BEFORE closing the loading window, using it as owner.
                 // This ensures the message box always has a valid parent window.
