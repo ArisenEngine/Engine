@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using ArisenLauncher.Services;
 using ArisenEditorFramework.Core;
+using ArisenEditorFramework.Services;
 using ArisenLauncher.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -16,7 +17,7 @@ public partial class MainViewModel : ObservableObject
     private readonly EngineDiscoveryService _discoveryService;
     private readonly LauncherProcessService _processService;
     private readonly ProjectService _projectService;
-    private readonly LogService _logService;
+    private readonly ILogService _logService;
 
     [ObservableProperty]
     private string _statusText = "Ready";
@@ -38,7 +39,7 @@ public partial class MainViewModel : ObservableObject
         EngineDiscoveryService discoveryService, 
         LauncherProcessService processService,
         ProjectService projectService,
-        LogService logService)
+        ILogService logService)
     {
         _configService = configService;
         _discoveryService = discoveryService;

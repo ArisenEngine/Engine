@@ -39,7 +39,7 @@ class Program
         }
         finally
         {
-            Logger.Dispose();
+            ArisenApplication.ShutdownEngine();
 
             // Force the OS to tear down the process. This avoids zombie processes 
             // caused by C++ native threads or unmanaged background C# tasks.
@@ -64,14 +64,14 @@ class Program
         box.ShowAsync().Wait(2000);
         
         // Final flush
-        Logger.Dispose();
+        ArisenApplication.ShutdownEngine();
         Environment.Exit(1);
     }
 
     static void Setup()
     {
         ArisenApplication.s_IsInEditor = true;
-        Logger.Initialize(true);
+        ArisenApplication.InitializeLogging(true);
         ProjectSolution.InstallationRoot = Environment.GetEnvironmentVariable(ProjectSolution.INSTALLATION_ENV_VARIABLE, EnvironmentVariableTarget.User);
         if (ProjectSolution.InstallationRoot == null)
         {

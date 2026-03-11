@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml;
 using ArisenLauncher.Views;
 using ArisenLauncher.Services;
 using ArisenLauncher.ViewModels;
+using ArisenEditorFramework.Services;
 
 namespace ArisenLauncher;
 
@@ -17,7 +18,7 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        var log = new LogService();
+        var log = new LogService("launcher.log");
         
         // Setup Global Exception Handling
         AppDomain.CurrentDomain.UnhandledException += (s, e) => 

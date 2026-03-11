@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using ArisenEditorFramework.Services;
 
 namespace ArisenLauncher.Services;
 
@@ -22,12 +23,12 @@ public class EngineInstance
 
 public class ConfigService
 {
-    private readonly LogService _logService;
+    private readonly ILogService _logService;
     private readonly string _settingsPath;
 
     public LauncherSettings Settings { get; private set; } = new();
 
-    public ConfigService(LogService logService)
+    public ConfigService(ILogService logService)
     {
         _logService = logService;
         _settingsPath = Path.Combine(AppContext.BaseDirectory, "launcher_settings.json");

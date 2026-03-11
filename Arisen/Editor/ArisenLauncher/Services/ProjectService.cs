@@ -6,15 +6,16 @@ using System.Threading.Tasks;
 
 using ArisenEditorFramework.Core;
 using ArisenLauncher.Models;
+using ArisenEditorFramework.Services;
 
 namespace ArisenLauncher.Services;
 
 public class ProjectService
 {
-    private readonly LogService _logService;
+    private readonly ILogService _logService;
     private readonly ConfigService _configService;
 
-    public ProjectService(LogService logService, ConfigService configService)
+    public ProjectService(ILogService logService, ConfigService configService)
     {
         _logService = logService;
         _configService = configService;

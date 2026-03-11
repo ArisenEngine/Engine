@@ -20,7 +20,7 @@ class Program
         {
             Logger.Fatal($"Unhandled Exception: {e.ExceptionObject}");
             // Ensure logs are flushed on fatal exit
-            Logger.Dispose();
+            ArisenApplication.ShutdownEngine();
         };
         
         TaskScheduler.UnobservedTaskException += (s, e) => 
@@ -31,9 +31,10 @@ class Program
 
         try
         {
-            Setup();
-            
+            ArisenApplication.InitializeLogging(false);
             Logger.Info("EditorTest application started.");
+            
+            Setup();
             
             BuildAvaloniaApp()
                 .StartWithClassicDesktopLifetime(args);
@@ -41,19 +42,12 @@ class Program
         finally
         {
             Logger.Info("EditorTest application shutting down.");
-            NativeRuntime.Shutdown();
-            Logger.Dispose();
+            ArisenApplication.ShutdownEngine();
         }
     }
 
     static void Setup()
     {
-        // Centralized Engine Initialization (Logger + Graphics RHI)
-        if (!NativeRuntime.Initialize())
-        {
-            Console.WriteLine("[EditorTest] Failed to initialize engine via NativeRuntime.");
-        }
-        
         // Setup installation root
         string? installRoot = Environment.GetEnvironmentVariable("ARISEN_ENGINE_ROOT", EnvironmentVariableTarget.User);
         if (installRoot == null)
@@ -64,6 +58,16 @@ class Program
         ArisenApplication.s_Platform = RuntimePlatform.Windows;
         ArisenApplication.s_StartupPath = installRoot;
         ArisenApplication.s_IsInEditor = true;
+
+        var config = new EngineConfig
+        {
+            AppName = "EditorTest"
+        };
+
+        if (!ArisenApplication.InitializeEngine(config))
+        {
+            Console.WriteLine("[EditorTest] Failed to initialize engine via ArisenApplication.InitializeEngine.");
+        }
     }
 
     public static AppBuilder BuildAvaloniaApp()

@@ -163,6 +163,7 @@ namespace ArisenEditor
             var bootstrapper = new Bootstrapper();
             bootstrapper.AddStep(new EnvironmentValidationStep());
             bootstrapper.AddStep(new ProjectSynthesisStep());
+            bootstrapper.AddStep(new EngineInitializationStep());
             bootstrapper.AddStep(new DependencyConvergenceStep());
             bootstrapper.AddStep(new DataFabricStep());
             bootstrapper.AddStep(new HardwareWarmupStep());

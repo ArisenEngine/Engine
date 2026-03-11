@@ -1,15 +1,16 @@
 using System;
 using System.IO;
 using System.Linq;
+using ArisenEditorFramework.Services;
 
 namespace ArisenLauncher.Services;
 
 public class EngineDiscoveryService
 {
     private readonly ConfigService m_ConfigService;
-    private readonly LogService m_LogService;
+    private readonly ILogService m_LogService;
 
-    public EngineDiscoveryService(ConfigService configService, LogService logService)
+    public EngineDiscoveryService(ConfigService configService, ILogService logService)
     {
         m_ConfigService = configService;
         m_LogService = logService;

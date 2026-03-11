@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Threading.Tasks;
 using ArisenLauncher.Services;
+using ArisenEditorFramework.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -11,7 +12,7 @@ namespace ArisenLauncher.ViewModels;
 public partial class NewProjectViewModel : ObservableObject
 {
     private readonly ProjectService _projectService;
-    private readonly LogService _logService;
+    private readonly ILogService _logService;
     private readonly EngineInstance _engine;
 
     [ObservableProperty]
@@ -28,7 +29,7 @@ public partial class NewProjectViewModel : ObservableObject
     public event Action<bool>? RequestClose;
     public Func<Task<string?>>? RequestFolderPickerAsync;
 
-    public NewProjectViewModel(ProjectService projectService, LogService logService, EngineInstance engine)
+    public NewProjectViewModel(ProjectService projectService, ILogService logService, EngineInstance engine)
     {
         _projectService = projectService;
         _logService = logService;

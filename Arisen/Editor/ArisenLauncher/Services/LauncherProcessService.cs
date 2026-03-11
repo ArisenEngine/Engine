@@ -3,19 +3,20 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using ArisenEditorFramework.Services;
 
 namespace ArisenLauncher.Services;
 
 public class LauncherProcessService
 {
-    private readonly LogService _logService;
+    private readonly ILogService _logService;
     private readonly List<Process> _activeProcesses = new();
     private readonly object _lock = new();
 
     public event Action? AllInstancesClosed;
     public event Action? ProcessStarted;
 
-    public LauncherProcessService(LogService logService)
+    public LauncherProcessService(ILogService logService)
     {
         _logService = logService;
     }

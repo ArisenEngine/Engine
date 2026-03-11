@@ -1,4 +1,5 @@
 using ArisenEngine.Core.Diagnostics;
+using ArisenEngine.Core.Lifecycle;
 using CSharpEngineTest.Framework;
 using CSharpEngineTest.RHI.Rendering;
 using CSharpEngineTest.Core.Graph;
@@ -7,8 +8,19 @@ using CSharpEngineTest.Core.Lifecycle;
 using CSharpEngineTest.Core.Packages;
 using CSharpEngineTest.RHI.Unit;
 
-Logger.Initialize();
+ArisenApplication.InitializeLogging();
 Logger.Log("###### Start C# Engine RHI Test ######");
+
+var config = new EngineConfig
+{
+    AppName = "CSharpEngineTest"
+};
+if (!ArisenApplication.InitializeEngine(config))
+{
+    Logger.Error("Failed to initialize engine.");
+    ArisenApplication.ShutdownEngine();
+    return;
+}
 
 TestRunner.RegisterTest<RHIBasicTriangleTest>();
 TestRunner.RegisterTest<GraphTests>();
@@ -28,4 +40,4 @@ catch (Exception ex)
 }
 
 Logger.Log("###### End C# Engine RHI Test ######");
-Logger.Dispose();
+ArisenApplication.ShutdownEngine();
