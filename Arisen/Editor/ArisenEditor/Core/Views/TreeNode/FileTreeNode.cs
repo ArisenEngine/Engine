@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.IO;
 using System.Reactive.Linq;
+using ArisenEngine.Core.Diagnostics;
+using ArisenEditor.Core.Services;
 using ArisenEditor.Utilities;
 using ArisenEditorFramework.Hierarchy;
 using Avalonia.Media.Imaging;
@@ -61,7 +63,7 @@ internal class FileTreeNode : TreeNodeBase
         }
         catch (Exception ex)
         {
-             ArisenEngine.Core.Diagnostics.Logger.Error($"Failed to load children for {Path}: {ex.Message}");
+             EditorLog.Error($"Failed to load children for {Path}: {ex.Message}");
         }
         
         var watcher = ArisenEditorFramework.Utilities.ArisenFileSystemWatcher.Current;

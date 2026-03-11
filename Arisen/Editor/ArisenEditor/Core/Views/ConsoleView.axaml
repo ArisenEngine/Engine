@@ -34,6 +34,8 @@
 
             </TextBox>
             <StackPanel Spacing="2" HorizontalAlignment="Right" Orientation="Horizontal" Width="315">
+                <ToggleButton Name="EditorToggle" Content="Editor" IsChecked="{Binding ShowEditorLogs}" VerticalAlignment="Center" Margin="0,0,5,0" Padding="5,2"/>
+                <ToggleButton Name="PlayerToggle" Content="Player" IsChecked="{Binding ShowPlayerLogs}" VerticalAlignment="Center" Margin="0,0,5,0" Padding="5,2"/>
                 <ToggleButton Name="InfoToggle" HorizontalAlignment="Right" IsChecked="{Binding InfoChecked}">
                     <Image Width="15" Height="15" Source="avares://ArisenEditor/Assets/Icons/info.png"></Image>
                 </ToggleButton>

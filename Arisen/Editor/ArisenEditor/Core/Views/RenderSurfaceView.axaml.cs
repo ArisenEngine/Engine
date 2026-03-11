@@ -1,10 +1,11 @@
 using System;
+using ArisenEditor.Core.Services;
 using ArisenEditor.Extensions.GameView;
+using ArisenEditor.ViewModels;
 using ArisenEngine.Rendering;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Input;
-using ArisenEditor.ViewModels;
 using ArisenEngine.Core.Diagnostics;
 
 namespace ArisenEngine.Views.Rendering
@@ -51,7 +52,7 @@ namespace ArisenEngine.Views.Rendering
                     Name = SurfaceType.ToString()
                 };
                 
-                Console.WriteLine($"Create Render Surface Host: {SurfaceType}");
+                EditorLog.Log($"Create Render Surface Host: {SurfaceType}");
                 RenderViewContainer.Children.Insert(0, m_Host);
             }
 
@@ -64,7 +65,7 @@ namespace ArisenEngine.Views.Rendering
             if (!Design.IsDesignMode)
             {
                 GameViewResolution.s_OnResolutionChanged -= OnGameViewResolutionChanged;
-                Console.WriteLine($"Remove Render Surface Host: {SurfaceType}");
+                EditorLog.Log($"Remove Render Surface Host: {SurfaceType}");
                 RenderViewContainer.Children.RemoveAt(0);
             
                 m_Host.Dispose();
@@ -128,7 +129,7 @@ namespace ArisenEngine.Views.Rendering
         protected override void OnGotFocus(GotFocusEventArgs e)
         {
             base.OnGotFocus(e);
-            Logger.Log($"Focus on :{Name}");
+            EditorLog.Log($"Focus on :{Name}");
         }
 
         protected override void OnSizeChanged(SizeChangedEventArgs e)

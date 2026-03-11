@@ -5,6 +5,8 @@ using System.IO;
 using ArisenEditorFramework.Hierarchy;
 using Avalonia.Media.Imaging;
 using ArisenEditor.Models;
+using ArisenEngine.Core.Diagnostics;
+using ArisenEditor.Core.Services;
 
 namespace ArisenEditor.ViewModels;
 
@@ -47,7 +49,7 @@ internal class SceneTreeNode : TreeNodeBase
         }
         catch (Exception ex)
         {
-            ArisenEngine.Core.Diagnostics.Logger.Error($"Failed to load children for {Path}: {ex.Message}");
+            EditorLog.Error($"Failed to load children for {Path}: {ex.Message}");
         }
         
         m_IsLoaded = true;

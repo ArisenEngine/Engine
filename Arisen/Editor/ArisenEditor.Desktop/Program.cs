@@ -1,12 +1,9 @@
 using System;
 using System.Threading;
+using ArisenEditor.Core.Services;
 using ArisenEditor.GameDev;
 using Avalonia;
-using Avalonia.ReactiveUI;
-using ArisenEngine;
-using ArisenEngine.Core.Diagnostics;
 using ArisenEngine.Core.Lifecycle;
-using ArisenEngine.Core.Diagnostics;
 
 namespace ArisenEditor.Desktop.Desktop;
 
@@ -52,7 +49,7 @@ class Program
         if (ex == null) return;
         
         // Ensure log is recorded
-        Logger.Error($"[GlobalException] {ex.Message}\n{ex.StackTrace}");
+        EditorLog.Error($"[GlobalException] {ex.Message}\n{ex.StackTrace}");
         
         // Show fatal error message box
         // We can't use MessageBoxUtility here because it might depend on Avalonia state that is already broken
@@ -75,13 +72,17 @@ class Program
         ProjectSolution.InstallationRoot = Environment.GetEnvironmentVariable(ProjectSolution.INSTALLATION_ENV_VARIABLE, EnvironmentVariableTarget.User);
         if (ProjectSolution.InstallationRoot == null)
         {
-            ProjectSolution.InstallationRoot = AppDomain.CurrentDomain.SetupInformation.ApplicationBase;
+            ProjectSolution.InstallationRoot = AppContext.BaseDirectory;
             Environment.SetEnvironmentVariable(ProjectSolution.INSTALLATION_ENV_VARIABLE, ProjectSolution.InstallationRoot, EnvironmentVariableTarget.User);
         }
         
         
         ArisenApplication.s_Platform = RuntimePlatform.Windows;
         ArisenApplication.s_StartupPath = ProjectSolution.InstallationRoot;
+
+        // Initialize Editor Logger
+        var editorLogService = new ArisenEditor.Core.Services.EditorLogService("editor.log");
+        ArisenEditor.Core.Services.EditorLog.Initialize(editorLogService);
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.

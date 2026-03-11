@@ -8,8 +8,15 @@ namespace ArisenEditor.Models;
 using LogMessage = Logger.LogMessage;
 using LogLevel = Logger.LogLevel;
 
+internal enum LogSource
+{
+    Player,
+    Editor
+}
+
 internal class MessageItemNode
 {
+    internal LogSource Source { get; }
     internal string StackTrace
     {
         get
@@ -62,8 +69,9 @@ internal class MessageItemNode
     
     private LogMessage m_Message;
 
-    internal MessageItemNode(LogMessage message)
+    internal MessageItemNode(LogMessage message, LogSource source = LogSource.Player)
     {
         m_Message = message;
+        Source = source;
     }
 }
