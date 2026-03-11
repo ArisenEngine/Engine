@@ -27,6 +27,7 @@ internal partial class MainEditorHostView : Window
             
         // File Watcher
         m_FileSystemWatcher = new ArisenFileSystemWatcher(ArisenApplication.s_DataPath);
+        ArisenFileSystemWatcher.Current = m_FileSystemWatcher;
         
         Dispatcher.UIThread.InvokeAsync(() =>
         {
@@ -43,6 +44,7 @@ internal partial class MainEditorHostView : Window
     {
         base.OnUnloaded(e);
         Logger.Log("Close Editor Window.");
+        ArisenFileSystemWatcher.Current = null;
         m_FileSystemWatcher.Dispose();
         m_FileSystemWatcher = null;
         ArisenApplication.Exit();

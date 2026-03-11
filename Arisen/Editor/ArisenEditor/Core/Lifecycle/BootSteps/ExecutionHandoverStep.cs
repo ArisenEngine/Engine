@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using ArisenEditorFramework.Lifecycle;
 
@@ -8,8 +9,8 @@ public class ExecutionHandoverStep : IBootStep
     public string Name => "Execution Handover";
     public string Description => "Surrendering control to the main editor thread...";
 
-    public async Task ExecuteAsync(BootContext context)
+    public async Task ExecuteAsync(BootContext context, CancellationToken cancellationToken = default)
     {
-        await Task.Delay(500);
+        await Task.Delay(500, cancellationToken);
     }
 }

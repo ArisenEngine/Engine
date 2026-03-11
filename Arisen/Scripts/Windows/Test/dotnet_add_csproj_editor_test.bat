@@ -38,12 +38,29 @@ if exist "%SLN_PATH%" (
     REM Resolve absolute project paths
     for %%I in ("%SCRIPT_DIR%\..\..\..\BindingGenerator\BindingGenerator.csproj") do set "BINDING_GENERATOR=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\..\AutoBinding\AutoBinding.csproj") do set "AUTO_BINDING=%%~fI"
+    for %%I in ("%SCRIPT_DIR%\..\..\..\External\ArisenDAG\ArisenDAG.csproj") do set "ARISEN_DAG=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\..\Engine\ArisenEngine.csproj") do set "ARISEN_ENGINE=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\..\Editor\ArisenEditor\ArisenEditor.csproj") do set "ARISEN_EDITOR=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\..\External\ArisenEditorFramework\ArisenEditorFramework.csproj") do set "ARISEN_EDITOR_FRAMEWORK=%%~fI"
+    for %%I in ("%SCRIPT_DIR%\..\..\..\Editor\ArisenEditor.Desktop\ArisenEditor.Desktop.csproj") do set "ARISEN_EDITOR_DESKTOP=%%~fI"
+    for %%I in ("%SCRIPT_DIR%\..\..\..\Editor\ArisenLauncher\ArisenLauncher.csproj") do set "ARISEN_LAUNCHER=%%~fI"
+    for %%I in ("%SCRIPT_DIR%\..\..\..\Editor\ArisenLauncher.Desktop\ArisenLauncher.Desktop.csproj") do set "ARISEN_LAUNCHER_DESKTOP=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\..\Test\EditorTest\EditorTest.csproj") do set "EDITOR_TEST=%%~fI"
 
-    for %%V in (BINDING_GENERATOR AUTO_BINDING ARISEN_ENGINE ARISEN_EDITOR ARISEN_EDITOR_FRAMEWORK EDITOR_TEST) do (
+    REM Avalonia Dock set
+    for %%I in ("%SCRIPT_DIR%\..\..\..\3rdparty\Ava.Dock\src\Avalonia.Controls.ProportionalStackPanel\Avalonia.Controls.ProportionalStackPanel.csproj") do set "AVA_ProportionalStack=%%~fI"
+    for %%I in ("%SCRIPT_DIR%\..\..\..\3rdparty\Ava.Dock\src\Avalonia.Controls.Recycling\Avalonia.Controls.Recycling.csproj") do set "AVA_Recycling=%%~fI"
+    for %%I in ("%SCRIPT_DIR%\..\..\..\3rdparty\Ava.Dock\src\Avalonia.Controls.Recycling.Model\Avalonia.Controls.Recycling.Model.csproj") do set "AVA_RecyclingModel=%%~fI"
+    for %%I in ("%SCRIPT_DIR%\..\..\..\3rdparty\Ava.Dock\src\Avalonia.MarkupExtension\Avalonia.MarkupExtension.csproj") do set "AVA_MarkupExt=%%~fI"
+    for %%I in ("%SCRIPT_DIR%\..\..\..\3rdparty\Ava.Dock\src\Dock.Avalonia\Dock.Avalonia.csproj") do set "AVA_DockAvalonia=%%~fI"
+    for %%I in ("%SCRIPT_DIR%\..\..\..\3rdparty\Ava.Dock\src\Dock.Model\Dock.Model.csproj") do set "AVA_DockModel=%%~fI"
+    for %%I in ("%SCRIPT_DIR%\..\..\..\3rdparty\Ava.Dock\src\Dock.Model.Avalonia\Dock.Model.Avalonia.csproj") do set "AVA_DockModelAvalonia=%%~fI"
+    for %%I in ("%SCRIPT_DIR%\..\..\..\3rdparty\Ava.Dock\src\Dock.Model.Mvvm\Dock.Model.Mvvm.csproj") do set "AVA_DockModelMvvm=%%~fI"
+    for %%I in ("%SCRIPT_DIR%\..\..\..\3rdparty\Ava.Dock\src\Dock.Model.ReactiveUI\Dock.Model.ReactiveUI.csproj") do set "AVA_DockModelReactiveUI=%%~fI"
+    for %%I in ("%SCRIPT_DIR%\..\..\..\3rdparty\Ava.Dock\src\Dock.Serializer\Dock.Serializer.csproj") do set "AVA_DockSerializer=%%~fI"
+    for %%I in ("%SCRIPT_DIR%\..\..\..\3rdparty\Ava.Dock\src\Dock.Settings\Dock.Settings.csproj") do set "AVA_DockSettings=%%~fI"
+
+    for %%V in (BINDING_GENERATOR AUTO_BINDING ARISEN_DAG ARISEN_ENGINE ARISEN_EDITOR ARISEN_EDITOR_FRAMEWORK ARISEN_EDITOR_DESKTOP ARISEN_LAUNCHER ARISEN_LAUNCHER_DESKTOP EDITOR_TEST) do (
         if "!%%V!"=="" (
             echo ERROR: Path for %%V is empty.
             set "EXIT_CODE=1"
@@ -66,17 +83,36 @@ if exist "%SLN_PATH%" (
     REM Relative paths for portability
     set "REL_BINDING_GENERATOR=..\..\..\BindingGenerator\BindingGenerator.csproj"
     set "REL_AUTO_BINDING=..\..\..\AutoBinding\AutoBinding.csproj"
+    set "REL_ARISEN_DAG=..\..\..\External\ArisenDAG\ArisenDAG.csproj"
     set "REL_ARISEN_ENGINE=..\..\..\Engine\ArisenEngine.csproj"
     set "REL_ARISEN_EDITOR=..\..\..\Editor\ArisenEditor\ArisenEditor.csproj"
     set "REL_ARISEN_EDITOR_FRAMEWORK=..\..\..\External\ArisenEditorFramework\ArisenEditorFramework.csproj"
+    set "REL_ARISEN_EDITOR_DESKTOP=..\..\..\Editor\ArisenEditor.Desktop\ArisenEditor.Desktop.csproj"
+    set "REL_ARISEN_LAUNCHER=..\..\..\Editor\ArisenLauncher\ArisenLauncher.csproj"
+    set "REL_ARISEN_LAUNCHER_DESKTOP=..\..\..\Editor\ArisenLauncher.Desktop\ArisenLauncher.Desktop.csproj"
     set "REL_EDITOR_TEST=..\..\..\Test\EditorTest\EditorTest.csproj"
 
     dotnet sln "!SLN_FILE!" add --in-root "!REL_BINDING_GENERATOR!"
     dotnet sln "!SLN_FILE!" add --in-root "!REL_AUTO_BINDING!"
+    dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_DAG!"
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_ENGINE!"
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_EDITOR!"
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_EDITOR_FRAMEWORK!"
+    dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_EDITOR_DESKTOP!"
+    dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_LAUNCHER!"
+    dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_LAUNCHER_DESKTOP!"
     dotnet sln "!SLN_FILE!" add --in-root "!REL_EDITOR_TEST!"
+
+    REM Avalonia Dock projects
+    for %%P in ("%AVA_ProportionalStack%" "%AVA_Recycling%" "%AVA_RecyclingModel%" "%AVA_MarkupExt%" "%AVA_DockAvalonia%" "%AVA_DockModel%" "%AVA_DockModelAvalonia%" "%AVA_DockModelMvvm%" "%AVA_DockModelReactiveUI%" "%AVA_DockSerializer%" "%AVA_DockSettings%") do (
+        if exist "%%~fP" (
+            for %%Q in ("%%~fP") do (
+                set "PROJ_NAME=%%~nQ"
+                set "REL_AVA=..\..\..\3rdparty\Ava.Dock\src\!PROJ_NAME!\!PROJ_NAME!.csproj"
+            )
+            dotnet sln "!SLN_FILE!" add --in-root "!REL_AVA!"
+        )
+    )
 
     popd
     echo Updating OutputPath for all projects in solution...

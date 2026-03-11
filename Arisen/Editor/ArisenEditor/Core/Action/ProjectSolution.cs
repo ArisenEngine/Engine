@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 // using System.Runtime.InteropServices;
 // using System.Runtime.InteropServices.ComTypes;
 using System.Diagnostics;
@@ -17,15 +17,15 @@ namespace ArisenEditor.GameDev
         public static string InstallationRoot = string.Empty;
         
         
-        private static readonly string k_TemplateSuffix = @".template";
+        // private static readonly string k_TemplateSuffix = @".template";
         private static readonly string k_Sln = @".sln";
         private static readonly string k_Csproj = @".csproj";
         
-        private static object m_VisualStudioInstance = null;
+        // private static object m_VisualStudioInstance = null;
         // private static EnvDTE80.DTE2 DTE => (m_VisualStudioInstance as EnvDTE80.DTE2);
 
         // use visual studio 2022
-        private static readonly string k_ProgID = @"VisualStudio.DTE.17.0";
+        // private static readonly string k_ProgID = @"VisualStudio.DTE.17.0";
         
 
         // // TODO: find a probably way to handle IDE in cross-platform

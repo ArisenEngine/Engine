@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using ArisenEditorFramework.Lifecycle;
 using ArisenEngine;
@@ -10,10 +11,17 @@ public class ProjectSynthesisStep : IBootStep
     public string Name => "Project Synthesis";
     public string Description => "Loading project manifest and assembly metadata...";
 
-    public async Task ExecuteAsync(BootContext context)
+    public async Task ExecuteAsync(BootContext context, CancellationToken cancellationToken = default)
     {
-        // Actually set the project root for the engine
-        ArisenApplication.s_ProjectRoot = System.IO.Path.GetDirectoryName(context.ProjectPath);
-        await Task.Delay(800);
+        // Set the project root for the engine
+        var projectRoot = System.IO.Path.GetDirectoryName(context.ProjectPath);
+        if (string.IsNullOrEmpty(projectRoot))
+        {
+            context.Success = false;
+            context.ErrorMessage = $"Could not determine project root directory from path: {context.ProjectPath}";
+            return;
+        }
+        ArisenApplication.s_ProjectRoot = projectRoot;
+        await Task.Delay(800, cancellationToken);
     }
 }

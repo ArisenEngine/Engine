@@ -24,7 +24,11 @@ namespace ArisenEngine.Views.Rendering
         
         GameViewResolutionConfig m_ResolutionConfig;
         
-        public RenderSurfaceView(GameViewResolutionConfig resolutionConfig = null)
+        public RenderSurfaceView() : this(null)
+        {
+        }
+
+        public RenderSurfaceView(GameViewResolutionConfig resolutionConfig)
         {
             m_ResolutionConfig = resolutionConfig;
             InitializeComponent();
