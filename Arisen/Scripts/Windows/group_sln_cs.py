@@ -55,14 +55,14 @@ def group_sln_projects_incremental(sln_path: str, rules: dict):
 
 if __name__ == "__main__":
     rules = {
-        "ToolChain": ["Serialization"],
+        "ToolChain": [],
         "Binding": ["BindingGenerator", "AutoBinding"],
         "Editor": [
             "ArisenEditor", "ArisenEditor.Desktop", "ArisenEditorShell",
             "ArisenLauncher", "ArisenLauncher.Desktop",
             "Avalonia.", "Dock.", "ArisenEditorFramework"
         ],
-        "Runtime": ["ArisenEngine"],
+        "Runtime": ["ArisenEngine","ArisenDAG"],
         "Test": ["EditorTest", "CSharpEngineTest"]
     }
 
