@@ -45,6 +45,10 @@ namespace ArisenEditor
 
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
+                // Explicitly tie the application's lifespan to the active MainWindow.
+                // If the user clicks the 'X' button on the MainWindow (Splash or Editor), the app will shut down.
+                desktop.ShutdownMode = Avalonia.Controls.ShutdownMode.OnMainWindowClose;
+
                 desktop.Exit += (sender, args) => ArisenEngine.Core.Lifecycle.ArisenApplication.ShutdownEngine();
 
                 string[] args = Environment.GetCommandLineArgs();
@@ -100,24 +104,27 @@ namespace ArisenEditor
 
         private async Task ShowPickerAndLaunch(IClassicDesktopStyleApplicationLifetime desktop)
         {
-            // Retry loop: if the folder picker is dismissed (e.g. clicking outside), 
-            // re-show it instead of leaving the app in an unrecoverable state.
-            const int maxRetries = 10;
+            var loadingWindow = new LoadingWindow();
+            desktop.MainWindow = loadingWindow;
             
-            for (int attempt = 0; attempt < maxRetries; attempt++)
+            var stageText = loadingWindow.FindControl<TextBlock>("StageText");
+            var statusText = loadingWindow.FindControl<TextBlock>("StatusText");
+            var progressBar = loadingWindow.FindControl<ArisenEditorFramework.UI.Controls.LoadingBar>("ProgressBar");
+            
+            if (stageText != null) stageText.Text = "Arisen Engine";
+            if (statusText != null) statusText.Text = "Waiting for project selection...";
+            if (progressBar != null) progressBar.IsVisible = false;
+
+            loadingWindow.Show();
+
+            while (true)
             {
                 var paths = await FileSystemUtilities.BrowserDirectory("Select Arisen Project Folder");
                 if (paths == null || paths.Count == 0)
                 {
-                    // Picker was dismissed — ask the user if they want to try again or quit
-                    // On first few attempts, just re-show silently
-                    if (attempt >= 2)
-                    {
-                        // After 3 dismissals, confirm the user actually wants to quit
-                        desktop.Shutdown();
-                        return;
-                    }
-                    continue;
+                    // Picker was dismissed (e.g. clicking outside or canceled), terminate Editor directly
+                    desktop.Shutdown();
+                    return;
                 }
 
                 string selectedFolder = paths[0];
@@ -125,26 +132,33 @@ namespace ArisenEditor
 
                 if (projectFiles.Length == 0)
                 {
-                    await MessageBoxUtility.ShowMessageBoxStandard("Error", 
+                    await MessageBoxUtility.ShowMessageBoxStandard(loadingWindow, "Error", 
                         "No .arisenproj file found in the selected folder.\nPlease select a valid Arisen project folder.");
-                    // Don't shutdown — let the user pick again
+                    // Let the user pick again
                     continue;
                 }
 
                 string projectPath = projectFiles[0];
-                await ExecuteBootstrapSequence(desktop, projectPath);
+                
+                // Reset UI for Bootstrap Sequence
+                if (stageText != null) stageText.Text = "Initializing Arisen Engine...";
+                if (statusText != null) statusText.Text = "Loading core modules...";
+                if (progressBar != null) progressBar.IsVisible = true;
+
+                await ExecuteBootstrapSequence(desktop, projectPath, loadingWindow);
                 return;
             }
-            
-            // Exhausted retries
-            desktop.Shutdown();
         }
 
-        private async Task ExecuteBootstrapSequence(IClassicDesktopStyleApplicationLifetime desktop, string projectPath)
+        private async Task ExecuteBootstrapSequence(IClassicDesktopStyleApplicationLifetime desktop, string projectPath, LoadingWindow? existingWindow = null)
         {
-            var loadingWindow = new LoadingWindow();
-            desktop.MainWindow = loadingWindow;
-            loadingWindow.Show();
+            var loadingWindow = existingWindow ?? new LoadingWindow();
+            
+            if (existingWindow == null)
+            {
+                desktop.MainWindow = loadingWindow;
+                loadingWindow.Show();
+            }
 
             var bootstrapper = new Bootstrapper();
             bootstrapper.AddStep(new EnvironmentValidationStep());

@@ -153,15 +153,21 @@ public class ArisenApplication
         throw new Exception($"Surface of host {host} not exists");
     }
 
-    public static void Exit()
+    private static bool s_HasShutdown = false;
+
+    public static void RequestExit()
     {
         EngineKernel.Instance.RequestShutdown();
     }
 
     public static void ShutdownEngine()
     {
+        if (s_HasShutdown) return;
+        s_HasShutdown = true;
+
         EngineKernel.Instance.Dispose();
         NativeRuntime.Shutdown();
+        Logger.Dispose();
     }
 
     #endregion

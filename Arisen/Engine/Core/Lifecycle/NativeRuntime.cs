@@ -1,5 +1,6 @@
 using System;
 using Arisen.Native.RHI;
+using ArisenEngine.Core.Diagnostics;
 using ArisenEngine.Core.RHI;
 
 namespace ArisenEngine.Core.Lifecycle;
@@ -48,7 +49,7 @@ public static class NativeRuntime
         }
         catch (Exception e)
         {
-            Console.WriteLine($"[NativeRuntime] Error during native engine shutdown: {e.Message}");
+            Logger.Fatal($"[NativeRuntime] Error during native engine shutdown: {e.Message}");
         }
     }
 }

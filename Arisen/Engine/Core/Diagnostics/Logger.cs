@@ -69,7 +69,16 @@ public static class Logger
     }
 
     [Conditional("DEBUG")]
-    public static void Assert(
+    public static void Assert(bool condition, string message = "") => AssertInternal(condition, message);
+    public static void Log(object msg) => LogInternal(msg);
+    public static void Info(object msg) => InfoInternal(msg);
+    public static void Trace(object msg) => TraceInternal(msg);
+    public static void Warning(object msg) => WarningInternal(msg);
+    public static void Error(object msg) => ErrorInternal(msg);
+    public static void Fatal(object msg) => FatalInternal(msg);
+    
+    [Conditional("DEBUG")]
+    private static void AssertInternal(
         bool condition,
         string message = "",
         [System.Runtime.CompilerServices.CallerFilePath]
@@ -86,7 +95,7 @@ public static class Logger
         }
     }
 
-    public static void Log(object msg,
+    private static void LogInternal(object msg,
         [System.Runtime.CompilerServices.CallerFilePath]
         string file = "",
         [System.Runtime.CompilerServices.CallerLineNumber]
@@ -94,7 +103,7 @@ public static class Logger
         [System.Runtime.CompilerServices.CallerMemberName]
         string function = "") => WriteLog(LogLevel.Log, msg, file, line, function);
 
-    public static void Info(object msg,
+    private static void InfoInternal(object msg,
         [System.Runtime.CompilerServices.CallerFilePath]
         string file = "",
         [System.Runtime.CompilerServices.CallerLineNumber]
@@ -102,7 +111,7 @@ public static class Logger
         [System.Runtime.CompilerServices.CallerMemberName]
         string function = "") => WriteLog(LogLevel.Info, msg, file, line, function);
 
-    public static void Trace(object msg,
+    private static void TraceInternal(object msg,
         [System.Runtime.CompilerServices.CallerFilePath]
         string file = "",
         [System.Runtime.CompilerServices.CallerLineNumber]
@@ -110,7 +119,7 @@ public static class Logger
         [System.Runtime.CompilerServices.CallerMemberName]
         string function = "") => WriteLog(LogLevel.Trace, msg, file, line, function);
 
-    public static void Warning(object msg,
+    private static void WarningInternal(object msg,
         [System.Runtime.CompilerServices.CallerFilePath]
         string file = "",
         [System.Runtime.CompilerServices.CallerLineNumber]
@@ -118,7 +127,7 @@ public static class Logger
         [System.Runtime.CompilerServices.CallerMemberName]
         string function = "") => WriteLog(LogLevel.Warning, msg, file, line, function);
 
-    public static void Error(object msg,
+    private static void ErrorInternal(object msg,
         [System.Runtime.CompilerServices.CallerFilePath]
         string file = "",
         [System.Runtime.CompilerServices.CallerLineNumber]
@@ -126,7 +135,7 @@ public static class Logger
         [System.Runtime.CompilerServices.CallerMemberName]
         string function = "") => WriteLog(LogLevel.Error, msg, file, line, function);
 
-    public static void Fatal(object msg,
+    private static void FatalInternal(object msg,
         [System.Runtime.CompilerServices.CallerFilePath]
         string file = "",
         [System.Runtime.CompilerServices.CallerLineNumber]

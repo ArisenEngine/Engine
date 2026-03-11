@@ -17,7 +17,7 @@ internal partial class HeaderMenuEntries
     {
         Task.Run(()=> {
 
-            ArisenApplication.Exit();
+            ArisenApplication.RequestExit();
             ProjectSolution.OpenVisualStudio(Path.Combine(ArisenApplication.s_ProjectRoot, ArisenApplication.s_ProjectName + @".sln"));
 
         });
