@@ -66,7 +66,7 @@ namespace ArisenEngine::Diagnostics
             std::error_code _ec;
             std::filesystem::create_directories(log_dir, _ec);
 
-            const auto log_file = (log_dir / "log.log").string();
+            const auto log_file = (log_dir / "player.log").string();
 
             constexpr size_t queue_size = 8192;
             constexpr size_t num_threads = 1;
