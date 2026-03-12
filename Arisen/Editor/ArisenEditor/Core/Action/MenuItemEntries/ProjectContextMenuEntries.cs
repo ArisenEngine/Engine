@@ -4,6 +4,7 @@ using ArisenEditor.Utilities;
 using ArisenEditor.ViewModels;
 using Avalonia.Interactivity;
 using ArisenEditorFramework.Utilities;
+using ArisenEditor.Core.Views;
 
 namespace ArisenEditor.Internal.MenuItemEntries;
 

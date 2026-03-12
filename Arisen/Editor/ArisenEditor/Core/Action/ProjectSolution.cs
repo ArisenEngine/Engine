@@ -19,105 +19,12 @@ namespace ArisenEditor.GameDev
         private static readonly string k_Sln = @".sln";
         private static readonly string k_Csproj = @".csproj";
         
-        // private static object m_VisualStudioInstance = null;
-        // private static EnvDTE80.DTE2 DTE => (m_VisualStudioInstance as EnvDTE80.DTE2);
-
-        // use visual studio 2022
-        // private static readonly string k_ProgID = @"VisualStudio.DTE.17.0";
-        
-
-        // // TODO: find a probably way to handle IDE in cross-platform
-        // [DllImport("ole32.dll")]
-        // private static extern int GetRunningObjectTable(uint reserved, out IRunningObjectTable pprot);
-        //
-        // [DllImport("ole32.dll")]
-        // private static extern int CreateBindCtx(uint reserved, out IBindCtx ppbc);
-        
         internal static void OpenVisualStudio(string solutionFullPath)
         {
-            // IRunningObjectTable rot = null;
-            // IEnumMoniker monikerTable = null;
-            // IBindCtx bindCtx = null;    
-            //
-            // try
-            // {
-            //     if (m_VisualStudioInstance == null)
-            //     {
-            //         // find and open visual studio
-            //         var hResult = GetRunningObjectTable(0, out rot);
-            //         if (hResult < 0 || rot == null) throw new COMException($"GetRunningObjectTable() returned HRESULT: {hResult:X8}");
-            //
-            //         rot.EnumRunning(out monikerTable);
-            //
-            //         hResult = CreateBindCtx(0, out bindCtx);
-            //         if (hResult < 0 || rot == null) throw new COMException($"CreateBindCtx() returned HRESULT: {hResult:X8}");
-            //
-            //         IMoniker[] currentMoniker = new IMoniker[1];
-            //
-            //         while (monikerTable.Next(1, currentMoniker, IntPtr.Zero) == 0)
-            //         {
-            //             string name = string.Empty;
-            //             currentMoniker[0]?.GetDisplayName(bindCtx, null, out name);
-            //             if (name.Contains(k_ProgID))
-            //             {
-            //                 hResult = rot.GetObject(currentMoniker[0], out object obj);
-            //                 if (hResult < 0 || obj == null) throw new COMException($"Running object table's GetObject() returned HRESULT: {hResult:X8}");
-            //
-            //                 EnvDTE80.DTE2 dte = obj as EnvDTE80.DTE2;
-            //
-            //                 var solutionName = dte.Solution.FullName;
-            //                 if (solutionName.ToString() == solutionFullPath)
-            //                 {
-            //                     m_VisualStudioInstance = obj;
-            //                     break;
-            //                 }
-            //             }
-            //         }
-            //
-            //         if (m_VisualStudioInstance == null)
-            //         {
-            //             Type visualStudioType = Type.GetTypeFromProgID(k_ProgID, true);
-            //             m_VisualStudioInstance = Activator.CreateInstance(visualStudioType);
-            //             DTE.Solution.Open(solutionFullPath);
-            //         }
-            //
-            //     } else
-            //     {
-            //         if (DTE.Solution.FullName != solutionFullPath)
-            //         {
-            //             DTE.Solution.Open(solutionFullPath);
-            //         } 
-            //     }
-            //
-            //     DTE.MainWindow.Activate();
-            //     DTE.MainWindow.Visible = true;
-            //
-            // } 
-            // catch(Exception e)
-            // {
-            //     Debug.WriteLine(e.Message);
-            // }
-            // finally
-            // {
-            //     if (monikerTable != null) Marshal.ReleaseComObject(monikerTable);
-            //     if (rot != null) Marshal.ReleaseComObject(rot);
-            //     if (bindCtx != null) Marshal.ReleaseComObject(bindCtx);
-            // }
         }
 
         internal static void CloseVisualStudio()
         {
-            // if (DTE != null)
-            // {
-            //     if (DTE.Solution.IsOpen)
-            //     {
-            //         DTE.ExecuteCommand("File.SaveAll");
-            //         DTE.Solution.Close(true);
-            //     }
-            //
-            //     m_VisualStudioInstance = null;
-            //     DTE.Quit();
-            // }
         }
 
         internal static bool HandleFiles(FileInfo file, DirectoryInfo sourceDir, DirectoryInfo destinationDir)

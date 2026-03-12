@@ -11,33 +11,35 @@ public class ViewLocator : IDataTemplate
 {
     public Control Build(object? data)
     {
+        if (data is Control control)
+        {
+            return control;
+        }
+
         var name = data?.GetType().FullName?.Replace("ViewModel", "View");
         if (name is null)
         {
             return new TextBlock { Text = "Invalid Data Type" };
         }
+
         var type = Type.GetType(name);
         if (type is { })
         {
             var instance = Activator.CreateInstance(type);
             if (instance is { })
             {
-                ((Control)instance).DataContext = data;
-                return (Control)instance;
-            }
-            else
-            {
-                return new TextBlock { Text = "Create Instance Failed: " + type.FullName };
+                var view = (Control)instance;
+                view.DataContext = data;
+                return view;
             }
         }
-        else
-        {
-            return new TextBlock { Text = "Not Found: " + name };
-        }
+
+        return new TextBlock { Text = "Not Found: " + name };
     }
 
     public bool Match(object? data)
     {
-        return data is ReactiveObject ro && ro.GetType().Name.EndsWith("ViewModel");
+        // Match ViewModels or Controls (Views)
+        return data is ReactiveObject ro && ro.GetType().Name.EndsWith("ViewModel") || data is Control;
     }
 }

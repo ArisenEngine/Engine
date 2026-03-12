@@ -11,6 +11,6 @@ public class DependencyConvergenceStep : IBootStep
 
     public async Task ExecuteAsync(BootContext context, CancellationToken cancellationToken = default)
     {
-        await Task.Delay(1200, cancellationToken);
+        await Task.Delay(1, cancellationToken);
     }
 }

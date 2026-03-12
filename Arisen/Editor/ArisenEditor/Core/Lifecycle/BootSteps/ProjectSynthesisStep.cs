@@ -22,6 +22,6 @@ public class ProjectSynthesisStep : IBootStep
             return;
         }
         ArisenApplication.s_ProjectRoot = projectRoot;
-        await Task.Delay(800, cancellationToken);
+        await Task.Delay(1, cancellationToken);
     }
 }

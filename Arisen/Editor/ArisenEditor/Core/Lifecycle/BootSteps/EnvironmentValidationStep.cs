@@ -12,6 +12,6 @@ public class EnvironmentValidationStep : IBootStep
 
     public async Task ExecuteAsync(BootContext context, CancellationToken cancellationToken = default)
     {
-        await Task.Delay(500, cancellationToken); // Simulate check
+        await Task.Delay(1, cancellationToken); // Simulate check
     }
 }
