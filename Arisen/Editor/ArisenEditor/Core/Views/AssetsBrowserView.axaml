@@ -56,6 +56,10 @@
                             <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontSize="12" />
                         </StackPanel>
                     </DataTemplate>
+
+                    <DataTemplate x:Key="NameEditCell" DataType="treevm:FileTreeNode">
+                        <TextBox Text="{Binding Name}" VerticalAlignment="Center" FontSize="12" Padding="2" />
+                    </DataTemplate>
                 </TreeDataGrid.Resources>
             </TreeDataGrid>
 
@@ -77,6 +81,26 @@
                                 </Image.Source>
                             </Image>
                             <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontSize="12" />
+                        </StackPanel>
+                    </DataTemplate>
+
+                    <DataTemplate x:Key="NameEditCell" DataType="treevm:FileTreeNode">
+                        <TextBox Text="{Binding Name}" VerticalAlignment="Center" FontSize="12" Padding="2" />
+                    </DataTemplate>
+
+                    <DataTemplate x:Key="AssetIconNameEditCell" DataType="treevm:FileTreeNode">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Image Width="16" Height="16">
+                                <Image.Source>
+                                    <MultiBinding Converter="{StaticResource IconConverter}">
+                                        <Binding Path="IsBranch" />
+                                        <Binding Path="IsExpanded" />
+                                        <Binding Path="IsRoot" />
+                                        <Binding Path="." />
+                                    </MultiBinding>
+                                </Image.Source>
+                            </Image>
+                            <TextBox Text="{Binding Name}" VerticalAlignment="Center" FontSize="12" Padding="2" MinWidth="100" />
                         </StackPanel>
                     </DataTemplate>
                 </TreeDataGrid.Resources>

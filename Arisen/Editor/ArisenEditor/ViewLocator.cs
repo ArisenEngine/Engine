@@ -83,17 +83,17 @@ public class ViewLocator : IDataTemplate
                 .Replace(ViewModelSuffixes[0], ViewModelSuffixes[1]);
             
             var resolved = type.Assembly.GetType(viewName);
-            if (resolved != null) return resolved;
+            if (resolved != null && resolved != type) return resolved;
 
             // Strategy 2: Simple Suffix Replacement (if flattened)
             viewName = fullName.Replace(ViewModelSuffixes[0], ViewModelSuffixes[1]);
             resolved = type.Assembly.GetType(viewName);
-            if (resolved != null) return resolved;
+            if (resolved != null && resolved != type) return resolved;
 
             // Strategy 3: Global Views namespace guess
             var shortName = type.Name.Replace(ViewModelSuffixes[0], ViewModelSuffixes[1]);
             resolved = type.Assembly.GetType($"ArisenEditor.Views.{shortName}");
-            if (resolved != null) return resolved;
+            if (resolved != null && resolved != type) return resolved;
 
             return null;
         });
