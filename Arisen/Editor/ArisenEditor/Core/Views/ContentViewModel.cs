@@ -13,6 +13,7 @@ using ReactiveUI;
 using ArisenEngine.Core.Lifecycle;
 using ArisenEditorFramework.Core;
 using ArisenEditor.Views;
+using ArisenEditor.Core.Services;
 
 namespace ArisenEditor.ViewModels;
 
@@ -114,20 +115,27 @@ internal class ContentViewModel : EditorPanelBase
         m_FolderSelections = FolderSource.RowSelection.SelectedItems.ToArray();
 
         AssetsItems.Clear();
-        foreach (var folderSelection  in FolderSelections)
+        foreach (var folderSelection in FolderSelections)
         {
             var folders = Directory.EnumerateDirectories(folderSelection.Path, "*", SearchOption.TopDirectoryOnly);
             var files = Directory.EnumerateFiles(folderSelection.Path, "*", SearchOption.TopDirectoryOnly);
+            
             foreach (var folder in folders)
             {
-                var folderName = folder.Split(Path.DirectorySeparatorChar)[^1];
-                AssetsItems.Add(new FileTreeNode(folderName, folder, true));
+                var folderName = Path.GetFileName(folder);
+                var node = new FileTreeNode(folderName, folder, true);
+                node.AssetGuid = AssetDatabaseService.Instance.GetGuidFromPath(folder);
+                AssetsItems.Add(node);
             }
             
             foreach (var file in files)
             {
-                var fileName = file.Split(Path.DirectorySeparatorChar)[^1];
-                AssetsItems.Add(new FileTreeNode(fileName, file, false));
+                if (file.EndsWith(".meta")) continue;
+                
+                var fileName = Path.GetFileName(file);
+                var node = new FileTreeNode(fileName, file, false);
+                node.AssetGuid = AssetDatabaseService.Instance.GetGuidFromPath(file);
+                AssetsItems.Add(node);
             }
         }
         
@@ -140,10 +148,7 @@ internal class ContentViewModel : EditorPanelBase
     #region Assets Part
 
     // Renamed from 'Content' to 'AssetsItems' to avoid conflict with EditorPanelBase.Content
-    private ObservableCollection<FileTreeNode> m_AssetsItems = new ObservableCollection<FileTreeNode>()
-    {
-        new FileTreeNode("Content", Path.Combine(ArisenApplication.s_ProjectRoot, "Content"), true, isRoot: true, true)
-    };
+    private ObservableCollection<FileTreeNode> m_AssetsItems = new ObservableCollection<FileTreeNode>();
 
     private ObservableCollection<FileTreeNode> AssetsItems
     {
