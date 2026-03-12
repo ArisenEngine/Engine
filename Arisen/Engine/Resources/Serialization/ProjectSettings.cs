@@ -1,4 +1,4 @@
-﻿using ArisenEngine.Core.Serialization;
+using ArisenEngine.Core.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,12 +15,12 @@ namespace ArisenEngine.Data.ProjectData
 
         public void OnAfterDeserialize()
         {
-            throw new NotImplementedException();
+            // Optional: Handle logic after file load 
         }
 
         public void OnBeforeSerialize()
         {
-            throw new NotImplementedException();
+            // Optional: Handle logic before file save
         }
     }
 }

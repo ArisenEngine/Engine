@@ -1,5 +1,4 @@
-﻿//using Core.ECS.Entity;
-
+using ArisenEngine.Core.ECS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,15 +10,27 @@ namespace ArisenEngine.Models
 {
     public sealed class Scene : ISerializationCallbackReceiver
     {
-        //public List<Entity> entities = new List<Entity>();
+        public string Name { get; set; } = "New Scene";
+        public EntityManager Registry { get; private set; } = new();
+
+        public Entity CreateEntity()
+        {
+            return Registry.CreateEntity();
+        }
+
+        public void DestroyEntity(Entity entity)
+        {
+            Registry.DestroyEntity(entity);
+        }
+
         public void OnBeforeSerialize()
         {
-            throw new NotImplementedException();
+            // Custom Yaml serialization logic will go here to parse out the EntityManager contiguous arrays later
         }
 
         public void OnAfterDeserialize()
         {
-            throw new NotImplementedException();
+            // Re-inflate EntityManager arrays upon load
         }
     }
 }
