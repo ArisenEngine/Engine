@@ -32,11 +32,13 @@ public class ArisenPanelFactory : DefaultPanelFactory
         RegisterPanel("Scene", () => new SceneViewModel());
         RegisterPanel("GameView", () => new GameViewModel());
         RegisterPanel("Console", () => new ConsoleViewModel());
+        RegisterPanel("Assets", () => new ContentViewModel());
+        RegisterPanel("PackageManager", () => new PackageManagerViewModel());
+        RegisterPanel("ProjectSettings", () => new ProjectSettingsViewModel());
 
         // Viewport and other placeholders
         RegisterPanel("Viewport", () => new EditorPanelWrapper("Viewport", "Viewport", new Avalonia.Controls.TextBlock { Text = "Viewport Placeholder", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center }));
         RegisterPanel("Toolbar", () => new EditorPanelWrapper("Toolbar", "Toolbar", new Avalonia.Controls.TextBlock { Text = "Toolbar Placeholder" }));
-        RegisterPanel("Assets", () => new EditorPanelWrapper("Assets", "Assets", new Avalonia.Controls.TextBlock { Text = "Assets Placeholder" }));
     }
 }
 

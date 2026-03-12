@@ -17,6 +17,7 @@ internal class FileTreeNode : TreeNodeBase
 {
     private string? m_UndoName;
     private bool m_IsLoaded = false;
+    public Guid AssetGuid { get; set; }
 
     internal FileTreeNode(string name, string path, bool isBranch, bool isRoot = false, bool isImmutable = false) : base(name, path, isBranch, isRoot, isImmutable)
     {

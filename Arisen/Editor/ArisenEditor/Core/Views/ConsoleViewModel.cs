@@ -13,7 +13,6 @@ using DynamicData;
 using DynamicData.Binding;
 using System.Collections.Generic;
 using ArisenEditor.Core.Services;
-using ArisenEditor.Models;
 using ArisenEngine.Core.Diagnostics;
 using Avalonia.ReactiveUI;
 using ReactiveUI;
