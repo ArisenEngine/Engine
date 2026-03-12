@@ -56,9 +56,20 @@ class Program
         var box = MsBox.Avalonia.MessageBoxManager.GetMessageBoxStandard("Fatal Error", 
             $"A fatal error occurred and the application must close.\n\nError: {ex.Message}\n\nPlease check logs for details.");
         
-        // StartWithClassicDesktopLifetime might not have started or might be crashing, 
-        // using ShowAsync() and potentially waiting a bit.
-        box.ShowAsync().Wait(2000);
+        // ShowAsync() will try to show the window. Since this is a fatal crash, 
+        // we wait for the result to ensure the user has seen it.
+        // If the dispatcher is already dead, this might return immediately or hang,
+        // but it's better than an arbitrary 2s timeout.
+        try 
+        {
+            var task = box.ShowAsync();
+            task.Wait();
+        }
+        catch
+        {
+            // If showing the box fails (e.g. Avalonia is too broken), 
+            // just proceed to shutdown.
+        }
         
         // Final flush
         ArisenApplication.ShutdownEngine();

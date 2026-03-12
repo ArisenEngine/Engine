@@ -53,6 +53,22 @@ namespace ArisenEditor
 
                 desktop.Exit += (sender, args) => ArisenEngine.Core.Lifecycle.ArisenApplication.ShutdownEngine();
 
+                // Global UI exception handler
+                Avalonia.Threading.Dispatcher.UIThread.UnhandledException += (sender, args) => 
+                {
+                    EditorLog.Error($"[DispatcherException] {args.Exception}");
+                    
+                    // Show message box on UI thread
+                    Avalonia.Threading.Dispatcher.UIThread.Post(async () => 
+                    {
+                        await MessageBoxUtility.ShowMessageBoxStandard("UI Error", 
+                            $"An internal UI error occurred:\n{args.Exception.Message}\n\nThe application will try to continue, but some features might be unstable.");
+                    });
+
+                    // Mark as handled to prevent process termination
+                    args.Handled = true;
+                };
+
                 string[] args = Environment.GetCommandLineArgs();
                 string? projectPath = null;
                 for (int i = 0; i < args.Length; i++)
