@@ -1,7 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 
-namespace ArisenEditor.Core.Views;
+namespace ArisenEditor.Views;
 
 public partial class AssetsBrowserView : UserControl
 {
