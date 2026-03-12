@@ -11,6 +11,6 @@ public class DataFabricStep : IBootStep
 
     public async Task ExecuteAsync(BootContext context, CancellationToken cancellationToken = default)
     {
-        await Task.Delay(1000, cancellationToken);
+        await Task.Delay(1, cancellationToken);
     }
 }

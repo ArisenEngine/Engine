@@ -4,6 +4,7 @@ using ArisenEditorFramework.Core;
 using ArisenEditor.ViewModels;
 using ArisenEditor.Views;
 using ArisenEditor.Core.Services;
+using ArisenEditor.Core.Views;
 using ArisenEditorFramework.Hierarchy;
 using ArisenEditorFramework.Inspector;
 using ReactiveUI;
@@ -13,6 +14,7 @@ namespace ArisenEditor.Core.Factory;
 public class ArisenPanelFactory : DefaultPanelFactory
 {
     private readonly SelectionService _selectionService = new();
+    private readonly Dictionary<string, IEditorPanel> _panelCache = new();
 
     public void Initialize()
     {
@@ -36,9 +38,20 @@ public class ArisenPanelFactory : DefaultPanelFactory
         RegisterPanel("PackageManager", () => new PackageManagerViewModel());
         RegisterPanel("ProjectSettings", () => new ProjectSettingsViewModel());
 
-        // Viewport and other placeholders
-        RegisterPanel("Viewport", () => new EditorPanelWrapper("Viewport", "Viewport", new Avalonia.Controls.TextBlock { Text = "Viewport Placeholder", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center }));
+        //other placeholders
         RegisterPanel("Toolbar", () => new EditorPanelWrapper("Toolbar", "Toolbar", new Avalonia.Controls.TextBlock { Text = "Toolbar Placeholder" }));
+    }
+
+    public override IEditorPanel CreatePanel(string panelId)
+    {
+        if (_panelCache.TryGetValue(panelId, out var cachedPanel))
+        {
+            return cachedPanel;
+        }
+
+        var panel = base.CreatePanel(panelId);
+        _panelCache[panelId] = panel;
+        return panel;
     }
 }
 

@@ -3,10 +3,11 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             xmlns:vm="using:ArisenEditor.ViewModels"
+             xmlns:vm="using:ArisenEditor.Core.Views"
+             xmlns:treevm="using:ArisenEditor.ViewModels"
              xmlns:converts="using:ArisenEditor.Converters"
-             x:Class="ArisenEditor.Views.AssetsBrowserView"
-             x:DataType="vm:AssetsBrowserViewModel">
+             x:Class="ArisenEditor.Core.Views.AssetsBrowserView"
+             x:DataType="treevm:AssetsBrowserViewModel">
 
     <UserControl.Resources>
         <converts:TreeViewIconConverter x:Key="IconConverter" />
@@ -40,7 +41,7 @@
             <!-- Folder Tree -->
             <TreeDataGrid Grid.Column="0" Source="{Binding FolderSource}" Background="#252526">
                 <TreeDataGrid.Resources>
-                    <DataTemplate x:Key="NameCell" DataType="vm:FileTreeNode">
+                    <DataTemplate x:Key="NameCell" DataType="treevm:FileTreeNode">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <Image Width="16" Height="16">
                                 <Image.Source>
@@ -63,7 +64,7 @@
             <!-- Asset List -->
             <TreeDataGrid Grid.Column="2" Source="{Binding AssetsSource}" Background="#1e1e1e">
                 <TreeDataGrid.Resources>
-                    <DataTemplate x:Key="AssetIconNameCell" DataType="vm:FileTreeNode">
+                    <DataTemplate x:Key="AssetIconNameCell" DataType="treevm:FileTreeNode">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <Image Width="16" Height="16">
                                 <Image.Source>

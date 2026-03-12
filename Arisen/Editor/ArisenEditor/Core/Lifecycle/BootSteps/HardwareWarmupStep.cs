@@ -11,6 +11,6 @@ public class HardwareWarmupStep : IBootStep
 
     public async Task ExecuteAsync(BootContext context, CancellationToken cancellationToken = default)
     {
-        await Task.Delay(1500, cancellationToken);
+        await Task.Delay(1, cancellationToken);
     }
 }
