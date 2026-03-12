@@ -21,7 +21,7 @@ internal static class ProjectContextMenuEntries
                 {
                     Process.Start("explorer.exe", $"/select,\"{fileTreeNode.Path}\"");
                 }
-                else if (dataContext is ContentViewModel projectHierarchyViewModel)
+                else if (dataContext is AssetsBrowserViewModel assetsBrowserViewModel)
                 {
                     
                 }

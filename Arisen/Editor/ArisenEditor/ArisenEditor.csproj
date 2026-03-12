@@ -89,8 +89,8 @@
 		  <DependentUpon>ConsoleView.axaml</DependentUpon>
 		  <SubType>Code</SubType>
 		</Compile>
-		<Compile Update="Core\Views\ContentView.axaml.cs">
-		  <DependentUpon>ContentView.axaml</DependentUpon>
+		<Compile Update="Core\Views\AssetsBrowserView.axaml.cs">
+		  <DependentUpon>AssetsBrowserView.axaml</DependentUpon>
 		  <SubType>Code</SubType>
 		</Compile>
 		<Compile Update="Core\Views\HierarchyView.axaml.cs">
