@@ -1,0 +1,90 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:vm="using:ArisenEditor.ViewModels"
+             xmlns:converts="using:ArisenEditor.Converters"
+             x:Class="ArisenEditor.Views.AssetsBrowserView"
+             x:DataType="vm:AssetsBrowserViewModel">
+
+    <UserControl.Resources>
+        <converts:TreeViewIconConverter x:Key="IconConverter" />
+    </UserControl.Resources>
+
+    <Grid RowDefinitions="Auto, *">
+        <!-- Toolbar -->
+        <Border Grid.Row="0" Background="#1e1e1e" Height="32" BorderBrush="#333333" BorderThickness="0,0,0,1">
+            <DockPanel Margin="4,0">
+                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <Button Content="Import" Padding="8,2" FontSize="11" Background="#3c3c3c" BorderThickness="1" BorderBrush="#555555" />
+                    <Button Content="Create" Padding="8,2" FontSize="11" Background="#3c3c3c" BorderThickness="1" BorderBrush="#555555" />
+                </StackPanel>
+                
+                <TextBox Text="{Binding AssetsSearchText}" 
+                         Width="200" 
+                         Height="22" 
+                         Watermark="Search assets..." 
+                         HorizontalAlignment="Right" 
+                         VerticalContentAlignment="Center"
+                         FontSize="11"
+                         Background="#2d2d2d"
+                         BorderThickness="1"
+                         BorderBrush="#3f3f46"
+                         Margin="4,0" />
+            </DockPanel>
+        </Border>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1" ColumnDefinitions="250, 4, *">
+            <!-- Folder Tree -->
+            <TreeDataGrid Grid.Column="0" Source="{Binding FolderSource}" Background="#252526">
+                <TreeDataGrid.Resources>
+                    <DataTemplate x:Key="NameCell" DataType="vm:FileTreeNode">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <Image Width="16" Height="16">
+                                <Image.Source>
+                                    <MultiBinding Converter="{StaticResource IconConverter}">
+                                        <Binding Path="IsBranch" />
+                                        <Binding Path="IsExpanded" />
+                                        <Binding Path="IsRoot" />
+                                        <Binding Path="." />
+                                    </MultiBinding>
+                                </Image.Source>
+                            </Image>
+                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontSize="12" />
+                        </StackPanel>
+                    </DataTemplate>
+                </TreeDataGrid.Resources>
+            </TreeDataGrid>
+
+            <GridSplitter Grid.Column="1" Background="Transparent" ResizeDirection="Columns" />
+
+            <!-- Asset List -->
+            <TreeDataGrid Grid.Column="2" Source="{Binding AssetsSource}" Background="#1e1e1e">
+                <TreeDataGrid.Resources>
+                    <DataTemplate x:Key="AssetIconNameCell" DataType="vm:FileTreeNode">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Image Width="16" Height="16">
+                                <Image.Source>
+                                    <MultiBinding Converter="{StaticResource IconConverter}">
+                                        <Binding Path="IsBranch" />
+                                        <Binding Path="IsExpanded" />
+                                        <Binding Path="IsRoot" />
+                                        <Binding Path="." />
+                                    </MultiBinding>
+                                </Image.Source>
+                            </Image>
+                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontSize="12" />
+                        </StackPanel>
+                    </DataTemplate>
+                </TreeDataGrid.Resources>
+                <TreeDataGrid.Styles>
+                    <Style Selector="TreeDataGridRow:selected">
+                        <Setter Property="Background" Value="#094771" />
+                    </Style>
+                </TreeDataGrid.Styles>
+            </TreeDataGrid>
+        </Grid>
+    </Grid>
+</UserControl>

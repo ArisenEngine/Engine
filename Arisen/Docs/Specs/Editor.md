@@ -5,7 +5,7 @@ The Arisen Editor uses Avalonia UI to provide a cross-platform (Windows/Mac/Linu
 
 - **Pattern**: Stick strictly to the **MVVM** (Model-View-ViewModel) Pattern.
 - **Views**: Written in `.axaml` files. Do not put business logic in the code-behind (`.axaml.cs`). Code-behind is strictly for UI-specific events that cannot be handled via bindings.
-- **ViewModels**: Inherit from `ObservableObject` (or implement `INotifyPropertyChanged`). Use `[RelayCommand]` and `[ObservableProperty]` attributes from `CommunityToolkit.Mvvm` to reduce boilerplate.
+- **ViewModels**: Inherit from `ReactiveObject` (from `ReactiveUI`) or `EditorPanelBase`. Use `this.RaiseAndSetIfChanged` for property notifications and `ReactiveCommand` for commands. Leverage `WhenAnyValue` for reactive logic.
 
 ## Editor vs Engine Separation
 - The Editor is an overarching host process. The `Engine` is a dependency sandbox running inside it.

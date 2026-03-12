@@ -38,6 +38,6 @@ public class ViewLocator : IDataTemplate
 
     public bool Match(object? data)
     {
-        return data is ReactiveObject || data is IDockable || data is ReactiveObject;
+        return data is ReactiveObject ro && ro.GetType().Name.EndsWith("ViewModel");
     }
 }

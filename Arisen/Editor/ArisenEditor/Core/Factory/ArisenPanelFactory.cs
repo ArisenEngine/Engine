@@ -32,7 +32,7 @@ public class ArisenPanelFactory : DefaultPanelFactory
         RegisterPanel("Scene", () => new SceneViewModel());
         RegisterPanel("GameView", () => new GameViewModel());
         RegisterPanel("Console", () => new ConsoleViewModel());
-        RegisterPanel("Assets", () => new ContentViewModel());
+        RegisterPanel("Assets", () => new AssetsBrowserViewModel());
         RegisterPanel("PackageManager", () => new PackageManagerViewModel());
         RegisterPanel("ProjectSettings", () => new ProjectSettingsViewModel());
 
