@@ -6,7 +6,7 @@
              xmlns:vm="using:ArisenEditor.Core.Views"
              xmlns:treevm="using:ArisenEditor.ViewModels"
              xmlns:converts="using:ArisenEditor.Converters"
-             x:Class="ArisenEditor.Core.Views.AssetsBrowserView"
+             x:Class="ArisenEditor.Views.AssetsBrowserView"
              x:DataType="treevm:AssetsBrowserViewModel">
 
     <UserControl.Resources>

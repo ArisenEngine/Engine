@@ -61,6 +61,14 @@ internal class AssetsBrowserViewModel : EditorPanelBase
             .Throttle(TimeSpan.FromMilliseconds(200))
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(_ => RefreshAssetsList());
+            
+        // Select the root folder by default so the asset list is not empty
+        if (FolderSource.Items.Any())
+        {
+            FolderSource.RowSelection.SelectedIndex = new IndexPath(0);
+        }
+        
+        RefreshAssetsList();
     }
 
     private void InitializeFolderSource()
