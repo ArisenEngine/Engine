@@ -34,12 +34,24 @@ public class ViewLocator : IDataTemplate
         // Strategy 1: Unwrapping IDockable (Docking system often passes the model itself)
         if (data is IDockable dockable)
         {
+            if (dockable.Context == null)
+            {
+                EditorLog.Warning($"[ViewLocator] IDockable {dockable.Id} has null Context.");
+                return new TextBlock { Text = $"Context null for {dockable.Id}" };
+            }
             return Build(dockable.Context);
+        }
+
+        // Strategy 2: Explicit Content Fallback (for wrapped panels)
+        // Check this FIRST because it's the most direct way AEF works
+        if (data is IEditorPanel panel && panel.Content is Control explicitContent)
+        {
+            return explicitContent;
         }
 
         var vmType = data.GetType();
         
-        // Strategy 2: Cached/Convention-based lookup
+        // Strategy 3: Cached/Convention-based lookup
         var viewType = ResolveViewType(vmType);
 
         if (viewType != null)
@@ -59,12 +71,6 @@ public class ViewLocator : IDataTemplate
             }
         }
 
-        // Strategy 3: Explicit Content Fallback (for wrapped panels)
-        if (data is IEditorPanel panel && panel.Content is Control explicitContent)
-        {
-            return explicitContent;
-        }
-
         var error = $"View not found for {vmType.Name}. Searched in {vmType.Assembly.GetName().Name}";
         EditorLog.Warning($"[ViewLocator] {error}");
         return new TextBlock { Text = error };
@@ -77,23 +83,39 @@ public class ViewLocator : IDataTemplate
             var fullName = type.FullName;
             if (string.IsNullOrEmpty(fullName)) return null;
 
-            // Strategy 1: Namespace Replacement (ViewModels -> Views)
-            var viewName = fullName
-                .Replace(NamespacePatterns[0], NamespacePatterns[1])
-                .Replace(ViewModelSuffixes[0], ViewModelSuffixes[1]);
-            
-            var resolved = type.Assembly.GetType(viewName);
-            if (resolved != null && resolved != type) return resolved;
+            string[] suffixes = { "ViewModel", "View", "Control" };
 
-            // Strategy 2: Simple Suffix Replacement (if flattened)
-            viewName = fullName.Replace(ViewModelSuffixes[0], ViewModelSuffixes[1]);
-            resolved = type.Assembly.GetType(viewName);
-            if (resolved != null && resolved != type) return resolved;
+            // Strategy 1: Namespace Replacement (ViewModels -> Views)
+            var baseName = fullName.Replace(".ViewModels.", ".Views.");
+            
+            foreach (var suffix in suffixes)
+            {
+                if (fullName.EndsWith("ViewModel"))
+                {
+                    var viewName = baseName.Replace("ViewModel", suffix);
+                    var resolved = type.Assembly.GetType(viewName);
+                    if (resolved != null && resolved != type) return resolved;
+                }
+            }
+
+            // Strategy 2: Simple Suffix Replacement (anywhere in string)
+            foreach (var suffix in suffixes)
+            {
+                 var viewName = fullName.Replace("ViewModel", suffix);
+                 var resolved = type.Assembly.GetType(viewName);
+                 if (resolved != null && resolved != type) return resolved;
+            }
 
             // Strategy 3: Global Views namespace guess
-            var shortName = type.Name.Replace(ViewModelSuffixes[0], ViewModelSuffixes[1]);
-            resolved = type.Assembly.GetType($"ArisenEditor.Views.{shortName}");
-            if (resolved != null && resolved != type) return resolved;
+            var shortNameBase = type.Name.Replace("ViewModel", "");
+            foreach (var suffix in new[] { "View", "Control" })
+            {
+                var resolved = type.Assembly.GetType($"ArisenEditor.Views.{shortNameBase}{suffix}");
+                if (resolved != null && resolved != type) return resolved;
+                
+                resolved = type.Assembly.GetType($"ArisenEditor.Core.Views.{shortNameBase}{suffix}");
+                if (resolved != null && resolved != type) return resolved;
+            }
 
             return null;
         });
@@ -105,10 +127,10 @@ public class ViewLocator : IDataTemplate
 
         var type = data.GetType();
         
-        // Match ViewModels, Panels, and Dockable containers
+        // Match ViewModels and Panels. 
+        // IMPORTANT: Do NOT match IDockable here, let DockControl handle its own templates.
         bool isMatch = (data is ReactiveObject && type.Name.EndsWith("ViewModel")) || 
-                       data is IEditorPanel ||
-                       data is IDockable;
+                       data is IEditorPanel;
         return isMatch;
     }
 }
