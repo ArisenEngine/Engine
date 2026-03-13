@@ -1,5 +1,10 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dmc="using:Dock.Model.Controls"
+        xmlns:core="using:Dock.Model.Core"
+        xmlns:recycling="clr-namespace:Avalonia.Controls.Recycling;assembly=Avalonia.Controls.Recycling"
+        xmlns:controls="clr-namespace:Dock.Avalonia.Controls;assembly=Dock.Avalonia"
+        xmlns:settings="clr-namespace:Dock.Settings;assembly=Dock.Settings">
     
     <!-- Custom Styles for Main Editor Header -->
     <Style Selector="Border.MainHeader">
@@ -90,5 +95,57 @@
     <Style Selector="Menu > MenuItem">
         <Setter Property="Height" Value="40"/>
     </Style>
+
+    <!-- Docking Overrides -->
+    <ControlTheme x:Key="{x:Type controls:ToolControl}" TargetType="controls:ToolControl">
+        <Setter Property="HeaderTemplate">
+            <DataTemplate DataType="core:IDockable">
+                <TextBlock Text="{Binding Title}" Padding="2" VerticalAlignment="Center" FontSize="11"/>
+            </DataTemplate>
+        </Setter>
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <DockPanel x:Name="PART_DockPanel"
+                           settings:DockProperties.IsDropArea="True"
+                           settings:DockProperties.IsDockTarget="True"
+                           x:DataType="dmc:IToolDock"
+                           x:CompileBindings="True">
+                    <controls:ToolTabStrip x:Name="PART_TabStrip"
+                                           ItemsSource="{Binding VisibleDockables}"
+                                           SelectedItem="{Binding ActiveDockable, Mode=TwoWay}"
+                                           DockPanel.Dock="Top"
+                                           Height="32"
+                                           settings:DockProperties.IsDropArea="True" />
+                    <Border x:Name="PART_Border">
+                        <controls:DockableControl DataContext="{Binding ActiveDockable}"
+                                                  TrackingMode="Visible">
+                            <ContentControl x:Name="PART_ContentPresenter"
+                                            Content="{Binding}"
+                                            HorizontalAlignment="Stretch"
+                                            VerticalAlignment="Stretch">
+                                <ContentControl.ContentTemplate>
+                                    <recycling:ControlRecyclingDataTemplate Parent="{Binding #PART_ContentPresenter}" />
+                                </ContentControl.ContentTemplate>
+                            </ContentControl>
+                        </controls:DockableControl>
+                    </Border>
+                </DockPanel>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^/template/ DockPanel#PART_DockPanel">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="ZIndex" Value="1" />
+        </Style>
+
+        <Style Selector="^/template/ Border#PART_Border">
+            <Setter Property="ZIndex" Value="-1" />
+            <Setter Property="Background" Value="{DynamicResource ArisenPanelDarkBrush}" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ArisenBorderDarkBrush}" />
+            <Setter Property="BorderThickness" Value="1,1,1,1" />
+        </Style>
+    </ControlTheme>
 
 </Styles>
