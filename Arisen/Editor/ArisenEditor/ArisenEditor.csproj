@@ -82,7 +82,7 @@
 		  <SubType>Code</SubType>
 		</Compile>
 		<Compile Update="Core\Views\MenuItemBarView.axaml.cs">
-		  <DependentUpon>MenuItemBar.axaml</DependentUpon>
+		  <DependentUpon>MenuItemBarView.axaml</DependentUpon>
 		  <SubType>Code</SubType>
 		</Compile>
 		<Compile Update="Core\Views\ConsoleView.axaml.cs">

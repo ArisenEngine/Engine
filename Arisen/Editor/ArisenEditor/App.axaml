@@ -26,6 +26,7 @@
             </FluentTheme.Palettes>
         </FluentTheme>
         <StyleInclude Source="avares://ArisenEditor/Themes/Fluent.axaml"/>
+        <StyleInclude Source="avares://ArisenEditor/Themes/MainEditorStyles.axaml"/>
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
         
         <Style Selector="controls|DockControl">

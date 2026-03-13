@@ -1,0 +1,94 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <!-- Custom Styles for Main Editor Header -->
+    <Style Selector="Border.MainHeader">
+        <Setter Property="Background" Value="{DynamicResource ArisenBackgroundDarkBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ArisenBorderDarkBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="Height" Value="40"/>
+    </Style>
+
+    <Style Selector="TextBlock.MenuLabel">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Margin" Value="10,0"/>
+        <Setter Property="Foreground" Value="#94a3b8"/> <!-- slate-400 -->
+    </Style>
+    
+    <Style Selector="TextBlock.MenuLabel:pointerover">
+        <Setter Property="Foreground" Value="{DynamicResource ArisenPrimaryBrush}"/>
+    </Style>
+
+    <!-- Toolbar Styles -->
+    <Style Selector="Border.MainToolbar">
+        <Setter Property="Background" Value="#0d1117"/> <!-- slightly darker for toolbar feel -->
+        <Setter Property="BorderBrush" Value="{DynamicResource ArisenBorderDarkBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="Height" Value="36"/>
+    </Style>
+
+    <Style Selector="Button.ToolbarButton">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="6"/>
+        <Setter Property="CornerRadius" Value="4"/>
+    </Style>
+    
+    <Style Selector="Button.ToolbarButton:pointerover">
+        <Setter Property="Background" Value="{DynamicResource ArisenBorderDarkBrush}"/>
+    </Style>
+
+    <!-- Footer Styles -->
+    <Style Selector="Border.MainFooter">
+        <Setter Property="Background" Value="{DynamicResource ArisenBackgroundDarkBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ArisenBorderDarkBrush}"/>
+        <Setter Property="BorderThickness" Value="0,1,0,0"/>
+        <Setter Property="Height" Value="24"/>
+    </Style>
+
+    <Style Selector="TextBlock.StatusBarText">
+        <Setter Property="FontSize" Value="10"/>
+        <Setter Property="Foreground" Value="#64748b"/> <!-- slate-500 -->
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- Play/Pause Group -->
+    <Style Selector="StackPanel.TransportGroup">
+        <Setter Property="Background" Value="#181e2a"/>
+        <Setter Property="Spacing" Value="2"/>
+        <Setter Property="Margin" Value="4"/>
+    </Style>
+
+    <!-- Dynamic Menu Styles -->
+    <Style Selector="Menu">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Padding" Value="0"/>
+    </Style>
+
+    <Style Selector="MenuItem">
+        <Setter Property="Foreground" Value="#94a3b8"/> <!-- slate-400 -->
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Padding" Value="10,0"/>
+        <Setter Property="MinHeight" Value="32"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <Style Selector="MenuItem:pointerover /template/ Border#root">
+        <Setter Property="Background" Value="Transparent"/>
+    </Style>
+
+    <Style Selector="MenuItem:pointerover">
+        <Setter Property="Foreground" Value="{DynamicResource ArisenPrimaryBrush}"/>
+    </Style>
+    
+    <Style Selector="MenuItem > MenuItem">
+        <Setter Property="Padding" Value="10,6"/>
+        <Setter Property="FontSize" Value="11"/>
+    </Style>
+    
+    <Style Selector="Menu > MenuItem">
+        <Setter Property="Height" Value="40"/>
+    </Style>
+
+</Styles>
