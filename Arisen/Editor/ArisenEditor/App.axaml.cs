@@ -8,7 +8,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using System.Threading.Tasks;
 using ArisenEditor.Core.Views;
-using ArisenEditor.Themes;
+using ArisenEditorFramework.Services;
 using ArisenEditor.Core.Models;
 using ArisenEditor.Core.Lifecycle.BootSteps;
 using ArisenEditorFramework.Lifecycle;
@@ -26,11 +26,14 @@ namespace ArisenEditor
 {
     public partial class App : Application
     {
-        internal static ThemeManager? ThemeManager;
+        internal static IThemeManager? ThemeManager;
         public override void Initialize()
         {
-            ThemeManager = new ThemeManager();
-            ThemeManager.Initialize(this);
+            ThemeManager = new ArisenEditorFramework.Services.ThemeManager(this);
+            
+            // Add Arisen Theme Resources
+            Styles.Add((Avalonia.Styling.IStyle)AvaloniaXamlLoader.Load(new Uri("avares://ArisenEditorFramework/Resources/ArisenThemeResources.axaml")));
+            
             AvaloniaXamlLoader.Load(this);
         }
 

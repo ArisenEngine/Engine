@@ -4,7 +4,7 @@
              xmlns:recycling="clr-namespace:Avalonia.Controls.Recycling;assembly=Avalonia.Controls.Recycling"
              xmlns:controls="clr-namespace:Dock.Avalonia.Controls;assembly=Dock.Avalonia"
              x:Class="ArisenEditor.App"
-             RequestedThemeVariant="Light">
+             RequestedThemeVariant="Dark">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
              <Application.DataTemplates>
@@ -20,9 +20,9 @@
         <FluentTheme>
             <FluentTheme.Palettes>
                 <!-- Palette for Light theme variant -->
-                <ColorPaletteResources x:Key="Light" Accent="Green" RegionColor="White" ErrorText="Red" />
+                <ColorPaletteResources x:Key="Light" Accent="#135bec" RegionColor="#f6f6f8" ErrorText="Red" />
                 <!-- Palette for Dark theme variant -->
-                <ColorPaletteResources x:Key="Dark" Accent="DarkGreen" RegionColor="#333333" ErrorText="Yellow" />
+                <ColorPaletteResources x:Key="Dark" Accent="#135bec" RegionColor="#101622" ErrorText="Yellow" />
             </FluentTheme.Palettes>
         </FluentTheme>
         <StyleInclude Source="avares://ArisenEditor/Themes/Fluent.axaml"/>
