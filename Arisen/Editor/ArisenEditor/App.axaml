@@ -12,8 +12,13 @@
              </Application.DataTemplates>
     
              <Application.Resources>
-                 <recycling:ControlRecycling x:Key="ControlRecyclingKey" TryToUseIdAsKey="False" />
-                 <Color x:Key="RegionColor">Transparent</Color>
+                 <ResourceDictionary>
+                     <ResourceDictionary.MergedDictionaries>
+                         <ResourceInclude Source="avares://ArisenEditor/Themes/Icons.axaml"/>
+                     </ResourceDictionary.MergedDictionaries>
+                     <recycling:ControlRecycling x:Key="ControlRecyclingKey" TryToUseIdAsKey="False" />
+                     <Color x:Key="RegionColor">Transparent</Color>
+                 </ResourceDictionary>
              </Application.Resources>
     <Application.Styles>
         

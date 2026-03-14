@@ -8,12 +8,12 @@
              x:Class="ArisenEditor.Views.HierarchyView"
              x:DataType="vm:HierarchyViewModel">
 
-    <Grid RowDefinitions="20,*">
+    <Grid RowDefinitions="32,*">
         <!-- Toolbar (Search, Add, etc) -->
-        <Border Grid.Row="0" BorderBrush="{DynamicResource ArisenBorderDarkBrush}" BorderThickness="0,0,0,1" Padding="6">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-                <Button Classes="ToolbarButton" ToolTip.Tip="Create New Entity" Width="20" Height="20" Padding="0">
-                    <PathIcon Data="{StaticResource PlusIcon}" Width="14" Height="14"/>
+        <Border Grid.Row="0" BorderBrush="{DynamicResource ArisenBorderDarkBrush}" BorderThickness="0,0,0,1" Padding="4,2">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+                <Button Classes="ToolbarButton" ToolTip.Tip="Create New Entity" Width="24" Height="24" Padding="0">
+                    <PathIcon Data="{StaticResource PlusIcon}" Width="12" Height="12" Foreground="#94a3b8"/>
                     <Button.Flyout>
                         <MenuFlyout ItemsSource="{Binding CreateActions}">
                             <MenuFlyout.ItemContainerTheme>
@@ -28,19 +28,22 @@
                     </Button.Flyout>
                 </Button>
                 
-                <Border Background="#0f172a" CornerRadius="20" BorderBrush="#1e293b" BorderThickness="1" HorizontalAlignment="Stretch">
+                <Border Background="{DynamicResource ArisenSurfaceDarkBrush}" 
+                        CornerRadius="4" 
+                        BorderBrush="{DynamicResource ArisenBorderDarkBrush}" 
+                        BorderThickness="1" 
+                        Height="24">
                     <Grid ColumnDefinitions="Auto,*">
-                        <PathIcon Grid.Column="0" Data="{StaticResource SearchIcon}" Width="12" Height="12" Margin="10,0,4,0" Foreground="#64748b"/>
+                        <PathIcon Grid.Column="0" Data="{StaticResource SearchIcon}" Width="10" Height="10" Margin="6,0,4,0" Foreground="#64748b"/>
                         <TextBox Grid.Column="1" 
                                  Text="{Binding SearchText}"
                                  Watermark="Search entities..." 
                                  Width="180" 
-                                 Height="10" 
                                  VerticalAlignment="Center" 
-                                 Padding="4,2" 
+                                 Padding="0,0,6,0" 
                                  Background="Transparent"
                                  BorderThickness="0"
-                                 FontSize="12"/>
+                                 FontSize="11"/>
                     </Grid>
                 </Border>
             </StackPanel>
