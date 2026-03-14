@@ -123,14 +123,20 @@ public class ViewLocator : IDataTemplate
 
     public bool Match(object? data)
     {
-        if (data == null || data is Control) return false;
+        if (data == null || data is Control || data is string) return false;
+
+        // Unwrap IDockable to match its inner context. Dock.Avalonia passes the dockable item itself.
+        if (data is IDockable dockable && dockable.Context != null && dockable.Context != dockable)
+        {
+            return Match(dockable.Context);
+        }
 
         var type = data.GetType();
         
-        // Match ViewModels and Panels. 
-        // IMPORTANT: Do NOT match IDockable here, let DockControl handle its own templates.
+        // Match ViewModels and EditorPanels
         bool isMatch = (data is ReactiveObject && type.Name.EndsWith("ViewModel")) || 
                        data is IEditorPanel;
+        
         return isMatch;
     }
 }

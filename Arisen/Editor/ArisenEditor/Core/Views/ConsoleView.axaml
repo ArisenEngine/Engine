@@ -17,7 +17,7 @@
         <converts:ConsoleViewIconConverter x:Key="IconConverter"></converts:ConsoleViewIconConverter>
     </UserControl.Resources>
 
-    <Grid RowDefinitions="5*, Auto, 5*" Background="Honeydew">
+    <Grid RowDefinitions="5*, Auto, 5*" Background="Transparent">
         <DockPanel>
       
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" HorizontalAlignment="Left" Spacing="5">
@@ -100,7 +100,7 @@
 
             <DataGrid.Styles>
                 <Style Selector="DataGrid DataGridRow:nth-child(2n)">
-                    <Setter Property="Background" Value="#20808080" />
+                    <Setter Property="Background" Value="#08FFFFFF" />
                 </Style>
             </DataGrid.Styles>
 
