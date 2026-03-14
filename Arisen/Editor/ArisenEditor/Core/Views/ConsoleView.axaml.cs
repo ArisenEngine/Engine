@@ -15,7 +15,7 @@ using Logger = Logger;
 
 internal partial class ConsoleView : UserControl
 {
-    private ConsoleViewModel m_ViewModel = null;
+    private ConsoleViewModel? m_ViewModel = null;
     public ConsoleView()
     {
         InitializeComponent();
@@ -96,7 +96,7 @@ internal partial class ConsoleView : UserControl
     {
         if (m_ViewModel != null)
         {
-            m_ViewModel.SelectedItem = ((DataGrid) e.Source)?.SelectedItem as MessageItemNode;
+            m_ViewModel.SelectedItem = ((DataGrid) e.Source!)?.SelectedItem as MessageItemNode;
         }
     }
 }
