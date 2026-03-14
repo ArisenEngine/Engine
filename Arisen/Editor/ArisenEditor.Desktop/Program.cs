@@ -3,6 +3,7 @@ using System.Threading;
 using ArisenEditor.Core.Services;
 using ArisenEditor.GameDev;
 using Avalonia;
+using Avalonia.ReactiveUI;
 using ArisenEngine.Core.Lifecycle;
 
 namespace ArisenEditor.Desktop.Desktop;
@@ -101,6 +102,6 @@ class Program
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
-            .LogToTrace();
-            // .UseReactiveUI();
+            .LogToTrace()
+            .UseReactiveUI();
 }
