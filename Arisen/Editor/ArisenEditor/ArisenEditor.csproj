@@ -13,6 +13,7 @@
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <AssemblyName>ArisenEditor</AssemblyName>
     <RootNamespace>ArisenEditor</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
   <RuntimeIdentifier>win-x64</RuntimeIdentifier>

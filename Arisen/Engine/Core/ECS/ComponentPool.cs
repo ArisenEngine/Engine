@@ -12,6 +12,9 @@ public interface IComponentPool
     void Remove(Entity entity);
     void Clear();
     Type GetComponentType();
+    object GetBoxed(Entity entity);
+    void SetBoxed(Entity entity, object component);
+    IntPtr GetAddress(Entity entity);
 }
 
 /// <summary>
@@ -27,6 +30,16 @@ public class ComponentPool<T> : IComponentPool where T : struct, IComponent
 
     public int Count => m_Count;
     public Type GetComponentType() => typeof(T);
+    public object GetBoxed(Entity entity) => Get(entity);
+    public void SetBoxed(Entity entity, object component) => Add(entity, (T)component);
+
+    public unsafe IntPtr GetAddress(Entity entity)
+    {
+        fixed (T* ptr = &m_Components[m_Sparse[entity.Id]])
+        {
+            return (IntPtr)ptr;
+        }
+    }
 
     public ComponentPool(int capacity = 128)
     {
@@ -76,6 +89,9 @@ public class ComponentPool<T> : IComponentPool where T : struct, IComponent
 
         return ref m_Components[m_Sparse[entity.Id]];
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref T GetRef(Entity entity) => ref Get(entity);
 
     public void Remove(Entity entity)
     {

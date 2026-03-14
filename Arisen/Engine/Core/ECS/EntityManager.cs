@@ -89,6 +89,21 @@ public class EntityManager
         return GetOrCreatePool<T>();
     }
 
+    /// <summary>
+    /// Returns all component pools that contain the given entity.
+    /// Useful for Inspector-style discovery.
+    /// </summary>
+    public IEnumerable<(Type Type, IComponentPool Pool)> GetEntityComponents(Entity entity)
+    {
+        foreach (var kvp in m_ComponentPools)
+        {
+            if (kvp.Value.Has(entity))
+            {
+                yield return (kvp.Key, kvp.Value);
+            }
+        }
+    }
+
     private ComponentPool<T> GetOrCreatePool<T>() where T : struct, IComponent
     {
         var type = typeof(T);

@@ -54,6 +54,7 @@ namespace ArisenEngine.Rendering
         {
             this.Width = width;
             this.Height = height;
+            ArisenApplication.ResizeSurface(m_Parent, width, height);
         }
     }
 }

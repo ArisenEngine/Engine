@@ -2,6 +2,7 @@ using ArisenEngine.Core.Diagnostics;
 using ArisenEngine.Core.Lifecycle;
 using ArisenEngine.Core.RHI;
 using ArisenEngine.Core.Memory;
+using ArisenEngine.Core.ECS;
 
 namespace ArisenEngine.Rendering;
 
@@ -56,7 +57,43 @@ public class RenderSubsystem : ITickableSubsystem
             );
 
             // 3. Render
-            var cameras = Array.Empty<Camera>(); // TODO: Get cameras from active world filtered by surface
+            // Fetch cameras from ECS
+            var entityManager = EngineKernel.Instance.GetSubsystem<SceneSubsystem>()?.ActiveEntityManager;
+            var cameras = Array.Empty<Camera>();
+
+            if (entityManager != null)
+            {
+                var cameraPool = entityManager.GetPool<CameraComponent>();
+                var transformPool = entityManager.GetPool<TransformComponent>();
+                var cameraList = new List<Camera>();
+
+                var cameraComponents = cameraPool.GetRawComponentArray();
+                var cameraEntities = cameraPool.GetRawEntityArray();
+                int camCount = cameraPool.Count;
+
+                for (int i = 0; i < camCount; i++)
+                {
+                    Entity entity = cameraEntities[i];
+                    if (transformPool.Has(entity))
+                    {
+                        ref var camComp = ref cameraComponents[i];
+                        ref var transComp = ref transformPool.GetRef(entity);
+
+                        cameraList.Add(new Camera
+                        {
+                            FieldOfView = camComp.VerticalFov,
+                            NearClip = camComp.NearPlane,
+                            FarClip = camComp.FarPlane,
+                            ProjectionType = camComp.IsPerspective ? CameraProjectionType.Perspective : CameraProjectionType.Orthographic,
+                            Position = transComp.Position,
+                            // Convert Quaternion to Euler if needed, or update Camera to support Quaternions
+                            Rotation = transComp.Position // Placeholder: Camera.cs uses Vector3 for rotation
+                        });
+                    }
+                }
+                cameras = cameraList.ToArray();
+            }
+
             m_CurrentPipeline.InternalRender(context, cameras);
         }
     }
