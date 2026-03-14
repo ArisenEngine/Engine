@@ -1,0 +1,52 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:ArisenEditor.Core.Views"
+             xmlns:view="using:ArisenEditor.Core.Views"
+             mc:Ignorable="d" d:DesignWidth="1920" d:DesignHeight="40"
+             x:DataType="vm:HeaderViewModel"
+             x:Class="ArisenEditor.Core.Views.HeaderView">
+    <Border Classes="MainHeader">
+        <Grid ColumnDefinitions="Auto, *, Auto" Margin="12,0">
+            <StackPanel Orientation="Horizontal" Spacing="20">
+                <!-- Logo and Title -->
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Border Width="24" Height="24" Background="{DynamicResource ArisenPrimaryBrush}" CornerRadius="4">
+                        <Path Stretch="Uniform" Fill="White" Data="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z" Width="14" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="Arisen Engine" Foreground="White" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                </StackPanel>
+                
+                <!-- Menus -->
+                <view:MenuItemBarView DataContext="{Binding MenuViewModel}" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- Header Search -->
+            <Border Grid.Column="1" HorizontalAlignment="Center" Width="250" Height="28" 
+                    Background="{DynamicResource ArisenPanelDarkBrush}" 
+                    BorderBrush="{DynamicResource ArisenBorderDarkBrush}" 
+                    BorderThickness="1" CornerRadius="4" Margin="0,6">
+                <Grid ColumnDefinitions="Auto, *">
+                    <Path Stretch="Uniform" Fill="#94a3b8" Data="M15.5,14H14.71L14.43,13.73C15.41,12.59 16,11.11 16,9.5A6.5,6.5 0 1,0 9.5,16C11.11,16 12.59,15.41 13.73,14.43L14,14.71V15.5L19,20.5L20.5,19L15.5,14M9.5,14C7,14 5,12 5,9.5C5,7 7,5 9.5,5C12,5 14,7 14,9.5C14,12 12,14 9.5,14Z" 
+                          Width="12" Height="12" Margin="8,0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBox Grid.Column="1" Watermark="Search components..." BorderThickness="0" Background="Transparent" Padding="0" VerticalContentAlignment="Center" FontSize="11" Text="{Binding SearchText}"/>
+                </Grid>
+            </Border>
+
+            <!-- Profile and Settings -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button Classes="ToolbarButton">
+                    <Path Stretch="Uniform" Fill="#94a3b8" Data="M12,22A2,2 0 0,0 14,20H10A2,2 0 0,0 12,22M18,16V11C18,7.93 16.36,5.36 13.5,4.68V4A1.5,1.5 0 0,0 12,2.5A1.5,1.5 0 0,0 10.5,4V4.68C7.63,5.36 6,7.92 6,11V16L4,18V19H20V18L18,16Z" Width="14" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+                <Button Classes="ToolbarButton">
+                    <Path Stretch="Uniform" Fill="#94a3b8" Data="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11.03L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.97 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.97 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11.03C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.95C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.95L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" Width="14" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+                <Separator Width="1" Height="16" Background="{DynamicResource ArisenBorderDarkBrush}"/>
+                <Border Width="24" Height="24" CornerRadius="12" Background="#135bec" Opacity="0.2" BorderBrush="#135bec" BorderThickness="1">
+                     <Path Stretch="Uniform" Fill="#135bec" Data="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>
