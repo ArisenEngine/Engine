@@ -77,7 +77,9 @@ public class ArisenPanelFactory : DefaultPanelFactory
 
         //other placeholders
         RegisterPanel("Viewport", () => new EditorPanelWrapper("Viewport", "Viewport", new Avalonia.Controls.TextBlock { Text = "Viewport Placeholder", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center }));
-        RegisterPanel("Toolbar", () => new EditorPanelWrapper("Toolbar", "Toolbar", new Avalonia.Controls.TextBlock { Text = "Toolbar Placeholder" }));
+        RegisterPanel("Header", () => new HeaderViewModel());
+        RegisterPanel("Toolbar", () => new ToolbarViewModel());
+        RegisterPanel("Footer", () => new FooterViewModel());
     }
 
     public override IEditorPanel CreatePanel(string panelId)

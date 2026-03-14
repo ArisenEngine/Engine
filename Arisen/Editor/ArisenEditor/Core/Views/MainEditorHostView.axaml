@@ -16,7 +16,7 @@
         </view:MainEditorHostViewModel>
         </Design.DataContext>
         
-    <Grid RowDefinitions="Auto, Auto, *, Auto" Background="#101622">
+    <Grid RowDefinitions="Auto, *, Auto" Background="#101622">
         <!-- Header -->
         <Border BorderBrush="#282e39" BorderThickness="0,0,0,1" Padding="12,6" Background="#101622">
             <Grid ColumnDefinitions="Auto, *, Auto">
@@ -37,25 +37,6 @@
                              <TextBox Background="Transparent" BorderThickness="0" Watermark="Search components..." FontSize="12" Width="150" />
                         </StackPanel>
                     </Border>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <!-- Toolbar -->
-        <Border Grid.Row="1" BorderBrush="#282e39" BorderThickness="0,0,0,1" Padding="12,4" Background="#101622">
-            <Grid ColumnDefinitions="Auto, *, Auto">
-                <view:ToolBarView />
-                
-                <Border Grid.Column="1" HorizontalAlignment="Center" Background="#181e2a" CornerRadius="8" BorderBrush="#282e39" BorderThickness="1" Padding="4">
-                    <StackPanel Orientation="Horizontal">
-                        <Button Content="▶" Foreground="#5c6b89" Background="Transparent" Padding="8,4" />
-                        <Button Content="⏸" Foreground="#5c6b89" Background="Transparent" Padding="8,4" />
-                        <Button Content="■" Foreground="#5c6b89" Background="Transparent" Padding="8,4" />
-                    </StackPanel>
-                </Border>
-
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
-                    <Button Content="Build" Background="#135bec" Foreground="White" FontSize="12" FontWeight="Bold" Padding="12,4" CornerRadius="4" />
                 </StackPanel>
             </Grid>
         </Border>

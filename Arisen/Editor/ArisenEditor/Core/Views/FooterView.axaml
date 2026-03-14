@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:ArisenEditor.Core.Views"
+             mc:Ignorable="d" d:DesignWidth="1920" d:DesignHeight="24"
+             x:DataType="vm:FooterViewModel"
+             x:Class="ArisenEditor.Core.Views.FooterView">
+    <Border Classes="MainFooter">
+        <Grid ColumnDefinitions="Auto, *, Auto" Margin="12,0">
+            <StackPanel Orientation="Horizontal" Spacing="16">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Ellipse Width="8" Height="8" Fill="{DynamicResource ArisenPrimaryBrush}"/>
+                    <TextBlock Classes="StatusBarText" Text="{Binding StatusText}" VerticalAlignment="Center"/>
+                </StackPanel>
+                <Separator Width="1" Height="12" Background="{DynamicResource ArisenBorderDarkBrush}"/>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <TextBlock Classes="StatusBarText" Text="Pos: 0.0, 1.2, -5.4"/>
+                    <TextBlock Classes="StatusBarText" Text="Rot: 0.0, 0.0, 0.0"/>
+                </StackPanel>
+            </StackPanel>
+            
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16">
+                <TextBlock Classes="StatusBarText" Text="AvaloniaUI 11.2.4"/>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Path Stretch="Uniform" Fill="#64748b" Data="M12,11L12,13L2,13L2,11L12,11M12,5L12,7L2,7L2,5L12,5M12,17L12,19L2,19L2,17L12,17M14,17L22,17L22,19L14,19L14,17M14,11L22,11L22,13L14,13L14,11M14,5L22,5L22,7L14,7L14,5Z" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Classes="StatusBarText" Text="2.4 GB / 16 GB"/>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>
