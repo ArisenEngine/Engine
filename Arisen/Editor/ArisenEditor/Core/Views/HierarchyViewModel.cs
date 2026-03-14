@@ -1,12 +1,11 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Reactive.Disposables;
-using System.Reactive.Linq;
 using ArisenEditorFramework.Core;
+using ArisenEditorFramework.Services;
+using ArisenEditorFramework.UI.Menus;
 using ArisenEngine.Core.ECS;
-using ArisenEngine.Core.Lifecycle;
-using DynamicData;
-using DynamicData.Binding;
 using ReactiveUI;
 
 namespace ArisenEditor.ViewModels;
@@ -31,11 +30,26 @@ public class EntityNodeViewModel : ReactiveObject
 
 internal class HierarchyViewModel : EditorPanelBase
 {
+    private ObservableCollection<EntityNodeViewModel> m_AllEntities = new();
     private ObservableCollection<EntityNodeViewModel> m_Entities = new();
     private readonly CompositeDisposable m_Disposables = new();
 
+    private string m_SearchText = string.Empty;
+    public string SearchText
+    {
+        get => m_SearchText;
+        set 
+        {
+            this.RaiseAndSetIfChanged(ref m_SearchText, value);
+            ApplyFilter();
+        }
+    }
+
+    public ObservableCollection<MenuAction> CreateActions { get; } = new();
+    public ObservableCollection<MenuAction> ContextActions { get; } = new();
+
     public EntityManager? ActiveEntityManager { get; set; }
-    public ArisenEditor.Core.Services.SelectionService? SelectionService { get; set; }
+    public ArisenEditor.Core.Services.SelectionService SelectionService { get; set; } = null!;
 
     public override string Title => "Hierarchy";
     public override string Id => "Hierarchy";
@@ -57,21 +71,45 @@ internal class HierarchyViewModel : EditorPanelBase
 
     internal HierarchyViewModel()
     {
-        // Typically, we would subscribe to an event aggregating Scene changes.
-        // For demonstration, simulating a refresh command or lifecycle hook.
+        // Register default provider (In a real app, this happens in bootstrapper)
+        MenuRegistry.Instance.RegisterProvider(new ArisenEditor.Core.Services.HierarchyMenuProvider());
+        
+        // Populate menus
+        RefreshMenus();
+
+        this.WhenAnyValue(x => x.SelectedEntity)
+            .Subscribe(_ => RefreshMenus(SelectedEntity));
+    }
+
+    public void RefreshMenus(object? context = null)
+    {
+        CreateActions.Clear();
+        foreach (var item in MenuRegistry.Instance.BuildMenu("Hierarchy.CreateMenu", context))
+            CreateActions.Add(item);
+
+        ContextActions.Clear();
+        foreach (var item in MenuRegistry.Instance.BuildMenu("Hierarchy.ContextMenu", context))
+            ContextActions.Add(item);
+    }
+
+    private void ApplyFilter()
+    {
+        if (string.IsNullOrWhiteSpace(m_SearchText))
+        {
+            Entities = new ObservableCollection<EntityNodeViewModel>(m_AllEntities);
+        }
+        else
+        {
+            var filtered = m_AllEntities.Where(e => e.Name.Contains(m_SearchText, StringComparison.OrdinalIgnoreCase)).ToList();
+            Entities = new ObservableCollection<EntityNodeViewModel>(filtered);
+        }
     }
 
     public void RefreshHierarchy(EntityManager entityManager)
     {
-        Entities.Clear();
+        ActiveEntityManager = entityManager;
+        m_AllEntities.Clear();
         
-        // This is exactly the hot path optimization dictated.
-        if (entityManager.HasComponent<NameComponent>(new Entity(0)) == false)
-        {
-            // Just a safeguard check if NameComponent pool exists at all, 
-            // a true engine would track active entities globally or via a Scene struct.
-        }
-
         var pool = entityManager.GetPool<NameComponent>();
         var components = pool.GetRawComponentArray();
         var entities = pool.GetRawEntityArray();
@@ -80,8 +118,10 @@ internal class HierarchyViewModel : EditorPanelBase
         for (int i = 0; i < count; i++)
         {
             ref NameComponent nameComp = ref components[i];
-            Entities.Add(new EntityNodeViewModel(entities[i], nameComp.Name));
+            m_AllEntities.Add(new EntityNodeViewModel(entities[i], nameComp.Name));
         }
+        
+        ApplyFilter();
     }
 
     internal void OnUnloaded()

@@ -6,6 +6,7 @@
              xmlns:vm="using:ArisenEditor.Core.Views"
              xmlns:treevm="using:ArisenEditor.ViewModels"
              xmlns:converts="using:ArisenEditor.Converters"
+             xmlns:menus="using:ArisenEditorFramework.UI.Menus"
              x:Class="ArisenEditor.Views.AssetsBrowserView"
              x:DataType="treevm:AssetsBrowserViewModel">
 
@@ -15,24 +16,41 @@
 
     <Grid RowDefinitions="Auto, *" Background="#101622">
         <!-- Toolbar -->
-        <Border Grid.Row="0" Background="#101622" Height="32" BorderBrush="#282e39" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Background="#101622" Height="40" BorderBrush="#282e39" BorderThickness="0,0,0,1" Padding="4">
             <DockPanel Margin="4,0">
-                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                    <Button Content="Import" Padding="8,2" FontSize="11" Background="#181e2a" BorderThickness="1" BorderBrush="#282e39" Foreground="#5c6b89" />
-                    <Button Content="Create" Padding="8,2" FontSize="11" Background="#181e2a" BorderThickness="1" BorderBrush="#282e39" Foreground="#5c6b89" />
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Button Content="Import" Padding="10,4" FontSize="11" Background="#181e2a" BorderThickness="1" BorderBrush="#282e39" Foreground="#94a3b8" />
+                    <Button Content="Create" Padding="10,4" FontSize="11" Background="#181e2a" BorderThickness="1" BorderBrush="#282e39" Foreground="#94a3b8">
+                        <Button.Flyout>
+                            <MenuFlyout ItemsSource="{Binding CreateActions}">
+                                <MenuFlyout.ItemContainerTheme>
+                                    <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="menus:MenuAction">
+                                        <Setter Property="Header" Value="{Binding Header}"/>
+                                        <Setter Property="Command" Value="{Binding Command}"/>
+                                        <Setter Property="CommandParameter" Value="{Binding CommandParameter}"/>
+                                        <Setter Property="ItemsSource" Value="{Binding Children}"/>
+                                    </ControlTheme>
+                                </MenuFlyout.ItemContainerTheme>
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
                 </StackPanel>
                 
-                <TextBox Text="{Binding AssetsSearchText}" 
-                         Width="200" 
-                         Height="22" 
-                         Watermark="Search assets..." 
-                         HorizontalAlignment="Right" 
-                         VerticalContentAlignment="Center"
-                         FontSize="11"
-                         Background="#2d2d2d"
-                         BorderThickness="1"
-                         BorderBrush="#3f3f46"
-                         Margin="4,0" />
+                <Border Background="#0f172a" CornerRadius="14" BorderBrush="#1e293b" BorderThickness="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="4,0">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <PathIcon Grid.Column="0" Data="{StaticResource SearchIcon}" Width="12" Height="12" Margin="10,0,4,0" Foreground="#64748b"/>
+                        <TextBox Grid.Column="1" 
+                                 Text="{Binding AssetsSearchText}" 
+                                 Width="180" 
+                                 Height="28" 
+                                 Watermark="Search assets..." 
+                                 VerticalAlignment="Center"
+                                 Padding="4,2" 
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 FontSize="12"/>
+                    </Grid>
+                </Border>
             </DockPanel>
         </Border>
 
@@ -67,6 +85,18 @@
 
             <!-- Asset List -->
             <TreeDataGrid Grid.Column="2" Source="{Binding AssetsSource}" Background="#181e2a">
+                <TreeDataGrid.ContextMenu>
+                    <ContextMenu ItemsSource="{Binding ContextActions}">
+                        <ContextMenu.ItemContainerTheme>
+                            <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="menus:MenuAction">
+                                <Setter Property="Header" Value="{Binding Header}"/>
+                                <Setter Property="Command" Value="{Binding Command}"/>
+                                <Setter Property="CommandParameter" Value="{Binding CommandParameter}"/>
+                                <Setter Property="ItemsSource" Value="{Binding Children}"/>
+                            </ControlTheme>
+                        </ContextMenu.ItemContainerTheme>
+                    </ContextMenu>
+                </TreeDataGrid.ContextMenu>
                 <TreeDataGrid.Resources>
                     <DataTemplate x:Key="AssetIconNameCell" DataType="treevm:FileTreeNode">
                         <StackPanel Orientation="Horizontal" Spacing="6">
@@ -112,4 +142,5 @@
             </TreeDataGrid>
         </Grid>
     </Grid>
+
 </UserControl>
