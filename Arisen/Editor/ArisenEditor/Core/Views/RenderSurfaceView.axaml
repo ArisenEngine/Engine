@@ -11,6 +11,6 @@
     <Design.DataContext>
         <vm:RenderSurfaceViewModel></vm:RenderSurfaceViewModel>
     </Design.DataContext>
-    <Panel Name="RenderViewContainer" Background="DarkGray">
+    <Panel Name="RenderViewContainer" Background="Transparent">
     </Panel>
 </UserControl>

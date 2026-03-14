@@ -23,11 +23,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="20">
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <Border Background="#135bec" Width="24" Height="24" CornerRadius="4">
-                            <Path Data="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Path.RenderTransform>
-                                    <ScaleTransform ScaleX="0.6" ScaleY="0.6" />
-                                </Path.RenderTransform>
-                            </Path>
+                            <Path Data="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Center" Stretch="Uniform" Width="14" Height="14" />
                         </Border>
                         <TextBlock Text="Arisen Engine" Foreground="White" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
                     </StackPanel>
@@ -37,11 +33,7 @@
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="15">
                     <Border Background="#181e2a" BorderBrush="#282e39" BorderThickness="1" CornerRadius="4" Padding="8,2">
                         <StackPanel Orientation="Horizontal" Spacing="5">
-                             <Path Data="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" Fill="#5c6b89" VerticalAlignment="Center">
-                                 <Path.RenderTransform>
-                                     <ScaleTransform ScaleX="0.5" ScaleY="0.5" />
-                                 </Path.RenderTransform>
-                             </Path>
+                             <Path Data="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" Fill="#5c6b89" HorizontalAlignment="Center" VerticalAlignment="Center" Stretch="Uniform" Width="12" Height="12" />
                              <TextBox Background="Transparent" BorderThickness="0" Watermark="Search components..." FontSize="12" Width="150" />
                         </StackPanel>
                     </Border>
