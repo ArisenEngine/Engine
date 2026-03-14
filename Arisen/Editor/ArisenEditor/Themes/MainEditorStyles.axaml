@@ -4,7 +4,8 @@
         xmlns:core="using:Dock.Model.Core"
         xmlns:recycling="clr-namespace:Avalonia.Controls.Recycling;assembly=Avalonia.Controls.Recycling"
         xmlns:controls="clr-namespace:Dock.Avalonia.Controls;assembly=Dock.Avalonia"
-        xmlns:settings="clr-namespace:Dock.Settings;assembly=Dock.Settings">
+        xmlns:settings="clr-namespace:Dock.Settings;assembly=Dock.Settings"
+        xmlns:conv="using:Dock.Avalonia.Converters">
     
     <!-- Custom Styles for Main Editor Header -->
     <Style Selector="Border.MainHeader">
@@ -117,6 +118,7 @@
                                            SelectedItem="{Binding ActiveDockable, Mode=TwoWay}"
                                            DockPanel.Dock="Top"
                                            Height="32"
+                                           IsVisible="{Binding GripMode, Converter={x:Static conv:GripModeConverters.IsVisibleVisibleConverter}}"
                                            settings:DockProperties.IsDropArea="True" />
                     <Border x:Name="PART_Border">
                         <controls:DockableControl DataContext="{Binding ActiveDockable}"

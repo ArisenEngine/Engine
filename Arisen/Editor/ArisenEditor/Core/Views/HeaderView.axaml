@@ -5,6 +5,7 @@
              xmlns:vm="using:ArisenEditor.Core.Views"
              xmlns:view="using:ArisenEditor.Core.Views"
              mc:Ignorable="d" d:DesignWidth="1920" d:DesignHeight="40"
+             Height="40"
              x:DataType="vm:HeaderViewModel"
              x:Class="ArisenEditor.Core.Views.HeaderView">
     <Border Classes="MainHeader">
