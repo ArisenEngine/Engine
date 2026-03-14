@@ -97,7 +97,8 @@
     </Style>
 
     <!-- Docking Overrides -->
-    <ControlTheme x:Key="{x:Type controls:ToolControl}" TargetType="controls:ToolControl">
+    <Styles.Resources>
+        <ControlTheme x:Key="{x:Type controls:ToolControl}" TargetType="controls:ToolControl">
         <Setter Property="HeaderTemplate">
             <DataTemplate DataType="core:IDockable">
                 <TextBlock Text="{Binding Title}" Padding="2" VerticalAlignment="Center" FontSize="11"/>
@@ -147,5 +148,6 @@
             <Setter Property="BorderThickness" Value="1,1,1,1" />
         </Style>
     </ControlTheme>
+    </Styles.Resources>
 
 </Styles>
