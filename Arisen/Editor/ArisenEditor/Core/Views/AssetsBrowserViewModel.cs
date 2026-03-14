@@ -9,11 +9,13 @@ using Avalonia.Controls;
 using Avalonia.Controls.Models.TreeDataGrid;
 using Avalonia.Controls.Selection;
 using ArisenEngine;
+using ArisenEditorFramework.UI.Menus;
+using ArisenEditorFramework.Services;
+using ArisenEditor.Core.Services;
 using ReactiveUI;
 using ArisenEngine.Core.Lifecycle;
 using ArisenEditorFramework.Core;
 using ArisenEditor.Views;
-using ArisenEditor.Core.Services;
 using ArisenEditor.Core.Views;
 
 namespace ArisenEditor.ViewModels;
@@ -32,8 +34,11 @@ internal class AssetsBrowserViewModel : EditorPanelBase
         set => this.RaiseAndSetIfChanged(ref m_AssetsSearchText, value);
     }
 
-    public HierarchicalTreeDataGridSource<FileTreeNode> FolderSource { get; private set; }
-    public FlatTreeDataGridSource<FileTreeNode> AssetsSource { get; private set; }
+    public ObservableCollection<MenuAction> CreateActions { get; } = new();
+    public ObservableCollection<MenuAction> ContextActions { get; } = new();
+
+    public HierarchicalTreeDataGridSource<FileTreeNode> FolderSource { get; private set; } = null!;
+    public FlatTreeDataGridSource<FileTreeNode> AssetsSource { get; private set; } = null!;
     
     private readonly ObservableCollection<FileTreeNode> m_AssetsItems = new();
     public ObservableCollection<FileTreeNode> AssetsItems => m_AssetsItems;
@@ -54,6 +59,9 @@ internal class AssetsBrowserViewModel : EditorPanelBase
 
     public AssetsBrowserViewModel()
     {
+        // Register provider
+        MenuRegistry.Instance.RegisterProvider(new AssetBrowserMenuProvider());
+
         InitializeFolderSource();
         InitializeAssetsSource();
         
@@ -63,12 +71,27 @@ internal class AssetsBrowserViewModel : EditorPanelBase
             .Subscribe(_ => RefreshAssetsList());
             
         // Select the root folder by default so the asset list is not empty
-        if (FolderSource.Items.Any())
+        if (FolderSource?.Items?.Any() == true)
         {
-            FolderSource.RowSelection.SelectedIndex = new IndexPath(0);
+            FolderSource.RowSelection!.SelectedIndex = new IndexPath(0);
         }
         
+        this.WhenAnyValue(x => x.AssetSelections)
+            .Subscribe(_ => RefreshMenus(AssetSelections?.FirstOrDefault()));
+
         RefreshAssetsList();
+        RefreshMenus();
+    }
+
+    public void RefreshMenus(object? context = null)
+    {
+        CreateActions.Clear();
+        foreach (var item in MenuRegistry.Instance.BuildMenu("Assets.CreateMenu", context))
+            CreateActions.Add(item);
+
+        ContextActions.Clear();
+        foreach (var item in MenuRegistry.Instance.BuildMenu("Assets.ContextMenu", context))
+            ContextActions.Add(item);
     }
 
     private void InitializeFolderSource()
