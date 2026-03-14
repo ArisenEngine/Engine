@@ -8,14 +8,29 @@ namespace ArisenEngine.Core.Diagnostics;
 public static class Logger
 {
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void LogCallback(uint type, [MarshalAs(UnmanagedType.LPUTF8Str)] string msg,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string threadName, [MarshalAs(UnmanagedType.LPUTF8Str)] string trace);
+    public delegate void LogCallback(uint type, [MarshalAs(UnmanagedType.LPUTF8Str)] string threadInfo,
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string msg, [MarshalAs(UnmanagedType.LPUTF8Str)] string trace);
 
     private static LogCallback? m_ReceiveLog;
 
-    internal static void RecordLog(uint type, string msg, string threadName, string trace)
+    internal static void RecordLog(uint type, string threadInfo, string msg, string trace)
     {
-        var message = new LogMessage((LogLevel)type, msg, "0", threadName, DateTime.Now, trace);
+        string threadId = "0";
+        string threadName = "Unknown";
+
+        if (!string.IsNullOrEmpty(threadInfo))
+        {
+            if (long.TryParse(threadInfo, out _))
+            {
+                threadId = threadInfo;
+            }
+            else
+            {
+                threadName = threadInfo;
+            }
+        }
+
+        var message = new LogMessage((LogLevel)type, msg, threadId, threadName, DateTime.Now, trace);
 
         Task.Run(() => { MessageAdded?.Invoke(message); });
     }
