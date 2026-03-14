@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:ArisenEditor.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="450"
+             x:Class="ArisenEditor.Views.HierarchyView"
+             x:DataType="vm:HierarchyViewModel">
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Toolbar (Search, Add, etc) -->
+        <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="4">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+                <Button Content="+" ToolTip.Tip="Create New Entity" Width="24" Height="24" Padding="0"/>
+                <TextBox Watermark="Search entities..." Width="200" Height="24" VerticalAlignment="Center" Padding="4,2"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Hierarchy Tree -->
+        <ListBox Grid.Row="1" 
+                 ItemsSource="{Binding Entities}" 
+                 SelectedItem="{Binding SelectedEntity}"
+                 Background="Transparent"
+                 BorderThickness="0">
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:EntityNodeViewModel">
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="4,2">
+                        <PathIcon Data="{StaticResource EntityIcon}" Width="14" Height="14" Foreground="{DynamicResource TextBrush}"/>
+                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </Grid>
+
+</UserControl>

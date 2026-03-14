@@ -74,6 +74,7 @@ public class ArisenApplication
         EngineKernel.Instance.RegisterSubsystem(new PlatformSubsystem());
         EngineKernel.Instance.RegisterSubsystem(new ProjectSubsystem());
         EngineKernel.Instance.RegisterSubsystem(new PackageSubsystem());
+        EngineKernel.Instance.RegisterSubsystem(new SceneSubsystem());
         EngineKernel.Instance.RegisterSubsystem(new RenderSubsystem());
 
         // Initialize RHI and native core
@@ -156,7 +157,7 @@ public class ArisenApplication
     {
         if (m_RenderSurfaces.TryGetValue(host, out var surface))
         {
-            // NativeHAL.RenderWindowAPI.ResizeRenderSurface(surface.Surface.SurfaceId, (uint)width, (uint)height);
+            NativeHAL.RenderWindowAPI.ResizeRenderSurface(surface.Surface.SurfaceId, (uint)width, (uint)height);
         }
     }
 

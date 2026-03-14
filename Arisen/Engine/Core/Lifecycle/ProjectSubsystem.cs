@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using ArisenEngine.Core.Diagnostics;
 using ArisenEngine.Core.Serialization;
+using ArisenEngine.Core.ECS;
 
 namespace ArisenEngine.Core.Lifecycle;
 
