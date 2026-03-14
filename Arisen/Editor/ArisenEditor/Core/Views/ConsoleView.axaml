@@ -20,7 +20,8 @@
     <Grid RowDefinitions="5*, Auto, 5*" Background="Transparent">
         <DockPanel>
       
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" HorizontalAlignment="Left" Spacing="5">
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*, Auto" Margin="0,0,0,5">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Spacing="5">
 
             <Button Name="CleanLog" Margin="0, 0,0,0" Command="{Binding ClearCommand}">
                 <Image Width="15" Height="15" Source="avares://ArisenEditor/Assets/Icons/clean.png"></Image>
@@ -33,7 +34,9 @@
                      TextWrapping="NoWrap" Width="400">
 
             </TextBox>
-            <StackPanel Spacing="2" HorizontalAlignment="Right" Orientation="Horizontal" Width="315">
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Spacing="2" HorizontalAlignment="Right" Orientation="Horizontal">
                 <ToggleButton Name="EditorToggle" Content="Editor" IsChecked="{Binding ShowEditorLogs}" VerticalAlignment="Center" Margin="0,0,5,0" Padding="5,2"/>
                 <ToggleButton Name="PlayerToggle" Content="Player" IsChecked="{Binding ShowPlayerLogs}" VerticalAlignment="Center" Margin="0,0,5,0" Padding="5,2"/>
                 <ToggleButton Name="InfoToggle" HorizontalAlignment="Right" IsChecked="{Binding InfoChecked}">
@@ -50,7 +53,7 @@
                 </ToggleButton>
             </StackPanel>
 
-        </StackPanel>
+        </Grid>
 
         <DataGrid GridLinesVisibility="None" ColumnHeaderHeight="20" Name="LogDataGrid" SelectionMode="Single" SelectionChanged="LogDataGrid_OnSelectionChanged"
                   ItemsSource="{Binding Messages}" IsReadOnly="True" HeadersVisibility="Column" CanUserResizeColumns="True">
@@ -69,28 +72,28 @@
 
                 <DataGridTemplateColumn Header="ThreadId" IsVisible="{Binding ThreadChecked}">
                     <DataTemplate x:DataType="m:MessageItemNode">
-                        <TextBlock MaxWidth="700" Text="{Binding ThreadId}" VerticalAlignment="Center"
+                        <TextBlock Text="{Binding ThreadId}" VerticalAlignment="Center"
                                    HorizontalAlignment="Center" TextWrapping="NoWrap" />
                     </DataTemplate>
                 </DataGridTemplateColumn>
                 
                 <DataGridTemplateColumn Header="ThreadName" IsVisible="{Binding ThreadChecked}">
                     <DataTemplate x:DataType="m:MessageItemNode">
-                        <TextBlock MaxWidth="700" Text="{Binding ThreadName}" VerticalAlignment="Center"
-                                   HorizontalAlignment="Center" TextWrapping="NoWrap" />
+                        <TextBlock Text="{Binding ThreadName}" VerticalAlignment="Center"
+                                   HorizontalAlignment="Left" TextWrapping="NoWrap" />
                     </DataTemplate>
                 </DataGridTemplateColumn>
 
                 <DataGridTemplateColumn Header="Time">
                     <DataTemplate x:DataType="m:MessageItemNode">
-                        <TextBlock MaxWidth="700" Text="{Binding TimeText}" VerticalAlignment="Center"
+                        <TextBlock Text="{Binding TimeText}" VerticalAlignment="Center"
                                    HorizontalAlignment="Center" TextWrapping="NoWrap" />
                     </DataTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="Message" Width="1000">
+                <DataGridTemplateColumn Header="Message" Width="*">
                     <DataTemplate x:DataType="m:MessageItemNode">
-                        <TextBlock MaxWidth="700" Text="{Binding MessageText}" VerticalAlignment="Center" Margin="10,0,0,0"
+                        <TextBlock Text="{Binding MessageText}" VerticalAlignment="Center" Margin="10,0,0,0"
                                    HorizontalAlignment="Left" TextWrapping="Wrap" />
                     </DataTemplate>
                 </DataGridTemplateColumn>
