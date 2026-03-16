@@ -19,6 +19,8 @@ internal class FileTreeNode : TreeNodeBase
     private bool m_IsLoaded = false;
     public Guid AssetGuid { get; set; }
 
+    public ObservableCollection<FileTreeNode> Folders { get; } = new();
+
     internal FileTreeNode(string name, string path, bool isBranch, bool isRoot = false, bool isImmutable = false) : base(name, path, isBranch, isRoot, isImmutable)
     {
         if (isBranch)
@@ -29,14 +31,24 @@ internal class FileTreeNode : TreeNodeBase
             if (Directory.Exists(path) && Directory.EnumerateFileSystemEntries(path).Any())
             {
                  // Add a dummy child to trick Avalonia TreeDataGrid into showing an expand chevron
-                 Children.Add(new FileTreeNode("Loading...", string.Empty, false) { Parent = this });
+                 var dummy = new FileTreeNode("Loading...", string.Empty, false) { Parent = this };
+                 Children.Add(dummy);
+                 Folders.Add(dummy);
             }
         }
         else
         {
-            var info = new FileInfo(path);
-            Size = info.Length;
-            Modified = info.LastWriteTimeUtc;
+            if (!string.IsNullOrEmpty(path))
+            {
+                var info = new FileInfo(path);
+                Size = info.Length;
+                Modified = info.LastWriteTimeUtc;
+            }
+            else
+            {
+                Size = 0;
+                Modified = DateTimeOffset.MinValue;
+            }
         }
     }
 
@@ -45,6 +57,7 @@ internal class FileTreeNode : TreeNodeBase
         if (!IsBranch || m_IsLoaded) return;
         
         Children.Clear();
+        Folders.Clear();
         
         var options = new EnumerationOptions
         {
@@ -62,6 +75,7 @@ internal class FileTreeNode : TreeNodeBase
                     // Create the child node and trigger its own dummy-child logic
                     var childNode = new FileTreeNode(name, fullPath, true, false) { Parent = this };
                     Children.Add(childNode);
+                    Folders.Add(childNode);
                 }
             }
         }
@@ -147,6 +161,7 @@ internal class FileTreeNode : TreeNodeBase
                 true,
                 false) { Parent = this };
             Children.Add(node);
+            Folders.Add(node);
         }
     }
 
@@ -157,6 +172,14 @@ internal class FileTreeNode : TreeNodeBase
             if (Children[i] is FileTreeNode child && child.Path == e.FullPath)
             {
                 Children.RemoveAt(i);
+                break;
+            }
+        }
+        for (var i = 0; i < Folders.Count; ++i)
+        {
+            if (Folders[i].Path == e.FullPath)
+            {
+                Folders.RemoveAt(i);
                 break;
             }
         }

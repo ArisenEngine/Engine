@@ -31,6 +31,7 @@ public partial class AssetsBrowserView : UserControl
                 }
             }
         }
+        e.Handled = true;
     }
 
     private void OnAssetDoubleTapped(object? sender, TappedEventArgs e)
@@ -55,5 +56,6 @@ public partial class AssetsBrowserView : UserControl
                 }
             }
         }
+        e.Handled = true;
     }
 }

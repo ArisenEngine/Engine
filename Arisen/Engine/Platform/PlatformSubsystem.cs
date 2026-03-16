@@ -16,7 +16,12 @@ public class PlatformSubsystem : ITickableSubsystem
         switch (ArisenApplication.s_Platform)
         {
             case RuntimePlatform.Windows:
-                // m_MessageHandler = new WindowsMessageHandle();
+                if (!ArisenApplication.s_IsInEditor)
+                {
+                    // Only standalone runtime games own the OS message loop.
+                    // In Editor mode, Avalonia owns the message loop.
+                    // m_MessageHandler = new WindowsMessageHandle(); // Note: currently commented out in base code anyway
+                }
                 break;
         }
     }

@@ -1,5 +1,4 @@
 using ArisenEditor.ViewModels;
-using ArisenEngine.Views.Rendering;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 
@@ -16,7 +15,7 @@ public partial class SceneView : UserControl
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-        LoadNativeRenderWindow();
+        LoadViewport();
     }
 
     protected override void OnUnloaded(RoutedEventArgs e)
@@ -24,14 +23,12 @@ public partial class SceneView : UserControl
         base.OnUnloaded(e);
         SceneViewContainer.Children.Clear();
     }
-
-    private void LoadNativeRenderWindow()
+    
+    private void LoadViewport()
     {
-        // Preview
-        SceneViewContainer.Children.Add(new RenderSurfaceView()
+        SceneViewContainer.Children.Add(new EditorViewportView()
         {
-            SurfaceType = ArisenEngine.Rendering.SurfaceType.SceneView,
-            DataContext = new RenderSurfaceViewModel(true)
+            DataContext = new EditorViewportViewModel(isSceneView: true)
         });
     }
 }

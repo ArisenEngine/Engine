@@ -113,7 +113,7 @@ internal class AssetsBrowserViewModel : EditorPanelBase
                             IsTextSearchEnabled = true,
                             TextSearchValueSelector = x => x.Name
                         }),
-                    x => x.Children.OfType<FileTreeNode>(),
+                    x => x.Folders,
                     x => x.HasChildren,
                     x => x.IsExpanded
                 ),
