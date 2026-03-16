@@ -90,7 +90,9 @@ public static class SceneSerializer
     {
         if (!File.Exists(path)) return;
 
-        var deserializer = new DeserializerBuilder().Build();
+        var deserializer = new DeserializerBuilder()
+            .IgnoreUnmatchedProperties()
+            .Build();
         var yaml = File.ReadAllText(path);
         
         var sceneData = deserializer.Deserialize<SceneData>(yaml);

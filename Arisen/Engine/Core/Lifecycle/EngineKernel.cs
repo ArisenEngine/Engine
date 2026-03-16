@@ -11,6 +11,7 @@ public sealed class EngineKernel : IDisposable
     private readonly List<IEngineSubsystem> m_Subsystems = new();
     private EnginePhase m_CurrentPhase = EnginePhase.None;
     private bool m_IsRunning = false;
+    private FrameScheduler m_FrameScheduler = new FrameScheduler();
 
     public EnginePhase CurrentPhase => m_CurrentPhase;
     public EngineConfig Config { get; private set; }
@@ -93,25 +94,30 @@ public sealed class EngineKernel : IDisposable
             Initialize(Config ?? new EngineConfig());
         }
 
-        var frameScheduler = new FrameScheduler();
-
         while (m_IsRunning)
         {
-            Profiler.FrameMark();
-            using (Profiler.Zone("EngineKernel.Update"))
-            {
-                Time.Update();
-                float deltaTime = Time.deltaTime;
-
-                frameScheduler.ExecuteFrame(deltaTime, m_Subsystems);
-            }
-
-            // End of frame cleanup
-            ArisenEngine.Core.Memory.FrameArena.Instance.Reset();
-            CurrentFrameIndex++;
+            Time.Update();
+            Tick(Time.deltaTime);
         }
 
         return 0;
+    }
+
+    /// <summary>
+    /// Executes a single frame of the engine. 
+    /// Exposing this allows external runners (like the Editor) to drive the loop.
+    /// </summary>
+    public void Tick(float deltaTime)
+    {
+        Profiler.FrameMark();
+        using (Profiler.Zone("EngineKernel.Update"))
+        {
+            m_FrameScheduler.ExecuteFrame(deltaTime, m_Subsystems);
+        }
+
+        // End of frame cleanup
+        ArisenEngine.Core.Memory.FrameArena.Instance.Reset();
+        CurrentFrameIndex++;
     }
 
     public void RequestShutdown()

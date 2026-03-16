@@ -27,6 +27,8 @@ namespace ArisenEditor
     public partial class App : Application
     {
         internal static IThemeManager? ThemeManager;
+        private static ArisenEditor.Core.Lifecycle.EditorEngineRunner? s_EngineRunner;
+        
         public override void Initialize()
         {
             ThemeManager = new ArisenEditorFramework.Services.ThemeManager(this);
@@ -54,7 +56,11 @@ namespace ArisenEditor
                 // If the user clicks the 'X' button on the MainWindow (Splash or Editor), the app will shut down.
                 desktop.ShutdownMode = Avalonia.Controls.ShutdownMode.OnMainWindowClose;
 
-                desktop.Exit += (sender, args) => ArisenEngine.Core.Lifecycle.ArisenApplication.ShutdownEngine();
+                desktop.Exit += (sender, args) => 
+                {
+                    s_EngineRunner?.Stop();
+                    ArisenEngine.Core.Lifecycle.ArisenApplication.ShutdownEngine();
+                };
 
                 // Global UI exception handler
                 Avalonia.Threading.Dispatcher.UIThread.UnhandledException += (sender, args) => 
@@ -248,6 +254,10 @@ namespace ArisenEditor
                 WindowState = WindowState.Maximized
             };
             desktop.MainWindow.Show();
+            
+            // Start the background Engine loop now that the UI is up
+            s_EngineRunner = new ArisenEditor.Core.Lifecycle.EditorEngineRunner();
+            s_EngineRunner.Start();
         }
         
         private static bool IsProduction()

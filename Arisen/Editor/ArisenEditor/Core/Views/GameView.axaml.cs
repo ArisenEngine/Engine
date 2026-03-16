@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using ArisenEditor.Extensions.GameView;
 using ArisenEditor.ViewModels;
-using ArisenEngine.Views.Rendering;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -32,7 +31,7 @@ public partial class GameView : UserControl
     {
         base.OnLoaded(e);
         m_GameViewModel = (DataContext as GameViewModel)!;
-        LoadNativeRenderWindow();
+        LoadViewport();
         m_GameViewModel.OnLoaded();
         ResolutionComboBox.SelectedIndex = 0;
     }
@@ -48,12 +47,11 @@ public partial class GameView : UserControl
         GameViewContainer.Children.Clear();
     }
     
-    private void LoadNativeRenderWindow()
+    private void LoadViewport()
     {
-        GameViewContainer.Children.Add(new RenderSurfaceView()
+        GameViewContainer.Children.Add(new EditorViewportView()
         {
-            SurfaceType = ArisenEngine.Rendering.SurfaceType.GameView,
-            DataContext = new RenderSurfaceViewModel(false)
+            DataContext = new EditorViewportViewModel(isSceneView: false)
         });
     }
 
