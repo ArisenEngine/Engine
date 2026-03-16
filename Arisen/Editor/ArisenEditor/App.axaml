@@ -33,7 +33,6 @@
         <StyleInclude Source="avares://ArisenEditor/Themes/Fluent.axaml"/>
         <StyleInclude Source="avares://ArisenEditor/Themes/MainEditorStyles.axaml"/>
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
-        <StyleInclude Source="avares://Avalonia.Controls.TreeDataGrid/Themes/Fluent.axaml"/>
         <StyleInclude Source="avares://Dock.Avalonia/Themes/DockFluentTheme.axaml"/>
         
         <Style Selector="controls|DockControl">

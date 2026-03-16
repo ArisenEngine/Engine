@@ -15,7 +15,7 @@ internal abstract class TreeNodeBase : ReactiveObject, IHierarchyItem, IEditable
 {
     private bool m_IsExpanded;
 
-    public bool IsExpanded
+    public virtual bool IsExpanded
     {
         get => m_IsExpanded;
         set { this.RaiseAndSetIfChanged(ref m_IsExpanded, value && HasChildren); }

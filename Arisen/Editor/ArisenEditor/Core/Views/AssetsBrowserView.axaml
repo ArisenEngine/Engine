@@ -7,6 +7,7 @@
              xmlns:treevm="using:ArisenEditor.ViewModels"
              xmlns:converts="using:ArisenEditor.Converters"
              xmlns:menus="using:ArisenEditorFramework.UI.Menus"
+             xmlns:ui="using:ArisenEditorFramework.UI.Controls"
              x:Class="ArisenEditor.Views.AssetsBrowserView"
              x:DataType="treevm:AssetsBrowserViewModel">
 
@@ -35,7 +36,12 @@
                         </Button.Flyout>
                     </Button>
                 </StackPanel>
-                
+                <!-- View Mode Controls -->
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,12,0">
+                    <!-- Slider for Icon Size -->
+                    <Slider Minimum="32" Maximum="128" Value="{Binding IconSize}" Width="100" VerticalAlignment="Center" />
+                </StackPanel>
+
                 <Border Background="#0f172a" CornerRadius="14" BorderBrush="#1e293b" BorderThickness="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="4,0">
                     <Grid ColumnDefinitions="Auto,*">
                         <PathIcon Grid.Column="0" Data="{StaticResource SearchIcon}" Width="12" Height="12" Margin="10,0,4,0" Foreground="#64748b"/>
@@ -57,35 +63,24 @@
         <!-- Main Content -->
         <Grid Grid.Row="1" ColumnDefinitions="250, 4, *">
             <!-- Folder Tree -->
-            <TreeDataGrid Grid.Column="0" Source="{Binding FolderSource}" Background="#181e2a" DoubleTapped="OnFolderDoubleTapped">
-                <TreeDataGrid.Resources>
-                    <DataTemplate x:Key="NameCell" DataType="treevm:FileTreeNode">
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <Image Width="16" Height="16">
-                                <Image.Source>
-                                    <MultiBinding Converter="{StaticResource IconConverter}">
-                                        <Binding Path="IsBranch" />
-                                        <Binding Path="IsExpanded" />
-                                        <Binding Path="IsRoot" />
-                                        <Binding Path="." />
-                                    </MultiBinding>
-                                </Image.Source>
-                            </Image>
-                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontSize="12" Foreground="White" />
-                        </StackPanel>
-                    </DataTemplate>
-
-                    <DataTemplate x:Key="NameEditCell" DataType="treevm:FileTreeNode">
-                        <TextBox Text="{Binding Name}" VerticalAlignment="Center" FontSize="12" Padding="2" />
-                    </DataTemplate>
-                </TreeDataGrid.Resources>
-            </TreeDataGrid>
+            <ui:ArisenTreeView Grid.Column="0" 
+                               x:Name="FolderGrid" 
+                               ItemsSource="{Binding FolderSource}" 
+                               SelectedItem="{Binding SelectedFolder, Mode=TwoWay}"
+                               Background="#181e2a" />
 
             <GridSplitter Grid.Column="1" Background="Transparent" ResizeDirection="Columns" />
 
             <!-- Asset List -->
-            <TreeDataGrid Grid.Column="2" x:Name="AssetsGrid" Source="{Binding AssetsSource}" Background="#181e2a" DoubleTapped="OnAssetDoubleTapped">
-                <TreeDataGrid.ContextMenu>
+            <ui:ArisenListView Grid.Column="2" 
+                               x:Name="AssetsGrid" 
+                               ItemsSource="{Binding AssetsSource}"
+                               SelectedItem="{Binding SelectedAsset, Mode=TwoWay}"
+                               IsIconMode="{Binding IsIconMode}"
+                               IconSize="{Binding IconSize}"
+                               Background="#181e2a"
+                               PointerWheelChanged="OnAssetsPointerWheelChanged">
+                <ui:ArisenListView.ContextMenu>
                     <ContextMenu ItemsSource="{Binding ContextActions}">
                         <ContextMenu.ItemContainerTheme>
                             <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="menus:MenuAction">
@@ -96,50 +91,8 @@
                             </ControlTheme>
                         </ContextMenu.ItemContainerTheme>
                     </ContextMenu>
-                </TreeDataGrid.ContextMenu>
-                <TreeDataGrid.Resources>
-                    <DataTemplate x:Key="AssetIconNameCell" DataType="treevm:FileTreeNode">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <Image Width="16" Height="16">
-                                <Image.Source>
-                                    <MultiBinding Converter="{StaticResource IconConverter}">
-                                        <Binding Path="IsBranch" />
-                                        <Binding Path="IsExpanded" />
-                                        <Binding Path="IsRoot" />
-                                        <Binding Path="." />
-                                    </MultiBinding>
-                                </Image.Source>
-                            </Image>
-                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontSize="12" Foreground="White" />
-                        </StackPanel>
-                    </DataTemplate>
-
-                    <DataTemplate x:Key="NameEditCell" DataType="treevm:FileTreeNode">
-                        <TextBox Text="{Binding Name}" VerticalAlignment="Center" FontSize="12" Padding="2" />
-                    </DataTemplate>
-
-                    <DataTemplate x:Key="AssetIconNameEditCell" DataType="treevm:FileTreeNode">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <Image Width="16" Height="16">
-                                <Image.Source>
-                                    <MultiBinding Converter="{StaticResource IconConverter}">
-                                        <Binding Path="IsBranch" />
-                                        <Binding Path="IsExpanded" />
-                                        <Binding Path="IsRoot" />
-                                        <Binding Path="." />
-                                    </MultiBinding>
-                                </Image.Source>
-                            </Image>
-                            <TextBox Text="{Binding Name}" VerticalAlignment="Center" FontSize="12" Padding="2" MinWidth="100" Background="#101622" Foreground="White" BorderBrush="#135bec" />
-                        </StackPanel>
-                    </DataTemplate>
-                </TreeDataGrid.Resources>
-                <TreeDataGrid.Styles>
-                    <Style Selector="TreeDataGridRow:selected">
-                        <Setter Property="Background" Value="#135bec" />
-                    </Style>
-                </TreeDataGrid.Styles>
-            </TreeDataGrid>
+                </ui:ArisenListView.ContextMenu>
+            </ui:ArisenListView>
         </Grid>
     </Grid>
 
