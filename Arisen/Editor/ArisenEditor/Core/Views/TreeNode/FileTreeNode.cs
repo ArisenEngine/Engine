@@ -99,7 +99,7 @@ internal class FileTreeNode : TreeNodeBase
     public override bool HasChildren => IsBranch;
 
     // Trigger lazy load on expansion
-    public new bool IsExpanded
+    public override bool IsExpanded
     {
         get => base.IsExpanded;
         set
