@@ -33,25 +33,5 @@ public class SceneService : ReactiveObject, ISceneService
     public void InitializeNewScene()
     {
         CurrentEntityManager = new EntityManager();
-        
-        // Add initial entities to populate the hierarchy for verification.
-        // In a real flow, this would be loaded from a .scene file by SceneSerializer.
-        var ent1 = CurrentEntityManager.CreateEntity();
-        CurrentEntityManager.AddComponent(ent1, new NameComponent { Name = "Main Camera" });
-
-        var ent2 = CurrentEntityManager.CreateEntity();
-        CurrentEntityManager.AddComponent(ent2, new NameComponent { Name = "Directional Light" });
-
-        var ent3 = CurrentEntityManager.CreateEntity();
-        CurrentEntityManager.AddComponent(ent3, new NameComponent { Name = "Environment Root" });
-        
-        // Create a default Editor Camera Entity
-        var editorCameraEntity = CurrentEntityManager.CreateEntity();
-        CurrentEntityManager.AddComponent<NameComponent>(editorCameraEntity).Name = "Editor Camera";
-        CurrentEntityManager.AddComponent<TransformComponent>(editorCameraEntity).Position = new Vector3(0, 0, -10);
-        CurrentEntityManager.AddComponent<CameraComponent>(editorCameraEntity);
-        
-        // Note: For now, we are manually adding NameComponents. 
-        // In the future, every entity created in Editor should probably get one by default.
     }
 }

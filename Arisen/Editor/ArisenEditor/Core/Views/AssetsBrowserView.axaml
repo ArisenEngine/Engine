@@ -57,7 +57,7 @@
         <!-- Main Content -->
         <Grid Grid.Row="1" ColumnDefinitions="250, 4, *">
             <!-- Folder Tree -->
-            <TreeDataGrid Grid.Column="0" Source="{Binding FolderSource}" Background="#181e2a">
+            <TreeDataGrid Grid.Column="0" Source="{Binding FolderSource}" Background="#181e2a" DoubleTapped="OnFolderDoubleTapped">
                 <TreeDataGrid.Resources>
                     <DataTemplate x:Key="NameCell" DataType="treevm:FileTreeNode">
                         <StackPanel Orientation="Horizontal" Spacing="4">
@@ -84,7 +84,7 @@
             <GridSplitter Grid.Column="1" Background="Transparent" ResizeDirection="Columns" />
 
             <!-- Asset List -->
-            <TreeDataGrid Grid.Column="2" Source="{Binding AssetsSource}" Background="#181e2a">
+            <TreeDataGrid Grid.Column="2" x:Name="AssetsGrid" Source="{Binding AssetsSource}" Background="#181e2a" DoubleTapped="OnAssetDoubleTapped">
                 <TreeDataGrid.ContextMenu>
                     <ContextMenu ItemsSource="{Binding ContextActions}">
                         <ContextMenu.ItemContainerTheme>

@@ -25,12 +25,12 @@ namespace ArisenEngine.Models
 
         public void OnBeforeSerialize()
         {
-            // Custom Yaml serialization logic will go here to parse out the EntityManager contiguous arrays later
+            // Note: In Arisen Editor, SceneSerializer directly writes to the file, but if mapped here,
+            // we'd serialize the components into a DTO list.
         }
 
         public void OnAfterDeserialize()
         {
-            // Re-inflate EntityManager arrays upon load
         }
     }
 }
