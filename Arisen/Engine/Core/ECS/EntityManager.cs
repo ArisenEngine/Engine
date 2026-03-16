@@ -90,6 +90,14 @@ public class EntityManager
     }
 
     /// <summary>
+    /// Checks if a pool exists for the given component type.
+    /// </summary>
+    public bool HasPool<T>() where T : struct, IComponent
+    {
+        return m_ComponentPools.ContainsKey(typeof(T));
+    }
+
+    /// <summary>
     /// Returns all component pools that contain the given entity.
     /// Useful for Inspector-style discovery.
     /// </summary>

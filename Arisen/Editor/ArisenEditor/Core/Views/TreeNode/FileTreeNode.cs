@@ -25,10 +25,11 @@ internal class FileTreeNode : TreeNodeBase
         {
             Size = ArisenEngine.FileSystem.FileSystemUtilities.GetFolderSize(path);
             Modified = new DirectoryInfo(path).LastWriteTimeUtc;
-            // Placeholder for expansion
+            // Placeholder for expansion so Avalonia shows the expander arrow
             if (Directory.Exists(path) && Directory.EnumerateFileSystemEntries(path).Any())
             {
-                 // Children.Add(null!); // We'll trigger load on expansion
+                 // Add a dummy child to trick Avalonia TreeDataGrid into showing an expand chevron
+                 Children.Add(new FileTreeNode("Loading...", string.Empty, false) { Parent = this });
             }
         }
         else
@@ -58,7 +59,9 @@ internal class FileTreeNode : TreeNodeBase
                 foreach (var fullPath in Directory.EnumerateDirectories(Path, "*", options))
                 {
                     var name = fullPath.Split(System.IO.Path.DirectorySeparatorChar)[^1];
-                    Children.Add(new FileTreeNode(name, fullPath, true, false) { Parent = this });
+                    // Create the child node and trigger its own dummy-child logic
+                    var childNode = new FileTreeNode(name, fullPath, true, false) { Parent = this };
+                    Children.Add(childNode);
                 }
             }
         }

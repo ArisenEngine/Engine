@@ -1,5 +1,4 @@
 using ArisenEngine.Core.Lifecycle;
-using ArisenEngine.Core.ECS.Systems;
 using ArisenEngine.Core.ECS;
 
 namespace ArisenEngine.Core.Lifecycle;
@@ -13,18 +12,15 @@ public class SceneSubsystem : ITickableSubsystem
     public EnginePhase InitPhase => EnginePhase.Init;
 
     public EntityManager ActiveEntityManager { get; private set; }
-    private EditorCameraSystem _cameraSystem;
 
     public void Initialize()
     {
         ActiveEntityManager = new EntityManager();
-        _cameraSystem = new EditorCameraSystem(ActiveEntityManager);
     }
 
     public void Tick(float deltaTime)
     {
-        // Execute ECS systems in order
-        _cameraSystem.Update(deltaTime);
+        // Execute ECS systems in order (will be populated dynamically later)
     }
 
     public void Shutdown()

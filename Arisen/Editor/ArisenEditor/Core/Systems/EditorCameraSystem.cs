@@ -1,29 +1,45 @@
 using System;
+using System.Numerics;
+using ArisenEngine.Core.ECS;
 using ArisenEngine.Core.Lifecycle;
+using ArisenEditor.Core.Services;
 
-namespace ArisenEngine.Core.ECS.Systems;
+namespace ArisenEditor.Core.Systems;
 
 /// <summary>
 /// A system that processes Editor Camera entities to handle movement and rotation.
 /// Adheres to DOD by processing Transform and Camera components in bulk.
 /// </summary>
-public class EditorCameraSystem
+public class EditorCameraSystem : ITickableSubsystem
 {
-    private EntityManager _entityManager;
+    public int Priority => 100;
+    public EnginePhase InitPhase => EnginePhase.PostInit;
 
-    public EditorCameraSystem(EntityManager entityManager)
+    public void Initialize()
     {
-        _entityManager = entityManager;
     }
 
-    public void Update(float deltaTime)
+    public void Shutdown()
     {
+    }
+
+    public void Dispose() => Shutdown();
+
+    public void Tick(float deltaTime)
+    {
+        var activeScene = SceneManagerService.Instance?.ActiveScene;
+        if (activeScene == null) return;
+        
+        var _entityManager = activeScene.Registry;
         // In a true DOD engine, we would 'Query' for entities with both Transform and Camera.
         // For simplicity in Phase 2, we iterate the Camera pool and match transforms.
+        
+        if (!_entityManager.HasPool<CameraComponent>() || !_entityManager.HasPool<TransformComponent>())
+            return;
+            
         var cameraPool = _entityManager.GetPool<CameraComponent>();
         var transformPool = _entityManager.GetPool<TransformComponent>();
         
-        var cameras = cameraPool.GetRawComponentArray();
         var cameraEntities = cameraPool.GetRawEntityArray();
         int count = cameraPool.Count;
 

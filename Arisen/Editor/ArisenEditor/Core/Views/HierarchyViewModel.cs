@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using ArisenEditorFramework.Core;
 using ArisenEditorFramework.Services;
 using ArisenEditorFramework.UI.Menus;
@@ -79,6 +80,25 @@ internal class HierarchyViewModel : EditorPanelBase
 
         this.WhenAnyValue(x => x.SelectedEntity)
             .Subscribe(_ => RefreshMenus(SelectedEntity));
+            
+        // Subscribe to SceneManagerService to auto-refresh when the active scene changes
+        ArisenEditor.Core.Services.SceneManagerService.Instance
+            .WhenAnyValue(x => x.ActiveScene)
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(scene => 
+            {
+                if (scene != null)
+                {
+                    RefreshHierarchy(scene.Registry);
+                }
+                else
+                {
+                    m_AllEntities.Clear();
+                    Entities.Clear();
+                    ActiveEntityManager = null;
+                }
+            })
+            .DisposeWith(m_Disposables);
     }
 
     public void RefreshMenus(object? context = null)
@@ -110,6 +130,12 @@ internal class HierarchyViewModel : EditorPanelBase
         ActiveEntityManager = entityManager;
         m_AllEntities.Clear();
         
+        if (!entityManager.HasPool<NameComponent>())
+        {
+            ApplyFilter();
+            return;
+        }
+
         var pool = entityManager.GetPool<NameComponent>();
         var components = pool.GetRawComponentArray();
         var entities = pool.GetRawEntityArray();
