@@ -79,7 +79,6 @@ class Program
 
     static void Setup()
     {
-        ArisenApplication.s_IsInEditor = true;
         ArisenApplication.InitializeLogging(true);
         ProjectSolution.InstallationRoot = Environment.GetEnvironmentVariable(ProjectSolution.INSTALLATION_ENV_VARIABLE, EnvironmentVariableTarget.User);
         if (ProjectSolution.InstallationRoot == null)
@@ -88,13 +87,21 @@ class Program
             Environment.SetEnvironmentVariable(ProjectSolution.INSTALLATION_ENV_VARIABLE, ProjectSolution.InstallationRoot, EnvironmentVariableTarget.User);
         }
         
-        
-        ArisenApplication.s_Platform = RuntimePlatform.Windows;
-        ArisenApplication.s_StartupPath = ProjectSolution.InstallationRoot;
-
-        // Initialize Editor Logger
+        // Editor Log Init first, so we don't miss anything that comes early
         var editorLogService = new ArisenEditor.Core.Services.EditorLogService("editor.log");
         ArisenEditor.Core.Services.EditorLog.Initialize(editorLogService);
+
+        var config = new EngineConfig
+        {
+            AppName = "ArisenEditor",
+            Platform = RuntimePlatform.Windows,
+            StartupPath = ProjectSolution.InstallationRoot,
+            WindowWidth = 1280,
+            WindowHeight = 720
+        };
+
+        // Note: Actual engine initialization via InitializeEngine(config) must happen inside the editor initialization flow or here.
+        // If not here, make sure ArisenEditor uses the proper EngineConfig.
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.

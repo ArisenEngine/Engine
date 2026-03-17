@@ -26,3 +26,6 @@ This document defines the strict, non-negotiable rules for any AI agent interact
 - The Editor is built on Avalonia UI. Stick to the MVVM pattern for the Editor.
 - UI ViewModels should notify property changes (`INotifyPropertyChanged`).
 - Editor code **MUST NOT** run C++ engine logic directly on the UI thread if it blocks for more than 16ms.
+
+## 6. Logging
+- When developing or fixing bugs, **ALWAYS** separate Editor logs (`ArisenEditor.Core.Services.EditorLog`) from Player logs (`ArisenEngine.Core.Diagnostics.Logger`). Do not mix them up.

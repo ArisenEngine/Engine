@@ -18,12 +18,12 @@ public class AssetDatabaseService : IDisposable
 
     private AssetDatabaseService() { }
 
-    public void Initialize()
+    public void Initialize(string projectRoot)
     {
-        m_AssetsRoot = Path.Combine(ArisenApplication.s_ProjectRoot, "Content");
+        m_AssetsRoot = Path.Combine(projectRoot, "Content");
         
         // Initialize SQLite DB in the project's Library folder
-        string libraryPath = Path.Combine(ArisenApplication.s_ProjectRoot, "Library");
+        string libraryPath = Path.Combine(projectRoot, "Library");
         string dbPath = Path.Combine(libraryPath, "AssetRegistry.db");
         
         ArisenEditor.Core.Assets.AssetDatabase.Initialize(dbPath);

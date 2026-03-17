@@ -28,7 +28,8 @@ public class EditorProjectService
         var manifest = ActiveProject;
         if (manifest == null) return;
 
-        string projectFile = Path.Combine(ArisenEngine.Core.Lifecycle.ArisenApplication.s_ProjectRoot, "Project.arisen");
+        var env = EngineKernel.Instance.GetSubsystem<EnvironmentSubsystem>();
+        string projectFile = Path.Combine(env?.ProjectRoot ?? string.Empty, "Project.arisen");
         try
         {
             SerializationUtil.Serialize(manifest, projectFile);
@@ -51,7 +52,8 @@ public class EditorProjectService
 
     public void LoadUserSettings()
     {
-        string libraryPath = Path.Combine(ArisenApplication.s_ProjectRoot, "Library");
+        var env = EngineKernel.Instance.GetSubsystem<EnvironmentSubsystem>();
+        string libraryPath = Path.Combine(env?.ProjectRoot ?? string.Empty, "Library");
         string settingsPath = Path.Combine(libraryPath, "EditorUserSettings.arisen_settings");
 
         if (File.Exists(settingsPath))
@@ -74,7 +76,8 @@ public class EditorProjectService
 
     public void SaveUserSettings()
     {
-        string libraryPath = Path.Combine(ArisenApplication.s_ProjectRoot, "Library");
+        var env = EngineKernel.Instance.GetSubsystem<EnvironmentSubsystem>();
+        string libraryPath = Path.Combine(env?.ProjectRoot ?? string.Empty, "Library");
         
         if (!Directory.Exists(libraryPath))
         {

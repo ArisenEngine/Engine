@@ -41,14 +41,7 @@ namespace ArisenEditor
 
         public override void OnFrameworkInitializationCompleted()
         {
-            if (OperatingSystem.IsWindows())
-            {
-                ArisenApplication.s_Platform = RuntimePlatform.Windows;
-                    
-            } else if (OperatingSystem.IsMacOS())
-            {
-                ArisenApplication.s_Platform = RuntimePlatform.MacOS;
-            }
+            // Platform is now set in EngineConfig inside Program.cs entry points
 
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
@@ -189,9 +182,9 @@ namespace ArisenEditor
 
             var bootstrapper = new Bootstrapper();
             bootstrapper.AddStep(new EnvironmentValidationStep());
-            bootstrapper.AddStep(new ProjectSynthesisStep());
             bootstrapper.AddStep(new EngineInitializationStep());
             bootstrapper.AddStep(new AssetDatabaseInitializationStep());
+            bootstrapper.AddStep(new ProjectSynthesisStep());
             bootstrapper.AddStep(new DependencyConvergenceStep());
             bootstrapper.AddStep(new DataFabricStep());
             bootstrapper.AddStep(new HardwareWarmupStep());

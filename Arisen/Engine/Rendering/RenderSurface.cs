@@ -73,14 +73,17 @@ public class RenderSurface : IRenderSurface
 
     private bool Initialize()
     {
-        switch (ArisenApplication.s_Platform)
+        var env = EngineKernel.Instance.GetSubsystem<EnvironmentSubsystem>();
+        RuntimePlatform platform = env?.Platform ?? RuntimePlatform.Windows;
+        
+        switch (platform)
         {
             case RuntimePlatform.Windows:
                 m_Processor = new WindowsProcHandler(this);
                 return true;
         }
 
-        throw new Exception($"Unsupported platform type: {ArisenApplication.s_Platform}");
+        throw new Exception($"Unsupported platform type: {platform}");
     }
 
     public bool IsValid() => ((m_Hosted && m_Host != IntPtr.Zero) || !m_Hosted) && m_Handle != IntPtr.Zero;

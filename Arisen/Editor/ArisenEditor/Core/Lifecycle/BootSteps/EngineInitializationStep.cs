@@ -12,10 +12,23 @@ public class EngineInitializationStep : IBootStep
 
     public async Task ExecuteAsync(BootContext context, CancellationToken cancellationToken = default)
     {
+        var projectRoot = System.IO.Path.GetDirectoryName(context.ProjectPath);
+        var projectName = System.IO.Path.GetFileNameWithoutExtension(context.ProjectPath);
+
         var config = new EngineConfig
         {
-            AppName = "ArisenEditor"
+            AppName = "ArisenEditor",
+            ProjectName = projectName,
+            ProjectRoot = projectRoot,
+            StartupPath = System.AppDomain.CurrentDomain.BaseDirectory,
+            WindowWidth = 1280,
+            WindowHeight = 720
         };
+
+        if (System.OperatingSystem.IsWindows())
+            config.Platform = ArisenEngine.Core.Lifecycle.RuntimePlatform.Windows;
+        else if (System.OperatingSystem.IsMacOS())
+            config.Platform = ArisenEngine.Core.Lifecycle.RuntimePlatform.MacOS;
 
         if (!ArisenApplication.InitializeEngine(config))
         {

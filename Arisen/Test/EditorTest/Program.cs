@@ -55,13 +55,11 @@ class Program
             installRoot = AppDomain.CurrentDomain.BaseDirectory;
         }
         
-        ArisenApplication.s_Platform = RuntimePlatform.Windows;
-        ArisenApplication.s_StartupPath = installRoot;
-        ArisenApplication.s_IsInEditor = true;
-
         var config = new EngineConfig
         {
-            AppName = "EditorTest"
+            AppName = "EditorTest",
+            Platform = RuntimePlatform.Windows,
+            StartupPath = installRoot
         };
 
         if (!ArisenApplication.InitializeEngine(config))

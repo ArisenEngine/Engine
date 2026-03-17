@@ -12,7 +12,15 @@ public class AssetDatabaseInitializationStep : IBootStep
 
     public async Task ExecuteAsync(BootContext context, CancellationToken cancellationToken = default)
     {
-        AssetDatabaseService.Instance.Initialize();
+        var projectRoot = System.IO.Path.GetDirectoryName(context.ProjectPath);
+        if (string.IsNullOrEmpty(projectRoot))
+        {
+            context.Success = false;
+            context.ErrorMessage = $"Could not determine project root directory from path: {context.ProjectPath}";
+            return;
+        }
+
+        AssetDatabaseService.Instance.Initialize(projectRoot);
         await Task.CompletedTask;
     }
 }

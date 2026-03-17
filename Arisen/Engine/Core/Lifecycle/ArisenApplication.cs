@@ -38,13 +38,7 @@ public class ArisenApplication
 
     #region Internal
 
-    public static string s_StartupPath = string.Empty;
-    public static string s_DataPath = string.Empty;
-    public static string s_ProjectRoot = string.Empty;
-    public static string s_ProjectName = string.Empty;
     public static bool s_IsRunning = false;
-    public static bool s_IsInEditor = false;
-    public static RuntimePlatform s_Platform = RuntimePlatform.Windows;
 
     internal static IEnumerable<SurfaceInfo> GetActiveSurfaces() => m_RenderSurfaces.Values;
 
@@ -71,6 +65,7 @@ public class ArisenApplication
         }
 
         // Register early subsystems
+        EngineKernel.Instance.RegisterSubsystem(new EnvironmentSubsystem());
         EngineKernel.Instance.RegisterSubsystem(new PlatformSubsystem());
         EngineKernel.Instance.RegisterSubsystem(new ProjectSubsystem());
         EngineKernel.Instance.RegisterSubsystem(new PackageSubsystem());
