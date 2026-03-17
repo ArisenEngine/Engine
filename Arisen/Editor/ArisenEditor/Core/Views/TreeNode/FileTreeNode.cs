@@ -35,6 +35,11 @@ internal class FileTreeNode : TreeNodeBase
                  Children.Add(dummy);
                  Folders.Add(dummy);
             }
+            
+            if (isRoot)
+            {
+                LoadChildren();
+            }
         }
         else
         {

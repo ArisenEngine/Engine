@@ -11,6 +11,25 @@ using ReactiveUI;
 
 namespace ArisenEditor.ViewModels;
 
+public class SceneNodeViewModel : ReactiveObject
+{
+    public string Name { get; }
+    
+    private bool m_IsExpanded = true;
+    public bool IsExpanded
+    {
+        get => m_IsExpanded;
+        set => this.RaiseAndSetIfChanged(ref m_IsExpanded, value);
+    }
+
+    public ObservableCollection<EntityNodeViewModel> Entities { get; } = new();
+
+    public SceneNodeViewModel(string name)
+    {
+        Name = string.IsNullOrWhiteSpace(name) ? "Unnamed Scene" : name;
+    }
+}
+
 public class EntityNodeViewModel : ReactiveObject
 {
     public Entity Entity { get; }
@@ -32,7 +51,7 @@ public class EntityNodeViewModel : ReactiveObject
 internal class HierarchyViewModel : EditorPanelBase
 {
     private ObservableCollection<EntityNodeViewModel> m_AllEntities = new();
-    private ObservableCollection<EntityNodeViewModel> m_Entities = new();
+    private ObservableCollection<SceneNodeViewModel> m_RootNodes = new();
     private readonly CompositeDisposable m_Disposables = new();
 
     private string m_SearchText = string.Empty;
@@ -57,17 +76,17 @@ internal class HierarchyViewModel : EditorPanelBase
 
     public override object Content => new Views.HierarchyView { DataContext = this };
 
-    public ObservableCollection<EntityNodeViewModel> Entities
+    public ObservableCollection<SceneNodeViewModel> RootNodes
     {
-        get => m_Entities;
-        set => this.RaiseAndSetIfChanged(ref m_Entities, value);
+        get => m_RootNodes;
+        set => this.RaiseAndSetIfChanged(ref m_RootNodes, value);
     }
 
-    private EntityNodeViewModel? m_SelectedEntity;
-    public EntityNodeViewModel? SelectedEntity
+    private ReactiveObject? m_SelectedItem;
+    public ReactiveObject? SelectedItem
     {
-        get => m_SelectedEntity;
-        set => this.RaiseAndSetIfChanged(ref m_SelectedEntity, value);
+        get => m_SelectedItem;
+        set => this.RaiseAndSetIfChanged(ref m_SelectedItem, value);
     }
 
     internal HierarchyViewModel()
@@ -78,8 +97,8 @@ internal class HierarchyViewModel : EditorPanelBase
         // Populate menus
         RefreshMenus();
 
-        this.WhenAnyValue(x => x.SelectedEntity)
-            .Subscribe(_ => RefreshMenus(SelectedEntity));
+        this.WhenAnyValue(x => x.SelectedItem)
+            .Subscribe(_ => RefreshMenus(SelectedItem));
             
         // Subscribe to SceneManagerService to auto-refresh when the active scene changes
         ArisenEditor.Core.Services.SceneManagerService.Instance
@@ -94,7 +113,7 @@ internal class HierarchyViewModel : EditorPanelBase
                 else
                 {
                     m_AllEntities.Clear();
-                    Entities.Clear();
+                    RootNodes.Clear();
                     ActiveEntityManager = null;
                 }
             })
@@ -114,15 +133,22 @@ internal class HierarchyViewModel : EditorPanelBase
 
     private void ApplyFilter()
     {
+        var sceneName = ArisenEditor.Core.Services.SceneManagerService.Instance.ActiveScene?.Name ?? "Unnamed Scene";
+        var sceneNode = new SceneNodeViewModel(sceneName);
+
         if (string.IsNullOrWhiteSpace(m_SearchText))
         {
-            Entities = new ObservableCollection<EntityNodeViewModel>(m_AllEntities);
+            foreach (var e in m_AllEntities)
+                sceneNode.Entities.Add(e);
         }
         else
         {
-            var filtered = m_AllEntities.Where(e => e.Name.Contains(m_SearchText, StringComparison.OrdinalIgnoreCase)).ToList();
-            Entities = new ObservableCollection<EntityNodeViewModel>(filtered);
+            foreach (var e in m_AllEntities.Where(en => en.Name.Contains(m_SearchText, StringComparison.OrdinalIgnoreCase)))
+                sceneNode.Entities.Add(e);
+            sceneNode.IsExpanded = true;
         }
+
+        RootNodes = new ObservableCollection<SceneNodeViewModel> { sceneNode };
     }
 
     public void RefreshHierarchy(EntityManager entityManager)

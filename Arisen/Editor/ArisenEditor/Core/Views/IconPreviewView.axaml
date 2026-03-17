@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:ArisenEditor.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ArisenEditor.Views.IconPreviewView"
+             x:DataType="vm:IconPreviewViewModel">
+    
+    <ScrollViewer>
+        <ItemsControl ItemsSource="{Binding Icons}" Margin="16">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="#181e2a" 
+                            BorderBrush="#282e39" 
+                            BorderThickness="1" 
+                            CornerRadius="8" 
+                            Padding="16" 
+                            Margin="8"
+                            Width="140"
+                            Height="100"
+                            ToolTip.Tip="{Binding Name}">
+                        <StackPanel Spacing="12" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <!-- Using Geometry property directly instead of dynamic resource lookup -->
+                            <PathIcon Data="{Binding Geometry}" 
+                                      Width="32" 
+                                      Height="32" 
+                                      Foreground="{DynamicResource TextBrush}"/>
+                            <TextBlock Text="{Binding Name}" 
+                                       FontSize="11" 
+                                       Foreground="#94a3b8" 
+                                       TextAlignment="Center" 
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </ScrollViewer>
+</UserControl>
