@@ -144,7 +144,6 @@ internal class AssetsBrowserViewModel : EditorPanelBase
         m_FolderSource.Clear();
         var env = EngineKernel.Instance.GetSubsystem<EnvironmentSubsystem>();
         var rootPath = env != null ? Path.Combine(env.ProjectRoot, "Content") : "Content";
-        ArisenEngine.Core.Diagnostics.Logger.Log($"[AssetsBrowser] Initializing FileTree at path: {rootPath} (env.ProjectRoot={env?.ProjectRoot})");
         var rootNode = new FileTreeNode("Content", rootPath, true, isRoot: true, true)
         {
             AllowDrag = false,
