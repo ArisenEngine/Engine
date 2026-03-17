@@ -27,15 +27,6 @@ internal class FileTreeNode : TreeNodeBase
         {
             Size = ArisenEngine.FileSystem.FileSystemUtilities.GetFolderSize(path);
             Modified = new DirectoryInfo(path).LastWriteTimeUtc;
-            // Placeholder for expansion so Avalonia shows the expander arrow
-            if (Directory.Exists(path) && Directory.EnumerateFileSystemEntries(path).Any())
-            {
-                 // Add a dummy child to trick Avalonia TreeDataGrid into showing an expand chevron
-                 var dummy = new FileTreeNode("Loading...", string.Empty, false) { Parent = this };
-                 Children.Add(dummy);
-                 Folders.Add(dummy);
-            }
-            
             if (isRoot)
             {
                 LoadChildren();
