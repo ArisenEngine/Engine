@@ -161,6 +161,8 @@ else()
     set(DOTNET_PROFILER_ARG "")
 endif()
 
+set(DOTNET_MACRO_ARG "-p:DefineConstants=${TARGET_MACRO}")
+
 add_subdirectory(Core/Core.Foundation)
 add_subdirectory(3rdparty/spdlog)
 set_target_properties(spdlog PROPERTIES FOLDER "3rdparty")
@@ -202,7 +204,7 @@ add_custom_target(BuildBindingGenerator
         dotnet build "${BINDING_GENERATOR_PROJ}"
         --configuration $<CONFIG>
         --output "${BINDING_GENERATOR_EXE}"
-        ${DOTNET_PROFILER_ARG}
+        ${DOTNET_PROFILER_ARG} ${DOTNET_MACRO_ARG}
     WORKING_DIRECTORY ${BINDING_GENERATOR_DIR}
     COMMENT "Building Binding Generator"
     VERBATIM
@@ -231,7 +233,7 @@ add_dependencies(GenerateAutoBinding BuildBindingGenerator)
 set_target_properties(GenerateAutoBinding PROPERTIES FOLDER "CMakeProcess")
 
 add_custom_target(BuildAutoBinding
-    COMMAND dotnet build ${AUTO_BINDING_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
+    COMMAND dotnet build ${AUTO_BINDING_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG} ${DOTNET_MACRO_ARG}
     WORKING_DIRECTORY ${AUTO_BINDING_DIR}
     COMMENT "Building AutoBinding Project"
     DEPENDS ${AUTO_BINDING_PROJ}
@@ -242,7 +244,7 @@ add_dependencies(BuildAutoBinding GenerateAutoBinding)
 set_target_properties(BuildAutoBinding PROPERTIES FOLDER "CMakeProcess")
 
 add_custom_target(BuildArisenDAG
-    COMMAND dotnet build ${ARISEN_DAG_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
+    COMMAND dotnet build ${ARISEN_DAG_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG} ${DOTNET_MACRO_ARG}
     WORKING_DIRECTORY ${ARISEN_DAG_DIR}
     COMMENT "Building Arisen DAG"
     DEPENDS ${ARISEN_DAG_PROJ}
@@ -252,7 +254,7 @@ add_custom_target(BuildArisenDAG
 set_target_properties(BuildArisenDAG PROPERTIES FOLDER "CMakeProcess")
 
 add_custom_target(BuildArisenEngine
-    COMMAND dotnet build ${ARISEN_ENGINE_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
+    COMMAND dotnet build ${ARISEN_ENGINE_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG} ${DOTNET_MACRO_ARG}
     WORKING_DIRECTORY ${ARISEN_ENGINE_PROJ_DIR}
     COMMENT "Building Arisen Engine"
     DEPENDS "AutoBinding.dll" "ArisenDAG.dll"
@@ -275,7 +277,7 @@ foreach(PROJ_PATH IN LISTS BUILTIN_PACKAGES_PROJS)
     set(TARGET_NAME "BuildPackage_${PROJ_NAME}")
     
     add_custom_target(${TARGET_NAME}
-        COMMAND dotnet build "${PROJ_PATH}" --configuration $<CONFIG> ${DOTNET_PROFILER_ARG}
+        COMMAND dotnet build "${PROJ_PATH}" --configuration $<CONFIG> ${DOTNET_PROFILER_ARG} ${DOTNET_MACRO_ARG}
         WORKING_DIRECTORY "${BUILTIN_PACKAGES_DIR}"
         COMMENT "Building Package: ${PROJ_NAME}"
         VERBATIM

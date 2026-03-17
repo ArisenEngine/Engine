@@ -51,6 +51,7 @@
 
         <!-- Hierarchy Tree -->
         <TreeView Grid.Row="1" 
+                  x:Name="MainTreeView"
                   ItemsSource="{Binding RootNodes}" 
                   SelectedItem="{Binding SelectedItem}"
                   Background="Transparent"

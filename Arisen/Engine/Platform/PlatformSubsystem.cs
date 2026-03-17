@@ -13,15 +13,15 @@ public class PlatformSubsystem : ITickableSubsystem
     public void Initialize()
     {
         using var _ = Profiler.Zone("PlatformSubsystem.Initialize");
-        switch (ArisenApplication.s_Platform)
+        var env = EngineKernel.Instance.GetSubsystem<EnvironmentSubsystem>();
+        switch (env?.Platform)
         {
             case RuntimePlatform.Windows:
-                if (!ArisenApplication.s_IsInEditor)
-                {
+#if !ARISEN_EDITOR
                     // Only standalone runtime games own the OS message loop.
                     // In Editor mode, Avalonia owns the message loop.
                     // m_MessageHandler = new WindowsMessageHandle(); // Note: currently commented out in base code anyway
-                }
+#endif
                 break;
         }
     }

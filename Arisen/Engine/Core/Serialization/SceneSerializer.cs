@@ -54,8 +54,6 @@ public static class SceneSerializer
                 var entities = (Entity[])getRawEntityArrayMethod.Invoke(pool, null);
                 int count = (int)getCountProperty.GetValue(pool);
 
-                var getMethod = pool.GetType().GetMethod("Get");
-
                 for (int i = 0; i < count; i++)
                 {
                     var entity = entities[i];
@@ -65,8 +63,8 @@ public static class SceneSerializer
                         entityDict[entity.Id] = eData;
                     }
 
-                    // Get the struct data using pool.Get(entity)
-                    var componentData = getMethod.Invoke(pool, new object[] { entity });
+                    // Get the struct data directly from the interface
+                    var componentData = pool.GetBoxed(entity);
                     
                     eData.Components[poolType.FullName] = componentData;
                 }

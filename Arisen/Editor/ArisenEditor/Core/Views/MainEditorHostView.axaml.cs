@@ -24,10 +24,11 @@ internal partial class MainEditorHostView : Window
     {
         base.OnLoaded(e);
         
-        Title = ArisenApplication.s_ProjectName;
+        var env = EngineKernel.Instance.GetSubsystem<EnvironmentSubsystem>();
+        Title = env?.ProjectName ?? "Arisen Editor";
             
         // File Watcher
-        m_FileSystemWatcher = new ArisenFileSystemWatcher(ArisenApplication.s_DataPath);
+        m_FileSystemWatcher = new ArisenFileSystemWatcher(env?.DataPath ?? string.Empty);
         ArisenFileSystemWatcher.Current = m_FileSystemWatcher;
         
         Dispatcher.UIThread.InvokeAsync(() =>

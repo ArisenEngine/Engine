@@ -24,7 +24,7 @@ public class ProjectSynthesisStep : IBootStep
             context.ErrorMessage = $"Could not determine project root directory from path: {context.ProjectPath}";
             return;
         }
-        ArisenApplication.s_ProjectRoot = projectRoot;
+        // EnvironmentSubsystem is now initialized in EngineInitializationStep
         
         // Load user settings early
         EditorProjectService.Instance.LoadUserSettings();
@@ -55,11 +55,16 @@ public class ProjectSynthesisStep : IBootStep
         {
             ArisenEngine.Core.Diagnostics.Logger.Log("[ProjectSynthesis] No scenes found. Generating default SampleScene.");
             
-            // Create and save the default scene
             var newScene = SceneManagerService.Instance.CreateNewScene("SampleScene");
             
-            // At this stage, ECS components aren't fully registered/accessible without
-            // potentially requiring the Native Core, so we will just leave the scene completely empty.
+            var cameraEntity = newScene.Registry.CreateEntity();
+            newScene.Registry.AddComponent(cameraEntity, new ArisenEngine.Core.ECS.NameComponent { Name = "Main Camera" });
+            newScene.Registry.AddComponent(cameraEntity, ArisenEngine.Core.ECS.CameraComponent.Default);
+            newScene.Registry.AddComponent(cameraEntity, ArisenEngine.Core.ECS.TransformComponent.Identity);
+
+            var lightEntity = newScene.Registry.CreateEntity();
+            newScene.Registry.AddComponent(lightEntity, new ArisenEngine.Core.ECS.NameComponent { Name = "Directional Light" });
+            newScene.Registry.AddComponent(lightEntity, ArisenEngine.Core.ECS.TransformComponent.Identity);
             
             string defaultScenePath = Path.Combine(scenesDir, "SampleScene.arisen");
             

@@ -18,7 +18,10 @@ internal partial class HeaderMenuEntries
         Task.Run(()=> {
 
             ArisenApplication.RequestExit();
-            ProjectSolution.OpenVisualStudio(Path.Combine(ArisenApplication.s_ProjectRoot, ArisenApplication.s_ProjectName + @".sln"));
+            var env = EngineKernel.Instance.GetSubsystem<EnvironmentSubsystem>();
+            string root = env?.ProjectRoot ?? string.Empty;
+            string name = env?.ProjectName ?? string.Empty;
+            ProjectSolution.OpenVisualStudio(Path.Combine(root, name + @".sln"));
 
         });
     }
