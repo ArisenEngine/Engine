@@ -53,7 +53,7 @@ public class ArisenPanelFactory : DefaultPanelFactory
             hierarchy.ActiveEntityManager = sceneSubsystem?.ActiveEntityManager;
             hierarchy.SelectionService = _selectionService;
             // Connect selection for this specific hierarchy instance
-            hierarchy.WhenAnyValue(x => x.SelectedEntity)
+            hierarchy.WhenAnyValue(x => x.SelectedItem)
                 .Subscribe(item => _selectionService.CurrentSelection = item);
             return hierarchy;
         });
@@ -75,8 +75,8 @@ public class ArisenPanelFactory : DefaultPanelFactory
         RegisterPanel("PackageManager", () => new PackageManagerViewModel());
         RegisterPanel("ProjectSettings", () => new ProjectSettingsViewModel());
 
-        //other placeholders
         RegisterPanel("Viewport", () => new EditorPanelWrapper("Viewport", "Viewport", new Avalonia.Controls.TextBlock { Text = "Viewport Placeholder", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center }));
+        RegisterPanel("IconPreview", () => new IconPreviewViewModel());
         RegisterPanel("Header", () => new HeaderViewModel());
         RegisterPanel("Toolbar", () => new ToolbarViewModel());
         RegisterPanel("Footer", () => new FooterViewModel());

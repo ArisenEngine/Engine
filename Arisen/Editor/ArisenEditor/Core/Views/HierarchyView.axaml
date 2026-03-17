@@ -50,12 +50,12 @@
         </Border>
 
         <!-- Hierarchy Tree -->
-        <ListBox Grid.Row="1" 
-                  ItemsSource="{Binding Entities}" 
-                  SelectedItem="{Binding SelectedEntity}"
+        <TreeView Grid.Row="1" 
+                  ItemsSource="{Binding RootNodes}" 
+                  SelectedItem="{Binding SelectedItem}"
                   Background="Transparent"
                   BorderThickness="0">
-            <ListBox.ContextMenu>
+            <TreeView.ContextMenu>
                 <ContextMenu ItemsSource="{Binding ContextActions}">
                     <ContextMenu.ItemContainerTheme>
                         <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="menus:MenuAction">
@@ -66,16 +66,28 @@
                         </ControlTheme>
                     </ContextMenu.ItemContainerTheme>
                 </ContextMenu>
-            </ListBox.ContextMenu>
-            <ListBox.ItemTemplate>
-                <DataTemplate x:DataType="vm:EntityNodeViewModel">
+            </TreeView.ContextMenu>
+            <TreeView.DataTemplates>
+                <TreeDataTemplate DataType="vm:SceneNodeViewModel" ItemsSource="{Binding Entities}">
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="4,2">
+                        <PathIcon Data="{StaticResource SceneIcon}" Width="14" Height="14" Foreground="{DynamicResource TextBrush}"/>
+                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </TreeDataTemplate>
+                
+                <TreeDataTemplate DataType="vm:EntityNodeViewModel">
                     <StackPanel Orientation="Horizontal" Spacing="8" Margin="4,2">
                         <PathIcon Data="{StaticResource EntityIcon}" Width="14" Height="14" Foreground="{DynamicResource TextBrush}"/>
                         <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
                     </StackPanel>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
+                </TreeDataTemplate>
+            </TreeView.DataTemplates>
+            <TreeView.Styles>
+                <Style Selector="TreeViewItem">
+                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay, DataType=vm:SceneNodeViewModel, FallbackValue=False}"/>
+                </Style>
+            </TreeView.Styles>
+        </TreeView>
     </Grid>
 
 </UserControl>
