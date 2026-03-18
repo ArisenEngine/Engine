@@ -15,7 +15,12 @@ namespace ArisenEditor.ViewModels;
 
 public class SceneNodeViewModel : ReactiveObject
 {
-    public string Name { get; }
+    private string m_Name;
+    public string Name
+    {
+        get => m_Name;
+        set => this.RaiseAndSetIfChanged(ref m_Name, value);
+    }
     
     private bool m_IsExpanded = true;
     public bool IsExpanded
@@ -28,7 +33,7 @@ public class SceneNodeViewModel : ReactiveObject
 
     public SceneNodeViewModel(string name)
     {
-        Name = string.IsNullOrWhiteSpace(name) ? "Unnamed Scene" : name;
+        m_Name = string.IsNullOrWhiteSpace(name) ? "Unnamed Scene" : name;
     }
 }
 
@@ -152,6 +157,24 @@ internal class HierarchyViewModel : EditorPanelBase
             if (ActiveEntityManager != null)
             {
                 RefreshHierarchy(ActiveEntityManager);
+            }
+        };
+
+        ArisenEditor.Core.Services.SceneManagerService.Instance.PropertyChanged += (sender, args) =>
+        {
+            if (args.PropertyName == nameof(ArisenEditor.Core.Services.SceneManagerService.IsDirty) ||
+                args.PropertyName == nameof(ArisenEditor.Core.Services.SceneManagerService.ActiveScene))
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => 
+                {
+                    if (RootNodes.Count > 0)
+                    {
+                        var svc = ArisenEditor.Core.Services.SceneManagerService.Instance;
+                        var sceneName = svc.ActiveScene?.Name ?? "Unnamed Scene";
+                        if (svc.IsDirty) sceneName += "*";
+                        RootNodes[0].Name = sceneName;
+                    }
+                });
             }
         };
     }
