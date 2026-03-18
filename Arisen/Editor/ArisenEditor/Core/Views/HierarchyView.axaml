@@ -86,9 +86,9 @@
                                    IsVisible="{Binding !IsRenaming}"
                                    DoubleTapped="OnEntityDoubleTapped"/>
                                    
-                        <TextBox Text="{Binding Name, Mode=TwoWay}"
+                        <TextBox Text="{Binding DraftName, Mode=TwoWay}"
                                  IsVisible="{Binding IsRenaming}"
-                                 KeyDown="OnRenameTextBoxKeyDown"
+                                 PropertyChanged="OnRenameTextBoxPropertyChanged"
                                  LostFocus="OnRenameTextBoxLostFocus"
                                  MinHeight="20"
                                  Padding="2,0"

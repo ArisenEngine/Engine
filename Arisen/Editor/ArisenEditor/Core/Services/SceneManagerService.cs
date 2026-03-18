@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using ArisenEngine.Core.ECS;
 using ArisenEngine.Models;
 using ArisenEngine.Core.Serialization;
 using ReactiveUI;
@@ -21,6 +22,13 @@ public class SceneManagerService : ReactiveObject
     private Guid _activeSceneGuid = Guid.Empty;
 
     public event Action? HierarchyChanged;
+    
+    // Fine-grained ECS Editor Events
+    public event Action<Entity, string>? EntityNameChanged;
+    public event Action<Entity>? EntityCreated;
+    public event Action<Entity>? EntityDeleted;
+    public event Action<Entity, Entity>? EntityParentChanged;
+    public event Action<Entity, Type>? EntityComponentChanged;
 
     private bool _isDirty;
     public bool IsDirty
@@ -32,10 +40,37 @@ public class SceneManagerService : ReactiveObject
     public void NotifyHierarchyChanged()
     {
         IsDirty = true;
-        Avalonia.Threading.Dispatcher.UIThread.Post(() => 
-        {
-            HierarchyChanged?.Invoke();
-        });
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => HierarchyChanged?.Invoke());
+    }
+
+    public void NotifyEntityNameChanged(Entity entity, string newName)
+    {
+        IsDirty = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => EntityNameChanged?.Invoke(entity, newName));
+    }
+
+    public void NotifyEntityCreated(Entity entity)
+    {
+        IsDirty = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => EntityCreated?.Invoke(entity));
+    }
+
+    public void NotifyEntityDeleted(Entity entity)
+    {
+        IsDirty = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => EntityDeleted?.Invoke(entity));
+    }
+
+    public void NotifyEntityParentChanged(Entity entity, Entity newParent)
+    {
+        IsDirty = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => EntityParentChanged?.Invoke(entity, newParent));
+    }
+
+    public void NotifyEntityComponentChanged(Entity entity, Type componentType)
+    {
+        IsDirty = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => EntityComponentChanged?.Invoke(entity, componentType));
     }
 
     /// <summary>

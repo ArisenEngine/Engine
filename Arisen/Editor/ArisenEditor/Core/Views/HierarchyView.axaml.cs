@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
+using System.Linq;
 
 namespace ArisenEditor.Views;
 
@@ -121,15 +122,60 @@ public partial class HierarchyView : UserControl
         }
     }
 
+    private void OnRenameTextBoxPropertyChanged(object? sender, Avalonia.AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == Avalonia.Visual.IsVisibleProperty)
+        {
+            if (sender is TextBox textBox)
+            {
+                if (textBox.IsVisible)
+                {
+                    // Hook handled events too, ensuring we ALWAYS force e.Handled=true on bubble
+                    // so no global HotKey or parent TreeView intercepts it.
+                    textBox.AddHandler(InputElement.KeyDownEvent, OnRenameTextBoxKeyDown, Avalonia.Interactivity.RoutingStrategies.Bubble, true);
+                    
+                    // Delay focusing to ensure layout visually attaches the TextBox
+                    Avalonia.Threading.DispatcherTimer.RunOnce(() =>
+                    {
+                        textBox.Focus();
+                        textBox.SelectAll();
+                    }, System.TimeSpan.FromMilliseconds(50));
+                }
+                else
+                {
+                    textBox.RemoveHandler(InputElement.KeyDownEvent, OnRenameTextBoxKeyDown);
+                }
+            }
+        }
+    }
+
     private void OnRenameTextBoxKeyDown(object? sender, Avalonia.Input.KeyEventArgs e)
     {
         if (e.Key == Avalonia.Input.Key.Enter || e.Key == Avalonia.Input.Key.Escape)
         {
             if (sender is TextBox textBox && textBox.DataContext is ViewModels.EntityNodeViewModel node)
             {
+                if (e.Key == Avalonia.Input.Key.Escape)
+                {
+                    node.DraftName = node.Name; // Force match so no command triggers on exit
+                }
                 node.IsRenaming = false;
                 e.Handled = true;
             }
+        }
+        else if (e.Key == Avalonia.Input.Key.Up ||
+                 e.Key == Avalonia.Input.Key.Down ||
+                 e.Key == Avalonia.Input.Key.Left ||
+                 e.Key == Avalonia.Input.Key.Right ||
+                 e.Key == Avalonia.Input.Key.Back ||
+                 e.Key == Avalonia.Input.Key.Delete ||
+                 e.Key == Avalonia.Input.Key.Space ||
+                 e.Key == Avalonia.Input.Key.Home ||
+                 e.Key == Avalonia.Input.Key.End ||
+                 e.Key == Avalonia.Input.Key.PageUp ||
+                 e.Key == Avalonia.Input.Key.PageDown)
+        {
+            e.Handled = true;
         }
     }
 

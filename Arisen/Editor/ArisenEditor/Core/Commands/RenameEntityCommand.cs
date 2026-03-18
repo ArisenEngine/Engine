@@ -42,7 +42,7 @@ public class RenameEntityCommand : IEditorCommand
         {
             ref var comp = ref scene.Registry.GetComponent<NameComponent>(m_Entity);
             comp.Name = name;
-            SceneManagerService.Instance.NotifyHierarchyChanged();
+            SceneManagerService.Instance.NotifyEntityNameChanged(m_Entity, name);
         }
     }
 }

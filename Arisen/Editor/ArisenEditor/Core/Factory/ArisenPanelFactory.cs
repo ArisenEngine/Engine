@@ -15,6 +15,7 @@ namespace ArisenEditor.Core.Factory;
 public class ArisenPanelFactory : DefaultPanelFactory
 {
     private readonly SelectionService _selectionService = new();
+    public ISelectionService SelectionService => _selectionService;
     private readonly SceneService _sceneService = new();
     private readonly Dictionary<string, IEditorPanel> _panelCache = new();
 

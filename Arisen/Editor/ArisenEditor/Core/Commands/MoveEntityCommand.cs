@@ -31,7 +31,7 @@ public class MoveEntityCommand : IEditorCommand
         var scene = SceneManagerService.Instance.ActiveScene;
         if (scene == null) return;
         ReparentEntity(scene.Registry, m_Entity, m_NewParent);
-        SceneManagerService.Instance.NotifyHierarchyChanged();
+        SceneManagerService.Instance.NotifyEntityParentChanged(m_Entity, m_NewParent);
     }
 
     public void Undo()
@@ -39,7 +39,7 @@ public class MoveEntityCommand : IEditorCommand
         var scene = SceneManagerService.Instance.ActiveScene;
         if (scene == null) return;
         ReparentEntity(scene.Registry, m_Entity, m_OldParent);
-        SceneManagerService.Instance.NotifyHierarchyChanged();
+        SceneManagerService.Instance.NotifyEntityParentChanged(m_Entity, m_OldParent);
     }
 
     /// <summary>
