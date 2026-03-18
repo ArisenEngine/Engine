@@ -13,6 +13,7 @@ public class DeleteEntityCommand : IEditorCommand
 {
     private readonly Entity m_Entity;
     private readonly string m_EntityName;
+    private Entity m_OldParent;
 
     // Saved component state for undo — list of (Type, boxed component data)
     private List<(Type Type, object Data)>? m_SavedComponents;
@@ -34,8 +35,17 @@ public class DeleteEntityCommand : IEditorCommand
         m_SavedComponents = new List<(Type, object)>();
         foreach (var (type, pool) in scene.Registry.GetEntityComponents(m_Entity))
         {
+            // Do not save Intrusive Linked List structs, we manage those via ReparentEntity natively!
+            if (type == typeof(ParentComponent) || type == typeof(SiblingComponent) || type == typeof(ChildComponent))
+                continue;
+
             m_SavedComponents.Add((type, pool.GetBoxed(m_Entity)));
         }
+
+        m_OldParent = scene.Registry.HasComponent<ParentComponent>(m_Entity) ? scene.Registry.GetComponent<ParentComponent>(m_Entity).Parent : Entity.Null;
+        
+        // Detach structurally from ECS tree before deleting
+        MoveEntityCommand.ReparentEntity(scene.Registry, m_Entity, Entity.Null);
 
         scene.DestroyEntity(m_Entity);
         SceneManagerService.Instance.NotifyEntityDeleted(m_Entity);
@@ -46,10 +56,8 @@ public class DeleteEntityCommand : IEditorCommand
         var scene = SceneManagerService.Instance.ActiveScene;
         if (scene == null || m_SavedComponents == null) return;
 
-        // Re-create an entity and restore all saved components.
-        // Note: the restored entity will get a new ID. For a perfect undo,
-        // EntityManager would need to support creating with a specific ID.
-        var restoredEntity = scene.CreateEntity();
+        // Re-create the entity mapping the EXACT original ID. This solves deep dependencies.
+        var restoredEntity = scene.Registry.CreateEntity(m_Entity.Id);
 
         var allPools = scene.Registry.GetAllPools();
         foreach (var (type, data) in m_SavedComponents)
@@ -59,6 +67,9 @@ public class DeleteEntityCommand : IEditorCommand
                 pool.SetBoxed(restoredEntity, data);
             }
         }
+
+        // Restore structural hierarchy manually
+        MoveEntityCommand.ReparentEntity(scene.Registry, restoredEntity, m_OldParent);
 
         SceneManagerService.Instance.NotifyEntityCreated(restoredEntity);
     }

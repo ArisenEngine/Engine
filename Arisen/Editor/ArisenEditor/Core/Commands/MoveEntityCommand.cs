@@ -103,27 +103,53 @@ public class MoveEntityCommand : IEditorCommand
             if (!em.HasComponent<ChildComponent>(newParentEntity))
             {
                 em.AddComponent(newParentEntity, new ChildComponent { FirstChild = srcEntity, ChildCount = 1 });
+                em.AddComponent(srcEntity, new SiblingComponent { NextSibling = Entity.Null, PrevSibling = Entity.Null });
             }
             else
             {
                 ref var newParentChildComp = ref em.GetComponent<ChildComponent>(newParentEntity);
                 newParentChildComp.ChildCount++;
-                var oldFirstChild = newParentChildComp.FirstChild;
-                newParentChildComp.FirstChild = srcEntity;
-
-                em.AddComponent(srcEntity, new SiblingComponent { NextSibling = oldFirstChild, PrevSibling = Entity.Null });
                 
-                if (oldFirstChild != Entity.Null)
+                var currentChild = newParentChildComp.FirstChild;
+                var lastChild = Entity.Null;
+                
+                // Find terminal child
+                while (currentChild != Entity.Null)
                 {
-                    if (!em.HasComponent<SiblingComponent>(oldFirstChild))
+                    lastChild = currentChild;
+                    if (em.HasComponent<SiblingComponent>(currentChild))
                     {
-                        em.AddComponent(oldFirstChild, new SiblingComponent { PrevSibling = srcEntity, NextSibling = Entity.Null });
+                        var next = em.GetComponent<SiblingComponent>(currentChild).NextSibling;
+                        if (next == Entity.Null) break;
+                        currentChild = next;
+                    }
+                    else
+                        break;
+                }
+                
+                // Append structurally
+                if (lastChild != Entity.Null)
+                {
+                    if (em.HasComponent<SiblingComponent>(lastChild))
+                    {
+                        ref var lastChildSib = ref em.GetComponent<SiblingComponent>(lastChild);
+                        lastChildSib.NextSibling = srcEntity;
                     }
                     else
                     {
-                        ref var firstChildSib = ref em.GetComponent<SiblingComponent>(oldFirstChild);
-                        firstChildSib.PrevSibling = srcEntity;
+                        em.AddComponent(lastChild, new SiblingComponent { NextSibling = srcEntity, PrevSibling = Entity.Null });
                     }
+                }
+
+                if (em.HasComponent<SiblingComponent>(srcEntity))
+                {
+                    ref var srcSib = ref em.GetComponent<SiblingComponent>(srcEntity);
+                    srcSib.PrevSibling = lastChild;
+                    srcSib.NextSibling = Entity.Null;
+                }
+                else
+                {
+                    em.AddComponent(srcEntity, new SiblingComponent { PrevSibling = lastChild, NextSibling = Entity.Null });
                 }
             }
         }
@@ -131,6 +157,7 @@ public class MoveEntityCommand : IEditorCommand
         {
             // Moving to root
             em.RemoveComponent<ParentComponent>(srcEntity);
+            em.RemoveComponent<SiblingComponent>(srcEntity);
         }
     }
 }

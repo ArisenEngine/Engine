@@ -8,7 +8,7 @@ Entities:
       NearPlane: 0.1
       FarPlane: 1000
       IsPerspective: 1
-    ArisenEngine.Core.ECS.TransformComponent: &o0
+    ArisenEngine.Core.ECS.TransformComponent:
       Position:
         X: 0
         Y: 0
@@ -26,29 +26,125 @@ Entities:
   Components:
     ArisenEngine.Core.ECS.NameComponent:
       Name: Directional Light
-    ArisenEngine.Core.ECS.TransformComponent: *o0
+    ArisenEngine.Core.ECS.TransformComponent:
+      Position:
+        X: 0
+        Y: 0
+        Z: 0
+      Rotation:
+        X: 0
+        Y: 0
+        Z: 0
+        W: 1
+      Scale:
+        X: 1
+        Y: 1
+        Z: 1
 - Id: 2
   Components:
     ArisenEngine.Core.ECS.NameComponent:
       Name: Parent0
-    ArisenEngine.Core.ECS.TransformComponent: *o0
+    ArisenEngine.Core.ECS.TransformComponent:
+      Position:
+        X: 0
+        Y: 0
+        Z: 0
+      Rotation:
+        X: 0
+        Y: 0
+        Z: 0
+        W: 1
+      Scale:
+        X: 1
+        Y: 1
+        Z: 1
 - Id: 3
   Components:
     ArisenEngine.Core.ECS.NameComponent:
       Name: Child0
-    ArisenEngine.Core.ECS.TransformComponent: *o0
-    ArisenEngine.Core.ECS.ParentComponent:
-      Parent: {}
+    ArisenEngine.Core.ECS.TransformComponent:
+      Position:
+        X: 0
+        Y: 0
+        Z: 0
+      Rotation:
+        X: 0
+        Y: 0
+        Z: 0
+        W: 1
+      Scale:
+        X: 1
+        Y: 1
+        Z: 1
 - Id: 4
   Components:
-    ArisenEngine.Core.ECS.NameComponent: &o1
-      Name: Empty Entity
-    ArisenEngine.Core.ECS.TransformComponent: *o0
+    ArisenEngine.Core.ECS.NameComponent:
+      Name: Child11
+    ArisenEngine.Core.ECS.TransformComponent:
+      Position:
+        X: 0
+        Y: 0
+        Z: 0
+      Rotation:
+        X: 0
+        Y: 0
+        Z: 0
+        W: 1
+      Scale:
+        X: 1
+        Y: 1
+        Z: 1
 - Id: 5
   Components:
-    ArisenEngine.Core.ECS.NameComponent: *o1
-    ArisenEngine.Core.ECS.TransformComponent: *o0
+    ArisenEngine.Core.ECS.NameComponent:
+      Name: Child10
+    ArisenEngine.Core.ECS.TransformComponent:
+      Position:
+        X: 0
+        Y: 0
+        Z: 0
+      Rotation:
+        X: 0
+        Y: 0
+        Z: 0
+        W: 1
+      Scale:
+        X: 1
+        Y: 1
+        Z: 1
 - Id: 6
   Components:
-    ArisenEngine.Core.ECS.NameComponent: *o1
-    ArisenEngine.Core.ECS.TransformComponent: *o0
+    ArisenEngine.Core.ECS.NameComponent:
+      Name: Parent1
+    ArisenEngine.Core.ECS.TransformComponent:
+      Position:
+        X: 0
+        Y: 0
+        Z: 0
+      Rotation:
+        X: 0
+        Y: 0
+        Z: 0
+        W: 1
+      Scale:
+        X: 1
+        Y: 1
+        Z: 1
+- Id: 7
+  Components:
+    ArisenEngine.Core.ECS.NameComponent:
+      Name: Child13
+    ArisenEngine.Core.ECS.TransformComponent:
+      Position:
+        X: 0
+        Y: 0
+        Z: 0
+      Rotation:
+        X: 0
+        Y: 0
+        Z: 0
+        W: 1
+      Scale:
+        X: 1
+        Y: 1
+        Z: 1

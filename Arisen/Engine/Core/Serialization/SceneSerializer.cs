@@ -25,6 +25,38 @@ public static class SceneSerializer
         public Dictionary<string, object> Components { get; set; } = new();
     }
 
+    private class EntityYamlConverter : IYamlTypeConverter
+    {
+        public bool Accepts(Type type) => type == typeof(Entity);
+
+        public object? ReadYaml(YamlDotNet.Core.IParser parser, Type type, ObjectDeserializer rootDeserializer)
+        {
+            if (parser.Current is YamlDotNet.Core.Events.Scalar scalar)
+            {
+                parser.MoveNext();
+                if (int.TryParse(scalar.Value, out int id)) return new Entity(id);
+            }
+            else if (parser.Current is YamlDotNet.Core.Events.MappingStart)
+            {
+                parser.MoveNext();
+                while (!(parser.Current is YamlDotNet.Core.Events.MappingEnd))
+                {
+                    parser.MoveNext(); 
+                }
+                parser.MoveNext();
+            }
+            return Entity.Null;
+        }
+
+        public void WriteYaml(YamlDotNet.Core.IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
+        {
+            if (value is Entity e)
+            {
+                emitter.Emit(new YamlDotNet.Core.Events.Scalar(e.Id.ToString()));
+            }
+        }
+    }
+
     /// <summary>
     /// Serializes all entities and their components into a YAML file at the specified path.
     /// </summary>
@@ -72,6 +104,8 @@ public static class SceneSerializer
 
         var serializer = new SerializerBuilder()
             .EnsureRoundtrip()
+            .DisableAliases()
+            .WithTypeConverter(new EntityYamlConverter())
             .Build();
 
         var yaml = serializer.Serialize(sceneData);
@@ -152,6 +186,17 @@ public static class SceneSerializer
 
     private static object ConvertYamlValue(object yamlVal, Type targetType)
     {
+        if (targetType == typeof(Entity))
+        {
+            if (yamlVal is string strId && int.TryParse(strId, out var id1))
+                return new Entity(id1);
+            if (yamlVal is Dictionary<object, object> entityDict && entityDict.TryGetValue("Id", out var idVal))
+                return new Entity(Convert.ToInt32(idVal));
+            if (yamlVal is IConvertible conv) // fallback for YamlDotNet integer boxing
+                return new Entity(conv.ToInt32(null));
+            return Entity.Null;
+        }
+
         if (yamlVal is Dictionary<object, object> dict)
         {
             if (targetType == typeof(Vector3))
