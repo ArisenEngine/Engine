@@ -246,13 +246,70 @@ namespace ArisenEditor
                 WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 WindowState = WindowState.Maximized
             };
+            // Attach the AI/Command-friendly Global Input Manager interceptor to the window root
+            window.AddHandler(Avalonia.Input.InputElement.KeyDownEvent, ArisenEditorFramework.Services.EditorInputManager.Instance.OnGlobalPreviewKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
             
-            window.KeyBindings.Add(new Avalonia.Input.KeyBinding 
-            { 
-                Gesture = new Avalonia.Input.KeyGesture(Avalonia.Input.Key.S, Avalonia.Input.KeyModifiers.Control), 
-                Command = (System.Windows.Input.ICommand)viewModel.SaveSceneCommand 
+            // Register global shortcuts
+            ArisenEditorFramework.Services.EditorInputManager.Instance.RegisterShortcut(
+                new ArisenEditorFramework.Services.EditorShortcut(
+                    Avalonia.Input.Key.S, 
+                    Avalonia.Input.KeyModifiers.Control, 
+                    (System.Windows.Input.ICommand)viewModel.SaveSceneCommand, 
+                    bypassTextInput: true // Save works regardless of text focus
+                )
+            );
+
+            // Register Undo (Ctrl+Z)
+            ArisenEditorFramework.Services.EditorInputManager.Instance.RegisterShortcut(
+                new ArisenEditorFramework.Services.EditorShortcut(
+                    Avalonia.Input.Key.Z, 
+                    Avalonia.Input.KeyModifiers.Control, 
+                    ReactiveCommand.Create(() => 
+                    {
+                        if (ArisenEditorFramework.Commands.CommandHistory.Instance.CanUndo)
+                            ArisenEditorFramework.Commands.CommandHistory.Instance.Undo();
+                    }), 
+                    bypassTextInput: false // Don't undo globally if the text box natively undoes text
+                )
+            );
+
+            // Register Redo (Ctrl+Y)
+            ArisenEditorFramework.Services.EditorInputManager.Instance.RegisterShortcut(
+                new ArisenEditorFramework.Services.EditorShortcut(
+                    Avalonia.Input.Key.Y, 
+                    Avalonia.Input.KeyModifiers.Control, 
+                    ReactiveCommand.Create(() => 
+                    {
+                        if (ArisenEditorFramework.Commands.CommandHistory.Instance.CanRedo)
+                            ArisenEditorFramework.Commands.CommandHistory.Instance.Redo();
+                    }), 
+                    bypassTextInput: false
+                )
+            );
+
+            // Register Delete / Backspace for Entities
+            var deleteCmd = ReactiveCommand.Create(() => 
+            {
+                if (panelFactory is ArisenPanelFactory apf)
+                {
+                    if (apf.SelectionService.CurrentSelection is ArisenEditor.ViewModels.EntityNodeViewModel entityNode)
+                    {
+                        var svc = ArisenEditor.Core.Services.SceneManagerService.Instance;
+                        if (svc.ActiveScene != null)
+                        {
+                            ArisenEditorFramework.Commands.CommandHistory.Instance.Execute(
+                                new ArisenEditor.Core.Commands.DeleteEntityCommand(entityNode.Entity, entityNode.Name)
+                            );
+                        }
+                    }
+                }
             });
-            
+
+            ArisenEditorFramework.Services.EditorInputManager.Instance.RegisterShortcut(
+                new ArisenEditorFramework.Services.EditorShortcut(Avalonia.Input.Key.Delete, Avalonia.Input.KeyModifiers.None, deleteCmd, bypassTextInput: false));
+            ArisenEditorFramework.Services.EditorInputManager.Instance.RegisterShortcut(
+                new ArisenEditorFramework.Services.EditorShortcut(Avalonia.Input.Key.Back, Avalonia.Input.KeyModifiers.None, deleteCmd, bypassTextInput: false));
+
             desktop.MainWindow = window;
             desktop.MainWindow.Show();
             

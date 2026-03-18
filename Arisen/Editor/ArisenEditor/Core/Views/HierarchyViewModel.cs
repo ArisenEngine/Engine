@@ -55,12 +55,42 @@ public class EntityNodeViewModel : ReactiveObject
             }
         }
     }
+
+    public void SetNameWithoutNotifying(string newName)
+    {
+        this.RaiseAndSetIfChanged(ref m_Name, newName, nameof(Name));
+    }
+    
+    private string m_DraftName = "";
+    public string DraftName
+    {
+        get => m_DraftName;
+        set => this.RaiseAndSetIfChanged(ref m_DraftName, value);
+    }
     
     private bool m_IsRenaming;
     public bool IsRenaming
     {
         get => m_IsRenaming;
-        set => this.RaiseAndSetIfChanged(ref m_IsRenaming, value);
+        set 
+        {
+            if (m_IsRenaming != value)
+            {
+                if (value)
+                {
+                    DraftName = Name; // Initialize draft
+                }
+                else
+                {
+                    // Commit draft to actual name if changed
+                    if (!string.IsNullOrWhiteSpace(DraftName) && DraftName != Name)
+                    {
+                        Name = DraftName;
+                    }
+                }
+                this.RaiseAndSetIfChanged(ref m_IsRenaming, value);
+            }
+        }
     }
     
     private bool m_IsExpanded = true;
@@ -71,6 +101,7 @@ public class EntityNodeViewModel : ReactiveObject
     }
 
     public ObservableCollection<EntityNodeViewModel> Children { get; } = new();
+    public EntityNodeViewModel? ParentNode { get; set; }
     
     public EntityNodeViewModel(Entity entity, string name)
     {
@@ -85,6 +116,7 @@ internal class HierarchyViewModel : EditorPanelBase
 {
     private ObservableCollection<EntityNodeViewModel> m_AllEntities = new();
     private ObservableCollection<SceneNodeViewModel> m_RootNodes = new();
+    private readonly System.Collections.Generic.Dictionary<Entity, EntityNodeViewModel> m_EntityMap = new();
     private readonly CompositeDisposable m_Disposables = new();
 
     private string m_SearchText = string.Empty;
@@ -146,17 +178,81 @@ internal class HierarchyViewModel : EditorPanelBase
                 else
                 {
                     m_AllEntities.Clear();
+                    m_EntityMap.Clear();
                     RootNodes.Clear();
                     ActiveEntityManager = null;
                 }
             })
             .DisposeWith(m_Disposables);
 
-        ArisenEditor.Core.Services.SceneManagerService.Instance.HierarchyChanged += () =>
+        var svc = ArisenEditor.Core.Services.SceneManagerService.Instance;
+
+        svc.EntityNameChanged += (entity, newName) =>
         {
-            if (ActiveEntityManager != null)
+            if (m_EntityMap.TryGetValue(entity, out var node))
             {
-                RefreshHierarchy(ActiveEntityManager);
+                node.SetNameWithoutNotifying(newName);
+            }
+        };
+
+        svc.EntityCreated += (entity) =>
+        {
+            if (ActiveEntityManager == null) return;
+            string name = $"Entity {entity.Id}";
+            if (ActiveEntityManager.HasComponent<NameComponent>(entity))
+                name = ActiveEntityManager.GetComponent<NameComponent>(entity).Name;
+
+            var node = new EntityNodeViewModel(entity, name);
+            m_EntityMap[entity] = node;
+
+            if (ActiveEntityManager.HasComponent<ParentComponent>(entity))
+            {
+                var p = ActiveEntityManager.GetComponent<ParentComponent>(entity).Parent;
+                if (p != Entity.Null && m_EntityMap.TryGetValue(p, out var pNode))
+                {
+                    node.ParentNode = pNode;
+                    pNode.Children.Add(node);
+                    return;
+                }
+            }
+            m_AllEntities.Add(node);
+        };
+
+        svc.EntityDeleted += (entity) =>
+        {
+            if (m_EntityMap.TryGetValue(entity, out var node))
+            {
+                if (node.ParentNode != null)
+                {
+                    node.ParentNode.Children.Remove(node);
+                }
+                else
+                {
+                    m_AllEntities.Remove(node);
+                }
+                m_EntityMap.Remove(entity);
+            }
+        };
+
+        svc.EntityParentChanged += (entity, newParent) =>
+        {
+            if (m_EntityMap.TryGetValue(entity, out var node))
+            {
+                if (node.ParentNode != null)
+                    node.ParentNode.Children.Remove(node);
+                else
+                    m_AllEntities.Remove(node);
+
+                if (newParent != Entity.Null && m_EntityMap.TryGetValue(newParent, out var pNode))
+                {
+                    node.ParentNode = pNode;
+                    pNode.Children.Add(node);
+                }
+                else
+                {
+                    node.ParentNode = null;
+                    m_AllEntities.Add(node);
+                }
             }
         };
 
@@ -225,6 +321,7 @@ internal class HierarchyViewModel : EditorPanelBase
         bool rootExpanded = RootNodes.Count > 0 ? RootNodes[0].IsExpanded : true;
         
         m_AllEntities.Clear();
+        m_EntityMap.Clear();
         
         if (!entityManager.HasPool<NameComponent>())
         {
@@ -237,8 +334,6 @@ internal class HierarchyViewModel : EditorPanelBase
         var entities = namePool.GetRawEntityArray();
         int count = namePool.Count;
 
-        var entityMap = new System.Collections.Generic.Dictionary<Entity, EntityNodeViewModel>();
-
         for (int i = 0; i < count; i++)
         {
             ref NameComponent nameComp = ref components[i];
@@ -250,7 +345,7 @@ internal class HierarchyViewModel : EditorPanelBase
             }
             
             m_AllEntities.Add(node);
-            entityMap[entities[i]] = node;
+            m_EntityMap[entities[i]] = node;
         }
         
         // Build hierarchy
@@ -261,9 +356,10 @@ internal class HierarchyViewModel : EditorPanelBase
             if (entityManager.HasComponent<ParentComponent>(node.Entity))
             {
                 var parentComp = entityManager.GetComponent<ParentComponent>(node.Entity);
-                if (parentComp.Parent != Entity.Null && entityMap.TryGetValue(parentComp.Parent, out var parentNode))
+                if (parentComp.Parent != Entity.Null && m_EntityMap.TryGetValue(parentComp.Parent, out var parentNode))
                 {
                     parentNode.Children.Add(node);
+                    node.ParentNode = parentNode;
                     continue;
                 }
             }
@@ -301,7 +397,6 @@ internal class HierarchyViewModel : EditorPanelBase
         }
 
         CommandHistory.Instance.Execute(new MoveEntityCommand(srcEntity, newParentEntity, em));
-        RefreshHierarchy(em);
     }
 
     internal void OnUnloaded()

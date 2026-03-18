@@ -43,7 +43,7 @@ public class CreateEntityCommand : IEditorCommand
             scene.Registry.AddComponent(m_CreatedEntity, new ParentComponent { Parent = m_Parent });
         }
 
-        SceneManagerService.Instance.NotifyHierarchyChanged();
+        SceneManagerService.Instance.NotifyEntityCreated(m_CreatedEntity);
     }
 
     public void Undo()
@@ -52,6 +52,6 @@ public class CreateEntityCommand : IEditorCommand
         if (scene == null || m_CreatedEntity == Entity.Null) return;
 
         scene.DestroyEntity(m_CreatedEntity);
-        SceneManagerService.Instance.NotifyHierarchyChanged();
+        SceneManagerService.Instance.NotifyEntityDeleted(m_CreatedEntity);
     }
 }

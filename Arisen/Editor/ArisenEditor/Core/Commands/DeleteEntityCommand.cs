@@ -38,7 +38,7 @@ public class DeleteEntityCommand : IEditorCommand
         }
 
         scene.DestroyEntity(m_Entity);
-        SceneManagerService.Instance.NotifyHierarchyChanged();
+        SceneManagerService.Instance.NotifyEntityDeleted(m_Entity);
     }
 
     public void Undo()
@@ -60,6 +60,6 @@ public class DeleteEntityCommand : IEditorCommand
             }
         }
 
-        SceneManagerService.Instance.NotifyHierarchyChanged();
+        SceneManagerService.Instance.NotifyEntityCreated(restoredEntity);
     }
 }
