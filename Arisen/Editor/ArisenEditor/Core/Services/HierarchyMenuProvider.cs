@@ -30,6 +30,21 @@ public class HierarchyMenuProvider : IMenuProvider
         }
         else if (menuId == "Hierarchy.ContextMenu" && context is EntityNodeViewModel node)
         {
+            yield return new MenuAction("Create Empty Child", ReactiveCommand.Create(() => 
+            {
+                CommandHistory.Instance.Execute(new CreateEntityCommand("Empty Entity", true, node.Entity));
+            }));
+
+            yield return new MenuAction("Create Child Camera", ReactiveCommand.Create(() => 
+            {
+                CommandHistory.Instance.Execute(new CreateEntityCommand("Camera", true, node.Entity));
+            }));
+
+            yield return new MenuAction("Create Child Light", ReactiveCommand.Create(() => 
+            {
+                CommandHistory.Instance.Execute(new CreateEntityCommand("Light", true, node.Entity));
+            }));
+
             yield return new MenuAction("Rename", ReactiveCommand.Create(() => 
             {
                 node.IsRenaming = true;

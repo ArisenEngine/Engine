@@ -190,13 +190,13 @@ internal class HierarchyViewModel : EditorPanelBase
             ContextActions.Add(item);
     }
 
-    private void ApplyFilter()
+    private void ApplyFilter(bool rootExpanded = true)
     {
         var svc = ArisenEditor.Core.Services.SceneManagerService.Instance;
         var sceneName = svc.ActiveScene?.Name ?? "Unnamed Scene";
         if (svc.IsDirty) sceneName += "*";
         
-        var sceneNode = new SceneNodeViewModel(sceneName);
+        var sceneNode = new SceneNodeViewModel(sceneName) { IsExpanded = rootExpanded };
 
         if (string.IsNullOrWhiteSpace(m_SearchText))
         {
@@ -216,11 +216,19 @@ internal class HierarchyViewModel : EditorPanelBase
     public void RefreshHierarchy(EntityManager entityManager)
     {
         ActiveEntityManager = entityManager;
+        
+        var collapsedEntityIds = new System.Collections.Generic.HashSet<Entity>();
+        foreach (var oldNode in m_AllEntities)
+        {
+            if (!oldNode.IsExpanded) collapsedEntityIds.Add(oldNode.Entity);
+        }
+        bool rootExpanded = RootNodes.Count > 0 ? RootNodes[0].IsExpanded : true;
+        
         m_AllEntities.Clear();
         
         if (!entityManager.HasPool<NameComponent>())
         {
-            ApplyFilter();
+            ApplyFilter(rootExpanded);
             return;
         }
 
@@ -235,6 +243,12 @@ internal class HierarchyViewModel : EditorPanelBase
         {
             ref NameComponent nameComp = ref components[i];
             var node = new EntityNodeViewModel(entities[i], nameComp.Name);
+            
+            if (collapsedEntityIds.Contains(entities[i]))
+            {
+                node.IsExpanded = false;
+            }
+            
             m_AllEntities.Add(node);
             entityMap[entities[i]] = node;
         }
@@ -258,7 +272,7 @@ internal class HierarchyViewModel : EditorPanelBase
 
         m_AllEntities = new ObservableCollection<EntityNodeViewModel>(rootEntities);
         
-        ApplyFilter();
+        ApplyFilter(rootExpanded);
     }
 
     public void MoveEntity(EntityNodeViewModel source, EntityNodeViewModel? targetParent)
