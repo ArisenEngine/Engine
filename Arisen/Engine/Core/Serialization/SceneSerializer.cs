@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using ArisenEngine.Core.ECS;
+using System.Numerics;
 using YamlDotNet.Serialization;
 
 namespace ArisenEngine.Core.Serialization;
@@ -121,7 +122,7 @@ public static class SceneSerializer
                         {
                             try
                             {
-                                var converted = Convert.ChangeType(yamlVal, field.FieldType);
+                                var converted = ConvertYamlValue(yamlVal, field.FieldType);
                                 field.SetValue(componentInstance, converted);
                             }
                             catch { /* Ignore conversion errors */ }
@@ -135,7 +136,7 @@ public static class SceneSerializer
                         {
                             try
                             {
-                                var converted = Convert.ChangeType(yamlVal, prop.PropertyType);
+                                var converted = ConvertYamlValue(yamlVal, prop.PropertyType);
                                 prop.SetValue(componentInstance, converted);
                             }
                             catch { /* Ignore conversion errors */ }
@@ -146,6 +147,30 @@ public static class SceneSerializer
                     genericAdd.Invoke(entityManager, new object[] { entity, componentInstance });
                 }
             }
+         }
+    }
+
+    private static object ConvertYamlValue(object yamlVal, Type targetType)
+    {
+        if (yamlVal is Dictionary<object, object> dict)
+        {
+            if (targetType == typeof(Vector3))
+            {
+                float x = dict.TryGetValue("X", out var xVal) ? Convert.ToSingle(xVal) : 0f;
+                float y = dict.TryGetValue("Y", out var yVal) ? Convert.ToSingle(yVal) : 0f;
+                float z = dict.TryGetValue("Z", out var zVal) ? Convert.ToSingle(zVal) : 0f;
+                return new Vector3(x, y, z);
+            }
+            if (targetType == typeof(Quaternion))
+            {
+                float x = dict.TryGetValue("X", out var xVal) ? Convert.ToSingle(xVal) : 0f;
+                float y = dict.TryGetValue("Y", out var yVal) ? Convert.ToSingle(yVal) : 0f;
+                float z = dict.TryGetValue("Z", out var zVal) ? Convert.ToSingle(zVal) : 0f;
+                float w = dict.TryGetValue("W", out var wVal) ? Convert.ToSingle(wVal) : 1f;
+                return new Quaternion(x, y, z, w);
+            }
         }
+        
+        return Convert.ChangeType(yamlVal, targetType);
     }
 }

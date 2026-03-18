@@ -58,8 +58,23 @@ public unsafe class ECSFieldPropertyViewModel : PropertyItemViewModel
     {
         if (value == null) return false;
 
-        // Convert the value if needed (e.g., string from TextBox to float)
         object? converted = TryConvert(value, PropertyType);
+        
+        // Handle Vector3 and Quaternion strings coming from Avalonia bindings
+        if (converted is string strValue)
+        {
+            if (PropertyType == typeof(System.Numerics.Vector3))
+            {
+                converted = TryParseVector3(strValue);
+                if (converted == null) return false; // Parse failed
+            }
+            else if (PropertyType == typeof(System.Numerics.Quaternion))
+            {
+                converted = TryParseQuaternion(strValue);
+                if (converted == null) return false; // Parse failed
+            }
+        }
+        
         if (converted == null) return false;
 
         // Use Unsafe to write directly to the component memory
@@ -87,6 +102,42 @@ public unsafe class ECSFieldPropertyViewModel : PropertyItemViewModel
         _fieldOffset = (int)Marshal.OffsetOf(pool.GetComponentType(), fieldInfo.Name);
 
         ApplyAttributes(fieldInfo);
+    }
+    
+    private static object? TryParseVector3(string input)
+    {
+        // Vector3.ToString() format: "<1, 2, 3>"
+        var clean = input.Trim('<', '>', ' ', '\t');
+        var parts = clean.Split(',');
+        if (parts.Length == 3 && 
+            float.TryParse(parts[0], out float x) &&
+            float.TryParse(parts[1], out float y) &&
+            float.TryParse(parts[2], out float z))
+        {
+            return new System.Numerics.Vector3(x, y, z);
+        }
+        return null;
+    }
+
+    private static object? TryParseQuaternion(string input)
+    {
+        // Quaternion depends on standard ToString output, usually "{X:1 Y:2 Z:3 W:4}" or "<1, 2, 3, 4>"
+        var clean = input.Replace("{", "").Replace("}", "").Replace("<", "").Replace(">", "").Trim();
+        var parts = clean.Split(new[] { ' ', ',', ':' }, StringSplitOptions.RemoveEmptyEntries);
+        
+        // Extract 4 floats from whatever tokens are found
+        var values = new System.Collections.Generic.List<float>();
+        foreach (var p in parts)
+        {
+            if (float.TryParse(p, out float v))
+                values.Add(v);
+        }
+        
+        if (values.Count >= 4)
+        {
+            return new System.Numerics.Quaternion(values[0], values[1], values[2], values[3]);
+        }
+        return null;
     }
 }
 

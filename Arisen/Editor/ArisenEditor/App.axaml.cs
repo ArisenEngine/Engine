@@ -238,14 +238,22 @@ namespace ArisenEditor
             var panelFactory = new ArisenPanelFactory();
             panelFactory.Initialize();
             
-            var viewModel = new MainEditorHostViewModel(panelFactory);
-            desktop.MainWindow = new Window
+            var viewModel = new MainDockViewModel(panelFactory);
+            var window = new Window
             {
                 Title = $"Arisen Editor - {metadata.Name}",
                 Content = new MainDockView { DataContext = viewModel },
                 WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 WindowState = WindowState.Maximized
             };
+            
+            window.KeyBindings.Add(new Avalonia.Input.KeyBinding 
+            { 
+                Gesture = new Avalonia.Input.KeyGesture(Avalonia.Input.Key.S, Avalonia.Input.KeyModifiers.Control), 
+                Command = (System.Windows.Input.ICommand)viewModel.SaveSceneCommand 
+            });
+            
+            desktop.MainWindow = window;
             desktop.MainWindow.Show();
             
             // Start the background Engine loop now that the UI is up
