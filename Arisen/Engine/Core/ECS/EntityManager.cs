@@ -29,6 +29,23 @@ public class EntityManager
     }
 
     /// <summary>
+    /// Creates a new Entity with a specific ID. Useful for deserialization to maintain relationships.
+    /// </summary>
+    public Entity CreateEntity(int id)
+    {
+        if (id >= m_NextEntityId)
+        {
+            m_NextEntityId = id + 1;
+        }
+        else
+        {
+            m_FreeIds.Remove(id);
+        }
+
+        return new Entity(id);
+    }
+
+    /// <summary>
     /// Destroys the entity and removes all associated components across all pools.
     /// </summary>
     public void DestroyEntity(Entity entity)
@@ -110,6 +127,15 @@ public class EntityManager
                 yield return (kvp.Key, kvp.Value);
             }
         }
+    }
+
+    /// <summary>
+    /// Returns all registered component pools.
+    /// Useful for serialization, inspection, and tools that need to iterate all components.
+    /// </summary>
+    public IReadOnlyDictionary<Type, IComponentPool> GetAllPools()
+    {
+        return m_ComponentPools;
     }
 
     private ComponentPool<T> GetOrCreatePool<T>() where T : struct, IComponent

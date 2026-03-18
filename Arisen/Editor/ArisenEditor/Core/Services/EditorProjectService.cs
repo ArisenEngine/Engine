@@ -12,8 +12,8 @@ namespace ArisenEditor.Core.Services;
 /// </summary>
 public class EditorProjectService
 {
-    private static EditorProjectService? _instance;
-    public static EditorProjectService Instance => _instance ??= new EditorProjectService();
+    private static readonly Lazy<EditorProjectService> _instance = new(() => new EditorProjectService());
+    public static EditorProjectService Instance => _instance.Value;
 
     public ProjectManifest? ActiveProject => EngineKernel.Instance.GetSubsystem<ProjectSubsystem>()?.ActiveProject;
 

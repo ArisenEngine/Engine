@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using ArisenEditorFramework.UI.Menus;
 using ArisenEditor.ViewModels;
+using ArisenEditor.Core.Commands;
+using ArisenEditorFramework.Commands;
 using ReactiveUI;
 
 namespace ArisenEditor.Core.Services;
@@ -13,36 +15,34 @@ public class HierarchyMenuProvider : IMenuProvider
         {
             yield return new MenuAction("Empty Entity", ReactiveCommand.Create(() => 
             {
-                // Logic to create empty entity
-                System.Diagnostics.Debug.WriteLine("Creating Empty Entity...");
+                CommandHistory.Instance.Execute(new CreateEntityCommand("Empty Entity"));
             }));
             
             yield return new MenuAction("Camera", ReactiveCommand.Create(() => 
             {
-                // Logic to create camera
-                System.Diagnostics.Debug.WriteLine("Creating Camera...");
+                CommandHistory.Instance.Execute(new CreateEntityCommand("Camera"));
             }));
 
             yield return new MenuAction("Light", ReactiveCommand.Create(() => 
             {
-                // Logic to create light
-                System.Diagnostics.Debug.WriteLine("Creating Light...");
+                CommandHistory.Instance.Execute(new CreateEntityCommand("Light"));
             }));
         }
         else if (menuId == "Hierarchy.ContextMenu" && context is EntityNodeViewModel node)
         {
             yield return new MenuAction("Rename", ReactiveCommand.Create(() => 
             {
-                System.Diagnostics.Debug.WriteLine($"Renaming {node.Name}...");
+                node.IsRenaming = true;
             }));
 
             yield return new MenuAction("Delete", ReactiveCommand.Create(() => 
             {
-                System.Diagnostics.Debug.WriteLine($"Deleting {node.Name}...");
+                CommandHistory.Instance.Execute(new DeleteEntityCommand(node.Entity, node.Name));
             }));
             
             yield return new MenuAction("Clone", ReactiveCommand.Create(() => 
             {
+                // Cloning requires iterating through all components and duplicating. A bit complex for now.
                 System.Diagnostics.Debug.WriteLine($"Cloning {node.Name}...");
             }));
         }

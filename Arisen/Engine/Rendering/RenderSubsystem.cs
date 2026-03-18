@@ -1,8 +1,10 @@
+using System;
 using ArisenEngine.Core.Diagnostics;
 using ArisenEngine.Core.Lifecycle;
 using ArisenEngine.Core.RHI;
 using ArisenEngine.Core.Memory;
 using ArisenEngine.Core.ECS;
+using ArisenEngine.Core.Math;
 
 namespace ArisenEngine.Rendering;
 
@@ -10,6 +12,11 @@ public class RenderSubsystem : ITickableSubsystem
 {
     private RenderPipeline? m_CurrentPipeline;
     private RenderPipelineAsset? m_CurrentAsset;
+
+    // Pre-allocated camera buffer to avoid per-frame allocations.
+    // Only reallocated when the number of cameras grows beyond capacity.
+    private Camera[] m_CameraBuffer = new Camera[4];
+    private int m_CameraCount;
 
     // Rendering should typically happen last in the frame
     public int Priority => 100;
@@ -57,19 +64,24 @@ public class RenderSubsystem : ITickableSubsystem
             );
 
             // 3. Render
-            // Fetch cameras from ECS
+            // Fetch cameras from ECS — zero-allocation path using pre-allocated buffer
             var entityManager = EngineKernel.Instance.GetSubsystem<SceneSubsystem>()?.ActiveEntityManager;
-            var cameras = Array.Empty<Camera>();
+            m_CameraCount = 0;
 
             if (entityManager != null)
             {
                 var cameraPool = entityManager.GetPool<CameraComponent>();
                 var transformPool = entityManager.GetPool<TransformComponent>();
-                var cameraList = new List<Camera>();
 
                 var cameraComponents = cameraPool.GetRawComponentArray();
                 var cameraEntities = cameraPool.GetRawEntityArray();
                 int camCount = cameraPool.Count;
+
+                // Ensure buffer capacity (only reallocates when cameras grow)
+                if (camCount > m_CameraBuffer.Length)
+                {
+                    m_CameraBuffer = new Camera[camCount * 2];
+                }
 
                 for (int i = 0; i < camCount; i++)
                 {
@@ -79,20 +91,23 @@ public class RenderSubsystem : ITickableSubsystem
                         ref var camComp = ref cameraComponents[i];
                         ref var transComp = ref transformPool.GetRef(entity);
 
-                        cameraList.Add(new Camera
-                        {
-                            FieldOfView = camComp.VerticalFov,
-                            NearClip = camComp.NearPlane,
-                            FarClip = camComp.FarPlane,
-                            ProjectionType = camComp.IsPerspective ? CameraProjectionType.Perspective : CameraProjectionType.Orthographic,
-                            Position = transComp.Position,
-                            // Convert Quaternion to Euler if needed, or update Camera to support Quaternions
-                            Rotation = transComp.Position // Placeholder: Camera.cs uses Vector3 for rotation
-                        });
+                        // Directly modify the struct in the array
+                        ref Camera cam = ref m_CameraBuffer[m_CameraCount];
+                        cam.FieldOfView = camComp.VerticalFov;
+                        cam.NearClip = camComp.NearPlane;
+                        cam.FarClip = camComp.FarPlane;
+                        cam.ProjectionType = camComp.IsPerspective != 0 ? CameraProjectionType.Perspective : CameraProjectionType.Orthographic;
+                        cam.Position = transComp.Position;
+                        cam.Rotation = transComp.Rotation.QuaternionToEulerDegrees();
+                        m_CameraCount++;
                     }
                 }
-                cameras = cameraList.ToArray();
             }
+
+            // Pass a lightweight ReadOnlySpan to avoid intermediate array allocations
+            ReadOnlySpan<Camera> cameras = m_CameraCount == 0 
+                ? ReadOnlySpan<Camera>.Empty 
+                : new ReadOnlySpan<Camera>(m_CameraBuffer, 0, m_CameraCount);
 
             m_CurrentPipeline.InternalRender(context, cameras);
         }

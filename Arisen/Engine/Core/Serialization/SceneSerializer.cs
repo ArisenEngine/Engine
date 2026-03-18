@@ -30,11 +30,7 @@ public static class SceneSerializer
     public static void SaveScene(string path, EntityManager entityManager)
     {
         var sceneData = new SceneData();
-        var allPools = entityManager.GetType()
-            .GetField("m_ComponentPools", BindingFlags.NonPublic | BindingFlags.Instance)
-            ?.GetValue(entityManager) as Dictionary<Type, IComponentPool>;
-
-        if (allPools == null) return;
+        var allPools = entityManager.GetAllPools();
 
         // Group component data by EntityID
         var entityDict = new Dictionary<int, EntityData>();
@@ -100,7 +96,7 @@ public static class SceneSerializer
         
         foreach (var eData in sceneData.Entities)
         {
-            var entity = entityManager.CreateEntity();
+            var entity = entityManager.CreateEntity(eData.Id);
 
             foreach (var kvp in eData.Components)
             {

@@ -1,4 +1,5 @@
 using ArisenEngine.Core.Math;
+using System.Runtime.InteropServices;
 
 namespace ArisenEngine.Rendering;
 
@@ -8,17 +9,18 @@ public enum CameraProjectionType
     Orthographic
 }
 
-public class Camera
+[StructLayout(LayoutKind.Sequential)]
+public struct Camera
 {
-    public float FieldOfView = 60.0f;
-    public float NearClip = 0.1f;
-    public float FarClip = 1000.0f;
-    public float AspectRatio = 1.0f;
-    public float OrthographicSize = 5.0f;
-    public CameraProjectionType ProjectionType = CameraProjectionType.Perspective;
+    public float FieldOfView;
+    public float NearClip;
+    public float FarClip;
+    public float AspectRatio;
+    public float OrthographicSize;
+    public CameraProjectionType ProjectionType;
 
-    public Vector3 Position = Vector3.Zero;
-    public Vector3 Rotation = Vector3.Zero; // Eulers in degrees
+    public Vector3 Position;
+    public Vector3 Rotation; // Eulers in degrees
 
     public Matrix4x4 ProjectionMatrix
     {

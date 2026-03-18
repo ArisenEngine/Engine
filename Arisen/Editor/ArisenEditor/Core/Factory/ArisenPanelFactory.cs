@@ -49,8 +49,6 @@ public class ArisenPanelFactory : DefaultPanelFactory
         RegisterPanel("Hierarchy", () =>
         {
             var hierarchy = new ArisenEditor.ViewModels.HierarchyViewModel();
-            var sceneSubsystem = EngineKernel.Instance.GetSubsystem<SceneSubsystem>();
-            hierarchy.ActiveEntityManager = sceneSubsystem?.ActiveEntityManager;
             hierarchy.SelectionService = _selectionService;
             // Connect selection for this specific hierarchy instance
             hierarchy.WhenAnyValue(x => x.SelectedItem)
@@ -60,8 +58,6 @@ public class ArisenPanelFactory : DefaultPanelFactory
         RegisterPanel("Inspector", () =>
         {
             var inspector = new ArisenEditor.ViewModels.InspectorViewModel();
-            var sceneSubsystem = EngineKernel.Instance.GetSubsystem<SceneSubsystem>();
-            inspector.ActiveEntityManager = sceneSubsystem?.ActiveEntityManager;
             inspector.SelectionService = _selectionService;
             // Connect selection for this specific inspector instance
             _selectionService.SelectionChanged += (obj) => inspector.TargetObject = obj;

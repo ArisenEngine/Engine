@@ -13,12 +13,30 @@ namespace ArisenEditor.Core.Services;
 /// </summary>
 public class SceneManagerService : ReactiveObject
 {
-    private static SceneManagerService? _instance;
-    public static SceneManagerService Instance => _instance ??= new SceneManagerService();
+    private static readonly Lazy<SceneManagerService> _instance = new(() => new SceneManagerService());
+    public static SceneManagerService Instance => _instance.Value;
 
     private Scene? _activeScene;
     private string? _activeScenePath;
     private Guid _activeSceneGuid = Guid.Empty;
+
+    public event Action? HierarchyChanged;
+
+    private bool _isDirty;
+    public bool IsDirty
+    {
+        get => _isDirty;
+        private set => this.RaiseAndSetIfChanged(ref _isDirty, value);
+    }
+
+    public void NotifyHierarchyChanged()
+    {
+        IsDirty = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => 
+        {
+            HierarchyChanged?.Invoke();
+        });
+    }
 
     /// <summary>
     /// The currently loaded Scene.
@@ -53,6 +71,7 @@ public class SceneManagerService : ReactiveObject
             
             _activeScenePath = path;
             ActiveScene = loadedScene;
+            IsDirty = false;
             
             // Resolve Guid and save to UserSettings
             _activeSceneGuid = AssetDatabaseService.Instance.GetGuidFromPath(path);
@@ -101,6 +120,7 @@ public class SceneManagerService : ReactiveObject
         try
         {
             SceneSerializer.SaveScene(_activeScenePath, ActiveScene.Registry);
+            IsDirty = false;
             EditorLog.Log($"[SceneManager] Saved scene to {_activeScenePath}");
             return true;
         }
@@ -120,6 +140,7 @@ public class SceneManagerService : ReactiveObject
         ActiveScene = newScene;
         _activeScenePath = null;
         _activeSceneGuid = Guid.Empty;
+        IsDirty = false;
         return newScene;
     }
 }

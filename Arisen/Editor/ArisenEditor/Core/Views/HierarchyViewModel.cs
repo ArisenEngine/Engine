@@ -3,6 +3,8 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using ArisenEditor.Core.Commands;
+using ArisenEditorFramework.Commands;
 using ArisenEditorFramework.Core;
 using ArisenEditorFramework.Services;
 using ArisenEditorFramework.UI.Menus;
@@ -38,13 +40,39 @@ public class EntityNodeViewModel : ReactiveObject
     public string Name
     {
         get => m_Name;
-        set => this.RaiseAndSetIfChanged(ref m_Name, value);
+        set 
+        {
+            if (m_Name != value)
+            {
+                var oldName = m_Name;
+                this.RaiseAndSetIfChanged(ref m_Name, value);
+                CommandHistory.Instance.Execute(new RenameEntityCommand(Entity, oldName, value));
+            }
+        }
     }
+    
+    private bool m_IsRenaming;
+    public bool IsRenaming
+    {
+        get => m_IsRenaming;
+        set => this.RaiseAndSetIfChanged(ref m_IsRenaming, value);
+    }
+    
+    private bool m_IsExpanded = true;
+    public bool IsExpanded
+    {
+        get => m_IsExpanded;
+        set => this.RaiseAndSetIfChanged(ref m_IsExpanded, value);
+    }
+
+    public ObservableCollection<EntityNodeViewModel> Children { get; } = new();
     
     public EntityNodeViewModel(Entity entity, string name)
     {
         Entity = entity;
-        Name = string.IsNullOrWhiteSpace(name) ? $"Entity {entity.Id}" : name;
+        // Set the backing field directly to avoid triggering the Name setter,
+        // which fires a RenameEntityCommand and causes an infinite RefreshHierarchy loop.
+        m_Name = string.IsNullOrWhiteSpace(name) ? $"Entity {entity.Id}" : name;
     }
 }
 
@@ -118,6 +146,14 @@ internal class HierarchyViewModel : EditorPanelBase
                 }
             })
             .DisposeWith(m_Disposables);
+
+        ArisenEditor.Core.Services.SceneManagerService.Instance.HierarchyChanged += () =>
+        {
+            if (ActiveEntityManager != null)
+            {
+                RefreshHierarchy(ActiveEntityManager);
+            }
+        };
     }
 
     public void RefreshMenus(object? context = null)
@@ -133,7 +169,10 @@ internal class HierarchyViewModel : EditorPanelBase
 
     private void ApplyFilter()
     {
-        var sceneName = ArisenEditor.Core.Services.SceneManagerService.Instance.ActiveScene?.Name ?? "Unnamed Scene";
+        var svc = ArisenEditor.Core.Services.SceneManagerService.Instance;
+        var sceneName = svc.ActiveScene?.Name ?? "Unnamed Scene";
+        if (svc.IsDirty) sceneName += "*";
+        
         var sceneNode = new SceneNodeViewModel(sceneName);
 
         if (string.IsNullOrWhiteSpace(m_SearchText))
@@ -162,18 +201,70 @@ internal class HierarchyViewModel : EditorPanelBase
             return;
         }
 
-        var pool = entityManager.GetPool<NameComponent>();
-        var components = pool.GetRawComponentArray();
-        var entities = pool.GetRawEntityArray();
-        int count = pool.Count;
+        var namePool = entityManager.GetPool<NameComponent>();
+        var components = namePool.GetRawComponentArray();
+        var entities = namePool.GetRawEntityArray();
+        int count = namePool.Count;
+
+        var entityMap = new System.Collections.Generic.Dictionary<Entity, EntityNodeViewModel>();
 
         for (int i = 0; i < count; i++)
         {
             ref NameComponent nameComp = ref components[i];
-            m_AllEntities.Add(new EntityNodeViewModel(entities[i], nameComp.Name));
+            var node = new EntityNodeViewModel(entities[i], nameComp.Name);
+            m_AllEntities.Add(node);
+            entityMap[entities[i]] = node;
         }
         
+        // Build hierarchy
+        var rootEntities = new System.Collections.Generic.List<EntityNodeViewModel>();
+        
+        foreach (var node in m_AllEntities)
+        {
+            if (entityManager.HasComponent<ParentComponent>(node.Entity))
+            {
+                var parentComp = entityManager.GetComponent<ParentComponent>(node.Entity);
+                if (parentComp.Parent != Entity.Null && entityMap.TryGetValue(parentComp.Parent, out var parentNode))
+                {
+                    parentNode.Children.Add(node);
+                    continue;
+                }
+            }
+            rootEntities.Add(node);
+        }
+
+        m_AllEntities = new ObservableCollection<EntityNodeViewModel>(rootEntities);
+        
         ApplyFilter();
+    }
+
+    public void MoveEntity(EntityNodeViewModel source, EntityNodeViewModel? targetParent)
+    {
+        var em = ActiveEntityManager;
+        if (em == null) return;
+        
+        var srcEntity = source.Entity;
+        var newParentEntity = targetParent?.Entity ?? Entity.Null;
+
+        if (srcEntity == newParentEntity) return;
+
+        // Check if newParentEntity is a child of srcEntity to prevent cycles
+        var current = newParentEntity;
+        while (current != Entity.Null && em.HasComponent<ParentComponent>(current))
+        {
+            if (current == srcEntity) return; // Cycle detected
+            current = em.GetComponent<ParentComponent>(current).Parent;
+        }
+
+        // Check if already at the target parent
+        if (em.HasComponent<ParentComponent>(srcEntity))
+        {
+            var oldParent = em.GetComponent<ParentComponent>(srcEntity).Parent;
+            if (oldParent == newParentEntity) return;
+        }
+
+        CommandHistory.Instance.Execute(new MoveEntityCommand(srcEntity, newParentEntity, em));
+        RefreshHierarchy(em);
     }
 
     internal void OnUnloaded()
