@@ -81,6 +81,11 @@ These rules are **STRICT** and **NON-NEGOTIABLE**.
 - Passes must be strictly independent. **DO NOT** rely on RHI state leaking from previous passes.
 - RenderGraph handles all Memory Barriers, Image Layout Transitions, and Resource Lifetime automatically based on declared dependencies.
 
+### AI-First Architecture & Editor Automation
+- **Complete Editor Automation:** Every action in the `Editor` must be executable via a headless Command API or ViewModel method, bypassing the Avalonia UI entirely. If a human can do it via a button click, an AI or automation script must be able to do it via code.
+- **Semantic Data Representation:** The Engine must have ways to query a "semantic summary" of the ECS state (e.g., exporting a subset of `ComponentPools` into structured JSON) so that external agents can easily read the world state without parsing binary assets.
+- **Headless Execution:** The `Engine` and `Core` simulation must remain strictly decoupled from the RenderGraph and Windowing systems. It must be possible to tick the engine at maximum speed in a background process for training AI agents (Reinforcement Learning).
+
 ---
 
 **Final Note to Antigravity (Gemini):**

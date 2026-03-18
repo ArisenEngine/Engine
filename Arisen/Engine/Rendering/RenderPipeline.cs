@@ -1,3 +1,5 @@
+using System;
+
 namespace ArisenEngine.Rendering;
 
 public abstract class RenderPipeline : IDisposable
@@ -7,7 +9,7 @@ public abstract class RenderPipeline : IDisposable
     /// <summary>
     /// Entry point for the render pipeline to execute its drawing logic.
     /// </summary>
-    protected abstract void Render(RenderContext context, Camera[] cameras);
+    protected abstract void Render(RenderContext context, ReadOnlySpan<Camera> cameras);
 
     protected abstract void OnDisposed();
 
@@ -17,7 +19,7 @@ public abstract class RenderPipeline : IDisposable
         disposed = true;
     }
 
-    internal void InternalRender(RenderContext context, Camera[] cameras)
+    internal void InternalRender(RenderContext context, ReadOnlySpan<Camera> cameras)
     {
         Render(context, cameras);
     }

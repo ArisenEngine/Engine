@@ -96,8 +96,6 @@ public unsafe class ECSFieldPropertyViewModel : PropertyItemViewModel
 /// </summary>
 internal class InspectorViewModel : ArisenEditorFramework.Inspector.InspectorViewModel
 {
-    // In a real implementation, this would be injected or fetched from a SceneService
-    public EntityManager? ActiveEntityManager { get; set; }
     public ArisenEditor.Core.Services.SelectionService? SelectionService { get; set; }
 
     protected override void RebuildProperties()
@@ -118,6 +116,7 @@ internal class InspectorViewModel : ArisenEditorFramework.Inspector.InspectorVie
         // 2. Check if we are inspecting a specialized EntityNode
         if (TargetObject is EntityNodeViewModel node)
         {
+            var ActiveEntityManager = ArisenEditor.Core.Services.SceneManagerService.Instance.ActiveScene?.Registry;
             if (ActiveEntityManager == null) return;
 
             foreach (var compInfo in ActiveEntityManager.GetEntityComponents(node.Entity))

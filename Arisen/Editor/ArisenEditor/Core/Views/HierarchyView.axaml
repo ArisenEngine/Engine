@@ -55,7 +55,8 @@
                   ItemsSource="{Binding RootNodes}" 
                   SelectedItem="{Binding SelectedItem}"
                   Background="Transparent"
-                  BorderThickness="0">
+                  BorderThickness="0"
+                  DragDrop.AllowDrop="True">
             <TreeView.ContextMenu>
                 <ContextMenu ItemsSource="{Binding ContextActions}">
                     <ContextMenu.ItemContainerTheme>
@@ -76,16 +77,32 @@
                     </StackPanel>
                 </TreeDataTemplate>
                 
-                <TreeDataTemplate DataType="vm:EntityNodeViewModel">
+                <TreeDataTemplate DataType="vm:EntityNodeViewModel" ItemsSource="{Binding Children}">
                     <StackPanel Orientation="Horizontal" Spacing="8" Margin="4,2">
                         <PathIcon Data="{StaticResource EntityIcon}" Width="14" Height="14" Foreground="{DynamicResource TextBrush}"/>
-                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                        
+                        <TextBlock Text="{Binding Name}" 
+                                   VerticalAlignment="Center" 
+                                   IsVisible="{Binding !IsRenaming}"
+                                   DoubleTapped="OnEntityDoubleTapped"/>
+                                   
+                        <TextBox Text="{Binding Name, Mode=TwoWay}"
+                                 IsVisible="{Binding IsRenaming}"
+                                 KeyDown="OnRenameTextBoxKeyDown"
+                                 LostFocus="OnRenameTextBoxLostFocus"
+                                 MinHeight="20"
+                                 Padding="2,0"
+                                 Margin="-4,-2,0,-2"
+                                 VerticalAlignment="Center"/>
                     </StackPanel>
                 </TreeDataTemplate>
             </TreeView.DataTemplates>
             <TreeView.Styles>
                 <Style Selector="TreeViewItem">
                     <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay, DataType=vm:SceneNodeViewModel, FallbackValue=False}"/>
+                </Style>
+                <Style Selector="TreeViewItem[DataContext={x:Type vm:EntityNodeViewModel}]">
+                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay, DataType=vm:EntityNodeViewModel, FallbackValue=False}"/>
                 </Style>
             </TreeView.Styles>
         </TreeView>
