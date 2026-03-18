@@ -38,10 +38,7 @@ public class CreateEntityCommand : IEditorCommand
             scene.Registry.AddComponent(m_CreatedEntity, TransformComponent.Identity);
         }
 
-        if (m_Parent != Entity.Null)
-        {
-            scene.Registry.AddComponent(m_CreatedEntity, new ParentComponent { Parent = m_Parent });
-        }
+        MoveEntityCommand.ReparentEntity(scene.Registry, m_CreatedEntity, m_Parent);
 
         SceneManagerService.Instance.NotifyEntityCreated(m_CreatedEntity);
     }
@@ -49,7 +46,7 @@ public class CreateEntityCommand : IEditorCommand
     public void Undo()
     {
         var scene = SceneManagerService.Instance.ActiveScene;
-        if (scene == null || m_CreatedEntity == Entity.Null) return;
+        MoveEntityCommand.ReparentEntity(scene.Registry, m_CreatedEntity, Entity.Null);
 
         scene.DestroyEntity(m_CreatedEntity);
         SceneManagerService.Instance.NotifyEntityDeleted(m_CreatedEntity);

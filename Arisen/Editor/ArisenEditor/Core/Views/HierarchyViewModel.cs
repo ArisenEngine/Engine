@@ -216,6 +216,7 @@ internal class HierarchyViewModel : EditorPanelBase
                 }
             }
             m_AllEntities.Add(node);
+            if (RootNodes.Count > 0) RootNodes[0].Entities.Add(node);
         };
 
         svc.EntityDeleted += (entity) =>
@@ -229,6 +230,7 @@ internal class HierarchyViewModel : EditorPanelBase
                 else
                 {
                     m_AllEntities.Remove(node);
+                    if (RootNodes.Count > 0) RootNodes[0].Entities.Remove(node);
                 }
                 m_EntityMap.Remove(entity);
             }
@@ -241,7 +243,10 @@ internal class HierarchyViewModel : EditorPanelBase
                 if (node.ParentNode != null)
                     node.ParentNode.Children.Remove(node);
                 else
+                {
                     m_AllEntities.Remove(node);
+                    if (RootNodes.Count > 0) RootNodes[0].Entities.Remove(node);
+                }
 
                 if (newParent != Entity.Null && m_EntityMap.TryGetValue(newParent, out var pNode))
                 {
@@ -252,6 +257,7 @@ internal class HierarchyViewModel : EditorPanelBase
                 {
                     node.ParentNode = null;
                     m_AllEntities.Add(node);
+                    if (RootNodes.Count > 0) RootNodes[0].Entities.Add(node);
                 }
             }
         };
@@ -351,6 +357,7 @@ internal class HierarchyViewModel : EditorPanelBase
         // Build hierarchy
         var rootEntities = new System.Collections.Generic.List<EntityNodeViewModel>();
         
+        // Step 1: Discover Roots and assign ParentNode refs (skip Children.Add for now)
         foreach (var node in m_AllEntities)
         {
             if (entityManager.HasComponent<ParentComponent>(node.Entity))
@@ -358,12 +365,53 @@ internal class HierarchyViewModel : EditorPanelBase
                 var parentComp = entityManager.GetComponent<ParentComponent>(node.Entity);
                 if (parentComp.Parent != Entity.Null && m_EntityMap.TryGetValue(parentComp.Parent, out var parentNode))
                 {
-                    parentNode.Children.Add(node);
                     node.ParentNode = parentNode;
-                    continue;
+                    continue; // Do NOT add to rootEntities!
                 }
             }
             rootEntities.Add(node);
+        }
+
+        // Step 2: Traverse Intrusive Linked Lists to establish exact child ordering
+        foreach (var node in m_AllEntities)
+        {
+            if (entityManager.HasComponent<ChildComponent>(node.Entity))
+            {
+                var childComp = entityManager.GetComponent<ChildComponent>(node.Entity);
+                var currentChild = childComp.FirstChild;
+                
+                // Prevent infinite cycle in corrupted files
+                int safetyLimit = 0; 
+                while (currentChild != Entity.Null && safetyLimit < 10000)
+                {
+                    if (m_EntityMap.TryGetValue(currentChild, out var childNode))
+                    {
+                        node.Children.Add(childNode);
+                    }
+                    
+                    if (entityManager.HasComponent<SiblingComponent>(currentChild))
+                    {
+                        currentChild = entityManager.GetComponent<SiblingComponent>(currentChild).NextSibling;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                    safetyLimit++;
+                }
+
+                // Fallback: If any children somehow weren't part of the linked list but claimed this parent,
+                // we should append them anyway to avoid losing objects in the UI.
+            }
+        }
+
+        // Safety pass: Catch any orphaned children missing from the Sibling chain
+        foreach (var node in m_AllEntities)
+        {
+            if (node.ParentNode != null && !node.ParentNode.Children.Contains(node))
+            {
+                node.ParentNode.Children.Add(node);
+            }
         }
 
         m_AllEntities = new ObservableCollection<EntityNodeViewModel>(rootEntities);
