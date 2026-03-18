@@ -98,7 +98,7 @@
                 </TreeDataTemplate>
             </TreeView.DataTemplates>
             <TreeView.Styles>
-                <Style Selector="TreeViewItem">
+                <Style Selector="TreeViewItem[DataContext={x:Type vm:SceneNodeViewModel}]">
                     <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay, DataType=vm:SceneNodeViewModel, FallbackValue=False}"/>
                 </Style>
                 <Style Selector="TreeViewItem[DataContext={x:Type vm:EntityNodeViewModel}]">

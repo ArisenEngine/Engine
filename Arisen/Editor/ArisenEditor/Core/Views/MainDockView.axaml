@@ -7,7 +7,7 @@
              xmlns:view="clr-namespace:ArisenEditor.Core.Views"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
              x:Class="ArisenEditor.Core.Views.MainDockView"
-             x:DataType="vm:MainEditorHostViewModel">
+             x:DataType="vm:MainDockViewModel">
     <DockPanel>
         <!-- The entire UI is now defined by the DockControl and registered panels -->
         <Border Padding="0">

@@ -5,7 +5,7 @@ using ReactiveUI;
 
 namespace ArisenEditor.Core.Views;
 
-internal class MainEditorHostViewModel : ReactiveObject
+internal class MainDockViewModel : ReactiveObject
 {
     private readonly ArisenEditorFramework.Docking.LayoutManager m_LayoutManager;
     private IRootDock? m_Layout;
@@ -37,11 +37,12 @@ internal class MainEditorHostViewModel : ReactiveObject
     public IReactiveCommand PauseCommand { get; }
     public IReactiveCommand StopCommand { get; }
     public IReactiveCommand BuildCommand { get; }
+    public IReactiveCommand SaveSceneCommand { get; }
     
     public MenuItemBarViewModel MenuViewModel { get; }
     public Dock.Model.Core.IFactory Factory => m_LayoutManager.Factory;
     
-    internal MainEditorHostViewModel(ArisenEditorFramework.Core.IPanelFactory? panelFactory = null)
+    internal MainDockViewModel(ArisenEditorFramework.Core.IPanelFactory? panelFactory = null)
     {
         MenuViewModel = new MenuItemBarViewModel();
         m_LayoutManager = new ArisenEditorFramework.Docking.LayoutManager();
@@ -59,6 +60,15 @@ internal class MainEditorHostViewModel : ReactiveObject
         PauseCommand = ReactiveCommand.Create(() => StatusText = "Paused");
         StopCommand = ReactiveCommand.Create(() => StatusText = "Engine Ready");
         BuildCommand = ReactiveCommand.Create(() => StatusText = "Building...");
+        
+        SaveSceneCommand = ReactiveCommand.Create(() =>
+        {
+            var svc = ArisenEditor.Core.Services.SceneManagerService.Instance;
+            if (svc.IsDirty && svc.ActiveScene != null)
+            {
+                svc.SaveCurrentScene();
+            }
+        });
     }
     
     public void CloseLayout()
