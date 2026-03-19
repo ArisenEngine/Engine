@@ -26,7 +26,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ArisenKernel\ArisenKernel.csproj" />
-    <ProjectReference Include="..\AutoBinding\AutoBinding.csproj" />
+    <ProjectReference Include="..\Packages.Generated\com.arisen.core.native\Com.Arisen.Core.Native.csproj" />
+    <ProjectReference Include="..\Packages.Generated\com.arisen.rhi.core\Com.Arisen.Rhi.Core.csproj" />
+    <ProjectReference Include="..\Packages.Generated\com.arisen.shader-compiler\Com.Arisen.Shadercompiler.csproj" />
     <ProjectReference Include="..\External\ArisenDAG\ArisenDAG.csproj" />
   </ItemGroup>
 

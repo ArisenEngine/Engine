@@ -15,7 +15,7 @@ using System.Text;
 
 namespace Arisen.Native
 {
-    public static class UTF8Marshaller
+    internal static class UTF8Marshaller
     {
         public static string NativeToUTF8(IntPtr nativePtr)
         {

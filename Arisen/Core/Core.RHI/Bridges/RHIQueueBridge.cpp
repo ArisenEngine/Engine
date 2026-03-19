@@ -1,4 +1,4 @@
-// RHIQueueBridge.cpp â€” extern "C" bridge for RHIQueue virtual methods
+// RHIQueueBridge.cpp â€?extern "C" bridge for RHIQueue virtual methods
 #include "RHI/Core/RHIDevice.h"
 #include "RHI/Queues/RHIQueue.h"
 #include "RHI/Commands/RHICommandBuffer.h"
@@ -6,6 +6,7 @@
 
 using namespace ArisenEngine::RHI;
 
+ARISEN_BIND_PACKAGE("com.arisen.rhi.core")
 ARISEN_BIND_BEGIN_BRIDGE("RHIQueue", "Core.RHI.dll", "Arisen.Native.RHI")
 
 extern "C" {
@@ -46,3 +47,4 @@ RHI_DLL int RHIQueue_GetType(RHIQueue* queue)
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()
+

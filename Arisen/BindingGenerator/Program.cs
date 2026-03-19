@@ -1,4 +1,4 @@
-﻿using System;
+s_ProjectNameusing System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -32,18 +32,18 @@ internal static class Program
             return;
         }
 
-        var outputDir = Path.Combine(s_Output, s_ProjectName);
+        var packagesDir = Path.Combine(s_Output, "Packages");
         Console.WriteLine($"Source: {s_SourceCode}");
-        Console.WriteLine($"Output: {outputDir}");
+        Console.WriteLine($"Packages Output: {packagesDir}");
 
-        // Clean previous output (skip bin/obj)
-        if (Directory.Exists(outputDir))
+        // We clean the Generated folder of each package before starting
+        if (Directory.Exists(packagesDir))
         {
-            CleanOutputDirectory(outputDir);
-        }
-        else
-        {
-            Directory.CreateDirectory(outputDir);
+            foreach (var pDir in Directory.GetDirectories(packagesDir))
+            {
+                var genDir = Path.Combine(pDir, "Generated");
+                if (Directory.Exists(genDir)) CleanOutputDirectory(genDir);
+            }
         }
 
         // Scan all headers
@@ -59,6 +59,7 @@ internal static class Program
 
         int generatedFiles = 0;
         var allGeneratedFiles = new List<string>();
+        var packagesModified = new HashSet<string>();
 
         foreach (var header in headers)
         {
@@ -76,9 +77,12 @@ internal static class Program
             Console.WriteLine($"  Processing: {relativePath}");
 
             var results = CSharpGenerator.ProcessHeader(content, header, s_GenerationTime);
-            foreach (var (fileName, csContent, subDir) in results)
+            foreach (var (packageId, fileName, csContent, subDir) in results)
             {
-                var targetDir = string.IsNullOrEmpty(subDir) ? outputDir : Path.Combine(outputDir, subDir);
+                var packageDir = Path.Combine(s_Output, "Packages.Generated", packageId, "Generated");
+                packagesModified.Add(packageId);
+
+                var targetDir = string.IsNullOrEmpty(subDir) ? packageDir : Path.Combine(packageDir, subDir);
                 if (!Directory.Exists(targetDir))
                     Directory.CreateDirectory(targetDir);
                 var outPath = Path.Combine(targetDir, fileName);
@@ -86,17 +90,21 @@ internal static class Program
                 var displayPath = string.IsNullOrEmpty(subDir) ? fileName : $"{subDir}/{fileName}";
                 allGeneratedFiles.Add(displayPath);
                 generatedFiles++;
-                Console.WriteLine($"    Generated: {displayPath}");
+                Console.WriteLine($"    Generated [{packageId}]: {displayPath}");
             }
         }
 
-        // Generate project file
-        ProjectGenerator.GenerateProjectFile(outputDir);
+        // Generate UTF8Marshaller and Package Metadata per package
+        foreach (var pkg in packagesModified)
+        {
+             var pDir = Path.Combine(s_Output, "Packages.Generated", pkg);
+             var pOut = Path.Combine(pDir, "Generated");
 
-        // Generate UTF8Marshaller (always needed)
-        MarshallerGenerator.GenerateMarshaller(outputDir, s_GenerationTime);
+             MarshallerGenerator.GenerateMarshaller(pOut, s_GenerationTime);
+             ProjectGenerator.GeneratePackageFiles(pkg, pDir);
+        }
 
-        Console.WriteLine($"\nGeneration complete: {generatedFiles} file(s) generated.");
+        Console.WriteLine($"\nGeneration complete: {generatedFiles} file(s) generated across {packagesModified.Count} package(s).");
     }
 
     static void ParseArguments(string[] args)

@@ -45,7 +45,7 @@ cmake --build "%VS_BUILD_DIR%" --config Release --target GenerateAutoBinding >> 
 if errorlevel 1 goto :fail
 
 echo [3/3] Verifying generated output...
-set "BINDING_OUTPUT_DIR=%ROOT_DIR%\AutoBinding"
+set "BINDING_OUTPUT_DIR=%ROOT_DIR%\Packages.Generated"
 set "CS_COUNT=0"
 if exist "%BINDING_OUTPUT_DIR%" (
     for /r "%BINDING_OUTPUT_DIR%" %%F in (*.cs) do set /a CS_COUNT+=1
@@ -53,7 +53,7 @@ if exist "%BINDING_OUTPUT_DIR%" (
 
 if "%CS_COUNT%" == "0" goto :fail
 
-echo Generated %CS_COUNT% C# binding file(s) in AutoBinding.
+echo Generated %CS_COUNT% C# binding file(s) in Packages.Generated.
 echo === Binding generation succeeded ===
 echo.
 if not defined ARISEN_NO_PAUSE pause

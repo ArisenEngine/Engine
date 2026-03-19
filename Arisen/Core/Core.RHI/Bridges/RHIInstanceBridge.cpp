@@ -1,4 +1,4 @@
-// RHIInstanceBridge.cpp â€” extern "C" bridge for RHIInstance virtual methods
+// RHIInstanceBridge.cpp â€?extern "C" bridge for RHIInstance virtual methods
 #include "RHI/Core/RHIInstance.h"
 #include "RHI/Core/RHIDevice.h"
 #include "RHI/Definitions/CoreRHICommon.h"
@@ -6,6 +6,7 @@
 
 using namespace ArisenEngine::RHI;
 
+ARISEN_BIND_PACKAGE("com.arisen.rhi.core")
 ARISEN_BIND_BEGIN_BRIDGE("RHIInstance", "Core.RHI.dll", "Arisen.Native.RHI")
 
 extern "C" {
@@ -98,3 +99,4 @@ RHI_DLL int RHIInstance_GetSuitablePresentMode(RHIInstance* inst, uint32_t windo
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()
+

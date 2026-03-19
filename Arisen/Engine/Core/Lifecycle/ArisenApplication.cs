@@ -8,19 +8,6 @@ using ArisenKernel.Lifecycle;
 
 namespace ArisenEngine.Core.Lifecycle;
 
-public enum RuntimePlatform
-{
-    Unknow,
-    Windows,
-    Linux,
-    MacOS,
-    Android,
-    IOS,
-    Browser,
-    XBox,
-    PS5
-}
-
 public class ArisenApplication
 {
     public static Action AllSurfacesDestroyed;

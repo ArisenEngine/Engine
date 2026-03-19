@@ -1,10 +1,11 @@
-// RHIDescriptorPoolBridge.cpp â€” extern "C" bridge for RHIDescriptorPool
+// RHIDescriptorPoolBridge.cpp â€?extern "C" bridge for RHIDescriptorPool
 #include "RHI/Descriptors/RHIDescriptorPool.h"
 #include "RHI/Pipeline/RHIPipelineState.h"
 #include "Base/BindingMacros.h"
 
 using namespace ArisenEngine::RHI;
 
+ARISEN_BIND_PACKAGE("com.arisen.rhi.core")
 ARISEN_BIND_BEGIN_BRIDGE("RHIDescriptorPool", "Core.RHI.dll", "Arisen.Native.RHI")
 
 extern "C" {
@@ -39,3 +40,4 @@ RHI_DLL void RHIDescriptorPool_UpdateDescriptorSet(RHIDescriptorPool* pool, uint
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()
+

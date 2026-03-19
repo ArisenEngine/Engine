@@ -56,7 +56,7 @@ def group_sln_projects_incremental(sln_path: str, rules: dict):
 if __name__ == "__main__":
     rules = {
         "ToolChain": [],
-        "Binding": ["BindingGenerator", "AutoBinding"],
+        "Binding": ["BindingGenerator"],
         "Editor": [
             "ArisenEditor", "ArisenEditor.Desktop", "ArisenEditorShell",
             "ArisenLauncher", "ArisenLauncher.Desktop",

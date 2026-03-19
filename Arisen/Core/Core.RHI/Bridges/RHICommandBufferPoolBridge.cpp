@@ -5,6 +5,7 @@
 
 using namespace ArisenEngine::RHI;
 
+ARISEN_BIND_PACKAGE("com.arisen.rhi.core")
 ARISEN_BIND_BEGIN_BRIDGE("RHICommandBufferPool", "Core.RHI.dll", "Arisen.Native.RHI")
 
 extern "C" {
@@ -27,3 +28,4 @@ RHI_DLL void RHICommandBufferPool_ReleaseCommandBuffer(RHICommandBufferPool* poo
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()
+

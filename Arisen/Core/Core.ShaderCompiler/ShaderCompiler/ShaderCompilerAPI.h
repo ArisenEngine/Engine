@@ -8,6 +8,7 @@
 #include "CoreShaderCompilerCommon.h"
 #include "../Core.HAL/CoreHALCommon.h"
 
+ARISEN_BIND_PACKAGE("com.arisen.shader-compiler")
 ARISEN_BIND_MODULE("Core.ShaderCompiler.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.ShaderCompiler")
 
@@ -125,3 +126,4 @@ namespace ArisenEngine::HAL
         const wchar_t* output,
         bool useDXLayout);
 }
+

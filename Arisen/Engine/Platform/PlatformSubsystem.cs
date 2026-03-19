@@ -1,4 +1,5 @@
 using ArisenEngine.Core.Diagnostics;
+using ArisenEngine.Core.Lifecycle;
 using ArisenKernel.Lifecycle;
 
 namespace ArisenEngine.Platform;

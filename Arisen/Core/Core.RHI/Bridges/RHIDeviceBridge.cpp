@@ -1,4 +1,4 @@
-// RHIDeviceBridge.cpp â€” extern "C" bridge for RHIDevice virtual methods
+// RHIDeviceBridge.cpp â€?extern "C" bridge for RHIDevice virtual methods
 #include "RHI/Core/RHIDevice.h"
 #include "RHI/Core/RHIFactory.h"
 #include "RHI/Core/RHIInstance.h"
@@ -9,6 +9,7 @@
 
 using namespace ArisenEngine::RHI;
 
+ARISEN_BIND_PACKAGE("com.arisen.rhi.core")
 ARISEN_BIND_BEGIN_BRIDGE("RHIDevice", "Core.RHI.dll", "Arisen.Native.RHI")
 
 extern "C" {
@@ -141,3 +142,4 @@ RHI_DLL uint64_t RHIDevice_GetDescriptorPoolHandle(RHIDevice* dev)
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()
+

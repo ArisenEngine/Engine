@@ -9,12 +9,13 @@ namespace BindingGenerator.Generator;
 
 public static class CSharpGenerator
 {
-    public static List<(string FileName, string Content, string SubDir)> ProcessHeader(string content,
+    public static List<(string PackageId, string FileName, string Content, string SubDir)> ProcessHeader(string content,
         string headerPath, string generationTime)
     {
-        var results = new List<(string, string, string)>();
+        var results = new List<(string, string, string, string)>();
 
         // Extract module-level metadata
+        var packageId = StringUtils.ExtractMacroArg(content, "ARISEN_BIND_PACKAGE") ?? "default";
         var dllName = StringUtils.ExtractMacroArg(content, "ARISEN_BIND_MODULE") ?? "";
         var csNamespace = StringUtils.ExtractMacroArg(content, "ARISEN_BIND_NAMESPACE") ?? "";
 
@@ -58,7 +59,7 @@ public static class CSharpGenerator
                 sb.AppendLine("    }");
                 sb.AppendLine("}");
 
-                results.Add(($"{e.Name}.cs", sb.ToString(), subDir));
+                results.Add((packageId, $"{e.Name}.cs", sb.ToString(), subDir));
             }
 
             // --- Structs ---
@@ -85,7 +86,7 @@ public static class CSharpGenerator
                 sb.AppendLine("    }");
                 sb.AppendLine("}");
 
-                results.Add(($"{s.Name}.cs", sb.ToString(), subDir));
+                results.Add((packageId, $"{s.Name}.cs", sb.ToString(), subDir));
             }
 
             // --- Handles ---
@@ -115,7 +116,7 @@ public static class CSharpGenerator
                 }
 
                 sb.AppendLine("}");
-                results.Add(("RHIHandle.cs", sb.ToString(), subDir));
+                results.Add((packageId, "RHIHandle.cs", sb.ToString(), subDir));
             }
         }
 
@@ -137,7 +138,10 @@ public static class CSharpGenerator
                 sb.AppendLine();
                 sb.AppendLine($"namespace {block.Namespace}");
                 sb.AppendLine("{");
-                sb.AppendLine("    using Arisen.Native.RHI;");
+                if (block.Namespace == "Arisen.Native.ShaderCompiler")
+                {
+                    sb.AppendLine("    using Arisen.Native.RHI;");
+                }
                 sb.AppendLine();
                 sb.AppendLine($"    public static class {block.ClassName}API");
                 sb.AppendLine("    {");
@@ -152,13 +156,13 @@ public static class CSharpGenerator
                 sb.AppendLine("    }");
                 sb.AppendLine("}");
 
-                results.Add(($"{block.ClassName}API.cs", sb.ToString(), blockSubDir));
+                results.Add((packageId, $"{block.ClassName}API.cs", sb.ToString(), blockSubDir));
 
                 // --- OOP Wrapper class ---
                 var wrapperContent = EmitOopWrapper(block);
                 if (!string.IsNullOrEmpty(wrapperContent))
                 {
-                    results.Add(($"{block.ClassName}.cs", wrapperContent, blockSubDir));
+                    results.Add((packageId, $"{block.ClassName}.cs", wrapperContent, blockSubDir));
                 }
             }
         }
@@ -174,7 +178,10 @@ public static class CSharpGenerator
             sb.AppendLine();
             sb.AppendLine($"namespace {csNamespace}");
             sb.AppendLine("{");
-            sb.AppendLine("    using Arisen.Native.RHI;");
+            if (csNamespace == "Arisen.Native.ShaderCompiler" || csNamespace == "Arisen.Native.RHI" || csNamespace == "")
+            {
+                sb.AppendLine("    using Arisen.Native.RHI;");
+            }
             sb.AppendLine();
             sb.AppendLine($"    public static class {className}");
             sb.AppendLine("    {");
@@ -189,7 +196,7 @@ public static class CSharpGenerator
             sb.AppendLine("    }");
             sb.AppendLine("}");
 
-            results.Add(($"{className}.cs", sb.ToString(), subDir));
+            results.Add((packageId, $"{className}.cs", sb.ToString(), subDir));
         }
 
         return results;
