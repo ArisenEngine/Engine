@@ -10,7 +10,8 @@ Engine subsystems are modular plugins that the `EngineKernel` manages.
 ## Steps
 1. Create a class implementing `IEngineSubsystem` (or `ITickableSubsystem` if it needs per-frame updates).
 2. Define its `Priority` and `InitPhase`.
-3. Register it with `EngineKernel.Instance` before the engine boots (typically in `ArisenApplication.InitializeEngine`).
+3. **NEW (Package Architecture):** Register the subsystem by adding it to the `subsystems` array in your `package.json`. The `PackageSubsystem` will automatically instantiate and register it during engine boot.
+   - *Note: You no longer manually register subsystems in `ArisenApplication` unless creating a Kernel-level built-in subsystem.*
 
 ## Example
 
@@ -26,8 +27,11 @@ namespace MyModule
 
         public void Initialize()
         {
-            // Set up physics world
+            // Set up physics world. 
+            // If you need services provided by other packages:
+            // var memoryRegistry = EngineKernel.Instance.GetSubsystem<IServiceRegistry>();
         }
+
 
         public void Tick(float deltaTime)
         {

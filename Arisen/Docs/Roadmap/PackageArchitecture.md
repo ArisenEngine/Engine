@@ -13,13 +13,14 @@ This document defines the architecture for evolving Arisen Engine from a monolit
 3. [Architecture Overview](#3-architecture-overview)
 4. [The Kernel (Shell)](#4-the-kernel-shell)
 5. [Package Anatomy — The Multi-DLL Question](#5-package-anatomy--the-multi-dll-question)
-6. [Package Manifest v2 Specification](#6-package-manifest-v2-specification)
-7. [Interface Contracts (Service Provider Model)](#7-interface-contracts-service-provider-model)
-8. [Migration Plan — Current Modules to Packages](#8-migration-plan--current-modules-to-packages)
-9. [The Launcher & Package Manager UI](#9-the-launcher--package-manager-ui)
-10. [Build System Evolution](#10-build-system-evolution)
-11. [Phased Roadmap](#11-phased-roadmap)
-12. [FAQ & Design Decisions](#12-faq--design-decisions)
+6. [AutoBinding Migration — Splitting Per Package](#6-autobinding-migration--splitting-per-package)
+7. [Package Manifest v2 Specification](#7-package-manifest-v2-specification)
+8. [Interface Contracts (Service Provider Model)](#8-interface-contracts-service-provider-model)
+9. [Migration Plan — Current Modules to Packages](#9-migration-plan--current-modules-to-packages)
+10. [The Launcher & Package Manager UI](#10-the-launcher--package-manager-ui)
+11. [Build System Evolution](#11-build-system-evolution)
+12. [Phased Roadmap](#12-phased-roadmap)
+13. [FAQ & Design Decisions](#13-faq--design-decisions)
 
 ---
 
@@ -301,7 +302,199 @@ The `PackageSubsystem` loads `com.arisen.core.native` first (topological sort), 
 
 ---
 
-## 6. Package Manifest v2 Specification
+## 6. AutoBinding Migration — Splitting Per Package
+
+> *"AutoBinding is only one project which contains RHI, Diagnostics, HALWindowAPI, ShaderCompilerAPI — how can I separate this into multiple packages?"*
+
+### Current Monolithic Layout
+
+The current `AutoBinding/` is a single C# project that contains **all** generated PInvoke bindings for every C++ module:
+
+```
+AutoBinding/                          ← ONE project, ONE DLL
+├── AutoBinding.csproj
+├── Diagnostics/                      ← from Core.Diagnostic (DllName = "Core.Diagnostic.dll")
+│   ├── LoggerAPI.cs
+│   ├── ProfilerAPI.cs
+│   ├── LogLevel.cs
+│   ├── LogSourceLocation.cs
+│   └── ProfilerZoneContext.cs
+├── RHI/                              ← from Core.RHI (DllName = "Core.RHI.dll")
+│   ├── RHIDeviceAPI.cs
+│   ├── RHIFactoryAPI.cs
+│   ├── EFormat.cs
+│   └── ... (72 files total!)
+├── HALWindowAPI.cs                   ← from Core.HAL (DllName = "Core.HAL.dll")
+├── RenderWindowAPI.cs                ← from Core.RHI (DllName = "Core.RHI.dll")
+├── ShaderCompilerAPI.cs              ← from Core.ShaderCompiler (DllName = "Core.ShaderCompiler.dll")
+├── UTF8Marshaller.cs                 ← shared utility (no DLL)
+└── WindowInitInfo.cs                 ← shared struct
+```
+
+The problem: all bindings compile into one `AutoBinding.dll`, which means every package that needs *any* native binding must depend on *all* of them.
+
+### The Key Insight: Data Already Exists
+
+Your C++ headers already tag each file with its module and namespace via macros:
+
+```cpp
+// Core/Core.RHI/RHI/Handles/RHIHandle.h
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+```
+
+The `BindingGenerator` reads these macros in `CSharpGenerator.ProcessHeader()` to determine the `DllName` constant and output subdirectory. **It already knows which C++ module each binding belongs to.** We just need to extend this to also know which *package* it belongs to.
+
+### Solution: 3-Step Evolution
+
+#### Step 1: Add `ARISEN_BIND_PACKAGE` Macro to C++ Headers
+
+Add a new annotation macro to each C++ module. This is a no-op in C++ (defined as empty), but the BindingGenerator reads it:
+
+```cpp
+// Core/Core.Foundation/BindingMacros.h — add to existing macros
+#define ARISEN_BIND_PACKAGE(x)   // Consumed by BindingGenerator only
+```
+
+Then annotate each C++ module's headers:
+
+```cpp
+// Core/Core.Diagnostic/Diagnostics/LoggerBridge.cpp
+ARISEN_BIND_PACKAGE("com.arisen.core.native")     // ← NEW
+ARISEN_BIND_MODULE("Core.Diagnostic.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.Diagnostics")
+```
+
+```cpp
+// Core/Core.HAL/HAL/HALWindowBridge.cpp
+ARISEN_BIND_PACKAGE("com.arisen.core.native")     // ← NEW
+ARISEN_BIND_MODULE("Core.HAL.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.HAL")
+```
+
+```cpp
+// Core/Core.RHI/RHI/Bridges/RHIDeviceBridge.cpp
+ARISEN_BIND_PACKAGE("com.arisen.rhi.vulkan")      // ← NEW
+ARISEN_BIND_MODULE("Core.RHI.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
+```
+
+```cpp
+// Core/Core.ShaderCompiler/ShaderCompiler/ShaderCompilerAPI.h
+ARISEN_BIND_PACKAGE("com.arisen.shader-compiler")  // ← NEW
+ARISEN_BIND_MODULE("Core.ShaderCompiler.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Native.ShaderCompiler")
+```
+
+#### Step 2: Modify BindingGenerator to Route Output Per Package
+
+The change in `Program.cs` is minimal (~20 lines). Instead of outputting everything to `AutoBinding/`, group by package ID:
+
+```csharp
+// Before (current):
+var outputDir = Path.Combine(s_Output, s_ProjectName); // → "AutoBinding/"
+
+// After:
+var packageId = StringUtils.ExtractMacroArg(content, "ARISEN_BIND_PACKAGE") ?? "default";
+var outputDir = Path.Combine(s_Output, "Packages", packageId, "Generated");
+```
+
+This produces the following output structure:
+
+```
+Packages/
+├── com.arisen.core.native/
+│   └── Generated/
+│       ├── Diagnostics/
+│       │   ├── LoggerAPI.cs
+│       │   ├── ProfilerAPI.cs
+│       │   ├── LogLevel.cs
+│       │   ├── LogSourceLocation.cs
+│       │   └── ProfilerZoneContext.cs
+│       ├── HALWindowAPI.cs
+│       ├── WindowInitInfo.cs
+│       └── UTF8Marshaller.cs
+├── com.arisen.rhi.vulkan/
+│   └── Generated/
+│       ├── RHI/
+│       │   ├── RHIDeviceAPI.cs
+│       │   ├── RHIFactoryAPI.cs
+│       │   ├── EFormat.cs
+│       │   ├── RHIHandle.cs
+│       │   └── ... (all 72 RHI files)
+│       ├── RenderWindowAPI.cs
+│       └── UTF8Marshaller.cs
+└── com.arisen.shader-compiler/
+    └── Generated/
+        ├── ShaderCompilerAPI.cs
+        └── UTF8Marshaller.cs
+```
+
+The `ProjectGenerator` is also updated to generate one `.csproj` per package instead of a single `AutoBinding.csproj`.
+
+#### Step 3: Each Package Compiles Its Own Bindings
+
+Instead of one `AutoBinding.csproj` referenced by `ArisenEngine.csproj`, each package's `.csproj` includes its own generated PInvoke files:
+
+```xml
+<!-- Packages/com.arisen.rhi.vulkan/Arisen.RHI.Vulkan.csproj -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <!-- Auto-generated PInvoke bindings compiled directly into this package -->
+  <ItemGroup>
+    <Compile Include="Generated/**/*.cs" />
+  </ItemGroup>
+
+  <!-- Reference the Kernel for shared contracts -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\ArisenKernel\ArisenKernel.csproj" />
+  </ItemGroup>
+</Project>
+```
+
+The generated PInvoke code compiles **directly into the package's DLL** — no separate `AutoBinding.dll` needed.
+
+### Handling Shared Utilities: `UTF8Marshaller`
+
+`UTF8Marshaller.cs` is needed by every package that does string PInvoke. Three options:
+
+| Option | Approach | Recommended? |
+|---|---|---|
+| **A. Copy into each package** | BindingGenerator copies `UTF8Marshaller.cs` into every package's `Generated/` dir | ✅ **Simplest, zero coupling** |
+| **B. Put in Kernel** | Move `UTF8Marshaller` into `ArisenKernel.dll` as a shared interop utility | Good, but adds interop concern to Kernel |
+| **C. Shared NuGet package** | Create `Arisen.Interop.Common` NuGet | Overkill for one file |
+
+**Recommendation: Option A.** The file is ~1KB. Just generate a copy into each package. It eliminates cross-package coupling entirely.
+
+### Current Bindings → Package Mapping Summary
+
+| Generated File(s) | `DllName` | Target Package |
+|---|---|---|
+| `Diagnostics/LoggerAPI.cs`, `ProfilerAPI.cs`, `LogLevel.cs`, `LogSourceLocation.cs`, `ProfilerZoneContext.cs` | `Core.Diagnostic.dll` | `com.arisen.core.native` |
+| `HALWindowAPI.cs`, `WindowInitInfo.cs` | `Core.HAL.dll` | `com.arisen.core.native` |
+| `RHI/*.cs` (72 files: enums, handles, `RHIDeviceAPI`, `RHIFactoryAPI`, etc.) | `Core.RHI.dll` | `com.arisen.rhi.vulkan` |
+| `RenderWindowAPI.cs` | `Core.RHI.dll` | `com.arisen.rhi.vulkan` |
+| `ShaderCompilerAPI.cs` | `Core.ShaderCompiler.dll` | `com.arisen.shader-compiler` |
+| `UTF8Marshaller.cs` | *(none)* | Copied into all packages |
+
+### No Manual Splitting Required
+
+> [!IMPORTANT]
+> Since all files in `AutoBinding/` are **auto-generated** by `BindingGenerator` and **regenerated on every build**, you never manually split them. The changes are:
+> 1. Add `ARISEN_BIND_PACKAGE("...")` to C++ headers (~5 minutes)
+> 2. Modify `Program.cs` to route output by package ID (~20 lines)
+> 3. Update `ProjectGenerator.cs` to emit per-package `.csproj`
+> 4. Update CMake to run BindingGenerator per-package
+>
+> **The C++ code doesn't change. The binding annotations don't change. The PInvoke signatures don't change.** Only the output routing changes.
+
+---
+
+## 7. Package Manifest v2 Specification
 
 Evolve the current `package.json` to support the new requirements:
 
@@ -372,7 +565,7 @@ Evolve the current `package.json` to support the new requirements:
 
 ---
 
-## 7. Interface Contracts (Service Provider Model)
+## 8. Interface Contracts (Service Provider Model)
 
 Packages communicate through **interfaces**, not concrete types. The Kernel provides a `ServiceRegistry` that packages register into and query from.
 
@@ -436,7 +629,7 @@ The rendering package doesn't change — it only talks to `IRHIDevice`.
 
 ---
 
-## 8. Migration Plan — Current Modules to Packages
+## 9. Migration Plan — Current Modules to Packages
 
 ### Phase Overview
 
@@ -541,7 +734,7 @@ Already a package. Just needs to declare `services.provides` in manifest v2.
 
 ---
 
-## 9. The Launcher & Package Manager UI
+## 10. The Launcher & Package Manager UI
 
 The Launcher evolves from a simple project opener into the **central hub** for engine management.
 
@@ -609,7 +802,7 @@ A visual editor for `project.arisen` that shows:
 
 ---
 
-## 10. Build System Evolution
+## 11. Build System Evolution
 
 ### Current Build Flow
 ```
@@ -646,7 +839,7 @@ CMake → Build C++ per-package → BindingGenerator per-package → Package Ass
 
 ---
 
-## 11. Phased Roadmap
+## 12. Phased Roadmap
 
 ### Phase A: Define Contracts & Extract Kernel *(Week 1-2)*
 
@@ -707,7 +900,7 @@ CMake → Build C++ per-package → BindingGenerator per-package → Package Ass
 
 ---
 
-## 12. FAQ & Design Decisions
+## 13. FAQ & Design Decisions
 
 ### Q: Do we need to change the C++ build at all?
 **A: Minimally.** The C++ modules (`Core.Foundation`, `Core.RHI`, `RHI.Vulkan`, etc.) are still built by CMake exactly as they are today. The only change is a **post-build copy step** that places the compiled DLLs into the package's `runtimes/{rid}/native/` directory. The C++ code itself doesn't change.
