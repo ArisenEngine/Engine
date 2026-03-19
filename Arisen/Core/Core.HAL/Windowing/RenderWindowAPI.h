@@ -3,6 +3,7 @@
 #include "../CoreHALCommon.h"
 #include "../Common/PlatformTypes.h"
 
+ARISEN_BIND_PACKAGE("com.arisen.core.native")
 ARISEN_BIND_MODULE("Core.HAL.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.HAL")
 
@@ -30,3 +31,4 @@ namespace ArisenEngine::HAL
 
     ARISEN_BIND_END_BRIDGE()
 }
+

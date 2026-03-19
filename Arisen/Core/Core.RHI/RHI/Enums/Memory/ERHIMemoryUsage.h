@@ -1,6 +1,7 @@
 #pragma once
 #include "Base/FoundationMinimal.h"
 
+ARISEN_BIND_PACKAGE("com.arisen.rhi.core")
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 
@@ -16,3 +17,4 @@ namespace ArisenEngine::RHI
         Transient // Short-lived, often mapped. (VMA_MEMORY_USAGE_CPU_TO_GPU / AUTO_PREFER_HOST)
     };
 } // namespace ArisenEngine::RHI
+

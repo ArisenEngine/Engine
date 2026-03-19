@@ -4,6 +4,7 @@
 
 using namespace ArisenEngine::RHI;
 
+ARISEN_BIND_PACKAGE("com.arisen.rhi.core")
 ARISEN_BIND_BEGIN_BRIDGE("RHISwapChain", "Core.RHI.dll", "Arisen.Native.RHI")
 
 extern "C" {
@@ -38,3 +39,4 @@ RHI_DLL uint64_t RHISwapChain_GetImageView(SwapChain* swapChain, uint32_t frameI
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()
+

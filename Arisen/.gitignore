@@ -468,3 +468,7 @@ Scripts/Windows/tools/*
 Scripts/Windows/*.log
 Scripts/Windows/tools/*.tar.xz
 env-vars.bat
+
+# Auto-generated package bindings
+/Packages.Generated/
+!/Packages/

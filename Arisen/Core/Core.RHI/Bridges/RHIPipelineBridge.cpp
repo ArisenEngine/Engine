@@ -5,6 +5,7 @@
 
 using namespace ArisenEngine::RHI;
 
+ARISEN_BIND_PACKAGE("com.arisen.rhi.core")
 ARISEN_BIND_BEGIN_BRIDGE("RHIPipeline", "Core.RHI.dll", "Arisen.Native.RHI")
 
 extern "C" {
@@ -120,3 +121,4 @@ RHI_DLL void RHIPipelineState_Delete(RHIPipelineState* pso)
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()
+

@@ -34,6 +34,11 @@
 /// Place once per header file, before any bindable declarations.
 #define ARISEN_BIND_MODULE(dll_name)
 
+/// Specifies the target Package ID for generated code.
+/// The BindingGenerator groups generated files into Packages/{package_id}/Generated.
+/// Place once per header file, typically alongside ARISEN_BIND_MODULE.
+#define ARISEN_BIND_PACKAGE(package_id)
+
 /// Specifies the C# namespace for generated code.
 /// Place once per header file, after ARISEN_BIND_MODULE.
 #define ARISEN_BIND_NAMESPACE(cs_namespace)

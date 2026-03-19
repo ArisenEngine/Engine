@@ -3,6 +3,7 @@
 #include "../CoreDiagnosticCommon.h"
 #include "../../Core.Foundation/Diagnostics/ILogHandler.h"
 
+ARISEN_BIND_PACKAGE("com.arisen.core.native")
 ARISEN_BIND_MODULE("Core.Diagnostic.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.Diagnostics")
 
@@ -21,3 +22,4 @@ namespace ArisenEngine::Diagnostics
 
     ARISEN_BIND_END_BRIDGE()
 }
+

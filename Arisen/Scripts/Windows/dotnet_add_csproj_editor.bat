@@ -38,7 +38,6 @@ set "SLN_PATH=%~1"
 if exist "%SLN_PATH%" (
     REM Resolve absolute project paths
     for %%I in ("%SCRIPT_DIR%\..\..\BindingGenerator\BindingGenerator.csproj") do set "BINDING_GENERATOR=%%~fI"
-    for %%I in ("%SCRIPT_DIR%\..\..\AutoBinding\AutoBinding.csproj") do set "AUTO_BINDING=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\External\ArisenDAG\ArisenDAG.csproj") do set "ARISEN_DAG=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\ArisenKernel\ArisenKernel.csproj") do set "ARISEN_KERNEL=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\Engine\ArisenEngine.csproj") do set "ARISEN_ENGINE=%%~fI"
@@ -62,7 +61,6 @@ if exist "%SLN_PATH%" (
 
     echo SLN_PATH: !SLN_PATH!
     echo BINDING_GENERATOR: !BINDING_GENERATOR!
-    echo AUTO_BINDING: !AUTO_BINDING!
     echo ARISEN_DAG: !ARISEN_DAG!
     echo ARISEN_KERNEL: !ARISEN_KERNEL!
     echo ARISEN_ENGINE: !ARISEN_ENGINE!
@@ -71,7 +69,7 @@ if exist "%SLN_PATH%" (
     echo ARISEN_EDITOR_DESKTOP: !ARISEN_EDITOR_DESKTOP!
 
     REM Basic existence checks
-    for %%V in (BINDING_GENERATOR AUTO_BINDING ARISEN_DAG ARISEN_KERNEL ARISEN_ENGINE ARISEN_EDITOR ARISEN_EDITOR_FRAMEWORK ARISEN_EDITOR_DESKTOP ARISEN_LAUNCHER ARISEN_LAUNCHER_DESKTOP) do (
+    for %%V in (BINDING_GENERATOR ARISEN_DAG ARISEN_KERNEL ARISEN_ENGINE ARISEN_EDITOR ARISEN_EDITOR_FRAMEWORK ARISEN_EDITOR_DESKTOP ARISEN_LAUNCHER ARISEN_LAUNCHER_DESKTOP) do (
         if "!%%V!"=="" (
             echo ERROR: Path for %%V is empty.
             set "EXIT_CODE=1"
@@ -94,7 +92,6 @@ if exist "%SLN_PATH%" (
 
     REM Relative paths for portability
     set "REL_BINDING_GENERATOR=..\..\..\BindingGenerator\BindingGenerator.csproj"
-    set "REL_AUTO_BINDING=..\..\..\AutoBinding\AutoBinding.csproj"
     set "REL_ARISEN_DAG=..\..\..\External\ArisenDAG\ArisenDAG.csproj"
     set "REL_ARISEN_KERNEL=..\..\..\ArisenKernel\ArisenKernel.csproj"
     set "REL_ARISEN_ENGINE=..\..\..\Engine\ArisenEngine.csproj"
@@ -106,10 +103,6 @@ if exist "%SLN_PATH%" (
 
     echo Adding !REL_BINDING_GENERATOR! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_BINDING_GENERATOR!"
-    if errorlevel 1 ( set "EXIT_CODE=1" & goto :cleanup )
-
-    echo Adding !REL_AUTO_BINDING! to !SLN_FILE! (^--in-root^)
-    dotnet sln "!SLN_FILE!" add --in-root "!REL_AUTO_BINDING!"
     if errorlevel 1 ( set "EXIT_CODE=1" & goto :cleanup )
 
     echo Adding !REL_ARISEN_DAG! to !SLN_FILE! (^--in-root^)

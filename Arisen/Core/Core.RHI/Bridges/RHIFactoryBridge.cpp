@@ -1,4 +1,4 @@
-// RHIFactoryBridge.cpp â€” extern "C" bridge for RHIFactory pure virtual methods
+// RHIFactoryBridge.cpp â€?extern "C" bridge for RHIFactory pure virtual methods
 #include "RHI/Core/RHIFactory.h"
 #include "RHI/Definitions/CoreRHICommon.h"
 #include "RHI/Handles/RHIHandle.h"
@@ -9,6 +9,7 @@
 
 using namespace ArisenEngine::RHI;
 
+ARISEN_BIND_PACKAGE("com.arisen.rhi.core")
 ARISEN_BIND_BEGIN_BRIDGE("RHIFactory", "Core.RHI.dll", "Arisen.Native.RHI")
 
 // Helper: construct a typed handle from (index, generation) pair
@@ -326,3 +327,4 @@ RHI_DLL void RHIFactory_UpdateTransfers(RHIFactory* f)
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()
+

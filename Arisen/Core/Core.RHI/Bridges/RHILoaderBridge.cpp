@@ -1,5 +1,5 @@
-// RHILoaderBridge.cpp â€” extern "C" bridge for RHILoader static methods
-// Auto-included by collect_sources â†’ compiled into Core.RHI.dll
+// RHILoaderBridge.cpp â€?extern "C" bridge for RHILoader static methods
+// Auto-included by collect_sources â†?compiled into Core.RHI.dll
 #include "RHI/Loader/RHILoader.h"
 #include "RHI/Core/RHIInstance.h"
 #include "RHI/Definitions/CoreRHICommon.h"
@@ -7,6 +7,7 @@
 
 using namespace ArisenEngine::RHI;
 
+ARISEN_BIND_PACKAGE("com.arisen.rhi.core")
 ARISEN_BIND_BEGIN_BRIDGE("RHILoader", "Core.RHI.dll", "Arisen.Native.RHI")
 
 extern "C" {
@@ -47,3 +48,4 @@ RHI_DLL void RHILoader_Dispose()
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()
+

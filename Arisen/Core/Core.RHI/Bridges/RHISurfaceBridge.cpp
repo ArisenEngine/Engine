@@ -1,10 +1,11 @@
-// RHISurfaceBridge.cpp â€” extern "C" bridge for RHISurface
+// RHISurfaceBridge.cpp â€?extern "C" bridge for RHISurface
 #include "RHI/Presentation/RHISurface.h"
 #include "RHI/Presentation/RHISwapChain.h"
 #include "Base/BindingMacros.h"
 
 using namespace ArisenEngine::RHI;
 
+ARISEN_BIND_PACKAGE("com.arisen.rhi.core")
 ARISEN_BIND_BEGIN_BRIDGE("RHISurface", "Core.RHI.dll", "Arisen.Native.RHI")
 
 extern "C" {
@@ -28,3 +29,4 @@ RHI_DLL void* RHISurface_GetSwapChain(RHISurface* surface)
 } // extern "C"
 
 ARISEN_BIND_END_BRIDGE()
+

@@ -1,6 +1,7 @@
-﻿#pragma once
+#pragma once
 #include "Base/BindingMacros.h"
 
+ARISEN_BIND_PACKAGE("com.arisen.rhi.core")
 ARISEN_BIND_MODULE("Core.RHI.dll")
 ARISEN_BIND_NAMESPACE("Arisen.Native.RHI")
 
@@ -58,3 +59,4 @@ namespace ArisenEngine::RHI
         IMAGE_LAYOUT_MAX_ENUM = 0x7FFFFFFF
     } EImageLayout;
 }
+
