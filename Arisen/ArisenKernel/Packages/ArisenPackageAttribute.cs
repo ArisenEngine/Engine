@@ -1,6 +1,6 @@
 using System;
 
-namespace ArisenEngine.Core.Packages;
+namespace ArisenKernel.Packages;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
 public class ArisenPackageAttribute : Attribute
@@ -12,3 +12,4 @@ public class ArisenPackageAttribute : Attribute
         PackageId = packageId;
     }
 }
+

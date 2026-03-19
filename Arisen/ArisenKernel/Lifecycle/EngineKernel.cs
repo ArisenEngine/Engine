@@ -1,7 +1,10 @@
-using ArisenEngine.Core.Diagnostics;
+using System;
+using System.Collections.Generic;
 using System.Linq;
+using ArisenKernel.Services;
+using ArisenKernel.Diagnostics;
 
-namespace ArisenEngine.Core.Lifecycle;
+namespace ArisenKernel.Lifecycle;
 
 public sealed class EngineKernel : IDisposable
 {
@@ -12,6 +15,10 @@ public sealed class EngineKernel : IDisposable
     private EnginePhase m_CurrentPhase = EnginePhase.None;
     private bool m_IsRunning = false;
     private FrameScheduler m_FrameScheduler = new FrameScheduler();
+
+    public IServiceRegistry Services { get; } = new ServiceRegistry();
+
+    public event Action OnFrameEnd;
 
     public EnginePhase CurrentPhase => m_CurrentPhase;
     public EngineConfig Config { get; private set; }
@@ -54,9 +61,8 @@ public sealed class EngineKernel : IDisposable
 
     public void Initialize(EngineConfig config)
     {
-        using var _ = Profiler.Zone("EngineKernel.Initialize");
         Config = config;
-        Logger.Log("[EngineKernel] Initializing...");
+        KernelLog.Info("[EngineKernel] Initializing...");
 
         // Sort subsystems by priority
         m_Subsystems.Sort((a, b) => a.Priority.CompareTo(b.Priority));
@@ -67,20 +73,19 @@ public sealed class EngineKernel : IDisposable
 
         m_IsRunning = true;
         m_CurrentPhase = EnginePhase.Running;
-        Logger.Log("[EngineKernel] Engine is now Running.");
+        KernelLog.Info("[EngineKernel] Engine is now Running.");
     }
 
     private void TransitionTo(EnginePhase phase)
     {
-        using var _ = Profiler.Zone($"EngineKernel.TransitionTo({phase})");
         m_CurrentPhase = phase;
-        Logger.Log($"[EngineKernel] Transitioning to phase: {phase}");
+        KernelLog.Info($"[EngineKernel] Transitioning to phase: {phase}");
 
         foreach (var subsystem in m_Subsystems)
         {
             if (subsystem.InitPhase == phase)
             {
-                Logger.Log($"  [Subsystem] Initializing: {subsystem.GetType().Name}");
+                KernelLog.Info($"  [Subsystem] Initializing: {subsystem.GetType().Name}");
                 subsystem.Initialize();
             }
         }
@@ -88,7 +93,6 @@ public sealed class EngineKernel : IDisposable
 
     public int Run()
     {
-        using var _ = Profiler.Zone("EngineKernel.Run");
         if (!m_IsRunning)
         {
             Initialize(Config ?? new EngineConfig());
@@ -109,14 +113,11 @@ public sealed class EngineKernel : IDisposable
     /// </summary>
     public void Tick(float deltaTime)
     {
-        Profiler.FrameMark();
-        using (Profiler.Zone("EngineKernel.Update"))
-        {
-            m_FrameScheduler.ExecuteFrame(deltaTime, m_Subsystems);
-        }
+        m_FrameScheduler.ExecuteFrame(deltaTime, m_Subsystems);
 
-        // End of frame cleanup
-        ArisenEngine.Core.Memory.FrameArena.Instance.Reset();
+        // End of frame cleanup via event so kernel doesn't depend on Memory systems
+        OnFrameEnd?.Invoke();
+        
         CurrentFrameIndex++;
     }
 
@@ -127,11 +128,10 @@ public sealed class EngineKernel : IDisposable
 
     public void Shutdown()
     {
-        using var _ = Profiler.Zone("EngineKernel.Shutdown");
         if (m_CurrentPhase == EnginePhase.Shutdown || m_CurrentPhase == EnginePhase.PreShutdown)
             return;
 
-        Logger.Log("[EngineKernel] Shutting down...");
+        KernelLog.Info("[EngineKernel] Shutting down...");
         m_CurrentPhase = EnginePhase.PreShutdown;
 
         // Shutdown in reverse priority order
@@ -139,12 +139,12 @@ public sealed class EngineKernel : IDisposable
 
         foreach (var subsystem in reversedSubsystems)
         {
-            Logger.Log($"  [Subsystem] Shutting down: {subsystem.GetType().Name}");
+            KernelLog.Info($"  [Subsystem] Shutting down: {subsystem.GetType().Name}");
             subsystem.Shutdown();
         }
 
         m_CurrentPhase = EnginePhase.Shutdown;
-        Logger.Log("[EngineKernel] Shutdown complete.");
+        Console.WriteLine("[EngineKernel] Shutdown complete.");
     }
 
     public void Dispose()

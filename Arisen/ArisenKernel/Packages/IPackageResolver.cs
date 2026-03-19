@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace ArisenEngine.Core.Packages;
+namespace ArisenKernel.Packages;
 
 /// <summary>
 /// Interface for resolving and downloading packages from various sources (Local, Git, Zip).
@@ -17,3 +17,4 @@ public interface IPackageResolver
     /// </summary>
     Task<string> ResolveAsync(string id, string url, string destinationDir);
 }
+

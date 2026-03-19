@@ -1,6 +1,6 @@
 using System;
 
-namespace ArisenEngine.Core.Lifecycle;
+namespace ArisenKernel.Lifecycle;
 
 public struct EngineVersion : IComparable<EngineVersion>
 {
@@ -50,3 +50,4 @@ public struct EngineVersion : IComparable<EngineVersion>
     public static bool operator >=(EngineVersion a, EngineVersion b) => a.CompareTo(b) >= 0;
     public static bool operator <=(EngineVersion a, EngineVersion b) => a.CompareTo(b) <= 0;
 }
+

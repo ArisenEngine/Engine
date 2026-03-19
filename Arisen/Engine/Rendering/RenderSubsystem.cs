@@ -1,6 +1,6 @@
 using System;
 using ArisenEngine.Core.Diagnostics;
-using ArisenEngine.Core.Lifecycle;
+using ArisenKernel.Lifecycle;
 using ArisenEngine.Core.RHI;
 using ArisenEngine.Core.Memory;
 using ArisenEngine.Core.ECS;
@@ -64,7 +64,7 @@ public class RenderSubsystem : ITickableSubsystem
             );
 
             // 3. Render
-            // Fetch cameras from ECS â€” zero-allocation path using pre-allocated buffer
+            // Fetch cameras from ECS â€?zero-allocation path using pre-allocated buffer
             var entityManager = EngineKernel.Instance.GetSubsystem<SceneSubsystem>()?.ActiveEntityManager;
             m_CameraCount = 0;
 

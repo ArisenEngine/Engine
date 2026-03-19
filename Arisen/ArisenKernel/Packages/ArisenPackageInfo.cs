@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace ArisenEngine.Core.Packages;
+namespace ArisenKernel.Packages;
 
 public class ArisenPackageInfo
 {
@@ -14,3 +14,4 @@ public class ArisenPackageInfo
     public Assembly? Assembly { get; set; }
     public object? EntryInstance { get; set; }
 }
+

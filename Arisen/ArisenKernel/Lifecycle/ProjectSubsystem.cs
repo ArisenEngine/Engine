@@ -1,10 +1,9 @@
-using System;
 using System.IO;
-using ArisenEngine.Core.Diagnostics;
-using ArisenEngine.Core.Serialization;
-using ArisenEngine.Core.ECS;
+using System.Text.Json;
+using ArisenKernel.Packages;
+using ArisenKernel.Diagnostics;
 
-namespace ArisenEngine.Core.Lifecycle;
+namespace ArisenKernel.Lifecycle;
 
 /// <summary>
 /// Manages the active project lifecycle and manifest.
@@ -19,7 +18,7 @@ public class ProjectSubsystem : IEngineSubsystem
 
     public void Initialize()
     {
-        Logger.Log("[ProjectSubsystem] Initializing...");
+        KernelLog.Info("[ProjectSubsystem] Initializing...");
         
         // Search for project file in current directory or startup path
         string baseDir = AppContext.BaseDirectory;
@@ -31,7 +30,7 @@ public class ProjectSubsystem : IEngineSubsystem
         }
         else
         {
-            Logger.Warning("[ProjectSubsystem] No Project.arisen found in application directory.");
+            KernelLog.Info("[ProjectSubsystem] No Project.arisen found in application directory.");
         }
     }
 
@@ -39,13 +38,15 @@ public class ProjectSubsystem : IEngineSubsystem
     {
         try
         {
-            ActiveProject = SerializationUtil.Deserialize<ProjectManifest>(path);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            string json = File.ReadAllText(path);
+            ActiveProject = JsonSerializer.Deserialize<ProjectManifest>(json, options);
             ProjectPath = Path.GetDirectoryName(path) ?? string.Empty;
-            Logger.Log($"[ProjectSubsystem] Loaded Project: {ActiveProject?.Name} from {path}");
+            KernelLog.Info($"[ProjectSubsystem] Loaded Project: {ActiveProject?.Name} from {path}");
         }
         catch (Exception e)
         {
-            Logger.Error($"[ProjectSubsystem] Failed to load project at {path}: {e.Message}");
+            KernelLog.Info($"[ProjectSubsystem] Failed to load project at {path}: {e.Message}");
         }
     }
 
@@ -56,3 +57,4 @@ public class ProjectSubsystem : IEngineSubsystem
 
     public void Dispose() => Shutdown();
 }
+

@@ -3,9 +3,9 @@ using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Threading.Tasks;
-using ArisenEngine.Core.Diagnostics;
+using ArisenKernel.Diagnostics;
 
-namespace ArisenEngine.Core.Packages;
+namespace ArisenKernel.Packages;
 
 /// <summary>
 /// Default implementation of IPackageResolver for Arisen Engine.
@@ -44,7 +44,7 @@ public class DefaultPackageResolver : IPackageResolver
         if (Directory.Exists(path))
         {
             string fullPath = Path.GetFullPath(path);
-            Logger.Log($"[PackageResolver] Using local directory: {fullPath}");
+            KernelLog.Info($"[PackageResolver] Using local directory: {fullPath}");
             return fullPath;
         }
 
@@ -53,7 +53,7 @@ public class DefaultPackageResolver : IPackageResolver
             string extractDir = Path.Combine(destinationDir, Path.GetFileNameWithoutExtension(path));
             if (!Directory.Exists(extractDir))
             {
-                Logger.Log($"[PackageResolver] Extracting local ZIP: {path} to {extractDir}");
+                KernelLog.Info($"[PackageResolver] Extracting local ZIP: {path} to {extractDir}");
                 ZipFile.ExtractToDirectory(path, extractDir);
             }
             return extractDir;
@@ -74,11 +74,11 @@ public class DefaultPackageResolver : IPackageResolver
         {
             // For now, we assume if it exists, it's correct. 
             // In a real scenario, we'd check versions here.
-            Logger.Log($"[PackageResolver] Package {id} already exists in {extractDir}. Skipping download.");
+            KernelLog.Info($"[PackageResolver] Package {id} already exists in {extractDir}. Skipping download.");
             return extractDir;
         }
 
-        Logger.Log($"[PackageResolver] Downloading package from {url}...");
+        KernelLog.Info($"[PackageResolver] Downloading package from {url}...");
 
         using (var response = await s_HttpClient.GetAsync(url))
         {
@@ -89,10 +89,11 @@ public class DefaultPackageResolver : IPackageResolver
             }
         }
 
-        Logger.Log($"[PackageResolver] Extracting to {extractDir}...");
+        KernelLog.Info($"[PackageResolver] Extracting to {extractDir}...");
         ZipFile.ExtractToDirectory(tempFile, extractDir);
         File.Delete(tempFile);
 
         return extractDir;
     }
 }
+
