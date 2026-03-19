@@ -1,7 +1,7 @@
 using System.Runtime.Loader;
 using System.Reflection;
 
-namespace ArisenEngine.Core.Packages;
+namespace ArisenKernel.Packages;
 
 /// <summary>
 /// Provides an isolated loading context for Arisen Packages and DLCs.
@@ -37,3 +37,4 @@ public class PackageLoadContext : AssemblyLoadContext
         return IntPtr.Zero;
     }
 }
+

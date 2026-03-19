@@ -1,7 +1,6 @@
 using System.Collections.Generic;
-using ArisenEngine.Core.Serialization;
 
-namespace ArisenEngine.Core.Lifecycle;
+namespace ArisenKernel.Packages;
 
 /// <summary>
 /// Defines a required package and its potential remote source.
@@ -16,7 +15,7 @@ public class PackageRequirement
 /// <summary>
 /// Defines the structure of an Arisen project manifest file (.arisen).
 /// </summary>
-public class ProjectManifest : ISerializationCallbackReceiver
+public class ProjectManifest
 {
     public string Name { get; set; } = "New Arisen Project";
     
@@ -26,7 +25,5 @@ public class ProjectManifest : ISerializationCallbackReceiver
     /// List of package requirements for this project.
     /// </summary>
     public List<PackageRequirement> Packages { get; set; } = new();
-
-    public void OnBeforeSerialize() { }
-    public void OnAfterDeserialize() { }
 }
+

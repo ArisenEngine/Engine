@@ -1,5 +1,5 @@
 using ArisenEngine.Core.Diagnostics;
-using ArisenEngine.Core.Lifecycle;
+using ArisenKernel.Lifecycle;
 
 namespace ArisenEngine.Core.Lifecycle;
 
@@ -44,3 +44,4 @@ public class EnvironmentSubsystem : IEngineSubsystem
     {
     }
 }
+

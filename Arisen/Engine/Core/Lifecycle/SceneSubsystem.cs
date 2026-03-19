@@ -1,4 +1,4 @@
-using ArisenEngine.Core.Lifecycle;
+using ArisenKernel.Lifecycle;
 using ArisenEngine.Core.ECS;
 
 namespace ArisenEngine.Core.Lifecycle;
@@ -30,3 +30,4 @@ public class SceneSubsystem : ITickableSubsystem
 
     public void Dispose() => Shutdown();
 }
+

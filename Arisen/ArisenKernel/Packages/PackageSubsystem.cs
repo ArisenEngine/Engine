@@ -1,9 +1,10 @@
 using System.Text.Json;
 using System.Reflection;
-using ArisenEngine.Core.Diagnostics;
-using ArisenEngine.Core.Lifecycle;
+using System;
+using ArisenKernel.Lifecycle;
+using ArisenKernel.Diagnostics;
 
-namespace ArisenEngine.Core.Packages;
+namespace ArisenKernel.Packages;
 
 public class PackageSubsystem : IEngineSubsystem
 {
@@ -18,7 +19,7 @@ public class PackageSubsystem : IEngineSubsystem
 
     public void Initialize()
     {
-        Logger.Log("[PackageSubsystem] Initializing...");
+        KernelLog.Info("[PackageSubsystem] Initializing...");
         
         string baseDir = AppContext.BaseDirectory;
         m_PackagesRoot = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", "Packages")); // Adjust for Dev/Test environment
@@ -91,7 +92,7 @@ public class PackageSubsystem : IEngineSubsystem
                             // Version Warning
                             if (!string.IsNullOrEmpty(version) && manifest.Version != version)
                             {
-                                Logger.Warning($"[PackageSubsystem] Package '{id}' version mismatch. Project requires {version}, found {manifest.Version}.");
+                                KernelLog.Info($"[PackageSubsystem] Package '{id}' version mismatch. Project requires {version}, found {manifest.Version}.");
                             }
 
                             manifests.Add((manifestPath, PackageSource.External, manifest));
@@ -109,12 +110,12 @@ public class PackageSubsystem : IEngineSubsystem
                 }
                 else
                 {
-                    Logger.Error($"[PackageSubsystem] Could not resolve package '{id}' (URL: {url ?? "None"})");
+                    KernelLog.Info($"[PackageSubsystem] Could not resolve package '{id}' (URL: {url ?? "None"})");
                 }
             }
             catch (Exception e)
             {
-                Logger.Error($"[PackageSubsystem] Error resolving package '{id}': {e.Message}");
+                KernelLog.Info($"[PackageSubsystem] Error resolving package '{id}': {e.Message}");
             }
         }
 
@@ -136,7 +137,7 @@ public class PackageSubsystem : IEngineSubsystem
         }
         catch (Exception e)
         {
-            Logger.Error($"[PackageSubsystem] Failed to read manifest at {path}: {e.Message}");
+            KernelLog.Info($"[PackageSubsystem] Failed to read manifest at {path}: {e.Message}");
             return null;
         }
     }
@@ -183,12 +184,12 @@ public class PackageSubsystem : IEngineSubsystem
             {
                 if (EngineVersion.Current < required)
                 {
-                    Logger.Warning($"[PackageSubsystem] Package {manifest.Id} requires Engine {required}, but current is {EngineVersion.Current}. Compatibility issues may occur.");
+                    KernelLog.Info($"[PackageSubsystem] Package {manifest.Id} requires Engine {required}, but current is {EngineVersion.Current}. Compatibility issues may occur.");
                 }
             }
         }
 
-        Logger.Log($"[PackageSubsystem] Loading Package: {manifest.Name} ({manifest.Id})");
+        KernelLog.Info($"[PackageSubsystem] Loading Package: {manifest.Name} ({manifest.Id})");
 
         try
         {
@@ -203,7 +204,7 @@ public class PackageSubsystem : IEngineSubsystem
                 string assemblyPath = Path.Combine(rootPath, manifest.EntryAssembly);
                 if (!File.Exists(assemblyPath))
                 {
-                    Logger.Error($"[PackageSubsystem] Entry assembly not found: {assemblyPath}");
+                    KernelLog.Info($"[PackageSubsystem] Entry assembly not found: {assemblyPath}");
                     return;
                 }
                 var loadContext = new PackageLoadContext(assemblyPath);
@@ -237,7 +238,7 @@ public class PackageSubsystem : IEngineSubsystem
         }
         catch (Exception e)
         {
-            Logger.Error($"[PackageSubsystem] Error loading package {manifest.Id}: {e.Message}");
+            KernelLog.Info($"[PackageSubsystem] Error loading package {manifest.Id}: {e.Message}");
         }
     }
 
@@ -276,3 +277,4 @@ public class PackageSubsystem : IEngineSubsystem
         public Dictionary<string, string>? Dependencies { get; set; }
     }
 }
+

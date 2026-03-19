@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using ArisenEngine.Core.Diagnostics;
 using ArisenEngine.Platform;
 using ArisenEngine.Rendering;
-using ArisenEngine.Core.Packages;
+using ArisenKernel.Packages;
+using ArisenKernel.Lifecycle;
 
 namespace ArisenEngine.Core.Lifecycle;
 

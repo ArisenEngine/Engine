@@ -1,4 +1,12 @@
-namespace ArisenEngine.Core.Lifecycle;
+namespace ArisenKernel.Lifecycle;
+
+public enum RuntimePlatform
+{
+    Windows,
+    Linux,
+    macOS,
+    Unknown
+}
 
 public class EngineConfig
 {

@@ -1,0 +1,106 @@
+using System;
+using ArisenKernel.Contracts;
+
+namespace ArisenKernel.Diagnostics;
+
+/// <summary>
+/// A static facade for the Kernel and Packages to log easily. 
+/// It attempts to use the registered ILogger from the ServiceRegistry. 
+/// If none is registered yet (e.g., during early boot), it falls back to the system console.
+/// </summary>
+public static class KernelLog
+{
+    private static ILogger? GetLogger()
+    {
+        if (Lifecycle.EngineKernel.Instance != null && 
+            Lifecycle.EngineKernel.Instance.Services.TryGetService<ILogger>(out var logger))
+        {
+            return logger;
+        }
+        return null;
+    }
+
+    public static void Info(string message)
+    {
+        var logger = GetLogger();
+        if (logger != null) logger.Log(message);
+        else Console.WriteLine($"[INFO] {message}");
+    }
+
+    public static void InfoFormat(string format, params object[] args)
+    {
+        var logger = GetLogger();
+        if (logger != null) logger.LogFormat(format, args);
+        else Console.WriteLine($"[INFO] {string.Format(format, args)}");
+    }
+
+    public static void Warning(string message)
+    {
+        var logger = GetLogger();
+        if (logger != null) logger.Warning(message);
+        else Console.WriteLine($"[WARN] {message}");
+    }
+
+    public static void WarningFormat(string format, params object[] args)
+    {
+        var logger = GetLogger();
+        if (logger != null) logger.WarningFormat(format, args);
+        else Console.WriteLine($"[WARN] {string.Format(format, args)}");
+    }
+
+    public static void Error(string message)
+    {
+        var logger = GetLogger();
+        if (logger != null) logger.Error(message);
+        else Console.WriteLine($"[ERROR] {message}");
+    }
+
+    public static void ErrorFormat(string format, params object[] args)
+    {
+        var logger = GetLogger();
+        if (logger != null) logger.ErrorFormat(format, args);
+        else Console.WriteLine($"[ERROR] {string.Format(format, args)}");
+    }
+
+    public static void Fatal(string message)
+    {
+        var logger = GetLogger();
+        if (logger != null) logger.Fatal(message);
+        else Console.WriteLine($"[FATAL] {message}");
+    }
+
+    public static void FatalFormat(string format, params object[] args)
+    {
+        var logger = GetLogger();
+        if (logger != null) logger.FatalFormat(format, args);
+        else Console.WriteLine($"[FATAL] {string.Format(format, args)}");
+    }
+
+    public static void Assert(bool condition, string message = "")
+    {
+        var logger = GetLogger();
+        if (logger != null) 
+        {
+            logger.Assert(condition, message);
+        }
+        else if (!condition)
+        {
+            Console.WriteLine($"[ASSERT FAILED] {message}");
+            System.Diagnostics.Debug.Assert(condition, message);
+        }
+    }
+
+    public static void AssertFormat(bool condition, string format, params object[] args)
+    {
+        var logger = GetLogger();
+        if (logger != null) 
+        {
+            logger.AssertFormat(condition, format, args);
+        }
+        else if (!condition)
+        {
+            Console.WriteLine($"[ASSERT FAILED] {string.Format(format, args)}");
+            System.Diagnostics.Debug.Assert(condition, string.Format(format, args));
+        }
+    }
+}

@@ -1,4 +1,4 @@
-namespace ArisenEngine.Core.Lifecycle;
+namespace ArisenKernel.Lifecycle;
 
 public enum EnginePhase
 {

@@ -62,7 +62,7 @@ if __name__ == "__main__":
             "ArisenLauncher", "ArisenLauncher.Desktop",
             "Avalonia.", "Dock.", "ArisenEditorFramework"
         ],
-        "Runtime": ["ArisenEngine","ArisenDAG"],
+        "Runtime": ["ArisenKernel", "ArisenEngine", "ArisenDAG"],
         "Test": ["EditorTest", "CSharpEngineTest"]
     }
 

@@ -195,6 +195,9 @@ set(AUTO_BINDING_PROJ ${AUTO_BINDING_DIR}/AutoBinding.csproj)
 set(ARISEN_DAG_DIR ${CMAKE_SOURCE_DIR}/External/ArisenDAG)
 set(ARISEN_DAG_PROJ ${ARISEN_DAG_DIR}/ArisenDAG.csproj)
 
+set(ARISEN_KERNEL_PROJ ${CMAKE_SOURCE_DIR}/ArisenKernel/ArisenKernel.csproj)
+set(ARISEN_KERNEL_PROJ_DIR ${CMAKE_SOURCE_DIR}/ArisenKernel/)
+
 set(ARISEN_ENGINE_PROJ ${CMAKE_SOURCE_DIR}/Engine/ArisenEngine.csproj)
 set(ARISEN_ENGINE_PROJ_DIR ${CMAKE_SOURCE_DIR}/Engine/)
 
@@ -253,15 +256,26 @@ add_custom_target(BuildArisenDAG
 )
 set_target_properties(BuildArisenDAG PROPERTIES FOLDER "CMakeProcess")
 
+add_custom_target(BuildArisenKernel
+    COMMAND dotnet build ${ARISEN_KERNEL_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG} ${DOTNET_MACRO_ARG}
+    WORKING_DIRECTORY ${ARISEN_KERNEL_PROJ_DIR}
+    COMMENT "Building Arisen Kernel"
+    DEPENDS ${ARISEN_KERNEL_PROJ} "ArisenDAG.dll" "AutoBinding.dll"
+    VERBATIM
+    USES_TERMINAL
+)
+add_dependencies(BuildArisenKernel BuildAutoBinding BuildArisenDAG)
+set_target_properties(BuildArisenKernel PROPERTIES FOLDER "CMakeProcess")
+
 add_custom_target(BuildArisenEngine
     COMMAND dotnet build ${ARISEN_ENGINE_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG} ${DOTNET_MACRO_ARG}
     WORKING_DIRECTORY ${ARISEN_ENGINE_PROJ_DIR}
     COMMENT "Building Arisen Engine"
-    DEPENDS "AutoBinding.dll" "ArisenDAG.dll"
+    DEPENDS "AutoBinding.dll" "ArisenDAG.dll" "ArisenKernel.dll"
     VERBATIM
     USES_TERMINAL
 )
-add_dependencies(BuildArisenEngine BuildAutoBinding BuildArisenDAG)
+add_dependencies(BuildArisenEngine BuildAutoBinding BuildArisenDAG BuildArisenKernel)
 set_target_properties(BuildArisenEngine PROPERTIES FOLDER "CMakeProcess")
 
 # Builtin Packages

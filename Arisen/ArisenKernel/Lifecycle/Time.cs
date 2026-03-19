@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace ArisenEngine.Core;
+namespace ArisenKernel.Lifecycle;
 
 public static class Time
 {

@@ -1,8 +1,9 @@
-namespace ArisenEngine.Core.Packages;
+namespace ArisenKernel.Packages;
 
 public enum PackageSource
 {
-    Builtin,    // Core engine packages, shipped with Arisen
+    Official,    // Core engine packages, shipped with Arisen
     UserProject, // The current user project's packages
     External    // Third-party plugins, DLC, Workshop content
 }
+
