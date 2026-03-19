@@ -11,6 +11,7 @@ When writing code that bridges the C++ core and the C# engine, data must be full
 1. The C# struct must have `[StructLayout(LayoutKind.Sequential)]`.
 2. Ensure types match exactly. (`int` in C++ -> `int` in C#, `float` -> `float`, pointers `void*` -> `IntPtr` or `unsafe void*`).
 3. For strings, always use raw pointers and unmanaged memory mechanisms instead of implicit marshalling penalties.
+4. **NEW:** C++ definitions MUST include the `ARISEN_BIND_PACKAGE` macro to tell the BindingGenerator which package this interop code belongs to.
 
 ## Example:
 
@@ -33,6 +34,11 @@ public struct NativeRenderMesh
 ```cpp
 #pragma once
 #include <stdint.h>
+#include "BindingMacros.h"
+
+ARISEN_BIND_PACKAGE("com.arisen.rendering.core")
+ARISEN_BIND_MODULE("Arisen.Rendering.Core.dll")
+ARISEN_BIND_NAMESPACE("Arisen.Rendering.Native")
 
 extern "C" {
     struct NativeRenderMesh {
