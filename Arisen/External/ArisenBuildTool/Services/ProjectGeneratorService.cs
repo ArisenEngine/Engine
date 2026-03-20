@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,13 +11,18 @@ public static class ProjectGeneratorService
 {
     public static void GenerateForManagedPackages(string workspaceDir, string projectsDir, string engineDir, List<PackageInfo> managedPackages, Dictionary<string, PackageInfo> packageMap)
     {
+        string buildExePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+        string buildCmd = buildExePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) 
+            ? $"&quot;{buildExePath}&quot;" 
+            : $"dotnet &quot;{buildExePath}&quot;";
+
         foreach (var package in managedPackages)
         {
-            GenerateProjectFile(workspaceDir, projectsDir, engineDir, package, packageMap);
+            GenerateProjectFile(workspaceDir, projectsDir, engineDir, package, packageMap, buildCmd);
         }
     }
 
-    private static void GenerateProjectFile(string workspaceDir, string projectsDir, string engineDir, PackageInfo package, Dictionary<string, PackageInfo> map)
+    private static void GenerateProjectFile(string workspaceDir, string projectsDir, string engineDir, PackageInfo package, Dictionary<string, PackageInfo> map, string buildCmd)
     {
         string packageName = Path.GetFileName(package.DirectoryPath);
         string projectName = string.Join(".", packageName.Split('.').Select(PathUtils.ToPascalCase));
@@ -29,8 +35,10 @@ public static class ProjectGeneratorService
         writer.WriteLine("    <ImplicitUsings>enable</ImplicitUsings>");
         writer.WriteLine("    <Nullable>enable</Nullable>");
         writer.WriteLine("    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>");
-        writer.WriteLine($"    <RootNamespace>ArisenEngine.{projectName.Replace("Com.Arisen.", "")}</RootNamespace>");
-        writer.WriteLine("    <OutputPath>Output\\$(Configuration)\\</OutputPath>");
+        writer.WriteLine($"    <RootNamespace>ArisenEngine.{projectName.Replace("Com.Arisen.", "").Replace("Com.User.", "")}</RootNamespace>");
+        
+        // Output binaries mapped uniformly into MyGame/.arisen/bin/
+        writer.WriteLine("    <OutputPath>..\\bin\\$(Configuration)\\</OutputPath>");
         writer.WriteLine("    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>");
         writer.WriteLine("  </PropertyGroup>");
         writer.WriteLine();
@@ -43,12 +51,12 @@ public static class ProjectGeneratorService
 
         writer.WriteLine("  <ItemGroup>");
         writer.WriteLine("    <Using Include=\"System.Numerics\" />");
+        writer.WriteLine("    <Using Include=\"System.Runtime.InteropServices\" />");
         writer.WriteLine("    <Using Include=\"ArisenKernel.Contracts\" />");
         writer.WriteLine("  </ItemGroup>");
         writer.WriteLine();
         
         writer.WriteLine("  <ItemGroup>");
-        // Kernel dependency
         string kernelPath = Path.Combine(engineDir, "ArisenKernel", "ArisenKernel.csproj");
         if (File.Exists(kernelPath))
         {
@@ -56,28 +64,34 @@ public static class ProjectGeneratorService
             writer.WriteLine($"    <ProjectReference Include=\"{depRel}\" />");
         }
 
-        // Explicit manifest dependencies
         if (package.Manifest.Dependencies != null)
         {
             foreach (var dep in package.Manifest.Dependencies.Keys)
             {
-                if (map.TryGetValue($"{dep}_managed", out var depInfo) || map.TryGetValue($"{dep}_native", out depInfo))
+                if (map.TryGetValue(dep, out var depInfo))
                 {
                     if (depInfo.Manifest.Type == "native") continue;
                     
                     string depPackageName = Path.GetFileName(depInfo.DirectoryPath);
                     string depProjectName = string.Join(".", depPackageName.Split('.').Select(PathUtils.ToPascalCase));
-                    string depRel = $"{depProjectName}.csproj"; // Since all csprojs are generated in the same Projects folder!
+                    string depRel = $"{depProjectName}.csproj";
                     writer.WriteLine($"    <ProjectReference Include=\"{depRel}\" />");
                 }
                 else
                 {
-                    Logger.Warning($"Warning: Topological dependency '{dep}' for package '{packageName}' not found in workspace map.");
+                    Logger.Warning($"Warning: Dependency '{dep}' for package '{packageName}' not found in graph.");
                 }
             }
         }
         
         writer.WriteLine("  </ItemGroup>");
+        writer.WriteLine();
+
+        // INJECTION PIPELINE: Auto-run ArisenBuildTool inject after compilation
+        writer.WriteLine("  <Target Name=\"ArisenPostBuildInjection\" AfterTargets=\"Build\">");
+        writer.WriteLine($"    <Exec Command=\"{buildCmd} inject --package &quot;{srcRel}&quot; --assembly &quot;$(TargetPath)&quot;\" />");
+        writer.WriteLine("  </Target>");
+        
         writer.WriteLine("</Project>");
         
         Logger.Info($"Generated CSProj: {csprojPath}");

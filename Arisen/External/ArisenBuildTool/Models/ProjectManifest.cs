@@ -14,4 +14,5 @@ public class ProjectManifest
     public string Name { get; set; } = "New Arisen Project";
     public string EngineVersion { get; set; } = string.Empty;
     public List<PackageRequirement> Packages { get; set; } = new();
+    public Dictionary<string, List<PackageRequirement>>? Profiles { get; set; }
 }
