@@ -189,7 +189,7 @@ public class ConsoleViewModel : EditorPanelBase, IDisposable
         }, DispatcherPriority.Background);
     }
 
-    public ICommand? ClearCommand { get; }
+    public System.Windows.Input.ICommand ClearCommand { get; }
     
     private readonly Subject<bool> m_CountChanged = new();
     private readonly CompositeDisposable m_Disposable = new();

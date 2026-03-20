@@ -1,4 +1,4 @@
----
+﻿---
 name: create_editor_command
 description: How to implement a user action (like adding a component or moving an entity) using a centralized Command Pattern instead of putting the logic directly into the .axaml.cs code-behind or a direct ViewModel method.
 ---
@@ -8,12 +8,12 @@ description: How to implement a user action (like adding a component or moving a
 To adhere to the **AI-First Architecture & Editor Automation** rules, all user actions in the Arisen Editor MUST be implemented as actionable Commands rather than direct logic in the UI or ViewModels. This ensures that an AI agent or a headless automation script can trigger the exact same actions without needing a UI.
 
 ## 1. Define the Command
-Create a new command class that implements the `IEditorCommand` interface. It should encapsulate all the necessary data to perform and undo the action.
+Create a new command class that implements the `ICommand` interface. It should encapsulate all the necessary data to perform and undo the action.
 
 ```csharp
 using ArisenEditor.Core.Commands;
 
-public class ChangeEntityNameCommand : IEditorCommand
+public class ChangeEntityNameCommand : ICommand
 {
     private readonly uint _entityId;
     private readonly string _newName;
@@ -58,3 +58,4 @@ public void OnRenameEntity(uint entityId, string oldName, string newName)
 - **Safety:** Because commands can have `Undo()`, AI agents can try actions and revert them if they realize they made a mistake or if the user rejects the AI's proposal.
 
 **NEVER** put the logic directly into `button_Click` event handlers or directly in the ViewModel's mutation methods.
+

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -49,9 +49,9 @@ internal abstract class TreeNodeBase : ReactiveObject, IHierarchyItem, IEditable
     private ObservableCollection<IHierarchyItem> m_Children = new();
     public ObservableCollection<IHierarchyItem> Children => m_Children;
 
-    public ICommand? BeginRenameCommand { get; protected set; }
-    public ICommand? EndRenameCommand { get; protected set; }
-    public ICommand? DeleteCommand { get; protected set; }
+    public System.Windows.Input.ICommand? BeginRenameCommand { get; protected set; }
+    public System.Windows.Input.ICommand? EndRenameCommand { get; protected set; }
+    public System.Windows.Input.ICommand? DeleteCommand { get; protected set; }
 
     private bool m_AllowDrag = true;
 

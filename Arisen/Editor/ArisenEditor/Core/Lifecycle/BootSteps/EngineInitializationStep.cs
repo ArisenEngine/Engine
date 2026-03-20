@@ -26,9 +26,9 @@ public class EngineInitializationStep : IBootStep
         };
 
         if (System.OperatingSystem.IsWindows())
-            config.Platform = ArisenEngine.Core.Lifecycle.RuntimePlatform.Windows;
+            config.Platform = ArisenKernel.Lifecycle.RuntimePlatform.Windows;
         else if (System.OperatingSystem.IsMacOS())
-            config.Platform = ArisenEngine.Core.Lifecycle.RuntimePlatform.MacOS;
+            config.Platform = ArisenKernel.Lifecycle.RuntimePlatform.macOS;
 
         if (!ArisenApplication.InitializeEngine(config))
         {
@@ -40,3 +40,4 @@ public class EngineInitializationStep : IBootStep
         await Task.CompletedTask;
     }
 }
+

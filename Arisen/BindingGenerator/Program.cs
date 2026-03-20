@@ -1,4 +1,4 @@
-s_ProjectNameusing System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -17,7 +17,6 @@ internal static class Program
 
     static string s_SourceCode = "";
     static string s_Output = "";
-    static string s_ProjectName = "AutoBinding";
     static readonly string s_GenerationTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
     static void Main(string[] args)
@@ -32,7 +31,7 @@ internal static class Program
             return;
         }
 
-        var packagesDir = Path.Combine(s_Output, "Packages");
+        var packagesDir = Path.Combine(s_Output, "Packages.Generated");
         Console.WriteLine($"Source: {s_SourceCode}");
         Console.WriteLine($"Packages Output: {packagesDir}");
 

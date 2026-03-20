@@ -1,6 +1,6 @@
-using ArisenEngine.Core.ECS;
+﻿using ArisenEngine.Core.ECS;
 using ArisenEditor.Core.Services;
-using ArisenEditorFramework.Commands;
+using ArisenKernel.Contracts;
 
 namespace ArisenEditor.Core.Commands;
 
@@ -8,7 +8,7 @@ namespace ArisenEditor.Core.Commands;
 /// Command to create a new entity with a NameComponent (and optionally a TransformComponent).
 /// Undoable: destroying the created entity on undo.
 /// </summary>
-public class CreateEntityCommand : IEditorCommand
+public class CreateEntityCommand : ICommand
 {
     private readonly string m_EntityName;
     private readonly bool m_AddTransform;
@@ -52,3 +52,4 @@ public class CreateEntityCommand : IEditorCommand
         SceneManagerService.Instance.NotifyEntityDeleted(m_CreatedEntity);
     }
 }
+

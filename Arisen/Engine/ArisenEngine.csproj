@@ -15,6 +15,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Using Include="ArisenKernel.Contracts" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="**\package.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -26,10 +30,15 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ArisenKernel\ArisenKernel.csproj" />
+    <ProjectReference Include="..\Packages\com.arisen.ecs\Com.Arisen.Ecs.csproj" />
     <ProjectReference Include="..\Packages.Generated\com.arisen.core.native\Com.Arisen.Core.Native.csproj" />
     <ProjectReference Include="..\Packages.Generated\com.arisen.rhi.core\Com.Arisen.Rhi.Core.csproj" />
     <ProjectReference Include="..\Packages.Generated\com.arisen.shader-compiler\Com.Arisen.Shadercompiler.csproj" />
     <ProjectReference Include="..\External\ArisenDAG\ArisenDAG.csproj" />
+    <ProjectReference Include="..\Packages\com.arisen.platform.desktop\Com.Arisen.Platform.Desktop.csproj" />
+    <ProjectReference Include="..\Packages\com.arisen.core\Com.Arisen.Core.csproj" />
+    <ProjectReference Include="..\Packages\com.arisen.rendering\Com.Arisen.Rendering.csproj" />
+    <ProjectReference Include="..\Packages\com.arisen.resources\Com.Arisen.Resources.csproj" />
   </ItemGroup>
 
   <ItemGroup>

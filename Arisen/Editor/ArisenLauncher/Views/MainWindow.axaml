@@ -3,7 +3,6 @@
         xmlns:vm="using:ArisenLauncher.ViewModels"
         xmlns:services="using:ArisenLauncher.Services"
         xmlns:models="using:ArisenLauncher.Models"
-        xmlns:framework="using:ArisenEditorFramework.Core"
         x:Class="ArisenLauncher.Views.MainWindow"
         x:Name="Root"
         x:DataType="vm:MainViewModel"
@@ -110,9 +109,7 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="models:LauncherProjectMetadata">
-                                <Button Command="{Binding #Root.((vm:MainViewModel)DataContext).LaunchProjectCommand}" 
-                                        CommandParameter="{Binding}"
-                                        Background="Transparent" Padding="0" Margin="0,0,16,16">
+                                <Border Background="Transparent" Padding="0" Margin="0,0,16,16">
                                     <Border Background="#1a1e26" CornerRadius="12" BorderBrush="#282e39" BorderThickness="1">
                                         <StackPanel>
                                             <Border Height="120" Background="#334155" CornerRadius="12,12,0,0">
@@ -125,10 +122,18 @@
                                                     <TextBlock Text="Member" FontSize="10" Foreground="#135bec" FontWeight="SemiBold" DockPanel.Dock="Left"/>
                                                     <TextBlock Text="{Binding LastModified, StringFormat='{}{0:MM/dd/yyyy}'}" FontSize="10" Foreground="#64748b" HorizontalAlignment="Right"/>
                                                 </DockPanel>
+                                                <DockPanel Margin="0,12,0,0">
+                                                    <Button Content="Play" Background="#135bec" Foreground="White" 
+                                                            Command="{Binding #Root.((vm:MainViewModel)DataContext).LaunchProjectCommand}" 
+                                                            CommandParameter="{Binding}" DockPanel.Dock="Left" />
+                                                    <Button Content="Pkgs" Background="#282e39" Foreground="White"
+                                                            Command="{Binding #Root.((vm:MainViewModel)DataContext).ManagePackagesCommand}" 
+                                                            CommandParameter="{Binding}" DockPanel.Dock="Right" HorizontalAlignment="Right" />
+                                                </DockPanel>
                                             </StackPanel>
                                         </StackPanel>
                                     </Border>
-                                </Button>
+                                </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

@@ -3,8 +3,6 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using ArisenLauncher.Services;
-using ArisenEditorFramework.Core;
-using ArisenEditorFramework.Services;
 using ArisenLauncher.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -33,6 +31,7 @@ public partial class MainViewModel : ObservableObject
     public Func<Task<string?>>? RequestFolderPickerAsync;
     public Func<Task<string?>>? RequestFilePickerAsync; // For .arisenproj
     public Func<EngineInstance, Task<bool>>? RequestNewProjectWizardAsync;
+    public Func<LauncherProjectMetadata, Task>? RequestPackageManagerAsync;
 
     public MainViewModel(
         ConfigService configService, 
@@ -170,17 +169,29 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void LaunchProject(LauncherProjectMetadata project)
+    private async Task LaunchProject(LauncherProjectMetadata project)
     {
         var engine = SelectedEngine;
         if (engine != null)
         {
-            _processService.LaunchEditor(engine, project.ProjectPath);
+            StatusText = $"Launching {project.Name}...";
+            bool success = await _projectService.LaunchProjectAsync(project, engine);
+            if (!success) StatusText = "Failed to launch project. Check logs.";
+            else StatusText = "Ready";
         }
         else
         {
             _logService.Error("Cannot launch project: No engine version selected.");
             StatusText = "Error: No engine selected.";
+        }
+    }
+
+    [RelayCommand]
+    private async Task ManagePackages(LauncherProjectMetadata project)
+    {
+        if (RequestPackageManagerAsync != null)
+        {
+            await RequestPackageManagerAsync(project);
         }
     }
 

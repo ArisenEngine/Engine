@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using ArisenEditorFramework.Services;
 
 namespace ArisenLauncher.Services;
 
@@ -11,6 +10,17 @@ public class LauncherSettings
     public List<EngineInstance> EngineVersions { get; set; } = new();
     public List<string> RecentProjects { get; set; } = new();
     public string LastUsedEngineId { get; set; } = string.Empty;
+    public EngineValidationConfig EngineValidation { get; set; } = new();
+}
+
+public class EngineValidationConfig
+{
+    public List<string> RequiredFiles { get; set; } = new List<string>
+    {
+        "ArisenKernel.dll",
+        "ArisenHost.exe",
+        "ArisenBuildTool.exe"
+    };
 }
 
 public class EngineInstance

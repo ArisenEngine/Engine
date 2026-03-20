@@ -27,7 +27,15 @@ public partial class MainWindow : Window
             vm.RequestFolderPickerAsync = OnRequestFolderPickerAsync;
             vm.RequestFilePickerAsync = OnRequestFilePickerAsync;
             vm.RequestNewProjectWizardAsync = OnRequestNewProjectWizardAsync;
+            vm.RequestPackageManagerAsync = OnRequestPackageManagerAsync;
         }
+    }
+
+    private async Task OnRequestPackageManagerAsync(Models.LauncherProjectMetadata project)
+    {
+        var pmConfig = new PackageManagerViewModel(project);
+        var window = new PackageManagerWindow { DataContext = pmConfig };
+        await window.ShowDialog(this);
     }
 
     private async Task<bool> OnRequestNewProjectWizardAsync(EngineInstance engine)

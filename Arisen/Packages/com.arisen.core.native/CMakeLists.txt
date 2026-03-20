@@ -1,0 +1,5 @@
+add_subdirectory(Source/Core.Foundation)
+add_subdirectory(Source/Core.Diagnostic)
+add_subdirectory(Source/Core.HAL)
+add_subdirectory(Source/Core.RHI)
+add_subdirectory(Source/Core.ShaderCompiler)

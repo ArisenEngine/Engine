@@ -471,4 +471,4 @@ env-vars.bat
 
 # Auto-generated package bindings
 /Packages.Generated/
-!/Packages/
+!/Packages/*

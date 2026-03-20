@@ -1,0 +1,21 @@
+{
+  "id": "com.arisen.platform.desktop",
+  "name": "Arisen Desktop Platform",
+  "version": "1.0.0",
+  "description": "Desktop windowing and message loop provider",
+  "entryAssembly": "Com.Arisen.Platform.Desktop.dll",
+  "entryClass": "ArisenEngine.Platform.DesktopPackage",
+  "author": "Arisen Team",
+  "tags": [
+      "platform",
+      "desktop",
+      "windows"
+  ],
+  "engineVersion": "0.1.0",
+  "dependencies": {
+      "com.arisen.core.native": "1.0.0"
+  },
+  "subsystems": [
+    { "type": "ArisenEngine.Platform.PlatformSubsystem" }
+  ]
+}

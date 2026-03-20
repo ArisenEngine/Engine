@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using ArisenEditorFramework.Services;
 
 namespace ArisenLauncher.Services;
 
@@ -24,7 +23,7 @@ public class EngineDiscoveryService
         ValidateAndAdd(baseDir, "Dev Local", isManual: false);
 
         // 2. Check environment variable
-        string? envPath = Environment.GetEnvironmentVariable("ARISEN_INSTALL_ROOT");
+        string? envPath = Environment.GetEnvironmentVariable("ARISEN_ENGINE_INSTALL_ROOT");
         if (!string.IsNullOrEmpty(envPath))
         {
             ValidateAndAdd(envPath, "Env Var", isManual: false);
@@ -80,9 +79,18 @@ public class EngineDiscoveryService
     {
         if (string.IsNullOrEmpty(path) || !Directory.Exists(path)) return false;
 
-        // Basic validation: Check for key DLLs or EXEs
-        return File.Exists(Path.Combine(path, "ArisenEngine.dll")) || 
-               File.Exists(Path.Combine(path, "ArisenEditor.dll")) ||
-               File.Exists(Path.Combine(path, "ArisenEditor.Desktop.exe"));
+        var validationConfig = m_ConfigService.Settings.EngineValidation;
+        if (validationConfig == null || validationConfig.RequiredFiles == null) 
+            return false;
+
+        foreach (var file in validationConfig.RequiredFiles)
+        {
+            if (!File.Exists(Path.Combine(path, file)))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
