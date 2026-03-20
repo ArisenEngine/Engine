@@ -1,5 +1,31 @@
 {
   "Name": "PackageGame",
   "EngineVersion": "Current",
-  "Packages": []
+  "Packages": [
+    {
+      "Id": "com.arisen.resources",
+      "Url": "file:///E:/Jingwen/ArisenEngine/Engine/Arisen/Development/PackageGame/Local/com.arisen.resources/",
+      "Version": "1.0.0"
+    },
+    {
+      "Id": "com.arisen.core",
+      "Url": "file:///E:/Jingwen/ArisenEngine/Engine/Arisen/Development/PackageGame/Local/com.arisen.core/",
+      "Version": "1.0.0"
+    },
+    {
+      "Id": "com.arisen.core.native",
+      "Url": "file:///E:/Jingwen/ArisenEngine/Engine/Arisen/Development/PackageGame/Local/com.arisen.core.native/",
+      "Version": "1.0.0"
+    },
+    {
+      "Id": "com.arisen.rhi.core",
+      "Url": "",
+      "Version": "1.0.0"
+    },
+    {
+      "Id": "com.arisen.ecs",
+      "Url": "",
+      "Version": "1.0.0"
+    }
+  ]
 }
