@@ -127,6 +127,17 @@ public partial class MainViewModel : ObservableObject
             if (!string.IsNullOrEmpty(path))
             {
                 _logService.Info($"User browsed for project: {path}");
+                
+                string projectDir = System.IO.Path.GetDirectoryName(path)!;
+                string manifestPath = System.IO.Path.Combine(projectDir, "manifest.json");
+                
+                if (!System.IO.File.Exists(manifestPath))
+                {
+                    StatusText = "Invalid project: Missing manifest.json";
+                    _logService.Warning($"Project validation failed. Missing manifest.json in {projectDir}");
+                    return;
+                }
+
                 var metadata = _projectService.LoadProject(path);
                 if (metadata != null)
                 {
@@ -134,12 +145,17 @@ public partial class MainViewModel : ObservableObject
                     {
                         _configService.Settings.RecentProjects.Insert(0, path);
                         _configService.Save();
+                        StatusText = $"Added project: {metadata.Name}";
+                    }
+                    else
+                    {
+                        StatusText = "Project is already in the list.";
                     }
                     RefreshLists();
                 }
                 else
                 {
-                    StatusText = "Invalid project file selected.";
+                    StatusText = "Invalid project file selected or corrupted.";
                 }
             }
         }

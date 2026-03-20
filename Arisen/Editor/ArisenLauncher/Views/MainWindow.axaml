@@ -78,7 +78,7 @@
                         <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" FontSize="12" Foreground="#64748b" Margin="0,0,16,0"/>
                         <Button Command="{Binding BrowseProjectCommand}"
                                 Background="Transparent" BorderBrush="#282e39" BorderThickness="1" Padding="16,8" CornerRadius="8">
-                            <TextBlock Text="Browse..." FontSize="13" Foreground="#94a3b8"/>
+                            <TextBlock Text="Add Existing" FontSize="13" Foreground="#94a3b8"/>
                         </Button>
                         <Button Command="{Binding NewProjectCommand}"
                                 Background="#135bec" Foreground="White" Padding="16,8" CornerRadius="8">
@@ -138,18 +138,35 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <!-- Create New Card (Always at end) -->
-                    <Button Width="300" Height="180" HorizontalAlignment="Left" Background="Transparent" Padding="0"
-                            Command="{Binding NewProjectCommand}">
-                        <Border Background="#0f1117" CornerRadius="12" BorderBrush="#282e39" BorderThickness="2">
-                           <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
-                               <Border Background="#282e39" Width="48" Height="48" CornerRadius="24">
-                                   <TextBlock Text="+" Foreground="#64748b" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                               </Border>
-                               <TextBlock Text="Create New" FontWeight="Bold" HorizontalAlignment="Center"/>
-                           </StackPanel>
-                        </Border>
-                    </Button>
+                    <!-- Bottom Action Cards -->
+                    <StackPanel Orientation="Horizontal" Spacing="16">
+                        <!-- Create New Card -->
+                        <Button Width="300" Height="180" Background="Transparent" Padding="0"
+                                Command="{Binding NewProjectCommand}">
+                            <Border Background="#0f1117" CornerRadius="12" BorderBrush="#282e39" BorderThickness="2">
+                               <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
+                                   <Border Background="#282e39" Width="48" Height="48" CornerRadius="24">
+                                       <TextBlock Text="+" Foreground="#64748b" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                   </Border>
+                                   <TextBlock Text="Create New Project" FontWeight="Bold" HorizontalAlignment="Center"/>
+                               </StackPanel>
+                            </Border>
+                        </Button>
+
+                        <!-- Add Existing Card -->
+                        <Button Width="300" Height="180" Background="Transparent" Padding="0"
+                                Command="{Binding BrowseProjectCommand}">
+                            <Border Background="#0f1117" CornerRadius="12" BorderBrush="#282e39" BorderThickness="2">
+                               <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
+                                   <Border Background="#282e39" Width="48" Height="48" CornerRadius="24">
+                                       <!-- A simple folder-like or plus icon -->
+                                       <Path Fill="#64748b" Data="M19,20H4C2.89,20 2,19.1 2,18V6C2,4.89 2.89,4 4,4H10L12,6H19A2,2 0 0,1 21,8H21L4,8V18L6.14,10.7C6.4,9.8 7.23,9.2 8.17,9.2H23.5L21.22,17.75C20.93,18.84 19.95,19.6 18.83,19.6" Stretch="Uniform" Width="24" Height="24" Margin="2,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                   </Border>
+                                   <TextBlock Text="Add Existing Project" FontWeight="Bold" HorizontalAlignment="Center"/>
+                               </StackPanel>
+                            </Border>
+                        </Button>
+                    </StackPanel>
                 </StackPanel>
             </ScrollViewer>
         </Grid>

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Linq;
 using ArisenBuildTool.Models;
 using ArisenBuildTool.Utils;
 
@@ -9,72 +10,112 @@ namespace ArisenBuildTool.Services;
 
 public static class PackageDiscoveryService
 {
-    public static Dictionary<string, PackageInfo> Discover(ProjectManifest manifest, string workspaceDir)
+    public static Dictionary<string, PackageInfo> Discover(ProjectManifest manifest, string workspaceDir, string engineDir)
     {
-        var map = new Dictionary<string, PackageInfo>();
+        var map = new Dictionary<string, PackageInfo>(StringComparer.OrdinalIgnoreCase);
+        var toProcess = new Queue<PackageRequirement>();
 
-        if (manifest.Packages == null)
-            return map;
-
-        foreach (var req in manifest.Packages)
+        if (manifest.Packages != null)
         {
-            if (string.IsNullOrEmpty(req.Url))
-            {
-                Logger.Warning($"Package '{req.Id}' has no URL specified. Skipping.");
-                continue;
-            }
+            foreach (var req in manifest.Packages) toProcess.Enqueue(req);
+        }
 
-            if (!req.Url.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+        if (manifest.Profiles != null)
+        {
+            foreach (var profile in manifest.Profiles.Values)
             {
-                Logger.Warning($"Package '{req.Id}' has non-file URL ({req.Url}). ArisenBuildTool currently only resolves local file:// URLs.");
-                continue;
+                if (profile != null)
+                {
+                    foreach (var req in profile) toProcess.Enqueue(req);
+                }
             }
+        }
 
-            // Extract path. It could be absolute or relative to workspaceDir.
-            string pathPart = Uri.UnescapeDataString(req.Url.Substring(7));
+        while (toProcess.Count > 0)
+        {
+            var req = toProcess.Dequeue();
+            if (string.IsNullOrEmpty(req.Id) || map.ContainsKey(req.Id)) continue;
+
+            string fullPath = ResolvePackagePath(req, workspaceDir, engineDir);
             
-            // If it's relative (e.g., file://Packages/com.arisen.core or file://./Packages/...)
-            string fullPath = Path.IsPathRooted(pathPart) 
-                ? Path.GetFullPath(pathPart) 
-                : Path.GetFullPath(Path.Combine(workspaceDir, pathPart));
-
-            if (!Directory.Exists(fullPath))
+            if (string.IsNullOrEmpty(fullPath) || !Directory.Exists(fullPath))
             {
-                Logger.Warning($"Directory for package '{req.Id}' not found at '{fullPath}'.");
+                Logger.Warning($"Directory for package '{req.Id}' not found. Searched path: '{fullPath}'");
                 continue;
             }
 
             string packageJsonPath = Path.Combine(fullPath, "package.json");
-            if (File.Exists(packageJsonPath))
-            {
-                try
-                {
-                    var json = File.ReadAllText(packageJsonPath);
-                    var pkgManifest = JsonSerializer.Deserialize<PackageManifest>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    if (pkgManifest != null)
-                    {
-                        string packageName = string.IsNullOrEmpty(pkgManifest.Name) ? Path.GetFileName(fullPath) : pkgManifest.Name;
-                        string bipartiteKey = $"{packageName}_{pkgManifest.Type}";
-
-                        map[bipartiteKey] = new PackageInfo 
-                        { 
-                            Manifest = pkgManifest, 
-                            DirectoryPath = fullPath 
-                        };
-                        Logger.Info($"Discovered package: {packageName} ({pkgManifest.Type}) at {fullPath}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error($"Error parsing {packageJsonPath}: {ex.Message}");
-                }
-            }
-            else
+            if (!File.Exists(packageJsonPath))
             {
                 Logger.Warning($"No package.json found for '{req.Id}' at '{fullPath}'.");
+                continue;
+            }
+
+            try
+            {
+                var json = File.ReadAllText(packageJsonPath);
+                var pkgManifest = JsonSerializer.Deserialize<PackageManifest>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (pkgManifest != null)
+                {
+                    pkgManifest.Id = req.Id; 
+                    string packageName = string.IsNullOrEmpty(pkgManifest.Name) ? Path.GetFileName(fullPath) : pkgManifest.Name;
+                    
+                    if (pkgManifest.NativeRuntimes != null && pkgManifest.NativeRuntimes.Count > 0 && pkgManifest.Entry == null)
+                    {
+                        pkgManifest.Type = "native";
+                    }
+                    else
+                    {
+                        pkgManifest.Type = "managed";
+                    }
+
+                    map[req.Id] = new PackageInfo 
+                    { 
+                        Manifest = pkgManifest, 
+                        DirectoryPath = fullPath 
+                    };
+                    Logger.Info($"Discovered package: {req.Id} ({pkgManifest.Type}) at {fullPath}");
+
+                    if (pkgManifest.Dependencies != null)
+                    {
+                        foreach (var dep in pkgManifest.Dependencies)
+                        {
+                            if (!map.ContainsKey(dep.Key))
+                            {
+                                toProcess.Enqueue(new PackageRequirement { Id = dep.Key });
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error parsing {packageJsonPath}: {ex.Message}");
             }
         }
 
         return map;
+    }
+
+    private static string ResolvePackagePath(PackageRequirement req, string workspaceDir, string engineDir)
+    {
+        if (!string.IsNullOrEmpty(req.Url) && req.Url.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+        {
+            string pathPart = Uri.UnescapeDataString(req.Url.Substring(7));
+            return Path.IsPathRooted(pathPart) 
+                ? Path.GetFullPath(pathPart) 
+                : Path.GetFullPath(Path.Combine(workspaceDir, pathPart));
+        }
+
+        string localPath = Path.GetFullPath(Path.Combine(workspaceDir, "Local", req.Id));
+        if (Directory.Exists(localPath)) return localPath;
+
+        string cachePath = Path.GetFullPath(Path.Combine(workspaceDir, ".Cache", req.Id));
+        if (Directory.Exists(cachePath)) return cachePath;
+
+        string enginePkgPath = Path.GetFullPath(Path.Combine(engineDir, "Packages", req.Id));
+        if (Directory.Exists(enginePkgPath)) return enginePkgPath;
+
+        return string.Empty;
     }
 }
