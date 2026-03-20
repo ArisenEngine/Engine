@@ -16,4 +16,6 @@ public interface IWindowProvider
     event EventHandler<(int Width, int Height)> OnWindowResized;
     
     void Close();
+
+    WindowProcessor CreateWindowProcessor();
 }

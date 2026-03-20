@@ -126,6 +126,17 @@
     <ProjectReference Include="..\..\3rdparty\Ava.Dock\src\Dock.Model.ReactiveUI\Dock.Model.ReactiveUI.csproj" />
     <ProjectReference Include="..\..\3rdparty\Ava.Dock\src\Dock.Serializer\Dock.Serializer.csproj" />
     <ProjectReference Include="..\..\Engine\ArisenEngine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="ArisenKernel.Contracts" />
+    <Using Include="ArisenKernel.Lifecycle" />
+    <Using Include="ArisenKernel.Packages" />
+    <Using Include="ArisenEngine.Core.Lifecycle" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\ArisenKernel\ArisenKernel.csproj" />
     <ProjectReference Include="..\..\External\ArisenEditorFramework\ArisenEditorFramework.csproj" />
   </ItemGroup>
 

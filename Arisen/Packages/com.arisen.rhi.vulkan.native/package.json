@@ -1,0 +1,10 @@
+{
+  "name": "com.arisen.rhi.vulkan.native",
+  "version": "1.0.0",
+  "displayName": "Vulkan RHI Native Provider",
+  "description": "C++ payload for the Vulkan rendering hardware interface driver backend.",
+  "type": "native",
+  "dependencies": {
+    "com.arisen.core.native": "1.0.0"
+  }
+}

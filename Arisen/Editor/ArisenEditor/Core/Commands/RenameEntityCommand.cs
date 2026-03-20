@@ -1,6 +1,6 @@
-using ArisenEngine.Core.ECS;
+﻿using ArisenEngine.Core.ECS;
 using ArisenEditor.Core.Services;
-using ArisenEditorFramework.Commands;
+using ArisenKernel.Contracts;
 
 namespace ArisenEditor.Core.Commands;
 
@@ -8,13 +8,13 @@ namespace ArisenEditor.Core.Commands;
 /// Command to rename an entity's NameComponent.
 /// Stores old name for undo.
 /// </summary>
-public class RenameEntityCommand : IEditorCommand
+public class RenameEntityCommand : ICommand
 {
     private readonly Entity m_Entity;
     private readonly string m_OldName;
     private readonly string m_NewName;
 
-    public string Description => $"Rename Entity '{m_OldName}' → '{m_NewName}'";
+    public string Description => $"Rename Entity '{m_OldName}' 鈫?'{m_NewName}'";
 
     public RenameEntityCommand(Entity entity, string oldName, string newName)
     {
@@ -46,3 +46,4 @@ public class RenameEntityCommand : IEditorCommand
         }
     }
 }
+

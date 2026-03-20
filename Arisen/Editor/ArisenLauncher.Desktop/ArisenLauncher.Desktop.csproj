@@ -23,6 +23,5 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ArisenLauncher\ArisenLauncher.csproj" />
-    <ProjectReference Include="..\..\External\ArisenEditorFramework\ArisenEditorFramework.csproj" />
   </ItemGroup>
 </Project>

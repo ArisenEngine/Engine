@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using ArisenEditor.Core.Commands;
-using ArisenEditorFramework.Commands;
+using ArisenKernel.Contracts;
 using ArisenEditorFramework.Core;
 using ArisenEditorFramework.Services;
 using ArisenEditorFramework.UI.Menus;
@@ -51,7 +51,7 @@ public class EntityNodeViewModel : ReactiveObject
             {
                 var oldName = m_Name;
                 this.RaiseAndSetIfChanged(ref m_Name, value);
-                CommandHistory.Instance.Execute(new RenameEntityCommand(Entity, oldName, value));
+                ArisenKernel.Lifecycle.EngineKernel.Instance.Services.GetService<ICommandManager>()!.Execute(new RenameEntityCommand(Entity, oldName, value));
             }
         }
     }
@@ -444,7 +444,7 @@ internal class HierarchyViewModel : EditorPanelBase
             if (oldParent == newParentEntity) return;
         }
 
-        CommandHistory.Instance.Execute(new MoveEntityCommand(srcEntity, newParentEntity, em));
+        ArisenKernel.Lifecycle.EngineKernel.Instance.Services.GetService<ICommandManager>()!.Execute(new MoveEntityCommand(srcEntity, newParentEntity, em));
     }
 
     internal void OnUnloaded()
@@ -452,3 +452,6 @@ internal class HierarchyViewModel : EditorPanelBase
         m_Disposables.Dispose();
     }
 }
+
+
+

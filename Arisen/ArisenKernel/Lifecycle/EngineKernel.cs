@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using ArisenKernel.Services;
 using ArisenKernel.Diagnostics;
+using ArisenKernel.Contracts;
+
 
 namespace ArisenKernel.Lifecycle;
 
@@ -26,6 +28,7 @@ public sealed class EngineKernel : IDisposable
 
     private EngineKernel()
     {
+
     }
 
     public void Reset()
@@ -152,3 +155,4 @@ public sealed class EngineKernel : IDisposable
         Shutdown();
     }
 }
+

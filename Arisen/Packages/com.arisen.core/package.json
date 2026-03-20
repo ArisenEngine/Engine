@@ -1,0 +1,9 @@
+{
+  "name": "com.arisen.core",
+  "version": "1.0.0",
+  "dependencies": {
+    "com.arisen.core.native": "1.0.0",
+    "com.arisen.rhi.core": "1.0.0",
+    "com.arisen.ecs": "1.0.0"
+  }
+}

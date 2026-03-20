@@ -1,0 +1,3 @@
+[11:36:44.416] [INFO] --------------------------------------------------
+[11:36:44.423] [INFO] ArisenBuildTool Started. Workspace: E:\Jingwen\ArisenEngine\Engine
+[11:36:44.423] [ERROR] Project manifest not found at 'E:\Jingwen\ArisenEngine\Engine\manifest.json' or 'E:\Jingwen\ArisenEngine\Engine\project.arisen'. Build aborted.

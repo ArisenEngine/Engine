@@ -1,6 +1,6 @@
-using ArisenEngine.Core.ECS;
+﻿using ArisenEngine.Core.ECS;
 using ArisenEditor.Core.Services;
-using ArisenEditorFramework.Commands;
+using ArisenKernel.Contracts;
 
 namespace ArisenEditor.Core.Commands;
 
@@ -9,14 +9,14 @@ namespace ArisenEditor.Core.Commands;
 /// Handles the intrusive linked list (Parent/Child/Sibling components)
 /// and supports undo by restoring the previous parent.
 /// </summary>
-public class MoveEntityCommand : IEditorCommand
+public class MoveEntityCommand : ICommand
 {
     private readonly Entity m_Entity;
     private readonly Entity m_NewParent;
     private readonly Entity m_OldParent;
     private readonly bool m_HadOldParent;
 
-    public string Description => $"Move Entity {m_Entity.Id} → Parent {(m_NewParent == Entity.Null ? "Root" : m_NewParent.Id.ToString())}";
+    public string Description => $"Move Entity {m_Entity.Id} 鈫?Parent {(m_NewParent == Entity.Null ? "Root" : m_NewParent.Id.ToString())}";
 
     public MoveEntityCommand(Entity entity, Entity newParent, EntityManager em)
     {
@@ -161,3 +161,4 @@ public class MoveEntityCommand : IEditorCommand
         }
     }
 }
+

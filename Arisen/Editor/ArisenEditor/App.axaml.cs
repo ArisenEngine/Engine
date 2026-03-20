@@ -1,4 +1,4 @@
-
+﻿
 using System;
 using System.Diagnostics;
 using ArisenEngine.Core.Lifecycle;
@@ -266,8 +266,8 @@ namespace ArisenEditor
                     Avalonia.Input.KeyModifiers.Control, 
                     ReactiveCommand.Create(() => 
                     {
-                        if (ArisenEditorFramework.Commands.CommandHistory.Instance.CanUndo)
-                            ArisenEditorFramework.Commands.CommandHistory.Instance.Undo();
+                        if (ArisenKernel.Lifecycle.EngineKernel.Instance.Services.GetService<ICommandManager>()!.CanUndo)
+                            ArisenKernel.Lifecycle.EngineKernel.Instance.Services.GetService<ICommandManager>()!.Undo();
                     }), 
                     bypassTextInput: false // Don't undo globally if the text box natively undoes text
                 )
@@ -280,8 +280,8 @@ namespace ArisenEditor
                     Avalonia.Input.KeyModifiers.Control, 
                     ReactiveCommand.Create(() => 
                     {
-                        if (ArisenEditorFramework.Commands.CommandHistory.Instance.CanRedo)
-                            ArisenEditorFramework.Commands.CommandHistory.Instance.Redo();
+                        if (ArisenKernel.Lifecycle.EngineKernel.Instance.Services.GetService<ICommandManager>()!.CanRedo)
+                            ArisenKernel.Lifecycle.EngineKernel.Instance.Services.GetService<ICommandManager>()!.Redo();
                     }), 
                     bypassTextInput: false
                 )
@@ -297,7 +297,7 @@ namespace ArisenEditor
                         var svc = ArisenEditor.Core.Services.SceneManagerService.Instance;
                         if (svc.ActiveScene != null)
                         {
-                            ArisenEditorFramework.Commands.CommandHistory.Instance.Execute(
+                            ArisenKernel.Lifecycle.EngineKernel.Instance.Services.GetService<ICommandManager>()!.Execute(
                                 new ArisenEditor.Core.Commands.DeleteEntityCommand(entityNode.Entity, entityNode.Name)
                             );
                         }
@@ -328,3 +328,6 @@ namespace ArisenEditor
         }
     }
 }
+
+
+

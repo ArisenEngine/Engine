@@ -1,0 +1,17 @@
+{
+  "id": "com.arisen.ecs",
+  "name": "Arisen Entity Component System",
+  "version": "1.0.0",
+  "description": "Core ECS framework for Arisen Engine",
+  "entryAssembly": "Com.Arisen.Ecs.dll",
+  "entryClass": "ArisenEngine.Core.ECS.EcsPackage",
+  "author": "Arisen Team",
+  "tags": [
+      "ecs",
+      "core"
+  ],
+  "engineVersion": "0.1.0",
+  "dependencies": {
+      "com.arisen.core.native": "1.0.0"
+  }
+}

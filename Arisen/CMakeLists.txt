@@ -151,8 +151,10 @@ if(ARISEN_ENABLE_PROFILER)
     set(TRACY_ENABLE ON CACHE BOOL "" FORCE)
     set(TRACY_STATIC OFF CACHE BOOL "" FORCE)
     set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
-    add_subdirectory(3rdparty/tracy)
-    set_target_properties(TracyClient PROPERTIES FOLDER "3rdparty")
+    if(NOT ${TARGET} STREQUAL "Launcher")
+        add_subdirectory(3rdparty/tracy)
+        set_target_properties(TracyClient PROPERTIES FOLDER "3rdparty")
+    endif()
     add_compile_definitions(ARISEN_PROFILER_ENABLED=1)
     set(DOTNET_PROFILER_ARG "-p:DefineConstants=ARISEN_PROFILER_ENABLED")
 else()
@@ -163,15 +165,13 @@ endif()
 
 set(DOTNET_MACRO_ARG "-p:DefineConstants=${TARGET_MACRO}")
 
-add_subdirectory(Core/Core.Foundation)
+if(NOT ${TARGET} STREQUAL "Launcher")
 add_subdirectory(3rdparty/spdlog)
 set_target_properties(spdlog PROPERTIES FOLDER "3rdparty")
-add_subdirectory(Core/Core.Diagnostic)
-add_subdirectory(Core/Core.HAL)
-add_subdirectory(Core/Core.RHI)
-add_subdirectory(Core/Core.ShaderCompiler)
-add_subdirectory(Core/RHI.DX12)
-add_subdirectory(Core/RHI.Vulkan)
+add_subdirectory(Packages/com.arisen.core.native)
+add_subdirectory(Packages/com.arisen.rhi.dx12.native)
+add_subdirectory(Packages/com.arisen.rhi.vulkan.native)
+endif()
 
 
 if("${TARGET}" STREQUAL "NativeEngineTest")
@@ -201,6 +201,7 @@ set(ARISEN_ENGINE_PROJ ${CMAKE_SOURCE_DIR}/Engine/ArisenEngine.csproj)
 set(ARISEN_ENGINE_PROJ_DIR ${CMAKE_SOURCE_DIR}/Engine/)
 
     # Build C# projects
+if(NOT ${TARGET} STREQUAL "Launcher")
 add_custom_target(BuildBindingGenerator
     COMMAND ${CMAKE_COMMAND} -E env
         dotnet build "${BINDING_GENERATOR_PROJ}"
@@ -246,16 +247,32 @@ add_custom_target(BuildArisenDAG
 )
 set_target_properties(BuildArisenDAG PROPERTIES FOLDER "CMakeProcess")
 
-add_custom_target(BuildArisenKernel
+endif() # Explicitly ending the NOT Launcher block early to expose Kernel/Host universally
+
+add_custom_target(BuildArisenKernel ALL
     COMMAND dotnet build ${ARISEN_KERNEL_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG} ${DOTNET_MACRO_ARG}
     WORKING_DIRECTORY ${ARISEN_KERNEL_PROJ_DIR}
     COMMENT "Building Arisen Kernel"
-    DEPENDS ${ARISEN_KERNEL_PROJ} "ArisenDAG.dll"
     VERBATIM
     USES_TERMINAL
 )
-add_dependencies(BuildArisenKernel BuildArisenDAG)
 set_target_properties(BuildArisenKernel PROPERTIES FOLDER "CMakeProcess")
+
+set(ARISEN_HOST_PROJ ${CMAKE_SOURCE_DIR}/ArisenHost/ArisenHost.csproj)
+set(ARISEN_HOST_PROJ_DIR ${CMAKE_SOURCE_DIR}/ArisenHost/)
+
+add_custom_target(BuildArisenHost ALL
+    COMMAND dotnet build ${ARISEN_HOST_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG} ${DOTNET_MACRO_ARG}
+    WORKING_DIRECTORY ${ARISEN_HOST_PROJ_DIR}
+    COMMENT "Building Arisen Host"
+    DEPENDS "ArisenKernel.dll"
+    VERBATIM
+    USES_TERMINAL
+)
+add_dependencies(BuildArisenHost BuildArisenKernel)
+set_target_properties(BuildArisenHost PROPERTIES FOLDER "CMakeProcess")
+
+if(NOT ${TARGET} STREQUAL "Launcher") # Resuming exclusion block for heavy monolith targets
 
 add_custom_target(BuildArisenEngine
     COMMAND dotnet build ${ARISEN_ENGINE_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG} ${DOTNET_MACRO_ARG}
@@ -291,8 +308,9 @@ foreach(PROJ_PATH IN LISTS BUILTIN_PACKAGES_PROJS)
     add_dependencies(BuildBuiltinPackages ${TARGET_NAME})
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "CMakeProcess/Packages")
 endforeach()
-
 set_target_properties(BuildBuiltinPackages PROPERTIES FOLDER "CMakeProcess")
+
+endif() # End NOT Launcher block
 
 endif()
 
@@ -308,6 +326,9 @@ endif()
     set(ARISEN_LAUNCHER_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenLauncher/)
     set(ARISEN_LAUNCHER_DESKTOP_PROJ ${CMAKE_SOURCE_DIR}/Editor/ArisenLauncher.Desktop/ArisenLauncher.Desktop.csproj)
     set(ARISEN_LAUNCHER_DESKTOP_PROJ_DIR ${CMAKE_SOURCE_DIR}/Editor/ArisenLauncher.Desktop/)
+    
+    set(ARISEN_BUILD_TOOL_PROJ ${CMAKE_SOURCE_DIR}/External/ArisenBuildTool/ArisenBuildTool.csproj)
+    set(ARISEN_BUILD_TOOL_PROJ_DIR ${CMAKE_SOURCE_DIR}/External/ArisenBuildTool/)
 
 if(${TARGET} STREQUAL "Editor" OR ${TARGET} STREQUAL "EditorTest")
     add_custom_target(BuildArisenEditorFramework
@@ -318,6 +339,9 @@ if(${TARGET} STREQUAL "Editor" OR ${TARGET} STREQUAL "EditorTest")
     USES_TERMINAL
     )
     set_target_properties(BuildArisenEditorFramework PROPERTIES FOLDER "CMakeProcess")
+endif()
+
+if(${TARGET} STREQUAL "Editor" OR ${TARGET} STREQUAL "EditorTest")
 
     add_custom_target(BuildArisenEditor
     COMMAND dotnet build ${ARISEN_EDITOR_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
@@ -360,18 +384,28 @@ if(${TARGET} STREQUAL "Editor" OR ${TARGET} STREQUAL "EditorTest")
     )
     add_dependencies(BuildEditorTest BuildArisenEditor)
     set_target_properties(BuildEditorTest PROPERTIES FOLDER "CMakeProcess")
+endif()
 
+if(${TARGET} STREQUAL "Editor" OR ${TARGET} STREQUAL "Launcher")
     # Launcher
     add_custom_target(BuildArisenLauncher
     COMMAND dotnet build ${ARISEN_LAUNCHER_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
     WORKING_DIRECTORY ${ARISEN_LAUNCHER_PROJ_DIR}
     COMMENT "Building Arisen Launcher"
-    DEPENDS "ArisenEditorFramework.dll"
     VERBATIM
     USES_TERMINAL
     )
-    add_dependencies(BuildArisenLauncher BuildArisenEditorFramework)
     set_target_properties(BuildArisenLauncher PROPERTIES FOLDER "CMakeProcess")
+
+    # BuildTool for Launcher Bootstrapping
+    add_custom_target(BuildArisenBuildTool ALL
+    COMMAND dotnet build ${ARISEN_BUILD_TOOL_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
+    WORKING_DIRECTORY ${ARISEN_BUILD_TOOL_PROJ_DIR}
+    COMMENT "Building Arisen Build Tool"
+    VERBATIM
+    USES_TERMINAL
+    )
+    set_target_properties(BuildArisenBuildTool PROPERTIES FOLDER "CMakeProcess")
 
     add_custom_target(BuildArisenLauncherDesktop ALL
     COMMAND dotnet build ${ARISEN_LAUNCHER_DESKTOP_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
@@ -429,6 +463,8 @@ elseif(${TARGET} STREQUAL "EditorTest")
     add_dependencies(BuildEditorTestAll BuildEditorTest)
 elseif(${TARGET} STREQUAL "BindingGenerator")
     message(STATUS "Configuring for Standalone Binding Generation")
+elseif(${TARGET} STREQUAL "Launcher")
+    message(STATUS "Configuring for Launcher")
 else()
     message(FATAL_ERROR "Unknown TARGET: ${TARGET}")
 endif()

@@ -1,21 +1,21 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ArisenEngine.Core.ECS;
 using ArisenEditor.Core.Services;
-using ArisenEditorFramework.Commands;
+using ArisenKernel.Contracts;
 
 namespace ArisenEditor.Core.Commands;
 
 /// <summary>
 /// Command to delete an entity. Saves all component data for undo restoration.
 /// </summary>
-public class DeleteEntityCommand : IEditorCommand
+public class DeleteEntityCommand : ICommand
 {
     private readonly Entity m_Entity;
     private readonly string m_EntityName;
     private Entity m_OldParent;
 
-    // Saved component state for undo — list of (Type, boxed component data)
+    // Saved component state for undo 鈥?list of (Type, boxed component data)
     private List<(Type Type, object Data)>? m_SavedComponents;
 
     public string Description => $"Delete Entity '{m_EntityName}'";
@@ -74,3 +74,4 @@ public class DeleteEntityCommand : IEditorCommand
         SceneManagerService.Instance.NotifyEntityCreated(restoredEntity);
     }
 }
+

@@ -1,0 +1,42 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ArisenLauncher.ViewModels"
+        x:Class="ArisenLauncher.Views.PackageManagerWindow"
+        x:DataType="vm:PackageManagerViewModel"
+        x:Name="PackageManagerWindowRoot"
+        Title="Project Package Manager" Width="600" Height="700" WindowStartupLocation="CenterOwner">
+    <Grid RowDefinitions="Auto,*,Auto" Margin="10">
+        <TextBlock Classes="h2" Text="{Binding Manifest.Name, StringFormat='Package Manager: {0}'}" Margin="0,0,0,10" />
+
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="15">
+                <!-- Packages -->
+                <Border BorderBrush="#333" BorderThickness="1" CornerRadius="4" Padding="10">
+                    <StackPanel>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="Project Packages" FontWeight="Bold" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Content="Add Package" Command="{Binding AddPackageCommand}" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding Packages}" Margin="0,10,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:PackageRequirementViewModel">
+                                    <Grid ColumnDefinitions="2*,3*,*,Auto" Margin="0,2">
+                                        <TextBox Grid.Column="0" Text="{Binding Id}" Watermark="Package ID" Margin="0,0,5,0"/>
+                                        <TextBox Grid.Column="1" Text="{Binding Url}" Watermark="Source URL" Margin="0,0,5,0"/>
+                                        <TextBox Grid.Column="2" Text="{Binding Version}" Watermark="Version" Margin="0,0,5,0"/>
+                                        <Button Grid.Column="3" Content="X" Command="{Binding #PackageManagerWindowRoot.((vm:PackageManagerViewModel)DataContext).RemovePackageCommand}" CommandParameter="{Binding}" Foreground="Red" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,10,0,0">
+            <Button Content="Save Manifest" Command="{Binding SaveManifestCommand}" Classes="accent" Click="SaveButton_Click" />
+            <Button Content="Close" Click="CloseButton_Click" />
+        </StackPanel>
+    </Grid>
+</Window>
