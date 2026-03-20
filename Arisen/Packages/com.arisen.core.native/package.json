@@ -1,8 +1,0 @@
-{
-  "name": "com.arisen.core.native",
-  "version": "1.0.0",
-  "displayName": "Arisen Core Native Provider",
-  "description": "The monolithic underlying C++ Core payload encompassing Foundation, HAL, and Diagnostics logic.",
-  "type": "native",
-  "dependencies": {}
-}

@@ -4,39 +4,118 @@
         x:Class="ArisenLauncher.Views.PackageManagerWindow"
         x:DataType="vm:PackageManagerViewModel"
         x:Name="PackageManagerWindowRoot"
-        Title="Project Package Manager" Width="600" Height="700" WindowStartupLocation="CenterOwner">
-    <Grid RowDefinitions="Auto,*,Auto" Margin="10">
-        <TextBlock Classes="h2" Text="{Binding Manifest.Name, StringFormat='Package Manager: {0}'}" Margin="0,0,0,10" />
+        Title="Project Package Manager" Width="850" Height="680" WindowStartupLocation="CenterOwner"
+        Background="#0f1117"
+        Foreground="#f1f5f9"
+        FontFamily="Inter, Space Grotesk">
+    
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- Header -->
+        <Border Grid.Row="0" Height="64" BorderBrush="#282e39" BorderThickness="0,0,0,1" Padding="24,0" Background="#1a1e26">
+            <DockPanel VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <Border Width="32" Height="32" Background="#135bec" CornerRadius="8">
+                        <Path Fill="White" Data="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z" Stretch="Uniform" Margin="6"/>
+                    </Border>
+                    <TextBlock Text="{Binding Manifest.Name, StringFormat='{}Packages / {0}'}" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
 
-        <ScrollViewer Grid.Row="1">
-            <StackPanel Spacing="15">
-                <!-- Packages -->
-                <Border BorderBrush="#333" BorderThickness="1" CornerRadius="4" Padding="10">
-                    <StackPanel>
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Text="Project Packages" FontWeight="Bold" VerticalAlignment="Center" />
-                            <Button Grid.Column="1" Content="Add Package" Command="{Binding AddPackageCommand}" />
+        <!-- Main Content -->
+        <ScrollViewer Grid.Row="1" Margin="24">
+            <StackPanel Spacing="24" Margin="0,0,0,32">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Installed Packages" FontSize="24" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock Text="Manage dependencies required for this project to compile and run." Foreground="#64748b" FontSize="14"/>
+                </StackPanel>
+
+                <!-- Add Package Controls (Moved to Top for permanent accessibility) -->
+                <Border Background="#1a1e26" CornerRadius="8" BorderBrush="#282e39" BorderThickness="1" Padding="20">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="Add New Package" FontWeight="Bold" FontSize="16" Foreground="White"/>
+                        <Grid ColumnDefinitions="*, Auto">
+                            <Button Grid.Column="0" Content="Type Custom URL..." Command="{Binding AddPackageCommand}" 
+                                    Margin="0,0,16,0"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="Transparent" BorderBrush="#282e39" BorderThickness="1" Padding="0,12" CornerRadius="6" Foreground="#94a3b8"/>
+                            <Button Grid.Column="1" Content="Browse Local Folder..." Command="{Binding AddLocalPackageCommand}" 
+                                    Background="#135bec" Foreground="White" Padding="24,12" CornerRadius="6" FontWeight="SemiBold"/>
                         </Grid>
-                        <ItemsControl ItemsSource="{Binding Packages}" Margin="0,10,0,0">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="vm:PackageRequirementViewModel">
-                                    <Grid ColumnDefinitions="2*,3*,*,Auto" Margin="0,2">
-                                        <TextBox Grid.Column="0" Text="{Binding Id}" Watermark="Package ID" Margin="0,0,5,0"/>
-                                        <TextBox Grid.Column="1" Text="{Binding Url}" Watermark="Source URL" Margin="0,0,5,0"/>
-                                        <TextBox Grid.Column="2" Text="{Binding Version}" Watermark="Version" Margin="0,0,5,0"/>
-                                        <Button Grid.Column="3" Content="X" Command="{Binding #PackageManagerWindowRoot.((vm:PackageManagerViewModel)DataContext).RemovePackageCommand}" CommandParameter="{Binding}" Foreground="Red" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
                     </StackPanel>
                 </Border>
+
+                <!-- Error Banner -->
+                <Border IsVisible="{Binding HasVerificationError}" 
+                        Background="#ef444420" BorderBrush="#ef4444" BorderThickness="1" CornerRadius="8" Padding="16">
+                    <TextBlock Text="{Binding VerificationError}" Foreground="#ef4444" FontWeight="Bold" TextWrapping="Wrap"/>
+                </Border>
+
+                <!-- Packages List -->
+                <ItemsControl ItemsSource="{Binding Packages}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="12"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="vm:PackageRequirementViewModel">
+                            <Border Background="#1a1e26" CornerRadius="8" BorderBrush="#282e39" BorderThickness="1" Padding="16">
+                                <StackPanel>
+                                    <Grid ColumnDefinitions="*, Auto, Auto">
+                                        <!-- Left side: ID & URL -->
+                                        <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
+                                            <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="16" Foreground="White" Padding="0,0,0,4" Margin="0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Description}" FontSize="13" Foreground="#94a3b8" Padding="0,0,0,6" Margin="0" IsVisible="{Binding HasDescription}" TextWrapping="Wrap" LineHeight="18"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="16">
+                                                <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasAuthor}" VerticalAlignment="Center">
+                                                    <Path Fill="#64748b" Data="M12,12C14.21,12 16,10.21 16,8C16,5.79 14.21,4 12,4C9.79,4 8,5.79 8,8C8,10.21 9.79,12 12,12M12,14C9.33,14 4,15.34 4,18V20H20V18C20,15.34 14.67,14 12,14Z" Stretch="Uniform" Width="12" Height="12"/>
+                                                    <TextBlock Text="{Binding Author}" FontSize="12" Foreground="#64748b" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding !IsUnresolved}" VerticalAlignment="Center">
+                                                    <Path Fill="#135bec" Data="M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z" Stretch="Uniform" Width="14" Height="14" Opacity="0.8"/>
+                                                    <TextBlock Text="{Binding Url}" FontSize="12" Foreground="#135bec" Opacity="0.8" Padding="0" Margin="0" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        
+                                        <!-- Middle: Version Badge -->
+                                        <Border Grid.Column="1" Background="#135bec20" BorderBrush="#135bec" BorderThickness="1" CornerRadius="12" Padding="8,4" Margin="16,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Version}" FontSize="12" Foreground="#135bec" FontWeight="Bold" VerticalAlignment="Center"/>
+                                        </Border>
+                                        
+                                        <!-- Right side: Remove Button -->
+                                        <Button Grid.Column="2" Content="Remove" Command="{Binding #PackageManagerWindowRoot.((vm:PackageManagerViewModel)DataContext).RemovePackageCommand}" CommandParameter="{Binding}" 
+                                                Background="#ef444420" Foreground="#ef4444" BorderBrush="#ef4444" BorderThickness="1" Padding="12,6" CornerRadius="6" VerticalAlignment="Center" Cursor="Hand"/>
+                                    </Grid>
+
+                                    <!-- Unresolved Missing Dependency Resolution Box -->
+                                    <Border IsVisible="{Binding IsUnresolved}" Background="#eab30810" BorderBrush="#eab308" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,12,0,0">
+                                        <StackPanel Spacing="8">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <Path Fill="#eab308" Data="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16" Stretch="Uniform" Width="16" Height="16"/>
+                                                <TextBlock Text="{Binding UnresolvedMessage}" Foreground="#eab308" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <Grid ColumnDefinitions="*, Auto, Auto">
+                                                <TextBox Grid.Column="0" Text="{Binding Url}" VerticalContentAlignment="Center" Watermark="Enter Remote URL or Browse..." Background="#0f1117" BorderBrush="#282e39" Foreground="#94a3b8" Padding="10,6" Margin="0,0,8,0" CornerRadius="4"/>
+                                                <Button Grid.Column="1" Content="Browse..." Command="{Binding #PackageManagerWindowRoot.((vm:PackageManagerViewModel)DataContext).BrowseResolvePackageCommand}" CommandParameter="{Binding}" Background="#1a1e26" BorderBrush="#282e39" BorderThickness="1" Foreground="White" FontWeight="Bold" Padding="16,6" Margin="0,0,8,0" CornerRadius="4"/>
+                                                <Button Grid.Column="2" Content="Confirm URL" Command="{Binding #PackageManagerWindowRoot.((vm:PackageManagerViewModel)DataContext).ConfirmResolvePackageCommand}" CommandParameter="{Binding}" Background="#eab308" Foreground="#0f1117" FontWeight="Bold" Padding="16,6" CornerRadius="4"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </StackPanel>
         </ScrollViewer>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,10,0,0">
-            <Button Content="Save Manifest" Command="{Binding SaveManifestCommand}" Classes="accent" Click="SaveButton_Click" />
-            <Button Content="Close" Click="CloseButton_Click" />
-        </StackPanel>
+        <!-- Footer -->
+        <Border Grid.Row="2" Background="#1a1e26" BorderBrush="#282e39" BorderThickness="0,1,0,0" Padding="24,16">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12">
+                <Button Content="Cancel" Click="CloseButton_Click" Background="Transparent" BorderBrush="#282e39" BorderThickness="1" Foreground="#94a3b8" Padding="24,10" CornerRadius="6"/>
+                <Button Content="Save Manifest" Command="{Binding SaveManifestCommand}" Click="SaveButton_Click" Background="#22c55e" Foreground="White" Padding="24,10" CornerRadius="6" FontWeight="Bold"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

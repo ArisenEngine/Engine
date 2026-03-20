@@ -1,1 +1,0 @@
-// redudant manual enums moved to AutoBinding

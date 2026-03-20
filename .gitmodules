@@ -30,3 +30,24 @@
 [submodule "Arisen/External/ArisenEditorFramework"]
 	path = Arisen/External/ArisenEditorFramework
 	url = https://github.com/eatdreamcat/ArisenEditorFramework.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.core"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.core
+	url = https://github.com/ArisenEngine/com.arisen.core.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.core.native"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.core.native
+	url = https://github.com/ArisenEngine/com.arisen.core.native.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.resources"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.resources
+	url = https://github.com/ArisenEngine/com.arisen.resources.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.ecs"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.ecs
+	url = https://github.com/ArisenEngine/com.arisen.ecs.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.platform.desktop"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.platform.desktop
+	url = https://github.com/ArisenEngine/com.arisen.platform.desktop.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.rendering"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.rendering
+	url = https://github.com/ArisenEngine/com.arisen.rendering.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native
+	url = https://github.com/ArisenEngine/com.arisen.rhi.vulkan.native.git
