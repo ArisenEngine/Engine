@@ -112,6 +112,24 @@ public partial class PackageManagerViewModel : ObservableObject
             var folder = await RequestFolderPickerAsync();
             if (!string.IsNullOrEmpty(folder))
             {
+                string packageJsonPath = Path.Combine(folder, "package.json");
+                if (!File.Exists(packageJsonPath))
+                {
+                    string id = "com.user." + Path.GetFileName(folder).ToLower().Replace(" ", "");
+                    var defaultPkg = new PackageManifest
+                    {
+                        Id = id,
+                        Name = Path.GetFileName(folder),
+                        Version = "1.0.0",
+                        Type = "managed",
+                        Dependencies = new System.Collections.Generic.Dictionary<string, string>()
+                    };
+                    File.WriteAllText(packageJsonPath, JsonSerializer.Serialize(defaultPkg, new JsonSerializerOptions { WriteIndented = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull }));
+                    // Provide a generic valid C# namespace compliant class
+                    string safeName = Path.GetFileName(folder).Replace(".", "").Replace(" ", "");
+                    File.WriteAllText(Path.Combine(folder, "Class1.cs"), $"namespace ArisenEngine.{safeName} {{\n    public class Class1 {{ }}\n}}\n");
+                }
+
                 AddLocalPackageRecursive(folder);
             }
         }

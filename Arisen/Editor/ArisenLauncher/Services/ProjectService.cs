@@ -42,7 +42,7 @@ public class ProjectService
         return null;
     }
 
-    public bool CreateProject(string folderPath, string name, EngineInstance engine, string? templateName = null)
+        public bool CreateProject(string folderPath, string name, EngineInstance engine, string? templateName = null)
     {
         try
         {
@@ -51,7 +51,6 @@ public class ProjectService
                 Directory.CreateDirectory(folderPath);
             }
 
-            // Copy template files if specified
             if (!string.IsNullOrEmpty(templateName))
             {
                 string templatePath = Path.Combine(engine.InstallPath, "Templates", templateName);
@@ -78,34 +77,53 @@ public class ProjectService
             string json = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(projectFile, json);
             
-            // Generate Project constraints
             Directory.CreateDirectory(Path.Combine(folderPath, "Local"));
             Directory.CreateDirectory(Path.Combine(folderPath, ".Cache"));
             Directory.CreateDirectory(Path.Combine(folderPath, "Assets"));
 
-            // Generate manifest.json
+            string lowerName = name.ToLower().Replace(" ", "");
+            string userPkgId = $"com.user.{lowerName}";
+            string userPkgPath = Path.Combine(folderPath, "Local", userPkgId);
+            Directory.CreateDirectory(userPkgPath);
+
+            var defaultPkg = new PackageManifest
+            {
+                Id = userPkgId,
+                Name = $"{name} Logic",
+                Version = "1.0.0",
+                Description = "Default project game assembly",
+                Type = "managed",
+                Dependencies = new Dictionary<string, string>() // ZERO Dependencies by default
+            };
+            File.WriteAllText(Path.Combine(userPkgPath, "package.json"), JsonSerializer.Serialize(defaultPkg, new JsonSerializerOptions { WriteIndented = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull }));
+            
+            // Give it one empty CS file so compiler succeeds
+            File.WriteAllText(Path.Combine(userPkgPath, "Class1.cs"), $"namespace ArisenEngine.{name};\npublic class Class1 {{ }}\n");
+
             string manifestFile = Path.Combine(folderPath, "manifest.json");
             var manifest = new ProjectManifest
             {
                 Name = name,
-                Packages = new List<PackageRequirement>()
+                Packages = new List<PackageRequirement>(),
+                Profiles = new Dictionary<string, List<PackageRequirement>>
+                {
+                    { "Development", new List<PackageRequirement> { new PackageRequirement { Id = userPkgId, Url = $"file://Local/{userPkgId}", Version = "1.0.0" } } }
+                }
             };
-            string manifestJson = JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true });
+            string manifestJson = JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull });
             File.WriteAllText(manifestFile, manifestJson);
             
-            // Generate .gitignore
             string gitignoreFile = Path.Combine(folderPath, ".gitignore");
             string gitignoreContent = """
             # Arisen Engine Generated Folders
             .Cache/
-            Projects/
+            .arisen/
             Logs/
             Outputs/
             *.user
             """;
             File.WriteAllText(gitignoreFile, gitignoreContent);
 
-            // Add to recent projects in config
             if (!_configService.Settings.RecentProjects.Contains(projectFile))
             {
                 _configService.Settings.RecentProjects.Insert(0, projectFile);
@@ -231,11 +249,11 @@ public class ProjectService
             string buildToolProject = Path.Combine(engine.InstallPath, "External", "ArisenBuildTool", "ArisenBuildTool.csproj");
             if (File.Exists(buildToolExecutable))
             {
-                toolArgs = $"\"{buildToolExecutable}\" --manifest \"{resolvedManifestPath}\" --engine \"{engine.InstallPath}\"";
+                toolArgs = $"\"{buildToolExecutable}\" generate --manifest \"{resolvedManifestPath}\" --engine \"{engine.InstallPath}\"";
             }
             else
             {
-                toolArgs = $"run --project \"{buildToolProject}\" -- --manifest \"{resolvedManifestPath}\" --engine \"{engine.InstallPath}\"";
+                toolArgs = $"run --project \"{buildToolProject}\" -- generate --manifest \"{resolvedManifestPath}\" --engine \"{engine.InstallPath}\"";
             }
 
             _logService.Info($"Running ArisenBuildTool...");
