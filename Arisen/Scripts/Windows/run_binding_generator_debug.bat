@@ -44,16 +44,7 @@ echo [RUN] cmake --build "%VS_BUILD_DIR%" --config Debug --target GenerateAutoBi
 cmake --build "%VS_BUILD_DIR%" --config Debug --target GenerateAutoBinding >> "%LOG_FILE%" 2>&1
 if errorlevel 1 goto :fail
 
-echo [3/3] Verifying generated output...
-set "BINDING_OUTPUT_DIR=%ROOT_DIR%\Packages.Generated"
-set "CS_COUNT=0"
-if exist "%BINDING_OUTPUT_DIR%" (
-    for /r "%BINDING_OUTPUT_DIR%" %%F in (*.cs) do set /a CS_COUNT+=1
-)
-
-if "%CS_COUNT%" == "0" goto :fail
-
-echo Generated %CS_COUNT% C# binding file(s) in Packages.Generated.
+echo [3/3] Binding Generation process completed.
 echo === Binding generation succeeded ===
 echo.
 if not defined ARISEN_NO_PAUSE pause

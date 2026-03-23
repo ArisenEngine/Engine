@@ -168,9 +168,13 @@ set(DOTNET_MACRO_ARG "-p:DefineConstants=${TARGET_MACRO}")
 if(NOT ${TARGET} STREQUAL "Launcher")
 add_subdirectory(3rdparty/spdlog)
 set_target_properties(spdlog PROPERTIES FOLDER "3rdparty")
-add_subdirectory(Packages/com.arisen.core.native)
-add_subdirectory(Packages/com.arisen.rhi.dx12.native)
-add_subdirectory(Packages/com.arisen.rhi.vulkan.native)
+foreach(PKG com.arisen.core.native com.arisen.rhi.dx12.native com.arisen.rhi.vulkan.native)
+    if(EXISTS "${CMAKE_SOURCE_DIR}/Packages/${PKG}")
+        add_subdirectory(Packages/${PKG})
+    elseif(EXISTS "${CMAKE_SOURCE_DIR}/Development/PackageGame/Local/${PKG}")
+        add_subdirectory(Development/PackageGame/Local/${PKG})
+    endif()
+endforeach()
 endif()
 
 
@@ -213,13 +217,11 @@ add_custom_target(BuildBindingGenerator
     VERBATIM
     USES_TERMINAL
 )
-add_dependencies(BuildBindingGenerator Core.Foundation)
-add_dependencies(BuildBindingGenerator Core.Diagnostic)
-add_dependencies(BuildBindingGenerator Core.HAL)
-add_dependencies(BuildBindingGenerator Core.RHI)
-add_dependencies(BuildBindingGenerator Core.ShaderCompiler)
-add_dependencies(BuildBindingGenerator RHI.DX12)
-add_dependencies(BuildBindingGenerator RHI.Vulkan)
+foreach(DEP Core.Foundation Core.Diagnostic Core.HAL Core.RHI Core.ShaderCompiler RHI.DX12 RHI.Vulkan)
+    if(TARGET ${DEP})
+        add_dependencies(BuildBindingGenerator ${DEP})
+    endif()
+endforeach()
 
 set_target_properties(BuildBindingGenerator PROPERTIES FOLDER "CMakeProcess")
 
