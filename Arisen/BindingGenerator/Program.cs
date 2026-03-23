@@ -31,19 +31,8 @@ internal static class Program
             return;
         }
 
-        var packagesDir = Path.Combine(s_Output, "Packages.Generated");
-        Console.WriteLine($"Source: {s_SourceCode}");
-        Console.WriteLine($"Packages Output: {packagesDir}");
-
-        // We clean the Generated folder of each package before starting
-        if (Directory.Exists(packagesDir))
-        {
-            foreach (var pDir in Directory.GetDirectories(packagesDir))
-            {
-                var genDir = Path.Combine(pDir, "Generated");
-                if (Directory.Exists(genDir)) CleanOutputDirectory(genDir);
-            }
-        }
+        var packageRoots = new Dictionary<string, string>();
+        var cleanedPackageRoots = new HashSet<string>();
 
         // Scan all headers
         // Scan both .h and .cpp files (bridges are in .cpp)
@@ -76,12 +65,29 @@ internal static class Program
             Console.WriteLine($"  Processing: {relativePath}");
 
             var results = CSharpGenerator.ProcessHeader(content, header, s_GenerationTime);
+            if (results.Count == 0) continue;
+
+            var packageRoot = FindPackageRoot(header);
+            if (packageRoot == null)
+            {
+                Console.WriteLine($"    [WARN] Could not find package.json for {header}. Skipping bindings.");
+                continue;
+            }
+
+            if (!cleanedPackageRoots.Contains(packageRoot))
+            {
+                var cleanDir = Path.Combine(packageRoot, "Managed", "Generated");
+                if (Directory.Exists(cleanDir)) CleanOutputDirectory(cleanDir);
+                cleanedPackageRoots.Add(packageRoot);
+            }
+
             foreach (var (packageId, fileName, csContent, subDir) in results)
             {
-                var packageDir = Path.Combine(s_Output, "Packages.Generated", packageId, "Generated");
+                packageRoots[packageId] = packageRoot;
                 packagesModified.Add(packageId);
 
-                var targetDir = string.IsNullOrEmpty(subDir) ? packageDir : Path.Combine(packageDir, subDir);
+                var generatedRoot = Path.Combine(packageRoot, "Managed", "Generated");
+                var targetDir = string.IsNullOrEmpty(subDir) ? generatedRoot : Path.Combine(generatedRoot, subDir);
                 if (!Directory.Exists(targetDir))
                     Directory.CreateDirectory(targetDir);
                 var outPath = Path.Combine(targetDir, fileName);
@@ -96,11 +102,11 @@ internal static class Program
         // Generate UTF8Marshaller and Package Metadata per package
         foreach (var pkg in packagesModified)
         {
-             var pDir = Path.Combine(s_Output, "Packages.Generated", pkg);
-             var pOut = Path.Combine(pDir, "Generated");
-
-             MarshallerGenerator.GenerateMarshaller(pOut, s_GenerationTime);
-             ProjectGenerator.GeneratePackageFiles(pkg, pDir);
+             if (packageRoots.TryGetValue(pkg, out var pRoot))
+             {
+                 var pOut = Path.Combine(pRoot, "Managed", "Generated");
+                 MarshallerGenerator.GenerateMarshaller(pOut, s_GenerationTime);
+             }
         }
 
         Console.WriteLine($"\nGeneration complete: {generatedFiles} file(s) generated across {packagesModified.Count} package(s).");
@@ -136,5 +142,16 @@ internal static class Program
             if (Directory.GetFiles(dir, "*", SearchOption.AllDirectories).Length == 0)
                 Directory.Delete(dir, true);
         }
+    }
+
+    static string FindPackageRoot(string startPath)
+    {
+        var dir = Path.GetDirectoryName(startPath);
+        while (!string.IsNullOrEmpty(dir))
+        {
+            if (File.Exists(Path.Combine(dir, "package.json"))) return dir;
+            dir = Path.GetDirectoryName(dir);
+        }
+        return null;
     }
 }
