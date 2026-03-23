@@ -5,6 +5,7 @@
         x:DataType="vm:PackageManagerViewModel"
         x:Name="PackageManagerWindowRoot"
         Title="Project Package Manager" Width="850" Height="680" WindowStartupLocation="CenterOwner"
+        Icon="avares://ArisenLauncher/Assets/arisen-logo.ico"
         Background="#0f1117"
         Foreground="#f1f5f9"
         FontFamily="Inter, Space Grotesk">
@@ -30,17 +31,75 @@
                     <TextBlock Text="Manage dependencies required for this project to compile and run." Foreground="#64748b" FontSize="14"/>
                 </StackPanel>
 
-                <!-- Add Package Controls (Moved to Top for permanent accessibility) -->
-                <Border Background="#1a1e26" CornerRadius="8" BorderBrush="#282e39" BorderThickness="1" Padding="20">
+                <!-- Toolbar -->
+                <Border Background="#1a1e26" CornerRadius="8" BorderBrush="#282e39" BorderThickness="1" Padding="8">
+                    <Grid ColumnDefinitions="Auto, *, Auto, Auto">
+                        <Button Grid.Column="0" Content="+ Create Local Package" Command="{Binding BeginCreatePackageCommand}" 
+                                Background="#135bec" Foreground="White" Padding="16,8" CornerRadius="6" FontWeight="SemiBold"/>
+                        
+                        <Button Grid.Column="2" Content="Import Local Package..." Command="{Binding AddLocalPackageCommand}" 
+                                Background="Transparent" BorderBrush="#282e39" BorderThickness="1" Foreground="#94a3b8" Padding="16,8" CornerRadius="6" Margin="0,0,8,0"/>
+                        
+                        <Button Grid.Column="3" Content="Add Remote URL..." Command="{Binding AddPackageCommand}" 
+                                Background="Transparent" BorderBrush="#282e39" BorderThickness="1" Foreground="#94a3b8" Padding="16,8" CornerRadius="6"/>
+                    </Grid>
+                </Border>
+
+                <!-- Create Package Wizard Panel -->
+                <Border IsVisible="{Binding IsCreatingPackage}" Background="#13151c" CornerRadius="8" BorderBrush="#282e39" BorderThickness="1" Padding="24">
                     <StackPanel Spacing="16">
-                        <TextBlock Text="Add New Package" FontWeight="Bold" FontSize="16" Foreground="White"/>
-                        <Grid ColumnDefinitions="*, Auto">
-                            <Button Grid.Column="0" Content="Type Custom URL..." Command="{Binding AddPackageCommand}" 
-                                    Margin="0,0,16,0"
-                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="Transparent" BorderBrush="#282e39" BorderThickness="1" Padding="0,12" CornerRadius="6" Foreground="#94a3b8"/>
-                            <Button Grid.Column="1" Content="Browse Local Folder..." Command="{Binding AddLocalPackageCommand}" 
-                                    Background="#135bec" Foreground="White" Padding="24,12" CornerRadius="6" FontWeight="SemiBold"/>
+                        <TextBlock Text="Create New Local Package" FontSize="18" FontWeight="Bold" Foreground="White"/>
+                        <TextBlock Text="Scaffolds a new package explicitly inside this project's Local/ directory." Foreground="#64748b" FontSize="12" Margin="0,-8,0,0"/>
+
+                        <!-- Validation Error -->
+                        <Border IsVisible="{Binding HasCreatePackageError}" Background="#ef444420" BorderBrush="#ef4444" BorderThickness="1" CornerRadius="6" Padding="12">
+                            <TextBlock Text="{Binding CreatePackageError}" Foreground="#ef4444" FontWeight="Bold" TextWrapping="Wrap" FontSize="12"/>
+                        </Border>
+
+                        <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto, Auto, Auto" Margin="0,8,0,0">
+                            <!-- Left Column -->
+                            <StackPanel Grid.Row="0" Grid.Column="0" Spacing="6" Margin="0,0,12,12">
+                                <TextBlock Text="Package ID (e.g. com.mycompany.inventory)" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
+                                <TextBox Text="{Binding NewPackageId}" Background="#0f1117" BorderBrush="#282e39" Foreground="White"/>
+                            </StackPanel>
+                            
+                            <StackPanel Grid.Row="1" Grid.Column="0" Spacing="6" Margin="0,0,12,12">
+                                <TextBlock Text="Package Name" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
+                                <TextBox Text="{Binding NewPackageName}" Background="#0f1117" BorderBrush="#282e39" Foreground="White"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="2" Grid.Column="0" Spacing="6" Margin="0,0,12,12">
+                                <TextBlock Text="Version" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
+                                <TextBox Text="{Binding NewPackageVersion}" Background="#0f1117" BorderBrush="#282e39" Foreground="White"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="3" Grid.Column="0" Spacing="6" Margin="0,0,12,0">
+                                <TextBlock Text="Package Type" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
+                                <ComboBox SelectedItem="{Binding NewPackageType}" ItemsSource="{Binding AvailablePackageTypes}" Background="#0f1117" BorderBrush="#282e39" Foreground="White" HorizontalAlignment="Stretch" />
+                            </StackPanel>
+
+                            <!-- Right Column -->
+                            <StackPanel Grid.Row="0" Grid.Column="1" Spacing="6" Margin="12,0,0,12">
+                                <TextBlock Text="Author" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
+                                <TextBox Text="{Binding NewPackageAuthor}" Background="#0f1117" BorderBrush="#282e39" Foreground="White" Watermark="Optional"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="1" Grid.Column="1" Grid.RowSpan="2" Spacing="6" Margin="12,0,0,12">
+                                <TextBlock Text="Dependencies (comma separated IDs)" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
+                                <TextBox Text="{Binding NewPackageDependencies}" Background="#0f1117" BorderBrush="#282e39" Foreground="White" Watermark="e.g. com.arisen.ecs, com.arisen.core" Height="86" AcceptsReturn="True" TextWrapping="Wrap"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="3" Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                <CheckBox Content="Scaffold C# IPackageEntry" Foreground="#94a3b8" FontWeight="SemiBold"
+                                          IsChecked="{Binding GeneratePackageEntry}"
+                                          IsEnabled="{Binding NewPackageType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter='managed'}" />
+                            </StackPanel>
                         </Grid>
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12" Margin="0,16,0,0">
+                            <Button Content="Cancel" Command="{Binding CancelCreatePackageCommand}" Background="Transparent" BorderBrush="#282e39" BorderThickness="1" Foreground="#94a3b8" Padding="20,8" CornerRadius="6"/>
+                            <Button Content="Create Package" Command="{Binding ConfirmCreatePackageCommand}" Background="#22c55e" Foreground="White" FontWeight="Bold" Padding="20,8" CornerRadius="6"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

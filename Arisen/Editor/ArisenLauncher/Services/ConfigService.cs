@@ -70,9 +70,14 @@ public class ConfigService
             string dir = Path.GetDirectoryName(_settingsPath)!;
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
+            string tempPath = _settingsPath + ".tmp";
             string json = JsonSerializer.Serialize(Settings, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(_settingsPath, json);
-            _logService.Info($"Configuration saved to {_settingsPath}");
+            File.WriteAllText(tempPath, json);
+            
+            // Atomically replace the old config
+            File.Move(tempPath, _settingsPath, overwrite: true);
+            
+            _logService.Info($"Configuration saved atomically to {_settingsPath}");
         }
         catch (Exception ex)
         {

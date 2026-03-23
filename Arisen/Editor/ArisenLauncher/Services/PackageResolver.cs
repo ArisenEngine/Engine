@@ -51,9 +51,20 @@ public class PackageResolver
             }
         }
 
-        _logService.Info($"[PackageResolver] Extracting to {extractDir}...");
-        ZipFile.ExtractToDirectory(tempFile, extractDir);
-        File.Delete(tempFile);
+        string tempExtractDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            _logService.Info($"[PackageResolver] Extracting to temporary directory...");
+            ZipFile.ExtractToDirectory(tempFile, tempExtractDir);
+
+            _logService.Info($"[PackageResolver] Moving safely to {extractDir}...");
+            Directory.Move(tempExtractDir, extractDir);
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+            if (Directory.Exists(tempExtractDir)) Directory.Delete(tempExtractDir, true);
+        }
 
         return extractDir;
     }
