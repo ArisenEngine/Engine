@@ -51,3 +51,6 @@
 [submodule "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native"]
 	path = Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native
 	url = https://github.com/ArisenEngine/com.arisen.rhi.vulkan.native.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.editor"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.editor
+	url = https://github.com/ArisenEngine/com.arisen.editor.git

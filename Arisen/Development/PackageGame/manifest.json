@@ -1,6 +1,15 @@
 {
   "Name": "PackageGame",
   "EngineVersion": "Current",
+  "Profiles": {
+    "Development": [
+      {
+        "Id": "com.arisen.packagegame",
+        "Url": "file://Local/com.arisen.packagegame",
+        "Version": "1.0.0"
+      }
+    ]
+  },
   "Packages": [
     {
       "Id": "com.arisen.resources",
