@@ -42,7 +42,7 @@ public class ProjectService
         return null;
     }
 
-        public bool CreateProject(string folderPath, string name, EngineInstance engine, string? templateName = null)
+        public bool CreateProject(string folderPath, string name, EngineInstance engine, string? templateName = null, string? defaultPackageId = null)
     {
         try
         {
@@ -81,8 +81,7 @@ public class ProjectService
             Directory.CreateDirectory(Path.Combine(folderPath, ".Cache"));
             Directory.CreateDirectory(Path.Combine(folderPath, "Assets"));
 
-            string lowerName = name.ToLower().Replace(" ", "");
-            string userPkgId = $"com.user.{lowerName}";
+            string userPkgId = string.IsNullOrWhiteSpace(defaultPackageId) ? $"com.user.{name.ToLower().Replace(" ", "")}" : defaultPackageId;
             string userPkgPath = Path.Combine(folderPath, "Local", userPkgId);
             Directory.CreateDirectory(userPkgPath);
 
@@ -274,7 +273,19 @@ public class ProjectService
                 {
                     process.OutputDataReceived += (s, e) => { if (e.Data != null) _logService.Info($"[BuildTool] {e.Data}"); };
                     process.BeginOutputReadLine();
-                    await process.WaitForExitAsync();
+
+                    using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(60));
+                    try
+                    {
+                        await process.WaitForExitAsync(cts.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        _logService.Critical("ArisenBuildTool timed out after 60 seconds.");
+                        process.Kill();
+                        return false;
+                    }
+
                     if (process.ExitCode != 0)
                     {
                         _logService.Error($"ArisenBuildTool failed with exit code: {process.ExitCode}");

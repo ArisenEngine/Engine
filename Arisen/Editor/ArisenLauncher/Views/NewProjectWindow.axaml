@@ -4,6 +4,7 @@
         x:Class="ArisenLauncher.Views.NewProjectWindow"
         x:DataType="vm:NewProjectViewModel"
         Title="Create New Project"
+        Icon="avares://ArisenLauncher/Assets/arisen-logo.ico"
         Width="800" Height="500"
         WindowStartupLocation="CenterOwner"
         Background="#1a1e26"
@@ -39,6 +40,12 @@
                 <StackPanel Spacing="8">
                     <TextBlock Text="Project Name" FontSize="12" FontWeight="SemiBold" Foreground="#94a3b8"/>
                     <TextBox Text="{Binding ProjectName}" Watermark="Enter project name..."
+                             Background="#0f1117" BorderBrush="#282e39"/>
+                </StackPanel>
+
+                <StackPanel Spacing="8" Margin="0,8,0,0">
+                    <TextBlock Text="Default Package ID" FontSize="12" FontWeight="SemiBold" Foreground="#94a3b8"/>
+                    <TextBox Text="{Binding DefaultPackageId}" Watermark="e.g. com.user.myproject"
                              Background="#0f1117" BorderBrush="#282e39"/>
                 </StackPanel>
 

@@ -10,6 +10,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <AssemblyName>ArisenLauncher</AssemblyName>
     <RootNamespace>ArisenLauncher</RootNamespace>
+    <ApplicationIcon>Assets\arisen-logo.ico</ApplicationIcon>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -23,5 +24,9 @@
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.4" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.4" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 </Project>

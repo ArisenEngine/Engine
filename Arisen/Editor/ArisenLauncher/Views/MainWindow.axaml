@@ -7,6 +7,7 @@
         x:Name="Root"
         x:DataType="vm:MainViewModel"
         Title="Avalonia Engine | Launch Hub"
+        Icon="avares://ArisenLauncher/Assets/arisen-logo.ico"
         Width="1200" Height="800"
         WindowStartupLocation="CenterScreen"
         Background="#0f1117"

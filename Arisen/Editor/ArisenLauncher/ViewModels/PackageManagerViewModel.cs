@@ -24,6 +24,22 @@ public partial class PackageManagerViewModel : ObservableObject
     partial void OnVerificationErrorChanged(string value) => OnPropertyChanged(nameof(HasVerificationError));
     public bool HasVerificationError => !string.IsNullOrEmpty(VerificationError);
 
+    // Create Package State
+    [ObservableProperty] private bool _isCreatingPackage;
+    [ObservableProperty] private string _newPackageId = "com.mycompany.mypackage";
+    [ObservableProperty] private string _newPackageName = "My Package";
+    [ObservableProperty] private string _newPackageVersion = "1.0.0";
+    [ObservableProperty] private string _newPackageType = "managed";
+    [ObservableProperty] private bool _generatePackageEntry = true;
+    [ObservableProperty] private string _newPackageAuthor = string.Empty;
+    [ObservableProperty] private string _newPackageDependencies = string.Empty;
+    [ObservableProperty] private string _createPackageError = string.Empty;
+    
+    public System.Collections.Generic.List<string> AvailablePackageTypes { get; } = new() { "managed", "native", "asset", "module" };
+
+    partial void OnCreatePackageErrorChanged(string value) => OnPropertyChanged(nameof(HasCreatePackageError));
+    public bool HasCreatePackageError => !string.IsNullOrEmpty(CreatePackageError);
+
     public ObservableCollection<PackageRequirementViewModel> Packages { get; } = new();
 
     public Func<Task<string?>>? RequestFolderPickerAsync;
@@ -101,6 +117,139 @@ public partial class PackageManagerViewModel : ObservableObject
         if (!Packages.Any(p => p.Id == id))
         {
             Packages.Add(new PackageRequirementViewModel { Id = id, Url = "https://github.com/...", Version = "1.0.0" });
+        }
+    }
+    
+    [RelayCommand]
+    private void BeginCreatePackage()
+    {
+        CreatePackageError = string.Empty;
+        IsCreatingPackage = true;
+        
+        // Reset defaults
+        NewPackageType = "managed";
+        GeneratePackageEntry = true;
+    }
+
+    [RelayCommand]
+    private void CancelCreatePackage()
+    {
+        IsCreatingPackage = false;
+    }
+
+    [RelayCommand]
+    private void ConfirmCreatePackage()
+    {
+        CreatePackageError = string.Empty;
+
+        // Validation
+        if (string.IsNullOrWhiteSpace(NewPackageId))
+        {
+            CreatePackageError = "Package ID cannot be empty.";
+            return;
+        }
+
+        if (Packages.Any(p => p.Id == NewPackageId))
+        {
+            CreatePackageError = $"A package with ID '{NewPackageId}' is already installed.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(NewPackageName) || string.IsNullOrWhiteSpace(NewPackageVersion))
+        {
+            CreatePackageError = "Package Name and Version are required.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(NewPackageType))
+        {
+            CreatePackageError = "Package Type is required.";
+            return;
+        }
+
+        string localDir = Path.Combine(Path.GetDirectoryName(_project.ProjectPath)!, "Local");
+        Directory.CreateDirectory(localDir); // Ensure Local dir exists
+
+        string packageDir = Path.Combine(localDir, NewPackageId);
+        if (Directory.Exists(packageDir))
+        {
+            CreatePackageError = $"Directory '{NewPackageId}' already exists in the Local workspace. Please manually import it or use a different ID.";
+            return;
+        }
+
+        try
+        {
+            // Scaffold Directory
+            Directory.CreateDirectory(packageDir);
+
+            // Parse Dependencies
+            var depsDict = new System.Collections.Generic.Dictionary<string, string>();
+            if (!string.IsNullOrWhiteSpace(NewPackageDependencies))
+            {
+                var depsList = NewPackageDependencies.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var dep in depsList)
+                {
+                    string cleanDep = dep.Trim();
+                    if (!string.IsNullOrEmpty(cleanDep))
+                    {
+                        depsDict[cleanDep] = "1.0.0"; // Default to 1.0.0 for missing deps placeholder
+                    }
+                }
+            }
+
+            // Create package.json adhering to Engine standard
+            var newPkg = new
+            {
+                // Must use lowercase schema
+                schema = "https://arisen.dev/schemas/package-v2.json",
+                id = NewPackageId,
+                name = NewPackageName,
+                version = NewPackageVersion,
+                type = NewPackageType,
+                author = NewPackageAuthor,
+                // MUST NOT provide subsystems
+                dependencies = depsDict
+            };
+
+            string jsonPath = Path.Combine(packageDir, "package.json");
+            File.WriteAllText(jsonPath, JsonSerializer.Serialize(newPkg, new JsonSerializerOptions { WriteIndented = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull }).Replace("\"schema\":", "\"$schema\":"));
+
+            // Generate IPackageEntry C# Hook if requested and managed
+            if (NewPackageType == "managed" && GeneratePackageEntry)
+            {
+                string safeNamespace = "ArisenEngine." + string.Join("", NewPackageId.Split('.').Select(part => char.ToUpper(part[0]) + part.Substring(1)));
+                string csCode = $$"""
+using ArisenKernel.Packages;
+using ArisenKernel.Contracts;
+
+namespace {{safeNamespace}}
+{
+    public class PackageEntry : IPackageEntry
+    {
+        public void OnLoad(IServiceRegistry registry)
+        {
+            // Initialize your package services here
+        }
+
+        public void OnUnload()
+        {
+            // Cleanup your package resources here
+        }
+    }
+}
+""";
+                File.WriteAllText(Path.Combine(packageDir, "PackageEntry.cs"), csCode);
+            }
+
+            // Import generated package automatically
+            AddLocalPackageRecursive(packageDir);
+
+            // Close creation panel
+            IsCreatingPackage = false;
+        }
+        catch (Exception ex)
+        {
+            CreatePackageError = $"Failed to perform package scaffolding: {ex.Message}";
         }
     }
     

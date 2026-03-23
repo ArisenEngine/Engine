@@ -38,26 +38,83 @@ Every single line of code written must adhere strictly to these four pillars:
 
 ---
 
-## 3. Documentation Index
+## 3. Documentation Index (MANDATORY)
 
-To maintain organization, detailed technical specs are split into specific files. When an AI agent encounters a design question, they MUST refer to these index files first:
+All documentation files are located under:
 
-* **[Project Management Architecture (ProjectManagement.md)](Architecture/ProjectManagement.md)**  
-  Defines the directory layout, `.arisenproj` identity rules, and the strict Boot/Creation lifecycles for the Engine.
-* **[Configuration Formats (ConfigurationFormats.md)](Architecture/ConfigurationFormats.md)**  
-  Defines the exact JSON schemas and data structures for `manifest.json`, `.arisenproj`, and `package.json`.
-* **[Package Lifecycle & Initialization (PackageLifecycle.md)](Architecture/PackageLifecycle.md)**  
-  Details how the Kernel guarantees deterministic boot order using Topological Dependency Sorting and Engine Phases/Priorities.
-* **[ArisenHost Bootstrapping & Binary Resolution (ArisenHost.md)](Architecture/ArisenHost.md)**  
-  Details how the universal executable finds workspaces, manages uniform DLL output paths, and safely intertwines C# and C++ memory loading.
-* **[ArisenBuildTool Generation (ArisenBuildTool.md)](Architecture/ArisenBuildTool.md)**  
-  Defines how the build tool generates transient `.sln` and `.csproj` files to provide a perfect IDE experience without polluting package source control.
-* **[Inter-Package Communication (ServiceRegistry.md)](Architecture/ServiceRegistry.md)**  
-  The strict rules for how packages fetch and provide services via C# Interfaces without ever statically referencing each other's concrete code.
-* **[Asset Pipeline & Resources (AssetPipeline.md)](Architecture/AssetPipeline.md)**  
-  Details how the engine achieves Zero-Overhead memory loading using GUIDs, YAML local `.meta` files, and pre-computed binary Cooking.
-* **[Package Architecture / Profiles (PackageArchitecture.md)](../Roadmap/PackageArchitecture.md)**  
-  Contains the transition plan moving the monolithic engine to packages and defines the Universal Host/Profiles mapping.
+Engine/Arisen/Docs/
+
+### ⚠️ File Access Rules (CRITICAL)
+
+- ALL paths below are relative to the repository root (ArisenEngine/)
+- NEVER assume current working directory
+- NEVER use implicit or guessed paths
+- If a file cannot be found → STOP and report missing context
+- NEVER hallucinate architecture details
+
+---
+
+### 📚 Architecture Documents
+
+- Engine/Arisen/Docs/Architecture/ProjectManagement.md
+- Engine/Arisen/Docs/Architecture/ConfigurationFormats.md
+- Engine/Arisen/Docs/Architecture/PackageLifecycle.md
+- Engine/Arisen/Docs/Architecture/ArisenHost.md
+- Engine/Arisen/Docs/Architecture/ArisenBuildTool.md
+- Engine/Arisen/Docs/Architecture/ServiceRegistry.md
+- Engine/Arisen/Docs/Architecture/AssetPipeline.md
+- Engine/Arisen/Docs/Architecture/PackageArchitecture.md
+
+---
+
+### 🧠 Skills & Implementation Guides
+
+- Engine/Arisen/Docs/Skills/
+
+This directory contains implementation-level knowledge and best practices.
+When solving concrete coding or system problems, consult relevant files here.
+
+---
+
+### 🧭 Context Loading Strategy (VERY IMPORTANT)
+
+When solving problems, you MUST load context as follows:
+
+- Architecture / system design questions  
+  → Read ALL relevant files under Architecture/
+
+- Build / compilation / project generation issues  
+  → Read:
+    - ArisenBuildTool.md
+    - ArisenHost.md
+
+- Runtime / initialization / dependency issues  
+  → Read:
+    - PackageLifecycle.md
+    - ServiceRegistry.md
+
+- Asset / resource / pipeline issues  
+  → Read:
+    - AssetPipeline.md
+
+- Package structure / modularization questions  
+  → Read:
+    - PackageArchitecture.md
+    - ProjectManagement.md
+
+---
+
+### 🚫 Forbidden Behavior
+
+- DO NOT answer architecture questions without reading relevant docs
+- DO NOT assume missing systems
+- DO NOT invent APIs or workflows not defined in docs
+
+# Context Depth Rules
+
+- For simple questions → read 1-2 relevant files
+- For system design → read multiple Architecture files
+- For critical changes → cross-check ALL related documents
 
 ***
 

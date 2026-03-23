@@ -21,6 +21,11 @@ public partial class NewProjectViewModel : ObservableObject
     private string _projectLocation;
 
     [ObservableProperty]
+    private string _defaultPackageId = "com.user.mynewproject";
+
+    private bool _isPackageIdModifiedByUser = false;
+
+    [ObservableProperty]
     private string? _selectedTemplate = "Blank Project";
 
     public ObservableCollection<string> Templates { get; } = new();
@@ -75,15 +80,56 @@ public partial class NewProjectViewModel : ObservableObject
                 ProjectLocation = path;
             }
         }
+        UpdatePackageId();
+    }
+
+    partial void OnDefaultPackageIdChanged(string value)
+    {
+        if (value != $"com.user.{ProjectName.ToLower().Replace(" ", "")}")
+        {
+            _isPackageIdModifiedByUser = true;
+        }
+    }
+
+    partial void OnProjectNameChanged(string value)
+    {
+        UpdatePackageId();
+    }
+
+    private void UpdatePackageId()
+    {
+        if (_isPackageIdModifiedByUser) return;
+
+        if (!string.IsNullOrWhiteSpace(ProjectName))
+        {
+            DefaultPackageId = $"com.user.{ProjectName.ToLower().Replace(" ", "")}";
+        }
     }
 
     [RelayCommand]
     private void Create()
     {
+        if (string.IsNullOrWhiteSpace(DefaultPackageId))
+        {
+            _logService.Error("Wizard: Default Package ID cannot be empty.");
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(ProjectName))
+        {
+            _logService.Error("Wizard: Project name cannot be empty.");
+            return;
+        }
+
+        if (ProjectName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+        {
+            _logService.Error($"Wizard: Project name '{ProjectName}' contains invalid characters.");
+            return;
+        }
+
         string fullPath = Path.Combine(ProjectLocation, ProjectName);
-        _logService.Info($"Creating new project: {ProjectName} at {fullPath} with template {SelectedTemplate}");
+        _logService.Info($"Creating new project: {ProjectName} at {fullPath} with template {SelectedTemplate} and package {DefaultPackageId}");
         
-        if (_projectService.CreateProject(fullPath, ProjectName, _engine, SelectedTemplate))
+        if (_projectService.CreateProject(fullPath, ProjectName, _engine, SelectedTemplate, DefaultPackageId))
         {
             RequestClose?.Invoke(true);
         }
