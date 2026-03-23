@@ -5,3 +5,5 @@ Logs/
 Outputs/
 *.user
 .arisen/
+.csproj
+.vxcproj
