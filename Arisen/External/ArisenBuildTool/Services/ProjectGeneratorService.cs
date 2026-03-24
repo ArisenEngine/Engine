@@ -46,6 +46,15 @@ public static class ProjectGeneratorService
         writer.WriteLine("  <ItemGroup>");
         string srcRel = PathUtils.GetRelativePath(projectsDir, package.DirectoryPath);
         writer.WriteLine($"    <Compile Include=\"{srcRel}\\**\\*.cs\" />");
+        
+        bool hasAvalonia = package.Manifest.NugetDependencies?.ContainsKey("Avalonia") == true;
+        if (hasAvalonia)
+        {
+            writer.WriteLine($"    <AvaloniaXaml Include=\"{srcRel}\\**\\*.axaml\" />");
+            writer.WriteLine($"    <AvaloniaResource Include=\"{srcRel}\\Assets\\**\" />");
+            writer.WriteLine($"    <AvaloniaResource Include=\"{srcRel}\\Resources\\**\" />");
+            writer.WriteLine($"    <AvaloniaResource Include=\"{srcRel}\\**\\*.png\" />");
+        }
         writer.WriteLine("  </ItemGroup>");
         writer.WriteLine();
 
@@ -86,6 +95,17 @@ public static class ProjectGeneratorService
         
         writer.WriteLine("  </ItemGroup>");
         writer.WriteLine();
+
+        if (package.Manifest.NugetDependencies != null && package.Manifest.NugetDependencies.Count > 0)
+        {
+            writer.WriteLine("  <ItemGroup>");
+            foreach (var kvp in package.Manifest.NugetDependencies)
+            {
+                writer.WriteLine($"    <PackageReference Include=\"{kvp.Key}\" Version=\"{kvp.Value}\" />");
+            }
+            writer.WriteLine("  </ItemGroup>");
+            writer.WriteLine();
+        }
 
         // INJECTION PIPELINE: Auto-run ArisenBuildTool inject after compilation
         writer.WriteLine("  <Target Name=\"ArisenPostBuildInjection\" AfterTargets=\"Build\">");

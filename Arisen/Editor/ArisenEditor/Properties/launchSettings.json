@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "ArisenEditor": {
-      "commandName": "Project",
-      "nativeDebugging": true
-    }
-  }
-}

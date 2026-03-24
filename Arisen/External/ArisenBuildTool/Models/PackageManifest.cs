@@ -42,5 +42,6 @@ public class PackageManifest
     public List<PackageSubsystem>? Subsystems { get; set; }
     
     public Dictionary<string, string>? Dependencies { get; set; }
+    public Dictionary<string, string>? NugetDependencies { get; set; }
     public Dictionary<string, List<string>>? NativeRuntimes { get; set; }
 }
