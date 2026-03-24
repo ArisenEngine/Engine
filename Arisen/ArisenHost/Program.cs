@@ -1,4 +1,13 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text.Json;
+using ArisenKernel.Contracts;
+using ArisenKernel.Lifecycle;
+using ArisenKernel.Services;
 
 namespace ArisenHost;
 
@@ -6,34 +15,116 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        Console.WriteLine("=== ArisenHost Initializing ===");
+        Console.WriteLine("=== ArisenHost Bootstrapper ===");
         
+        string workspacePath = "";
         string entryPackage = "";
-        
+        string profile = "Development";
+
         for (int i = 0; i < args.Length; i++)
         {
-            if (args[i] == "--entry" && i + 1 < args.Length)
-            {
-                entryPackage = args[i + 1];
-            }
+            if (args[i] == "--workspace" && i + 1 < args.Length) workspacePath = args[i + 1];
+            if (args[i] == "--entry" && i + 1 < args.Length) entryPackage = args[i + 1];
+            if (args[i] == "--profile" && i + 1 < args.Length) profile = args[i + 1];
         }
 
-        if (string.IsNullOrEmpty(entryPackage))
+        if (string.IsNullOrEmpty(workspacePath))
         {
-            Console.WriteLine("FATAL ERROR: No entry package specified. Use --entry <PackageIdentifier>");
+            workspacePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Development", "PackageGame"));
+            Console.WriteLine($"[Host] No --workspace provided. Defaulting to: {workspacePath}");
+        }
+
+        string manifestPath = Path.Combine(workspacePath, "manifest.json");
+        if (!File.Exists(manifestPath))
+        {
+            Console.WriteLine($"[Host] FATAL ERROR: Cannot find manifest.json at {manifestPath}");
             Environment.Exit(1);
         }
 
-        Console.WriteLine($"Starting host execution for entry package: {entryPackage}");
+        Console.WriteLine($"[Host] Reading Workspace Manifest: {manifestPath}");
+        var manifestJson = JsonDocument.Parse(File.ReadAllText(manifestPath));
+        var packagesElement = manifestJson.RootElement.GetProperty("Packages");
         
-        // --- System Lifecycle Plan ---
-        // 1. Initialize ArisenKernel ServiceRegistry
-        // 2. Scan and Mount Packages from 'Local' and '.Cache' 
-        // 3. Resolve Topological Dependencies via manifest.json
-        // 4. Instantiate Main Entry Point interface (IEngineSubsystem/IProjectEntry)
-        // 5. Spin up Engine Frame Loop
-        // -----------------------------
+        List<string> packageUrls = new();
+        foreach (var pkg in packagesElement.EnumerateArray())
+        {
+            var url = pkg.GetProperty("Url").GetString();
+            if (!string.IsNullOrEmpty(url))
+            {
+                if (url.StartsWith("file://"))
+                {
+                    string localPath = url.Substring(7);
+                    if (Path.IsPathRooted(localPath)) packageUrls.Add(localPath);
+                    else packageUrls.Add(Path.Combine(workspacePath, localPath));
+                }
+            }
+        }
+
+        // 1. Initialize Kernel
+        var kernel = EngineKernel.Instance;
+        var registry = kernel.Services;
+
+        // 2. Load Topologically (Simplified parsing)
+        Console.WriteLine("[Host] Mounting Packages...");
         
-        Console.WriteLine("TODO: Implement PackageLoadContext dispatch sequence.");
+        foreach (var pUrl in packageUrls)
+        {
+            string pJsonPath = Path.Combine(pUrl, "package.json");
+            if (!File.Exists(pJsonPath)) continue;
+
+            var pDoc = JsonDocument.Parse(File.ReadAllText(pJsonPath));
+            var root = pDoc.RootElement;
+            string id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() : root.GetProperty("name").GetString();
+            
+            // Native Runtimes
+            if (root.TryGetProperty("nativeRuntimes", out var nativeBlock) && nativeBlock.TryGetProperty("win-x64", out var win64Block))
+            {
+                foreach (var dll in win64Block.EnumerateArray())
+                {
+                    string nativeName = dll.GetString();
+                    Console.WriteLine($"[Host] Mapping Native C++ Payload: {nativeName} for {id}");
+                    // NativeLibrary.Load(nativeName); // Actually deferred to execution or .arisen/bin/ output directory loader
+                }
+            }
+            
+            // Execute IPackageEntry dynamically if entry class is declared
+            if (root.TryGetProperty("entryAssembly", out var entryAsm))
+            {
+                string asmName = entryAsm.GetString();
+                Console.WriteLine($"[Host] Booting Managed Entry: {asmName} for {id}");
+                try
+                {
+                    Assembly asm = Assembly.LoadFrom(Path.Combine(pUrl, "Managed", asmName));
+                    if (root.TryGetProperty("entryClass", out var entryClass))
+                    {
+                        Type t = asm.GetType(entryClass.GetString());
+                        if (t != null)
+                        {
+                            var entryInstance = Activator.CreateInstance(t);
+                            var onLoadMethod = t.GetMethod("OnLoad");
+                            if (onLoadMethod != null) onLoadMethod.Invoke(entryInstance, new object[] { registry });
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"[Host] Managed boot neglected/failed for {id}: " + e.Message);
+                }
+            }
+        }
+
+        Console.WriteLine("[Host] Topologial Mount Complete.");
+
+        // 3. Fallback to registry checks for boot takeover
+        if (registry.TryGetService<IApplicationHost>(out var appHost))
+        {
+            Console.WriteLine("[Host] Yielding main thread to IApplicationHost (Editor/UI).");
+            appHost.Run(args);
+        }
+        else
+        {
+            Console.WriteLine("[Host] No IApplicationHost detected. Engaging default bare-metal Engine tick.");
+            kernel.Run();
+        }
     }
 }
