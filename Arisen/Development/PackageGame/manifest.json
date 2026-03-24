@@ -4,8 +4,8 @@
   "Profiles": {
     "Development": [
       {
-        "Id": "com.arisen.packagegame",
-        "Url": "file://Local/com.arisen.packagegame",
+        "Id": "com.arisen.editor",
+        "Url": "file://Local/com.arisen.editor",
         "Version": "1.0.0"
       }
     ]

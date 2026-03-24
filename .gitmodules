@@ -21,15 +21,6 @@
 [submodule "Arisen/Test/NativeEngineTest/Assets/glTF-Sample-Models"]
 	path = Arisen/Test/Assets/glTF-Sample-Models
 	url = https://github.com/KhronosGroup/glTF-Sample-Models.git
-[submodule "Arisen/External/ArisenNodeCanvas"]
-	path = Arisen/External/ArisenNodeCanvas
-	url = https://github.com/eatdreamcat/ArisenNodeCanvas.git
-[submodule "Arisen/External/ArisenDAG"]
-	path = Arisen/External/ArisenDAG
-	url = https://github.com/eatdreamcat/ArisenDAG.git
-[submodule "Arisen/External/ArisenEditorFramework"]
-	path = Arisen/External/ArisenEditorFramework
-	url = https://github.com/eatdreamcat/ArisenEditorFramework.git
 [submodule "Arisen/Development/PackageGame/Local/com.arisen.core"]
 	path = Arisen/Development/PackageGame/Local/com.arisen.core
 	url = https://github.com/ArisenEngine/com.arisen.core.git
@@ -54,3 +45,9 @@
 [submodule "Arisen/Development/PackageGame/Local/com.arisen.editor"]
 	path = Arisen/Development/PackageGame/Local/com.arisen.editor
 	url = https://github.com/ArisenEngine/com.arisen.editor.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.dag"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.dag
+	url = https://github.com/ArisenEngine/com.arisen.dag.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.nodecanvas"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.nodecanvas
+	url = https://github.com/ArisenEngine/com.arisen.nodecanvas.git

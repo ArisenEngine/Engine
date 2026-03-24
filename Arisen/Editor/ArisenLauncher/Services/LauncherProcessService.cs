@@ -30,21 +30,21 @@ public class LauncherProcessService
 
     public void LaunchEditor(EngineInstance engine, string? projectPath = null)
     {
-        string editorExe = Path.Combine(engine.InstallPath, "ArisenEditor.Desktop.exe");
-        if (!File.Exists(editorExe))
+        string hostExe = Path.Combine(engine.InstallPath, "ArisenHost.exe");
+        if (!File.Exists(hostExe))
         {
-            _logService.Error($"Editor executable not found: {editorExe}");
+            _logService.Error($"Engine Host executable not found: {hostExe}");
             return;
         }
 
-        string arguments = projectPath != null ? $"-project \"{projectPath}\"" : "";
-        _logService.Info($"Launching Editor: {editorExe} {arguments}");
+        string arguments = $"--entry com.arisen.editor{(projectPath != null ? $" -project \"{projectPath}\"" : "")}";
+        _logService.Info($"Launching Editor via Host: {hostExe} {arguments}");
 
         try
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = editorExe,
+                FileName = hostExe,
                 Arguments = arguments,
                 UseShellExecute = true,
                 WorkingDirectory = engine.InstallPath
