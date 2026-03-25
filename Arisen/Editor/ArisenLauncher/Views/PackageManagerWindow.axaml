@@ -26,148 +26,310 @@
         <!-- Main Content -->
         <TabControl Grid.Row="1" Margin="24,12,24,24" Background="Transparent">
             <!-- Packages Tab -->
+            <!-- Packages Tab -->
             <TabItem Header="Installed Packages" FontSize="16" FontWeight="Bold">
-                <ScrollViewer Margin="0,16,0,0">
-                    <StackPanel Spacing="24" Margin="0,0,0,32">
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="Manage dependencies required for this project to compile and run." Foreground="#64748b" FontSize="14"/>
+                <Grid RowDefinitions="Auto, *" Margin="0,16,0,0">
+                    <!-- Top Toolbar -->
+                    <Grid Grid.Row="0" ColumnDefinitions="Auto, *, 300" Margin="0,0,0,16">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                            <Button Content="+ Create Local" Command="{Binding BeginCreatePackageCommand}" 
+                                    Background="#135bec" Foreground="White" Padding="12,6" CornerRadius="6" FontWeight="SemiBold"/>
+                            <Button Content="Import Local..." Command="{Binding AddLocalPackageCommand}" 
+                                    Background="Transparent" BorderBrush="#282e39" BorderThickness="1" Foreground="#94a3b8" Padding="12,6" CornerRadius="6"/>
+                            <Button Content="Add Remote..." Command="{Binding AddPackageCommand}" 
+                                    Background="Transparent" BorderBrush="#282e39" BorderThickness="1" Foreground="#94a3b8" Padding="12,6" CornerRadius="6"/>
                         </StackPanel>
-                <Border Background="#1a1e26" CornerRadius="8" BorderBrush="#282e39" BorderThickness="1" Padding="8">
-                    <Grid ColumnDefinitions="Auto, *, Auto, Auto">
-                        <Button Grid.Column="0" Content="+ Create Local Package" Command="{Binding BeginCreatePackageCommand}" 
-                                Background="#135bec" Foreground="White" Padding="16,8" CornerRadius="6" FontWeight="SemiBold"/>
                         
-                        <Button Grid.Column="2" Content="Import Local Package..." Command="{Binding AddLocalPackageCommand}" 
-                                Background="Transparent" BorderBrush="#282e39" BorderThickness="1" Foreground="#94a3b8" Padding="16,8" CornerRadius="6" Margin="0,0,8,0"/>
-                        
-                        <Button Grid.Column="3" Content="Add Remote URL..." Command="{Binding AddPackageCommand}" 
-                                Background="Transparent" BorderBrush="#282e39" BorderThickness="1" Foreground="#94a3b8" Padding="16,8" CornerRadius="6"/>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                            <ComboBox SelectedIndex="{Binding SortMode}" MaxWidth="120" Background="#0f1117" BorderBrush="#282e39" Foreground="White" VerticalAlignment="Center" CornerRadius="6">
+                                <ComboBoxItem>Sort by Name</ComboBoxItem>
+                                <ComboBoxItem>Sort by ID</ComboBoxItem>
+                            </ComboBox>
+                            <TextBox Text="{Binding SearchText}" Watermark="Search packages..." Background="#0f1117" BorderBrush="#282e39" Foreground="White" CornerRadius="6" Padding="8,6" VerticalAlignment="Center" Width="180"/>
+                        </StackPanel>
                     </Grid>
-                </Border>
 
-                <!-- Create Package Wizard Panel -->
-                <Border IsVisible="{Binding IsCreatingPackage}" Background="#13151c" CornerRadius="8" BorderBrush="#282e39" BorderThickness="1" Padding="24">
-                    <StackPanel Spacing="16">
-                        <TextBlock Text="Create New Local Package" FontSize="18" FontWeight="Bold" Foreground="White"/>
-                        <TextBlock Text="Scaffolds a new package explicitly inside this project's Local/ directory." Foreground="#64748b" FontSize="12" Margin="0,-8,0,0"/>
+                    <!-- Main Area -->
+                    <Grid Grid.Row="1">
+                        <!-- Create Package Wizard Panel -->
+                        <Border IsVisible="{Binding IsCreatingPackage}" ZIndex="10" Background="#13151c" CornerRadius="8" BorderBrush="#282e39" BorderThickness="1" Padding="24" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                            <StackPanel Spacing="16">
+                                <TextBlock Text="Create New Local Package" FontSize="18" FontWeight="Bold" Foreground="White"/>
+                                <TextBlock Text="Scaffolds a new package explicitly inside this project's Local/ directory." Foreground="#64748b" FontSize="12" Margin="0,-8,0,0"/>
 
-                        <!-- Validation Error -->
-                        <Border IsVisible="{Binding HasCreatePackageError}" Background="#ef444420" BorderBrush="#ef4444" BorderThickness="1" CornerRadius="6" Padding="12">
-                            <TextBlock Text="{Binding CreatePackageError}" Foreground="#ef4444" FontWeight="Bold" TextWrapping="Wrap" FontSize="12"/>
+                                <!-- Validation Error -->
+                                <Border IsVisible="{Binding HasCreatePackageError}" Background="#ef444420" BorderBrush="#ef4444" BorderThickness="1" CornerRadius="6" Padding="12">
+                                    <TextBlock Text="{Binding CreatePackageError}" Foreground="#ef4444" FontWeight="Bold" TextWrapping="Wrap" FontSize="12"/>
+                                </Border>
+
+                                <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto, Auto, Auto, Auto, Auto" Margin="0,8,0,0">
+                                    <!-- Left Column -->
+                                    <StackPanel Grid.Row="0" Grid.Column="0" Spacing="6" Margin="0,0,12,12">
+                                        <TextBlock Text="Package ID (e.g. com.mycompany.inventory)" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
+                                        <TextBox Text="{Binding NewPackageId}" Background="#0f1117" BorderBrush="#282e39" Foreground="White"/>
+                                    </StackPanel>
+                                    
+                                    <StackPanel Grid.Row="1" Grid.Column="0" Spacing="6" Margin="0,0,12,12">
+                                        <TextBlock Text="Package Name" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
+                                        <TextBox Text="{Binding NewPackageName}" Background="#0f1117" BorderBrush="#282e39" Foreground="White"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="2" Grid.Column="0" Spacing="6" Margin="0,0,12,12">
+                                        <TextBlock Text="Version" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
+                                        <TextBox Text="{Binding NewPackageVersion}" Background="#0f1117" BorderBrush="#282e39" Foreground="White"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="3" Grid.Column="0" Spacing="6" Margin="0,0,12,0">
+                                        <TextBlock Text="Package Type" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
+                                        <ComboBox SelectedItem="{Binding NewPackageType}" ItemsSource="{Binding AvailablePackageTypes}" Background="#0f1117" BorderBrush="#282e39" Foreground="White" HorizontalAlignment="Stretch" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="4" Grid.Column="0" Spacing="6" Margin="0,12,12,12">
+                                        <TextBlock Text="Assembly Entry (Class Name)" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
+                                        <TextBox Text="{Binding NewPackageAssemblyEntry}" Background="#0f1117" BorderBrush="#282e39" Foreground="White" Watermark="e.g. ArisenEngine.Core.PackageEntry"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6" Margin="0,12,0,0">
+                                        <TextBlock Text="Service Capabilities Matrix" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
+                                        <ListBox ItemsSource="{Binding NewPackageServices}" Background="#0f1117" BorderBrush="#282e39" BorderThickness="1" CornerRadius="4" Height="140">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid ColumnDefinitions="*, Auto, Auto" Margin="4,2">
+                                                        <TextBlock Grid.Column="0" Text="{Binding FriendlyName}" ToolTip.Tip="{Binding ContractName}" VerticalAlignment="Center" Foreground="#94a3b8"/>
+                                                        <CheckBox Grid.Column="1" Content="Provides" IsChecked="{Binding IsProvided}" Margin="16,0,8,0" Foreground="#22c55e" FontWeight="SemiBold"/>
+                                                        <CheckBox Grid.Column="2" Content="Requires" IsChecked="{Binding IsRequired}" Margin="8,0" Foreground="#ef4444" FontWeight="SemiBold"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+                                    </StackPanel>
+                                </Grid>
+
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12" Margin="0,16,0,0">
+                                    <Button Content="Cancel" Command="{Binding CancelCreatePackageCommand}" Background="Transparent" BorderBrush="#282e39" BorderThickness="1" Foreground="#94a3b8" Padding="20,8" CornerRadius="6"/>
+                                    <Button Content="Create Package" Command="{Binding ConfirmCreatePackageCommand}" Background="#22c55e" Foreground="White" FontWeight="Bold" Padding="20,8" CornerRadius="6"/>
+                                </StackPanel>
+                            </StackPanel>
                         </Border>
 
-                        <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto, Auto, Auto" Margin="0,8,0,0">
-                            <!-- Left Column -->
-                            <StackPanel Grid.Row="0" Grid.Column="0" Spacing="6" Margin="0,0,12,12">
-                                <TextBlock Text="Package ID (e.g. com.mycompany.inventory)" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
-                                <TextBox Text="{Binding NewPackageId}" Background="#0f1117" BorderBrush="#282e39" Foreground="White"/>
-                            </StackPanel>
+                        <Grid ColumnDefinitions="280, 1, *" IsVisible="{Binding !IsCreatingPackage}">
                             
-                            <StackPanel Grid.Row="1" Grid.Column="0" Spacing="6" Margin="0,0,12,12">
-                                <TextBlock Text="Package Name" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
-                                <TextBox Text="{Binding NewPackageName}" Background="#0f1117" BorderBrush="#282e39" Foreground="White"/>
-                            </StackPanel>
-
-                            <StackPanel Grid.Row="2" Grid.Column="0" Spacing="6" Margin="0,0,12,12">
-                                <TextBlock Text="Version" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
-                                <TextBox Text="{Binding NewPackageVersion}" Background="#0f1117" BorderBrush="#282e39" Foreground="White"/>
-                            </StackPanel>
-
-                            <StackPanel Grid.Row="3" Grid.Column="0" Spacing="6" Margin="0,0,12,0">
-                                <TextBlock Text="Package Type" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
-                                <ComboBox SelectedItem="{Binding NewPackageType}" ItemsSource="{Binding AvailablePackageTypes}" Background="#0f1117" BorderBrush="#282e39" Foreground="White" HorizontalAlignment="Stretch" />
-                            </StackPanel>
-
-                            <!-- Right Column -->
-                            <StackPanel Grid.Row="0" Grid.Column="1" Spacing="6" Margin="12,0,0,12">
-                                <TextBlock Text="Author" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
-                                <TextBox Text="{Binding NewPackageAuthor}" Background="#0f1117" BorderBrush="#282e39" Foreground="White" Watermark="Optional"/>
-                            </StackPanel>
-
-                            <StackPanel Grid.Row="1" Grid.Column="1" Grid.RowSpan="2" Spacing="6" Margin="12,0,0,12">
-                                <TextBlock Text="Dependencies (comma separated IDs)" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
-                                <TextBox Text="{Binding NewPackageDependencies}" Background="#0f1117" BorderBrush="#282e39" Foreground="White" Watermark="e.g. com.arisen.ecs, com.arisen.core" Height="86" AcceptsReturn="True" TextWrapping="Wrap"/>
-                            </StackPanel>
-
-                            <StackPanel Grid.Row="3" Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                                <CheckBox Content="Scaffold C# IPackageEntry" Foreground="#94a3b8" FontWeight="SemiBold"
-                                          IsChecked="{Binding GeneratePackageEntry}"
-                                          IsEnabled="{Binding NewPackageType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter='managed'}" />
-                            </StackPanel>
-                        </Grid>
-
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12" Margin="0,16,0,0">
-                            <Button Content="Cancel" Command="{Binding CancelCreatePackageCommand}" Background="Transparent" BorderBrush="#282e39" BorderThickness="1" Foreground="#94a3b8" Padding="20,8" CornerRadius="6"/>
-                            <Button Content="Create Package" Command="{Binding ConfirmCreatePackageCommand}" Background="#22c55e" Foreground="White" FontWeight="Bold" Padding="20,8" CornerRadius="6"/>
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
-
-                <!-- Error Banner -->
-                <Border IsVisible="{Binding HasVerificationError}" 
-                        Background="#ef444420" BorderBrush="#ef4444" BorderThickness="1" CornerRadius="8" Padding="16">
-                    <TextBlock Text="{Binding VerificationError}" Foreground="#ef4444" FontWeight="Bold" TextWrapping="Wrap"/>
-                </Border>
-
-                <!-- Packages List -->
-                <ItemsControl ItemsSource="{Binding Packages}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Spacing="12"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate DataType="vm:PackageRequirementViewModel">
-                            <Border Background="#1a1e26" CornerRadius="8" BorderBrush="#282e39" BorderThickness="1" Padding="16">
-                                <StackPanel>
-                                    <Grid ColumnDefinitions="*, Auto, Auto">
-                                        <!-- Left side: ID & URL -->
-                                        <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
-                                            <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="16" Foreground="White" Padding="0,0,0,4" Margin="0" VerticalAlignment="Center"/>
-                                            <TextBlock Text="{Binding Description}" FontSize="13" Foreground="#94a3b8" Padding="0,0,0,6" Margin="0" IsVisible="{Binding HasDescription}" TextWrapping="Wrap" LineHeight="18"/>
-                                            <StackPanel Orientation="Horizontal" Spacing="16">
-                                                <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasAuthor}" VerticalAlignment="Center">
-                                                    <Path Fill="#64748b" Data="M12,12C14.21,12 16,10.21 16,8C16,5.79 14.21,4 12,4C9.79,4 8,5.79 8,8C8,10.21 9.79,12 12,12M12,14C9.33,14 4,15.34 4,18V20H20V18C20,15.34 14.67,14 12,14Z" Stretch="Uniform" Width="12" Height="12"/>
-                                                    <TextBlock Text="{Binding Author}" FontSize="12" Foreground="#64748b" VerticalAlignment="Center"/>
-                                                </StackPanel>
-                                                <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding !IsUnresolved}" VerticalAlignment="Center">
-                                                    <Path Fill="#135bec" Data="M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z" Stretch="Uniform" Width="14" Height="14" Opacity="0.8"/>
-                                                    <TextBlock Text="{Binding Url}" FontSize="12" Foreground="#135bec" Opacity="0.8" Padding="0" Margin="0" VerticalAlignment="Center"/>
-                                                </StackPanel>
-                                            </StackPanel>
-                                        </StackPanel>
-                                        
-                                        <!-- Middle: Version Badge -->
-                                        <Border Grid.Column="1" Background="#135bec20" BorderBrush="#135bec" BorderThickness="1" CornerRadius="12" Padding="8,4" Margin="16,0" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Version}" FontSize="12" Foreground="#135bec" FontWeight="Bold" VerticalAlignment="Center"/>
-                                        </Border>
-                                        
-                                        <!-- Right side: Remove Button -->
-                                        <Button Grid.Column="2" Content="Remove" Command="{Binding #PackageManagerWindowRoot.((vm:PackageManagerViewModel)DataContext).RemovePackageCommand}" CommandParameter="{Binding}" 
-                                                Background="#ef444420" Foreground="#ef4444" BorderBrush="#ef4444" BorderThickness="1" Padding="12,6" CornerRadius="6" VerticalAlignment="Center" Cursor="Hand"/>
-                                    </Grid>
-
-                                    <!-- Unresolved Missing Dependency Resolution Box -->
-                                    <Border IsVisible="{Binding IsUnresolved}" Background="#eab30810" BorderBrush="#eab308" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,12,0,0">
-                                        <StackPanel Spacing="8">
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <Path Fill="#eab308" Data="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16" Stretch="Uniform" Width="16" Height="16"/>
-                                                <TextBlock Text="{Binding UnresolvedMessage}" Foreground="#eab308" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                            <Grid ColumnDefinitions="*, Auto, Auto">
-                                                <TextBox Grid.Column="0" Text="{Binding Url}" VerticalContentAlignment="Center" Watermark="Enter Remote URL or Browse..." Background="#0f1117" BorderBrush="#282e39" Foreground="#94a3b8" Padding="10,6" Margin="0,0,8,0" CornerRadius="4"/>
-                                                <Button Grid.Column="1" Content="Browse..." Command="{Binding #PackageManagerWindowRoot.((vm:PackageManagerViewModel)DataContext).BrowseResolvePackageCommand}" CommandParameter="{Binding}" Background="#1a1e26" BorderBrush="#282e39" BorderThickness="1" Foreground="White" FontWeight="Bold" Padding="16,6" Margin="0,0,8,0" CornerRadius="4"/>
-                                                <Button Grid.Column="2" Content="Confirm URL" Command="{Binding #PackageManagerWindowRoot.((vm:PackageManagerViewModel)DataContext).ConfirmResolvePackageCommand}" CommandParameter="{Binding}" Background="#eab308" Foreground="#0f1117" FontWeight="Bold" Padding="16,6" CornerRadius="4"/>
-                                            </Grid>
-                                        </StackPanel>
+                            <!-- Left Panel: Package List -->
+                            <Border Grid.Column="0" Background="#1a1e26" BorderBrush="#282e39" BorderThickness="1" CornerRadius="8">
+                                <Grid RowDefinitions="Auto, *">
+                                    <!-- Error Banner (Global Verification) -->
+                                    <Border Grid.Row="0" IsVisible="{Binding HasVerificationError}" 
+                                            Background="#ef444420" BorderBrush="#ef4444" BorderThickness="0,0,0,1" Padding="12,12">
+                                        <TextBlock Text="{Binding VerificationError}" Foreground="#ef4444" FontWeight="Bold" TextWrapping="Wrap" FontSize="12"/>
                                     </Border>
-                                </StackPanel>
+
+                                    <ListBox Grid.Row="1" ItemsSource="{Binding FilteredPackages}" SelectedItem="{Binding SelectedPackage}" Background="Transparent" 
+                                             BorderThickness="0" CornerRadius="8" Padding="0" VerticalAlignment="Stretch">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate DataType="vm:PackageRequirementViewModel">
+                                                <Grid ColumnDefinitions="*, Auto" Margin="8,4">
+                                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" FontSize="14" Foreground="White" TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="{Binding Id}" FontSize="11" Foreground="#64748b" TextTrimming="CharacterEllipsis" Margin="0,0,0,2"/>
+                                                        <TextBlock Text="{Binding Version}" FontSize="12" Foreground="#94a3b8"/>
+                                                    </StackPanel>
+                                                    
+                                                    <!-- Badges -->
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                                                        <Border IsVisible="{Binding IsLocal}" Background="#135bec20" BorderBrush="#135bec" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                                            <TextBlock Text="Local" FontSize="10" Foreground="#135bec" FontWeight="Bold"/>
+                                                        </Border>
+                                                        <Border IsVisible="{Binding IsUnresolved}" Background="#eab30820" BorderBrush="#eab308" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                                            <TextBlock Text="Missing" FontSize="10" Foreground="#eab308" FontWeight="Bold"/>
+                                                        </Border>
+                                                        <Border IsVisible="{Binding IsRemote}" Background="#22c55e20" BorderBrush="#22c55e" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                                            <TextBlock Text="Remote" FontSize="10" Foreground="#22c55e" FontWeight="Bold"/>
+                                                        </Border>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                        <ListBox.Styles>
+                                            <Style Selector="ListBoxItem">
+                                                <Setter Property="Padding" Value="8"/>
+                                                <Setter Property="Margin" Value="0,2"/>
+                                            </Style>
+                                        </ListBox.Styles>
+                                    </ListBox>
+                                </Grid>
                             </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                    </StackPanel>
-                </ScrollViewer>
+
+                            <GridSplitter Grid.Column="1" Background="Transparent" ResizeDirection="Columns" Margin="-2,0,2,0"/>
+
+                            <!-- Right Panel: Package Details -->
+                            <Border Grid.Column="2" Background="#13151c" BorderBrush="#282e39" BorderThickness="1" CornerRadius="8" Margin="8,0,0,0">
+                                <!-- Show when package is selected -->
+                                <Panel>
+                                    <TextBlock Text="Select a package to view details." Foreground="#64748b" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding SelectedPackage, Converter={x:Static ObjectConverters.IsNull}}"/>
+                                    
+                                    <ScrollViewer IsVisible="{Binding SelectedPackage, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                        <StackPanel DataContext="{Binding SelectedPackage}" x:DataType="vm:PackageRequirementViewModel" Margin="24" Spacing="24">
+                                            
+                                            <!-- Header -->
+                                            <Grid ColumnDefinitions="*, Auto">
+                                                <StackPanel Grid.Column="0" Spacing="8">
+                                                    <TextBlock Text="{Binding DisplayName}" FontWeight="Black" FontSize="26" Foreground="White" TextWrapping="Wrap"/>
+                                                    <TextBlock Text="{Binding Id}" FontSize="13" Foreground="#64748b" Margin="0,-4,0,0"/>
+                                                    
+                                                    <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,8,0,0">
+                                                        <Border Background="#282e39" CornerRadius="6" Padding="10,4">
+                                                            <TextBlock Text="{Binding Version, StringFormat='v{0}'}" FontSize="12" Foreground="White" FontWeight="Bold"/>
+                                                        </Border>
+                                                        <Border Background="#135bec20" BorderBrush="#135bec" BorderThickness="1" CornerRadius="6" Padding="10,4">
+                                                            <TextBlock Text="{Binding Type}" FontSize="12" Foreground="#135bec" FontWeight="Bold"/>
+                                                        </Border>
+                                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                            <Path Fill="#64748b" Data="M12,17L12,10M12,21L12,21M12,3L12,3M3.1,12C3.1,12 3.1,12 3.1,12" Stretch="Uniform" Width="12" Height="12"/>
+                                                            <TextBlock Text="{Binding EngineVersion, StringFormat='Engine: {0}'}" FontSize="12" Foreground="#94a3b8"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </StackPanel>
+
+                                                <!-- Action Buttons Area -->
+                                                <StackPanel Grid.Column="1" Spacing="12" VerticalAlignment="Top">
+                                                    <Button Content="Remove" Command="{Binding ParentContext.RemovePackageCommand}" CommandParameter="{Binding}" 
+                                                            Background="#ef444420" Foreground="#ef4444" BorderBrush="#ef4444" BorderThickness="1" Padding="16,8" CornerRadius="6" FontWeight="Bold" Cursor="Hand" Width="120" HorizontalContentAlignment="Center"/>
+                                                    <Button Content="Save Manifest" Command="{Binding ParentContext.SaveLocalPackageCommand}" CommandParameter="{Binding}" 
+                                                            IsVisible="{Binding IsLocal}"
+                                                            Background="#22c55e" Foreground="White" Padding="16,8" CornerRadius="6" FontWeight="Bold" Cursor="Hand" Width="120" HorizontalContentAlignment="Center"/>
+                                                </StackPanel>
+                                            </Grid>
+
+                                            <Separator Background="#282e39"/>
+
+                                            <!-- Metadata Sections -->
+                                            <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto" Margin="0,0,0,24">
+                                                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="8" Margin="0,0,12,12">
+                                                    <TextBlock Text="DISPLAY NAME" FontSize="11" Foreground="#64748b" FontWeight="Bold"/>
+                                                    <TextBox Text="{Binding DisplayName}" IsEnabled="False" Opacity="0.7" Background="#0f1117" BorderBrush="#282e39" Foreground="White" CornerRadius="4"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Row="0" Grid.Column="1" Spacing="8" Margin="12,0,0,12">
+                                                    <TextBlock Text="VERSION" FontSize="11" Foreground="#64748b" FontWeight="Bold"/>
+                                                    <TextBox Text="{Binding Version}" IsEnabled="{Binding IsLocal}" Background="#0f1117" BorderBrush="#282e39" Foreground="White" CornerRadius="4"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Row="1" Grid.Column="0" Spacing="8" Margin="0,12,12,0">
+                                                    <TextBlock Text="AUTHOR" FontSize="11" Foreground="#64748b" FontWeight="Bold"/>
+                                                    <TextBox Text="{Binding Author}" IsEnabled="{Binding IsLocal}" Background="#0f1117" BorderBrush="#282e39" Foreground="White" CornerRadius="4"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="8" Margin="12,12,0,0">
+                                                    <TextBlock Text="STATUS" FontSize="11" Foreground="#64748b" FontWeight="Bold"/>
+                                                    <TextBlock IsVisible="{Binding IsLocal}" Text="Local Source (Mutable)" Foreground="#135bec" FontSize="13" VerticalAlignment="Center"/>
+                                                    <TextBlock IsVisible="{Binding IsRemote}" Text="Remote Registry (Read-Only)" Foreground="#22c55e" FontSize="13" VerticalAlignment="Center"/>
+                                                    <TextBlock IsVisible="{Binding IsUnresolved}" Text="Unresolved / Missing" Foreground="#ef4444" FontSize="13" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Grid>
+
+                                            <StackPanel Spacing="8">
+                                                <TextBlock Text="DESCRIPTION" FontSize="11" Foreground="#64748b" FontWeight="Bold"/>
+                                                <TextBox Text="{Binding Description}" IsEnabled="{Binding IsLocal}" AcceptsReturn="True" TextWrapping="Wrap" Height="60" Background="#0f1117" BorderBrush="#282e39" Foreground="White" CornerRadius="4"/>
+                                            </StackPanel>
+
+                                            <!-- Dependencies Section -->
+                                            <StackPanel Spacing="16">
+                                                <DockPanel>
+                                                    <TextBlock DockPanel.Dock="Left" Text="Dependencies" Foreground="White" FontWeight="Bold" FontSize="14"/>
+                                                    <Button DockPanel.Dock="Right" Content="+ Add" IsVisible="{Binding IsLocal}" Command="{Binding ParentContext.AddDependencyCommand}" CommandParameter="{Binding}" Padding="8,2" FontSize="12" Background="#135bec" Foreground="White" CornerRadius="4"/>
+                                                </DockPanel>
+                                                
+                                                <Border Background="#1a1e26" CornerRadius="8" BorderBrush="#282e39" BorderThickness="1" MinHeight="40">
+                                                    <ItemsControl ItemsSource="{Binding Dependencies}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate DataType="vm:DependencyViewModel">
+                                                                <Border BorderBrush="#282e39" BorderThickness="0,0,0,1" Padding="12,8">
+                                                                    <Grid ColumnDefinitions="*, 80, Auto">
+                                                                        <TextBox Grid.Column="0" Text="{Binding Id}" IsEnabled="{Binding $parent[StackPanel].((vm:PackageRequirementViewModel)DataContext).IsLocal}" Background="Transparent" BorderThickness="0" Foreground="White" Padding="0"/>
+                                                                        <TextBox Grid.Column="1" Text="{Binding Version}" IsEnabled="{Binding $parent[StackPanel].((vm:PackageRequirementViewModel)DataContext).IsLocal}" Background="Transparent" BorderThickness="0" Foreground="#94a3b8" HorizontalContentAlignment="Right" Padding="0,0,8,0"/>
+                                                                        <Button Grid.Column="2" Content="✕" IsVisible="{Binding $parent[StackPanel].((vm:PackageRequirementViewModel)DataContext).IsLocal}" 
+                                                                                Command="{Binding $parent[Window].((vm:PackageManagerViewModel)DataContext).RemoveDependencyCommand}" CommandParameter="{Binding}"
+                                                                                Background="Transparent" Foreground="#ef4444" Padding="4,2"/>
+                                                                    </Grid>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </Border>
+                                            </StackPanel>
+
+                                            <!-- Advanced Configuration (Expander) -->
+                                            <Expander Header="Advanced Configuration / Build Metadata" Foreground="#94a3b8" Background="#1a1e26" BorderBrush="#282e39" CornerRadius="8">
+                                                <StackPanel Spacing="16" Margin="16">
+                                                    <Border Background="#ef444410" BorderBrush="#ef444440" BorderThickness="1" CornerRadius="6" Padding="12">                                                        <TextBlock Text="Note: These fields are managed by ArisenBuildTool and are read-only in the Launcher to prevent build desync." 
+                                                                    Foreground="#ef4444" FontSize="11" TextWrapping="Wrap" FontWeight="SemiBold"/>
+                                                    </Border>
+
+                                                    <StackPanel Spacing="6">
+                                                        <TextBlock Text="Assembly DLL Name" FontSize="11" Foreground="#64748b" FontWeight="Bold"/>
+                                                        <TextBox Text="{Binding AssemblyEntry}" IsEnabled="False" Opacity="0.7" Background="#0f1117" BorderBrush="#282e39" Foreground="White" Watermark="e.g. MyPackage.dll"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Spacing="6">
+                                                        <TextBlock Text="Entry Point Class" FontSize="11" Foreground="#64748b" FontWeight="Bold"/>
+                                                        <TextBox Text="{Binding EntryClass}" IsEnabled="False" Opacity="0.7" Background="#0f1117" BorderBrush="#282e39" Foreground="White" Watermark="e.g. MyNamespace.MyPackageEntry"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Spacing="6" IsVisible="{Binding NativeRuntimesDisplay, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                        <TextBlock Text="Native Runtimes" FontSize="11" Foreground="#64748b" FontWeight="Bold"/>
+                                                        <TextBox Text="{Binding NativeRuntimesDisplay}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="100" Background="#0f1117" BorderBrush="#282e39" Foreground="#22c55e" CornerRadius="4"/>
+                                                    </StackPanel>
+
+
+                                                    <!-- Services Matrix (Display Only) -->
+                                                    <StackPanel Spacing="8">
+                                                        <TextBlock Text="Injected Services" FontSize="11" Foreground="#64748b" FontWeight="Bold"/>
+                                                        <Border Background="#0f1117" BorderBrush="#282e39" BorderThickness="1" CornerRadius="6" Padding="12">
+                                                            <Grid>
+                                                                <ListBox ItemsSource="{Binding EditableServices}" Background="Transparent" Height="150" BorderThickness="0" CornerRadius="0">
+                                                                    <ListBox.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                            <Grid ColumnDefinitions="*, Auto, Auto" Margin="0,4">
+                                                                                <TextBlock Grid.Column="0" Text="{Binding FriendlyName}" ToolTip.Tip="{Binding ContractName}" VerticalAlignment="Center" Foreground="#94a3b8" FontSize="12"/>
+                                                                                <Border Grid.Column="1" IsVisible="{Binding IsProvided}" Background="#22c55e20" CornerRadius="4" Padding="6,2" Margin="8,0">
+                                                                                    <TextBlock Text="Provides" Foreground="#22c55e" FontSize="10" FontWeight="Bold"/>
+                                                                                </Border>
+                                                                                <Border Grid.Column="2" IsVisible="{Binding IsRequired}" Background="#ef444420" CornerRadius="4" Padding="6,2">
+                                                                                    <TextBlock Text="Requires" Foreground="#ef4444" FontSize="10" FontWeight="Bold"/>
+                                                                                </Border>
+                                                                            </Grid>
+                                                                        </DataTemplate>
+                                                                    </ListBox.ItemTemplate>
+                                                                </ListBox>
+                                                                <TextBlock Text="Enable 'View Services' to scan contracts." IsVisible="{Binding !HasEditableServicesLoaded}" Foreground="#64748b" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
+                                                            </Grid>
+                                                        </Border>
+                                                        <CheckBox Content="View Service Mapping" IsChecked="{Binding IsEditingServices}" IsEnabled="{Binding IsLocal}" Foreground="#94a3b8" Margin="0,4,0,0" FontSize="12"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Expander>
+
+                                            <!-- Status Banner (Missing) -->
+                                            <Border IsVisible="{Binding IsUnresolved}" Background="#eab30810" BorderBrush="#eab308" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,8,0,0">
+                                                <StackPanel Spacing="12">
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <Path Fill="#eab308" Data="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16" Stretch="Uniform" Width="18" Height="18"/>
+                                                        <TextBlock Text="{Binding UnresolvedMessage}" Foreground="#eab308" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                    <Grid ColumnDefinitions="*, Auto, Auto">
+                                                        <TextBox Grid.Column="0" Text="{Binding Url}" VerticalContentAlignment="Center" Watermark="Enter Remote URL or Browse..." Background="#0f1117" BorderBrush="#282e39" Foreground="#94a3b8" Padding="10,8" Margin="0,0,8,0" CornerRadius="4"/>
+                                                        <Button Grid.Column="1" Content="Browse..." Command="{Binding ParentContext.BrowseResolvePackageCommand}" CommandParameter="{Binding}" Background="#1a1e26" BorderBrush="#282e39" BorderThickness="1" Foreground="White" FontWeight="Bold" Padding="16,8" Margin="0,0,8,0" CornerRadius="4"/>
+                                                        <Button Grid.Column="2" Content="Confirm URL" Command="{Binding ParentContext.ConfirmResolvePackageCommand}" CommandParameter="{Binding}" Background="#eab308" Foreground="#0f1117" FontWeight="Bold" Padding="16,8" CornerRadius="4"/>
+                                                    </Grid>
+                                                </StackPanel>
+                                            </Border>
+
+
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </Panel>
+                            </Border>
+
+                        </Grid>
+                    </Grid>
+                </Grid>
             </TabItem>
             
             <!-- Profiles Tab -->

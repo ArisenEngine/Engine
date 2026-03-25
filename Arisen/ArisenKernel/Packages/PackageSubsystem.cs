@@ -194,14 +194,17 @@ public class PackageSubsystem : IEngineSubsystem
         try
         {
             string rootPath = Path.GetFullPath(Path.GetDirectoryName(manifestPath)!);
-            Assembly? assembly;
-            if (manifest.EntryAssembly == "ArisenEngine.dll")
+            Assembly? assembly = null;
+            string entryAssembly = manifest.Entry?.Assembly ?? string.Empty;
+            string entryClass = manifest.Entry?.Class ?? string.Empty;
+
+            if (entryAssembly == "ArisenEngine.dll")
             {
                 assembly = Assembly.GetExecutingAssembly();
             }
-            else
+            else if (!string.IsNullOrEmpty(entryAssembly))
             {
-                string assemblyPath = Path.Combine(rootPath, manifest.EntryAssembly);
+                string assemblyPath = Path.Combine(rootPath, entryAssembly);
                 if (!File.Exists(assemblyPath))
                 {
                     KernelLog.Info($"[PackageSubsystem] Entry assembly not found: {assemblyPath}");
@@ -212,12 +215,10 @@ public class PackageSubsystem : IEngineSubsystem
                 assembly = loadContext.LoadFromAssemblyPath(assemblyPath);
             }
 
-            if (assembly == null) return;
-
             object? entryInstance = null;
-            if (!string.IsNullOrEmpty(manifest.EntryClass))
+            if (assembly != null && !string.IsNullOrEmpty(entryClass))
             {
-                var type = assembly.GetType(manifest.EntryClass);
+                var type = assembly.GetType(entryClass);
                 if (type != null) entryInstance = Activator.CreateInstance(type);
             }
 
@@ -271,10 +272,15 @@ public class PackageSubsystem : IEngineSubsystem
         public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public string Version { get; set; } = string.Empty;
-        public string EntryAssembly { get; set; } = string.Empty;
-        public string EntryClass { get; set; } = string.Empty;
+        public PackageEntryBlock? Entry { get; set; }
         public string EngineVersion { get; set; } = string.Empty;
         public Dictionary<string, string>? Dependencies { get; set; }
+    }
+
+    private class PackageEntryBlock
+    {
+        public string Assembly { get; set; } = string.Empty;
+        public string Class { get; set; } = string.Empty;
     }
 }
 
