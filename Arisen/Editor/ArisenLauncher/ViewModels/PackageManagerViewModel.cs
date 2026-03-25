@@ -23,13 +23,47 @@ public partial class PackageManagerViewModel : ObservableObject
     [ObservableProperty]
     private string _verificationError = string.Empty;
 
+    [ObservableProperty]
+    private string _saveFeedback = string.Empty;
+
     partial void OnVerificationErrorChanged(string value) => OnPropertyChanged(nameof(HasVerificationError));
     public bool HasVerificationError => !string.IsNullOrEmpty(VerificationError);
+    public bool HasSaveFeedback => !string.IsNullOrEmpty(SaveFeedback);
 
-    public enum PackageSortMode { Name, Id }
-    [ObservableProperty] private PackageSortMode _sortMode = PackageSortMode.Id;
+    [ObservableProperty] private int _sortMode = 1; // 1 = ID, 0 = Name
 
-    partial void OnSortModeChanged(PackageSortMode value) => UpdateFilteredPackages();
+    partial void OnSortModeChanged(int value) => UpdateFilteredPackages();
+    
+    [ObservableProperty] private bool _isDirty;
+    [ObservableProperty] private bool _showExitConfirmation;
+
+    [RelayCommand]
+    private void Cancel()
+    {
+        if (IsDirty)
+        {
+            ShowExitConfirmation = true;
+        }
+        else
+        {
+            RequestClose?.Invoke();
+        }
+    }
+
+    [RelayCommand]
+    private void ConfirmExit()
+    {
+        ShowExitConfirmation = false;
+        RequestClose?.Invoke();
+    }
+
+    [RelayCommand]
+    private void StayEditing()
+    {
+        ShowExitConfirmation = false;
+    }
+
+    public Action? RequestClose;
 
 
     // Create Package State
@@ -74,13 +108,15 @@ public partial class PackageManagerViewModel : ObservableObject
                                      p.Version.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
         }
 
-        if (SortMode == PackageSortMode.Name)
-            query = query.OrderBy(p => p.Description ?? p.Id);
-        else
+        if (SortMode == 0) // Name
+            query = query.OrderBy(p => p.DisplayName ?? p.Id);
+        else // ID
             query = query.OrderBy(p => p.Id);
 
+        // P8: Batch update UI collection
+        var results = query.ToList();
         FilteredPackages.Clear();
-        foreach (var p in query)
+        foreach (var p in results)
         {
             FilteredPackages.Add(p);
         }
@@ -93,23 +129,31 @@ public partial class PackageManagerViewModel : ObservableObject
 
     public Func<Task<string?>>? RequestFolderPickerAsync;
 
-    public PackageManagerViewModel(LauncherProjectMetadata project)
+    public static PackageJsonManifest? ParsePackageManifest(string path)
     {
-        _project = project;
-        _manifestPath = Path.Combine(Path.GetDirectoryName(project.ProjectPath)!, "manifest.json");
-        
-        Packages.CollectionChanged += (s, e) => UpdateFilteredPackages();
+        if (!File.Exists(path)) return null;
 
-        InitializeServices();
-        
-        LoadManifest();
+        try
+        {
+            string json = File.ReadAllText(path);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            return JsonSerializer.Deserialize<PackageJsonManifest>(json, options);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] Failed to parse manifest at {path}: {ex.Message}");
+            return null;
+        }
     }
 
-    private void LoadManifest()
+    public void MarkDirty() => IsDirty = true;
+
+    private async Task LoadManifestAsync()
     {
         if (File.Exists(_manifestPath))
         {
-            Manifest = JsonSerializer.Deserialize<ProjectManifest>(File.ReadAllText(_manifestPath), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new ProjectManifest();
+            string content = await File.ReadAllTextAsync(_manifestPath);
+            Manifest = JsonSerializer.Deserialize<ProjectManifest>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new ProjectManifest();
         }
 
         Packages.Clear();
@@ -120,100 +164,16 @@ public partial class PackageManagerViewModel : ObservableObject
                 if (!Packages.Any(p => p.Id == req.Id))
                 {
                     bool isMissing = string.IsNullOrWhiteSpace(req.Url);
-                    string dispName = string.Empty;
-                    string type = "managed";
-                    string engVer = "Current";
-                    string entryDll = string.Empty;
-                    string entryType = string.Empty;
-                    string desc = string.Empty;
-                    string auth = string.Empty;
-                    string prov = string.Empty;
-                    string reqsStr = string.Empty;
-                    string nativeRuntimes = string.Empty;
-                     var depsList = new System.Collections.Generic.List<DependencyViewModel>();
+                    PackageJsonManifest? pData = null;
 
                     if (!isMissing && (req.Url ?? "").StartsWith("file://", StringComparison.OrdinalIgnoreCase))
                     {
-                        try
-                        {
-                            string localPath = Uri.UnescapeDataString(new Uri(req.Url ?? "").LocalPath);
-                            string pkgJson = Path.Combine(localPath, "package.json");
-                            if (File.Exists(pkgJson))
-                            {
-                                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                                var pData = JsonSerializer.Deserialize<PackageJsonManifest>(File.ReadAllText(pkgJson), options);
-                                if (pData != null)
-                                {
-                                    dispName = pData.Name;
-                                    if (string.IsNullOrEmpty(dispName)) dispName = pData.Id;
-                                    type = pData.Type ?? "managed";
-                                    desc = pData.Description ?? string.Empty;
-                                    auth = pData.Author ?? string.Empty;
-                                    engVer = pData.EngineVersion ?? "Current";
-
-                                    if (pData.Entry != null)
-                                    {
-                                        entryDll = pData.Entry.Assembly ?? string.Empty;
-                                        entryType = pData.Entry.Class ?? string.Empty;
-                                    }
-
-                                    if (pData.Services != null)
-                                    {
-                                        if (pData.Services.Provides != null)
-                                            prov = string.Join(", ", pData.Services.Provides.Where(x => !string.IsNullOrEmpty(x)));
-                                        if (pData.Services.Requires != null)
-                                            reqsStr = string.Join(", ", pData.Services.Requires.Where(x => !string.IsNullOrEmpty(x)));
-                                    }
-
-                                    if (pData.Dependencies != null)
-                                    {
-                                        foreach (var dep in pData.Dependencies)
-                                        {
-                                            depsList.Add(new DependencyViewModel { Id = dep.Key, Version = dep.Value ?? "*" });
-                                        }
-                                    }
-
-                                    if (pData.NativeRuntimes != null)
-                                    {
-                                        var sb = new System.Text.StringBuilder();
-                                        foreach (var kvp in pData.NativeRuntimes)
-                                        {
-                                            sb.Append(kvp.Key).Append(": ");
-                                            if (kvp.Value != null)
-                                                sb.Append(string.Join(", ", kvp.Value));
-                                            sb.AppendLine();
-                                        }
-                                        nativeRuntimes = sb.ToString().Trim();
-                                    }
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        { 
-                            VerificationError += $"Failed to parse {req.Id}/package.json: {ex.Message}; ";
-                        }
+                        string localPath = Uri.UnescapeDataString(new Uri(req.Url ?? "").LocalPath);
+                        string pkgJson = Path.Combine(localPath, "package.json");
+                        pData = ParsePackageManifest(pkgJson);
                     }
 
-                    var vm = new PackageRequirementViewModel { 
-                        Id = req.Id, 
-                        DisplayName = string.IsNullOrEmpty(dispName) ? req.Id : dispName,
-                        Url = req.Url ?? string.Empty, 
-                        Version = req.Version ?? string.Empty,
-                        Description = desc,
-                        Author = auth,
-                        Type = type,
-                        EngineVersion = engVer,
-                        AssemblyEntry = entryDll,
-                        EntryClass = entryType,
-                        ServicesProvides = prov,
-                        ServicesRequires = reqsStr,
-                        NativeRuntimesDisplay = nativeRuntimes,
-                        IsLocal = !isMissing && (req.Url ?? "").StartsWith("file://", StringComparison.OrdinalIgnoreCase),
-                        IsUnresolved = isMissing,
-                        UnresolvedMessage = isMissing ? "URL is completely missing in manifest.json" : string.Empty,
-                        ParentContext = this
-                    };
-                    foreach (var d in depsList) vm.Dependencies.Add(d);
+                    var vm = CreateViewModelFromData(req, pData);
                     Packages.Add(vm);
                 }
             }
@@ -221,6 +181,103 @@ public partial class PackageManagerViewModel : ObservableObject
 
         InitializeProfiles();
         RefreshServiceStatus();
+    }
+
+    private PackageRequirementViewModel CreateViewModelFromData(PackageRequirement req, PackageJsonManifest? pData)
+    {
+        bool isMissing = string.IsNullOrWhiteSpace(req.Url);
+        string dispName = string.Empty;
+        string type = "managed";
+        string engVer = "Current";
+        string entryDll = string.Empty;
+        string entryType = string.Empty;
+        string desc = string.Empty;
+        string auth = string.Empty;
+        string prov = string.Empty;
+        string reqsStr = string.Empty;
+        string nativeRuntimes = string.Empty;
+        var depsList = new System.Collections.Generic.List<DependencyViewModel>();
+
+        if (pData != null)
+        {
+            dispName = pData.Name;
+            if (string.IsNullOrEmpty(dispName)) dispName = pData.Id;
+            type = pData.Type ?? "managed";
+            desc = pData.Description ?? string.Empty;
+            auth = pData.Author ?? string.Empty;
+            engVer = pData.EngineVersion ?? "Current";
+
+            if (pData.Entry != null)
+            {
+                entryDll = pData.Entry.Assembly ?? string.Empty;
+                entryType = pData.Entry.Class ?? string.Empty;
+            }
+
+            if (pData.Services != null)
+            {
+                if (pData.Services.Provides != null)
+                    prov = string.Join(", ", pData.Services.Provides.Where(x => !string.IsNullOrEmpty(x)));
+                if (pData.Services.Requires != null)
+                    reqsStr = string.Join(", ", pData.Services.Requires.Where(x => !string.IsNullOrEmpty(x)));
+            }
+
+            if (pData.Dependencies != null)
+            {
+                foreach (var dep in pData.Dependencies)
+                {
+                    depsList.Add(new DependencyViewModel { Id = dep.Key, Version = dep.Value ?? "*" });
+                }
+            }
+
+            if (pData.NativeRuntimes != null)
+            {
+                var sb = new System.Text.StringBuilder();
+                foreach (var kvp in pData.NativeRuntimes)
+                {
+                    sb.Append(kvp.Key).Append(": ");
+                    if (kvp.Value != null)
+                        sb.Append(string.Join(", ", kvp.Value));
+                    sb.AppendLine();
+                }
+                nativeRuntimes = sb.ToString().Trim();
+            }
+        }
+
+        var vm = new PackageRequirementViewModel { 
+            Id = req.Id, 
+            DisplayName = string.IsNullOrEmpty(dispName) ? req.Id : dispName,
+            Url = req.Url ?? string.Empty, 
+            Version = req.Version ?? string.Empty,
+            Description = desc,
+            Author = auth,
+            Type = type,
+            EngineVersion = engVer,
+            AssemblyEntry = entryDll,
+            EntryClass = entryType,
+            ServicesProvides = prov,
+            ServicesRequires = reqsStr,
+            NativeRuntimesDisplay = nativeRuntimes,
+            IsLocal = !isMissing && (req.Url ?? "").StartsWith("file://", StringComparison.OrdinalIgnoreCase),
+            IsUnresolved = isMissing,
+            UnresolvedMessage = isMissing ? "URL is completely missing in manifest.json" : string.Empty,
+            ParentContext = this,
+            CachedManifest = pData // P5/P6 Cache
+        };
+        foreach (var d in depsList) vm.Dependencies.Add(d);
+        return vm;
+    }
+
+    public PackageManagerViewModel(LauncherProjectMetadata project)
+    {
+        _project = project;
+        _manifestPath = Path.Combine(Path.GetDirectoryName(project.ProjectPath)!, "manifest.json");
+        
+        Packages.CollectionChanged += (s, e) => UpdateFilteredPackages();
+
+        InitializeServices();
+        
+        // P4: Trigger async load to avoid blocking UI thread
+        Task.Run(LoadManifestAsync);
     }
 
     [RelayCommand]
@@ -382,12 +439,12 @@ namespace {{safeNamespace}}
 {
     public class PackageEntry : IPackageEntry
     {
-        public void OnLoad(IServiceRegistry registry)
+        public void OnLoad(IServiceRegistry services)
         {
             // Initialize your package services here
         }
 
-        public void OnUnload()
+        public void OnUnload(IServiceRegistry services)
         {
             // Cleanup your package resources here
         }
@@ -627,29 +684,13 @@ namespace {{safeNamespace}}
         {
             if (p == vm) continue;
 
-            if (p.Url.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+            var pData = p.CachedManifest;
+            if (pData?.Dependencies != null)
             {
-                string localPath = Uri.UnescapeDataString(new Uri(p.Url).LocalPath);
-                string packageJsonPath = Path.Combine(localPath, "package.json");
-                
-                if (File.Exists(packageJsonPath))
+                if (pData.Dependencies.TryGetValue(vm.Id, out _))
                 {
-                    try
-                    {
-                        using var doc = JsonDocument.Parse(File.ReadAllText(packageJsonPath));
-                        if (doc.RootElement.TryGetProperty("dependencies", out var depsProp) && depsProp.ValueKind == JsonValueKind.Object)
-                        {
-                            foreach (var dep in depsProp.EnumerateObject())
-                            {
-                                if (dep.Name == vm.Id)
-                                {
-                                    VerificationError = $"Cannot remove '{vm.Id}' because installed package '{p.Id}' depends on it. Remove '{p.Id}' first.";
-                                    return; // Block removal completely
-                                }
-                            }
-                        }
-                    }
-                    catch { /* Ignore parsing errors during removal check */ }
+                    VerificationError = $"Cannot remove '{vm.Id}' because installed package '{p.Id}' depends on it. Remove '{p.Id}' first.";
+                    return; // Block removal completely
                 }
             }
         }
@@ -833,6 +874,14 @@ namespace {{safeNamespace}}
                     var options = new JsonSerializerOptions { WriteIndented = true };
                     var doc = JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, object>>(oldJsonText) ?? new();
 
+                    // A6: Handle $schema correctly by ensuring it persists if it existed
+                    // We don't need the fragile string.Replace anymore if we maintain it in the dictionary
+                    if (!doc.ContainsKey("$schema") && doc.ContainsKey("schema"))
+                    {
+                        doc["$schema"] = doc["schema"];
+                        doc.Remove("schema");
+                    }
+
                     doc["name"] = vm.DisplayName;
                     doc["version"] = vm.Version;
                     doc["description"] = vm.Description;
@@ -864,14 +913,20 @@ namespace {{safeNamespace}}
                     else doc.Remove("services");
 
                     string newJson = JsonSerializer.Serialize(doc, options);
-                    newJson = newJson.Replace("\"schema\":", "\"$schema\":");
                     File.WriteAllText(packageJsonPath, newJson);
+                    
+                    // Update cache after save
+                    vm.CachedManifest = ParsePackageManifest(packageJsonPath);
                     RefreshServiceStatus();
+                    SaveFeedback = "Package manifest saved successfully!";
+                    // Reset feedback after a delay
+                    Task.Delay(3000).ContinueWith(_ => SaveFeedback = string.Empty);
                 }
             }
             catch (Exception ex)
             {
                 VerificationError = $"Failed to save package.json: {ex.Message}";
+                SaveFeedback = string.Empty;
             }
         }
     }
@@ -894,15 +949,25 @@ public partial class PackageRequirementViewModel : ObservableObject
     public bool HasDescription => !string.IsNullOrWhiteSpace(Description);
     public bool HasAuthor => !string.IsNullOrWhiteSpace(Author);
 
+    [ObservableProperty] private bool _isLocal;
     [ObservableProperty] private string _displayName = string.Empty;
     [ObservableProperty] private string _type = "managed";
     [ObservableProperty] private string _engineVersion = "Current";
-    [ObservableProperty] private string _entryClass = string.Empty;
     [ObservableProperty] private string _assemblyEntry = string.Empty;
+    [ObservableProperty] private string _entryClass = string.Empty;
     [ObservableProperty] private string _servicesProvides = string.Empty;
     [ObservableProperty] private string _servicesRequires = string.Empty;
     [ObservableProperty] private string _nativeRuntimesDisplay = string.Empty;
-    [ObservableProperty] private bool _isLocal;
+
+    partial void OnDisplayNameChanged(string value) => ParentContext?.MarkDirty();
+    partial void OnVersionChanged(string value) => ParentContext?.MarkDirty();
+    partial void OnDescriptionChanged(string value) => ParentContext?.MarkDirty();
+    partial void OnAuthorChanged(string value) => ParentContext?.MarkDirty();
+    partial void OnAssemblyEntryChanged(string value) => ParentContext?.MarkDirty();
+    partial void OnEntryClassChanged(string value) => ParentContext?.MarkDirty();
+    partial void OnTypeChanged(string value) => ParentContext?.MarkDirty();
+    partial void OnServicesProvidesChanged(string value) => ParentContext?.MarkDirty();
+    partial void OnServicesRequiresChanged(string value) => ParentContext?.MarkDirty();
 
     public ObservableCollection<DependencyViewModel> Dependencies { get; } = new();
 
@@ -942,6 +1007,14 @@ public partial class PackageRequirementViewModel : ObservableObject
     [ObservableProperty] private string _unresolvedMessage = string.Empty;
 
     public bool IsRemote => !IsLocal && !IsUnresolved;
+
+    // P5/P6: Cache the parsed manifest for performance
+    private PackageJsonManifest? _cachedManifest;
+    public PackageJsonManifest? CachedManifest 
+    { 
+        get => _cachedManifest;
+        set => SetProperty(ref _cachedManifest, value);
+    }
 }
 
 public partial class ServiceSelectionViewModel : ObservableObject
@@ -960,7 +1033,7 @@ public partial class DependencyViewModel : ObservableObject
     [ObservableProperty] private string _version = string.Empty;
 }
 
-internal class PackageJsonEntry
+public class PackageJsonEntry
 {
     [JsonPropertyName("assembly")]
     public string Assembly { get; set; } = string.Empty;
@@ -968,13 +1041,13 @@ internal class PackageJsonEntry
     public string Class { get; set; } = string.Empty;
 }
 
-internal class PackageJsonServices
+public class PackageJsonServices
 {
     public List<string>? Provides { get; set; }
     public List<string>? Requires { get; set; }
 }
 
-internal class PackageJsonManifest
+public class PackageJsonManifest
 {
     [JsonPropertyName("id")]
     public string Id { get; set; } = string.Empty;
@@ -996,6 +1069,6 @@ internal class PackageJsonManifest
     public Dictionary<string, string>? Dependencies { get; set; }
     [JsonPropertyName("services")]
     public PackageJsonServices? Services { get; set; }
-    [JsonPropertyName("NativeRuntimes")]
+    [JsonPropertyName("nativeRuntimes")] // A7: Corrected from PascalCase to camelCase
     public Dictionary<string, List<string>>? NativeRuntimes { get; set; }
 }

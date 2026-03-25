@@ -7,17 +7,42 @@ namespace ArisenKernel.Diagnostics;
 /// A static facade for the Kernel and Packages to log easily. 
 /// It attempts to use the registered ILogger from the ServiceRegistry. 
 /// If none is registered yet (e.g., during early boot), it falls back to the system console.
+/// P2: Caches the logger reference to avoid per-call dictionary lookup.
+/// B13: Uses IsValueCreated to avoid premature kernel instantiation.
 /// </summary>
 public static class KernelLog
 {
+    private static ILogger? s_CachedLogger;
+    private static bool s_LoggerLookupAttempted;
+
     private static ILogger? GetLogger()
     {
-        if (Lifecycle.EngineKernel.Instance != null && 
-            Lifecycle.EngineKernel.Instance.Services.TryGetService<ILogger>(out var logger))
+        // P2: Return cached logger if already resolved
+        if (s_CachedLogger != null) return s_CachedLogger;
+
+        // B13: Don't access EngineKernel.Instance if it hasn't been created yet —
+        // accessing it triggers Lazy<> initialization
+        if (!s_LoggerLookupAttempted && Lifecycle.EngineKernel.IsCreated)
         {
-            return logger;
+            if (Lifecycle.EngineKernel.Instance.Services.TryGetService<ILogger>(out var logger))
+            {
+                s_CachedLogger = logger;
+                return s_CachedLogger;
+            }
+            // Don't re-attempt until InvalidateCache is called
+            s_LoggerLookupAttempted = true;
         }
         return null;
+    }
+
+    /// <summary>
+    /// Invalidates the cached logger, forcing a new lookup on next call.
+    /// Should be called when services are re-registered (e.g., after kernel Reset).
+    /// </summary>
+    public static void InvalidateCache()
+    {
+        s_CachedLogger = null;
+        s_LoggerLookupAttempted = false;
     }
 
     public static void Info(string message)

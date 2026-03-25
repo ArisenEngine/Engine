@@ -131,7 +131,8 @@
                                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" FontSize="14" Foreground="White" TextTrimming="CharacterEllipsis"/>
                                                         <TextBlock Text="{Binding Id}" FontSize="11" Foreground="#64748b" TextTrimming="CharacterEllipsis" Margin="0,0,0,2"/>
-                                                        <TextBlock Text="{Binding Version}" FontSize="12" Foreground="#94a3b8"/>
+                                                        <TextBlock Text="{Binding Description}" FontSize="10" Foreground="#475569" TextTrimming="CharacterEllipsis" IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                        <TextBlock Text="{Binding Version}" FontSize="12" Foreground="#94a3b8" Margin="0,2,0,0"/>
                                                     </StackPanel>
                                                     
                                                     <!-- Badges -->
@@ -206,7 +207,7 @@
                                             <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto" Margin="0,0,0,24">
                                                 <StackPanel Grid.Row="0" Grid.Column="0" Spacing="8" Margin="0,0,12,12">
                                                     <TextBlock Text="DISPLAY NAME" FontSize="11" Foreground="#64748b" FontWeight="Bold"/>
-                                                    <TextBox Text="{Binding DisplayName}" IsEnabled="False" Opacity="0.7" Background="#0f1117" BorderBrush="#282e39" Foreground="White" CornerRadius="4"/>
+                                                    <TextBox Text="{Binding DisplayName}" IsEnabled="{Binding IsLocal}" Background="#0f1117" BorderBrush="#282e39" Foreground="White" CornerRadius="4"/>
                                                 </StackPanel>
                                                 <StackPanel Grid.Row="0" Grid.Column="1" Spacing="8" Margin="12,0,0,12">
                                                     <TextBlock Text="VERSION" FontSize="11" Foreground="#64748b" FontWeight="Bold"/>
@@ -256,7 +257,7 @@
                                             </StackPanel>
 
                                             <!-- Advanced Configuration (Expander) -->
-                                            <Expander Header="Advanced Configuration / Build Metadata" Foreground="#94a3b8" Background="#1a1e26" BorderBrush="#282e39" CornerRadius="8">
+                                            <Expander Header="Advanced Configuration / Build Metadata" Foreground="#94a3b8" Background="#1a1e26" BorderBrush="#282e39" CornerRadius="8" Padding="0">
                                                 <StackPanel Spacing="16" Margin="16">
                                                     <Border Background="#ef444410" BorderBrush="#ef444440" BorderThickness="1" CornerRadius="6" Padding="12">                                                        <TextBlock Text="Note: These fields are managed by ArisenBuildTool and are read-only in the Launcher to prevent build desync." 
                                                                     Foreground="#ef4444" FontSize="11" TextWrapping="Wrap" FontWeight="SemiBold"/>
@@ -442,9 +443,29 @@
         <!-- Footer -->
         <Border Grid.Row="2" Background="#1a1e26" BorderBrush="#282e39" BorderThickness="0,1,0,0" Padding="24,16">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12">
-                <Button Content="Cancel" Click="CloseButton_Click" Background="Transparent" BorderBrush="#282e39" BorderThickness="1" Foreground="#94a3b8" Padding="24,10" CornerRadius="6"/>
+                <Button Content="Cancel" Command="{Binding CancelCommand}" Background="Transparent" BorderBrush="#282e39" BorderThickness="1" Foreground="#94a3b8" Padding="24,10" CornerRadius="6"/>
                 <Button Content="Save Manifest" Command="{Binding SaveManifestCommand}" Click="SaveButton_Click" Background="#22c55e" Foreground="White" Padding="24,10" CornerRadius="6" FontWeight="Bold"/>
             </StackPanel>
+        </Border>
+
+        <!-- Exit Confirmation Overlay -->
+        <Border Grid.Row="0" Grid.RowSpan="3" Background="#cc0f1117" IsVisible="{Binding ShowExitConfirmation}" ZIndex="100">
+            <Border Background="#1a1e26" BorderBrush="#282e39" BorderThickness="1" CornerRadius="12" Padding="32" Width="400" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Spacing="24">
+                    <StackPanel Spacing="8" HorizontalAlignment="Center">
+                        <Border Width="48" Height="48" Background="#eab30820" BorderBrush="#eab308" BorderThickness="1" CornerRadius="24" HorizontalAlignment="Center">
+                            <Path Fill="#eab308" Data="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16" Stretch="Uniform" Margin="12"/>
+                        </Border>
+                        <TextBlock Text="Unsaved Changes" FontSize="20" FontWeight="Black" Foreground="White" HorizontalAlignment="Center" Margin="0,12,0,4"/>
+                        <TextBlock Text="You have unsaved changes in your manifest. Are you sure you want to discard them?" Foreground="#94a3b8" FontSize="14" TextWrapping="Wrap" TextAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="12">
+                        <Button Content="Discard Changes and Exit" Command="{Binding ConfirmExitCommand}" Background="#ef4444" Foreground="White" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="12" CornerRadius="8" FontWeight="Bold"/>
+                        <Button Content="Keep Editing" Command="{Binding StayEditingCommand}" Background="Transparent" BorderBrush="#282e39" BorderThickness="1" Foreground="#94a3b8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="12" CornerRadius="8"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
         </Border>
     </Grid>
 </Window>

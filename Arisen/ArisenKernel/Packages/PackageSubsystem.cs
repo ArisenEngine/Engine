@@ -31,10 +31,11 @@ public class PackageSubsystem : IEngineSubsystem
         // Ensure root exists
         if (!Directory.Exists(m_PackagesRoot)) Directory.CreateDirectory(m_PackagesRoot);
         
-        DiscoverAndLoadPackagesAsync().GetAwaiter().GetResult();
+        // B2: Use synchronous discovery to avoid sync-over-async deadlock
+        DiscoverAndLoadPackages();
     }
 
-    private async Task DiscoverAndLoadPackagesAsync()
+    private void DiscoverAndLoadPackages()
     {
         var projectSubsystem = EngineKernel.Instance.GetSubsystem<ProjectSubsystem>();
         var projectPackages = projectSubsystem?.ActiveProject?.Packages ?? new List<PackageRequirement>();
@@ -56,7 +57,24 @@ public class PackageSubsystem : IEngineSubsystem
                 string? resolvedPath = null;
                 if (!string.IsNullOrEmpty(url))
                 {
-                    resolvedPath = await m_Resolver.ResolveAsync(id, url, m_PackagesRoot);
+                    // B2: Use synchronous resolution for local paths; remote still uses async
+                    if (url.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string localPath = Uri.UnescapeDataString(url.Substring(7));
+                        if (Directory.Exists(localPath))
+                            resolvedPath = Path.GetFullPath(localPath);
+                        else if (File.Exists(localPath) && localPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string extractDir = Path.Combine(m_PackagesRoot, Path.GetFileNameWithoutExtension(localPath));
+                            if (!Directory.Exists(extractDir))
+                                System.IO.Compression.ZipFile.ExtractToDirectory(localPath, extractDir);
+                            resolvedPath = extractDir;
+                        }
+                    }
+                    else
+                    {
+                        resolvedPath = m_Resolver.ResolveAsync(id, url, m_PackagesRoot).GetAwaiter().GetResult();
+                    }
                 }
                 else
                 {
@@ -147,6 +165,7 @@ public class PackageSubsystem : IEngineSubsystem
     {
         var result = new List<(string ManifestPath, PackageSource Source, PackageManifest Manifest)>();
         var visited = new HashSet<string>();
+        var visiting = new HashSet<string>(); // B3: Track in-progress visits for cycle detection
         var map = manifests.ToDictionary(x => x.Manifest.Id);
 
         void Visit(string id)
@@ -154,7 +173,14 @@ public class PackageSubsystem : IEngineSubsystem
             if (visited.Contains(id)) return;
             if (!map.TryGetValue(id, out var item)) return;
 
-            visited.Add(id);
+            // B3: Detect circular dependencies
+            if (visiting.Contains(id))
+            {
+                KernelLog.Warning($"[PackageSubsystem] Circular dependency detected involving package '{id}'. Skipping.");
+                return;
+            }
+
+            visiting.Add(id);
             if (item.Manifest.Dependencies != null)
             {
                 foreach (var depId in item.Manifest.Dependencies.Keys)
@@ -162,6 +188,8 @@ public class PackageSubsystem : IEngineSubsystem
                     Visit(depId);
                 }
             }
+            visiting.Remove(id);
+            visited.Add(id);
             result.Add(item);
         }
 
@@ -198,9 +226,10 @@ public class PackageSubsystem : IEngineSubsystem
             string entryAssembly = manifest.Entry?.Assembly ?? string.Empty;
             string entryClass = manifest.Entry?.Class ?? string.Empty;
 
-            if (entryAssembly == "ArisenEngine.dll")
+            if (entryAssembly == "ArisenKernel.dll")
             {
-                assembly = Assembly.GetExecutingAssembly();
+                // B4: Use the kernel assembly correctly
+                assembly = typeof(PackageSubsystem).Assembly;
             }
             else if (!string.IsNullOrEmpty(entryAssembly))
             {
@@ -256,6 +285,22 @@ public class PackageSubsystem : IEngineSubsystem
 
     public void Shutdown()
     {
+        // B19: Call OnUnload on all package entry instances
+        foreach (var pkg in m_LoadedPackages.Values)
+        {
+            if (pkg.EntryInstance is IPackageEntry entry)
+            {
+                try
+                {
+                    entry.OnUnload(EngineKernel.Instance.Services);
+                }
+                catch (Exception e)
+                {
+                    KernelLog.Info($"[PackageSubsystem] Error unloading package {pkg.Id}: {e.Message}");
+                }
+            }
+        }
+
         m_LoadedPackages.Clear();
 
         foreach (var context in m_LoadContexts)

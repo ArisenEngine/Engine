@@ -32,19 +32,23 @@ public class ArisenApplication
             InitializeLogging(false);
         }
 
-        // Register early subsystems
+        // B6: Initialize native runtime BEFORE registering subsystems
+        // so that native DLLs are available during subsystem PreInit
+        if (!NativeRuntime.Initialize())
+        {
+            return false;
+        }
+
+        // B7: Reset shutdown flag to allow re-initialization
+        s_HasShutdown = false;
+
+        // Register subsystems (native runtime is now ready)
         EngineKernel.Instance.RegisterSubsystem(new EnvironmentSubsystem());
         EngineKernel.Instance.RegisterSubsystem(new PlatformSubsystem());
         EngineKernel.Instance.RegisterSubsystem(new ProjectSubsystem());
         EngineKernel.Instance.RegisterSubsystem(new PackageSubsystem());
         EngineKernel.Instance.RegisterSubsystem(new SceneSubsystem());
         EngineKernel.Instance.RegisterSubsystem(new RenderSubsystem());
-
-        // Initialize RHI and native core
-        if (!NativeRuntime.Initialize())
-        {
-            return false;
-        }
 
         // Use PackageSubsystem to resolve the default render pipeline
         var packageSubsystem = EngineKernel.Instance.GetSubsystem<PackageSubsystem>();

@@ -119,6 +119,18 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void RemoveFromRecent(LauncherProjectMetadata project)
+    {
+        if (_configService.Settings.RecentProjects.Contains(project.ProjectPath))
+        {
+            _configService.Settings.RecentProjects.Remove(project.ProjectPath);
+            _configService.Save();
+            RefreshLists();
+            StatusText = $"Removed from recent: {project.Name}";
+        }
+    }
+
+    [RelayCommand]
     private async Task BrowseProject()
     {
         if (RequestFilePickerAsync != null)
