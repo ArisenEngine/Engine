@@ -1,8 +1,9 @@
 namespace ArisenKernel.Contracts;
 
 /// <summary>
-/// Contract for the hardware resource creation factory.
+/// Abstract factory for creating instances of the actual rendering contexts and buffers.
 /// </summary>
+[ServiceContract("RHI Factory", "Abstract factory for creating rendering contexts, buffers, and shaders.")]
 public interface IRHIFactory
 {
     bool IsValid { get; }

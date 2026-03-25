@@ -5,6 +5,7 @@ namespace ArisenKernel.Contracts;
 /// <summary>
 /// Contract for providing native window handles to the engine for swapchain creation.
 /// </summary>
+[ServiceContract("Window Provider", "Provides an OS window handle to the engine for rendering SwapChains.")]
 public interface IWindowProvider
 {
     IntPtr GetWindowHandle();

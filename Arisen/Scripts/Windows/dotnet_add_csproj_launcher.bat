@@ -38,20 +38,20 @@ set "SLN_PATH=%~1"
 if exist "%SLN_PATH%" (
     REM Resolve absolute project paths
     for %%I in ("%SCRIPT_DIR%\..\..\ArisenKernel\ArisenKernel.csproj") do set "ARISEN_KERNEL=%%~fI"
-    for %%I in ("%SCRIPT_DIR%\..\..\ArisenHost\ArisenHost.csproj") do set "ARISEN_HOST=%%~fI"
+
     for %%I in ("%SCRIPT_DIR%\..\..\Editor\ArisenLauncher\ArisenLauncher.csproj") do set "ARISEN_LAUNCHER=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\Editor\ArisenLauncher.Desktop\ArisenLauncher.Desktop.csproj") do set "ARISEN_LAUNCHER_DESKTOP=%%~fI"
     for %%I in ("%SCRIPT_DIR%\..\..\External\ArisenBuildTool\ArisenBuildTool.csproj") do set "ARISEN_BUILD_TOOL=%%~fI"
 
     echo SLN_PATH: !SLN_PATH!
     echo ARISEN_KERNEL: !ARISEN_KERNEL!
-    echo ARISEN_HOST: !ARISEN_HOST!
+
     echo ARISEN_LAUNCHER: !ARISEN_LAUNCHER!
     echo ARISEN_LAUNCHER_DESKTOP: !ARISEN_LAUNCHER_DESKTOP!
     echo ARISEN_BUILD_TOOL: !ARISEN_BUILD_TOOL!
 
     REM Basic existence checks
-    for %%V in (ARISEN_KERNEL ARISEN_HOST ARISEN_LAUNCHER ARISEN_LAUNCHER_DESKTOP ARISEN_BUILD_TOOL) do (
+    for %%V in (ARISEN_KERNEL ARISEN_LAUNCHER ARISEN_LAUNCHER_DESKTOP ARISEN_BUILD_TOOL) do (
         if "!%%V!"=="" (
             echo ERROR: Path for %%V is empty.
             set "EXIT_CODE=1"
@@ -74,7 +74,7 @@ if exist "%SLN_PATH%" (
 
     REM Relative paths for portability
     set "REL_ARISEN_KERNEL=..\..\..\ArisenKernel\ArisenKernel.csproj"
-    set "REL_ARISEN_HOST=..\..\..\ArisenHost\ArisenHost.csproj"
+
     set "REL_ARISEN_LAUNCHER=..\..\..\Editor\ArisenLauncher\ArisenLauncher.csproj"
     set "REL_ARISEN_LAUNCHER_DESKTOP=..\..\..\Editor\ArisenLauncher.Desktop\ArisenLauncher.Desktop.csproj"
     set "REL_ARISEN_BUILD_TOOL=..\..\..\External\ArisenBuildTool\ArisenBuildTool.csproj"
@@ -83,9 +83,6 @@ if exist "%SLN_PATH%" (
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_KERNEL!"
     if errorlevel 1 ( set "EXIT_CODE=1" & goto :cleanup )
 
-    echo Adding !REL_ARISEN_HOST! to !SLN_FILE! (^--in-root^)
-    dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_HOST!"
-    if errorlevel 1 ( set "EXIT_CODE=1" & goto :cleanup )
 
     echo Adding !REL_ARISEN_LAUNCHER! to !SLN_FILE! (^--in-root^)
     dotnet sln "!SLN_FILE!" add --in-root "!REL_ARISEN_LAUNCHER!"

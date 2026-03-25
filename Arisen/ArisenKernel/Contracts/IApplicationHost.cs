@@ -1,8 +1,9 @@
 namespace ArisenKernel.Contracts;
 
 /// <summary>
-/// Implemented by packages that require taking over the main thread (e.g., Avalonia UI or specialized windowing).
+/// Defines the main entry point loop that takes over the application thread after bootup.
 /// </summary>
+[ServiceContract("Application Host", "Defines the main entry point loop that takes over the application thread.")]
 public interface IApplicationHost
 {
     /// <summary>

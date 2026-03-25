@@ -116,12 +116,12 @@ class Program
         var packageMap = PackageDiscoveryService.Discover(manifest, workspaceDir, engineDir);
         Logger.Info($"Discovered {packageMap.Count} packages in dependency graph.");
 
-        var managedPackages = packageMap.Values.Where(p => p.Manifest.Type != "native").ToList();
-        var nativePackages = packageMap.Values.Where(p => p.Manifest.Type == "native").ToList();
+        var managedPackages = packageMap.Values.Where(p => p.Manifest.Entry != null || Directory.Exists(Path.Combine(p.DirectoryPath, "Managed")) || Directory.GetFiles(p.DirectoryPath, "*.cs", SearchOption.AllDirectories).Length > 0).ToList();
+        var nativePackages = packageMap.Values.Where(p => p.Manifest.Type == "native" || File.Exists(Path.Combine(p.DirectoryPath, "CMakeLists.txt"))).ToList();
 
-        ProjectGeneratorService.GenerateForManagedPackages(workspaceDir, projectsDir, engineDir, managedPackages, packageMap);
-        CMakeGeneratorService.Generate(engineDir, projectsDir, nativePackages, projectName);
-        SolutionGeneratorService.Generate(projectsDir, engineDir, packageMap, projectName);
+        ProjectGeneratorService.GenerateForManagedPackages(workspaceDir, projectsDir, engineDir, managedPackages, packageMap, manifest);
+        CMakeGeneratorService.Generate(engineDir, projectsDir, nativePackages, projectName, manifest);
+        SolutionGeneratorService.Generate(projectsDir, engineDir, packageMap, projectName, manifest);
 
         Logger.Info("ArisenBuildTool: Workspace generation complete.");
     }

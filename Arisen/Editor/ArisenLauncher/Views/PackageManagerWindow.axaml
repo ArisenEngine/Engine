@@ -24,14 +24,14 @@
         </Border>
 
         <!-- Main Content -->
-        <ScrollViewer Grid.Row="1" Margin="24">
-            <StackPanel Spacing="24" Margin="0,0,0,32">
-                <StackPanel Spacing="8">
-                    <TextBlock Text="Installed Packages" FontSize="24" FontWeight="Bold" Foreground="White"/>
-                    <TextBlock Text="Manage dependencies required for this project to compile and run." Foreground="#64748b" FontSize="14"/>
-                </StackPanel>
-
-                <!-- Toolbar -->
+        <TabControl Grid.Row="1" Margin="24,12,24,24" Background="Transparent">
+            <!-- Packages Tab -->
+            <TabItem Header="Installed Packages" FontSize="16" FontWeight="Bold">
+                <ScrollViewer Margin="0,16,0,0">
+                    <StackPanel Spacing="24" Margin="0,0,0,32">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Manage dependencies required for this project to compile and run." Foreground="#64748b" FontSize="14"/>
+                        </StackPanel>
                 <Border Background="#1a1e26" CornerRadius="8" BorderBrush="#282e39" BorderThickness="1" Padding="8">
                     <Grid ColumnDefinitions="Auto, *, Auto, Auto">
                         <Button Grid.Column="0" Content="+ Create Local Package" Command="{Binding BeginCreatePackageCommand}" 
@@ -166,8 +166,116 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-            </StackPanel>
-        </ScrollViewer>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- Profiles Tab -->
+            <TabItem Header="Workspace Profiles" FontSize="16" FontWeight="Bold">
+                <ScrollViewer Margin="0,16,0,0">
+                    <StackPanel Spacing="24">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Define entry-point profiles for booting the Engine Kernel (e.g. Development, Production, DedicatedServer)." Foreground="#64748b" FontSize="14" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        
+                        <Button Content="+ Add Custom Profile" Command="{Binding AddProfileCommand}" Background="#135bec" Foreground="White" Padding="16,8" CornerRadius="6" FontWeight="SemiBold"/>
+                        
+                        <ItemsControl ItemsSource="{Binding Profiles}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="16"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:WorkspaceProfileViewModel">
+                                    <Border Background="#1a1e26" CornerRadius="8" BorderBrush="#282e39" BorderThickness="1" Padding="16">
+                                        <StackPanel Spacing="12">
+                                            <Grid ColumnDefinitions="*, Auto">
+                                                <TextBox Grid.Column="0" Text="{Binding Name}" Background="#0f1117" BorderBrush="#282e39" FontWeight="Bold" Foreground="White"/>
+                                                <Button Grid.Column="1" Content="Delete" Command="{Binding #PackageManagerWindowRoot.((vm:PackageManagerViewModel)DataContext).RemoveProfileCommand}" CommandParameter="{Binding}" Background="Transparent" Foreground="#ef4444" Margin="8,0,0,0"/>
+                                            </Grid>
+                                            
+                                            <TextBlock Text="Entry Packages Binding:" Foreground="#94a3b8" FontSize="12"/>
+                                            <ItemsControl ItemsSource="{Binding Nodes}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate DataType="vm:PackageRequirementViewModel">
+                                                        <Grid ColumnDefinitions="*,*" Margin="0,0,0,8">
+                                                            <TextBox Grid.Column="0" Text="{Binding Id}" Background="#0f1117" BorderBrush="#282e39" Foreground="#94a3b8" Watermark="Package ID" Margin="0,0,8,0"/>
+                                                            <Button Grid.Column="1" Content="Remove" Command="{Binding $parent[ItemsControl].((vm:WorkspaceProfileViewModel)DataContext).RemoveEntryNodeCommand}" CommandParameter="{Binding}" Background="#1a1e26" Foreground="#ef4444"/>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <Button Content="+ Select Package" Command="{Binding AddEntryNodeCommand}" Background="#0f1117" BorderBrush="#282e39" BorderThickness="1" Foreground="#94a3b8"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- Service Contracts Tab -->
+            <TabItem Header="Service Dashboard" FontSize="16" FontWeight="Bold">
+                <ScrollViewer Margin="0,16,0,0">
+                    <StackPanel Spacing="24">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Automated Data-Driven Systems Map" FontSize="18" FontWeight="Bold" Foreground="White" />
+                            <TextBlock Text="This dashboard dynamically reflects loaded C# contracts and cross-references them against all package.json requirements." Foreground="#64748b" FontSize="14" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        
+                        <ItemsControl ItemsSource="{Binding Capabilities}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="12"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:ServiceCapabilityViewModel">
+                                    <Border Background="{Binding BackgroundColor}" CornerRadius="8" BorderBrush="#282e39" BorderThickness="1" Padding="16">
+                                        <Grid ColumnDefinitions="Auto, *, Auto">
+                                            
+                                            <!-- Status Icon -->
+                                            <Border Grid.Column="0" Width="32" Height="32" CornerRadius="16" Background="#282e39" Margin="0,0,16,0" VerticalAlignment="Center">
+                                                <Panel>
+                                                    <TextBlock Text="✓" Foreground="#22c55e" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding IsProvided}" />
+                                                    <TextBlock Text="!" Foreground="#ef4444" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding IsNotSatisfied}" />
+                                                </Panel>
+                                            </Border>
+                                            
+                                            <!-- Info -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding FriendlyName}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="0,0,0,4"/>
+                                                <TextBlock Text="{Binding Description}" FontSize="13" Foreground="#94a3b8" TextWrapping="Wrap" Margin="0,0,0,8" />
+                                                <TextBlock Text="{Binding ContractName}" FontSize="11" Foreground="#64748b" FontFamily="Consolas, monospace" />
+                                            </StackPanel>
+                                            
+                                            <!-- Mapping Details -->
+                                            <StackPanel Grid.Column="2" Spacing="4" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" IsVisible="{Binding IsRequired}">
+                                                    <TextBlock Text="Required By:" FontSize="12" Foreground="#94a3b8" Width="80"/>
+                                                    <ItemsControl ItemsSource="{Binding RequiringPackages}">
+                                                        <ItemsControl.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" FontSize="12" Foreground="#ef4444" FontWeight="Bold" /></DataTemplate></ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" IsVisible="{Binding IsProvided}">
+                                                    <TextBlock Text="Provided By:" FontSize="12" Foreground="#94a3b8" Width="80"/>
+                                                    <ItemsControl ItemsSource="{Binding ProvidingPackages}">
+                                                        <ItemsControl.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" FontSize="12" Foreground="#22c55e" FontWeight="Bold" /></DataTemplate></ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+        </TabControl>
 
         <!-- Footer -->
         <Border Grid.Row="2" Background="#1a1e26" BorderBrush="#282e39" BorderThickness="0,1,0,0" Padding="24,16">
