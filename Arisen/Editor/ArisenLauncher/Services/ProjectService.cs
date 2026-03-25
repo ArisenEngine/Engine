@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -202,9 +203,17 @@ public class ProjectService
                 return false;
             }
 
+            // B8: Deep-clone packages to avoid mutating the deserialized manifest in memory
+            var resolvedPackages = manifest.Packages?.Select(r => new PackageRequirement 
+            { 
+                Id = r.Id, 
+                Url = r.Url, 
+                Version = r.Version 
+            }).ToList() ?? new List<PackageRequirement>();
+
             var resolver = new PackageResolver(_logService);
 
-            foreach (var req in manifest.Packages)
+            foreach (var req in resolvedPackages)
             {
                 if (string.IsNullOrEmpty(req.Url)) continue;
 
@@ -239,8 +248,16 @@ public class ProjectService
             }
 
             // Generate synthetic resolved manifest for ArisenBuildTool mapping
+            // B8: Use the resolved (cloned) packages, not the original manifest
+            var resolvedManifest = new ProjectManifest
+            {
+                Name = manifest.Name,
+                EngineVersion = manifest.EngineVersion,
+                Packages = resolvedPackages,
+                Profiles = manifest.Profiles
+            };
             string resolvedManifestPath = Path.Combine(projectDir, "manifest.resolved.json");
-            File.WriteAllText(resolvedManifestPath, JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(resolvedManifestPath, JsonSerializer.Serialize(resolvedManifest, new JsonSerializerOptions { WriteIndented = true }));
 
             // 2. Execute ArisenBuildTool Out-of-Source Generation
             string buildToolExecutable = Path.Combine(engine.InstallPath, "External", "ArisenBuildTool", "bin", "Debug", "net9.0", "ArisenBuildTool.dll");

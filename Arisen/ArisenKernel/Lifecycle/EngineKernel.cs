@@ -12,6 +12,8 @@ public sealed class EngineKernel : IDisposable
 {
     private static readonly Lazy<EngineKernel> s_Instance = new(() => new EngineKernel());
     public static EngineKernel Instance => s_Instance.Value;
+    /// <summary>B13: Allows checking if the kernel has been instantiated without triggering Lazy creation.</summary>
+    public static bool IsCreated => s_Instance.IsValueCreated;
 
     private readonly List<IEngineSubsystem> m_Subsystems = new();
     private EnginePhase m_CurrentPhase = EnginePhase.None;
@@ -44,6 +46,8 @@ public sealed class EngineKernel : IDisposable
         m_IsRunning = false;
         Config = null;
         CurrentFrameIndex = 0;
+        // B10: Reset ServiceRegistry to avoid duplicate registrations on re-init
+        (Services as ServiceRegistry)?.Clear();
     }
 
     public void RegisterSubsystem<T>(T subsystem) where T : class, IEngineSubsystem
@@ -51,8 +55,9 @@ public sealed class EngineKernel : IDisposable
         if (m_CurrentPhase != EnginePhase.None)
             throw new InvalidOperationException("Cannot register subsystems after initialization has started");
 
-        if (m_Subsystems.Any(s => s is T))
-            throw new InvalidOperationException($"Subsystem of type {typeof(T).Name} is already registered.");
+        // B1: Check by concrete type to avoid ambiguity with interface-based checks
+        if (m_Subsystems.Any(s => s.GetType() == subsystem.GetType()))
+            throw new InvalidOperationException($"Subsystem of type {subsystem.GetType().Name} is already registered.");
 
         m_Subsystems.Add(subsystem);
     }
@@ -137,17 +142,15 @@ public sealed class EngineKernel : IDisposable
         KernelLog.Info("[EngineKernel] Shutting down...");
         m_CurrentPhase = EnginePhase.PreShutdown;
 
-        // Shutdown in reverse priority order
-        var reversedSubsystems = m_Subsystems.AsEnumerable().Reverse().ToList();
-
-        foreach (var subsystem in reversedSubsystems)
+        // P3: Shutdown in reverse priority order without allocating a new list
+        for (int i = m_Subsystems.Count - 1; i >= 0; i--)
         {
-            KernelLog.Info($"  [Subsystem] Shutting down: {subsystem.GetType().Name}");
-            subsystem.Shutdown();
+            KernelLog.Info($"  [Subsystem] Shutting down: {m_Subsystems[i].GetType().Name}");
+            m_Subsystems[i].Shutdown();
         }
 
         m_CurrentPhase = EnginePhase.Shutdown;
-        Console.WriteLine("[EngineKernel] Shutdown complete.");
+        KernelLog.Info("[EngineKernel] Shutdown complete.");
     }
 
     public void Dispose()

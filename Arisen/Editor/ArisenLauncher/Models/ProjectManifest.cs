@@ -23,6 +23,14 @@ public class PackageManifest
     public string Name { get; set; } = string.Empty;
     public string Version { get; set; } = "1.0.0";
     public string? Description { get; set; }
+    public string? Author { get; set; }
     public string? Type { get; set; }
     public Dictionary<string, string>? Dependencies { get; set; }
+    public PackageServices? Services { get; set; }
+}
+
+public class PackageServices
+{
+    public List<string>? Provides { get; set; }
+    public List<string>? Requires { get; set; }
 }

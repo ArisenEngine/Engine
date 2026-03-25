@@ -11,15 +11,20 @@ public interface ILogService
     void Critical(string message, Exception? ex = null);
 }
 
-public class LogService : ILogService
+public class LogService : ILogService, IDisposable
 {
-    private readonly string _logFilePath;
+    private readonly StreamWriter _writer;
 
     public LogService(string filename)
     {
-        _logFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs", filename);
-        // Clear old log
-        if (File.Exists(_logFilePath)) File.Delete(_logFilePath);
+        string logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+        // B17: Ensure the logs directory exists before attempting to write
+        if (!Directory.Exists(logDir)) Directory.CreateDirectory(logDir);
+
+        string logFilePath = Path.Combine(logDir, filename);
+        // Clear old log and open a persistent, buffered writer
+        // P7: StreamWriter is far more efficient than per-line File.AppendAllText
+        _writer = new StreamWriter(logFilePath, append: false) { AutoFlush = true };
     }
 
     private void Log(string level, string message, Exception? ex)
@@ -35,7 +40,7 @@ public class LogService : ILogService
         
         try
         {
-            File.AppendAllText(_logFilePath, logLine + "\n");
+            _writer.WriteLine(logLine);
         }
         catch { }
     }
@@ -44,4 +49,9 @@ public class LogService : ILogService
     public void Warning(string message) => Log("WARN", message, null);
     public void Error(string message, Exception? ex = null) => Log("ERROR", message, ex);
     public void Critical(string message, Exception? ex = null) => Log("CRITICAL", message, ex);
+
+    public void Dispose()
+    {
+        _writer.Dispose();
+    }
 }

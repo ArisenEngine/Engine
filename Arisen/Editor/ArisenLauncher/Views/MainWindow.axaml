@@ -6,7 +6,7 @@
         x:Class="ArisenLauncher.Views.MainWindow"
         x:Name="Root"
         x:DataType="vm:MainViewModel"
-        Title="Avalonia Engine | Launch Hub"
+        Title="Arisen Engine | Launch Hub"
         Icon="avares://ArisenLauncher/Assets/arisen-logo.ico"
         Width="1200" Height="800"
         WindowStartupLocation="CenterScreen"
@@ -23,16 +23,16 @@
                     <Border Width="32" Height="32" Background="#135bec" CornerRadius="8">
                         <Path Fill="White" Data="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z" Stretch="Uniform" Margin="6"/>
                     </Border>
-                    <TextBlock Text="Avalonia Engine" FontWeight="Bold" FontSize="18" VerticalAlignment="Center"/>
+                    <TextBlock Text="Arisen Engine" FontWeight="Bold" FontSize="18" VerticalAlignment="Center"/>
                 </StackPanel>
                 
                 <!-- Navigation -->
                 <StackPanel DockPanel.Dock="Top" Spacing="4">
                     <TextBlock Text="MAIN MENU" IsVisible="True" FontSize="10" FontWeight="Bold" Foreground="#64748b" Margin="12,0,0,8"/>
                     <Button Classes="NavItemActive" Content="Projects"/>
-                    <Button Classes="NavItem" Content="Learning"/>
-                    <Button Classes="NavItem" Content="Marketplace"/>
-                    <Button Classes="NavItem" Content="Templates"/>
+                    <Button Classes="NavItem" Content="Learning (Coming Soon)" IsEnabled="False"/>
+                    <Button Classes="NavItem" Content="Marketplace (Coming Soon)" IsEnabled="False"/>
+                    <Button Classes="NavItem" Content="Templates (Coming Soon)" IsEnabled="False"/>
                 </StackPanel>
                 
                 <!-- Bottom Profile/Settings -->
@@ -105,32 +105,53 @@
                     <ItemsControl ItemsSource="{Binding RecentProjects}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <UniformGrid Columns="3"/>
+                                <WrapPanel Orientation="Horizontal"/>
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="models:LauncherProjectMetadata">
-                                <Border Background="Transparent" Padding="0" Margin="0,0,16,16">
-                                    <Border Background="#1a1e26" CornerRadius="12" BorderBrush="#282e39" BorderThickness="1">
+                                <Border Background="Transparent" Padding="0" Margin="0,0,24,24" Width="320">
+                                    <Border Background="#1a1e26" CornerRadius="12" BorderBrush="#282e39" BorderThickness="1" ClipToBounds="True">
                                         <StackPanel>
-                                            <Border Height="120" Background="#334155" CornerRadius="12,12,0,0">
-                                                <TextBlock Text="Arisen" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.1" FontSize="48" FontWeight="Bold"/>
+                                            <!-- U4: Improved Thumbnail with Gradient -->
+                                            <Border Height="140" CornerRadius="12,12,0,0">
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                        <GradientStop Offset="0" Color="#1e293b"/>
+                                                        <GradientStop Offset="1" Color="#0f172a"/>
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                                <Viewbox Stretch="Uniform" Margin="40">
+                                                    <Path Fill="#135bec" Data="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z" Opacity="0.4"/>
+                                                </Viewbox>
                                             </Border>
+                                            
                                             <StackPanel Margin="16">
-                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
-                                                <TextBlock Text="{Binding ProjectPath}" FontSize="9" Foreground="#64748b" Margin="0,2,0,8" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
-                                                <DockPanel>
-                                                    <TextBlock Text="Member" FontSize="10" Foreground="#135bec" FontWeight="SemiBold" DockPanel.Dock="Left"/>
-                                                    <TextBlock Text="{Binding LastModified, StringFormat='{}{0:MM/dd/yyyy}'}" FontSize="10" Foreground="#64748b" HorizontalAlignment="Right"/>
-                                                </DockPanel>
-                                                <DockPanel Margin="0,12,0,0">
-                                                    <Button Content="Play" Background="#135bec" Foreground="White" 
+                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="16" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding ProjectPath}" FontSize="11" Foreground="#64748b" Margin="0,4,0,12" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                                
+                                                <Grid ColumnDefinitions="*, Auto" Margin="0,0,0,16">
+                                                    <TextBlock Grid.Column="0" Text="Arisen Project" FontSize="11" Foreground="#135bec" FontWeight="SemiBold"/>
+                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                                        <TextBlock Text="{Binding LastModified, StringFormat='{}{0:MM/dd/yyyy}'}" FontSize="11" Foreground="#64748b"/>
+                                                        <Button Background="Transparent" Padding="2"
+                                                                Command="{Binding #Root.((vm:MainViewModel)DataContext).RemoveFromRecentCommand}"
+                                                                CommandParameter="{Binding}" ToolTip.Tip="Remove from recent">
+                                                            <Path Data="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" 
+                                                                  Fill="#64748b" Width="12" Height="12" Stretch="Uniform"/>
+                                                        </Button>
+                                                    </StackPanel>
+                                                </Grid>
+                                                
+                                                <!-- U5: Better Button Sizing and Labels -->
+                                                <Grid ColumnDefinitions="*, 8, *">
+                                                    <Button Grid.Column="0" Content="Launch Editor" Classes="Primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                                                             Command="{Binding #Root.((vm:MainViewModel)DataContext).LaunchProjectCommand}" 
-                                                            CommandParameter="{Binding}" DockPanel.Dock="Left" />
-                                                    <Button Content="Pkgs" Background="#282e39" Foreground="White"
+                                                            CommandParameter="{Binding}" />
+                                                    <Button Grid.Column="2" Content="Packages" Classes="Secondary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                                                             Command="{Binding #Root.((vm:MainViewModel)DataContext).ManagePackagesCommand}" 
-                                                            CommandParameter="{Binding}" DockPanel.Dock="Right" HorizontalAlignment="Right" />
-                                                </DockPanel>
+                                                            CommandParameter="{Binding}" />
+                                                </Grid>
                                             </StackPanel>
                                         </StackPanel>
                                     </Border>
@@ -195,6 +216,27 @@
             <Setter Property="Padding" Value="12,10"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+        
+        <Style Selector="Button.Primary">
+            <Setter Property="Background" Value="#135bec"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Button.Secondary">
+            <Setter Property="Background" Value="#282e39"/>
+            <Setter Property="Foreground" Value="#94a3b8"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Button.Secondary:hover">
+            <Setter Property="Background" Value="#323945"/>
+            <Setter Property="Foreground" Value="White"/>
         </Style>
     </Window.Styles>
 </Window>

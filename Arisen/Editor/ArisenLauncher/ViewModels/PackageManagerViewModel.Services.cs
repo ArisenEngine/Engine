@@ -65,48 +65,31 @@ public partial class PackageManagerViewModel
                 
                 if (File.Exists(packageJsonPath))
                 {
-                    try
+                    var pData = pkg.CachedManifest;
+                    if (pData?.Services != null)
                     {
-                        using var doc = JsonDocument.Parse(File.ReadAllText(packageJsonPath));
-                        if (doc.RootElement.TryGetProperty("services", out var servicesProp))
+                        if (pData.Services.Provides != null)
                         {
-                            if (servicesProp.TryGetProperty("provides", out var providesArray))
+                            foreach (var contract in pData.Services.Provides.Where(x => !string.IsNullOrEmpty(x)))
                             {
-                                foreach (var element in providesArray.EnumerateArray())
-                                {
-                                    string contract = string.Empty;
-                                    if (element.ValueKind == JsonValueKind.String)
-                                        contract = element.GetString() ?? "";
-                                    else if (element.ValueKind == JsonValueKind.Object && element.TryGetProperty("interface", out var intfProp))
-                                        contract = intfProp.GetString() ?? "";
-
-                                    if (!string.IsNullOrEmpty(contract))
-                                    {
-                                        var cap = GetOrCreateCapability(contract, dynamicCapabilities);
-                                        cap.IsProvided = true;
-                                        if (!cap.ProvidingPackages.Contains(pkg.Id))
-                                            cap.ProvidingPackages.Add(pkg.Id);
-                                    }
-                                }
+                                var cap = GetOrCreateCapability(contract, dynamicCapabilities);
+                                cap.IsProvided = true;
+                                if (!cap.ProvidingPackages.Contains(pkg.Id))
+                                    cap.ProvidingPackages.Add(pkg.Id);
                             }
+                        }
 
-                            if (servicesProp.TryGetProperty("requires", out var requiresArray))
+                        if (pData.Services.Requires != null)
+                        {
+                            foreach (var contract in pData.Services.Requires.Where(x => !string.IsNullOrEmpty(x)))
                             {
-                                foreach (var element in requiresArray.EnumerateArray())
-                                {
-                                    string contract = element.GetString() ?? "";
-                                    if (!string.IsNullOrEmpty(contract))
-                                    {
-                                        var cap = GetOrCreateCapability(contract, dynamicCapabilities);
-                                        cap.IsRequired = true;
-                                        if (!cap.RequiringPackages.Contains(pkg.Id))
-                                            cap.RequiringPackages.Add(pkg.Id);
-                                    }
-                                }
+                                var cap = GetOrCreateCapability(contract, dynamicCapabilities);
+                                cap.IsRequired = true;
+                                if (!cap.RequiringPackages.Contains(pkg.Id))
+                                    cap.RequiringPackages.Add(pkg.Id);
                             }
                         }
                     }
-                    catch { /* Ignore corrupt JSON fragments during active editing */ }
                 }
             }
         }

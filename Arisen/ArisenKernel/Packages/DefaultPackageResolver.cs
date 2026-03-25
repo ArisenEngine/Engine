@@ -89,9 +89,16 @@ public class DefaultPackageResolver : IPackageResolver
             }
         }
 
-        KernelLog.Info($"[PackageResolver] Extracting to {extractDir}...");
-        ZipFile.ExtractToDirectory(tempFile, extractDir);
-        File.Delete(tempFile);
+        // B12: Ensure temp file is cleaned up even if extraction fails
+        try
+        {
+            KernelLog.Info($"[PackageResolver] Extracting to {extractDir}...");
+            ZipFile.ExtractToDirectory(tempFile, extractDir);
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
 
         return extractDir;
     }

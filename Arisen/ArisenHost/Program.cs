@@ -87,33 +87,38 @@ public class Program
                 }
             }
             
-            // Execute IPackageEntry dynamically if entry class is declared
-            if (root.TryGetProperty("entryAssembly", out var entryAsm))
+            // B5+A5: Read nested entry: { assembly, class } schema (standardized format)
+            if (root.TryGetProperty("entry", out var entryObj) && entryObj.ValueKind == JsonValueKind.Object)
             {
-                string asmName = entryAsm.GetString();
-                Console.WriteLine($"[Host] Booting Managed Entry: {asmName} for {id}");
-                try
+                string asmName = entryObj.TryGetProperty("assembly", out var asmProp) ? asmProp.GetString() ?? "" : "";
+                string entryClassName = entryObj.TryGetProperty("class", out var clsProp) ? clsProp.GetString() ?? "" : "";
+                
+                if (!string.IsNullOrEmpty(asmName))
                 {
-                    Assembly asm = Assembly.LoadFrom(Path.Combine(pUrl, "Managed", asmName));
-                    if (root.TryGetProperty("entryClass", out var entryClass))
+                    Console.WriteLine($"[Host] Booting Managed Entry: {asmName} for {id}");
+                    try
                     {
-                        Type t = asm.GetType(entryClass.GetString());
-                        if (t != null)
+                        Assembly asm = Assembly.LoadFrom(Path.Combine(pUrl, "Managed", asmName));
+                        if (!string.IsNullOrEmpty(entryClassName))
                         {
-                            var entryInstance = Activator.CreateInstance(t);
-                            var onLoadMethod = t.GetMethod("OnLoad");
-                            if (onLoadMethod != null) onLoadMethod.Invoke(entryInstance, new object[] { registry });
+                            Type t = asm.GetType(entryClassName);
+                            if (t != null)
+                            {
+                                var entryInstance = Activator.CreateInstance(t);
+                                var onLoadMethod = t.GetMethod("OnLoad");
+                                if (onLoadMethod != null) onLoadMethod.Invoke(entryInstance, new object[] { registry });
+                            }
                         }
                     }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine($"[Host] Managed boot neglected/failed for {id}: " + e.Message);
+                    catch (Exception e)
+                    {
+                        Console.WriteLine($"[Host] Managed boot neglected/failed for {id}: " + e.Message);
+                    }
                 }
             }
         }
 
-        Console.WriteLine("[Host] Topologial Mount Complete.");
+        Console.WriteLine("[Host] Topological Mount Complete.");
 
         // 3. Fallback to registry checks for boot takeover
         if (registry.TryGetService<IApplicationHost>(out var appHost))

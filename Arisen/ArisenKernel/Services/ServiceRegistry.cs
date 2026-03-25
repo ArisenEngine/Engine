@@ -37,4 +37,12 @@ public class ServiceRegistry : IServiceRegistry
         service = default!;
         return false;
     }
+
+    /// <summary>
+    /// Clears all registered services. Used by EngineKernel.Reset().
+    /// </summary>
+    public void Clear()
+    {
+        _services.Clear();
+    }
 }

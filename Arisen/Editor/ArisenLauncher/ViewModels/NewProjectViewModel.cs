@@ -28,6 +28,12 @@ public partial class NewProjectViewModel : ObservableObject
     [ObservableProperty]
     private string? _selectedTemplate = "Blank Project";
 
+    [ObservableProperty]
+    private string _wizardError = string.Empty;
+
+    public bool HasWizardError => !string.IsNullOrEmpty(WizardError);
+    public bool HasTemplates => Templates.Count > 0;
+
     public ObservableCollection<string> Templates { get; } = new();
 
     public event Action<bool>? RequestClose;
@@ -62,10 +68,12 @@ public partial class NewProjectViewModel : ObservableObject
             {
                 SelectedTemplate = Templates[0];
             }
+            OnPropertyChanged(nameof(HasTemplates));
         }
         catch (Exception ex)
         {
             _logService.Error("Failed to load templates.", ex);
+            WizardError = "Failed to load project templates from engine.";
         }
     }
 
@@ -111,20 +119,28 @@ public partial class NewProjectViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(DefaultPackageId))
         {
-            _logService.Error("Wizard: Default Package ID cannot be empty.");
+            WizardError = "Default Package ID cannot be empty.";
             return;
         }
         if (string.IsNullOrWhiteSpace(ProjectName))
         {
-            _logService.Error("Wizard: Project name cannot be empty.");
+            WizardError = "Project name cannot be empty.";
             return;
         }
 
         if (ProjectName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
         {
-            _logService.Error($"Wizard: Project name '{ProjectName}' contains invalid characters.");
+            WizardError = $"Project name contains invalid characters.";
             return;
         }
+
+        if (string.IsNullOrWhiteSpace(ProjectLocation) || !Directory.Exists(ProjectLocation))
+        {
+            WizardError = "Invalid project location.";
+            return;
+        }
+
+        WizardError = string.Empty;
 
         string fullPath = Path.Combine(ProjectLocation, ProjectName);
         _logService.Info($"Creating new project: {ProjectName} at {fullPath} with template {SelectedTemplate} and package {DefaultPackageId}");
@@ -135,7 +151,7 @@ public partial class NewProjectViewModel : ObservableObject
         }
         else
         {
-            _logService.Error("Wizard: Failed to create project.");
+            WizardError = "Failed to create project files. Check logs for details.";
         }
     }
 
