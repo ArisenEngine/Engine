@@ -86,7 +86,7 @@ for /f "usebackq delims=" %%A in (`powershell -Command "$m = Get-Content '%MANIF
     echo [Arisen] --------------------------------------------------
     echo [Arisen] Compiling Profile: %%A
     echo [Arisen] --------------------------------------------------
-    set "LOG_FILE=%MANIFEST_PATH%\..\build_%%A.log"
+    set "LOG_FILE=%MANIFEST_PATH%\..\.arisen\build_%%A.log"
     echo [Arisen] Logging MSBuild completely to: !LOG_FILE!
     msbuild "%SLN_PATH%" /p:Configuration=%%A /p:Platform=x64 /m /fl /flp:logfile="!LOG_FILE!";verbosity=normal
     if errorlevel 1 (

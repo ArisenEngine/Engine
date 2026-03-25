@@ -23,17 +23,17 @@ public static class CMakeGeneratorService
         string cmakeListsPath = Path.Combine(cmakeTargetDir, "CMakeLists.txt");
         using var writer = new StreamWriter(cmakeListsPath);
         writer.WriteLine("cmake_minimum_required(VERSION 3.29)");
-        writer.WriteLine($"project({projectName}_Native)");
-        writer.WriteLine($"set(ARISEN_ENGINE_DIR \"{engineDir.Replace('\\', '/')}\")");
-        writer.WriteLine("set(CMAKE_CXX_STANDARD 23)");
-        writer.WriteLine("set(CMAKE_CXX_STANDARD_REQUIRED ON)");
-
         string[] profiles = manifest.Profiles != null && manifest.Profiles.Count > 0 
             ? manifest.Profiles.Keys.ToArray() 
             : new[] { "Development", "Production" };
             
         string configTypes = string.Join(";", profiles);
         writer.WriteLine($"set(CMAKE_CONFIGURATION_TYPES \"{configTypes}\" CACHE STRING \"\" FORCE)");
+
+        writer.WriteLine($"project({projectName}_Native)");
+        writer.WriteLine($"set(ARISEN_ENGINE_DIR \"{engineDir.Replace('\\', '/')}\")");
+        writer.WriteLine("set(CMAKE_CXX_STANDARD 23)");
+        writer.WriteLine("set(CMAKE_CXX_STANDARD_REQUIRED ON)");
 
         string cmakeModulePath = Path.Combine(engineDir, "cmake").Replace('\\', '/'); 
         writer.WriteLine($"list(APPEND CMAKE_MODULE_PATH \"{cmakeModulePath}\")");

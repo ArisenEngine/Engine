@@ -79,7 +79,7 @@ class Program
             engineDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
         }
 
-        string logPath = Path.Combine(workspaceDir, "ArisenBuildTool.log");
+        string logPath = Path.Combine(workspaceDir, ".arisen", "ArisenBuildTool.log");
         Logger.Initialize(logPath);
         Logger.Info($"ArisenBuildTool Generation Started. Workspace: {workspaceDir} | Profile: {profile}");
 
@@ -121,7 +121,7 @@ class Program
 
         ProjectGeneratorService.GenerateForManagedPackages(workspaceDir, projectsDir, engineDir, managedPackages, packageMap, manifest);
         CMakeGeneratorService.Generate(engineDir, projectsDir, nativePackages, projectName, manifest);
-        SolutionGeneratorService.Generate(projectsDir, engineDir, packageMap, projectName, manifest);
+        SolutionGeneratorService.Generate(projectsDir, engineDir, managedPackages, projectName, manifest);
 
         Logger.Info("ArisenBuildTool: Workspace generation complete.");
     }
