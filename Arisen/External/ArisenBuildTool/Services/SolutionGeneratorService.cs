@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using ArisenBuildTool.Models;
 using ArisenBuildTool.Utils;
 
@@ -8,52 +10,223 @@ namespace ArisenBuildTool.Services;
 
 public static class SolutionGeneratorService
 {
-    public static void Generate(string projectsDir, string engineDir, Dictionary<string, PackageInfo> packageMap, string projectName)
-    {
-        string slnPath = Path.Combine(projectsDir, "..", $"{projectName}.sln"); // Root of workspace
-        string slnDir = Path.GetDirectoryName(slnPath)!;
-        Logger.Info($"Generating {slnPath}...");
-        
-        ProcessRunner.Run("dotnet", $"new sln -n {projectName} --force", slnDir);
-        
-        // Generate the Entry Point executable project (.arisen/Projects/projectName.csproj)
-        string entryCsproj = Path.Combine(projectsDir, $"{projectName}.csproj");
-        GenerateEntryPointProject(entryCsproj, engineDir, projectName);
-        
-        string entryCsprojRel = PathUtils.GetRelativePath(slnDir, entryCsproj);
-        ProcessRunner.Run("dotnet", $"sln {projectName}.sln add \"{entryCsprojRel}\"", slnDir);
+    private const string CSHARP_PROJECT_TYPE = "{9A19103F-16F7-4668-BE54-9A1E7A4F7556}";
+    private const string VIRTUAL_FOLDER_TYPE = "{2150E333-8FDC-42A3-9474-1A3956D46DE8}";
 
-        // Add auto-generated C# Packages
+    public static void Generate(string projectsDir, string engineDir, Dictionary<string, PackageInfo> packageMap, string projectName, ProjectManifest manifest)
+    {
+        string slnPath = Path.Combine(projectsDir, "..", $"{projectName}.sln");
+        string slnDir = Path.GetDirectoryName(slnPath)!;
+        Logger.Info($"Generating {slnPath} purely from C#...");
+
+        // Generate Entry Project
+        string entryCsprojDir = Path.Combine(projectsDir, projectName);
+        Directory.CreateDirectory(entryCsprojDir);
+        string entryCsproj = Path.Combine(entryCsprojDir, $"{projectName}.csproj");
+        GenerateEntryPointProject(entryCsproj, engineDir, projectName, manifest);
+
+        // Generate Protective MSVC Property File
+        string dirBuildProps = Path.Combine(slnDir, "Directory.Build.props");
+        GenerateDirectoryBuildProps(dirBuildProps);
+
+        var profiles = manifest.Profiles != null && manifest.Profiles.Count > 0 
+            ? manifest.Profiles.Keys.ToList() 
+            : new List<string> { "Development", "Production" };
+
+        using var writer = new StreamWriter(slnPath);
+        writer.WriteLine(); // Start with empty line for Visual Studio encoding expectations
+        writer.WriteLine("Microsoft Visual Studio Solution File, Format Version 12.00");
+        writer.WriteLine("# Visual Studio Version 17");
+
+        var projectGuids = new Dictionary<string, string>(); // Path -> GUID
+        var nestedProjects = new List<(string child, string parent)>();
+
+        // 1. Write Entry Project
+        string entryGuid = Guid.NewGuid().ToString("B").ToUpper();
+        string entryRel = PathUtils.GetRelativePath(slnDir, entryCsproj);
+        writer.WriteLine($"Project(\"{CSHARP_PROJECT_TYPE}\") = \"{projectName}\", \"{entryRel}\", \"{entryGuid}\"");
+        writer.WriteLine("EndProject");
+        projectGuids[entryGuid] = entryGuid;
+
+        // 2. Write Virtual Folders
+        string pkgFolderGuid = Guid.NewGuid().ToString("B").ToUpper();
+        writer.WriteLine($"Project(\"{VIRTUAL_FOLDER_TYPE}\") = \"Packages\", \"Packages\", \"{pkgFolderGuid}\"");
+        writer.WriteLine("EndProject");
+
+        string localFolderGuid = Guid.NewGuid().ToString("B").ToUpper();
+        writer.WriteLine($"Project(\"{VIRTUAL_FOLDER_TYPE}\") = \"Local Packages\", \"Local Packages\", \"{localFolderGuid}\"");
+        writer.WriteLine("EndProject");
+
+        string nativeFolderGuid = Guid.NewGuid().ToString("B").ToUpper();
+        writer.WriteLine($"Project(\"{VIRTUAL_FOLDER_TYPE}\") = \"Native Dependencies\", \"Native Dependencies\", \"{nativeFolderGuid}\"");
+        writer.WriteLine("EndProject");
+
+        // 3. Write Core Kernel
+        string kernelPath = Path.Combine(engineDir, "ArisenKernel", "ArisenKernel.csproj");
+        if (File.Exists(kernelPath))
+        {
+            string kernelRel = PathUtils.GetRelativePath(slnDir, kernelPath);
+            string kernelGuid = Guid.NewGuid().ToString("B").ToUpper();
+            writer.WriteLine($"Project(\"{CSHARP_PROJECT_TYPE}\") = \"ArisenKernel\", \"{kernelRel}\", \"{kernelGuid}\"");
+            writer.WriteLine("EndProject");
+            projectGuids[kernelGuid] = kernelGuid;
+            nestedProjects.Add((kernelGuid, pkgFolderGuid));
+        }
+
+        // 4. Write C# Packages
         foreach (var package in packageMap.Values.Where(p => p.Manifest.Type != "native"))
         {
             string packageName = Path.GetFileName(package.DirectoryPath);
             string pkgProjectName = string.Join(".", packageName.Split('.').Select(PathUtils.ToPascalCase));
-            string csprojPath = Path.Combine(projectsDir, $"{pkgProjectName}.csproj");
-            
+            string csprojPath = Path.Combine(projectsDir, pkgProjectName, $"{pkgProjectName}.csproj");
             string relPath = PathUtils.GetRelativePath(slnDir, csprojPath);
-            string virtualFolder = package.DirectoryPath.Contains("ArisenKernel") || package.DirectoryPath.Contains("Local") == false ? "Packages" : "Local Packages";
             
-            ProcessRunner.Run("dotnet", $"sln {projectName}.sln add --solution-folder \"{virtualFolder}\" \"{relPath}\"", slnDir);
+            string guid = Guid.NewGuid().ToString("B").ToUpper();
+            projectGuids[guid] = guid;
+            
+            writer.WriteLine($"Project(\"{CSHARP_PROJECT_TYPE}\") = \"{pkgProjectName}\", \"{relPath}\", \"{guid}\"");
+            writer.WriteLine("EndProject");
+
+            string folderGuid = package.DirectoryPath.Contains("ArisenKernel") || package.DirectoryPath.Contains("Local") == false ? pkgFolderGuid : localFolderGuid;
+            nestedProjects.Add((guid, folderGuid));
         }
 
-        // Add Native C++ Packages (Assuming CMake generates inside Projects/Native/)
-        if (packageMap.Values.Any(p => p.Manifest.Type == "native"))
+        // 4. Parse & Write Native Projects from CMake .sln
+        var nativeProjectGuids = new List<string>();
+        string cmakeSln = Path.Combine(projectsDir, "Native", "build", $"{projectName}_Native.sln");
+        if (File.Exists(cmakeSln))
         {
-            string buildDir = Path.Combine(projectsDir, "Native", "build");
-            if (Directory.Exists(buildDir))
+            string[] lines = File.ReadAllLines(cmakeSln);
+            
+            HashSet<string> skippedGuids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string l in lines)
             {
-                string[] vcxprojs = Directory.GetFiles(buildDir, "*.vcxproj", SearchOption.AllDirectories);
-                foreach (var vcxproj in vcxprojs)
+                var m = Regex.Match(l, @"Project\(""(.*?)""\)\s*=\s*""(.*?)"",\s*""(.*?)"",\s*""(\{.*?\})""");
+                if (m.Success)
                 {
-                    if (vcxproj.Contains("ZERO_CHECK") || vcxproj.Contains("ALL_BUILD") || vcxproj.Contains("CompilerId")) continue;
-                    string relPath = PathUtils.GetRelativePath(slnDir, vcxproj);
-                    ProcessRunner.Run("dotnet", $"sln {projectName}.sln add --solution-folder \"Native Dependencies\" \"{relPath}\"", slnDir);
+                    string pN = m.Groups[2].Value;
+                    if (pN == "CMakePredefinedTargets" || pN == "ALL_BUILD" || pN == "INSTALL")
+                    {
+                        skippedGuids.Add(m.Groups[4].Value);
+                    }
+                }
+            }
+            
+            bool insideProject = false;
+            bool skipProject = false;
+            bool insideProjectDependencies = false;
+            string currentProjGuid = "";
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string line = lines[i];
+                if (line.StartsWith("Project("))
+                {
+                    insideProject = true;
+                    // Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RHI.Vulkan", "com.arisen.rhi.vulkan.native\RHI.Vulkan\RHI.Vulkan.vcxproj", "{CFF99EF6-48AA-38A1-BB26-B55354ABFACB}"
+                    var match = Regex.Match(line, @"Project\(""(.*?)""\)\s*=\s*""(.*?)"",\s*""(.*?)"",\s*""(.*?)""");
+                    if (match.Success)
+                    {
+                        string pType = match.Groups[1].Value;
+                        string pName = match.Groups[2].Value;
+                        string pPath = match.Groups[3].Value;
+                        currentProjGuid = match.Groups[4].Value; // Includes {}
+
+                        if (pName == "CMakePredefinedTargets" || pName == "ALL_BUILD" || pName == "INSTALL") 
+                        {
+                            skipProject = true;
+                            continue;
+                        }
+
+                        skipProject = false;
+                        
+                        // We do not map Virtual Folders emitted by CMake to project configs, only physical .vcxproj projects.
+                        if (pType == VIRTUAL_FOLDER_TYPE.Trim('{', '}'))
+                        {
+                            // Virtual folder: we can map the path as standard name
+                            writer.WriteLine(line);
+                        }
+                        else
+                        {
+                            nativeProjectGuids.Add(currentProjGuid);
+                            
+                            string absoluteVcxproj = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(cmakeSln)!, pPath));
+                            string mergedRelPath = PathUtils.GetRelativePath(slnDir, absoluteVcxproj);
+                        
+                            writer.WriteLine($"Project(\"{pType}\") = \"{pName}\", \"{mergedRelPath}\", \"{currentProjGuid}\"");
+                        }
+                        nestedProjects.Add((currentProjGuid, nativeFolderGuid));
+                    }
+                }
+                else if (line.StartsWith("EndProject"))
+                {
+                    if (!skipProject) writer.WriteLine(line);
+                    insideProject = false;
+                    skipProject = false;
+                }
+                else if (insideProject && !skipProject)
+                {
+                    bool isBanned = false;
+                    foreach(var g in skippedGuids)
+                    {
+                        if (line.Contains(g))
+                        {
+                            isBanned = true;
+                            break;
+                        }
+                    }
+                    if (!isBanned) writer.WriteLine(line);
                 }
             }
         }
+
+        // Write Global section
+        writer.WriteLine("Global");
+        
+        // Profiles Map
+        writer.WriteLine("\tGlobalSection(SolutionConfigurationPlatforms) = preSolution");
+        foreach(var profile in profiles)
+        {
+            writer.WriteLine($"\t\t{profile}|x64 = {profile}|x64");
+        }
+        writer.WriteLine("\tEndGlobalSection");
+
+        // Project Maps
+        writer.WriteLine("\tGlobalSection(ProjectConfigurationPlatforms) = postSolution");
+        foreach (var guid in projectGuids.Keys) // C# Projects
+        {
+            foreach (var profile in profiles)
+            {
+                writer.WriteLine($"\t\t{guid}.{profile}|x64.ActiveCfg = {profile}|Any CPU");
+                writer.WriteLine($"\t\t{guid}.{profile}|x64.Build.0 = {profile}|Any CPU");
+            }
+        }
+        foreach (var guid in nativeProjectGuids) // C++ Projects
+        {
+            foreach (var profile in profiles)
+            {
+                writer.WriteLine($"\t\t{guid}.{profile}|x64.ActiveCfg = {profile}|x64");
+                writer.WriteLine($"\t\t{guid}.{profile}|x64.Build.0 = {profile}|x64");
+            }
+        }
+        writer.WriteLine("\tEndGlobalSection");
+
+        // Folders
+        writer.WriteLine("\tGlobalSection(NestedProjects) = preSolution");
+        foreach (var tuple in nestedProjects)
+        {
+            writer.WriteLine($"\t\t{tuple.child} = {tuple.parent}");
+        }
+        writer.WriteLine("\tEndGlobalSection");
+        
+        writer.WriteLine("\tGlobalSection(ExtensibilityGlobals) = postSolution");
+        writer.WriteLine($"\t\tSolutionGuid = {Guid.NewGuid().ToString("B").ToUpper()}");
+        writer.WriteLine("\tEndGlobalSection");
+
+        writer.WriteLine("EndGlobal");
     }
 
-    private static void GenerateEntryPointProject(string csprojPath, string engineDir, string projectName)
+    private static void GenerateEntryPointProject(string csprojPath, string engineDir, string projectName, ProjectManifest manifest)
     {
         using StreamWriter writer = new StreamWriter(csprojPath);
         writer.WriteLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
@@ -62,8 +235,8 @@ public static class SolutionGeneratorService
         writer.WriteLine("    <TargetFramework>net9.0</TargetFramework>");
         writer.WriteLine("    <ImplicitUsings>enable</ImplicitUsings>");
         writer.WriteLine("    <Nullable>enable</Nullable>");
-        // Output locally into .arisen/bin/$(Configuration)/
-        writer.WriteLine("    <OutputPath>..\\bin\\$(Configuration)\\</OutputPath>");
+        // Output binaries mapped uniformly
+        writer.WriteLine("    <OutputPath>..\\..\\bin\\$(Configuration)\\</OutputPath>");
         writer.WriteLine("    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>");
         writer.WriteLine("    <PlatformTarget>x64</PlatformTarget>");
         writer.WriteLine($"    <RootNamespace>{projectName}</RootNamespace>");
@@ -71,13 +244,24 @@ public static class SolutionGeneratorService
         writer.WriteLine("    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>");
         writer.WriteLine("  </PropertyGroup>");
         writer.WriteLine();
+        
+        string[] profiles = manifest.Profiles != null && manifest.Profiles.Count > 0 
+            ? manifest.Profiles.Keys.ToArray() 
+            : new[] { "Development", "Production" };
+            
+        foreach (var profile in profiles)
+        {
+            writer.WriteLine($"  <PropertyGroup Condition=\"'$(Configuration)' == '{profile}'\">");
+            writer.WriteLine($"    <DefineConstants>ARISEN_PROFILE_{profile.ToUpper()}</DefineConstants>");
+            writer.WriteLine($"  </PropertyGroup>");
+        }
 
         writer.WriteLine("  <ItemGroup>");
         string hostSrcDir = Path.Combine(engineDir, "ArisenHost");
         if (Directory.Exists(hostSrcDir))
         {
             string srcRel = PathUtils.GetRelativePath(Path.GetDirectoryName(csprojPath)!, hostSrcDir);
-            writer.WriteLine($"    <Compile Include=\"{srcRel}\\**\\*.cs\" />");
+            writer.WriteLine($"    <Compile Include=\"{srcRel}\\**\\*.cs\" Exclude=\"{srcRel}\\obj\\**\\*;{srcRel}\\bin\\**\\*\" />");
         }
         writer.WriteLine("  </ItemGroup>");
         writer.WriteLine();
@@ -89,7 +273,27 @@ public static class SolutionGeneratorService
             string depRel = PathUtils.GetRelativePath(Path.GetDirectoryName(csprojPath)!, kernelPath);
             writer.WriteLine($"    <ProjectReference Include=\"{depRel}\" />");
         }
+        else
+        {
+            string dllPath = Path.Combine(engineDir, "ArisenKernel", "bin", "$(Configuration)", "net9.0", "ArisenKernel.dll");
+            writer.WriteLine($"    <Reference Include=\"ArisenKernel\">");
+            writer.WriteLine($"      <HintPath>..\\..\\bin\\$(Configuration)\\ArisenKernel.dll</HintPath>");
+            writer.WriteLine($"    </Reference>");
+        }
         writer.WriteLine("  </ItemGroup>");
+        writer.WriteLine("</Project>");
+    }
+
+    private static void GenerateDirectoryBuildProps(string propsPath)
+    {
+        using StreamWriter writer = new StreamWriter(propsPath);
+        writer.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+        writer.WriteLine("<Project>");
+        writer.WriteLine("  <!-- Protective override for unmapped C++ evaluation folders -->");
+        writer.WriteLine("  <PropertyGroup Condition=\"'$(MSBuildProjectExtension)' == '.vcxproj'\">");
+        writer.WriteLine("    <OutDir>$(SolutionDir)Projects\\Native\\build\\$(Platform)\\$(Configuration)\\</OutDir>");
+        writer.WriteLine("    <IntDir>$(SolutionDir)Projects\\Native\\build\\$(Platform)\\$(Configuration)\\$(ProjectName)\\</IntDir>");
+        writer.WriteLine("  </PropertyGroup>");
         writer.WriteLine("</Project>");
     }
 }

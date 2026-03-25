@@ -1,0 +1,8 @@
+{
+    "Id": "com.arisen.packagegame",
+    "Name": "PackageGame",
+    "Version": "1.0.0",
+    "Description": "game assembly",
+    "Type": "managed",
+    "Dependencies": {}
+}

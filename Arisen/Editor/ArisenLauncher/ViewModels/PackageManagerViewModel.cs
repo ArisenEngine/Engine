@@ -48,6 +48,9 @@ public partial class PackageManagerViewModel : ObservableObject
     {
         _project = project;
         _manifestPath = Path.Combine(Path.GetDirectoryName(project.ProjectPath)!, "manifest.json");
+        
+        InitializeServices();
+        
         LoadManifest();
     }
 
@@ -99,12 +102,27 @@ public partial class PackageManagerViewModel : ObservableObject
                 }
             }
         }
+
+        InitializeProfiles();
+        RefreshServiceStatus();
     }
 
     [RelayCommand]
     public void SaveManifest()
     {
         Manifest.Packages = Packages.Select(x => new PackageRequirement { Id = x.Id, Url = x.Url, Version = string.IsNullOrEmpty(x.Version) ? null : x.Version }).ToList();
+        
+        // Save Profiles
+        Manifest.Profiles = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<PackageRequirement>>();
+        foreach (var profile in Profiles)
+        {
+            var reqs = new System.Collections.Generic.List<PackageRequirement>();
+            foreach (var node in profile.Nodes)
+            {
+                reqs.Add(new PackageRequirement { Id = node.Id, Url = node.Url, Version = string.IsNullOrEmpty(node.Version) ? null : node.Version });
+            }
+            Manifest.Profiles[profile.Name] = reqs;
+        }
 
         string json = JsonSerializer.Serialize(Manifest, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(_manifestPath, json);
@@ -478,6 +496,7 @@ namespace {{safeNamespace}}
         }
 
         Packages.Remove(vm);
+        RefreshServiceStatus();
     }
 
     [RelayCommand]
@@ -601,6 +620,8 @@ namespace {{safeNamespace}}
                 }
             }
         }
+        
+        RefreshServiceStatus();
     }
 }
 

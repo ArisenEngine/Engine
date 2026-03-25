@@ -49,6 +49,9 @@ endif()
 # Set Macros
 if(${TARGET} STREQUAL "Editor")
     set(TARGET_MACRO "ARISEN_EDITOR")
+elseif(${TARGET} STREQUAL "BindingGenerator")
+    set(TARGET_MACRO "ARISEN_BINDING_GENERATOR")
+    set(ARISEN_BINDING_GENERATOR ON CACHE BOOL "" FORCE)
 else()
     set(TARGET_MACRO "ARISEN_RUNTIME")
 endif()
@@ -260,19 +263,6 @@ add_custom_target(BuildArisenKernel ALL
 )
 set_target_properties(BuildArisenKernel PROPERTIES FOLDER "CMakeProcess")
 
-set(ARISEN_HOST_PROJ ${CMAKE_SOURCE_DIR}/ArisenHost/ArisenHost.csproj)
-set(ARISEN_HOST_PROJ_DIR ${CMAKE_SOURCE_DIR}/ArisenHost/)
-
-add_custom_target(BuildArisenHost ALL
-    COMMAND dotnet build ${ARISEN_HOST_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG} ${DOTNET_MACRO_ARG}
-    WORKING_DIRECTORY ${ARISEN_HOST_PROJ_DIR}
-    COMMENT "Building Arisen Host"
-    DEPENDS "ArisenKernel.dll"
-    VERBATIM
-    USES_TERMINAL
-)
-add_dependencies(BuildArisenHost BuildArisenKernel)
-set_target_properties(BuildArisenHost PROPERTIES FOLDER "CMakeProcess")
 
 if(NOT ${TARGET} STREQUAL "Launcher") # Resuming exclusion block for heavy monolith targets
 
