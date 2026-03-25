@@ -13,7 +13,7 @@ public static class SolutionGeneratorService
     private const string CSHARP_PROJECT_TYPE = "{9A19103F-16F7-4668-BE54-9A1E7A4F7556}";
     private const string VIRTUAL_FOLDER_TYPE = "{2150E333-8FDC-42A3-9474-1A3956D46DE8}";
 
-    public static void Generate(string projectsDir, string engineDir, Dictionary<string, PackageInfo> packageMap, string projectName, ProjectManifest manifest)
+    public static void Generate(string projectsDir, string engineDir, List<PackageInfo> managedPackages, string projectName, ProjectManifest manifest)
     {
         string slnPath = Path.Combine(projectsDir, "..", $"{projectName}.sln");
         string slnDir = Path.GetDirectoryName(slnPath)!;
@@ -74,7 +74,7 @@ public static class SolutionGeneratorService
         }
 
         // 4. Write C# Packages
-        foreach (var package in packageMap.Values.Where(p => p.Manifest.Type != "native"))
+        foreach (var package in managedPackages)
         {
             string packageName = Path.GetFileName(package.DirectoryPath);
             string pkgProjectName = string.Join(".", packageName.Split('.').Select(PathUtils.ToPascalCase));
