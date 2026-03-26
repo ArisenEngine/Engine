@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "ArisenEngine": {
-      "commandName": "Project",
-      "nativeDebugging": true
-    }
-  }
-}
