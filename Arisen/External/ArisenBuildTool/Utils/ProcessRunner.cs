@@ -27,7 +27,16 @@ public static class ProcessRunner
         }
 
         proc.OutputDataReceived += (sender, e) => { if (e.Data != null) Logger.Info($"  {e.Data}"); };
-        proc.ErrorDataReceived += (sender, e) => { if (e.Data != null) Logger.Error($"  {e.Data}"); };
+        proc.ErrorDataReceived += (sender, e) => 
+        { 
+            if (e.Data != null) 
+            {
+                if (e.Data.Contains("error", StringComparison.OrdinalIgnoreCase))
+                    Logger.Error($"  {e.Data}");
+                else
+                    Logger.Warning($"  {e.Data}");
+            }
+        };
 
         proc.BeginOutputReadLine();
         proc.BeginErrorReadLine();

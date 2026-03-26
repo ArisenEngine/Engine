@@ -87,49 +87,72 @@ public class Program
                 }
             }
             
-            // B5+A5: Read nested entry: { assembly, class } schema (standardized format)
-            if (root.TryGetProperty("entry", out var entryObj) && entryObj.ValueKind == JsonValueKind.Object)
+        // B5+A5: Read nested entry: { assembly, class } schema (standardized format)
+        if (root.TryGetPropertyIC("entry", out var entryObj) && entryObj.ValueKind == JsonValueKind.Object)
+        {
+            string asmName = entryObj.TryGetPropertyIC("assembly", out var asmProp) ? asmProp.GetString() ?? "" : "";
+            string entryClassName = entryObj.TryGetPropertyIC("class", out var clsProp) ? clsProp.GetString() ?? "" : "";
+            
+            if (!string.IsNullOrEmpty(asmName))
             {
-                string asmName = entryObj.TryGetProperty("assembly", out var asmProp) ? asmProp.GetString() ?? "" : "";
-                string entryClassName = entryObj.TryGetProperty("class", out var clsProp) ? clsProp.GetString() ?? "" : "";
-                
-                if (!string.IsNullOrEmpty(asmName))
+                Console.WriteLine($"[Host] Booting Managed Entry: {asmName} for {id}");
+                try
                 {
-                    Console.WriteLine($"[Host] Booting Managed Entry: {asmName} for {id}");
-                    try
+                    Assembly asm = Assembly.LoadFrom(Path.Combine(pUrl, "Managed", asmName));
+                    if (!string.IsNullOrEmpty(entryClassName))
                     {
-                        Assembly asm = Assembly.LoadFrom(Path.Combine(pUrl, "Managed", asmName));
-                        if (!string.IsNullOrEmpty(entryClassName))
+                        Type t = asm.GetType(entryClassName);
+                        if (t != null)
                         {
-                            Type t = asm.GetType(entryClassName);
-                            if (t != null)
-                            {
-                                var entryInstance = Activator.CreateInstance(t);
-                                var onLoadMethod = t.GetMethod("OnLoad");
-                                if (onLoadMethod != null) onLoadMethod.Invoke(entryInstance, new object[] { registry });
-                            }
+                            var entryInstance = Activator.CreateInstance(t);
+                            var onLoadMethod = t.GetMethod("OnLoad");
+                            if (onLoadMethod != null) onLoadMethod.Invoke(entryInstance, new object[] { registry });
                         }
                     }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine($"[Host] Managed boot neglected/failed for {id}: " + e.Message);
-                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"[Host] Managed boot neglected/failed for {id}: " + e.Message);
                 }
             }
         }
+    }
 
-        Console.WriteLine("[Host] Topological Mount Complete.");
+    Console.WriteLine("[Host] Topological Mount Complete.");
 
-        // 3. Fallback to registry checks for boot takeover
-        if (registry.TryGetService<IApplicationHost>(out var appHost))
-        {
-            Console.WriteLine("[Host] Yielding main thread to IApplicationHost (Editor/UI).");
-            appHost.Run(args);
+    // 3. Fallback to registry checks for boot takeover
+    if (registry.TryGetService<IApplicationHost>(out var appHost))
+    {
+        Console.WriteLine("[Host] Yielding main thread to IApplicationHost (Editor/UI).");
+        appHost.Run(args);
+    }
+    else
+    {
+        Console.WriteLine("[Host] No IApplicationHost detected. Engaging default bare-metal Engine tick.");
+        kernel.Run();
         }
-        else
+    }
+}
+
+public static class JsonExtensions
+{
+    public static bool TryGetPropertyIC(this JsonElement element, string propertyName, out JsonElement value)
+    {
+        foreach (var prop in element.EnumerateObject())
         {
-            Console.WriteLine("[Host] No IApplicationHost detected. Engaging default bare-metal Engine tick.");
-            kernel.Run();
+            if (string.Equals(prop.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+            {
+                value = prop.Value;
+                return true;
+            }
         }
+        value = default;
+        return false;
+    }
+
+    public static JsonElement GetPropertyIC(this JsonElement element, string propertyName)
+    {
+        if (TryGetPropertyIC(element, propertyName, out var value)) return value;
+        throw new KeyNotFoundException($"Property '{propertyName}' not found (case-insensitive)");
     }
 }
