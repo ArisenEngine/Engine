@@ -38,34 +38,11 @@ public partial class PackageManagerViewModel : ObservableObject
 
     partial void OnSortModeChanged(int value) => UpdateFilteredPackages();
     
-    [ObservableProperty] private bool _isDirty;
-    [ObservableProperty] private bool _showExitConfirmation;
 
     [RelayCommand]
-    private void Cancel()
+    private void Close()
     {
-        if (IsDirty)
-        {
-            ShowExitConfirmation = true;
-        }
-        else
-        {
-            RequestClose?.Invoke();
-        }
-    }
-
-    [RelayCommand]
-    private void ConfirmExit()
-    {
-        IsDirty = false;
-        ShowExitConfirmation = false;
         RequestClose?.Invoke();
-    }
-
-    [RelayCommand]
-    private void StayEditing()
-    {
-        ShowExitConfirmation = false;
     }
 
     public Action? RequestClose;
@@ -151,7 +128,33 @@ public partial class PackageManagerViewModel : ObservableObject
         }
     }
 
-    public void MarkDirty() => IsDirty = true;
+
+    /// <summary>
+    /// Resolves a file:// URL (which may be relative like "file://Local/pkg") to an absolute local path
+    /// by combining it with the project directory.
+    /// </summary>
+    private string? ResolveFileUrl(string fileUrl)
+    {
+        if (!fileUrl.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        // Strip the "file://" prefix to get the raw path portion
+        string rawPath = fileUrl.Substring("file://".Length);
+        rawPath = Uri.UnescapeDataString(rawPath);
+
+        // If it's already an absolute path (e.g. file:///C:/foo or file://C:/foo), use it directly
+        if (Path.IsPathRooted(rawPath))
+        {
+            // Handle file:///C:/... which gives /C:/... after stripping
+            if (rawPath.Length > 2 && rawPath[0] == '/' && rawPath[2] == ':')
+                rawPath = rawPath.Substring(1);
+            return rawPath.TrimEnd('/', '\\');
+        }
+
+        // Relative path: resolve against project directory
+        string projectDir = Path.GetDirectoryName(_project.ProjectPath)!;
+        return Path.GetFullPath(Path.Combine(projectDir, rawPath)).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+    }
 
     private async Task LoadManifestAsync()
     {
@@ -176,9 +179,12 @@ public partial class PackageManagerViewModel : ObservableObject
 
                         if (!isMissing && (req.Url ?? "").StartsWith("file://", StringComparison.OrdinalIgnoreCase))
                         {
-                            string localPath = Uri.UnescapeDataString(new Uri(req.Url ?? "").LocalPath);
-                            string pkgJson = Path.Combine(localPath, "package.json");
-                            pData = ParsePackageManifest(pkgJson);
+                            string? localPath = ResolveFileUrl(req.Url!);
+                            if (localPath != null)
+                            {
+                                string pkgJson = Path.Combine(localPath, "package.json");
+                                pData = ParsePackageManifest(pkgJson);
+                            }
                         }
 
                         var vm = CreateViewModelFromData(req, pData);
@@ -285,7 +291,11 @@ public partial class PackageManagerViewModel : ObservableObject
         _project = project;
         _manifestPath = Path.Combine(Path.GetDirectoryName(project.ProjectPath)!, "manifest.json");
         
-        Packages.CollectionChanged += (s, e) => UpdateFilteredPackages();
+        Packages.CollectionChanged += (s, e) => {
+            UpdateFilteredPackages();
+        };
+
+        Profiles.CollectionChanged += (s, e) => { };
 
         InitializeServices();
         
@@ -312,7 +322,6 @@ public partial class PackageManagerViewModel : ObservableObject
 
         string json = JsonSerializer.Serialize(Manifest, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(_manifestPath, json);
-        IsDirty = false;
     }
     
     [RelayCommand]
@@ -741,7 +750,8 @@ namespace {{safeNamespace}}
         // 1. Check Local Path Schema
         if (vm.Url.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
         {
-            string localPath = Uri.UnescapeDataString(new Uri(vm.Url).LocalPath);
+            string? localPath = ResolveFileUrl(vm.Url);
+            if (localPath == null) { vm.UnresolvedMessage = "Failed to resolve file URL."; return; }
             string packageJsonPath = Path.Combine(localPath, "package.json");
             if (File.Exists(packageJsonPath))
             {
@@ -880,7 +890,8 @@ namespace {{safeNamespace}}
 
             try
             {
-                string localPath = new Uri(vm.Url).LocalPath;
+                string? localPath = ResolveFileUrl(vm.Url);
+                if (localPath == null) { VerificationError = "Failed to resolve package URL."; return; }
                 string packageJsonPath = Path.Combine(localPath, "package.json");
                 if (File.Exists(packageJsonPath))
                 {
@@ -951,7 +962,7 @@ namespace {{safeNamespace}}
                         // Sync UI and Cache
                         vm.CachedManifest = ParsePackageManifest(packageJsonPath);
                         RefreshServiceStatus();
-                        IsDirty = false;
+
                         SaveFeedback = "Package saved successfully!";
                         Task.Delay(3000).ContinueWith(_ => SaveFeedback = string.Empty);
                     }
@@ -993,15 +1004,15 @@ public partial class PackageRequirementViewModel : ObservableObject
     [ObservableProperty] private string _servicesRequires = string.Empty;
     [ObservableProperty] private string _nativeRuntimesDisplay = string.Empty;
 
-    partial void OnDisplayNameChanged(string value) => ParentContext?.MarkDirty();
-    partial void OnVersionChanged(string value) => ParentContext?.MarkDirty();
-    partial void OnDescriptionChanged(string value) => ParentContext?.MarkDirty();
-    partial void OnAuthorChanged(string value) => ParentContext?.MarkDirty();
-    partial void OnAssemblyEntryChanged(string value) => ParentContext?.MarkDirty();
-    partial void OnEntryClassChanged(string value) => ParentContext?.MarkDirty();
-    partial void OnTypeChanged(string value) => ParentContext?.MarkDirty();
-    partial void OnServicesProvidesChanged(string value) => ParentContext?.MarkDirty();
-    partial void OnServicesRequiresChanged(string value) => ParentContext?.MarkDirty();
+    partial void OnDisplayNameChanged(string value) { }
+    partial void OnVersionChanged(string value) { }
+    partial void OnDescriptionChanged(string value) { }
+    partial void OnAuthorChanged(string value) { }
+    partial void OnAssemblyEntryChanged(string value) { }
+    partial void OnEntryClassChanged(string value) { }
+    partial void OnTypeChanged(string value) { }
+    partial void OnServicesProvidesChanged(string value) { }
+    partial void OnServicesRequiresChanged(string value) { }
 
     public ObservableCollection<DependencyViewModel> Dependencies { get; } = new();
 
@@ -1029,7 +1040,6 @@ public partial class PackageRequirementViewModel : ObservableObject
                     });
                 }
             }
-            OnPropertyChanged(nameof(EditableServices));
             OnPropertyChanged(nameof(HasEditableServicesLoaded));
         }
     }

@@ -38,15 +38,6 @@ public partial class PackageManagerWindow : Window
         }
     }
 
-    protected override void OnClosing(WindowClosingEventArgs e)
-    {
-        if (DataContext is ArisenLauncher.ViewModels.PackageManagerViewModel vm && vm.IsDirty && !vm.ShowExitConfirmation)
-        {
-            e.Cancel = true;
-            vm.ShowExitConfirmation = true;
-        }
-        base.OnClosing(e);
-    }
 
     private void SaveButton_Click(object? sender, RoutedEventArgs e)
     {
