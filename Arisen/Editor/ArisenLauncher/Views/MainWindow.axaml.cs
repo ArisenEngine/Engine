@@ -28,7 +28,14 @@ public partial class MainWindow : Window
             vm.RequestFilePickerAsync = OnRequestFilePickerAsync;
             vm.RequestNewProjectWizardAsync = OnRequestNewProjectWizardAsync;
             vm.RequestPackageManagerAsync = OnRequestPackageManagerAsync;
+            vm.RequestMessageBoxAsync = OnRequestMessageBoxAsync;
         }
+    }
+
+    private async Task OnRequestMessageBoxAsync(string title, string message)
+    {
+        var window = new MessageWindow(title, message);
+        await window.ShowDialog(this);
     }
 
     private async Task OnRequestPackageManagerAsync(Models.LauncherProjectMetadata project)

@@ -20,7 +20,29 @@ public class EngineDiscoveryService
         m_LogService.Info("Starting engine discovery...");
         // 1. Check current directory (for development)
         string baseDir = AppContext.BaseDirectory;
-        ValidateAndAdd(baseDir, "Dev Local", isManual: false);
+        if (!ValidateAndAdd(baseDir, "Dev Local", isManual: false))
+        {
+            // If we are in a build output folder, climb up to find the engine root
+            DirectoryInfo? dir = new DirectoryInfo(baseDir);
+            while (dir != null)
+            {
+                if (IsValidEngineFolder(dir.FullName))
+                {
+                    ValidateAndAdd(dir.FullName, "Dev Local (Root)", isManual: false);
+                    break;
+                }
+                
+                // Special check for repo-style layout: Engine/Arisen
+                string engineRootCandidate = Path.Combine(dir.FullName, "Engine", "Arisen");
+                if (IsValidEngineFolder(engineRootCandidate))
+                {
+                    ValidateAndAdd(engineRootCandidate, "Dev Local (Source)", isManual: false);
+                    break;
+                }
+
+                dir = dir.Parent;
+            }
+        }
 
         // 2. Check environment variable
         string? envPath = Environment.GetEnvironmentVariable("ARISEN_ENGINE_INSTALL_ROOT");

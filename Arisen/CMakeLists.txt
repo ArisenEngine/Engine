@@ -399,6 +399,9 @@ if(${TARGET} STREQUAL "Editor" OR ${TARGET} STREQUAL "Launcher")
     )
     set_target_properties(BuildArisenBuildTool PROPERTIES FOLDER "CMakeProcess")
 
+    # P9: Building the Launcher requires the Kernel and BuildTool binaries for bootstrapping
+    add_dependencies(BuildArisenLauncher BuildArisenKernel BuildArisenBuildTool)
+
     add_custom_target(BuildArisenLauncherDesktop ALL
     COMMAND dotnet build ${ARISEN_LAUNCHER_DESKTOP_PROJ} --configuration $<CONFIG> --output "${OUTPUT_DIR}" ${DOTNET_PROFILER_ARG}
     WORKING_DIRECTORY ${ARISEN_LAUNCHER_DESKTOP_PROJ_DIR}

@@ -18,7 +18,7 @@ public class EngineValidationConfig
     public List<string> RequiredFiles { get; set; } = new List<string>
     {
         "ArisenKernel.dll",
-        "ArisenHost.exe",
+        "ArisenBuildTool.dll",
         "ArisenBuildTool.exe"
     };
 }
