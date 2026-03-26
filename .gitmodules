@@ -24,8 +24,8 @@
 [submodule "Arisen/Development/PackageGame/Local/com.arisen.dag"]
 	path = Arisen/Development/PackageGame/Local/com.arisen.dag
 	url = https://github.com/ArisenEngine/com.arisen.dag.git
-[submodule "Arisen/Development/PackageGame/Local/com.arisen.code.native"]
-	path = Arisen/Development/PackageGame/Local/com.arisen.code.native
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.core.native"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.core.native
 	url = https://github.com/ArisenEngine/com.arisen.core.native.git
 [submodule "Arisen/Development/PackageGame/Local/com.arisen.resources"]
 	path = Arisen/Development/PackageGame/Local/com.arisen.resources
