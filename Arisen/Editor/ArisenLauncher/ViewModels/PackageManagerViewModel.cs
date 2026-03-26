@@ -6,6 +6,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Text.Json;
 using System.Linq;
+using System.Text.Json.Nodes;
 using ArisenLauncher.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -19,6 +20,9 @@ public partial class PackageManagerViewModel : ObservableObject
 
     [ObservableProperty]
     private ProjectManifest _manifest = new();
+
+    [ObservableProperty]
+    private bool _isLoading;
 
     [ObservableProperty]
     private string _verificationError = string.Empty;
@@ -53,6 +57,7 @@ public partial class PackageManagerViewModel : ObservableObject
     [RelayCommand]
     private void ConfirmExit()
     {
+        IsDirty = false;
         ShowExitConfirmation = false;
         RequestClose?.Invoke();
     }
@@ -150,37 +155,45 @@ public partial class PackageManagerViewModel : ObservableObject
 
     private async Task LoadManifestAsync()
     {
-        if (File.Exists(_manifestPath))
+        IsLoading = true;
+        try 
         {
-            string content = await File.ReadAllTextAsync(_manifestPath);
-            Manifest = JsonSerializer.Deserialize<ProjectManifest>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new ProjectManifest();
-        }
-
-        Packages.Clear();
-        if (Manifest.Packages != null)
-        {
-            foreach (var req in Manifest.Packages) 
+            if (File.Exists(_manifestPath))
             {
-                if (!Packages.Any(p => p.Id == req.Id))
+                string content = await File.ReadAllTextAsync(_manifestPath);
+                Manifest = JsonSerializer.Deserialize<ProjectManifest>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new ProjectManifest();
+            }
+
+            Packages.Clear();
+            if (Manifest.Packages != null)
+            {
+                foreach (var req in Manifest.Packages) 
                 {
-                    bool isMissing = string.IsNullOrWhiteSpace(req.Url);
-                    PackageJsonManifest? pData = null;
-
-                    if (!isMissing && (req.Url ?? "").StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+                    if (!Packages.Any(p => p.Id == req.Id))
                     {
-                        string localPath = Uri.UnescapeDataString(new Uri(req.Url ?? "").LocalPath);
-                        string pkgJson = Path.Combine(localPath, "package.json");
-                        pData = ParsePackageManifest(pkgJson);
-                    }
+                        bool isMissing = string.IsNullOrWhiteSpace(req.Url);
+                        PackageJsonManifest? pData = null;
 
-                    var vm = CreateViewModelFromData(req, pData);
-                    Packages.Add(vm);
+                        if (!isMissing && (req.Url ?? "").StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string localPath = Uri.UnescapeDataString(new Uri(req.Url ?? "").LocalPath);
+                            string pkgJson = Path.Combine(localPath, "package.json");
+                            pData = ParsePackageManifest(pkgJson);
+                        }
+
+                        var vm = CreateViewModelFromData(req, pData);
+                        Packages.Add(vm);
+                    }
                 }
             }
-        }
 
-        InitializeProfiles();
-        RefreshServiceStatus();
+            InitializeProfiles();
+            RefreshServiceStatus();
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     private PackageRequirementViewModel CreateViewModelFromData(PackageRequirement req, PackageJsonManifest? pData)
@@ -299,6 +312,7 @@ public partial class PackageManagerViewModel : ObservableObject
 
         string json = JsonSerializer.Serialize(Manifest, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(_manifestPath, json);
+        IsDirty = false;
     }
     
     [RelayCommand]
@@ -866,61 +880,81 @@ namespace {{safeNamespace}}
 
             try
             {
-                string localPath = Uri.UnescapeDataString(new Uri(vm.Url).LocalPath);
+                string localPath = new Uri(vm.Url).LocalPath;
                 string packageJsonPath = Path.Combine(localPath, "package.json");
                 if (File.Exists(packageJsonPath))
                 {
-                    string oldJsonText = File.ReadAllText(packageJsonPath);
-                    var options = new JsonSerializerOptions { WriteIndented = true };
-                    var doc = JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, object>>(oldJsonText) ?? new();
-
-                    // A6: Handle $schema correctly by ensuring it persists if it existed
-                    // We don't need the fragile string.Replace anymore if we maintain it in the dictionary
-                    if (!doc.ContainsKey("$schema") && doc.ContainsKey("schema"))
+                    string jsonContent = File.ReadAllText(packageJsonPath);
+                    var node = JsonNode.Parse(jsonContent);
+                    if (node is JsonObject obj)
                     {
-                        doc["$schema"] = doc["schema"];
-                        doc.Remove("schema");
+                        // Update core fields
+                        obj["name"] = vm.DisplayName;
+                        obj["version"] = vm.Version;
+                        obj["description"] = vm.Description;
+                        obj["author"] = vm.Author;
+
+                        // Entry
+                        if (!string.IsNullOrEmpty(vm.AssemblyEntry) || !string.IsNullOrEmpty(vm.EntryClass))
+                        {
+                            var entryObj = obj["entry"] as JsonObject ?? new JsonObject();
+                            if (!string.IsNullOrEmpty(vm.AssemblyEntry)) entryObj["assembly"] = vm.AssemblyEntry;
+                            if (!string.IsNullOrEmpty(vm.EntryClass)) entryObj["class"] = vm.EntryClass;
+                            obj["entry"] = entryObj;
+                        }
+                        else
+                        {
+                            obj.Remove("entry");
+                        }
+
+                        // Dependencies
+                        if (vm.Dependencies.Count > 0)
+                        {
+                            var depsObj = new JsonObject();
+                            foreach (var d in vm.Dependencies) depsObj[d.Id] = d.Version;
+                            obj["dependencies"] = depsObj;
+                        }
+                        else
+                        {
+                            obj.Remove("dependencies");
+                        }
+
+                        // Services
+                        var providesArr = vm.ServicesProvides?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList() ?? new List<string>();
+                        var requiresArr = vm.ServicesRequires?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList() ?? new List<string>();
+                        
+                        if (providesArr.Count > 0 || requiresArr.Count > 0)
+                        {
+                            var servicesObj = new JsonObject();
+                            if (providesArr.Count > 0)
+                            {
+                                var pArr = new JsonArray();
+                                foreach (var p in providesArr) pArr.Add(p);
+                                servicesObj["provides"] = pArr;
+                            }
+                            if (requiresArr.Count > 0)
+                            {
+                                var rArr = new JsonArray();
+                                foreach (var r in requiresArr) rArr.Add(r);
+                                servicesObj["requires"] = rArr;
+                            }
+                            obj["services"] = servicesObj;
+                        }
+                        else
+                        {
+                            obj.Remove("services");
+                        }
+
+                        var options = new JsonSerializerOptions { WriteIndented = true };
+                        File.WriteAllText(packageJsonPath, obj.ToJsonString(options));
+                        
+                        // Sync UI and Cache
+                        vm.CachedManifest = ParsePackageManifest(packageJsonPath);
+                        RefreshServiceStatus();
+                        IsDirty = false;
+                        SaveFeedback = "Package saved successfully!";
+                        Task.Delay(3000).ContinueWith(_ => SaveFeedback = string.Empty);
                     }
-
-                    doc["name"] = vm.DisplayName;
-                    doc["version"] = vm.Version;
-                    doc["description"] = vm.Description;
-                    doc["author"] = vm.Author;
-
-                    // Entry
-                    var entry = new System.Collections.Generic.Dictionary<string, string>();
-                    if (!string.IsNullOrEmpty(vm.AssemblyEntry)) entry["assembly"] = vm.AssemblyEntry;
-                    if (!string.IsNullOrEmpty(vm.EntryClass)) entry["class"] = vm.EntryClass;
-                    if (entry.Count > 0) doc["entry"] = entry;
-                    else doc.Remove("entry");
-
-                    // Dependencies
-                    var deps = new System.Collections.Generic.Dictionary<string, string>();
-                    foreach (var d in vm.Dependencies) deps[d.Id] = d.Version;
-                    if (deps.Count > 0) doc["dependencies"] = deps;
-                    else doc.Remove("dependencies");
-
-                    // Services
-                    var providesArr = vm.ServicesProvides?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToArray() ?? Array.Empty<string>();
-                    var requiresArr = vm.ServicesRequires?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToArray() ?? Array.Empty<string>();
-                    if (providesArr.Length > 0 || requiresArr.Length > 0)
-                    {
-                        var servicesDict = new System.Collections.Generic.Dictionary<string, string[]>();
-                        if (providesArr.Length > 0) servicesDict["provides"] = providesArr;
-                        if (requiresArr.Length > 0) servicesDict["requires"] = requiresArr;
-                        doc["services"] = servicesDict;
-                    }
-                    else doc.Remove("services");
-
-                    string newJson = JsonSerializer.Serialize(doc, options);
-                    File.WriteAllText(packageJsonPath, newJson);
-                    
-                    // Update cache after save
-                    vm.CachedManifest = ParsePackageManifest(packageJsonPath);
-                    RefreshServiceStatus();
-                    SaveFeedback = "Package manifest saved successfully!";
-                    // Reset feedback after a delay
-                    Task.Delay(3000).ContinueWith(_ => SaveFeedback = string.Empty);
                 }
             }
             catch (Exception ex)
