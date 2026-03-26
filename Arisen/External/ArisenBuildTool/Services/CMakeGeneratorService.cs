@@ -7,7 +7,7 @@ namespace ArisenBuildTool.Services;
 
 public static class CMakeGeneratorService
 {
-    public static void Generate(string engineDir, string projectsDir, List<PackageInfo> nativePackages, string projectName, ProjectManifest manifest)
+    public static void Generate(string engineDir, string projectsDir, List<PackageInfo> nativePackages, string projectName, ProjectManifest manifest, string profile)
     {
         if (nativePackages.Count == 0)
         {
@@ -15,7 +15,7 @@ public static class CMakeGeneratorService
             return;
         }
 
-        Logger.Info($"Generating CMake tree for {nativePackages.Count} native packages...");
+        Logger.Info($"Generating CMake tree for {nativePackages.Count} native packages (Profile: {profile})...");
         
         string cmakeTargetDir = Path.Combine(projectsDir, "Native");
         Directory.CreateDirectory(cmakeTargetDir);
@@ -23,12 +23,9 @@ public static class CMakeGeneratorService
         string cmakeListsPath = Path.Combine(cmakeTargetDir, "CMakeLists.txt");
         using var writer = new StreamWriter(cmakeListsPath);
         writer.WriteLine("cmake_minimum_required(VERSION 3.29)");
-        string[] profiles = manifest.Profiles != null && manifest.Profiles.Count > 0 
-            ? manifest.Profiles.Keys.ToArray() 
-            : new[] { "Development", "Production" };
-            
-        string configTypes = string.Join(";", profiles);
-        writer.WriteLine($"set(CMAKE_CONFIGURATION_TYPES \"{configTypes}\" CACHE STRING \"\" FORCE)");
+        
+        // Use standard Debug;Release for IDE consistency
+        writer.WriteLine("set(CMAKE_CONFIGURATION_TYPES \"Debug;Release\" CACHE STRING \"\" FORCE)");
 
         writer.WriteLine($"project({projectName}_Native)");
         writer.WriteLine($"set(ARISEN_ENGINE_DIR \"{engineDir.Replace('\\', '/')}\")");
@@ -56,22 +53,18 @@ public static class CMakeGeneratorService
         writer.WriteLine("add_subdirectory(\"${ARISEN_ENGINE_DIR}/3rdparty/spdlog\" \"${CMAKE_CURRENT_BINARY_DIR}/3rdparty/spdlog\")");
         writer.WriteLine("set_target_properties(spdlog PROPERTIES FOLDER \"3rdparty\")");
         
-        foreach (var profile in profiles)
-        {
-            string uProf = profile.ToUpper();
-            
-            // Initialize required CMake variables for non-standard configuration types linking back to RelWithDebInfo
-            writer.WriteLine($"set(CMAKE_C_FLAGS_{uProf} \"${{CMAKE_C_FLAGS_RELWITHDEBINFO}}\")");
-            writer.WriteLine($"set(CMAKE_CXX_FLAGS_{uProf} \"${{CMAKE_CXX_FLAGS_RELWITHDEBINFO}}\")");
-            writer.WriteLine($"set(CMAKE_EXE_LINKER_FLAGS_{uProf} \"${{CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO}}\")");
-            writer.WriteLine($"set(CMAKE_SHARED_LINKER_FLAGS_{uProf} \"${{CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO}}\")");
-            writer.WriteLine($"set(CMAKE_STATIC_LINKER_FLAGS_{uProf} \"${{CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO}}\")");
-            writer.WriteLine($"set(CMAKE_MODULE_LINKER_FLAGS_{uProf} \"${{CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO}}\")");
-            
-            writer.WriteLine($"set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_{uProf} \"${{CMAKE_SOURCE_DIR}}/../../bin/{profile}\")");
-            writer.WriteLine($"set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_{uProf} \"${{CMAKE_SOURCE_DIR}}/../../bin/{profile}\")");
-            writer.WriteLine($"add_compile_definitions($<$<CONFIG:{profile}>:ARISEN_PROFILE_{uProf}>)");
-        }
+        string uProf = profile.ToUpper();
+        
+        // Map Debug and Release to the correct profile macro
+        writer.WriteLine($"# Profile-specific definitions for {profile}");
+        writer.WriteLine($"add_compile_definitions(ARISEN_PROFILE_{uProf})");
+        
+        // Ensure Release uses RelWithDebInfo flags for optimization + symbols
+        writer.WriteLine("set(CMAKE_C_FLAGS_RELEASE \"${CMAKE_C_FLAGS_RELWITHDEBINFO}\")");
+        writer.WriteLine("set(CMAKE_CXX_FLAGS_RELEASE \"${CMAKE_CXX_FLAGS_RELWITHDEBINFO}\")");
+        
+        writer.WriteLine($"set(CMAKE_RUNTIME_OUTPUT_DIRECTORY \"${{CMAKE_SOURCE_DIR}}/../../bin\")");
+        writer.WriteLine($"set(CMAKE_LIBRARY_OUTPUT_DIRECTORY \"${{CMAKE_SOURCE_DIR}}/../../bin\")");
 
         foreach(var pkg in nativePackages)
         {

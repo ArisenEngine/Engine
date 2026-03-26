@@ -129,7 +129,7 @@ class Program
         var nativePackages = packageMap.Values.Where(p => p.Manifest.Type == "native" || File.Exists(Path.Combine(p.DirectoryPath, "CMakeLists.txt"))).ToList();
 
         ProjectGeneratorService.GenerateForManagedPackages(workspaceDir, projectsDir, engineDir, managedPackages, packageMap, manifest, profile);
-        CMakeGeneratorService.Generate(engineDir, projectsDir, nativePackages, projectName, manifest);
+        CMakeGeneratorService.Generate(engineDir, projectsDir, nativePackages, projectName, manifest, profile);
         SolutionGeneratorService.Generate(projectsDir, engineDir, managedPackages, projectName, manifest, profile);
 
         Logger.Info("ArisenBuildTool: Workspace generation complete.");
