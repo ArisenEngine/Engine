@@ -94,7 +94,7 @@ public static class PackageInjectorService
             if (provides.Count > 0) 
             {
                 pkg.Services ??= new PackageServices();
-                pkg.Services.Provides = provides;
+                pkg.Services.Provides = provides.Select(p => JsonSerializer.SerializeToElement(p)).ToList();
             }
 
             // Save modified package.json safely without mangling existing fields we don't own
