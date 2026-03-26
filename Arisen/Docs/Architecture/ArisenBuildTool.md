@@ -36,9 +36,28 @@ During Phase 2, `ArisenBuildTool` automatically injects the **Arisen Roslyn Sour
 - Every time the user clicks "Build" in Visual Studio/Rider, the injected analyzer scans the code for `[EngineSubsystem]` attributes and instantly overwrites the `package.json` with the compiled metadata!
 
 ### Phase 4: Solution Generation
-Finally, the tool generates a master `MyGame.sln` file at the root of the workspace.
-- This solution references the generated `.csproj` files.
-- It organizes them into logical Solution Folders (e.g., `Engine Packages`, `Local Packages`, `Native`).
+The tool generates a separate solution file for each **Profile** defined in the workspace:
+- **Solution Naming**: `{ProjectName}_{Profile}.sln` (e.g., `MyGame_Development.sln`).
+- **Profile Macros**: Each solution automatically defines the preprocessor macro `ARISEN_PROFILE_{PROFILE}` (e.g., `ARISEN_PROFILE_DEVELOPMENT`).
+- **Organization**: Projects are organized into logical Solution Folders: `Engine Packages`, `Local Packages`, and `Native Dependencies`.
+
+---
+
+## Configuration Mapping
+
+To handle the differences between managed (C#) and native (C++) build systems, `ArisenBuildTool` performs automatic configuration mapping within the solution:
+
+### 1. Managed Projects (C#)
+C# projects follow standard MSBuild configurations:
+- **Debug**: Full symbols, no optimizations.
+- **Release**: Optimized binaries.
+
+### 2. Native Projects (C++)
+Native projects (CMake) are generated with standard **`Debug`** and **`Release`** configuration names, mirroring the managed projects.
+- **1:1 Mapping**: Solutions map `Debug`➔`Debug` and `Release`➔`Release` directly.
+- **Profile Isolation**: Because each profile (Development/Production) has its own private native build folder (e.g., `.arisen/Projects/Development/Native`), the generator injects the correct `ARISEN_PROFILE_{PROFILE}` macro into both configurations for that profile.
+
+This ensures a seamless development experience where IDE configuration names match across all languages, while maintaining the engine's strict profile-specific macro architecture.
 
 ---
 
