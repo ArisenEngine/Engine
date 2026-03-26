@@ -17,33 +17,34 @@
 [submodule "Arisen/Test/NativeEngineTest/Assets/glTF-Sample-Models"]
 	path = Arisen/Test/Assets/glTF-Sample-Models
 	url = https://github.com/KhronosGroup/glTF-Sample-Models.git
-# [submodule "Arisen/Development/PackageGame/Local/com.arisen.core"]
-# 	path = Arisen/Development/PackageGame/Local/com.arisen.core
-# 	url = https://github.com/ArisenEngine/com.arisen.core.git
-# [submodule "Arisen/Development/PackageGame/Local/com.arisen.core.native"]
-# 	path = Arisen/Development/PackageGame/Local/com.arisen.core.native
-# 	url = https://github.com/ArisenEngine/com.arisen.core.native.git
-# [submodule "Arisen/Development/PackageGame/Local/com.arisen.resources"]
-# 	path = Arisen/Development/PackageGame/Local/com.arisen.resources
-# 	url = https://github.com/ArisenEngine/com.arisen.resources.git
-# [submodule "Arisen/Development/PackageGame/Local/com.arisen.ecs"]
-# 	path = Arisen/Development/PackageGame/Local/com.arisen.ecs
-# 	url = https://github.com/ArisenEngine/com.arisen.ecs.git
-# [submodule "Arisen/Development/PackageGame/Local/com.arisen.platform.desktop"]
-# 	path = Arisen/Development/PackageGame/Local/com.arisen.platform.desktop
-# 	url = https://github.com/ArisenEngine/com.arisen.platform.desktop.git
-# [submodule "Arisen/Development/PackageGame/Local/com.arisen.rendering"]
-# 	path = Arisen/Development/PackageGame/Local/com.arisen.rendering
-# 	url = https://github.com/ArisenEngine/com.arisen.rendering.git
-# [submodule "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native"]
-# 	path = Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native
-# 	url = https://github.com/ArisenEngine/com.arisen.rhi.vulkan.native.git
-# [submodule "Arisen/Development/PackageGame/Local/com.arisen.editor"]
-# 	path = Arisen/Development/PackageGame/Local/com.arisen.editor
-# 	url = https://github.com/ArisenEngine/com.arisen.editor.git
-# [submodule "Arisen/Development/PackageGame/Local/com.arisen.dag"]
-# 	path = Arisen/Development/PackageGame/Local/com.arisen.dag
-# 	url = https://github.com/ArisenEngine/com.arisen.dag.git
-# [submodule "Arisen/Development/PackageGame/Local/com.arisen.nodecanvas"]
-# 	path = Arisen/Development/PackageGame/Local/com.arisen.nodecanvas
-# 	url = https://github.com/ArisenEngine/com.arisen.nodecanvas.git
+
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.rendering"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.rendering
+	url = https://github.com/ArisenEngine/com.arisen.rendering.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.dag"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.dag
+	url = https://github.com/ArisenEngine/com.arisen.dag.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.code.native"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.code.native
+	url = https://github.com/ArisenEngine/com.arisen.core.native.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.resources"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.resources
+	url = https://github.com/ArisenEngine/com.arisen.resources.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.ecs"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.ecs
+	url = https://github.com/ArisenEngine/com.arisen.ecs.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.platform.desktop"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.platform.desktop
+	url = https://github.com/ArisenEngine/com.arisen.platform.desktop.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.editor"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.editor
+	url = https://github.com/ArisenEngine/com.arisen.editor.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native
+	url = https://github.com/ArisenEngine/com.arisen.rhi.vulkan.native.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.core"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.core
+	url = https://github.com/ArisenEngine/com.arisen.core.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.nodecanvas"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.nodecanvas
+	url = https://github.com/ArisenEngine/com.arisen.nodecanvas.git
