@@ -1,22 +1,6 @@
 {
   "Name": "PackageGame",
   "EngineVersion": "Current",
-  "Profiles": {
-    "Development": [
-      {
-        "Id": "com.arisen.editor",
-        "Url": "file://Local/com.arisen.editor",
-        "Version": "1.0.0"
-      }
-    ],
-    "Production": [
-      {
-        "Id": "com.arisen.packagegame",
-        "Url": "file://Local/com.arisen.packagegame",
-        "Version": "1.0.0"
-      }
-    ]
-  },
   "Packages": [
     {
       "Id": "com.arisen.packagegame",
@@ -63,5 +47,21 @@
       "Url": "file://Local/com.arisen.rendering",
       "Version": "1.0.0"
     }
-  ]
+  ],
+  "Profiles": {
+    "Development": [
+      {
+        "Id": "com.arisen.editor",
+        "Url": "file://Local/com.arisen.editor",
+        "Version": "1.0.0"
+      }
+    ],
+    "Production": [
+      {
+        "Id": "com.arisen.packagegame",
+        "Url": "file://Local/com.arisen.packagegame",
+        "Version": "1.0.0"
+      }
+    ]
+  }
 }

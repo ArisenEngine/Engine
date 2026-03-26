@@ -195,7 +195,7 @@
                                                 <StackPanel Grid.Column="1" Spacing="12" VerticalAlignment="Top">
                                                     <Button Content="Remove" Command="{Binding ParentContext.RemovePackageCommand}" CommandParameter="{Binding}" 
                                                             Background="#ef444420" Foreground="#ef4444" BorderBrush="#ef4444" BorderThickness="1" Padding="16,8" CornerRadius="6" FontWeight="Bold" Cursor="Hand" Width="120" HorizontalContentAlignment="Center"/>
-                                                    <Button Content="Save Manifest" Command="{Binding ParentContext.SaveLocalPackageCommand}" CommandParameter="{Binding}" 
+                                                    <Button Content="Save Package" Command="{Binding ParentContext.SaveLocalPackageCommand}" CommandParameter="{Binding}" 
                                                             IsVisible="{Binding IsLocal}"
                                                             Background="#22c55e" Foreground="White" Padding="16,8" CornerRadius="6" FontWeight="Bold" Cursor="Hand" Width="120" HorizontalContentAlignment="Center"/>
                                                 </StackPanel>
@@ -466,6 +466,14 @@
                     </StackPanel>
                 </StackPanel>
             </Border>
+        </Border>
+
+        <!-- Loading Overlay -->
+        <Border Grid.Row="0" Grid.RowSpan="3" Background="#cc0f1117" IsVisible="{Binding IsLoading}" ZIndex="99">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="24">
+                <ProgressBar IsIndeterminate="True" Width="200" Height="4" Foreground="#135bec" Background="#282e39"/>
+                <TextBlock Text="Loading Package Manifests..." Foreground="#94a3b8" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+            </StackPanel>
         </Border>
     </Grid>
 </Window>
