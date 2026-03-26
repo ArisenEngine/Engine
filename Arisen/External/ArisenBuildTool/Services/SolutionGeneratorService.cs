@@ -13,9 +13,9 @@ public static class SolutionGeneratorService
     private const string CSHARP_PROJECT_TYPE = "{9A19103F-16F7-4668-BE54-9A1E7A4F7556}";
     private const string VIRTUAL_FOLDER_TYPE = "{2150E333-8FDC-42A3-9474-1A3956D46DE8}";
 
-    public static void Generate(string projectsDir, string engineDir, List<PackageInfo> managedPackages, string projectName, ProjectManifest manifest)
+    public static void Generate(string projectsDir, string engineDir, List<PackageInfo> managedPackages, string projectName, ProjectManifest manifest, string profile)
     {
-        string slnPath = Path.Combine(projectsDir, "..", $"{projectName}.sln");
+        string slnPath = Path.Combine(projectsDir, "..", "..", $"{projectName}_{profile}.sln");
         string slnDir = Path.GetDirectoryName(slnPath)!;
         Logger.Info($"Generating {slnPath} purely from C#...");
 
@@ -23,15 +23,13 @@ public static class SolutionGeneratorService
         string entryCsprojDir = Path.Combine(projectsDir, projectName);
         Directory.CreateDirectory(entryCsprojDir);
         string entryCsproj = Path.Combine(entryCsprojDir, $"{projectName}.csproj");
-        GenerateEntryPointProject(entryCsproj, engineDir, projectName, manifest);
+        GenerateEntryPointProject(entryCsproj, engineDir, projectName, manifest, profile);
 
         // Generate Protective MSVC Property File
         string dirBuildProps = Path.Combine(slnDir, "Directory.Build.props");
         GenerateDirectoryBuildProps(dirBuildProps);
 
-        var profiles = manifest.Profiles != null && manifest.Profiles.Count > 0 
-            ? manifest.Profiles.Keys.ToList() 
-            : new List<string> { "Development", "Production" };
+        var configurations = new List<string> { "Debug", "Release" };
 
         using var writer = new StreamWriter(slnPath);
         writer.WriteLine(); // Start with empty line for Visual Studio encoding expectations
@@ -185,28 +183,28 @@ public static class SolutionGeneratorService
         
         // Profiles Map
         writer.WriteLine("\tGlobalSection(SolutionConfigurationPlatforms) = preSolution");
-        foreach(var profile in profiles)
+        foreach(var config in configurations)
         {
-            writer.WriteLine($"\t\t{profile}|x64 = {profile}|x64");
+            writer.WriteLine($"\t\t{config}|x64 = {config}|x64");
         }
         writer.WriteLine("\tEndGlobalSection");
-
+ 
         // Project Maps
         writer.WriteLine("\tGlobalSection(ProjectConfigurationPlatforms) = postSolution");
         foreach (var guid in projectGuids.Keys) // C# Projects
         {
-            foreach (var profile in profiles)
+            foreach (var config in configurations)
             {
-                writer.WriteLine($"\t\t{guid}.{profile}|x64.ActiveCfg = {profile}|Any CPU");
-                writer.WriteLine($"\t\t{guid}.{profile}|x64.Build.0 = {profile}|Any CPU");
+                writer.WriteLine($"\t\t{guid}.{config}|x64.ActiveCfg = {config}|Any CPU");
+                writer.WriteLine($"\t\t{guid}.{config}|x64.Build.0 = {config}|Any CPU");
             }
         }
         foreach (var guid in nativeProjectGuids) // C++ Projects
         {
-            foreach (var profile in profiles)
+            foreach (var config in configurations)
             {
-                writer.WriteLine($"\t\t{guid}.{profile}|x64.ActiveCfg = {profile}|x64");
-                writer.WriteLine($"\t\t{guid}.{profile}|x64.Build.0 = {profile}|x64");
+                writer.WriteLine($"\t\t{guid}.{config}|x64.ActiveCfg = {config}|x64");
+                writer.WriteLine($"\t\t{guid}.{config}|x64.Build.0 = {config}|x64");
             }
         }
         writer.WriteLine("\tEndGlobalSection");
@@ -226,7 +224,7 @@ public static class SolutionGeneratorService
         writer.WriteLine("EndGlobal");
     }
 
-    private static void GenerateEntryPointProject(string csprojPath, string engineDir, string projectName, ProjectManifest manifest)
+    private static void GenerateEntryPointProject(string csprojPath, string engineDir, string projectName, ProjectManifest manifest, string profile)
     {
         using StreamWriter writer = new StreamWriter(csprojPath);
         writer.WriteLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
@@ -236,25 +234,25 @@ public static class SolutionGeneratorService
         writer.WriteLine("    <ImplicitUsings>enable</ImplicitUsings>");
         writer.WriteLine("    <Nullable>enable</Nullable>");
         // Output binaries mapped uniformly
-        writer.WriteLine("    <OutputPath>..\\..\\bin\\$(Configuration)\\</OutputPath>");
+        writer.WriteLine("    <OutputPath>..\\..\\..\\bin\\$(Configuration)\\</OutputPath>");
         writer.WriteLine("    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>");
         writer.WriteLine("    <PlatformTarget>x64</PlatformTarget>");
         writer.WriteLine($"    <RootNamespace>{projectName}</RootNamespace>");
         writer.WriteLine("    <RuntimeIdentifier>win-x64</RuntimeIdentifier>");
         writer.WriteLine("    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>");
+        writer.WriteLine($"    <DefineConstants>ARISEN_PROFILE_{profile.ToUpper()}</DefineConstants>");
         writer.WriteLine("  </PropertyGroup>");
         writer.WriteLine();
-        
-        string[] profiles = manifest.Profiles != null && manifest.Profiles.Count > 0 
-            ? manifest.Profiles.Keys.ToArray() 
-            : new[] { "Development", "Production" };
-            
-        foreach (var profile in profiles)
-        {
-            writer.WriteLine($"  <PropertyGroup Condition=\"'$(Configuration)' == '{profile}'\">");
-            writer.WriteLine($"    <DefineConstants>ARISEN_PROFILE_{profile.ToUpper()}</DefineConstants>");
-            writer.WriteLine($"  </PropertyGroup>");
-        }
+
+        writer.WriteLine("  <PropertyGroup Condition=\"'$(Configuration)' == 'Debug'\">");
+        writer.WriteLine("    <Optimize>false</Optimize>");
+        writer.WriteLine("    <DebugSymbols>true</DebugSymbols>");
+        writer.WriteLine("  </PropertyGroup>");
+
+        writer.WriteLine("  <PropertyGroup Condition=\"'$(Configuration)' == 'Release'\">");
+        writer.WriteLine("    <Optimize>true</Optimize>");
+        writer.WriteLine("    <DebugSymbols>false</DebugSymbols>");
+        writer.WriteLine("  </PropertyGroup>");
 
         writer.WriteLine("  <ItemGroup>");
         string hostSrcDir = Path.Combine(engineDir, "ArisenHost");
