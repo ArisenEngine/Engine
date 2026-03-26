@@ -3,7 +3,7 @@ setlocal EnableDelayedExpansion
 
 :: Defaults
 set "MANIFEST_PATH="
-set "BINDING_CONFIG=debug"
+set "BUILD_CONFIG=Debug"
 
 :parse_args
 if "%~1"=="" goto end_parse
@@ -14,10 +14,16 @@ if /i "%~1"=="-m" (
     set "MANIFEST_PATH=%~2"
     shift
 ) else if /i "%~1"=="-b" (
-    set "BINDING_CONFIG=%~2"
+    set "BUILD_CONFIG=%~2"
     shift
 ) else if /i "%~1"=="--binding-config" (
-    set "BINDING_CONFIG=%~2"
+    set "BUILD_CONFIG=%~2"
+    shift
+) else if /i "%~1"=="-c" (
+    set "BUILD_CONFIG=%~2"
+    shift
+) else if /i "%~1"=="--config" (
+    set "BUILD_CONFIG=%~2"
     shift
 ) else (
     if not defined MANIFEST_PATH set "MANIFEST_PATH=%~1"
@@ -28,14 +34,13 @@ goto parse_args
 
 if "%MANIFEST_PATH%"=="" set "MANIFEST_PATH=%~dp0..\..\Development\PackageGame\manifest.json"
 
-if /i "%BINDING_CONFIG%"=="release" (
+if /i "!BUILD_CONFIG!"=="Release" (
     set "BINDING_BAT=run_binding_generator_release.bat"
 ) else (
     set "BINDING_BAT=run_binding_generator_debug.bat"
 )
 
 set "SLN_DIR=%MANIFEST_PATH%\..\.arisen"
-set "SLN_PATH=%SLN_DIR%\PackageGame.sln"
 set "BUILD_TOOL_CSPROJ=%~dp0..\..\External\ArisenBuildTool\ArisenBuildTool.csproj"
 
 echo [Arisen] Locating Developer Command Prompt...
@@ -61,35 +66,48 @@ if not defined VSCMD_ARG_TGT_ARCH (
 
 echo [Arisen] Synchronizing C# Bindings via BindingGenerator (!BINDING_BAT!)...
 call "%~dp0!BINDING_BAT!" --no-pause
-if %errorlevel% neq 0 (
+if !errorlevel! neq 0 (
     echo [ERROR] BindingGenerator failed to refresh interop code.
     goto :fail
 )
 
 set "ENGINE_ROOT=%~dp0..\.."
-echo [Arisen] Generating Workspace with ArisenBuildTool...
-dotnet run --project "%BUILD_TOOL_CSPROJ%" -- generate -m "%MANIFEST_PATH%" -e "%ENGINE_ROOT%"
-if %errorlevel% neq 0 (
-    echo [ERROR] ArisenBuildTool failed to generate workspace.
-    goto :fail
-)
+echo [Arisen] Generating Workspace with ArisenBuildTool for profile loop...
+:: Note: We run ArisenBuildTool once per profile during the compile phase if needed, 
+:: but here we just ensure the tool itself is ready.
+dotnet build "%BUILD_TOOL_CSPROJ%" -c Release >nul
 
-echo [Arisen] Restoring NuGet Packages...
-dotnet restore "%SLN_PATH%"
-if %errorlevel% neq 0 (
-    echo [ERROR] NuGet restore failed.
-    goto :fail
-)
+echo [Arisen] Extracting Project Name from manifest...
+for /f "usebackq delims=" %%P in (`powershell -Command "$m = Get-Content '%MANIFEST_PATH%' -Raw | ConvertFrom-Json; $m.Name"`) do set "PROJECT_NAME=%%P"
+if not defined PROJECT_NAME set "PROJECT_NAME=MyGame"
 
 echo [Arisen] Discovering profiles from manifest.json...
 for /f "usebackq delims=" %%A in (`powershell -Command "$m = Get-Content '%MANIFEST_PATH%' -Raw | ConvertFrom-Json; if($m.Profiles) { $m.Profiles.psobject.properties.name } else { 'Development'; 'Production' }"`) do (
     echo [Arisen] --------------------------------------------------
-    echo [Arisen] Compiling Profile: %%A
+    echo [Arisen] Processing Profile: %%A [!BUILD_CONFIG!]
     echo [Arisen] --------------------------------------------------
+    
+    :: Generate the solution for this specific profile
+    dotnet run --project "%BUILD_TOOL_CSPROJ%" -- generate -m "%MANIFEST_PATH%" -e "%ENGINE_ROOT%" --profile %%A
+    
+    set "CURRENT_SLN=%SLN_DIR%\!PROJECT_NAME!_%%A.sln"
+    
+    if not exist "!CURRENT_SLN!" (
+        echo [ERROR] Solution file not found for profile %%A: !CURRENT_SLN!
+        goto :fail
+    )
+
+    echo [Arisen] Restoring NuGet Packages for %%A...
+    dotnet restore "!CURRENT_SLN!"
+    if !errorlevel! neq 0 (
+        echo [ERROR] NuGet restore failed for profile %%A.
+        goto :fail
+    )
+
     set "LOG_FILE=%MANIFEST_PATH%\..\.arisen\build_%%A.log"
     echo [Arisen] Logging MSBuild completely to: !LOG_FILE!
-    msbuild "%SLN_PATH%" /p:Configuration=%%A /p:Platform=x64 /m /fl /flp:logfile="!LOG_FILE!";verbosity=normal
-    if errorlevel 1 (
+    msbuild "!CURRENT_SLN!" /p:Configuration=!BUILD_CONFIG! /p:Platform=x64 /m /fl /flp:logfile="!LOG_FILE!";verbosity=normal
+    if !errorlevel! neq 0 (
         echo [ERROR] MSBuild failed on profile: %%A
         goto :fail
     )

@@ -203,8 +203,9 @@ public static class SolutionGeneratorService
         {
             foreach (var config in configurations)
             {
-                writer.WriteLine($"\t\t{guid}.{config}|x64.ActiveCfg = {config}|x64");
-                writer.WriteLine($"\t\t{guid}.{config}|x64.Build.0 = {config}|x64");
+                string nativeConfig = config == "Debug" ? "Development" : "Production";
+                writer.WriteLine($"\t\t{guid}.{config}|x64.ActiveCfg = {nativeConfig}|x64");
+                writer.WriteLine($"\t\t{guid}.{config}|x64.Build.0 = {nativeConfig}|x64");
             }
         }
         writer.WriteLine("\tEndGlobalSection");

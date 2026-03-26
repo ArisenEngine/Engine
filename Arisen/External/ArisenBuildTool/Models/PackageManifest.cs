@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace ArisenBuildTool.Models;
@@ -36,10 +37,10 @@ public class PackageServiceProvider
 public class PackageServices
 {
     [JsonPropertyName("provides")]
-    public List<PackageServiceProvider>? Provides { get; set; }
+    public List<JsonElement>? Provides { get; set; }
     
     [JsonPropertyName("requires")]
-    public List<string>? Requires { get; set; }
+    public List<JsonElement>? Requires { get; set; }
 }
 
 public class PackageManifest
