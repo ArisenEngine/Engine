@@ -15,16 +15,20 @@ public class LogService : ILogService, IDisposable
 {
     private readonly StreamWriter _writer;
 
-    public LogService(string filename)
+    public LogService()
     {
         string logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
-        // B17: Ensure the logs directory exists before attempting to write
         if (!Directory.Exists(logDir)) Directory.CreateDirectory(logDir);
 
+        // P8: Create a unique log file for every launch with a timestamp
+        // Windows filenames cannot contain ':', so we use '-' for the time part
+        string timestamp = DateTime.Now.ToString("yyyy-M-d HH-mm-ss.fff");
+        string filename = $"log-{timestamp}.log";
         string logFilePath = Path.Combine(logDir, filename);
-        // Clear old log and open a persistent, buffered writer
-        // P7: StreamWriter is far more efficient than per-line File.AppendAllText
-        _writer = new StreamWriter(logFilePath, append: false) { AutoFlush = true };
+        
+        // Use FileShare.ReadWrite to allow log viewers (like Notepad++) to access the file while the launcher is running
+        var stream = new FileStream(logFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+        _writer = new StreamWriter(stream) { AutoFlush = true };
     }
 
     private void Log(string level, string message, Exception? ex)

@@ -6,6 +6,7 @@ namespace ArisenLauncher.Models;
 public class LauncherProjectMetadata
 {
     public string Name { get; set; } = "New Project";
+    public Guid ProjectId { get; set; } = Guid.Empty;
     public string Description { get; set; } = string.Empty;
     public DateTime LastModified { get; set; } = DateTime.UtcNow;
     [JsonIgnore]

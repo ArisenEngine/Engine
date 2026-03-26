@@ -93,16 +93,16 @@
             </Border>
 
             <!-- Scrollable Content -->
-            <ScrollViewer Grid.Row="1" Padding="48">
-                <StackPanel Spacing="32">
-                    <StackPanel Spacing="8">
+            <ScrollViewer Grid.Row="1">
+                <Grid RowDefinitions="Auto, 32, Auto, 32, Auto" Margin="48">
+                    <StackPanel Grid.Row="0" Spacing="8">
                         <TextBlock Text="My Projects" FontSize="32" FontWeight="Bold" Foreground="White"/>
                         <TextBlock Text="Manage your active workspace. Choose a project to start editing."
                                    Foreground="#64748b" FontSize="14"/>
                     </StackPanel>
 
                     <!-- Projects Grid -->
-                    <ItemsControl ItemsSource="{Binding RecentProjects}">
+                    <ItemsControl Grid.Row="2" ItemsSource="{Binding RecentProjects}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel Orientation="Horizontal"/>
@@ -161,7 +161,7 @@
                     </ItemsControl>
 
                     <!-- Bottom Action Cards -->
-                    <StackPanel Orientation="Horizontal" Spacing="16">
+                    <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="16">
                         <!-- Create New Card -->
                         <Button Width="300" Height="180" Background="Transparent" Padding="0"
                                 Command="{Binding NewProjectCommand}">
@@ -189,7 +189,7 @@
                             </Border>
                         </Button>
                     </StackPanel>
-                </StackPanel>
+                </Grid>
             </ScrollViewer>
         </Grid>
     </Grid>

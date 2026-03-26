@@ -17,7 +17,7 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        var log = new LogService("launcher.log");
+        var log = new LogService();
         
         // Setup Global Exception Handling
         AppDomain.CurrentDomain.UnhandledException += (s, e) => 

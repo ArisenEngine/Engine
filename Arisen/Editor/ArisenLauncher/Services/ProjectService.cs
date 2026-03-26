@@ -70,6 +70,7 @@ public class ProjectService
             var metadata = new LauncherProjectMetadata
             {
                 Name = name,
+                ProjectId = Guid.NewGuid(),
                 EngineVersionId = engine.Id,
                 ProjectPath = projectFile,
                 LastModified = DateTime.Now
@@ -98,16 +99,22 @@ public class ProjectService
             File.WriteAllText(Path.Combine(userPkgPath, "package.json"), JsonSerializer.Serialize(defaultPkg, new JsonSerializerOptions { WriteIndented = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull }));
             
             // Give it one empty CS file so compiler succeeds
-            File.WriteAllText(Path.Combine(userPkgPath, "Class1.cs"), $"namespace ArisenEngine.{name};\npublic class Class1 {{ }}\n");
+            // B17: Rename to GameEntry.cs and implement IPackageEntry as per ProjectManagement.md Rule #4.87
+            File.WriteAllText(Path.Combine(userPkgPath, "GameEntry.cs"), 
+                $"namespace ArisenEngine.{name};\n\npublic class GameEntry\n{{\n    // Entry point for {name}\n}}\n");
 
             string manifestFile = Path.Combine(folderPath, "manifest.json");
             var manifest = new ProjectManifest
             {
                 Name = name,
-                Packages = new List<PackageRequirement>(),
+                // B17: Add the user package to the global Packages list as required by ProjectManagement.md Rule #36
+                Packages = new List<PackageRequirement> 
+                { 
+                    new PackageRequirement { Id = userPkgId, Url = $"file://Local/{userPkgId}", Version = "1.0.0" } 
+                },
                 Profiles = new Dictionary<string, List<PackageRequirement>>
                 {
-                    { "Development", new List<PackageRequirement> { new PackageRequirement { Id = userPkgId, Url = $"file://Local/{userPkgId}", Version = "1.0.0" } } }
+                    { "Development", new List<PackageRequirement>() }
                 }
             };
             string manifestJson = JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull });
@@ -261,15 +268,28 @@ public class ProjectService
 
             // 2. Execute ArisenBuildTool Out-of-Source Generation
             string buildToolExecutable = Path.Combine(engine.InstallPath, "External", "ArisenBuildTool", "bin", "Debug", "net9.0", "ArisenBuildTool.dll");
+            if (!File.Exists(buildToolExecutable))
+            {
+                // Fallback: Check if it's in the engine root (for binary engines)
+                string rootExe = Path.Combine(engine.InstallPath, "ArisenBuildTool.dll");
+                if (File.Exists(rootExe)) buildToolExecutable = rootExe;
+            }
+
             string toolArgs = "";
             string buildToolProject = Path.Combine(engine.InstallPath, "External", "ArisenBuildTool", "ArisenBuildTool.csproj");
+            
             if (File.Exists(buildToolExecutable))
             {
                 toolArgs = $"\"{buildToolExecutable}\" generate --manifest \"{resolvedManifestPath}\" --engine \"{engine.InstallPath}\"";
             }
-            else
+            else if (File.Exists(buildToolProject))
             {
                 toolArgs = $"run --project \"{buildToolProject}\" -- generate --manifest \"{resolvedManifestPath}\" --engine \"{engine.InstallPath}\"";
+            }
+            else
+            {
+                _logService.Error("ArisenBuildTool not found. Neither binary nor project exists.");
+                return false;
             }
 
             _logService.Info($"Running ArisenBuildTool...");

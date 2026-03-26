@@ -32,6 +32,7 @@ public partial class MainViewModel : ObservableObject
     public Func<Task<string?>>? RequestFilePickerAsync; // For .arisenproj
     public Func<EngineInstance, Task<bool>>? RequestNewProjectWizardAsync;
     public Func<LauncherProjectMetadata, Task>? RequestPackageManagerAsync;
+    public Func<string, string, Task>? RequestMessageBoxAsync;
 
     public MainViewModel(
         ConfigService configService, 
@@ -189,8 +190,14 @@ public partial class MainViewModel : ObservableObject
                 }
                 else
                 {
-                    _logService.Warning($"Failed to validate engine folder: {path}");
-                    StatusText = "Invalid engine folder. Ensure ArisenEngine.dll is present.";
+                    if (RequestMessageBoxAsync != null)
+                    {
+                        await RequestMessageBoxAsync("Invalid Engine Folder", "The selected folder is missing required engine binaries (ArisenKernel.dll, ArisenBuildTool.dll/exe).");
+                    }
+                    else
+                    {
+                        StatusText = "Invalid engine folder. Ensure core engine DLLs are present.";
+                    }
                 }
             }
         }
@@ -210,7 +217,14 @@ public partial class MainViewModel : ObservableObject
         else
         {
             _logService.Error("Cannot launch project: No engine version selected.");
-            StatusText = "Error: No engine selected.";
+            if (RequestMessageBoxAsync != null)
+            {
+                await RequestMessageBoxAsync("No Engine Selected", "Please select an engine version to launch this project.");
+            }
+            else
+            {
+                StatusText = "Error: No engine selected.";
+            }
         }
     }
 
@@ -229,7 +243,14 @@ public partial class MainViewModel : ObservableObject
         var engine = SelectedEngine;
         if (engine == null)
         {
-            StatusText = "Error: No engine selected for new project.";
+            if (RequestMessageBoxAsync != null)
+            {
+                await RequestMessageBoxAsync("No Engine Selected", "Please select or add an engine version before creating a new project.");
+            }
+            else
+            {
+                StatusText = "Error: No engine selected for new project.";
+            }
             return;
         }
 
