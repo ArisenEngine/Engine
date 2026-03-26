@@ -153,6 +153,11 @@ public partial class PackageManagerViewModel : ObservableObject
 
         // Relative path: resolve against project directory
         string projectDir = Path.GetDirectoryName(_project.ProjectPath)!;
+        
+        // Remove leading slash if it's treated as a relative path segment (e.g. file://Local/...)
+        if (rawPath.StartsWith("/") || rawPath.StartsWith("\\"))
+            rawPath = rawPath.Substring(1);
+            
         return Path.GetFullPath(Path.Combine(projectDir, rawPath)).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
     }
 
@@ -235,9 +240,28 @@ public partial class PackageManagerViewModel : ObservableObject
             if (pData.Services != null)
             {
                 if (pData.Services.Provides != null)
-                    prov = string.Join(", ", pData.Services.Provides.Where(x => !string.IsNullOrEmpty(x)));
+                {
+                    var provNames = new List<string>();
+                    foreach (var p in pData.Services.Provides)
+                    {
+                        if (p.ValueKind == JsonValueKind.String) provNames.Add(p.GetString()!);
+                        else if (p.ValueKind == JsonValueKind.Object && p.TryGetProperty("interface", out var iface))
+                            provNames.Add(iface.GetString()!);
+                    }
+                    prov = string.Join(", ", provNames.Where(x => !string.IsNullOrEmpty(x)));
+                }
+
                 if (pData.Services.Requires != null)
-                    reqsStr = string.Join(", ", pData.Services.Requires.Where(x => !string.IsNullOrEmpty(x)));
+                {
+                    var reqNames = new List<string>();
+                    foreach (var r in pData.Services.Requires)
+                    {
+                        if (r.ValueKind == JsonValueKind.String) reqNames.Add(r.GetString()!);
+                        else if (r.ValueKind == JsonValueKind.Object && r.TryGetProperty("interface", out var iface))
+                            reqNames.Add(iface.GetString()!);
+                    }
+                    reqsStr = string.Join(", ", reqNames.Where(x => !string.IsNullOrEmpty(x)));
+                }
             }
 
             if (pData.Dependencies != null)
@@ -775,13 +799,33 @@ namespace {{safeNamespace}}
                         {
                             if (entryObj2.TryGetProperty("assembly", out var assemblyProp2) && assemblyProp2.ValueKind == JsonValueKind.String)
                                 vm.AssemblyEntry = assemblyProp2.GetString() ?? string.Empty;
+                            if (entryObj2.TryGetProperty("class", out var classProp2) && classProp2.ValueKind == JsonValueKind.String)
+                                vm.EntryClass = classProp2.GetString() ?? string.Empty;
                         }
                         if (doc.RootElement.TryGetProperty("services", out var srvProp))
                         {
                             if (srvProp.TryGetProperty("provides", out var pProp) && pProp.ValueKind == JsonValueKind.Array)
-                                vm.ServicesProvides = string.Join(", ", pProp.EnumerateArray().Select(x => x.GetString()).Where(x => !string.IsNullOrEmpty(x)));
+                            {
+                                var names = new List<string>();
+                                foreach (var p in pProp.EnumerateArray())
+                                {
+                                    if (p.ValueKind == JsonValueKind.String) names.Add(p.GetString()!);
+                                    else if (p.ValueKind == JsonValueKind.Object && p.TryGetProperty("interface", out var iface))
+                                        names.Add(iface.GetString()!);
+                                }
+                                vm.ServicesProvides = string.Join(", ", names.Where(x => !string.IsNullOrEmpty(x)));
+                            }
                             if (srvProp.TryGetProperty("requires", out var rProp) && rProp.ValueKind == JsonValueKind.Array)
-                                vm.ServicesRequires = string.Join(", ", rProp.EnumerateArray().Select(x => x.GetString()).Where(x => !string.IsNullOrEmpty(x)));
+                            {
+                                var names = new List<string>();
+                                foreach (var r in rProp.EnumerateArray())
+                                {
+                                    if (r.ValueKind == JsonValueKind.String) names.Add(r.GetString()!);
+                                    else if (r.ValueKind == JsonValueKind.Object && r.TryGetProperty("interface", out var iface))
+                                        names.Add(iface.GetString()!);
+                                }
+                                vm.ServicesRequires = string.Join(", ", names.Where(x => !string.IsNullOrEmpty(x)));
+                            }
                         }
 
                         vm.IsLocal = true;
@@ -1087,8 +1131,8 @@ public class PackageJsonEntry
 
 public class PackageJsonServices
 {
-    public List<string>? Provides { get; set; }
-    public List<string>? Requires { get; set; }
+    public List<JsonElement>? Provides { get; set; }
+    public List<JsonElement>? Requires { get; set; }
 }
 
 public class PackageJsonManifest

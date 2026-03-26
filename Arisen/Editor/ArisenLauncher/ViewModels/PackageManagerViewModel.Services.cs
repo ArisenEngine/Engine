@@ -60,7 +60,8 @@ public partial class PackageManagerViewModel
         {
             if (pkg.Url != null && pkg.Url.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
             {
-                string localPath = Uri.UnescapeDataString(new Uri(pkg.Url).LocalPath);
+                string? localPath = ResolveFileUrl(pkg.Url);
+                if (localPath == null) continue;
                 string packageJsonPath = Path.Combine(localPath, "package.json");
                 
                 if (File.Exists(packageJsonPath))
@@ -70,8 +71,15 @@ public partial class PackageManagerViewModel
                     {
                         if (pData.Services.Provides != null)
                         {
-                            foreach (var contract in pData.Services.Provides.Where(x => !string.IsNullOrEmpty(x)))
+                            foreach (var element in pData.Services.Provides)
                             {
+                                string? contract = null;
+                                if (element.ValueKind == JsonValueKind.String) contract = element.GetString();
+                                else if (element.ValueKind == JsonValueKind.Object && element.TryGetProperty("interface", out var iface))
+                                    contract = iface.GetString();
+
+                                if (string.IsNullOrEmpty(contract)) continue;
+
                                 var cap = GetOrCreateCapability(contract, dynamicCapabilities);
                                 cap.IsProvided = true;
                                 if (!cap.ProvidingPackages.Contains(pkg.Id))
@@ -81,8 +89,15 @@ public partial class PackageManagerViewModel
 
                         if (pData.Services.Requires != null)
                         {
-                            foreach (var contract in pData.Services.Requires.Where(x => !string.IsNullOrEmpty(x)))
+                            foreach (var element in pData.Services.Requires)
                             {
+                                string? contract = null;
+                                if (element.ValueKind == JsonValueKind.String) contract = element.GetString();
+                                else if (element.ValueKind == JsonValueKind.Object && element.TryGetProperty("interface", out var iface))
+                                    contract = iface.GetString();
+
+                                if (string.IsNullOrEmpty(contract)) continue;
+
                                 var cap = GetOrCreateCapability(contract, dynamicCapabilities);
                                 cap.IsRequired = true;
                                 if (!cap.RequiringPackages.Contains(pkg.Id))
