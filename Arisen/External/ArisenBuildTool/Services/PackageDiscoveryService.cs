@@ -10,7 +10,7 @@ namespace ArisenBuildTool.Services;
 
 public static class PackageDiscoveryService
 {
-    public static Dictionary<string, PackageInfo> Discover(ProjectManifest manifest, string workspaceDir, string engineDir)
+    public static Dictionary<string, PackageInfo> Discover(ProjectManifest manifest, string workspaceDir, string engineDir, string? targetProfile = null)
     {
         var map = new Dictionary<string, PackageInfo>(StringComparer.OrdinalIgnoreCase);
         var toProcess = new Queue<PackageRequirement>();
@@ -20,14 +20,18 @@ public static class PackageDiscoveryService
             foreach (var req in manifest.Packages) toProcess.Enqueue(req);
         }
 
-        if (manifest.Profiles != null)
+        if (!string.IsNullOrEmpty(targetProfile) && manifest.Profiles != null)
         {
-            foreach (var profile in manifest.Profiles.Values)
+            if (manifest.Profiles.TryGetValue(targetProfile, out var profilePackages))
             {
-                if (profile != null)
+                if (profilePackages != null)
                 {
-                    foreach (var req in profile) toProcess.Enqueue(req);
+                    foreach (var req in profilePackages) toProcess.Enqueue(req);
                 }
+            }
+            else
+            {
+                Logger.Warning($"Profile '{targetProfile}' not found in manifest. Skipping profile-specific packages.");
             }
         }
 

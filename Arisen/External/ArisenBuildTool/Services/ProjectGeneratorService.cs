@@ -9,7 +9,7 @@ namespace ArisenBuildTool.Services;
 
 public static class ProjectGeneratorService
 {
-    public static void GenerateForManagedPackages(string workspaceDir, string projectsDir, string engineDir, List<PackageInfo> managedPackages, Dictionary<string, PackageInfo> packageMap, ProjectManifest manifest)
+    public static void GenerateForManagedPackages(string workspaceDir, string projectsDir, string engineDir, List<PackageInfo> managedPackages, Dictionary<string, PackageInfo> packageMap, ProjectManifest manifest, string profile)
     {
         string buildExePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
         string buildCmd = buildExePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) 
@@ -18,11 +18,11 @@ public static class ProjectGeneratorService
 
         foreach (var package in managedPackages)
         {
-            GenerateProjectFile(workspaceDir, projectsDir, engineDir, package, packageMap, buildCmd, manifest);
+            GenerateProjectFile(workspaceDir, projectsDir, engineDir, package, packageMap, buildCmd, manifest, profile);
         }
     }
 
-    private static void GenerateProjectFile(string workspaceDir, string projectsDir, string engineDir, PackageInfo package, Dictionary<string, PackageInfo> map, string buildCmd, ProjectManifest manifest)
+    private static void GenerateProjectFile(string workspaceDir, string projectsDir, string engineDir, PackageInfo package, Dictionary<string, PackageInfo> map, string buildCmd, ProjectManifest manifest, string profile)
     {
         string packageName = Path.GetFileName(package.DirectoryPath);
         string projectName = string.Join(".", packageName.Split('.').Select(PathUtils.ToPascalCase));
@@ -40,21 +40,21 @@ public static class ProjectGeneratorService
         writer.WriteLine($"    <RootNamespace>ArisenEngine.{projectName.Replace("Com.Arisen.", "").Replace("Com.User.", "")}</RootNamespace>");
         
         // Output binaries mapped uniformly into MyGame/.arisen/bin/
-        writer.WriteLine("    <OutputPath>..\\..\\bin\\$(Configuration)\\</OutputPath>");
+        writer.WriteLine("    <OutputPath>..\\..\\..\\bin\\$(Configuration)\\</OutputPath>");
         writer.WriteLine("    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>");
+        writer.WriteLine($"    <DefineConstants>ARISEN_PROFILE_{profile.ToUpper()}</DefineConstants>");
         writer.WriteLine("  </PropertyGroup>");
         writer.WriteLine();
 
-        string[] profiles = manifest.Profiles != null && manifest.Profiles.Count > 0 
-            ? manifest.Profiles.Keys.ToArray() 
-            : new[] { "Development", "Production" };
-            
-        foreach (var profile in profiles)
-        {
-            writer.WriteLine($"  <PropertyGroup Condition=\"'$(Configuration)' == '{profile}'\">");
-            writer.WriteLine($"    <DefineConstants>ARISEN_PROFILE_{profile.ToUpper()}</DefineConstants>");
-            writer.WriteLine($"  </PropertyGroup>");
-        }
+        writer.WriteLine("  <PropertyGroup Condition=\"'$(Configuration)' == 'Debug'\">");
+        writer.WriteLine("    <Optimize>false</Optimize>");
+        writer.WriteLine("    <DebugSymbols>true</DebugSymbols>");
+        writer.WriteLine("  </PropertyGroup>");
+
+        writer.WriteLine("  <PropertyGroup Condition=\"'$(Configuration)' == 'Release'\">");
+        writer.WriteLine("    <Optimize>true</Optimize>");
+        writer.WriteLine("    <DebugSymbols>false</DebugSymbols>");
+        writer.WriteLine("  </PropertyGroup>");
 
         writer.WriteLine("  <ItemGroup>");
         string srcRel = PathUtils.GetRelativePath(csprojDir, package.DirectoryPath);

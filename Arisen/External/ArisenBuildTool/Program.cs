@@ -67,6 +67,10 @@ class Program
             {
                 profile = args[++i];
             }
+            else if ((args[i] == "--workspace" || args[i] == "-w") && i + 1 < args.Length)
+            {
+                workspaceDir = Path.GetFullPath(args[++i]);
+            }
         }
 
         if (string.IsNullOrEmpty(manifestPath))
@@ -109,19 +113,19 @@ class Program
 
         string projectName = string.IsNullOrEmpty(manifest.Name) ? "MyGame" : manifest.Name;
         string arisenHiddenDir = Path.Combine(workspaceDir, ".arisen");
-        string projectsDir = Path.Combine(arisenHiddenDir, "Projects");
+        string projectsDir = Path.Combine(arisenHiddenDir, "Projects", profile);
         
         Directory.CreateDirectory(projectsDir);
 
-        var packageMap = PackageDiscoveryService.Discover(manifest, workspaceDir, engineDir);
+        var packageMap = PackageDiscoveryService.Discover(manifest, workspaceDir, engineDir, profile);
         Logger.Info($"Discovered {packageMap.Count} packages in dependency graph.");
 
         var managedPackages = packageMap.Values.Where(p => p.Manifest.Entry != null || Directory.Exists(Path.Combine(p.DirectoryPath, "Managed")) || Directory.GetFiles(p.DirectoryPath, "*.cs", SearchOption.AllDirectories).Length > 0).ToList();
         var nativePackages = packageMap.Values.Where(p => p.Manifest.Type == "native" || File.Exists(Path.Combine(p.DirectoryPath, "CMakeLists.txt"))).ToList();
 
-        ProjectGeneratorService.GenerateForManagedPackages(workspaceDir, projectsDir, engineDir, managedPackages, packageMap, manifest);
+        ProjectGeneratorService.GenerateForManagedPackages(workspaceDir, projectsDir, engineDir, managedPackages, packageMap, manifest, profile);
         CMakeGeneratorService.Generate(engineDir, projectsDir, nativePackages, projectName, manifest);
-        SolutionGeneratorService.Generate(projectsDir, engineDir, managedPackages, projectName, manifest);
+        SolutionGeneratorService.Generate(projectsDir, engineDir, managedPackages, projectName, manifest, profile);
 
         Logger.Info("ArisenBuildTool: Workspace generation complete.");
     }

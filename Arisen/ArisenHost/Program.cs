@@ -46,17 +46,41 @@ public class Program
         var packagesElement = manifestJson.RootElement.GetProperty("Packages");
         
         List<string> packageUrls = new();
-        foreach (var pkg in packagesElement.EnumerateArray())
+        void AddPackages(JsonElement element)
         {
-            var url = pkg.GetProperty("Url").GetString();
-            if (!string.IsNullOrEmpty(url))
+            foreach (var pkg in element.EnumerateArray())
             {
-                if (url.StartsWith("file://"))
+                var url = pkg.GetProperty("Url").GetString();
+                if (!string.IsNullOrEmpty(url))
                 {
-                    string localPath = url.Substring(7);
-                    if (Path.IsPathRooted(localPath)) packageUrls.Add(localPath);
-                    else packageUrls.Add(Path.Combine(workspacePath, localPath));
+                    if (url.StartsWith("file://"))
+                    {
+                        string localPath = url.Substring(7);
+                        if (Path.IsPathRooted(localPath)) packageUrls.Add(localPath);
+                        else packageUrls.Add(Path.Combine(workspacePath, localPath));
+                    }
+                    else
+                    {
+                        // TODO: Handle cache/URL packages
+                        packageUrls.Add(url);
+                    }
                 }
+            }
+        }
+
+        AddPackages(packagesElement);
+
+        // Load Profile Packages
+        if (manifestJson.RootElement.TryGetProperty("Profiles", out var profilesElement))
+        {
+            if (profilesElement.TryGetProperty(profile, out var profilePackages))
+            {
+                Console.WriteLine($"[Host] Loading Profile: {profile}");
+                AddPackages(profilePackages);
+            }
+            else if (profile != "Development" && profile != "Production")
+            {
+                Console.WriteLine($"[Host] WARNING: Profile '{profile}' not found in manifest.json.");
             }
         }
 
