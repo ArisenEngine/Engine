@@ -54,7 +54,7 @@ This document defines the strict `JSON` structural schemas for the core configur
 | `Profiles` | `object` | Optional | A dictionary of named profiles mapped to additional package arrays. |
 | `Profiles[Key]` | `array` | Optional | A list of packages formatted identically to the base `Packages` array. These are **appended** to the base list when this specific profile is requested via command line (`--profile Key`). |
 
-**Behavioral Rule:** If `ArisenHost` is launched without a `--profile` argument, or if the `Profiles` object does not exist, the engine purely resolves and loads the base `Packages` array by two approaches:
+**Behavioral Rule:** If the workspace is launched via its thin executable (e.g., `MyGame.exe`), it automatically invokes the **EngineBootstrapper** logic in the Kernel. The bootstrapper resolves and loads the base `Packages` array by two approaches:
 
 1. **Topological Dependency Sorting**: When the engine reads all the package.json files, it builds a Directed Acyclic Graph (DAG). If package B depends on package A, the Engine mathematically guarantees package A is loaded first.
 
@@ -142,7 +142,8 @@ This document defines the strict `JSON` structural schemas for the core configur
 | `id` | `string` | **Yes** | The reverse-DNS globally unique identifier (e.g., `com.arisen.ecs`). |
 | `name` | `string` | **Yes** | The human-readable display name. |
 | `version` | `string` | **Yes** | Semantic versioning string (e.g., `"1.2.0"`). |
-| `entry.assembly` | `string` | Optional | The managed C# DLL filename located in `lib/net9.0/`. Omitted for pure-data/asset packages. |
+| `entry.assembly` | `string` | **Yes** | The managed C# DLL filename located in `lib/net9.0/`. Omitted for pure-data/asset packages. |
+| `entry.class` | `string` | Optional | The full name of the class implementing `IPackageEntry` to be invoked on boot. |
 | `services.provides` | `array` | Optional | A list of explicit C# interfaces this package registers into the Kernel's `ServiceRegistry` on boot. |
 | `services.requires` | `array` | Optional | A list of interfaces this package demands to exist in the registry before it can boot. |
 | `subsystems` | `array` | Optional | Types implementing `IEngineSubsystem`. The Kernel automatically instantiates and ticks them based on `phase` and `priority`. |

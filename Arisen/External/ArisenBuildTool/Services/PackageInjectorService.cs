@@ -42,6 +42,17 @@ public static class PackageInjectorService
         pkg.Entry ??= new PackageEntry();
         pkg.Entry.Assembly = Path.GetFileName(assemblyPath);
 
+        // Hook assembly resolution to find dependencies in the same folder as the target assembly
+        ResolveEventHandler resolveHandler = (sender, args) =>
+        {
+            string folder = Path.GetDirectoryName(assemblyPath) ?? "";
+            string name = new AssemblyName(args.Name).Name + ".dll";
+            string candidate = Path.Combine(folder, name);
+            if (File.Exists(candidate)) return Assembly.LoadFrom(candidate);
+            return null;
+        };
+        AppDomain.CurrentDomain.AssemblyResolve += resolveHandler;
+
         // Scan Assembly via byte loading to avoid absolutely any File Locks
         try
         {
@@ -107,6 +118,10 @@ public static class PackageInjectorService
         catch (Exception ex)
         {
             Console.WriteLine($"ArisenBuildTool Inject Error during Reflection: {ex.Message}");
+        }
+        finally
+        {
+            AppDomain.CurrentDomain.AssemblyResolve -= resolveHandler;
         }
     }
 }

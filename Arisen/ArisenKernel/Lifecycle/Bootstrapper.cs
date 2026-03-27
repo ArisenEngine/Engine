@@ -9,13 +9,13 @@ using ArisenKernel.Contracts;
 using ArisenKernel.Lifecycle;
 using ArisenKernel.Services;
 
-namespace ArisenHost;
+namespace ArisenKernel.Lifecycle;
 
-public class Program
+public static class EngineBootstrapper
 {
-    public static void Main(string[] args)
+    public static void Run(string[] args)
     {
-        Console.WriteLine("=== ArisenHost Bootstrapper ===");
+        Console.WriteLine("=== Arisen Engine Bootstrapper ===");
         
         string workspacePath = "";
         string entryPackage = "";

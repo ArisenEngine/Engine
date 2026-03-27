@@ -227,13 +227,14 @@ public static class SolutionGeneratorService
         writer.WriteLine("    <TargetFramework>net9.0</TargetFramework>");
         writer.WriteLine("    <ImplicitUsings>enable</ImplicitUsings>");
         writer.WriteLine("    <Nullable>enable</Nullable>");
-        // Output binaries isolated per profile/configuration
+        // Output binaries mapped isolated
         writer.WriteLine($"    <OutputPath>..\\..\\..\\bin\\{profile}\\$(Configuration)\\</OutputPath>");
         writer.WriteLine("    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>");
         writer.WriteLine("    <PlatformTarget>x64</PlatformTarget>");
         writer.WriteLine($"    <RootNamespace>{projectName}</RootNamespace>");
         writer.WriteLine("    <RuntimeIdentifier>win-x64</RuntimeIdentifier>");
         writer.WriteLine("    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>");
+        writer.WriteLine("    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>");
         writer.WriteLine($"    <DefineConstants>ARISEN_PROFILE_{profile.ToUpper()}</DefineConstants>");
         writer.WriteLine("  </PropertyGroup>");
         writer.WriteLine();
@@ -249,41 +250,29 @@ public static class SolutionGeneratorService
         writer.WriteLine("  </PropertyGroup>");
 
         writer.WriteLine("  <ItemGroup>");
-        string hostSrcDir = Path.Combine(engineDir, "ArisenHost");
-        if (Directory.Exists(hostSrcDir))
+        string kernelSource = Path.Combine(engineDir, "ArisenKernel", "ArisenKernel.csproj");
+        if (File.Exists(kernelSource))
         {
-            string srcRel = PathUtils.GetRelativePath(Path.GetDirectoryName(csprojPath)!, hostSrcDir);
-            writer.WriteLine($"    <Compile Include=\"{srcRel}\\**\\*.cs\" Exclude=\"{srcRel}\\obj\\**\\*;{srcRel}\\bin\\**\\*\" />");
-        }
-        writer.WriteLine("  </ItemGroup>");
-        writer.WriteLine();
-
-        writer.WriteLine("  <ItemGroup>");
-        string kernelPath = Path.Combine(engineDir, "ArisenKernel", "ArisenKernel.csproj");
-        if (File.Exists(kernelPath))
-        {
-            string depRel = PathUtils.GetRelativePath(Path.GetDirectoryName(csprojPath)!, kernelPath);
+            string depRel = PathUtils.GetRelativePath(Path.GetDirectoryName(csprojPath)!, kernelSource);
             writer.WriteLine($"    <ProjectReference Include=\"{depRel}\" />");
         }
         else
         {
              writer.WriteLine("    <Reference Include=\"ArisenKernel\">");
-             writer.WriteLine("      <HintPath>..\\..\\..\\bin\\$(Configuration)\\ArisenKernel.dll</HintPath>");
+             writer.WriteLine($"      <HintPath>..\\..\\..\\bin\\{profile}\\$(Configuration)\\ArisenKernel.dll</HintPath>");
              writer.WriteLine("    </Reference>");
         }
         writer.WriteLine("  </ItemGroup>");
-
-        // Build the ArisenHost source into the output folder of this project
-        string hostSource = Path.Combine(engineDir, "ArisenHost", "ArisenHost.csproj");
-        if (File.Exists(hostSource))
-        {
-            string hostSourceRel = PathUtils.GetRelativePath(Path.GetDirectoryName(csprojPath)!, hostSource);
-            writer.WriteLine("  <Target Name=\"BuildHost\" AfterTargets=\"Build\">");
-            writer.WriteLine($"    <Exec Command=\"dotnet build &quot;{hostSourceRel}&quot; -c $(Configuration) -o &quot;$(OutputPath)&quot;\" />");
-            writer.WriteLine("  </Target>");
-        }
-
         writer.WriteLine("</Project>");
+        
+        // Generate a thin Program.cs Stub
+        string entryPointSource = @"using System;
+namespace {0};
+public class Program {{
+    public static void Main(string[] args) => ArisenKernel.Lifecycle.EngineBootstrapper.Run(args);
+}}";
+        string programPath = Path.Combine(Path.GetDirectoryName(csprojPath)!, "Program.cs");
+        File.WriteAllText(programPath, string.Format(entryPointSource, projectName));
     }
 
     private static void GenerateDirectoryBuildProps(string propsPath)

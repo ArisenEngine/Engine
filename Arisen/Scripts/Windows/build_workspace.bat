@@ -99,6 +99,9 @@ for /f "usebackq delims=" %%A in (`powershell -Command "$m = Get-Content '%MANIF
         goto :fail
     )
 
+    :: Kill any running instance of the project to prevent file locks on ArisenKernel.dll
+    taskkill /F /IM "!PROJECT_NAME!.exe" /T 2>nul
+
     echo [Arisen] Restoring NuGet Packages for %%A...
     dotnet restore "!CURRENT_SLN!"
     if !errorlevel! neq 0 (

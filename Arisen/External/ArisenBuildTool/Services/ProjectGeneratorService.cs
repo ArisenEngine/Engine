@@ -42,6 +42,7 @@ public static class ProjectGeneratorService
         // Output binaries mapped into MyGame/.arisen/bin/{profile}/$(Configuration)/
         writer.WriteLine($"    <OutputPath>..\\..\\..\\bin\\{profile}\\$(Configuration)\\</OutputPath>");
         writer.WriteLine("    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>");
+        writer.WriteLine("    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>");
         writer.WriteLine($"    <DefineConstants>ARISEN_PROFILE_{profile.ToUpper()}</DefineConstants>");
         writer.WriteLine("  </PropertyGroup>");
         writer.WriteLine();
