@@ -142,10 +142,24 @@
                                                         </Button>
                                                     </StackPanel>
                                                 </Grid>
+
+                                                <!-- Boot Configuration Selectors -->
+                                                <StackPanel Spacing="8" Margin="0,0,0,16">
+                                                    <Grid ColumnDefinitions="*, *">
+                                                        <ComboBox Grid.Column="0" ItemsSource="{Binding AvailableProfiles}"
+                                                                  SelectedItem="{Binding SelectedProfile}"
+                                                                  HorizontalAlignment="Stretch" Margin="0,0,4,0"
+                                                                  FontSize="11" Height="32" Theme="{StaticResource ArisenComboBox}"/>
+                                                        <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableConfigurations}"
+                                                                  SelectedItem="{Binding SelectedConfiguration}"
+                                                                  HorizontalAlignment="Stretch" Margin="4,0,0,0"
+                                                                  FontSize="11" Height="32" Theme="{StaticResource ArisenComboBox}"/>
+                                                    </Grid>
+                                                </StackPanel>
                                                 
                                                 <!-- U5: Better Button Sizing and Labels -->
                                                 <Grid ColumnDefinitions="*, 8, *">
-                                                    <Button Grid.Column="0" Content="Launch Editor" Classes="Primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                    <Button Grid.Column="0" Content="Boot" Classes="Primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                                                             Command="{Binding #Root.((vm:MainViewModel)DataContext).LaunchProjectCommand}" 
                                                             CommandParameter="{Binding}" />
                                                     <Button Grid.Column="2" Content="Packages" Classes="Secondary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
@@ -193,6 +207,17 @@
             </ScrollViewer>
         </Grid>
     </Grid>
+
+    <Window.Resources>
+        <ControlTheme x:Key="ArisenComboBox" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+            <Setter Property="Background" Value="#11141b"/>
+            <Setter Property="BorderBrush" Value="#282e39"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="12,4"/>
+            <Setter Property="Foreground" Value="#94a3b8"/>
+        </ControlTheme>
+    </Window.Resources>
 
     <Window.Styles>
         <Style Selector="Button.NavItem">

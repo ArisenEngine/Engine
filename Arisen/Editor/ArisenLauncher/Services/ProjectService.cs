@@ -33,6 +33,43 @@ public class ProjectService
             {
                 metadata.ProjectPath = projectPath;
                 metadata.LastModified = File.GetLastWriteTime(projectPath);
+
+                // Populate Profiles from manifest.json
+                string projectDir = Path.GetDirectoryName(projectPath)!;
+                string manifestPath = Path.Combine(projectDir, "manifest.json");
+                if (File.Exists(manifestPath))
+                {
+                    try
+                    {
+                        string manifestJson = File.ReadAllText(manifestPath);
+                        var manifest = JsonSerializer.Deserialize<ProjectManifest>(manifestJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        if (manifest?.Profiles != null)
+                        {
+                            metadata.AvailableProfiles.Clear();
+                            foreach (var profile in manifest.Profiles.Keys)
+                            {
+                                metadata.AvailableProfiles.Add(profile);
+                            }
+
+                            if (metadata.AvailableProfiles.Contains("Development"))
+                                metadata.SelectedProfile = "Development";
+                            else if (metadata.AvailableProfiles.Count > 0)
+                                metadata.SelectedProfile = metadata.AvailableProfiles[0];
+                        }
+                        else
+                        {
+                            // Fallback if no profiles defined
+                            metadata.AvailableProfiles.Clear();
+                            metadata.AvailableProfiles.Add("Development");
+                            metadata.SelectedProfile = "Development";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logService.Warning($"Failed to parse profiles for {projectPath}: {ex.Message}");
+                    }
+                }
+
                 return metadata;
             }
         }
@@ -180,11 +217,11 @@ public class ProjectService
         }
     }
 
-    public async Task<bool> LaunchProjectAsync(LauncherProjectMetadata project, EngineInstance engine, string entryMode = "development")
+    public async Task<bool> LaunchProjectAsync(LauncherProjectMetadata project, EngineInstance engine)
     {
         try
         {
-            _logService.Info($"Preparing to launch project: {project.Name} in {entryMode} mode...");
+            _logService.Info($"Preparing to launch project: {project.Name} in {project.SelectedProfile} mode...");
             string projectDir = Path.GetDirectoryName(project.ProjectPath)!;
             string manifestPath = Path.Combine(projectDir, "manifest.json");
             
@@ -331,37 +368,29 @@ public class ProjectService
                 }
             }
 
-            // 3. Launch Editor or Application Host natively from generated Out-Of-Source Solution
-            _logService.Info($"Bootstrapping target: {entryMode}...");
+            // 3. Launch the Workspace Stub natively from generated isolated bin folder
+            _logService.Info($"Bootstrapping target: {project.SelectedProfile} [{project.SelectedConfiguration}]...");
 
-            System.Diagnostics.ProcessStartInfo bootPsi;
+            string profile = project.SelectedProfile;
+            string config = project.SelectedConfiguration;
+            string binDir = Path.Combine(projectDir, ".arisen", "bin", profile, config);
+            string projectExe = Path.Combine(binDir, $"{project.Name}.exe");
 
-            if (entryMode == "standalone")
+            if (!File.Exists(projectExe))
             {
-                string hostProject = Path.Combine(projectsDir, $"{project.Name}.csproj");
-                bootPsi = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "dotnet",
-                    Arguments = $"run --project \"{hostProject}\"",
-                    WorkingDirectory = projectsDir, // Run from projects dir
-                    UseShellExecute = false,
-                    RedirectStandardOutput = false,
-                    CreateNoWindow = false
-                };
+                _logService.Error($"Project executable not found: {projectExe}. Did you build the workspace for this profile/configuration?");
+                return false;
             }
-            else // "development"
+
+            var bootPsi = new System.Diagnostics.ProcessStartInfo
             {
-                string editorProject = Path.Combine(engine.InstallPath, "Editor", "ArisenEditor", "ArisenEditor.csproj");
-                bootPsi = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "dotnet",
-                    Arguments = $"run --project \"{editorProject}\" --project-path \"{projectDir}\" --entry {entryMode}",
-                    WorkingDirectory = engine.InstallPath,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = false,
-                    CreateNoWindow = false
-                };
-            }
+                FileName = projectExe,
+                Arguments = $"--workspace \"{projectDir}\" --profile \"{profile}\"",
+                WorkingDirectory = binDir,
+                UseShellExecute = false,
+                RedirectStandardOutput = false,
+                CreateNoWindow = false
+            };
             
             System.Diagnostics.Process.Start(bootPsi);
             return true;
