@@ -62,9 +62,24 @@ public static class PackageInjectorService
             var subsystems = new List<PackageSubsystem>();
             var provides = new List<PackageServiceProvider>();
 
-            foreach (var type in assembly.GetTypes())
+            foreach (var type in assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract))
             {
-                // Find IEngineSubsystem logic
+                // Discovery Phase 1: Identify Package Entry Class
+                bool implementsEntry = type.GetInterfaces().Any(i => i.Name == "IPackageEntry");
+                if (implementsEntry)
+                {
+                    pkg.Entry.Class = type.FullName;
+                    Console.WriteLine($"[ArisenBuildTool] Discovered Entry Class: {type.FullName}");
+
+                    // If it also implements IApplicationHost, automatically register it as a service
+                    if (type.GetInterfaces().Any(i => i.Name == "IApplicationHost"))
+                    {
+                         provides.Add(new PackageServiceProvider { Interface = "IApplicationHost", Priority = 100 });
+                         Console.WriteLine("[ArisenBuildTool] Automated Service Discovery: IApplicationHost");
+                    }
+                }
+
+                // Discovery Phase 2: Handle Subsystems via Attributes
                 var subsystemAttr = type.GetCustomAttributesData().FirstOrDefault(a => a.AttributeType.Name == "EngineSubsystemAttribute");
                 if (subsystemAttr != null)
                 {
@@ -84,7 +99,7 @@ public static class PackageInjectorService
                     });
                 }
                 
-                // Find ServiceProviders logic
+                // Discovery Phase 3: Handle Service Providers via Attributes
                 var serviceAttr = type.GetCustomAttributesData().FirstOrDefault(a => a.AttributeType.Name == "EngineServiceAttribute");
                 if (serviceAttr != null && serviceAttr.ConstructorArguments.Count > 0)
                 {
