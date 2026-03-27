@@ -1,5 +1,6 @@
 @echo off
 setlocal EnableDelayedExpansion
+set "SCRIPT_ROOT=%~dp0"
 
 :: Defaults
 set "MANIFEST_PATH="
@@ -41,7 +42,7 @@ if /i "!BUILD_CONFIG!"=="Release" (
 )
 
 set "SLN_DIR=%MANIFEST_PATH%\..\.arisen"
-set "BUILD_TOOL_CSPROJ=%~dp0..\..\External\ArisenBuildTool\ArisenBuildTool.csproj"
+set "BUILD_TOOL_CSPROJ=!SCRIPT_ROOT!..\..\External\ArisenBuildTool\ArisenBuildTool.csproj"
 
 echo [Arisen] Locating Developer Command Prompt...
 set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -64,14 +65,15 @@ if not defined VSCMD_ARG_TGT_ARCH (
     call "%VS_PATH%\VC\Auxiliary\Build\vcvars64.bat" >nul
 )
 
-echo [Arisen] Synchronizing C# Bindings via BindingGenerator (!BINDING_BAT!)...
-call "%~dp0!BINDING_BAT!" --no-pause
+echo [DEBUG] SCRIPT_ROOT is: !SCRIPT_ROOT!
+echo [DEBUG] BINDING_BAT is: !BINDING_BAT!
+call "!SCRIPT_ROOT!!BINDING_BAT!" --no-pause
 if !errorlevel! neq 0 (
     echo [ERROR] BindingGenerator failed to refresh interop code.
     goto :fail
 )
 
-set "ENGINE_ROOT=%~dp0..\.."
+set "ENGINE_ROOT=!SCRIPT_ROOT!..\.."
 echo [Arisen] Generating Workspace with ArisenBuildTool for profile loop...
 :: Note: We run ArisenBuildTool once per profile during the compile phase if needed, 
 :: but here we just ensure the tool itself is ready.
