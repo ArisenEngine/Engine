@@ -95,11 +95,9 @@ public static class ProjectGeneratorService
         }
         else
         {
-            string dllPath = Path.Combine(engineDir, "ArisenKernel", "bin", "$(Configuration)", "net9.0", "ArisenKernel.dll");
-            // Note: In an actual bin-distribute, engineDir might be the root where bin/ is compiled.
-            // Using a resilient path reference strategy for the final binary engine.
+            // Binary engine refers to co-located kernel in the isolated bin folder
             writer.WriteLine($"    <Reference Include=\"ArisenKernel\">");
-            writer.WriteLine($"      <HintPath>..\\..\\bin\\$(Configuration)\\ArisenKernel.dll</HintPath>");
+            writer.WriteLine($"      <HintPath>..\\..\\bin\\{profile}\\$(Configuration)\\ArisenKernel.dll</HintPath>");
             writer.WriteLine($"    </Reference>");
         }
 
