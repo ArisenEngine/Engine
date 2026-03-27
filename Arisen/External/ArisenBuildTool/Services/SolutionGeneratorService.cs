@@ -112,7 +112,6 @@ public static class SolutionGeneratorService
             
             bool insideProject = false;
             bool skipProject = false;
-            bool insideProjectDependencies = false;
             string currentProjGuid = "";
 
             for (int i = 0; i < lines.Length; i++)
@@ -121,14 +120,13 @@ public static class SolutionGeneratorService
                 if (line.StartsWith("Project("))
                 {
                     insideProject = true;
-                    // Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RHI.Vulkan", "com.arisen.rhi.vulkan.native\RHI.Vulkan\RHI.Vulkan.vcxproj", "{CFF99EF6-48AA-38A1-BB26-B55354ABFACB}"
                     var match = Regex.Match(line, @"Project\(""(.*?)""\)\s*=\s*""(.*?)"",\s*""(.*?)"",\s*""(.*?)""");
                     if (match.Success)
                     {
                         string pType = match.Groups[1].Value;
                         string pName = match.Groups[2].Value;
                         string pPath = match.Groups[3].Value;
-                        currentProjGuid = match.Groups[4].Value; // Includes {}
+                        currentProjGuid = match.Groups[4].Value;
 
                         if (pName == "CMakePredefinedTargets" || pName == "ALL_BUILD" || pName == "INSTALL") 
                         {
@@ -138,19 +136,15 @@ public static class SolutionGeneratorService
 
                         skipProject = false;
                         
-                        // We do not map Virtual Folders emitted by CMake to project configs, only physical .vcxproj projects.
                         if (pType == VIRTUAL_FOLDER_TYPE.Trim('{', '}'))
                         {
-                            // Virtual folder: we can map the path as standard name
                             writer.WriteLine(line);
                         }
                         else
                         {
                             nativeProjectGuids.Add(currentProjGuid);
-                            
                             string absoluteVcxproj = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(cmakeSln)!, pPath));
                             string mergedRelPath = PathUtils.GetRelativePath(slnDir, absoluteVcxproj);
-                        
                             writer.WriteLine($"Project(\"{pType}\") = \"{pName}\", \"{mergedRelPath}\", \"{currentProjGuid}\"");
                         }
                         nestedProjects.Add((currentProjGuid, nativeFolderGuid));
@@ -233,8 +227,8 @@ public static class SolutionGeneratorService
         writer.WriteLine("    <TargetFramework>net9.0</TargetFramework>");
         writer.WriteLine("    <ImplicitUsings>enable</ImplicitUsings>");
         writer.WriteLine("    <Nullable>enable</Nullable>");
-        // Output binaries mapped uniformly
-        writer.WriteLine("    <OutputPath>..\\..\\..\\bin\\$(Configuration)\\</OutputPath>");
+        // Output binaries isolated per profile/configuration
+        writer.WriteLine($"    <OutputPath>..\\..\\..\\bin\\{profile}\\$(Configuration)\\</OutputPath>");
         writer.WriteLine("    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>");
         writer.WriteLine("    <PlatformTarget>x64</PlatformTarget>");
         writer.WriteLine($"    <RootNamespace>{projectName}</RootNamespace>");
@@ -273,12 +267,22 @@ public static class SolutionGeneratorService
         }
         else
         {
-            string dllPath = Path.Combine(engineDir, "ArisenKernel", "bin", "$(Configuration)", "net9.0", "ArisenKernel.dll");
-            writer.WriteLine($"    <Reference Include=\"ArisenKernel\">");
-            writer.WriteLine($"      <HintPath>..\\..\\bin\\$(Configuration)\\ArisenKernel.dll</HintPath>");
-            writer.WriteLine($"    </Reference>");
+             writer.WriteLine("    <Reference Include=\"ArisenKernel\">");
+             writer.WriteLine("      <HintPath>..\\..\\..\\bin\\$(Configuration)\\ArisenKernel.dll</HintPath>");
+             writer.WriteLine("    </Reference>");
         }
         writer.WriteLine("  </ItemGroup>");
+
+        // Build the ArisenHost source into the output folder of this project
+        string hostSource = Path.Combine(engineDir, "ArisenHost", "ArisenHost.csproj");
+        if (File.Exists(hostSource))
+        {
+            string hostSourceRel = PathUtils.GetRelativePath(Path.GetDirectoryName(csprojPath)!, hostSource);
+            writer.WriteLine("  <Target Name=\"BuildHost\" AfterTargets=\"Build\">");
+            writer.WriteLine($"    <Exec Command=\"dotnet build &quot;{hostSourceRel}&quot; -c $(Configuration) -o &quot;$(OutputPath)&quot;\" />");
+            writer.WriteLine("  </Target>");
+        }
+
         writer.WriteLine("</Project>");
     }
 

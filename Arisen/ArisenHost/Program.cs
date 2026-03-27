@@ -30,8 +30,10 @@ public class Program
 
         if (string.IsNullOrEmpty(workspacePath))
         {
-            workspacePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Development", "PackageGame"));
-            Console.WriteLine($"[Host] No --workspace provided. Defaulting to: {workspacePath}");
+            // NEW: In generated projects, we are in .arisen/bin/{profile}/{config}/
+            // .. (config) -> .. (profile) -> .. (bin) -> .. (.arisen) -> Workspace Root
+            workspacePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+            Console.WriteLine($"[Host] No --workspace provided. Deducing from location: {workspacePath}");
         }
 
         string manifestPath = Path.Combine(workspacePath, "manifest.json");
@@ -122,16 +124,33 @@ public class Program
                 Console.WriteLine($"[Host] Booting Managed Entry: {asmName} for {id}");
                 try
                 {
-                    Assembly asm = Assembly.LoadFrom(Path.Combine(pUrl, "Managed", asmName));
-                    if (!string.IsNullOrEmpty(entryClassName))
+                    // Prefer central bin folder (where Host is) for generated projects
+                    string binDir = AppContext.BaseDirectory;
+                    string fullPath = Path.Combine(binDir, asmName);
+                    
+                    // Fallback to source Managed folder if not found in bin
+                    if (!File.Exists(fullPath))
                     {
-                        Type t = asm.GetType(entryClassName);
-                        if (t != null)
+                        fullPath = Path.Combine(pUrl, "Managed", asmName);
+                    }
+
+                    if (File.Exists(fullPath))
+                    {
+                        Assembly asm = Assembly.LoadFrom(fullPath);
+                        if (!string.IsNullOrEmpty(entryClassName))
                         {
-                            var entryInstance = Activator.CreateInstance(t);
-                            var onLoadMethod = t.GetMethod("OnLoad");
-                            if (onLoadMethod != null) onLoadMethod.Invoke(entryInstance, new object[] { registry });
+                            Type t = asm.GetType(entryClassName);
+                            if (t != null)
+                            {
+                                var entryInstance = Activator.CreateInstance(t);
+                                var onLoadMethod = t.GetMethod("OnLoad");
+                                if (onLoadMethod != null) onLoadMethod.Invoke(entryInstance, new object[] { registry });
+                            }
                         }
+                    }
+                    else
+                    {
+                         Console.WriteLine($"[Host] WARNING: Could not find assembly {asmName} in bin/ or Managed/");
                     }
                 }
                 catch (Exception e)

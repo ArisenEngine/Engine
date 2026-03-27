@@ -39,8 +39,8 @@ public static class ProjectGeneratorService
         writer.WriteLine("    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>");
         writer.WriteLine($"    <RootNamespace>ArisenEngine.{projectName.Replace("Com.Arisen.", "").Replace("Com.User.", "")}</RootNamespace>");
         
-        // Output binaries mapped uniformly into MyGame/.arisen/bin/
-        writer.WriteLine("    <OutputPath>..\\..\\..\\bin\\$(Configuration)\\</OutputPath>");
+        // Output binaries mapped into MyGame/.arisen/bin/{profile}/$(Configuration)/
+        writer.WriteLine($"    <OutputPath>..\\..\\..\\bin\\{profile}\\$(Configuration)\\</OutputPath>");
         writer.WriteLine("    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>");
         writer.WriteLine($"    <DefineConstants>ARISEN_PROFILE_{profile.ToUpper()}</DefineConstants>");
         writer.WriteLine("  </PropertyGroup>");

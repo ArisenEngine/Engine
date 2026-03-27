@@ -59,12 +59,12 @@ public static class CMakeGeneratorService
         writer.WriteLine($"# Profile-specific definitions for {profile}");
         writer.WriteLine($"add_compile_definitions(ARISEN_PROFILE_{uProf})");
         
-        // Ensure Release uses RelWithDebInfo flags for optimization + symbols
-        writer.WriteLine("set(CMAKE_C_FLAGS_RELEASE \"${CMAKE_C_FLAGS_RELWITHDEBINFO}\")");
-        writer.WriteLine("set(CMAKE_CXX_FLAGS_RELEASE \"${CMAKE_CXX_FLAGS_RELWITHDEBINFO}\")");
-        
-        writer.WriteLine($"set(CMAKE_RUNTIME_OUTPUT_DIRECTORY \"${{CMAKE_SOURCE_DIR}}/../../bin\")");
-        writer.WriteLine($"set(CMAKE_LIBRARY_OUTPUT_DIRECTORY \"${{CMAKE_SOURCE_DIR}}/../../bin\")");
+        // Ensure Debug and Release are isolated even within the same profile's native folder
+        // Paths are relative to Projects/{profile}/Native/ - we need 3 levels up to reach .arisen/
+        writer.WriteLine($"set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG \"${{CMAKE_SOURCE_DIR}}/../../../bin/{profile}/Debug\")");
+        writer.WriteLine($"set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG \"${{CMAKE_SOURCE_DIR}}/../../../bin/{profile}/Debug\")");
+        writer.WriteLine($"set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE \"${{CMAKE_SOURCE_DIR}}/../../../bin/{profile}/Release\")");
+        writer.WriteLine($"set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE \"${{CMAKE_SOURCE_DIR}}/../../../bin/{profile}/Release\")");
 
         foreach(var pkg in nativePackages)
         {
