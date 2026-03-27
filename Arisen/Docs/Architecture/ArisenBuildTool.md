@@ -35,10 +35,12 @@ As defined in [ConfigurationFormats.md](ConfigurationFormats.md), users should n
 During Phase 2, `ArisenBuildTool` automatically injects the **Arisen Roslyn Source Generator** into the generated `.csproj`. 
 - Every time the user clicks "Build" in Visual Studio/Rider, the injected analyzer scans the code for `[EngineSubsystem]` attributes and instantly overwrites the `package.json` with the compiled metadata!
 
-### Phase 4: Solution Generation
+### Phase 4: Solution & Entry Point Generation
 The tool generates a separate solution file for each **Profile** defined in the workspace:
 - **Solution Naming**: `{ProjectName}_{Profile}.sln` (e.g., `MyGame_Development.sln`).
-- **Profile Macros**: Each solution automatically defines the preprocessor macro `ARISEN_PROFILE_{PROFILE}` (e.g., `ARISEN_PROFILE_DEVELOPMENT`).
+- **Storage**: Solutions are stored in `.arisen/Projects/{Profile}/`.
+- **Profile Macros**: Each solution automatically defines the preprocessor macro `ARISEN_PROFILE_{PROFILE}` for both C++ and C# projects.
+- **Unified Entry Point**: The tool generates a thin `Program.cs` stub in the workspace project. This stub calls `ArisenKernel.Lifecycle.EngineBootstrapper.Run(args)`, making the workspace a manageable .NET executable.
 - **Organization**: Projects are organized into logical Solution Folders: `Engine Packages`, `Local Packages`, and `Native Dependencies`.
 
 ---
@@ -47,15 +49,16 @@ The tool generates a separate solution file for each **Profile** defined in the 
 
 To handle the differences between managed (C#) and native (C++) build systems, `ArisenBuildTool` performs automatic configuration mapping within the solution:
 
-### 1. Managed Projects (C#)
-C# projects follow standard MSBuild configurations:
-- **Debug**: Full symbols, no optimizations.
-- **Release**: Optimized binaries.
+### 1. Isolated Binary Outputs
+To ensure perfect portability and SDK readiness, all managed and native artifacts for a profile are co-located in a unified, isolated directory:
+- **Path**: `.arisen/bin/{profile}/{configuration}/`
+- **Co-Location**: Every project in the solution (including the entry point and all packages) redirect their `OutputPath` to this folder.
+- **Dependency Deployment**: Managed projects use `<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>` to ensure transitive NuGet dependencies (like Avalonia) are correctly deployed to this folder even for library packages.
 
-### 2. Native Projects (C++)
-Native projects (CMake) are generated with standard **`Debug`** and **`Release`** configuration names, mirroring the managed projects.
+### 2. Configuration Mapping
+Managed projects use standard `Debug` and `Release` configurations. Native projects (CMake) are generated to match these names exactly:
 - **1:1 Mapping**: Solutions map `Debug`➔`Debug` and `Release`➔`Release` directly.
-- **Profile Isolation**: Because each profile (Development/Production) has its own private native build folder (e.g., `.arisen/Projects/Development/Native`), the generator injects the correct `ARISEN_PROFILE_{PROFILE}` macro into both configurations for that profile.
+- **Macro Injection**: The `ARISEN_PROFILE_{PROFILE}` macro is injected into all projects to allow conditional compilation based on the active engine profile (e.g., enabling Editor code only in `Development`).
 
 This ensures a seamless development experience where IDE configuration names match across all languages, while maintaining the engine's strict profile-specific macro architecture.
 

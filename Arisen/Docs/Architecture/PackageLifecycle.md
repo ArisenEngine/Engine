@@ -25,8 +25,8 @@ Before any code is executed, the Kernel reads the `dependencies` graph from ever
 The Kernel builds a **Directed Acyclic Graph (DAG)** of all these dependencies. It then performs a **Topological Sort**. 
 If a cycle is detected (e.g., Package A depends on Package B, which depends on Package A), the Kernel immediately throws a Fatal Error and halts.
 
-### The Loading Sequence
-Because of the Topological Sort, the Kernel guarantees that `com.arisen.core.native` is loaded into memory and its `IPackageEntry.OnLoad()` is called **strictly before** `com.arisen.rhi.vulkan`. 
+### The Loading Sequence (Mounting)
+As defined in [ArisenHost.md](ArisenHost.md), the **EngineBootstrapper** performs the initial "Mounting" of packages. Because of the Topological Sort, the Kernel guarantees that `com.arisen.core.native` is loaded into memory and its `IPackageEntry.OnLoad()` is called **strictly before** `com.arisen.rhi.vulkan`. 
 This ensures that native foundational layers (like Memory Allocators or Logging) are fully ready before higher-level graphics packages attempt to interact with them.
 
 ---

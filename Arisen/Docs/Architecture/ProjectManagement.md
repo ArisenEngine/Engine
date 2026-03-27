@@ -23,8 +23,11 @@ MyGame/                     <-- THIS IS A WORKSPACE, NOT A PACKAGE!
 │   └── com.user.mygame/    <-- THIS REMAINS A TRUE PACKAGE
 │       ├── package.json    (The actual definition of the user's game)
 │       └── GameEntry.cs
+├── .arisen/                (Transient Build & IDE Data)
+│   ├── Projects/           (Generated .sln and .csproj per profile)
+│   └── bin/                (Isolated binaries: {profile}/{configuration}/)
 ├── Assets/                 (Raw game assets, scenes, materials)
-├── .Cache/                 (Auto-downloaded registry packages, transient build data)
+├── .Cache/                 (Auto-downloaded registry packages)
 └── Logs/                   (Engine output logs per session)
 ```
 
@@ -98,10 +101,11 @@ The act of "Launching" a project from the `ArisenLauncher`.
    - The Launcher reads `manifest.json`.
    - It checks `Local/` and `.Cache/`. If remote packages are missing, the Launcher downloads them **before** booting the Kernel.
 3. **Boot Execution**:
-   - The Launcher spawns `ArisenHost.exe --project "Path/To/MyGame" --profile Development`.
-4. **Kernel Operations (Host)**:
+   - The Launcher spawns the workspace's thin entry executable (e.g., `MyGame.exe` inside `.arisen/bin/`).
+   - This executable automatically invokes `ArisenKernel.Lifecycle.EngineBootstrapper.Run(args)`.
+4. **Kernel Operations (Bootstrapper)**:
    - The Kernel completely ignores `.arisenproj`.
-   - The Kernel loads `manifest.json`, extracts the base packages, and appends the `Development` profile packages.
+   - The Bootstrapper deduces the workspace root and loads `manifest.json`.
    - The Kernel loads assemblies and invokes `IPackageEntry.OnLoad()` on all valid packages, including the auto-scaffolded `com.user.mygame`.
 
 ---
