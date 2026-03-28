@@ -129,14 +129,20 @@ class Program
             Path.Combine(workspaceDir, ".arisen", "bin", profile, "Release")
         };
         PackageResolutionService.SaveResolvedManifests(profile, outputDirs, sortedPackages);
+        NativeDeploymentService.Deploy(sortedPackages, outputDirs, profile);
 
         var managedPackages = sortedPackages.Where(p => 
+            p.Manifest.Type == "hybrid" ||
             p.Manifest.Entry != null || 
             Directory.Exists(Path.Combine(p.DirectoryPath, "Managed")) || 
             Directory.GetFiles(p.DirectoryPath, "*.cs", SearchOption.AllDirectories).Length > 0 ||
             (p.Manifest.NugetDependencies != null && p.Manifest.NugetDependencies.Count > 0)
         ).ToList();
-        var nativePackages = sortedPackages.Where(p => p.Manifest.Type == "native" || File.Exists(Path.Combine(p.DirectoryPath, "CMakeLists.txt"))).ToList();
+        var nativePackages = sortedPackages.Where(p => 
+            p.Manifest.Type == "hybrid" ||
+            p.Manifest.Type == "native" || 
+            File.Exists(Path.Combine(p.DirectoryPath, "CMakeLists.txt"))
+        ).ToList();
 
         // B13: Identify if this profile has the Editor capability
         bool isEditor = false;

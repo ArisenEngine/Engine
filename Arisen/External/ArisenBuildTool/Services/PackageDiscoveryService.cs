@@ -64,13 +64,21 @@ public static class PackageDiscoveryService
                     pkgManifest.Id = req.Id; 
                     string packageName = string.IsNullOrEmpty(pkgManifest.Name) ? Path.GetFileName(fullPath) : pkgManifest.Name;
                     
-                    if (pkgManifest.NativeRuntimes != null && pkgManifest.NativeRuntimes.Count > 0 && pkgManifest.Entry == null)
+                    // Deducing Type if not explicitly provided as hybrid
+                    if (pkgManifest.Type != "hybrid")
                     {
-                        pkgManifest.Type = "native";
-                    }
-                    else
-                    {
-                        pkgManifest.Type = "managed";
+                        if (pkgManifest.NativeRuntimes != null && pkgManifest.NativeRuntimes.Count > 0 && pkgManifest.Entry == null)
+                        {
+                            pkgManifest.Type = "native";
+                        }
+                        else if (Directory.Exists(Path.Combine(fullPath, "Managed")) && File.Exists(Path.Combine(fullPath, "CMakeLists.txt")))
+                        {
+                            pkgManifest.Type = "hybrid";
+                        }
+                        else
+                        {
+                            pkgManifest.Type = "managed";
+                        }
                     }
 
                     map[req.Id] = new PackageInfo 
