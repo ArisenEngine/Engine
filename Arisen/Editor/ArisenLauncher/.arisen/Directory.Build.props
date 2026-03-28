@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <!-- Protective override for unmapped C++ evaluation folders -->
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.vcxproj'">
+    <OutDir>$(SolutionDir)Projects\Native\build\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)Projects\Native\build\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+</Project>
