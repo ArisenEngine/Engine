@@ -333,15 +333,15 @@ public partial class PackageManagerViewModel : ObservableObject
         Manifest.Packages = Packages.Select(x => new PackageRequirement { Id = x.Id, Url = x.Url, Version = string.IsNullOrEmpty(x.Version) ? null : x.Version }).ToList();
         
         // Save Profiles
-        Manifest.Profiles = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<PackageRequirement>>();
+        Manifest.Profiles = new System.Collections.Generic.Dictionary<string, ProfileDefinition>();
         foreach (var profile in Profiles)
         {
-            var reqs = new System.Collections.Generic.List<PackageRequirement>();
+            var def = new ProfileDefinition { IsEditor = profile.IsEditor };
             foreach (var node in profile.Nodes)
             {
-                reqs.Add(new PackageRequirement { Id = node.Id, Url = node.Url, Version = string.IsNullOrEmpty(node.Version) ? null : node.Version });
+                def.Packages.Add(new PackageRequirement { Id = node.Id, Url = node.Url, Version = string.IsNullOrEmpty(node.Version) ? null : node.Version });
             }
-            Manifest.Profiles[profile.Name] = reqs;
+            Manifest.Profiles[profile.Name] = def;
         }
 
         string json = JsonSerializer.Serialize(Manifest, new JsonSerializerOptions { WriteIndented = true });

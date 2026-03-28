@@ -357,6 +357,10 @@
                                                 <TextBox Grid.Column="0" Text="{Binding Name}" Background="#0f1117" BorderBrush="#282e39" FontWeight="Bold" Foreground="White"/>
                                                 <Button Grid.Column="1" Content="Delete" Command="{Binding #PackageManagerWindowRoot.((vm:PackageManagerViewModel)DataContext).RemoveProfileCommand}" CommandParameter="{Binding}" Background="Transparent" Foreground="#ef4444" Margin="8,0,0,0"/>
                                             </Grid>
+
+                                            <CheckBox Content="Engine Editor Mode (Enable Native Log Callbacks)" 
+                                                      IsChecked="{Binding IsEditor}" 
+                                                      Foreground="#94a3b8" FontSize="12" Margin="0,-4,0,0"/>
                                             
                                             <TextBlock Text="Entry Packages Binding:" Foreground="#94a3b8" FontSize="12"/>
                                             <ItemsControl ItemsSource="{Binding Nodes}">

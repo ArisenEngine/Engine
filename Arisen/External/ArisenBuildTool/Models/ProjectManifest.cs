@@ -9,10 +9,16 @@ public class PackageRequirement
     public string? Version { get; set; }
 }
 
+public class ProfileDefinition
+{
+    public bool IsEditor { get; set; } = false;
+    public List<PackageRequirement> Packages { get; set; } = new();
+}
+
 public class ProjectManifest
 {
     public string Name { get; set; } = "New Arisen Project";
     public string EngineVersion { get; set; } = string.Empty;
     public List<PackageRequirement> Packages { get; set; } = new();
-    public Dictionary<string, List<PackageRequirement>>? Profiles { get; set; }
+    public Dictionary<string, ProfileDefinition>? Profiles { get; set; }
 }
