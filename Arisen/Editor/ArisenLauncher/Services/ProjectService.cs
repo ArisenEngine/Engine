@@ -149,9 +149,12 @@ public class ProjectService
                 { 
                     new PackageRequirement { Id = userPkgId, Url = $"file://Local/{userPkgId}", Version = "1.0.0" } 
                 },
-                Profiles = new Dictionary<string, List<PackageRequirement>>
+                Profiles = new Dictionary<string, ProfileDefinition>
                 {
-                    { "Development", new List<PackageRequirement>() }
+                    { 
+                        "Development", 
+                        new ProfileDefinition { IsEditor = true } 
+                    }
                 }
             };
             string manifestJson = JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull });

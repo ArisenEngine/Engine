@@ -17,8 +17,8 @@ public partial class PackageManagerViewModel
         {
             foreach (var kvp in Manifest.Profiles)
             {
-                var p = new WorkspaceProfileViewModel { Name = kvp.Key };
-                foreach (var req in kvp.Value)
+                var p = new WorkspaceProfileViewModel { Name = kvp.Key, IsEditor = kvp.Value.IsEditor };
+                foreach (var req in kvp.Value.Packages)
                 {
                     p.Nodes.Add(new PackageRequirementViewModel
                     {
@@ -59,6 +59,7 @@ public partial class PackageManagerViewModel
 public partial class WorkspaceProfileViewModel : ObservableObject
 {
     [ObservableProperty] private string _name = string.Empty;
+    [ObservableProperty] private bool _isEditor;
     public ObservableCollection<PackageRequirementViewModel> Nodes { get; } = new();
 
     [RelayCommand]

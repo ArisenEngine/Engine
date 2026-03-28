@@ -9,7 +9,7 @@ namespace ArisenBuildTool.Services;
 
 public static class ProjectGeneratorService
 {
-    public static void GenerateForManagedPackages(string workspaceDir, string projectsDir, string engineDir, List<PackageInfo> managedPackages, Dictionary<string, PackageInfo> packageMap, ProjectManifest manifest, string profile)
+    public static void GenerateForManagedPackages(string workspaceDir, string projectsDir, string engineDir, List<PackageInfo> managedPackages, Dictionary<string, PackageInfo> packageMap, ProjectManifest manifest, string profile, bool isEditor)
     {
         string buildExePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
         string buildCmd = buildExePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) 
@@ -18,11 +18,11 @@ public static class ProjectGeneratorService
 
         foreach (var package in managedPackages)
         {
-            GenerateProjectFile(workspaceDir, projectsDir, engineDir, package, packageMap, buildCmd, manifest, profile);
+            GenerateProjectFile(workspaceDir, projectsDir, engineDir, package, packageMap, buildCmd, manifest, profile, isEditor);
         }
     }
 
-    private static void GenerateProjectFile(string workspaceDir, string projectsDir, string engineDir, PackageInfo package, Dictionary<string, PackageInfo> map, string buildCmd, ProjectManifest manifest, string profile)
+    private static void GenerateProjectFile(string workspaceDir, string projectsDir, string engineDir, PackageInfo package, Dictionary<string, PackageInfo> map, string buildCmd, ProjectManifest manifest, string profile, bool isEditor)
     {
         string packageName = Path.GetFileName(package.DirectoryPath);
         string projectName = string.Join(".", packageName.Split('.').Select(PathUtils.ToPascalCase));
@@ -43,7 +43,10 @@ public static class ProjectGeneratorService
         writer.WriteLine($"    <OutputPath>..\\..\\..\\bin\\{profile}\\$(Configuration)\\</OutputPath>");
         writer.WriteLine("    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>");
         writer.WriteLine("    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>");
-        writer.WriteLine($"    <DefineConstants>ARISEN_PROFILE_{profile.ToUpper()}</DefineConstants>");
+        
+        string constants = $"ARISEN_PROFILE_{profile.ToUpper()}";
+        if (isEditor) constants += ";ARISEN_ENGINE_EDITOR";
+        writer.WriteLine($"    <DefineConstants>{constants}</DefineConstants>");
         writer.WriteLine("  </PropertyGroup>");
         writer.WriteLine();
 

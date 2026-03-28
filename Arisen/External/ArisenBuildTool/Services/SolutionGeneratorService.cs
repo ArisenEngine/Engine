@@ -13,7 +13,7 @@ public static class SolutionGeneratorService
     private const string CSHARP_PROJECT_TYPE = "{9A19103F-16F7-4668-BE54-9A1E7A4F7556}";
     private const string VIRTUAL_FOLDER_TYPE = "{2150E333-8FDC-42A3-9474-1A3956D46DE8}";
 
-    public static void Generate(string projectsDir, string engineDir, List<PackageInfo> managedPackages, string projectName, ProjectManifest manifest, string profile)
+    public static void Generate(string projectsDir, string engineDir, List<PackageInfo> managedPackages, string projectName, ProjectManifest manifest, string profile, bool isEditor)
     {
         string slnPath = Path.Combine(projectsDir, "..", "..", $"{projectName}_{profile}.sln");
         string slnDir = Path.GetDirectoryName(slnPath)!;
@@ -23,7 +23,7 @@ public static class SolutionGeneratorService
         string entryCsprojDir = Path.Combine(projectsDir, projectName);
         Directory.CreateDirectory(entryCsprojDir);
         string entryCsproj = Path.Combine(entryCsprojDir, $"{projectName}.csproj");
-        GenerateEntryPointProject(entryCsproj, engineDir, projectName, manifest, profile);
+        GenerateEntryPointProject(entryCsproj, engineDir, projectName, manifest, profile, isEditor);
 
         // Generate Protective MSVC Property File
         string dirBuildProps = Path.Combine(slnDir, "Directory.Build.props");
@@ -253,7 +253,7 @@ public static class SolutionGeneratorService
         writer.WriteLine("EndGlobal");
     }
 
-    private static void GenerateEntryPointProject(string csprojPath, string engineDir, string projectName, ProjectManifest manifest, string profile)
+    private static void GenerateEntryPointProject(string csprojPath, string engineDir, string projectName, ProjectManifest manifest, string profile, bool isEditor)
     {
         using StreamWriter writer = new StreamWriter(csprojPath);
         writer.WriteLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
@@ -270,7 +270,10 @@ public static class SolutionGeneratorService
         writer.WriteLine("    <RuntimeIdentifier>win-x64</RuntimeIdentifier>");
         writer.WriteLine("    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>");
         writer.WriteLine("    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>");
-        writer.WriteLine($"    <DefineConstants>ARISEN_PROFILE_{profile.ToUpper()}</DefineConstants>");
+        
+        string constants = $"ARISEN_PROFILE_{profile.ToUpper()}";
+        if (isEditor) constants += ";ARISEN_ENGINE_EDITOR";
+        writer.WriteLine($"    <DefineConstants>{constants}</DefineConstants>");
         writer.WriteLine("  </PropertyGroup>");
         writer.WriteLine();
 

@@ -22,11 +22,11 @@ public static class PackageDiscoveryService
 
         if (!string.IsNullOrEmpty(targetProfile) && manifest.Profiles != null)
         {
-            if (manifest.Profiles.TryGetValue(targetProfile, out var profilePackages))
+            if (manifest.Profiles.TryGetValue(targetProfile, out var profileDef))
             {
-                if (profilePackages != null)
+                if (profileDef.Packages != null)
                 {
-                    foreach (var req in profilePackages) toProcess.Enqueue(req);
+                    foreach (var req in profileDef.Packages) toProcess.Enqueue(req);
                 }
             }
             else

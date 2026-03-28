@@ -138,9 +138,16 @@ class Program
         ).ToList();
         var nativePackages = sortedPackages.Where(p => p.Manifest.Type == "native" || File.Exists(Path.Combine(p.DirectoryPath, "CMakeLists.txt"))).ToList();
 
-        ProjectGeneratorService.GenerateForManagedPackages(workspaceDir, projectsDir, engineDir, managedPackages, packageMap, manifest, profile);
+        // B13: Identify if this profile has the Editor capability
+        bool isEditor = false;
+        if (manifest.Profiles != null && manifest.Profiles.TryGetValue(profile, out var profileDef))
+        {
+            isEditor = profileDef.IsEditor;
+        }
+
+        ProjectGeneratorService.GenerateForManagedPackages(workspaceDir, projectsDir, engineDir, managedPackages, packageMap, manifest, profile, isEditor);
         CMakeGeneratorService.Generate(engineDir, projectsDir, nativePackages, projectName, manifest, profile);
-        SolutionGeneratorService.Generate(projectsDir, engineDir, managedPackages, projectName, manifest, profile);
+        SolutionGeneratorService.Generate(projectsDir, engineDir, managedPackages, projectName, manifest, profile, isEditor);
 
         Logger.Info("ArisenBuildTool: Workspace generation complete.");
     }
