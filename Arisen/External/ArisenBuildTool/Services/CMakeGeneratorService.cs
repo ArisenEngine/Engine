@@ -32,27 +32,6 @@ public static class CMakeGeneratorService
         writer.WriteLine("set(CMAKE_CXX_STANDARD 23)");
         writer.WriteLine("set(CMAKE_CXX_STANDARD_REQUIRED ON)");
 
-        string cmakeModulePath = Path.Combine(engineDir, "cmake").Replace('\\', '/'); 
-        writer.WriteLine($"list(APPEND CMAKE_MODULE_PATH \"{cmakeModulePath}\")");
-        writer.WriteLine("include(Utils)");
-        
-        writer.WriteLine("option(ARISEN_ENABLE_PROFILER \"Enable Tracy Profiler\" ON)");
-        writer.WriteLine("if(ARISEN_ENABLE_PROFILER)");
-        writer.WriteLine("    set(ARISEN_PROFILER_ENABLED ON)");
-        writer.WriteLine("    set(TRACY_ENABLE ON CACHE BOOL \"\" FORCE)");
-        writer.WriteLine("    set(TRACY_STATIC OFF CACHE BOOL \"\" FORCE)");
-        writer.WriteLine("    set(BUILD_SHARED_LIBS ON CACHE BOOL \"\" FORCE)");
-        writer.WriteLine("    add_subdirectory(\"${ARISEN_ENGINE_DIR}/3rdparty/tracy\" \"${CMAKE_CURRENT_BINARY_DIR}/3rdparty/tracy\")");
-        writer.WriteLine("    set_target_properties(TracyClient PROPERTIES FOLDER \"3rdparty\")");
-        writer.WriteLine("    add_compile_definitions(ARISEN_PROFILER_ENABLED=1)");
-        writer.WriteLine("else()");
-        writer.WriteLine("    set(ARISEN_PROFILER_ENABLED OFF)");
-        writer.WriteLine("    add_compile_definitions(ARISEN_PROFILER_ENABLED=0)");
-        writer.WriteLine("endif()");
-        
-        writer.WriteLine("add_subdirectory(\"${ARISEN_ENGINE_DIR}/3rdparty/spdlog\" \"${CMAKE_CURRENT_BINARY_DIR}/3rdparty/spdlog\")");
-        writer.WriteLine("set_target_properties(spdlog PROPERTIES FOLDER \"3rdparty\")");
-        
         string uProf = profile.ToUpper();
         
         // Map Debug and Release to the correct profile macro

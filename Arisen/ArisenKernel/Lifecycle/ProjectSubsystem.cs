@@ -14,45 +14,45 @@ public class ProjectSubsystem : IEngineSubsystem
     public EnginePhase InitPhase => EnginePhase.PreInit;
 
     public ProjectManifest? ActiveProject { get; private set; }
-    public string ProjectPath { get; private set; } = string.Empty;
+    public string ProjectDir { get; private set; } = string.Empty;
 
     public void Initialize()
     {
-        KernelLog.Info("[ProjectSubsystem] Initializing...");
-        
-        // Search for project file in current directory or startup path
-        string baseDir = AppContext.BaseDirectory;
-        string projectFile = Path.Combine(baseDir, "Project.arisen");
-        
-        if (File.Exists(projectFile))
-        {
-            LoadProject(projectFile);
-        }
-        else
-        {
-            KernelLog.Info("[ProjectSubsystem] No Project.arisen found in application directory.");
-        }
+        KernelLog.Info("[ProjectSubsystem] Early initialization phase complete.");
     }
 
-    public void LoadProject(string path)
+    /// <summary>
+    /// Loads the project context from a standardized workspace directory containing a manifest.json.
+    /// </summary>
+    public void LoadFromWorkspace(string workspacePath)
     {
         try
         {
+            string absPath = Path.GetFullPath(workspacePath);
+            string manifestPath = Path.Combine(absPath, "manifest.json");
+            
+            if (!File.Exists(manifestPath))
+            {
+                KernelLog.Warning($"[ProjectSubsystem] No manifest.json found at {absPath}.");
+                return;
+            }
+
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            string json = File.ReadAllText(path);
+            string json = File.ReadAllText(manifestPath);
             ActiveProject = JsonSerializer.Deserialize<ProjectManifest>(json, options);
-            ProjectPath = Path.GetDirectoryName(path) ?? string.Empty;
-            KernelLog.Info($"[ProjectSubsystem] Loaded Project: {ActiveProject?.Name} from {path}");
+            ProjectDir = absPath;
+            KernelLog.Info($"[ProjectSubsystem] Unified Project Context Established: {ActiveProject?.Name} at {ProjectDir}");
         }
         catch (Exception e)
         {
-            KernelLog.Info($"[ProjectSubsystem] Failed to load project at {path}: {e.Message}");
+            KernelLog.Error($"[ProjectSubsystem] Failed to establish project context: {e.Message}");
         }
     }
 
     public void Shutdown()
     {
         ActiveProject = null;
+        ProjectDir = string.Empty;
     }
 
     public void Dispose() => Shutdown();

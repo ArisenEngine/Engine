@@ -37,6 +37,14 @@ public static class EngineBootstrapper
             KernelLog.InfoFormat("[Host] No --workspace provided. Deducing from location: {0}", workspacePath);
         }
 
+        // 1. Initialize Kernel and Core Project Subsystem
+        var kernel = EngineKernel.Instance;
+        var registry = kernel.Services;
+        
+        var projectSubsystem = new ProjectSubsystem();
+        registry.RegisterService<ProjectSubsystem>(projectSubsystem);
+        projectSubsystem.LoadFromWorkspace(workspacePath);
+
         string manifestPath = Path.Combine(workspacePath, "manifest.json");
         if (!File.Exists(manifestPath))
         {
@@ -74,12 +82,25 @@ public static class EngineBootstrapper
         AddPackages(packagesElement);
 
         // Load Profile Packages
-        if (manifestJson.RootElement.TryGetProperty("Profiles", out var profilesElement))
+        if (manifestJson.RootElement.TryGetPropertyIC("Profiles", out var profilesElement))
         {
-            if (profilesElement.TryGetProperty(profile, out var profilePackages))
+            if (profilesElement.TryGetPropertyIC(profile, out var profileDefinition))
             {
                 KernelLog.InfoFormat("[Host] Loading Profile: {0}", profile);
-                AddPackages(profilePackages);
+                
+                // NEW: Handle ProfileDefinition object (IsEditor, Packages, etc)
+                if (profileDefinition.ValueKind == JsonValueKind.Object)
+                {
+                    if (profileDefinition.TryGetPropertyIC("Packages", out var profilePackages))
+                    {
+                        AddPackages(profilePackages);
+                    }
+                }
+                else if (profileDefinition.ValueKind == JsonValueKind.Array)
+                {
+                    // Legacy support for raw package arrays in profiles
+                    AddPackages(profileDefinition);
+                }
             }
             else if (profile != "Development" && profile != "Production")
             {
@@ -129,10 +150,6 @@ public static class EngineBootstrapper
                 KernelLog.WarningFormat("[Host] Failed to parse resolved manifest '{0}': {1}. Falling back to manifest.json order.", resolvedManifestPath, ex.Message);
             }
         }
-
-        // 1. Initialize Kernel
-        var kernel = EngineKernel.Instance;
-        var registry = kernel.Services;
 
         // 2. Load Topologically (Preferring build-time resolved manifest)
         KernelLog.Info("[Host] Mounting Packages...");
