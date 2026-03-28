@@ -120,13 +120,17 @@ class Program
         var packageMap = PackageDiscoveryService.Discover(manifest, workspaceDir, engineDir, profile);
         Logger.Info($"Discovered {packageMap.Count} packages in dependency graph.");
 
-        var managedPackages = packageMap.Values.Where(p => 
+        // B10: Resolve topological order and save resolved manifest
+        var sortedPackages = PackageResolutionService.SortTopologically(packageMap);
+        PackageResolutionService.SaveResolvedManifest(workspaceDir, profile, sortedPackages);
+
+        var managedPackages = sortedPackages.Where(p => 
             p.Manifest.Entry != null || 
             Directory.Exists(Path.Combine(p.DirectoryPath, "Managed")) || 
             Directory.GetFiles(p.DirectoryPath, "*.cs", SearchOption.AllDirectories).Length > 0 ||
             (p.Manifest.NugetDependencies != null && p.Manifest.NugetDependencies.Count > 0)
         ).ToList();
-        var nativePackages = packageMap.Values.Where(p => p.Manifest.Type == "native" || File.Exists(Path.Combine(p.DirectoryPath, "CMakeLists.txt"))).ToList();
+        var nativePackages = sortedPackages.Where(p => p.Manifest.Type == "native" || File.Exists(Path.Combine(p.DirectoryPath, "CMakeLists.txt"))).ToList();
 
         ProjectGeneratorService.GenerateForManagedPackages(workspaceDir, projectsDir, engineDir, managedPackages, packageMap, manifest, profile);
         CMakeGeneratorService.Generate(engineDir, projectsDir, nativePackages, projectName, manifest, profile);
