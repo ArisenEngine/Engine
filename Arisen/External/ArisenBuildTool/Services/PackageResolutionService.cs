@@ -51,42 +51,50 @@ public static class PackageResolutionService
         return result;
     }
 
-    public static void SaveResolvedManifest(string workspaceDir, string profile, List<PackageInfo> sortedPackages)
+    public static void SaveResolvedManifests(string profile, List<string> outputDirs, List<PackageInfo> sortedPackages)
     {
-        string fileName = $"manifest.resolved.{profile}.json";
-        string path = Path.Combine(workspaceDir, fileName);
+        string fileName = "manifest.resolved.json";
 
-        var resolvedData = new
+        foreach (var outDir in outputDirs)
         {
-            Profile = profile,
-            Timestamp = DateTime.UtcNow.ToString("O"),
-            ResolvedPackages = sortedPackages.Select(p => new
+            if (!Directory.Exists(outDir)) Directory.CreateDirectory(outDir);
+            
+            string path = Path.Combine(outDir, fileName);
+
+            var resolvedData = new
             {
-                Id = p.Manifest.Id,
-                Name = p.Manifest.Name,
-                Version = p.Manifest.Version,
-                // Store relative URL for portability
-                Url = GetRelativeUrl(workspaceDir, p.DirectoryPath)
-            }).ToList()
-        };
+                Profile = profile,
+                Timestamp = DateTime.UtcNow.ToString("O"),
+                ResolvedPackages = sortedPackages.Select(p => new
+                {
+                    Id = p.Manifest.Id,
+                    Name = p.Manifest.Name,
+                    Version = p.Manifest.Version,
+                    // Store relative URL for portability (Relative to the output directory!)
+                    Url = GetRelativeUrl(outDir, p.DirectoryPath)
+                }).ToList()
+            };
 
-        try
-        {
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            string json = JsonSerializer.Serialize(resolvedData, options);
-            File.WriteAllText(path, json);
-            Logger.Info($"Generated resolved manifest: {fileName}");
-        }
-        catch (Exception ex)
-        {
-            Logger.Error($"Failed to save resolved manifest: {ex.Message}");
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                string json = JsonSerializer.Serialize(resolvedData, options);
+                File.WriteAllText(path, json);
+                Logger.Info($"Generated resolved manifest: {path}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to save resolved manifest to {outDir}: {ex.Message}");
+            }
         }
     }
 
-    private static string GetRelativeUrl(string workspaceDir, string packageDir)
+    private static string GetRelativeUrl(string fromDir, string packageDir)
     {
         // Convert back to file:// style relative path
-        string relPath = PathUtils.GetRelativePath(workspaceDir, packageDir).Replace('\\', '/');
+        string relPath = PathUtils.GetRelativePath(fromDir, packageDir).Replace('\\', '/');
+        // Ensure it has / at end if it doesn't represent a file but a directory
+        if (!relPath.EndsWith("/")) relPath += "/";
         return $"file://{relPath}";
     }
 }

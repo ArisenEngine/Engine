@@ -120,9 +120,15 @@ class Program
         var packageMap = PackageDiscoveryService.Discover(manifest, workspaceDir, engineDir, profile);
         Logger.Info($"Discovered {packageMap.Count} packages in dependency graph.");
 
-        // B10: Resolve topological order and save resolved manifest
+        // B10: Resolve topological order and save resolved manifest into the profile's bin folders
         var sortedPackages = PackageResolutionService.SortTopologically(packageMap);
-        PackageResolutionService.SaveResolvedManifest(workspaceDir, profile, sortedPackages);
+        
+        var outputDirs = new List<string>
+        {
+            Path.Combine(workspaceDir, ".arisen", "bin", profile, "Debug"),
+            Path.Combine(workspaceDir, ".arisen", "bin", profile, "Release")
+        };
+        PackageResolutionService.SaveResolvedManifests(profile, outputDirs, sortedPackages);
 
         var managedPackages = sortedPackages.Where(p => 
             p.Manifest.Entry != null || 

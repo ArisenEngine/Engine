@@ -88,7 +88,15 @@ public static class EngineBootstrapper
         }
 
         // B11: Check for resolved manifest to skip runtime resolution and use topological order
-        string resolvedManifestPath = Path.Combine(workspacePath, $"manifest.resolved.{profile}.json");
+        // PRIORITY 1: Local manifest.resolved.json co-located with binary (Modernized approach)
+        string resolvedManifestPath = Path.Combine(AppContext.BaseDirectory, "manifest.resolved.json");
+        
+        // PRIORITY 2: Fallback to root naming convention for legacy/debug support
+        if (!File.Exists(resolvedManifestPath))
+        {
+            resolvedManifestPath = Path.Combine(workspacePath, $"manifest.resolved.{profile}.json");
+        }
+
         if (File.Exists(resolvedManifestPath))
         {
             try
@@ -106,8 +114,10 @@ public static class EngineBootstrapper
                             if (url.StartsWith("file://"))
                             {
                                 string localPath = url.Substring(7);
+                                // For local paths in a resolved manifest, they are relative to the manifest file itself
+                                string manifestDir = Path.GetDirectoryName(resolvedManifestPath)!;
                                 if (Path.IsPathRooted(localPath)) packageUrls.Add(localPath);
-                                else packageUrls.Add(Path.Combine(workspacePath, localPath));
+                                else packageUrls.Add(Path.GetFullPath(Path.Combine(manifestDir, localPath)));
                             }
                             else packageUrls.Add(url);
                         }
