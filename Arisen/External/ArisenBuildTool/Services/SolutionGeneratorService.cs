@@ -38,40 +38,37 @@ public static class SolutionGeneratorService
 
         var projectGuids = new Dictionary<string, string>(); // Path -> GUID
         var nestedProjects = new List<(string child, string parent)>();
+        
+        // Track folder usage
+        string pkgFolderGuid = Guid.NewGuid().ToString("B").ToUpper();
+        string localFolderGuid = Guid.NewGuid().ToString("B").ToUpper();
+        string nativeFolderGuid = Guid.NewGuid().ToString("B").ToUpper();
+        bool hasPkgFolder = false;
+        bool hasLocalFolder = false;
+        bool hasNativeFolder = false;
+
+        var slnProjects = new List<string>(); // Buffered project lines
 
         // 1. Write Entry Project
         string entryGuid = Guid.NewGuid().ToString("B").ToUpper();
         string entryRel = PathUtils.GetRelativePath(slnDir, entryCsproj);
-        writer.WriteLine($"Project(\"{CSHARP_PROJECT_TYPE}\") = \"{projectName}\", \"{entryRel}\", \"{entryGuid}\"");
-        writer.WriteLine("EndProject");
+        slnProjects.Add($"Project(\"{CSHARP_PROJECT_TYPE}\") = \"{projectName}\", \"{entryRel}\", \"{entryGuid}\"");
+        slnProjects.Add("EndProject");
         projectGuids[entryGuid] = entryGuid;
 
-        // 2. Write Virtual Folders
-        string pkgFolderGuid = Guid.NewGuid().ToString("B").ToUpper();
-        writer.WriteLine($"Project(\"{VIRTUAL_FOLDER_TYPE}\") = \"Packages\", \"Packages\", \"{pkgFolderGuid}\"");
-        writer.WriteLine("EndProject");
-
-        string localFolderGuid = Guid.NewGuid().ToString("B").ToUpper();
-        writer.WriteLine($"Project(\"{VIRTUAL_FOLDER_TYPE}\") = \"Local Packages\", \"Local Packages\", \"{localFolderGuid}\"");
-        writer.WriteLine("EndProject");
-
-        string nativeFolderGuid = Guid.NewGuid().ToString("B").ToUpper();
-        writer.WriteLine($"Project(\"{VIRTUAL_FOLDER_TYPE}\") = \"Native Dependencies\", \"Native Dependencies\", \"{nativeFolderGuid}\"");
-        writer.WriteLine("EndProject");
-
-        // 3. Write Core Kernel
+        // 2. Write Core Kernel
         string kernelPath = Path.Combine(engineDir, "ArisenKernel", "ArisenKernel.csproj");
         if (File.Exists(kernelPath))
         {
             string kernelRel = PathUtils.GetRelativePath(slnDir, kernelPath);
             string kernelGuid = Guid.NewGuid().ToString("B").ToUpper();
-            writer.WriteLine($"Project(\"{CSHARP_PROJECT_TYPE}\") = \"ArisenKernel\", \"{kernelRel}\", \"{kernelGuid}\"");
-            writer.WriteLine("EndProject");
+            slnProjects.Add($"Project(\"{CSHARP_PROJECT_TYPE}\") = \"ArisenKernel\", \"{kernelRel}\", \"{kernelGuid}\"");
+            slnProjects.Add("EndProject");
             projectGuids[kernelGuid] = kernelGuid;
-            nestedProjects.Add((kernelGuid, pkgFolderGuid));
+            // ArisenKernel is now at root - no nesting
         }
 
-        // 4. Write C# Packages
+        // 3. Write C# Packages
         foreach (var package in managedPackages)
         {
             string packageName = Path.GetFileName(package.DirectoryPath);
@@ -82,10 +79,15 @@ public static class SolutionGeneratorService
             string guid = Guid.NewGuid().ToString("B").ToUpper();
             projectGuids[guid] = guid;
             
-            writer.WriteLine($"Project(\"{CSHARP_PROJECT_TYPE}\") = \"{pkgProjectName}\", \"{relPath}\", \"{guid}\"");
-            writer.WriteLine("EndProject");
+            slnProjects.Add($"Project(\"{CSHARP_PROJECT_TYPE}\") = \"{pkgProjectName}\", \"{relPath}\", \"{guid}\"");
+            slnProjects.Add("EndProject");
 
-            string folderGuid = package.DirectoryPath.Contains("ArisenKernel") || package.DirectoryPath.Contains("Local") == false ? pkgFolderGuid : localFolderGuid;
+            bool isLocal = package.DirectoryPath.Contains("Local");
+            string folderGuid = isLocal ? localFolderGuid : pkgFolderGuid;
+            
+            if (isLocal) hasLocalFolder = true;
+            else hasPkgFolder = true;
+
             nestedProjects.Add((guid, folderGuid));
         }
 
@@ -134,25 +136,26 @@ public static class SolutionGeneratorService
                             continue;
                         }
 
+                        // Skip VIRTUAL_FOLDER_TYPE from native solution to avoid "nothing" folders like 3rdparty, Core, RHI
+                        if (string.Equals(pType, VIRTUAL_FOLDER_TYPE, StringComparison.OrdinalIgnoreCase))
+                        {
+                            skipProject = true;
+                            continue;
+                        }
+
                         skipProject = false;
-                        
-                        if (pType == VIRTUAL_FOLDER_TYPE.Trim('{', '}'))
-                        {
-                            writer.WriteLine(line);
-                        }
-                        else
-                        {
-                            nativeProjectGuids.Add(currentProjGuid);
-                            string absoluteVcxproj = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(cmakeSln)!, pPath));
-                            string mergedRelPath = PathUtils.GetRelativePath(slnDir, absoluteVcxproj);
-                            writer.WriteLine($"Project(\"{pType}\") = \"{pName}\", \"{mergedRelPath}\", \"{currentProjGuid}\"");
-                        }
+                        hasNativeFolder = true;
+                        nativeProjectGuids.Add(currentProjGuid);
+
+                        string absoluteVcxproj = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(cmakeSln)!, pPath));
+                        string mergedRelPath = PathUtils.GetRelativePath(slnDir, absoluteVcxproj);
+                        slnProjects.Add($"Project(\"{pType}\") = \"{pName}\", \"{mergedRelPath}\", \"{currentProjGuid}\"");
                         nestedProjects.Add((currentProjGuid, nativeFolderGuid));
                     }
                 }
                 else if (line.StartsWith("EndProject"))
                 {
-                    if (!skipProject) writer.WriteLine(line);
+                    if (!skipProject) slnProjects.Add(line);
                     insideProject = false;
                     skipProject = false;
                 }
@@ -167,9 +170,33 @@ public static class SolutionGeneratorService
                             break;
                         }
                     }
-                    if (!isBanned) writer.WriteLine(line);
+                    if (!isBanned) slnProjects.Add(line);
                 }
             }
+        }
+
+        // Now write everything to the solution file
+        // 1. Folders (Dynamic)
+        if (hasPkgFolder)
+        {
+            writer.WriteLine($"Project(\"{VIRTUAL_FOLDER_TYPE}\") = \"Packages\", \"Packages\", \"{pkgFolderGuid}\"");
+            writer.WriteLine("EndProject");
+        }
+        if (hasLocalFolder)
+        {
+            writer.WriteLine($"Project(\"{VIRTUAL_FOLDER_TYPE}\") = \"Local Packages\", \"Local Packages\", \"{localFolderGuid}\"");
+            writer.WriteLine("EndProject");
+        }
+        if (hasNativeFolder)
+        {
+            writer.WriteLine($"Project(\"{VIRTUAL_FOLDER_TYPE}\") = \"Native Dependencies\", \"Native Dependencies\", \"{nativeFolderGuid}\"");
+            writer.WriteLine("EndProject");
+        }
+
+        // 2. Projects
+        foreach (var projLine in slnProjects)
+        {
+            writer.WriteLine(projLine);
         }
 
         // Write Global section
@@ -202,12 +229,20 @@ public static class SolutionGeneratorService
             }
         }
         writer.WriteLine("\tEndGlobalSection");
-
+ 
         // Folders
         writer.WriteLine("\tGlobalSection(NestedProjects) = preSolution");
         foreach (var tuple in nestedProjects)
         {
-            writer.WriteLine($"\t\t{tuple.child} = {tuple.parent}");
+            // Only write nesting if the parent folder was actually created
+            bool parentExists = (tuple.parent == pkgFolderGuid && hasPkgFolder) ||
+                                (tuple.parent == localFolderGuid && hasLocalFolder) ||
+                                (tuple.parent == nativeFolderGuid && hasNativeFolder);
+                                
+            if (parentExists)
+            {
+                writer.WriteLine($"\t\t{tuple.child} = {tuple.parent}");
+            }
         }
         writer.WriteLine("\tEndGlobalSection");
         
