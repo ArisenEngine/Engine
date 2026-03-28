@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using ArisenKernel.Contracts;
+using ArisenKernel.Diagnostics;
 using ArisenKernel.Lifecycle;
 using ArisenKernel.Services;
 
@@ -15,7 +16,7 @@ public static class EngineBootstrapper
 {
     public static void Run(string[] args)
     {
-        Console.WriteLine("=== Arisen Engine Bootstrapper ===");
+        KernelLog.Info("=== Arisen Engine Bootstrapper ===");
         
         string workspacePath = "";
         string entryPackage = "";
@@ -33,17 +34,17 @@ public static class EngineBootstrapper
             // NEW: In generated projects, we are in .arisen/bin/{profile}/{config}/
             // .. (config) -> .. (profile) -> .. (bin) -> .. (.arisen) -> Workspace Root
             workspacePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
-            Console.WriteLine($"[Host] No --workspace provided. Deducing from location: {workspacePath}");
+            KernelLog.InfoFormat("[Host] No --workspace provided. Deducing from location: {0}", workspacePath);
         }
 
         string manifestPath = Path.Combine(workspacePath, "manifest.json");
         if (!File.Exists(manifestPath))
         {
-            Console.WriteLine($"[Host] FATAL ERROR: Cannot find manifest.json at {manifestPath}");
+            KernelLog.FatalFormat("[Host] FATAL ERROR: Cannot find manifest.json at {0}", manifestPath);
             Environment.Exit(1);
         }
 
-        Console.WriteLine($"[Host] Reading Workspace Manifest: {manifestPath}");
+        KernelLog.InfoFormat("[Host] Reading Workspace Manifest: {0}", manifestPath);
         var manifestJson = JsonDocument.Parse(File.ReadAllText(manifestPath));
         var packagesElement = manifestJson.RootElement.GetProperty("Packages");
         
@@ -77,12 +78,45 @@ public static class EngineBootstrapper
         {
             if (profilesElement.TryGetProperty(profile, out var profilePackages))
             {
-                Console.WriteLine($"[Host] Loading Profile: {profile}");
+                KernelLog.InfoFormat("[Host] Loading Profile: {0}", profile);
                 AddPackages(profilePackages);
             }
             else if (profile != "Development" && profile != "Production")
             {
-                Console.WriteLine($"[Host] WARNING: Profile '{profile}' not found in manifest.json.");
+                KernelLog.WarningFormat("[Host] WARNING: Profile '{0}' not found in manifest.json.", profile);
+            }
+        }
+
+        // B11: Check for resolved manifest to skip runtime resolution and use topological order
+        string resolvedManifestPath = Path.Combine(workspacePath, $"manifest.resolved.{profile}.json");
+        if (File.Exists(resolvedManifestPath))
+        {
+            try
+            {
+                KernelLog.InfoFormat("[Host] Found Resolved Manifest: {0}. Using build-time topological sort.", resolvedManifestPath);
+                var resolvedJson = JsonDocument.Parse(File.ReadAllText(resolvedManifestPath));
+                if (resolvedJson.RootElement.TryGetProperty("ResolvedPackages", out var resolvedPkgs))
+                {
+                    packageUrls.Clear(); // Switch to the sorted list
+                    foreach (var pkg in resolvedPkgs.EnumerateArray())
+                    {
+                        var url = pkg.GetProperty("Url").GetString();
+                        if (!string.IsNullOrEmpty(url))
+                        {
+                            if (url.StartsWith("file://"))
+                            {
+                                string localPath = url.Substring(7);
+                                if (Path.IsPathRooted(localPath)) packageUrls.Add(localPath);
+                                else packageUrls.Add(Path.Combine(workspacePath, localPath));
+                            }
+                            else packageUrls.Add(url);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                KernelLog.WarningFormat("[Host] Failed to parse resolved manifest '{0}': {1}. Falling back to manifest.json order.", resolvedManifestPath, ex.Message);
             }
         }
 
@@ -90,8 +124,8 @@ public static class EngineBootstrapper
         var kernel = EngineKernel.Instance;
         var registry = kernel.Services;
 
-        // 2. Load Topologically (Simplified parsing)
-        Console.WriteLine("[Host] Mounting Packages...");
+        // 2. Load Topologically (Preferring build-time resolved manifest)
+        KernelLog.Info("[Host] Mounting Packages...");
         
         foreach (var pUrl in packageUrls)
         {
@@ -108,7 +142,7 @@ public static class EngineBootstrapper
                 foreach (var dll in win64Block.EnumerateArray())
                 {
                     string nativeName = dll.GetString();
-                    Console.WriteLine($"[Host] Mapping Native C++ Payload: {nativeName} for {id}");
+                    KernelLog.InfoFormat("[Host] Mapping Native C++ Payload: {0} for {1}", nativeName, id);
                     // NativeLibrary.Load(nativeName); // Actually deferred to execution or .arisen/bin/ output directory loader
                 }
             }
@@ -121,7 +155,7 @@ public static class EngineBootstrapper
             
             if (!string.IsNullOrEmpty(asmName))
             {
-                Console.WriteLine($"[Host] Booting Managed Entry: {asmName} for {id}");
+                KernelLog.InfoFormat("[Host] Booting Managed Entry: {0} for {1}", asmName, id);
                 try
                 {
                     // Prefer central bin folder (where Host is) for generated projects
@@ -150,28 +184,28 @@ public static class EngineBootstrapper
                     }
                     else
                     {
-                         Console.WriteLine($"[Host] WARNING: Could not find assembly {asmName} in bin/ or Managed/");
+                         KernelLog.WarningFormat("[Host] WARNING: Could not find assembly {0} in bin/ or Managed/", asmName);
                     }
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"[Host] Managed boot neglected/failed for {id}: " + e.Message);
+                    KernelLog.ErrorFormat("[Host] Managed boot neglected/failed for {0}: {1}", id, e.Message);
                 }
             }
         }
     }
 
-    Console.WriteLine("[Host] Topological Mount Complete.");
+    KernelLog.Info("[Host] Topological Mount Complete.");
 
     // 3. Fallback to registry checks for boot takeover
     if (registry.TryGetService<IApplicationHost>(out var appHost))
     {
-        Console.WriteLine("[Host] Yielding main thread to IApplicationHost (Editor/UI).");
+        KernelLog.Info("[Host] Yielding main thread to IApplicationHost (Editor/UI).");
         appHost.Run(args);
     }
     else
     {
-        Console.WriteLine("[Host] No IApplicationHost detected. Engaging default bare-metal Engine tick.");
+        KernelLog.Info("[Host] No IApplicationHost detected. Engaging default bare-metal Engine tick.");
         kernel.Run();
         }
     }

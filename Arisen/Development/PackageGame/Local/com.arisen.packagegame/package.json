@@ -1,8 +1,19 @@
 {
-    "id": "com.arisen.packagegame",
-    "type": "managed",
-    "version": "1.0.0",
-    "description": "game assembly",
-    "name": "PackageGame",
-    "dependencies": {}
+  "id": "com.arisen.packagegame",
+  "name": "PackageGame",
+  "version": "1.0.0",
+  "description": "game assembly",
+  "type": "managed",
+  "entry": {
+    "assembly": "Com.Arisen.Packagegame.dll"
+  },
+  "dependencies": {
+    "com.arisen.core": "1.0.0",
+    "com.arisen.ecs": "1.0.0",
+    "com.arisen.dag": "1.0.0",
+    "com.arisen.platform.desktop": "1.0.0",
+    "com.arisen.rhi.vulkan.native": "1.0.0",
+    "com.arisen.resources": "1.0.0",
+    "com.arisen.rendering": "1.0.0"
+  }
 }
