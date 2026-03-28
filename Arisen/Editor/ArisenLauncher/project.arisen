@@ -1,0 +1,22 @@
+{
+  "Name": "ArisenLauncher",
+  "EngineVersion": "Current",
+  "Packages": [
+    {
+      "Id": "com.arisen.core.native",
+      "Url": "file://../../Development/PackageGame/Local/com.arisen.core.native",
+      "Version": "1.0.0"
+    },
+    {
+      "Id": "com.arisen.core",
+      "Url": "file://../../Development/PackageGame/Local/com.arisen.core",
+      "Version": "1.0.0"
+    }
+  ],
+  "Profiles": {
+    "Development": {
+      "IsEditor": true,
+      "Packages": []
+    }
+  }
+}

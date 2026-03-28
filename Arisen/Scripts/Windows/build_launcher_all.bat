@@ -28,57 +28,55 @@ REM === 配置部分 ===
 set "TARGET=Launcher"
 set "PLATFORM=Windows"
 
-REM ==== 1. 创建构建目录（如果不存在）====
-set VS_BUILD_DIR=!ROOT_DIR!\Projects\VisualStudio\Launcher
-if not exist "!VS_BUILD_DIR!" (
-    mkdir "!VS_BUILD_DIR!"
-)
+REM ==== 1. Create Build Directory ====
+set "VS_BUILD_DIR=!ROOT_DIR!\Projects\VisualStudio\Launcher"
+if not exist "!VS_BUILD_DIR!" mkdir "!VS_BUILD_DIR!"
 
 set "LOG_FILE=!VS_BUILD_DIR!\build_launcher.log"
-echo === Launcher Build Log === > "!LOG_FILE!"
+echo === Arisen Launcher Build Log === > "!LOG_FILE!"
 
-REM ==== 2. 配置CMake工程（只需一次，生成多配置.sln） ====
-echo === Configuring (Debug + Release) ===
-call :next Configuring CMake (multi-config solution)
-call :run cmake -S "!ROOT_DIR!" -B "!VS_BUILD_DIR!" -DTARGET="!TARGET!" -DPLATFORM="!PLATFORM!" -G "Visual Studio 17 2022" -A x64
+REM ==== 2. Generate Workspace via ArisenBuildTool ====
+echo === Generating Launcher Workspace ===
+call :next Generating Arisen Workspace
+call :run dotnet run --project "!ROOT_DIR!\External\ArisenBuildTool\ArisenBuildTool.csproj" -- --workspace "!ROOT_DIR!\Editor\ArisenLauncher" --profile Development --generate
 if errorlevel 1 (
-    echo ERROR: CMake configuration failed.
+    echo ERROR: ArisenBuildTool generation failed.
     set "EXIT_CODE=1"
     goto :cleanup
 )
 
-REM ==== 3. 添加 C# 工程到 sln ====
-call :next Adding .csproj to solution
-call :run cmd /d /v:off /c ""!SCRIPT_DIR!\dotnet_add_csproj_launcher.bat" "!VS_BUILD_DIR!\ArisenLauncher.sln" "!VS_BUILD_DIR!\Outputs""
+REM ==== 3. Build Native Components (Core, etc.) ====
+echo === Building Native Components ===
+call :next Building Native (Debug)
+call :run cmake --build "!ROOT_DIR!\Editor\ArisenLauncher\.arisen\Projects\Development\Native\build" --config Debug
 if errorlevel 1 (
-    echo ERROR: dotnet csproj add failed.
+    echo ERROR: Native Debug build failed.
     set "EXIT_CODE=1"
     goto :cleanup
 )
 
-REM ==== group sln ====
-call :next Grouping solution folders
-call :run python "!SCRIPT_DIR!/group_sln_cs.py" "!VS_BUILD_DIR!\ArisenLauncher.sln"
+call :next Building Native (Release)
+call :run cmake --build "!ROOT_DIR!\Editor\ArisenLauncher\.arisen\Projects\Development\Native\build" --config Release
 if errorlevel 1 (
-    echo ERROR: group sln failed.
+    echo ERROR: Native Release build failed.
     set "EXIT_CODE=1"
     goto :cleanup
 )
 
-REM ==== 4. 编译 Debug ====
-call :next Building Debug
-call :run cmake --build "!VS_BUILD_DIR!" --config Debug
+REM ==== 4. Build Managed Launcher ====
+echo === Building Launcher Desktop ===
+call :next Building Managed Launcher (Debug)
+call :run dotnet build "!ROOT_DIR!\Editor\ArisenLauncher\.arisen\ArisenLauncher_Development.sln" --configuration Debug /p:Platform=x64
 if errorlevel 1 (
-    echo ERROR: Debug build failed.
+    echo ERROR: Launcher Managed build failed.
     set "EXIT_CODE=1"
     goto :cleanup
 )
 
-REM ==== 5. 编译 Release ====
-call :next Building Release
-call :run cmake --build "!VS_BUILD_DIR!" --config Release
+call :next Building Managed Launcher (Release)
+call :run dotnet build "!ROOT_DIR!\Editor\ArisenLauncher\.arisen\ArisenLauncher_Development.sln" --configuration Release /p:Platform=x64
 if errorlevel 1 (
-    echo ERROR: Release build failed.
+    echo ERROR: Launcher Managed build failed.
     set "EXIT_CODE=1"
     goto :cleanup
 )
