@@ -220,7 +220,7 @@ public static class SolutionGeneratorService
                 writer.WriteLine($"\t\t{guid}.{config}|x64.Build.0 = {config}|Any CPU");
             }
         }
-        foreach (var guid in nativeProjectGuids) // C++ Projects
+        foreach (var guid in nativeProjectGuids) // C++ Projects (Ensure Build.0 is enabled for MSBuild/VS)
         {
             foreach (var config in configurations)
             {

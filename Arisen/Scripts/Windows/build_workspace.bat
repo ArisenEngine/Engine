@@ -109,6 +109,17 @@ for /f "usebackq delims=" %%A in (`powershell -Command "$m = Get-Content '%MANIF
         goto :fail
     )
 
+    :: Manual Native Build (Ensures native binaries are ready even if SLN Build skips them or fails)
+    set "NATIVE_BUILD_DIR=%SLN_DIR%\Projects\%%A\Native\build"
+    if exist "!NATIVE_BUILD_DIR!" (
+        echo [Arisen] Building Native Components for %%A [!BUILD_CONFIG!]...
+        cmake --build "!NATIVE_BUILD_DIR!" --config !BUILD_CONFIG!
+        if !errorlevel! neq 0 (
+            echo [ERROR] Native build failed for profile %%A.
+            goto :fail
+        )
+    )
+
     set "LOG_FILE=%MANIFEST_PATH%\..\.arisen\build_%%A.log"
     echo [Arisen] Logging MSBuild completely to: !LOG_FILE!
     msbuild "!CURRENT_SLN!" /p:Configuration=!BUILD_CONFIG! /p:Platform=x64 /m /fl /flp:logfile="!LOG_FILE!";verbosity=normal

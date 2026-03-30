@@ -28,20 +28,15 @@ set "ROOT_DIR=%SCRIPT_DIR%\..\.."
 REM 规范路径转换（绝对路径）
 for %%I in ("%ROOT_DIR%") do set "ROOT_DIR=%%~fI"
 
-set "VS_BUILD_DIR=%ROOT_DIR%\Projects\VisualStudio\BindingGenerator"
-if not exist "%VS_BUILD_DIR%" mkdir "%VS_BUILD_DIR%"
+echo [1/2] Refreshing Source Interop with BindingGenerator (Debug)...
+set "GEN_CSPROJ=%ROOT_DIR%\BindingGenerator\BindingGenerator.csproj"
+set "GEN_LOG=%ROOT_DIR%\Projects\VisualStudio\BindingGenerator\build.log"
 
-set "LOG_FILE=%VS_BUILD_DIR%\build.log"
-echo === Binding Generator Build Log === > "%LOG_FILE%"
+if not exist "%ROOT_DIR%\Projects\VisualStudio\BindingGenerator" mkdir "%ROOT_DIR%\Projects\VisualStudio\BindingGenerator"
+echo === Binding Generator Build Log === > "%GEN_LOG%"
 
-echo [1/3] Configuring CMake...
-echo [RUN] cmake -S "%ROOT_DIR%" -B "%VS_BUILD_DIR%" -DTARGET="%ARISEN_TARGET%" -DPLATFORM="%ARISEN_PLATFORM%" -G "Visual Studio 17 2022" -A x64 >> "%LOG_FILE%"
-cmake -S "%ROOT_DIR%" -B "%VS_BUILD_DIR%" -DTARGET="%ARISEN_TARGET%" -DPLATFORM="%ARISEN_PLATFORM%" -G "Visual Studio 17 2022" -A x64 >> "%LOG_FILE%" 2>&1
-if errorlevel 1 goto :fail
-
-echo [2/3] Building and Running GenerateAutoBinding (Debug)...
-echo [RUN] cmake --build "%VS_BUILD_DIR%" --config Debug --target GenerateAutoBinding >> "%LOG_FILE%"
-cmake --build "%VS_BUILD_DIR%" --config Debug --target GenerateAutoBinding >> "%LOG_FILE%" 2>&1
+echo [RUN] dotnet run --project "%GEN_CSPROJ%" --configuration Debug -- --source_code "%ROOT_DIR%\Development" --output "%ROOT_DIR%\Development" >> "%GEN_LOG%"
+dotnet run --project "%GEN_CSPROJ%" --configuration Debug -- --source_code "%ROOT_DIR%\Development" --output "%ROOT_DIR%\Development" >> "%GEN_LOG%" 2>&1
 if errorlevel 1 goto :fail
 
 echo [3/3] Binding Generation process completed.

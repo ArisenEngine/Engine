@@ -103,7 +103,6 @@ public static class BindingParser
             if (string.IsNullOrEmpty(finalName)) finalName = macroName;
 
             var fields = new List<(string, string)>();
-            // Use Singleline to allow matching across lines in the body
             var fieldPattern = @"((?:const\s+)?[\w:\*]+(?:\s+const)?)\s+([\w]+)[^;]*;";
             var resultsInBody = Regex.Matches(body, fieldPattern, RegexOptions.Singleline);
             foreach (Match fieldMatch in resultsInBody)
@@ -114,6 +113,17 @@ public static class BindingParser
             }
 
             results.Add(new StructInfo(finalName, fields));
+        }
+
+        // Handle standalone structs (Opaque/Handles)
+        var standalonePattern = @"ARISEN_BIND_STRUCT\s*\(\s*(\w+)\s*\)\s*;?";
+        foreach (Match m in Regex.Matches(content, standalonePattern))
+        {
+            var name = m.Groups[1].Value;
+            if (results.Any(r => r.Name == name)) continue;
+            
+            // Generate as opaque 64-bit handle
+            results.Add(new StructInfo(name, new List<(string, string)> { ("uint64_t", "Handle") }));
         }
 
         return results;
