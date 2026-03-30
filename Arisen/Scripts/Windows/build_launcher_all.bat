@@ -38,7 +38,7 @@ echo === Arisen Launcher Build Log === > "!LOG_FILE!"
 REM ==== 2. Generate Workspace via ArisenBuildTool ====
 echo === Generating Launcher Workspace ===
 call :next Generating Arisen Workspace
-call :run dotnet run --project "!ROOT_DIR!\External\ArisenBuildTool\ArisenBuildTool.csproj" -- --workspace "!ROOT_DIR!\Editor\ArisenLauncher" --profile Development --generate
+call :run dotnet run --project "!ROOT_DIR!\External\ArisenBuildTool\ArisenBuildTool.csproj" -- --workspace "!ROOT_DIR!\Editor\ArisenLauncher" --engine "!ROOT_DIR!" --profile Development --generate
 if errorlevel 1 (
     echo ERROR: ArisenBuildTool generation failed.
     set "EXIT_CODE=1"
@@ -66,7 +66,7 @@ if errorlevel 1 (
 REM ==== 4. Build Managed Launcher ====
 echo === Building Launcher Desktop ===
 call :next Building Managed Launcher (Debug)
-call :run dotnet build "!ROOT_DIR!\Editor\ArisenLauncher\.arisen\ArisenLauncher_Development.sln" --configuration Debug /p:Platform=x64
+call :run msbuild "!ROOT_DIR!\Editor\ArisenLauncher\.arisen\ArisenLauncher_Development.sln" /p:Configuration=Debug /p:Platform=x64
 if errorlevel 1 (
     echo ERROR: Launcher Managed build failed.
     set "EXIT_CODE=1"
@@ -74,7 +74,7 @@ if errorlevel 1 (
 )
 
 call :next Building Managed Launcher (Release)
-call :run dotnet build "!ROOT_DIR!\Editor\ArisenLauncher\.arisen\ArisenLauncher_Development.sln" --configuration Release /p:Platform=x64
+call :run msbuild "!ROOT_DIR!\Editor\ArisenLauncher\.arisen\ArisenLauncher_Development.sln" /p:Configuration=Release /p:Platform=x64
 if errorlevel 1 (
     echo ERROR: Launcher Managed build failed.
     set "EXIT_CODE=1"

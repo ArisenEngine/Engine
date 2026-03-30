@@ -80,12 +80,13 @@ class Program
 
         if (string.IsNullOrEmpty(engineDir))
         {
-            engineDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+            engineDir = FindEngineRoot(AppContext.BaseDirectory);
         }
 
         string logPath = Path.Combine(workspaceDir, ".arisen", "ArisenBuildTool.log");
         Logger.Initialize(logPath);
         Logger.Info($"ArisenBuildTool Generation Started. Workspace: {workspaceDir} | Profile: {profile}");
+        Logger.Info($"Engine Root: {engineDir}");
 
         if (!File.Exists(manifestPath))
         {
@@ -156,5 +157,31 @@ class Program
         SolutionGeneratorService.Generate(projectsDir, engineDir, managedPackages, projectName, manifest, profile, isEditor);
 
         Logger.Info("ArisenBuildTool: Workspace generation complete.");
+    }
+
+    private static string FindEngineRoot(string startDir)
+    {
+        string current = startDir;
+        while (!string.IsNullOrEmpty(current))
+        {
+            // The marker for Arisen Engine root is the presence of the ArisenKernel folder
+            if (Directory.Exists(Path.Combine(current, "ArisenKernel")))
+            {
+                return current;
+            }
+            
+            // Also check if we are in External/ArisenBuildTool and need to go up
+            if (Directory.Exists(Path.Combine(current, "..", "ArisenKernel")))
+            {
+                return Path.GetFullPath(Path.Combine(current, ".."));
+            }
+
+            var parent = Directory.GetParent(current);
+            if (parent == null) break;
+            current = parent.FullName;
+        }
+
+        // Fallback to legacy behavior if discovery fails
+        return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
     }
 }
