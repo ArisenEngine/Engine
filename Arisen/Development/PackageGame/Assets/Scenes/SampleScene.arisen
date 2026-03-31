@@ -22,6 +22,9 @@ Entities:
         X: 1
         Y: 1
         Z: 1
+    ArisenEngine.Core.ECS.ChildComponent:
+      FirstChild: 4
+      ChildCount: 1
 - Id: 1
   Components:
     ArisenEngine.Core.ECS.NameComponent:
@@ -40,3 +43,70 @@ Entities:
         X: 1
         Y: 1
         Z: 1
+    ArisenEngine.Core.ECS.ChildComponent:
+      FirstChild: 2
+      ChildCount: 1
+- Id: 2
+  Components:
+    ArisenEngine.Core.ECS.NameComponent:
+      Name: 2
+    ArisenEngine.Core.ECS.TransformComponent:
+      Position:
+        X: 0
+        Y: 0
+        Z: 0
+      Rotation:
+        X: 0
+        Y: 0
+        Z: 0
+        W: 1
+      Scale:
+        X: 1
+        Y: 1
+        Z: 1
+    ArisenEngine.Core.ECS.ParentComponent:
+      Parent: 1
+    ArisenEngine.Core.ECS.SiblingComponent:
+      PrevSibling: -1
+      NextSibling: -1
+- Id: 3
+  Components:
+    ArisenEngine.Core.ECS.NameComponent:
+      Name: 3
+    ArisenEngine.Core.ECS.TransformComponent:
+      Position:
+        X: 0
+        Y: 0
+        Z: 0
+      Rotation:
+        X: 0
+        Y: 0
+        Z: 0
+        W: 1
+      Scale:
+        X: 1
+        Y: 1
+        Z: 1
+- Id: 4
+  Components:
+    ArisenEngine.Core.ECS.NameComponent:
+      Name: 1
+    ArisenEngine.Core.ECS.TransformComponent:
+      Position:
+        X: 0
+        Y: 0
+        Z: 0
+      Rotation:
+        X: 0
+        Y: 0
+        Z: 0
+        W: 1
+      Scale:
+        X: 1
+        Y: 1
+        Z: 1
+    ArisenEngine.Core.ECS.ParentComponent:
+      Parent: 0
+    ArisenEngine.Core.ECS.SiblingComponent:
+      PrevSibling: -1
+      NextSibling: -1
