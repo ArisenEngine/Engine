@@ -23,7 +23,7 @@ public static class SolutionGeneratorService
         string entryCsprojDir = Path.Combine(projectsDir, projectName);
         Directory.CreateDirectory(entryCsprojDir);
         string entryCsproj = Path.Combine(entryCsprojDir, $"{projectName}.csproj");
-        GenerateEntryPointProject(entryCsproj, engineDir, projectName, manifest, profile, isEditor);
+        GenerateEntryPointProject(entryCsproj, engineDir, projectName, manifest, profile, isEditor, managedPackages, projectsDir);
 
         // Generate Protective MSVC Property File
         string dirBuildProps = Path.Combine(slnDir, "Directory.Build.props");
@@ -253,8 +253,10 @@ public static class SolutionGeneratorService
         writer.WriteLine("EndGlobal");
     }
 
-    private static void GenerateEntryPointProject(string csprojPath, string engineDir, string projectName, ProjectManifest manifest, string profile, bool isEditor)
+    private static void GenerateEntryPointProject(string csprojPath, string engineDir, string projectName, ProjectManifest manifest, string profile, bool isEditor, List<PackageInfo> managedPackages, string projectsDir)
     {
+        string csprojDir = Path.GetDirectoryName(csprojPath)!;
+
         using StreamWriter writer = new StreamWriter(csprojPath);
         writer.WriteLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
         writer.WriteLine("  <PropertyGroup>");
@@ -291,7 +293,7 @@ public static class SolutionGeneratorService
         string kernelSource = Path.Combine(engineDir, "ArisenKernel", "ArisenKernel.csproj");
         if (File.Exists(kernelSource))
         {
-            string depRel = PathUtils.GetRelativePath(Path.GetDirectoryName(csprojPath)!, kernelSource);
+            string depRel = PathUtils.GetRelativePath(csprojDir, kernelSource);
             writer.WriteLine($"    <ProjectReference Include=\"{depRel}\" />");
         }
         else
@@ -300,6 +302,19 @@ public static class SolutionGeneratorService
              writer.WriteLine($"      <HintPath>..\\..\\..\\bin\\{profile}\\$(Configuration)\\ArisenKernel.dll</HintPath>");
              writer.WriteLine("    </Reference>");
         }
+
+        // Add Project References to all discovered managed packages to ensure IDE recompilation on "Run"
+        // We set ReferenceOutputAssembly to false because they are loaded dynamically at runtime.
+        foreach (var package in managedPackages)
+        {
+            string packageName = Path.GetFileName(package.DirectoryPath);
+            string pkgProjectName = string.Join(".", packageName.Split('.').Select(PathUtils.ToPascalCase));
+            string pkgCsprojPath = Path.Combine(projectsDir, pkgProjectName, $"{pkgProjectName}.csproj");
+            string relPath = PathUtils.GetRelativePath(csprojDir, pkgCsprojPath);
+            
+            writer.WriteLine($"    <ProjectReference Include=\"{relPath}\" ReferenceOutputAssembly=\"false\" SkipGetTargetFrameworkProperties=\"true\" />");
+        }
+
         writer.WriteLine("  </ItemGroup>");
         writer.WriteLine("</Project>");
         
