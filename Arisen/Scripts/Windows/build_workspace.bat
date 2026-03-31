@@ -33,7 +33,14 @@ shift
 goto parse_args
 :end_parse
 
-if "%MANIFEST_PATH%"=="" set "MANIFEST_PATH=%~dp0..\..\Development\PackageGame\manifest.json"
+if "%MANIFEST_PATH%"=="" (
+    if exist "!SCRIPT_ROOT!..\..\Development\PackageGame\project.arisen" (
+        set "MANIFEST_PATH=!SCRIPT_ROOT!..\..\Development\PackageGame\project.arisen"
+    ) else (
+        set "MANIFEST_PATH=!SCRIPT_ROOT!..\..\Development\PackageGame\manifest.json"
+    )
+)
+for %%I in ("%MANIFEST_PATH%") do set "MANIFEST_PATH=%%~fI"
 
 if /i "!BUILD_CONFIG!"=="Release" (
     set "BINDING_BAT=run_binding_generator_release.bat"
@@ -80,11 +87,13 @@ echo [Arisen] Generating Workspace with ArisenBuildTool for profile loop...
 dotnet build "%BUILD_TOOL_CSPROJ%" -c Release >nul
 
 echo [Arisen] Extracting Project Name from manifest...
-for /f "usebackq delims=" %%P in (`powershell -Command "$m = Get-Content '%MANIFEST_PATH%' -Raw | ConvertFrom-Json; $m.Name"`) do set "PROJECT_NAME=%%P"
+if exist "!MANIFEST_PATH!" (
+    for /f "usebackq delims=" %%P in (`powershell -NoProfile -Command "$m = Get-Content -LiteralPath '!MANIFEST_PATH!' -Raw | ConvertFrom-Json; if ($m.Name) { $m.Name } else { 'MyGame' }"`) do set "PROJECT_NAME=%%P"
+)
 if not defined PROJECT_NAME set "PROJECT_NAME=MyGame"
 
-echo [Arisen] Discovering profiles from manifest.json...
-for /f "usebackq delims=" %%A in (`powershell -Command "$m = Get-Content '%MANIFEST_PATH%' -Raw | ConvertFrom-Json; if($m.Profiles) { $m.Profiles.psobject.properties.name } else { 'Development'; 'Production' }"`) do (
+echo [Arisen] Discovering profiles from manifest...
+for /f "usebackq delims=" %%A in (`powershell -NoProfile -Command "$m = Get-Content -LiteralPath '!MANIFEST_PATH!' -Raw | ConvertFrom-Json; if ($m.Profiles) { $m.Profiles.psobject.Properties.Name } else { 'Development'; 'Production' }"`) do (
     echo [Arisen] --------------------------------------------------
     echo [Arisen] Processing Profile: %%A [!BUILD_CONFIG!]
     echo [Arisen] --------------------------------------------------
@@ -101,6 +110,7 @@ for /f "usebackq delims=" %%A in (`powershell -Command "$m = Get-Content '%MANIF
 
     :: Kill any running instance of the project to prevent file locks on ArisenKernel.dll
     taskkill /F /IM "!PROJECT_NAME!.exe" /T 2>nul
+    taskkill /F /IM "!PROJECT_NAME!.Desktop.exe" /T 2>nul
 
     echo [Arisen] Restoring NuGet Packages for %%A...
     dotnet restore "!CURRENT_SLN!"
@@ -121,8 +131,9 @@ for /f "usebackq delims=" %%A in (`powershell -Command "$m = Get-Content '%MANIF
     )
 
     set "LOG_FILE=%MANIFEST_PATH%\..\.arisen\build_%%A.log"
-    echo [Arisen] Logging MSBuild completely to: !LOG_FILE!
-    msbuild "!CURRENT_SLN!" /p:Configuration=!BUILD_CONFIG! /p:Platform=x64 /m /fl /flp:logfile="!LOG_FILE!";verbosity=normal
+    for %%F in ("!LOG_FILE!") do set "LOG_FILE_ABS=%%~fF"
+    echo [Arisen] MSBuild Log: !LOG_FILE_ABS!
+    msbuild "!CURRENT_SLN!" /p:Configuration=!BUILD_CONFIG! /p:Platform=x64 /m /fl /flp:logfile="!LOG_FILE_ABS!";verbosity=normal
     if !errorlevel! neq 0 (
         echo [ERROR] MSBuild failed on profile: %%A
         goto :fail
