@@ -72,10 +72,10 @@ Entities:
 - Id: 3
   Components:
     ArisenEngine.Core.ECS.NameComponent:
-      Name: 3
+      Name: 0
     ArisenEngine.Core.ECS.TransformComponent:
       Position:
-        X: 0
+        X: 40
         Y: 0
         Z: 0
       Rotation:
