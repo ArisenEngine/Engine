@@ -20,6 +20,14 @@ public class PackageSubsystem : IEngineSubsystem
     public void Initialize()
     {
         KernelLog.Info("[PackageSubsystem] Initializing...");
+
+        // If packages were already registered by the Bootstrapper during early mount,
+        // we skip the disk discovery phase to avoid redundancy.
+        if (m_LoadedPackages.Count > 0)
+        {
+            KernelLog.Info($"[PackageSubsystem] {m_LoadedPackages.Count} packages already registered by Bootstrapper. Skipping discovery.");
+            return;
+        }
         
         string baseDir = AppContext.BaseDirectory;
         m_PackagesRoot = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", "Packages")); // Adjust for Dev/Test environment
@@ -256,6 +264,7 @@ public class PackageSubsystem : IEngineSubsystem
                 Id = manifest.Id,
                 Name = manifest.Name,
                 Version = manifest.Version,
+                Type = manifest.Type,
                 RootPath = rootPath,
                 Source = source,
                 EngineVersion = manifest.EngineVersion,
@@ -310,6 +319,12 @@ public class PackageSubsystem : IEngineSubsystem
         m_LoadContexts.Clear();
     }
 
+    public void RegisterLoadedPackage(ArisenPackageInfo info)
+    {
+        if (info == null || string.IsNullOrEmpty(info.Id)) return;
+        m_LoadedPackages[info.Id] = info;
+    }
+
     public void Dispose() => Shutdown();
 
     private class PackageManifest
@@ -317,6 +332,7 @@ public class PackageSubsystem : IEngineSubsystem
         public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public string Version { get; set; } = string.Empty;
+        public string Type { get; set; } = "managed";
         public PackageEntryBlock? Entry { get; set; }
         public string EngineVersion { get; set; } = string.Empty;
         public Dictionary<string, string>? Dependencies { get; set; }

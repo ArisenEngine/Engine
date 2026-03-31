@@ -50,6 +50,6 @@ echo.
 echo ============================================================
 echo   PROCESS FAILED. Showing last 50 lines from log:
 echo ============================================================
-powershell -NoProfile -Command "Get-Content -LiteralPath '%LOG_FILE%' -Tail 50"
+powershell -NoProfile -Command "Get-Content -LiteralPath '%GEN_LOG%' -Tail 50"
 if not defined ARISEN_NO_PAUSE pause
 exit /b 1

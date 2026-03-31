@@ -9,6 +9,7 @@ using ArisenKernel.Contracts;
 using ArisenKernel.Diagnostics;
 using ArisenKernel.Lifecycle;
 using ArisenKernel.Services;
+using ArisenKernel.Packages;
 
 namespace ArisenKernel.Lifecycle;
 
@@ -44,6 +45,10 @@ public static class EngineBootstrapper
         var projectSubsystem = new ProjectSubsystem();
         registry.RegisterService<ProjectSubsystem>(projectSubsystem);
         projectSubsystem.LoadFromWorkspace(workspacePath);
+
+        // B15: Initialize PackageSubsystem to track all loaded packages for other systems (like the Editor)
+        var packageSubsystem = new PackageSubsystem();
+        kernel.RegisterSubsystem(packageSubsystem);
 
         string manifestPath = Path.Combine(workspacePath, "manifest.json");
         if (!File.Exists(manifestPath))
@@ -198,16 +203,31 @@ public static class EngineBootstrapper
                     if (File.Exists(fullPath))
                     {
                         Assembly asm = Assembly.LoadFrom(fullPath);
+                        object? entryInstance = null;
                         if (!string.IsNullOrEmpty(entryClassName))
                         {
                             Type t = asm.GetType(entryClassName);
                             if (t != null)
                             {
-                                var entryInstance = Activator.CreateInstance(t);
+                                entryInstance = Activator.CreateInstance(t);
                                 var onLoadMethod = t.GetMethod("OnLoad");
                                 if (onLoadMethod != null) onLoadMethod.Invoke(entryInstance, new object[] { registry });
                             }
                         }
+
+                        // B15: Register this successfully loaded package in the PackageSubsystem
+                        var pkgInfo = new ArisenPackageInfo
+                        {
+                            Id = id,
+                            Name = root.TryGetProperty("name", out var n) ? n.GetString() ?? id : id,
+                            Version = root.TryGetProperty("version", out var v) ? v.GetString() ?? "1.0.0" : "1.0.0",
+                            Type = root.TryGetProperty("type", out var typeProp) ? typeProp.GetString() ?? "managed" : "managed",
+                            RootPath = pUrl,
+                            Assembly = asm,
+                            EntryInstance = entryInstance,
+                            Source = pUrl.Contains("Local") ? PackageSource.External : PackageSource.Official
+                        };
+                        packageSubsystem.RegisterLoadedPackage(pkgInfo);
                     }
                     else
                     {

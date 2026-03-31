@@ -10,6 +10,7 @@ public class ArisenPackageInfo
     public string RootPath { get; set; } = string.Empty;
     public PackageSource Source { get; set; } = PackageSource.Official;
     public string EngineVersion { get; set; } = string.Empty;
+    public string Type { get; set; } = "managed";
     public Dictionary<string, string> Dependencies { get; set; } = new();
     public Assembly? Assembly { get; set; }
     public object? EntryInstance { get; set; }
