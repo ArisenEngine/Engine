@@ -25,10 +25,17 @@ Entities:
     ArisenEngine.Core.ECS.ChildComponent:
       FirstChild: 4
       ChildCount: 1
+    ArisenEngine.Core.ECS.ParentComponent:
+      Parent: 0
 - Id: 1
   Components:
     ArisenEngine.Core.ECS.NameComponent:
       Name: Directional Light
+    ArisenEngine.Core.ECS.CameraComponent:
+      VerticalFov: 0
+      NearPlane: 0
+      FarPlane: 0
+      IsPerspective: 0
     ArisenEngine.Core.ECS.TransformComponent:
       Position:
         X: 0
@@ -46,6 +53,11 @@ Entities:
     ArisenEngine.Core.ECS.ChildComponent:
       FirstChild: 2
       ChildCount: 1
+    ArisenEngine.Core.ECS.ParentComponent:
+      Parent: 0
+    ArisenEngine.Core.ECS.SiblingComponent:
+      PrevSibling: 0
+      NextSibling: 0
 - Id: 2
   Components:
     ArisenEngine.Core.ECS.NameComponent:
