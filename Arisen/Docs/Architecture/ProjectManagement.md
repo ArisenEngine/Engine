@@ -40,7 +40,24 @@ Because `MyGame/` is not a package, the user's actual game logic MUST live insid
 
 ---
 
-## 2. Project Identity (`.arisenproj`)
+## 2. Standard Package Set (Baselines)
+
+A standard Arisen workspace typically includes a baseline set of core packages. These are listed in `manifest.json` under common profiles:
+
+| Package | Type | Duty |
+| :--- | :--- | :--- |
+| `com.arisen.core` | Kernel | Core managed abstractions and lifecycle. |
+| `com.arisen.ecs` | Domain | High-performance Entity Component System. |
+| `com.arisen.rendering` | Domain | RenderGraph architecture and pipeline management. |
+| `com.arisen.taskgraph` | Foundation| Internal multi-threaded job system. |
+| `com.arisen.platform.desktop` | Platform | Desktop windowing and input hosting. |
+| `com.arisen.editor` | Tooling | (Development only) Visual authoring environment. |
+
+For a complete list of core packages and their domains, see the [Package Registry](PackageRegistry.md).
+
+---
+
+## 3. Project Identity (`.arisenproj`)
 
 The `.arisenproj` is a JSON file that defines the high-level metadata needed by the **Launcher**. The **Kernel** rarely needs to read this file; it exists primarily for UI, caching, and engine-version mapping.
 

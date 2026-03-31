@@ -14,6 +14,7 @@
     "com.arisen.platform.desktop": "1.0.0",
     "com.arisen.rhi.vulkan.native": "1.0.0",
     "com.arisen.resources": "1.0.0",
-    "com.arisen.rendering": "1.0.0"
+    "com.arisen.rendering": "1.0.0",
+    "com.arisen.generic-renderpipeline": "1.0.0"
   }
 }

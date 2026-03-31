@@ -46,6 +46,11 @@
       "Id": "com.arisen.rendering",
       "Url": "file://Local/com.arisen.rendering",
       "Version": "1.0.0"
+    },
+    {
+      "Id": "com.arisen.generic-renderpipeline",
+      "Url": "file://Local/com.arisen.generic-renderpipeline",
+      "Version": "1.0.0"
     }
   ],
   "Profiles": {

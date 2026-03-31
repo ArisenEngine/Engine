@@ -9,7 +9,13 @@ Arisen Engine is a **Next-Generation, Package-Centric Microkernel Architecture**
 - **Beyond Games**: If a user wants to develop a regular desktop application rather than a game, they simply exclude game-specific packages (like ECS or Physics) and use UI/Platform packages instead.
 
 ### Current Goal
-Our immediate operational goal is to **build out the core game-engine packages** (Rendering, ECS, Editor) and successfully develop a game using this package-centric engine to prove the architecture.
+Our immediate operational goal is to **finalize the core engine infrastructure** (RenderGraph, TaskGraph, ECS) and successfully develop a game using this package-centric microkernel to prove the architecture.
+
+#### Key Milestones
+- [x] Decentralize Kernel from Application logic.
+- [x] Implement DAG and RenderGraph foundational packages.
+- [/] Integrate internal Job System (TaskGraph) into ECS.
+- [/] Bridge Vulkan RHI to Editor Viewport (Texture Sharing).
 
 ---
 
@@ -64,6 +70,8 @@ Engine/Arisen/Docs/
 - Engine/Arisen/Docs/Architecture/ServiceRegistry.md
 - Engine/Arisen/Docs/Architecture/AssetPipeline.md
 - Engine/Arisen/Docs/Architecture/PackageArchitecture.md
+- Engine/Arisen/Docs/Architecture/PackageRegistry.md
+- Engine/Arisen/Docs/Architecture/Rendering.md
 
 ---
 

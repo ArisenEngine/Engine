@@ -35,3 +35,9 @@
 [submodule "Arisen/Development/PackageGame/Local/com.arisen.nodecanvas"]
 	path = Arisen/Development/PackageGame/Local/com.arisen.nodecanvas
 	url = https://github.com/ArisenEngine/com.arisen.nodecanvas.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.generic-renderpipeline"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.generic-renderpipeline
+	url = https://github.com/ArisenEngine/com.arisen.generic-renderpipeline.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.taskgraph"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.taskgraph
+	url = https://github.com/ArisenEngine/com.arisen.taskgraph.git
