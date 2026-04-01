@@ -42,6 +42,11 @@ Every single line of code written must adhere strictly to these four pillars:
    - Prefer `struct` (value types) over `class` (reference types) throughout the engine.
    - Never use `virtual` methods or object-oriented inheritance for high-frequency game logic.
 
+5. **Empirical Reliability (Verify, Don't Assume)**
+   - **Never assume state or API behavior.** 
+   - When encountering uncertainty in core systems (RHI, TaskGraph, ECS), you MUST investigate the source code to find the definitive technical answer. 
+   - Assumptions lead to architectural drift; discovery of 'Source Truth' is mandatory before implementation.
+
 ---
 
 ## 3. Documentation Index (MANDATORY)
@@ -114,9 +119,10 @@ When solving problems, you MUST load context as follows:
 
 ### 🚫 Forbidden Behavior
 
-- DO NOT answer architecture questions without reading relevant docs
-- DO NOT assume missing systems
-- DO NOT invent APIs or workflows not defined in docs
+- DO NOT answer architecture questions without reading relevant docs and source code
+- DO NOT assume missing systems or API behaviors
+- DO NOT invent APIs or workflows not defined in docs or verified in source code
+- STOP and investigate if you reach a point of "conceptual" implementation; find the concrete path.
 
 # Context Depth Rules
 
