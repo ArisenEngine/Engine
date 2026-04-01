@@ -2,6 +2,7 @@
 
 #include "CommandListSetD3D12.h"
 #include "ExceptionHandle.h"
+#include "FenceD3D12.h"
 #include "RenderCommandListD3D12.h"
 #include "RenderContextD3D12.h"
 
@@ -62,6 +63,11 @@ Ptr<IRenderCommandList> CommandQueueD3D12::CreateRenderCommandList(IRenderPass& 
 Ptr<ICommandListSet> CommandQueueD3D12::CreateCommandListSet(std::vector<Ptr<ICommandList>> command_lists) const
 {
     return MakePtr(CommandListSetD3D12, command_lists);
+}
+
+Ptr<IFence> CommandQueueD3D12::CreateFence() const
+{
+    return MakePtr(FenceD3D12, *this);
 }
 
 ARISENRHI_D3D12_END_NAMESPACE

@@ -31,6 +31,7 @@ public:
     // ICommandQueue
     [[nodiscard]] virtual Ptr<IRenderCommandList> CreateRenderCommandList(IRenderPass& render_pass) const override final;
     [[nodiscard]] virtual Ptr<ICommandListSet> CreateCommandListSet(std::vector<Ptr<ICommandList>> command_lists) const override final;
+    [[nodiscard]] virtual Ptr<IFence> CreateFence() const;
 
     const IRHIContextCommonD3D12& GetContextD3d12() const
     {

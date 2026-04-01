@@ -144,6 +144,7 @@ void GameInstance::InitArisenRHI(HWND hwnd)
             }
 
             // complete.
+            m_render_context_ptr->com
         }
         break;
     case RHI_DEVICE_TYPE::RHI_DEVICE_TYPE_VULKAN:
