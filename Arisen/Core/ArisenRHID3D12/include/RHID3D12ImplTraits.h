@@ -4,6 +4,7 @@
 #include "IRenderContext.h"
 #include "IDescriptorManager.h"
 #include "IDescriptorManagerD3D12.h"
+#include "IFenceD3D12.h"
 #include "IProgramD3D12.h"
 #include "IRenderCommandListD3D12.h"
 #include "IRenderContextD3D12.h"
@@ -31,6 +32,7 @@ struct RHID3D12ImplTraits
     using RenderCommandListInterface = IRenderCommandListD3D12;
     using CommandListSetInterface = ICommandListSetD3D12;
     using ShaderInterface = IShaderD3D12;
+    using FenceInterface = IFenceD3D12;
 
     using DescriptorManagerImplType = DescriptorManagerD3D12;
 };
