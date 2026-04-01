@@ -22,12 +22,28 @@ public static class EngineBootstrapper
         string workspacePath = "";
         string entryPackage = "";
         string profile = "Development";
+        bool profileSpecified = false;
+        bool workspaceSpecified = false;
 
         for (int i = 0; i < args.Length; i++)
         {
-            if (args[i] == "--workspace" && i + 1 < args.Length) workspacePath = args[i + 1];
+            if (args[i] == "--workspace" && i + 1 < args.Length) { workspacePath = args[i + 1]; workspaceSpecified = true; }
             if (args[i] == "--entry" && i + 1 < args.Length) entryPackage = args[i + 1];
-            if (args[i] == "--profile" && i + 1 < args.Length) profile = args[i + 1];
+            if (args[i] == "--profile" && i + 1 < args.Length) { profile = args[i + 1]; profileSpecified = true; }
+        }
+
+        // B18: Try to load from launch.config.json if located in the binary folder (Explicit configuration wins over deduction)
+        string configPath = Path.Combine(AppContext.BaseDirectory, "launch.config.json");
+        if (File.Exists(configPath))
+        {
+            try
+            {
+                using var configDoc = JsonDocument.Parse(File.ReadAllText(configPath));
+                var root = configDoc.RootElement;
+                if (!profileSpecified && root.TryGetProperty("Profile", out var pProp)) profile = pProp.GetString() ?? profile;
+                if (!workspaceSpecified && root.TryGetProperty("Workspace", out var wProp)) workspacePath = wProp.GetString() ?? workspacePath;
+            }
+            catch { /* Skip and fall back to deduction */ }
         }
 
         if (string.IsNullOrEmpty(workspacePath))

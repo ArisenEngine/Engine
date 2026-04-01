@@ -186,6 +186,15 @@ class Program
         };
         PackageResolutionService.SaveResolvedManifests(profile, outputDirs, sortedPackages);
         NativeDeploymentService.Deploy(sortedPackages, outputDirs, profile);
+        
+        // B18: Generate launch.config.json in binary folders for explicit profile/workspace resolution
+        foreach (var dir in outputDirs)
+        {
+            Directory.CreateDirectory(dir);
+            var launchConfig = new { Profile = profile, Workspace = Path.GetFullPath(workspaceDir) };
+            string configJson = JsonSerializer.Serialize(launchConfig, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(Path.Combine(dir, "launch.config.json"), configJson);
+        }
 
         var managedPackages = sortedPackages.Where(p => 
             p.Manifest.Type == "hybrid" || p.Manifest.Entry != null || 

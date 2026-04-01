@@ -74,7 +74,7 @@
         }
       ]
     },
-    "Testing": {
+    "RHIVulkanTesting": {
       "IsEditor": false,
       "Packages": [
         {
