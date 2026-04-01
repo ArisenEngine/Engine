@@ -1,10 +1,3 @@
-[submodule "Arisen/3rdparty/cgltf"]
-	path = Arisen/3rdparty/cgltf
-	url = https://github.com/ArisenEngine/cgltf.git
-	branch = arisen_dev
-[submodule "Arisen/Test/NativeEngineTest/Assets/glTF-Sample-Models"]
-	path = Arisen/Test/Assets/glTF-Sample-Models
-	url = https://github.com/KhronosGroup/glTF-Sample-Models.git
 [submodule "Arisen/Development/PackageGame/Local/com.arisen.rendering"]
 	path = Arisen/Development/PackageGame/Local/com.arisen.rendering
 	url = https://github.com/ArisenEngine/com.arisen.rendering.git
@@ -41,3 +34,9 @@
 [submodule "Arisen/Development/PackageGame/Local/com.arisen.taskgraph"]
 	path = Arisen/Development/PackageGame/Local/com.arisen.taskgraph
 	url = https://github.com/ArisenEngine/com.arisen.taskgraph.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.testrunner"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.testrunner
+	url = https://github.com/ArisenEngine/com.arisen.testrunner.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native.test"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native.test
+	url = https://github.com/ArisenEngine/com.arisen.rhi.vulkan.native.test.git
