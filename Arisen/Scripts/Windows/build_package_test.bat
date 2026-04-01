@@ -15,6 +15,7 @@ set "PACKAGE_ID=%~1"
 if "%PACKAGE_ID%"=="" (
     echo [ERROR] No Package ID provided.
     echo Usage: RunPackageTests.bat ^<PackageId^>
+    pause
     exit /b 1
 )
 
@@ -45,4 +46,5 @@ REM (In a real scenario, this would invoke the engine's bootstrapper with --prof
 REM dotnet run --project "%WORKSPACE_DIR%\.arisen\Projects\Testing\%PACKAGE_ID%.TestRun\%PACKAGE_ID%.TestRun.csproj" -- --profile Testing
 
 echo [Arisen] Done.
+pause
 exit /b 0
