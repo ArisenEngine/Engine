@@ -1,31 +1,49 @@
 ---
-name: Create Arisen Package
-description: Scaffolds a new Arisen Engine package following the strict Workspace and Config architectures.
+name: create-package
+description: Scaffolds a new Arisen Engine package. Use when adding features, subsystems, or new game modules.
 ---
 
-# Creating an Arisen Engine Package
-If the user asks you to create a new package for the engine or a game, you MUST follow these absolute rules derived from `Docs/Architecture/ConfigurationFormats.md` and `ProjectManagement.md`.
+# Create Package SOP
 
-## 1. Directory Structure
-Create the new package folder inside the `Local/` workspace directory (for user code) or `Engine/Packages/` (for core engine code). DO NOT generate `.sln` or `.csproj` files directly inside the package folder.
+When scaffolding a new package, follow this procedure to ensure it integrates seamlessly with the microkernel and build system.
+
+## 1. Directory Structure Checklist
+- [ ] Determine the target directory:
+    - `Engine/Packages/`: Core engine systems.
+    - `Local/`: User-defined components and gameplay code.
+- [ ] Create the new package folder. Use lowercase (e.g., `com.arisen.physics`).
 
 ## 2. package.json Scaffold
-Generate a `package.json` file inside the root of the new package folder.
-**CRITICAL:** Only populate `id`, `name`, `version`, `author`, and `dependencies`. 
-**DO NOT** manually generate `subsystems`, `nativeRuntimes`, or `entry.assembly`. These are auto-populated by the `ArisenBuildTool` compiler.
+Generate a valid `package.json` in the root of the new folder. Follow these strict rules:
+- [ ] `$schema`: Use "https://arisen.dev/schemas/package-v2.json".
+- [ ] `id`: Unique lowercase ID using dot notation.
+- [ ] `dependencies`: Mandatory empty or populated map.
+- [ ] **NO manual editing** of `subsystems`, `nativeRuntimes`, or `entry.assembly`.
 
+### Template:
 ```json
 {
   "$schema": "https://arisen.dev/schemas/package-v2.json",
   "id": "com.user.newpackage",
   "name": "New Package",
   "version": "1.0.0",
+  "author": "Your Name",
   "dependencies": {}
 }
 ```
 
 ## 3. C# Entry Point
-Generate a C# file (e.g., `PackageEntry.cs`) that explicitly implements `ArisenKernel.Packages.IPackageEntry`. This gives the Kernel a hook to execute code on boot.
+- [ ] Create a `PackageEntry.cs` that implements `ArisenKernel.Packages.IPackageEntry`.
+- [ ] Implement `OnLoad()` for subsystem registration.
 
-## 4. Manifest Updates
-You MUST add the new package's `id` and `Url` to the workspace's `manifest.json`. If it is not listed in the `manifest.json` (either in base `Packages` or a specific `Profile`), the Kernel will completely ignore the folder.
+## 4. Mandatory Manifest Registration
+- [ ] Update the workspace's `manifest.json`.
+- [ ] Add the package ID and relative URL.
+- [ ] **CRITICAL**: If not registered, the Kernel will completely ignore the directory.
+
+## 5. Verification
+Validate that the new package compiles and is discoverable:
+```powershell
+./Engine/Arisen/Scripts/Windows/build_workspace.bat Debug
+```
+Confirm the package appears in the `Assets Browser` if integrated with the Editor.
