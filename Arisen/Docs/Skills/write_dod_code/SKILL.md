@@ -1,20 +1,32 @@
 ---
-name: Write Zero-Overhead DOD Code
-description: Guidelines for writing high-performance Entity Component System (ECS) hot-paths.
+name: write-dod-code
+description: Guidelines for high-performance Data-Oriented Design (DOD) in the ECS. Use when optimizing hot paths, simulation loops, or rendering passes.
 ---
 
-# Writing Data-Oriented (DOD) Hot Paths
-If the user asks you to optimize a loop, build a high-frequency system, or pass data between packages during the simulation tick, you MUST adhere to the Zero-Overhead rules defined in `Docs/GEMINI.MD` and `Docs/Architecture/ServiceRegistry.md`.
+# DOD Performance Checklist
 
-## 1. Ban on Interfaces in Hot Paths
-**CRITICAL:** You must NEVER call `IServiceRegistry` or any C# `interface` virtual method inside an entity loop (`Update`, `Tick`, `Render`). Virtual dispatch destroys CPU cache locality. The Service Registry is for Macro-System initialization ONLY.
+When writing high-performance engine code (hot paths), you MUST follow these Data-Oriented Design (DOD) principles to achieve zero-overhead execution.
 
-## 2. Ban on Managed Allocations
-Never allocate classes (`new MyObject()`) in the hot path. This creates Garbage Collection (GC) pressure.
-Use purely unmanaged `struct` types. If you need transient memory for a single frame, use `FrameArena.Instance.Alloc<T>()` and do not store the reference.
+## 1. Hot Path Definition
+A hot path is any code that runs:
+- Inside an ECS System loop.
+- Every frame during the simulation tick (`Update`, `Tick`).
+- Inside the RenderGraph command recording.
 
-## 3. Communicating via ECS
-If `com.arisen.physics` and `com.arisen.rendering` need to share position data natively, they DO NOT statically reference each other or call methods on each other!
-1. Rely on a shared `struct` defined in a Foundation package (e.g. `struct TransformComponent`).
-2. Ask the ECS for the `NativeArray<TransformComponent>`.
-3. Iterate directly over the flat memory using `Span<T>` or pointers. This guarantees 100% C++ equivalent speed.
+## 2. Zero-Overhead Essentials
+- [ ] **Ban on Classes**: Do not use `class` for components or hot-path local data. Use `struct`.
+- [ ] **Ban on Managed Allocations**: No `new` keywords in the hot path. These cause GC pressure.
+- [ ] **Ban on Interfaces**: Never call a C# `interface` method inside a loop. Virtual dispatch kills CPU cache hits.
+- [ ] **Ban on Locks**: Do not use `lock` statements for thread safety in hot paths. Use atomics or ECS commands.
+
+## 3. Memory & Iteration
+- [ ] **Flat Arrays**: Use `ComponentPool<T>.GetRawComponentArray()` for bulk processing.
+- [ ] **Native Buffers**: For large data transfers between packages, use `NativeArray<T>`.
+- [ ] **Transient Memory**: For single-frame allocations, use `FrameArena.Instance.Alloc<T>()`.
+- [ ] **Pointer Iteration**: Prefer `Span<T>` or `fixed` pointer blocks when high-speed access to large data is required.
+
+## 4. Verification
+Benchmarks and performance verification:
+1. Run with `Release` profile.
+2. Monitor GC pauses (should be zero in simulation loops).
+3. Use `scan-build.bat` for static analysis of performance-critical code.

@@ -1,22 +1,36 @@
 ---
-name: Consume or Provide Arisen Services
-description: How to safely decouple Domain packages using the Arisen IServiceRegistry.
+name: use-service-registry
+description: Guides safe decoupling of packages via IServiceRegistry. Use when connecting subsystems or providing/consuming engine services.
 ---
 
-# Using the ServiceRegistry
-When a user asks you to connect two major systems together (e.g., the Game Logic telling the Renderer what to do), you MUST use the `IServiceRegistry` pattern defined in `Docs/Architecture/ServiceRegistry.md`.
+# Service Registry SOP
 
-## 1. No Static Domain References
-**CRITICAL:** A Domain Package (like `com.user.game`) MUST NEVER directly static-reference another Domain Package (like `com.arisen.rhi.vulkan`). If you generate code that casts a registry object back to its concrete implementation (e.g. `(VulkanDevice)registry.Get<IRHIDevice>()`), you have destroyed the Microkernel Architecture.
+Use the `IServiceRegistry` pattern to decoupling packages. This allows the Arisen Microkernel to manage dependencies and lifecycle.
+
+## 1. Safety Checklist
+- [ ] **NO Static Domain References**: A Domain package must never directly reference another Domain package.
+- [ ] **No Concrete Casts**: Use interfaces only. Never cast a service to its concrete implementation.
+- [ ] **No Repository Caching**: Cache the service instance, not the registry itself.
 
 ## 2. Providing a Service
-If you write a backend subsystem:
-1. Declare the intent via C# Interfaces defined in a Foundation package.
-2. In `IPackageEntry.OnLoad()`, call `services.Register<IMyService>(new MyConcreteService());`
-3. Ensure `package.json` declares `"services": { "provides": [ {"interface": "IMyService"} ] }`.
+If you are implementing a new engine service (e.g., a new RHI backend):
+1. [ ] **Declare Interface**: Definitions MUST live in a Foundation package (e.g., `com.arisen.rhi`).
+2. [ ] **Implementation**: Implement the interface in your package.
+3. [ ] **Registration**: In `IPackageEntry.OnLoad(IServiceRegistry services)`:
+    ```csharp
+    services.Register<IMyService>(new MyConcreteService());
+    ```
+4. [ ] **Metadata**: Declare `"services": { "provides": [ "IMyService" ] }` in `package.json`.
 
 ## 3. Consuming a Service
-If you write a subsystem that requires a backend to function:
-1. Ensure `package.json` declares `"services": { "requires": [ "IMyService" ] }` so the Kernel can validate load order.
-2. In your `IEngineSubsystem.OnInit(IServiceRegistry registry)`, call `_myService = registry.Get<IMyService>();`.
-3. **DO NOT cache the registry itself.** Cache the specific service instance you retrieved.
+If your subsystem requires another service (e.g., the Game logic needs the Renderer):
+1. [ ] **Declare Dependency**: Add the interface ID to `"services": { "requires": [ "IMyService" ] }` in `package.json`.
+2. [ ] **Retrieval**: In your `IEngineSubsystem.OnInit(IServiceRegistry registry)`:
+    ```csharp
+    _myService = registry.Get<IMyService>();
+    ```
+3. [ ] **Null Checks**: Ensure the service exists before use, or handle the missing service gracefully.
+
+## 4. Verification
+- Verify that both provider and consumer packages appear in the `manifest.json`.
+- Check that the Kernel's service log reports successful registration and resolution.

@@ -1,65 +1,51 @@
 ---
 name: code-reviewer
-description:
-  Use this skill to review code. It supports both local changes (staged or working tree)
-  and remote Pull Requests (by ID or URL). It focuses on correctness, maintainability,
-  and adherence to project standards.
+description: Reviews code changes for bugs, style, and DOD performance. Use when reviewing PRs or checking code quality in the Arisen Engine.
 ---
 
-# Code Reviewer
+# Code Reviewer SOP
 
-This skill guides the agent in conducting professional and thorough code reviews for both local development and remote Pull Requests.
+When conducting code reviews, follow this step-by-step Standard Operating Procedure to ensure the Arisen Engine's performance and stability are maintained.
 
-## Workflow
+## 1. Preparation & Context
+- Identify the review target (local changes or remote PR).
+- If remote: `gh pr checkout <PR_NUMBER>`.
+- Read the documentation: `Docs/GEMINI.MD` and `Docs/Architecture/ProjectManagement.md`.
 
-### 1. Determine Review Target
-*   **Remote PR**: If the user provides a PR number or URL (e.g., "Review PR #123"), target that remote PR.
-*   **Local Changes**: If no specific PR is mentioned, or if the user asks to "review my changes", target the current local file system states (staged and unstaged changes).
+## 2. Automated Verification
+Run the standard verification suite before manual review:
+```powershell
+./Engine/Arisen/Scripts/Windows/build_workspace.bat Testing
+```
+> [!NOTE]
+> If testing fails, prioritize reporting these failures before deep manual analysis.
 
-### 2. Preparation
+## 3. Technical Review Checklist
 
-#### For Remote PRs:
-1.  **Checkout**: Use the GitHub CLI to checkout the PR.
-    ```bash
-    gh pr checkout <PR_NUMBER>
-    ```
-2.  **Preflight**: Execute the project's standard verification suite to catch automated failures early.
-    ```bash
-    npm run preflight
-    ```
-3.  **Context**: Read the PR description and any existing comments to understand the goal and history.
+### A. Correctness & Quality
+- [ ] Does the logic match the intended feature/fix?
+- [ ] Are edge cases (null, empty, timeout, concurrency) handled?
+- [ ] Is error handling robust and informative?
 
-#### For Local Changes:
-1.  **Identify Changes**:
-    *   Check status: `git status`
-    *   Read diffs: `git diff` (working tree) and/or `git diff --staged` (staged).
-2.  **Preflight (Optional)**: If the changes are substantial, ask the user if they want to run `npm run preflight` before reviewing.
+### B. Arisen Performance Rules (CRITICAL)
+- [ ] **Zero-Overhead**: Are there any managed allocations (`new`) in entity loops or simulation ticks?
+- [ ] **Data-Oriented Design (DOD)**: Are interfaces being called in hot paths? (Virtual dispatch should be avoided).
+- [ ] **Memory Locality**: Are components processed in contiguous flat arrays?
 
-### 3. In-Depth Analysis
-Analyze the code changes based on the following pillars:
+### C. Multi-Threading & Concurrency
+- [ ] Are there any unsafe mutations of shared state outside of ECS commands?
+- [ ] Is atomic synchronization used correctly where necessary?
+- [ ] Avoid `lock` statements entirely in hot paths.
 
-*   **Correctness**: Does the code achieve its stated purpose without bugs or logical errors?
-*   **Maintainability**: Is the code clean, well-structured, and easy to understand and modify in the future? Consider factors like code clarity, modularity, and adherence to established design patterns.
-*   **Readability**: Is the code well-commented (where necessary) and consistently formatted according to our project's coding style guidelines?
-*   **Efficiency**: Are there any obvious performance bottlenecks or resource inefficiencies introduced by the changes?
-*   **Security**: Are there any potential security vulnerabilities or insecure coding practices?
-*   **Edge Cases and Error Handling**: Does the code appropriately handle edge cases and potential errors?
-*   **Testability**: Is the new or modified code adequately covered by tests (even if preflight checks pass)? Suggest additional test cases that would improve coverage or robustness.
+### D. Package Integrity
+- [ ] Does the PR respect package boundaries?
+- [ ] No static domain references between disconnected packages.
 
-### 4. Provide Feedback
+## 4. Providing Feedback
+- Be specific about line numbers and rationale.
+- Propose concrete code alternatives.
+- Structure findings as: **Critical**, **Improvements**, and **Nits**.
+- Conclusion: Recommendation to Approve or Request Changes.
 
-#### Structure
-*   **Summary**: A high-level overview of the review.
-*   **Findings**:
-    *   **Critical**: Bugs, security issues, or breaking changes.
-    *   **Improvements**: Suggestions for better code quality or performance.
-    *   **Nitpicks**: Formatting or minor style issues (optional).
-*   **Conclusion**: Clear recommendation (Approved / Request Changes).
-
-#### Tone
-*   Be constructive, professional, and friendly.
-*   Explain *why* a change is requested.
-*   For approvals, acknowledge the specific value of the contribution.
-
-### 5. Cleanup (Remote PRs only)
-*   After the review, ask the user if they want to switch back to the default branch (e.g., `main` or `master`).
+## 5. Cleanup
+- If remote: ask the user if they want to switch back to the default branch.
