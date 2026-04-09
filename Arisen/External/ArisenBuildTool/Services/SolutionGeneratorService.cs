@@ -52,8 +52,6 @@ public static class SolutionGeneratorService
         // 1. Write Entry Project
         string entryGuid = Guid.NewGuid().ToString("B").ToUpper();
         string entryRel = PathUtils.GetRelativePath(slnDir, entryCsproj);
-        slnProjects.Add($"Project(\"{CSHARP_PROJECT_TYPE}\") = \"{projectName}\", \"{entryRel}\", \"{entryGuid}\"");
-        slnProjects.Add("EndProject");
         projectGuids[entryGuid] = entryGuid;
 
         // 2. Write Core Kernel
@@ -173,6 +171,27 @@ public static class SolutionGeneratorService
                     if (!isBanned) slnProjects.Add(line);
                 }
             }
+        }
+
+        // 5. Add Entry Project with dependencies on native projects to the start of the solution
+        // We do this here after all nativeProjectGuids have been identified
+        string entryProjHeader = $"Project(\"{CSHARP_PROJECT_TYPE}\") = \"{projectName}\", \"{entryRel}\", \"{entryGuid}\"";
+        if (nativeProjectGuids.Count > 0)
+        {
+            var entryProjLines = new List<string> { entryProjHeader };
+            entryProjLines.Add("\tProjectSection(ProjectDependencies) = postProject");
+            foreach (var nGuid in nativeProjectGuids)
+            {
+                entryProjLines.Add($"\t\t{nGuid} = {nGuid}");
+            }
+            entryProjLines.Add("\tEndProjectSection");
+            entryProjLines.Add("EndProject");
+            slnProjects.InsertRange(0, entryProjLines);
+        }
+        else
+        {
+            slnProjects.Insert(0, entryProjHeader);
+            slnProjects.Insert(1, "EndProject");
         }
 
         // Now write everything to the solution file
