@@ -22,4 +22,9 @@ public interface IRHIDevice
     /// Waits for a specific submission ticket on the CPU.
     /// </summary>
     void WaitQueueTicket(ulong ticket);
+
+    /// <summary>
+    /// Gets the shared Win32 handle for an exported image, if supported.
+    /// </summary>
+    IntPtr GetSharedWin32Handle(uint index, uint generation);
 }
