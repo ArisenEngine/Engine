@@ -122,3 +122,21 @@ Entities:
     ArisenEngine.Core.ECS.SiblingComponent:
       PrevSibling: -1
       NextSibling: -1
+- Id: 5
+  Components:
+    ArisenEngine.Core.ECS.NameComponent:
+      Name: Empty Entity
+    ArisenEngine.Core.ECS.TransformComponent:
+      Position:
+        X: 0
+        Y: 0
+        Z: 0
+      Rotation:
+        X: 0
+        Y: 0
+        Z: 0
+        W: 1
+      Scale:
+        X: 1
+        Y: 1
+        Z: 1

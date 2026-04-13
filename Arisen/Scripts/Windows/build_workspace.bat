@@ -49,14 +49,14 @@ shift
 goto parse_args
 :end_parse
 
-if "%MANIFEST_PATH%"=="" (
+if "!MANIFEST_PATH!"=="" (
     if exist "!SCRIPT_ROOT!..\..\Development\PackageGame\project.arisen" (
         set "MANIFEST_PATH=!SCRIPT_ROOT!..\..\Development\PackageGame\project.arisen"
     ) else (
         set "MANIFEST_PATH=!SCRIPT_ROOT!..\..\Development\PackageGame\manifest.json"
     )
 )
-for %%I in ("%MANIFEST_PATH%") do set "MANIFEST_PATH=%%~fI"
+for %%I in ("!MANIFEST_PATH!") do set "MANIFEST_PATH=%%~fI"
 
 if /i "!BUILD_CONFIG!"=="Release" (
     set "BINDING_BAT=run_binding_generator_release.bat"
@@ -64,7 +64,7 @@ if /i "!BUILD_CONFIG!"=="Release" (
     set "BINDING_BAT=run_binding_generator_debug.bat"
 )
 
-set "WORKSPACE_DIR=%MANIFEST_PATH%\.."
+set "WORKSPACE_DIR=!MANIFEST_PATH!\.."
 for %%I in ("!WORKSPACE_DIR!") do set "WORKSPACE_DIR=%%~fI"
 set "SLN_DIR=!WORKSPACE_DIR!\.arisen"
 set "BUILD_TOOL_CSPROJ=!SCRIPT_ROOT!..\..\External\ArisenBuildTool\ArisenBuildTool.csproj"
@@ -136,7 +136,7 @@ for %%A in (!PROFILES!) do (
     )
     
     if not defined PROJECT_NAME set "PROJECT_NAME=MyGame"
-    set "CURRENT_SLN=%SLN_DIR%\!PROJECT_NAME!_%%A.sln"
+    set "CURRENT_SLN=!SLN_DIR!\!PROJECT_NAME!_%%A.sln"
     
     if not exist "!CURRENT_SLN!" (
         echo [ERROR] Solution file not found for profile %%A: !CURRENT_SLN!
@@ -146,6 +146,8 @@ for %%A in (!PROFILES!) do (
     :: Cleanup running instances
     taskkill /F /IM "!PROJECT_NAME!.exe" /T 2>nul
     taskkill /F /IM "!PROJECT_NAME!.Desktop.exe" /T 2>nul
+    taskkill /F /IM "ArisenLauncher.exe" /T 2>nul
+    taskkill /F /IM "ArisenEditor.exe" /T 2>nul
 
     echo [Arisen] Restoring NuGet Packages for %%A...
     dotnet restore "!CURRENT_SLN!"
@@ -165,10 +167,10 @@ for %%A in (!PROFILES!) do (
         )
     )
 
-    set "LOG_FILE=%SLN_DIR%\build_%%A.log"
+    set "LOG_FILE=!SLN_DIR!\build_%%A.log"
     for %%F in ("!LOG_FILE!") do set "LOG_FILE_ABS=%%~fF"
     echo [Arisen] MSBuild Log: !LOG_FILE_ABS!
-    msbuild "!CURRENT_SLN!" /p:Configuration=!BUILD_CONFIG! /p:Platform=x64 /m /fl /flp:logfile="!LOG_FILE_ABS!";verbosity=normal
+    msbuild "!CURRENT_SLN!" /p:Configuration=!BUILD_CONFIG! /p:Platform=x64 /m /fl "/flp:logfile=!LOG_FILE_ABS!;verbosity=normal"
     if !errorlevel! neq 0 (
         echo [ERROR] MSBuild failed on profile: %%A
         goto :fail
