@@ -16,6 +16,12 @@ namespace ArisenLauncher.Views
         private CompositionDrawingSurface? _compositionSurface;
         private ICompositionGpuInterop? _interop;
 
+        private PixelSize GetPhysicalPixelSize()
+        {
+            var scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
+            return new PixelSize((int)Math.Max(1, Bounds.Width * scaling), (int)Math.Max(1, Bounds.Height * scaling));
+        }
+
         public EditorViewportControl()
         {
             InitializeComponent();
@@ -53,7 +59,29 @@ namespace ArisenLauncher.Views
         public void BindSurface(IRenderSurface surface)
         {
             _surface = surface;
+            
+            // Apply initial size (Physical Pixels)
+            var size = GetPhysicalPixelSize();
+            if (size.Width > 0 && size.Height > 0)
+            {
+                _surface.Resize((uint)size.Width, (uint)size.Height);
+            }
+            
             InvalidateVisual();
+        }
+
+        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+        {
+            base.OnPropertyChanged(change);
+
+            if (change.Property == BoundsProperty)
+            {
+                var size = GetPhysicalPixelSize();
+                if (_surface != null && size.Width > 0 && size.Height > 0)
+                {
+                    _surface.Resize((uint)size.Width, (uint)size.Height);
+                }
+            }
         }
 
         public override void Render(DrawingContext context)
@@ -76,7 +104,7 @@ namespace ArisenLauncher.Views
 
             try 
             {
-                var pixelSize = new PixelSize((int)Bounds.Width, (int)Bounds.Height);
+                var pixelSize = GetPhysicalPixelSize();
                 
                 // Import the D3D11 shared texture into Avalonia
                 var importedImage = _interop.ImportImage(
@@ -96,6 +124,5 @@ namespace ArisenLauncher.Views
                 // Log or handle interop failure
             }
         }
-    }
     }
 }
