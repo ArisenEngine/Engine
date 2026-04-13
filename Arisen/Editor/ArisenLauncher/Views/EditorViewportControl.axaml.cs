@@ -112,12 +112,17 @@ namespace ArisenLauncher.Views
                     sharedHandle,
                     pixelSize);
 
-                // Phase 1 Synchronization: RenderSubsystem already performs a WaitIdle for virtual surfaces
-                // to ensure the texture is ready before this update.
-                await _compositionSurface.UpdateAsync(importedImage);
-                
-                // Successfully updated the compositor with the new frame.
-                importedImage.Dispose();
+                try 
+                {
+                    // Phase 1.5 Synchronization: RenderSubsystem already performs a WaitQueueTicket(ticket)
+                    // for virtual surfaces to ensure the texture is ready before this update.
+                    await _compositionSurface.UpdateAsync(importedImage);
+                }
+                finally 
+                {
+                    importedImage.Dispose();
+                }
+
             }
             catch (Exception ex)
             {
