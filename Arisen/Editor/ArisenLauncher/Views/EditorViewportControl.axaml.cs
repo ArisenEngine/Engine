@@ -6,7 +6,10 @@ using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Rendering.SceneGraph;
 using Avalonia.Markup.Xaml;
+using Avalonia.Rendering.Composition;
+using Avalonia.Threading;
 using ArisenKernel.Contracts;
+using System.Threading.Tasks;
 
 namespace ArisenLauncher.Views
 {
@@ -35,25 +38,35 @@ namespace ArisenLauncher.Views
         protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
         {
             base.OnAttachedToVisualTree(e);
-            InitializeComposition();
+            _ = InitializeCompositionAsync();
         }
 
-        private void InitializeComposition()
+        private async Task InitializeCompositionAsync()
         {
-            var compositor = ElementComposition.GetElementVisual(this)?.Compositor;
-            if (compositor == null) return;
+            try 
+            {
+                var compositor = ElementComposition.GetElementVisual(this)?.Compositor;
+                if (compositor == null) return;
 
-            _interop = compositor.TryGetCompositionGpuInterop();
-            if (_interop == null) return;
+                _interop = await compositor.TryGetCompositionGpuInterop();
+                if (_interop == null) return;
 
-            _compositionSurface = compositor.CreateDrawingSurface();
-            
-            // Create a CompositionVisual to host our surface
-            var visual = compositor.CreateSurfaceVisual();
-            visual.Surface = _compositionSurface;
-            visual.Size = new Vector(Bounds.Width, Bounds.Height);
-            
-            ElementComposition.SetElementChildVisual(this, visual);
+                _compositionSurface = compositor.CreateDrawingSurface();
+                
+                // Create a CompositionVisual to host our surface
+                var visual = compositor.CreateSurfaceVisual();
+                visual.Surface = _compositionSurface;
+                visual.Size = new Vector(Bounds.Width, Bounds.Height);
+                
+                ElementComposition.SetElementChildVisual(this, visual);
+
+                // Trigger visual update once interop is ready
+                Dispatcher.UIThread.Post(InvalidateVisual, DispatcherPriority.Render);
+            }
+            catch (Exception)
+            {
+                // Silently fail or log if possible
+            }
         }
 
         public void BindSurface(IRenderSurface surface)
@@ -108,9 +121,13 @@ namespace ArisenLauncher.Views
                 
                 // Import the D3D11 shared texture into Avalonia
                 var importedImage = _interop.ImportImage(
-                    KnownPlatformGraphicsExternalImageHandleTypes.D3D11TextureGlobalSharedHandle,
-                    sharedHandle,
-                    pixelSize);
+                    new Avalonia.Platform.PlatformHandle(sharedHandle, KnownPlatformGraphicsExternalImageHandleTypes.D3D11TextureGlobalSharedHandle),
+                    new Avalonia.Platform.PlatformGraphicsExternalImageProperties
+                    {
+                        Width = pixelSize.Width,
+                        Height = pixelSize.Height,
+                        Format = Avalonia.Platform.PlatformGraphicsExternalImageFormat.B8G8R8A8UNorm
+                    });
 
                 try 
                 {
