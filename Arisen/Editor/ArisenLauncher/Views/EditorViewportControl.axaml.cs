@@ -18,6 +18,10 @@ namespace ArisenLauncher.Views
         private IRenderSurface? _surface;
         private CompositionDrawingSurface? _compositionSurface;
         private ICompositionGpuInterop? _interop;
+        
+        private ICompositionImportedGpuImage? _cachedImportedImage;
+        private IntPtr _lastSharedHandle = IntPtr.Zero;
+        private PixelSize _lastPixelSize;
 
         private PixelSize GetPhysicalPixelSize()
         {
@@ -118,32 +122,39 @@ namespace ArisenLauncher.Views
             try 
             {
                 var pixelSize = GetPhysicalPixelSize();
-                
-                // Import the D3D11 shared texture into Avalonia
-                var importedImage = _interop.ImportImage(
-                    new Avalonia.Platform.PlatformHandle(sharedHandle, KnownPlatformGraphicsExternalImageHandleTypes.D3D11TextureGlobalSharedHandle),
-                    new Avalonia.Platform.PlatformGraphicsExternalImageProperties
-                    {
-                        Width = pixelSize.Width,
-                        Height = pixelSize.Height,
-                        Format = Avalonia.Platform.PlatformGraphicsExternalImageFormat.B8G8R8A8UNorm
-                    });
 
-                try 
+                // Phase 2 Optimization: Cache the imported image to avoid per-frame allocations.
+                // Recreate only if the shared handle or dimensions have changed.
+                if (_cachedImportedImage == null || sharedHandle != _lastSharedHandle || pixelSize != _lastPixelSize)
                 {
-                    // Phase 1.5 Synchronization: RenderSubsystem already performs a WaitQueueTicket(ticket)
-                    // for virtual surfaces to ensure the texture is ready before this update.
-                    await _compositionSurface.UpdateAsync(importedImage);
-                }
-                finally 
-                {
-                    importedImage.Dispose();
+                    _cachedImportedImage?.Dispose();
+                    _lastSharedHandle = sharedHandle;
+                    _lastPixelSize = pixelSize;
+
+                    _cachedImportedImage = _interop.ImportImage(
+                        new Avalonia.Platform.PlatformHandle(sharedHandle, KnownPlatformGraphicsExternalImageHandleTypes.D3D11TextureGlobalSharedHandle),
+                        new Avalonia.Platform.PlatformGraphicsExternalImageProperties
+                        {
+                            Width = pixelSize.Width,
+                            Height = pixelSize.Height,
+                            Format = Avalonia.Platform.PlatformGraphicsExternalImageFormat.B8G8R8A8UNorm
+                        });
                 }
 
+                // Phase 2 Synchronization: Targeted asynchronous wait for the GPU ticket.
+                // This replaces the CPU stall in the Engine thread, allowing the UI 
+                // and Engine to run concurrently.
+                ulong targetTicket = _surface.GetLastRenderTicket();
+                await _surface.WaitForRenderTicketAsync(targetTicket);
+
+                await _compositionSurface.UpdateAsync(_cachedImportedImage);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // Log or handle interop failure
+                // Clean up on failure to allow retry next frame
+                _cachedImportedImage?.Dispose();
+                _cachedImportedImage = null;
+                _lastSharedHandle = IntPtr.Zero;
             }
         }
     }
