@@ -14,8 +14,9 @@ Our immediate operational goal is to **finalize the core engine infrastructure**
 #### Key Milestones
 - [x] Decentralize Kernel from Application logic.
 - [x] Implement DAG and RenderGraph foundational packages.
-- [/] Integrate internal Job System (TaskGraph) into ECS.
-- [/] Bridge Vulkan RHI to Editor Viewport (Texture Sharing).
+- [x] Integrate internal Job System (TaskGraph) into ECS (via EntityCommandBuffer).
+- [x] Integrate RenderGraph into parallel Rendering Pipeline.
+- [/] Bridge Vulkan RHI to Editor Viewport (Phase 2 Sync completed).
 
 ---
 
