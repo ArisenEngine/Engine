@@ -49,6 +49,7 @@ A standard Arisen workspace typically includes a baseline set of core packages. 
 | `com.arisen.core` | Kernel | Core managed abstractions and lifecycle. |
 | `com.arisen.ecs` | Domain | High-performance Entity Component System. |
 | `com.arisen.rendering` | Domain | RenderGraph architecture and pipeline management. |
+| `com.arisen.generic-renderpipeline` | Domain | Standard parallel render pipeline implementation. |
 | `com.arisen.taskgraph` | Foundation| Internal multi-threaded job system. |
 | `com.arisen.platform.desktop` | Platform | Desktop windowing and input hosting. |
 | `com.arisen.editor` | Tooling | (Development only) Visual authoring environment. |

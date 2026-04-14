@@ -88,7 +88,7 @@ public class MeshRenderSubsystem : IEngineSubsystem
 
 ## 4. Architectural Rules for Services
 
-1. **No Data Storage in Services**: Services should generally be stateless managers or gateways (like `IAssetDatabase`, `IRHIDevice`, `IPhysicsWorld`). Game-state data MUST live in the ECS `ComponentPool<T>`.
+1. **No Data Storage in Services**: Services should generally be stateless managers or gateways (like `IAssetDatabase`, `IRHIDevice`, `ITaskGraph`, `IPhysicsWorld`). Game-state data MUST live in the ECS `ComponentPool<T>`.
 2. **Read-Only Interfaces**: Prefer using `IReadOnly...` interfaces if a package is exposing data that shouldn't be mutated by other packages.
 3. **Never Cache the Registry**: Subsystems should fetch the services they need during `OnInit()` and cache the service instance itself, *not* the global `IServiceRegistry`. 
 4. **Strict Cast Prevention**: Developers MUST NOT attempt to cast a Service Interface back to its concrete type (e.g. `(VulkanRHIDevice)registry.Get<IRHIDevice>()`). Doing so bypasses the package boundaries and breaks the architectural paradigm.
