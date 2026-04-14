@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace ArisenKernel.Contracts;
 
@@ -28,6 +29,8 @@ public interface IRenderSurface : IDisposable
     void DisposeSurface();
     IntPtr GetHandle();
     IntPtr GetSharedHandle();
+    ulong GetLastRenderTicket();
+    Task WaitForRenderTicketAsync(ulong ticket);
     
     // Lifecycle hooks
     void OnCreate();
