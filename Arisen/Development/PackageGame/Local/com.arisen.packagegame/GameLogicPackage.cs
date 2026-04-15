@@ -13,15 +13,15 @@ public class GameLogicPackage : IPackageEntry
     {
         KernelLog.Info("[GameLogic] Package Loaded.");
 
-        // Verification of TaskGraph system
-        var taskGraph = registry.GetService<ArisenEngine.Threading.ITaskGraph>();
-        if (taskGraph != null)
+        // Verification of Mesh Rendering system
+        var scene = EngineKernel.Instance.GetSubsystem<ArisenEngine.ECS.Lifecycle.SceneSubsystem>();
+        if (scene != null)
         {
-            TaskGraphTest.RunTest(taskGraph);
+            MeshRenderTest.Setup(scene);
         }
         else
         {
-            KernelLog.Warning("[GameLogic] ITaskGraph service not found! TaskGraphTest skipped.");
+            KernelLog.Warning("[GameLogic] SceneSubsystem not found! MeshRenderTest skipped.");
         }
     }
 
