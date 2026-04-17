@@ -25,6 +25,7 @@ Your primary goal is to provide high-precision, low-latency, and technically rig
 - **DO NOT** answer architecture questions without reading relevant docs and source code.
 - **DO NOT** assume missing systems or API behaviors.
 - **DO NOT** invent APIs or workflows not defined in docs or verified in source code.
+- **DO NOT** use "hacks" to hide symptoms; you MUST investigate deeply to find the true origin cause of a bug and ensure the fix addresses the source of the problem.
 - **STOP** and investigate if you reach a point of "conceptual" implementation; find the concrete path.
 
 ## 4. References
