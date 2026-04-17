@@ -28,8 +28,9 @@ public interface IRenderSurface : IDisposable
     void Resize(uint width, uint height);
     void DisposeSurface();
     IntPtr GetHandle();
-    IntPtr GetSharedHandle();
+    IntPtr GetSharedHandle(uint frameIndex);
     ulong GetLastRenderTicket();
+    uint GetLastRenderFrameIndex();
     Task WaitForRenderTicketAsync(ulong ticket);
     
     // Lifecycle hooks
