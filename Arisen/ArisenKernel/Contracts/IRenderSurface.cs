@@ -20,6 +20,7 @@ public struct SurfaceInfo
 
 public interface IRenderSurface : IDisposable
 {
+    string Name { get; }
     IntPtr Handle { get; }
     uint SurfaceId { get; }
     uint Width { get; }
