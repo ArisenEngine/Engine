@@ -172,91 +172,16 @@ public static class EngineBootstrapper
             }
         }
 
-        // 2. Load Topologically (Preferring build-time resolved manifest)
-        KernelLog.Info("[Host] Mounting Packages...");
-        
-        foreach (var pUrl in packageUrls)
+        // 2. Initialize Kernel (The kernel now handles topological package loading)
+        kernel.Initialize(new EngineConfig
         {
-            string pJsonPath = Path.Combine(pUrl, "package.json");
-            if (!File.Exists(pJsonPath)) continue;
+            ProjectRoot = workspacePath,
+            ProjectName = Path.GetFileName(workspacePath),
+            PackageUrls = packageUrls,
+            Platform = RuntimePlatform.Windows // TODO: Deduce from OS
+        });
 
-            var pDoc = JsonDocument.Parse(File.ReadAllText(pJsonPath));
-            var root = pDoc.RootElement;
-            string id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() : root.GetProperty("name").GetString();
-            
-            // Native Runtimes
-            if (root.TryGetProperty("nativeRuntimes", out var nativeBlock) && nativeBlock.TryGetProperty("win-x64", out var win64Block))
-            {
-                foreach (var dll in win64Block.EnumerateArray())
-                {
-                    string nativeName = dll.GetString();
-                    KernelLog.InfoFormat("[Host] Mapping Native C++ Payload: {0} for {1}", nativeName, id);
-                    // NativeLibrary.Load(nativeName); // Actually deferred to execution or .arisen/bin/ output directory loader
-                }
-            }
-            
-        // B5+A5: Read nested entry: { assembly, class } schema (standardized format)
-        if (root.TryGetPropertyIC("entry", out var entryObj) && entryObj.ValueKind == JsonValueKind.Object)
-        {
-            string asmName = entryObj.TryGetPropertyIC("assembly", out var asmProp) ? asmProp.GetString() ?? "" : "";
-            string entryClassName = entryObj.TryGetPropertyIC("class", out var clsProp) ? clsProp.GetString() ?? "" : "";
-            
-            if (!string.IsNullOrEmpty(asmName))
-            {
-                KernelLog.InfoFormat("[Host] Booting Managed Entry: {0} for {1}", asmName, id);
-                try
-                {
-                    // Prefer central bin folder (where Host is) for generated projects
-                    string binDir = AppContext.BaseDirectory;
-                    string fullPath = Path.Combine(binDir, asmName);
-                    
-                    // Fallback to source Managed folder if not found in bin
-                    if (!File.Exists(fullPath))
-                    {
-                        fullPath = Path.Combine(pUrl, "Managed", asmName);
-                    }
-
-                    if (File.Exists(fullPath))
-                    {
-                        Assembly asm = Assembly.LoadFrom(fullPath);
-                        object? entryInstance = null;
-                        if (!string.IsNullOrEmpty(entryClassName))
-                        {
-                            Type t = asm.GetType(entryClassName);
-                            if (t != null)
-                            {
-                                entryInstance = Activator.CreateInstance(t);
-                                var onLoadMethod = t.GetMethod("OnLoad");
-                                if (onLoadMethod != null) onLoadMethod.Invoke(entryInstance, new object[] { registry });
-                            }
-                        }
-
-                        // B15: Register this successfully loaded package in the PackageSubsystem
-                        var pkgInfo = new ArisenPackageInfo
-                        {
-                            Id = id,
-                            Name = root.TryGetProperty("name", out var n) ? n.GetString() ?? id : id,
-                            Version = root.TryGetProperty("version", out var v) ? v.GetString() ?? "1.0.0" : "1.0.0",
-                            Type = root.TryGetProperty("type", out var typeProp) ? typeProp.GetString() ?? "managed" : "managed",
-                            RootPath = pUrl,
-                            Assembly = asm,
-                            EntryInstance = entryInstance,
-                            Source = pUrl.Contains("Local") ? PackageSource.External : PackageSource.Official
-                        };
-                        packageSubsystem.RegisterLoadedPackage(pkgInfo);
-                    }
-                    else
-                    {
-                         KernelLog.WarningFormat("[Host] WARNING: Could not find assembly {0} in bin/ or Managed/", asmName);
-                    }
-                }
-                catch (Exception e)
-                {
-                    KernelLog.ErrorFormat("[Host] Managed boot neglected/failed for {0}: {1}", id, e.Message);
-                }
-            }
-        }
-    }
+        KernelLog.Info("[Host] Kernel Initialization Complete.");
 
     KernelLog.Info("[Host] Topological Mount Complete.");
 

@@ -24,13 +24,20 @@ public static class KernelLog
         // accessing it triggers Lazy<> initialization
         if (!s_LoggerLookupAttempted && Lifecycle.EngineKernel.IsCreated)
         {
-            if (Lifecycle.EngineKernel.Instance.Services.TryGetService<ILogger>(out var logger))
+            var kernel = Lifecycle.EngineKernel.Instance;
+            if (kernel.Services.TryGetService<ILogger>(out var logger))
             {
                 s_CachedLogger = logger;
                 return s_CachedLogger;
             }
-            // Don't re-attempt until InvalidateCache is called
-            s_LoggerLookupAttempted = true;
+
+            // Only stop re-attempting if we've passed the initialization phases.
+            // If we are still in PreInit/Init/PostInit, we keep trying as services 
+            // might still be registering (e.g. from late-loading packages).
+            if (kernel.CurrentPhase >= Lifecycle.EnginePhase.Running)
+            {
+                s_LoggerLookupAttempted = true;
+            }
         }
         return null;
     }

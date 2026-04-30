@@ -1,10 +1,12 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
+using System.Reflection;
+using System.Text.Json;
 using ArisenKernel.Services;
 using ArisenKernel.Diagnostics;
 using ArisenKernel.Contracts;
-
+using ArisenKernel.Packages;
 
 namespace ArisenKernel.Lifecycle;
 
@@ -22,15 +24,14 @@ public sealed class EngineKernel : IDisposable
 
     public IServiceRegistry Services { get; } = new ServiceRegistry();
 
-    public event Action OnFrameEnd;
+    public event Action? OnFrameEnd;
 
     public EnginePhase CurrentPhase => m_CurrentPhase;
-    public EngineConfig Config { get; private set; }
+    public EngineConfig? Config { get; private set; }
     public uint CurrentFrameIndex { get; private set; } = 0;
 
-    private EngineKernel()
+    public EngineKernel()
     {
-
     }
 
     public void Reset()
@@ -62,7 +63,7 @@ public sealed class EngineKernel : IDisposable
         m_Subsystems.Add(subsystem);
     }
 
-    public T GetSubsystem<T>() where T : class, IEngineSubsystem
+    public T? GetSubsystem<T>() where T : class, IEngineSubsystem
     {
         return m_Subsystems.OfType<T>().FirstOrDefault();
     }
@@ -72,7 +73,13 @@ public sealed class EngineKernel : IDisposable
         Config = config;
         KernelLog.Info("[EngineKernel] Initializing...");
 
-        // Sort subsystems by priority
+        // 1. Mount Packages (Moved from Host for single-source-of-truth)
+        if (config.PackageUrls.Count > 0)
+        {
+            LoadPackages(config.PackageUrls);
+        }
+
+        // 2. Sort subsystems by priority
         m_Subsystems.Sort((a, b) => a.Priority.CompareTo(b.Priority));
 
         TransitionTo(EnginePhase.PreInit);
@@ -82,6 +89,80 @@ public sealed class EngineKernel : IDisposable
         m_IsRunning = true;
         m_CurrentPhase = EnginePhase.Running;
         KernelLog.Info("[EngineKernel] Engine is now Running.");
+    }
+
+    private void LoadPackages(List<string> packageUrls)
+    {
+        KernelLog.Info("[EngineKernel] Loading Packages...");
+        
+        var packageSubsystem = GetSubsystem<PackageSubsystem>();
+        if (packageSubsystem == null)
+        {
+            packageSubsystem = new PackageSubsystem();
+            m_Subsystems.Add(packageSubsystem);
+        }
+
+        foreach (var pUrl in packageUrls)
+        {
+            string pJsonPath = Path.Combine(pUrl, "package.json");
+            if (!File.Exists(pJsonPath)) continue;
+
+            try
+            {
+                var pDoc = JsonDocument.Parse(File.ReadAllText(pJsonPath));
+                var root = pDoc.RootElement;
+                string id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() : root.GetProperty("name").GetString();
+                
+                if (root.TryGetProperty("entry", out var entryObj) && entryObj.ValueKind == JsonValueKind.Object)
+                {
+                    string asmName = entryObj.TryGetProperty("assembly", out var asmProp) ? asmProp.GetString() ?? "" : "";
+                    string entryClassName = entryObj.TryGetProperty("class", out var clsProp) ? clsProp.GetString() ?? "" : "";
+                    
+                    if (!string.IsNullOrEmpty(asmName))
+                    {
+                        // Prefer central bin folder (where Host is)
+                        string binDir = AppContext.BaseDirectory;
+                        string fullPath = Path.Combine(binDir, asmName);
+                        
+                        if (!File.Exists(fullPath))
+                            fullPath = Path.Combine(pUrl, "Managed", asmName);
+
+                        if (File.Exists(fullPath))
+                        {
+                            Assembly asm = Assembly.LoadFrom(fullPath);
+                            object? entryInstance = null;
+                            if (!string.IsNullOrEmpty(entryClassName))
+                            {
+                                Type t = asm.GetType(entryClassName);
+                                if (t != null)
+                                {
+                                    entryInstance = Activator.CreateInstance(t);
+                                    var onLoadMethod = t.GetMethod("OnLoad");
+                                    if (onLoadMethod != null) onLoadMethod.Invoke(entryInstance, new object[] { Services });
+                                }
+                            }
+
+                            var pkgInfo = new ArisenPackageInfo
+                            {
+                                Id = id,
+                                Name = root.TryGetProperty("name", out var n) ? n.GetString() ?? id : id,
+                                Version = root.TryGetProperty("version", out var v) ? v.GetString() ?? "1.0.0" : "1.0.0",
+                                Type = root.TryGetProperty("type", out var typeProp) ? typeProp.GetString() ?? "managed" : "managed",
+                                RootPath = pUrl,
+                                Assembly = asm,
+                                EntryInstance = entryInstance
+                            };
+                            packageSubsystem.RegisterLoadedPackage(pkgInfo);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                KernelLog.Error($"[EngineKernel] Failed to load package at {pUrl}: {ex.Message}");
+            }
+        }
+        KernelLog.Info("[EngineKernel] Package Loading Complete.");
     }
 
     private void TransitionTo(EnginePhase phase)
@@ -158,4 +239,3 @@ public sealed class EngineKernel : IDisposable
         Shutdown();
     }
 }
-

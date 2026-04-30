@@ -20,5 +20,8 @@ public class EngineConfig
     public string ProjectName { get; set; } = string.Empty;
     public RuntimePlatform Platform { get; set; } = RuntimePlatform.Windows;
 
+    /// <summary>B13: Topological list of package local paths to load during kernel initialization.</summary>
+    public List<string> PackageUrls { get; set; } = new();
+
     // Add additional configuration properties as needed
 }
