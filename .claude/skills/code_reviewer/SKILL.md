@@ -5,47 +5,57 @@ description: Reviews code changes for bugs, style, and DOD performance. Use when
 
 # Code Reviewer SOP
 
-When conducting code reviews, follow this step-by-step Standard Operating Procedure to ensure the Arisen Engine's performance and stability are maintained.
+When conducting code reviews, follow this procedure to verify correctness, package integrity, and hot-path performance.
 
-## 1. Preparation & Context
-- Identify the review target (local changes or remote PR).
+## 1. Preparation and context
+- Identify the review target: local changes or a remote PR.
 - If remote: `gh pr checkout <PR_NUMBER>`.
-- Read the documentation: `Docs/GEMINI.MD` and `Docs/Architecture/ProjectManagement.md`.
+- Read the repo workflow in `CLAUDE.md`.
+- Read the architecture docs most relevant to the changed area. Start with `Arisen/Docs/Architecture/ProjectManagement.md`, then load rendering, lifecycle, service-registry, or package docs as needed.
 
-## 2. Automated Verification
-Run the standard verification suite before manual review:
+## 2. Automated verification
+Run the closest valid build or test path before deep manual review.
+
+Main workspace examples:
 ```powershell
-./Engine/Arisen/Scripts/Windows/build_workspace.bat Testing
+Arisen\Scripts\Windows\build_workspace.bat --config Debug --profile Development
+Arisen\Scripts\Windows\build_workspace.bat --config Release --profile Production
 ```
+
+Isolated package-test example:
+```powershell
+Arisen\Scripts\Windows\build_workspace.bat --package com.arisen.rhi.vulkan.native --config Debug
+```
+
 > [!NOTE]
-> If testing fails, prioritize reporting these failures before deep manual analysis.
+> If verification fails, report the failing build or test results before spending time on deeper manual analysis.
 
-## 3. Technical Review Checklist
+## 3. Technical review checklist
 
-### A. Correctness & Quality
-- [ ] Does the logic match the intended feature/fix?
-- [ ] Are edge cases (null, empty, timeout, concurrency) handled?
-- [ ] Is error handling robust and informative?
+### A. Correctness and quality
+- [ ] Does the logic match the intended feature or fix?
+- [ ] Are edge cases, null handling, sequencing, and concurrency expectations correct?
+- [ ] Is the change internally consistent with nearby code and package contracts?
 
-### B. Arisen Performance Rules (CRITICAL)
-- [ ] **Zero-Overhead**: Are there any managed allocations (`new`) in entity loops or simulation ticks?
-- [ ] **Data-Oriented Design (DOD)**: Are interfaces being called in hot paths? (Virtual dispatch should be avoided).
-- [ ] **Memory Locality**: Are components processed in contiguous flat arrays?
+### B. Arisen performance rules
+- [ ] **Zero-overhead**: no managed allocations in hot loops, simulation ticks, or render-pass execution.
+- [ ] **DOD**: avoid interface dispatch and object-heavy patterns in hot paths.
+- [ ] **Memory locality**: bulk data should stay contiguous and batch-friendly.
 
-### C. Multi-Threading & Concurrency
-- [ ] Are there any unsafe mutations of shared state outside of ECS commands?
-- [ ] Is atomic synchronization used correctly where necessary?
-- [ ] Avoid `lock` statements entirely in hot paths.
+### C. Multi-threading and concurrency
+- [ ] Are shared-state mutations safe and intentional?
+- [ ] Are ECS commands, task-graph boundaries, or explicit synchronization used where required?
+- [ ] Avoid `lock` in hot paths.
 
-### D. Package Integrity
-- [ ] Does the PR respect package boundaries?
-- [ ] No static domain references between disconnected packages.
+### D. Package integrity
+- [ ] Does the change respect package boundaries and manifest-driven composition?
+- [ ] Are service dependencies expressed through interfaces and `IServiceRegistry` instead of concrete cross-package coupling?
 
-## 4. Providing Feedback
-- Be specific about line numbers and rationale.
-- Propose concrete code alternatives.
-- Structure findings as: **Critical**, **Improvements**, and **Nits**.
-- Conclusion: Recommendation to Approve or Request Changes.
+## 4. Providing feedback
+- Be specific about file paths, line numbers, and rationale.
+- Propose concrete alternatives when something should change.
+- Structure findings as `Critical`, `Improvements`, and `Nits`.
+- End with a clear recommendation: approve or request changes.
 
 ## 5. Cleanup
-- If remote: ask the user if they want to switch back to the default branch.
+- If you checked out a remote PR branch, confirm whether the user wants to switch back afterward.

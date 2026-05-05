@@ -5,32 +5,42 @@ description: Guides safe decoupling of packages via IServiceRegistry. Use when c
 
 # Service Registry SOP
 
-Use the `IServiceRegistry` pattern to decoupling packages. This allows the Arisen Microkernel to manage dependencies and lifecycle.
+Use `IServiceRegistry` to decouple packages while preserving lifecycle control and package boundaries.
 
-## 1. Safety Checklist
-- [ ] **NO Static Domain References**: A Domain package must never directly reference another Domain package.
-- [ ] **No Concrete Casts**: Use interfaces only. Never cast a service to its concrete implementation.
-- [ ] **No Repository Caching**: Cache the service instance, not the registry itself.
+Reference architecture doc:
+- `Arisen/Docs/Architecture/ServiceRegistry.md`
 
-## 2. Providing a Service
-If you are implementing a new engine service (e.g., a new RHI backend):
-1. [ ] **Declare Interface**: Definitions MUST live in a Foundation package (e.g., `com.arisen.rhi`).
-2. [ ] **Implementation**: Implement the interface in your package.
-3. [ ] **Registration**: In `IPackageEntry.OnLoad(IServiceRegistry services)`:
-    ```csharp
-    services.Register<IMyService>(new MyConcreteService());
-    ```
-4. [ ] **Metadata**: Declare `"services": { "provides": [ "IMyService" ] }` in `package.json`.
+## 1. Safety checklist
+- [ ] No static domain references between disconnected packages.
+- [ ] Register and consume interfaces, not concrete implementations.
+- [ ] Do not cast resolved services back to concrete types.
+- [ ] Cache the resolved service instance, not the registry itself.
+- [ ] Do not use service lookups inside hot inner loops.
 
-## 3. Consuming a Service
-If your subsystem requires another service (e.g., the Game logic needs the Renderer):
-1. [ ] **Declare Dependency**: Add the interface ID to `"services": { "requires": [ "IMyService" ] }` in `package.json`.
-2. [ ] **Retrieval**: In your `IEngineSubsystem.OnInit(IServiceRegistry registry)`:
-    ```csharp
-    _myService = registry.Get<IMyService>();
-    ```
-3. [ ] **Null Checks**: Ensure the service exists before use, or handle the missing service gracefully.
+## 2. Providing a service
+If a package provides a new engine service:
+1. [ ] Declare the interface in the appropriate shared/foundation package.
+2. [ ] Implement the interface inside the provider package.
+3. [ ] Register it from `IPackageEntry.OnLoad(IServiceRegistry services)`.
+4. [ ] Declare the provided service in `package.json` metadata when the package contract requires it.
+
+Example:
+```csharp
+services.Register<IMyService>(new MyConcreteService());
+```
+
+## 3. Consuming a service
+If a package depends on another service:
+1. [ ] Declare the required service in `package.json` when applicable.
+2. [ ] Resolve it during subsystem or package initialization, not repeatedly in hot paths.
+3. [ ] Store the interface reference for later use.
+
+Example:
+```csharp
+_myService = registry.Get<IMyService>();
+```
 
 ## 4. Verification
-- Verify that both provider and consumer packages appear in the `manifest.json`.
-- Check that the Kernel's service log reports successful registration and resolution.
+- Verify both provider and consumer packages are present in the active workspace manifest.
+- Verify lifecycle ordering makes the provider available before the consumer uses it.
+- Verify the final usage path stays outside hot inner loops.

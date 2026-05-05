@@ -13,6 +13,18 @@ The root `README.md` lists the expected Windows toolchain:
 - .NET SDK 9.0+
 - Python 3+
 
+## Documentation ownership
+
+Use a single source of truth for each kind of documentation:
+
+- `README.md` - public overview and quick-start
+- `CLAUDE.md` - repo-specific AI and developer workflow guidance
+- `Arisen\Docs\Architecture` - source-of-truth architecture and build documentation
+- `.claude\rules\arisen.md` - thin always-on Claude routing rules
+- `.claude\skills\*\SKILL.md` - Claude-only procedural skills
+
+Do not mirror assistant-specific guidance between `Arisen\Docs` and `.claude`. Keep architecture and domain documentation under `Arisen\Docs\Architecture`, and keep Claude runtime guidance under `CLAUDE.md`, `.claude\rules`, and `.claude\skills`.
+
 ## Common commands
 
 Run commands from the repository root.
@@ -72,7 +84,6 @@ No dedicated lint command or repo-local static-analysis script was found in the 
 
 ## Important repo notes
 
-- The root `README.md` currently points to `Scripts/Windows/generate_editor_all.bat`, but that file does not exist in this checkout. Prefer the live scripts under `Arisen\Scripts\Windows\`.
 - Generated solutions and project files are produced by `ArisenBuildTool`; do not hand-maintain `.sln`, `.csproj`, or native build glue unless the task is specifically about the generator.
 - The main generated outputs live under workspace-local `.arisen/`, especially:
   - `.arisen\Projects\{Profile}\`
@@ -91,7 +102,8 @@ The important top-level areas are:
 - `Arisen\Development\PackageGame\Local\com.*` - engine and app packages under active development
 - `Arisen\Editor\ArisenLauncher` and `Arisen\Editor\ArisenLauncher.Desktop` - Avalonia launcher/editor host
 - `Arisen\Docs\Architecture` - source-of-truth architecture docs for package lifecycle, build generation, rendering, service registry, manifests, and project layout
-- `Arisen\Docs\Skills` - implementation guidance for DOD, package creation, and service-registry usage
+- `.claude\skills` - Claude-only procedural skills for review, package creation, DOD guidance, and service-registry usage
+- `.claude\rules` - thin always-on Claude routing rules
 
 ### Core model: everything is a package
 
@@ -186,7 +198,7 @@ Rules to preserve the architecture:
 Relevant files:
 - `Arisen\ArisenKernel\Services\IServiceRegistry.cs`
 - `Arisen\Docs\Architecture\ServiceRegistry.md`
-- `Arisen\Docs\Skills\use_service_registry\SKILL.md`
+- `.claude\skills\use_service_registry\SKILL.md`
 
 ### Hot-path / DOD rules
 
@@ -207,7 +219,7 @@ This is especially important when touching:
 - managed/native interop boundaries
 
 Relevant docs:
-- `Arisen\Docs\Skills\write_dod_code\SKILL.md`
+- `.claude\skills\write_dod_code\SKILL.md`
 - `Arisen\Docs\Architecture\Rendering.md`
 
 ### Rendering stack
