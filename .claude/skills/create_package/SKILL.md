@@ -5,22 +5,26 @@ description: Scaffolds a new Arisen Engine package. Use when adding features, su
 
 # Create Package SOP
 
-When scaffolding a new package, follow this procedure to ensure it integrates seamlessly with the microkernel and build system.
+When scaffolding a new package, follow this procedure so it integrates cleanly with the package graph and generated workspace.
 
-## 1. Directory Structure Checklist
-- [ ] Determine the target directory:
-    - `Engine/Packages/`: Core engine systems.
-    - `Local/`: User-defined components and gameplay code.
-- [ ] Create the new package folder. Use lowercase (e.g., `com.arisen.physics`).
+## 1. Choose the target workspace and directory
+- [ ] Identify the workspace that should own the package.
+- [ ] Place the package under that workspace's package roots, typically `Local/` for actively developed engine, editor, or game packages.
+- [ ] Use a lowercase dot-separated package ID such as `com.arisen.physics`.
 
-## 2. package.json Scaffold
-Generate a valid `package.json` in the root of the new folder. Follow these strict rules:
-- [ ] `$schema`: Use "https://arisen.dev/schemas/package-v2.json".
-- [ ] `id`: Unique lowercase ID using dot notation.
-- [ ] `dependencies`: Mandatory empty or populated map.
-- [ ] **NO manual editing** of `subsystems`, `nativeRuntimes`, or `entry.assembly`.
+For the canonical development workspace in this repo, packages live under paths such as:
+- `Arisen/Development/PackageGame/Local/com.arisen.*`
 
-### Template:
+## 2. Scaffold `package.json`
+Create a valid `package.json` in the package root.
+
+Rules:
+- [ ] `$schema`: use `https://arisen.dev/schemas/package-v2.json`
+- [ ] `id`: unique lowercase ID using dot notation
+- [ ] `dependencies`: include an explicit empty or populated object
+- [ ] Do not hand-maintain derived metadata such as `subsystems`, `nativeRuntimes`, or `entry.assembly` unless the task specifically requires it
+
+Template:
 ```json
 {
   "$schema": "https://arisen.dev/schemas/package-v2.json",
@@ -32,18 +36,26 @@ Generate a valid `package.json` in the root of the new folder. Follow these stri
 }
 ```
 
-## 3. C# Entry Point
-- [ ] Create a `PackageEntry.cs` that implements `ArisenKernel.Packages.IPackageEntry`.
-- [ ] Implement `OnLoad()` for subsystem registration.
+## 3. Add the package entry point if needed
+- [ ] Create a `PackageEntry.cs` that implements `ArisenKernel.Packages.IPackageEntry` when the package needs runtime registration.
+- [ ] Use `OnLoad(IServiceRegistry services)` for subsystem or service registration.
 
-## 4. Mandatory Manifest Registration
-- [ ] Update the workspace's `manifest.json`.
-- [ ] Add the package ID and relative URL.
-- [ ] **CRITICAL**: If not registered, the Kernel will completely ignore the directory.
+## 4. Register the package in the workspace manifest
+- [ ] Update the owning workspace `manifest.json`.
+- [ ] Add the package ID, URL, and version.
+- [ ] If the package is profile-specific, add it under the correct profile block.
+- [ ] If the package is not present in the workspace manifest, the kernel and generated workspace will ignore it.
+
+For the canonical workspace in this repo, the manifest is:
+- `Arisen/Development/PackageGame/manifest.json`
 
 ## 5. Verification
-Validate that the new package compiles and is discoverable:
+Validate that the package is discoverable and compiles through the generated workspace.
+
+Examples:
 ```powershell
-./Engine/Arisen/Scripts/Windows/build_workspace.bat Debug
+Arisen\Scripts\Windows\build_workspace.bat --config Debug --profile Development
+Arisen\Scripts\Windows\build_workspace.bat --manifest Arisen\Development\PackageGame\manifest.json --config Debug --profile Development
 ```
-Confirm the package appears in the `Assets Browser` if integrated with the Editor.
+
+If the package includes editor-facing functionality, verify it appears through the generated Development workspace after a successful build.

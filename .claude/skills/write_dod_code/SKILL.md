@@ -5,28 +5,28 @@ description: Guidelines for high-performance Data-Oriented Design (DOD) in the E
 
 # DOD Performance Checklist
 
-When writing high-performance engine code (hot paths), you MUST follow these Data-Oriented Design (DOD) principles to achieve zero-overhead execution.
+When writing hot-path engine code, follow these Data-Oriented Design rules to preserve zero-overhead execution.
 
-## 1. Hot Path Definition
+## 1. Hot path definition
 A hot path is any code that runs:
-- Inside an ECS System loop.
-- Every frame during the simulation tick (`Update`, `Tick`).
-- Inside the RenderGraph command recording.
+- inside an ECS system loop
+- every frame during simulation or rendering
+- inside RenderGraph pass execution or command recording
+- inside task-graph-driven bulk processing
 
-## 2. Zero-Overhead Essentials
-- [ ] **Ban on Classes**: Do not use `class` for components or hot-path local data. Use `struct`.
-- [ ] **Ban on Managed Allocations**: No `new` keywords in the hot path. These cause GC pressure.
-- [ ] **Ban on Interfaces**: Never call a C# `interface` method inside a loop. Virtual dispatch kills CPU cache hits.
-- [ ] **Ban on Locks**: Do not use `lock` statements for thread safety in hot paths. Use atomics or ECS commands.
+## 2. Zero-overhead essentials
+- [ ] Use `struct` for components and hot-path local data.
+- [ ] Do not allocate managed objects in the hot path.
+- [ ] Avoid interface dispatch inside inner loops.
+- [ ] Avoid `lock` in hot paths.
 
-## 3. Memory & Iteration
-- [ ] **Flat Arrays**: Use `ComponentPool<T>.GetRawComponentArray()` for bulk processing.
-- [ ] **Native Buffers**: For large data transfers between packages, use `NativeArray<T>`.
-- [ ] **Transient Memory**: For single-frame allocations, use `FrameArena.Instance.Alloc<T>()`.
-- [ ] **Pointer Iteration**: Prefer `Span<T>` or `fixed` pointer blocks when high-speed access to large data is required.
+## 3. Memory and iteration
+- [ ] Prefer contiguous component storage and batch processing.
+- [ ] Use `ComponentPool<T>.GetRawComponentArray()` or equivalent flat-array access when available.
+- [ ] Use `NativeArray<T>`, spans, or other bulk-transfer primitives for large cross-boundary data movement.
+- [ ] Use transient frame allocators such as `FrameArena` for one-frame scratch memory when the subsystem supports them.
 
 ## 4. Verification
-Benchmarks and performance verification:
-1. Run with `Release` profile.
-2. Monitor GC pauses (should be zero in simulation loops).
-3. Use `scan-build.bat` for static analysis of performance-critical code.
+- Build and profile in Release when measuring hot-path performance.
+- Confirm GC pressure stays out of simulation and rendering loops.
+- Validate the final design against the relevant architecture docs and nearby package patterns instead of relying on generic OOP conventions.

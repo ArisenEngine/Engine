@@ -1,193 +1,122 @@
 # ArisenEngine
 
-ArisenEngine is an open-source, self-developed rendering engine designed for learning and research. It adopts a modular architecture and supports multi-platform builds and modern graphics APIs (specifically Vulkan). The goal is to create a modern, high-performance graphics engine that allows developers to explore cutting-edge graphics programming and engine architecture.
+ArisenEngine is a package-centric microkernel engine and editor stack for learning, research, and high-performance runtime architecture. The engine stays intentionally thin: workspaces declare packages, packages provide the real functionality, and `ArisenBuildTool` generates the runnable/editor/testable outputs from that package graph.
 
----
+## Requirements
 
-![License](https://img.shields.io/github/license/ArisenEngine/Engine)
-![Contributors](https://img.shields.io/github/contributors/ArisenEngine/Engine)
-[![Contributors](https://contrib.rocks/image?repo=ArisenEngine/Engine)](https://github.com/ArisenEngine/Engine/graphs/contributors)
+| Component | Version |
+| --- | --- |
+| Visual Studio | 2022 with MSBuild and C++23 toolchain |
+| Windows SDK | 10+ |
+| CMake | 3.29+ |
+| .NET SDK | 9.0+ |
+| Vulkan SDK | Latest recommended |
+| Python | 3+ |
 
----
+## Repository layout
 
-## 🧰 Requirements
+- `Arisen/ArisenKernel` - kernel contracts, bootstrapping, package loading, service registry, subsystem lifecycle
+- `Arisen/External/ArisenBuildTool` - workspace/package discovery, dependency resolution, project and solution generation
+- `Arisen/Development/PackageGame` - canonical development workspace
+- `Arisen/Development/PackageGame/Local/com.*` - engine, editor, rendering, and testing packages under active development
+- `Arisen/Editor/ArisenLauncher` - launcher/editor workspace
+- `Arisen/BindingGenerator` - managed/native binding generation
+- `Arisen/Docs/Architecture` - source-of-truth architecture and build documentation
 
-| Component     | Version Requirement      |
-| ------------- | ------------------------ |
-| CMake         | ≥ 3.29                   |
-| Vulkan SDK    | Installed (Latest recommended) |
-| Visual Studio | 2022 (C++23 support)     |
-| Windows SDK   | 10+                      |
-| .NET SDK      | 9.0+                     |
-| Python        | 3.0+                     |
+## Canonical workspace
 
----
+The main development workspace is:
 
-## 🏗️ Architecture Design
+- `Arisen/Development/PackageGame`
 
-### Core Architecture Overview
+Its source-of-truth manifest is:
 
-ArisenEngine employs a layered modular architecture, primarily divided into the following core levels:
+- `Arisen/Development/PackageGame/manifest.json`
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Editor Layer (C#)                        │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────┐ │
-│  │   ArisenEditor  │  │   Project Mgmt  │  │   UI/UX      │ │
-│  │   (Avalonia)    │  │   & Asset Tools │  │   Framework  │ │
-│  └─────────────────┘  └─────────────────┘  └──────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────────┐
-│                 Engine Layer (C#)                           │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────┐ │
-│  │   ShaderLab     │  │   Serialization │  │   Models     │ │
-│  │   Parser        │  │   System        │  │   & ECS      │ │
-│  └─────────────────┘  └─────────────────┘  └──────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────────┐
-│                Platform Layer (C++)                         │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────┐ │
-│  │   Shader        │  │   Window        │  │   File I/O   │ │
-│  │   Compiler      │  │   Management    │  │   & Utils    │ │
-│  │   (DXC)         │  │   (Win32)       │  │              │ │
-│  └─────────────────┘  └─────────────────┘  └──────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────────┐
-│                   RHI Layer (C++)                           │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────┐ │
-│  │   Vulkan        │  │   DirectX 12    │  │   Common     │ │
-│  │   Backend       │  │   (Planned)     │  │   RHI        │ │
-│  └─────────────────┘  └─────────────────┘  └──────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────────┐
-│                 Infrastructure (C++)                        │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────┐ │
-│  │   Logging       │  │   Memory        │  │   Profiling  │ │
-│  │   (spdlog)      │  │   Management    │  │   (Tracy)    │ │
-│  └─────────────────┘  └─────────────────┘  └──────────────┘ │
-└─────────────────────────────────────────────────────────────┘
+The workspace currently defines these main profiles:
+
+- `Development` - editor-enabled workspace with `com.arisen.editor`
+- `Production` - non-editor runtime profile
+- `RHIVulkanTesting` - test runner plus Vulkan native test package
+
+The base workspace package set includes the core kernel/runtime, ECS, DAG, desktop platform, resources, rendering, and Vulkan backend packages.
+
+## Build the main workspace
+
+Run commands from the repository root.
+
+Build all profiles from the canonical workspace:
+
+```bat
+Arisen\Scripts\Windows\build_workspace.bat
 ```
 
-### Core Components Details
+Build a specific profile/configuration:
 
-#### 1. ShaderLab System 🎨
-- **Function**: Parses ShaderLab format shader files, extracting metadata and HLSL code.
-- **Features**:
-  - Complete Pass parsing (Name, Tags, Render States).
-  - HLSL code extraction and preprocessor directive handling.
-  - Render State parsing (Blend, ZWrite, ZTest, Cull, Stencil, etc.).
-  - Pragma directive parsing (Entry points, Target models, Multi-compile variants).
-  - Code fidelity checking based on source text slicing.
-- **Output**: Shader metadata in YAML format, pure HLSL code for DXC compilation.
-
-#### 2. RHI (Render Hardware Interface) 🖥️
-- **Design Philosophy**: High-performance thin abstraction over modern graphics APIs.
-- **Supported Backends**:
-  - **Vulkan**: Primary backend. Deeply optimized for low overhead, explicit synchronization, and bindless resources.
-  - **DirectX 12**: Planned for future expansion.
-- **Core Functions**:
-  - Handle-based resource management (Bindless ready).
-  - Explicit synchronization (Barriers, Semaphores, Fences).
-  - Multi-threaded command recording.
-  - Dynamic resource binding via Descriptor Indexing.
-
-#### 3. Shader Compilation System ⚙️
-- **Compiler**: DirectX Shader Compiler (DXC).
-- **Target Formats**: SPIR-V (Vulkan).
-- **Features**:
-  - Cross-platform compilation from HLSL to SPIR-V.
-  - Shader variant management (multi_compile, shader_feature).
-  - Include file dependency resolution.
-  - Optimization level control.
-
-#### 4. Editor System 🛠️
-- **UI Framework**: Avalonia (Cross-platform .NET UI).
-- **Core Functions**:
-  - Project management and asset browser.
-  - Shader editor and preview.
-  - Scene editor and entity management.
-  - Real-time rendering preview window.
-- **Extensibility**: Modular design based on plugins.
-
-#### 5. Binding Generation System 🔗
-- **Tech Stack**: CppSharp (C++ to C# binding generation).
-- **Functions**:
-  - Automatic generation of C# bindings for C++ native code.
-  - Type-safe memory management.
-  - Cross-language call optimization (P/Invoke).
-
-### Data Flow Architecture
-
-```
-ShaderLab File → ShaderLab Parser → YAML Metadata
-                                    ↓
-Pure HLSL Code → DXC Compiler → SPIR-V Bytecode
-                                    ↓
-SPIR-V Reflection → Descriptor Info → Vulkan Pipeline Build
-                                    ↓
-Render Pipeline → GPU Execution → Framebuffer Output
+```bat
+Arisen\Scripts\Windows\build_workspace.bat --config Debug --profile Development
+Arisen\Scripts\Windows\build_workspace.bat --config Release --profile Production
 ```
 
-## 🗺️ High-Performance Roadmap
+Build an explicit workspace manifest:
 
-ArisenEngine aims to rival modern commercial engines in rendering architecture, focusing on "GPU-Driven," "Bindless," and "Parallelism."
-
-### Phase 1: The Modern Foundation (Current Focus) 🏗️
-Establishing a rock-solid, zero-overhead foundation for modern rendering.
-- [x] **High-Performance RHI (Vulkan)**
-    - [x] Handle-based resource access (preparing for Bindless).
-    - [x] Explicit memory management (VMA integration).
-    - [x] Synchronization primitive abstraction.
-- [ ] **Data-Oriented Core**
-    - [ ] Job System / Task Graph (Fiber-based multitasking).
-    - [ ] SIMD-optimized math library.
-    - [ ] Low-fragmentation memory allocators (Frame/Stack allocators).
-- [ ] **Bindless Architecture**
-    - [ ] Global Descriptor Heap design.
-    - [ ] "Bindless" texture and buffer access in shaders.
-    - [ ] Removal of legacy descriptor set binding management.
-
-### Phase 2: GPU-Driven Rendering Pipeline 🚀
-Moving the heavy lifting from CPU to GPU.
-- [ ] **GPU-Driven Geometry**
-    - [ ] GPU Culling (Frustum, Occlusion) via Compute Shaders.
-    - [ ] Mesh Shaders pipeline support.
-    - [ ] Indirect Drawing (Multi-Draw Indirect).
-- [ ] **Modern Render Graph**
-    - [ ] Automatic resource barrier placement.
-    - [ ] Transient resource management (memory aliasing).
-    - [ ] Async Compute scheduling.
-
-### Phase 3: Advanced Graphics Features 🌟
-Implementing state-of-the-art rendering techniques.
-- [ ] **Global Illumination**
-    - [ ] Hybrid Ray Tracing pipeline.
-    - [ ] Real-time GI (DDGI or Voxel-based).
-    - [ ] Screen Space Glocal Illumination (SSGI).
-- [ ] **Virtual Geometry**
-    - [ ] Cluster-based rendering (similar to Nanite).
-    - [ ] Continuous Level of Detail (LOD).
-- [ ] **Volumetric Effects**
-    - [ ] Volumetric Fog & Lighting.
-    - [ ] Volumetric Clouds.
-
-### Phase 4: Production Readiness & Tooling 🛠️
-Making the engine usable for actual game production.
-- [ ] **Asset Pipeline**
-    - [ ] Fast texture compression/transcoding (KTX2/DDS).
-    - [ ] Model optimization (MeshOptimizer).
-    - [ ] Asynchronous Asset Streaming.
-- [ ] **Editor & Debugging**
-    - [ ] GPU Frame Profiler integration.
-    - [ ] Visual Shader Graph.
-    - [ ] Scene serialization & Prefab system.
-
-## ⚙️ Build Instructions (Windows)
-
-### ✅ Quick Build Editor (Recommended)
-
-Run the following script to generate the Editor solution:
-
-```bash
-Scripts/Windows/generate_editor_all.bat
+```bat
+Arisen\Scripts\Windows\build_workspace.bat --manifest Arisen\Development\PackageGame\manifest.json --config Debug --profile Development
 ```
+
+`build_workspace.bat` performs the current end-to-end workspace pipeline:
+
+- locates and initializes the Visual Studio developer environment
+- refreshes generated bindings
+- builds `ArisenBuildTool`
+- resolves workspace packages and generates per-profile solutions
+- builds generated native projects with CMake when present
+- restores NuGet packages and builds the generated solution with MSBuild
+
+## Build the launcher/editor workspace
+
+Build the launcher/editor workspace with:
+
+```bat
+Arisen\Scripts\Windows\build_launcher_all.bat
+```
+
+This generates the launcher workspace, builds native components in Debug and Release, then builds the managed launcher solution in Debug and Release.
+
+## Refresh bindings only
+
+```bat
+Arisen\Scripts\Windows\run_binding_generator_debug.bat
+Arisen\Scripts\Windows\run_binding_generator_release.bat
+```
+
+## Current test workflow
+
+This repository does not currently expose a standard `dotnet test` / xUnit / NUnit workflow.
+
+The active testing path is package-level workspace generation through `ArisenBuildTool test`, exposed by `build_workspace.bat --package`.
+
+Example:
+
+```bat
+Arisen\Scripts\Windows\build_workspace.bat --package com.arisen.rhi.vulkan.native --config Debug
+```
+
+The canonical workspace manifest also includes a concrete testing profile:
+
+- `RHIVulkanTesting`
+
+## Generated outputs
+
+Generated `.sln`, `.csproj`, native build glue, and workspace output under `.arisen/` are derived artifacts produced by `ArisenBuildTool`. Treat package metadata, workspace manifests, and source code as the source of truth instead of hand-maintaining generated files.
+
+## Further reading
+
+For architecture and build details, read:
+
+- `Arisen/Docs/Architecture/ProjectManagement.md`
+- `Arisen/Docs/Architecture/ArisenBuildTool.md`
+- `Arisen/Docs/Architecture/ConfigurationFormats.md`
+- `Arisen/Docs/Architecture/PackageLifecycle.md`
+- `Arisen/Docs/Architecture/ServiceRegistry.md`
+- `Arisen/Docs/Architecture/Rendering.md`
