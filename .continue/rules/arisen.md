@@ -2,17 +2,13 @@
 trigger: always_on
 ---
 
----
-trigger: always_on
----
-
-# Arisen Engine Agentic Routing Rules
+# Arisen Engine Claude Routing Rules
 
 - Arisen is a package-centric microkernel: treat workspaces, manifests, and packages as the primary composition model.
 - Verify behavior from source code and local documentation before answering architecture, build, lifecycle, rendering, or package-boundary questions.
-- Read `AGENTS.md` first for repository workflow, build commands, and documentation ownership.
+- Read `CLAUDE.md` first for repository workflow, build commands, and documentation ownership.
 - Read `Arisen/Docs/Architecture/*.md` before making or describing architectural decisions.
-- Use `.agents/skills/*/SKILL.md` for Agentic-specific task procedures.
+- Use `.claude/skills/*/SKILL.md` for Claude-specific task procedures.
 - Keep this file thin: do not duplicate architecture docs, skill docs, or long-form workflow guidance here.
 
 ## Core Development Principles

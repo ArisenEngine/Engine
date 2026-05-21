@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "writing-checks": {
+      "source": "continuedev/skills",
+      "sourceType": "github",
+      "skillPath": "writing-checks/SKILL.md",
+      "computedHash": "5b0b98267d7c76ef45549c7aac4c9c087ed16ec3c41eb545f9f14d19828e3d7f"
+    }
+  }
+}
