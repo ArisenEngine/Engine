@@ -100,7 +100,7 @@ This document defines the strict `JSON` structural schemas for the core configur
 ## 3. Package Definition (`package.json`)
 
 **Location**: Root of every package directory (e.g. `Engine/Packages/com.arisen.ecs/package.json` or `Local/com.user.mygame/package.json`).  
-**Purpose**: Defines the package's identity, dependencies, C# entry assembly, and native requirements.
+**Purpose**: Defines the package's human-authored identity, dependencies, and package-level requirements. Code-derived metadata is emitted to sibling `package.generated.json` and merged by tooling/runtime.
 
 ### Schema Spec
 ```json
@@ -115,16 +115,9 @@ This document defines the strict `JSON` structural schemas for the core configur
   "engine": {
     "minVersion": "0.1.0"
   },
-  "entry": {
-    "assembly": "Arisen.RHI.Vulkan.dll"
-  },
-  "services": {
-    "provides": [ { "interface": "ArisenEngine.Core.RHI.IRHIDevice", "priority": 100 } ],
+    "services": {
     "requires": [ "ArisenEngine.Core.Platform.IWindowProvider" ]
   },
-  "subsystems": [
-    { "class": "ArisenEngine.RHI.Vulkan.VulkanSubsystem", "phase": "PreInit", "priority": 5 }
-  ],
   "dependencies": {
     "com.arisen.core.native": ">=1.0.0"
   },
@@ -142,24 +135,24 @@ This document defines the strict `JSON` structural schemas for the core configur
 | `id` | `string` | **Yes** | The reverse-DNS globally unique identifier (e.g., `com.arisen.ecs`). |
 | `name` | `string` | **Yes** | The human-readable display name. |
 | `version` | `string` | **Yes** | Semantic versioning string (e.g., `"1.2.0"`). |
-| `entry.assembly` | `string` | **Yes** | The managed C# DLL filename located in `lib/net9.0/`. Omitted for pure-data/asset packages. |
-| `entry.class` | `string` | Optional | The full name of the class implementing `IPackageEntry` to be invoked on boot. |
-| `services.provides` | `array` | Optional | A list of explicit C# interfaces this package registers into the Kernel's `ServiceRegistry` on boot. |
-| `services.requires` | `array` | Optional | A list of interfaces this package demands to exist in the registry before it can boot. |
-| `subsystems` | `array` | Optional | Types implementing `IEngineSubsystem`. The Kernel automatically instantiates and ticks them based on `phase` and `priority`. |
+| `entry.assembly` | `string` | Generated | The managed C# DLL filename. Usually emitted into `package.generated.json`. |
+| `entry.class` | `string` | Generated | The full name of the class implementing `IPackageEntry`. Usually emitted into `package.generated.json`. |
+| `services.provides` | `array` | Optional/generated | C# interfaces this package registers into the Kernel's `ServiceRegistry` on boot. Prefer code generation/attributes for providers. |
+| `services.requires` | `array` | Optional/human | Interfaces this package demands to exist in the registry before it can boot. |
+| `subsystems` | `array` | Generated | Types implementing `IEngineSubsystem`. Prefer `package.generated.json`; runtime merges authored and generated entries for transition compatibility. |
 | `dependencies` | `object` | Optional | Key-value pairs of required package IDs and their semantic version constraints. |
 | `nativeRuntimes` | `object` | Optional | Key-value pairs matching a platform Runtime Identifier (RID) to a list of unmanaged DLLs located in `runtimes/{rid}/native/`. |
 
 ### ArisenBuildTool Auto-Generation (Developer UX)
 
-A core philosophy of Arisen Engine is that humans should not manually write complex JSON configurations for compiled code. The `package.json` acts as the **highly-optimized compiled output** that the Kernel reads instantly at runtime. 
+A core philosophy of Arisen Engine is that humans should not manually write complex JSON configurations for compiled code. `package.json` is human-authored package intent; `package.generated.json` is tool-authored code metadata. Build-time validation, workspace generation, and runtime fallback read the **effective package manifest** formed by merging both files.
 
-To achieve this without compromising Developer Experience (DX), the **ArisenBuildTool** completely automates the generation of complex fields:
-1. **Subsystems (`subsystems`)**: Developers write standard C# code and tag it with `[EngineSubsystem(Phase, Priority)]`. During compilation, a Roslyn Source Generator or the ArisenBuildTool scans the assembly and injects this JSON node automatically.
-2. **Native Runtimes (`nativeRuntimes`)**: When compiling C++ `vcxproj` files via the engine's toolchain, the output binaries are automatically registered here.
-3. **Entry Assembly (`entry.assembly`)**: Inferred automatically based on the `.csproj` target output name.
+To achieve this without compromising Developer Experience (DX), the **ArisenBuildTool** writes generated fields to sibling `package.generated.json` instead of mutating human-owned `package.json`:
+1. **Subsystems (`subsystems`)**: Developers write standard C# code and tag it with `[EngineSubsystem(Phase, Priority)]`. During compilation, a Roslyn Source Generator or the ArisenBuildTool scans the assembly and writes this JSON node automatically to `package.generated.json`.
+2. **Native Runtimes (`nativeRuntimes`)**: When compiling C++ projects via the engine's toolchain, output binaries are automatically registered in generated metadata.
+3. **Entry (`entry.assembly`, `entry.class`)**: Inferred automatically from the compiled managed assembly and discovered `IPackageEntry` class.
 
-The *only* fields a user or package author should ever manually edit in `package.json` are:
+The *only* fields a user or package author should normally edit in `package.json` are:
 - `id`
 - `version`
 - `name` / `author` / `description`

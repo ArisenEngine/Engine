@@ -87,7 +87,7 @@ public static class PackageValidationService
                 continue;
             }
 
-            PackageManifest? packageManifest = ReadPackageManifest(packageJsonPath, requirement.Id, result);
+            PackageManifest? packageManifest = ReadPackageManifest(packagePath, requirement.Id, result);
             if (packageManifest == null)
             {
                 continue;
@@ -215,12 +215,11 @@ public static class PackageValidationService
             && string.Equals(left.Version ?? string.Empty, right.Version ?? string.Empty, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static PackageManifest? ReadPackageManifest(string packageJsonPath, string packageId, PackageValidationResult result)
+    private static PackageManifest? ReadPackageManifest(string packagePath, string packageId, PackageValidationResult result)
     {
         try
         {
-            string json = File.ReadAllText(packageJsonPath);
-            var manifest = JsonSerializer.Deserialize<PackageManifest>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var manifest = PackageManifestService.ReadEffectiveManifest(packagePath);
             if (manifest == null)
             {
                 result.Errors.Add($"Package '{packageId}' package.json deserialized to null.");
@@ -231,7 +230,7 @@ public static class PackageValidationService
         }
         catch (Exception ex)
         {
-            result.Errors.Add($"Failed to parse package '{packageId}' manifest at '{packageJsonPath}': {ex.Message}");
+            result.Errors.Add($"Failed to parse package '{packageId}' manifest at '{packagePath}': {ex.Message}");
             return null;
         }
     }

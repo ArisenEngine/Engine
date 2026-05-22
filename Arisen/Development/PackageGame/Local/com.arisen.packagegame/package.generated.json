@@ -1,0 +1,6 @@
+{
+  "entry": {
+    "assembly": "Com.Arisen.Packagegame.dll",
+    "class": "PackageGame.GameLogicPackage"
+  }
+}

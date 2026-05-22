@@ -60,11 +60,13 @@ For every discovered package:
 - **Managed Packages (C#)**: It generates `com.user.mygame.csproj` inside the hidden folder. It defines `<Compile Include="../../Local/com.user.mygame/**/*.cs" />` to link the source code. It automatically resolves exact `<ProjectReference>` links based on the `package.json` dependencies.
 - **Native Packages (C++)**: It generates `CMakeLists.txt` or `.vcxproj` pointing to the native source code.
 
-### Phase 3: Developer UX Injection (Source Generators)
-As defined in [ConfigurationFormats.md](ConfigurationFormats.md), users should not manually configure `subsystems` or `nativeRuntimes` in their `package.json`. 
+### Phase 3: Developer UX Injection (Generated Package Metadata)
+As defined in [ConfigurationFormats.md](ConfigurationFormats.md), users should not manually configure code-derived metadata such as `entry`, generated `services.provides`, generated `subsystems`, or `nativeRuntimes` in their human-owned `package.json`.
 
-During Phase 2, `ArisenBuildTool` automatically injects the **Arisen Roslyn Source Generator** into the generated `.csproj`. 
-- Every time the user clicks "Build" in Visual Studio/Rider, the injected analyzer scans the code for `[EngineSubsystem]` attributes and instantly overwrites the `package.json` with the compiled metadata!
+During Phase 2, `ArisenBuildTool` injects a post-build metadata step into the generated `.csproj`.
+- Every time the user clicks "Build" in Visual Studio/Rider, the injected step scans the compiled assembly for `IPackageEntry`, `[EngineSubsystem]`, and `[EngineService]` metadata.
+- The step writes `package.generated.json` next to `package.json` instead of overwriting `package.json`.
+- Validation, generation, and runtime fallback merge `package.json` + `package.generated.json` into an effective package manifest.
 
 ### Phase 4: Resolved Manifest & Entry Point Generation
 The tool generates a separate solution file for each **Profile** defined in the workspace:

@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using ArisenBuildTool.Models;
-using ArisenBuildTool.Utils;
 
 namespace ArisenBuildTool.Services;
 
@@ -14,7 +14,8 @@ public static class PackageInjectorService
     public static void Inject(string packageDir, string assemblyPath)
     {
         string packageJsonPath = Path.Combine(packageDir, "package.json");
-        
+        string generatedJsonPath = Path.Combine(packageDir, "package.generated.json");
+
         if (!File.Exists(packageJsonPath))
         {
             Console.WriteLine($"ArisenBuildTool Inject Error: package.json not found at {packageJsonPath}");
@@ -27,33 +28,25 @@ public static class PackageInjectorService
             return;
         }
 
-        PackageManifest pkg;
-        try
+        var generatedPackage = new GeneratedPackageMetadata
         {
-            string rawJson = File.ReadAllText(packageJsonPath);
-            pkg = JsonSerializer.Deserialize<PackageManifest>(rawJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"ArisenBuildTool Inject Error: Malformed package.json. {ex.Message}");
-            return;
-        }
+            Entry = new PackageEntry
+            {
+                Assembly = Path.GetFileName(assemblyPath)
+            }
+        };
 
-        pkg.Entry ??= new PackageEntry();
-        pkg.Entry.Assembly = Path.GetFileName(assemblyPath);
-
-        // Hook assembly resolution to find dependencies in the same folder as the target assembly
+        // Hook assembly resolution to find dependencies in the same folder as the target assembly.
         ResolveEventHandler resolveHandler = (sender, args) =>
         {
-            string folder = Path.GetDirectoryName(assemblyPath) ?? "";
+            string folder = Path.GetDirectoryName(assemblyPath) ?? string.Empty;
             string name = new AssemblyName(args.Name).Name + ".dll";
             string candidate = Path.Combine(folder, name);
-            if (File.Exists(candidate)) return Assembly.LoadFrom(candidate);
-            return null;
+            return File.Exists(candidate) ? Assembly.LoadFrom(candidate) : null;
         };
         AppDomain.CurrentDomain.AssemblyResolve += resolveHandler;
 
-        // Scan Assembly via byte loading to avoid absolutely any File Locks
+        // Scan Assembly via byte loading to avoid file locks.
         try
         {
             byte[] assemblyBytes = File.ReadAllBytes(assemblyPath);
@@ -64,28 +57,28 @@ public static class PackageInjectorService
 
             foreach (var type in assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract))
             {
-                // Discovery Phase 1: Identify Package Entry Class
+                // Discovery Phase 1: Identify Package Entry Class.
                 bool implementsEntry = type.GetInterfaces().Any(i => i.Name == "IPackageEntry");
                 if (implementsEntry)
                 {
-                    pkg.Entry.Class = type.FullName;
+                    generatedPackage.Entry!.Class = type.FullName;
                     Console.WriteLine($"[ArisenBuildTool] Discovered Entry Class: {type.FullName}");
 
-                    // If it also implements IApplicationHost, automatically register it as a service
+                    // If it also implements IApplicationHost, automatically register it as a service.
                     if (type.GetInterfaces().Any(i => i.Name == "IApplicationHost"))
                     {
-                         provides.Add(new PackageServiceProvider { Interface = "IApplicationHost", Priority = 100 });
-                         Console.WriteLine("[ArisenBuildTool] Automated Service Discovery: IApplicationHost");
+                        provides.Add(new PackageServiceProvider { Interface = "IApplicationHost", Priority = 100 });
+                        Console.WriteLine("[ArisenBuildTool] Automated Service Discovery: IApplicationHost");
                     }
                 }
 
-                // Discovery Phase 2: Handle Subsystems via Attributes
+                // Discovery Phase 2: Handle Subsystems via Attributes.
                 var subsystemAttr = type.GetCustomAttributesData().FirstOrDefault(a => a.AttributeType.Name == "EngineSubsystemAttribute");
                 if (subsystemAttr != null)
                 {
                     string phase = "Init";
                     int priority = 100;
-                    
+
                     if (subsystemAttr.ConstructorArguments.Count > 0)
                         phase = subsystemAttr.ConstructorArguments[0].Value?.ToString() ?? "Init";
                     if (subsystemAttr.ConstructorArguments.Count > 1)
@@ -98,8 +91,8 @@ public static class PackageInjectorService
                         Priority = priority
                     });
                 }
-                
-                // Discovery Phase 3: Handle Service Providers via Attributes
+
+                // Discovery Phase 3: Handle Service Providers via Attributes.
                 var serviceAttr = type.GetCustomAttributesData().FirstOrDefault(a => a.AttributeType.Name == "EngineServiceAttribute");
                 if (serviceAttr != null && serviceAttr.ConstructorArguments.Count > 0)
                 {
@@ -108,27 +101,30 @@ public static class PackageInjectorService
                         provides.Add(new PackageServiceProvider
                         {
                             Interface = interfaceType.FullName ?? interfaceType.Name,
-                            Priority = serviceAttr.ConstructorArguments.Count > 1 
+                            Priority = serviceAttr.ConstructorArguments.Count > 1
                                 && serviceAttr.ConstructorArguments[1].Value is int prio2 ? prio2 : 100
                         });
                     }
                 }
             }
 
-            if (subsystems.Count > 0) pkg.Subsystems = subsystems;
-            
-            if (provides.Count > 0) 
+            if (subsystems.Count > 0) generatedPackage.Subsystems = subsystems;
+
+            if (provides.Count > 0)
             {
-                pkg.Services ??= new PackageServices();
-                pkg.Services.Provides = provides.Select(p => JsonSerializer.SerializeToElement(p)).ToList();
+                generatedPackage.Services ??= new PackageServices();
+                generatedPackage.Services.Provides = provides.Select(p => JsonSerializer.SerializeToElement(p)).ToList();
             }
 
-            // Save modified package.json safely without mangling existing fields we don't own
-            var options = new JsonSerializerOptions { WriteIndented = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull };
-            string updatedJson = JsonSerializer.Serialize(pkg, options);
-            File.WriteAllText(packageJsonPath, updatedJson);
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+            string updatedJson = JsonSerializer.Serialize(generatedPackage, options);
+            File.WriteAllText(generatedJsonPath, updatedJson);
 
-            Console.WriteLine($"ArisenBuildTool Inject Success: Rewrote {Path.GetFileName(packageDir)}/package.json with {subsystems.Count} subsystems.");
+            Console.WriteLine($"ArisenBuildTool Inject Success: Wrote {Path.GetFileName(packageDir)}/package.generated.json with {subsystems.Count} subsystems.");
         }
         catch (Exception ex)
         {
@@ -138,5 +134,17 @@ public static class PackageInjectorService
         {
             AppDomain.CurrentDomain.AssemblyResolve -= resolveHandler;
         }
+    }
+
+    private sealed class GeneratedPackageMetadata
+    {
+        [JsonPropertyName("entry")]
+        public PackageEntry? Entry { get; set; }
+
+        [JsonPropertyName("services")]
+        public PackageServices? Services { get; set; }
+
+        [JsonPropertyName("subsystems")]
+        public List<PackageSubsystem>? Subsystems { get; set; }
     }
 }
