@@ -191,14 +191,15 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
   - [x] Documented launch as an external launcher/IDE/generated-host responsibility; build tool emits launch artifacts but does not own interactive process orchestration.
 - [x] Improve `ArisenBuildTool test --package <id>` diagnostics.
   - [x] Log workspace/engine root, companion `.test` package, virtual test manifest contents, and missing local package guidance before generation.
-- [ ] Ensure the launcher uses the same validation before opening projects.
-- [ ] Ensure project creation scaffolds:
-  - [ ] `.arisenproj`
-  - [ ] `manifest.json`
-  - [ ] `Local/com.user.project/package.json`
-  - [ ] starter `IPackageEntry`
-  - [ ] `Assets/`, `.Cache/`, `Logs/`
-- [ ] Ensure `.arisenproj` has no hardcoded absolute project path.
+- [x] Ensure the launcher uses the same validation before opening projects.
+  - [x] Launcher launch path now invokes `ArisenBuildTool validate --manifest ... --profile ...` before generation, then invokes `generate` with the same selected profile.
+- [x] Ensure project creation scaffolds:
+  - [x] `.arisenproj`
+  - [x] `manifest.json`
+  - [x] `Local/com.user.project/package.json`
+  - [x] starter `IPackageEntry`
+  - [x] `Assets/`, `.Cache/`, `Logs/`
+- [x] Ensure `.arisenproj` has no hardcoded absolute project path.
 
 ### Acceptance Criteria
 

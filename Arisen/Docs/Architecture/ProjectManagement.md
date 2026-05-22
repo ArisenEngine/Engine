@@ -106,6 +106,9 @@ The act of "Creating a New Project" via `ArisenLauncher` must perform the follow
    - A project without code is useless. The Launcher MUST scaffold a starter package inside `Local/com.user.mygame/`.
    - It generates `Local/com.user.mygame/package.json`.
    - It generates a single C# file (e.g., `GameEntry.cs`) that explicitly implements `IPackageEntry`. This establishes the user's immediate injection point into the Kernel.
+5. **Runtime Directories**: Create `Assets/`, `.Cache/`, and `Logs/` during scaffold so the workspace layout matches runtime expectations immediately.
+
+The generated `.arisenproj` must not serialize `ProjectPath` or any other absolute workspace path; the launcher derives that path from the file picker/recent-project entry at load time.
 
 ---
 
