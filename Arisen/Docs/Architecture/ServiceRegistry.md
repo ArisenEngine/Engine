@@ -86,6 +86,43 @@ public class MeshRenderSubsystem : IEngineSubsystem
 
 ---
 
+The validator accepts both service declaration forms:
+
+```json
+"services": {
+  "provides": [
+    "ArisenEngine.Core.RHI.IRHIDevice",
+        { "interface": "ArisenEngine.Core.RHI.IRHIFactory", "priority": 100 }
+  ],
+  "requires": [
+    "ArisenEngine.Core.RHI.IRHIDevice",
+    { "interface": "ArisenEngine.Core.RHI.IDebugCapture", "optional": true },
+    { "interface": "ArisenEngine.Core.RHI.ILateBoundDevice", "deferred": true }
+  ]
+}
+```
+
+`ArisenBuildTool validate` checks service contracts during package graph validation:
+
+- malformed `services.provides` / `services.requires` entries are fatal,
+- empty service contract names are fatal,
+- a required service with no selected provider package is fatal,
+- an optional service with no selected provider package logs a warning,
+- `deferred` service contracts still participate in build-time graph/provider validation but are not required to be registered during initial package mount,
+- duplicate providers currently emit a warning because provider selection/priority policy is not finalized yet.
+
+Runtime boot performs a second validation pass through `PackageSubsystem`:
+
+- while a package entry runs `OnLoad()`, `ServiceRegistry` records the current package as the provider context,
+- metadata-driven subsystems are instantiated by `PackageSubsystem` and registered as concrete services with their provider package context so editor/runtime tooling can resolve them,
+- after `OnLoad()` and metadata subsystem registration, every non-deferred declared `services.provides` contract must have been registered by that same package,
+- after all packages mount, every non-optional and non-deferred declared `services.requires` contract must be present in the registry,
+- `ServiceRegistry.GetRegisteredServices()` exposes contract, implementation, and provider package metadata for diagnostics/editor UI.
+
+This two-stage validation catches both graph-level mistakes before generation and implementation-level mistakes during boot.
+
+---
+
 ## 4. Architectural Rules for Services
 
 1. **No Data Storage in Services**: Services should generally be stateless managers or gateways (like `IAssetDatabase`, `IRHIDevice`, `ITaskGraph`, `IPhysicsWorld`). Game-state data MUST live in the ECS `ComponentPool<T>`.

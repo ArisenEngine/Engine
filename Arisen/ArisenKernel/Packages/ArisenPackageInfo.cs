@@ -12,6 +12,8 @@ public class ArisenPackageInfo
     public string EngineVersion { get; set; } = string.Empty;
     public string Type { get; set; } = "managed";
     public Dictionary<string, string> Dependencies { get; set; } = new();
+    public List<string> ProvidedServices { get; set; } = new();
+    public List<string> RequiredServices { get; set; } = new();
     public Assembly? Assembly { get; set; }
     public object? EntryInstance { get; set; }
 }

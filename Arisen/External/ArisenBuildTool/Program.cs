@@ -25,6 +25,12 @@ class Program
             return;
         }
 
+        if (args.Length > 0 && args[0].Equals("validate", StringComparison.OrdinalIgnoreCase))
+        {
+            RunValidateMode(args);
+            return;
+        }
+
         RunGenerateMode(args);
     }
 
@@ -97,6 +103,58 @@ class Program
         ExecuteGeneration(workspaceDir, engineDir, "Testing", testManifest);
     }
 
+    static void RunValidateMode(string[] args)
+    {
+        string workspaceDir = Path.GetFullPath(".");
+        string manifestPath = string.Empty;
+        string engineDir = string.Empty;
+        string profile = "Development";
+
+        for (int i = 1; i < args.Length; i++)
+        {
+            if ((args[i] == "--manifest" || args[i] == "-m") && i + 1 < args.Length)
+            {
+                manifestPath = Path.GetFullPath(args[++i]);
+                workspaceDir = Path.GetDirectoryName(manifestPath) ?? workspaceDir;
+            }
+            else if ((args[i] == "--engine" || args[i] == "-e") && i + 1 < args.Length)
+            {
+                engineDir = Path.GetFullPath(args[++i]);
+            }
+            else if (args[i] == "--profile" && i + 1 < args.Length)
+            {
+                profile = args[++i];
+            }
+            else if ((args[i] == "--workspace" || args[i] == "-w") && i + 1 < args.Length)
+            {
+                workspaceDir = Path.GetFullPath(args[++i]);
+            }
+        }
+
+        if (string.IsNullOrEmpty(manifestPath))
+        {
+            manifestPath = Path.Combine(workspaceDir, "manifest.json");
+        }
+
+        if (string.IsNullOrEmpty(engineDir))
+        {
+            engineDir = FindEngineRoot(AppContext.BaseDirectory);
+        }
+
+        Logger.Initialize(Path.Combine(workspaceDir, ".arisen", "ArisenBuildTool.Validate.log"));
+        Logger.Info($"ArisenBuildTool Validation Started. Workspace: {workspaceDir} | Profile: {profile}");
+        Logger.Info($"Engine Root: {engineDir}");
+
+        if (!TryReadManifest(manifestPath, out var manifest))
+        {
+            Environment.Exit(1);
+        }
+
+        var result = PackageValidationService.Validate(manifest!, workspaceDir, engineDir, profile);
+        PackageValidationService.LogSummary(result);
+        Environment.Exit(result.Success ? 0 : 1);
+    }
+
     static void RunGenerateMode(string[] args)
     {
         string workspaceDir = Path.GetFullPath(".");
@@ -142,31 +200,12 @@ class Program
         Logger.Info($"ArisenBuildTool Generation Started. Workspace: {workspaceDir} | Profile: {profile}");
         Logger.Info($"Engine Root: {engineDir}");
 
-        if (!File.Exists(manifestPath))
+        if (!TryReadManifest(manifestPath, out var manifest))
         {
-            string arisenManifestPath = Path.Combine(workspaceDir, "project.arisen");
-            if (File.Exists(arisenManifestPath)) manifestPath = arisenManifestPath;
-            else
-            {
-                Logger.Error($"Project manifest not found at '{manifestPath}'. Build aborted.");
-                return;
-            }
+            Environment.Exit(1);
         }
 
-        ProjectManifest? manifest = null;
-        try
-        {
-            string json = File.ReadAllText(manifestPath);
-            manifest = JsonSerializer.Deserialize<ProjectManifest>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            if (manifest == null) throw new Exception("Deserialization returned null.");
-        }
-        catch (Exception ex)
-        {
-            Logger.Error($"Failed to parse ProjectManifest: {ex.Message}");
-            return;
-        }
-
-        ExecuteGeneration(workspaceDir, engineDir, profile, manifest);
+        ExecuteGeneration(workspaceDir, engineDir, profile, manifest!);
         Logger.Info("ArisenBuildTool: Workspace generation complete.");
     }
 
@@ -176,8 +215,16 @@ class Program
         string projectsDir = Path.Combine(workspaceDir, ".arisen", "Projects", profile);
         Directory.CreateDirectory(projectsDir);
 
-        var packageMap = PackageDiscoveryService.Discover(manifest, workspaceDir, engineDir, profile);
-        var sortedPackages = PackageResolutionService.SortTopologically(packageMap);
+        var validation = PackageValidationService.Validate(manifest, workspaceDir, engineDir, profile);
+        PackageValidationService.LogSummary(validation);
+        if (!validation.Success)
+        {
+            Logger.Error("ArisenBuildTool: Workspace generation aborted because package validation failed.");
+            Environment.Exit(1);
+        }
+
+        var packageMap = validation.PackageMap;
+        var sortedPackages = validation.SortedPackages;
         
         var outputDirs = new List<string>
         {
@@ -217,6 +264,35 @@ class Program
         SolutionGeneratorService.Generate(projectsDir, engineDir, managedPackages, projectName, manifest, profile, isEditor);
 
         Console.WriteLine($"ArisenBuildTool: Solution for '{projectName}' ({profile}) generated successfully.");
+    }
+
+    private static bool TryReadManifest(string manifestPath, out ProjectManifest? manifest)
+    {
+        manifest = null;
+        if (!File.Exists(manifestPath))
+        {
+            string workspaceDir = Path.GetDirectoryName(manifestPath) ?? Path.GetFullPath(".");
+            string arisenManifestPath = Path.Combine(workspaceDir, "project.arisen");
+            if (File.Exists(arisenManifestPath)) manifestPath = arisenManifestPath;
+            else
+            {
+                Logger.Error($"Project manifest not found at '{manifestPath}'.");
+                return false;
+            }
+        }
+
+        try
+        {
+            string json = File.ReadAllText(manifestPath);
+            manifest = JsonSerializer.Deserialize<ProjectManifest>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (manifest == null) throw new Exception("Deserialization returned null.");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"Failed to parse ProjectManifest: {ex.Message}");
+            return false;
+        }
     }
 
     private static string FindEngineRoot(string startDir)

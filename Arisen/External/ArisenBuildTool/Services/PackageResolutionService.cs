@@ -70,6 +70,10 @@ public static class PackageResolutionService
                     Id = p.Manifest.Id,
                     Name = p.Manifest.Name,
                     Version = p.Manifest.Version,
+                    Type = p.Manifest.Type,
+                    Dependencies = p.Manifest.Dependencies ?? new Dictionary<string, string>(),
+                    Services = p.Manifest.Services,
+                    Entry = p.Manifest.Entry,
                     // Store relative URL for portability (Relative to the output directory!)
                     Url = GetRelativeUrl(outDir, p.DirectoryPath)
                 }).ToList()

@@ -1,13 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text.Json;
 using ArisenKernel.Contracts;
 using ArisenKernel.Diagnostics;
-using ArisenKernel.Lifecycle;
 using ArisenKernel.Services;
 using ArisenKernel.Packages;
 
@@ -24,12 +20,14 @@ public static class EngineBootstrapper
         string profile = "Development";
         bool profileSpecified = false;
         bool workspaceSpecified = false;
+        bool allowResolvedManifestFallback = false;
 
         for (int i = 0; i < args.Length; i++)
         {
             if (args[i] == "--workspace" && i + 1 < args.Length) { workspacePath = args[i + 1]; workspaceSpecified = true; }
             if (args[i] == "--entry" && i + 1 < args.Length) entryPackage = args[i + 1];
             if (args[i] == "--profile" && i + 1 < args.Length) { profile = args[i + 1]; profileSpecified = true; }
+            if (args[i] == "--allow-manifest-fallback") allowResolvedManifestFallback = true;
         }
 
         // B18: Try to load from launch.config.json if located in the binary folder (Explicit configuration wins over deduction)
@@ -141,34 +139,17 @@ public static class EngineBootstrapper
 
         if (File.Exists(resolvedManifestPath))
         {
-            try
+            if (!TryLoadResolvedPackageUrls(resolvedManifestPath, workspacePath, profile, packageUrls, out var resolvedError))
             {
-                KernelLog.InfoFormat("[Host] Found Resolved Manifest: {0}. Using build-time topological sort.", resolvedManifestPath);
-                var resolvedJson = JsonDocument.Parse(File.ReadAllText(resolvedManifestPath));
-                if (resolvedJson.RootElement.TryGetProperty("ResolvedPackages", out var resolvedPkgs))
+                if (allowResolvedManifestFallback)
                 {
-                    packageUrls.Clear(); // Switch to the sorted list
-                    foreach (var pkg in resolvedPkgs.EnumerateArray())
-                    {
-                        var url = pkg.GetProperty("Url").GetString();
-                        if (!string.IsNullOrEmpty(url))
-                        {
-                            if (url.StartsWith("file://"))
-                            {
-                                string localPath = url.Substring(7);
-                                // For local paths in a resolved manifest, they are relative to the manifest file itself
-                                string manifestDir = Path.GetDirectoryName(resolvedManifestPath)!;
-                                if (Path.IsPathRooted(localPath)) packageUrls.Add(localPath);
-                                else packageUrls.Add(Path.GetFullPath(Path.Combine(manifestDir, localPath)));
-                            }
-                            else packageUrls.Add(url);
-                        }
-                    }
+                    KernelLog.WarningFormat("[Host] Failed to parse resolved manifest '{0}': {1}. Falling back to manifest.json order because --allow-manifest-fallback was specified.", resolvedManifestPath, resolvedError);
                 }
-            }
-            catch (Exception ex)
-            {
-                KernelLog.WarningFormat("[Host] Failed to parse resolved manifest '{0}': {1}. Falling back to manifest.json order.", resolvedManifestPath, ex.Message);
+                else
+                {
+                    KernelLog.FatalFormat("[Host] FATAL ERROR: Resolved manifest '{0}' is invalid: {1}", resolvedManifestPath, resolvedError);
+                    Environment.Exit(1);
+                }
             }
         }
 
@@ -185,17 +166,106 @@ public static class EngineBootstrapper
 
     KernelLog.Info("[Host] Topological Mount Complete.");
 
-    // 3. Fallback to registry checks for boot takeover
-    if (registry.TryGetService<IApplicationHost>(out var appHost))
-    {
-        KernelLog.Info("[Host] Yielding main thread to IApplicationHost (Editor/UI).");
-        appHost.Run(args);
-    }
-    else
-    {
-        KernelLog.Info("[Host] No IApplicationHost detected. Engaging default bare-metal Engine tick.");
-        kernel.Run();
+        // 3. Fallback to registry checks for boot takeover
+        if (registry.TryGetService<IApplicationHost>(out var appHost))
+        {
+            KernelLog.Info("[Host] Yielding main thread to IApplicationHost (Editor/UI).");
+            appHost.Run(args);
         }
+        else
+        {
+            KernelLog.Info("[Host] No IApplicationHost detected. Engaging default bare-metal Engine tick.");
+            kernel.Run();
+        }
+    }
+    private static bool TryLoadResolvedPackageUrls(string resolvedManifestPath, string workspacePath, string profile, List<string> packageUrls, out string error)
+    {
+        error = string.Empty;
+
+        try
+        {
+            KernelLog.InfoFormat("[Host] Found Resolved Manifest: {0}. Using build-time topological sort.", resolvedManifestPath);
+            using var resolvedJson = JsonDocument.Parse(File.ReadAllText(resolvedManifestPath));
+            var root = resolvedJson.RootElement;
+
+            if (root.TryGetPropertyIC("Profile", out var resolvedProfileElement))
+            {
+                string? resolvedProfile = resolvedProfileElement.GetString();
+                if (!string.IsNullOrWhiteSpace(resolvedProfile) && !string.Equals(resolvedProfile, profile, StringComparison.OrdinalIgnoreCase))
+                {
+                    error = $"profile mismatch. Requested '{profile}', resolved manifest contains '{resolvedProfile}'.";
+                    return false;
+                }
+            }
+
+            if (!root.TryGetPropertyIC("ResolvedPackages", out var resolvedPackages) || resolvedPackages.ValueKind != JsonValueKind.Array)
+            {
+                error = "missing or invalid ResolvedPackages array.";
+                return false;
+            }
+
+            var resolvedPackageUrls = new List<string>();
+            string manifestDir = Path.GetDirectoryName(resolvedManifestPath)!;
+            foreach (var package in resolvedPackages.EnumerateArray())
+            {
+                if (!package.TryGetPropertyIC("Url", out var urlElement) || urlElement.ValueKind != JsonValueKind.String)
+                {
+                    error = "resolved package entry is missing Url.";
+                    return false;
+                }
+
+                string? url = urlElement.GetString();
+                if (string.IsNullOrWhiteSpace(url))
+                {
+                    error = "resolved package entry contains an empty Url.";
+                    return false;
+                }
+
+                string resolvedPath = ResolvePackageUrl(url, manifestDir, workspacePath);
+                if (url.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+                {
+                    string packageJsonPath = Path.Combine(resolvedPath, "package.json");
+                    if (!File.Exists(packageJsonPath))
+                    {
+                        error = $"resolved package path '{resolvedPath}' does not contain package.json.";
+                        return false;
+                    }
+                }
+
+                resolvedPackageUrls.Add(resolvedPath);
+            }
+
+            if (resolvedPackageUrls.Count == 0)
+            {
+                error = "ResolvedPackages is empty.";
+                return false;
+            }
+
+            packageUrls.Clear();
+            packageUrls.AddRange(resolvedPackageUrls);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            return false;
+        }
+    }
+
+    private static string ResolvePackageUrl(string url, string manifestDir, string workspacePath)
+    {
+        if (!url.StartsWith("file://", StringComparison.OrdinalIgnoreCase)) return url;
+
+        string localPath = Uri.UnescapeDataString(url.Substring(7));
+        if (Path.IsPathRooted(localPath)) return Path.GetFullPath(localPath);
+
+        string manifestRelativePath = Path.GetFullPath(Path.Combine(manifestDir, localPath));
+        if (Directory.Exists(manifestRelativePath) || File.Exists(Path.Combine(manifestRelativePath, "package.json")))
+        {
+            return manifestRelativePath;
+        }
+
+        return Path.GetFullPath(Path.Combine(workspacePath, localPath));
     }
 }
 
