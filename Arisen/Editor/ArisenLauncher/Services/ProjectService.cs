@@ -77,10 +77,10 @@ public class ProjectService
         {
             _logService.Error($"Failed to load project at {projectPath}", ex);
         }
-        return null;
+                return null;
     }
 
-        public bool CreateProject(string folderPath, string name, EngineInstance engine, string? templateName = null, string? defaultPackageId = null)
+    public bool CreateProject(string folderPath, string name, EngineInstance engine, string? templateName = null, string? defaultPackageId = null)
     {
         try
         {
@@ -115,12 +115,13 @@ public class ProjectService
 
             string json = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(projectFile, json);
-            
+
             Directory.CreateDirectory(Path.Combine(folderPath, "Local"));
             Directory.CreateDirectory(Path.Combine(folderPath, ".Cache"));
             Directory.CreateDirectory(Path.Combine(folderPath, "Assets"));
+            Directory.CreateDirectory(Path.Combine(folderPath, "Logs"));
 
-            string userPkgId = string.IsNullOrWhiteSpace(defaultPackageId) ? $"com.user.{name.ToLower().Replace(" ", "")}" : defaultPackageId;
+            string userPkgId = string.IsNullOrWhiteSpace(defaultPackageId) ? $"com.user.{SanitizePackageSegment(name)}" : defaultPackageId;
             string userPkgPath = Path.Combine(folderPath, "Local", userPkgId);
             Directory.CreateDirectory(userPkgPath);
 
@@ -131,35 +132,57 @@ public class ProjectService
                 Version = "1.0.0",
                 Description = "Default project game assembly",
                 Type = "managed",
-                Dependencies = new Dictionary<string, string>() // ZERO Dependencies by default
+                Dependencies = new Dictionary<string, string>()
             };
             File.WriteAllText(Path.Combine(userPkgPath, "package.json"), JsonSerializer.Serialize(defaultPkg, new JsonSerializerOptions { WriteIndented = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull }));
-            
-            // Give it one empty CS file so compiler succeeds
-            // B17: Rename to GameEntry.cs and implement IPackageEntry as per ProjectManagement.md Rule #4.87
-            File.WriteAllText(Path.Combine(userPkgPath, "GameEntry.cs"), 
-                $"namespace ArisenEngine.{name};\n\npublic class GameEntry\n{{\n    // Entry point for {name}\n}}\n");
+
+            // Provide an immediate kernel injection point for the user's game package.
+            string safeNamespace = $"ArisenGame.{SanitizeCSharpIdentifier(name)}";
+            File.WriteAllText(Path.Combine(userPkgPath, "GameEntry.cs"),
+                $$"""
+                using ArisenKernel.Diagnostics;
+                using ArisenKernel.Packages;
+                using ArisenKernel.Services;
+
+                namespace {{safeNamespace}};
+
+                public sealed class GameEntry : IPackageEntry
+                {
+                    public void OnLoad(IServiceRegistry services)
+                    {
+                        KernelLog.Info("[{{name}}] Game package loaded.");
+                    }
+
+                    public void OnUnload(IServiceRegistry services)
+                    {
+                        KernelLog.Info("[{{name}}] Game package unloaded.");
+                    }
+                }
+                """);
 
             string manifestFile = Path.Combine(folderPath, "manifest.json");
             var manifest = new ProjectManifest
             {
                 Name = name,
-                // B17: Add the user package to the global Packages list as required by ProjectManagement.md Rule #36
-                Packages = new List<PackageRequirement> 
-                { 
-                    new PackageRequirement { Id = userPkgId, Url = $"file://Local/{userPkgId}", Version = "1.0.0" } 
+                Packages = new List<PackageRequirement>
+                {
+                    new PackageRequirement { Id = userPkgId, Url = $"file://Local/{userPkgId}", Version = "1.0.0" }
                 },
                 Profiles = new Dictionary<string, ProfileDefinition>
                 {
-                    { 
-                        "Development", 
-                        new ProfileDefinition { IsEditor = true } 
+                    {
+                        "Development",
+                        new ProfileDefinition { IsEditor = true }
+                    },
+                    {
+                        "Production",
+                        new ProfileDefinition { IsEditor = false }
                     }
                 }
             };
             string manifestJson = JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull });
             File.WriteAllText(manifestFile, manifestJson);
-            
+
             string gitignoreFile = Path.Combine(folderPath, ".gitignore");
             string gitignoreContent = """
             # Arisen Engine Generated Folders
@@ -185,6 +208,19 @@ public class ProjectService
             _logService.Error("Failed to create project.", ex);
             return false;
         }
+    }
+
+    private static string SanitizePackageSegment(string value)
+    {
+        var chars = value.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray();
+        return chars.Length == 0 ? "project" : new string(chars);
+    }
+
+    private static string SanitizeCSharpIdentifier(string value)
+    {
+        var chars = value.Where(char.IsLetterOrDigit).ToArray();
+        string result = chars.Length == 0 ? "Project" : new string(chars);
+        return char.IsDigit(result[0]) ? $"Project{result}" : result;
     }
 
     private void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
@@ -220,6 +256,67 @@ public class ProjectService
         }
     }
 
+    private async Task<bool> RunBuildToolAsync(string buildToolExecutable, string buildToolProject, string commandArgs, string workingDirectory, TimeSpan timeout)
+    {
+        string toolArgs;
+        if (File.Exists(buildToolExecutable))
+        {
+            toolArgs = $"\"{buildToolExecutable}\" {commandArgs}";
+        }
+        else if (File.Exists(buildToolProject))
+        {
+            toolArgs = $"run --project \"{buildToolProject}\" -- {commandArgs}";
+        }
+        else
+        {
+            _logService.Error("ArisenBuildTool not found. Neither binary nor project exists.");
+            return false;
+        }
+
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "dotnet",
+            Arguments = toolArgs,
+            WorkingDirectory = workingDirectory,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+
+        using var process = System.Diagnostics.Process.Start(psi);
+        if (process == null)
+        {
+            _logService.Error("Failed to start ArisenBuildTool process.");
+            return false;
+        }
+
+        process.OutputDataReceived += (s, e) => { if (e.Data != null) _logService.Info($"[BuildTool] {e.Data}"); };
+        process.ErrorDataReceived += (s, e) => { if (e.Data != null) _logService.Error($"[BuildTool] {e.Data}"); };
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
+        using var cts = new System.Threading.CancellationTokenSource(timeout);
+        try
+        {
+            await process.WaitForExitAsync(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            _logService.Critical($"ArisenBuildTool timed out after {timeout.TotalSeconds:0} seconds.");
+            process.Kill(entireProcessTree: true);
+            return false;
+        }
+
+        if (process.ExitCode != 0)
+        {
+            _logService.Error($"ArisenBuildTool failed with exit code: {process.ExitCode}");
+            return false;
+        }
+
+        return true;
+    }
+
     public async Task<bool> LaunchProjectAsync(LauncherProjectMetadata project, EngineInstance engine)
     {
         try
@@ -234,9 +331,9 @@ public class ProjectService
                 return false;
             }
 
+                                    
             var localDir = Path.Combine(projectDir, "Local");
             var cacheDir = Path.Combine(projectDir, ".Cache");
-            var projectsDir = Path.Combine(projectDir, "Projects");
             Directory.CreateDirectory(localDir);
             Directory.CreateDirectory(cacheDir);
 
@@ -300,82 +397,43 @@ public class ProjectService
             {
                 Name = manifest.Name,
                 EngineVersion = manifest.EngineVersion,
-                Packages = resolvedPackages,
+                                Packages = resolvedPackages,
                 Profiles = manifest.Profiles
             };
             string resolvedManifestPath = Path.Combine(projectDir, "manifest.resolved.json");
             File.WriteAllText(resolvedManifestPath, JsonSerializer.Serialize(resolvedManifest, new JsonSerializerOptions { WriteIndented = true }));
 
-            // 2. Execute ArisenBuildTool Out-of-Source Generation
+            string profile = string.IsNullOrWhiteSpace(project.SelectedProfile) ? "Development" : project.SelectedProfile;
+            string config = string.IsNullOrWhiteSpace(project.SelectedConfiguration) ? "Debug" : project.SelectedConfiguration;
+
+            // 2. Execute ArisenBuildTool validation + out-of-source generation
             string buildToolExecutable = Path.Combine(engine.InstallPath, "External", "ArisenBuildTool", "bin", "Debug", "net9.0", "ArisenBuildTool.dll");
             if (!File.Exists(buildToolExecutable))
             {
                 // Fallback: Check if it's in the engine root (for binary engines)
                 string rootExe = Path.Combine(engine.InstallPath, "ArisenBuildTool.dll");
-                if (File.Exists(rootExe)) buildToolExecutable = rootExe;
+                                if (File.Exists(rootExe)) buildToolExecutable = rootExe;
             }
 
-            string toolArgs = "";
             string buildToolProject = Path.Combine(engine.InstallPath, "External", "ArisenBuildTool", "ArisenBuildTool.csproj");
-            
-            if (File.Exists(buildToolExecutable))
+
+            _logService.Info("Validating workspace package graph with ArisenBuildTool...");
+            string validateArgs = $"validate --manifest \"{resolvedManifestPath}\" --engine \"{engine.InstallPath}\" --profile \"{profile}\"";
+            if (!await RunBuildToolAsync(buildToolExecutable, buildToolProject, validateArgs, engine.InstallPath, TimeSpan.FromSeconds(60)))
             {
-                toolArgs = $"\"{buildToolExecutable}\" generate --manifest \"{resolvedManifestPath}\" --engine \"{engine.InstallPath}\"";
-            }
-            else if (File.Exists(buildToolProject))
-            {
-                toolArgs = $"run --project \"{buildToolProject}\" -- generate --manifest \"{resolvedManifestPath}\" --engine \"{engine.InstallPath}\"";
-            }
-            else
-            {
-                _logService.Error("ArisenBuildTool not found. Neither binary nor project exists.");
                 return false;
             }
 
-            _logService.Info($"Running ArisenBuildTool...");
-            
-            var psi = new System.Diagnostics.ProcessStartInfo
+            _logService.Info("Generating workspace files with ArisenBuildTool...");
+            string generateArgs = $"generate --manifest \"{resolvedManifestPath}\" --engine \"{engine.InstallPath}\" --profile \"{profile}\"";
+            if (!await RunBuildToolAsync(buildToolExecutable, buildToolProject, generateArgs, engine.InstallPath, TimeSpan.FromSeconds(60)))
             {
-                FileName = "dotnet",
-                Arguments = toolArgs,
-                WorkingDirectory = engine.InstallPath,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true
-            };
-            
-            using (var process = System.Diagnostics.Process.Start(psi))
-            {
-                if (process != null)
-                {
-                    process.OutputDataReceived += (s, e) => { if (e.Data != null) _logService.Info($"[BuildTool] {e.Data}"); };
-                    process.BeginOutputReadLine();
-
-                    using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(60));
-                    try
-                    {
-                        await process.WaitForExitAsync(cts.Token);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        _logService.Critical("ArisenBuildTool timed out after 60 seconds.");
-                        process.Kill();
-                        return false;
-                    }
-
-                    if (process.ExitCode != 0)
-                    {
-                        _logService.Error($"ArisenBuildTool failed with exit code: {process.ExitCode}");
-                        return false;
-                    }
-                }
+                return false;
             }
 
             // 3. Launch the Workspace Stub natively from generated isolated bin folder
-            _logService.Info($"Bootstrapping target: {project.SelectedProfile} [{project.SelectedConfiguration}]...");
+            _logService.Info($"Bootstrapping target: {profile} [{config}]...");
 
-            string profile = project.SelectedProfile;
-            string config = project.SelectedConfiguration;
             string binDir = Path.Combine(projectDir, ".arisen", "bin", profile, config);
             string projectExe = Path.Combine(binDir, $"{project.Name}.exe");
 

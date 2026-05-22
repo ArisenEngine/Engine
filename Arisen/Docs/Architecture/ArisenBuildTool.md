@@ -34,7 +34,7 @@ Validation is intentionally strict. The command exits with code `0` on success a
 - optional service requirements as warnings when no provider is selected,
 - deferred service contracts as graph-validated but late-registered runtime contracts.
 
-A successful validation produces the same package order that generation uses for `manifest.resolved.json`. Launcher/editor package management should call this validation path rather than reimplementing graph checks.
+A successful validation produces the same package order that generation uses for `manifest.resolved.json`. Launcher/editor package management should call this validation path rather than reimplementing graph checks. The launcher launch path invokes `validate` with the selected profile before invoking `generate` with that same profile, so CLI and launcher launches report package graph errors through the same validation implementation.
 
 ---
 
