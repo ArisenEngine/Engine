@@ -57,8 +57,7 @@ public static class PackageDiscoveryService
 
             try
             {
-                var json = File.ReadAllText(packageJsonPath);
-                var pkgManifest = JsonSerializer.Deserialize<PackageManifest>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                                var pkgManifest = PackageManifestService.ReadEffectiveManifest(fullPath);
                 if (pkgManifest != null)
                 {
                     pkgManifest.Id = req.Id; 

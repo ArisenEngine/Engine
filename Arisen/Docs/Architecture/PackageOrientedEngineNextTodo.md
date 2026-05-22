@@ -165,9 +165,9 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
 - [x] Make shutdown run in exact reverse initialization order.
 - [x] Add phase-specific diagnostics.
 - [x] Move current core/rendering package subsystems out of `OnLoad()` manual registration and into package metadata.
-- [ ] Decide source-generator ownership.
-  - [ ] If using attributes such as `[EngineSubsystem]`, generation should update package metadata consistently.
-  - [ ] Avoid requiring users to manually maintain subsystem metadata if source generation is intended.
+- [x] Decide source-generator ownership.
+  - [x] If using attributes such as `[EngineSubsystem]`, generation writes package metadata consistently to `package.generated.json`.
+  - [x] Avoid requiring users to manually maintain generated subsystem metadata.
 
 ### Acceptance Criteria
 
