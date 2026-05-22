@@ -23,6 +23,9 @@ public struct RenderOutputInfo
     public ulong Ticket;
     public uint FrameIndex;
     public IntPtr SharedHandle;
+    public ulong MemorySize;
+    public IntPtr WaitSemaphoreHandle;
+    public IntPtr SignalSemaphoreHandle;
     public uint Width;
     public uint Height;
 }
@@ -39,6 +42,10 @@ public interface IRenderSurface : IDisposable
     void DisposeSurface();
     IntPtr GetHandle();
     IntPtr GetSharedHandle(uint frameIndex);
+    ulong GetSharedMemorySize(uint frameIndex);
+    IntPtr GetRenderFinishedSemaphoreHandle(uint frameIndex);
+    IntPtr CreateConsumedSemaphoreHandle(uint frameIndex);
+    void ReleaseConsumedSemaphoreHandle(IntPtr handle);
     ulong GetLastRenderTicket();
     uint GetLastRenderFrameIndex();
     Task WaitForRenderTicketAsync(ulong ticket);
