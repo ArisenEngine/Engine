@@ -184,11 +184,13 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
 ### TODO
 
 - [x] Add `ArisenBuildTool validate --workspace <path>`.
-- [ ] Add `ArisenBuildTool graph --workspace <path> --profile <profile>`.
-  - [ ] Output readable text and optionally DOT/JSON.
-- [ ] Add `ArisenBuildTool generate --workspace <path> --profile <profile>` if not already formalized.
-- [ ] Add `ArisenBuildTool run --workspace <path> --profile <profile> --config Debug` or document why launch stays external.
-- [ ] Improve `ArisenBuildTool test --package <id>` diagnostics.
+- [x] Add `ArisenBuildTool graph --workspace <path> --profile <profile>`.
+  - [x] Output readable text and optionally DOT/JSON.
+- [x] Add `ArisenBuildTool generate --workspace <path> --profile <profile>` if not already formalized.
+- [x] Add `ArisenBuildTool run --workspace <path> --profile <profile> --config Debug` or document why launch stays external.
+  - [x] Documented launch as an external launcher/IDE/generated-host responsibility; build tool emits launch artifacts but does not own interactive process orchestration.
+- [x] Improve `ArisenBuildTool test --package <id>` diagnostics.
+  - [x] Log workspace/engine root, companion `.test` package, virtual test manifest contents, and missing local package guidance before generation.
 - [ ] Ensure the launcher uses the same validation before opening projects.
 - [ ] Ensure project creation scaffolds:
   - [ ] `.arisenproj`

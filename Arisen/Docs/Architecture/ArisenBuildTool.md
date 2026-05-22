@@ -38,10 +38,65 @@ A successful validation produces the same package order that generation uses for
 
 ---
 
+## Graph Inspection
+
+`ArisenBuildTool graph` renders the validated package dependency graph for a workspace/profile without generating IDE files.
+
+```bat
+ArisenBuildTool.exe graph --workspace "Path\To\MyGame" --profile Development --format text
+ArisenBuildTool.exe graph --workspace "Path\To\MyGame" --profile Development --format json --output ".arisen\package-graph.json"
+ArisenBuildTool.exe graph --workspace "Path\To\MyGame" --profile Development --format dot --output ".arisen\package-graph.dot"
+```
+
+Supported formats:
+
+- `text` - readable topological order, per-package dependencies, and edge list.
+- `json` - machine-readable package nodes and dependency edges for launcher/editor tooling.
+- `dot` - Graphviz DOT output for visual dependency diagrams.
+
+The command uses the same validation and effective package manifest merge path as `validate` and `generate`. Invalid graphs fail before output.
+
+---
+
+## Launch Boundary
+
+Interactive launch intentionally stays outside `ArisenBuildTool` for now. The build tool owns validation, graph inspection, generated project files, native payload deployment, `manifest.resolved.json`, and `launch.config.json`. Process orchestration belongs to the launcher, IDE launch profiles, scripts, or the generated thin executable host.
+
+This keeps launch-specific concerns out of the build generator:
+
+- debugger attachment and IDE-specific launch profiles,
+- editor/game mode selection,
+- graphics diagnostics such as Vulkan validation or RenderDoc setup,
+- process lifetime management and log capture,
+- user-selected engine installation state in the launcher.
+
+`ArisenBuildTool` may add a thin non-interactive `run` command later for CI or scripting, but that command should only locate the generated output, start the host process with the correct working directory, forward arguments, and return the child process exit code. It must not become a second launcher.
+
+---
+
+## Package Test Workspace Generation
+
+`ArisenBuildTool test --package <id>` creates an isolated `Testing` workspace profile for one package and its companion test package.
+
+```bat
+ArisenBuildTool.exe test --workspace "Path\To\MyGame" --package com.arisen.rhi.vulkan.native
+```
+
+The command expects local packages under `Local/`:
+
+- `com.arisen.core`
+- the requested package id
+- the companion package id, usually `<id>.test`
+- `com.arisen.testrunner`
+
+Before generation it logs the workspace, engine root, companion test package, and full virtual manifest package list. Missing local package folders or missing `package.json` files are reported before invoking the normal generation pipeline.
+
+---
+
 ## The Generation Pipeline
 
 When a user clicks "Generate IDE Files" in the Launcher, it invokes:
-`ArisenBuildTool.exe generate --workspace "Path/To/MyGame"`
+`ArisenBuildTool.exe generate --workspace "Path/To/MyGame" --profile Development`
 
 The tool executes four strict phases:
 
