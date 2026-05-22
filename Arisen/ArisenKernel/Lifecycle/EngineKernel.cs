@@ -1,11 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
-using System.Reflection;
-using System.Text.Json;
 using ArisenKernel.Services;
 using ArisenKernel.Diagnostics;
-using ArisenKernel.Contracts;
 using ArisenKernel.Packages;
 
 namespace ArisenKernel.Lifecycle;
@@ -18,6 +14,9 @@ public sealed class EngineKernel : IDisposable
     public static bool IsCreated => s_Instance.IsValueCreated;
 
     private readonly List<IEngineSubsystem> m_Subsystems = new();
+    private readonly Dictionary<IEngineSubsystem, SubsystemRegistrationInfo> m_SubsystemInfo = new();
+    private readonly List<IEngineSubsystem> m_InitializedSubsystems = new();
+    private long m_NextSubsystemRegistrationOrder;
     private EnginePhase m_CurrentPhase = EnginePhase.None;
     private bool m_IsRunning = false;
     private FrameScheduler m_FrameScheduler = new FrameScheduler();
@@ -43,6 +42,9 @@ public sealed class EngineKernel : IDisposable
         }
 
         m_Subsystems.Clear();
+        m_SubsystemInfo.Clear();
+        m_InitializedSubsystems.Clear();
+        m_NextSubsystemRegistrationOrder = 0;
         m_CurrentPhase = EnginePhase.None;
         m_IsRunning = false;
         Config = null;
@@ -53,6 +55,22 @@ public sealed class EngineKernel : IDisposable
 
     public void RegisterSubsystem<T>(T subsystem) where T : class, IEngineSubsystem
     {
+        RegisterSubsystem(
+            subsystem,
+            packageId: string.Empty,
+            packageOrder: int.MaxValue,
+            declaredClassName: subsystem.GetType().FullName ?? subsystem.GetType().Name,
+            initPhase: subsystem.InitPhase,
+            priority: subsystem.Priority);
+    }
+
+    public void RegisterSubsystem<T>(T subsystem, string packageId, int packageOrder, string declaredClassName) where T : class, IEngineSubsystem
+    {
+        RegisterSubsystem(subsystem, packageId, packageOrder, declaredClassName, subsystem.InitPhase, subsystem.Priority);
+    }
+
+    public void RegisterSubsystem<T>(T subsystem, string packageId, int packageOrder, string declaredClassName, EnginePhase initPhase, int priority) where T : class, IEngineSubsystem
+    {
         if (m_CurrentPhase != EnginePhase.None)
             throw new InvalidOperationException("Cannot register subsystems after initialization has started");
 
@@ -61,6 +79,13 @@ public sealed class EngineKernel : IDisposable
             throw new InvalidOperationException($"Subsystem of type {subsystem.GetType().Name} is already registered.");
 
         m_Subsystems.Add(subsystem);
+        m_SubsystemInfo[subsystem] = new SubsystemRegistrationInfo(
+            packageId,
+            packageOrder,
+            declaredClassName,
+            initPhase,
+            priority,
+            m_NextSubsystemRegistrationOrder++);
     }
 
     public T? GetSubsystem<T>() where T : class, IEngineSubsystem
@@ -73,96 +98,31 @@ public sealed class EngineKernel : IDisposable
         Config = config;
         KernelLog.Info("[EngineKernel] Initializing...");
 
-        // 1. Mount Packages (Moved from Host for single-source-of-truth)
-        if (config.PackageUrls.Count > 0)
-        {
-            LoadPackages(config.PackageUrls);
-        }
-
-        // 2. Sort subsystems by priority
-        m_Subsystems.Sort((a, b) => a.Priority.CompareTo(b.Priority));
-
-        TransitionTo(EnginePhase.PreInit);
-        TransitionTo(EnginePhase.Init);
-        TransitionTo(EnginePhase.PostInit);
-
-        m_IsRunning = true;
-        m_CurrentPhase = EnginePhase.Running;
-        KernelLog.Info("[EngineKernel] Engine is now Running.");
-    }
-
-    private void LoadPackages(List<string> packageUrls)
-    {
-        KernelLog.Info("[EngineKernel] Loading Packages...");
-        
+        // 1. Mount packages through PackageSubsystem, the single owner of package runtime state.
         var packageSubsystem = GetSubsystem<PackageSubsystem>();
         if (packageSubsystem == null)
         {
             packageSubsystem = new PackageSubsystem();
-            m_Subsystems.Add(packageSubsystem);
+            RegisterSubsystem(packageSubsystem, "ArisenKernel", 0, typeof(PackageSubsystem).FullName ?? nameof(PackageSubsystem));
         }
 
-        foreach (var pUrl in packageUrls)
+        if (config.PackageUrls.Count > 0)
         {
-            string pJsonPath = Path.Combine(pUrl, "package.json");
-            if (!File.Exists(pJsonPath)) continue;
-
-            try
-            {
-                var pDoc = JsonDocument.Parse(File.ReadAllText(pJsonPath));
-                var root = pDoc.RootElement;
-                string id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() : root.GetProperty("name").GetString();
-                
-                if (root.TryGetProperty("entry", out var entryObj) && entryObj.ValueKind == JsonValueKind.Object)
-                {
-                    string asmName = entryObj.TryGetProperty("assembly", out var asmProp) ? asmProp.GetString() ?? "" : "";
-                    string entryClassName = entryObj.TryGetProperty("class", out var clsProp) ? clsProp.GetString() ?? "" : "";
-                    
-                    if (!string.IsNullOrEmpty(asmName))
-                    {
-                        // Prefer central bin folder (where Host is)
-                        string binDir = AppContext.BaseDirectory;
-                        string fullPath = Path.Combine(binDir, asmName);
-                        
-                        if (!File.Exists(fullPath))
-                            fullPath = Path.Combine(pUrl, "Managed", asmName);
-
-                        if (File.Exists(fullPath))
-                        {
-                            Assembly asm = Assembly.LoadFrom(fullPath);
-                            object? entryInstance = null;
-                            if (!string.IsNullOrEmpty(entryClassName))
-                            {
-                                Type t = asm.GetType(entryClassName);
-                                if (t != null)
-                                {
-                                    entryInstance = Activator.CreateInstance(t);
-                                    var onLoadMethod = t.GetMethod("OnLoad");
-                                    if (onLoadMethod != null) onLoadMethod.Invoke(entryInstance, new object[] { Services });
-                                }
-                            }
-
-                            var pkgInfo = new ArisenPackageInfo
-                            {
-                                Id = id,
-                                Name = root.TryGetProperty("name", out var n) ? n.GetString() ?? id : id,
-                                Version = root.TryGetProperty("version", out var v) ? v.GetString() ?? "1.0.0" : "1.0.0",
-                                Type = root.TryGetProperty("type", out var typeProp) ? typeProp.GetString() ?? "managed" : "managed",
-                                RootPath = pUrl,
-                                Assembly = asm,
-                                EntryInstance = entryInstance
-                            };
-                            packageSubsystem.RegisterLoadedPackage(pkgInfo);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                KernelLog.Error($"[EngineKernel] Failed to load package at {pUrl}: {ex.Message}");
-            }
+            KernelLog.Info("[EngineKernel] Mounting packages through PackageSubsystem...");
+            packageSubsystem.MountPackages(config.PackageUrls);
+            KernelLog.Info("[EngineKernel] Package mount complete.");
         }
-        KernelLog.Info("[EngineKernel] Package Loading Complete.");
+
+        // 2. Sort subsystems deterministically by phase, package topological order, priority, then class name.
+        m_Subsystems.Sort(CompareSubsystems);
+
+                TransitionTo(EnginePhase.PreInit);
+        TransitionTo(EnginePhase.Init);
+        TransitionTo(EnginePhase.PostInit);
+        TransitionTo(EnginePhase.Running);
+
+        m_IsRunning = true;
+        KernelLog.Info("[EngineKernel] Engine is now Running.");
     }
 
     private void TransitionTo(EnginePhase phase)
@@ -172,10 +132,12 @@ public sealed class EngineKernel : IDisposable
 
         foreach (var subsystem in m_Subsystems)
         {
-            if (subsystem.InitPhase == phase)
+            var info = GetSubsystemInfo(subsystem);
+            if (info.InitPhase == phase)
             {
-                KernelLog.Info($"  [Subsystem] Initializing: {subsystem.GetType().Name}");
+                KernelLog.Info($"  [Subsystem] Initializing: {info.DeclaredClassName} (Package: {info.PackageId}, Priority: {info.Priority})");
                 subsystem.Initialize();
+                m_InitializedSubsystems.Add(subsystem);
             }
         }
     }
@@ -197,7 +159,7 @@ public sealed class EngineKernel : IDisposable
     }
 
     /// <summary>
-    /// Executes a single frame of the engine. 
+    /// Executes a single frame of the engine.
     /// Exposing this allows external runners (like the Editor) to drive the loop.
     /// </summary>
     public void Tick(float deltaTime)
@@ -206,7 +168,7 @@ public sealed class EngineKernel : IDisposable
 
         // End of frame cleanup via event so kernel doesn't depend on Memory systems
         OnFrameEnd?.Invoke();
-        
+
         CurrentFrameIndex++;
     }
 
@@ -223,19 +185,63 @@ public sealed class EngineKernel : IDisposable
         KernelLog.Info("[EngineKernel] Shutting down...");
         m_CurrentPhase = EnginePhase.PreShutdown;
 
-        // P3: Shutdown in reverse priority order without allocating a new list
-        for (int i = m_Subsystems.Count - 1; i >= 0; i--)
+        for (int i = m_InitializedSubsystems.Count - 1; i >= 0; i--)
         {
-            KernelLog.Info($"  [Subsystem] Shutting down: {m_Subsystems[i].GetType().Name}");
-            m_Subsystems[i].Shutdown();
+            KernelLog.Info($"  [Subsystem] Shutting down: {m_InitializedSubsystems[i].GetType().Name}");
+            m_InitializedSubsystems[i].Shutdown();
         }
+        m_InitializedSubsystems.Clear();
 
         m_CurrentPhase = EnginePhase.Shutdown;
         KernelLog.Info("[EngineKernel] Shutdown complete.");
     }
+
+    private int CompareSubsystems(IEngineSubsystem left, IEngineSubsystem right)
+    {
+        var leftInfo = GetSubsystemInfo(left);
+        var rightInfo = GetSubsystemInfo(right);
+
+        int phaseCompare = leftInfo.InitPhase.CompareTo(rightInfo.InitPhase);
+        if (phaseCompare != 0) return phaseCompare;
+
+        int packageOrderCompare = leftInfo.PackageOrder.CompareTo(rightInfo.PackageOrder);
+        if (packageOrderCompare != 0) return packageOrderCompare;
+
+        int priorityCompare = leftInfo.Priority.CompareTo(rightInfo.Priority);
+        if (priorityCompare != 0) return priorityCompare;
+
+        int classCompare = string.Compare(leftInfo.DeclaredClassName, rightInfo.DeclaredClassName, StringComparison.Ordinal);
+        if (classCompare != 0) return classCompare;
+
+        return leftInfo.RegistrationOrder.CompareTo(rightInfo.RegistrationOrder);
+    }
+
+    private SubsystemRegistrationInfo GetSubsystemInfo(IEngineSubsystem subsystem)
+    {
+        if (m_SubsystemInfo.TryGetValue(subsystem, out var info)) return info;
+
+        info = new SubsystemRegistrationInfo(
+            PackageId: string.Empty,
+            PackageOrder: int.MaxValue,
+            DeclaredClassName: subsystem.GetType().FullName ?? subsystem.GetType().Name,
+            InitPhase: subsystem.InitPhase,
+            Priority: subsystem.Priority,
+            RegistrationOrder: m_NextSubsystemRegistrationOrder++);
+        m_SubsystemInfo[subsystem] = info;
+        return info;
+    }
+
+    private sealed record SubsystemRegistrationInfo(
+        string PackageId,
+        int PackageOrder,
+        string DeclaredClassName,
+        EnginePhase InitPhase,
+        int Priority,
+        long RegistrationOrder);
 
     public void Dispose()
     {
         Shutdown();
     }
 }
+

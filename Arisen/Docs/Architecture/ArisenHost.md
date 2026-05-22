@@ -3,7 +3,7 @@
 **Status**: Active  
 **Module**: `ArisenKernel.Lifecycle`
 
-The **Engine Bootstrapper** (formerly `ArisenHost`) is the unified, bare-metal entry logic integrated directly into the `ArisenKernel.dll`. It is responsible for discovering the Workspace, resolving all package binaries, and handing execution over to the Engine Kernel.
+The **Engine Bootstrapper** (formerly `ArisenHost`) is the unified, bare-metal entry logic integrated directly into the `ArisenKernel.dll`. It is responsible for discovering the Workspace, resolving the active profile package list, and handing execution over to the Engine Kernel. Runtime package mounting itself is owned by `PackageSubsystem`.
 
 ---
 
@@ -32,9 +32,11 @@ The bootstrapper resolves the environment using standard arguments:
 MyGame.exe --workspace "D:/MyGame" --profile "Development"
 ```
 
-1. **Deducation**: If `--workspace` is missing, the bootstrapper automatically deduces the workspace root based on the isolated binary folder structure (moving 4 levels up from `bin/`).
-2. **Manifest Resolution**: It parses the workspace `manifest.json` to identify the required packages and active profile.
-3. **Topological Mounting**: It iterates through all active packages, loading their managed assemblies into the `AssemblyLoadContext` and mapping their native C++ payloads into memory.
+1. **Deduction**: If `--workspace` is missing, the bootstrapper automatically deduces the workspace root based on the isolated binary folder structure (moving 4 levels up from `bin/`).
+2. **Launch Config**: If `launch.config.json` exists beside the executable, it is used to recover profile/workspace information before path deduction.
+3. **Manifest Resolution**: It parses the workspace `manifest.json` to identify base packages and active profile packages.
+4. **Resolved Manifest Authority**: If `manifest.resolved.json` exists beside the executable, the bootstrapper treats it as the authoritative package list and topological order. Invalid resolved manifests are fatal by default; raw `manifest.json` fallback is allowed only when `--allow-manifest-fallback` is passed.
+5. **Kernel Hand-off**: It passes the ordered package URL list to `EngineKernel.Initialize()`. The kernel ensures `PackageSubsystem` exists and delegates actual package mounting to it.
 
 ---
 
@@ -43,16 +45,17 @@ MyGame.exe --workspace "D:/MyGame" --profile "Development"
 Arisen uses a **Strict Co-Location Strategy**. All compiled artifacts (Engine Kernel, Package DLLs, Native RHI/HAL binaries, and Transitive NuGet dependencies) are placed in a single flat directory:
 `MyGame/.arisen/bin/{profile}/{configuration}/`.
 
-When the bootstrapper runs:
-1. It looks for assemblies first in the global `bin/` directory.
-2. If an assembly is missing (e.g., in a non-built source package), it falls back to the package's local `Managed/` folder.
-3. Native binaries are mapped globally, ensuring `[DllImport]` works flawlessly across package boundaries.
+When `PackageSubsystem` mounts a package:
+1. It looks for entry assemblies first in the global `bin/` directory.
+2. If an assembly is missing from `bin/`, it falls back to the package root and then the package's local `Managed/` folder.
+3. Entry classes must implement `IPackageEntry` when declared.
+4. Native binaries are mapped globally by deployment/copy rules, ensuring `[DllImport]` works across package boundaries.
 
 ---
 
 ## 4. Boot Hand-off
 
-Once all packages are mounted, the bootstrapper attempts to find a "Master Controller" to yield the main thread to:
+Once all packages are mounted by `PackageSubsystem`, the bootstrapper attempts to find a "Master Controller" to yield the main thread to:
 
 1. **IApplicationHost**: If a package (like `com.arisen.editor`) has registered an `IApplicationHost` service, the bootstrapper yields the main thread to it (launching the Editor UI).
 2. **Bare-Metal Kernel**: If no application host is detected, the bootstrapper engages the default engine tick loop via `EngineKernel.Instance.Run()`.

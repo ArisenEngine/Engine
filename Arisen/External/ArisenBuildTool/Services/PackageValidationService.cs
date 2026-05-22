@@ -1,0 +1,469 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+using ArisenBuildTool.Models;
+using ArisenBuildTool.Utils;
+
+namespace ArisenBuildTool.Services;
+
+public sealed class PackageValidationResult
+{
+    public Dictionary<string, PackageInfo> PackageMap { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public List<PackageInfo> SortedPackages { get; } = new();
+    public List<string> Errors { get; } = new();
+    public List<string> Warnings { get; } = new();
+    public bool Success => Errors.Count == 0;
+}
+
+public static class PackageValidationService
+{
+    private static readonly HashSet<string> s_ValidPackageTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "managed",
+        "native",
+        "hybrid"
+    };
+
+    public static PackageValidationResult Validate(ProjectManifest manifest, string workspaceDir, string engineDir, string profile)
+    {
+        var result = new PackageValidationResult();
+        var pendingPackages = new Queue<PackageRequirement>();
+        var requestedPackages = new Dictionary<string, PackageRequirement>(StringComparer.OrdinalIgnoreCase);
+
+        if (manifest.Packages == null || manifest.Packages.Count == 0)
+        {
+            result.Errors.Add("Workspace manifest does not list any base packages.");
+        }
+        else
+        {
+            foreach (var package in manifest.Packages)
+            {
+                EnqueueRequestedPackage(package, "base manifest", pendingPackages, requestedPackages, result);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(profile))
+        {
+            if (manifest.Profiles != null && manifest.Profiles.TryGetValue(profile, out var profileDefinition))
+            {
+                foreach (var package in profileDefinition.Packages ?? new List<PackageRequirement>())
+                {
+                    EnqueueRequestedPackage(package, $"profile '{profile}'", pendingPackages, requestedPackages, result);
+                }
+            }
+            else
+            {
+                result.Errors.Add($"Profile '{profile}' was not found in the workspace manifest.");
+            }
+        }
+
+        while (pendingPackages.Count > 0)
+        {
+            var requirement = pendingPackages.Dequeue();
+            if (string.IsNullOrWhiteSpace(requirement.Id))
+            {
+                result.Errors.Add("Encountered a package requirement with an empty Id.");
+                continue;
+            }
+
+            if (result.PackageMap.ContainsKey(requirement.Id))
+            {
+                continue;
+            }
+
+            string packagePath = ResolvePackagePath(requirement, workspaceDir, engineDir);
+            if (string.IsNullOrEmpty(packagePath) || !Directory.Exists(packagePath))
+            {
+                result.Errors.Add($"Package '{requirement.Id}' could not be resolved. Searched workspace Local, workspace .Cache, engine Packages, and explicit URL '{requirement.Url ?? "<none>"}'.");
+                continue;
+            }
+
+            string packageJsonPath = Path.Combine(packagePath, "package.json");
+            if (!File.Exists(packageJsonPath))
+            {
+                result.Errors.Add($"Package '{requirement.Id}' at '{packagePath}' is missing package.json.");
+                continue;
+            }
+
+            PackageManifest? packageManifest = ReadPackageManifest(packageJsonPath, requirement.Id, result);
+            if (packageManifest == null)
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(packageManifest.Id) && !string.Equals(packageManifest.Id, requirement.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                result.Errors.Add($"Package ID mismatch at '{packageJsonPath}'. Requirement requested '{requirement.Id}', but package.json declares '{packageManifest.Id}'.");
+                continue;
+            }
+
+            packageManifest.Id = requirement.Id;
+            packageManifest.Type = NormalizePackageType(packageManifest, packagePath);
+            if (!s_ValidPackageTypes.Contains(packageManifest.Type ?? string.Empty))
+            {
+                result.Errors.Add($"Package '{requirement.Id}' has invalid type '{packageManifest.Type}'. Valid types are: managed, native, hybrid.");
+                continue;
+            }
+
+            if (packageManifest.Entry != null)
+            {
+                ValidateEntryBlock(packageManifest, result);
+            }
+
+            ValidateSubsystemMetadata(packageManifest, result);
+
+            result.PackageMap[requirement.Id] = new PackageInfo
+            {
+                Manifest = packageManifest,
+                DirectoryPath = packagePath
+            };
+
+            if (packageManifest.Dependencies != null)
+            {
+                foreach (var dependency in packageManifest.Dependencies.OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (string.IsNullOrWhiteSpace(dependency.Key))
+                    {
+                        result.Errors.Add($"Package '{requirement.Id}' declares an empty dependency id.");
+                        continue;
+                    }
+
+                    if (!result.PackageMap.ContainsKey(dependency.Key))
+                    {
+                        pendingPackages.Enqueue(new PackageRequirement { Id = dependency.Key, Version = dependency.Value });
+                    }
+                }
+            }
+        }
+
+        if (result.Errors.Count == 0)
+        {
+            ValidateServiceContracts(result);
+        }
+
+        if (result.Errors.Count == 0)
+        {
+            SortTopologically(result);
+        }
+
+        return result;
+    }
+
+    public static void LogSummary(PackageValidationResult result)
+    {
+        foreach (var warning in result.Warnings)
+        {
+            Logger.Warning(warning);
+        }
+
+        foreach (var error in result.Errors)
+        {
+            Logger.Error(error);
+        }
+
+        if (result.Success)
+        {
+            Logger.Info($"Package validation succeeded. {result.PackageMap.Count} packages resolved.");
+            Logger.Info("Resolved package order:");
+            for (int i = 0; i < result.SortedPackages.Count; i++)
+            {
+                var package = result.SortedPackages[i];
+                Logger.Info($"  {i + 1}. {package.Manifest.Id} ({package.Manifest.Type}) -> {package.DirectoryPath}");
+            }
+        }
+        else
+        {
+            Logger.Error($"Package validation failed with {result.Errors.Count} error(s) and {result.Warnings.Count} warning(s).");
+        }
+    }
+
+    private static void EnqueueRequestedPackage(
+        PackageRequirement package,
+        string source,
+        Queue<PackageRequirement> pendingPackages,
+        Dictionary<string, PackageRequirement> requestedPackages,
+        PackageValidationResult result)
+    {
+        if (string.IsNullOrWhiteSpace(package.Id))
+        {
+            result.Errors.Add($"The {source} contains a package requirement with an empty Id.");
+            return;
+        }
+
+        if (requestedPackages.TryGetValue(package.Id, out var existing))
+        {
+            if (!SameRequirement(existing, package))
+            {
+                result.Errors.Add($"Package '{package.Id}' is listed multiple times with conflicting URL/version metadata.");
+            }
+            else
+            {
+                result.Warnings.Add($"Package '{package.Id}' is listed more than once. The duplicate entry from {source} will be ignored.");
+            }
+            return;
+        }
+
+        requestedPackages[package.Id] = package;
+        pendingPackages.Enqueue(package);
+    }
+
+    private static bool SameRequirement(PackageRequirement left, PackageRequirement right)
+    {
+        return string.Equals(left.Url ?? string.Empty, right.Url ?? string.Empty, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(left.Version ?? string.Empty, right.Version ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static PackageManifest? ReadPackageManifest(string packageJsonPath, string packageId, PackageValidationResult result)
+    {
+        try
+        {
+            string json = File.ReadAllText(packageJsonPath);
+            var manifest = JsonSerializer.Deserialize<PackageManifest>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (manifest == null)
+            {
+                result.Errors.Add($"Package '{packageId}' package.json deserialized to null.");
+                return null;
+            }
+
+            return manifest;
+        }
+        catch (Exception ex)
+        {
+            result.Errors.Add($"Failed to parse package '{packageId}' manifest at '{packageJsonPath}': {ex.Message}");
+            return null;
+        }
+    }
+
+    private static string NormalizePackageType(PackageManifest manifest, string packagePath)
+    {
+        if (string.Equals(manifest.Type, "hybrid", StringComparison.OrdinalIgnoreCase))
+        {
+            return "hybrid";
+        }
+
+        if (string.Equals(manifest.Type, "managed", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(manifest.Type, "native", StringComparison.OrdinalIgnoreCase))
+        {
+            return manifest.Type!.ToLowerInvariant();
+        }
+
+        if (manifest.NativeRuntimes != null && manifest.NativeRuntimes.Count > 0 && manifest.Entry == null)
+        {
+            return "native";
+        }
+
+        if (Directory.Exists(Path.Combine(packagePath, "Managed")) && File.Exists(Path.Combine(packagePath, "CMakeLists.txt")))
+        {
+            return "hybrid";
+        }
+
+        return "managed";
+    }
+
+    private static void ValidateEntryBlock(PackageManifest manifest, PackageValidationResult result)
+    {
+        if (string.IsNullOrWhiteSpace(manifest.Entry?.Assembly) && !string.Equals(manifest.Type, "native", StringComparison.OrdinalIgnoreCase))
+        {
+            result.Errors.Add($"Package '{manifest.Id}' has an entry block but no entry.assembly.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(manifest.Entry?.Class) && string.IsNullOrWhiteSpace(manifest.Entry?.Assembly))
+        {
+            result.Errors.Add($"Package '{manifest.Id}' declares entry.class but no entry.assembly.");
+        }
+    }
+
+    private static void ValidateSubsystemMetadata(PackageManifest manifest, PackageValidationResult result)
+    {
+        if (manifest.Subsystems == null) return;
+
+        var validPhases = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "PreInit",
+            "Init",
+            "PostInit",
+            "Running",
+            "PreShutdown",
+            "Shutdown"
+        };
+
+        foreach (var subsystem in manifest.Subsystems)
+        {
+            if (string.IsNullOrWhiteSpace(subsystem.Class))
+            {
+                result.Errors.Add($"Package '{manifest.Id}' declares a subsystem with an empty class.");
+            }
+
+            if (!validPhases.Contains(subsystem.Phase))
+            {
+                result.Errors.Add($"Package '{manifest.Id}' subsystem '{subsystem.Class}' declares invalid phase '{subsystem.Phase}'.");
+            }
+        }
+    }
+
+    private static void ValidateServiceContracts(PackageValidationResult result)
+    {
+        var providersByContract = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var package in result.PackageMap.Values)
+        {
+            foreach (var providedContract in EnumerateServiceContracts(package.Manifest.Services?.Provides, package.Manifest.Id, "provides", result))
+            {
+                if (!providersByContract.TryGetValue(providedContract.Name, out var providers))
+                {
+                    providers = new List<string>();
+                    providersByContract[providedContract.Name] = providers;
+                }
+
+                providers.Add(package.Manifest.Id);
+            }
+        }
+
+        foreach (var provider in providersByContract.Where(x => x.Value.Count > 1))
+        {
+            result.Warnings.Add($"Service contract '{provider.Key}' is provided by multiple packages: {string.Join(", ", provider.Value.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))}. Provider selection policy is not implemented yet.");
+        }
+
+        foreach (var package in result.PackageMap.Values)
+        {
+            foreach (var requiredContract in EnumerateServiceContracts(package.Manifest.Services?.Requires, package.Manifest.Id, "requires", result))
+            {
+                if (!providersByContract.ContainsKey(requiredContract.Name))
+                {
+                    if (requiredContract.Optional)
+                    {
+                        result.Warnings.Add($"Package '{package.Manifest.Id}' optionally requires service '{requiredContract.Name}', but no selected package provides it.");
+                    }
+                    else
+                    {
+                        result.Errors.Add($"Package '{package.Manifest.Id}' requires service '{requiredContract.Name}', but no selected package provides it.");
+                    }
+                }
+            }
+        }
+    }
+
+    private sealed record ServiceContractDescriptor(string Name, bool Optional, bool Deferred);
+
+    private static IEnumerable<ServiceContractDescriptor> EnumerateServiceContracts(List<JsonElement>? elements, string packageId, string sectionName, PackageValidationResult result)
+    {
+        if (elements == null) yield break;
+
+        foreach (var element in elements)
+        {
+            string? contract = null;
+            bool optional = false;
+            bool deferred = false;
+            if (element.ValueKind == JsonValueKind.String)
+            {
+                contract = element.GetString();
+            }
+            else if (element.ValueKind == JsonValueKind.Object && element.TryGetProperty("interface", out var interfaceElement) && interfaceElement.ValueKind == JsonValueKind.String)
+            {
+                contract = interfaceElement.GetString();
+                optional = IsTrue(element, "optional");
+                deferred = IsTrue(element, "deferred");
+            }
+            else
+            {
+                result.Errors.Add($"Package '{packageId}' has invalid services.{sectionName} entry. Expected a string or an object with an 'interface' string property.");
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(contract))
+            {
+                result.Errors.Add($"Package '{packageId}' has an empty services.{sectionName} contract.");
+                continue;
+            }
+
+            yield return new ServiceContractDescriptor(contract, optional, deferred);
+        }
+    }
+
+    private static bool IsTrue(JsonElement element, string propertyName)
+    {
+        return element.TryGetProperty(propertyName, out var property)
+            && property.ValueKind == JsonValueKind.True;
+    }
+
+    private static void SortTopologically(PackageValidationResult result)
+    {
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var visiting = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var stack = new Stack<string>();
+
+        void Visit(string id)
+        {
+            if (visited.Contains(id)) return;
+            if (!result.PackageMap.TryGetValue(id, out var package))
+            {
+                result.Errors.Add($"Package '{id}' is referenced but was not discovered.");
+                return;
+            }
+
+            if (visiting.Contains(id))
+            {
+                var cycle = stack.Reverse().SkipWhile(x => !string.Equals(x, id, StringComparison.OrdinalIgnoreCase)).Concat(new[] { id });
+                result.Errors.Add($"Package dependency cycle detected: {string.Join(" -> ", cycle)}");
+                return;
+            }
+
+            visiting.Add(id);
+            stack.Push(id);
+
+            if (package.Manifest.Dependencies != null)
+            {
+                foreach (var dependencyId in package.Manifest.Dependencies.Keys.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (!result.PackageMap.ContainsKey(dependencyId))
+                    {
+                        result.Errors.Add($"Package '{id}' depends on missing package '{dependencyId}'.");
+                    }
+                    else
+                    {
+                        Visit(dependencyId);
+                    }
+                }
+            }
+
+            stack.Pop();
+            visiting.Remove(id);
+            visited.Add(id);
+            result.SortedPackages.Add(package);
+        }
+
+        foreach (var id in result.PackageMap.Keys.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
+        {
+            Visit(id);
+        }
+
+        if (result.Errors.Count > 0)
+        {
+            result.SortedPackages.Clear();
+        }
+    }
+
+    private static string ResolvePackagePath(PackageRequirement req, string workspaceDir, string engineDir)
+    {
+        if (!string.IsNullOrEmpty(req.Url) && req.Url.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+        {
+            string pathPart = Uri.UnescapeDataString(req.Url.Substring(7));
+            return Path.IsPathRooted(pathPart)
+                ? Path.GetFullPath(pathPart)
+                : Path.GetFullPath(Path.Combine(workspaceDir, pathPart));
+        }
+
+        string localPath = Path.GetFullPath(Path.Combine(workspaceDir, "Local", req.Id));
+        if (Directory.Exists(localPath)) return localPath;
+
+        string cachePath = Path.GetFullPath(Path.Combine(workspaceDir, ".Cache", req.Id));
+        if (Directory.Exists(cachePath)) return cachePath;
+
+        string enginePkgPath = Path.GetFullPath(Path.Combine(engineDir, "Packages", req.Id));
+        if (Directory.Exists(enginePkgPath)) return enginePkgPath;
+
+        return string.Empty;
+    }
+}

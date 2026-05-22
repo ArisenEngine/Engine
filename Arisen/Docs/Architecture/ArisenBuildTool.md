@@ -9,6 +9,35 @@ Human developers do not manually create or maintain `.sln`, `.csproj`, or `.vcxp
 
 ---
 
+## Validation Pipeline
+
+Before generation, `ArisenBuildTool` validates the selected workspace/profile package graph. This is available as an explicit command and is also run automatically by `generate`.
+
+```bat
+ArisenBuildTool.exe validate --workspace "Path\To\MyGame" --profile Development
+```
+
+Validation is intentionally strict. The command exits with code `0` on success and non-zero on failure. It reports:
+
+- selected workspace and profile,
+- discovered package count,
+- stable resolved package order,
+- duplicate package declarations,
+- missing package directories,
+- missing `package.json` files,
+- package ID mismatches,
+- invalid package types,
+- malformed package entry blocks,
+- dependency cycles,
+- invalid service contract declarations,
+- `services.requires` entries with no matching selected `services.provides` provider,
+- optional service requirements as warnings when no provider is selected,
+- deferred service contracts as graph-validated but late-registered runtime contracts.
+
+A successful validation produces the same package order that generation uses for `manifest.resolved.json`. Launcher/editor package management should call this validation path rather than reimplementing graph checks.
+
+---
+
 ## The Generation Pipeline
 
 When a user clicks "Generate IDE Files" in the Launcher, it invokes:
@@ -16,10 +45,12 @@ When a user clicks "Generate IDE Files" in the Launcher, it invokes:
 
 The tool executes four strict phases:
 
-### Phase 1: Package Discovery & Workspace Resolution
+### Phase 1: Package Validation & Workspace Resolution
 1. The tool parses `manifest.json` at the workspace root.
-2. It gathers **ALL** packages listed (Base packages + packages from every Profile including Development/Server).
-3. It recursively resolves dependencies from each package's `package.json` to build the full Directed Acyclic Graph (DAG) of the workspace.
+2. It gathers base packages plus packages from the selected profile.
+3. It recursively resolves dependencies from each package's `package.json` to build the full Directed Acyclic Graph (DAG) for that profile.
+4. It fails before generation if any required package is missing, malformed, duplicated with conflicting metadata, participates in a dependency cycle, or requires a service contract that no selected package provides.
+5. It sorts packages in a stable topological order.
 
 ### Phase 2: IDE Project Generation (The `.arisen` hidden folder)
 We DO NOT pollute the user's `Local/` or package source folders with IDE-specific configuration files.
@@ -35,12 +66,14 @@ As defined in [ConfigurationFormats.md](ConfigurationFormats.md), users should n
 During Phase 2, `ArisenBuildTool` automatically injects the **Arisen Roslyn Source Generator** into the generated `.csproj`. 
 - Every time the user clicks "Build" in Visual Studio/Rider, the injected analyzer scans the code for `[EngineSubsystem]` attributes and instantly overwrites the `package.json` with the compiled metadata!
 
-### Phase 4: Solution & Entry Point Generation
+### Phase 4: Resolved Manifest & Entry Point Generation
 The tool generates a separate solution file for each **Profile** defined in the workspace:
 - **Solution Naming**: `{ProjectName}_{Profile}.sln` (e.g., `MyGame_Development.sln`).
 - **Storage**: Solutions are stored in `.arisen/Projects/{Profile}/`.
 - **Profile Macros**: Each solution automatically defines the preprocessor macro `ARISEN_PROFILE_{PROFILE}` for both C++ and C# projects.
 - **Unified Entry Point**: The tool generates a thin `Program.cs` stub in the workspace project. This stub calls `ArisenKernel.Lifecycle.EngineBootstrapper.Run(args)`, making the workspace a manageable .NET executable.
+- **Resolved Manifest**: The tool writes `manifest.resolved.json` into each `.arisen/bin/{profile}/{configuration}/` output directory. It includes sorted packages plus debug metadata such as type, entry, dependency, and service declarations. Runtime boot treats this resolved manifest as authoritative when present so package mount order matches build-time validation.
+- **Launch Config**: The tool writes `launch.config.json` beside the executable so the bootstrapper can recover the workspace/profile without relying only on path deduction.
 - **Organization**: Projects are organized into logical Solution Folders: `Engine Packages`, `Local Packages`, and `Native Dependencies`.
 
 ---

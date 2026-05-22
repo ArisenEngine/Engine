@@ -3,12 +3,14 @@ using System.Reflection;
 using System;
 using ArisenKernel.Lifecycle;
 using ArisenKernel.Diagnostics;
+using ArisenKernel.Services;
 
 namespace ArisenKernel.Packages;
 
 public class PackageSubsystem : IEngineSubsystem
 {
     private readonly Dictionary<string, ArisenPackageInfo> m_LoadedPackages = new();
+    private readonly List<string> m_LoadOrder = new();
     private readonly List<PackageLoadContext> m_LoadContexts = new();
     private readonly IPackageResolver m_Resolver = new DefaultPackageResolver();
     private string m_PackagesRoot = string.Empty;
@@ -16,6 +18,32 @@ public class PackageSubsystem : IEngineSubsystem
     public string Name => "PackageSubsystem";
     public int Priority => 10;
     public EnginePhase InitPhase => EnginePhase.Init;
+
+    public void MountPackages(IEnumerable<string> packageUrls)
+    {
+        if (packageUrls == null) throw new ArgumentNullException(nameof(packageUrls));
+
+        foreach (var packageUrl in packageUrls)
+        {
+            if (string.IsNullOrWhiteSpace(packageUrl)) continue;
+
+            string packageJsonPath = Path.Combine(packageUrl, "package.json");
+            if (!File.Exists(packageJsonPath))
+            {
+                throw new FileNotFoundException($"Package manifest not found for '{packageUrl}'.", packageJsonPath);
+            }
+
+            var manifest = TryReadManifest(packageJsonPath);
+            if (manifest == null)
+            {
+                throw new InvalidOperationException($"Failed to read package manifest '{packageJsonPath}'.");
+            }
+
+                        LoadPackage(packageJsonPath, PackageSource.External, manifest);
+        }
+
+        ValidateRequiredServices();
+    }
 
     public void Initialize()
     {
@@ -149,8 +177,10 @@ public class PackageSubsystem : IEngineSubsystem
         var sortedManifests = SortManifestsByDependency(manifests);
         foreach (var item in sortedManifests)
         {
-            LoadPackage(item.ManifestPath, item.Source, item.Manifest);
+                        LoadPackage(item.ManifestPath, item.Source, item.Manifest);
         }
+
+        ValidateRequiredServices();
     }
 
     private PackageManifest? TryReadManifest(string path)
@@ -231,6 +261,7 @@ public class PackageSubsystem : IEngineSubsystem
         {
             string rootPath = Path.GetFullPath(Path.GetDirectoryName(manifestPath)!);
             Assembly? assembly = null;
+            object? entryInstance = null;
             string entryAssembly = manifest.Entry?.Assembly ?? string.Empty;
             string entryClass = manifest.Entry?.Class ?? string.Empty;
 
@@ -241,22 +272,43 @@ public class PackageSubsystem : IEngineSubsystem
             }
             else if (!string.IsNullOrEmpty(entryAssembly))
             {
-                string assemblyPath = Path.Combine(rootPath, entryAssembly);
-                if (!File.Exists(assemblyPath))
+                string assemblyPath = ResolveEntryAssemblyPath(rootPath, entryAssembly);
+                if (string.IsNullOrEmpty(assemblyPath))
                 {
-                    KernelLog.Info($"[PackageSubsystem] Entry assembly not found: {assemblyPath}");
-                    return;
+                    throw new FileNotFoundException($"Entry assembly '{entryAssembly}' was not found for package '{manifest.Id}'.");
                 }
-                var loadContext = new PackageLoadContext(assemblyPath);
-                m_LoadContexts.Add(loadContext);
-                assembly = loadContext.LoadFromAssemblyPath(assemblyPath);
+
+                if (Path.GetFullPath(assemblyPath).StartsWith(Path.GetFullPath(AppContext.BaseDirectory), StringComparison.OrdinalIgnoreCase))
+                {
+                    assembly = Assembly.LoadFrom(assemblyPath);
+                }
+                else
+                {
+                    var loadContext = new PackageLoadContext(assemblyPath);
+                    m_LoadContexts.Add(loadContext);
+                    assembly = loadContext.LoadFromAssemblyPath(assemblyPath);
+                }
             }
 
-            object? entryInstance = null;
             if (assembly != null && !string.IsNullOrEmpty(entryClass))
             {
-                var type = assembly.GetType(entryClass);
-                if (type != null) entryInstance = Activator.CreateInstance(type);
+                var type = assembly.GetType(entryClass, throwOnError: false);
+                if (type == null)
+                {
+                    throw new TypeLoadException($"Entry class '{entryClass}' was not found in assembly '{entryAssembly}' for package '{manifest.Id}'.");
+                }
+
+                entryInstance = Activator.CreateInstance(type);
+                if (entryInstance is not IPackageEntry entry)
+                {
+                    throw new InvalidOperationException($"Entry class '{entryClass}' for package '{manifest.Id}' must implement {nameof(IPackageEntry)}.");
+                }
+
+                using var registrationScope = EngineKernel.Instance.Services is ServiceRegistry registry
+                    ? registry.BeginPackageRegistration(manifest.Id)
+                    : null;
+
+                                entry.OnLoad(EngineKernel.Instance.Services);
             }
 
             var packageInfo = new ArisenPackageInfo
@@ -269,16 +321,163 @@ public class PackageSubsystem : IEngineSubsystem
                 Source = source,
                 EngineVersion = manifest.EngineVersion,
                 Dependencies = manifest.Dependencies ?? new(),
+                ProvidedServices = EnumerateServiceContracts(manifest.Services?.Provides).ToList(),
+                RequiredServices = EnumerateServiceContracts(manifest.Services?.Requires, includeDeferredOrOptional: false).ToList(),
                 Assembly = assembly,
                 EntryInstance = entryInstance
             };
 
+                        int packageOrder = m_LoadOrder.Count;
+            RegisterPackageSubsystems(manifest, assembly, packageOrder);
+            ValidateProvidedServices(manifest);
+
             m_LoadedPackages[manifest.Id] = packageInfo;
+            m_LoadOrder.Add(manifest.Id);
         }
         catch (Exception e)
         {
-            KernelLog.Info($"[PackageSubsystem] Error loading package {manifest.Id}: {e.Message}");
+            string entryClass = manifest.Entry?.Class ?? "<none>";
+            KernelLog.Error($"[PackageSubsystem] Error loading package {manifest.Id} entry {entryClass}: {e.Message}");
+            throw;
         }
+    }
+
+    private static string ResolveEntryAssemblyPath(string rootPath, string entryAssembly)
+    {
+        string binPath = Path.Combine(AppContext.BaseDirectory, entryAssembly);
+        if (File.Exists(binPath)) return binPath;
+
+        string rootAssemblyPath = Path.Combine(rootPath, entryAssembly);
+        if (File.Exists(rootAssemblyPath)) return rootAssemblyPath;
+
+        string managedAssemblyPath = Path.Combine(rootPath, "Managed", entryAssembly);
+        if (File.Exists(managedAssemblyPath)) return managedAssemblyPath;
+
+        return string.Empty;
+    }
+
+            private void RegisterPackageSubsystems(PackageManifest manifest, Assembly? assembly, int packageOrder)
+    {
+        if (manifest.Subsystems == null || manifest.Subsystems.Count == 0) return;
+
+        if (assembly == null)
+        {
+            throw new InvalidOperationException($"Package '{manifest.Id}' declares subsystems but has no managed assembly to scan.");
+        }
+
+        foreach (var subsystemMetadata in manifest.Subsystems)
+        {
+            if (string.IsNullOrWhiteSpace(subsystemMetadata.Class))
+            {
+                throw new InvalidOperationException($"Package '{manifest.Id}' declares a subsystem with an empty class name.");
+            }
+
+            var subsystemType = assembly.GetType(subsystemMetadata.Class, throwOnError: false);
+            if (subsystemType == null)
+            {
+                throw new TypeLoadException($"Subsystem class '{subsystemMetadata.Class}' was not found for package '{manifest.Id}'.");
+            }
+
+            object? instance = Activator.CreateInstance(subsystemType);
+            if (instance is not IEngineSubsystem subsystem)
+            {
+                throw new InvalidOperationException($"Subsystem class '{subsystemMetadata.Class}' for package '{manifest.Id}' must implement {nameof(IEngineSubsystem)}.");
+            }
+
+                        if (!Enum.TryParse<EnginePhase>(subsystemMetadata.Phase, ignoreCase: true, out var initPhase))
+            {
+                throw new InvalidOperationException($"Subsystem '{subsystemMetadata.Class}' for package '{manifest.Id}' declares invalid phase '{subsystemMetadata.Phase}'.");
+            }
+
+                        EngineKernel.Instance.RegisterSubsystem(
+                subsystem,
+                manifest.Id,
+                packageOrder,
+                subsystemMetadata.Class,
+                initPhase,
+                subsystemMetadata.Priority);
+
+            using var registrationScope = EngineKernel.Instance.Services is ServiceRegistry registry
+                ? registry.BeginPackageRegistration(manifest.Id)
+                : null;
+            EngineKernel.Instance.Services.RegisterService(subsystemType, subsystem);
+
+            KernelLog.Info($"[PackageSubsystem] Registered subsystem {subsystemMetadata.Class} from package {manifest.Id}.");
+        }
+    }
+
+    private void ValidateProvidedServices(PackageManifest manifest)
+    {
+        foreach (var contractName in EnumerateServiceContracts(manifest.Services?.Provides, includeDeferredOrOptional: false))
+        {
+            bool wasRegisteredByPackage = EngineKernel.Instance.Services.GetRegisteredServices().Any(service =>
+                ServiceContractMatches(service.ContractName, contractName)
+                && string.Equals(service.ProviderPackageId, manifest.Id, StringComparison.OrdinalIgnoreCase));
+
+            if (!wasRegisteredByPackage)
+            {
+                throw new InvalidOperationException($"Package '{manifest.Id}' declares provided service '{contractName}', but it was not registered during OnLoad().");
+            }
+        }
+    }
+
+    private void ValidateRequiredServices()
+    {
+        foreach (var package in m_LoadedPackages.Values)
+        {
+            foreach (var contractName in package.RequiredServices)
+            {
+                if (!EngineKernel.Instance.Services.IsServiceRegistered(contractName))
+                {
+                    throw new InvalidOperationException($"Package '{package.Id}' requires service '{contractName}', but it is not registered after package mounting.");
+                }
+            }
+        }
+    }
+
+        private static IEnumerable<string> EnumerateServiceContracts(List<JsonElement>? serviceElements, bool includeDeferredOrOptional = true)
+    {
+        if (serviceElements == null) yield break;
+
+        foreach (var element in serviceElements)
+        {
+            string? contractName = null;
+            bool isDeferredOrOptional = false;
+            if (element.ValueKind == JsonValueKind.String)
+            {
+                contractName = element.GetString();
+            }
+            else if (element.ValueKind == JsonValueKind.Object
+                && element.TryGetProperty("interface", out var interfaceElement)
+                && interfaceElement.ValueKind == JsonValueKind.String)
+            {
+                contractName = interfaceElement.GetString();
+                isDeferredOrOptional = IsTrue(element, "deferred") || IsTrue(element, "optional");
+            }
+
+            if (!includeDeferredOrOptional && isDeferredOrOptional) continue;
+
+            if (!string.IsNullOrWhiteSpace(contractName))
+            {
+                yield return contractName;
+            }
+        }
+    }
+
+    private static bool IsTrue(JsonElement element, string propertyName)
+    {
+        return element.TryGetProperty(propertyName, out var property)
+            && property.ValueKind == JsonValueKind.True;
+    }
+
+    private static bool ServiceContractMatches(string registeredContractName, string declaredContractName)
+    {
+                if (string.Equals(registeredContractName, declaredContractName, StringComparison.Ordinal)) return true;
+        if (declaredContractName.StartsWith(registeredContractName + ",", StringComparison.Ordinal)) return true;
+
+        int lastDot = registeredContractName.LastIndexOf('.');
+        string shortName = lastDot >= 0 ? registeredContractName[(lastDot + 1)..] : registeredContractName;
+        return string.Equals(shortName, declaredContractName, StringComparison.Ordinal);
     }
 
     public T? GetPackageEntry<T>(string packageId) where T : class
@@ -294,9 +493,12 @@ public class PackageSubsystem : IEngineSubsystem
 
     public void Shutdown()
     {
-        // B19: Call OnUnload on all package entry instances
-        foreach (var pkg in m_LoadedPackages.Values)
+        // B19: Call OnUnload on all package entry instances in reverse mount order.
+        for (int i = m_LoadOrder.Count - 1; i >= 0; i--)
         {
+            string packageId = m_LoadOrder[i];
+            if (!m_LoadedPackages.TryGetValue(packageId, out var pkg)) continue;
+
             if (pkg.EntryInstance is IPackageEntry entry)
             {
                 try
@@ -310,6 +512,7 @@ public class PackageSubsystem : IEngineSubsystem
             }
         }
 
+        m_LoadOrder.Clear();
         m_LoadedPackages.Clear();
 
         foreach (var context in m_LoadContexts)
@@ -323,6 +526,7 @@ public class PackageSubsystem : IEngineSubsystem
     {
         if (info == null || string.IsNullOrEmpty(info.Id)) return;
         m_LoadedPackages[info.Id] = info;
+        if (!m_LoadOrder.Contains(info.Id)) m_LoadOrder.Add(info.Id);
     }
 
     public void Dispose() => Shutdown();
@@ -335,7 +539,24 @@ public class PackageSubsystem : IEngineSubsystem
         public string Type { get; set; } = "managed";
         public PackageEntryBlock? Entry { get; set; }
         public string EngineVersion { get; set; } = string.Empty;
-        public Dictionary<string, string>? Dependencies { get; set; }
+                public Dictionary<string, string>? Dependencies { get; set; }
+        public PackageServicesBlock? Services { get; set; }
+        public List<PackageSubsystemBlock>? Subsystems { get; set; }
+    }
+
+    private class PackageSubsystemBlock
+    {
+        public string Class { get; set; } = string.Empty;
+        public string Phase { get; set; } = "Init";
+        public int Priority { get; set; } = 100;
+        public List<string>? EnabledProfiles { get; set; }
+        public List<JsonElement>? RequiresServices { get; set; }
+    }
+
+    private class PackageServicesBlock
+    {
+        public List<JsonElement>? Provides { get; set; }
+        public List<JsonElement>? Requires { get; set; }
     }
 
     private class PackageEntryBlock
