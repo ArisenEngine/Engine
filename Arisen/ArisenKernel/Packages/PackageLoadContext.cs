@@ -4,11 +4,14 @@ using System.Reflection;
 namespace ArisenKernel.Packages;
 
 /// <summary>
-/// Provides an isolated loading context for Arisen Packages and DLCs.
+/// Collectible assembly load context for package-local managed assemblies.
+/// Shared assemblies that are already deployed beside the host executable stay in the default context;
+/// this context is reserved for package-private assemblies so package entries can be unloaded after shutdown
+/// once no runtime references remain.
 /// </summary>
-public class PackageLoadContext : AssemblyLoadContext
+public sealed class PackageLoadContext : AssemblyLoadContext
 {
-    private AssemblyDependencyResolver m_Resolver;
+    private readonly AssemblyDependencyResolver m_Resolver;
 
     public PackageLoadContext(string mainAssemblyPath) : base(isCollectible: true)
     {

@@ -64,15 +64,9 @@
         }
       ]
     },
-    "Production": {
+        "Production": {
       "IsEditor": false,
-      "Packages": [
-        {
-          "Id": "com.arisen.packagegame",
-          "Url": "file://Local/com.arisen.packagegame",
-          "Version": "1.0.0"
-        }
-      ]
+      "Packages": []
     },
     "RHIVulkanTesting": {
       "IsEditor": false,

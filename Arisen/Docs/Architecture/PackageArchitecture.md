@@ -12,31 +12,49 @@ A package in Arisen is a self-contained unit of functionality. It consists of:
 
 ## 🏗️ Architecture Layers
 
-Arisen Engine organizes its core packages into four logical layers to manage complexity and dependencies:
+Arisen Engine organizes its core packages into six logical layers to manage complexity and dependencies. Every package declares its layer in `package.json`, and `ArisenBuildTool validate` rejects reverse dependencies.
 
-### 1. Kernel & Foundation (Lowest Layer)
+### 1. Foundation (Lowest Layer)
 These packages form the absolute base of the engine.
 -   **`com.arisen.core`**: Provides the base types and the core `ServiceRegistry`.
 -   **`com.arisen.core.native`**: The monolithic C++ foundation, providing hardware abstraction (HAL) and low-level diagnostics.
 -   **`com.arisen.dag`**: A generic graph-based execution system.
 -   **`com.arisen.taskgraph`**: The high-performance job system for all multi-threaded operations.
+-   **`com.arisen.platform.desktop`**: The desktop platform/window provider.
 
 ### 2. Domain (Core Features)
 This layer implements the standard features expected of a game engine.
 -   **`com.arisen.ecs`**: The foundational Entity Component System.
 -   **`com.arisen.rendering`**: The RenderGraph and core pipeline management.
 -   **`com.arisen.resources`**: Background asset discovery and database management.
--   **`com.arisen.rhi.vulkan.native`**: The primary hardware driver implementation.
+-   **`com.arisen.generic-renderpipeline`**: The default concrete RenderPipeline implemented via RenderGraph.
 
-### 3. Tooling (Editor & Authoring)
+### 3. Driver (Backend Implementations)
+Concrete hardware/API backends. Driver packages should depend only on Foundation packages and expose backend functionality through shared contracts/services.
+-   **`com.arisen.rhi.vulkan.native`**: The primary Vulkan hardware driver implementation.
+
+### 4. Tooling (Editor & Authoring)
 Packages that provide the visual environment for creating games.
 -   **`com.arisen.editor`**: The main Avalonia host and panel management system.
 -   **`com.arisen.nodecanvas`**: A reusable UI foundation for all node-based editing.
 
-### 4. User (Application & Projects)
-The highest level where the final project is assembled.
--   **`com.arisen.generic-renderpipeline`**: A concrete, user-layer implementation of the RenderGraph.
+### 5. User (Application & Projects)
+The highest non-test layer where the final project is assembled.
 -   **`com.arisen.packagegame`**: The specific game logic and root configuration.
+
+### 6. Test
+Test runner and package-specific test fixtures may depend on any layer because they are excluded from normal runtime profiles.
+
+Layer dependency policy:
+
+| Package layer | May depend on |
+| :--- | :--- |
+| `foundation` | `foundation` |
+| `domain` | `foundation`, `domain` |
+| `driver` | `foundation` |
+| `tooling` | `foundation`, `domain`, `tooling` |
+| `user` | `foundation`, `domain`, `driver`, `tooling`, `user` |
+| `test` | any layer |
 
 ---
 

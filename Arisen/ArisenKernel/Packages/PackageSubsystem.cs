@@ -358,10 +358,10 @@ public class PackageSubsystem : IEngineSubsystem
             string entryAssembly = manifest.Entry?.Assembly ?? string.Empty;
             string entryClass = manifest.Entry?.Class ?? string.Empty;
 
-            if (entryAssembly == "ArisenKernel.dll")
+            if (string.Equals(entryAssembly, "ArisenKernel.dll", StringComparison.OrdinalIgnoreCase))
             {
-                // B4: Use the kernel assembly correctly
                 assembly = typeof(PackageSubsystem).Assembly;
+                KernelLog.Info($"[PackageSubsystem] Package '{manifest.Id}' entry assembly '{entryAssembly}' uses kernel assembly context.");
             }
             else if (!string.IsNullOrEmpty(entryAssembly))
             {
@@ -371,15 +371,18 @@ public class PackageSubsystem : IEngineSubsystem
                     throw new FileNotFoundException($"Entry assembly '{entryAssembly}' was not found for package '{manifest.Id}'.");
                 }
 
-                if (Path.GetFullPath(assemblyPath).StartsWith(Path.GetFullPath(AppContext.BaseDirectory), StringComparison.OrdinalIgnoreCase))
+                var loadPolicy = GetAssemblyLoadPolicy(assemblyPath);
+                if (loadPolicy == PackageAssemblyLoadPolicy.DefaultContext)
                 {
                     assembly = Assembly.LoadFrom(assemblyPath);
+                    KernelLog.Info($"[PackageSubsystem] Package '{manifest.Id}' entry assembly '{entryAssembly}' loaded in default context.");
                 }
                 else
                 {
                     var loadContext = new PackageLoadContext(assemblyPath);
                     m_LoadContexts.Add(loadContext);
                     assembly = loadContext.LoadFromAssemblyPath(assemblyPath);
+                    KernelLog.Info($"[PackageSubsystem] Package '{manifest.Id}' entry assembly '{entryAssembly}' loaded in isolated collectible context.");
                 }
             }
 
@@ -401,7 +404,7 @@ public class PackageSubsystem : IEngineSubsystem
                     ? registry.BeginPackageRegistration(manifest.Id)
                     : null;
 
-                                entry.OnLoad(EngineKernel.Instance.Services);
+                entry.OnLoad(EngineKernel.Instance.Services);
             }
 
             var packageInfo = new ArisenPackageInfo
@@ -420,7 +423,7 @@ public class PackageSubsystem : IEngineSubsystem
                 EntryInstance = entryInstance
             };
 
-                        int packageOrder = m_LoadOrder.Count;
+            int packageOrder = m_LoadOrder.Count;
             RegisterPackageSubsystems(manifest, assembly, packageOrder);
             ValidateProvidedServices(manifest);
 
@@ -433,6 +436,17 @@ public class PackageSubsystem : IEngineSubsystem
             KernelLog.Error($"[PackageSubsystem] Error loading package {manifest.Id} entry {entryClass}: {e.Message}");
             throw;
         }
+    }
+
+
+
+    private static PackageAssemblyLoadPolicy GetAssemblyLoadPolicy(string assemblyPath)
+    {
+        string fullAssemblyPath = Path.GetFullPath(assemblyPath);
+        string baseDirectory = Path.GetFullPath(AppContext.BaseDirectory);
+        return fullAssemblyPath.StartsWith(baseDirectory, StringComparison.OrdinalIgnoreCase)
+            ? PackageAssemblyLoadPolicy.DefaultContext
+            : PackageAssemblyLoadPolicy.IsolatedCollectibleContext;
     }
 
     private static string ResolveEntryAssemblyPath(string rootPath, string entryAssembly)
@@ -623,6 +637,12 @@ public class PackageSubsystem : IEngineSubsystem
     }
 
     public void Dispose() => Shutdown();
+
+    private enum PackageAssemblyLoadPolicy
+    {
+        DefaultContext,
+        IsolatedCollectibleContext
+    }
 
     private class PackageManifest
     {

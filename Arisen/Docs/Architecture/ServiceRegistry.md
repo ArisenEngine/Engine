@@ -25,11 +25,11 @@ Packages communicate explicitly through abstract C# interfaces. These interfaces
 When a package is designed to provide core functionality to the rest of the engine, it must do two things:
 
 **1. Declare the intent in `package.json`**
-The package tells the Kernel what interfaces it provides, and at what priority (highest priority "wins" if multiple packages provide the same interface).
+The package tells the Kernel what interfaces it provides. The current service registry is single-provider: the active workspace/profile must select exactly one provider package for each service contract. The optional `priority` field is accepted as metadata for future explicit provider selection, but it does not make duplicate selected providers valid today.
 ```json
 "services": {
   "provides": [
-    { "interface": "ArisenEngine.Core.RHI.IRHIDevice", "priority": 100 }
+    { "interface": "ArisenEngine.Core.RHI.IRHIDevice", "priority": 100, "capabilities": ["vulkan"] }
   ]
 }
 ```
@@ -86,13 +86,24 @@ public class MeshRenderSubsystem : IEngineSubsystem
 
 ---
 
+The canonical service declaration format is intentionally small:
+
+- simple string form: `"Namespace.IContract"`;
+- object form: `{ "interface": "Namespace.IContract" }`;
+- service contract names must be fully qualified type names, not short names such as `"IApplicationHost"`;
+- object metadata:
+  - `priority` integer is allowed on providers for future profile-driven provider selection;
+  - `capabilities` array of non-empty strings is allowed on providers/requirements for diagnostics and future matching;
+  - `optional: true` is valid on requirements and means missing providers produce warnings instead of errors;
+  - `deferred: true` is valid on providers or requirements and means build-time provider validation still runs, but initial runtime registration checks are skipped.
+
 The validator accepts both service declaration forms:
 
 ```json
 "services": {
   "provides": [
     "ArisenEngine.Core.RHI.IRHIDevice",
-        { "interface": "ArisenEngine.Core.RHI.IRHIFactory", "priority": 100 }
+    { "interface": "ArisenEngine.Core.RHI.IRHIFactory", "priority": 100, "capabilities": ["vulkan"] }
   ],
   "requires": [
     "ArisenEngine.Core.RHI.IRHIDevice",
@@ -106,10 +117,14 @@ The validator accepts both service declaration forms:
 
 - malformed `services.provides` / `services.requires` entries are fatal,
 - empty service contract names are fatal,
+- unqualified service contract names without a namespace separator (`.`) are fatal,
+- object-form `priority` must be an integer when present and is only valid in `services.provides`,
+- object-form `capabilities` must be an array of non-empty strings when present,
+- object-form `optional` is only valid in `services.requires`,
 - a required service with no selected provider package is fatal,
 - an optional service with no selected provider package logs a warning,
 - `deferred` service contracts still participate in build-time graph/provider validation but are not required to be registered during initial package mount,
-- duplicate providers currently emit a warning because provider selection/priority policy is not finalized yet.
+- duplicate selected providers are fatal. The current `IServiceRegistry` stores one active provider per contract and does not support automatic priority-based overrides.
 
 Runtime boot performs a second validation pass through `PackageSubsystem`:
 

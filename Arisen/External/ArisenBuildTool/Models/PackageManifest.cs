@@ -63,6 +63,9 @@ public class PackageManifest
     [JsonPropertyName("type")]
     public string? Type { get; set; }
 
+    [JsonPropertyName("layer")]
+    public string? Layer { get; set; }
+
     [JsonPropertyName("entry")]
     public PackageEntry? Entry { get; set; }
     
