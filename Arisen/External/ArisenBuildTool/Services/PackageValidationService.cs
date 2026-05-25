@@ -26,6 +26,16 @@ public static class PackageValidationService
         "hybrid"
     };
 
+    private static readonly HashSet<string> s_ValidPackageLayers = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "foundation",
+        "domain",
+        "driver",
+        "tooling",
+        "user",
+        "test"
+    };
+
     public static PackageValidationResult Validate(ProjectManifest manifest, string workspaceDir, string engineDir, string profile)
     {
         var result = new PackageValidationResult();
@@ -107,6 +117,8 @@ public static class PackageValidationService
                 continue;
             }
 
+            ValidatePackageLayer(packageManifest, result);
+
             if (packageManifest.Entry != null)
             {
                 ValidateEntryBlock(packageManifest, result);
@@ -136,6 +148,11 @@ public static class PackageValidationService
                     }
                 }
             }
+        }
+
+        if (result.Errors.Count == 0)
+        {
+            ValidatePackageLayerDependencies(result);
         }
 
         if (result.Errors.Count == 0)
@@ -261,6 +278,60 @@ public static class PackageValidationService
         return "managed";
     }
 
+    private static void ValidatePackageLayer(PackageManifest manifest, PackageValidationResult result)
+    {
+        if (string.IsNullOrWhiteSpace(manifest.Layer))
+        {
+            result.Errors.Add($"Package '{manifest.Id}' is missing required layer metadata. Valid layers are: foundation, domain, driver, tooling, user, test.");
+            return;
+        }
+
+        manifest.Layer = manifest.Layer.ToLowerInvariant();
+        if (!s_ValidPackageLayers.Contains(manifest.Layer))
+        {
+            result.Errors.Add($"Package '{manifest.Id}' has invalid layer '{manifest.Layer}'. Valid layers are: foundation, domain, driver, tooling, user, test.");
+        }
+    }
+
+    private static void ValidatePackageLayerDependencies(PackageValidationResult result)
+    {
+        foreach (var package in result.PackageMap.Values)
+        {
+            if (package.Manifest.Dependencies == null) continue;
+
+            foreach (var dependencyId in package.Manifest.Dependencies.Keys)
+            {
+                if (!result.PackageMap.TryGetValue(dependencyId, out var dependency)) continue;
+
+                if (!CanDependOnLayer(package.Manifest.Layer, dependency.Manifest.Layer))
+                {
+                    result.Errors.Add($"Package '{package.Manifest.Id}' in layer '{package.Manifest.Layer}' cannot depend on package '{dependency.Manifest.Id}' in layer '{dependency.Manifest.Layer}'.");
+                }
+            }
+        }
+    }
+
+    private static bool CanDependOnLayer(string? packageLayer, string? dependencyLayer)
+    {
+        if (string.IsNullOrWhiteSpace(packageLayer) || string.IsNullOrWhiteSpace(dependencyLayer)) return true;
+
+        return packageLayer.ToLowerInvariant() switch
+        {
+            "foundation" => string.Equals(dependencyLayer, "foundation", StringComparison.OrdinalIgnoreCase),
+            "domain" => IsOneOf(dependencyLayer, "foundation", "domain"),
+            "driver" => string.Equals(dependencyLayer, "foundation", StringComparison.OrdinalIgnoreCase),
+            "tooling" => IsOneOf(dependencyLayer, "foundation", "domain", "tooling"),
+            "user" => IsOneOf(dependencyLayer, "foundation", "domain", "driver", "tooling", "user"),
+            "test" => true,
+            _ => true
+        };
+    }
+
+    private static bool IsOneOf(string value, params string[] candidates)
+    {
+        return candidates.Any(candidate => string.Equals(value, candidate, StringComparison.OrdinalIgnoreCase));
+    }
+
     private static void ValidateEntryBlock(PackageManifest manifest, PackageValidationResult result)
     {
         if (string.IsNullOrWhiteSpace(manifest.Entry?.Assembly) && !string.Equals(manifest.Type, "native", StringComparison.OrdinalIgnoreCase))
@@ -322,7 +393,7 @@ public static class PackageValidationService
 
         foreach (var provider in providersByContract.Where(x => x.Value.Count > 1))
         {
-            result.Warnings.Add($"Service contract '{provider.Key}' is provided by multiple packages: {string.Join(", ", provider.Value.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))}. Provider selection policy is not implemented yet.");
+            result.Errors.Add($"Service contract '{provider.Key}' is provided by multiple selected packages: {string.Join(", ", provider.Value.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))}. Select exactly one provider package for each service contract in the active workspace/profile.");
         }
 
         foreach (var package in result.PackageMap.Values)
@@ -344,7 +415,7 @@ public static class PackageValidationService
         }
     }
 
-    private sealed record ServiceContractDescriptor(string Name, bool Optional, bool Deferred);
+    private sealed record ServiceContractDescriptor(string Name, bool Optional, bool Deferred, int? Priority, IReadOnlyList<string> Capabilities);
 
     private static IEnumerable<ServiceContractDescriptor> EnumerateServiceContracts(List<JsonElement>? elements, string packageId, string sectionName, PackageValidationResult result)
     {
@@ -355,6 +426,8 @@ public static class PackageValidationService
             string? contract = null;
             bool optional = false;
             bool deferred = false;
+            int? priority = null;
+            var capabilities = Array.Empty<string>();
             if (element.ValueKind == JsonValueKind.String)
             {
                 contract = element.GetString();
@@ -364,6 +437,52 @@ public static class PackageValidationService
                 contract = interfaceElement.GetString();
                 optional = IsTrue(element, "optional");
                 deferred = IsTrue(element, "deferred");
+
+                if (string.Equals(sectionName, "provides", StringComparison.OrdinalIgnoreCase) && optional)
+                {
+                    result.Errors.Add($"Package '{packageId}' has invalid services.{sectionName} optional flag for contract '{contract}'. The optional flag is only valid in services.requires.");
+                }
+
+                if (string.Equals(sectionName, "requires", StringComparison.OrdinalIgnoreCase) && element.TryGetProperty("priority", out _))
+                {
+                    result.Errors.Add($"Package '{packageId}' has invalid services.{sectionName} priority for contract '{contract}'. Priority is only valid in services.provides.");
+                }
+
+                if (element.TryGetProperty("priority", out var priorityElement))
+                {
+                    if (priorityElement.ValueKind == JsonValueKind.Number && priorityElement.TryGetInt32(out int parsedPriority))
+                    {
+                        priority = parsedPriority;
+                    }
+                    else
+                    {
+                        result.Errors.Add($"Package '{packageId}' has invalid services.{sectionName} priority for contract '{contract}'. Expected an integer.");
+                    }
+                }
+
+                if (element.TryGetProperty("capabilities", out var capabilitiesElement))
+                {
+                    if (capabilitiesElement.ValueKind == JsonValueKind.Array)
+                    {
+                        var parsedCapabilities = new List<string>();
+                        foreach (var capabilityElement in capabilitiesElement.EnumerateArray())
+                        {
+                            if (capabilityElement.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(capabilityElement.GetString()))
+                            {
+                                result.Errors.Add($"Package '{packageId}' has invalid services.{sectionName} capability for contract '{contract}'. Expected non-empty strings.");
+                                continue;
+                            }
+
+                            parsedCapabilities.Add(capabilityElement.GetString()!);
+                        }
+
+                        capabilities = parsedCapabilities.ToArray();
+                    }
+                    else
+                    {
+                        result.Errors.Add($"Package '{packageId}' has invalid services.{sectionName} capabilities for contract '{contract}'. Expected an array of strings.");
+                    }
+                }
             }
             else
             {
@@ -377,7 +496,13 @@ public static class PackageValidationService
                 continue;
             }
 
-            yield return new ServiceContractDescriptor(contract, optional, deferred);
+            if (!contract.Contains('.', StringComparison.Ordinal))
+            {
+                result.Errors.Add($"Package '{packageId}' has unqualified services.{sectionName} contract '{contract}'. Service contracts must use fully qualified type names such as 'ArisenKernel.Contracts.IApplicationHost'.");
+                continue;
+            }
+
+            yield return new ServiceContractDescriptor(contract, optional, deferred, priority, capabilities);
         }
     }
 

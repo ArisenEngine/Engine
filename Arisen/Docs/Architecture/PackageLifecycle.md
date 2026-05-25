@@ -23,6 +23,16 @@ Runtime package mounting follows this responsibility split:
 
 This avoids split-brain package state between bootstrapper, kernel, and package tracking UI. It also centralizes runtime service-contract validation so a package that declares non-deferred `services.provides` must actually register those services during `OnLoad()`, and all non-optional/non-deferred `services.requires` contracts must exist before subsystem initialization continues.
 
+### Managed Assembly Load Context Policy
+
+`PackageSubsystem` owns the managed package assembly load policy:
+
+- `ArisenKernel.dll` entry declarations are resolved to the already-loaded kernel assembly.
+- Entry assemblies resolved under `AppContext.BaseDirectory` are loaded in the default context. This is the expected path for generated workspace outputs and shared engine assemblies that must exchange kernel contract types without type identity splits.
+- Entry assemblies resolved from package-local roots such as `Managed/` are loaded in a collectible `PackageLoadContext`. The context uses `AssemblyDependencyResolver` for package-private managed and unmanaged dependencies.
+
+Unloadability is best-effort and applies only to assemblies loaded through `PackageLoadContext`. `PackageSubsystem.Shutdown()` first calls `IPackageEntry.OnUnload()` in reverse package order, clears package state, and then unloads collectible contexts. Actual memory reclamation depends on package code releasing all references to objects, types, delegates, threads, and unmanaged callbacks from that context. Default-context assemblies are intentionally process-lifetime assemblies and are not unloadable.
+
 ---
 
 ## Tier 1: Package-Level Dependencies (Topological Sort)

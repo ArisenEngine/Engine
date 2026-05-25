@@ -109,14 +109,21 @@ This document defines the strict `JSON` structural schemas for the core configur
   "id": "com.arisen.rhi.vulkan",
   "name": "Arisen RHI — Vulkan Support",
   "version": "1.2.0",
+  "layer": "driver",
   "description": "Vulkan rendering backend implementation",
   "author": "Arisen Team",
   
   "engine": {
     "minVersion": "0.1.0"
   },
-    "services": {
-    "requires": [ "ArisenEngine.Core.Platform.IWindowProvider" ]
+  "services": {
+    "provides": [
+      { "interface": "ArisenKernel.Contracts.IRHIFactory", "priority": 100, "capabilities": ["vulkan"] }
+    ],
+    "requires": [
+      "ArisenKernel.Contracts.IWindowProvider",
+      { "interface": "ArisenKernel.Contracts.IDebugCapture", "optional": true }
+    ]
   },
   "dependencies": {
     "com.arisen.core.native": ">=1.0.0"
@@ -135,10 +142,11 @@ This document defines the strict `JSON` structural schemas for the core configur
 | `id` | `string` | **Yes** | The reverse-DNS globally unique identifier (e.g., `com.arisen.ecs`). |
 | `name` | `string` | **Yes** | The human-readable display name. |
 | `version` | `string` | **Yes** | Semantic versioning string (e.g., `"1.2.0"`). |
+| `layer` | `string` | **Yes** | Architectural layer used by validation. Valid values: `foundation`, `domain`, `driver`, `tooling`, `user`, `test`. |
 | `entry.assembly` | `string` | Generated | The managed C# DLL filename. Usually emitted into `package.generated.json`. |
 | `entry.class` | `string` | Generated | The full name of the class implementing `IPackageEntry`. Usually emitted into `package.generated.json`. |
-| `services.provides` | `array` | Optional/generated | C# interfaces this package registers into the Kernel's `ServiceRegistry` on boot. Prefer code generation/attributes for providers. |
-| `services.requires` | `array` | Optional/human | Interfaces this package demands to exist in the registry before it can boot. |
+| `services.provides` | `array` | Optional/generated | C# interfaces this package registers into the Kernel's `ServiceRegistry` on boot. Entries may be strings or objects with a fully qualified `interface` type name, optional integer `priority`, optional string-array `capabilities`, and optional `deferred` for providers that are declared at graph-validation time but registered later. Prefer code generation/attributes for providers. Duplicate selected providers for the same interface are fatal. |
+| `services.requires` | `array` | Optional/human | Interfaces this package demands to exist in the registry before it can boot. Entries may be strings or objects with a fully qualified `interface` type name, optional `optional`, optional `deferred`, and optional string-array `capabilities`. |
 | `subsystems` | `array` | Generated | Types implementing `IEngineSubsystem`. Prefer `package.generated.json`; runtime merges authored and generated entries for transition compatibility. |
 | `dependencies` | `object` | Optional | Key-value pairs of required package IDs and their semantic version constraints. |
 | `nativeRuntimes` | `object` | Optional | Key-value pairs matching a platform Runtime Identifier (RID) to a list of unmanaged DLLs located in `runtimes/{rid}/native/`. |
@@ -155,5 +163,7 @@ To achieve this without compromising Developer Experience (DX), the **ArisenBuil
 The *only* fields a user or package author should normally edit in `package.json` are:
 - `id`
 - `version`
+- `layer`
 - `name` / `author` / `description`
+- `services.requires` (for cross-package service contracts; use string form for required services and object form for `optional`, `deferred`, or capability metadata)
 - `dependencies`

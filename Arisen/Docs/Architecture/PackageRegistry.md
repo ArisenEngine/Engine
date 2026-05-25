@@ -4,20 +4,33 @@ This registry lists all core packages currently located in the `Local/` director
 
 ## 📦 Package Tiers
 
-Packages are categorized into four distinct domains based on their proximity to the Kernel and the User:
+Packages are categorized into six layers based on their proximity to the Kernel and the User:
 
-1.  **Kernel/Foundation**: Direct extensions of the Arisen Kernel or low-level primitives.
-2.  **Domain**: Core engine features (Rendering, ECS, Resources).
-3.  **Tooling**: The Editor and visual authoring environments.
-4.  **User**: Final application logic and high-level configurations.
+1.  **Foundation**: Direct kernel extensions, core contracts, low-level primitives, platform providers, and execution foundations.
+2.  **Domain**: Core engine features (Rendering, ECS, Resources, generic render pipelines) that may depend on Foundation and peer Domain packages.
+3.  **Driver**: Concrete hardware/backend implementations, such as Vulkan RHI, that should depend only on Foundation contracts/payloads.
+4.  **Tooling**: Editor and visual authoring environments.
+5.  **User**: Final application logic and high-level project configuration.
+6.  **Test**: Test runner and package-specific test fixtures.
+
+`package.json` must declare one of these values in its `layer` field. `ArisenBuildTool validate` enforces layer dependencies:
+
+| Package layer | May depend on |
+| :--- | :--- |
+| `foundation` | `foundation` |
+| `domain` | `foundation`, `domain` |
+| `driver` | `foundation` |
+| `tooling` | `foundation`, `domain`, `tooling` |
+| `user` | `foundation`, `domain`, `driver`, `tooling`, `user` |
+| `test` | any layer |
 
 ---
 
 ## 🏗️ Core Package Directory
 
-| Package ID | Domain | Duty |
+| Package ID | Layer | Duty |
 | :--- | :--- | :--- |
-| **`com.arisen.core`** | Kernel | Managed lifecycle, service registry abstractions, and base types. |
+| **`com.arisen.core`** | Foundation | Managed lifecycle, service registry abstractions, and base types. |
 | **`com.arisen.core.native`** | Foundation | Monolithic C++ payload (Foundation, HAL, Diagnostics, Shader Compiler). |
 | **`com.arisen.dag`** | Foundation | Generic Directed Acyclic Graph (DAG) system for data-driven execution logic. |
 | **`com.arisen.taskgraph`** | Foundation | High-performance, multi-threaded internal **Job System** for engine-wide concurrency. |
@@ -28,7 +41,7 @@ Packages are categorized into four distinct domains based on their proximity to 
 | **`com.arisen.rhi.vulkan.native`** | Driver | Native Vulkan implementation of the Rendering Hardware Interface (RHI). |
 | **`com.arisen.editor`** | Tooling | The official Avalonia-based visual authoring environment. |
 | **`com.arisen.nodecanvas`** | Tooling | Foundation for node-based visual editing and graph manipulation. |
-| **`com.arisen.generic-renderpipeline`** | User | High-level, user-configurable RenderPipeline implemented via RenderGraph. |
+| **`com.arisen.generic-renderpipeline`** | Domain | High-level default RenderPipeline implemented via RenderGraph. |
 | **`com.arisen.packagegame`** | User | The main assembly and project root for the active application/game. |
 
 ---

@@ -65,10 +65,10 @@ public static class PackageInjectorService
                     Console.WriteLine($"[ArisenBuildTool] Discovered Entry Class: {type.FullName}");
 
                     // If it also implements IApplicationHost, automatically register it as a service.
-                    if (type.GetInterfaces().Any(i => i.Name == "IApplicationHost"))
+                                        if (type.GetInterfaces().FirstOrDefault(i => i.Name == "IApplicationHost") is { } applicationHostInterface)
                     {
-                        provides.Add(new PackageServiceProvider { Interface = "IApplicationHost", Priority = 100 });
-                        Console.WriteLine("[ArisenBuildTool] Automated Service Discovery: IApplicationHost");
+                        provides.Add(new PackageServiceProvider { Interface = applicationHostInterface.FullName ?? applicationHostInterface.Name, Priority = 100 });
+                        Console.WriteLine($"[ArisenBuildTool] Automated Service Discovery: {applicationHostInterface.FullName ?? applicationHostInterface.Name}");
                     }
                 }
 

@@ -99,9 +99,9 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
   - [x] Entry class not found.
   - [x] Entry class does not implement `IPackageEntry`.
   - [x] `OnLoad()` exception includes package ID and class name.
-- [ ] Add package load context policy.
-  - [ ] Decide which assemblies load into default context vs isolated context.
-  - [ ] Define unloadability expectations.
+- [x] Add package load context policy.
+  - [x] Default context is used for `ArisenKernel.dll` and assemblies deployed under `AppContext.BaseDirectory`.
+  - [x] Package-local managed assemblies use collectible `PackageLoadContext`; unloadability is best-effort after `OnUnload()` and reference cleanup.
 
 ### Acceptance Criteria
 
@@ -117,14 +117,14 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
 
 ### TODO
 
-- [ ] Finalize service contract format in `package.json`.
-  - [ ] Support simple string form: `"ArisenKernel.Contracts.IRHIFactory"`.
-  - [ ] Support object form with priority/capabilities if needed.
+- [x] Finalize service contract format in `package.json`.
+  - [x] Support simple string form: `"ArisenKernel.Contracts.IRHIFactory"`.
+  - [x] Support object form with `interface`, optional integer `priority`, optional string-array `capabilities`, requirement-only `optional`, and provider/requirement `deferred` flags.
 - [x] During package resolution, validate required services can be provided by the selected package set.
 - [x] During package load, validate provided services are actually registered by the package's `OnLoad()`.
 - [x] During boot, validate all required services are available before dependent subsystems initialize.
-- [ ] Add duplicate service policy.
-  - [ ] Decide whether duplicate providers fail, use priority, or require explicit selection in profile. Current validation warns on duplicate providers.
+- [x] Add duplicate service policy.
+  - [x] Duplicate selected providers for the same service contract fail validation. Priority is accepted as metadata but is not used for automatic overrides until profile-level provider selection exists.
 - [x] Add optional service semantics.
   - [x] Required services fail boot.
   - [x] Optional services log diagnostics only.
@@ -132,7 +132,7 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
 - [x] Add service registry introspection for editor/debugging.
   - [x] List registered services.
   - [x] Show provider package if known.
-  - [ ] Show duplicate/overridden providers if supported.
+  - [x] Show duplicate/overridden providers policy: duplicates are validation errors, so there are no runtime overrides in the current registry model.
 
 ### Acceptance Criteria
 
@@ -215,19 +215,19 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
 
 ### TODO
 
-- [ ] Audit every `package.json` dependency.
-  - [ ] `com.arisen.taskgraph` exists but should be included in relevant workspace/package dependencies where needed.
-  - [ ] `com.arisen.nodecanvas` should be included by `com.arisen.editor` if the editor uses it.
-  - [ ] Rendering pipeline packages should depend explicitly on rendering/RHI/contracts they use.
+- [x] Audit every `package.json` dependency.
+  - [x] `com.arisen.taskgraph` exists and is included by ECS/rendering/packagegame where currently used.
+  - [x] `com.arisen.nodecanvas` is included by `com.arisen.editor`.
+  - [x] Rendering pipeline packages explicitly depend on rendering/core/native contracts they use.
 - [ ] Move shared contracts into kernel or dedicated contract packages where appropriate.
 - [ ] Avoid domain packages referencing concrete implementation packages unless intended.
   - [ ] Example: rendering should depend on RHI contracts, not a concrete Vulkan package.
-- [ ] Define clear package tiers in `PackageRegistry.md` and enforce no reverse dependencies.
-- [ ] Consider adding package-layer validation:
-  - [ ] Foundation cannot depend on Domain/Tooling/User.
-  - [ ] Domain cannot depend on Tooling/User.
-  - [ ] Tooling can depend on Domain/Foundation.
-  - [ ] User can depend on any public engine package.
+- [x] Define clear package tiers in `PackageRegistry.md` and enforce no reverse dependencies.
+- [x] Consider adding package-layer validation:
+  - [x] Foundation cannot depend on Domain/Tooling/User.
+  - [x] Domain cannot depend on Tooling/User.
+  - [x] Tooling can depend on Domain/Foundation/Tooling.
+  - [x] User can depend on public engine package layers.
 
 ### Acceptance Criteria
 
