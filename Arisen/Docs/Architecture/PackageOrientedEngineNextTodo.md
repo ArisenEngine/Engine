@@ -269,18 +269,18 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
 
 ### TODO
 
-- [ ] Add small validation fixtures/workspaces.
-  - [ ] Valid minimal workspace.
-  - [ ] Missing dependency workspace.
-  - [ ] Cycle workspace.
-  - [ ] Missing service workspace.
-  - [ ] Duplicate package ID workspace.
-- [ ] Add package graph tests around `ArisenBuildTool` resolution.
+- [x] Add small validation fixtures/workspaces.
+  - [x] Valid minimal workspace.
+  - [x] Missing dependency workspace.
+  - [x] Cycle workspace.
+  - [x] Missing service workspace.
+  - [x] Duplicate package ID workspace.
+- [x] Add package graph tests around `ArisenBuildTool` resolution.
 - [ ] Add runtime boot smoke tests with a minimal managed package.
 - [ ] Add package unload order test.
-- [ ] Add service contract validation tests.
+- [x] Add service contract validation tests.
 - [x] Keep package-level test workflow through `build_workspace.bat --package <id>`.
-- [ ] Later, consider standard `dotnet test` for pure build tool/kernel unit tests if desired.
+- [x] Later, consider standard `dotnet test` for pure build tool/kernel unit tests if desired.
 
 ### Acceptance Criteria
 

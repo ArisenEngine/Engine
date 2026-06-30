@@ -36,6 +36,16 @@ Validation is intentionally strict. The command exits with code `0` on success a
 
 A successful validation produces the same package order that generation uses for `manifest.resolved.json`. Launcher/editor package management should call this validation path rather than reimplementing graph checks. The launcher launch path invokes `validate` with the selected profile before invoking `generate` with that same profile, so CLI and launcher launches report package graph errors through the same validation implementation.
 
+### Validation Fixture Tests
+
+Pure package graph and metadata validation is covered by `ArisenBuildTool.Tests`:
+
+```bat
+dotnet test Arisen\External\ArisenBuildTool.Tests\ArisenBuildTool.Tests.csproj
+```
+
+The fixture tests synthesize small temporary workspaces and verify valid graph sorting, missing dependencies, dependency cycles, missing required services, duplicate package declarations, and invalid native test metadata.
+
 ---
 
 ## Graph Inspection
