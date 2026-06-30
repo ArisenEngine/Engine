@@ -2,10 +2,6 @@
 trigger: always_on
 ---
 
----
-trigger: always_on
----
-
 # Arisen Engine Agentic Routing Rules
 
 - Arisen is a package-centric microkernel: treat workspaces, manifests, and packages as the primary composition model.
