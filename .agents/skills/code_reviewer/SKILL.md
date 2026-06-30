@@ -10,7 +10,7 @@ When conducting code reviews, follow this procedure to verify correctness, packa
 ## 1. Preparation and context
 - Identify the review target: local changes or a remote PR.
 - If remote: `gh pr checkout <PR_NUMBER>`.
-- Read the repo workflow in `CLAUDE.md`.
+- Read the repo workflow in `AGENTS.md`.
 - Read the architecture docs most relevant to the changed area. Start with `Arisen/Docs/Architecture/ProjectManagement.md`, then load rendering, lifecycle, service-registry, or package docs as needed.
 
 ## 2. Automated verification
