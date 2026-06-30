@@ -36,7 +36,7 @@ public class DefaultPackageResolver : IPackageResolver
         throw new NotSupportedException($"URL scheme not supported: {url}");
     }
 
-    private async Task<string> ResolveLocalAsync(string path, string destinationDir)
+    private Task<string> ResolveLocalAsync(string path, string destinationDir)
     {
         // Handle potentially escaped characters in file:// paths
         path = Uri.UnescapeDataString(path);
@@ -45,7 +45,7 @@ public class DefaultPackageResolver : IPackageResolver
         {
             string fullPath = Path.GetFullPath(path);
             KernelLog.Info($"[PackageResolver] Using local directory: {fullPath}");
-            return fullPath;
+            return Task.FromResult(fullPath);
         }
 
         if (File.Exists(path) && (path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)))
@@ -56,7 +56,7 @@ public class DefaultPackageResolver : IPackageResolver
                 KernelLog.Info($"[PackageResolver] Extracting local ZIP: {path} to {extractDir}");
                 ZipFile.ExtractToDirectory(path, extractDir);
             }
-            return extractDir;
+            return Task.FromResult(extractDir);
         }
 
         throw new FileNotFoundException($"Local package source not found: {path}");
