@@ -126,6 +126,7 @@ public static class PackageValidationService
 
             ValidateSubsystemMetadata(packageManifest, result);
             ValidateNativeRuntimeMetadata(packageManifest, packagePath, result);
+            ValidateNativeTestMetadata(packageManifest, packagePath, result);
 
             result.PackageMap[requirement.Id] = new PackageInfo
             {
@@ -400,6 +401,44 @@ public static class PackageValidationService
             result.Errors,
             result.Warnings,
             validateFiles: true).ToList();
+    }
+
+    private static void ValidateNativeTestMetadata(PackageManifest manifest, string packagePath, PackageValidationResult result)
+    {
+        if (manifest.NativeTests == null || manifest.NativeTests.Count == 0)
+        {
+            return;
+        }
+
+        if (!string.Equals(manifest.Layer, "test", StringComparison.OrdinalIgnoreCase))
+        {
+            result.Errors.Add($"Package '{manifest.Id}' declares nativeTests but is in layer '{manifest.Layer}'. Native tests are only valid in test packages.");
+        }
+
+        if (!NativeTestManifestService.HasRuntime(manifest, NativeRuntimeManifestService.DefaultRuntimeIdentifier))
+        {
+            result.Errors.Add($"Package '{manifest.Id}' declares nativeTests but has no '{NativeRuntimeManifestService.DefaultRuntimeIdentifier}' test entries for the current target runtime.");
+        }
+
+        var package = new PackageInfo
+        {
+            Manifest = manifest,
+            DirectoryPath = packagePath
+        };
+
+        var runtimeLibraries = NativeRuntimeManifestService
+            .EnumerateForRuntime(package, NativeRuntimeManifestService.DefaultRuntimeIdentifier, result.Errors, result.Warnings)
+            .Select(runtime => Path.GetFileName(runtime.Path))
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var nativeTest in NativeTestManifestService.EnumerateForRuntime(package, NativeRuntimeManifestService.DefaultRuntimeIdentifier, result.Errors))
+        {
+            if (!runtimeLibraries.Contains(nativeTest.Library))
+            {
+                result.Errors.Add($"Package '{manifest.Id}' native test library '{nativeTest.Library}' must also be declared in nativeRuntimes['{NativeRuntimeManifestService.DefaultRuntimeIdentifier}'].");
+            }
+        }
     }
 
     private static void ValidateServiceContracts(PackageValidationResult result)

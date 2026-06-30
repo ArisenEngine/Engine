@@ -73,6 +73,8 @@ public static class PackageResolutionService
                     Type = p.Manifest.Type,
                     Dependencies = p.Manifest.Dependencies ?? new Dictionary<string, string>(),
                     Services = p.Manifest.Services,
+                    NativeRuntimes = p.Manifest.NativeRuntimes,
+                    NativeTests = p.Manifest.NativeTests,
                     Entry = p.Manifest.Entry,
                     // Store relative URL for portability (Relative to the output directory!)
                     Url = GetRelativeUrl(outDir, p.DirectoryPath)

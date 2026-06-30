@@ -7,6 +7,7 @@ set "MANIFEST_PATH="
 set "BUILD_CONFIG=Debug"
 set "TARGET_PROFILE="
 set "TEST_PACKAGE_ID="
+set "RUN_TESTS=0"
 
 :parse_args
 if "%~1"=="" goto end_parse
@@ -40,6 +41,8 @@ if /i "%~1"=="-m" (
 ) else if /i "%~1"=="--package" (
     set "TEST_PACKAGE_ID=%~2"
     shift
+) else if /i "%~1"=="--run-tests" (
+    set "RUN_TESTS=1"
 ) else (
     if not defined MANIFEST_PATH (
         set "MANIFEST_PATH=%~1"
@@ -174,6 +177,25 @@ for %%A in (!PROFILES!) do (
     if !errorlevel! neq 0 (
         echo [ERROR] MSBuild failed on profile: %%A
         goto :fail
+    )
+
+    if /i "!MODE!"=="IsolatedTest" if "!RUN_TESTS!"=="1" (
+        set "TEST_EXE=!WORKSPACE_DIR!\.arisen\bin\%%A\!BUILD_CONFIG!\!PROJECT_NAME!.exe"
+        if not exist "!TEST_EXE!" (
+            echo [ERROR] Test executable not found: !TEST_EXE!
+            goto :fail
+        )
+
+        echo [Arisen] Running package tests: !TEST_EXE!
+        pushd "!WORKSPACE_DIR!\.arisen\bin\%%A\!BUILD_CONFIG!"
+        "!TEST_EXE!"
+        set "TEST_EXIT=!errorlevel!"
+        popd
+
+        if !TEST_EXIT! neq 0 (
+            echo [ERROR] Package tests failed with exit code !TEST_EXIT!.
+            goto :fail
+        )
     )
 )
 

@@ -69,6 +69,11 @@ public static class PackageManifestService
         {
             manifest.NativeRuntimes = generated.NativeRuntimes;
         }
+
+        if (generated.NativeTests != null && generated.NativeTests.Count > 0)
+        {
+            manifest.NativeTests = generated.NativeTests;
+        }
     }
 
     private static List<PackageSubsystem> MergeSubsystems(List<PackageSubsystem>? authored, List<PackageSubsystem> generated)

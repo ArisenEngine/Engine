@@ -83,4 +83,7 @@ public class PackageManifest
     
     [JsonPropertyName("nativeRuntimes")]
     public Dictionary<string, List<JsonElement>>? NativeRuntimes { get; set; }
+
+    [JsonPropertyName("nativeTests")]
+    public Dictionary<string, List<JsonElement>>? NativeTests { get; set; }
 }
