@@ -276,8 +276,8 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
   - [x] Missing service workspace.
   - [x] Duplicate package ID workspace.
 - [x] Add package graph tests around `ArisenBuildTool` resolution.
-- [ ] Add runtime boot smoke tests with a minimal managed package.
-- [ ] Add package unload order test.
+- [x] Add runtime boot smoke tests with a minimal managed package.
+- [x] Add package unload order test.
 - [x] Add service contract validation tests.
 - [x] Keep package-level test workflow through `build_workspace.bat --package <id>`.
 - [x] Later, consider standard `dotnet test` for pure build tool/kernel unit tests if desired.

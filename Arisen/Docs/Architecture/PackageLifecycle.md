@@ -23,6 +23,14 @@ Runtime package mounting follows this responsibility split:
 
 This avoids split-brain package state between bootstrapper, kernel, and package tracking UI. It also centralizes runtime service-contract validation so a package that declares non-deferred `services.provides` must actually register those services during `OnLoad()`, and all non-optional/non-deferred `services.requires` contracts must exist before subsystem initialization continues.
 
+Runtime package lifecycle behavior is covered by `ArisenKernel.Tests`:
+
+```bat
+dotnet test Arisen\ArisenKernel.Tests\ArisenKernel.Tests.csproj
+```
+
+The tests create temporary package manifests, boot them through `EngineKernel.Initialize()`, verify package entry loading and service registration, and assert that shutdown unloads package entries in reverse mount order.
+
 ### Managed Assembly Load Context Policy
 
 `PackageSubsystem` owns the managed package assembly load policy:
