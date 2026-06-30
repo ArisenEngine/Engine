@@ -62,10 +62,26 @@ This generates the `Arisen\Editor\ArisenLauncher` workspace, builds native compo
 
 ### Test workflow
 
-There is no standard `dotnet test` / xUnit / NUnit workflow wired up in this repo. The current test path is package-level workspace generation.
+Fast package/kernel validation is available through a single no-pause command:
+
+- `Arisen\Scripts\Windows\validate_fast.bat`
+
+What this runs:
+- `dotnet test Arisen\External\ArisenBuildTool.Tests\ArisenBuildTool.Tests.csproj`
+- `dotnet test Arisen\ArisenKernel.Tests\ArisenKernel.Tests.csproj`
+- `ArisenBuildTool validate` for the default workspace profiles:
+  - `Development`
+  - `Production`
+  - `RHIVulkanTesting`
+
+Use this as the first validation gate for package graph, service-contract, native-test metadata, and runtime package lifecycle changes.
+
+Package-level workspace generation/testing remains available for native package integration:
 
 - Build an isolated package test workspace:
   - `Arisen\Scripts\Windows\build_workspace.bat --package com.arisen.rhi.vulkan.native --config Debug`
+- Build and run the isolated package tests:
+  - `Arisen\Scripts\Windows\build_workspace.bat --package com.arisen.rhi.vulkan.native --config Debug --run-tests`
 
 How this works:
 - `build_workspace.bat --package X` calls `ArisenBuildTool test --package X`

@@ -46,6 +46,16 @@ dotnet test Arisen\External\ArisenBuildTool.Tests\ArisenBuildTool.Tests.csproj
 
 The fixture tests synthesize small temporary workspaces and verify valid graph sorting, missing dependencies, dependency cycles, missing required services, duplicate package declarations, and invalid native test metadata.
 
+### Fast Validation Gate
+
+Run the fast local/CI gate before package architecture or build-tool changes:
+
+```bat
+Arisen\Scripts\Windows\validate_fast.bat
+```
+
+This command runs the build-tool fixture tests, kernel package lifecycle tests, and `ArisenBuildTool validate` for the canonical `Development`, `Production`, and `RHIVulkanTesting` profiles.
+
 ---
 
 ## Graph Inspection
