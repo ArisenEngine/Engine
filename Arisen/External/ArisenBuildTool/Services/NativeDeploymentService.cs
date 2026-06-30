@@ -17,47 +17,49 @@ public static class NativeDeploymentService
         {
             if (pkg.Manifest.NativeRuntimes == null) continue;
 
-            // Arisen uses platform IDs like "win-x64", "linux-x64", etc.
-            // For now, we only handle current platform or "win-x64" as default.
-            string targetPlatform = "win-x64"; 
-            
-            if (pkg.Manifest.NativeRuntimes.TryGetValue(targetPlatform, out var runtimes))
+            foreach (var runtime in NativeRuntimeManifestService.EnumerateForRuntime(pkg, NativeRuntimeManifestService.DefaultRuntimeIdentifier))
             {
-                foreach (var runtime in runtimes)
+                if (runtime.Source == NativeRuntimeSource.BuildOutput)
                 {
-                    // If it's just a filename (no separators), assume it's build-generated and skip deployment mapping
-                    if (!runtime.Contains("/") && !runtime.Contains("\\"))
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    // Resolve absolute source path
-                    string sourcePath = Path.GetFullPath(Path.Combine(pkg.DirectoryPath, runtime));
+                string sourcePath = Path.GetFullPath(Path.Combine(pkg.DirectoryPath, runtime.Path));
+                if (!NativeRuntimeManifestService.IsInsideDirectory(sourcePath, pkg.DirectoryPath))
+                {
+                    throw new InvalidOperationException($"Static native runtime '{runtime.Path}' escapes the package directory. Package: {pkg.Manifest.Id}");
+                }
                     
-                    if (!File.Exists(sourcePath))
+                if (!File.Exists(sourcePath))
+                {
+                    string message = $"Static native runtime not found: {sourcePath} (Package: {pkg.Manifest.Id})";
+                    if (runtime.Required)
                     {
-                        Logger.Warning($"Static native runtime not found: {sourcePath} (Package: {pkg.Manifest.Id})");
-                        continue;
+                        throw new FileNotFoundException(message, sourcePath);
                     }
 
-                    string filename = Path.GetFileName(sourcePath);
+                    Logger.Warning(message);
+                    continue;
+                }
 
-                    foreach (var outDir in outputDirs)
-                    {
-                        string destPath = Path.Combine(outDir, filename);
+                string filename = Path.GetFileName(sourcePath);
+
+                foreach (var outDir in outputDirs)
+                {
+                    string destPath = Path.Combine(outDir, filename);
                         
-                        try
+                    try
+                    {
+                        if (ShouldCopy(sourcePath, destPath))
                         {
-                            if (ShouldCopy(sourcePath, destPath))
-                            {
-                                Logger.Info($"Deploying native payload: {filename} -> {outDir}");
-                                File.Copy(sourcePath, destPath, true);
-                            }
+                            Logger.Info($"Deploying native payload: {filename} -> {outDir}");
+                            File.Copy(sourcePath, destPath, true);
                         }
-                        catch (Exception ex)
-                        {
-                            Logger.Error($"Failed to deploy {filename} to {outDir}: {ex.Message}");
-                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"Failed to deploy {filename} to {outDir}: {ex.Message}");
+                        throw;
                     }
                 }
             }

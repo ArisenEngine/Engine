@@ -129,7 +129,16 @@ This document defines the strict `JSON` structural schemas for the core configur
     "com.arisen.core.native": ">=1.0.0"
   },
   "nativeRuntimes": {
-    "win-x64": ["Core.RHI.dll", "RHI.Vulkan.dll"]
+    "win-x64": [
+      "RHI.Vulkan.dll",
+      "3rdparty/vulkan/Layers/VkLayer_khronos_validation.dll",
+      {
+        "path": "3rdparty/renderdoc/renderdoc.dll",
+        "source": "static",
+        "required": false,
+        "exports": ["RENDERDOC_GetAPI"]
+      }
+    ]
   }
 }
 ```
@@ -149,7 +158,50 @@ This document defines the strict `JSON` structural schemas for the core configur
 | `services.requires` | `array` | Optional/human | Interfaces this package demands to exist in the registry before it can boot. Entries may be strings or objects with a fully qualified `interface` type name, optional `optional`, optional `deferred`, and optional string-array `capabilities`. |
 | `subsystems` | `array` | Generated | Types implementing `IEngineSubsystem`. Prefer `package.generated.json`; runtime merges authored and generated entries for transition compatibility. |
 | `dependencies` | `object` | Optional | Key-value pairs of required package IDs and their semantic version constraints. |
-| `nativeRuntimes` | `object` | Optional | Key-value pairs matching a platform Runtime Identifier (RID) to a list of unmanaged DLLs located in `runtimes/{rid}/native/`. |
+| `nativeRuntimes` | `object` | Optional | Key-value pairs matching a platform Runtime Identifier (RID) to unmanaged runtime payload declarations. String shorthand remains supported. |
+
+### Native Runtime Entries
+
+`nativeRuntimes` entries may use either string shorthand or object form.
+
+String shorthand:
+
+```json
+"nativeRuntimes": {
+  "win-x64": [
+    "RHI.Vulkan.dll",
+    "3rdparty/vulkan/Layers/VkLayer_khronos_validation.dll"
+  ]
+}
+```
+
+Rules:
+- A bare file name such as `"RHI.Vulkan.dll"` is treated as a build output produced by the package's native project.
+- A relative path with `/` or `\` is treated as a static payload copied from the package directory.
+- Static payloads are required by default and `ArisenBuildTool validate` fails if they are missing for the active target RID.
+- Runtime paths must be package-relative and must not escape the package directory.
+
+Object form:
+
+```json
+{
+  "path": "3rdparty/vulkan/Layers/VkLayer_khronos_validation.dll",
+  "source": "static",
+  "required": true,
+  "configurations": ["Debug", "Release"],
+  "exports": ["vkGetInstanceProcAddr"]
+}
+```
+
+Object fields:
+
+| Field | Type | Required? | Description |
+|---|---|---|---|
+| `path` / `name` | `string` | **Yes** | Package-relative payload path or build-output file name. |
+| `source` / `kind` | `string` | Optional | `static` or `buildOutput`. If omitted, inferred from whether the path contains a directory separator. |
+| `required` | `bool` | Optional | Defaults to `true`. Missing optional static payloads produce warnings instead of errors. |
+| `configurations` | `array<string>` | Optional | Configuration metadata for future config-specific deployment. Current validation parses it but does not filter by it yet. |
+| `exports` | `array<string>` | Optional | Expected DLL exports. For existing static DLL payloads, validation checks these exports during `ArisenBuildTool validate`. |
 
 ### ArisenBuildTool Auto-Generation (Developer UX)
 

@@ -82,5 +82,5 @@ public class PackageManifest
     public Dictionary<string, string>? NugetDependencies { get; set; }
     
     [JsonPropertyName("nativeRuntimes")]
-    public Dictionary<string, List<string>>? NativeRuntimes { get; set; }
+    public Dictionary<string, List<JsonElement>>? NativeRuntimes { get; set; }
 }

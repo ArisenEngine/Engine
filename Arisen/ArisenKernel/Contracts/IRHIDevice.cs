@@ -6,6 +6,8 @@ namespace ArisenKernel.Contracts;
 [ServiceContract("RHI Device", "The low-level hardware abstraction layer representing the Graphics API (Vulkan, DX12, etc).")]
 public interface IRHIDevice
 {
+    IntPtr NativeHandle { get; }
+
     bool IsValid { get; }
     
     /// <summary>
