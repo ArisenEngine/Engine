@@ -91,6 +91,14 @@ The command expects local packages under `Local/`:
 
 Before generation it logs the workspace, engine root, companion test package, and full virtual manifest package list. Missing local package folders or missing `package.json` files are reported before invoking the normal generation pipeline.
 
+`build_workspace.bat --package <id>` builds the generated `Testing` profile. Add `--run-tests` to execute the generated test host after a successful build and return the test process exit code:
+
+```bat
+Arisen\Scripts\Windows\build_workspace.bat --package com.arisen.rhi.vulkan.native --config Debug --run-tests
+```
+
+Native test packages declare their registration libraries through `nativeTests` in `package.json`. The generated `manifest.resolved.json` carries this metadata to `com.arisen.testrunner`, which loads each declared native library from `.arisen/bin/Testing/{configuration}/` and calls the declared registration export.
+
 ---
 
 ## The Generation Pipeline

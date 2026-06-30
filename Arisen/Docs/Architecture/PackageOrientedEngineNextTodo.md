@@ -254,7 +254,7 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
   - [x] Missing DLL fails.
   - [x] Missing export fails if declared.
   - [x] Platform mismatch fails.
-- [ ] Decide how native test packages run inside the package test workflow.
+- [x] Decide how native test packages run inside the package test workflow.
 
 ### Acceptance Criteria
 
@@ -279,7 +279,7 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
 - [ ] Add runtime boot smoke tests with a minimal managed package.
 - [ ] Add package unload order test.
 - [ ] Add service contract validation tests.
-- [ ] Keep package-level test workflow through `build_workspace.bat --package <id>`.
+- [x] Keep package-level test workflow through `build_workspace.bat --package <id>`.
 - [ ] Later, consider standard `dotnet test` for pure build tool/kernel unit tests if desired.
 
 ### Acceptance Criteria

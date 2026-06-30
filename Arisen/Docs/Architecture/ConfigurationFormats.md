@@ -139,6 +139,14 @@ This document defines the strict `JSON` structural schemas for the core configur
         "exports": ["RENDERDOC_GetAPI"]
       }
     ]
+  },
+  "nativeTests": {
+    "win-x64": [
+      {
+        "library": "Arisen.RHI.Vulkan.Test.dll",
+        "registerExport": "RegisterNativeTests"
+      }
+    ]
   }
 }
 ```
@@ -159,6 +167,7 @@ This document defines the strict `JSON` structural schemas for the core configur
 | `subsystems` | `array` | Generated | Types implementing `IEngineSubsystem`. Prefer `package.generated.json`; runtime merges authored and generated entries for transition compatibility. |
 | `dependencies` | `object` | Optional | Key-value pairs of required package IDs and their semantic version constraints. |
 | `nativeRuntimes` | `object` | Optional | Key-value pairs matching a platform Runtime Identifier (RID) to unmanaged runtime payload declarations. String shorthand remains supported. |
+| `nativeTests` | `object` | Optional/test-only | Key-value pairs matching a platform Runtime Identifier (RID) to native test registration declarations. Valid only for packages in the `test` layer. |
 
 ### Native Runtime Entries
 
@@ -202,6 +211,28 @@ Object fields:
 | `required` | `bool` | Optional | Defaults to `true`. Missing optional static payloads produce warnings instead of errors. |
 | `configurations` | `array<string>` | Optional | Configuration metadata for future config-specific deployment. Current validation parses it but does not filter by it yet. |
 | `exports` | `array<string>` | Optional | Expected DLL exports. For existing static DLL payloads, validation checks these exports during `ArisenBuildTool validate`. |
+
+### Native Test Entries
+
+`nativeTests` declares native libraries that expose test registration functions for `com.arisen.testrunner`.
+
+```json
+"nativeTests": {
+  "win-x64": [
+    {
+      "library": "Arisen.RHI.Vulkan.Test.dll",
+      "registerExport": "RegisterNativeTests"
+    }
+  ]
+}
+```
+
+Rules:
+- `nativeTests` is valid only in packages with `layer: "test"`.
+- `library` must be a deployed file name, not a path.
+- The same `library` must also appear in `nativeRuntimes` for the same runtime identifier.
+- `registerExport` defaults to `RegisterNativeTests` when string shorthand is used.
+- At runtime, `com.arisen.testrunner` reads `manifest.resolved.json`, loads each declared library from the output directory, calls the registration export, and fails the test run if a declared library or export cannot be loaded.
 
 ### ArisenBuildTool Auto-Generation (Developer UX)
 
