@@ -125,6 +125,7 @@ public static class PackageValidationService
             }
 
             ValidateSubsystemMetadata(packageManifest, result);
+            ValidateNativeRuntimeMetadata(packageManifest, packagePath, result);
 
             result.PackageMap[requirement.Id] = new PackageInfo
             {
@@ -371,6 +372,34 @@ public static class PackageValidationService
                 result.Errors.Add($"Package '{manifest.Id}' subsystem '{subsystem.Class}' declares invalid phase '{subsystem.Phase}'.");
             }
         }
+    }
+
+    private static void ValidateNativeRuntimeMetadata(PackageManifest manifest, string packagePath, PackageValidationResult result)
+    {
+        if (manifest.NativeRuntimes == null || manifest.NativeRuntimes.Count == 0)
+        {
+            return;
+        }
+
+        var package = new PackageInfo
+        {
+            Manifest = manifest,
+            DirectoryPath = packagePath
+        };
+
+        if (!NativeRuntimeManifestService.HasRuntime(manifest, NativeRuntimeManifestService.DefaultRuntimeIdentifier)
+            && (string.Equals(manifest.Type, "native", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(manifest.Type, "hybrid", StringComparison.OrdinalIgnoreCase)))
+        {
+            result.Errors.Add($"Package '{manifest.Id}' declares native runtimes but has no '{NativeRuntimeManifestService.DefaultRuntimeIdentifier}' payloads for the current target runtime.");
+        }
+
+        _ = NativeRuntimeManifestService.EnumerateForRuntime(
+            package,
+            NativeRuntimeManifestService.DefaultRuntimeIdentifier,
+            result.Errors,
+            result.Warnings,
+            validateFiles: true).ToList();
     }
 
     private static void ValidateServiceContracts(PackageValidationResult result)

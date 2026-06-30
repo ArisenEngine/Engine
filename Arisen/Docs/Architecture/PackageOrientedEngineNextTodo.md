@@ -244,16 +244,16 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
 ### TODO
 
 - [ ] Finalize native package metadata.
-  - [ ] Native library names per platform/configuration.
-  - [ ] Runtime DLL copy rules.
+  - [x] Native library names per platform/configuration.
+  - [x] Runtime DLL copy rules.
   - [ ] Native initialization/shutdown entry points if needed.
-- [ ] Ensure build tool deploys native runtime payloads into `.arisen/bin/{profile}/{configuration}/`.
+- [x] Ensure build tool deploys native runtime payloads into `.arisen/bin/{profile}/{configuration}/`.
 - [ ] Ensure `com.arisen.core.native` exposes foundation services through managed contracts if needed.
-- [ ] Ensure `com.arisen.rhi.vulkan.native` registers RHI services through managed bridge code.
+- [x] Ensure `com.arisen.rhi.vulkan.native` registers RHI services through managed bridge code.
 - [ ] Add native package validation:
-  - [ ] Missing DLL fails.
-  - [ ] Missing export fails if declared.
-  - [ ] Platform mismatch fails.
+  - [x] Missing DLL fails.
+  - [x] Missing export fails if declared.
+  - [x] Platform mismatch fails.
 - [ ] Decide how native test packages run inside the package test workflow.
 
 ### Acceptance Criteria

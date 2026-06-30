@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 using Arisen.Native.RHI;
 using ArisenEngine.Core.ECS;
 using ArisenEngine.Core.RHI;
-using ArisenEngine.Core.Native;
 using ArisenEngine.Rendering;
 using ArisenEngine.ECS.Lifecycle;
 using ArisenKernel.Lifecycle;
@@ -35,13 +34,12 @@ public static class MeshRenderTest
         });
 
         // 4. Setup MeshRenderer (passing raw RHI handles for DOD purity)
-        // Resolve the IRHIDevice from the Service Registry and cast to its implementation
         var service = EngineKernel.Instance.Services.GetService<IRHIDevice>();
         
-        if (service is VulkanRHIDevice vulkan)
+        if (service.IsValid)
         {
             // Reconstruct the RHI struct handle for the mesh factory
-            var device = new RHIDevice(vulkan.NativeHandle);
+            var device = new RHIDevice(service.NativeHandle);
             
             // Note: We still use the Mesh class here as a factory/storage for the test geometry.
             // But we extract the raw handles to store in the ECS Component.
@@ -76,7 +74,7 @@ public static class MeshRenderTest
         }
         else
         {
-            KernelLog.Warning("[MeshRenderTest] No compatible VulkanRHIDevice service found, cannot create test mesh.");
+            KernelLog.Warning("[MeshRenderTest] No valid IRHIDevice service found, cannot create test mesh.");
         }
     }
 }
