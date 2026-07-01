@@ -341,6 +341,7 @@ public partial class PackageManagerViewModel : ObservableObject
         
         Packages.CollectionChanged += (s, e) => {
             UpdateFilteredPackages();
+            RefreshProfilePackageOptions();
         };
 
         Profiles.CollectionChanged += (s, e) => { };
@@ -361,10 +362,17 @@ public partial class PackageManagerViewModel : ObservableObject
         foreach (var profile in Profiles)
         {
             var def = new ProfileDefinition { IsEditor = profile.IsEditor };
-            foreach (var node in profile.Nodes)
+            var enabledOptions = profile.PackageOptions.Where(x => x.IsEnabled).OrderBy(x => x.Id, StringComparer.OrdinalIgnoreCase).ToList();
+            foreach (var option in enabledOptions)
             {
-                def.Packages.Add(new PackageRequirement { Id = node.Id, Url = node.Url, Version = string.IsNullOrEmpty(node.Version) ? null : node.Version });
+                def.Packages.Add(new PackageRequirement
+                {
+                    Id = option.Id,
+                    Url = string.IsNullOrEmpty(option.Url) ? null : option.Url,
+                    Version = string.IsNullOrEmpty(option.Version) ? null : option.Version
+                });
             }
+            SyncProfilePackages(profile);
             Manifest.Profiles[profile.Name] = def;
         }
 

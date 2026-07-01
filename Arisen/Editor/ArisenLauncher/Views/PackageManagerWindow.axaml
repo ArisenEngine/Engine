@@ -362,18 +362,38 @@
                                                       IsChecked="{Binding IsEditor}" 
                                                       Foreground="#94a3b8" FontSize="12" Margin="0,-4,0,0"/>
                                             
-                                            <TextBlock Text="Entry Packages Binding:" Foreground="#94a3b8" FontSize="12"/>
-                                            <ItemsControl ItemsSource="{Binding Nodes}">
+                                            <TextBlock Text="Profile Packages:" Foreground="#94a3b8" FontSize="12"/>
+                                            <ItemsControl ItemsSource="{Binding PackageOptions}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Spacing="8"/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
                                                 <ItemsControl.ItemTemplate>
-                                                    <DataTemplate DataType="vm:PackageRequirementViewModel">
-                                                        <Grid ColumnDefinitions="*,*" Margin="0,0,0,8">
-                                                            <TextBox Grid.Column="0" Text="{Binding Id}" Background="#0f1117" BorderBrush="#282e39" Foreground="#94a3b8" Watermark="Package ID" Margin="0,0,8,0"/>
-                                                            <Button Grid.Column="1" Content="Remove" Command="{Binding $parent[ItemsControl].((vm:WorkspaceProfileViewModel)DataContext).RemoveEntryNodeCommand}" CommandParameter="{Binding}" Background="#1a1e26" Foreground="#ef4444"/>
-                                                        </Grid>
+                                                    <DataTemplate DataType="vm:ProfilePackageOptionViewModel">
+                                                        <Border Background="#0f1117" BorderBrush="#282e39" BorderThickness="1" CornerRadius="6" Padding="10">
+                                                            <Grid ColumnDefinitions="Auto, *, Auto">
+                                                                <CheckBox Grid.Column="0"
+                                                                          IsChecked="{Binding IsEnabled}"
+                                                                          Command="{Binding #PackageManagerWindowRoot.((vm:PackageManagerViewModel)DataContext).SyncProfilePackagesCommand}"
+                                                                          CommandParameter="{Binding $parent[ItemsControl].((vm:WorkspaceProfileViewModel)DataContext)}"
+                                                                          VerticalAlignment="Center"
+                                                                          Margin="0,0,12,0"/>
+                                                                <StackPanel Grid.Column="1" Spacing="2">
+                                                                    <TextBlock Text="{Binding DisplayName}" Foreground="White" FontWeight="SemiBold" FontSize="13"/>
+                                                                    <TextBlock Text="{Binding Id}" Foreground="#64748b" FontSize="11" FontFamily="Consolas, monospace"/>
+                                                                </StackPanel>
+                                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                                    <Border Background="#135bec20" BorderBrush="#135bec" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                                                        <TextBlock Text="{Binding Type}" Foreground="#60a5fa" FontSize="10" FontWeight="Bold"/>
+                                                                    </Border>
+                                                                    <TextBlock Text="{Binding Version, StringFormat='v{0}'}" Foreground="#94a3b8" FontSize="11" VerticalAlignment="Center"/>
+                                                                </StackPanel>
+                                                            </Grid>
+                                                        </Border>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
-                                            <Button Content="+ Select Package" Command="{Binding AddEntryNodeCommand}" Background="#0f1117" BorderBrush="#282e39" BorderThickness="1" Foreground="#94a3b8"/>
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
