@@ -385,8 +385,8 @@
             
             <!-- Package Graph Tab -->
             <TabItem Header="Package Graph" FontSize="16" FontWeight="Bold">
-                <Grid RowDefinitions="Auto, Auto, *" Margin="0,16,0,0">
-                    <Grid Grid.Row="0" ColumnDefinitions="Auto, Auto, *" Margin="0,0,0,16">
+                <Grid RowDefinitions="Auto, Auto, Auto, Auto, *" Margin="0,16,0,0">
+                    <Grid Grid.Row="0" ColumnDefinitions="Auto, Auto, Auto, *" Margin="0,0,0,16">
                         <ComboBox Grid.Column="0"
                                   ItemsSource="{Binding GraphProfiles}"
                                   SelectedItem="{Binding SelectedGraphProfile}"
@@ -404,7 +404,16 @@
                                 CornerRadius="6"
                                 FontWeight="SemiBold"
                                 Margin="12,0,0,0"/>
-                        <TextBlock Grid.Column="2"
+                        <Button Grid.Column="2"
+                                Content="Regenerate Projects"
+                                Command="{Binding RegenerateProjectFilesCommand}"
+                                Background="#22c55e"
+                                Foreground="White"
+                                Padding="16,8"
+                                CornerRadius="6"
+                                FontWeight="SemiBold"
+                                Margin="12,0,0,0"/>
+                        <TextBlock Grid.Column="3"
                                    Text="{Binding GraphStatus}"
                                    Foreground="#94a3b8"
                                    FontSize="13"
@@ -414,6 +423,21 @@
                     </Grid>
 
                     <Border Grid.Row="1"
+                            IsVisible="{Binding HasGenerateStatus}"
+                            Background="#22c55e20"
+                            BorderBrush="#22c55e"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="0,0,0,16">
+                        <TextBlock Text="{Binding GenerateStatus}"
+                                   Foreground="#22c55e"
+                                   FontWeight="SemiBold"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"/>
+                    </Border>
+
+                    <Border Grid.Row="2"
                             IsVisible="{Binding HasGraphError}"
                             Background="#ef444420"
                             BorderBrush="#ef4444"
@@ -428,7 +452,22 @@
                                    TextWrapping="Wrap"/>
                     </Border>
 
-                    <Grid Grid.Row="2" ColumnDefinitions="*, 16, *">
+                    <Border Grid.Row="3"
+                            IsVisible="{Binding HasGenerateError}"
+                            Background="#ef444420"
+                            BorderBrush="#ef4444"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="0,0,0,16">
+                        <TextBlock Text="{Binding GenerateError}"
+                                   Foreground="#ef4444"
+                                   FontFamily="Consolas, monospace"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"/>
+                    </Border>
+
+                    <Grid Grid.Row="4" ColumnDefinitions="*, 16, *">
                         <Border Grid.Column="0" Background="#1a1e26" BorderBrush="#282e39" BorderThickness="1" CornerRadius="8">
                             <Grid RowDefinitions="Auto, *">
                                 <Border Grid.Row="0" BorderBrush="#282e39" BorderThickness="0,0,0,1" Padding="12">

@@ -64,7 +64,7 @@
         }
       ]
     },
-        "Production": {
+    "Production": {
       "IsEditor": false,
       "Packages": []
     },

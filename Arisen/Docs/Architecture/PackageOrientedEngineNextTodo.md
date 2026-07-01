@@ -305,7 +305,8 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
 - [ ] Allow adding local packages through templates.
 - [ ] Allow adding registry/cache packages once registry support exists.
 - [ ] Add profile selector: Development / Production / testing profiles.
-- [ ] Add regenerate project files action.
+- [x] Add regenerate project files action.
+  - Package manager graph tab can run `ArisenBuildTool generate` for the selected profile and show validation/generation output.
 - [ ] Add launch action using selected profile/configuration.
 
 ### Acceptance Criteria
