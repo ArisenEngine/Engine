@@ -53,7 +53,7 @@ What this script does:
 
 - `Arisen\Scripts\Windows\build_launcher_all.bat`
 
-This generates the `Arisen\Editor\ArisenLauncher` workspace, builds native components in Debug and Release, then builds the managed launcher solution in Debug and Release.
+This generates the `Arisen\Editor\ArisenLauncher` workspace for package metadata/native components, builds native components in Debug and Release, then builds the real Avalonia launcher desktop app into `.arisen\bin\Development\{Configuration}\`. The runnable launcher apphost at that path is `ArisenLauncher.exe`.
 
 ### Refresh bindings only
 

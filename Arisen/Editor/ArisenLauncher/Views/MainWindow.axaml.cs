@@ -38,9 +38,9 @@ public partial class MainWindow : Window
         await window.ShowDialog(this);
     }
 
-    private async Task OnRequestPackageManagerAsync(Models.LauncherProjectMetadata project)
+    private async Task OnRequestPackageManagerAsync(Models.LauncherProjectMetadata project, EngineInstance? engine)
     {
-        var pmConfig = new PackageManagerViewModel(project);
+        var pmConfig = new PackageManagerViewModel(project, engine);
         var window = new PackageManagerWindow { DataContext = pmConfig };
         await window.ShowDialog(this);
     }

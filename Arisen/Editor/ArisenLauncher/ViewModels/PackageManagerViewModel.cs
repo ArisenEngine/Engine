@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Linq;
 using System.Text.Json.Nodes;
 using ArisenLauncher.Models;
+using ArisenLauncher.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -16,6 +18,7 @@ namespace ArisenLauncher.ViewModels;
 public partial class PackageManagerViewModel : ObservableObject
 {
     private readonly LauncherProjectMetadata _project;
+    private readonly EngineInstance? _engine;
     private readonly string _manifestPath;
 
     [ObservableProperty]
@@ -33,6 +36,19 @@ public partial class PackageManagerViewModel : ObservableObject
     partial void OnVerificationErrorChanged(string value) => OnPropertyChanged(nameof(HasVerificationError));
     public bool HasVerificationError => !string.IsNullOrEmpty(VerificationError);
     public bool HasSaveFeedback => !string.IsNullOrEmpty(SaveFeedback);
+
+    [ObservableProperty] private bool _isGraphLoading;
+    [ObservableProperty] private string _selectedGraphProfile = "Development";
+    [ObservableProperty] private string _graphStatus = "Package graph has not been refreshed yet.";
+    [ObservableProperty] private string _graphError = string.Empty;
+
+    partial void OnGraphErrorChanged(string value) => OnPropertyChanged(nameof(HasGraphError));
+    public bool HasGraphError => !string.IsNullOrEmpty(GraphError);
+    public bool HasGraphResult => PackageGraphPackages.Count > 0;
+
+    public ObservableCollection<string> GraphProfiles { get; } = new();
+    public ObservableCollection<PackageGraphPackageViewModel> PackageGraphPackages { get; } = new();
+    public ObservableCollection<PackageGraphEdgeViewModel> PackageGraphEdges { get; } = new();
 
     [ObservableProperty] private int _sortMode = 1; // 1 = ID, 0 = Name
 
@@ -310,9 +326,10 @@ public partial class PackageManagerViewModel : ObservableObject
         return vm;
     }
 
-    public PackageManagerViewModel(LauncherProjectMetadata project)
+    public PackageManagerViewModel(LauncherProjectMetadata project, EngineInstance? engine = null)
     {
         _project = project;
+        _engine = engine;
         _manifestPath = Path.Combine(Path.GetDirectoryName(project.ProjectPath)!, "manifest.json");
         
         Packages.CollectionChanged += (s, e) => {
@@ -346,6 +363,183 @@ public partial class PackageManagerViewModel : ObservableObject
 
         string json = JsonSerializer.Serialize(Manifest, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(_manifestPath, json);
+    }
+
+    [RelayCommand]
+    private async Task RefreshPackageGraph()
+    {
+        GraphError = string.Empty;
+        GraphStatus = "Refreshing package graph...";
+        PackageGraphPackages.Clear();
+        PackageGraphEdges.Clear();
+        OnPropertyChanged(nameof(HasGraphResult));
+
+        if (_engine == null)
+        {
+            GraphError = "Select an engine version in the launcher before refreshing the package graph.";
+            GraphStatus = "Package graph refresh failed.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(SelectedGraphProfile))
+        {
+            GraphError = "Select a workspace profile before refreshing the package graph.";
+            GraphStatus = "Package graph refresh failed.";
+            return;
+        }
+
+        if (!File.Exists(_manifestPath))
+        {
+            GraphError = $"Workspace manifest not found: {_manifestPath}";
+            GraphStatus = "Package graph refresh failed.";
+            return;
+        }
+
+        IsGraphLoading = true;
+        try
+        {
+            string projectDir = Path.GetDirectoryName(_project.ProjectPath)!;
+            string outputDir = Path.Combine(projectDir, ".arisen");
+            Directory.CreateDirectory(outputDir);
+
+            string outputPath = Path.Combine(outputDir, $"package-graph.{SanitizeFileName(SelectedGraphProfile)}.json");
+            string args = $"graph --manifest \"{_manifestPath}\" --engine \"{_engine.InstallPath}\" --profile \"{SelectedGraphProfile}\" --format json --output \"{outputPath}\"";
+            var result = await RunBuildToolCaptureAsync(args, _engine.InstallPath, TimeSpan.FromSeconds(60));
+
+            if (!result.Succeeded)
+            {
+                GraphError = BuildToolOutputToMessage(result);
+                GraphStatus = "Package graph refresh failed.";
+                return;
+            }
+
+            if (!File.Exists(outputPath))
+            {
+                GraphError = $"ArisenBuildTool completed but did not write graph output: {outputPath}";
+                GraphStatus = "Package graph refresh failed.";
+                return;
+            }
+
+            string json = await File.ReadAllTextAsync(outputPath);
+            var graph = JsonSerializer.Deserialize<PackageGraphDocument>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (graph == null)
+            {
+                GraphError = "ArisenBuildTool wrote an empty package graph.";
+                GraphStatus = "Package graph refresh failed.";
+                return;
+            }
+
+            foreach (var package in graph.Packages.OrderBy(x => x.Order))
+            {
+                PackageGraphPackages.Add(new PackageGraphPackageViewModel
+                {
+                    Order = package.Order,
+                    Id = package.Id,
+                    Type = package.Type,
+                    Path = package.Path,
+                    DependenciesDisplay = package.Dependencies.Count == 0
+                        ? "<none>"
+                        : string.Join(", ", package.Dependencies.OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase).Select(x => $"{x.Key} {x.Value}"))
+                });
+            }
+
+            foreach (var edge in graph.Edges.OrderBy(x => x.From, StringComparer.OrdinalIgnoreCase).ThenBy(x => x.To, StringComparer.OrdinalIgnoreCase))
+            {
+                PackageGraphEdges.Add(new PackageGraphEdgeViewModel
+                {
+                    From = edge.From,
+                    To = edge.To,
+                    Version = edge.Version
+                });
+            }
+
+            GraphStatus = $"Validated {PackageGraphPackages.Count} packages and {PackageGraphEdges.Count} dependency edges for {graph.Profile}.";
+            OnPropertyChanged(nameof(HasGraphResult));
+        }
+        catch (Exception ex)
+        {
+            GraphError = $"Failed to refresh package graph: {ex.Message}";
+            GraphStatus = "Package graph refresh failed.";
+        }
+        finally
+        {
+            IsGraphLoading = false;
+        }
+    }
+
+    private async Task<BuildToolRunResult> RunBuildToolCaptureAsync(string commandArgs, string workingDirectory, TimeSpan timeout)
+    {
+        string buildToolExecutable = Path.Combine(workingDirectory, "External", "ArisenBuildTool", "bin", "Debug", "net9.0", "ArisenBuildTool.dll");
+        if (!File.Exists(buildToolExecutable))
+        {
+            string rootDll = Path.Combine(workingDirectory, "ArisenBuildTool.dll");
+            if (File.Exists(rootDll)) buildToolExecutable = rootDll;
+        }
+
+        string buildToolProject = Path.Combine(workingDirectory, "External", "ArisenBuildTool", "ArisenBuildTool.csproj");
+        string toolArgs;
+        if (File.Exists(buildToolExecutable))
+        {
+            toolArgs = $"\"{buildToolExecutable}\" {commandArgs}";
+        }
+        else if (File.Exists(buildToolProject))
+        {
+            toolArgs = $"run --project \"{buildToolProject}\" -- {commandArgs}";
+        }
+        else
+        {
+            return new BuildToolRunResult(false, -1, string.Empty, "ArisenBuildTool not found for the selected engine.");
+        }
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = "dotnet",
+            Arguments = toolArgs,
+            WorkingDirectory = workingDirectory,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+
+        using var process = Process.Start(psi);
+        if (process == null)
+        {
+            return new BuildToolRunResult(false, -1, string.Empty, "Failed to start ArisenBuildTool.");
+        }
+
+        Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+        Task<string> errorTask = process.StandardError.ReadToEndAsync();
+
+        using var cts = new System.Threading.CancellationTokenSource(timeout);
+        try
+        {
+            await process.WaitForExitAsync(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            process.Kill(entireProcessTree: true);
+            return new BuildToolRunResult(false, -1, await outputTask, $"ArisenBuildTool timed out after {timeout.TotalSeconds:0} seconds.");
+        }
+
+        string output = await outputTask;
+        string error = await errorTask;
+        return new BuildToolRunResult(process.ExitCode == 0, process.ExitCode, output, error);
+    }
+
+    private static string BuildToolOutputToMessage(BuildToolRunResult result)
+    {
+        string combined = string.Join(Environment.NewLine, new[] { result.StandardError, result.StandardOutput }.Where(x => !string.IsNullOrWhiteSpace(x))).Trim();
+        if (string.IsNullOrWhiteSpace(combined))
+            return $"ArisenBuildTool failed with exit code {result.ExitCode}.";
+
+        return combined;
+    }
+
+    private static string SanitizeFileName(string value)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        return string.Concat(value.Select(c => invalid.Contains(c) ? '_' : c));
     }
     
     [RelayCommand]
@@ -1119,6 +1313,47 @@ public partial class DependencyViewModel : ObservableObject
 {
     [ObservableProperty] private string _id = string.Empty;
     [ObservableProperty] private string _version = string.Empty;
+}
+
+public partial class PackageGraphPackageViewModel : ObservableObject
+{
+    [ObservableProperty] private int _order;
+    [ObservableProperty] private string _id = string.Empty;
+    [ObservableProperty] private string _type = string.Empty;
+    [ObservableProperty] private string _path = string.Empty;
+    [ObservableProperty] private string _dependenciesDisplay = string.Empty;
+}
+
+public partial class PackageGraphEdgeViewModel : ObservableObject
+{
+    [ObservableProperty] private string _from = string.Empty;
+    [ObservableProperty] private string _to = string.Empty;
+    [ObservableProperty] private string _version = string.Empty;
+}
+
+internal sealed record BuildToolRunResult(bool Succeeded, int ExitCode, string StandardOutput, string StandardError);
+
+internal sealed class PackageGraphDocument
+{
+    public string Profile { get; set; } = string.Empty;
+    public List<PackageGraphPackageDocument> Packages { get; set; } = new();
+    public List<PackageGraphEdgeDocument> Edges { get; set; } = new();
+}
+
+internal sealed class PackageGraphPackageDocument
+{
+    public int Order { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public string Path { get; set; } = string.Empty;
+    public Dictionary<string, string> Dependencies { get; set; } = new();
+}
+
+internal sealed class PackageGraphEdgeDocument
+{
+    public string From { get; set; } = string.Empty;
+    public string To { get; set; } = string.Empty;
+    public string Version { get; set; } = string.Empty;
 }
 
 public class PackageJsonEntry

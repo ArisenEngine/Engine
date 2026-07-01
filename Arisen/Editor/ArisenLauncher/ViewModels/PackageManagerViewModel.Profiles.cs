@@ -13,6 +13,7 @@ public partial class PackageManagerViewModel
     private void InitializeProfiles()
     {
         Profiles.Clear();
+        GraphProfiles.Clear();
         if (Manifest.Profiles != null)
         {
             foreach (var kvp in Manifest.Profiles)
@@ -28,6 +29,7 @@ public partial class PackageManagerViewModel
                     });
                 }
                 Profiles.Add(p);
+                GraphProfiles.Add(p.Name);
             }
         }
         else
@@ -35,7 +37,16 @@ public partial class PackageManagerViewModel
             // Default scaffolding
             Profiles.Add(new WorkspaceProfileViewModel { Name = "Development" });
             Profiles.Add(new WorkspaceProfileViewModel { Name = "Production" });
+            GraphProfiles.Add("Development");
+            GraphProfiles.Add("Production");
         }
+
+        if (GraphProfiles.Contains(_project.SelectedProfile))
+            SelectedGraphProfile = _project.SelectedProfile;
+        else if (GraphProfiles.Contains("Development"))
+            SelectedGraphProfile = "Development";
+        else if (GraphProfiles.Count > 0)
+            SelectedGraphProfile = GraphProfiles[0];
     }
 
     [RelayCommand]
@@ -47,12 +58,17 @@ public partial class PackageManagerViewModel
             name = $"CustomProfile{i++}";
         }
         Profiles.Add(new WorkspaceProfileViewModel { Name = name });
+        GraphProfiles.Add(name);
+        SelectedGraphProfile = name;
     }
 
     [RelayCommand]
     private void RemoveProfile(WorkspaceProfileViewModel vm)
     {
         Profiles.Remove(vm);
+        GraphProfiles.Remove(vm.Name);
+        if (SelectedGraphProfile == vm.Name)
+            SelectedGraphProfile = GraphProfiles.FirstOrDefault() ?? string.Empty;
     }
 }
 

@@ -31,7 +31,7 @@ public partial class MainViewModel : ObservableObject
     public Func<Task<string?>>? RequestFolderPickerAsync;
     public Func<Task<string?>>? RequestFilePickerAsync; // For .arisenproj
     public Func<EngineInstance, Task<bool>>? RequestNewProjectWizardAsync;
-    public Func<LauncherProjectMetadata, Task>? RequestPackageManagerAsync;
+    public Func<LauncherProjectMetadata, EngineInstance?, Task>? RequestPackageManagerAsync;
     public Func<string, string, Task>? RequestMessageBoxAsync;
 
     public MainViewModel(
@@ -192,7 +192,7 @@ public partial class MainViewModel : ObservableObject
                 {
                     if (RequestMessageBoxAsync != null)
                     {
-                        await RequestMessageBoxAsync("Invalid Engine Folder", "The selected folder is missing required engine binaries (ArisenKernel.dll, ArisenBuildTool.dll/exe).");
+                        await RequestMessageBoxAsync("Invalid Engine Folder", "Select an Arisen source root with ArisenKernel/ and External/ArisenBuildTool/, or a binary engine folder with ArisenKernel.dll and ArisenBuildTool.");
                     }
                     else
                     {
@@ -233,7 +233,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (RequestPackageManagerAsync != null)
         {
-            await RequestPackageManagerAsync(project);
+            await RequestPackageManagerAsync(project, SelectedEngine);
         }
     }
 
