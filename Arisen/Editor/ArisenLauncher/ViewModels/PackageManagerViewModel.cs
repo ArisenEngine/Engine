@@ -38,12 +38,19 @@ public partial class PackageManagerViewModel : ObservableObject
     public bool HasSaveFeedback => !string.IsNullOrEmpty(SaveFeedback);
 
     [ObservableProperty] private bool _isGraphLoading;
+    [ObservableProperty] private bool _isGeneratingProjects;
     [ObservableProperty] private string _selectedGraphProfile = "Development";
     [ObservableProperty] private string _graphStatus = "Package graph has not been refreshed yet.";
     [ObservableProperty] private string _graphError = string.Empty;
+    [ObservableProperty] private string _generateStatus = string.Empty;
+    [ObservableProperty] private string _generateError = string.Empty;
 
     partial void OnGraphErrorChanged(string value) => OnPropertyChanged(nameof(HasGraphError));
+    partial void OnGenerateErrorChanged(string value) => OnPropertyChanged(nameof(HasGenerateError));
+    partial void OnGenerateStatusChanged(string value) => OnPropertyChanged(nameof(HasGenerateStatus));
     public bool HasGraphError => !string.IsNullOrEmpty(GraphError);
+    public bool HasGenerateError => !string.IsNullOrEmpty(GenerateError);
+    public bool HasGenerateStatus => !string.IsNullOrEmpty(GenerateStatus);
     public bool HasGraphResult => PackageGraphPackages.Count > 0;
 
     public ObservableCollection<string> GraphProfiles { get; } = new();
@@ -464,6 +471,61 @@ public partial class PackageManagerViewModel : ObservableObject
         finally
         {
             IsGraphLoading = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task RegenerateProjectFiles()
+    {
+        GenerateError = string.Empty;
+        GenerateStatus = "Regenerating project files...";
+
+        if (_engine == null)
+        {
+            GenerateError = "Select an engine version in the launcher before regenerating project files.";
+            GenerateStatus = string.Empty;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(SelectedGraphProfile))
+        {
+            GenerateError = "Select a workspace profile before regenerating project files.";
+            GenerateStatus = string.Empty;
+            return;
+        }
+
+        if (!File.Exists(_manifestPath))
+        {
+            GenerateError = $"Workspace manifest not found: {_manifestPath}";
+            GenerateStatus = string.Empty;
+            return;
+        }
+
+        IsGeneratingProjects = true;
+        try
+        {
+            SaveManifest();
+
+            string args = $"generate --manifest \"{_manifestPath}\" --engine \"{_engine.InstallPath}\" --profile \"{SelectedGraphProfile}\"";
+            var result = await RunBuildToolCaptureAsync(args, _engine.InstallPath, TimeSpan.FromSeconds(120));
+
+            if (!result.Succeeded)
+            {
+                GenerateError = BuildToolOutputToMessage(result);
+                GenerateStatus = string.Empty;
+                return;
+            }
+
+            GenerateStatus = $"Project files regenerated for {SelectedGraphProfile}.";
+        }
+        catch (Exception ex)
+        {
+            GenerateError = $"Failed to regenerate project files: {ex.Message}";
+            GenerateStatus = string.Empty;
+        }
+        finally
+        {
+            IsGeneratingProjects = false;
         }
     }
 
