@@ -383,6 +383,116 @@
                 </ScrollViewer>
             </TabItem>
             
+            <!-- Package Graph Tab -->
+            <TabItem Header="Package Graph" FontSize="16" FontWeight="Bold">
+                <Grid RowDefinitions="Auto, Auto, *" Margin="0,16,0,0">
+                    <Grid Grid.Row="0" ColumnDefinitions="Auto, Auto, *" Margin="0,0,0,16">
+                        <ComboBox Grid.Column="0"
+                                  ItemsSource="{Binding GraphProfiles}"
+                                  SelectedItem="{Binding SelectedGraphProfile}"
+                                  Width="180"
+                                  Background="#0f1117"
+                                  BorderBrush="#282e39"
+                                  Foreground="White"
+                                  CornerRadius="6"/>
+                        <Button Grid.Column="1"
+                                Content="Refresh Graph"
+                                Command="{Binding RefreshPackageGraphCommand}"
+                                Background="#135bec"
+                                Foreground="White"
+                                Padding="16,8"
+                                CornerRadius="6"
+                                FontWeight="SemiBold"
+                                Margin="12,0,0,0"/>
+                        <TextBlock Grid.Column="2"
+                                   Text="{Binding GraphStatus}"
+                                   Foreground="#94a3b8"
+                                   FontSize="13"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center"
+                                   Margin="16,0,0,0"/>
+                    </Grid>
+
+                    <Border Grid.Row="1"
+                            IsVisible="{Binding HasGraphError}"
+                            Background="#ef444420"
+                            BorderBrush="#ef4444"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="0,0,0,16">
+                        <TextBlock Text="{Binding GraphError}"
+                                   Foreground="#ef4444"
+                                   FontFamily="Consolas, monospace"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"/>
+                    </Border>
+
+                    <Grid Grid.Row="2" ColumnDefinitions="*, 16, *">
+                        <Border Grid.Column="0" Background="#1a1e26" BorderBrush="#282e39" BorderThickness="1" CornerRadius="8">
+                            <Grid RowDefinitions="Auto, *">
+                                <Border Grid.Row="0" BorderBrush="#282e39" BorderThickness="0,0,0,1" Padding="12">
+                                    <TextBlock Text="Topological Order" Foreground="White" FontWeight="Bold" FontSize="14"/>
+                                </Border>
+                                <Grid Grid.Row="1">
+                                    <ListBox ItemsSource="{Binding PackageGraphPackages}" Background="Transparent" BorderThickness="0" Padding="8">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate DataType="vm:PackageGraphPackageViewModel">
+                                                <Border Background="#13151c" BorderBrush="#282e39" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,8">
+                                                    <Grid ColumnDefinitions="42, *">
+                                                        <Border Grid.Column="0" Width="28" Height="28" CornerRadius="14" Background="#282e39" VerticalAlignment="Top">
+                                                            <TextBlock Text="{Binding Order}" Foreground="#94a3b8" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
+                                                        </Border>
+                                                        <StackPanel Grid.Column="1" Spacing="4">
+                                                            <Grid ColumnDefinitions="*, Auto">
+                                                                <TextBlock Grid.Column="0" Text="{Binding Id}" Foreground="White" FontWeight="Bold" FontSize="13" TextTrimming="CharacterEllipsis"/>
+                                                                <Border Grid.Column="1" Background="#135bec20" BorderBrush="#135bec" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="8,0,0,0">
+                                                                    <TextBlock Text="{Binding Type}" Foreground="#60a5fa" FontSize="10" FontWeight="Bold"/>
+                                                                </Border>
+                                                            </Grid>
+                                                            <TextBlock Text="{Binding DependenciesDisplay, StringFormat='Deps: {0}'}" Foreground="#94a3b8" FontSize="11" TextWrapping="Wrap"/>
+                                                            <TextBlock Text="{Binding Path}" Foreground="#64748b" FontSize="10" FontFamily="Consolas, monospace" TextTrimming="CharacterEllipsis"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                    <TextBlock Text="Refresh the selected profile to inspect the resolved package order."
+                                               IsVisible="{Binding !HasGraphResult}"
+                                               Foreground="#64748b"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               FontSize="13"/>
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="2" Background="#1a1e26" BorderBrush="#282e39" BorderThickness="1" CornerRadius="8">
+                            <Grid RowDefinitions="Auto, *">
+                                <Border Grid.Row="0" BorderBrush="#282e39" BorderThickness="0,0,0,1" Padding="12">
+                                    <TextBlock Text="Dependency Edges" Foreground="White" FontWeight="Bold" FontSize="14"/>
+                                </Border>
+                                <ListBox Grid.Row="1" ItemsSource="{Binding PackageGraphEdges}" Background="Transparent" BorderThickness="0" Padding="8">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate DataType="vm:PackageGraphEdgeViewModel">
+                                            <Border Background="#13151c" BorderBrush="#282e39" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,8">
+                                                <Grid ColumnDefinitions="*, Auto, *" RowDefinitions="Auto, Auto">
+                                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding From}" Foreground="White" FontWeight="SemiBold" FontSize="12" TextWrapping="Wrap"/>
+                                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="->" Foreground="#94a3b8" FontWeight="Bold" Margin="10,0"/>
+                                                    <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding To}" Foreground="#60a5fa" FontWeight="SemiBold" FontSize="12" TextWrapping="Wrap"/>
+                                                    <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Text="{Binding Version, StringFormat='Version: {0}'}" Foreground="#64748b" FontSize="11" Margin="0,6,0,0"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
             <!-- Service Contracts Tab -->
             <TabItem Header="Service Dashboard" FontSize="16" FontWeight="Bold">
                 <ScrollViewer Margin="0,16,0,0">

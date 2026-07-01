@@ -31,6 +31,13 @@ public class EngineDiscoveryService
                     ValidateAndAdd(dir.FullName, "Dev Local (Root)", isManual: false);
                     break;
                 }
+
+                string arisenSourceCandidate = Path.Combine(dir.FullName, "Arisen");
+                if (IsValidEngineFolder(arisenSourceCandidate))
+                {
+                    ValidateAndAdd(arisenSourceCandidate, "Dev Local (Source)", isManual: false);
+                    break;
+                }
                 
                 // Special check for repo-style layout: Engine/Arisen
                 string engineRootCandidate = Path.Combine(dir.FullName, "Engine", "Arisen");
@@ -101,6 +108,11 @@ public class EngineDiscoveryService
     {
         if (string.IsNullOrEmpty(path) || !Directory.Exists(path)) return false;
 
+        if (IsSourceEngineFolder(path))
+        {
+            return true;
+        }
+
         var validationConfig = m_ConfigService.Settings.EngineValidation;
         if (validationConfig == null || validationConfig.RequiredFiles == null) 
             return false;
@@ -114,5 +126,12 @@ public class EngineDiscoveryService
         }
 
         return true;
+    }
+
+    private static bool IsSourceEngineFolder(string path)
+    {
+        return File.Exists(Path.Combine(path, "ArisenKernel", "ArisenKernel.csproj"))
+               && File.Exists(Path.Combine(path, "External", "ArisenBuildTool", "ArisenBuildTool.csproj"))
+               && Directory.Exists(Path.Combine(path, "Development", "PackageGame"));
     }
 }

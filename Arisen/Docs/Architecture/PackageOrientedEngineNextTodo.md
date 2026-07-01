@@ -295,10 +295,12 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
 
 ### TODO
 
-- [ ] Show selected workspace packages and profile packages.
-- [ ] Show dependency graph.
-- [ ] Show missing/cyclic/invalid package errors.
-- [ ] Show service provides/requires health.
+- [x] Show selected workspace packages and profile packages.
+- [x] Show dependency graph.
+  - Package manager has a read-only graph tab that calls `ArisenBuildTool graph --format json` for the selected profile and renders topological order plus dependency edges.
+- [x] Show missing/cyclic/invalid package errors.
+  - Graph refresh uses the build-tool validation path and surfaces captured build-tool output when validation fails.
+- [x] Show service provides/requires health.
 - [ ] Allow enabling/disabling packages per profile.
 - [ ] Allow adding local packages through templates.
 - [ ] Allow adding registry/cache packages once registry support exists.

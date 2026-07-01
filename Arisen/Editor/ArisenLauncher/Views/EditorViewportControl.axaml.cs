@@ -105,17 +105,18 @@ namespace ArisenLauncher.Views
         {
             base.Render(context);
 
-            if (_surface == null || _compositionSurface == null || _interop == null)
+            var surface = _surface;
+            if (surface == null || _compositionSurface == null || _interop == null)
                 return;
 
-            IntPtr win32Handle = _surface.GetSharedHandle();
+            IntPtr win32Handle = surface.GetSharedHandle(surface.GetLastRenderFrameIndex());
             if (win32Handle == IntPtr.Zero)
                 return;
 
-            UpdateCompositionSurface(win32Handle);
+            UpdateCompositionSurface(surface, win32Handle);
         }
 
-        private async void UpdateCompositionSurface(IntPtr sharedHandle)
+        private async void UpdateCompositionSurface(IRenderSurface surface, IntPtr sharedHandle)
         {
             if (_interop == null || _compositionSurface == null) return;
 
@@ -127,7 +128,7 @@ namespace ArisenLauncher.Views
                 // Recreate only if the shared handle or dimensions have changed.
                 if (_cachedImportedImage == null || sharedHandle != _lastSharedHandle || pixelSize != _lastPixelSize)
                 {
-                    _cachedImportedImage?.Dispose();
+                    DisposeImportedImage(_cachedImportedImage);
                     _lastSharedHandle = sharedHandle;
                     _lastPixelSize = pixelSize;
 
@@ -144,17 +145,35 @@ namespace ArisenLauncher.Views
                 // Phase 2 Synchronization: Targeted asynchronous wait for the GPU ticket.
                 // This replaces the CPU stall in the Engine thread, allowing the UI 
                 // and Engine to run concurrently.
-                ulong targetTicket = _surface.GetLastRenderTicket();
-                await _surface.WaitForRenderTicketAsync(targetTicket);
+                ulong targetTicket = surface.GetLastRenderTicket();
+                await surface.WaitForRenderTicketAsync(targetTicket);
 
                 await _compositionSurface.UpdateAsync(_cachedImportedImage);
             }
             catch (Exception)
             {
                 // Clean up on failure to allow retry next frame
-                _cachedImportedImage?.Dispose();
+                DisposeImportedImage(_cachedImportedImage);
                 _cachedImportedImage = null;
                 _lastSharedHandle = IntPtr.Zero;
+            }
+        }
+
+        private static void DisposeImportedImage(ICompositionImportedGpuImage? image)
+        {
+            try
+            {
+                if (image is IAsyncDisposable asyncDisposable)
+                {
+                    _ = asyncDisposable.DisposeAsync().AsTask();
+                }
+                else if (image is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+            catch (Exception)
+            {
             }
         }
     }

@@ -4,7 +4,7 @@ using Avalonia.ReactiveUI;
 
 namespace ArisenLauncher.Desktop;
 
-class Program
+public class Program
 {
     [STAThread]
     public static void Main(string[] args)

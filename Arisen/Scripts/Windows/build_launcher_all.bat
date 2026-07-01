@@ -43,6 +43,7 @@ REM ==== 2. Process Cleanup ====
 echo === Cleaning up [!PROJECT_NAME!] processes ===
 taskkill /F /IM !PROJECT_NAME!.exe /T >nul 2>&1
 taskkill /F /IM !PROJECT_NAME!.Desktop.exe /T >nul 2>&1
+taskkill /F /IM !PROJECT_NAME!.Host.exe /T >nul 2>&1
 
 echo [Arisen] Locating Developer Command Prompt...
 set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -95,10 +96,10 @@ if errorlevel 1 (
 
 REM ==== 5. Build Managed Launcher ====
 echo === Building Launcher Desktop [!PROJECT_NAME!] ===
-set "SLN_PATH=!LAUNCHER_DIR!\.arisen\!PROJECT_NAME!_Development.sln"
+set "LAUNCHER_DESKTOP_CSPROJ=!ROOT_DIR!\Editor\ArisenLauncher.Desktop\ArisenLauncher.Desktop.csproj"
 
 call :next Building Managed Launcher (Debug)
-call :run msbuild "!SLN_PATH!" /p:Configuration=Debug /p:Platform=x64 /m
+call :build_desktop Debug
 if errorlevel 1 (
     echo ERROR: Launcher Managed Debug build failed.
     set "EXIT_CODE=1"
@@ -106,7 +107,7 @@ if errorlevel 1 (
 )
 
 call :next Building Managed Launcher (Release)
-call :run msbuild "!SLN_PATH!" /p:Configuration=Release /p:Platform=x64 /m
+call :build_desktop Release
 if errorlevel 1 (
     echo ERROR: Launcher Managed Release build failed.
     set "EXIT_CODE=1"
@@ -141,4 +142,24 @@ if not "%_EXIT_CODE%"=="0" (
     echo Command failed with exit code %_EXIT_CODE%. Showing last 120 lines from log:
     powershell -NoProfile -Command "Get-Content -LiteralPath '!LOG_FILE_ABS!' -Tail 120"
 )
-exit /b %_EXIT_CODE%
+exit /b %_EXIT_CODE%
+
+:build_desktop
+set "BUILD_CONFIG=%~1"
+set "BIN_DIR=!LAUNCHER_DIR!\.arisen\bin\Development\!BUILD_CONFIG!"
+if not exist "!BIN_DIR!" mkdir "!BIN_DIR!"
+
+REM Remove the generated EngineBootstrapper apphost so the launcher bin path resolves to the real Avalonia desktop app.
+del /q "!BIN_DIR!\!PROJECT_NAME!.exe" "!BIN_DIR!\!PROJECT_NAME!.deps.json" "!BIN_DIR!\!PROJECT_NAME!.runtimeconfig.json" 2>nul
+
+call :run dotnet build "!LAUNCHER_DESKTOP_CSPROJ!" -c !BUILD_CONFIG! -r win-x64 --no-self-contained -p:OutputPath=!BIN_DIR! -p:AppendTargetFrameworkToOutputPath=false -p:AppendRuntimeIdentifierToOutputPath=false
+if errorlevel 1 exit /b 1
+
+if not exist "!BIN_DIR!\ArisenLauncher.Desktop.exe" (
+    echo [ERROR] Desktop launcher executable was not produced: !BIN_DIR!\ArisenLauncher.Desktop.exe
+    exit /b 1
+)
+
+copy /y "!BIN_DIR!\ArisenLauncher.Desktop.exe" "!BIN_DIR!\!PROJECT_NAME!.exe" >nul
+if errorlevel 1 exit /b 1
+exit /b 0

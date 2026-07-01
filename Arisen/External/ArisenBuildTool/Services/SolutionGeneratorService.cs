@@ -274,6 +274,11 @@ public static class SolutionGeneratorService
 
     private static void GenerateEntryPointProject(string csprojPath, string engineDir, string projectName, ProjectManifest manifest, string profile, bool isEditor, List<PackageInfo> managedPackages, string projectsDir)
     {
+        if (TryGenerateLauncherHostProject(csprojPath, engineDir, projectName, profile, isEditor))
+        {
+            return;
+        }
+
         string csprojDir = Path.GetDirectoryName(csprojPath)!;
 
         using StreamWriter writer = new StreamWriter(csprojPath);
@@ -345,6 +350,88 @@ public class Program {{
 }}";
         string programPath = Path.Combine(Path.GetDirectoryName(csprojPath)!, "Program.cs");
         File.WriteAllText(programPath, string.Format(entryPointSource, projectName));
+    }
+
+    private static bool TryGenerateLauncherHostProject(string csprojPath, string engineDir, string projectName, string profile, bool isEditor)
+    {
+        if (!string.Equals(projectName, "ArisenLauncher", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        string desktopProject = Path.Combine(engineDir, "Editor", "ArisenLauncher.Desktop", "ArisenLauncher.Desktop.csproj");
+        string launcherProject = Path.Combine(engineDir, "Editor", "ArisenLauncher", "ArisenLauncher.csproj");
+        if (!File.Exists(desktopProject))
+        {
+            return false;
+        }
+
+        string csprojDir = Path.GetDirectoryName(csprojPath)!;
+        string desktopProjectRel = PathUtils.GetRelativePath(csprojDir, desktopProject);
+        string launcherProjectRel = PathUtils.GetRelativePath(csprojDir, launcherProject);
+
+        using StreamWriter writer = new StreamWriter(csprojPath);
+        writer.WriteLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
+        writer.WriteLine("  <PropertyGroup>");
+        writer.WriteLine("    <OutputType>WinExe</OutputType>");
+        writer.WriteLine("    <TargetFramework>net9.0</TargetFramework>");
+        writer.WriteLine("    <ImplicitUsings>enable</ImplicitUsings>");
+        writer.WriteLine("    <Nullable>enable</Nullable>");
+        writer.WriteLine($"    <OutputPath>..\\..\\..\\bin\\{profile}\\$(Configuration)\\</OutputPath>");
+        writer.WriteLine("    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>");
+        writer.WriteLine("    <PlatformTarget>x64</PlatformTarget>");
+        writer.WriteLine("    <AssemblyName>ArisenLauncher.Host</AssemblyName>");
+        writer.WriteLine("    <RootNamespace>ArisenLauncher.Host</RootNamespace>");
+        writer.WriteLine("    <RuntimeIdentifier>win-x64</RuntimeIdentifier>");
+        writer.WriteLine("    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>");
+        writer.WriteLine("    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>");
+
+        string constants = $"ARISEN_PROFILE_{profile.ToUpperInvariant()}";
+        if (isEditor) constants += ";ARISEN_ENGINE_EDITOR";
+        writer.WriteLine($"    <DefineConstants>{constants}</DefineConstants>");
+        writer.WriteLine("  </PropertyGroup>");
+        writer.WriteLine();
+
+        writer.WriteLine("  <PropertyGroup Condition=\"'$(Configuration)' == 'Debug'\">");
+        writer.WriteLine("    <Optimize>false</Optimize>");
+        writer.WriteLine("    <DebugSymbols>true</DebugSymbols>");
+        writer.WriteLine("  </PropertyGroup>");
+        writer.WriteLine();
+
+        writer.WriteLine("  <PropertyGroup Condition=\"'$(Configuration)' == 'Release'\">");
+        writer.WriteLine("    <Optimize>true</Optimize>");
+        writer.WriteLine("    <DebugSymbols>false</DebugSymbols>");
+        writer.WriteLine("  </PropertyGroup>");
+        writer.WriteLine();
+
+        writer.WriteLine("  <ItemGroup>");
+        if (File.Exists(launcherProject))
+        {
+            writer.WriteLine($"    <ProjectReference Include=\"{launcherProjectRel}\" />");
+        }
+        writer.WriteLine($"    <ProjectReference Include=\"{desktopProjectRel}\" />");
+        writer.WriteLine("  </ItemGroup>");
+        writer.WriteLine();
+
+        writer.WriteLine("  <Target Name=\"CopyStableLauncherAppHost\" AfterTargets=\"Build\">");
+        writer.WriteLine("    <Copy SourceFiles=\"$(TargetDir)ArisenLauncher.Desktop.exe\" DestinationFiles=\"$(TargetDir)$(AssemblyName).exe\" SkipUnchangedFiles=\"false\" Condition=\"Exists('$(TargetDir)ArisenLauncher.Desktop.exe')\" />");
+        writer.WriteLine("    <Copy SourceFiles=\"$(TargetDir)ArisenLauncher.Desktop.exe\" DestinationFiles=\"$(TargetDir)ArisenLauncher.exe\" SkipUnchangedFiles=\"false\" Condition=\"Exists('$(TargetDir)ArisenLauncher.Desktop.exe')\" />");
+        writer.WriteLine("  </Target>");
+        writer.WriteLine("</Project>");
+
+        string entryPointSource = @"using System;
+
+namespace ArisenLauncher.Host;
+public static class Program
+{
+    [STAThread]
+    public static void Main(string[] args) => ArisenLauncher.Desktop.Program.Main(args);
+}";
+        string programPath = Path.Combine(csprojDir, "Program.cs");
+        File.WriteAllText(programPath, entryPointSource);
+
+        Logger.Info("Generated launcher desktop host entry project for Rider/debugger startup.");
+        return true;
     }
 
     private static void GenerateDirectoryBuildProps(string propsPath)
