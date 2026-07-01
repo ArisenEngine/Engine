@@ -300,6 +300,7 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
   - Package manager has a read-only graph tab that calls `ArisenBuildTool graph --format json` for the selected profile and renders topological order plus dependency edges.
 - [x] Show missing/cyclic/invalid package errors.
   - Graph refresh uses the build-tool validation path and surfaces captured build-tool output when validation fails.
+  - Package manager can run explicit profile validation through `ArisenBuildTool validate` for the selected profile.
 - [x] Show service provides/requires health.
 - [x] Allow enabling/disabling packages per profile.
   - Profiles tab exposes installed packages as profile toggles and saves enabled packages back to `Profiles[*].Packages`.

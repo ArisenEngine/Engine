@@ -331,82 +331,12 @@ public class ProjectService
                 return false;
             }
 
-                                    
-            var localDir = Path.Combine(projectDir, "Local");
-            var cacheDir = Path.Combine(projectDir, ".Cache");
-            Directory.CreateDirectory(localDir);
-            Directory.CreateDirectory(cacheDir);
-
-            // 1. Package Management Resolution
-            _logService.Info("Resolving packages via manifest.json...");
-            string json = File.ReadAllText(manifestPath);
-            var manifest = JsonSerializer.Deserialize<ProjectManifest>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            if (manifest == null) 
-            {
-                _logService.Error("Failed to deserialize manifest.json");
-                return false;
-            }
-
-            // B8: Deep-clone packages to avoid mutating the deserialized manifest in memory
-            var resolvedPackages = manifest.Packages?.Select(r => new PackageRequirement 
-            { 
-                Id = r.Id, 
-                Url = r.Url, 
-                Version = r.Version 
-            }).ToList() ?? new List<PackageRequirement>();
-
-            var resolver = new PackageResolver(_logService);
-
-            foreach (var req in resolvedPackages)
-            {
-                if (string.IsNullOrEmpty(req.Url)) continue;
-
-                if (req.Url.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
-                {
-                    string sourcePath = Uri.UnescapeDataString(new Uri(req.Url).LocalPath);
-                    string targetPath = Path.Combine(localDir, req.Id);
-                    
-                    // Import if it doesn't exist locally
-                    if (!Directory.Exists(targetPath))
-                    {
-                        if (Directory.Exists(sourcePath))
-                        {
-                            _logService.Info($"Importing local package '{req.Id}' from {sourcePath} to {targetPath}");
-                            CopyDirectory(sourcePath, targetPath, true);
-                        }
-                        else 
-                        {
-                            _logService.Warning($"Package '{req.Id}' could not be imported. Directory not found: {sourcePath}");
-                        }
-                    }
-
-                    // Rewrite URL to target the now imported/existent directory
-                    req.Url = new Uri(targetPath).AbsoluteUri;
-                }
-                else if (req.Url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-                {
-                    _logService.Info($"Downloading remote package '{req.Id}' into .Cache...");
-                    string resolvedPath = await resolver.ResolveAsync(req.Id, req.Url, cacheDir);
-                    req.Url = new Uri(resolvedPath).AbsoluteUri;
-                }
-            }
-
-            // Generate synthetic resolved manifest for ArisenBuildTool mapping
-            // B8: Use the resolved (cloned) packages, not the original manifest
-            var resolvedManifest = new ProjectManifest
-            {
-                Name = manifest.Name,
-                EngineVersion = manifest.EngineVersion,
-                                Packages = resolvedPackages,
-                Profiles = manifest.Profiles
-            };
-            string resolvedManifestPath = Path.Combine(projectDir, "manifest.resolved.json");
-            File.WriteAllText(resolvedManifestPath, JsonSerializer.Serialize(resolvedManifest, new JsonSerializerOptions { WriteIndented = true }));
-
             string profile = string.IsNullOrWhiteSpace(project.SelectedProfile) ? "Development" : project.SelectedProfile;
             string config = string.IsNullOrWhiteSpace(project.SelectedConfiguration) ? "Debug" : project.SelectedConfiguration;
 
-            // 2. Execute ArisenBuildTool validation + out-of-source generation
+            _logService.Info("Using workspace manifest.json for package resolution.");
+
+            // 1. Execute ArisenBuildTool validation + out-of-source generation
             string buildToolExecutable = Path.Combine(engine.InstallPath, "External", "ArisenBuildTool", "bin", "Debug", "net9.0", "ArisenBuildTool.dll");
             if (!File.Exists(buildToolExecutable))
             {
@@ -418,20 +348,20 @@ public class ProjectService
             string buildToolProject = Path.Combine(engine.InstallPath, "External", "ArisenBuildTool", "ArisenBuildTool.csproj");
 
             _logService.Info("Validating workspace package graph with ArisenBuildTool...");
-            string validateArgs = $"validate --manifest \"{resolvedManifestPath}\" --engine \"{engine.InstallPath}\" --profile \"{profile}\"";
+            string validateArgs = $"validate --manifest \"{manifestPath}\" --engine \"{engine.InstallPath}\" --profile \"{profile}\"";
             if (!await RunBuildToolAsync(buildToolExecutable, buildToolProject, validateArgs, engine.InstallPath, TimeSpan.FromSeconds(60)))
             {
                 return false;
             }
 
             _logService.Info("Generating workspace files with ArisenBuildTool...");
-            string generateArgs = $"generate --manifest \"{resolvedManifestPath}\" --engine \"{engine.InstallPath}\" --profile \"{profile}\"";
+            string generateArgs = $"generate --manifest \"{manifestPath}\" --engine \"{engine.InstallPath}\" --profile \"{profile}\"";
             if (!await RunBuildToolAsync(buildToolExecutable, buildToolProject, generateArgs, engine.InstallPath, TimeSpan.FromSeconds(60)))
             {
                 return false;
             }
 
-            // 3. Launch the Workspace Stub natively from generated isolated bin folder
+            // 2. Launch the Workspace Stub natively from generated isolated bin folder
             _logService.Info($"Bootstrapping target: {profile} [{config}]...");
 
             string binDir = Path.Combine(projectDir, ".arisen", "bin", profile, config);
