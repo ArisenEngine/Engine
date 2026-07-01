@@ -301,7 +301,8 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
 - [x] Show missing/cyclic/invalid package errors.
   - Graph refresh uses the build-tool validation path and surfaces captured build-tool output when validation fails.
 - [x] Show service provides/requires health.
-- [ ] Allow enabling/disabling packages per profile.
+- [x] Allow enabling/disabling packages per profile.
+  - Profiles tab exposes installed packages as profile toggles and saves enabled packages back to `Profiles[*].Packages`.
 - [ ] Allow adding local packages through templates.
 - [ ] Allow adding registry/cache packages once registry support exists.
 - [ ] Add profile selector: Development / Production / testing profiles.
