@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using ArisenLauncher.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -90,20 +91,65 @@ public partial class PackageManagerViewModel
     private void PopulateProfilePackageOptions(WorkspaceProfileViewModel profile, HashSet<string> enabledPackageIds)
     {
         profile.PackageOptions.Clear();
-        foreach (var package in Packages.OrderBy(x => x.Id, StringComparer.OrdinalIgnoreCase))
+
+        foreach (var package in EnumerateProfilePackageOptions(profile, enabledPackageIds))
         {
-            profile.PackageOptions.Add(new ProfilePackageOptionViewModel
-            {
-                Id = package.Id,
-                DisplayName = string.IsNullOrWhiteSpace(package.DisplayName) ? package.Id : package.DisplayName,
-                Version = package.Version,
-                Url = package.Url,
-                Type = package.Type,
-                IsEnabled = enabledPackageIds.Contains(package.Id)
-            });
+            profile.PackageOptions.Add(package);
         }
 
         SyncProfileNodesFromOptions(profile);
+    }
+
+    private IEnumerable<ProfilePackageOptionViewModel> EnumerateProfilePackageOptions(WorkspaceProfileViewModel profile, HashSet<string> enabledPackageIds)
+    {
+        var basePackageIds = GetBasePackageIds();
+        var options = new Dictionary<string, ProfilePackageOptionViewModel>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var req in profile.Nodes)
+        {
+            if (string.IsNullOrWhiteSpace(req.Id) || basePackageIds.Contains(req.Id))
+                continue;
+
+            options[req.Id] = new ProfilePackageOptionViewModel
+            {
+                Id = req.Id,
+                DisplayName = string.IsNullOrWhiteSpace(req.DisplayName) ? req.Id : req.DisplayName,
+                Version = req.Version,
+                Url = req.Url,
+                Type = req.Type,
+                IsEnabled = enabledPackageIds.Contains(req.Id)
+            };
+        }
+
+        string projectDir = Path.GetDirectoryName(_project.ProjectPath)!;
+        string localDir = Path.Combine(projectDir, "Local");
+        if (Directory.Exists(localDir))
+        {
+            foreach (var packageDir in Directory.EnumerateDirectories(localDir))
+            {
+                string packageJson = Path.Combine(packageDir, "package.json");
+                var packageJsonManifest = ParsePackageManifest(packageJson);
+                string id = string.IsNullOrWhiteSpace(packageJsonManifest?.Id)
+                    ? Path.GetFileName(packageDir)
+                    : packageJsonManifest!.Id;
+
+                if (string.IsNullOrWhiteSpace(id) || basePackageIds.Contains(id))
+                    continue;
+
+                string relativePath = Path.GetRelativePath(projectDir, packageDir).Replace('\\', '/');
+                options[id] = new ProfilePackageOptionViewModel
+                {
+                    Id = id,
+                    DisplayName = string.IsNullOrWhiteSpace(packageJsonManifest?.Name) ? id : packageJsonManifest!.Name,
+                    Version = packageJsonManifest?.Version ?? string.Empty,
+                    Url = $"file://{relativePath}",
+                    Type = packageJsonManifest?.Type ?? "managed",
+                    IsEnabled = enabledPackageIds.Contains(id)
+                };
+            }
+        }
+
+        return options.Values.OrderBy(x => x.Id, StringComparer.OrdinalIgnoreCase);
     }
 
     private void RefreshProfilePackageOptions()
@@ -120,18 +166,49 @@ public partial class PackageManagerViewModel
         }
     }
 
-    private static void SyncProfileNodesFromOptions(WorkspaceProfileViewModel profile)
+    private void SyncProfileNodesFromOptions(WorkspaceProfileViewModel profile)
     {
-        profile.Nodes.Clear();
-        foreach (var option in profile.PackageOptions.Where(x => x.IsEnabled).OrderBy(x => x.Id, StringComparer.OrdinalIgnoreCase))
+        var basePackageIds = GetBasePackageIds();
+        var previousNodes = profile.Nodes.ToList();
+        var optionIds = profile.PackageOptions.Select(x => x.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var nextNodes = new Dictionary<string, PackageRequirementViewModel>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var node in previousNodes)
         {
-            profile.Nodes.Add(new PackageRequirementViewModel
+            if (string.IsNullOrWhiteSpace(node.Id) || basePackageIds.Contains(node.Id) || optionIds.Contains(node.Id))
+                continue;
+
+            nextNodes[node.Id] = node;
+        }
+
+        foreach (var option in profile.PackageOptions.Where(x => x.IsEnabled))
+        {
+            if (string.IsNullOrWhiteSpace(option.Id) || basePackageIds.Contains(option.Id))
+                continue;
+
+            nextNodes[option.Id] = new PackageRequirementViewModel
             {
                 Id = option.Id,
                 Url = option.Url,
-                Version = option.Version
-            });
+                Version = option.Version,
+                DisplayName = option.DisplayName,
+                Type = option.Type
+            };
         }
+
+        profile.Nodes.Clear();
+        foreach (var node in nextNodes.Values.OrderBy(x => x.Id, StringComparer.OrdinalIgnoreCase))
+        {
+            profile.Nodes.Add(node);
+        }
+    }
+
+    private HashSet<string> GetBasePackageIds()
+    {
+        return Packages
+            .Select(x => x.Id)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 }
 

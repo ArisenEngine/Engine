@@ -39,18 +39,25 @@ public partial class PackageManagerViewModel : ObservableObject
 
     [ObservableProperty] private bool _isGraphLoading;
     [ObservableProperty] private bool _isGeneratingProjects;
+    [ObservableProperty] private bool _isValidatingProfile;
     [ObservableProperty] private string _selectedGraphProfile = "Development";
     [ObservableProperty] private string _graphStatus = "Package graph has not been refreshed yet.";
     [ObservableProperty] private string _graphError = string.Empty;
     [ObservableProperty] private string _generateStatus = string.Empty;
     [ObservableProperty] private string _generateError = string.Empty;
+    [ObservableProperty] private string _validationStatus = string.Empty;
+    [ObservableProperty] private string _validationError = string.Empty;
 
     partial void OnGraphErrorChanged(string value) => OnPropertyChanged(nameof(HasGraphError));
     partial void OnGenerateErrorChanged(string value) => OnPropertyChanged(nameof(HasGenerateError));
     partial void OnGenerateStatusChanged(string value) => OnPropertyChanged(nameof(HasGenerateStatus));
+    partial void OnValidationErrorChanged(string value) => OnPropertyChanged(nameof(HasValidationError));
+    partial void OnValidationStatusChanged(string value) => OnPropertyChanged(nameof(HasValidationStatus));
     public bool HasGraphError => !string.IsNullOrEmpty(GraphError);
     public bool HasGenerateError => !string.IsNullOrEmpty(GenerateError);
     public bool HasGenerateStatus => !string.IsNullOrEmpty(GenerateStatus);
+    public bool HasValidationError => !string.IsNullOrEmpty(ValidationError);
+    public bool HasValidationStatus => !string.IsNullOrEmpty(ValidationStatus);
     public bool HasGraphResult => PackageGraphPackages.Count > 0;
 
     public ObservableCollection<string> GraphProfiles { get; } = new();
@@ -362,17 +369,21 @@ public partial class PackageManagerViewModel : ObservableObject
         foreach (var profile in Profiles)
         {
             var def = new ProfileDefinition { IsEditor = profile.IsEditor };
-            var enabledOptions = profile.PackageOptions.Where(x => x.IsEnabled).OrderBy(x => x.Id, StringComparer.OrdinalIgnoreCase).ToList();
-            foreach (var option in enabledOptions)
+            SyncProfileNodesFromOptions(profile);
+
+            foreach (var package in profile.Nodes.OrderBy(x => x.Id, StringComparer.OrdinalIgnoreCase))
             {
+                if (string.IsNullOrWhiteSpace(package.Id))
+                    continue;
+
                 def.Packages.Add(new PackageRequirement
                 {
-                    Id = option.Id,
-                    Url = string.IsNullOrEmpty(option.Url) ? null : option.Url,
-                    Version = string.IsNullOrEmpty(option.Version) ? null : option.Version
+                    Id = package.Id,
+                    Url = string.IsNullOrEmpty(package.Url) ? null : package.Url,
+                    Version = string.IsNullOrEmpty(package.Version) ? null : package.Version
                 });
             }
-            SyncProfilePackages(profile);
+
             Manifest.Profiles[profile.Name] = def;
         }
 
@@ -534,6 +545,61 @@ public partial class PackageManagerViewModel : ObservableObject
         finally
         {
             IsGeneratingProjects = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ValidateProfile()
+    {
+        ValidationError = string.Empty;
+        ValidationStatus = "Validating profile...";
+
+        if (_engine == null)
+        {
+            ValidationError = "Select an engine version in the launcher before validating a profile.";
+            ValidationStatus = string.Empty;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(SelectedGraphProfile))
+        {
+            ValidationError = "Select a workspace profile before validating.";
+            ValidationStatus = string.Empty;
+            return;
+        }
+
+        if (!File.Exists(_manifestPath))
+        {
+            ValidationError = $"Workspace manifest not found: {_manifestPath}";
+            ValidationStatus = string.Empty;
+            return;
+        }
+
+        IsValidatingProfile = true;
+        try
+        {
+            SaveManifest();
+
+            string args = $"validate --manifest \"{_manifestPath}\" --engine \"{_engine.InstallPath}\" --profile \"{SelectedGraphProfile}\"";
+            var result = await RunBuildToolCaptureAsync(args, _engine.InstallPath, TimeSpan.FromSeconds(60));
+
+            if (!result.Succeeded)
+            {
+                ValidationError = BuildToolOutputToMessage(result);
+                ValidationStatus = string.Empty;
+                return;
+            }
+
+            ValidationStatus = $"Profile {SelectedGraphProfile} is valid.";
+        }
+        catch (Exception ex)
+        {
+            ValidationError = $"Failed to validate profile: {ex.Message}";
+            ValidationStatus = string.Empty;
+        }
+        finally
+        {
+            IsValidatingProfile = false;
         }
     }
 
