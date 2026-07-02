@@ -17,8 +17,13 @@ public readonly record struct WindowCreateInfo(
     int Height,
     bool Visible = true);
 
+/// <summary>
+/// Native window/surface information used by runtime RHI backends.
+/// NativeSurfaceId is an opaque provider-owned key; value 0 can be valid.
+/// </summary>
 public readonly record struct WindowSurfaceInfo(
     IntPtr NativeHandle,
+    uint NativeSurfaceId,
     int Width,
     int Height,
     float DpiScale,
