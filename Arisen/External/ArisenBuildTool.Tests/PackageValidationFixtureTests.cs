@@ -1,6 +1,7 @@
 using System.Text.Json;
 using ArisenBuildTool.Models;
 using ArisenBuildTool.Services;
+using ArisenBuildTool.Utils;
 using Xunit;
 
 namespace ArisenBuildTool.Tests;
@@ -21,6 +22,93 @@ public sealed class PackageValidationFixtureTests
 
         Assert.True(result.Success, string.Join(Environment.NewLine, result.Errors));
         Assert.Equal(new[] { "com.test.foundation", "com.test.app" }, result.SortedPackages.Select(package => package.Manifest.Id));
+    }
+
+    [Fact]
+    public void WorkspaceManifestParserAllowsCommentsAndTrailingCommas()
+    {
+        var manifest = ManifestJson.Deserialize<ProjectManifest>(
+            """
+            {
+              // Human-authored workspace manifest comments are allowed.
+              "Name": "JsoncFixture",
+              "EngineVersion": "Current",
+              "Packages": [
+                {
+                  "Id": "com.test.app",
+                  "Url": "file://Local/com.test.app",
+                  "Version": "1.0.0",
+                },
+              ],
+              "Profiles": {
+                "Development": {
+                  "Packages": [],
+                },
+              },
+            }
+            """);
+
+        Assert.NotNull(manifest);
+        Assert.Equal("JsoncFixture", manifest!.Name);
+        Assert.Equal("com.test.app", manifest.Packages.Single().Id);
+    }
+
+    [Fact]
+    public void WorkspaceManifestParserRejectsFullJson5UnquotedKeys()
+    {
+        Assert.Throws<JsonException>(() => ManifestJson.Deserialize<ProjectManifest>(
+            """
+            {
+              Name: "Json5Fixture",
+              EngineVersion: "Current",
+              Packages: [],
+            }
+            """));
+    }
+
+    [Fact]
+    public void PackageManifestAllowsCommentsAndTrailingCommas()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddRawPackageJson(
+            "com.test.app",
+            """
+            {
+              // Human-authored package manifest comments are allowed.
+              "id": "com.test.app",
+              "name": "Commented Package",
+              "version": "1.0.0",
+              "layer": "user",
+              "dependencies": {
+              },
+            }
+            """);
+
+        var result = workspace.Validate("com.test.app");
+
+        Assert.True(result.Success, string.Join(Environment.NewLine, result.Errors));
+        Assert.Equal("Commented Package", result.PackageMap["com.test.app"].Manifest.Name);
+    }
+
+    [Fact]
+    public void PackageManifestRejectsFullJson5UnquotedKeys()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddRawPackageJson(
+            "com.test.app",
+            """
+            {
+              id: "com.test.app",
+              name: "Json5 Package",
+              version: "1.0.0",
+              layer: "user",
+            }
+            """);
+
+        var result = workspace.Validate("com.test.app");
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error => error.Contains("Failed to parse package", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -416,6 +504,13 @@ public sealed class PackageValidationFixtureTests
             string packageDir = Path.Combine(LocalPath, id);
             Directory.CreateDirectory(packageDir);
             File.WriteAllText(Path.Combine(packageDir, "package.json"), JsonSerializer.Serialize(manifest, s_JsonOptions));
+        }
+
+        public void AddRawPackageJson(string id, string json)
+        {
+            string packageDir = Path.Combine(LocalPath, id);
+            Directory.CreateDirectory(packageDir);
+            File.WriteAllText(Path.Combine(packageDir, "package.json"), json);
         }
 
         private static void WritePackage(

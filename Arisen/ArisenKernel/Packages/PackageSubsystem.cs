@@ -189,16 +189,13 @@ public class PackageSubsystem : IEngineSubsystem
     {
         try
         {
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            string json = File.ReadAllText(path);
-            var manifest = JsonSerializer.Deserialize<PackageManifest>(json, options);
+            var manifest = ManifestJson.DeserializeFile<PackageManifest>(path);
             if (manifest == null) return null;
 
             string generatedPath = Path.Combine(Path.GetDirectoryName(path)!, "package.generated.json");
             if (File.Exists(generatedPath))
             {
-                string generatedJson = File.ReadAllText(generatedPath);
-                var generatedManifest = JsonSerializer.Deserialize<PackageManifest>(generatedJson, options);
+                var generatedManifest = ManifestJson.DeserializeFile<PackageManifest>(generatedPath);
                 if (generatedManifest != null)
                 {
                     MergeGeneratedManifest(manifest, generatedManifest);

@@ -41,8 +41,7 @@ public class ProjectService
                 {
                     try
                     {
-                        string manifestJson = File.ReadAllText(manifestPath);
-                        var manifest = JsonSerializer.Deserialize<ProjectManifest>(manifestJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        var manifest = ManifestJson.DeserializeFile<ProjectManifest>(manifestPath);
                         if (manifest?.Profiles != null)
                         {
                             metadata.AvailableProfiles.Clear();
@@ -125,16 +124,21 @@ public class ProjectService
             string userPkgPath = Path.Combine(folderPath, "Local", userPkgId);
             Directory.CreateDirectory(userPkgPath);
 
-            var defaultPkg = new PackageManifest
+            string packageJson = $$"""
             {
-                Id = userPkgId,
-                Name = $"{name} Logic",
-                Version = "1.0.0",
-                Description = "Default project game assembly",
-                Type = "managed",
-                Dependencies = new Dictionary<string, string>()
-            };
-            File.WriteAllText(Path.Combine(userPkgPath, "package.json"), JsonSerializer.Serialize(defaultPkg, new JsonSerializerOptions { WriteIndented = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull }));
+              // Human-authored package identity. Keep id/version stable because workspace manifests and locks refer to them.
+              "id": {{ToJsonString(userPkgId)}},
+              "name": {{ToJsonString($"{name} Logic")}},
+              "version": "1.0.0",
+              "layer": "user",
+              "type": "managed",
+              "description": "Default project game assembly",
+
+              // Add explicit package dependencies here as this project starts using engine packages.
+              "dependencies": {}
+            }
+            """;
+            File.WriteAllText(Path.Combine(userPkgPath, "package.json"), packageJson);
 
             // Provide an immediate kernel injection point for the user's game package.
             string safeNamespace = $"ArisenGame.{SanitizeCSharpIdentifier(name)}";
@@ -161,26 +165,34 @@ public class ProjectService
                 """);
 
             string manifestFile = Path.Combine(folderPath, "manifest.json");
-            var manifest = new ProjectManifest
+            string manifestJson = $$"""
             {
-                Name = name,
-                Packages = new List<PackageRequirement>
+              // Workspace display name and engine compatibility selector.
+              "Name": {{ToJsonString(name)}},
+              "EngineVersion": "Current",
+
+              // Base packages are loaded for every profile.
+              "Packages": [
                 {
-                    new PackageRequirement { Id = userPkgId, Url = $"file://Local/{userPkgId}", Version = "1.0.0" }
-                },
-                Profiles = new Dictionary<string, ProfileDefinition>
-                {
-                    {
-                        "Development",
-                        new ProfileDefinition { IsEditor = true }
-                    },
-                    {
-                        "Production",
-                        new ProfileDefinition { IsEditor = false }
-                    }
+                  "Id": {{ToJsonString(userPkgId)}},
+                  "Url": {{ToJsonString($"file://Local/{userPkgId}")}},
+                  "Version": "1.0.0"
                 }
-            };
-            string manifestJson = JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull });
+              ],
+
+              // Profiles append packages for a launch mode. Development usually includes editor tooling.
+              "Profiles": {
+                "Development": {
+                  "IsEditor": true,
+                  "Packages": []
+                },
+                "Production": {
+                  "IsEditor": false,
+                  "Packages": []
+                }
+              }
+            }
+            """;
             File.WriteAllText(manifestFile, manifestJson);
 
             string gitignoreFile = Path.Combine(folderPath, ".gitignore");
@@ -221,6 +233,11 @@ public class ProjectService
         var chars = value.Where(char.IsLetterOrDigit).ToArray();
         string result = chars.Length == 0 ? "Project" : new string(chars);
         return char.IsDigit(result[0]) ? $"Project{result}" : result;
+    }
+
+    private static string ToJsonString(string value)
+    {
+        return JsonSerializer.Serialize(value);
     }
 
     private void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
@@ -335,8 +352,7 @@ public class ProjectService
             string config = string.IsNullOrWhiteSpace(project.SelectedConfiguration) ? "Debug" : project.SelectedConfiguration;
 
             _logService.Info("Using workspace manifest.json for package resolution.");
-            string json = File.ReadAllText(manifestPath);
-            var manifest = JsonSerializer.Deserialize<ProjectManifest>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var manifest = ManifestJson.DeserializeFile<ProjectManifest>(manifestPath);
             if (manifest == null)
             {
                 _logService.Error("Failed to deserialize manifest.json");

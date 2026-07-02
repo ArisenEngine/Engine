@@ -85,7 +85,7 @@ public static class PackageRegistryIndexService
             throw new InvalidDataException($"Package archive '{archivePath}' does not contain package.json at the zip root.");
 
         using var stream = entry.Open();
-        var manifest = JsonSerializer.Deserialize<PackageManifest>(stream, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var manifest = Utils.ManifestJson.Deserialize<PackageManifest>(stream);
         if (manifest == null)
             throw new InvalidDataException($"Package archive '{archivePath}' has an invalid package.json.");
 

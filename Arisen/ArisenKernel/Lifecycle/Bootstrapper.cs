@@ -36,7 +36,7 @@ public static class EngineBootstrapper
         {
             try
             {
-                using var configDoc = JsonDocument.Parse(File.ReadAllText(configPath));
+                using var configDoc = JsonDocument.Parse(File.ReadAllText(configPath), ManifestJson.DocumentOptions);
                 var root = configDoc.RootElement;
                 if (!profileSpecified && root.TryGetProperty("Profile", out var pProp)) profile = pProp.GetString() ?? profile;
                 if (!workspaceSpecified && root.TryGetProperty("Workspace", out var wProp)) workspacePath = wProp.GetString() ?? workspacePath;
@@ -72,7 +72,7 @@ public static class EngineBootstrapper
         }
 
         KernelLog.InfoFormat("[Host] Reading Workspace Manifest: {0}", manifestPath);
-        var manifestJson = JsonDocument.Parse(File.ReadAllText(manifestPath));
+        var manifestJson = ManifestJson.ParseDocumentFile(manifestPath);
         var packagesElement = manifestJson.RootElement.GetProperty("Packages");
         
         List<string> packageUrls = new();
@@ -185,7 +185,7 @@ public static class EngineBootstrapper
         try
         {
             KernelLog.InfoFormat("[Host] Found Resolved Manifest: {0}. Using build-time topological sort.", resolvedManifestPath);
-            using var resolvedJson = JsonDocument.Parse(File.ReadAllText(resolvedManifestPath));
+            using var resolvedJson = JsonDocument.Parse(File.ReadAllText(resolvedManifestPath), ManifestJson.DocumentOptions);
             var root = resolvedJson.RootElement;
 
             if (root.TryGetPropertyIC("Profile", out var resolvedProfileElement))

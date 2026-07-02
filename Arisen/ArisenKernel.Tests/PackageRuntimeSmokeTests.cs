@@ -44,6 +44,40 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
     }
 
     [Fact]
+    public void EngineKernelLoadsPackageManifestWithCommentsAndTrailingCommas()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string packagePath = workspace.AddRawPackageJson(
+            "com.test.runtime.jsonc",
+            $$"""
+            {
+              // Runtime package manifests accept comments.
+              "id": "com.test.runtime.jsonc",
+              "name": "Jsonc Runtime Package",
+              "version": "1.0.0",
+              "type": "managed",
+              "entry": {
+                "assembly": "{{typeof(PackageRuntimeSmokeTests).Assembly.GetName().Name}}.dll",
+                "class": "{{typeof(ProviderPackageEntry).FullName}}",
+              },
+              "services": {
+                "provides": [
+                  "{{typeof(IRuntimeSmokeService).FullName}}",
+                ],
+              },
+            }
+            """);
+
+        EngineKernel.Instance.Initialize(new EngineConfig
+        {
+            PackageUrls = new List<string> { packagePath }
+        });
+
+        Assert.Contains("load:provider", TestPackageEvents.Events);
+        Assert.True(EngineKernel.Instance.Services.TryGetService<IRuntimeSmokeService>(out _));
+    }
+
+    [Fact]
     public void EngineKernelShutdownUnloadsPackageEntriesInReverseMountOrder()
     {
         using var workspace = RuntimePackageWorkspace.Create();
@@ -181,6 +215,14 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
             if (nativeRuntimes is { Count: > 0 }) manifest["nativeRuntimes"] = nativeRuntimes;
 
             File.WriteAllText(Path.Combine(packageDir, "package.json"), JsonSerializer.Serialize(manifest, s_JsonOptions));
+            return packageDir;
+        }
+
+        public string AddRawPackageJson(string id, string json)
+        {
+            string packageDir = Path.Combine(m_Root, id);
+            Directory.CreateDirectory(packageDir);
+            File.WriteAllText(Path.Combine(packageDir, "package.json"), json);
             return packageDir;
         }
 
