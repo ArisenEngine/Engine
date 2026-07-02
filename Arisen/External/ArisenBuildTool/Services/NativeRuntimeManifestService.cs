@@ -21,7 +21,9 @@ public sealed record NativeRuntimeDescriptor(
     NativeRuntimeSource Source,
     bool Required,
     IReadOnlyList<string> Configurations,
-    IReadOnlyList<string> Exports);
+    IReadOnlyList<string> Exports,
+    string? InitExport,
+    string? ShutdownExport);
 
 public static class NativeRuntimeManifestService
 {
@@ -92,13 +94,17 @@ public static class NativeRuntimeManifestService
             NativeRuntimeSource.BuildOutput,
             Required: true,
             Configurations: Array.Empty<string>(),
-            Exports: Array.Empty<string>());
+            Exports: Array.Empty<string>(),
+            InitExport: null,
+            ShutdownExport: null);
 
         string? path = null;
         NativeRuntimeSource? source = null;
         bool required = true;
         var configurations = Array.Empty<string>();
         var exports = Array.Empty<string>();
+        string? initExport = null;
+        string? shutdownExport = null;
 
         if (element.ValueKind == JsonValueKind.String)
         {
@@ -127,6 +133,8 @@ public static class NativeRuntimeManifestService
 
             configurations = ReadStringArray(element, "configurations", packageId, runtimeIdentifier, index, errors);
             exports = ReadStringArray(element, "exports", packageId, runtimeIdentifier, index, errors);
+            initExport = ReadOptionalExportName(element, "initExport", packageId, runtimeIdentifier, index, errors);
+            shutdownExport = ReadOptionalExportName(element, "shutdownExport", packageId, runtimeIdentifier, index, errors);
         }
         else
         {
@@ -153,7 +161,9 @@ public static class NativeRuntimeManifestService
             source.Value,
             required,
             configurations,
-            exports);
+            exports,
+            initExport,
+            shutdownExport);
         return true;
     }
 
@@ -188,7 +198,7 @@ public static class NativeRuntimeManifestService
             return;
         }
 
-        if (descriptor.Exports.Count > 0)
+        if (GetExpectedExports(descriptor).Count > 0)
         {
             ValidateExports(package.Manifest.Id, descriptor, sourcePath, errors);
         }
@@ -205,7 +215,7 @@ public static class NativeRuntimeManifestService
         try
         {
             var exports = ReadExportNames(sourcePath);
-            foreach (var expectedExport in descriptor.Exports)
+            foreach (var expectedExport in GetExpectedExports(descriptor))
             {
                 if (!exports.Contains(expectedExport))
                 {
@@ -217,6 +227,14 @@ public static class NativeRuntimeManifestService
         {
             errors?.Add($"Package '{packageId}' native runtime '{descriptor.Path}' export validation failed: {ex.Message}");
         }
+    }
+
+    private static IReadOnlyList<string> GetExpectedExports(NativeRuntimeDescriptor descriptor)
+    {
+        var expectedExports = new HashSet<string>(descriptor.Exports, StringComparer.Ordinal);
+        if (!string.IsNullOrWhiteSpace(descriptor.InitExport)) expectedExports.Add(descriptor.InitExport);
+        if (!string.IsNullOrWhiteSpace(descriptor.ShutdownExport)) expectedExports.Add(descriptor.ShutdownExport);
+        return expectedExports.OrderBy(x => x, StringComparer.Ordinal).ToArray();
     }
 
     private static HashSet<string> ReadExportNames(string path)
@@ -354,6 +372,25 @@ public static class NativeRuntimeManifestService
         return element.TryGetProperty(propertyName, out var property) && property.ValueKind == JsonValueKind.String
             ? property.GetString()
             : null;
+    }
+
+    private static string? ReadOptionalExportName(JsonElement element, string propertyName, string packageId, string runtimeIdentifier, int index, IList<string>? errors)
+    {
+        if (!element.TryGetProperty(propertyName, out var property)) return null;
+        if (property.ValueKind != JsonValueKind.String)
+        {
+            errors?.Add($"Package '{packageId}' nativeRuntimes['{runtimeIdentifier}'][{index}] has invalid '{propertyName}'. Expected string.");
+            return null;
+        }
+
+        string? value = property.GetString();
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            errors?.Add($"Package '{packageId}' nativeRuntimes['{runtimeIdentifier}'][{index}] has an empty {propertyName}.");
+            return null;
+        }
+
+        return value;
     }
 
     private static string[] ReadStringArray(JsonElement element, string propertyName, string packageId, string runtimeIdentifier, int index, IList<string>? errors)

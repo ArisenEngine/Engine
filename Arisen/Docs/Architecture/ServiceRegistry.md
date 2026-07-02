@@ -13,7 +13,7 @@ To solve this, Arisen Engine relies entirely on a **Service Locator Pattern** dr
 
 ## 1. The Core Philosophy
 
-Packages communicate explicitly through abstract C# interfaces. These interfaces are defined in ultra-lightweight, foundation packages (like `com.arisen.core` or a dedicated `ArisenKernel.Contracts` assembly).
+Packages communicate explicitly through abstract C# interfaces. Cross-cutting engine contracts currently live in `ArisenKernel.Contracts`; a dedicated contract package should only be introduced when a contract family needs to version independently from the kernel.
 
 - **Providers**: Packages register concrete classes that implement `IService` contracts.
 - **Consumers**: Packages ask the Kernel for implementations of `IService` contracts.
@@ -29,7 +29,7 @@ The package tells the Kernel what interfaces it provides. The current service re
 ```json
 "services": {
   "provides": [
-    { "interface": "ArisenEngine.Core.RHI.IRHIDevice", "priority": 100, "capabilities": ["vulkan"] }
+    { "interface": "ArisenKernel.Contracts.IRHIDevice", "priority": 100, "capabilities": ["vulkan"] }
   ]
 }
 ```
@@ -59,7 +59,7 @@ When another package's `IEngineSubsystem` ticks and needs to draw something, it 
 ```json
 "services": {
   "requires": [
-    "ArisenEngine.Core.RHI.IRHIDevice"
+    "ArisenKernel.Contracts.IRHIDevice"
   ]
 }
 ```
@@ -102,13 +102,13 @@ The validator accepts both service declaration forms:
 ```json
 "services": {
   "provides": [
-    "ArisenEngine.Core.RHI.IRHIDevice",
-    { "interface": "ArisenEngine.Core.RHI.IRHIFactory", "priority": 100, "capabilities": ["vulkan"] }
+    "ArisenKernel.Contracts.IRHIDevice",
+    { "interface": "ArisenKernel.Contracts.IRHIFactory", "priority": 100, "capabilities": ["vulkan"] }
   ],
   "requires": [
-    "ArisenEngine.Core.RHI.IRHIDevice",
-    { "interface": "ArisenEngine.Core.RHI.IDebugCapture", "optional": true },
-    { "interface": "ArisenEngine.Core.RHI.ILateBoundDevice", "deferred": true }
+    "ArisenKernel.Contracts.IRHIDevice",
+    { "interface": "ArisenKernel.Contracts.IRHIBackend", "capabilities": ["vulkan"] },
+    { "interface": "ArisenKernel.Contracts.IDebugCapture", "optional": true }
   ]
 }
 ```
@@ -118,6 +118,7 @@ The validator accepts both service declaration forms:
 - malformed `services.provides` / `services.requires` entries are fatal,
 - empty service contract names are fatal,
 - unqualified service contract names without a namespace separator (`.`) are fatal,
+- `ArisenKernel.Contracts.*` names are validated against source files in `Arisen/ArisenKernel/Contracts`; unknown kernel contract names are fatal,
 - object-form `priority` must be an integer when present and is only valid in `services.provides`,
 - object-form `capabilities` must be an array of non-empty strings when present,
 - object-form `optional` is only valid in `services.requires`,

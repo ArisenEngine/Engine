@@ -16,8 +16,9 @@ Arisen Engine organizes its core packages into six logical layers to manage comp
 
 ### 1. Foundation (Lowest Layer)
 These packages form the absolute base of the engine.
--   **`com.arisen.core`**: Provides the base types and the core `ServiceRegistry`.
--   **`com.arisen.core.native`**: The monolithic C++ foundation, providing hardware abstraction (HAL) and low-level diagnostics.
+-   **`ArisenKernel.Contracts`**: Kernel-owned service contracts shared across packages, validated by `ArisenBuildTool`.
+-   **`com.arisen.core`**: Provides managed base types and package-level foundation services such as `ILogger` and `ICommandManager`.
+-   **`com.arisen.core.native`**: The monolithic C++ foundation payload for Foundation, HAL, Diagnostics, RHI base types, and Shader Compiler. It is exposed to packages through managed facade services rather than direct service registration from native code.
 -   **`com.arisen.dag`**: A generic graph-based execution system.
 -   **`com.arisen.taskgraph`**: The high-performance job system for all multi-threaded operations.
 -   **`com.arisen.platform.desktop`**: The desktop platform/window provider.

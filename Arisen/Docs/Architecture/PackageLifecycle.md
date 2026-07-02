@@ -18,8 +18,8 @@ Runtime package mounting follows this responsibility split:
 1. `EngineBootstrapper` resolves workspace root, profile, `manifest.json`, and preferably `manifest.resolved.json`.
 2. `EngineKernel.Initialize()` ensures `PackageSubsystem` exists.
 3. `EngineKernel` passes the already ordered package URL list to `PackageSubsystem.MountPackages()`.
-4. `PackageSubsystem` reads each `package.json`, loads the entry assembly if present, creates the entry class, calls `IPackageEntry.OnLoad(IServiceRegistry)`, validates declared service providers/requirements, and records `ArisenPackageInfo`.
-5. `PackageSubsystem.Shutdown()` calls `IPackageEntry.OnUnload(IServiceRegistry)` in reverse mount order.
+4. `PackageSubsystem` reads each `package.json`, loads the entry assembly if present, creates the entry class, calls `IPackageEntry.OnLoad(IServiceRegistry)`, invokes any declared native `initExport` hooks, validates declared service providers/requirements, and records `ArisenPackageInfo`.
+5. `PackageSubsystem.Shutdown()` calls `IPackageEntry.OnUnload(IServiceRegistry)` and any declared native `shutdownExport` hooks in reverse mount order.
 
 This avoids split-brain package state between bootstrapper, kernel, and package tracking UI. It also centralizes runtime service-contract validation so a package that declares non-deferred `services.provides` must actually register those services during `OnLoad()`, and all non-optional/non-deferred `services.requires` contracts must exist before subsystem initialization continues.
 
@@ -29,7 +29,7 @@ Runtime package lifecycle behavior is covered by `ArisenKernel.Tests`:
 dotnet test Arisen\ArisenKernel.Tests\ArisenKernel.Tests.csproj
 ```
 
-The tests create temporary package manifests, boot them through `EngineKernel.Initialize()`, verify package entry loading and service registration, and assert that shutdown unloads package entries in reverse mount order.
+The tests create temporary package manifests, boot them through `EngineKernel.Initialize()`, verify package entry loading and service registration, assert that shutdown unloads package entries in reverse mount order, and cover native lifecycle metadata failure behavior.
 
 ### Managed Assembly Load Context Policy
 

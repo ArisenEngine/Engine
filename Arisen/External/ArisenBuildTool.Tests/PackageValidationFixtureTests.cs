@@ -162,6 +162,25 @@ public sealed class PackageValidationFixtureTests
     }
 
     [Fact]
+    public void UnknownKernelServiceContractFailsValidation()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage(
+            "com.test.app",
+            layer: "user",
+            services: new
+            {
+                requires = new object[] { "ArisenKernel.Contracts.IMissingKernelContract" }
+            });
+
+        var result = workspace.Validate("com.test.app");
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error => error.Contains("unknown kernel service contract", StringComparison.OrdinalIgnoreCase)
+            && error.Contains("ArisenKernel.Contracts.IMissingKernelContract", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void DuplicatePackageIdWithConflictingMetadataFailsValidation()
     {
         using var workspace = ValidationWorkspace.Create();
@@ -267,6 +286,30 @@ public sealed class PackageValidationFixtureTests
         Assert.Contains(result.Errors, error => error.Contains("must also be declared in nativeRuntimes", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public void NativeRuntimeLifecycleExportMustBeNonEmptyString()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage(
+            "com.test.native",
+            layer: "driver",
+            type: "native",
+            nativeRuntimes: new Dictionary<string, object[]>
+            {
+                ["win-x64"] = new object[]
+                {
+                    new { path = "Native.Runtime.dll", initExport = "" },
+                    new { path = "Native.Runtime.dll", shutdownExport = 42 }
+                }
+            });
+
+        var result = workspace.Validate("com.test.native");
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error => error.Contains("empty initExport", StringComparison.Ordinal));
+        Assert.Contains(result.Errors, error => error.Contains("invalid 'shutdownExport'", StringComparison.Ordinal));
+    }
+
     private sealed class ValidationWorkspace : IDisposable
     {
         private static readonly JsonSerializerOptions s_JsonOptions = new()
@@ -280,9 +323,13 @@ public sealed class PackageValidationFixtureTests
         {
             m_Root = root;
             Directory.CreateDirectory(LocalPath);
+            Directory.CreateDirectory(KernelContractsPath);
+            File.WriteAllText(Path.Combine(KernelContractsPath, "IApplicationHost.cs"), "namespace ArisenKernel.Contracts; public interface IApplicationHost { }");
         }
 
         private string LocalPath => Path.Combine(m_Root, "Local");
+
+        private string KernelContractsPath => Path.Combine(m_Root, "ArisenKernel", "Contracts");
 
         public static ValidationWorkspace Create()
         {

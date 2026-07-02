@@ -108,8 +108,8 @@ If a manifest entry points at a remote source and a same-ID folder exists under 
 
 | Package ID | Layer | Duty |
 | :--- | :--- | :--- |
-| **`com.arisen.core`** | Foundation | Managed lifecycle, service registry abstractions, and base types. |
-| **`com.arisen.core.native`** | Foundation | Monolithic C++ payload (Foundation, HAL, Diagnostics, Shader Compiler). |
+| **`com.arisen.core`** | Foundation | Managed lifecycle, service registry abstractions, base types, and foundation services such as `ILogger` / `ICommandManager`. |
+| **`com.arisen.core.native`** | Foundation | Monolithic C++ payload (Foundation, HAL, Diagnostics, RHI base types, Shader Compiler) exposed through managed facade services. |
 | **`com.arisen.dag`** | Foundation | Generic Directed Acyclic Graph (DAG) system for data-driven execution logic. |
 | **`com.arisen.taskgraph`** | Foundation | High-performance, multi-threaded internal **Job System** for engine-wide concurrency. |
 | **`com.arisen.platform.desktop`** | Foundation | Desktop platform provider (Win32/X11 windowing, OS message loops). |
