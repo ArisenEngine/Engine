@@ -234,9 +234,7 @@ public partial class PackageManagerViewModel : ObservableObject
 
         try
         {
-            string json = File.ReadAllText(path);
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            return JsonSerializer.Deserialize<PackageJsonManifest>(json, options);
+            return ManifestJson.DeserializeFile<PackageJsonManifest>(path);
         }
         catch (Exception ex)
         {
@@ -286,7 +284,7 @@ public partial class PackageManagerViewModel : ObservableObject
             if (File.Exists(_manifestPath))
             {
                 string content = await File.ReadAllTextAsync(_manifestPath);
-                Manifest = JsonSerializer.Deserialize<ProjectManifest>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new ProjectManifest();
+                Manifest = ManifestJson.Deserialize<ProjectManifest>(content) ?? new ProjectManifest();
             }
 
             Packages.Clear();
@@ -1247,7 +1245,7 @@ public sealed class {{entryClassName}} : IPackageEntry
 
         try
         {
-            using var doc = JsonDocument.Parse(File.ReadAllText(packageJsonPath));
+            using var doc = ManifestJson.ParseDocumentFile(packageJsonPath);
             
             if (doc.RootElement.TryGetProperty("description", out var descProp) && descProp.ValueKind == JsonValueKind.String)
                 description = descProp.GetString() ?? string.Empty;
@@ -1463,7 +1461,7 @@ public sealed class {{entryClassName}} : IPackageEntry
             {
                 try
                 {
-                    using var doc = JsonDocument.Parse(File.ReadAllText(packageJsonPath));
+                    using var doc = ManifestJson.ParseDocumentFile(packageJsonPath);
                     string parsedId = string.Empty;
                     if (doc.RootElement.TryGetProperty("id", out var idProp) && idProp.ValueKind == JsonValueKind.String)
                         parsedId = idProp.GetString() ?? string.Empty;
@@ -1653,7 +1651,7 @@ public sealed class {{entryClassName}} : IPackageEntry
         {
             try
             {
-                using var doc = JsonDocument.Parse(File.ReadAllText(packageJsonPath));
+                using var doc = ManifestJson.ParseDocumentFile(packageJsonPath);
                 if (doc.RootElement.TryGetProperty("dependencies", out var depsProp) && depsProp.ValueKind == JsonValueKind.Object)
                 {
                     foreach (var dep in depsProp.EnumerateObject())

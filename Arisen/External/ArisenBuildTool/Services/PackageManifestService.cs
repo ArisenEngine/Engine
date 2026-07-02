@@ -9,11 +9,6 @@ namespace ArisenBuildTool.Services;
 
 public static class PackageManifestService
 {
-    private static readonly JsonSerializerOptions s_JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
-
     public static PackageManifest? ReadEffectiveManifest(string packageDir)
     {
         string packageJsonPath = Path.Combine(packageDir, "package.json");
@@ -34,8 +29,7 @@ public static class PackageManifestService
 
     public static PackageManifest? ReadManifestFile(string path)
     {
-        string json = File.ReadAllText(path);
-        return JsonSerializer.Deserialize<PackageManifest>(json, s_JsonOptions);
+        return Utils.ManifestJson.DeserializeFile<PackageManifest>(path);
     }
 
     private static void MergeGenerated(PackageManifest manifest, PackageManifest generated)

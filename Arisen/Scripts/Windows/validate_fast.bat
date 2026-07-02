@@ -1,5 +1,9 @@
 @echo off
-setlocal
+setlocal EnableExtensions
+
+set "ARISEN_NO_PAUSE="
+if /i "%~1"=="--no-pause" set "ARISEN_NO_PAUSE=1"
+if defined CI set "ARISEN_NO_PAUSE=1"
 
 set "SCRIPT_ROOT=%~dp0"
 for %%I in ("%SCRIPT_ROOT%..\..") do set "ENGINE_ROOT=%%~fI"
@@ -8,10 +12,12 @@ for %%I in ("%ENGINE_ROOT%\..") do set "REPO_ROOT=%%~fI"
 pushd "%REPO_ROOT%" >nul
 if errorlevel 1 (
     echo [ERROR] Failed to enter repository root: %REPO_ROOT%
-    exit /b 1
+    set "EXIT_CODE=1"
+    goto :finish_no_pop
 )
 
 echo [Arisen] Fast validation started.
+echo [Arisen] Repository root: %REPO_ROOT%
 
 call :run dotnet test "Arisen\External\ArisenBuildTool.Tests\ArisenBuildTool.Tests.csproj"
 if errorlevel 1 goto :fail
@@ -32,8 +38,8 @@ call :run dotnet run --project "Arisen\External\ArisenBuildTool\ArisenBuildTool.
 if errorlevel 1 goto :fail
 
 echo [Arisen] Fast validation succeeded.
-popd >nul
-exit /b 0
+set "EXIT_CODE=0"
+goto :finish
 
 :run
 echo.
@@ -43,10 +49,29 @@ if errorlevel 1 (
     echo [ERROR] Command failed: %*
     exit /b 1
 )
+echo [Arisen] Passed: %*
 exit /b 0
 
 :fail
-popd >nul
-exit /b 1
+set "EXIT_CODE=1"
+echo.
+echo [Arisen] Fast validation failed.
 
-pause
+:finish
+popd >nul
+
+:finish_no_pop
+echo.
+if "%EXIT_CODE%"=="0" (
+    echo [Arisen] RESULT: SUCCESS
+) else (
+    echo [Arisen] RESULT: FAILED
+)
+
+if not defined ARISEN_NO_PAUSE (
+    echo.
+    echo Press any key to close this validation window...
+    pause >nul
+)
+
+exit /b %EXIT_CODE%

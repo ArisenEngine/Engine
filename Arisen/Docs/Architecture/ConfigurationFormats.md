@@ -3,7 +3,37 @@
 **Status**: Draft / Active  
 **Module**: Entire Ecosystem (Launcher, Kernel, Build Tool)
 
-This document defines the strict `JSON` structural schemas for the core configuration files driving the Arisen Engine's package-centric architecture.
+This document defines the structural schemas for the core configuration files driving the Arisen Engine's package-centric architecture.
+
+## Manifest Syntax Policy
+
+Human-authored Arisen manifests use a conservative JSONC-compatible syntax:
+
+- `manifest.json`
+- `package.json`
+
+Tooling also accepts the same syntax for `package.generated.json` during local development/transition, although generated writers should normally emit strict JSON.
+
+Allowed authoring conveniences:
+
+- `// line comments`
+- `/* block comments */`
+- trailing commas in objects and arrays
+
+Not allowed:
+
+- unquoted object keys
+- single-quoted strings
+- hexadecimal numbers
+- other full JSON5-only syntax
+
+Generated distribution files remain strict JSON and should not contain comments:
+
+- `manifest.resolved.json`
+- `.arisen/package-lock.json`
+- registry `registry.json`
+
+The file extension remains `.json` for compatibility with existing tools and package conventions. Tooling reads authored files with comments/trailing commas enabled, but writers should emit strict JSON unless the file is an initial human-facing template.
 
 ## Canonical Casing
 

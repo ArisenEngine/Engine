@@ -1,5 +1,4 @@
 using System.IO;
-using System.Text.Json;
 using ArisenKernel.Packages;
 using ArisenKernel.Diagnostics;
 
@@ -37,9 +36,7 @@ public class ProjectSubsystem : IEngineSubsystem
                 return;
             }
 
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            string json = File.ReadAllText(manifestPath);
-            ActiveProject = JsonSerializer.Deserialize<ProjectManifest>(json, options);
+            ActiveProject = ManifestJson.DeserializeFile<ProjectManifest>(manifestPath);
             ProjectDir = absPath;
             KernelLog.Info($"[ProjectSubsystem] Unified Project Context Established: {ActiveProject?.Name} at {ProjectDir}");
         }

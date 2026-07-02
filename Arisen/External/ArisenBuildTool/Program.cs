@@ -612,8 +612,7 @@ class Program
 
         try
         {
-            string json = File.ReadAllText(manifestPath);
-            manifest = JsonSerializer.Deserialize<ProjectManifest>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            manifest = ManifestJson.DeserializeFile<ProjectManifest>(manifestPath);
             if (manifest == null) throw new Exception("Deserialization returned null.");
             return true;
         }
