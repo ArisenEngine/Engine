@@ -26,6 +26,84 @@ Packages are categorized into six layers based on their proximity to the Kernel 
 
 ---
 
+## Package Registry Source Format
+
+A package registry source is a static JSON index plus package archives. The initial format is intentionally CDN-friendly and can be served from any HTTP file host.
+
+Default index filename:
+
+```text
+registry.json
+```
+
+Index schema:
+
+```json
+{
+  "schemaVersion": 1,
+  "packages": [
+    {
+      "id": "com.example.inventory",
+      "version": "1.0.0",
+      "name": "com.example.inventory",
+      "description": "Inventory package",
+      "type": "managed",
+      "layer": "user",
+      "archive": {
+        "url": "https://packages.example.com/arisen/com.example.inventory-1.0.0.zip",
+        "sha256": "lowercase-hex-sha256",
+        "sizeBytes": 12345
+      }
+    }
+  ]
+}
+```
+
+Rules:
+
+- `schemaVersion` is currently `1`.
+- `packages` is sorted by package id, then version, for reproducible diffs.
+- `id` and `version` come from the archive root `package.json` and are required.
+- `archive.url` points at a package zip whose root contains `package.json`.
+- `archive.sha256` is the lowercase SHA-256 hash of the zip file.
+- `archive.sizeBytes` is the zip file size in bytes.
+- The index does not include a generation timestamp; publishing the same archives should produce identical JSON.
+
+The index can be generated from archives created by `ArisenBuildTool pack`:
+
+```bat
+ArisenBuildTool.exe registry-index --source ".arisen\Packages" --base-url "https://packages.example.com/arisen" --output ".arisen\Packages\registry.json"
+```
+
+Manifest support accepts two remote package forms:
+
+- direct package archive URL: `Url` points to a `.zip` and the archive is restored directly.
+- registry index URL: `Url` points to `registry.json`, `Id` names the package, and `Version` selects a package version from the index.
+
+Registry `Version` supports exact versions and these semantic range forms:
+
+- `1.2.3`
+- `>=1.2.0 <2.0.0`
+- `^1.2.3`
+- `~1.2.3`
+- `*`
+
+When a range matches multiple indexed package versions, the launcher selects the highest matching SemVer version. It verifies the downloaded archive against `archive.sha256`, extracts it into `.Cache/{packageId}`, and records the requested range plus the concrete `ResolvedVersion` in `.arisen/package-lock.json`. If the registry later offers a newer matching version, restore fails until the cached package and lock entry are removed, keeping range-based restores reproducible by default.
+
+The Package Manager UI can also inspect a registry URL before restore. The remote package flow lists package-version entries from `registry.json`; selecting one fills the manifest package `Id` and exact `Version` while keeping `Url` pointed at the registry index. A user may also type a supported range into `Version`; confirmation resolves it to the highest matching exact version.
+
+### Local Override Policy
+
+Package source selection is explicit and comes from the workspace manifest:
+
+- `Url: "file://..."` uses that local package path.
+- `Url: "https://.../registry.json"` or `Url: "https://.../package.zip"` uses `.Cache/{packageId}` after launcher restore.
+- An empty `Url` is a fallback lookup and may search `Local/{packageId}`, `.Cache/{packageId}`, then engine packages.
+
+If a manifest entry points at a remote source and a same-ID folder exists under `Local/`, the local folder is ignored. `ArisenBuildTool validate` warns about this so local source never silently shadows a reproducible registry/cache dependency. To intentionally override a registry package with local source, change the manifest entry to `file://Local/{packageId}`. The Package Manager exposes this as a `Use Local` action when a same-ID local package exists.
+
+---
+
 ## 🏗️ Core Package Directory
 
 | Package ID | Layer | Duty |

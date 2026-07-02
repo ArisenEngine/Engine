@@ -93,7 +93,7 @@ The canonical service declaration format is intentionally small:
 - service contract names must be fully qualified type names, not short names such as `"IApplicationHost"`;
 - object metadata:
   - `priority` integer is allowed on providers for future profile-driven provider selection;
-  - `capabilities` array of non-empty strings is allowed on providers/requirements for diagnostics and future matching;
+  - `capabilities` array of non-empty strings is allowed on providers/requirements; when a requirement lists capabilities, `ArisenBuildTool validate` requires a selected provider for the same interface to advertise all requested capabilities;
   - `optional: true` is valid on requirements and means missing providers produce warnings instead of errors;
   - `deferred: true` is valid on providers or requirements and means build-time provider validation still runs, but initial runtime registration checks are skipped.
 
@@ -122,7 +122,9 @@ The validator accepts both service declaration forms:
 - object-form `capabilities` must be an array of non-empty strings when present,
 - object-form `optional` is only valid in `services.requires`,
 - a required service with no selected provider package is fatal,
+- a required service with requested capabilities is fatal if the selected provider for that interface does not advertise those capabilities,
 - an optional service with no selected provider package logs a warning,
+- an optional service with requested capabilities logs a warning if the selected provider does not advertise those capabilities,
 - `deferred` service contracts still participate in build-time graph/provider validation but are not required to be registered during initial package mount,
 - duplicate selected providers are fatal. The current `IServiceRegistry` stores one active provider per contract and does not support automatic priority-based overrides.
 

@@ -61,7 +61,7 @@ Layer dependency policy:
 ## 🔗 The "Everything is a Package" Vision
 
 In Arisen, **no core system is hard-coded into the kernel**. This means:
--   **RHI Swapping**: If you want to use DirectX 12 instead of Vulkan, you simply replace `com.arisen.rhi.vulkan.native` with a `com.arisen.rhi.dx12.native` package. Because both provide the same `IRHIDevice` service, the rest of the engine remains unaffected.
+-   **RHI Swapping**: If you want to use DirectX 12 instead of Vulkan, the user/composition package replaces `com.arisen.rhi.vulkan.native` with a `com.arisen.rhi.dx12.native` package and updates its `IRHIBackend` capability requirement. Because render/domain packages depend on shared contracts instead of concrete backend packages, the rest of the engine remains unaffected.
 -   **UI Hosting**: If you don't want to use an Editor, you exclude `com.arisen.editor` and build your game purely using game-level packages.
 -   **Platform Portability**: Porting to a new platform (like macOS or Android) is as simple as writing a new `com.arisen.platform.[platform-name]` package that provides its own `IWindowProvider`.
 

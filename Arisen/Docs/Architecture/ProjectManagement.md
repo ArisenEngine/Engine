@@ -121,6 +121,8 @@ The act of "Launching" a project from the `ArisenLauncher`.
 2. **Package Pre-Resolution (Launcher)**: 
    - The Launcher reads `manifest.json`.
    - It checks `Local/` and `.Cache/`. If remote packages are missing, the Launcher downloads them **before** booting the Kernel.
+   - Remote `Url` values may point directly to a package `.zip` or to a `registry.json` index. Registry entries use the manifest package `Id` plus `Version` or supported semantic version range, verify the indexed archive SHA-256, and restore the archive to `.Cache/{packageId}`.
+   - Local overrides are explicit. A remote manifest URL uses `.Cache/{packageId}` even when `Local/{packageId}` also exists; switch the manifest URL to `file://Local/{packageId}` to use local source.
 3. **Boot Execution**:
    - The Launcher spawns the workspace's thin entry executable (e.g., `MyGame.exe` inside `.arisen/bin/`).
    - This executable automatically invokes `ArisenKernel.Lifecycle.EngineBootstrapper.Run(args)`.

@@ -335,6 +335,17 @@ public class ProjectService
             string config = string.IsNullOrWhiteSpace(project.SelectedConfiguration) ? "Debug" : project.SelectedConfiguration;
 
             _logService.Info("Using workspace manifest.json for package resolution.");
+            string json = File.ReadAllText(manifestPath);
+            var manifest = JsonSerializer.Deserialize<ProjectManifest>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (manifest == null)
+            {
+                _logService.Error("Failed to deserialize manifest.json");
+                return false;
+            }
+
+            _logService.Info("Restoring remote packages into workspace cache if needed...");
+            var resolver = new PackageResolver(_logService);
+            await resolver.RestoreManifestPackagesAsync(manifest, profile, projectDir);
 
             // 1. Execute ArisenBuildTool validation + out-of-source generation
             string buildToolExecutable = Path.Combine(engine.InstallPath, "External", "ArisenBuildTool", "bin", "Debug", "net9.0", "ArisenBuildTool.dll");

@@ -121,6 +121,47 @@ Native test packages declare their registration libraries through `nativeTests` 
 
 ---
 
+## Package Archive Publishing
+
+`ArisenBuildTool pack` creates a distributable package archive from a selected workspace/profile package:
+
+```bat
+ArisenBuildTool.exe pack --workspace "Path\To\MyGame" --profile Development --package com.user.inventory --output ".arisen\Packages"
+```
+
+The command validates the selected workspace/profile graph first, then writes `{packageId}-{version}.zip`. The zip root contains the package contents directly, including `package.json`, which matches the launcher cache restore format for remote package URLs.
+
+By default the command writes to `.arisen\Packages\` and refuses to overwrite an existing archive. Pass `--overwrite` to replace the existing zip. Transient build/generated directories are excluded from package archives:
+
+- `.arisen/`
+- `.git/`
+- `bin/`
+- `obj/`
+
+---
+
+## Package Registry Index Publishing
+
+`ArisenBuildTool registry-index` creates a deterministic `registry.json` from a directory of package archives:
+
+```bat
+ArisenBuildTool.exe registry-index --source ".arisen\Packages" --base-url "https://packages.example.com/arisen" --output ".arisen\Packages\registry.json"
+```
+
+The command scans top-level `*.zip` files in `--source`. Each archive must use the `pack` archive format, with `package.json` at the zip root. The generated index is sorted by package id and version, and intentionally excludes generation timestamps so the file is stable in source control and CDN publishing workflows.
+
+Each package entry includes:
+
+- package id and version,
+- display metadata copied from `package.json`,
+- archive URL derived from `--base-url` plus the zip filename,
+- archive SHA-256 hash,
+- archive byte size.
+
+If `--output` is omitted, the command writes `registry.json` inside the source directory. Existing output files are not overwritten unless `--overwrite` is passed.
+
+---
+
 ## The Generation Pipeline
 
 When a user clicks "Generate IDE Files" in the Launcher, it invokes:

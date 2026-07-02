@@ -76,6 +76,92 @@ public sealed class PackageValidationFixtureTests
     }
 
     [Fact]
+    public void RequiredServiceCapabilityIsSatisfiedByProviderCapability()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage(
+            "com.test.rhi.vulkan",
+            layer: "driver",
+            services: new
+            {
+                provides = new object[]
+                {
+                    new
+                    {
+                        @interface = "Com.Test.Contracts.IRHIBackend",
+                        capabilities = new[] { "vulkan" }
+                    }
+                }
+            });
+        workspace.AddPackage(
+            "com.test.app",
+            layer: "user",
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.test.rhi.vulkan"] = "1.0.0"
+            },
+            services: new
+            {
+                requires = new object[]
+                {
+                    new
+                    {
+                        @interface = "Com.Test.Contracts.IRHIBackend",
+                        capabilities = new[] { "vulkan" }
+                    }
+                }
+            });
+
+        var result = workspace.Validate("com.test.app");
+
+        Assert.True(result.Success, string.Join(Environment.NewLine, result.Errors));
+    }
+
+    [Fact]
+    public void RequiredServiceCapabilityMismatchFailsValidation()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage(
+            "com.test.rhi.dx12",
+            layer: "driver",
+            services: new
+            {
+                provides = new object[]
+                {
+                    new
+                    {
+                        @interface = "Com.Test.Contracts.IRHIBackend",
+                        capabilities = new[] { "dx12" }
+                    }
+                }
+            });
+        workspace.AddPackage(
+            "com.test.app",
+            layer: "user",
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.test.rhi.dx12"] = "1.0.0"
+            },
+            services: new
+            {
+                requires = new object[]
+                {
+                    new
+                    {
+                        @interface = "Com.Test.Contracts.IRHIBackend",
+                        capabilities = new[] { "vulkan" }
+                    }
+                }
+            });
+
+        var result = workspace.Validate("com.test.app");
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error => error.Contains("capabilities [vulkan]", StringComparison.OrdinalIgnoreCase)
+            && error.Contains("com.test.rhi.dx12", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void DuplicatePackageIdWithConflictingMetadataFailsValidation()
     {
         using var workspace = ValidationWorkspace.Create();
@@ -89,6 +175,50 @@ public sealed class PackageValidationFixtureTests
 
         Assert.False(result.Success);
         Assert.Contains(result.Errors, error => error.Contains("listed multiple times", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void RemoteRequirementUsesCacheWhenLocalPackageWithSameIdExists()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage("com.test.remote", layer: "user", description: "local copy");
+        workspace.AddCachedPackage("com.test.remote", layer: "user", description: "cached remote copy");
+
+        var manifest = workspace.CreateManifest(new PackageRequirement
+        {
+            Id = "com.test.remote",
+            Url = "https://packages.example.test/registry.json",
+            Version = "1.0.0"
+        });
+
+        var result = workspace.Validate(manifest);
+
+        Assert.True(result.Success, string.Join(Environment.NewLine, result.Errors));
+        Assert.Contains(Path.Combine(".Cache", "com.test.remote"), result.PackageMap["com.test.remote"].DirectoryPath);
+        Assert.Equal("cached remote copy", result.PackageMap["com.test.remote"].Manifest.Description);
+        Assert.Contains(result.Warnings, warning => warning.Contains("local folder", StringComparison.OrdinalIgnoreCase)
+            && warning.Contains("ignored", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void FileUrlRequirementUsesLocalOverrideWhenCachePackageWithSameIdExists()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage("com.test.override", layer: "user", description: "local override");
+        workspace.AddCachedPackage("com.test.override", layer: "user", description: "cached remote copy");
+
+        var manifest = workspace.CreateManifest(new PackageRequirement
+        {
+            Id = "com.test.override",
+            Url = "file://Local/com.test.override",
+            Version = "1.0.0"
+        });
+
+        var result = workspace.Validate(manifest);
+
+        Assert.True(result.Success, string.Join(Environment.NewLine, result.Errors));
+        Assert.Contains(Path.Combine("Local", "com.test.override"), result.PackageMap["com.test.override"].DirectoryPath);
+        Assert.Equal("local override", result.PackageMap["com.test.override"].Manifest.Description);
     }
 
     [Fact]
@@ -164,12 +294,31 @@ public sealed class PackageValidationFixtureTests
             string id,
             string layer,
             string? type = null,
+            string? description = null,
             Dictionary<string, string>? dependencies = null,
             object? services = null,
             Dictionary<string, object[]>? nativeRuntimes = null,
             Dictionary<string, object[]>? nativeTests = null)
         {
-            string packageDir = Path.Combine(LocalPath, id);
+            WritePackage(Path.Combine(LocalPath, id), id, layer, type, description, dependencies, services, nativeRuntimes, nativeTests);
+        }
+
+        public void AddCachedPackage(string id, string layer, string? type = null, string? description = null)
+        {
+            WritePackage(Path.Combine(m_Root, ".Cache", id), id, layer, type, description);
+        }
+
+        private static void WritePackage(
+            string packageDir,
+            string id,
+            string layer,
+            string? type = null,
+            string? description = null,
+            Dictionary<string, string>? dependencies = null,
+            object? services = null,
+            Dictionary<string, object[]>? nativeRuntimes = null,
+            Dictionary<string, object[]>? nativeTests = null)
+        {
             Directory.CreateDirectory(packageDir);
 
             var manifest = new Dictionary<string, object?>
@@ -181,6 +330,7 @@ public sealed class PackageValidationFixtureTests
             };
 
             if (!string.IsNullOrWhiteSpace(type)) manifest["type"] = type;
+            if (!string.IsNullOrWhiteSpace(description)) manifest["description"] = description;
             if (dependencies is { Count: > 0 }) manifest["dependencies"] = dependencies;
             if (services != null) manifest["services"] = services;
             if (nativeRuntimes is { Count: > 0 }) manifest["nativeRuntimes"] = nativeRuntimes;

@@ -220,8 +220,9 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
   - [x] `com.arisen.nodecanvas` is included by `com.arisen.editor`.
   - [x] Rendering pipeline packages explicitly depend on rendering/core/native contracts they use.
 - [ ] Move shared contracts into kernel or dedicated contract packages where appropriate.
-- [ ] Avoid domain packages referencing concrete implementation packages unless intended.
-  - [ ] Example: rendering should depend on RHI contracts, not a concrete Vulkan package.
+- [x] Avoid domain packages referencing concrete implementation packages unless intended.
+  - [x] Example: rendering should depend on RHI contracts, not a concrete Vulkan package.
+  - [x] `ArisenBuildTool validate` enforces service capability requirements, so the user/composition package can require `IRHIBackend` with `vulkan` while render/domain packages stay backend-agnostic.
 - [x] Define clear package tiers in `PackageRegistry.md` and enforce no reverse dependencies.
 - [x] Consider adding package-layer validation:
   - [x] Foundation cannot depend on Domain/Tooling/User.
@@ -304,12 +305,21 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
 - [x] Show service provides/requires health.
 - [x] Allow enabling/disabling packages per profile.
   - Profiles tab exposes installed packages as profile toggles and saves enabled packages back to `Profiles[*].Packages`.
-- [ ] Allow adding local packages through templates.
-- [ ] Allow adding registry/cache packages once registry support exists.
-- [ ] Add profile selector: Development / Production / testing profiles.
+- [x] Allow adding local packages through templates.
+  - Package Manager create flow offers managed library, runtime entry, service provider, and editor tool templates.
+  - Templates scaffold `package.json`, dependency metadata, entry assembly/class metadata when needed, and starter C# files.
+  - Editor-tool templates are added to the Development profile instead of the base package list.
+- [x] Allow adding registry/cache packages once registry support exists.
+  - Launcher and Package Manager restore `http(s)` manifest package URLs into workspace `.Cache/{packageId}` before validation/generation/launch.
+  - Cached packages are then resolved by the same BuildTool package graph path as local packages.
+  - Zip packages may contain `package.json` at archive root or inside one top-level folder.
+  - Package Manager remote-package flow can inspect a `registry.json` URL, list exact package versions, and save the selected `Id`/`Url`/`Version` into the workspace manifest.
+- [x] Add profile selector: Development / Production / testing profiles.
+  - Package graph tools and launch action share the selected workspace profile and expose Debug/Release configuration selection.
 - [x] Add regenerate project files action.
   - Package manager graph tab can run `ArisenBuildTool generate` for the selected profile and show validation/generation output.
-- [ ] Add launch action using selected profile/configuration.
+- [x] Add launch action using selected profile/configuration.
+  - Package manager launch reuses `ProjectService.LaunchProjectAsync`, so validation, generation, and boot use the same path as the main launcher Boot button.
 
 ### Acceptance Criteria
 
@@ -324,19 +334,31 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
 
 ### TODO
 
-- [ ] Define package registry source format.
-- [ ] Define `.Cache/` package layout.
-- [ ] Implement package acquisition before build/boot.
-- [ ] Add version resolution policy.
-  - [ ] Exact versions first.
-  - [ ] Semantic ranges later if needed.
-- [ ] Add package lock/resolved file for reproducibility.
-- [ ] Add package integrity metadata.
-  - [ ] Hashes.
-  - [ ] source URL.
-  - [ ] timestamp.
-- [ ] Decide how local package overrides work.
-- [ ] Add packaging command for publishing a package archive.
+- [x] Define package registry source format.
+  - Static `registry.json` schema version 1 lists package archives by id/version, URL, SHA-256, and size.
+  - `ArisenBuildTool registry-index --source <package-zip-dir> --base-url <url> --output <registry.json>` generates deterministic indexes from packed package archives.
+- [x] Define `.Cache/` package layout.
+  - Remote package archives are extracted to `.Cache/{packageId}` with `package.json` at that directory root.
+- [x] Implement package acquisition before build/boot.
+  - Launcher Boot and Package Manager validate/graph/generate restore direct remote package archive URLs before invoking `ArisenBuildTool`.
+  - Remote registry index URLs resolve by package `Id` plus `Version` or supported semantic range, verify archive SHA-256, then restore the selected archive into `.Cache/{packageId}`.
+- [x] Add version resolution policy.
+  - [x] Exact versions first.
+  - [x] Semantic ranges: exact, `>=`/`<=`/`>`/`<` comparator sets, caret, tilde, and `*`.
+  - [x] Ranges resolve to the highest matching indexed SemVer and lock the concrete `ResolvedVersion`.
+- [x] Add package lock/resolved file for reproducibility.
+  - Remote package restore writes `.arisen/package-lock.json` with package ID, requested version/range, selected resolved version for registry packages, source URL, cache path, content hash, and acquisition timestamp.
+  - Existing cached remote packages are validated against the lock file before validation/generation/launch continues.
+- [x] Add package integrity metadata.
+  - [x] Hashes.
+  - [x] source URL.
+  - [x] timestamp.
+- [x] Decide how local package overrides work.
+  - Manifest source is explicit: `file://` uses local source, `http(s)://` uses restored `.Cache/{packageId}`, and empty URL falls back through discovery paths.
+  - Same-ID `Local/{packageId}` folders do not silently shadow registry/cache packages; validation warns and Package Manager exposes an explicit local override action.
+- [x] Add packaging command for publishing a package archive.
+  - `ArisenBuildTool pack --workspace <path> --profile <profile> --package <id> --output <dir>` validates the selected package graph, then emits `{packageId}-{version}.zip`.
+  - Package archives place `package.json` at zip root and exclude transient `.arisen/`, `.git/`, `bin/`, and `obj/` directories.
 
 ### Acceptance Criteria
 

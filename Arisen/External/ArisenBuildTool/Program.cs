@@ -37,6 +37,18 @@ class Program
             return;
         }
 
+        if (args.Length > 0 && args[0].Equals("pack", StringComparison.OrdinalIgnoreCase))
+        {
+            RunPackMode(args);
+            return;
+        }
+
+        if (args.Length > 0 && args[0].Equals("registry-index", StringComparison.OrdinalIgnoreCase))
+        {
+            RunRegistryIndexMode(args);
+            return;
+        }
+
         RunGenerateMode(args);
     }
 
@@ -302,6 +314,173 @@ class Program
         else
         {
             Console.WriteLine(graph);
+        }
+    }
+
+    static void RunPackMode(string[] args)
+    {
+        string workspaceDir = Path.GetFullPath(".");
+        string manifestPath = string.Empty;
+        string engineDir = string.Empty;
+        string profile = "Development";
+        string packageId = string.Empty;
+        string outputDir = string.Empty;
+        bool overwrite = false;
+
+        for (int i = 1; i < args.Length; i++)
+        {
+            if ((args[i] == "--package" || args[i] == "-p") && i + 1 < args.Length)
+            {
+                packageId = args[++i];
+            }
+            else if ((args[i] == "--manifest" || args[i] == "-m") && i + 1 < args.Length)
+            {
+                manifestPath = Path.GetFullPath(args[++i]);
+                workspaceDir = Path.GetDirectoryName(manifestPath) ?? workspaceDir;
+            }
+            else if ((args[i] == "--engine" || args[i] == "-e") && i + 1 < args.Length)
+            {
+                engineDir = Path.GetFullPath(args[++i]);
+            }
+            else if (args[i] == "--profile" && i + 1 < args.Length)
+            {
+                profile = args[++i];
+            }
+            else if ((args[i] == "--workspace" || args[i] == "-w") && i + 1 < args.Length)
+            {
+                workspaceDir = Path.GetFullPath(args[++i]);
+            }
+            else if ((args[i] == "--output" || args[i] == "-o") && i + 1 < args.Length)
+            {
+                outputDir = Path.GetFullPath(args[++i]);
+            }
+            else if (args[i] == "--overwrite")
+            {
+                overwrite = true;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(packageId))
+        {
+            Console.WriteLine("ArisenBuildTool Pack Error: --package <Id> is required.");
+            Environment.Exit(1);
+        }
+
+        if (string.IsNullOrEmpty(manifestPath))
+        {
+            manifestPath = Path.Combine(workspaceDir, "manifest.json");
+        }
+
+        if (string.IsNullOrEmpty(engineDir))
+        {
+            engineDir = FindEngineRoot(AppContext.BaseDirectory);
+        }
+
+        if (string.IsNullOrEmpty(outputDir))
+        {
+            outputDir = Path.Combine(workspaceDir, ".arisen", "Packages");
+        }
+
+        Logger.Initialize(Path.Combine(workspaceDir, ".arisen", "ArisenBuildTool.Pack.log"));
+        Logger.Info($"ArisenBuildTool Pack Started. Workspace: {workspaceDir} | Profile: {profile} | Package: {packageId}");
+        Logger.Info($"Engine Root: {engineDir}");
+        Logger.Info($"Output Directory: {outputDir}");
+
+        if (!TryReadManifest(manifestPath, out var manifest))
+        {
+            Environment.Exit(1);
+        }
+
+        var validation = PackageValidationService.Validate(manifest!, workspaceDir, engineDir, profile);
+        PackageValidationService.LogSummary(validation);
+        if (!validation.Success)
+        {
+            Logger.Error("ArisenBuildTool: Package pack aborted because package validation failed.");
+            Environment.Exit(1);
+        }
+
+        if (!validation.PackageMap.TryGetValue(packageId, out var package))
+        {
+            Logger.Error($"Package '{packageId}' is not selected by workspace profile '{profile}'.");
+            Environment.Exit(1);
+            return;
+        }
+
+        try
+        {
+            string archivePath = PackagePackService.Pack(package, outputDir, overwrite);
+            Logger.Info($"Packed package '{packageId}' to {archivePath}");
+            Console.WriteLine(archivePath);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"Failed to pack package '{packageId}': {ex.Message}");
+            Environment.Exit(1);
+        }
+    }
+
+    static void RunRegistryIndexMode(string[] args)
+    {
+        string sourceDir = string.Empty;
+        string outputPath = string.Empty;
+        string baseUrl = string.Empty;
+        bool overwrite = false;
+
+        for (int i = 1; i < args.Length; i++)
+        {
+            if ((args[i] == "--source" || args[i] == "-s") && i + 1 < args.Length)
+            {
+                sourceDir = Path.GetFullPath(args[++i]);
+            }
+            else if ((args[i] == "--output" || args[i] == "-o") && i + 1 < args.Length)
+            {
+                outputPath = Path.GetFullPath(args[++i]);
+            }
+            else if (args[i] == "--base-url" && i + 1 < args.Length)
+            {
+                baseUrl = args[++i];
+            }
+            else if (args[i] == "--overwrite")
+            {
+                overwrite = true;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(sourceDir))
+        {
+            Console.WriteLine("ArisenBuildTool Registry Index Error: --source <Directory> is required.");
+            Environment.Exit(1);
+        }
+
+        if (!Directory.Exists(sourceDir))
+        {
+            Console.WriteLine($"ArisenBuildTool Registry Index Error: source directory not found: {sourceDir}");
+            Environment.Exit(1);
+        }
+
+        if (string.IsNullOrWhiteSpace(outputPath))
+        {
+            outputPath = Path.Combine(sourceDir, "registry.json");
+        }
+
+        Logger.Initialize(Path.Combine(sourceDir, "ArisenBuildTool.RegistryIndex.log"));
+        Logger.Info($"ArisenBuildTool Registry Index Started. Source: {sourceDir}");
+        Logger.Info($"Output: {outputPath}");
+        if (!string.IsNullOrWhiteSpace(baseUrl))
+        {
+            Logger.Info($"Base URL: {baseUrl}");
+        }
+
+        try
+        {
+            PackageRegistryIndexService.Write(sourceDir, outputPath, baseUrl, overwrite);
+            Logger.Info($"Wrote package registry index to {outputPath}");
+            Console.WriteLine(outputPath);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"Failed to write package registry index: {ex.Message}");
+            Environment.Exit(1);
         }
     }
 

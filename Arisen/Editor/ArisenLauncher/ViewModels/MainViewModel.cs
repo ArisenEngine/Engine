@@ -269,4 +269,9 @@ public partial class MainViewModel : ObservableObject
     {
         return new NewProjectViewModel(_projectService, _logService, engine);
     }
+
+    public PackageManagerViewModel CreatePackageManagerViewModel(LauncherProjectMetadata project, EngineInstance? engine)
+    {
+        return new PackageManagerViewModel(project, engine, _projectService);
+    }
 }
