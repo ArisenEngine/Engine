@@ -18,7 +18,8 @@ The package-oriented foundation is now in place:
 - The canonical development workspace is `Arisen/Development/PackageGame`.
 - Runtime validation exists through `Arisen/Scripts/Windows/validate_runtime.bat --no-pause --config Debug --frames 1`.
 - Standalone runtime window creation is owned by `IWindowProvider`; editor builds use `ARISEN_ENGINE_EDITOR` and do not create a separate native game window.
-- Vulkan runtime initialization now validates the Win32 window contract before registering `IRHIDevice`; editor initialization remains on a virtual/device-only path until editor-hosted surfaces are implemented.
+- Vulkan runtime initialization now validates the Win32 window contract, creates the selected backend against the HAL window surface id, initializes the runtime swapchain, and registers `IRHIDevice`; editor initialization remains on a virtual/device-only path until editor-hosted surfaces are implemented.
+- Runtime smoke now exercises RHI warmup through a rendering-owned `PostInit` subsystem in non-editor builds. Editor builds keep hardware warmup in the editor boot pipeline.
 
 The next risk is no longer package graph correctness. The next risk is whether the selected packages form a real working engine at runtime, especially across the platform/RHI/rendering boundary.
 
@@ -103,20 +104,23 @@ The next risk is no longer package graph correctness. The next risk is whether t
   - [x] Runtime builds require `IWindowProvider` to expose a valid Win32 window before Vulkan device registration.
   - [x] Editor viewport surfaces remain a later editor-hosted/virtual/shared-handle path.
 - [ ] Finalize RHI service contracts.
-  - [ ] `IRHIBackend` advertises backend capability such as `vulkan`.
-  - [ ] `IRHIDevice` represents the initialized device used by rendering.
-  - [ ] Decide whether swapchain/surface interfaces are separate contracts.
+  - [x] `IRHIBackend` advertises backend capability such as `vulkan`.
+  - [x] `IRHIDevice` represents the initialized device used by rendering.
+  - [x] Decide whether swapchain/surface interfaces are separate contracts.
+    - For the first RenderGraph vertical slice, surfaces and swapchains remain owned by the initialized `IRHIDevice`/backend path rather than being separate services. This prevents reusable rendering packages from depending on concrete platform or Vulkan packages before editor-hosted surfaces and multi-window ownership are finalized.
+    - The managed RHI wrapper now exposes native instance/surface facts needed for diagnostics: validation state, max frames in flight, surface availability, selected swapchain format, selected present mode, and linear color-space support.
 - [ ] Implement Vulkan backend initialization path.
-  - [ ] Load native Vulkan runtime payloads through package native runtime rules.
-  - [ ] Create instance/device/queue/surface/swapchain from platform window data.
+  - [x] Load native Vulkan runtime payloads through package native runtime rules.
+  - [x] Create instance/device/queue/surface/swapchain from platform window data.
   - [x] Register `IRHIDevice` only after successful initialization.
   - [ ] Unregister/shutdown in reverse package/subsystem order.
 - [ ] Add diagnostics.
   - [x] Log selected initialization mode: editor virtual surface or runtime Win32 window.
-  - [ ] Log selected adapter, validation layer status, instance/device extension state, and swapchain format.
+  - [x] Log available native RHI diagnostics: validation layer status, max frames in flight, surface availability, selected swapchain format, present mode, and linear color-space support.
+  - [ ] Add native exports for selected adapter and instance/device extension state, then log them during backend initialization.
   - [ ] Fail clearly when Vulkan SDK/runtime/driver requirements are missing.
 - [ ] Add RHI smoke tests.
-  - [ ] Device creation succeeds on supported machines.
+  - [x] Device creation succeeds on supported machines.
   - [ ] Missing required native export or payload fails validation before boot.
   - [ ] Backend capability mismatch fails validation before boot.
 
@@ -135,14 +139,15 @@ The next risk is no longer package graph correctness. The next risk is whether t
 ### TODO
 
 - [ ] Finalize minimal RenderGraph execution interfaces.
-  - [ ] Define pass inputs, outputs, resource handles, and execution context.
+  - [x] Define pass inputs, outputs, resource handles, and execution context for the first frame target.
   - [ ] Keep graph compilation allocation-free after setup where practical.
   - [ ] Validate pass dependency cycles and missing resources.
-- [ ] Implement a clear-color frame.
-  - [ ] Add a presentable swapchain target resource.
-  - [ ] Add a clear pass.
-  - [ ] Add a present pass.
-  - [ ] Execute for one frame in smoke mode.
+- [x] Implement a clear-color frame.
+  - [x] Add a presentable swapchain target resource.
+  - [x] Add a clear pass.
+  - [x] Add engine-owned frame target prepare/finalization passes.
+  - [x] Execute for one frame in smoke mode.
+    - Production smoke now registers the platform-owned Win32 surface in `RenderSubsystem`, builds the generic pipeline, records `ClearPass`, and submits the RenderGraph against the runtime swapchain.
 - [ ] Implement a triangle frame after clear-color works.
   - [ ] Add minimal shader asset or embedded shader path.
   - [ ] Create pipeline state through the RHI abstraction.
@@ -253,13 +258,11 @@ The next risk is no longer package graph correctness. The next risk is whether t
 
 Implement in this order:
 
-1. **Finalize runtime Vulkan surface/swapchain creation** using the validated Win32 window contract.
-2. **Complete RHI service contracts** for backend capability, device, surface, and swapchain ownership.
-3. **Add Vulkan diagnostics** for adapter, validation layers, extensions, and swapchain format.
-4. **RenderGraph clear-color frame**.
-5. **RenderGraph triangle frame**.
-6. **First cooked shader asset path**.
-7. **Editor/runtime diagnostics and viewport integration**.
+1. **Complete RHI service contracts** for surface and swapchain ownership.
+2. **Add Vulkan diagnostics** for adapter, validation layers, extensions, and swapchain format.
+3. **RenderGraph triangle frame**.
+4. **First cooked shader asset path**.
+5. **Editor/runtime diagnostics and viewport integration**.
 
 This keeps the work vertical and testable. Each step should leave the engine in a better running state than before.
 
@@ -269,18 +272,16 @@ This keeps the work vertical and testable. Each step should leave the engine in 
 
 Start with:
 
-> Replace the temporary runtime Vulkan device-only bootstrap with a real Win32 surface and swapchain creation path.
+> Implement the RenderGraph triangle frame.
 
 Why first:
 
-- The smoke harness and window contract are already in place.
-- The runtime branch now has a validated Win32 handle, size, and DPI input.
-- RenderGraph clear/present requires a real presentable swapchain target.
-- This keeps editor viewport work safe because editor builds remain on the virtual/editor-hosted path.
+- Runtime smoke now proves a RenderGraph clear frame can record and submit against the real platform swapchain.
+- The clear frame only proves attachment setup, output finalization, and submission; it does not yet prove shader assets, vertex/index buffers, pipeline state, or draw calls.
+- A triangle frame is the smallest next vertical slice that exercises real GPU draw state while keeping the asset path simple.
 
 Expected output:
 
-- A runtime-only Vulkan path that creates an OS-backed surface/swapchain from `IWindowProvider`.
-- Clear diagnostics for unsupported/missing Vulkan runtime requirements.
-- `IRHIDevice` registration only after successful backend initialization.
+- A minimal triangle pass that runs through RenderGraph after the clear pass.
+- Clear diagnostics for pipeline creation, shader selection, vertex/index buffers, and draw submission.
 - `validate_runtime.bat --no-pause --config Debug --frames 1` remains green.
