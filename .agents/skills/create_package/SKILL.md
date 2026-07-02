@@ -21,7 +21,9 @@ Create a valid `package.json` in the package root.
 Rules:
 - [ ] `$schema`: use `https://arisen.dev/schemas/package-v2.json`
 - [ ] `id`: unique lowercase ID using dot notation
+- [ ] `layer`: choose `foundation`, `domain`, `driver`, `tooling`, `user`, or `test`
 - [ ] `dependencies`: include an explicit empty or populated object
+- [ ] Use conservative JSONC-compatible authoring only: comments and trailing commas are okay, but keep quoted keys and normal JSON values
 - [ ] Do not hand-maintain derived metadata such as `subsystems`, `nativeRuntimes`, or `entry.assembly` unless the task specifically requires it
 
 Template:
@@ -31,6 +33,7 @@ Template:
   "id": "com.user.newpackage",
   "name": "New Package",
   "version": "1.0.0",
+  "layer": "user",
   "author": "Your Name",
   "dependencies": {}
 }
@@ -45,6 +48,8 @@ Template:
 - [ ] Add the package ID, URL, and version.
 - [ ] If the package is profile-specific, add it under the correct profile block.
 - [ ] If the package is not present in the workspace manifest, the kernel and generated workspace will ignore it.
+- [ ] If this package is a composition/root package choosing a concrete provider, declare the provider package in `dependencies` or the workspace manifest so it cannot be culled from the selected graph.
+- [ ] If this package is reusable domain code, prefer `services.requires` for contracts and avoid depending on concrete provider packages such as a specific RHI backend.
 
 For the canonical workspace in this repo, the manifest is:
 - `Arisen/Development/PackageGame/manifest.json`
@@ -56,6 +61,12 @@ Examples:
 ```powershell
 Arisen\Scripts\Windows\build_workspace.bat --config Debug --profile Development
 Arisen\Scripts\Windows\build_workspace.bat --manifest Arisen\Development\PackageGame\manifest.json --config Debug --profile Development
+```
+
+For packages that affect boot, platform windows, RHI startup, profile macros, or runtime smoke behavior, run:
+
+```powershell
+Arisen\Scripts\Windows\validate_runtime.bat --no-pause --config Debug --frames 1
 ```
 
 If the package includes editor-facing functionality, verify it appears through the generated Development workspace after a successful build.

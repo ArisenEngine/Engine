@@ -18,6 +18,10 @@ Packages communicate explicitly through abstract C# interfaces. Cross-cutting en
 - **Providers**: Packages register concrete classes that implement `IService` contracts.
 - **Consumers**: Packages ask the Kernel for implementations of `IService` contracts.
 
+Service contracts do not replace package graph composition. They describe how selected packages communicate after the graph is chosen. The workspace manifest and package `dependencies` still decide which concrete provider packages are present.
+
+For example, `com.arisen.rendering` should require `IRHIDevice` / `IRHIBackend` contracts and stay backend-agnostic. `com.arisen.packagegame`, as the composition root, may depend on `com.arisen.rhi.vulkan.native` to select Vulkan for that product. This keeps Vulkan from being culled out of the resolved package graph while still preventing rendering/domain code from referencing Vulkan concrete types.
+
 ---
 
 ## 2. Registering Services (Providers)

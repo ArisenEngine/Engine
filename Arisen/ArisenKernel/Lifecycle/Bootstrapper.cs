@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using ArisenKernel.Contracts;
 using ArisenKernel.Diagnostics;
@@ -21,6 +22,8 @@ public static class EngineBootstrapper
         bool profileSpecified = false;
         bool workspaceSpecified = false;
         bool allowResolvedManifestFallback = false;
+        bool smokeMode = false;
+        uint smokeFrameCount = 1;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -28,6 +31,12 @@ public static class EngineBootstrapper
             if (args[i] == "--entry" && i + 1 < args.Length) entryPackage = args[i + 1];
             if (args[i] == "--profile" && i + 1 < args.Length) { profile = args[i + 1]; profileSpecified = true; }
             if (args[i] == "--allow-manifest-fallback") allowResolvedManifestFallback = true;
+            if (args[i] == "--smoke") smokeMode = true;
+            if (args[i] == "--frames" && i + 1 < args.Length && uint.TryParse(args[i + 1], out var parsedFrames))
+            {
+                smokeFrameCount = Math.Max(1, parsedFrames);
+                smokeMode = true;
+            }
         }
 
         // B18: Try to load from launch.config.json if located in the binary folder (Explicit configuration wins over deduction)
@@ -107,7 +116,7 @@ public static class EngineBootstrapper
             {
                 KernelLog.InfoFormat("[Host] Loading Profile: {0}", profile);
                 
-                // NEW: Handle ProfileDefinition object (IsEditor, Packages, etc)
+                // NEW: Handle ProfileDefinition object (Packages, etc)
                 if (profileDefinition.ValueKind == JsonValueKind.Object)
                 {
                     if (profileDefinition.TryGetPropertyIC("Packages", out var profilePackages))
@@ -152,6 +161,10 @@ public static class EngineBootstrapper
                 }
             }
         }
+        else
+        {
+            KernelLog.WarningFormat("[Host] No resolved manifest found for profile '{0}'. Runtime will use raw manifest package order.", profile);
+        }
 
         // 2. Initialize Kernel (The kernel now handles topological package loading)
         kernel.Initialize(new EngineConfig
@@ -164,7 +177,15 @@ public static class EngineBootstrapper
 
         KernelLog.Info("[Host] Kernel Initialization Complete.");
 
-    KernelLog.Info("[Host] Topological Mount Complete.");
+        KernelLog.Info("[Host] Topological Mount Complete.");
+        LogRuntimeDiagnostics(kernel, packageSubsystem, workspacePath, profile, resolvedManifestPath, smokeMode);
+
+        if (smokeMode)
+        {
+            KernelLog.InfoFormat("[Host] Smoke mode requested. Running {0} frame(s) and exiting without application-host handoff.", smokeFrameCount);
+            Environment.ExitCode = kernel.RunForFrames(smokeFrameCount);
+            return;
+        }
 
         // 3. Fallback to registry checks for boot takeover
         if (registry.TryGetService<IApplicationHost>(out var appHost))
@@ -178,6 +199,54 @@ public static class EngineBootstrapper
             kernel.Run();
         }
     }
+
+    private static void LogRuntimeDiagnostics(
+        EngineKernel kernel,
+        PackageSubsystem packageSubsystem,
+        string workspacePath,
+        string profile,
+        string resolvedManifestPath,
+        bool smokeMode)
+    {
+        KernelLog.Info("[Host] Runtime diagnostics:");
+        KernelLog.InfoFormat("  Workspace: {0}", workspacePath);
+        KernelLog.InfoFormat("  Profile: {0}", profile);
+        KernelLog.InfoFormat("  SmokeMode: {0}", smokeMode);
+        KernelLog.InfoFormat("  ResolvedManifest: {0}", File.Exists(resolvedManifestPath) ? resolvedManifestPath : "<not found>");
+
+        KernelLog.Info("  Package load order:");
+        int packageIndex = 1;
+        foreach (var package in packageSubsystem.GetLoadedPackagesInOrder())
+        {
+            KernelLog.InfoFormat("    {0}. {1} ({2}, {3})", packageIndex++, package.Id, package.Type, package.Version);
+        }
+
+        KernelLog.Info("  Subsystem init order:");
+        int subsystemIndex = 1;
+        foreach (var subsystem in kernel.GetInitializedSubsystemDiagnostics())
+        {
+            KernelLog.InfoFormat(
+                "    {0}. {1} (Package: {2}, Phase: {3}, Priority: {4})",
+                subsystemIndex++,
+                subsystem.ClassName,
+                string.IsNullOrWhiteSpace(subsystem.PackageId) ? "<kernel>" : subsystem.PackageId,
+                subsystem.InitPhase,
+                subsystem.Priority);
+        }
+
+        KernelLog.Info("  Registered services:");
+        int serviceIndex = 1;
+        foreach (var service in kernel.Services.GetRegisteredServices().OrderBy(x => x.ContractName, StringComparer.Ordinal))
+        {
+            KernelLog.InfoFormat(
+                "    {0}. {1} -> {2} (Provider: {3})",
+                serviceIndex++,
+                service.ContractName,
+                service.ImplementationName,
+                string.IsNullOrWhiteSpace(service.ProviderPackageId) ? "<kernel>" : service.ProviderPackageId);
+        }
+    }
+
     private static bool TryLoadResolvedPackageUrls(string resolvedManifestPath, string workspacePath, string profile, List<string> packageUrls, out string error)
     {
         error = string.Empty;

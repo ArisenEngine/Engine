@@ -35,6 +35,8 @@ Generated distribution files remain strict JSON and should not contain comments:
 
 The file extension remains `.json` for compatibility with existing tools and package conventions. Tooling reads authored files with comments/trailing commas enabled, but writers should emit strict JSON unless the file is an initial human-facing template.
 
+Use comments in human-authored files to explain intent, ownership, or generator boundaries. Do not rely on comments as data. Generated files should prefer stable, strict JSON so package archives, registry indexes, and resolved manifests remain portable across standard JSON tooling.
+
 ## Canonical Casing
 
 Arisen intentionally keeps two JSON styles because the files are owned by different surfaces:
@@ -297,3 +299,35 @@ The *only* fields a user or package author should normally edit in `package.json
 - `name` / `author` / `description`
 - `services.requires` (for cross-package service contracts; use string form for required services and object form for `optional`, `deferred`, or capability metadata)
 - `dependencies`
+
+### Dependency And Service Intent
+
+`dependencies` and `services` answer different questions:
+
+- `dependencies` decides which packages are in the resolved graph and establishes package load ordering.
+- `services.provides` and `services.requires` describe runtime contracts between packages in that selected graph.
+
+Reusable packages should avoid depending on concrete backend providers when a shared contract is sufficient. For example, `com.arisen.rendering` should require RHI contracts, not depend on `com.arisen.rhi.vulkan.native`.
+
+Composition/root packages are different: they choose the concrete product assembly. It is correct for a user/root package to depend on a concrete provider such as `com.arisen.rhi.vulkan.native` when that product selects Vulkan. Without either a manifest entry or a package dependency, the provider package is not selected and can be absent from the generated graph even if another package requires the service contract.
+
+Provider packages then advertise the contracts they implement:
+
+```json
+"services": {
+  "provides": [
+    { "interface": "ArisenKernel.Contracts.IRHIBackend", "capabilities": ["vulkan"] },
+    { "interface": "ArisenKernel.Contracts.IRHIDevice", "capabilities": ["vulkan"], "deferred": true }
+  ]
+}
+```
+
+Consumer packages request contracts and capabilities:
+
+```json
+"services": {
+  "requires": [
+    { "interface": "ArisenKernel.Contracts.IRHIBackend", "capabilities": ["vulkan"] }
+  ]
+}
+```

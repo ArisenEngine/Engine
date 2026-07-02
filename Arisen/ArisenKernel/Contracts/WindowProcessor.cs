@@ -14,6 +14,9 @@ public abstract class WindowProcessor
     protected IntPtr m_ResizeCallbackPtr;
     public IntPtr ResizeCallbackPtr => m_ResizeCallbackPtr;
 
+    protected IntPtr m_ResizingCallbackPtr;
+    public IntPtr ResizingCallbackPtr => m_ResizingCallbackPtr;
+
     protected abstract void OnResizing();
     protected abstract void OnResized();
     protected abstract void OnCreate();

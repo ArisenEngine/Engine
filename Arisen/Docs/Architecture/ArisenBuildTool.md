@@ -56,6 +56,16 @@ Arisen\Scripts\Windows\validate_fast.bat
 
 This command runs the build-tool fixture tests, kernel package lifecycle tests, and `ArisenBuildTool validate` for the canonical `Development`, `Production`, and `RHIVulkanTesting` profiles.
 
+### Runtime Validation Gate
+
+Run the full runtime gate before committing changes that affect boot, platform windows, generated launch metadata, package lifecycle, RHI initialization, smoke-mode execution, or profile macro behavior:
+
+```bat
+Arisen\Scripts\Windows\validate_runtime.bat --no-pause --config Debug --frames 1
+```
+
+This command runs the fast gate first, builds generated runtime outputs for the canonical workspace, and launches bounded smoke runs for the selected runtime profiles. It is the preferred validation path for the platform/RHI/rendering roadmap because it proves the package graph under a real process instead of only validating metadata.
+
 ---
 
 ## Graph Inspection
@@ -197,6 +207,7 @@ The tool generates a separate solution file for each **Profile** defined in the 
 - **Solution Naming**: `{ProjectName}_{Profile}.sln` (e.g., `MyGame_Development.sln`).
 - **Storage**: Solutions are stored in `.arisen/Projects/{Profile}/`.
 - **Profile Macros**: Each solution automatically defines the preprocessor macro `ARISEN_PROFILE_{PROFILE}` for both C++ and C# projects.
+- **Editor Macro**: Editor-capable generated projects define `ARISEN_ENGINE_EDITOR`. Use this compile-time macro for editor/runtime behavior policy such as UI host ownership, standalone window creation, and RHI surface boot. Do not use runtime flags such as `EngineConfig.IsEditor` for these ownership decisions.
 - **Unified Entry Point**: The tool generates a thin `Program.cs` stub in the workspace project. This stub calls `ArisenKernel.Lifecycle.EngineBootstrapper.Run(args)`, making the workspace a manageable .NET executable.
 - **Resolved Manifest**: The tool writes `manifest.resolved.json` into each `.arisen/bin/{profile}/{configuration}/` output directory. It includes sorted packages plus debug metadata such as type, entry, dependency, and service declarations. Runtime boot treats this resolved manifest as authoritative when present so package mount order matches build-time validation.
 - **Launch Config**: The tool writes `launch.config.json` beside the executable so the bootstrapper can recover the workspace/profile without relying only on path deduction.
