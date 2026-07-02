@@ -16,6 +16,16 @@ When conducting code reviews, follow this procedure to verify correctness, packa
 ## 2. Automated verification
 Run the closest valid build or test path before deep manual review.
 
+Fast architecture/package gate:
+```powershell
+Arisen\Scripts\Windows\validate_fast.bat
+```
+
+Runtime/platform/RHI gate:
+```powershell
+Arisen\Scripts\Windows\validate_runtime.bat --no-pause --config Debug --frames 1
+```
+
 Main workspace examples:
 ```powershell
 Arisen\Scripts\Windows\build_workspace.bat --config Debug --profile Development
@@ -50,6 +60,14 @@ Arisen\Scripts\Windows\build_workspace.bat --package com.arisen.rhi.vulkan.nativ
 ### D. Package integrity
 - [ ] Does the change respect package boundaries and manifest-driven composition?
 - [ ] Are service dependencies expressed through interfaces and `IServiceRegistry` instead of concrete cross-package coupling?
+- [ ] If a concrete backend/provider package is selected, is that dependency limited to a composition/root package or workspace manifest rather than reusable domain code?
+- [ ] Are service capabilities used when a consumer requires a specific backend feature?
+- [ ] Are deferred service providers marked with `deferred: true` when registration happens after package load?
+
+### E. Editor/runtime policy
+- [ ] Platform/RHI ownership branches use `ARISEN_ENGINE_EDITOR` when behavior differs between editor and standalone runtime.
+- [ ] The change does not reintroduce runtime `EngineConfig.IsEditor`-style checks for compile-time ownership policy.
+- [ ] Standalone runtime window creation goes through `IWindowProvider`; editor viewport work uses editor-hosted/virtual/shared-surface paths.
 
 ## 4. Providing feedback
 - Be specific about file paths, line numbers, and rationale.

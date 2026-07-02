@@ -8,6 +8,8 @@ set "BUILD_CONFIG=Debug"
 set "TARGET_PROFILE="
 set "TEST_PACKAGE_ID="
 set "RUN_TESTS=0"
+set "ARISEN_NO_PAUSE="
+if defined CI set "ARISEN_NO_PAUSE=1"
 
 :parse_args
 if "%~1"=="" goto end_parse
@@ -43,6 +45,8 @@ if /i "%~1"=="-m" (
     shift
 ) else if /i "%~1"=="--run-tests" (
     set "RUN_TESTS=1"
+) else if /i "%~1"=="--no-pause" (
+    set "ARISEN_NO_PAUSE=1"
 ) else (
     if not defined MANIFEST_PATH (
         set "MANIFEST_PATH=%~1"
@@ -201,11 +205,11 @@ for %%A in (!PROFILES!) do (
 
 echo.
 echo [Arisen] Build successful!
-pause
+if not defined ARISEN_NO_PAUSE pause
 exit /b 0
 
 :fail
 echo.
 echo [ERROR] Build Pipeline aborted due to execution or compilation errors.
-pause
+if not defined ARISEN_NO_PAUSE pause
 exit /b 1

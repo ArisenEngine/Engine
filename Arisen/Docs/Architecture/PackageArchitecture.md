@@ -2,7 +2,7 @@
 
 Arisen Engine is built on the principle that **"Everything is a Package"**. This architecture ensures that the engine is highly modular, customizable, and scalable.
 
-## 📦 What is a Package?
+## What Is A Package?
 
 A package in Arisen is a self-contained unit of functionality. It consists of:
 -   **Manifest**: A `package.json` file that defines the package's ID, version, name, entry point, services, and dependencies.
@@ -10,7 +10,7 @@ A package in Arisen is a self-contained unit of functionality. It consists of:
 -   **Assets**: Any resources (textures, models, shaders) required by the package.
 -   **Services**: A list of interfaces the package provides or requires from the `ServiceRegistry`.
 
-## 🏗️ Architecture Layers
+## Architecture Layers
 
 Arisen Engine organizes its core packages into six logical layers to manage complexity and dependencies. Every package declares its layer in `package.json`, and `ArisenBuildTool validate` rejects reverse dependencies.
 
@@ -59,7 +59,56 @@ Layer dependency policy:
 
 ---
 
-## 🔗 The "Everything is a Package" Vision
+## Composition And Provider Selection
+
+Package composition is explicit. A package can consume a contract without directly referencing a concrete provider type, but the selected workspace graph must still include a concrete provider package.
+
+This creates two different dependency styles:
+
+1. **Reusable domain packages** depend on shared contracts and foundation packages. They express runtime needs through `services.requires`, for example requiring `ArisenKernel.Contracts.IRHIDevice` or `ArisenKernel.Contracts.IRHIBackend` with a capability such as `vulkan`.
+2. **Composition/root packages** choose concrete providers. A game/root package may declare a normal package dependency on `com.arisen.rhi.vulkan.native`, `com.arisen.rhi.dx12.native`, or a future Metal backend because that package is deciding which backend ships in the product.
+
+This is not a contradiction. Domain code stays backend-agnostic, while the root package keeps the selected concrete provider from being culled out of the package graph.
+
+Example:
+
+```json
+{
+  "id": "com.arisen.packagegame",
+  "layer": "user",
+  "dependencies": {
+    "com.arisen.rendering": "1.0.0",
+    "com.arisen.generic-renderpipeline": "1.0.0",
+    "com.arisen.rhi.vulkan.native": "1.0.0"
+  },
+  "services": {
+    "requires": [
+      { "interface": "ArisenKernel.Contracts.IRHIBackend", "capabilities": ["vulkan"] }
+    ]
+  }
+}
+```
+
+The Vulkan package then declares the contracts it provides:
+
+```json
+{
+  "id": "com.arisen.rhi.vulkan.native",
+  "layer": "driver",
+  "services": {
+    "provides": [
+      { "interface": "ArisenKernel.Contracts.IRHIBackend", "capabilities": ["vulkan"] },
+      { "interface": "ArisenKernel.Contracts.IRHIDevice", "capabilities": ["vulkan"], "deferred": true }
+    ]
+  }
+}
+```
+
+`IRHIDevice` and the other cross-backend RHI contracts are shared contracts. Vulkan, DX12, and Metal packages implement/provide them; they do not each define incompatible versions of the same engine contract.
+
+---
+
+## The "Everything is a Package" Vision
 
 In Arisen, **no core system is hard-coded into the kernel**. This means:
 -   **RHI Swapping**: If you want to use DirectX 12 instead of Vulkan, the user/composition package replaces `com.arisen.rhi.vulkan.native` with a `com.arisen.rhi.dx12.native` package and updates its `IRHIBackend` capability requirement. Because render/domain packages depend on shared contracts instead of concrete backend packages, the rest of the engine remains unaffected.
@@ -68,7 +117,7 @@ In Arisen, **no core system is hard-coded into the kernel**. This means:
 
 ---
 
-## 🛠️ Package Guidelines
+## Package Guidelines
 
 Every package MUST adhere to the following rules to maintain engine integrity:
 

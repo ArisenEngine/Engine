@@ -78,6 +78,20 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
     }
 
     [Fact]
+    public void EngineKernelRunForFramesTicksAndShutsDownCleanly()
+    {
+        EngineKernel.Instance.RegisterSubsystem(new CountingTickSubsystem());
+
+        int exitCode = EngineKernel.Instance.RunForFrames(3);
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal(3u, EngineKernel.Instance.CurrentFrameIndex);
+        Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+        Assert.Equal(3, CountingTickSubsystem.TickCount);
+        Assert.True(CountingTickSubsystem.WasShutdown);
+    }
+
+    [Fact]
     public void EngineKernelShutdownUnloadsPackageEntriesInReverseMountOrder()
     {
         using var workspace = RuntimePackageWorkspace.Create();
@@ -288,5 +302,40 @@ internal static class TestPackageEvents
     public static void Reset()
     {
         Events.Clear();
+        CountingTickSubsystem.Reset();
+    }
+}
+
+public sealed class CountingTickSubsystem : ITickableSubsystem
+{
+    public static int TickCount { get; private set; }
+    public static bool WasShutdown { get; private set; }
+
+    public int Priority => 0;
+    public EnginePhase InitPhase => EnginePhase.Running;
+
+    public static void Reset()
+    {
+        TickCount = 0;
+        WasShutdown = false;
+    }
+
+    public void Initialize()
+    {
+    }
+
+    public void Tick(float deltaTime)
+    {
+        TickCount++;
+    }
+
+    public void Shutdown()
+    {
+        WasShutdown = true;
+    }
+
+    public void Dispose()
+    {
+        Shutdown();
     }
 }

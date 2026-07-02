@@ -19,6 +19,7 @@ A hot path is any code that runs:
 - [ ] Do not allocate managed objects in the hot path.
 - [ ] Avoid interface dispatch inside inner loops.
 - [ ] Avoid `lock` in hot paths.
+- [ ] Resolve package services during initialization/setup and cache typed service references before frame execution.
 
 ## 3. Memory and iteration
 - [ ] Prefer contiguous component storage and batch processing.
@@ -30,3 +31,4 @@ A hot path is any code that runs:
 - Build and profile in Release when measuring hot-path performance.
 - Confirm GC pressure stays out of simulation and rendering loops.
 - Validate the final design against the relevant architecture docs and nearby package patterns instead of relying on generic OOP conventions.
+- For rendering/RHI changes, verify the path remains compatible with `validate_runtime.bat --no-pause --config Debug --frames 1` and does not add service-registry lookups inside RenderGraph pass execution.

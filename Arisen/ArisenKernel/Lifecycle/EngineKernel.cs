@@ -158,6 +158,25 @@ public sealed class EngineKernel : IDisposable
         return 0;
     }
 
+    public int RunForFrames(uint frameCount)
+    {
+        if (!m_IsRunning)
+        {
+            Initialize(Config ?? new EngineConfig());
+        }
+
+        KernelLog.Info($"[EngineKernel] Running bounded frame loop for {frameCount} frame(s).");
+        for (uint i = 0; i < frameCount && m_IsRunning; i++)
+        {
+            Time.Update();
+            Tick(Time.deltaTime);
+        }
+
+        RequestShutdown();
+        Shutdown();
+        return 0;
+    }
+
     /// <summary>
     /// Executes a single frame of the engine.
     /// Exposing this allows external runners (like the Editor) to drive the loop.
@@ -239,9 +258,30 @@ public sealed class EngineKernel : IDisposable
         int Priority,
         long RegistrationOrder);
 
+    public IReadOnlyList<EngineSubsystemDiagnosticInfo> GetInitializedSubsystemDiagnostics()
+    {
+        return m_InitializedSubsystems
+            .Select(subsystem =>
+            {
+                var info = GetSubsystemInfo(subsystem);
+                return new EngineSubsystemDiagnosticInfo(
+                    info.DeclaredClassName,
+                    info.PackageId,
+                    info.InitPhase,
+                    info.Priority);
+            })
+            .ToArray();
+    }
+
     public void Dispose()
     {
         Shutdown();
     }
 }
+
+public sealed record EngineSubsystemDiagnosticInfo(
+    string ClassName,
+    string PackageId,
+    EnginePhase InitPhase,
+    int Priority);
 

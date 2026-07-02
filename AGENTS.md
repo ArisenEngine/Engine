@@ -76,6 +76,18 @@ What this runs:
 
 Use this as the first validation gate for package graph, service-contract, native-test metadata, and runtime package lifecycle changes.
 
+Full runtime validation is available when a change touches boot, generated workspaces, platform windows, RHI startup, profile macros, package loading, or smoke-mode behavior:
+
+- `Arisen\Scripts\Windows\validate_runtime.bat --no-pause --config Debug --frames 1`
+
+What this runs:
+- `validate_fast.bat`
+- generated workspace build(s) for the canonical runtime profiles
+- bounded runtime smoke launches for generated `PackageGame.exe`
+- `Development`, `Production`, and `RHIVulkanTesting` boot coverage where applicable
+
+Use `validate_runtime.bat` as the main local gate for runtime/rendering work. If a GPU-dependent path is unavailable on the machine, report that explicitly instead of hiding it behind a generic build failure.
+
 Package-level workspace generation/testing remains available for native package integration:
 
 - Build an isolated package test workspace:
@@ -133,6 +145,12 @@ The canonical development workspace currently lives at:
 Its `manifest.json` defines:
 - base packages such as `com.arisen.core`, `com.arisen.ecs`, `com.arisen.rendering`, `com.arisen.generic-renderpipeline`, `com.arisen.rhi.vulkan.native`
 - profiles such as `Development`, `Production`, and `RHIVulkanTesting`
+
+Package dependency intent:
+- composition/root packages may depend on concrete provider packages because they choose the product assembly, for example selecting `com.arisen.rhi.vulkan.native`
+- reusable domain packages should depend on shared contracts/foundation packages and express runtime needs through `services.requires`
+- concrete provider packages must declare `services.provides` and any package dependencies required for their own implementation
+- a package is only part of the selected graph if the workspace manifest or another selected package dependency pulls it in
 
 ### Boot flow
 
@@ -248,6 +266,13 @@ The rendering path is layered:
 
 Render work is expected to be expressed as RenderGraph passes instead of ad hoc direct orchestration. Multi-threaded rendering is tied to the task graph.
 
+Current platform/RHI ownership policy:
+- standalone runtime builds create and pump the main Win32 window through `IWindowProvider`
+- editor builds use `ARISEN_ENGINE_EDITOR`; the Avalonia/editor host owns native UI windows and the platform package must not create an independent runtime window loop
+- runtime Vulkan initialization must validate `IWindowProvider.GetWindowInfo()` before registering `IRHIDevice`
+- editor Vulkan initialization may use a virtual/device-only path until editor-hosted viewport surfaces are implemented
+- future DX12/Metal backends should follow the same contracts: common RHI interfaces stay shared, concrete backend packages stay selectable by composition packages
+
 ### What to read before making architectural changes
 
 Do not answer architecture questions from memory alone; read the docs and relevant source first.
@@ -263,6 +288,7 @@ Start with:
   - `Arisen\Docs\Architecture\ServiceRegistry.md`
 - rendering questions:
   - `Arisen\Docs\Architecture\Rendering.md`
+  - `Arisen\Docs\Architecture\RuntimeRenderingNextTodo.md`
 - package-boundary questions:
   - `Arisen\Docs\Architecture\PackageArchitecture.md`
   - `Arisen\Docs\Architecture\PackageRegistry.md`

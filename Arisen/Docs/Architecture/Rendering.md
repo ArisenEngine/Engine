@@ -71,9 +71,24 @@ Rendering execution is integrated with the `com.arisen.taskgraph` job system.
 
 ---
 
-## 5. Viewport Integration
+## 5. Platform And RHI Surface Policy
 
-For the Editor, the `RenderGraph` supports a special "Shared Texture" mode. Instead of presenting directly to a native swapchain, the final output is exported as a Win32 Shared Handle, which is then consumed by the Avalonia-based Viewport using GPU-GPU interop for **Zero-Overhead** UI display.
+Rendering does not own platform windows directly. It consumes surface/device contracts that are provided by selected packages.
+
+Current policy:
+- Standalone runtime builds create and pump the main Win32 window through `IWindowProvider`.
+- Editor builds use the generated `ARISEN_ENGINE_EDITOR` compile-time macro. The Avalonia/editor host owns native UI windows, so the platform package must not create a separate standalone game window in editor builds.
+- Runtime Vulkan initialization must consume `IWindowProvider.GetWindowInfo()` and validate a real `WindowSurfaceKind.Win32` native handle before registering `IRHIDevice`.
+- Editor Vulkan initialization may use a virtual/device-only path until editor-hosted viewport surfaces are implemented.
+- Future DX12 and Metal packages should follow the same shared RHI contracts and backend capability model. The selected root/composition package chooses the concrete provider package; rendering/domain packages stay backend-agnostic.
+
+The next runtime rendering step is replacing the temporary runtime device-only Vulkan bootstrap with a real Win32 surface and swapchain creation path.
+
+---
+
+## 6. Viewport Integration
+
+For the Editor, the RenderGraph should support an editor-hosted viewport surface instead of assuming the standalone runtime window path. The long-term target is a shared texture/shared handle path consumed by the Avalonia viewport. Simpler staged or virtual surfaces may be used as transitional diagnostics, but editor integration must still go through explicit package services and RHI contracts.
 
 ---
 *AI Guidance: When implementing new rendering features, ensure they are encapsulated as `RenderPass` nodes that can be managed by the RenderGraph. Avoid direct RHI calls outside of the Pass execution context.*

@@ -704,6 +704,17 @@ public class PackageSubsystem : IEngineSubsystem
 
     public IEnumerable<ArisenPackageInfo> GetAllPackages() => m_LoadedPackages.Values;
 
+    public IEnumerable<ArisenPackageInfo> GetLoadedPackagesInOrder()
+    {
+        foreach (var packageId in m_LoadOrder)
+        {
+            if (m_LoadedPackages.TryGetValue(packageId, out var package))
+            {
+                yield return package;
+            }
+        }
+    }
+
     public void Shutdown()
     {
         // B19: Call OnUnload on all package entry instances in reverse mount order.

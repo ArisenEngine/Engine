@@ -16,6 +16,9 @@ The package-oriented foundation is now in place:
 - `PackageSubsystem` owns deterministic package load and unload.
 - Services, subsystems, native runtimes, launcher validation, package graph UI, and registry/cache acquisition exist.
 - The canonical development workspace is `Arisen/Development/PackageGame`.
+- Runtime validation exists through `Arisen/Scripts/Windows/validate_runtime.bat --no-pause --config Debug --frames 1`.
+- Standalone runtime window creation is owned by `IWindowProvider`; editor builds use `ARISEN_ENGINE_EDITOR` and do not create a separate native game window.
+- Vulkan runtime initialization now validates the Win32 window contract before registering `IRHIDevice`; editor initialization remains on a virtual/device-only path until editor-hosted surfaces are implemented.
 
 The next risk is no longer package graph correctness. The next risk is whether the selected packages form a real working engine at runtime, especially across the platform/RHI/rendering boundary.
 
@@ -30,6 +33,7 @@ The next risk is no longer package graph correctness. The next risk is whether t
 5. **Make smoke tests executable.** Every major runtime milestone should have a CLI or package-test workflow that can run without manual editor clicking.
 6. **Prefer small vertical slices.** A clear window color, one triangle, one asset, and one editor viewport are better than a large incomplete renderer.
 7. **Generated outputs remain disposable.** Fix source manifests, package code, or generators instead of hand-editing `.arisen/` outputs.
+8. **Editor/runtime ownership is compile-time policy.** Use `ARISEN_ENGINE_EDITOR` for editor-only ownership branches; do not revive runtime `EngineConfig.IsEditor` checks for platform/RHI behavior.
 
 ---
 
@@ -39,18 +43,18 @@ The next risk is no longer package graph correctness. The next risk is whether t
 
 ### TODO
 
-- [ ] Add a headless/smoke launch mode for generated PackageGame binaries.
-  - [ ] Support a bounded frame count such as `--frames 1` or `--smoke`.
-  - [ ] Ensure the default engine loop exits cleanly without requiring editor UI.
-  - [ ] Emit package load order, subsystem order, registered services, and shutdown order.
-- [ ] Add a BuildTool or script entry point for runtime smoke validation.
-  - [ ] Generate/build the Development profile.
-  - [ ] Launch the generated executable with explicit `--workspace`, `--profile`, and `--config`.
-  - [ ] Fail on non-zero process exit, missing resolved manifest, or package/service boot error.
-- [ ] Add smoke coverage for all important profiles.
-  - [ ] Development loads editor/tooling packages when expected.
-  - [ ] Production excludes editor-only packages.
-  - [ ] RHIVulkanTesting loads Vulkan test packages and `com.arisen.testrunner`.
+- [x] Add a headless/smoke launch mode for generated PackageGame binaries.
+  - [x] Support a bounded frame count such as `--frames 1` or `--smoke`.
+  - [x] Ensure the default engine loop exits cleanly without requiring editor UI.
+  - [x] Emit package load order, subsystem order, registered services, and shutdown order.
+- [x] Add a BuildTool or script entry point for runtime smoke validation.
+  - [x] Generate/build the selected profile.
+  - [x] Launch the generated executable with explicit `--workspace`, `--profile`, and `--config`.
+  - [x] Fail on non-zero process exit, missing executable, build error, or package/service boot error.
+- [x] Add smoke coverage for all important profiles.
+  - [x] Development loads editor/tooling packages when expected.
+  - [x] Production excludes editor-only packages.
+  - [x] RHIVulkanTesting loads Vulkan test packages and `com.arisen.testrunner`.
 
 ### Acceptance Criteria
 
@@ -66,17 +70,19 @@ The next risk is no longer package graph correctness. The next risk is whether t
 
 ### TODO
 
-- [ ] Finalize the platform/window service contract shape.
-  - [ ] Confirm `IWindowProvider` ownership under `ArisenKernel.Contracts`.
-  - [ ] Define the minimum runtime data rendering needs: native handle, dimensions, DPI scale, surface kind, resize events.
-  - [ ] Document whether the editor viewport and standalone game window share the same contract or use separate adapter services.
-- [ ] Implement deterministic desktop window lifecycle.
-  - [ ] Create window before RHI swapchain/device initialization.
-  - [ ] Surface resize and close events through a low-allocation path.
-  - [ ] Shut down window resources after rendering/RHI shutdown.
-- [ ] Validate package metadata.
-  - [ ] `com.arisen.platform.desktop` provides the platform/window service.
-  - [ ] Rendering/RHI packages require only contracts, not concrete platform package types.
+- [x] Finalize the platform/window service contract shape.
+  - [x] Confirm `IWindowProvider` ownership under `ArisenKernel.Contracts`.
+  - [x] Define the minimum runtime data rendering needs: native handle, dimensions, DPI scale, surface kind, resize events.
+  - [x] Document whether the editor viewport and standalone game window share the same contract or use separate adapter services.
+    - Standalone runtime uses `IWindowProvider` for the main Win32 window.
+    - Editor builds use `ARISEN_ENGINE_EDITOR`; the UI host owns native windows, and viewport surfaces are registered later through editor-hosted/virtual/shared-handle adapters.
+- [x] Implement deterministic desktop window lifecycle.
+  - [x] Create window before RHI swapchain/device initialization.
+  - [x] Surface resize and close events through a low-allocation path.
+  - [x] Shut down window resources after rendering/RHI shutdown.
+- [x] Validate package metadata.
+  - [x] `com.arisen.platform.desktop` provides the platform/window service.
+  - [x] Rendering/RHI packages require only contracts, not concrete platform package types.
 
 ### Acceptance Criteria
 
@@ -92,6 +98,10 @@ The next risk is no longer package graph correctness. The next risk is whether t
 
 ### TODO
 
+- [x] Define editor/runtime initialization policy.
+  - [x] Editor builds use `ARISEN_ENGINE_EDITOR` and do not require a standalone native window.
+  - [x] Runtime builds require `IWindowProvider` to expose a valid Win32 window before Vulkan device registration.
+  - [x] Editor viewport surfaces remain a later editor-hosted/virtual/shared-handle path.
 - [ ] Finalize RHI service contracts.
   - [ ] `IRHIBackend` advertises backend capability such as `vulkan`.
   - [ ] `IRHIDevice` represents the initialized device used by rendering.
@@ -99,9 +109,10 @@ The next risk is no longer package graph correctness. The next risk is whether t
 - [ ] Implement Vulkan backend initialization path.
   - [ ] Load native Vulkan runtime payloads through package native runtime rules.
   - [ ] Create instance/device/queue/surface/swapchain from platform window data.
-  - [ ] Register `IRHIDevice` only after successful initialization.
+  - [x] Register `IRHIDevice` only after successful initialization.
   - [ ] Unregister/shutdown in reverse package/subsystem order.
 - [ ] Add diagnostics.
+  - [x] Log selected initialization mode: editor virtual surface or runtime Win32 window.
   - [ ] Log selected adapter, validation layer status, instance/device extension state, and swapchain format.
   - [ ] Fail clearly when Vulkan SDK/runtime/driver requirements are missing.
 - [ ] Add RHI smoke tests.
@@ -216,11 +227,11 @@ The next risk is no longer package graph correctness. The next risk is whether t
 
 ### TODO
 
-- [ ] Add `validate_runtime` or equivalent script.
-  - [ ] Run fast unit tests.
-  - [ ] Validate PackageGame profiles.
-  - [ ] Build required generated outputs.
-  - [ ] Run headless/smoke boot.
+- [x] Add `validate_runtime` or equivalent script.
+  - [x] Run fast unit tests.
+  - [x] Validate PackageGame profiles.
+  - [x] Build required generated outputs.
+  - [x] Run headless/smoke boot.
 - [ ] Add artifact/log policy.
   - [ ] Store smoke logs under workspace `.arisen/Logs`.
   - [ ] Keep logs deterministic enough for diffing.
@@ -242,9 +253,9 @@ The next risk is no longer package graph correctness. The next risk is whether t
 
 Implement in this order:
 
-1. **Runtime boot smoke mode** for PackageGame.
-2. **Platform/window contract cleanup** so RHI initialization has stable input.
-3. **Vulkan `IRHIDevice` bring-up** with clear diagnostics.
+1. **Finalize runtime Vulkan surface/swapchain creation** using the validated Win32 window contract.
+2. **Complete RHI service contracts** for backend capability, device, surface, and swapchain ownership.
+3. **Add Vulkan diagnostics** for adapter, validation layers, extensions, and swapchain format.
 4. **RenderGraph clear-color frame**.
 5. **RenderGraph triangle frame**.
 6. **First cooked shader asset path**.
@@ -254,21 +265,22 @@ This keeps the work vertical and testable. Each step should leave the engine in 
 
 ---
 
-## Suggested First Implementation Task
+## Suggested Next Implementation Task
 
 Start with:
 
-> Add a bounded runtime smoke mode for generated PackageGame binaries and wire it into a script.
+> Replace the temporary runtime Vulkan device-only bootstrap with a real Win32 surface and swapchain creation path.
 
 Why first:
 
-- It proves the completed package infrastructure under real process boot.
-- It creates the validation harness needed for Vulkan, RenderGraph, assets, and editor viewport work.
-- It is lower risk than starting directly inside Vulkan or RenderGraph.
-- It gives us clean logs for package load order, service registration, subsystem initialization, and shutdown.
+- The smoke harness and window contract are already in place.
+- The runtime branch now has a validated Win32 handle, size, and DPI input.
+- RenderGraph clear/present requires a real presentable swapchain target.
+- This keeps editor viewport work safe because editor builds remain on the virtual/editor-hosted path.
 
 Expected output:
 
-- A command or script that launches PackageGame for a bounded run.
-- Exit code `0` on clean boot/shutdown and non-zero on boot failure.
-- Logs showing workspace, profile, resolved manifest, packages, services, subsystems, and shutdown order.
+- A runtime-only Vulkan path that creates an OS-backed surface/swapchain from `IWindowProvider`.
+- Clear diagnostics for unsupported/missing Vulkan runtime requirements.
+- `IRHIDevice` registration only after successful backend initialization.
+- `validate_runtime.bat --no-pause --config Debug --frames 1` remains green.
