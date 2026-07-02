@@ -77,6 +77,55 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
             TestPackageEvents.Events);
     }
 
+    [Fact]
+    public void EngineKernelFailsWhenNativeLifecycleLibraryIsMissing()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string packagePath = workspace.AddPackage(
+            "com.test.runtime.native",
+            typeof(ProviderPackageEntry),
+            nativeRuntimes: new Dictionary<string, object[]>
+            {
+                ["win-x64"] = new object[]
+                {
+                    new
+                    {
+                        path = "Missing.Native.dll",
+                        initExport = "ArisenNativeInit"
+                    }
+                }
+            });
+
+        var exception = Assert.Throws<FileNotFoundException>(() =>
+            EngineKernel.Instance.Initialize(new EngineConfig
+            {
+                PackageUrls = new List<string> { packagePath }
+            }));
+
+        Assert.Contains("native lifecycle hooks", exception.Message);
+        Assert.Contains("Missing.Native.dll", exception.Message);
+    }
+
+    [Fact]
+    public void EngineKernelIgnoresMissingNativeRuntimeWithoutLifecycleHooks()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string packagePath = workspace.AddPackage(
+            "com.test.runtime.native-passive",
+            typeof(ProviderPackageEntry),
+            nativeRuntimes: new Dictionary<string, object[]>
+            {
+                ["win-x64"] = new object[] { "Missing.Passive.dll" }
+            });
+
+        EngineKernel.Instance.Initialize(new EngineConfig
+        {
+            PackageUrls = new List<string> { packagePath }
+        });
+
+        Assert.Contains("load:provider", TestPackageEvents.Events);
+    }
+
     public void Dispose()
     {
         EngineKernel.Instance.Reset();
@@ -108,7 +157,8 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
             string id,
             Type entryType,
             Dictionary<string, string>? dependencies = null,
-            object? services = null)
+            object? services = null,
+            Dictionary<string, object[]>? nativeRuntimes = null)
         {
             string packageDir = Path.Combine(m_Root, id);
             Directory.CreateDirectory(packageDir);
@@ -128,6 +178,7 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
 
             if (dependencies is { Count: > 0 }) manifest["dependencies"] = dependencies;
             if (services != null) manifest["services"] = services;
+            if (nativeRuntimes is { Count: > 0 }) manifest["nativeRuntimes"] = nativeRuntimes;
 
             File.WriteAllText(Path.Combine(packageDir, "package.json"), JsonSerializer.Serialize(manifest, s_JsonOptions));
             return packageDir;

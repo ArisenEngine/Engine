@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Reflection;
 using System;
+using System.Runtime.InteropServices;
 using ArisenKernel.Lifecycle;
 using ArisenKernel.Diagnostics;
 using ArisenKernel.Services;
@@ -12,6 +13,7 @@ public class PackageSubsystem : IEngineSubsystem
     private readonly Dictionary<string, ArisenPackageInfo> m_LoadedPackages = new();
     private readonly List<string> m_LoadOrder = new();
     private readonly List<PackageLoadContext> m_LoadContexts = new();
+    private readonly Dictionary<string, List<LoadedNativeRuntime>> m_LoadedNativeRuntimes = new(StringComparer.OrdinalIgnoreCase);
     private readonly IPackageResolver m_Resolver = new DefaultPackageResolver();
     private string m_PackagesRoot = string.Empty;
 
@@ -424,8 +426,14 @@ public class PackageSubsystem : IEngineSubsystem
             };
 
             int packageOrder = m_LoadOrder.Count;
+            var nativeRuntimes = LoadNativeRuntimes(manifest);
             RegisterPackageSubsystems(manifest, assembly, packageOrder);
             ValidateProvidedServices(manifest);
+
+            if (nativeRuntimes.Count > 0)
+            {
+                m_LoadedNativeRuntimes[manifest.Id] = nativeRuntimes;
+            }
 
             m_LoadedPackages[manifest.Id] = packageInfo;
             m_LoadOrder.Add(manifest.Id);
@@ -439,6 +447,107 @@ public class PackageSubsystem : IEngineSubsystem
     }
 
 
+
+    private static List<LoadedNativeRuntime> LoadNativeRuntimes(PackageManifest manifest)
+    {
+        var loadedRuntimes = new List<LoadedNativeRuntime>();
+        if (manifest.NativeRuntimes == null || manifest.NativeRuntimes.Count == 0) return loadedRuntimes;
+
+        foreach (var runtime in EnumerateNativeRuntimes(manifest))
+        {
+            if (string.IsNullOrWhiteSpace(runtime.InitExport) && string.IsNullOrWhiteSpace(runtime.ShutdownExport))
+            {
+                continue;
+            }
+
+            string libraryPath = Path.Combine(AppContext.BaseDirectory, Path.GetFileName(runtime.Path));
+            if (!File.Exists(libraryPath))
+            {
+                throw new FileNotFoundException($"Package '{manifest.Id}' declares native lifecycle hooks for '{runtime.Path}', but deployed library '{libraryPath}' was not found.", libraryPath);
+            }
+
+            IntPtr libraryHandle = NativeLibrary.Load(libraryPath);
+            try
+            {
+                KernelLog.Info($"[PackageSubsystem] Loaded native runtime '{Path.GetFileName(libraryPath)}' for package '{manifest.Id}'.");
+
+                if (!string.IsNullOrWhiteSpace(runtime.InitExport))
+                {
+                    InvokeNativeLifecycleExport(manifest.Id, libraryHandle, runtime.Path, runtime.InitExport, "init");
+                }
+
+                loadedRuntimes.Add(new LoadedNativeRuntime(runtime.Path, libraryHandle, runtime.ShutdownExport));
+            }
+            catch
+            {
+                NativeLibrary.Free(libraryHandle);
+                throw;
+            }
+        }
+
+        return loadedRuntimes;
+    }
+
+    private static void InvokeNativeLifecycleExport(string packageId, IntPtr libraryHandle, string libraryPath, string exportName, string phase)
+    {
+        if (!NativeLibrary.TryGetExport(libraryHandle, exportName, out var exportPtr))
+        {
+            throw new EntryPointNotFoundException($"Package '{packageId}' native runtime '{libraryPath}' declares {phase} export '{exportName}', but the export was not found.");
+        }
+
+        var callback = Marshal.GetDelegateForFunctionPointer<NativeLifecycleCallback>(exportPtr);
+        int result = callback();
+        if (result != 0)
+        {
+            throw new InvalidOperationException($"Package '{packageId}' native runtime '{libraryPath}' {phase} export '{exportName}' returned error code {result}.");
+        }
+
+        KernelLog.Info($"[PackageSubsystem] Native {phase} hook '{exportName}' succeeded for package '{packageId}'.");
+    }
+
+    private static IEnumerable<NativeRuntimeBlock> EnumerateNativeRuntimes(PackageManifest manifest)
+    {
+        foreach (var ridEntry in manifest.NativeRuntimes ?? new Dictionary<string, List<JsonElement>>())
+        {
+            if (!string.Equals(ridEntry.Key, DefaultRuntimeIdentifier, StringComparison.OrdinalIgnoreCase)) continue;
+
+            foreach (var element in ridEntry.Value)
+            {
+                if (TryReadNativeRuntime(element, out var runtime))
+                {
+                    yield return runtime;
+                }
+            }
+        }
+    }
+
+    private static bool TryReadNativeRuntime(JsonElement element, out NativeRuntimeBlock runtime)
+    {
+        runtime = new NativeRuntimeBlock();
+
+        if (element.ValueKind == JsonValueKind.String)
+        {
+            runtime.Path = element.GetString() ?? string.Empty;
+            return !string.IsNullOrWhiteSpace(runtime.Path);
+        }
+
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        runtime.Path = ReadStringProperty(element, "path") ?? ReadStringProperty(element, "name") ?? string.Empty;
+        runtime.InitExport = ReadStringProperty(element, "initExport");
+        runtime.ShutdownExport = ReadStringProperty(element, "shutdownExport");
+        return !string.IsNullOrWhiteSpace(runtime.Path);
+    }
+
+    private static string? ReadStringProperty(JsonElement element, string propertyName)
+    {
+        return element.TryGetProperty(propertyName, out var property) && property.ValueKind == JsonValueKind.String
+            ? property.GetString()
+            : null;
+    }
 
     private static PackageAssemblyLoadPolicy GetAssemblyLoadPolicy(string assemblyPath)
     {
@@ -617,10 +726,34 @@ public class PackageSubsystem : IEngineSubsystem
                     KernelLog.Info($"[PackageSubsystem] Error unloading package {pkg.Id}: {e.Message}");
                 }
             }
+
+            if (m_LoadedNativeRuntimes.TryGetValue(packageId, out var nativeRuntimes))
+            {
+                for (int nativeIndex = nativeRuntimes.Count - 1; nativeIndex >= 0; nativeIndex--)
+                {
+                    var nativeRuntime = nativeRuntimes[nativeIndex];
+                    try
+                    {
+                        if (!string.IsNullOrWhiteSpace(nativeRuntime.ShutdownExport))
+                        {
+                            InvokeNativeLifecycleExport(pkg.Id, nativeRuntime.LibraryHandle, nativeRuntime.Path, nativeRuntime.ShutdownExport, "shutdown");
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        KernelLog.Info($"[PackageSubsystem] Error running native shutdown for package {pkg.Id}: {e.Message}");
+                    }
+                    finally
+                    {
+                        NativeLibrary.Free(nativeRuntime.LibraryHandle);
+                    }
+                }
+            }
         }
 
         m_LoadOrder.Clear();
         m_LoadedPackages.Clear();
+        m_LoadedNativeRuntimes.Clear();
 
         foreach (var context in m_LoadContexts)
         {
@@ -644,6 +777,20 @@ public class PackageSubsystem : IEngineSubsystem
         IsolatedCollectibleContext
     }
 
+    private const string DefaultRuntimeIdentifier = "win-x64";
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int NativeLifecycleCallback();
+
+    private sealed record LoadedNativeRuntime(string Path, IntPtr LibraryHandle, string? ShutdownExport);
+
+    private sealed class NativeRuntimeBlock
+    {
+        public string Path { get; set; } = string.Empty;
+        public string? InitExport { get; set; }
+        public string? ShutdownExport { get; set; }
+    }
+
     private class PackageManifest
     {
         public string Id { get; set; } = string.Empty;
@@ -655,6 +802,7 @@ public class PackageSubsystem : IEngineSubsystem
         public Dictionary<string, string>? Dependencies { get; set; }
         public PackageServicesBlock? Services { get; set; }
         public List<PackageSubsystemBlock>? Subsystems { get; set; }
+        public Dictionary<string, List<JsonElement>>? NativeRuntimes { get; set; }
     }
 
     private class PackageSubsystemBlock

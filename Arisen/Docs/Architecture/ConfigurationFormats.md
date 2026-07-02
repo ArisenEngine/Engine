@@ -165,7 +165,7 @@ Source precedence is intentional: `file://` means local source, `http(s)://` mea
 | `entry.assembly` | `string` | Generated | The managed C# DLL filename. Usually emitted into `package.generated.json`. |
 | `entry.class` | `string` | Generated | The full name of the class implementing `IPackageEntry`. Usually emitted into `package.generated.json`. |
 | `services.provides` | `array` | Optional/generated | C# interfaces this package registers into the Kernel's `ServiceRegistry` on boot. Entries may be strings or objects with a fully qualified `interface` type name, optional integer `priority`, optional string-array `capabilities`, and optional `deferred` for providers that are declared at graph-validation time but registered later. Prefer code generation/attributes for providers. Duplicate selected providers for the same interface are fatal. |
-| `services.requires` | `array` | Optional/human | Interfaces this package demands to exist in the registry before it can boot. Entries may be strings or objects with a fully qualified `interface` type name, optional `optional`, optional `deferred`, and optional string-array `capabilities`. When capabilities are listed, validation requires a selected provider for the same interface to advertise every requested capability. |
+| `services.requires` | `array` | Optional/human | Interfaces this package demands to exist in the registry before it can boot. Entries may be strings or objects with a fully qualified `interface` type name, optional `optional`, optional `deferred`, and optional string-array `capabilities`. When capabilities are listed, validation requires a selected provider for the same interface to advertise every requested capability. `ArisenKernel.Contracts.*` names are validated against the kernel contracts source folder. |
 | `subsystems` | `array` | Generated | Types implementing `IEngineSubsystem`. Prefer `package.generated.json`; runtime merges authored and generated entries for transition compatibility. |
 | `dependencies` | `object` | Optional | Key-value pairs of required package IDs and their semantic version constraints. |
 | `nativeRuntimes` | `object` | Optional | Key-value pairs matching a platform Runtime Identifier (RID) to unmanaged runtime payload declarations. String shorthand remains supported. |
@@ -200,7 +200,9 @@ Object form:
   "source": "static",
   "required": true,
   "configurations": ["Debug", "Release"],
-  "exports": ["vkGetInstanceProcAddr"]
+  "exports": ["vkGetInstanceProcAddr"],
+  "initExport": "ArisenNativeInit",
+  "shutdownExport": "ArisenNativeShutdown"
 }
 ```
 
@@ -213,6 +215,10 @@ Object fields:
 | `required` | `bool` | Optional | Defaults to `true`. Missing optional static payloads produce warnings instead of errors. |
 | `configurations` | `array<string>` | Optional | Configuration metadata for future config-specific deployment. Current validation parses it but does not filter by it yet. |
 | `exports` | `array<string>` | Optional | Expected DLL exports. For existing static DLL payloads, validation checks these exports during `ArisenBuildTool validate`. |
+| `initExport` | `string` | Optional | Parameterless C ABI lifecycle export called by `PackageSubsystem` when the package is mounted. Return `0` for success; non-zero fails package load. |
+| `shutdownExport` | `string` | Optional | Parameterless C ABI lifecycle export called by `PackageSubsystem` in reverse package order during shutdown. Return `0` for success; non-zero is logged during shutdown. |
+
+Native lifecycle exports are optional. Managed or hybrid packages should continue to prefer `IPackageEntry.OnLoad()` / `OnUnload()` when managed code owns lifecycle orchestration. Use native lifecycle exports only for native-only payloads or low-level initialization that must occur inside the native DLL.
 
 ### Native Test Entries
 

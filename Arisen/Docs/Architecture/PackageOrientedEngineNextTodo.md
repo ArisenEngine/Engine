@@ -219,7 +219,10 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
   - [x] `com.arisen.taskgraph` exists and is included by ECS/rendering/packagegame where currently used.
   - [x] `com.arisen.nodecanvas` is included by `com.arisen.editor`.
   - [x] Rendering pipeline packages explicitly depend on rendering/core/native contracts they use.
-- [ ] Move shared contracts into kernel or dedicated contract packages where appropriate.
+- [x] Move shared contracts into kernel or dedicated contract packages where appropriate.
+  - [x] Current shared engine service contracts are owned by `ArisenKernel.Contracts`.
+  - [x] `ArisenBuildTool validate` checks `ArisenKernel.Contracts.*` service names against `Arisen/ArisenKernel/Contracts`.
+  - [x] Dedicated contract packages remain a future split only for independently versioned contract families.
 - [x] Avoid domain packages referencing concrete implementation packages unless intended.
   - [x] Example: rendering should depend on RHI contracts, not a concrete Vulkan package.
   - [x] `ArisenBuildTool validate` enforces service capability requirements, so the user/composition package can require `IRHIBackend` with `vulkan` while render/domain packages stay backend-agnostic.
@@ -244,12 +247,15 @@ This works as an early implementation, but it risks duplicated behavior, inconsi
 
 ### TODO
 
-- [ ] Finalize native package metadata.
+- [x] Finalize native package metadata.
   - [x] Native library names per platform/configuration.
   - [x] Runtime DLL copy rules.
-  - [ ] Native initialization/shutdown entry points if needed.
+  - [x] Optional native initialization/shutdown entry points through `nativeRuntimes[*].initExport` and `shutdownExport`.
 - [x] Ensure build tool deploys native runtime payloads into `.arisen/bin/{profile}/{configuration}/`.
-- [ ] Ensure `com.arisen.core.native` exposes foundation services through managed contracts if needed.
+- [x] Ensure `com.arisen.core.native` exposes foundation services through managed contracts if needed.
+  - [x] `com.arisen.core.native` remains a passive native payload provider.
+  - [x] `com.arisen.core` is the managed facade and declares/provides `ArisenKernel.Contracts.ILogger` plus `ArisenEngine.Core.Automation.ICommandManager`.
+  - [x] Future native foundation capabilities should be exposed by managed contracts in `com.arisen.core` unless native-only lifecycle hooks are required.
 - [x] Ensure `com.arisen.rhi.vulkan.native` registers RHI services through managed bridge code.
 - [ ] Add native package validation:
   - [x] Missing DLL fails.

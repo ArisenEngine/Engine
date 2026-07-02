@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Text.Json;
 using ArisenBuildTool.Models;
 using ArisenBuildTool.Utils;
@@ -19,6 +20,8 @@ public sealed class PackageValidationResult
 
 public static class PackageValidationService
 {
+    private const string KernelContractNamespace = "ArisenKernel.Contracts.";
+
     private static readonly HashSet<string> s_ValidPackageTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         "managed",
@@ -168,7 +171,7 @@ public static class PackageValidationService
 
         if (result.Errors.Count == 0)
         {
-            ValidateServiceContracts(result);
+            ValidateServiceContracts(result, LoadKernelServiceContracts(engineDir, result));
         }
 
         if (result.Errors.Count == 0)
@@ -450,13 +453,46 @@ public static class PackageValidationService
         }
     }
 
-    private static void ValidateServiceContracts(PackageValidationResult result)
+    private static HashSet<string> LoadKernelServiceContracts(string engineDir, PackageValidationResult result)
+    {
+        var contracts = new HashSet<string>(StringComparer.Ordinal);
+        string contractsDir = Path.GetFullPath(Path.Combine(engineDir, "ArisenKernel", "Contracts"));
+        if (!Directory.Exists(contractsDir))
+        {
+            result.Errors.Add($"Kernel contracts directory was not found at '{contractsDir}'.");
+            return contracts;
+        }
+
+        foreach (var contractFile in Directory.EnumerateFiles(contractsDir, "*.cs", SearchOption.TopDirectoryOnly)
+                     .OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
+        {
+            string source;
+            try
+            {
+                source = File.ReadAllText(contractFile);
+            }
+            catch (Exception ex)
+            {
+                result.Errors.Add($"Failed to read kernel contract source '{contractFile}': {ex.Message}");
+                continue;
+            }
+
+            foreach (Match match in Regex.Matches(source, @"\b(?:public|internal)\s+interface\s+([A-Za-z_][A-Za-z0-9_]*)\b"))
+            {
+                contracts.Add(KernelContractNamespace + match.Groups[1].Value);
+            }
+        }
+
+        return contracts;
+    }
+
+    private static void ValidateServiceContracts(PackageValidationResult result, IReadOnlySet<string> kernelServiceContracts)
     {
         var providersByContract = new Dictionary<string, List<ServiceProviderDescriptor>>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var package in result.PackageMap.Values)
         {
-            foreach (var providedContract in EnumerateServiceContracts(package.Manifest.Services?.Provides, package.Manifest.Id, "provides", result))
+            foreach (var providedContract in EnumerateServiceContracts(package.Manifest.Services?.Provides, package.Manifest.Id, "provides", result, kernelServiceContracts))
             {
                 if (!providersByContract.TryGetValue(providedContract.Name, out var providers))
                 {
@@ -475,7 +511,7 @@ public static class PackageValidationService
 
         foreach (var package in result.PackageMap.Values)
         {
-            foreach (var requiredContract in EnumerateServiceContracts(package.Manifest.Services?.Requires, package.Manifest.Id, "requires", result))
+            foreach (var requiredContract in EnumerateServiceContracts(package.Manifest.Services?.Requires, package.Manifest.Id, "requires", result, kernelServiceContracts))
             {
                 if (!providersByContract.TryGetValue(requiredContract.Name, out var providers))
                 {
@@ -528,7 +564,12 @@ public static class PackageValidationService
             : string.Join(", ", capabilities.OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
     }
 
-    private static IEnumerable<ServiceContractDescriptor> EnumerateServiceContracts(List<JsonElement>? elements, string packageId, string sectionName, PackageValidationResult result)
+    private static IEnumerable<ServiceContractDescriptor> EnumerateServiceContracts(
+        List<JsonElement>? elements,
+        string packageId,
+        string sectionName,
+        PackageValidationResult result,
+        IReadOnlySet<string> kernelServiceContracts)
     {
         if (elements == null) yield break;
 
@@ -610,6 +651,13 @@ public static class PackageValidationService
             if (!contract.Contains('.', StringComparison.Ordinal))
             {
                 result.Errors.Add($"Package '{packageId}' has unqualified services.{sectionName} contract '{contract}'. Service contracts must use fully qualified type names such as 'ArisenKernel.Contracts.IApplicationHost'.");
+                continue;
+            }
+
+            if (contract.StartsWith(KernelContractNamespace, StringComparison.Ordinal)
+                && !kernelServiceContracts.Contains(contract))
+            {
+                result.Errors.Add($"Package '{packageId}' references unknown kernel service contract '{contract}' in services.{sectionName}. Add the contract under ArisenKernel/Contracts or move the service declaration to the owning package contract namespace.");
                 continue;
             }
 
