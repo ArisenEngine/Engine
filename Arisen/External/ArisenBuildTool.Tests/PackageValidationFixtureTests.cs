@@ -39,6 +39,62 @@ public sealed class PackageValidationFixtureTests
     }
 
     [Fact]
+    public void MissingWorkspaceRequiredFieldsFailValidation()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage("com.test.app", layer: "user");
+
+        var manifest = workspace.CreateManifest(new PackageRequirement
+        {
+            Id = "com.test.app",
+            Url = "file://Local/com.test.app",
+            Version = "1.0.0"
+        });
+        manifest.Name = string.Empty;
+        manifest.EngineVersion = string.Empty;
+
+        var result = workspace.Validate(manifest);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error => error.Contains("missing required Name", StringComparison.Ordinal));
+        Assert.Contains(result.Errors, error => error.Contains("missing required EngineVersion", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void MissingWorkspacePackageVersionFailsValidation()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage("com.test.app", layer: "user");
+
+        var result = workspace.Validate(workspace.CreateManifest(new PackageRequirement
+        {
+            Id = "com.test.app",
+            Url = "file://Local/com.test.app"
+        }));
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error => error.Contains("missing required Version", StringComparison.Ordinal)
+            && error.Contains("com.test.app", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void MissingPackageRequiredFieldsFailValidation()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddRawPackage("com.test.app", new Dictionary<string, object?>
+        {
+            ["id"] = "com.test.app",
+            ["layer"] = "user"
+        });
+
+        var result = workspace.Validate("com.test.app");
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error => error.Contains("missing required name", StringComparison.Ordinal));
+        Assert.Contains(result.Errors, error => error.Contains("missing required version", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void DependencyCycleFailsValidation()
     {
         using var workspace = ValidationWorkspace.Create();
@@ -355,6 +411,13 @@ public sealed class PackageValidationFixtureTests
             WritePackage(Path.Combine(m_Root, ".Cache", id), id, layer, type, description);
         }
 
+        public void AddRawPackage(string id, Dictionary<string, object?> manifest)
+        {
+            string packageDir = Path.Combine(LocalPath, id);
+            Directory.CreateDirectory(packageDir);
+            File.WriteAllText(Path.Combine(packageDir, "package.json"), JsonSerializer.Serialize(manifest, s_JsonOptions));
+        }
+
         private static void WritePackage(
             string packageDir,
             string id,
@@ -391,6 +454,7 @@ public sealed class PackageValidationFixtureTests
             return new ProjectManifest
             {
                 Name = "ValidationFixture",
+                EngineVersion = "Current",
                 Packages = packages.ToList(),
                 Profiles = new Dictionary<string, ProfileDefinition>
                 {
@@ -402,7 +466,7 @@ public sealed class PackageValidationFixtureTests
         public PackageValidationResult Validate(params string[] packageIds)
         {
             var requirements = packageIds
-                .Select(id => new PackageRequirement { Id = id, Url = $"file://Local/{id}" })
+                .Select(id => new PackageRequirement { Id = id, Url = $"file://Local/{id}", Version = "1.0.0" })
                 .ToArray();
 
             return Validate(CreateManifest(requirements));
