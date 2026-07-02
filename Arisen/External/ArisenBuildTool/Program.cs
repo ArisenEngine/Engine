@@ -134,10 +134,10 @@ class Program
             EngineVersion = "Current",
             Packages = new List<PackageRequirement>
             {
-                new PackageRequirement { Id = "com.arisen.core", Url = "file://Local/com.arisen.core" },
-                new PackageRequirement { Id = packageId, Url = $"file://Local/{packageId}" },
-                new PackageRequirement { Id = testPackageId, Url = $"file://Local/{testPackageId}" },
-                new PackageRequirement { Id = "com.arisen.testrunner", Url = "file://Local/com.arisen.testrunner" }
+                new PackageRequirement { Id = "com.arisen.core", Url = "file://Local/com.arisen.core", Version = "1.0.0" },
+                new PackageRequirement { Id = packageId, Url = $"file://Local/{packageId}", Version = "1.0.0" },
+                new PackageRequirement { Id = testPackageId, Url = $"file://Local/{testPackageId}", Version = "1.0.0" },
+                new PackageRequirement { Id = "com.arisen.testrunner", Url = "file://Local/com.arisen.testrunner", Version = "1.0.0" }
             },
             Profiles = new Dictionary<string, ProfileDefinition>
             {

@@ -5,6 +5,15 @@
 
 This document defines the strict `JSON` structural schemas for the core configuration files driving the Arisen Engine's package-centric architecture.
 
+## Canonical Casing
+
+Arisen intentionally keeps two JSON styles because the files are owned by different surfaces:
+
+- Workspace/project files (`manifest.json`, `.arisenproj`) use **PascalCase** keys because they are edited mainly by launcher/project tooling and mirror the managed project model.
+- Package files (`package.json`, `package.generated.json`) use **camelCase** keys because they are package metadata, registry payloads, and generated package descriptors.
+
+Tooling may deserialize case-insensitively for transition compatibility, but generated files and documentation must use the canonical casing above. Validation treats the field names listed in this document as the source of truth.
+
 ---
 
 ## 1. Project Manifest (`manifest.json`)
@@ -18,7 +27,7 @@ This document defines the strict `JSON` structural schemas for the core configur
   "$schema": "https://arisen.dev/schemas/manifest-v1.json",
   "Name": "MyGame",
   "EngineVersion": "Current",
-  
+
   "Packages": [
     {
       "Id": "com.user.mygame",
@@ -50,7 +59,7 @@ This document defines the strict `JSON` structural schemas for the core configur
 | `Packages` | `array` | **Yes** | The base list of packages loaded regardless of what Profile is active. |
 | `Packages[].Id` | `string` | **Yes** | The unique identifier of the package to load. |
 | `Packages[].Url` | `string` | Optional | A path to resolve the package locally (`file:///...`), a direct remote package archive (`https://.../package.zip`), or a remote registry index (`https://.../registry.json`). If empty, resolves from local/engine package search paths. |
-| `Packages[].Version` | `string` | **Yes** | Exact package version or supported registry semantic range (e.g., `"1.0.0"`, `">=1.2.0 <2.0.0"`, `"^1.2.0"`, `"~1.2.0"`, `"*"`). |
+| `Packages[].Version` | `string` | **Yes** | Exact package version or supported registry semantic range (e.g., `"1.0.0"`, `">=1.2.0 <2.0.0"`, `"^1.2.0"`, `"~1.2.0"`, `"*"`). Local file packages should still declare an exact version so duplicate entries and package locks remain deterministic. |
 | `Profiles` | `object` | Optional | A dictionary of named profiles mapped to additional package arrays. |
 | `Profiles[Key]` | `array` | Optional | A list of packages formatted identically to the base `Packages` array. These are **appended** to the base list when this specific profile is requested via command line (`--profile Key`). |
 

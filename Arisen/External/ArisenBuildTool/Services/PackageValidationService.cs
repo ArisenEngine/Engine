@@ -45,6 +45,8 @@ public static class PackageValidationService
         var pendingPackages = new Queue<PackageRequirement>();
         var requestedPackages = new Dictionary<string, PackageRequirement>(StringComparer.OrdinalIgnoreCase);
 
+        ValidateWorkspaceManifest(manifest, result);
+
         if (manifest.Packages == null || manifest.Packages.Count == 0)
         {
             result.Errors.Add("Workspace manifest does not list any base packages.");
@@ -115,6 +117,8 @@ public static class PackageValidationService
                 continue;
             }
 
+            ValidateRequiredPackageManifestFields(packageManifest, packageJsonPath, result);
+
             if (!string.IsNullOrWhiteSpace(packageManifest.Id) && !string.Equals(packageManifest.Id, requirement.Id, StringComparison.OrdinalIgnoreCase))
             {
                 result.Errors.Add($"Package ID mismatch at '{packageJsonPath}'. Requirement requested '{requirement.Id}', but package.json declares '{packageManifest.Id}'.");
@@ -182,6 +186,19 @@ public static class PackageValidationService
         return result;
     }
 
+    private static void ValidateWorkspaceManifest(ProjectManifest manifest, PackageValidationResult result)
+    {
+        if (string.IsNullOrWhiteSpace(manifest.Name))
+        {
+            result.Errors.Add("Workspace manifest is missing required Name.");
+        }
+
+        if (string.IsNullOrWhiteSpace(manifest.EngineVersion))
+        {
+            result.Errors.Add("Workspace manifest is missing required EngineVersion.");
+        }
+    }
+
     public static void LogSummary(PackageValidationResult result)
     {
         foreach (var warning in result.Warnings)
@@ -238,6 +255,11 @@ public static class PackageValidationService
 
         requestedPackages[package.Id] = package;
         pendingPackages.Enqueue(package);
+
+        if (string.IsNullOrWhiteSpace(package.Version))
+        {
+            result.Errors.Add($"Package requirement '{package.Id}' from {source} is missing required Version.");
+        }
     }
 
     private static bool SameRequirement(PackageRequirement left, PackageRequirement right)
@@ -263,6 +285,24 @@ public static class PackageValidationService
         {
             result.Errors.Add($"Failed to parse package '{packageId}' manifest at '{packagePath}': {ex.Message}");
             return null;
+        }
+    }
+
+    private static void ValidateRequiredPackageManifestFields(PackageManifest manifest, string packageJsonPath, PackageValidationResult result)
+    {
+        if (string.IsNullOrWhiteSpace(manifest.Id))
+        {
+            result.Errors.Add($"Package manifest at '{packageJsonPath}' is missing required id.");
+        }
+
+        if (string.IsNullOrWhiteSpace(manifest.Name))
+        {
+            result.Errors.Add($"Package '{manifest.Id}' manifest at '{packageJsonPath}' is missing required name.");
+        }
+
+        if (string.IsNullOrWhiteSpace(manifest.Version))
+        {
+            result.Errors.Add($"Package '{manifest.Id}' manifest at '{packageJsonPath}' is missing required version.");
         }
     }
 
