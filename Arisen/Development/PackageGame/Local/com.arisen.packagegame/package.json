@@ -9,6 +9,16 @@
     "assembly": "Com.Arisen.Packagegame.dll",
     "class": "PackageGame.GameLogicPackage"
   },
+  "services": {
+    "requires": [
+      {
+        "interface": "ArisenKernel.Contracts.IRHIBackend",
+        "capabilities": [
+          "vulkan"
+        ]
+      }
+    ]
+  },
   "dependencies": {
     "com.arisen.core": "1.0.0",
     "com.arisen.ecs": "1.0.0",

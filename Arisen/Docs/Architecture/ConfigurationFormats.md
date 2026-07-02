@@ -49,10 +49,12 @@ This document defines the strict `JSON` structural schemas for the core configur
 | `EngineVersion` | `string` | **Yes** | The specific version of Arisen Engine required (e.g., `"1.2.0"` or `"Current"`). |
 | `Packages` | `array` | **Yes** | The base list of packages loaded regardless of what Profile is active. |
 | `Packages[].Id` | `string` | **Yes** | The unique identifier of the package to load. |
-| `Packages[].Url` | `string` | Optional | A path to resolve the package locally (`file:///...`) or remotely (`https://...`). If empty, resolves from the Engine's default registry. |
-| `Packages[].Version` | `string` | **Yes** | Semantic versioning requirement (e.g., `"1.0.0"`, `"^1.2.0"`). |
+| `Packages[].Url` | `string` | Optional | A path to resolve the package locally (`file:///...`), a direct remote package archive (`https://.../package.zip`), or a remote registry index (`https://.../registry.json`). If empty, resolves from local/engine package search paths. |
+| `Packages[].Version` | `string` | **Yes** | Exact package version or supported registry semantic range (e.g., `"1.0.0"`, `">=1.2.0 <2.0.0"`, `"^1.2.0"`, `"~1.2.0"`, `"*"`). |
 | `Profiles` | `object` | Optional | A dictionary of named profiles mapped to additional package arrays. |
 | `Profiles[Key]` | `array` | Optional | A list of packages formatted identically to the base `Packages` array. These are **appended** to the base list when this specific profile is requested via command line (`--profile Key`). |
+
+Source precedence is intentional: `file://` means local source, `http(s)://` means a restored cache package, and an empty `Url` is fallback discovery. Local folders do not silently override remote manifest entries.
 
 **Behavioral Rule:** If the workspace is launched via its thin executable (e.g., `MyGame.exe`), it automatically invokes the **EngineBootstrapper** logic in the Kernel. The bootstrapper resolves and loads the base `Packages` array by two approaches:
 
@@ -163,7 +165,7 @@ This document defines the strict `JSON` structural schemas for the core configur
 | `entry.assembly` | `string` | Generated | The managed C# DLL filename. Usually emitted into `package.generated.json`. |
 | `entry.class` | `string` | Generated | The full name of the class implementing `IPackageEntry`. Usually emitted into `package.generated.json`. |
 | `services.provides` | `array` | Optional/generated | C# interfaces this package registers into the Kernel's `ServiceRegistry` on boot. Entries may be strings or objects with a fully qualified `interface` type name, optional integer `priority`, optional string-array `capabilities`, and optional `deferred` for providers that are declared at graph-validation time but registered later. Prefer code generation/attributes for providers. Duplicate selected providers for the same interface are fatal. |
-| `services.requires` | `array` | Optional/human | Interfaces this package demands to exist in the registry before it can boot. Entries may be strings or objects with a fully qualified `interface` type name, optional `optional`, optional `deferred`, and optional string-array `capabilities`. |
+| `services.requires` | `array` | Optional/human | Interfaces this package demands to exist in the registry before it can boot. Entries may be strings or objects with a fully qualified `interface` type name, optional `optional`, optional `deferred`, and optional string-array `capabilities`. When capabilities are listed, validation requires a selected provider for the same interface to advertise every requested capability. |
 | `subsystems` | `array` | Generated | Types implementing `IEngineSubsystem`. Prefer `package.generated.json`; runtime merges authored and generated entries for transition compatibility. |
 | `dependencies` | `object` | Optional | Key-value pairs of required package IDs and their semantic version constraints. |
 | `nativeRuntimes` | `object` | Optional | Key-value pairs matching a platform Runtime Identifier (RID) to unmanaged runtime payload declarations. String shorthand remains supported. |

@@ -62,7 +62,26 @@
                                     <TextBlock Text="{Binding CreatePackageError}" Foreground="#ef4444" FontWeight="Bold" TextWrapping="Wrap" FontSize="12"/>
                                 </Border>
 
-                                <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto, Auto, Auto, Auto, Auto" Margin="0,8,0,0">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Package Template" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
+                                    <ComboBox SelectedItem="{Binding SelectedPackageTemplate}"
+                                              ItemsSource="{Binding PackageTemplates}"
+                                              Background="#0f1117"
+                                              BorderBrush="#282e39"
+                                              Foreground="White"
+                                              HorizontalAlignment="Stretch">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate DataType="vm:PackageTemplateViewModel">
+                                                <StackPanel Spacing="2">
+                                                    <TextBlock Text="{Binding Name}" Foreground="White" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="{Binding Description}" Foreground="#64748b" FontSize="11" TextWrapping="Wrap"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto, Auto, Auto, Auto, Auto, Auto" Margin="0,8,0,0">
                                     <!-- Left Column -->
                                     <StackPanel Grid.Row="0" Grid.Column="0" Spacing="6" Margin="0,0,12,12">
                                         <TextBlock Text="Package ID (e.g. com.mycompany.inventory)" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
@@ -85,11 +104,38 @@
                                     </StackPanel>
 
                                     <StackPanel Grid.Row="4" Grid.Column="0" Spacing="6" Margin="0,12,12,12">
-                                        <TextBlock Text="Assembly Entry (Class Name)" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
-                                        <TextBox Text="{Binding NewPackageAssemblyEntry}" Background="#0f1117" BorderBrush="#282e39" Foreground="White" Watermark="e.g. ArisenEngine.Core.PackageEntry"/>
+                                        <TextBlock Text="Author" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
+                                        <TextBox Text="{Binding NewPackageAuthor}" Background="#0f1117" BorderBrush="#282e39" Foreground="White"/>
                                     </StackPanel>
 
-                                    <StackPanel Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6" Margin="0,12,0,0">
+                                    <StackPanel Grid.Row="0" Grid.Column="1" Spacing="6" Margin="12,0,0,12">
+                                        <TextBlock Text="Package Layer" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
+                                        <TextBox Text="{Binding NewPackageLayer}" Background="#0f1117" BorderBrush="#282e39" Foreground="White"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6" Margin="12,0,0,12">
+                                        <TextBlock Text="Dependencies (comma-separated IDs)" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
+                                        <TextBox Text="{Binding NewPackageDependencies}" Background="#0f1117" BorderBrush="#282e39" Foreground="White"/>
+                                    </StackPanel>
+
+                                    <CheckBox Grid.Row="2" Grid.Column="1"
+                                              Content="Generate package entry"
+                                              IsChecked="{Binding GeneratePackageEntry}"
+                                              Foreground="#94a3b8"
+                                              FontWeight="SemiBold"
+                                              Margin="12,8,0,12"/>
+
+                                    <StackPanel Grid.Row="3" Grid.Column="1" Spacing="6" Margin="12,0,0,12">
+                                        <TextBlock Text="Entry Assembly" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
+                                        <TextBox Text="{Binding NewPackageAssemblyEntry}" IsEnabled="{Binding GeneratePackageEntry}" Background="#0f1117" BorderBrush="#282e39" Foreground="White"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="4" Grid.Column="1" Spacing="6" Margin="12,12,0,12">
+                                        <TextBlock Text="Entry Class" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
+                                        <TextBox Text="{Binding NewPackageEntryClass}" IsEnabled="{Binding GeneratePackageEntry}" Background="#0f1117" BorderBrush="#282e39" Foreground="White"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6" Margin="0,12,0,0">
                                         <TextBlock Text="Service Capabilities Matrix" FontSize="12" Foreground="#94a3b8" FontWeight="SemiBold"/>
                                         <ListBox ItemsSource="{Binding NewPackageServices}" Background="#0f1117" BorderBrush="#282e39" BorderThickness="1" CornerRadius="4" Height="140">
                                             <ListBox.ItemTemplate>
@@ -198,6 +244,9 @@
                                                     <Button Content="Save Package" Command="{Binding ParentContext.SaveLocalPackageCommand}" CommandParameter="{Binding}" 
                                                             IsVisible="{Binding IsLocal}"
                                                             Background="#22c55e" Foreground="White" Padding="16,8" CornerRadius="6" FontWeight="Bold" Cursor="Hand" Width="120" HorizontalContentAlignment="Center"/>
+                                                    <Button Content="Use Local" Command="{Binding ParentContext.UseLocalOverrideCommand}" CommandParameter="{Binding}"
+                                                            IsVisible="{Binding HasLocalOverrideCandidate}"
+                                                            Background="#135bec20" Foreground="#60a5fa" BorderBrush="#135bec" BorderThickness="1" Padding="16,8" CornerRadius="6" FontWeight="Bold" Cursor="Hand" Width="120" HorizontalContentAlignment="Center"/>
                                                 </StackPanel>
                                             </Grid>
 
@@ -229,6 +278,10 @@
                                                 <TextBlock Text="DESCRIPTION" FontSize="11" Foreground="#64748b" FontWeight="Bold"/>
                                                 <TextBox Text="{Binding Description}" IsEnabled="{Binding IsLocal}" AcceptsReturn="True" TextWrapping="Wrap" Height="60" Background="#0f1117" BorderBrush="#282e39" Foreground="White" CornerRadius="4"/>
                                             </StackPanel>
+
+                                            <Border IsVisible="{Binding HasLocalOverrideCandidate}" Background="#135bec10" BorderBrush="#135bec" BorderThickness="1" CornerRadius="6" Padding="12">
+                                                <TextBlock Text="A same-ID package exists in Local/. The manifest currently points at a remote source, so the cached remote package is used until you switch to the local override." Foreground="#60a5fa" FontSize="12" TextWrapping="Wrap"/>
+                                            </Border>
 
                                             <!-- Dependencies Section -->
                                             <StackPanel Spacing="16">
@@ -314,10 +367,32 @@
                                                         <Path Fill="#eab308" Data="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16" Stretch="Uniform" Width="18" Height="18"/>
                                                         <TextBlock Text="{Binding UnresolvedMessage}" Foreground="#eab308" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
                                                     </StackPanel>
-                                                    <Grid ColumnDefinitions="*, Auto, Auto">
-                                                        <TextBox Grid.Column="0" Text="{Binding Url}" VerticalContentAlignment="Center" Watermark="Enter Remote URL or Browse..." Background="#0f1117" BorderBrush="#282e39" Foreground="#94a3b8" Padding="10,8" Margin="0,0,8,0" CornerRadius="4"/>
-                                                        <Button Grid.Column="1" Content="Browse..." Command="{Binding ParentContext.BrowseResolvePackageCommand}" CommandParameter="{Binding}" Background="#1a1e26" BorderBrush="#282e39" BorderThickness="1" Foreground="White" FontWeight="Bold" Padding="16,8" Margin="0,0,8,0" CornerRadius="4"/>
-                                                        <Button Grid.Column="2" Content="Confirm URL" Command="{Binding ParentContext.ConfirmResolvePackageCommand}" CommandParameter="{Binding}" Background="#eab308" Foreground="#0f1117" FontWeight="Bold" Padding="16,8" CornerRadius="4"/>
+                                                    <Grid ColumnDefinitions="*, 190" RowDefinitions="Auto, Auto, Auto">
+                                                        <TextBox Grid.Row="0" Grid.Column="0" Text="{Binding Id}" VerticalContentAlignment="Center" Watermark="Package ID" Background="#0f1117" BorderBrush="#282e39" Foreground="#94a3b8" Padding="10,8" Margin="0,0,8,8" CornerRadius="4"/>
+                                                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Version}" VerticalContentAlignment="Center" Watermark="Version" Background="#0f1117" BorderBrush="#282e39" Foreground="#94a3b8" Padding="10,8" CornerRadius="4"/>
+                                                        <ComboBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                                                  IsVisible="{Binding HasRegistryPackageOptions}"
+                                                                  ItemsSource="{Binding RegistryPackageOptions}"
+                                                                  SelectedItem="{Binding SelectedRegistryPackageOption}"
+                                                                  Background="#0f1117"
+                                                                  BorderBrush="#282e39"
+                                                                  Foreground="White"
+                                                                  Margin="0,0,0,8"
+                                                                  HorizontalAlignment="Stretch">
+                                                            <ComboBox.ItemTemplate>
+                                                                <DataTemplate DataType="vm:RegistryPackageOptionViewModel">
+                                                                    <StackPanel Spacing="2">
+                                                                        <TextBlock Text="{Binding DisplayName}" Foreground="White" FontWeight="SemiBold"/>
+                                                                        <TextBlock Text="{Binding Details}" Foreground="#64748b" FontSize="11" TextWrapping="Wrap"/>
+                                                                    </StackPanel>
+                                                                </DataTemplate>
+                                                            </ComboBox.ItemTemplate>
+                                                        </ComboBox>
+                                                        <TextBox Grid.Row="2" Grid.Column="0" Text="{Binding Url}" VerticalContentAlignment="Center" Watermark="Package .zip URL or registry.json URL" Background="#0f1117" BorderBrush="#282e39" Foreground="#94a3b8" Padding="10,8" Margin="0,0,8,0" CornerRadius="4"/>
+                                                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                                            <Button Content="Browse..." Command="{Binding ParentContext.BrowseResolvePackageCommand}" CommandParameter="{Binding}" Background="#1a1e26" BorderBrush="#282e39" BorderThickness="1" Foreground="White" FontWeight="Bold" Padding="12,8" CornerRadius="4"/>
+                                                            <Button Content="Confirm" Command="{Binding ParentContext.ConfirmResolvePackageCommand}" CommandParameter="{Binding}" Background="#eab308" Foreground="#0f1117" FontWeight="Bold" Padding="12,8" CornerRadius="4"/>
+                                                        </StackPanel>
                                                     </Grid>
                                                 </StackPanel>
                                             </Border>
@@ -405,8 +480,8 @@
             
             <!-- Package Graph Tab -->
             <TabItem Header="Package Graph" FontSize="16" FontWeight="Bold">
-                <Grid RowDefinitions="Auto, Auto, Auto, Auto, Auto, Auto, *" Margin="0,16,0,0">
-                    <Grid Grid.Row="0" ColumnDefinitions="Auto, Auto, Auto, Auto, *" Margin="0,0,0,16">
+                <Grid RowDefinitions="Auto, Auto, Auto, Auto, Auto, Auto, Auto, Auto, *" Margin="0,16,0,0">
+                    <Grid Grid.Row="0" ColumnDefinitions="Auto, Auto, Auto, Auto, Auto, Auto, *" Margin="0,0,0,16">
                         <ComboBox Grid.Column="0"
                                   ItemsSource="{Binding GraphProfiles}"
                                   SelectedItem="{Binding SelectedGraphProfile}"
@@ -415,7 +490,16 @@
                                   BorderBrush="#282e39"
                                   Foreground="White"
                                   CornerRadius="6"/>
-                        <Button Grid.Column="1"
+                        <ComboBox Grid.Column="1"
+                                  ItemsSource="{Binding LaunchConfigurations}"
+                                  SelectedItem="{Binding SelectedLaunchConfiguration}"
+                                  Width="96"
+                                  Background="#0f1117"
+                                  BorderBrush="#282e39"
+                                  Foreground="White"
+                                  CornerRadius="6"
+                                  Margin="12,0,0,0"/>
+                        <Button Grid.Column="2"
                                 Content="Validate Profile"
                                 Command="{Binding ValidateProfileCommand}"
                                 Background="#0f1117"
@@ -426,7 +510,7 @@
                                 CornerRadius="6"
                                 FontWeight="SemiBold"
                                 Margin="12,0,0,0"/>
-                        <Button Grid.Column="2"
+                        <Button Grid.Column="3"
                                 Content="Refresh Graph"
                                 Command="{Binding RefreshPackageGraphCommand}"
                                 Background="#135bec"
@@ -435,7 +519,7 @@
                                 CornerRadius="6"
                                 FontWeight="SemiBold"
                                 Margin="12,0,0,0"/>
-                        <Button Grid.Column="3"
+                        <Button Grid.Column="4"
                                 Content="Regenerate Projects"
                                 Command="{Binding RegenerateProjectFilesCommand}"
                                 Background="#22c55e"
@@ -444,7 +528,16 @@
                                 CornerRadius="6"
                                 FontWeight="SemiBold"
                                 Margin="12,0,0,0"/>
-                        <TextBlock Grid.Column="4"
+                        <Button Grid.Column="5"
+                                Content="Launch"
+                                Command="{Binding LaunchSelectedProfileCommand}"
+                                Background="#f59e0b"
+                                Foreground="#111827"
+                                Padding="16,8"
+                                CornerRadius="6"
+                                FontWeight="Bold"
+                                Margin="12,0,0,0"/>
+                        <TextBlock Grid.Column="6"
                                    Text="{Binding GraphStatus}"
                                    Foreground="#94a3b8"
                                    FontSize="13"
@@ -484,6 +577,21 @@
                     </Border>
 
                     <Border Grid.Row="3"
+                            IsVisible="{Binding HasLaunchStatus}"
+                            Background="#f59e0b20"
+                            BorderBrush="#f59e0b"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="0,0,0,16">
+                        <TextBlock Text="{Binding LaunchStatus}"
+                                   Foreground="#f59e0b"
+                                   FontWeight="SemiBold"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"/>
+                    </Border>
+
+                    <Border Grid.Row="4"
                             IsVisible="{Binding HasValidationError}"
                             Background="#ef444420"
                             BorderBrush="#ef4444"
@@ -498,7 +606,7 @@
                                    TextWrapping="Wrap"/>
                     </Border>
 
-                    <Border Grid.Row="4"
+                    <Border Grid.Row="5"
                             IsVisible="{Binding HasGraphError}"
                             Background="#ef444420"
                             BorderBrush="#ef4444"
@@ -513,7 +621,7 @@
                                    TextWrapping="Wrap"/>
                     </Border>
 
-                    <Border Grid.Row="5"
+                    <Border Grid.Row="6"
                             IsVisible="{Binding HasGenerateError}"
                             Background="#ef444420"
                             BorderBrush="#ef4444"
@@ -528,7 +636,22 @@
                                    TextWrapping="Wrap"/>
                     </Border>
 
-                    <Grid Grid.Row="6" ColumnDefinitions="*, 16, *">
+                    <Border Grid.Row="7"
+                            IsVisible="{Binding HasLaunchError}"
+                            Background="#ef444420"
+                            BorderBrush="#ef4444"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="0,0,0,16">
+                        <TextBlock Text="{Binding LaunchError}"
+                                   Foreground="#ef4444"
+                                   FontFamily="Consolas, monospace"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"/>
+                    </Border>
+
+                    <Grid Grid.Row="8" ColumnDefinitions="*, 16, *">
                         <Border Grid.Column="0" Background="#1a1e26" BorderBrush="#282e39" BorderThickness="1" CornerRadius="8">
                             <Grid RowDefinitions="Auto, *">
                                 <Border Grid.Row="0" BorderBrush="#282e39" BorderThickness="0,0,0,1" Padding="12">

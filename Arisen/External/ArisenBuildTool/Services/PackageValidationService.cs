@@ -90,6 +90,15 @@ public static class PackageValidationService
                 continue;
             }
 
+            if (IsRemoteUrl(requirement.Url))
+            {
+                string localPath = Path.GetFullPath(Path.Combine(workspaceDir, "Local", requirement.Id));
+                if (Directory.Exists(localPath))
+                {
+                    result.Warnings.Add($"Package '{requirement.Id}' is requested from remote source '{requirement.Url}', so local folder '{localPath}' is ignored. Switch the manifest URL to file://Local/{requirement.Id} to use a local override.");
+                }
+            }
+
             string packageJsonPath = Path.Combine(packagePath, "package.json");
             if (!File.Exists(packageJsonPath))
             {
@@ -443,7 +452,7 @@ public static class PackageValidationService
 
     private static void ValidateServiceContracts(PackageValidationResult result)
     {
-        var providersByContract = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        var providersByContract = new Dictionary<string, List<ServiceProviderDescriptor>>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var package in result.PackageMap.Values)
         {
@@ -451,24 +460,24 @@ public static class PackageValidationService
             {
                 if (!providersByContract.TryGetValue(providedContract.Name, out var providers))
                 {
-                    providers = new List<string>();
+                    providers = new List<ServiceProviderDescriptor>();
                     providersByContract[providedContract.Name] = providers;
                 }
 
-                providers.Add(package.Manifest.Id);
+                providers.Add(new ServiceProviderDescriptor(package.Manifest.Id, providedContract));
             }
         }
 
         foreach (var provider in providersByContract.Where(x => x.Value.Count > 1))
         {
-            result.Errors.Add($"Service contract '{provider.Key}' is provided by multiple selected packages: {string.Join(", ", provider.Value.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))}. Select exactly one provider package for each service contract in the active workspace/profile.");
+            result.Errors.Add($"Service contract '{provider.Key}' is provided by multiple selected packages: {string.Join(", ", provider.Value.Select(x => x.PackageId).OrderBy(x => x, StringComparer.OrdinalIgnoreCase))}. Select exactly one provider package for each service contract in the active workspace/profile.");
         }
 
         foreach (var package in result.PackageMap.Values)
         {
             foreach (var requiredContract in EnumerateServiceContracts(package.Manifest.Services?.Requires, package.Manifest.Id, "requires", result))
             {
-                if (!providersByContract.ContainsKey(requiredContract.Name))
+                if (!providersByContract.TryGetValue(requiredContract.Name, out var providers))
                 {
                     if (requiredContract.Optional)
                     {
@@ -479,11 +488,45 @@ public static class PackageValidationService
                         result.Errors.Add($"Package '{package.Manifest.Id}' requires service '{requiredContract.Name}', but no selected package provides it.");
                     }
                 }
+                else if (requiredContract.Capabilities.Count > 0 && !providers.Any(provider => ProvidesCapabilities(provider.Contract, requiredContract.Capabilities)))
+                {
+                    string requestedCapabilities = string.Join(", ", requiredContract.Capabilities.OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
+                    string selectedProviders = string.Join(", ", providers
+                        .Select(provider => $"{provider.PackageId} [{FormatCapabilities(provider.Contract.Capabilities)}]")
+                        .OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
+
+                    string message = $"Package '{package.Manifest.Id}' requires service '{requiredContract.Name}' with capabilities [{requestedCapabilities}], but selected provider(s) do not satisfy them: {selectedProviders}.";
+                    if (requiredContract.Optional)
+                    {
+                        result.Warnings.Add(message);
+                    }
+                    else
+                    {
+                        result.Errors.Add(message);
+                    }
+                }
             }
         }
     }
 
+    private sealed record ServiceProviderDescriptor(string PackageId, ServiceContractDescriptor Contract);
+
     private sealed record ServiceContractDescriptor(string Name, bool Optional, bool Deferred, int? Priority, IReadOnlyList<string> Capabilities);
+
+    private static bool ProvidesCapabilities(ServiceContractDescriptor provider, IReadOnlyList<string> requiredCapabilities)
+    {
+        if (requiredCapabilities.Count == 0) return true;
+
+        var providerCapabilities = provider.Capabilities.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return requiredCapabilities.All(providerCapabilities.Contains);
+    }
+
+    private static string FormatCapabilities(IReadOnlyList<string> capabilities)
+    {
+        return capabilities.Count == 0
+            ? "none"
+            : string.Join(", ", capabilities.OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
+    }
 
     private static IEnumerable<ServiceContractDescriptor> EnumerateServiceContracts(List<JsonElement>? elements, string packageId, string sectionName, PackageValidationResult result)
     {
@@ -647,6 +690,12 @@ public static class PackageValidationService
                 : Path.GetFullPath(Path.Combine(workspaceDir, pathPart));
         }
 
+        if (IsRemoteUrl(req.Url))
+        {
+            string remoteCachePath = Path.GetFullPath(Path.Combine(workspaceDir, ".Cache", req.Id));
+            return Directory.Exists(remoteCachePath) ? remoteCachePath : string.Empty;
+        }
+
         string localPath = Path.GetFullPath(Path.Combine(workspaceDir, "Local", req.Id));
         if (Directory.Exists(localPath)) return localPath;
 
@@ -657,5 +706,12 @@ public static class PackageValidationService
         if (Directory.Exists(enginePkgPath)) return enginePkgPath;
 
         return string.Empty;
+    }
+
+    private static bool IsRemoteUrl(string? url)
+    {
+        return !string.IsNullOrWhiteSpace(url)
+            && (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                || url.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
     }
 }

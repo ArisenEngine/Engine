@@ -72,13 +72,13 @@
       "IsEditor": false,
       "Packages": [
         {
-          "Id": "com.arisen.testrunner",
-          "Url": "file://Local/com.arisen.testrunner",
+          "Id": "com.arisen.rhi.vulkan.native.test",
+          "Url": "file://Local/com.arisen.rhi.vulkan.native.test",
           "Version": "1.0.0"
         },
         {
-          "Id": "com.arisen.rhi.vulkan.native.test",
-          "Url": "file://Local/com.arisen.rhi.vulkan.native.test",
+          "Id": "com.arisen.testrunner",
+          "Url": "file://Local/com.arisen.testrunner",
           "Version": "1.0.0"
         }
       ]

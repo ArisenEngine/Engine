@@ -40,7 +40,10 @@ public partial class MainWindow : Window
 
     private async Task OnRequestPackageManagerAsync(Models.LauncherProjectMetadata project, EngineInstance? engine)
     {
-        var pmConfig = new PackageManagerViewModel(project, engine);
+        if (DataContext is not MainViewModel vm)
+            return;
+
+        var pmConfig = vm.CreatePackageManagerViewModel(project, engine);
         var window = new PackageManagerWindow { DataContext = pmConfig };
         await window.ShowDialog(this);
     }

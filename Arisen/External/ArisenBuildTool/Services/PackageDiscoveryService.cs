@@ -118,6 +118,12 @@ public static class PackageDiscoveryService
                 : Path.GetFullPath(Path.Combine(workspaceDir, pathPart));
         }
 
+        if (IsRemoteUrl(req.Url))
+        {
+            string remoteCachePath = Path.GetFullPath(Path.Combine(workspaceDir, ".Cache", req.Id));
+            return Directory.Exists(remoteCachePath) ? remoteCachePath : string.Empty;
+        }
+
         string localPath = Path.GetFullPath(Path.Combine(workspaceDir, "Local", req.Id));
         if (Directory.Exists(localPath)) return localPath;
 
@@ -128,5 +134,12 @@ public static class PackageDiscoveryService
         if (Directory.Exists(enginePkgPath)) return enginePkgPath;
 
         return string.Empty;
+    }
+
+    private static bool IsRemoteUrl(string? url)
+    {
+        return !string.IsNullOrWhiteSpace(url)
+            && (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                || url.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
     }
 }

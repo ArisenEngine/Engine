@@ -19,6 +19,7 @@ public partial class PackageManagerViewModel : ObservableObject
 {
     private readonly LauncherProjectMetadata _project;
     private readonly EngineInstance? _engine;
+    private readonly ProjectService? _projectService;
     private readonly string _manifestPath;
 
     [ObservableProperty]
@@ -40,27 +41,36 @@ public partial class PackageManagerViewModel : ObservableObject
     [ObservableProperty] private bool _isGraphLoading;
     [ObservableProperty] private bool _isGeneratingProjects;
     [ObservableProperty] private bool _isValidatingProfile;
+    [ObservableProperty] private bool _isLaunchingProject;
     [ObservableProperty] private string _selectedGraphProfile = "Development";
+    [ObservableProperty] private string _selectedLaunchConfiguration = "Debug";
     [ObservableProperty] private string _graphStatus = "Package graph has not been refreshed yet.";
     [ObservableProperty] private string _graphError = string.Empty;
     [ObservableProperty] private string _generateStatus = string.Empty;
     [ObservableProperty] private string _generateError = string.Empty;
     [ObservableProperty] private string _validationStatus = string.Empty;
     [ObservableProperty] private string _validationError = string.Empty;
+    [ObservableProperty] private string _launchStatus = string.Empty;
+    [ObservableProperty] private string _launchError = string.Empty;
 
     partial void OnGraphErrorChanged(string value) => OnPropertyChanged(nameof(HasGraphError));
     partial void OnGenerateErrorChanged(string value) => OnPropertyChanged(nameof(HasGenerateError));
     partial void OnGenerateStatusChanged(string value) => OnPropertyChanged(nameof(HasGenerateStatus));
     partial void OnValidationErrorChanged(string value) => OnPropertyChanged(nameof(HasValidationError));
     partial void OnValidationStatusChanged(string value) => OnPropertyChanged(nameof(HasValidationStatus));
+    partial void OnLaunchErrorChanged(string value) => OnPropertyChanged(nameof(HasLaunchError));
+    partial void OnLaunchStatusChanged(string value) => OnPropertyChanged(nameof(HasLaunchStatus));
     public bool HasGraphError => !string.IsNullOrEmpty(GraphError);
     public bool HasGenerateError => !string.IsNullOrEmpty(GenerateError);
     public bool HasGenerateStatus => !string.IsNullOrEmpty(GenerateStatus);
     public bool HasValidationError => !string.IsNullOrEmpty(ValidationError);
     public bool HasValidationStatus => !string.IsNullOrEmpty(ValidationStatus);
+    public bool HasLaunchError => !string.IsNullOrEmpty(LaunchError);
+    public bool HasLaunchStatus => !string.IsNullOrEmpty(LaunchStatus);
     public bool HasGraphResult => PackageGraphPackages.Count > 0;
 
     public ObservableCollection<string> GraphProfiles { get; } = new();
+    public ObservableCollection<string> LaunchConfigurations => _project.AvailableConfigurations;
     public ObservableCollection<PackageGraphPackageViewModel> PackageGraphPackages { get; } = new();
     public ObservableCollection<PackageGraphEdgeViewModel> PackageGraphEdges { get; } = new();
 
@@ -80,19 +90,96 @@ public partial class PackageManagerViewModel : ObservableObject
 
     // Create Package State
     [ObservableProperty] private bool _isCreatingPackage;
+    [ObservableProperty] private PackageTemplateViewModel? _selectedPackageTemplate;
     [ObservableProperty] private string _newPackageId = "com.mycompany.mypackage";
     [ObservableProperty] private string _newPackageName = "My Package";
     [ObservableProperty] private string _newPackageVersion = "1.0.0";
     [ObservableProperty] private string _newPackageType = "managed";
+    [ObservableProperty] private string _newPackageLayer = "user";
     [ObservableProperty] private bool _generatePackageEntry = true;
     [ObservableProperty] private string _newPackageAuthor = string.Empty;
     [ObservableProperty] private string _newPackageDependencies = string.Empty;
     [ObservableProperty] private string _newPackageAssemblyEntry = string.Empty;
+    [ObservableProperty] private string _newPackageEntryClass = string.Empty;
     [ObservableProperty] private string _createPackageError = string.Empty;
     
     public ObservableCollection<ServiceSelectionViewModel> NewPackageServices { get; } = new();
     
-    public System.Collections.Generic.List<string> AvailablePackageTypes { get; } = new() { "managed", "native", "asset", "module" };
+    public System.Collections.Generic.List<string> AvailablePackageTypes { get; } = new() { "managed" };
+    public ObservableCollection<PackageTemplateViewModel> PackageTemplates { get; } = new()
+    {
+        new PackageTemplateViewModel
+        {
+            Id = "managed-library",
+            Name = "Managed Library",
+            Description = "Plain managed package with explicit dependencies and no runtime entry.",
+            PackageId = "com.mycompany.library",
+            PackageName = "Managed Library",
+            Type = "managed",
+            Layer = "user",
+            Dependencies = "com.arisen.core",
+            GenerateEntry = false,
+            AddToBaseManifest = true
+        },
+        new PackageTemplateViewModel
+        {
+            Id = "runtime-entry",
+            Name = "Runtime Entry",
+            Description = "Managed package with an IPackageEntry hook for project/game initialization.",
+            PackageId = "com.mycompany.runtime",
+            PackageName = "Runtime Package",
+            Type = "managed",
+            Layer = "user",
+            Dependencies = "com.arisen.core",
+            GenerateEntry = true,
+            AddToBaseManifest = true
+        },
+        new PackageTemplateViewModel
+        {
+            Id = "service-provider",
+            Name = "Service Provider",
+            Description = "Managed package prepared for registering coarse-grained engine services.",
+            PackageId = "com.mycompany.service",
+            PackageName = "Service Provider",
+            Type = "managed",
+            Layer = "user",
+            Dependencies = "com.arisen.core",
+            GenerateEntry = true,
+            AddToBaseManifest = true
+        },
+        new PackageTemplateViewModel
+        {
+            Id = "editor-tool",
+            Name = "Editor Tool",
+            Description = "Profile-specific editor/tooling package with editor-facing dependencies.",
+            PackageId = "com.mycompany.editor-tool",
+            PackageName = "Editor Tool",
+            Type = "managed",
+            Layer = "tooling",
+            Dependencies = "com.arisen.core, com.arisen.editor",
+            GenerateEntry = true,
+            AddToBaseManifest = false,
+            TargetProfile = "Development"
+        }
+    };
+
+    partial void OnSelectedPackageTemplateChanged(PackageTemplateViewModel? value)
+    {
+        if (value != null)
+        {
+            ApplyPackageTemplate(value);
+        }
+    }
+
+    partial void OnNewPackageIdChanged(string value)
+    {
+        RefreshGeneratedEntryMetadata();
+    }
+
+    partial void OnGeneratePackageEntryChanged(bool value)
+    {
+        RefreshGeneratedEntryMetadata();
+    }
 
     partial void OnCreatePackageErrorChanged(string value) => OnPropertyChanged(nameof(HasCreatePackageError));
     public bool HasCreatePackageError => !string.IsNullOrEmpty(CreatePackageError);
@@ -333,6 +420,7 @@ public partial class PackageManagerViewModel : ObservableObject
             IsLocal = !isMissing && (req.Url ?? "").StartsWith("file://", StringComparison.OrdinalIgnoreCase),
             IsUnresolved = isMissing,
             UnresolvedMessage = isMissing ? "URL is completely missing in manifest.json" : string.Empty,
+            HasLocalOverrideCandidate = IsRemoteUrl(req.Url ?? string.Empty) && TryGetLocalPackageOverride(req.Id, out _),
             ParentContext = this,
             CachedManifest = pData // P5/P6 Cache
         };
@@ -340,11 +428,13 @@ public partial class PackageManagerViewModel : ObservableObject
         return vm;
     }
 
-    public PackageManagerViewModel(LauncherProjectMetadata project, EngineInstance? engine = null)
+    public PackageManagerViewModel(LauncherProjectMetadata project, EngineInstance? engine = null, ProjectService? projectService = null)
     {
         _project = project;
         _engine = engine;
+        _projectService = projectService;
         _manifestPath = Path.Combine(Path.GetDirectoryName(project.ProjectPath)!, "manifest.json");
+        SelectedLaunchConfiguration = string.IsNullOrWhiteSpace(project.SelectedConfiguration) ? "Debug" : project.SelectedConfiguration;
         
         Packages.CollectionChanged += (s, e) => {
             UpdateFilteredPackages();
@@ -391,6 +481,13 @@ public partial class PackageManagerViewModel : ObservableObject
         File.WriteAllText(_manifestPath, json);
     }
 
+    private async Task RestoreRemotePackagesForSelectedProfileAsync()
+    {
+        string projectDir = Path.GetDirectoryName(_project.ProjectPath)!;
+        var resolver = new PackageResolver(null);
+        await resolver.RestoreManifestPackagesAsync(Manifest, SelectedGraphProfile, projectDir);
+    }
+
     [RelayCommand]
     private async Task RefreshPackageGraph()
     {
@@ -424,10 +521,15 @@ public partial class PackageManagerViewModel : ObservableObject
         IsGraphLoading = true;
         try
         {
+            SaveManifest();
+            GraphStatus = "Restoring remote packages...";
+            await RestoreRemotePackagesForSelectedProfileAsync();
+
             string projectDir = Path.GetDirectoryName(_project.ProjectPath)!;
             string outputDir = Path.Combine(projectDir, ".arisen");
             Directory.CreateDirectory(outputDir);
 
+            GraphStatus = "Refreshing package graph...";
             string outputPath = Path.Combine(outputDir, $"package-graph.{SanitizeFileName(SelectedGraphProfile)}.json");
             string args = $"graph --manifest \"{_manifestPath}\" --engine \"{_engine.InstallPath}\" --profile \"{SelectedGraphProfile}\" --format json --output \"{outputPath}\"";
             var result = await RunBuildToolCaptureAsync(args, _engine.InstallPath, TimeSpan.FromSeconds(60));
@@ -524,7 +626,10 @@ public partial class PackageManagerViewModel : ObservableObject
         try
         {
             SaveManifest();
+            GenerateStatus = "Restoring remote packages...";
+            await RestoreRemotePackagesForSelectedProfileAsync();
 
+            GenerateStatus = "Regenerating project files...";
             string args = $"generate --manifest \"{_manifestPath}\" --engine \"{_engine.InstallPath}\" --profile \"{SelectedGraphProfile}\"";
             var result = await RunBuildToolCaptureAsync(args, _engine.InstallPath, TimeSpan.FromSeconds(120));
 
@@ -579,7 +684,10 @@ public partial class PackageManagerViewModel : ObservableObject
         try
         {
             SaveManifest();
+            ValidationStatus = "Restoring remote packages...";
+            await RestoreRemotePackagesForSelectedProfileAsync();
 
+            ValidationStatus = "Validating profile...";
             string args = $"validate --manifest \"{_manifestPath}\" --engine \"{_engine.InstallPath}\" --profile \"{SelectedGraphProfile}\"";
             var result = await RunBuildToolCaptureAsync(args, _engine.InstallPath, TimeSpan.FromSeconds(60));
 
@@ -600,6 +708,76 @@ public partial class PackageManagerViewModel : ObservableObject
         finally
         {
             IsValidatingProfile = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task LaunchSelectedProfile()
+    {
+        LaunchError = string.Empty;
+        LaunchStatus = "Launching profile...";
+
+        if (_projectService == null)
+        {
+            LaunchError = "Package Manager was opened without launch support.";
+            LaunchStatus = string.Empty;
+            return;
+        }
+
+        if (_engine == null)
+        {
+            LaunchError = "Select an engine version in the launcher before launching.";
+            LaunchStatus = string.Empty;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(SelectedGraphProfile))
+        {
+            LaunchError = "Select a workspace profile before launching.";
+            LaunchStatus = string.Empty;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(SelectedLaunchConfiguration))
+        {
+            LaunchError = "Select a build configuration before launching.";
+            LaunchStatus = string.Empty;
+            return;
+        }
+
+        if (!File.Exists(_manifestPath))
+        {
+            LaunchError = $"Workspace manifest not found: {_manifestPath}";
+            LaunchStatus = string.Empty;
+            return;
+        }
+
+        IsLaunchingProject = true;
+        try
+        {
+            SaveManifest();
+
+            _project.SelectedProfile = SelectedGraphProfile;
+            _project.SelectedConfiguration = SelectedLaunchConfiguration;
+
+            bool success = await _projectService.LaunchProjectAsync(_project, _engine);
+            if (!success)
+            {
+                LaunchError = "Failed to launch profile. Check the launcher log for build or boot details.";
+                LaunchStatus = string.Empty;
+                return;
+            }
+
+            LaunchStatus = $"Launching {SelectedGraphProfile} [{SelectedLaunchConfiguration}].";
+        }
+        catch (Exception ex)
+        {
+            LaunchError = $"Failed to launch profile: {ex.Message}";
+            LaunchStatus = string.Empty;
+        }
+        finally
+        {
+            IsLaunchingProject = false;
         }
     }
 
@@ -681,11 +859,19 @@ public partial class PackageManagerViewModel : ObservableObject
     [RelayCommand]
     private void AddPackage()
     {
-        string id = "com.new.package";
-        if (!Packages.Any(p => p.Id == id))
+        var package = new PackageRequirementViewModel
         {
-            Packages.Add(new PackageRequirementViewModel { Id = id, Url = "https://github.com/...", Version = "1.0.0" });
-        }
+            Id = string.Empty,
+            Url = string.Empty,
+            Version = string.Empty,
+            DisplayName = "Remote Package",
+            IsUnresolved = true,
+            UnresolvedMessage = "Enter a direct package .zip URL, or a registry.json URL to inspect available package versions.",
+            ParentContext = this
+        };
+
+        Packages.Add(package);
+        SelectedPackage = package;
     }
     
     [RelayCommand]
@@ -693,16 +879,17 @@ public partial class PackageManagerViewModel : ObservableObject
     {
         CreatePackageError = string.Empty;
         IsCreatingPackage = true;
-        
-        // Reset defaults
-        NewPackageType = "managed";
-        GeneratePackageEntry = true;
-        NewPackageAssemblyEntry = string.Empty;
-        
+
         NewPackageServices.Clear();
         foreach (var cap in Capabilities) 
         {
             NewPackageServices.Add(new ServiceSelectionViewModel { ContractName = cap.ContractName, FriendlyName = cap.FriendlyName });
+        }
+
+        SelectedPackageTemplate = PackageTemplates.FirstOrDefault();
+        if (SelectedPackageTemplate != null)
+        {
+            ApplyPackageTemplate(SelectedPackageTemplate);
         }
     }
 
@@ -716,6 +903,7 @@ public partial class PackageManagerViewModel : ObservableObject
     private void ConfirmCreatePackage()
     {
         CreatePackageError = string.Empty;
+        var template = SelectedPackageTemplate ?? PackageTemplates.First();
 
         // Validation
         if (string.IsNullOrWhiteSpace(NewPackageId))
@@ -724,7 +912,7 @@ public partial class PackageManagerViewModel : ObservableObject
             return;
         }
 
-        if (Packages.Any(p => p.Id == NewPackageId))
+        if (PackageIdExists(NewPackageId))
         {
             CreatePackageError = $"A package with ID '{NewPackageId}' is already installed.";
             return;
@@ -739,6 +927,18 @@ public partial class PackageManagerViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(NewPackageType))
         {
             CreatePackageError = "Package Type is required.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(NewPackageLayer))
+        {
+            CreatePackageError = "Package Layer is required.";
+            return;
+        }
+
+        if (GeneratePackageEntry && (string.IsNullOrWhiteSpace(NewPackageAssemblyEntry) || string.IsNullOrWhiteSpace(NewPackageEntryClass)))
+        {
+            CreatePackageError = "Entry Assembly and Entry Class are required when generating a package entry.";
             return;
         }
 
@@ -786,53 +986,67 @@ public partial class PackageManagerViewModel : ObservableObject
                 };
             }
 
-            var newPkg = new
+            string jsonPath = Path.Combine(packageDir, "package.json");
+            var packageJson = new JsonObject
             {
-                // Must use lowercase schema
-                schema = "https://arisen.dev/schemas/package-v2.json",
-                id = NewPackageId,
-                name = NewPackageName,
-                version = NewPackageVersion,
-                type = NewPackageType,
-                author = NewPackageAuthor,
-                entry = string.IsNullOrWhiteSpace(NewPackageAssemblyEntry) ? null : new { assembly = NewPackageAssemblyEntry },
-                services = servicesObj,
-                // MUST NOT provide subsystems
-                dependencies = depsDict
+                ["$schema"] = "https://arisen.dev/schemas/package-v2.json",
+                ["id"] = NewPackageId,
+                ["name"] = NewPackageName,
+                ["version"] = NewPackageVersion,
+                ["layer"] = NewPackageLayer,
+                ["type"] = NewPackageType,
+                ["dependencies"] = JsonSerializer.SerializeToNode(depsDict) as JsonObject ?? new JsonObject()
             };
 
-            string jsonPath = Path.Combine(packageDir, "package.json");
-            File.WriteAllText(jsonPath, JsonSerializer.Serialize(newPkg, new JsonSerializerOptions { WriteIndented = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull }).Replace("\"schema\":", "\"$schema\":"));
+            if (!string.IsNullOrWhiteSpace(NewPackageAuthor))
+            {
+                packageJson["author"] = NewPackageAuthor;
+            }
+
+            if (GeneratePackageEntry)
+            {
+                packageJson["entry"] = new JsonObject
+                {
+                    ["assembly"] = NewPackageAssemblyEntry,
+                    ["class"] = NewPackageEntryClass
+                };
+            }
+
+            if (servicesObj != null)
+            {
+                packageJson["services"] = JsonSerializer.SerializeToNode(servicesObj);
+            }
+
+            File.WriteAllText(jsonPath, packageJson.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
 
             // Generate IPackageEntry C# Hook if requested and managed
             if (NewPackageType == "managed" && GeneratePackageEntry)
             {
-                string safeNamespace = "ArisenEngine." + string.Join("", NewPackageId.Split('.').Select(part => char.ToUpper(part[0]) + part.Substring(1)));
-                string csCode = $$"""
-using ArisenKernel.Packages;
-using ArisenKernel.Contracts;
-
-namespace {{safeNamespace}}
-{
-    public class PackageEntry : IPackageEntry
-    {
-        public void OnLoad(IServiceRegistry services)
-        {
-            // Initialize your package services here
-        }
-
-        public void OnUnload(IServiceRegistry services)
-        {
-            // Cleanup your package resources here
-        }
-    }
-}
-""";
+                string entryNamespace = GetNamespaceFromQualifiedClass(NewPackageEntryClass);
+                string entryClassName = GetClassNameFromQualifiedClass(NewPackageEntryClass);
+                string csCode = CreatePackageEntrySource(template, entryNamespace, entryClassName, providesArr);
                 File.WriteAllText(Path.Combine(packageDir, "PackageEntry.cs"), csCode);
             }
+            else if (NewPackageType == "managed")
+            {
+                string markerNamespace = ToGeneratedNamespace(NewPackageId);
+                File.WriteAllText(Path.Combine(packageDir, "PackageMarker.cs"), $$"""
+namespace {{markerNamespace}};
 
-            // Import generated package automatically
-            AddLocalPackageRecursive(packageDir);
+public sealed class PackageMarker
+{
+}
+""");
+            }
+
+            if (template.AddToBaseManifest)
+            {
+                AddLocalPackageRecursive(packageDir);
+            }
+            else
+            {
+                AddProfilePackageRequirement(template.TargetProfile, packageDir, NewPackageId, NewPackageVersion);
+            }
 
             // Close creation panel
             IsCreatingPackage = false;
@@ -841,6 +1055,144 @@ namespace {{safeNamespace}}
         {
             CreatePackageError = $"Failed to perform package scaffolding: {ex.Message}";
         }
+    }
+
+    private void ApplyPackageTemplate(PackageTemplateViewModel template)
+    {
+        NewPackageId = template.PackageId;
+        NewPackageName = template.PackageName;
+        NewPackageVersion = "1.0.0";
+        NewPackageType = template.Type;
+        NewPackageLayer = template.Layer;
+        NewPackageDependencies = template.Dependencies;
+        GeneratePackageEntry = template.GenerateEntry;
+        NewPackageAuthor = string.Empty;
+        RefreshGeneratedEntryMetadata();
+    }
+
+    private bool PackageIdExists(string packageId)
+    {
+        return Packages.Any(p => string.Equals(p.Id, packageId, StringComparison.OrdinalIgnoreCase))
+            || Profiles.SelectMany(p => p.Nodes).Any(p => string.Equals(p.Id, packageId, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void RefreshGeneratedEntryMetadata()
+    {
+        if (!GeneratePackageEntry)
+        {
+            NewPackageAssemblyEntry = string.Empty;
+            NewPackageEntryClass = string.Empty;
+            return;
+        }
+
+        NewPackageAssemblyEntry = $"{ToGeneratedProjectName(NewPackageId)}.dll";
+        NewPackageEntryClass = $"{ToGeneratedNamespace(NewPackageId)}.PackageEntry";
+    }
+
+    private static string CreatePackageEntrySource(PackageTemplateViewModel template, string entryNamespace, string entryClassName, string[] providesArr)
+    {
+        string loadBody = template.Id == "service-provider" && providesArr.Length > 0
+            ? "        // Register the selected service implementations here."
+            : "        // Initialize package services here.";
+
+        if (template.Id == "editor-tool")
+        {
+            loadBody = "        // Register editor tools or editor-facing services here.";
+        }
+
+        return $$"""
+using ArisenKernel.Diagnostics;
+using ArisenKernel.Packages;
+using ArisenKernel.Services;
+
+namespace {{entryNamespace}};
+
+public sealed class {{entryClassName}} : IPackageEntry
+{
+    public void OnLoad(IServiceRegistry services)
+    {
+        KernelLog.Info("[{{template.Name}}] Package loaded.");
+{{loadBody}}
+    }
+
+    public void OnUnload(IServiceRegistry services)
+    {
+        KernelLog.Info("[{{template.Name}}] Package unloaded.");
+    }
+}
+""";
+    }
+
+    private void AddProfilePackageRequirement(string profileName, string packageDir, string packageId, string version)
+    {
+        string projectDir = Path.GetDirectoryName(_project.ProjectPath)!;
+        string relativePath = Path.GetRelativePath(projectDir, packageDir).Replace('\\', '/');
+        string packageUrl = $"file://{relativePath}";
+
+        var profile = Profiles.FirstOrDefault(x => string.Equals(x.Name, profileName, StringComparison.OrdinalIgnoreCase));
+        if (profile == null)
+        {
+            profile = new WorkspaceProfileViewModel { Name = profileName, IsEditor = true };
+            Profiles.Add(profile);
+            if (!GraphProfiles.Contains(profileName))
+            {
+                GraphProfiles.Add(profileName);
+            }
+        }
+
+        var existing = profile.Nodes.FirstOrDefault(x => string.Equals(x.Id, packageId, StringComparison.OrdinalIgnoreCase));
+        if (existing == null)
+        {
+            profile.Nodes.Add(new PackageRequirementViewModel
+            {
+                Id = packageId,
+                Url = packageUrl,
+                Version = version,
+                DisplayName = NewPackageName,
+                Type = NewPackageType,
+                IsLocal = true,
+                ParentContext = this,
+                CachedManifest = ParsePackageManifest(Path.Combine(packageDir, "package.json"))
+            });
+        }
+        else
+        {
+            existing.Url = packageUrl;
+            existing.Version = version;
+        }
+
+        RefreshProfilePackageOptions();
+    }
+
+    private static string GetNamespaceFromQualifiedClass(string qualifiedClass)
+    {
+        int lastDot = qualifiedClass.LastIndexOf('.');
+        return lastDot <= 0 ? "ArisenEngine.Generated" : qualifiedClass[..lastDot];
+    }
+
+    private static string GetClassNameFromQualifiedClass(string qualifiedClass)
+    {
+        int lastDot = qualifiedClass.LastIndexOf('.');
+        return lastDot < 0 || lastDot == qualifiedClass.Length - 1 ? "PackageEntry" : qualifiedClass[(lastDot + 1)..];
+    }
+
+    private static string ToGeneratedProjectName(string packageId)
+    {
+        return string.Join(".", packageId.Split('.', StringSplitOptions.RemoveEmptyEntries).Select(ToPascalCase));
+    }
+
+    private static string ToGeneratedNamespace(string packageId)
+    {
+        return $"ArisenEngine.Generated.{string.Join(".", packageId.Split('.', StringSplitOptions.RemoveEmptyEntries).Select(ToPascalCase))}";
+    }
+
+    private static string ToPascalCase(string value)
+    {
+        var chars = value.Where(char.IsLetterOrDigit).ToArray();
+        if (chars.Length == 0) return "Package";
+
+        string cleaned = new string(chars);
+        return char.ToUpperInvariant(cleaned[0]) + (cleaned.Length == 1 ? string.Empty : cleaned[1..]);
     }
     
     [RelayCommand]
@@ -1087,13 +1439,13 @@ namespace {{safeNamespace}}
                 string fileUri = new Uri(folder).AbsoluteUri;
                 if (!fileUri.EndsWith("/")) fileUri += "/";
                 vm.Url = fileUri;
-                ConfirmResolvePackage(vm); // auto-verify upon browse
+                await ConfirmResolvePackage(vm); // auto-verify upon browse
             }
         }
     }
 
     [RelayCommand]
-    private void ConfirmResolvePackage(PackageRequirementViewModel vm)
+    private async Task ConfirmResolvePackage(PackageRequirementViewModel vm)
     {
         if (string.IsNullOrWhiteSpace(vm.Url))
         {
@@ -1160,6 +1512,7 @@ namespace {{safeNamespace}}
 
                         vm.IsLocal = true;
                         vm.IsUnresolved = false;
+                        vm.ClearRegistryOptions();
                         vm.UnresolvedMessage = string.Empty;
                         // Synchronize deep dependencies silently if valid
                         ConfirmResolveRecursive(localPath);
@@ -1178,14 +1531,118 @@ namespace {{safeNamespace}}
         }
         else if (vm.Url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
         {
-            // For Remote HTTP, we grant resolution instantly
+            if (IsRegistryIndexUrl(vm.Url))
+            {
+                await ConfirmRegistryPackageAsync(vm);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(vm.Id))
+            {
+                vm.UnresolvedMessage = "Package ID is required for direct remote package archives.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(vm.Version))
+            {
+                vm.UnresolvedMessage = "Exact Version is required for direct remote package archives.";
+                return;
+            }
+
+            vm.ClearRegistryOptions();
+            vm.IsLocal = false;
             vm.IsUnresolved = false;
             vm.UnresolvedMessage = string.Empty;
+            if (string.IsNullOrWhiteSpace(vm.DisplayName) || vm.DisplayName == "Remote Package")
+            {
+                vm.DisplayName = vm.Id;
+            }
         }
         else
         {
             vm.UnresolvedMessage = "Invalid URL Scheme. Must be file:// or http://";
         }
+    }
+
+    private async Task ConfirmRegistryPackageAsync(PackageRequirementViewModel vm)
+    {
+        try
+        {
+            var registryPackages = await new PackageRegistryClient().GetPackagesAsync(vm.Url);
+            if (registryPackages.Count == 0)
+            {
+                vm.UnresolvedMessage = "Registry index contains no package versions.";
+                vm.ClearRegistryOptions();
+                return;
+            }
+
+            vm.SetRegistryOptions(registryPackages);
+            var selectedPackage = PackageRegistryClient.SelectPackageVersion(registryPackages, vm.Id, vm.Version, out string rangeError);
+            if (!string.IsNullOrWhiteSpace(rangeError))
+            {
+                vm.UnresolvedMessage = $"Invalid version range: {rangeError}";
+                return;
+            }
+
+            if (selectedPackage == null)
+            {
+                if (vm.SelectedRegistryPackageOption == null)
+                {
+                    vm.SelectedRegistryPackageOption = vm.RegistryPackageOptions.FirstOrDefault();
+                }
+
+                vm.UnresolvedMessage = "Select a package version from the registry, or enter a matching semantic version range, then confirm again.";
+                return;
+            }
+
+            vm.ApplyRegistryPackage(selectedPackage);
+            vm.IsLocal = false;
+            vm.IsUnresolved = false;
+            vm.UnresolvedMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            vm.UnresolvedMessage = $"Failed to inspect registry: {ex.Message}";
+            vm.ClearRegistryOptions();
+        }
+    }
+
+    private static bool IsRegistryIndexUrl(string url)
+    {
+        return Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            && uri.LocalPath.EndsWith(".json", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsRemoteUrl(string url)
+    {
+        return url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            || url.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool TryGetLocalPackageOverride(string packageId, out string packageDir)
+    {
+        string projectDir = Path.GetDirectoryName(_project.ProjectPath)!;
+        packageDir = Path.Combine(projectDir, "Local", packageId);
+        return !string.IsNullOrWhiteSpace(packageId)
+            && Directory.Exists(packageDir)
+            && File.Exists(Path.Combine(packageDir, "package.json"));
+    }
+
+    [RelayCommand]
+    private async Task UseLocalOverride(PackageRequirementViewModel vm)
+    {
+        if (!TryGetLocalPackageOverride(vm.Id, out var packageDir))
+        {
+            vm.UnresolvedMessage = $"No local override package found at Local/{vm.Id}.";
+            vm.IsUnresolved = true;
+            return;
+        }
+
+        string projectDir = Path.GetDirectoryName(_project.ProjectPath)!;
+        string relativePath = Path.GetRelativePath(projectDir, packageDir).Replace('\\', '/');
+        vm.Url = $"file://{relativePath}";
+        vm.HasLocalOverrideCandidate = false;
+        await ConfirmResolvePackage(vm);
     }
 
     private void ConfirmResolveRecursive(string folder)
@@ -1368,7 +1825,10 @@ public partial class PackageRequirementViewModel : ObservableObject
     public bool HasDescription => !string.IsNullOrWhiteSpace(Description);
     public bool HasAuthor => !string.IsNullOrWhiteSpace(Author);
 
-    [ObservableProperty] private bool _isLocal;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsRemote))]
+    private bool _isLocal;
+
     [ObservableProperty] private string _displayName = string.Empty;
     [ObservableProperty] private string _type = "managed";
     [ObservableProperty] private string _engineVersion = "Current";
@@ -1421,10 +1881,54 @@ public partial class PackageRequirementViewModel : ObservableObject
     private ObservableCollection<ServiceSelectionViewModel>? _editableServices;
     public ObservableCollection<ServiceSelectionViewModel>? EditableServices => _editableServices;
 
-    [ObservableProperty] private bool _isUnresolved;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsRemote))]
+    private bool _isUnresolved;
+
     [ObservableProperty] private string _unresolvedMessage = string.Empty;
+    [ObservableProperty] private RegistryPackageOptionViewModel? _selectedRegistryPackageOption;
+    [ObservableProperty] private bool _hasLocalOverrideCandidate;
 
     public bool IsRemote => !IsLocal && !IsUnresolved;
+    public bool HasRegistryPackageOptions => RegistryPackageOptions.Count > 0;
+    public ObservableCollection<RegistryPackageOptionViewModel> RegistryPackageOptions { get; } = new();
+
+    partial void OnSelectedRegistryPackageOptionChanged(RegistryPackageOptionViewModel? value)
+    {
+        if (value == null)
+            return;
+
+        ApplyRegistryPackage(value.Package);
+        IsUnresolved = true;
+    }
+
+    public void SetRegistryOptions(IReadOnlyList<PackageRegistryPackageVersion> packages)
+    {
+        SelectedRegistryPackageOption = null;
+        RegistryPackageOptions.Clear();
+        foreach (var package in packages)
+        {
+            RegistryPackageOptions.Add(new RegistryPackageOptionViewModel(package));
+        }
+
+        OnPropertyChanged(nameof(HasRegistryPackageOptions));
+    }
+
+    public void ClearRegistryOptions()
+    {
+        RegistryPackageOptions.Clear();
+        SelectedRegistryPackageOption = null;
+        OnPropertyChanged(nameof(HasRegistryPackageOptions));
+    }
+
+    public void ApplyRegistryPackage(PackageRegistryPackageVersion package)
+    {
+        Id = package.Id;
+        Version = package.Version;
+        DisplayName = string.IsNullOrWhiteSpace(package.Name) ? package.Id : package.Name;
+        Description = package.Description;
+        Type = string.IsNullOrWhiteSpace(package.Type) ? "managed" : package.Type;
+    }
 
     // P5/P6: Cache the parsed manifest for performance
     private PackageJsonManifest? _cachedManifest;
@@ -1435,6 +1939,22 @@ public partial class PackageRequirementViewModel : ObservableObject
     }
 }
 
+public sealed class RegistryPackageOptionViewModel
+{
+    public RegistryPackageOptionViewModel(PackageRegistryPackageVersion package)
+    {
+        Package = package;
+        DisplayName = $"{package.Id} @ {package.Version}";
+        Details = string.IsNullOrWhiteSpace(package.Description)
+            ? package.ArchiveUrl
+            : package.Description;
+    }
+
+    public PackageRegistryPackageVersion Package { get; }
+    public string DisplayName { get; }
+    public string Details { get; }
+}
+
 public partial class ServiceSelectionViewModel : ObservableObject
 {
     public string ContractName { get; init; } = string.Empty;
@@ -1442,6 +1962,21 @@ public partial class ServiceSelectionViewModel : ObservableObject
     
     [ObservableProperty] private bool _isProvided;
     [ObservableProperty] private bool _isRequired;
+}
+
+public sealed class PackageTemplateViewModel
+{
+    public string Id { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+    public string Description { get; init; } = string.Empty;
+    public string PackageId { get; init; } = string.Empty;
+    public string PackageName { get; init; } = string.Empty;
+    public string Type { get; init; } = "managed";
+    public string Layer { get; init; } = "user";
+    public string Dependencies { get; init; } = string.Empty;
+    public bool GenerateEntry { get; init; }
+    public bool AddToBaseManifest { get; init; }
+    public string TargetProfile { get; init; } = "Development";
 }
 
 
