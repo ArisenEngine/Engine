@@ -35,8 +35,9 @@ Its source-of-truth manifest is:
 
 The workspace currently defines these main profiles:
 
-- `Development` - editor-enabled workspace with `com.arisen.editor`
-- `Production` - non-editor runtime profile
+- `Editor` - editor-enabled authoring workspace with `com.arisen.editor`
+- `Development` - standalone runtime profile with diagnostics/profiler enabled
+- `Production` - standalone runtime profile without profiler instrumentation
 - `RHIVulkanTesting` - test runner plus Vulkan native test package
 
 The base workspace package set includes the core kernel/runtime, ECS, DAG, desktop platform, resources, rendering, and Vulkan backend packages.
@@ -55,6 +56,7 @@ Build a specific profile/configuration:
 
 ```bat
 Arisen\Scripts\Windows\build_workspace.bat --config Debug --profile Development
+Arisen\Scripts\Windows\build_workspace.bat --config Debug --profile Editor
 Arisen\Scripts\Windows\build_workspace.bat --config Release --profile Production
 ```
 

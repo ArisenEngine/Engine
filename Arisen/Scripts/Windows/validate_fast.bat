@@ -28,6 +28,9 @@ if errorlevel 1 goto :fail
 call :run dotnet test "Arisen\Editor\ArisenLauncher.Tests\ArisenLauncher.Tests.csproj"
 if errorlevel 1 goto :fail
 
+call :run dotnet run --project "Arisen\External\ArisenBuildTool\ArisenBuildTool.csproj" -- validate --workspace "Arisen\Development\PackageGame" --profile Editor
+if errorlevel 1 goto :fail
+
 call :run dotnet run --project "Arisen\External\ArisenBuildTool\ArisenBuildTool.csproj" -- validate --workspace "Arisen\Development\PackageGame" --profile Development
 if errorlevel 1 goto :fail
 

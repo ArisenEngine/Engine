@@ -68,15 +68,29 @@ Tooling may deserialize case-insensitively for transition compatibility, but gen
     }
   ],
 
-  // Profiles are purely optional
+  // Profiles are optional named build/runtime policies.
   "Profiles": {
-    "Development": [
-      {
-        "Id": "com.arisen.editor.default",
-        "Url": "",
-        "Version": "1.0.0"
-      }
-    ]
+    "Editor": {
+      "IsEditor": true,
+      "EnableProfiler": true,
+      "Packages": [
+        {
+          "Id": "com.arisen.editor.default",
+          "Url": "",
+          "Version": "1.0.0"
+        }
+      ]
+    },
+    "Development": {
+      "IsEditor": false,
+      "EnableProfiler": true,
+      "Packages": []
+    },
+    "Production": {
+      "IsEditor": false,
+      "EnableProfiler": false,
+      "Packages": []
+    }
   }
 }
 ```
@@ -92,8 +106,10 @@ Tooling may deserialize case-insensitively for transition compatibility, but gen
 | `Packages[].Id` | `string` | **Yes** | The unique identifier of the package to load. |
 | `Packages[].Url` | `string` | Optional | A path to resolve the package locally (`file:///...`), a direct remote package archive (`https://.../package.zip`), or a remote registry index (`https://.../registry.json`). If empty, resolves from local/engine package search paths. |
 | `Packages[].Version` | `string` | **Yes** | Exact package version or supported registry semantic range (e.g., `"1.0.0"`, `">=1.2.0 <2.0.0"`, `"^1.2.0"`, `"~1.2.0"`, `"*"`). Local file packages should still declare an exact version so duplicate entries and package locks remain deterministic. |
-| `Profiles` | `object` | Optional | A dictionary of named profiles mapped to additional package arrays. |
-| `Profiles[Key]` | `array` | Optional | A list of packages formatted identically to the base `Packages` array. These are **appended** to the base list when this specific profile is requested via command line (`--profile Key`). |
+| `Profiles` | `object` | Optional | A dictionary of named profiles mapped to profile metadata objects. |
+| `Profiles[Key].IsEditor` | `bool` | Optional | If `true`, generated projects define `ARISEN_ENGINE_EDITOR`. Use this for editor/window/RHI ownership policy, not runtime flags. Defaults to `false`. |
+| `Profiles[Key].EnableProfiler` | `bool` | Optional | If `true`, generated managed and native projects define `ARISEN_PROFILER_ENABLED`. Defaults to `false`. |
+| `Profiles[Key].Packages` | `array` | Optional | Additional packages formatted identically to the base `Packages` array. These are **appended** to the base list when this specific profile is requested via command line (`--profile Key`). |
 
 Source precedence is intentional: `file://` means local source, `http(s)://` means a restored cache package, and an empty `Url` is fallback discovery. Local folders do not silently override remote manifest entries.
 

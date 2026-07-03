@@ -54,8 +54,9 @@
     }
   ],
   "Profiles": {
-    "Development": {
+    "Editor": {
       "IsEditor": true,
+      "EnableProfiler": true,
       "Packages": [
         {
           "Id": "com.arisen.editor",
@@ -64,12 +65,19 @@
         }
       ]
     },
+    "Development": {
+      "IsEditor": false,
+      "EnableProfiler": true,
+      "Packages": []
+    },
     "Production": {
       "IsEditor": false,
+      "EnableProfiler": false,
       "Packages": []
     },
     "RHIVulkanTesting": {
       "IsEditor": false,
+      "EnableProfiler": false,
       "Packages": [
         {
           "Id": "com.arisen.rhi.vulkan.native.test",

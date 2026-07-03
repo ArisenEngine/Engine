@@ -8,7 +8,7 @@ namespace ArisenBuildTool.Services;
 
 public static class CMakeGeneratorService
 {
-    public static void Generate(string engineDir, string projectsDir, List<PackageInfo> nativePackages, string projectName, ProjectManifest manifest, string profile)
+    public static void Generate(string engineDir, string projectsDir, List<PackageInfo> nativePackages, string projectName, ProjectManifest manifest, string profile, bool enableProfiler)
     {
         if (nativePackages.Count == 0)
         {
@@ -34,12 +34,11 @@ public static class CMakeGeneratorService
         writer.WriteLine("set(CMAKE_CXX_STANDARD_REQUIRED ON)");
 
         string uProf = profile.ToUpper();
-        bool profilerEnabled = string.Equals(profile, "Development", StringComparison.OrdinalIgnoreCase);
         
         // Map Debug and Release to the correct profile macro
         writer.WriteLine($"# Profile-specific definitions for {profile}");
         writer.WriteLine($"add_compile_definitions(ARISEN_PROFILE_{uProf})");
-        writer.WriteLine($"set(ARISEN_PROFILER_ENABLED {(profilerEnabled ? "1" : "0")} CACHE BOOL \"Enable Arisen profiler instrumentation\" FORCE)");
+        writer.WriteLine($"set(ARISEN_PROFILER_ENABLED {(enableProfiler ? "1" : "0")} CACHE BOOL \"Enable Arisen profiler instrumentation\" FORCE)");
         writer.WriteLine("if(ARISEN_PROFILER_ENABLED)");
         writer.WriteLine("    add_compile_definitions(ARISEN_PROFILER_ENABLED=1)");
         writer.WriteLine("else()");

@@ -13,7 +13,7 @@ public static class SolutionGeneratorService
     private const string CSHARP_PROJECT_TYPE = "{9A19103F-16F7-4668-BE54-9A1E7A4F7556}";
     private const string VIRTUAL_FOLDER_TYPE = "{2150E333-8FDC-42A3-9474-1A3956D46DE8}";
 
-    public static void Generate(string projectsDir, string engineDir, List<PackageInfo> managedPackages, string projectName, ProjectManifest manifest, string profile, bool isEditor)
+    public static void Generate(string projectsDir, string engineDir, List<PackageInfo> managedPackages, string projectName, ProjectManifest manifest, string profile, bool isEditor, bool enableProfiler)
     {
         string slnPath = Path.Combine(projectsDir, "..", "..", $"{projectName}_{profile}.sln");
         string slnDir = Path.GetDirectoryName(slnPath)!;
@@ -23,7 +23,7 @@ public static class SolutionGeneratorService
         string entryCsprojDir = Path.Combine(projectsDir, projectName);
         Directory.CreateDirectory(entryCsprojDir);
         string entryCsproj = Path.Combine(entryCsprojDir, $"{projectName}.csproj");
-        GenerateEntryPointProject(entryCsproj, engineDir, projectName, manifest, profile, isEditor, managedPackages, projectsDir);
+        GenerateEntryPointProject(entryCsproj, engineDir, projectName, manifest, profile, isEditor, enableProfiler, managedPackages, projectsDir);
 
         // Generate Protective MSVC Property File
         string dirBuildProps = Path.Combine(slnDir, "Directory.Build.props");
@@ -272,9 +272,9 @@ public static class SolutionGeneratorService
         writer.WriteLine("EndGlobal");
     }
 
-    private static void GenerateEntryPointProject(string csprojPath, string engineDir, string projectName, ProjectManifest manifest, string profile, bool isEditor, List<PackageInfo> managedPackages, string projectsDir)
+    private static void GenerateEntryPointProject(string csprojPath, string engineDir, string projectName, ProjectManifest manifest, string profile, bool isEditor, bool enableProfiler, List<PackageInfo> managedPackages, string projectsDir)
     {
-        if (TryGenerateLauncherHostProject(csprojPath, engineDir, projectName, profile, isEditor))
+        if (TryGenerateLauncherHostProject(csprojPath, engineDir, projectName, profile, isEditor, enableProfiler))
         {
             return;
         }
@@ -297,7 +297,7 @@ public static class SolutionGeneratorService
         writer.WriteLine("    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>");
         writer.WriteLine("    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>");
         
-        string constants = BuildDefineConstants(profile, isEditor);
+        string constants = BuildDefineConstants(profile, isEditor, enableProfiler);
         writer.WriteLine($"    <DefineConstants>{constants}</DefineConstants>");
         writer.WriteLine("  </PropertyGroup>");
         writer.WriteLine();
@@ -351,7 +351,7 @@ public class Program {{
         File.WriteAllText(programPath, string.Format(entryPointSource, projectName));
     }
 
-    private static bool TryGenerateLauncherHostProject(string csprojPath, string engineDir, string projectName, string profile, bool isEditor)
+    private static bool TryGenerateLauncherHostProject(string csprojPath, string engineDir, string projectName, string profile, bool isEditor, bool enableProfiler)
     {
         if (!string.Equals(projectName, "ArisenLauncher", StringComparison.OrdinalIgnoreCase))
         {
@@ -385,7 +385,7 @@ public class Program {{
         writer.WriteLine("    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>");
         writer.WriteLine("    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>");
 
-        string constants = BuildDefineConstants(profile, isEditor);
+        string constants = BuildDefineConstants(profile, isEditor, enableProfiler);
         writer.WriteLine($"    <DefineConstants>{constants}</DefineConstants>");
         writer.WriteLine("  </PropertyGroup>");
         writer.WriteLine();
@@ -432,14 +432,11 @@ public static class Program
         return true;
     }
 
-    private static string BuildDefineConstants(string profile, bool isEditor)
+    private static string BuildDefineConstants(string profile, bool isEditor, bool enableProfiler)
     {
         string constants = $"ARISEN_PROFILE_{profile.ToUpperInvariant()}";
         if (isEditor) constants += ";ARISEN_ENGINE_EDITOR";
-        if (string.Equals(profile, "Development", StringComparison.OrdinalIgnoreCase))
-        {
-            constants += ";ARISEN_PROFILER_ENABLED";
-        }
+        if (enableProfiler) constants += ";ARISEN_PROFILER_ENABLED";
 
         return constants;
     }

@@ -54,7 +54,7 @@ Run the fast local/CI gate before package architecture or build-tool changes:
 Arisen\Scripts\Windows\validate_fast.bat
 ```
 
-This command runs the build-tool fixture tests, kernel package lifecycle tests, and `ArisenBuildTool validate` for the canonical `Development`, `Production`, and `RHIVulkanTesting` profiles.
+This command runs the build-tool fixture tests, kernel package lifecycle tests, and `ArisenBuildTool validate` for the canonical `Editor`, `Development`, `Production`, and `RHIVulkanTesting` profiles.
 
 ### Runtime Validation Gate
 
@@ -208,6 +208,7 @@ The tool generates a separate solution file for each **Profile** defined in the 
 - **Storage**: Solutions are stored in `.arisen/Projects/{Profile}/`.
 - **Profile Macros**: Each solution automatically defines the preprocessor macro `ARISEN_PROFILE_{PROFILE}` for both C++ and C# projects.
 - **Editor Macro**: Editor-capable generated projects define `ARISEN_ENGINE_EDITOR`. Use this compile-time macro for editor/runtime behavior policy such as UI host ownership, standalone window creation, and RHI surface boot. Do not use runtime flags such as `EngineConfig.IsEditor` for these ownership decisions.
+- **Profiler Macro**: Profiles with `EnableProfiler: true` define `ARISEN_PROFILER_ENABLED` for both managed and native projects. This is independent from the profile name and from `IsEditor`.
 - **Unified Entry Point**: The tool generates a thin `Program.cs` stub in the workspace project. This stub calls `ArisenKernel.Lifecycle.EngineBootstrapper.Run(args)`, making the workspace a manageable .NET executable.
 - **Resolved Manifest**: The tool writes `manifest.resolved.json` into each `.arisen/bin/{profile}/{configuration}/` output directory. It includes sorted packages plus debug metadata such as type, entry, dependency, and service declarations. Runtime boot treats this resolved manifest as authoritative when present so package mount order matches build-time validation.
 - **Launch Config**: The tool writes `launch.config.json` beside the executable so the bootstrapper can recover the workspace/profile without relying only on path deduction.
@@ -228,7 +229,7 @@ To ensure perfect portability and SDK readiness, all managed and native artifact
 ### 2. Configuration Mapping
 Managed projects use standard `Debug` and `Release` configurations. Native projects (CMake) are generated to match these names exactly:
 - **1:1 Mapping**: Solutions map `Debug`➔`Debug` and `Release`➔`Release` directly.
-- **Macro Injection**: The `ARISEN_PROFILE_{PROFILE}` macro is injected into all projects to allow conditional compilation based on the active engine profile (e.g., enabling Editor code only in `Development`).
+- **Macro Injection**: The `ARISEN_PROFILE_{PROFILE}` macro is injected into all projects. `ARISEN_ENGINE_EDITOR` and `ARISEN_PROFILER_ENABLED` are controlled by explicit profile metadata instead of profile names.
 
 This ensures a seamless development experience where IDE configuration names match across all languages, while maintaining the engine's strict profile-specific macro architecture.
 

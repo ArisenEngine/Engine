@@ -53,7 +53,8 @@ The next risk is no longer package graph correctness. The next risk is whether t
   - [x] Launch the generated executable with explicit `--workspace`, `--profile`, and `--config`.
   - [x] Fail on non-zero process exit, missing executable, build error, or package/service boot error.
 - [x] Add smoke coverage for all important profiles.
-  - [x] Development loads editor/tooling packages when expected.
+  - [x] Editor loads editor/tooling packages when expected.
+  - [x] Development boots the standalone runtime path with profiler diagnostics enabled.
   - [x] Production excludes editor-only packages.
   - [x] RHIVulkanTesting loads Vulkan test packages and `com.arisen.testrunner`.
 
@@ -160,7 +161,7 @@ The next risk is no longer package graph correctness. The next risk is whether t
   - [ ] Log culled passes and resource transitions.
   - [ ] Capture enough metadata to debug failed frame setup.
   - [x] Add realtime profiler trace hooks for render frame timing.
-    - Development profile builds now emit `ARISEN_PROFILER_ENABLED`.
+    - Profiles with `EnableProfiler: true` now emit `ARISEN_PROFILER_ENABLED`.
     - Runtime frames mark `RuntimeFrame`.
     - Render snapshots plot draw count, camera count, and output size.
     - RenderGraph traces compile, record-layer, work-item, and submit spans.
