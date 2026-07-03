@@ -78,7 +78,7 @@ Current implementation:
 - Small passes record as one pass-level work item; heavy passes may expose multiple `RenderPassWorkItem` ranges.
 - `GeometryPass` is the first range-capable pass and can split the frame snapshot draw list into contiguous chunks.
 - GPU submission remains ordered by the compiled graph's topological order.
-- Development profile builds emit Tracy profiler zones for frame ticks, RenderGraph compile/record/submit work, TaskGraph layers, and worker-thread tasks.
+- Profiles with `EnableProfiler: true` emit Tracy profiler zones for frame ticks, RenderGraph compile/record/submit work, TaskGraph layers, and worker-thread tasks.
 
 Target production flow:
 

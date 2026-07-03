@@ -5,7 +5,7 @@ set "SCRIPT_ROOT=%~dp0"
 for %%I in ("%SCRIPT_ROOT%..\..") do set "ENGINE_ROOT=%%~fI"
 for %%I in ("%ENGINE_ROOT%\..") do set "REPO_ROOT=%%~fI"
 
-set "PROFILES=Development Production RHIVulkanTesting"
+set "PROFILES=Editor Development Production RHIVulkanTesting"
 set "CONFIG=Debug"
 set "FRAMES=1"
 set "RUN_FAST=1"

@@ -16,6 +16,7 @@
   "Profiles": {
     "Development": {
       "IsEditor": true,
+      "EnableProfiler": true,
       "Packages": []
     }
   }

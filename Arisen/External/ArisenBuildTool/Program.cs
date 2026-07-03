@@ -583,14 +583,16 @@ class Program
         ).ToList();
 
         bool isEditor = false;
+        bool enableProfiler = false;
         if (manifest.Profiles != null && manifest.Profiles.TryGetValue(profile, out var profileDef))
         {
             isEditor = profileDef.IsEditor;
+            enableProfiler = profileDef.EnableProfiler;
         }
 
-        ProjectGeneratorService.GenerateForManagedPackages(workspaceDir, projectsDir, engineDir, managedPackages, packageMap, manifest, profile, isEditor);
-        CMakeGeneratorService.Generate(engineDir, projectsDir, nativePackages, projectName, manifest, profile);
-        SolutionGeneratorService.Generate(projectsDir, engineDir, managedPackages, projectName, manifest, profile, isEditor);
+        ProjectGeneratorService.GenerateForManagedPackages(workspaceDir, projectsDir, engineDir, managedPackages, packageMap, manifest, profile, isEditor, enableProfiler);
+        CMakeGeneratorService.Generate(engineDir, projectsDir, nativePackages, projectName, manifest, profile, enableProfiler);
+        SolutionGeneratorService.Generate(projectsDir, engineDir, managedPackages, projectName, manifest, profile, isEditor, enableProfiler);
 
         Console.WriteLine($"ArisenBuildTool: Solution for '{projectName}' ({profile}) generated successfully.");
     }

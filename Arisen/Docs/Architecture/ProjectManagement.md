@@ -52,7 +52,7 @@ A standard Arisen workspace typically includes a baseline set of core packages. 
 | `com.arisen.generic-renderpipeline` | Domain | Standard parallel render pipeline implementation. |
 | `com.arisen.taskgraph` | Foundation| Internal multi-threaded job system. |
 | `com.arisen.platform.desktop` | Platform | Desktop windowing and input hosting. |
-| `com.arisen.editor` | Tooling | (Development only) Visual authoring environment. |
+| `com.arisen.editor` | Tooling | (Editor profile) Visual authoring environment. |
 
 For a complete list of core packages and their domains, see the [Package Registry](PackageRegistry.md).
 
@@ -89,9 +89,10 @@ The manifest is consumed by both the **Launcher** (to download missing packages)
 
 ### Mandatory Rules for `manifest.json`:
 1. **Base Packages**: Specifies the minimal required packages to run the core logic (e.g., `com.arisen.core`, `com.user.mygame`).
-2. **Profiles Node**: A dictionary of string keys mapping to lists of additional packages.
-   - **Development**: Appends Editor UI (`com.arisen.editor.default`).
-   - **Production**: Excludes Editor UI, appends optimized standalone hosts or analytics.
+2. **Profiles Node**: A dictionary of named profile objects with metadata plus additional packages.
+   - **Editor**: Sets `IsEditor: true` and appends editor UI packages.
+   - **Development**: Sets `IsEditor: false`, may set `EnableProfiler: true`, and runs the standalone runtime with diagnostics.
+   - **Production**: Sets `IsEditor: false` and `EnableProfiler: false` for standalone shipping behavior.
 
 ---
 
@@ -101,7 +102,7 @@ The act of "Creating a New Project" via `ArisenLauncher` must perform the follow
 
 1. **Folder Generation**: Create `MyGame/`, `MyGame/Local`, `MyGame/Assets`.
 2. **Guid Generation**: Generate a new UUID and write `MyGame.arisenproj`.
-3. **Manifest Generation**: Write `manifest.json` with a preset (e.g., "3D Template") which includes both a `Development` and `Production` profile.
+3. **Manifest Generation**: Write `manifest.json` with a preset (e.g., "3D Template") which includes `Editor`, `Development`, and `Production` profiles.
 4. **Primary Package Generation**: 
    - A project without code is useless. The Launcher MUST scaffold a starter package inside `Local/com.user.mygame/`.
    - It generates `Local/com.user.mygame/package.json`.

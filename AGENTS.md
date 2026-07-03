@@ -36,6 +36,7 @@ The canonical workspace in this repo is `Arisen\Development\PackageGame`. The ma
 - Build all profiles from the default workspace:
   - `Arisen\Scripts\Windows\build_workspace.bat`
 - Build a specific profile/configuration:
+  - `Arisen\Scripts\Windows\build_workspace.bat --config Debug --profile Editor`
   - `Arisen\Scripts\Windows\build_workspace.bat --config Debug --profile Development`
   - `Arisen\Scripts\Windows\build_workspace.bat --config Release --profile Production`
 - Build a specific workspace manifest explicitly:
@@ -70,6 +71,7 @@ What this runs:
 - `dotnet test Arisen\External\ArisenBuildTool.Tests\ArisenBuildTool.Tests.csproj`
 - `dotnet test Arisen\ArisenKernel.Tests\ArisenKernel.Tests.csproj`
 - `ArisenBuildTool validate` for the default workspace profiles:
+  - `Editor`
   - `Development`
   - `Production`
   - `RHIVulkanTesting`
@@ -84,7 +86,7 @@ What this runs:
 - `validate_fast.bat`
 - generated workspace build(s) for the canonical runtime profiles
 - bounded runtime smoke launches for generated `PackageGame.exe`
-- `Development`, `Production`, and `RHIVulkanTesting` boot coverage where applicable
+- `Editor`, `Development`, `Production`, and `RHIVulkanTesting` boot coverage where applicable
 
 Use `validate_runtime.bat` as the main local gate for runtime/rendering work. If a GPU-dependent path is unavailable on the machine, report that explicitly instead of hiding it behind a generic build failure.
 
@@ -144,7 +146,7 @@ The canonical development workspace currently lives at:
 
 Its `manifest.json` defines:
 - base packages such as `com.arisen.core`, `com.arisen.ecs`, `com.arisen.rendering`, `com.arisen.generic-renderpipeline`, `com.arisen.rhi.vulkan.native`
-- profiles such as `Development`, `Production`, and `RHIVulkanTesting`
+- profiles such as `Editor`, `Development`, `Production`, and `RHIVulkanTesting`
 
 Package dependency intent:
 - composition/root packages may depend on concrete provider packages because they choose the product assembly, for example selecting `com.arisen.rhi.vulkan.native`
