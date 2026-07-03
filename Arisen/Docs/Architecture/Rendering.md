@@ -33,8 +33,9 @@ Because the engine knows the entire graph, it can perform several high-end optim
 ### RenderPipeline Orchestration
 The `RenderPipeline` base class manages the lifecycle of the `RenderGraph`. Instead of manual rendering loops, developers override `SetupGraph()` to register their passes.
 ```csharp
-protected override void SetupGraph(RenderGraph graph, RenderContext context, ReadOnlySpan<Camera> cameras)
+protected override void SetupGraph(RenderGraph graph, RenderContext context)
 {
+    ReadOnlySpan<Camera> cameras = context.Cameras;
     graph.AddPass(new MyCustomPass());
 }
 ```
@@ -69,6 +70,43 @@ Rendering execution is integrated with the `com.arisen.taskgraph` job system.
 -   **Command Recording**: Multiple render passes can record their native command buffers in parallel across different CPU cores.
 -   **Submission**: The `RenderSubsystem` collects these buffers and submits them to the GPU queue in the correct topological order.
 
+Current implementation:
+- `RenderPipeline` owns a reusable `RenderGraph`.
+- `RenderGraph` compiles pass dependencies into parallel layers.
+- Each pass records through a `RenderCommandList`, which is the CPU-side facade over the current RHI command buffer.
+- Worker threads use per-thread/per-surface command pools so command recording can happen concurrently.
+- Small passes record as one pass-level work item; heavy passes may expose multiple `RenderPassWorkItem` ranges.
+- `GeometryPass` is the first range-capable pass and can split the frame snapshot draw list into contiguous chunks.
+- GPU submission remains ordered by the compiled graph's topological order.
+- Development profile builds emit Tracy profiler zones for frame ticks, RenderGraph compile/record/submit work, TaskGraph layers, and worker-thread tasks.
+
+Target production flow:
+
+```mermaid
+graph LR
+    Sim["Simulation / ECS"] --> Extract["Render extraction"]
+    Extract --> Snapshot["FrameSnapshot"]
+    Snapshot --> Setup["RenderGraph setup"]
+    Setup --> Compile["RenderGraph compile"]
+    Compile --> Record["Parallel command recording"]
+    Record --> Submit["Ordered queue submit / present"]
+```
+
+Threading rules:
+- Simulation must not be read directly by render worker threads. Rendering consumes a stable frame snapshot.
+- `RenderSubsystem` extracts camera, draw-list, output target, surface, frame index, and timing data into `RenderFrameSnapshot` before RenderGraph setup/execution begins.
+- Snapshot arrays are copied into `FrameArena` and exposed as `ReadOnlySpan<T>` from pointer/count pairs so command-recording tasks can capture the context without holding managed ECS buffers.
+- Pass setup may resolve cached resources, but pass recording must not perform service-registry lookups, shader compilation, asset discovery, or unbounded allocation.
+- `RenderCommandList` is the pass-facing command API. Passes should not directly depend on concrete native/Vulkan command buffer details.
+- Large scene passes should split draw ranges into multiple record tasks instead of treating one RenderGraph pass as one CPU job.
+- A pass may return zero work items only when it has no command work for the frame; dependency ordering still comes from the compiled graph, and submission skips that pass.
+- Queue submit, swapchain acquire/present, fence advancement, and frame-resource recycling should be owned by one backend/output submission path.
+
+Profiling rules:
+- Use the external Tracy Profiler viewer for full realtime timeline inspection.
+- Keep the launcher/editor as a control surface for opening Tracy and launching profiler-enabled runs; do not embed Tracy's full UI in Avalonia yet.
+- See `Profiling.md` for the current timeline workflow and profiler enablement policy.
+
 ---
 
 ## 5. Platform And RHI Surface Policy
@@ -91,4 +129,4 @@ The next runtime rendering step is replacing the temporary runtime device-only V
 For the Editor, the RenderGraph should support an editor-hosted viewport surface instead of assuming the standalone runtime window path. The long-term target is a shared texture/shared handle path consumed by the Avalonia viewport. Simpler staged or virtual surfaces may be used as transitional diagnostics, but editor integration must still go through explicit package services and RHI contracts.
 
 ---
-*AI Guidance: When implementing new rendering features, ensure they are encapsulated as `RenderPass` nodes that can be managed by the RenderGraph. Avoid direct RHI calls outside of the Pass execution context.*
+*AI Guidance: When implementing new rendering features, ensure they are encapsulated as `RenderPass` nodes that can be managed by the RenderGraph. Passes should record through `RenderCommandList`; avoid direct native/backend calls outside package-owned RHI implementations.*

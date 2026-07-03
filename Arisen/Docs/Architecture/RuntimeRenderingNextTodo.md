@@ -148,24 +148,83 @@ The next risk is no longer package graph correctness. The next risk is whether t
   - [x] Add engine-owned frame target prepare/finalization passes.
   - [x] Execute for one frame in smoke mode.
     - Production smoke now registers the platform-owned Win32 surface in `RenderSubsystem`, builds the generic pipeline, records `ClearPass`, and submits the RenderGraph against the runtime swapchain.
-- [ ] Implement a triangle frame after clear-color works.
-  - [ ] Add minimal shader asset or embedded shader path.
-  - [ ] Create pipeline state through the RHI abstraction.
-  - [ ] Record and submit draw commands through RenderGraph execution.
+- [x] Implement a triangle frame after clear-color works.
+  - [x] Add minimal shader asset or embedded shader path.
+    - Current slice uses an embedded HLSL source compiled during pipeline setup. This is temporary until Milestone 5 introduces cooked shader assets.
+  - [x] Create pipeline state through the RHI abstraction.
+    - `SmokeTrianglePass` creates RHI shader programs, a graphics pipeline state, swapchain color format metadata, and a cached graphics pipeline.
+  - [x] Record and submit draw commands through RenderGraph execution.
+    - Production smoke logs `SmokeTrianglePass` pipeline creation, `SmokeTrianglePass.Record`, and `RenderGraph` submitting five nodes.
 - [ ] Add frame diagnostics.
   - [ ] Log graph pass order.
   - [ ] Log culled passes and resource transitions.
   - [ ] Capture enough metadata to debug failed frame setup.
+  - [x] Add realtime profiler trace hooks for render frame timing.
+    - Development profile builds now emit `ARISEN_PROFILER_ENABLED`.
+    - Runtime frames mark `RuntimeFrame`.
+    - Render snapshots plot draw count, camera count, and output size.
+    - RenderGraph traces compile, record-layer, work-item, and submit spans.
+    - TaskGraph traces execute/layer spans and worker-thread task spans.
+- [x] Add first CPU command-list boundary.
+  - [x] Introduce `RenderCommandList` as the pass-facing command API over the current RHI command buffer.
+  - [x] Update built-in passes to record through `RenderCommandList`.
+  - [x] Keep native/backend-specific command details behind RHI wrappers.
 
 ### Acceptance Criteria
 
 - A one-frame smoke launch clears/presents through RenderGraph.
-- A later smoke launch draws a triangle through RenderGraph.
+- A smoke launch draws a triangle through RenderGraph.
 - The implementation does not bypass the package/RHI boundaries to get a frame on screen.
 
 ---
 
-## Milestone 5 - Asset Pipeline Vertical Slice
+## Milestone 5 - Render Threading Architecture
+
+**Goal:** Lock in the multi-threaded rendering shape before real scene content makes it expensive to migrate.
+
+### TODO
+
+- [x] Define the high-level threading model.
+  - [x] Simulation/ECS produces data.
+  - [x] Render extraction produces a stable frame snapshot.
+  - [x] RenderGraph setup/compile owns pass/resource ordering.
+  - [x] Worker threads record command lists.
+  - [x] A submission/output owner submits in graph order and presents.
+- [x] Add first frame snapshot contract.
+  - [x] Define camera, surface, frame index, draw-list, and output metadata layout.
+  - [x] Ensure render workers do not read mutable ECS state directly.
+  - [x] Keep draw data contiguous and suitable for range splitting.
+    - `RenderFrameSnapshot` now carries output target metadata plus camera and draw-list pointer/count pairs copied into `FrameArena`.
+    - `RenderContext` forwards to the snapshot so existing passes can migrate incrementally while consuming stable frame data.
+- [x] Improve command recording granularity.
+  - [x] Allow heavy passes to split draw ranges into multiple record tasks.
+    - `RenderPassWorkItem` defines pass-level work or draw ranges into `RenderFrameSnapshot.DrawList`.
+    - `GeometryPass` splits draw commands into contiguous chunks while clear/smoke/final passes stay single work-item passes.
+  - [x] Keep pass-level recording for small passes such as clear/final output.
+  - [x] Validate command pool ownership per worker/surface/frame.
+    - RenderGraph still keys command pools by worker thread and surface, and now releases a losing pool if workers race to create the same key.
+- [ ] Harden RenderGraph execution.
+  - [ ] Separate graph compile allocations from per-frame recording where practical.
+  - [ ] Add pass-order diagnostics for compiled layers.
+  - [x] Add realtime profiler diagnostics for compiled graph execution.
+    - Tracy zones now show RenderGraph compile, record layers, work items, ordered submit, and TaskGraph worker tasks.
+  - [x] Add explicit failure handling when a worker pass fails.
+    - Recording tasks capture exceptions with pass/work-item context and throw an aggregate failure after the layer finishes.
+- [ ] Define submission ownership.
+  - [ ] Centralize swapchain acquire/present, fences, and frame-resource recycling.
+  - [ ] Keep queue submission ordered by compiled graph dependencies.
+  - [ ] Prepare for future graphics/compute/copy queue families without exposing backend details to passes.
+
+### Acceptance Criteria
+
+- Production rendering code records through `RenderCommandList`, not directly against backend/native APIs.
+- Render workers consume immutable frame data.
+- The design supports both pass-level and draw-range-level parallel command recording.
+- Runtime smoke remains green while the architecture boundary is introduced incrementally.
+
+---
+
+## Milestone 6 - Asset Pipeline Vertical Slice
 
 **Goal:** Connect package/workspace assets to runtime rendering through stable asset IDs and cooked data.
 
@@ -197,7 +256,7 @@ The next risk is no longer package graph correctness. The next risk is whether t
 
 ---
 
-## Milestone 6 - Editor Viewport Integration
+## Milestone 7 - Editor Viewport Integration
 
 **Goal:** Make the launcher/editor a useful visual control surface for the runtime renderer.
 
@@ -226,7 +285,7 @@ The next risk is no longer package graph correctness. The next risk is whether t
 
 ---
 
-## Milestone 7 - Runtime Test And CI Gate
+## Milestone 8 - Runtime Test And CI Gate
 
 **Goal:** Promote the vertical slice into a repeatable validation gate.
 
@@ -260,9 +319,11 @@ Implement in this order:
 
 1. **Complete RHI service contracts** for surface and swapchain ownership.
 2. **Add Vulkan diagnostics** for adapter, validation layers, extensions, and swapchain format.
-3. **RenderGraph triangle frame**.
-4. **First cooked shader asset path**.
-5. **Editor/runtime diagnostics and viewport integration**.
+3. **Render threading architecture boundary**.
+4. **Profiler trace foundation for RenderGraph/TaskGraph**.
+5. **First cooked shader asset path**.
+6. **Editor/runtime diagnostics and viewport integration**.
+7. **Runtime test/log policy hardening**.
 
 This keeps the work vertical and testable. Each step should leave the engine in a better running state than before.
 
@@ -272,16 +333,19 @@ This keeps the work vertical and testable. Each step should leave the engine in 
 
 Start with:
 
-> Implement the RenderGraph triangle frame.
+> Finish RenderGraph execution hardening.
 
 Why first:
 
-- Runtime smoke now proves a RenderGraph clear frame can record and submit against the real platform swapchain.
-- The clear frame only proves attachment setup, output finalization, and submission; it does not yet prove shader assets, vertex/index buffers, pipeline state, or draw calls.
-- A triangle frame is the smallest next vertical slice that exercises real GPU draw state while keeping the asset path simple.
+- Runtime smoke now proves a shader-backed RenderGraph triangle frame can record and submit against the real platform swapchain.
+- `SmokeTrianglePass` is intentionally a smoke/sample pass, not production scene rendering.
+- The pass-facing command API, first frame snapshot contract, and draw-range command recording path now exist.
+- Realtime Tracy trace hooks now expose frame, TaskGraph, RenderGraph, and pass work-item timing.
+- The next risk is still RenderGraph compile/diagnostic quality: failed graph setup or worker recording needs precise pass/layer/resource context and resource diagnostics.
 
 Expected output:
 
-- A minimal triangle pass that runs through RenderGraph after the clear pass.
-- Clear diagnostics for pipeline creation, shader selection, vertex/index buffers, and draw submission.
+- Pass-order and compiled-layer diagnostics.
+- Clear resource transition/culling diagnostics for the minimal frame.
+- Reduced or isolated per-frame graph compile allocations where practical.
 - `validate_runtime.bat --no-pause --config Debug --frames 1` remains green.

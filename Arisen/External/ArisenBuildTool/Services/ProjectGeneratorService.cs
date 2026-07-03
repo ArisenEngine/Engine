@@ -47,8 +47,7 @@ public static class ProjectGeneratorService
         writer.WriteLine("    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>");
         writer.WriteLine("    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>");
         
-        string constants = $"ARISEN_PROFILE_{profile.ToUpper()}";
-        if (isEditor) constants += ";ARISEN_ENGINE_EDITOR";
+        string constants = BuildDefineConstants(profile, isEditor);
         writer.WriteLine($"    <DefineConstants>{constants}</DefineConstants>");
         writer.WriteLine("  </PropertyGroup>");
         writer.WriteLine();
@@ -149,5 +148,17 @@ public static class ProjectGeneratorService
         writer.WriteLine("</Project>");
         
         Logger.Info($"Generated CSProj: {csprojPath}");
+    }
+
+    private static string BuildDefineConstants(string profile, bool isEditor)
+    {
+        string constants = $"ARISEN_PROFILE_{profile.ToUpper()}";
+        if (isEditor) constants += ";ARISEN_ENGINE_EDITOR";
+        if (string.Equals(profile, "Development", StringComparison.OrdinalIgnoreCase))
+        {
+            constants += ";ARISEN_PROFILER_ENABLED";
+        }
+
+        return constants;
     }
 }
