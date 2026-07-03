@@ -255,6 +255,7 @@ This is especially important when touching:
 Relevant docs:
 - `.agents\skills\write_dod_code\SKILL.md`
 - `Arisen\Docs\Architecture\Rendering.md`
+- `Arisen\Docs\Architecture\Profiling.md`
 
 ### Rendering stack
 

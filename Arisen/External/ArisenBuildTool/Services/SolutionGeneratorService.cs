@@ -297,8 +297,7 @@ public static class SolutionGeneratorService
         writer.WriteLine("    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>");
         writer.WriteLine("    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>");
         
-        string constants = $"ARISEN_PROFILE_{profile.ToUpper()}";
-        if (isEditor) constants += ";ARISEN_ENGINE_EDITOR";
+        string constants = BuildDefineConstants(profile, isEditor);
         writer.WriteLine($"    <DefineConstants>{constants}</DefineConstants>");
         writer.WriteLine("  </PropertyGroup>");
         writer.WriteLine();
@@ -386,8 +385,7 @@ public class Program {{
         writer.WriteLine("    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>");
         writer.WriteLine("    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>");
 
-        string constants = $"ARISEN_PROFILE_{profile.ToUpperInvariant()}";
-        if (isEditor) constants += ";ARISEN_ENGINE_EDITOR";
+        string constants = BuildDefineConstants(profile, isEditor);
         writer.WriteLine($"    <DefineConstants>{constants}</DefineConstants>");
         writer.WriteLine("  </PropertyGroup>");
         writer.WriteLine();
@@ -432,6 +430,18 @@ public static class Program
 
         Logger.Info("Generated launcher desktop host entry project for Rider/debugger startup.");
         return true;
+    }
+
+    private static string BuildDefineConstants(string profile, bool isEditor)
+    {
+        string constants = $"ARISEN_PROFILE_{profile.ToUpperInvariant()}";
+        if (isEditor) constants += ";ARISEN_ENGINE_EDITOR";
+        if (string.Equals(profile, "Development", StringComparison.OrdinalIgnoreCase))
+        {
+            constants += ";ARISEN_PROFILER_ENABLED";
+        }
+
+        return constants;
     }
 
     private static void GenerateDirectoryBuildProps(string propsPath)

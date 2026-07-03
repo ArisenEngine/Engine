@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using ArisenBuildTool.Models;
@@ -33,10 +34,17 @@ public static class CMakeGeneratorService
         writer.WriteLine("set(CMAKE_CXX_STANDARD_REQUIRED ON)");
 
         string uProf = profile.ToUpper();
+        bool profilerEnabled = string.Equals(profile, "Development", StringComparison.OrdinalIgnoreCase);
         
         // Map Debug and Release to the correct profile macro
         writer.WriteLine($"# Profile-specific definitions for {profile}");
         writer.WriteLine($"add_compile_definitions(ARISEN_PROFILE_{uProf})");
+        writer.WriteLine($"set(ARISEN_PROFILER_ENABLED {(profilerEnabled ? "1" : "0")} CACHE BOOL \"Enable Arisen profiler instrumentation\" FORCE)");
+        writer.WriteLine("if(ARISEN_PROFILER_ENABLED)");
+        writer.WriteLine("    add_compile_definitions(ARISEN_PROFILER_ENABLED=1)");
+        writer.WriteLine("else()");
+        writer.WriteLine("    add_compile_definitions(ARISEN_PROFILER_ENABLED=0)");
+        writer.WriteLine("endif()");
         
         // Ensure Debug and Release are isolated even within the same profile's native folder
         // Paths are relative to Projects/{profile}/Native/ - we need 3 levels up to reach .arisen/
