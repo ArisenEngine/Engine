@@ -73,12 +73,17 @@ Rendering execution is integrated with the `com.arisen.taskgraph` job system.
 Current implementation:
 - `RenderPipeline` owns a reusable `RenderGraph`.
 - `RenderGraph` compiles pass dependencies into parallel layers.
+- `RenderGraph` caches the compiled topology as pass-node ids and parallel-layer ids when the graph signature is stable, so steady-state frames can skip the DAG compiler while still resolving the current frame's pass instances.
+- The generic DAG compiler reports dependency cycles with remaining node/edge context, and RenderGraph wraps compile failures with render pass graph state.
+- RenderGraph validates that declared resources belong to the current frame graph, so stale transient resource handles fail during setup instead of during command recording.
 - Each pass records through a `RenderCommandList`, which is the CPU-side facade over the current RHI command buffer.
 - Worker threads use per-thread/per-surface command pools so command recording can happen concurrently.
 - Small passes record as one pass-level work item; heavy passes may expose multiple `RenderPassWorkItem` ranges.
 - `GeometryPass` is the first range-capable pass and can split the frame snapshot draw list into contiguous chunks.
 - GPU submission remains ordered by the compiled graph's topological order.
 - Profiles with `EnableProfiler: true` emit Tracy profiler zones for frame ticks, RenderGraph compile/record/submit work, TaskGraph layers, and worker-thread tasks.
+- RenderGraph plots `RenderGraph.CompileCacheHit` so Tracy can show whether a frame reused the compiled topology.
+- Frame-paced RenderGraph diagnostics log compiled pass order, compiled layers, resource access chains, current pass-culling status, per-layer work-item counts, zero-work skipped passes, and submit totals.
 
 Target production flow:
 
@@ -97,10 +102,16 @@ Threading rules:
 - `RenderSubsystem` extracts camera, draw-list, output target, surface, frame index, and timing data into `RenderFrameSnapshot` before RenderGraph setup/execution begins.
 - Snapshot arrays are copied into `FrameArena` and exposed as `ReadOnlySpan<T>` from pointer/count pairs so command-recording tasks can capture the context without holding managed ECS buffers.
 - Pass setup may resolve cached resources, but pass recording must not perform service-registry lookups, shader compilation, asset discovery, or unbounded allocation.
+- The current smoke shader and smoke checker texture are loaded by GUID through `IAssetDatabase`; cooking/loading and Texture2D GPU upload happen during pipeline setup, not inside command recording.
+- `RHITexture2DResource` is the first setup-time texture upload owner. It consumes cooked Texture2D bytes, creates an upload buffer, records a one-shot copy command buffer, transitions the image to shader-read layout, creates an image view and sampler, and registers both the image view and sampler in the global bindless table.
+- The smoke pass is the first sampled Texture2D binding proof. It caches bindless image/sampler indices during setup and pushes a small unmanaged constant block during recording; shader code samples set 3 bindless image/sampler arrays. This remains a smoke path, not the final material system.
+- The smoke triangle mesh is loaded by GUID and cooked into an interleaved static mesh payload. `RHIStaticMeshResource` creates setup-time RHI vertex/index buffers, while `SmokeTrianglePass` declares the vertex input layout, binds those buffers, and records an indexed draw. This proves the first cooked mesh path; device-local staged buffer uploads remain production hardening work.
 - `RenderCommandList` is the pass-facing command API. Passes should not directly depend on concrete native/Vulkan command buffer details.
 - Large scene passes should split draw ranges into multiple record tasks instead of treating one RenderGraph pass as one CPU job.
 - A pass may return zero work items only when it has no command work for the frame; dependency ordering still comes from the compiled graph, and submission skips that pass.
-- Queue submit, swapchain acquire/present, fence advancement, and frame-resource recycling should be owned by one backend/output submission path.
+- Resource access diagnostics are derived from `RenderGraphBuilder.Read`/`Write` declarations and frame-boundary passes. They describe the intended ordering chain; automatic barrier planning is still future work.
+- `RenderFrameSubmission` is the per-surface output owner for the current managed slice. It acquires the swapchain image, submits ordered graphics command buffers through the RHI device, applies first/last swapchain wait/signal ownership, presents the frame, and emits submission diagnostics.
+- Future graphics/compute/copy queues should extend the submission owner rather than exposing backend queue details to render passes.
 
 Profiling rules:
 - Use the external Tracy Profiler viewer for full realtime timeline inspection.

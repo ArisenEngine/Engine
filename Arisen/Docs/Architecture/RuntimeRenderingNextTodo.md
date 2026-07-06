@@ -139,10 +139,13 @@ The next risk is no longer package graph correctness. The next risk is whether t
 
 ### TODO
 
-- [ ] Finalize minimal RenderGraph execution interfaces.
+- [x] Finalize minimal RenderGraph execution interfaces.
   - [x] Define pass inputs, outputs, resource handles, and execution context for the first frame target.
-  - [ ] Keep graph compilation allocation-free after setup where practical.
-  - [ ] Validate pass dependency cycles and missing resources.
+  - [x] Keep graph compilation allocation-free after setup where practical.
+    - RenderGraph now caches the compiled topology as pass-node ids and parallel-layer ids when the graph signature is stable, so steady-state frames can skip DAG compilation while still resolving current frame pass instances.
+  - [x] Validate pass dependency cycles and missing resources.
+    - The generic DAG compiler now reports remaining cyclic nodes/edges, and RenderGraph wraps compile failures with pass/edge context.
+    - RenderGraph validates resource handles during pass setup and fails clearly when a pass declares stale, foreign, or unknown resources.
 - [x] Implement a clear-color frame.
   - [x] Add a presentable swapchain target resource.
   - [x] Add a clear pass.
@@ -151,15 +154,17 @@ The next risk is no longer package graph correctness. The next risk is whether t
     - Production smoke now registers the platform-owned Win32 surface in `RenderSubsystem`, builds the generic pipeline, records `ClearPass`, and submits the RenderGraph against the runtime swapchain.
 - [x] Implement a triangle frame after clear-color works.
   - [x] Add minimal shader asset or embedded shader path.
-    - Current slice uses an embedded HLSL source compiled during pipeline setup. This is temporary until Milestone 5 introduces cooked shader assets.
+    - Current slice uses `SmokeTriangle.hlsl` as a package asset with a stable `.meta` GUID and cooks Vulkan SPIR-V into the workspace cooked asset cache during pipeline setup.
   - [x] Create pipeline state through the RHI abstraction.
     - `SmokeTrianglePass` creates RHI shader programs, a graphics pipeline state, swapchain color format metadata, and a cached graphics pipeline.
   - [x] Record and submit draw commands through RenderGraph execution.
     - Production smoke logs `SmokeTrianglePass` pipeline creation, `SmokeTrianglePass.Record`, and `RenderGraph` submitting five nodes.
-- [ ] Add frame diagnostics.
-  - [ ] Log graph pass order.
-  - [ ] Log culled passes and resource transitions.
-  - [ ] Capture enough metadata to debug failed frame setup.
+- [x] Add frame diagnostics.
+  - [x] Log graph pass order.
+  - [x] Log culled passes and resource transitions.
+    - RenderGraph now logs ordered resource access chains and plots/logs the current culled pass count. Automatic pass culling and graph-planned GPU barriers remain future implementation work.
+  - [x] Capture enough metadata to debug failed frame setup.
+    - RenderGraph diagnostics now log compiled pass order, compiled layers, per-layer work-item counts, skipped zero-work passes, and submit totals on the diagnostics cadence.
   - [x] Add realtime profiler trace hooks for render frame timing.
     - Profiles with `EnableProfiler: true` now emit `ARISEN_PROFILER_ENABLED`.
     - Runtime frames mark `RuntimeFrame`.
@@ -204,17 +209,23 @@ The next risk is no longer package graph correctness. The next risk is whether t
   - [x] Keep pass-level recording for small passes such as clear/final output.
   - [x] Validate command pool ownership per worker/surface/frame.
     - RenderGraph still keys command pools by worker thread and surface, and now releases a losing pool if workers race to create the same key.
-- [ ] Harden RenderGraph execution.
-  - [ ] Separate graph compile allocations from per-frame recording where practical.
-  - [ ] Add pass-order diagnostics for compiled layers.
+- [x] Harden RenderGraph execution.
+  - [x] Separate graph compile allocations from per-frame recording where practical.
+    - The current topology cache isolates DAG compile allocations from steady-state recording when graph structure is unchanged; command-buffer arrays, scheduled task objects, and future persistent pass instances remain deeper allocation-reduction work.
+  - [x] Add pass-order diagnostics for compiled layers.
   - [x] Add realtime profiler diagnostics for compiled graph execution.
     - Tracy zones now show RenderGraph compile, record layers, work items, ordered submit, and TaskGraph worker tasks.
   - [x] Add explicit failure handling when a worker pass fails.
     - Recording tasks capture exceptions with pass/work-item context and throw an aggregate failure after the layer finishes.
-- [ ] Define submission ownership.
-  - [ ] Centralize swapchain acquire/present, fences, and frame-resource recycling.
-  - [ ] Keep queue submission ordered by compiled graph dependencies.
-  - [ ] Prepare for future graphics/compute/copy queue families without exposing backend details to passes.
+    - Work-item description failures and invalid work-item counts now report the owning pass before workers are scheduled.
+- [x] Define submission ownership.
+  - [x] Centralize swapchain acquire/present, fences, and frame-resource recycling.
+    - `RenderFrameSubmission` now owns per-surface acquire, ordered graphics submit, first/last swapchain wait/signal policy, present, ticket, and submission diagnostics for the managed runtime slice.
+    - Native fence advancement and deferred frame-resource recycling remain inside the RHI queue/device implementation behind the managed owner.
+  - [x] Keep queue submission ordered by compiled graph dependencies.
+    - RenderGraph still records worker command buffers by compiled DAG order, but now submits through the frame submission owner instead of calling `RHIDevice.Submit` directly.
+  - [x] Prepare for future graphics/compute/copy queue families without exposing backend details to passes.
+    - The first owner only exposes graphics submission, and future queue-family support should extend this boundary rather than leaking backend queues to render passes.
 
 ### Acceptance Criteria
 
@@ -232,22 +243,36 @@ The next risk is no longer package graph correctness. The next risk is whether t
 ### TODO
 
 - [ ] Finalize the first asset types.
-  - [ ] Shader source/cooked shader.
-  - [ ] Texture2D.
-  - [ ] Mesh or simple geometry buffer.
+  - [x] Shader source/cooked shader.
+    - First slice: `SmokeTriangle.hlsl` is a package asset with a stable `.meta` GUID and cooked Vulkan SPIR-V variants.
+    - Shader cooking now goes through `ShaderAsset`, `ShaderVariantKey`, and `ShaderAssetCooker` instead of being owned directly by `SmokeTrianglePass`.
+  - [x] Texture2D.
+    - First slice: `SmokeChecker.ppm` is a package asset with a stable `.meta` GUID and cooks into a deterministic binary Texture2D payload.
+    - Texture cooking now goes through `Texture2DAsset`, `Texture2DVariantKey`, and `Texture2DAssetCooker`.
+    - Runtime setup loads the cooked texture through `CookedAssetHandle`.
+    - `RHITexture2DResource` uploads the cooked payload through a staging buffer, records a one-shot `CopyBufferToImage` command, transitions the image to shader-read layout, creates the image view/sampler, and registers both the image view and sampler in the global bindless table.
+    - The smoke shader samples the uploaded checker texture through bindless image/sampler indices supplied by a small setup-time push-constant path.
+  - [x] Mesh or simple geometry buffer.
+    - First slice: `SmokeTriangle.armesh` is a package asset with a stable `.meta` GUID and cooks into a deterministic static mesh payload.
+    - Mesh cooking now goes through `MeshAsset`, `MeshVariantKey`, and `MeshAssetCooker`.
+    - `RHIStaticMeshResource` loads cooked vertex/index bytes during setup, creates RHI vertex/index buffers, and caches draw metadata.
+    - `SmokeTrianglePass` declares the vertex layout in pipeline state, binds the cooked mesh buffers through `RenderCommandList`, and records an indexed draw.
 - [ ] Implement `.meta` generation and stable GUID assignment.
-  - [ ] Create missing meta files for new assets.
-  - [ ] Preserve GUIDs across moves/renames.
-  - [ ] Detect duplicate GUIDs.
+  - [x] Create missing meta files for new assets inside workspace/package `Assets/` folders.
+  - [x] Preserve GUIDs across moves/renames.
+  - [x] Detect duplicate GUIDs.
 - [ ] Implement first cooking path.
-  - [ ] Cook shader assets for Vulkan.
-  - [ ] Emit cooked outputs under workspace/package cache.
-  - [ ] Emit an asset manifest mapping GUID to cooked artifact.
+  - [x] Cook shader assets for Vulkan.
+  - [x] Emit cooked outputs under workspace/package cache.
+  - [x] Emit an asset manifest mapping GUID to cooked artifact.
 - [ ] Add runtime asset database service.
-  - [ ] Load by GUID, not by source path.
-  - [ ] Return typed handles suitable for rendering.
-  - [ ] Track lifetime/reference state.
-- [ ] Use a cooked asset in the minimal RenderGraph frame.
+  - [x] Load by GUID, not by source path.
+    - First slice resolves GUID to source metadata during setup, then consumes a cooked artifact path.
+  - [x] Return typed handles suitable for rendering.
+    - `IAssetDatabase.TryLoadCookedAsset` returns a generation-checked `CookedAssetHandle`, and setup code reads stable cooked bytes from that handle.
+  - [x] Track lifetime/reference state.
+    - The runtime database keeps loaded cooked asset slots, reference counts, stale-handle generation checks, diagnostics, explicit release, and package-unload cleanup.
+- [x] Use a cooked asset in the minimal RenderGraph frame.
 
 ### Acceptance Criteria
 
@@ -318,13 +343,13 @@ The next risk is no longer package graph correctness. The next risk is whether t
 
 Implement in this order:
 
-1. **Complete RHI service contracts** for surface and swapchain ownership.
-2. **Add Vulkan diagnostics** for adapter, validation layers, extensions, and swapchain format.
-3. **Render threading architecture boundary**.
-4. **Profiler trace foundation for RenderGraph/TaskGraph**.
-5. **First cooked shader asset path**.
-6. **Editor/runtime diagnostics and viewport integration**.
-7. **Runtime test/log policy hardening**.
+1. **First material binding model over shader + texture refs**.
+   - The smoke pass now proves bindless sampled Texture2D constants. The next production step is lifting that convention into a reusable material/shader binding description instead of keeping it pass-specific.
+2. **Device-local static mesh buffer upload path**.
+   - The first mesh slice uses setup-time upload buffers for simplicity. The production path should stage into device-local vertex/index buffers and add the needed buffer barrier ownership to the RHI/RenderGraph boundary.
+3. **Editor shader/texture/mesh asset importers, generated asset refs, and hot reload**.
+4. **Editor/runtime diagnostics and viewport integration**.
+5. **Runtime test/log policy hardening**.
 
 This keeps the work vertical and testable. Each step should leave the engine in a better running state than before.
 
@@ -334,19 +359,18 @@ This keeps the work vertical and testable. Each step should leave the engine in 
 
 Start with:
 
-> Finish RenderGraph execution hardening.
+> Add the first material binding model over shader + texture refs.
 
-Why first:
+Why next:
 
-- Runtime smoke now proves a shader-backed RenderGraph triangle frame can record and submit against the real platform swapchain.
-- `SmokeTrianglePass` is intentionally a smoke/sample pass, not production scene rendering.
-- The pass-facing command API, first frame snapshot contract, and draw-range command recording path now exist.
-- Realtime Tracy trace hooks now expose frame, TaskGraph, RenderGraph, and pass work-item timing.
-- The next risk is still RenderGraph compile/diagnostic quality: failed graph setup or worker recording needs precise pass/layer/resource context and resource diagnostics.
+- The asset database now has GUID lookup, cooked manifest registration, typed handles, reference tracking, release diagnostics, and shader/texture/mesh rendering consumers.
+- Shader, Texture2D, and Mesh cooking all have reusable asset/variant/cooker boundaries.
+- The smoke pass now proves both sampled Texture2D binding and cooked indexed mesh drawing, but the texture binding convention is still pass-local push constants.
+- A small material binding model is the shortest next step toward user-authored draw data without hardcoded pass-specific resource constants.
 
 Expected output:
 
-- Pass-order and compiled-layer diagnostics.
-- Clear resource transition/culling diagnostics for the minimal frame.
-- Reduced or isolated per-frame graph compile allocations where practical.
-- `validate_runtime.bat --no-pause --config Debug --frames 1` remains green.
+- A reusable material/shader binding description for Texture2D refs and small constants.
+- A setup-time translation from material asset refs to bindless descriptor indices.
+- The smoke pass uses the material binding description instead of owning texture push constants directly.
+- Runtime smoke remains green and no material asset lookup, descriptor registration, or upload work occurs during RenderGraph pass recording.
