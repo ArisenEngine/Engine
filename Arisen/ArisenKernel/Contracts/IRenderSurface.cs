@@ -22,6 +22,7 @@ public struct RenderOutputInfo
 {
     public ulong Ticket;
     public uint FrameIndex;
+    public uint ResizeGeneration;
     public IntPtr SharedHandle;
     public ulong MemorySize;
     public IntPtr WaitSemaphoreHandle;

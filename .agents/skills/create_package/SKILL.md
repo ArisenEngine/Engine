@@ -66,7 +66,7 @@ Arisen\Scripts\Windows\build_workspace.bat --manifest Arisen\Development\Package
 For packages that affect boot, platform windows, RHI startup, profile macros, or runtime smoke behavior, run:
 
 ```powershell
-Arisen\Scripts\Windows\validate_runtime.bat --no-pause --config Debug --frames 1
+Arisen\Scripts\Windows\validate_runtime.bat --no-pause --config Debug --smoke-mode scene --frames 1
 ```
 
 If the package includes editor-facing functionality, verify it appears through the generated Development workspace after a successful build.

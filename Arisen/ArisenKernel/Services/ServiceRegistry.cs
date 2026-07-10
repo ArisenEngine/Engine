@@ -82,6 +82,29 @@ public class ServiceRegistry : IServiceRegistry
         return _registrationInfo.Values.ToArray();
     }
 
+    public int UnregisterServicesProvidedByPackage(string packageId)
+    {
+        if (string.IsNullOrWhiteSpace(packageId)) return 0;
+
+        int removedCount = 0;
+        foreach (var registration in _registrationInfo.ToArray())
+        {
+            if (!string.Equals(registration.Value.ProviderPackageId, packageId, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (_services.TryRemove(registration.Key, out _))
+            {
+                removedCount++;
+            }
+
+            _registrationInfo.TryRemove(registration.Key, out _);
+        }
+
+        return removedCount;
+    }
+
     /// <summary>
     /// Clears all registered services. Used by EngineKernel.Reset().
     /// </summary>

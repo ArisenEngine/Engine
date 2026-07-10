@@ -48,4 +48,4 @@ _myService = registry.Get<IMyService>();
 - Verify a concrete provider is selected by the workspace manifest or by a composition/root package dependency; a service requirement alone does not add a package to the graph.
 - Verify lifecycle ordering makes the provider available before the consumer uses it.
 - Verify the final usage path stays outside hot inner loops.
-- For runtime/RHI changes, run `Arisen\Scripts\Windows\validate_runtime.bat --no-pause --config Debug --frames 1` when local graphics prerequisites are available.
+- For runtime/RHI changes, run `Arisen\Scripts\Windows\validate_runtime.bat --no-pause --config Debug --smoke-mode scene --frames 1` when local graphics prerequisites are available.

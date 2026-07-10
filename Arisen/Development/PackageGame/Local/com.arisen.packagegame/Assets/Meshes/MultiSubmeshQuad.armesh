@@ -1,0 +1,10 @@
+# Runtime smoke mesh with two submesh ranges sharing one vertex/index buffer.
+v -0.45 -0.45 0.0 0.0 1.0 1.0 1.0 1.0
+v  0.45 -0.45 0.0 1.0 1.0 1.0 1.0 1.0
+v  0.45  0.45 0.0 1.0 0.0 1.0 1.0 1.0
+v -0.45  0.45 0.0 0.0 0.0 1.0 1.0 1.0
+
+i 0 1 2 0 2 3
+
+submesh 0 3 0
+submesh 3 3 1

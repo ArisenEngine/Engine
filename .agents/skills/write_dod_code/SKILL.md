@@ -31,4 +31,4 @@ A hot path is any code that runs:
 - Build and profile in Release when measuring hot-path performance.
 - Confirm GC pressure stays out of simulation and rendering loops.
 - Validate the final design against the relevant architecture docs and nearby package patterns instead of relying on generic OOP conventions.
-- For rendering/RHI changes, verify the path remains compatible with `validate_runtime.bat --no-pause --config Debug --frames 1` and does not add service-registry lookups inside RenderGraph pass execution.
+- For rendering/RHI changes, verify the path remains compatible with `validate_runtime.bat --no-pause --config Debug --smoke-mode scene --frames 1` and does not add service-registry lookups inside RenderGraph pass execution.

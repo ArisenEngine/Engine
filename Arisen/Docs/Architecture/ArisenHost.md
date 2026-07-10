@@ -59,3 +59,11 @@ Once all packages are mounted by `PackageSubsystem`, the bootstrapper attempts t
 
 1. **IApplicationHost**: If a package (like `com.arisen.editor`) has registered an `IApplicationHost` service, the bootstrapper yields the main thread to it (launching the Editor UI).
 2. **Bare-Metal Kernel**: If no application host is detected, the bootstrapper engages the default engine tick loop via `EngineKernel.Instance.Run()`.
+
+Smoke validation is a bounded variant of the same boot path:
+
+```bash
+MyGame.exe --workspace "D:/MyGame" --profile "Development" --smoke-mode scene --frames 1
+```
+
+Supported smoke modes are `boot`, `scene`, and `hot-reload`. `boot` preserves the legacy one-frame bounded loop. `scene` runs at least two frames so packages that defer scene setup to first `OnFrameEnd` still render one prepared scene frame. `hot-reload` currently runs a multi-frame scene stability window and logs that true file-change recook/reload smoke still needs a runtime-owned asset-change harness.

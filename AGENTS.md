@@ -80,7 +80,7 @@ Use this as the first validation gate for package graph, service-contract, nativ
 
 Full runtime validation is available when a change touches boot, generated workspaces, platform windows, RHI startup, profile macros, package loading, or smoke-mode behavior:
 
-- `Arisen\Scripts\Windows\validate_runtime.bat --no-pause --config Debug --frames 1`
+- `Arisen\Scripts\Windows\validate_runtime.bat --no-pause --config Debug --smoke-mode scene --frames 1`
 
 What this runs:
 - `validate_fast.bat`
@@ -291,7 +291,7 @@ Start with:
   - `Arisen\Docs\Architecture\ServiceRegistry.md`
 - rendering questions:
   - `Arisen\Docs\Architecture\Rendering.md`
-  - `Arisen\Docs\Architecture\RuntimeRenderingNextTodo.md`
+  - `Arisen\Docs\Architecture\ProductionSceneRenderingNextTodo.md`
 - package-boundary questions:
   - `Arisen\Docs\Architecture\PackageArchitecture.md`
   - `Arisen\Docs\Architecture\PackageRegistry.md`

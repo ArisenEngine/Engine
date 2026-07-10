@@ -1,14 +1,8 @@
 using System;
 using System.Numerics;
-using System.Runtime.InteropServices;
-using Arisen.Native.RHI;
 using ArisenEngine.Core.ECS;
-using ArisenEngine.Core.RHI;
-using ArisenEngine.Rendering;
 using ArisenEngine.ECS.Lifecycle;
-using ArisenKernel.Lifecycle;
 using ArisenKernel.Diagnostics;
-using ArisenKernel.Contracts;
 
 namespace PackageGame;
 
@@ -18,63 +12,41 @@ public static class MeshRenderTest
     {
         KernelLog.Info("[MeshRenderTest] Setting up verification scene...");
 
-        // 1. Register the MeshSystem
         scene.RegisterSystem(new MeshSystem());
 
-        // 2. Create a test entity
         var em = scene.ActiveEntityManager;
-        var entity = em.CreateEntity();
+        var cameraEntity = em.CreateEntity();
+        em.AddComponent(cameraEntity, new TransformComponent
+        {
+            Position = new Vector3(0.0f, 0.0f, -2.5f),
+            Rotation = Quaternion.Identity,
+            Scale = Vector3.One
+        });
+        em.AddComponent(cameraEntity, CameraComponent.Default);
 
-        // 3. Setup Transform (centered at origin, unit scale)
+        var meshGuid = GameLogicAssetRefs.MultiSubmeshQuadMesh.Ref.Guid;
+        var materialGuid = Guid.Empty;
+
+        AddMeshEntity(em, meshGuid, materialGuid, new Vector3(-0.05f, 0.0f, 0.35f));
+        AddMeshEntity(em, meshGuid, materialGuid, new Vector3(0.05f, 0.0f, 0.0f));
+
+        KernelLog.Info("[MeshRenderTest] Scene smoke created with 1 camera and 2 asset-authored static mesh entities.");
+    }
+
+    public static void Shutdown()
+    {
+    }
+
+    private static void AddMeshEntity(EntityManager em, Guid meshGuid, Guid materialGuid, Vector3 position)
+    {
+        var entity = em.CreateEntity();
         em.AddComponent(entity, new TransformComponent
         {
-            Position = new Vector3(0, 0, 5), // Move it in front of the camera
+            Position = position,
             Rotation = Quaternion.Identity,
             Scale = Vector3.One
         });
 
-        // 4. Setup MeshRenderer (passing raw RHI handles for DOD purity)
-        var service = EngineKernel.Instance.Services.GetService<IRHIDevice>();
-        
-        if (service.IsValid)
-        {
-            // Reconstruct the RHI struct handle for the mesh factory
-            var device = new RHIDevice(service.NativeHandle);
-            
-            // Note: We still use the Mesh class here as a factory/storage for the test geometry.
-            // But we extract the raw handles to store in the ECS Component.
-            var mesh = new Mesh(device, "TestTriangle");
-            
-            var vertices = new[] {
-                new Vector3(-0.5f, -0.5f, 0),
-                new Vector3( 0.0f,  0.5f, 0),
-                new Vector3( 0.5f, -0.5f, 0)
-            };
-            
-            unsafe 
-            {
-                mesh.SetVertices(vertices, (uint)sizeof(Vector3));
-            }
-            
-            var indices = new uint[] { 0, 1, 2 };
-            mesh.SetIndices(indices);
-
-            em.AddComponent(entity, new MeshRendererComponent
-            {
-                VertexBuffer = mesh.VertexBuffer.Handle,
-                IndexBuffer = mesh.IndexBuffer.Handle,
-                IndexCount = mesh.IndexBuffer.Count,
-                // Correctly map the high-level IndexType to unmanaged EIndexType
-                IndexType = mesh.IndexBuffer.IndexType == IndexType.Uint32 ? 
-                            EIndexType.INDEX_TYPE_UINT32 : EIndexType.INDEX_TYPE_UINT16,
-                MaterialID = 1
-            });
-
-            KernelLog.Info("[MeshRenderTest] Test entity created with raw RHI handles in MeshRendererComponent.");
-        }
-        else
-        {
-            KernelLog.Warning("[MeshRenderTest] No valid IRHIDevice service found, cannot create test mesh.");
-        }
+        em.AddComponent(entity, MeshRendererComponent.Create(meshGuid, materialGuid));
     }
 }

@@ -49,6 +49,8 @@ public class GameLogicPackage : IPackageEntry
             EngineKernel.Instance.OnFrameEnd -= m_DeferredSetup;
             m_DeferredSetup = null;
         }
+
+        MeshRenderTest.Shutdown();
         KernelLog.Info("[GameLogic] Package Unloaded.");
     }
 }

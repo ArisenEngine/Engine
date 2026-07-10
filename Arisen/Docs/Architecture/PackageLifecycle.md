@@ -19,7 +19,7 @@ Runtime package mounting follows this responsibility split:
 2. `EngineKernel.Initialize()` ensures `PackageSubsystem` exists.
 3. `EngineKernel` passes the already ordered package URL list to `PackageSubsystem.MountPackages()`.
 4. `PackageSubsystem` reads each `package.json`, loads the entry assembly if present, creates the entry class, calls `IPackageEntry.OnLoad(IServiceRegistry)`, invokes any declared native `initExport` hooks, validates declared service providers/requirements, and records `ArisenPackageInfo`.
-5. `PackageSubsystem.Shutdown()` calls `IPackageEntry.OnUnload(IServiceRegistry)` and any declared native `shutdownExport` hooks in reverse mount order.
+5. `PackageSubsystem.Shutdown()` calls `IPackageEntry.OnUnload(IServiceRegistry)` and any declared native `shutdownExport` hooks in reverse mount order, then unregisters services provided by each package after that package finishes unloading.
 
 This avoids split-brain package state between bootstrapper, kernel, and package tracking UI. It also centralizes runtime service-contract validation so a package that declares non-deferred `services.provides` must actually register those services during `OnLoad()`, and all non-optional/non-deferred `services.requires` contracts must exist before subsystem initialization continues.
 
@@ -29,7 +29,7 @@ Runtime package lifecycle behavior is covered by `ArisenKernel.Tests`:
 dotnet test Arisen\ArisenKernel.Tests\ArisenKernel.Tests.csproj
 ```
 
-The tests create temporary package manifests, boot them through `EngineKernel.Initialize()`, verify package entry loading and service registration, assert that shutdown unloads package entries in reverse mount order, and cover native lifecycle metadata failure behavior.
+The tests create temporary package manifests, boot them through `EngineKernel.Initialize()`, verify package entry loading and service registration, assert that shutdown unloads package entries in reverse mount order, confirm package-provided services are removed during shutdown, and cover native lifecycle metadata failure behavior.
 
 ### Managed Assembly Load Context Policy
 
@@ -39,7 +39,7 @@ The tests create temporary package manifests, boot them through `EngineKernel.In
 - Entry assemblies resolved under `AppContext.BaseDirectory` are loaded in the default context. This is the expected path for generated workspace outputs and shared engine assemblies that must exchange kernel contract types without type identity splits.
 - Entry assemblies resolved from package-local roots such as `Managed/` are loaded in a collectible `PackageLoadContext`. The context uses `AssemblyDependencyResolver` for package-private managed and unmanaged dependencies.
 
-Unloadability is best-effort and applies only to assemblies loaded through `PackageLoadContext`. `PackageSubsystem.Shutdown()` first calls `IPackageEntry.OnUnload()` in reverse package order, clears package state, and then unloads collectible contexts. Actual memory reclamation depends on package code releasing all references to objects, types, delegates, threads, and unmanaged callbacks from that context. Default-context assemblies are intentionally process-lifetime assemblies and are not unloadable.
+Unloadability is best-effort and applies only to assemblies loaded through `PackageLoadContext`. `PackageSubsystem.Shutdown()` first calls `IPackageEntry.OnUnload()` in reverse package order, runs native shutdown hooks, unregisters services provided by each unloaded package, clears package state, and then unloads collectible contexts. Actual memory reclamation depends on package code releasing all references to objects, types, delegates, threads, and unmanaged callbacks from that context. Default-context assemblies are intentionally process-lifetime assemblies and are not unloadable.
 
 ---
 
@@ -117,5 +117,5 @@ When the engine shuts down, the Kernel executes subsystem teardown in reverse su
 1. `EditorShell` shuts down.
 2. `ECS` shuts down.
 3. `VulkanRHI` shuts down.
-4. Package entries unload in reverse topological order.
+4. Package entries unload in reverse topological order, and their service registrations are removed after each package unloads.
 5. `Logger` flushes and shuts down.

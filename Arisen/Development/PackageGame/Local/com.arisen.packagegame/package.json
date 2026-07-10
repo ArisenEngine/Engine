@@ -16,7 +16,8 @@
         "capabilities": [
           "vulkan"
         ]
-      }
+      },
+      "ArisenEngine.Rendering.IRenderMaterialLibrary"
     ]
   },
   "dependencies": {

@@ -454,6 +454,341 @@ public sealed class PackageValidationFixtureTests
         Assert.Contains(result.Errors, error => error.Contains("invalid 'shutdownExport'", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public void NativeOutputValidationFailsWhenResolvedPayloadIsMissing()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        string outputDir = Path.Combine(workspace.RootPath, "bin");
+        Directory.CreateDirectory(outputDir);
+        string resolvedManifestPath = Path.Combine(outputDir, "manifest.resolved.json");
+        File.WriteAllText(
+            resolvedManifestPath,
+            """
+            {
+              "ResolvedPackages": [
+                {
+                  "Id": "com.test.native",
+                  "NativeRuntimes": {
+                    "win-x64": [
+                      "Native.Runtime.dll"
+                    ]
+                  }
+                }
+              ]
+            }
+            """);
+
+        var result = NativeOutputValidationService.Validate(resolvedManifestPath, outputDir);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error => error.Contains("Native.Runtime.dll", StringComparison.Ordinal)
+            && error.Contains("deployed native runtime", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void NativeOutputValidationFailsWhenDeclaredExportIsMissing()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        string outputDir = Path.Combine(workspace.RootPath, "bin");
+        Directory.CreateDirectory(outputDir);
+        string resolvedManifestPath = Path.Combine(outputDir, "manifest.resolved.json");
+        string deployedDllPath = Path.Combine(outputDir, "Native.Runtime.dll");
+        File.Copy(typeof(PackageValidationFixtureTests).Assembly.Location, deployedDllPath);
+        File.WriteAllText(
+            resolvedManifestPath,
+            """
+            {
+              "ResolvedPackages": [
+                {
+                  "Id": "com.test.native",
+                  "NativeRuntimes": {
+                    "win-x64": [
+                      {
+                        "path": "Native.Runtime.dll",
+                        "exports": [
+                          "MissingNativeExport"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+            """);
+
+        var result = NativeOutputValidationService.Validate(resolvedManifestPath, outputDir);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error => error.Contains("MissingNativeExport", StringComparison.Ordinal)
+            && error.Contains("missing declared export", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void NativeOutputValidationFiltersConfigurationSpecificPayloads()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        string outputDir = Path.Combine(workspace.RootPath, "bin");
+        Directory.CreateDirectory(outputDir);
+        string resolvedManifestPath = Path.Combine(outputDir, "manifest.resolved.json");
+        File.WriteAllText(Path.Combine(outputDir, "Native.Debug.dll"), string.Empty);
+        File.WriteAllText(
+            resolvedManifestPath,
+            """
+            {
+              "ResolvedPackages": [
+                {
+                  "Id": "com.test.native",
+                  "NativeRuntimes": {
+                    "win-x64": [
+                      {
+                        "path": "Native.Debug.dll",
+                        "configurations": [
+                          "Debug"
+                        ]
+                      },
+                      {
+                        "path": "Native.Release.dll",
+                        "configurations": [
+                          "Release"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+            """);
+
+        var result = NativeOutputValidationService.Validate(resolvedManifestPath, outputDir, "Debug");
+
+        Assert.True(result.Success, string.Join(Environment.NewLine, result.Errors));
+    }
+
+    [Fact]
+    public void EditorSharedTextureViewportGraphRequiresRenderingPlatformAndRhiBackend()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage(
+            "com.test.core",
+            layer: "foundation",
+            services: new
+            {
+                provides = new object[]
+                {
+                    "ArisenEngine.Core.Assets.IAssetDatabase"
+                }
+            });
+        workspace.AddPackage("com.test.ecs", layer: "domain", dependencies: new Dictionary<string, string>
+        {
+            ["com.test.core"] = "1.0.0"
+        });
+        workspace.AddPackage("com.test.platform.desktop", layer: "foundation", services: new
+        {
+            provides = new object[]
+            {
+                "ArisenKernel.Contracts.IWindowProvider"
+            }
+        });
+        workspace.AddPackage("com.test.rhi.vulkan.native", layer: "driver", services: new
+        {
+            provides = new object[]
+            {
+                new
+                {
+                    @interface = "ArisenKernel.Contracts.IRHIBackend",
+                    capabilities = new[] { "vulkan" }
+                },
+                new
+                {
+                    @interface = "ArisenKernel.Contracts.IRHIDevice",
+                    capabilities = new[] { "vulkan" },
+                    deferred = true
+                }
+            }
+        });
+        workspace.AddPackage(
+            "com.test.rendering",
+            layer: "domain",
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.test.core"] = "1.0.0",
+                ["com.test.ecs"] = "1.0.0"
+            },
+            services: new
+            {
+                requires = new object[]
+                {
+                    "ArisenKernel.Contracts.IWindowProvider",
+                    "ArisenKernel.Contracts.IRHIBackend",
+                    new
+                    {
+                        @interface = "ArisenKernel.Contracts.IRHIDevice",
+                        deferred = true
+                    }
+                }
+            });
+        workspace.AddPackage(
+            "com.test.editor",
+            layer: "tooling",
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.test.core"] = "1.0.0",
+                ["com.test.ecs"] = "1.0.0",
+                ["com.test.rendering"] = "1.0.0",
+                ["com.test.platform.desktop"] = "1.0.0"
+            },
+            services: new
+            {
+                provides = new object[]
+                {
+                    "ArisenKernel.Contracts.IApplicationHost"
+                },
+                requires = new object[]
+                {
+                    new
+                    {
+                        @interface = "ArisenKernel.Contracts.IRHIBackend",
+                        capabilities = new[] { "vulkan" }
+                    }
+                }
+            });
+
+        var result = workspace.Validate("com.test.editor", "com.test.rhi.vulkan.native");
+
+        Assert.True(result.Success, string.Join(Environment.NewLine, result.Errors));
+        Assert.Contains(result.SortedPackages, package => package.Manifest.Id == "com.test.rendering");
+        Assert.Contains(result.SortedPackages, package => package.Manifest.Id == "com.test.platform.desktop");
+        Assert.Contains(result.SortedPackages, package => package.Manifest.Id == "com.test.rhi.vulkan.native");
+    }
+
+    [Fact]
+    public void AssetReferenceGeneratorEmitsMaterialSlotConstants()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        string packageDir = workspace.AddPackage(
+            "com.test.renderpipeline",
+            layer: "domain",
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.arisen.core"] = "1.0.0"
+            },
+            entryClass: "Com.Test.RenderPipelinePackage");
+        string materialDir = Path.Combine(packageDir, "Assets", "Materials");
+        string meshDir = Path.Combine(packageDir, "Assets", "Meshes");
+        string shaderDir = Path.Combine(packageDir, "Assets", "Shaders");
+        string textureDir = Path.Combine(packageDir, "Assets", "Textures");
+        Directory.CreateDirectory(materialDir);
+        Directory.CreateDirectory(meshDir);
+        Directory.CreateDirectory(shaderDir);
+        Directory.CreateDirectory(textureDir);
+        File.WriteAllText(
+            Path.Combine(materialDir, "SmokeMaterial.arismaterial.meta"),
+            """
+            Guid: 11111111-2222-3333-4444-555555555555
+            AssetType: Material
+            Importer: ArisenMaterialImporter
+            """);
+        File.WriteAllText(
+            Path.Combine(materialDir, "SmokeMaterial.arismaterial.meta.meta"),
+            """
+            Guid: aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+            AssetType: meta
+            Importer: metaImporter
+            """);
+        File.WriteAllText(
+            Path.Combine(materialDir, "SmokeMaterial.arismaterial"),
+            """
+            Name: Test/Smoke
+            Shader:
+              Guid: 33333333-4444-5555-6666-777777777777
+            Texture2DRefs:
+            - Name: BaseColor
+              Slot: 0
+            ScalarProperties:
+            - Name: MetallicFactor
+              Value: 0
+            - Name: RoughnessFactor
+              Value: 1
+            Vector4Properties:
+            - Name: BaseColorFactor
+              Value:
+                X: 1
+                Y: 1
+                Z: 1
+                W: 1
+            """);
+        File.WriteAllText(
+            Path.Combine(meshDir, "TexturedQuad.obj.meta"),
+            """
+            Guid: 22222222-3333-4444-5555-666666666666
+            AssetType: Mesh
+            Importer: ObjMeshImporter
+            """);
+        File.WriteAllText(Path.Combine(meshDir, "TexturedQuad.obj"), string.Empty);
+        File.WriteAllText(
+            Path.Combine(meshDir, "TexturedQuad.bin.meta"),
+            """
+            Guid: 55555555-6666-7777-8888-999999999999
+            AssetType: AssetDependency
+            Importer: GltfBufferDependency
+            """);
+        File.WriteAllText(Path.Combine(meshDir, "TexturedQuad.bin"), string.Empty);
+        File.WriteAllText(
+            Path.Combine(shaderDir, "SmokeTriangle.hlsl.meta"),
+            """
+            Guid: 33333333-4444-5555-6666-777777777777
+            AssetType: ShaderSource
+            Importer: HlslShaderImporter
+            """);
+        File.WriteAllText(
+            Path.Combine(shaderDir, "SmokeTriangle.hlsl"),
+            """
+            // @arisen.material.texture2d NormalMap
+            // @arisen.material.scalar AlphaCutoff
+            // @arisen.material.vector4 EmissiveFactor
+            """);
+        File.WriteAllText(
+            Path.Combine(textureDir, "SmokeChecker.ppm.meta"),
+            """
+            Guid: 44444444-5555-6666-7777-888888888888
+            AssetType: Texture2D
+            Importer: PpmTextureImporter
+            """);
+        File.WriteAllText(Path.Combine(textureDir, "SmokeChecker.ppm"), string.Empty);
+
+        string projectDir = Path.Combine(workspace.RootPath, ".arisen", "Projects", "Development", "Com.Test.Renderpipeline");
+        AssetReferenceGeneratorService.Generate(
+            projectDir,
+            "Com.Test.Renderpipeline",
+            new PackageInfo
+            {
+                DirectoryPath = packageDir,
+                Manifest = ManifestJson.Deserialize<PackageManifest>(File.ReadAllText(Path.Combine(packageDir, "package.json")))!
+            });
+
+        string generated = File.ReadAllText(Path.Combine(projectDir, "Generated", "RenderPipelineAssetRefs.g.cs"));
+        Assert.Contains("public static readonly Guid SmokeMaterialGuid", generated);
+        Assert.Contains("using ArisenEngine.Core.Assets;", generated);
+        Assert.Contains("public static readonly AssetRef<MaterialSourceAsset> SmokeMaterialRef", generated);
+        Assert.Contains("public static readonly AssetRef<MeshSourceAsset> TexturedQuadMeshRef", generated);
+        Assert.Contains("public static readonly AssetRef<ShaderSourceAsset> SmokeTriangleShaderRef", generated);
+        Assert.Contains("public static readonly AssetRef<Texture2DSourceAsset> SmokeCheckerTextureRef", generated);
+        Assert.DoesNotContain("SmokeMaterial_arismaterialMetaGuid", generated);
+        Assert.DoesNotContain("TexturedQuadAssetDependencyGuid", generated);
+        Assert.DoesNotContain("55555555-6666-7777-8888-999999999999", generated);
+        Assert.Contains("public static class SmokeMaterial", generated);
+        Assert.Contains("public static readonly AssetRef<MaterialSourceAsset> Ref = SmokeMaterialRef;", generated);
+        Assert.Contains("public static class TexturedQuadMesh", generated);
+        Assert.Contains("public static readonly AssetRef<MeshSourceAsset> Ref = TexturedQuadMeshRef;", generated);
+        Assert.Contains("public const string BaseColor = \"BaseColor\";", generated);
+        Assert.Contains("public const string MetallicFactor = \"MetallicFactor\";", generated);
+        Assert.Contains("public const string RoughnessFactor = \"RoughnessFactor\";", generated);
+        Assert.Contains("public const string BaseColorFactor = \"BaseColorFactor\";", generated);
+        Assert.Contains("public const string NormalMap = \"NormalMap\";", generated);
+        Assert.Contains("public const string AlphaCutoff = \"AlphaCutoff\";", generated);
+        Assert.Contains("public const string EmissiveFactor = \"EmissiveFactor\";", generated);
+    }
+
     private sealed class ValidationWorkspace : IDisposable
     {
         private static readonly JsonSerializerOptions s_JsonOptions = new()
@@ -469,9 +804,14 @@ public sealed class PackageValidationFixtureTests
             Directory.CreateDirectory(LocalPath);
             Directory.CreateDirectory(KernelContractsPath);
             File.WriteAllText(Path.Combine(KernelContractsPath, "IApplicationHost.cs"), "namespace ArisenKernel.Contracts; public interface IApplicationHost { }");
+            File.WriteAllText(Path.Combine(KernelContractsPath, "IRHIBackend.cs"), "namespace ArisenKernel.Contracts; public interface IRHIBackend { }");
+            File.WriteAllText(Path.Combine(KernelContractsPath, "IRHIDevice.cs"), "namespace ArisenKernel.Contracts; public interface IRHIDevice { }");
+            File.WriteAllText(Path.Combine(KernelContractsPath, "IWindowProvider.cs"), "namespace ArisenKernel.Contracts; public interface IWindowProvider { }");
         }
 
         private string LocalPath => Path.Combine(m_Root, "Local");
+
+        public string RootPath => m_Root;
 
         private string KernelContractsPath => Path.Combine(m_Root, "ArisenKernel", "Contracts");
 
@@ -481,7 +821,7 @@ public sealed class PackageValidationFixtureTests
             return new ValidationWorkspace(root);
         }
 
-        public void AddPackage(
+        public string AddPackage(
             string id,
             string layer,
             string? type = null,
@@ -489,9 +829,12 @@ public sealed class PackageValidationFixtureTests
             Dictionary<string, string>? dependencies = null,
             object? services = null,
             Dictionary<string, object[]>? nativeRuntimes = null,
-            Dictionary<string, object[]>? nativeTests = null)
+            Dictionary<string, object[]>? nativeTests = null,
+            string? entryClass = null)
         {
-            WritePackage(Path.Combine(LocalPath, id), id, layer, type, description, dependencies, services, nativeRuntimes, nativeTests);
+            string packageDir = Path.Combine(LocalPath, id);
+            WritePackage(packageDir, id, layer, type, description, dependencies, services, nativeRuntimes, nativeTests, entryClass);
+            return packageDir;
         }
 
         public void AddCachedPackage(string id, string layer, string? type = null, string? description = null)
@@ -522,7 +865,8 @@ public sealed class PackageValidationFixtureTests
             Dictionary<string, string>? dependencies = null,
             object? services = null,
             Dictionary<string, object[]>? nativeRuntimes = null,
-            Dictionary<string, object[]>? nativeTests = null)
+            Dictionary<string, object[]>? nativeTests = null,
+            string? entryClass = null)
         {
             Directory.CreateDirectory(packageDir);
 
@@ -536,6 +880,7 @@ public sealed class PackageValidationFixtureTests
 
             if (!string.IsNullOrWhiteSpace(type)) manifest["type"] = type;
             if (!string.IsNullOrWhiteSpace(description)) manifest["description"] = description;
+            if (!string.IsNullOrWhiteSpace(entryClass)) manifest["entry"] = new { assembly = "Com.Test.dll", @class = entryClass };
             if (dependencies is { Count: > 0 }) manifest["dependencies"] = dependencies;
             if (services != null) manifest["services"] = services;
             if (nativeRuntimes is { Count: > 0 }) manifest["nativeRuntimes"] = nativeRuntimes;

@@ -52,6 +52,12 @@ public partial class PackageManagerViewModel : ObservableObject
     [ObservableProperty] private string _validationError = string.Empty;
     [ObservableProperty] private string _launchStatus = string.Empty;
     [ObservableProperty] private string _launchError = string.Empty;
+    [ObservableProperty] private string _launchOutput = string.Empty;
+    [ObservableProperty] private string _launchDiagnostics = string.Empty;
+    [ObservableProperty] private string _launchLogPath = string.Empty;
+    [ObservableProperty] private string _launchLatestLogPath = string.Empty;
+    [ObservableProperty] private string _launchSummaryPath = string.Empty;
+    [ObservableProperty] private int _smokeFrameCount = 1;
 
     partial void OnGraphErrorChanged(string value) => OnPropertyChanged(nameof(HasGraphError));
     partial void OnGenerateErrorChanged(string value) => OnPropertyChanged(nameof(HasGenerateError));
@@ -60,6 +66,18 @@ public partial class PackageManagerViewModel : ObservableObject
     partial void OnValidationStatusChanged(string value) => OnPropertyChanged(nameof(HasValidationStatus));
     partial void OnLaunchErrorChanged(string value) => OnPropertyChanged(nameof(HasLaunchError));
     partial void OnLaunchStatusChanged(string value) => OnPropertyChanged(nameof(HasLaunchStatus));
+    partial void OnLaunchOutputChanged(string value) => OnPropertyChanged(nameof(HasLaunchOutput));
+    partial void OnLaunchDiagnosticsChanged(string value) => OnPropertyChanged(nameof(HasLaunchDiagnostics));
+    partial void OnLaunchLogPathChanged(string value) => OnPropertyChanged(nameof(HasLaunchLogPath));
+    partial void OnLaunchLatestLogPathChanged(string value) => OnPropertyChanged(nameof(HasLaunchLatestLogPath));
+    partial void OnLaunchSummaryPathChanged(string value) => OnPropertyChanged(nameof(HasLaunchSummaryPath));
+    partial void OnSmokeFrameCountChanged(int value)
+    {
+        if (value < 1)
+        {
+            SmokeFrameCount = 1;
+        }
+    }
     public bool HasGraphError => !string.IsNullOrEmpty(GraphError);
     public bool HasGenerateError => !string.IsNullOrEmpty(GenerateError);
     public bool HasGenerateStatus => !string.IsNullOrEmpty(GenerateStatus);
@@ -67,6 +85,11 @@ public partial class PackageManagerViewModel : ObservableObject
     public bool HasValidationStatus => !string.IsNullOrEmpty(ValidationStatus);
     public bool HasLaunchError => !string.IsNullOrEmpty(LaunchError);
     public bool HasLaunchStatus => !string.IsNullOrEmpty(LaunchStatus);
+    public bool HasLaunchOutput => !string.IsNullOrEmpty(LaunchOutput);
+    public bool HasLaunchDiagnostics => !string.IsNullOrEmpty(LaunchDiagnostics);
+    public bool HasLaunchLogPath => !string.IsNullOrEmpty(LaunchLogPath);
+    public bool HasLaunchLatestLogPath => !string.IsNullOrEmpty(LaunchLatestLogPath);
+    public bool HasLaunchSummaryPath => !string.IsNullOrEmpty(LaunchSummaryPath);
     public bool HasGraphResult => PackageGraphPackages.Count > 0;
 
     public ObservableCollection<string> GraphProfiles { get; } = new();
@@ -714,6 +737,9 @@ public partial class PackageManagerViewModel : ObservableObject
     {
         LaunchError = string.Empty;
         LaunchStatus = "Launching profile...";
+        LaunchOutput = string.Empty;
+        LaunchDiagnostics = string.Empty;
+        LaunchLogPath = string.Empty;
 
         if (_projectService == null)
         {
@@ -771,6 +797,90 @@ public partial class PackageManagerViewModel : ObservableObject
         catch (Exception ex)
         {
             LaunchError = $"Failed to launch profile: {ex.Message}";
+            LaunchStatus = string.Empty;
+        }
+        finally
+        {
+            IsLaunchingProject = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task LaunchSmokeProfile()
+    {
+        LaunchError = string.Empty;
+        LaunchOutput = string.Empty;
+        LaunchDiagnostics = string.Empty;
+        LaunchLogPath = string.Empty;
+        LaunchLatestLogPath = string.Empty;
+        LaunchSummaryPath = string.Empty;
+        LaunchStatus = $"Running {SmokeFrameCount}-frame scene smoke launch...";
+
+        if (_projectService == null)
+        {
+            LaunchError = "Package Manager was opened without launch support.";
+            LaunchStatus = string.Empty;
+            return;
+        }
+
+        if (_engine == null)
+        {
+            LaunchError = "Select an engine version in the launcher before launching.";
+            LaunchStatus = string.Empty;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(SelectedGraphProfile))
+        {
+            LaunchError = "Select a workspace profile before launching.";
+            LaunchStatus = string.Empty;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(SelectedLaunchConfiguration))
+        {
+            LaunchError = "Select a build configuration before launching.";
+            LaunchStatus = string.Empty;
+            return;
+        }
+
+        if (!File.Exists(_manifestPath))
+        {
+            LaunchError = $"Workspace manifest not found: {_manifestPath}";
+            LaunchStatus = string.Empty;
+            return;
+        }
+
+        IsLaunchingProject = true;
+        try
+        {
+            SaveManifest();
+
+            _project.SelectedProfile = SelectedGraphProfile;
+            _project.SelectedConfiguration = SelectedLaunchConfiguration;
+
+            var result = await _projectService.LaunchProjectWithResultAsync(
+                _project,
+                _engine,
+                ProjectLaunchOptions.Smoke(SmokeFrameCount));
+
+            LaunchOutput = FormatLaunchOutput(result);
+            LaunchDiagnostics = FormatLaunchDiagnostics(result);
+            LaunchLogPath = result.LogPath;
+            LaunchLatestLogPath = result.LatestLogPath;
+            LaunchSummaryPath = result.SummaryPath;
+            if (!result.Succeeded)
+            {
+                LaunchError = $"Smoke launch failed with exit code {result.ExitCode?.ToString() ?? "<none>"}.";
+                LaunchStatus = string.Empty;
+                return;
+            }
+
+            LaunchStatus = $"Scene smoke launch passed for {SelectedGraphProfile} [{SelectedLaunchConfiguration}] after {SmokeFrameCount} requested frame(s).";
+        }
+        catch (Exception ex)
+        {
+            LaunchError = $"Failed to run smoke launch: {ex.Message}";
             LaunchStatus = string.Empty;
         }
         finally
@@ -846,6 +956,166 @@ public partial class PackageManagerViewModel : ObservableObject
             return $"ArisenBuildTool failed with exit code {result.ExitCode}.";
 
         return combined;
+    }
+
+    private static string FormatLaunchDiagnostics(ProjectLaunchResult result)
+    {
+        string combined = string.Join(Environment.NewLine, new[] { result.StandardError, result.StandardOutput }.Where(x => !string.IsNullOrWhiteSpace(x)));
+        var lines = combined.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+        var packageIds = new List<string>();
+        var renderLines = new List<string>();
+        string rhiBackend = string.Empty;
+        string renderGraphSummary = string.Empty;
+
+        foreach (string line in lines)
+        {
+            if (line.Contains("[PackageSubsystem] Loading Package:", StringComparison.Ordinal))
+            {
+                string packageId = ExtractPackageId(line);
+                if (!string.IsNullOrWhiteSpace(packageId))
+                {
+                    packageIds.Add(packageId);
+                }
+            }
+            else if (line.Contains("[RuntimeRHIWarmupSubsystem] RHI backend initialized:", StringComparison.Ordinal))
+            {
+                rhiBackend = TrimAfter(line, "RHI backend initialized:");
+            }
+            else if (line.Contains("[RuntimeRHIWarmupSubsystem] Initializing selected RHI backend:", StringComparison.Ordinal))
+            {
+                rhiBackend = TrimAfter(line, "Initializing selected RHI backend:");
+            }
+            else if (line.Contains("[RenderGraph]", StringComparison.Ordinal) &&
+                     (line.Contains("Compiled", StringComparison.OrdinalIgnoreCase) ||
+                      line.Contains("Pass", StringComparison.OrdinalIgnoreCase) ||
+                      line.Contains("Submit", StringComparison.OrdinalIgnoreCase)))
+            {
+                renderGraphSummary = StripLogPrefix(line);
+            }
+            else if (line.Contains("[StaticMeshPass]", StringComparison.Ordinal) ||
+                     line.Contains("[GenericRenderPipeline]", StringComparison.Ordinal))
+            {
+                renderLines.Add(StripLogPrefix(line));
+            }
+        }
+
+        var summary = new List<string>
+        {
+            $"Result: {(result.Succeeded ? "Passed" : "Failed")}",
+            $"Exit Code: {result.ExitCode?.ToString() ?? "<none>"}"
+        };
+
+        if (!string.IsNullOrWhiteSpace(rhiBackend))
+        {
+            summary.Add($"RHI Backend: {rhiBackend}");
+        }
+
+        if (packageIds.Count > 0)
+        {
+            string packagePreview = string.Join(" -> ", packageIds.Take(8));
+            if (packageIds.Count > 8)
+            {
+                packagePreview += $" -> ... ({packageIds.Count} total)";
+            }
+
+            summary.Add($"Packages: {packagePreview}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(renderGraphSummary))
+        {
+            summary.Add($"RenderGraph: {renderGraphSummary}");
+        }
+
+        if (renderLines.Count > 0)
+        {
+            summary.Add($"Render Evidence: {renderLines.Last()}");
+        }
+
+        return string.Join(Environment.NewLine, summary);
+    }
+
+    private static string FormatLaunchOutput(ProjectLaunchResult result)
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(result.LogPath))
+        {
+            parts.Add($"Log: {result.LogPath}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.LatestLogPath))
+        {
+            parts.Add($"Latest Log: {result.LatestLogPath}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.SummaryPath))
+        {
+            parts.Add($"Summary JSON: {result.SummaryPath}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.ExecutablePath))
+        {
+            parts.Add($"Executable: {result.ExecutablePath}");
+        }
+
+        if (result.ExitCode.HasValue)
+        {
+            parts.Add($"Exit Code: {result.ExitCode.Value}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.StandardError))
+        {
+            parts.Add("[stderr]");
+            parts.Add(result.StandardError.Trim());
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.StandardOutput))
+        {
+            parts.Add("[stdout]");
+            parts.Add(result.StandardOutput.Trim());
+        }
+
+        string output = string.Join(Environment.NewLine, parts);
+        const int maxChars = 16000;
+        if (output.Length > maxChars)
+        {
+            output = output.Substring(output.Length - maxChars);
+        }
+
+        return output;
+    }
+
+    private static string ExtractPackageId(string line)
+    {
+        int open = line.LastIndexOf('(');
+        int close = line.LastIndexOf(')');
+        if (open < 0 || close <= open)
+        {
+            return string.Empty;
+        }
+
+        return line.Substring(open + 1, close - open - 1).Trim();
+    }
+
+    private static string TrimAfter(string line, string marker)
+    {
+        int index = line.IndexOf(marker, StringComparison.Ordinal);
+        if (index < 0)
+        {
+            return string.Empty;
+        }
+
+        return line.Substring(index + marker.Length).Trim();
+    }
+
+    private static string StripLogPrefix(string line)
+    {
+        int bracket = line.IndexOf("] ", StringComparison.Ordinal);
+        if (bracket >= 0 && bracket + 2 < line.Length)
+        {
+            return line.Substring(bracket + 2).Trim();
+        }
+
+        return line.Trim();
     }
 
     private static string SanitizeFileName(string value)

@@ -49,6 +49,12 @@ class Program
             return;
         }
 
+        if (args.Length > 0 && args[0].Equals("validate-native-output", StringComparison.OrdinalIgnoreCase))
+        {
+            RunValidateNativeOutputMode(args);
+            return;
+        }
+
         RunGenerateMode(args);
     }
 
@@ -482,6 +488,51 @@ class Program
             Logger.Error($"Failed to write package registry index: {ex.Message}");
             Environment.Exit(1);
         }
+    }
+
+    static void RunValidateNativeOutputMode(string[] args)
+    {
+        string resolvedManifestPath = string.Empty;
+        string outputDir = string.Empty;
+        string configuration = string.Empty;
+
+        for (int i = 1; i < args.Length; i++)
+        {
+            if ((args[i] == "--resolved-manifest" || args[i] == "-m") && i + 1 < args.Length)
+            {
+                resolvedManifestPath = Path.GetFullPath(args[++i]);
+            }
+            else if ((args[i] == "--output-dir" || args[i] == "-o") && i + 1 < args.Length)
+            {
+                outputDir = Path.GetFullPath(args[++i]);
+            }
+            else if ((args[i] == "--configuration" || args[i] == "-c") && i + 1 < args.Length)
+            {
+                configuration = args[++i];
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(resolvedManifestPath))
+        {
+            Console.WriteLine("ArisenBuildTool Native Output Validation Error: --resolved-manifest <Path> is required.");
+            Environment.Exit(1);
+        }
+
+        if (string.IsNullOrWhiteSpace(outputDir))
+        {
+            Console.WriteLine("ArisenBuildTool Native Output Validation Error: --output-dir <Directory> is required.");
+            Environment.Exit(1);
+        }
+
+        string logDir = Path.GetDirectoryName(resolvedManifestPath) ?? Path.GetFullPath(".");
+        Logger.Initialize(Path.Combine(logDir, "ArisenBuildTool.NativeOutputValidate.log"));
+        Logger.Info($"ArisenBuildTool Native Output Validation Started. Manifest: {resolvedManifestPath}");
+        Logger.Info($"Output Directory: {outputDir}");
+        if (!string.IsNullOrWhiteSpace(configuration)) Logger.Info($"Configuration: {configuration}");
+
+        var result = NativeOutputValidationService.Validate(resolvedManifestPath, outputDir, configuration);
+        NativeOutputValidationService.LogSummary(result);
+        Environment.Exit(result.Success ? 0 : 1);
     }
 
     static void RunGenerateMode(string[] args)

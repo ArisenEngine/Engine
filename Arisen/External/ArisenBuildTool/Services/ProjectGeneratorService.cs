@@ -28,6 +28,7 @@ public static class ProjectGeneratorService
         string projectName = string.Join(".", packageName.Split('.').Select(PathUtils.ToPascalCase));
         string csprojDir = Path.Combine(projectsDir, projectName);
         Directory.CreateDirectory(csprojDir);
+        AssetReferenceGeneratorService.Generate(csprojDir, projectName, package);
         string csprojPath = Path.Combine(csprojDir, $"{projectName}.csproj");
 
         using StreamWriter writer = new StreamWriter(csprojPath);

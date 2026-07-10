@@ -270,8 +270,8 @@ Object fields:
 | `path` / `name` | `string` | **Yes** | Package-relative payload path or build-output file name. |
 | `source` / `kind` | `string` | Optional | `static` or `buildOutput`. If omitted, inferred from whether the path contains a directory separator. |
 | `required` | `bool` | Optional | Defaults to `true`. Missing optional static payloads produce warnings instead of errors. |
-| `configurations` | `array<string>` | Optional | Configuration metadata for future config-specific deployment. Current validation parses it but does not filter by it yet. |
-| `exports` | `array<string>` | Optional | Expected DLL exports. For existing static DLL payloads, validation checks these exports during `ArisenBuildTool validate`. |
+| `configurations` | `array<string>` | Optional | Configuration filter for generated/deployed output validation. If present, `validate-native-output` only checks the entry when the active configuration matches, for example `Debug` or `Release`. |
+| `exports` | `array<string>` | Optional | Expected DLL exports. For existing static DLL payloads, `ArisenBuildTool validate` checks these exports. For built/deployed output payloads, `ArisenBuildTool validate-native-output` checks these exports in the generated bin directory before runtime boot. |
 | `initExport` | `string` | Optional | Parameterless C ABI lifecycle export called by `PackageSubsystem` when the package is mounted. Return `0` for success; non-zero fails package load. |
 | `shutdownExport` | `string` | Optional | Parameterless C ABI lifecycle export called by `PackageSubsystem` in reverse package order during shutdown. Return `0` for success; non-zero is logged during shutdown. |
 

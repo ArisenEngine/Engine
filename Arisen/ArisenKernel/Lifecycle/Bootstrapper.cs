@@ -22,8 +22,17 @@ public static class EngineBootstrapper
         bool profileSpecified = false;
         bool workspaceSpecified = false;
         bool allowResolvedManifestFallback = false;
-        bool smokeMode = false;
-        uint smokeFrameCount = 1;
+        RuntimeSmokeOptions smokeOptions;
+        try
+        {
+            smokeOptions = RuntimeSmokeOptions.Parse(args);
+        }
+        catch (ArgumentException ex)
+        {
+            KernelLog.FatalFormat("[Host] FATAL ERROR: {0}", ex.Message);
+            Environment.Exit(1);
+            return;
+        }
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -31,12 +40,6 @@ public static class EngineBootstrapper
             if (args[i] == "--entry" && i + 1 < args.Length) entryPackage = args[i + 1];
             if (args[i] == "--profile" && i + 1 < args.Length) { profile = args[i + 1]; profileSpecified = true; }
             if (args[i] == "--allow-manifest-fallback") allowResolvedManifestFallback = true;
-            if (args[i] == "--smoke") smokeMode = true;
-            if (args[i] == "--frames" && i + 1 < args.Length && uint.TryParse(args[i + 1], out var parsedFrames))
-            {
-                smokeFrameCount = Math.Max(1, parsedFrames);
-                smokeMode = true;
-            }
         }
 
         // B18: Try to load from launch.config.json if located in the binary folder (Explicit configuration wins over deduction)
@@ -178,12 +181,30 @@ public static class EngineBootstrapper
         KernelLog.Info("[Host] Kernel Initialization Complete.");
 
         KernelLog.Info("[Host] Topological Mount Complete.");
-        LogRuntimeDiagnostics(kernel, packageSubsystem, workspacePath, profile, resolvedManifestPath, smokeMode);
+        LogRuntimeDiagnostics(kernel, packageSubsystem, workspacePath, profile, resolvedManifestPath, smokeOptions);
 
-        if (smokeMode)
+        if (smokeOptions.Enabled)
         {
-            KernelLog.InfoFormat("[Host] Smoke mode requested. Running {0} frame(s) and exiting without application-host handoff.", smokeFrameCount);
-            Environment.ExitCode = kernel.RunForFrames(smokeFrameCount);
+            KernelLog.InfoFormat(
+                "[Host] Smoke mode '{0}' requested. Running {1} frame(s) and exiting without application-host handoff.",
+                smokeOptions.ModeName,
+                smokeOptions.EffectiveFrameCount);
+
+            if (smokeOptions.EffectiveFrameCount != smokeOptions.RequestedFrameCount)
+            {
+                KernelLog.InfoFormat(
+                    "[Host] Smoke mode '{0}' raised requested frame count from {1} to {2}.",
+                    smokeOptions.ModeName,
+                    smokeOptions.RequestedFrameCount,
+                    smokeOptions.EffectiveFrameCount);
+            }
+
+            if (smokeOptions.Mode == RuntimeSmokeMode.HotReload)
+            {
+                KernelLog.Warning("[Host] Hot-reload smoke currently exercises multi-frame scene stability. File-change recook/reload smoke awaits a runtime-owned asset-change harness.");
+            }
+
+            Environment.ExitCode = kernel.RunForFrames(smokeOptions.EffectiveFrameCount);
             return;
         }
 
@@ -206,12 +227,15 @@ public static class EngineBootstrapper
         string workspacePath,
         string profile,
         string resolvedManifestPath,
-        bool smokeMode)
+        RuntimeSmokeOptions smokeOptions)
     {
         KernelLog.Info("[Host] Runtime diagnostics:");
         KernelLog.InfoFormat("  Workspace: {0}", workspacePath);
         KernelLog.InfoFormat("  Profile: {0}", profile);
-        KernelLog.InfoFormat("  SmokeMode: {0}", smokeMode);
+        KernelLog.InfoFormat("  SmokeMode: {0}", smokeOptions.Enabled);
+        KernelLog.InfoFormat("  SmokeKind: {0}", smokeOptions.Enabled ? smokeOptions.ModeName : "<none>");
+        KernelLog.InfoFormat("  SmokeFramesRequested: {0}", smokeOptions.Enabled ? smokeOptions.RequestedFrameCount : 0);
+        KernelLog.InfoFormat("  SmokeFramesEffective: {0}", smokeOptions.Enabled ? smokeOptions.EffectiveFrameCount : 0);
         KernelLog.InfoFormat("  ResolvedManifest: {0}", File.Exists(resolvedManifestPath) ? resolvedManifestPath : "<not found>");
 
         KernelLog.Info("  Package load order:");

@@ -222,7 +222,7 @@ public static class CSharpGenerator
 
     private static void EmitPInvokeFunction(StringBuilder sb, FunctionInfo func, string dllConst)
     {
-        var csReturnType = TypeMapper.MapType(func.ReturnType);
+        var csReturnType = TypeMapper.MapReturnType(func.ReturnType);
         var csParams = new List<string>();
 
         foreach (var (type, name) in func.Parameters)

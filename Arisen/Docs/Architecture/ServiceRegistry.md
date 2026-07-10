@@ -139,6 +139,7 @@ Runtime boot performs a second validation pass through `PackageSubsystem`:
 - metadata-driven subsystems are instantiated by `PackageSubsystem` and registered as concrete services with their provider package context so editor/runtime tooling can resolve them,
 - after `OnLoad()` and metadata subsystem registration, every non-deferred declared `services.provides` contract must have been registered by that same package,
 - after all packages mount, every non-optional and non-deferred declared `services.requires` contract must be present in the registry,
+- during shutdown, packages unload in reverse mount order, then `PackageSubsystem` removes all services whose provider context matches the package that just unloaded,
 - `ServiceRegistry.GetRegisteredServices()` exposes contract, implementation, and provider package metadata for diagnostics/editor UI.
 
 This two-stage validation catches both graph-level mistakes before generation and implementation-level mistakes during boot.
