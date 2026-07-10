@@ -480,8 +480,8 @@
             
             <!-- Package Graph Tab -->
             <TabItem Header="Package Graph" FontSize="16" FontWeight="Bold">
-                <Grid RowDefinitions="Auto, Auto, Auto, Auto, Auto, Auto, Auto, Auto, *" Margin="0,16,0,0">
-                    <Grid Grid.Row="0" ColumnDefinitions="Auto, Auto, Auto, Auto, Auto, Auto, *" Margin="0,0,0,16">
+                <Grid RowDefinitions="Auto, Auto, Auto, Auto, Auto, Auto, Auto, Auto, Auto, Auto, *" Margin="0,16,0,0">
+                    <Grid Grid.Row="0" ColumnDefinitions="Auto, Auto, Auto, Auto, Auto, Auto, Auto, *" Margin="0,0,0,16">
                         <ComboBox Grid.Column="0"
                                   ItemsSource="{Binding GraphProfiles}"
                                   SelectedItem="{Binding SelectedGraphProfile}"
@@ -537,7 +537,26 @@
                                 CornerRadius="6"
                                 FontWeight="Bold"
                                 Margin="12,0,0,0"/>
-                        <TextBlock Grid.Column="6"
+                        <StackPanel Grid.Column="6"
+                                    Orientation="Horizontal"
+                                    Spacing="8"
+                                    Margin="12,0,0,0">
+                            <TextBox Text="{Binding SmokeFrameCount}"
+                                     Width="52"
+                                     Background="#0f1117"
+                                     BorderBrush="#282e39"
+                                     Foreground="White"
+                                     CornerRadius="6"
+                                     HorizontalContentAlignment="Center"/>
+                            <Button Content="Smoke"
+                                    Command="{Binding LaunchSmokeProfileCommand}"
+                                    Background="#7c3aed"
+                                    Foreground="White"
+                                    Padding="16,8"
+                                    CornerRadius="6"
+                                    FontWeight="Bold"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="7"
                                    Text="{Binding GraphStatus}"
                                    Foreground="#94a3b8"
                                    FontSize="13"
@@ -651,7 +670,66 @@
                                    TextWrapping="Wrap"/>
                     </Border>
 
-                    <Grid Grid.Row="8" ColumnDefinitions="*, 16, *">
+                    <Border Grid.Row="8"
+                            IsVisible="{Binding HasLaunchDiagnostics}"
+                            Background="#135bec20"
+                            BorderBrush="#135bec"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="0,0,0,16">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Smoke Diagnostics"
+                                       Foreground="#60a5fa"
+                                       FontWeight="Bold"
+                                       FontSize="12"/>
+                            <TextBlock Text="{Binding LaunchDiagnostics}"
+                                       Foreground="#dbeafe"
+                                       FontFamily="Consolas, monospace"
+                                       FontSize="11"
+                                       TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding LaunchLogPath, StringFormat='Saved log: {0}'}"
+                                       IsVisible="{Binding HasLaunchLogPath}"
+                                       Foreground="#93c5fd"
+                                       FontFamily="Consolas, monospace"
+                                       FontSize="10"
+                                       TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding LaunchLatestLogPath, StringFormat='Latest log: {0}'}"
+                                       IsVisible="{Binding HasLaunchLatestLogPath}"
+                                       Foreground="#93c5fd"
+                                       FontFamily="Consolas, monospace"
+                                       FontSize="10"
+                                       TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding LaunchSummaryPath, StringFormat='Summary JSON: {0}'}"
+                                       IsVisible="{Binding HasLaunchSummaryPath}"
+                                       Foreground="#93c5fd"
+                                       FontFamily="Consolas, monospace"
+                                       FontSize="10"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="9"
+                            IsVisible="{Binding HasLaunchOutput}"
+                            Background="#0f1117"
+                            BorderBrush="#282e39"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="0,0,0,16">
+                        <TextBox Text="{Binding LaunchOutput}"
+                                 IsReadOnly="True"
+                                 AcceptsReturn="True"
+                                 TextWrapping="NoWrap"
+                                 FontFamily="Consolas, monospace"
+                                 FontSize="11"
+                                 Foreground="#cbd5e1"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 MaxHeight="220"/>
+                    </Border>
+
+                    <Grid Grid.Row="10" ColumnDefinitions="*, 16, *">
                         <Border Grid.Column="0" Background="#1a1e26" BorderBrush="#282e39" BorderThickness="1" CornerRadius="8">
                             <Grid RowDefinitions="Auto, *">
                                 <Border Grid.Row="0" BorderBrush="#282e39" BorderThickness="0,0,0,1" Padding="12">

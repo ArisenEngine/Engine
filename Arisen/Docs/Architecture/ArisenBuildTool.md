@@ -31,6 +31,7 @@ Validation is intentionally strict. The command exits with code `0` on success a
 - dependency cycles,
 - invalid service contract declarations,
 - `services.requires` entries with no matching selected `services.provides` provider,
+- `services.requires` capability mismatches, such as requesting `IRHIBackend` with `vulkan` when only another backend capability is selected,
 - optional service requirements as warnings when no provider is selected,
 - deferred service contracts as graph-validated but late-registered runtime contracts.
 
@@ -61,10 +62,38 @@ This command runs the build-tool fixture tests, kernel package lifecycle tests, 
 Run the full runtime gate before committing changes that affect boot, platform windows, generated launch metadata, package lifecycle, RHI initialization, smoke-mode execution, or profile macro behavior:
 
 ```bat
-Arisen\Scripts\Windows\validate_runtime.bat --no-pause --config Debug --frames 1
+Arisen\Scripts\Windows\validate_runtime.bat --no-pause --config Debug --smoke-mode scene --frames 1
 ```
 
-This command runs the fast gate first, builds generated runtime outputs for the canonical workspace, and launches bounded smoke runs for the selected runtime profiles. It is the preferred validation path for the platform/RHI/rendering roadmap because it proves the package graph under a real process instead of only validating metadata.
+This command runs the fast gate first, builds generated runtime outputs for the canonical workspace, and launches bounded smoke runs for the selected runtime profiles. The default validation smoke mode is `scene`: the bootstrapper runs at least two frames even when `--frames 1` is requested, because `PackageGame` creates the smoke scene at the end of the first frame and renders it on the next frame. It is the preferred validation path for the platform/RHI/rendering roadmap because it proves the package graph under a real process instead of only validating metadata.
+
+Before each smoke launch, the runtime gate runs:
+
+```bat
+ArisenBuildTool validate-native-output --resolved-manifest <bin>\manifest.resolved.json --output-dir <bin> --configuration Debug
+```
+
+This checks selected `nativeRuntimes` against the generated bin directory, including required payload presence, configuration-filtered entries, and declared DLL exports. This catches stale or missing native backend payloads, for example a Vulkan backend missing the `CreateInstance` export, before `PackageGame.exe` starts.
+
+GPU-backed smoke runs are policy-controlled:
+
+```bat
+Arisen\Scripts\Windows\validate_runtime.bat --no-pause --gpu-smoke auto
+Arisen\Scripts\Windows\validate_runtime.bat --no-pause --gpu-smoke required
+Arisen\Scripts\Windows\validate_runtime.bat --no-pause --gpu-smoke skip
+```
+
+- `auto` is the default. The script probes `vulkaninfo`; profiles whose resolved manifest includes `com.arisen.rhi.vulkan.native` run smoke only when Vulkan is available, otherwise they are reported as `cpu-fallback-passed` after package graph, build output, and native output checks.
+- `required` fails early when Vulkan is unavailable and should be used on GPU-capable local machines or GPU CI agents.
+- `skip` builds the profiles and records CPU fallback validation intentionally, which is useful for CPU-only CI validation.
+
+Runtime validation writes machine-readable artifacts under the canonical workspace log directory:
+
+- `.arisen\Logs\smoke-cli-{profile}-{configuration}-{timestamp}.log` captures stdout/stderr for each CLI smoke process that actually runs.
+- `.arisen\Logs\validate-runtime-{configuration}-{timestamp}.json` captures the complete validation result for one script invocation.
+- `.arisen\Logs\validate-runtime-{configuration}-latest.json` is refreshed after every invocation and is the stable path for CI/tooling to inspect.
+
+The summary JSON includes the requested profiles, configuration, smoke mode/frame count, GPU policy, Vulkan probe result, smoke run/skip/fallback counts, failure stage/profile/message when present, and per-profile pass/fallback/fail records with log paths. A successful run has `"succeeded": true` and exit code `0`; failed build, manifest inspection, or runtime smoke stages preserve enough context for the launcher, CI logs, or an AI agent to continue from the failing profile.
 
 ---
 
@@ -193,6 +222,7 @@ Instead, the tool creates a hidden folder inside the workspace: `MyGame/.arisen/
 For every discovered package:
 - **Managed Packages (C#)**: It generates `com.user.mygame.csproj` inside the hidden folder. It defines `<Compile Include="../../Local/com.user.mygame/**/*.cs" />` to link the source code. It automatically resolves exact `<ProjectReference>` links based on the `package.json` dependencies.
 - **Native Packages (C++)**: It generates `CMakeLists.txt` or `.vcxproj` pointing to the native source code.
+- **Asset reference helpers**: It scans package-local `Assets/**/*.meta` sidecars and emits disposable `*AssetRefs.g.cs` helpers into the generated project for real source assets, skipping metadata files themselves. Material nested constants include names authored in `.arismaterial` value sections and package-local shader-source `@arisen.material.*` annotations reached through the material's `Shader.Guid`.
 
 ### Phase 3: Developer UX Injection (Generated Package Metadata)
 As defined in [ConfigurationFormats.md](ConfigurationFormats.md), users should not manually configure code-derived metadata such as `entry`, generated `services.provides`, generated `subsystems`, or `nativeRuntimes` in their human-owned `package.json`.

@@ -126,6 +126,32 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
     }
 
     [Fact]
+    public void EngineKernelShutdownUnregistersPackageProvidedServices()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string providerPath = workspace.AddPackage(
+            "com.test.runtime.provider",
+            typeof(ProviderPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IRuntimeSmokeService).FullName! }
+            });
+
+        EngineKernel.Instance.Initialize(new EngineConfig
+        {
+            PackageUrls = new List<string> { providerPath }
+        });
+
+        Assert.True(EngineKernel.Instance.Services.TryGetService<IRuntimeSmokeService>(out _));
+
+        EngineKernel.Instance.Shutdown();
+
+        Assert.False(EngineKernel.Instance.Services.TryGetService<IRuntimeSmokeService>(out _));
+        Assert.DoesNotContain(EngineKernel.Instance.Services.GetRegisteredServices(), serviceInfo =>
+            serviceInfo.ProviderPackageId == "com.test.runtime.provider");
+    }
+
+    [Fact]
     public void EngineKernelFailsWhenNativeLifecycleLibraryIsMissing()
     {
         using var workspace = RuntimePackageWorkspace.Create();

@@ -30,8 +30,8 @@ Expected first timeline markers:
 - `TaskGraph.Execute`.
 - `TaskGraph.Layer`.
 - `ArisenWorker-N` worker threads.
-- Per-task spans such as `ClearPass[0]`, `SmokeTrianglePass[0]`, and `GeometryPass[N]`.
-- Plots for render graph pass/layer/work-item counts and render snapshot size/counts.
+- Per-task spans such as `ClearPass[0]` and `StaticMeshPass[N]`; render command recording tasks are queued with the pass/work-item name and executed inside `Profiler.Zone(task.Name)` on worker threads.
+- Plots for render graph pass/layer/work-item counts, culled pass count, resource transition count, render snapshot size/counts, and static mesh draw/material batch counts.
 
 ## Launcher Integration Target
 

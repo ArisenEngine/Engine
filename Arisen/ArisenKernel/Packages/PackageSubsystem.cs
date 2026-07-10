@@ -757,6 +757,15 @@ public class PackageSubsystem : IEngineSubsystem
                     }
                 }
             }
+
+            if (EngineKernel.Instance.Services is ServiceRegistry registry)
+            {
+                int removedServiceCount = registry.UnregisterServicesProvidedByPackage(pkg.Id);
+                if (removedServiceCount > 0)
+                {
+                    KernelLog.Info($"[PackageSubsystem] Unregistered {removedServiceCount} service(s) provided by package {pkg.Id}.");
+                }
+            }
         }
 
         m_LoadOrder.Clear();

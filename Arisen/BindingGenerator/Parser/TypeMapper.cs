@@ -130,6 +130,15 @@ public static class TypeMapper
         return mappedLocal;
     }
 
+    public static string MapReturnType(string cppType)
+    {
+        var normalized = cppType.Trim();
+        if (normalized == "const char*" || normalized == "const wchar_t*")
+            return "IntPtr";
+
+        return MapType(cppType);
+    }
+
     public static string MapEnumBaseType(string cppBaseType)
     {
         return cppBaseType switch

@@ -23,7 +23,7 @@ Arisen\Scripts\Windows\validate_fast.bat
 
 Runtime/platform/RHI gate:
 ```powershell
-Arisen\Scripts\Windows\validate_runtime.bat --no-pause --config Debug --frames 1
+Arisen\Scripts\Windows\validate_runtime.bat --no-pause --config Debug --smoke-mode scene --frames 1
 ```
 
 Main workspace examples:

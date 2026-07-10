@@ -34,7 +34,8 @@ public static class NativeRuntimeManifestService
         string runtimeIdentifier,
         IList<string>? errors = null,
         IList<string>? warnings = null,
-        bool validateFiles = false)
+        bool validateFiles = false,
+        string? configuration = null)
     {
         if (package.Manifest.NativeRuntimes == null) yield break;
 
@@ -57,6 +58,11 @@ public static class NativeRuntimeManifestService
             for (int i = 0; i < ridEntry.Value.Count; i++)
             {
                 if (!TryParse(package.Manifest.Id, rid, i, ridEntry.Value[i], errors, out var descriptor))
+                {
+                    continue;
+                }
+
+                if (isTargetRid && !MatchesConfiguration(descriptor, configuration))
                 {
                     continue;
                 }
@@ -204,7 +210,7 @@ public static class NativeRuntimeManifestService
         }
     }
 
-    private static void ValidateExports(string packageId, NativeRuntimeDescriptor descriptor, string sourcePath, IList<string>? errors)
+    public static void ValidateExports(string packageId, NativeRuntimeDescriptor descriptor, string sourcePath, IList<string>? errors)
     {
         if (!string.Equals(Path.GetExtension(sourcePath), ".dll", StringComparison.OrdinalIgnoreCase))
         {
@@ -229,12 +235,22 @@ public static class NativeRuntimeManifestService
         }
     }
 
-    private static IReadOnlyList<string> GetExpectedExports(NativeRuntimeDescriptor descriptor)
+    public static IReadOnlyList<string> GetExpectedExports(NativeRuntimeDescriptor descriptor)
     {
         var expectedExports = new HashSet<string>(descriptor.Exports, StringComparer.Ordinal);
         if (!string.IsNullOrWhiteSpace(descriptor.InitExport)) expectedExports.Add(descriptor.InitExport);
         if (!string.IsNullOrWhiteSpace(descriptor.ShutdownExport)) expectedExports.Add(descriptor.ShutdownExport);
         return expectedExports.OrderBy(x => x, StringComparer.Ordinal).ToArray();
+    }
+
+    private static bool MatchesConfiguration(NativeRuntimeDescriptor descriptor, string? configuration)
+    {
+        if (string.IsNullOrWhiteSpace(configuration) || descriptor.Configurations.Count == 0)
+        {
+            return true;
+        }
+
+        return descriptor.Configurations.Any(value => string.Equals(value, configuration, StringComparison.OrdinalIgnoreCase));
     }
 
     private static HashSet<string> ReadExportNames(string path)
