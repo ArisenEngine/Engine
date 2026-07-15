@@ -583,7 +583,9 @@ public static class AssetReferenceGeneratorService
             "shader" or "shadersource" => "Shader",
             "texture" or "texture2d" => "Texture",
             "mesh" => "Mesh",
+            "model" => "Model",
             "material" => "Material",
+            "scene" => "Scene",
             _ => SanitizeIdentifier(PathUtils.ToPascalCase(assetType))
         };
     }
@@ -688,7 +690,9 @@ public static class AssetReferenceGeneratorService
             "shader" or "shadersource" => "ShaderSourceAsset",
             "texture" or "texture2d" => "Texture2DSourceAsset",
             "mesh" => "MeshSourceAsset",
+            "model" => "ModelSourceAsset",
             "material" => "MaterialSourceAsset",
+            "scene" => "SceneSourceAsset",
             _ => null
         };
     }
@@ -700,7 +704,9 @@ public static class AssetReferenceGeneratorService
             "shader" or "shadersource" => "ShaderSource",
             "texture" or "texture2d" => "Texture2D",
             "mesh" => "Mesh",
+            "model" => "Model",
             "material" => "Material",
+            "scene" => "Scene",
             _ => assetType.Trim()
         };
     }

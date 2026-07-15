@@ -1,0 +1,54 @@
+Name: PackageGame/ShowcaseMarble
+Shader:
+  Guid: 72b6d255-0f54-46e5-9d05-8e0486d4f875
+  Name: GenericRP/StandardLit
+  Keywords:
+  - USE_TRIPLANAR
+  Variant:
+    Backend: Vulkan
+    TargetEnvironment: vulkan1.3
+    ShaderModel: 6_4
+    OptimizationLevel: 0
+    DebugInfo: true
+Texture2DRefs:
+- Name: BaseColor
+  Slot: 0
+  Texture:
+    Guid: 678ed7b8-bb78-4b47-b5c0-416879f06917
+    Name: PackageGame/Marble021BaseColor
+    Variant:
+      Format: R8G8B8A8UNorm
+      ColorSpace: SRgb
+      GenerateMipMaps: false
+    SourceFormat: ImageFile
+- Name: Normal
+  Slot: 1
+  Texture:
+    Guid: ead642b0-cde6-4ae0-8bdc-03472fb3d5aa
+    Name: GenericRP/DefaultNormal
+    Variant:
+      Format: R8G8B8A8UNorm
+      ColorSpace: Linear
+      GenerateMipMaps: false
+    SourceFormat: PpmP3
+ScalarProperties:
+- Name: MetallicFactor
+  Value: 0.0
+- Name: RoughnessFactor
+  Value: 0.24
+Vector4Properties:
+- Name: BaseColorFactor
+  Value:
+    X: 0.92
+    Y: 0.97
+    Z: 1.0
+    W: 1.0
+- Name: EmissiveFactor
+  Value:
+    X: 0.018
+    Y: 0.026
+    Z: 0.038
+    W: 0.45
+RenderState:
+  CullMode: None
+  FrontFace: CounterClockwise

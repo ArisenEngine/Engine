@@ -16,6 +16,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="StbImageSharp" Version="2.30.15" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
 
@@ -25,25 +26,64 @@
 
   <ItemGroup>
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\AssetRecord.cs" Link="Source\Core\Assets\AssetRecord.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\AssetMetadata.cs" Link="Source\Core\Assets\AssetMetadata.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\AssetRef.cs" Link="Source\Core\Assets\AssetRef.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\GeneratedAssetIdentity.cs" Link="Source\Core\Assets\GeneratedAssetIdentity.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Automation\*.cs" Link="Source\Core\Automation\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Math\MathTypes.cs" Link="Source\Core\Math\MathTypes.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Math\MathExtensions.cs" Link="Source\Core\Math\MathExtensions.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Math\Mathf.cs" Link="Source\Core\Math\Mathf.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Memory\*.cs" Link="Source\Core\Memory\%(Filename)%(Extension)" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core\RHI\MeshDrawCommand.cs" Link="Source\Core\RHI\MeshDrawCommand.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Serialization\ISerializationCallbackReceiver.cs" Link="Source\Core\Serialization\ISerializationCallbackReceiver.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Serialization\SerializationUtil.cs" Link="Source\Core\Serialization\SerializationUtil.cs" />
+
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\IComponent.cs" Link="Source\ECS\IComponent.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\Entity.cs" Link="Source\ECS\Entity.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\IEntityManager.cs" Link="Source\ECS\IEntityManager.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\ComponentPool.cs" Link="Source\ECS\ComponentPool.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\EntityManager.cs" Link="Source\ECS\EntityManager.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\NameComponent.cs" Link="Source\ECS\NameComponent.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\TransformComponent.cs" Link="Source\ECS\TransformComponent.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\CameraComponent.cs" Link="Source\ECS\CameraComponent.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\DirectionalLightComponent.cs" Link="Source\ECS\DirectionalLightComponent.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\PointLightComponent.cs" Link="Source\ECS\PointLightComponent.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\SpotLightComponent.cs" Link="Source\ECS\SpotLightComponent.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\SceneEnvironmentComponent.cs" Link="Source\ECS\SceneEnvironmentComponent.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\MeshRendererComponent.cs" Link="Source\ECS\MeshRendererComponent.cs" />
 
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EBlendFactor.cs" Link="Source\CoreNative\RHI\EBlendFactor.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EBlendOp.cs" Link="Source\CoreNative\RHI\EBlendOp.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\ECullModeFlagBits.cs" Link="Source\CoreNative\RHI\ECullModeFlagBits.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EFrontFace.cs" Link="Source\CoreNative\RHI\EFrontFace.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EFormat.cs" Link="Source\CoreNative\RHI\EFormat.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EIndexType.cs" Link="Source\CoreNative\RHI\EIndexType.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EProgramStage.cs" Link="Source\CoreNative\RHI\EProgramStage.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\RHIHandle.cs" Link="Source\CoreNative\RHI\RHIHandle.cs" />
 
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\AssetDependencyStamp.cs" Link="Source\Rendering\Resources\AssetDependencyStamp.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\GltfModelImportEmitter.cs" Link="Source\Rendering\Resources\GltfModelImportEmitter.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\GltfModelImportPlanner.cs" Link="Source\Rendering\Resources\GltfModelImportPlanner.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\MaterialAsset.cs" Link="Source\Rendering\Resources\MaterialAsset.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\MeshAsset.cs" Link="Source\Rendering\Resources\MeshAsset.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\ShaderLabSource.cs" Link="Source\Rendering\Resources\ShaderLabSource.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\ShaderMaterialContractAnnotations.cs" Link="Source\Rendering\Resources\ShaderMaterialContractAnnotations.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\Texture2DAsset.cs" Link="Source\Rendering\Resources\Texture2DAsset.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\DirectionalLight.cs" Link="Source\Rendering\DirectionalLight.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\DirectionalLightSnapshotExtractor.cs" Link="Source\Rendering\DirectionalLightSnapshotExtractor.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\PointLight.cs" Link="Source\Rendering\PointLight.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\PointLightSnapshotExtractor.cs" Link="Source\Rendering\PointLightSnapshotExtractor.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\SpotLight.cs" Link="Source\Rendering\SpotLight.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\SpotLightSnapshotExtractor.cs" Link="Source\Rendering\SpotLightSnapshotExtractor.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\SceneEnvironment.cs" Link="Source\Rendering\SceneEnvironment.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\SceneEnvironmentSnapshotExtractor.cs" Link="Source\Rendering\SceneEnvironmentSnapshotExtractor.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderQueuePolicy.cs" Link="Source\Rendering\RenderQueuePolicy.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\StaticMeshFrustumCuller.cs" Link="Source\Rendering\StaticMeshFrustumCuller.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderGraphResourcePlanner.cs" Link="Source\Rendering\RenderGraphResourcePlanner.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderResource.cs" Link="Source\Rendering\RenderResource.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\RenderOutputEncoding.cs" Link="Source\GenericRenderPipeline\RenderOutputEncoding.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Shaders\*.cs" Link="Source\Rendering\Shaders\%(Filename)%(Extension)" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\SceneAssetLoader.cs" Link="Source\Resources\Serialization\SceneAssetLoader.cs" />
   </ItemGroup>
 
 </Project>

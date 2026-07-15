@@ -81,6 +81,41 @@ public sealed class RenderGraphResourcePlannerTests
     }
 
     [Fact]
+    public void BuildTransitionPlan_UsesKnownTransientInitialStateForFirstWrite()
+    {
+        var sceneColor = TransientTexture(
+            "SceneColor",
+            6,
+            RenderResourceState.ShaderRead);
+        var accesses = new[]
+        {
+            Write(sceneColor, 11, RenderResourceState.ColorAttachment),
+            Read(sceneColor, 12, RenderResourceState.ShaderRead)
+        };
+
+        var transitions = RenderGraphResourcePlanner.BuildTransitionPlan(
+            new[] { sceneColor },
+            new uint[] { 11, 12 },
+            accesses,
+            PassName);
+
+        Assert.Collection(
+            transitions,
+            transition =>
+            {
+                Assert.Equal(RenderResourceState.ShaderRead, transition.FromState);
+                Assert.Equal(RenderResourceState.ColorAttachment, transition.ToState);
+                Assert.Equal(11u, transition.BeforePassNodeId);
+            },
+            transition =>
+            {
+                Assert.Equal(RenderResourceState.ColorAttachment, transition.FromState);
+                Assert.Equal(RenderResourceState.ShaderRead, transition.ToState);
+                Assert.Equal(12u, transition.BeforePassNodeId);
+            });
+    }
+
+    [Fact]
     public void BuildTransitionPlan_RejectsTransientReadBeforeWrite()
     {
         var resource = TransientTexture("History", 4);
@@ -121,6 +156,18 @@ public sealed class RenderGraphResourcePlannerTests
     private static RenderResource TransientTexture(string name, uint id)
     {
         return new RenderResource(name, RenderResourceType.Texture, id);
+    }
+
+    private static RenderResource TransientTexture(
+        string name,
+        uint id,
+        RenderResourceState initialState)
+    {
+        return new RenderResource(
+            name,
+            RenderResourceType.Texture,
+            id,
+            initialState: initialState);
     }
 
     private static RenderResource ImportedTexture(string name, uint id, RenderResourceState initialState)
