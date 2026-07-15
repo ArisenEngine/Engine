@@ -2,6 +2,7 @@ using ArisenKernel.Packages;
 using ArisenKernel.Services;
 using ArisenKernel.Diagnostics;
 using ArisenKernel.Lifecycle;
+using ArisenEngine.Core.Assets;
 
 namespace PackageGame;
 
@@ -34,7 +35,8 @@ public class GameLogicPackage : IPackageEntry
         var scene = EngineKernel.Instance.GetSubsystem<ArisenEngine.ECS.Lifecycle.SceneSubsystem>();
         if (scene != null)
         {
-            MeshRenderTest.Setup(scene);
+            EngineKernel.Instance.Services.TryGetService<IAssetDatabase>(out var assetDatabase);
+            MeshRenderTest.Setup(scene, assetDatabase);
         }
         else
         {

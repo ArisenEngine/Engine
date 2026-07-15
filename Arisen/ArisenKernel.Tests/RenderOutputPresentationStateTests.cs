@@ -89,3 +89,55 @@ public sealed class RenderOutputPresentationStateTests
         };
     }
 }
+
+public sealed class RenderOutputFramePacingStateTests
+{
+    [Fact]
+    public void CanSubmitAllowsFirstFrameBeforeAnyConsumption()
+    {
+        var state = new RenderOutputFramePacingState();
+
+        Assert.True(state.CanSubmit(frameIndex: 100, maxOutstandingFrames: 3));
+    }
+
+    [Fact]
+    public void CanSubmitAllowsInitialBurstBeforeFirstConsumption()
+    {
+        var state = new RenderOutputFramePacingState();
+        state.MarkSubmitted(100);
+
+        Assert.True(state.CanSubmit(frameIndex: 101, maxOutstandingFrames: 3));
+        Assert.True(state.CanSubmit(frameIndex: 102, maxOutstandingFrames: 3));
+        Assert.False(state.CanSubmit(frameIndex: 103, maxOutstandingFrames: 3));
+
+        state.MarkConsumed(100);
+
+        Assert.True(state.CanSubmit(frameIndex: 101, maxOutstandingFrames: 3));
+    }
+
+    [Fact]
+    public void CanSubmitBlocksWhenOutstandingFramesWouldExceedBudget()
+    {
+        var state = new RenderOutputFramePacingState();
+        state.MarkSubmitted(100);
+        state.MarkConsumed(100);
+
+        Assert.True(state.CanSubmit(frameIndex: 102, maxOutstandingFrames: 3));
+        Assert.False(state.CanSubmit(frameIndex: 103, maxOutstandingFrames: 3));
+
+        state.MarkConsumed(102);
+
+        Assert.True(state.CanSubmit(frameIndex: 104, maxOutstandingFrames: 3));
+    }
+
+    [Fact]
+    public void MarkConsumedIgnoresOlderFrameIndices()
+    {
+        var state = new RenderOutputFramePacingState();
+
+        state.MarkConsumed(42);
+        state.MarkConsumed(41);
+
+        Assert.Equal(42u, state.LastConsumedFrameIndex);
+    }
+}

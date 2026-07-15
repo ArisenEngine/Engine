@@ -30,8 +30,19 @@ Expected first timeline markers:
 - `TaskGraph.Execute`.
 - `TaskGraph.Layer`.
 - `ArisenWorker-N` worker threads.
-- Per-task spans such as `ClearPass[0]` and `StaticMeshPass[N]`; render command recording tasks are queued with the pass/work-item name and executed inside `Profiler.Zone(task.Name)` on worker threads.
-- Plots for render graph pass/layer/work-item counts, culled pass count, resource transition count, render snapshot size/counts, and static mesh draw/material batch counts.
+- Per-task spans such as `EnvironmentSkyPass[0]`, `DirectionalShadowPass[0]`, `GenericStaticMeshPass[N]`, and `TonemapPass[0]`; render command recording tasks are queued with the pass/work-item name and executed inside `Profiler.Zone(task.Name)` on worker threads.
+- Setup spans such as `DirectionalShadowPass.Prepare` when a pass has meaningful setup cost outside command recording.
+- Plots for render graph pass/layer/work-item counts, culled pass count, resource transition count, transient texture count, render snapshot size/counts, scene color size/format, mesh/cull/material/light/environment counts, visible draw command count, static mesh draw/material/queue/object-buffer counts, and directional shadow draw/map/enabled counters.
+
+## Bounded Validation And Manual Profiling
+
+Use bounded runtime validation as the automated rendering gate:
+
+```bat
+Arisen\Scripts\Windows\validate_runtime.bat --no-pause --config Debug --smoke-mode scene --frames 1
+```
+
+The scene smoke mode may internally run enough frames to render deferred scene setup, but the caller still requests a bounded one-frame validation window. Longer visual profiling should be a manual Tracy session from a profiler-enabled profile such as `Editor` or `Development`, not a default CI requirement.
 
 ## Launcher Integration Target
 

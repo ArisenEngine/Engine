@@ -78,6 +78,9 @@ StyleCopReport.xml
 *.ilk
 *.meta
 *.obj
+!/Development/PackageGame/Assets/Scenes/SampleScene.arisen.meta
+!/Development/PackageGame/Local/com.arisen.packagegame/Assets/**/*.meta
+!/Development/PackageGame/Local/com.arisen.packagegame/Assets/**/*.obj
 *.iobj
 *.pch
 *.pdb

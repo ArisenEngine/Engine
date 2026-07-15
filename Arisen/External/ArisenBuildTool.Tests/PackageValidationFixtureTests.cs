@@ -675,12 +675,16 @@ public sealed class PackageValidationFixtureTests
             entryClass: "Com.Test.RenderPipelinePackage");
         string materialDir = Path.Combine(packageDir, "Assets", "Materials");
         string meshDir = Path.Combine(packageDir, "Assets", "Meshes");
+        string modelDir = Path.Combine(packageDir, "Assets", "Models");
         string shaderDir = Path.Combine(packageDir, "Assets", "Shaders");
         string textureDir = Path.Combine(packageDir, "Assets", "Textures");
+        string sceneDir = Path.Combine(packageDir, "Assets", "Scenes");
         Directory.CreateDirectory(materialDir);
         Directory.CreateDirectory(meshDir);
+        Directory.CreateDirectory(modelDir);
         Directory.CreateDirectory(shaderDir);
         Directory.CreateDirectory(textureDir);
+        Directory.CreateDirectory(sceneDir);
         File.WriteAllText(
             Path.Combine(materialDir, "SmokeMaterial.arismaterial.meta"),
             """
@@ -726,6 +730,14 @@ public sealed class PackageValidationFixtureTests
             """);
         File.WriteAllText(Path.Combine(meshDir, "TexturedQuad.obj"), string.Empty);
         File.WriteAllText(
+            Path.Combine(modelDir, "HeroModel.arismodel.meta"),
+            """
+            Guid: 77777777-8888-9999-aaaa-bbbbbbbbbbbb
+            AssetType: Model
+            Importer: ArisenModelImporter
+            """);
+        File.WriteAllText(Path.Combine(modelDir, "HeroModel.arismodel"), string.Empty);
+        File.WriteAllText(
             Path.Combine(meshDir, "TexturedQuad.bin.meta"),
             """
             Guid: 55555555-6666-7777-8888-999999999999
@@ -755,6 +767,14 @@ public sealed class PackageValidationFixtureTests
             Importer: PpmTextureImporter
             """);
         File.WriteAllText(Path.Combine(textureDir, "SmokeChecker.ppm"), string.Empty);
+        File.WriteAllText(
+            Path.Combine(sceneDir, "SmokeScene.arisenscene.meta"),
+            """
+            Guid: 66666666-7777-8888-9999-aaaaaaaaaaaa
+            AssetType: Scene
+            Importer: ArisenSceneImporter
+            """);
+        File.WriteAllText(Path.Combine(sceneDir, "SmokeScene.arisenscene"), string.Empty);
 
         string projectDir = Path.Combine(workspace.RootPath, ".arisen", "Projects", "Development", "Com.Test.Renderpipeline");
         AssetReferenceGeneratorService.Generate(
@@ -771,8 +791,10 @@ public sealed class PackageValidationFixtureTests
         Assert.Contains("using ArisenEngine.Core.Assets;", generated);
         Assert.Contains("public static readonly AssetRef<MaterialSourceAsset> SmokeMaterialRef", generated);
         Assert.Contains("public static readonly AssetRef<MeshSourceAsset> TexturedQuadMeshRef", generated);
+        Assert.Contains("public static readonly AssetRef<ModelSourceAsset> HeroModelRef", generated);
         Assert.Contains("public static readonly AssetRef<ShaderSourceAsset> SmokeTriangleShaderRef", generated);
         Assert.Contains("public static readonly AssetRef<Texture2DSourceAsset> SmokeCheckerTextureRef", generated);
+        Assert.Contains("public static readonly AssetRef<SceneSourceAsset> SmokeSceneRef", generated);
         Assert.DoesNotContain("SmokeMaterial_arismaterialMetaGuid", generated);
         Assert.DoesNotContain("TexturedQuadAssetDependencyGuid", generated);
         Assert.DoesNotContain("55555555-6666-7777-8888-999999999999", generated);
@@ -780,6 +802,10 @@ public sealed class PackageValidationFixtureTests
         Assert.Contains("public static readonly AssetRef<MaterialSourceAsset> Ref = SmokeMaterialRef;", generated);
         Assert.Contains("public static class TexturedQuadMesh", generated);
         Assert.Contains("public static readonly AssetRef<MeshSourceAsset> Ref = TexturedQuadMeshRef;", generated);
+        Assert.Contains("public static class HeroModel", generated);
+        Assert.Contains("public static readonly AssetRef<ModelSourceAsset> Ref = HeroModelRef;", generated);
+        Assert.Contains("public static class SmokeScene", generated);
+        Assert.Contains("public static readonly AssetRef<SceneSourceAsset> Ref = SmokeSceneRef;", generated);
         Assert.Contains("public const string BaseColor = \"BaseColor\";", generated);
         Assert.Contains("public const string MetallicFactor = \"MetallicFactor\";", generated);
         Assert.Contains("public const string RoughnessFactor = \"RoughnessFactor\";", generated);

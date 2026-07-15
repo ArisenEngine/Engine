@@ -1,0 +1,173 @@
+Name: Marble Teapot Showcase
+Entities:
+- Name: Main Camera
+  Transform:
+    Position:
+      X: 2.2
+      Y: 1.2
+      Z: -3.3
+    Rotation:
+      X: 0.05760113
+      Y: -0.2892589
+      Z: 0.01744022
+      W: 0.9553571
+    Scale:
+      X: 1.0
+      Y: 1.0
+      Z: 1.0
+  Camera:
+    VerticalFov: 38.0
+    NearPlane: 0.05
+    FarPlane: 100.0
+    IsPerspective: true
+- Name: Warm Key Light
+  DirectionalLight:
+    Direction:
+      X: -0.32
+      Y: 0.82
+      Z: -0.47
+    Color:
+      X: 1.0
+      Y: 0.94
+      Z: 0.84
+    Intensity: 1.35
+    AmbientIntensity: 0.10
+    Enabled: true
+- Name: Cool Rim Light
+  Transform:
+    Position:
+      X: -1.15
+      Y: 1.05
+      Z: -1.25
+    Rotation:
+      X: 0.0
+      Y: 0.0
+      Z: 0.0
+      W: 1.0
+    Scale:
+      X: 1.0
+      Y: 1.0
+      Z: 1.0
+  PointLight:
+    Color:
+      X: 0.56
+      Y: 0.74
+      Z: 1.0
+    Intensity: 1.25
+    Range: 3.2
+    Enabled: true
+- Name: Warm Focus Spot
+  Transform:
+    Position:
+      X: 0.35
+      Y: 1.55
+      Z: -1.85
+    Rotation:
+      X: 0.24269248
+      Y: -0.08494237
+      Z: 0.0
+      W: 0.96637733
+    Scale:
+      X: 1.0
+      Y: 1.0
+      Z: 1.0
+  SpotLight:
+    Color:
+      X: 1.0
+      Y: 0.82
+      Z: 0.58
+    Intensity: 2.35
+    Range: 4.4
+    InnerConeAngleDegrees: 13.0
+    OuterConeAngleDegrees: 29.0
+    Enabled: true
+- Name: Blue Hour Environment
+  Environment:
+    SkyColor:
+      X: 0.035
+      Y: 0.115
+      Z: 0.22
+    HorizonColor:
+      X: 0.52
+      Y: 0.66
+      Z: 0.74
+    GroundColor:
+      X: 0.045
+      Y: 0.055
+      Z: 0.065
+    AmbientColor:
+      X: 0.40
+      Y: 0.50
+      Z: 0.62
+    SkyIntensity: 0.95
+    AmbientIntensity: 0.24
+    Enabled: true
+- Name: Utah Teapot
+  Transform:
+    Position:
+      X: 0.0
+      Y: 0.47
+      Z: 0.0
+    Rotation:
+      X: 0.0
+      Y: -0.1736482
+      Z: 0.0
+      W: 0.9848078
+    Scale:
+      X: 0.42
+      Y: 0.42
+      Z: 0.42
+  MeshRenderer:
+    Mesh:
+      Guid: 7300d793-8cd9-4983-8035-e99aa92e9449
+      PackageId: com.arisen.packagegame
+    Material:
+      Guid: a2122786-c40a-41f2-bf35-1f5cbc4d39c2
+      PackageId: com.arisen.packagegame
+    Visible: true
+- Name: Presentation Pedestal
+  Transform:
+    Position:
+      X: 0.0
+      Y: 0.0
+      Z: 0.0
+    Rotation:
+      X: 0.0
+      Y: 0.0
+      Z: 0.0
+      W: 1.0
+    Scale:
+      X: 1.0
+      Y: 1.0
+      Z: 1.0
+  MeshRenderer:
+    Mesh:
+      Guid: ed26e5c7-77ae-4cd7-b4ec-cb02ea6bac33
+      PackageId: com.arisen.packagegame
+    Material:
+      Guid: a2dd1381-3958-4480-837b-35ffe6dd15c0
+      PackageId: com.arisen.packagegame
+    Visible: true
+- Name: Ground
+  Transform:
+    Position:
+      X: 0.0
+      Y: -0.006
+      Z: 0.0
+    Rotation:
+      X: 0.0
+      Y: 0.0
+      Z: 0.0
+      W: 1.0
+    Scale:
+      X: 20.0
+      Y: 1.0
+      Z: 20.0
+  MeshRenderer:
+    Mesh:
+      Guid: 0fed982b-5130-430e-860b-dc9c7284b8c1
+      PackageId: com.arisen.packagegame
+    Material:
+      Guid: e87b0335-5689-45a0-9fe1-455a01b59a20
+      PackageId: com.arisen.packagegame
+    Visible: true
