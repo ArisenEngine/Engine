@@ -1,0 +1,12 @@
+Name: Khronos Lantern Showcase
+Source:
+  Path: Source/Lantern.glb
+  Format: GltfBinary
+Import:
+  OutputRoot: Assets/Generated/Lantern
+  SceneIndex: 0
+  UnitScale: 1.0
+  EmitTextures: true
+Shader:
+  Guid: 72b6d255-0f54-46e5-9d05-8e0486d4f875
+  Name: GenericRP/StandardLit

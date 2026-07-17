@@ -678,12 +678,14 @@ public sealed class PackageValidationFixtureTests
         string modelDir = Path.Combine(packageDir, "Assets", "Models");
         string shaderDir = Path.Combine(packageDir, "Assets", "Shaders");
         string textureDir = Path.Combine(packageDir, "Assets", "Textures");
+        string environmentDir = Path.Combine(packageDir, "Assets", "Environments");
         string sceneDir = Path.Combine(packageDir, "Assets", "Scenes");
         Directory.CreateDirectory(materialDir);
         Directory.CreateDirectory(meshDir);
         Directory.CreateDirectory(modelDir);
         Directory.CreateDirectory(shaderDir);
         Directory.CreateDirectory(textureDir);
+        Directory.CreateDirectory(environmentDir);
         Directory.CreateDirectory(sceneDir);
         File.WriteAllText(
             Path.Combine(materialDir, "SmokeMaterial.arismaterial.meta"),
@@ -768,6 +770,14 @@ public sealed class PackageValidationFixtureTests
             """);
         File.WriteAllText(Path.Combine(textureDir, "SmokeChecker.ppm"), string.Empty);
         File.WriteAllText(
+            Path.Combine(environmentDir, "Studio.arienvironment.meta"),
+            """
+            Guid: 88888888-9999-aaaa-bbbb-cccccccccccc
+            AssetType: EnvironmentTexture
+            Importer: ArisenEnvironmentTextureImporter
+            """);
+        File.WriteAllText(Path.Combine(environmentDir, "Studio.arienvironment"), string.Empty);
+        File.WriteAllText(
             Path.Combine(sceneDir, "SmokeScene.arisenscene.meta"),
             """
             Guid: 66666666-7777-8888-9999-aaaaaaaaaaaa
@@ -794,6 +804,7 @@ public sealed class PackageValidationFixtureTests
         Assert.Contains("public static readonly AssetRef<ModelSourceAsset> HeroModelRef", generated);
         Assert.Contains("public static readonly AssetRef<ShaderSourceAsset> SmokeTriangleShaderRef", generated);
         Assert.Contains("public static readonly AssetRef<Texture2DSourceAsset> SmokeCheckerTextureRef", generated);
+        Assert.Contains("public static readonly AssetRef<EnvironmentTextureSourceAsset> StudioEnvironmentTextureRef", generated);
         Assert.Contains("public static readonly AssetRef<SceneSourceAsset> SmokeSceneRef", generated);
         Assert.DoesNotContain("SmokeMaterial_arismaterialMetaGuid", generated);
         Assert.DoesNotContain("TexturedQuadAssetDependencyGuid", generated);
@@ -806,6 +817,8 @@ public sealed class PackageValidationFixtureTests
         Assert.Contains("public static readonly AssetRef<ModelSourceAsset> Ref = HeroModelRef;", generated);
         Assert.Contains("public static class SmokeScene", generated);
         Assert.Contains("public static readonly AssetRef<SceneSourceAsset> Ref = SmokeSceneRef;", generated);
+        Assert.Contains("public static class StudioEnvironmentTexture", generated);
+        Assert.Contains("public static readonly AssetRef<EnvironmentTextureSourceAsset> Ref = StudioEnvironmentTextureRef;", generated);
         Assert.Contains("public const string BaseColor = \"BaseColor\";", generated);
         Assert.Contains("public const string MetallicFactor = \"MetallicFactor\";", generated);
         Assert.Contains("public const string RoughnessFactor = \"RoughnessFactor\";", generated);

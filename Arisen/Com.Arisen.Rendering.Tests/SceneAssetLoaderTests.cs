@@ -14,6 +14,7 @@ public sealed class SceneAssetLoaderTests
         var db = new TestAssetDatabase(temp.Path);
         var sceneGuid = Guid.Parse("0bb7d5fb-1924-45ee-9b45-85891d0e6d9f");
         var meshGuid = Guid.Parse("3b392205-8cad-4d61-bf47-040b3549f0cf");
+        var environmentTextureGuid = Guid.Parse("4c4c4c4c-5d5d-6e6e-7f7f-808080808080");
         string scenePath = Path.Combine(temp.Path, "SmokeScene.arisenscene");
         string meshPath = Path.Combine(temp.Path, "MultiSubmeshQuad.armesh");
 
@@ -73,6 +74,8 @@ public sealed class SceneAssetLoaderTests
                 OuterConeAngleDegrees: 26
             - Name: Sky Environment
               Environment:
+                EnvironmentTexture:
+                  Guid: {environmentTextureGuid:D}
                 SkyColor:
                   X: 0.1
                   Y: 0.2
@@ -91,6 +94,7 @@ public sealed class SceneAssetLoaderTests
                   Z: 0.75
                 SkyIntensity: 0.9
                 AmbientIntensity: 0.3
+                Exposure: 1.25
             - Name: Mesh A
               Transform:
                 Position:
@@ -156,9 +160,11 @@ public sealed class SceneAssetLoaderTests
 
         var environment = entityManager.GetPool<SceneEnvironmentComponent>().GetRawComponentArray()[0];
         Assert.Equal(new System.Numerics.Vector3(0.1f, 0.2f, 0.4f), environment.SkyColor);
+        Assert.Equal(environmentTextureGuid, environment.EnvironmentTextureGuid);
         Assert.Equal(new System.Numerics.Vector3(0.5f, 0.6f, 0.75f), environment.AmbientColor);
         Assert.Equal(0.9f, environment.SkyIntensity);
         Assert.Equal(0.3f, environment.AmbientIntensity);
+        Assert.Equal(1.25f, environment.Exposure);
         Assert.Equal(1, environment.Enabled);
 
         var meshComponents = entityManager.GetPool<MeshRendererComponent>().GetRawComponentArray();
@@ -204,9 +210,11 @@ public sealed class SceneAssetLoaderTests
         var sceneGuid = Guid.Parse("bbbbbbbb-1111-2222-3333-444444444444");
         var meshGuid = Guid.Parse("cccccccc-1111-2222-3333-444444444444");
         var materialGuid = Guid.Parse("dddddddd-1111-2222-3333-444444444444");
+        var environmentTextureGuid = Guid.Parse("eeeeeeee-1111-2222-3333-444444444444");
         string scenePath = Path.Combine(temp.Path, "Inspectable.arisenscene");
         string meshPath = Path.Combine(temp.Path, "Inspectable.obj");
         string materialPath = Path.Combine(temp.Path, "Inspectable.arismaterial");
+        string environmentPath = Path.Combine(temp.Path, "Inspectable.arienvironment");
 
         File.WriteAllText(scenePath, $"""
             Name: Inspectable Scene
@@ -290,6 +298,8 @@ public sealed class SceneAssetLoaderTests
                 OuterConeAngleDegrees: 32
             - Name: World
               Environment:
+                EnvironmentTexture:
+                  Guid: {environmentTextureGuid:D}
                 SkyColor:
                   X: 0.1
                   Y: 0.2
@@ -301,9 +311,11 @@ public sealed class SceneAssetLoaderTests
             """);
         File.WriteAllText(meshPath, string.Empty);
         File.WriteAllText(materialPath, string.Empty);
+        File.WriteAllText(environmentPath, string.Empty);
         db.AddAsset(sceneGuid, "Scene", scenePath);
         db.AddAsset(meshGuid, "Mesh", meshPath);
         db.AddAsset(materialGuid, "Material", materialPath);
+        db.AddAsset(environmentTextureGuid, "EnvironmentTexture", environmentPath);
 
         var inspection = SceneAssetLoader.InspectScene(
             db,
@@ -333,6 +345,11 @@ public sealed class SceneAssetLoaderTests
 
         var camera = Assert.Single(inspection.Entities, entity => entity.Camera != null).Camera!;
         Assert.Equal(55.0f, camera.VerticalFov);
+
+        var environment = Assert.Single(inspection.Entities, entity => entity.Environment != null).Environment!;
+        Assert.Equal(environmentTextureGuid, environment.EnvironmentTexture.Guid);
+        Assert.True(environment.EnvironmentTexture.IsResolved, environment.EnvironmentTexture.Diagnostic);
+        Assert.Equal(SceneEnvironmentComponent.DefaultExposure, environment.Exposure);
 
         var accent = Assert.Single(inspection.Entities, entity => entity.PointLight != null);
         Assert.Equal(new System.Numerics.Vector3(-1, 1.25f, -2), accent.Transform.Position);

@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using ArisenEditor.Core.Commands;
 using Arisen.Native.RHI;
 using ArisenEngine.Core.Assets;
 using ArisenEngine.Core.RHI;
@@ -7,6 +8,7 @@ using ArisenEngine.Rendering;
 using ArisenEngine.Rendering.Resources;
 using ArisenEngine.Resources.Serialization;
 using Xunit;
+using EditorAssetDatabase = ArisenEditor.Core.Assets.AssetDatabase;
 
 namespace Com.Arisen.Rendering.Tests;
 
@@ -91,9 +93,22 @@ public sealed class RenderingAssetPipelineTests
                 {
                   "name": "PaintedMetal",
                   "alphaMode": "MASK",
+                  "alphaCutoff": 0.42,
                   "pbrMetallicRoughness": {
                     "baseColorFactor": [0.25, 0.5, 0.75, 1.0],
                     "baseColorTexture": { "index": 0 },
+                    "metallicRoughnessTexture": {
+                      "index": 3,
+                      "texCoord": 1,
+                      "extensions": {
+                        "KHR_texture_transform": {
+                          "offset": [0.1, 0.2],
+                          "scale": [2.0, 0.5],
+                          "rotation": 0.25,
+                          "texCoord": 2
+                        }
+                      }
+                    },
                     "metallicFactor": 0.8,
                     "roughnessFactor": 0.35
                   },
@@ -104,18 +119,36 @@ public sealed class RenderingAssetPipelineTests
                       "emissiveStrength": 2.0
                     }
                   },
-                  "normalTexture": { "index": 1 }
+                  "normalTexture": { "index": 1 },
+                  "occlusionTexture": { "index": 4, "strength": 0.65 }
                 }
               ],
               "textures": [
                 { "source": 0 },
                 { "source": 1 },
-                { "source": 2 }
+                { "source": 2 },
+                { "source": 3, "sampler": 0 },
+                { "source": 3, "sampler": 1 }
               ],
               "images": [
                 { "uri": "BaseColor.png" },
                 { "uri": "Normal.png" },
-                { "uri": "Emissive.png" }
+                { "uri": "Emissive.png" },
+                { "uri": "Packed.png" }
+              ],
+              "samplers": [
+                {
+                  "magFilter": 9728,
+                  "minFilter": 9987,
+                  "wrapS": 33648,
+                  "wrapT": 33071
+                },
+                {
+                  "magFilter": 9729,
+                  "minFilter": 9984,
+                  "wrapS": 10497,
+                  "wrapT": 10497
+                }
               ],
               "animations": [
                 { "channels": [], "samplers": [] }
@@ -133,6 +166,8 @@ public sealed class RenderingAssetPipelineTests
         Assert.Contains(plan.GeneratedChildren, child => child.Kind == "texture2d" && child.Key == "images/0");
         Assert.Contains(plan.GeneratedChildren, child => child.Kind == "texture2d" && child.Key == "images/1");
         Assert.Contains(plan.GeneratedChildren, child => child.Kind == "texture2d" && child.Key == "images/2");
+        Assert.Contains(plan.GeneratedChildren, child => child.Kind == "texture2d" && child.Key == "images/3");
+        Assert.Equal(4, plan.GeneratedChildren.Count(child => child.Kind == "texture2d"));
 
         var materialChild = Assert.Single(plan.GeneratedChildren, child => child.Kind == "material");
         Assert.Equal(materialGuid, materialChild.Metadata.Guid);
@@ -161,9 +196,64 @@ public sealed class RenderingAssetPipelineTests
         Assert.Equal(2, material.EmissiveTexture.TextureIndex);
         Assert.Equal(2, material.EmissiveTexture.ImageIndex);
         Assert.Equal("Emissive.png", material.EmissiveTexture.Uri);
-        Assert.Contains(plan.Warnings, warning => warning.Contains("alphaMode", StringComparison.Ordinal));
+        Assert.NotNull(material.MetallicRoughnessTexture);
+        Assert.Equal(3, material.MetallicRoughnessTexture.TextureIndex);
+        Assert.Equal(3, material.MetallicRoughnessTexture.ImageIndex);
+        Assert.Equal(
+            new MaterialTextureSamplerSettings(
+                MaterialTextureFilter.Linear,
+                MaterialTextureFilter.Nearest,
+                MaterialTextureMipmapMode.Linear,
+                MaterialTextureWrapMode.MirroredRepeat,
+                MaterialTextureWrapMode.ClampToEdge),
+            material.MetallicRoughnessTexture.Sampler);
+        Assert.Equal(
+            new MaterialTextureTransform(
+                new Vector2(0.1f, 0.2f),
+                new Vector2(2.0f, 0.5f),
+                0.25f,
+                2),
+            material.MetallicRoughnessTexture.Transform);
+        Assert.NotNull(material.OcclusionTexture);
+        Assert.Equal(4, material.OcclusionTexture.TextureIndex);
+        Assert.Equal(3, material.OcclusionTexture.ImageIndex);
+        Assert.Equal(0.65f, material.OcclusionStrength);
+        Assert.Equal(GltfMaterialAlphaMode.Mask, material.AlphaMode);
+        Assert.Equal(0.42f, material.AlphaCutoff);
+        Assert.DoesNotContain(plan.Warnings, warning => warning.Contains("alphaMode", StringComparison.Ordinal));
+        Assert.Contains(plan.Warnings, warning => warning.Contains("TEXCOORD_2", StringComparison.Ordinal));
         Assert.Contains(plan.Warnings, warning => warning.Contains("animations", StringComparison.Ordinal));
         Assert.Contains(plan.Warnings, warning => warning.Contains("morph targets", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void GltfModelImportPlanner_PreservesUnsupportedBlendWarning()
+    {
+        using var workspace = TestWorkspace.Create();
+        var gltfPath = workspace.Write("Assets/Transparent.gltf", """
+            {
+              "asset": { "version": "2.0" },
+              "materials": [
+                {
+                  "name": "Transparent",
+                  "alphaMode": "BLEND"
+                }
+              ]
+            }
+            """);
+
+        var plan = GltfModelImportPlanner.CreatePlan(
+            gltfPath,
+            Guid.Parse("abababab-cdcd-efef-0101-232323232323"),
+            "com.arisen.test");
+        var material = Assert.Single(plan.Materials);
+
+        Assert.Equal(GltfMaterialAlphaMode.Blend, material.AlphaMode);
+        Assert.Equal(MaterialPbrDefaults.AlphaCutoff, material.AlphaCutoff);
+        Assert.Contains(
+            plan.Warnings,
+            warning => warning.Contains("alphaMode 'BLEND'", StringComparison.Ordinal) &&
+                       warning.Contains("transparent render pass", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -175,32 +265,63 @@ public sealed class RenderingAssetPipelineTests
         var baseColorPath = workspace.WriteBinary("Assets/BaseColor.png", CreateTinyPng());
         var normalPath = workspace.Write("Assets/Normal.ppm", "P3\n1 1\n255\n128 128 255\n");
         var emissivePath = workspace.WriteBinary("Assets/Emissive.png", CreateTinyPng());
+        var packedPath = workspace.Write("Assets/Packed.ppm", "P3\n1 1\n255\n128 64 192\n");
         var gltfPath = workspace.Write("Assets/Robot.gltf", $$"""
             {
               "asset": { "version": "2.0" },
               "materials": [
                 {
                   "name": "PaintedMetal",
+                  "alphaMode": "MASK",
+                  "alphaCutoff": 0.42,
                   "pbrMetallicRoughness": {
                     "baseColorFactor": [0.25, 0.5, 0.75, 1.0],
                     "baseColorTexture": { "index": 0 },
+                    "metallicRoughnessTexture": {
+                      "index": 3,
+                      "extensions": {
+                        "KHR_texture_transform": {
+                          "offset": [0.25, 0.5],
+                          "scale": [2.0, 0.75],
+                          "rotation": 0.3
+                        }
+                      }
+                    },
                     "metallicFactor": 0.8,
                     "roughnessFactor": 0.35
                   },
                   "emissiveFactor": [0.05, 0.06, 0.07],
                   "emissiveTexture": { "index": 2 },
-                  "normalTexture": { "index": 1 }
+                  "normalTexture": { "index": 1 },
+                  "occlusionTexture": { "index": 4, "strength": 0.65 }
                 }
               ],
               "textures": [
                 { "source": 0 },
                 { "source": 1 },
-                { "source": 2 }
+                { "source": 2 },
+                { "source": 3, "sampler": 0 },
+                { "source": 3, "sampler": 1 }
               ],
               "images": [
                 { "uri": "{{Path.GetFileName(baseColorPath)}}"},
                 { "uri": "{{Path.GetFileName(normalPath)}}"},
-                { "uri": "{{Path.GetFileName(emissivePath)}}"}
+                { "uri": "{{Path.GetFileName(emissivePath)}}"},
+                { "uri": "{{Path.GetFileName(packedPath)}}"}
+              ],
+              "samplers": [
+                {
+                  "magFilter": 9728,
+                  "minFilter": 9987,
+                  "wrapS": 33648,
+                  "wrapT": 33071
+                },
+                {
+                  "magFilter": 9729,
+                  "minFilter": 9984,
+                  "wrapS": 10497,
+                  "wrapT": 10497
+                }
               ]
             }
             """);
@@ -210,8 +331,12 @@ public sealed class RenderingAssetPipelineTests
                 MaterialContract
                 {
                     Texture2D BaseColor
+                    Texture2D MetallicRoughness
+                    Texture2D Occlusion
                     Scalar MetallicFactor
                     Scalar RoughnessFactor
+                    Scalar OcclusionStrength
+                    Scalar AlphaCutoff
                     Vector4 BaseColorFactor
                 }
 
@@ -222,6 +347,8 @@ public sealed class RenderingAssetPipelineTests
                         HLSLPROGRAM
                         #pragma vertex VSMain
                         #pragma fragment PSMain
+                        #pragma shader_feature USE_NORMAL_MAP
+                        #pragma shader_feature ALPHA_TEST
                         float4 VSMain() : SV_Position { return 0; }
                         float4 PSMain() : SV_Target0 { return 1; }
                         ENDHLSL
@@ -238,7 +365,7 @@ public sealed class RenderingAssetPipelineTests
             new GltfModelImportEmissionSettings(shaderGuid, "Tests/StandardLit", "Robot"));
 
         var materialPath = Assert.Single(result.MaterialPaths);
-        Assert.Equal(3, result.TexturePaths.Count);
+        Assert.Equal(4, result.TexturePaths.Count);
         Assert.Empty(result.Warnings);
         Assert.True(File.Exists(materialPath));
         Assert.True(File.Exists(materialPath + ".meta"));
@@ -273,21 +400,75 @@ public sealed class RenderingAssetPipelineTests
         var loadedMaterial = MaterialAssetLoader.LoadSource(db, materialMetadata.Guid);
         Assert.Equal("PaintedMetal", loadedMaterial.Name);
         Assert.Equal(shaderGuid, loadedMaterial.Shader.Guid);
-        Assert.Equal(3, loadedMaterial.Texture2DRefs.Count);
+        Assert.Equal(new[] { "ALPHA_TEST", "USE_NORMAL_MAP" }, loadedMaterial.Shader.VariantKeywords);
+        Assert.Contains(
+            ".kw-ALPHA_TEST-USE_NORMAL_MAP.PSMain",
+            loadedMaterial.Shader.Variant.GetCookedVariant(
+                "PSMain",
+                loadedMaterial.Shader.VariantKeywords),
+            StringComparison.Ordinal);
+        Assert.Equal(5, loadedMaterial.Texture2DRefs.Count);
         Assert.Contains(loadedMaterial.Texture2DRefs, texture => texture.Name == MaterialTextureSlots.BaseColor);
         Assert.Contains(loadedMaterial.Texture2DRefs, texture => texture.Name == MaterialTextureSlots.Normal);
         Assert.Contains(loadedMaterial.Texture2DRefs, texture => texture.Name == MaterialTextureSlots.Emissive);
+        Assert.Contains(loadedMaterial.Texture2DRefs, texture => texture.Name == MaterialTextureSlots.MetallicRoughness);
+        Assert.Contains(loadedMaterial.Texture2DRefs, texture => texture.Name == MaterialTextureSlots.Occlusion);
         Assert.Equal(Texture2DSourceFormat.ImageFile, loadedMaterial.Texture2DRefs.Single(texture => texture.Name == MaterialTextureSlots.BaseColor).Texture.SourceFormat);
         Assert.Equal(Texture2DSourceFormat.PpmP3, loadedMaterial.Texture2DRefs.Single(texture => texture.Name == MaterialTextureSlots.Normal).Texture.SourceFormat);
         Assert.Equal(Texture2DSourceFormat.ImageFile, loadedMaterial.Texture2DRefs.Single(texture => texture.Name == MaterialTextureSlots.Emissive).Texture.SourceFormat);
+        Assert.Equal(Texture2DSourceFormat.PpmP3, loadedMaterial.Texture2DRefs.Single(texture => texture.Name == MaterialTextureSlots.MetallicRoughness).Texture.SourceFormat);
+        Assert.Equal(Texture2DSourceFormat.PpmP3, loadedMaterial.Texture2DRefs.Single(texture => texture.Name == MaterialTextureSlots.Occlusion).Texture.SourceFormat);
+        Assert.Equal(Texture2DColorSpace.SRgb, loadedMaterial.Texture2DRefs.Single(texture => texture.Name == MaterialTextureSlots.BaseColor).Texture.Variant.ColorSpace);
+        Assert.Equal(Texture2DColorSpace.Linear, loadedMaterial.Texture2DRefs.Single(texture => texture.Name == MaterialTextureSlots.Normal).Texture.Variant.ColorSpace);
+        Assert.Equal(Texture2DColorSpace.SRgb, loadedMaterial.Texture2DRefs.Single(texture => texture.Name == MaterialTextureSlots.Emissive).Texture.Variant.ColorSpace);
+        var metallicRoughness = loadedMaterial.Texture2DRefs.Single(texture => texture.Name == MaterialTextureSlots.MetallicRoughness);
+        var occlusion = loadedMaterial.Texture2DRefs.Single(texture => texture.Name == MaterialTextureSlots.Occlusion);
+        Assert.Equal(Texture2DColorSpace.Linear, metallicRoughness.Texture.Variant.ColorSpace);
+        Assert.Equal(Texture2DColorSpace.Linear, occlusion.Texture.Variant.ColorSpace);
+        Assert.Equal(metallicRoughness.Texture.Guid, occlusion.Texture.Guid);
+        Assert.Equal(
+            new MaterialTextureSamplerSettings(
+                MaterialTextureFilter.Linear,
+                MaterialTextureFilter.Nearest,
+                MaterialTextureMipmapMode.Linear,
+                MaterialTextureWrapMode.MirroredRepeat,
+                MaterialTextureWrapMode.ClampToEdge),
+            metallicRoughness.ResolvedSampler);
+        Assert.Equal(
+            new MaterialTextureSamplerSettings(
+                MaterialTextureFilter.Nearest,
+                MaterialTextureFilter.Linear,
+                MaterialTextureMipmapMode.Nearest,
+                MaterialTextureWrapMode.Repeat,
+                MaterialTextureWrapMode.Repeat),
+            occlusion.ResolvedSampler);
+        Assert.Equal(
+            new MaterialTextureTransform(
+                new Vector2(0.25f, 0.5f),
+                new Vector2(2.0f, 0.75f),
+                0.3f,
+                0),
+            metallicRoughness.ResolvedTransform);
+        Assert.Equal(MaterialTextureTransform.Identity, occlusion.ResolvedTransform);
         Assert.Equal(0.8f, loadedMaterial.ScalarProperties.Single(property => property.Name == MaterialPropertySlots.MetallicFactor).Value);
         Assert.Equal(0.35f, loadedMaterial.ScalarProperties.Single(property => property.Name == MaterialPropertySlots.RoughnessFactor).Value);
+        Assert.Equal(0.65f, loadedMaterial.ScalarProperties.Single(property => property.Name == MaterialPropertySlots.OcclusionStrength).Value);
+        Assert.Equal(0.42f, loadedMaterial.ScalarProperties.Single(property => property.Name == MaterialPropertySlots.AlphaCutoff).Value);
         Assert.Equal(
             new Vector4(0.25f, 0.5f, 0.75f, 1.0f),
             loadedMaterial.Vector4Properties.Single(property => property.Name == MaterialPropertySlots.BaseColorFactor).Value);
         Assert.Equal(
             new Vector4(0.05f, 0.06f, 0.07f, 1.0f),
             loadedMaterial.Vector4Properties.Single(property => property.Name == MaterialPropertySlots.EmissiveFactor).Value);
+
+        var cookedMaterial = MaterialAssetCooker.LoadOrCook(db, materialMetadata.Guid);
+        Assert.True(cookedMaterial.IsValid);
+        Assert.Equal(
+            new[] { "ALPHA_TEST", "USE_NORMAL_MAP" },
+            cookedMaterial.Asset.Shader.VariantKeywords);
+        Assert.Equal(
+            loadedMaterial.Shader.GetVariantIdentity(),
+            cookedMaterial.Asset.Shader.GetVariantIdentity());
     }
 
     [Fact]
@@ -365,6 +546,353 @@ public sealed class RenderingAssetPipelineTests
         Assert.Equal(new Vector3(0, 0, 0), cooked.Bounds.Min);
         Assert.Equal(new Vector3(1.25f, 1.25f, 0), cooked.Bounds.Max);
         Assert.Equal(1u, cooked.SubmeshCount);
+    }
+
+    [Fact]
+    public void ModelSourceReimporter_ReimportsToResolvedOutputRootAndReportsOrphans()
+    {
+        using var workspace = TestWorkspace.Create();
+        var sourceGuid = Guid.Parse("12121212-3434-5656-7878-909090909090");
+        var shaderGuid = Guid.Parse("23232323-4545-6767-8989-a0a0a0a0a0a0");
+        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var sourceAsset = CreateModelSourceAsset(
+            workspace,
+            db,
+            sourceGuid,
+            shaderGuid,
+            "Assets/Generated/Robot");
+
+        var result = ModelSourceReimporter.Reimport(sourceAsset);
+
+        Assert.Equal(Path.Combine(workspace.Root, "Assets", "Generated", "Robot"), result.OutputRoot);
+        Assert.Single(result.Emission.ScenePaths);
+        Assert.Single(result.Emission.MeshPaths);
+        Assert.Single(result.Emission.MaterialPaths);
+        Assert.Empty(result.Emission.TexturePaths);
+        Assert.Empty(result.OrphanedGeneratedChildren);
+        Assert.Empty(result.ForeignGeneratedChildren);
+
+        foreach (var emittedPath in result.Emission.ScenePaths
+                     .Concat(result.Emission.MeshPaths)
+                     .Concat(result.Emission.MaterialPaths))
+        {
+            Assert.True(File.Exists(emittedPath));
+            var metadata = SerializationUtil.Deserialize<AssetMetadata>(emittedPath + ".meta", serializeIfNotExist: false);
+            Assert.NotNull(metadata.Generated);
+            Assert.Equal(sourceGuid, metadata.Generated.SourceGuid);
+            Assert.Contains(result.GeneratedChildGuids, guid => guid == metadata.Guid);
+        }
+
+        var orphanMetaPath = Path.Combine(result.OutputRoot, "Materials", "OldMaterial.arismaterial.meta");
+        SerializationUtil.Serialize(
+            new AssetMetadata
+            {
+                Guid = Guid.Parse("34343434-5656-7878-9090-b1b1b1b1b1b1"),
+                AssetType = "Material",
+                Importer = "GltfMaterialImporter",
+                Generated = new GeneratedAssetMetadata
+                {
+                    SourceGuid = sourceGuid,
+                    SourcePackageId = "com.arisen.test",
+                    ChildKind = "material",
+                    ChildKey = "materials/99",
+                    GeneratedByImporter = "GltfMaterialImporter"
+                }
+            },
+            orphanMetaPath);
+
+        var inspection = ModelSourceReimporter.InspectGeneratedOutput(sourceAsset, result.Model, result.Plan);
+        var orphan = Assert.Single(inspection.OrphanedGeneratedChildren);
+        Assert.Equal("materials/99", orphan.ChildKey);
+
+        var secondResult = ModelSourceReimporter.Reimport(sourceAsset);
+        Assert.Single(secondResult.OrphanedGeneratedChildren);
+        Assert.True(File.Exists(orphanMetaPath));
+    }
+
+    [Fact]
+    public void ModelSourceReimporter_MaterialAndTextureChangesInvalidateCookedOutputs()
+    {
+        using var workspace = TestWorkspace.Create();
+        var sourceGuid = Guid.Parse("9a9a9a9a-b1b1-c2c2-d3d3-e4e4e4e4e4e4");
+        var shaderGuid = Guid.Parse("abababab-c2c2-d3d3-e4e4-f5f5f5f5f5f5");
+        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var sourceAsset = CreateTexturedModelSourceAsset(workspace, db, sourceGuid, shaderGuid, 0.25f);
+
+        var firstResult = ModelSourceReimporter.Reimport(sourceAsset);
+        var materialPath = Assert.Single(firstResult.Emission.MaterialPaths);
+        var generatedTexturePath = Assert.Single(firstResult.Emission.TexturePaths);
+        var materialMetadata = SerializationUtil.Deserialize<AssetMetadata>(
+            materialPath + ".meta",
+            serializeIfNotExist: false);
+        var textureMetadata = SerializationUtil.Deserialize<AssetMetadata>(
+            generatedTexturePath + ".meta",
+            serializeIfNotExist: false);
+        db.AddAsset(materialMetadata.Guid, materialMetadata.AssetType, materialPath);
+        db.AddAsset(textureMetadata.Guid, textureMetadata.AssetType, generatedTexturePath);
+
+        var firstMaterial = MaterialAssetLoader.LoadSource(db, materialMetadata.Guid);
+        var firstCookedMaterial = MaterialAssetCooker.LoadOrCook(db, materialMetadata.Guid);
+        var firstTexture = Assert.Single(firstMaterial.Texture2DRefs).Texture;
+        var firstCookedTexture = Texture2DAssetCooker.LoadOrCook(db, firstTexture);
+        var firstPixels = Texture2DAssetCooker.GetPixelData(
+            db.GetCookedAssetBytes(firstCookedTexture.Handle)).ToArray();
+        Assert.Equal(0.25f, firstCookedMaterial.Asset.ScalarProperties.Single(
+            property => property.Name == MaterialPropertySlots.RoughnessFactor).Value);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, firstPixels);
+
+        var newestDependencyTime = DateTime.UtcNow.AddMinutes(10);
+        File.SetLastWriteTimeUtc(materialPath, newestDependencyTime);
+        File.SetLastWriteTimeUtc(materialPath + ".meta", newestDependencyTime);
+        File.SetLastWriteTimeUtc(generatedTexturePath, newestDependencyTime.AddMinutes(-4));
+        var firstDependencyStamp = AssetDependencyTracker.GetMaterialStamp(db, firstMaterial);
+        File.SetLastWriteTimeUtc(generatedTexturePath, newestDependencyTime.AddMinutes(-3));
+        var changedTextureDependencyStamp = AssetDependencyTracker.GetMaterialStamp(db, firstMaterial);
+        Assert.NotEqual(firstDependencyStamp, changedTextureDependencyStamp);
+
+        Assert.True(db.TryGetCookedArtifact(
+            materialMetadata.Guid,
+            firstCookedMaterial.Variant,
+            out var materialArtifact));
+        Assert.True(db.TryGetCookedArtifact(
+            textureMetadata.Guid,
+            firstCookedTexture.Variant,
+            out var textureArtifact));
+        File.SetLastWriteTimeUtc(materialArtifact.Path, newestDependencyTime.AddMinutes(10));
+        File.SetLastWriteTimeUtc(textureArtifact.Path, newestDependencyTime.AddMinutes(10));
+
+        db.Release(firstCookedMaterial.Handle);
+        db.Release(firstCookedTexture.Handle);
+        WriteTexturedModelGltf(workspace, 0.75f);
+        workspace.Write("Assets/Models/TexturedRobot/Source/BaseColor.ppm", "P3\n1 1\n255\n0 0 255\n");
+
+        var secondResult = ModelSourceReimporter.Reimport(sourceAsset);
+        Assert.Equal(firstResult.GeneratedChildGuids, secondResult.GeneratedChildGuids);
+
+        var reloadQueue = new RenderResourceReloadQueue();
+        db.AssetChanged += reloadQueue.MarkDirty;
+        var invalidatedGuids = ModelSourceReimporter.InvalidateCookedOutputs(
+            db,
+            sourceAsset,
+            secondResult);
+
+        Assert.Contains(sourceGuid, invalidatedGuids);
+        Assert.Contains(materialMetadata.Guid, invalidatedGuids);
+        Assert.Contains(textureMetadata.Guid, invalidatedGuids);
+        Assert.False(db.TryGetCookedArtifact(materialMetadata.Guid, firstCookedMaterial.Variant, out _));
+        Assert.False(db.TryGetCookedArtifact(textureMetadata.Guid, firstCookedTexture.Variant, out _));
+
+        var dirtyGuids = reloadQueue.Drain();
+        Assert.Contains(sourceGuid, dirtyGuids);
+        Assert.Contains(materialMetadata.Guid, dirtyGuids);
+        Assert.Contains(textureMetadata.Guid, dirtyGuids);
+
+        var secondCookedMaterial = MaterialAssetCooker.LoadOrCook(db, materialMetadata.Guid);
+        var secondTexture = Assert.Single(secondCookedMaterial.Asset.Texture2DRefs).Texture;
+        var secondCookedTexture = Texture2DAssetCooker.LoadOrCook(db, secondTexture);
+        var secondPixels = Texture2DAssetCooker.GetPixelData(
+            db.GetCookedAssetBytes(secondCookedTexture.Handle)).ToArray();
+
+        Assert.Equal(0.75f, secondCookedMaterial.Asset.ScalarProperties.Single(
+            property => property.Name == MaterialPropertySlots.RoughnessFactor).Value);
+        Assert.Equal(new byte[] { 0, 0, 255, 255 }, secondPixels);
+
+        db.Release(secondCookedMaterial.Handle);
+        db.Release(secondCookedTexture.Handle);
+    }
+
+    [Fact]
+    public void AssetImporter_RenameMovePreservesModelRootAndGeneratedChildIdentity()
+    {
+        using var workspace = TestWorkspace.Create();
+        var sourceGuid = Guid.Parse("bcbcbcbc-d3d3-e4e4-f5f5-161616161616");
+        var shaderGuid = Guid.Parse("cdcdcdcd-e4e4-f5f5-0606-272727272727");
+        const string packageId = "com.arisen.test";
+        var assetsRoot = Path.Combine(workspace.Root, "Assets");
+        workspace.WriteBinary(
+            "Assets/Models/Shared/Robot.glb",
+            CreateGltfSceneTriangleGlb(1.0f));
+        var oldModelPath = workspace.Write("Assets/Models/Original/Robot.arismodel", $$"""
+            Name: RenameableRobot
+            Source:
+              Path: ../Shared/Robot.glb
+              Format: GltfBinary
+            Import:
+              OutputRoot: Assets/Generated/RenameableRobot
+              SceneIndex: 0
+              UnitScale: 1.0
+              EmitTextures: false
+            Shader:
+              Guid: {{shaderGuid:D}}
+              Name: Tests/StandardLit
+            """);
+        var oldMetaPath = oldModelPath + ".meta";
+        SerializationUtil.Serialize(
+            new AssetMetadata
+            {
+                Guid = sourceGuid,
+                AssetType = ModelSourceAssetLoader.ModelAssetType,
+                Importer = "ArisenModelImporter"
+            },
+            oldMetaPath);
+
+        var oldAsset = new AssetRecord(
+            sourceGuid,
+            ModelSourceAssetLoader.ModelAssetType,
+            oldModelPath,
+            oldMetaPath,
+            packageId);
+        var oldModel = ModelSourceAssetLoader.LoadSource(oldAsset);
+        var oldPlan = ModelSourceAssetLoader.CreateGltfPlan(oldAsset, oldModel);
+        Assert.NotEmpty(oldPlan.GeneratedChildren);
+
+        var databasePath = Path.Combine(workspace.Root, ".arisen", "Editor", "AssetDatabase.db");
+        EditorAssetDatabase.Initialize(databasePath);
+        try
+        {
+            var oldRelativePath = Path.GetRelativePath(workspace.Root, oldModelPath).Replace('\\', '/');
+            EditorAssetDatabase.Instance.RegisterAsset(
+                sourceGuid,
+                oldRelativePath,
+                ModelSourceAssetLoader.ModelAssetType,
+                "ArisenModelImporter",
+                packageId,
+                0);
+
+            var newModelPath = Path.Combine(
+                assetsRoot,
+                "Models",
+                "Moved",
+                "RobotRenamed.arismodel");
+            Directory.CreateDirectory(Path.GetDirectoryName(newModelPath)!);
+            File.Move(oldModelPath, newModelPath);
+
+            // Simulate a watcher-created destination sidecar racing the rename event.
+            SerializationUtil.Serialize(
+                new AssetMetadata
+                {
+                    Guid = Guid.Parse("dededede-f5f5-0606-1717-383838383838"),
+                    AssetType = ModelSourceAssetLoader.ModelAssetType,
+                    Importer = "ArisenModelImporter"
+                },
+                newModelPath + ".meta");
+
+            var changes = new List<AssetChangeEvent>();
+            using var importer = new ArisenEditor.Core.Assets.AssetImporter(
+                assetsRoot,
+                workspace.Root,
+                packageId);
+            importer.AssetChanged += changes.Add;
+            importer.ProcessRenamedFile(oldModelPath, newModelPath);
+
+            var newRelativePath = Path.GetRelativePath(workspace.Root, newModelPath).Replace('\\', '/');
+            Assert.False(EditorAssetDatabase.Instance.TryGetGuid(oldRelativePath, out _));
+            Assert.True(EditorAssetDatabase.Instance.TryGetGuid(newRelativePath, out var registeredGuid));
+            Assert.Equal(sourceGuid, registeredGuid);
+            Assert.Equal(newRelativePath, EditorAssetDatabase.Instance.GetPath(sourceGuid));
+            Assert.False(File.Exists(oldMetaPath));
+            Assert.True(File.Exists(newModelPath + ".meta"));
+
+            var movedMetadata = SerializationUtil.Deserialize<AssetMetadata>(
+                newModelPath + ".meta",
+                serializeIfNotExist: false);
+            Assert.Equal(sourceGuid, movedMetadata.Guid);
+            Assert.Equal(ModelSourceAssetLoader.ModelAssetType, movedMetadata.AssetType);
+            Assert.Equal("ArisenModelImporter", movedMetadata.Importer);
+
+            var change = Assert.Single(changes);
+            Assert.Equal(AssetChangeKind.Renamed, change.Kind);
+            Assert.Equal(sourceGuid, change.Guid);
+            Assert.Equal(oldModelPath, change.PreviousSourcePath);
+            Assert.Equal(newModelPath, change.SourcePath);
+
+            var movedAsset = new AssetRecord(
+                sourceGuid,
+                ModelSourceAssetLoader.ModelAssetType,
+                newModelPath,
+                newModelPath + ".meta",
+                packageId);
+            var movedModel = ModelSourceAssetLoader.LoadSource(movedAsset);
+            var movedPlan = ModelSourceAssetLoader.CreateGltfPlan(movedAsset, movedModel);
+
+            Assert.Equal(oldModel.Guid, movedModel.Guid);
+            Assert.Equal(oldModel.ResolvedSourcePath, movedModel.ResolvedSourcePath);
+            Assert.Equal(
+                oldPlan.GeneratedChildren.Select(child => child.Metadata.Guid),
+                movedPlan.GeneratedChildren.Select(child => child.Metadata.Guid));
+
+            var reimport = ModelSourceReimporter.Reimport(movedAsset);
+            Assert.Equal(
+                movedPlan.GeneratedChildren.Select(child => child.Metadata.Guid),
+                reimport.GeneratedChildGuids);
+            foreach (var emittedPath in reimport.Emission.ScenePaths
+                         .Concat(reimport.Emission.MeshPaths)
+                         .Concat(reimport.Emission.MaterialPaths)
+                         .Concat(reimport.Emission.TexturePaths))
+            {
+                var generatedMetadata = SerializationUtil.Deserialize<AssetMetadata>(
+                    emittedPath + ".meta",
+                    serializeIfNotExist: false);
+                Assert.NotNull(generatedMetadata.Generated);
+                Assert.Equal(sourceGuid, generatedMetadata.Generated.SourceGuid);
+            }
+        }
+        finally
+        {
+            EditorAssetDatabase.Instance.Dispose();
+        }
+    }
+
+    [Fact]
+    public void ModelSourceReimporter_RejectsUnsafeOrForeignGeneratedOutput()
+    {
+        using var workspace = TestWorkspace.Create();
+        var sourceGuid = Guid.Parse("45454545-6767-8989-a0a0-c2c2c2c2c2c2");
+        var shaderGuid = Guid.Parse("56565656-7878-9090-b1b1-d3d3d3d3d3d3");
+        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var sourceAsset = CreateModelSourceAsset(
+            workspace,
+            db,
+            sourceGuid,
+            shaderGuid,
+            "Assets/Generated/Robot");
+        var model = ModelSourceAssetLoader.LoadSource(sourceAsset);
+        var plan = ModelSourceAssetLoader.CreateGltfPlan(sourceAsset, model);
+        var outputRoot = ModelSourceReimporter.ValidateOutputRoot(sourceAsset, model);
+        var foreignMetaPath = Path.Combine(outputRoot, "Materials", "Foreign.arismaterial.meta");
+
+        SerializationUtil.Serialize(
+            new AssetMetadata
+            {
+                Guid = Guid.Parse("67676767-8989-a0a0-b1b1-e4e4e4e4e4e4"),
+                AssetType = "Material",
+                Importer = "GltfMaterialImporter",
+                Generated = new GeneratedAssetMetadata
+                {
+                    SourceGuid = Guid.Parse("78787878-9090-a1a1-b2b2-f5f5f5f5f5f5"),
+                    SourcePackageId = "com.arisen.other",
+                    ChildKind = "material",
+                    ChildKey = "materials/0",
+                    GeneratedByImporter = "GltfMaterialImporter"
+                }
+            },
+            foreignMetaPath);
+
+        var inspection = ModelSourceReimporter.InspectGeneratedOutput(outputRoot, sourceGuid, plan);
+        Assert.Single(inspection.ForeignGeneratedChildren);
+        var ex = Assert.Throws<InvalidOperationException>(() => ModelSourceReimporter.Reimport(sourceAsset));
+        Assert.Contains("another source GUID", ex.Message, StringComparison.Ordinal);
+
+        var unsafeSourceAsset = CreateModelSourceAsset(
+            workspace,
+            db,
+            Guid.Parse("89898989-a0a0-b1b1-c2c2-060606060606"),
+            shaderGuid,
+            "Assets");
+        var unsafeModel = ModelSourceAssetLoader.LoadSource(unsafeSourceAsset);
+        var unsafeEx = Assert.Throws<InvalidOperationException>(
+            () => ModelSourceReimporter.ValidateOutputRoot(unsafeSourceAsset, unsafeModel));
+        Assert.Contains("child directory", unsafeEx.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -466,6 +994,229 @@ public sealed class RenderingAssetPipelineTests
         Assert.Equal(Texture2DColorSpace.SRgb, cooked.ColorSpace);
         Assert.Equal(4, pixels.Length);
         Assert.Contains(pixels.ToArray(), value => value > 0);
+    }
+
+    [Fact]
+    public void EnvironmentTextureAssetCooker_ParsesAndRecooksLinearLatLongPayload()
+    {
+        using var workspace = TestWorkspace.Create();
+        var environmentGuid = Guid.Parse("10101010-2020-3030-4040-505050505050");
+        var sourceTextureGuid = Guid.Parse("11111111-2121-3131-4141-515151515151");
+        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var texturePath = workspace.Write(
+            "Assets/Environment.ppm",
+            "P3\n4 2\n255\n255 128 0  64 128 255  0 32 128  255 255 255\n16 16 32  32 32 64  64 64 96  128 128 160\n");
+        var environmentPath = workspace.Write("Assets/Studio.arienvironment", $$"""
+            Version: 1
+            Name: Test Studio
+            SourceTexture:
+              Guid: {{sourceTextureGuid:D}}
+              PackageId: com.arisen.test
+            Layout: LatLong
+            SourceColorSpace: SRgb
+            RuntimeFormat: R16G16B16A16SFloat
+            RotationDegrees: 27.5
+            Intensity: 1.4
+            """);
+        db.AddAsset(sourceTextureGuid, "Texture2D", texturePath);
+        db.AddAsset(environmentGuid, "EnvironmentTexture", environmentPath);
+
+        var asset = EnvironmentTextureAssetLoader.LoadSource(db, environmentGuid);
+        var firstStamp = AssetDependencyTracker.GetEnvironmentTextureStamp(db, asset);
+        var firstCooked = EnvironmentTextureAssetCooker.LoadOrCook(db, asset);
+        var firstPixels = EnvironmentTextureAssetCooker.GetPixelData(
+            db.GetCookedAssetBytes(firstCooked.Handle));
+
+        Assert.Equal("Test Studio", asset.Name);
+        Assert.Equal(sourceTextureGuid, asset.SourceTexture.Guid);
+        Assert.Equal(EnvironmentTextureLayout.LatLong, asset.Variant.Layout);
+        Assert.Equal(EnvironmentTextureCookedFormat.R16G16B16A16SFloat, asset.Variant.Format);
+        Assert.Equal(Texture2DColorSpace.SRgb, asset.SourceColorSpace);
+        Assert.Equal("latlong.r16g16b16a16sfloat.nomips", firstCooked.Variant);
+        Assert.Equal(4u, firstCooked.Width);
+        Assert.Equal(2u, firstCooked.Height);
+        Assert.Equal(64, firstPixels.Length);
+        Assert.Equal(27.5f, firstCooked.RotationDegrees);
+        Assert.Equal(1.4f, firstCooked.Intensity);
+
+        var firstRed = (float)BitConverter.UInt16BitsToHalf(
+            BinaryPrimitives.ReadUInt16LittleEndian(firstPixels.Slice(0, 2)));
+        var firstGreen = (float)BitConverter.UInt16BitsToHalf(
+            BinaryPrimitives.ReadUInt16LittleEndian(firstPixels.Slice(2, 2)));
+        Assert.InRange(firstRed, 0.999f, 1.001f);
+        Assert.InRange(firstGreen, 0.214f, 0.217f);
+        db.Release(firstCooked.Handle);
+
+        File.WriteAllText(
+            texturePath,
+            "P3\n4 2\n255\n0 0 255  0 0 128  0 0 64  0 0 32\n0 16 64  0 32 96  0 64 128  0 128 255\n");
+        File.SetLastWriteTimeUtc(texturePath, DateTime.UtcNow.AddMinutes(2));
+
+        var secondStamp = AssetDependencyTracker.GetEnvironmentTextureStamp(db, asset);
+        var secondCooked = EnvironmentTextureAssetCooker.LoadOrCook(db, asset);
+        var secondPixels = EnvironmentTextureAssetCooker.GetPixelData(
+            db.GetCookedAssetBytes(secondCooked.Handle));
+        var secondRed = (float)BitConverter.UInt16BitsToHalf(
+            BinaryPrimitives.ReadUInt16LittleEndian(secondPixels.Slice(0, 2)));
+        var secondBlue = (float)BitConverter.UInt16BitsToHalf(
+            BinaryPrimitives.ReadUInt16LittleEndian(secondPixels.Slice(4, 2)));
+
+        Assert.NotEqual(firstStamp, secondStamp);
+        Assert.Equal(0.0f, secondRed);
+        Assert.InRange(secondBlue, 0.999f, 1.001f);
+        db.Release(secondCooked.Handle);
+    }
+
+    [Fact]
+    public void EnvironmentTextureAssetCooker_RejectsNonLatLongDimensions()
+    {
+        using var workspace = TestWorkspace.Create();
+        var environmentGuid = Guid.NewGuid();
+        var sourceTextureGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var texturePath = workspace.Write(
+            "Assets/Invalid.ppm",
+            "P3\n3 2\n255\n255 0 0  0 255 0  0 0 255\n255 255 255  64 64 64  0 0 0\n");
+        var environmentPath = workspace.Write("Assets/Invalid.arienvironment", $$"""
+            Version: 1
+            SourceTexture:
+              Guid: {{sourceTextureGuid:D}}
+            Layout: LatLong
+            SourceColorSpace: Linear
+            RuntimeFormat: R16G16B16A16SFloat
+            Intensity: 1.0
+            """);
+        db.AddAsset(sourceTextureGuid, "Texture2D", texturePath);
+        db.AddAsset(environmentGuid, "EnvironmentTexture", environmentPath);
+
+        var error = Assert.Throws<InvalidOperationException>(
+            () => EnvironmentTextureAssetCooker.LoadOrCook(db, environmentGuid));
+
+        Assert.Contains("2:1", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void EnvironmentLightingAssetCooker_GeneratesCachesAndRecooksIblPayloads()
+    {
+        using var workspace = TestWorkspace.Create();
+        var environmentGuid = Guid.Parse("20202020-3030-4040-5050-606060606060");
+        var sourceTextureGuid = Guid.Parse("21212121-3131-4141-5151-616161616161");
+        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var texturePath = workspace.Write(
+            "Assets/ConstantEnvironment.ppm",
+            "P3\n4 2\n255\n128 64 32  128 64 32  128 64 32  128 64 32\n128 64 32  128 64 32  128 64 32  128 64 32\n");
+        var environmentPath = workspace.Write("Assets/Constant.arienvironment", $$"""
+            Version: 1
+            Name: Constant Environment
+            SourceTexture:
+              Guid: {{sourceTextureGuid:D}}
+            Layout: LatLong
+            SourceColorSpace: Linear
+            RuntimeFormat: R16G16B16A16SFloat
+            RotationDegrees: 15.0
+            Intensity: 2.0
+            """);
+        db.AddAsset(sourceTextureGuid, "Texture2D", texturePath);
+        db.AddAsset(environmentGuid, "EnvironmentTexture", environmentPath);
+
+        var firstCooked = EnvironmentLightingAssetCooker.LoadOrCook(db, environmentGuid);
+        var firstBytes = db.GetCookedAssetBytes(firstCooked.Handle);
+        var irradiance = EnvironmentLightingAssetCooker.GetIrradiancePixelData(firstBytes);
+        var specular = EnvironmentLightingAssetCooker.GetSpecularPixelData(firstBytes);
+        var brdf = EnvironmentLightingAssetCooker.GetBrdfPixelData(firstBytes);
+
+        Assert.True(firstCooked.IsValid);
+        Assert.Equal(EnvironmentLightingAssetCooker.CookedVariant, firstCooked.Variant);
+        Assert.Equal(EnvironmentLightingAssetCooker.IrradianceWidth, firstCooked.IrradianceWidth);
+        Assert.Equal(EnvironmentLightingAssetCooker.IrradianceHeight, firstCooked.IrradianceHeight);
+        Assert.Equal(1, firstCooked.IrradianceMipCount);
+        Assert.Equal(EnvironmentLightingAssetCooker.SpecularWidth, firstCooked.SpecularWidth);
+        Assert.Equal(EnvironmentLightingAssetCooker.SpecularHeight, firstCooked.SpecularHeight);
+        Assert.Equal(8, firstCooked.SpecularMipCount);
+        Assert.Equal(EnvironmentLightingAssetCooker.BrdfWidth, firstCooked.BrdfWidth);
+        Assert.Equal(EnvironmentLightingAssetCooker.BrdfHeight, firstCooked.BrdfHeight);
+        Assert.Equal(1, firstCooked.BrdfMipCount);
+        Assert.Equal(
+            EnvironmentLightingAssetCooker.GetPackedMipDataSize(
+                firstCooked.SpecularWidth,
+                firstCooked.SpecularHeight,
+                firstCooked.SpecularMipCount),
+            specular.Length);
+
+        Assert.InRange(ReadHalf(irradiance, 0), 0.500f, 0.505f);
+        Assert.InRange(ReadHalf(irradiance, 2), 0.249f, 0.253f);
+        Assert.InRange(ReadHalf(irradiance, 4), 0.123f, 0.127f);
+        Assert.InRange(ReadHalf(specular, 0), 0.500f, 0.505f);
+        Assert.InRange(ReadHalf(specular, specular.Length - 8), 0.500f, 0.505f);
+
+        var brdfCenterOffset = checked(
+            (((int)EnvironmentLightingAssetCooker.BrdfHeight / 2) *
+                (int)EnvironmentLightingAssetCooker.BrdfWidth +
+                (int)EnvironmentLightingAssetCooker.BrdfWidth / 2) * 8);
+        var brdfA = ReadHalf(brdf, brdfCenterOffset);
+        var brdfB = ReadHalf(brdf, brdfCenterOffset + 2);
+        Assert.InRange(brdfA, 0.1f, 1.0f);
+        Assert.InRange(brdfB, 0.0f, 0.5f);
+        Assert.True(brdfA > brdfB);
+
+        Assert.True(db.TryGetCookedArtifact(environmentGuid, firstCooked.Variant, out var firstArtifact));
+        db.Release(firstCooked.Handle);
+        File.SetLastWriteTimeUtc(firstArtifact.Path, DateTime.UtcNow.AddMinutes(5));
+        var preservedWriteTime = File.GetLastWriteTimeUtc(firstArtifact.Path);
+
+        var cachedCooked = EnvironmentLightingAssetCooker.LoadOrCook(db, environmentGuid);
+        Assert.Equal(preservedWriteTime, File.GetLastWriteTimeUtc(firstArtifact.Path));
+        db.Release(cachedCooked.Handle);
+
+        File.WriteAllText(
+            texturePath,
+            "P3\n4 2\n255\n0 32 255  0 32 255  0 32 255  0 32 255\n0 32 255  0 32 255  0 32 255  0 32 255\n");
+        File.SetLastWriteTimeUtc(texturePath, preservedWriteTime.AddMinutes(1));
+        var recooked = EnvironmentLightingAssetCooker.LoadOrCook(db, environmentGuid);
+        var recookedIrradiance = EnvironmentLightingAssetCooker.GetIrradiancePixelData(
+            db.GetCookedAssetBytes(recooked.Handle));
+
+        Assert.InRange(ReadHalf(recookedIrradiance, 0), 0.0f, 0.001f);
+        Assert.InRange(ReadHalf(recookedIrradiance, 4), 0.999f, 1.001f);
+        db.Release(recooked.Handle);
+    }
+
+    [Fact]
+    public void AssetImporter_InfersEnvironmentDescriptorAndHdrTextureMetadata()
+    {
+        using var workspace = TestWorkspace.Create();
+        var assetsRoot = Path.Combine(workspace.Root, "Assets");
+        var environmentPath = workspace.Write(
+            "Assets/Sky.arienvironment",
+            "Version: 1\nSourceTexture:\n  Guid: 11111111-2222-3333-4444-555555555555\n");
+        var hdrPath = workspace.Write("Assets/Sky.hdr", "placeholder");
+        var databasePath = Path.Combine(workspace.Root, ".arisen", "Editor", "AssetDatabase.db");
+        EditorAssetDatabase.Initialize(databasePath);
+
+        try
+        {
+            using var importer = new ArisenEditor.Core.Assets.AssetImporter(
+                assetsRoot,
+                workspace.Root,
+                "com.arisen.test");
+            importer.Start();
+
+            var environmentMetadata = SerializationUtil.Deserialize<ArisenEditor.Core.Assets.AssetMetadata>(
+                environmentPath + ".meta",
+                serializeIfNotExist: false);
+            var hdrMetadata = SerializationUtil.Deserialize<ArisenEditor.Core.Assets.AssetMetadata>(
+                hdrPath + ".meta",
+                serializeIfNotExist: false);
+
+            Assert.Equal("EnvironmentTexture", environmentMetadata.AssetType);
+            Assert.Equal("ArisenEnvironmentTextureImporter", environmentMetadata.Importer);
+            Assert.Equal("Texture2D", hdrMetadata.AssetType);
+            Assert.Equal("HdrTextureImporter", hdrMetadata.Importer);
+        }
+        finally
+        {
+            EditorAssetDatabase.Instance.Dispose();
+        }
     }
 
     [Fact]
@@ -726,7 +1477,71 @@ public sealed class RenderingAssetPipelineTests
     }
 
     [Fact]
-    public void StandardLitPackageAssets_DefinePbrNormalMapMaterialContract()
+    public void TonemapPackageAssets_ConsumePreparedSceneExposure()
+    {
+        var tonemapShaderPath = GetRepositoryFile(
+            "Arisen",
+            "Development",
+            "PackageGame",
+            "Local",
+            "com.arisen.generic-renderpipeline",
+            "Assets",
+            "Shaders",
+            "Tonemap.hlsl");
+        var tonemapPassPath = GetRepositoryFile(
+            "Arisen",
+            "Development",
+            "PackageGame",
+            "Local",
+            "com.arisen.generic-renderpipeline",
+            "Src",
+            "TonemapPass.cs");
+        var pipelinePath = GetRepositoryFile(
+            "Arisen",
+            "Development",
+            "PackageGame",
+            "Local",
+            "com.arisen.generic-renderpipeline",
+            "Src",
+            "GenericRenderPipeline.cs");
+        var inspectorPath = GetRepositoryFile(
+            "Arisen",
+            "Development",
+            "PackageGame",
+            "Local",
+            "com.arisen.editor",
+            "Managed",
+            "Core",
+            "Views",
+            "InspectorViewModel.cs");
+
+        var tonemapShaderText = File.ReadAllText(tonemapShaderPath);
+        var tonemapPassText = File.ReadAllText(tonemapPassPath);
+        var pipelineText = File.ReadAllText(pipelinePath);
+        var inspectorText = File.ReadAllText(inspectorPath);
+
+        Assert.Contains(
+            "float exposure = max(TonemapConstants.toneMapParams.x, 0.0);",
+            tonemapShaderText,
+            StringComparison.Ordinal);
+        Assert.Contains("AcesFilm(hdrColor * exposure)", tonemapShaderText, StringComparison.Ordinal);
+        Assert.Contains(
+            "m_Exposure = SceneEnvironment.NormalizeExposure(exposure);",
+            tonemapPassText,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "m_TonemapPass.SetExposure(sceneEnvironment.Exposure);",
+            pipelineText,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("m_TonemapPass.SetExposure(1.0f);", pipelineText, StringComparison.Ordinal);
+        Assert.Contains(
+            "AddReadOnly(category, \"Exposure\", environment.Exposure.ToString(\"0.###\"));",
+            inspectorText,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void StandardLitPackageAssets_DefinePbrEnvironmentMaterialContract()
     {
         using var workspace = TestWorkspace.Create();
         var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
@@ -743,6 +1558,23 @@ public sealed class RenderingAssetPipelineTests
             "Assets",
             "Shaders",
             "StandardLit.shader");
+        var smokeStaticMeshShaderPath = GetRepositoryFile(
+            "Arisen",
+            "Development",
+            "PackageGame",
+            "Local",
+            "com.arisen.generic-renderpipeline",
+            "Assets",
+            "Shaders",
+            "SmokeStaticMesh.shader");
+        var staticMeshPassPath = GetRepositoryFile(
+            "Arisen",
+            "Development",
+            "PackageGame",
+            "Local",
+            "com.arisen.generic-renderpipeline",
+            "Src",
+            "StaticMeshPass.cs");
         var smokeCheckerPath = GetRepositoryFile(
             "Arisen",
             "Development",
@@ -773,6 +1605,8 @@ public sealed class RenderingAssetPipelineTests
 
         var shaderSource = ShaderLabSource.Load(shaderPath);
         var shaderText = File.ReadAllText(shaderPath);
+        var smokeStaticMeshShaderText = File.ReadAllText(smokeStaticMeshShaderPath);
+        var staticMeshPassText = File.ReadAllText(staticMeshPassPath);
 
         Assert.Equal("GenericRP/StandardLit", shaderSource.Name);
         Assert.Contains("float4 environmentAmbient;", shaderText, StringComparison.Ordinal);
@@ -781,6 +1615,84 @@ public sealed class RenderingAssetPipelineTests
         Assert.Contains("DistributionGGX", shaderText, StringComparison.Ordinal);
         Assert.Contains("GeometrySmith", shaderText, StringComparison.Ordinal);
         Assert.Contains("FresnelSchlick", shaderText, StringComparison.Ordinal);
+        Assert.Contains("FresnelSchlickRoughness", shaderText, StringComparison.Ordinal);
+        Assert.Contains("float2 DirectionToLatLongUV", shaderText, StringComparison.Ordinal);
+        Assert.Contains(
+            "atan2(direction.x, direction.z) + rotationRadians;",
+            shaderText,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "if (input.EnvironmentTextureIndices1.w > 0.5)",
+            shaderText,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "BindlessImages[NonUniformResourceIndex(irradianceImageIndex)].SampleLevel(",
+            shaderText,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "BindlessImages[NonUniformResourceIndex(specularImageIndex)].SampleLevel(",
+            shaderText,
+            StringComparison.Ordinal);
+        Assert.Contains("roughness * specularMaxLod", shaderText, StringComparison.Ordinal);
+        Assert.Contains("float2(normalDotView, roughness)", shaderText, StringComparison.Ordinal);
+        Assert.Contains(
+            "ambientDiffuse = irradiance * albedo * diffuseWeight * environmentIntensity;",
+            shaderText,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "(reflectanceAtNormal * brdf.x + brdf.y) * environmentIntensity;",
+            shaderText,
+            StringComparison.Ordinal);
+        Assert.Contains("roughness *= packedMetallicRoughness.g;", shaderText, StringComparison.Ordinal);
+        Assert.Contains("metallic *= packedMetallicRoughness.b;", shaderText, StringComparison.Ordinal);
+        Assert.Contains("? packedMetallicRoughness.r", shaderText, StringComparison.Ordinal);
+        Assert.Contains(
+            "float3 ambientDiffuse = ambientRadiance * albedo * (1.0 - metallic);",
+            shaderText,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "float3 ambientSpecular = ambientRadiance * reflectanceAtNormal *",
+            shaderText,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "float3 indirectLighting = (ambientDiffuse + ambientSpecular) * occlusion;",
+            shaderText,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "float3 outputColor = directLighting + indirectLighting + emissive;",
+            shaderText,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "clip(baseColor.a - input.PbrMaterialParameters.y);",
+            shaderText,
+            StringComparison.Ordinal);
+        Assert.Contains("float4 environmentTextureIndices0;", shaderText, StringComparison.Ordinal);
+        Assert.Contains("float4 environmentTextureIndices1;", shaderText, StringComparison.Ordinal);
+        Assert.Contains("float4 environmentParameters;", shaderText, StringComparison.Ordinal);
+        Assert.Contains("float4 emissiveFactor;", smokeStaticMeshShaderText, StringComparison.Ordinal);
+        Assert.Contains("float4 emissiveTextureIndices;", smokeStaticMeshShaderText, StringComparison.Ordinal);
+        Assert.Contains("float4 metallicRoughnessTextureIndices;", smokeStaticMeshShaderText, StringComparison.Ordinal);
+        Assert.Contains("float4 occlusionTextureIndices;", smokeStaticMeshShaderText, StringComparison.Ordinal);
+        Assert.Contains("float4 pbrMaterialParameters;", smokeStaticMeshShaderText, StringComparison.Ordinal);
+        Assert.Contains("float4 environmentTextureIndices0;", smokeStaticMeshShaderText, StringComparison.Ordinal);
+        Assert.Contains("float4 environmentTextureIndices1;", smokeStaticMeshShaderText, StringComparison.Ordinal);
+        Assert.Contains("float4 environmentParameters;", smokeStaticMeshShaderText, StringComparison.Ordinal);
+        Assert.Contains(
+            "public readonly Vector4 EnvironmentTextureIndices0;",
+            staticMeshPassText,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "public readonly Vector4 EnvironmentTextureIndices1;",
+            staticMeshPassText,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "public readonly Vector4 EnvironmentParameters;",
+            staticMeshPassText,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "public void SetEnvironmentLighting(RHIEnvironmentLightingResource? environmentLighting)",
+            staticMeshPassText,
+            StringComparison.Ordinal);
         Assert.Equal(
             new[] { MaterialTextureSlots.BaseColor, MaterialTextureSlots.Normal },
             shaderSource.MaterialContract.RequiredTexture2DRefs);
@@ -816,6 +1728,12 @@ public sealed class RenderingAssetPipelineTests
         Assert.Equal(0.0f, material.ScalarProperties.Single(property => property.Name == MaterialPropertySlots.MetallicFactor).Value);
         Assert.Equal(0.7f, material.ScalarProperties.Single(property => property.Name == MaterialPropertySlots.RoughnessFactor).Value);
         Assert.Equal(
+            MaterialPbrDefaults.OcclusionStrength,
+            material.ScalarProperties.Single(property => property.Name == MaterialPropertySlots.OcclusionStrength).Value);
+        Assert.Equal(
+            MaterialPbrDefaults.AlphaCutoff,
+            material.ScalarProperties.Single(property => property.Name == MaterialPropertySlots.AlphaCutoff).Value);
+        Assert.Equal(
             new Vector4(1, 1, 1, 1),
             material.Vector4Properties.Single(property => property.Name == MaterialPropertySlots.BaseColorFactor).Value);
         Assert.Equal(
@@ -849,10 +1767,43 @@ public sealed class RenderingAssetPipelineTests
         Assert.Contains("SkyConstants.skyColorIntensity", shaderText, StringComparison.Ordinal);
         Assert.Contains("SkyConstants.horizonColor", shaderText, StringComparison.Ordinal);
         Assert.Contains("SkyConstants.groundColor", shaderText, StringComparison.Ordinal);
+        Assert.Contains("SkyConstants.environmentImageIndex", shaderText, StringComparison.Ordinal);
+        Assert.Contains("BindlessImages", shaderText, StringComparison.Ordinal);
+        Assert.Contains("atan2", shaderText, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void MaterialCooker_PreservesShaderKeywordsAndRenderStateInCookedPayload()
+    public void MaterialConventions_DefinePbrBindingsAndDeterministicTextureDefaults()
+    {
+        Assert.Equal("MetallicRoughness", MaterialTextureSlots.MetallicRoughness);
+        Assert.Equal("Occlusion", MaterialTextureSlots.Occlusion);
+        Assert.Equal("OcclusionStrength", MaterialPropertySlots.OcclusionStrength);
+        Assert.Equal("AlphaCutoff", MaterialPropertySlots.AlphaCutoff);
+        Assert.Equal(0, MaterialPbrTextureChannels.Occlusion);
+        Assert.Equal(1, MaterialPbrTextureChannels.Roughness);
+        Assert.Equal(2, MaterialPbrTextureChannels.Metallic);
+        Assert.Equal(1.0f, MaterialPbrDefaults.OcclusionStrength);
+        Assert.Equal(0.5f, MaterialPbrDefaults.AlphaCutoff);
+
+        var textureRef = new MaterialTexture2DRef(
+            MaterialTextureSlots.MetallicRoughness,
+            new Texture2DAsset(
+                Guid.NewGuid(),
+                "Tests/MetallicRoughness",
+                new Texture2DVariantKey(
+                    Texture2DCookedFormat.R8G8B8A8UNorm,
+                    Texture2DColorSpace.Linear,
+                    GenerateMipMaps: false),
+                Texture2DSourceFormat.ImageFile));
+
+        Assert.Null(textureRef.Sampler);
+        Assert.Null(textureRef.Transform);
+        Assert.Equal(MaterialTextureSamplerSettings.Default, textureRef.ResolvedSampler);
+        Assert.Equal(MaterialTextureTransform.Identity, textureRef.ResolvedTransform);
+    }
+
+    [Fact]
+    public void MaterialCooker_PreservesShaderRenderStateAndTextureBindingMetadata()
     {
         using var workspace = TestWorkspace.Create();
         var shaderGuid = Guid.NewGuid();
@@ -907,6 +1858,21 @@ public sealed class RenderingAssetPipelineTests
                   ColorSpace: SRgb
                   GenerateMipMaps: false
                 SourceFormat: PpmP3
+              Sampler:
+                MinFilter: Nearest
+                MagFilter: Linear
+                MipmapMode: Linear
+                WrapU: MirroredRepeat
+                WrapV: ClampToEdge
+              Transform:
+                Offset:
+                  X: 0.25
+                  Y: 0.5
+                Scale:
+                  X: 2.0
+                  Y: 0.75
+                Rotation: 0.3
+                TexCoord: 1
             ScalarProperties:
             - Name: RoughnessFactor
               Value: 0.5
@@ -934,7 +1900,23 @@ public sealed class RenderingAssetPipelineTests
         Assert.True(cooked.Asset.RenderState.BlendEnabled);
         Assert.Equal(EBlendFactor.BLEND_FACTOR_SRC_ALPHA, cooked.Asset.RenderState.SrcColorBlendFactor);
         Assert.Equal(EBlendFactor.BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, cooked.Asset.RenderState.DstColorBlendFactor);
-        Assert.Equal(3u, cooked.Asset.Texture2DRefs.Single().Slot);
+        var textureRef = Assert.Single(cooked.Asset.Texture2DRefs);
+        Assert.Equal(3u, textureRef.Slot);
+        Assert.Equal(
+            new MaterialTextureSamplerSettings(
+                MaterialTextureFilter.Nearest,
+                MaterialTextureFilter.Linear,
+                MaterialTextureMipmapMode.Linear,
+                MaterialTextureWrapMode.MirroredRepeat,
+                MaterialTextureWrapMode.ClampToEdge),
+            textureRef.ResolvedSampler);
+        Assert.Equal(
+            new MaterialTextureTransform(
+                new Vector2(0.25f, 0.5f),
+                new Vector2(2.0f, 0.75f),
+                0.3f,
+                1),
+            textureRef.ResolvedTransform);
         Assert.Equal(0.5f, cooked.Asset.ScalarProperties.Single().Value);
         Assert.Equal(new Vector4(0.1f, 0.2f, 0.3f, 0.4f), cooked.Asset.Vector4Properties.Single().Value);
     }
@@ -953,6 +1935,8 @@ public sealed class RenderingAssetPipelineTests
                 MaterialContract
                 {
                     Texture2D BaseColor
+                    Texture2D Normal
+                    Scalar RoughnessFactor
                     Vector4 BaseColorFactor
                 }
 
@@ -984,9 +1968,224 @@ public sealed class RenderingAssetPipelineTests
         db.AddAsset(shaderGuid, ShaderAssetCooker.ShaderSourceAssetType, shaderPath);
         db.AddAsset(materialGuid, "Material", materialPath);
 
+        var inspection = MaterialAssetLoader.InspectSource(db, materialGuid);
+        Assert.False(inspection.IsShaderContractValid);
+        Assert.Collection(
+            inspection.ShaderContractDiagnostics,
+            diagnostic =>
+            {
+                Assert.Equal(MaterialShaderContractBindingKind.Texture2DRef, diagnostic.BindingKind);
+                Assert.Equal("Normal", diagnostic.BindingName);
+            },
+            diagnostic =>
+            {
+                Assert.Equal(MaterialShaderContractBindingKind.ScalarProperty, diagnostic.BindingKind);
+                Assert.Equal("RoughnessFactor", diagnostic.BindingName);
+            },
+            diagnostic =>
+            {
+                Assert.Equal(MaterialShaderContractBindingKind.Vector4Property, diagnostic.BindingKind);
+                Assert.Equal("BaseColorFactor", diagnostic.BindingName);
+            });
+
         var error = Assert.Throws<InvalidOperationException>(() => MaterialAssetLoader.LoadSource(db, materialGuid));
+        Assert.Contains("Texture2DRefs", error.Message, StringComparison.Ordinal);
+        Assert.Contains("Normal", error.Message, StringComparison.Ordinal);
+        Assert.Contains("ScalarProperties", error.Message, StringComparison.Ordinal);
+        Assert.Contains("RoughnessFactor", error.Message, StringComparison.Ordinal);
         Assert.Contains("Vector4Properties", error.Message, StringComparison.Ordinal);
         Assert.Contains("BaseColorFactor", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MaterialSourceEditor_UpdatesBindingsAndPreservesUnrelatedYaml()
+    {
+        using var workspace = TestWorkspace.Create();
+        var shaderGuid = Guid.NewGuid();
+        var oldTextureGuid = Guid.NewGuid();
+        var newTextureGuid = Guid.NewGuid();
+        var materialGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+
+        var shaderPath = workspace.Write("Assets/Editable.shader", """
+            Shader "Tests/Editable"
+            {
+                MaterialContract
+                {
+                    Texture2D BaseColor
+                    Scalar RoughnessFactor
+                    Vector4 BaseColorFactor
+                }
+
+                SubShader
+                {
+                    Pass
+                    {
+                        HLSLPROGRAM
+                        #pragma vertex VSMain
+                        #pragma fragment PSMain
+                        float4 VSMain() : SV_Position { return 0; }
+                        float4 PSMain() : SV_Target0 { return 1; }
+                        ENDHLSL
+                    }
+                }
+            }
+            """);
+        var oldTexturePath = workspace.Write("Assets/Old.ppm", "P3\n1 1\n255\n255 255 255\n");
+        var newTexturePath = workspace.WriteBinary("Assets/New.png", CreateTinyPng());
+        var materialPath = workspace.Write("Assets/Editable.arismaterial", $$"""
+            Name: Tests/Editable
+            Shader:
+              Guid: {{shaderGuid:D}}
+            Texture2DRefs:
+            - Name: BaseColor
+              Slot: 7
+              Texture:
+                Guid: {{oldTextureGuid:D}}
+                Name: Tests/Old
+                Variant:
+                  Format: R8G8B8A8UNorm
+                  ColorSpace: SRgb
+                  GenerateMipMaps: true
+                SourceFormat: PpmP3
+              Sampler:
+                MinFilter: Nearest
+                MagFilter: Linear
+                MipmapMode: Linear
+                WrapU: MirroredRepeat
+                WrapV: ClampToEdge
+              Transform:
+                Offset: { X: 0.25, Y: 0.5 }
+                Scale: { X: 2.0, Y: 0.75 }
+                Rotation: 0.3
+                TexCoord: 1
+            ScalarProperties:
+            - Name: RoughnessFactor
+              Value: 0.25
+            Vector4Properties:
+            - Name: BaseColorFactor
+              Value: { X: 1, Y: 1, Z: 1, W: 1 }
+            EditorData:
+              PreserveMe: yes
+              Nested:
+                Value: 17
+            """);
+
+        db.AddAsset(shaderGuid, ShaderAssetCooker.ShaderSourceAssetType, shaderPath);
+        db.AddAsset(oldTextureGuid, "Texture2D", oldTexturePath);
+        db.AddAsset(newTextureGuid, "Texture2D", newTexturePath);
+        db.AddAsset(materialGuid, "Material", materialPath);
+
+        var textureEdit = MaterialSourceAssetEditor.UpdateTexture2DRef(
+            materialPath,
+            MaterialTextureSlots.BaseColor,
+            new MaterialTextureSourceReference(newTextureGuid, "Tests/New", Texture2DSourceFormat.ImageFile));
+        var scalarEdit = MaterialSourceAssetEditor.UpdateScalarProperty(
+            materialPath,
+            MaterialPropertySlots.RoughnessFactor,
+            0.625f);
+        var vectorEdit = MaterialSourceAssetEditor.UpdateVector4Property(
+            materialPath,
+            MaterialPropertySlots.BaseColorFactor,
+            new Vector4(0.1f, 0.2f, 0.3f, 0.4f));
+
+        Assert.True(textureEdit.Success, textureEdit.Diagnostic);
+        Assert.True(scalarEdit.Success, scalarEdit.Diagnostic);
+        Assert.True(vectorEdit.Success, vectorEdit.Diagnostic);
+
+        var loaded = MaterialAssetLoader.LoadSource(db, materialGuid);
+        var texture = Assert.Single(loaded.Texture2DRefs);
+        Assert.Equal(newTextureGuid, texture.Texture.Guid);
+        Assert.Equal("Tests/New", texture.Texture.Name);
+        Assert.Equal(Texture2DSourceFormat.ImageFile, texture.Texture.SourceFormat);
+        Assert.Equal(Texture2DColorSpace.SRgb, texture.Texture.Variant.ColorSpace);
+        Assert.True(texture.Texture.Variant.GenerateMipMaps);
+        Assert.Equal(7u, texture.Slot);
+        Assert.Equal(MaterialTextureFilter.Nearest, texture.ResolvedSampler.MinFilter);
+        Assert.Equal(MaterialTextureWrapMode.ClampToEdge, texture.ResolvedSampler.WrapV);
+        Assert.Equal(new Vector2(0.25f, 0.5f), texture.ResolvedTransform.Offset);
+        Assert.Equal(new Vector2(2.0f, 0.75f), texture.ResolvedTransform.Scale);
+        Assert.Equal(0.3f, texture.ResolvedTransform.Rotation);
+        Assert.Equal(1u, texture.ResolvedTransform.TexCoord);
+        Assert.Equal(0.625f, Assert.Single(loaded.ScalarProperties).Value);
+        Assert.Equal(new Vector4(0.1f, 0.2f, 0.3f, 0.4f), Assert.Single(loaded.Vector4Properties).Value);
+
+        var editedYaml = File.ReadAllText(materialPath);
+        Assert.Contains("EditorData:", editedYaml, StringComparison.Ordinal);
+        Assert.Contains("PreserveMe: yes", editedYaml, StringComparison.Ordinal);
+        Assert.Contains("Value: 17", editedYaml, StringComparison.Ordinal);
+
+        var beforeInvalidEdits = editedYaml;
+        Assert.False(MaterialSourceAssetEditor.UpdateTexture2DRef(
+            materialPath,
+            "MissingTexture",
+            new MaterialTextureSourceReference(oldTextureGuid, "Tests/Old", Texture2DSourceFormat.PpmP3)).Success);
+        Assert.False(MaterialSourceAssetEditor.UpdateScalarProperty(materialPath, "MissingScalar", 1.0f).Success);
+        Assert.False(MaterialSourceAssetEditor.UpdateVector4Property(materialPath, "MissingVector", Vector4.One).Success);
+        Assert.Equal(beforeInvalidEdits, File.ReadAllText(materialPath));
+    }
+
+    [Fact]
+    public void MaterialPropertyCommand_ExecuteUndoIsDeterministicAndGeneratedSourcesAreReadOnly()
+    {
+        using var workspace = TestWorkspace.Create();
+        var materialGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var materialPath = workspace.Write("Assets/Command.arismaterial", """
+            Name: Tests/Command
+            ScalarProperties:
+            - Name: RoughnessFactor
+              Value: 0.2
+            """);
+        SerializationUtil.Serialize(
+            new AssetMetadata { Guid = materialGuid, AssetType = "Material" },
+            materialPath + ".meta");
+        File.AppendAllText(materialPath + ".meta", "ImporterType: LegacyMaterialImporter\n");
+        db.AddAsset(materialGuid, "Material", materialPath);
+        Assert.True(db.TryGetAsset(materialGuid, out var sourceAsset));
+
+        var applied = new List<float>();
+        var changeCount = 0;
+        db.AssetChanged += _ => changeCount++;
+        var command = new ModifyMaterialScalarPropertyCommand(
+            db,
+            sourceAsset,
+            MaterialPropertySlots.RoughnessFactor,
+            0.2f,
+            0.8f,
+            applied.Add);
+
+        command.Execute();
+        Assert.Contains("Value: 0.8", File.ReadAllText(materialPath), StringComparison.Ordinal);
+        command.Undo();
+        Assert.Contains("Value: 0.2", File.ReadAllText(materialPath), StringComparison.Ordinal);
+        command.Execute();
+        Assert.Contains("Value: 0.8", File.ReadAllText(materialPath), StringComparison.Ordinal);
+        Assert.Equal(new[] { 0.8f, 0.2f, 0.8f }, applied);
+        Assert.Equal(3, changeCount);
+
+        SerializationUtil.Serialize(
+            new AssetMetadata
+            {
+                Guid = materialGuid,
+                AssetType = "Material",
+                Importer = "GltfMaterialImporter",
+                Generated = new GeneratedAssetMetadata
+                {
+                    SourceGuid = Guid.NewGuid(),
+                    SourcePackageId = "com.arisen.test",
+                    ChildKind = "material",
+                    ChildKey = "materials/0",
+                    GeneratedByImporter = "GltfMaterialImporter"
+                }
+            },
+            materialPath + ".meta");
+        var beforeGeneratedEdit = File.ReadAllText(materialPath);
+
+        var generatedError = Assert.Throws<InvalidOperationException>(() => command.Undo());
+        Assert.Contains("read-only", generatedError.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(beforeGeneratedEdit, File.ReadAllText(materialPath));
+        Assert.Equal(3, changeCount);
     }
 
     [Fact]
@@ -1337,6 +2536,94 @@ public sealed class RenderingAssetPipelineTests
     {
         return Convert.FromBase64String(
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lTEpGAAAAABJRU5ErkJggg==");
+    }
+
+    private static AssetRecord CreateModelSourceAsset(
+        TestWorkspace workspace,
+        TestAssetDatabase db,
+        Guid sourceGuid,
+        Guid shaderGuid,
+        string outputRoot)
+    {
+        workspace.WriteBinary("Assets/Models/Robot/Source/Robot.glb", CreateGltfSceneTriangleGlb(1.0f));
+        var modelPath = workspace.Write("Assets/Models/Robot/Robot.arismodel", $$"""
+            Name: Robot
+            Source:
+              Path: Source/Robot.glb
+              Format: GltfBinary
+            Import:
+              OutputRoot: {{outputRoot}}
+              SceneIndex: 0
+              UnitScale: 1.0
+              EmitTextures: false
+            Shader:
+              Guid: {{shaderGuid:D}}
+              Name: Tests/StandardLit
+            """);
+        db.AddAsset(sourceGuid, "Model", modelPath, "com.arisen.test");
+        Assert.True(db.TryGetAsset(sourceGuid, out var sourceAsset));
+        return sourceAsset;
+    }
+
+    private static AssetRecord CreateTexturedModelSourceAsset(
+        TestWorkspace workspace,
+        TestAssetDatabase db,
+        Guid sourceGuid,
+        Guid shaderGuid,
+        float roughnessFactor)
+    {
+        var shaderPath = workspace.Write("Assets/Shaders/StandardLit.shader", CreateStandardLitShader());
+        workspace.Write(
+            "Assets/Models/TexturedRobot/Source/BaseColor.ppm",
+            "P3\n1 1\n255\n255 0 0\n");
+        WriteTexturedModelGltf(workspace, roughnessFactor);
+        var modelPath = workspace.Write("Assets/Models/TexturedRobot/TexturedRobot.arismodel", $$"""
+            Name: TexturedRobot
+            Source:
+              Path: Source/TexturedRobot.gltf
+              Format: GltfJson
+            Import:
+              OutputRoot: Assets/Generated/TexturedRobot
+              SceneIndex: 0
+              UnitScale: 1.0
+              EmitTextures: true
+            Shader:
+              Guid: {{shaderGuid:D}}
+              Name: Tests/StandardLit
+            """);
+
+        db.AddAsset(shaderGuid, ShaderAssetCooker.ShaderSourceAssetType, shaderPath);
+        db.AddAsset(sourceGuid, ModelSourceAssetLoader.ModelAssetType, modelPath);
+        Assert.True(db.TryGetAsset(sourceGuid, out var sourceAsset));
+        return sourceAsset;
+    }
+
+    private static string WriteTexturedModelGltf(TestWorkspace workspace, float roughnessFactor)
+    {
+        var roughness = roughnessFactor.ToString(
+            "0.00",
+            System.Globalization.CultureInfo.InvariantCulture);
+        return workspace.Write("Assets/Models/TexturedRobot/Source/TexturedRobot.gltf", $$"""
+            {
+              "asset": { "version": "2.0" },
+              "materials": [
+                {
+                  "name": "TexturedPaint",
+                  "pbrMetallicRoughness": {
+                    "baseColorTexture": { "index": 0 },
+                    "metallicFactor": 0.5,
+                    "roughnessFactor": {{roughness}}
+                  }
+                }
+              ],
+              "textures": [
+                { "source": 0 }
+              ],
+              "images": [
+                { "uri": "BaseColor.ppm" }
+              ]
+            }
+            """);
     }
 
     private static string CreateStandardLitShader()
@@ -1725,6 +3012,12 @@ public sealed class RenderingAssetPipelineTests
     private static float ReadSingle(ReadOnlySpan<byte> bytes, int offset)
     {
         return BinaryPrimitives.ReadSingleLittleEndian(bytes.Slice(offset, sizeof(float)));
+    }
+
+    private static float ReadHalf(ReadOnlySpan<byte> bytes, int offset)
+    {
+        return (float)BitConverter.UInt16BitsToHalf(
+            BinaryPrimitives.ReadUInt16LittleEndian(bytes.Slice(offset, sizeof(ushort))));
     }
 
     private sealed class TestWorkspace : IDisposable

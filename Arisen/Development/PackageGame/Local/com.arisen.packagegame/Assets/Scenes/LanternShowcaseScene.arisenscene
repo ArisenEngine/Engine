@@ -1,0 +1,206 @@
+Name: Lantern Production Model Showcase
+Entities:
+- Name: Main Camera
+  Transform:
+    Position:
+      X: 3.0
+      Y: 1.7
+      Z: -4.6
+    Rotation:
+      X: 0.01380141
+      Y: -0.2503689
+      Z: 0.003569505
+      W: 0.9680455
+    Scale:
+      X: 1.0
+      Y: 1.0
+      Z: 1.0
+  Camera:
+    VerticalFov: 40.0
+    NearPlane: 0.1
+    FarPlane: 160.0
+    IsPerspective: true
+- Name: Warm Key Light
+  DirectionalLight:
+    Direction:
+      X: -0.42
+      Y: 0.78
+      Z: -0.46
+    Color:
+      X: 1.0
+      Y: 0.90
+      Z: 0.76
+    Intensity: 1.65
+    AmbientIntensity: 0.08
+    Enabled: true
+- Name: Lantern Fill Light
+  Transform:
+    Position:
+      X: 1.25
+      Y: 2.2
+      Z: -0.65
+    Rotation:
+      X: 0.0
+      Y: 0.0
+      Z: 0.0
+      W: 1.0
+    Scale:
+      X: 1.0
+      Y: 1.0
+      Z: 1.0
+  PointLight:
+    Color:
+      X: 1.0
+      Y: 0.72
+      Z: 0.42
+    Intensity: 4.25
+    Range: 5.5
+    Enabled: true
+- Name: Lantern Downlight
+  Transform:
+    Position:
+      X: 1.15
+      Y: 2.05
+      Z: 0.0
+    Rotation:
+      X: 0.7071068
+      Y: 0.0
+      Z: 0.0
+      W: 0.7071068
+    Scale:
+      X: 1.0
+      Y: 1.0
+      Z: 1.0
+  SpotLight:
+    Color:
+      X: 1.0
+      Y: 0.58
+      Z: 0.26
+    Intensity: 4.0
+    Range: 4.2
+    InnerConeAngleDegrees: 24.0
+    OuterConeAngleDegrees: 42.0
+    Enabled: true
+- Name: Blue Hour Environment
+  Environment:
+    EnvironmentTexture:
+      Guid: b7c4e40e-c95f-47e5-84b7-b7554e0edc17
+      PackageId: com.arisen.packagegame
+    SkyColor:
+      X: 0.030
+      Y: 0.100
+      Z: 0.205
+    HorizonColor:
+      X: 0.50
+      Y: 0.62
+      Z: 0.72
+    GroundColor:
+      X: 0.040
+      Y: 0.048
+      Z: 0.055
+    AmbientColor:
+      X: 0.38
+      Y: 0.46
+      Z: 0.58
+    SkyIntensity: 0.92
+    AmbientIntensity: 0.20
+    Exposure: 1.15
+    Enabled: true
+- Name: Lantern Pole Body
+  Transform:
+    Position:
+      X: 0.4587785
+      Y: 1.561924
+      Z: 0.0
+    Rotation:
+      X: 0.0
+      Y: 1.0
+      Z: 0.0
+      W: 0.0
+    Scale:
+      X: 0.12
+      Y: 0.12
+      Z: 0.12
+  MeshRenderer:
+    Mesh:
+      Guid: 898e8c48-c5f9-b88b-d3a6-49e82e954bd4
+      PackageId: com.arisen.packagegame
+    Material:
+      Guid: 55b0353b-2e5d-b80f-545f-5a386d72f006
+      PackageId: com.arisen.packagegame
+    FirstSubmeshIndex: 0
+    SubmeshCount: 1
+    Visible: true
+- Name: Lantern Chain
+  Transform:
+    Position:
+      X: 1.14984
+      Y: 2.524544
+      Z: 0.0
+    Rotation:
+      X: 0.0
+      Y: 1.0
+      Z: 0.0
+      W: 0.0
+    Scale:
+      X: 0.12
+      Y: 0.12
+      Z: 0.12
+  MeshRenderer:
+    Mesh:
+      Guid: be413b32-5991-8ae5-c2c2-eba34d934325
+      PackageId: com.arisen.packagegame
+    Material:
+      Guid: 55b0353b-2e5d-b80f-545f-5a386d72f006
+      PackageId: com.arisen.packagegame
+    FirstSubmeshIndex: 0
+    SubmeshCount: 1
+    Visible: true
+- Name: Lantern Head
+  Transform:
+    Position:
+      X: 1.149841
+      Y: 2.161098
+      Z: 0.0
+    Rotation:
+      X: 0.0
+      Y: 1.0
+      Z: 0.0
+      W: 0.0
+    Scale:
+      X: 0.12
+      Y: 0.12
+      Z: 0.12
+  MeshRenderer:
+    Mesh:
+      Guid: a8eb7531-7a75-0078-cf43-3fe29fbad766
+      PackageId: com.arisen.packagegame
+    Material:
+      Guid: 55b0353b-2e5d-b80f-545f-5a386d72f006
+      PackageId: com.arisen.packagegame
+    FirstSubmeshIndex: 0
+    SubmeshCount: 1
+    Visible: true
+- Name: Ground
+  Transform:
+    Position:
+      X: 0.45
+      Y: -0.01
+      Z: 0.0
+    Rotation:
+      X: 0.0
+      Y: 0.0
+      Z: 0.0
+      W: 1.0
+    Scale:
+      X: 20.0
+      Y: 1.0
+      Z: 20.0
+  MeshRenderer:
+    Mesh:
+      Guid: 0fed982b-5130-430e-860b-dc9c7284b8c1
+      PackageId: com.arisen.packagegame
+    Material:
+      Guid: e87b0335-5689-45a0-9fe1-455a01b59a20
+      PackageId: com.arisen.packagegame
+    Visible: true

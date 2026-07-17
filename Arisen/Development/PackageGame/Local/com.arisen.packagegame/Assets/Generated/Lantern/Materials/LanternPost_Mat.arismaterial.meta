@@ -1,0 +1,9 @@
+Guid: 55b0353b-2e5d-b80f-545f-5a386d72f006
+AssetType: Material
+Importer: GltfMaterialImporter
+Generated:
+  SourceGuid: 8d5dc1c2-1a92-4502-9c49-b8fb2c42f9f7
+  SourcePackageId: com.arisen.packagegame
+  ChildKind: material
+  ChildKey: materials/0
+  GeneratedByImporter: GltfMaterialImporter

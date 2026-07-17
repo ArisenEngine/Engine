@@ -1,0 +1,135 @@
+﻿Name: LanternPost_Mat
+Shader:
+  Guid: 72b6d255-0f54-46e5-9d05-8e0486d4f875
+  Name: GenericRP/StandardLit
+  Keywords:
+  - USE_NORMAL_MAP
+  Variant:
+    Backend: Vulkan
+    TargetEnvironment: vulkan1.3
+    ShaderModel: 6_4
+    OptimizationLevel: 0
+    DebugInfo: true
+Texture2DRefs:
+- Name: BaseColor
+  Slot: 0
+  Texture:
+    Guid: 85f2677d-96e2-bf70-3e3d-27e2e73a8a16
+    Name: BaseColor_0
+    Variant:
+      Format: R8G8B8A8UNorm
+      ColorSpace: SRgb
+      GenerateMipMaps: false
+    SourceFormat: ImageFile
+  Sampler:
+    MinFilter: Linear
+    MagFilter: Linear
+    MipmapMode: Nearest
+    WrapU: Repeat
+    WrapV: Repeat
+  Transform:
+    Offset:
+      X: 0
+      Y: 0
+    Scale:
+      X: 1
+      Y: 1
+    Rotation: 0
+    TexCoord: 0
+- Name: Normal
+  Slot: 1
+  Texture:
+    Guid: 1a36c586-10fb-ccf3-98e8-99310dbbf5d2
+    Name: Normal_2
+    Variant:
+      Format: R8G8B8A8UNorm
+      ColorSpace: Linear
+      GenerateMipMaps: false
+    SourceFormat: ImageFile
+  Sampler:
+    MinFilter: Linear
+    MagFilter: Linear
+    MipmapMode: Nearest
+    WrapU: Repeat
+    WrapV: Repeat
+  Transform:
+    Offset:
+      X: 0
+      Y: 0
+    Scale:
+      X: 1
+      Y: 1
+    Rotation: 0
+    TexCoord: 0
+- Name: Emissive
+  Slot: 2
+  Texture:
+    Guid: 9c41d0a0-2a84-8185-81c5-ff80d034b696
+    Name: Emissive_3
+    Variant:
+      Format: R8G8B8A8UNorm
+      ColorSpace: SRgb
+      GenerateMipMaps: false
+    SourceFormat: ImageFile
+  Sampler:
+    MinFilter: Linear
+    MagFilter: Linear
+    MipmapMode: Nearest
+    WrapU: Repeat
+    WrapV: Repeat
+  Transform:
+    Offset:
+      X: 0
+      Y: 0
+    Scale:
+      X: 1
+      Y: 1
+    Rotation: 0
+    TexCoord: 0
+- Name: MetallicRoughness
+  Slot: 3
+  Texture:
+    Guid: 984534a2-785f-4f19-5ebb-262a54c6e526
+    Name: MetallicRoughness_1
+    Variant:
+      Format: R8G8B8A8UNorm
+      ColorSpace: Linear
+      GenerateMipMaps: false
+    SourceFormat: ImageFile
+  Sampler:
+    MinFilter: Linear
+    MagFilter: Linear
+    MipmapMode: Nearest
+    WrapU: Repeat
+    WrapV: Repeat
+  Transform:
+    Offset:
+      X: 0
+      Y: 0
+    Scale:
+      X: 1
+      Y: 1
+    Rotation: 0
+    TexCoord: 0
+ScalarProperties:
+- Name: MetallicFactor
+  Value: 1
+- Name: RoughnessFactor
+  Value: 1
+- Name: OcclusionStrength
+  Value: 1
+- Name: AlphaCutoff
+  Value: 0.5
+Vector4Properties:
+- Name: BaseColorFactor
+  Value:
+    X: 1
+    Y: 1
+    Z: 1
+    W: 1
+- Name: EmissiveFactor
+  Value:
+    X: 1
+    Y: 1
+    Z: 1
+    W: 1
