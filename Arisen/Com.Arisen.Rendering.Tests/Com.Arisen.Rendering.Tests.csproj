@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.5" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
       <PrivateAssets>all</PrivateAssets>
@@ -38,6 +39,14 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Serialization\ISerializationCallbackReceiver.cs" Link="Source\Core\Serialization\ISerializationCallbackReceiver.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Serialization\SerializationUtil.cs" Link="Source\Core\Serialization\SerializationUtil.cs" />
 
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Assets\AssetDatabase.cs" Link="Source\Editor\Assets\AssetDatabase.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Assets\AssetImporter.cs" Link="Source\Editor\Assets\AssetImporter.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Assets\AssetImportScheduler.cs" Link="Source\Editor\Assets\AssetImportScheduler.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Assets\AssetMetadata.cs" Link="Source\Editor\Assets\AssetMetadata.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Assets\AssetPathPolicy.cs" Link="Source\Editor\Assets\AssetPathPolicy.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Assets\MaterialAssetEditPolicy.cs" Link="Source\Editor\Assets\MaterialAssetEditPolicy.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Commands\ModifyMaterialAssetPropertyCommands.cs" Link="Source\Editor\Commands\ModifyMaterialAssetPropertyCommands.cs" />
+
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\IComponent.cs" Link="Source\ECS\IComponent.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\Entity.cs" Link="Source\ECS\Entity.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\IEntityManager.cs" Link="Source\ECS\IEntityManager.cs" />
@@ -62,10 +71,15 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\RHIHandle.cs" Link="Source\CoreNative\RHI\RHIHandle.cs" />
 
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\AssetDependencyStamp.cs" Link="Source\Rendering\Resources\AssetDependencyStamp.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\EnvironmentTextureAsset.cs" Link="Source\Rendering\Resources\EnvironmentTextureAsset.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\EnvironmentLightingAsset.cs" Link="Source\Rendering\Resources\EnvironmentLightingAsset.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\GltfModelImportEmitter.cs" Link="Source\Rendering\Resources\GltfModelImportEmitter.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\GltfModelImportPlanner.cs" Link="Source\Rendering\Resources\GltfModelImportPlanner.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\MaterialAsset.cs" Link="Source\Rendering\Resources\MaterialAsset.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\MaterialSourceAssetEditor.cs" Link="Source\Rendering\Resources\MaterialSourceAssetEditor.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\MeshAsset.cs" Link="Source\Rendering\Resources\MeshAsset.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\ModelSourceAsset.cs" Link="Source\Rendering\Resources\ModelSourceAsset.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\ModelSourceReimporter.cs" Link="Source\Rendering\Resources\ModelSourceReimporter.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\ShaderLabSource.cs" Link="Source\Rendering\Resources\ShaderLabSource.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\ShaderMaterialContractAnnotations.cs" Link="Source\Rendering\Resources\ShaderMaterialContractAnnotations.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\Texture2DAsset.cs" Link="Source\Rendering\Resources\Texture2DAsset.cs" />
@@ -78,6 +92,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\SceneEnvironment.cs" Link="Source\Rendering\SceneEnvironment.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\SceneEnvironmentSnapshotExtractor.cs" Link="Source\Rendering\SceneEnvironmentSnapshotExtractor.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderQueuePolicy.cs" Link="Source\Rendering\RenderQueuePolicy.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderResourceReloadQueue.cs" Link="Source\Rendering\RenderResourceReloadQueue.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\StaticMeshFrustumCuller.cs" Link="Source\Rendering\StaticMeshFrustumCuller.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderGraphResourcePlanner.cs" Link="Source\Rendering\RenderGraphResourcePlanner.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderResource.cs" Link="Source\Rendering\RenderResource.cs" />

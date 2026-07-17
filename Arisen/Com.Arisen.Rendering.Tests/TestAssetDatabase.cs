@@ -103,6 +103,16 @@ internal sealed class TestAssetDatabase : IAssetDatabase
 
     public int InvalidateCookedAssets(Guid guid, string? variant = null)
     {
+        var loadedHandles = m_Loaded
+            .Where(pair => pair.Value.Artifact.Guid == guid &&
+                (variant == null || string.Equals(pair.Value.Artifact.Variant, variant, StringComparison.Ordinal)))
+            .Select(pair => pair.Key)
+            .ToArray();
+        foreach (var handleIndex in loadedHandles)
+        {
+            m_Loaded.Remove(handleIndex);
+        }
+
         var keys = m_Artifacts.Keys
             .Where(key => key.Guid == guid && (variant == null || string.Equals(key.Variant, variant, StringComparison.Ordinal)))
             .ToArray();
@@ -111,7 +121,7 @@ internal sealed class TestAssetDatabase : IAssetDatabase
             m_Artifacts.Remove(key);
         }
 
-        return keys.Length;
+        return loadedHandles.Length;
     }
 
     public void NotifyAssetChanged(AssetChangeEvent change)

@@ -582,6 +582,7 @@ public static class AssetReferenceGeneratorService
         {
             "shader" or "shadersource" => "Shader",
             "texture" or "texture2d" => "Texture",
+            "environmenttexture" => "EnvironmentTexture",
             "mesh" => "Mesh",
             "model" => "Model",
             "material" => "Material",
@@ -689,6 +690,7 @@ public static class AssetReferenceGeneratorService
         {
             "shader" or "shadersource" => "ShaderSourceAsset",
             "texture" or "texture2d" => "Texture2DSourceAsset",
+            "environmenttexture" => "EnvironmentTextureSourceAsset",
             "mesh" => "MeshSourceAsset",
             "model" => "ModelSourceAsset",
             "material" => "MaterialSourceAsset",
@@ -703,6 +705,7 @@ public static class AssetReferenceGeneratorService
         {
             "shader" or "shadersource" => "ShaderSource",
             "texture" or "texture2d" => "Texture2D",
+            "environmenttexture" => "EnvironmentTexture",
             "mesh" => "Mesh",
             "model" => "Model",
             "material" => "Material",

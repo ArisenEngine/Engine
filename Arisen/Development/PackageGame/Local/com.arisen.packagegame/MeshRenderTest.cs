@@ -20,7 +20,7 @@ public static class MeshRenderTest
         {
             var result = SceneAssetLoader.LoadScene(
                 assetDatabase,
-                GameLogicAssetRefs.SmokeScene.Ref,
+                GameLogicAssetRefs.LanternShowcaseScene.Ref,
                 scene.ActiveEntityManager);
             if (result.Success)
             {

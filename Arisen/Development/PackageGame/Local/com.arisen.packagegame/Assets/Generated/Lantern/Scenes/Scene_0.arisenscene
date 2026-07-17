@@ -1,0 +1,77 @@
+﻿Name: Scene_0
+Entities:
+- Name: LanternPole_Body
+  Transform:
+    Position:
+      X: 3.823154
+      Y: 13.01603
+      Z: 0
+    Rotation:
+      X: 0
+      Y: 1
+      Z: 0
+      W: 0
+    Scale:
+      X: 1
+      Y: 1
+      Z: 1
+  MeshRenderer:
+    Mesh:
+      Guid: 898e8c48-c5f9-b88b-d3a6-49e82e954bd4
+      PackageId: com.arisen.packagegame
+    Material:
+      Guid: 55b0353b-2e5d-b80f-545f-5a386d72f006
+      PackageId: com.arisen.packagegame
+    FirstSubmeshIndex: 0
+    SubmeshCount: 1
+    Visible: true
+- Name: LanternPole_Chain
+  Transform:
+    Position:
+      X: 9.582001
+      Y: 21.03787
+      Z: 0
+    Rotation:
+      X: 0
+      Y: 1
+      Z: 0
+      W: 0
+    Scale:
+      X: 1
+      Y: 1
+      Z: 1
+  MeshRenderer:
+    Mesh:
+      Guid: be413b32-5991-8ae5-c2c2-eba34d934325
+      PackageId: com.arisen.packagegame
+    Material:
+      Guid: 55b0353b-2e5d-b80f-545f-5a386d72f006
+      PackageId: com.arisen.packagegame
+    FirstSubmeshIndex: 0
+    SubmeshCount: 1
+    Visible: true
+- Name: LanternPole_Lantern
+  Transform:
+    Position:
+      X: 9.582007
+      Y: 18.00915
+      Z: 0
+    Rotation:
+      X: 0
+      Y: 1
+      Z: 0
+      W: 0
+    Scale:
+      X: 1
+      Y: 1
+      Z: 1
+  MeshRenderer:
+    Mesh:
+      Guid: a8eb7531-7a75-0078-cf43-3fe29fbad766
+      PackageId: com.arisen.packagegame
+    Material:
+      Guid: 55b0353b-2e5d-b80f-545f-5a386d72f006
+      PackageId: com.arisen.packagegame
+    FirstSubmeshIndex: 0
+    SubmeshCount: 1
+    Visible: true

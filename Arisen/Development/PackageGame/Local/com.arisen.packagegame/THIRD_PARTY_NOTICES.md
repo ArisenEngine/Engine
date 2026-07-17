@@ -8,6 +8,14 @@
 - MD5: `3372195cc9762fd2818642c462fa76a2`
 - License: CC0 1.0 Universal
 
+## Khronos glTF Sample Assets - Lantern
+
+- Source: https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/Lantern
+- Local source file: `Assets/Models/Lantern/Source/Lantern.glb`
+- Generated children: `Assets/Generated/Lantern`
+- Original source package in this repository: `com.arisen.rhi.vulkan.native.test/Assets/glTF-Sample-Models/2.0/Lantern`
+- License: CC0 1.0 Universal; the bundled sample README states that Microsoft waived copyright and related or neighboring rights to this asset to the extent possible under law.
+
 ## three.js
 
 `Assets/Meshes/UtahTeapot.obj`, `ShowcasePedestal.obj`, and

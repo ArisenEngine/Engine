@@ -1,0 +1,10 @@
+Version: 1
+Name: Blue Hour Panorama
+SourceTexture:
+  Guid: d5a4f9f1-2f0f-4da8-8b15-19ac1fb30e57
+  PackageId: com.arisen.packagegame
+Layout: LatLong
+SourceColorSpace: SRgb
+RuntimeFormat: R16G16B16A16SFloat
+RotationDegrees: 18.0
+Intensity: 1.35

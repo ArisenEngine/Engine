@@ -1,0 +1,9 @@
+Guid: a8eb7531-7a75-0078-cf43-3fe29fbad766
+AssetType: Mesh
+Importer: GltfMeshImporter
+Generated:
+  SourceGuid: 8d5dc1c2-1a92-4502-9c49-b8fb2c42f9f7
+  SourcePackageId: com.arisen.packagegame
+  ChildKind: mesh
+  ChildKey: meshes/2
+  GeneratedByImporter: GltfMeshImporter

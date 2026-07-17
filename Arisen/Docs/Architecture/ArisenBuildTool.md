@@ -222,7 +222,7 @@ Instead, the tool creates a hidden folder inside the workspace: `MyGame/.arisen/
 For every discovered package:
 - **Managed Packages (C#)**: It generates `com.user.mygame.csproj` inside the hidden folder. It defines `<Compile Include="../../Local/com.user.mygame/**/*.cs" />` to link the source code. It automatically resolves exact `<ProjectReference>` links based on the `package.json` dependencies.
 - **Native Packages (C++)**: It generates `CMakeLists.txt` or `.vcxproj` pointing to the native source code.
-- **Asset reference helpers**: It scans package-local `Assets/**/*.meta` sidecars and emits disposable `*AssetRefs.g.cs` helpers into the generated project for real source assets, skipping metadata files themselves. Material nested constants include names authored in `.arismaterial` value sections and package-local shader-source `@arisen.material.*` annotations reached through the material's `Shader.Guid`.
+- **Asset reference helpers**: It scans package-local `Assets/**/*.meta` sidecars and emits disposable `*AssetRefs.g.cs` helpers into the generated project for real source assets, skipping metadata files themselves. Known assets receive typed refs, including `EnvironmentTextureSourceAsset` for `.arienvironment` descriptors. Material nested constants include names authored in `.arismaterial` value sections and package-local shader-source `@arisen.material.*` annotations reached through the material's `Shader.Guid`.
 
 ### Phase 3: Developer UX Injection (Generated Package Metadata)
 As defined in [ConfigurationFormats.md](ConfigurationFormats.md), users should not manually configure code-derived metadata such as `entry`, generated `services.provides`, generated `subsystems`, or `nativeRuntimes` in their human-owned `package.json`.
