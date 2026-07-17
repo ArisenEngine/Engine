@@ -97,7 +97,7 @@ public sealed class RenderOutputFramePacingStateTests
     {
         var state = new RenderOutputFramePacingState();
 
-        Assert.True(state.CanSubmit(frameIndex: 100, maxOutstandingFrames: 3));
+        Assert.True(state.CanSubmit(maxOutstandingFrames: 3));
     }
 
     [Fact]
@@ -106,13 +106,22 @@ public sealed class RenderOutputFramePacingStateTests
         var state = new RenderOutputFramePacingState();
         state.MarkSubmitted(100);
 
-        Assert.True(state.CanSubmit(frameIndex: 101, maxOutstandingFrames: 3));
-        Assert.True(state.CanSubmit(frameIndex: 102, maxOutstandingFrames: 3));
-        Assert.False(state.CanSubmit(frameIndex: 103, maxOutstandingFrames: 3));
+        Assert.True(state.CanSubmit(maxOutstandingFrames: 3));
+        state.MarkSubmitted(101);
+        Assert.True(state.CanSubmit(maxOutstandingFrames: 3));
+        state.MarkSubmitted(102);
+        Assert.False(state.CanSubmit(maxOutstandingFrames: 3));
+        Assert.Equal(3u, state.OutstandingFrameCount);
 
         state.MarkConsumed(100);
 
-        Assert.True(state.CanSubmit(frameIndex: 101, maxOutstandingFrames: 3));
+        Assert.False(state.CanSubmit(maxOutstandingFrames: 3));
+        Assert.Equal(2u, state.OutstandingFrameCount);
+
+        state.MarkConsumed(102);
+
+        Assert.True(state.CanSubmit(maxOutstandingFrames: 3));
+        Assert.Equal(0u, state.OutstandingFrameCount);
     }
 
     [Fact]
@@ -122,12 +131,15 @@ public sealed class RenderOutputFramePacingStateTests
         state.MarkSubmitted(100);
         state.MarkConsumed(100);
 
-        Assert.True(state.CanSubmit(frameIndex: 102, maxOutstandingFrames: 3));
-        Assert.False(state.CanSubmit(frameIndex: 103, maxOutstandingFrames: 3));
+        Assert.True(state.CanSubmit(maxOutstandingFrames: 3));
+        state.MarkSubmitted(101);
+        Assert.True(state.CanSubmit(maxOutstandingFrames: 3));
+        state.MarkSubmitted(102);
+        Assert.False(state.CanSubmit(maxOutstandingFrames: 3));
 
-        state.MarkConsumed(102);
+        state.MarkConsumed(101);
 
-        Assert.True(state.CanSubmit(frameIndex: 104, maxOutstandingFrames: 3));
+        Assert.True(state.CanSubmit(maxOutstandingFrames: 3));
     }
 
     [Fact]
@@ -135,9 +147,25 @@ public sealed class RenderOutputFramePacingStateTests
     {
         var state = new RenderOutputFramePacingState();
 
+        state.MarkSubmitted(41);
+        state.MarkSubmitted(42);
         state.MarkConsumed(42);
         state.MarkConsumed(41);
 
         Assert.Equal(42u, state.LastConsumedFrameIndex);
+        Assert.Equal(0u, state.OutstandingFrameCount);
+    }
+
+    [Fact]
+    public void CanSubmitCountsSuccessfulOutputsInsteadOfFrameIndexDistance()
+    {
+        var state = new RenderOutputFramePacingState();
+        state.MarkSubmitted(10);
+        state.MarkConsumed(10);
+
+        state.MarkSubmitted(1000);
+
+        Assert.Equal(1u, state.OutstandingFrameCount);
+        Assert.True(state.CanSubmit(maxOutstandingFrames: 3));
     }
 }

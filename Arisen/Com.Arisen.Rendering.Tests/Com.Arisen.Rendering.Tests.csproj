@@ -31,6 +31,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\AssetRef.cs" Link="Source\Core\Assets\AssetRef.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\GeneratedAssetIdentity.cs" Link="Source\Core\Assets\GeneratedAssetIdentity.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Automation\*.cs" Link="Source\Core\Automation\%(Filename)%(Extension)" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Diagnostics\Profiler.cs" Link="Source\Core\Diagnostics\Profiler.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Math\MathTypes.cs" Link="Source\Core\Math\MathTypes.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Math\MathExtensions.cs" Link="Source\Core\Math\MathExtensions.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Math\Mathf.cs" Link="Source\Core\Math\Mathf.cs" />
@@ -52,6 +53,9 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\IEntityManager.cs" Link="Source\ECS\IEntityManager.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\ComponentPool.cs" Link="Source\ECS\ComponentPool.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\EntityManager.cs" Link="Source\ECS\EntityManager.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\EntityCommandBuffer.cs" Link="Source\ECS\EntityCommandBuffer.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\Systems\ISystem.cs" Link="Source\ECS\Systems\ISystem.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\Systems\SystemContainer.cs" Link="Source\ECS\Systems\SystemContainer.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\NameComponent.cs" Link="Source\ECS\NameComponent.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\TransformComponent.cs" Link="Source\ECS\TransformComponent.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\CameraComponent.cs" Link="Source\ECS\CameraComponent.cs" />
@@ -69,6 +73,11 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EIndexType.cs" Link="Source\CoreNative\RHI\EIndexType.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EProgramStage.cs" Link="Source\CoreNative\RHI\EProgramStage.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\RHIHandle.cs" Link="Source\CoreNative\RHI\RHIHandle.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\Diagnostics\ProfilerAPI.cs" Link="Source\CoreNative\Diagnostics\ProfilerAPI.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\Diagnostics\ProfilerZoneContext.cs" Link="Source\CoreNative\Diagnostics\ProfilerZoneContext.cs" />
+
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.dag\Managed\*.cs" Link="Source\DAG\%(Filename)%(Extension)" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.taskgraph\Managed\*.cs" Link="Source\TaskGraph\%(Filename)%(Extension)" />
 
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\AssetDependencyStamp.cs" Link="Source\Rendering\Resources\AssetDependencyStamp.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\EnvironmentTextureAsset.cs" Link="Source\Rendering\Resources\EnvironmentTextureAsset.cs" />

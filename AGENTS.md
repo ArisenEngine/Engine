@@ -256,6 +256,7 @@ This is especially important when touching:
 
 Relevant docs:
 - `.agents\skills\write_dod_code\SKILL.md`
+- `Arisen\Docs\Architecture\TaskGraph.md`
 - `Arisen\Docs\Architecture\Rendering.md`
 - `Arisen\Docs\Architecture\Profiling.md`
 
@@ -292,6 +293,8 @@ Start with:
 - rendering questions:
   - `Arisen\Docs\Architecture\Rendering.md`
   - `Arisen\Docs\Architecture\ProductionSceneRenderingNextTodo.md`
+- ECS/task scheduling questions:
+  - `Arisen\Docs\Architecture\TaskGraph.md`
 - package-boundary questions:
   - `Arisen\Docs\Architecture\PackageArchitecture.md`
   - `Arisen\Docs\Architecture\PackageRegistry.md`

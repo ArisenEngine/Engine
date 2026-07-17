@@ -275,7 +275,7 @@ Recent validation baseline:
   - [x] Stop editor boot from synthesizing/loading an unrelated legacy `SampleScene`.
   - [x] Make Hierarchy inspect the same active `.arisenscene` rendered by the viewport.
 - [ ] Complete project-facing scene workflow.
-  - [ ] Route editor scene switching through a frame-boundary activation request.
+  - [x] Route editor scene switching through a frame-boundary activation request.
   - [ ] Make Project Settings edit the startup scene reference without rewriting unrelated manifest fields/comments.
   - [ ] Define source-scene save/dirty policy and retire the conflicting legacy `.arisen` active-scene path.
 - [ ] Make render-pipeline selection asset-driven.
@@ -290,12 +290,16 @@ Recent validation baseline:
 - `RuntimeSceneService` owns macro-level scene loading. It parses into a candidate `EntityManager`, preserves the previous world on failure, atomically activates successful worlds through `SceneSubsystem`, and publishes immutable active-scene metadata for tooling.
 - `ProjectSceneBootstrapSubsystem` replaces the first-frame `MeshRenderTest` callback. It registers `MeshSystem` and activates the configured startup scene during `PostInit`, before Editor handoff or standalone frame zero.
 - Editor `ProjectSynthesisStep` no longer creates or loads `Assets/Scenes/SampleScene.arisen`. Hierarchy initializes from `IRuntimeSceneService.ActiveScene` and uses `SceneAssetLoader.InspectScene`, so the hierarchy and viewport share one scene identity without exposing live ECS mutation to the UI thread.
+- `IRuntimeSceneService.RequestSceneLoad` now provides a coalesced cross-thread request boundary drained by `ResourcesPackage` from `EngineKernel.OnFrameEnd`. Active-scene transform edits, undo/redo, and editor `.arisenscene` opening use this path; loading still occurs into a candidate world, failed reloads preserve the current world, and successful replacement refreshes Hierarchy while preserving the selected source entity by scene path and entity index.
+- Editor shared-texture presentation now receives an explicit host-specific wakeup after each finalized render output. The viewport coalesces those notifications onto Avalonia's UI thread, preventing producer pacing from freezing after its initial image burst and making frame-boundary scene edits visible without switching Scene/Game tabs.
+- The cross-cutting simulation scheduler now distinguishes one-shot frame graphs from reusable compiled ECS schedules. `SceneSubsystem` consumes the package-owned shared worker executor, systems run on every frame without creating a private worker pool, worker failures propagate to the engine thread, and failed frames discard deferred structural commands.
 - Focused validation covers manifest parsing/validation and failed/successful atomic scene activation. The remaining composition work is editor scene switching/saving and serialized render-pipeline settings.
 
 ### Acceptance Criteria
 
 - Editor Hierarchy and viewport identify the same scene immediately after boot.
 - Runtime and Editor profiles activate the same manifest-selected startup scene before frame zero.
+- Editing or undoing an active source-scene transform updates the viewport after the next frame boundary without restarting the editor.
 - Failed scene parsing/reference validation cannot replace or partially mutate the active world.
 - Product startup contains no hardcoded showcase scene reference or hidden code-created fallback.
 - Render-pipeline implementation remains code-defined while project-facing quality settings and selection become serialized assets.
