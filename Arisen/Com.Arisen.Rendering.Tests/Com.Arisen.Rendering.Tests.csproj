@@ -99,6 +99,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\RenderOutputEncoding.cs" Link="Source\GenericRenderPipeline\RenderOutputEncoding.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Shaders\*.cs" Link="Source\Rendering\Shaders\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\SceneAssetLoader.cs" Link="Source\Resources\Serialization\SceneAssetLoader.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\RuntimeSceneService.cs" Link="Source\Resources\Serialization\RuntimeSceneService.cs" />
   </ItemGroup>
 
 </Project>

@@ -17,9 +17,17 @@
           "vulkan"
         ]
       },
-      "ArisenEngine.Rendering.IRenderMaterialLibrary"
+      "ArisenEngine.Rendering.IRenderMaterialLibrary",
+      "ArisenEngine.Resources.Serialization.IRuntimeSceneService"
     ]
   },
+  "subsystems": [
+    {
+      "class": "PackageGame.ProjectSceneBootstrapSubsystem",
+      "phase": "PostInit",
+      "priority": 50
+    }
+  ],
   "dependencies": {
     "com.arisen.core": "1.0.0",
     "com.arisen.ecs": "1.0.0",

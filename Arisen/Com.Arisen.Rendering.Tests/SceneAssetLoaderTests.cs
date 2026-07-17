@@ -8,6 +8,67 @@ namespace Com.Arisen.Rendering.Tests;
 public sealed class SceneAssetLoaderTests
 {
     [Fact]
+    public void RuntimeSceneService_ActivatesOnlyFullyLoadedSceneWorlds()
+    {
+        using var temp = new TempDirectory();
+        var db = new TestAssetDatabase(temp.Path);
+        var validSceneGuid = Guid.Parse("11111111-aaaa-bbbb-cccc-222222222222");
+        var brokenSceneGuid = Guid.Parse("33333333-aaaa-bbbb-cccc-444444444444");
+        var missingMeshGuid = Guid.Parse("55555555-aaaa-bbbb-cccc-666666666666");
+        string validScenePath = Path.Combine(temp.Path, "RuntimeScene.arisenscene");
+        string brokenScenePath = Path.Combine(temp.Path, "BrokenRuntimeScene.arisenscene");
+
+        File.WriteAllText(validScenePath,
+            """
+            Name: Runtime Scene
+            Entities:
+            - Name: Main Camera
+              Camera:
+                VerticalFov: 60
+                NearPlane: 0.1
+                FarPlane: 100
+                IsPerspective: true
+            """);
+        File.WriteAllText(brokenScenePath, $"""
+            Name: Broken Runtime Scene
+            Entities:
+            - Name: Missing Mesh
+              MeshRenderer:
+                Mesh:
+                  Guid: {missingMeshGuid:D}
+            """);
+        db.AddAsset(validSceneGuid, "Scene", validScenePath);
+        db.AddAsset(brokenSceneGuid, "Scene", brokenScenePath);
+
+        var originalWorld = new EntityManager();
+        EntityManager activeWorld = originalWorld;
+        RuntimeSceneState? publishedState = null;
+        var service = new RuntimeSceneService(db, world => activeWorld = world);
+        service.ActiveSceneChanged += state => publishedState = state;
+
+        var failed = service.LoadScene(
+            new AssetRef<SceneSourceAsset>(brokenSceneGuid, "Scene", "com.arisen.test"));
+
+        Assert.False(failed.Success);
+        Assert.Same(originalWorld, activeWorld);
+        Assert.Null(service.ActiveScene);
+        Assert.Null(publishedState);
+
+        var loaded = service.LoadScene(
+            new AssetRef<SceneSourceAsset>(validSceneGuid, "Scene", "com.arisen.test"));
+
+        Assert.True(loaded.Success, loaded.Diagnostic);
+        Assert.Equal("Runtime Scene", loaded.SceneName);
+        Assert.Equal(validScenePath, loaded.SourcePath);
+        Assert.NotSame(originalWorld, activeWorld);
+        Assert.Same(activeWorld, service.ActiveScene!.EntityManager);
+        Assert.Equal(validSceneGuid, service.ActiveScene.Scene.Guid);
+        Assert.Equal("Runtime Scene", service.ActiveScene.Name);
+        Assert.Same(service.ActiveScene, publishedState);
+        Assert.Equal(1, activeWorld.GetPool<CameraComponent>().Count);
+    }
+
+    [Fact]
     public void SceneAssetLoader_SpawnsCameraAndMeshRenderers()
     {
         using var temp = new TempDirectory();

@@ -1,6 +1,10 @@
 {
   "Name": "PackageGame",
   "EngineVersion": "Current",
+  "StartupScene": {
+    "Guid": "bd52ee1a-84a1-4d9d-bdb4-2a83757b5a4b",
+    "PackageId": "com.arisen.packagegame"
+  },
   "Packages": [
     {
       "Id": "com.arisen.packagegame",

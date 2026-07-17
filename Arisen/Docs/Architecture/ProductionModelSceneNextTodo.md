@@ -256,7 +256,53 @@ Recent validation baseline:
 
 ---
 
-## Milestone 5 - Shadow And Visibility Quality
+## Milestone 5 - Project Composition And Active Scene
+
+**Goal:** Replace development-only scene/pipeline bootstrap with project-selected assets shared by Editor and runtime.
+
+### TODO
+
+- [x] Add workspace startup-scene selection.
+  - [x] Store a stable scene GUID and owning package id in `manifest.json`.
+  - [x] Validate incomplete startup-scene references in `ArisenBuildTool`.
+  - [x] Remove the hardcoded `LanternShowcaseScene` reference from package code.
+- [x] Add one runtime scene activation boundary.
+  - [x] Load and validate into a temporary ECS world.
+  - [x] Replace `SceneSubsystem.ActiveEntityManager` only after successful loading.
+  - [x] Publish active scene identity through `IRuntimeSceneService`.
+- [x] Unify initial Editor and runtime scene ownership.
+  - [x] Load the selected startup scene from a `PostInit` composition subsystem before frame zero.
+  - [x] Stop editor boot from synthesizing/loading an unrelated legacy `SampleScene`.
+  - [x] Make Hierarchy inspect the same active `.arisenscene` rendered by the viewport.
+- [ ] Complete project-facing scene workflow.
+  - [ ] Route editor scene switching through a frame-boundary activation request.
+  - [ ] Make Project Settings edit the startup scene reference without rewriting unrelated manifest fields/comments.
+  - [ ] Define source-scene save/dirty policy and retire the conflicting legacy `.arisen` active-scene path.
+- [ ] Make render-pipeline selection asset-driven.
+  - [ ] Define a serialized Generic RP settings asset and loader.
+  - [ ] Move shadow size/bias/PCF and other project-level quality settings into that asset.
+  - [ ] Register a render-pipeline provider/factory instead of auto-assigning `GenericRenderPipelineAsset` during package load.
+  - [ ] Let Project Settings select the render-pipeline settings asset.
+
+### Progress Notes
+
+- `manifest.json` now selects `LanternShowcaseScene.arisenscene` through `StartupScene.Guid` plus `StartupScene.PackageId`; workspace validation rejects partial references.
+- `RuntimeSceneService` owns macro-level scene loading. It parses into a candidate `EntityManager`, preserves the previous world on failure, atomically activates successful worlds through `SceneSubsystem`, and publishes immutable active-scene metadata for tooling.
+- `ProjectSceneBootstrapSubsystem` replaces the first-frame `MeshRenderTest` callback. It registers `MeshSystem` and activates the configured startup scene during `PostInit`, before Editor handoff or standalone frame zero.
+- Editor `ProjectSynthesisStep` no longer creates or loads `Assets/Scenes/SampleScene.arisen`. Hierarchy initializes from `IRuntimeSceneService.ActiveScene` and uses `SceneAssetLoader.InspectScene`, so the hierarchy and viewport share one scene identity without exposing live ECS mutation to the UI thread.
+- Focused validation covers manifest parsing/validation and failed/successful atomic scene activation. The remaining composition work is editor scene switching/saving and serialized render-pipeline settings.
+
+### Acceptance Criteria
+
+- Editor Hierarchy and viewport identify the same scene immediately after boot.
+- Runtime and Editor profiles activate the same manifest-selected startup scene before frame zero.
+- Failed scene parsing/reference validation cannot replace or partially mutate the active world.
+- Product startup contains no hardcoded showcase scene reference or hidden code-created fallback.
+- Render-pipeline implementation remains code-defined while project-facing quality settings and selection become serialized assets.
+
+---
+
+## Milestone 6 - Shadow And Visibility Quality
 
 **Goal:** Replace the showcase-fixed directional shadow slice with a scene-aware shadow policy.
 
@@ -285,7 +331,7 @@ Recent validation baseline:
 
 ---
 
-## Milestone 6 - Transparent And Alpha Queue Policy
+## Milestone 7 - Transparent And Alpha Queue Policy
 
 **Goal:** Make imported alpha content predictable instead of only classifying it into a late deterministic queue.
 
@@ -315,7 +361,7 @@ Recent validation baseline:
 
 ---
 
-## Milestone 7 - RenderGraph Resource Ownership Hardening
+## Milestone 8 - RenderGraph Resource Ownership Hardening
 
 **Goal:** Continue moving pass-owned resources into graph-declared resources with graph-owned barriers and lifetime.
 
@@ -344,7 +390,7 @@ Recent validation baseline:
 
 ---
 
-## Milestone 8 - Automated Visual And Viewport Validation
+## Milestone 9 - Automated Visual And Viewport Validation
 
 **Goal:** Catch visual regressions such as Y-flip, blank first SceneView frame, viewport flicker, missing model children, and broken material import earlier.
 
@@ -391,18 +437,19 @@ These are important, but should not block the next production model scene roadma
 
 ## Recommended Immediate Sprint
 
-Begin **Milestone 5** with scene-aware directional shadow camera fitting.
+Continue **Milestone 5** with serialized Generic RP settings and project-level pipeline selection.
 
 The fastest useful next step is:
 
-1. Compute a setup-owned world-space bound for visible directional-shadow casters and receivers from the prepared static-mesh items.
-2. Fit a single orthographic directional-light camera to that bound while retaining the current fixed showcase slice when no usable bound exists.
-3. Stabilize the fitted projection by snapping its light-space center to shadow-map texel increments so camera motion does not introduce avoidable shimmer.
-4. Keep command recording unchanged: pass only the prepared light view-projection and compact caster span to `DirectionalShadowPass` and `StaticMeshPass`.
-5. Add focused bounds/fallback/stability tests, Tracy diagnostics, and full runtime smoke validation.
+1. Define a package-owned Generic RP settings source asset with stable GUID identity and deterministic defaults.
+2. Move the existing clear color and shadow-map size into that asset first, leaving pass topology code-defined.
+3. Register a render-pipeline provider/factory service from `com.arisen.generic-renderpipeline` instead of assigning a concrete asset during package `OnLoad`.
+4. Extend workspace project settings with the selected render-pipeline settings asset and load it from the composition root.
+5. Add a functional Project Settings editor for startup-scene and render-pipeline selection, preserving unrelated manifest fields and comments.
+6. Run focused settings/provider tests plus full Editor, Development, Production, and RHIVulkanTesting smoke validation.
 
 Why this order:
 
-- The current fixed orthographic slice was suitable for the teapot showcase but is not derived from the imported Lantern scene or active camera.
-- Fitting and stable snapping establish the shadow-space contract before adding bias, PCF quality, map-size controls, or separate shadow-caster culling.
-- A single-map scene-aware policy improves the current sample without prematurely introducing cascades.
+- Scene identity is now project-selected and shared, but render-pipeline selection still uses the development-only auto-instantiation called out in `GenericRenderPipelinePackage`.
+- Establishing serialized quality settings before scene-aware shadow fitting prevents the fitter from adding another hardcoded map-size/policy contract.
+- Pass topology should remain code-owned; the authoring goal is selectable providers and data-driven quality settings, not a serialized arbitrary pass graph.

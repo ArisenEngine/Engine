@@ -33,6 +33,10 @@ public sealed class PackageValidationFixtureTests
               // Human-authored workspace manifest comments are allowed.
               "Name": "JsoncFixture",
               "EngineVersion": "Current",
+              "StartupScene": {
+                "Guid": "11111111-2222-3333-4444-555555555555",
+                "PackageId": "com.test.app",
+              },
               "Packages": [
                 {
                   "Id": "com.test.app",
@@ -50,6 +54,8 @@ public sealed class PackageValidationFixtureTests
 
         Assert.NotNull(manifest);
         Assert.Equal("JsoncFixture", manifest!.Name);
+        Assert.Equal(Guid.Parse("11111111-2222-3333-4444-555555555555"), manifest.StartupScene!.Guid);
+        Assert.Equal("com.test.app", manifest.StartupScene.PackageId);
         Assert.Equal("com.test.app", manifest.Packages.Single().Id);
     }
 
@@ -146,6 +152,29 @@ public sealed class PackageValidationFixtureTests
         Assert.False(result.Success);
         Assert.Contains(result.Errors, error => error.Contains("missing required Name", StringComparison.Ordinal));
         Assert.Contains(result.Errors, error => error.Contains("missing required EngineVersion", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void IncompleteWorkspaceStartupSceneFailsValidation()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage("com.test.app", layer: "user");
+
+        var manifest = workspace.CreateManifest(new PackageRequirement
+        {
+            Id = "com.test.app",
+            Url = "file://Local/com.test.app",
+            Version = "1.0.0"
+        });
+        manifest.StartupScene = new ProjectAssetReference();
+
+        var result = workspace.Validate(manifest);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error => error.Contains("StartupScene", StringComparison.Ordinal)
+            && error.Contains("Guid", StringComparison.Ordinal));
+        Assert.Contains(result.Errors, error => error.Contains("StartupScene", StringComparison.Ordinal)
+            && error.Contains("PackageId", StringComparison.Ordinal));
     }
 
     [Fact]
