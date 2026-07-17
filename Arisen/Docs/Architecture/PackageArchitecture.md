@@ -20,7 +20,7 @@ These packages form the absolute base of the engine.
 -   **`com.arisen.core`**: Provides managed base types and package-level foundation services such as `ILogger` and `ICommandManager`.
 -   **`com.arisen.core.native`**: The monolithic C++ foundation payload for Foundation, HAL, Diagnostics, RHI base types, and Shader Compiler. It is exposed to packages through managed facade services rather than direct service registration from native code.
 -   **`com.arisen.dag`**: A generic graph-based execution system.
--   **`com.arisen.taskgraph`**: The high-performance job system for all multi-threaded operations.
+-   **`com.arisen.taskgraph`**: The shared worker executor for one-shot task graphs and reusable compiled simulation schedules.
 -   **`com.arisen.platform.desktop`**: The desktop platform/window provider.
 
 ### 2. Domain (Core Features)

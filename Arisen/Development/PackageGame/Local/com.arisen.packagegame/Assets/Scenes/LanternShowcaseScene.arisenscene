@@ -3,18 +3,18 @@ Entities:
 - Name: Main Camera
   Transform:
     Position:
-      X: 3.0
+      X: 3
       Y: 1.7
       Z: -4.6
     Rotation:
       X: 0.01380141
       Y: -0.2503689
-      Z: 0.003569505
+      Z: 0.00356951
       W: 0.9680455
     Scale:
-      X: 1.0
-      Y: 1.0
-      Z: 1.0
+      X: 1
+      Y: 1
+      Z: 1
   Camera:
     VerticalFov: 40.0
     NearPlane: 0.1
@@ -36,7 +36,7 @@ Entities:
   Transform:
     Position:
       X: 0
-      Y: 3
+      Y: 2
       Z: 0
     Rotation:
       X: 0
@@ -199,7 +199,7 @@ Entities:
   Transform:
     Position:
       X: 0.45
-      Y: 2
+      Y: 0.01
       Z: 0
     Rotation:
       X: 0

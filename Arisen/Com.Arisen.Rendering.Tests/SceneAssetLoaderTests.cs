@@ -69,6 +69,122 @@ public sealed class SceneAssetLoaderTests
     }
 
     [Fact]
+    public void RuntimeSceneService_QueuedReloadActivatesOnlyAtFrameBoundary()
+    {
+        using var temp = new TempDirectory();
+        var db = new TestAssetDatabase(temp.Path);
+        var sceneGuid = Guid.Parse("77777777-aaaa-bbbb-cccc-888888888888");
+        string scenePath = Path.Combine(temp.Path, "LiveEditScene.arisenscene");
+        File.WriteAllText(scenePath,
+            """
+            Name: Live Edit Scene
+            Entities:
+            - Name: Editable Mesh
+              Transform:
+                Position:
+                  X: 1
+                  Y: 2
+                  Z: 3
+            """);
+        db.AddAsset(sceneGuid, "Scene", scenePath);
+
+        EntityManager? activeWorld = null;
+        var service = new RuntimeSceneService(db, world => activeWorld = world);
+        var sceneRef = new AssetRef<SceneSourceAsset>(sceneGuid, "Scene", "com.arisen.test");
+        var initialLoad = service.LoadScene(sceneRef);
+        Assert.True(initialLoad.Success, initialLoad.Diagnostic);
+        var initialWorld = Assert.IsType<EntityManager>(activeWorld);
+        Assert.Equal(
+            new System.Numerics.Vector3(1, 2, 3),
+            initialWorld.GetPool<TransformComponent>().GetRawComponentArray()[0].Position);
+
+        var edit = SceneAssetLoader.UpdateEntityTransform(
+            scenePath,
+            0,
+            new SceneTransformInspection(
+                new System.Numerics.Vector3(4, 5, 6),
+                System.Numerics.Quaternion.Identity,
+                System.Numerics.Vector3.One));
+        Assert.True(edit.Success, edit.Diagnostic);
+
+        service.RequestSceneLoad(sceneRef);
+
+        Assert.Same(initialWorld, activeWorld);
+        Assert.Equal(
+            new System.Numerics.Vector3(1, 2, 3),
+            initialWorld.GetPool<TransformComponent>().GetRawComponentArray()[0].Position);
+
+        var processed = service.ProcessPendingSceneLoadAtFrameBoundary();
+
+        Assert.True(processed.HasValue);
+        Assert.True(processed.Value.Success, processed.Value.Diagnostic);
+        Assert.NotSame(initialWorld, activeWorld);
+        Assert.Same(activeWorld, service.ActiveScene!.EntityManager);
+        Assert.Equal(
+            new System.Numerics.Vector3(4, 5, 6),
+            activeWorld!.GetPool<TransformComponent>().GetRawComponentArray()[0].Position);
+        Assert.Null(service.ProcessPendingSceneLoadAtFrameBoundary());
+
+        var lastValidWorld = activeWorld;
+        File.WriteAllText(scenePath, "Name: Broken Live Edit Scene\nEntities: []\n");
+        service.RequestSceneLoad(sceneRef);
+
+        var failedReload = service.ProcessPendingSceneLoadAtFrameBoundary();
+
+        Assert.True(failedReload.HasValue);
+        Assert.False(failedReload.Value.Success);
+        Assert.Same(lastValidWorld, activeWorld);
+        Assert.Same(lastValidWorld, service.ActiveScene.EntityManager);
+    }
+
+    [Fact]
+    public void RuntimeSceneService_CoalescesQueuedLoadsToLatestRequest()
+    {
+        using var temp = new TempDirectory();
+        var db = new TestAssetDatabase(temp.Path);
+        var firstSceneGuid = Guid.Parse("99999999-aaaa-bbbb-cccc-111111111111");
+        var latestSceneGuid = Guid.Parse("99999999-aaaa-bbbb-cccc-222222222222");
+        string firstScenePath = Path.Combine(temp.Path, "FirstQueuedScene.arisenscene");
+        string latestScenePath = Path.Combine(temp.Path, "LatestQueuedScene.arisenscene");
+        File.WriteAllText(firstScenePath,
+            """
+            Name: First Queued Scene
+            Entities:
+            - Name: First Camera
+              Camera:
+                VerticalFov: 45
+            """);
+        File.WriteAllText(latestScenePath,
+            """
+            Name: Latest Queued Scene
+            Entities:
+            - Name: Latest Camera
+              Camera:
+                VerticalFov: 60
+            """);
+        db.AddAsset(firstSceneGuid, "Scene", firstScenePath);
+        db.AddAsset(latestSceneGuid, "Scene", latestScenePath);
+
+        EntityManager? activeWorld = null;
+        var service = new RuntimeSceneService(db, world => activeWorld = world);
+        service.RequestSceneLoad(
+            new AssetRef<SceneSourceAsset>(firstSceneGuid, "Scene", "com.arisen.test"));
+        service.RequestSceneLoad(
+            new AssetRef<SceneSourceAsset>(latestSceneGuid, "Scene", "com.arisen.test"));
+
+        Assert.Null(activeWorld);
+
+        var processed = service.ProcessPendingSceneLoadAtFrameBoundary();
+
+        Assert.True(processed.HasValue);
+        Assert.True(processed.Value.Success, processed.Value.Diagnostic);
+        Assert.Equal("Latest Queued Scene", processed.Value.SceneName);
+        Assert.Equal(latestSceneGuid, service.ActiveScene!.Scene.Guid);
+        Assert.Same(activeWorld, service.ActiveScene.EntityManager);
+        Assert.Null(service.ProcessPendingSceneLoadAtFrameBoundary());
+    }
+
+    [Fact]
     public void SceneAssetLoader_SpawnsCameraAndMeshRenderers()
     {
         using var temp = new TempDirectory();
