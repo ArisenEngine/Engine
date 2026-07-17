@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace ArisenBuildTool.Models;
@@ -16,10 +17,17 @@ public class ProfileDefinition
     public List<PackageRequirement> Packages { get; set; } = new();
 }
 
+public class ProjectAssetReference
+{
+    public Guid Guid { get; set; }
+    public string PackageId { get; set; } = string.Empty;
+}
+
 public class ProjectManifest
 {
     public string Name { get; set; } = string.Empty;
     public string EngineVersion { get; set; } = string.Empty;
+    public ProjectAssetReference? StartupScene { get; set; }
     public List<PackageRequirement> Packages { get; set; } = new();
     public Dictionary<string, ProfileDefinition>? Profiles { get; set; }
 }

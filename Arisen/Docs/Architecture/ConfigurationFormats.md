@@ -60,6 +60,12 @@ Tooling may deserialize case-insensitively for transition compatibility, but gen
   "Name": "MyGame",
   "EngineVersion": "Current",
 
+  // The package-owned scene activated before frame zero.
+  "StartupScene": {
+    "Guid": "11111111-2222-3333-4444-555555555555",
+    "PackageId": "com.user.mygame"
+  },
+
   "Packages": [
     {
       "Id": "com.user.mygame",
@@ -102,6 +108,9 @@ Tooling may deserialize case-insensitively for transition compatibility, but gen
 | `$schema` | `string` | Optional | URL to the JSON schema for IDE autocomplete and validation. |
 | `Name` | `string` | **Yes** | The user-friendly name of the project. |
 | `EngineVersion` | `string` | **Yes** | The specific version of Arisen Engine required (e.g., `"1.2.0"` or `"Current"`). |
+| `StartupScene` | `object` | Optional | Package-owned `Scene` asset activated by the root composition package before frame zero. Projects intended to run a scene should provide it. |
+| `StartupScene.Guid` | `Guid` | Required with `StartupScene` | Stable `.arisenscene.meta` identity. Empty GUIDs fail workspace validation. |
+| `StartupScene.PackageId` | `string` | Required with `StartupScene` | Package that owns the selected scene asset. Empty package IDs fail workspace validation. |
 | `Packages` | `array` | **Yes** | The base list of packages loaded regardless of what Profile is active. |
 | `Packages[].Id` | `string` | **Yes** | The unique identifier of the package to load. |
 | `Packages[].Url` | `string` | Optional | A path to resolve the package locally (`file:///...`), a direct remote package archive (`https://.../package.zip`), or a remote registry index (`https://.../registry.json`). If empty, resolves from local/engine package search paths. |
@@ -118,6 +127,8 @@ Source precedence is intentional: `file://` means local source, `http(s)://` mea
 1. **Topological Dependency Sorting**: When the engine reads all the package.json files, it builds a Directed Acyclic Graph (DAG). If package B depends on package A, the Engine mathematically guarantees package A is loaded first.
 
 2. **Subsystem Phases and Priorities**: Packages register "Subsystems". The Engine gathers all subsystems across all packages, groups them by an EnginePhase (like PreInit, Init, PostInit), and then ticks them based on a numeric priority.
+
+3. **Startup Scene Activation**: The root composition package consumes `StartupScene` through `IRuntimeSceneService` during `PostInit`. Scene parsing and reference validation complete in a temporary ECS world; only a successful load replaces `SceneSubsystem.ActiveEntityManager`. Editor Hierarchy and runtime rendering therefore observe the same selected scene.
 ---
 
 ## 2. Project Identity (`.arisenproj`)

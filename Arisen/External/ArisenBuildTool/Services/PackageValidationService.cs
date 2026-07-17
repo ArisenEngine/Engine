@@ -197,6 +197,19 @@ public static class PackageValidationService
         {
             result.Errors.Add("Workspace manifest is missing required EngineVersion.");
         }
+
+        if (manifest.StartupScene != null)
+        {
+            if (manifest.StartupScene.Guid == Guid.Empty)
+            {
+                result.Errors.Add("Workspace manifest StartupScene is missing a valid Guid.");
+            }
+
+            if (string.IsNullOrWhiteSpace(manifest.StartupScene.PackageId))
+            {
+                result.Errors.Add("Workspace manifest StartupScene is missing PackageId.");
+            }
+        }
     }
 
     public static void LogSummary(PackageValidationResult result)
