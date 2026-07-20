@@ -75,6 +75,7 @@ set "WORKSPACE_DIR=!MANIFEST_PATH!\.."
 for %%I in ("!WORKSPACE_DIR!") do set "WORKSPACE_DIR=%%~fI"
 set "SLN_DIR=!WORKSPACE_DIR!\.arisen"
 set "BUILD_TOOL_CSPROJ=!SCRIPT_ROOT!..\..\External\ArisenBuildTool\ArisenBuildTool.csproj"
+set "BUILD_TOOL_DLL=!SCRIPT_ROOT!..\..\External\ArisenBuildTool\bin\x64\Release\net9.0\ArisenBuildTool.dll"
 set "ENGINE_ROOT=!SCRIPT_ROOT!..\.."
 
 echo [Arisen] Locating Developer Command Prompt...
@@ -107,6 +108,14 @@ if !errorlevel! neq 0 (
 
 echo [Arisen] Ensuring ArisenBuildTool is compiled...
 dotnet build "%BUILD_TOOL_CSPROJ%" -c Release >nul
+if !errorlevel! neq 0 (
+    echo [ERROR] Failed to compile ArisenBuildTool.
+    goto :fail
+)
+if not exist "!BUILD_TOOL_DLL!" (
+    echo [ERROR] ArisenBuildTool output was not found: !BUILD_TOOL_DLL!
+    goto :fail
+)
 
 :: Determine mode and profiles
 if defined TEST_PACKAGE_ID (
@@ -121,8 +130,12 @@ if defined TEST_PACKAGE_ID (
     ) else (
         echo [Arisen] MODE: Workspace Profile Loop
         set "PROFILES="
-        for /f "usebackq delims=" %%A in (`powershell -NoProfile -Command "$m = Get-Content -LiteralPath '!MANIFEST_PATH!' -Raw | ConvertFrom-Json; if ($m.Profiles) { $m.Profiles.psobject.Properties.Name } else { 'Development'; 'Production' }"`) do (
+        for /f "usebackq delims=" %%A in (`dotnet "!BUILD_TOOL_DLL!" manifest-info --manifest "!MANIFEST_PATH!" --field profiles`) do (
             set "PROFILES=!PROFILES! %%A"
+        )
+        if not defined PROFILES (
+            echo [ERROR] Could not read profiles from workspace manifest: !MANIFEST_PATH!
+            goto :fail
         )
     )
 )
@@ -138,8 +151,9 @@ for %%A in (!PROFILES!) do (
     ) else (
         dotnet run --project "%BUILD_TOOL_CSPROJ%" -- generate -m "%MANIFEST_PATH%" -e "!ENGINE_ROOT!" --profile %%A
         
-        :: Extract Project Name for this profile (it might change in manifest, but usually it's global)
-        for /f "usebackq delims=" %%P in (`powershell -NoProfile -Command "$m = Get-Content -LiteralPath '!MANIFEST_PATH!' -Raw | ConvertFrom-Json; if ($m.Name) { $m.Name } else { 'MyGame' }"`) do set "PROJECT_NAME=%%P"
+        :: Read the source manifest through the same comment-aware parser used by generation.
+        set "PROJECT_NAME="
+        for /f "usebackq delims=" %%P in (`dotnet "!BUILD_TOOL_DLL!" manifest-info --manifest "!MANIFEST_PATH!" --field name`) do set "PROJECT_NAME=%%P"
     )
     
     if not defined PROJECT_NAME set "PROJECT_NAME=MyGame"

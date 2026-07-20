@@ -38,6 +38,11 @@ public class ProjectManifest
     /// Scene asset activated before the first engine frame.
     /// </summary>
     public ProjectAssetReference? StartupScene { get; set; }
+
+    /// <summary>
+    /// Package-owned render-pipeline settings asset selected for this workspace.
+    /// </summary>
+    public ProjectAssetReference? RenderPipeline { get; set; }
     
     /// <summary>
     /// List of package requirements for this project.

@@ -179,7 +179,7 @@ Recent validation baseline:
 - `RHITexture2DResource` creates the authored setup-time sampler through per-axis RHI address modes, and `RHIMaterialResource` caches each resolved transform next to the prepared bindless binding. RenderGraph command recording remains unchanged; StandardLit consumption belongs to the later shader item.
 - `MaterialConventions_DefinePbrBindingsAndDeterministicTextureDefaults` and `MaterialCooker_PreservesShaderRenderStateAndTextureBindingMetadata` cover the shared names/defaults and source-to-cooked round trip.
 - `GltfModelImportPlanner` now imports metallic-roughness and occlusion texture bindings, occlusion strength, glTF sampler enums, and `KHR_texture_transform`. It preserves each resolved UV set in material metadata and reports nonzero UV sets because the current static mesh shader path still samples only `TEXCOORD_0`.
-- `GltfModelImportEmitter` emits packed and occlusion bindings as linear variants, keeps sampler/transform metadata binding-local, and deduplicates the physical generated image when several bindings reference the same glTF image. `MASK` materials select the explicit `ALPHA_TEST` variant and emit the authored/default cutoff; `BLEND` remains unmodified and produces a transparent-pass warning.
+- `GltfModelImportEmitter` emits packed and occlusion bindings as linear variants, keeps sampler/transform metadata binding-local, and deduplicates the physical generated image when several bindings reference the same glTF image. `MASK` materials select the explicit `ALPHA_TEST` variant and emit the authored/default cutoff; `BLEND` materials now emit straight-alpha render state for the explicit transparent pass.
 - The package-owned Lantern generated material now includes its linear metallic-roughness image child. Planner/emitter tests cover shared-image bindings, sampler mapping, UV transforms, occlusion strength, alpha cutoff, `MASK`, and retained `BLEND` diagnostics.
 - `StaticMeshPass` now resolves optional metallic-roughness/occlusion bindings, occlusion strength, and alpha cutoff during setup. The values travel in each draw's existing bindless object-buffer record, preserving the 124-byte draw push-constant contract and allocation-free command recording.
 - StandardLit multiplies roughness from packed green and metallic from packed blue, reuses packed red for occlusion when image/sampler bindings match, and applies authored occlusion strength only to ambient diffuse/specular. Direct lights and emissive remain unoccluded. The explicit `ALPHA_TEST` variant clips sampled base-color alpha against the authored cutoff.
@@ -274,15 +274,15 @@ Recent validation baseline:
   - [x] Load the selected startup scene from a `PostInit` composition subsystem before frame zero.
   - [x] Stop editor boot from synthesizing/loading an unrelated legacy `SampleScene`.
   - [x] Make Hierarchy inspect the same active `.arisenscene` rendered by the viewport.
-- [ ] Complete project-facing scene workflow.
+- [x] Complete project-facing scene workflow.
   - [x] Route editor scene switching through a frame-boundary activation request.
-  - [ ] Make Project Settings edit the startup scene reference without rewriting unrelated manifest fields/comments.
-  - [ ] Define source-scene save/dirty policy and retire the conflicting legacy `.arisen` active-scene path.
-- [ ] Make render-pipeline selection asset-driven.
-  - [ ] Define a serialized Generic RP settings asset and loader.
-  - [ ] Move shadow size/bias/PCF and other project-level quality settings into that asset.
-  - [ ] Register a render-pipeline provider/factory instead of auto-assigning `GenericRenderPipelineAsset` during package load.
-  - [ ] Let Project Settings select the render-pipeline settings asset.
+  - [x] Make Project Settings edit the startup scene reference without rewriting unrelated manifest fields/comments.
+  - [x] Define source-scene save/dirty policy and retire the conflicting legacy `.arisen` active-scene path.
+- [x] Make render-pipeline selection asset-driven.
+  - [x] Define a serialized Generic RP settings asset and loader.
+  - [x] Move shadow size/bias/PCF and other project-level quality settings into that asset.
+  - [x] Register a render-pipeline provider/factory instead of auto-assigning `GenericRenderPipelineAsset` during package load.
+  - [x] Let Project Settings select the render-pipeline settings asset.
 
 ### Progress Notes
 
@@ -293,7 +293,17 @@ Recent validation baseline:
 - `IRuntimeSceneService.RequestSceneLoad` now provides a coalesced cross-thread request boundary drained by `ResourcesPackage` from `EngineKernel.OnFrameEnd`. Active-scene transform edits, undo/redo, and editor `.arisenscene` opening use this path; loading still occurs into a candidate world, failed reloads preserve the current world, and successful replacement refreshes Hierarchy while preserving the selected source entity by scene path and entity index.
 - Editor shared-texture presentation now receives an explicit host-specific wakeup after each finalized render output. The viewport coalesces those notifications onto Avalonia's UI thread, preventing producer pacing from freezing after its initial image burst and making frame-boundary scene edits visible without switching Scene/Game tabs.
 - The cross-cutting simulation scheduler now distinguishes one-shot frame graphs from reusable compiled ECS schedules. `SceneSubsystem` consumes the package-owned shared worker executor, systems run on every frame without creating a private worker pool, worker failures propagate to the engine thread, and failed frames discard deferred structural commands.
-- Focused validation covers manifest parsing/validation and failed/successful atomic scene activation. The remaining composition work is editor scene switching/saving and serialized render-pipeline settings.
+- Editor Project Settings now lists indexed package-owned Scene assets, supports explicit Apply/Revert and Use Active Scene actions, and updates the workspace `StartupScene` reference for the next launch. Its structured UTF-8 patcher validates that the owner is a base workspace package and changes only the top-level startup-scene value (or inserts it before `Packages`), preserving comments, trailing commas, BOM/newline style, unknown fields, and unrelated bytes. Focused coverage includes replacement, insertion, BOM/CRLF/comment preservation, profile-only package rejection without mutation, duplicate-property rejection, and the no-op case.
+- `IEditorSceneDocumentService` now owns saved and working source for the active `.arisenscene`. Transform commands edit the working YAML, mark the document dirty, and queue immutable revisioned snapshots for frame-boundary preview without touching disk. Runtime loading still uses a candidate world and publishes a completion report; failed snapshots preserve the previous world.
+- Save validates the staged snapshot, detects external source changes against the saved baseline, and atomically replaces UTF-8 source only on explicit user action. Undo/redo restores exact working-source revisions, dirty scene switching and editor close use Save/Discard/Cancel resolution, and title/Hierarchy state expose dirty or external-conflict status.
+- Hierarchy now follows only the active editor document and preserves node identity, selection, and fold state across previews. The legacy `SceneManagerService`, `SceneService`, `.arisen` open/save path, reflection serializer, last-opened-scene setting, editor camera registry, and direct live-ECS entity commands have been removed.
+- Focused scene coverage includes snapshot success/failure isolation, staged preview, atomic Save, exact-source undo/redo, external-write conflict handling, dirty-switch policy, and pending-activation queue protection.
+- `DefaultGenericRP.arisrenderpipeline` is the first stable `RenderPipelineSettings` asset. It stores fallback clear color and directional-shadow enabled state, map size, receiver depth/slope bias, strength, and PCF radius; strict loader validation rejects unsupported versions/providers and unsafe ranges.
+- `com.arisen.generic-renderpipeline` now provides `IRenderPipelineProvider` instead of assigning an in-memory default from package load. `RenderSubsystem.Initialize` asks the single composition-selected provider to activate `manifest.json`'s `RenderPipeline` GUID/package identity; the referenced asset may be owned by the game package.
+- Project Settings lists eligible package-owned pipeline settings beside startup scenes. Apply patches both references in one atomic write while preserving comments, trailing commas, BOM/newline style, unknown fields, and unrelated bytes.
+- Runtime asset indexing reads package ownership from each selected `package.json` instead of deriving it from a package-root path; empty owner identities are rejected before assets enter the registry.
+- Focused settings/provider/manifest tests pass, BuildTool emits typed `AssetRef<RenderPipelineSettingsSourceAsset>` helpers, and the generated Editor profile builds with zero errors.
+- Full Debug runtime validation passes for `Editor`, `Development`, `Production`, and `RHIVulkanTesting` with one scene-smoke frame each, zero skips/fallbacks, and empty active `vk_validation.log` files. Milestone 5 implementation is complete.
 
 ### Acceptance Criteria
 
@@ -312,20 +322,29 @@ Recent validation baseline:
 
 ### TODO
 
-- [ ] Fit the directional shadow camera from scene/camera bounds.
-  - [ ] Compute visible caster/receiver bounds during setup.
-  - [ ] Use stable snapping to reduce shimmering.
-  - [ ] Fall back to the fixed showcase slice when bounds are unavailable.
-- [ ] Add shadow quality controls.
-  - [ ] Depth bias and slope bias.
-  - [ ] PCF radius/quality settings.
-  - [ ] Shadow map size as a pipeline/scene setting.
-- [ ] Add shadow culling.
-  - [ ] Separate camera-visible draw span from shadow-caster draw span.
-  - [ ] Keep shadow culling output compact and setup-owned.
-- [ ] Document cascade policy.
-  - [ ] Keep single-map shadows for this milestone.
-  - [ ] Define the first cascade plan for a later large-scene milestone.
+- [x] Fit the directional shadow camera from scene/camera bounds.
+  - [x] Compute visible caster/receiver bounds during setup.
+  - [x] Use stable snapping to reduce shimmering.
+  - [x] Fall back to the fixed showcase slice when bounds are unavailable.
+- [x] Add shadow quality controls.
+  - [x] Depth bias and slope bias.
+  - [x] PCF radius/quality settings.
+  - [x] Shadow map size as a pipeline/scene setting.
+- [x] Add shadow culling.
+  - [x] Separate camera-visible draw span from shadow-caster draw span.
+  - [x] Keep shadow culling output compact and setup-owned.
+- [x] Document cascade policy.
+  - [x] Keep single-map shadows for this milestone.
+  - [x] Define the first cascade plan for a later large-scene milestone.
+
+### Progress Notes
+
+- `StaticMeshFrustumCuller` now exposes conservative world-AABB extraction shared by primary-camera and light-frustum tests. Authored bounds remain preferred, cooked mesh bounds remain the fallback, and unusable bounds stay conservatively visible.
+- `DirectionalShadowFitter` unions bounded camera-visible receivers, fits a padded square orthographic slice in a stable light basis, and snaps its XY center to the selected map's world-space texel increment. The previous showcase matrix remains the deterministic no-bounds fallback.
+- Generic RP owns separate reusable camera and shadow draw arrays. The shadow traversal considers all valid static scene items against the fitted light frustum and expands only accepted submeshes into the pass span; no culling or scene access moved into command recording.
+- Tracy and throttled setup diagnostics expose receiver, caster, culled-caster, camera-draw, shadow-draw, fitted/fallback, diameter/depth, and world-units-per-texel data.
+- This milestone intentionally keeps one shadow map. The first deferred cascade design uses four practical-split camera slices, independently fitted/snapped projections, per-cascade compact caster spans, a depth-array target, maximum-distance fade, and setup-prepared selection data.
+- Focused rendering coverage passes all 135 tests. Full Debug runtime validation passes Editor, Development, Production, and RHIVulkanTesting with four GPU scene-smoke runs, zero skips or CPU fallbacks, and empty active `vk_validation.log` files. Milestone 6 is complete.
 
 ### Acceptance Criteria
 
@@ -341,21 +360,31 @@ Recent validation baseline:
 
 ### TODO
 
-- [ ] Implement an explicit transparent pass.
-  - [ ] Keep opaque and alpha-test in depth-writing static mesh pass.
-  - [ ] Draw transparent materials after opaque lighting.
-  - [ ] Sort transparent draws back-to-front by camera distance.
-- [ ] Define transparent depth policy.
-  - [ ] Depth test on.
-  - [ ] Depth write off.
-  - [ ] Blend state from material render state.
-- [ ] Map glTF alpha modes.
-  - [ ] `OPAQUE` to opaque queue.
-  - [ ] `MASK` to alpha-test queue and cutoff.
-  - [ ] `BLEND` to transparent queue.
-- [ ] Add diagnostics.
-  - [ ] Plot opaque, alpha-test, transparent, and skipped alpha draw counts.
-  - [ ] Warn when a material requests transparency before the pass is available.
+- [x] Implement an explicit transparent pass.
+  - [x] Keep opaque and alpha-test in depth-writing static mesh pass.
+  - [x] Draw transparent materials after opaque lighting.
+  - [x] Sort transparent draws back-to-front by camera-space depth.
+- [x] Define transparent depth policy.
+  - [x] Depth test on.
+  - [x] Depth write off.
+  - [x] Blend state from material render state.
+- [x] Map glTF alpha modes.
+  - [x] `OPAQUE` to opaque queue.
+  - [x] `MASK` to alpha-test queue and cutoff.
+  - [x] `BLEND` to transparent queue.
+- [x] Add diagnostics.
+  - [x] Plot opaque, alpha-test, transparent, and skipped alpha draw counts.
+  - [x] Retire the temporary `BLEND` unsupported warning once the pass is available while preserving unknown-mode diagnostics.
+
+### Progress Notes
+
+- Generic RP partitions camera-visible draw commands into reusable depth-writing and transparent arrays during setup. Material queue lookup, validation, and sorting stay outside command recording.
+- `TransparentDrawOrdering` sorts by descending camera-space depth from each draw's transformed local origin and uses source draw order as the stable tie-breaker. `StaticMeshPass` preserves that prepared order while still splitting adjacent pipeline batches into bounded worker-recording ranges; RenderGraph submits those ranges in index order.
+- The opaque and transparent `StaticMeshPass` instances share one concrete depth target. Opaque and alpha-test pipelines clear and write depth; the transparent pass loads the same attachment, uses `LESS_OR_EQUAL` testing, disables depth writes in its pipeline key/state, and preserves material-authored blending.
+- Transparent draws run after opaque HDR lighting and before tonemapping. They are excluded from the directional depth-only caster span; alpha-test draws remain depth-writing and shadow eligible.
+- glTF `OPAQUE` keeps default opaque state, `MASK` selects `ALPHA_TEST` plus cutoff, and `BLEND` emits `SrcAlpha` / `OneMinusSrcAlpha` straight-alpha render state. Unknown alpha modes still produce import diagnostics.
+- Tracy exposes setup-level opaque, alpha-test, transparent, and skipped-alpha counts plus transparent pass draw/batch/work-item counters. Focused rendering coverage passes all 146 tests, including deterministic off-axis depth ordering and generated `BLEND` material loading.
+- Full Debug runtime validation passes Editor, Development, Production, and RHIVulkanTesting with four GPU scene-smoke runs, zero skips or CPU fallbacks, and all six discovered `vk_validation.log` files empty. Milestone 7 is complete.
 
 ### Acceptance Criteria
 
@@ -371,25 +400,43 @@ Recent validation baseline:
 
 ### TODO
 
-- [ ] Move frame depth into graph-owned transient allocation.
-  - [ ] Declare depth usage from all passes.
-  - [ ] Remove pass-owned depth image transitions from `StaticMeshPass`.
-  - [ ] Preserve resize and deferred disposal safety.
-- [ ] Move directional shadow map allocation/barriers into the graph resource planner.
-  - [ ] Keep `DirectionalShadowTarget` as a high-level owner only if needed.
-  - [ ] Let pass declarations drive depth write and shader-read transitions.
-- [ ] Extend resource diagnostics.
-  - [ ] Log depth/shadow access chains.
-  - [ ] Validate invalid load/read/write combinations.
-  - [ ] Preserve pass-culling behavior for side-effect and output passes.
-- [ ] Prepare for future aliasing.
-  - [ ] Track lifetime intervals for transient textures.
-  - [ ] Do not implement aliasing until depth/shadow ownership is stable.
+- [x] Move frame depth into graph-owned transient allocation.
+  - [x] Declare depth usage from all passes.
+  - [x] Remove pass-owned depth image transitions from `StaticMeshPass`.
+  - [x] Preserve resize and deferred disposal safety.
+- [x] Move directional shadow map allocation/barriers into the graph resource planner.
+  - [x] Remove `DirectionalShadowTarget`; `RenderGraphTexture` is the sole allocation owner.
+  - [x] Let pass declarations drive depth write and shader-read transitions.
+- [x] Extend resource diagnostics.
+  - [x] Log depth/shadow access chains.
+  - [x] Validate invalid load/read/write combinations.
+  - [x] Preserve pass-culling behavior for side-effect and output passes.
+- [x] Prepare for future aliasing.
+  - [x] Track lifetime intervals for transient textures.
+  - [x] Do not implement aliasing until depth/shadow ownership is stable.
+
+### Progress Notes
+
+- `GenericRenderPipeline` now requests a depth-only `FORMAT_D32_SFLOAT` `FrameDepth` transient beside HDR `SceneColor` and binds its prepared view/format into both static-mesh passes.
+- `StaticMeshPass` no longer creates, resizes, transitions, shares through a pass-to-pass binding, or disposes the frame depth image. Opaque/alpha-test work declares read/write attachment use and retains clear-then-load semantics; transparent work declares read-only attachment use and records against the read-only depth layout with writes disabled.
+- `RenderGraphTextureDescriptor.DepthAttachment2D` requests only depth-attachment usage and a depth aspect, without an unnecessary sampler or bindless descriptors. Existing graph-owned resize replacement continues through `DeferredRenderResourceDisposalQueue` and the last submitted queue ticket.
+- `DepthReadAttachment` gives the planner an explicit write-to-read-only transition with depth attachment read access. RenderGraph now preflights pass work-item counts and plans/persists states only for active passes, preventing a zero-draw transparent pass from claiming a transition it never records.
+- Focused descriptor, transition-chain, inactive-pass, profiling, and source-ownership contracts pass in the `154/154` rendering suite. Full Debug runtime validation passes Editor, Development, Production, and RHIVulkanTesting with four GPU smoke runs, zero skips or CPU fallbacks, and all six discovered `vk_validation.log` files empty.
+- `RenderGraphTextureDescriptor.DepthAttachmentSampled2D` gives `DirectionalShadowMap` depth-attachment and sampled usage, a depth aspect, and graph-owned bindless image/sampler registration. Generic RP requests it at the selected settings size and passes only its prepared view/format/dimensions and sampling indices to recorders.
+- `DirectionalShadowTarget` and its expected-layout state are removed. `DirectionalShadowPass` no longer allocates, transitions, or disposes the image; its depth-write declaration followed by static-mesh shader reads produces the graph-planned write-to-read barrier. The focused rendering suite passes `157/157`, and a regenerated Development workspace builds successfully.
+- Development runtime diagnostics show `GenericDirectionalShadowMap` as a 2048x2048 `FORMAT_D32_SFLOAT` texture with usage `0x24`, depth aspect, and valid bindless image/sampler indices. Its access chain is `DirectionalShadowPass[write:DepthAttachment] -> GenericStaticMeshPass[read:ShaderRead] -> GenericTransparentStaticMeshPass[read:ShaderRead]`, with planned `Unknown -> DepthAttachment -> ShaderRead` transitions. Full Debug runtime validation passes all four GPU profiles with zero skips or CPU fallbacks, and all six discovered `vk_validation.log` files are empty.
+- Attachment operations now declare explicit setup-time `RenderAttachmentIntent` values. Directional shadow, environment sky, and tonemap declare `Clear/Store`; opaque color and transparent color declare `Load/Store`; opaque depth declares `ClearThenLoad/Store`; transparent depth declares `ReadOnlyLoad/Store`. Named access-chain diagnostics include both load and store intent, and topology caching includes the intent values.
+- `RenderGraphResourcePlanner` rejects uninitialized loads, loads after any discarded attachment operation, clear without write access, plain clear plus read access, invalid load/read/write masks, writes through read-only depth, incomplete intent, non-attachment intent, and mismatched intent within one pass/resource. `StaticMeshPass` keeps a clear-only opaque work item when depth must be initialized but no eligible draw or fallback exists, while zero-draw transparent work remains inactive. `DirectionalShadowPass` still clears its graph-declared map when it has no casters.
+- Pass culling is isolated in the pure compile-time `RenderGraphPassCullingPlanner`. Focused behavioral tests prove that output ownership retains its resource-producer chain, side-effect passes retain explicit predecessors, and unused producers are removed. Attachment validation, culling, empty-frame recording contracts, and generated Development compilation pass in the `169/169` focused rendering suite with zero generated-build errors.
+- Runtime access diagnostics now show `SceneColor` as `Clear/Store -> Load/Store -> Load/Store -> ShaderRead`, `FrameDepth` as `ClearThenLoad/Store -> ReadOnlyLoad/Store`, `DirectionalShadowMap` as `Clear/Store -> ShaderRead`, and `FrameColor` tonemap output as `Clear/Store`. Full Debug runtime validation passes Editor, Development, Production, and RHIVulkanTesting with four GPU scene-smoke runs, zero skips or CPU fallbacks, and all six discovered `vk_validation.log` files empty.
+- `RenderGraphResourceLifetimePlanner` now derives inclusive first/last compiled-pass intervals after pass culling and work-item preflight. It includes only active accesses to non-imported transient textures, validates that active passes are a unique ordered subset of the compiled order, and exposes interval count plus peak simultaneous live count through logs and Tracy counters. Focused tests cover overlapping and non-overlapping intervals, imported texture exclusion, culled accesses, zero-work passes, and invalid active-pass order.
+- Current Development, Production, and RHIVulkanTesting diagnostics report three intervals with peak live count `3`: `SceneColor [2..5]`, `FrameDepth [3..3]`, and `DirectionalShadowMap [1..3]`. The focused rendering suite passes `179/179`; the regenerated Development workspace builds with zero errors; and full Debug runtime validation passes all four GPU profiles with zero skips/fallbacks and all six discovered `vk_validation.log` files empty. Physical image aliasing remains deliberately disabled, so Milestone 8 is complete without changing Vulkan allocation, descriptor, barrier, or deferred-disposal ownership.
 
 ### Acceptance Criteria
 
 - Scene color, frame depth, and directional shadow map follow the same resource-planning model.
 - Render passes contain fewer manual layout transitions.
+- Active transient texture lifetimes are observable without enabling physical image aliasing.
 - Full runtime validation remains green with empty active Vulkan validation logs.
 
 ---
@@ -400,21 +447,42 @@ Recent validation baseline:
 
 ### TODO
 
-- [ ] Add bounded screenshot or image-summary validation.
-  - [ ] Capture a deterministic runtime smoke frame.
-  - [ ] Check nonblank color/depth output.
-  - [ ] Track coarse luminance/color histogram rather than brittle pixel-perfect output.
-- [ ] Add editor viewport smoke validation.
-  - [ ] Verify first SceneView frame presents without switching tabs.
-  - [ ] Verify SceneView and GameView orientation.
-  - [ ] Verify resize generation and shared-texture pacing state.
-- [ ] Add import/reimport validation fixtures.
-  - [ ] Generated model children are present.
-  - [ ] Generated material texture refs resolve.
-  - [ ] Generated scene loads through `SceneAssetLoader`.
-- [ ] Add profiler workflow checks.
-  - [ ] Keep `open_tracy_profiler.bat` documented.
-  - [ ] Add a short profiler-enabled manual run recipe for model-scene profiling.
+- [x] Add bounded screenshot or image-summary validation.
+  - [x] Capture a deterministic standalone runtime smoke frame.
+  - [x] Check nonblank final color output.
+  - [x] Check nonblank depth output.
+  - [x] Track coarse luminance/color statistics rather than brittle pixel-perfect output.
+- [x] Add editor viewport smoke validation.
+  - [x] Verify first SceneView frame presents without switching tabs.
+  - [x] Verify SceneView and GameView orientation.
+  - [x] Verify resize generation and shared-texture pacing state.
+- [x] Add import/reimport validation fixtures.
+  - [x] Generated model children are present.
+  - [x] Generated material texture refs resolve.
+  - [x] Generated scene loads through `SceneAssetLoader`.
+- [x] Add profiler workflow checks.
+  - [x] Keep `open_tracy_profiler.bat` documented.
+  - [x] Add a short profiler-enabled manual run recipe for model-scene profiling.
+
+### Completion Notes
+
+- `--visual-summary` is an explicit scene-smoke option owned by `RuntimeSmokeOptions`; it captures the final effective smoke frame and turns a missing or failed capture into a nonzero smoke result.
+- Shared rendering inserts `RenderOutputReadbackPass` after the active `FrameColor` and published primary `FrameDepth` producers and before `FinalOutputPass`. The pipeline publishes depth semantically rather than looking up the `"FrameDepth"` debug name, and capture-only processes add transfer-source usage to that graph-owned D32 image.
+- The pass declares transfer-read access for both resources and records only the backend-neutral `RenderCommandList.CopyImageToBuffer2D` contract. Its explicit image-aspect argument reaches the shared native command stream; Vulkan implements the color and depth copies with `vkCmdCopyImageToBuffer` and invalidates non-coherent readback allocations before CPU mapping.
+- One submission and one bounded buffer produce the atomic schema-2 JSON artifact. Existing final-color metadata and statistics remain at the root; the required nested D32 result records finite/normalized/written/clear depth coverage, extrema/average, a 16-bin histogram, a 4x4 spatial grid, and independent pass/fail checks. The combined capture limit remains 256 MiB.
+- `validate_runtime.bat` requests fresh visual summaries for scene-mode Development and Production runs only, rejects stale/missing/mismatched/failed schema-2 artifacts, validates depth dimensions/format/counts/distribution shape, and records successful artifact paths in its machine-readable summary.
+- `--editor-viewport-smoke` now opens a real Avalonia/Vulkan host with SceneView active, waits for its first accepted output, resizes the live window, waits for an advanced resize generation and changed physical output size, activates GameView, and waits for its first accepted output. The harness uses explicit presentation observations rather than timing sleeps and writes a version 1 JSON artifact.
+- SceneView and GameView use distinct surface roles. Diagnostics are emitted only after Avalonia accepts the imported image, marks its ticket presented, and reports consumption. The smoke contract checks the Vulkan compositor reflection (`scaleY = -1` about the visual center), nonzero output, frame consumption, first-Scene-before-Game order, and resize generation/size changes.
+- Shutdown now closes and detaches the smoke window before the desktop lifetime stops the engine. `RenderSurface` drains in-flight ticket waits before native device removal, preventing an Avalonia continuation from calling into a destroyed Vulkan device.
+- Scene-mode `validate_runtime.bat` keeps the regular Editor kernel smoke and adds this host smoke with a 30-second harness timeout plus a 45-second process bound. Summary schema 4 records the viewport run count and per-profile artifact/log/exit/pass status.
+- Focused `EditorViewportSmokeStateTests` pass `4/4`; D32 summary, graph-transition, descriptor, RHI source-contract, deterministic reimport, and profiler workflow coverage bring the complete rendering suite to `199/199`. A direct Development GPU smoke produces a passing 1280x720 schema-2 artifact with all `921600` depth values finite and normalized, `506252` written values, `415348` clear values, and an empty `vk_validation.log`.
+- Full Debug runtime validation passes Editor, Development, Production, and RHIVulkanTesting with four GPU scene-smoke runs, one additional passing real-host Editor viewport smoke, zero skips/fallbacks, two passing 1280x720 schema-2 color/depth summaries, one passing viewport artifact, and all six discovered `vk_validation.log` files empty.
+- `ModelReimportValidationFixture_ReimportsIndexesAndLoadsGeneratedScene` builds a temporary package-owned glTF workflow around a stable `.arismodel` root. It verifies one scene, one mesh, one material, and three physical generated textures are emitted and indexed; four material bindings resolve through typed `Texture2D` lookup because metallic-roughness and occlusion share the packed texture; and `SceneAssetLoader` both inspects and loads the generated mesh/material refs into ECS.
+- The same fixture reimports twice and requires identical child GUID order plus byte-identical `.meta` sidecars, keeps every generated source under its `Assets/Generated` output root and outside `.arisen`, and confirms foreign-source generated metadata blocks a subsequent reimport before output is touched.
+- `Profiling.md` now documents the engine-bundled viewer command, build/log/output locations, an unbounded Development Lantern-scene capture recipe, the separate Editor reimport workflow, and the concrete zone/plot groups to inspect. It explicitly distinguishes already-generated runtime scene loading from Editor-only glTF reimport.
+- Model planning, emission, reimport/invalidation, runtime scene activation, and scene source loading now expose coarse Tracy zones outside render recording and per-entity loops. `ModelImport.*` and `SceneLoad.*` plots report bounded generated-child, warning, invalidation, entity, renderer, light, and environment counts.
+- `open_tracy_profiler.bat --config Release --no-pause` was verified against the bundled Tracy `0.11.2` source: the viewer rebuilt, launched responsively from `Arisen/Projects/TracyProfiler/Release/tracy-profiler.exe`, and was closed cleanly after verification. Profiling contract coverage passes `56/56`.
+- Final full Debug runtime validation passes Editor, Development, Production, and RHIVulkanTesting with four GPU scene-smoke runs, one real-host Editor viewport smoke, zero skips/fallbacks, two passing schema-2 color/depth summaries, and all six discovered `vk_validation.log` files empty. Milestone 9 and this roadmap are complete.
 
 ### Acceptance Criteria
 
@@ -439,21 +507,10 @@ These are important, but should not block the next production model scene roadma
 
 ---
 
-## Recommended Immediate Sprint
+## Roadmap Complete
 
-Continue **Milestone 5** with serialized Generic RP settings and project-level pipeline selection.
+All nine milestones in this production model-scene roadmap are complete.
 
-The fastest useful next step is:
+The next roadmap should be derived from the current architecture and game goal rather than extending this completed checklist. Its first prioritization pass should revisit the deferred items alongside the broader requirements of a production open-world RPG: world partition/streaming, cooked scene data, asset build/deployment, gameplay-facing ECS authoring, animation/skinning, terrain/foliage, scalable lighting/shadows, and editor workflows.
 
-1. Define a package-owned Generic RP settings source asset with stable GUID identity and deterministic defaults.
-2. Move the existing clear color and shadow-map size into that asset first, leaving pass topology code-defined.
-3. Register a render-pipeline provider/factory service from `com.arisen.generic-renderpipeline` instead of assigning a concrete asset during package `OnLoad`.
-4. Extend workspace project settings with the selected render-pipeline settings asset and load it from the composition root.
-5. Add a functional Project Settings editor for startup-scene and render-pipeline selection, preserving unrelated manifest fields and comments.
-6. Run focused settings/provider tests plus full Editor, Development, Production, and RHIVulkanTesting smoke validation.
-
-Why this order:
-
-- Scene identity is now project-selected and shared, but render-pipeline selection still uses the development-only auto-instantiation called out in `GenericRenderPipelinePackage`.
-- Establishing serialized quality settings before scene-aware shadow fitting prevents the fitter from adding another hardcoded map-size/policy contract.
-- Pass topology should remain code-owned; the authoring goal is selectable providers and data-driven quality settings, not a serialized arbitrary pass graph.
+Keep this file only until that successor roadmap is written and reviewed; then delete this completed roadmap so there is one active next-TODO source of truth.

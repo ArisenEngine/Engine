@@ -66,6 +66,12 @@ Tooling may deserialize case-insensitively for transition compatibility, but gen
     "PackageId": "com.user.mygame"
   },
 
+  // Package-owned render-pipeline quality settings selected at startup.
+  "RenderPipeline": {
+    "Guid": "22222222-3333-4444-5555-666666666666",
+    "PackageId": "com.arisen.generic-renderpipeline"
+  },
+
   "Packages": [
     {
       "Id": "com.user.mygame",
@@ -111,6 +117,9 @@ Tooling may deserialize case-insensitively for transition compatibility, but gen
 | `StartupScene` | `object` | Optional | Package-owned `Scene` asset activated by the root composition package before frame zero. Projects intended to run a scene should provide it. |
 | `StartupScene.Guid` | `Guid` | Required with `StartupScene` | Stable `.arisenscene.meta` identity. Empty GUIDs fail workspace validation. |
 | `StartupScene.PackageId` | `string` | Required with `StartupScene` | Package that owns the selected scene asset. Empty package IDs fail workspace validation. |
+| `RenderPipeline` | `object` | Optional globally; required by workspaces that load `RenderSubsystem` | Package-owned `RenderPipelineSettings` asset used to activate the selected pipeline provider. |
+| `RenderPipeline.Guid` | `Guid` | Required with `RenderPipeline` | Stable `.arisrenderpipeline.meta` identity. Empty GUIDs fail workspace validation. |
+| `RenderPipeline.PackageId` | `string` | Required with `RenderPipeline` | Package that owns the selected settings asset. It must be present in the base `Packages` list and may be the game package rather than the provider package. |
 | `Packages` | `array` | **Yes** | The base list of packages loaded regardless of what Profile is active. |
 | `Packages[].Id` | `string` | **Yes** | The unique identifier of the package to load. |
 | `Packages[].Url` | `string` | Optional | A path to resolve the package locally (`file:///...`), a direct remote package archive (`https://.../package.zip`), or a remote registry index (`https://.../registry.json`). If empty, resolves from local/engine package search paths. |
@@ -129,6 +138,8 @@ Source precedence is intentional: `file://` means local source, `http(s)://` mea
 2. **Subsystem Phases and Priorities**: Packages register "Subsystems". The Engine gathers all subsystems across all packages, groups them by an EnginePhase (like PreInit, Init, PostInit), and then ticks them based on a numeric priority.
 
 3. **Startup Scene Activation**: The root composition package consumes `StartupScene` through `IRuntimeSceneService` during `PostInit`. Scene parsing and reference validation complete in a temporary ECS world; only a successful load replaces `SceneSubsystem.ActiveEntityManager`. Editor Hierarchy and runtime rendering therefore observe the same selected scene.
+
+4. **Render Pipeline Activation**: A concrete package selected by composition provides the single `IRenderPipelineProvider`. During `RenderSubsystem.Initialize`, the engine passes the selected asset GUID/package identity to that provider, which validates its schema and activates the resulting code-defined pipeline. `RenderPipeline.PackageId` owns the asset; it does not select the provider. The settings asset stores durable quality policy, not an arbitrary pass graph.
 ---
 
 ## 2. Project Identity (`.arisenproj`)

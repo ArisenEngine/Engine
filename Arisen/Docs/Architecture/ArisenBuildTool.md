@@ -7,6 +7,8 @@ To provide World-Class Developer Experience (DX), Arisen Engine uses a "Generate
 
 Human developers do not manually create or maintain `.sln`, `.csproj`, or `.vcxproj` files. Instead, `ArisenBuildTool` reads the Workspace's `manifest.json` and automatically generates a perfect IDE solution.
 
+`build_workspace.bat` and `build_launcher_all.bat` query manifest name/profile metadata through `ArisenBuildTool manifest-info`, so their parsing follows the same comment/trailing-comma policy as validation and generation. They do not pass human-authored JSONC through PowerShell `ConvertFrom-Json`.
+
 ---
 
 ## Validation Pipeline
@@ -65,7 +67,7 @@ Run the full runtime gate before committing changes that affect boot, platform w
 Arisen\Scripts\Windows\validate_runtime.bat --no-pause --config Debug --smoke-mode scene --frames 1
 ```
 
-This command runs the fast gate first, builds generated runtime outputs for the canonical workspace, and launches bounded smoke runs for the selected runtime profiles. The default validation smoke mode is `scene`: the bootstrapper runs at least two frames even when `--frames 1` is requested, because `PackageGame` creates the smoke scene at the end of the first frame and renders it on the next frame. It is the preferred validation path for the platform/RHI/rendering roadmap because it proves the package graph under a real process instead of only validating metadata.
+This command runs the fast gate first, builds generated runtime outputs for the canonical workspace, and launches bounded smoke runs for the selected runtime profiles. The default validation smoke mode is `scene`: the bootstrapper runs at least two frames even when `--frames 1` is requested, because `PackageGame` creates the smoke scene at the end of the first frame and renders it on the next frame. Scene-mode Editor validation then launches one additional real Avalonia host process to prove initial SceneView presentation, live resize, GameView presentation, compositor orientation, and clean shutdown. It is the preferred validation path for the platform/RHI/rendering roadmap because it proves both the package graph and editor presentation boundary under real processes instead of only validating metadata.
 
 Before each smoke launch, the runtime gate runs:
 
@@ -90,10 +92,13 @@ Arisen\Scripts\Windows\validate_runtime.bat --no-pause --gpu-smoke skip
 Runtime validation writes machine-readable artifacts under the canonical workspace log directory:
 
 - `.arisen\Logs\smoke-cli-{profile}-{configuration}-{timestamp}.log` captures stdout/stderr for each CLI smoke process that actually runs.
+- `.arisen\Logs\visual-summary-{profile}-latest.json` contains the fresh schema-2 final-color plus graph-owned D32 depth summary requested automatically for scene-mode Development and Production smoke runs. Validation requires finite normalized depth, minimum written coverage, nontrivial depth variation, and correctly shaped histogram/spatial distributions in addition to the color checks.
+- `.arisen\Logs\editor-viewport-smoke-Editor-{configuration}-{timestamp}.log` captures the additional real Avalonia editor-host process used by scene-mode Editor validation.
+- `.arisen\Logs\editor-viewport-summary-Editor-latest.json` contains the fresh versioned SceneView first-frame/resize and GameView presentation observations. The harness has a 30-second internal timeout and the validation script enforces a 45-second process bound.
 - `.arisen\Logs\validate-runtime-{configuration}-{timestamp}.json` captures the complete validation result for one script invocation.
 - `.arisen\Logs\validate-runtime-{configuration}-latest.json` is refreshed after every invocation and is the stable path for CI/tooling to inspect.
 
-The summary JSON includes the requested profiles, configuration, smoke mode/frame count, GPU policy, Vulkan probe result, smoke run/skip/fallback counts, failure stage/profile/message when present, and per-profile pass/fallback/fail records with log paths. A successful run has `"succeeded": true` and exit code `0`; failed build, manifest inspection, or runtime smoke stages preserve enough context for the launcher, CI logs, or an AI agent to continue from the failing profile.
+Runtime validation summary schema 4 includes the requested profiles, configuration, smoke mode/frame count, GPU policy, Vulkan probe result, smoke run/skip/fallback counts, validated standalone visual-summary artifact count/paths, editor viewport smoke run/artifact counts and paths, failure stage/profile/message when present, and per-profile pass/fallback/fail records. Each profile record includes its CLI log plus standalone visual-summary and editor-viewport request/path/log/exit/pass status. A successful run has `"succeeded": true` and exit code `0`; failed build, manifest inspection, visual-summary validation, editor viewport launch/artifact validation, or runtime smoke stages preserve enough context for the launcher, CI logs, or an AI agent to continue from the failing profile.
 
 ---
 

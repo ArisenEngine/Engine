@@ -169,6 +169,20 @@ public static class EngineBootstrapper
             KernelLog.WarningFormat("[Host] No resolved manifest found for profile '{0}'. Runtime will use raw manifest package order.", profile);
         }
 
+        RuntimeVisualSummaryService? visualSummaryService = null;
+        if (smokeOptions.CaptureVisualSummary)
+        {
+            visualSummaryService = new RuntimeVisualSummaryService(
+                workspacePath,
+                profile,
+                smokeOptions.EffectiveFrameCount - 1);
+            registry.RegisterService<IRuntimeVisualSummaryService>(visualSummaryService);
+            KernelLog.InfoFormat(
+                "[Host] Visual summary requested for frame {0}. Output: {1}",
+                visualSummaryService.CaptureFrameIndex,
+                visualSummaryService.OutputPath);
+        }
+
         // 2. Initialize Kernel (The kernel now handles topological package loading)
         kernel.Initialize(new EngineConfig
         {
@@ -204,7 +218,31 @@ public static class EngineBootstrapper
                 KernelLog.Warning("[Host] Hot-reload smoke currently exercises multi-frame scene stability. File-change recook/reload smoke awaits a runtime-owned asset-change harness.");
             }
 
-            Environment.ExitCode = kernel.RunForFrames(smokeOptions.EffectiveFrameCount);
+            var smokeExitCode = kernel.RunForFrames(smokeOptions.EffectiveFrameCount);
+            if (visualSummaryService != null)
+            {
+                if (!visualSummaryService.IsComplete)
+                {
+                    visualSummaryService.ReportFailure(
+                        $"No native render surface captured requested frame {visualSummaryService.CaptureFrameIndex}.");
+                }
+
+                if (!visualSummaryService.Succeeded)
+                {
+                    KernelLog.FatalFormat(
+                        "[Host] Visual summary failed: {0}",
+                        visualSummaryService.FailureMessage ?? "unknown visual-summary failure");
+                    smokeExitCode = 1;
+                }
+                else
+                {
+                    KernelLog.InfoFormat(
+                        "[Host] Visual summary passed: {0}",
+                        visualSummaryService.OutputPath);
+                }
+            }
+
+            Environment.ExitCode = smokeExitCode;
             return;
         }
 
@@ -236,6 +274,7 @@ public static class EngineBootstrapper
         KernelLog.InfoFormat("  SmokeKind: {0}", smokeOptions.Enabled ? smokeOptions.ModeName : "<none>");
         KernelLog.InfoFormat("  SmokeFramesRequested: {0}", smokeOptions.Enabled ? smokeOptions.RequestedFrameCount : 0);
         KernelLog.InfoFormat("  SmokeFramesEffective: {0}", smokeOptions.Enabled ? smokeOptions.EffectiveFrameCount : 0);
+        KernelLog.InfoFormat("  VisualSummary: {0}", smokeOptions.CaptureVisualSummary);
         KernelLog.InfoFormat("  ResolvedManifest: {0}", File.Exists(resolvedManifestPath) ? resolvedManifestPath : "<not found>");
 
         KernelLog.Info("  Package load order:");

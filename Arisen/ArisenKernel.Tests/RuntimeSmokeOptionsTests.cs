@@ -15,6 +15,7 @@ public sealed class RuntimeSmokeOptionsTests
         Assert.Equal("boot", options.ModeName);
         Assert.Equal(3u, options.RequestedFrameCount);
         Assert.Equal(3u, options.EffectiveFrameCount);
+        Assert.False(options.CaptureVisualSummary);
     }
 
     [Fact]
@@ -27,6 +28,7 @@ public sealed class RuntimeSmokeOptionsTests
         Assert.Equal("scene", options.ModeName);
         Assert.Equal(1u, options.RequestedFrameCount);
         Assert.Equal(2u, options.EffectiveFrameCount);
+        Assert.False(options.CaptureVisualSummary);
     }
 
     [Fact]
@@ -39,6 +41,7 @@ public sealed class RuntimeSmokeOptionsTests
         Assert.Equal("hot-reload", options.ModeName);
         Assert.Equal(2u, options.RequestedFrameCount);
         Assert.Equal(4u, options.EffectiveFrameCount);
+        Assert.False(options.CaptureVisualSummary);
     }
 
     [Fact]
@@ -48,5 +51,26 @@ public sealed class RuntimeSmokeOptionsTests
             RuntimeSmokeOptions.Parse(new[] { "--smoke-mode", "gpu-only" }));
 
         Assert.Contains("Unknown smoke mode", exception.Message);
+    }
+
+    [Fact]
+    public void VisualSummarySelectsSceneModeAndFinalEffectiveFrame()
+    {
+        var options = RuntimeSmokeOptions.Parse(new[] { "--visual-summary", "--frames", "1" });
+
+        Assert.True(options.Enabled);
+        Assert.True(options.CaptureVisualSummary);
+        Assert.Equal(RuntimeSmokeMode.Scene, options.Mode);
+        Assert.Equal(2u, options.EffectiveFrameCount);
+        Assert.Equal(1u, options.EffectiveFrameCount - 1);
+    }
+
+    [Fact]
+    public void VisualSummaryRejectsNonSceneMode()
+    {
+        var exception = Assert.Throws<ArgumentException>(() =>
+            RuntimeSmokeOptions.Parse(new[] { "--visual-summary", "--smoke-mode", "boot" }));
+
+        Assert.Contains("requires scene smoke mode", exception.Message);
     }
 }

@@ -210,6 +210,27 @@ public static class PackageValidationService
                 result.Errors.Add("Workspace manifest StartupScene is missing PackageId.");
             }
         }
+
+        if (manifest.RenderPipeline != null)
+        {
+            if (manifest.RenderPipeline.Guid == Guid.Empty)
+            {
+                result.Errors.Add("Workspace manifest RenderPipeline is missing a valid Guid.");
+            }
+
+            if (string.IsNullOrWhiteSpace(manifest.RenderPipeline.PackageId))
+            {
+                result.Errors.Add("Workspace manifest RenderPipeline is missing PackageId.");
+            }
+            else if (!manifest.Packages.Any(package => string.Equals(
+                         package.Id,
+                         manifest.RenderPipeline.PackageId,
+                         StringComparison.OrdinalIgnoreCase)))
+            {
+                result.Errors.Add(
+                    $"Workspace manifest RenderPipeline package '{manifest.RenderPipeline.PackageId}' is not selected in the base Packages list.");
+            }
+        }
     }
 
     public static void LogSummary(PackageValidationResult result)

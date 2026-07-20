@@ -55,7 +55,60 @@ class Program
             return;
         }
 
+        if (args.Length > 0 && args[0].Equals("manifest-info", StringComparison.OrdinalIgnoreCase))
+        {
+            RunManifestInfoMode(args);
+            return;
+        }
+
         RunGenerateMode(args);
+    }
+
+    static void RunManifestInfoMode(string[] args)
+    {
+        string manifestPath = string.Empty;
+        string field = string.Empty;
+        for (int i = 1; i < args.Length; i++)
+        {
+            if ((args[i] == "--manifest" || args[i] == "-m") && i + 1 < args.Length)
+                manifestPath = Path.GetFullPath(args[++i]);
+            else if (args[i] == "--field" && i + 1 < args.Length)
+                field = args[++i];
+        }
+
+        if (string.IsNullOrWhiteSpace(manifestPath) || string.IsNullOrWhiteSpace(field))
+        {
+            Console.Error.WriteLine(
+                "ArisenBuildTool Manifest Info Error: --manifest <path> and --field <name|profiles> are required.");
+            Environment.ExitCode = 1;
+            return;
+        }
+
+        if (!TryReadManifest(manifestPath, out var manifest) || manifest == null)
+        {
+            Environment.ExitCode = 1;
+            return;
+        }
+
+        if (field.Equals("name", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine(string.IsNullOrWhiteSpace(manifest.Name) ? "MyGame" : manifest.Name);
+            return;
+        }
+
+        if (field.Equals("profiles", StringComparison.OrdinalIgnoreCase))
+        {
+            var profiles = manifest.Profiles?.Keys.ToArray() ?? ["Development", "Production"];
+            foreach (string profile in profiles)
+            {
+                Console.WriteLine(profile);
+            }
+            return;
+        }
+
+        Console.Error.WriteLine(
+            $"ArisenBuildTool Manifest Info Error: unsupported field '{field}'.");
+        Environment.ExitCode = 1;
     }
 
     static void RunInjectMode(string[] args)

@@ -5,6 +5,11 @@
     "Guid": "bd52ee1a-84a1-4d9d-bdb4-2a83757b5a4b",
     "PackageId": "com.arisen.packagegame"
   },
+  // Selects package-owned quality settings; pass topology remains code-defined.
+  "RenderPipeline": {
+    "Guid": "460f2aa8-4a28-43a4-abae-ff32034ae10a",
+    "PackageId": "com.arisen.generic-renderpipeline"
+  },
   "Packages": [
     {
       "Id": "com.arisen.packagegame",

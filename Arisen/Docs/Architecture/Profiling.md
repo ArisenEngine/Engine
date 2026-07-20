@@ -10,29 +10,60 @@ Arisen uses Tracy as the first production-grade realtime profiler backend. The e
 - Profiles with `EnableProfiler: false` do not define profiler instrumentation.
 - The regular Arisen build links the Tracy client, but it does not build the Tracy Profiler viewer executable.
 
-## Timeline Workflow
+## Bundled Tracy Viewer
 
-1. Build and run a profiler-enabled profile such as `Editor` or `Development`.
-2. Open the matching bundled Tracy Profiler viewer:
-   - `Arisen\Scripts\Windows\open_tracy_profiler.bat`
-3. Connect to the running Arisen process from the Tracy start/connect screen.
-4. Inspect the timeline.
+Tracy viewer and client protocols must match. Arisen's launcher always configures and builds the viewer from the same bundled Tracy source used by `com.arisen.core.native`; do not substitute an arbitrary installed Tracy version. The bundled source currently reports Tracy `0.11.2`, with `TracyVersion.hpp` remaining the version authority.
 
-Tracy viewer and client protocols must match. Do not use an arbitrary installed Tracy version when connecting to Arisen. If the viewer reports `Incompatible protocol`, rebuild and launch the bundled viewer with `open_tracy_profiler.bat`.
+Run this from the repository root:
 
-Expected first timeline markers:
+```bat
+Arisen\Scripts\Windows\open_tracy_profiler.bat --config Release --no-pause
+```
 
-- `RuntimeFrame` frame marks.
-- `RenderSubsystem.Tick`.
-- `RenderPipeline.SetupGraph`.
-- `RenderGraph.Compile`.
-- `RenderGraph.RecordLayer`.
-- `TaskGraph.Execute`.
-- `TaskGraph.Layer`.
-- `ArisenWorker-N` worker threads.
-- Per-task spans such as `EnvironmentSkyPass[0]`, `DirectionalShadowPass[0]`, `GenericStaticMeshPass[N]`, and `TonemapPass[0]`; render command recording tasks are queued with the pass/work-item name and executed inside `Profiler.Zone(task.Name)` on worker threads.
-- Setup spans such as `DirectionalShadowPass.Prepare` when a pass has meaningful setup cost outside command recording.
-- Plots for render graph pass/layer/work-item counts, culled pass count, resource transition count, transient texture count, render snapshot size/counts, scene color size/format, mesh/cull/material/light/environment counts, visible draw command count, static mesh draw/material/queue/object-buffer counts, and directional shadow draw/map/enabled counters.
+The script:
+
+- builds the bundled `tracy-profiler` CMake target under `Arisen\Projects\TracyProfiler`;
+- writes `Arisen\Projects\TracyProfiler\open_tracy_profiler.log`;
+- launches the resulting `Release\tracy-profiler.exe`;
+- accepts `--clean` when a clean viewer rebuild is required.
+
+If the viewer reports `Incompatible protocol`, close that viewer and run the command above again. A successful regular workspace build does not rebuild the viewer executable.
+
+## Model Scene Capture Recipe
+
+The canonical Development profile has `EnableProfiler: true` and renders the package-owned Lantern model scene. Build it, open the bundled viewer, and launch an unbounded manual session from the repository root:
+
+```bat
+Arisen\Scripts\Windows\build_workspace.bat --config Debug --profile Development
+Arisen\Scripts\Windows\open_tracy_profiler.bat --config Release --no-pause
+Arisen\Development\PackageGame\.arisen\bin\Development\Debug\PackageGame.exe --workspace Arisen\Development\PackageGame --profile Development
+```
+
+In Tracy, connect to the discovered `PackageGame` client on localhost. Do not pass `--smoke-mode` or `--frames` for this workflow; those options intentionally bound validation and are too short for interactive timeline analysis. Close the PackageGame window when the capture interval is complete, then save the capture from Tracy when a persistent `.tracy` file is needed.
+
+The Development path loads and renders already-generated Lantern children. It does not reimport glTF every frame. To profile explicit model import, build and launch the `Editor` profile with the same viewer, select the stable `Lantern.arismodel` root, and invoke `Reimport` while connected. That action should produce `ModelSourceReimporter.Reimport`, nested planner/emitter zones, generated-child plots, and a separate cooked-output invalidation zone.
+
+## Timeline Inspection
+
+Start with these zone groups:
+
+- Model import: `ModelSourceReimporter.Reimport`, `GltfModelImportPlanner.CreatePlan`, `GltfModelImportEmitter.Emit`, and `ModelSourceReimporter.InvalidateCookedOutputs`.
+- Scene activation: `RuntimeSceneService.LoadScene` and `SceneAssetLoader.LoadSceneSource`.
+- Frame/render setup: `RuntimeFrame` frame marks, `RenderSubsystem.Tick`, and `RenderPipeline.SetupGraph`.
+- Graph/scheduling: `RenderGraph.Compile`, `RenderGraph.RecordLayer`, `RenderGraph.Submit`, `TaskGraph.Execute`, and `TaskGraph.Layer`.
+- Worker recording: `ArisenWorker-N` threads and per-task spans such as `EnvironmentSkyPass[0]`, `DirectionalShadowPass[0]`, `GenericStaticMeshPass[N]`, `GenericTransparentStaticMeshPass[N]`, and `TonemapPass[0]`. Render command tasks execute inside `Profiler.Zone(task.Name)`.
+- Setup work: `DirectionalShadowPass.Prepare` and other coarse setup spans outside command recording.
+
+Then correlate these plot groups:
+
+- `ModelImport.*`: planned and emitted child/material/image/texture counts, warnings, orphan/foreign output, and invalidated assets.
+- `SceneLoad.*`: entity, camera, mesh renderer, light, and environment counts from the activated scene.
+- `Render.*`: extracted and visible mesh items, camera/shadow culling, draw queues, materials, lights, environment state, output size, and frame depth.
+- `RenderGraph.*`: pass/layer/work-item counts, compile-cache hits, culling, transitions, and transient texture lifetime/peak-live counts.
+- `StaticMeshPass.*`, `TransparentStaticMeshPass.*`, and `DirectionalShadowPass.*`: draw/batch/work-item/object-buffer and shadow quality counts.
+- `RenderSubmission.*`: acquire, submit, ticket, and presentation state.
+
+A normal Development capture will show scene activation near startup and recurring render markers afterward. Explicit model-import markers appear only when an Editor reimport is requested.
 
 ## Bounded Validation And Manual Profiling
 
