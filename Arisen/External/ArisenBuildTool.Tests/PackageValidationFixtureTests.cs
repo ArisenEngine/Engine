@@ -37,6 +37,10 @@ public sealed class PackageValidationFixtureTests
                 "Guid": "11111111-2222-3333-4444-555555555555",
                 "PackageId": "com.test.app",
               },
+              "RenderPipeline": {
+                "Guid": "22222222-3333-4444-5555-666666666666",
+                "PackageId": "com.test.app",
+              },
               "Packages": [
                 {
                   "Id": "com.test.app",
@@ -56,6 +60,8 @@ public sealed class PackageValidationFixtureTests
         Assert.Equal("JsoncFixture", manifest!.Name);
         Assert.Equal(Guid.Parse("11111111-2222-3333-4444-555555555555"), manifest.StartupScene!.Guid);
         Assert.Equal("com.test.app", manifest.StartupScene.PackageId);
+        Assert.Equal(Guid.Parse("22222222-3333-4444-5555-666666666666"), manifest.RenderPipeline!.Guid);
+        Assert.Equal("com.test.app", manifest.RenderPipeline.PackageId);
         Assert.Equal("com.test.app", manifest.Packages.Single().Id);
     }
 
@@ -175,6 +181,55 @@ public sealed class PackageValidationFixtureTests
             && error.Contains("Guid", StringComparison.Ordinal));
         Assert.Contains(result.Errors, error => error.Contains("StartupScene", StringComparison.Ordinal)
             && error.Contains("PackageId", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void IncompleteWorkspaceRenderPipelineFailsValidation()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage("com.test.app", layer: "user");
+
+        var manifest = workspace.CreateManifest(new PackageRequirement
+        {
+            Id = "com.test.app",
+            Url = "file://Local/com.test.app",
+            Version = "1.0.0"
+        });
+        manifest.RenderPipeline = new ProjectAssetReference();
+
+        var result = workspace.Validate(manifest);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error => error.Contains("RenderPipeline", StringComparison.Ordinal)
+            && error.Contains("Guid", StringComparison.Ordinal));
+        Assert.Contains(result.Errors, error => error.Contains("RenderPipeline", StringComparison.Ordinal)
+            && error.Contains("PackageId", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void WorkspaceRenderPipelinePackageMustBeSelectedInBasePackages()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage("com.test.app", layer: "user");
+
+        var manifest = workspace.CreateManifest(new PackageRequirement
+        {
+            Id = "com.test.app",
+            Url = "file://Local/com.test.app",
+            Version = "1.0.0"
+        });
+        manifest.RenderPipeline = new ProjectAssetReference
+        {
+            Guid = Guid.Parse("33333333-4444-5555-6666-777777777777"),
+            PackageId = "com.test.pipeline"
+        };
+
+        var result = workspace.Validate(manifest);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error =>
+            error.Contains("RenderPipeline", StringComparison.Ordinal) &&
+            error.Contains("base Packages", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -709,6 +764,7 @@ public sealed class PackageValidationFixtureTests
         string textureDir = Path.Combine(packageDir, "Assets", "Textures");
         string environmentDir = Path.Combine(packageDir, "Assets", "Environments");
         string sceneDir = Path.Combine(packageDir, "Assets", "Scenes");
+        string settingsDir = Path.Combine(packageDir, "Assets", "Settings");
         Directory.CreateDirectory(materialDir);
         Directory.CreateDirectory(meshDir);
         Directory.CreateDirectory(modelDir);
@@ -716,6 +772,7 @@ public sealed class PackageValidationFixtureTests
         Directory.CreateDirectory(textureDir);
         Directory.CreateDirectory(environmentDir);
         Directory.CreateDirectory(sceneDir);
+        Directory.CreateDirectory(settingsDir);
         File.WriteAllText(
             Path.Combine(materialDir, "SmokeMaterial.arismaterial.meta"),
             """
@@ -814,6 +871,14 @@ public sealed class PackageValidationFixtureTests
             Importer: ArisenSceneImporter
             """);
         File.WriteAllText(Path.Combine(sceneDir, "SmokeScene.arisenscene"), string.Empty);
+        File.WriteAllText(
+            Path.Combine(settingsDir, "Default.arisrenderpipeline.meta"),
+            """
+            Guid: 99999999-aaaa-bbbb-cccc-dddddddddddd
+            AssetType: RenderPipelineSettings
+            Importer: ArisenRenderPipelineSettingsImporter
+            """);
+        File.WriteAllText(Path.Combine(settingsDir, "Default.arisrenderpipeline"), string.Empty);
 
         string projectDir = Path.Combine(workspace.RootPath, ".arisen", "Projects", "Development", "Com.Test.Renderpipeline");
         AssetReferenceGeneratorService.Generate(
@@ -835,6 +900,7 @@ public sealed class PackageValidationFixtureTests
         Assert.Contains("public static readonly AssetRef<Texture2DSourceAsset> SmokeCheckerTextureRef", generated);
         Assert.Contains("public static readonly AssetRef<EnvironmentTextureSourceAsset> StudioEnvironmentTextureRef", generated);
         Assert.Contains("public static readonly AssetRef<SceneSourceAsset> SmokeSceneRef", generated);
+        Assert.Contains("public static readonly AssetRef<RenderPipelineSettingsSourceAsset> DefaultRenderPipelineSettingsRef", generated);
         Assert.DoesNotContain("SmokeMaterial_arismaterialMetaGuid", generated);
         Assert.DoesNotContain("TexturedQuadAssetDependencyGuid", generated);
         Assert.DoesNotContain("55555555-6666-7777-8888-999999999999", generated);
@@ -848,6 +914,7 @@ public sealed class PackageValidationFixtureTests
         Assert.Contains("public static readonly AssetRef<SceneSourceAsset> Ref = SmokeSceneRef;", generated);
         Assert.Contains("public static class StudioEnvironmentTexture", generated);
         Assert.Contains("public static readonly AssetRef<EnvironmentTextureSourceAsset> Ref = StudioEnvironmentTextureRef;", generated);
+        Assert.Contains("public static readonly AssetRef<RenderPipelineSettingsSourceAsset> Ref = DefaultRenderPipelineSettingsRef;", generated);
         Assert.Contains("public const string BaseColor = \"BaseColor\";", generated);
         Assert.Contains("public const string MetallicFactor = \"MetallicFactor\";", generated);
         Assert.Contains("public const string RoughnessFactor = \"RoughnessFactor\";", generated);

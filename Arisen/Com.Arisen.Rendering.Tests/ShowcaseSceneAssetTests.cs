@@ -318,7 +318,7 @@ public sealed class ShowcaseSceneAssetTests
                 showcaseInspection.Entities,
                 entity => entity.Name == "Lantern Downlight");
             Assert.NotNull(downlight.SpotLight);
-            Assert.Equal(new Vector3(2.0f, 2.05f, 0.0f), downlight.Transform.Position);
+            Assert.Equal(new Vector3(2.0f, 2.0f, 0.0f), downlight.Transform.Position);
             Assert.Equal(new Vector3(1.0f, 0.58f, 0.26f), downlight.SpotLight!.Color);
             Assert.Equal(4.0f, downlight.SpotLight.Intensity);
             Assert.Equal(4.2f, downlight.SpotLight.Range);

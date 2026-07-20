@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using ArisenEditor.Core.Commands;
 using Arisen.Native.RHI;
 using ArisenEngine.Core.Assets;
+using ArisenEngine.Core.ECS;
 using ArisenEngine.Core.RHI;
 using ArisenEngine.Core.Serialization;
 using ArisenEngine.Rendering;
@@ -227,7 +228,7 @@ public sealed class RenderingAssetPipelineTests
     }
 
     [Fact]
-    public void GltfModelImportPlanner_PreservesUnsupportedBlendWarning()
+    public void GltfModelImportPlanner_AcceptsBlendForTransparentRendering()
     {
         using var workspace = TestWorkspace.Create();
         var gltfPath = workspace.Write("Assets/Transparent.gltf", """
@@ -250,10 +251,78 @@ public sealed class RenderingAssetPipelineTests
 
         Assert.Equal(GltfMaterialAlphaMode.Blend, material.AlphaMode);
         Assert.Equal(MaterialPbrDefaults.AlphaCutoff, material.AlphaCutoff);
-        Assert.Contains(
+        Assert.DoesNotContain(
             plan.Warnings,
-            warning => warning.Contains("alphaMode 'BLEND'", StringComparison.Ordinal) &&
-                       warning.Contains("transparent render pass", StringComparison.Ordinal));
+            warning => warning.Contains("alphaMode", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void GltfModelImportEmitter_MapsBlendToTransparentRenderState()
+    {
+        using var workspace = TestWorkspace.Create();
+        var sourceGuid = Guid.Parse("cdcdcdcd-abab-4545-8989-010101010101");
+        var shaderGuid = Guid.Parse("34343434-5656-7878-9090-abababababab");
+        var gltfPath = workspace.Write("Assets/Transparent.gltf", """
+            {
+              "asset": { "version": "2.0" },
+              "materials": [
+                {
+                  "name": "WindowGlass",
+                  "alphaMode": "BLEND",
+                  "pbrMetallicRoughness": {
+                    "baseColorFactor": [0.6, 0.8, 1.0, 0.35]
+                  }
+                }
+              ]
+            }
+            """);
+        var shaderPath = workspace.Write("Assets/StandardLit.shader", """
+            Shader "Tests/StandardLit"
+            {
+                SubShader
+                {
+                    Pass
+                    {
+                        Cull Back
+                        HLSLPROGRAM
+                        #pragma vertex VSMain
+                        #pragma fragment PSMain
+                        float4 VSMain() : SV_Position { return 0; }
+                        float4 PSMain() : SV_Target0 { return 1; }
+                        ENDHLSL
+                    }
+                }
+            }
+            """);
+
+        var plan = GltfModelImportPlanner.CreatePlan(gltfPath, sourceGuid, "com.arisen.test");
+        var result = GltfModelImportEmitter.Emit(
+            plan,
+            gltfPath,
+            Path.Combine(workspace.Root, "Assets", "Generated"),
+            new GltfModelImportEmissionSettings(shaderGuid, "Tests/StandardLit", "Transparent"));
+
+        Assert.Empty(result.Warnings);
+        var materialPath = Assert.Single(result.MaterialPaths);
+        var materialMetadata = SerializationUtil.Deserialize<AssetMetadata>(
+            materialPath + ".meta",
+            serializeIfNotExist: false);
+        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        db.AddAsset(shaderGuid, ShaderAssetCooker.ShaderSourceAssetType, shaderPath);
+        db.AddAsset(materialMetadata.Guid, "Material", materialPath);
+
+        var material = MaterialAssetLoader.LoadSource(db, materialMetadata.Guid);
+        var renderQueue = RenderQueuePolicy.Resolve(
+            material.RenderState,
+            material.Shader.VariantKeywords);
+
+        Assert.True(material.RenderState.BlendEnabled);
+        Assert.Equal(EBlendFactor.BLEND_FACTOR_SRC_ALPHA, material.RenderState.SrcColorBlendFactor);
+        Assert.Equal(EBlendFactor.BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, material.RenderState.DstColorBlendFactor);
+        Assert.Equal(EBlendOp.BLEND_OP_ADD, material.RenderState.ColorBlendOp);
+        Assert.Equal(RenderQueueClass.Transparent, renderQueue.Class);
+        Assert.Equal(new Vector4(0.6f, 0.8f, 1.0f, 0.35f), material.Vector4Properties.Single(
+            property => property.Name == MaterialPropertySlots.BaseColorFactor).Value);
     }
 
     [Fact]
@@ -608,6 +677,171 @@ public sealed class RenderingAssetPipelineTests
         var secondResult = ModelSourceReimporter.Reimport(sourceAsset);
         Assert.Single(secondResult.OrphanedGeneratedChildren);
         Assert.True(File.Exists(orphanMetaPath));
+    }
+
+    [Fact]
+    public void ModelReimportValidationFixture_ReimportsIndexesAndLoadsGeneratedScene()
+    {
+        using var workspace = TestWorkspace.Create();
+        const string packageId = "com.arisen.test";
+        var sourceGuid = Guid.Parse("13572468-2468-1357-8642-abcdefabcdef");
+        var shaderGuid = Guid.Parse("24681357-1357-2468-9753-bcdefabcdefa");
+        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var sourceAsset = CreateModelReimportValidationSourceAsset(
+            workspace,
+            db,
+            sourceGuid,
+            shaderGuid,
+            packageId);
+
+        var firstResult = ModelSourceReimporter.Reimport(sourceAsset);
+
+        Assert.Empty(firstResult.Emission.Warnings);
+        Assert.Empty(firstResult.OrphanedGeneratedChildren);
+        Assert.Empty(firstResult.ForeignGeneratedChildren);
+        Assert.Single(firstResult.Emission.ScenePaths);
+        Assert.Single(firstResult.Emission.MeshPaths);
+        Assert.Single(firstResult.Emission.MaterialPaths);
+        Assert.Equal(3, firstResult.Emission.TexturePaths.Count);
+
+        var emittedPaths = GetEmittedSourcePaths(firstResult);
+        Assert.Equal(6, emittedPaths.Length);
+        Assert.Equal(firstResult.Plan.GeneratedChildren.Count, emittedPaths.Length);
+        var indexedMetadata = IndexGeneratedAssets(db, firstResult, emittedPaths);
+        var outputPrefix = Path.GetFullPath(firstResult.OutputRoot) + Path.DirectorySeparatorChar;
+
+        for (int i = 0; i < emittedPaths.Length; i++)
+        {
+            var emittedPath = Path.GetFullPath(emittedPaths[i]);
+            Assert.True(
+                emittedPath.StartsWith(outputPrefix, StringComparison.OrdinalIgnoreCase),
+                $"Generated source escaped its output root: {emittedPath}");
+            Assert.False(
+                emittedPath.Split(
+                        new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
+                        StringSplitOptions.RemoveEmptyEntries)
+                    .Any(segment => string.Equals(segment, ".arisen", StringComparison.OrdinalIgnoreCase)),
+                $"Generated source was written beneath .arisen: {emittedPath}");
+
+            var metadata = indexedMetadata[i];
+            var plannedChild = Assert.Single(
+                firstResult.Plan.GeneratedChildren,
+                child => child.Metadata.Guid == metadata.Guid);
+            Assert.Equal(plannedChild.Metadata.AssetType, metadata.AssetType);
+            Assert.Equal(plannedChild.Metadata.Importer, metadata.Importer);
+            Assert.NotNull(metadata.Generated);
+            Assert.Equal(sourceGuid, metadata.Generated.SourceGuid);
+            Assert.Equal(packageId, metadata.Generated.SourcePackageId);
+            Assert.Equal(plannedChild.Kind, metadata.Generated.ChildKind);
+            Assert.Equal(plannedChild.Key, metadata.Generated.ChildKey);
+            Assert.Equal(
+                plannedChild.Metadata.Generated!.GeneratedByImporter,
+                metadata.Generated.GeneratedByImporter);
+        }
+
+        foreach (var child in firstResult.Plan.GeneratedChildren)
+        {
+            Assert.True(db.TryGetAsset(child.Metadata.Guid, out var indexedChild));
+            Assert.Equal(child.Metadata.AssetType, indexedChild.AssetType);
+            Assert.Equal(packageId, indexedChild.PackageId);
+        }
+
+        var materialMetadata = indexedMetadata.Single(
+            metadata => string.Equals(metadata.AssetType, "Material", StringComparison.OrdinalIgnoreCase));
+        var material = MaterialAssetLoader.LoadSource(db, materialMetadata.Guid);
+        Assert.Equal(new[] { "USE_NORMAL_MAP" }, material.Shader.VariantKeywords);
+        Assert.Equal(4, material.Texture2DRefs.Count);
+        Assert.Equal(3, material.Texture2DRefs.Select(binding => binding.Texture.Guid).Distinct().Count());
+        Assert.Equal(
+            material.Texture2DRefs.Single(binding => binding.Name == MaterialTextureSlots.MetallicRoughness).Texture.Guid,
+            material.Texture2DRefs.Single(binding => binding.Name == MaterialTextureSlots.Occlusion).Texture.Guid);
+        foreach (var binding in material.Texture2DRefs)
+        {
+            var textureRef = new AssetRef<Texture2DSourceAsset>(
+                binding.Texture.Guid,
+                "Texture2D",
+                packageId);
+            Assert.True(
+                db.TryGetAsset(textureRef, out var textureAsset),
+                $"Generated material texture '{binding.Name}' did not resolve: {binding.Texture.Guid:D}");
+            Assert.Equal("Texture2D", textureAsset.AssetType);
+            Assert.True(File.Exists(textureAsset.SourcePath));
+        }
+
+        var sceneMetadata = indexedMetadata.Single(
+            metadata => string.Equals(metadata.AssetType, "Scene", StringComparison.OrdinalIgnoreCase));
+        var meshMetadata = indexedMetadata.Single(
+            metadata => string.Equals(metadata.AssetType, "Mesh", StringComparison.OrdinalIgnoreCase));
+        var sceneRef = new AssetRef<SceneSourceAsset>(sceneMetadata.Guid, "Scene", packageId);
+        var inspection = SceneAssetLoader.InspectScene(db, sceneRef);
+        Assert.True(inspection.Success, inspection.Diagnostic);
+        Assert.Equal("ReimportValidationScene", inspection.SceneName);
+        var inspectedEntity = Assert.Single(inspection.Entities);
+        Assert.NotNull(inspectedEntity.MeshRenderer);
+        Assert.Equal(meshMetadata.Guid, inspectedEntity.MeshRenderer.Mesh.Guid);
+        Assert.Equal(materialMetadata.Guid, inspectedEntity.MeshRenderer.Material.Guid);
+        Assert.True(inspectedEntity.MeshRenderer.Mesh.IsResolved, inspectedEntity.MeshRenderer.Mesh.Diagnostic);
+        Assert.True(inspectedEntity.MeshRenderer.Material.IsResolved, inspectedEntity.MeshRenderer.Material.Diagnostic);
+
+        var entityManager = new EntityManager();
+        var loadResult = SceneAssetLoader.LoadScene(db, sceneRef, entityManager);
+        Assert.True(loadResult.Success, loadResult.Diagnostic);
+        Assert.Equal(1, loadResult.EntityCount);
+        Assert.Equal(1, loadResult.MeshRendererCount);
+        var renderer = entityManager.GetPool<MeshRendererComponent>().GetRawComponentArray()[0];
+        Assert.Equal(meshMetadata.Guid, renderer.MeshGuid);
+        Assert.Equal(materialMetadata.Guid, renderer.MaterialGuid);
+
+        var firstSidecars = emittedPaths.ToDictionary(
+            path => Path.GetRelativePath(firstResult.OutputRoot, path),
+            path => File.ReadAllText(path + ".meta"),
+            StringComparer.OrdinalIgnoreCase);
+        var secondResult = ModelSourceReimporter.Reimport(sourceAsset);
+        var secondPaths = GetEmittedSourcePaths(secondResult);
+
+        Assert.Equal(firstResult.GeneratedChildGuids, secondResult.GeneratedChildGuids);
+        Assert.Empty(secondResult.OrphanedGeneratedChildren);
+        Assert.Empty(secondResult.ForeignGeneratedChildren);
+        Assert.Equal(
+            firstSidecars.Keys.OrderBy(path => path, StringComparer.OrdinalIgnoreCase),
+            secondPaths
+                .Select(path => Path.GetRelativePath(secondResult.OutputRoot, path))
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase));
+        foreach (var secondPath in secondPaths)
+        {
+            var relativePath = Path.GetRelativePath(secondResult.OutputRoot, secondPath);
+            Assert.Equal(firstSidecars[relativePath], File.ReadAllText(secondPath + ".meta"));
+        }
+
+        var foreignMetaPath = Path.Combine(
+            secondResult.OutputRoot,
+            "Materials",
+            "Foreign.arismaterial.meta");
+        SerializationUtil.Serialize(
+            new AssetMetadata
+            {
+                Guid = Guid.Parse("35792468-4682-5791-a246-cdefabcdefab"),
+                AssetType = "Material",
+                Importer = "GltfMaterialImporter",
+                Generated = new GeneratedAssetMetadata
+                {
+                    SourceGuid = Guid.Parse("46823579-5791-6824-b357-defabcdefabc"),
+                    SourcePackageId = "com.arisen.foreign",
+                    ChildKind = "material",
+                    ChildKey = "materials/0",
+                    GeneratedByImporter = "GltfMaterialImporter"
+                }
+            },
+            foreignMetaPath);
+
+        var foreignInspection = ModelSourceReimporter.InspectGeneratedOutput(
+            secondResult.OutputRoot,
+            sourceGuid,
+            secondResult.Plan);
+        Assert.Single(foreignInspection.ForeignGeneratedChildren);
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => ModelSourceReimporter.Reimport(sourceAsset));
+        Assert.Contains("another source GUID", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1335,6 +1569,47 @@ public sealed class RenderingAssetPipelineTests
         Assert.Equal(RenderQueuePolicy.AlphaTestQueue, alphaTest.Value);
         Assert.Equal(RenderQueueClass.Transparent, transparent.Class);
         Assert.Equal(RenderQueuePolicy.TransparentQueue, transparent.Value);
+    }
+
+    [Fact]
+    public void TransparentDrawOrdering_SortsBackToFrontWithStableDistanceTies()
+    {
+        var draws = new[]
+        {
+            new MeshDrawCommand
+            {
+                LocalToWorld = Matrix4x4.CreateTranslation(0.0f, 0.0f, 2.0f),
+                MaterialID = 10
+            },
+            new MeshDrawCommand
+            {
+                LocalToWorld = Matrix4x4.CreateTranslation(1.0f, 0.0f, 5.0f),
+                MaterialID = 20
+            },
+            new MeshDrawCommand
+            {
+                LocalToWorld = Matrix4x4.CreateTranslation(-1.0f, 0.0f, 5.0f),
+                MaterialID = 30
+            },
+            new MeshDrawCommand
+            {
+                LocalToWorld = Matrix4x4.CreateTranslation(100.0f, 0.0f, 3.0f),
+                MaterialID = 40
+            }
+        };
+        var sortKeys = new TransparentDrawSortKey[draws.Length];
+
+        TransparentDrawOrdering.SortBackToFront(
+            draws,
+            sortKeys,
+            draws.Length,
+            Matrix4x4.CreateLookAt(Vector3.Zero, Vector3.UnitZ, Vector3.UnitY));
+
+        Assert.Equal(new uint[] { 20, 30, 40, 10 }, draws.Select(draw => draw.MaterialID));
+        Assert.Equal(5.0f, sortKeys[0].CameraDepth);
+        Assert.Equal(5.0f, sortKeys[1].CameraDepth);
+        Assert.Equal(1u, sortKeys[0].SourceDrawIndex);
+        Assert.Equal(2u, sortKeys[1].SourceDrawIndex);
     }
 
     [Fact]
@@ -2536,6 +2811,200 @@ public sealed class RenderingAssetPipelineTests
     {
         return Convert.FromBase64String(
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lTEpGAAAAABJRU5ErkJggg==");
+    }
+
+    private static AssetRecord CreateModelReimportValidationSourceAsset(
+        TestWorkspace workspace,
+        TestAssetDatabase db,
+        Guid sourceGuid,
+        Guid shaderGuid,
+        string packageId)
+    {
+        var shaderPath = workspace.Write(
+            "Assets/Shaders/ReimportValidation.shader",
+            CreateModelReimportValidationShader());
+        workspace.WriteBinary(
+            "Assets/Models/ReimportValidation/Source/Triangle.bin",
+            CreateGltfTriangleBuffer(1.0f));
+        workspace.Write(
+            "Assets/Models/ReimportValidation/Source/BaseColor.ppm",
+            "P3\n1 1\n255\n210 120 45\n");
+        workspace.Write(
+            "Assets/Models/ReimportValidation/Source/Normal.ppm",
+            "P3\n1 1\n255\n128 128 255\n");
+        workspace.Write(
+            "Assets/Models/ReimportValidation/Source/Packed.ppm",
+            "P3\n1 1\n255\n220 96 180\n");
+        workspace.Write(
+            "Assets/Models/ReimportValidation/Source/ReimportValidation.gltf",
+            CreateModelReimportValidationGltf());
+        var modelPath = workspace.Write("Assets/Models/ReimportValidation/ReimportValidation.arismodel", $$"""
+            Name: ReimportValidation
+            Source:
+              Path: Source/ReimportValidation.gltf
+              Format: GltfJson
+            Import:
+              OutputRoot: Assets/Generated/ReimportValidation
+              SceneIndex: 0
+              UnitScale: 1.0
+              EmitTextures: true
+            Shader:
+              Guid: {{shaderGuid:D}}
+              Name: Tests/ReimportValidation
+            """);
+        SerializationUtil.Serialize(
+            new AssetMetadata
+            {
+                Guid = sourceGuid,
+                AssetType = ModelSourceAssetLoader.ModelAssetType,
+                Importer = "ArisenModelImporter"
+            },
+            modelPath + ".meta");
+
+        db.AddAsset(shaderGuid, ShaderAssetCooker.ShaderSourceAssetType, shaderPath, packageId);
+        db.AddAsset(sourceGuid, ModelSourceAssetLoader.ModelAssetType, modelPath, packageId);
+        Assert.True(db.TryGetAsset(sourceGuid, out var sourceAsset));
+        return sourceAsset;
+    }
+
+    private static string CreateModelReimportValidationGltf()
+    {
+        return """
+            {
+              "asset": { "version": "2.0" },
+              "scene": 0,
+              "scenes": [
+                { "name": "ReimportValidationScene", "nodes": [0] }
+              ],
+              "nodes": [
+                { "name": "ValidationTriangle", "mesh": 0 }
+              ],
+              "buffers": [
+                { "uri": "Triangle.bin", "byteLength": 114 }
+              ],
+              "bufferViews": [
+                { "buffer": 0, "byteOffset": 0, "byteLength": 36 },
+                { "buffer": 0, "byteOffset": 36, "byteLength": 36 },
+                { "buffer": 0, "byteOffset": 72, "byteLength": 24 },
+                { "buffer": 0, "byteOffset": 96, "byteLength": 12 },
+                { "buffer": 0, "byteOffset": 108, "byteLength": 6 }
+              ],
+              "accessors": [
+                { "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" },
+                { "bufferView": 1, "componentType": 5126, "count": 3, "type": "VEC3" },
+                { "bufferView": 2, "componentType": 5126, "count": 3, "type": "VEC2" },
+                { "bufferView": 3, "componentType": 5121, "normalized": true, "count": 3, "type": "VEC4" },
+                { "bufferView": 4, "componentType": 5123, "count": 3, "type": "SCALAR" }
+              ],
+              "images": [
+                { "uri": "BaseColor.ppm" },
+                { "uri": "Normal.ppm" },
+                { "uri": "Packed.ppm" }
+              ],
+              "textures": [
+                { "source": 0 },
+                { "source": 1 },
+                { "source": 2 },
+                { "source": 2 }
+              ],
+              "materials": [
+                {
+                  "name": "ValidationMaterial",
+                  "pbrMetallicRoughness": {
+                    "baseColorTexture": { "index": 0 },
+                    "metallicRoughnessTexture": { "index": 2 },
+                    "metallicFactor": 0.7,
+                    "roughnessFactor": 0.35
+                  },
+                  "normalTexture": { "index": 1 },
+                  "occlusionTexture": { "index": 3, "strength": 0.8 }
+                }
+              ],
+              "meshes": [
+                {
+                  "primitives": [
+                    {
+                      "attributes": {
+                        "POSITION": 0,
+                        "NORMAL": 1,
+                        "TEXCOORD_0": 2,
+                        "COLOR_0": 3
+                      },
+                      "indices": 4,
+                      "material": 0
+                    }
+                  ]
+                }
+              ]
+            }
+            """;
+    }
+
+    private static string CreateModelReimportValidationShader()
+    {
+        return """
+            Shader "Tests/ReimportValidation"
+            {
+                MaterialContract
+                {
+                    Texture2D BaseColor
+                    Texture2D Normal
+                    Texture2D MetallicRoughness
+                    Texture2D Occlusion
+                    Scalar MetallicFactor
+                    Scalar RoughnessFactor
+                    Scalar OcclusionStrength
+                    Scalar AlphaCutoff
+                    Vector4 BaseColorFactor
+                    Vector4 EmissiveFactor
+                }
+
+                SubShader
+                {
+                    Pass
+                    {
+                        HLSLPROGRAM
+                        #pragma vertex VSMain
+                        #pragma fragment PSMain
+                        #pragma shader_feature USE_NORMAL_MAP
+                        float4 VSMain() : SV_Position { return 0; }
+                        float4 PSMain() : SV_Target0 { return 1; }
+                        ENDHLSL
+                    }
+                }
+            }
+            """;
+    }
+
+    private static string[] GetEmittedSourcePaths(ModelSourceReimportResult result)
+    {
+        return result.Emission.ScenePaths
+            .Concat(result.Emission.MeshPaths)
+            .Concat(result.Emission.MaterialPaths)
+            .Concat(result.Emission.TexturePaths)
+            .ToArray();
+    }
+
+    private static AssetMetadata[] IndexGeneratedAssets(
+        TestAssetDatabase db,
+        ModelSourceReimportResult result,
+        IReadOnlyList<string> emittedPaths)
+    {
+        var metadata = new AssetMetadata[emittedPaths.Count];
+        for (int i = 0; i < emittedPaths.Count; i++)
+        {
+            var sourcePath = emittedPaths[i];
+            metadata[i] = SerializationUtil.Deserialize<AssetMetadata>(
+                sourcePath + ".meta",
+                serializeIfNotExist: false);
+            db.AddAsset(
+                metadata[i].Guid,
+                metadata[i].AssetType,
+                sourcePath,
+                result.Plan.PackageId);
+        }
+
+        return metadata;
     }
 
     private static AssetRecord CreateModelSourceAsset(

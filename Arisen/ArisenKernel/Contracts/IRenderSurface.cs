@@ -7,7 +7,8 @@ public enum SurfaceType
 {
     Window,
     SharedHandle,
-    SceneView
+    SceneView,
+    GameView
 }
 
 public struct SurfaceInfo

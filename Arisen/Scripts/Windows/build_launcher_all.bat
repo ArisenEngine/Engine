@@ -17,6 +17,8 @@ REM === 0. Configure Paths ===
 set "TARGET=Launcher"
 set "PLATFORM=Windows"
 set "LAUNCHER_DIR=!ROOT_DIR!\Editor\ArisenLauncher"
+set "BUILD_TOOL_CSPROJ=!ROOT_DIR!\External\ArisenBuildTool\ArisenBuildTool.csproj"
+set "BUILD_TOOL_DLL=!ROOT_DIR!\External\ArisenBuildTool\bin\x64\Release\net9.0\ArisenBuildTool.dll"
 
 REM Detect manifest (project.arisen takes precedence over manifest.json)
 if exist "!LAUNCHER_DIR!\project.arisen" (
@@ -35,7 +37,12 @@ echo === Arisen Launcher Build Log === > "!LOG_FILE_ABS!"
 
 echo [Arisen] Extracting Project Name from launcher manifest...
 if exist "!MANIFEST_PATH!" (
-    for /f "usebackq delims=" %%P in (`powershell -NoProfile -Command "$m = Get-Content -LiteralPath '!MANIFEST_PATH!' -Raw | ConvertFrom-Json; if ($m.Name) { $m.Name } else { 'ArisenLauncher' }"`) do set "PROJECT_NAME=%%P"
+    dotnet build "!BUILD_TOOL_CSPROJ!" -c Release >nul
+    if errorlevel 1 (
+        echo [ERROR] Failed to build ArisenBuildTool for launcher manifest parsing.
+        exit /b 1
+    )
+    for /f "usebackq delims=" %%P in (`dotnet "!BUILD_TOOL_DLL!" manifest-info --manifest "!MANIFEST_PATH!" --field name`) do set "PROJECT_NAME=%%P"
 )
 if not defined PROJECT_NAME set "PROJECT_NAME=ArisenLauncher"
 

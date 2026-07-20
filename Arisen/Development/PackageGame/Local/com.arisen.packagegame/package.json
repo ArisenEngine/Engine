@@ -17,6 +17,7 @@
           "vulkan"
         ]
       },
+      "ArisenEngine.Rendering.IRenderPipelineProvider",
       "ArisenEngine.Rendering.IRenderMaterialLibrary",
       "ArisenEngine.Resources.Serialization.IRuntimeSceneService"
     ]

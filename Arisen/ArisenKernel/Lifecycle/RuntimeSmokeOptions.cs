@@ -10,9 +10,10 @@ public enum RuntimeSmokeMode
 internal readonly record struct RuntimeSmokeOptions(
     bool Enabled,
     RuntimeSmokeMode Mode,
-    uint RequestedFrameCount)
+    uint RequestedFrameCount,
+    bool CaptureVisualSummary)
 {
-    public static RuntimeSmokeOptions Disabled { get; } = new(false, RuntimeSmokeMode.Boot, 1);
+    public static RuntimeSmokeOptions Disabled { get; } = new(false, RuntimeSmokeMode.Boot, 1, false);
 
     public uint EffectiveFrameCount => Math.Max(RequestedFrameCount, GetMinimumFrameCount(Mode));
 
@@ -28,6 +29,8 @@ internal readonly record struct RuntimeSmokeOptions(
     {
         bool enabled = false;
         RuntimeSmokeMode mode = RuntimeSmokeMode.Boot;
+        bool modeSpecified = false;
+        bool captureVisualSummary = false;
         uint frames = 1;
 
         for (int i = 0; i < args.Length; i++)
@@ -39,18 +42,30 @@ internal readonly record struct RuntimeSmokeOptions(
             else if (string.Equals(args[i], "--smoke-mode", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
             {
                 mode = ParseMode(args[i + 1]);
+                modeSpecified = true;
                 enabled = true;
                 i++;
             }
             else if (string.Equals(args[i], "--smoke-scene", StringComparison.OrdinalIgnoreCase))
             {
                 mode = RuntimeSmokeMode.Scene;
+                modeSpecified = true;
                 enabled = true;
             }
             else if (string.Equals(args[i], "--smoke-hot-reload", StringComparison.OrdinalIgnoreCase))
             {
                 mode = RuntimeSmokeMode.HotReload;
+                modeSpecified = true;
                 enabled = true;
+            }
+            else if (string.Equals(args[i], "--visual-summary", StringComparison.OrdinalIgnoreCase))
+            {
+                captureVisualSummary = true;
+                enabled = true;
+                if (!modeSpecified)
+                {
+                    mode = RuntimeSmokeMode.Scene;
+                }
             }
             else if (string.Equals(args[i], "--frames", StringComparison.OrdinalIgnoreCase)
                      && i + 1 < args.Length
@@ -62,7 +77,16 @@ internal readonly record struct RuntimeSmokeOptions(
             }
         }
 
-        return enabled ? new RuntimeSmokeOptions(true, mode, frames) : Disabled;
+        if (captureVisualSummary && mode != RuntimeSmokeMode.Scene)
+        {
+            throw new ArgumentException(
+                "--visual-summary requires scene smoke mode.",
+                nameof(args));
+        }
+
+        return enabled
+            ? new RuntimeSmokeOptions(true, mode, frames, captureVisualSummary)
+            : Disabled;
     }
 
     private static uint GetMinimumFrameCount(RuntimeSmokeMode mode) => mode switch
