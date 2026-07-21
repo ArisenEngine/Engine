@@ -13,7 +13,14 @@ To provide a native experience, every Arisen workspace contains a thin **Entry P
 
 ```csharp
 public class Program {
-    public static void Main(string[] args) => ArisenKernel.Lifecycle.EngineBootstrapper.Run(args);
+    public static void Main(string[] args) {
+        if (RuntimeAssetCookHost.IsCookCommand(args)) {
+            Environment.ExitCode = RuntimeAssetCookHost.Run(args);
+            return;
+        }
+
+        ArisenKernel.Lifecycle.EngineBootstrapper.Run(args);
+    }
 }
 ```
 
@@ -21,6 +28,22 @@ This architecture ensures that:
 1. **Manageability**: The game project is a real, debuggable process in the IDE.
 2. **Zero Overhead**: All complex bootstrapping logic is offloaded to the Kernel library.
 3. **Isolation**: The executable is automatically co-located with all dependencies in `.arisen/bin/{profile}/{configuration}/`.
+
+When `com.arisen.core` participates in the generated graph, the entry project compile-references that package so it can dispatch package-aware build commands. Other package project references remain runtime-loaded and use `ReferenceOutputAssembly="false"`; normal game/editor composition still comes from the selected package graph rather than static entry-project references.
+
+### Build-Stage Cook Dispatch
+
+The generated host recognizes:
+
+```bash
+MyGame.exe --arisen-cook-runtime-assets --workspace "D:/MyGame" --profile Production --configuration Release --runtime-identifier win-x64 --output-root "D:/MyGame/.arisen/bin/Production/Release"
+```
+
+`RuntimeAssetCookHost` reuses `EngineBootstrapper.ResolvePackageGraph()` and prefers the generated `.arisen/Projects/{Profile}/manifest.source.resolved.json`. This source-resolved graph is build-stage-only, so repeat builds retain package source roots after the launch output has been rewritten for deployment. The host then calls `EngineKernel.MountPackageGraph()` instead of full initialization. Package entries can register source-format-owned cooker providers, but subsystem phases never begin, so the command does not create windows, initialize the RHI, run frames, or activate a scene.
+
+The cook host sets `EngineConfig.ExecutionMode` to `RuntimeAssetCook`, which gives `IAssetDatabase` the corresponding source-access mode. This is an execution-purpose boundary, not an Editor flag: package-owned cookers may read indexed workspace source, while ordinary runtime execution selects cooked payloads.
+
+The command writes `.arisen/Intermediate/Cook/{Profile}/{Configuration}/runtime-assets.json` and returns a process exit code. When `--output-root` is supplied, it also stages and verifies the complete catalog closure, replaces the owned `<output-root>/Content/` tree, and publishes `<output-root>/runtime-assets.json`. Production generated projects invoke this path automatically after `Build`, then run `ArisenBuildTool deploy-runtime-metadata` to publish output-owned package/project metadata. Omitting `--output-root` retains intermediate-only behavior for explicit tooling.
 
 ---
 
@@ -32,11 +55,23 @@ The bootstrapper resolves the environment using standard arguments:
 MyGame.exe --workspace "D:/MyGame" --profile "Development"
 ```
 
-1. **Deduction**: If `--workspace` is missing, the bootstrapper automatically deduces the workspace root based on the isolated binary folder structure (moving 4 levels up from `bin/`).
-2. **Launch Config**: If `launch.config.json` exists beside the executable, it is used to recover profile/workspace information before path deduction.
+Ordinary Development and test launches index workspace assets but select cooked scene/rendering payloads. Source selection is a deliberate diagnostic action:
+
+```bash
+MyGame.exe --workspace "D:/MyGame" --profile Development --diagnostic-source-assets
+```
+
+The bootstrapper maps this flag to `EngineConfig.EnableSourceAssetDiagnostics`. `com.arisen.resources` then selects `AssetSourceAccessMode.Diagnostic`; without the flag it selects `Disabled`. Editor source access remains compile-owned through `ARISEN_ENGINE_EDITOR`, while Production and deployed launches reject the flag before package initialization.
+
+1. **Deduction**: For a workspace launch, if `--workspace` is missing, the bootstrapper deduces the workspace root based on the isolated binary folder structure.
+2. **Launch Config**: If `launch.config.json` exists beside the executable, it is used before path deduction. `Mode: Deployed` roots metadata beside the executable and rejects `--workspace` or a conflicting profile override.
 3. **Manifest Resolution**: It parses the workspace `manifest.json` to identify base packages and active profile packages.
 4. **Resolved Manifest Authority**: If `manifest.resolved.json` exists beside the executable, the bootstrapper treats it as the authoritative package list and topological order. Invalid resolved manifests are fatal by default; raw `manifest.json` fallback is allowed only when `--allow-manifest-fallback` is passed.
 5. **Kernel Hand-off**: It passes the ordered package URL list to `EngineKernel.Initialize()`. The kernel ensures `PackageSubsystem` exists and delegates actual package mounting to it.
+
+For an ordinary `ARISEN_PROFILE_PRODUCTION` launch, `com.arisen.resources` requires `<app-base>/runtime-assets.json` and `<app-base>/Content/`. Catalog profile, paths, sizes, and hashes are validated before any asset lookup is published. The runtime database contains no source records, uses `Disabled` source access, and rejects cooking, invalidation, or source refresh; missing or incompatible cooked content is fatal instead of falling back to workspace `Assets` or `.arisen/Cache`.
+
+A finalized Production output also contains a sanitized `manifest.json` plus effective descriptors under `<app-base>/Packages/<package-id>/package.json`. Both that manifest and `manifest.resolved.json` use only `file://Packages/...` URLs. Package assemblies and native payloads remain co-located in `<app-base>`, so moving or copying the complete output preserves package loading without copying package source directories.
 
 ---
 
@@ -67,3 +102,5 @@ MyGame.exe --workspace "D:/MyGame" --profile "Development" --smoke-mode scene --
 ```
 
 Supported smoke modes are `boot`, `scene`, and `hot-reload`. `boot` preserves the legacy one-frame bounded loop. `scene` runs at least two frames so packages that defer scene setup to first `OnFrameEnd` still render one prepared scene frame. `hot-reload` currently runs a multi-frame scene stability window and logs that true file-change recook/reload smoke still needs a runtime-owned asset-change harness.
+
+`--visual-summary-output <path>` implies scene visual capture and overrides the default workspace-relative artifact path. Runtime validation uses it so a deployed player can remain rooted to its copied output while CI artifacts are written to the canonical validation log directory.

@@ -10,22 +10,32 @@ using ArisenKernel.Packages;
 
 namespace ArisenKernel.Lifecycle;
 
+public sealed record EnginePackageGraphResolution(
+    string WorkspacePath,
+    string Profile,
+    string ManifestPath,
+    string ResolvedManifestPath,
+    IReadOnlyList<string> PackageUrls);
+
 public static class EngineBootstrapper
 {
     public static void Run(string[] args)
     {
         KernelLog.Info("=== Arisen Engine Bootstrapper ===");
-        
+
         string workspacePath = "";
         string entryPackage = "";
         string profile = "Development";
         bool profileSpecified = false;
         bool workspaceSpecified = false;
         bool allowResolvedManifestFallback = false;
+        bool deployedLaunch = false;
         RuntimeSmokeOptions smokeOptions;
+        RuntimeAssetOptions runtimeAssetOptions;
         try
         {
             smokeOptions = RuntimeSmokeOptions.Parse(args);
+            runtimeAssetOptions = RuntimeAssetOptions.Parse(args);
         }
         catch (ArgumentException ex)
         {
@@ -50,10 +60,70 @@ public static class EngineBootstrapper
             {
                 using var configDoc = JsonDocument.Parse(File.ReadAllText(configPath), ManifestJson.DocumentOptions);
                 var root = configDoc.RootElement;
-                if (!profileSpecified && root.TryGetProperty("Profile", out var pProp)) profile = pProp.GetString() ?? profile;
-                if (!workspaceSpecified && root.TryGetProperty("Workspace", out var wProp)) workspacePath = wProp.GetString() ?? workspacePath;
+                string? configuredProfile = root.TryGetProperty("Profile", out var pProp)
+                    ? pProp.GetString()
+                    : null;
+                deployedLaunch = root.TryGetProperty("Mode", out var modeProperty) &&
+                    string.Equals(modeProperty.GetString(), "Deployed", StringComparison.Ordinal);
+
+                if (deployedLaunch && workspaceSpecified)
+                {
+                    throw new InvalidOperationException(
+                        "A deployed launch does not permit --workspace. Runtime metadata is rooted beside the executable.");
+                }
+
+                if (deployedLaunch && profileSpecified &&
+                    !string.IsNullOrWhiteSpace(configuredProfile) &&
+                    !string.Equals(profile, configuredProfile, StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        $"A deployed launch targets profile '{configuredProfile}', not '{profile}'.");
+                }
+
+                if (!profileSpecified && !string.IsNullOrWhiteSpace(configuredProfile))
+                {
+                    profile = configuredProfile;
+                }
+
+                if (deployedLaunch)
+                {
+                    workspacePath = Path.GetFullPath(AppContext.BaseDirectory);
+                    KernelLog.InfoFormat(
+                        "[Host] Using deployed runtime metadata rooted at: {0}",
+                        workspacePath);
+                }
+                else if (!workspaceSpecified &&
+                         root.TryGetProperty("Workspace", out var wProp) &&
+                         !string.IsNullOrWhiteSpace(wProp.GetString()))
+                {
+                    string configuredWorkspace = wProp.GetString()!;
+                    workspacePath = Path.IsPathRooted(configuredWorkspace)
+                        ? Path.GetFullPath(configuredWorkspace)
+                        : Path.GetFullPath(Path.Combine(
+                            Path.GetDirectoryName(configPath)!,
+                            configuredWorkspace));
+                }
             }
-            catch { /* Skip and fall back to deduction */ }
+            catch (Exception ex)
+            {
+                KernelLog.FatalFormat(
+                    "[Host] FATAL ERROR: Invalid launch configuration '{0}': {1}",
+                    configPath,
+                    ex.Message);
+                Environment.Exit(1);
+                return;
+            }
+        }
+
+        try
+        {
+            runtimeAssetOptions.Validate(profile, deployedLaunch);
+        }
+        catch (InvalidOperationException ex)
+        {
+            KernelLog.FatalFormat("[Host] FATAL ERROR: {0}", ex.Message);
+            Environment.Exit(1);
+            return;
         }
 
         if (string.IsNullOrEmpty(workspacePath))
@@ -67,7 +137,7 @@ public static class EngineBootstrapper
         // 1. Initialize Kernel and Core Project Subsystem
         var kernel = EngineKernel.Instance;
         var registry = kernel.Services;
-        
+
         var projectSubsystem = new ProjectSubsystem();
         registry.RegisterService<ProjectSubsystem>(projectSubsystem);
         projectSubsystem.LoadFromWorkspace(workspacePath);
@@ -76,121 +146,100 @@ public static class EngineBootstrapper
         var packageSubsystem = new PackageSubsystem();
         kernel.RegisterSubsystem(packageSubsystem);
 
-        string manifestPath = Path.Combine(workspacePath, "manifest.json");
-        if (!File.Exists(manifestPath))
+        EnginePackageGraphResolution packageGraph;
+        try
         {
-            KernelLog.FatalFormat("[Host] FATAL ERROR: Cannot find manifest.json at {0}", manifestPath);
+            packageGraph = ResolvePackageGraph(
+                workspacePath,
+                profile,
+                allowResolvedManifestFallback);
+        }
+        catch (Exception ex)
+        {
+            KernelLog.FatalFormat("[Host] FATAL ERROR: {0}", ex.Message);
             Environment.Exit(1);
+            return;
         }
 
-        KernelLog.InfoFormat("[Host] Reading Workspace Manifest: {0}", manifestPath);
-        var manifestJson = ManifestJson.ParseDocumentFile(manifestPath);
-        var packagesElement = manifestJson.RootElement.GetProperty("Packages");
-        
-        List<string> packageUrls = new();
-        void AddPackages(JsonElement element)
-        {
-            foreach (var pkg in element.EnumerateArray())
-            {
-                var url = pkg.GetProperty("Url").GetString();
-                if (!string.IsNullOrEmpty(url))
-                {
-                    if (url.StartsWith("file://"))
-                    {
-                        string localPath = url.Substring(7);
-                        if (Path.IsPathRooted(localPath)) packageUrls.Add(localPath);
-                        else packageUrls.Add(Path.Combine(workspacePath, localPath));
-                    }
-                    else
-                    {
-                        // TODO: Handle cache/URL packages
-                        packageUrls.Add(url);
-                    }
-                }
-            }
-        }
+        workspacePath = packageGraph.WorkspacePath;
+        profile = packageGraph.Profile;
+        List<string> packageUrls = packageGraph.PackageUrls.ToList();
+        string resolvedManifestPath = packageGraph.ResolvedManifestPath;
+        string projectName = projectSubsystem.ActiveProject?.Name ??
+            Path.GetFileName(
+                workspacePath.TrimEnd(
+                    Path.DirectorySeparatorChar,
+                    Path.AltDirectorySeparatorChar));
 
-        AddPackages(packagesElement);
-
-        // Load Profile Packages
-        if (manifestJson.RootElement.TryGetPropertyIC("Profiles", out var profilesElement))
+        if (runtimeAssetOptions.EnableSourceAssetDiagnostics)
         {
-            if (profilesElement.TryGetPropertyIC(profile, out var profileDefinition))
-            {
-                KernelLog.InfoFormat("[Host] Loading Profile: {0}", profile);
-                
-                // NEW: Handle ProfileDefinition object (Packages, etc)
-                if (profileDefinition.ValueKind == JsonValueKind.Object)
-                {
-                    if (profileDefinition.TryGetPropertyIC("Packages", out var profilePackages))
-                    {
-                        AddPackages(profilePackages);
-                    }
-                }
-                else if (profileDefinition.ValueKind == JsonValueKind.Array)
-                {
-                    // Legacy support for raw package arrays in profiles
-                    AddPackages(profileDefinition);
-                }
-            }
-            else if (profile != "Development" && profile != "Production")
-            {
-                KernelLog.WarningFormat("[Host] WARNING: Profile '{0}' not found in manifest.json.", profile);
-            }
-        }
-
-        // B11: Check for resolved manifest to skip runtime resolution and use topological order
-        // PRIORITY 1: Local manifest.resolved.json co-located with binary (Modernized approach)
-        string resolvedManifestPath = Path.Combine(AppContext.BaseDirectory, "manifest.resolved.json");
-        
-        // PRIORITY 2: Fallback to root naming convention for legacy/debug support
-        if (!File.Exists(resolvedManifestPath))
-        {
-            resolvedManifestPath = Path.Combine(workspacePath, $"manifest.resolved.{profile}.json");
-        }
-
-        if (File.Exists(resolvedManifestPath))
-        {
-            if (!TryLoadResolvedPackageUrls(resolvedManifestPath, workspacePath, profile, packageUrls, out var resolvedError))
-            {
-                if (allowResolvedManifestFallback)
-                {
-                    KernelLog.WarningFormat("[Host] Failed to parse resolved manifest '{0}': {1}. Falling back to manifest.json order because --allow-manifest-fallback was specified.", resolvedManifestPath, resolvedError);
-                }
-                else
-                {
-                    KernelLog.FatalFormat("[Host] FATAL ERROR: Resolved manifest '{0}' is invalid: {1}", resolvedManifestPath, resolvedError);
-                    Environment.Exit(1);
-                }
-            }
-        }
-        else
-        {
-            KernelLog.WarningFormat("[Host] No resolved manifest found for profile '{0}'. Runtime will use raw manifest package order.", profile);
+            KernelLog.Warning(
+                "[Host] Diagnostic source-asset selection is enabled for this process.");
         }
 
         RuntimeVisualSummaryService? visualSummaryService = null;
         if (smokeOptions.CaptureVisualSummary)
         {
-            visualSummaryService = new RuntimeVisualSummaryService(
-                workspacePath,
-                profile,
-                smokeOptions.EffectiveFrameCount - 1);
+            visualSummaryService = smokeOptions.Mode == RuntimeSmokeMode.WorldStreaming
+                ? new RuntimeVisualSummaryService(
+                    workspacePath,
+                    profile,
+                    smokeOptions.VisualSummaryOutputPath)
+                : new RuntimeVisualSummaryService(
+                    workspacePath,
+                    profile,
+                    smokeOptions.EffectiveFrameCount - 1,
+                    smokeOptions.VisualSummaryOutputPath);
             registry.RegisterService<IRuntimeVisualSummaryService>(visualSummaryService);
-            KernelLog.InfoFormat(
-                "[Host] Visual summary requested for frame {0}. Output: {1}",
-                visualSummaryService.CaptureFrameIndex,
-                visualSummaryService.OutputPath);
+            if (smokeOptions.Mode == RuntimeSmokeMode.WorldStreaming)
+            {
+                KernelLog.InfoFormat(
+                    "[Host] Named world-streaming visual summaries requested. Output base: {0}",
+                    visualSummaryService.OutputPath);
+            }
+            else
+            {
+                KernelLog.InfoFormat(
+                    "[Host] Visual summary requested for frame {0}. Output: {1}",
+                    visualSummaryService.CaptureFrameIndex,
+                    visualSummaryService.OutputPath);
+            }
         }
 
         // 2. Initialize Kernel (The kernel now handles topological package loading)
-        kernel.Initialize(new EngineConfig
+        try
         {
-            ProjectRoot = workspacePath,
-            ProjectName = Path.GetFileName(workspacePath),
-            PackageUrls = packageUrls,
-            Platform = RuntimePlatform.Windows // TODO: Deduce from OS
-        });
+            kernel.Initialize(new EngineConfig
+            {
+                ProjectRoot = workspacePath,
+                ProjectName = projectName,
+                PackageUrls = packageUrls,
+                Platform = RuntimePlatform.Windows, // TODO: Deduce from OS
+                EnableSourceAssetDiagnostics = runtimeAssetOptions.EnableSourceAssetDiagnostics
+            });
+        }
+        catch (Exception ex)
+        {
+            KernelLog.FatalFormat(
+                "[Host] FATAL ERROR: Engine initialization failed: {0}",
+                ex.Message);
+            try
+            {
+                if (kernel.IsPackageGraphMounted)
+                {
+                    kernel.Shutdown();
+                }
+            }
+            catch (Exception shutdownException)
+            {
+                KernelLog.ErrorFormat(
+                    "[Host] Package shutdown after initialization failure also failed: {0}",
+                    shutdownException.Message);
+            }
+
+            Environment.Exit(1);
+            return;
+        }
 
         KernelLog.Info("[Host] Kernel Initialization Complete.");
 
@@ -218,13 +267,62 @@ public static class EngineBootstrapper
                 KernelLog.Warning("[Host] Hot-reload smoke currently exercises multi-frame scene stability. File-change recook/reload smoke awaits a runtime-owned asset-change harness.");
             }
 
-            var smokeExitCode = kernel.RunForFrames(smokeOptions.EffectiveFrameCount);
+            int smokeExitCode;
+            IRuntimeSmokeScenario? smokeScenario = null;
+            if (smokeOptions.Mode == RuntimeSmokeMode.WorldStreaming)
+            {
+                if (!registry.TryGetService<IRuntimeSmokeScenarioProvider>(out var scenarioProvider))
+                {
+                    KernelLog.Fatal(
+                        "[Host] World-streaming smoke requires an IRuntimeSmokeScenarioProvider.");
+                    kernel.Shutdown();
+                    Environment.ExitCode = 1;
+                    return;
+                }
+
+                var context = new RuntimeSmokeScenarioContext(
+                    smokeOptions.ModeName,
+                    workspacePath,
+                    profile,
+                    smokeOptions.SmokeSummaryOutputPath,
+                    visualSummaryService);
+                if (!scenarioProvider.TryCreateScenario(
+                        context,
+                        out smokeScenario,
+                        out string scenarioDiagnostic))
+                {
+                    KernelLog.FatalFormat(
+                        "[Host] World-streaming smoke scenario creation failed: {0}",
+                        scenarioDiagnostic);
+                    kernel.Shutdown();
+                    Environment.ExitCode = 1;
+                    return;
+                }
+
+                smokeExitCode = kernel.RunSmokeScenario(
+                    smokeScenario,
+                    smokeOptions.EffectiveFrameCount,
+                    TimeSpan.FromSeconds(45));
+                KernelLog.InfoFormat(
+                    smokeScenario.Succeeded
+                        ? "[Host] Smoke scenario passed: {0}"
+                        : "[Host] Smoke scenario failed: {0}",
+                    smokeScenario.Succeeded
+                        ? smokeScenario.OutputPath
+                        : smokeScenario.FailureMessage ?? "unknown scenario failure");
+            }
+            else
+            {
+                smokeExitCode = kernel.RunForFrames(smokeOptions.EffectiveFrameCount);
+            }
+
             if (visualSummaryService != null)
             {
+                visualSummaryService.Seal();
                 if (!visualSummaryService.IsComplete)
                 {
                     visualSummaryService.ReportFailure(
-                        $"No native render surface captured requested frame {visualSummaryService.CaptureFrameIndex}.");
+                        "No native render surface completed every requested visual-summary capture.");
                 }
 
                 if (!visualSummaryService.Succeeded)
@@ -237,7 +335,8 @@ public static class EngineBootstrapper
                 else
                 {
                     KernelLog.InfoFormat(
-                        "[Host] Visual summary passed: {0}",
+                        "[Host] {0} visual summary capture(s) passed. Output base: {1}",
+                        visualSummaryService.GetCaptureResults().Count,
                         visualSummaryService.OutputPath);
                 }
             }
@@ -257,6 +356,152 @@ public static class EngineBootstrapper
             KernelLog.Info("[Host] No IApplicationHost detected. Engaging default bare-metal Engine tick.");
             kernel.Run();
         }
+    }
+
+    public static EnginePackageGraphResolution ResolvePackageGraph(
+        string workspacePath,
+        string profile,
+        bool allowResolvedManifestFallback = false,
+        string? resolvedManifestPathOverride = null)
+    {
+        if (string.IsNullOrWhiteSpace(workspacePath))
+        {
+            throw new ArgumentException("A non-empty workspace path is required.", nameof(workspacePath));
+        }
+
+        if (string.IsNullOrWhiteSpace(profile))
+        {
+            throw new ArgumentException("A non-empty profile is required.", nameof(profile));
+        }
+
+        string fullWorkspacePath = Path.GetFullPath(workspacePath);
+        string manifestPath = Path.Combine(fullWorkspacePath, "manifest.json");
+        if (!File.Exists(manifestPath))
+        {
+            throw new FileNotFoundException(
+                $"Cannot find manifest.json at {manifestPath}",
+                manifestPath);
+        }
+
+        KernelLog.InfoFormat("[Host] Reading Project Manifest: {0}", manifestPath);
+        using JsonDocument manifestJson = ManifestJson.ParseDocumentFile(manifestPath);
+        if (!manifestJson.RootElement.TryGetPropertyIC("Packages", out JsonElement packagesElement) ||
+            packagesElement.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidDataException(
+                $"Workspace manifest '{manifestPath}' must contain a Packages array.");
+        }
+
+        var packageUrls = new List<string>();
+        void AddPackages(JsonElement element)
+        {
+            if (element.ValueKind != JsonValueKind.Array)
+            {
+                throw new InvalidDataException("A workspace package collection must be an array.");
+            }
+
+            foreach (JsonElement package in element.EnumerateArray())
+            {
+                if (!package.TryGetPropertyIC("Url", out JsonElement urlElement) ||
+                    urlElement.ValueKind != JsonValueKind.String ||
+                    string.IsNullOrWhiteSpace(urlElement.GetString()))
+                {
+                    throw new InvalidDataException(
+                        "A workspace package entry must contain a non-empty Url string.");
+                }
+
+                string url = urlElement.GetString()!;
+                packageUrls.Add(ResolvePackageUrl(url, fullWorkspacePath, fullWorkspacePath));
+            }
+        }
+
+        AddPackages(packagesElement);
+        if (manifestJson.RootElement.TryGetPropertyIC("Profiles", out JsonElement profilesElement))
+        {
+            if (profilesElement.TryGetPropertyIC(profile, out JsonElement profileDefinition))
+            {
+                KernelLog.InfoFormat("[Host] Loading Profile: {0}", profile);
+                if (profileDefinition.ValueKind == JsonValueKind.Object &&
+                    profileDefinition.TryGetPropertyIC("Packages", out JsonElement profilePackages))
+                {
+                    AddPackages(profilePackages);
+                }
+                else if (profileDefinition.ValueKind == JsonValueKind.Array)
+                {
+                    AddPackages(profileDefinition);
+                }
+            }
+            else if (!string.Equals(profile, "Development", StringComparison.OrdinalIgnoreCase) &&
+                     !string.Equals(profile, "Production", StringComparison.OrdinalIgnoreCase))
+            {
+                KernelLog.WarningFormat(
+                    "[Host] WARNING: Profile '{0}' not found in manifest.json.",
+                    profile);
+            }
+        }
+
+        string resolvedManifestPath;
+        if (!string.IsNullOrWhiteSpace(resolvedManifestPathOverride))
+        {
+            resolvedManifestPath = Path.GetFullPath(resolvedManifestPathOverride);
+            if (!File.Exists(resolvedManifestPath))
+            {
+                throw new FileNotFoundException(
+                    $"Resolved manifest override was not found at '{resolvedManifestPath}'.",
+                    resolvedManifestPath);
+            }
+        }
+        else
+        {
+            resolvedManifestPath = Path.Combine(AppContext.BaseDirectory, "manifest.resolved.json");
+            if (!File.Exists(resolvedManifestPath))
+            {
+                resolvedManifestPath = Path.Combine(
+                    fullWorkspacePath,
+                    $"manifest.resolved.{profile}.json");
+            }
+        }
+
+        if (File.Exists(resolvedManifestPath))
+        {
+            if (!TryLoadResolvedPackageUrls(
+                    resolvedManifestPath,
+                    fullWorkspacePath,
+                    profile,
+                    packageUrls,
+                    out string resolvedError))
+            {
+                if (!allowResolvedManifestFallback)
+                {
+                    throw new InvalidDataException(
+                        $"Resolved manifest '{resolvedManifestPath}' is invalid: {resolvedError}");
+                }
+
+                KernelLog.WarningFormat(
+                    "[Host] Failed to parse resolved manifest '{0}': {1}. Falling back to manifest.json order because --allow-manifest-fallback was specified.",
+                    resolvedManifestPath,
+                    resolvedError);
+            }
+        }
+        else
+        {
+            KernelLog.WarningFormat(
+                "[Host] No resolved manifest found for profile '{0}'. Runtime will use raw manifest package order.",
+                profile);
+        }
+
+        if (packageUrls.Count == 0)
+        {
+            throw new InvalidDataException(
+                $"Workspace '{fullWorkspacePath}' profile '{profile}' resolves no packages.");
+        }
+
+        return new EnginePackageGraphResolution(
+            fullWorkspacePath,
+            profile,
+            manifestPath,
+            resolvedManifestPath,
+            packageUrls.ToArray());
     }
 
     private static void LogRuntimeDiagnostics(

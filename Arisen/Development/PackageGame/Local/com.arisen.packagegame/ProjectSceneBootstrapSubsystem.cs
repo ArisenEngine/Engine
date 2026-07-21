@@ -28,6 +28,26 @@ public sealed class ProjectSceneBootstrapSubsystem : IEngineSubsystem
 
         sceneSubsystem.RegisterSystem(new MeshSystem());
 
+        if (project.StartupWorld is { IsValid: true } startupWorld)
+        {
+            var worldService = kernel.Services.GetService<IRuntimeWorldStreamingService>();
+            RuntimeWorldLoadResult worldResult = worldService.LoadWorld(
+                new AssetRef<WorldSourceAsset>(
+                    startupWorld.Guid,
+                    "World",
+                    startupWorld.PackageId));
+            if (!worldResult.Success)
+            {
+                throw new InvalidOperationException(worldResult.Diagnostic);
+            }
+
+            KernelLog.InfoFormat(
+                "[ProjectSceneBootstrap] Activated startup world '{0}' with {1} streamable cells.",
+                worldResult.WorldGuid,
+                worldResult.CellCount);
+            return;
+        }
+
         var sceneService = kernel.Services.GetService<IRuntimeSceneService>();
         var sceneRef = new AssetRef<SceneSourceAsset>(
             startupScene.Guid,

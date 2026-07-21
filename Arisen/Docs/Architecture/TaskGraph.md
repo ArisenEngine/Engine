@@ -3,11 +3,11 @@
 **Status:** Active  
 **Packages:** `com.arisen.taskgraph`, `com.arisen.ecs`
 
-Arisen uses one package-owned worker pool for engine job execution. Consumers describe dependency topology, while `TaskGraphPackage` owns worker creation and shutdown. Domain packages must not create private `TaskGraph` instances or private worker pools.
+Arisen uses one package-owned worker pool for engine job execution. Consumers describe dependency topology or submit coarse background operations, while `TaskGraphPackage` owns worker creation and shutdown. Domain packages must not create private `TaskGraph` instances or private worker pools.
 
 ## Execution Modes
 
-TaskGraph supports two deliberately separate modes:
+TaskGraph supports three deliberately separate modes:
 
 1. **One-shot graph**
    - Build with `ITaskGraph.AddTask` and `AddDependency`.
@@ -21,16 +21,25 @@ TaskGraph supports two deliberately separate modes:
    - `ITaskSchedule.Execute` can run the same topology every frame while task nodes receive updated frame context.
    - ECS `SystemContainer` uses this mode and recompiles only when systems change.
 
+3. **Background operation**
+   - Submit coarse, cancellation-aware work through `IBackgroundTaskScheduler.Schedule`.
+   - `BackgroundTask<T>` exposes queued/running/succeeded/failed/cancelled state, failure, result, completion waiting, and a monotonic sequence.
+   - Runtime package composition creates at least two workers and reserves one or two workers for background work. Foreground graph/schedule dispatch uses the remaining workers, so delayed file I/O cannot occupy every frame worker.
+   - Cancellation is cooperative. Owners must cancel and drain their operations before the scheduler package unloads. If cancellation wins after an operation has returned an `IDisposable` result, `BackgroundTask<T>` disposes that unclaimed result before publishing `Cancelled`.
+   - Background operations may produce immutable staging data. They must not mutate live ECS state, record RHI commands, invoke UI work, or publish callbacks that permit those mutations from a worker.
+
 Do not change one-shot `Execute` to retain tasks, and do not rebuild a stable ECS topology every frame. Those are different lifetime contracts.
 
 ## Worker And Failure Policy
 
-- `TaskGraphPackage` registers the shared `ITaskGraph` service and is the only normal runtime owner of `TaskWorker` threads.
+- `TaskGraphPackage` registers the same `TaskGraph` instance as `ITaskGraph` and `IBackgroundTaskScheduler` and is the only normal runtime owner of `TaskWorker` threads.
+- Foreground graph work and background operations use fixed worker partitions. A directly constructed one-worker test executor cannot provide that isolation; normal package composition guarantees at least two workers.
 - Work within one compiled layer may execute concurrently; the next layer starts only after every work item in the current layer signals completion.
 - Normal dispatch uses value-type queue records and a reusable completion batch. It does not allocate delegate wrappers or completion events per task.
 - Worker exceptions are captured with task context and rethrown on the waiting engine thread after the layer completes.
 - One `TaskGraph` does not support concurrent `Execute` calls. Frame scheduling currently invokes simulation and RenderGraph recording sequentially against the shared executor.
 - Disposing the shared executor while work is active is invalid. Package shutdown must happen after frame execution has stopped.
+- Scheduler disposal cancels every outstanding background task, waits for the tracked set to drain, and only then joins worker threads.
 
 ## ECS Scheduling
 
@@ -53,6 +62,8 @@ Command playback also clears each buffer in a `finally` path. If playback fails,
 - Keep task topology compilation outside steady-state frame execution.
 - Do not create worker threads, `CountdownEvent` instances, or delegate wrappers per frame.
 - Keep structural ECS mutation deferred through per-system/per-thread command buffers.
+- Keep background results immutable until their owning subsystem consumes them at an explicit frame boundary.
+- Poll status or consume completion at a coarse owner boundary. Do not wait for background I/O from the simulation/render frame.
 - Use Tracy zones at graph, layer, and task granularity; do not create per-entity zones.
 - Add multi-frame tests for every persistent schedule consumer. A one-frame smoke cannot prove reusable execution semantics.
 
@@ -64,7 +75,8 @@ Focused coverage lives in `Com.Arisen.Rendering.Tests/TaskGraphExecutionTests.cs
 - repeated reusable schedule execution;
 - ECS component-hazard ordering across frames;
 - worker failure propagation and one-shot graph recovery;
-- system-execution and command-playback failure discard.
+- system-execution and command-playback failure discard;
+- background completion, failure, cancellation, shutdown drain, and foreground/background worker isolation.
 
 Runtime/rendering changes must still pass:
 

@@ -11,14 +11,14 @@ The Engine achieves this through a **two-tier initialization architecture**: Pac
 
 ### Ownership Rule
 
-`PackageSubsystem` is the single runtime owner of package mount state. `EngineBootstrapper` resolves the workspace/profile package URL list, and `EngineKernel` coordinates lifecycle, but neither should directly instantiate package entry classes or maintain an independent loaded-package collection.
+`PackageSubsystem` is the single runtime owner of package mount state. `EngineBootstrapper` resolves either the workspace/profile package URL list or the deployed output-owned package list, and `EngineKernel` coordinates lifecycle, but neither should directly instantiate package entry classes or maintain an independent loaded-package collection.
 
 Runtime package mounting follows this responsibility split:
 
-1. `EngineBootstrapper` resolves workspace root, profile, `manifest.json`, and preferably `manifest.resolved.json`.
-2. `EngineKernel.Initialize()` ensures `PackageSubsystem` exists.
+1. `EngineBootstrapper` resolves project root, profile, `manifest.json`, and preferably `manifest.resolved.json`. A `Mode: Deployed` launch roots all of these beside the executable and rejects workspace redirection.
+2. `EngineKernel.Initialize()` ensures `PackageSubsystem` exists and mounts the graph when it has not already been mounted through the package-only boundary.
 3. `EngineKernel` passes the already ordered package URL list to `PackageSubsystem.MountPackages()`.
-4. `PackageSubsystem` reads each `package.json`, loads the entry assembly if present, creates the entry class, calls `IPackageEntry.OnLoad(IServiceRegistry)`, invokes any declared native `initExport` hooks, validates declared service providers/requirements, and records `ArisenPackageInfo`.
+4. `PackageSubsystem` reads each effective `package.json` from either a source package root or deployed `Packages/<id>/`, loads the co-located entry assembly if present, creates the entry class, calls `IPackageEntry.OnLoad(IServiceRegistry)`, invokes any declared native `initExport` hooks, validates declared service providers/requirements, and records `ArisenPackageInfo`.
 5. `PackageSubsystem.Shutdown()` calls `IPackageEntry.OnUnload(IServiceRegistry)` and any declared native `shutdownExport` hooks in reverse mount order, then unregisters services provided by each package after that package finishes unloading.
 
 This avoids split-brain package state between bootstrapper, kernel, and package tracking UI. It also centralizes runtime service-contract validation so a package that declares non-deferred `services.provides` must actually register those services during `OnLoad()`, and all non-optional/non-deferred `services.requires` contracts must exist before subsystem initialization continues.
@@ -29,7 +29,7 @@ Runtime package lifecycle behavior is covered by `ArisenKernel.Tests`:
 dotnet test Arisen\ArisenKernel.Tests\ArisenKernel.Tests.csproj
 ```
 
-The tests create temporary package manifests, boot them through `EngineKernel.Initialize()`, verify package entry loading and service registration, assert that shutdown unloads package entries in reverse mount order, confirm package-provided services are removed during shutdown, and cover native lifecycle metadata failure behavior.
+The tests create temporary package manifests, boot them through `EngineKernel.Initialize()`, verify package entry loading and service registration, assert that shutdown unloads package entries in reverse mount order, confirm package-provided services are removed during shutdown, cover package-only mount/unload with no subsystem phases, and cover native lifecycle metadata failure behavior.
 
 ### Managed Assembly Load Context Policy
 
@@ -60,8 +60,21 @@ The Kernel builds a **Directed Acyclic Graph (DAG)** of all these dependencies. 
 If a cycle is detected (e.g., Package A depends on Package B, which depends on Package A), the Kernel immediately throws a Fatal Error and halts.
 
 ### The Loading Sequence (Mounting)
-As defined in [ArisenHost.md](ArisenHost.md), the **EngineBootstrapper** resolves which package directories should participate in boot. Actual package mounting is then performed by **PackageSubsystem**. Because `ArisenBuildTool` writes `manifest.resolved.json` in topological order and the bootstrapper prefers it, the kernel guarantees that `com.arisen.core.native` is loaded into memory and its `IPackageEntry.OnLoad()` is called **strictly before** `com.arisen.rhi.vulkan`.
+As defined in [ArisenHost.md](ArisenHost.md), the **EngineBootstrapper** resolves which package directories should participate in boot. Actual package mounting is then performed by **PackageSubsystem**. Because `ArisenBuildTool` writes `manifest.resolved.json` in topological order and the bootstrapper prefers it, the kernel guarantees that `com.arisen.core.native` is loaded into memory and its `IPackageEntry.OnLoad()` is called **strictly before** `com.arisen.rhi.vulkan`. Finalized Production manifests point at metadata-only deployed package directories; workspace profiles retain source package roots for authoring and import.
 This ensures that native foundational layers (like Memory Allocators or Logging) are fully ready before higher-level graphics packages attempt to interact with them.
+
+### Package-Only Build-Stage Mounting
+
+`EngineKernel.MountPackageGraph(EngineConfig)` is the explicit boundary for package-aware tools that need package entries and coarse services but must not start the engine. It performs the same `PackageSubsystem.MountPackages()` operation as normal initialization while keeping `CurrentPhase` at `None`:
+
+- package entries run `OnLoad()` and register services/providers;
+- package metadata may register subsystem objects with the kernel;
+- no subsystem `Initialize()` method runs, so windows, RHI devices, render loops, and live scene activation are not started;
+- `IsPackageGraphMounted` distinguishes this state from both an untouched and a fully initialized kernel;
+- `Shutdown()` directly shuts down `PackageSubsystem` when subsystem phases never began, preserving reverse package unload and service removal;
+- a later `Initialize()` may continue only with the same `EngineConfig` instance, preventing a mounted graph from being initialized under different composition data.
+
+The generated runtime asset cook host uses this path. This is a lifecycle boundary, not a second package loader: `PackageSubsystem` remains the sole owner of assembly contexts, native lifecycle hooks, package records, runtime service validation, and reverse unload.
 
 ---
 

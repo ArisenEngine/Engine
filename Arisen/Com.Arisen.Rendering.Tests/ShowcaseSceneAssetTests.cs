@@ -50,7 +50,7 @@ public sealed class ShowcaseSceneAssetTests
 
         try
         {
-            var db = new TestAssetDatabase(cookedRoot);
+            var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, cookedRoot);
             string scenePath = Path.Combine(packageRoot, "Assets", "Scenes", "SmokeScene.arisenscene");
             string teapotPath = Path.Combine(packageRoot, "Assets", "Meshes", "UtahTeapot.obj");
             string pedestalPath = Path.Combine(packageRoot, "Assets", "Meshes", "ShowcasePedestal.obj");
@@ -188,7 +188,7 @@ public sealed class ShowcaseSceneAssetTests
 
         try
         {
-            var db = new TestAssetDatabase(cookedRoot);
+            var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, cookedRoot);
             string modelPath = Path.Combine(packageRoot, "Assets", "Models", "Lantern", "Lantern.arismodel");
 
             db.AddAsset(s_LanternModelGuid, "Model", modelPath, "com.arisen.packagegame");
@@ -269,7 +269,7 @@ public sealed class ShowcaseSceneAssetTests
 
         try
         {
-            var db = new TestAssetDatabase(cookedRoot);
+            var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, cookedRoot);
             string modelPath = Path.Combine(packageRoot, "Assets", "Models", "Lantern", "Lantern.arismodel");
             string showcaseScenePath = Path.Combine(packageRoot, "Assets", "Scenes", "LanternShowcaseScene.arisenscene");
             string generatedScenePath = Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Scenes", "Scene_0.arisenscene");
@@ -347,14 +347,12 @@ public sealed class ShowcaseSceneAssetTests
                 Assert.True(entity.MeshRenderer.Material.IsResolved, entity.MeshRenderer.Material.Diagnostic);
             });
 
+            var sceneRef = new AssetRef<SceneSourceAsset>(
+                s_LanternShowcaseSceneGuid,
+                "Scene",
+                "com.arisen.packagegame");
             var entityManager = new EntityManager();
-            var loadResult = SceneAssetLoader.LoadScene(
-                db,
-                new AssetRef<SceneSourceAsset>(
-                    s_LanternShowcaseSceneGuid,
-                    "Scene",
-                    "com.arisen.packagegame"),
-                entityManager);
+            var loadResult = SceneAssetLoader.LoadScene(db, sceneRef, entityManager);
 
             Assert.True(loadResult.Success, loadResult.Diagnostic);
             Assert.Equal(9, loadResult.EntityCount);
@@ -364,6 +362,16 @@ public sealed class ShowcaseSceneAssetTests
             Assert.Equal(1, loadResult.PointLightCount);
             Assert.Equal(1, loadResult.SpotLightCount);
             Assert.Equal(1, loadResult.EnvironmentCount);
+
+            var cookedScene = SceneAssetCooker.Cook(db, sceneRef);
+            Assert.Equal(9, cookedScene.EntityCount);
+            Assert.Equal(7, cookedScene.AssetReferenceCount);
+            var cookedEntityManager = new EntityManager();
+            var cookedLoadResult = SceneAssetCooker.LoadCooked(db, sceneRef, cookedEntityManager);
+            Assert.True(cookedLoadResult.Success, cookedLoadResult.Diagnostic);
+            Assert.Equal(loadResult.EntityCount, cookedLoadResult.EntityCount);
+            Assert.Equal(loadResult.MeshRendererCount, cookedLoadResult.MeshRendererCount);
+            Assert.Equal(loadResult.EnvironmentCount, cookedLoadResult.EnvironmentCount);
 
             var meshRenderers = entityManager.GetPool<MeshRendererComponent>().GetRawComponentArray();
             Assert.Contains(meshRenderers.Take(4), renderer => renderer.MeshGuid == s_LanternMesh0Guid);

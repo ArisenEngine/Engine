@@ -40,6 +40,12 @@ public class ProjectManifest
     public ProjectAssetReference? StartupScene { get; set; }
 
     /// <summary>
+    /// Package-owned world descriptor selected for streaming-capable runtime composition.
+    /// StartupScene remains the compatibility bootstrap until world streaming owns activation.
+    /// </summary>
+    public ProjectAssetReference? StartupWorld { get; set; }
+
+    /// <summary>
     /// Package-owned render-pipeline settings asset selected for this workspace.
     /// </summary>
     public ProjectAssetReference? RenderPipeline { get; set; }

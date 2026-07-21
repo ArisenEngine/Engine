@@ -1,6 +1,37 @@
+Version: 2
 Name: Marble Teapot Showcase
+ComponentSchemas:
+- TypeId: 1
+  Name: Transform
+  Version: 1
+  Required: true
+- TypeId: 2
+  Name: Camera
+  Version: 2
+  Required: true
+- TypeId: 3
+  Name: MeshRenderer
+  Version: 1
+  Required: true
+- TypeId: 4
+  Name: DirectionalLight
+  Version: 1
+  Required: true
+- TypeId: 5
+  Name: PointLight
+  Version: 1
+  Required: true
+- TypeId: 6
+  Name: SpotLight
+  Version: 1
+  Required: true
+- TypeId: 7
+  Name: Environment
+  Version: 1
+  Required: true
 Entities:
-- Name: Main Camera
+- Guid: 10000000-0000-0000-0000-000000000001
+  Name: Main Camera
   Transform:
     Position:
       X: 2.2
@@ -20,7 +51,8 @@ Entities:
     NearPlane: 0.05
     FarPlane: 100.0
     IsPerspective: true
-- Name: Warm Key Light
+- Guid: 10000000-0000-0000-0000-000000000002
+  Name: Warm Key Light
   DirectionalLight:
     Direction:
       X: -0.32
@@ -33,7 +65,8 @@ Entities:
     Intensity: 1.35
     AmbientIntensity: 0.10
     Enabled: true
-- Name: Cool Rim Light
+- Guid: 10000000-0000-0000-0000-000000000003
+  Name: Cool Rim Light
   Transform:
     Position:
       X: -1.15
@@ -56,7 +89,8 @@ Entities:
     Intensity: 1.25
     Range: 3.2
     Enabled: true
-- Name: Warm Focus Spot
+- Guid: 10000000-0000-0000-0000-000000000004
+  Name: Warm Focus Spot
   Transform:
     Position:
       X: 0.35
@@ -81,7 +115,8 @@ Entities:
     InnerConeAngleDegrees: 13.0
     OuterConeAngleDegrees: 29.0
     Enabled: true
-- Name: Blue Hour Environment
+- Guid: 10000000-0000-0000-0000-000000000005
+  Name: Blue Hour Environment
   Environment:
     SkyColor:
       X: 0.035
@@ -102,7 +137,8 @@ Entities:
     SkyIntensity: 0.95
     AmbientIntensity: 0.24
     Enabled: true
-- Name: Utah Teapot
+- Guid: 10000000-0000-0000-0000-000000000006
+  Name: Utah Teapot
   Transform:
     Position:
       X: 0.0
@@ -125,7 +161,8 @@ Entities:
       Guid: a2122786-c40a-41f2-bf35-1f5cbc4d39c2
       PackageId: com.arisen.packagegame
     Visible: true
-- Name: Presentation Pedestal
+- Guid: 10000000-0000-0000-0000-000000000007
+  Name: Presentation Pedestal
   Transform:
     Position:
       X: 0.0
@@ -148,7 +185,8 @@ Entities:
       Guid: a2dd1381-3958-4480-837b-35ffe6dd15c0
       PackageId: com.arisen.packagegame
     Visible: true
-- Name: Ground
+- Guid: 10000000-0000-0000-0000-000000000008
+  Name: Ground
   Transform:
     Position:
       X: 0.0

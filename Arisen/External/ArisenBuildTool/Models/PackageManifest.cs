@@ -53,6 +53,9 @@ public class PackageManifest
     
     [JsonPropertyName("version")]
     public string Version { get; set; } = string.Empty;
+
+    [JsonPropertyName("engineVersion")]
+    public string? EngineVersion { get; set; }
     
     [JsonPropertyName("author")]
     public string? Author { get; set; }

@@ -1,0 +1,53 @@
+Version: 1
+WorldGuid: 9a9b4db5-c0a8-4f2e-8929-89464bea9d51
+Name: Lantern Open World Foundation
+PersistentScene:
+  Guid: bd52ee1a-84a1-4d9d-bdb4-2a83757b5a4b
+  PackageId: com.arisen.packagegame
+Partition:
+  Origin: { X: -256, Y: -64, Z: -256 }
+  CellSize: { X: 256, Y: 128, Z: 256 }
+  LoadRadius: 1
+  UnloadHysteresis: 1
+  MaxActiveCells: 16
+Policy:
+  UnresolvedReferences: KeepUnresolved
+  UnloadedTargets: ClearAndLateResolve
+  DependencyCycles: Reject
+Layers:
+- Id: surface
+  Priority: 0
+Cells:
+- Coordinate: { X: -1, Y: 0, Z: 0 }
+  Layer: surface
+  Scene:
+    Guid: 0bb7d5fb-1924-45ee-9b45-85891d0e6d9f
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: -512, Y: -64, Z: -256 }
+    Max: { X: -256, Y: 64, Z: 0 }
+  EstimatedCpuBytes: 1048576
+  EstimatedGpuBytes: 67108864
+- Coordinate: { X: 0, Y: 0, Z: 0 }
+  Layer: surface
+  Scene:
+    Guid: 0bb7d5fb-1924-45ee-9b45-85891d0e6d9f
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: -256, Y: -64, Z: -256 }
+    Max: { X: 0, Y: 64, Z: 0 }
+  EstimatedCpuBytes: 1048576
+  EstimatedGpuBytes: 67108864
+- Coordinate: { X: 1, Y: 0, Z: 0 }
+  Layer: surface
+  Scene:
+    Guid: c3845237-9946-6fea-13b6-9672584bed67
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: 0, Y: -64, Z: -256 }
+    Max: { X: 256, Y: 64, Z: 0 }
+  Dependencies:
+  - Coordinate: { X: 0, Y: 0, Z: 0 }
+    Layer: surface
+  EstimatedCpuBytes: 2097152
+  EstimatedGpuBytes: 134217728

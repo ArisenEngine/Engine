@@ -11,7 +11,7 @@ public sealed class SceneAssetLoaderTests
     public void RuntimeSceneService_ActivatesOnlyFullyLoadedSceneWorlds()
     {
         using var temp = new TempDirectory();
-        var db = new TestAssetDatabase(temp.Path);
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, temp.Path);
         var validSceneGuid = Guid.Parse("11111111-aaaa-bbbb-cccc-222222222222");
         var brokenSceneGuid = Guid.Parse("33333333-aaaa-bbbb-cccc-444444444444");
         var missingMeshGuid = Guid.Parse("55555555-aaaa-bbbb-cccc-666666666666");
@@ -19,7 +19,7 @@ public sealed class SceneAssetLoaderTests
         string brokenScenePath = Path.Combine(temp.Path, "BrokenRuntimeScene.arisenscene");
 
         File.WriteAllText(validScenePath,
-            """
+            SceneTestSource.MigrateLegacy(validSceneGuid, validScenePath, """
             Name: Runtime Scene
             Entities:
             - Name: Main Camera
@@ -28,29 +28,28 @@ public sealed class SceneAssetLoaderTests
                 NearPlane: 0.1
                 FarPlane: 100
                 IsPerspective: true
-            """);
-        File.WriteAllText(brokenScenePath, $"""
+            """));
+        File.WriteAllText(brokenScenePath, SceneTestSource.MigrateLegacy(brokenSceneGuid, brokenScenePath, $"""
             Name: Broken Runtime Scene
             Entities:
             - Name: Missing Mesh
               MeshRenderer:
                 Mesh:
                   Guid: {missingMeshGuid:D}
-            """);
+            """));
         db.AddAsset(validSceneGuid, "Scene", validScenePath);
         db.AddAsset(brokenSceneGuid, "Scene", brokenScenePath);
 
         var originalWorld = new EntityManager();
-        EntityManager activeWorld = originalWorld;
         RuntimeSceneState? publishedState = null;
-        var service = new RuntimeSceneService(db, world => activeWorld = world);
+        var service = new RuntimeSceneService(db, originalWorld);
         service.ActiveSceneChanged += state => publishedState = state;
 
         var failed = service.LoadScene(
             new AssetRef<SceneSourceAsset>(brokenSceneGuid, "Scene", "com.arisen.test"));
 
         Assert.False(failed.Success);
-        Assert.Same(originalWorld, activeWorld);
+        Assert.Equal(0, originalWorld.EntityCount);
         Assert.Null(service.ActiveScene);
         Assert.Null(publishedState);
 
@@ -60,23 +59,22 @@ public sealed class SceneAssetLoaderTests
         Assert.True(loaded.Success, loaded.Diagnostic);
         Assert.Equal("Runtime Scene", loaded.SceneName);
         Assert.Equal(validScenePath, loaded.SourcePath);
-        Assert.NotSame(originalWorld, activeWorld);
-        Assert.Same(activeWorld, service.ActiveScene!.EntityManager);
+        Assert.Same(originalWorld, service.ActiveScene!.EntityManager);
         Assert.Equal(validSceneGuid, service.ActiveScene.Scene.Guid);
         Assert.Equal("Runtime Scene", service.ActiveScene.Name);
         Assert.Same(service.ActiveScene, publishedState);
-        Assert.Equal(1, activeWorld.GetPool<CameraComponent>().Count);
+        Assert.Equal(1, originalWorld.GetPool<CameraComponent>().Count);
     }
 
     [Fact]
     public void RuntimeSceneService_QueuedReloadActivatesOnlyAtFrameBoundary()
     {
         using var temp = new TempDirectory();
-        var db = new TestAssetDatabase(temp.Path);
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, temp.Path);
         var sceneGuid = Guid.Parse("77777777-aaaa-bbbb-cccc-888888888888");
         string scenePath = Path.Combine(temp.Path, "LiveEditScene.arisenscene");
         File.WriteAllText(scenePath,
-            """
+            SceneTestSource.MigrateLegacy(sceneGuid, scenePath, """
             Name: Live Edit Scene
             Entities:
             - Name: Editable Mesh
@@ -85,22 +83,23 @@ public sealed class SceneAssetLoaderTests
                   X: 1
                   Y: 2
                   Z: 3
-            """);
+            """));
         db.AddAsset(sceneGuid, "Scene", scenePath);
 
-        EntityManager? activeWorld = null;
-        var service = new RuntimeSceneService(db, world => activeWorld = world);
+        var activeWorld = new EntityManager();
+        var service = new RuntimeSceneService(db, activeWorld);
         var sceneRef = new AssetRef<SceneSourceAsset>(sceneGuid, "Scene", "com.arisen.test");
         var initialLoad = service.LoadScene(sceneRef);
         Assert.True(initialLoad.Success, initialLoad.Diagnostic);
-        var initialWorld = Assert.IsType<EntityManager>(activeWorld);
+        var initialWorld = activeWorld;
         Assert.Equal(
             new System.Numerics.Vector3(1, 2, 3),
             initialWorld.GetPool<TransformComponent>().GetRawComponentArray()[0].Position);
 
+        Guid editableEntityGuid = SceneAssetLoader.InspectScene(db, sceneRef).Entities.Single().AuthoringGuid;
         var edit = SceneAssetLoader.UpdateEntityTransform(
             scenePath,
-            0,
+            editableEntityGuid,
             new SceneTransformInspection(
                 new System.Numerics.Vector3(4, 5, 6),
                 System.Numerics.Quaternion.Identity,
@@ -118,11 +117,11 @@ public sealed class SceneAssetLoaderTests
 
         Assert.True(processed.HasValue);
         Assert.True(processed.Value.Success, processed.Value.Diagnostic);
-        Assert.NotSame(initialWorld, activeWorld);
+        Assert.Same(initialWorld, activeWorld);
         Assert.Same(activeWorld, service.ActiveScene!.EntityManager);
         Assert.Equal(
             new System.Numerics.Vector3(4, 5, 6),
-            activeWorld!.GetPool<TransformComponent>().GetRawComponentArray()[0].Position);
+            activeWorld.GetPool<TransformComponent>().GetRawComponentArray()[0].Position);
         Assert.Null(service.ProcessPendingSceneLoadAtFrameBoundary());
 
         var lastValidWorld = activeWorld;
@@ -141,38 +140,38 @@ public sealed class SceneAssetLoaderTests
     public void RuntimeSceneService_CoalescesQueuedLoadsToLatestRequest()
     {
         using var temp = new TempDirectory();
-        var db = new TestAssetDatabase(temp.Path);
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, temp.Path);
         var firstSceneGuid = Guid.Parse("99999999-aaaa-bbbb-cccc-111111111111");
         var latestSceneGuid = Guid.Parse("99999999-aaaa-bbbb-cccc-222222222222");
         string firstScenePath = Path.Combine(temp.Path, "FirstQueuedScene.arisenscene");
         string latestScenePath = Path.Combine(temp.Path, "LatestQueuedScene.arisenscene");
         File.WriteAllText(firstScenePath,
-            """
+            SceneTestSource.MigrateLegacy(firstSceneGuid, firstScenePath, """
             Name: First Queued Scene
             Entities:
             - Name: First Camera
               Camera:
                 VerticalFov: 45
-            """);
+            """));
         File.WriteAllText(latestScenePath,
-            """
+            SceneTestSource.MigrateLegacy(latestSceneGuid, latestScenePath, """
             Name: Latest Queued Scene
             Entities:
             - Name: Latest Camera
               Camera:
                 VerticalFov: 60
-            """);
+            """));
         db.AddAsset(firstSceneGuid, "Scene", firstScenePath);
         db.AddAsset(latestSceneGuid, "Scene", latestScenePath);
 
-        EntityManager? activeWorld = null;
-        var service = new RuntimeSceneService(db, world => activeWorld = world);
+        var activeWorld = new EntityManager();
+        var service = new RuntimeSceneService(db, activeWorld);
         service.RequestSceneLoad(
             new AssetRef<SceneSourceAsset>(firstSceneGuid, "Scene", "com.arisen.test"));
         service.RequestSceneLoad(
             new AssetRef<SceneSourceAsset>(latestSceneGuid, "Scene", "com.arisen.test"));
 
-        Assert.Null(activeWorld);
+        Assert.Equal(0, activeWorld.EntityCount);
 
         var processed = service.ProcessPendingSceneLoadAtFrameBoundary();
 
@@ -188,14 +187,14 @@ public sealed class SceneAssetLoaderTests
     public void SceneAssetLoader_SpawnsCameraAndMeshRenderers()
     {
         using var temp = new TempDirectory();
-        var db = new TestAssetDatabase(temp.Path);
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, temp.Path);
         var sceneGuid = Guid.Parse("0bb7d5fb-1924-45ee-9b45-85891d0e6d9f");
         var meshGuid = Guid.Parse("3b392205-8cad-4d61-bf47-040b3549f0cf");
         var environmentTextureGuid = Guid.Parse("4c4c4c4c-5d5d-6e6e-7f7f-808080808080");
         string scenePath = Path.Combine(temp.Path, "SmokeScene.arisenscene");
         string meshPath = Path.Combine(temp.Path, "MultiSubmeshQuad.armesh");
 
-        File.WriteAllText(scenePath, $"""
+        File.WriteAllText(scenePath, SceneTestSource.MigrateLegacy(sceneGuid, scenePath, $"""
             Name: Test Scene
             Entities:
             - Name: Main Camera
@@ -289,7 +288,7 @@ public sealed class SceneAssetLoaderTests
                 FirstSubmeshIndex: 1
                 SubmeshCount: 1
                 Visible: true
-            """);
+            """));
         File.WriteAllText(meshPath, string.Empty);
         db.AddAsset(sceneGuid, "Scene", scenePath);
         db.AddAsset(meshGuid, "Mesh", meshPath);
@@ -347,26 +346,26 @@ public sealed class SceneAssetLoaderTests
         var meshComponents = entityManager.GetPool<MeshRendererComponent>().GetRawComponentArray();
         Assert.Equal(meshGuid, meshComponents[0].MeshGuid);
         Assert.Equal(meshGuid, meshComponents[1].MeshGuid);
-        Assert.Equal(1, meshComponents[1].FirstSubmeshIndex);
-        Assert.Equal(1, meshComponents[1].SubmeshCount);
+        var meshB = meshComponents.ToArray().Single(component => component.FirstSubmeshIndex == 1);
+        Assert.Equal(1, meshB.SubmeshCount);
     }
 
     [Fact]
     public void SceneAssetLoader_ReportsMissingMeshReferenceWithEntityName()
     {
         using var temp = new TempDirectory();
-        var db = new TestAssetDatabase(temp.Path);
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, temp.Path);
         var sceneGuid = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
         var missingMeshGuid = Guid.Parse("11111111-2222-3333-4444-555555555555");
         string scenePath = Path.Combine(temp.Path, "Broken.arisenscene");
-        File.WriteAllText(scenePath, $"""
+        File.WriteAllText(scenePath, SceneTestSource.MigrateLegacy(sceneGuid, scenePath, $"""
             Name: Broken
             Entities:
             - Name: Broken Mesh
               MeshRenderer:
                 Mesh:
                   Guid: {missingMeshGuid:D}
-            """);
+            """));
         db.AddAsset(sceneGuid, "Scene", scenePath);
 
         var result = SceneAssetLoader.LoadScene(
@@ -383,7 +382,7 @@ public sealed class SceneAssetLoaderTests
     public void SceneAssetInspector_ReportsEntitiesComponentsAndReferences()
     {
         using var temp = new TempDirectory();
-        var db = new TestAssetDatabase(temp.Path);
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, temp.Path);
         var sceneGuid = Guid.Parse("bbbbbbbb-1111-2222-3333-444444444444");
         var meshGuid = Guid.Parse("cccccccc-1111-2222-3333-444444444444");
         var materialGuid = Guid.Parse("dddddddd-1111-2222-3333-444444444444");
@@ -393,7 +392,7 @@ public sealed class SceneAssetLoaderTests
         string materialPath = Path.Combine(temp.Path, "Inspectable.arismaterial");
         string environmentPath = Path.Combine(temp.Path, "Inspectable.arienvironment");
 
-        File.WriteAllText(scenePath, $"""
+        File.WriteAllText(scenePath, SceneTestSource.MigrateLegacy(sceneGuid, scenePath, $"""
             Name: Inspectable Scene
             Entities:
             - Name: Main Camera
@@ -485,7 +484,7 @@ public sealed class SceneAssetLoaderTests
                   X: 0.4
                   Y: 0.5
                   Z: 0.6
-            """);
+            """));
         File.WriteAllText(meshPath, string.Empty);
         File.WriteAllText(materialPath, string.Empty);
         File.WriteAllText(environmentPath, string.Empty);
@@ -547,19 +546,19 @@ public sealed class SceneAssetLoaderTests
     public void SceneAssetInspector_SurfacesMissingReferenceDiagnosticsWithoutSpawning()
     {
         using var temp = new TempDirectory();
-        var db = new TestAssetDatabase(temp.Path);
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, temp.Path);
         var sceneGuid = Guid.Parse("eeeeeeee-1111-2222-3333-444444444444");
         var missingMeshGuid = Guid.Parse("ffffffff-1111-2222-3333-444444444444");
         string scenePath = Path.Combine(temp.Path, "MissingReference.arisenscene");
 
-        File.WriteAllText(scenePath, $"""
+        File.WriteAllText(scenePath, SceneTestSource.MigrateLegacy(sceneGuid, scenePath, $"""
             Name: Missing Reference
             Entities:
             - Name: Broken Mesh
               MeshRenderer:
                 Mesh:
                   Guid: {missingMeshGuid:D}
-            """);
+            """));
         db.AddAsset(sceneGuid, "Scene", scenePath);
 
         var inspection = SceneAssetLoader.InspectScene(
@@ -579,13 +578,13 @@ public sealed class SceneAssetLoaderTests
     public void SceneAssetEditor_UpdatesEntityTransformWithoutDroppingComponents()
     {
         using var temp = new TempDirectory();
-        var db = new TestAssetDatabase(temp.Path);
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, temp.Path);
         var sceneGuid = Guid.Parse("12345678-1111-2222-3333-444444444444");
         var meshGuid = Guid.Parse("12345678-aaaa-bbbb-cccc-444444444444");
         string scenePath = Path.Combine(temp.Path, "Editable.arisenscene");
         string meshPath = Path.Combine(temp.Path, "Editable.obj");
 
-        File.WriteAllText(scenePath, $"""
+        File.WriteAllText(scenePath, SceneTestSource.MigrateLegacy(sceneGuid, scenePath, $"""
             Name: Editable Scene
             Entities:
             - Name: Camera
@@ -601,7 +600,7 @@ public sealed class SceneAssetLoaderTests
                 Mesh:
                   Guid: {meshGuid:D}
                 Visible: true
-            """);
+            """));
         File.WriteAllText(meshPath, string.Empty);
         db.AddAsset(sceneGuid, "Scene", scenePath);
         db.AddAsset(meshGuid, "Mesh", meshPath);
@@ -611,7 +610,13 @@ public sealed class SceneAssetLoaderTests
             new System.Numerics.Quaternion(0.1f, 0.2f, 0.3f, 0.9f),
             new System.Numerics.Vector3(2.0f, 3.0f, 4.0f));
 
-        var edit = SceneAssetLoader.UpdateEntityTransform(scenePath, 1, newTransform);
+        var beforeEdit = SceneAssetLoader.InspectScene(
+            db,
+            new AssetRef<SceneSourceAsset>(sceneGuid, "Scene", "com.arisen.test"));
+        Guid meshEntityGuid = Assert.Single(
+            beforeEdit.Entities,
+            entity => entity.Name == "Mesh").AuthoringGuid;
+        var edit = SceneAssetLoader.UpdateEntityTransform(scenePath, meshEntityGuid, newTransform);
         Assert.True(edit.Success, edit.Diagnostic);
 
         var inspection = SceneAssetLoader.InspectScene(
@@ -632,26 +637,27 @@ public sealed class SceneAssetLoaderTests
     }
 
     [Fact]
-    public void SceneAssetEditor_RejectsOutOfRangeEntityIndex()
+    public void SceneAssetEditor_RejectsMissingEntityGuid()
     {
         using var temp = new TempDirectory();
         string scenePath = Path.Combine(temp.Path, "Editable.arisenscene");
-        File.WriteAllText(scenePath, """
+        Guid sceneGuid = Guid.Parse("99999999-0000-0000-0000-000000000001");
+        File.WriteAllText(scenePath, SceneTestSource.MigrateLegacy(sceneGuid, scenePath, """
             Name: Editable Scene
             Entities:
             - Name: Only Entity
-            """);
+            """));
 
         var edit = SceneAssetLoader.UpdateEntityTransform(
             scenePath,
-            3,
+            Guid.Parse("99999999-0000-0000-0000-000000000099"),
             new SceneTransformInspection(
                 System.Numerics.Vector3.Zero,
                 System.Numerics.Quaternion.Identity,
                 System.Numerics.Vector3.One));
 
         Assert.False(edit.Success);
-        Assert.Contains("outside the entity count", edit.Diagnostic);
+        Assert.Contains("does not contain entity GUID", edit.Diagnostic);
     }
 
     private sealed class TempDirectory : IDisposable

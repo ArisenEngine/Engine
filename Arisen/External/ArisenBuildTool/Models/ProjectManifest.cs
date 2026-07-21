@@ -28,6 +28,7 @@ public class ProjectManifest
     public string Name { get; set; } = string.Empty;
     public string EngineVersion { get; set; } = string.Empty;
     public ProjectAssetReference? StartupScene { get; set; }
+    public ProjectAssetReference? StartupWorld { get; set; }
     public ProjectAssetReference? RenderPipeline { get; set; }
     public List<PackageRequirement> Packages { get; set; } = new();
     public Dictionary<string, ProfileDefinition>? Profiles { get; set; }

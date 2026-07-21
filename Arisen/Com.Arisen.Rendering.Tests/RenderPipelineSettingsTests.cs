@@ -155,6 +155,10 @@ public sealed class RenderPipelineSettingsTests
         {
             ActivatedSettings = null;
         }
+
+        public void ReleaseDeviceResources()
+        {
+        }
     }
 
     private sealed class TemporaryDirectory : IDisposable

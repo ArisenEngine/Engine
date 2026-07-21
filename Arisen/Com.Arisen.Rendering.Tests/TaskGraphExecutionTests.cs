@@ -101,6 +101,73 @@ public sealed class TaskGraphExecutionTests
     }
 
     [Fact]
+    public void BackgroundTask_RunsWithoutBlockingCallerAndReturnsResult()
+    {
+        using var taskGraph = new TaskGraph(workerCount: 2);
+        using var started = new ManualResetEventSlim(false);
+        using var release = new ManualResetEventSlim(false);
+        BackgroundTask<int> background = taskGraph.Schedule(
+            "DelayedBackgroundRead",
+            cancellationToken =>
+            {
+                started.Set();
+                release.Wait(cancellationToken);
+                return 42;
+            });
+
+        Assert.True(started.Wait(TimeSpan.FromSeconds(2)));
+        Assert.False(background.IsCompleted);
+        Assert.Equal(1, taskGraph.OutstandingTaskCount);
+
+        int foregroundExecutions = 0;
+        taskGraph.AddTask(new ActionTask(() => foregroundExecutions++, "ForegroundGraph"));
+        taskGraph.Execute();
+        Assert.Equal(1, foregroundExecutions);
+
+        release.Set();
+        Assert.True(background.Wait(TimeSpan.FromSeconds(2)));
+        Assert.Equal(BackgroundTaskStatus.Succeeded, background.Status);
+        Assert.True(background.TryGetResult(out int result));
+        Assert.Equal(42, result);
+        Assert.Equal(0, taskGraph.OutstandingTaskCount);
+    }
+
+    [Fact]
+    public void BackgroundTask_CancellationAndFailureAreObservableAndIsolated()
+    {
+        using var taskGraph = new TaskGraph(workerCount: 2);
+        using var started = new ManualResetEventSlim(false);
+        BackgroundTask<int> cancelled = taskGraph.Schedule(
+            "CancellableBackgroundRead",
+            cancellationToken =>
+            {
+                started.Set();
+                cancellationToken.WaitHandle.WaitOne();
+                cancellationToken.ThrowIfCancellationRequested();
+                return 1;
+            });
+        Assert.True(started.Wait(TimeSpan.FromSeconds(2)));
+        cancelled.Cancel();
+        Assert.True(cancelled.Wait(TimeSpan.FromSeconds(2)));
+        Assert.Equal(BackgroundTaskStatus.Cancelled, cancelled.Status);
+        Assert.False(cancelled.TryGetResult(out _));
+
+        BackgroundTask<int> failed = taskGraph.Schedule<int>(
+            "FailingBackgroundRead",
+            _ => throw new TestTaskException("background failure"));
+        Assert.True(failed.Wait(TimeSpan.FromSeconds(2)));
+        Assert.Equal(BackgroundTaskStatus.Failed, failed.Status);
+        Assert.IsType<TestTaskException>(failed.Failure);
+
+        BackgroundTask<int> recovered = taskGraph.Schedule(
+            "RecoveredBackgroundRead",
+            _ => 7);
+        Assert.True(recovered.Wait(TimeSpan.FromSeconds(2)));
+        Assert.True(recovered.TryGetResult(out int result));
+        Assert.Equal(7, result);
+    }
+
+    [Fact]
     public void SystemContainer_ExecutesSystemsOnEveryFrameAndHonorsComponentHazards()
     {
         using var taskGraph = new TaskGraph(workerCount: 2);
@@ -157,7 +224,7 @@ public sealed class TaskGraphExecutionTests
         systems.AddSystem(invalidSystem);
         systems.AddSystem(markerSystem);
 
-        Assert.Throws<IndexOutOfRangeException>(
+        Assert.Throws<InvalidOperationException>(
             () => systems.Execute(entityManager, 1.0f / 60.0f));
         Assert.False(entityManager.HasComponent<DeferredMarkerComponent>(entity));
 
@@ -197,6 +264,42 @@ public sealed class TaskGraphExecutionTests
             var components = em.GetPool<SchedulerCounterComponent>().GetRawComponentArray();
             components[0].Value++;
             ExecutionCount++;
+        }
+    }
+
+    [Fact]
+    public void CancelledBackgroundTaskDisposesCompletedUnclaimedResult()
+    {
+        using var taskGraph = new TaskGraph(workerCount: 2);
+        using var started = new ManualResetEventSlim(false);
+        using var release = new ManualResetEventSlim(false);
+        var result = new DisposableBackgroundResult();
+        BackgroundTask<DisposableBackgroundResult> task = taskGraph.Schedule(
+            "DisposableCancellation",
+            _ =>
+            {
+                started.Set();
+                release.Wait();
+                return result;
+            });
+
+        Assert.True(started.Wait(TimeSpan.FromSeconds(2)));
+        task.Cancel();
+        release.Set();
+        Assert.True(task.Wait(TimeSpan.FromSeconds(2)));
+
+        Assert.Equal(BackgroundTaskStatus.Cancelled, task.Status);
+        Assert.True(result.IsDisposed);
+        Assert.False(task.TryGetResult(out _));
+    }
+
+    private sealed class DisposableBackgroundResult : IDisposable
+    {
+        public bool IsDisposed { get; private set; }
+
+        public void Dispose()
+        {
+            IsDisposed = true;
         }
     }
 

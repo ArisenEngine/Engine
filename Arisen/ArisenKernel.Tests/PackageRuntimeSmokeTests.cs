@@ -92,6 +92,24 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
     }
 
     [Fact]
+    public void EngineKernelRunsStateDrivenSmokeThroughShutdown()
+    {
+        EngineKernel.Instance.RegisterSubsystem(new CountingTickSubsystem());
+        var scenario = new CountingSmokeScenario(readyAfterFrames: 2);
+
+        int exitCode = EngineKernel.Instance.RunSmokeScenario(
+            scenario,
+            maximumFrameCount: 8,
+            maximumDuration: TimeSpan.FromSeconds(2));
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal(2u, EngineKernel.Instance.CurrentFrameIndex);
+        Assert.True(scenario.IsComplete);
+        Assert.True(scenario.Succeeded);
+        Assert.True(scenario.ShutdownObserved);
+    }
+
+    [Fact]
     public void EngineKernelShutdownUnloadsPackageEntriesInReverseMountOrder()
     {
         using var workspace = RuntimePackageWorkspace.Create();
@@ -149,6 +167,36 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
         Assert.False(EngineKernel.Instance.Services.TryGetService<IRuntimeSmokeService>(out _));
         Assert.DoesNotContain(EngineKernel.Instance.Services.GetRegisteredServices(), serviceInfo =>
             serviceInfo.ProviderPackageId == "com.test.runtime.provider");
+    }
+
+    [Fact]
+    public void PackageOnlyMountRegistersServicesWithoutStartingSubsystemPhases()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string providerPath = workspace.AddPackage(
+            "com.test.runtime.provider",
+            typeof(ProviderPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IRuntimeSmokeService).FullName! }
+            });
+
+        EngineKernel.Instance.MountPackageGraph(new EngineConfig
+        {
+            PackageUrls = new List<string> { providerPath }
+        });
+
+        Assert.True(EngineKernel.Instance.IsPackageGraphMounted);
+        Assert.Equal(EnginePhase.None, EngineKernel.Instance.CurrentPhase);
+        Assert.Contains("load:provider", TestPackageEvents.Events);
+        Assert.True(EngineKernel.Instance.Services.TryGetService<IRuntimeSmokeService>(out _));
+
+        EngineKernel.Instance.Shutdown();
+
+        Assert.False(EngineKernel.Instance.IsPackageGraphMounted);
+        Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+        Assert.Equal(new[] { "load:provider", "unload:provider" }, TestPackageEvents.Events);
+        Assert.False(EngineKernel.Instance.Services.TryGetService<IRuntimeSmokeService>(out _));
     }
 
     [Fact]
@@ -279,6 +327,49 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
             {
                 // Best-effort cleanup; failed deletion should not mask test results.
             }
+        }
+    }
+
+    private sealed class CountingSmokeScenario : IRuntimeSmokeScenario
+    {
+        private readonly int m_ReadyAfterFrames;
+        private int m_Frames;
+
+        public CountingSmokeScenario(int readyAfterFrames)
+        {
+            m_ReadyAfterFrames = readyAfterFrames;
+        }
+
+        public string Name => "counting";
+        public string OutputPath => "counting.json";
+        public bool IsReadyForShutdown => m_Frames >= m_ReadyAfterFrames || FailureMessage != null;
+        public bool IsComplete { get; private set; }
+        public bool Succeeded => IsComplete && FailureMessage == null && ShutdownObserved;
+        public string? FailureMessage { get; private set; }
+        public bool ShutdownObserved { get; private set; }
+
+        public void Start(uint initialFrameIndex)
+        {
+        }
+
+        public void BeforeFrame(uint frameIndex)
+        {
+        }
+
+        public void AfterFrame(uint frameIndex)
+        {
+            m_Frames++;
+        }
+
+        public void ReportFailure(string message)
+        {
+            FailureMessage ??= message;
+        }
+
+        public void AfterShutdown()
+        {
+            ShutdownObserved = EngineKernel.Instance.CurrentPhase == EnginePhase.Shutdown;
+            IsComplete = true;
         }
     }
 }

@@ -9,7 +9,7 @@ trigger: always_on
 - Read `AGENTS.md` first for repository workflow, build commands, and documentation ownership.
 - Read `Arisen/Docs/Architecture/*.md` before making or describing architectural decisions.
 - Use `.agents/skills/*/SKILL.md` for Agentic-specific task procedures.
-- For platform/RHI/rendering work, verify the current editor/runtime policy in `AGENTS.md`, `Rendering.md`, and `ProductionSceneRenderingNextTodo.md` before changing code.
+- For scene/world/rendering work, verify the current policy in `AGENTS.md`, `Rendering.md`, `AssetPipeline.md`, `WorldStreaming.md`, and `TerrainOutdoorWorldNextTodo.md` before changing code.
 - Keep this file thin: do not duplicate architecture docs, skill docs, or long-form workflow guidance here.
 
 ## Core Development Principles

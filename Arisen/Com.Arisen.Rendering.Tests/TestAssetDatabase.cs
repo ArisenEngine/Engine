@@ -2,19 +2,44 @@ using ArisenEngine.Core.Assets;
 
 namespace Com.Arisen.Rendering.Tests;
 
+internal static class SceneTestSource
+{
+    public static string MigrateLegacy(Guid sceneGuid, string sourcePath, string source)
+    {
+        var result = ArisenEngine.Resources.Serialization.SceneAssetLoader.MigrateLegacySceneSource(
+            sceneGuid,
+            sourcePath,
+            source);
+        if (!result.Success)
+        {
+            throw new InvalidOperationException(result.Diagnostic);
+        }
+
+        return result.UpdatedSource;
+    }
+}
+
 internal sealed class TestAssetDatabase : IAssetDatabase
 {
     private readonly Dictionary<Guid, AssetRecord> m_Assets = new();
+    private readonly Dictionary<Guid, AssetDescriptor> m_AssetDescriptors = new();
     private readonly Dictionary<(Guid Guid, string Variant), CookedAssetRecord> m_Artifacts = new();
     private readonly Dictionary<int, LoadedCookedAsset> m_Loaded = new();
     private int m_NextHandleIndex;
 
-    public TestAssetDatabase(string cookedRoot)
+    public TestAssetDatabase(
+        AssetSourceAccessMode sourceAccessMode,
+        string cookedRoot)
     {
+        SourceAccessMode = sourceAccessMode;
         CookedRoot = cookedRoot;
     }
 
     public string CookedRoot { get; }
+    public AssetDatabaseMode Mode { get; private set; } = AssetDatabaseMode.Workspace;
+    public bool IsReadOnlyRuntime => Mode == AssetDatabaseMode.ReadOnlyRuntime;
+    public AssetSourceAccessMode SourceAccessMode { get; private set; }
+    public bool CanReadSourceAssets => SourceAccessMode != AssetSourceAccessMode.Disabled;
     public IReadOnlyCollection<AssetRecord> Assets => m_Assets.Values;
     public event Action<AssetChangeEvent>? AssetChanged;
 
@@ -27,11 +52,42 @@ internal sealed class TestAssetDatabase : IAssetDatabase
         }
 
         m_Assets[guid] = new AssetRecord(guid, assetType, sourcePath, metaPath, packageId);
+        m_AssetDescriptors[guid] = new AssetDescriptor(guid, assetType, packageId);
+    }
+
+    public void UseReadOnlyRuntime()
+    {
+        ReleaseAllLoadedCookedAssets();
+        m_Assets.Clear();
+        Mode = AssetDatabaseMode.ReadOnlyRuntime;
+        SourceAccessMode = AssetSourceAccessMode.Disabled;
+    }
+
+    public void UseSourceAccess(AssetSourceAccessMode sourceAccessMode)
+    {
+        if (Mode == AssetDatabaseMode.ReadOnlyRuntime)
+        {
+            throw new InvalidOperationException(
+                "The test asset database cannot enable source access after a runtime catalog mount.");
+        }
+
+        SourceAccessMode = sourceAccessMode;
     }
 
     public bool TryGetAsset(Guid guid, out AssetRecord asset)
     {
-        return m_Assets.TryGetValue(guid, out asset!);
+        if (CanReadSourceAssets)
+        {
+            return m_Assets.TryGetValue(guid, out asset!);
+        }
+
+        asset = null!;
+        return false;
+    }
+
+    public bool TryGetAssetDescriptor(Guid guid, out AssetDescriptor asset)
+    {
+        return m_AssetDescriptors.TryGetValue(guid, out asset);
     }
 
     public bool TryGetCookedArtifact(Guid guid, string variant, out CookedAssetRecord artifact)
@@ -41,6 +97,7 @@ internal sealed class TestAssetDatabase : IAssetDatabase
 
     public string GetCookedArtifactPath(Guid guid, string variant, string extension)
     {
+        EnsureMutable();
         Directory.CreateDirectory(CookedRoot);
         var safeVariant = string.Join("_", variant.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
         return Path.Combine(CookedRoot, $"{guid:N}.{safeVariant}{extension}");
@@ -48,13 +105,16 @@ internal sealed class TestAssetDatabase : IAssetDatabase
 
     public void RegisterCookedArtifact(CookedAssetRecord artifact)
     {
+        EnsureMutable();
         m_Artifacts[(artifact.Guid, artifact.Variant)] = artifact;
     }
 
     public bool TryLoadCookedAsset(Guid guid, string variant, string expectedAssetType, out CookedAssetHandle handle)
     {
         handle = CookedAssetHandle.Invalid;
-        if (!m_Artifacts.TryGetValue((guid, variant), out var artifact) ||
+        if (!m_AssetDescriptors.TryGetValue(guid, out AssetDescriptor descriptor) ||
+            !m_Artifacts.TryGetValue((guid, variant), out var artifact) ||
+            !string.Equals(descriptor.AssetType, expectedAssetType, StringComparison.OrdinalIgnoreCase) ||
             !string.Equals(artifact.AssetType, expectedAssetType, StringComparison.OrdinalIgnoreCase) ||
             !File.Exists(artifact.Path))
         {
@@ -103,6 +163,7 @@ internal sealed class TestAssetDatabase : IAssetDatabase
 
     public int InvalidateCookedAssets(Guid guid, string? variant = null)
     {
+        EnsureMutable();
         var loadedHandles = m_Loaded
             .Where(pair => pair.Value.Artifact.Guid == guid &&
                 (variant == null || string.Equals(pair.Value.Artifact.Variant, variant, StringComparison.Ordinal)))
@@ -140,6 +201,14 @@ internal sealed class TestAssetDatabase : IAssetDatabase
                 RefCount: 1,
                 asset.Bytes.Length))
             .ToArray();
+    }
+
+    private void EnsureMutable()
+    {
+        if (IsReadOnlyRuntime)
+        {
+            throw new InvalidOperationException("The test asset database is mounted read-only.");
+        }
     }
 
     private sealed record LoadedCookedAsset(CookedAssetRecord Artifact, byte[] Bytes);

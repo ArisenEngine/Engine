@@ -85,10 +85,15 @@ Full runtime validation is available when a change touches boot, generated works
 What this runs:
 - `validate_fast.bat`
 - generated workspace build(s) for the canonical runtime profiles
+- explicit mutable-cache cooking for cooked-only `Development` and `RHIVulkanTesting` smoke runs
 - bounded runtime smoke launches for generated `PackageGame.exe`
 - `Editor`, `Development`, `Production`, and `RHIVulkanTesting` boot coverage where applicable
+- runtime source-access policy checks (`EditorAuthoring` for Editor; `Disabled` for ordinary runtime profiles)
+- copied Production output boot outside the workspace, including zero-source, catalog tamper, and missing-artifact checks
 
 Use `validate_runtime.bat` as the main local gate for runtime/rendering work. If a GPU-dependent path is unavailable on the machine, report that explicitly instead of hiding it behind a generic build failure.
+
+Normal Development/test runtime selection is cooked-only. Prepare its mutable cooked cache explicitly with the generated apphost's `--arisen-cook-runtime-assets` command. Use `--diagnostic-source-assets` only for a bounded Development/test diagnosis; Editor source access is compile-owned and Production/deployed launches reject this option.
 
 Package-level workspace generation/testing remains available for native package integration:
 
@@ -270,6 +275,8 @@ The rendering path is layered:
 
 Render work is expected to be expressed as RenderGraph passes instead of ad hoc direct orchestration. Multi-threaded rendering is tied to the task graph.
 
+World-cell workers may read and validate payloads and acquire generation-checked CPU residency leases. They must not mutate ECS, touch UI state, create RHI resources, or record commands. `IRuntimeAssetResidencyService` performs bounded provider setup at the frame boundary; cells wait in `WaitingForResources`, and final GPU release remains submission-ticket deferred.
+
 Current platform/RHI ownership policy:
 - standalone runtime builds create and pump the main Win32 window through `IWindowProvider`
 - editor builds use `ARISEN_ENGINE_EDITOR`; the Avalonia/editor host owns native UI windows and the platform package must not create an independent runtime window loop
@@ -290,9 +297,11 @@ Start with:
   - `Arisen\Docs\Architecture\ArisenHost.md`
   - `Arisen\Docs\Architecture\PackageLifecycle.md`
   - `Arisen\Docs\Architecture\ServiceRegistry.md`
-- rendering questions:
+- rendering/scene-world questions:
   - `Arisen\Docs\Architecture\Rendering.md`
-  - `Arisen\Docs\Architecture\ProductionSceneRenderingNextTodo.md`
+  - `Arisen\Docs\Architecture\AssetPipeline.md`
+  - `Arisen\Docs\Architecture\WorldStreaming.md`
+  - `Arisen\Docs\Architecture\TerrainOutdoorWorldNextTodo.md`
 - ECS/task scheduling questions:
   - `Arisen\Docs\Architecture\TaskGraph.md`
 - package-boundary questions:

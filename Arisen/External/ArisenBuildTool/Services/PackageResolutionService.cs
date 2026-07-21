@@ -51,10 +51,12 @@ public static class PackageResolutionService
         return result;
     }
 
-    public static void SaveResolvedManifests(string profile, List<string> outputDirs, List<PackageInfo> sortedPackages)
+    public static void SaveResolvedManifests(
+        string profile,
+        List<string> outputDirs,
+        List<PackageInfo> sortedPackages,
+        string fileName = "manifest.resolved.json")
     {
-        string fileName = "manifest.resolved.json";
-
         foreach (var outDir in outputDirs)
         {
             if (!Directory.Exists(outDir)) Directory.CreateDirectory(outDir);
@@ -70,9 +72,11 @@ public static class PackageResolutionService
                     Id = p.Manifest.Id,
                     Name = p.Manifest.Name,
                     Version = p.Manifest.Version,
+                    EngineVersion = p.Manifest.EngineVersion,
                     Type = p.Manifest.Type,
                     Dependencies = p.Manifest.Dependencies ?? new Dictionary<string, string>(),
                     Services = p.Manifest.Services,
+                    Subsystems = p.Manifest.Subsystems,
                     NativeRuntimes = p.Manifest.NativeRuntimes,
                     NativeTests = p.Manifest.NativeTests,
                     Entry = p.Manifest.Entry,

@@ -11,6 +11,9 @@ namespace Com.Arisen.Rendering.Tests;
 
 public sealed class EditorSceneDocumentServiceTests
 {
+    private static readonly Guid s_EditableEntityGuid =
+        Guid.Parse("30000000-0000-0000-0000-000000000001");
+
     [Fact]
     public void RuntimeSnapshotPreview_ActivatesAtFrameBoundaryWithoutWritingSource()
     {
@@ -19,7 +22,7 @@ public sealed class EditorSceneDocumentServiceTests
         var edit = SceneAssetLoader.UpdateEntityTransformSource(
             context.FirstScenePath,
             diskSource,
-            0,
+            s_EditableEntityGuid,
             TransformAt(4, 5, 6));
         Assert.True(edit.Success, edit.Diagnostic);
 
@@ -76,7 +79,7 @@ public sealed class EditorSceneDocumentServiceTests
         using var context = new SceneContext();
         string savedSource = File.ReadAllText(context.FirstScenePath);
 
-        var edit = context.Documents.ApplyEntityTransform(0, TransformAt(4, 5, 6));
+        var edit = context.Documents.ApplyEntityTransform(s_EditableEntityGuid, TransformAt(4, 5, 6));
 
         Assert.True(edit.Success, edit.Diagnostic);
         Assert.True(context.Documents.Current!.IsDirty);
@@ -101,6 +104,54 @@ public sealed class EditorSceneDocumentServiceTests
     }
 
     [Fact]
+    public void DocumentTransformEdit_TargetsStableGuidAfterWorkingSourceReorder()
+    {
+        using var context = new SceneContext();
+        Guid decoyGuid = Guid.Parse("30000000-0000-0000-0000-000000000002");
+        string reordered = $$"""
+            Version: 2
+            Name: Reordered Scene
+            ComponentSchemas:
+            - TypeId: 1
+              Name: Transform
+              Version: 1
+              Required: true
+            Entities:
+            - Guid: {{decoyGuid:D}}
+              Name: Decoy
+              Transform:
+                Position: { X: 90, Y: 91, Z: 92 }
+            - Guid: {{s_EditableEntityGuid:D}}
+              Name: Editable Entity
+              Transform:
+                Position: { X: 1, Y: 2, Z: 3 }
+            """;
+
+        var reorder = context.Documents.ApplyWorkingSource(reordered);
+        Assert.True(reorder.Success, reorder.Diagnostic);
+        Assert.Equal(decoyGuid, context.Documents.Current!.Inspection.Entities[0].AuthoringGuid);
+
+        var edit = context.Documents.ApplyEntityTransform(
+            s_EditableEntityGuid,
+            TransformAt(7, 8, 9));
+        Assert.True(edit.Success, edit.Diagnostic);
+        SceneEntityInspection editable = Assert.Single(
+            context.Documents.Current!.Inspection.Entities,
+            entity => entity.AuthoringGuid == s_EditableEntityGuid);
+        SceneEntityInspection decoy = Assert.Single(
+            context.Documents.Current.Inspection.Entities,
+            entity => entity.AuthoringGuid == decoyGuid);
+        Assert.Equal(new Vector3(7, 8, 9), editable.Transform.Position);
+        Assert.Equal(new Vector3(90, 91, 92), decoy.Transform.Position);
+
+        SceneLoadResult? preview =
+            context.RuntimeScenes.ProcessPendingSceneLoadAtFrameBoundary();
+        Assert.True(preview.HasValue);
+        Assert.True(preview.Value.Success, preview.Value.Diagnostic);
+        Assert.Equal(new Vector3(7, 8, 9), context.ActivePosition);
+    }
+
+    [Fact]
     public void TransformCommand_UndoRestoresExactSavedSourceAndRedoRestoresEdit()
     {
         using var context = new SceneContext();
@@ -109,7 +160,7 @@ public sealed class EditorSceneDocumentServiceTests
         var newTransform = TransformAt(7, 8, 9);
         var command = new ModifySceneAssetTransformCommand(
             context.Documents,
-            0,
+            s_EditableEntityGuid,
             "Editable Entity",
             oldTransform,
             newTransform);
@@ -142,7 +193,7 @@ public sealed class EditorSceneDocumentServiceTests
     public void ExternalSourceChange_BlocksSaveAndDiscardReloadsDisk()
     {
         using var context = new SceneContext();
-        var edit = context.Documents.ApplyEntityTransform(0, TransformAt(4, 5, 6));
+        var edit = context.Documents.ApplyEntityTransform(s_EditableEntityGuid, TransformAt(4, 5, 6));
         Assert.True(edit.Success, edit.Diagnostic);
 
         string externalSource = CreateSceneSource("Externally Changed", 9, 10, 11);
@@ -171,7 +222,7 @@ public sealed class EditorSceneDocumentServiceTests
     public void DirtyDocument_BlocksSceneSwitchUntilChangesAreDiscarded()
     {
         using var context = new SceneContext();
-        var edit = context.Documents.ApplyEntityTransform(0, TransformAt(4, 5, 6));
+        var edit = context.Documents.ApplyEntityTransform(s_EditableEntityGuid, TransformAt(4, 5, 6));
         Assert.True(edit.Success, edit.Diagnostic);
 
         var blocked = context.Documents.RequestOpenScene(context.SecondScene);
@@ -201,7 +252,7 @@ public sealed class EditorSceneDocumentServiceTests
         var queued = context.Documents.RequestOpenScene(context.SecondScene);
         Assert.True(queued.Success, queued.Diagnostic);
 
-        var edit = context.Documents.ApplyEntityTransform(0, TransformAt(4, 5, 6));
+        var edit = context.Documents.ApplyEntityTransform(s_EditableEntityGuid, TransformAt(4, 5, 6));
         var save = context.Documents.Save();
 
         Assert.False(edit.Success);
@@ -227,9 +278,16 @@ public sealed class EditorSceneDocumentServiceTests
     private static string CreateSceneSource(string name, float x, float y, float z)
     {
         return $"""
+            Version: 2
             Name: {name}
+            ComponentSchemas:
+            - TypeId: 1
+              Name: Transform
+              Version: 1
+              Required: true
             Entities:
-            - Name: Editable Entity
+            - Guid: {s_EditableEntityGuid:D}
+              Name: Editable Entity
               Transform:
                 Position:
                   X: {x}
@@ -261,10 +319,13 @@ public sealed class EditorSceneDocumentServiceTests
             FirstScene = new AssetRef<SceneSourceAsset>(firstGuid, "Scene", "com.arisen.test");
             SecondScene = new AssetRef<SceneSourceAsset>(secondGuid, "Scene", "com.arisen.test");
 
-            Database = new TestAssetDatabase(Path.Combine(m_Root, "Cooked"));
+            Database = new TestAssetDatabase(
+                AssetSourceAccessMode.EditorAuthoring,
+                Path.Combine(m_Root, "Cooked"));
             Database.AddAsset(firstGuid, "Scene", FirstScenePath);
             Database.AddAsset(secondGuid, "Scene", secondScenePath);
-            RuntimeScenes = new RuntimeSceneService(Database, world => ActiveWorld = world);
+            ActiveWorld = new EntityManager();
+            RuntimeScenes = new RuntimeSceneService(Database, ActiveWorld);
             var initialLoad = RuntimeScenes.LoadScene(FirstScene);
             Assert.True(initialLoad.Success, initialLoad.Diagnostic);
 
@@ -282,10 +343,10 @@ public sealed class EditorSceneDocumentServiceTests
         public RuntimeSceneService RuntimeScenes { get; }
         public CommandManager Commands { get; }
         public EditorSceneDocumentService Documents { get; }
-        public EntityManager? ActiveWorld { get; private set; }
+        public EntityManager ActiveWorld { get; }
 
         public Vector3 ActivePosition =>
-            ActiveWorld!.GetPool<TransformComponent>().GetRawComponentArray()[0].Position;
+            ActiveWorld.GetPool<TransformComponent>().GetRawComponentArray()[0].Position;
 
         public void Dispose()
         {

@@ -13,7 +13,7 @@ public static class SolutionGeneratorService
     private const string CSHARP_PROJECT_TYPE = "{9A19103F-16F7-4668-BE54-9A1E7A4F7556}";
     private const string VIRTUAL_FOLDER_TYPE = "{2150E333-8FDC-42A3-9474-1A3956D46DE8}";
 
-    public static void Generate(string projectsDir, string engineDir, List<PackageInfo> managedPackages, string projectName, ProjectManifest manifest, string profile, bool isEditor, bool enableProfiler)
+    public static void Generate(string workspaceDir, string projectsDir, string engineDir, List<PackageInfo> managedPackages, string projectName, ProjectManifest manifest, string profile, bool isEditor, bool enableProfiler)
     {
         string slnPath = Path.Combine(projectsDir, "..", "..", $"{projectName}_{profile}.sln");
         string slnDir = Path.GetDirectoryName(slnPath)!;
@@ -23,7 +23,7 @@ public static class SolutionGeneratorService
         string entryCsprojDir = Path.Combine(projectsDir, projectName);
         Directory.CreateDirectory(entryCsprojDir);
         string entryCsproj = Path.Combine(entryCsprojDir, $"{projectName}.csproj");
-        GenerateEntryPointProject(entryCsproj, engineDir, projectName, manifest, profile, isEditor, enableProfiler, managedPackages, projectsDir);
+        GenerateEntryPointProject(workspaceDir, entryCsproj, engineDir, projectName, manifest, profile, isEditor, enableProfiler, managedPackages, projectsDir);
 
         // Generate Protective MSVC Property File
         string dirBuildProps = Path.Combine(slnDir, "Directory.Build.props");
@@ -38,7 +38,7 @@ public static class SolutionGeneratorService
 
         var projectGuids = new Dictionary<string, string>(); // Path -> GUID
         var nestedProjects = new List<(string child, string parent)>();
-        
+
         // Track folder usage
         string pkgFolderGuid = Guid.NewGuid().ToString("B").ToUpper();
         string localFolderGuid = Guid.NewGuid().ToString("B").ToUpper();
@@ -73,16 +73,16 @@ public static class SolutionGeneratorService
             string pkgProjectName = string.Join(".", packageName.Split('.').Select(PathUtils.ToPascalCase));
             string csprojPath = Path.Combine(projectsDir, pkgProjectName, $"{pkgProjectName}.csproj");
             string relPath = PathUtils.GetRelativePath(slnDir, csprojPath);
-            
+
             string guid = Guid.NewGuid().ToString("B").ToUpper();
             projectGuids[guid] = guid;
-            
+
             slnProjects.Add($"Project(\"{CSHARP_PROJECT_TYPE}\") = \"{pkgProjectName}\", \"{relPath}\", \"{guid}\"");
             slnProjects.Add("EndProject");
 
             bool isLocal = package.DirectoryPath.Contains("Local");
             string folderGuid = isLocal ? localFolderGuid : pkgFolderGuid;
-            
+
             if (isLocal) hasLocalFolder = true;
             else hasPkgFolder = true;
 
@@ -95,7 +95,7 @@ public static class SolutionGeneratorService
         if (File.Exists(cmakeSln))
         {
             string[] lines = File.ReadAllLines(cmakeSln);
-            
+
             HashSet<string> skippedGuids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (string l in lines)
             {
@@ -109,7 +109,7 @@ public static class SolutionGeneratorService
                     }
                 }
             }
-            
+
             bool insideProject = false;
             bool skipProject = false;
             string currentProjGuid = "";
@@ -128,7 +128,7 @@ public static class SolutionGeneratorService
                         string pPath = match.Groups[3].Value;
                         currentProjGuid = match.Groups[4].Value;
 
-                        if (pName == "CMakePredefinedTargets" || pName == "ALL_BUILD" || pName == "INSTALL") 
+                        if (pName == "CMakePredefinedTargets" || pName == "ALL_BUILD" || pName == "INSTALL")
                         {
                             skipProject = true;
                             continue;
@@ -160,7 +160,7 @@ public static class SolutionGeneratorService
                 else if (insideProject && !skipProject)
                 {
                     bool isBanned = false;
-                    foreach(var g in skippedGuids)
+                    foreach (var g in skippedGuids)
                     {
                         if (line.Contains(g))
                         {
@@ -220,15 +220,15 @@ public static class SolutionGeneratorService
 
         // Write Global section
         writer.WriteLine("Global");
-        
+
         // Profiles Map
         writer.WriteLine("\tGlobalSection(SolutionConfigurationPlatforms) = preSolution");
-        foreach(var config in configurations)
+        foreach (var config in configurations)
         {
             writer.WriteLine($"\t\t{config}|x64 = {config}|x64");
         }
         writer.WriteLine("\tEndGlobalSection");
- 
+
         // Project Maps
         writer.WriteLine("\tGlobalSection(ProjectConfigurationPlatforms) = postSolution");
         foreach (var guid in projectGuids.Keys) // C# Projects
@@ -248,7 +248,7 @@ public static class SolutionGeneratorService
             }
         }
         writer.WriteLine("\tEndGlobalSection");
- 
+
         // Folders
         writer.WriteLine("\tGlobalSection(NestedProjects) = preSolution");
         foreach (var tuple in nestedProjects)
@@ -257,14 +257,14 @@ public static class SolutionGeneratorService
             bool parentExists = (tuple.parent == pkgFolderGuid && hasPkgFolder) ||
                                 (tuple.parent == localFolderGuid && hasLocalFolder) ||
                                 (tuple.parent == nativeFolderGuid && hasNativeFolder);
-                                
+
             if (parentExists)
             {
                 writer.WriteLine($"\t\t{tuple.child} = {tuple.parent}");
             }
         }
         writer.WriteLine("\tEndGlobalSection");
-        
+
         writer.WriteLine("\tGlobalSection(ExtensibilityGlobals) = postSolution");
         writer.WriteLine($"\t\tSolutionGuid = {Guid.NewGuid().ToString("B").ToUpper()}");
         writer.WriteLine("\tEndGlobalSection");
@@ -272,7 +272,7 @@ public static class SolutionGeneratorService
         writer.WriteLine("EndGlobal");
     }
 
-    private static void GenerateEntryPointProject(string csprojPath, string engineDir, string projectName, ProjectManifest manifest, string profile, bool isEditor, bool enableProfiler, List<PackageInfo> managedPackages, string projectsDir)
+    private static void GenerateEntryPointProject(string workspaceDir, string csprojPath, string engineDir, string projectName, ProjectManifest manifest, string profile, bool isEditor, bool enableProfiler, List<PackageInfo> managedPackages, string projectsDir)
     {
         if (TryGenerateLauncherHostProject(csprojPath, engineDir, projectName, profile, isEditor, enableProfiler))
         {
@@ -296,7 +296,7 @@ public static class SolutionGeneratorService
         writer.WriteLine("    <RuntimeIdentifier>win-x64</RuntimeIdentifier>");
         writer.WriteLine("    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>");
         writer.WriteLine("    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>");
-        
+
         string constants = BuildDefineConstants(profile, isEditor, enableProfiler);
         writer.WriteLine($"    <DefineConstants>{constants}</DefineConstants>");
         writer.WriteLine("  </PropertyGroup>");
@@ -321,34 +321,85 @@ public static class SolutionGeneratorService
         }
         else
         {
-             writer.WriteLine("    <Reference Include=\"ArisenKernel\">");
-             writer.WriteLine($"      <HintPath>..\\..\\..\\bin\\{profile}\\$(Configuration)\\ArisenKernel.dll</HintPath>");
-             writer.WriteLine("    </Reference>");
+            writer.WriteLine("    <Reference Include=\"ArisenKernel\">");
+            writer.WriteLine($"      <HintPath>..\\..\\..\\bin\\{profile}\\$(Configuration)\\ArisenKernel.dll</HintPath>");
+            writer.WriteLine("    </Reference>");
         }
 
         // Add Project References to all discovered managed packages to ensure IDE recompilation on "Run"
         // We set ReferenceOutputAssembly to false because they are loaded dynamically at runtime.
+        bool hasCorePackage = false;
         foreach (var package in managedPackages)
         {
             string packageName = Path.GetFileName(package.DirectoryPath);
             string pkgProjectName = string.Join(".", packageName.Split('.').Select(PathUtils.ToPascalCase));
             string pkgCsprojPath = Path.Combine(projectsDir, pkgProjectName, $"{pkgProjectName}.csproj");
             string relPath = PathUtils.GetRelativePath(csprojDir, pkgCsprojPath);
-            
-            writer.WriteLine($"    <ProjectReference Include=\"{relPath}\" ReferenceOutputAssembly=\"false\" SkipGetTargetFrameworkProperties=\"true\" />");
+
+            if (string.Equals(package.Manifest.Id, "com.arisen.core", StringComparison.OrdinalIgnoreCase))
+            {
+                hasCorePackage = true;
+                writer.WriteLine($"    <ProjectReference Include=\"{relPath}\" />");
+            }
+            else
+            {
+                writer.WriteLine($"    <ProjectReference Include=\"{relPath}\" ReferenceOutputAssembly=\"false\" SkipGetTargetFrameworkProperties=\"true\" />");
+            }
         }
 
         writer.WriteLine("  </ItemGroup>");
+        if (hasCorePackage && string.Equals(profile, "Production", StringComparison.OrdinalIgnoreCase))
+        {
+            string escapedWorkspace = EscapeXmlAttribute(Path.GetFullPath(workspaceDir));
+            string escapedEngine = EscapeXmlAttribute(Path.GetFullPath(engineDir));
+            string buildToolDll = EscapeXmlAttribute(Path.Combine(
+                engineDir,
+                "External",
+                "ArisenBuildTool",
+                "bin",
+                "x64",
+                "Debug",
+                "net9.0",
+                "ArisenBuildTool.dll"));
+            writer.WriteLine();
+            writer.WriteLine("  <Target Name=\"ArisenCookRuntimeAssets\" AfterTargets=\"Build\" Condition=\"'$(DesignTimeBuild)' != 'true' and '$(ArisenSkipAssetCook)' != 'true'\">");
+            writer.WriteLine($"    <Exec Command=\"&quot;$(TargetDir)$(AssemblyName).exe&quot; --arisen-cook-runtime-assets --workspace &quot;{escapedWorkspace}&quot; --profile {profile} --configuration $(Configuration) --runtime-identifier win-x64 --output-root &quot;$(TargetDir).&quot;\" />");
+            writer.WriteLine($"    <Exec Command=\"dotnet &quot;{buildToolDll}&quot; deploy-runtime-metadata --workspace &quot;{escapedWorkspace}&quot; --engine &quot;{escapedEngine}&quot; --profile {profile} --output-root &quot;$(TargetDir).&quot;\" />");
+            writer.WriteLine("  </Target>");
+        }
         writer.WriteLine("</Project>");
-        
+
         // Generate a thin Program.cs Stub
-        string entryPointSource = @"using System;
+        string entryPointSource = hasCorePackage
+            ? @"using System;
+using ArisenEngine.Core.Assets;
+namespace {0};
+public class Program {{
+    public static void Main(string[] args) {{
+        if (RuntimeAssetCookHost.IsCookCommand(args)) {{
+            Environment.ExitCode = RuntimeAssetCookHost.Run(args);
+            return;
+        }}
+
+        ArisenKernel.Lifecycle.EngineBootstrapper.Run(args);
+    }}
+}}"
+            : @"using System;
 namespace {0};
 public class Program {{
     public static void Main(string[] args) => ArisenKernel.Lifecycle.EngineBootstrapper.Run(args);
 }}";
         string programPath = Path.Combine(Path.GetDirectoryName(csprojPath)!, "Program.cs");
         File.WriteAllText(programPath, string.Format(entryPointSource, projectName));
+    }
+
+    private static string EscapeXmlAttribute(string value)
+    {
+        return value
+            .Replace("&", "&amp;", StringComparison.Ordinal)
+            .Replace("\"", "&quot;", StringComparison.Ordinal)
+            .Replace("<", "&lt;", StringComparison.Ordinal)
+            .Replace(">", "&gt;", StringComparison.Ordinal);
     }
 
     private static bool TryGenerateLauncherHostProject(string csprojPath, string engineDir, string projectName, string profile, bool isEditor, bool enableProfiler)

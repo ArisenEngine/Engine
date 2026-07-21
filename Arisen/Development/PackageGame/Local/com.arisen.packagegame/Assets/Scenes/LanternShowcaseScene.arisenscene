@@ -1,6 +1,37 @@
+Version: 2
 Name: Lantern Production Model Showcase
+ComponentSchemas:
+- TypeId: 1
+  Name: Transform
+  Version: 1
+  Required: true
+- TypeId: 2
+  Name: Camera
+  Version: 2
+  Required: true
+- TypeId: 3
+  Name: MeshRenderer
+  Version: 1
+  Required: true
+- TypeId: 4
+  Name: DirectionalLight
+  Version: 1
+  Required: true
+- TypeId: 5
+  Name: PointLight
+  Version: 1
+  Required: true
+- TypeId: 6
+  Name: SpotLight
+  Version: 1
+  Required: true
+- TypeId: 7
+  Name: Environment
+  Version: 1
+  Required: true
 Entities:
-- Name: Main Camera
+- Guid: 20000000-0000-0000-0000-000000000001
+  Name: Main Camera
   Transform:
     Position:
       X: 3
@@ -20,7 +51,8 @@ Entities:
     NearPlane: 0.1
     FarPlane: 160.0
     IsPerspective: true
-- Name: Warm Key Light
+- Guid: 20000000-0000-0000-0000-000000000002
+  Name: Warm Key Light
   DirectionalLight:
     Direction:
       X: -0.42
@@ -47,7 +79,8 @@ Entities:
       X: 1
       Y: 1
       Z: 1
-- Name: Lantern Fill Light
+- Guid: 20000000-0000-0000-0000-000000000003
+  Name: Lantern Fill Light
   Transform:
     Position:
       X: 3
@@ -70,7 +103,8 @@ Entities:
     Intensity: 4.25
     Range: 5.5
     Enabled: true
-- Name: Lantern Downlight
+- Guid: 20000000-0000-0000-0000-000000000004
+  Name: Lantern Downlight
   Transform:
     Position:
       X: 2
@@ -95,7 +129,8 @@ Entities:
     InnerConeAngleDegrees: 24.0
     OuterConeAngleDegrees: 42.0
     Enabled: true
-- Name: Blue Hour Environment
+- Guid: 20000000-0000-0000-0000-000000000005
+  Name: Blue Hour Environment
   Environment:
     EnvironmentTexture:
       Guid: b7c4e40e-c95f-47e5-84b7-b7554e0edc17
@@ -120,7 +155,8 @@ Entities:
     AmbientIntensity: 0.20
     Exposure: 1.15
     Enabled: true
-- Name: Lantern Pole Body
+- Guid: 20000000-0000-0000-0000-000000000006
+  Name: Lantern Pole Body
   Transform:
     Position:
       X: 0.4587785
@@ -145,7 +181,8 @@ Entities:
     FirstSubmeshIndex: 0
     SubmeshCount: 1
     Visible: true
-- Name: Lantern Chain
+- Guid: 20000000-0000-0000-0000-000000000007
+  Name: Lantern Chain
   Transform:
     Position:
       X: 1.14984
@@ -170,7 +207,8 @@ Entities:
     FirstSubmeshIndex: 0
     SubmeshCount: 1
     Visible: true
-- Name: Lantern Head
+- Guid: 20000000-0000-0000-0000-000000000008
+  Name: Lantern Head
   Transform:
     Position:
       X: 1.149841
@@ -195,7 +233,8 @@ Entities:
     FirstSubmeshIndex: 0
     SubmeshCount: 1
     Visible: true
-- Name: Ground
+- Guid: 20000000-0000-0000-0000-000000000009
+  Name: Ground
   Transform:
     Position:
       X: 0.45

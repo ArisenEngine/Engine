@@ -307,7 +307,7 @@ public sealed class RenderingAssetPipelineTests
         var materialMetadata = SerializationUtil.Deserialize<AssetMetadata>(
             materialPath + ".meta",
             serializeIfNotExist: false);
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         db.AddAsset(shaderGuid, ShaderAssetCooker.ShaderSourceAssetType, shaderPath);
         db.AddAsset(materialMetadata.Guid, "Material", materialPath);
 
@@ -457,7 +457,7 @@ public sealed class RenderingAssetPipelineTests
             Assert.Equal(sourceGuid, textureMetadata.Generated.SourceGuid);
         }
 
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         db.AddAsset(shaderGuid, ShaderAssetCooker.ShaderSourceAssetType, shaderPath);
         db.AddAsset(materialMetadata.Guid, "Material", materialPath);
         foreach (var texturePath in result.TexturePaths)
@@ -579,7 +579,7 @@ public sealed class RenderingAssetPipelineTests
         Assert.Equal(sourceGuid, meshMetadata.Generated.SourceGuid);
         Assert.Equal("meshes/0", meshMetadata.Generated.ChildKey);
 
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         db.AddAsset(sceneMetadata.Guid, "Scene", scenePath);
         db.AddAsset(meshMetadata.Guid, "Mesh", meshPath);
         db.AddAsset(materialMetadata.Guid, "Material", materialPath);
@@ -593,6 +593,12 @@ public sealed class RenderingAssetPipelineTests
         Assert.Equal(1, inspection.MeshRendererCount);
 
         var entity = Assert.Single(inspection.Entities);
+        Guid expectedEntityGuid = GeneratedAssetIdentity.CreateChildGuid(
+            sourceGuid,
+            "com.arisen.test",
+            "scene-entity",
+            "scenes/0/nodes/0/primitives/0");
+        Assert.Equal(expectedEntityGuid, entity.AuthoringGuid);
         Assert.Equal("TriangleNode", entity.Name);
         Assert.Equal(new Vector3(2.0f, 3.0f, 4.0f), entity.Transform.Position);
         Assert.Equal(new Vector3(2.0f, 2.0f, 2.0f), entity.Transform.Scale);
@@ -603,6 +609,18 @@ public sealed class RenderingAssetPipelineTests
         Assert.True(entity.MeshRenderer.Material.IsResolved, entity.MeshRenderer.Material.Diagnostic);
         Assert.Equal(0, entity.MeshRenderer.FirstSubmeshIndex);
         Assert.Equal(1, entity.MeshRenderer.SubmeshCount);
+
+        string firstGeneratedSource = File.ReadAllText(scenePath);
+        GltfModelImportEmissionResult repeated = GltfModelImportEmitter.Emit(
+            plan,
+            glbPath,
+            Path.Combine(workspace.Root, "Assets", "Generated"),
+            new GltfModelImportEmissionSettings(
+                shaderGuid,
+                "Tests/StandardLit",
+                "SceneTriangle"));
+        Assert.Equal(scenePath, Assert.Single(repeated.ScenePaths));
+        Assert.Equal(firstGeneratedSource, File.ReadAllText(scenePath));
 
         var mesh = new MeshAsset(
             meshMetadata.Guid,
@@ -623,7 +641,7 @@ public sealed class RenderingAssetPipelineTests
         using var workspace = TestWorkspace.Create();
         var sourceGuid = Guid.Parse("12121212-3434-5656-7878-909090909090");
         var shaderGuid = Guid.Parse("23232323-4545-6767-8989-a0a0a0a0a0a0");
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         var sourceAsset = CreateModelSourceAsset(
             workspace,
             db,
@@ -686,7 +704,7 @@ public sealed class RenderingAssetPipelineTests
         const string packageId = "com.arisen.test";
         var sourceGuid = Guid.Parse("13572468-2468-1357-8642-abcdefabcdef");
         var shaderGuid = Guid.Parse("24681357-1357-2468-9753-bcdefabcdefa");
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         var sourceAsset = CreateModelReimportValidationSourceAsset(
             workspace,
             db,
@@ -850,7 +868,7 @@ public sealed class RenderingAssetPipelineTests
         using var workspace = TestWorkspace.Create();
         var sourceGuid = Guid.Parse("9a9a9a9a-b1b1-c2c2-d3d3-e4e4e4e4e4e4");
         var shaderGuid = Guid.Parse("abababab-c2c2-d3d3-e4e4-f5f5f5f5f5f5");
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         var sourceAsset = CreateTexturedModelSourceAsset(workspace, db, sourceGuid, shaderGuid, 0.25f);
 
         var firstResult = ModelSourceReimporter.Reimport(sourceAsset);
@@ -1083,7 +1101,7 @@ public sealed class RenderingAssetPipelineTests
         using var workspace = TestWorkspace.Create();
         var sourceGuid = Guid.Parse("45454545-6767-8989-a0a0-c2c2c2c2c2c2");
         var shaderGuid = Guid.Parse("56565656-7878-9090-b1b1-d3d3d3d3d3d3");
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         var sourceAsset = CreateModelSourceAsset(
             workspace,
             db,
@@ -1155,7 +1173,7 @@ public sealed class RenderingAssetPipelineTests
         var materialMetadata0 = SerializationUtil.Deserialize<AssetMetadata>(result.MaterialPaths[0] + ".meta", serializeIfNotExist: false);
         var materialMetadata1 = SerializationUtil.Deserialize<AssetMetadata>(result.MaterialPaths[1] + ".meta", serializeIfNotExist: false);
 
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         db.AddAsset(sceneMetadata.Guid, "Scene", scenePath);
         db.AddAsset(meshMetadata.Guid, "Mesh", meshPath);
         db.AddAsset(materialMetadata0.Guid, "Material", result.MaterialPaths[0]);
@@ -1171,6 +1189,20 @@ public sealed class RenderingAssetPipelineTests
 
         var primitive0 = Assert.Single(inspection.Entities, entity => entity.Name == "MultiMaterialNode_Primitive_0");
         var primitive1 = Assert.Single(inspection.Entities, entity => entity.Name == "MultiMaterialNode_Primitive_1");
+        Assert.Equal(
+            GeneratedAssetIdentity.CreateChildGuid(
+                sourceGuid,
+                "com.arisen.test",
+                "scene-entity",
+                "scenes/0/nodes/0/primitives/0"),
+            primitive0.AuthoringGuid);
+        Assert.Equal(
+            GeneratedAssetIdentity.CreateChildGuid(
+                sourceGuid,
+                "com.arisen.test",
+                "scene-entity",
+                "scenes/0/nodes/0/primitives/1"),
+            primitive1.AuthoringGuid);
         Assert.NotNull(primitive0.MeshRenderer);
         Assert.NotNull(primitive1.MeshRenderer);
         Assert.Equal(meshMetadata.Guid, primitive0.MeshRenderer.Mesh.Guid);
@@ -1207,7 +1239,7 @@ public sealed class RenderingAssetPipelineTests
     {
         using var workspace = TestWorkspace.Create();
         var textureGuid = Guid.NewGuid();
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         var texturePath = workspace.WriteBinary("Assets/BaseColor.png", CreateTinyPng());
         db.AddAsset(textureGuid, "Texture2D", texturePath);
 
@@ -1236,7 +1268,7 @@ public sealed class RenderingAssetPipelineTests
         using var workspace = TestWorkspace.Create();
         var environmentGuid = Guid.Parse("10101010-2020-3030-4040-505050505050");
         var sourceTextureGuid = Guid.Parse("11111111-2121-3131-4141-515151515151");
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         var texturePath = workspace.Write(
             "Assets/Environment.ppm",
             "P3\n4 2\n255\n255 128 0  64 128 255  0 32 128  255 255 255\n16 16 32  32 32 64  64 64 96  128 128 160\n");
@@ -1307,7 +1339,7 @@ public sealed class RenderingAssetPipelineTests
         using var workspace = TestWorkspace.Create();
         var environmentGuid = Guid.NewGuid();
         var sourceTextureGuid = Guid.NewGuid();
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         var texturePath = workspace.Write(
             "Assets/Invalid.ppm",
             "P3\n3 2\n255\n255 0 0  0 255 0  0 0 255\n255 255 255  64 64 64  0 0 0\n");
@@ -1335,7 +1367,7 @@ public sealed class RenderingAssetPipelineTests
         using var workspace = TestWorkspace.Create();
         var environmentGuid = Guid.Parse("20202020-3030-4040-5050-606060606060");
         var sourceTextureGuid = Guid.Parse("21212121-3131-4141-5151-616161616161");
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         var texturePath = workspace.Write(
             "Assets/ConstantEnvironment.ppm",
             "P3\n4 2\n255\n128 64 32  128 64 32  128 64 32  128 64 32\n128 64 32  128 64 32  128 64 32  128 64 32\n");
@@ -1495,7 +1527,7 @@ public sealed class RenderingAssetPipelineTests
         var materialMetadata = SerializationUtil.Deserialize<AssetMetadata>(
             Assert.Single(result.MaterialPaths) + ".meta",
             serializeIfNotExist: false);
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         db.AddAsset(shaderGuid, ShaderAssetCooker.ShaderSourceAssetType, workspace.Write("Assets/StandardLit.shader", CreateStandardLitShader()));
         db.AddAsset(materialMetadata.Guid, "Material", result.MaterialPaths.Single());
         var loadedMaterial = MaterialAssetLoader.LoadSource(db, materialMetadata.Guid);
@@ -1819,7 +1851,7 @@ public sealed class RenderingAssetPipelineTests
     public void StandardLitPackageAssets_DefinePbrEnvironmentMaterialContract()
     {
         using var workspace = TestWorkspace.Create();
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         var shaderGuid = Guid.Parse("72b6d255-0f54-46e5-9d05-8e0486d4f875");
         var smokeCheckerGuid = Guid.Parse("c320bf66-0495-4e70-8f27-d54e90dd6c8d");
         var defaultNormalGuid = Guid.Parse("ead642b0-cde6-4ae0-8bdc-03472fb3d5aa");
@@ -2084,7 +2116,7 @@ public sealed class RenderingAssetPipelineTests
         var shaderGuid = Guid.NewGuid();
         var textureGuid = Guid.NewGuid();
         var materialGuid = Guid.NewGuid();
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
 
         var shaderPath = workspace.Write("Assets/Lit.shader", """
             Shader "Tests/Lit"
@@ -2202,7 +2234,7 @@ public sealed class RenderingAssetPipelineTests
         using var workspace = TestWorkspace.Create();
         var shaderGuid = Guid.NewGuid();
         var materialGuid = Guid.NewGuid();
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
 
         var shaderPath = workspace.Write("Assets/MissingBinding.shader", """
             Shader "Tests/MissingBinding"
@@ -2280,7 +2312,7 @@ public sealed class RenderingAssetPipelineTests
         var oldTextureGuid = Guid.NewGuid();
         var newTextureGuid = Guid.NewGuid();
         var materialGuid = Guid.NewGuid();
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
 
         var shaderPath = workspace.Write("Assets/Editable.shader", """
             Shader "Tests/Editable"
@@ -2405,7 +2437,7 @@ public sealed class RenderingAssetPipelineTests
     {
         using var workspace = TestWorkspace.Create();
         var materialGuid = Guid.NewGuid();
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         var materialPath = workspace.Write("Assets/Command.arismaterial", """
             Name: Tests/Command
             ScalarProperties:
@@ -2468,7 +2500,7 @@ public sealed class RenderingAssetPipelineTests
     {
         using var workspace = TestWorkspace.Create();
         var meshGuid = Guid.NewGuid();
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         var meshPath = workspace.Write("Assets/Triangle.armesh", """
             v -1 -2 0 0 0 1 0 0
             v 3 0 2 1 0 0 1 0
@@ -2506,7 +2538,7 @@ public sealed class RenderingAssetPipelineTests
     {
         using var workspace = TestWorkspace.Create();
         var meshGuid = Guid.NewGuid();
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         var meshPath = workspace.Write("Assets/Broken.obj", """
             v 0 0 0
             v 1 0 0
@@ -2528,7 +2560,7 @@ public sealed class RenderingAssetPipelineTests
     {
         using var workspace = TestWorkspace.Create();
         var meshGuid = Guid.NewGuid();
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         var gltfPath = workspace.Write("Assets/Broken.gltf", """
             {
               "asset": { "version": "2.0" },
@@ -2564,7 +2596,7 @@ public sealed class RenderingAssetPipelineTests
     {
         using var workspace = TestWorkspace.Create();
         var meshGuid = Guid.NewGuid();
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         var gltfPath = workspace.Write("Assets/ExtraUv.gltf", """
             {
               "asset": { "version": "2.0" },
@@ -2601,7 +2633,7 @@ public sealed class RenderingAssetPipelineTests
     {
         using var workspace = TestWorkspace.Create();
         var meshGuid = Guid.NewGuid();
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         var binPath = workspace.WriteBinary("Assets/Triangle.bin", CreateGltfTriangleBuffer(1.0f));
         var gltfPath = workspace.Write("Assets/Triangle.gltf", $$"""
             {
@@ -2665,7 +2697,7 @@ public sealed class RenderingAssetPipelineTests
     {
         using var workspace = TestWorkspace.Create();
         var meshGuid = Guid.NewGuid();
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         var binPath = workspace.WriteBinary("Assets/Triangle.bin", CreateGltfTriangleBuffer(1.0f));
         var gltfPath = workspace.Write("Assets/NodeTriangle.gltf", $$"""
             {
@@ -2727,7 +2759,7 @@ public sealed class RenderingAssetPipelineTests
     {
         using var workspace = TestWorkspace.Create();
         var meshGuid = Guid.NewGuid();
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         var glbPath = workspace.WriteBinary("Assets/Triangle.glb", CreateGltfTriangleGlb(1.5f));
         db.AddAsset(meshGuid, "Mesh", glbPath);
 
@@ -2753,7 +2785,7 @@ public sealed class RenderingAssetPipelineTests
     {
         using var workspace = TestWorkspace.Create();
         var meshGuid = Guid.NewGuid();
-        var db = new TestAssetDatabase(Path.Combine(workspace.Root, "Cooked"));
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
         var binPath = workspace.WriteBinary("Assets/Triangle.bin", CreateGltfTriangleBuffer(1.0f));
         var gltfPath = workspace.Write("Assets/Triangle.gltf", $$"""
             {

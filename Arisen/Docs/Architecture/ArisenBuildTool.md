@@ -57,7 +57,7 @@ Run the fast local/CI gate before package architecture or build-tool changes:
 Arisen\Scripts\Windows\validate_fast.bat
 ```
 
-This command runs the build-tool fixture tests, kernel package lifecycle tests, and `ArisenBuildTool validate` for the canonical `Editor`, `Development`, `Production`, and `RHIVulkanTesting` profiles.
+This command runs the build-tool fixture tests, kernel package lifecycle tests, launcher tests, rendering/asset tests, and `ArisenBuildTool validate` for the canonical `Editor`, `Development`, `Production`, and `RHIVulkanTesting` profiles.
 
 ### Runtime Validation Gate
 
@@ -67,7 +67,7 @@ Run the full runtime gate before committing changes that affect boot, platform w
 Arisen\Scripts\Windows\validate_runtime.bat --no-pause --config Debug --smoke-mode scene --frames 1
 ```
 
-This command runs the fast gate first, builds generated runtime outputs for the canonical workspace, and launches bounded smoke runs for the selected runtime profiles. The default validation smoke mode is `scene`: the bootstrapper runs at least two frames even when `--frames 1` is requested, because `PackageGame` creates the smoke scene at the end of the first frame and renders it on the next frame. Scene-mode Editor validation then launches one additional real Avalonia host process to prove initial SceneView presentation, live resize, GameView presentation, compositor orientation, and clean shutdown. It is the preferred validation path for the platform/RHI/rendering roadmap because it proves both the package graph and editor presentation boundary under real processes instead of only validating metadata.
+This command runs the fast gate first, builds generated runtime outputs for the canonical workspace, explicitly cooks the mutable-cache closure for Development and RHIVulkanTesting, and launches bounded smoke runs for the selected runtime profiles. Every smoke must report its expected source-access policy in a fresh native log: `EditorAuthoring` for Editor and `Disabled` for ordinary Development, Production, and RHIVulkanTesting. The default validation smoke mode is `scene`: the bootstrapper runs at least two frames even when `--frames 1` is requested, because `PackageGame` creates the smoke scene at the end of the first frame and renders it on the next frame. Scene-mode Editor validation then launches one additional real Avalonia host process to prove initial SceneView presentation, live resize, GameView presentation, compositor orientation, and clean shutdown. Production validation launches without `--workspace`, copies the complete output to a temporary directory outside the workspace, boots it there, and verifies graceful tamper and missing-artifact failures. It is the preferred validation path for boot/platform/RHI/rendering changes because it proves package, cooked-selection, editor-presentation, and deployed-player boundaries under real processes.
 
 Before each smoke launch, the runtime gate runs:
 
@@ -92,13 +92,16 @@ Arisen\Scripts\Windows\validate_runtime.bat --no-pause --gpu-smoke skip
 Runtime validation writes machine-readable artifacts under the canonical workspace log directory:
 
 - `.arisen\Logs\smoke-cli-{profile}-{configuration}-{timestamp}.log` captures stdout/stderr for each CLI smoke process that actually runs.
+- `.arisen\Logs\cook-runtime-assets-{profile}-{configuration}-{timestamp}.log` captures explicit pre-smoke cooking for cooked-only Development and RHIVulkanTesting runs.
 - `.arisen\Logs\visual-summary-{profile}-latest.json` contains the fresh schema-2 final-color plus graph-owned D32 depth summary requested automatically for scene-mode Development and Production smoke runs. Validation requires finite normalized depth, minimum written coverage, nontrivial depth variation, and correctly shaped histogram/spatial distributions in addition to the color checks.
 - `.arisen\Logs\editor-viewport-smoke-Editor-{configuration}-{timestamp}.log` captures the additional real Avalonia editor-host process used by scene-mode Editor validation.
 - `.arisen\Logs\editor-viewport-summary-Editor-latest.json` contains the fresh versioned SceneView first-frame/resize and GameView presentation observations. The harness has a 30-second internal timeout and the validation script enforces a 45-second process bound.
+- `.arisen\Logs\relocated-production-{configuration}-latest.log` captures copied-output boot plus tamper/missing diagnostics.
+- `.arisen\Logs\relocated-production-{configuration}-latest.json` records source-independent metadata, source-file absence, cooked-scene observation, relocation, tamper rejection, and missing-artifact rejection.
 - `.arisen\Logs\validate-runtime-{configuration}-{timestamp}.json` captures the complete validation result for one script invocation.
 - `.arisen\Logs\validate-runtime-{configuration}-latest.json` is refreshed after every invocation and is the stable path for CI/tooling to inspect.
 
-Runtime validation summary schema 4 includes the requested profiles, configuration, smoke mode/frame count, GPU policy, Vulkan probe result, smoke run/skip/fallback counts, validated standalone visual-summary artifact count/paths, editor viewport smoke run/artifact counts and paths, failure stage/profile/message when present, and per-profile pass/fallback/fail records. Each profile record includes its CLI log plus standalone visual-summary and editor-viewport request/path/log/exit/pass status. A successful run has `"succeeded": true` and exit code `0`; failed build, manifest inspection, visual-summary validation, editor viewport launch/artifact validation, or runtime smoke stages preserve enough context for the launcher, CI logs, or an AI agent to continue from the failing profile.
+Runtime validation summary schema 5 includes the requested profiles, configuration, smoke mode/frame count, GPU policy, Vulkan probe result, smoke run/skip/fallback counts, validated standalone visual-summary artifact count/paths, editor viewport smoke run/artifact counts and paths, relocated Production run/summary/log evidence, failure stage/profile/message when present, and per-profile pass/fallback/fail records. Each profile record includes its CLI log plus standalone visual-summary, editor-viewport, and copied-output Production request/path/log/exit/pass status. A successful run has `"succeeded": true` and exit code `0`; failed build, manifest inspection, visual-summary validation, editor viewport launch/artifact validation, copied-output validation, or runtime smoke stages preserve enough context for the launcher, CI logs, or an AI agent to continue from the failing profile.
 
 ---
 
@@ -244,10 +247,35 @@ The tool generates a separate solution file for each **Profile** defined in the 
 - **Profile Macros**: Each solution automatically defines the preprocessor macro `ARISEN_PROFILE_{PROFILE}` for both C++ and C# projects.
 - **Editor Macro**: Editor-capable generated projects define `ARISEN_ENGINE_EDITOR`. Use this compile-time macro for editor/runtime behavior policy such as UI host ownership, standalone window creation, and RHI surface boot. Do not use runtime flags such as `EngineConfig.IsEditor` for these ownership decisions.
 - **Profiler Macro**: Profiles with `EnableProfiler: true` define `ARISEN_PROFILER_ENABLED` for both managed and native projects. This is independent from the profile name and from `IsEditor`.
-- **Unified Entry Point**: The tool generates a thin `Program.cs` stub in the workspace project. This stub calls `ArisenKernel.Lifecycle.EngineBootstrapper.Run(args)`, making the workspace a manageable .NET executable.
-- **Resolved Manifest**: The tool writes `manifest.resolved.json` into each `.arisen/bin/{profile}/{configuration}/` output directory. It includes sorted packages plus debug metadata such as type, entry, dependency, and service declarations. Runtime boot treats this resolved manifest as authoritative when present so package mount order matches build-time validation.
-- **Launch Config**: The tool writes `launch.config.json` beside the executable so the bootstrapper can recover the workspace/profile without relying only on path deduction.
+- **Unified Entry Point**: The tool generates a thin `Program.cs` stub in the workspace project. When `com.arisen.core` is selected, the entry project compile-references only that package and first dispatches `RuntimeAssetCookHost` commands; all other package references remain build-order-only runtime-loaded references. Normal execution calls `ArisenKernel.Lifecycle.EngineBootstrapper.Run(args)`, making the workspace a manageable .NET executable.
+- **Resolved Manifest**: The tool writes `manifest.resolved.json` into each `.arisen/bin/{profile}/{configuration}/` output directory. It includes sorted packages plus runtime metadata such as type, entry, dependency, service, subsystem, and native declarations. Runtime boot treats this resolved manifest as authoritative when present so package mount order matches build-time validation. Generation also writes `.arisen/Projects/{profile}/manifest.source.resolved.json` for build-stage tools that require source package roots.
+- **Launch Config**: Workspace-oriented profiles receive workspace/profile recovery metadata. A finalized Production output receives schema-versioned `Mode: Deployed` metadata and cannot be redirected to a source workspace.
 - **Organization**: Projects are organized into logical Solution Folders: `Engine Packages`, `Local Packages`, and `Native Dependencies`.
+
+### Generated Runtime Asset Cook Host
+
+Production entry projects contain an `ArisenCookRuntimeAssets` target that runs after a successful `Build`:
+
+```text
+PackageGame.exe --arisen-cook-runtime-assets \
+  --workspace <workspace> \
+  --profile Production \
+  --configuration <Debug|Release> \
+  --runtime-identifier win-x64 \
+  --output-root <launch-output>
+```
+
+The generated target invokes the workspace apphost directly from `$(TargetDir)`, after managed package assemblies and native payloads have been built, and passes that same directory as `--output-root`. After cooking succeeds it invokes `ArisenBuildTool deploy-runtime-metadata`, which revalidates the graph and transactionally publishes effective package descriptors plus sanitized project/resolved/launch metadata. Set `ArisenSkipAssetCook=true` only when isolating generated build behavior or package compilation. Development and Editor entry hosts understand the cook command for explicit tooling use, but automatic post-build cooking and metadata finalization are currently Production-only.
+
+The host resolves the same profile package graph used by runtime boot, mounts package entries without starting subsystem phases, and invokes package-owned `IRuntimeAssetCooker` providers. This keeps `ArisenBuildTool` independent of scene, material, shader, texture, mesh, and render-pipeline source formats and avoids loading engine package assemblies into the build tool process.
+
+The host retains an intermediate catalog for build diagnostics:
+
+```text
+.arisen/Intermediate/Cook/{Profile}/{Configuration}/runtime-assets.json
+```
+
+The catalog is a deterministic closed set rooted at workspace `StartupScene`, optional `StartupWorld`, and `RenderPipeline`. A normal Production build also transactionally publishes exactly that closure to `.arisen/bin/{Profile}/{Configuration}/Content/` and writes the byte-identical final `runtime-assets.json` beside `manifest.resolved.json`, `manifest.json`, `launch.config.json`, and `Packages/`. Staging validates every source and final file before the active deployment changes. Artifacts whose identity, payload format version, size, SHA-256, and deployed bytes still match are hard-linked into the new transaction; changed/corrupt artifacts are copied from verified cook output. Replacing complete owned content and descriptor trees removes stale and untracked files, and failed commits restore prior state.
 
 ---
 

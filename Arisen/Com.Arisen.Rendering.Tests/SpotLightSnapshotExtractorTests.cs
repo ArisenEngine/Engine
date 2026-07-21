@@ -104,6 +104,7 @@ public sealed class SpotLightSnapshotExtractorTests
         Assert.Equal(6, stats.EnabledCount);
         Assert.Equal(4, stats.AcceptedCount);
         Assert.Equal(1, stats.MissingTransformCount);
+        Assert.Equal(0, stats.InvalidInputCount);
         Assert.Equal(2, stats.DroppedCount);
         Assert.Equal(new Vector3(1.0f, 2.0f, 3.0f), destination[0].Position);
         Assert.Equal(Vector3.UnitZ, destination[0].Direction);
@@ -143,6 +144,36 @@ public sealed class SpotLightSnapshotExtractorTests
         Assert.Equal(1, stats.EnabledCount);
         Assert.Equal(0, stats.AcceptedCount);
         Assert.Equal(0, stats.MissingTransformCount);
+        Assert.Equal(0, stats.InvalidInputCount);
+        Assert.Equal(1, stats.DroppedCount);
+    }
+
+    [Fact]
+    public void ExtractRejectsNonFiniteOriginRelativeInput()
+    {
+        var entityManager = new EntityManager();
+        AddSpotLight(
+            entityManager,
+            Vector3.Zero,
+            new Quaternion(float.NaN, 0, 0, 1),
+            Vector3.One,
+            intensity: 1,
+            range: 4,
+            innerConeAngle: 18,
+            outerConeAngle: 28,
+            enabled: true,
+            withTransform: true);
+        var pool = entityManager.GetPool<SpotLightComponent>();
+        Span<SpotLight> destination = stackalloc SpotLight[1];
+
+        SpotLightExtractionStats stats = SpotLightSnapshotExtractor.Extract(
+            pool.GetRawComponentArray().AsSpan(0, pool.Count),
+            pool.GetRawEntityArray().AsSpan(0, pool.Count),
+            entityManager.GetPool<TransformComponent>(),
+            destination);
+
+        Assert.Equal(0, stats.AcceptedCount);
+        Assert.Equal(1, stats.InvalidInputCount);
         Assert.Equal(1, stats.DroppedCount);
     }
 
