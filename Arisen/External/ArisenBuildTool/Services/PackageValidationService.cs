@@ -211,6 +211,27 @@ public static class PackageValidationService
             }
         }
 
+        if (manifest.StartupWorld != null)
+        {
+            if (manifest.StartupWorld.Guid == Guid.Empty)
+            {
+                result.Errors.Add("Workspace manifest StartupWorld is missing a valid Guid.");
+            }
+
+            if (string.IsNullOrWhiteSpace(manifest.StartupWorld.PackageId))
+            {
+                result.Errors.Add("Workspace manifest StartupWorld is missing PackageId.");
+            }
+            else if (!manifest.Packages.Any(package => string.Equals(
+                         package.Id,
+                         manifest.StartupWorld.PackageId,
+                         StringComparison.OrdinalIgnoreCase)))
+            {
+                result.Errors.Add(
+                    $"Workspace manifest StartupWorld package '{manifest.StartupWorld.PackageId}' is not selected in the base Packages list.");
+            }
+        }
+
         if (manifest.RenderPipeline != null)
         {
             if (manifest.RenderPipeline.Guid == Guid.Empty)

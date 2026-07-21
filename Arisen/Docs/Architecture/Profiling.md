@@ -65,6 +65,24 @@ Then correlate these plot groups:
 
 A normal Development capture will show scene activation near startup and recurring render markers afterward. Explicit model-import markers appear only when an Editor reimport is requested.
 
+## World-Streaming Capture Recipe
+
+Open the bundled Tracy viewer before launching this bounded Development scenario:
+
+```bat
+Arisen\Development\PackageGame\.arisen\bin\Development\Debug\PackageGame.exe --workspace Arisen\Development\PackageGame --profile Development --smoke-mode world-streaming --smoke-summary-output Arisen\Development\PackageGame\.arisen\Logs\world-streaming-summary-Development-manual.json --visual-summary --visual-summary-output Arisen\Development\PackageGame\.arisen\Logs\world-streaming-visual-Development-manual.json
+```
+
+The scenario crosses the canonical world repeatedly and exits after four complete load/unload cycles plus shutdown inspection. Use the stable world/cell identity in the following zones to attribute individual spikes:
+
+- `WorldStreaming.CellRead/<cell-id>` encloses one cell's worker read/decode/validation and residency acquisition path.
+- `WorldStreaming.Activate/<cell-id>` encloses its frame-boundary ECS activation.
+- `WorldStreaming.Unload/<cell-id>` encloses its frame-boundary ECS destruction and owner release.
+- `WorldStreaming.Read`, `WorldStreaming.Decode`, `WorldStreaming.Validate`, `WorldStreaming.AcquireResidency`, and `WorldStreaming.WaitForResources` separate the coarse phases.
+- `WorldStreamingSmoke.AfterFrame` shows validation bookkeeping and is not production streaming work.
+
+Correlate the zones with `WorldStreaming.*` plots for queued/active/in-flight/waiting/ready/failed/cancelled state counts, in-flight and decoded bytes, peaks, cancellations, failures, stale completions, budget stalls, and the last load/activation/unload times. `AssetResidency.*` plots report owners, resident/waiting/ready/failed resources, CPU cooked bytes, prepared GPU estimates, prepared descriptors, setup/eviction/failure/budget pressure, pending disposal, and setup time. These counters are sampled once at coarse service/frame boundaries, not inside entity or draw loops.
+
 ## Bounded Validation And Manual Profiling
 
 Use bounded runtime validation as the automated rendering gate:
@@ -73,7 +91,7 @@ Use bounded runtime validation as the automated rendering gate:
 Arisen\Scripts\Windows\validate_runtime.bat --no-pause --config Debug --smoke-mode scene --frames 1
 ```
 
-The scene smoke mode may internally run enough frames to render deferred scene setup, but the caller still requests a bounded one-frame validation window. Longer visual profiling should be a manual Tracy session from a profiler-enabled profile such as `Editor` or `Development`, not a default CI requirement.
+The scene smoke mode may internally run enough frames to render deferred scene setup, but the caller still requests a bounded one-frame validation window. The full command also runs the deterministic world-streaming scenario for Development and Production and repeats Production from an isolated copied output. Those gates validate machine-readable state, memory, visual, shutdown, source-access, and Vulkan results; they do not attempt to judge timeline performance. Longer visual profiling should be a manual Tracy session from a profiler-enabled profile such as `Editor` or `Development`, not a default CI requirement. Production keeps profiler instrumentation disabled even though its functional streaming gate runs.
 
 ## Launcher Integration Target
 

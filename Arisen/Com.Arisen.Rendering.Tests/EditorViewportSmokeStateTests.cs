@@ -22,8 +22,16 @@ public sealed class EditorViewportSmokeStateTests
 
         state.NotifyGameViewActivated();
         Assert.Equal(
-            EditorViewportSmokeAction.Complete,
+            EditorViewportSmokeAction.None,
             state.Observe(CreateObservation(EditorViewportKind.GameView, 4, 1, 800, 450)));
+
+        Guid worldGuid = Guid.Parse("93000000-0000-0000-0000-000000000001");
+        Guid cellId = Guid.Parse("93000000-0000-0000-0000-000000000002");
+        state.ObserveWorldFirstOpen(worldGuid, 2, cellId);
+        state.NotifyWorldCellLoadRequested(cellId);
+        state.ObserveWorldCellActive(cellId);
+        state.NotifyWorldCellUnloadRequested(cellId);
+        Assert.True(state.ObserveWorldCellUnloaded(cellId));
 
         var artifact = state.CreateArtifact("Editor", 30);
         Assert.True(state.Succeeded);
@@ -31,6 +39,10 @@ public sealed class EditorViewportSmokeStateTests
         Assert.True(artifact.Checks.ScenePresentedBeforeGameViewActivation);
         Assert.True(artifact.Checks.SceneResizeGenerationAdvanced);
         Assert.True(artifact.Checks.GameOrientationCorrect);
+        Assert.True(artifact.Checks.WorldVisibleOnFirstOpen);
+        Assert.True(artifact.Checks.WorldCellLoadObserved);
+        Assert.True(artifact.Checks.WorldCellUnloadObserved);
+        Assert.Equal(2, artifact.WorldPartition!.CellCount);
     }
 
     [Fact]

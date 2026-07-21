@@ -37,6 +37,10 @@ public sealed class PackageValidationFixtureTests
                 "Guid": "11111111-2222-3333-4444-555555555555",
                 "PackageId": "com.test.app",
               },
+              "StartupWorld": {
+                "Guid": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                "PackageId": "com.test.app",
+              },
               "RenderPipeline": {
                 "Guid": "22222222-3333-4444-5555-666666666666",
                 "PackageId": "com.test.app",
@@ -60,6 +64,8 @@ public sealed class PackageValidationFixtureTests
         Assert.Equal("JsoncFixture", manifest!.Name);
         Assert.Equal(Guid.Parse("11111111-2222-3333-4444-555555555555"), manifest.StartupScene!.Guid);
         Assert.Equal("com.test.app", manifest.StartupScene.PackageId);
+        Assert.Equal(Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"), manifest.StartupWorld!.Guid);
+        Assert.Equal("com.test.app", manifest.StartupWorld.PackageId);
         Assert.Equal(Guid.Parse("22222222-3333-4444-5555-666666666666"), manifest.RenderPipeline!.Guid);
         Assert.Equal("com.test.app", manifest.RenderPipeline.PackageId);
         Assert.Equal("com.test.app", manifest.Packages.Single().Id);
@@ -204,6 +210,48 @@ public sealed class PackageValidationFixtureTests
             && error.Contains("Guid", StringComparison.Ordinal));
         Assert.Contains(result.Errors, error => error.Contains("RenderPipeline", StringComparison.Ordinal)
             && error.Contains("PackageId", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void IncompleteOrProfileOnlyWorkspaceStartupWorldFailsValidation()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage("com.test.app", layer: "user");
+        workspace.AddPackage("com.test.world", layer: "user");
+        var manifest = workspace.CreateManifest(new PackageRequirement
+        {
+            Id = "com.test.app",
+            Url = "file://Local/com.test.app",
+            Version = "1.0.0"
+        });
+        manifest.StartupWorld = new ProjectAssetReference();
+
+        PackageValidationResult incomplete = workspace.Validate(manifest);
+
+        Assert.False(incomplete.Success);
+        Assert.Contains(incomplete.Errors, error => error.Contains("StartupWorld", StringComparison.Ordinal)
+            && error.Contains("Guid", StringComparison.Ordinal));
+        Assert.Contains(incomplete.Errors, error => error.Contains("StartupWorld", StringComparison.Ordinal)
+            && error.Contains("PackageId", StringComparison.Ordinal));
+
+        manifest.StartupWorld = new ProjectAssetReference
+        {
+            Guid = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
+            PackageId = "com.test.world"
+        };
+        manifest.Profiles!["Development"].Packages.Add(new PackageRequirement
+        {
+            Id = "com.test.world",
+            Url = "file://Local/com.test.world",
+            Version = "1.0.0"
+        });
+
+        PackageValidationResult profileOnly = workspace.Validate(manifest);
+
+        Assert.False(profileOnly.Success);
+        Assert.Contains(profileOnly.Errors, error =>
+            error.Contains("StartupWorld", StringComparison.Ordinal) &&
+            error.Contains("base Packages", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -764,6 +812,7 @@ public sealed class PackageValidationFixtureTests
         string textureDir = Path.Combine(packageDir, "Assets", "Textures");
         string environmentDir = Path.Combine(packageDir, "Assets", "Environments");
         string sceneDir = Path.Combine(packageDir, "Assets", "Scenes");
+        string worldDir = Path.Combine(packageDir, "Assets", "Worlds");
         string settingsDir = Path.Combine(packageDir, "Assets", "Settings");
         Directory.CreateDirectory(materialDir);
         Directory.CreateDirectory(meshDir);
@@ -772,6 +821,7 @@ public sealed class PackageValidationFixtureTests
         Directory.CreateDirectory(textureDir);
         Directory.CreateDirectory(environmentDir);
         Directory.CreateDirectory(sceneDir);
+        Directory.CreateDirectory(worldDir);
         Directory.CreateDirectory(settingsDir);
         File.WriteAllText(
             Path.Combine(materialDir, "SmokeMaterial.arismaterial.meta"),
@@ -872,6 +922,14 @@ public sealed class PackageValidationFixtureTests
             """);
         File.WriteAllText(Path.Combine(sceneDir, "SmokeScene.arisenscene"), string.Empty);
         File.WriteAllText(
+            Path.Combine(worldDir, "SmokeWorld.arisenworld.meta"),
+            """
+            Guid: a9999999-aaaa-bbbb-cccc-dddddddddddd
+            AssetType: World
+            Importer: ArisenWorldImporter
+            """);
+        File.WriteAllText(Path.Combine(worldDir, "SmokeWorld.arisenworld"), string.Empty);
+        File.WriteAllText(
             Path.Combine(settingsDir, "Default.arisrenderpipeline.meta"),
             """
             Guid: 99999999-aaaa-bbbb-cccc-dddddddddddd
@@ -900,6 +958,7 @@ public sealed class PackageValidationFixtureTests
         Assert.Contains("public static readonly AssetRef<Texture2DSourceAsset> SmokeCheckerTextureRef", generated);
         Assert.Contains("public static readonly AssetRef<EnvironmentTextureSourceAsset> StudioEnvironmentTextureRef", generated);
         Assert.Contains("public static readonly AssetRef<SceneSourceAsset> SmokeSceneRef", generated);
+        Assert.Contains("public static readonly AssetRef<WorldSourceAsset> SmokeWorldRef", generated);
         Assert.Contains("public static readonly AssetRef<RenderPipelineSettingsSourceAsset> DefaultRenderPipelineSettingsRef", generated);
         Assert.DoesNotContain("SmokeMaterial_arismaterialMetaGuid", generated);
         Assert.DoesNotContain("TexturedQuadAssetDependencyGuid", generated);
@@ -912,6 +971,8 @@ public sealed class PackageValidationFixtureTests
         Assert.Contains("public static readonly AssetRef<ModelSourceAsset> Ref = HeroModelRef;", generated);
         Assert.Contains("public static class SmokeScene", generated);
         Assert.Contains("public static readonly AssetRef<SceneSourceAsset> Ref = SmokeSceneRef;", generated);
+        Assert.Contains("public static class SmokeWorld", generated);
+        Assert.Contains("public static readonly AssetRef<WorldSourceAsset> Ref = SmokeWorldRef;", generated);
         Assert.Contains("public static class StudioEnvironmentTexture", generated);
         Assert.Contains("public static readonly AssetRef<EnvironmentTextureSourceAsset> Ref = StudioEnvironmentTextureRef;", generated);
         Assert.Contains("public static readonly AssetRef<RenderPipelineSettingsSourceAsset> Ref = DefaultRenderPipelineSettingsRef;", generated);

@@ -695,6 +695,7 @@ public static class AssetReferenceGeneratorService
             "model" => "ModelSourceAsset",
             "material" => "MaterialSourceAsset",
             "scene" => "SceneSourceAsset",
+            "world" => "WorldSourceAsset",
             "renderpipelinesettings" => "RenderPipelineSettingsSourceAsset",
             _ => null
         };
@@ -711,6 +712,7 @@ public static class AssetReferenceGeneratorService
             "model" => "Model",
             "material" => "Material",
             "scene" => "Scene",
+            "world" => "World",
             "renderpipelinesettings" => "RenderPipelineSettings",
             _ => assetType.Trim()
         };

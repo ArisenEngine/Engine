@@ -30,6 +30,7 @@ public sealed class DirectionalLightSnapshotExtractorTests
         Assert.Equal(3, stats.SourceCount);
         Assert.Equal(2, stats.EnabledCount);
         Assert.Equal(1, stats.AcceptedCount);
+        Assert.Equal(0, stats.InvalidInputCount);
         Assert.Equal(1, stats.DroppedCount);
         Assert.Equal(Vector3.UnitY, destination[0].Direction);
         Assert.Equal(firstEnabled.Color, destination[0].Color);
@@ -48,6 +49,22 @@ public sealed class DirectionalLightSnapshotExtractorTests
         Assert.Equal(1, stats.SourceCount);
         Assert.Equal(1, stats.EnabledCount);
         Assert.Equal(0, stats.AcceptedCount);
+        Assert.Equal(0, stats.InvalidInputCount);
+        Assert.Equal(1, stats.DroppedCount);
+    }
+
+    [Fact]
+    public void ExtractRejectsNonFiniteLightInput()
+    {
+        DirectionalLightComponent invalid = DirectionalLightComponent.Default;
+        invalid.Direction = new Vector3(float.PositiveInfinity, 0, 0);
+        Span<DirectionalLight> destination = stackalloc DirectionalLight[1];
+
+        DirectionalLightExtractionStats stats =
+            DirectionalLightSnapshotExtractor.Extract([invalid], destination);
+
+        Assert.Equal(0, stats.AcceptedCount);
+        Assert.Equal(1, stats.InvalidInputCount);
         Assert.Equal(1, stats.DroppedCount);
     }
 }

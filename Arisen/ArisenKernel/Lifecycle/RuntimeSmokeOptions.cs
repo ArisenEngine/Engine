@@ -4,16 +4,25 @@ public enum RuntimeSmokeMode
 {
     Boot,
     Scene,
-    HotReload
+    HotReload,
+    WorldStreaming
 }
 
 internal readonly record struct RuntimeSmokeOptions(
     bool Enabled,
     RuntimeSmokeMode Mode,
     uint RequestedFrameCount,
-    bool CaptureVisualSummary)
+    bool CaptureVisualSummary,
+    string? VisualSummaryOutputPath,
+    string? SmokeSummaryOutputPath)
 {
-    public static RuntimeSmokeOptions Disabled { get; } = new(false, RuntimeSmokeMode.Boot, 1, false);
+    public static RuntimeSmokeOptions Disabled { get; } = new(
+        false,
+        RuntimeSmokeMode.Boot,
+        1,
+        false,
+        null,
+        null);
 
     public uint EffectiveFrameCount => Math.Max(RequestedFrameCount, GetMinimumFrameCount(Mode));
 
@@ -22,6 +31,7 @@ internal readonly record struct RuntimeSmokeOptions(
         RuntimeSmokeMode.Boot => "boot",
         RuntimeSmokeMode.Scene => "scene",
         RuntimeSmokeMode.HotReload => "hot-reload",
+        RuntimeSmokeMode.WorldStreaming => "world-streaming",
         _ => Mode.ToString()
     };
 
@@ -31,6 +41,8 @@ internal readonly record struct RuntimeSmokeOptions(
         RuntimeSmokeMode mode = RuntimeSmokeMode.Boot;
         bool modeSpecified = false;
         bool captureVisualSummary = false;
+        string? visualSummaryOutputPath = null;
+        string? smokeSummaryOutputPath = null;
         uint frames = 1;
 
         for (int i = 0; i < args.Length; i++)
@@ -58,8 +70,49 @@ internal readonly record struct RuntimeSmokeOptions(
                 modeSpecified = true;
                 enabled = true;
             }
+            else if (string.Equals(args[i], "--smoke-world-streaming", StringComparison.OrdinalIgnoreCase))
+            {
+                mode = RuntimeSmokeMode.WorldStreaming;
+                modeSpecified = true;
+                enabled = true;
+            }
             else if (string.Equals(args[i], "--visual-summary", StringComparison.OrdinalIgnoreCase))
             {
+                captureVisualSummary = true;
+                enabled = true;
+                if (!modeSpecified)
+                {
+                    mode = RuntimeSmokeMode.Scene;
+                }
+            }
+            else if (string.Equals(
+                         args[i],
+                         "--smoke-summary-output",
+                         StringComparison.OrdinalIgnoreCase))
+            {
+                if (i + 1 >= args.Length || string.IsNullOrWhiteSpace(args[i + 1]))
+                {
+                    throw new ArgumentException(
+                        "--smoke-summary-output requires a non-empty path.",
+                        nameof(args));
+                }
+
+                smokeSummaryOutputPath = Path.GetFullPath(args[++i]);
+                enabled = true;
+            }
+            else if (string.Equals(
+                         args[i],
+                         "--visual-summary-output",
+                         StringComparison.OrdinalIgnoreCase))
+            {
+                if (i + 1 >= args.Length || string.IsNullOrWhiteSpace(args[i + 1]))
+                {
+                    throw new ArgumentException(
+                        "--visual-summary-output requires a non-empty path.",
+                        nameof(args));
+                }
+
+                visualSummaryOutputPath = Path.GetFullPath(args[++i]);
                 captureVisualSummary = true;
                 enabled = true;
                 if (!modeSpecified)
@@ -77,15 +130,29 @@ internal readonly record struct RuntimeSmokeOptions(
             }
         }
 
-        if (captureVisualSummary && mode != RuntimeSmokeMode.Scene)
+        if (captureVisualSummary && mode is not (
+                RuntimeSmokeMode.Scene or RuntimeSmokeMode.WorldStreaming))
         {
             throw new ArgumentException(
-                "--visual-summary requires scene smoke mode.",
+                "--visual-summary requires scene or world-streaming smoke mode.",
+                nameof(args));
+        }
+
+        if (smokeSummaryOutputPath != null && mode != RuntimeSmokeMode.WorldStreaming)
+        {
+            throw new ArgumentException(
+                "--smoke-summary-output requires world-streaming smoke mode.",
                 nameof(args));
         }
 
         return enabled
-            ? new RuntimeSmokeOptions(true, mode, frames, captureVisualSummary)
+            ? new RuntimeSmokeOptions(
+                true,
+                mode,
+                frames,
+                captureVisualSummary,
+                visualSummaryOutputPath,
+                smokeSummaryOutputPath)
             : Disabled;
     }
 
@@ -94,6 +161,7 @@ internal readonly record struct RuntimeSmokeOptions(
         RuntimeSmokeMode.Boot => 1,
         RuntimeSmokeMode.Scene => 2,
         RuntimeSmokeMode.HotReload => 4,
+        RuntimeSmokeMode.WorldStreaming => 1024,
         _ => 1
     };
 
@@ -107,8 +175,14 @@ internal readonly record struct RuntimeSmokeOptions(
             return RuntimeSmokeMode.HotReload;
         }
 
+        if (string.Equals(value, "world-streaming", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "worldstreaming", StringComparison.OrdinalIgnoreCase))
+        {
+            return RuntimeSmokeMode.WorldStreaming;
+        }
+
         throw new ArgumentException(
-            $"Unknown smoke mode '{value}'. Expected one of: boot, scene, hot-reload.",
+            $"Unknown smoke mode '{value}'. Expected one of: boot, scene, hot-reload, world-streaming.",
             nameof(value));
     }
 }

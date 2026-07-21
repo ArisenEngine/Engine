@@ -1,6 +1,17 @@
-﻿Name: Scene_0
+Version: 2
+Name: Scene_0
+ComponentSchemas:
+- TypeId: 1
+  Name: Transform
+  Version: 1
+  Required: true
+- TypeId: 3
+  Name: MeshRenderer
+  Version: 1
+  Required: true
 Entities:
-- Name: LanternPole_Body
+- Guid: 25337086-8b2b-ef81-dca1-cf94c08604d3
+  Name: LanternPole_Body
   Transform:
     Position:
       X: 3.823154
@@ -25,7 +36,8 @@ Entities:
     FirstSubmeshIndex: 0
     SubmeshCount: 1
     Visible: true
-- Name: LanternPole_Chain
+- Guid: 9332b448-0ea6-f467-fd47-f50ddf43dbe6
+  Name: LanternPole_Chain
   Transform:
     Position:
       X: 9.582001
@@ -50,7 +62,8 @@ Entities:
     FirstSubmeshIndex: 0
     SubmeshCount: 1
     Visible: true
-- Name: LanternPole_Lantern
+- Guid: 580524f2-39bd-6e77-535e-91b5b9fabc9e
+  Name: LanternPole_Lantern
   Transform:
     Position:
       X: 9.582007

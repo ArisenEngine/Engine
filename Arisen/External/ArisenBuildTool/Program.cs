@@ -55,6 +55,12 @@ class Program
             return;
         }
 
+        if (args.Length > 0 && args[0].Equals("deploy-runtime-metadata", StringComparison.OrdinalIgnoreCase))
+        {
+            RunDeployRuntimeMetadataMode(args);
+            return;
+        }
+
         if (args.Length > 0 && args[0].Equals("manifest-info", StringComparison.OrdinalIgnoreCase))
         {
             RunManifestInfoMode(args);
@@ -62,6 +68,78 @@ class Program
         }
 
         RunGenerateMode(args);
+    }
+
+    static void RunDeployRuntimeMetadataMode(string[] args)
+    {
+        string workspaceDir = string.Empty;
+        string engineDir = string.Empty;
+        string profile = string.Empty;
+        string outputRoot = string.Empty;
+        for (int i = 1; i < args.Length; i++)
+        {
+            if ((args[i] == "--workspace" || args[i] == "-w") && i + 1 < args.Length)
+                workspaceDir = Path.GetFullPath(args[++i]);
+            else if ((args[i] == "--engine" || args[i] == "-e") && i + 1 < args.Length)
+                engineDir = Path.GetFullPath(args[++i]);
+            else if (args[i] == "--profile" && i + 1 < args.Length)
+                profile = args[++i];
+            else if (args[i] == "--output-root" && i + 1 < args.Length)
+                outputRoot = Path.GetFullPath(args[++i]);
+        }
+
+        if (string.IsNullOrWhiteSpace(workspaceDir) ||
+            string.IsNullOrWhiteSpace(profile) ||
+            string.IsNullOrWhiteSpace(outputRoot))
+        {
+            Console.Error.WriteLine(
+                "ArisenBuildTool Runtime Metadata Error: --workspace, --profile, and --output-root are required.");
+            Environment.ExitCode = 1;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(engineDir))
+        {
+            engineDir = FindEngineRoot(AppContext.BaseDirectory);
+        }
+
+        Logger.Initialize(Path.Combine(workspaceDir, ".arisen", "ArisenBuildTool.log"));
+        string manifestPath = Path.Combine(workspaceDir, "manifest.json");
+        if (!TryReadManifest(manifestPath, out ProjectManifest? manifest) || manifest == null)
+        {
+            Environment.ExitCode = 1;
+            return;
+        }
+
+        PackageValidationResult validation = PackageValidationService.Validate(
+            manifest,
+            workspaceDir,
+            engineDir,
+            profile);
+        PackageValidationService.LogSummary(validation);
+        if (!validation.Success)
+        {
+            Logger.Error("Runtime metadata deployment aborted because package validation failed.");
+            Environment.ExitCode = 1;
+            return;
+        }
+
+        try
+        {
+            RuntimePackageMetadataDeploymentResult result =
+                RuntimePackageMetadataDeploymentService.Deploy(
+                    manifest,
+                    profile,
+                    validation.SortedPackages,
+                    outputRoot);
+            Logger.Info(
+                $"Runtime metadata deployed {result.PackageCount} package descriptor(s) to '{result.OutputRoot}'.");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"Runtime metadata deployment failed: {ex.Message}");
+            Environment.ExitCode = 1;
+        }
     }
 
     static void RunManifestInfoMode(string[] args)
@@ -658,15 +736,20 @@ class Program
 
         var packageMap = validation.PackageMap;
         var sortedPackages = validation.SortedPackages;
-        
+
         var outputDirs = new List<string>
         {
             Path.Combine(workspaceDir, ".arisen", "bin", profile, "Debug"),
             Path.Combine(workspaceDir, ".arisen", "bin", profile, "Release")
         };
         PackageResolutionService.SaveResolvedManifests(profile, outputDirs, sortedPackages);
+        PackageResolutionService.SaveResolvedManifests(
+            profile,
+            new List<string> { projectsDir },
+            sortedPackages,
+            "manifest.source.resolved.json");
         NativeDeploymentService.Deploy(sortedPackages, outputDirs, profile);
-        
+
         // B18: Generate launch.config.json in binary folders for explicit profile/workspace resolution
         foreach (var dir in outputDirs)
         {
@@ -676,13 +759,13 @@ class Program
             File.WriteAllText(Path.Combine(dir, "launch.config.json"), configJson);
         }
 
-        var managedPackages = sortedPackages.Where(p => 
-            p.Manifest.Type == "hybrid" || p.Manifest.Entry != null || 
-            Directory.Exists(Path.Combine(p.DirectoryPath, "Managed")) || 
+        var managedPackages = sortedPackages.Where(p =>
+            p.Manifest.Type == "hybrid" || p.Manifest.Entry != null ||
+            Directory.Exists(Path.Combine(p.DirectoryPath, "Managed")) ||
             Directory.GetFiles(p.DirectoryPath, "*.cs", SearchOption.AllDirectories).Length > 0
         ).ToList();
-        var nativePackages = sortedPackages.Where(p => 
-            p.Manifest.Type == "hybrid" || p.Manifest.Type == "native" || 
+        var nativePackages = sortedPackages.Where(p =>
+            p.Manifest.Type == "hybrid" || p.Manifest.Type == "native" ||
             File.Exists(Path.Combine(p.DirectoryPath, "CMakeLists.txt"))
         ).ToList();
 
@@ -696,7 +779,7 @@ class Program
 
         ProjectGeneratorService.GenerateForManagedPackages(workspaceDir, projectsDir, engineDir, managedPackages, packageMap, manifest, profile, isEditor, enableProfiler);
         CMakeGeneratorService.Generate(engineDir, projectsDir, nativePackages, projectName, manifest, profile, enableProfiler);
-        SolutionGeneratorService.Generate(projectsDir, engineDir, managedPackages, projectName, manifest, profile, isEditor, enableProfiler);
+        SolutionGeneratorService.Generate(workspaceDir, projectsDir, engineDir, managedPackages, projectName, manifest, profile, isEditor, enableProfiler);
 
         Console.WriteLine($"ArisenBuildTool: Solution for '{projectName}' ({profile}) generated successfully.");
     }

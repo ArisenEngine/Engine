@@ -8,6 +8,12 @@ public enum RuntimePlatform
     Unknown
 }
 
+public enum EngineExecutionMode
+{
+    Runtime,
+    RuntimeAssetCook
+}
+
 public class EngineConfig
 {
     public string AppName { get; set; } = "ArisenApplication";
@@ -19,6 +25,8 @@ public class EngineConfig
     public string ProjectRoot { get; set; } = string.Empty;
     public string ProjectName { get; set; } = string.Empty;
     public RuntimePlatform Platform { get; set; } = RuntimePlatform.Windows;
+    public EngineExecutionMode ExecutionMode { get; set; } = EngineExecutionMode.Runtime;
+    public bool EnableSourceAssetDiagnostics { get; set; }
 
     /// <summary>B13: Topological list of package local paths to load during kernel initialization.</summary>
     public List<string> PackageUrls { get; set; } = new();

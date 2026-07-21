@@ -30,6 +30,9 @@ Not allowed:
 Generated distribution files remain strict JSON and should not contain comments:
 
 - `manifest.resolved.json`
+- deployed `manifest.json` and `launch.config.json`
+- deployed `Packages/<package-id>/package.json` descriptors
+- `runtime-assets.json`
 - `.arisen/package-lock.json`
 - registry `registry.json`
 
@@ -39,10 +42,11 @@ Use comments in human-authored files to explain intent, ownership, or generator 
 
 ## Canonical Casing
 
-Arisen intentionally keeps two JSON styles because the files are owned by different surfaces:
+Arisen chooses canonical JSON casing by the surface that owns each file:
 
 - Workspace/project files (`manifest.json`, `.arisenproj`) use **PascalCase** keys because they are edited mainly by launcher/project tooling and mirror the managed project model.
 - Package files (`package.json`, `package.generated.json`) use **camelCase** keys because they are package metadata, registry payloads, and generated package descriptors.
+- Other machine-generated distribution formats use the casing fixed by their versioned schema; `runtime-assets.json` uses **camelCase** keys.
 
 Tooling may deserialize case-insensitively for transition compatibility, but generated files and documentation must use the canonical casing above. Validation treats the field names listed in this document as the source of truth.
 
@@ -63,6 +67,12 @@ Tooling may deserialize case-insensitively for transition compatibility, but gen
   // The package-owned scene activated before frame zero.
   "StartupScene": {
     "Guid": "11111111-2222-3333-4444-555555555555",
+    "PackageId": "com.user.mygame"
+  },
+
+  // Cooked world/cell descriptor selected for streaming-capable composition.
+  "StartupWorld": {
+    "Guid": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
     "PackageId": "com.user.mygame"
   },
 
@@ -117,6 +127,9 @@ Tooling may deserialize case-insensitively for transition compatibility, but gen
 | `StartupScene` | `object` | Optional | Package-owned `Scene` asset activated by the root composition package before frame zero. Projects intended to run a scene should provide it. |
 | `StartupScene.Guid` | `Guid` | Required with `StartupScene` | Stable `.arisenscene.meta` identity. Empty GUIDs fail workspace validation. |
 | `StartupScene.PackageId` | `string` | Required with `StartupScene` | Package that owns the selected scene asset. Empty package IDs fail workspace validation. |
+| `StartupWorld` | `object` | Optional | Package-owned `World` descriptor used as the `startupWorld` cooked root and runtime activation root. Its persistent scene activates during `PostInit`; cells require a streaming source or explicit pin. |
+| `StartupWorld.Guid` | `Guid` | Required with `StartupWorld` | Stable `.arisenworld.meta` identity. Empty GUIDs fail workspace validation. |
+| `StartupWorld.PackageId` | `string` | Required with `StartupWorld` | Package that owns the selected world. It must be present in the base `Packages` list so Production closure cannot depend on a profile-only package. |
 | `RenderPipeline` | `object` | Optional globally; required by workspaces that load `RenderSubsystem` | Package-owned `RenderPipelineSettings` asset used to activate the selected pipeline provider. |
 | `RenderPipeline.Guid` | `Guid` | Required with `RenderPipeline` | Stable `.arisrenderpipeline.meta` identity. Empty GUIDs fail workspace validation. |
 | `RenderPipeline.PackageId` | `string` | Required with `RenderPipeline` | Package that owns the selected settings asset. It must be present in the base `Packages` list and may be the game package rather than the provider package. |
@@ -137,9 +150,11 @@ Source precedence is intentional: `file://` means local source, `http(s)://` mea
 
 2. **Subsystem Phases and Priorities**: Packages register "Subsystems". The Engine gathers all subsystems across all packages, groups them by an EnginePhase (like PreInit, Init, PostInit), and then ticks them based on a numeric priority.
 
-3. **Startup Scene Activation**: The root composition package consumes `StartupScene` through `IRuntimeSceneService` during `PostInit`. Scene parsing and reference validation complete in a temporary ECS world; only a successful load replaces `SceneSubsystem.ActiveEntityManager`. Editor Hierarchy and runtime rendering therefore observe the same selected scene.
+3. **Startup Content Selection**: The root composition package prefers `StartupWorld` when present. `IRuntimeWorldStreamingService` activates that descriptor's persistent scene into the stable `SceneSubsystem` entity manager during `PostInit`, and Production cooking closes/deploys its persistent and cell graph under the `startupWorld` root. Streamable cells activate asynchronously after a camera source or explicit pin selects them. Without `StartupWorld`, `StartupScene` remains the compatibility bootstrap through `IRuntimeSceneService`.
 
 4. **Render Pipeline Activation**: A concrete package selected by composition provides the single `IRenderPipelineProvider`. During `RenderSubsystem.Initialize`, the engine passes the selected asset GUID/package identity to that provider, which validates its schema and activates the resulting code-defined pipeline. `RenderPipeline.PackageId` owns the asset; it does not select the provider. The settings asset stores durable quality policy, not an arbitrary pass graph.
+
+Production deployment emits a strict-JSON runtime form of `manifest.json` beside the executable. It retains only project identity, startup scene/world selections, render-pipeline selection, and the resolved package list; every package URL is `file://Packages/<package-id>/`. It contains no workspace, package-source, authoring-asset, or cache path.
 ---
 
 ## 2. Project Identity (`.arisenproj`)
@@ -369,3 +384,71 @@ Consumer packages request contracts and capabilities:
   ]
 }
 ```
+
+---
+
+## 4. Deployed Launch And Package Metadata
+
+**Location**: Production output root.
+**Purpose**: Makes package/project boot independent of the source workspace.
+
+`launch.config.json` schema version 1 uses:
+
+```json
+{
+  "SchemaVersion": 1,
+  "Mode": "Deployed",
+  "Profile": "Production"
+}
+```
+
+Rules:
+
+- `Mode: Deployed` binds project/package metadata to `AppContext.BaseDirectory`.
+- `--workspace` and a conflicting `--profile` are rejected for deployed launches.
+- `manifest.resolved.json` remains the authoritative topological order and every deployed package URL must resolve beneath `Packages/`.
+- `Packages/<package-id>/package.json` is the strict-JSON effective package descriptor formed from authored plus generated package metadata. It contains runtime entry, dependency, service, subsystem, and native declarations but no package source path.
+- Package assemblies and native payloads remain co-located in the output root; descriptor directories are metadata-only.
+- `.arisen/Projects/{Profile}/manifest.source.resolved.json` is a separate build-stage artifact. It is never copied into the Production output and lets repeat cooking resolve source package roots after deployed metadata finalization.
+
+`ArisenBuildTool deploy-runtime-metadata` stages and validates the complete descriptor set, then replaces `Packages/`, `manifest.json`, `manifest.resolved.json`, and `launch.config.json` with rollback. Replacing the complete owned descriptor tree removes stale package records deterministically.
+
+---
+
+## 5. Runtime Asset Catalog (`runtime-assets.json`)
+
+**Location**: Future profile output beside generated launch/resolved metadata, with artifact paths interpreted relative to that output's supplied content root.
+**Purpose**: Defines the immutable, relocatable set of cooked artifacts available to one runtime profile. It is separate from `.arisen/Cache/CookedAssets/AssetManifest.json`, which is mutable development cache state and may contain machine-local paths and timestamps.
+
+`RuntimeAssetCatalog` schema version 1 is strict JSON with exact camelCase property names:
+
+```json
+{"schemaVersion":1,"targetProfile":"Production","roots":[{"name":"startupScene","guid":"11111111-2222-3333-4444-555555555555","packageId":"com.user.mygame","assetType":"Scene","variant":"runtime.scene.v1"}],"artifacts":[{"guid":"11111111-2222-3333-4444-555555555555","packageId":"com.user.mygame","assetType":"Scene","variant":"runtime.scene.v1","path":"com.user.mygame/scenes/startup.ariscene","sizeInBytes":4096,"sha256":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","formatVersion":1,"dependencies":[{"guid":"22222222-3333-4444-5555-666666666666","packageId":"com.user.mygame","assetType":"Material","variant":"material.runtime","required":true}]},{"guid":"22222222-3333-4444-5555-666666666666","packageId":"com.user.mygame","assetType":"Material","variant":"material.runtime","path":"com.user.mygame/materials/default.arimaterial","sizeInBytes":1024,"sha256":"abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789","formatVersion":6,"dependencies":[]}]}
+```
+
+| Field | Type | Required? | Description |
+|---|---|---|---|
+| `schemaVersion` | `int` | **Yes** | Catalog schema version. The current reader accepts exactly version `1`. |
+| `targetProfile` | `string` | **Yes** | Profile for which the closed artifact set was built. |
+| `roots` | `array<object>` | **Yes** | Deterministically sorted named entry assets, for example `startupScene`, `startupWorld`, and `renderPipeline`. |
+| `roots[].name` | `string` | **Yes** | Unique semantic root name; comparison also rejects case-only duplicates. |
+| `roots[].guid` | canonical GUID string | **Yes** | Root artifact GUID. |
+| `roots[].packageId` | `string` | **Yes** | Owning package; must exactly match the referenced artifact. |
+| `roots[].assetType` | `string` | **Yes** | Typed asset identity; must exactly match the referenced artifact. |
+| `roots[].variant` | `string` | **Yes** | Cooked variant; `(guid, variant)` is the catalog lookup key. |
+| `artifacts` | `array<object>` | **Yes** | Complete deterministically sorted artifact set. |
+| `artifacts[].path` | `string` | **Yes** | Forward-slash content-root-relative path, never a source/cache/machine path. |
+| `artifacts[].sizeInBytes` | `long` | **Yes** | Exact deployed file size; must be non-negative. |
+| `artifacts[].sha256` | `string` | **Yes** | Exactly 64 lowercase hexadecimal characters covering deployed bytes. |
+| `artifacts[].formatVersion` | `int` | **Yes** | Positive package-owned payload format version, independent of catalog schema version. |
+| `artifacts[].dependencies` | `array<object>` | **Yes** | Typed dependency identities in canonical order. Every listed dependency resolves inside this catalog. |
+| `dependencies[].required` | `bool` | **Yes** | Preserves required/optional consumption intent for validation and diagnostics. |
+
+Rules:
+
+- Catalog roots, artifacts, and dependencies are canonicalized before writing. Serialization contains no timestamps and uses compact strict JSON with one trailing LF, so stable model input produces byte-identical output.
+- Root names, `(GUID, variant)` artifact identities, dependency identities within one artifact, and output paths must be unique. Output paths use case-insensitive collision checks for portable deployment.
+- Rooted paths, URI/drive prefixes, backslashes, empty path segments, `.`/`..`, trailing dots/spaces, and any path resolving outside the supplied content root are invalid.
+- Parsing rejects comments, trailing commas, duplicate JSON properties, unknown properties, wrong JSON types, unsupported schema versions, invalid GUIDs, and malformed hashes.
+- Deployment validation rejects missing/tampered/wrong-size files and symbolic-link or reparse-point traversal. Relocating the complete content root is valid because no machine-rooted value is serialized.
+- The schema contract is implemented in `com.arisen.core`. Profile closure, cooking, output layout, and emission are owned by `ArisenBuildTool` and remain separate orchestration concerns.

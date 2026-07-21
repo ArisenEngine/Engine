@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using ArisenKernel.Services;
 using ArisenKernel.Diagnostics;
@@ -20,6 +21,7 @@ public sealed class EngineKernel : IDisposable
     private EnginePhase m_CurrentPhase = EnginePhase.None;
     private bool m_IsRunning = false;
     private FrameScheduler m_FrameScheduler = new FrameScheduler();
+    private bool m_IsPackageGraphMounted;
 
     public IServiceRegistry Services { get; } = new ServiceRegistry();
 
@@ -29,6 +31,8 @@ public sealed class EngineKernel : IDisposable
     public EngineConfig? Config { get; private set; }
     public uint CurrentFrameIndex { get; private set; } = 0;
 
+    public bool IsPackageGraphMounted => m_IsPackageGraphMounted;
+
     public EngineKernel()
     {
     }
@@ -36,7 +40,8 @@ public sealed class EngineKernel : IDisposable
     public void Reset()
     {
         // Properly shutdown subsystems before clearing to avoid resource leaks
-        if (m_CurrentPhase != EnginePhase.None && m_CurrentPhase != EnginePhase.Shutdown)
+        if (m_IsPackageGraphMounted ||
+            (m_CurrentPhase != EnginePhase.None && m_CurrentPhase != EnginePhase.Shutdown))
         {
             Shutdown();
         }
@@ -49,6 +54,7 @@ public sealed class EngineKernel : IDisposable
         m_IsRunning = false;
         Config = null;
         CurrentFrameIndex = 0;
+        m_IsPackageGraphMounted = false;
         // B10: Reset ServiceRegistry to avoid duplicate registrations on re-init
         (Services as ServiceRegistry)?.Clear();
     }
@@ -95,10 +101,53 @@ public sealed class EngineKernel : IDisposable
 
     public void Initialize(EngineConfig config)
     {
-        Config = config;
         KernelLog.Info("[EngineKernel] Initializing...");
 
-        // 1. Mount packages through PackageSubsystem, the single owner of package runtime state.
+        if (!m_IsPackageGraphMounted)
+        {
+            MountPackageGraph(config);
+        }
+        else if (!ReferenceEquals(Config, config))
+        {
+            throw new InvalidOperationException(
+                "The mounted package graph cannot be initialized with a different engine configuration.");
+        }
+
+        // Sort subsystems deterministically by phase, package topological order, priority, then class name.
+        m_Subsystems.Sort(CompareSubsystems);
+
+        TransitionTo(EnginePhase.PreInit);
+        TransitionTo(EnginePhase.Init);
+        TransitionTo(EnginePhase.PostInit);
+        TransitionTo(EnginePhase.Running);
+
+        m_IsRunning = true;
+        KernelLog.Info("[EngineKernel] Engine is now Running.");
+    }
+
+    /// <summary>
+    /// Mounts package entries and services without entering subsystem phases. Build-stage hosts use
+    /// this boundary to invoke package-owned tooling without creating windows, RHI devices, or live
+    /// scene state.
+    /// </summary>
+    public void MountPackageGraph(EngineConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        if (m_CurrentPhase != EnginePhase.None)
+        {
+            throw new InvalidOperationException(
+                $"Packages cannot be mounted while the engine is in phase '{m_CurrentPhase}'.");
+        }
+
+        if (m_IsPackageGraphMounted)
+        {
+            throw new InvalidOperationException("The package graph is already mounted.");
+        }
+
+        Config = config;
+        m_IsPackageGraphMounted = true;
+
+        // PackageSubsystem remains the single owner of package runtime state.
         var packageSubsystem = GetSubsystem<PackageSubsystem>();
         if (packageSubsystem == null)
         {
@@ -112,17 +161,6 @@ public sealed class EngineKernel : IDisposable
             packageSubsystem.MountPackages(config.PackageUrls);
             KernelLog.Info("[EngineKernel] Package mount complete.");
         }
-
-        // 2. Sort subsystems deterministically by phase, package topological order, priority, then class name.
-        m_Subsystems.Sort(CompareSubsystems);
-
-                TransitionTo(EnginePhase.PreInit);
-        TransitionTo(EnginePhase.Init);
-        TransitionTo(EnginePhase.PostInit);
-        TransitionTo(EnginePhase.Running);
-
-        m_IsRunning = true;
-        KernelLog.Info("[EngineKernel] Engine is now Running.");
     }
 
     private void TransitionTo(EnginePhase phase)
@@ -177,6 +215,79 @@ public sealed class EngineKernel : IDisposable
         return 0;
     }
 
+    public int RunSmokeScenario(
+        IRuntimeSmokeScenario scenario,
+        uint maximumFrameCount,
+        TimeSpan maximumDuration)
+    {
+        ArgumentNullException.ThrowIfNull(scenario);
+        if (maximumFrameCount == 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maximumFrameCount));
+        }
+
+        if (maximumDuration <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maximumDuration));
+        }
+
+        if (!m_IsRunning)
+        {
+            Initialize(Config ?? new EngineConfig());
+        }
+
+        KernelLog.Info(
+            $"[EngineKernel] Running bounded smoke scenario '{scenario.Name}' for at most " +
+            $"{maximumFrameCount} frame(s) and {maximumDuration.TotalSeconds:F0} second(s).");
+        var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            scenario.Start(CurrentFrameIndex);
+            uint executedFrames = 0;
+            while (m_IsRunning && !scenario.IsReadyForShutdown)
+            {
+                if (executedFrames >= maximumFrameCount)
+                {
+                    scenario.ReportFailure(
+                        $"Scenario exceeded its {maximumFrameCount}-frame limit.");
+                    break;
+                }
+
+                if (stopwatch.Elapsed >= maximumDuration)
+                {
+                    scenario.ReportFailure(
+                        $"Scenario exceeded its {maximumDuration.TotalSeconds:F0}-second deadline.");
+                    break;
+                }
+
+                uint frameIndex = CurrentFrameIndex;
+                scenario.BeforeFrame(frameIndex);
+                Time.Update();
+                Tick(Time.deltaTime);
+                scenario.AfterFrame(frameIndex);
+                executedFrames++;
+                Thread.Yield();
+            }
+        }
+        catch (Exception ex)
+        {
+            scenario.ReportFailure($"Unhandled scenario error: {ex.Message}");
+        }
+
+        RequestShutdown();
+        Shutdown();
+        try
+        {
+            scenario.AfterShutdown();
+        }
+        catch (Exception ex)
+        {
+            scenario.ReportFailure($"Post-shutdown validation failed: {ex.Message}");
+        }
+
+        return scenario.IsComplete && scenario.Succeeded ? 0 : 1;
+    }
+
     /// <summary>
     /// Executes a single frame of the engine.
     /// Exposing this allows external runners (like the Editor) to drive the loop.
@@ -204,12 +315,23 @@ public sealed class EngineKernel : IDisposable
         KernelLog.Info("[EngineKernel] Shutting down...");
         m_CurrentPhase = EnginePhase.PreShutdown;
 
+        PackageSubsystem? packageSubsystem = GetSubsystem<PackageSubsystem>();
+        bool packageSubsystemWasInitialized = packageSubsystem != null &&
+                                              m_InitializedSubsystems.Contains(packageSubsystem);
+
         for (int i = m_InitializedSubsystems.Count - 1; i >= 0; i--)
         {
             KernelLog.Info($"  [Subsystem] Shutting down: {m_InitializedSubsystems[i].GetType().Name}");
             m_InitializedSubsystems[i].Shutdown();
         }
         m_InitializedSubsystems.Clear();
+
+        if (m_IsPackageGraphMounted && packageSubsystem != null && !packageSubsystemWasInitialized)
+        {
+            packageSubsystem.Shutdown();
+        }
+
+        m_IsPackageGraphMounted = false;
 
         m_CurrentPhase = EnginePhase.Shutdown;
         KernelLog.Info("[EngineKernel] Shutdown complete.");
