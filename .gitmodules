@@ -40,3 +40,12 @@
 [submodule "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native.test"]
 	path = Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native.test
 	url = https://github.com/ArisenEngine/com.arisen.rhi.vulkan.native.test.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.terrain"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.terrain
+	url = https://github.com/ArisenEngine/com.arisen.terrain.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.terrain.generic-renderpipeline"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.terrain.generic-renderpipeline
+	url = https://github.com/ArisenEngine/com.arisen.terrain.generic-renderpipeline.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.terrain.editor"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.terrain.editor
+	url = https://github.com/ArisenEngine/com.arisen.terrain.editor.git
