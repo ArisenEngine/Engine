@@ -56,13 +56,14 @@ public sealed class EditorWorldDocumentServiceTests : IDisposable
         Assert.True(context.Documents.LoadCellForEditing(firstCell));
 
         context.Streaming.SetStreamingSource(new WorldPosition(10_000, 0, 10_000));
-        context.Streaming.PublishState(firstCell, WorldCellStreamingState.Active, desired: false);
+        context.Streaming.PublishState(firstCell, WorldCellStreamingState.Active, runtimeDesired: false);
 
         current = context.Documents.Current!;
         EditorWorldCellDocumentState first = current.Cells.Single(cell => cell.CellId == firstCell);
         Assert.True(first.IsEditPinned);
         Assert.True(first.Streaming.Pinned);
-        Assert.False(first.Streaming.Desired);
+        Assert.True(first.Streaming.Desired);
+        Assert.False(first.IsRuntimeDesired);
         Assert.Equal(selection, current.Selection);
         Assert.Equal(firstCell, current.SelectedCellId);
         Assert.Contains($"cell:{firstCell}", current.ExpandedNodeIds);
@@ -73,6 +74,92 @@ public sealed class EditorWorldDocumentServiceTests : IDisposable
         Assert.NotNull(focus);
         Assert.Equal(-50, focus.Value.X);
         Assert.Equal(-50, focus.Value.Z);
+    }
+
+    [Fact]
+    public void SelectCell_PublishesOnlyWhenSelectionChanges()
+    {
+        using var context = new WorldContext(m_Root);
+        WorldCellId firstCell = context.Documents.Current!.Cells[0].CellId;
+        var publicationCount = 0;
+        context.Documents.StateChanged += _ => publicationCount++;
+
+        context.Documents.SelectCell(firstCell);
+        context.Documents.SelectCell(firstCell);
+
+        Assert.Equal(1, publicationCount);
+        Assert.Equal(firstCell, context.Documents.Current!.SelectedCellId);
+    }
+
+    [Fact]
+    public void FocusCell_DoesNotChangeResidencyOrDirtyDocuments()
+    {
+        using var context = new WorldContext(m_Root);
+        EditorWorldCellDocumentState cell = context.Documents.Current!.Cells[1];
+        WorldCellStreamingSnapshot before = cell.Streaming;
+        int reloadRequests = context.Streaming.ReloadRequests;
+
+        Assert.True(context.Documents.FocusCell(cell.CellId));
+
+        EditorWorldDocumentState current = context.Documents.Current!;
+        EditorWorldCellDocumentState after = current.Cells.Single(item => item.CellId == cell.CellId);
+        Assert.False(current.IsDirty);
+        Assert.Equal(before.State, after.Streaming.State);
+        Assert.Equal(before.Pinned, after.Streaming.Pinned);
+        Assert.Equal(before.Desired, after.Streaming.Desired);
+        Assert.Equal(reloadRequests, context.Streaming.ReloadRequests);
+        Assert.Equal(cell.CellId, current.FocusedCellId);
+    }
+
+    [Fact]
+    public void CellTransformEditing_RequiresActiveEditResidencyAndClearsSelectionOnUnload()
+    {
+        using var context = new WorldContext(m_Root);
+        EditorWorldCellDocumentState cell = context.Documents.Current!.Cells[0];
+        SceneEntityInspection entity = cell.SceneDocument.Inspection.Entities.Single(
+            item => item.AuthoringGuid == s_AnchorGuid);
+        var editedTransform = entity.Transform with
+        {
+            Position = entity.Transform.Position + new System.Numerics.Vector3(7.0f, 0.0f, 0.0f)
+        };
+
+        EditorWorldDocumentResult unloadedEdit = context.Documents.ApplyCellEntityTransform(
+            cell.CellId,
+            entity.AuthoringGuid,
+            editedTransform);
+
+        Assert.False(unloadedEdit.Success);
+        Assert.Contains("active and pinned", unloadedEdit.Diagnostic, StringComparison.OrdinalIgnoreCase);
+        Assert.False(context.Documents.Current!.Cells[0].IsEditResident);
+        Assert.Null(context.Streaming.PreviewSources[cell.CellId]);
+
+        Assert.True(context.Documents.LoadCellForEditing(cell.CellId));
+        Assert.False(context.Documents.Current!.Cells[0].IsEditResident);
+        context.Streaming.PublishState(cell.CellId, WorldCellStreamingState.Active, runtimeDesired: false);
+        Assert.True(context.Documents.Current!.Cells[0].IsEditResident);
+
+        EditorWorldDocumentResult activeEdit = context.Documents.ApplyCellEntityTransform(
+            cell.CellId,
+            entity.AuthoringGuid,
+            editedTransform);
+
+        Assert.True(activeEdit.Success, activeEdit.Diagnostic);
+        Assert.True(context.Documents.Current!.Cells[0].IsDirty);
+        Assert.NotNull(context.Streaming.PreviewSources[cell.CellId]);
+
+        context.Documents.SetStableSelection(new EditorWorldSelectionId(
+            cell.SceneDocument.Scene.Guid,
+            cell.CellId,
+            entity.AuthoringGuid));
+        Assert.True(context.Documents.UnloadCellForEditing(cell.CellId));
+        Assert.False(context.Documents.Current!.Cells[0].IsEditResident);
+        Assert.Null(context.Documents.Current!.Selection);
+
+        EditorWorldDocumentResult staleEdit = context.Documents.ApplyCellEntityTransform(
+            cell.CellId,
+            entity.AuthoringGuid,
+            editedTransform);
+        Assert.False(staleEdit.Success);
     }
 
     [Fact]
@@ -305,7 +392,13 @@ public sealed class EditorWorldDocumentServiceTests : IDisposable
         public bool PinCell(WorldCellId cellId)
         {
             if (!m_Cells.TryGetValue(cellId, out WorldCellStreamingSnapshot? snapshot)) return false;
-            m_Cells[cellId] = snapshot with { Pinned = true };
+            WorldCellDesiredSource sources = snapshot.DesiredSources | WorldCellDesiredSource.EditPin;
+            m_Cells[cellId] = snapshot with
+            {
+                Desired = true,
+                DesiredSources = sources,
+                Pinned = true
+            };
             CellStateChanged?.Invoke(m_Cells[cellId]);
             return true;
         }
@@ -313,7 +406,14 @@ public sealed class EditorWorldDocumentServiceTests : IDisposable
         public bool UnpinCell(WorldCellId cellId)
         {
             if (!m_Cells.TryGetValue(cellId, out WorldCellStreamingSnapshot? snapshot)) return false;
-            m_Cells[cellId] = snapshot with { Pinned = false };
+            WorldCellDesiredSource sources =
+                snapshot.DesiredSources & ~WorldCellDesiredSource.EditPin;
+            m_Cells[cellId] = snapshot with
+            {
+                Desired = sources != WorldCellDesiredSource.None,
+                DesiredSources = sources,
+                Pinned = false
+            };
             CellStateChanged?.Invoke(m_Cells[cellId]);
             return true;
         }
@@ -360,12 +460,16 @@ public sealed class EditorWorldDocumentServiceTests : IDisposable
         public void PublishState(
             WorldCellId cellId,
             WorldCellStreamingState state,
-            bool desired)
+            bool runtimeDesired)
         {
+            WorldCellDesiredSource sources = runtimeDesired
+                ? m_Cells[cellId].DesiredSources | WorldCellDesiredSource.Runtime
+                : m_Cells[cellId].DesiredSources & ~WorldCellDesiredSource.Runtime;
             WorldCellStreamingSnapshot snapshot = m_Cells[cellId] with
             {
                 State = state,
-                Desired = desired,
+                Desired = sources != WorldCellDesiredSource.None,
+                DesiredSources = sources,
                 TransitionSequence = m_Cells[cellId].TransitionSequence + 1
             };
             m_Cells[cellId] = snapshot;
@@ -379,6 +483,7 @@ public sealed class EditorWorldDocumentServiceTests : IDisposable
                 0,
                 0,
                 false,
+                WorldCellDesiredSource.None,
                 false,
                 false,
                 RuntimeSceneInstanceId.Invalid,

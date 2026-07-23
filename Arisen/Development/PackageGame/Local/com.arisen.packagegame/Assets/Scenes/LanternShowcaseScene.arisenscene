@@ -35,8 +35,8 @@ Entities:
   Transform:
     Position:
       X: 3
-      Y: 1.7
-      Z: -4.6
+      Y: 2
+      Z: -6
     Rotation:
       X: 0.01380141
       Y: -0.2503689

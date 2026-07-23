@@ -1,0 +1,54 @@
+Version: 2
+Name: Marble Teapot Center Cell
+ComponentSchemas:
+- TypeId: 1
+  Name: Transform
+  Version: 1
+  Required: true
+- TypeId: 3
+  Name: MeshRenderer
+  Version: 1
+  Required: true
+Entities:
+- Guid: 32000000-0000-0000-0000-000000000001
+  Name: Center Utah Teapot
+  Transform:
+    Position: { X: 128.0, Y: 64.47, Z: 128.0 }
+    Rotation: { X: 0.0, Y: 0.1736482, Z: 0.0, W: 0.9848078 }
+    Scale: { X: 0.42, Y: 0.42, Z: 0.42 }
+  MeshRenderer:
+    Mesh:
+      Guid: 7300d793-8cd9-4983-8035-e99aa92e9449
+      PackageId: com.arisen.packagegame
+    Material:
+      Guid: a2122786-c40a-41f2-bf35-1f5cbc4d39c2
+      PackageId: com.arisen.packagegame
+    Visible: true
+- Guid: 32000000-0000-0000-0000-000000000002
+  Name: Center Presentation Pedestal
+  Transform:
+    Position: { X: 128.0, Y: 64.0, Z: 128.0 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  MeshRenderer:
+    Mesh:
+      Guid: ed26e5c7-77ae-4cd7-b4ec-cb02ea6bac33
+      PackageId: com.arisen.packagegame
+    Material:
+      Guid: a2dd1381-3958-4480-837b-35ffe6dd15c0
+      PackageId: com.arisen.packagegame
+    Visible: true
+- Guid: 32000000-0000-0000-0000-000000000003
+  Name: Center Ground
+  Transform:
+    Position: { X: 128.0, Y: 63.994, Z: 128.0 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 20.0, Y: 1.0, Z: 20.0 }
+  MeshRenderer:
+    Mesh:
+      Guid: 0fed982b-5130-430e-860b-dc9c7284b8c1
+      PackageId: com.arisen.packagegame
+    Material:
+      Guid: e87b0335-5689-45a0-9fe1-455a01b59a20
+      PackageId: com.arisen.packagegame
+    Visible: true

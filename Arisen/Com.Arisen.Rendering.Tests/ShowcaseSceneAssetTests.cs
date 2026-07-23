@@ -23,8 +23,11 @@ public sealed class ShowcaseSceneAssetTests
     private static readonly Guid s_StandardLitShaderGuid = Guid.Parse("72b6d255-0f54-46e5-9d05-8e0486d4f875");
     private static readonly Guid s_DefaultNormalGuid = Guid.Parse("ead642b0-cde6-4ae0-8bdc-03472fb3d5aa");
     private static readonly Guid s_LanternModelGuid = Guid.Parse("8d5dc1c2-1a92-4502-9c49-b8fb2c42f9f7");
+    private static readonly Guid s_LanternWorldGuid = Guid.Parse("9a9b4db5-c0a8-4f2e-8929-89464bea9d51");
     private static readonly Guid s_LanternShowcaseSceneGuid = Guid.Parse("bd52ee1a-84a1-4d9d-bdb4-2a83757b5a4b");
     private static readonly Guid s_LanternGeneratedSceneGuid = Guid.Parse("c3845237-9946-6fea-13b6-9672584bed67");
+    private static readonly Guid s_TeapotWestCellSceneGuid = Guid.Parse("c3db7370-879e-40ad-956c-4de8a7331e88");
+    private static readonly Guid s_TeapotCenterCellSceneGuid = Guid.Parse("506af06e-b16d-4573-b6c9-98548c370e90");
     private static readonly Guid s_LanternMesh0Guid = Guid.Parse("898e8c48-c5f9-b88b-d3a6-49e82e954bd4");
     private static readonly Guid s_LanternMesh1Guid = Guid.Parse("be413b32-5991-8ae5-c2c2-eba34d934325");
     private static readonly Guid s_LanternMesh2Guid = Guid.Parse("a8eb7531-7a75-0078-cf43-3fe29fbad766");
@@ -412,20 +415,22 @@ public sealed class ShowcaseSceneAssetTests
             Assert.Equal(
                 s_LanternMetallicRoughnessTextureGuid,
                 material.Texture2DRefs.Single(texture => texture.Name == MaterialTextureSlots.MetallicRoughness).Texture.Guid);
+            Assert.All(material.Texture2DRefs, texture =>
+            {
+                Assert.True(texture.Texture.Variant.GenerateMipMaps);
+                Assert.Equal(MaterialTextureMipmapMode.Linear, texture.ResolvedSampler.MipmapMode);
+            });
 
             AssertGeneratedMeshCooks(db, s_LanternMesh0Guid, "Lantern/Mesh_0");
             AssertGeneratedMeshCooks(db, s_LanternMesh1Guid, "Lantern/Mesh_1");
             AssertGeneratedMeshCooks(db, s_LanternMesh2Guid, "Lantern/Mesh_2");
 
-            var cookedBaseColor = Texture2DAssetCooker.LoadOrCook(
-                db,
-                new Texture2DAsset(
-                    s_LanternBaseColorTextureGuid,
-                    "Lantern/BaseColor",
-                    Texture2DVariantKey.DefaultSRgb,
-                    Texture2DSourceFormat.ImageFile));
+            MaterialTexture2DRef baseColorTexture = material.Texture2DRefs.Single(
+                texture => texture.Name == MaterialTextureSlots.BaseColor);
+            var cookedBaseColor = Texture2DAssetCooker.LoadOrCook(db, baseColorTexture.Texture);
             Assert.True(cookedBaseColor.Width > 0);
             Assert.True(cookedBaseColor.Height > 0);
+            Assert.True(cookedBaseColor.MipCount > 1);
         }
         finally
         {
@@ -441,6 +446,127 @@ public sealed class ShowcaseSceneAssetTests
                 // Best-effort test cleanup.
             }
         }
+    }
+
+    [Fact]
+    public void PackageLanternWorld_KeepsGlobalRenderComponentsOutOfCells()
+    {
+        string packageRoot = GetRepositoryFile(
+            "Arisen", "Development", "PackageGame", "Local", "com.arisen.packagegame");
+        string cookedRoot = Path.Combine(
+            Path.GetTempPath(),
+            "ArisenLanternWorldContentTests",
+            Guid.NewGuid().ToString("N"));
+
+        try
+        {
+            var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, cookedRoot);
+            db.AddAsset(
+                s_LanternWorldGuid,
+                "World",
+                Path.Combine(packageRoot, "Assets", "Worlds", "LanternWorld.arisenworld"),
+                "com.arisen.packagegame");
+            db.AddAsset(
+                s_LanternShowcaseSceneGuid,
+                "Scene",
+                Path.Combine(packageRoot, "Assets", "Scenes", "LanternShowcaseScene.arisenscene"),
+                "com.arisen.packagegame");
+            db.AddAsset(
+                s_TeapotWestCellSceneGuid,
+                "Scene",
+                Path.Combine(packageRoot, "Assets", "Scenes", "TeapotWestCell.arisenscene"),
+                "com.arisen.packagegame");
+            db.AddAsset(
+                s_TeapotCenterCellSceneGuid,
+                "Scene",
+                Path.Combine(packageRoot, "Assets", "Scenes", "TeapotCenterCell.arisenscene"),
+                "com.arisen.packagegame");
+            db.AddAsset(
+                s_LanternGeneratedSceneGuid,
+                "Scene",
+                Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Scenes", "Scene_0.arisenscene"),
+                "com.arisen.packagegame");
+
+            AddCellRenderAssets(db, packageRoot);
+
+            WorldDescriptorLoadResult loaded = WorldDescriptorLoader.LoadSource(
+                db,
+                new AssetRef<WorldSourceAsset>(
+                    s_LanternWorldGuid,
+                    "World",
+                    "com.arisen.packagegame"));
+
+            Assert.True(loaded.Success, loaded.Diagnostic);
+            WorldDescriptor descriptor = Assert.IsType<WorldDescriptor>(loaded.Descriptor);
+            Assert.Equal(s_LanternShowcaseSceneGuid, descriptor.PersistentScene.Guid);
+            Assert.Equal(3, descriptor.Cells.Count);
+            Assert.DoesNotContain(descriptor.Cells, cell => cell.Scene.Guid == s_SceneGuid);
+            WorldCellDescriptor westCell = Assert.Single(
+                descriptor.Cells,
+                cell => cell.Key.Coordinate == new WorldCellCoordinate(-1, 0, 0));
+            WorldCellDescriptor centerCell = Assert.Single(
+                descriptor.Cells,
+                cell => cell.Key.Coordinate == new WorldCellCoordinate(0, 0, 0));
+            WorldCellDescriptor lanternCell = Assert.Single(
+                descriptor.Cells,
+                cell => cell.Key.Coordinate == new WorldCellCoordinate(1, 0, 0));
+            Assert.Equal(
+                new WorldBounds(
+                    new WorldPosition(-385.5, -0.25, -129.5),
+                    new WorldPosition(-382.5, 1.75, -126.5)),
+                westCell.FocusBounds);
+            Assert.Equal(
+                new WorldBounds(
+                    new WorldPosition(-129.5, -0.25, -129.5),
+                    new WorldPosition(-126.5, 1.75, -126.5)),
+                centerCell.FocusBounds);
+            Assert.Null(lanternCell.FocusBounds);
+
+            foreach (WorldCellDescriptor cell in descriptor.Cells)
+            {
+                SceneInspectionResult inspection = SceneAssetLoader.InspectScene(
+                    db,
+                    new AssetRef<SceneSourceAsset>(
+                        cell.Scene.Guid,
+                        "Scene",
+                        cell.Scene.PackageId));
+                Assert.True(inspection.Success, inspection.Diagnostic);
+                Assert.Equal(0, inspection.CameraCount);
+                Assert.Equal(0, inspection.DirectionalLightCount);
+                Assert.Equal(0, inspection.PointLightCount);
+                Assert.Equal(0, inspection.SpotLightCount);
+                Assert.Equal(0, inspection.EnvironmentCount);
+            }
+        }
+        finally
+        {
+            try
+            {
+                if (Directory.Exists(cookedRoot))
+                {
+                    Directory.Delete(cookedRoot, recursive: true);
+                }
+            }
+            catch
+            {
+                // Best-effort test cleanup.
+            }
+        }
+    }
+
+    private static void AddCellRenderAssets(TestAssetDatabase db, string packageRoot)
+    {
+        db.AddAsset(s_TeapotMeshGuid, "Mesh", Path.Combine(packageRoot, "Assets", "Meshes", "UtahTeapot.obj"), "com.arisen.packagegame");
+        db.AddAsset(s_PedestalMeshGuid, "Mesh", Path.Combine(packageRoot, "Assets", "Meshes", "ShowcasePedestal.obj"), "com.arisen.packagegame");
+        db.AddAsset(s_GroundMeshGuid, "Mesh", Path.Combine(packageRoot, "Assets", "Meshes", "ShowcaseGround.obj"), "com.arisen.packagegame");
+        db.AddAsset(s_MarbleMaterialGuid, "Material", Path.Combine(packageRoot, "Assets", "Materials", "ShowcaseMarble.arismaterial"), "com.arisen.packagegame");
+        db.AddAsset(s_CharcoalMaterialGuid, "Material", Path.Combine(packageRoot, "Assets", "Materials", "ShowcaseCharcoal.arismaterial"), "com.arisen.packagegame");
+        db.AddAsset(s_GroundMaterialGuid, "Material", Path.Combine(packageRoot, "Assets", "Materials", "ShowcaseGround.arismaterial"), "com.arisen.packagegame");
+        db.AddAsset(s_LanternMesh0Guid, "Mesh", Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Meshes", "Mesh_0.glb"), "com.arisen.packagegame");
+        db.AddAsset(s_LanternMesh1Guid, "Mesh", Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Meshes", "Mesh_1.glb"), "com.arisen.packagegame");
+        db.AddAsset(s_LanternMesh2Guid, "Mesh", Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Meshes", "Mesh_2.glb"), "com.arisen.packagegame");
+        db.AddAsset(s_LanternMaterialGuid, "Material", Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Materials", "LanternPost_Mat.arismaterial"), "com.arisen.packagegame");
+        db.AddAsset(s_BlueHourEnvironmentGuid, "EnvironmentTexture", Path.Combine(packageRoot, "Assets", "Environments", "BlueHour.arienvironment"), "com.arisen.packagegame");
     }
 
     private static string GetRepositoryFile(params string[] segments)

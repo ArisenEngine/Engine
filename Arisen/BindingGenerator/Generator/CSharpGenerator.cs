@@ -108,7 +108,7 @@ public static class CSharpGenerator
                     sb.AppendLine("    {");
                     sb.AppendLine("        public uint Index;");
                     sb.AppendLine("        public uint Generation;");
-                    sb.AppendLine("        public bool IsValid => Index != 0xFFFFFFFFu;");
+                    sb.AppendLine("        public bool IsValid => Index != 0xFFFFFFFFu && Generation != 0;");
                     sb.AppendLine(
                         $"        public static readonly {handleName} Invalid = new {handleName} {{ Index = 0xFFFFFFFF, Generation = 0 }};");
                     sb.AppendLine("    }");

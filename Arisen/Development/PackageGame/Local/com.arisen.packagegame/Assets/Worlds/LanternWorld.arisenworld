@@ -1,4 +1,4 @@
-Version: 1
+Version: 2
 WorldGuid: 9a9b4db5-c0a8-4f2e-8929-89464bea9d51
 Name: Lantern Open World Foundation
 PersistentScene:
@@ -21,21 +21,27 @@ Cells:
 - Coordinate: { X: -1, Y: 0, Z: 0 }
   Layer: surface
   Scene:
-    Guid: 0bb7d5fb-1924-45ee-9b45-85891d0e6d9f
+    Guid: c3db7370-879e-40ad-956c-4de8a7331e88
     PackageId: com.arisen.packagegame
   Bounds:
     Min: { X: -512, Y: -64, Z: -256 }
     Max: { X: -256, Y: 64, Z: 0 }
+  FocusBounds:
+    Min: { X: -385.5, Y: -0.25, Z: -129.5 }
+    Max: { X: -382.5, Y: 1.75, Z: -126.5 }
   EstimatedCpuBytes: 1048576
   EstimatedGpuBytes: 67108864
 - Coordinate: { X: 0, Y: 0, Z: 0 }
   Layer: surface
   Scene:
-    Guid: 0bb7d5fb-1924-45ee-9b45-85891d0e6d9f
+    Guid: 506af06e-b16d-4573-b6c9-98548c370e90
     PackageId: com.arisen.packagegame
   Bounds:
     Min: { X: -256, Y: -64, Z: -256 }
     Max: { X: 0, Y: 64, Z: 0 }
+  FocusBounds:
+    Min: { X: -129.5, Y: -0.25, Z: -129.5 }
+    Max: { X: -126.5, Y: 1.75, Z: -126.5 }
   EstimatedCpuBytes: 1048576
   EstimatedGpuBytes: 67108864
 - Coordinate: { X: 1, Y: 0, Z: 0 }

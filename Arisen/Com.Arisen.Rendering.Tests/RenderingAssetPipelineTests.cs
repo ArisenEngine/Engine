@@ -190,9 +190,11 @@ public sealed class RenderingAssetPipelineTests
         Assert.Equal(0, material.BaseColorTexture.TextureIndex);
         Assert.Equal(0, material.BaseColorTexture.ImageIndex);
         Assert.Equal("BaseColor.png", material.BaseColorTexture.Uri);
+        Assert.True(material.BaseColorTexture.GenerateMipMaps);
         Assert.NotNull(material.NormalTexture);
         Assert.Equal(1, material.NormalTexture.TextureIndex);
         Assert.Equal(1, material.NormalTexture.ImageIndex);
+        Assert.True(material.NormalTexture.GenerateMipMaps);
         Assert.NotNull(material.EmissiveTexture);
         Assert.Equal(2, material.EmissiveTexture.TextureIndex);
         Assert.Equal(2, material.EmissiveTexture.ImageIndex);
@@ -200,6 +202,7 @@ public sealed class RenderingAssetPipelineTests
         Assert.NotNull(material.MetallicRoughnessTexture);
         Assert.Equal(3, material.MetallicRoughnessTexture.TextureIndex);
         Assert.Equal(3, material.MetallicRoughnessTexture.ImageIndex);
+        Assert.True(material.MetallicRoughnessTexture.GenerateMipMaps);
         Assert.Equal(
             new MaterialTextureSamplerSettings(
                 MaterialTextureFilter.Linear,
@@ -218,6 +221,7 @@ public sealed class RenderingAssetPipelineTests
         Assert.NotNull(material.OcclusionTexture);
         Assert.Equal(4, material.OcclusionTexture.TextureIndex);
         Assert.Equal(3, material.OcclusionTexture.ImageIndex);
+        Assert.True(material.OcclusionTexture.GenerateMipMaps);
         Assert.Equal(0.65f, material.OcclusionStrength);
         Assert.Equal(GltfMaterialAlphaMode.Mask, material.AlphaMode);
         Assert.Equal(0.42f, material.AlphaCutoff);
@@ -225,6 +229,49 @@ public sealed class RenderingAssetPipelineTests
         Assert.Contains(plan.Warnings, warning => warning.Contains("TEXCOORD_2", StringComparison.Ordinal));
         Assert.Contains(plan.Warnings, warning => warning.Contains("animations", StringComparison.Ordinal));
         Assert.Contains(plan.Warnings, warning => warning.Contains("morph targets", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData(9728, false)]
+    [InlineData(9729, false)]
+    [InlineData(9984, true)]
+    [InlineData(9985, true)]
+    [InlineData(9986, true)]
+    [InlineData(9987, true)]
+    public void GltfModelImportPlanner_MapsSamplerMipRequirements(
+        int minFilter,
+        bool generateMipMaps)
+    {
+        using var workspace = TestWorkspace.Create();
+        string gltfPath = workspace.Write("Assets/Sampled.gltf", $$"""
+            {
+              "asset": { "version": "2.0" },
+              "materials": [
+                {
+                  "pbrMetallicRoughness": {
+                    "baseColorTexture": { "index": 0 }
+                  }
+                }
+              ],
+              "textures": [
+                { "source": 0, "sampler": 0 }
+              ],
+              "images": [
+                { "uri": "BaseColor.png" }
+              ],
+              "samplers": [
+                { "minFilter": {{minFilter}} }
+              ]
+            }
+            """);
+
+        GltfModelImportPlan plan = GltfModelImportPlanner.CreatePlan(
+            gltfPath,
+            Guid.Parse("47474747-5858-6969-7a7a-8b8b8b8b8b8b"),
+            "com.arisen.test");
+
+        GltfImportedTextureRef texture = Assert.Single(plan.Materials).BaseColorTexture!;
+        Assert.Equal(generateMipMaps, texture.GenerateMipMaps);
     }
 
     [Fact]
@@ -494,6 +541,8 @@ public sealed class RenderingAssetPipelineTests
         var occlusion = loadedMaterial.Texture2DRefs.Single(texture => texture.Name == MaterialTextureSlots.Occlusion);
         Assert.Equal(Texture2DColorSpace.Linear, metallicRoughness.Texture.Variant.ColorSpace);
         Assert.Equal(Texture2DColorSpace.Linear, occlusion.Texture.Variant.ColorSpace);
+        Assert.All(loadedMaterial.Texture2DRefs, texture =>
+            Assert.True(texture.Texture.Variant.GenerateMipMaps));
         Assert.Equal(metallicRoughness.Texture.Guid, occlusion.Texture.Guid);
         Assert.Equal(
             new MaterialTextureSamplerSettings(
@@ -1096,6 +1145,112 @@ public sealed class RenderingAssetPipelineTests
     }
 
     [Fact]
+    public void AssetImporter_QueuedDeleteForAtomicReplacementPublishesChange()
+    {
+        using var workspace = TestWorkspace.Create();
+        var assetGuid = Guid.Parse("abababab-cdcd-efef-0101-232323232323");
+        const string packageId = "com.arisen.test";
+        var assetsRoot = Path.Combine(workspace.Root, "Assets");
+        var sourcePath = workspace.Write("Assets/Atomic.arisenscene", "Version: 2\nName: Atomic\nEntities: []\n");
+        SerializationUtil.Serialize(
+            new AssetMetadata
+            {
+                Guid = assetGuid,
+                AssetType = "Scene",
+                Importer = "ArisenSceneImporter"
+            },
+            sourcePath + ".meta");
+        File.AppendAllText(sourcePath + ".meta", "ImporterType: \n");
+
+        var databasePath = Path.Combine(workspace.Root, ".arisen", "Editor", "AssetDatabase.db");
+        EditorAssetDatabase.Initialize(databasePath);
+        try
+        {
+            var relativePath = Path.GetRelativePath(workspace.Root, sourcePath).Replace('\\', '/');
+            EditorAssetDatabase.Instance.RegisterAsset(
+                assetGuid,
+                relativePath,
+                "Scene",
+                "ArisenSceneImporter",
+                packageId,
+                0);
+
+            var changes = new List<AssetChangeEvent>();
+            using var importer = new ArisenEditor.Core.Assets.AssetImporter(
+                assetsRoot,
+                workspace.Root,
+                packageId);
+            importer.AssetChanged += changes.Add;
+            importer.ProcessDeletedFile(sourcePath);
+
+            var change = Assert.Single(changes);
+            Assert.Equal(AssetChangeKind.Changed, change.Kind);
+            Assert.Equal(assetGuid, change.Guid);
+            Assert.True(File.Exists(sourcePath));
+            Assert.True(File.Exists(sourcePath + ".meta"));
+            Assert.DoesNotContain("ImporterType", File.ReadAllText(sourcePath + ".meta"), StringComparison.Ordinal);
+            var runtimeMetadata = SerializationUtil.Deserialize<ArisenEngine.Core.Assets.AssetMetadata>(
+                sourcePath + ".meta",
+                serializeIfNotExist: false);
+            Assert.Equal(assetGuid, runtimeMetadata.Guid);
+            Assert.True(EditorAssetDatabase.Instance.TryGetGuid(relativePath, out var registeredGuid));
+            Assert.Equal(assetGuid, registeredGuid);
+        }
+        finally
+        {
+            EditorAssetDatabase.Instance.Dispose();
+        }
+    }
+
+    [Fact]
+    public void AssetDatabase_PrunesMissingRenameSourceBeforeImporterScan()
+    {
+        using var workspace = TestWorkspace.Create();
+        var assetGuid = Guid.Parse("bcbcbcbc-dede-f0f0-1212-343434343434");
+        const string packageId = "com.arisen.test";
+        var assetsRoot = Path.Combine(workspace.Root, "Assets");
+        var currentPath = workspace.Write("Assets/Current.ppm", "P3\n1 1\n255\n255 255 255\n");
+        SerializationUtil.Serialize(
+            new AssetMetadata
+            {
+                Guid = assetGuid,
+                AssetType = "Texture2D",
+                Importer = "ImageTextureImporter"
+            },
+            currentPath + ".meta");
+
+        var databasePath = Path.Combine(workspace.Root, ".arisen", "Editor", "AssetDatabase.db");
+        EditorAssetDatabase.Initialize(databasePath);
+        try
+        {
+            const string stalePath = "Assets/Previous.ppm";
+            EditorAssetDatabase.Instance.RegisterAsset(
+                assetGuid,
+                stalePath,
+                "Texture2D",
+                "ImageTextureImporter",
+                packageId,
+                0);
+
+            Assert.Equal(1, EditorAssetDatabase.Instance.PruneMissingAssets(workspace.Root));
+
+            using var importer = new ArisenEditor.Core.Assets.AssetImporter(
+                assetsRoot,
+                workspace.Root,
+                packageId);
+            importer.Start();
+
+            var currentRelativePath = Path.GetRelativePath(workspace.Root, currentPath).Replace('\\', '/');
+            Assert.Equal(currentRelativePath, EditorAssetDatabase.Instance.GetPath(assetGuid));
+            Assert.False(EditorAssetDatabase.Instance.TryGetGuid(stalePath, out _));
+        }
+        finally
+        {
+            EditorAssetDatabase.Instance.Dispose();
+        }
+    }
+
+    [Fact]
     public void ModelSourceReimporter_RejectsUnsafeOrForeignGeneratedOutput()
     {
         using var workspace = TestWorkspace.Create();
@@ -1260,6 +1415,60 @@ public sealed class RenderingAssetPipelineTests
         Assert.Equal(Texture2DColorSpace.SRgb, cooked.ColorSpace);
         Assert.Equal(4, pixels.Length);
         Assert.Contains(pixels.ToArray(), value => value > 0);
+    }
+
+    [Fact]
+    public void Texture2DAssetCooker_GeneratesPackedMipChain()
+    {
+        using var workspace = TestWorkspace.Create();
+        var textureGuid = Guid.Parse("48484848-5959-6a6a-7b7b-8c8c8c8c8c8c");
+        var db = new TestAssetDatabase(
+            AssetSourceAccessMode.Diagnostic,
+            Path.Combine(workspace.Root, "Cooked"));
+        string texturePath = workspace.Write(
+            "Assets/SolidRed.ppm",
+            "P3\n4 2\n255\n255 0 0  255 0 0  255 0 0  255 0 0\n255 0 0  255 0 0  255 0 0  255 0 0\n");
+        db.AddAsset(textureGuid, "Texture2D", texturePath);
+
+        var texture = new Texture2DAsset(
+            textureGuid,
+            "Tests/SolidRed",
+            new Texture2DVariantKey(
+                Texture2DCookedFormat.R8G8B8A8UNorm,
+                Texture2DColorSpace.SRgb,
+                GenerateMipMaps: true));
+
+        CookedTexture2D cooked = Texture2DAssetCooker.LoadOrCook(db, texture);
+        ReadOnlySpan<byte> pixels = Texture2DAssetCooker.GetPixelData(
+            db.GetCookedAssetBytes(cooked.Handle));
+
+        Assert.Equal(3, cooked.MipCount);
+        Assert.Equal(44, pixels.Length);
+        for (int index = 0; index < pixels.Length; index += 4)
+        {
+            Assert.Equal(255, pixels[index]);
+            Assert.Equal(0, pixels[index + 1]);
+            Assert.Equal(0, pixels[index + 2]);
+            Assert.Equal(255, pixels[index + 3]);
+        }
+
+        Assert.True(db.TryGetCookedArtifact(textureGuid, cooked.Variant, out var mippedArtifact));
+        db.Release(cooked.Handle);
+
+        var noMipTexture = texture with
+        {
+            Variant = texture.Variant with { GenerateMipMaps = false }
+        };
+        CookedTexture2D noMipCooked = Texture2DAssetCooker.LoadOrCook(db, noMipTexture);
+        Assert.True(db.TryGetCookedArtifact(textureGuid, noMipCooked.Variant, out var noMipArtifact));
+        db.Release(noMipCooked.Handle);
+
+        File.Copy(noMipArtifact.Path, mippedArtifact.Path, overwrite: true);
+        File.SetLastWriteTimeUtc(mippedArtifact.Path, DateTime.UtcNow.AddMinutes(1));
+
+        CookedTexture2D repaired = Texture2DAssetCooker.LoadOrCook(db, texture);
+        Assert.Equal(3, repaired.MipCount);
+        Assert.Equal(44, repaired.PixelDataSize);
     }
 
     [Fact]
@@ -2531,6 +2740,33 @@ public sealed class RenderingAssetPipelineTests
         Assert.Equal(0.0f, ReadSingle(bytes.Span, checked((int)cooked.VertexDataOffset) + 28));
         Assert.Equal(0.0f, ReadSingle(bytes.Span, checked((int)cooked.VertexDataOffset) + 32));
         Assert.Equal(1.0f, ReadSingle(bytes.Span, checked((int)cooked.VertexDataOffset) + 36));
+    }
+
+    [Fact]
+    public void MeshCooker_ReadCookedBoundsBalancesTemporaryHandle()
+    {
+        using var workspace = TestWorkspace.Create();
+        var meshGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(
+            AssetSourceAccessMode.Diagnostic,
+            Path.Combine(workspace.Root, "Cooked"));
+        var meshPath = workspace.Write("Assets/Bounds.armesh", """
+            v -7 -3 -2 0 0 1 0 0
+            v 5 11 4 1 0 0 1 0
+            v 0 2 8 0 1 0 0 1
+            i 0 1 2
+            """);
+        db.AddAsset(meshGuid, "Mesh", meshPath);
+
+        var mesh = new MeshAsset(meshGuid, "Tests/Bounds", MeshVariantKey.Default);
+        CookedMesh cooked = MeshAssetCooker.LoadOrCook(db, mesh);
+        db.Release(cooked.Handle);
+        Assert.Empty(db.GetLoadedCookedAssetDiagnostics());
+
+        Assert.True(MeshAssetCooker.TryReadCookedBounds(db, meshGuid, out MeshBounds bounds));
+        Assert.Equal(new Vector3(-7.0f, -3.0f, -2.0f), bounds.Min);
+        Assert.Equal(new Vector3(5.0f, 11.0f, 8.0f), bounds.Max);
+        Assert.Empty(db.GetLoadedCookedAssetDiagnostics());
     }
 
     [Fact]
