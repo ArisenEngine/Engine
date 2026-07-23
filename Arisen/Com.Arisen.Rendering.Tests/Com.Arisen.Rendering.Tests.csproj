@@ -56,6 +56,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Commands\ModifyMaterialAssetPropertyCommands.cs" Link="Source\Editor\Commands\ModifyMaterialAssetPropertyCommands.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Commands\ModifySceneAssetTransformCommand.cs" Link="Source\Editor\Commands\ModifySceneAssetTransformCommand.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Services\EditorSceneDocumentService.cs" Link="Source\Editor\Services\EditorSceneDocumentService.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Services\EditorSceneViewFocusFraming.cs" Link="Source\Editor\Services\EditorSceneViewFocusFraming.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Services\EditorWorldDocumentService.cs" Link="Source\Editor\Services\EditorWorldDocumentService.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Services\WorkspaceManifestEditor.cs" Link="Source\Editor\Services\WorkspaceManifestEditor.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Validation\EditorViewportSmokeState.cs" Link="Source\Editor\Validation\EditorViewportSmokeState.cs" />
@@ -112,6 +113,8 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\ShaderMaterialContractAnnotations.cs" Link="Source\Rendering\Resources\ShaderMaterialContractAnnotations.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\Texture2DAsset.cs" Link="Source\Rendering\Resources\Texture2DAsset.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\DirectionalLight.cs" Link="Source\Rendering\DirectionalLight.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Camera.cs" Link="Source\Rendering\Camera.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\SceneViewCameraOverride.cs" Link="Source\Rendering\SceneViewCameraOverride.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\DirectionalLightSnapshotExtractor.cs" Link="Source\Rendering\DirectionalLightSnapshotExtractor.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\PointLight.cs" Link="Source\Rendering\PointLight.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\PointLightSnapshotExtractor.cs" Link="Source\Rendering\PointLightSnapshotExtractor.cs" />
@@ -122,6 +125,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderQueuePolicy.cs" Link="Source\Rendering\RenderQueuePolicy.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\TransparentDrawOrdering.cs" Link="Source\Rendering\TransparentDrawOrdering.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderResourceReloadQueue.cs" Link="Source\Rendering\RenderResourceReloadQueue.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderTargetImageStateTracker.cs" Link="Source\Rendering\RenderTargetImageStateTracker.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\StaticMeshFrustumCuller.cs" Link="Source\Rendering\StaticMeshFrustumCuller.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderGraphPassCullingPlanner.cs" Link="Source\Rendering\RenderGraphPassCullingPlanner.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderGraphResourceLifetimePlanner.cs" Link="Source\Rendering\RenderGraphResourceLifetimePlanner.cs" />

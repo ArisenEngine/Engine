@@ -52,6 +52,14 @@ public sealed class WorldAssetCookerTests
         Assert.All(descriptor.Cells, cell => Assert.Equal(32, cell.SceneContentHash.Length));
         Assert.All(descriptor.Cells, cell => Assert.True(cell.EstimatedCpuBytes >= cell.ScenePayloadBytes));
         Assert.All(descriptor.Cells, cell => Assert.Single(cell.Neighbors));
+        WorldCellDescriptor focusedCell = Assert.Single(
+            descriptor.Cells,
+            cell => cell.FocusBounds.HasValue);
+        Assert.Equal(
+            new WorldBounds(
+                new WorldPosition(10, 20, 30),
+                new WorldPosition(40, 50, 60)),
+            focusedCell.FocusBounds);
         WorldCellDescriptor dependentCell = Assert.Single(
             descriptor.Cells,
             cell => cell.Dependencies.Count == 1);
@@ -101,6 +109,7 @@ public sealed class WorldAssetCookerTests
     [InlineData(WorldInvalidCase.UndeclaredDependency, "undeclared dependency")]
     [InlineData(WorldInvalidCase.DependencyCycle, "cyclic cells")]
     [InlineData(WorldInvalidCase.UnresolvedEntity, "undeclared entity")]
+    [InlineData(WorldInvalidCase.FocusBoundsOutsideCell, "FocusBounds")]
     public void InvalidWorldData_FailsBeforeCooking(
         WorldInvalidCase invalidCase,
         string expectedDiagnostic)
@@ -159,7 +168,8 @@ public sealed class WorldAssetCookerTests
         DuplicateCell,
         UndeclaredDependency,
         DependencyCycle,
-        UnresolvedEntity
+        UnresolvedEntity,
+        FocusBoundsOutsideCell
     }
 
     private sealed class WorldFixture : IDisposable
@@ -239,6 +249,9 @@ public sealed class WorldAssetCookerTests
             Guid targetEntity = invalidCase == WorldInvalidCase.UnresolvedEntity
                 ? Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff")
                 : s_FirstEntityGuid;
+            string focusBoundsMinX = invalidCase == WorldInvalidCase.FocusBoundsOutsideCell
+                ? "-1"
+                : "10";
             string first = $$"""
                 - Coordinate: { X: 0, Y: 0, Z: 0 }
                   Layer: Surface
@@ -248,6 +261,9 @@ public sealed class WorldAssetCookerTests
                   Bounds:
                     Min: { X: 0, Y: 0, Z: 0 }
                     Max: { X: {{firstBoundsMax}}, Y: 100, Z: 100 }
+                  FocusBounds:
+                    Min: { X: {{focusBoundsMinX}}, Y: 20, Z: 30 }
+                    Max: { X: 40, Y: 50, Z: 60 }
                   EstimatedCpuBytes: 128
                   EstimatedGpuBytes: 256
                 {{Indent(firstDependency, 2)}}  References:
@@ -279,7 +295,7 @@ public sealed class WorldAssetCookerTests
                 """;
             string cells = reverseCells ? second + Environment.NewLine + first : first + Environment.NewLine + second;
             return $$"""
-                Version: 1
+                Version: 2
                 WorldGuid: {{WorldGuid:D}}
                 Name: Deterministic Test World
                 PersistentScene:

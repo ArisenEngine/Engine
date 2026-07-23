@@ -114,6 +114,45 @@ public sealed class RuntimeSceneInstanceTests
     }
 
     [Fact]
+    public void ReloadActivePersistentScene_PreservesAdditiveInstances()
+    {
+        using var context = new SceneInstanceContext();
+        Assert.True(context.Service.LoadScene(context.Persistent.Scene).Success);
+        RuntimeSceneInstanceId originalPersistentId = context.Service.ActiveScene!.InstanceId;
+        Assert.True(context.Service.TryResolveEntity(
+            originalPersistentId,
+            context.Persistent.EntityGuid,
+            out Entity originalPersistentEntity));
+
+        RuntimeSceneInstanceId cellId = context.Service.RequestAdditiveSceneLoad(context.FirstCell.Scene);
+        Assert.True(context.Service.ProcessPendingSceneLoadAtFrameBoundary()!.Value.Success);
+        Assert.True(context.Service.TryResolveEntity(
+            cellId,
+            context.FirstCell.EntityGuid,
+            out Entity cellEntity));
+
+        context.Service.RequestSceneLoad(context.Persistent.Scene);
+        SceneLoadResult? reload = context.Service.ProcessPendingSceneLoadAtFrameBoundary();
+
+        Assert.True(reload.HasValue);
+        Assert.True(reload.Value.Success, reload.Value.Diagnostic);
+        Assert.NotEqual(originalPersistentId, context.Service.ActiveScene!.InstanceId);
+        Assert.False(context.World.IsAlive(originalPersistentEntity));
+        Assert.True(context.World.IsAlive(cellEntity));
+        Assert.True(context.Service.TryResolveEntity(
+            cellId,
+            context.FirstCell.EntityGuid,
+            out Entity preservedCellEntity));
+        Assert.Equal(cellEntity, preservedCellEntity);
+        Assert.Equal(2, context.Service.GetSceneInstances().Count);
+
+        Assert.True(context.Service.RequestSceneUnload(cellId));
+        Assert.Null(context.Service.ProcessPendingSceneLoadAtFrameBoundary());
+        Assert.False(context.World.IsAlive(cellEntity));
+        Assert.Single(context.Service.GetSceneInstances());
+    }
+
+    [Fact]
     public void RepeatedAdditiveCycles_KeepSlotsPoolsOwnershipAndHistoryBounded()
     {
         using var context = new SceneInstanceContext();

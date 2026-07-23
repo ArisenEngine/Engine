@@ -54,6 +54,38 @@ public sealed class RuntimeWorldStreamingTests
     }
 
     [Fact]
+    public void PersistentSceneReload_PreservesActiveCellInstanceAndSubsequentUnload()
+    {
+        using var context = new StreamingContext();
+        WorldCellId cellId = context.CellId(0);
+        Assert.True(context.Streaming.PinCell(cellId));
+        context.PumpUntil(() => context.State(cellId) == WorldCellStreamingState.Active);
+
+        WorldCellStreamingSnapshot active = context.Cell(cellId);
+        RuntimeSceneInstanceId cellInstanceId = active.SceneInstanceId;
+        Assert.True(context.SceneService.TryResolveEntity(
+            cellInstanceId,
+            StreamingContext.EntityGuid(1),
+            out Entity cellEntity));
+
+        context.SceneService.RequestSceneLoad(context.SceneService.ActiveScene!.Scene);
+        SceneLoadResult? reload = context.SceneService.ProcessPendingSceneLoadAtFrameBoundary();
+
+        Assert.True(reload.HasValue);
+        Assert.True(reload.Value.Success, reload.Value.Diagnostic);
+        Assert.Equal(WorldCellStreamingState.Active, context.State(cellId));
+        Assert.Equal(cellInstanceId, context.Cell(cellId).SceneInstanceId);
+        Assert.True(context.World.IsAlive(cellEntity));
+
+        Assert.True(context.Streaming.UnpinCell(cellId));
+        context.PumpUntil(() => context.State(cellId) == WorldCellStreamingState.Unloaded);
+        Assert.DoesNotContain(
+            "not active and cannot be unloaded",
+            context.Cell(cellId).Diagnostic,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void BudgetsBoundReadsAndActivationsWhileDependenciesActivateFirst()
     {
         var budgets = new WorldStreamingBudgets(
@@ -97,6 +129,76 @@ public sealed class RuntimeWorldStreamingTests
         Assert.Equal(0, drained.BytesInFlight);
         Assert.Equal(0, drained.DecodedStagingBytes);
         Assert.Equal(1, context.World.EntityCount);
+    }
+
+    [Fact]
+    public void PinningDependentCell_SeparatesEditAndRuntimeDemandProvenance()
+    {
+        using var context = new StreamingContext(loadRadius: 0);
+        WorldCellId prerequisite = context.CellId(0);
+        WorldCellId dependent = context.CellId(1);
+
+        Assert.True(context.Streaming.PinCell(dependent));
+        context.Streaming.ProcessAtFrameBoundary();
+
+        Assert.Equal(
+            WorldCellDesiredSource.EditDependency,
+            context.Cell(prerequisite).DesiredSources);
+        Assert.Equal(WorldCellDesiredSource.EditPin, context.Cell(dependent).DesiredSources);
+        Assert.True(context.Cell(prerequisite).Desired);
+        Assert.True(context.Cell(dependent).Desired);
+        context.PumpUntil(() =>
+            context.State(prerequisite) == WorldCellStreamingState.Active &&
+            context.State(dependent) == WorldCellStreamingState.Active);
+
+        var provenanceChanges = new List<WorldCellStreamingSnapshot>();
+        context.Streaming.CellStateChanged += snapshot => provenanceChanges.Add(snapshot);
+
+        context.Streaming.SetStreamingSource(new WorldPosition(110, 10, 10));
+        context.Streaming.ProcessAtFrameBoundary();
+
+        Assert.Equal(
+            WorldCellDesiredSource.EditDependency | WorldCellDesiredSource.Runtime,
+            context.Cell(prerequisite).DesiredSources);
+        Assert.Equal(
+            WorldCellDesiredSource.EditPin | WorldCellDesiredSource.Runtime,
+            context.Cell(dependent).DesiredSources);
+        Assert.Contains(provenanceChanges, snapshot =>
+            snapshot.CellId == prerequisite &&
+            snapshot.DesiredSources ==
+            (WorldCellDesiredSource.EditDependency | WorldCellDesiredSource.Runtime));
+        Assert.Contains(provenanceChanges, snapshot =>
+            snapshot.CellId == dependent &&
+            snapshot.DesiredSources ==
+            (WorldCellDesiredSource.EditPin | WorldCellDesiredSource.Runtime));
+
+        provenanceChanges.Clear();
+        Assert.True(context.Streaming.UnpinCell(dependent));
+        context.Streaming.ProcessAtFrameBoundary();
+
+        Assert.Equal(WorldCellDesiredSource.Runtime, context.Cell(prerequisite).DesiredSources);
+        Assert.Equal(WorldCellDesiredSource.Runtime, context.Cell(dependent).DesiredSources);
+        Assert.Contains(provenanceChanges, snapshot =>
+            snapshot.CellId == prerequisite &&
+            snapshot.DesiredSources == WorldCellDesiredSource.Runtime);
+        Assert.Contains(provenanceChanges, snapshot =>
+            snapshot.CellId == dependent &&
+            snapshot.DesiredSources == WorldCellDesiredSource.Runtime);
+
+        provenanceChanges.Clear();
+        context.Streaming.ClearStreamingSource();
+        context.Streaming.ProcessAtFrameBoundary();
+
+        Assert.Equal(WorldCellDesiredSource.None, context.Cell(prerequisite).DesiredSources);
+        Assert.Equal(WorldCellDesiredSource.None, context.Cell(dependent).DesiredSources);
+        Assert.False(context.Cell(prerequisite).Desired);
+        Assert.False(context.Cell(dependent).Desired);
+        Assert.Contains(provenanceChanges, snapshot =>
+            snapshot.CellId == prerequisite &&
+            snapshot.DesiredSources == WorldCellDesiredSource.None);
+        Assert.Contains(provenanceChanges, snapshot =>
+            snapshot.CellId == dependent &&
+            snapshot.DesiredSources == WorldCellDesiredSource.None);
     }
 
     [Fact]
@@ -420,6 +522,86 @@ public sealed class RuntimeWorldStreamingTests
         string json = File.ReadAllText(output);
         Assert.Contains("\"passed\": true", json, StringComparison.Ordinal);
         Assert.Contains("\"completedSoakCycles\": 4", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BoundedSmokeScenario_WarmsOneFrameBeforeInitialVisualCapture()
+    {
+        using var context = new StreamingContext(loadRadius: 2);
+        var visual = new RecordingVisualSummaryService();
+        var scenarioContext = new ArisenKernel.Lifecycle.RuntimeSmokeScenarioContext(
+            "world-streaming",
+            context.Root,
+            "Development",
+            Path.Combine(context.Root, "world-streaming-smoke.json"),
+            visual);
+        var scenario = new WorldStreamingSmokeScenario(
+            scenarioContext,
+            context.Streaming,
+            context.SceneService,
+            context.Residency,
+            context.Origin,
+            context.Database,
+            context.TaskGraph);
+
+        scenario.Start(41);
+
+        (string Name, uint FrameIndex) capture = Assert.Single(visual.ScheduledCaptures);
+        Assert.Equal("before", capture.Name);
+        Assert.Equal(42u, capture.FrameIndex);
+    }
+
+    private sealed class RecordingVisualSummaryService : ArisenKernel.Lifecycle.IRuntimeVisualSummaryService
+    {
+        public List<(string Name, uint FrameIndex)> ScheduledCaptures { get; } = [];
+        public bool IsEnabled => true;
+        public uint CaptureFrameIndex => ScheduledCaptures.Count == 0
+            ? uint.MaxValue
+            : ScheduledCaptures[0].FrameIndex;
+        public string ProfileName => "Development";
+        public string OutputPath => "visual-summary.json";
+        public bool IsComplete => false;
+        public bool Succeeded => false;
+        public string? FailureMessage => null;
+
+        public bool TryScheduleCapture(string name, uint frameIndex, out string outputPath)
+        {
+            ScheduledCaptures.Add((name, frameIndex));
+            outputPath = $"visual-summary.{name}.json";
+            return true;
+        }
+
+        public bool TryBeginCapture(
+            uint frameIndex,
+            out ArisenKernel.Lifecycle.RuntimeVisualSummaryCapture capture)
+        {
+            capture = default;
+            return false;
+        }
+
+        public void ReportSuccess(ArisenKernel.Lifecycle.RuntimeVisualSummaryCapture capture) =>
+            throw new NotSupportedException();
+
+        public void ReportFailure(
+            ArisenKernel.Lifecycle.RuntimeVisualSummaryCapture capture,
+            string message) => throw new NotSupportedException();
+
+        public void ReportFailure(string message) => throw new NotSupportedException();
+
+        public bool TryGetCaptureResult(
+            string name,
+            out ArisenKernel.Lifecycle.RuntimeVisualSummaryCaptureResult result)
+        {
+            result = null!;
+            return false;
+        }
+
+        public IReadOnlyList<ArisenKernel.Lifecycle.RuntimeVisualSummaryCaptureResult>
+            GetCaptureResults() => [];
+
+        public void Seal()
+        {
+        }
     }
 
     private sealed class StreamingContext : IDisposable

@@ -19,12 +19,12 @@ Texture2DRefs:
     Variant:
       Format: R8G8B8A8UNorm
       ColorSpace: SRgb
-      GenerateMipMaps: false
+      GenerateMipMaps: true
     SourceFormat: ImageFile
   Sampler:
     MinFilter: Linear
     MagFilter: Linear
-    MipmapMode: Nearest
+    MipmapMode: Linear
     WrapU: Repeat
     WrapV: Repeat
   Transform:
@@ -44,12 +44,12 @@ Texture2DRefs:
     Variant:
       Format: R8G8B8A8UNorm
       ColorSpace: Linear
-      GenerateMipMaps: false
+      GenerateMipMaps: true
     SourceFormat: ImageFile
   Sampler:
     MinFilter: Linear
     MagFilter: Linear
-    MipmapMode: Nearest
+    MipmapMode: Linear
     WrapU: Repeat
     WrapV: Repeat
   Transform:
@@ -69,12 +69,12 @@ Texture2DRefs:
     Variant:
       Format: R8G8B8A8UNorm
       ColorSpace: SRgb
-      GenerateMipMaps: false
+      GenerateMipMaps: true
     SourceFormat: ImageFile
   Sampler:
     MinFilter: Linear
     MagFilter: Linear
-    MipmapMode: Nearest
+    MipmapMode: Linear
     WrapU: Repeat
     WrapV: Repeat
   Transform:
@@ -94,12 +94,12 @@ Texture2DRefs:
     Variant:
       Format: R8G8B8A8UNorm
       ColorSpace: Linear
-      GenerateMipMaps: false
+      GenerateMipMaps: true
     SourceFormat: ImageFile
   Sampler:
     MinFilter: Linear
     MagFilter: Linear
-    MipmapMode: Nearest
+    MipmapMode: Linear
     WrapU: Repeat
     WrapV: Repeat
   Transform:
