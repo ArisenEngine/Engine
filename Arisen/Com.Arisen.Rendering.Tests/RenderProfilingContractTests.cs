@@ -32,7 +32,8 @@ public sealed class RenderProfilingContractTests
     [InlineData("Render.ShadowCasterItemCount")]
     [InlineData("Render.CulledShadowCasterItemCount")]
     [InlineData("Render.ShadowCasterDrawCommandCount")]
-    [InlineData("Render.ShadowSceneFitted")]
+    [InlineData("Render.ShadowCascadeCount")]
+    [InlineData("Render.DroppedShadowDrawCommandCount")]
     [InlineData("Render.MaterialCount")]
     [InlineData("Render.PreparedMaterialCount")]
     [InlineData("Render.LightCount")]
@@ -43,7 +44,8 @@ public sealed class RenderProfilingContractTests
     [InlineData("DirectionalShadowPass.ShadowMapSize")]
     [InlineData("DirectionalShadowPass.Enabled")]
     [InlineData("DirectionalShadowPass.SceneFitted")]
-    [InlineData("DirectionalShadowPass.WorldUnitsPerTexel")]
+    [InlineData("DirectionalShadowPass.CascadeCount")]
+    [InlineData("DirectionalShadowPass.DroppedDrawCount")]
     [InlineData("RenderGraph.CulledPassCount")]
     [InlineData("RenderGraph.ResourceTransitionCount")]
     [InlineData("RenderGraph.TransientTextureCount")]
@@ -52,6 +54,14 @@ public sealed class RenderProfilingContractTests
     [InlineData("Render.FrameDepth.Width")]
     [InlineData("Render.FrameDepth.Height")]
     [InlineData("Render.FrameDepth.Format")]
+    [InlineData("Terrain.ExtractedTileCount")]
+    [InlineData("Terrain.PreparedDrawCount")]
+    [InlineData("Terrain.SubmittedDrawCount")]
+    [InlineData("Terrain.DroppedShadowDrawCount")]
+    [InlineData("Terrain.VisibleTileCount")]
+    [InlineData("Terrain.SeamViolationCount")]
+    [InlineData("Terrain.Residency.CpuBytes")]
+    [InlineData("Terrain.Residency.PreparedBytes")]
     public void SceneRenderingProfilerCountersRemainDeclared(string counterName)
     {
         var sourcePath = GetCounterSourcePath(counterName);
@@ -72,6 +82,92 @@ public sealed class RenderProfilingContractTests
         Assert.Contains("Materials:", source, StringComparison.Ordinal);
         Assert.Contains("VisibleDrawCommands:", source, StringComparison.Ordinal);
         Assert.Contains("ShadowDrawCommands:", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TerrainSubmissionDiagnosticsRemainBoundedAndRuntimeValidated()
+    {
+        var featureSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.terrain.generic-renderpipeline/Managed/TerrainGenericRenderPipelineFeature.cs");
+        var passSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.terrain.generic-renderpipeline/Managed/TerrainRenderPass.cs");
+        var runtimeValidation = ReadRepoFile(
+            "Arisen/Scripts/Windows/validate_runtime.bat");
+        var relocatedValidation = ReadRepoFile(
+            "Arisen/Scripts/Windows/validate_relocated_production.ps1");
+
+        const string marker = "[Terrain.GenericRP] Submitted terrain draw commands";
+        Assert.Contains("m_SubmittedDrawReported", featureSource, StringComparison.Ordinal);
+        Assert.Contains(marker, featureSource, StringComparison.Ordinal);
+        Assert.Contains("LastRecordedDrawCount", passSource, StringComparison.Ordinal);
+        Assert.Contains("Volatile.Write", passSource, StringComparison.Ordinal);
+        Assert.Contains(marker, runtimeValidation, StringComparison.Ordinal);
+        Assert.Contains(marker, relocatedValidation, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TerrainProfilingKeepsCoarsePipelineAndResidencyAttribution()
+    {
+        var featureSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.terrain.generic-renderpipeline/Managed/TerrainGenericRenderPipelineFeature.cs");
+        var providerSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.terrain.generic-renderpipeline/Managed/TerrainPreparedAssetProvider.cs");
+        var cookerSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.terrain/Managed/Assets/TerrainRuntimeAssetCooker.cs");
+
+        Assert.Contains("Profiler.Zone(\"Terrain.LodPlan\")", featureSource, StringComparison.Ordinal);
+        Assert.Contains("Profiler.Zone(\"Terrain.ExpandPatches\")", featureSource, StringComparison.Ordinal);
+        Assert.Contains("Profiler.Zone(\"Terrain.PrepareCascades\")", featureSource, StringComparison.Ordinal);
+        Assert.Contains("Terrain.LodLevel0Patches", featureSource, StringComparison.Ordinal);
+        Assert.Contains("Terrain.LodLevel12Patches", featureSource, StringComparison.Ordinal);
+        Assert.Contains("Profiler.Zone(\"Terrain.ReleasePreparedResource\")", providerSource, StringComparison.Ordinal);
+        Assert.Contains("\"Terrain.SetupRoot\"", providerSource, StringComparison.Ordinal);
+        Assert.Contains("\"Terrain.SetupTile\"", providerSource, StringComparison.Ordinal);
+        Assert.Contains("Profiler.Zone(\"Terrain.CookRoot\")", cookerSource, StringComparison.Ordinal);
+        Assert.Contains("Profiler.Zone(\"Terrain.CookTile\")", cookerSource, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RelocatedProductionValidationAuditsTerrainRuntimeClosure()
+    {
+        var validation = ReadRepoFile(
+            "Arisen/Scripts/Windows/validate_relocated_production.ps1");
+
+        Assert.Contains("terrainClosureComplete = $false", validation, StringComparison.Ordinal);
+        Assert.Contains("$checks.terrainClosureComplete = $true", validation, StringComparison.Ordinal);
+        Assert.Contains("schemaVersion = 4", validation, StringComparison.Ordinal);
+        Assert.Contains("--smoke-mode terrain-streaming", validation, StringComparison.Ordinal);
+        Assert.Contains("validate_terrain_streaming_summary.ps1", validation, StringComparison.Ordinal);
+        Assert.Contains("Assert-SourceIndependentRun", validation, StringComparison.Ordinal);
+        Assert.Contains("Assert-TerrainShutdown", validation, StringComparison.Ordinal);
+        Assert.Contains(
+            "$checks.terrainStreamingSourceIndependent = $true",
+            validation,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "relocated-production-terrain-streaming.json",
+            validation,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "Runtime catalog contains stale or missing generated terrain tile rows.",
+            validation,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "Runtime catalog contains an unreferenced generated terrain tile artifact.",
+            validation,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "Runtime catalog must contain exactly three cooked terrain shader stages.",
+            validation,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "26dd7ce8-e574-4ab2-8ab7-5e6e26f361b5",
+            validation,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "Render-pipeline closure does not reach terrain shader artifact",
+            validation,
+            StringComparison.Ordinal);
     }
 
     [Fact]
@@ -135,6 +231,45 @@ public sealed class RenderProfilingContractTests
     }
 
     [Fact]
+    public void StaticMeshHostWriteBarrierPrecedesDynamicRendering()
+    {
+        var passSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.generic-renderpipeline/Src/StaticMeshPass.cs");
+
+        var fallbackStart = passSource.IndexOf("private void RecordFallbackMesh", StringComparison.Ordinal);
+        var fallbackEnd = passSource.IndexOf("private void RecordDrawRange", fallbackStart, StringComparison.Ordinal);
+        var fallbackBarrier = passSource.IndexOf("RecordObjectDataBarrier(commandList);", fallbackStart, StringComparison.Ordinal);
+        var fallbackRendering = passSource.IndexOf("BeginStaticMeshRendering(", fallbackStart, StringComparison.Ordinal);
+
+        Assert.InRange(fallbackBarrier, fallbackStart, fallbackEnd - 1);
+        Assert.InRange(fallbackRendering, fallbackStart, fallbackEnd - 1);
+        Assert.True(fallbackBarrier < fallbackRendering);
+
+        var batchStart = passSource.IndexOf("private void RecordBatchWorkItem", StringComparison.Ordinal);
+        var batchEnd = passSource.IndexOf("private void BeginStaticMeshRendering", batchStart, StringComparison.Ordinal);
+        var batchBarrier = passSource.IndexOf("RecordObjectDataBarrier(commandList);", batchStart, StringComparison.Ordinal);
+        var batchRendering = passSource.IndexOf("BeginStaticMeshRendering(", batchStart, StringComparison.Ordinal);
+
+        Assert.InRange(batchBarrier, batchStart, batchEnd - 1);
+        Assert.InRange(batchRendering, batchStart, batchEnd - 1);
+        Assert.True(batchBarrier < batchRendering);
+    }
+
+    [Fact]
+    public void SharedImageOwnershipUsesExternalQueueFamilyInsteadOfForeignFamily()
+    {
+        var managedSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.core/RHI/RHICommandBufferInterop.cs");
+        var nativeSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.core.native/Source/Core.RHI/RHI/Sync/RHIImageMemoryBarrier.h");
+
+        Assert.Contains("public const uint External = 0xFFFFFFFEu;", managedSource, StringComparison.Ordinal);
+        Assert.Contains("RHI_QUEUE_FAMILY_EXTERNAL = 0xFFFFFFFEu;", nativeSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("External = 0xFFFFFFFDu;", managedSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("RHI_QUEUE_FAMILY_EXTERNAL = 0xFFFFFFFDu;", nativeSource, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void DirectionalShadowAllocationAndTransitionsAreOwnedByRenderGraph()
     {
         var pipelineSource = ReadRepoFile(
@@ -145,13 +280,14 @@ public sealed class RenderProfilingContractTests
             FindRepoRoot(),
             "Arisen/Development/PackageGame/Local/com.arisen.generic-renderpipeline/Src/DirectionalShadowTarget.cs");
 
-        Assert.Contains("RenderGraphTextureDescriptor.DepthAttachmentSampled2D(", pipelineSource, StringComparison.Ordinal);
+        Assert.Contains("RenderGraphTextureDescriptor.DepthAttachmentSampled2DArray(", pipelineSource, StringComparison.Ordinal);
         Assert.Contains("var shadowMapResource = directionalShadowTexture.Resource;", pipelineSource, StringComparison.Ordinal);
-        Assert.Contains("m_DirectionalShadowPass.SetDepthTarget(", pipelineSource, StringComparison.Ordinal);
+        Assert.Contains("m_DirectionalShadowPass.SetDepthTargets(", pipelineSource, StringComparison.Ordinal);
         Assert.DoesNotContain("CreateTransientResource(\"DirectionalShadowMap\"", pipelineSource, StringComparison.Ordinal);
         Assert.DoesNotContain("DirectionalShadowTarget", pipelineSource, StringComparison.Ordinal);
 
         Assert.Contains("BeginRenderingDepthOnly(", passSource, StringComparison.Ordinal);
+        Assert.Contains("texture.GetLayerImageView(", passSource, StringComparison.Ordinal);
         Assert.DoesNotContain("m_PreparedDrawCount <= 0", passSource, StringComparison.Ordinal);
         Assert.DoesNotContain("TransitionImageLayout(", passSource, StringComparison.Ordinal);
         Assert.DoesNotContain("CreateImage(", passSource, StringComparison.Ordinal);
@@ -296,6 +432,13 @@ public sealed class RenderProfilingContractTests
         if (counterName.StartsWith("DirectionalShadowPass.", StringComparison.Ordinal))
         {
             return "Arisen/Development/PackageGame/Local/com.arisen.generic-renderpipeline/Src/DirectionalShadowPass.cs";
+        }
+
+        if (counterName.StartsWith("Terrain.", StringComparison.Ordinal))
+        {
+            return counterName.StartsWith("Terrain.Residency.", StringComparison.Ordinal)
+                ? "Arisen/Development/PackageGame/Local/com.arisen.terrain.generic-renderpipeline/Managed/TerrainPreparedAssetProvider.cs"
+                : "Arisen/Development/PackageGame/Local/com.arisen.terrain.generic-renderpipeline/Managed/TerrainGenericRenderPipelineFeature.cs";
         }
 
         if (counterName.StartsWith("Render.", StringComparison.Ordinal))

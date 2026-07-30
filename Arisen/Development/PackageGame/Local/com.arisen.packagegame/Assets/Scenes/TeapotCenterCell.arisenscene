@@ -9,6 +9,10 @@ ComponentSchemas:
   Name: MeshRenderer
   Version: 1
   Required: true
+- TypeId: 1413829202
+  Name: TerrainTile
+  Version: 1
+  Required: true
 Entities:
 - Guid: 32000000-0000-0000-0000-000000000001
   Name: Center Utah Teapot
@@ -24,6 +28,70 @@ Entities:
       Guid: a2122786-c40a-41f2-bf35-1f5cbc4d39c2
       PackageId: com.arisen.packagegame
     Visible: true
+- Guid: 8ccdcc65-cc0f-5987-a8cb-176beec7fbc2
+  Name: Showcase Valley Terrain Tile 0,0
+  Transform:
+    Position: { X: 248.0, Y: 64.02, Z: 249.8 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 6f4d0a1c-0e85-4a42-93fe-34058ef48511, PackageId: com.arisen.packagegame }
+    TileGuid: 807a7664-36ee-bdf8-71ea-e78cd4db0c4f
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 0, Z: 0 }
+    WorldPlacement: { X: -8.0, Y: 0.02, Z: -6.2 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
+- Guid: b9436ec5-3755-591e-b2a7-4fa6f80d7caa
+  Name: Showcase Valley Terrain Tile 1,0
+  Transform:
+    Position: { X: 254.0, Y: 64.02, Z: 249.8 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 6f4d0a1c-0e85-4a42-93fe-34058ef48511, PackageId: com.arisen.packagegame }
+    TileGuid: 9b8e9a8a-7c9d-493e-9aa6-5ba74e5b630d
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 1, Z: 0 }
+    WorldPlacement: { X: -2.0, Y: 0.02, Z: -6.2 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
+- Guid: da5ee671-4ab2-4769-a105-3567e6806069
+  Name: Showcase Valley Terrain Tile 0,1
+  Transform:
+    Position: { X: 248.0, Y: 64.02, Z: 255.8 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 6f4d0a1c-0e85-4a42-93fe-34058ef48511, PackageId: com.arisen.packagegame }
+    TileGuid: 331e576c-eddd-d7cc-e553-23ef719f496d
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 0, Z: 1 }
+    WorldPlacement: { X: -8.0, Y: 0.02, Z: -0.20000000000000018 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
+- Guid: 2dbc795e-4111-4a89-a5e1-d33645335c72
+  Name: Showcase Valley Terrain Tile 1,1
+  Transform:
+    Position: { X: 254.0, Y: 64.02, Z: 255.8 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 6f4d0a1c-0e85-4a42-93fe-34058ef48511, PackageId: com.arisen.packagegame }
+    TileGuid: 3fd9bf23-4923-f0e5-cd73-94920028ed67
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 1, Z: 1 }
+    WorldPlacement: { X: -2.0, Y: 0.02, Z: -0.20000000000000018 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
 - Guid: 32000000-0000-0000-0000-000000000002
   Name: Center Presentation Pedestal
   Transform:

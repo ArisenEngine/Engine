@@ -101,6 +101,18 @@ public sealed class RenderOutputFramePacingStateTests
     }
 
     [Fact]
+    public void SingleOutstandingOutputRequiresConsumptionBeforeNextSubmit()
+    {
+        var state = new RenderOutputFramePacingState();
+
+        state.MarkSubmitted(10);
+        Assert.False(state.CanSubmit(maxOutstandingFrames: 1));
+
+        state.MarkConsumed(10);
+        Assert.True(state.CanSubmit(maxOutstandingFrames: 1));
+    }
+
+    [Fact]
     public void CanSubmitAllowsInitialBurstBeforeFirstConsumption()
     {
         var state = new RenderOutputFramePacingState();

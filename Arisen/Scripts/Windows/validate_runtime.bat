@@ -19,6 +19,7 @@ set "CPU_FALLBACK_RUNS=0"
 set "EDITOR_VIEWPORT_SMOKE_RUNS=0"
 set "RELOCATED_PRODUCTION_SMOKE_RUNS=0"
 set "WORLD_STREAMING_SMOKE_RUNS=0"
+set "TERRAIN_STREAMING_SMOKE_RUNS=0"
 set "FAILURE_STAGE="
 set "FAILED_PROFILE="
 set "FAILURE_MESSAGE="
@@ -114,6 +115,7 @@ echo [Arisen] CPU fallback validations: %CPU_FALLBACK_RUNS%
 echo [Arisen] Editor viewport smoke runs: %EDITOR_VIEWPORT_SMOKE_RUNS%
 echo [Arisen] Relocated Production smoke runs: %RELOCATED_PRODUCTION_SMOKE_RUNS%
 echo [Arisen] World-streaming smoke runs: %WORLD_STREAMING_SMOKE_RUNS%
+echo [Arisen] Terrain-streaming smoke runs: %TERRAIN_STREAMING_SMOKE_RUNS%
 set "EXIT_CODE=0"
 goto :finish
 
@@ -122,13 +124,14 @@ if /i "%SMOKE_MODE%"=="boot" exit /b 0
 if /i "%SMOKE_MODE%"=="scene" exit /b 0
 if /i "%SMOKE_MODE%"=="hot-reload" exit /b 0
 if /i "%SMOKE_MODE%"=="world-streaming" exit /b 0
+if /i "%SMOKE_MODE%"=="terrain-streaming" exit /b 0
 if /i "%SMOKE_MODE%"=="hotreload" (
     set "SMOKE_MODE=hot-reload"
     exit /b 0
 )
 
 echo [ERROR] Invalid --smoke-mode value: %SMOKE_MODE%
-echo [ERROR] Expected one of: boot, scene, hot-reload, world-streaming
+echo [ERROR] Expected one of: boot, scene, hot-reload, world-streaming, terrain-streaming
 set "FAILURE_STAGE=smoke mode"
 set "FAILURE_MESSAGE=Invalid --smoke-mode value: %SMOKE_MODE%"
 exit /b 1
@@ -203,6 +206,15 @@ set "CURRENT_WORLD_STREAMING_EXIT_CODE="
 set "CURRENT_WORLD_STREAMING_REQUIRED=0"
 if /i "%CURRENT_PROFILE%"=="Development" set "CURRENT_WORLD_STREAMING_REQUIRED=1"
 if /i "%CURRENT_PROFILE%"=="Production" set "CURRENT_WORLD_STREAMING_REQUIRED=1"
+set "CURRENT_TERRAIN_STREAMING_REQUESTED=0"
+set "CURRENT_TERRAIN_STREAMING_SUMMARY_PATH="
+set "CURRENT_TERRAIN_STREAMING_VISUAL_BASE_PATH="
+set "CURRENT_TERRAIN_STREAMING_LOG_PATH="
+set "CURRENT_TERRAIN_STREAMING_PASSED="
+set "CURRENT_TERRAIN_STREAMING_EXIT_CODE="
+set "CURRENT_TERRAIN_STREAMING_REQUIRED=0"
+if /i "%CURRENT_PROFILE%"=="Development" set "CURRENT_TERRAIN_STREAMING_REQUIRED=1"
+if /i "%CURRENT_PROFILE%"=="Production" set "CURRENT_TERRAIN_STREAMING_REQUIRED=1"
 echo.
 echo [Arisen] --------------------------------------------------
 echo [Arisen] Runtime profile smoke: %CURRENT_PROFILE% [%CONFIG%]
@@ -400,6 +412,22 @@ if errorlevel 1 (
     exit /b 1
 )
 
+call :validate_runtime_shutdown_log "%CURRENT_SMOKE_STARTED_UTC%"
+if errorlevel 1 (
+    echo [ERROR] Runtime package shutdown validation failed for profile %CURRENT_PROFILE%.
+    set "FAILED_PROFILE=%CURRENT_PROFILE%"
+    set "FAILURE_STAGE=runtime package shutdown"
+    set "FAILURE_MESSAGE=Runtime package shutdown validation failed for profile %CURRENT_PROFILE%"
+    set "RESULT_PROFILE=%CURRENT_PROFILE%"
+    set "RESULT_STATUS=failed"
+    set "RESULT_REQUIRES_VULKAN=%PROFILE_REQUIRES_VULKAN%"
+    set "RESULT_EXIT_CODE=1"
+    set "RESULT_LOG_PATH=%CURRENT_PROFILE_LOG%"
+    set "RESULT_MESSAGE=!FAILURE_MESSAGE!"
+    call :record_result
+    exit /b 1
+)
+
 if "!CURRENT_VISUAL_SUMMARY_REQUESTED!"=="1" (
     call :validate_visual_summary
     if errorlevel 1 (
@@ -438,6 +466,25 @@ if "!CURRENT_WORLD_STREAMING_REQUIRED!"=="1" (
     set /a WORLD_STREAMING_SMOKE_RUNS+=1
 )
 
+if "!CURRENT_TERRAIN_STREAMING_REQUIRED!"=="1" (
+    call :run_terrain_streaming_smoke
+    if errorlevel 1 (
+        echo [ERROR] Terrain-streaming smoke failed for profile %CURRENT_PROFILE%.
+        set "FAILED_PROFILE=%CURRENT_PROFILE%"
+        set "FAILURE_STAGE=terrain-streaming smoke"
+        set "FAILURE_MESSAGE=Terrain-streaming smoke failed for profile %CURRENT_PROFILE%"
+        set "RESULT_PROFILE=%CURRENT_PROFILE%"
+        set "RESULT_STATUS=failed"
+        set "RESULT_REQUIRES_VULKAN=%PROFILE_REQUIRES_VULKAN%"
+        set "RESULT_EXIT_CODE=1"
+        set "RESULT_LOG_PATH=!CURRENT_TERRAIN_STREAMING_LOG_PATH!"
+        set "RESULT_MESSAGE=!FAILURE_MESSAGE!"
+        call :record_result
+        exit /b 1
+    )
+    set /a TERRAIN_STREAMING_SMOKE_RUNS+=1
+)
+
 if /i "!CURRENT_PROFILE!"=="Production" (
     call :run_relocated_production_validation
     if errorlevel 1 (
@@ -456,6 +503,7 @@ if /i "!CURRENT_PROFILE!"=="Production" (
     )
     set /a RELOCATED_PRODUCTION_SMOKE_RUNS+=1
     set /a WORLD_STREAMING_SMOKE_RUNS+=1
+    set /a TERRAIN_STREAMING_SMOKE_RUNS+=1
 )
 
 call :configure_editor_viewport_smoke
@@ -510,6 +558,11 @@ if /i "%CURRENT_PROFILE%"=="Editor" set "EXPECTED_SOURCE_ACCESS=EditorAuthoring"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$start = [DateTime]::Parse($env:CURRENT_SMOKE_STARTED_UTC, [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::RoundtripKind).ToUniversalTime(); $log = Get-ChildItem -LiteralPath (Join-Path $env:BIN_DIR 'logs') -Filter 'player_*.log' -File -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTimeUtc -ge $start.AddSeconds(-1) } | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1; if ($null -eq $log) { Write-Host '[ERROR] Runtime smoke produced no fresh player log for source-access validation.'; exit 1 }; $text = Get-Content -LiteralPath $log.FullName -Raw; $expected = 'with {0} source access' -f $env:EXPECTED_SOURCE_ACCESS; if ($text.IndexOf($expected, [StringComparison]::Ordinal) -lt 0) { Write-Host ('[ERROR] Runtime log {0} does not contain expected source-access policy: {1}' -f $log.FullName, $expected); exit 1 }; Write-Host ('[Arisen] Runtime asset policy passed: {0} ({1})' -f $env:EXPECTED_SOURCE_ACCESS, $log.FullName)"
 exit /b %ERRORLEVEL%
 
+:validate_runtime_shutdown_log
+set "CURRENT_LOG_SCAN_STARTED_UTC=%~1"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$start = [DateTime]::Parse($env:CURRENT_LOG_SCAN_STARTED_UTC, [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::RoundtripKind).ToUniversalTime(); $log = Get-ChildItem -LiteralPath (Join-Path $env:BIN_DIR 'logs') -Filter 'player_*.log' -File -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTimeUtc -ge $start.AddSeconds(-1) } | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1; if ($null -eq $log) { Write-Host '[ERROR] Runtime smoke produced no fresh player log for package-shutdown validation.'; exit 1 }; $text = Get-Content -LiteralPath $log.FullName -Raw; $unloadFailure = '[PackageSubsystem] Error unloading package'; if ($text.IndexOf($unloadFailure, [StringComparison]::Ordinal) -ge 0) { Write-Host ('[ERROR] Runtime log contains a package unload failure: {0}' -f $log.FullName); exit 1 }; $resolvedPath = Join-Path $env:BIN_DIR 'manifest.resolved.json'; if (-not (Test-Path -LiteralPath $resolvedPath -PathType Leaf)) { Write-Host ('[ERROR] Runtime resolved manifest is missing for shutdown validation: {0}' -f $resolvedPath); exit 1 }; try { $resolved = Get-Content -LiteralPath $resolvedPath -Raw | ConvertFrom-Json } catch { Write-Host ('[ERROR] Runtime resolved manifest is invalid for shutdown validation: {0}' -f $_.Exception.Message); exit 1 }; $packageIds = @($resolved.ResolvedPackages | ForEach-Object { [string]$_.Id }); $terrainSelected = $packageIds -contains 'com.arisen.terrain.generic-renderpipeline'; $vulkanSelected = $packageIds -contains 'com.arisen.rhi.vulkan.native'; if ($terrainSelected -and $vulkanSelected) { $activationMarker = '[GenericRP.Features] Froze '; $releaseMarker = '[Terrain.GenericRP] Feature device-resource release completed.'; $destroyMarker = '[RHILoader::DestroyCurrentInstance] Destroying active RHI instance.'; $unregisterMarker = '[Terrain.GenericRP] Render feature unregistered.'; $vulkanUnloadMarker = '[VulkanRHIPackage] Unloaded Vulkan RHI backend.'; $activationIndex = $text.IndexOf($activationMarker, [StringComparison]::Ordinal); $releaseIndex = $text.IndexOf($releaseMarker, [StringComparison]::Ordinal); $destroyIndex = $text.IndexOf($destroyMarker, [StringComparison]::Ordinal); $unregisterIndex = $text.IndexOf($unregisterMarker, [StringComparison]::Ordinal); $vulkanUnloadIndex = $text.IndexOf($vulkanUnloadMarker, [StringComparison]::Ordinal); if ($activationIndex -ge 0 -and $releaseIndex -lt 0) { Write-Host ('[ERROR] Activated terrain feature did not report device-resource release: {0}' -f $log.FullName); exit 1 }; if ($destroyIndex -ge 0 -and ($releaseIndex -lt 0 -or $releaseIndex -ge $destroyIndex)) { Write-Host ('[ERROR] Terrain feature resources were not released before active RHI destruction: {0}' -f $log.FullName); exit 1 }; if ($unregisterIndex -lt 0 -or $vulkanUnloadIndex -lt 0 -or $unregisterIndex -ge $vulkanUnloadIndex) { Write-Host ('[ERROR] Terrain Generic RP adapter did not unregister before Vulkan package unload: {0}' -f $log.FullName); exit 1 } }; Write-Host ('[Arisen] Runtime package shutdown log passed: {0}' -f $log.FullName)"
+exit /b %ERRORLEVEL%
+
 :prepare_workspace_runtime_assets
 set "CURRENT_ASSET_PREPARATION_LOG="
 if /i "%CURRENT_PROFILE%"=="Editor" exit /b 0
@@ -561,11 +614,12 @@ set "CURRENT_WORLD_STREAMING_LOG_PATH=%LOG_DIR%\world-streaming-%CURRENT_PROFILE
 set "CURRENT_WORLD_STREAMING_EXIT_CODE="
 set "CURRENT_WORLD_STREAMING_PASSED=0"
 del /q "!CURRENT_WORLD_STREAMING_SUMMARY_PATH!" "!CURRENT_WORLD_STREAMING_LOG_PATH!" >nul 2>nul
-for %%N in (before during after) do del /q "%LOG_DIR%\world-streaming-visual-%CURRENT_PROFILE%-latest.%%N.json" >nul 2>nul
+for %%N in (before during shadow-near shadow-mid shadow-far shadow-far-stable after) do del /q "%LOG_DIR%\world-streaming-visual-%CURRENT_PROFILE%-latest.%%N.json" >nul 2>nul
 
 call :prepare_vulkan_validation_log "%PROFILE_REQUIRES_VULKAN%"
 if errorlevel 1 exit /b 1
 echo [Arisen] Running bounded world-streaming smoke: %EXE_PATH%
+for /f "delims=" %%I in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-Date).ToUniversalTime().ToString('o')"') do set "CURRENT_WORLD_STREAMING_STARTED_UTC=%%I"
 pushd "%BIN_DIR%" >nul
 if /i "%CURRENT_PROFILE%"=="Production" (
     "%EXE_PATH%" --smoke-mode world-streaming --frames 1 --smoke-summary-output "!CURRENT_WORLD_STREAMING_SUMMARY_PATH!" --visual-summary --visual-summary-output "!CURRENT_WORLD_STREAMING_VISUAL_BASE_PATH!" > "!CURRENT_WORLD_STREAMING_LOG_PATH!" 2>&1
@@ -579,10 +633,72 @@ if not "!CURRENT_WORLD_STREAMING_EXIT_CODE!"=="0" exit /b 1
 
 call :validate_vulkan_validation_log "%PROFILE_REQUIRES_VULKAN%"
 if errorlevel 1 exit /b 1
-powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_ROOT%validate_world_streaming_summary.ps1" -SummaryPath "!CURRENT_WORLD_STREAMING_SUMMARY_PATH!" -ExpectedProfile "%CURRENT_PROFILE%" -ExpectedVisualCaptureCount 3
+call :validate_terrain_submission_log "%CURRENT_WORLD_STREAMING_STARTED_UTC%"
+if errorlevel 1 exit /b 1
+powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_ROOT%validate_world_streaming_summary.ps1" -SummaryPath "!CURRENT_WORLD_STREAMING_SUMMARY_PATH!" -ExpectedProfile "%CURRENT_PROFILE%" -ExpectedVisualCaptureCount 7
+if errorlevel 1 exit /b 1
+powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_ROOT%validate_cascaded_shadow_visuals.ps1" -SummaryPath "!CURRENT_WORLD_STREAMING_SUMMARY_PATH!" -LogDirectory "%BIN_DIR%\logs" -ExpectedCascadeCount 4 -StartedUtc "!CURRENT_WORLD_STREAMING_STARTED_UTC!"
+if errorlevel 1 exit /b 1
+powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_ROOT%validate_outdoor_atmosphere_visuals.ps1" -SummaryPath "!CURRENT_WORLD_STREAMING_SUMMARY_PATH!" -LogDirectory "%BIN_DIR%\logs" -StartedUtc "!CURRENT_WORLD_STREAMING_STARTED_UTC!"
 if errorlevel 1 exit /b 1
 set "CURRENT_WORLD_STREAMING_PASSED=1"
 exit /b 0
+
+:run_terrain_streaming_smoke
+set "CURRENT_TERRAIN_STREAMING_REQUESTED=1"
+set "CURRENT_TERRAIN_STREAMING_SUMMARY_PATH=%LOG_DIR%\terrain-streaming-summary-%CURRENT_PROFILE%-latest.json"
+set "CURRENT_TERRAIN_STREAMING_VISUAL_BASE_PATH=%LOG_DIR%\terrain-streaming-visual-%CURRENT_PROFILE%-latest.json"
+set "CURRENT_TERRAIN_STREAMING_LOG_PATH=%LOG_DIR%\terrain-streaming-%CURRENT_PROFILE%-%CONFIG%-%RUN_TIMESTAMP%.log"
+set "CURRENT_TERRAIN_STREAMING_EXIT_CODE="
+set "CURRENT_TERRAIN_STREAMING_PASSED=0"
+del /q "!CURRENT_TERRAIN_STREAMING_SUMMARY_PATH!" "!CURRENT_TERRAIN_STREAMING_LOG_PATH!" >nul 2>nul
+for %%N in (near boundary-mixed-lod far-cascade post-rebase returned-start) do del /q "%LOG_DIR%\terrain-streaming-visual-%CURRENT_PROFILE%-latest.%%N.json" >nul 2>nul
+
+call :prepare_vulkan_validation_log "%PROFILE_REQUIRES_VULKAN%"
+if errorlevel 1 (
+    set "CURRENT_TERRAIN_STREAMING_EXIT_CODE=1"
+    exit /b 1
+)
+echo [Arisen] Running bounded terrain-streaming smoke: %EXE_PATH%
+for /f "delims=" %%I in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-Date).ToUniversalTime().ToString('o')"') do set "CURRENT_TERRAIN_STREAMING_STARTED_UTC=%%I"
+pushd "%BIN_DIR%" >nul
+if /i "%CURRENT_PROFILE%"=="Production" (
+    "%EXE_PATH%" --smoke-mode terrain-streaming --frames 1 --smoke-summary-output "!CURRENT_TERRAIN_STREAMING_SUMMARY_PATH!" --visual-summary --visual-summary-output "!CURRENT_TERRAIN_STREAMING_VISUAL_BASE_PATH!" > "!CURRENT_TERRAIN_STREAMING_LOG_PATH!" 2>&1
+) else (
+    "%EXE_PATH%" --workspace "%WORKSPACE_DIR%" --profile "%CURRENT_PROFILE%" --smoke-mode terrain-streaming --frames 1 --smoke-summary-output "!CURRENT_TERRAIN_STREAMING_SUMMARY_PATH!" --visual-summary --visual-summary-output "!CURRENT_TERRAIN_STREAMING_VISUAL_BASE_PATH!" > "!CURRENT_TERRAIN_STREAMING_LOG_PATH!" 2>&1
+)
+set "CURRENT_TERRAIN_STREAMING_EXIT_CODE=!ERRORLEVEL!"
+popd >nul
+type "!CURRENT_TERRAIN_STREAMING_LOG_PATH!"
+if not "!CURRENT_TERRAIN_STREAMING_EXIT_CODE!"=="0" exit /b 1
+
+call :validate_vulkan_validation_log "%PROFILE_REQUIRES_VULKAN%"
+if errorlevel 1 (
+    set "CURRENT_TERRAIN_STREAMING_EXIT_CODE=1"
+    exit /b 1
+)
+call :validate_terrain_submission_log "%CURRENT_TERRAIN_STREAMING_STARTED_UTC%"
+if errorlevel 1 (
+    set "CURRENT_TERRAIN_STREAMING_EXIT_CODE=1"
+    exit /b 1
+)
+call :validate_runtime_shutdown_log "%CURRENT_TERRAIN_STREAMING_STARTED_UTC%"
+if errorlevel 1 (
+    set "CURRENT_TERRAIN_STREAMING_EXIT_CODE=1"
+    exit /b 1
+)
+powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_ROOT%validate_terrain_streaming_summary.ps1" -SummaryPath "!CURRENT_TERRAIN_STREAMING_SUMMARY_PATH!" -ExpectedProfile "%CURRENT_PROFILE%" -ExpectedVisualCaptureCount 5
+if errorlevel 1 (
+    set "CURRENT_TERRAIN_STREAMING_EXIT_CODE=1"
+    exit /b 1
+)
+set "CURRENT_TERRAIN_STREAMING_PASSED=1"
+exit /b 0
+
+:validate_terrain_submission_log
+set "CURRENT_TERRAIN_SUBMISSION_STARTED_UTC=%~1"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$resolvedPath = Join-Path $env:BIN_DIR 'manifest.resolved.json'; if (-not (Test-Path -LiteralPath $resolvedPath -PathType Leaf)) { Write-Host ('[ERROR] Runtime resolved manifest is missing for terrain submission validation: {0}' -f $resolvedPath); exit 1 }; try { $resolved = Get-Content -LiteralPath $resolvedPath -Raw | ConvertFrom-Json } catch { Write-Host ('[ERROR] Runtime resolved manifest is invalid for terrain submission validation: {0}' -f $_.Exception.Message); exit 1 }; $packageIds = @($resolved.ResolvedPackages | ForEach-Object { [string]$_.Id }); if ($packageIds -notcontains 'com.arisen.terrain.generic-renderpipeline') { exit 0 }; $start = [DateTime]::Parse($env:CURRENT_TERRAIN_SUBMISSION_STARTED_UTC, [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::RoundtripKind).ToUniversalTime(); $log = Get-ChildItem -LiteralPath (Join-Path $env:BIN_DIR 'logs') -Filter 'player_*.log' -File -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTimeUtc -ge $start.AddSeconds(-1) } | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1; if ($null -eq $log) { Write-Host '[ERROR] Runtime run produced no fresh player log for terrain submission validation.'; exit 1 }; $text = Get-Content -LiteralPath $log.FullName -Raw; $marker = '[Terrain.GenericRP] Submitted terrain draw commands'; $pattern = [Regex]::Escape($marker) + ' \| Draws: ([1-9][0-9]*) \| Ticket: ([1-9][0-9]*)\.'; $match = [Regex]::Match($text, $pattern); if (-not $match.Success) { Write-Host ('[ERROR] Runtime run did not submit a positive terrain draw count: {0}' -f $log.FullName); exit 1 }; Write-Host ('[Arisen] Terrain submission passed: draws={0}, ticket={1}, log={2}' -f $match.Groups[1].Value, $match.Groups[2].Value, $log.FullName)"
+exit /b %ERRORLEVEL%
 
 :run_relocated_production_validation
 set "CURRENT_RELOCATED_PRODUCTION_REQUESTED=1"
@@ -639,9 +755,14 @@ exit /b 0
 echo [Arisen] Running bounded Avalonia editor viewport smoke: %EXE_PATH%
 call :prepare_vulkan_validation_log "1"
 if errorlevel 1 exit /b 1
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$stderrPath = $env:CURRENT_EDITOR_VIEWPORT_SMOKE_LOG_PATH + '.stderr'; Remove-Item -LiteralPath $env:CURRENT_EDITOR_VIEWPORT_SMOKE_LOG_PATH,$stderrPath -Force -ErrorAction SilentlyContinue; $quote = [char]34; $arguments = '--workspace {0}{1}{0} --profile {0}{2}{0} --editor-viewport-smoke --editor-viewport-smoke-timeout 30' -f $quote,$env:WORKSPACE_DIR,$env:CURRENT_PROFILE; try { $process = Start-Process -FilePath $env:EXE_PATH -ArgumentList $arguments -WorkingDirectory $env:BIN_DIR -PassThru -RedirectStandardOutput $env:CURRENT_EDITOR_VIEWPORT_SMOKE_LOG_PATH -RedirectStandardError $stderrPath; if (-not $process.WaitForExit(45000)) { try { $process.Kill() } catch {}; $process.WaitForExit(); Add-Content -LiteralPath $env:CURRENT_EDITOR_VIEWPORT_SMOKE_LOG_PATH -Value '[ERROR] Editor viewport smoke exceeded the 45 second process timeout.'; exit 124 }; $process.WaitForExit(); $exitCode = $process.ExitCode } catch { Add-Content -LiteralPath $env:CURRENT_EDITOR_VIEWPORT_SMOKE_LOG_PATH -Value ('[ERROR] Failed to launch editor viewport smoke: {0}' -f $_.Exception.Message); $exitCode = 125 }; if (Test-Path -LiteralPath $stderrPath) { Get-Content -LiteralPath $stderrPath | Add-Content -LiteralPath $env:CURRENT_EDITOR_VIEWPORT_SMOKE_LOG_PATH; Remove-Item -LiteralPath $stderrPath -Force }; exit $exitCode"
+for /f "delims=" %%I in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-Date).ToUniversalTime().ToString('o')"') do set "CURRENT_EDITOR_VIEWPORT_SMOKE_STARTED_UTC=%%I"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$stderrPath = $env:CURRENT_EDITOR_VIEWPORT_SMOKE_LOG_PATH + '.stderr'; Remove-Item -LiteralPath $env:CURRENT_EDITOR_VIEWPORT_SMOKE_LOG_PATH,$stderrPath -Force -ErrorAction SilentlyContinue; $env:ARISEN_ENABLE_RENDERDOC = $null; $quote = [char]34; $arguments = '--workspace {0}{1}{0} --profile {0}{2}{0} --editor-viewport-smoke --editor-viewport-smoke-timeout 90' -f $quote,$env:WORKSPACE_DIR,$env:CURRENT_PROFILE; try { $process = Start-Process -FilePath $env:EXE_PATH -ArgumentList $arguments -WorkingDirectory $env:BIN_DIR -PassThru -RedirectStandardOutput $env:CURRENT_EDITOR_VIEWPORT_SMOKE_LOG_PATH -RedirectStandardError $stderrPath; if (-not $process.WaitForExit(120000)) { try { $process.Kill() } catch {}; $process.WaitForExit(); Add-Content -LiteralPath $env:CURRENT_EDITOR_VIEWPORT_SMOKE_LOG_PATH -Value '[ERROR] Editor viewport smoke exceeded the 120 second process timeout.'; exit 124 }; $process.WaitForExit(); $exitCode = $process.ExitCode } catch { Add-Content -LiteralPath $env:CURRENT_EDITOR_VIEWPORT_SMOKE_LOG_PATH -Value ('[ERROR] Failed to launch editor viewport smoke: {0}' -f $_.Exception.Message); $exitCode = 125 }; if (Test-Path -LiteralPath $stderrPath) { Get-Content -LiteralPath $stderrPath | Add-Content -LiteralPath $env:CURRENT_EDITOR_VIEWPORT_SMOKE_LOG_PATH; Remove-Item -LiteralPath $stderrPath -Force }; exit $exitCode"
 set "CURRENT_EDITOR_VIEWPORT_SMOKE_EXIT_CODE=%ERRORLEVEL%"
 if exist "%CURRENT_EDITOR_VIEWPORT_SMOKE_LOG_PATH%" type "%CURRENT_EDITOR_VIEWPORT_SMOKE_LOG_PATH%"
+if not "%CURRENT_EDITOR_VIEWPORT_SMOKE_EXIT_CODE%"=="0" exit /b 1
+
+call :validate_runtime_shutdown_log "%CURRENT_EDITOR_VIEWPORT_SMOKE_STARTED_UTC%"
+set "CURRENT_EDITOR_VIEWPORT_SMOKE_EXIT_CODE=%ERRORLEVEL%"
 if not "%CURRENT_EDITOR_VIEWPORT_SMOKE_EXIT_CODE%"=="0" exit /b 1
 
 call :validate_vulkan_validation_log "1"
@@ -653,8 +774,9 @@ set "CURRENT_EDITOR_VIEWPORT_SMOKE_EXIT_CODE=%ERRORLEVEL%"
 exit /b %CURRENT_EDITOR_VIEWPORT_SMOKE_EXIT_CODE%
 
 :validate_editor_viewport_smoke
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$path = $env:CURRENT_EDITOR_VIEWPORT_SMOKE_PATH; if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { Write-Host ('[ERROR] Editor viewport smoke artifact was not produced: {0}' -f $path); exit 1 }; try { $artifact = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json } catch { Write-Host ('[ERROR] Editor viewport smoke artifact is not valid JSON: {0}' -f $_.Exception.Message); exit 1 }; if ([int]$artifact.schemaVersion -ne 2) { Write-Host ('[ERROR] Editor viewport smoke schema mismatch. Expected 2, received {0}.' -f $artifact.schemaVersion); exit 1 }; if ([string]$artifact.profile -cne $env:CURRENT_PROFILE) { Write-Host ('[ERROR] Editor viewport smoke profile mismatch. Expected {0}, received {1}.' -f $env:CURRENT_PROFILE, $artifact.profile); exit 1 }; if ($artifact.passed -ne $true -or $artifact.checks.passed -ne $true) { Write-Host ('[ERROR] Editor viewport smoke checks did not pass: {0}' -f $path); exit 1 }; if ($null -eq $artifact.sceneFirstFrame -or $null -eq $artifact.sceneResizedFrame -or $null -eq $artifact.gameFirstFrame) { Write-Host '[ERROR] Editor viewport smoke is missing a required SceneView or GameView observation.'; exit 1 }; if ($artifact.sceneFirstFrame.consumptionReported -ne $true -or $artifact.sceneResizedFrame.consumptionReported -ne $true -or $artifact.gameFirstFrame.consumptionReported -ne $true) { Write-Host '[ERROR] Editor viewport smoke did not report all presented frames as consumed.'; exit 1 }; if ([double]$artifact.sceneFirstFrame.presentationScaleY -ne -1.0 -or [double]$artifact.sceneResizedFrame.presentationScaleY -ne -1.0 -or [double]$artifact.gameFirstFrame.presentationScaleY -ne -1.0) { Write-Host '[ERROR] Editor viewport smoke compositor Y-flip policy is incorrect.'; exit 1 }; if ($null -eq $artifact.worldPartition -or [int]$artifact.worldPartition.cellCount -le 0 -or $artifact.worldPartition.loadRequested -ne $true -or $artifact.worldPartition.activeObserved -ne $true -or $artifact.worldPartition.unloadRequested -ne $true -or $artifact.worldPartition.unloadedObserved -ne $true) { Write-Host '[ERROR] Editor viewport smoke did not prove first-open world visibility and explicit cell load/unload.'; exit 1 }; Write-Host ('[Arisen] Editor viewport smoke passed: Scene={0}x{1}, Resized={2}x{3}, Game={4}x{5}, WorldCells={6}, output={7}' -f $artifact.sceneFirstFrame.width, $artifact.sceneFirstFrame.height, $artifact.sceneResizedFrame.width, $artifact.sceneResizedFrame.height, $artifact.gameFirstFrame.width, $artifact.gameFirstFrame.height, $artifact.worldPartition.cellCount, $path)"
-exit /b %ERRORLEVEL%
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0validate_editor_viewport_summary.ps1" -ArtifactPath "%CURRENT_EDITOR_VIEWPORT_SMOKE_PATH%" -ExpectedProfile "%CURRENT_PROFILE%"
+set "CURRENT_EDITOR_VIEWPORT_SMOKE_EXIT_CODE=%ERRORLEVEL%"
+exit /b %CURRENT_EDITOR_VIEWPORT_SMOKE_EXIT_CODE%
 
 :profile_requires_vulkan
 set "PROFILE_REQUIRES_VULKAN=0"

@@ -89,9 +89,21 @@ What this runs:
 - bounded runtime smoke launches for generated `PackageGame.exe`
 - `Editor`, `Development`, `Production`, and `RHIVulkanTesting` boot coverage where applicable
 - runtime source-access policy checks (`EditorAuthoring` for Editor; `Disabled` for ordinary runtime profiles)
+- fresh player-log checks that fail the gate when any package reports an unload error
+- dedicated Development and Production `world-streaming` and `terrain-streaming` state/memory/visual/shutdown gates
 - copied Production output boot outside the workspace, including zero-source, catalog tamper, and missing-artifact checks
+- copied cooked-only Production world/terrain streaming with preserved visual artifacts and empty Vulkan validation logs
 
 Use `validate_runtime.bat` as the main local gate for runtime/rendering work. If a GPU-dependent path is unavailable on the machine, report that explicitly instead of hiding it behind a generic build failure.
+
+Focused Editor RenderDoc restart validation is available after building the `Editor` profile:
+
+- Launch the real dual-viewport restart smoke:
+  - `Arisen\Development\PackageGame\.arisen\bin\Editor\Debug\PackageGame.exe --workspace Arisen\Development\PackageGame --profile Editor --editor-viewport-smoke --editor-viewport-smoke-timeout 120 --editor-viewport-smoke-restart-renderdoc`
+- Validate its generation-2 artifact:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File Arisen\Scripts\Windows\validate_editor_viewport_summary.ps1 -ArtifactPath Arisen\Development\PackageGame\.arisen\Logs\editor-viewport-summary-Editor-latest.json -ExpectedProfile Editor -ExpectRenderDocRestart`
+
+This gate must advance the graphics generation, restore both viewports, sustain at least 320 accepted frames per viewport after restart, exit cleanly, and leave `vk_validation.log` empty.
 
 Normal Development/test runtime selection is cooked-only. Prepare its mutable cooked cache explicitly with the generated apphost's `--arisen-cook-runtime-assets` command. Use `--diagnostic-source-assets` only for a bounded Development/test diagnosis; Editor source access is compile-owned and Production/deployed launches reject this option.
 
@@ -112,6 +124,8 @@ How this works:
 
 The default workspace manifest also contains a concrete testing profile:
 - `RHIVulkanTesting` in `Arisen\Development\PackageGame\manifest.json`
+
+An ordinary interactive `RHIVulkanTesting` launch uses the test runner's package-only application host. It mounts packages for native-test discovery without initializing game subsystems, so rendering cases open one test-owned window at a time; closing the current window advances the sequential test run. Smoke-mode launches still perform full engine initialization for bounded runtime validation.
 
 ### Lint / static analysis
 
@@ -280,8 +294,11 @@ World-cell workers may read and validate payloads and acquire generation-checked
 Current platform/RHI ownership policy:
 - standalone runtime builds create and pump the main Win32 window through `IWindowProvider`
 - editor builds use `ARISEN_ENGINE_EDITOR`; the Avalonia/editor host owns native UI windows and the platform package must not create an independent runtime window loop
+- RenderDoc is an explicit diagnostic mode. It may be enabled at process start through `ARISEN_ENABLE_RENDERDOC=1`, or activated once inside the Editor by releasing every viewport and generation-owned GPU resource, recreating the backend with RenderDoc enabled, and restoring the viewports. External injection into an already-running Vulkan generation is unsupported, and in-process activation is one-way for that Editor process
 - runtime Vulkan initialization must validate `IWindowProvider.GetWindowInfo()` before registering `IRHIDevice`
-- editor Vulkan initialization may use a virtual/device-only path until editor-hosted viewport surfaces are implemented
+- editor Vulkan initialization uses virtual shared-texture surfaces hosted by Avalonia; resize must await active compositor updates and imported-object disposal, acknowledge external-consumer release, and only then recreate at the render-thread boundary
+- each editor virtual frame slot owns one persistent producer/consumer semaphore pair; Avalonia imports those handles once per swapchain generation and must not dispose/reimport them per presented frame
+- deferred GPU-disposal queues must be bound to one native-device/backend-generation identity. Before backend replacement, residency invalidation must finish on the old generation, every pending ticket must be no newer than that generation's last submitted ticket, and the queue must be empty and explicitly unbound
 - future DX12/Metal backends should follow the same contracts: common RHI interfaces stay shared, concrete backend packages stay selectable by composition packages
 
 ### What to read before making architectural changes
@@ -301,12 +318,21 @@ Start with:
   - `Arisen\Docs\Architecture\Rendering.md`
   - `Arisen\Docs\Architecture\AssetPipeline.md`
   - `Arisen\Docs\Architecture\WorldStreaming.md`
-  - `Arisen\Docs\Architecture\TerrainOutdoorWorldNextTodo.md`
+  - `Arisen\Docs\Architecture\VegetationOutdoorWorldNextTodo.md`
 - ECS/task scheduling questions:
   - `Arisen\Docs\Architecture\TaskGraph.md`
 - package-boundary questions:
   - `Arisen\Docs\Architecture\PackageArchitecture.md`
   - `Arisen\Docs\Architecture\PackageRegistry.md`
+
+## Forbidden workaround fixes
+
+- Fix the violated invariant at the layer that owns it. Do not hide a race, lifetime error, ownership error, stale-state bug, initialization-order bug, or GPU synchronization bug by changing when the symptom happens.
+- Correctness must not depend on arbitrary sleeps, quiet-period timers, debounce windows, retry counts, polling intervals, extra frames, tab/view switches, process restarts, garbage collection, blanket device-idle waits, swallowed exceptions, disabled validation, or suppressed diagnostics.
+- Waiting on an explicit state transition or synchronization primitive is valid. Waiting for an estimated amount of time and assuming the operation is then safe is not.
+- Debouncing, throttling, coalescing, retries, and timeouts are allowed only when they implement an explicit UX, performance, transient-I/O, or bounded-validation policy. The underlying lifecycle and synchronization must remain correct when that policy is disabled or configured to its minimum interval.
+- A bug fix that introduces a timing or suppression policy must include deterministic coverage that bypasses the policy and stresses the original failing path. Tests must assert observable state, ownership, generation, ticket, or completion conditions rather than elapsed time.
+- Do not ship a speculative workaround as a completed fix. If the root cause cannot yet be established, report the mitigation and unresolved invariant explicitly and keep the task open.
 
 ## Working assumptions for edits
 

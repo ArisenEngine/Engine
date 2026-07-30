@@ -15,7 +15,7 @@ public sealed class RenderPipelineSettingsTests
         File.WriteAllText(
             sourcePath,
             """
-            Version: 1
+            Version: 2
             Pipeline: GenericRP
             Name: Cinematic
             Fallback:
@@ -31,6 +31,10 @@ public sealed class RenderPipelineSettingsTests
               SlopeBias: 0.003
               Strength: 0.9
               PcfRadius: 2
+              CascadeCount: 3
+              MaximumDistance: 640
+              PracticalSplitWeight: 0.7
+              TerminalFadeFraction: 0.15
             """);
         var asset = new AssetRecord(
             Guid.Parse("11111111-2222-3333-4444-555555555555"),
@@ -51,6 +55,54 @@ public sealed class RenderPipelineSettingsTests
         Assert.Equal(0.003f, settings.Shadows.SlopeBias);
         Assert.Equal(0.9f, settings.Shadows.Strength);
         Assert.Equal(2, settings.Shadows.PcfRadius);
+        Assert.Equal(3, settings.Shadows.CascadeCount);
+        Assert.Equal(640.0f, settings.Shadows.MaximumDistance);
+        Assert.Equal(0.7f, settings.Shadows.PracticalSplitWeight);
+        Assert.Equal(0.15f, settings.Shadows.TerminalFadeFraction);
+    }
+
+    [Fact]
+    public void GenericSettingsLoader_VersionOneUsesCompatibleCascadeDefaults()
+    {
+        using var temp = new TemporaryDirectory();
+        string sourcePath = Path.Combine(temp.Path, "Legacy.arisrenderpipeline");
+        File.WriteAllText(
+            sourcePath,
+            """
+            Version: 1
+            Pipeline: GenericRP
+            Fallback:
+              ClearColor: { R: 0, G: 0, B: 0, A: 1 }
+            Shadows:
+              Enabled: true
+              MapSize: 1024
+              DepthBias: 0.001
+              SlopeBias: 0.002
+              Strength: 1
+              PcfRadius: 1
+            """);
+        var asset = new AssetRecord(
+            Guid.NewGuid(),
+            GenericRenderPipelineSettingsLoader.AssetType,
+            sourcePath,
+            sourcePath + ".meta",
+            GenericRenderPipelineSettingsLoader.ProviderPackageId);
+
+        GenericRenderPipelineSettings settings =
+            GenericRenderPipelineSettingsLoader.LoadSource(asset);
+
+        Assert.Equal(
+            GenericShadowSettings.Default.CascadeCount,
+            settings.Shadows.CascadeCount);
+        Assert.Equal(
+            GenericShadowSettings.Default.MaximumDistance,
+            settings.Shadows.MaximumDistance);
+        Assert.Equal(
+            GenericShadowSettings.Default.PracticalSplitWeight,
+            settings.Shadows.PracticalSplitWeight);
+        Assert.Equal(
+            GenericShadowSettings.Default.TerminalFadeFraction,
+            settings.Shadows.TerminalFadeFraction);
     }
 
     [Theory]
@@ -83,6 +135,52 @@ public sealed class RenderPipelineSettingsTests
             GenericRenderPipelineSettingsLoader.ProviderPackageId);
 
         var exception = Assert.Throws<InvalidOperationException>(() =>
+            GenericRenderPipelineSettingsLoader.LoadSource(asset));
+
+        Assert.Contains("invalid", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData(0, 250.0f, 0.65f, 0.1f)]
+    [InlineData(5, 250.0f, 0.65f, 0.1f)]
+    [InlineData(4, 4.0f, 0.65f, 0.1f)]
+    [InlineData(4, 250.0f, 1.1f, 0.1f)]
+    [InlineData(4, 250.0f, 0.65f, 0.6f)]
+    public void GenericSettingsLoader_RejectsInvalidCascadeQuality(
+        int cascadeCount,
+        float maximumDistance,
+        float splitWeight,
+        float terminalFadeFraction)
+    {
+        using var temp = new TemporaryDirectory();
+        string sourcePath = Path.Combine(temp.Path, "InvalidCascade.arisrenderpipeline");
+        File.WriteAllText(
+            sourcePath,
+            $$"""
+            Version: 2
+            Pipeline: GenericRP
+            Fallback:
+              ClearColor: { R: 0, G: 0, B: 0, A: 1 }
+            Shadows:
+              Enabled: true
+              MapSize: 2048
+              DepthBias: 0.001
+              SlopeBias: 0.002
+              Strength: 1
+              PcfRadius: 1
+              CascadeCount: {{cascadeCount}}
+              MaximumDistance: {{maximumDistance}}
+              PracticalSplitWeight: {{splitWeight}}
+              TerminalFadeFraction: {{terminalFadeFraction}}
+            """);
+        var asset = new AssetRecord(
+            Guid.NewGuid(),
+            GenericRenderPipelineSettingsLoader.AssetType,
+            sourcePath,
+            sourcePath + ".meta",
+            GenericRenderPipelineSettingsLoader.ProviderPackageId);
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
             GenericRenderPipelineSettingsLoader.LoadSource(asset));
 
         Assert.Contains("invalid", exception.Message, StringComparison.OrdinalIgnoreCase);

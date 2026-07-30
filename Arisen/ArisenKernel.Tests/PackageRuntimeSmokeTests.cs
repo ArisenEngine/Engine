@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ArisenKernel.Contracts;
 using ArisenKernel.Lifecycle;
 using ArisenKernel.Packages;
 using ArisenKernel.Services;
@@ -200,6 +201,34 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
     }
 
     [Fact]
+    public void BootstrapperHandsPackageOnlyHostOffBeforeSubsystemInitialization()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        workspace.AddPackage(
+            "com.test.package-only-host",
+            typeof(PackageOnlyHostPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IApplicationHost).FullName! }
+            });
+        workspace.WriteProjectManifest("com.test.package-only-host");
+
+        EngineBootstrapper.Run(new[]
+        {
+            "--workspace", workspace.Root,
+            "--profile", "Development",
+            "--allow-manifest-fallback"
+        });
+
+        Assert.True(EngineKernel.Instance.IsPackageGraphMounted);
+        Assert.Equal(EnginePhase.None, EngineKernel.Instance.CurrentPhase);
+        Assert.Contains("run:package-only-host", TestPackageEvents.Events);
+        Assert.False(CountingTickSubsystem.WasInitialized);
+
+        EngineKernel.Instance.Shutdown();
+    }
+
+    [Fact]
     public void EngineKernelFailsWhenNativeLifecycleLibraryIsMissing()
     {
         using var workspace = RuntimePackageWorkspace.Create();
@@ -275,6 +304,8 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
             return new RuntimePackageWorkspace(root);
         }
 
+        public string Root => m_Root;
+
         public string AddPackage(
             string id,
             Type entryType,
@@ -312,6 +343,25 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
             Directory.CreateDirectory(packageDir);
             File.WriteAllText(Path.Combine(packageDir, "package.json"), json);
             return packageDir;
+        }
+
+        public void WriteProjectManifest(params string[] packageIds)
+        {
+            var manifest = new
+            {
+                Name = "ArisenKernel Package-Only Host Test",
+                EngineVersion = "Current",
+                Packages = packageIds.Select(id => new
+                {
+                    Id = id,
+                    Url = $"file://{id}",
+                    Version = "1.0.0"
+                })
+            };
+
+            File.WriteAllText(
+                Path.Combine(m_Root, "manifest.json"),
+                JsonSerializer.Serialize(manifest, s_JsonOptions));
         }
 
         public void Dispose()
@@ -412,6 +462,29 @@ public sealed class ConsumerPackageEntry : IPackageEntry
     }
 }
 
+public sealed class PackageOnlyHostPackageEntry : IPackageEntry
+{
+    public void OnLoad(IServiceRegistry services)
+    {
+        EngineKernel.Instance.RegisterSubsystem(new CountingTickSubsystem());
+        services.RegisterService<IApplicationHost>(new PackageOnlyTestHost());
+    }
+
+    public void OnUnload(IServiceRegistry services)
+    {
+    }
+}
+
+public sealed class PackageOnlyTestHost : IApplicationHost
+{
+    public bool RequiresEngineInitialization => false;
+
+    public void Run(string[] args)
+    {
+        TestPackageEvents.Events.Add("run:package-only-host");
+    }
+}
+
 internal static class TestPackageEvents
 {
     public static List<string> Events { get; } = new();
@@ -426,6 +499,7 @@ internal static class TestPackageEvents
 public sealed class CountingTickSubsystem : ITickableSubsystem
 {
     public static int TickCount { get; private set; }
+    public static bool WasInitialized { get; private set; }
     public static bool WasShutdown { get; private set; }
 
     public int Priority => 0;
@@ -434,11 +508,13 @@ public sealed class CountingTickSubsystem : ITickableSubsystem
     public static void Reset()
     {
         TickCount = 0;
+        WasInitialized = false;
         WasShutdown = false;
     }
 
     public void Initialize()
     {
+        WasInitialized = true;
     }
 
     public void Tick(float deltaTime)

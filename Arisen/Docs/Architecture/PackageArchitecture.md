@@ -39,6 +39,20 @@ Packages that provide the visual environment for creating games.
 -   **`com.arisen.editor`**: The main Avalonia host and panel management system.
 -   **`com.arisen.nodecanvas`**: A reusable UI foundation for all node-based editing.
 
+Optional authoring packages extend the Editor through the setup-only
+`IEditorExtensionRegistry` service. An adapter registers one stable
+`IEditorExtension` during package `OnLoad`; the Editor freezes extensions in
+`(Order, ExtensionId)` order before Avalonia starts and accepts bounded panel,
+SceneView-overlay, menu-provider, and property-editor contributions while
+constructing the UI. SceneView overlay registrations are independently ordered
+and duplicate-checked; each package owns its control, visibility UI, state, and
+disposal without adding a feature dependency to `com.arisen.editor`.
+Panel descriptors select a dock region without requiring the Editor package to
+reference the feature package. Registrations are cleaned up when the UI exits,
+the registry is unfrozen, and adapter packages unregister during reverse package
+shutdown. An empty frozen extension set is valid, so `com.arisen.editor` starts
+without optional authoring packages selected.
+
 ### 5. User (Application & Projects)
 The highest non-test layer where the final project is assembled.
 -   **`com.arisen.packagegame`**: The specific game logic and root configuration.

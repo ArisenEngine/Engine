@@ -50,7 +50,56 @@ public sealed class RuntimeAssetSelectionTests
         Assert.Throws<InvalidOperationException>(() =>
             database.InvalidateCookedAssets(guid));
         Assert.Throws<InvalidOperationException>(() =>
+            database.RemoveCookedArtifacts(
+                [new CookedAssetIdentity(guid, fixture.Variant)]));
+        Assert.Throws<InvalidOperationException>(() =>
             database.RefreshDirectory(temp.Path));
+    }
+
+    [Fact]
+    public void AssetDatabase_RemovesCookedArtifactsPersistentlyAndRejectsExternalPaths()
+    {
+        using var temp = new TempDirectory();
+        string workspaceRoot = Path.Combine(temp.Path, "Workspace");
+        Directory.CreateDirectory(workspaceRoot);
+        var database = new AssetDatabase();
+        database.Initialize(workspaceRoot, AssetSourceAccessMode.RuntimeAssetCook);
+        Guid removedGuid = Guid.Parse("a1000000-0000-0000-0000-000000000010");
+        Guid retainedGuid = Guid.Parse("a1000000-0000-0000-0000-000000000011");
+        const string variant = "runtime.test.v1";
+        string removedPath = database.GetCookedArtifactPath(removedGuid, variant, ".bin");
+        string retainedPath = database.GetCookedArtifactPath(retainedGuid, variant, ".bin");
+        File.WriteAllBytes(removedPath, [1, 2, 3]);
+        File.WriteAllBytes(retainedPath, [4, 5, 6]);
+        RegisterCooked(database, removedGuid, variant, removedPath);
+        RegisterCooked(database, retainedGuid, variant, retainedPath);
+
+        int removed = database.RemoveCookedArtifacts(
+            [new CookedAssetIdentity(removedGuid, variant)]);
+
+        Assert.Equal(1, removed);
+        Assert.False(File.Exists(removedPath));
+        Assert.True(File.Exists(retainedPath));
+        Assert.False(database.TryGetCookedArtifact(removedGuid, variant, out _));
+        Assert.True(database.TryGetCookedArtifact(retainedGuid, variant, out _));
+
+        var reopened = new AssetDatabase();
+        reopened.Initialize(workspaceRoot, AssetSourceAccessMode.RuntimeAssetCook);
+        Assert.False(reopened.TryGetCookedArtifact(removedGuid, variant, out _));
+        Assert.True(reopened.TryGetCookedArtifact(retainedGuid, variant, out _));
+
+        Guid externalGuid = Guid.Parse("a1000000-0000-0000-0000-000000000012");
+        string externalPath = Path.Combine(temp.Path, "external.bin");
+        File.WriteAllBytes(externalPath, [7, 8, 9]);
+        RegisterCooked(database, externalGuid, variant, externalPath);
+
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() =>
+            database.RemoveCookedArtifacts(
+                [new CookedAssetIdentity(externalGuid, variant)]));
+
+        Assert.Contains("outside CookedRoot", error.Message, StringComparison.Ordinal);
+        Assert.True(File.Exists(externalPath));
+        Assert.True(database.TryGetCookedArtifact(externalGuid, variant, out _));
     }
 
     [Fact]
@@ -88,6 +137,50 @@ public sealed class RuntimeAssetSelectionTests
         Assert.Equal(handles.Length, diagnostic.RefCount);
 
         Parallel.ForEach(handles, database.Release);
+        Assert.Empty(database.GetLoadedCookedAssetDiagnostics());
+    }
+
+    [Fact]
+    public void AssetDatabase_RecookPreservesLeasedBytesAndRoutesNewLoadsToReplacement()
+    {
+        using var temp = new TempDirectory();
+        string workspaceRoot = Path.Combine(temp.Path, "Workspace");
+        Directory.CreateDirectory(workspaceRoot);
+        File.WriteAllText(Path.Combine(workspaceRoot, "Source.asset"), "source");
+        var database = new AssetDatabase();
+        database.Initialize(workspaceRoot, AssetSourceAccessMode.RuntimeAssetCook);
+        AssetRecord asset = Assert.Single(database.Assets);
+        const string variant = "runtime.test.v1";
+        string cookedPath = database.GetCookedArtifactPath(asset.Guid, variant, ".bin");
+        byte[] originalBytes = [1, 2, 3, 4];
+        byte[] replacementBytes = [5, 6, 7, 8];
+        File.WriteAllBytes(cookedPath, originalBytes);
+        RegisterCooked(database, asset.Guid, variant, cookedPath);
+        Assert.True(database.TryLoadCookedAsset(
+            asset.Guid,
+            variant,
+            asset.AssetType,
+            out CookedAssetHandle original));
+
+        DateTime replacementWriteTime = File.GetLastWriteTimeUtc(cookedPath).AddSeconds(2);
+        File.WriteAllBytes(cookedPath, replacementBytes);
+        File.SetLastWriteTimeUtc(cookedPath, replacementWriteTime);
+        RegisterCooked(database, asset.Guid, variant, cookedPath);
+        Assert.True(database.TryLoadCookedAsset(
+            asset.Guid,
+            variant,
+            asset.AssetType,
+            out CookedAssetHandle replacement));
+
+        Assert.NotEqual(original, replacement);
+        Assert.Equal(originalBytes, database.GetCookedAssetBytes(original).ToArray());
+        Assert.Equal(replacementBytes, database.GetCookedAssetBytes(replacement).ToArray());
+        Assert.Equal(2, database.GetLoadedCookedAssetDiagnostics().Count);
+
+        database.Release(original);
+        Assert.Equal(replacementBytes, database.GetCookedAssetBytes(replacement).ToArray());
+        Assert.Single(database.GetLoadedCookedAssetDiagnostics());
+        database.Release(replacement);
         Assert.Empty(database.GetLoadedCookedAssetDiagnostics());
     }
 
@@ -466,6 +559,22 @@ public sealed class RuntimeAssetSelectionTests
             Path.Combine(outputRoot, RuntimeAssetCatalog.DefaultFileName),
             catalog.Serialize());
         return new DeploymentFixture(variant, Path.GetFullPath(artifactPath));
+    }
+
+    private static void RegisterCooked(
+        AssetDatabase database,
+        Guid guid,
+        string variant,
+        string path)
+    {
+        var info = new FileInfo(path);
+        database.RegisterCookedArtifact(new CookedAssetRecord(
+            guid,
+            "TestAsset",
+            variant,
+            info.FullName,
+            info.Length,
+            info.LastWriteTimeUtc));
     }
 
     private readonly record struct DeploymentFixture(string Variant, string ArtifactPath);

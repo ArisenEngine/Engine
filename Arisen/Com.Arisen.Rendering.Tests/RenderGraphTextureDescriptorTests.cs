@@ -24,6 +24,7 @@ public sealed class RenderGraphTextureDescriptorTests
             descriptor.Usage);
         Assert.Equal(EImageAspectFlagBits.IMAGE_ASPECT_DEPTH_BIT, descriptor.AspectMask);
         Assert.False(descriptor.RegisterBindlessSampled);
+        Assert.Equal(1u, descriptor.ArrayLayers);
     }
 
     [Fact]
@@ -41,6 +42,7 @@ public sealed class RenderGraphTextureDescriptorTests
         Assert.Equal(expectedUsage, descriptor.Usage);
         Assert.Equal(EImageAspectFlagBits.IMAGE_ASPECT_COLOR_BIT, descriptor.AspectMask);
         Assert.True(descriptor.RegisterBindlessSampled);
+        Assert.Equal(1u, descriptor.ArrayLayers);
     }
 
     [Fact]
@@ -58,6 +60,26 @@ public sealed class RenderGraphTextureDescriptorTests
         Assert.Equal(expectedUsage, descriptor.Usage);
         Assert.Equal(EImageAspectFlagBits.IMAGE_ASPECT_DEPTH_BIT, descriptor.AspectMask);
         Assert.True(descriptor.RegisterBindlessSampled);
+        Assert.Equal(1u, descriptor.ArrayLayers);
+    }
+
+    [Fact]
+    public void DepthAttachmentSampled2DArray_OwnsSharedDepthLayers()
+    {
+        var descriptor = RenderGraphTextureDescriptor.DepthAttachmentSampled2DArray(
+            "DirectionalShadowCascades",
+            2048,
+            2048,
+            EFormat.FORMAT_D32_SFLOAT,
+            4);
+
+        var expectedUsage =
+            (uint)EImageUsageFlagBits.IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+            (uint)EImageUsageFlagBits.IMAGE_USAGE_SAMPLED_BIT;
+        Assert.Equal(expectedUsage, descriptor.Usage);
+        Assert.Equal(EImageAspectFlagBits.IMAGE_ASPECT_DEPTH_BIT, descriptor.AspectMask);
+        Assert.True(descriptor.RegisterBindlessSampled);
+        Assert.Equal(4u, descriptor.ArrayLayers);
     }
 
     [Fact]

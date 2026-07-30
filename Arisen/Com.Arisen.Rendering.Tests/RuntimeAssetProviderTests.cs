@@ -134,6 +134,7 @@ public sealed class RuntimeAssetProviderTests
         Guid shadowShaderGuid = Guid.Parse("93000000-0000-0000-0000-000000000003");
         Guid skyShaderGuid = Guid.Parse("93000000-0000-0000-0000-000000000004");
         Guid fallbackMeshGuid = Guid.Parse("93000000-0000-0000-0000-000000000005");
+        Guid terrainShaderGuid = Guid.Parse("93000000-0000-0000-0000-000000000006");
         string settingsPath = temp.Write("Assets/Default.arisrenderpipeline", """
             Version: 1
             Pipeline: GenericRP
@@ -170,6 +171,11 @@ public sealed class RuntimeAssetProviderTests
             "Mesh",
             temp.Write("Assets/Fallback.obj", string.Empty),
             packageId);
+        database.AddAsset(
+            terrainShaderGuid,
+            ShaderAssetCooker.ShaderSourceAssetType,
+            temp.Write("Assets/Terrain.hlsl", string.Empty),
+            "com.arisen.terrain.generic-renderpipeline");
         var shadowShader = new ShaderAsset(
             shadowShaderGuid,
             "Tests/Shadow",
@@ -184,12 +190,25 @@ public sealed class RuntimeAssetProviderTests
             ],
             ShaderVariantKey.VulkanDebug);
         var recipes = new RuntimeShaderCookRecipeRegistry();
+        var optionalShaders = new GenericRenderPipelineRuntimeShaderRegistry();
+        var terrainShader = new ShaderAsset(
+            terrainShaderGuid,
+            "Tests/Terrain",
+            [
+                new ShaderStageAsset("Vertex", EProgramStage.Vertex, "VSMain"),
+                new ShaderStageAsset("Fragment", EProgramStage.Fragment, "PSMain")
+            ],
+            ShaderVariantKey.VulkanDebug);
+        optionalShaders.RegisterRuntimeShaders(
+            "com.arisen.terrain.generic-renderpipeline",
+            [terrainShader]);
         var provider = new GenericRenderPipelineRuntimeAssetCooker(
             database,
             recipes,
             new AssetRef<MaterialSourceAsset>(materialGuid, "Material", packageId),
             new AssetRef<MeshSourceAsset>(fallbackMeshGuid, "Mesh", packageId),
-            [shadowShader, skyShader]);
+            [shadowShader, skyShader],
+            optionalShaders);
         var request = new RuntimeAssetCookRequest(
             settingsGuid,
             packageId,
@@ -238,6 +257,20 @@ public sealed class RuntimeAssetProviderTests
                 skyShader.Variant.GetCookedVariant("PSMain")),
             dependency => AssertDependency(
                 dependency,
+                terrainShaderGuid,
+                "com.arisen.terrain.generic-renderpipeline",
+                ShaderAssetCooker.ShaderSourceAssetType,
+                required: true,
+                terrainShader.Variant.GetCookedVariant("VSMain")),
+            dependency => AssertDependency(
+                dependency,
+                terrainShaderGuid,
+                "com.arisen.terrain.generic-renderpipeline",
+                ShaderAssetCooker.ShaderSourceAssetType,
+                required: true,
+                terrainShader.Variant.GetCookedVariant("PSMain")),
+            dependency => AssertDependency(
+                dependency,
                 fallbackMeshGuid,
                 packageId,
                 "Mesh",
@@ -250,6 +283,13 @@ public sealed class RuntimeAssetProviderTests
             skyShaderGuid,
             skyShader.Variant.GetCookedVariant("PSMain"),
             out _));
+        Assert.True(recipes.TryGetRecipe(
+            terrainShaderGuid,
+            terrainShader.Variant.GetCookedVariant("PSMain"),
+            out RuntimeShaderCookRecipe terrainRecipe));
+        Assert.Equal(
+            "com.arisen.terrain.generic-renderpipeline",
+            terrainRecipe.OwnerId);
     }
 
     [Fact]

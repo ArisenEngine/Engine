@@ -1472,6 +1472,101 @@ public sealed class RenderingAssetPipelineTests
     }
 
     [Fact]
+    public void Texture2DAssetCooker_FiltersSrgbAndLinearMipsNumerically()
+    {
+        using var workspace = TestWorkspace.Create();
+        var db = new TestAssetDatabase(
+            AssetSourceAccessMode.Diagnostic,
+            Path.Combine(workspace.Root, "Cooked"));
+        string texturePath = workspace.Write(
+            "Assets/ColorSpace.ppm",
+            "P3\n2 2\n255\n0 0 0  255 255 255\n255 0 0  0 255 0\n");
+        var textureGuid = Guid.Parse("5a6b7c8d-1111-2222-3333-444444444444");
+        db.AddAsset(textureGuid, "Texture2D", texturePath);
+
+        var srgbAsset = new Texture2DAsset(
+            textureGuid,
+            "Tests/ColorSpaceSRgb",
+            Texture2DVariantKey.MipmappedSRgb);
+        CookedTexture2D srgb = Texture2DAssetCooker.LoadOrCook(db, srgbAsset);
+        byte[] srgbPixels = Texture2DAssetCooker.GetPixelData(
+            db.GetCookedAssetBytes(srgb.Handle)).ToArray();
+
+        Assert.Equal(2, srgb.MipCount);
+        Assert.Equal(20, srgbPixels.Length);
+        Assert.Equal(new byte[] { 188, 188, 137, 255 }, srgbPixels[16..20]);
+        Assert.Equal(
+            "0F0FE356A762B526EABA38EC6018A090ABC55500C25D5522B714B8F49083E22A",
+            Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(srgbPixels)));
+        db.Release(srgb.Handle);
+
+        var linearAsset = srgbAsset with
+        {
+            Name = "Tests/ColorSpaceLinear",
+            Variant = Texture2DVariantKey.MipmappedLinear
+        };
+        CookedTexture2D linear = Texture2DAssetCooker.LoadOrCook(db, linearAsset);
+        byte[] linearPixels = Texture2DAssetCooker.GetPixelData(
+            db.GetCookedAssetBytes(linear.Handle)).ToArray();
+
+        Assert.Equal(2, linear.MipCount);
+        Assert.Equal(20, linearPixels.Length);
+        Assert.Equal(new byte[] { 128, 128, 64, 255 }, linearPixels[16..20]);
+        Assert.Equal(
+            "51DCA9B31991C217A2E94AF4F23A8CC070A1FD4A289E30DBAEC281D619081590",
+            Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(linearPixels)));
+        db.Release(linear.Handle);
+    }
+
+    [Fact]
+    public void Texture2DAssetCooker_NormalizesEveryGeneratedNormalMip()
+    {
+        using var workspace = TestWorkspace.Create();
+        var db = new TestAssetDatabase(
+            AssetSourceAccessMode.Diagnostic,
+            Path.Combine(workspace.Root, "Cooked"));
+        string texturePath = workspace.Write(
+            "Assets/Normals.ppm",
+            """
+            P3
+            4 4
+            255
+            128 128 255  128 128 255  255 128 128  255 128 128
+            128 128 255  128 128 255  255 128 128  255 128 128
+            0 128 128      0 128 128      128 255 128  128 255 128
+            0 128 128      0 128 128      128 255 128  128 255 128
+            """);
+        var textureGuid = Guid.Parse("6b7c8d9e-1111-2222-3333-444444444444");
+        db.AddAsset(textureGuid, "Texture2D", texturePath);
+
+        var asset = new Texture2DAsset(
+            textureGuid,
+            "Tests/Normals",
+            Texture2DVariantKey.MipmappedNormal);
+        CookedTexture2D cooked = Texture2DAssetCooker.LoadOrCook(db, asset);
+        byte[] pixels = Texture2DAssetCooker.GetPixelData(
+            db.GetCookedAssetBytes(cooked.Handle)).ToArray();
+
+        Assert.Equal(3, cooked.MipCount);
+        Assert.Equal(84, pixels.Length);
+        Assert.Equal(
+            "3E67ABC33AD42F19AD1739B6812BA370A95E59B0D35CBC69B224CF77DFEA3D1A",
+            Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(pixels)));
+
+        for (int offset = 64; offset < pixels.Length; offset += 4)
+        {
+            float x = (pixels[offset] / 255.0f) * 2.0f - 1.0f;
+            float y = (pixels[offset + 1] / 255.0f) * 2.0f - 1.0f;
+            float z = (pixels[offset + 2] / 255.0f) * 2.0f - 1.0f;
+            float length = MathF.Sqrt((x * x) + (y * y) + (z * z));
+            Assert.InRange(length, 0.99f, 1.01f);
+            Assert.Equal(255, pixels[offset + 3]);
+        }
+
+        db.Release(cooked.Handle);
+    }
+
+    [Fact]
     public void EnvironmentTextureAssetCooker_ParsesAndRecooksLinearLatLongPayload()
     {
         using var workspace = TestWorkspace.Create();
@@ -2046,8 +2141,19 @@ public sealed class RenderingAssetPipelineTests
             tonemapPassText,
             StringComparison.Ordinal);
         Assert.Contains(
-            "m_TonemapPass.SetExposure(sceneEnvironment.Exposure);",
+            "m_TonemapPass.SetExposure(m_EnvironmentFrameData.EffectiveExposure);",
             pipelineText,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "profile.ResolveExposure(environment.Exposure)",
+            File.ReadAllText(GetRepositoryFile(
+                "Arisen",
+                "Development",
+                "PackageGame",
+                "Local",
+                "com.arisen.generic-renderpipeline",
+                "Src",
+                "EnvironmentFrameData.cs")),
             StringComparison.Ordinal);
         Assert.DoesNotContain("m_TonemapPass.SetExposure(1.0f);", pipelineText, StringComparison.Ordinal);
         Assert.Contains(
@@ -2280,10 +2386,13 @@ public sealed class RenderingAssetPipelineTests
             "com.arisen.generic-renderpipeline",
             "Src",
             "EnvironmentSkyPass.cs")), StringComparison.Ordinal);
-        Assert.Contains("SkyConstants.skyColorIntensity", shaderText, StringComparison.Ordinal);
-        Assert.Contains("SkyConstants.horizonColor", shaderText, StringComparison.Ordinal);
-        Assert.Contains("SkyConstants.groundColor", shaderText, StringComparison.Ordinal);
-        Assert.Contains("SkyConstants.environmentImageIndex", shaderText, StringComparison.Ordinal);
+        Assert.Contains("ByteAddressBuffer BindlessBuffers", shaderText, StringComparison.Ordinal);
+        Assert.Contains("LoadEnvironmentVector(0)", shaderText, StringComparison.Ordinal);
+        Assert.Contains("LoadEnvironmentVector(1)", shaderText, StringComparison.Ordinal);
+        Assert.Contains("LoadEnvironmentVector(2)", shaderText, StringComparison.Ordinal);
+        Assert.Contains("SKY_MODE_PANORAMA", shaderText, StringComparison.Ordinal);
+        Assert.Contains("SKY_MODE_PROCEDURAL_OUTDOOR", shaderText, StringComparison.Ordinal);
+        Assert.Contains("sunDirectionIntensity", shaderText, StringComparison.Ordinal);
         Assert.Contains("BindlessImages", shaderText, StringComparison.Ordinal);
         Assert.Contains("atan2", shaderText, StringComparison.Ordinal);
     }
@@ -2380,6 +2489,7 @@ public sealed class RenderingAssetPipelineTests
                 MipmapMode: Linear
                 WrapU: MirroredRepeat
                 WrapV: ClampToEdge
+                MaxAnisotropy: 8.0
               Transform:
                 Offset:
                   X: 0.25
@@ -2424,7 +2534,8 @@ public sealed class RenderingAssetPipelineTests
                 MaterialTextureFilter.Linear,
                 MaterialTextureMipmapMode.Linear,
                 MaterialTextureWrapMode.MirroredRepeat,
-                MaterialTextureWrapMode.ClampToEdge),
+                MaterialTextureWrapMode.ClampToEdge,
+                8.0f),
             textureRef.ResolvedSampler);
         Assert.Equal(
             new MaterialTextureTransform(

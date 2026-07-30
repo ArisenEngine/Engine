@@ -99,7 +99,7 @@ public sealed class RuntimeSmokeOptionsTests
         var exception = Assert.Throws<ArgumentException>(() =>
             RuntimeSmokeOptions.Parse(new[] { "--visual-summary", "--smoke-mode", "boot" }));
 
-        Assert.Contains("requires scene or world-streaming smoke mode", exception.Message);
+        Assert.Contains("requires scene, world-streaming, or terrain-streaming smoke mode", exception.Message);
     }
 
     [Fact]
@@ -129,6 +129,27 @@ public sealed class RuntimeSmokeOptionsTests
             RuntimeSmokeOptions.Parse(
                 ["--smoke-mode", "scene", "--smoke-summary-output", "summary.json"]));
 
-        Assert.Contains("requires world-streaming smoke mode", exception.Message);
+        Assert.Contains("requires world-streaming or terrain-streaming smoke mode", exception.Message);
+    }
+
+    [Fact]
+    public void TerrainStreamingSmokeUsesBoundedNamedScenarioWindow()
+    {
+        RuntimeSmokeOptions options = RuntimeSmokeOptions.Parse(
+            [
+                "--smoke-terrain-streaming",
+                "--frames", "2",
+                "--smoke-summary-output", "terrain-summary.json",
+                "--visual-summary"
+            ]);
+
+        Assert.Equal(RuntimeSmokeMode.TerrainStreaming, options.Mode);
+        Assert.Equal("terrain-streaming", options.ModeName);
+        Assert.True(options.UsesPackageScenario);
+        Assert.Equal(1024u, options.EffectiveFrameCount);
+        Assert.True(options.CaptureVisualSummary);
+        Assert.Equal(
+            Path.GetFullPath("terrain-summary.json"),
+            options.SmokeSummaryOutputPath);
     }
 }

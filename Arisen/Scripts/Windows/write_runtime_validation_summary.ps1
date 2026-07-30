@@ -16,6 +16,10 @@ $worldStreamingSummaryArtifactPaths = @(
     $profiles |
         Where-Object { $_.worldStreaming.requested -eq $true -and $_.worldStreaming.passed -eq $true -and $_.worldStreaming.summaryPath } |
         ForEach-Object { [string]$_.worldStreaming.summaryPath })
+$terrainStreamingSummaryArtifactPaths = @(
+    $profiles |
+        Where-Object { $_.terrainStreaming.requested -eq $true -and $_.terrainStreaming.passed -eq $true -and $_.terrainStreaming.summaryPath } |
+        ForEach-Object { [string]$_.terrainStreaming.summaryPath })
 $editorViewportSmokeArtifactPaths = @(
     $profiles |
         Where-Object { $_.editorViewportSmoke.requested -eq $true -and $_.editorViewportSmoke.passed -eq $true -and $_.editorViewportSmoke.path } |
@@ -39,7 +43,7 @@ if ($env:EXIT_CODE -ne "0") {
 }
 
 $summary = [ordered]@{
-    schemaVersion = 6
+    schemaVersion = 7
     capturedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
     repositoryRoot = $env:REPO_ROOT
     workspacePath = $env:WORKSPACE_DIR
@@ -60,6 +64,9 @@ $summary = [ordered]@{
     worldStreamingSmokeRuns = [int]$env:WORLD_STREAMING_SMOKE_RUNS
     worldStreamingSummaryArtifactCount = $worldStreamingSummaryArtifactPaths.Count
     worldStreamingSummaryArtifactPaths = $worldStreamingSummaryArtifactPaths
+    terrainStreamingSmokeRuns = [int]$env:TERRAIN_STREAMING_SMOKE_RUNS
+    terrainStreamingSummaryArtifactCount = $terrainStreamingSummaryArtifactPaths.Count
+    terrainStreamingSummaryArtifactPaths = $terrainStreamingSummaryArtifactPaths
     editorViewportSmokeRuns = [int]$env:EDITOR_VIEWPORT_SMOKE_RUNS
     editorViewportSmokeArtifactCount = $editorViewportSmokeArtifactPaths.Count
     editorViewportSmokeArtifactPaths = $editorViewportSmokeArtifactPaths

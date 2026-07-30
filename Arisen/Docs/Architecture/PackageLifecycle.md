@@ -63,7 +63,7 @@ If a cycle is detected (e.g., Package A depends on Package B, which depends on P
 As defined in [ArisenHost.md](ArisenHost.md), the **EngineBootstrapper** resolves which package directories should participate in boot. Actual package mounting is then performed by **PackageSubsystem**. Because `ArisenBuildTool` writes `manifest.resolved.json` in topological order and the bootstrapper prefers it, the kernel guarantees that `com.arisen.core.native` is loaded into memory and its `IPackageEntry.OnLoad()` is called **strictly before** `com.arisen.rhi.vulkan`. Finalized Production manifests point at metadata-only deployed package directories; workspace profiles retain source package roots for authoring and import.
 This ensures that native foundational layers (like Memory Allocators or Logging) are fully ready before higher-level graphics packages attempt to interact with them.
 
-### Package-Only Build-Stage Mounting
+### Package-Only Mounting
 
 `EngineKernel.MountPackageGraph(EngineConfig)` is the explicit boundary for package-aware tools that need package entries and coarse services but must not start the engine. It performs the same `PackageSubsystem.MountPackages()` operation as normal initialization while keeping `CurrentPhase` at `None`:
 
@@ -74,7 +74,9 @@ This ensures that native foundational layers (like Memory Allocators or Logging)
 - `Shutdown()` directly shuts down `PackageSubsystem` when subsystem phases never began, preserving reverse package unload and service removal;
 - a later `Initialize()` may continue only with the same `EngineConfig` instance, preventing a mounted graph from being initialized under different composition data.
 
-The generated runtime asset cook host uses this path. This is a lifecycle boundary, not a second package loader: `PackageSubsystem` remains the sole owner of assembly contexts, native lifecycle hooks, package records, runtime service validation, and reverse unload.
+The generated runtime asset cook host uses this path directly. `EngineBootstrapper` also mounts before initialization so an `IApplicationHost` with `RequiresEngineInitialization == false` can take over at this boundary. The native test runner uses that option to prevent ordinary game subsystems from creating a second window or a competing RHI instance. Smoke launches intentionally continue through full initialization.
+
+This is a lifecycle boundary, not a second package loader: `PackageSubsystem` remains the sole owner of assembly contexts, native lifecycle hooks, package records, runtime service validation, and reverse unload.
 
 ---
 
