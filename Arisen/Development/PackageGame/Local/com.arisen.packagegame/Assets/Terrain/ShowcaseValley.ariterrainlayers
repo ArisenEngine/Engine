@@ -1,0 +1,31 @@
+Version: 2
+LayerSetGuid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761
+Name: Showcase Valley Layers
+Layers:
+- Id: GrassSoil
+  Albedo: { Guid: ff13c032-05d0-4bb4-968f-a94b74f9b49c, PackageId: com.arisen.packagegame }
+  Normal: { Guid: 293dbf25-a017-4e88-abe8-af33d07c85cd, PackageId: com.arisen.packagegame }
+  Orm: { Guid: b7572a2a-fe34-4656-9fd8-a25015ae0630, PackageId: com.arisen.packagegame }
+  Tint: { R: 0.92, G: 1.0, B: 0.88, A: 1.0 }
+  RoughnessMultiplier: 1.0
+  MetallicMultiplier: 0.0
+  NormalStrength: 0.9
+  WorldTiling: { X: 0.85, Z: 0.85 }
+- Id: Rock
+  Albedo: { Guid: e5004b6f-512b-4888-8b2b-71274bd1b3e7, PackageId: com.arisen.packagegame }
+  Normal: { Guid: 308b49d3-4788-4e99-81af-a52155498062, PackageId: com.arisen.packagegame }
+  Orm: { Guid: b0dc1f41-d712-4ecb-b871-f7f751994f30, PackageId: com.arisen.packagegame }
+  Tint: { R: 0.94, G: 0.97, B: 1.0, A: 1.0 }
+  RoughnessMultiplier: 0.95
+  MetallicMultiplier: 0.0
+  NormalStrength: 1.35
+  WorldTiling: { X: 0.7, Z: 0.7 }
+- Id: Path
+  Albedo: { Guid: c6dadd86-5cfa-467a-a74b-da67731c4547, PackageId: com.arisen.packagegame }
+  Normal: { Guid: 5a475d7b-aee9-4742-b8ee-b9c1f11d481e, PackageId: com.arisen.packagegame }
+  Orm: { Guid: 52c89ca8-e436-419c-afc9-6098e2135cb6, PackageId: com.arisen.packagegame }
+  Tint: { R: 1.0, G: 0.92, B: 0.82, A: 1.0 }
+  RoughnessMultiplier: 1.05
+  MetallicMultiplier: 0.0
+  NormalStrength: 0.75
+  WorldTiling: { X: 1.1, Z: 0.8 }

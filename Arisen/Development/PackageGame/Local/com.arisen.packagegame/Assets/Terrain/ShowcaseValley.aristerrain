@@ -1,0 +1,27 @@
+Version: 2
+TerrainGuid: 6f4d0a1c-0e85-4a42-93fe-34058ef48511
+Name: Showcase Valley Terrain
+WorldPlacement: { X: -8.0, Y: 0.02, Z: -6.2 }
+SampleSpacing: { X: 0.375, Z: 0.375 }
+HeightRange: { Min: 0.0, Max: 2.0 }
+HeightSource:
+  Path: Height/ShowcaseValley.pgm
+  Format: Pgm16BigEndianScalar
+WeightSource:
+  Path: ShowcaseValley.ariweights
+  Format: Rgba8Hex
+TileResolution: 17
+BorderPolicy: SharedEdgeSamples
+TileOrigin: { X: 0, Z: 0 }
+LayerSet:
+  Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761
+  PackageId: com.arisen.packagegame
+GeneratedTiles:
+- Coordinate: { X: 0, Z: 0 }
+  Guid: 807a7664-36ee-bdf8-71ea-e78cd4db0c4f
+- Coordinate: { X: 1, Z: 0 }
+  Guid: 9b8e9a8a-7c9d-493e-9aa6-5ba74e5b630d
+- Coordinate: { X: 0, Z: 1 }
+  Guid: 331e576c-eddd-d7cc-e553-23ef719f496d
+- Coordinate: { X: 1, Z: 1 }
+  Guid: 3fd9bf23-4923-f0e5-cd73-94920028ed67

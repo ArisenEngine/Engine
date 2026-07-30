@@ -15,6 +15,15 @@ public interface IRuntimeSmokeScenarioProvider
         out string diagnostic);
 }
 
+public interface IRuntimeSmokeScenarioRegistry
+{
+    void Register(string modeName, IRuntimeSmokeScenarioProvider provider);
+
+    bool Unregister(string modeName, IRuntimeSmokeScenarioProvider provider);
+
+    IReadOnlyList<string> GetRegisteredModes();
+}
+
 public interface IRuntimeSmokeScenario
 {
     string Name { get; }

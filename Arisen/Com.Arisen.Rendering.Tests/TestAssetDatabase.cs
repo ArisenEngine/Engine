@@ -185,6 +185,44 @@ internal sealed class TestAssetDatabase : IAssetDatabase
         return loadedHandles.Length;
     }
 
+    public int RemoveCookedArtifacts(IReadOnlyCollection<CookedAssetIdentity> identities)
+    {
+        EnsureMutable();
+        ArgumentNullException.ThrowIfNull(identities);
+        int removedCount = 0;
+        foreach (CookedAssetIdentity identity in identities.Distinct())
+        {
+            if (!m_Artifacts.Remove(
+                    (identity.Guid, identity.Variant),
+                    out CookedAssetRecord? artifact))
+            {
+                continue;
+            }
+
+            int[] loadedHandles = m_Loaded
+                .Where(pair => pair.Value.Artifact.Guid == identity.Guid &&
+                    string.Equals(
+                        pair.Value.Artifact.Variant,
+                        identity.Variant,
+                        StringComparison.Ordinal))
+                .Select(pair => pair.Key)
+                .ToArray();
+            foreach (int handleIndex in loadedHandles)
+            {
+                m_Loaded.Remove(handleIndex);
+            }
+
+            if (File.Exists(artifact.Path))
+            {
+                File.Delete(artifact.Path);
+            }
+
+            removedCount++;
+        }
+
+        return removedCount;
+    }
+
     public void NotifyAssetChanged(AssetChangeEvent change)
     {
         AssetChanged?.Invoke(change);

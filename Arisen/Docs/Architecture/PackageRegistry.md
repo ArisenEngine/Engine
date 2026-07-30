@@ -120,6 +120,9 @@ If a manifest entry points at a remote source and a same-ID folder exists under 
 | **`com.arisen.editor`** | Tooling | The official Avalonia-based visual authoring environment. |
 | **`com.arisen.nodecanvas`** | Tooling | Foundation for node-based visual editing and graph manipulation. |
 | **`com.arisen.generic-renderpipeline`** | Domain | High-level default RenderPipeline implemented via RenderGraph. |
+| **`com.arisen.terrain`** | Domain | Terrain source/cooked data, scene components, runtime queries, LOD planning, diagnostics, and streaming smoke ownership. |
+| **`com.arisen.terrain.generic-renderpipeline`** | Domain | Optional Generic RP terrain preparation, layered rendering, cascaded shadows, and deferred device-resource ownership. |
+| **`com.arisen.terrain.editor`** | Tooling | Terrain import, sculpt/paint authoring, diagnostics, transactional save/reimport/cook, and SceneView previews. |
 | **`com.arisen.packagegame`** | User | The main assembly and project root for the active application/game. |
 
 ---

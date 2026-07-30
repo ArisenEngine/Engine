@@ -5,7 +5,8 @@ public enum RuntimeSmokeMode
     Boot,
     Scene,
     HotReload,
-    WorldStreaming
+    WorldStreaming,
+    TerrainStreaming
 }
 
 internal readonly record struct RuntimeSmokeOptions(
@@ -26,12 +27,16 @@ internal readonly record struct RuntimeSmokeOptions(
 
     public uint EffectiveFrameCount => Math.Max(RequestedFrameCount, GetMinimumFrameCount(Mode));
 
+    public bool UsesPackageScenario => Mode is
+        RuntimeSmokeMode.WorldStreaming or RuntimeSmokeMode.TerrainStreaming;
+
     public string ModeName => Mode switch
     {
         RuntimeSmokeMode.Boot => "boot",
         RuntimeSmokeMode.Scene => "scene",
         RuntimeSmokeMode.HotReload => "hot-reload",
         RuntimeSmokeMode.WorldStreaming => "world-streaming",
+        RuntimeSmokeMode.TerrainStreaming => "terrain-streaming",
         _ => Mode.ToString()
     };
 
@@ -73,6 +78,12 @@ internal readonly record struct RuntimeSmokeOptions(
             else if (string.Equals(args[i], "--smoke-world-streaming", StringComparison.OrdinalIgnoreCase))
             {
                 mode = RuntimeSmokeMode.WorldStreaming;
+                modeSpecified = true;
+                enabled = true;
+            }
+            else if (string.Equals(args[i], "--smoke-terrain-streaming", StringComparison.OrdinalIgnoreCase))
+            {
+                mode = RuntimeSmokeMode.TerrainStreaming;
                 modeSpecified = true;
                 enabled = true;
             }
@@ -131,17 +142,20 @@ internal readonly record struct RuntimeSmokeOptions(
         }
 
         if (captureVisualSummary && mode is not (
-                RuntimeSmokeMode.Scene or RuntimeSmokeMode.WorldStreaming))
+                RuntimeSmokeMode.Scene or
+                RuntimeSmokeMode.WorldStreaming or
+                RuntimeSmokeMode.TerrainStreaming))
         {
             throw new ArgumentException(
-                "--visual-summary requires scene or world-streaming smoke mode.",
+                "--visual-summary requires scene, world-streaming, or terrain-streaming smoke mode.",
                 nameof(args));
         }
 
-        if (smokeSummaryOutputPath != null && mode != RuntimeSmokeMode.WorldStreaming)
+        if (smokeSummaryOutputPath != null && mode is not (
+                RuntimeSmokeMode.WorldStreaming or RuntimeSmokeMode.TerrainStreaming))
         {
             throw new ArgumentException(
-                "--smoke-summary-output requires world-streaming smoke mode.",
+                "--smoke-summary-output requires world-streaming or terrain-streaming smoke mode.",
                 nameof(args));
         }
 
@@ -162,6 +176,7 @@ internal readonly record struct RuntimeSmokeOptions(
         RuntimeSmokeMode.Scene => 2,
         RuntimeSmokeMode.HotReload => 4,
         RuntimeSmokeMode.WorldStreaming => 1024,
+        RuntimeSmokeMode.TerrainStreaming => 1024,
         _ => 1
     };
 
@@ -181,8 +196,15 @@ internal readonly record struct RuntimeSmokeOptions(
             return RuntimeSmokeMode.WorldStreaming;
         }
 
+        if (string.Equals(value, "terrain-streaming", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "terrainstreaming", StringComparison.OrdinalIgnoreCase))
+        {
+            return RuntimeSmokeMode.TerrainStreaming;
+        }
+
         throw new ArgumentException(
-            $"Unknown smoke mode '{value}'. Expected one of: boot, scene, hot-reload, world-streaming.",
+            $"Unknown smoke mode '{value}'. Expected one of: boot, scene, hot-reload, " +
+            "world-streaming, terrain-streaming.",
             nameof(value));
     }
 }

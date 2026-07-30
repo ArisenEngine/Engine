@@ -47,6 +47,7 @@ public interface IRenderSurface : IDisposable
     ulong GetSharedMemorySize(uint frameIndex);
     IntPtr GetRenderFinishedSemaphoreHandle(uint frameIndex);
     IntPtr CreateConsumedSemaphoreHandle(uint frameIndex);
+    void CompleteConsumedSemaphoreHandle(IntPtr handle);
     void ReleaseConsumedSemaphoreHandle(IntPtr handle);
     ulong GetLastRenderTicket();
     uint GetLastRenderFrameIndex();

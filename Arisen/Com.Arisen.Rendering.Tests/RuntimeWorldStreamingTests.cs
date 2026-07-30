@@ -502,7 +502,10 @@ public sealed class RuntimeWorldStreamingTests
             context.TaskGraph);
 
         scenario.Start(0);
-        for (uint frame = 0; frame < 1024 && !scenario.IsReadyForShutdown; frame++)
+        var deadline = Stopwatch.StartNew();
+        for (uint frame = 0;
+             deadline.Elapsed < TimeSpan.FromSeconds(5) && !scenario.IsReadyForShutdown;
+             frame++)
         {
             scenario.BeforeFrame(frame);
             context.Streaming.ProcessAtFrameBoundary();
@@ -551,24 +554,132 @@ public sealed class RuntimeWorldStreamingTests
         Assert.Equal(42u, capture.FrameIndex);
     }
 
+    [Fact]
+    public void BoundedSmokeScenario_CapturesStableNearMidFarCameraPath()
+    {
+        using var context = new StreamingContext(loadRadius: 2);
+        var visual = new RecordingVisualSummaryService();
+        var scenarioContext = new ArisenKernel.Lifecycle.RuntimeSmokeScenarioContext(
+            "world-streaming",
+            context.Root,
+            "Development",
+            Path.Combine(context.Root, "world-streaming-smoke.json"),
+            visual);
+        var scenario = new WorldStreamingSmokeScenario(
+            scenarioContext,
+            context.Streaming,
+            context.SceneService,
+            context.Residency,
+            context.Origin,
+            context.Database,
+            context.TaskGraph);
+        var cameraPool = context.World.GetPool<CameraComponent>();
+        Entity cameraEntity = Assert.Single(
+            cameraPool.GetRawEntityArray().AsSpan(0, cameraPool.Count).ToArray());
+        WorldPosition originalCamera = context.Origin.ToWorld(
+            context.World.GetComponent<TransformComponent>(cameraEntity).Position);
+
+        scenario.Start(0);
+        var deadline = Stopwatch.StartNew();
+        for (uint frame = 0;
+             deadline.Elapsed < TimeSpan.FromSeconds(5) && !scenario.IsReadyForShutdown;
+             frame++)
+        {
+            scenario.BeforeFrame(frame);
+            context.Streaming.ProcessAtFrameBoundary();
+            visual.CompleteFrame(frame);
+            scenario.AfterFrame(frame);
+            Thread.Yield();
+        }
+
+        Assert.True(scenario.IsReadyForShutdown, scenario.FailureMessage);
+        Assert.Equal(
+            [
+                "before",
+                "during",
+                "shadow-near",
+                "shadow-mid",
+                "shadow-far",
+                "shadow-far-stable",
+                "after"
+            ],
+            visual.ScheduledCaptures.Select(capture => capture.Name).ToArray());
+        Assert.True(visual.ScheduledCaptures
+            .Select(capture => capture.FrameIndex)
+            .SequenceEqual(visual.ScheduledCaptures
+                .Select(capture => capture.FrameIndex)
+                .Order()));
+        Assert.Equal(
+            visual.ScheduledCaptures.Count,
+            visual.ScheduledCaptures.Select(capture => capture.FrameIndex).Distinct().Count());
+        uint farFrame = visual.ScheduledCaptures.Single(capture =>
+            capture.Name == "shadow-far").FrameIndex;
+        uint stableFrame = visual.ScheduledCaptures.Single(capture =>
+            capture.Name == "shadow-far-stable").FrameIndex;
+        Assert.Equal(farFrame + 1, stableFrame);
+        WorldPosition restoredCamera = context.Origin.ToWorld(
+            context.World.GetComponent<TransformComponent>(cameraEntity).Position);
+        Assert.InRange(Math.Abs(restoredCamera.X - originalCamera.X), 0.0, 0.001);
+        Assert.InRange(Math.Abs(restoredCamera.Y - originalCamera.Y), 0.0, 0.001);
+        Assert.InRange(Math.Abs(restoredCamera.Z - originalCamera.Z), 0.0, 0.001);
+
+        context.Streaming.Shutdown(unloadActiveCells: true);
+        context.SceneService.ClearForShutdown();
+        context.Database.ReleaseAllLoadedCookedAssets();
+        scenario.AfterShutdown();
+        Assert.True(scenario.Succeeded, scenario.FailureMessage);
+    }
+
     private sealed class RecordingVisualSummaryService : ArisenKernel.Lifecycle.IRuntimeVisualSummaryService
     {
         public List<(string Name, uint FrameIndex)> ScheduledCaptures { get; } = [];
+        private readonly List<ArisenKernel.Lifecycle.RuntimeVisualSummaryCaptureResult> m_Results = [];
+        private bool m_Sealed;
         public bool IsEnabled => true;
-        public uint CaptureFrameIndex => ScheduledCaptures.Count == 0
-            ? uint.MaxValue
-            : ScheduledCaptures[0].FrameIndex;
+        public uint CaptureFrameIndex => m_Results
+            .Where(result => result.State == ArisenKernel.Lifecycle.RuntimeVisualSummaryCaptureState.Scheduled)
+            .Select(result => result.Capture.FrameIndex)
+            .DefaultIfEmpty(uint.MaxValue)
+            .Min();
         public string ProfileName => "Development";
         public string OutputPath => "visual-summary.json";
-        public bool IsComplete => false;
-        public bool Succeeded => false;
-        public string? FailureMessage => null;
+        public bool IsComplete => m_Sealed && m_Results.Count > 0 && m_Results.All(result =>
+            result.State is ArisenKernel.Lifecycle.RuntimeVisualSummaryCaptureState.Succeeded or
+                ArisenKernel.Lifecycle.RuntimeVisualSummaryCaptureState.Failed);
+        public bool Succeeded => IsComplete && m_Results.All(result =>
+            result.State == ArisenKernel.Lifecycle.RuntimeVisualSummaryCaptureState.Succeeded);
+        public string? FailureMessage { get; private set; }
 
         public bool TryScheduleCapture(string name, uint frameIndex, out string outputPath)
         {
             ScheduledCaptures.Add((name, frameIndex));
             outputPath = $"visual-summary.{name}.json";
+            var capture = new ArisenKernel.Lifecycle.RuntimeVisualSummaryCapture(
+                ScheduledCaptures.Count,
+                name,
+                frameIndex,
+                outputPath);
+            m_Results.Add(new ArisenKernel.Lifecycle.RuntimeVisualSummaryCaptureResult(
+                capture,
+                ArisenKernel.Lifecycle.RuntimeVisualSummaryCaptureState.Scheduled,
+                null));
             return true;
+        }
+
+        public void CompleteFrame(uint frameIndex)
+        {
+            for (int index = 0; index < m_Results.Count; index++)
+            {
+                ArisenKernel.Lifecycle.RuntimeVisualSummaryCaptureResult result = m_Results[index];
+                if (result.State == ArisenKernel.Lifecycle.RuntimeVisualSummaryCaptureState.Scheduled &&
+                    result.Capture.FrameIndex == frameIndex)
+                {
+                    m_Results[index] = result with
+                    {
+                        State = ArisenKernel.Lifecycle.RuntimeVisualSummaryCaptureState.Succeeded
+                    };
+                }
+            }
         }
 
         public bool TryBeginCapture(
@@ -584,23 +695,33 @@ public sealed class RuntimeWorldStreamingTests
 
         public void ReportFailure(
             ArisenKernel.Lifecycle.RuntimeVisualSummaryCapture capture,
-            string message) => throw new NotSupportedException();
+            string message) => FailureMessage = message;
 
-        public void ReportFailure(string message) => throw new NotSupportedException();
+        public void ReportFailure(string message) => FailureMessage = message;
 
         public bool TryGetCaptureResult(
             string name,
             out ArisenKernel.Lifecycle.RuntimeVisualSummaryCaptureResult result)
         {
-            result = null!;
-            return false;
+            ArisenKernel.Lifecycle.RuntimeVisualSummaryCaptureResult? match =
+                m_Results.SingleOrDefault(candidate =>
+                    string.Equals(candidate.Capture.Name, name, StringComparison.Ordinal));
+            if (match == null)
+            {
+                result = null!;
+                return false;
+            }
+
+            result = match;
+            return true;
         }
 
         public IReadOnlyList<ArisenKernel.Lifecycle.RuntimeVisualSummaryCaptureResult>
-            GetCaptureResults() => [];
+            GetCaptureResults() => m_Results.ToArray();
 
         public void Seal()
         {
+            m_Sealed = true;
         }
     }
 
@@ -739,8 +860,16 @@ public sealed class RuntimeWorldStreamingTests
         {
             Guid entityGuid = EntityGuid(positionX);
             string path = Path.Combine(Root, name + ".arisenscene");
-            string schemaSuffix = m_IncludeSharedRenderAssets
+            bool includeCamera = string.Equals(name, "Persistent", StringComparison.Ordinal);
+            string cameraSchemaSuffix = includeCamera
+                ? "\n- TypeId: 2\n  Name: Camera\n  Version: 2\n  Required: true"
+                : string.Empty;
+            string rendererSchemaSuffix = m_IncludeSharedRenderAssets
                 ? "\n- TypeId: 3\n  Name: MeshRenderer\n  Version: 1\n  Required: true"
+                : string.Empty;
+            string schemaSuffix = cameraSchemaSuffix + rendererSchemaSuffix;
+            string cameraSuffix = includeCamera
+                ? "\n  Camera:\n    VerticalFov: 45\n    NearPlane: 0.1\n    FarPlane: 200\n    IsPerspective: true"
                 : string.Empty;
             string rendererSuffix = m_IncludeSharedRenderAssets
                 ? $"\n  MeshRenderer:\n    Mesh: {{ Guid: {s_SharedMeshGuid:D}, PackageId: {PackageId} }}" +
@@ -760,7 +889,7 @@ public sealed class RuntimeWorldStreamingTests
                   Transform:
                     Position: { X: {{positionX}}, Y: 0, Z: 0 }
                     Rotation: { X: 0, Y: 0, Z: 0, W: 1 }
-                    Scale: { X: 1, Y: 1, Z: 1 }{{rendererSuffix}}
+                    Scale: { X: 1, Y: 1, Z: 1 }{{cameraSuffix}}{{rendererSuffix}}
                 """);
             Database.AddAsset(sceneGuid, "Scene", path, PackageId);
         }

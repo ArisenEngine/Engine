@@ -6,10 +6,13 @@ using ArisenEngine.Core.ECS;
 using ArisenEngine.Rendering;
 using ArisenEngine.Rendering.Resources;
 using ArisenEngine.Resources.Serialization;
+using ArisenEngine.Terrain;
+using ArisenEngine.Terrain.Assets;
 using Xunit;
 
 namespace Com.Arisen.Rendering.Tests;
 
+[Collection(SceneComponentExtensionRegistryCollection.Name)]
 public sealed class ShowcaseSceneAssetTests
 {
     private static readonly Guid s_SceneGuid = Guid.Parse("0bb7d5fb-1924-45ee-9b45-85891d0e6d9f");
@@ -38,6 +41,12 @@ public sealed class ShowcaseSceneAssetTests
     private static readonly Guid s_LanternEmissiveTextureGuid = Guid.Parse("9c41d0a0-2a84-8185-81c5-ff80d034b696");
     private static readonly Guid s_BlueHourSourceTextureGuid = Guid.Parse("d5a4f9f1-2f0f-4da8-8b15-19ac1fb30e57");
     private static readonly Guid s_BlueHourEnvironmentGuid = Guid.Parse("b7c4e40e-c95f-47e5-84b7-b7554e0edc17");
+    private static readonly Guid s_TerrainRootGuid = Guid.Parse("6f4d0a1c-0e85-4a42-93fe-34058ef48511");
+    private static readonly Guid s_TerrainLayerSetGuid = Guid.Parse("5dcaa6bd-2b51-498d-9fa9-bd68f4642761");
+    private static readonly Guid s_TerrainTile0Guid = Guid.Parse("807a7664-36ee-bdf8-71ea-e78cd4db0c4f");
+    private static readonly Guid s_TerrainTile1Guid = Guid.Parse("9b8e9a8a-7c9d-493e-9aa6-5ba74e5b630d");
+    private static readonly Guid s_TerrainTile2Guid = Guid.Parse("331e576c-eddd-d7cc-e553-23ef719f496d");
+    private static readonly Guid s_TerrainTile3Guid = Guid.Parse("3fd9bf23-4923-f0e5-cd73-94920028ed67");
 
     [Fact]
     public void PackageShowcaseScene_LoadsClassicMeshAndDistinctMaterials()
@@ -449,6 +458,151 @@ public sealed class ShowcaseSceneAssetTests
     }
 
     [Fact]
+    public void PackageShowcaseTerrain_CooksTwoByTwoTilesWithBitExactSharedBorders()
+    {
+        const string packageId = "com.arisen.packagegame";
+        string packageRoot = GetRepositoryFile(
+            "Arisen", "Development", "PackageGame", "Local", packageId);
+        string cookedRoot = Path.Combine(
+            Path.GetTempPath(),
+            "ArisenShowcaseTerrainTests",
+            Guid.NewGuid().ToString("N"));
+
+        try
+        {
+            var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, cookedRoot);
+            AddTerrainAssets(db, packageRoot);
+            var rootRef = new AssetRef<TerrainRootSourceAsset>(
+                s_TerrainRootGuid,
+                TerrainAssetTypes.Root,
+                packageId);
+
+            CookedTerrainRootArtifact artifact = TerrainRootAssetCooker.Cook(db, rootRef);
+            Assert.Equal(4, artifact.TileCount);
+            Assert.Equal(
+                4,
+                artifact.Dependencies.Count(
+                    dependency => dependency.AssetType == TerrainAssetTypes.Tile));
+            Assert.Equal(
+                s_TerrainTile1Guid,
+                TerrainTileIdentity.CreateGuid(
+                    s_TerrainRootGuid,
+                    packageId,
+                    new TerrainTileCoordinate(1, 0)));
+
+            Assert.True(
+                TerrainRootAssetCooker.TryLoadCooked(
+                    db,
+                    rootRef,
+                    out CookedTerrainRoot root,
+                    out string rootDiagnostic),
+                rootDiagnostic);
+            Assert.Equal(33, root.HeightSourceWidth);
+            Assert.Equal(33, root.HeightSourceHeight);
+            Assert.Equal(2, root.SourceSchemaVersion);
+            Assert.Equal(3, root.Layers.Count);
+            Assert.Equal(
+                9,
+                artifact.Dependencies.Count(
+                    dependency => dependency.AssetType == "Texture2D"));
+            Assert.Equal(
+                3,
+                artifact.Dependencies.Count(
+                    dependency => dependency.Variant == TerrainTextureCookVariants.Albedo));
+            Assert.Equal(
+                3,
+                artifact.Dependencies.Count(
+                    dependency => dependency.Variant == TerrainTextureCookVariants.Normal));
+            Assert.Equal(
+                3,
+                artifact.Dependencies.Count(
+                    dependency => dependency.Variant == TerrainTextureCookVariants.Orm));
+            Assert.Equal(
+                s_TerrainTile1Guid,
+                root.Tiles.Single(tile => tile.Coordinate == new TerrainTileCoordinate(0, 0))
+                    .Neighbors.PositiveX);
+            Assert.Equal(
+                s_TerrainTile0Guid,
+                root.Tiles.Single(tile => tile.Coordinate == new TerrainTileCoordinate(1, 0))
+                    .Neighbors.NegativeX);
+            Assert.Equal(
+                s_TerrainTile2Guid,
+                root.Tiles.Single(tile => tile.Coordinate == new TerrainTileCoordinate(0, 0))
+                    .Neighbors.PositiveZ);
+            Assert.Equal(
+                s_TerrainTile0Guid,
+                root.Tiles.Single(tile => tile.Coordinate == new TerrainTileCoordinate(0, 1))
+                    .Neighbors.NegativeZ);
+
+            CookedTerrainTile tile0 = LoadTerrainTile(db, s_TerrainTile0Guid);
+            CookedTerrainTile tile1 = LoadTerrainTile(db, s_TerrainTile1Guid);
+            CookedTerrainTile tile2 = LoadTerrainTile(db, s_TerrainTile2Guid);
+            CookedTerrainTile tile3 = LoadTerrainTile(db, s_TerrainTile3Guid);
+            Assert.Equal(new TerrainTileCoordinate(0, 0), tile0.Coordinate);
+            Assert.Equal(new TerrainTileCoordinate(1, 0), tile1.Coordinate);
+            Assert.Equal(new TerrainTileCoordinate(0, 1), tile2.Coordinate);
+            Assert.Equal(new TerrainTileCoordinate(1, 1), tile3.Coordinate);
+            Assert.Equal(tile0.WorldPlacement.Y, tile1.WorldPlacement.Y);
+            Assert.Equal(tile0.WorldPlacement.Z, tile1.WorldPlacement.Z);
+            Assert.Equal(
+                tile0.WorldPlacement.X +
+                ((tile0.Resolution - 1) * tile0.SampleSpacing.X),
+                tile1.WorldPlacement.X);
+            Assert.Equal(tile0.WorldPlacement.X, tile2.WorldPlacement.X);
+            Assert.Equal(
+                tile0.WorldPlacement.Z +
+                ((tile0.Resolution - 1) * tile0.SampleSpacing.Z),
+                tile2.WorldPlacement.Z);
+            CookedTerrainTile[] tiles = [tile0, tile1, tile2, tile3];
+            bool sawRock = false;
+            bool sawPath = false;
+            bool sawBlend = false;
+            foreach (CookedTerrainTile tile in tiles)
+            {
+                Assert.Equal(3, tile.LayerCount);
+                for (int z = 0; z < tile.Resolution; z++)
+                {
+                    for (int x = 0; x < tile.Resolution; x++)
+                    {
+                        int nonZeroLayers = 0;
+                        int weightSum = 0;
+                        for (int layer = 0; layer < TerrainCookedFormat.WeightChannelCount; layer++)
+                        {
+                            byte weight = tile.GetLayerWeight(x, z, layer);
+                            weightSum += weight;
+                            nonZeroLayers += weight == 0 ? 0 : 1;
+                            sawRock |= layer == 1 && weight != 0;
+                            sawPath |= layer == 2 && weight != 0;
+                        }
+
+                        Assert.Equal(byte.MaxValue, weightSum);
+                        sawBlend |= nonZeroLayers > 1;
+                    }
+                }
+            }
+
+            Assert.True(sawRock, "The authored fixture never contributes its rock layer.");
+            Assert.True(sawPath, "The authored fixture never contributes its path layer.");
+            Assert.True(sawBlend, "The authored fixture contains no blended layer samples.");
+            TerrainTileAssetCooker.ValidateSharedBorders(tiles);
+        }
+        finally
+        {
+            try
+            {
+                if (Directory.Exists(cookedRoot))
+                {
+                    Directory.Delete(cookedRoot, recursive: true);
+                }
+            }
+            catch
+            {
+                // Best-effort test cleanup.
+            }
+        }
+    }
+
+    [Fact]
     public void PackageLanternWorld_KeepsGlobalRenderComponentsOutOfCells()
     {
         string packageRoot = GetRepositoryFile(
@@ -457,6 +611,8 @@ public sealed class ShowcaseSceneAssetTests
             Path.GetTempPath(),
             "ArisenLanternWorldContentTests",
             Guid.NewGuid().ToString("N"));
+        var terrainCodec = new TerrainTileSceneComponentCodec();
+        SceneComponentExtensionRegistry.Shared.Register(terrainCodec);
 
         try
         {
@@ -540,6 +696,7 @@ public sealed class ShowcaseSceneAssetTests
         }
         finally
         {
+            SceneComponentExtensionRegistry.Shared.Unregister(terrainCodec);
             try
             {
                 if (Directory.Exists(cookedRoot))
@@ -567,6 +724,35 @@ public sealed class ShowcaseSceneAssetTests
         db.AddAsset(s_LanternMesh2Guid, "Mesh", Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Meshes", "Mesh_2.glb"), "com.arisen.packagegame");
         db.AddAsset(s_LanternMaterialGuid, "Material", Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Materials", "LanternPost_Mat.arismaterial"), "com.arisen.packagegame");
         db.AddAsset(s_BlueHourEnvironmentGuid, "EnvironmentTexture", Path.Combine(packageRoot, "Assets", "Environments", "BlueHour.arienvironment"), "com.arisen.packagegame");
+        AddTerrainAssets(db, packageRoot);
+    }
+
+    private static void AddTerrainAssets(TestAssetDatabase db, string packageRoot)
+    {
+        const string packageId = "com.arisen.packagegame";
+        db.AddAsset(s_TerrainRootGuid, TerrainAssetTypes.Root, Path.Combine(packageRoot, "Assets", "Terrain", "ShowcaseValley.aristerrain"), packageId);
+        db.AddAsset(s_TerrainLayerSetGuid, TerrainAssetTypes.LayerSet, Path.Combine(packageRoot, "Assets", "Terrain", "ShowcaseValley.ariterrainlayers"), packageId);
+        db.AddAsset(s_TerrainTile0Guid, TerrainAssetTypes.Tile, Path.Combine(packageRoot, "Assets", "Terrain", "Generated", "ShowcaseValley_0_0.ariterraingenerated"), packageId);
+        db.AddAsset(s_TerrainTile1Guid, TerrainAssetTypes.Tile, Path.Combine(packageRoot, "Assets", "Terrain", "Generated", "ShowcaseValley_1_0.ariterraingenerated"), packageId);
+        db.AddAsset(s_TerrainTile2Guid, TerrainAssetTypes.Tile, Path.Combine(packageRoot, "Assets", "Terrain", "Generated", "ShowcaseValley_0_1.ariterraingenerated"), packageId);
+        db.AddAsset(s_TerrainTile3Guid, TerrainAssetTypes.Tile, Path.Combine(packageRoot, "Assets", "Terrain", "Generated", "ShowcaseValley_1_1.ariterraingenerated"), packageId);
+    }
+
+    private static CookedTerrainTile LoadTerrainTile(TestAssetDatabase db, Guid tileGuid)
+    {
+        Assert.True(
+            TerrainTileAssetCooker.TryLoadCooked(
+                db,
+                new AssetRef<TerrainTileSourceAsset>(
+                    tileGuid,
+                    TerrainAssetTypes.Tile,
+                    "com.arisen.packagegame"),
+                s_TerrainRootGuid,
+                s_TerrainLayerSetGuid,
+                out CookedTerrainTile tile,
+                out string diagnostic),
+            diagnostic);
+        return tile;
     }
 
     private static string GetRepositoryFile(params string[] segments)

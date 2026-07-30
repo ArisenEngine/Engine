@@ -9,7 +9,7 @@ trigger: always_on
 - Read `AGENTS.md` first for repository workflow, build commands, and documentation ownership.
 - Read `Arisen/Docs/Architecture/*.md` before making or describing architectural decisions.
 - Use `.agents/skills/*/SKILL.md` for Agentic-specific task procedures.
-- For scene/world/rendering work, verify the current policy in `AGENTS.md`, `Rendering.md`, `AssetPipeline.md`, `WorldStreaming.md`, and `TerrainOutdoorWorldNextTodo.md` before changing code.
+- For scene/world/rendering work, verify the current policy in `AGENTS.md`, `Rendering.md`, `AssetPipeline.md`, `WorldStreaming.md`, and `VegetationOutdoorWorldNextTodo.md` before changing code.
 - Keep this file thin: do not duplicate architecture docs, skill docs, or long-form workflow guidance here.
 
 ## Core Development Principles
@@ -53,6 +53,7 @@ Every single line of code written must adhere strictly to these pillars:
 - DO NOT answer architecture questions without reading relevant docs and source code.
 - DO NOT assume missing systems or API behaviors.
 - DO NOT invent APIs or workflows not defined in docs or verified in source code.
+- DO NOT use timing changes, retries, state resets, error suppression, or other symptom-hiding workarounds as correctness fixes. Repair the owning invariant and follow `AGENTS.md` "Forbidden workaround fixes".
 - STOP and investigate if you reach a point of "conceptual" implementation; find the concrete path.
 
 ## Context Depth Rules

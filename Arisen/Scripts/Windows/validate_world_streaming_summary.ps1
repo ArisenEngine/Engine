@@ -5,8 +5,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$ExpectedProfile,
 
-    [ValidateRange(0, 3)]
-    [int]$ExpectedVisualCaptureCount = 3
+    [ValidateRange(0, 7)]
+    [int]$ExpectedVisualCaptureCount = 7
 )
 
 $ErrorActionPreference = "Stop"
@@ -77,7 +77,24 @@ try {
     Assert-Condition ($captures.Count -eq $ExpectedVisualCaptureCount) `
         "Expected $ExpectedVisualCaptureCount visual captures, received $($captures.Count)."
     if ($ExpectedVisualCaptureCount -gt 0) {
-        $expectedNames = @("before", "during", "after")
+        $expectedNames = if ($ExpectedVisualCaptureCount -eq 7) {
+            @(
+                "before",
+                "during",
+                "shadow-near",
+                "shadow-mid",
+                "shadow-far",
+                "shadow-far-stable",
+                "after"
+            )
+        }
+        elseif ($ExpectedVisualCaptureCount -eq 3) {
+            @("before", "during", "after")
+        }
+        else {
+            throw "Visual validation supports either 3 legacy captures or 7 shadow-path captures."
+        }
+        $visualsByName = @{}
         $previousFrame = -1L
         foreach ($expectedName in $expectedNames) {
             $capture = @($captures | Where-Object { [string]$_.capture.name -ceq $expectedName })
@@ -104,6 +121,44 @@ try {
                 "Visual capture '$expectedName' is blank."
             Assert-Condition ([long]$visual.depth.writtenDepthPixelCount -gt 0) `
                 "Visual capture '$expectedName' contains no written depth."
+            Assert-Condition ([string]$visual.pixelSha256 -match '^[0-9A-Fa-f]{64}$') `
+                "Visual capture '$expectedName' has no valid color pixel hash."
+            Assert-Condition ([string]$visual.depth.pixelSha256 -match '^[0-9A-Fa-f]{64}$') `
+                "Visual capture '$expectedName' has no valid depth pixel hash."
+            $visualsByName[$expectedName] = $visual
+        }
+
+        if ($ExpectedVisualCaptureCount -eq 7) {
+            $distanceNames = @("shadow-near", "shadow-mid", "shadow-far")
+            $distanceColorHashes = @($distanceNames | ForEach-Object {
+                [string]$visualsByName[$_].pixelSha256
+            })
+            $distanceDepthHashes = @($distanceNames | ForEach-Object {
+                [string]$visualsByName[$_].depth.pixelSha256
+            })
+            Assert-Condition (@($distanceColorHashes | Select-Object -Unique).Count -eq 3) `
+                "Near/mid/far shadow captures did not produce three distinct color views."
+            Assert-Condition (@($distanceDepthHashes | Select-Object -Unique).Count -eq 3) `
+                "Near/mid/far shadow captures did not produce three distinct depth views."
+
+            $farCapture = @($captures | Where-Object {
+                [string]$_.capture.name -ceq "shadow-far"
+            })[0]
+            $stableCapture = @($captures | Where-Object {
+                [string]$_.capture.name -ceq "shadow-far-stable"
+            })[0]
+            Assert-Condition (
+                [long]$stableCapture.capture.frameIndex -eq
+                ([long]$farCapture.capture.frameIndex + 1)) `
+                "Far shadow stability captures are not consecutive frames."
+            Assert-Condition (
+                [string]$visualsByName["shadow-far"].pixelSha256 -ceq
+                [string]$visualsByName["shadow-far-stable"].pixelSha256) `
+                "Stationary far shadow frames changed color output."
+            Assert-Condition (
+                [string]$visualsByName["shadow-far"].depth.pixelSha256 -ceq
+                [string]$visualsByName["shadow-far-stable"].depth.pixelSha256) `
+                "Stationary far shadow frames changed depth output."
         }
     }
 

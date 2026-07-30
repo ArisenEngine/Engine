@@ -66,6 +66,16 @@
       "Id": "com.arisen.generic-renderpipeline",
       "Url": "file://Local/com.arisen.generic-renderpipeline",
       "Version": "1.0.0"
+    },
+    {
+      "Id": "com.arisen.terrain",
+      "Url": "file://Local/com.arisen.terrain",
+      "Version": "1.0.0"
+    },
+    {
+      "Id": "com.arisen.terrain.generic-renderpipeline",
+      "Url": "file://Local/com.arisen.terrain.generic-renderpipeline",
+      "Version": "1.0.0"
     }
   ],
   "Profiles": {
@@ -76,6 +86,11 @@
         {
           "Id": "com.arisen.editor",
           "Url": "file://Local/com.arisen.editor",
+          "Version": "1.0.0"
+        },
+        {
+          "Id": "com.arisen.terrain.editor",
+          "Url": "file://Local/com.arisen.terrain.editor",
           "Version": "1.0.0"
         }
       ]

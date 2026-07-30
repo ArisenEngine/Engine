@@ -38,6 +38,14 @@ $result = [ordered]@{
         exitCode = Get-NullableInt $env:CURRENT_WORLD_STREAMING_EXIT_CODE
         passed = Get-NullableBool $env:CURRENT_WORLD_STREAMING_PASSED
     }
+    terrainStreaming = [ordered]@{
+        requested = $env:CURRENT_TERRAIN_STREAMING_REQUESTED -eq "1"
+        summaryPath = Get-NullableString $env:CURRENT_TERRAIN_STREAMING_SUMMARY_PATH
+        visualBasePath = Get-NullableString $env:CURRENT_TERRAIN_STREAMING_VISUAL_BASE_PATH
+        logPath = Get-NullableString $env:CURRENT_TERRAIN_STREAMING_LOG_PATH
+        exitCode = Get-NullableInt $env:CURRENT_TERRAIN_STREAMING_EXIT_CODE
+        passed = Get-NullableBool $env:CURRENT_TERRAIN_STREAMING_PASSED
+    }
     editorViewportSmoke = [ordered]@{
         requested = $env:CURRENT_EDITOR_VIEWPORT_SMOKE_REQUESTED -eq "1"
         path = Get-NullableString $env:CURRENT_EDITOR_VIEWPORT_SMOKE_PATH

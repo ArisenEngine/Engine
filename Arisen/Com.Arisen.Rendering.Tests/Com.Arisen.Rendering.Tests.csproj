@@ -60,6 +60,10 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Services\EditorWorldDocumentService.cs" Link="Source\Editor\Services\EditorWorldDocumentService.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Services\WorkspaceManifestEditor.cs" Link="Source\Editor\Services\WorkspaceManifestEditor.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Validation\EditorViewportSmokeState.cs" Link="Source\Editor\Validation\EditorViewportSmokeState.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Views\EditorViewportSurfaceOwnership.cs" Link="Source\Editor\Views\EditorViewportSurfaceOwnership.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Extensions\EditorExtensionRegistryCore.cs" Link="Source\Editor\Extensions\EditorExtensionRegistryCore.cs" />
+
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rhi.vulkan.native\Managed\RenderDocStartupPolicy.cs" Link="Source\Vulkan\RenderDocStartupPolicy.cs" />
 
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\IComponent.cs" Link="Source\ECS\IComponent.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\Entity.cs" Link="Source\ECS\Entity.cs" />
@@ -114,6 +118,9 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\Texture2DAsset.cs" Link="Source\Rendering\Resources\Texture2DAsset.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\DirectionalLight.cs" Link="Source\Rendering\DirectionalLight.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Camera.cs" Link="Source\Rendering\Camera.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\DepthReconstruction.cs" Link="Source\Rendering\DepthReconstruction.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\DeferredRenderResourceDisposalState.cs" Link="Source\Rendering\DeferredRenderResourceDisposalState.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\GraphicsDeviceLifecycle.cs" Link="Source\Rendering\GraphicsDeviceLifecycle.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\SceneViewCameraOverride.cs" Link="Source\Rendering\SceneViewCameraOverride.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\DirectionalLightSnapshotExtractor.cs" Link="Source\Rendering\DirectionalLightSnapshotExtractor.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\PointLight.cs" Link="Source\Rendering\PointLight.cs" />
@@ -126,6 +133,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\TransparentDrawOrdering.cs" Link="Source\Rendering\TransparentDrawOrdering.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderResourceReloadQueue.cs" Link="Source\Rendering\RenderResourceReloadQueue.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderTargetImageStateTracker.cs" Link="Source\Rendering\RenderTargetImageStateTracker.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderFrameResourceSlotState.cs" Link="Source\Rendering\RenderFrameResourceSlotState.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\StaticMeshFrustumCuller.cs" Link="Source\Rendering\StaticMeshFrustumCuller.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderGraphPassCullingPlanner.cs" Link="Source\Rendering\RenderGraphPassCullingPlanner.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderGraphResourceLifetimePlanner.cs" Link="Source\Rendering\RenderGraphResourceLifetimePlanner.cs" />
@@ -137,12 +145,16 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\IRenderPipelineProvider.cs" Link="Source\Rendering\IRenderPipelineProvider.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderPipelineProviderSelection.cs" Link="Source\Rendering\RenderPipelineProviderSelection.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\DirectionalShadowFitter.cs" Link="Source\GenericRenderPipeline\DirectionalShadowFitter.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\GenericRenderPipelineFeatureRegistryCore.cs" Link="Source\GenericRenderPipeline\GenericRenderPipelineFeatureRegistryCore.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\GenericRenderPipelineRuntimeShaderRegistry.cs" Link="Source\GenericRenderPipeline\GenericRenderPipelineRuntimeShaderRegistry.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\GenericRenderPipelineSettings.cs" Link="Source\GenericRenderPipeline\GenericRenderPipelineSettings.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\GenericRenderPipelineRuntimeAssetCooker.cs" Link="Source\GenericRenderPipeline\GenericRenderPipelineRuntimeAssetCooker.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\RenderOutputEncoding.cs" Link="Source\GenericRenderPipeline\RenderOutputEncoding.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\StaticMeshMaterialPipelineSignature.cs" Link="Source\GenericRenderPipeline\StaticMeshMaterialPipelineSignature.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Shaders\*.cs" Link="Source\Rendering\Shaders\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\SceneAssetCooker.cs" Link="Source\Resources\Serialization\SceneAssetCooker.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\SceneComponentSchemas.cs" Link="Source\Resources\Serialization\SceneComponentSchemas.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\SceneComponentExtensionRegistry.cs" Link="Source\Resources\Serialization\SceneComponentExtensionRegistry.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\SceneAssetLoader.cs" Link="Source\Resources\Serialization\SceneAssetLoader.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\SceneRuntimeAssetCooker.cs" Link="Source\Resources\Serialization\SceneRuntimeAssetCooker.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\WorldAsset.cs" Link="Source\Resources\Serialization\WorldAsset.cs" />
@@ -151,8 +163,16 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\WorldOriginService.cs" Link="Source\Resources\Serialization\WorldOriginService.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\RuntimeWorldStreamingService.cs" Link="Source\Resources\Serialization\RuntimeWorldStreamingService.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\WorldStreamingSmokeScenario.cs" Link="Source\Resources\Serialization\WorldStreamingSmokeScenario.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\RuntimeSmokeScenarioRegistry.cs" Link="Source\Resources\Serialization\RuntimeSmokeScenarioRegistry.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\RuntimeAssetResidencyService.cs" Link="Source\Resources\Serialization\RuntimeAssetResidencyService.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\RuntimeSceneService.cs" Link="Source\Resources\Serialization\RuntimeSceneService.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain\Managed\Assets\*.cs" Link="Source\Terrain\Assets\%(Filename)%(Extension)" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain\Managed\Runtime\*.cs" Link="Source\Terrain\Runtime\%(Filename)%(Extension)" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain.generic-renderpipeline\Managed\TerrainSharedGridBuilder.cs" Link="Source\TerrainGenericRenderPipeline\TerrainSharedGridBuilder.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain.generic-renderpipeline\Managed\TerrainDrawWorkPartition.cs" Link="Source\TerrainGenericRenderPipeline\TerrainDrawWorkPartition.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain.generic-renderpipeline\Managed\TerrainPreparedPayloadPacking.cs" Link="Source\TerrainGenericRenderPipeline\TerrainPreparedPayloadPacking.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain.editor\Managed\TerrainEditorDiagnosticsSession.cs" Link="Source\TerrainEditor\TerrainEditorDiagnosticsSession.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain.editor\Managed\TerrainEditorAuthoringController.cs" Link="Source\TerrainEditor\TerrainEditorAuthoringController.cs" />
   </ItemGroup>
 
 </Project>

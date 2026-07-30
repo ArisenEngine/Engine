@@ -180,7 +180,7 @@ public static class EngineBootstrapper
         RuntimeVisualSummaryService? visualSummaryService = null;
         if (smokeOptions.CaptureVisualSummary)
         {
-            visualSummaryService = smokeOptions.Mode == RuntimeSmokeMode.WorldStreaming
+            visualSummaryService = smokeOptions.UsesPackageScenario
                 ? new RuntimeVisualSummaryService(
                     workspacePath,
                     profile,
@@ -191,10 +191,11 @@ public static class EngineBootstrapper
                     smokeOptions.EffectiveFrameCount - 1,
                     smokeOptions.VisualSummaryOutputPath);
             registry.RegisterService<IRuntimeVisualSummaryService>(visualSummaryService);
-            if (smokeOptions.Mode == RuntimeSmokeMode.WorldStreaming)
+            if (smokeOptions.UsesPackageScenario)
             {
                 KernelLog.InfoFormat(
-                    "[Host] Named world-streaming visual summaries requested. Output base: {0}",
+                    "[Host] Named {0} visual summaries requested. Output base: {1}",
+                    smokeOptions.ModeName,
                     visualSummaryService.OutputPath);
             }
             else
@@ -206,22 +207,36 @@ public static class EngineBootstrapper
             }
         }
 
-        // 2. Initialize Kernel (The kernel now handles topological package loading)
+        var engineConfig = new EngineConfig
+        {
+            ProjectRoot = workspacePath,
+            ProjectName = projectName,
+            PackageUrls = packageUrls,
+            Platform = RuntimePlatform.Windows, // TODO: Deduce from OS
+            EnableSourceAssetDiagnostics = runtimeAssetOptions.EnableSourceAssetDiagnostics
+        };
+        IApplicationHost? packageOnlyHost = null;
+
+        // 2. Mount packages first so an application host can select package-only or full-engine startup.
         try
         {
-            kernel.Initialize(new EngineConfig
+            kernel.MountPackageGraph(engineConfig);
+
+            if (!smokeOptions.Enabled &&
+                registry.TryGetService<IApplicationHost>(out var mountedHost) &&
+                !mountedHost.RequiresEngineInitialization)
             {
-                ProjectRoot = workspacePath,
-                ProjectName = projectName,
-                PackageUrls = packageUrls,
-                Platform = RuntimePlatform.Windows, // TODO: Deduce from OS
-                EnableSourceAssetDiagnostics = runtimeAssetOptions.EnableSourceAssetDiagnostics
-            });
+                packageOnlyHost = mountedHost;
+            }
+            else
+            {
+                kernel.Initialize(engineConfig);
+            }
         }
         catch (Exception ex)
         {
             KernelLog.FatalFormat(
-                "[Host] FATAL ERROR: Engine initialization failed: {0}",
+                "[Host] FATAL ERROR: Engine startup failed: {0}",
                 ex.Message);
             try
             {
@@ -238,6 +253,14 @@ public static class EngineBootstrapper
             }
 
             Environment.Exit(1);
+            return;
+        }
+
+        if (packageOnlyHost != null)
+        {
+            KernelLog.Info("[Host] Package graph mount complete; subsystem initialization was not requested by the application host.");
+            LogRuntimeDiagnostics(kernel, packageSubsystem, workspacePath, profile, resolvedManifestPath, smokeOptions);
+            packageOnlyHost.Run(args);
             return;
         }
 
@@ -269,12 +292,13 @@ public static class EngineBootstrapper
 
             int smokeExitCode;
             IRuntimeSmokeScenario? smokeScenario = null;
-            if (smokeOptions.Mode == RuntimeSmokeMode.WorldStreaming)
+            if (smokeOptions.UsesPackageScenario)
             {
                 if (!registry.TryGetService<IRuntimeSmokeScenarioProvider>(out var scenarioProvider))
                 {
-                    KernelLog.Fatal(
-                        "[Host] World-streaming smoke requires an IRuntimeSmokeScenarioProvider.");
+                    KernelLog.FatalFormat(
+                        "[Host] Smoke mode '{0}' requires an IRuntimeSmokeScenarioProvider.",
+                        smokeOptions.ModeName);
                     kernel.Shutdown();
                     Environment.ExitCode = 1;
                     return;
@@ -292,7 +316,8 @@ public static class EngineBootstrapper
                         out string scenarioDiagnostic))
                 {
                     KernelLog.FatalFormat(
-                        "[Host] World-streaming smoke scenario creation failed: {0}",
+                        "[Host] Smoke scenario '{0}' creation failed: {1}",
+                        smokeOptions.ModeName,
                         scenarioDiagnostic);
                     kernel.Shutdown();
                     Environment.ExitCode = 1;

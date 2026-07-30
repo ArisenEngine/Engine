@@ -67,7 +67,7 @@ The bootstrapper maps this flag to `EngineConfig.EnableSourceAssetDiagnostics`. 
 2. **Launch Config**: If `launch.config.json` exists beside the executable, it is used before path deduction. `Mode: Deployed` roots metadata beside the executable and rejects `--workspace` or a conflicting profile override.
 3. **Manifest Resolution**: It parses the workspace `manifest.json` to identify base packages and active profile packages.
 4. **Resolved Manifest Authority**: If `manifest.resolved.json` exists beside the executable, the bootstrapper treats it as the authoritative package list and topological order. Invalid resolved manifests are fatal by default; raw `manifest.json` fallback is allowed only when `--allow-manifest-fallback` is passed.
-5. **Kernel Hand-off**: It passes the ordered package URL list to `EngineKernel.Initialize()`. The kernel ensures `PackageSubsystem` exists and delegates actual package mounting to it.
+5. **Kernel Hand-off**: It passes the ordered package URL list to `EngineKernel.MountPackageGraph()`. After package entries register their services, the bootstrapper either continues through `EngineKernel.Initialize()` or hands a package-only application host the main thread.
 
 For an ordinary `ARISEN_PROFILE_PRODUCTION` launch, `com.arisen.resources` requires `<app-base>/runtime-assets.json` and `<app-base>/Content/`. Catalog profile, paths, sizes, and hashes are validated before any asset lookup is published. The runtime database contains no source records, uses `Disabled` source access, and rejects cooking, invalidation, or source refresh; missing or incompatible cooked content is fatal instead of falling back to workspace `Assets` or `.arisen/Cache`.
 
@@ -90,10 +90,13 @@ When `PackageSubsystem` mounts a package:
 
 ## 4. Boot Hand-off
 
-Once all packages are mounted by `PackageSubsystem`, the bootstrapper attempts to find a "Master Controller" to yield the main thread to:
+Once all packages are mounted by `PackageSubsystem`, the bootstrapper resolves the process owner:
 
-1. **IApplicationHost**: If a package (like `com.arisen.editor`) has registered an `IApplicationHost` service, the bootstrapper yields the main thread to it (launching the Editor UI).
-2. **Bare-Metal Kernel**: If no application host is detected, the bootstrapper engages the default engine tick loop via `EngineKernel.Instance.Run()`.
+1. **Package-only application host**: An `IApplicationHost` may return `false` from `RequiresEngineInitialization`. The bootstrapper then yields immediately after package mounting, without entering subsystem phases. `com.arisen.testrunner` uses this mode so native tests own their RHI instance, render window, and Win32 message loop; the game platform, scene, and rendering subsystems never start alongside them.
+2. **Full-engine application host**: The default contract value is `true`. The bootstrapper initializes all subsystem phases before yielding to hosts such as `com.arisen.editor`.
+3. **Bare-metal kernel**: If no application host is detected, the bootstrapper initializes the engine and engages the default tick loop through `EngineKernel.Instance.Run()`.
+
+Smoke mode always takes the full-engine path and exits through its bounded kernel loop, even when the selected package graph also contains a package-only host. This preserves `RHIVulkanTesting` runtime smoke coverage while keeping an ordinary interactive test launch isolated.
 
 Smoke validation is a bounded variant of the same boot path:
 
@@ -101,6 +104,8 @@ Smoke validation is a bounded variant of the same boot path:
 MyGame.exe --workspace "D:/MyGame" --profile "Development" --smoke-mode scene --frames 1
 ```
 
-Supported smoke modes are `boot`, `scene`, and `hot-reload`. `boot` preserves the legacy one-frame bounded loop. `scene` runs at least two frames so packages that defer scene setup to first `OnFrameEnd` still render one prepared scene frame. `hot-reload` currently runs a multi-frame scene stability window and logs that true file-change recook/reload smoke still needs a runtime-owned asset-change harness.
+Kernel-owned smoke modes are `boot`, `scene`, and `hot-reload`. `boot` preserves the legacy one-frame bounded loop. `scene` runs at least two frames so packages that defer scene setup to first `OnFrameEnd` still render one prepared scene frame. `hot-reload` currently runs a multi-frame scene stability window and logs that true file-change recook/reload smoke still needs a runtime-owned asset-change harness.
+
+Selected packages can register additional bounded modes through `IRuntimeSmokeScenarioRegistry`. The current `com.arisen.resources` provider owns `world-streaming`, and `com.arisen.terrain` owns `terrain-streaming`. The kernel supplies the scenario context, frame callbacks, wall-clock deadline, optional named visual capture, guaranteed engine shutdown, and one post-shutdown inspection callback; it does not depend on world or terrain implementations.
 
 `--visual-summary-output <path>` implies scene visual capture and overrides the default workspace-relative artifact path. Runtime validation uses it so a deployed player can remain rooted to its copied output while CI artifacts are written to the canonical validation log directory.

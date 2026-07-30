@@ -8,6 +8,8 @@ public interface IRHIDevice
 {
     IntPtr NativeHandle { get; }
 
+    ulong Generation { get; }
+
     bool IsValid { get; }
     
     /// <summary>

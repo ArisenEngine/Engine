@@ -1,4 +1,4 @@
-Version: 1
+Version: 2
 Name: Blue Hour Panorama
 SourceTexture:
   Guid: d5a4f9f1-2f0f-4da8-8b15-19ac1fb30e57
@@ -8,3 +8,22 @@ SourceColorSpace: SRgb
 RuntimeFormat: R16G16B16A16SFloat
 RotationDegrees: 18.0
 Intensity: 1.35
+Outdoor:
+  SkyMode: ProceduralOutdoor
+  SunSkyCoupling: 0.72
+  HorizonExponent: 0.65
+  ZenithExponent: 1.35
+  SunAngularRadiusDegrees: 0.53
+  SunDiscIntensity: 5.5
+  SunGlowIntensity: 0.30
+  SunGlowExponent: 72.0
+  AerialPerspectiveEnabled: true
+  AerialStartDistance: 18.0
+  AerialDistance: 120.0
+  AerialStrength: 0.42
+  HeightFogEnabled: true
+  HeightFogBaseHeight: 0.0
+  HeightFogDensity: 0.006
+  HeightFogFalloff: 0.22
+  ExposurePolicy: Scene
+  FixedExposure: 1.15

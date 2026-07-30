@@ -42,6 +42,20 @@ public sealed class RenderOutputImageSummaryTests
         Assert.Equal(artifact.PixelCount, artifact.LuminanceHistogram.Sum());
         Assert.Equal(16, artifact.LuminanceHistogram.Length);
         Assert.Equal(16, artifact.SpatialLuminanceGrid.Length);
+        Assert.Equal(64, artifact.PixelSha256.Length);
+        Assert.Equal(
+            artifact.PixelSha256,
+            RenderOutputImageSummaryBuilder.Build(
+                pixels,
+                2,
+                1,
+                EFormat.FORMAT_B8G8R8A8_UNORM,
+                CreateDepthPixels(0.25f, 1.0f),
+                EFormat.FORMAT_D32_SFLOAT,
+                "Development",
+                RenderOutputKind.NativeSwapchain,
+                7,
+                2).PixelSha256);
         Assert.Equal(2, artifact.SchemaVersion);
         Assert.True(artifact.Depth.Passed);
     }
@@ -157,6 +171,14 @@ public sealed class RenderOutputImageSummaryTests
         Assert.Equal(artifact.NormalizedDepthPixelCount, artifact.DepthHistogram.Sum());
         Assert.Equal(16, artifact.DepthHistogram.Length);
         Assert.Equal(16, artifact.SpatialDepthGrid.Length);
+        Assert.Equal(64, artifact.PixelSha256.Length);
+        Assert.NotEqual(
+            artifact.PixelSha256,
+            RenderDepthImageSummaryBuilder.Build(
+                CreateDepthPixels(0.2f, 0.6f, 1.0f, 1.0f),
+                2,
+                2,
+                EFormat.FORMAT_D32_SFLOAT).PixelSha256);
     }
 
     [Fact]
