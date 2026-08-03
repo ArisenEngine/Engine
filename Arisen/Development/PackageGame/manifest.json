@@ -92,18 +92,55 @@
           "Id": "com.arisen.terrain.editor",
           "Url": "file://Local/com.arisen.terrain.editor",
           "Version": "1.0.0"
+        },
+        {
+          "Id": "com.arisen.vegetation",
+          "Url": "file://Local/com.arisen.vegetation",
+          "Version": "1.0.0"
+        },
+        {
+          "Id": "com.arisen.vegetation.generic-renderpipeline",
+          "Url": "file://Local/com.arisen.vegetation.generic-renderpipeline",
+          "Version": "1.0.0"
+        },
+        {
+          "Id": "com.arisen.vegetation.editor",
+          "Url": "file://Local/com.arisen.vegetation.editor",
+          "Version": "1.0.0"
         }
       ]
     },
     "Development": {
       "IsEditor": false,
       "EnableProfiler": true,
-      "Packages": []
+      "Packages": [
+        {
+          "Id": "com.arisen.vegetation",
+          "Url": "file://Local/com.arisen.vegetation",
+          "Version": "1.0.0"
+        },
+        {
+          "Id": "com.arisen.vegetation.generic-renderpipeline",
+          "Url": "file://Local/com.arisen.vegetation.generic-renderpipeline",
+          "Version": "1.0.0"
+        }
+      ]
     },
     "Production": {
       "IsEditor": false,
       "EnableProfiler": false,
-      "Packages": []
+      "Packages": [
+        {
+          "Id": "com.arisen.vegetation",
+          "Url": "file://Local/com.arisen.vegetation",
+          "Version": "1.0.0"
+        },
+        {
+          "Id": "com.arisen.vegetation.generic-renderpipeline",
+          "Url": "file://Local/com.arisen.vegetation.generic-renderpipeline",
+          "Version": "1.0.0"
+        }
+      ]
     },
     "RHIVulkanTesting": {
       "IsEditor": false,
