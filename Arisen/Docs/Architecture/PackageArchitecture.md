@@ -29,6 +29,7 @@ This layer implements the standard features expected of a game engine.
 -   **`com.arisen.rendering`**: The RenderGraph and core pipeline management.
 -   **`com.arisen.resources`**: Background asset discovery and database management.
 -   **`com.arisen.generic-renderpipeline`**: The default concrete RenderPipeline implemented via RenderGraph.
+-   **`com.arisen.vegetation`**: Backend-neutral vegetation identity, runtime cluster data, bounded queries, diagnostics, and authoring-preview contracts.
 
 ### 3. Driver (Backend Implementations)
 Concrete hardware/API backends. Driver packages should depend only on Foundation packages and expose backend functionality through shared contracts/services.
@@ -38,6 +39,7 @@ Concrete hardware/API backends. Driver packages should depend only on Foundation
 Packages that provide the visual environment for creating games.
 -   **`com.arisen.editor`**: The main Avalonia host and panel management system.
 -   **`com.arisen.nodecanvas`**: A reusable UI foundation for all node-based editing.
+-   **`com.arisen.vegetation.editor`**: Optional vegetation authoring extension selected by the Editor profile.
 
 Optional authoring packages extend the Editor through the setup-only
 `IEditorExtensionRegistry` service. An adapter registers one stable
@@ -119,6 +121,28 @@ The Vulkan package then declares the contracts it provides:
 ```
 
 `IRHIDevice` and the other cross-backend RHI contracts are shared contracts. Vulkan, DX12, and Metal packages implement/provide them; they do not each define incompatible versions of the same engine contract.
+
+### Vegetation Package Composition
+
+Vegetation follows the same composition rule while keeping ownership explicit:
+
+- `com.arisen.vegetation` is the reusable domain package. It owns package-neutral
+  contracts and immutable runtime snapshots and does not depend on a concrete
+  render pipeline, Editor, or RHI backend.
+- `com.arisen.vegetation.generic-renderpipeline` is the optional Generic RP
+  adapter. It depends on the vegetation runtime and Generic RP feature registry,
+  resolves services once during package load, and unregisters its feature before
+  package unload.
+- `com.arisen.vegetation.editor` is the optional authoring adapter. It depends on
+  the vegetation runtime and Editor extension registry and is selected only by
+  the `Editor` profile.
+
+The canonical `PackageGame` composition selects the runtime and Generic RP
+adapter in `Editor`, `Development`, and `Production`, and selects the Editor
+adapter only in `Editor`. `RHIVulkanTesting` remains vegetation-free. The
+workspace/composition package still selects `com.arisen.rhi.vulkan.native`; no
+vegetation package depends on Vulkan, so a future DX12 or Metal composition can
+replace the provider without changing vegetation contracts.
 
 ---
 

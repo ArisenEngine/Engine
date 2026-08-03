@@ -32,27 +32,22 @@ The completed foundation provides:
 - Editor extension registration, transactional terrain sculpt/paint/save/reimport/cook, immutable authoring previews, diagnostics, and stable hierarchy state;
 - package-provided bounded smoke scenarios, named visual captures, Tracy instrumentation, and copied-output Production validation.
 
-The promoted Release gate on 2026-08-03 is:
+The completed foundation gate on 2026-08-03 is:
 
-- BuildTool tests: `64/64`;
+- BuildTool tests: `72/72`;
 - kernel tests: `72/72`;
 - launcher tests: `18/18`;
-- rendering/asset/Editor tests: `623/623`;
-- two complete GPU-required Release runtime cycles, each covering Editor, Development, Production,
-  and RHIVulkanTesting with zero skipped GPU checks;
-- two real dual-viewport Editor restart/capture runs with bounded imports, graphics-generation
-  advance, clean shutdown, and non-empty captures of `50,091,850` and `50,658,800` bytes;
-- repeated Development, Production, and relocated Production world/terrain soaks with bounded
-  memory, cooked-generation evidence, complete worker/disposal drain, source/cache rejection,
-  catalog tamper rejection, and missing-artifact rejection;
-- zero packages, collectible contexts, native runtimes, services, initialized subsystems, render
-  surfaces, and terrain tasks at both cycle baselines;
-- all eleven archived Vulkan validation logs empty and first-party generated builds at zero warnings
-  and zero errors.
+- rendering/asset/Editor tests: `627/627`;
+- the Debug `validate_runtime.bat --no-pause --config Debug --smoke-mode scene --frames 1` gate
+  passed with Editor, Development, Production, and RHIVulkanTesting GPU smoke coverage, zero
+  skipped GPU checks, viewport coverage, world/terrain streaming checks, copied cooked-only
+  Production coverage, and clean shutdown;
+- generated Editor, Development, and Production workspaces built with zero warnings and zero errors.
 
 Measured vegetation gaps:
 
-- no vegetation, foliage, biome, scatter, species, or impostor package/code exists;
+- the Milestone 1 vegetation package spine now exists in three repositories, but no species,
+  foliage, biome, scatter, or impostor data has been implemented;
 - no source or cooked schema defines species meshes/materials, placement rules, stable instances, clusters, or LOD ranges;
 - no scene component or runtime service binds vegetation clusters to world cells;
 - ordinary static meshes are entity-oriented and are not an acceptable representation for tens of thousands of plants;
@@ -108,7 +103,11 @@ At completion, Arisen must be able to author, cook, deploy, stream, and render a
 - `com.arisen.rendering` and `com.arisen.generic-renderpipeline` remain backend-neutral graph/pipeline owners. They should change only for a measured reusable rendering contract, not vegetation-specific types.
 - composition/root metadata selects the vegetation runtime and concrete Generic RP/Editor adapters. Reusable vegetation packages must not depend on Vulkan.
 
-The three vegetation repositories do not exist yet. Create them before adding submodules; do not place non-submodule package directories at the canonical `Local/com.arisen.*` paths and later replace them destructively.
+The three vegetation repositories are real submodules at the canonical `Local/com.arisen.*`
+paths. Keep them separate: runtime contracts/data in `com.arisen.vegetation`, Generic RP
+integration in `com.arisen.vegetation.generic-renderpipeline`, and Editor authoring in
+`com.arisen.vegetation.editor`. Do not replace these submodules with ordinary package
+directories.
 
 ---
 
@@ -118,23 +117,39 @@ The three vegetation repositories do not exist yet. Create them before adding su
 
 ### TODO
 
-- [ ] Create and add `com.arisen.vegetation`, `com.arisen.vegetation.generic-renderpipeline`, and `com.arisen.vegetation.editor` as submodules.
-- [ ] Add explicit package/service metadata and profile composition.
-  - [ ] Select runtime and Generic RP adapter in Editor/Development/Production.
-  - [ ] Select the Editor adapter only in `Editor`.
-  - [ ] Keep Vulkan only at composition level.
-- [ ] Define narrow package-neutral services for runtime cluster data, optional queries, diagnostics, and authoring preview.
-- [ ] Register one stable Generic RP feature and one Editor extension through existing registries.
-- [ ] Prove optional lifecycle and package direction.
-  - [ ] Generic RP and Editor still run without vegetation selected.
-  - [ ] Vegetation runtime compiles without Generic RP, Editor, or Vulkan references.
-  - [ ] Adapter teardown releases feature resources before RHI destruction and unregisters before provider unload.
+- [x] Create and add `com.arisen.vegetation`, `com.arisen.vegetation.generic-renderpipeline`, and `com.arisen.vegetation.editor` as submodules.
+- [x] Add explicit package/service metadata and profile composition.
+  - [x] Select runtime and Generic RP adapter in Editor/Development/Production.
+  - [x] Select the Editor adapter only in `Editor`.
+  - [x] Keep Vulkan only at composition level.
+- [x] Define narrow package-neutral services for runtime cluster data, optional queries, diagnostics, and authoring preview.
+- [x] Register one stable Generic RP feature and one Editor extension through existing registries.
+- [x] Prove optional lifecycle and package direction.
+  - [x] Generic RP and Editor still run without vegetation selected.
+  - [x] Vegetation runtime compiles without Generic RP, Editor, or Vulkan references.
+  - [x] Adapter teardown releases feature resources before RHI destruction and unregisters before provider unload.
 
 ### Acceptance Criteria
 
 - Package metadata alone expresses inclusion, service closure, and unload order.
 - No shared package depends on vegetation.
 - No vegetation service lookup is introduced in per-instance or command-recording loops.
+
+### Milestone 1 Completion Record
+
+- The runtime package publishes immutable atomic cluster-data, diagnostics, and
+  authoring-preview snapshots and exposes explicit invalid/outside/unavailable
+  query states.
+- The Generic RP adapter registers a stable no-pass feature and releases it in
+  reverse lifecycle order; the Editor adapter registers a lifecycle-valid
+  extension without introducing placeholder UI.
+- `72/72` BuildTool tests, `72/72` kernel tests, `18/18` launcher tests, and
+  `627/627` rendering/Editor tests passed. The canonical Editor, Development,
+  and Production workspaces generated and built successfully, and the complete
+  Debug runtime validation artifact is
+  `.arisen/Logs/validate-runtime-Debug-latest.json`.
+- The next active work is Milestone 2: strict species, biome/scatter, and
+  cooked-cluster asset contracts with deterministic fixtures and corruption tests.
 
 ---
 
@@ -376,7 +391,7 @@ The three vegetation repositories do not exist yet. Create them before adding su
 
 Implement the first visible vertical slice in this order:
 
-1. [ ] create the three vegetation repositories, add submodules, and establish package/profile composition;
+1. [x] create the three vegetation repositories, add submodules, and establish package/profile composition;
 2. [ ] define one species asset, one biome asset, and strict deterministic fixtures;
 3. [ ] cook one terrain-aware cluster page with stable identities and corruption tests;
 4. [ ] add a vegetation cluster scene codec plus cell/residency ownership;

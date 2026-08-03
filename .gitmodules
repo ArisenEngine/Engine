@@ -49,3 +49,12 @@
 [submodule "Arisen/Development/PackageGame/Local/com.arisen.terrain.editor"]
 	path = Arisen/Development/PackageGame/Local/com.arisen.terrain.editor
 	url = https://github.com/ArisenEngine/com.arisen.terrain.editor.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.vegetation"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.vegetation
+	url = https://github.com/ArisenEngine/com.arisen.vegetation.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.vegetation.generic-renderpipeline"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.vegetation.generic-renderpipeline
+	url = https://github.com/ArisenEngine/com.arisen.vegetation.generic-renderpipeline.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.vegetation.editor"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.vegetation.editor
+	url = https://github.com/ArisenEngine/com.arisen.vegetation.editor.git

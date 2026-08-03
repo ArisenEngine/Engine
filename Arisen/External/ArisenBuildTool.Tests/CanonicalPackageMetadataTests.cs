@@ -114,6 +114,161 @@ public sealed class CanonicalPackageMetadataTests
             loadOrder["com.arisen.terrain.editor"]);
     }
 
+    [Fact]
+    public void VegetationFreeEditorCompositionResolvesWithoutVegetationPackages()
+    {
+        var result = ValidateComposition(
+            isEditor: true,
+            "com.arisen.editor",
+            "com.arisen.generic-renderpipeline",
+            "com.arisen.rhi.vulkan.native");
+
+        Assert.True(result.Success, FormatErrors(result));
+        Assert.DoesNotContain(result.PackageMap.Keys, IsVegetationPackage);
+    }
+
+    [Fact]
+    public void VegetationRuntimeCompositionResolvesWithoutAdaptersOrVulkan()
+    {
+        var result = ValidateComposition(isEditor: false, "com.arisen.vegetation");
+
+        Assert.True(result.Success, FormatErrors(result));
+        Assert.Contains(
+            "com.arisen.vegetation",
+            result.PackageMap.Keys,
+            StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain(
+            result.PackageMap.Keys,
+            packageId => string.Equals(
+                packageId,
+                "com.arisen.generic-renderpipeline",
+                StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(
+            result.PackageMap.Keys,
+            packageId => string.Equals(
+                packageId,
+                "com.arisen.editor",
+                StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(
+            result.PackageMap.Keys,
+            packageId => string.Equals(
+                packageId,
+                "com.arisen.rhi.vulkan.native",
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void VegetationPackageDependenciesPreserveOptionalAdapterBoundaries()
+    {
+        var genericRenderPipeline = ReadPackageManifest("com.arisen.generic-renderpipeline");
+        var editor = ReadPackageManifest("com.arisen.editor");
+        var vegetation = ReadPackageManifest("com.arisen.vegetation");
+        var vegetationGenericRenderPipeline =
+            ReadPackageManifest("com.arisen.vegetation.generic-renderpipeline");
+        var vegetationEditor = ReadPackageManifest("com.arisen.vegetation.editor");
+
+        Assert.DoesNotContain(genericRenderPipeline.Dependencies!.Keys, IsVegetationPackage);
+        Assert.DoesNotContain(editor.Dependencies!.Keys, IsVegetationPackage);
+        Assert.DoesNotContain(
+            vegetation.Dependencies!.Keys,
+            packageId =>
+                IsVegetationAdapter(packageId) ||
+                string.Equals(
+                    packageId,
+                    "com.arisen.rhi.vulkan.native",
+                    StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(
+            vegetationGenericRenderPipeline.Dependencies!.Keys,
+            packageId => string.Equals(
+                packageId,
+                "com.arisen.vegetation",
+                StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(
+            vegetationEditor.Dependencies!.Keys,
+            packageId => string.Equals(
+                packageId,
+                "com.arisen.vegetation",
+                StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(
+            vegetationGenericRenderPipeline.Dependencies.Keys,
+            packageId => string.Equals(
+                packageId,
+                "com.arisen.rhi.vulkan.native",
+                StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(
+            vegetationEditor.Dependencies.Keys,
+            packageId => string.Equals(
+                packageId,
+                "com.arisen.rhi.vulkan.native",
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void VegetationAdaptersLoadAfterTheirOwnedProviders()
+    {
+        string repositoryRoot = FindRepositoryRoot();
+        string engineRoot = Path.Combine(repositoryRoot, "Arisen");
+        string workspace = GetWorkspaceDirectory(repositoryRoot);
+        var manifest = ManifestJson.DeserializeFile<ProjectManifest>(
+            Path.Combine(workspace, "manifest.json"));
+
+        Assert.NotNull(manifest);
+        var result = PackageValidationService.Validate(manifest!, workspace, engineRoot, "Editor");
+        Assert.True(result.Success, FormatErrors(result));
+
+        var loadOrder = result.SortedPackages
+            .Select((package, index) => (package.Manifest.Id, index))
+            .ToDictionary(item => item.Id, item => item.index, StringComparer.OrdinalIgnoreCase);
+
+        Assert.True(
+            loadOrder["com.arisen.vegetation"] <
+            loadOrder["com.arisen.vegetation.generic-renderpipeline"]);
+        Assert.True(
+            loadOrder["com.arisen.generic-renderpipeline"] <
+            loadOrder["com.arisen.vegetation.generic-renderpipeline"]);
+        Assert.True(
+            loadOrder["com.arisen.vegetation"] <
+            loadOrder["com.arisen.vegetation.editor"]);
+        Assert.True(
+            loadOrder["com.arisen.editor"] <
+            loadOrder["com.arisen.vegetation.editor"]);
+    }
+
+    [Theory]
+    [InlineData("Editor", true)]
+    [InlineData("Development", false)]
+    [InlineData("Production", false)]
+    public void RuntimeProfilesSelectExpectedVegetationAdapters(
+        string profile,
+        bool expectEditorAdapter)
+    {
+        PackageValidationResult result = ValidateCanonicalProfile(profile);
+
+        Assert.True(result.Success, FormatErrors(result));
+        Assert.Contains(
+            "com.arisen.vegetation",
+            result.PackageMap.Keys,
+            StringComparer.OrdinalIgnoreCase);
+        Assert.Contains(
+            "com.arisen.vegetation.generic-renderpipeline",
+            result.PackageMap.Keys,
+            StringComparer.OrdinalIgnoreCase);
+        Assert.Equal(
+            expectEditorAdapter,
+            result.PackageMap.Keys.Contains(
+                "com.arisen.vegetation.editor",
+                StringComparer.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void RhiTestingProfileDoesNotSelectVegetationPackages()
+    {
+        PackageValidationResult result = ValidateCanonicalProfile("RHIVulkanTesting");
+
+        Assert.True(result.Success, FormatErrors(result));
+        Assert.DoesNotContain(result.PackageMap.Keys, IsVegetationPackage);
+    }
+
     private static PackageValidationResult ValidateComposition(
         bool isEditor,
         params string[] packageIds)
@@ -153,6 +308,18 @@ public sealed class CanonicalPackageMetadataTests
         return Assert.IsType<PackageManifest>(manifest);
     }
 
+    private static PackageValidationResult ValidateCanonicalProfile(string profile)
+    {
+        string repositoryRoot = FindRepositoryRoot();
+        string engineRoot = Path.Combine(repositoryRoot, "Arisen");
+        string workspace = GetWorkspaceDirectory(repositoryRoot);
+        var manifest = ManifestJson.DeserializeFile<ProjectManifest>(
+            Path.Combine(workspace, "manifest.json"));
+
+        Assert.NotNull(manifest);
+        return PackageValidationService.Validate(manifest!, workspace, engineRoot, profile);
+    }
+
     private static string GetPackageDirectory(string packageId)
     {
         return Path.Combine(
@@ -173,6 +340,23 @@ public sealed class CanonicalPackageMetadataTests
     private static bool IsTerrainPackage(string packageId)
     {
         return packageId.StartsWith("com.arisen.terrain", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsVegetationPackage(string packageId)
+    {
+        return packageId.StartsWith("com.arisen.vegetation", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsVegetationAdapter(string packageId)
+    {
+        return string.Equals(
+                packageId,
+                "com.arisen.vegetation.generic-renderpipeline",
+                StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(
+                packageId,
+                "com.arisen.vegetation.editor",
+                StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FormatErrors(PackageValidationResult result)
