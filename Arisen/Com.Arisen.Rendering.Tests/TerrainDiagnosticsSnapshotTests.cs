@@ -145,6 +145,50 @@ public sealed class TerrainDiagnosticsSnapshotTests
     }
 
     [Fact]
+    public void SmokeDiscoveryRequiresPublishedLodFrameBeforeSchedulingCapture()
+    {
+        TerrainRuntimeFixture fixture = TerrainRuntimeTestData.Create(1, 1, resolution: 17);
+        CookedTerrainTile tile = fixture.Tiles[0];
+        TerrainDiagnosticTileInput input = CreateTileInput(
+            fixture.Root,
+            tile,
+            1,
+            Array.Empty<RuntimeAssetResidencyOwnerId>());
+        TerrainDiagnosticsSnapshot preparedOnly = Build(fixture.Root, [input]);
+
+        var runtime = new TerrainRuntimeDataStore();
+        runtime.PublishRoot(fixture.Root);
+        runtime.PublishTile(tile);
+        var planner = new TerrainLodPlanner(runtime);
+        var view = new TerrainLodView(
+            new WorldPosition(8.0, 20.0, 8.0),
+            default,
+            Matrix4x4.Identity,
+            TerrainLodProjection.Perspective,
+            Math.PI / 3.0,
+            0.0,
+            1080);
+        TerrainPatchRecord[] patches = planner.Plan(
+            [TerrainRuntimeTestData.CreateComponent(tile)],
+            view,
+            new TerrainLodSettings(2.0, 0.15, 32, false)).ToArray();
+        TerrainDiagnosticsSnapshot rendered = Build(
+            fixture.Root,
+            [input],
+            planner.Metrics,
+            patches);
+
+        Assert.False(TerrainStreamingSmokeScenario.HasCompleteRenderSnapshot(
+            preparedOnly,
+            Assert.Single(preparedOnly.Roots),
+            preparedOnly.Tiles));
+        Assert.True(TerrainStreamingSmokeScenario.HasCompleteRenderSnapshot(
+            rendered,
+            Assert.Single(rendered.Roots),
+            rendered.Tiles));
+    }
+
+    [Fact]
     public void EditorSelectionAndOverlayVisibilitySurviveEmptyRuntimeRefresh()
     {
         TerrainRuntimeFixture fixture = TerrainRuntimeTestData.Create(1, 1, resolution: 17);
@@ -168,7 +212,9 @@ public sealed class TerrainDiagnosticsSnapshotTests
 
     private static TerrainDiagnosticsSnapshot Build(
         CookedTerrainRoot root,
-        TerrainDiagnosticTileInput[] tiles)
+        TerrainDiagnosticTileInput[] tiles,
+        TerrainLodMetrics lod = default,
+        TerrainPatchRecord[]? patches = null)
     {
         TerrainDiagnosticRootInput[] roots =
         [
@@ -185,12 +231,12 @@ public sealed class TerrainDiagnosticsSnapshotTests
         return TerrainDiagnosticsSnapshotBuilder.Build(
             1,
             new TerrainResidencyMetrics(1, tiles.Length, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-            default,
+            lod,
             default,
             default,
             roots,
             tiles,
-            ReadOnlySpan<TerrainPatchRecord>.Empty,
+            patches is null ? ReadOnlySpan<TerrainPatchRecord>.Empty : patches,
             Array.Empty<TerrainResidencyResourceSnapshot>());
     }
 

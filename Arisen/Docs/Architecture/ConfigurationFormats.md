@@ -139,7 +139,7 @@ Tooling may deserialize case-insensitively for transition compatibility, but gen
 | `Packages[].Version` | `string` | **Yes** | Exact package version or supported registry semantic range (e.g., `"1.0.0"`, `">=1.2.0 <2.0.0"`, `"^1.2.0"`, `"~1.2.0"`, `"*"`). Local file packages should still declare an exact version so duplicate entries and package locks remain deterministic. |
 | `Profiles` | `object` | Optional | A dictionary of named profiles mapped to profile metadata objects. |
 | `Profiles[Key].IsEditor` | `bool` | Optional | If `true`, generated projects define `ARISEN_ENGINE_EDITOR`. Use this for editor/window/RHI ownership policy, not runtime flags. Defaults to `false`. |
-| `Profiles[Key].EnableProfiler` | `bool` | Optional | If `true`, generated managed and native projects define `ARISEN_PROFILER_ENABLED`. Defaults to `false`. |
+| `Profiles[Key].EnableProfiler` | `bool` | Optional | If `true`, generated managed and native projects define `ARISEN_PROFILER_ENABLED` and profiler-only native payloads are selected. If `false`, instrumentation and `requiresProfiler` payloads are excluded. Defaults to `false`. |
 | `Profiles[Key].Packages` | `array` | Optional | Additional packages formatted identically to the base `Packages` array. These are **appended** to the base list when this specific profile is requested via command line (`--profile Key`). |
 
 Source precedence is intentional: `file://` means local source, `http(s)://` means a restored cache package, and an empty `Url` is fallback discovery. Local folders do not silently override remote manifest entries.
@@ -255,6 +255,7 @@ Production deployment emits a strict-JSON runtime form of `manifest.json` beside
 | `id` | `string` | **Yes** | The reverse-DNS globally unique identifier (e.g., `com.arisen.ecs`). |
 | `name` | `string` | **Yes** | The human-readable display name. |
 | `version` | `string` | **Yes** | Semantic versioning string (e.g., `"1.2.0"`). |
+| `engine.minVersion` | `string` | Optional | Minimum compatible Arisen engine semantic version. BuildTool and runtime reject a package when the current engine is older. |
 | `layer` | `string` | **Yes** | Architectural layer used by validation. Valid values: `foundation`, `domain`, `driver`, `tooling`, `user`, `test`. |
 | `entry.assembly` | `string` | Generated | The managed C# DLL filename. Usually emitted into `package.generated.json`. |
 | `entry.class` | `string` | Generated | The full name of the class implementing `IPackageEntry`. Usually emitted into `package.generated.json`. |
@@ -264,6 +265,18 @@ Production deployment emits a strict-JSON runtime form of `manifest.json` beside
 | `dependencies` | `object` | Optional | Key-value pairs of required package IDs and their semantic version constraints. |
 | `nativeRuntimes` | `object` | Optional | Key-value pairs matching a platform Runtime Identifier (RID) to unmanaged runtime payload declarations. String shorthand remains supported. |
 | `nativeTests` | `object` | Optional/test-only | Key-value pairs matching a platform Runtime Identifier (RID) to native test registration declarations. Valid only for packages in the `test` layer. |
+
+Dependency values support exact versions, `*`, caret ranges such as `^1.2.0`, tilde ranges such
+as `~1.2.0`, and whitespace-separated comparator conjunctions such as
+`>=1.2.0 <2.0.0`. Validation records every base, profile, direct, and transitive edge and checks
+each constraint against the one selected package version, even when another edge discovered that
+package first.
+
+`engine.minVersion` is the canonical engine compatibility field. Legacy package-level
+`engineVersion` remains readable for migration, produces a validation warning, and is emitted as
+canonical `engine.minVersion` in generated/deployed metadata. Declaring both fields with different
+values is an error. Workspace-level PascalCase `EngineVersion` is a separate engine-installation
+selection field and is not part of this migration.
 
 ### Native Runtime Entries
 
@@ -293,8 +306,10 @@ Object form:
   "path": "3rdparty/vulkan/Layers/VkLayer_khronos_validation.dll",
   "source": "static",
   "required": true,
+  "requiresProfiler": false,
   "configurations": ["Debug", "Release"],
   "exports": ["vkGetInstanceProcAddr"],
+  "sharedPayload": "khronos.vulkan-loader",
   "initExport": "ArisenNativeInit",
   "shutdownExport": "ArisenNativeShutdown"
 }
@@ -306,13 +321,26 @@ Object fields:
 |---|---|---|---|
 | `path` / `name` | `string` | **Yes** | Package-relative payload path or build-output file name. |
 | `source` / `kind` | `string` | Optional | `static` or `buildOutput`. If omitted, inferred from whether the path contains a directory separator. |
-| `required` | `bool` | Optional | Defaults to `true`. Missing optional static payloads produce warnings instead of errors. |
+| `required` | `bool` | Optional | Defaults to `true`. A missing optional static payload is omitted. Deployment removes an older destination when no static or build-output owner remains, and finalization rejects such orphaned stale output if deployment was skipped. |
+| `requiresProfiler` | `bool` | Optional | Defaults to `false`. When `true`, the payload is selected only when the active workspace profile has `EnableProfiler: true`. Disabled entries are omitted from resolved/deployed package metadata; generation removes an older owned destination and finalization rejects stale output if cleanup was skipped. |
 | `configurations` | `array<string>` | Optional | Configuration filter for generated/deployed output validation. If present, `validate-native-output` only checks the entry when the active configuration matches, for example `Debug` or `Release`. |
 | `exports` | `array<string>` | Optional | Expected DLL exports. For existing static DLL payloads, `ArisenBuildTool validate` checks these exports. For built/deployed output payloads, `ArisenBuildTool validate-native-output` checks these exports in the generated bin directory before runtime boot. |
+| `sharedPayload` | `string` | Optional | Explicit logical identity for intentional cross-package ownership of one destination basename. Every colliding declaration must use the same identity, and static sources must be byte-identical. |
 | `initExport` | `string` | Optional | Parameterless C ABI lifecycle export called by `PackageSubsystem` when the package is mounted. Return `0` for success; non-zero fails package load. |
 | `shutdownExport` | `string` | Optional | Parameterless C ABI lifecycle export called by `PackageSubsystem` in reverse package order during shutdown. Return `0` for success; non-zero is logged during shutdown. |
 
 Native lifecycle exports are optional. Managed or hybrid packages should continue to prefer `IPackageEntry.OnLoad()` / `OnUnload()` when managed code owns lifecycle orchestration. Use native lifecycle exports only for native-only payloads or low-level initialization that must occur inside the native DLL.
+
+Native deployment is basename-based, so BuildTool constructs the complete ownership map before it
+changes any destination. A basename claimed by different packages is rejected unless every
+overlapping declaration uses the same `sharedPayload`. Static deployment compares SHA-256 content,
+not timestamps or sizes, and publishes a changed file through a private staging file plus atomic
+replacement. An optional static declaration whose source disappeared cannot retain an older
+destination unless another active declaration owns that basename as build output. Profiler-only
+declarations follow the profile's explicit `EnableProfiler` value rather than its name, and inactive
+declarations cannot retain stale output. After native build completion, the entry-project target writes a finalized
+`NativePayloads` inventory to `manifest.resolved.json`; each record contains runtime identifier,
+basename, byte size, SHA-256, owners, and optional shared identity.
 
 ### Native Test Entries
 
@@ -348,6 +376,7 @@ To achieve this without compromising Developer Experience (DX), the **ArisenBuil
 The *only* fields a user or package author should normally edit in `package.json` are:
 - `id`
 - `version`
+- `engine.minVersion`
 - `layer`
 - `name` / `author` / `description`
 - `services.requires` (for cross-package service contracts; use string form for required services and object form for `optional`, `deferred`, or capability metadata)
@@ -392,13 +421,14 @@ Consumer packages request contracts and capabilities:
 **Location**: Production output root.
 **Purpose**: Makes package/project boot independent of the source workspace.
 
-`launch.config.json` schema version 1 uses:
+`launch.config.json` schema version 2 uses:
 
 ```json
 {
-  "SchemaVersion": 1,
+  "SchemaVersion": 2,
   "Mode": "Deployed",
-  "Profile": "Production"
+  "Profile": "Production",
+  "Configuration": "Debug"
 }
 ```
 
@@ -407,6 +437,8 @@ Rules:
 - `Mode: Deployed` binds project/package metadata to `AppContext.BaseDirectory`.
 - `--workspace` and a conflicting `--profile` are rejected for deployed launches.
 - `manifest.resolved.json` remains the authoritative topological order and every deployed package URL must resolve beneath `Packages/`.
+- `Configuration` records the exact managed/native build identity used to filter configuration-specific `nativeRuntimes`. The finalized resolved manifest carries the same value, so copying the output to a directory not named `Debug` or `Release` cannot change the selected payload set.
+- `NativePayloadsFinalized: true` and the `NativePayloads` SHA-256 inventory bind selected native declarations to the bytes beside the manifest. Boot rejects missing, stale, owner-mismatched, or tampered payloads before package code loads; `--allow-manifest-fallback` does not bypass compatibility or integrity failures.
 - `Packages/<package-id>/package.json` is the strict-JSON effective package descriptor formed from authored plus generated package metadata. It contains runtime entry, dependency, service, subsystem, and native declarations but no package source path.
 - Package assemblies and native payloads remain co-located in the output root; descriptor directories are metadata-only.
 - `.arisen/Projects/{Profile}/manifest.source.resolved.json` is a separate build-stage artifact. It is never copied into the Production output and lets repeat cooking resolve source package roots after deployed metadata finalization.

@@ -96,14 +96,27 @@ What this runs:
 
 Use `validate_runtime.bat` as the main local gate for runtime/rendering work. If a GPU-dependent path is unavailable on the machine, report that explicitly instead of hiding it behind a generic build failure.
 
-Focused Editor RenderDoc restart validation is available after building the `Editor` profile:
+The release promotion gate repeats the complete ownership-sensitive runtime surface and requires a
+real RenderDoc artifact:
 
-- Launch the real dual-viewport restart smoke:
-  - `Arisen\Development\PackageGame\.arisen\bin\Editor\Debug\PackageGame.exe --workspace Arisen\Development\PackageGame --profile Editor --editor-viewport-smoke --editor-viewport-smoke-timeout 120 --editor-viewport-smoke-restart-renderdoc`
-- Validate its generation-2 artifact:
-  - `powershell -NoProfile -ExecutionPolicy Bypass -File Arisen\Scripts\Windows\validate_editor_viewport_summary.ps1 -ArtifactPath Arisen\Development\PackageGame\.arisen\Logs\editor-viewport-summary-Editor-latest.json -ExpectedProfile Editor -ExpectRenderDocRestart`
+- `Arisen\Scripts\Windows\validate_stability_stress.bat --config Release --cycles 2 --no-pause`
 
-This gate must advance the graphics generation, restore both viewports, sustain at least 320 accepted frames per viewport after restart, exit cleanly, and leave `vk_validation.log` empty.
+This runs fast validation and the isolated Vulkan package tests, then performs two GPU-required
+runtime cycles covering every canonical profile, world/terrain streaming, copied Production, the
+real dual-viewport Editor path, in-process RenderDoc generation replacement, and a request-owned
+capture. The schema-2 report under `.arisen\Logs\validate-stability-stress-Release-latest.json`
+requires zero package/context/native/service/subsystem/surface ownership after each cycle, bounded
+Editor imports, drained workers, non-empty `.rdc` captures, clean shutdown, and empty Vulkan logs.
+Use this expensive gate for stabilization promotion, not as the first check for a narrow edit.
+
+Focused Editor RenderDoc restart and capture validation is available after building the `Editor` profile:
+
+- Launch the real dual-viewport restart/capture smoke:
+  - `Arisen\Development\PackageGame\.arisen\bin\Editor\Debug\PackageGame.exe --workspace Arisen\Development\PackageGame --profile Editor --editor-viewport-smoke --editor-viewport-smoke-timeout 120 --editor-viewport-smoke-restart-renderdoc --editor-viewport-smoke-capture-renderdoc`
+- Validate its schema-8 artifact:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File Arisen\Scripts\Windows\validate_editor_viewport_summary.ps1 -ArtifactPath Arisen\Development\PackageGame\.arisen\Logs\editor-viewport-summary-Editor-latest.json -ExpectedProfile Editor -ExpectRenderDocRestart -ExpectRenderDocCapture`
+
+This gate must advance the graphics generation, restore both viewports, sustain at least 320 accepted frames per viewport after restart, publish one request-owned non-empty `.rdc` artifact, exit cleanly, and leave `vk_validation.log` empty.
 
 Normal Development/test runtime selection is cooked-only. Prepare its mutable cooked cache explicitly with the generated apphost's `--arisen-cook-runtime-assets` command. Use `--diagnostic-source-assets` only for a bounded Development/test diagnosis; Editor source access is compile-owned and Production/deployed launches reject this option.
 
@@ -202,6 +215,9 @@ Important implications:
 - generated IDE files are output artifacts, not the source of truth
 - package metadata in `package.json` drives generation
 - the workspace manifest controls which package set becomes a runnable/editor/testable application
+- every selected dependency edge is a semantic-version constraint; package compatibility uses canonical `engine.minVersion` (legacy package `engineVersion` is migration-only)
+- runtime mount preserves base/profile constraints plus exact resolved versions, validates them against the effective descriptors, rejects cycles, and sorts the current graph before package code loads
+- generated runtime manifests are not boot-ready until their post-build native payload inventory is finalized; boot verifies basename owners, size, and SHA-256 before package load
 
 Relevant files:
 - `Arisen\External\ArisenBuildTool\Program.cs`
@@ -294,7 +310,7 @@ World-cell workers may read and validate payloads and acquire generation-checked
 Current platform/RHI ownership policy:
 - standalone runtime builds create and pump the main Win32 window through `IWindowProvider`
 - editor builds use `ARISEN_ENGINE_EDITOR`; the Avalonia/editor host owns native UI windows and the platform package must not create an independent runtime window loop
-- RenderDoc is an explicit diagnostic mode. It may be enabled at process start through `ARISEN_ENABLE_RENDERDOC=1`, or activated once inside the Editor by releasing every viewport and generation-owned GPU resource, recreating the backend with RenderDoc enabled, and restoring the viewports. External injection into an already-running Vulkan generation is unsupported, and in-process activation is one-way for that Editor process
+- RenderDoc is an explicit diagnostic mode. It may be enabled at process start through `ARISEN_ENABLE_RENDERDOC=1`, or activated once inside the Editor by releasing every viewport and generation-owned GPU resource, recreating the backend with RenderDoc enabled, and restoring the viewports. External injection into an already-running Vulkan generation is unsupported, and in-process activation is one-way for that Editor process. Viewport capture remains active through `PublishingArtifact`; only a newer matching `GetCapture` inventory entry with an existing non-empty `.rdc` file completes it, and its owned publication worker is cancelled and joined during teardown
 - runtime Vulkan initialization must validate `IWindowProvider.GetWindowInfo()` before registering `IRHIDevice`
 - editor Vulkan initialization uses virtual shared-texture surfaces hosted by Avalonia; resize must await active compositor updates and imported-object disposal, acknowledge external-consumer release, and only then recreate at the render-thread boundary
 - each editor virtual frame slot owns one persistent producer/consumer semaphore pair; Avalonia imports those handles once per swapchain generation and must not dispose/reimport them per presented frame
@@ -306,6 +322,8 @@ Current platform/RHI ownership policy:
 Do not answer architecture questions from memory alone; read the docs and relevant source first.
 
 Start with:
+- active feature roadmap:
+  - `Arisen\Docs\Architecture\VegetationOutdoorWorldNextTodo.md`
 - package/workspace/build questions:
   - `Arisen\Docs\Architecture\ProjectManagement.md`
   - `Arisen\Docs\Architecture\ArisenBuildTool.md`
@@ -318,7 +336,6 @@ Start with:
   - `Arisen\Docs\Architecture\Rendering.md`
   - `Arisen\Docs\Architecture\AssetPipeline.md`
   - `Arisen\Docs\Architecture\WorldStreaming.md`
-  - `Arisen\Docs\Architecture\VegetationOutdoorWorldNextTodo.md`
 - ECS/task scheduling questions:
   - `Arisen\Docs\Architecture\TaskGraph.md`
 - package-boundary questions:

@@ -457,7 +457,7 @@ public sealed class PackageValidationFixtureTests
     }
 
     [Fact]
-    public void DuplicatePackageIdWithConflictingMetadataFailsValidation()
+    public void DuplicatePackageIdWithUnsatisfiedConstraintReportsTheRequirement()
     {
         using var workspace = ValidationWorkspace.Create();
         workspace.AddPackage("com.test.app", layer: "user");
@@ -469,7 +469,227 @@ public sealed class PackageValidationFixtureTests
         var result = workspace.Validate(manifest);
 
         Assert.False(result.Success);
-        Assert.Contains(result.Errors, error => error.Contains("listed multiple times", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(result.Errors, error => error.Contains("resolved to version '1.0.0'", StringComparison.OrdinalIgnoreCase)
+            && error.Contains("constraint '2.0.0'", StringComparison.OrdinalIgnoreCase)
+            && error.Contains("base manifest", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void CompatibleDuplicateRootRangesResolveOnePackageVersion()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage("com.test.app", layer: "user", version: "1.4.2");
+        ProjectManifest manifest = workspace.CreateManifest(
+            new PackageRequirement
+            {
+                Id = "com.test.app",
+                Url = "file://Local/com.test.app",
+                Version = "^1.0.0"
+            },
+            new PackageRequirement
+            {
+                Id = "com.test.app",
+                Url = "file://Local/com.test.app",
+                Version = ">=1.4.0 <2.0.0"
+            });
+
+        PackageValidationResult result = workspace.Validate(manifest);
+
+        Assert.True(result.Success, string.Join(Environment.NewLine, result.Errors));
+        Assert.Equal("1.4.2", result.PackageMap["com.test.app"].Manifest.Version);
+    }
+
+    [Fact]
+    public void EveryTransitiveRequirementIsValidatedAfterSharedPackageDiscovery()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage("com.test.shared", layer: "foundation", version: "1.5.0");
+        workspace.AddPackage(
+            "com.test.a",
+            layer: "domain",
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.test.shared"] = "^1.0.0"
+            });
+        workspace.AddPackage(
+            "com.test.b",
+            layer: "domain",
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.test.shared"] = ">=1.5.0 <2.0.0"
+            });
+        workspace.AddPackage(
+            "com.test.app",
+            layer: "user",
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.test.a"] = "1.0.0",
+                ["com.test.b"] = "1.0.0"
+            });
+
+        PackageValidationResult result = workspace.Validate("com.test.app");
+
+        Assert.True(result.Success, string.Join(Environment.NewLine, result.Errors));
+    }
+
+    [Fact]
+    public void IncompatibleTransitiveRangeReportsTheCompleteDependencyEdge()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage("com.test.shared", layer: "foundation", version: "1.5.0");
+        workspace.AddPackage(
+            "com.test.a",
+            layer: "domain",
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.test.shared"] = "^1.0.0"
+            });
+        workspace.AddPackage(
+            "com.test.b",
+            layer: "domain",
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.test.shared"] = "^2.0.0"
+            });
+        workspace.AddPackage(
+            "com.test.app",
+            layer: "user",
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.test.a"] = "1.0.0",
+                ["com.test.b"] = "1.0.0"
+            });
+
+        PackageValidationResult result = workspace.Validate("com.test.app");
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error =>
+            error.Contains("com.test.shared", StringComparison.OrdinalIgnoreCase) &&
+            error.Contains("^2.0.0", StringComparison.Ordinal) &&
+            error.Contains("com.test.b -> com.test.shared", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void PackageRequiringNewerEngineFailsBeforeGeneration()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddRawPackage(
+            "com.test.future",
+            new Dictionary<string, object?>
+            {
+                ["id"] = "com.test.future",
+                ["name"] = "Future Package",
+                ["version"] = "1.0.0",
+                ["layer"] = "user",
+                ["engine"] = new { minVersion = "99.0.0" }
+            });
+
+        PackageValidationResult result = workspace.Validate("com.test.future");
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error =>
+            error.Contains("requires engine version '99.0.0'", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void LegacyEngineVersionMigratesToCanonicalMetadataWithWarning()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddRawPackage(
+            "com.test.legacy",
+            new Dictionary<string, object?>
+            {
+                ["id"] = "com.test.legacy",
+                ["name"] = "Legacy Package",
+                ["version"] = "1.0.0",
+                ["layer"] = "user",
+                ["engineVersion"] = "0.1.0"
+            });
+
+        PackageValidationResult result = workspace.Validate("com.test.legacy");
+
+        Assert.True(result.Success, string.Join(Environment.NewLine, result.Errors));
+        PackageManifest manifest = result.PackageMap["com.test.legacy"].Manifest;
+        Assert.Equal("0.1.0", manifest.Engine?.MinVersion);
+        Assert.Null(manifest.EngineVersion);
+        Assert.Contains(result.Warnings, warning =>
+            warning.Contains("legacy engineVersion", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void CrossPackageNativeBasenameCollisionRequiresSharedIdentity()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage(
+            "com.test.native.a",
+            layer: "driver",
+            type: "native",
+            nativeRuntimes: new Dictionary<string, object[]>
+            {
+                ["win-x64"] = ["Shared.Runtime.dll"]
+            });
+        workspace.AddPackage(
+            "com.test.native.b",
+            layer: "driver",
+            type: "native",
+            nativeRuntimes: new Dictionary<string, object[]>
+            {
+                ["win-x64"] = ["Shared.Runtime.dll"]
+            });
+        workspace.AddPackage(
+            "com.test.app",
+            layer: "user",
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.test.native.a"] = "1.0.0",
+                ["com.test.native.b"] = "1.0.0"
+            });
+
+        PackageValidationResult result = workspace.Validate("com.test.app");
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error =>
+            error.Contains("Shared.Runtime.dll", StringComparison.OrdinalIgnoreCase) &&
+            error.Contains("sharedPayload", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ExplicitSharedNativePayloadIdentityAllowsCoOwnership()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        object sharedRuntime = new
+        {
+            path = "Shared.Runtime.dll",
+            sharedPayload = "vendor.shared-runtime"
+        };
+        workspace.AddPackage(
+            "com.test.native.a",
+            layer: "driver",
+            type: "native",
+            nativeRuntimes: new Dictionary<string, object[]>
+            {
+                ["win-x64"] = [sharedRuntime]
+            });
+        workspace.AddPackage(
+            "com.test.native.b",
+            layer: "driver",
+            type: "native",
+            nativeRuntimes: new Dictionary<string, object[]>
+            {
+                ["win-x64"] = [sharedRuntime]
+            });
+        workspace.AddPackage(
+            "com.test.app",
+            layer: "user",
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.test.native.a"] = "1.0.0",
+                ["com.test.native.b"] = "1.0.0"
+            });
+
+        PackageValidationResult result = workspace.Validate("com.test.app");
+
+        Assert.True(result.Success, string.Join(Environment.NewLine, result.Errors));
     }
 
     [Fact]
@@ -587,6 +807,29 @@ public sealed class PackageValidationFixtureTests
     }
 
     [Fact]
+    public void NativeRuntimeRequiresProfilerMustBeBoolean()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage(
+            "com.test.native",
+            layer: "driver",
+            type: "native",
+            nativeRuntimes: new Dictionary<string, object[]>
+            {
+                ["win-x64"] = new object[]
+                {
+                    new { path = "TracyClient.dll", requiresProfiler = "yes" }
+                }
+            });
+
+        var result = workspace.Validate("com.test.native");
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error =>
+            error.Contains("invalid 'requiresProfiler'", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void NativeOutputValidationFailsWhenResolvedPayloadIsMissing()
     {
         using var workspace = ValidationWorkspace.Create();
@@ -667,6 +910,19 @@ public sealed class PackageValidationFixtureTests
             resolvedManifestPath,
             """
             {
+              "Configuration": "Debug",
+              "NativePayloadsFinalized": true,
+              "NativePayloads": [
+                {
+                  "RuntimeIdentifier": "win-x64",
+                  "FileName": "Native.Debug.dll",
+                  "Size": 0,
+                  "Sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "Owners": [
+                    "com.test.native"
+                  ]
+                }
+              ],
               "ResolvedPackages": [
                 {
                   "Id": "com.test.native",
@@ -1026,10 +1282,11 @@ public sealed class PackageValidationFixtureTests
             object? services = null,
             Dictionary<string, object[]>? nativeRuntimes = null,
             Dictionary<string, object[]>? nativeTests = null,
-            string? entryClass = null)
+            string? entryClass = null,
+            string version = "1.0.0")
         {
             string packageDir = Path.Combine(LocalPath, id);
-            WritePackage(packageDir, id, layer, type, description, dependencies, services, nativeRuntimes, nativeTests, entryClass);
+            WritePackage(packageDir, id, layer, type, description, dependencies, services, nativeRuntimes, nativeTests, entryClass, version);
             return packageDir;
         }
 
@@ -1062,7 +1319,8 @@ public sealed class PackageValidationFixtureTests
             object? services = null,
             Dictionary<string, object[]>? nativeRuntimes = null,
             Dictionary<string, object[]>? nativeTests = null,
-            string? entryClass = null)
+            string? entryClass = null,
+            string version = "1.0.0")
         {
             Directory.CreateDirectory(packageDir);
 
@@ -1070,7 +1328,7 @@ public sealed class PackageValidationFixtureTests
             {
                 ["id"] = id,
                 ["name"] = id,
-                ["version"] = "1.0.0",
+                ["version"] = version,
                 ["layer"] = layer
             };
 

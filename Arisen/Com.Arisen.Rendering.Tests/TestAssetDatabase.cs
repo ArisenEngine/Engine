@@ -19,13 +19,14 @@ internal static class SceneTestSource
     }
 }
 
-internal sealed class TestAssetDatabase : IAssetDatabase
+internal sealed class TestAssetDatabase : IAssetDatabase, ICookedArtifactWriteOwner
 {
     private readonly Dictionary<Guid, AssetRecord> m_Assets = new();
     private readonly Dictionary<Guid, AssetDescriptor> m_AssetDescriptors = new();
     private readonly Dictionary<(Guid Guid, string Variant), CookedAssetRecord> m_Artifacts = new();
     private readonly Dictionary<int, LoadedCookedAsset> m_Loaded = new();
     private int m_NextHandleIndex;
+    private long m_CookedPublicationGeneration;
 
     public TestAssetDatabase(
         AssetSourceAccessMode sourceAccessMode,
@@ -95,12 +96,76 @@ internal sealed class TestAssetDatabase : IAssetDatabase
         return m_Artifacts.TryGetValue((guid, variant), out artifact!);
     }
 
-    public string GetCookedArtifactPath(Guid guid, string variant, string extension)
+    public CookedArtifactWrite BeginCookedArtifactWrite(
+        Guid guid,
+        string variant,
+        string extension)
     {
         EnsureMutable();
-        Directory.CreateDirectory(CookedRoot);
-        var safeVariant = string.Join("_", variant.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
-        return Path.Combine(CookedRoot, $"{guid:N}.{safeVariant}{extension}");
+        if (guid == Guid.Empty || string.IsNullOrWhiteSpace(variant))
+        {
+            throw new ArgumentException("Cooked artifact identity cannot be empty.");
+        }
+
+        string normalizedExtension = extension.StartsWith('.') ? extension : "." + extension;
+        Guid transactionId = Guid.NewGuid();
+        string cookedRoot = Path.GetFullPath(CookedRoot);
+        string transactionRoot = Path.Combine(
+            cookedRoot,
+            ".staging",
+            transactionId.ToString("N"));
+        Directory.CreateDirectory(transactionRoot);
+        return new CookedArtifactWrite(
+            this,
+            transactionId,
+            guid,
+            variant,
+            normalizedExtension,
+            cookedRoot,
+            Path.Combine(transactionRoot, "artifact" + normalizedExtension));
+    }
+
+    CookedAssetRecord ICookedArtifactWriteOwner.CommitCookedArtifactWrite(
+        CookedArtifactWrite write,
+        string assetType)
+    {
+        EnsureMutable();
+        if (!File.Exists(write.OutputPath))
+        {
+            throw new FileNotFoundException("The staged cooked artifact is missing.", write.OutputPath);
+        }
+
+        long generation = ++m_CookedPublicationGeneration;
+        string finalDirectory = Path.Combine(CookedRoot, write.Guid.ToString("N"));
+        Directory.CreateDirectory(finalDirectory);
+        string finalPath = Path.Combine(
+            finalDirectory,
+            $"{write.Variant}.g{generation:D20}.{write.TransactionId:N}{write.Extension}");
+        File.Move(write.OutputPath, finalPath);
+        var output = new FileInfo(finalPath);
+        var artifact = new CookedAssetRecord(
+            write.Guid,
+            assetType,
+            write.Variant,
+            output.FullName,
+            output.Length,
+            output.LastWriteTimeUtc);
+        RegisterCookedArtifact(artifact);
+        return artifact;
+    }
+
+    void ICookedArtifactWriteOwner.DiscardCookedArtifactWrite(CookedArtifactWrite write)
+    {
+        if (File.Exists(write.OutputPath))
+        {
+            File.Delete(write.OutputPath);
+        }
+
+        string? transactionRoot = Path.GetDirectoryName(write.OutputPath);
+        if (!string.IsNullOrWhiteSpace(transactionRoot) && Directory.Exists(transactionRoot))
+        {
+            Directory.Delete(transactionRoot, recursive: true);
+        }
     }
 
     public void RegisterCookedArtifact(CookedAssetRecord artifact)

@@ -21,4 +21,8 @@
     <ProjectReference Include="..\ArisenKernel\ArisenKernel.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\Shared\Testing\DeterministicFaultInjector.cs" Link="Shared\Testing\DeterministicFaultInjector.cs" />
+  </ItemGroup>
+
 </Project>

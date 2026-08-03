@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Text.Json;
+using Arisen.Versioning;
 using ArisenBuildTool.Models;
 using ArisenBuildTool.Utils;
 
@@ -43,7 +44,8 @@ public static class PackageValidationService
     {
         var result = new PackageValidationResult();
         var pendingPackages = new Queue<PackageRequirement>();
-        var requestedPackages = new Dictionary<string, PackageRequirement>(StringComparer.OrdinalIgnoreCase);
+        var resolutionRequirements = new Dictionary<string, PackageRequirement>(StringComparer.OrdinalIgnoreCase);
+        var requirementEdges = new List<PackageRequirementEdge>();
 
         ValidateWorkspaceManifest(manifest, result);
 
@@ -55,7 +57,13 @@ public static class PackageValidationService
         {
             foreach (var package in manifest.Packages)
             {
-                EnqueueRequestedPackage(package, "base manifest", pendingPackages, requestedPackages, result);
+                EnqueueRequirement(
+                    package,
+                    "base manifest",
+                    pendingPackages,
+                    resolutionRequirements,
+                    requirementEdges,
+                    result);
             }
         }
 
@@ -65,7 +73,13 @@ public static class PackageValidationService
             {
                 foreach (var package in profileDefinition.Packages ?? new List<PackageRequirement>())
                 {
-                    EnqueueRequestedPackage(package, $"profile '{profile}'", pendingPackages, requestedPackages, result);
+                    EnqueueRequirement(
+                        package,
+                        $"profile '{profile}'",
+                        pendingPackages,
+                        resolutionRequirements,
+                        requirementEdges,
+                        result);
                 }
             }
             else
@@ -118,6 +132,7 @@ public static class PackageValidationService
             }
 
             ValidateRequiredPackageManifestFields(packageManifest, packageJsonPath, result);
+            ValidatePackageEngineCompatibility(packageManifest, result);
 
             if (!string.IsNullOrWhiteSpace(packageManifest.Id) && !string.Equals(packageManifest.Id, requirement.Id, StringComparison.OrdinalIgnoreCase))
             {
@@ -154,19 +169,26 @@ public static class PackageValidationService
             {
                 foreach (var dependency in packageManifest.Dependencies.OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase))
                 {
-                    if (string.IsNullOrWhiteSpace(dependency.Key))
-                    {
-                        result.Errors.Add($"Package '{requirement.Id}' declares an empty dependency id.");
-                        continue;
-                    }
-
-                    if (!result.PackageMap.ContainsKey(dependency.Key))
-                    {
-                        pendingPackages.Enqueue(new PackageRequirement { Id = dependency.Key, Version = dependency.Value });
-                    }
+                    EnqueueRequirement(
+                        new PackageRequirement
+                        {
+                            Id = dependency.Key,
+                            Version = dependency.Value
+                        },
+                        $"package '{requirement.Id}' dependency edge '{requirement.Id} -> {dependency.Key}'",
+                        pendingPackages,
+                        resolutionRequirements,
+                        requirementEdges,
+                        result);
                 }
             }
         }
+
+        ValidatePackageVersions(requirementEdges, result);
+
+        NativePayloadIntegrityService.ValidateOwnership(
+            result.PackageMap.Values.ToArray(),
+            result.Errors);
 
         if (result.Errors.Count == 0)
         {
@@ -282,11 +304,12 @@ public static class PackageValidationService
         }
     }
 
-    private static void EnqueueRequestedPackage(
+    private static void EnqueueRequirement(
         PackageRequirement package,
         string source,
         Queue<PackageRequirement> pendingPackages,
-        Dictionary<string, PackageRequirement> requestedPackages,
+        Dictionary<string, PackageRequirement> resolutionRequirements,
+        List<PackageRequirementEdge> requirementEdges,
         PackageValidationResult result)
     {
         if (string.IsNullOrWhiteSpace(package.Id))
@@ -295,33 +318,94 @@ public static class PackageValidationService
             return;
         }
 
-        if (requestedPackages.TryGetValue(package.Id, out var existing))
-        {
-            if (!SameRequirement(existing, package))
-            {
-                result.Errors.Add($"Package '{package.Id}' is listed multiple times with conflicting URL/version metadata.");
-            }
-            else
-            {
-                result.Warnings.Add($"Package '{package.Id}' is listed more than once. The duplicate entry from {source} will be ignored.");
-            }
-            return;
-        }
-
-        requestedPackages[package.Id] = package;
-        pendingPackages.Enqueue(package);
+        requirementEdges.Add(new PackageRequirementEdge(
+            package.Id,
+            package.Version ?? string.Empty,
+            source));
 
         if (string.IsNullOrWhiteSpace(package.Version))
         {
             result.Errors.Add($"Package requirement '{package.Id}' from {source} is missing required Version.");
         }
+
+        if (resolutionRequirements.TryGetValue(package.Id, out PackageRequirement? existing))
+        {
+            if (!string.IsNullOrWhiteSpace(package.Url))
+            {
+                if (!string.IsNullOrWhiteSpace(existing.Url) &&
+                    !string.Equals(existing.Url, package.Url, StringComparison.OrdinalIgnoreCase))
+                {
+                    result.Errors.Add(
+                        $"Package '{package.Id}' has conflicting resolution URLs '{existing.Url}' and '{package.Url}' ({source}).");
+                }
+                else if (string.IsNullOrWhiteSpace(existing.Url))
+                {
+                    existing.Url = package.Url;
+                }
+            }
+
+            return;
+        }
+
+        var resolutionRequirement = new PackageRequirement
+        {
+            Id = package.Id,
+            Url = package.Url,
+            Version = package.Version
+        };
+        resolutionRequirements[package.Id] = resolutionRequirement;
+        pendingPackages.Enqueue(resolutionRequirement);
     }
 
-    private static bool SameRequirement(PackageRequirement left, PackageRequirement right)
+    private static void ValidatePackageVersions(
+        IReadOnlyList<PackageRequirementEdge> requirementEdges,
+        PackageValidationResult result)
     {
-        return string.Equals(left.Url ?? string.Empty, right.Url ?? string.Empty, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(left.Version ?? string.Empty, right.Version ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+        var parsedVersions = new Dictionary<string, SemanticVersion>(StringComparer.OrdinalIgnoreCase);
+        foreach ((string packageId, PackageInfo package) in result.PackageMap)
+        {
+            if (SemanticVersion.TryParseExact(package.Manifest.Version, out SemanticVersion version))
+            {
+                parsedVersions[packageId] = version;
+            }
+            else if (!string.IsNullOrWhiteSpace(package.Manifest.Version))
+            {
+                result.Errors.Add(
+                    $"Package '{packageId}' declares invalid semantic version '{package.Manifest.Version}'. Expected major.minor.patch with optional prerelease/build metadata.");
+            }
+        }
+
+        foreach (PackageRequirementEdge edge in requirementEdges)
+        {
+            if (string.IsNullOrWhiteSpace(edge.VersionExpression) ||
+                !result.PackageMap.TryGetValue(edge.PackageId, out PackageInfo? package) ||
+                !parsedVersions.TryGetValue(edge.PackageId, out SemanticVersion resolvedVersion))
+            {
+                continue;
+            }
+
+            if (!SemanticVersionRange.TryParse(
+                    edge.VersionExpression,
+                    out SemanticVersionRange range,
+                    out string rangeError))
+            {
+                result.Errors.Add(
+                    $"Package requirement '{edge.PackageId}' from {edge.Source} has invalid semantic-version constraint '{edge.VersionExpression}': {rangeError}");
+                continue;
+            }
+
+            if (!range.Matches(resolvedVersion))
+            {
+                result.Errors.Add(
+                    $"Package '{edge.PackageId}' resolved to version '{package.Manifest.Version}', which does not satisfy constraint '{edge.VersionExpression}' from {edge.Source}.");
+            }
+        }
     }
+
+    private sealed record PackageRequirementEdge(
+        string PackageId,
+        string VersionExpression,
+        string Source);
 
     private static PackageManifest? ReadPackageManifest(string packagePath, string packageId, PackageValidationResult result)
     {
@@ -358,6 +442,64 @@ public static class PackageValidationService
         if (string.IsNullOrWhiteSpace(manifest.Version))
         {
             result.Errors.Add($"Package '{manifest.Id}' manifest at '{packageJsonPath}' is missing required version.");
+        }
+    }
+
+    private static void ValidatePackageEngineCompatibility(
+        PackageManifest manifest,
+        PackageValidationResult result)
+    {
+        string? canonicalMinimum = manifest.Engine?.MinVersion;
+        string? legacyMinimum = manifest.EngineVersion;
+
+        if (manifest.Engine != null && string.IsNullOrWhiteSpace(canonicalMinimum))
+        {
+            result.Errors.Add(
+                $"Package '{manifest.Id}' declares engine compatibility without required engine.minVersion.");
+            return;
+        }
+
+        if (legacyMinimum != null && string.IsNullOrWhiteSpace(legacyMinimum))
+        {
+            result.Errors.Add(
+                $"Package '{manifest.Id}' declares legacy engineVersion with an empty value.");
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(canonicalMinimum) &&
+            !string.IsNullOrWhiteSpace(legacyMinimum) &&
+            !string.Equals(canonicalMinimum, legacyMinimum, StringComparison.OrdinalIgnoreCase))
+        {
+            result.Errors.Add(
+                $"Package '{manifest.Id}' declares conflicting engine.minVersion '{canonicalMinimum}' and legacy engineVersion '{legacyMinimum}'. Remove engineVersion after migrating its value.");
+            return;
+        }
+
+        string? effectiveMinimum = !string.IsNullOrWhiteSpace(canonicalMinimum)
+            ? canonicalMinimum
+            : legacyMinimum;
+        if (!string.IsNullOrWhiteSpace(legacyMinimum))
+        {
+            result.Warnings.Add(
+                $"Package '{manifest.Id}' uses legacy engineVersion. Migrate it to engine.minVersion; generated and deployed metadata will use the canonical field.");
+            manifest.Engine ??= new PackageEngineCompatibility();
+            manifest.Engine.MinVersion = legacyMinimum;
+            manifest.EngineVersion = null;
+        }
+
+        if (string.IsNullOrWhiteSpace(effectiveMinimum)) return;
+
+        if (!SemanticVersion.TryParseExact(effectiveMinimum, out SemanticVersion minimumVersion))
+        {
+            result.Errors.Add(
+                $"Package '{manifest.Id}' declares invalid engine.minVersion '{effectiveMinimum}'. Expected major.minor.patch.");
+            return;
+        }
+
+        if (EngineCompatibility.CurrentVersion.CompareTo(minimumVersion) < 0)
+        {
+            result.Errors.Add(
+                $"Package '{manifest.Id}' requires engine version '{effectiveMinimum}' or newer, but this BuildTool targets engine '{EngineCompatibility.CurrentVersionText}'.");
         }
     }
 

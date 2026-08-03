@@ -20,10 +20,12 @@ public sealed record NativeRuntimeDescriptor(
     string Path,
     NativeRuntimeSource Source,
     bool Required,
+    bool RequiresProfiler,
     IReadOnlyList<string> Configurations,
     IReadOnlyList<string> Exports,
     string? InitExport,
-    string? ShutdownExport);
+    string? ShutdownExport,
+    string? SharedPayload);
 
 public static class NativeRuntimeManifestService
 {
@@ -35,7 +37,8 @@ public static class NativeRuntimeManifestService
         IList<string>? errors = null,
         IList<string>? warnings = null,
         bool validateFiles = false,
-        string? configuration = null)
+        string? configuration = null,
+        bool? enableProfiler = null)
     {
         if (package.Manifest.NativeRuntimes == null) yield break;
 
@@ -63,6 +66,11 @@ public static class NativeRuntimeManifestService
                 }
 
                 if (isTargetRid && !MatchesConfiguration(descriptor, configuration))
+                {
+                    continue;
+                }
+
+                if (isTargetRid && !MatchesProfiler(descriptor, enableProfiler))
                 {
                     continue;
                 }
@@ -99,18 +107,22 @@ public static class NativeRuntimeManifestService
             string.Empty,
             NativeRuntimeSource.BuildOutput,
             Required: true,
+            RequiresProfiler: false,
             Configurations: Array.Empty<string>(),
             Exports: Array.Empty<string>(),
             InitExport: null,
-            ShutdownExport: null);
+            ShutdownExport: null,
+            SharedPayload: null);
 
         string? path = null;
         NativeRuntimeSource? source = null;
         bool required = true;
+        bool requiresProfiler = false;
         var configurations = Array.Empty<string>();
         var exports = Array.Empty<string>();
         string? initExport = null;
         string? shutdownExport = null;
+        string? sharedPayload = null;
 
         if (element.ValueKind == JsonValueKind.String)
         {
@@ -137,10 +149,18 @@ public static class NativeRuntimeManifestService
                 else errors?.Add($"Package '{packageId}' nativeRuntimes['{runtimeIdentifier}'][{index}] has invalid 'required'. Expected boolean.");
             }
 
+            if (element.TryGetProperty("requiresProfiler", out var requiresProfilerElement))
+            {
+                if (requiresProfilerElement.ValueKind == JsonValueKind.True) requiresProfiler = true;
+                else if (requiresProfilerElement.ValueKind == JsonValueKind.False) requiresProfiler = false;
+                else errors?.Add($"Package '{packageId}' nativeRuntimes['{runtimeIdentifier}'][{index}] has invalid 'requiresProfiler'. Expected boolean.");
+            }
+
             configurations = ReadStringArray(element, "configurations", packageId, runtimeIdentifier, index, errors);
             exports = ReadStringArray(element, "exports", packageId, runtimeIdentifier, index, errors);
             initExport = ReadOptionalExportName(element, "initExport", packageId, runtimeIdentifier, index, errors);
             shutdownExport = ReadOptionalExportName(element, "shutdownExport", packageId, runtimeIdentifier, index, errors);
+            sharedPayload = ReadOptionalString(element, "sharedPayload", packageId, runtimeIdentifier, index, errors);
         }
         else
         {
@@ -166,10 +186,12 @@ public static class NativeRuntimeManifestService
             path.Replace('\\', '/'),
             source.Value,
             required,
+            requiresProfiler,
             configurations,
             exports,
             initExport,
-            shutdownExport);
+            shutdownExport,
+            sharedPayload);
         return true;
     }
 
@@ -251,6 +273,82 @@ public static class NativeRuntimeManifestService
         }
 
         return descriptor.Configurations.Any(value => string.Equals(value, configuration, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool MatchesProfiler(NativeRuntimeDescriptor descriptor, bool? enableProfiler)
+    {
+        return !descriptor.RequiresProfiler || enableProfiler is not false;
+    }
+
+    public static Dictionary<string, List<JsonElement>>? SelectForProfiler(
+        PackageManifest manifest,
+        bool enableProfiler)
+    {
+        ArgumentNullException.ThrowIfNull(manifest);
+        if (manifest.NativeRuntimes == null)
+        {
+            return null;
+        }
+
+        var selected = new Dictionary<string, List<JsonElement>>(StringComparer.OrdinalIgnoreCase);
+        var errors = new List<string>();
+        foreach ((string runtimeIdentifier, List<JsonElement> entries) in manifest.NativeRuntimes)
+        {
+            var selectedEntries = new List<JsonElement>(entries.Count);
+            for (int index = 0; index < entries.Count; index++)
+            {
+                if (!TryParse(
+                        manifest.Id,
+                        runtimeIdentifier,
+                        index,
+                        entries[index],
+                        errors,
+                        out NativeRuntimeDescriptor descriptor))
+                {
+                    continue;
+                }
+
+                if (MatchesProfiler(descriptor, enableProfiler))
+                {
+                    selectedEntries.Add(entries[index].Clone());
+                }
+            }
+
+            selected[runtimeIdentifier] = selectedEntries;
+        }
+
+        if (errors.Count > 0)
+        {
+            throw new InvalidDataException(
+                $"Package '{manifest.Id}' native runtime profile projection failed:" +
+                Environment.NewLine + string.Join(Environment.NewLine, errors.Select(error => $"- {error}")));
+        }
+
+        return selected;
+    }
+
+    public static PackageManifest CreateProfileProjection(PackageManifest manifest, bool enableProfiler)
+    {
+        ArgumentNullException.ThrowIfNull(manifest);
+        return new PackageManifest
+        {
+            Id = manifest.Id,
+            Name = manifest.Name,
+            Version = manifest.Version,
+            Engine = manifest.Engine,
+            EngineVersion = manifest.EngineVersion,
+            Author = manifest.Author,
+            Description = manifest.Description,
+            Type = manifest.Type,
+            Layer = manifest.Layer,
+            Entry = manifest.Entry,
+            Services = manifest.Services,
+            Subsystems = manifest.Subsystems,
+            Dependencies = manifest.Dependencies,
+            NugetDependencies = manifest.NugetDependencies,
+            NativeRuntimes = SelectForProfiler(manifest, enableProfiler),
+            NativeTests = manifest.NativeTests
+        };
     }
 
     private static HashSet<string> ReadExportNames(string path)
@@ -391,6 +489,11 @@ public static class NativeRuntimeManifestService
     }
 
     private static string? ReadOptionalExportName(JsonElement element, string propertyName, string packageId, string runtimeIdentifier, int index, IList<string>? errors)
+    {
+        return ReadOptionalString(element, propertyName, packageId, runtimeIdentifier, index, errors);
+    }
+
+    private static string? ReadOptionalString(JsonElement element, string propertyName, string packageId, string runtimeIdentifier, int index, IList<string>? errors)
     {
         if (!element.TryGetProperty(propertyName, out var property)) return null;
         if (property.ValueKind != JsonValueKind.String)

@@ -126,16 +126,22 @@ public sealed class EditorViewportSmokeStateTests
         Assert.True(state.ObserveWorldCellUnloaded(cellId));
 
         var artifact = state.CreateArtifact("Editor", 30);
-        Assert.Equal(6, artifact.SchemaVersion);
+        Assert.Equal(8, artifact.SchemaVersion);
         Assert.True(state.Succeeded);
         Assert.True(artifact.Passed);
         Assert.True(artifact.RenderDocAvailabilityObserved);
         Assert.False(artifact.RenderDocAvailableAtStartup);
         Assert.True(artifact.Checks.RenderDocStartupExpectationMet);
         Assert.True(artifact.Checks.RenderDocRestartExpectationMet);
+        Assert.True(artifact.Checks.RenderDocCaptureExpectationMet);
         Assert.False(artifact.RenderDocRestartExpected);
         Assert.False(artifact.RenderDocRestartRequested);
         Assert.False(artifact.RenderDocRestartCompleted);
+        Assert.False(artifact.RenderDocCaptureExpected);
+        Assert.False(artifact.RenderDocCaptureRequested);
+        Assert.False(artifact.RenderDocCaptureSucceeded);
+        Assert.Equal((ulong)0, artifact.RenderDocCaptureRequestId);
+        Assert.Equal(string.Empty, artifact.RenderDocCapturePath);
         Assert.Equal(0, artifact.PostRestartConcurrentSceneFrameCount);
         Assert.Equal(0, artifact.PostRestartConcurrentGameFrameCount);
         Assert.True(artifact.Checks.InteropResourceCachesBounded);
@@ -174,7 +180,10 @@ public sealed class EditorViewportSmokeStateTests
     [Fact]
     public void ObserveRequiresSustainedPresentationAfterRenderDocRestart()
     {
-        var state = new EditorViewportSmokeState(expectRenderDocRestart: true);
+        using var capture = TemporaryCaptureFile.Create();
+        var state = new EditorViewportSmokeState(
+            expectRenderDocRestart: true,
+            expectRenderDocCapture: true);
         state.ObserveRenderDocAvailability(false);
         state.NotifyTerrainPaintAvailability(true);
 
@@ -197,6 +206,12 @@ public sealed class EditorViewportSmokeStateTests
             currentGeneration: 8,
             renderDocAvailable: true,
             diagnostic: string.Empty);
+        state.NotifyRenderDocCaptureRequested(requestId: 19);
+        state.ObserveRenderDocCaptureCompleted(
+            requestId: 19,
+            succeeded: true,
+            diagnostic: "RenderDoc published the capture artifact.",
+            capturePath: capture.Path);
 
         for (int index = 0;
              index < EditorViewportSmokeState.RequiredConcurrentFramesPerViewport - 1;
@@ -250,6 +265,11 @@ public sealed class EditorViewportSmokeStateTests
         Assert.True(artifact.RenderDocRestartRequested);
         Assert.True(artifact.RenderDocRestartCompleted);
         Assert.True(artifact.RenderDocAvailableAfterRestart);
+        Assert.True(artifact.RenderDocCaptureExpected);
+        Assert.True(artifact.RenderDocCaptureRequested);
+        Assert.True(artifact.RenderDocCaptureSucceeded);
+        Assert.Equal((ulong)19, artifact.RenderDocCaptureRequestId);
+        Assert.Equal(capture.Path, artifact.RenderDocCapturePath);
         Assert.Equal((ulong)7, artifact.GraphicsGenerationBeforeRestart);
         Assert.Equal((ulong)8, artifact.GraphicsGenerationAfterRestart);
         Assert.Equal(
@@ -259,6 +279,7 @@ public sealed class EditorViewportSmokeStateTests
             EditorViewportSmokeState.RequiredConcurrentFramesPerViewport,
             artifact.PostRestartConcurrentGameFrameCount);
         Assert.True(artifact.Checks.RenderDocRestartExpectationMet);
+        Assert.True(artifact.Checks.RenderDocCaptureExpectationMet);
         Assert.True(artifact.Checks.PostRestartSceneFramesPresented);
         Assert.True(artifact.Checks.PostRestartGameFramesPresented);
     }
@@ -464,5 +485,29 @@ public sealed class EditorViewportSmokeStateTests
                 400,
                 450)));
         return frameIndex;
+    }
+
+    private sealed class TemporaryCaptureFile : IDisposable
+    {
+        private TemporaryCaptureFile(string path)
+        {
+            Path = path;
+        }
+
+        public string Path { get; }
+
+        public static TemporaryCaptureFile Create()
+        {
+            string path = System.IO.Path.Combine(
+                System.IO.Path.GetTempPath(),
+                $"arisen-renderdoc-{Guid.NewGuid():N}.rdc");
+            File.WriteAllBytes(path, [0x52, 0x44, 0x43]);
+            return new TemporaryCaptureFile(path);
+        }
+
+        public void Dispose()
+        {
+            File.Delete(Path);
+        }
     }
 }

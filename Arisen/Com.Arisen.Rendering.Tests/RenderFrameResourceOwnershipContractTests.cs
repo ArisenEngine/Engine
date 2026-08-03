@@ -40,16 +40,42 @@ public sealed class RenderFrameResourceOwnershipContractTests
             "Arisen/Development/PackageGame/Local/com.arisen.core.native/Source/Core.RHI/RHI/Queues/RHIQueue.h");
         string vulkanQueueSource = ReadRepoFile(
             "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Queues/RHIVkQueue.cpp");
+        string vulkanSwapChainSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Presentation/RHIVkSwapChain.cpp");
 
         Assert.Contains("SwapChainFrameIndex = swapChainFrameIndex", managedDeviceSource, StringComparison.Ordinal);
         Assert.Contains("desc.SwapChainFrameIndex = bridgeDesc->swapChainFrameIndex;", bridgeSource, StringComparison.Ordinal);
         Assert.Contains("public uint SwapChainFrameIndex;", generatedBridgeSource, StringComparison.Ordinal);
         Assert.Contains("UInt32 SwapChainFrameIndex", queueContractSource, StringComparison.Ordinal);
         Assert.Contains("descriptor->SwapChainFrameIndex", vulkanQueueSource, StringComparison.Ordinal);
-        Assert.Contains("GetImageAvailableSemaphore(swapChainFrameIndex)", vulkanQueueSource, StringComparison.Ordinal);
-        Assert.Contains("GetRenderFinishSemaphore(swapChainFrameIndex)", vulkanQueueSource, StringComparison.Ordinal);
+        Assert.Contains("PrepareFrameSubmission(swapChainFrameIndex", vulkanQueueSource, StringComparison.Ordinal);
+        Assert.Contains("CommitFrameSubmission(swapChainFrameIndex", vulkanQueueSource, StringComparison.Ordinal);
+        Assert.Contains("m_ImageAvailableSemaphores[currentFrame]", vulkanSwapChainSource, StringComparison.Ordinal);
+        Assert.Contains("m_RenderFinishSemaphores[currentFrame]", vulkanSwapChainSource, StringComparison.Ordinal);
         Assert.DoesNotContain("GetImageAvailableSemaphore(resourceFrameIndex)", vulkanQueueSource, StringComparison.Ordinal);
         Assert.DoesNotContain("GetRenderFinishSemaphore(resourceFrameIndex)", vulkanQueueSource, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RenderGraphReturnsRecordedCommandBuffersToTheirOwningPools()
+    {
+        string graphSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rendering/RenderGraph.cs");
+
+        Assert.Contains("private readonly struct RecordedCommandBufferLease", graphSource, StringComparison.Ordinal);
+        Assert.Contains(
+            "Pool.ReleaseCommandBuffer(FrameResourceIndex, CommandBuffer.RHIHandle);",
+            graphSource,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "nodeCommandBuffers[capturedWorkItemIndex] = new RecordedCommandBufferLease(",
+            graphSource,
+            StringComparison.Ordinal);
+        Assert.Contains("var releaseFailures = ReleaseRecordedCommandBuffers();", graphSource, StringComparison.Ordinal);
+        Assert.Contains(
+            "RenderGraph execution and command-buffer release both failed.",
+            graphSource,
+            StringComparison.Ordinal);
     }
 
     private static string ReadRepoFile(string relativePath)

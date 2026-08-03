@@ -912,6 +912,62 @@ public sealed class RenderingAssetPipelineTests
     }
 
     [Fact]
+    public void ModelSourceReimporter_BoundedStressPreservesGeneratedIdentityAndFiles()
+    {
+        using var workspace = TestWorkspace.Create();
+        const string packageId = "com.arisen.test";
+        var sourceGuid = Guid.Parse("57913579-1357-2468-9753-abcdefabcdef");
+        var shaderGuid = Guid.Parse("68124680-2468-3579-a864-bcdefabcdefa");
+        var db = new TestAssetDatabase(
+            AssetSourceAccessMode.Diagnostic,
+            Path.Combine(workspace.Root, "Cooked"));
+        AssetRecord sourceAsset = CreateModelReimportValidationSourceAsset(
+            workspace,
+            db,
+            sourceGuid,
+            shaderGuid,
+            packageId);
+
+        ModelSourceReimportResult baseline = ModelSourceReimporter.Reimport(sourceAsset);
+        string[] baselinePaths = GetEmittedSourcePaths(baseline);
+        var baselineFiles = baselinePaths.ToDictionary(
+            path => Path.GetRelativePath(baseline.OutputRoot, path),
+            path => (
+                Content: File.ReadAllBytes(path),
+                Metadata: File.ReadAllText(path + ".meta")),
+            StringComparer.OrdinalIgnoreCase);
+        int baselineAssetCount = db.Assets.Count;
+        const int cycleCount = 16;
+
+        for (int cycle = 0; cycle < cycleCount; cycle++)
+        {
+            ModelSourceReimportResult result = ModelSourceReimporter.Reimport(sourceAsset);
+            string[] emittedPaths = GetEmittedSourcePaths(result);
+
+            Assert.Equal(baseline.GeneratedChildGuids, result.GeneratedChildGuids);
+            Assert.Empty(result.Emission.Warnings);
+            Assert.Empty(result.OrphanedGeneratedChildren);
+            Assert.Empty(result.ForeignGeneratedChildren);
+            Assert.Equal(
+                baselineFiles.Keys.OrderBy(path => path, StringComparer.OrdinalIgnoreCase),
+                emittedPaths
+                    .Select(path => Path.GetRelativePath(result.OutputRoot, path))
+                    .OrderBy(path => path, StringComparer.OrdinalIgnoreCase));
+
+            foreach (string emittedPath in emittedPaths)
+            {
+                string relativePath = Path.GetRelativePath(result.OutputRoot, emittedPath);
+                var expected = baselineFiles[relativePath];
+                Assert.Equal(expected.Content, File.ReadAllBytes(emittedPath));
+                Assert.Equal(expected.Metadata, File.ReadAllText(emittedPath + ".meta"));
+            }
+
+            Assert.Equal(baselineAssetCount, db.Assets.Count);
+            Assert.Empty(db.GetLoadedCookedAssetDiagnostics());
+        }
+    }
+
+    [Fact]
     public void ModelSourceReimporter_MaterialAndTextureChangesInvalidateCookedOutputs()
     {
         using var workspace = TestWorkspace.Create();
@@ -1140,6 +1196,257 @@ public sealed class RenderingAssetPipelineTests
         }
         finally
         {
+            EditorAssetDatabase.Instance.Dispose();
+        }
+    }
+
+    [Fact]
+    public void AssetImporter_RenameFailurePreservesOldRegistrationAndSidecars()
+    {
+        using var workspace = TestWorkspace.Create();
+        Guid sourceGuid = Guid.Parse("cececece-e5e5-f6f6-0707-282828282828");
+        Guid racingGuid = Guid.Parse("dfdfdfdf-f6f6-0707-1818-393939393939");
+        const string packageId = "com.arisen.test";
+        string assetsRoot = Path.Combine(workspace.Root, "Assets");
+        string oldPath = workspace.Write("Assets/Original/Atomic.ppm", "P3\n1 1\n255\n255 0 0\n");
+        string oldMetaPath = oldPath + ".meta";
+        SerializationUtil.Serialize(
+            new AssetMetadata
+            {
+                Guid = sourceGuid,
+                AssetType = "Texture2D",
+                Importer = "PpmTextureImporter"
+            },
+            oldMetaPath);
+
+        string databasePath = Path.Combine(workspace.Root, ".arisen", "Editor", "AssetDatabase.db");
+        EditorAssetDatabase.Initialize(databasePath);
+        try
+        {
+            string oldRelativePath = Path.GetRelativePath(workspace.Root, oldPath).Replace('\\', '/');
+            EditorAssetDatabase.Instance.RegisterAsset(
+                sourceGuid,
+                oldRelativePath,
+                "Texture2D",
+                "PpmTextureImporter",
+                packageId,
+                0);
+
+            string newPath = Path.Combine(assetsRoot, "Moved", "Atomic.ppm");
+            Directory.CreateDirectory(Path.GetDirectoryName(newPath)!);
+            File.Move(oldPath, newPath);
+            string newMetaPath = newPath + ".meta";
+            SerializationUtil.Serialize(
+                new AssetMetadata
+                {
+                    Guid = racingGuid,
+                    AssetType = "Texture2D",
+                    Importer = "PpmTextureImporter"
+                },
+                newMetaPath);
+            byte[] racingSidecar = File.ReadAllBytes(newMetaPath);
+
+            var changes = new List<AssetChangeEvent>();
+            using var importer = new ArisenEditor.Core.Assets.AssetImporter(
+                assetsRoot,
+                workspace.Root,
+                packageId);
+            importer.AssetChanged += changes.Add;
+            importer.BeforeRenameRegistrationCommit = () =>
+                throw new InvalidOperationException("Injected rename registration failure.");
+
+            InvalidOperationException error = Assert.Throws<InvalidOperationException>(() =>
+                importer.ProcessRenamedFile(oldPath, newPath));
+
+            Assert.Contains("Injected rename registration failure", error.Message);
+            string newRelativePath = Path.GetRelativePath(workspace.Root, newPath).Replace('\\', '/');
+            Assert.True(EditorAssetDatabase.Instance.TryGetGuid(oldRelativePath, out Guid retainedGuid));
+            Assert.Equal(sourceGuid, retainedGuid);
+            Assert.False(EditorAssetDatabase.Instance.TryGetGuid(newRelativePath, out _));
+            Assert.Equal(oldRelativePath, EditorAssetDatabase.Instance.GetPath(sourceGuid));
+            Assert.True(File.Exists(oldMetaPath));
+            Assert.Equal(racingSidecar, File.ReadAllBytes(newMetaPath));
+            Assert.Empty(changes);
+        }
+        finally
+        {
+            EditorAssetDatabase.Instance.Dispose();
+        }
+    }
+
+    [Fact]
+    public void AssetImporter_InitialScanFailureCompletesStartupRollback()
+    {
+        using var workspace = TestWorkspace.Create();
+        const string packageId = "com.arisen.test";
+        string assetsRoot = Path.Combine(workspace.Root, "Assets");
+        workspace.Write("Assets/Initial.ppm", "P3\n1 1\n255\n255 255 255\n");
+        string databasePath = Path.Combine(workspace.Root, ".arisen", "Editor", "AssetDatabase.db");
+        EditorAssetDatabase.Initialize(databasePath);
+        var importer = new ArisenEditor.Core.Assets.AssetImporter(
+            assetsRoot,
+            workspace.Root,
+            packageId,
+            debounceDelay: TimeSpan.Zero,
+            retryDelay: TimeSpan.Zero,
+            maxAttempts: 1)
+        {
+            BeforeInitialScanFile = _ =>
+                throw new InvalidOperationException("Injected initial scan failure.")
+        };
+
+        try
+        {
+            InvalidOperationException error = Assert.Throws<InvalidOperationException>(importer.Start);
+            Assert.Contains("Injected initial scan failure", error.Message);
+            Assert.Equal(
+                ArisenEditor.Core.Assets.AssetImporterState.Faulted,
+                importer.State);
+
+            importer.Dispose();
+            Assert.Equal(
+                ArisenEditor.Core.Assets.AssetImporterState.Disposed,
+                importer.State);
+        }
+        finally
+        {
+            importer.Dispose();
+            EditorAssetDatabase.Instance.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task EditorAssetDatabase_SerializesSharedConnectionOperations()
+    {
+        using var workspace = TestWorkspace.Create();
+        string databasePath = Path.Combine(workspace.Root, ".arisen", "Editor", "AssetDatabase.db");
+        EditorAssetDatabase.Initialize(databasePath);
+        EditorAssetDatabase database = EditorAssetDatabase.Instance;
+        var firstOperationEntered = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseFirstOperation = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        int operationCount = 0;
+        database.AfterConnectionGateEntered = () =>
+        {
+            if (Interlocked.Increment(ref operationCount) == 1)
+            {
+                firstOperationEntered.TrySetResult(true);
+                releaseFirstOperation.Task.GetAwaiter().GetResult();
+            }
+        };
+
+        Task? writer = null;
+        Task<bool>? reader = null;
+        try
+        {
+            Guid guid = Guid.Parse("dddddddd-1111-2222-3333-444444444444");
+            const string path = "Assets/Concurrent.asset";
+            writer = Task.Run(() => database.RegisterAsset(
+                guid,
+                path,
+                "TestAsset",
+                "TestImporter",
+                "com.arisen.test",
+                1));
+            await firstOperationEntered.Task;
+
+            var readerAttempted = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            reader = Task.Run(() =>
+            {
+                readerAttempted.TrySetResult(true);
+                return database.TryGetGuid(path, out Guid observed) && observed == guid;
+            });
+            await readerAttempted.Task;
+            Assert.False(reader.IsCompleted);
+
+            releaseFirstOperation.TrySetResult(true);
+            await writer;
+            Assert.True(await reader);
+        }
+        finally
+        {
+            releaseFirstOperation.TrySetResult(true);
+            if (writer != null)
+            {
+                await writer;
+            }
+
+            if (reader != null)
+            {
+                await reader;
+            }
+
+            database.AfterConnectionGateEntered = null;
+            database.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task AssetImporter_ReplaysEventsCapturedDuringInitialScan()
+    {
+        using var workspace = TestWorkspace.Create();
+        const string packageId = "com.arisen.test";
+        string assetsRoot = Path.Combine(workspace.Root, "Assets");
+        string initialPath = workspace.Write("Assets/Initial.ppm", "P3\n1 1\n255\n255 255 255\n");
+        string databasePath = Path.Combine(workspace.Root, ".arisen", "Editor", "AssetDatabase.db");
+        EditorAssetDatabase.Initialize(databasePath);
+        var scanEntered = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseScan = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var importer = new ArisenEditor.Core.Assets.AssetImporter(
+            assetsRoot,
+            workspace.Root,
+            packageId,
+            debounceDelay: TimeSpan.Zero,
+            retryDelay: TimeSpan.Zero,
+            maxAttempts: 1);
+        importer.BeforeInitialScanFile = path =>
+        {
+            if (string.Equals(
+                    Path.GetFileName(path),
+                    Path.GetFileName(initialPath),
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                scanEntered.TrySetResult(true);
+                releaseScan.Task.GetAwaiter().GetResult();
+            }
+        };
+
+        try
+        {
+            Task start = Task.Run(importer.Start);
+            Task firstStartupTransition = await Task.WhenAny(scanEntered.Task, start);
+            if (ReferenceEquals(firstStartupTransition, start))
+            {
+                await start;
+            }
+
+            Assert.Same(scanEntered.Task, firstStartupTransition);
+            string createdPath = workspace.Write(
+                "Assets/CreatedDuringScan.ppm",
+                "P3\n1 1\n255\n0 255 0\n");
+            importer.EnqueueWatcherEvent(
+                createdPath,
+                ArisenEditor.Core.Assets.AssetImportWorkKind.Created);
+            string createdRelativePath = Path.GetRelativePath(workspace.Root, createdPath).Replace('\\', '/');
+            Assert.False(EditorAssetDatabase.Instance.TryGetGuid(createdRelativePath, out _));
+
+            releaseScan.TrySetResult(true);
+            await start;
+            await importer.WaitForIdleAsync();
+
+            Assert.True(EditorAssetDatabase.Instance.TryGetGuid(createdRelativePath, out Guid createdGuid));
+            Assert.NotEqual(Guid.Empty, createdGuid);
+            Assert.True(File.Exists(createdPath + ".meta"));
+            Assert.Empty(importer.GetTerminalFailures());
+        }
+        finally
+        {
+            releaseScan.TrySetResult(true);
+            importer.Dispose();
             EditorAssetDatabase.Instance.Dispose();
         }
     }
@@ -3179,7 +3486,13 @@ public sealed class RenderingAssetPipelineTests
         Assert.Equal(new Vector3(1, 1, 0), firstCook.Bounds.Max);
 
         File.WriteAllBytes(binPath, CreateGltfTriangleBuffer(2.0f));
-        File.SetLastWriteTimeUtc(binPath, File.GetLastWriteTimeUtc(db.GetCookedArtifactPath(meshGuid, mesh.Variant.GetCookedVariant(), ".mesh")).AddSeconds(2));
+        Assert.True(db.TryGetCookedArtifact(
+            meshGuid,
+            mesh.Variant.GetCookedVariant(),
+            out CookedAssetRecord firstArtifact));
+        File.SetLastWriteTimeUtc(
+            binPath,
+            File.GetLastWriteTimeUtc(firstArtifact.Path).AddSeconds(2));
 
         var secondCook = MeshAssetCooker.LoadOrCook(db, mesh);
 

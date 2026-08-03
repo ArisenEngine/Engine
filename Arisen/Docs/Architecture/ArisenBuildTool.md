@@ -47,7 +47,7 @@ Pure package graph and metadata validation is covered by `ArisenBuildTool.Tests`
 dotnet test Arisen\External\ArisenBuildTool.Tests\ArisenBuildTool.Tests.csproj
 ```
 
-The fixture tests synthesize small temporary workspaces and verify valid graph sorting, missing dependencies, dependency cycles, missing required services, duplicate package declarations, and invalid native test metadata.
+The fixture tests synthesize small temporary workspaces and verify graph sorting, every semantic-version edge, engine compatibility migration/rejection, missing dependencies, dependency cycles, required services, native basename ownership, same-size replacement, stale/tampered payload identity, and native test metadata.
 
 ### Fast Validation Gate
 
@@ -75,7 +75,7 @@ Before each smoke launch, the runtime gate runs:
 ArisenBuildTool validate-native-output --resolved-manifest <bin>\manifest.resolved.json --output-dir <bin> --configuration Debug
 ```
 
-This checks selected `nativeRuntimes` against the generated bin directory, including required payload presence, configuration-filtered entries, and declared DLL exports. This catches stale or missing native backend payloads, for example a Vulkan backend missing the `CreateInstance` export, before `PackageGame.exe` starts.
+This checks selected `nativeRuntimes` against the generated bin directory, including required payload presence, configuration-filtered entries, declared DLL exports, finalized owners, byte size, and SHA-256. This catches stale, tampered, or missing native backend payloads, for example a Vulkan backend missing the `CreateInstance` export, before `PackageGame.exe` starts.
 
 GPU-backed smoke runs are policy-controlled:
 
@@ -220,8 +220,9 @@ The tool executes four strict phases:
 1. The tool parses `manifest.json` at the workspace root.
 2. It gathers base packages plus packages from the selected profile.
 3. It recursively resolves dependencies from each package's `package.json` to build the full Directed Acyclic Graph (DAG) for that profile.
-4. It fails before generation if any required package is missing, malformed, duplicated with conflicting metadata, participates in a dependency cycle, or requires a service contract that no selected package provides.
-5. It sorts packages in a stable topological order.
+4. It validates every root/direct/transitive semantic-version edge against the selected package, enforces `engine.minVersion`, and fails before generation on incompatible constraints.
+5. It builds the complete native destination-basename ownership map and rejects ambiguous cross-package payloads before deployment.
+6. It fails if any required package is missing, malformed, participates in a dependency cycle, or requires a service contract that no selected package provides, then sorts the graph in stable topological order.
 
 ### Phase 2: IDE Project Generation (The `.arisen` hidden folder)
 We DO NOT pollute the user's `Local/` or package source folders with IDE-specific configuration files.
@@ -246,15 +247,16 @@ The tool generates a separate solution file for each **Profile** defined in the 
 - **Storage**: Solutions are stored in `.arisen/Projects/{Profile}/`.
 - **Profile Macros**: Each solution automatically defines the preprocessor macro `ARISEN_PROFILE_{PROFILE}` for both C++ and C# projects.
 - **Editor Macro**: Editor-capable generated projects define `ARISEN_ENGINE_EDITOR`. Use this compile-time macro for editor/runtime behavior policy such as UI host ownership, standalone window creation, and RHI surface boot. Do not use runtime flags such as `EngineConfig.IsEditor` for these ownership decisions.
-- **Profiler Macro**: Profiles with `EnableProfiler: true` define `ARISEN_PROFILER_ENABLED` for both managed and native projects. This is independent from the profile name and from `IsEditor`.
+- **Profiler Policy**: Profiles with `EnableProfiler: true` define `ARISEN_PROFILER_ENABLED` for both managed and native projects and select `nativeRuntimes` entries marked `requiresProfiler: true`. Disabled profiles compile out instrumentation, do not build or deploy profiler-only payloads, omit those entries from effective runtime metadata, remove stale owned payloads during generation, and reject them during finalization. This is independent from the profile name and from `IsEditor`.
 - **Unified Entry Point**: The tool generates a thin `Program.cs` stub in the workspace project. When `com.arisen.core` is selected, the entry project compile-references only that package and first dispatches `RuntimeAssetCookHost` commands; all other package references remain build-order-only runtime-loaded references. Normal execution calls `ArisenKernel.Lifecycle.EngineBootstrapper.Run(args)`, making the workspace a manageable .NET executable.
-- **Resolved Manifest**: The tool writes `manifest.resolved.json` into each `.arisen/bin/{profile}/{configuration}/` output directory. It includes sorted packages plus runtime metadata such as type, entry, dependency, service, subsystem, and native declarations. Runtime boot treats this resolved manifest as authoritative when present so package mount order matches build-time validation. Generation also writes `.arisen/Projects/{profile}/manifest.source.resolved.json` for build-stage tools that require source package roots.
+- **Resolved Manifest**: Generation writes a non-finalized `manifest.resolved.json` into each `.arisen/bin/{profile}/{configuration}/` directory plus `.arisen/Projects/{profile}/manifest.source.resolved.json` for source-aware build tools. The manifest records `EnableProfiler` and projects each package's native runtime declarations to the active profile. Static deployment removes orphaned optional payloads and inactive profiler-only payloads that no longer have a producer. After native and managed build completion, every entry project runs `ArisenBuildTool finalize-native-output`, revalidates effective package metadata, rejects stale inactive or optional-static output, records the exact `Configuration`, computes that configuration's SHA-256 inventory, atomically replaces the runtime manifest, and validates it. Runtime boot requires this finalized identity before loading native packages, including after the output is relocated to a directory whose name no longer identifies the configuration.
 - **Launch Config**: Workspace-oriented profiles receive workspace/profile recovery metadata. A finalized Production output receives schema-versioned `Mode: Deployed` metadata and cannot be redirected to a source workspace.
 - **Organization**: Projects are organized into logical Solution Folders: `Engine Packages`, `Local Packages`, and `Native Dependencies`.
 
 ### Generated Runtime Asset Cook Host
 
-Production entry projects contain an `ArisenCookRuntimeAssets` target that runs after a successful `Build`:
+Every generated entry project contains `ArisenFinalizeNativeOutput`, which runs after a successful
+build. Production then runs `ArisenCookRuntimeAssets` after native finalization:
 
 ```text
 PackageGame.exe --arisen-cook-runtime-assets \
@@ -265,9 +267,20 @@ PackageGame.exe --arisen-cook-runtime-assets \
   --output-root <launch-output>
 ```
 
-The generated target invokes the workspace apphost directly from `$(TargetDir)`, after managed package assemblies and native payloads have been built, and passes that same directory as `--output-root`. After cooking succeeds it invokes `ArisenBuildTool deploy-runtime-metadata`, which revalidates the graph and transactionally publishes effective package descriptors plus sanitized project/resolved/launch metadata. Set `ArisenSkipAssetCook=true` only when isolating generated build behavior or package compilation. Development and Editor entry hosts understand the cook command for explicit tooling use, but automatic post-build cooking and metadata finalization are currently Production-only.
+Native finalization runs for Editor, Development, Production, and testing profiles and cannot be
+disabled by `ArisenSkipAssetCook`. The Production cook target invokes the workspace apphost directly
+from `$(TargetDir)` and passes that directory as `--output-root`. After cooking succeeds it invokes
+`ArisenBuildTool deploy-runtime-metadata --configuration $(Configuration)`, which revalidates the
+graph and transactionally publishes effective package descriptors plus sanitized project/resolved/
+launch metadata with the final native inventory. `ArisenSkipAssetCook=true` suppresses only
+Production asset cooking/deployed metadata for diagnostic build isolation; it does not make stale
+native output bootable.
 
 The host resolves the same profile package graph used by runtime boot, mounts package entries without starting subsystem phases, and invokes package-owned `IRuntimeAssetCooker` providers. This keeps `ArisenBuildTool` independent of scene, material, shader, texture, mesh, and render-pipeline source formats and avoids loading engine package assemblies into the build tool process.
+Before source-aware mounting, the cook host validates the finalized runtime manifest and native
+payload inventory beside its executable. The separate non-finalized
+`manifest.source.resolved.json` supplies source package URLs only; it cannot replace or bypass the
+runtime integrity check.
 
 The host retains an intermediate catalog for build diagnostics:
 

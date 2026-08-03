@@ -7,6 +7,13 @@ namespace Com.Arisen.Rendering.Tests;
 public sealed class EntityGenerationTests
 {
     [Fact]
+    public void ComponentPool_DoesNotExposeUnownedNativeAddress()
+    {
+        Assert.Null(typeof(IComponentPool).GetMethod("GetAddress"));
+        Assert.Null(typeof(ComponentPool<TransformComponent>).GetMethod("GetAddress"));
+    }
+
+    [Fact]
     public void ReusedEntitySlot_RejectsStaleGeneration()
     {
         var entityManager = new EntityManager();

@@ -5,46 +5,102 @@ using System.Runtime.InteropServices;
 using ArisenKernel.Lifecycle;
 using ArisenKernel.Diagnostics;
 using ArisenKernel.Services;
+using Arisen.Versioning;
 
 namespace ArisenKernel.Packages;
+
+internal interface INativePackageRuntimeApi
+{
+    IntPtr Load(string packageId, string runtimePath);
+    int InvokeLifecycle(
+        string packageId,
+        IntPtr libraryHandle,
+        string runtimePath,
+        string exportName,
+        string phase);
+    void Free(IntPtr libraryHandle);
+}
 
 public class PackageSubsystem : IEngineSubsystem
 {
     private readonly Dictionary<string, ArisenPackageInfo> m_LoadedPackages = new();
     private readonly List<string> m_LoadOrder = new();
-    private readonly List<PackageLoadContext> m_LoadContexts = new();
+    private readonly Dictionary<string, PackageLoadContext> m_LoadContexts = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, List<LoadedNativeRuntime>> m_LoadedNativeRuntimes = new(StringComparer.OrdinalIgnoreCase);
     private readonly IPackageResolver m_Resolver = new DefaultPackageResolver();
+    private readonly INativePackageRuntimeApi m_NativeRuntimeApi;
     private string m_PackagesRoot = string.Empty;
+    private AggregateException? m_ShutdownFailure;
+
+    public PackageSubsystem()
+        : this(new NativePackageRuntimeApi())
+    {
+    }
+
+    internal PackageSubsystem(INativePackageRuntimeApi nativeRuntimeApi)
+    {
+        m_NativeRuntimeApi = nativeRuntimeApi ?? throw new ArgumentNullException(nameof(nativeRuntimeApi));
+    }
 
     public string Name => "PackageSubsystem";
     public int Priority => 10;
     public EnginePhase InitPhase => EnginePhase.Init;
+    internal int LoadedContextCount => m_LoadContexts.Count;
+    internal int LoadedNativeRuntimeCount => m_LoadedNativeRuntimes.Values.Sum(runtimes => runtimes.Count);
 
-    public void MountPackages(IEnumerable<string> packageUrls)
+    public void MountPackages(
+        IEnumerable<string> packageUrls,
+        IEnumerable<SelectedPackageRequirement>? selectedRequirements = null)
     {
         if (packageUrls == null) throw new ArgumentNullException(nameof(packageUrls));
+        int initialPackageCount = m_LoadOrder.Count;
 
-        foreach (var packageUrl in packageUrls)
+        try
         {
-            if (string.IsNullOrWhiteSpace(packageUrl)) continue;
-
-            string packageJsonPath = Path.Combine(packageUrl, "package.json");
-            if (!File.Exists(packageJsonPath))
+            var manifests = new List<(string ManifestPath, PackageSource Source, PackageManifest Manifest)>();
+            foreach (var packageUrl in packageUrls)
             {
-                throw new FileNotFoundException($"Package manifest not found for '{packageUrl}'.", packageJsonPath);
+                if (string.IsNullOrWhiteSpace(packageUrl)) continue;
+
+                string packageJsonPath = Path.Combine(packageUrl, "package.json");
+                if (!File.Exists(packageJsonPath))
+                {
+                    throw new FileNotFoundException($"Package manifest not found for '{packageUrl}'.", packageJsonPath);
+                }
+
+                var manifest = TryReadManifest(packageJsonPath);
+                if (manifest == null)
+                {
+                    throw new InvalidOperationException($"Failed to read package manifest '{packageJsonPath}'.");
+                }
+
+                manifests.Add((packageJsonPath, PackageSource.External, manifest));
             }
 
-            var manifest = TryReadManifest(packageJsonPath);
-            if (manifest == null)
+            ValidateManifestGraph(
+                manifests,
+                selectedRequirements ?? Array.Empty<SelectedPackageRequirement>());
+            foreach (var package in SortManifestsByDependency(manifests))
             {
-                throw new InvalidOperationException($"Failed to read package manifest '{packageJsonPath}'.");
+                LoadPackage(package.ManifestPath, package.Source, package.Manifest);
             }
 
-                        LoadPackage(packageJsonPath, PackageSource.External, manifest);
+            ValidateRequiredServices();
         }
+        catch (Exception mountError)
+        {
+            var rollbackErrors = new List<Exception>();
+            RollbackLoadedPackagesTo(initialPackageCount, rollbackErrors);
+            if (rollbackErrors.Count > 0)
+            {
+                rollbackErrors.Insert(0, mountError);
+                throw new AggregateException(
+                    "Package graph mount failed and rollback reported additional errors.",
+                    rollbackErrors);
+            }
 
-        ValidateRequiredServices();
+            throw;
+        }
     }
 
     public void Initialize()
@@ -145,12 +201,6 @@ public class PackageSubsystem : IEngineSubsystem
                         var manifest = TryReadManifest(manifestPath);
                         if (manifest != null)
                         {
-                            // Version Warning
-                            if (!string.IsNullOrEmpty(version) && manifest.Version != version)
-                            {
-                                KernelLog.Info($"[PackageSubsystem] Package '{id}' version mismatch. Project requires {version}, found {manifest.Version}.");
-                            }
-
                             manifests.Add((manifestPath, PackageSource.External, manifest));
 
                             // Add dependencies
@@ -176,13 +226,37 @@ public class PackageSubsystem : IEngineSubsystem
         }
 
         // Pass 2: Sort and Load
+        ValidateManifestGraph(
+            manifests,
+            projectPackages.Select(package => new SelectedPackageRequirement(
+                package.Id,
+                package.Version ?? string.Empty,
+                "workspace manifest")));
         var sortedManifests = SortManifestsByDependency(manifests);
-        foreach (var item in sortedManifests)
+        int initialPackageCount = m_LoadOrder.Count;
+        try
         {
-                        LoadPackage(item.ManifestPath, item.Source, item.Manifest);
-        }
+            foreach (var item in sortedManifests)
+            {
+                LoadPackage(item.ManifestPath, item.Source, item.Manifest);
+            }
 
-        ValidateRequiredServices();
+            ValidateRequiredServices();
+        }
+        catch (Exception mountError)
+        {
+            var rollbackErrors = new List<Exception>();
+            RollbackLoadedPackagesTo(initialPackageCount, rollbackErrors);
+            if (rollbackErrors.Count > 0)
+            {
+                rollbackErrors.Insert(0, mountError);
+                throw new AggregateException(
+                    "Discovered package graph mount failed and rollback reported additional errors.",
+                    rollbackErrors);
+            }
+
+            throw;
+        }
     }
 
         private PackageManifest? TryReadManifest(string path)
@@ -294,9 +368,12 @@ public class PackageSubsystem : IEngineSubsystem
         List<(string ManifestPath, PackageSource Source, PackageManifest Manifest)> manifests)
     {
         var result = new List<(string ManifestPath, PackageSource Source, PackageManifest Manifest)>();
-        var visited = new HashSet<string>();
-        var visiting = new HashSet<string>(); // B3: Track in-progress visits for cycle detection
-        var map = manifests.ToDictionary(x => x.Manifest.Id);
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var visiting = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var visitPath = new List<string>();
+        var map = manifests.ToDictionary(
+            item => item.Manifest.Id,
+            StringComparer.OrdinalIgnoreCase);
 
         void Visit(string id)
         {
@@ -306,11 +383,17 @@ public class PackageSubsystem : IEngineSubsystem
             // B3: Detect circular dependencies
             if (visiting.Contains(id))
             {
-                KernelLog.Warning($"[PackageSubsystem] Circular dependency detected involving package '{id}'. Skipping.");
-                return;
+                int cycleStart = visitPath.FindIndex(value =>
+                    string.Equals(value, id, StringComparison.OrdinalIgnoreCase));
+                IEnumerable<string> cycle = cycleStart >= 0
+                    ? visitPath.Skip(cycleStart).Append(id)
+                    : visitPath.Append(id);
+                throw new InvalidDataException(
+                    $"Package dependency cycle detected: {string.Join(" -> ", cycle)}.");
             }
 
             visiting.Add(id);
+            visitPath.Add(id);
             if (item.Manifest.Dependencies != null)
             {
                 foreach (var depId in item.Manifest.Dependencies.Keys)
@@ -318,6 +401,7 @@ public class PackageSubsystem : IEngineSubsystem
                     Visit(depId);
                 }
             }
+            visitPath.RemoveAt(visitPath.Count - 1);
             visiting.Remove(id);
             visited.Add(id);
             result.Add(item);
@@ -331,23 +415,195 @@ public class PackageSubsystem : IEngineSubsystem
         return result;
     }
 
+    private void ValidateManifestGraph(
+        IReadOnlyCollection<(string ManifestPath, PackageSource Source, PackageManifest Manifest)> manifests,
+        IEnumerable<SelectedPackageRequirement> selectedRequirements)
+    {
+        var errors = new List<string>();
+        var versions = new Dictionary<string, SemanticVersion>(StringComparer.OrdinalIgnoreCase);
+        foreach (ArisenPackageInfo loadedPackage in m_LoadedPackages.Values)
+        {
+            if (SemanticVersion.TryParseExact(loadedPackage.Version, out SemanticVersion loadedVersion))
+            {
+                versions[loadedPackage.Id] = loadedVersion;
+            }
+        }
+
+        var selectedManifests = new Dictionary<string, PackageManifest>(StringComparer.OrdinalIgnoreCase);
+        foreach ((string manifestPath, _, PackageManifest manifest) in manifests)
+        {
+            if (string.IsNullOrWhiteSpace(manifest.Id))
+            {
+                errors.Add($"Package manifest '{manifestPath}' has an empty id.");
+                continue;
+            }
+
+            if (!selectedManifests.TryAdd(manifest.Id, manifest))
+            {
+                errors.Add($"Package graph contains duplicate package id '{manifest.Id}'.");
+                continue;
+            }
+
+            if (!SemanticVersion.TryParseExact(manifest.Version, out SemanticVersion packageVersion))
+            {
+                errors.Add(
+                    $"Package '{manifest.Id}' declares invalid semantic version '{manifest.Version}'. Expected major.minor.patch.");
+            }
+            else
+            {
+                versions[manifest.Id] = packageVersion;
+            }
+
+            try
+            {
+                ValidatePackageEngineCompatibility(manifest);
+            }
+            catch (InvalidDataException exception)
+            {
+                errors.Add(exception.Message);
+            }
+        }
+
+        foreach (SelectedPackageRequirement requirement in selectedRequirements)
+        {
+            ValidateVersionRequirement(requirement, versions, errors);
+        }
+
+        foreach ((string packageId, PackageManifest manifest) in selectedManifests)
+        {
+            foreach ((string dependencyId, string versionExpression) in
+                     manifest.Dependencies ?? new Dictionary<string, string>())
+            {
+                ValidateVersionRequirement(
+                    new SelectedPackageRequirement(
+                        dependencyId,
+                        versionExpression,
+                        $"package dependency edge '{packageId} -> {dependencyId}'"),
+                    versions,
+                    errors);
+            }
+        }
+
+        if (errors.Count > 0)
+        {
+            throw new InvalidDataException(
+                "Package compatibility preflight failed:" + Environment.NewLine +
+                string.Join(Environment.NewLine, errors.Select(error => $"- {error}")));
+        }
+    }
+
+    private static void ValidateVersionRequirement(
+        SelectedPackageRequirement requirement,
+        IReadOnlyDictionary<string, SemanticVersion> versions,
+        ICollection<string> errors)
+    {
+        if (string.IsNullOrWhiteSpace(requirement.PackageId))
+        {
+            errors.Add($"{requirement.Source} contains an empty package id.");
+            return;
+        }
+
+        if (!versions.TryGetValue(requirement.PackageId, out SemanticVersion resolvedVersion))
+        {
+            errors.Add(
+                $"{requirement.Source} requires package '{requirement.PackageId}', but it is not selected.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(requirement.VersionExpression))
+        {
+            errors.Add(
+                $"{requirement.Source} requires package '{requirement.PackageId}' without a version constraint.");
+            return;
+        }
+
+        if (!SemanticVersionRange.TryParse(
+                requirement.VersionExpression,
+                out SemanticVersionRange range,
+                out string rangeError))
+        {
+            errors.Add(
+                $"{requirement.Source} declares invalid constraint '{requirement.VersionExpression}' for package '{requirement.PackageId}': {rangeError}");
+            return;
+        }
+
+        if (!range.Matches(resolvedVersion))
+        {
+            errors.Add(
+                $"{requirement.Source} requires package '{requirement.PackageId}' at '{requirement.VersionExpression}', " +
+                $"but the selected version is '{resolvedVersion}'.");
+        }
+    }
+
+    private static string ValidatePackageEngineCompatibility(PackageManifest manifest)
+    {
+        string? canonicalMinimum = manifest.Engine?.MinVersion;
+        string? legacyMinimum = manifest.EngineVersion;
+        if (manifest.Engine != null && string.IsNullOrWhiteSpace(canonicalMinimum))
+        {
+            throw new InvalidDataException(
+                $"Package '{manifest.Id}' declares engine compatibility without engine.minVersion.");
+        }
+
+        if (legacyMinimum != null && string.IsNullOrWhiteSpace(legacyMinimum))
+        {
+            throw new InvalidDataException(
+                $"Package '{manifest.Id}' declares legacy engineVersion with an empty value.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(canonicalMinimum) &&
+            !string.IsNullOrWhiteSpace(legacyMinimum) &&
+            !string.Equals(canonicalMinimum, legacyMinimum, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidDataException(
+                $"Package '{manifest.Id}' declares conflicting engine.minVersion '{canonicalMinimum}' and legacy engineVersion '{legacyMinimum}'.");
+        }
+
+        string effectiveMinimum = !string.IsNullOrWhiteSpace(canonicalMinimum)
+            ? canonicalMinimum
+            : legacyMinimum ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(legacyMinimum))
+        {
+            KernelLog.Warning(
+                $"[PackageSubsystem] Package '{manifest.Id}' uses legacy engineVersion. Migrate to engine.minVersion.");
+        }
+
+        if (string.IsNullOrWhiteSpace(effectiveMinimum)) return string.Empty;
+
+        if (!SemanticVersion.TryParseExact(effectiveMinimum, out SemanticVersion minimumVersion))
+        {
+            throw new InvalidDataException(
+                $"Package '{manifest.Id}' declares invalid engine.minVersion '{effectiveMinimum}'. Expected major.minor.patch.");
+        }
+
+        if (EngineCompatibility.CurrentVersion.CompareTo(minimumVersion) < 0)
+        {
+            throw new InvalidDataException(
+                $"Package '{manifest.Id}' requires engine version '{effectiveMinimum}' or newer, but the running engine is '{EngineCompatibility.CurrentVersionText}'.");
+        }
+
+        return effectiveMinimum;
+    }
+
     private void LoadPackage(string manifestPath, PackageSource source, PackageManifest manifest)
     {
         if (m_LoadedPackages.ContainsKey(manifest.Id)) return;
 
-        // Verify Engine Version
-        if (!string.IsNullOrEmpty(manifest.EngineVersion))
-        {
-            if (EngineVersion.TryParse(manifest.EngineVersion, out var required))
-            {
-                if (EngineVersion.Current < required)
-                {
-                    KernelLog.Info($"[PackageSubsystem] Package {manifest.Id} requires Engine {required}, but current is {EngineVersion.Current}. Compatibility issues may occur.");
-                }
-            }
-        }
+        string engineMinimumVersion = manifest.Engine?.MinVersion ?? manifest.EngineVersion ?? string.Empty;
 
         KernelLog.Info($"[PackageSubsystem] Loading Package: {manifest.Name} ({manifest.Id})");
+
+        int packageOrder = m_LoadOrder.Count;
+        PackageLoadContext? loadContext = null;
+        IPackageEntry? entry = null;
+        bool entryLoadCompleted = false;
+        var nativeRuntimes = new List<LoadedNativeRuntime>();
+        using var serviceRegistrationScope = EngineKernel.Instance.Services is ServiceRegistry registry
+            ? registry.BeginPackageRegistration(manifest.Id)
+            : null;
+        using var subsystemRegistrationScope = EngineKernel.Instance.BeginPackageSubsystemRegistration(
+            manifest.Id,
+            packageOrder);
 
         try
         {
@@ -378,8 +634,7 @@ public class PackageSubsystem : IEngineSubsystem
                 }
                 else
                 {
-                    var loadContext = new PackageLoadContext(assemblyPath);
-                    m_LoadContexts.Add(loadContext);
+                    loadContext = new PackageLoadContext(assemblyPath);
                     assembly = loadContext.LoadFromAssemblyPath(assemblyPath);
                     KernelLog.Info($"[PackageSubsystem] Package '{manifest.Id}' entry assembly '{entryAssembly}' loaded in isolated collectible context.");
                 }
@@ -394,16 +649,14 @@ public class PackageSubsystem : IEngineSubsystem
                 }
 
                 entryInstance = Activator.CreateInstance(type);
-                if (entryInstance is not IPackageEntry entry)
+                if (entryInstance is not IPackageEntry packageEntry)
                 {
                     throw new InvalidOperationException($"Entry class '{entryClass}' for package '{manifest.Id}' must implement {nameof(IPackageEntry)}.");
                 }
 
-                using var registrationScope = EngineKernel.Instance.Services is ServiceRegistry registry
-                    ? registry.BeginPackageRegistration(manifest.Id)
-                    : null;
-
+                entry = packageEntry;
                 entry.OnLoad(EngineKernel.Instance.Services);
+                entryLoadCompleted = true;
             }
 
             var packageInfo = new ArisenPackageInfo
@@ -414,7 +667,7 @@ public class PackageSubsystem : IEngineSubsystem
                 Type = manifest.Type,
                 RootPath = rootPath,
                 Source = source,
-                EngineVersion = manifest.EngineVersion,
+                EngineVersion = engineMinimumVersion,
                 Dependencies = manifest.Dependencies ?? new(),
                 ProvidedServices = EnumerateServiceContracts(manifest.Services?.Provides).ToList(),
                 RequiredServices = EnumerateServiceContracts(manifest.Services?.Requires, includeDeferredOrOptional: false).ToList(),
@@ -422,14 +675,18 @@ public class PackageSubsystem : IEngineSubsystem
                 EntryInstance = entryInstance
             };
 
-            int packageOrder = m_LoadOrder.Count;
-            var nativeRuntimes = LoadNativeRuntimes(manifest);
+            nativeRuntimes = LoadNativeRuntimes(manifest);
             RegisterPackageSubsystems(manifest, assembly, packageOrder);
             ValidateProvidedServices(manifest);
 
             if (nativeRuntimes.Count > 0)
             {
                 m_LoadedNativeRuntimes[manifest.Id] = nativeRuntimes;
+            }
+
+            if (loadContext != null)
+            {
+                m_LoadContexts[manifest.Id] = loadContext;
             }
 
             m_LoadedPackages[manifest.Id] = packageInfo;
@@ -439,61 +696,132 @@ public class PackageSubsystem : IEngineSubsystem
         {
             string entryClass = manifest.Entry?.Class ?? "<none>";
             KernelLog.Error($"[PackageSubsystem] Error loading package {manifest.Id} entry {entryClass}: {e.Message}");
+            m_LoadedPackages.Remove(manifest.Id);
+            m_LoadedNativeRuntimes.Remove(manifest.Id);
+            m_LoadContexts.Remove(manifest.Id);
+            m_LoadOrder.Remove(manifest.Id);
+            var rollbackErrors = new List<Exception>();
+            if (entryLoadCompleted && entry != null)
+            {
+                TryUnloadEntry(manifest.Id, entry, rollbackErrors);
+            }
+
+            ShutdownNativeRuntimes(manifest.Id, nativeRuntimes, rollbackErrors);
+            UnregisterPackageServicesAndSubsystems(manifest.Id, rollbackErrors);
+            if (loadContext != null)
+            {
+                TryUnloadContext(manifest.Id, loadContext, rollbackErrors);
+            }
+
+            if (rollbackErrors.Count > 0)
+            {
+                rollbackErrors.Insert(0, e);
+                throw new AggregateException(
+                    $"Package '{manifest.Id}' load failed and rollback reported additional errors.",
+                    rollbackErrors);
+            }
+
             throw;
         }
     }
 
-
-
-    private static List<LoadedNativeRuntime> LoadNativeRuntimes(PackageManifest manifest)
+    private List<LoadedNativeRuntime> LoadNativeRuntimes(PackageManifest manifest)
     {
         var loadedRuntimes = new List<LoadedNativeRuntime>();
         if (manifest.NativeRuntimes == null || manifest.NativeRuntimes.Count == 0) return loadedRuntimes;
 
-        foreach (var runtime in EnumerateNativeRuntimes(manifest))
+        IntPtr provisionalHandle = IntPtr.Zero;
+        NativeRuntimeBlock? provisionalRuntime = null;
+        bool provisionalInitCompleted = false;
+        try
         {
-            if (string.IsNullOrWhiteSpace(runtime.InitExport) && string.IsNullOrWhiteSpace(runtime.ShutdownExport))
+            foreach (var runtime in EnumerateNativeRuntimes(manifest))
             {
-                continue;
-            }
+                if (string.IsNullOrWhiteSpace(runtime.InitExport) && string.IsNullOrWhiteSpace(runtime.ShutdownExport))
+                {
+                    continue;
+                }
 
-            string libraryPath = Path.Combine(AppContext.BaseDirectory, Path.GetFileName(runtime.Path));
-            if (!File.Exists(libraryPath))
-            {
-                throw new FileNotFoundException($"Package '{manifest.Id}' declares native lifecycle hooks for '{runtime.Path}', but deployed library '{libraryPath}' was not found.", libraryPath);
-            }
-
-            IntPtr libraryHandle = NativeLibrary.Load(libraryPath);
-            try
-            {
-                KernelLog.Info($"[PackageSubsystem] Loaded native runtime '{Path.GetFileName(libraryPath)}' for package '{manifest.Id}'.");
+                provisionalRuntime = runtime;
+                provisionalHandle = m_NativeRuntimeApi.Load(manifest.Id, runtime.Path);
+                KernelLog.Info(
+                    $"[PackageSubsystem] Loaded native runtime '{Path.GetFileName(runtime.Path)}' for package '{manifest.Id}'.");
 
                 if (!string.IsNullOrWhiteSpace(runtime.InitExport))
                 {
-                    InvokeNativeLifecycleExport(manifest.Id, libraryHandle, runtime.Path, runtime.InitExport, "init");
+                    InvokeNativeLifecycleExport(
+                        manifest.Id,
+                        provisionalHandle,
+                        runtime.Path,
+                        runtime.InitExport,
+                        "init");
                 }
 
-                loadedRuntimes.Add(new LoadedNativeRuntime(runtime.Path, libraryHandle, runtime.ShutdownExport));
+                provisionalInitCompleted = true;
+                loadedRuntimes.Add(new LoadedNativeRuntime(
+                    runtime.Path,
+                    provisionalHandle,
+                    runtime.ShutdownExport));
+                provisionalHandle = IntPtr.Zero;
+                provisionalRuntime = null;
+                provisionalInitCompleted = false;
             }
-            catch
+        }
+        catch (Exception loadError)
+        {
+            var rollbackErrors = new List<Exception>();
+            if (provisionalHandle != IntPtr.Zero)
             {
-                NativeLibrary.Free(libraryHandle);
-                throw;
+                if (provisionalInitCompleted &&
+                    provisionalRuntime != null &&
+                    !string.IsNullOrWhiteSpace(provisionalRuntime.ShutdownExport))
+                {
+                    try
+                    {
+                        InvokeNativeLifecycleExport(
+                            manifest.Id,
+                            provisionalHandle,
+                            provisionalRuntime.Path,
+                            provisionalRuntime.ShutdownExport,
+                            "shutdown");
+                    }
+                    catch (Exception shutdownError)
+                    {
+                        rollbackErrors.Add(shutdownError);
+                    }
+                }
+
+                TryFreeNativeRuntime(manifest.Id, provisionalRuntime?.Path ?? "<unknown>", provisionalHandle, rollbackErrors);
             }
+
+            ShutdownNativeRuntimes(manifest.Id, loadedRuntimes, rollbackErrors);
+            if (rollbackErrors.Count > 0)
+            {
+                rollbackErrors.Insert(0, loadError);
+                throw new AggregateException(
+                    $"Package '{manifest.Id}' native runtime load failed and rollback reported additional errors.",
+                    rollbackErrors);
+            }
+
+            throw;
         }
 
         return loadedRuntimes;
     }
 
-    private static void InvokeNativeLifecycleExport(string packageId, IntPtr libraryHandle, string libraryPath, string exportName, string phase)
+    private void InvokeNativeLifecycleExport(
+        string packageId,
+        IntPtr libraryHandle,
+        string libraryPath,
+        string exportName,
+        string phase)
     {
-        if (!NativeLibrary.TryGetExport(libraryHandle, exportName, out var exportPtr))
-        {
-            throw new EntryPointNotFoundException($"Package '{packageId}' native runtime '{libraryPath}' declares {phase} export '{exportName}', but the export was not found.");
-        }
-
-        var callback = Marshal.GetDelegateForFunctionPointer<NativeLifecycleCallback>(exportPtr);
-        int result = callback();
+        int result = m_NativeRuntimeApi.InvokeLifecycle(
+            packageId,
+            libraryHandle,
+            libraryPath,
+            exportName,
+            phase);
         if (result != 0)
         {
             throw new InvalidOperationException($"Package '{packageId}' native runtime '{libraryPath}' {phase} export '{exportName}' returned error code {result}.");
@@ -715,68 +1043,216 @@ public class PackageSubsystem : IEngineSubsystem
         }
     }
 
-    public void Shutdown()
+    private void RollbackLoadedPackagesTo(int initialPackageCount, List<Exception> errors)
     {
-        // B19: Call OnUnload on all package entry instances in reverse mount order.
-        for (int i = m_LoadOrder.Count - 1; i >= 0; i--)
+        for (int i = m_LoadOrder.Count - 1; i >= initialPackageCount; i--)
         {
             string packageId = m_LoadOrder[i];
-            if (!m_LoadedPackages.TryGetValue(packageId, out var pkg)) continue;
-
-            if (pkg.EntryInstance is IPackageEntry entry)
+            if (m_LoadedPackages.TryGetValue(packageId, out ArisenPackageInfo? package))
             {
-                try
+                UnloadPackage(packageId, package, errors);
+            }
+            else
+            {
+                m_LoadOrder.RemoveAt(i);
+            }
+        }
+    }
+
+    private void UnloadPackage(string packageId, ArisenPackageInfo package, List<Exception> errors)
+    {
+        if (package.EntryInstance is IPackageEntry entry)
+        {
+            TryUnloadEntry(packageId, entry, errors);
+        }
+
+        if (m_LoadedNativeRuntimes.TryGetValue(packageId, out List<LoadedNativeRuntime>? nativeRuntimes))
+        {
+            ShutdownNativeRuntimes(packageId, nativeRuntimes, errors);
+        }
+
+        UnregisterPackageServicesAndSubsystems(packageId, errors);
+
+        m_LoadedPackages.Remove(packageId);
+        m_LoadedNativeRuntimes.Remove(packageId);
+        m_LoadOrder.Remove(packageId);
+
+        if (m_LoadContexts.Remove(packageId, out PackageLoadContext? loadContext))
+        {
+            TryUnloadContext(packageId, loadContext, errors);
+        }
+    }
+
+    private void TryUnloadEntry(
+        string packageId,
+        IPackageEntry entry,
+        List<Exception> errors)
+    {
+        int packageOrder = m_LoadOrder.IndexOf(packageId);
+        if (packageOrder < 0) packageOrder = int.MaxValue;
+        using var serviceRegistrationScope = EngineKernel.Instance.Services is ServiceRegistry registry
+            ? registry.BeginPackageRegistration(packageId)
+            : null;
+        using var subsystemRegistrationScope = EngineKernel.Instance.BeginPackageSubsystemRegistration(
+            packageId,
+            packageOrder);
+
+        try
+        {
+            entry.OnUnload(EngineKernel.Instance.Services);
+        }
+        catch (Exception error)
+        {
+            KernelLog.Error($"[PackageSubsystem] Error unloading package {packageId}: {error.Message}");
+            AddFailure(errors, error);
+        }
+    }
+
+    private void ShutdownNativeRuntimes(
+        string packageId,
+        List<LoadedNativeRuntime> nativeRuntimes,
+        List<Exception> errors)
+    {
+        for (int nativeIndex = nativeRuntimes.Count - 1; nativeIndex >= 0; nativeIndex--)
+        {
+            LoadedNativeRuntime nativeRuntime = nativeRuntimes[nativeIndex];
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(nativeRuntime.ShutdownExport))
                 {
-                    entry.OnUnload(EngineKernel.Instance.Services);
-                }
-                catch (Exception e)
-                {
-                    KernelLog.Info($"[PackageSubsystem] Error unloading package {pkg.Id}: {e.Message}");
+                    InvokeNativeLifecycleExport(
+                        packageId,
+                        nativeRuntime.LibraryHandle,
+                        nativeRuntime.Path,
+                        nativeRuntime.ShutdownExport,
+                        "shutdown");
                 }
             }
-
-            if (m_LoadedNativeRuntimes.TryGetValue(packageId, out var nativeRuntimes))
+            catch (Exception error)
             {
-                for (int nativeIndex = nativeRuntimes.Count - 1; nativeIndex >= 0; nativeIndex--)
-                {
-                    var nativeRuntime = nativeRuntimes[nativeIndex];
-                    try
-                    {
-                        if (!string.IsNullOrWhiteSpace(nativeRuntime.ShutdownExport))
-                        {
-                            InvokeNativeLifecycleExport(pkg.Id, nativeRuntime.LibraryHandle, nativeRuntime.Path, nativeRuntime.ShutdownExport, "shutdown");
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        KernelLog.Info($"[PackageSubsystem] Error running native shutdown for package {pkg.Id}: {e.Message}");
-                    }
-                    finally
-                    {
-                        NativeLibrary.Free(nativeRuntime.LibraryHandle);
-                    }
-                }
+                KernelLog.Error(
+                    $"[PackageSubsystem] Error running native shutdown for package {packageId}: {error.Message}");
+                AddFailure(errors, error);
             }
-
-            if (EngineKernel.Instance.Services is ServiceRegistry registry)
+            finally
             {
-                int removedServiceCount = registry.UnregisterServicesProvidedByPackage(pkg.Id);
+                TryFreeNativeRuntime(
+                    packageId,
+                    nativeRuntime.Path,
+                    nativeRuntime.LibraryHandle,
+                    errors);
+            }
+        }
+
+        nativeRuntimes.Clear();
+    }
+
+    private void TryFreeNativeRuntime(
+        string packageId,
+        string runtimePath,
+        IntPtr libraryHandle,
+        List<Exception> errors)
+    {
+        try
+        {
+            m_NativeRuntimeApi.Free(libraryHandle);
+        }
+        catch (Exception error)
+        {
+            KernelLog.Error(
+                $"[PackageSubsystem] Error freeing native runtime '{runtimePath}' for package {packageId}: {error.Message}");
+            AddFailure(errors, error);
+        }
+    }
+
+    private static void UnregisterPackageServicesAndSubsystems(
+        string packageId,
+        List<Exception> errors)
+    {
+        if (EngineKernel.Instance.Services is ServiceRegistry registry)
+        {
+            try
+            {
+                int removedServiceCount = registry.UnregisterServicesProvidedByPackage(packageId);
                 if (removedServiceCount > 0)
                 {
-                    KernelLog.Info($"[PackageSubsystem] Unregistered {removedServiceCount} service(s) provided by package {pkg.Id}.");
+                    KernelLog.Info(
+                        $"[PackageSubsystem] Unregistered {removedServiceCount} service(s) provided by package {packageId}.");
                 }
+            }
+            catch (Exception error)
+            {
+                KernelLog.Error(
+                    $"[PackageSubsystem] Error unregistering services for package {packageId}: {error.Message}");
+                AddFailure(errors, error);
             }
         }
 
-        m_LoadOrder.Clear();
-        m_LoadedPackages.Clear();
-        m_LoadedNativeRuntimes.Clear();
-
-        foreach (var context in m_LoadContexts)
+        try
         {
-            context.Unload();
+            int removedSubsystemCount = EngineKernel.Instance.UnregisterSubsystemsProvidedByPackage(packageId);
+            if (removedSubsystemCount > 0)
+            {
+                KernelLog.Info(
+                    $"[PackageSubsystem] Unregistered {removedSubsystemCount} subsystem(s) provided by package {packageId}.");
+            }
         }
-        m_LoadContexts.Clear();
+        catch (Exception error)
+        {
+            KernelLog.Error(
+                $"[PackageSubsystem] Error unregistering subsystems for package {packageId}: {error.Message}");
+            AddFailure(errors, error);
+        }
+    }
+
+    private static void TryUnloadContext(
+        string packageId,
+        PackageLoadContext loadContext,
+        List<Exception> errors)
+    {
+        try
+        {
+            loadContext.Unload();
+        }
+        catch (Exception error)
+        {
+            KernelLog.Error(
+                $"[PackageSubsystem] Error unloading managed context for package {packageId}: {error.Message}");
+            AddFailure(errors, error);
+        }
+    }
+
+    private static void AddFailure(List<Exception> errors, Exception error)
+    {
+        if (error is AggregateException aggregate)
+        {
+            errors.AddRange(aggregate.Flatten().InnerExceptions);
+            return;
+        }
+
+        errors.Add(error);
+    }
+
+    public void Shutdown()
+    {
+        if (m_LoadOrder.Count == 0)
+        {
+            if (m_ShutdownFailure != null) throw m_ShutdownFailure;
+            return;
+        }
+
+        var errors = new List<Exception>();
+        RollbackLoadedPackagesTo(0, errors);
+
+        if (errors.Count > 0)
+        {
+            m_ShutdownFailure = new AggregateException(
+                "Package shutdown completed with one or more cleanup errors.",
+                errors);
+            throw m_ShutdownFailure;
+        }
+
+        m_ShutdownFailure = null;
     }
 
     public void RegisterLoadedPackage(ArisenPackageInfo info)
@@ -796,9 +1272,6 @@ public class PackageSubsystem : IEngineSubsystem
 
     private const string DefaultRuntimeIdentifier = "win-x64";
 
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private delegate int NativeLifecycleCallback();
-
     private sealed record LoadedNativeRuntime(string Path, IntPtr LibraryHandle, string? ShutdownExport);
 
     private sealed class NativeRuntimeBlock
@@ -815,11 +1288,17 @@ public class PackageSubsystem : IEngineSubsystem
         public string Version { get; set; } = string.Empty;
         public string Type { get; set; } = "managed";
         public PackageEntryBlock? Entry { get; set; }
-                public string EngineVersion { get; set; } = string.Empty;
+        public PackageEngineCompatibilityBlock? Engine { get; set; }
+        public string? EngineVersion { get; set; }
         public Dictionary<string, string>? Dependencies { get; set; }
         public PackageServicesBlock? Services { get; set; }
         public List<PackageSubsystemBlock>? Subsystems { get; set; }
         public Dictionary<string, List<JsonElement>>? NativeRuntimes { get; set; }
+    }
+
+    private class PackageEngineCompatibilityBlock
+    {
+        public string? MinVersion { get; set; }
     }
 
     private class PackageSubsystemBlock
@@ -841,6 +1320,47 @@ public class PackageSubsystem : IEngineSubsystem
     {
         public string Assembly { get; set; } = string.Empty;
         public string Class { get; set; } = string.Empty;
+    }
+}
+
+internal sealed class NativePackageRuntimeApi : INativePackageRuntimeApi
+{
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int NativeLifecycleCallback();
+
+    public IntPtr Load(string packageId, string runtimePath)
+    {
+        string libraryPath = Path.Combine(AppContext.BaseDirectory, Path.GetFileName(runtimePath));
+        if (!File.Exists(libraryPath))
+        {
+            throw new FileNotFoundException(
+                $"Package '{packageId}' declares native lifecycle hooks for '{runtimePath}', but deployed library '{libraryPath}' was not found.",
+                libraryPath);
+        }
+
+        return NativeLibrary.Load(libraryPath);
+    }
+
+    public int InvokeLifecycle(
+        string packageId,
+        IntPtr libraryHandle,
+        string runtimePath,
+        string exportName,
+        string phase)
+    {
+        if (!NativeLibrary.TryGetExport(libraryHandle, exportName, out IntPtr exportPtr))
+        {
+            throw new EntryPointNotFoundException(
+                $"Package '{packageId}' native runtime '{runtimePath}' declares {phase} export '{exportName}', but the export was not found.");
+        }
+
+        var callback = Marshal.GetDelegateForFunctionPointer<NativeLifecycleCallback>(exportPtr);
+        return callback();
+    }
+
+    public void Free(IntPtr libraryHandle)
+    {
+        NativeLibrary.Free(libraryHandle);
     }
 }
 

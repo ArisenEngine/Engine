@@ -14,6 +14,11 @@ public enum EngineExecutionMode
     RuntimeAssetCook
 }
 
+public sealed record SelectedPackageRequirement(
+    string PackageId,
+    string VersionExpression,
+    string Source);
+
 public class EngineConfig
 {
     public string AppName { get; set; } = "ArisenApplication";
@@ -30,6 +35,12 @@ public class EngineConfig
 
     /// <summary>B13: Topological list of package local paths to load during kernel initialization.</summary>
     public List<string> PackageUrls { get; set; } = new();
+
+    /// <summary>
+    /// Direct workspace constraints plus exact build-resolved package identities that must match
+    /// the package metadata loaded from <c>PackageUrls</c> before any package entry runs.
+    /// </summary>
+    public List<SelectedPackageRequirement> PackageRequirements { get; set; } = new();
 
     // Add additional configuration properties as needed
 }
