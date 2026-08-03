@@ -179,6 +179,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\RuntimeSmokeScenarioRegistry.cs" Link="Source\Resources\Serialization\RuntimeSmokeScenarioRegistry.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\RuntimeAssetResidencyService.cs" Link="Source\Resources\Serialization\RuntimeAssetResidencyService.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\RuntimeSceneService.cs" Link="Source\Resources\Serialization\RuntimeSceneService.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation\Managed\Assets\*.cs" Link="Source\Vegetation\Assets\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation\Managed\Runtime\*.cs" Link="Source\Vegetation\Runtime\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain\Managed\Assets\*.cs" Link="Source\Terrain\Assets\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain\Managed\Runtime\*.cs" Link="Source\Terrain\Runtime\%(Filename)%(Extension)" />

@@ -1,0 +1,18 @@
+Version: 1
+SpeciesGuid: 7b0f2e52-8b67-4e3d-bf0a-cbc42f622001
+Name: Valley Rock
+Lods:
+- Mesh: { Guid: 9f57d9cc-2db6-4c85-ae7b-544338806e2c, PackageId: com.arisen.generic-renderpipeline }
+  Material: { Guid: 4ac21c64-e984-4ed0-9e21-93878de5249e, PackageId: com.arisen.generic-renderpipeline }
+  MaximumDistance: 180.0
+  MaximumScreenError: 4.0
+ShadowPolicy: Cast
+ScaleRange: { Minimum: 0.6, Maximum: 1.8 }
+YawRangeDegrees: { Minimum: 0.0, Maximum: 360.0 }
+TiltRangeDegrees: { Minimum: -15.0, Maximum: 15.0 }
+CollisionPromotion:
+  Mode: Capsule
+  CapsuleRadius: 0.75
+  CapsuleHalfHeight: 1.5
+  MaximumDistance: 24.0
+WindResponse: 0.05

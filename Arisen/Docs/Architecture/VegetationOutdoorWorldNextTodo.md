@@ -46,9 +46,11 @@ The completed foundation gate on 2026-08-03 is:
 
 Measured vegetation gaps:
 
-- the Milestone 1 vegetation package spine now exists in three repositories, but no species,
-  foliage, biome, scatter, or impostor data has been implemented;
-- no source or cooked schema defines species meshes/materials, placement rules, stable instances, clusters, or LOD ranges;
+- the Milestone 1 vegetation package spine and the first Milestone 2 species/biome
+  source-to-cooked slice now exist, but no scatter output, generated cluster, instance-page,
+  foliage, or impostor data has been implemented;
+- versioned source and cooked schemas now define species mesh/material LODs and biome
+  placement rules, but no schema defines stable instances, clusters, or instance pages;
 - no scene component or runtime service binds vegetation clusters to world cells;
 - ordinary static meshes are entity-oriented and are not an acceptable representation for tens of thousands of plants;
 - Generic RP has no vegetation extraction, instance-buffer preparation, wind shading, alpha-cutout path, or vegetation shadow contribution;
@@ -148,8 +150,8 @@ directories.
   and Production workspaces generated and built successfully, and the complete
   Debug runtime validation artifact is
   `.arisen/Logs/validate-runtime-Debug-latest.json`.
-- The next active work is Milestone 2: strict species, biome/scatter, and
-  cooked-cluster asset contracts with deterministic fixtures and corruption tests.
+- The next active work is the remaining Milestone 2 cluster/instance-page
+  contracts, followed by deterministic terrain-aware scatter baking.
 
 ---
 
@@ -159,18 +161,22 @@ directories.
 
 ### TODO
 
-- [ ] Define a vegetation species asset.
-  - [ ] Stable GUID/package identity, bounded mesh/material LOD list, shadow policy, scale/yaw/tilt ranges, collision-promotion metadata, and wind response.
-  - [ ] Validate mesh/material dependencies and finite ordered distance/error ranges.
-- [ ] Define a biome/scatter profile.
-  - [ ] Ordered species entries with density, seed salt, altitude/slope/layer-weight rules, minimum spacing, cluster size, and exclusion policy.
-  - [ ] Keep quality/runtime density multipliers out of stable source identity unless they change cooked placement.
-- [ ] Define versioned cooked biome, species, cluster, and instance-page containers.
-  - [ ] Fixed-width little-endian headers, magic/version/hash, bounded section tables, exact alignment, and explicit dependency identities.
+- [x] Define a vegetation species asset.
+  - [x] Stable GUID/package identity, bounded mesh/material LOD list, shadow policy, scale/yaw/tilt ranges, collision-promotion metadata, and wind response.
+  - [x] Validate mesh/material dependencies and finite ordered distance/error ranges.
+- [x] Define a biome/scatter-rule profile.
+  - [x] Ordered species entries with density, seed salt, altitude/slope/layer-weight rules, minimum spacing, cluster size, and exclusion policy.
+  - [x] Keep quality/runtime density multipliers out of stable source identity unless they change cooked placement.
+- [x] Define versioned cooked species and biome containers.
+  - [x] Use fixed-width little-endian headers, magic/version/hash, bounded section tables, exact alignment, and explicit dependency identities.
+- [x] Add strict species/biome readers, deterministic writers, and corruption tests.
+  - [x] Reject unsupported required sections, malformed counts/offsets, invalid identity/ranges/order, duplicate entry/rule IDs, and missing or mismatched dependency ownership.
+  - [x] Prove identical validated descriptors produce byte-identical species/biome payloads.
+- [ ] Define versioned cooked cluster and instance-page containers.
   - [ ] Store quantized or compact instance position/orientation/scale, stable instance key, conservative bounds, species index, and optional LOD acceleration.
-- [ ] Add strict readers, deterministic writers, and corruption tests.
+- [ ] Add strict cluster/page readers, deterministic writers, and corruption tests.
   - [ ] Reject unsupported required sections, malformed counts/offsets, non-finite transforms, bad quaternions/scales, duplicate IDs, invalid bounds, and missing dependencies.
-  - [ ] Prove unchanged inputs produce byte-identical output and preserve timestamps/artifact generations.
+  - [ ] Prove unchanged inputs preserve cluster/page timestamps and artifact generations.
 
 ### Acceptance Criteria
 
@@ -392,7 +398,7 @@ directories.
 Implement the first visible vertical slice in this order:
 
 1. [x] create the three vegetation repositories, add submodules, and establish package/profile composition;
-2. [ ] define one species asset, one biome asset, and strict deterministic fixtures;
+2. [x] define one species asset, one biome asset, and strict deterministic fixtures;
 3. [ ] cook one terrain-aware cluster page with stable identities and corruption tests;
 4. [ ] add a vegetation cluster scene codec plus cell/residency ownership;
 5. [ ] render one cluster as one direct indexed instanced batch through the Generic RP feature;
