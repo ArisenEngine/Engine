@@ -1,0 +1,17 @@
+Version: 1
+BiomeGuid: c0a92f10-0eb9-4d24-b729-7d0f38313001
+Name: Showcase Valley Vegetation
+GlobalSeed: 1469598103934665603
+Entries:
+- EntryId: valley-rock
+  Species: { Guid: 7b0f2e52-8b67-4e3d-bf0a-cbc42f622001, PackageId: com.arisen.packagegame }
+  Density: 0.0125
+  SeedSalt: 16294208416658607535
+  AltitudeRange: { Minimum: -64.0, Maximum: 192.0 }
+  SlopeRangeDegrees: { Minimum: 0.0, Maximum: 65.0 }
+  LayerWeightRules:
+  - LayerId: Rock
+    WeightRange: { Minimum: 0.25, Maximum: 1.0 }
+  MinimumSpacing: 5.0
+  ClusterSize: 64
+  ExclusionPolicy: Respect
