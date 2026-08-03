@@ -1,4 +1,6 @@
 using System.Security.Cryptography;
+using System.Text.Json;
+using Arisen.Testing;
 using Arisen.Native.RHI;
 using ArisenEngine.Core.Assets;
 using ArisenEngine.Core.ECS;
@@ -11,6 +13,11 @@ namespace Com.Arisen.Rendering.Tests;
 
 public sealed class RuntimeAssetSelectionTests
 {
+    private enum AssetPublicationFaultStage
+    {
+        BeforeManifestReplace
+    }
+
     [Fact]
     public void AssetDatabase_MountsValidatedRuntimeCatalogWithoutSourceState()
     {
@@ -44,9 +51,9 @@ public sealed class RuntimeAssetSelectionTests
         Assert.False(database.TryLoadCookedAsset(guid, fixture.Variant, "WrongType", out _));
 
         Assert.Throws<InvalidOperationException>(() =>
-            database.GetCookedArtifactPath(guid, fixture.Variant, ".bin"));
+            database.BeginCookedArtifactWrite(guid, fixture.Variant, ".bin"));
         Assert.Throws<InvalidOperationException>(() =>
-            database.RegisterCookedArtifact(artifact));
+            database.RegisterExistingCookedArtifact(artifact));
         Assert.Throws<InvalidOperationException>(() =>
             database.InvalidateCookedAssets(guid));
         Assert.Throws<InvalidOperationException>(() =>
@@ -67,19 +74,23 @@ public sealed class RuntimeAssetSelectionTests
         Guid removedGuid = Guid.Parse("a1000000-0000-0000-0000-000000000010");
         Guid retainedGuid = Guid.Parse("a1000000-0000-0000-0000-000000000011");
         const string variant = "runtime.test.v1";
-        string removedPath = database.GetCookedArtifactPath(removedGuid, variant, ".bin");
-        string retainedPath = database.GetCookedArtifactPath(retainedGuid, variant, ".bin");
-        File.WriteAllBytes(removedPath, [1, 2, 3]);
-        File.WriteAllBytes(retainedPath, [4, 5, 6]);
-        RegisterCooked(database, removedGuid, variant, removedPath);
-        RegisterCooked(database, retainedGuid, variant, retainedPath);
+        CookedAssetRecord removedArtifact = PublishCooked(
+            database,
+            removedGuid,
+            variant,
+            [1, 2, 3]);
+        CookedAssetRecord retainedArtifact = PublishCooked(
+            database,
+            retainedGuid,
+            variant,
+            [4, 5, 6]);
 
         int removed = database.RemoveCookedArtifacts(
             [new CookedAssetIdentity(removedGuid, variant)]);
 
         Assert.Equal(1, removed);
-        Assert.False(File.Exists(removedPath));
-        Assert.True(File.Exists(retainedPath));
+        Assert.False(File.Exists(removedArtifact.Path));
+        Assert.True(File.Exists(retainedArtifact.Path));
         Assert.False(database.TryGetCookedArtifact(removedGuid, variant, out _));
         Assert.True(database.TryGetCookedArtifact(retainedGuid, variant, out _));
 
@@ -91,7 +102,8 @@ public sealed class RuntimeAssetSelectionTests
         Guid externalGuid = Guid.Parse("a1000000-0000-0000-0000-000000000012");
         string externalPath = Path.Combine(temp.Path, "external.bin");
         File.WriteAllBytes(externalPath, [7, 8, 9]);
-        RegisterCooked(database, externalGuid, variant, externalPath);
+        database.RegisterExistingCookedArtifact(
+            CreateCookedRecord(externalGuid, variant, externalPath));
 
         InvalidOperationException error = Assert.Throws<InvalidOperationException>(() =>
             database.RemoveCookedArtifacts(
@@ -151,21 +163,33 @@ public sealed class RuntimeAssetSelectionTests
         database.Initialize(workspaceRoot, AssetSourceAccessMode.RuntimeAssetCook);
         AssetRecord asset = Assert.Single(database.Assets);
         const string variant = "runtime.test.v1";
-        string cookedPath = database.GetCookedArtifactPath(asset.Guid, variant, ".bin");
         byte[] originalBytes = [1, 2, 3, 4];
         byte[] replacementBytes = [5, 6, 7, 8];
-        File.WriteAllBytes(cookedPath, originalBytes);
-        RegisterCooked(database, asset.Guid, variant, cookedPath);
+        CookedAssetRecord originalArtifact = PublishCooked(
+            database,
+            asset.Guid,
+            variant,
+            originalBytes);
         Assert.True(database.TryLoadCookedAsset(
             asset.Guid,
             variant,
             asset.AssetType,
             out CookedAssetHandle original));
+        long originalRegistryGeneration = database.CookedRegistryGeneration;
 
-        DateTime replacementWriteTime = File.GetLastWriteTimeUtc(cookedPath).AddSeconds(2);
-        File.WriteAllBytes(cookedPath, replacementBytes);
-        File.SetLastWriteTimeUtc(cookedPath, replacementWriteTime);
-        RegisterCooked(database, asset.Guid, variant, cookedPath);
+        using (CookedArtifactWrite replacementWrite = database.BeginCookedArtifactWrite(
+                   asset.Guid,
+                   variant,
+                   ".bin"))
+        {
+            File.WriteAllBytes(replacementWrite.OutputPath, replacementBytes);
+            File.SetLastWriteTimeUtc(
+                replacementWrite.OutputPath,
+                originalArtifact.LastWriteTimeUtc);
+            CookedAssetRecord replacementArtifact = replacementWrite.Commit("TestAsset");
+            Assert.NotEqual(originalArtifact.Path, replacementArtifact.Path);
+        }
+
         Assert.True(database.TryLoadCookedAsset(
             asset.Guid,
             variant,
@@ -173,6 +197,7 @@ public sealed class RuntimeAssetSelectionTests
             out CookedAssetHandle replacement));
 
         Assert.NotEqual(original, replacement);
+        Assert.Equal(originalRegistryGeneration + 1, database.CookedRegistryGeneration);
         Assert.Equal(originalBytes, database.GetCookedAssetBytes(original).ToArray());
         Assert.Equal(replacementBytes, database.GetCookedAssetBytes(replacement).ToArray());
         Assert.Equal(2, database.GetLoadedCookedAssetDiagnostics().Count);
@@ -182,6 +207,233 @@ public sealed class RuntimeAssetSelectionTests
         Assert.Single(database.GetLoadedCookedAssetDiagnostics());
         database.Release(replacement);
         Assert.Empty(database.GetLoadedCookedAssetDiagnostics());
+    }
+
+    [Fact]
+    public async Task AssetDatabase_CookedPublicationKeepsReadersOnOneCompleteGeneration()
+    {
+        using var temp = new TempDirectory();
+        string workspaceRoot = Path.Combine(temp.Path, "Workspace");
+        Directory.CreateDirectory(workspaceRoot);
+        File.WriteAllText(Path.Combine(workspaceRoot, "Source.asset"), "source");
+        var database = new AssetDatabase();
+        database.Initialize(workspaceRoot, AssetSourceAccessMode.RuntimeAssetCook);
+        AssetRecord asset = Assert.Single(database.Assets);
+        const string variant = "runtime.test.v1";
+        CookedAssetRecord original = PublishCooked(
+            database,
+            asset.Guid,
+            variant,
+            [1, 2, 3, 4],
+            ".original.bin");
+        using CookedArtifactWrite replacementWrite = database.BeginCookedArtifactWrite(
+            asset.Guid,
+            variant,
+            ".replacement.bin");
+        File.WriteAllBytes(replacementWrite.OutputPath, [5, 6, 7, 8]);
+
+        string manifestPath = Path.Combine(database.CookedRoot, "AssetManifest.json");
+        string originalManifest = File.ReadAllText(manifestPath);
+        long originalGeneration = database.CookedRegistryGeneration;
+        var staged = new TaskCompletionSource<CookedManifestCommit>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        database.BeforeCookedManifestReplace = commit =>
+        {
+            staged.TrySetResult(commit);
+            release.Task.GetAwaiter().GetResult();
+        };
+
+        Task<CookedAssetRecord> register = Task.Run(() => replacementWrite.Commit("TestAsset"));
+        CookedManifestCommit stagedRegister = await staged.Task;
+        try
+        {
+            Assert.Equal(originalGeneration, stagedRegister.PreviousGeneration);
+            Assert.Equal(originalGeneration + 1, stagedRegister.CandidateGeneration);
+            Assert.Equal(originalGeneration, database.CookedRegistryGeneration);
+            Assert.Equal(originalManifest, File.ReadAllText(manifestPath));
+            Parallel.For(0, 128, _ =>
+            {
+                Assert.True(database.TryGetCookedArtifact(asset.Guid, variant, out CookedAssetRecord visible));
+                Assert.Equal(original.Path, visible.Path);
+                Assert.Equal(originalGeneration, database.CookedRegistryGeneration);
+            });
+        }
+        finally
+        {
+            release.TrySetResult();
+        }
+
+        CookedAssetRecord replacement = await register;
+        database.BeforeCookedManifestReplace = null;
+        Assert.Equal(stagedRegister.CandidateGeneration, database.CookedRegistryGeneration);
+        Assert.True(database.TryGetCookedArtifact(asset.Guid, variant, out CookedAssetRecord published));
+        Assert.Equal(replacement.Path, published.Path);
+        using (JsonDocument manifest = JsonDocument.Parse(File.ReadAllText(manifestPath)))
+        {
+            Assert.Equal(
+                stagedRegister.CandidateGeneration,
+                manifest.RootElement.GetProperty("Generation").GetInt64());
+        }
+
+        var invalidateStaged = new TaskCompletionSource<CookedManifestCommit>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var invalidateRelease = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        database.BeforeCookedManifestReplace = commit =>
+        {
+            invalidateStaged.TrySetResult(commit);
+            invalidateRelease.Task.GetAwaiter().GetResult();
+        };
+
+        Task<int> invalidate = Task.Run(() => database.InvalidateCookedAssets(asset.Guid, variant));
+        CookedManifestCommit stagedInvalidate = await invalidateStaged.Task;
+        try
+        {
+            Assert.Equal(stagedRegister.CandidateGeneration, database.CookedRegistryGeneration);
+            Assert.True(database.TryGetCookedArtifact(asset.Guid, variant, out CookedAssetRecord visible));
+            Assert.Equal(replacement.Path, visible.Path);
+        }
+        finally
+        {
+            invalidateRelease.TrySetResult();
+        }
+
+        Assert.Equal(0, await invalidate);
+        database.BeforeCookedManifestReplace = null;
+        Assert.Equal(stagedInvalidate.CandidateGeneration, database.CookedRegistryGeneration);
+        Assert.False(database.TryGetCookedArtifact(asset.Guid, variant, out _));
+    }
+
+    [Fact]
+    public void AssetDatabase_ManifestFailurePreservesSnapshotFilesAndLoadedGeneration()
+    {
+        using var temp = new TempDirectory();
+        string workspaceRoot = Path.Combine(temp.Path, "Workspace");
+        Directory.CreateDirectory(workspaceRoot);
+        File.WriteAllText(Path.Combine(workspaceRoot, "Source.asset"), "source");
+        var database = new AssetDatabase();
+        database.Initialize(workspaceRoot, AssetSourceAccessMode.RuntimeAssetCook);
+        AssetRecord asset = Assert.Single(database.Assets);
+        const string variant = "runtime.test.v1";
+        byte[] originalBytes = [11, 12, 13, 14];
+        CookedAssetRecord original = PublishCooked(
+            database,
+            asset.Guid,
+            variant,
+            originalBytes,
+            ".original.bin");
+        Assert.True(database.TryLoadCookedAsset(
+            asset.Guid,
+            variant,
+            asset.AssetType,
+            out CookedAssetHandle originalHandle));
+
+        string manifestPath = Path.Combine(database.CookedRoot, "AssetManifest.json");
+        string originalManifest = File.ReadAllText(manifestPath);
+        long originalRegistryGeneration = database.CookedRegistryGeneration;
+        database.BeforeCookedManifestReplace = _ =>
+            throw new IOException("Injected manifest replacement failure.");
+
+        using CookedArtifactWrite replacementWrite = database.BeginCookedArtifactWrite(
+            asset.Guid,
+            variant,
+            ".replacement.bin");
+        File.WriteAllBytes(replacementWrite.OutputPath, [21, 22, 23, 24]);
+        InvalidOperationException registerError = Assert.Throws<InvalidOperationException>(() =>
+            replacementWrite.Commit("TestAsset"));
+        Assert.Contains("Failed to publish cooked manifest generation", registerError.Message);
+        Assert.True(File.Exists(replacementWrite.OutputPath));
+        Assert.Equal(originalRegistryGeneration, database.CookedRegistryGeneration);
+        Assert.Equal(originalManifest, File.ReadAllText(manifestPath));
+        Assert.True(database.TryGetCookedArtifact(asset.Guid, variant, out CookedAssetRecord retained));
+        Assert.Equal(original.Path, retained.Path);
+        Assert.True(database.TryLoadCookedAsset(
+            asset.Guid,
+            variant,
+            asset.AssetType,
+            out CookedAssetHandle retainedHandle));
+        Assert.Equal(originalHandle, retainedHandle);
+        Assert.Equal(originalBytes, database.GetCookedAssetBytes(originalHandle).ToArray());
+
+        Assert.Throws<InvalidOperationException>(() =>
+            database.InvalidateCookedAssets(asset.Guid, variant));
+        Assert.Throws<InvalidOperationException>(() =>
+            database.RemoveCookedArtifacts([new CookedAssetIdentity(asset.Guid, variant)]));
+        Assert.Equal(originalRegistryGeneration, database.CookedRegistryGeneration);
+        Assert.Equal(originalManifest, File.ReadAllText(manifestPath));
+        Assert.True(File.Exists(original.Path));
+        Assert.Equal(originalBytes, File.ReadAllBytes(original.Path));
+        Assert.True(database.TryGetCookedArtifact(asset.Guid, variant, out retained));
+        Assert.Equal(original.Path, retained.Path);
+        Assert.Equal(2, Assert.Single(database.GetLoadedCookedAssetDiagnostics()).RefCount);
+
+        database.BeforeCookedManifestReplace = null;
+        database.Release(originalHandle);
+        database.Release(retainedHandle);
+        Assert.Empty(database.GetLoadedCookedAssetDiagnostics());
+    }
+
+    [Fact]
+    public void AssetDatabase_FailedRecookPreservesUnloadedArtifactAndCleansStaging()
+    {
+        using var temp = new TempDirectory();
+        string workspaceRoot = Path.Combine(temp.Path, "Workspace");
+        Directory.CreateDirectory(workspaceRoot);
+        File.WriteAllText(Path.Combine(workspaceRoot, "Source.asset"), "source");
+        var database = new AssetDatabase();
+        database.Initialize(workspaceRoot, AssetSourceAccessMode.RuntimeAssetCook);
+        AssetRecord asset = Assert.Single(database.Assets);
+        const string variant = "runtime.test.v1";
+        byte[] originalBytes = [31, 32, 33, 34];
+        CookedAssetRecord original = PublishCooked(
+            database,
+            asset.Guid,
+            variant,
+            originalBytes);
+        string manifestPath = Path.Combine(database.CookedRoot, "AssetManifest.json");
+        string originalManifest = File.ReadAllText(manifestPath);
+        long originalGeneration = database.CookedRegistryGeneration;
+        var faults = new DeterministicFaultInjector<AssetPublicationFaultStage>();
+        faults.Arm(
+            AssetPublicationFaultStage.BeforeManifestReplace,
+            () => new IOException("Injected unloaded recook publication failure."));
+        database.BeforeCookedManifestReplace = _ =>
+            faults.ThrowIfArmed(AssetPublicationFaultStage.BeforeManifestReplace);
+
+        string stagingPath;
+        using (CookedArtifactWrite replacementWrite = database.BeginCookedArtifactWrite(
+                   asset.Guid,
+                   variant,
+                   ".bin"))
+        {
+            stagingPath = replacementWrite.OutputPath;
+            File.WriteAllBytes(stagingPath, [41, 42, 43, 44]);
+            Assert.Throws<InvalidOperationException>(() =>
+                replacementWrite.Commit("TestAsset"));
+            Assert.True(File.Exists(stagingPath));
+        }
+
+        database.BeforeCookedManifestReplace = null;
+        Assert.False(File.Exists(stagingPath));
+        Assert.Equal(originalGeneration, database.CookedRegistryGeneration);
+        Assert.Equal(originalManifest, File.ReadAllText(manifestPath));
+        Assert.True(File.Exists(original.Path));
+        Assert.Equal(originalBytes, File.ReadAllBytes(original.Path));
+        Assert.True(database.TryGetCookedArtifact(
+            asset.Guid,
+            variant,
+            out CookedAssetRecord retained));
+        Assert.Equal(original.Path, retained.Path);
+        Assert.True(database.TryLoadCookedAsset(
+            asset.Guid,
+            variant,
+            asset.AssetType,
+            out CookedAssetHandle handle));
+        Assert.Equal(originalBytes, database.GetCookedAssetBytes(handle).ToArray());
+        database.Release(handle);
+        faults.EnsureFullyConsumed();
     }
 
     [Fact]
@@ -463,16 +715,12 @@ public sealed class RuntimeAssetSelectionTests
             string variant = mutableMaterial.Asset.Shader.Variant.GetCookedVariant(
                 stage.EntryPoint,
                 mutableMaterial.Asset.Shader.VariantKeywords);
-            string path = database.GetCookedArtifactPath(shaderGuid, variant, ".spv");
-            File.WriteAllBytes(path, [3, 2, 35, 7]);
-            var info = new FileInfo(path);
-            database.RegisterCookedArtifact(new CookedAssetRecord(
+            using CookedArtifactWrite write = database.BeginCookedArtifactWrite(
                 shaderGuid,
-                ShaderAssetCooker.ShaderSourceAssetType,
                 variant,
-                info.FullName,
-                info.Length,
-                info.LastWriteTimeUtc));
+                ".spv");
+            File.WriteAllBytes(write.OutputPath, [3, 2, 35, 7]);
+            write.Commit(ShaderAssetCooker.ShaderSourceAssetType);
         }
 
         database.Release(mutableMesh.Handle);
@@ -561,20 +809,34 @@ public sealed class RuntimeAssetSelectionTests
         return new DeploymentFixture(variant, Path.GetFullPath(artifactPath));
     }
 
-    private static void RegisterCooked(
+    private static CookedAssetRecord PublishCooked(
         AssetDatabase database,
+        Guid guid,
+        string variant,
+        byte[] bytes,
+        string extension = ".bin")
+    {
+        using CookedArtifactWrite write = database.BeginCookedArtifactWrite(
+            guid,
+            variant,
+            extension);
+        File.WriteAllBytes(write.OutputPath, bytes);
+        return write.Commit("TestAsset");
+    }
+
+    private static CookedAssetRecord CreateCookedRecord(
         Guid guid,
         string variant,
         string path)
     {
         var info = new FileInfo(path);
-        database.RegisterCookedArtifact(new CookedAssetRecord(
+        return new CookedAssetRecord(
             guid,
             "TestAsset",
             variant,
             info.FullName,
             info.Length,
-            info.LastWriteTimeUtc));
+            info.LastWriteTimeUtc);
     }
 
     private readonly record struct DeploymentFixture(string Variant, string ArtifactPath);

@@ -1,4 +1,5 @@
 using System;
+using Arisen.Versioning;
 
 namespace ArisenKernel.Lifecycle;
 
@@ -8,7 +9,10 @@ public struct EngineVersion : IComparable<EngineVersion>
     public int Minor { get; }
     public int Patch { get; }
 
-    public static readonly EngineVersion Current = new EngineVersion(0, 1, 0);
+    public static readonly EngineVersion Current = new EngineVersion(
+        EngineCompatibility.CurrentVersion.Major,
+        EngineCompatibility.CurrentVersion.Minor,
+        EngineCompatibility.CurrentVersion.Patch);
 
     public EngineVersion(int major, int minor, int patch)
     {

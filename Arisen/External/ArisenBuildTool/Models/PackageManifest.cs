@@ -43,6 +43,12 @@ public class PackageServices
     public List<JsonElement>? Requires { get; set; }
 }
 
+public class PackageEngineCompatibility
+{
+    [JsonPropertyName("minVersion")]
+    public string? MinVersion { get; set; }
+}
+
 public class PackageManifest
 {
     [JsonPropertyName("id")]
@@ -54,7 +60,11 @@ public class PackageManifest
     [JsonPropertyName("version")]
     public string Version { get; set; } = string.Empty;
 
+    [JsonPropertyName("engine")]
+    public PackageEngineCompatibility? Engine { get; set; }
+
     [JsonPropertyName("engineVersion")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? EngineVersion { get; set; }
     
     [JsonPropertyName("author")]

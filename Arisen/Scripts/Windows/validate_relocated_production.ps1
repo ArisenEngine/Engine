@@ -189,6 +189,8 @@ function Get-RunOutput {
 
     $combined = $outputParts -join [Environment]::NewLine
     $process.Dispose()
+    Write-ValidationLog "[Arisen] Relocated Production $CaseName exit code: $exitCode"
+    Add-Content -LiteralPath $logPathFull -Value $combined
     if ($RequireEmptyVulkanLog) {
         if (-not (Test-Path -LiteralPath $validationLog -PathType Leaf)) {
             throw "Relocated Production $CaseName run produced no Vulkan validation log."
@@ -199,8 +201,6 @@ function Get-RunOutput {
             throw "Relocated Production $CaseName Vulkan validation log is not empty."
         }
     }
-    Write-ValidationLog "[Arisen] Relocated Production $CaseName exit code: $exitCode"
-    Add-Content -LiteralPath $logPathFull -Value $combined
     return [pscustomobject]@{
         ExitCode = $exitCode
         Output = $combined

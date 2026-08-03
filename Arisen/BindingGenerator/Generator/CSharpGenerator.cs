@@ -150,7 +150,7 @@ public static class CSharpGenerator
 
                 foreach (var func in block.Functions)
                 {
-                    EmitPInvokeFunction(sb, func, "DllName");
+                    EmitPInvokeFunction(sb, func, "DllName", block.Namespace == "Arisen.Native.RHI");
                 }
 
                 sb.AppendLine("    }");
@@ -190,7 +190,7 @@ public static class CSharpGenerator
 
             foreach (var func in externFuncs)
             {
-                EmitPInvokeFunction(sb, func, "DllName");
+                EmitPInvokeFunction(sb, func, "DllName", csNamespace == "Arisen.Native.RHI");
             }
 
             sb.AppendLine("    }");
@@ -220,10 +220,12 @@ public static class CSharpGenerator
         return "";
     }
 
-    private static void EmitPInvokeFunction(StringBuilder sb, FunctionInfo func, string dllConst)
+    private static void EmitPInvokeFunction(StringBuilder sb, FunctionInfo func, string dllConst,
+        bool checkedRhiInterop)
     {
         var csReturnType = TypeMapper.MapReturnType(func.ReturnType);
         var csParams = new List<string>();
+        var csArguments = new List<string>();
 
         foreach (var (type, name) in func.Parameters)
         {
@@ -233,11 +235,36 @@ public static class CSharpGenerator
                 csParams.Add($"{marshalAttr} {csType} {name}");
             else
                 csParams.Add($"{csType} {name}");
+            csArguments.Add(name);
+        }
+
+        if (!checkedRhiInterop)
+        {
+            sb.AppendLine(
+                $"        [SuppressUnmanagedCodeSecurity, DllImport({dllConst}, CallingConvention = CallingConvention.Cdecl)]");
+            sb.AppendLine($"        public static extern {csReturnType} {func.Name}({string.Join(", ", csParams)});");
+            sb.AppendLine();
+            return;
         }
 
         sb.AppendLine(
-            $"        [SuppressUnmanagedCodeSecurity, DllImport({dllConst}, CallingConvention = CallingConvention.Cdecl)]");
-        sb.AppendLine($"        public static extern {csReturnType} {func.Name}({string.Join(", ", csParams)});");
+            $"        [SuppressUnmanagedCodeSecurity, DllImport({dllConst}, EntryPoint = \"{func.Name}\", CallingConvention = CallingConvention.Cdecl, SetLastError = true)]");
+        sb.AppendLine($"        private static extern {csReturnType} Native_{func.Name}({string.Join(", ", csParams)});");
+        sb.AppendLine();
+        sb.AppendLine($"        public static {csReturnType} {func.Name}({string.Join(", ", csParams)})");
+        sb.AppendLine("        {");
+        if (csReturnType == "void")
+        {
+            sb.AppendLine($"            Native_{func.Name}({string.Join(", ", csArguments)});");
+            sb.AppendLine($"            RHIInterop.ThrowIfFailed(nameof({func.Name}));");
+        }
+        else
+        {
+            sb.AppendLine($"            {csReturnType} result = Native_{func.Name}({string.Join(", ", csArguments)});");
+            sb.AppendLine($"            RHIInterop.ThrowIfFailed(nameof({func.Name}));");
+            sb.AppendLine("            return result;");
+        }
+        sb.AppendLine("        }");
         sb.AppendLine();
     }
 

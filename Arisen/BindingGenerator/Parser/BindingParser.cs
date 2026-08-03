@@ -173,8 +173,9 @@ public static class BindingParser
 
     public static void ParseFunctionsInBlock(string block, List<FunctionInfo> results)
     {
-        // Match function declarations: EXPORT_MACRO ReturnType FunctionName(params);
-        var funcPattern = @"(?:\w+_DLL\s+)?(\w[\w\s\*]*?)\s+(\w+)\s*\(([^)]*)\)\s*(?:;|{)";
+        // A bridge block can contain local helpers. Only explicitly exported functions
+        // belong to the generated ABI surface.
+        var funcPattern = @"\w+_DLL\s+(\w[\w\s\*]*?)\s+(\w+)\s*\(([^)]*)\)\s*(?:;|{)";
         foreach (Match m in Regex.Matches(block, funcPattern))
         {
             var retType = m.Groups[1].Value.Trim();
@@ -184,20 +185,6 @@ public static class BindingParser
             // Skip functions with C++ reference types (&&, &) — not C-ABI compatible
             if (paramsStr.Contains("&&") || paramsStr.Contains("&"))
                 continue;
-
-            // Skip DLL export macro names that look like return types
-            if (retType.EndsWith("_DLL"))
-            {
-                // The actual return type is missing, this is probably "EXPORT void func()"
-                // Re-parse: DLL_MACRO RetType Name(...)
-                var reParse = Regex.Match(m.Value, @"\w+_DLL\s+(\w[\w\s\*]*?)\s+(\w+)\s*\(([^)]*)\)\s*;");
-                if (reParse.Success)
-                {
-                    retType = reParse.Groups[1].Value.Trim();
-                    name = reParse.Groups[2].Value.Trim();
-                    paramsStr = reParse.Groups[3].Value.Trim();
-                }
-            }
 
             // Skip if name looks like a macro
             if (name.Contains("_DLL") || name == "dummy_core_hal_function")

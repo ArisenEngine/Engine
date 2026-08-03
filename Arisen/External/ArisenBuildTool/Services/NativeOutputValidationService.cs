@@ -47,6 +47,7 @@ public static class NativeOutputValidationService
 
         using (document)
         {
+            ValidateResolvedConfiguration(document.RootElement, configuration, result);
             if (!TryGetProperty(document.RootElement, "ResolvedPackages", out var packagesElement)
                 || packagesElement.ValueKind != JsonValueKind.Array)
             {
@@ -58,9 +59,48 @@ public static class NativeOutputValidationService
             {
                 ValidatePackage(packageElement, outputDir, configuration, result);
             }
+
+            ValidatePayloadInventory(
+                document.RootElement,
+                packagesElement,
+                outputDir,
+                configuration,
+                result);
         }
 
         return result;
+    }
+
+    private static void ValidateResolvedConfiguration(
+        JsonElement root,
+        string? expectedConfiguration,
+        NativeOutputValidationResult result)
+    {
+        if (!TryGetProperty(root, "NativePayloadsFinalized", out JsonElement finalizedElement) ||
+            finalizedElement.ValueKind != JsonValueKind.True)
+        {
+            return;
+        }
+
+        if (!TryGetProperty(root, "Configuration", out JsonElement configurationElement) ||
+            configurationElement.ValueKind != JsonValueKind.String ||
+            string.IsNullOrWhiteSpace(configurationElement.GetString()))
+        {
+            result.Errors.Add(
+                "Finalized resolved manifest is missing a valid Configuration identity.");
+            return;
+        }
+
+        string declaredConfiguration = configurationElement.GetString()!.Trim();
+        if (!string.IsNullOrWhiteSpace(expectedConfiguration) &&
+            !string.Equals(
+                declaredConfiguration,
+                expectedConfiguration.Trim(),
+                StringComparison.OrdinalIgnoreCase))
+        {
+            result.Errors.Add(
+                $"Resolved manifest Configuration '{declaredConfiguration}' does not match requested configuration '{expectedConfiguration.Trim()}'.");
+        }
     }
 
     public static void LogSummary(NativeOutputValidationResult result)
@@ -166,6 +206,261 @@ public static class NativeOutputValidationService
             NativeRuntimeManifestService.ValidateExports(packageId, descriptor, outputPath, result.Errors);
         }
     }
+
+    private static void ValidatePayloadInventory(
+        JsonElement rootElement,
+        JsonElement packagesElement,
+        string outputDir,
+        string? configuration,
+        NativeOutputValidationResult result)
+    {
+        List<ResolvedNativeDeclaration> declarations = ReadResolvedNativeDeclarations(
+            packagesElement,
+            configuration,
+            result);
+        if (declarations.Count == 0) return;
+
+        if (!TryGetProperty(rootElement, "NativePayloadsFinalized", out JsonElement finalizedElement) ||
+            finalizedElement.ValueKind != JsonValueKind.True)
+        {
+            result.Errors.Add(
+                "Resolved manifest native payload metadata is not finalized. Rebuild the entry project before boot.");
+            return;
+        }
+
+        if (!TryGetProperty(rootElement, "NativePayloads", out JsonElement payloadsElement) ||
+            payloadsElement.ValueKind != JsonValueKind.Array)
+        {
+            result.Errors.Add("Resolved manifest is missing the finalized NativePayloads array.");
+            return;
+        }
+
+        var inventory = new Dictionary<string, ResolvedNativeInventoryEntry>(StringComparer.OrdinalIgnoreCase);
+        foreach (JsonElement payloadElement in payloadsElement.EnumerateArray())
+        {
+            if (!TryReadInventoryEntry(payloadElement, result, out ResolvedNativeInventoryEntry? entry))
+            {
+                continue;
+            }
+
+            ResolvedNativeInventoryEntry inventoryEntry = entry!;
+            if (!inventory.TryAdd(inventoryEntry.FileName, inventoryEntry))
+            {
+                result.Errors.Add(
+                    $"Resolved manifest contains duplicate native payload inventory entry '{inventoryEntry.FileName}'.");
+                continue;
+            }
+
+            string outputPath = Path.Combine(outputDir, inventoryEntry.FileName);
+            if (!File.Exists(outputPath))
+            {
+                result.Errors.Add(
+                    $"Finalized native payload '{inventoryEntry.FileName}' was not found at '{outputPath}'.");
+                continue;
+            }
+
+            long actualSize = new FileInfo(outputPath).Length;
+            if (actualSize != inventoryEntry.Size)
+            {
+                result.Errors.Add(
+                    $"Native payload '{inventoryEntry.FileName}' size mismatch. Expected {inventoryEntry.Size} bytes, found {actualSize} bytes.");
+                continue;
+            }
+
+            string actualHash = NativePayloadIntegrityService.ComputeSha256(outputPath);
+            if (!string.Equals(actualHash, inventoryEntry.Sha256, StringComparison.OrdinalIgnoreCase))
+            {
+                result.Errors.Add(
+                    $"Native payload '{inventoryEntry.FileName}' SHA-256 mismatch. Expected {inventoryEntry.Sha256}, found {actualHash}.");
+            }
+        }
+
+        foreach (IGrouping<string, ResolvedNativeDeclaration> declarationGroup in declarations
+                     .GroupBy(declaration => declaration.FileName, StringComparer.OrdinalIgnoreCase))
+        {
+            if (!inventory.TryGetValue(declarationGroup.Key, out ResolvedNativeInventoryEntry? entry))
+            {
+                if (declarationGroup.Any(declaration => declaration.Required))
+                {
+                    result.Errors.Add(
+                        $"Required native payload '{declarationGroup.Key}' has no finalized hash inventory entry.");
+                }
+
+                continue;
+            }
+
+            string[] expectedOwners = declarationGroup
+                .Select(declaration => declaration.PackageId)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(owner => owner, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            string[] actualOwners = entry.Owners
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(owner => owner, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (!expectedOwners.SequenceEqual(actualOwners, StringComparer.OrdinalIgnoreCase))
+            {
+                result.Errors.Add(
+                    $"Native payload '{declarationGroup.Key}' owner mismatch. Expected [{string.Join(", ", expectedOwners)}], " +
+                    $"inventory contains [{string.Join(", ", actualOwners)}].");
+            }
+        }
+
+        var declaredFiles = declarations
+            .Select(declaration => declaration.FileName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (string inventoryFile in inventory.Keys.Where(file => !declaredFiles.Contains(file)))
+        {
+            result.Errors.Add(
+                $"Native payload inventory entry '{inventoryFile}' is not declared by any resolved package.");
+        }
+    }
+
+    private static List<ResolvedNativeDeclaration> ReadResolvedNativeDeclarations(
+        JsonElement packagesElement,
+        string? configuration,
+        NativeOutputValidationResult result)
+    {
+        var declarations = new List<ResolvedNativeDeclaration>();
+        foreach (JsonElement packageElement in packagesElement.EnumerateArray())
+        {
+            string packageId = TryGetProperty(packageElement, "Id", out JsonElement idElement) &&
+                               idElement.ValueKind == JsonValueKind.String
+                ? idElement.GetString() ?? "<unknown>"
+                : "<unknown>";
+            if (!TryGetProperty(packageElement, "NativeRuntimes", out JsonElement runtimesElement) ||
+                runtimesElement.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+            {
+                continue;
+            }
+
+            Dictionary<string, List<JsonElement>>? nativeRuntimes;
+            try
+            {
+                nativeRuntimes = JsonSerializer.Deserialize<Dictionary<string, List<JsonElement>>>(
+                    runtimesElement.GetRawText(),
+                    ManifestJson.SerializerOptions);
+            }
+            catch (Exception exception)
+            {
+                result.Errors.Add(
+                    $"Package '{packageId}' NativeRuntimes could not be parsed for hash validation: {exception.Message}");
+                continue;
+            }
+
+            var package = new PackageInfo
+            {
+                DirectoryPath = string.Empty,
+                Manifest = new PackageManifest
+                {
+                    Id = packageId,
+                    NativeRuntimes = nativeRuntimes
+                }
+            };
+            foreach (NativeRuntimeDescriptor descriptor in NativeRuntimeManifestService.EnumerateForRuntime(
+                         package,
+                         NativeRuntimeManifestService.DefaultRuntimeIdentifier,
+                         result.Errors,
+                         result.Warnings,
+                         configuration: configuration))
+            {
+                string fileName = Path.GetFileName(
+                    descriptor.Path.Replace('/', Path.DirectorySeparatorChar));
+                declarations.Add(new ResolvedNativeDeclaration(
+                    packageId,
+                    fileName,
+                    descriptor.Required));
+            }
+        }
+
+        return declarations;
+    }
+
+    private static bool TryReadInventoryEntry(
+        JsonElement element,
+        NativeOutputValidationResult result,
+        out ResolvedNativeInventoryEntry? entry)
+    {
+        entry = null;
+        if (element.ValueKind != JsonValueKind.Object ||
+            !TryGetProperty(element, "FileName", out JsonElement fileNameElement) ||
+            fileNameElement.ValueKind != JsonValueKind.String ||
+            string.IsNullOrWhiteSpace(fileNameElement.GetString()))
+        {
+            result.Errors.Add("Resolved manifest contains a native payload entry without a valid FileName.");
+            return false;
+        }
+
+        string fileName = fileNameElement.GetString()!;
+        if (!string.Equals(fileName, Path.GetFileName(fileName), StringComparison.Ordinal))
+        {
+            result.Errors.Add(
+                $"Resolved native payload FileName '{fileName}' must be a destination basename.");
+            return false;
+        }
+
+        if (!TryGetProperty(element, "Size", out JsonElement sizeElement) ||
+            sizeElement.ValueKind != JsonValueKind.Number ||
+            !sizeElement.TryGetInt64(out long size) ||
+            size < 0)
+        {
+            result.Errors.Add(
+                $"Resolved native payload '{fileName}' has an invalid Size.");
+            return false;
+        }
+
+        if (!TryGetProperty(element, "Sha256", out JsonElement hashElement) ||
+            hashElement.ValueKind != JsonValueKind.String ||
+            !IsSha256(hashElement.GetString()))
+        {
+            result.Errors.Add(
+                $"Resolved native payload '{fileName}' has an invalid SHA-256 value.");
+            return false;
+        }
+
+        if (!TryGetProperty(element, "Owners", out JsonElement ownersElement) ||
+            ownersElement.ValueKind != JsonValueKind.Array)
+        {
+            result.Errors.Add(
+                $"Resolved native payload '{fileName}' has no Owners array.");
+            return false;
+        }
+
+        string[] owners = ownersElement.EnumerateArray()
+            .Where(owner => owner.ValueKind == JsonValueKind.String)
+            .Select(owner => owner.GetString() ?? string.Empty)
+            .Where(owner => !string.IsNullOrWhiteSpace(owner))
+            .ToArray();
+        if (owners.Length != ownersElement.GetArrayLength() || owners.Length == 0)
+        {
+            result.Errors.Add(
+                $"Resolved native payload '{fileName}' contains an invalid owner identity.");
+            return false;
+        }
+
+        entry = new ResolvedNativeInventoryEntry(
+            fileName,
+            size,
+            hashElement.GetString()!,
+            owners);
+        return true;
+    }
+
+    private static bool IsSha256(string? value)
+    {
+        return value is { Length: 64 } && value.All(Uri.IsHexDigit);
+    }
+
+    private sealed record ResolvedNativeDeclaration(
+        string PackageId,
+        string FileName,
+        bool Required);
+
+    private sealed record ResolvedNativeInventoryEntry(
+        string FileName,
+        long Size,
+        string Sha256,
+        IReadOnlyList<string> Owners);
 
     private static bool TryGetProperty(JsonElement element, string propertyName, out JsonElement value)
     {

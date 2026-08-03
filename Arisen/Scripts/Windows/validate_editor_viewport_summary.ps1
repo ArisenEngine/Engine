@@ -8,7 +8,8 @@ param(
     [int]$RequiredResizeTransitions = 4,
     [int]$RequiredConcurrentFrames = 320,
     [switch]$ExpectRenderDoc,
-    [switch]$ExpectRenderDocRestart
+    [switch]$ExpectRenderDocRestart,
+    [switch]$ExpectRenderDocCapture
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,6 +17,10 @@ $ErrorActionPreference = "Stop"
 if ($ExpectRenderDoc.IsPresent -and $ExpectRenderDocRestart.IsPresent)
 {
     throw "Process-start RenderDoc and in-process RenderDoc restart expectations are mutually exclusive."
+}
+if ($ExpectRenderDocCapture.IsPresent -and -not $ExpectRenderDocRestart.IsPresent)
+{
+    throw "RenderDoc capture validation requires an in-process RenderDoc restart expectation."
 }
 
 function Fail-Validation([string]$Message)
@@ -38,9 +43,9 @@ catch
     Fail-Validation "Editor viewport smoke artifact is not valid JSON: $($_.Exception.Message)"
 }
 
-if ([int]$artifact.schemaVersion -ne 6)
+if ([int]$artifact.schemaVersion -ne 8)
 {
-    Fail-Validation "Editor viewport smoke schema mismatch. Expected 6, received $($artifact.schemaVersion)."
+    Fail-Validation "Editor viewport smoke schema mismatch. Expected 8, received $($artifact.schemaVersion)."
 }
 
 $expectedRenderDocRestart = $ExpectRenderDocRestart.IsPresent
@@ -56,6 +61,56 @@ if ([bool]$artifact.renderDocRestartExpected -ne $expectedRenderDocRestart -or
         "Requested=$($artifact.renderDocRestartRequested), " +
         "Completed=$($artifact.renderDocRestartCompleted), " +
         "Available=$($artifact.renderDocAvailableAfterRestart).")
+}
+
+$expectedRenderDocCapture = $ExpectRenderDocCapture.IsPresent
+if ([bool]$artifact.renderDocCaptureExpected -ne $expectedRenderDocCapture -or
+    [bool]$artifact.renderDocCaptureRequested -ne $expectedRenderDocCapture -or
+    [bool]$artifact.renderDocCaptureSucceeded -ne $expectedRenderDocCapture -or
+    $artifact.checks.renderDocCaptureExpectationMet -ne $true)
+{
+    Fail-Validation (
+        "Editor viewport smoke RenderDoc capture state did not match the requested mode. " +
+        "Expected=$expectedRenderDocCapture, " +
+        "Requested=$($artifact.renderDocCaptureRequested), " +
+        "Succeeded=$($artifact.renderDocCaptureSucceeded), " +
+        "Diagnostic=$($artifact.renderDocCaptureDiagnostic).")
+}
+if ($expectedRenderDocCapture -and [uint64]$artifact.renderDocCaptureRequestId -eq 0)
+{
+    Fail-Validation "Editor viewport smoke did not record a valid RenderDoc capture request identity."
+}
+if (-not $expectedRenderDocCapture -and [uint64]$artifact.renderDocCaptureRequestId -ne 0)
+{
+    Fail-Validation "Editor viewport smoke recorded a RenderDoc capture identity without requesting capture."
+}
+
+$renderDocCapturePath = [string]$artifact.renderDocCapturePath
+if ($expectedRenderDocCapture)
+{
+    if ([string]::IsNullOrWhiteSpace($renderDocCapturePath) -or
+        -not [IO.Path]::IsPathRooted($renderDocCapturePath) -or
+        [IO.Path]::GetExtension($renderDocCapturePath) -cne ".rdc")
+    {
+        Fail-Validation (
+            "Editor viewport smoke did not publish an absolute .rdc capture path: " +
+            "'$renderDocCapturePath'.")
+    }
+    if (-not (Test-Path -LiteralPath $renderDocCapturePath -PathType Leaf))
+    {
+        Fail-Validation "Editor viewport smoke capture artifact does not exist: $renderDocCapturePath"
+    }
+    $renderDocCaptureFile = Get-Item -LiteralPath $renderDocCapturePath
+    if ($renderDocCaptureFile.Length -le 0)
+    {
+        Fail-Validation "Editor viewport smoke capture artifact is empty: $renderDocCapturePath"
+    }
+}
+elseif (-not [string]::IsNullOrEmpty($renderDocCapturePath))
+{
+    Fail-Validation (
+        "Editor viewport smoke recorded a RenderDoc capture path without requesting capture: " +
+        "'$renderDocCapturePath'.")
 }
 
 if ($expectedRenderDocRestart)
@@ -204,4 +259,5 @@ Write-Host (
     "InteropCaches=$($artifact.maxSceneImportedImageCount)/$($artifact.maxSceneImportedSemaphoreCount), " +
     "RenderDocStartup=$($artifact.renderDocAvailableAtStartup), " +
     "RenderDocRestart=$($artifact.renderDocRestartCompleted), " +
+    "RenderDocCapture=$renderDocCapturePath, " +
     "Cell=(0,0,0), output=$ArtifactPath")

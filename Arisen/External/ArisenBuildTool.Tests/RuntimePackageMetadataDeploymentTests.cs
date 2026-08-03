@@ -24,7 +24,8 @@ public sealed class RuntimePackageMetadataDeploymentTests
                 project,
                 "Production",
                 packages,
-                output);
+                output,
+                "Debug");
         byte[] firstProject = File.ReadAllBytes(first.ProjectManifestPath);
         byte[] firstResolved = File.ReadAllBytes(first.ResolvedManifestPath);
         byte[] firstLaunch = File.ReadAllBytes(first.LaunchConfigPath);
@@ -34,7 +35,8 @@ public sealed class RuntimePackageMetadataDeploymentTests
                 project,
                 "Production",
                 packages,
-                output);
+                output,
+                "Debug");
 
         Assert.Equal(2, second.PackageCount);
         Assert.False(Directory.Exists(
@@ -48,9 +50,10 @@ public sealed class RuntimePackageMetadataDeploymentTests
             SearchOption.TopDirectoryOnly));
 
         using JsonDocument launch = JsonDocument.Parse(firstLaunch);
-        Assert.Equal(1, launch.RootElement.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(2, launch.RootElement.GetProperty("SchemaVersion").GetInt32());
         Assert.Equal("Deployed", launch.RootElement.GetProperty("Mode").GetString());
         Assert.Equal("Production", launch.RootElement.GetProperty("Profile").GetString());
+        Assert.Equal("Debug", launch.RootElement.GetProperty("Configuration").GetString());
         Assert.False(launch.RootElement.TryGetProperty("Workspace", out _));
 
         using JsonDocument runtimeProject = JsonDocument.Parse(firstProject);
@@ -67,6 +70,10 @@ public sealed class RuntimePackageMetadataDeploymentTests
             projectPackages[1].GetProperty("Url").GetString());
 
         using JsonDocument resolved = JsonDocument.Parse(firstResolved);
+        Assert.False(resolved.RootElement.GetProperty("EnableProfiler").GetBoolean());
+        Assert.Equal("Debug", resolved.RootElement.GetProperty("Configuration").GetString());
+        Assert.True(resolved.RootElement.GetProperty("NativePayloadsFinalized").GetBoolean());
+        Assert.Empty(resolved.RootElement.GetProperty("NativePayloads").EnumerateArray());
         JsonElement resolvedPackages = resolved.RootElement.GetProperty("ResolvedPackages");
         Assert.Equal(2, resolvedPackages.GetArrayLength());
         Assert.Equal(
@@ -91,6 +98,65 @@ public sealed class RuntimePackageMetadataDeploymentTests
                 "package.json");
             Assert.True(File.Exists(descriptor), descriptor);
         }
+    }
+
+    [Fact]
+    public void ProfilerDisabledDeploymentOmitsConditionalRuntimeFromPackageMetadata()
+    {
+        using var temp = new TempDirectory();
+        string output = Path.Combine(temp.Path, "Output");
+        ProjectManifest project = CreateProject();
+        project.Profiles = new Dictionary<string, ProfileDefinition>
+        {
+            ["Production"] = new ProfileDefinition { EnableProfiler = false }
+        };
+        var package = new PackageInfo
+        {
+            DirectoryPath = Path.Combine(temp.Path, "Local", "com.test.profiler"),
+            Manifest = new PackageManifest
+            {
+                Id = "com.test.profiler",
+                Name = "Profiler Runtime",
+                Version = "1.0.0",
+                Type = "native",
+                NativeRuntimes = new Dictionary<string, List<JsonElement>>
+                {
+                    ["win-x64"] =
+                    [
+                        JsonSerializer.SerializeToElement(new
+                        {
+                            path = "TracyClient.dll",
+                            source = "buildOutput",
+                            requiresProfiler = true
+                        })
+                    ]
+                }
+            }
+        };
+
+        RuntimePackageMetadataDeploymentResult result =
+            RuntimePackageMetadataDeploymentService.Deploy(
+                project,
+                "Production",
+                [package],
+                output,
+                "Debug");
+
+        using JsonDocument descriptor = JsonDocument.Parse(File.ReadAllBytes(Path.Combine(
+            result.PackagesRoot,
+            package.Manifest.Id,
+            "package.json")));
+        using JsonDocument resolved = JsonDocument.Parse(File.ReadAllBytes(result.ResolvedManifestPath));
+        Assert.Empty(descriptor.RootElement
+            .GetProperty("nativeRuntimes")
+            .GetProperty("win-x64")
+            .EnumerateArray());
+        Assert.Empty(resolved.RootElement
+            .GetProperty("ResolvedPackages")[0]
+            .GetProperty("NativeRuntimes")
+            .GetProperty("win-x64")
+            .EnumerateArray());
+        Assert.False(File.Exists(Path.Combine(output, "TracyClient.dll")));
     }
 
     [Fact]
@@ -119,7 +185,8 @@ public sealed class RuntimePackageMetadataDeploymentTests
                 CreateProject(),
                 "Production",
                 packages,
-                output));
+                output,
+                "Debug"));
 
         Assert.Contains("duplicate package id", error.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("existing-launch-config", File.ReadAllText(launchPath));

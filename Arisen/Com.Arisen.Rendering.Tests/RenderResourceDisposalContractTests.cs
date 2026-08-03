@@ -79,9 +79,12 @@ public sealed class RenderResourceDisposalContractTests
             "Arisen/Development/PackageGame/Local/com.arisen.rendering/RenderSurface.cs");
         var deviceSource = ReadRepoFile(
             "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Core/RHIVkDevice.cpp");
+        var resourcePoolsSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Handles/RHIVkResourcePools.h");
 
-        Assert.Contains("Dictionary<IntPtr, ResizeSurfaceCommand>? pendingResizes", commandQueueSource, StringComparison.Ordinal);
-        Assert.Contains("pendingResizes[resize.Host] = resize;", commandQueueSource, StringComparison.Ordinal);
+        Assert.Contains("Dictionary<RenderSurfaceRegistration, ResizeSurfaceCommand>? pendingResizes", commandQueueSource, StringComparison.Ordinal);
+        Assert.Contains("pendingResizes[resize.Registration] = resize;", commandQueueSource, StringComparison.Ordinal);
+        Assert.Contains("pendingResizes.TryAdd(resize.Registration", commandQueueSource, StringComparison.Ordinal);
         Assert.Contains("ExecutePendingResizes", commandQueueSource, StringComparison.Ordinal);
 
         Assert.DoesNotContain("SurfaceResizeStabilizationInterval", viewportSource, StringComparison.Ordinal);
@@ -104,9 +107,14 @@ public sealed class RenderResourceDisposalContractTests
         Assert.DoesNotContain("for (auto h : m_SharedHandles)", swapChainSource, StringComparison.Ordinal);
         Assert.DoesNotContain("handles = std::move(oldSharedHandles)", swapChainSource, StringComparison.Ordinal);
         Assert.Contains("AcknowledgeExternalConsumerRelease", swapChainSource, StringComparison.Ordinal);
-        Assert.Contains("GetLatestTicket() : 0", swapChainSource, StringComparison.Ordinal);
-        Assert.DoesNotContain("GetLatestTicket() +", swapChainSource, StringComparison.Ordinal);
-        Assert.Contains("if (!image) return;", deviceSource, StringComparison.Ordinal);
+        Assert.Contains("const RHIGpuTicket retirementTicket = m_LastOwnedGraphicsTicket;", swapChainSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetLatestTicket()", swapChainSource, StringComparison.Ordinal);
+        Assert.Contains("void* sharedHandle{nullptr};", resourcePoolsSource, StringComparison.Ordinal);
+        Assert.Contains("RHIVkImageState::~RHIVkImageState()", deviceSource, StringComparison.Ordinal);
+        Assert.Contains("if (sharedHandle != nullptr)", deviceSource, StringComparison.Ordinal);
+        Assert.Contains("::CloseHandle(static_cast<HANDLE>(sharedHandle))", deviceSource, StringComparison.Ordinal);
+        Assert.Contains("image->state->sharedHandle = win32Handle;", deviceSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("CloseSharedWin32Handle", deviceSource, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -134,8 +142,8 @@ public sealed class RenderResourceDisposalContractTests
         Assert.Contains("GetOrImportSemaphore", viewportSource, StringComparison.Ordinal);
         Assert.Contains("await ClearImportedResourceCacheAsync();", viewportSource, StringComparison.Ordinal);
         Assert.Contains("await DisposeImportedSemaphoreAsync(semaphore);", viewportSource, StringComparison.Ordinal);
-        Assert.Contains("CompleteConsumedSemaphore(info.SignalSemaphoreHandle);", viewportSource, StringComparison.Ordinal);
-        Assert.Contains("ReleaseConsumedSemaphore(info.SignalSemaphoreHandle);", viewportSource, StringComparison.Ordinal);
+        Assert.Contains("CompleteConsumedSemaphore(registration, info.SignalSemaphoreHandle);", viewportSource, StringComparison.Ordinal);
+        Assert.Contains("ReleaseConsumedSemaphore(registration, info.SignalSemaphoreHandle);", viewportSource, StringComparison.Ordinal);
 
         Assert.DoesNotContain("auto nextProducer = factory->CreateSemaphore();", swapChainSource, StringComparison.Ordinal);
         Assert.Contains("m_ImageAvailableSemaphoreSharedHandles[currentFrame]", swapChainSource, StringComparison.Ordinal);
@@ -145,9 +153,11 @@ public sealed class RenderResourceDisposalContractTests
         Assert.Contains("replacementConsumerSemaphores", swapChainSource, StringComparison.Ordinal);
         Assert.Contains("replacementProducerSemaphores", swapChainSource, StringComparison.Ordinal);
         Assert.Contains("CompleteConsumedSemaphoreWin32Handle", swapChainSource, StringComparison.Ordinal);
-        Assert.Contains("GetExternalConsumerWaitSemaphore", queueSource, StringComparison.Ordinal);
+        Assert.Contains("PrepareFrameSubmission", queueSource, StringComparison.Ordinal);
+        Assert.Contains("appendSwapChainPlan", queueSource, StringComparison.Ordinal);
+        Assert.Contains("plan.waitSemaphore = m_ImageAvailableSemaphores[currentFrame]", swapChainSource, StringComparison.Ordinal);
         Assert.Contains("VK_PIPELINE_STAGE_ALL_COMMANDS_BIT", queueSource, StringComparison.Ordinal);
-        Assert.Contains("NotifyFrameSubmitted(swapChainFrameIndex, submitTicket)", queueSource, StringComparison.Ordinal);
+        Assert.Contains("CommitFrameSubmission(swapChainFrameIndex, submitTicket)", queueSource, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -167,6 +177,122 @@ public sealed class RenderResourceDisposalContractTests
         Assert.Contains("brush.IsChecked = false;", smokeSource, StringComparison.Ordinal);
         Assert.Contains("paint.IsChecked = true;", smokeSource, StringComparison.Ordinal);
         Assert.Contains("RequiredConcurrentFramesPerViewport = 320", smokeStateSource, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SurfaceReleaseCommitsNativeOwnershipBeforeManagedCacheRemoval()
+    {
+        var rhiSystemSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.core/RHI/RHISystem.cs");
+        var renderSurfaceSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rendering/RenderSurface.cs");
+        var instanceSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Core/RHIVkInstance.cpp");
+        var surfaceSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Presentation/RHIVkSurface.cpp");
+        var swapChainSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Presentation/RHIVkSwapChain.cpp");
+
+        int nativeDestroy = rhiSystemSource.IndexOf(
+            "m_Instance.Value.DestroySurface(windowId);",
+            StringComparison.Ordinal);
+        int deviceRemoval = rhiSystemSource.IndexOf(
+            "m_DeviceWrappers.TryRemove(windowId, out _);",
+            nativeDestroy,
+            StringComparison.Ordinal);
+        int surfaceRemoval = rhiSystemSource.IndexOf(
+            "m_SurfaceWrappers.TryRemove(windowId, out _);",
+            nativeDestroy,
+            StringComparison.Ordinal);
+
+        Assert.True(nativeDestroy >= 0);
+        Assert.True(deviceRemoval > nativeDestroy);
+        Assert.True(surfaceRemoval > nativeDestroy);
+        Assert.DoesNotContain("DeviceWaitIdle failed before removing surface", rhiSystemSource, StringComparison.Ordinal);
+
+        Assert.Contains("bool releaseCommitted = false;", renderSurfaceSource, StringComparison.Ordinal);
+        Assert.Contains("m_IsDisposed = releaseCommitted;", renderSurfaceSource, StringComparison.Ordinal);
+        Assert.Contains("m_DisposeStarted = false;", renderSurfaceSource, StringComparison.Ordinal);
+
+        int prepareForRelease = instanceSource.IndexOf("PrepareForRelease()", StringComparison.Ordinal);
+        int nativeSurfaceReset = instanceSource.IndexOf("it->second.reset();", prepareForRelease, StringComparison.Ordinal);
+        int nativeSurfaceErase = instanceSource.IndexOf("m_Surfaces.erase(it);", nativeSurfaceReset, StringComparison.Ordinal);
+        Assert.True(prepareForRelease >= 0);
+        Assert.True(nativeSurfaceReset > prepareForRelease);
+        Assert.True(nativeSurfaceErase > nativeSurfaceReset);
+        Assert.Contains(
+            "Surface release did not commit; active frame, external-consumer lease, or GPU generation ownership remains",
+            instanceSource,
+            StringComparison.Ordinal);
+        Assert.Contains("m_SwapChain->PrepareForSurfaceRelease()", surfaceSource, StringComparison.Ordinal);
+        Assert.Contains("HasActiveFrameOwnershipLocked()", swapChainSource, StringComparison.Ordinal);
+        Assert.Contains("Refusing release while a frame is active", swapChainSource, StringComparison.Ordinal);
+        Assert.Contains("Physical generation release remains incomplete", swapChainSource, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void NativeSubmitFaultFixtureIsSingleArmOneShotAndRecoversTickets()
+    {
+        var queueHeader = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Queues/RHIVkQueue.h");
+        var queueSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Queues/RHIVkQueue.cpp");
+        var nativeTestSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native.test/RHI/Unit/RHIAbiContractTest.h");
+
+        Assert.Contains("InjectNextSubmitResultForTesting", queueHeader, StringComparison.Ordinal);
+        Assert.Contains("compare_exchange_strong", queueHeader, StringComparison.Ordinal);
+        Assert.Contains("A submit failure is already pending", queueHeader, StringComparison.Ordinal);
+        Assert.Contains(
+            "m_InjectedSubmitResult.exchange(VK_SUCCESS, std::memory_order_acq_rel)",
+            queueSource,
+            StringComparison.Ordinal);
+        Assert.Contains("duplicateSubmitFaultRejected", nativeTestSource, StringComparison.Ordinal);
+        Assert.Contains("recoveredSubmitTicket", nativeTestSource, StringComparison.Ordinal);
+        Assert.Contains(
+            "queue->GetLatestTicket() != latestBeforeSubmit",
+            nativeTestSource,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "queue->GetCommandBufferSubmitTicketForTesting(commandBuffer) != 0",
+            nativeTestSource,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FatalPhysicalPresentFailureEntersGenerationFailStopUntilTeardown()
+    {
+        var swapChainHeader = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Presentation/RHIVkSwapChain.h");
+        var swapChainSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Presentation/RHIVkSwapChain.cpp");
+        var nativeTestSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native.test/RHI/Rendering/RHIBasicRenderingTest.h");
+
+        Assert.Contains("m_InjectedPresentResult", swapChainHeader, StringComparison.Ordinal);
+        Assert.Contains("m_TerminalPresentResult", swapChainHeader, StringComparison.Ordinal);
+        Assert.Contains(
+            "const VkResult injectedResult = std::exchange(m_InjectedPresentResult, VK_SUCCESS);",
+            swapChainSource,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "Swapchain generation cannot acquire after terminal presentation failure",
+            swapChainSource,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "Refusing generation reuse after terminal presentation failure",
+            swapChainSource,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "InjectNextPresentResultForTesting(VK_ERROR_SURFACE_LOST_KHR)",
+            nativeTestSource,
+            StringComparison.Ordinal);
+        Assert.Contains("duplicatePresentFaultRejected", nativeTestSource, StringComparison.Ordinal);
+        Assert.Contains(
+            "RHI::RHISwapChainFrameState::Retired",
+            nativeTestSource,
+            StringComparison.Ordinal);
+        Assert.Contains("terminalAcquireRejected", nativeTestSource, StringComparison.Ordinal);
     }
 
     private static string ReadRepoFile(string relativePath)

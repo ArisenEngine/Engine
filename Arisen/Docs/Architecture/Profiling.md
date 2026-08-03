@@ -6,9 +6,12 @@ Arisen uses Tracy as the first production-grade realtime profiler backend. The e
 
 - `com.arisen.core.native` contains the Tracy client dependency and the native `Core.Diagnostic` profiler bridge.
 - `com.arisen.core` exposes the managed facade: `Profiler.Zone`, `Profiler.FrameMark`, `Profiler.FrameMarkNamed`, `Profiler.PlotValue`, and `Profiler.SetThreadName`.
-- Profiles with `EnableProfiler: true` define `ARISEN_PROFILER_ENABLED`.
-- Profiles with `EnableProfiler: false` do not define profiler instrumentation.
-- The regular Arisen build links the Tracy client, but it does not build the Tracy Profiler viewer executable.
+- Profiles with `EnableProfiler: true` define `ARISEN_PROFILER_ENABLED`, build and link the Tracy
+  client, and deploy `TracyClient.dll` plus its optional debug symbols.
+- Profiles with `EnableProfiler: false` compile out profiler instrumentation and neither build nor
+  deploy Tracy. Resolved and deployed package metadata omit the profiler-only payload, and stale
+  Tracy output is rejected.
+- Regular profiler-enabled Arisen builds do not build the Tracy Profiler viewer executable.
 
 ## RenderDoc Frame Capture
 
@@ -43,6 +46,23 @@ Scene/ECS state, hierarchy, selection, layout, authoring documents, and CPU asse
 
 RenderDoc changes the Vulkan dispatch chain, so it remains explicit rather than part of ordinary startup. Editor opaque-Win32 image/semaphore interop is supported in this mode: each virtual frame slot keeps one native producer/consumer semaphore pair, and Avalonia keeps the corresponding imported objects alive for the whole swapchain generation. Do not import or dispose those semaphores per frame. Resize awaits the active compositor update, disposes generation imports, acknowledges external release, and only then replaces native synchronization and images.
 
+Each viewport capture targets its exact `RenderSurfaceRegistration(host, generation)`. A request owns
+the state sequence `Pending -> Capturing -> PublishingArtifact -> Succeeded/Failed`; another request
+cannot replace it while any of those active states is owned. Before starting native capture,
+`RenderDocService` snapshots `GetNumCaptures()` and assigns a unique template beneath
+`logs/renderdoc` containing the process id, monotonic request id, and a random suffix. A successful
+`EndFrameCapture` plus successful render-frame retirement/completion advances only to
+`PublishingArtifact`.
+
+Artifact success is owned by RenderDoc's inventory, not by filesystem timing or inferred writer
+process ownership. One long-running publication worker observes `GetNumCaptures` and `GetCapture`,
+accepts only a newer `.rdc` path matching the request template, and verifies that the file exists and
+is non-empty. Render frames pulse an `AutoResetEvent` between observations. Cancellation wakes the
+worker and teardown joins it synchronously before disposing its signal or replacing capture state.
+There is no sleep, quiet period, retry bound, file-timestamp heuristic, or Restart Manager inference
+in this ownership contract. Replay-UI launch occurs only after terminal publication and a launch
+failure does not invalidate the already-published capture artifact.
+
 Use the real dual-viewport regression when changing editor presentation, synchronization, resize, or RenderDoc integration:
 
 ```powershell
@@ -57,11 +77,24 @@ The run must load RenderDoc before Vulkan initialization, complete four exact re
 Use the in-process generation-replacement regression for the `Enable RenderDoc` path:
 
 ```powershell
-& "Arisen\Development\PackageGame\.arisen\bin\Editor\Debug\PackageGame.exe" --workspace "Arisen\Development\PackageGame" --profile Editor --editor-viewport-smoke --editor-viewport-smoke-timeout 120 --editor-viewport-smoke-restart-renderdoc
-powershell -NoProfile -ExecutionPolicy Bypass -File "Arisen\Scripts\Windows\validate_editor_viewport_summary.ps1" -ArtifactPath "Arisen\Development\PackageGame\.arisen\Logs\editor-viewport-summary-Editor-latest.json" -ExpectedProfile Editor -ExpectRenderDocRestart
+& "Arisen\Development\PackageGame\.arisen\bin\Editor\Debug\PackageGame.exe" --workspace "Arisen\Development\PackageGame" --profile Editor --editor-viewport-smoke --editor-viewport-smoke-timeout 120 --editor-viewport-smoke-restart-renderdoc --editor-viewport-smoke-capture-renderdoc
+powershell -NoProfile -ExecutionPolicy Bypass -File "Arisen\Scripts\Windows\validate_editor_viewport_summary.ps1" -ArtifactPath "Arisen\Development\PackageGame\.arisen\Logs\editor-viewport-summary-Editor-latest.json" -ExpectedProfile Editor -ExpectRenderDocRestart -ExpectRenderDocCapture
 ```
 
-The schema-6 artifact must record a completed generation advance, RenderDoc availability after restart, and at least 320 additional accepted frames from both SceneView and GameView. The process must then complete package and Vulkan shutdown without a remaining `PackageGame.exe`, and `vk_validation.log` must remain empty.
+The schema-8 artifact must record a completed generation advance, RenderDoc availability after restart, at least 320 additional accepted frames from both SceneView and GameView, one terminal capture request identity, and an existing non-empty `.rdc` path. The process must then complete package and Vulkan shutdown without a remaining `PackageGame.exe`, and `vk_validation.log` must remain empty.
+
+Use the promoted stabilization gate after lifecycle, native ABI, rendering ownership, asset
+publication, worker-drain, RenderDoc, or deployment changes:
+
+```bat
+Arisen\Scripts\Windows\validate_stability_stress.bat --config Release --cycles 2 --no-pause
+```
+
+This gate runs fast validation and the isolated Vulkan package suite once, then performs two full
+GPU-required runtime cycles plus one in-process RenderDoc restart/capture per cycle. Its structured
+report archives profile logs, eleven empty Vulkan validation logs, copied Production evidence,
+world/terrain memory and shutdown baselines, Editor ownership/cache bounds, graphics-generation
+advance, and each non-empty capture artifact under `.arisen/Logs`.
 
 ## Bundled Tracy Viewer
 
@@ -181,4 +214,8 @@ A custom in-editor profiler timeline can be added later for simplified engine di
 - Avoid per-entity profiler zones.
 - Keep service-registry lookups out of profiled hot loops.
 - Prefer coarse zones around frame setup, graph compile, task layers, pass work items, submission, and backend queue work.
+- Use Tracy plots/zones for recurring frame telemetry. Ordinary warmed rendering does not emit text diagnostics.
+- Set `ARISEN_RENDER_DIAGNOSTICS` before process start only for targeted text diagnosis. Categories are `frame`, `submission`, `graph`, and `passes`; comma-separated combinations and `all` are accepted. `graph` is event-bounded to initial or changed topology, while the other categories are deliberately verbose and should be enabled only for a bounded diagnosis.
+- `KernelLog.Info` and the engine-wide `ILogger.Log` contract are release-visible informational channels and map to `Logger.Info`. Direct `Logger.Log` is debug-detail severity and may be filtered by the native Release logger. Lifecycle or validation evidence must use an informational-or-higher channel or a structured artifact; it must not depend on debug output surviving Release filtering.
+- Do not add frame-modulo logging, direct native console output, or a timer/throttle to conceal warmed log volume. Keep validation, failure, and lifecycle diagnostics unconditional and fix recurring failures at their owner.
 - Keep Production profile instrumentation disabled by default.

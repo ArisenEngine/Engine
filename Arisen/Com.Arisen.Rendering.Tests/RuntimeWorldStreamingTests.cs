@@ -10,6 +10,101 @@ namespace Com.Arisen.Rendering.Tests;
 public sealed class RuntimeWorldStreamingTests
 {
     [Fact]
+    public void CellNotifications_AggregateFailuresAndRunEverySubscriberInOrder()
+    {
+        using var context = new StreamingContext();
+        var subscribers = new FailingStreamingSubscribers();
+        context.Streaming.CellStateChanged += subscribers.CellFailureOne;
+        context.Streaming.CellStateChanged += subscribers.CellSuccessOne;
+        context.Streaming.CellStateChanged += subscribers.CellFailureTwo;
+        context.Streaming.CellStateChanged += subscribers.CellSuccessTwo;
+
+        Assert.True(context.Streaming.PinCell(context.CellId(0)));
+        context.Streaming.ProcessAtFrameBoundary();
+
+        context.Streaming.CellStateChanged -= subscribers.CellFailureOne;
+        context.Streaming.CellStateChanged -= subscribers.CellSuccessOne;
+        context.Streaming.CellStateChanged -= subscribers.CellFailureTwo;
+        context.Streaming.CellStateChanged -= subscribers.CellSuccessTwo;
+
+        Assert.NotEmpty(subscribers.Invocations);
+        Assert.Equal(0, subscribers.Invocations.Count % 4);
+        for (int index = 0; index < subscribers.Invocations.Count; index += 4)
+        {
+            Assert.Equal(
+                ["cell-failure-one", "cell-success-one", "cell-failure-two", "cell-success-two"],
+                subscribers.Invocations.Skip(index).Take(4));
+        }
+
+        WorldStreamingDiagnostic aggregate = Assert.Single(
+            context.Streaming.GetDiagnostics(),
+            diagnostic => diagnostic.Kind == WorldStreamingDiagnosticKind.SubscriberAggregate);
+        Assert.Equal("ProcessAtFrameBoundary", aggregate.Boundary);
+        Assert.Equal(subscribers.Invocations.Count / 2, aggregate.SubscriberFailures.Count);
+        Assert.Equal(
+            (long)aggregate.SubscriberFailures.Count,
+            context.Streaming.GetMetrics().SubscriberFailureCount);
+        Assert.All(
+            aggregate.SubscriberFailures,
+            failure =>
+            {
+                Assert.Equal("CellStateChanged", failure.Notification);
+                Assert.Contains(nameof(FailingStreamingSubscribers), failure.Subscriber, StringComparison.Ordinal);
+                Assert.Contains("Cell=", failure.Payload, StringComparison.Ordinal);
+            });
+        Assert.Contains(
+            aggregate.SubscriberFailures,
+            failure => failure.Message == "cell subscriber one failed");
+        Assert.Contains(
+            aggregate.SubscriberFailures,
+            failure => failure.Message == "cell subscriber two failed");
+    }
+
+    [Fact]
+    public void ActiveWorldNotifications_AggregateCloseAndOpenFailuresWithinLoadBoundary()
+    {
+        using var context = new StreamingContext();
+        var subscribers = new FailingStreamingSubscribers();
+        context.Streaming.ActiveWorldChanged += subscribers.WorldFailureOne;
+        context.Streaming.ActiveWorldChanged += subscribers.WorldSuccessOne;
+        context.Streaming.ActiveWorldChanged += subscribers.WorldFailureTwo;
+        context.Streaming.ActiveWorldChanged += subscribers.WorldSuccessTwo;
+        AssetRef<WorldSourceAsset> world = context.Streaming.ActiveWorldAsset!.Value;
+
+        RuntimeWorldLoadResult reloaded = context.Streaming.LoadWorld(world);
+
+        context.Streaming.ActiveWorldChanged -= subscribers.WorldFailureOne;
+        context.Streaming.ActiveWorldChanged -= subscribers.WorldSuccessOne;
+        context.Streaming.ActiveWorldChanged -= subscribers.WorldFailureTwo;
+        context.Streaming.ActiveWorldChanged -= subscribers.WorldSuccessTwo;
+
+        Assert.True(reloaded.Success, reloaded.Diagnostic);
+        Assert.Equal(
+            [
+                "world-failure-one", "world-success-one", "world-failure-two", "world-success-two",
+                "world-failure-one", "world-success-one", "world-failure-two", "world-success-two"
+            ],
+            subscribers.Invocations);
+        WorldStreamingDiagnostic aggregate = Assert.Single(
+            context.Streaming.GetDiagnostics(),
+            diagnostic => diagnostic.Kind == WorldStreamingDiagnosticKind.SubscriberAggregate);
+        Assert.Equal("LoadWorld", aggregate.Boundary);
+        Assert.Equal(4, aggregate.SubscriberFailures.Count);
+        Assert.Equal(4, context.Streaming.GetMetrics().SubscriberFailureCount);
+        Assert.All(
+            aggregate.SubscriberFailures,
+            failure =>
+            {
+                Assert.Equal("ActiveWorldChanged", failure.Notification);
+                Assert.Contains(nameof(FailingStreamingSubscribers), failure.Subscriber, StringComparison.Ordinal);
+            });
+        Assert.Equal(2, aggregate.SubscriberFailures.Count(failure => failure.Payload == "World=<closed>"));
+        Assert.Equal(2, aggregate.SubscriberFailures.Count(failure => failure.Payload.Contains(
+            $"World={world.Guid:D}",
+            StringComparison.Ordinal)));
+    }
+
+    [Fact]
     public void DelayedWorkerRead_DoesNotBlockFrameOrMutateEcsBeforeActivation()
     {
         using var context = new StreamingContext(loaderFactory: database =>
@@ -723,6 +818,43 @@ public sealed class RuntimeWorldStreamingTests
         {
             m_Sealed = true;
         }
+    }
+
+    private sealed class FailingStreamingSubscribers
+    {
+        public List<string> Invocations { get; } = new();
+
+        public void CellFailureOne(WorldCellStreamingSnapshot _)
+        {
+            Invocations.Add("cell-failure-one");
+            throw new InvalidOperationException("cell subscriber one failed");
+        }
+
+        public void CellSuccessOne(WorldCellStreamingSnapshot _) => Invocations.Add("cell-success-one");
+
+        public void CellFailureTwo(WorldCellStreamingSnapshot _)
+        {
+            Invocations.Add("cell-failure-two");
+            throw new ArgumentException("cell subscriber two failed");
+        }
+
+        public void CellSuccessTwo(WorldCellStreamingSnapshot _) => Invocations.Add("cell-success-two");
+
+        public void WorldFailureOne(AssetRef<WorldSourceAsset>? _)
+        {
+            Invocations.Add("world-failure-one");
+            throw new InvalidOperationException("world subscriber one failed");
+        }
+
+        public void WorldSuccessOne(AssetRef<WorldSourceAsset>? _) => Invocations.Add("world-success-one");
+
+        public void WorldFailureTwo(AssetRef<WorldSourceAsset>? _)
+        {
+            Invocations.Add("world-failure-two");
+            throw new ArgumentException("world subscriber two failed");
+        }
+
+        public void WorldSuccessTwo(AssetRef<WorldSourceAsset>? _) => Invocations.Add("world-success-two");
     }
 
     private sealed class StreamingContext : IDisposable

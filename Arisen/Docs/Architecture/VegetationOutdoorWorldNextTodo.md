@@ -1,6 +1,7 @@
 # Arisen Vegetation And Biome Outdoor World: Next TODO Roadmap
 
-This is the active implementation roadmap after completion of the streamed terrain and outdoor-world foundation.
+This is the single active implementation roadmap as of 2026-08-03, after completion of the engine
+stabilization and promotion gate.
 
 Arisen can now author, cook, deploy, stream, query, render, and validate a layered multi-cell terrain with deterministic LOD, cascaded shadows, origin rebasing, bounded residency, Editor transactions, and copied cooked-only Production coverage. The next visible and scalability blocker for a large 3D open-world RPG is vegetation: stable species and biome data, deterministic terrain-aware placement, cell-owned residency, dense instanced rendering, wind and shadow integration, practical Editor authoring, and a Production reliability gate.
 
@@ -12,6 +13,12 @@ The goal is one attractive outdoor valley populated with grass, shrubs, rocks, a
 
 The completed foundation provides:
 
+- transactional package mount/rollback, aggregate idempotent teardown, semantic-version and engine
+  compatibility enforcement, and finalized SHA-256 native payload identity before boot;
+- a no-throw native ABI error contract, generation-qualified RHI/surface ownership, explicit
+  acquired/submitted/presented-or-retired frame state, and request-owned RenderDoc publication;
+- immutable cooked-asset snapshots with serialized atomic mutation plus deterministic Editor,
+  import-worker, TaskGraph, diagnostics, and graphics-generation drains;
 - package-owned source/cooked assets, generated-child identity, deterministic catalog closure, and relocatable cooked-only deployment;
 - one stable ECS world with persistent and additive cell-owned scene instances, exclusive extension-component identities, and frame-boundary activation/unload;
 - bounded asynchronous world-cell reads, cancellation, retries, edit pins, residency ownership, submission-ticket-safe disposal, and shutdown drain;
@@ -25,18 +32,23 @@ The completed foundation provides:
 - Editor extension registration, transactional terrain sculpt/paint/save/reimport/cook, immutable authoring previews, diagnostics, and stable hierarchy state;
 - package-provided bounded smoke scenarios, named visual captures, Tracy instrumentation, and copied-output Production validation.
 
-The completion gate on 2026-07-24 is:
+The promoted Release gate on 2026-08-03 is:
 
-- BuildTool tests: `43/43`;
-- kernel tests: `36/36`;
+- BuildTool tests: `64/64`;
+- kernel tests: `72/72`;
 - launcher tests: `18/18`;
-- rendering/asset/editor tests: `508/508`;
-- Editor, Development, Production, and RHIVulkanTesting runtime profiles passing;
-- four runtime smoke runs, zero skips, and zero CPU fallbacks;
-- one real Editor viewport smoke;
-- three world-streaming runs and three terrain-streaming runs;
-- Development, Production, and relocated Production terrain soaks with four cycles, one rebase, five captures, bounded memory, complete shutdown drain, and empty Vulkan validation logs;
-- copied Production world/terrain streaming, source/cache rejection, terrain closure, tamper rejection, and missing-artifact rejection.
+- rendering/asset/Editor tests: `623/623`;
+- two complete GPU-required Release runtime cycles, each covering Editor, Development, Production,
+  and RHIVulkanTesting with zero skipped GPU checks;
+- two real dual-viewport Editor restart/capture runs with bounded imports, graphics-generation
+  advance, clean shutdown, and non-empty captures of `50,091,850` and `50,658,800` bytes;
+- repeated Development, Production, and relocated Production world/terrain soaks with bounded
+  memory, cooked-generation evidence, complete worker/disposal drain, source/cache rejection,
+  catalog tamper rejection, and missing-artifact rejection;
+- zero packages, collectible contexts, native runtimes, services, initialized subsystems, render
+  surfaces, and terrain tasks at both cycle baselines;
+- all eleven archived Vulkan validation logs empty and first-party generated builds at zero warnings
+  and zero errors.
 
 Measured vegetation gaps:
 

@@ -44,7 +44,9 @@ public sealed class RuntimeAssetCookHostGenerationTests
             project,
             StringComparison.Ordinal);
         Assert.Contains("Name=\"ArisenCookRuntimeAssets\"", project, StringComparison.Ordinal);
-        Assert.Contains("AfterTargets=\"Build\"", project, StringComparison.Ordinal);
+        Assert.Contains("Name=\"ArisenFinalizeNativeOutput\"", project, StringComparison.Ordinal);
+        Assert.Contains("AfterTargets=\"ArisenFinalizeNativeOutput\"", project, StringComparison.Ordinal);
+        Assert.Contains("finalize-native-output", project, StringComparison.Ordinal);
         Assert.Contains("$(ArisenSkipAssetCook)", project, StringComparison.Ordinal);
         Assert.Contains(
             "&quot;$(TargetDir)$(AssemblyName).exe&quot;",
@@ -57,6 +59,7 @@ public sealed class RuntimeAssetCookHostGenerationTests
             project,
             StringComparison.Ordinal);
         Assert.Contains("deploy-runtime-metadata", project, StringComparison.Ordinal);
+        Assert.Contains("--configuration $(Configuration)", project, StringComparison.Ordinal);
         Assert.Contains("--engine &quot;", project, StringComparison.Ordinal);
         Assert.True(
             project.IndexOf("--arisen-cook-runtime-assets", StringComparison.Ordinal) <
@@ -69,7 +72,7 @@ public sealed class RuntimeAssetCookHostGenerationTests
     }
 
     [Fact]
-    public void DevelopmentEntryKeepsManualCookDispatchWithoutAutomaticTarget()
+    public void DevelopmentEntryFinalizesNativeIdentityWithoutAutomaticAssetCook()
     {
         using var temp = new TempDirectory();
         string workspace = Path.Combine(temp.Path, "Workspace");
@@ -95,7 +98,44 @@ public sealed class RuntimeAssetCookHostGenerationTests
 
         Assert.DoesNotContain("ArisenCookRuntimeAssets", project, StringComparison.Ordinal);
         Assert.DoesNotContain("deploy-runtime-metadata", project, StringComparison.Ordinal);
+        Assert.Contains("ArisenFinalizeNativeOutput", project, StringComparison.Ordinal);
+        Assert.Contains("finalize-native-output", project, StringComparison.Ordinal);
         Assert.Contains("RuntimeAssetCookHost.IsCookCommand", program, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void VirtualProfileEntryFinalizesAgainstItsPersistedManifest()
+    {
+        using var temp = new TempDirectory();
+        string workspace = Path.Combine(temp.Path, "Workspace & Testing");
+        string projects = Path.Combine(workspace, ".arisen", "Projects", "Testing");
+        string engine = Path.Combine(temp.Path, "Engine");
+        string testManifestPath = Path.Combine(projects, "manifest.test.json");
+        Directory.CreateDirectory(projects);
+        List<PackageInfo> packages = CreatePackages(workspace);
+
+        SolutionGeneratorService.Generate(
+            workspace,
+            projects,
+            engine,
+            packages,
+            "PackageTestRun",
+            new ProjectManifest { Name = "PackageTestRun" },
+            "Testing",
+            isEditor: false,
+            enableProfiler: false,
+            finalizationManifestPath: testManifestPath);
+
+        string project = File.ReadAllText(Path.Combine(
+            projects,
+            "PackageTestRun",
+            "PackageTestRun.csproj"));
+
+        Assert.Contains("finalize-native-output", project, StringComparison.Ordinal);
+        Assert.Contains("--profile Testing", project, StringComparison.Ordinal);
+        Assert.Contains("--manifest &quot;", project, StringComparison.Ordinal);
+        Assert.Contains("manifest.test.json&quot;", project, StringComparison.Ordinal);
+        Assert.Contains("Workspace &amp; Testing", project, StringComparison.Ordinal);
     }
 
     private static List<PackageInfo> CreatePackages(string workspace)

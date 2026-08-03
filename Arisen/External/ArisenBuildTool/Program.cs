@@ -55,6 +55,12 @@ class Program
             return;
         }
 
+        if (args.Length > 0 && args[0].Equals("finalize-native-output", StringComparison.OrdinalIgnoreCase))
+        {
+            RunFinalizeNativeOutputMode(args);
+            return;
+        }
+
         if (args.Length > 0 && args[0].Equals("deploy-runtime-metadata", StringComparison.OrdinalIgnoreCase))
         {
             RunDeployRuntimeMetadataMode(args);
@@ -76,6 +82,7 @@ class Program
         string engineDir = string.Empty;
         string profile = string.Empty;
         string outputRoot = string.Empty;
+        string configuration = string.Empty;
         for (int i = 1; i < args.Length; i++)
         {
             if ((args[i] == "--workspace" || args[i] == "-w") && i + 1 < args.Length)
@@ -86,6 +93,8 @@ class Program
                 profile = args[++i];
             else if (args[i] == "--output-root" && i + 1 < args.Length)
                 outputRoot = Path.GetFullPath(args[++i]);
+            else if ((args[i] == "--configuration" || args[i] == "-c") && i + 1 < args.Length)
+                configuration = args[++i];
         }
 
         if (string.IsNullOrWhiteSpace(workspaceDir) ||
@@ -131,7 +140,8 @@ class Program
                     manifest,
                     profile,
                     validation.SortedPackages,
-                    outputRoot);
+                    outputRoot,
+                    configuration);
             Logger.Info(
                 $"Runtime metadata deployed {result.PackageCount} package descriptor(s) to '{result.OutputRoot}'.");
         }
@@ -140,6 +150,106 @@ class Program
             Logger.Error($"Runtime metadata deployment failed: {ex.Message}");
             Environment.ExitCode = 1;
         }
+    }
+
+    static void RunFinalizeNativeOutputMode(string[] args)
+    {
+        string workspaceDir = string.Empty;
+        string engineDir = string.Empty;
+        string profile = string.Empty;
+        string configuration = string.Empty;
+        string outputRoot = string.Empty;
+        string manifestPath = string.Empty;
+        for (int i = 1; i < args.Length; i++)
+        {
+            if ((args[i] == "--workspace" || args[i] == "-w") && i + 1 < args.Length)
+                workspaceDir = Path.GetFullPath(args[++i]);
+            else if ((args[i] == "--engine" || args[i] == "-e") && i + 1 < args.Length)
+                engineDir = Path.GetFullPath(args[++i]);
+            else if (args[i] == "--profile" && i + 1 < args.Length)
+                profile = args[++i];
+            else if ((args[i] == "--configuration" || args[i] == "-c") && i + 1 < args.Length)
+                configuration = args[++i];
+            else if (args[i] == "--output-root" && i + 1 < args.Length)
+                outputRoot = Path.GetFullPath(args[++i]);
+            else if (args[i] == "--manifest" && i + 1 < args.Length)
+                manifestPath = Path.GetFullPath(args[++i]);
+        }
+
+        if (string.IsNullOrWhiteSpace(workspaceDir) ||
+            string.IsNullOrWhiteSpace(profile) ||
+            string.IsNullOrWhiteSpace(configuration) ||
+            string.IsNullOrWhiteSpace(outputRoot))
+        {
+            Console.Error.WriteLine(
+                "ArisenBuildTool Native Output Finalization Error: --workspace, --profile, --configuration, and --output-root are required.");
+            Environment.ExitCode = 1;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(engineDir))
+        {
+            engineDir = FindEngineRoot(AppContext.BaseDirectory);
+        }
+
+        Logger.Initialize(Path.Combine(workspaceDir, ".arisen", "ArisenBuildTool.log"));
+        if (string.IsNullOrWhiteSpace(manifestPath))
+        {
+            manifestPath = Path.Combine(workspaceDir, "manifest.json");
+        }
+        if (!TryReadManifest(manifestPath, out ProjectManifest? manifest) || manifest == null)
+        {
+            Environment.ExitCode = 1;
+            return;
+        }
+
+        PackageValidationResult validation = PackageValidationService.Validate(
+            manifest,
+            workspaceDir,
+            engineDir,
+            profile);
+        PackageValidationService.LogSummary(validation);
+        if (!validation.Success)
+        {
+            Logger.Error("Native output finalization aborted because package validation failed.");
+            Environment.ExitCode = 1;
+            return;
+        }
+
+        bool enableProfiler = manifest.Profiles != null &&
+            manifest.Profiles.TryGetValue(profile, out ProfileDefinition? profileDefinition) &&
+            profileDefinition.EnableProfiler;
+
+        NativePayloadInventoryResult inventory = NativePayloadIntegrityService.BuildInventory(
+            validation.SortedPackages,
+            outputRoot,
+            configuration,
+            enableProfiler);
+        foreach (string warning in inventory.Warnings) Logger.Warning(warning);
+        foreach (string error in inventory.Errors) Logger.Error(error);
+        if (!inventory.Success)
+        {
+            Logger.Error("Native output finalization aborted because payload identity validation failed.");
+            Environment.ExitCode = 1;
+            return;
+        }
+
+        PackageResolutionService.SaveResolvedManifests(
+            profile,
+            new List<string> { outputRoot },
+            validation.SortedPackages,
+            nativePayloads: inventory.Payloads,
+            nativePayloadsFinalized: true,
+            configuration: configuration,
+            enableProfiler: enableProfiler);
+
+        string resolvedManifestPath = Path.Combine(outputRoot, "manifest.resolved.json");
+        NativeOutputValidationResult outputValidation = NativeOutputValidationService.Validate(
+            resolvedManifestPath,
+            outputRoot,
+            configuration);
+        NativeOutputValidationService.LogSummary(outputValidation);
+        if (!outputValidation.Success) Environment.ExitCode = 1;
     }
 
     static void RunManifestInfoMode(string[] args)
@@ -288,8 +398,23 @@ class Program
             Logger.Info($"  - {package.Id} ({package.Url})");
         }
 
-        // Reuse the generate logic with the virtual manifest
-        ExecuteGeneration(workspaceDir, engineDir, "Testing", testManifest);
+        string testProjectsDir = Path.Combine(workspaceDir, ".arisen", "Projects", "Testing");
+        Directory.CreateDirectory(testProjectsDir);
+        string testManifestPath = Path.Combine(testProjectsDir, "manifest.test.json");
+        File.WriteAllText(
+            testManifestPath,
+            JsonSerializer.Serialize(
+                testManifest,
+                new JsonSerializerOptions { WriteIndented = true }));
+
+        // Reuse the generate logic with the persisted virtual manifest so post-build
+        // finalization validates the same graph that generated the isolated workspace.
+        ExecuteGeneration(
+            workspaceDir,
+            engineDir,
+            "Testing",
+            testManifest,
+            testManifestPath);
     }
 
     private static bool ValidateLocalTestPackage(string workspaceDir, string packageId, bool isRequired)
@@ -720,7 +845,12 @@ class Program
         Logger.Info("ArisenBuildTool: Workspace generation complete.");
     }
 
-    static void ExecuteGeneration(string workspaceDir, string engineDir, string profile, ProjectManifest manifest)
+    static void ExecuteGeneration(
+        string workspaceDir,
+        string engineDir,
+        string profile,
+        ProjectManifest manifest,
+        string? finalizationManifestPath = null)
     {
         string projectName = string.IsNullOrEmpty(manifest.Name) ? "MyGame" : manifest.Name;
         string projectsDir = Path.Combine(workspaceDir, ".arisen", "Projects", profile);
@@ -737,24 +867,45 @@ class Program
         var packageMap = validation.PackageMap;
         var sortedPackages = validation.SortedPackages;
 
+        bool isEditor = false;
+        bool enableProfiler = false;
+        if (manifest.Profiles != null && manifest.Profiles.TryGetValue(profile, out var profileDef))
+        {
+            isEditor = profileDef.IsEditor;
+            enableProfiler = profileDef.EnableProfiler;
+        }
+
         var outputDirs = new List<string>
         {
             Path.Combine(workspaceDir, ".arisen", "bin", profile, "Debug"),
             Path.Combine(workspaceDir, ".arisen", "bin", profile, "Release")
         };
-        PackageResolutionService.SaveResolvedManifests(profile, outputDirs, sortedPackages);
+        PackageResolutionService.SaveResolvedManifests(
+            profile,
+            outputDirs,
+            sortedPackages,
+            enableProfiler: enableProfiler);
         PackageResolutionService.SaveResolvedManifests(
             profile,
             new List<string> { projectsDir },
             sortedPackages,
-            "manifest.source.resolved.json");
-        NativeDeploymentService.Deploy(sortedPackages, outputDirs, profile);
+            "manifest.source.resolved.json",
+            enableProfiler: enableProfiler);
+        NativeDeploymentService.Deploy(sortedPackages, outputDirs, profile, enableProfiler);
 
         // B18: Generate launch.config.json in binary folders for explicit profile/workspace resolution
         foreach (var dir in outputDirs)
         {
             Directory.CreateDirectory(dir);
-            var launchConfig = new { Profile = profile, Workspace = Path.GetFullPath(workspaceDir) };
+            var launchConfig = new Dictionary<string, object?>
+            {
+                ["Profile"] = profile,
+                ["Workspace"] = Path.GetFullPath(workspaceDir)
+            };
+            if (!string.IsNullOrWhiteSpace(finalizationManifestPath))
+            {
+                launchConfig["Manifest"] = Path.GetFullPath(finalizationManifestPath);
+            }
             string configJson = JsonSerializer.Serialize(launchConfig, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(Path.Combine(dir, "launch.config.json"), configJson);
         }
@@ -769,17 +920,19 @@ class Program
             File.Exists(Path.Combine(p.DirectoryPath, "CMakeLists.txt"))
         ).ToList();
 
-        bool isEditor = false;
-        bool enableProfiler = false;
-        if (manifest.Profiles != null && manifest.Profiles.TryGetValue(profile, out var profileDef))
-        {
-            isEditor = profileDef.IsEditor;
-            enableProfiler = profileDef.EnableProfiler;
-        }
-
         ProjectGeneratorService.GenerateForManagedPackages(workspaceDir, projectsDir, engineDir, managedPackages, packageMap, manifest, profile, isEditor, enableProfiler);
         CMakeGeneratorService.Generate(engineDir, projectsDir, nativePackages, projectName, manifest, profile, enableProfiler);
-        SolutionGeneratorService.Generate(workspaceDir, projectsDir, engineDir, managedPackages, projectName, manifest, profile, isEditor, enableProfiler);
+        SolutionGeneratorService.Generate(
+            workspaceDir,
+            projectsDir,
+            engineDir,
+            managedPackages,
+            projectName,
+            manifest,
+            profile,
+            isEditor,
+            enableProfiler,
+            finalizationManifestPath);
 
         Console.WriteLine($"ArisenBuildTool: Solution for '{projectName}' ({profile}) generated successfully.");
     }

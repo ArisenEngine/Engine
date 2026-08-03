@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using Arisen.Testing;
 using ArisenEngine.Core.ECS;
 using ArisenEngine.Threading;
 using Xunit;
@@ -8,6 +9,12 @@ namespace Com.Arisen.Rendering.Tests;
 
 public sealed class TaskGraphExecutionTests
 {
+    private enum TaskDrainFaultStage
+    {
+        CancellationCallback,
+        UnclaimedResultDisposal
+    }
+
     [Fact]
     public void OneShotGraph_HonorsDependencies()
     {
@@ -168,6 +175,107 @@ public sealed class TaskGraphExecutionTests
     }
 
     [Fact]
+    public async Task DisposalStopsAdmissionAndReportsUndrainedTaskUntilCleanupCompletes()
+    {
+        using var started = new ManualResetEventSlim(false);
+        using var cancellationObserved = new ManualResetEventSlim(false);
+        using var allowCompletion = new ManualResetEventSlim(false);
+        var taskGraph = new TaskGraph(workerCount: 2);
+        BackgroundTask<int> background = taskGraph.Schedule(
+            "WorldStreaming.CellRead/test-cell",
+            cancellationToken =>
+            {
+                using CancellationTokenRegistration registration =
+                    cancellationToken.Register(cancellationObserved.Set);
+                started.Set();
+                allowCompletion.Wait();
+                return 42;
+            });
+
+        Assert.True(started.Wait(TimeSpan.FromSeconds(2)));
+        Task? disposeTask = null;
+        try
+        {
+            disposeTask = Task.Run(taskGraph.Dispose);
+            Assert.True(cancellationObserved.Wait(TimeSpan.FromSeconds(2)));
+
+            BackgroundTaskDrainSnapshot snapshot = taskGraph.GetDrainSnapshot();
+            Assert.Equal(BackgroundTaskSchedulerState.StopRequested, snapshot.State);
+            BackgroundTaskDrainEntry pending = Assert.Single(snapshot.OutstandingTasks);
+            Assert.Equal(background.Sequence, pending.Sequence);
+            Assert.Equal("WorldStreaming.CellRead/test-cell", pending.Name);
+            Assert.Equal(BackgroundTaskStatus.Running, pending.Status);
+            Assert.True(pending.CancellationRequested);
+            Assert.False(disposeTask.IsCompleted);
+            Assert.Throws<ObjectDisposedException>(() => taskGraph.Schedule("Rejected", _ => 1));
+        }
+        finally
+        {
+            allowCompletion.Set();
+            if (disposeTask != null)
+            {
+                await disposeTask.WaitAsync(TimeSpan.FromSeconds(5));
+            }
+            else
+            {
+                taskGraph.Dispose();
+            }
+        }
+
+        Assert.Equal(BackgroundTaskStatus.Cancelled, background.Status);
+        BackgroundTaskDrainSnapshot completed = taskGraph.GetDrainSnapshot();
+        Assert.Equal(BackgroundTaskSchedulerState.Disposed, completed.State);
+        Assert.True(completed.IsDrained);
+        Assert.Empty(completed.OutstandingTasks);
+    }
+
+    [Fact]
+    public void DisposalReportsCancellationCallbackFailureAfterWorkersDrain()
+    {
+        using var started = new ManualResetEventSlim(false);
+        using var cancellationCallbackEntered = new ManualResetEventSlim(false);
+        var taskGraph = new TaskGraph(workerCount: 2);
+        var faults = new DeterministicFaultInjector<TaskDrainFaultStage>();
+        faults.Arm(
+            TaskDrainFaultStage.CancellationCallback,
+            () => new TestTaskException("Injected cancellation callback failure."));
+        taskGraph.Schedule<int>(
+            "WorldStreaming.CellRead/cancellation-failure",
+            cancellationToken =>
+            {
+                using CancellationTokenRegistration registration = cancellationToken.Register(
+                    () =>
+                    {
+                        cancellationCallbackEntered.Set();
+                        faults.ThrowIfArmed(TaskDrainFaultStage.CancellationCallback);
+                    });
+                started.Set();
+                cancellationCallbackEntered.Wait();
+                cancellationToken.ThrowIfCancellationRequested();
+                return 1;
+            });
+
+        Assert.True(started.Wait(TimeSpan.FromSeconds(2)));
+        AggregateException failure = Assert.Throws<AggregateException>(taskGraph.Dispose);
+
+        Assert.Contains(
+            failure.Flatten().InnerExceptions,
+            error => error.Message.Contains(
+                "#1 'WorldStreaming.CellRead/cancellation-failure'",
+                StringComparison.Ordinal));
+        BackgroundTaskDrainSnapshot snapshot = taskGraph.GetDrainSnapshot();
+        Assert.Equal(BackgroundTaskSchedulerState.Faulted, snapshot.State);
+        Assert.True(snapshot.IsDrained);
+
+        AggregateException repeated = Assert.Throws<AggregateException>(taskGraph.Dispose);
+        Assert.Equal(failure.Message, repeated.Message);
+        Assert.Equal(
+            failure.Flatten().InnerExceptions.Count,
+            repeated.Flatten().InnerExceptions.Count);
+        faults.EnsureFullyConsumed();
+    }
+
+    [Fact]
     public void SystemContainer_ExecutesSystemsOnEveryFrameAndHonorsComponentHazards()
     {
         using var taskGraph = new TaskGraph(workerCount: 2);
@@ -293,6 +401,41 @@ public sealed class TaskGraphExecutionTests
         Assert.False(task.TryGetResult(out _));
     }
 
+    [Fact]
+    public void CancelledBackgroundTaskReportsUnclaimedResultDisposalFailureWithoutStrandingDrain()
+    {
+        using var taskGraph = new TaskGraph(workerCount: 2);
+        using var started = new ManualResetEventSlim(false);
+        using var release = new ManualResetEventSlim(false);
+        var faults = new DeterministicFaultInjector<TaskDrainFaultStage>();
+        faults.Arm(
+            TaskDrainFaultStage.UnclaimedResultDisposal,
+            () => new TestTaskException("Injected result-disposal failure."));
+        var result = new ThrowingDisposableBackgroundResult(faults);
+        BackgroundTask<ThrowingDisposableBackgroundResult> task = taskGraph.Schedule(
+            "FailingDisposableCancellation",
+            _ =>
+            {
+                started.Set();
+                release.Wait();
+                return result;
+            });
+
+        Assert.True(started.Wait(TimeSpan.FromSeconds(2)));
+        task.Cancel();
+        release.Set();
+        Assert.True(task.Wait(TimeSpan.FromSeconds(2)));
+
+        Assert.Equal(BackgroundTaskStatus.Failed, task.Status);
+        InvalidOperationException failure = Assert.IsType<InvalidOperationException>(task.Failure);
+        Assert.Contains("disposing an unclaimed result", failure.Message, StringComparison.Ordinal);
+        Assert.IsType<TestTaskException>(failure.InnerException);
+        Assert.Equal(1, result.DisposeCount);
+        Assert.Equal(0, taskGraph.OutstandingTaskCount);
+        Assert.True(taskGraph.GetDrainSnapshot().IsDrained);
+        faults.EnsureFullyConsumed();
+    }
+
     private sealed class DisposableBackgroundResult : IDisposable
     {
         public bool IsDisposed { get; private set; }
@@ -300,6 +443,18 @@ public sealed class TaskGraphExecutionTests
         public void Dispose()
         {
             IsDisposed = true;
+        }
+    }
+
+    private sealed class ThrowingDisposableBackgroundResult(
+        DeterministicFaultInjector<TaskDrainFaultStage> faults) : IDisposable
+    {
+        public int DisposeCount { get; private set; }
+
+        public void Dispose()
+        {
+            DisposeCount++;
+            faults.ThrowIfArmed(TaskDrainFaultStage.UnclaimedResultDisposal);
         }
     }
 

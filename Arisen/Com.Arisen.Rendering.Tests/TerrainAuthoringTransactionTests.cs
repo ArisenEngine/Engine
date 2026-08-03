@@ -224,7 +224,13 @@ public sealed class TerrainAuthoringTransactionTests
         Assert.Contains(new TerrainTileCoordinate(1, 0), cook.DependencyRecookedTiles);
         Assert.Contains(new TerrainTileCoordinate(1, 1), cook.ReusedTiles);
         Assert.Equal(sentinel, File.GetLastWriteTimeUtc(retainedArtifact.Path));
-        Assert.True(File.Exists(missingArtifact.Path));
+        Assert.False(File.Exists(missingArtifact.Path));
+        Assert.True(fixture.Database.TryGetCookedArtifact(
+            missing.Guid,
+            TerrainTileAssetCooker.RuntimeVariant,
+            out CookedAssetRecord recookedMissingArtifact));
+        Assert.NotEqual(missingArtifact.Path, recookedMissingArtifact.Path);
+        Assert.True(File.Exists(recookedMissingArtifact.Path));
     }
 
     [Fact]

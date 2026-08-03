@@ -18,6 +18,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Shared\Versioning\SemanticVersion.cs" Link="Versioning\SemanticVersion.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="ArisenEngine" />
     <InternalsVisibleTo Include="ArisenEditor" />
     <InternalsVisibleTo Include="ArisenEditor.Desktop" />

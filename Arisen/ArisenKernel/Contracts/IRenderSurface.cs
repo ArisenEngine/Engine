@@ -11,12 +11,31 @@ public enum SurfaceType
     GameView
 }
 
-public struct SurfaceInfo
+public readonly record struct RenderSurfaceRegistration(IntPtr Host, ulong Generation)
 {
-    public string Name;
-    public IntPtr Parent;
-    public IRenderSurface Surface;
-    public SurfaceType SurfaceType;
+    public bool IsValid => Host != IntPtr.Zero && Generation != 0;
+}
+
+public readonly struct SurfaceInfo
+{
+    public SurfaceInfo(
+        RenderSurfaceRegistration registration,
+        string name,
+        IRenderSurface surface,
+        SurfaceType surfaceType)
+    {
+        Registration = registration;
+        Name = name;
+        Surface = surface;
+        SurfaceType = surfaceType;
+    }
+
+    public RenderSurfaceRegistration Registration { get; }
+    public string Name { get; }
+    public IntPtr Parent => Registration.Host;
+    public IRenderSurface Surface { get; }
+    public SurfaceType SurfaceType { get; }
+    public uint SurfaceId => Surface.SurfaceId;
 }
 
 public struct RenderOutputInfo

@@ -56,7 +56,7 @@ public interface IWindowProvider
     /// <summary>
     /// Raised when the window size changes. Useful for notifying the SwapChain to resize.
     /// </summary>
-    event EventHandler<(int Width, int Height)> OnWindowResized;
+    event EventHandler<(int Width, int Height)>? OnWindowResized;
 
     event Action<WindowResizeInfo>? WindowResized;
 

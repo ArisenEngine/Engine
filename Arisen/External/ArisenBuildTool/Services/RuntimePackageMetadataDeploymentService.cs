@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ArisenBuildTool.Models;
+using ArisenBuildTool.Utils;
 
 namespace ArisenBuildTool.Services;
 
@@ -19,7 +20,7 @@ public sealed record RuntimePackageMetadataDeploymentResult(
 /// </summary>
 public static class RuntimePackageMetadataDeploymentService
 {
-    public const int SchemaVersion = 1;
+    public const int SchemaVersion = PackageResolutionService.ResolvedManifestSchemaVersion;
     public const string PackagesDirectoryName = "Packages";
     public const string ProjectManifestFileName = "manifest.json";
     public const string ResolvedManifestFileName = "manifest.resolved.json";
@@ -36,7 +37,8 @@ public static class RuntimePackageMetadataDeploymentService
         ProjectManifest project,
         string profile,
         IReadOnlyList<PackageInfo> sortedPackages,
-        string outputRoot)
+        string outputRoot,
+        string configuration)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(sortedPackages);
@@ -50,22 +52,64 @@ public static class RuntimePackageMetadataDeploymentService
             throw new ArgumentException("Runtime metadata deployment requires an output root.", nameof(outputRoot));
         }
 
+        if (string.IsNullOrWhiteSpace(configuration))
+        {
+            throw new ArgumentException(
+                "Runtime metadata deployment requires a build configuration.",
+                nameof(configuration));
+        }
+
         if (sortedPackages.Count == 0)
         {
             throw new InvalidOperationException("Runtime metadata deployment requires at least one package.");
         }
 
         ValidatePackages(sortedPackages);
+        string normalizedConfiguration = configuration.Trim();
+        bool enableProfiler = project.Profiles != null &&
+            project.Profiles.TryGetValue(profile, out ProfileDefinition? profileDefinition) &&
+            profileDefinition.EnableProfiler;
         string fullOutputRoot = Path.GetFullPath(outputRoot);
         Directory.CreateDirectory(fullOutputRoot);
+        NativePayloadInventoryResult nativeInventory =
+            NativePayloadIntegrityService.BuildInventory(
+                sortedPackages,
+                fullOutputRoot,
+                normalizedConfiguration,
+                enableProfiler);
+        foreach (string warning in nativeInventory.Warnings)
+        {
+            Logger.Warning(warning);
+        }
+
+        if (!nativeInventory.Success)
+        {
+            throw new InvalidOperationException(
+                "Runtime metadata native-payload preflight failed:" + Environment.NewLine +
+                string.Join(Environment.NewLine, nativeInventory.Errors.Select(error => $"- {error}")));
+        }
+
         string transactionId = Guid.NewGuid().ToString("N");
         string stagingRoot = Path.Combine(fullOutputRoot, $".runtime-metadata-stage-{transactionId}");
         string backupRoot = Path.Combine(fullOutputRoot, $".runtime-metadata-backup-{transactionId}");
 
         try
         {
-            WriteStagedMetadata(project, profile.Trim(), sortedPackages, stagingRoot);
-            ValidateStagedMetadata(profile.Trim(), sortedPackages, stagingRoot);
+            WriteStagedMetadata(
+                project,
+                profile.Trim(),
+                normalizedConfiguration,
+                sortedPackages,
+                nativeInventory.Payloads,
+                enableProfiler,
+                stagingRoot);
+            ValidateStagedMetadata(
+                profile.Trim(),
+                normalizedConfiguration,
+                sortedPackages,
+                nativeInventory.Payloads,
+                enableProfiler,
+                stagingRoot);
             Commit(fullOutputRoot, stagingRoot, backupRoot);
 
             return new RuntimePackageMetadataDeploymentResult(
@@ -108,17 +152,25 @@ public static class RuntimePackageMetadataDeploymentService
     private static void WriteStagedMetadata(
         ProjectManifest project,
         string profile,
+        string configuration,
         IReadOnlyList<PackageInfo> packages,
+        IReadOnlyList<ResolvedNativePayload> nativePayloads,
+        bool enableProfiler,
         string stagingRoot)
     {
         Directory.CreateDirectory(stagingRoot);
         string packagesRoot = Path.Combine(stagingRoot, PackagesDirectoryName);
         Directory.CreateDirectory(packagesRoot);
-        foreach (PackageInfo package in packages)
+        PackageManifest[] profileManifests = packages
+            .Select(package => NativeRuntimeManifestService.CreateProfileProjection(
+                package.Manifest,
+                enableProfiler))
+            .ToArray();
+        foreach (PackageManifest manifest in profileManifests)
         {
-            string packageRoot = Path.Combine(packagesRoot, package.Manifest.Id);
+            string packageRoot = Path.Combine(packagesRoot, manifest.Id);
             Directory.CreateDirectory(packageRoot);
-            WriteJson(Path.Combine(packageRoot, "package.json"), package.Manifest);
+            WriteJson(Path.Combine(packageRoot, "package.json"), manifest);
         }
 
         var runtimePackages = packages
@@ -144,20 +196,24 @@ public static class RuntimePackageMetadataDeploymentService
         {
             SchemaVersion,
             Profile = profile,
-            ResolvedPackages = packages.Select(package => new
+            EnableProfiler = enableProfiler,
+            Configuration = configuration,
+            NativePayloadsFinalized = true,
+            NativePayloads = nativePayloads,
+            ResolvedPackages = profileManifests.Select(manifest => new
             {
-                package.Manifest.Id,
-                package.Manifest.Name,
-                package.Manifest.Version,
-                package.Manifest.EngineVersion,
-                package.Manifest.Type,
-                Dependencies = package.Manifest.Dependencies ?? new Dictionary<string, string>(),
-                package.Manifest.Services,
-                package.Manifest.Subsystems,
-                package.Manifest.NativeRuntimes,
-                package.Manifest.NativeTests,
-                package.Manifest.Entry,
-                Url = GetDeployedPackageUrl(package.Manifest.Id)
+                manifest.Id,
+                manifest.Name,
+                manifest.Version,
+                manifest.Engine,
+                manifest.Type,
+                Dependencies = manifest.Dependencies ?? new Dictionary<string, string>(),
+                manifest.Services,
+                manifest.Subsystems,
+                manifest.NativeRuntimes,
+                manifest.NativeTests,
+                manifest.Entry,
+                Url = GetDeployedPackageUrl(manifest.Id)
             }).ToArray()
         };
         WriteJson(Path.Combine(stagingRoot, ResolvedManifestFileName), resolvedManifest);
@@ -166,14 +222,18 @@ public static class RuntimePackageMetadataDeploymentService
         {
             SchemaVersion,
             Mode = DeployedLaunchMode,
-            Profile = profile
+            Profile = profile,
+            Configuration = configuration
         };
         WriteJson(Path.Combine(stagingRoot, LaunchConfigFileName), launchConfig);
     }
 
     private static void ValidateStagedMetadata(
         string expectedProfile,
+        string expectedConfiguration,
         IReadOnlyList<PackageInfo> packages,
+        IReadOnlyList<ResolvedNativePayload> nativePayloads,
+        bool expectedEnableProfiler,
         string stagingRoot)
     {
         using JsonDocument launchConfig = JsonDocument.Parse(
@@ -182,7 +242,12 @@ public static class RuntimePackageMetadataDeploymentService
         if (!launchRoot.TryGetProperty("Mode", out JsonElement modeElement) ||
             !string.Equals(modeElement.GetString(), DeployedLaunchMode, StringComparison.Ordinal) ||
             !launchRoot.TryGetProperty("Profile", out JsonElement profileElement) ||
-            !string.Equals(profileElement.GetString(), expectedProfile, StringComparison.Ordinal))
+            !string.Equals(profileElement.GetString(), expectedProfile, StringComparison.Ordinal) ||
+            !launchRoot.TryGetProperty("Configuration", out JsonElement launchConfigurationElement) ||
+            !string.Equals(
+                launchConfigurationElement.GetString(),
+                expectedConfiguration,
+                StringComparison.Ordinal))
         {
             throw new InvalidDataException("Staged launch configuration does not describe the requested deployed profile.");
         }
@@ -190,6 +255,25 @@ public static class RuntimePackageMetadataDeploymentService
         using JsonDocument resolved = JsonDocument.Parse(
             File.ReadAllBytes(Path.Combine(stagingRoot, ResolvedManifestFileName)));
         JsonElement resolvedRoot = resolved.RootElement;
+        if (!resolvedRoot.TryGetProperty("EnableProfiler", out JsonElement profilerElement) ||
+            (expectedEnableProfiler
+                ? profilerElement.ValueKind != JsonValueKind.True
+                : profilerElement.ValueKind != JsonValueKind.False) ||
+            !resolvedRoot.TryGetProperty("Configuration", out JsonElement resolvedConfigurationElement) ||
+            !string.Equals(
+                resolvedConfigurationElement.GetString(),
+                expectedConfiguration,
+                StringComparison.Ordinal) ||
+            !resolvedRoot.TryGetProperty("NativePayloadsFinalized", out JsonElement finalizedElement) ||
+            finalizedElement.ValueKind != JsonValueKind.True ||
+            !resolvedRoot.TryGetProperty("NativePayloads", out JsonElement nativePayloadElements) ||
+            nativePayloadElements.ValueKind != JsonValueKind.Array ||
+            nativePayloadElements.GetArrayLength() != nativePayloads.Count)
+        {
+            throw new InvalidDataException(
+                "Staged resolved manifest has an invalid native payload inventory.");
+        }
+
         if (!resolvedRoot.TryGetProperty("ResolvedPackages", out JsonElement resolvedPackages) ||
             resolvedPackages.ValueKind != JsonValueKind.Array ||
             resolvedPackages.GetArrayLength() != packages.Count)

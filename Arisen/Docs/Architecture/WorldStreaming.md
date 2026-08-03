@@ -25,6 +25,16 @@ Cell work is split deliberately:
 4. Worker state notifications are queued internally. Public `CellStateChanged` callbacks are delivered when the frame-boundary owner drains them, never directly from a worker.
 5. Activation calls `RuntimeSceneService.ActivatePreparedAdditiveAtFrameBoundary`; unload calls `UnloadSceneAtFrameBoundary`. Both structural operations therefore occur on the owning frame thread.
 
+`CellStateChanged` and `ActiveWorldChanged` are synchronous observational boundaries. The publisher
+snapshots each multicast delegate, invokes every subscriber independently and outside the streaming
+state lock, and never lets one observer prevent later observers from seeing an already-committed
+transition. Failures emitted by one public operation are collected until its owning boundary
+(`LoadWorld`, preview/reload/retry, frame processing, or shutdown) completes. The service then adds
+one `SubscriberAggregate` entry to `GetDiagnostics()`, increments `SubscriberFailureCount`, and logs
+one aggregate error. Each child diagnostic retains the event name, payload identity, deterministic
+registration index plus declaring type/method, exception type, and message. Observer failure does not
+roll back committed world/ECS state, but it is never silently swallowed.
+
 The payload loader has Tracy zones for `WorldStreaming.Read`, `WorldStreaming.Decode`, and `WorldStreaming.Validate`. Each admitted worker also emits `WorldStreaming.CellRead/<cell-id>`, while frame-boundary ownership emits `WorldStreaming.Activate/<cell-id>` and `WorldStreaming.Unload/<cell-id>` around concrete cell work. The stable cell suffix makes latency attributable without adding per-entity zones. Coarse aggregate zones remain available for `WorldStreaming.PlanRequests`, `WorldStreaming.WaitForResources`, `WorldStreaming.Activate`, and `WorldStreaming.Unload`.
 
 ## State And Retry Contract

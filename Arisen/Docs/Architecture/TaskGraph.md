@@ -26,6 +26,8 @@ TaskGraph supports three deliberately separate modes:
    - `BackgroundTask<T>` exposes queued/running/succeeded/failed/cancelled state, failure, result, completion waiting, and a monotonic sequence.
    - Runtime package composition creates at least two workers and reserves one or two workers for background work. Foreground graph/schedule dispatch uses the remaining workers, so delayed file I/O cannot occupy every frame worker.
    - Cancellation is cooperative. Owners must cancel and drain their operations before the scheduler package unloads. If cancellation wins after an operation has returned an `IDisposable` result, `BackgroundTask<T>` disposes that unclaimed result before publishing `Cancelled`.
+   - Names are diagnostic identities and must identify the owning operation, for example `WorldStreaming.CellRead/{cell-id}`. The scheduler adds a monotonic sequence, terminal status, and cancellation state to that identity.
+   - `BackgroundTask<T>.Wait` completes only after the operation is terminal and the scheduler has removed it from the outstanding set. If disposal of a cancellation-lost `IDisposable` result fails, the task becomes `Failed`, preserves the attributable cleanup exception, and still releases scheduler ownership.
    - Background operations may produce immutable staging data. They must not mutate live ECS state, record RHI commands, invoke UI work, or publish callbacks that permit those mutations from a worker.
 
 Do not change one-shot `Execute` to retain tasks, and do not rebuild a stable ECS topology every frame. Those are different lifetime contracts.
@@ -38,8 +40,10 @@ Do not change one-shot `Execute` to retain tasks, and do not rebuild a stable EC
 - Normal dispatch uses value-type queue records and a reusable completion batch. It does not allocate delegate wrappers or completion events per task.
 - Worker exceptions are captured with task context and rethrown on the waiting engine thread after the layer completes.
 - One `TaskGraph` does not support concurrent `Execute` calls. Frame scheduling currently invokes simulation and RenderGraph recording sequentially against the shared executor.
-- Disposing the shared executor while work is active is invalid. Package shutdown must happen after frame execution has stopped.
-- Scheduler disposal cancels every outstanding background task, waits for the tracked set to drain, and only then joins worker threads.
+- Disposing the shared executor during foreground graph execution is invalid. Package shutdown must happen after frame execution has stopped.
+- Background admission and scheduler stop are serialized. Once stop wins, new background work is rejected and every concurrent or repeated disposer observes the same terminal completion result.
+- Background shutdown follows `Accepting -> StopRequested -> Drained -> Disposed` or `Faulted`. It cancels every task that an owner failed to drain, waits without an elapsed-time assumption until the tracked set is empty, and only then joins workers and disposes completion state. A failed drain never permits worker/event disposal.
+- `IBackgroundTaskScheduler.GetDrainSnapshot()` returns the lifecycle state plus deterministic sequence-ordered `BackgroundTaskDrainEntry` identities containing name, status, and cancellation state. Package shutdown warns once for each initially undrained identity before requesting cooperative cancellation. Cancellation, worker termination, and completion-state failures are aggregated with their task/worker identity; a terminal failure is preserved for later `Dispose` callers.
 
 ## ECS Scheduling
 
@@ -77,6 +81,7 @@ Focused coverage lives in `Com.Arisen.Rendering.Tests/TaskGraphExecutionTests.cs
 - worker failure propagation and one-shot graph recovery;
 - system-execution and command-playback failure discard;
 - background completion, failure, cancellation, shutdown drain, and foreground/background worker isolation.
+- stop-versus-admission serialization, blocked-drain identity snapshots, cancellation-callback failure propagation, and unclaimed-result cleanup failure without stranded ownership.
 
 Runtime/rendering changes must still pass:
 

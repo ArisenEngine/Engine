@@ -7,6 +7,8 @@ namespace ArisenKernel.Services;
 
 public class ServiceRegistry : IServiceRegistry
 {
+    internal const string KernelProviderId = "ArisenKernel";
+
     private readonly ConcurrentDictionary<Type, object> _services = new();
     private readonly ConcurrentDictionary<Type, ServiceRegistrationInfo> _registrationInfo = new();
     private readonly AsyncLocal<string?> _currentProviderPackageId = new();

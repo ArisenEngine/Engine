@@ -2,6 +2,9 @@
   "id": "com.arisen.packagegame",
   "name": "PackageGame",
   "version": "1.0.0",
+  "engine": {
+    "minVersion": "0.1.0"
+  },
   "layer": "user",
   "description": "game assembly",
   "type": "managed",

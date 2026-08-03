@@ -13,7 +13,17 @@ public static class SolutionGeneratorService
     private const string CSHARP_PROJECT_TYPE = "{9A19103F-16F7-4668-BE54-9A1E7A4F7556}";
     private const string VIRTUAL_FOLDER_TYPE = "{2150E333-8FDC-42A3-9474-1A3956D46DE8}";
 
-    public static void Generate(string workspaceDir, string projectsDir, string engineDir, List<PackageInfo> managedPackages, string projectName, ProjectManifest manifest, string profile, bool isEditor, bool enableProfiler)
+    public static void Generate(
+        string workspaceDir,
+        string projectsDir,
+        string engineDir,
+        List<PackageInfo> managedPackages,
+        string projectName,
+        ProjectManifest manifest,
+        string profile,
+        bool isEditor,
+        bool enableProfiler,
+        string? finalizationManifestPath = null)
     {
         string slnPath = Path.Combine(projectsDir, "..", "..", $"{projectName}_{profile}.sln");
         string slnDir = Path.GetDirectoryName(slnPath)!;
@@ -23,7 +33,18 @@ public static class SolutionGeneratorService
         string entryCsprojDir = Path.Combine(projectsDir, projectName);
         Directory.CreateDirectory(entryCsprojDir);
         string entryCsproj = Path.Combine(entryCsprojDir, $"{projectName}.csproj");
-        GenerateEntryPointProject(workspaceDir, entryCsproj, engineDir, projectName, manifest, profile, isEditor, enableProfiler, managedPackages, projectsDir);
+        GenerateEntryPointProject(
+            workspaceDir,
+            entryCsproj,
+            engineDir,
+            projectName,
+            manifest,
+            profile,
+            isEditor,
+            enableProfiler,
+            managedPackages,
+            projectsDir,
+            finalizationManifestPath);
 
         // Generate Protective MSVC Property File
         string dirBuildProps = Path.Combine(slnDir, "Directory.Build.props");
@@ -272,7 +293,18 @@ public static class SolutionGeneratorService
         writer.WriteLine("EndGlobal");
     }
 
-    private static void GenerateEntryPointProject(string workspaceDir, string csprojPath, string engineDir, string projectName, ProjectManifest manifest, string profile, bool isEditor, bool enableProfiler, List<PackageInfo> managedPackages, string projectsDir)
+    private static void GenerateEntryPointProject(
+        string workspaceDir,
+        string csprojPath,
+        string engineDir,
+        string projectName,
+        ProjectManifest manifest,
+        string profile,
+        bool isEditor,
+        bool enableProfiler,
+        List<PackageInfo> managedPackages,
+        string projectsDir,
+        string? finalizationManifestPath)
     {
         if (TryGenerateLauncherHostProject(csprojPath, engineDir, projectName, profile, isEditor, enableProfiler))
         {
@@ -348,23 +380,30 @@ public static class SolutionGeneratorService
         }
 
         writer.WriteLine("  </ItemGroup>");
+        string escapedWorkspace = EscapeXmlAttribute(Path.GetFullPath(workspaceDir));
+        string escapedEngine = EscapeXmlAttribute(Path.GetFullPath(engineDir));
+        string manifestArgument = string.IsNullOrWhiteSpace(finalizationManifestPath)
+            ? string.Empty
+            : $" --manifest &quot;{EscapeXmlAttribute(Path.GetFullPath(finalizationManifestPath))}&quot;";
+        string buildToolDll = EscapeXmlAttribute(Path.Combine(
+            engineDir,
+            "External",
+            "ArisenBuildTool",
+            "bin",
+            "x64",
+            "Release",
+            "net9.0",
+            "ArisenBuildTool.dll"));
+        writer.WriteLine();
+        writer.WriteLine("  <Target Name=\"ArisenFinalizeNativeOutput\" AfterTargets=\"Build\" Condition=\"'$(DesignTimeBuild)' != 'true'\">");
+        writer.WriteLine($"    <Exec Command=\"dotnet &quot;{buildToolDll}&quot; finalize-native-output --workspace &quot;{escapedWorkspace}&quot; --engine &quot;{escapedEngine}&quot; --profile {profile} --configuration $(Configuration) --output-root &quot;$(TargetDir).&quot;{manifestArgument}\" />");
+        writer.WriteLine("  </Target>");
         if (hasCorePackage && string.Equals(profile, "Production", StringComparison.OrdinalIgnoreCase))
         {
-            string escapedWorkspace = EscapeXmlAttribute(Path.GetFullPath(workspaceDir));
-            string escapedEngine = EscapeXmlAttribute(Path.GetFullPath(engineDir));
-            string buildToolDll = EscapeXmlAttribute(Path.Combine(
-                engineDir,
-                "External",
-                "ArisenBuildTool",
-                "bin",
-                "x64",
-                "Debug",
-                "net9.0",
-                "ArisenBuildTool.dll"));
             writer.WriteLine();
-            writer.WriteLine("  <Target Name=\"ArisenCookRuntimeAssets\" AfterTargets=\"Build\" Condition=\"'$(DesignTimeBuild)' != 'true' and '$(ArisenSkipAssetCook)' != 'true'\">");
+            writer.WriteLine("  <Target Name=\"ArisenCookRuntimeAssets\" AfterTargets=\"ArisenFinalizeNativeOutput\" Condition=\"'$(DesignTimeBuild)' != 'true' and '$(ArisenSkipAssetCook)' != 'true'\">");
             writer.WriteLine($"    <Exec Command=\"&quot;$(TargetDir)$(AssemblyName).exe&quot; --arisen-cook-runtime-assets --workspace &quot;{escapedWorkspace}&quot; --profile {profile} --configuration $(Configuration) --runtime-identifier win-x64 --output-root &quot;$(TargetDir).&quot;\" />");
-            writer.WriteLine($"    <Exec Command=\"dotnet &quot;{buildToolDll}&quot; deploy-runtime-metadata --workspace &quot;{escapedWorkspace}&quot; --engine &quot;{escapedEngine}&quot; --profile {profile} --output-root &quot;$(TargetDir).&quot;\" />");
+            writer.WriteLine($"    <Exec Command=\"dotnet &quot;{buildToolDll}&quot; deploy-runtime-metadata --workspace &quot;{escapedWorkspace}&quot; --engine &quot;{escapedEngine}&quot; --profile {profile} --configuration $(Configuration) --output-root &quot;$(TargetDir).&quot;\" />");
             writer.WriteLine("  </Target>");
         }
         writer.WriteLine("</Project>");

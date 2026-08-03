@@ -15,7 +15,8 @@ public sealed record EnginePackageGraphResolution(
     string Profile,
     string ManifestPath,
     string ResolvedManifestPath,
-    IReadOnlyList<string> PackageUrls);
+    IReadOnlyList<string> PackageUrls,
+    IReadOnlyList<SelectedPackageRequirement> PackageRequirements);
 
 public static class EngineBootstrapper
 {
@@ -28,6 +29,8 @@ public static class EngineBootstrapper
         string profile = "Development";
         bool profileSpecified = false;
         bool workspaceSpecified = false;
+        string manifestPath = string.Empty;
+        bool manifestSpecified = false;
         bool allowResolvedManifestFallback = false;
         bool deployedLaunch = false;
         RuntimeSmokeOptions smokeOptions;
@@ -47,6 +50,7 @@ public static class EngineBootstrapper
         for (int i = 0; i < args.Length; i++)
         {
             if (args[i] == "--workspace" && i + 1 < args.Length) { workspacePath = args[i + 1]; workspaceSpecified = true; }
+            if (args[i] == "--manifest" && i + 1 < args.Length) { manifestPath = Path.GetFullPath(args[i + 1]); manifestSpecified = true; }
             if (args[i] == "--entry" && i + 1 < args.Length) entryPackage = args[i + 1];
             if (args[i] == "--profile" && i + 1 < args.Length) { profile = args[i + 1]; profileSpecified = true; }
             if (args[i] == "--allow-manifest-fallback") allowResolvedManifestFallback = true;
@@ -63,6 +67,9 @@ public static class EngineBootstrapper
                 string? configuredProfile = root.TryGetProperty("Profile", out var pProp)
                     ? pProp.GetString()
                     : null;
+                string? configuredManifest = root.TryGetProperty("Manifest", out var manifestProperty)
+                    ? manifestProperty.GetString()
+                    : null;
                 deployedLaunch = root.TryGetProperty("Mode", out var modeProperty) &&
                     string.Equals(modeProperty.GetString(), "Deployed", StringComparison.Ordinal);
 
@@ -70,6 +77,13 @@ public static class EngineBootstrapper
                 {
                     throw new InvalidOperationException(
                         "A deployed launch does not permit --workspace. Runtime metadata is rooted beside the executable.");
+                }
+
+                if (deployedLaunch &&
+                    (manifestSpecified || !string.IsNullOrWhiteSpace(configuredManifest)))
+                {
+                    throw new InvalidOperationException(
+                        "A deployed launch does not permit a manifest override. Runtime metadata is rooted beside the executable.");
                 }
 
                 if (deployedLaunch && profileSpecified &&
@@ -103,6 +117,17 @@ public static class EngineBootstrapper
                             Path.GetDirectoryName(configPath)!,
                             configuredWorkspace));
                 }
+
+                if (!deployedLaunch &&
+                    !manifestSpecified &&
+                    !string.IsNullOrWhiteSpace(configuredManifest))
+                {
+                    manifestPath = Path.IsPathRooted(configuredManifest)
+                        ? Path.GetFullPath(configuredManifest)
+                        : Path.GetFullPath(Path.Combine(
+                            Path.GetDirectoryName(configPath)!,
+                            configuredManifest));
+                }
             }
             catch (Exception ex)
             {
@@ -134,13 +159,18 @@ public static class EngineBootstrapper
             KernelLog.InfoFormat("[Host] No --workspace provided. Deducing from location: {0}", workspacePath);
         }
 
+        if (string.IsNullOrWhiteSpace(manifestPath))
+        {
+            manifestPath = Path.Combine(workspacePath, "manifest.json");
+        }
+
         // 1. Initialize Kernel and Core Project Subsystem
         var kernel = EngineKernel.Instance;
         var registry = kernel.Services;
 
         var projectSubsystem = new ProjectSubsystem();
-        registry.RegisterService<ProjectSubsystem>(projectSubsystem);
-        projectSubsystem.LoadFromWorkspace(workspacePath);
+        kernel.RegisterKernelOwnedService(projectSubsystem);
+        projectSubsystem.LoadFromWorkspace(workspacePath, manifestPath);
 
         // B15: Initialize PackageSubsystem to track all loaded packages for other systems (like the Editor)
         var packageSubsystem = new PackageSubsystem();
@@ -152,7 +182,8 @@ public static class EngineBootstrapper
             packageGraph = ResolvePackageGraph(
                 workspacePath,
                 profile,
-                allowResolvedManifestFallback);
+                allowResolvedManifestFallback,
+                manifestPathOverride: manifestPath);
         }
         catch (Exception ex)
         {
@@ -164,6 +195,8 @@ public static class EngineBootstrapper
         workspacePath = packageGraph.WorkspacePath;
         profile = packageGraph.Profile;
         List<string> packageUrls = packageGraph.PackageUrls.ToList();
+        List<SelectedPackageRequirement> packageRequirements =
+            packageGraph.PackageRequirements.ToList();
         string resolvedManifestPath = packageGraph.ResolvedManifestPath;
         string projectName = projectSubsystem.ActiveProject?.Name ??
             Path.GetFileName(
@@ -190,7 +223,7 @@ public static class EngineBootstrapper
                     profile,
                     smokeOptions.EffectiveFrameCount - 1,
                     smokeOptions.VisualSummaryOutputPath);
-            registry.RegisterService<IRuntimeVisualSummaryService>(visualSummaryService);
+            kernel.RegisterKernelOwnedService<IRuntimeVisualSummaryService>(visualSummaryService);
             if (smokeOptions.UsesPackageScenario)
             {
                 KernelLog.InfoFormat(
@@ -212,6 +245,7 @@ public static class EngineBootstrapper
             ProjectRoot = workspacePath,
             ProjectName = projectName,
             PackageUrls = packageUrls,
+            PackageRequirements = packageRequirements,
             Platform = RuntimePlatform.Windows, // TODO: Deduce from OS
             EnableSourceAssetDiagnostics = runtimeAssetOptions.EnableSourceAssetDiagnostics
         };
@@ -387,7 +421,47 @@ public static class EngineBootstrapper
         string workspacePath,
         string profile,
         bool allowResolvedManifestFallback = false,
-        string? resolvedManifestPathOverride = null)
+        string? resolvedManifestPathOverride = null,
+        string? manifestPathOverride = null)
+    {
+        return ResolvePackageGraphCore(
+            workspacePath,
+            profile,
+            allowResolvedManifestFallback,
+            resolvedManifestPathOverride,
+            manifestPathOverride,
+            validateFinalizedNativePayloads: true);
+    }
+
+    public static EnginePackageGraphResolution ResolveBuildStagePackageGraph(
+        string workspacePath,
+        string profile,
+        string sourceResolvedManifestPath,
+        string runtimeResolvedManifestPath)
+    {
+        _ = ResolvePackageGraphCore(
+            workspacePath,
+            profile,
+            allowResolvedManifestFallback: false,
+            runtimeResolvedManifestPath,
+            manifestPathOverride: null,
+            validateFinalizedNativePayloads: true);
+        return ResolvePackageGraphCore(
+            workspacePath,
+            profile,
+            allowResolvedManifestFallback: false,
+            sourceResolvedManifestPath,
+            manifestPathOverride: null,
+            validateFinalizedNativePayloads: false);
+    }
+
+    private static EnginePackageGraphResolution ResolvePackageGraphCore(
+        string workspacePath,
+        string profile,
+        bool allowResolvedManifestFallback,
+        string? resolvedManifestPathOverride,
+        string? manifestPathOverride,
+        bool validateFinalizedNativePayloads)
     {
         if (string.IsNullOrWhiteSpace(workspacePath))
         {
@@ -400,11 +474,13 @@ public static class EngineBootstrapper
         }
 
         string fullWorkspacePath = Path.GetFullPath(workspacePath);
-        string manifestPath = Path.Combine(fullWorkspacePath, "manifest.json");
+        string manifestPath = string.IsNullOrWhiteSpace(manifestPathOverride)
+            ? Path.Combine(fullWorkspacePath, "manifest.json")
+            : Path.GetFullPath(manifestPathOverride);
         if (!File.Exists(manifestPath))
         {
             throw new FileNotFoundException(
-                $"Cannot find manifest.json at {manifestPath}",
+                $"Cannot find project manifest at {manifestPath}",
                 manifestPath);
         }
 
@@ -418,15 +494,35 @@ public static class EngineBootstrapper
         }
 
         var packageUrls = new List<string>();
-        void AddPackages(JsonElement element)
+        var packageRequirements = new List<SelectedPackageRequirement>();
+        var selectedUrls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        void AddPackages(JsonElement element, string source)
         {
             if (element.ValueKind != JsonValueKind.Array)
             {
                 throw new InvalidDataException("A workspace package collection must be an array.");
             }
 
+            int packageIndex = 0;
             foreach (JsonElement package in element.EnumerateArray())
             {
+                string entrySource = $"{source} entry {packageIndex}";
+                if (!package.TryGetPropertyIC("Id", out JsonElement idElement) ||
+                    idElement.ValueKind != JsonValueKind.String ||
+                    string.IsNullOrWhiteSpace(idElement.GetString()))
+                {
+                    throw new InvalidDataException(
+                        $"{entrySource} must contain a non-empty Id string.");
+                }
+
+                if (!package.TryGetPropertyIC("Version", out JsonElement versionElement) ||
+                    versionElement.ValueKind != JsonValueKind.String ||
+                    string.IsNullOrWhiteSpace(versionElement.GetString()))
+                {
+                    throw new InvalidDataException(
+                        $"{entrySource} for package '{idElement.GetString()}' must contain a non-empty Version string.");
+                }
+
                 if (!package.TryGetPropertyIC("Url", out JsonElement urlElement) ||
                     urlElement.ValueKind != JsonValueKind.String ||
                     string.IsNullOrWhiteSpace(urlElement.GetString()))
@@ -436,11 +532,17 @@ public static class EngineBootstrapper
                 }
 
                 string url = urlElement.GetString()!;
-                packageUrls.Add(ResolvePackageUrl(url, fullWorkspacePath, fullWorkspacePath));
+                string resolvedUrl = ResolvePackageUrl(url, fullWorkspacePath, fullWorkspacePath);
+                if (selectedUrls.Add(resolvedUrl)) packageUrls.Add(resolvedUrl);
+                packageRequirements.Add(new SelectedPackageRequirement(
+                    idElement.GetString()!,
+                    versionElement.GetString()!,
+                    entrySource));
+                packageIndex++;
             }
         }
 
-        AddPackages(packagesElement);
+        AddPackages(packagesElement, "workspace base Packages");
         if (manifestJson.RootElement.TryGetPropertyIC("Profiles", out JsonElement profilesElement))
         {
             if (profilesElement.TryGetPropertyIC(profile, out JsonElement profileDefinition))
@@ -449,11 +551,11 @@ public static class EngineBootstrapper
                 if (profileDefinition.ValueKind == JsonValueKind.Object &&
                     profileDefinition.TryGetPropertyIC("Packages", out JsonElement profilePackages))
                 {
-                    AddPackages(profilePackages);
+                    AddPackages(profilePackages, $"workspace profile '{profile}' Packages");
                 }
                 else if (profileDefinition.ValueKind == JsonValueKind.Array)
                 {
-                    AddPackages(profileDefinition);
+                    AddPackages(profileDefinition, $"workspace profile '{profile}' Packages");
                 }
             }
             else if (!string.Equals(profile, "Development", StringComparison.OrdinalIgnoreCase) &&
@@ -494,9 +596,12 @@ public static class EngineBootstrapper
                     fullWorkspacePath,
                     profile,
                     packageUrls,
-                    out string resolvedError))
+                    packageRequirements,
+                    validateFinalizedNativePayloads,
+                    out string resolvedError,
+                    out bool compatibilityOrIntegrityFailure))
             {
-                if (!allowResolvedManifestFallback)
+                if (compatibilityOrIntegrityFailure || !allowResolvedManifestFallback)
                 {
                     throw new InvalidDataException(
                         $"Resolved manifest '{resolvedManifestPath}' is invalid: {resolvedError}");
@@ -526,7 +631,8 @@ public static class EngineBootstrapper
             profile,
             manifestPath,
             resolvedManifestPath,
-            packageUrls.ToArray());
+            packageUrls.ToArray(),
+            packageRequirements.ToArray());
     }
 
     private static void LogRuntimeDiagnostics(
@@ -580,9 +686,18 @@ public static class EngineBootstrapper
         }
     }
 
-    private static bool TryLoadResolvedPackageUrls(string resolvedManifestPath, string workspacePath, string profile, List<string> packageUrls, out string error)
+    private static bool TryLoadResolvedPackageUrls(
+        string resolvedManifestPath,
+        string workspacePath,
+        string profile,
+        List<string> packageUrls,
+        List<SelectedPackageRequirement> packageRequirements,
+        bool validateFinalizedNativePayloads,
+        out string error,
+        out bool compatibilityOrIntegrityFailure)
     {
         error = string.Empty;
+        compatibilityOrIntegrityFailure = false;
 
         try
         {
@@ -606,8 +721,20 @@ public static class EngineBootstrapper
                 return false;
             }
 
-            var resolvedPackageUrls = new List<string>();
             string manifestDir = Path.GetDirectoryName(resolvedManifestPath)!;
+            if (!ResolvedManifestCompatibilityValidator.Validate(
+                    root,
+                    resolvedPackages,
+                    manifestDir,
+                    validateFinalizedNativePayloads,
+                    out error))
+            {
+                compatibilityOrIntegrityFailure = true;
+                return false;
+            }
+
+            var resolvedPackageUrls = new List<string>();
+            var resolvedPackageRequirements = new List<SelectedPackageRequirement>();
             foreach (var package in resolvedPackages.EnumerateArray())
             {
                 if (!package.TryGetPropertyIC("Url", out var urlElement) || urlElement.ValueKind != JsonValueKind.String)
@@ -635,6 +762,10 @@ public static class EngineBootstrapper
                 }
 
                 resolvedPackageUrls.Add(resolvedPath);
+                resolvedPackageRequirements.Add(new SelectedPackageRequirement(
+                    package.GetPropertyIC("Id").GetString()!,
+                    package.GetPropertyIC("Version").GetString()!,
+                    $"resolved manifest '{Path.GetFileName(resolvedManifestPath)}'"));
             }
 
             if (resolvedPackageUrls.Count == 0)
@@ -645,6 +776,7 @@ public static class EngineBootstrapper
 
             packageUrls.Clear();
             packageUrls.AddRange(resolvedPackageUrls);
+            packageRequirements.AddRange(resolvedPackageRequirements);
             return true;
         }
         catch (Exception ex)

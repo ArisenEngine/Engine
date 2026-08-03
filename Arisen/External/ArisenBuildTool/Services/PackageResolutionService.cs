@@ -10,6 +10,8 @@ namespace ArisenBuildTool.Services;
 
 public static class PackageResolutionService
 {
+    public const int ResolvedManifestSchemaVersion = 2;
+
     public static List<PackageInfo> SortTopologically(Dictionary<string, PackageInfo> packageMap)
     {
         var result = new List<PackageInfo>();
@@ -55,7 +57,11 @@ public static class PackageResolutionService
         string profile,
         List<string> outputDirs,
         List<PackageInfo> sortedPackages,
-        string fileName = "manifest.resolved.json")
+        string fileName = "manifest.resolved.json",
+        IReadOnlyList<ResolvedNativePayload>? nativePayloads = null,
+        bool nativePayloadsFinalized = false,
+        string? configuration = null,
+        bool? enableProfiler = null)
     {
         foreach (var outDir in outputDirs)
         {
@@ -65,19 +71,27 @@ public static class PackageResolutionService
 
             var resolvedData = new
             {
+                SchemaVersion = ResolvedManifestSchemaVersion,
                 Profile = profile,
-                Timestamp = DateTime.UtcNow.ToString("O"),
+                EnableProfiler = enableProfiler,
+                Configuration = string.IsNullOrWhiteSpace(configuration)
+                    ? null
+                    : configuration.Trim(),
+                NativePayloadsFinalized = nativePayloadsFinalized,
+                NativePayloads = nativePayloads ?? Array.Empty<ResolvedNativePayload>(),
                 ResolvedPackages = sortedPackages.Select(p => new
                 {
                     Id = p.Manifest.Id,
                     Name = p.Manifest.Name,
                     Version = p.Manifest.Version,
-                    EngineVersion = p.Manifest.EngineVersion,
+                    Engine = p.Manifest.Engine,
                     Type = p.Manifest.Type,
                     Dependencies = p.Manifest.Dependencies ?? new Dictionary<string, string>(),
                     Services = p.Manifest.Services,
                     Subsystems = p.Manifest.Subsystems,
-                    NativeRuntimes = p.Manifest.NativeRuntimes,
+                    NativeRuntimes = enableProfiler.HasValue
+                        ? NativeRuntimeManifestService.SelectForProfiler(p.Manifest, enableProfiler.Value)
+                        : p.Manifest.NativeRuntimes,
                     NativeTests = p.Manifest.NativeTests,
                     Entry = p.Manifest.Entry,
                     // Store relative URL for portability (Relative to the output directory!)
@@ -85,17 +99,43 @@ public static class PackageResolutionService
                 }).ToList()
             };
 
-            try
+            var options = new JsonSerializerOptions
             {
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                string json = JsonSerializer.Serialize(resolvedData, options);
-                File.WriteAllText(path, json);
-                Logger.Info($"Generated resolved manifest: {path}");
-            }
-            catch (Exception ex)
+                WriteIndented = true,
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            };
+            string json = JsonSerializer.Serialize(resolvedData, options) + Environment.NewLine;
+            WriteAtomically(path, json);
+            Logger.Info($"Generated resolved manifest: {path}");
+        }
+    }
+
+    private static void WriteAtomically(string path, string content)
+    {
+        string directory = Path.GetDirectoryName(path)!;
+        string stagingPath = Path.Combine(
+            directory,
+            $".{Path.GetFileName(path)}.arisen-stage-{Guid.NewGuid():N}");
+        try
+        {
+            using (var stream = new FileStream(
+                       stagingPath,
+                       FileMode.CreateNew,
+                       FileAccess.Write,
+                       FileShare.None))
+            using (var writer = new StreamWriter(stream))
             {
-                Logger.Error($"Failed to save resolved manifest to {outDir}: {ex.Message}");
+                writer.Write(content);
+                writer.Flush();
+                stream.Flush(flushToDisk: true);
             }
+
+            if (File.Exists(path)) File.Replace(stagingPath, path, destinationBackupFileName: null);
+            else File.Move(stagingPath, path);
+        }
+        finally
+        {
+            if (File.Exists(stagingPath)) File.Delete(stagingPath);
         }
     }
 

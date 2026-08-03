@@ -23,16 +23,18 @@ public class ProjectSubsystem : IEngineSubsystem
     /// <summary>
     /// Loads the project context from a standardized workspace directory containing a manifest.json.
     /// </summary>
-    public void LoadFromWorkspace(string workspacePath)
+    public void LoadFromWorkspace(string workspacePath, string? manifestPathOverride = null)
     {
         try
         {
             string absPath = Path.GetFullPath(workspacePath);
-            string manifestPath = Path.Combine(absPath, "manifest.json");
+            string manifestPath = string.IsNullOrWhiteSpace(manifestPathOverride)
+                ? Path.Combine(absPath, "manifest.json")
+                : Path.GetFullPath(manifestPathOverride);
             
             if (!File.Exists(manifestPath))
             {
-                KernelLog.Warning($"[ProjectSubsystem] No manifest.json found at {absPath}.");
+                KernelLog.Warning($"[ProjectSubsystem] No project manifest found at {manifestPath}.");
                 return;
             }
 

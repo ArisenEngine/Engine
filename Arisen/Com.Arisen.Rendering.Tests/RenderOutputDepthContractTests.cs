@@ -36,7 +36,11 @@ public sealed class RenderOutputDepthContractTests
         Assert.Contains("EImageAspectFlagBits srcImageAspect", managedRhi, StringComparison.Ordinal);
         Assert.Contains("uint32_t srcImageAspect", nativeBridge, StringComparison.Ordinal);
         Assert.Contains(
-            "static_cast<EImageAspectFlagBits>(srcImageAspect)",
+            "ABI::RequireFlags<EImageAspectFlagBits>(",
+            nativeBridge,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "srcImageAspect, ABI::ImageAspectMask, false, __func__, \"srcImageAspect\"",
             nativeBridge,
             StringComparison.Ordinal);
     }

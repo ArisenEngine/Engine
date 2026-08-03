@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Shared\Testing\DeterministicFaultInjector.cs" Link="Shared\Testing\DeterministicFaultInjector.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\AssetRecord.cs" Link="Source\Core\Assets\AssetRecord.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\AssetDatabase.cs" Link="Source\Core\Assets\AssetDatabase.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\AssetMetadata.cs" Link="Source\Core\Assets\AssetMetadata.cs" />
@@ -38,12 +39,14 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\RuntimeAssetDeployment.cs" Link="Source\Core\Assets\RuntimeAssetDeployment.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Automation\*.cs" Link="Source\Core\Automation\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Diagnostics\Profiler.cs" Link="Source\Core\Diagnostics\Profiler.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Diagnostics\OrderedNotificationDispatcher.cs" Link="Source\Core\Diagnostics\OrderedNotificationDispatcher.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Math\MathTypes.cs" Link="Source\Core\Math\MathTypes.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Math\MathExtensions.cs" Link="Source\Core\Math\MathExtensions.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Math\Mathf.cs" Link="Source\Core\Math\Mathf.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Math\Color.cs" Link="Source\Core\Math\Color.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Memory\*.cs" Link="Source\Core\Memory\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\RHI\MeshDrawCommand.cs" Link="Source\Core\RHI\MeshDrawCommand.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core\RHI\RHICommandBufferInterop.cs" Link="Source\Core\RHI\RHICommandBufferInterop.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Serialization\ISerializationCallbackReceiver.cs" Link="Source\Core\Serialization\ISerializationCallbackReceiver.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Serialization\SerializationUtil.cs" Link="Source\Core\Serialization\SerializationUtil.cs" />
 
@@ -61,6 +64,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Services\WorkspaceManifestEditor.cs" Link="Source\Editor\Services\WorkspaceManifestEditor.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Validation\EditorViewportSmokeState.cs" Link="Source\Editor\Validation\EditorViewportSmokeState.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Views\EditorViewportSurfaceOwnership.cs" Link="Source\Editor\Views\EditorViewportSurfaceOwnership.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Lifecycle\EditorEngineThreadOwner.cs" Link="Source\Editor\Lifecycle\EditorEngineThreadOwner.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Extensions\EditorExtensionRegistryCore.cs" Link="Source\Editor\Extensions\EditorExtensionRegistryCore.cs" />
 
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rhi.vulkan.native\Managed\RenderDocStartupPolicy.cs" Link="Source\Vulkan\RenderDocStartupPolicy.cs" />
@@ -88,11 +92,14 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EBlendFactor.cs" Link="Source\CoreNative\RHI\EBlendFactor.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EBlendOp.cs" Link="Source\CoreNative\RHI\EBlendOp.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\ECullModeFlagBits.cs" Link="Source\CoreNative\RHI\ECullModeFlagBits.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EAccessFlag.cs" Link="Source\CoreNative\RHI\EAccessFlag.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EFrontFace.cs" Link="Source\CoreNative\RHI\EFrontFace.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EFormat.cs" Link="Source\CoreNative\RHI\EFormat.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EImageAspectFlagBits.cs" Link="Source\CoreNative\RHI\EImageAspectFlagBits.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EImageLayout.cs" Link="Source\CoreNative\RHI\EImageLayout.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EImageUsageFlagBits.cs" Link="Source\CoreNative\RHI\EImageUsageFlagBits.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EIndexType.cs" Link="Source\CoreNative\RHI\EIndexType.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EPipelineStageFlagBits.cs" Link="Source\CoreNative\RHI\EPipelineStageFlagBits.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EProgramStage.cs" Link="Source\CoreNative\RHI\EProgramStage.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\RHIHandle.cs" Link="Source\CoreNative\RHI\RHIHandle.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\Diagnostics\ProfilerAPI.cs" Link="Source\CoreNative\Diagnostics\ProfilerAPI.cs" />
@@ -133,7 +140,13 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\TransparentDrawOrdering.cs" Link="Source\Rendering\TransparentDrawOrdering.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderResourceReloadQueue.cs" Link="Source\Rendering\RenderResourceReloadQueue.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderTargetImageStateTracker.cs" Link="Source\Rendering\RenderTargetImageStateTracker.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderFrameColorOutputPolicy.cs" Link="Source\Rendering\RenderFrameColorOutputPolicy.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderFrameFailureAggregator.cs" Link="Source\Rendering\RenderFrameFailureAggregator.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderFrameSubmissionState.cs" Link="Source\Rendering\RenderFrameSubmissionState.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderFrameResourceSlotState.cs" Link="Source\Rendering\RenderFrameResourceSlotState.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderDiagnostics.cs" Link="Source\Rendering\RenderDiagnostics.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderDocCaptureArtifactProbe.cs" Link="Source\Rendering\RenderDocCaptureArtifactProbe.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderDocCaptureRequestState.cs" Link="Source\Rendering\RenderDocCaptureRequestState.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\StaticMeshFrustumCuller.cs" Link="Source\Rendering\StaticMeshFrustumCuller.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderGraphPassCullingPlanner.cs" Link="Source\Rendering\RenderGraphPassCullingPlanner.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderGraphResourceLifetimePlanner.cs" Link="Source\Rendering\RenderGraphResourceLifetimePlanner.cs" />
