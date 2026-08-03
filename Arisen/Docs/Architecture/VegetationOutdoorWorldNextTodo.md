@@ -46,11 +46,12 @@ The completed foundation gate on 2026-08-03 is:
 
 Measured vegetation gaps:
 
-- the Milestone 1 vegetation package spine and the first Milestone 2 species/biome
-  source-to-cooked slice now exist, but no scatter output, generated cluster, instance-page,
+- the Milestone 1 vegetation package spine and Milestone 2 species/biome/cluster/instance-page
+  source-to-cooked slices now exist, but no terrain-aware scatter output, generated placement,
   foliage, or impostor data has been implemented;
-- versioned source and cooked schemas now define species mesh/material LODs and biome
-  placement rules, but no schema defines stable instances, clusters, or instance pages;
+- versioned schemas and codecs now define explicit cluster/page identities, compact stable
+  instances, canonical dependency closure, and exact page pins, but no policy derives generated
+  GUIDs or produces canonical terrain-backed cluster/page fixtures;
 - no scene component or runtime service binds vegetation clusters to world cells;
 - ordinary static meshes are entity-oriented and are not an acceptable representation for tens of thousands of plants;
 - Generic RP has no vegetation extraction, instance-buffer preparation, wind shading, alpha-cutout path, or vegetation shadow contribution;
@@ -150,8 +151,7 @@ directories.
   and Production workspaces generated and built successfully, and the complete
   Debug runtime validation artifact is
   `.arisen/Logs/validate-runtime-Debug-latest.json`.
-- The next active work is the remaining Milestone 2 cluster/instance-page
-  contracts, followed by deterministic terrain-aware scatter baking.
+- The next active work is Milestone 3 deterministic terrain-aware scatter baking.
 
 ---
 
@@ -172,17 +172,35 @@ directories.
 - [x] Add strict species/biome readers, deterministic writers, and corruption tests.
   - [x] Reject unsupported required sections, malformed counts/offsets, invalid identity/ranges/order, duplicate entry/rule IDs, and missing or mismatched dependency ownership.
   - [x] Prove identical validated descriptors produce byte-identical species/biome payloads.
-- [ ] Define versioned cooked cluster and instance-page containers.
-  - [ ] Store quantized or compact instance position/orientation/scale, stable instance key, conservative bounds, species index, and optional LOD acceleration.
-- [ ] Add strict cluster/page readers, deterministic writers, and corruption tests.
-  - [ ] Reject unsupported required sections, malformed counts/offsets, non-finite transforms, bad quaternions/scales, duplicate IDs, invalid bounds, and missing dependencies.
-  - [ ] Prove unchanged inputs preserve cluster/page timestamps and artifact generations.
+- [x] Define versioned cooked cluster and instance-page containers.
+  - [x] Store compact local position, packed orientation, uniform scale, conservative radius/bounds, stable instance key, and canonical species index. LOD acceleration remains deferred to Milestone 6.
+- [x] Add strict cluster/page readers, deterministic writers, and corruption tests.
+  - [x] Reject unsupported required sections, malformed counts/offsets, non-finite transforms, bad quaternions/scales, duplicate IDs, invalid bounds, and missing dependencies.
+  - [x] Prove unchanged inputs preserve cluster/page timestamps and artifact generations.
 
 ### Acceptance Criteria
 
 - Source assets contain durable design intent; cooked assets contain bounded runtime-ready placement.
 - Instance and cluster identity is independent from transient render LOD, buffer offsets, and backend handles.
 - Production closure needs no vegetation authoring files.
+
+### Milestone 2 Completion Record
+
+- Instance pages use `runtime.vegetation-instance-page.v1`, `ARIVPAGE`, and
+  `.arivegetationpage`; cluster roots use `runtime.vegetation-cluster.v1`,
+  `ARIVCLUS`, and `.arivegetationcluster`.
+- Canonical readers/writers enforce bounded sections, transforms, species/page
+  order, cross-page instance-key uniqueness, authored and cooked biome species
+  membership, exact page byte-size/SHA-256 pins, dependency closure, and root
+  bounds equal to the page-bounds union.
+- Format-v1 cluster/page GUIDs are explicit caller-supplied identities. Page GUIDs
+  are immutable publication identities: byte-identical recooks preserve path,
+  timestamp, and registry generation, while changed bytes require a new page GUID.
+- `46/46` focused vegetation tests pass, including rehashed corruption, exact-pin
+  tampering, unchanged artifact reuse, immutable page identity, and deployment
+  closure from initially uncooked authored dependencies.
+- Terrain sampling, scatter generation, generated GUID derivation, cell ownership,
+  and transactional page-set replacement remain Milestone 3 or later work.
 
 ---
 
@@ -204,6 +222,10 @@ directories.
 - [ ] Partition accepted instances into stable clusters/pages owned by world cells.
   - [ ] Derive generated cluster GUIDs from biome/species/cell/page identity.
   - [ ] Reuse unchanged pages and transactionally remove stale pages/catalog rows.
+    - Format v1 already reuses byte-identical artifacts and rejects changed bytes
+      under an existing page GUID. Allocating a replacement GUID, atomically
+      switching the cluster/catalog closure, removing stale rows/files, and
+      rolling back a failed replacement remain part of this unchecked item.
 - [ ] Add determinism, border, and parallel-bake tests.
 
 ### Acceptance Criteria

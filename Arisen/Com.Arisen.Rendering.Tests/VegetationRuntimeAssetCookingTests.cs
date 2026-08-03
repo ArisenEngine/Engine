@@ -1,6 +1,10 @@
+using System.Buffers.Binary;
+using System.Numerics;
+using System.Security.Cryptography;
 using System.Text;
 using ArisenEngine.Core.Assets;
 using ArisenEngine.Core.Serialization;
+using ArisenEngine.Resources.Serialization;
 using ArisenEngine.Vegetation.Assets;
 using Xunit;
 
@@ -16,6 +20,12 @@ public sealed class VegetationRuntimeAssetCookingTests
         Guid.Parse("9f57d9cc-2db6-4c85-ae7b-544338806101");
     private static readonly Guid s_MaterialGuid =
         Guid.Parse("4ac21c64-e984-4ed0-9e21-93878de52601");
+    private static readonly Guid s_ClusterGuid =
+        Guid.Parse("d4c1c31a-87fb-44c2-bc9a-1c34186c6101");
+    private static readonly Guid s_PageGuid =
+        Guid.Parse("b1e48963-9750-4dc7-89d6-c9f350606101");
+    private static readonly Guid s_UnlistedSpeciesGuid =
+        Guid.Parse("ed68ca2d-0884-42af-843c-1c6594546101");
     private const string PackageId = "com.arisen.vegetation.test";
     private const string WrongPackageId = "com.arisen.vegetation.foreign";
 
@@ -207,6 +217,321 @@ public sealed class VegetationRuntimeAssetCookingTests
                 request.Variant == "material.runtime");
     }
 
+    [Fact]
+    public void GeneratedClusterCookCoordinator_ClosesInitiallyUncookedAuthoredDependencies()
+    {
+        using var fixture = VegetationDiskFixture.Create();
+        AssetDatabase database = fixture.CreateDatabase();
+        VegetationClusterAssetCooker.Cook(database, CreateGeneratedCluster());
+        Assert.True(database.TryGetCookedArtifact(
+            s_ClusterGuid,
+            VegetationClusterAssetCooker.RuntimeVariant,
+            out CookedAssetRecord originalCluster));
+        Assert.True(database.TryGetCookedArtifact(
+            s_PageGuid,
+            VegetationInstancePageAssetCooker.RuntimeVariant,
+            out CookedAssetRecord originalPage));
+        Assert.False(database.TryGetCookedArtifact(
+            s_BiomeGuid,
+            VegetationBiomeAssetCooker.RuntimeVariant,
+            out _));
+        Assert.False(database.TryGetCookedArtifact(
+            s_SpeciesGuid,
+            VegetationSpeciesAssetCooker.RuntimeVariant,
+            out _));
+        long preservedGeneration = database.CookedRegistryGeneration;
+
+        var renderingDependencies = new DeterministicRenderingDependencyCooker(fixture.Root);
+        var registry = new RuntimeAssetCookerRegistry();
+        registry.RegisterCooker(new VegetationRuntimeAssetCooker(database));
+        registry.RegisterCooker(renderingDependencies);
+
+        RuntimeAssetCookResult result = RuntimeAssetCookCoordinator.Cook(
+            fixture.CreateContext(),
+            [
+                new RuntimeAssetCookRootRequest(
+                    "vegetationCluster",
+                    s_ClusterGuid,
+                    PackageId,
+                    VegetationAssetTypes.Cluster)
+            ],
+            registry);
+
+        RuntimeAssetCatalogRoot root = Assert.Single(result.Catalog.Roots);
+        Assert.Equal(VegetationClusterAssetCooker.RuntimeVariant, root.Variant);
+        Assert.Equal(6, result.Catalog.Artifacts.Count);
+        Assert.Equal(6, result.Files.Count);
+        Assert.Equal(preservedGeneration + 2, database.CookedRegistryGeneration);
+        Assert.True(database.TryGetCookedArtifact(
+            s_ClusterGuid,
+            VegetationClusterAssetCooker.RuntimeVariant,
+            out CookedAssetRecord retainedCluster));
+        Assert.True(database.TryGetCookedArtifact(
+            s_PageGuid,
+            VegetationInstancePageAssetCooker.RuntimeVariant,
+            out CookedAssetRecord retainedPage));
+        Assert.Equal(originalCluster.Path, retainedCluster.Path);
+        Assert.Equal(originalPage.Path, retainedPage.Path);
+
+        RuntimeAssetCatalogArtifact cluster = FindArtifact(
+            result.Catalog,
+            s_ClusterGuid,
+            VegetationClusterAssetCooker.RuntimeVariant);
+        RuntimeAssetCatalogArtifact page = FindArtifact(
+            result.Catalog,
+            s_PageGuid,
+            VegetationInstancePageAssetCooker.RuntimeVariant);
+        RuntimeAssetCatalogArtifact biome = FindArtifact(
+            result.Catalog,
+            s_BiomeGuid,
+            VegetationBiomeAssetCooker.RuntimeVariant);
+        RuntimeAssetCatalogArtifact species = FindArtifact(
+            result.Catalog,
+            s_SpeciesGuid,
+            VegetationSpeciesAssetCooker.RuntimeVariant);
+        RuntimeAssetCatalogArtifact mesh = FindArtifact(
+            result.Catalog,
+            s_MeshGuid,
+            "staticmesh.uint32");
+        RuntimeAssetCatalogArtifact material = FindArtifact(
+            result.Catalog,
+            s_MaterialGuid,
+            "material.runtime");
+
+        Assert.Equal(3, cluster.Dependencies.Count);
+        Assert.Contains(cluster.Dependencies, dependency =>
+            dependency.Guid == page.Guid && dependency.Required);
+        Assert.Contains(cluster.Dependencies, dependency =>
+            dependency.Guid == biome.Guid && dependency.Required);
+        Assert.Contains(cluster.Dependencies, dependency =>
+            dependency.Guid == species.Guid && dependency.Required);
+        RuntimeAssetCatalogDependency pageSpecies = Assert.Single(page.Dependencies);
+        AssertDependency(
+            pageSpecies,
+            species.Guid,
+            species.PackageId,
+            species.AssetType,
+            species.Variant);
+        RuntimeAssetCatalogDependency biomeSpecies = Assert.Single(biome.Dependencies);
+        AssertDependency(
+            biomeSpecies,
+            species.Guid,
+            species.PackageId,
+            species.AssetType,
+            species.Variant);
+        Assert.Equal(2, species.Dependencies.Count);
+        Assert.Contains(species.Dependencies, dependency => dependency.Guid == mesh.Guid);
+        Assert.Contains(species.Dependencies, dependency => dependency.Guid == material.Guid);
+        Assert.Empty(mesh.Dependencies);
+        Assert.Empty(material.Dependencies);
+    }
+
+    [Fact]
+    public void GeneratedClusterCookCoordinator_RejectsAuthoredBiomeDriftBeforeClosure()
+    {
+        using var fixture = VegetationDiskFixture.Create();
+        AssetDatabase database = fixture.CreateDatabase();
+        VegetationClusterAssetCooker.Cook(database, CreateGeneratedCluster());
+        long preservedGeneration = database.CookedRegistryGeneration;
+        File.WriteAllText(
+            Path.Combine(
+                fixture.PackageRoot,
+                "Assets",
+                "RuntimeBiome.arivegetationbiome"),
+            CreateBiomeSource(s_UnlistedSpeciesGuid));
+
+        var registry = new RuntimeAssetCookerRegistry();
+        registry.RegisterCooker(new VegetationRuntimeAssetCooker(database));
+        registry.RegisterCooker(new DeterministicRenderingDependencyCooker(fixture.Root));
+
+        InvalidDataException error = Assert.Throws<InvalidDataException>(() =>
+            RuntimeAssetCookCoordinator.Cook(
+                fixture.CreateContext(),
+                [
+                    new RuntimeAssetCookRootRequest(
+                        "vegetationCluster",
+                        s_ClusterGuid,
+                        PackageId,
+                        VegetationAssetTypes.Cluster)
+                ],
+                registry));
+
+        Assert.Contains("not declared by authored biome", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(preservedGeneration, database.CookedRegistryGeneration);
+        Assert.False(database.TryGetCookedArtifact(
+            s_BiomeGuid,
+            VegetationBiomeAssetCooker.RuntimeVariant,
+            out _));
+        Assert.False(database.TryGetCookedArtifact(
+            s_SpeciesGuid,
+            VegetationSpeciesAssetCooker.RuntimeVariant,
+            out _));
+    }
+
+    [Fact]
+    public void GeneratedRuntimeCooker_PinsOutputsAgainstMutableCacheRemoval()
+    {
+        using var fixture = VegetationDiskFixture.Create();
+        AssetDatabase database = fixture.CreateDatabase();
+        VegetationClusterAssetCooker.Cook(database, CreateGeneratedCluster());
+        var cooker = new VegetationRuntimeAssetCooker(database);
+        RuntimeAssetCookContext context = fixture.CreateContext();
+
+        RuntimeAssetCookerOutput cluster = cooker.Cook(
+            context,
+            new RuntimeAssetCookRequest(
+                s_ClusterGuid,
+                PackageId,
+                VegetationAssetTypes.Cluster));
+        RuntimeAssetCookerOutput page = cooker.Cook(
+            context,
+            new RuntimeAssetCookRequest(
+                s_PageGuid,
+                PackageId,
+                VegetationAssetTypes.InstancePage));
+        byte[] clusterBytes = File.ReadAllBytes(cluster.SourcePath);
+        byte[] pageBytes = File.ReadAllBytes(page.SourcePath);
+
+        Assert.Equal(
+            2,
+            database.RemoveCookedArtifacts(
+            [
+                new CookedAssetIdentity(
+                    s_ClusterGuid,
+                    VegetationClusterAssetCooker.RuntimeVariant),
+                new CookedAssetIdentity(
+                    s_PageGuid,
+                    VegetationInstancePageAssetCooker.RuntimeVariant)
+            ]));
+
+        Assert.True(File.Exists(cluster.SourcePath));
+        Assert.True(File.Exists(page.SourcePath));
+        Assert.Equal(clusterBytes, File.ReadAllBytes(cluster.SourcePath));
+        Assert.Equal(pageBytes, File.ReadAllBytes(page.SourcePath));
+        Assert.StartsWith(
+            Path.GetFullPath(context.StagingRoot),
+            cluster.SourcePath,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.StartsWith(
+            Path.GetFullPath(context.StagingRoot),
+            page.SourcePath,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(
+            cluster.Artifact.Sha256,
+            Convert.ToHexString(SHA256.HashData(clusterBytes)).ToLowerInvariant());
+        Assert.Equal(
+            page.Artifact.Sha256,
+            Convert.ToHexString(SHA256.HashData(pageBytes)).ToLowerInvariant());
+    }
+
+    [Fact]
+    public void ClusterLoad_RejectsValidPageWhoseBytesDoNotMatchRootHashPin()
+    {
+        using var fixture = VegetationDiskFixture.Create();
+        AssetDatabase database = fixture.CreateDatabase();
+        VegetationSpeciesAssetCooker.Cook(
+            database,
+            new AssetRef<VegetationSpeciesSourceAsset>(
+                s_SpeciesGuid,
+                VegetationAssetTypes.Species,
+                PackageId));
+        VegetationBiomeAssetCooker.Cook(
+            database,
+            new AssetRef<VegetationBiomeSourceAsset>(
+                s_BiomeGuid,
+                VegetationAssetTypes.Biome,
+                PackageId));
+        VegetationClusterAssetCooker.Cook(database, CreateGeneratedCluster());
+        Assert.True(database.TryGetCookedArtifact(
+            s_PageGuid,
+            VegetationInstancePageAssetCooker.RuntimeVariant,
+            out CookedAssetRecord originalPage));
+
+        byte[] tamperedPage = File.ReadAllBytes(originalPage.Path);
+        int instancesDescriptor = FindPageSectionDescriptor(tamperedPage, sectionType: 4);
+        int instancesOffset = checked((int)BinaryPrimitives.ReadUInt64LittleEndian(
+            tamperedPage.AsSpan(instancesDescriptor + 8)));
+        Span<byte> firstOrientation = tamperedPage.AsSpan(instancesOffset + 24, 8);
+        firstOrientation.Clear();
+        BinaryPrimitives.WriteInt16LittleEndian(firstOrientation[2..], short.MaxValue);
+        SHA256.HashData(tamperedPage.AsSpan(VegetationInstancePageAssetCooker.HeaderSize))
+            .CopyTo(tamperedPage.AsSpan(
+                VegetationInstancePageAssetCooker.HashOffset,
+                VegetationCookedContainer.HashSize));
+        using (CookedArtifactWrite write = database.BeginCookedArtifactWrite(
+            s_PageGuid,
+            VegetationInstancePageAssetCooker.RuntimeVariant,
+            VegetationInstancePageAssetCooker.CookedExtension))
+        {
+            File.WriteAllBytes(write.OutputPath, tamperedPage);
+            write.Commit(VegetationAssetTypes.InstancePage);
+        }
+
+        Assert.True(
+            VegetationInstancePageAssetCooker.TryLoadCooked(
+                database,
+                new AssetRef<VegetationInstancePageSourceAsset>(
+                    s_PageGuid,
+                    VegetationAssetTypes.InstancePage,
+                    PackageId),
+                s_ClusterGuid,
+                out _,
+                out string pageDiagnostic),
+            pageDiagnostic);
+        Assert.False(
+            VegetationClusterAssetCooker.TryLoadCooked(
+                database,
+                new AssetRef<VegetationClusterSourceAsset>(
+                    s_ClusterGuid,
+                    VegetationAssetTypes.Cluster,
+                    PackageId),
+                out _,
+                out string clusterDiagnostic));
+        Assert.Contains("full-file SHA-256", clusterDiagnostic, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ClusterCook_RejectsPageSpeciesThatItsAuthoredBiomeDoesNotDeclare()
+    {
+        using var fixture = VegetationDiskFixture.Create();
+        AssetDatabase database = fixture.CreateDatabase();
+        VegetationSpeciesAssetCooker.Cook(
+            database,
+            new AssetRef<VegetationSpeciesSourceAsset>(
+                s_SpeciesGuid,
+                VegetationAssetTypes.Species,
+                PackageId));
+        VegetationSpeciesAssetCooker.Cook(
+            database,
+            new AssetRef<VegetationSpeciesSourceAsset>(
+                s_UnlistedSpeciesGuid,
+                VegetationAssetTypes.Species,
+                PackageId));
+        VegetationBiomeAssetCooker.Cook(
+            database,
+            new AssetRef<VegetationBiomeSourceAsset>(
+                s_BiomeGuid,
+                VegetationAssetTypes.Biome,
+                PackageId));
+        long initialGeneration = database.CookedRegistryGeneration;
+
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() =>
+            VegetationClusterAssetCooker.Cook(
+                database,
+                CreateGeneratedCluster(s_UnlistedSpeciesGuid)));
+
+        Assert.Contains("not declared by authored biome", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(initialGeneration, database.CookedRegistryGeneration);
+        Assert.False(database.TryGetCookedArtifact(
+            s_ClusterGuid,
+            VegetationClusterAssetCooker.RuntimeVariant,
+            out _));
+        Assert.False(database.TryGetCookedArtifact(
+            s_PageGuid,
+            VegetationInstancePageAssetCooker.RuntimeVariant,
+            out _));
+    }
+
     private static RuntimeAssetCatalogArtifact FindArtifact(
         RuntimeAssetCatalog catalog,
         Guid guid,
@@ -214,6 +539,22 @@ public sealed class VegetationRuntimeAssetCookingTests
     {
         Assert.True(catalog.TryGetArtifact(guid, variant, out RuntimeAssetCatalogArtifact artifact));
         return artifact;
+    }
+
+    private static int FindPageSectionDescriptor(byte[] bytes, uint sectionType)
+    {
+        int sectionCount = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(104));
+        for (int index = 0; index < sectionCount; index++)
+        {
+            int offset = VegetationInstancePageAssetCooker.HeaderSize +
+                (index * VegetationCookedContainer.SectionDirectoryEntrySize);
+            if (BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(offset)) == sectionType)
+            {
+                return offset;
+            }
+        }
+
+        throw new InvalidOperationException($"Section '{sectionType}' was not found.");
     }
 
     private static void AssertDependency(
@@ -230,10 +571,13 @@ public sealed class VegetationRuntimeAssetCookingTests
         Assert.True(dependency.Required);
     }
 
-    private static string CreateSpeciesSource() => $$"""
+    private static string CreateSpeciesSource() =>
+        CreateSpeciesSource(s_SpeciesGuid, "Runtime Cooking Species");
+
+    private static string CreateSpeciesSource(Guid speciesGuid, string name) => $$"""
         Version: 1
-        SpeciesGuid: {{s_SpeciesGuid:D}}
-        Name: Runtime Cooking Species
+        SpeciesGuid: {{speciesGuid:D}}
+        Name: {{name}}
         Lods:
         - Mesh: { Guid: {{s_MeshGuid:D}}, PackageId: {{PackageId}} }
           Material: { Guid: {{s_MaterialGuid:D}}, PackageId: {{PackageId}} }
@@ -251,14 +595,14 @@ public sealed class VegetationRuntimeAssetCookingTests
         WindResponse: 0.4
         """;
 
-    private static string CreateBiomeSource() => $$"""
+    private static string CreateBiomeSource(Guid? speciesGuid = null) => $$"""
         Version: 1
         BiomeGuid: {{s_BiomeGuid:D}}
         Name: Runtime Cooking Biome
         GlobalSeed: 1469598103934665603
         Entries:
         - EntryId: fixture
-          Species: { Guid: {{s_SpeciesGuid:D}}, PackageId: {{PackageId}} }
+          Species: { Guid: {{(speciesGuid ?? s_SpeciesGuid):D}}, PackageId: {{PackageId}} }
           Density: 0.125
           SeedSalt: 29
           AltitudeRange: { Minimum: -500.0, Maximum: 4000.0 }
@@ -270,6 +614,44 @@ public sealed class VegetationRuntimeAssetCookingTests
           ClusterSize: 64
           ExclusionPolicy: Respect
         """;
+
+    private static VegetationClusterCookDescriptor CreateGeneratedCluster(
+        Guid? speciesGuid = null)
+    {
+        var species = new CookedVegetationSpeciesReference(
+            speciesGuid ?? s_SpeciesGuid,
+            PackageId);
+        var page = new VegetationInstancePageCookDescriptor(
+            s_PageGuid,
+            s_ClusterGuid,
+            PackageId,
+            VegetationInstancePageAssetCooker.CurrentGeneratedSchemaVersion,
+            new WorldPosition(8192.0, 32.0, -4096.0),
+            Array.AsReadOnly([species]),
+            Array.AsReadOnly<VegetationCookedInstanceInput>(
+            [
+                new(
+                    0x101UL,
+                    0,
+                    new Vector3(-2.0f, 0.5f, 1.0f),
+                    Quaternion.Identity,
+                    0.8f,
+                    1.5f),
+                new(
+                    0x102UL,
+                    0,
+                    new Vector3(3.0f, 1.0f, -4.0f),
+                    Quaternion.CreateFromAxisAngle(Vector3.UnitY, 0.5f),
+                    1.2f,
+                    2.0f)
+            ]));
+        return new VegetationClusterCookDescriptor(
+            s_ClusterGuid,
+            PackageId,
+            VegetationClusterAssetCooker.CurrentGeneratedSchemaVersion,
+            new CookedVegetationBiomeReference(s_BiomeGuid, PackageId),
+            Array.AsReadOnly([page]));
+    }
 
     public enum DependencyOwnershipFault
     {
@@ -348,12 +730,19 @@ public sealed class VegetationRuntimeAssetCookingTests
                 VegetationAssetTypes.Species,
                 CreateSpeciesSource());
             WriteAsset(
+                "RuntimeUnlistedSpecies.arivegetationspecies",
+                s_UnlistedSpeciesGuid,
+                VegetationAssetTypes.Species,
+                CreateSpeciesSource(s_UnlistedSpeciesGuid, "Unlisted Runtime Species"));
+            WriteAsset(
                 "RuntimeBiome.arivegetationbiome",
                 s_BiomeGuid,
                 VegetationAssetTypes.Biome,
                 CreateBiomeSource());
             WriteAsset("RuntimeMesh.mesh", s_MeshGuid, "Mesh", "fixture mesh");
             WriteAsset("RuntimeMaterial.material", s_MaterialGuid, "Material", "fixture material");
+            WriteAsset("RuntimeCluster.generated", s_ClusterGuid, VegetationAssetTypes.Cluster, "fixture cluster");
+            WriteAsset("RuntimePage.generated", s_PageGuid, VegetationAssetTypes.InstancePage, "fixture page");
         }
 
         public string Root { get; }
