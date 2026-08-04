@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Security.Cryptography;
 using Arisen.Testing;
 using ArisenKernel.Contracts;
+using ArisenKernel.Diagnostics;
 using ArisenKernel.Lifecycle;
 using ArisenKernel.Packages;
 using ArisenKernel.Services;
@@ -16,6 +17,7 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
         LifecycleFaultInjection.Reset();
         TestPackageEvents.Reset();
         EngineKernel.Instance.Reset();
+        KernelLog.InvalidateCache();
     }
 
     [Fact]
@@ -365,6 +367,346 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
     }
 
     [Fact]
+    public void EngineKernelRejectsResetFromPackageOnLoadBeforeMutation()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string packagePath = workspace.AddPackage(
+            "com.test.runtime.reentrant-load-reset",
+            typeof(ResetFromLoadPackageEntry));
+        EngineShutdownOwnershipSnapshot before =
+            EngineKernel.Instance.GetShutdownOwnershipSnapshot();
+        RenderSurfaceRegistry surfaces = EngineKernel.Instance.RenderSurfaces;
+
+        InvalidOperationException failure = Assert.Throws<InvalidOperationException>(() =>
+            EngineKernel.Instance.MountPackageGraph(new EngineConfig
+            {
+                PackageUrls = new List<string> { packagePath }
+            }));
+
+        Assert.Contains(
+            "cannot reset while package graph mounting is in progress",
+            failure.Message,
+            StringComparison.Ordinal);
+        Assert.Equal(before, EngineKernel.Instance.GetShutdownOwnershipSnapshot());
+        Assert.Same(surfaces, EngineKernel.Instance.RenderSurfaces);
+        Assert.False(surfaces.IsDisposed);
+        Assert.Equal(EnginePhase.None, EngineKernel.Instance.CurrentPhase);
+        Assert.Null(EngineKernel.Instance.Config);
+        Assert.Null(EngineKernel.Instance.GetSubsystem<PackageSubsystem>());
+        Assert.Equal(new[] { "load:reentrant-reset" }, TestPackageEvents.Events);
+    }
+
+    [Fact]
+    public void EngineKernelRejectsNestedMountFromPackageOnLoadBeforeMutation()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string packagePath = workspace.AddPackage(
+            "com.test.runtime.reentrant-load-mount",
+            typeof(NestedMountFromLoadPackageEntry));
+        EngineShutdownOwnershipSnapshot before =
+            EngineKernel.Instance.GetShutdownOwnershipSnapshot();
+        RenderSurfaceRegistry surfaces = EngineKernel.Instance.RenderSurfaces;
+
+        InvalidOperationException failure = Assert.Throws<InvalidOperationException>(() =>
+            EngineKernel.Instance.MountPackageGraph(new EngineConfig
+            {
+                PackageUrls = new List<string> { packagePath }
+            }));
+
+        Assert.Contains(
+            "cannot mount packages while package graph mounting is in progress",
+            failure.Message,
+            StringComparison.Ordinal);
+        Assert.Equal(before, EngineKernel.Instance.GetShutdownOwnershipSnapshot());
+        Assert.Same(surfaces, EngineKernel.Instance.RenderSurfaces);
+        Assert.False(surfaces.IsDisposed);
+        Assert.Equal(EnginePhase.None, EngineKernel.Instance.CurrentPhase);
+        Assert.Null(EngineKernel.Instance.Config);
+        Assert.Null(EngineKernel.Instance.GetSubsystem<PackageSubsystem>());
+        Assert.Equal(new[] { "load:reentrant-mount" }, TestPackageEvents.Events);
+    }
+
+    [Fact]
+    public void BootstrapperFailureDiagnosticsCannotSuppressCleanupDrain()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string packagePath = workspace.AddPackage(
+            "com.test.runtime.retryable",
+            typeof(RetryableOwnershipPackageEntry));
+        var logger = new SelectiveThrowingLogger(
+            "[Host] FATAL ERROR: Engine startup failed:",
+            "[Host] Package shutdown after initialization failure also failed:");
+
+        try
+        {
+            EngineKernel.Instance.RegisterKernelOwnedService<ILogger>(logger);
+            KernelLog.InvalidateCache();
+            EngineKernel.Instance.MountPackageGraph(new EngineConfig
+            {
+                PackageUrls = new List<string> { packagePath }
+            });
+
+            EngineBootstrapper.HandleInitializationFailure(
+                EngineKernel.Instance,
+                new InvalidOperationException("injected initialization failure"));
+
+            Assert.Equal(2, logger.ThrowCount);
+            Assert.False(EngineKernel.Instance.HasPendingPackageCleanup);
+            Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+            Assert.Equal(
+                new[]
+                {
+                    "load:retryable",
+                    "unload:retryable:1",
+                    "unload:retryable:2"
+                },
+                TestPackageEvents.Events);
+            Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+        }
+        finally
+        {
+            KernelLog.InvalidateCache();
+        }
+    }
+
+    [Fact]
+    public void BootstrapperDrainsRetainedStartupOwnershipBeforeRequestingExit()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        workspace.AddPackage(
+            "com.test.runtime.partial-retryable",
+            typeof(PartialLoadRetryableOwnershipPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IPartialLoadService).FullName! }
+            });
+        workspace.WriteProjectManifest("com.test.runtime.partial-retryable");
+        int? requestedExitCode = null;
+
+        EngineBootstrapper.Run(
+            new[]
+            {
+                "--workspace", workspace.Root,
+                "--profile", "Development",
+                "--allow-manifest-fallback"
+            },
+            exitCode =>
+            {
+                Assert.Equal(
+                    new[]
+                    {
+                        "load:partial-retryable",
+                        "unload:partial-retryable:1",
+                        "unload:partial-retryable:2"
+                    },
+                    TestPackageEvents.Events);
+                Assert.False(EngineKernel.Instance.HasPendingPackageCleanup);
+                Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+                Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+                requestedExitCode = exitCode;
+            });
+
+        Assert.Equal(1, requestedExitCode);
+    }
+
+    [Fact]
+    public void BootstrapperCleansKernelOwnershipAfterCleanMountFailure()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        workspace.AddPackage(
+            "com.test.runtime.failing-load",
+            typeof(BareThrowingLoadPackageEntry));
+        workspace.WriteProjectManifest("com.test.runtime.failing-load");
+        LifecycleFaultInjection.Arm(
+            LifecycleFaultStage.PackageLoad,
+            "injected clean package load failure");
+        int? requestedExitCode = null;
+
+        EngineBootstrapper.Run(
+            new[]
+            {
+                "--workspace", workspace.Root,
+                "--profile", "Development",
+                "--allow-manifest-fallback"
+            },
+            exitCode =>
+            {
+                Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+                Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+                requestedExitCode = exitCode;
+            });
+
+        Assert.Equal(1, requestedExitCode);
+        Assert.Equal(new[] { "load:failing" }, TestPackageEvents.Events);
+        LifecycleFaultInjection.EnsureFullyConsumed();
+    }
+
+    [Fact]
+    public void BootstrapperReportsStalledStartupCleanupWithoutRequestingExit()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        workspace.AddPackage(
+            "com.test.runtime.always-pending",
+            typeof(AlwaysPendingOwnershipPackageEntry),
+            subsystems: new object[]
+            {
+                new
+                {
+                    @class = typeof(ThrowingInitializeSubsystem).FullName!,
+                    phase = "PreInit",
+                    priority = 0
+                }
+            });
+        workspace.WriteProjectManifest("com.test.runtime.always-pending");
+        LifecycleFaultInjection.Arm(
+            LifecycleFaultStage.SubsystemInitialize,
+            "injected startup subsystem failure");
+        bool exitRequested = false;
+
+        try
+        {
+            AggregateException failure = Assert.Throws<AggregateException>(() =>
+                EngineBootstrapper.Run(
+                    new[]
+                    {
+                        "--workspace", workspace.Root,
+                        "--profile", "Development",
+                        "--allow-manifest-fallback"
+                    },
+                    _ => exitRequested = true));
+
+            Assert.Contains(
+                "startup cleanup stalled",
+                failure.Message,
+                StringComparison.OrdinalIgnoreCase);
+            Assert.False(exitRequested);
+            Assert.Equal(2, AlwaysPendingOwnershipPackageEntry.UnloadAttemptCount);
+            Assert.True(EngineKernel.Instance.HasPendingPackageCleanup);
+            Assert.True(EngineKernel.Instance.HasPackageRuntimeOwnership);
+            Assert.Equal(EnginePhase.PreShutdown, EngineKernel.Instance.CurrentPhase);
+            LifecycleFaultInjection.EnsureFullyConsumed();
+        }
+        finally
+        {
+            AlwaysPendingOwnershipPackageEntry.AllowCleanup = true;
+            EngineKernel.Instance.Shutdown();
+        }
+
+        Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+    }
+
+    [Fact]
+    public void BootstrapperManifestFailureRequestsExitWithoutInstallingKernelOwnership()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        workspace.WriteProjectManifest();
+        EngineShutdownOwnershipSnapshot before =
+            EngineKernel.Instance.GetShutdownOwnershipSnapshot();
+        int? requestedExitCode = null;
+
+        EngineBootstrapper.Run(
+            new[]
+            {
+                "--workspace", workspace.Root,
+                "--profile", "Development",
+                "--allow-manifest-fallback"
+            },
+            exitCode =>
+            {
+                Assert.Equal(before, EngineKernel.Instance.GetShutdownOwnershipSnapshot());
+                Assert.Null(EngineKernel.Instance.GetSubsystem<PackageSubsystem>());
+                Assert.Empty(EngineKernel.Instance.Services.GetRegisteredServices());
+                requestedExitCode = exitCode;
+            });
+
+        Assert.Equal(1, requestedExitCode);
+    }
+
+    [Fact]
+    public void BootstrapperCompensatesFailureAfterInstallingKernelOwnership()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        workspace.AddPackage(
+            "com.test.runtime.provider",
+            typeof(ProviderPackageEntry));
+        workspace.WriteProjectManifest("com.test.runtime.provider");
+        var logger = new SelectiveThrowingLogger(
+            "Diagnostic source-asset selection is enabled");
+        int? requestedExitCode = null;
+
+        try
+        {
+            EngineKernel.Instance.RegisterKernelOwnedService<ILogger>(logger);
+            KernelLog.InvalidateCache();
+
+            EngineBootstrapper.Run(
+                new[]
+                {
+                    "--workspace", workspace.Root,
+                    "--profile", "Development",
+                    "--allow-manifest-fallback",
+                    RuntimeAssetOptions.SourceDiagnosticsArgument
+                },
+                exitCode =>
+                {
+                    Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+                    Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+                    requestedExitCode = exitCode;
+                });
+
+            Assert.Equal(1, requestedExitCode);
+            Assert.Equal(1, logger.ThrowCount);
+        }
+        finally
+        {
+            KernelLog.InvalidateCache();
+        }
+    }
+
+    [Fact]
+    public void BootstrapperCompensatesFailureDuringStartupCompletionDiagnostics()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        workspace.AddPackage(
+            "com.test.runtime.provider",
+            typeof(ProviderPackageEntry));
+        workspace.WriteProjectManifest("com.test.runtime.provider");
+        var logger = new SelectiveThrowingLogger(
+            "[Host] Kernel Initialization Complete.");
+        int? requestedExitCode = null;
+
+        try
+        {
+            EngineKernel.Instance.RegisterKernelOwnedService<ILogger>(logger);
+            KernelLog.InvalidateCache();
+
+            EngineBootstrapper.Run(
+                new[]
+                {
+                    "--workspace", workspace.Root,
+                    "--profile", "Development",
+                    "--allow-manifest-fallback"
+                },
+                exitCode =>
+                {
+                    Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+                    Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+                    requestedExitCode = exitCode;
+                });
+
+            Assert.Equal(1, requestedExitCode);
+            Assert.Equal(1, logger.ThrowCount);
+            Assert.Equal(
+                new[] { "load:provider", "unload:provider" },
+                TestPackageEvents.Events);
+        }
+        finally
+        {
+            KernelLog.InvalidateCache();
+        }
+    }
+
+    [Fact]
     public void EngineKernelFailsWhenNativeLifecycleLibraryIsMissing()
     {
         using var workspace = RuntimePackageWorkspace.Create();
@@ -589,6 +931,689 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
     }
 
     [Fact]
+    public void EngineKernelRejectsReentrantResetAndCompletesOuterShutdown()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string providerPath = workspace.AddPackage(
+            "com.test.runtime.provider",
+            typeof(ProviderPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IRuntimeSmokeService).FullName! }
+            });
+        EngineKernel.Instance.RegisterSubsystem(new ShutdownFollowerSubsystem());
+        EngineKernel.Instance.RegisterSubsystem(
+            new ReentrantResetShutdownSubsystem(EngineKernel.Instance));
+        EngineKernel.Instance.Initialize(new EngineConfig
+        {
+            PackageUrls = new List<string> { providerPath }
+        });
+
+        AggregateException failure = Assert.Throws<AggregateException>(
+            () => EngineKernel.Instance.Shutdown());
+
+        Assert.Contains(
+            failure.InnerExceptions,
+            error => error.Message.Contains(
+                "cannot reset while shutdown is in progress",
+                StringComparison.Ordinal));
+        Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+        Assert.False(EngineKernel.Instance.IsPackageGraphMounted);
+        Assert.False(EngineKernel.Instance.Services.TryGetService<IRuntimeSmokeService>(out _));
+        Assert.Contains("shutdown:reentrant-reset", TestPackageEvents.Events);
+        Assert.Contains("shutdown:following", TestPackageEvents.Events);
+        Assert.Contains("unload:provider", TestPackageEvents.Events);
+        EngineShutdownOwnershipSnapshot ownership =
+            EngineKernel.Instance.GetShutdownOwnershipSnapshot();
+        Assert.True(ownership.IsClean, ownership.ToString());
+    }
+
+    [Fact]
+    public void EngineKernelRejectsReentrantInitializeAndRequiresResetAfterShutdown()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string providerPath = workspace.AddPackage(
+            "com.test.runtime.provider",
+            typeof(ProviderPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IRuntimeSmokeService).FullName! }
+            });
+        var config = new EngineConfig
+        {
+            PackageUrls = new List<string> { providerPath }
+        };
+        EngineKernel.Instance.RegisterSubsystem(new ShutdownFollowerSubsystem());
+        EngineKernel.Instance.RegisterSubsystem(
+            new ReentrantInitializeShutdownSubsystem(EngineKernel.Instance, config));
+        EngineKernel.Instance.Initialize(config);
+
+        AggregateException failure = Assert.Throws<AggregateException>(
+            () => EngineKernel.Instance.Shutdown());
+
+        Assert.Contains(
+            failure.InnerExceptions,
+            error => error.Message.Contains(
+                "cannot initialize while shutdown is in progress",
+                StringComparison.Ordinal));
+        Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+        Assert.False(EngineKernel.Instance.IsPackageGraphMounted);
+        Assert.False(EngineKernel.Instance.Services.TryGetService<IRuntimeSmokeService>(out _));
+        Assert.Contains("shutdown:reentrant-initialize", TestPackageEvents.Events);
+        Assert.Contains("shutdown:following", TestPackageEvents.Events);
+        Assert.Contains("unload:provider", TestPackageEvents.Events);
+        EngineShutdownOwnershipSnapshot ownership =
+            EngineKernel.Instance.GetShutdownOwnershipSnapshot();
+        Assert.True(ownership.IsClean, ownership.ToString());
+
+        InvalidOperationException terminalFailure = Assert.Throws<InvalidOperationException>(
+            () => EngineKernel.Instance.Initialize(config));
+        Assert.Contains("call Reset", terminalFailure.Message, StringComparison.Ordinal);
+
+        EngineKernel.Instance.Reset();
+        EngineKernel.Instance.Initialize(config);
+        Assert.Equal(EnginePhase.Running, EngineKernel.Instance.CurrentPhase);
+        EngineKernel.Instance.Shutdown();
+    }
+
+    [Fact]
+    public void EngineKernelRejectsShutdownFromSubsystemInitializeAndCompensates()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string providerPath = workspace.AddPackage(
+            "com.test.runtime.provider",
+            typeof(ProviderPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IRuntimeSmokeService).FullName! }
+            });
+        EngineKernel.Instance.RegisterSubsystem(
+            new ShutdownFromInitializeSubsystem(EngineKernel.Instance));
+
+        InvalidOperationException failure = Assert.Throws<InvalidOperationException>(() =>
+            EngineKernel.Instance.Initialize(new EngineConfig
+            {
+                PackageUrls = new List<string> { providerPath }
+            }));
+
+        Assert.Contains(
+            "cannot shutdown while initialization is in progress",
+            failure.Message,
+            StringComparison.Ordinal);
+        Assert.Equal(
+            new[]
+            {
+                "load:provider",
+                "initialize:reentrant-shutdown",
+                "shutdown:reentrant-shutdown",
+                "unload:provider"
+            },
+            TestPackageEvents.Events);
+        Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+        Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+    }
+
+    [Fact]
+    public void EngineKernelRejectsResetFromSubsystemInitializeAndCompensates()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string providerPath = workspace.AddPackage(
+            "com.test.runtime.provider",
+            typeof(ProviderPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IRuntimeSmokeService).FullName! }
+            });
+        EngineKernel.Instance.RegisterSubsystem(
+            new ResetFromInitializeSubsystem(EngineKernel.Instance));
+
+        InvalidOperationException failure = Assert.Throws<InvalidOperationException>(() =>
+            EngineKernel.Instance.Initialize(new EngineConfig
+            {
+                PackageUrls = new List<string> { providerPath }
+            }));
+
+        Assert.Contains(
+            "cannot reset while initialization is in progress",
+            failure.Message,
+            StringComparison.Ordinal);
+        Assert.Equal(
+            new[]
+            {
+                "load:provider",
+                "initialize:reentrant-reset",
+                "shutdown:reentrant-reset-initialize",
+                "unload:provider"
+            },
+            TestPackageEvents.Events);
+        Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+        Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+    }
+
+    [Fact]
+    public async Task EngineKernelKeepsExclusiveAdmissionThroughInitializationCompensation()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string providerPath = workspace.AddPackage(
+            "com.test.runtime.provider",
+            typeof(ProviderPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IRuntimeSmokeService).FullName! }
+            });
+        var config = new EngineConfig
+        {
+            PackageUrls = new List<string> { providerPath }
+        };
+        using var subsystem = new BlockingFailedInitializeSubsystem();
+        EngineKernel.Instance.RegisterSubsystem(subsystem);
+
+        Task<Exception> initialization = Task.Run(() =>
+            Record.Exception(() => EngineKernel.Instance.Initialize(config)));
+        try
+        {
+            Assert.True(subsystem.ShutdownEntered.Wait(TimeSpan.FromSeconds(10)));
+
+            Assert.Contains(
+                "cannot reset while shutdown is in progress",
+                Assert.Throws<InvalidOperationException>(EngineKernel.Instance.Reset).Message,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "cannot mount packages while shutdown is in progress",
+                Assert.Throws<InvalidOperationException>(() =>
+                    EngineKernel.Instance.MountPackageGraph(new EngineConfig())).Message,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "cannot initialize while shutdown is in progress",
+                Assert.Throws<InvalidOperationException>(() =>
+                    EngineKernel.Instance.Initialize(config)).Message,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "cannot run the engine while shutdown is in progress",
+                Assert.Throws<InvalidOperationException>(() => EngineKernel.Instance.Run()).Message,
+                StringComparison.Ordinal);
+        }
+        finally
+        {
+            subsystem.AllowShutdown.Set();
+        }
+
+        Exception failure = Assert.IsType<InvalidOperationException>(
+            await initialization.WaitAsync(TimeSpan.FromSeconds(10)));
+        Assert.Contains("injected blocking initialization failure", failure.Message);
+        Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+        Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+    }
+
+    [Fact]
+    public void EngineKernelRejectsLifecycleMutationFromFrameCallback()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string providerPath = workspace.AddPackage(
+            "com.test.runtime.provider",
+            typeof(ProviderPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IRuntimeSmokeService).FullName! }
+            });
+        var subsystem = new ResetFromTickSubsystem(EngineKernel.Instance);
+        EngineKernel.Instance.RegisterSubsystem(subsystem);
+        EngineKernel.Instance.MountPackageGraph(new EngineConfig
+        {
+            PackageUrls = new List<string> { providerPath }
+        });
+
+        int exitCode = EngineKernel.Instance.RunForFrames(1);
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal(1, subsystem.TickCount);
+        InvalidOperationException failure = Assert.IsType<InvalidOperationException>(
+            subsystem.ResetFailure);
+        Assert.Contains(
+            "cannot reset while engine run loop is in progress",
+            failure.Message,
+            StringComparison.Ordinal);
+        Assert.True(subsystem.WasShutdown);
+        Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+        Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+    }
+
+    [Fact]
+    public void EngineKernelRejectsLifecycleMutationFromDirectTickCallback()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string providerPath = workspace.AddPackage(
+            "com.test.runtime.provider",
+            typeof(ProviderPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IRuntimeSmokeService).FullName! }
+            });
+        var subsystem = new ResetFromTickSubsystem(EngineKernel.Instance);
+        EngineKernel.Instance.RegisterSubsystem(subsystem);
+        EngineKernel.Instance.Initialize(new EngineConfig
+        {
+            PackageUrls = new List<string> { providerPath }
+        });
+
+        EngineKernel.Instance.Tick(1.0f / 60.0f);
+
+        Assert.Equal(1, subsystem.TickCount);
+        InvalidOperationException failure = Assert.IsType<InvalidOperationException>(
+            subsystem.ResetFailure);
+        Assert.Contains(
+            "cannot reset while engine run loop is in progress",
+            failure.Message,
+            StringComparison.Ordinal);
+        Assert.Equal(1u, EngineKernel.Instance.CurrentFrameIndex);
+        Assert.False(subsystem.WasShutdown);
+        Assert.Equal(EnginePhase.Running, EngineKernel.Instance.CurrentPhase);
+
+        EngineKernel.Instance.Shutdown();
+
+        Assert.True(subsystem.WasShutdown);
+        Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+    }
+
+    [Fact]
+    public async Task EngineKernelKeepsRegistrationClosedUntilResetCompletes()
+    {
+        using var subsystem = new BlockingShutdownSubsystem();
+        EngineKernel.Instance.RegisterSubsystem(subsystem);
+        EngineKernel.Instance.Initialize(new EngineConfig());
+
+        Task reset = Task.Run(EngineKernel.Instance.Reset);
+        try
+        {
+            Assert.True(subsystem.ShutdownEntered.Wait(TimeSpan.FromSeconds(10)));
+
+            InvalidOperationException serviceFailure = Assert.Throws<InvalidOperationException>(() =>
+                EngineKernel.Instance.RegisterKernelOwnedService<IPartialLoadService>(
+                    new PartialLoadService()));
+            Assert.Contains(
+                "registration is closed",
+                serviceFailure.Message,
+                StringComparison.Ordinal);
+            InvalidOperationException subsystemFailure = Assert.Throws<InvalidOperationException>(() =>
+                EngineKernel.Instance.RegisterSubsystem(new CountingTickSubsystem()));
+            Assert.Contains(
+                "while reset is in progress",
+                subsystemFailure.Message,
+                StringComparison.Ordinal);
+        }
+        finally
+        {
+            subsystem.AllowShutdown.Set();
+        }
+
+        await reset.WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.Equal(EnginePhase.None, EngineKernel.Instance.CurrentPhase);
+        Assert.Empty(EngineKernel.Instance.Services.GetRegisteredServices());
+        EngineKernel.Instance.RegisterKernelOwnedService<IPartialLoadService>(
+            new PartialLoadService());
+        Assert.True(EngineKernel.Instance.Services.TryGetService<IPartialLoadService>(out _));
+        EngineKernel.Instance.Shutdown();
+        Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+    }
+
+    [Fact]
+    public async Task EngineKernelExcludesLifecycleEntryDuringSubsystemRegistration()
+    {
+        using var subsystem = new BlockingRegistrationSubsystem();
+        Task registration = Task.Run(() =>
+            EngineKernel.Instance.RegisterSubsystem(subsystem));
+        try
+        {
+            Assert.True(subsystem.RegistrationEntered.Wait(TimeSpan.FromSeconds(10)));
+
+            InvalidOperationException failure = Assert.Throws<InvalidOperationException>(
+                EngineKernel.Instance.Reset);
+            Assert.Contains(
+                "cannot reset while subsystem registration is in progress",
+                failure.Message,
+                StringComparison.Ordinal);
+        }
+        finally
+        {
+            subsystem.AllowRegistration.Set();
+        }
+
+        await registration.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Same(subsystem, EngineKernel.Instance.GetSubsystem<BlockingRegistrationSubsystem>());
+
+        EngineKernel.Instance.Reset();
+
+        Assert.Null(EngineKernel.Instance.GetSubsystem<BlockingRegistrationSubsystem>());
+        Assert.Equal(EnginePhase.None, EngineKernel.Instance.CurrentPhase);
+    }
+
+    [Fact]
+    public void EngineKernelTracksSubsystemMetadataByReferenceIdentity()
+    {
+        var subsystem = new ThrowingValueEqualitySubsystem();
+
+        EngineKernel.Instance.RegisterSubsystem(subsystem);
+
+        Assert.Same(
+            subsystem,
+            EngineKernel.Instance.GetSubsystem<ThrowingValueEqualitySubsystem>());
+        EngineKernel.Instance.Reset();
+        Assert.Null(EngineKernel.Instance.GetSubsystem<ThrowingValueEqualitySubsystem>());
+    }
+
+    [Fact]
+    public void EngineKernelRejectsRunFromSubsystemShutdownAndCompletesOuterShutdown()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string providerPath = workspace.AddPackage(
+            "com.test.runtime.provider",
+            typeof(ProviderPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IRuntimeSmokeService).FullName! }
+            });
+        EngineKernel.Instance.RegisterSubsystem(new ShutdownFollowerSubsystem());
+        EngineKernel.Instance.RegisterSubsystem(
+            new RunFromShutdownSubsystem(EngineKernel.Instance));
+        EngineKernel.Instance.Initialize(new EngineConfig
+        {
+            PackageUrls = new List<string> { providerPath }
+        });
+
+        AggregateException failure = Assert.Throws<AggregateException>(
+            () => EngineKernel.Instance.Shutdown());
+
+        Assert.Contains(
+            failure.InnerExceptions,
+            error => error.Message.Contains(
+                "cannot run the engine while shutdown is in progress",
+                StringComparison.Ordinal));
+        Assert.Equal(0u, EngineKernel.Instance.CurrentFrameIndex);
+        Assert.Contains("shutdown:reentrant-run", TestPackageEvents.Events);
+        Assert.Contains("shutdown:following", TestPackageEvents.Events);
+        Assert.Contains("unload:provider", TestPackageEvents.Events);
+        Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+        Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+    }
+
+    [Fact]
+    public void PackageSubsystemRejectsDirectReentrantShutdownAndDrainsOnce()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string providerPath = workspace.AddPackage(
+            "com.test.runtime.provider",
+            typeof(ProviderPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IRuntimeSmokeService).FullName! }
+            });
+        string reentrantPath = workspace.AddPackage(
+            "com.test.runtime.reentrant-package-shutdown",
+            typeof(ReentrantPackageShutdownEntry),
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.test.runtime.provider"] = "1.0.0"
+            },
+            services: new
+            {
+                provides = new object[] { typeof(IPartialLoadService).FullName! }
+            });
+        EngineKernel.Instance.Initialize(new EngineConfig
+        {
+            PackageUrls = new List<string> { reentrantPath, providerPath }
+        });
+
+        AggregateException failure = Assert.Throws<AggregateException>(
+            () => EngineKernel.Instance.Shutdown());
+
+        Assert.Contains(
+            failure.Flatten().InnerExceptions,
+            error => error.Message.Contains(
+                "cannot shutdown while package shutdown is in progress",
+                StringComparison.Ordinal));
+        Assert.Equal(
+            new[]
+            {
+                "load:provider",
+                "load:reentrant-package-shutdown",
+                "unload:reentrant-package-shutdown",
+                "unload:provider"
+            },
+            TestPackageEvents.Events);
+        Assert.False(EngineKernel.Instance.Services.TryGetService<IRuntimeSmokeService>(out _));
+        Assert.False(EngineKernel.Instance.Services.TryGetService<IPartialLoadService>(out _));
+        Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+        Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+    }
+
+    [Fact]
+    public void PackageSubsystemRejectsDirectShutdownDuringMountRollback()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string reentrantPath = workspace.AddPackage(
+            "com.test.runtime.reentrant-package-shutdown",
+            typeof(ReentrantPackageShutdownEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IPartialLoadService).FullName! }
+            });
+        string failingPath = workspace.AddPackage(
+            "com.test.runtime.failing-load",
+            typeof(BareThrowingLoadPackageEntry),
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.test.runtime.reentrant-package-shutdown"] = "1.0.0"
+            });
+        LifecycleFaultInjection.Arm(
+            LifecycleFaultStage.PackageLoad,
+            "injected package load failure");
+        EngineShutdownOwnershipSnapshot before =
+            EngineKernel.Instance.GetShutdownOwnershipSnapshot();
+
+        AggregateException failure = Assert.Throws<AggregateException>(() =>
+            EngineKernel.Instance.MountPackageGraph(new EngineConfig
+            {
+                PackageUrls = new List<string> { failingPath, reentrantPath }
+            }));
+
+        Assert.Contains(
+            failure.Flatten().InnerExceptions,
+            error => error.Message.Contains(
+                "injected package load failure",
+                StringComparison.Ordinal));
+        Assert.Contains(
+            failure.Flatten().InnerExceptions,
+            error => error.Message.Contains(
+                "cannot shutdown while package mounting is in progress",
+                StringComparison.Ordinal));
+        Assert.Equal(
+            new[]
+            {
+                "load:reentrant-package-shutdown",
+                "load:failing",
+                "unload:reentrant-package-shutdown"
+            },
+            TestPackageEvents.Events);
+        Assert.Equal(before, EngineKernel.Instance.GetShutdownOwnershipSnapshot());
+        Assert.Null(EngineKernel.Instance.Config);
+        Assert.Null(EngineKernel.Instance.GetSubsystem<PackageSubsystem>());
+        Assert.False(EngineKernel.Instance.Services.TryGetService<IPartialLoadService>(out _));
+        LifecycleFaultInjection.EnsureFullyConsumed();
+    }
+
+    [Fact]
+    public void EngineKernelMountCompletionDiagnosticFailureRollsBackMountedGraph()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string providerPath = workspace.AddPackage(
+            "com.test.runtime.provider",
+            typeof(ProviderPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IRuntimeSmokeService).FullName! }
+            });
+        var config = new EngineConfig
+        {
+            PackageUrls = new List<string> { providerPath }
+        };
+        var logger = new SelectiveThrowingLogger(
+            "[EngineKernel] Package mount complete.");
+
+        try
+        {
+            EngineKernel.Instance.RegisterKernelOwnedService<ILogger>(logger);
+            KernelLog.InvalidateCache();
+            EngineShutdownOwnershipSnapshot before =
+                EngineKernel.Instance.GetShutdownOwnershipSnapshot();
+
+            InvalidOperationException failure = Assert.Throws<InvalidOperationException>(
+                () => EngineKernel.Instance.MountPackageGraph(config));
+
+            Assert.Contains("Injected logger failure", failure.Message, StringComparison.Ordinal);
+            Assert.Equal(1, logger.ThrowCount);
+            Assert.Equal(
+                new[] { "load:provider", "unload:provider" },
+                TestPackageEvents.Events);
+            Assert.Equal(before, EngineKernel.Instance.GetShutdownOwnershipSnapshot());
+            Assert.Null(EngineKernel.Instance.Config);
+            Assert.Null(EngineKernel.Instance.GetSubsystem<PackageSubsystem>());
+            Assert.False(EngineKernel.Instance.Services.TryGetService<IRuntimeSmokeService>(out _));
+
+            EngineKernel.Instance.MountPackageGraph(config);
+            Assert.True(EngineKernel.Instance.IsPackageGraphMounted);
+            Assert.True(EngineKernel.Instance.Services.TryGetService<IRuntimeSmokeService>(out _));
+            EngineKernel.Instance.Shutdown();
+            Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+        }
+        finally
+        {
+            KernelLog.InvalidateCache();
+        }
+    }
+
+    [Fact]
+    public void EngineKernelInitializePreservesCleanMountFailureRetry()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string failingPath = workspace.AddPackage(
+            "com.test.runtime.failing-load",
+            typeof(BareThrowingLoadPackageEntry));
+        LifecycleFaultInjection.Arm(
+            LifecycleFaultStage.PackageLoad,
+            "injected clean initialization mount failure");
+        RenderSurfaceRegistry surfaces = EngineKernel.Instance.RenderSurfaces;
+
+        InvalidOperationException failure = Assert.Throws<InvalidOperationException>(() =>
+            EngineKernel.Instance.Initialize(new EngineConfig
+            {
+                PackageUrls = new List<string> { failingPath }
+            }));
+
+        Assert.Contains("injected clean initialization mount failure", failure.Message);
+        Assert.Equal(EnginePhase.None, EngineKernel.Instance.CurrentPhase);
+        Assert.False(EngineKernel.Instance.IsPackageGraphMounted);
+        Assert.Null(EngineKernel.Instance.Config);
+        Assert.Same(surfaces, EngineKernel.Instance.RenderSurfaces);
+        Assert.False(surfaces.IsDisposed);
+        Assert.Null(EngineKernel.Instance.GetSubsystem<PackageSubsystem>());
+        LifecycleFaultInjection.EnsureFullyConsumed();
+
+        string providerPath = workspace.AddPackage(
+            "com.test.runtime.recovery-provider",
+            typeof(ProviderPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IRuntimeSmokeService).FullName! }
+            });
+        EngineKernel.Instance.Initialize(new EngineConfig
+        {
+            PackageUrls = new List<string> { providerPath }
+        });
+        Assert.Equal(EnginePhase.Running, EngineKernel.Instance.CurrentPhase);
+        EngineKernel.Instance.Shutdown();
+        Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+    }
+
+    [Fact]
+    public void EngineKernelFinalRunningDiagnosticFailureCompensatesInitialization()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string providerPath = workspace.AddPackage(
+            "com.test.runtime.provider",
+            typeof(ProviderPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IRuntimeSmokeService).FullName! }
+            });
+        var logger = new SelectiveThrowingLogger(
+            "[EngineKernel] Engine is now Running.");
+
+        try
+        {
+            EngineKernel.Instance.RegisterKernelOwnedService<ILogger>(logger);
+            KernelLog.InvalidateCache();
+            EngineKernel.Instance.RegisterSubsystem(new ShutdownFollowerSubsystem());
+
+            InvalidOperationException failure = Assert.Throws<InvalidOperationException>(() =>
+                EngineKernel.Instance.Initialize(new EngineConfig
+                {
+                    PackageUrls = new List<string> { providerPath }
+                }));
+
+            Assert.Contains("Injected logger failure", failure.Message, StringComparison.Ordinal);
+            Assert.Equal(1, logger.ThrowCount);
+            Assert.Contains("shutdown:following", TestPackageEvents.Events);
+            Assert.Contains("unload:provider", TestPackageEvents.Events);
+            Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+            Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+        }
+        finally
+        {
+            KernelLog.InvalidateCache();
+        }
+    }
+
+    [Fact]
+    public void EngineKernelClosesServiceRegistrationBeforeShutdownDiagnostics()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string providerPath = workspace.AddPackage(
+            "com.test.runtime.provider",
+            typeof(ProviderPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IRuntimeSmokeService).FullName! }
+            });
+        var logger = new MutatingShutdownLogger();
+
+        try
+        {
+            EngineKernel.Instance.RegisterKernelOwnedService<ILogger>(logger);
+            KernelLog.InvalidateCache();
+            EngineKernel.Instance.Initialize(new EngineConfig
+            {
+                PackageUrls = new List<string> { providerPath }
+            });
+
+            EngineKernel.Instance.Shutdown();
+
+            InvalidOperationException failure = Assert.IsType<InvalidOperationException>(
+                logger.RegistrationFailure);
+            Assert.Contains(
+                "registration is closed during engine shutdown",
+                failure.Message,
+                StringComparison.Ordinal);
+            Assert.False(EngineKernel.Instance.Services.TryGetService<IPartialLoadService>(out _));
+            Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+        }
+        finally
+        {
+            KernelLog.InvalidateCache();
+        }
+    }
+
+    [Fact]
     public void PackageMountRollsBackEarlierNativeRuntimeWhenLaterLoadFails()
     {
         using var workspace = RuntimePackageWorkspace.Create();
@@ -716,8 +1741,277 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
             },
             TestPackageEvents.Events);
         Assert.False(EngineKernel.Instance.Services.TryGetService<IRuntimeSmokeService>(out _));
+        Assert.False(EngineKernel.Instance.HasPendingPackageCleanup);
         Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+        int eventCountAfterShutdown = TestPackageEvents.Events.Count;
+
+        AggregateException repeatedFailure = Assert.Throws<AggregateException>(
+            () => EngineKernel.Instance.Shutdown());
+
+        Assert.Same(exception, repeatedFailure);
+        Assert.Equal(eventCountAfterShutdown, TestPackageEvents.Events.Count);
         LifecycleFaultInjection.EnsureFullyConsumed();
+    }
+
+    [Fact]
+    public void EngineKernelShutdownRetainsPendingPackageAndDependencyClosureUntilRetryCompletes()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string providerPath = workspace.AddPackage(
+            "com.test.runtime.provider",
+            typeof(ProviderPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IRuntimeSmokeService).FullName! }
+            });
+        string retryablePath = workspace.AddPackage(
+            "com.test.runtime.retryable",
+            typeof(RetryableOwnershipPackageEntry),
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.test.runtime.provider"] = "1.0.0"
+            });
+        string leafPath = workspace.AddPackage(
+            "com.test.runtime.leaf",
+            typeof(LeafPackageEntry),
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.test.runtime.retryable"] = "1.0.0"
+            });
+        var config = new EngineConfig
+        {
+            PackageUrls = new List<string> { leafPath, retryablePath, providerPath }
+        };
+
+        EngineKernel.Instance.Initialize(config);
+
+        AggregateException firstFailure = Assert.Throws<AggregateException>(
+            () => EngineKernel.Instance.Shutdown());
+
+        Assert.Contains(
+            firstFailure.Flatten().InnerExceptions,
+            error => error.Message.Contains("pending ownership", StringComparison.Ordinal));
+        Assert.Equal(EnginePhase.PreShutdown, EngineKernel.Instance.CurrentPhase);
+        Assert.True(EngineKernel.Instance.IsPackageGraphMounted);
+        Assert.True(EngineKernel.Instance.HasPendingPackageCleanup);
+        Assert.Same(config, EngineKernel.Instance.Config);
+        Assert.True(EngineKernel.Instance.Services.TryGetService<IRuntimeSmokeService>(out _));
+        Assert.Equal(
+            new[] { "com.test.runtime.provider", "com.test.runtime.retryable" },
+            EngineKernel.Instance.GetSubsystem<PackageSubsystem>()!
+                .GetLoadedPackagesInOrder()
+                .Select(package => package.Id));
+        Assert.Equal(
+            new[]
+            {
+                "load:provider",
+                "load:retryable",
+                "load:leaf",
+                "unload:leaf",
+                "unload:retryable:1"
+            },
+            TestPackageEvents.Events);
+
+        EngineKernel.Instance.Shutdown();
+
+        Assert.Equal(
+            new[]
+            {
+                "load:provider",
+                "load:retryable",
+                "load:leaf",
+                "unload:leaf",
+                "unload:retryable:1",
+                "unload:retryable:2",
+                "unload:provider"
+            },
+            TestPackageEvents.Events);
+        Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+        Assert.False(EngineKernel.Instance.IsPackageGraphMounted);
+        Assert.False(EngineKernel.Instance.HasPendingPackageCleanup);
+        Assert.False(EngineKernel.Instance.Services.TryGetService<IRuntimeSmokeService>(out _));
+        Assert.Empty(EngineKernel.Instance.GetSubsystem<PackageSubsystem>()!.GetAllPackages());
+        Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+    }
+
+    [Fact]
+    public void EngineKernelPreservesTerminalPackageFailureAcrossPendingCleanupRetry()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string providerPath = workspace.AddPackage(
+            "com.test.runtime.provider",
+            typeof(ProviderPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IRuntimeSmokeService).FullName! }
+            });
+        string retryablePath = workspace.AddPackage(
+            "com.test.runtime.retryable",
+            typeof(RetryableOwnershipPackageEntry),
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.test.runtime.provider"] = "1.0.0"
+            });
+        string failingLeafPath = workspace.AddPackage(
+            "com.test.runtime.throwing-unload",
+            typeof(ThrowingUnloadPackageEntry),
+            dependencies: new Dictionary<string, string>
+            {
+                ["com.test.runtime.retryable"] = "1.0.0"
+            });
+
+        EngineKernel.Instance.Initialize(new EngineConfig
+        {
+            PackageUrls = new List<string>
+            {
+                failingLeafPath,
+                retryablePath,
+                providerPath
+            }
+        });
+        LifecycleFaultInjection.Arm(
+            LifecycleFaultStage.PackageUnload,
+            "injected terminal package unload failure");
+
+        AggregateException firstFailure = Assert.Throws<AggregateException>(
+            () => EngineKernel.Instance.Shutdown());
+
+        Assert.Contains(
+            firstFailure.Flatten().InnerExceptions,
+            error => error.Message.Contains(
+                "injected terminal package unload failure",
+                StringComparison.Ordinal));
+        Assert.True(EngineKernel.Instance.HasPendingPackageCleanup);
+        Assert.Equal(EnginePhase.PreShutdown, EngineKernel.Instance.CurrentPhase);
+
+        AggregateException terminalFailure = Assert.Throws<AggregateException>(
+            () => EngineKernel.Instance.Shutdown());
+
+        Assert.Contains(
+            terminalFailure.Flatten().InnerExceptions,
+            error => error.Message.Contains(
+                "injected terminal package unload failure",
+                StringComparison.Ordinal));
+        Assert.False(EngineKernel.Instance.HasPendingPackageCleanup);
+        Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+        Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+        int eventCountAfterCompletion = TestPackageEvents.Events.Count;
+
+        AggregateException repeatedFailure = Assert.Throws<AggregateException>(
+            () => EngineKernel.Instance.Shutdown());
+
+        Assert.Same(terminalFailure, repeatedFailure);
+        Assert.Equal(eventCountAfterCompletion, TestPackageEvents.Events.Count);
+        LifecycleFaultInjection.EnsureFullyConsumed();
+    }
+
+    [Fact]
+    public void EngineKernelPreservesShutdownDiagnosticFailureAcrossPendingCleanupRetry()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string packagePath = workspace.AddPackage(
+            "com.test.runtime.retryable",
+            typeof(RetryableOwnershipPackageEntry));
+        var logger = new SelectiveThrowingLogger(
+            "[EngineKernel] Package shutdown failed:");
+
+        try
+        {
+            EngineKernel.Instance.RegisterKernelOwnedService<ILogger>(logger);
+            KernelLog.InvalidateCache();
+            EngineKernel.Instance.MountPackageGraph(new EngineConfig
+            {
+                PackageUrls = new List<string> { packagePath }
+            });
+
+            AggregateException firstFailure = Assert.Throws<AggregateException>(
+                () => EngineKernel.Instance.Shutdown());
+
+            Assert.Contains(
+                "Injected logger failure",
+                firstFailure.ToString(),
+                StringComparison.Ordinal);
+            Assert.True(EngineKernel.Instance.HasPendingPackageCleanup);
+            Assert.Equal(EnginePhase.PreShutdown, EngineKernel.Instance.CurrentPhase);
+            Assert.Equal(1, logger.ThrowCount);
+
+            AggregateException terminalFailure = Assert.Throws<AggregateException>(
+                () => EngineKernel.Instance.Shutdown());
+
+            Assert.Contains(
+                "Injected logger failure",
+                terminalFailure.ToString(),
+                StringComparison.Ordinal);
+            Assert.False(EngineKernel.Instance.HasPendingPackageCleanup);
+            Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+            Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
+
+            AggregateException repeatedFailure = Assert.Throws<AggregateException>(
+                () => EngineKernel.Instance.Shutdown());
+
+            Assert.Same(terminalFailure, repeatedFailure);
+            Assert.Equal(1, logger.ThrowCount);
+        }
+        finally
+        {
+            KernelLog.InvalidateCache();
+        }
+    }
+
+    [Fact]
+    public void EngineKernelRetainsProvisionalFailedLoadUntilShutdownCompletesCleanup()
+    {
+        using var workspace = RuntimePackageWorkspace.Create();
+        string packagePath = workspace.AddPackage(
+            "com.test.runtime.partial-retryable",
+            typeof(PartialLoadRetryableOwnershipPackageEntry),
+            services: new
+            {
+                provides = new object[] { typeof(IPartialLoadService).FullName! }
+            });
+        var config = new EngineConfig
+        {
+            PackageUrls = new List<string> { packagePath }
+        };
+
+        AggregateException mountFailure = Assert.Throws<AggregateException>(
+            () => EngineKernel.Instance.MountPackageGraph(config));
+
+        Assert.Contains(
+            mountFailure.Flatten().InnerExceptions,
+            error => error.Message.Contains("injected partial load failure", StringComparison.Ordinal));
+        Assert.Contains(
+            mountFailure.Flatten().InnerExceptions,
+            error => error.Message.Contains("injected partial rollback failure", StringComparison.Ordinal));
+        Assert.Equal(EnginePhase.None, EngineKernel.Instance.CurrentPhase);
+        Assert.False(EngineKernel.Instance.IsPackageGraphMounted);
+        Assert.True(EngineKernel.Instance.HasPendingPackageCleanup);
+        Assert.Same(config, EngineKernel.Instance.Config);
+        Assert.True(EngineKernel.Instance.Services.TryGetService<IPartialLoadService>(out _));
+        Assert.NotNull(EngineKernel.Instance.GetSubsystem<RollbackProbeSubsystem>());
+        Assert.Single(
+            EngineKernel.Instance.GetSubsystem<PackageSubsystem>()!.GetAllPackages());
+        Assert.Equal(
+            new[] { "load:partial-retryable", "unload:partial-retryable:1" },
+            TestPackageEvents.Events);
+
+        EngineKernel.Instance.Shutdown();
+
+        Assert.Equal(
+            new[]
+            {
+                "load:partial-retryable",
+                "unload:partial-retryable:1",
+                "unload:partial-retryable:2"
+            },
+            TestPackageEvents.Events);
+        Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+        Assert.False(EngineKernel.Instance.IsPackageGraphMounted);
+        Assert.False(EngineKernel.Instance.HasPendingPackageCleanup);
+        Assert.False(EngineKernel.Instance.Services.TryGetService<IPartialLoadService>(out _));
+        Assert.Null(EngineKernel.Instance.GetSubsystem<RollbackProbeSubsystem>());
+        Assert.Empty(EngineKernel.Instance.GetSubsystem<PackageSubsystem>()!.GetAllPackages());
+        Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
     }
 
     [Fact]
@@ -1325,11 +2619,128 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
         Assert.Contains("SHA-256 mismatch", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    private sealed class SelectiveThrowingLogger : ILogger
+    {
+        private readonly HashSet<string> m_PendingFailureFragments;
+
+        public SelectiveThrowingLogger(params string[] failureFragments)
+        {
+            m_PendingFailureFragments = new HashSet<string>(
+                failureFragments,
+                StringComparer.Ordinal);
+        }
+
+        public int ThrowCount { get; private set; }
+
+        public void Log(string message) => Publish(message);
+        public void LogFormat(string format, params object[] args) =>
+            Publish(string.Format(format, args));
+        public void Warning(string message) => Publish(message);
+        public void WarningFormat(string format, params object[] args) =>
+            Publish(string.Format(format, args));
+        public void Error(string message) => Publish(message);
+        public void ErrorFormat(string format, params object[] args) =>
+            Publish(string.Format(format, args));
+        public void Fatal(string message) => Publish(message);
+        public void FatalFormat(string format, params object[] args) =>
+            Publish(string.Format(format, args));
+
+        public void Assert(bool condition, string message = "")
+        {
+            if (!condition) Publish(message);
+        }
+
+        public void AssertFormat(bool condition, string format, params object[] args)
+        {
+            if (!condition) Publish(string.Format(format, args));
+        }
+
+        private void Publish(string message)
+        {
+            string? matchedFragment = null;
+            foreach (string fragment in m_PendingFailureFragments)
+            {
+                if (message.Contains(fragment, StringComparison.Ordinal))
+                {
+                    matchedFragment = fragment;
+                    break;
+                }
+            }
+
+            if (matchedFragment == null)
+            {
+                return;
+            }
+
+            m_PendingFailureFragments.Remove(matchedFragment);
+            ThrowCount++;
+            throw new InvalidOperationException(
+                $"Injected logger failure for '{matchedFragment}'.");
+        }
+    }
+
+    private sealed class MutatingShutdownLogger : ILogger
+    {
+        private bool m_AttemptedRegistration;
+
+        public Exception? RegistrationFailure { get; private set; }
+
+        public void Log(string message) => Publish(message);
+        public void LogFormat(string format, params object[] args) =>
+            Publish(string.Format(format, args));
+        public void Warning(string message) => Publish(message);
+        public void WarningFormat(string format, params object[] args) =>
+            Publish(string.Format(format, args));
+        public void Error(string message) => Publish(message);
+        public void ErrorFormat(string format, params object[] args) =>
+            Publish(string.Format(format, args));
+        public void Fatal(string message) => Publish(message);
+        public void FatalFormat(string format, params object[] args) =>
+            Publish(string.Format(format, args));
+
+        public void Assert(bool condition, string message = "")
+        {
+            if (!condition) Publish(message);
+        }
+
+        public void AssertFormat(bool condition, string format, params object[] args)
+        {
+            if (!condition) Publish(string.Format(format, args));
+        }
+
+        private void Publish(string message)
+        {
+            if (m_AttemptedRegistration ||
+                !message.Contains("[EngineKernel] Shutdown baseline:", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            m_AttemptedRegistration = true;
+            try
+            {
+                EngineKernel.Instance.RegisterKernelOwnedService<IPartialLoadService>(
+                    new PartialLoadService());
+            }
+            catch (Exception error)
+            {
+                RegistrationFailure = error;
+            }
+        }
+    }
+
     public void Dispose()
     {
         LifecycleFaultInjection.Reset();
-        EngineKernel.Instance.Reset();
-        TestPackageEvents.Reset();
+        try
+        {
+            EngineKernel.Instance.Reset();
+        }
+        finally
+        {
+            KernelLog.InvalidateCache();
+            TestPackageEvents.Reset();
+        }
     }
 
     private sealed class RuntimePackageWorkspace : IDisposable
@@ -1519,6 +2930,49 @@ public sealed class ProviderPackageEntry : IPackageEntry
     }
 }
 
+public sealed class ResetFromLoadPackageEntry : IPackageEntry
+{
+    public void OnLoad(IServiceRegistry services)
+    {
+        TestPackageEvents.Events.Add("load:reentrant-reset");
+        EngineKernel.Instance.Reset();
+    }
+
+    public void OnUnload(IServiceRegistry services)
+    {
+        TestPackageEvents.Events.Add("unload:reentrant-reset");
+    }
+}
+
+public sealed class NestedMountFromLoadPackageEntry : IPackageEntry
+{
+    public void OnLoad(IServiceRegistry services)
+    {
+        TestPackageEvents.Events.Add("load:reentrant-mount");
+        EngineKernel.Instance.MountPackageGraph(new EngineConfig());
+    }
+
+    public void OnUnload(IServiceRegistry services)
+    {
+        TestPackageEvents.Events.Add("unload:reentrant-mount");
+    }
+}
+
+public sealed class ReentrantPackageShutdownEntry : IPackageEntry
+{
+    public void OnLoad(IServiceRegistry services)
+    {
+        TestPackageEvents.Events.Add("load:reentrant-package-shutdown");
+        services.RegisterService<IPartialLoadService>(new PartialLoadService());
+    }
+
+    public void OnUnload(IServiceRegistry services)
+    {
+        TestPackageEvents.Events.Add("unload:reentrant-package-shutdown");
+        EngineKernel.Instance.GetSubsystem<PackageSubsystem>()!.Shutdown();
+    }
+}
+
 public sealed class ConsumerPackageEntry : IPackageEntry
 {
     public void OnLoad(IServiceRegistry services)
@@ -1578,6 +3032,20 @@ public sealed class ThrowingLoadPackageEntry : IPackageEntry
     }
 }
 
+public sealed class BareThrowingLoadPackageEntry : IPackageEntry
+{
+    public void OnLoad(IServiceRegistry services)
+    {
+        TestPackageEvents.Events.Add("load:failing");
+        LifecycleFaultInjection.ThrowIfArmed(LifecycleFaultStage.PackageLoad);
+    }
+
+    public void OnUnload(IServiceRegistry services)
+    {
+        TestPackageEvents.Events.Add("unload:failing");
+    }
+}
+
 public sealed class ThrowingUnloadPackageEntry : IPackageEntry
 {
     public void OnLoad(IServiceRegistry services)
@@ -1589,6 +3057,110 @@ public sealed class ThrowingUnloadPackageEntry : IPackageEntry
     {
         TestPackageEvents.Events.Add("unload:throwing-unload");
         LifecycleFaultInjection.ThrowIfArmed(LifecycleFaultStage.PackageUnload);
+    }
+}
+
+public sealed class RetryableOwnershipPackageEntry : IPackageEntry
+{
+    private static bool s_HasPendingOwnership;
+    private static int s_UnloadAttemptCount;
+
+    public bool HasPendingOwnership => s_HasPendingOwnership;
+
+    public void OnLoad(IServiceRegistry services)
+    {
+        s_HasPendingOwnership = true;
+        TestPackageEvents.Events.Add("load:retryable");
+    }
+
+    public void OnUnload(IServiceRegistry services)
+    {
+        s_UnloadAttemptCount++;
+        TestPackageEvents.Events.Add($"unload:retryable:{s_UnloadAttemptCount}");
+        if (s_UnloadAttemptCount >= 2)
+        {
+            s_HasPendingOwnership = false;
+        }
+    }
+
+    public static void Reset()
+    {
+        s_HasPendingOwnership = false;
+        s_UnloadAttemptCount = 0;
+    }
+}
+
+public sealed class AlwaysPendingOwnershipPackageEntry : IPackageEntry
+{
+    public static bool AllowCleanup { get; set; }
+    public static int UnloadAttemptCount { get; private set; }
+
+    public bool HasPendingOwnership => !AllowCleanup;
+
+    public void OnLoad(IServiceRegistry services)
+    {
+        AllowCleanup = false;
+        TestPackageEvents.Events.Add("load:always-pending");
+    }
+
+    public void OnUnload(IServiceRegistry services)
+    {
+        UnloadAttemptCount++;
+        TestPackageEvents.Events.Add($"unload:always-pending:{UnloadAttemptCount}");
+    }
+
+    public static void Reset()
+    {
+        AllowCleanup = false;
+        UnloadAttemptCount = 0;
+    }
+}
+
+public sealed class LeafPackageEntry : IPackageEntry
+{
+    public void OnLoad(IServiceRegistry services)
+    {
+        TestPackageEvents.Events.Add("load:leaf");
+    }
+
+    public void OnUnload(IServiceRegistry services)
+    {
+        TestPackageEvents.Events.Add("unload:leaf");
+    }
+}
+
+public sealed class PartialLoadRetryableOwnershipPackageEntry : IPackageEntry
+{
+    private static bool s_HasPendingOwnership;
+    private static int s_UnloadAttemptCount;
+
+    public bool HasPendingOwnership => s_HasPendingOwnership;
+
+    public void OnLoad(IServiceRegistry services)
+    {
+        s_HasPendingOwnership = true;
+        TestPackageEvents.Events.Add("load:partial-retryable");
+        services.RegisterService<IPartialLoadService>(new PartialLoadService());
+        EngineKernel.Instance.RegisterSubsystem(new RollbackProbeSubsystem());
+        throw new InvalidOperationException("injected partial load failure");
+    }
+
+    public void OnUnload(IServiceRegistry services)
+    {
+        s_UnloadAttemptCount++;
+        TestPackageEvents.Events.Add($"unload:partial-retryable:{s_UnloadAttemptCount}");
+        if (s_UnloadAttemptCount == 1)
+        {
+            throw new InvalidOperationException("injected partial rollback failure");
+        }
+
+        s_HasPendingOwnership = false;
+    }
+
+    public static void Reset()
+    {
+        s_HasPendingOwnership = false;
+        s_UnloadAttemptCount = 0;
     }
 }
 
@@ -1636,6 +3208,9 @@ internal static class TestPackageEvents
     {
         Events.Clear();
         CountingTickSubsystem.Reset();
+        RetryableOwnershipPackageEntry.Reset();
+        AlwaysPendingOwnershipPackageEntry.Reset();
+        PartialLoadRetryableOwnershipPackageEntry.Reset();
     }
 }
 
@@ -1782,6 +3357,255 @@ public sealed class ShutdownFollowerSubsystem : IEngineSubsystem
     public void Shutdown()
     {
         TestPackageEvents.Events.Add("shutdown:following");
+    }
+
+    public void Dispose() { }
+}
+
+public sealed class ShutdownFromInitializeSubsystem : IEngineSubsystem
+{
+    private readonly EngineKernel m_Kernel;
+
+    public ShutdownFromInitializeSubsystem(EngineKernel kernel)
+    {
+        m_Kernel = kernel;
+    }
+
+    public int Priority => 10;
+    public EnginePhase InitPhase => EnginePhase.Running;
+
+    public void Initialize()
+    {
+        TestPackageEvents.Events.Add("initialize:reentrant-shutdown");
+        m_Kernel.Shutdown();
+    }
+
+    public void Shutdown()
+    {
+        TestPackageEvents.Events.Add("shutdown:reentrant-shutdown");
+    }
+
+    public void Dispose() { }
+}
+
+public sealed class ResetFromInitializeSubsystem : IEngineSubsystem
+{
+    private readonly EngineKernel m_Kernel;
+
+    public ResetFromInitializeSubsystem(EngineKernel kernel)
+    {
+        m_Kernel = kernel;
+    }
+
+    public int Priority => 10;
+    public EnginePhase InitPhase => EnginePhase.Running;
+
+    public void Initialize()
+    {
+        TestPackageEvents.Events.Add("initialize:reentrant-reset");
+        m_Kernel.Reset();
+    }
+
+    public void Shutdown()
+    {
+        TestPackageEvents.Events.Add("shutdown:reentrant-reset-initialize");
+    }
+
+    public void Dispose() { }
+}
+
+public sealed class RunFromShutdownSubsystem : IEngineSubsystem
+{
+    private readonly EngineKernel m_Kernel;
+
+    public RunFromShutdownSubsystem(EngineKernel kernel)
+    {
+        m_Kernel = kernel;
+    }
+
+    public int Priority => 10;
+    public EnginePhase InitPhase => EnginePhase.Running;
+    public void Initialize() { }
+
+    public void Shutdown()
+    {
+        TestPackageEvents.Events.Add("shutdown:reentrant-run");
+        m_Kernel.Run();
+    }
+
+    public void Dispose() { }
+}
+
+public sealed class BlockingFailedInitializeSubsystem : IEngineSubsystem
+{
+    public int Priority => 10;
+    public EnginePhase InitPhase => EnginePhase.Running;
+    public ManualResetEventSlim ShutdownEntered { get; } = new(false);
+    public ManualResetEventSlim AllowShutdown { get; } = new(false);
+
+    public void Initialize()
+    {
+        throw new InvalidOperationException("injected blocking initialization failure");
+    }
+
+    public void Shutdown()
+    {
+        ShutdownEntered.Set();
+        AllowShutdown.Wait();
+    }
+
+    public void Dispose()
+    {
+        ShutdownEntered.Dispose();
+        AllowShutdown.Dispose();
+    }
+}
+
+public sealed class ResetFromTickSubsystem : ITickableSubsystem
+{
+    private readonly EngineKernel m_Kernel;
+
+    public ResetFromTickSubsystem(EngineKernel kernel)
+    {
+        m_Kernel = kernel;
+    }
+
+    public int Priority => 10;
+    public EnginePhase InitPhase => EnginePhase.Running;
+    public int TickCount { get; private set; }
+    public Exception? ResetFailure { get; private set; }
+    public bool WasShutdown { get; private set; }
+    public void Initialize() { }
+
+    public void Tick(float deltaTime)
+    {
+        TickCount++;
+        try
+        {
+            m_Kernel.Reset();
+        }
+        catch (Exception error)
+        {
+            ResetFailure = error;
+        }
+    }
+
+    public void Shutdown()
+    {
+        WasShutdown = true;
+    }
+
+    public void Dispose() { }
+}
+
+public sealed class BlockingShutdownSubsystem : IEngineSubsystem, IDisposable
+{
+    public int Priority => 10;
+    public EnginePhase InitPhase => EnginePhase.Running;
+    public ManualResetEventSlim ShutdownEntered { get; } = new(false);
+    public ManualResetEventSlim AllowShutdown { get; } = new(false);
+
+    public void Initialize() { }
+
+    public void Shutdown()
+    {
+        ShutdownEntered.Set();
+        AllowShutdown.Wait();
+    }
+
+    public void Dispose()
+    {
+        ShutdownEntered.Dispose();
+        AllowShutdown.Dispose();
+    }
+}
+
+public sealed class BlockingRegistrationSubsystem : IEngineSubsystem, IDisposable
+{
+    private int m_ShouldBlock = 1;
+
+    public int Priority
+    {
+        get
+        {
+            if (Interlocked.Exchange(ref m_ShouldBlock, 0) != 0)
+            {
+                RegistrationEntered.Set();
+                AllowRegistration.Wait();
+            }
+
+            return 10;
+        }
+    }
+
+    public EnginePhase InitPhase => EnginePhase.Running;
+    public ManualResetEventSlim RegistrationEntered { get; } = new(false);
+    public ManualResetEventSlim AllowRegistration { get; } = new(false);
+
+    public void Initialize() { }
+    public void Shutdown() { }
+
+    public void Dispose()
+    {
+        RegistrationEntered.Dispose();
+        AllowRegistration.Dispose();
+    }
+}
+
+public sealed class ThrowingValueEqualitySubsystem : IEngineSubsystem
+{
+    public int Priority => 10;
+    public EnginePhase InitPhase => EnginePhase.Running;
+    public void Initialize() { }
+    public void Shutdown() { }
+    public void Dispose() { }
+    public override int GetHashCode() =>
+        throw new InvalidOperationException("Subsystem value equality must not be used.");
+    public override bool Equals(object? obj) =>
+        throw new InvalidOperationException("Subsystem value equality must not be used.");
+}
+
+public sealed class ReentrantResetShutdownSubsystem : IEngineSubsystem
+{
+    private readonly EngineKernel m_Kernel;
+
+    public ReentrantResetShutdownSubsystem(EngineKernel kernel)
+    {
+        m_Kernel = kernel;
+    }
+
+    public int Priority => 10;
+    public EnginePhase InitPhase => EnginePhase.Running;
+    public void Initialize() { }
+
+    public void Shutdown()
+    {
+        TestPackageEvents.Events.Add("shutdown:reentrant-reset");
+        m_Kernel.Reset();
+    }
+
+    public void Dispose() { }
+}
+
+public sealed class ReentrantInitializeShutdownSubsystem : IEngineSubsystem
+{
+    private readonly EngineKernel m_Kernel;
+    private readonly EngineConfig m_Config;
+
+    public ReentrantInitializeShutdownSubsystem(EngineKernel kernel, EngineConfig config)
+    {
+        m_Kernel = kernel;
+        m_Config = config;
+    }
+
+    public int Priority => 10;
+    public EnginePhase InitPhase => EnginePhase.Running;
+    public void Initialize() { }
+
+    public void Shutdown()
+    {
+        TestPackageEvents.Events.Add("shutdown:reentrant-initialize");
+        m_Kernel.Initialize(m_Config);
     }
 
     public void Dispose() { }

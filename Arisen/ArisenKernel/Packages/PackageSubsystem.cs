@@ -29,8 +29,11 @@ public class PackageSubsystem : IEngineSubsystem
     private readonly Dictionary<string, List<LoadedNativeRuntime>> m_LoadedNativeRuntimes = new(StringComparer.OrdinalIgnoreCase);
     private readonly IPackageResolver m_Resolver = new DefaultPackageResolver();
     private readonly INativePackageRuntimeApi m_NativeRuntimeApi;
+    private readonly List<Exception> m_DeferredShutdownFailures = new();
     private string m_PackagesRoot = string.Empty;
     private AggregateException? m_ShutdownFailure;
+    private bool m_HasPendingCleanup;
+    private int m_ActiveLifecycleOperation;
 
     public PackageSubsystem()
         : this(new NativePackageRuntimeApi())
@@ -47,12 +50,27 @@ public class PackageSubsystem : IEngineSubsystem
     public EnginePhase InitPhase => EnginePhase.Init;
     internal int LoadedContextCount => m_LoadContexts.Count;
     internal int LoadedNativeRuntimeCount => m_LoadedNativeRuntimes.Values.Sum(runtimes => runtimes.Count);
+    internal bool HasPendingCleanup => m_HasPendingCleanup;
+    internal bool HasOwnedRuntimeState =>
+        m_HasPendingCleanup ||
+        m_LoadOrder.Count != 0 ||
+        m_LoadedPackages.Count != 0 ||
+        m_LoadContexts.Count != 0 ||
+        m_LoadedNativeRuntimes.Count != 0;
 
     public void MountPackages(
         IEnumerable<string> packageUrls,
         IEnumerable<SelectedPackageRequirement>? selectedRequirements = null)
     {
         if (packageUrls == null) throw new ArgumentNullException(nameof(packageUrls));
+        using IDisposable operationScope = BeginLifecycleOperation(
+            PackageLifecycleOperation.Mounting);
+        if (m_HasPendingCleanup)
+        {
+            throw new InvalidOperationException(
+                "Packages cannot be mounted while package cleanup remains pending.");
+        }
+
         int initialPackageCount = m_LoadOrder.Count;
 
         try
@@ -90,7 +108,16 @@ public class PackageSubsystem : IEngineSubsystem
         catch (Exception mountError)
         {
             var rollbackErrors = new List<Exception>();
-            RollbackLoadedPackagesTo(initialPackageCount, rollbackErrors);
+            if (!m_HasPendingCleanup)
+            {
+                var pendingErrors = new List<Exception>();
+                RollbackLoadedPackagesTo(
+                    initialPackageCount,
+                    rollbackErrors,
+                    pendingErrors);
+                rollbackErrors.AddRange(pendingErrors);
+            }
+
             if (rollbackErrors.Count > 0)
             {
                 rollbackErrors.Insert(0, mountError);
@@ -105,6 +132,8 @@ public class PackageSubsystem : IEngineSubsystem
 
     public void Initialize()
     {
+        using IDisposable operationScope = BeginLifecycleOperation(
+            PackageLifecycleOperation.Initializing);
         KernelLog.Info("[PackageSubsystem] Initializing...");
 
         // If packages were already registered by the Bootstrapper during early mount,
@@ -246,7 +275,16 @@ public class PackageSubsystem : IEngineSubsystem
         catch (Exception mountError)
         {
             var rollbackErrors = new List<Exception>();
-            RollbackLoadedPackagesTo(initialPackageCount, rollbackErrors);
+            if (!m_HasPendingCleanup)
+            {
+                var pendingErrors = new List<Exception>();
+                RollbackLoadedPackagesTo(
+                    initialPackageCount,
+                    rollbackErrors,
+                    pendingErrors);
+                rollbackErrors.AddRange(pendingErrors);
+            }
+
             if (rollbackErrors.Count > 0)
             {
                 rollbackErrors.Insert(0, mountError);
@@ -597,6 +635,7 @@ public class PackageSubsystem : IEngineSubsystem
         PackageLoadContext? loadContext = null;
         IPackageEntry? entry = null;
         bool entryLoadCompleted = false;
+        ArisenPackageInfo? packageInfo = null;
         var nativeRuntimes = new List<LoadedNativeRuntime>();
         using var serviceRegistrationScope = EngineKernel.Instance.Services is ServiceRegistry registry
             ? registry.BeginPackageRegistration(manifest.Id)
@@ -655,11 +694,9 @@ public class PackageSubsystem : IEngineSubsystem
                 }
 
                 entry = packageEntry;
-                entry.OnLoad(EngineKernel.Instance.Services);
-                entryLoadCompleted = true;
             }
 
-            var packageInfo = new ArisenPackageInfo
+            packageInfo = new ArisenPackageInfo
             {
                 Id = manifest.Id,
                 Name = manifest.Name,
@@ -674,6 +711,12 @@ public class PackageSubsystem : IEngineSubsystem
                 Assembly = assembly,
                 EntryInstance = entryInstance
             };
+
+            if (entry != null)
+            {
+                entry.OnLoad(EngineKernel.Instance.Services);
+                entryLoadCompleted = true;
+            }
 
             nativeRuntimes = LoadNativeRuntimes(manifest);
             RegisterPackageSubsystems(manifest, assembly, packageOrder);
@@ -695,22 +738,41 @@ public class PackageSubsystem : IEngineSubsystem
         catch (Exception e)
         {
             string entryClass = manifest.Entry?.Class ?? "<none>";
-            KernelLog.Error($"[PackageSubsystem] Error loading package {manifest.Id} entry {entryClass}: {e.Message}");
+            var rollbackErrors = new List<Exception>();
+            TryLogCleanupError(
+                $"[PackageSubsystem] Error loading package {manifest.Id} entry {entryClass}: {e.Message}",
+                rollbackErrors);
             m_LoadedPackages.Remove(manifest.Id);
             m_LoadedNativeRuntimes.Remove(manifest.Id);
             m_LoadContexts.Remove(manifest.Id);
             m_LoadOrder.Remove(manifest.Id);
-            var rollbackErrors = new List<Exception>();
+            bool entryCleanupComplete = true;
             if (entryLoadCompleted && entry != null)
             {
-                TryUnloadEntry(manifest.Id, entry, rollbackErrors);
+                entryCleanupComplete = TryUnloadEntry(manifest.Id, entry, rollbackErrors);
+            }
+            else if (entry != null &&
+                     TryHasPendingEntryOwnership(manifest.Id, entry, rollbackErrors))
+            {
+                entryCleanupComplete = TryUnloadEntry(manifest.Id, entry, rollbackErrors);
             }
 
-            ShutdownNativeRuntimes(manifest.Id, nativeRuntimes, rollbackErrors);
-            UnregisterPackageServicesAndSubsystems(manifest.Id, rollbackErrors);
-            if (loadContext != null)
+            if (!entryCleanupComplete && packageInfo != null)
             {
-                TryUnloadContext(manifest.Id, loadContext, rollbackErrors);
+                RetainPackageForPendingCleanup(
+                    manifest.Id,
+                    packageInfo,
+                    loadContext,
+                    nativeRuntimes);
+            }
+            else
+            {
+                ShutdownNativeRuntimes(manifest.Id, nativeRuntimes, rollbackErrors);
+                UnregisterPackageServicesAndSubsystems(manifest.Id, rollbackErrors);
+                if (loadContext != null)
+                {
+                    TryUnloadContext(manifest.Id, loadContext, rollbackErrors);
+                }
             }
 
             if (rollbackErrors.Count > 0)
@@ -1043,27 +1105,49 @@ public class PackageSubsystem : IEngineSubsystem
         }
     }
 
-    private void RollbackLoadedPackagesTo(int initialPackageCount, List<Exception> errors)
+    private bool RollbackLoadedPackagesTo(
+        int initialPackageCount,
+        List<Exception> errors,
+        List<Exception> pendingErrors)
     {
+        m_HasPendingCleanup = false;
         for (int i = m_LoadOrder.Count - 1; i >= initialPackageCount; i--)
         {
             string packageId = m_LoadOrder[i];
             if (m_LoadedPackages.TryGetValue(packageId, out ArisenPackageInfo? package))
             {
-                UnloadPackage(packageId, package, errors);
+                int errorCountBeforeUnload = errors.Count;
+                if (!UnloadPackage(packageId, package, errors))
+                {
+                    int pendingErrorCount = errors.Count - errorCountBeforeUnload;
+                    if (pendingErrorCount > 0)
+                    {
+                        pendingErrors.AddRange(
+                            errors.GetRange(errorCountBeforeUnload, pendingErrorCount));
+                        errors.RemoveRange(errorCountBeforeUnload, pendingErrorCount);
+                    }
+
+                    m_HasPendingCleanup = true;
+                    return false;
+                }
             }
             else
             {
                 m_LoadOrder.RemoveAt(i);
             }
         }
+
+        return true;
     }
 
-    private void UnloadPackage(string packageId, ArisenPackageInfo package, List<Exception> errors)
+    private bool UnloadPackage(string packageId, ArisenPackageInfo package, List<Exception> errors)
     {
         if (package.EntryInstance is IPackageEntry entry)
         {
-            TryUnloadEntry(packageId, entry, errors);
+            if (!TryUnloadEntry(packageId, entry, errors))
+            {
+                return false;
+            }
         }
 
         if (m_LoadedNativeRuntimes.TryGetValue(packageId, out List<LoadedNativeRuntime>? nativeRuntimes))
@@ -1081,9 +1165,11 @@ public class PackageSubsystem : IEngineSubsystem
         {
             TryUnloadContext(packageId, loadContext, errors);
         }
+
+        return true;
     }
 
-    private void TryUnloadEntry(
+    private bool TryUnloadEntry(
         string packageId,
         IPackageEntry entry,
         List<Exception> errors)
@@ -1097,15 +1183,71 @@ public class PackageSubsystem : IEngineSubsystem
             packageId,
             packageOrder);
 
+        Exception? unloadError = null;
         try
         {
             entry.OnUnload(EngineKernel.Instance.Services);
         }
         catch (Exception error)
         {
-            KernelLog.Error($"[PackageSubsystem] Error unloading package {packageId}: {error.Message}");
+            unloadError = error;
             AddFailure(errors, error);
+            TryLogCleanupError(
+                $"[PackageSubsystem] Error unloading package {packageId}: {error.Message}",
+                errors);
         }
+
+        bool hasPendingOwnership = TryHasPendingEntryOwnership(packageId, entry, errors);
+        if (hasPendingOwnership && unloadError == null)
+        {
+            errors.Add(new InvalidOperationException(
+                $"Package '{packageId}' completed OnUnload but still reports pending ownership."));
+        }
+
+        return !hasPendingOwnership;
+    }
+
+    private static bool TryHasPendingEntryOwnership(
+        string packageId,
+        IPackageEntry entry,
+        List<Exception> errors)
+    {
+        try
+        {
+            return entry.HasPendingOwnership;
+        }
+        catch (Exception error)
+        {
+            errors.Add(new InvalidOperationException(
+                $"Package '{packageId}' failed to report whether entry ownership remains pending.",
+                error));
+            return true;
+        }
+    }
+
+    private void RetainPackageForPendingCleanup(
+        string packageId,
+        ArisenPackageInfo package,
+        PackageLoadContext? loadContext,
+        List<LoadedNativeRuntime> nativeRuntimes)
+    {
+        m_LoadedPackages[packageId] = package;
+        if (nativeRuntimes.Count > 0)
+        {
+            m_LoadedNativeRuntimes[packageId] = nativeRuntimes;
+        }
+
+        if (loadContext != null)
+        {
+            m_LoadContexts[packageId] = loadContext;
+        }
+
+        if (!m_LoadOrder.Contains(packageId))
+        {
+            m_LoadOrder.Add(packageId);
+        }
+
+        m_HasPendingCleanup = true;
     }
 
     private void ShutdownNativeRuntimes(
@@ -1130,9 +1272,10 @@ public class PackageSubsystem : IEngineSubsystem
             }
             catch (Exception error)
             {
-                KernelLog.Error(
-                    $"[PackageSubsystem] Error running native shutdown for package {packageId}: {error.Message}");
                 AddFailure(errors, error);
+                TryLogCleanupError(
+                    $"[PackageSubsystem] Error running native shutdown for package {packageId}: {error.Message}",
+                    errors);
             }
             finally
             {
@@ -1159,9 +1302,10 @@ public class PackageSubsystem : IEngineSubsystem
         }
         catch (Exception error)
         {
-            KernelLog.Error(
-                $"[PackageSubsystem] Error freeing native runtime '{runtimePath}' for package {packageId}: {error.Message}");
             AddFailure(errors, error);
+            TryLogCleanupError(
+                $"[PackageSubsystem] Error freeing native runtime '{runtimePath}' for package {packageId}: {error.Message}",
+                errors);
         }
     }
 
@@ -1182,9 +1326,10 @@ public class PackageSubsystem : IEngineSubsystem
             }
             catch (Exception error)
             {
-                KernelLog.Error(
-                    $"[PackageSubsystem] Error unregistering services for package {packageId}: {error.Message}");
                 AddFailure(errors, error);
+                TryLogCleanupError(
+                    $"[PackageSubsystem] Error unregistering services for package {packageId}: {error.Message}",
+                    errors);
             }
         }
 
@@ -1199,9 +1344,10 @@ public class PackageSubsystem : IEngineSubsystem
         }
         catch (Exception error)
         {
-            KernelLog.Error(
-                $"[PackageSubsystem] Error unregistering subsystems for package {packageId}: {error.Message}");
             AddFailure(errors, error);
+            TryLogCleanupError(
+                $"[PackageSubsystem] Error unregistering subsystems for package {packageId}: {error.Message}",
+                errors);
         }
     }
 
@@ -1216,9 +1362,24 @@ public class PackageSubsystem : IEngineSubsystem
         }
         catch (Exception error)
         {
-            KernelLog.Error(
-                $"[PackageSubsystem] Error unloading managed context for package {packageId}: {error.Message}");
             AddFailure(errors, error);
+            TryLogCleanupError(
+                $"[PackageSubsystem] Error unloading managed context for package {packageId}: {error.Message}",
+                errors);
+        }
+    }
+
+    private static void TryLogCleanupError(string message, List<Exception> errors)
+    {
+        try
+        {
+            KernelLog.Error(message);
+        }
+        catch (Exception error)
+        {
+            errors.Add(new InvalidOperationException(
+                "Package cleanup failed to publish a diagnostic.",
+                error));
         }
     }
 
@@ -1235,6 +1396,8 @@ public class PackageSubsystem : IEngineSubsystem
 
     public void Shutdown()
     {
+        using IDisposable operationScope = BeginLifecycleOperation(
+            PackageLifecycleOperation.ShuttingDown);
         if (m_LoadOrder.Count == 0)
         {
             if (m_ShutdownFailure != null) throw m_ShutdownFailure;
@@ -1242,27 +1405,108 @@ public class PackageSubsystem : IEngineSubsystem
         }
 
         var errors = new List<Exception>();
-        RollbackLoadedPackagesTo(0, errors);
+        var pendingErrors = new List<Exception>();
+        bool cleanupCompleted = RollbackLoadedPackagesTo(0, errors, pendingErrors);
+        m_DeferredShutdownFailures.AddRange(errors);
 
-        if (errors.Count > 0)
+        if (!cleanupCompleted)
+        {
+            var attemptFailures = new List<Exception>(m_DeferredShutdownFailures);
+            attemptFailures.AddRange(pendingErrors);
+            throw new AggregateException(
+                "Package shutdown remains incomplete because an entry still owns retryable state.",
+                attemptFailures);
+        }
+
+        if (m_DeferredShutdownFailures.Count > 0)
         {
             m_ShutdownFailure = new AggregateException(
                 "Package shutdown completed with one or more cleanup errors.",
-                errors);
+                m_DeferredShutdownFailures);
             throw m_ShutdownFailure;
         }
 
+        m_DeferredShutdownFailures.Clear();
         m_ShutdownFailure = null;
     }
 
-    public void RegisterLoadedPackage(ArisenPackageInfo info)
+    private IDisposable BeginLifecycleOperation(PackageLifecycleOperation operation)
     {
-        if (info == null || string.IsNullOrEmpty(info.Id)) return;
-        m_LoadedPackages[info.Id] = info;
-        if (!m_LoadOrder.Contains(info.Id)) m_LoadOrder.Add(info.Id);
+        int activeValue = Interlocked.CompareExchange(
+            ref m_ActiveLifecycleOperation,
+            (int)operation,
+            (int)PackageLifecycleOperation.None);
+        if (activeValue != (int)PackageLifecycleOperation.None)
+        {
+            var activeOperation = (PackageLifecycleOperation)activeValue;
+            throw new InvalidOperationException(
+                $"Package subsystem cannot {GetRequestedOperationName(operation)} while " +
+                $"{GetActiveOperationName(activeOperation)} is in progress.");
+        }
+
+        return new LifecycleOperationScope(this, operation);
     }
 
+    private void EndLifecycleOperation(PackageLifecycleOperation operation)
+    {
+        int activeValue = Interlocked.CompareExchange(
+            ref m_ActiveLifecycleOperation,
+            (int)PackageLifecycleOperation.None,
+            (int)operation);
+        if (activeValue != (int)operation)
+        {
+            throw new InvalidOperationException(
+                $"Package subsystem lifecycle operation '{operation}' lost its admission ownership.");
+        }
+    }
+
+    private static string GetRequestedOperationName(PackageLifecycleOperation operation) =>
+        operation switch
+        {
+            PackageLifecycleOperation.Mounting => "mount packages",
+            PackageLifecycleOperation.Initializing => "initialize",
+            PackageLifecycleOperation.ShuttingDown => "shutdown",
+            _ => "mutate lifecycle state"
+        };
+
+    private static string GetActiveOperationName(PackageLifecycleOperation operation) =>
+        operation switch
+        {
+            PackageLifecycleOperation.Mounting => "package mounting",
+            PackageLifecycleOperation.Initializing => "package initialization",
+            PackageLifecycleOperation.ShuttingDown => "package shutdown",
+            _ => "another lifecycle operation"
+        };
+
     public void Dispose() => Shutdown();
+
+    private enum PackageLifecycleOperation
+    {
+        None,
+        Mounting,
+        Initializing,
+        ShuttingDown
+    }
+
+    private sealed class LifecycleOperationScope : IDisposable
+    {
+        private PackageSubsystem? m_Owner;
+        private readonly PackageLifecycleOperation m_Operation;
+
+        public LifecycleOperationScope(
+            PackageSubsystem owner,
+            PackageLifecycleOperation operation)
+        {
+            m_Owner = owner;
+            m_Operation = operation;
+        }
+
+        public void Dispose()
+        {
+            PackageSubsystem? owner = Interlocked.Exchange(ref m_Owner, null);
+            owner?.EndLifecycleOperation(m_Operation);
+        }
+    }
 
     private enum PackageAssemblyLoadPolicy
     {

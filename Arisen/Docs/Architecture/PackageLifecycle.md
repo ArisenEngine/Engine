@@ -20,7 +20,7 @@ Runtime package mounting follows this responsibility split:
 3. `EngineKernel` passes package URLs plus every selected workspace/profile constraint and each exact build-resolved package version to `PackageSubsystem.MountPackages()`.
 4. `PackageSubsystem` reads each effective `package.json` from either a source package root or deployed `Packages/<id>/`, validates every selected and dependency constraint, rejects dependency cycles, and topologically sorts the descriptors it just read. It then loads the co-located entry assembly if present, creates the entry class, calls `IPackageEntry.OnLoad(IServiceRegistry)`, invokes any declared native `initExport` hooks, validates declared service providers/requirements, and records `ArisenPackageInfo`.
 5. Only after every selected package and the final required-service set validate does `EngineKernel` commit `IsPackageGraphMounted` and retain the supplied `EngineConfig`.
-6. `PackageSubsystem.Shutdown()` calls `IPackageEntry.OnUnload(IServiceRegistry)` and any declared native `shutdownExport` hooks in reverse mount order, then unregisters services and subsystem registrations provided by each package after that package finishes unloading. The `com.arisen.core` provider completes the diagnostics logger from its own `OnUnload`, after all dependent packages have emitted their teardown diagnostics. It closes native callback admission, drains in-flight native handlers, flushes and joins the asynchronous file queue, drains the managed notification dispatcher, releases event subscribers, and invalidates the kernel logger cache before the remaining provider/kernel messages fall back to the console.
+6. `PackageSubsystem.Shutdown()` calls `IPackageEntry.OnUnload(IServiceRegistry)` and any declared native `shutdownExport` hooks in reverse mount order, then unregisters services and subsystem registrations provided by each package after that package finishes unloading. An entry that still reports `IPackageEntry.HasPendingOwnership` remains mounted with its native runtimes, services, subsystems, and managed context; reverse traversal stops so its dependency closure remains reachable. The `com.arisen.core` provider completes the diagnostics logger from its own `OnUnload`, after all dependent packages have emitted their teardown diagnostics. It closes native callback admission, drains in-flight native handlers, flushes and joins the asynchronous file queue, drains the managed notification dispatcher, releases event subscribers, and invalidates the kernel logger cache before the remaining provider/kernel messages fall back to the console.
 
 This avoids split-brain package state between bootstrapper, kernel, and package tracking UI. It also centralizes runtime service-contract validation so a package that declares non-deferred `services.provides` must actually register those services during `OnLoad()`, and all non-optional/non-deferred `services.requires` contracts must exist before subsystem initialization continues.
 
@@ -39,9 +39,69 @@ Package mounting is an all-or-nothing operation at two levels:
 - each package provisionally owns its managed context, entry instance, package-attributed services and subsystems, initialized native runtimes, and metadata until provider validation succeeds;
 - the requested graph provisionally owns every package added by that mount call until final required-service validation succeeds.
 
-If a stage fails, `PackageSubsystem` rolls back in reverse package/runtime order. A completed managed `OnLoad` receives one `OnUnload` attempt; an `OnLoad` that threw does not. Native runtimes receive `shutdownExport` only after their `initExport` completed successfully, and every loaded library is freed even when a shutdown hook fails. Package-attributed service and subsystem registrations are removed, package records are discarded, and collectible contexts are marked for unload. If rollback itself reports errors, the original mount failure and every cleanup failure are returned together as an `AggregateException` after all independent cleanup has run.
+If a stage fails, `PackageSubsystem` rolls back in reverse package/runtime order. A completed managed `OnLoad` receives one `OnUnload` attempt. An `OnLoad` that throws must either finish its own rollback or report `HasPendingOwnership`; an opted-in entry receives one kernel-owned cleanup attempt, and the provisional package remains reachable when that attempt still reports ownership. Native runtimes receive `shutdownExport` only after their `initExport` completed successfully, and every loaded library is freed even when a shutdown hook fails. Package-attributed service and subsystem registrations are removed, package records are discarded, and collectible contexts are marked for unload only after entry-owned cleanup completes. If rollback itself reports errors, the original mount failure and every cleanup failure are returned together as an `AggregateException` after all independent cleanup has run.
 
-`EngineKernel.MountPackageGraph()` exposes `Config` provisionally because package entries need it during `OnLoad`, but restores the previous value and removes an auto-created `PackageSubsystem` when mounting fails. A clean rollback may be followed by a new mount attempt without resetting the kernel.
+`EngineKernel.MountPackageGraph()` exposes `Config` provisionally because package entries need it during `OnLoad`. A clean rollback restores the previous value, removes an auto-created `PackageSubsystem`, and permits a new mount attempt without resetting the kernel. When entry-owned cleanup remains pending, the provisional config and package subsystem stay reachable, the graph remains uncommitted, and another mount is rejected until explicit shutdown completes the retained cleanup.
+
+### Resumable Entry Teardown
+
+`IPackageEntry.HasPendingOwnership` is the explicit retry contract for package-owned state that cannot
+be abandoned after an unload attempt. Its default is `false`, so existing entries and exceptions that
+are purely diagnostic preserve one-shot teardown behavior. Entries that opt in must keep the property
+side-effect free and make `OnUnload` idempotent and resumable: each successful stage clears only the
+ownership it actually released, while a failed stage remains represented for a later call.
+
+After every `OnUnload` attempt, `PackageSubsystem` reads the property regardless of whether the call
+returned or threw. When it is `false`, native shutdown, package-attributed service/subsystem removal,
+package record removal, and context unload continue, and any thrown exception is aggregated as a
+terminal diagnostic. When it is `true`, those later stages do not run, reverse package traversal stops,
+and all earlier dependencies remain mounted. A property getter failure is treated conservatively as
+pending ownership.
+
+`EngineKernel.Shutdown()` performs one teardown attempt per call. It remains in `PreShutdown`,
+preserves `IsPackageGraphMounted` for a previously mounted graph, and leaves kernel-owned services
+registered while package cleanup is pending. A later explicit `Shutdown()` resumes from the retained
+package without a timed wait or internal retry policy. The kernel enters terminal `Shutdown`, clears
+mounted state, and validates the zero-ownership baseline only after package cleanup reaches zero.
+`Reset()` follows the same path and must not silently discard pending package state.
+
+Bootstrap startup compensation is a separate host policy. Project and package metadata are resolved
+before the Bootstrapper installs any kernel-owned state. After a later startup failure, the host
+always performs at least one shutdown attempt. It repeats only while the coarse observable ownership
+snapshot moves monotonically toward zero and at least one kernel/package count or state strictly
+improves. The snapshot is intentionally coarse and does not infer progress inside one retained entry.
+An identical or regressing snapshot is reported as stalled cleanup, and the Bootstrapper does not
+request process exit while package runtime ownership remains. This provides a bounded drain without
+a sleep, timeout, or arbitrary retry count.
+
+### Lifecycle Operation Admission
+
+`EngineKernel` admits only one package-mount, initialization, run, shutdown, or reset operation at a
+time through an atomic compare-and-swap owner. Initialization keeps that ownership continuously when
+it transitions into compensating shutdown, and run ownership remains active through subsystem ticks,
+frame-end callbacks, and smoke-scenario callbacks. Standalone subsystem registration acquires the same
+exclusive owner for its complete collection mutation; package setup on the current lifecycle thread
+reuses the mount/initialization owner. `PackageSubsystem` has its own admission owner covering package
+mounting and rollback, initialization, and shutdown. Concurrent or callback-side reentry is rejected
+before a second lifecycle mutation can begin.
+
+The first shutdown attempt closes `ServiceRegistry` registration under its registration gate before
+any teardown callback runs. Existing services remain readable and removable, but package, subsystem,
+logger, and host callbacks cannot add a service after shutdown has started. Registration stays closed
+across incomplete and terminal shutdown. `EngineKernel.Reset()` also keeps registration closed while
+it clears the previous cycle, then atomically releases reset admission and reopens registration at the
+new-cycle boundary.
+
+Failure-path diagnostics are non-owning. A logger exception cannot suppress Bootstrapper's
+compensating shutdown or any later teardown stage. One-shot host/subsystem/diagnostic failures are
+retained across a pending package retry and included in the final cached shutdown result, while an
+attempt-local package cleanup failure that succeeds on retry is reported only by the incomplete
+attempt.
+
+An entry whose registration call may throw after committing must record cleanup intent before the
+call and reconcile the exact attempted instance during rollback. A duplicate logical ID owned by a
+different instance is a pre-commit collision, not package ownership; cleanup must never unregister
+that existing owner by ID.
 
 Build-stage source resolution is a separate explicit operation. `ResolveBuildStagePackageGraph()`
 first verifies the finalized runtime `manifest.resolved.json` beside the executing cook host,
@@ -57,7 +117,7 @@ non-finalized source manifest is therefore never accepted as the runtime integri
 - Entry assemblies resolved under `AppContext.BaseDirectory` are loaded in the default context. This is the expected path for generated workspace outputs and shared engine assemblies that must exchange kernel contract types without type identity splits.
 - Entry assemblies resolved from package-local roots such as `Managed/` are loaded in a collectible `PackageLoadContext`. The context uses `AssemblyDependencyResolver` for package-private managed and unmanaged dependencies.
 
-Unloadability is best-effort and applies only to assemblies loaded through `PackageLoadContext`. `PackageSubsystem.Shutdown()` first calls `IPackageEntry.OnUnload()` in reverse package order, runs native shutdown hooks, unregisters services and subsystems provided by each unloaded package, removes package state, and then marks that package's collectible context for unload. Actual memory reclamation depends on package code releasing all references to objects, types, delegates, threads, and unmanaged callbacks from that context. Default-context assemblies are intentionally process-lifetime assemblies and are not unloadable.
+Unloadability is best-effort and applies only to assemblies loaded through `PackageLoadContext`. `PackageSubsystem.Shutdown()` first calls `IPackageEntry.OnUnload()` in reverse package order. Once the entry reports no pending ownership, it runs native shutdown hooks, unregisters services and subsystems provided by that package, removes package state, and then marks that package's collectible context for unload. A retained entry keeps the context strongly reachable until a later unload attempt completes. Actual memory reclamation depends on package code releasing all references to objects, types, delegates, threads, and unmanaged callbacks from that context. Default-context assemblies are intentionally process-lifetime assemblies and are not unloadable.
 
 ### Asynchronous Unload Ownership
 
@@ -182,4 +242,10 @@ When the engine shuts down, the Kernel executes subsystem teardown in reverse su
 5. `com.arisen.core` emits the final diagnostics-completion marker, drains native callbacks and the asynchronous file queue, then joins the ordered managed event dispatcher and releases its subscribers.
 6. `com.arisen.core.native` and the remaining kernel state finish teardown with console fallback after the logger service is removed.
 
-After all cleanup attempts, `EngineKernel` enters `Shutdown` and throws one aggregate when any cleanup failed. Repeated `Shutdown()` calls do not execute hooks twice; they return the same stored aggregate so an incomplete teardown cannot be mistaken for success.
+If package ownership remains pending, `EngineKernel` stays in `PreShutdown`: completed one-shot
+subsystem stages are not repeated, while a later `Shutdown()` retries only the retained package
+cleanup. Once all ownership is released, the kernel enters terminal `Shutdown` and throws one
+aggregate when any cleanup failed. Calls made after terminal `Shutdown` execute no hooks and return
+the same stored aggregate, so an incomplete or previously failed teardown cannot be mistaken for
+success. `Reset()` is rejected while a shutdown attempt is active and may clear state only after
+that attempt returns.
