@@ -84,7 +84,13 @@ Runtime lookup captures one immutable registry snapshot, performs file I/O outsi
 
 The current `IAssetDatabase` reads a cooked artifact into managed memory and returns a generation-checked `CookedAssetHandle`. Loaded bytes are immutable for that handle's lifetime. Publishing a changed artifact removes only the old slot's current-key mapping: existing owners may finish reading the retained old generation, while every subsequent acquisition is routed to a fresh slot containing the replacement bytes. Releasing an old handle cannot remove the replacement mapping. Each format validates its own magic, version, counts, offsets, sizes, and semantic constraints before setup consumes the payload.
 
-Cooked-handle slot acquisition/release is synchronized for background streaming. Concurrent requests for the same `(GUID, variant)` converge on one slot and increment its reference count; bytes are read outside the slot lock and a racing second read is discarded after the winner is observed. `IRuntimeAssetResidencyService` adds owner-level sharing above those handles so persistent scenes and additive cells retain one CPU payload until the final owner releases it.
+Cooked-handle slot acquisition/release is synchronized for background streaming. Concurrent requests for the same `(GUID, variant)` converge on one slot and increment its reference count; bytes are read outside the slot lock and a racing second read is discarded after the winner is observed. `IRuntimeAssetResidencyService` adds owner-level sharing above those handles so persistent scenes and additive cells retain one CPU payload until the final owner releases it. A prepared provider may capture a generation-qualified claim for the exact held handle and bind the dependency keys decoded from that payload. Every sharing owner must require that same canonical closure; owner membership changes invalidate the claim.
+
+Prepared-provider callbacks use service-owned admission. `Prepare` runs outside the residency state gate from the single active frame-boundary pass. Invalidation, unregister, and disposal close preparation admission and publish that lifecycle state before draining an in-flight callback. Provider release and metrics sampling are serialized against preparation; metrics sampling temporarily pauses new admission. Lifecycle reentry from any provider callback is rejected rather than waiting on ownership held by that callback. Exact-instance registration queries remain valid through cleanup drain and let package rollback preserve a different provider that already owns the same logical ID.
+
+Atomic prepared publication is separately single-owner. Before invoking the external publication callback outside the state gate, the service validates the admitted root claim, every canonical dependency claim, the canonical dependency binding, and the complete sharing-owner closure. Owner attachment, release, and acquisition rollback wait for an active publication to finish. After the callback returns, the service revalidates root/provider admission, every dependency claim, and the canonical binding before committing `Ready`; an intervening invalidation raises a publication-specific stale signal so the provider removes the just-published state and returns to `Waiting`.
+
+Provider and cooked-handle cleanup legs are journaled independently; successful legs are not repeated and failed legs retain deterministic retry ownership. Temporary cleanup keeps one row per logical cooked-handle reference even when multiple racers receive the same exact handle generation, while those rows share one physical CPU-byte charge. Completing the charged row transfers that charge and any key-reuse block to another outstanding row, and CPU bytes are decremented only after the final reference releases. Losing-racer cleanup does not block sharing a live winner; after the live resource is removed, remaining cleanup blocks reacquisition until retry completes.
 
 Cooked bytes are not assumed to match CLR or native object layout. GPU resources still require explicit backend-owned upload/setup, and cooked scenes decode a sectioned payload into an immutable staging representation before deterministic ECS instantiation. Memory mapping and direct typed views may be introduced later for formats whose schema, alignment, lifetime, and platform portability make that safe; they are not a blanket current guarantee.
 
@@ -368,7 +374,7 @@ The first scene source asset slice adds `.arisenscene` / `.scene` files as `Scen
 
 The first world descriptor slice adds `.arisenworld` files as `World` assets:
 
-- `WorldSourceAsset` generated refs and optional workspace `StartupWorld` selection preserve package/GUID identity. When selected, `StartupWorld` is both the `startupWorld` Production cook root and the runtime activation root: its persistent scene is activated during `PostInit`, while streamable cells wait for a camera source or explicit pin. `StartupScene` is the compatibility fallback only when no world is selected.
+- `WorldSourceAsset` generated refs and optional workspace `StartupWorld` selection preserve package/GUID identity. When selected, `StartupWorld` is both the `startupWorld` Production cook root and the runtime activation root: `PostInit` accepts the persistent-world request, while frame-boundary residency setup gates activation of the persistent scene and world as one transaction. Streamable cells then wait for a camera source or explicit pin. `StartupScene` is the compatibility fallback only when no world is selected.
 - Source schema version 2 stores the world GUID/name, persistent scene, double-precision partition origin/cell size, load radius, unload hysteresis, active-cell limit, canonical layers, explicit cells, bounds, optional world-space cell `FocusBounds`, scene references, dependencies, residency estimates, and stable entity references. Version-1 worlds without focus metadata migrate in memory. Focus bounds must be finite, ordered, and contained by their cell. The declared world GUID must equal the `.meta` GUID. Unknown or duplicate YAML fields fail instead of being ignored.
 - `WorldCellIdentity` derives an RFC-4122-shaped deterministic GUID from `world GUID + integer XYZ coordinate + canonical layer`. Layer text is lowercase ASCII identity data. IDs therefore do not depend on source/deployment paths, source list order, or runtime request order.
 - Cell bounds must be finite, ordered, and non-overlapping within one layer. Cell keys, IDs, scene package/type identities, explicit dependencies, and referenced authoring entity GUIDs are all validated before cooking. Neighbor IDs are the existing six axis-adjacent keys in the same layer and both neighbor/dependency arrays are serialized in stable ID order.
@@ -413,7 +419,32 @@ The vegetation authoring, cooked-data, and first scatter-bake slices are owned b
 - The current one-page planner fails as soon as accepted output exceeds the authored cluster size or `65,536` page limit; it never completes unbounded spacing work and then truncates. It returns cluster/page descriptors, generated metadata, and the placement hash without mutating the asset database. The caller registers those generated identities and publishes through `VegetationClusterAssetCooker`.
 - Child pages are serialized and validated before publication, then the cluster root commits last under the shared setup-time publication gate. This is not transactional page-set replacement: stale page artifacts remain registered, and committed children are not rolled back if later root publication fails. Atomically switching the new cluster/catalog closure, pruning stale rows/files, and rolling back a failed replacement remain Milestone 3 work.
 
-The scatter slice does not yet define an explicit valid-empty/no-output plan, multi-page partitioning, transactional stale-page removal, scene codecs, residency, rendering, Editor authoring, or backend behavior. Those remain later vegetation work.
+The scatter slice still does not define an explicit valid-empty/no-output plan, multi-page
+partitioning, or transactional stale-page removal. The scene/runtime boundary is now present:
+`VegetationClusterSceneComponentCodec` (schema version 1) stores one blittable cluster component
+per scene entity, validates the exact world/cell/origin/bounds and exclusive cluster identity, and
+emits the cluster, biome, pages, every unique biome species, and every LOD mesh/material dependency.
+Source scene staging validates the already-published generated cluster/page closure, then reads the
+current authored biome and every unique authored species/LOD descriptor without requiring their
+cooked variants to exist. `RuntimeAssetCookCoordinator` can therefore close a scene root from a
+clean authored cache and cannot substitute stale cooked biome membership. Cooked scene staging
+instead loads the exact cooked cluster, biome, and every unique cooked biome species, rejects
+missing artifacts or membership mismatches, and derives the same flattened dependency plan without
+source fallback. The cluster itself remains constrained to one canonical species and that species
+must belong to the biome. `VegetationRuntimeDataStore`
+prepares and atomically publishes immutable generation-qualified cluster/page views; page
+publication carries the cooked payload's exact byte size and SHA-256 rather than reserializing it
+in production. The bounded query service reports invalid, outside-coverage, unavailable, and
+available states without loading assets. Generic RP's prepared provider decodes only residency-held
+handles on background workers. Cluster claims bind their exact biome/species/page keys and validate
+page parent, schema, byte-size/SHA-256 pins, species union, counts, bounds, biome membership, and
+cross-page stable keys. Page claims reciprocally bind the exact parent cluster and species; species
+and biome claims bind mesh/material and species keys respectively. The provider revalidates the
+root/dependency claims, canonical binding, and owner-plan generation immediately before and after
+publication, treats a superseded owner plan as `Waiting`, and lets page
+resources evict independently while shared species dependencies remain coarse residency keys. GPU
+instance buffers, vegetation extraction/render passes, Editor authoring, and backend-specific
+behavior remain later vegetation work.
 
 Terrain brush authoring is an in-memory transaction until explicit save. `TerrainAuthoringDocument` owns a validated root/tile working set, exact saved baselines, dirty tile identities, and deterministic brush commands. The first height brush applies signed quantized linear-falloff deltas; the first four-layer paint brush changes one selected channel while renormalizing all channels to an exact `UNorm8` sum of 255. Samples on shared edges and corners update every owning tile. Undo records contain only changed sample indices and exact before/after values, so undo/redo restores byte-identical data and clears dirty state when the working copy returns to its baseline.
 

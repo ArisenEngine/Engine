@@ -47,14 +47,20 @@ public sealed class GenericRenderPipelineFeatureRegistryTests
     public void DuplicateFeatureIdIsRejectedWithStableDiagnostic()
     {
         var registry = new GenericRenderPipelineFeatureRegistryCore<TestFeature>();
-        registry.Register(new TestFeature("feature.duplicate", 0), "feature.duplicate", 0);
+        var registered = new TestFeature("feature.duplicate", 0);
+        var collision = new TestFeature("feature.duplicate", 1);
+        registry.Register(registered, registered.Id, registered.Order);
 
         var exception = Assert.Throws<InvalidOperationException>(() =>
-            registry.Register(new TestFeature("feature.duplicate", 1), "feature.duplicate", 1));
+            registry.Register(collision, collision.Id, collision.Order));
 
         Assert.Equal(
             "[GenericRP.Features] Feature ID 'feature.duplicate' is already registered.",
             exception.Message);
+        Assert.True(registry.IsRegistered(registered));
+        Assert.False(registry.IsRegistered(collision));
+        Assert.True(registry.Unregister(registered, registered.Id));
+        Assert.False(registry.IsRegistered(registered));
     }
 
     [Fact]

@@ -9,9 +9,28 @@ Runtime world streaming turns a cooked `World` descriptor into one persistent sc
 
 `ProjectSceneBootstrapSubsystem` selects startup content during `PostInit`:
 
-- when `StartupWorld` is valid, `IRuntimeWorldStreamingService.LoadWorld` loads the descriptor and activates its persistent scene;
+- when `StartupWorld` is valid, `IRuntimeWorldStreamingService.LoadWorld` loads the descriptor and
+  admits its persistent scene for activation. If required residency is not ready, the call returns
+  a deferred result; the persistent scene and world become active together at a later frame
+  boundary;
 - otherwise, `StartupScene` is activated through the compatibility `IRuntimeSceneService` path;
 - loading a world does not automatically select streamable cells. A composition/gameplay caller must set a finite streaming source, while Editor authoring explicitly pins cells for edit residency. Editing the persistent scene camera does not silently change cell ownership.
+
+`IRuntimeWorldStreamingService.PresentationSnapshot` returns one state-gate-coherent revision with
+the active world asset, pending world asset, and active world GUID. `WorldPresentationChanged`
+carries that exact committed snapshot. The revision advances when pending ownership is admitted,
+replaced, or cleared and when active ownership is committed or cleared by activation, failure, or
+shutdown; direct supersession publishes pending A to pending B without an observable empty gap.
+
+An Editor viewport with a configured startup world subscribes before reading its initial snapshot.
+Any active world prevents barrier arming. With no active world, any valid pending winner arms the
+barrier, including a superseding world observed after restart. Callback and current-snapshot
+revisions must match, so stale identity callbacks and B-to-C-to-B ABA transitions cannot capture an
+obsolete output boundary. Once a barrier is armed, a pending successor takes precedence over an
+outgoing active world present in the same revision. A terminal snapshot with neither an active nor
+pending world releases the barrier without activation. Committed presentation changes publish
+before fallible residency cleanup; a failed supersession then publishes its terminal empty revision
+and leaves cleanup-only frame processing available for deterministic retry.
 
 Editor/diagnostic source mode validates `.arisenworld` and `.arisenscene` source. Read-only Production resolves `.ariworld` and `.ariscene` artifacts from `runtime-assets.json`. Production never falls back to authoring YAML.
 
@@ -25,15 +44,26 @@ Cell work is split deliberately:
 4. Worker state notifications are queued internally. Public `CellStateChanged` callbacks are delivered when the frame-boundary owner drains them, never directly from a worker.
 5. Activation calls `RuntimeSceneService.ActivatePreparedAdditiveAtFrameBoundary`; unload calls `UnloadSceneAtFrameBoundary`. Both structural operations therefore occur on the owning frame thread.
 
-`CellStateChanged` and `ActiveWorldChanged` are synchronous observational boundaries. The publisher
-snapshots each multicast delegate, invokes every subscriber independently and outside the streaming
-state lock, and never lets one observer prevent later observers from seeing an already-committed
-transition. Failures emitted by one public operation are collected until its owning boundary
-(`LoadWorld`, preview/reload/retry, frame processing, or shutdown) completes. The service then adds
-one `SubscriberAggregate` entry to `GetDiagnostics()`, increments `SubscriberFailureCount`, and logs
-one aggregate error. Each child diagnostic retains the event name, payload identity, deterministic
-registration index plus declaring type/method, exception type, and message. Observer failure does not
-roll back committed world/ECS state, but it is never silently swallowed.
+World lifecycle operations are serialized by an explicit non-reentrant gate. `LoadWorld`,
+`ProcessAtFrameBoundary`, and `Shutdown` wait for an operation already in progress; a same-thread
+reentry from an activation validator or observer fails immediately with a diagnostic instead of
+deadlocking. A ready cell also takes a monotonic activation claim before placement and scene
+activation. Reload, preview replacement, undesired-cell planning, and shutdown cannot release that
+cell's staging or residency lease until the claim has completed. If a successful activation is
+superseded, the new scene instance is unloaded first and only then are staging and residency
+ownership released and the cell requeued.
+
+`CellStateChanged`, `ActiveWorldChanged`, and `WorldPresentationChanged` are synchronous
+observational boundaries. The publisher snapshots each multicast delegate, invokes every subscriber
+independently and outside the streaming state lock, and never lets one observer prevent later
+observers from seeing an already-committed transition. Failures emitted by one public operation are
+collected until its owning boundary (`LoadWorld`, preview/reload/retry, frame processing, or
+shutdown) completes. The service then adds one `SubscriberAggregate` entry to `GetDiagnostics()`,
+increments `SubscriberFailureCount`, and logs one aggregate error. Each child diagnostic retains the
+event name, payload identity, deterministic registration index plus declaring type/method,
+exception type, and message; presentation payloads record the revision, active asset, pending asset,
+and active GUID. Observer failure does not roll back committed world/ECS state, but it is never
+silently swallowed.
 
 The payload loader has Tracy zones for `WorldStreaming.Read`, `WorldStreaming.Decode`, and `WorldStreaming.Validate`. Each admitted worker also emits `WorldStreaming.CellRead/<cell-id>`, while frame-boundary ownership emits `WorldStreaming.Activate/<cell-id>` and `WorldStreaming.Unload/<cell-id>` around concrete cell work. The stable cell suffix makes latency attributable without adding per-entity zones. Coarse aggregate zones remain available for `WorldStreaming.PlanRequests`, `WorldStreaming.WaitForResources`, `WorldStreaming.Activate`, and `WorldStreaming.Unload`.
 
@@ -55,7 +85,12 @@ Read, decode, validation, budget, and activation failures remain `Failed` until 
 
 Each prepared additive activation carries its owning `WorldCellId` into `RuntimeSceneService`. Entity-to-instance ownership can therefore resolve back to the cell without transient hierarchy or UI state. Package-owned scene components may also expose an exclusive stable identity; the service validates those identities before ECS mutation, rejects a second active owner, releases them only with successful instance unload, and permits the same stable identity after unload/reload. Terrain uses this boundary for one tile GUID per owning cell scene.
 
-Shutdown cancels all tracked requests, drains their completion, clears staging accounting, and runs before task-graph worker teardown. `ResourcesPackage` then clears all remaining scene ownership.
+Shutdown cancels all tracked requests, drains their completion, and clears staging accounting. It
+prevalidates one dependency-safe batch containing every active additive instance and the persistent
+instance, then unloads that batch atomically before releasing any cell or persistent residency
+lease. A rejected batch leaves the old scenes, ECS entities, and leases intact and returns the
+service to its prior running state; no partial world replacement is reported. Shutdown runs before
+task-graph worker teardown, after which `ResourcesPackage` clears any remaining scene ownership.
 
 ## Selection And Ordering
 
@@ -97,6 +132,14 @@ The coordinator holds one generation-checked cooked handle per key and reference
 
 `IRuntimePreparedAssetProvider` keeps backend setup behind a package-neutral boundary. GenericRP registers one provider for meshes, materials, and environment texture/IBL resources. Setup runs at the frame boundary, outside RenderGraph command recording, and is bounded by count and soft wall time. A cell remains `WaitingForResources` until every required key is ready. GenericRP caches by stable residency key, shares material resources by GUID, and shares texture/image/sampler allocations across materials with the same texture variant and sampler settings. Render passes consume the resulting prepared resources without registry or asset-database lookup. Residency snapshots expose immutable owner IDs so package diagnostics can attribute resources without creating a second ownership table. Device-resource teardown calls `InvalidatePreparedProvider`: every still-owned key returns to `Waiting`, provider resources are released, and normal bounded setup recreates them after a valid device becomes available.
 
+Acquisition, `Prepare`, prepared publication, and provider lifecycle callbacks run outside the
+residency state gate under explicit callback admission. Every world-streaming lifecycle entry asks
+the residency coordinator to reject callback-side reentry before it waits for the world lifecycle
+gate. This ordering prevents a callback that the current world operation is draining from waiting
+back on that operation's gate. Publication rejection and release failure retain generation-qualified
+ownership for deterministic frame-boundary cleanup retry instead of abandoning a cooked handle or
+prepared resource.
+
 The terrain Generic RP adapter registers a second prepared provider for `TerrainRoot` and `TerrainTile` keys. Root preparation validates the cooked contract and acquires reference-counted albedo, normal, and ORM leases through GenericRP's shared texture cache, so terrain and ordinary materials converge on the same image/view/sampler allocation. Tile preparation waits for a valid RHI frame context, validates the cooked tile, uploads expanded heights, packed four-channel weights, and packed geometric-error records into three independently owned bindless storage buffers, and shares immutable grid vertex/index buffers by resolution. Terrain scene dependencies therefore keep a cell in `WaitingForResources` until the root layers and tile resources are ready. Tile buffers, exact root texture generations, and the final shared-grid reference are released through the latest submitted ticket, while render extraction consumes only active terrain components and prepared views. Asset changes and immutable authoring previews build all affected GPU replacements first and publish matching CPU root/tile generations as one frame-boundary transaction; unrelated tile generations remain resident, retained unsaved previews are reapplied after a cell reload, and any failure preserves the previous valid publication.
 
 Successful root/tile preparation also publishes immutable CPU data through `ITerrainRuntimeDataStore`; release removes only the matching generation. `ITerrainQueryService` never acquires or loads an asset. It resolves a double-world X/Z position against the canonical root grid, requires the resolved tile's ECS component to be active, and returns an explicit invalid, outside, unavailable, or available result with bilinear height, gradient normal, normalized layer weights, tile identity, and generation. Positive interior borders resolve to the positive tile, while the outer root border remains inclusive. This makes cached-but-inactive cell data unavailable to gameplay, editor, physics, and navigation callers.
@@ -136,13 +179,28 @@ The canonical `LanternWorld` fixture keeps its one gameplay camera, global direc
 
 ## Current Boundary
 
-Decoded scene staging remains separate from CPU cooked residency and is released immediately after activation or rejection. Prepared setup is intentionally a soft per-item budget because one RHI upload cannot currently be preempted; no additional item starts after the count/time limit. GPU estimates are package-provider accounting rather than backend heap telemetry. DirectStorage-style I/O, compressed pack files, exact non-default variants in cooked scene metadata, and backend memory-budget queries remain later work.
+Decoded scene staging remains separate from CPU cooked residency and is released immediately after a
+completed activation claim or an explicit rejection. Prepared setup is intentionally a soft
+per-item budget because one RHI upload cannot currently be preempted; no additional item starts
+after the count/time limit. GPU estimates are package-provider accounting rather than backend heap
+telemetry. DirectStorage-style I/O, compressed pack files, exact non-default variants in cooked
+scene metadata, and backend memory-budget queries remain later work.
 
-Terrain-aware vegetation scatter currently stops at deterministic cluster/page descriptors and publication through the asset database. No vegetation scene component, cell activation contract, residency provider, or unload ownership is wired into this runtime service yet; those remain Milestone 4 and must not be inferred from offline cell identity.
+Vegetation cluster scenes now participate in this boundary. The package-owned codec validates the
+cluster/biome/species identities, owning world cell, canonical double-world origin and bounds, and
+exclusive cluster ownership before ECS mutation. `com.arisen.vegetation` publishes immutable,
+generation-qualified CPU cluster/page snapshots and bounded query results; Generic RP's provider
+loads only the residency-held cooked handles on workers and binds each decoded dependency closure
+to the owner-plan generation. Cluster/page preparation validates reciprocal parent membership,
+schema, exact page size/SHA-256 pins, species union, counts, bounds, biome membership, and
+cross-page stable keys; publication revalidates root/dependency claims, canonical binding, and
+owner-plan generation before and after the callback, and keeps cells in `WaitingForResources`
+when ownership changes. GPU instance buffers and render passes remain the
+next vegetation sprint item.
 
 ## Validation
 
-Focused coverage in `RuntimeWorldStreamingTests.cs` and `RuntimeAssetResidencyTests.cs` proves delayed I/O does not block or mutate ECS, callback thread ownership, deterministic dependency/priority order, edit-pin dependency provenance, overlapping runtime/editor demand, camera active-cell limiting, hysteresis, read/setup/activation/unload budgets, resource-gated activation, shared persistent/cell ownership, required failure, deterministic LRU eviction, cancellation and stale-completion cleanup, explicit retry, unload rejection without duplicate ownership, and shutdown drain. `TerrainResidencyCoordinationTests.cs` adds shared-root and independently evicted tile lifetime, immutable owner attribution, failed-generation retry, cancelled-acquisition rollback, provider invalidation/re-preparation, and terrain shutdown drain. `TerrainPreparedPayloadPackingTests.cs` locks canonical height/weight/error GPU packing and malformed-input rejection. `WorldOriginServiceTests.cs` proves negative floor selection, deterministic hysteresis/grid rebasing, one frame-boundary shift, parent/child and camera/light-relative stability, far-cell sub-meter precision, immutable staging, and world reconstruction. `EditorWorldDocumentServiceTests.cs` proves first-open state, stable UI identity, independent edit pins, focus without residency or dirty-state mutation, source preview without disk writes, conflict/discard behavior, transactional save-all, undo/redo moves, and cross-cell hierarchy rejection. `EditorSceneViewFocusFramingTests.cs` and `SceneViewCameraOverrideTests.cs` prove content framing, cell-bounds fallback, SceneView/GameView isolation, and stable world reconstruction across render-origin rebases. `RuntimeAssetSelectionTests` also races concurrent cooked acquisition and proves all callers share one generation-checked slot and balanced reference count.
+Focused coverage in `RuntimeWorldStreamingTests.cs` and `RuntimeAssetResidencyTests.cs` proves delayed I/O does not block or mutate ECS, callback thread ownership, callback-before-lifecycle-gate reentry rejection, concurrent prepared-publication/reload completion, deterministic dependency/priority order, edit-pin dependency provenance, overlapping runtime/editor demand, camera active-cell limiting, hysteresis, read/setup/activation/unload budgets, resource-gated activation, shared persistent/cell ownership, required failure, deterministic LRU eviction, cancellation and stale-completion cleanup, explicit retry, unload rejection without duplicate ownership, activation-claim supersession, serialized lifecycle calls, rejected whole-world unload retention, coherent presentation revisions across admission, supersession, activation, failure, and shutdown, subscriber isolation, and shutdown drain. `StartupWorldPresentationBarrierStateTests.cs` covers subscribe-before-read startup, restart while pending, stale and ABA callback rejection, superseding winners, exact activation revisions and output boundaries, and terminal release without activation. `TerrainResidencyCoordinationTests.cs` adds shared-root and independently evicted tile lifetime, immutable owner attribution, failed-generation retry, cancelled-acquisition rollback, provider invalidation/re-preparation, and terrain shutdown drain. `VegetationResidencyCoordinationTests.cs` covers worker publication, cancellation, retries, shared species dependencies, independently evicted pages, stale generations, and provider shutdown. `VegetationSceneComponentTests.cs` covers source/cooked codec round trips, clean-root dependency cooking, strict cooked-only closure, exact dependency graphs, identity and bounds rejection, exclusive ownership, and activation-context validation. `TerrainPreparedPayloadPackingTests.cs` locks canonical height/weight/error GPU packing and malformed-input rejection. `WorldOriginServiceTests.cs` proves negative floor selection, deterministic hysteresis/grid rebasing, one frame-boundary shift, parent/child and camera/light-relative stability, far-cell sub-meter precision, immutable staging, and world reconstruction. `EditorWorldDocumentServiceTests.cs` proves first-open state, stable UI identity, independent edit pins, focus without residency or dirty-state mutation, source preview without disk writes, conflict/discard behavior, transactional save-all, undo/redo moves, and cross-cell hierarchy rejection. `EditorSceneViewFocusFramingTests.cs` and `SceneViewCameraOverrideTests.cs` prove content framing, cell-bounds fallback, SceneView/GameView isolation, and stable world reconstruction across render-origin rebases. `RuntimeAssetSelectionTests` also races concurrent cooked acquisition and proves all callers share one generation-checked slot and balanced reference count.
 
 The kernel owns only the package-neutral `IRuntimeSmokeScenarioProvider`/`IRuntimeSmokeScenario` lifecycle. A selected package may provide a bounded scenario for a named mode; the kernel supplies frame callbacks, a wall-clock deadline, optional named visual capture service, guaranteed engine shutdown, and one post-shutdown inspection callback. `com.arisen.resources` provides `world-streaming` and writes schema-versioned JSON atomically through `--smoke-summary-output`.
 

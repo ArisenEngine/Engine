@@ -344,6 +344,7 @@ public sealed class EditorWorldDocumentServiceTests : IDisposable
     {
         private readonly IAssetDatabase m_Database;
         private readonly Dictionary<WorldCellId, WorldCellStreamingSnapshot> m_Cells = new();
+        private long m_PresentationRevision;
 
         public FakeWorldStreamingService(IAssetDatabase database)
         {
@@ -352,6 +353,11 @@ public sealed class EditorWorldDocumentServiceTests : IDisposable
 
         public WorldDescriptor? ActiveWorld { get; private set; }
         public AssetRef<WorldSourceAsset>? ActiveWorldAsset { get; private set; }
+        public RuntimeWorldPresentationSnapshot PresentationSnapshot => new(
+            m_PresentationRevision,
+            ActiveWorldAsset,
+            PendingWorldAsset: null,
+            ActiveWorld?.WorldGuid ?? Guid.Empty);
         public WorldStreamingBudgets Budgets { get; private set; } = WorldStreamingBudgets.Default;
         public Dictionary<WorldCellId, SceneSourceSnapshot?> PreviewSources { get; } = new();
         public int ReloadRequests { get; private set; }
@@ -359,6 +365,7 @@ public sealed class EditorWorldDocumentServiceTests : IDisposable
 
         public event Action<WorldCellStreamingSnapshot>? CellStateChanged;
         public event Action<AssetRef<WorldSourceAsset>?>? ActiveWorldChanged;
+        public event Action<RuntimeWorldPresentationSnapshot>? WorldPresentationChanged;
 
         public bool TryConfigureBudgets(WorldStreamingBudgets budgets, out string diagnostic)
         {
@@ -382,6 +389,8 @@ public sealed class EditorWorldDocumentServiceTests : IDisposable
                 m_Cells[cell.Id] = Snapshot(cell.Id);
                 PreviewSources[cell.Id] = null;
             }
+            m_PresentationRevision++;
+            WorldPresentationChanged?.Invoke(PresentationSnapshot);
             ActiveWorldChanged?.Invoke(world);
             return new RuntimeWorldLoadResult(true, world.Guid, m_Cells.Count, string.Empty);
         }

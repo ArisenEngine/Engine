@@ -52,9 +52,13 @@ Measured vegetation gaps:
 - versioned schemas/codecs plus the scatter planner now derive package-owned cluster/page GUIDs,
   compact canonical instances, exact dependency pins, and one frozen terrain-backed fixture, but
   cluster-closure replacement cannot yet atomically prune stale generated page rows/files;
-- no scene component or runtime service binds vegetation clusters to world cells;
+- the package-owned scene codec, cell activation contract, generation-qualified CPU publication,
+  bounded query service, and Generic RP prepared-resource provider now bind vegetation clusters to
+  world-cell residency; GPU instance buffers and render passes are still absent;
 - ordinary static meshes are entity-oriented and are not an acceptable representation for tens of thousands of plants;
-- Generic RP has no vegetation extraction, instance-buffer preparation, wind shading, alpha-cutout path, or vegetation shadow contribution;
+- Generic RP has no vegetation extraction, GPU instance-buffer preparation, wind shading,
+  alpha-cutout path, or vegetation shadow contribution; its current provider only validates and
+  publishes CPU cluster/page data outside command recording;
 - the existing direct indexed API can render instanced batches, but there is no measured vegetation command/memory baseline and no shared managed indirect-draw contract;
 - Editor has no biome painting, density masks, exclusion volumes, scatter preview, instance inspection, or regeneration transaction;
 - no Development/Production/relocated Production gate validates vegetation identity, placement, LOD, memory, visuals, wind, shadows, origin rebasing, or shutdown.
@@ -274,25 +278,89 @@ directories.
 
 ### TODO
 
-- [ ] Add a package-owned scene extension for vegetation cluster references.
-  - [ ] Store biome/species/cluster GUIDs, owning cell, double-world bounds/origin, visibility flags, and quality group.
-  - [ ] Use one blittable ECS component per cluster/page, not per instance.
-  - [ ] Reject duplicate exclusive cluster ownership and invalid cell/bounds pairings.
-- [ ] Add runtime CPU publication and optional query service.
-  - [ ] Generation-qualify immutable cluster pages.
-  - [ ] Return explicit unavailable/outside states and bounded nearby-instance results for future promotion/gameplay systems.
+- [x] Add a package-owned scene extension for vegetation cluster references.
+  - [x] Store biome/species/cluster GUIDs, owning cell, double-world bounds/origin, visibility flags, and quality group.
+  - [x] Use one blittable ECS component per cluster/page, not per instance.
+  - [x] Reject duplicate exclusive cluster ownership and invalid cell/bounds pairings.
+- [x] Add runtime CPU publication and optional query service.
+  - [x] Generation-qualify immutable cluster pages.
+  - [x] Return explicit unavailable/outside states and bounded nearby-instance results for future promotion/gameplay systems.
 - [ ] Integrate generic residency.
-  - [ ] Workers acquire and validate cooked cluster pages and dependencies.
-  - [ ] Cells remain `WaitingForResources` until required prepared resources are ready.
+  - [x] Workers acquire and validate cooked cluster pages and dependencies.
+  - [x] Cells remain `WaitingForResources` until required prepared resources are ready.
   - [ ] Share species mesh/material resources while cluster instance buffers remain independently evictable.
   - [ ] Release only after ECS unload and defer device destruction through the latest submission ticket.
-- [ ] Add cancellation, retry, shared-species, LRU, stale-generation, and shutdown-drain tests.
+- [x] Add cancellation, retry, shared-species, LRU, stale-generation, and shutdown-drain tests.
 
 ### Acceptance Criteria
 
 - Every visible cluster has one active/pinned cell owner and generation-matched CPU/GPU residency.
 - Unloaded cells expose no queryable or drawable vegetation instance.
 - Repeated load/unload returns entity slots, cooked handles, instance pages, descriptors, and native resources to baseline.
+
+### Immediate Sprint Item 4 Completion Record
+
+- `VegetationClusterSceneComponentCodec` publishes a strict source/cooked schema with canonical
+  big-endian GUID identity, exact dependency variants, world-cell ownership, double-world bounds,
+  visibility/shadow flags, quality group, and one blittable `VegetationClusterComponent` per
+  cluster entity. Activation validators receive the owning cell context and run before ECS
+  mutation; duplicate exclusive cluster identities are rejected. Source scene staging validates
+  the already-published generated cluster/page closure and discovers current authored biome,
+  species, and LOD dependencies without requiring cooked biome/species artifacts, so a clean scene
+  root closes through the coordinator. Cooked scene staging instead requires the exact cooked
+  cluster, biome, and every cooked biome species with no source fallback. Both paths require the
+  cluster's sole canonical species to be a biome member and emit the same flattened dependency plan.
+- `VegetationRuntimeDataStore` prepares cluster/page records on workers and atomically publishes
+  immutable generation-qualified snapshots. The bounded query service never reads a stale or
+  inactive generation, and exact cooked page size/SHA-256 identity survives publication without a
+  production reserialization step.
+- Generic RP registers a CPU-only vegetation prepared provider that decodes exact residency-held
+  handles. Cluster/page claims bind and validate the reciprocal biome/species/page/parent closure,
+  including schema, exact page size/SHA-256 pins, species union, counts, bounds, biome membership,
+  and cross-page stable keys; species and biome claims bind mesh/material and species dependencies.
+  The root and dependency claims, canonical binding, and owner-plan generation are revalidated
+  under active publication admission before and after the external publication callback. Stale
+  publication is rolled back to `Waiting`, while a current owner that omits a decoded dependency
+  fails deterministically.
+- Required cluster/page/species/biome keys keep a cell in `WaitingForResources` until worker
+  validation and frame-boundary publication complete. Cancellation, stale claims, cleanup retry,
+  shared species keys, incompatible shared-owner rejection, independent page eviction, projected
+  LRU budget selection, and provider shutdown are covered.
+- Prepared-provider admission excludes lifecycle release and coherent metrics sampling from an
+  in-flight setup callback without holding the residency state gate across package code. Atomic
+  publication blocks claim-mutating owner attachment/release/rollback, and post-callback claim
+  validation catches dependency-provider invalidation before `Ready` is committed. Every world
+  lifecycle operation rejects reentry from acquisition, `Prepare`, prepared-publication, and
+  provider-lifecycle callbacks before waiting for the world lifecycle gate.
+- Duplicate acquisitions of one exact cooked-handle generation retain one cleanup row per logical
+  reference but one transferable CPU-byte charge. Losing-racer cleanup remains shareable while a
+  live winner exists; once that winner is evicted, outstanding failed cleanup blocks reacquisition
+  until its deterministic retry succeeds.
+- Deferred startup-world activation publishes a state-gate-coherent revision containing the active
+  asset/GUID and pending winner. Each Editor viewport subscribes before its initial snapshot read,
+  never rearms over an active world, and follows the current pending winner across restart or
+  supersession. An armed barrier prioritizes a pending successor over an outgoing active world in
+  the same revision. Matching callback/current revisions reject stale and B-to-C-to-B ABA
+  observations; terminal empty state releases without activation. Once the coherent winner activates, the visual
+  remains detached while outputs through that exact ticket boundary are consumed with the normal
+  compositor semaphore handshake, and attaches only after a newer output is accepted and reported
+  consumed while the same activation revision remains current.
+- Focused validation passes `RuntimeWorldStreamingTests` `39/39`,
+  `RuntimeAssetResidencyTests` `38/38`, `VegetationResidencyCoordinationTests` `36/36`, and all
+  vegetation-filtered tests `123/123`.
+  The complete unfiltered Debug rendering/asset/Editor surface passes `827/827` with zero skips.
+  Fast validation covers the same `827` unique tests as `826/826` non-allocation Debug tests plus
+  the exact-allocation test `1/1` in a fresh Release host with tiered compilation disabled.
+- Final fast validation passes BuildTool `73/73`, kernel `102/102`, launcher `18/18`, the rendering
+  split above, and all four profile graphs. The schema-7 Debug runtime report at
+  `Arisen/Development/PackageGame/.arisen/Logs/validate-runtime-Debug-latest.json` records
+  `succeeded=true`, `exitCode=0`, and `gpuAvailable=true`: four GPU smoke runs with zero skips or
+  CPU fallbacks and two visual-summary artifacts; three world-streaming runs with two summary
+  artifacts; three terrain-streaming runs with two summary artifacts; one real Editor viewport
+  run/artifact; one relocated cooked-only Production run/artifact; all four profiles passed and
+  no failure was reported.
+- This record completes Immediate Sprint item 4 only. GPU cluster instance buffers, deferred native
+  destruction, extraction, and RenderGraph passes remain Milestone 5 work.
 
 ---
 
@@ -454,7 +522,7 @@ Implement the first visible vertical slice in this order:
 1. [x] create the three vegetation repositories, add submodules, and establish package/profile composition;
 2. [x] define one species asset, one biome asset, and strict deterministic fixtures;
 3. [x] cook one terrain-aware cluster page with stable identities and corruption tests;
-4. [ ] add a vegetation cluster scene codec plus cell/residency ownership;
+4. [x] add a vegetation cluster scene codec plus cell/residency ownership;
 5. [ ] render one cluster as one direct indexed instanced batch through the Generic RP feature;
 6. [ ] contribute matching cascaded-shadow work and prove copied Production closure;
 7. [ ] extend the fixture to grass, shrub, rock, and tree species across multiple cells before broad Editor tooling.

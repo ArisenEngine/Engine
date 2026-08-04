@@ -191,6 +191,29 @@ public sealed class RuntimeAssetCookingTests
     }
 
     [Fact]
+    public void Registry_UnregisterRemovesOnlyTheExactCookerInstance()
+    {
+        var registry = new RuntimeAssetCookerRegistry();
+        var first = new DelegateCooker("package.first", new[] { "Scene", "Material" },
+            (_, request) => throw new InvalidOperationException(request.AssetType));
+        var second = new DelegateCooker("package.second", new[] { "Texture2D" },
+            (_, request) => throw new InvalidOperationException(request.AssetType));
+
+        registry.RegisterCooker(first);
+        registry.RegisterCooker(second);
+
+        Assert.True(registry.UnregisterCooker(first));
+        Assert.False(registry.UnregisterCooker(first));
+        Assert.False(registry.TryGetCooker("Scene", out _));
+        Assert.False(registry.TryGetCooker("Material", out _));
+        Assert.True(registry.TryGetCooker("Texture2D", out IRuntimeAssetCooker selected));
+        Assert.Same(second, selected);
+        Assert.Equal(
+            new[] { new RuntimeAssetCookerRegistration("Texture2D", "package.second") },
+            registry.GetRegistrations());
+    }
+
+    [Fact]
     public void Cook_RejectsProviderOutputThatDoesNotMatchTheRequest()
     {
         using var temp = new TempDirectory();

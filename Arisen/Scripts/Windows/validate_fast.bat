@@ -1,5 +1,5 @@
 @echo off
-setlocal EnableExtensions
+setlocal EnableExtensions DisableDelayedExpansion
 
 set "ARISEN_NO_PAUSE="
 if /i "%~1"=="--no-pause" set "ARISEN_NO_PAUSE=1"
@@ -28,7 +28,10 @@ if errorlevel 1 goto :fail
 call :run dotnet test "Arisen\Editor\ArisenLauncher.Tests\ArisenLauncher.Tests.csproj"
 if errorlevel 1 goto :fail
 
-call :run dotnet test "Arisen\Com.Arisen.Rendering.Tests\Com.Arisen.Rendering.Tests.csproj"
+call :run dotnet test "Arisen\Com.Arisen.Rendering.Tests\Com.Arisen.Rendering.Tests.csproj" --filter "Category!=AllocationSensitive"
+if errorlevel 1 goto :fail
+
+call :run_rendering_allocation_tests
 if errorlevel 1 goto :fail
 
 call :run dotnet run --project "Arisen\External\ArisenBuildTool\ArisenBuildTool.csproj" -- validate --workspace "Arisen\Development\PackageGame" --profile Editor
@@ -46,6 +49,15 @@ if errorlevel 1 goto :fail
 echo [Arisen] Fast validation succeeded.
 set "EXIT_CODE=0"
 goto :finish
+
+:run_rendering_allocation_tests
+setlocal
+set "DOTNET_TieredCompilation=0"
+echo.
+echo [Arisen] Allocation-sensitive rendering tests use a fresh Release host with tiered compilation disabled.
+call :run dotnet test "Arisen\Com.Arisen.Rendering.Tests\Com.Arisen.Rendering.Tests.csproj" --configuration Release --filter "Category=AllocationSensitive"
+set "ALLOCATION_TEST_EXIT_CODE=%ERRORLEVEL%"
+endlocal & exit /b %ALLOCATION_TEST_EXIT_CODE%
 
 :run
 echo.

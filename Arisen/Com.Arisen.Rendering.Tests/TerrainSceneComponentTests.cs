@@ -140,12 +140,15 @@ public sealed class TerrainSceneComponentTests : IDisposable
         var service = new RuntimeSceneService(fixture.Database, world);
         var firstCell = new WorldCellId(Guid.Parse("71000000-0000-0000-0000-000000000001"));
         var secondCell = new WorldCellId(Guid.Parse("71000000-0000-0000-0000-000000000002"));
+        var tileBounds = new WorldBounds(
+            tileOrigin,
+            new WorldPosition(tileOrigin.X + 1.0, tileOrigin.Y + 1.0, tileOrigin.Z + 1.0));
 
         var first = service.ActivatePreparedAdditiveAtFrameBoundary(
             firstScene.Reference,
             firstPlaced,
             "test-source",
-            firstCell);
+            new SceneComponentActivationContext(firstCell, tileOrigin, tileBounds));
 
         Assert.True(first.Result.Success, first.Result.Diagnostic);
         Assert.True(service.TryResolveEntity(first.InstanceId, firstScene.EntityGuid, out Entity firstEntity));
@@ -161,7 +164,7 @@ public sealed class TerrainSceneComponentTests : IDisposable
             secondScene.Reference,
             SceneStagingPlacement.PlaceCell(secondStaging, tileOrigin, firstRenderOrigin),
             "test-source",
-            secondCell);
+            new SceneComponentActivationContext(secondCell, tileOrigin, tileBounds));
         Assert.False(duplicate.Result.Success);
         Assert.Contains("already active", duplicate.Result.Diagnostic, StringComparison.Ordinal);
 
@@ -171,7 +174,7 @@ public sealed class TerrainSceneComponentTests : IDisposable
             secondScene.Reference,
             SceneStagingPlacement.PlaceCell(secondStaging, tileOrigin, rebasedOrigin),
             "test-source",
-            secondCell);
+            new SceneComponentActivationContext(secondCell, tileOrigin, tileBounds));
 
         Assert.True(reloaded.Result.Success, reloaded.Result.Diagnostic);
         Assert.True(service.TryResolveEntity(

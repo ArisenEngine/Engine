@@ -131,8 +131,9 @@ Vegetation follows the same composition rule while keeping ownership explicit:
   render pipeline, Editor, or RHI backend.
 - `com.arisen.vegetation.generic-renderpipeline` is the optional Generic RP
   adapter. It depends on the vegetation runtime and Generic RP feature registry,
-  resolves services once during package load, and unregisters its feature before
-  package unload.
+  resolves services once during package load, registers one prepared-asset
+  provider for vegetation cluster/page/species/biome keys alongside its feature,
+  and unregisters/releases both in reverse ownership order before package unload.
 - `com.arisen.vegetation.editor` is the optional authoring adapter. It depends on
   the vegetation runtime and Editor extension registry and is selected only by
   the `Editor` profile.
