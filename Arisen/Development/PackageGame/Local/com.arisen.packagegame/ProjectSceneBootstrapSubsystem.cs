@@ -42,7 +42,9 @@ public sealed class ProjectSceneBootstrapSubsystem : IEngineSubsystem
             }
 
             KernelLog.InfoFormat(
-                "[ProjectSceneBootstrap] Activated startup world '{0}' with {1} streamable cells.",
+                worldResult.Deferred
+                    ? "[ProjectSceneBootstrap] Deferred startup world '{0}' until persistent residency is ready ({1} streamable cells)."
+                    : "[ProjectSceneBootstrap] Activated startup world '{0}' with {1} streamable cells.",
                 worldResult.WorldGuid,
                 worldResult.CellCount);
             return;

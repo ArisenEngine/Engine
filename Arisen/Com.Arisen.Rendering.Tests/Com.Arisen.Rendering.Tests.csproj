@@ -64,6 +64,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Services\WorkspaceManifestEditor.cs" Link="Source\Editor\Services\WorkspaceManifestEditor.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Validation\EditorViewportSmokeState.cs" Link="Source\Editor\Validation\EditorViewportSmokeState.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Views\EditorViewportSurfaceOwnership.cs" Link="Source\Editor\Views\EditorViewportSurfaceOwnership.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Views\StartupWorldPresentationBarrierState.cs" Link="Source\Editor\Views\StartupWorldPresentationBarrierState.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Lifecycle\EditorEngineThreadOwner.cs" Link="Source\Editor\Lifecycle\EditorEngineThreadOwner.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Extensions\EditorExtensionRegistryCore.cs" Link="Source\Editor\Extensions\EditorExtensionRegistryCore.cs" />
 
@@ -77,6 +78,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\EntityCommandBuffer.cs" Link="Source\ECS\EntityCommandBuffer.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\Systems\ISystem.cs" Link="Source\ECS\Systems\ISystem.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\Systems\SystemContainer.cs" Link="Source\ECS\Systems\SystemContainer.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\Lifecycle\SceneSubsystem.cs" Link="Source\ECS\Lifecycle\SceneSubsystem.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\NameComponent.cs" Link="Source\ECS\NameComponent.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\TransformComponent.cs" Link="Source\ECS\TransformComponent.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\ParentComponent.cs" Link="Source\ECS\ParentComponent.cs" />
@@ -179,8 +181,11 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\RuntimeSmokeScenarioRegistry.cs" Link="Source\Resources\Serialization\RuntimeSmokeScenarioRegistry.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\RuntimeAssetResidencyService.cs" Link="Source\Resources\Serialization\RuntimeAssetResidencyService.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\RuntimeSceneService.cs" Link="Source\Resources\Serialization\RuntimeSceneService.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\ResourcesPackage.cs" Link="Source\Resources\ResourcesPackage.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation\Managed\Assets\*.cs" Link="Source\Vegetation\Assets\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation\Managed\Runtime\*.cs" Link="Source\Vegetation\Runtime\%(Filename)%(Extension)" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation\Managed\VegetationPackage.cs" Link="Source\Vegetation\VegetationPackage.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\*.cs" Link="Source\VegetationGenericRenderPipeline\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain\Managed\Assets\*.cs" Link="Source\Terrain\Assets\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain\Managed\Runtime\*.cs" Link="Source\Terrain\Runtime\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain.generic-renderpipeline\Managed\TerrainSharedGridBuilder.cs" Link="Source\TerrainGenericRenderPipeline\TerrainSharedGridBuilder.cs" />

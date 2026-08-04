@@ -42,6 +42,7 @@ internal sealed class TestAssetDatabase : IAssetDatabase, ICookedArtifactWriteOw
     public AssetSourceAccessMode SourceAccessMode { get; private set; }
     public bool CanReadSourceAssets => SourceAccessMode != AssetSourceAccessMode.Disabled;
     public IReadOnlyCollection<AssetRecord> Assets => m_Assets.Values;
+    public Action<Guid>? SuccessfulCookedAssetLoad { get; set; }
     public event Action<AssetChangeEvent>? AssetChanged;
 
     public void AddAsset(Guid guid, string assetType, string sourcePath, string packageId = "com.arisen.test")
@@ -174,6 +175,17 @@ internal sealed class TestAssetDatabase : IAssetDatabase, ICookedArtifactWriteOw
         m_Artifacts[(artifact.Guid, artifact.Variant)] = artifact;
     }
 
+    public void ReplaceCookedArtifactForTest(CookedAssetRecord artifact)
+    {
+        if (!m_Artifacts.ContainsKey((artifact.Guid, artifact.Variant)))
+        {
+            throw new InvalidOperationException(
+                $"Cooked artifact '{artifact.Guid:D}:{artifact.Variant}' is not registered.");
+        }
+
+        m_Artifacts[(artifact.Guid, artifact.Variant)] = artifact;
+    }
+
     public bool TryLoadCookedAsset(Guid guid, string variant, string expectedAssetType, out CookedAssetHandle handle)
     {
         handle = CookedAssetHandle.Invalid;
@@ -188,6 +200,7 @@ internal sealed class TestAssetDatabase : IAssetDatabase, ICookedArtifactWriteOw
 
         handle = new CookedAssetHandle(++m_NextHandleIndex, 1, guid, variant);
         m_Loaded[handle.Index] = new LoadedCookedAsset(artifact, File.ReadAllBytes(artifact.Path));
+        SuccessfulCookedAssetLoad?.Invoke(guid);
         return true;
     }
 

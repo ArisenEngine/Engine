@@ -183,6 +183,42 @@ public sealed class RuntimeSceneInstanceTests
         Assert.True(context.Service.GetDiagnostics().Count <= 128);
     }
 
+    [Fact]
+    public void PersistentReplacementFailureReportIsSuppressedDuringWorldDrain()
+    {
+        using var context = new SceneInstanceContext();
+        Assert.True(context.Service.LoadScene(context.Persistent.Scene).Success);
+        int diagnosticCount = context.Service.GetDiagnostics().Count;
+        int stateChanges = 0;
+        context.Service.SceneInstanceStateChanged += _ => stateChanges++;
+
+        context.Service.BeginWorldLifecycleMutation();
+        try
+        {
+            context.Service.ReportWorldPersistentReplacementFailure(
+                context.Persistent.Scene,
+                snapshot: null,
+                "Injected persistent replacement failure.");
+        }
+        finally
+        {
+            context.Service.EndWorldLifecycleMutation();
+        }
+
+        Assert.Equal(diagnosticCount, context.Service.GetDiagnostics().Count);
+        Assert.Equal(0, stateChanges);
+        Assert.Single(context.Service.GetSceneInstances());
+
+        context.Service.ReportWorldPersistentReplacementFailure(
+            context.Persistent.Scene,
+            snapshot: null,
+            "Injected persistent replacement failure.");
+
+        Assert.Equal(diagnosticCount + 1, context.Service.GetDiagnostics().Count);
+        Assert.Equal(1, stateChanges);
+        Assert.Single(context.Service.GetSceneInstances());
+    }
+
     private static int ExtractPointLights(EntityManager entityManager)
     {
         ComponentPool<PointLightComponent> lightPool = entityManager.GetPool<PointLightComponent>();

@@ -238,6 +238,7 @@ public sealed class TerrainCookedSurfaceSamplerTests
     }
 
     [Fact]
+    [Trait("Category", "AllocationSensitive")]
     public void TrySampleRejectsInvalidAndOutsidePositionsWithoutAllocating()
     {
         TerrainRuntimeFixture fixture = TerrainRuntimeTestData.Create(1, 1, resolution: 3);
