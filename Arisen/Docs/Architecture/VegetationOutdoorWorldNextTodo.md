@@ -46,12 +46,12 @@ The completed foundation gate on 2026-08-03 is:
 
 Measured vegetation gaps:
 
-- the Milestone 1 vegetation package spine and Milestone 2 species/biome/cluster/instance-page
-  source-to-cooked slices now exist, but no terrain-aware scatter output, generated placement,
-  foliage, or impostor data has been implemented;
-- versioned schemas and codecs now define explicit cluster/page identities, compact stable
-  instances, canonical dependency closure, and exact page pins, but no policy derives generated
-  GUIDs or produces canonical terrain-backed cluster/page fixtures;
+- the Milestone 1 vegetation package spine, Milestone 2 source-to-cooked formats, and first
+  Milestone 3 terrain-aware one-page scatter slice now exist, but valid-empty planning,
+  multi-page replacement, broader foliage, and impostor data have not been implemented;
+- versioned schemas/codecs plus the scatter planner now derive package-owned cluster/page GUIDs,
+  compact canonical instances, exact dependency pins, and one frozen terrain-backed fixture, but
+  cluster-closure replacement cannot yet atomically prune stale generated page rows/files;
 - no scene component or runtime service binds vegetation clusters to world cells;
 - ordinary static meshes are entity-oriented and are not an acceptable representation for tens of thousands of plants;
 - Generic RP has no vegetation extraction, instance-buffer preparation, wind shading, alpha-cutout path, or vegetation shadow contribution;
@@ -151,7 +151,8 @@ directories.
   and Production workspaces generated and built successfully, and the complete
   Debug runtime validation artifact is
   `.arisen/Logs/validate-runtime-Debug-latest.json`.
-- The next active work is Milestone 3 deterministic terrain-aware scatter baking.
+- Milestone 3 remains active; its first deterministic one-page scatter slice is complete, while
+  explicit empty output, multi-page replacement, and atomic stale-page pruning remain open.
 
 ---
 
@@ -199,8 +200,9 @@ directories.
 - `46/46` focused vegetation tests pass, including rehashed corruption, exact-pin
   tampering, unchanged artifact reuse, immutable page identity, and deployment
   closure from initially uncooked authored dependencies.
-- Terrain sampling, scatter generation, generated GUID derivation, cell ownership,
-  and transactional page-set replacement remain Milestone 3 or later work.
+- Terrain sampling, one-page scatter generation, generated GUID derivation, and canonical
+  cell ownership are now implemented by the first Milestone 3 slice. Explicit empty output,
+  multi-page planning, and transactional page-set replacement remain open.
 
 ---
 
@@ -210,29 +212,59 @@ directories.
 
 ### TODO
 
-- [ ] Implement canonical candidate generation from integer spatial cells and explicit seeds.
-  - [ ] Use a documented deterministic hash/sequence with no global mutable RNG.
-  - [ ] Make output independent of task scheduling and dictionary iteration.
-- [ ] Evaluate terrain placement against cooked root/tile samples.
-  - [ ] Height, normal, slope, altitude, and normalized layer weights.
-  - [ ] Stable positive-border ownership matching terrain/world-cell policy.
-- [ ] Apply density, spacing, exclusion, and overlap rules deterministically.
-  - [ ] Bound candidate and accepted counts per source tile/cell.
-  - [ ] Report overflow or invalid rules instead of silently truncating near content.
+- [x] Implement canonical candidate generation from integer spatial cells and explicit seeds.
+  - [x] Use a documented deterministic hash/sequence with no global mutable RNG.
+  - [x] Make output independent of task scheduling and dictionary iteration.
+- [x] Evaluate terrain placement against cooked root/tile samples.
+  - [x] Height, normal, slope, altitude, and normalized layer weights.
+  - [x] Stable positive-border ownership matching terrain/world-cell policy.
+- [x] Apply density, spacing, exclusion, and overlap rules deterministically.
+  - [x] Bound candidate and accepted counts per source tile/cell.
+  - [x] Report overflow or invalid rules instead of silently truncating near content.
 - [ ] Partition accepted instances into stable clusters/pages owned by world cells.
-  - [ ] Derive generated cluster GUIDs from biome/species/cell/page identity.
+  - [x] Derive generated cluster/page GUIDs from biome, terrain, species, cell, and canonical content identity.
+  - [ ] Return an explicit no-output plan for valid empty cells and partition larger accepted sets into bounded pages.
   - [ ] Reuse unchanged pages and transactionally remove stale pages/catalog rows.
     - Format v1 already reuses byte-identical artifacts and rejects changed bytes
-      under an existing page GUID. Allocating a replacement GUID, atomically
-      switching the cluster/catalog closure, removing stale rows/files, and
-      rolling back a failed replacement remain part of this unchecked item.
-- [ ] Add determinism, border, and parallel-bake tests.
+      under an existing page GUID. The one-page planner now derives replacement
+      GUIDs from canonical content; atomically switching the cluster/catalog
+      closure, removing stale rows/files, and rolling back a failed replacement
+      remain part of this unchecked item.
+- [x] Add determinism, border, and parallel-bake tests for the one-page slice.
 
 ### Acceptance Criteria
 
 - Rebuilding with different worker scheduling produces byte-identical cluster artifacts.
 - Adjacent terrain/cell borders neither duplicate nor omit accepted candidates.
 - Runtime never reruns source scatter rules during ordinary frame rendering.
+
+### Immediate Sprint Item 3 Completion Record
+
+- The public scatter entry loads cooked biome/species/terrain data through
+  `IAssetDatabase` and verifies every terrain tile against the root's exact
+  size/SHA-256 pin. Direct decoded-record baking is internal test surface only.
+- Candidate generation, terrain/rule/exclusion filtering, spacing halo,
+  cell-local float narrowing, positive-border ownership, reconciled metrics,
+  generated identities, and codec-canonical page hashing are deterministic and
+  bounded. Sparse spacing-sized buckets contain only already visited lower-key
+  candidates, the maximum `1,048,576`-candidate fixture completes with
+  reconciled metrics, and overflow fails immediately instead of returning an
+  unpublishable descriptor.
+- The canonical Showcase fixture produces one frozen terrain-backed page and
+  publishes it through the existing cluster cooker; rehashed non-finite page
+  corruption is rejected through both direct page and cluster-closure loads.
+- Focused terrain/query plus scatter/showcase coverage passes `31/31`, and the
+  package-boundary test proves vegetation depends on terrain without a reverse
+  dependency.
+- Final validation passes BuildTool `73/73`, kernel `72/72`, launcher `18/18`,
+  and rendering/asset/Editor `694/694`. The schema-7 Debug runtime report at
+  `.arisen/Logs/validate-runtime-Debug-latest.json` records `succeeded=true`,
+  four GPU smoke runs with zero skips/fallbacks, three world-streaming runs,
+  three terrain-streaming runs, the real Editor viewport smoke, relocated
+  cooked-only Production, and no reported failure.
+- This record completes Immediate Sprint item 3 only. Valid empty/no-output
+  planning, multi-page partitioning, and atomic stale-page replacement remain
+  unchecked Milestone 3 work.
 
 ---
 
@@ -421,7 +453,7 @@ Implement the first visible vertical slice in this order:
 
 1. [x] create the three vegetation repositories, add submodules, and establish package/profile composition;
 2. [x] define one species asset, one biome asset, and strict deterministic fixtures;
-3. [ ] cook one terrain-aware cluster page with stable identities and corruption tests;
+3. [x] cook one terrain-aware cluster page with stable identities and corruption tests;
 4. [ ] add a vegetation cluster scene codec plus cell/residency ownership;
 5. [ ] render one cluster as one direct indexed instanced batch through the Generic RP feature;
 6. [ ] contribute matching cascaded-shadow work and prove copied Production closure;

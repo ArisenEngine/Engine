@@ -59,6 +59,46 @@ public sealed class TerrainQueryServiceTests
             result.LayerWeights);
     }
 
+    [Theory]
+    [InlineData(0.0, 0.7, 3)]
+    [InlineData(1_000_000.0, 0.05, 1)]
+    public void QueryUsesCanonicalPositiveTileStartsForDecimalSpacing(
+        double rootX,
+        double spacingX,
+        int positiveTileIndex)
+    {
+        TerrainRuntimeFixture fixture = TerrainRuntimeTestData.Create(
+            tileCountX: 4,
+            tileCountZ: 1,
+            resolution: 3,
+            worldPlacement: new WorldPosition(rootX, 7.0, -20.0),
+            sampleSpacing: new TerrainSampleSpacing(spacingX, 0.7));
+        var world = new EntityManager();
+        var runtimeData = new TerrainRuntimeDataStore();
+        runtimeData.PublishRoot(fixture.Root);
+        foreach (CookedTerrainTile tile in fixture.Tiles)
+        {
+            Entity entity = world.CreateEntity();
+            world.AddComponent(entity, TerrainRuntimeTestData.CreateComponent(tile));
+            runtimeData.PublishTile(tile);
+        }
+
+        var queries = new TerrainQueryService(runtimeData, () => world);
+        CookedTerrainTile positiveTile = fixture.Tiles[positiveTileIndex];
+        var border = new WorldPosition(
+            positiveTile.WorldPlacement.X,
+            0.0,
+            positiveTile.WorldPlacement.Z + 0.35);
+
+        TerrainQueryResult positive = queries.Query(border);
+        TerrainQueryResult negative = queries.Query(
+            border with { X = Math.BitDecrement(border.X) });
+        Assert.Equal(TerrainQueryStatus.Available, positive.Status);
+        Assert.Equal(positiveTile.Guid, positive.TileGuid);
+        Assert.Equal(TerrainQueryStatus.Available, negative.Status);
+        Assert.Equal(fixture.Tiles[positiveTileIndex - 1].Guid, negative.TileGuid);
+    }
+
     [Fact]
     public void QueryNeverLoadsAndDistinguishesInvalidOutsideAndInactiveResidency()
     {

@@ -87,6 +87,8 @@ Cell payloads remain origin-independent. Immediately before frame-boundary activ
 
 `IWorldOriginService.ToWorld` and `TryToOriginRelative` are the only general conversion boundary. `RenderFrameSnapshot.RenderOrigin` carries the double origin once per frame for diagnostics and future world reconstruction; per-camera, per-light, per-mesh, culling, and shadow records remain compact floats. Extraction rejects non-finite camera, mesh transform, and light input before matrix construction or upload. No projection, winding, or Y-axis correction is part of origin handling.
 
+Offline vegetation scatter planning uses the same partition coordinate contract. Terrain samples remain double-world values until each accepted placement is narrowed to a `float3` relative to its computed owner-cell origin. The narrowed value is reconstructed in double world space and ownership is recomputed until stable, so a stored point cannot round across a cell boundary after the ownership decision. Positive borders follow the half-open positive-cell rule. A one-spacing X/Z halo contributes deterministic lower-key blockers from adjacent cells, but only placements owned by the requested XYZ cell are emitted. The page origin is that requested cell's canonical world origin; scatter identity never depends on the current runtime render origin.
+
 ## Asset And GPU Residency
 
 `IRuntimeAssetResidencyService` is the coarse resources-owned coordination contract. A persistent scene or cell request receives a generation-qualified `RuntimeAssetResidencyOwnerId`; its immutable scene staging is reduced to a canonical, deduplicated `RuntimeAssetResidencyKey` plan and acquired on the worker before the result is published. Keys contain package, GUID, asset type, and cooked variant. The current cooked-scene dependency record does not serialize a variant, so `RuntimeAssetVariantPolicy` deliberately resolves the supported default variants: `staticmesh.uint32`, `material.runtime`, and `latlong.r16g16b16a16sfloat.nomips`. Non-default scene variants require a future cooked-scene schema revision rather than an implicit guess.
@@ -135,6 +137,8 @@ The canonical `LanternWorld` fixture keeps its one gameplay camera, global direc
 ## Current Boundary
 
 Decoded scene staging remains separate from CPU cooked residency and is released immediately after activation or rejection. Prepared setup is intentionally a soft per-item budget because one RHI upload cannot currently be preempted; no additional item starts after the count/time limit. GPU estimates are package-provider accounting rather than backend heap telemetry. DirectStorage-style I/O, compressed pack files, exact non-default variants in cooked scene metadata, and backend memory-budget queries remain later work.
+
+Terrain-aware vegetation scatter currently stops at deterministic cluster/page descriptors and publication through the asset database. No vegetation scene component, cell activation contract, residency provider, or unload ownership is wired into this runtime service yet; those remain Milestone 4 and must not be inferred from offline cell identity.
 
 ## Validation
 

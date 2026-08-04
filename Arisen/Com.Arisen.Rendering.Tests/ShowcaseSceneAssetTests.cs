@@ -8,6 +8,7 @@ using ArisenEngine.Rendering.Resources;
 using ArisenEngine.Resources.Serialization;
 using ArisenEngine.Terrain;
 using ArisenEngine.Terrain.Assets;
+using ArisenEngine.Vegetation.Assets;
 using Xunit;
 
 namespace Com.Arisen.Rendering.Tests;
@@ -47,6 +48,14 @@ public sealed class ShowcaseSceneAssetTests
     private static readonly Guid s_TerrainTile1Guid = Guid.Parse("9b8e9a8a-7c9d-493e-9aa6-5ba74e5b630d");
     private static readonly Guid s_TerrainTile2Guid = Guid.Parse("331e576c-eddd-d7cc-e553-23ef719f496d");
     private static readonly Guid s_TerrainTile3Guid = Guid.Parse("3fd9bf23-4923-f0e5-cd73-94920028ed67");
+    private static readonly Guid s_ValleyRockSpeciesGuid =
+        Guid.Parse("7b0f2e52-8b67-4e3d-bf0a-cbc42f622001");
+    private static readonly Guid s_ShowcaseValleyBiomeGuid =
+        Guid.Parse("c0a92f10-0eb9-4d24-b729-7d0f38313001");
+    private static readonly Guid s_ValleyRockMeshGuid =
+        Guid.Parse("9f57d9cc-2db6-4c85-ae7b-544338806e2c");
+    private static readonly Guid s_ValleyRockMaterialGuid =
+        Guid.Parse("4ac21c64-e984-4ed0-9e21-93878de5249e");
 
     [Fact]
     public void PackageShowcaseScene_LoadsClassicMeshAndDistinctMaterials()
@@ -585,6 +594,221 @@ public sealed class ShowcaseSceneAssetTests
             Assert.True(sawPath, "The authored fixture never contributes its path layer.");
             Assert.True(sawBlend, "The authored fixture contains no blended layer samples.");
             TerrainTileAssetCooker.ValidateSharedBorders(tiles);
+        }
+        finally
+        {
+            try
+            {
+                if (Directory.Exists(cookedRoot))
+                {
+                    Directory.Delete(cookedRoot, recursive: true);
+                }
+            }
+            catch
+            {
+                // Best-effort test cleanup.
+            }
+        }
+    }
+
+    [Fact]
+    public void PackageShowcaseVegetation_BakesOneCanonicalTerrainBackedClusterPage()
+    {
+        const string packageId = "com.arisen.packagegame";
+        const string pipelinePackageId = "com.arisen.generic-renderpipeline";
+        string packageRoot = GetRepositoryFile(
+            "Arisen", "Development", "PackageGame", "Local", packageId);
+        string pipelineRoot = GetRepositoryFile(
+            "Arisen", "Development", "PackageGame", "Local", pipelinePackageId);
+        string cookedRoot = Path.Combine(
+            Path.GetTempPath(),
+            "ArisenShowcaseVegetationTests",
+            Guid.NewGuid().ToString("N"));
+
+        try
+        {
+            var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, cookedRoot);
+            AddTerrainAssets(db, packageRoot);
+            db.AddAsset(
+                s_ValleyRockSpeciesGuid,
+                VegetationAssetTypes.Species,
+                Path.Combine(
+                    packageRoot,
+                    "Assets",
+                    "Vegetation",
+                    "ValleyRock.arivegetationspecies"),
+                packageId);
+            db.AddAsset(
+                s_ShowcaseValleyBiomeGuid,
+                VegetationAssetTypes.Biome,
+                Path.Combine(
+                    packageRoot,
+                    "Assets",
+                    "Vegetation",
+                    "ShowcaseValley.arivegetationbiome"),
+                packageId);
+            db.AddAsset(
+                s_ValleyRockMeshGuid,
+                "Mesh",
+                Path.Combine(pipelineRoot, "Assets", "Meshes", "FacetedCrystal.obj"),
+                pipelinePackageId);
+            db.AddAsset(
+                s_ValleyRockMaterialGuid,
+                "Material",
+                Path.Combine(
+                    pipelineRoot,
+                    "Assets",
+                    "Materials",
+                    "StandardLitMaterial.arismaterial"),
+                pipelinePackageId);
+
+            var terrainRootRef = new AssetRef<TerrainRootSourceAsset>(
+                s_TerrainRootGuid,
+                TerrainAssetTypes.Root,
+                packageId);
+            TerrainRootAssetCooker.Cook(db, terrainRootRef);
+            Assert.True(
+                TerrainRootAssetCooker.TryLoadCooked(
+                    db,
+                    terrainRootRef,
+                    out CookedTerrainRoot terrainRoot,
+                    out string terrainDiagnostic),
+                terrainDiagnostic);
+            CookedTerrainTile[] tiles =
+            [
+                LoadTerrainTile(db, s_TerrainTile0Guid),
+                LoadTerrainTile(db, s_TerrainTile1Guid),
+                LoadTerrainTile(db, s_TerrainTile2Guid),
+                LoadTerrainTile(db, s_TerrainTile3Guid)
+            ];
+
+            var speciesRef = new AssetRef<VegetationSpeciesSourceAsset>(
+                s_ValleyRockSpeciesGuid,
+                VegetationAssetTypes.Species,
+                packageId);
+            var biomeRef = new AssetRef<VegetationBiomeSourceAsset>(
+                s_ShowcaseValleyBiomeGuid,
+                VegetationAssetTypes.Biome,
+                packageId);
+            VegetationSpeciesAssetCooker.Cook(db, speciesRef);
+            VegetationBiomeAssetCooker.Cook(db, biomeRef);
+            Assert.True(
+                VegetationSpeciesAssetCooker.TryLoadCooked(
+                    db,
+                    speciesRef,
+                    out CookedVegetationSpecies species,
+                    out string speciesDiagnostic),
+                speciesDiagnostic);
+            Assert.True(
+                VegetationBiomeAssetCooker.TryLoadCooked(
+                    db,
+                    biomeRef,
+                    out CookedVegetationBiome biome,
+                    out string biomeDiagnostic),
+                biomeDiagnostic);
+
+            var partition = new WorldPartitionSettings(
+                new WorldPosition(-256.0, -64.0, -256.0),
+                new WorldPosition(256.0, 128.0, 256.0),
+                LoadRadius: 1,
+                UnloadHysteresis: 1,
+                MaxActiveCells: 16);
+            VegetationScatterBakeResult result = VegetationScatterBaker.Build(
+                db,
+                new VegetationScatterCookRequest(
+                    s_LanternWorldGuid,
+                    biomeRef,
+                    terrainRootRef,
+                    partition,
+                    new WorldCellKey(new WorldCellCoordinate(1, 0, 0), "surface"),
+                    "valley-rock",
+                    UnscaledConservativeRadius: 1.75f,
+                    Exclusions: []));
+            Assert.Equal(1, result.Metrics.AcceptedCount);
+            Assert.Equal(
+                Guid.Parse("cadf9261-1ffe-85e6-23df-b62a204da08d"),
+                result.ClusterMetadata.Guid);
+            Assert.Equal(
+                Guid.Parse("dd3ef159-5eea-0247-97ac-4add9c3d4994"),
+                result.PageMetadata[0].Guid);
+            string placementHash = Convert.ToHexString(result.PlacementContentHash);
+            Assert.Equal("99168D344D128746B87BC2F3900698CB", placementHash[..32]);
+            Assert.Equal("79EFE1671F9C286C61D4151E99468A9A", placementHash[32..]);
+            Assert.Single(result.Cluster.Pages);
+            Assert.Equal(result.Metrics.AcceptedCount, result.Cluster.Pages[0].Instances.Count);
+
+            string generatedRoot = Path.Combine(cookedRoot, "GeneratedSources");
+            Directory.CreateDirectory(generatedRoot);
+            string clusterSource = Path.Combine(generatedRoot, "ShowcaseValley.cluster.generated");
+            string pageSource = Path.Combine(generatedRoot, "ShowcaseValley.page.generated");
+            File.WriteAllText(clusterSource, "generated vegetation cluster identity");
+            File.WriteAllText(pageSource, "generated vegetation page identity");
+            db.AddAsset(
+                result.ClusterMetadata.Guid,
+                VegetationAssetTypes.Cluster,
+                clusterSource,
+                packageId);
+            db.AddAsset(
+                result.PageMetadata[0].Guid,
+                VegetationAssetTypes.InstancePage,
+                pageSource,
+                packageId);
+            CookedVegetationClusterArtifact artifact = VegetationClusterAssetCooker.Cook(
+                db,
+                result.Cluster);
+            Assert.True(
+                VegetationClusterAssetCooker.TryLoadCooked(
+                    db,
+                    new AssetRef<VegetationClusterSourceAsset>(
+                        artifact.ClusterGuid,
+                        VegetationAssetTypes.Cluster,
+                        packageId),
+                    out CookedVegetationCluster cluster,
+                    out string clusterDiagnostic),
+                clusterDiagnostic);
+            CookedVegetationInstancePageReference page = Assert.Single(cluster.Pages);
+            Assert.Equal(result.PageMetadata[0].Guid, page.Guid);
+            Assert.Equal(result.Metrics.AcceptedCount, page.InstanceCount);
+            Assert.True(
+                VegetationInstancePageAssetCooker.TryLoadCooked(
+                    db,
+                    new AssetRef<VegetationInstancePageSourceAsset>(
+                        page.Guid,
+                        VegetationAssetTypes.InstancePage,
+                        packageId),
+                    cluster.Guid,
+                    out CookedVegetationInstancePage loadedPage,
+                    out string pageDiagnostic),
+                pageDiagnostic);
+            Assert.Equal(page.InstanceCount, loadedPage.Instances.Count);
+            Assert.Equal(page.Origin, loadedPage.Origin);
+            Assert.Equal(page.Bounds, loadedPage.Bounds);
+            Assert.Equal(SHA256.HashSizeInBytes, result.PlacementContentHash.Length);
+            string pageHash = Convert.ToHexString(page.ContentHash);
+            string clusterHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(artifact.Path)));
+            Assert.Equal("B3CB5AB88DEDEEB59CC0366AB2165DAB", pageHash[..32]);
+            Assert.Equal("2B25922AB65D5B3FDE4B3A63C3C341F4", pageHash[32..]);
+            Assert.Equal("073268F1E53948B89A6FCFA5A99708A7", clusterHash[..32]);
+            Assert.Equal("10F133D3BCCFFBAA75CE592694F94BB5", clusterHash[32..]);
+
+            VegetationScatterBakeResult reordered = VegetationScatterBaker.Build(
+                new VegetationScatterBakeDescriptor(
+                    s_LanternWorldGuid,
+                    biome,
+                    species,
+                    terrainRoot,
+                    tiles.Reverse().ToArray(),
+                    partition,
+                    new WorldCellKey(new WorldCellCoordinate(1, 0, 0), "surface"),
+                    "valley-rock",
+                    UnscaledConservativeRadius: 1.75f,
+                    Exclusions: []));
+            Assert.Equal(result.ClusterMetadata.Guid, reordered.ClusterMetadata.Guid);
+            Assert.Equal(result.PageMetadata[0].Guid, reordered.PageMetadata[0].Guid);
+            Assert.Equal(result.PlacementContentHash, reordered.PlacementContentHash);
+            Assert.Equal(
+                VegetationClusterAssetCooker.WritePayload(cluster),
+                File.ReadAllBytes(artifact.Path));
         }
         finally
         {

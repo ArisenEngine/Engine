@@ -204,6 +204,21 @@ public sealed class CanonicalPackageMetadataTests
     }
 
     [Fact]
+    public void VegetationDependsOnTerrainWithoutReversingTheDomainBoundary()
+    {
+        var vegetation = ReadPackageManifest("com.arisen.vegetation");
+        var terrain = ReadPackageManifest("com.arisen.terrain");
+
+        Assert.Contains(
+            vegetation.Dependencies!.Keys,
+            packageId => string.Equals(
+                packageId,
+                "com.arisen.terrain",
+                StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(terrain.Dependencies!.Keys, IsVegetationPackage);
+    }
+
+    [Fact]
     public void VegetationAdaptersLoadAfterTheirOwnedProviders()
     {
         string repositoryRoot = FindRepositoryRoot();
