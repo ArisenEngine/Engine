@@ -12,6 +12,8 @@ public class ServiceRegistry : IServiceRegistry
     private readonly ConcurrentDictionary<Type, object> _services = new();
     private readonly ConcurrentDictionary<Type, ServiceRegistrationInfo> _registrationInfo = new();
     private readonly AsyncLocal<string?> _currentProviderPackageId = new();
+    private readonly object _registrationGate = new();
+    private bool _registrationClosed;
 
     public IDisposable BeginPackageRegistration(string packageId)
     {
@@ -35,15 +37,24 @@ public class ServiceRegistry : IServiceRegistry
             throw new ArgumentException($"Service instance type '{service.GetType().FullName}' is not assignable to contract '{contractType.FullName}'.", nameof(service));
         }
         
-        if (!_services.TryAdd(contractType, service))
+        lock (_registrationGate)
         {
-            throw new InvalidOperationException($"Service of type {contractType.Name} is already registered.");
-        }
+            if (_registrationClosed)
+            {
+                throw new InvalidOperationException(
+                    "Service registration is closed during engine shutdown.");
+            }
 
-        _registrationInfo[contractType] = new ServiceRegistrationInfo(
-            contractType.FullName ?? contractType.Name,
-            service.GetType().FullName ?? service.GetType().Name,
-            _currentProviderPackageId.Value);
+            if (!_services.TryAdd(contractType, service))
+            {
+                throw new InvalidOperationException($"Service of type {contractType.Name} is already registered.");
+            }
+
+            _registrationInfo[contractType] = new ServiceRegistrationInfo(
+                contractType.FullName ?? contractType.Name,
+                service.GetType().FullName ?? service.GetType().Name,
+                _currentProviderPackageId.Value);
+        }
     }
 
     public T GetService<T>()
@@ -107,14 +118,25 @@ public class ServiceRegistry : IServiceRegistry
         return removedCount;
     }
 
-    /// <summary>
-    /// Clears all registered services. Used by EngineKernel.Reset().
-    /// </summary>
-    public void Clear()
+    internal void ClearAndReopenAfter(Action completeReset)
     {
-        _services.Clear();
-        _registrationInfo.Clear();
-        _currentProviderPackageId.Value = null;
+        ArgumentNullException.ThrowIfNull(completeReset);
+        lock (_registrationGate)
+        {
+            _services.Clear();
+            _registrationInfo.Clear();
+            _currentProviderPackageId.Value = null;
+            completeReset();
+            _registrationClosed = false;
+        }
+    }
+
+    internal void CloseRegistration()
+    {
+        lock (_registrationGate)
+        {
+            _registrationClosed = true;
+        }
     }
 
     private static bool ServiceContractMatches(Type serviceType, string contractName)

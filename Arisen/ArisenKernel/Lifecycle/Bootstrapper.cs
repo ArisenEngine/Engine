@@ -20,8 +20,12 @@ public sealed record EnginePackageGraphResolution(
 
 public static class EngineBootstrapper
 {
-    public static void Run(string[] args)
+    public static void Run(string[] args) => Run(args, Environment.Exit);
+
+    internal static void Run(string[] args, Action<int> requestProcessExit)
     {
+        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(requestProcessExit);
         KernelLog.Info("=== Arisen Engine Bootstrapper ===");
 
         string workspacePath = "";
@@ -43,7 +47,7 @@ public static class EngineBootstrapper
         catch (ArgumentException ex)
         {
             KernelLog.FatalFormat("[Host] FATAL ERROR: {0}", ex.Message);
-            Environment.Exit(1);
+            requestProcessExit(1);
             return;
         }
 
@@ -135,7 +139,7 @@ public static class EngineBootstrapper
                     "[Host] FATAL ERROR: Invalid launch configuration '{0}': {1}",
                     configPath,
                     ex.Message);
-                Environment.Exit(1);
+                requestProcessExit(1);
                 return;
             }
         }
@@ -147,7 +151,7 @@ public static class EngineBootstrapper
         catch (InvalidOperationException ex)
         {
             KernelLog.FatalFormat("[Host] FATAL ERROR: {0}", ex.Message);
-            Environment.Exit(1);
+            requestProcessExit(1);
             return;
         }
 
@@ -164,21 +168,12 @@ public static class EngineBootstrapper
             manifestPath = Path.Combine(workspacePath, "manifest.json");
         }
 
-        // 1. Initialize Kernel and Core Project Subsystem
-        var kernel = EngineKernel.Instance;
-        var registry = kernel.Services;
-
+        // Resolve project/package metadata before registering kernel-owned state.
         var projectSubsystem = new ProjectSubsystem();
-        kernel.RegisterKernelOwnedService(projectSubsystem);
-        projectSubsystem.LoadFromWorkspace(workspacePath, manifestPath);
-
-        // B15: Initialize PackageSubsystem to track all loaded packages for other systems (like the Editor)
-        var packageSubsystem = new PackageSubsystem();
-        kernel.RegisterSubsystem(packageSubsystem);
-
         EnginePackageGraphResolution packageGraph;
         try
         {
+            projectSubsystem.LoadFromWorkspace(workspacePath, manifestPath);
             packageGraph = ResolvePackageGraph(
                 workspacePath,
                 profile,
@@ -188,10 +183,13 @@ public static class EngineBootstrapper
         catch (Exception ex)
         {
             KernelLog.FatalFormat("[Host] FATAL ERROR: {0}", ex.Message);
-            Environment.Exit(1);
+            requestProcessExit(1);
             return;
         }
 
+        // 1. Initialize Kernel and Core Project Subsystem
+        var kernel = EngineKernel.Instance;
+        var registry = kernel.Services;
         workspacePath = packageGraph.WorkspacePath;
         profile = packageGraph.Profile;
         List<string> packageUrls = packageGraph.PackageUrls.ToList();
@@ -203,57 +201,65 @@ public static class EngineBootstrapper
                 workspacePath.TrimEnd(
                     Path.DirectorySeparatorChar,
                     Path.AltDirectorySeparatorChar));
-
-        if (runtimeAssetOptions.EnableSourceAssetDiagnostics)
-        {
-            KernelLog.Warning(
-                "[Host] Diagnostic source-asset selection is enabled for this process.");
-        }
-
+        var packageSubsystem = new PackageSubsystem();
         RuntimeVisualSummaryService? visualSummaryService = null;
-        if (smokeOptions.CaptureVisualSummary)
-        {
-            visualSummaryService = smokeOptions.UsesPackageScenario
-                ? new RuntimeVisualSummaryService(
-                    workspacePath,
-                    profile,
-                    smokeOptions.VisualSummaryOutputPath)
-                : new RuntimeVisualSummaryService(
-                    workspacePath,
-                    profile,
-                    smokeOptions.EffectiveFrameCount - 1,
-                    smokeOptions.VisualSummaryOutputPath);
-            kernel.RegisterKernelOwnedService<IRuntimeVisualSummaryService>(visualSummaryService);
-            if (smokeOptions.UsesPackageScenario)
-            {
-                KernelLog.InfoFormat(
-                    "[Host] Named {0} visual summaries requested. Output base: {1}",
-                    smokeOptions.ModeName,
-                    visualSummaryService.OutputPath);
-            }
-            else
-            {
-                KernelLog.InfoFormat(
-                    "[Host] Visual summary requested for frame {0}. Output: {1}",
-                    visualSummaryService.CaptureFrameIndex,
-                    visualSummaryService.OutputPath);
-            }
-        }
-
-        var engineConfig = new EngineConfig
-        {
-            ProjectRoot = workspacePath,
-            ProjectName = projectName,
-            PackageUrls = packageUrls,
-            PackageRequirements = packageRequirements,
-            Platform = RuntimePlatform.Windows, // TODO: Deduce from OS
-            EnableSourceAssetDiagnostics = runtimeAssetOptions.EnableSourceAssetDiagnostics
-        };
         IApplicationHost? packageOnlyHost = null;
+        IApplicationHost? runtimeHost = null;
+        IRuntimeSmokeScenario? smokeScenario = null;
 
-        // 2. Mount packages first so an application host can select package-only or full-engine startup.
         try
         {
+            kernel.RegisterKernelOwnedService(projectSubsystem);
+
+            // B15: Initialize PackageSubsystem to track all loaded packages for other systems (like the Editor)
+            kernel.RegisterSubsystem(packageSubsystem);
+
+            if (runtimeAssetOptions.EnableSourceAssetDiagnostics)
+            {
+                KernelLog.Warning(
+                    "[Host] Diagnostic source-asset selection is enabled for this process.");
+            }
+
+            if (smokeOptions.CaptureVisualSummary)
+            {
+                visualSummaryService = smokeOptions.UsesPackageScenario
+                    ? new RuntimeVisualSummaryService(
+                        workspacePath,
+                        profile,
+                        smokeOptions.VisualSummaryOutputPath)
+                    : new RuntimeVisualSummaryService(
+                        workspacePath,
+                        profile,
+                        smokeOptions.EffectiveFrameCount - 1,
+                        smokeOptions.VisualSummaryOutputPath);
+                kernel.RegisterKernelOwnedService<IRuntimeVisualSummaryService>(visualSummaryService);
+                if (smokeOptions.UsesPackageScenario)
+                {
+                    KernelLog.InfoFormat(
+                        "[Host] Named {0} visual summaries requested. Output base: {1}",
+                        smokeOptions.ModeName,
+                        visualSummaryService.OutputPath);
+                }
+                else
+                {
+                    KernelLog.InfoFormat(
+                        "[Host] Visual summary requested for frame {0}. Output: {1}",
+                        visualSummaryService.CaptureFrameIndex,
+                        visualSummaryService.OutputPath);
+                }
+            }
+
+            var engineConfig = new EngineConfig
+            {
+                ProjectRoot = workspacePath,
+                ProjectName = projectName,
+                PackageUrls = packageUrls,
+                PackageRequirements = packageRequirements,
+                Platform = RuntimePlatform.Windows, // TODO: Deduce from OS
+                EnableSourceAssetDiagnostics = runtimeAssetOptions.EnableSourceAssetDiagnostics
+            };
+
+            // 2. Mount packages first so an application host can select package-only or full-engine startup.
             kernel.MountPackageGraph(engineConfig);
 
             if (!smokeOptions.Enabled &&
@@ -266,109 +272,104 @@ public static class EngineBootstrapper
             {
                 kernel.Initialize(engineConfig);
             }
+
+            if (packageOnlyHost != null)
+            {
+                KernelLog.Info("[Host] Package graph mount complete; subsystem initialization was not requested by the application host.");
+                LogRuntimeDiagnostics(kernel, packageSubsystem, workspacePath, profile, resolvedManifestPath, smokeOptions);
+            }
+            else
+            {
+                KernelLog.Info("[Host] Kernel Initialization Complete.");
+                KernelLog.Info("[Host] Topological Mount Complete.");
+                LogRuntimeDiagnostics(kernel, packageSubsystem, workspacePath, profile, resolvedManifestPath, smokeOptions);
+
+                if (smokeOptions.Enabled)
+                {
+                    KernelLog.InfoFormat(
+                        "[Host] Smoke mode '{0}' requested. Running {1} frame(s) and exiting without application-host handoff.",
+                        smokeOptions.ModeName,
+                        smokeOptions.EffectiveFrameCount);
+
+                    if (smokeOptions.EffectiveFrameCount != smokeOptions.RequestedFrameCount)
+                    {
+                        KernelLog.InfoFormat(
+                            "[Host] Smoke mode '{0}' raised requested frame count from {1} to {2}.",
+                            smokeOptions.ModeName,
+                            smokeOptions.RequestedFrameCount,
+                            smokeOptions.EffectiveFrameCount);
+                    }
+
+                    if (smokeOptions.Mode == RuntimeSmokeMode.HotReload)
+                    {
+                        KernelLog.Warning("[Host] Hot-reload smoke currently exercises multi-frame scene stability. File-change recook/reload smoke awaits a runtime-owned asset-change harness.");
+                    }
+
+                    if (smokeOptions.UsesPackageScenario)
+                    {
+                        if (!registry.TryGetService<IRuntimeSmokeScenarioProvider>(out var scenarioProvider))
+                        {
+                            throw new InvalidOperationException(
+                                $"Smoke mode '{smokeOptions.ModeName}' requires an IRuntimeSmokeScenarioProvider.");
+                        }
+
+                        var context = new RuntimeSmokeScenarioContext(
+                            smokeOptions.ModeName,
+                            workspacePath,
+                            profile,
+                            smokeOptions.SmokeSummaryOutputPath,
+                            visualSummaryService);
+                        if (!scenarioProvider.TryCreateScenario(
+                                context,
+                                out smokeScenario,
+                                out string scenarioDiagnostic))
+                        {
+                            throw new InvalidOperationException(
+                                $"Smoke scenario '{smokeOptions.ModeName}' creation failed: {scenarioDiagnostic}");
+                        }
+                    }
+                }
+                else if (registry.TryGetService<IApplicationHost>(out var appHost))
+                {
+                    runtimeHost = appHost;
+                    KernelLog.Info("[Host] Yielding main thread to IApplicationHost (Editor/UI).");
+                }
+                else
+                {
+                    KernelLog.Info("[Host] No IApplicationHost detected. Engaging default bare-metal Engine tick.");
+                }
+            }
         }
         catch (Exception ex)
         {
-            KernelLog.FatalFormat(
-                "[Host] FATAL ERROR: Engine startup failed: {0}",
-                ex.Message);
-            try
-            {
-                if (kernel.IsPackageGraphMounted)
-                {
-                    kernel.Shutdown();
-                }
-            }
-            catch (Exception shutdownException)
-            {
-                KernelLog.ErrorFormat(
-                    "[Host] Package shutdown after initialization failure also failed: {0}",
-                    shutdownException.Message);
-            }
-
-            Environment.Exit(1);
+            HandleInitializationFailure(kernel, ex);
+            requestProcessExit(1);
             return;
         }
 
         if (packageOnlyHost != null)
         {
-            KernelLog.Info("[Host] Package graph mount complete; subsystem initialization was not requested by the application host.");
-            LogRuntimeDiagnostics(kernel, packageSubsystem, workspacePath, profile, resolvedManifestPath, smokeOptions);
             packageOnlyHost.Run(args);
             return;
         }
 
-        KernelLog.Info("[Host] Kernel Initialization Complete.");
-
-        KernelLog.Info("[Host] Topological Mount Complete.");
-        LogRuntimeDiagnostics(kernel, packageSubsystem, workspacePath, profile, resolvedManifestPath, smokeOptions);
-
         if (smokeOptions.Enabled)
         {
-            KernelLog.InfoFormat(
-                "[Host] Smoke mode '{0}' requested. Running {1} frame(s) and exiting without application-host handoff.",
-                smokeOptions.ModeName,
-                smokeOptions.EffectiveFrameCount);
-
-            if (smokeOptions.EffectiveFrameCount != smokeOptions.RequestedFrameCount)
-            {
-                KernelLog.InfoFormat(
-                    "[Host] Smoke mode '{0}' raised requested frame count from {1} to {2}.",
-                    smokeOptions.ModeName,
-                    smokeOptions.RequestedFrameCount,
-                    smokeOptions.EffectiveFrameCount);
-            }
-
-            if (smokeOptions.Mode == RuntimeSmokeMode.HotReload)
-            {
-                KernelLog.Warning("[Host] Hot-reload smoke currently exercises multi-frame scene stability. File-change recook/reload smoke awaits a runtime-owned asset-change harness.");
-            }
-
             int smokeExitCode;
-            IRuntimeSmokeScenario? smokeScenario = null;
             if (smokeOptions.UsesPackageScenario)
             {
-                if (!registry.TryGetService<IRuntimeSmokeScenarioProvider>(out var scenarioProvider))
-                {
-                    KernelLog.FatalFormat(
-                        "[Host] Smoke mode '{0}' requires an IRuntimeSmokeScenarioProvider.",
-                        smokeOptions.ModeName);
-                    kernel.Shutdown();
-                    Environment.ExitCode = 1;
-                    return;
-                }
-
-                var context = new RuntimeSmokeScenarioContext(
-                    smokeOptions.ModeName,
-                    workspacePath,
-                    profile,
-                    smokeOptions.SmokeSummaryOutputPath,
-                    visualSummaryService);
-                if (!scenarioProvider.TryCreateScenario(
-                        context,
-                        out smokeScenario,
-                        out string scenarioDiagnostic))
-                {
-                    KernelLog.FatalFormat(
-                        "[Host] Smoke scenario '{0}' creation failed: {1}",
-                        smokeOptions.ModeName,
-                        scenarioDiagnostic);
-                    kernel.Shutdown();
-                    Environment.ExitCode = 1;
-                    return;
-                }
-
+                IRuntimeSmokeScenario activeSmokeScenario = smokeScenario!;
                 smokeExitCode = kernel.RunSmokeScenario(
-                    smokeScenario,
+                    activeSmokeScenario,
                     smokeOptions.EffectiveFrameCount,
                     TimeSpan.FromSeconds(45));
                 KernelLog.InfoFormat(
-                    smokeScenario.Succeeded
+                    activeSmokeScenario.Succeeded
                         ? "[Host] Smoke scenario passed: {0}"
                         : "[Host] Smoke scenario failed: {0}",
-                    smokeScenario.Succeeded
-                        ? smokeScenario.OutputPath
-                        : smokeScenario.FailureMessage ?? "unknown scenario failure");
+                    activeSmokeScenario.Succeeded
+                        ? activeSmokeScenario.OutputPath
+                        : activeSmokeScenario.FailureMessage ?? "unknown scenario failure");
             }
             else
             {
@@ -404,16 +405,81 @@ public static class EngineBootstrapper
             return;
         }
 
-        // 3. Fallback to registry checks for boot takeover
-        if (registry.TryGetService<IApplicationHost>(out var appHost))
+        // 3. Yield to the startup-selected host or the default engine loop.
+        if (runtimeHost != null)
         {
-            KernelLog.Info("[Host] Yielding main thread to IApplicationHost (Editor/UI).");
-            appHost.Run(args);
+            runtimeHost.Run(args);
         }
         else
         {
-            KernelLog.Info("[Host] No IApplicationHost detected. Engaging default bare-metal Engine tick.");
             kernel.Run();
+        }
+    }
+
+    internal static void HandleInitializationFailure(
+        EngineKernel kernel,
+        Exception initializationError)
+    {
+        ArgumentNullException.ThrowIfNull(kernel);
+        ArgumentNullException.ThrowIfNull(initializationError);
+
+        TryPublishHostFailureDiagnostic(() => KernelLog.FatalFormat(
+            "[Host] FATAL ERROR: Engine startup failed: {0}",
+            initializationError.Message));
+
+        EngineShutdownOwnershipSnapshot previous = kernel.GetShutdownOwnershipSnapshot();
+        while (true)
+        {
+            Exception? shutdownFailure = null;
+            try
+            {
+                kernel.Shutdown();
+            }
+            catch (Exception shutdownException)
+            {
+                shutdownFailure = shutdownException;
+                TryPublishHostFailureDiagnostic(() => KernelLog.ErrorFormat(
+                    "[Host] Package shutdown after initialization failure also failed: {0}",
+                    shutdownException.Message));
+            }
+
+            if (!kernel.IsPackageGraphMounted && !kernel.HasPackageRuntimeOwnership)
+            {
+                return;
+            }
+
+            EngineShutdownOwnershipSnapshot current = kernel.GetShutdownOwnershipSnapshot();
+            if (!current.IsStrictProgressFrom(previous))
+            {
+                var failures = new List<Exception> { initializationError };
+                if (shutdownFailure != null) failures.Add(shutdownFailure);
+                throw new AggregateException(
+                    "Engine startup cleanup stalled with retained package ownership. " +
+                    $"Before: {previous}. After: {current}.",
+                    failures);
+            }
+
+            previous = current;
+        }
+    }
+
+    private static void TryPublishHostFailureDiagnostic(Action publish)
+    {
+        try
+        {
+            publish();
+        }
+        catch (Exception diagnosticError)
+        {
+            try
+            {
+                Console.Error.WriteLine(
+                    $"[Host] Failure diagnostic could not be published: {diagnosticError.Message}");
+            }
+            catch
+            {
+                // Failure-path diagnostics cannot take ownership of host cleanup.
+            }
         }
     }
 
