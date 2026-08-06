@@ -135,7 +135,7 @@ public sealed class RenderProfilingContractTests
 
         Assert.Contains("terrainClosureComplete = $false", validation, StringComparison.Ordinal);
         Assert.Contains("$checks.terrainClosureComplete = $true", validation, StringComparison.Ordinal);
-        Assert.Contains("schemaVersion = 4", validation, StringComparison.Ordinal);
+        Assert.Contains("schemaVersion = 6", validation, StringComparison.Ordinal);
         Assert.Contains("--smoke-mode terrain-streaming", validation, StringComparison.Ordinal);
         Assert.Contains("validate_terrain_streaming_summary.ps1", validation, StringComparison.Ordinal);
         Assert.Contains("Assert-SourceIndependentRun", validation, StringComparison.Ordinal);

@@ -5,6 +5,30 @@ namespace Com.Arisen.Rendering.Tests;
 public sealed class RenderFrameResourceOwnershipContractTests
 {
     [Fact]
+    public void DeviceFrameSlotIsReservedBeforeSwapChainAcquire()
+    {
+        string subsystemSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rendering/RenderSubsystem.cs");
+
+        int reservationIndex = subsystemSource.IndexOf(
+            "RenderFrameResourceReservation frameResource = AcquireFrameResourceSlot(",
+            StringComparison.Ordinal);
+        int acquireIndex = subsystemSource.IndexOf(
+            "if (!submission.Begin(",
+            StringComparison.Ordinal);
+        int failedAcquireCancellationIndex = subsystemSource.IndexOf(
+            "m_FrameResourceSlots.Cancel(frameResource);",
+            acquireIndex,
+            StringComparison.Ordinal);
+
+        Assert.True(reservationIndex >= 0, "RenderSubsystem must reserve a device frame slot.");
+        Assert.True(acquireIndex > reservationIndex,
+            "The previous device-frame ticket must complete before native swapchain acquire.");
+        Assert.True(failedAcquireCancellationIndex > acquireIndex,
+            "A native acquire skip must cancel its unused device-frame reservation.");
+    }
+
+    [Fact]
     public void MultiSurfaceRenderingSeparatesOutputAndDeviceFrameIndices()
     {
         string subsystemSource = ReadRepoFile(
@@ -51,7 +75,21 @@ public sealed class RenderFrameResourceOwnershipContractTests
         Assert.Contains("PrepareFrameSubmission(swapChainFrameIndex", vulkanQueueSource, StringComparison.Ordinal);
         Assert.Contains("CommitFrameSubmission(swapChainFrameIndex", vulkanQueueSource, StringComparison.Ordinal);
         Assert.Contains("m_ImageAvailableSemaphores[currentFrame]", vulkanSwapChainSource, StringComparison.Ordinal);
-        Assert.Contains("m_RenderFinishSemaphores[currentFrame]", vulkanSwapChainSource, StringComparison.Ordinal);
+        Assert.Contains("m_ImageAvailableSemaphoreTickets[currentFrame]", vulkanSwapChainSource, StringComparison.Ordinal);
+        Assert.Contains("m_RealPresentWaitSemaphores[imageIndex]", vulkanSwapChainSource, StringComparison.Ordinal);
+        Assert.Contains("ResolveRenderFinishSemaphoreLocked(frameIndex)", vulkanSwapChainSource, StringComparison.Ordinal);
+        Assert.Contains(
+            "plan.signalSemaphore = ResolveRenderFinishSemaphoreLocked(frameIndex);",
+            vulkanSwapChainSource,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "auto hSem = ResolveRenderFinishSemaphoreLocked(frameIndex);",
+            vulkanSwapChainSource,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "plan.signalSemaphore = m_RenderFinishSemaphores[currentFrame]",
+            vulkanSwapChainSource,
+            StringComparison.Ordinal);
         Assert.DoesNotContain("GetImageAvailableSemaphore(resourceFrameIndex)", vulkanQueueSource, StringComparison.Ordinal);
         Assert.DoesNotContain("GetRenderFinishSemaphore(resourceFrameIndex)", vulkanQueueSource, StringComparison.Ordinal);
     }

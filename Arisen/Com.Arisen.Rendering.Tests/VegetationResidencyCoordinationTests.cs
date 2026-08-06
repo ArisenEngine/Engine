@@ -935,6 +935,216 @@ public sealed class VegetationResidencyCoordinationTests
         Assert.True(store.GetSnapshot().IsEmpty);
     }
 
+    [Theory]
+    [InlineData((int)VegetationPreparedPublicationStage.PreparedEntryAdded)]
+    [InlineData((int)VegetationPreparedPublicationStage.ClusterMappingAdded)]
+    [InlineData((int)VegetationPreparedPublicationStage.GpuBytesCharged)]
+    [InlineData((int)VegetationPreparedPublicationStage.PreparedCountUpdated)]
+    public void PublicationFailureRollsBackOnlySuccessfullyPublishedLegs(
+        int injectedStageValue)
+    {
+        var injectedStage = (VegetationPreparedPublicationStage)injectedStageValue;
+        using var fixture = new VegetationResidencyFixture();
+        using var store = new FaultInjectingVegetationRuntimeDataStore();
+        using var residency = fixture.CreateResidency(maxInactiveResources: 0);
+        var gpuResources = new TrackingVegetationGpuResourceFactory();
+        int injectionRemaining = 1;
+        using var vegetationProvider = new VegetationPreparedAssetProvider(
+            fixture.Database,
+            fixture.Scheduler,
+            store,
+            residency,
+            gpuResources,
+            (key, stage) =>
+            {
+                if (key.AssetType == VegetationAssetTypes.Cluster &&
+                    stage == injectedStage &&
+                    Interlocked.Exchange(ref injectionRemaining, 0) != 0)
+                {
+                    throw new InvalidOperationException(
+                        $"Injected vegetation publication failure after '{stage}'.");
+                }
+            });
+        residency.RegisterPreparedProvider(vegetationProvider);
+        residency.RegisterPreparedProvider(new ImmediateRenderingPreparedProvider());
+        RuntimeAssetResidencyLease first = residency.AcquireSceneDependencies(
+            CellOwner(1, generation: 1),
+            fixture.GetClosure(clusterIndex: 0),
+            pinned: false);
+
+        ProcessUntilTerminal(residency, vegetationProvider, first);
+
+        Assert.Equal(RuntimePreparedAssetState.Failed, first.State);
+        Assert.Equal(3, vegetationProvider.GetMetrics().PreparedResourceCount);
+        Assert.Equal(0, vegetationProvider.GetMetrics().EstimatedGpuBytes);
+        Assert.Equal(1, gpuResources.CreatedCount);
+        Assert.Equal(1, gpuResources.ReleaseCount);
+        Assert.Equal(0, gpuResources.LiveResourceCount);
+        Assert.Equal(0, store.GetMetrics().ResidentClusterCount);
+
+        first.Dispose();
+        residency.ProcessAtFrameBoundary();
+        Assert.Equal(default, vegetationProvider.GetMetrics());
+
+        using RuntimeAssetResidencyLease retry = residency.AcquireSceneDependencies(
+            CellOwner(1, generation: 2),
+            fixture.GetClosure(clusterIndex: 0),
+            pinned: false);
+        ProcessUntilTerminal(residency, vegetationProvider, retry);
+
+        Assert.Equal(RuntimePreparedAssetState.Ready, retry.State);
+        Assert.Equal(4, vegetationProvider.GetMetrics().PreparedResourceCount);
+        Assert.Equal(
+            TrackingVegetationGpuResourceFactory.ResourceBytes,
+            vegetationProvider.GetMetrics().EstimatedGpuBytes);
+        Assert.Equal(2, gpuResources.CreatedCount);
+        Assert.Equal(1, gpuResources.ReleaseCount);
+        Assert.Equal(1, gpuResources.LiveResourceCount);
+    }
+
+    [Fact]
+    public void PublicationRollbackFailureRetainsLiveResourceForTeardownRetry()
+    {
+        using var fixture = new VegetationResidencyFixture();
+        using var store = new FaultInjectingVegetationRuntimeDataStore();
+        using var residency = fixture.CreateResidency(maxInactiveResources: 0);
+        var gpuResources = new TrackingVegetationGpuResourceFactory();
+        int injectionRemaining = 1;
+        using var vegetationProvider = new VegetationPreparedAssetProvider(
+            fixture.Database,
+            fixture.Scheduler,
+            store,
+            residency,
+            gpuResources,
+            (key, stage) =>
+            {
+                if (key.AssetType == VegetationAssetTypes.Cluster &&
+                    stage == VegetationPreparedPublicationStage.GpuBytesCharged &&
+                    Interlocked.Exchange(ref injectionRemaining, 0) != 0)
+                {
+                    throw new InvalidOperationException(
+                        "Injected vegetation publication failure after GPU byte charge.");
+                }
+            });
+        residency.RegisterPreparedProvider(vegetationProvider);
+        residency.RegisterPreparedProvider(new ImmediateRenderingPreparedProvider());
+        store.SetRemoveOutcomes(fixture.ClusterGuid, RemoveOutcome.Throw);
+        RuntimeAssetResidencyLease lease = residency.AcquireSceneDependencies(
+            CellOwner(1, generation: 1),
+            fixture.GetClosure(clusterIndex: 0),
+            pinned: false);
+
+        ProcessUntilTerminal(residency, vegetationProvider, lease);
+
+        Assert.Equal(RuntimePreparedAssetState.Failed, lease.State);
+        Assert.Equal(4, vegetationProvider.GetMetrics().PreparedResourceCount);
+        Assert.Equal(
+            TrackingVegetationGpuResourceFactory.ResourceBytes,
+            vegetationProvider.GetMetrics().EstimatedGpuBytes);
+        Assert.Equal(1, store.GetMetrics().ResidentClusterCount);
+        Assert.Equal(1, gpuResources.CreatedCount);
+        Assert.Equal(0, gpuResources.ReleaseCount);
+        Assert.Equal(1, gpuResources.LiveResourceCount);
+
+        vegetationProvider.Release(fixture.ClusterKey(clusterIndex: 0));
+
+        Assert.Equal(3, vegetationProvider.GetMetrics().PreparedResourceCount);
+        Assert.Equal(0, vegetationProvider.GetMetrics().EstimatedGpuBytes);
+        Assert.Equal(0, store.GetMetrics().ResidentClusterCount);
+        Assert.Equal(1, gpuResources.ReleaseCount);
+        Assert.Equal(0, gpuResources.LiveResourceCount);
+
+        lease.Dispose();
+        residency.ProcessAtFrameBoundary();
+        Assert.Equal(default, vegetationProvider.GetMetrics());
+    }
+
+    [Fact]
+    public void GpuReleaseFailureRetainsPublicationForDisposeRetry()
+    {
+        using var fixture = new VegetationResidencyFixture();
+        using var store = new FaultInjectingVegetationRuntimeDataStore();
+        using var residency = fixture.CreateResidency(maxInactiveResources: 0);
+        var gpuResources = new TrackingVegetationGpuResourceFactory();
+        using var vegetationProvider = new VegetationPreparedAssetProvider(
+            fixture.Database,
+            fixture.Scheduler,
+            store,
+            residency,
+            gpuResources);
+        residency.RegisterPreparedProvider(vegetationProvider);
+        residency.RegisterPreparedProvider(new ImmediateRenderingPreparedProvider());
+        RuntimeAssetResidencyLease lease = residency.AcquireSceneDependencies(
+            CellOwner(1, generation: 1),
+            fixture.GetClosure(clusterIndex: 0),
+            pinned: false);
+        ProcessUntilTerminal(residency, vegetationProvider, lease);
+        gpuResources.ReleaseFailuresRemaining = 1;
+
+        AggregateException failure = Assert.Throws<AggregateException>(
+            vegetationProvider.Dispose);
+
+        Assert.Contains(
+            failure.InnerExceptions,
+            exception => exception.ToString().Contains(
+                "injected",
+                StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(1, vegetationProvider.GetMetrics().PreparedResourceCount);
+        Assert.Equal(
+            TrackingVegetationGpuResourceFactory.ResourceBytes,
+            vegetationProvider.GetMetrics().EstimatedGpuBytes);
+        Assert.Equal(0, store.GetMetrics().ResidentClusterCount);
+        Assert.Equal(0, gpuResources.ReleaseCount);
+        Assert.Equal(1, gpuResources.LiveResourceCount);
+
+        vegetationProvider.Dispose();
+
+        Assert.Equal(0, vegetationProvider.GetMetrics().PreparedResourceCount);
+        Assert.Equal(0, vegetationProvider.GetMetrics().EstimatedGpuBytes);
+        Assert.Equal(1, gpuResources.ReleaseCount);
+        Assert.Equal(0, gpuResources.LiveResourceCount);
+
+        lease.Dispose();
+        residency.ProcessAtFrameBoundary();
+        Assert.Equal(default, vegetationProvider.GetMetrics());
+    }
+
+    [Fact]
+    public void StaleGpuDependenciesInvalidateProviderAndReleasePreparedCluster()
+    {
+        using var fixture = new VegetationResidencyFixture();
+        using var store = new FaultInjectingVegetationRuntimeDataStore();
+        using var residency = fixture.CreateResidency(maxInactiveResources: 0);
+        var gpuResources = new TrackingVegetationGpuResourceFactory();
+        using var vegetationProvider = new VegetationPreparedAssetProvider(
+            fixture.Database,
+            fixture.Scheduler,
+            store,
+            residency,
+            gpuResources);
+        residency.RegisterPreparedProvider(vegetationProvider);
+        vegetationProvider.SetResidencyRegistrationOwned(true);
+        residency.RegisterPreparedProvider(new ImmediateRenderingPreparedProvider());
+        using RuntimeAssetResidencyLease lease = residency.AcquireSceneDependencies(
+            CellOwner(1, generation: 1),
+            fixture.GetClosure(clusterIndex: 0),
+            pinned: false);
+        ProcessUntilTerminal(residency, vegetationProvider, lease);
+
+        Assert.Equal(RuntimePreparedAssetState.Ready, lease.State);
+        Assert.Equal(1, gpuResources.LiveResourceCount);
+        Assert.Equal(4, vegetationProvider.GetMetrics().PreparedResourceCount);
+
+        gpuResources.InvalidateDependencies();
+
+        Assert.True(vegetationProvider.InvalidateStaleDependencies());
+        Assert.Equal(0, gpuResources.LiveResourceCount);
+        Assert.Equal(1, gpuResources.ReleaseCount);
+        Assert.Equal(default, vegetationProvider.GetMetrics());
+        Assert.True(store.GetSnapshot().IsEmpty);
+        Assert.False(vegetationProvider.InvalidateStaleDependencies());
+    }
+
     [Fact]
     public void DisposeRetriesOnlyPublicationsWhoseStoreRemovalFailed()
     {
@@ -1676,6 +1886,90 @@ public sealed class VegetationResidencyCoordinationTests
             m_Prepared.Count,
             EstimatedGpuBytes: 0,
             PendingDisposalCount: 0);
+    }
+
+    private sealed class TrackingVegetationGpuResourceFactory :
+        IVegetationClusterGpuResourceFactory
+    {
+        public const long ResourceBytes = 4096;
+
+        private readonly HashSet<TrackingVegetationGpuResource> m_Live = new();
+
+        public int CreatedCount { get; private set; }
+
+        public int ReleaseCount { get; private set; }
+
+        public int ReleaseFailuresRemaining { get; set; }
+
+        public int LiveResourceCount => m_Live.Count;
+
+        public int PendingDisposalCount => 0;
+
+        public void InvalidateDependencies()
+        {
+            foreach (TrackingVegetationGpuResource resource in m_Live)
+            {
+                resource.DependenciesCurrent = false;
+            }
+        }
+
+        public void UpdateFrameContext(
+            ArisenEngine.Core.RHI.RHIDevice device,
+            ulong deviceGeneration)
+        {
+        }
+
+        public VegetationGpuResourceBuildResult TryCreate(
+            CookedVegetationCluster cluster,
+            IReadOnlyList<CookedVegetationSpecies> species,
+            IReadOnlyList<CookedVegetationInstancePage> pages)
+        {
+            var resource = new TrackingVegetationGpuResource();
+            Assert.True(m_Live.Add(resource));
+            CreatedCount++;
+            return VegetationGpuResourceBuildResult.Ready(resource);
+        }
+
+        public void RequestRelease(IVegetationClusterGpuResource resource)
+        {
+            var tracked = Assert.IsType<TrackingVegetationGpuResource>(resource);
+            if (ReleaseFailuresRemaining > 0)
+            {
+                ReleaseFailuresRemaining--;
+                throw new InvalidOperationException(
+                    "Injected vegetation GPU resource release failure.");
+            }
+            Assert.True(m_Live.Remove(tracked), "GPU resource was released more than once.");
+            tracked.Dispose();
+            ReleaseCount++;
+        }
+
+        public void UpdateSubmittedTicket(ulong submittedTicket)
+        {
+        }
+
+        public void ReleaseAllDeviceResources()
+        {
+            Assert.Empty(m_Live);
+        }
+
+        private sealed class TrackingVegetationGpuResource :
+            IVegetationClusterGpuResource
+        {
+            private bool m_Disposed;
+
+            public long EstimatedGpuBytes => ResourceBytes;
+
+            public bool DependenciesCurrent { get; set; } = true;
+
+            public VegetationPreparedClusterView CreateView(ulong generation) => default;
+
+            public void Dispose()
+            {
+                Assert.False(m_Disposed, "GPU resource was disposed more than once.");
+                m_Disposed = true;
+            }
+        }
     }
 
     private sealed class FailFirstPreparedProvider : IRuntimePreparedAssetProvider

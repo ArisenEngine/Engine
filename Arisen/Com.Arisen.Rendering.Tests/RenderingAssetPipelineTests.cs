@@ -2470,6 +2470,35 @@ public sealed class RenderingAssetPipelineTests
     }
 
     [Fact]
+    public void StandardLitNormalMapVaryings_AreOwnedByNormalMapVariant()
+    {
+        string shaderText = File.ReadAllText(GetRepositoryFile(
+            "Arisen",
+            "Development",
+            "PackageGame",
+            "Local",
+            "com.arisen.generic-renderpipeline",
+            "Assets",
+            "Shaders",
+            "StandardLit.shader")).ReplaceLineEndings("\n");
+
+        Assert.Contains(
+            "#if USE_NORMAL_MAP\n" +
+            "                float3 WorldTangent : TANGENT0;\n" +
+            "                float TangentSign : TANGENT1;\n" +
+            "#endif",
+            shaderText,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "#if USE_NORMAL_MAP\n" +
+            "                output.WorldTangent = TransformDirection(input.Tangent.xyz, objectData);\n" +
+            "                output.TangentSign = input.Tangent.w;\n" +
+            "#endif",
+            shaderText,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void StandardLitPackageAssets_DefinePbrEnvironmentMaterialContract()
     {
         using var workspace = TestWorkspace.Create();

@@ -442,8 +442,15 @@ cross-page stable keys. Page claims reciprocally bind the exact parent cluster a
 and biome claims bind mesh/material and species keys respectively. The provider revalidates the
 root/dependency claims, canonical binding, and owner-plan generation immediately before and after
 publication, treats a superseded owner plan as `Waiting`, and lets page
-resources evict independently while shared species dependencies remain coarse residency keys. GPU
-instance buffers, vegetation extraction/render passes, Editor authoring, and backend-specific
+resources evict independently while shared species dependencies remain coarse residency keys.
+Frame-boundary GPU publication converts the canonical page records into one immutable 48-byte
+origin-relative instance record per accepted placement and groups contiguous ranges by exact
+species/mesh/material identity. The adapter retains exact-key Generic RP mesh/material leases and
+owns only the independently evictable cluster instance buffer; releasing residency tombstones the
+publication immediately and retires physical resources on the setup thread through the latest
+submission ticket. RenderGraph recording consumes those prepared buffers and leases through direct
+indexed opaque and cascaded-shadow passes without reopening cooked or source assets. Editor
+authoring, hierarchical culling/LOD, broad foliage materials, and backend-specific GPU-driven
 behavior remain later vegetation work.
 
 Terrain brush authoring is an in-memory transaction until explicit save. `TerrainAuthoringDocument` owns a validated root/tile working set, exact saved baselines, dirty tile identities, and deterministic brush commands. The first height brush applies signed quantized linear-falloff deltas; the first four-layer paint brush changes one selected channel while renormalizing all channels to an exact `UNorm8` sum of 255. Samples on shared edges and corners update every owning tile. Undo records contain only changed sample indices and exact before/after values, so undo/redo restores byte-identical data and clears dirty state when the working copy returns to its baseline.

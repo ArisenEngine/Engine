@@ -20,6 +20,20 @@ $terrainStreamingSummaryArtifactPaths = @(
     $profiles |
         Where-Object { $_.terrainStreaming.requested -eq $true -and $_.terrainStreaming.passed -eq $true -and $_.terrainStreaming.summaryPath } |
         ForEach-Object { [string]$_.terrainStreaming.summaryPath })
+$vegetationVisualSummaryArtifactPaths = @(
+    $profiles |
+        Where-Object {
+            $_.vegetationVisualComparison.requested -eq $true -and
+            $_.vegetationVisualComparison.passed -eq $true
+        } |
+        ForEach-Object {
+            @(
+                [string]$_.vegetationVisualComparison.disabledSummaryPath,
+                [string]$_.vegetationVisualComparison.opaqueOnlySummaryPath,
+                [string]$_.vegetationVisualComparison.fullSummaryPath
+            )
+        } |
+        Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
 $editorViewportSmokeArtifactPaths = @(
     $profiles |
         Where-Object { $_.editorViewportSmoke.requested -eq $true -and $_.editorViewportSmoke.passed -eq $true -and $_.editorViewportSmoke.path } |
@@ -43,7 +57,7 @@ if ($env:EXIT_CODE -ne "0") {
 }
 
 $summary = [ordered]@{
-    schemaVersion = 7
+    schemaVersion = 8
     capturedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
     repositoryRoot = $env:REPO_ROOT
     workspacePath = $env:WORKSPACE_DIR
@@ -67,6 +81,9 @@ $summary = [ordered]@{
     terrainStreamingSmokeRuns = [int]$env:TERRAIN_STREAMING_SMOKE_RUNS
     terrainStreamingSummaryArtifactCount = $terrainStreamingSummaryArtifactPaths.Count
     terrainStreamingSummaryArtifactPaths = $terrainStreamingSummaryArtifactPaths
+    vegetationVisualComparisonRuns = [int]$env:VEGETATION_VISUAL_COMPARISON_RUNS
+    vegetationVisualSummaryArtifactCount = $vegetationVisualSummaryArtifactPaths.Count
+    vegetationVisualSummaryArtifactPaths = $vegetationVisualSummaryArtifactPaths
     editorViewportSmokeRuns = [int]$env:EDITOR_VIEWPORT_SMOKE_RUNS
     editorViewportSmokeArtifactCount = $editorViewportSmokeArtifactPaths.Count
     editorViewportSmokeArtifactPaths = $editorViewportSmokeArtifactPaths

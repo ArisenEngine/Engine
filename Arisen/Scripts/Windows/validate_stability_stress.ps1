@@ -65,6 +65,8 @@ function Read-AndValidateRuntimeSummary([string]$Path)
     Assert-Condition (Test-Path -LiteralPath $Path -PathType Leaf) `
         "Runtime validation summary was not produced: $Path"
     $summary = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json
+    Assert-Condition ([int]$summary.schemaVersion -eq 8) `
+        "Runtime validation summary schema mismatch. Expected 8: $Path"
     Assert-Condition ($summary.succeeded -eq $true -and [int]$summary.exitCode -eq 0) `
         "Runtime validation summary reports failure: $Path"
     Assert-Condition ($summary.gpuAvailable -eq $true) `
@@ -79,6 +81,13 @@ function Read-AndValidateRuntimeSummary([string]$Path)
         "Runtime validation did not execute all world-streaming gates: $Path"
     Assert-Condition ([int]$summary.terrainStreamingSmokeRuns -eq 3) `
         "Runtime validation did not execute all terrain-streaming gates: $Path"
+    Assert-Condition ([int]$summary.vegetationVisualComparisonRuns -eq 2) `
+        "Runtime validation did not execute Development and copied Production vegetation comparisons: $Path"
+    $vegetationSummaryPaths = @($summary.vegetationVisualSummaryArtifactPaths)
+    Assert-Condition (
+        [int]$summary.vegetationVisualSummaryArtifactCount -eq 3 -and
+        $vegetationSummaryPaths.Count -eq 3) `
+        "Runtime validation did not report all three local vegetation comparison summaries: $Path"
     Assert-Condition ([int]$summary.relocatedProductionSmokeRuns -eq 1) `
         "Runtime validation did not execute copied Production validation: $Path"
     $profiles = @($summary.profileResults)
@@ -86,6 +95,29 @@ function Read-AndValidateRuntimeSummary([string]$Path)
         "Runtime validation did not report exactly four profile results: $Path"
     Assert-Condition (@($profiles | Where-Object { $_.status -cne "passed" }).Count -eq 0) `
         "At least one runtime profile did not pass: $Path"
+    $vegetationProfiles = @($profiles | Where-Object {
+        $_.vegetationVisualComparison.requested -eq $true
+    })
+    Assert-Condition (
+        $vegetationProfiles.Count -eq 1 -and
+        [string]$vegetationProfiles[0].profile -ceq "Development" -and
+        $vegetationProfiles[0].vegetationVisualComparison.passed -eq $true) `
+        "Runtime validation did not report one passed Development vegetation comparison: $Path"
+    $profileVegetationPaths = @(
+        [string]$vegetationProfiles[0].vegetationVisualComparison.disabledSummaryPath,
+        [string]$vegetationProfiles[0].vegetationVisualComparison.opaqueOnlySummaryPath,
+        [string]$vegetationProfiles[0].vegetationVisualComparison.fullSummaryPath)
+    Assert-Condition (
+        @($profileVegetationPaths | Where-Object {
+            [string]::IsNullOrWhiteSpace($_)
+        }).Count -eq 0 -and
+        @($profileVegetationPaths | Select-Object -Unique).Count -eq 3) `
+        "Development vegetation comparison paths are missing or duplicated: $Path"
+    foreach ($profileVegetationPath in $profileVegetationPaths)
+    {
+        Assert-Condition ($vegetationSummaryPaths -contains $profileVegetationPath) `
+            "Development vegetation comparison path is absent from aggregate evidence: $profileVegetationPath"
+    }
     return $summary
 }
 
@@ -101,7 +133,9 @@ function Get-FreshPlayerLogs([DateTime]$StartedUtc)
 function Assert-CleanPlayerLogs([IO.FileInfo[]]$Logs)
 {
     Assert-Condition ($Logs.Count -gt 0) "Stress cycle produced no fresh player logs."
-    $forbidden = "\[FATAL\]|Fatal error|SEHException|0xC0000005|VK_ERROR_DEVICE_LOST|Error unloading package"
+    $forbidden =
+        "\[FATAL\]|Fatal error|SEHException|0xC0000005|VK_ERROR_DEVICE_LOST|" +
+        "Error unloading package|vk message warning:|vk message error:"
     foreach ($log in $Logs)
     {
         $text = Get-Content -LiteralPath $log.FullName -Raw
@@ -110,9 +144,42 @@ function Assert-CleanPlayerLogs([IO.FileInfo[]]$Logs)
                 $forbidden,
                 [Text.RegularExpressions.RegexOptions]::IgnoreCase))
         {
-            throw "Fresh player log contains a crash/device-loss/unload marker: $($log.FullName)"
+            throw "Fresh player log contains a crash/device-loss/unload/Vulkan marker: $($log.FullName)"
         }
     }
+}
+
+function Get-PlayerLogSnapshot([string]$LogsPath)
+{
+    $snapshot = @{}
+    foreach ($log in @(Get-ChildItem -LiteralPath $LogsPath `
+            -Filter "player_*.log" -File -ErrorAction SilentlyContinue))
+    {
+        $snapshot[$log.FullName] = [pscustomobject]@{
+            length = [long]$log.Length
+            lastWriteTimeUtcTicks = [long]$log.LastWriteTimeUtc.Ticks
+            creationTimeUtcTicks = [long]$log.CreationTimeUtc.Ticks
+        }
+    }
+    return $snapshot
+}
+
+function Get-LaunchOwnedPlayerLogs(
+    [string]$LogsPath,
+    [Collections.IDictionary]$Snapshot)
+{
+    return @(
+        Get-ChildItem -LiteralPath $LogsPath `
+            -Filter "player_*.log" -File -ErrorAction SilentlyContinue |
+            Where-Object {
+                $previous = $Snapshot[$_.FullName]
+                $null -eq $previous -or
+                    [long]$previous.length -ne [long]$_.Length -or
+                    [long]$previous.lastWriteTimeUtcTicks -ne
+                        [long]$_.LastWriteTimeUtc.Ticks -or
+                    [long]$previous.creationTimeUtcTicks -ne
+                        [long]$_.CreationTimeUtc.Ticks
+            })
 }
 
 function Read-JsonArtifact([string]$Path, [string]$Description)
@@ -334,6 +401,25 @@ function Archive-WorldStreamingArtifact(
     }
 }
 
+function Get-ArchivedWorldVisualCapturePath(
+    [object]$ArchivedWorld,
+    [string]$CaptureName,
+    [string]$Description)
+{
+    $artifact = Read-JsonArtifact `
+        ([string]$ArchivedWorld.summaryPath) `
+        "$Description summary"
+    $matches = @($artifact.visualCaptures | Where-Object {
+        [string]$_.capture.name -ceq $CaptureName
+    })
+    Assert-Condition ($matches.Count -eq 1) `
+        "$Description must contain exactly one '$CaptureName' visual capture."
+    $path = [string]$matches[0].capture.outputPath
+    Assert-Condition (Test-Path -LiteralPath $path -PathType Leaf) `
+        "$Description archived '$CaptureName' visual does not exist: $path"
+    return $path
+}
+
 function Archive-TerrainStreamingArtifact(
     [string]$SourcePath,
     [int]$Cycle,
@@ -408,6 +494,8 @@ function Archive-RelocatedProductionArtifact(
     [int]$Cycle)
 {
     $artifact = Read-JsonArtifact $SourcePath "Relocated Production summary"
+    Assert-Condition ([int]$artifact.schemaVersion -eq 6) `
+        "Relocated Production summary schema mismatch. Expected 6: $SourcePath"
     Assert-Condition ($artifact.passed -eq $true) `
         "Relocated Production ownership artifact reports failure: $SourcePath"
     Assert-AllChecksPassed $artifact.checks "Relocated Production artifact '$SourcePath'"
@@ -420,6 +508,21 @@ function Archive-RelocatedProductionArtifact(
         ([string]$artifact.terrainStreamingSummaryArtifact) `
         $Cycle `
         "relocated-production-terrain"
+    $vegetationArtifacts = $artifact.vegetationVisualComparisonArtifacts
+    Assert-Condition ($null -ne $vegetationArtifacts) `
+        "Relocated Production artifact has no vegetation visual comparison evidence: $SourcePath"
+    Assert-Condition (
+        [IO.Path]::GetFullPath([string]$vegetationArtifacts.fullSummary) -ieq
+        [IO.Path]::GetFullPath([string]$artifact.worldStreamingSummaryArtifact)) `
+        "Relocated Production full vegetation summary is not the canonical world-streaming summary."
+    $vegetationDisabled = Archive-WorldStreamingArtifact `
+        ([string]$vegetationArtifacts.disabledSummary) `
+        $Cycle `
+        "relocated-production-vegetation-disabled"
+    $vegetationOpaqueOnly = Archive-WorldStreamingArtifact `
+        ([string]$vegetationArtifacts.opaqueOnlySummary) `
+        $Cycle `
+        "relocated-production-vegetation-opaque-only"
     $logPath = Archive-RuntimeLog `
         ([string]$artifact.logPath) `
         $Cycle `
@@ -427,6 +530,26 @@ function Archive-RelocatedProductionArtifact(
 
     $artifact.worldStreamingSummaryArtifact = $world.summaryPath
     $artifact.worldStreamingVisualArtifacts = $world.visualPaths
+    $artifact.vegetationVisualComparisonArtifacts.disabledSummary =
+        $vegetationDisabled.summaryPath
+    $artifact.vegetationVisualComparisonArtifacts.disabledDuringVisual =
+        Get-ArchivedWorldVisualCapturePath `
+            $vegetationDisabled `
+            "during" `
+            "Relocated Production disabled vegetation"
+    $artifact.vegetationVisualComparisonArtifacts.opaqueOnlySummary =
+        $vegetationOpaqueOnly.summaryPath
+    $artifact.vegetationVisualComparisonArtifacts.opaqueOnlyDuringVisual =
+        Get-ArchivedWorldVisualCapturePath `
+            $vegetationOpaqueOnly `
+            "during" `
+            "Relocated Production opaque-only vegetation"
+    $artifact.vegetationVisualComparisonArtifacts.fullSummary = $world.summaryPath
+    $artifact.vegetationVisualComparisonArtifacts.fullDuringVisual =
+        Get-ArchivedWorldVisualCapturePath `
+            $world `
+            "during" `
+            "Relocated Production full vegetation"
     $artifact.terrainStreamingSummaryArtifact = $terrain.summaryPath
     $artifact.terrainStreamingVisualArtifacts = $terrain.visualPaths
     $artifact.logPath = $logPath
@@ -439,10 +562,19 @@ function Archive-RelocatedProductionArtifact(
         logPath = $logPath
         world = $world
         terrain = $terrain
+        vegetationVisualComparison = [ordered]@{
+            disabled = $vegetationDisabled
+            opaqueOnly = $vegetationOpaqueOnly
+            full = $world
+        }
         baseline = [ordered]@{
             sourceIndependent = $artifact.checks.metadataIsSourceIndependent -eq $true
             worldShutdownDrained = $world.baseline.shutdownDrained
             terrainShutdownDrained = $terrain.baseline.shutdownDrained
+            vegetationShutdownDrained =
+                $artifact.checks.vegetationStreamingShutdownPassed -eq $true
+            vegetationVisualComparisonPassed =
+                $artifact.checks.vegetationVisualComparisonPassed -eq $true
             vulkanValidationLogsEmpty = $artifact.checks.vulkanValidationLogsEmpty -eq $true
             tamperRejected = $artifact.checks.tamperRejected -eq $true
             missingArtifactRejected = $artifact.checks.missingArtifactRejected -eq $true
@@ -458,10 +590,13 @@ function Archive-RuntimeCycleEvidence(
     $pathMap = @{}
     $worldResults = [Collections.Generic.List[object]]::new()
     $terrainResults = [Collections.Generic.List[object]]::new()
+    $vegetationResults = [Collections.Generic.List[object]]::new()
     $editorResults = [Collections.Generic.List[object]]::new()
     $sceneVisualPaths = [Collections.Generic.List[string]]::new()
+    $vegetationSummaryPaths = [Collections.Generic.List[string]]::new()
     $runtimeLogPaths = [Collections.Generic.List[string]]::new()
     $vulkanLogPaths = [Collections.Generic.List[string]]::new()
+    $worldResultsBySource = @{}
 
     $index = 0
     foreach ($path in @($RuntimeSummary.worldStreamingSummaryArtifactPaths))
@@ -469,7 +604,9 @@ function Archive-RuntimeCycleEvidence(
         $index++
         $result = Archive-WorldStreamingArtifact ([string]$path) $Cycle "world-$index"
         $worldResults.Add($result)
-        $pathMap[[IO.Path]::GetFullPath([string]$path)] = $result.summaryPath
+        $source = [IO.Path]::GetFullPath([string]$path)
+        $pathMap[$source] = $result.summaryPath
+        $worldResultsBySource[$source] = $result
     }
 
     $index = 0
@@ -506,6 +643,29 @@ function Archive-RuntimeCycleEvidence(
         $pathMap[[IO.Path]::GetFullPath([string]$path)] = $archivedPath
     }
 
+    $index = 0
+    foreach ($path in @($RuntimeSummary.vegetationVisualSummaryArtifactPaths))
+    {
+        $index++
+        $source = [IO.Path]::GetFullPath([string]$path)
+        if ($pathMap.ContainsKey($source))
+        {
+            Assert-Condition ($worldResultsBySource.ContainsKey($source)) `
+                "Vegetation summary unexpectedly aliases non-world evidence: $path"
+            $result = $worldResultsBySource[$source]
+        }
+        else
+        {
+            $result = Archive-WorldStreamingArtifact `
+                ([string]$path) `
+                $Cycle `
+                "vegetation-$index"
+            $pathMap[$source] = $result.summaryPath
+        }
+        $vegetationResults.Add($result)
+        $vegetationSummaryPaths.Add([string]$result.summaryPath)
+    }
+
     $relocatedPath = [string]@($RuntimeSummary.relocatedProductionSummaryArtifactPaths)[0]
     $relocated = Archive-RelocatedProductionArtifact $relocatedPath $Cycle
     $pathMap[[IO.Path]::GetFullPath($relocatedPath)] = $relocated.summaryPath
@@ -533,6 +693,32 @@ function Archive-RuntimeCycleEvidence(
                 $Cycle `
                 "runtime-$profileName-world"
             $runtimeLogPaths.Add([string]$profile.worldStreaming.logPath)
+        }
+        if ($profile.vegetationVisualComparison.requested -eq $true)
+        {
+            foreach ($summaryField in @(
+                "disabledSummaryPath",
+                "opaqueOnlySummaryPath",
+                "fullSummaryPath"))
+            {
+                $source = [IO.Path]::GetFullPath(
+                    [string]$profile.vegetationVisualComparison.$summaryField)
+                Assert-Condition ($pathMap.ContainsKey($source)) `
+                    "Vegetation comparison summary was not archived: $source"
+                $profile.vegetationVisualComparison.$summaryField = $pathMap[$source]
+            }
+            $profile.vegetationVisualComparison.disabledLogPath = Archive-RuntimeLog `
+                ([string]$profile.vegetationVisualComparison.disabledLogPath) `
+                $Cycle `
+                "runtime-$profileName-vegetation-disabled"
+            $runtimeLogPaths.Add(
+                [string]$profile.vegetationVisualComparison.disabledLogPath)
+            $profile.vegetationVisualComparison.opaqueOnlyLogPath = Archive-RuntimeLog `
+                ([string]$profile.vegetationVisualComparison.opaqueOnlyLogPath) `
+                $Cycle `
+                "runtime-$profileName-vegetation-opaque-only"
+            $runtimeLogPaths.Add(
+                [string]$profile.vegetationVisualComparison.opaqueOnlyLogPath)
         }
         if ($profile.terrainStreaming.requested -eq $true)
         {
@@ -570,6 +756,9 @@ function Archive-RuntimeCycleEvidence(
     }
 
     $RuntimeSummary.visualSummaryArtifactPaths = $sceneVisualPaths.ToArray()
+    $RuntimeSummary.vegetationVisualSummaryArtifactCount = $vegetationSummaryPaths.Count
+    $RuntimeSummary.vegetationVisualSummaryArtifactPaths =
+        $vegetationSummaryPaths.ToArray()
     $RuntimeSummary.worldStreamingSummaryArtifactPaths = @(
         $worldResults | ForEach-Object { $_.summaryPath })
     $RuntimeSummary.terrainStreamingSummaryArtifactPaths = @(
@@ -586,6 +775,7 @@ function Archive-RuntimeCycleEvidence(
         vulkanValidationLogPaths = $vulkanLogPaths.ToArray()
         sceneVisualPaths = $sceneVisualPaths.ToArray()
         world = $worldResults.ToArray()
+        vegetationVisualComparisons = $vegetationResults.ToArray()
         terrain = $terrainResults.ToArray()
         editor = $editorResults.ToArray()
         relocatedProduction = $relocated
@@ -608,7 +798,9 @@ function Archive-RuntimeCycleEvidence(
                     Where-Object { -not $_.baseline.importedResourceCachesBounded }).Count -eq 0
             copiedProductionPassed = $relocated.baseline.sourceIndependent -and
                 $relocated.baseline.worldShutdownDrained -and
-                $relocated.baseline.terrainShutdownDrained
+                $relocated.baseline.terrainShutdownDrained -and
+                $relocated.baseline.vegetationShutdownDrained -and
+                $relocated.baseline.vegetationVisualComparisonPassed
             passed = $true
         }
     }
@@ -790,10 +982,22 @@ try
                 "ARISEN_NATIVE_TEST_FRAME_LIMIT",
                 "1",
                 [EnvironmentVariableTarget]::Process)
+            $nativePackagePlayerLogsPath = Join-Path $testingOutput "logs"
+            $nativePackagePlayerLogSnapshot =
+                Get-PlayerLogSnapshot $nativePackagePlayerLogsPath
             Invoke-Checked (Join-Path $scriptRoot "build_workspace.bat") @(
                 "--package", "com.arisen.rhi.vulkan.native",
                 "--config", $Configuration,
                 "--run-tests")
+            $nativePackagePlayerLogs = @(
+                Get-LaunchOwnedPlayerLogs `
+                    $nativePackagePlayerLogsPath `
+                    $nativePackagePlayerLogSnapshot)
+            Assert-Condition ($nativePackagePlayerLogs.Count -eq 1) `
+                ("Isolated Vulkan package tests must produce exactly one launch-owned " +
+                    "Testing player log; found $($nativePackagePlayerLogs.Count): " +
+                    "$(@($nativePackagePlayerLogs.FullName) -join ', ')")
+            Assert-CleanPlayerLogs $nativePackagePlayerLogs
         }
         finally
         {

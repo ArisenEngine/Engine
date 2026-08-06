@@ -13,6 +13,10 @@ ComponentSchemas:
   Name: TerrainTile
   Version: 1
   Required: true
+- TypeId: 1447380803
+  Name: VegetationCluster
+  Version: 1
+  Required: false
 Entities:
 - Guid: 32000000-0000-0000-0000-000000000001
   Name: Center Utah Teapot
@@ -120,3 +124,26 @@ Entities:
       Guid: e87b0335-5689-45a0-9fe1-455a01b59a20
       PackageId: com.arisen.packagegame
     Visible: true
+- Guid: 9cfcb277-b756-4349-b55e-39ddf24cfbe1
+  Name: Showcase Valley Vegetation Cluster
+  Transform:
+    Position: { X: 0, Y: 0, Z: 0 }
+    Rotation: { X: 0, Y: 0, Z: 0, W: 1 }
+    Scale: { X: 1, Y: 1, Z: 1 }
+  VegetationCluster:
+    Cluster: { Guid: e90ae5ab-24fb-2617-9983-3ed656bd652c, PackageId: com.arisen.packagegame }
+    Biome: { Guid: c0a92f10-0eb9-4d24-b729-7d0f38313001, PackageId: com.arisen.packagegame }
+    Species: { Guid: 7b0f2e52-8b67-4e3d-bf0a-cbc42f622001, PackageId: com.arisen.packagegame }
+    WorldGuid: 9a9b4db5-c0a8-4f2e-8929-89464bea9d51
+    OwningCellGuid: 5d13eda6-606a-57a0-bae4-cd559ddad464
+    Cell: { X: 0, Y: 0, Z: 0, Layer: surface }
+    Origin: { X: -256, Y: -64, Z: -256 }
+    Bounds:
+      Min: { X: -9.9700844287872314, Y: -2.1974024772644043, Z: -8.4557883739471436 }
+      Max: { X: 1.9058775901794434, Y: 3.9241063594818115, Z: 2.6819112300872803 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    QualityGroup: 0
+    PageCount: 1
+    InstanceCount: 13

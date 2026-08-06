@@ -38,6 +38,18 @@ $result = [ordered]@{
         exitCode = Get-NullableInt $env:CURRENT_WORLD_STREAMING_EXIT_CODE
         passed = Get-NullableBool $env:CURRENT_WORLD_STREAMING_PASSED
     }
+    vegetationVisualComparison = [ordered]@{
+        requested = $env:CURRENT_VEGETATION_VISUAL_COMPARISON_REQUESTED -eq "1"
+        disabledSummaryPath = Get-NullableString $env:CURRENT_VEGETATION_VISUAL_DISABLED_SUMMARY_PATH
+        disabledVisualBasePath = Get-NullableString $env:CURRENT_VEGETATION_VISUAL_DISABLED_VISUAL_BASE_PATH
+        disabledLogPath = Get-NullableString $env:CURRENT_VEGETATION_VISUAL_DISABLED_LOG_PATH
+        opaqueOnlySummaryPath = Get-NullableString $env:CURRENT_VEGETATION_VISUAL_OPAQUE_ONLY_SUMMARY_PATH
+        opaqueOnlyVisualBasePath = Get-NullableString $env:CURRENT_VEGETATION_VISUAL_OPAQUE_ONLY_VISUAL_BASE_PATH
+        opaqueOnlyLogPath = Get-NullableString $env:CURRENT_VEGETATION_VISUAL_OPAQUE_ONLY_LOG_PATH
+        fullSummaryPath = Get-NullableString $env:CURRENT_WORLD_STREAMING_SUMMARY_PATH
+        fullVisualBasePath = Get-NullableString $env:CURRENT_WORLD_STREAMING_VISUAL_BASE_PATH
+        passed = Get-NullableBool $env:CURRENT_VEGETATION_VISUAL_COMPARISON_PASSED
+    }
     terrainStreaming = [ordered]@{
         requested = $env:CURRENT_TERRAIN_STREAMING_REQUESTED -eq "1"
         summaryPath = Get-NullableString $env:CURRENT_TERRAIN_STREAMING_SUMMARY_PATH
