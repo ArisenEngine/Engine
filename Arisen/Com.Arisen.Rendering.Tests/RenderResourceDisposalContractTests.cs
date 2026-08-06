@@ -231,6 +231,157 @@ public sealed class RenderResourceDisposalContractTests
     }
 
     [Fact]
+    public void VulkanTerminalTeardownProvesCompletionBeforeDestroyingParents()
+    {
+        var instanceSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Core/RHIVkInstance.cpp");
+        var deviceSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Core/RHIVkDevice.cpp");
+        var swapChainSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Presentation/RHIVkSwapChain.cpp");
+
+        int terminalDeviceProof = instanceSource.IndexOf(
+            "EnsureTerminalCompletion()",
+            StringComparison.Ordinal);
+        int terminalSurfacePrepare = instanceSource.IndexOf(
+            "PrepareForReleaseAfterTerminalCompletion()",
+            terminalDeviceProof,
+            StringComparison.Ordinal);
+        int surfaceClear = instanceSource.IndexOf(
+            "m_Surfaces.clear();",
+            terminalSurfacePrepare,
+            StringComparison.Ordinal);
+        int deviceClear = instanceSource.IndexOf(
+            "m_LogicalDevices.clear();",
+            surfaceClear,
+            StringComparison.Ordinal);
+        Assert.True(terminalDeviceProof >= 0);
+        Assert.True(terminalSurfacePrepare > terminalDeviceProof);
+        Assert.True(surfaceClear > terminalSurfacePrepare);
+        Assert.True(deviceClear > surfaceClear);
+        Assert.Contains("std::terminate();", instanceSource, StringComparison.Ordinal);
+
+        int deviceCompletionGate = deviceSource.IndexOf(
+            "if (!HasTerminalCompletion() && !EnsureTerminalCompletion())",
+            StringComparison.Ordinal);
+        int registryShutdown = deviceSource.IndexOf(
+            "m_ResourceRegistry->Shutdown();",
+            deviceCompletionGate,
+            StringComparison.Ordinal);
+        int deferredFlush = deviceSource.IndexOf(
+            "m_DeferredDeletion->Flush(RHIQueueType::Graphics, kAll);",
+            registryShutdown,
+            StringComparison.Ordinal);
+        Assert.True(deviceCompletionGate >= 0);
+        Assert.True(registryShutdown > deviceCompletionGate);
+        Assert.True(deferredFlush > registryShutdown);
+
+        int destructorStart = swapChainSource.IndexOf(
+            "RHIVkSwapChain::~RHIVkSwapChain() noexcept",
+            StringComparison.Ordinal);
+        int destructorEnd = swapChainSource.IndexOf(
+            "void ArisenEngine::RHI::RHIVkSwapChain::CreateSwapChainWithDesc",
+            destructorStart,
+            StringComparison.Ordinal);
+        Assert.True(destructorStart >= 0);
+        Assert.True(destructorEnd > destructorStart);
+        string destructor = swapChainSource[destructorStart..destructorEnd];
+
+        int physicalGuard = destructor.IndexOf("if (isPhysical)", StringComparison.Ordinal);
+        int ownershipCheck = destructor.IndexOf(
+            "HasPhysicalGenerationOwnershipLocked()",
+            physicalGuard,
+            StringComparison.Ordinal);
+        int failStop = destructor.IndexOf("std::terminate();", ownershipCheck, StringComparison.Ordinal);
+        int virtualCleanupGuard = destructor.IndexOf("if (!isPhysical)", failStop, StringComparison.Ordinal);
+        int cleanup = destructor.IndexOf("Cleanup();", virtualCleanupGuard, StringComparison.Ordinal);
+        Assert.True(physicalGuard >= 0);
+        Assert.True(ownershipCheck > physicalGuard);
+        Assert.True(failStop > ownershipCheck);
+        Assert.True(virtualCleanupGuard > failStop);
+        Assert.True(cleanup > virtualCleanupGuard);
+        Assert.DoesNotContain("WaitIdleNoThrow()", destructor, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void VulkanQueueAndSwapchainSynchronizationUsesOneLockOrder()
+    {
+        var deviceSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Core/RHIVkDevice.cpp");
+        var queueHeader = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Queues/RHIVkQueue.h");
+        var queueSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Queues/RHIVkQueue.cpp");
+        var swapChainSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Presentation/RHIVkSwapChain.cpp");
+
+        static string Method(string source, string start, string next)
+        {
+            int methodStart = source.IndexOf(start, StringComparison.Ordinal);
+            int methodEnd = source.IndexOf(next, methodStart, StringComparison.Ordinal);
+            Assert.True(methodStart >= 0);
+            Assert.True(methodEnd > methodStart);
+            return source[methodStart..methodEnd];
+        }
+
+        static void AssertQueueBeforeSwapchain(string method)
+        {
+            int queueLock = method.IndexOf(
+                "queueLock(graphicsQueue->m_SubmitMutex)",
+                StringComparison.Ordinal);
+            int swapChainLock = method.IndexOf(
+                "lock(m_Mutex)",
+                queueLock,
+                StringComparison.Ordinal);
+            Assert.True(queueLock >= 0);
+            Assert.True(swapChainLock > queueLock);
+        }
+
+        string acquire = Method(
+            swapChainSource,
+            "RHIVkSwapChain::AcquireCurrentImage(UInt32 frameIndex)",
+            "RHIVkSwapChain::AcquireCurrentImageLocked");
+        string resize = Method(
+            swapChainSource,
+            "RHIVkSwapChain::TrySetResolution(UInt32 width, UInt32 height)",
+            "RHIVkSwapChain::TrySetResolutionLocked");
+        string surfaceRelease = Method(
+            swapChainSource,
+            "RHIVkSwapChain::PrepareForSurfaceRelease()",
+            "RHIVkSwapChain::PrepareForSurfaceReleaseAfterTerminalCompletion");
+        AssertQueueBeforeSwapchain(acquire);
+        AssertQueueBeforeSwapchain(resize);
+        AssertQueueBeforeSwapchain(surfaceRelease);
+
+        string publicWait = Method(
+            queueSource,
+            "RHIVkQueue::WaitForTicket(RHIGpuTicket ticket)",
+            "RHIVkQueue::WaitForTicketUnderSubmitLock");
+        Assert.Contains("Update();", publicWait, StringComparison.Ordinal);
+        Assert.Contains("vkWaitSemaphores", publicWait, StringComparison.Ordinal);
+        Assert.Contains("ticket > latestTicket", publicWait, StringComparison.Ordinal);
+        Assert.DoesNotContain("m_SubmitMutex", publicWait, StringComparison.Ordinal);
+
+        Assert.Contains(
+            "std::shared_ptr<std::mutex> m_RawQueueMutex",
+            queueHeader,
+            StringComparison.Ordinal);
+        Assert.Contains("rawQueueMutexes[queue]", deviceSource, StringComparison.Ordinal);
+        Assert.Contains("GetQueueForVkHandle", deviceSource, StringComparison.Ordinal);
+        Assert.Contains("rawQueueLock(*m_RawQueueMutex)", queueSource, StringComparison.Ordinal);
+        Assert.Contains("PresentNoThrow(presentInfo)", swapChainSource, StringComparison.Ordinal);
+        Assert.Equal(
+            3,
+            System.Text.RegularExpressions.Regex.Matches(
+                swapChainSource,
+                @"GetQueueForVkHandle\(\s*m_VkPresentQueue\)").Count);
+        Assert.DoesNotContain(
+            "GetQueue(RHIQueueType::Present)",
+            swapChainSource,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void NativeSubmitFaultFixtureIsSingleArmOneShotAndRecoversTickets()
     {
         var queueHeader = ReadRepoFile(
@@ -257,6 +408,84 @@ public sealed class RenderResourceDisposalContractTests
             "queue->GetCommandBufferSubmitTicketForTesting(commandBuffer) != 0",
             nativeTestSource,
             StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void NativeCommandPoolRetirementInheritsAcceptedChildTickets()
+    {
+        var poolHeader = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Commands/RHIVkCommandBufferPool.h");
+        var poolSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Commands/RHIVkCommandBufferPool.cpp");
+        var queueSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Queues/RHIVkQueue.cpp");
+        var deviceSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native/RHI.Vulkan/Core/RHIVkDevice.cpp");
+        var nativeTestSource = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.rhi.vulkan.native.test/RHI/Unit/RHIAbiContractTest.h");
+
+        Assert.Contains(
+            "std::atomic<RHIGpuTicket> m_AcceptedSubmitTickets[QUEUE_TYPE_COUNT]",
+            poolHeader,
+            StringComparison.Ordinal);
+        Assert.Contains("compare_exchange_weak", poolSource, StringComparison.Ordinal);
+        Assert.Contains("std::memory_order_release", poolSource, StringComparison.Ordinal);
+        Assert.Contains("std::memory_order_acquire", poolHeader, StringComparison.Ordinal);
+
+        int checkedQueueSubmit = queueSource.IndexOf(
+            "vkQueueSubmit(m_Queue, 1, &submitInfo, VK_NULL_HANDLE)",
+            StringComparison.Ordinal);
+        int acceptedSubmit = queueSource.IndexOf(
+            "ownerPool->RecordAcceptedSubmission(m_Type, submitTicket);",
+            StringComparison.Ordinal);
+        int latestTicketPublication = acceptedSubmit >= 0
+            ? queueSource.IndexOf(
+                "m_LatestTicket.store(submitTicket, std::memory_order_release);",
+                acceptedSubmit,
+                StringComparison.Ordinal)
+            : -1;
+        int frameSubmissionPublication = acceptedSubmit >= 0
+            ? queueSource.IndexOf(
+                "CommitFrameSubmission(swapChainFrameIndex, submitTicket)",
+                acceptedSubmit,
+                StringComparison.Ordinal)
+            : -1;
+        Assert.True(checkedQueueSubmit >= 0);
+        Assert.True(acceptedSubmit > checkedQueueSubmit);
+        Assert.True(latestTicketPublication > acceptedSubmit);
+        Assert.True(frameSubmissionPublication > acceptedSubmit);
+
+        int poolRelease = deviceSource.IndexOf(
+            "RHIVkDevice::ReleaseCommandBufferPool",
+            StringComparison.Ordinal);
+        int registryTicketPublication = poolRelease >= 0
+            ? deviceSource.IndexOf(
+                "m_ResourceRegistry->UpdateTicket(",
+                poolRelease,
+                StringComparison.Ordinal)
+            : -1;
+        int registryOwnershipRelease = registryTicketPublication >= 0
+            ? deviceSource.IndexOf(
+                "ReleaseRegistryOwnership(*m_ResourceRegistry, item->registryHandle,",
+                registryTicketPublication,
+                StringComparison.Ordinal)
+            : -1;
+        Assert.True(poolRelease >= 0);
+        Assert.True(registryTicketPublication > poolRelease);
+        Assert.True(registryOwnershipRelease > registryTicketPublication);
+
+        Assert.Contains("VerifyPendingCommandPoolRetirement()", nativeTestSource, StringComparison.Ordinal);
+        Assert.Contains("registry->Retain(poolRegistryHandle)", nativeTestSource, StringComparison.Ordinal);
+        Assert.Contains(
+            "firstTicket = queue->Submit(firstCommand, &blockedSubmit);",
+            nativeTestSource,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "secondTicket = queue->Submit(secondCommand);",
+            nativeTestSource,
+            StringComparison.Ordinal);
+        Assert.Contains("queue->GetCompletedTicket() != baselineTicket", nativeTestSource, StringComparison.Ordinal);
+        Assert.Contains("SignalSemaphoreValue(blockingSemaphore, 1)", nativeTestSource, StringComparison.Ordinal);
     }
 
     [Fact]

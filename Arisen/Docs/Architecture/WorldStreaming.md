@@ -132,6 +132,14 @@ The coordinator holds one generation-checked cooked handle per key and reference
 
 `IRuntimePreparedAssetProvider` keeps backend setup behind a package-neutral boundary. GenericRP registers one provider for meshes, materials, and environment texture/IBL resources. Setup runs at the frame boundary, outside RenderGraph command recording, and is bounded by count and soft wall time. A cell remains `WaitingForResources` until every required key is ready. GenericRP caches by stable residency key, shares material resources by GUID, and shares texture/image/sampler allocations across materials with the same texture variant and sampler settings. Render passes consume the resulting prepared resources without registry or asset-database lookup. Residency snapshots expose immutable owner IDs so package diagnostics can attribute resources without creating a second ownership table. Device-resource teardown calls `InvalidatePreparedProvider`: every still-owned key returns to `Waiting`, provider resources are released, and normal bounded setup recreates them after a valid device becomes available.
 
+Residency may invoke provider `Release` and `GetMetrics` from the caller that drops an owner, not
+only from the frame setup thread. Generic RP therefore tombstones the exact released key under a
+narrow lifecycle gate and publishes one immutable metrics snapshot immediately; new acquisitions
+and retained-lease currency checks fail closed against that tombstone. Physical material/RHI
+retirement is queued and drained only by setup-thread entry points. Source acquisition, lease
+disposal, device mutation, and deferred-queue access remain setup-thread affine, and unchanged
+metrics publication allocates nothing in the warmed frame path.
+
 Acquisition, `Prepare`, prepared publication, and provider lifecycle callbacks run outside the
 residency state gate under explicit callback admission. Every world-streaming lifecycle entry asks
 the residency coordinator to reject callback-side reentry before it waits for the world lifecycle
@@ -195,8 +203,13 @@ to the owner-plan generation. Cluster/page preparation validates reciprocal pare
 schema, exact page size/SHA-256 pins, species union, counts, bounds, biome membership, and
 cross-page stable keys; publication revalidates root/dependency claims, canonical binding, and
 owner-plan generation before and after the callback, and keeps cells in `WaitingForResources`
-when ownership changes. GPU instance buffers and render passes remain the
-next vegetation sprint item.
+when ownership changes. Frame-boundary GPU setup retains exact-key Generic RP mesh/material leases,
+packs one immutable origin-relative instance buffer per cluster, and publishes only a matching CPU,
+prepared-resource, RHI-device, and owner-plan generation. Cell unload removes ECS ownership first,
+then tombstones each exact prepared key; material, mesh, instance-buffer, and descriptor retirement
+stays on the setup thread and is deferred through the latest submitted ticket. Extraction therefore
+cannot expose an unloaded or stale cluster, and the opaque/four-cascade shadow passes never perform
+asset or service lookup while recording.
 
 ## Validation
 
@@ -212,10 +225,21 @@ When visual summaries are enabled, the scenario produces seven independent schem
 
 `validate_runtime.bat --no-pause --config Debug --smoke-mode scene --frames 1` promotes this scenario for both Development and Production in addition to their normal scene smoke. Production is then copied outside the workspace and rerun cooked-only; the copied run must stream the closed world catalog, preserve all seven visual artifacts, pass the same world-streaming and cascade checks, avoid workspace/source/cache access, reject one tampered artifact by SHA-256, and reject one missing artifact with a stable diagnostic. Every run that actually initializes Vulkan must produce an empty `vk_validation.log`; the lightweight Editor kernel smoke deliberately skips hardware warmup, while the real Avalonia viewport smoke owns and proves the Editor Vulkan log.
 
+Vegetation rendering validation reuses the canonical `world-streaming` full-mode run and adds
+Development `disabled` and `opaque-only` runs. `validate_vegetation_rendering_visuals.ps1` requires
+each run's named `during` checkpoint to own exactly the center cell and the same ECS/origin state,
+and requires the capture surface, dimensions, formats, and spatial-grid shape to match without
+requiring cross-process frame indices to be equal. Disabled-to-opaque must exceed conservative
+relative color, depth-grid, and written-depth coverage margins. Opaque-only and full must have
+byte-identical complete depth output, while full must be measurably darker in aggregate and in at
+least one spatial region, isolating vegetation's directional-shadow contribution without expected
+pixel hashes. The relocated cooked-only Production audit runs the same three modes and retains each
+comparison summary plus named `during` artifact outside its temporary player root.
+
 `com.arisen.terrain` also provides the independent `terrain-streaming` scenario. It follows deterministic near, boundary, far, post-rebase, and returned-to-start camera checkpoints, performs exactly one origin rebase, then completes four observable load/reload/unload cycles without sleeps. Thirteen ordered checkpoints verify four stable tile identities, generation advancement after every reload, active ECS/query parity, normalized height/normal/weight queries, conservative world bounds, bounded LOD/patch histograms, zero seam violations, and bounded ECS/cooked/residency/prepared/deferred-disposal state. The final post-shutdown inspection requires the terrain cell to be undesired and unloaded or cancelled, with zero visible/runtime/diagnostic/residency resources, pending disposals, and tasks.
 
 Five schema-2 color/depth captures are retained for `near`, `boundary-mixed-lod`, `far-cascade`, `post-rebase`, and `returned-start`. `validate_terrain_streaming_summary.ps1` requires upright nonblank color and finite written depth, distinct near/boundary/far views, stable world/query state across the rebase, and tight numeric similarity when returning to an equivalent camera/origin state. Equivalent frames use bounded luminance/depth-grid and written-coverage tolerances rather than byte-identical hashes because origin-relative floating-point reconstruction can differ slightly while remaining visually equivalent.
 
-Development and Production run the dedicated terrain scenario locally, and copied Production runs it again from an isolated cooked-only player. Every run requires a fresh positive terrain submission marker, an empty Vulkan validation log, clean feature/RHI teardown ordering, a completely drained terrain summary, and all five visual artifacts. The relocated run rejects concrete workspace manifest/cache/package/scene/terrain-source access while allowing harmless embedded debug-symbol paths, then rewrites preserved capture paths out of its temporary player root. Aggregate runtime validation schema 7 records per-profile terrain results and counts three terrain runs; relocated Production schema 4 records its terrain checks, summary, and five preserved visuals alongside the existing world artifacts.
+Development and Production run the dedicated terrain scenario locally, and copied Production runs it again from an isolated cooked-only player. Every run requires a fresh positive terrain submission marker, an empty Vulkan validation log, clean feature/RHI teardown ordering, a completely drained terrain summary, and all five visual artifacts. The relocated run rejects concrete workspace manifest/cache/package/scene/terrain-source access while allowing harmless embedded debug-symbol paths, then rewrites preserved capture paths out of its temporary player root. Aggregate runtime validation schema 8 records per-profile world/terrain results, three terrain runs, the Development and relocated Production vegetation comparisons, and their summary artifact paths. Relocated Production schema 6 records terrain and vegetation closure, both streaming checks, clean shutdown, the terrain/world visuals, and all six vegetation comparison summary/`during` artifact paths.
 
 The relocated Production audit validates terrain closure before boot. Starting from the `startupWorld` and `renderPipeline` catalog roots, it requires the canonical cooked-v2 terrain root, all four generated tiles, exactly three sRGB albedo mip chains, three renormalized linear normal mip chains, three linear ORM mip chains, and three terrain shader stages to be resolved and reachable. It rejects stale or unreferenced terrain-tile rows, wrong texture format versions/variants, deployed terrain layer-set authoring assets, and terrain source extensions including `.ariweights`. Tamper and missing-artifact checks target a terrain tile, and `terrainClosureComplete` is published only after the graph audit succeeds.

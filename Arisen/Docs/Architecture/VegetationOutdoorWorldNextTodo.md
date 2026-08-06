@@ -53,15 +53,22 @@ Measured vegetation gaps:
   compact canonical instances, exact dependency pins, and one frozen terrain-backed fixture, but
   cluster-closure replacement cannot yet atomically prune stale generated page rows/files;
 - the package-owned scene codec, cell activation contract, generation-qualified CPU publication,
-  bounded query service, and Generic RP prepared-resource provider now bind vegetation clusters to
-  world-cell residency; GPU instance buffers and render passes are still absent;
+  bounded query service, and Generic RP prepared-resource provider bind vegetation clusters to
+  world-cell residency; exact-key shared mesh/material leases, immutable cluster instance buffers,
+  and direct-instanced opaque/shadow passes now complete the first visible slice;
 - ordinary static meshes are entity-oriented and are not an acceptable representation for tens of thousands of plants;
-- Generic RP has no vegetation extraction, GPU instance-buffer preparation, wind shading,
-  alpha-cutout path, or vegetation shadow contribution; its current provider only validates and
-  publishes CPU cluster/page data outside command recording;
-- the existing direct indexed API can render instanced batches, but there is no measured vegetation command/memory baseline and no shared managed indirect-draw contract;
+- Generic RP now extracts deterministic cluster components, prepares 48-byte origin-relative GPU
+  instances, and contributes one opaque plus four cascade shadow batches for the canonical cluster;
+  hierarchical culling/LOD, wind shading, alpha cutout, density scaling, and broad foliage material
+  semantics remain absent;
+- the existing direct indexed API now has a canonical baseline of one 13-instance opaque batch and
+  four 13-instance cascade batches, but representative dense-valley command/memory measurements and
+  a shared managed indirect-draw contract remain absent;
 - Editor has no biome painting, density masks, exclusion volumes, scatter preview, instance inspection, or regeneration transaction;
-- no Development/Production/relocated Production gate validates vegetation identity, placement, LOD, memory, visuals, wind, shadows, origin rebasing, or shutdown.
+- Development, Editor, Production, and relocated cooked-only Production now validate the canonical
+  cluster identity, direct-instanced counts, visible opaque/depth coverage, shadow-only color
+  contribution, closure, and shutdown; LOD, density, wind, origin-rebase, and multi-cell vegetation
+  stress coverage remain later work.
 
 ---
 
@@ -285,11 +292,11 @@ directories.
 - [x] Add runtime CPU publication and optional query service.
   - [x] Generation-qualify immutable cluster pages.
   - [x] Return explicit unavailable/outside states and bounded nearby-instance results for future promotion/gameplay systems.
-- [ ] Integrate generic residency.
+- [x] Integrate generic residency.
   - [x] Workers acquire and validate cooked cluster pages and dependencies.
   - [x] Cells remain `WaitingForResources` until required prepared resources are ready.
-  - [ ] Share species mesh/material resources while cluster instance buffers remain independently evictable.
-  - [ ] Release only after ECS unload and defer device destruction through the latest submission ticket.
+  - [x] Share species mesh/material resources while cluster instance buffers remain independently evictable.
+  - [x] Release only after ECS unload and defer device destruction through the latest submission ticket.
 - [x] Add cancellation, retry, shared-species, LRU, stale-generation, and shutdown-drain tests.
 
 ### Acceptance Criteria
@@ -359,8 +366,9 @@ directories.
   artifacts; three terrain-streaming runs with two summary artifacts; one real Editor viewport
   run/artifact; one relocated cooked-only Production run/artifact; all four profiles passed and
   no failure was reported.
-- This record completes Immediate Sprint item 4 only. GPU cluster instance buffers, deferred native
-  destruction, extraction, and RenderGraph passes remain Milestone 5 work.
+- This record completes Immediate Sprint item 4. Exact-key shared mesh/material leases, GPU cluster
+  instance buffers, deferred native destruction, extraction, and RenderGraph passes are completed by
+  the following Immediate Sprint item 5/6 record.
 
 ---
 
@@ -370,21 +378,58 @@ directories.
 
 ### TODO
 
-- [ ] Prepare immutable species mesh/material resources and one cluster instance storage buffer outside command recording.
-- [ ] Define compact origin-relative GPU instance records with transform, stable variation, wind phase, color variation, and selection/debug flags.
-- [ ] Extract active cluster components in deterministic biome/cell/species/cluster order into reusable arrays.
-- [ ] Group compatible instances by mesh/material/LOD/shadow state.
-- [ ] Add opaque and directional-shadow vegetation passes through `IGenericRenderPipelineFeature`.
-  - [ ] Use `RenderCommandList.DrawIndexed` with positive `instanceCount` and `firstInstance` ranges.
-  - [ ] Declare graph-owned HDR color, depth, and cascade-array access explicitly.
-  - [ ] Keep asset lookup, culling, LOD, upload, and pipeline creation outside recording.
-- [ ] Add visual and command-contract tests for one tree/shrub cluster.
+- [x] Prepare immutable species mesh/material resources and one cluster instance storage buffer outside command recording.
+- [x] Define compact origin-relative GPU instance records with transform, stable variation, wind phase, color variation, and selection/debug flags.
+- [x] Extract active cluster components in deterministic biome/cell/species/cluster order into reusable arrays.
+- [x] Group compatible instances by mesh/material/LOD/shadow state.
+- [x] Add opaque and directional-shadow vegetation passes through `IGenericRenderPipelineFeature`.
+  - [x] Use `RenderCommandList.DrawIndexed` with positive `instanceCount` and `firstInstance` ranges.
+  - [x] Declare graph-owned HDR color, depth, and cascade-array access explicitly.
+  - [x] Keep asset lookup, culling, LOD, upload, and pipeline creation outside recording.
+- [x] Add visual and command-contract tests for one canonical multi-instance rock cluster.
 
 ### Acceptance Criteria
 
 - The first cluster renders in Development, Editor SceneView/GameView, Production, and copied Production.
 - One draw represents many instances and native interop is batched.
 - The adapter contains no Vulkan type or concrete backend dependency.
+
+### Immediate Sprint Item 5/6 Completion Record
+
+- Generic RP exposes a narrow prepared-asset source whose exact residency-key mesh and material
+  leases carry device and publication generations. Caller-thread release synchronously tombstones
+  the key, setup entry points retire physical resources in FIFO order, and coherent metrics are
+  published atomically without steady-state allocation. A stale material publication never replaces
+  the current resource while residency remains `Ready`; invalidation transitions ownership through
+  `Waiting` before a replacement can publish.
+- The vegetation adapter packs the canonical cooked page into one immutable storage buffer of
+  48-byte origin-relative instance records. Stable-key ordering produces one compatible LOD-0 batch
+  with 13 instances while retaining the exact Generic RP mesh/material publications. Cluster buffers
+  remain independently evictable, and final buffer, descriptor, mesh, and material release is
+  deferred through the latest submitted ticket.
+- `VegetationClusterRenderSource` scans the contiguous ECS component pool into reusable storage and
+  applies deterministic biome/world/cell/species/cluster ordering. Feature preparation joins only
+  matching active CPU, residency, prepared-resource, and RHI generations before expanding cached
+  opaque and cascade draw ranges.
+- `VegetationOpaquePass` records one direct indexed batch with 13 instances into graph-owned HDR
+  color/depth. `VegetationShadowPass` records one 13-instance batch for each of four directional
+  cascades. Both use backend-neutral `RenderCommandList` calls and pre-created shaders, pipelines,
+  buffers, bindless data, and constants; command recording performs no service lookup, asset access,
+  upload, pipeline creation, managed allocation, or lock.
+- The per-surface/device-generation `[Vegetation.GenericRP.Validation]` record requires the exact
+  canonical cluster/species identity, opaque `1/13`, shadow `4/52`, per-cascade `1/13`, zero drops,
+  and a positive submission ticket. Editor validation requires records from two distinct surfaces.
+- `ARISEN_VEGETATION_RENDER_VALIDATION_MODE` provides fail-closed `disabled`, `opaque-only`, and
+  `full` process-start modes. The world-streaming `during` checkpoint owns the exact center cell and
+  fixed camera state: disabled-to-opaque changes meaningful color and depth coverage, while
+  opaque-only-to-full preserves frame depth exactly and produces a measurable darker color delta,
+  isolating the vegetation shadow contribution. The same comparison runs against relocated
+  cooked-only Production output with no source fallback.
+- Final validation on 2026-08-06 passed the isolated Vulkan Release suite `27/27` with an empty
+  validation log and the full Debug schema-8 runtime gate with four profile smokes, three world and
+  three terrain runs, two vegetation visual comparisons retaining three summaries, one real Editor
+  viewport run, and one relocated cooked-only Production run. All ten retained Vulkan validation
+  logs were empty; the gate reported zero skips, zero CPU fallbacks, and no failure.
 
 ---
 
@@ -523,8 +568,8 @@ Implement the first visible vertical slice in this order:
 2. [x] define one species asset, one biome asset, and strict deterministic fixtures;
 3. [x] cook one terrain-aware cluster page with stable identities and corruption tests;
 4. [x] add a vegetation cluster scene codec plus cell/residency ownership;
-5. [ ] render one cluster as one direct indexed instanced batch through the Generic RP feature;
-6. [ ] contribute matching cascaded-shadow work and prove copied Production closure;
+5. [x] render one cluster as one direct indexed instanced batch through the Generic RP feature;
+6. [x] contribute matching cascaded-shadow work and prove copied Production closure;
 7. [ ] extend the fixture to grass, shrub, rock, and tree species across multiple cells before broad Editor tooling.
 
 The first checkpoint is not a complete forest system. It is one package-owned species and one deterministic cluster page, generated from the canonical terrain, owned by a world cell, rendered with one instanced opaque draw and one instanced shadow draw, and validated without source access.

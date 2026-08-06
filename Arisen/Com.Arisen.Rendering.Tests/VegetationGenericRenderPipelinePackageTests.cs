@@ -25,6 +25,12 @@ namespace ArisenEngine.Rendering
 
     public readonly struct GenericRenderPipelineFeatureSubmissionContext
     {
+        public GenericRenderPipelineFeatureSubmissionContext(ulong submittedTicket)
+        {
+            SubmittedTicket = submittedTicket;
+        }
+
+        public ulong SubmittedTicket { get; }
     }
 
     public interface IGenericRenderPipelineFeature
@@ -88,7 +94,13 @@ namespace Com.Arisen.Rendering.Tests
             services.RegisterService<IRuntimeAssetResidencyService>(residency);
             services.RegisterService<ArisenEngine.Rendering.IGenericRenderPipelineFeatureRegistry>(
                 featureRegistry);
+            services.RegisterService<ArisenEngine.Rendering.IGenericRenderPipelinePreparedAssetSource>(
+                new ArisenEngine.Rendering.TestGenericRenderPipelinePreparedAssetSource());
+            services.RegisterService<ArisenEngine.Rendering.IGenericRenderPipelineRuntimeShaderRegistry>(
+                new ArisenEngine.Rendering.TestGenericRenderPipelineRuntimeShaderRegistry());
             services.RegisterService<IVegetationClusterDataSource>(runtimeData);
+            services.RegisterService<IVegetationClusterRenderSource>(
+                new VegetationClusterRenderSource(() => null));
             services.RegisterService<IVegetationRuntimeDataStore>(runtimeData);
             services.RegisterService<IVegetationDiagnosticsPublisher>(diagnostics);
             services.RegisterService<IVegetationAuthoringPreviewService>(previews);
@@ -149,6 +161,54 @@ namespace Com.Arisen.Rendering.Tests
             package.OnLoad(services);
             package.OnUnload(services);
 
+            Assert.Equal(0, featureRegistry.Count);
+            Assert.False(package.HasPendingOwnership);
+            Assert.Equal(default, runtimeData.GetMetrics());
+        }
+
+        [Fact]
+        public void RuntimeShaderCollisionPreservesExistingOwnerAndAllowsRetry()
+        {
+            Directory.CreateDirectory(m_Root);
+            var database = new TestAssetDatabase(
+                AssetSourceAccessMode.Disabled,
+                Path.Combine(m_Root, "Cooked"));
+            using var scheduler = new TaskGraph(workerCount: 1);
+            using var residency = CreateResidency(database);
+            var runtimeData = new VegetationRuntimeDataStore();
+            var featureRegistry = new RecordingFeatureRegistry();
+            var shaderRegistry =
+                new ArisenEngine.Rendering.TestGenericRenderPipelineRuntimeShaderRegistry();
+            shaderRegistry.RegisterRuntimeShaders(
+                VegetationGenericRenderPipelineFeature.Id,
+                Array.Empty<ArisenEngine.Rendering.ShaderAsset>());
+            ServiceRegistry services = CreateServices(
+                database,
+                scheduler,
+                residency,
+                runtimeData,
+                featureRegistry,
+                shaderRegistry);
+            var package = new VegetationGenericRenderPipelinePackage();
+
+            InvalidOperationException failure = Assert.Throws<InvalidOperationException>(
+                () => package.OnLoad(services));
+
+            Assert.Contains("already registered", failure.Message, StringComparison.Ordinal);
+            Assert.Equal(
+                VegetationGenericRenderPipelineFeature.Id,
+                shaderRegistry.RegisteredOwnerId);
+            Assert.Equal(0, shaderRegistry.UnregisterCallCount);
+            Assert.Equal(0, featureRegistry.Count);
+            Assert.False(package.HasPendingOwnership);
+
+            Assert.True(shaderRegistry.UnregisterRuntimeShaders(
+                VegetationGenericRenderPipelineFeature.Id));
+            package.OnLoad(services);
+            package.OnUnload(services);
+
+            Assert.Null(shaderRegistry.RegisteredOwnerId);
+            Assert.Equal(2, shaderRegistry.UnregisterCallCount);
             Assert.Equal(0, featureRegistry.Count);
             Assert.False(package.HasPendingOwnership);
             Assert.Equal(default, runtimeData.GetMetrics());
@@ -286,7 +346,8 @@ namespace Com.Arisen.Rendering.Tests
                 AssetSourceAccessMode.Disabled,
                 Path.Combine(m_Root, "Cooked"));
             using var scheduler = new TaskGraph(workerCount: 1);
-            using var residency = CreateResidency(database);
+            using var innerResidency = CreateResidency(database);
+            var residency = new FailOnceResidencyService(innerResidency);
             var existing = new ForeignPreparedProvider();
             residency.RegisterPreparedProvider(existing);
             var runtimeData = new VegetationRuntimeDataStore();
@@ -307,6 +368,7 @@ namespace Com.Arisen.Rendering.Tests
             Assert.Equal(0, existing.ReleaseCount);
             Assert.Equal(0, featureRegistry.Count);
             Assert.False(package.HasPendingOwnership);
+            Assert.Equal(0, residency.InvalidateCallCount);
 
             Assert.True(residency.UnregisterPreparedProvider(existing.ProviderId));
             package.OnLoad(services);
@@ -335,7 +397,9 @@ namespace Com.Arisen.Rendering.Tests
             IBackgroundTaskScheduler scheduler,
             IRuntimeAssetResidencyService residency,
             VegetationRuntimeDataStore runtimeData,
-            RecordingFeatureRegistry featureRegistry)
+            RecordingFeatureRegistry featureRegistry,
+            ArisenEngine.Rendering.TestGenericRenderPipelineRuntimeShaderRegistry?
+                shaderRegistry = null)
         {
             var diagnostics = new VegetationDiagnosticsService();
             var previews = new VegetationAuthoringPreviewService();
@@ -345,7 +409,14 @@ namespace Com.Arisen.Rendering.Tests
             services.RegisterService<IRuntimeAssetResidencyService>(residency);
             services.RegisterService<ArisenEngine.Rendering.IGenericRenderPipelineFeatureRegistry>(
                 featureRegistry);
+            services.RegisterService<ArisenEngine.Rendering.IGenericRenderPipelinePreparedAssetSource>(
+                new ArisenEngine.Rendering.TestGenericRenderPipelinePreparedAssetSource());
+            services.RegisterService<ArisenEngine.Rendering.IGenericRenderPipelineRuntimeShaderRegistry>(
+                shaderRegistry ??
+                new ArisenEngine.Rendering.TestGenericRenderPipelineRuntimeShaderRegistry());
             services.RegisterService<IVegetationClusterDataSource>(runtimeData);
+            services.RegisterService<IVegetationClusterRenderSource>(
+                new VegetationClusterRenderSource(() => null));
             services.RegisterService<IVegetationRuntimeDataStore>(runtimeData);
             services.RegisterService<IVegetationDiagnosticsPublisher>(diagnostics);
             services.RegisterService<IVegetationAuthoringPreviewService>(previews);
@@ -482,6 +553,7 @@ namespace Com.Arisen.Rendering.Tests
 
             public bool FailNextRegister { get; set; }
             public int UnregisterFailuresRemaining { get; set; }
+            public int InvalidateCallCount { get; private set; }
             public IRuntimePreparedAssetProvider? RegisteredProvider { get; private set; }
 
             public RuntimeAssetResidencyBudgets Budgets => m_Inner.Budgets;
@@ -530,8 +602,11 @@ namespace Com.Arisen.Rendering.Tests
                 return removed;
             }
 
-            public bool InvalidatePreparedProvider(string providerId, string diagnostic) =>
-                m_Inner.InvalidatePreparedProvider(providerId, diagnostic);
+            public bool InvalidatePreparedProvider(string providerId, string diagnostic)
+            {
+                InvalidateCallCount++;
+                return m_Inner.InvalidatePreparedProvider(providerId, diagnostic);
+            }
 
             public bool TryGetPreparationClaim(
                 RuntimeAssetResidencyKey key,

@@ -612,7 +612,7 @@ public sealed class ShowcaseSceneAssetTests
     }
 
     [Fact]
-    public void PackageShowcaseVegetation_BakesOneCanonicalTerrainBackedClusterPage()
+    public void PackageShowcaseVegetation_BakesCanonicalMultiInstanceClusterPage()
     {
         const string packageId = "com.arisen.packagegame";
         const string pipelinePackageId = "com.arisen.generic-renderpipeline";
@@ -724,16 +724,16 @@ public sealed class ShowcaseSceneAssetTests
                     "valley-rock",
                     UnscaledConservativeRadius: 1.75f,
                     Exclusions: []));
-            Assert.Equal(1, result.Metrics.AcceptedCount);
+            Assert.Equal(19, result.Metrics.AcceptedCount);
             Assert.Equal(
                 Guid.Parse("cadf9261-1ffe-85e6-23df-b62a204da08d"),
                 result.ClusterMetadata.Guid);
             Assert.Equal(
-                Guid.Parse("dd3ef159-5eea-0247-97ac-4add9c3d4994"),
+                Guid.Parse("1fe92f10-564f-c062-b5e4-275e313d9d4d"),
                 result.PageMetadata[0].Guid);
             string placementHash = Convert.ToHexString(result.PlacementContentHash);
-            Assert.Equal("99168D344D128746B87BC2F3900698CB", placementHash[..32]);
-            Assert.Equal("79EFE1671F9C286C61D4151E99468A9A", placementHash[32..]);
+            Assert.Equal("098A5D3965C8BB5161AF7000A128170B", placementHash[..32]);
+            Assert.Equal("6C89A3DBC4C03E9E0BB36107D66D2AD1", placementHash[32..]);
             Assert.Single(result.Cluster.Pages);
             Assert.Equal(result.Metrics.AcceptedCount, result.Cluster.Pages[0].Instances.Count);
 
@@ -786,10 +786,10 @@ public sealed class ShowcaseSceneAssetTests
             Assert.Equal(SHA256.HashSizeInBytes, result.PlacementContentHash.Length);
             string pageHash = Convert.ToHexString(page.ContentHash);
             string clusterHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(artifact.Path)));
-            Assert.Equal("B3CB5AB88DEDEEB59CC0366AB2165DAB", pageHash[..32]);
-            Assert.Equal("2B25922AB65D5B3FDE4B3A63C3C341F4", pageHash[32..]);
-            Assert.Equal("073268F1E53948B89A6FCFA5A99708A7", clusterHash[..32]);
-            Assert.Equal("10F133D3BCCFFBAA75CE592694F94BB5", clusterHash[32..]);
+            Assert.Equal("1781C82B99977620DDE1C23885E18277", pageHash[..32]);
+            Assert.Equal("F375E2618442D7A5017F80AB14257CAF", pageHash[32..]);
+            Assert.Equal("E22967B6FEA69B00AC88412B719CD98B", clusterHash[..32]);
+            Assert.Equal("B8C79CC874DAEF6B571397013E9345BE", clusterHash[32..]);
 
             VegetationScatterBakeResult reordered = VegetationScatterBaker.Build(
                 new VegetationScatterBakeDescriptor(
@@ -890,6 +890,7 @@ public sealed class ShowcaseSceneAssetTests
             WorldCellDescriptor lanternCell = Assert.Single(
                 descriptor.Cells,
                 cell => cell.Key.Coordinate == new WorldCellCoordinate(1, 0, 0));
+            Assert.Equal(s_LanternGeneratedSceneGuid, lanternCell.Scene.Guid);
             Assert.Equal(
                 new WorldBounds(
                     new WorldPosition(-385.5, -0.25, -129.5),

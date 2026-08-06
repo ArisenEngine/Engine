@@ -144,6 +144,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderTargetImageStateTracker.cs" Link="Source\Rendering\RenderTargetImageStateTracker.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderFrameColorOutputPolicy.cs" Link="Source\Rendering\RenderFrameColorOutputPolicy.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderFrameFailureAggregator.cs" Link="Source\Rendering\RenderFrameFailureAggregator.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderFramePostSubmission.cs" Link="Source\Rendering\RenderFramePostSubmission.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderFrameSubmissionState.cs" Link="Source\Rendering\RenderFrameSubmissionState.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderFrameResourceSlotState.cs" Link="Source\Rendering\RenderFrameResourceSlotState.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderDiagnostics.cs" Link="Source\Rendering\RenderDiagnostics.cs" />
@@ -153,6 +154,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderGraphPassCullingPlanner.cs" Link="Source\Rendering\RenderGraphPassCullingPlanner.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderGraphResourceLifetimePlanner.cs" Link="Source\Rendering\RenderGraphResourceLifetimePlanner.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderGraphResourcePlanner.cs" Link="Source\Rendering\RenderGraphResourcePlanner.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderGraphSubmissionTicketTracker.cs" Link="Source\Rendering\RenderGraphSubmissionTicketTracker.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderGraphTextureDescriptor.cs" Link="Source\Rendering\RenderGraphTextureDescriptor.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderOutputKind.cs" Link="Source\Rendering\RenderOutputKind.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderOutputImageSummary.cs" Link="Source\Rendering\RenderOutputImageSummary.cs" />
@@ -160,10 +162,13 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\IRenderPipelineProvider.cs" Link="Source\Rendering\IRenderPipelineProvider.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderPipelineProviderSelection.cs" Link="Source\Rendering\RenderPipelineProviderSelection.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\DirectionalShadowFitter.cs" Link="Source\GenericRenderPipeline\DirectionalShadowFitter.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\GenericRenderPipelineFeatureDispatcher.cs" Link="Source\GenericRenderPipeline\GenericRenderPipelineFeatureDispatcher.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\GenericRenderPipelineFeatureRegistryCore.cs" Link="Source\GenericRenderPipeline\GenericRenderPipelineFeatureRegistryCore.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\GenericRenderPipelineFrameSubmission.cs" Link="Source\GenericRenderPipeline\GenericRenderPipelineFrameSubmission.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\GenericRenderPipelineRuntimeShaderRegistry.cs" Link="Source\GenericRenderPipeline\GenericRenderPipelineRuntimeShaderRegistry.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\GenericRenderPipelineSettings.cs" Link="Source\GenericRenderPipeline\GenericRenderPipelineSettings.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\GenericRenderPipelineRuntimeAssetCooker.cs" Link="Source\GenericRenderPipeline\GenericRenderPipelineRuntimeAssetCooker.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\GenericPreparedAssetProviderLifecycleState.cs" Link="Source\GenericRenderPipeline\GenericPreparedAssetProviderLifecycleState.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\RenderOutputEncoding.cs" Link="Source\GenericRenderPipeline\RenderOutputEncoding.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.generic-renderpipeline\Src\StaticMeshMaterialPipelineSignature.cs" Link="Source\GenericRenderPipeline\StaticMeshMaterialPipelineSignature.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Shaders\*.cs" Link="Source\Rendering\Shaders\%(Filename)%(Extension)" />
@@ -185,7 +190,13 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation\Managed\Assets\*.cs" Link="Source\Vegetation\Assets\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation\Managed\Runtime\*.cs" Link="Source\Vegetation\Runtime\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation\Managed\VegetationPackage.cs" Link="Source\Vegetation\VegetationPackage.cs" />
-    <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\*.cs" Link="Source\VegetationGenericRenderPipeline\%(Filename)%(Extension)" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\VegetationPreparedRendering.cs" Link="Source\VegetationGenericRenderPipeline\VegetationPreparedRendering.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\VegetationPreparedAssetProviderLifecycleState.cs" Link="Source\VegetationGenericRenderPipeline\VegetationPreparedAssetProviderLifecycleState.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\VegetationGpuResourceRetirementState.cs" Link="Source\VegetationGenericRenderPipeline\VegetationGpuResourceRetirementState.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\VegetationPassCleanupJournal.cs" Link="Source\VegetationGenericRenderPipeline\VegetationPassCleanupJournal.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\VegetationPreparedAssetProvider.cs" Link="Source\VegetationGenericRenderPipeline\VegetationPreparedAssetProvider.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\VegetationRenderValidationMode.cs" Link="Source\VegetationGenericRenderPipeline\VegetationRenderValidationMode.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\VegetationGenericRenderPipelinePackage.cs" Link="Source\VegetationGenericRenderPipeline\VegetationGenericRenderPipelinePackage.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain\Managed\Assets\*.cs" Link="Source\Terrain\Assets\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain\Managed\Runtime\*.cs" Link="Source\Terrain\Runtime\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain.generic-renderpipeline\Managed\TerrainSharedGridBuilder.cs" Link="Source\TerrainGenericRenderPipeline\TerrainSharedGridBuilder.cs" />

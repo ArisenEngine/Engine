@@ -54,6 +54,9 @@ public sealed class VegetationPackageRegistrationTests : IDisposable
         package.OnLoad(retryServices);
 
         Assert.NotEmpty(retryCookerRegistry.GetRegistrations());
+        IVegetationClusterRenderSource renderSource =
+            retryServices.GetService<IVegetationClusterRenderSource>();
+        Assert.True(renderSource.ExtractVisibleClusters().IsEmpty);
         Assert.Contains(
             SceneComponentExtensionRegistry.Shared.GetRegistrations(),
             registration => registration.TypeId == VegetationClusterSceneComponentCodec.TypeId);
