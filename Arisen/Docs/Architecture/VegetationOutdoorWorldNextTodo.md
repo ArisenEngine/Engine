@@ -456,6 +456,9 @@ directories.
   - [x] Double-world camera input, origin-relative float bounds, frustum and distance/error culling, quality density, and hard batch/instance budgets.
   - [x] LOD hysteresis; deterministic dither/fade bands remain deferred to the material/visual slice.
   - [x] Stable nearest-first overflow behavior with explicit diagnostics.
+  - [x] Resolve each extracted cluster's resident record and planner selection through ordered
+    lookups; the former per-extracted-cluster scans made prepared-draw setup quadratic in the
+    resident cluster count.
 - [x] Preserve identity across origin rebasing.
   - [x] Rebase changes GPU representation, not accepted instances or stable selection identity; LOD decisions remain held inside the defined hysteresis band.
 - [ ] Split large batch ranges into bounded TaskGraph setup/recording work while preserving deterministic submission order.
@@ -505,10 +508,23 @@ directories.
   cascade-shadow draws. In the Release allocation host with tiered compilation disabled, planning
   costs 40-43/156-178/302-332 us on average and 80-85/349-366/643-718 us at the worst frame,
   replays byte-identically, and allocates nothing after warmup. Because each scale also culls every
-  resident cluster at some frame while still traversing it, plan cost is linear in the resident
+  resident cluster at some frame while still traversing it, planner cost is linear in the resident
   cluster count (about 0.15 us per cluster along this path), and draw pressure is dominated by the
-  four cascade-batch sets; TaskGraph range partitioning is the remaining Milestone 6 work and these
-  counts are the baseline for the Milestone 9 indirect-contract decision.
+  four cascade-batch sets. These numbers measure the planner alone, and the surrounding feature
+  setup was quadratic in the resident cluster count until the ordered lookups below landed, so
+  setup, not planning, is what forces TaskGraph range partitioning; these counts are the baseline
+  for the Milestone 9 indirect-contract decision.
+- Prepared-draw setup is no longer a linear scan per extracted cluster.
+  `VegetationGenericRenderPipelineFeature` now resolves resident records and planner selections
+  through `VegetationClusterLookup`, which binary-searches the Guid-ordered resident snapshot and
+  the planner's `(cluster, generation, species)`-ordered selection output, rewinding to the first
+  entry of a duplicate-cluster run so multi-species clusters keep the exact selection the former
+  scan returned. The dense-valley lookup report (2,048 resident clusters, 1,662 probes, 4,096
+  selections) measures 103.5 us ordered versus 720.1 us linear for resident clusters and 96.0 us
+  ordered versus 1,584.5 us linear for selections, all allocation-free, replacing roughly 2.3 ms of
+  quadratic setup per dense-valley peak frame with roughly 200 us. `VegetationClusterLookupTests`
+  covers found, missing, boundary, and out-of-range Guids, sliced spans, duplicate-run ordering,
+  and equivalence against the removed linear scans.
 - Vegetation shadow recording is now partitioned by cascade through
   `VegetationShadowDrawWorkPartition`: every cascade contributes bounded 256-draw work items on the
   shared TaskGraph, work items are dispatched in cascade/range order so submission stays
@@ -520,6 +536,9 @@ directories.
   `.arisen/Logs/validate-runtime-Debug-latest.json` records `succeeded=true` with four GPU smoke
   runs, zero skips or CPU fallbacks, one Editor viewport smoke, relocated cooked-only Production,
   three world-streaming runs, three terrain-streaming runs, and two vegetation visual comparisons.
+  The same gate re-passed unchanged after the ordered setup lookups landed, with the canonical
+  vegetation contract line still `PreparedClusters=1`, `OpaqueBatches=1`, `OpaqueInstances=13`,
+  `RecordedShadowBatches=4`, `ShadowBatches=1,1,1,1`, and `Dropped=0`.
 
 ---
 
