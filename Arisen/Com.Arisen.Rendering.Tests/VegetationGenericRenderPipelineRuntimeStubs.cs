@@ -124,7 +124,8 @@ namespace ArisenEngine.Vegetation.GenericRenderPipeline
             VegetationPreparedAssetProvider preparedAssets,
             VegetationOpaquePass opaquePass,
             VegetationShadowPass shadowPass,
-            VegetationRenderValidationMode validationMode)
+            VegetationRenderValidationMode validationMode,
+            ArisenEngine.Threading.ITaskGraph? taskSystem = null)
         {
             ArgumentNullException.ThrowIfNull(renderSource);
             ArgumentNullException.ThrowIfNull(clusterData);
@@ -134,6 +135,7 @@ namespace ArisenEngine.Vegetation.GenericRenderPipeline
             ArgumentNullException.ThrowIfNull(opaquePass);
             ArgumentNullException.ThrowIfNull(shadowPass);
             _ = validationMode;
+            _ = taskSystem;
             m_PreparedAssets = preparedAssets;
         }
 

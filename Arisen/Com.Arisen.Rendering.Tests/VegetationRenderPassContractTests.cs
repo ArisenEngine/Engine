@@ -80,7 +80,7 @@ public sealed class VegetationRenderPassContractTests
             "Vegetation.hlsl");
 
         Assert.Contains(
-            "(component.Flags & VegetationClusterFlags.ReceiveShadows) != 0",
+            "(cluster.Component.Flags & VegetationClusterFlags.ReceiveShadows) != 0",
             feature,
             StringComparison.Ordinal);
         Assert.Contains(

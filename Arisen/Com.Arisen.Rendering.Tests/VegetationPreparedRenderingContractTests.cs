@@ -260,7 +260,7 @@ public sealed class VegetationPreparedRenderingContractTests
             "VegetationPreparedAssetProvider.cs");
         string lookup = SliceBetween(
             source,
-            "internal bool TryGetCluster(",
+            "public bool TryGetCluster(",
             "internal void UpdateSubmittedTicket(ulong submittedTicket)");
 
         AssertInOrder(
