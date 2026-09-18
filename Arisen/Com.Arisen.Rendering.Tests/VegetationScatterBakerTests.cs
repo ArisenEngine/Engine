@@ -347,6 +347,49 @@ public sealed class VegetationScatterBakerTests
     }
 
     [Fact]
+    public void Bake_ReturnsExplicitNoOutputPlanWhenAllCandidatesAreExcluded()
+    {
+        ScatterFixture fixture = CreateFixture();
+        var exclusion = new VegetationScatterExclusion(
+            new WorldBounds(
+                new WorldPosition(-3.0, -100.0, -3.0),
+                new WorldPosition(3.0, 100.0, 3.0)),
+            VegetationScatterExclusionKind.Hard);
+
+        VegetationScatterBakeResult result = VegetationScatterBaker.Build(
+            CreateDescriptor(fixture, exclusions: [exclusion]));
+
+        Assert.Equal(VegetationScatterBakeDisposition.NoOutput, result.Disposition);
+        Assert.False(result.HasOutput);
+        Assert.Throws<InvalidOperationException>(() => _ = result.Cluster);
+        Assert.Empty(result.PageMetadata);
+        Assert.Equal(0, result.Metrics.AcceptedCount);
+        AssertMetricsReconcile(result.Metrics);
+        Assert.Equal(
+            VegetationScatterIdentity.CreateClusterGuid(
+                fixture.Biome.Guid,
+                fixture.Biome.PackageId,
+                s_WorldGuid,
+                fixture.Terrain.Root.Guid,
+                fixture.Terrain.Root.PackageId,
+                fixture.Species.Guid,
+                fixture.Species.PackageId,
+                EntryId,
+                s_NegativeCell),
+            result.ClusterMetadata.Guid);
+        Assert.Equal(SHA256.HashSizeInBytes, result.PlacementContentHash.Length);
+
+        VegetationScatterBakeResult repeated = VegetationScatterBaker.Build(
+            CreateDescriptor(fixture, exclusions: [exclusion]));
+        Assert.Equal(result.Metrics, repeated.Metrics);
+        Assert.Equal(result.ClusterMetadata.Guid, repeated.ClusterMetadata.Guid);
+        Assert.Equal(
+            result.ClusterMetadata.Generated?.ChildKey,
+            repeated.ClusterMetadata.Generated?.ChildKey);
+        Assert.Equal(result.PlacementContentHash, repeated.PlacementContentHash);
+    }
+
+    [Fact]
     public void Bake_ReportsCandidateAndOnePageAcceptedOverflowWithoutTruncation()
     {
         ScatterFixture fixture = CreateFixture();
@@ -366,11 +409,46 @@ public sealed class VegetationScatterBakerTests
         ScatterFixture acceptedOverflow = WithEntry(
             fixture,
             fixture.Entry with { Density = 2.0f, ClusterSize = 1 });
-        InvalidOperationException acceptedError = Assert.Throws<InvalidOperationException>(() =>
-            VegetationScatterBaker.Build(CreateDescriptor(acceptedOverflow)));
-        Assert.Contains("accepted instance count", acceptedError.Message, StringComparison.Ordinal);
-        Assert.Contains("one-page limit '1'", acceptedError.Message, StringComparison.Ordinal);
-        Assert.Contains(EntryId, acceptedError.Message, StringComparison.Ordinal);
+        VegetationScatterBakeResult accepted = VegetationScatterBaker.Build(
+            CreateDescriptor(acceptedOverflow));
+        Assert.True(accepted.Cluster.Pages.Count > 1);
+        Assert.Equal(
+            accepted.Metrics.AcceptedCount,
+            accepted.Cluster.Pages.Sum(page => page.Instances.Count));
+        Assert.All(
+            accepted.Cluster.Pages,
+            page => Assert.InRange(
+                page.Instances.Count,
+                1,
+                acceptedOverflow.Entry.ClusterSize));
+        Assert.Equal(
+            accepted.Cluster.Pages.Select(page => page.Guid),
+            accepted.PageMetadata.Select(metadata => metadata.Guid));
+        Assert.Equal(
+            accepted.Cluster.Pages.SelectMany(page => page.Instances.Select(instance => instance.StableKey)),
+            accepted.Cluster.Pages.SelectMany(page => page.Instances.Select(instance => instance.StableKey)).Order());
+        Assert.Equal(accepted.Cluster.Pages.Count, accepted.PageContentHashes.Count);
+        for (int pageIndex = 0; pageIndex < accepted.Cluster.Pages.Count; pageIndex++)
+        {
+            Assert.Equal(
+                VegetationScatterIdentity.CreatePageGuid(
+                    accepted.Cluster.Guid,
+                    accepted.Cluster.PackageId,
+                    pageIndex,
+                    accepted.PageContentHashes[pageIndex]),
+                accepted.Cluster.Pages[pageIndex].Guid);
+        }
+        VegetationScatterBakeResult reordered = VegetationScatterBaker.Build(
+            CreateDescriptor(
+                acceptedOverflow,
+                tiles: acceptedOverflow.Tiles.Reverse().ToArray()));
+        Assert.Equal(
+            accepted.Cluster.Pages.Select(page => page.Guid),
+            reordered.Cluster.Pages.Select(page => page.Guid));
+        Assert.Equal(accepted.PlacementContentHash, reordered.PlacementContentHash);
+        Assert.Equal(
+            accepted.Cluster.Pages.SelectMany(page => page.Instances),
+            reordered.Cluster.Pages.SelectMany(page => page.Instances));
 
         ScatterFixture radiusOverflow = fixture with
         {

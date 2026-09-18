@@ -301,6 +301,183 @@ internal sealed class TestAssetDatabase : IAssetDatabase, ICookedArtifactWriteOw
         return removedCount;
     }
 
+    public IReadOnlyList<CookedAssetRecord> PublishCookedArtifactSet(
+        IReadOnlyCollection<CookedArtifactSetEntry> entries,
+        IReadOnlyCollection<CookedAssetIdentity> removals)
+    {
+        EnsureMutable();
+        ArgumentNullException.ThrowIfNull(entries);
+        ArgumentNullException.ThrowIfNull(removals);
+        var entryArray = entries
+            .OrderBy(entry => entry.Guid)
+            .ThenBy(entry => entry.Variant, StringComparer.Ordinal)
+            .ToArray();
+        var removalArray = removals
+            .Distinct()
+            .OrderBy(identity => identity.Guid)
+            .ThenBy(identity => identity.Variant, StringComparer.Ordinal)
+            .ToArray();
+        var removalKeys = removalArray.ToHashSet();
+        var replacementKeys = entryArray
+            .Select(entry => new CookedAssetIdentity(entry.Guid, entry.Variant))
+            .ToHashSet();
+        if (replacementKeys.Overlaps(removalKeys))
+        {
+            throw new InvalidOperationException(
+                "A cooked artifact set cannot replace and remove the same identity.");
+        }
+
+        Dictionary<(Guid Guid, string Variant), CookedAssetRecord> previous =
+            new(m_Artifacts);
+        var transactionId = Guid.NewGuid().ToString("N");
+        string transactionRoot = Path.Combine(
+            Path.GetFullPath(CookedRoot),
+            ".set",
+            transactionId);
+        string stagedRoot = Path.Combine(transactionRoot, "staged");
+        string backupRoot = Path.Combine(transactionRoot, "backup");
+        var installed = new List<string>();
+        var backups = new List<(string Original, string Backup)>();
+        var changed = new HashSet<CookedAssetIdentity>();
+        var published = new List<CookedAssetRecord>(entryArray.Length);
+        try
+        {
+            Directory.CreateDirectory(stagedRoot);
+            foreach (CookedArtifactSetEntry entry in entryArray)
+            {
+                if (entry.Guid == Guid.Empty ||
+                    string.IsNullOrWhiteSpace(entry.AssetType) ||
+                    string.IsNullOrWhiteSpace(entry.Variant) ||
+                    entry.Payload is not { Length: > 0 })
+                {
+                    throw new ArgumentException("Cooked artifact set entry is invalid.", nameof(entries));
+                }
+
+                CookedAssetIdentity identity = new(entry.Guid, entry.Variant);
+                string stagedPath = Path.Combine(
+                    stagedRoot,
+                    $"{entry.Guid:N}-{entry.Variant}{entry.Extension}");
+                File.WriteAllBytes(stagedPath, entry.Payload);
+                if (previous.TryGetValue((entry.Guid, entry.Variant), out CookedAssetRecord? existing) &&
+                    existing.AssetType.Equals(entry.AssetType, StringComparison.OrdinalIgnoreCase) &&
+                    File.Exists(existing.Path) &&
+                    File.ReadAllBytes(existing.Path).AsSpan().SequenceEqual(entry.Payload))
+                {
+                    m_Artifacts[(entry.Guid, entry.Variant)] = existing;
+                    published.Add(existing);
+                    File.Delete(stagedPath);
+                    continue;
+                }
+
+                changed.Add(identity);
+                if (previous.TryGetValue((entry.Guid, entry.Variant), out existing) &&
+                    File.Exists(existing.Path))
+                {
+                    string backup = Path.Combine(backupRoot, Path.GetFileName(existing.Path));
+                    Directory.CreateDirectory(backupRoot);
+                    File.Move(existing.Path, backup);
+                    backups.Add((existing.Path, backup));
+                }
+
+                string finalDirectory = Path.Combine(
+                    Path.GetFullPath(CookedRoot),
+                    entry.Guid.ToString("N"));
+                Directory.CreateDirectory(finalDirectory);
+                string finalPath = Path.Combine(
+                    finalDirectory,
+                    $"{entry.Variant}.{transactionId}{entry.Extension}");
+                File.Move(stagedPath, finalPath);
+                installed.Add(finalPath);
+                var output = new FileInfo(finalPath);
+                var artifact = new CookedAssetRecord(
+                    entry.Guid,
+                    entry.AssetType.Trim(),
+                    entry.Variant.Trim(),
+                    output.FullName,
+                    output.Length,
+                    output.LastWriteTimeUtc);
+                m_Artifacts[(entry.Guid, entry.Variant)] = artifact;
+                published.Add(artifact);
+            }
+
+            foreach (CookedAssetIdentity identity in removalArray)
+            {
+                if (!previous.TryGetValue((identity.Guid, identity.Variant), out CookedAssetRecord? existing))
+                {
+                    continue;
+                }
+
+                changed.Add(identity);
+                m_Artifacts.Remove((identity.Guid, identity.Variant));
+                if (File.Exists(existing.Path))
+                {
+                    string backup = Path.Combine(backupRoot, Path.GetFileName(existing.Path));
+                    Directory.CreateDirectory(backupRoot);
+                    File.Move(existing.Path, backup);
+                    backups.Add((existing.Path, backup));
+                }
+            }
+
+            foreach (CookedAssetIdentity identity in changed)
+            {
+                int[] handles = m_Loaded
+                    .Where(pair => pair.Value.Artifact.Guid == identity.Guid &&
+                        string.Equals(pair.Value.Artifact.Variant, identity.Variant, StringComparison.Ordinal))
+                    .Select(pair => pair.Key)
+                    .ToArray();
+                foreach (int handle in handles)
+                {
+                    m_Loaded.Remove(handle);
+                }
+            }
+
+            foreach ((string _, string backup) in backups)
+            {
+                if (File.Exists(backup)) File.Delete(backup);
+            }
+
+            if (Directory.Exists(transactionRoot))
+            {
+                Directory.Delete(transactionRoot, recursive: true);
+            }
+
+            return published
+                .OrderBy(artifact => artifact.Guid)
+                .ThenBy(artifact => artifact.Variant, StringComparer.Ordinal)
+                .ToArray();
+        }
+        catch
+        {
+            m_Artifacts.Clear();
+            foreach ((Guid guid, string variant, CookedAssetRecord artifact) in previous
+                         .Select(pair => (pair.Key.Guid, pair.Key.Variant, pair.Value)))
+            {
+                m_Artifacts[(guid, variant)] = artifact;
+            }
+
+            foreach (string path in installed)
+            {
+                if (File.Exists(path)) File.Delete(path);
+            }
+
+            foreach ((string original, string backup) in backups)
+            {
+                if (File.Exists(backup))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(original)!);
+                    File.Move(backup, original, overwrite: true);
+                }
+            }
+
+            if (Directory.Exists(transactionRoot))
+            {
+                Directory.Delete(transactionRoot, recursive: true);
+            }
+
+            throw;
+        }
+    }
+
     public void NotifyAssetChanged(AssetChangeEvent change)
     {
         AssetChanged?.Invoke(change);

@@ -103,6 +103,112 @@ public sealed class VegetationCookedClusterTests
     }
 
     [Fact]
+    public void ClusterV1_CooksDeterministicSpatialAndSpeciesAcceleration()
+    {
+        using var fixture = new ClusterDiskFixture();
+        AssetDatabase database = fixture.CreateDatabase();
+        VegetationClusterCookDescriptor descriptor = CreateClusterDescriptor() with
+        {
+            SpeciesData = Array.AsReadOnly(
+            [
+                CreateAccelerationSpecies(
+                    VegetationCookedInstancePageTests.SpeciesBGuid,
+                    400.0f,
+                    8.0f),
+                CreateAccelerationSpecies(
+                    VegetationCookedInstancePageTests.SpeciesAGuid,
+                    200.0f,
+                    4.0f)
+            ])
+        };
+
+        CookedVegetationClusterArtifact first = VegetationClusterAssetCooker.Cook(
+            database,
+            descriptor);
+        byte[] firstBytes = File.ReadAllBytes(first.Path);
+        Assert.True(
+            VegetationClusterAssetCooker.TryReadPayload(
+                VegetationCookedInstancePageTests.ClusterGuid,
+                VegetationCookedInstancePageTests.PackageId,
+                firstBytes,
+                "cluster-acceleration",
+                out CookedVegetationCluster loaded,
+                out string diagnostic),
+            diagnostic);
+
+        Assert.NotNull(loaded.Acceleration);
+        Assert.Equal(3, loaded.Acceleration!.SpatialNodes.Count);
+        Assert.Equal(loaded.Bounds, loaded.Acceleration.Bounds);
+        Assert.Equal(2, loaded.Acceleration.Species.Count);
+        Assert.Equal(
+            loaded.Species,
+            loaded.Acceleration.Species.Select(species => species.Species));
+        Assert.All(
+            loaded.Acceleration.SpatialNodes,
+            node => Assert.True(node.Bounds.Min.X >= loaded.Bounds.Min.X &&
+                node.Bounds.Min.Y >= loaded.Bounds.Min.Y &&
+                node.Bounds.Min.Z >= loaded.Bounds.Min.Z &&
+                node.Bounds.Max.X <= loaded.Bounds.Max.X &&
+                node.Bounds.Max.Y <= loaded.Bounds.Max.Y &&
+                node.Bounds.Max.Z <= loaded.Bounds.Max.Z));
+        Assert.All(
+            loaded.Acceleration.SpatialNodes.Where(node => node.IsLeaf),
+            node => Assert.Equal(1, node.PageCount));
+        Assert.Equal(200.0f, loaded.Acceleration.Species[0].MaximumLodDistance);
+        Assert.Equal(4.0f, loaded.Acceleration.Species[0].MaximumLodScreenError);
+        Assert.Equal(400.0f, loaded.Acceleration.Species[1].MaximumLodDistance);
+        Assert.Equal(8.0f, loaded.Acceleration.Species[1].MaximumLodScreenError);
+
+        CookedVegetationClusterArtifact repeated = VegetationClusterAssetCooker.Cook(
+            database,
+            descriptor with { Pages = descriptor.Pages.Reverse().ToArray() });
+        Assert.Equal(firstBytes, File.ReadAllBytes(repeated.Path));
+    }
+
+    [Fact]
+    public void ClusterV1_RejectsRehashedAccelerationCorruption()
+    {
+        using var fixture = new ClusterDiskFixture();
+        AssetDatabase database = fixture.CreateDatabase();
+        VegetationClusterCookDescriptor descriptor = CreateClusterDescriptor() with
+        {
+            SpeciesData = [
+                CreateAccelerationSpecies(
+                    VegetationCookedInstancePageTests.SpeciesAGuid,
+                    200.0f,
+                    4.0f),
+                CreateAccelerationSpecies(
+                    VegetationCookedInstancePageTests.SpeciesBGuid,
+                    400.0f,
+                    8.0f)]
+        };
+        CookedVegetationClusterArtifact artifact = VegetationClusterAssetCooker.Cook(
+            database,
+            descriptor);
+        byte[] valid = File.ReadAllBytes(artifact.Path);
+
+        int spatialDescriptor = FindSectionDescriptor(valid, 5);
+        int spatialOffset = checked((int)BinaryPrimitives.ReadUInt64LittleEndian(
+            valid.AsSpan(spatialDescriptor + 8)));
+        byte[] badPageCount = valid.ToArray();
+        BinaryPrimitives.WriteInt32LittleEndian(
+            badPageCount.AsSpan(spatialOffset + 60),
+            1);
+        Rehash(badPageCount);
+        AssertRejected(badPageCount);
+
+        int speciesDescriptor = FindSectionDescriptor(valid, 6);
+        int speciesOffset = checked((int)BinaryPrimitives.ReadUInt64LittleEndian(
+            valid.AsSpan(speciesDescriptor + 8)));
+        byte[] negativeZeroLod = valid.ToArray();
+        BinaryPrimitives.WriteUInt32LittleEndian(
+            negativeZeroLod.AsSpan(speciesOffset + 72),
+            0x80000000U);
+        Rehash(negativeZeroLod);
+        AssertRejected(negativeZeroLod);
+    }
+
+    [Fact]
     public void ClusterV1_RejectsDuplicateStableKeysAcrossPagesBeforePublication()
     {
         using var fixture = new ClusterDiskFixture();
@@ -329,6 +435,48 @@ public sealed class VegetationCookedClusterTests
                 s_BiomeGuid,
                 VegetationCookedInstancePageTests.PackageId),
             Array.AsReadOnly(pages));
+    }
+
+    private static CookedVegetationSpecies CreateAccelerationSpecies(
+        Guid speciesGuid,
+        float maximumDistance,
+        float maximumScreenError)
+    {
+        return new CookedVegetationSpecies(
+            speciesGuid,
+            VegetationCookedInstancePageTests.PackageId,
+            SourceSchemaVersion: 1,
+            $"Acceleration {speciesGuid:N}",
+            [
+                new CookedVegetationSpeciesLod(
+                    new CookedVegetationMeshReference(
+                        Guid.Parse("d1000000-0000-0000-0000-000000000001"),
+                        VegetationCookedInstancePageTests.PackageId),
+                    new CookedVegetationMaterialReference(
+                        Guid.Parse("d2000000-0000-0000-0000-000000000001"),
+                        VegetationCookedInstancePageTests.PackageId),
+                    maximumDistance * 0.5f,
+                    maximumScreenError * 0.5f),
+                new CookedVegetationSpeciesLod(
+                    new CookedVegetationMeshReference(
+                        Guid.Parse("d1000000-0000-0000-0000-000000000002"),
+                        VegetationCookedInstancePageTests.PackageId),
+                    new CookedVegetationMaterialReference(
+                        Guid.Parse("d2000000-0000-0000-0000-000000000002"),
+                        VegetationCookedInstancePageTests.PackageId),
+                    maximumDistance,
+                    maximumScreenError)
+            ],
+            VegetationShadowPolicy.Cast,
+            new VegetationValueRange(1.0f, 1.0f),
+            new VegetationValueRange(0.0f, 0.0f),
+            new VegetationValueRange(0.0f, 0.0f),
+            new VegetationCollisionPromotionDescriptor(
+                VegetationCollisionPromotionMode.None,
+                0.0f,
+                0.0f,
+                0.0f),
+            WindResponse: 0.0f);
     }
 
     private static VegetationClusterCookDescriptor CreateOwnershipFaultDescriptor(

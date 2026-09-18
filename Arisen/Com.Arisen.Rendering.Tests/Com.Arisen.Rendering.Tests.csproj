@@ -191,6 +191,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation\Managed\Runtime\*.cs" Link="Source\Vegetation\Runtime\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation\Managed\VegetationPackage.cs" Link="Source\Vegetation\VegetationPackage.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\VegetationPreparedRendering.cs" Link="Source\VegetationGenericRenderPipeline\VegetationPreparedRendering.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\VegetationCullingPlanner.cs" Link="Source\VegetationGenericRenderPipeline\VegetationCullingPlanner.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\VegetationPreparedAssetProviderLifecycleState.cs" Link="Source\VegetationGenericRenderPipeline\VegetationPreparedAssetProviderLifecycleState.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\VegetationGpuResourceRetirementState.cs" Link="Source\VegetationGenericRenderPipeline\VegetationGpuResourceRetirementState.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\VegetationPassCleanupJournal.cs" Link="Source\VegetationGenericRenderPipeline\VegetationPassCleanupJournal.cs" />

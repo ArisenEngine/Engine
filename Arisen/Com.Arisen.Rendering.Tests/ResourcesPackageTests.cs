@@ -769,6 +769,11 @@ public sealed class ResourcesPackageTests
             string extension) =>
             m_Inner.BeginCookedArtifactWrite(guid, variant, extension);
 
+        public IReadOnlyList<CookedAssetRecord> PublishCookedArtifactSet(
+            IReadOnlyCollection<CookedArtifactSetEntry> entries,
+            IReadOnlyCollection<CookedAssetIdentity> removals) =>
+            m_Inner.PublishCookedArtifactSet(entries, removals);
+
         public bool TryLoadCookedAsset(
             Guid guid,
             string variant,
