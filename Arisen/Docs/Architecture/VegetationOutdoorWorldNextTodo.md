@@ -62,8 +62,10 @@ Measured vegetation gaps:
   shading, alpha cutout, deterministic dither/fade, and broad foliage material semantics remain
   absent;
 - the existing direct indexed API now has a canonical baseline of one 13-instance opaque batch and
-  four 13-instance cascade batches, but representative dense-valley command/memory measurements and
-  a shared managed indirect-draw contract remain absent;
+  four 13-instance cascade batches; the dense-valley camera-path measurement extends that baseline
+  to 2,048 resident clusters and 524,288 instances (1,662 opaque plus 6,648 cascade draws and
+  19.48 MiB of selected instance payload on the busiest frame), while a shared managed
+  indirect-draw contract remains absent;
 - Editor has no biome painting, density masks, exclusion volumes, scatter preview, instance inspection, or regeneration transaction;
 - Development, Editor, Production, and relocated cooked-only Production now validate the canonical
   cluster identity, direct-instanced counts, visible opaque/depth coverage, shadow-only color
@@ -491,6 +493,18 @@ directories.
   instance-budget fragmentation, dense 256-cluster overflow, and a 65-frame rebased camera path
   that replays identically with zero allocation after warmup. TaskGraph range partitioning and
   deterministic dither/fade remain the next Milestone 6 work.
+- `VegetationDenseValleyMeasurementTests` records the dense-valley planning and command baseline on a
+  24-frame, 2,400 m camera pass over 48 m cluster cells with a 2,000 m farthest-LOD limit and four
+  shadow cascades: 256/1,024/2,048 resident clusters hold 16,384/131,072/524,288 instances, and the
+  busiest frames plan 256/994/1,662 candidates, accept 1,662 clusters with 425,472 selected
+  instances (19.48 MiB at the 48-byte GPU instance stride), and project 1,662 opaque plus 6,648
+  cascade-shadow draws. In the Release allocation host with tiered compilation disabled, planning
+  costs 40-43/156-178/302-332 us on average and 80-85/349-366/643-718 us at the worst frame,
+  replays byte-identically, and allocates nothing after warmup. Because each scale also culls every
+  resident cluster at some frame while still traversing it, plan cost is linear in the resident
+  cluster count (about 0.15 us per cluster along this path), and draw pressure is dominated by the
+  four cascade-batch sets; TaskGraph range partitioning is the remaining Milestone 6 work and these
+  counts are the baseline for the Milestone 9 indirect-contract decision.
 - The 2026-09-18 Debug runtime gate passed end to end after this slice. The schema-8 report at
   `.arisen/Logs/validate-runtime-Debug-latest.json` records `succeeded=true` with four GPU smoke
   runs, zero skips or CPU fallbacks, one Editor viewport smoke, relocated cooked-only Production,
