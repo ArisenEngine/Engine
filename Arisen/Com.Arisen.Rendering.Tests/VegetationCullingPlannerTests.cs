@@ -718,6 +718,9 @@ public sealed class VegetationCullingPlannerTests
 
         int previousLod = int.MaxValue;
         bool reachedFinestLod = false;
+        var visibleGuids = new HashSet<Guid>();
+        bool observedBudgetDrop = false;
+        bool observedCulledFrame = false;
         for (int frame = 0; frame < FrameCount; frame++)
         {
             FrameSelection approach = Assert.Single(
@@ -726,9 +729,21 @@ public sealed class VegetationCullingPlannerTests
             Assert.True(approach.LodLevel <= previousLod);
             previousLod = approach.LodLevel;
             reachedFinestLod |= approach.LodLevel == 0;
+            foreach (FrameSelection entry in snapped[frame])
+            {
+                visibleGuids.Add(entry.ClusterGuid);
+            }
+
+            observedBudgetDrop |=
+                snapped[frame].Count(entry => entry.Accepted) == 4 &&
+                snapped[frame].Length > 4;
+            observedCulledFrame |= snapped[frame].Length < inputs.Length;
         }
 
         Assert.True(reachedFinestLod);
+        Assert.Equal(inputs.Length, visibleGuids.Count);
+        Assert.True(observedBudgetDrop);
+        Assert.True(observedCulledFrame);
 
         var warmed = new VegetationCullingPlanner();
         _ = RunCameraPath(
