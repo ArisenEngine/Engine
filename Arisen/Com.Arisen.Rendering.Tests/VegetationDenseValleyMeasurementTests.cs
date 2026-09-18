@@ -113,8 +113,8 @@ public sealed class VegetationDenseValleyMeasurementTests
         var report = new StringBuilder();
         report.AppendLine(
             "clusters instances extracted gathered accepted workItems gatherSerialUs " +
-            "gatherShardedUs planUs prepareSerialUs prepareShardedUs setupSerialUs " +
-            "setupShardedUs serialAlloc shardedAlloc");
+            "gatherShardedUs planInlineUs planDispatchedUs prepareSerialUs " +
+            "prepareShardedUs setupSerialUs setupShardedUs serialAlloc shardedAlloc");
         WarmPlanner();
         using var taskGraph = new TaskGraph();
         foreach ((int clusterCount, int instancesPerCluster) in scales)
@@ -137,7 +137,8 @@ public sealed class VegetationDenseValleyMeasurementTests
                 $"{measurement.PeakAcceptedCount} {measurement.WorkItemCount} " +
                 $"{measurement.GatherSerialMicroseconds:F1} " +
                 $"{measurement.GatherShardedMicroseconds:F1} " +
-                $"{measurement.PlanMicroseconds:F1} " +
+                $"{measurement.PlanInlineMicroseconds:F1} " +
+                $"{measurement.PlanDispatchedMicroseconds:F1} " +
                 $"{measurement.PrepareSerialMicroseconds:F1} " +
                 $"{measurement.PrepareShardedMicroseconds:F1} " +
                 $"{measurement.SetupSerialMicroseconds:F1} " +
@@ -158,7 +159,7 @@ public sealed class VegetationDenseValleyMeasurementTests
         var path = new SetupShardPath(built);
         VegetationCullingSettings settings = VegetationCullingSettings.Default;
         var serialPlanner = new VegetationCullingPlanner();
-        var shardedPlanner = new VegetationCullingPlanner();
+        var shardedPlanner = new VegetationCullingPlanner(taskGraph);
         var inlineDispatcher = new VegetationSetupWorkDispatcher(taskSystem: null);
         var taskDispatcher = new VegetationSetupWorkDispatcher(taskGraph);
         for (int pass = 0; pass < SetupWarmupPassCount; pass++)
@@ -206,7 +207,8 @@ public sealed class VegetationDenseValleyMeasurementTests
             reportedSerial.WorkItemCount,
             reportedSerial.GatherMicroseconds,
             reportedSharded.GatherMicroseconds,
-            Math.Min(reportedSerial.PlanMicroseconds, reportedSharded.PlanMicroseconds),
+            reportedSerial.PlanMicroseconds,
+            reportedSharded.PlanMicroseconds,
             reportedSerial.PrepareMicroseconds,
             reportedSharded.PrepareMicroseconds,
             reportedSerial.GatherMicroseconds + reportedSerial.PrepareMicroseconds,
@@ -779,6 +781,7 @@ public sealed class VegetationDenseValleyMeasurementTests
                 }
 
                 peakAcceptedCount = Math.Max(peakAcceptedCount, acceptedCount);
+                fingerprint = FoldSelectionFingerprint(fingerprint, selections);
                 m_PrepareItemCount = inputCount;
                 m_FrameRegions.EnsureRegions(
                     VegetationSetupWorkPartition.GetWorkItemCount(inputCount),
@@ -889,6 +892,23 @@ public sealed class VegetationDenseValleyMeasurementTests
             return hash;
         }
 
+        private static ulong FoldSelectionFingerprint(
+            ulong hash,
+            ReadOnlySpan<VegetationCullingSelection> selections)
+        {
+            for (int index = 0; index < selections.Length; index++)
+            {
+                ref readonly VegetationCullingSelection selection = ref selections[index];
+                hash = Mix(hash, selection.ClusterGuid);
+                hash = Mix(hash, selection.SpeciesGuid);
+                hash = (hash ^ (uint)selection.LodLevel) * 1099511628211UL;
+                hash = (hash ^ (selection.Accepted ? 1UL : 0UL)) * 1099511628211UL;
+                hash = (hash ^ (uint)selection.BudgetInstanceCount) * 1099511628211UL;
+            }
+
+            return hash;
+        }
+
         private static ulong Mix(ulong hash, Guid value) =>
             (hash ^ (uint)value.GetHashCode()) * 1099511628211UL;
     }
@@ -928,7 +948,8 @@ public sealed class VegetationDenseValleyMeasurementTests
         int WorkItemCount,
         double GatherSerialMicroseconds,
         double GatherShardedMicroseconds,
-        double PlanMicroseconds,
+        double PlanInlineMicroseconds,
+        double PlanDispatchedMicroseconds,
         double PrepareSerialMicroseconds,
         double PrepareShardedMicroseconds,
         double SetupSerialMicroseconds,
