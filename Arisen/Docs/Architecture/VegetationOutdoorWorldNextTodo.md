@@ -465,7 +465,14 @@ directories.
   - [x] Partition recording into bounded work items: the opaque pass records 256-draw ranges and the
     shadow pass now partitions each cascade the same way, so the dense-valley peak of 6,648 cascade
     draws becomes 26 independent recording tasks that still submit in cascade/range order.
-  - [ ] Partition per-cluster culling and prepared-draw setup across TaskGraph workers.
+  - [x] Partition per-cluster culling and prepared-draw setup across TaskGraph workers.
+    - [x] `VegetationSetupWorkPartition` bounds every setup work item to 256 inputs; gather and
+      prepared-draw setup dispatch through `VegetationSetupWorkDispatcher` and merge shard regions
+      in work-item order, which reconstitutes the serial output order.
+    - [x] `VegetationCullingPlanner` evaluates those bounded ranges with per-shard candidate, page,
+      and node scratch, then merges shard candidates in work-item order ahead of the existing
+      identity sort, history, and budget stages so scheduling cannot change the selection.
+    - [x] Draw emission, budget selection, and shadow recording stay serial by design.
 - [x] Add multi-kilometer, negative-coordinate, and camera-path stress tests; focused rebase, overflow, and zero-steady-state-allocation tests are present.
   - [x] Cover multi-kilometer distance culling, sub-meter nearest-first ranking at 10,000 km, and
     rebase-invariant selection at that magnitude.
@@ -498,8 +505,9 @@ directories.
   rebasing identity, invalid-input fail-closed behavior, zero steady-state allocation,
   multi-kilometer distance culling, sub-meter ranking at 10,000 km, negative-coordinate symmetry,
   instance-budget fragmentation, dense 256-cluster overflow, and a 65-frame rebased camera path
-  that replays identically with zero allocation after warmup. TaskGraph range partitioning and
-  deterministic dither/fade remain the next Milestone 6 work.
+  that replays identically with zero allocation after warmup. Deterministic dither/fade remains the
+  next Milestone 6 work; TaskGraph range partitioning landed with the setup and culling shards
+  recorded below.
 - `VegetationDenseValleyMeasurementTests` records the dense-valley planning and command baseline on a
   24-frame, 2,400 m camera pass over 48 m cluster cells with a 2,000 m farthest-LOD limit and four
   shadow cascades: 256/1,024/2,048 resident clusters hold 16,384/131,072/524,288 instances, and the
@@ -512,8 +520,8 @@ directories.
   cluster count (about 0.15 us per cluster along this path), and draw pressure is dominated by the
   four cascade-batch sets. These numbers measure the planner alone, and the surrounding feature
   setup was quadratic in the resident cluster count until the ordered lookups below landed, so
-  setup, not planning, is what forces TaskGraph range partitioning; these counts are the baseline
-  for the Milestone 9 indirect-contract decision.
+  setup was the first TaskGraph partitioning target; these counts are the baseline for the
+  Milestone 9 indirect-contract decision.
 - Prepared-draw setup is no longer a linear scan per extracted cluster.
   `VegetationGenericRenderPipelineFeature` now resolves resident records and planner selections
   through `VegetationClusterLookup`, which binary-searches the Guid-ordered resident snapshot and
@@ -539,6 +547,24 @@ directories.
   The same gate re-passed unchanged after the ordered setup lookups landed, with the canonical
   vegetation contract line still `PreparedClusters=1`, `OpaqueBatches=1`, `OpaqueInstances=13`,
   `RecordedShadowBatches=4`, `ShadowBatches=1,1,1,1`, and `Dropped=0`.
+- Per-cluster culling and prepared-draw setup now dispatch across bounded TaskGraph work items and
+  reconstitute the serial output order afterwards. `VegetationSetupWorkPartition` caps every work
+  item at 256 inputs; gather and prepared-frame setup run through `VegetationSetupWorkDispatcher`,
+  and `VegetationCullingPlanner` evaluates the same ranges with per-shard candidate, page, and node
+  scratch before merging shard candidates in work-item order ahead of the identity sort, history,
+  and budget stages. The dense-valley report
+  (`TaskGraphSetupShardingReportIsDeterministicAndAllocationFreeInline`, 2,048 and 10,240 clusters on
+  the 24-frame path) measures at 10,240 clusters / 163,840 instances / 40 work items in Release:
+  gather 942.9 to 327.3 us, plan 1,565.5 to 858.7 us, prepared-frame setup 359.2 to 183.8 us, and
+  gather+prepare 1,302.1 to 511.1 us; the controlled Debug A/B measured the plan at 6,011-6,017 us
+  for the former serial loop, 6,165-6,263 us with shard bookkeeping run inline (+2.5%), and
+  2,128-2,179 us dispatched. The inline shard path stays allocation-free after warmup, the dispatched
+  path adds only TaskGraph-owned work items, and draw emission, budget selection, and shadow
+  recording remain serial so submission order and the runtime contract line are unchanged.
+  `VegetationCullingPlannerTests` covers inline-versus-dispatched equivalence across a five-frame
+  multi-shard path, zero steady-state allocation for the inline shard path, and replay under
+  barrier-synchronized workers, and the dense-valley report now folds plan selections into its
+  serial-versus-sharded fingerprint.
 
 ---
 

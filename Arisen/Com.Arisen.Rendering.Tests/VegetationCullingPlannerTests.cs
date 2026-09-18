@@ -1,8 +1,11 @@
 using Arisen.Native.RHI;
 using ArisenEngine.Resources.Serialization;
+using ArisenEngine.Threading;
 using ArisenEngine.Vegetation;
 using ArisenEngine.Vegetation.Assets;
 using ArisenEngine.Vegetation.GenericRenderPipeline;
+using System.Buffers.Binary;
+using System.Collections.Concurrent;
 using System.Numerics;
 using System.Security.Cryptography;
 using Xunit;
@@ -766,6 +769,234 @@ public sealed class VegetationCullingPlannerTests
         long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
         Assert.Equal(0, allocated);
+    }
+
+    [Fact]
+    public void PlannerWorkItemDispatchMatchesInlinePlanningAcrossFrames()
+    {
+        const int clusterCount = 1_024;
+        const int frameCount = 5;
+        using var fixture = new Fixture();
+        VegetationClusterCullingInput[] inputs = CreateShardedInputs(fixture, clusterCount);
+        VegetationCullingSettings settings = VegetationCullingSettings.Default with
+        {
+            MaximumDistance = 4_096.0,
+            MaximumInstanceCount = 64
+        };
+        int workItemCount = VegetationSetupWorkPartition.GetWorkItemCount(clusterCount);
+        Assert.True(workItemCount > 1, $"expected a partitioned plan, got {workItemCount} shards");
+        var inlinePlanner = new VegetationCullingPlanner();
+        using var taskGraph = new TaskGraph(workerCount: 4);
+        var dispatchedPlanner = new VegetationCullingPlanner(taskGraph);
+        for (int pass = 0; pass < 2; pass++)
+        {
+            _ = inlinePlanner.Plan(inputs, CreateShardView(pass), settings);
+            _ = dispatchedPlanner.Plan(inputs, CreateShardView(pass), settings);
+        }
+
+        bool observedCulling = false;
+        bool observedAcceptance = false;
+        for (int frame = 0; frame < frameCount; frame++)
+        {
+            VegetationCullingView view = CreateShardView(frame);
+            ReadOnlySpan<VegetationCullingSelection> inline =
+                inlinePlanner.Plan(inputs, view, settings);
+            ReadOnlySpan<VegetationCullingSelection> dispatched =
+                dispatchedPlanner.Plan(inputs, view, settings);
+
+            AssertSelectionsIdentical(inline, dispatched);
+            Assert.Equal(inlinePlanner.Metrics, dispatchedPlanner.Metrics);
+            observedCulling |= inlinePlanner.Metrics.CulledClusterCount > 0;
+            observedAcceptance |= inlinePlanner.Metrics.SelectedSpeciesCount > 0;
+        }
+
+        Assert.True(observedCulling, "the dispatch comparison must exercise frustum culling");
+        Assert.True(observedAcceptance, "the dispatch comparison must exercise acceptance");
+        _ = inlinePlanner.Plan(inputs, CreateShardView(0), settings);
+        _ = inlinePlanner.Plan(inputs, CreateShardView(0), settings);
+        long beforeBytes = GC.GetAllocatedBytesForCurrentThread();
+        _ = inlinePlanner.Plan(inputs, CreateShardView(0), settings);
+        long allocatedBytes = GC.GetAllocatedBytesForCurrentThread() - beforeBytes;
+
+        Assert.Equal(0, allocatedBytes);
+    }
+
+    [Fact]
+    public void PlannerShardDispatchIsRaceFreeUnderSynchronizedWorkers()
+    {
+        const int clusterCount = 1_024;
+        const int passCount = 4;
+        using var fixture = new Fixture();
+        VegetationClusterCullingInput[] inputs = CreateShardedInputs(fixture, clusterCount);
+        VegetationCullingSettings settings = VegetationCullingSettings.Default with
+        {
+            MaximumDistance = 4_096.0,
+            MaximumInstanceCount = 64
+        };
+        var inlinePlanner = new VegetationCullingPlanner();
+        var taskGraph = new BarrierTaskGraph();
+        var shardedPlanner = new VegetationCullingPlanner(taskGraph);
+        for (int pass = 0; pass < passCount; pass++)
+        {
+            VegetationCullingView view = CreateShardView(pass);
+            ReadOnlySpan<VegetationCullingSelection> inline =
+                inlinePlanner.Plan(inputs, view, settings);
+            ReadOnlySpan<VegetationCullingSelection> sharded =
+                shardedPlanner.Plan(inputs, view, settings);
+
+            AssertSelectionsIdentical(inline, sharded);
+            Assert.Equal(inlinePlanner.Metrics, shardedPlanner.Metrics);
+        }
+
+        Assert.True(
+            taskGraph.ExecuteCount >= passCount,
+            $"expected one dispatch per pass, saw {taskGraph.ExecuteCount}");
+        Assert.Contains(
+            taskGraph.WorkerThreads,
+            thread => thread != Environment.CurrentManagedThreadId);
+    }
+
+    private static VegetationClusterCullingInput[] CreateShardedInputs(
+        Fixture fixture,
+        int clusterCount)
+    {
+        var inputs = new VegetationClusterCullingInput[clusterCount];
+        for (int index = 0; index < clusterCount; index++)
+        {
+            inputs[index] = fixture.CreateInput(
+                CreateIndexedGuid(0x71, index),
+                CreateIndexedGuid(0x72, index),
+                new WorldPosition(-600.0 + (index * 1.25), 0.0, 0.0),
+                generation: 1 + (ulong)(index % 3),
+                instanceCount: 1 + (index % 3));
+        }
+
+        return inputs;
+    }
+
+    private static VegetationCullingView CreateShardView(int frame)
+    {
+        const int frameCount = 5;
+        double cameraX = -700.0 + (1_400.0 * frame / (frameCount - 1));
+        var camera = new WorldPosition(cameraX, 0.0, 0.0);
+        WorldPosition renderOrigin = new(Math.Floor(cameraX / 256.0) * 256.0, 0.0, 0.0);
+        return CreateForwardView(camera, renderOrigin);
+    }
+
+    private static Guid CreateIndexedGuid(byte prefix, int index)
+    {
+        Span<byte> bytes = stackalloc byte[16];
+        bytes[0] = prefix;
+        bytes[1] = 0x5E;
+        BinaryPrimitives.WriteInt32BigEndian(bytes[2..6], index);
+        bytes[6] = 0x80;
+        bytes[7] = 0xA1;
+        bytes[8] = 0x0D;
+        bytes[15] = 0x01;
+        return new Guid(bytes, bigEndian: true);
+    }
+
+    private static void AssertSelectionsIdentical(
+        ReadOnlySpan<VegetationCullingSelection> expected,
+        ReadOnlySpan<VegetationCullingSelection> actual)
+    {
+        Assert.Equal(expected.Length, actual.Length);
+        for (int index = 0; index < expected.Length; index++)
+        {
+            ref readonly VegetationCullingSelection left = ref expected[index];
+            ref readonly VegetationCullingSelection right = ref actual[index];
+            Assert.Equal(left.ClusterGuid, right.ClusterGuid);
+            Assert.Equal(left.Generation, right.Generation);
+            Assert.Equal(left.SpeciesGuid, right.SpeciesGuid);
+            Assert.Equal(left.LodLevel, right.LodLevel);
+            Assert.Equal(left.VisiblePageCount, right.VisiblePageCount);
+            Assert.Equal(left.VisibleInstanceCount, right.VisibleInstanceCount);
+            Assert.Equal(left.BudgetInstanceCount, right.BudgetInstanceCount);
+            Assert.Equal(left.DistanceSquared, right.DistanceSquared);
+            Assert.Equal(left.ScreenSpaceError, right.ScreenSpaceError);
+            Assert.Equal(left.Accepted, right.Accepted);
+        }
+    }
+
+    /// <summary>
+    /// Runs every dispatched work item of one batch on dedicated threads that pass a shared
+    /// barrier before touching shard scratch, so shard overlap is guaranteed rather than likely.
+    /// </summary>
+    private sealed class BarrierTaskGraph : ITaskGraph
+    {
+        private const int MaximumWorkers = 4;
+
+        private readonly List<TaskNode> m_Pending = new();
+
+        public int ExecuteCount { get; private set; }
+
+        public ConcurrentBag<int> WorkerThreads { get; } = new();
+
+        public TaskNode AddTask(TaskNode task)
+        {
+            ArgumentNullException.ThrowIfNull(task);
+            m_Pending.Add(task);
+            return task;
+        }
+
+        public void AddDependency(TaskNode src, TaskNode dst) =>
+            throw new NotSupportedException("Culling shards must not depend on each other.");
+
+        public ITaskSchedule CreateSchedule(
+            IReadOnlyList<TaskNode> tasks,
+            IReadOnlyList<TaskDependency> dependencies) =>
+            throw new NotSupportedException("Culling shards must not depend on each other.");
+
+        public void Execute()
+        {
+            ExecuteCount++;
+            TaskNode[] batch = m_Pending.ToArray();
+            m_Pending.Clear();
+            if (batch.Length == 0)
+            {
+                return;
+            }
+
+            int workerCount = Math.Min(batch.Length, MaximumWorkers);
+            var barrier = new Barrier(workerCount);
+            var failures = new ConcurrentQueue<Exception>();
+            var workers = new Thread[workerCount];
+            for (int workerIndex = 0; workerIndex < workerCount; workerIndex++)
+            {
+                int first = workerIndex;
+                workers[workerIndex] = new Thread(() =>
+                {
+                    WorkerThreads.Add(Environment.CurrentManagedThreadId);
+                    try
+                    {
+                        barrier.SignalAndWait();
+                        for (int index = first; index < batch.Length; index += workerCount)
+                        {
+                            batch[index].Execute();
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        failures.Enqueue(exception);
+                    }
+                })
+                {
+                    IsBackground = true,
+                    Name = $"VegetationCullingShard{workerIndex}"
+                };
+                workers[workerIndex].Start();
+            }
+
+            for (int workerIndex = 0; workerIndex < workerCount; workerIndex++)
+            {
+                workers[workerIndex].Join();
+            }
+
+            if (!failures.IsEmpty)
+            {
+                throw new AggregateException(failures);
+            }
+        }
     }
 
     private readonly record struct FrameSelection(
