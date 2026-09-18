@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Text;
 using Arisen.Native.RHI;
 using ArisenEngine.Resources.Serialization;
+using ArisenEngine.Threading;
 using ArisenEngine.Vegetation;
 using ArisenEngine.Vegetation.Assets;
 using ArisenEngine.Vegetation.GenericRenderPipeline;
@@ -19,6 +20,7 @@ public sealed class VegetationDenseValleyMeasurementTests
     private const int ShadowCascadeCount = 4;
     private const int FrameCount = 24;
     private const int WarmupPassCount = 3;
+    private const int SetupWarmupPassCount = 3;
     private const int PlannerWarmupPassCount = 12;
     private const float InstanceRadius = 0.35f;
     private const double CellSpacing = 48.0;
@@ -97,6 +99,124 @@ public sealed class VegetationDenseValleyMeasurementTests
         {
             _ = TimePath(planner, inputs, VegetationCullingSettings.Default);
         }
+    }
+
+    [Fact]
+    [Trait("Category", "AllocationSensitive")]
+    public void TaskGraphSetupShardingReportIsDeterministicAndAllocationFreeInline()
+    {
+        (int Clusters, int InstancesPerCluster)[] scales =
+        [
+            (2048, 256),
+            (10240, 16)
+        ];
+        var report = new StringBuilder();
+        report.AppendLine(
+            "clusters instances extracted gathered accepted workItems gatherSerialUs " +
+            "gatherShardedUs planUs prepareSerialUs prepareShardedUs setupSerialUs " +
+            "setupShardedUs serialAlloc shardedAlloc");
+        WarmPlanner();
+        using var taskGraph = new TaskGraph();
+        foreach ((int clusterCount, int instancesPerCluster) in scales)
+        {
+            SetupShardingMeasurement measurement = MeasureSetupSharding(
+                clusterCount,
+                instancesPerCluster,
+                taskGraph);
+            Assert.True(
+                measurement.Deterministic,
+                "serial and sharded setup must produce identical ordered output");
+            Assert.True(
+                measurement.ObservedPartitioning,
+                "the sharded path must dispatch more than one setup work item");
+            Assert.Equal(0, measurement.SerialAllocatedBytes);
+            report.AppendLine(string.Create(
+                CultureInfo.InvariantCulture,
+                $"{measurement.ClusterCount} {measurement.InstanceCount} " +
+                $"{measurement.ExtractedCount} {measurement.PeakGatheredCount} " +
+                $"{measurement.PeakAcceptedCount} {measurement.WorkItemCount} " +
+                $"{measurement.GatherSerialMicroseconds:F1} " +
+                $"{measurement.GatherShardedMicroseconds:F1} " +
+                $"{measurement.PlanMicroseconds:F1} " +
+                $"{measurement.PrepareSerialMicroseconds:F1} " +
+                $"{measurement.PrepareShardedMicroseconds:F1} " +
+                $"{measurement.SetupSerialMicroseconds:F1} " +
+                $"{measurement.SetupShardedMicroseconds:F1} " +
+                $"{measurement.SerialAllocatedBytes} " +
+                $"{measurement.ShardedAllocatedBytes}"));
+        }
+
+        m_Output.WriteLine(report.ToString());
+    }
+
+    private static SetupShardingMeasurement MeasureSetupSharding(
+        int clusterCount,
+        int instancesPerCluster,
+        ITaskGraph taskGraph)
+    {
+        VegetationClusterCullingInput[] built = BuildValley(clusterCount, instancesPerCluster);
+        var path = new SetupShardPath(built);
+        VegetationCullingSettings settings = VegetationCullingSettings.Default;
+        var serialPlanner = new VegetationCullingPlanner();
+        var shardedPlanner = new VegetationCullingPlanner();
+        var inlineDispatcher = new VegetationSetupWorkDispatcher(taskSystem: null);
+        var taskDispatcher = new VegetationSetupWorkDispatcher(taskGraph);
+        for (int pass = 0; pass < SetupWarmupPassCount; pass++)
+        {
+            _ = path.Run(inlineDispatcher, sharded: false, serialPlanner, settings);
+            _ = path.Run(taskDispatcher, sharded: true, shardedPlanner, settings);
+        }
+
+        SetupShardPass serial = path.Run(
+            inlineDispatcher,
+            sharded: false,
+            serialPlanner,
+            settings);
+        SetupShardPass serialConfirmation = path.Run(
+            inlineDispatcher,
+            sharded: false,
+            serialPlanner,
+            settings);
+        SetupShardPass sharded = path.Run(
+            taskDispatcher,
+            sharded: true,
+            shardedPlanner,
+            settings);
+        SetupShardPass shardedConfirmation = path.Run(
+            taskDispatcher,
+            sharded: true,
+            shardedPlanner,
+            settings);
+        SetupShardPass reportedSerial =
+            serial.GatherMicroseconds + serial.PrepareMicroseconds <=
+            serialConfirmation.GatherMicroseconds + serialConfirmation.PrepareMicroseconds
+                ? serial
+                : serialConfirmation;
+        SetupShardPass reportedSharded =
+            sharded.GatherMicroseconds + sharded.PrepareMicroseconds <=
+            shardedConfirmation.GatherMicroseconds + shardedConfirmation.PrepareMicroseconds
+                ? sharded
+                : shardedConfirmation;
+        return new SetupShardingMeasurement(
+            clusterCount,
+            clusterCount * instancesPerCluster,
+            path.ExtractedCount,
+            reportedSerial.PeakInputCount,
+            reportedSerial.PeakAcceptedCount,
+            reportedSerial.WorkItemCount,
+            reportedSerial.GatherMicroseconds,
+            reportedSharded.GatherMicroseconds,
+            Math.Min(reportedSerial.PlanMicroseconds, reportedSharded.PlanMicroseconds),
+            reportedSerial.PrepareMicroseconds,
+            reportedSharded.PrepareMicroseconds,
+            reportedSerial.GatherMicroseconds + reportedSerial.PrepareMicroseconds,
+            reportedSharded.GatherMicroseconds + reportedSharded.PrepareMicroseconds,
+            serial.AllocatedBytes + serialConfirmation.AllocatedBytes,
+            reportedSharded.AllocatedBytes,
+            serial.Fingerprint == serialConfirmation.Fingerprint &&
+            serial.Fingerprint == sharded.Fingerprint &&
+            sharded.Fingerprint == shardedConfirmation.Fingerprint,
+            reportedSerial.WorkItemCount > 1 && reportedSharded.WorkItemCount > 1);
     }
 
     private static DenseValleyMeasurement Measure(int clusterCount, int instancesPerCluster)
@@ -572,6 +692,251 @@ public sealed class VegetationDenseValleyMeasurementTests
         Guid ClusterGuid,
         int LodLevel,
         bool Accepted);
+
+    private sealed class SetupShardPath
+    {
+        private readonly VegetationClusterComponent[] m_Extracted;
+        private readonly VegetationResidentClusterData[] m_Residents;
+        private readonly DictionaryPreparedClusterSource m_Prepared = new();
+        private readonly VegetationClusterCullingInput[] m_Inputs;
+        private readonly VegetationPreparedClusterFrame[] m_Frames;
+        private readonly VegetationSetupShardBuffer<VegetationClusterCullingInput> m_InputRegions = new();
+        private readonly VegetationSetupShardBuffer<VegetationPreparedClusterFrame> m_FrameRegions = new();
+        private readonly Action<int> m_GatherWorkItem;
+        private readonly Action<int> m_PrepareWorkItem;
+        private VegetationCullingSelection[] m_Selections;
+        private int m_SelectionCount;
+        private int m_PrepareItemCount;
+
+        public SetupShardPath(VegetationClusterCullingInput[] inputs)
+        {
+            m_Extracted = new VegetationClusterComponent[inputs.Length];
+            m_Residents = new VegetationResidentClusterData[inputs.Length];
+            m_Inputs = new VegetationClusterCullingInput[inputs.Length];
+            m_Frames = new VegetationPreparedClusterFrame[inputs.Length];
+            m_Selections = new VegetationCullingSelection[inputs.Length];
+            for (int index = 0; index < inputs.Length; index++)
+            {
+                m_Extracted[index] = inputs[index].Component;
+                m_Residents[index] = inputs[index].Resident;
+                m_Prepared.Add(inputs[index].Prepared);
+            }
+
+            Array.Sort(m_Residents, static (left, right) => left.Guid.CompareTo(right.Guid));
+            m_GatherWorkItem = RunGatherWorkItem;
+            m_PrepareWorkItem = RunPrepareWorkItem;
+        }
+
+        public int ExtractedCount => m_Extracted.Length;
+
+        public SetupShardPass Run(
+            VegetationSetupWorkDispatcher dispatcher,
+            bool sharded,
+            VegetationCullingPlanner planner,
+            VegetationCullingSettings settings)
+        {
+            int workItemCount =
+                VegetationSetupWorkPartition.GetWorkItemCount(m_Extracted.Length);
+            m_InputRegions.EnsureRegions(
+                workItemCount,
+                VegetationSetupWorkPartition.MaximumInputsPerWorkItem);
+            double gatherTotal = 0.0;
+            double planTotal = 0.0;
+            double prepareTotal = 0.0;
+            int peakInputCount = 0;
+            int peakFrameCount = 0;
+            int peakAcceptedCount = 0;
+            ulong fingerprint = 14695981039346656037UL;
+            long beforeBytes = GC.GetAllocatedBytesForCurrentThread();
+            for (int frame = 0; frame < FrameCount; frame++)
+            {
+                VegetationCullingView view = CreatePathView(frame);
+                long gatherStart = Stopwatch.GetTimestamp();
+                int inputCount = sharded ? GatherSharded(dispatcher) : GatherSerial();
+                gatherTotal += Stopwatch.GetElapsedTime(gatherStart).TotalMicroseconds;
+                peakInputCount = Math.Max(peakInputCount, inputCount);
+
+                long planStart = Stopwatch.GetTimestamp();
+                ReadOnlySpan<VegetationCullingSelection> selections = planner.Plan(
+                    new ReadOnlySpan<VegetationClusterCullingInput>(m_Inputs, 0, inputCount),
+                    view,
+                    settings);
+                planTotal += Stopwatch.GetElapsedTime(planStart).TotalMicroseconds;
+                if (selections.Length > m_Selections.Length)
+                {
+                    Array.Resize(ref m_Selections, selections.Length);
+                }
+
+                selections.CopyTo(m_Selections);
+                m_SelectionCount = selections.Length;
+                int acceptedCount = 0;
+                for (int index = 0; index < selections.Length; index++)
+                {
+                    if (selections[index].Accepted)
+                    {
+                        acceptedCount++;
+                    }
+                }
+
+                peakAcceptedCount = Math.Max(peakAcceptedCount, acceptedCount);
+                m_PrepareItemCount = inputCount;
+                m_FrameRegions.EnsureRegions(
+                    VegetationSetupWorkPartition.GetWorkItemCount(inputCount),
+                    VegetationSetupWorkPartition.MaximumInputsPerWorkItem);
+                long prepareStart = Stopwatch.GetTimestamp();
+                int frameCount = sharded ? PrepareSharded(dispatcher) : PrepareSerial();
+                prepareTotal += Stopwatch.GetElapsedTime(prepareStart).TotalMicroseconds;
+                peakFrameCount = Math.Max(peakFrameCount, frameCount);
+                fingerprint = FoldFingerprint(fingerprint, inputCount, frameCount);
+            }
+
+            long allocatedBytes = GC.GetAllocatedBytesForCurrentThread() - beforeBytes;
+            return new SetupShardPass(
+                gatherTotal / FrameCount,
+                planTotal / FrameCount,
+                prepareTotal / FrameCount,
+                peakInputCount,
+                peakFrameCount,
+                peakAcceptedCount,
+                workItemCount,
+                allocatedBytes,
+                fingerprint);
+        }
+
+        private int GatherSerial() => VegetationPreparedSetup.GatherCullingInputs(
+            m_Extracted,
+            0,
+            m_Extracted.Length,
+            m_Residents,
+            m_Prepared,
+            m_Inputs);
+
+        private int GatherSharded(VegetationSetupWorkDispatcher dispatcher)
+        {
+            dispatcher.Dispatch(m_Extracted.Length, m_GatherWorkItem);
+            return m_InputRegions.MergeInto(m_Inputs);
+        }
+
+        private int PrepareSerial() => VegetationPreparedSetup.BuildPreparedFrames(
+            new ReadOnlySpan<VegetationClusterCullingInput>(m_Inputs, 0, m_PrepareItemCount),
+            0,
+            m_PrepareItemCount,
+            new ReadOnlySpan<VegetationCullingSelection>(m_Selections, 0, m_SelectionCount),
+            m_Frames);
+
+        private int PrepareSharded(VegetationSetupWorkDispatcher dispatcher)
+        {
+            dispatcher.Dispatch(m_PrepareItemCount, m_PrepareWorkItem);
+            return m_FrameRegions.MergeInto(m_Frames);
+        }
+
+        private void RunGatherWorkItem(int workItemIndex)
+        {
+            if (!VegetationSetupWorkPartition.TryGetRange(
+                    m_Extracted.Length,
+                    workItemIndex,
+                    out int start,
+                    out int count))
+            {
+                throw new InvalidOperationException(
+                    $"Gather work item '{workItemIndex}' is outside the extracted range.");
+            }
+
+            int written = VegetationPreparedSetup.GatherCullingInputs(
+                m_Extracted,
+                start,
+                count,
+                m_Residents,
+                m_Prepared,
+                m_InputRegions.GetRegion(workItemIndex));
+            m_InputRegions.SetCount(workItemIndex, written);
+        }
+
+        private void RunPrepareWorkItem(int workItemIndex)
+        {
+            if (!VegetationSetupWorkPartition.TryGetRange(
+                    m_PrepareItemCount,
+                    workItemIndex,
+                    out int start,
+                    out int count))
+            {
+                throw new InvalidOperationException(
+                    $"Prepare work item '{workItemIndex}' is outside the gathered range.");
+            }
+
+            int written = VegetationPreparedSetup.BuildPreparedFrames(
+                new ReadOnlySpan<VegetationClusterCullingInput>(m_Inputs, 0, m_PrepareItemCount),
+                start,
+                count,
+                new ReadOnlySpan<VegetationCullingSelection>(m_Selections, 0, m_SelectionCount),
+                m_FrameRegions.GetRegion(workItemIndex));
+            m_FrameRegions.SetCount(workItemIndex, written);
+        }
+
+        private ulong FoldFingerprint(ulong hash, int inputCount, int frameCount)
+        {
+            for (int index = 0; index < inputCount; index++)
+            {
+                hash = Mix(hash, m_Inputs[index].Resident.Guid);
+            }
+
+            for (int index = 0; index < frameCount; index++)
+            {
+                hash = Mix(hash, m_Frames[index].Component.ClusterGuid);
+                hash = Mix(hash, m_Frames[index].Selection.SpeciesGuid);
+            }
+
+            return hash;
+        }
+
+        private static ulong Mix(ulong hash, Guid value) =>
+            (hash ^ (uint)value.GetHashCode()) * 1099511628211UL;
+    }
+
+    private sealed class DictionaryPreparedClusterSource : IVegetationPreparedClusterSource
+    {
+        private readonly Dictionary<(Guid ClusterGuid, ulong Generation), VegetationPreparedClusterView>
+            m_Views = new();
+
+        public void Add(VegetationPreparedClusterView view) =>
+            m_Views[(view.ClusterGuid, view.Generation)] = view;
+
+        public bool TryGetCluster(
+            Guid clusterGuid,
+            ulong generation,
+            out VegetationPreparedClusterView cluster) =>
+            m_Views.TryGetValue((clusterGuid, generation), out cluster);
+    }
+
+    private readonly record struct SetupShardPass(
+        double GatherMicroseconds,
+        double PlanMicroseconds,
+        double PrepareMicroseconds,
+        int PeakInputCount,
+        int PeakFrameCount,
+        int PeakAcceptedCount,
+        int WorkItemCount,
+        long AllocatedBytes,
+        ulong Fingerprint);
+
+    private readonly record struct SetupShardingMeasurement(
+        int ClusterCount,
+        int InstanceCount,
+        int ExtractedCount,
+        int PeakGatheredCount,
+        int PeakAcceptedCount,
+        int WorkItemCount,
+        double GatherSerialMicroseconds,
+        double GatherShardedMicroseconds,
+        double PlanMicroseconds,
+        double PrepareSerialMicroseconds,
+        double PrepareShardedMicroseconds,
+        double SetupSerialMicroseconds,
+        double SetupShardedMicroseconds,
+        long SerialAllocatedBytes,
+        long ShardedAllocatedBytes,
+        bool Deterministic,
+        bool ObservedPartitioning);
 
     private readonly record struct TimedPath(
         int PeakCandidates,

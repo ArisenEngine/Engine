@@ -91,6 +91,7 @@ namespace Com.Arisen.Rendering.Tests
             var services = new ServiceRegistry();
             services.RegisterService<IAssetDatabase>(database);
             services.RegisterService<IBackgroundTaskScheduler>(scheduler);
+            services.RegisterService<ITaskGraph>(scheduler);
             services.RegisterService<IRuntimeAssetResidencyService>(residency);
             services.RegisterService<ArisenEngine.Rendering.IGenericRenderPipelineFeatureRegistry>(
                 featureRegistry);
@@ -394,7 +395,7 @@ namespace Com.Arisen.Rendering.Tests
 
         private static ServiceRegistry CreateServices(
             IAssetDatabase database,
-            IBackgroundTaskScheduler scheduler,
+            TaskGraph taskGraph,
             IRuntimeAssetResidencyService residency,
             VegetationRuntimeDataStore runtimeData,
             RecordingFeatureRegistry featureRegistry,
@@ -405,7 +406,8 @@ namespace Com.Arisen.Rendering.Tests
             var previews = new VegetationAuthoringPreviewService();
             var services = new ServiceRegistry();
             services.RegisterService<IAssetDatabase>(database);
-            services.RegisterService<IBackgroundTaskScheduler>(scheduler);
+            services.RegisterService<IBackgroundTaskScheduler>(taskGraph);
+            services.RegisterService<ITaskGraph>(taskGraph);
             services.RegisterService<IRuntimeAssetResidencyService>(residency);
             services.RegisterService<ArisenEngine.Rendering.IGenericRenderPipelineFeatureRegistry>(
                 featureRegistry);
