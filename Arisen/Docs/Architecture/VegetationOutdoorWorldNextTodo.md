@@ -67,9 +67,11 @@ Measured vegetation gaps:
 - Editor has no biome painting, density masks, exclusion volumes, scatter preview, instance inspection, or regeneration transaction;
 - Development, Editor, Production, and relocated cooked-only Production now validate the canonical
   cluster identity, direct-instanced counts, visible opaque/depth coverage, shadow-only color
-  contribution, closure, and shutdown; focused planner tests cover LOD, density, budgets, and
-  origin-rebase identity, while wind, multi-cell camera-path stress, and GPU visual LOD coverage
-  remain later work.
+  contribution, closure, and shutdown; focused planner tests cover LOD, density, budgets,
+  origin-rebase identity, multi-kilometer distance culling with exact double-precision ranking,
+  negative-coordinate symmetry, budget fragmentation, and deterministic camera paths across
+  rebased origins, while wind, multi-cell camera-path stress, and GPU visual LOD coverage remain
+  later work.
 
 ---
 
@@ -455,7 +457,11 @@ directories.
 - [x] Preserve identity across origin rebasing.
   - [x] Rebase changes GPU representation, not accepted instances or stable selection identity; LOD decisions remain held inside the defined hysteresis band.
 - [ ] Split large batch ranges into bounded TaskGraph setup/recording work while preserving deterministic submission order.
-- [ ] Add multi-kilometer, negative-coordinate, and camera-path stress tests; focused rebase, overflow, and zero-steady-state-allocation tests are present.
+- [x] Add multi-kilometer, negative-coordinate, and camera-path stress tests; focused rebase, overflow, and zero-steady-state-allocation tests are present.
+  - [x] Cover multi-kilometer distance culling, sub-meter nearest-first ranking at 10,000 km, and
+    rebase-invariant selection at that magnitude.
+  - [x] Cover negative-coordinate symmetry, instance-budget fragmentation, dense 256-cluster
+    overflow, deterministic 65-frame rebased camera-path replay, and path-wide zero allocation.
 
 ### Acceptance Criteria
 
@@ -480,9 +486,11 @@ directories.
   Reusable arrays keep warmed calls allocation-free; planner metrics are plotted alongside prepared
   and submitted draw metrics, and release/reset clears selection history.
 - Focused tests cover distance LOD, frustum rejection, nearest-first overflow, hysteresis, origin
-  rebasing identity, invalid-input fail-closed behavior, and zero steady-state allocation. TaskGraph
-  partitioning, deterministic dither/fade, and multi-kilometer/negative-coordinate/camera-path
-  stress validation remain the next Milestone 6 work.
+  rebasing identity, invalid-input fail-closed behavior, zero steady-state allocation,
+  multi-kilometer distance culling, sub-meter ranking at 10,000 km, negative-coordinate symmetry,
+  instance-budget fragmentation, dense 256-cluster overflow, and a 65-frame rebased camera path
+  that replays identically with zero allocation after warmup. TaskGraph range partitioning and
+  deterministic dither/fade remain the next Milestone 6 work.
 - The 2026-09-18 Debug runtime gate passed end to end after this slice. The schema-8 report at
   `.arisen/Logs/validate-runtime-Debug-latest.json` records `succeeded=true` with four GPU smoke
   runs, zero skips or CPU fallbacks, one Editor viewport smoke, relocated cooked-only Production,
