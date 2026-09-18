@@ -459,6 +459,10 @@ directories.
 - [x] Preserve identity across origin rebasing.
   - [x] Rebase changes GPU representation, not accepted instances or stable selection identity; LOD decisions remain held inside the defined hysteresis band.
 - [ ] Split large batch ranges into bounded TaskGraph setup/recording work while preserving deterministic submission order.
+  - [x] Partition recording into bounded work items: the opaque pass records 256-draw ranges and the
+    shadow pass now partitions each cascade the same way, so the dense-valley peak of 6,648 cascade
+    draws becomes 26 independent recording tasks that still submit in cascade/range order.
+  - [ ] Partition per-cluster culling and prepared-draw setup across TaskGraph workers.
 - [x] Add multi-kilometer, negative-coordinate, and camera-path stress tests; focused rebase, overflow, and zero-steady-state-allocation tests are present.
   - [x] Cover multi-kilometer distance culling, sub-meter nearest-first ranking at 10,000 km, and
     rebase-invariant selection at that magnitude.
@@ -505,6 +509,13 @@ directories.
   cluster count (about 0.15 us per cluster along this path), and draw pressure is dominated by the
   four cascade-batch sets; TaskGraph range partitioning is the remaining Milestone 6 work and these
   counts are the baseline for the Milestone 9 indirect-contract decision.
+- Vegetation shadow recording is now partitioned by cascade through
+  `VegetationShadowDrawWorkPartition`: every cascade contributes bounded 256-draw work items on the
+  shared TaskGraph, work items are dispatched in cascade/range order so submission stays
+  deterministic, and per-work-item batch/instance counters accumulate through interlocked adds. The
+  canonical 13-instance cluster still records `OpaqueBatches=1`, `RecordedShadowBatches=4`, and
+  `ShadowBatches=1,1,1,1` in the runtime gate, and the 2026-09-18 Debug runtime gate passed with
+  zero skips and two vegetation visual comparisons after the change.
 - The 2026-09-18 Debug runtime gate passed end to end after this slice. The schema-8 report at
   `.arisen/Logs/validate-runtime-Debug-latest.json` records `succeeded=true` with four GPU smoke
   runs, zero skips or CPU fallbacks, one Editor viewport smoke, relocated cooked-only Production,
