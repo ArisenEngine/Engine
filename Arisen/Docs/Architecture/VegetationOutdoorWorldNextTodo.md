@@ -483,6 +483,10 @@ directories.
   rebasing identity, invalid-input fail-closed behavior, and zero steady-state allocation. TaskGraph
   partitioning, deterministic dither/fade, and multi-kilometer/negative-coordinate/camera-path
   stress validation remain the next Milestone 6 work.
+- The 2026-09-18 Debug runtime gate passed end to end after this slice. The schema-8 report at
+  `.arisen/Logs/validate-runtime-Debug-latest.json` records `succeeded=true` with four GPU smoke
+  runs, zero skips or CPU fallbacks, one Editor viewport smoke, relocated cooked-only Production,
+  three world-streaming runs, three terrain-streaming runs, and two vegetation visual comparisons.
 
 ---
 
