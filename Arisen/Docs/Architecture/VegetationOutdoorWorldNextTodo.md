@@ -461,7 +461,7 @@ directories.
     resident cluster count.
 - [x] Preserve identity across origin rebasing.
   - [x] Rebase changes GPU representation, not accepted instances or stable selection identity; LOD decisions remain held inside the defined hysteresis band.
-- [ ] Split large batch ranges into bounded TaskGraph setup/recording work while preserving deterministic submission order.
+- [x] Split large batch ranges into bounded TaskGraph setup/recording work while preserving deterministic submission order.
   - [x] Partition recording into bounded work items: the opaque pass records 256-draw ranges and the
     shadow pass now partitions each cascade the same way, so the dense-valley peak of 6,648 cascade
     draws becomes 26 independent recording tasks that still submit in cascade/range order.
