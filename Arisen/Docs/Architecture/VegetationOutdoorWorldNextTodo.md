@@ -47,11 +47,10 @@ The completed foundation gate on 2026-08-03 is:
 Measured vegetation gaps:
 
 - the Milestone 1 vegetation package spine, Milestone 2 source-to-cooked formats, and first
-  Milestone 3 terrain-aware one-page scatter slice now exist, but valid-empty planning,
-  multi-page replacement, broader foliage, and impostor data have not been implemented;
+  Milestone 3 terrain-aware scatter slice now exist, while broader foliage and impostor
+  data have not been implemented;
 - versioned schemas/codecs plus the scatter planner now derive package-owned cluster/page GUIDs,
-  compact canonical instances, exact dependency pins, and one frozen terrain-backed fixture, but
-  cluster-closure replacement cannot yet atomically prune stale generated page rows/files;
+  compact canonical instances, exact dependency pins, and one frozen terrain-backed fixture;
 - the package-owned scene codec, cell activation contract, generation-qualified CPU publication,
   bounded query service, and Generic RP prepared-resource provider bind vegetation clusters to
   world-cell residency; exact-key shared mesh/material leases, immutable cluster instance buffers,
@@ -59,16 +58,18 @@ Measured vegetation gaps:
 - ordinary static meshes are entity-oriented and are not an acceptable representation for tens of thousands of plants;
 - Generic RP now extracts deterministic cluster components, prepares 48-byte origin-relative GPU
   instances, and contributes one opaque plus four cascade shadow batches for the canonical cluster;
-  hierarchical culling/LOD, wind shading, alpha cutout, density scaling, and broad foliage material
-  semantics remain absent;
+  cooking-side acceleration and runtime setup-owned hierarchical culling/LOD now exist, while wind
+  shading, alpha cutout, deterministic dither/fade, and broad foliage material semantics remain
+  absent;
 - the existing direct indexed API now has a canonical baseline of one 13-instance opaque batch and
   four 13-instance cascade batches, but representative dense-valley command/memory measurements and
   a shared managed indirect-draw contract remain absent;
 - Editor has no biome painting, density masks, exclusion volumes, scatter preview, instance inspection, or regeneration transaction;
 - Development, Editor, Production, and relocated cooked-only Production now validate the canonical
   cluster identity, direct-instanced counts, visible opaque/depth coverage, shadow-only color
-  contribution, closure, and shutdown; LOD, density, wind, origin-rebase, and multi-cell vegetation
-  stress coverage remain later work.
+  contribution, closure, and shutdown; focused planner tests cover LOD, density, budgets, and
+  origin-rebase identity, while wind, multi-cell camera-path stress, and GPU visual LOD coverage
+  remain later work.
 
 ---
 
@@ -162,8 +163,8 @@ directories.
   and Production workspaces generated and built successfully, and the complete
   Debug runtime validation artifact is
   `.arisen/Logs/validate-runtime-Debug-latest.json`.
-- Milestone 3 remains active; its first deterministic one-page scatter slice is complete, while
-  explicit empty output, multi-page replacement, and atomic stale-page pruning remain open.
+- Milestone 3 remains active; deterministic empty output, bounded multi-page planning, and
+  transactional page replacement are complete, while broader foliage and impostor data remain open.
 
 ---
 
@@ -185,7 +186,7 @@ directories.
   - [x] Reject unsupported required sections, malformed counts/offsets, invalid identity/ranges/order, duplicate entry/rule IDs, and missing or mismatched dependency ownership.
   - [x] Prove identical validated descriptors produce byte-identical species/biome payloads.
 - [x] Define versioned cooked cluster and instance-page containers.
-  - [x] Store compact local position, packed orientation, uniform scale, conservative radius/bounds, stable instance key, and canonical species index. LOD acceleration remains deferred to Milestone 6.
+  - [x] Store compact local position, packed orientation, uniform scale, conservative radius/bounds, stable instance key, and canonical species index. Runtime culling/LOD selection remains deferred to Milestone 6.
 - [x] Add strict cluster/page readers, deterministic writers, and corruption tests.
   - [x] Reject unsupported required sections, malformed counts/offsets, non-finite transforms, bad quaternions/scales, duplicate IDs, invalid bounds, and missing dependencies.
   - [x] Prove unchanged inputs preserve cluster/page timestamps and artifact generations.
@@ -211,9 +212,9 @@ directories.
 - `46/46` focused vegetation tests pass, including rehashed corruption, exact-pin
   tampering, unchanged artifact reuse, immutable page identity, and deployment
   closure from initially uncooked authored dependencies.
-- Terrain sampling, one-page scatter generation, generated GUID derivation, and canonical
-  cell ownership are now implemented by the first Milestone 3 slice. Explicit empty output,
-  multi-page planning, and transactional page-set replacement remain open.
+- Terrain sampling, scatter generation, generated GUID derivation, canonical cell ownership,
+  explicit empty output, bounded multi-page planning, and transactional page-set replacement
+  are now implemented by the first Milestone 3 slices.
 
 ---
 
@@ -232,15 +233,16 @@ directories.
 - [x] Apply density, spacing, exclusion, and overlap rules deterministically.
   - [x] Bound candidate and accepted counts per source tile/cell.
   - [x] Report overflow or invalid rules instead of silently truncating near content.
-- [ ] Partition accepted instances into stable clusters/pages owned by world cells.
+- [x] Partition accepted instances into stable clusters/pages owned by world cells.
   - [x] Derive generated cluster/page GUIDs from biome, terrain, species, cell, and canonical content identity.
-  - [ ] Return an explicit no-output plan for valid empty cells and partition larger accepted sets into bounded pages.
-  - [ ] Reuse unchanged pages and transactionally remove stale pages/catalog rows.
-    - Format v1 already reuses byte-identical artifacts and rejects changed bytes
-      under an existing page GUID. The one-page planner now derives replacement
-      GUIDs from canonical content; atomically switching the cluster/catalog
-      closure, removing stale rows/files, and rolling back a failed replacement
-      remain part of this unchecked item.
+  - [x] Return an explicit no-output plan for valid empty cells.
+  - [x] Partition larger accepted sets into bounded pages using the authored `ClusterSize` as the
+    per-page target while enforcing cooked cluster page/count limits.
+  - [x] Reuse unchanged pages and transactionally remove stale pages/catalog rows.
+    - Format v1 reuses byte-identical artifacts and rejects changed bytes under an
+      existing page GUID. The recipe generator stages the complete generated source
+      set, preserves unchanged page identities, removes stale generated files and
+      exact cooked rows, and restores the prior source/cooked closure on failure.
 - [x] Add determinism, border, and parallel-bake tests for the one-page slice.
 
 ### Acceptance Criteria
@@ -273,9 +275,14 @@ directories.
   four GPU smoke runs with zero skips/fallbacks, three world-streaming runs,
   three terrain-streaming runs, the real Editor viewport smoke, relocated
   cooked-only Production, and no reported failure.
-- This record completes Immediate Sprint item 3 only. Valid empty/no-output
-  planning, multi-page partitioning, and atomic stale-page replacement remain
-  unchecked Milestone 3 work.
+- This record completes valid-empty planning, bounded multi-page partitioning, and
+  transactional page replacement within Milestone 3. The baker returns an explicit
+  no-output plan with deterministic empty placement identity and reconciled metrics,
+  and partitions larger accepted sets by stable-key order into pages bounded by the
+  authored `ClusterSize`. The recipe generator publishes each page with its own
+  content hash, removes stale generated pages/catalog rows by exact identity, and
+  restores the previous generated/cooked closure when source refresh or manifest
+  publication fails.
 
 ---
 
@@ -439,22 +446,43 @@ directories.
 
 ### TODO
 
-- [ ] Build conservative cluster/page acceleration during cooking.
-  - [ ] World bounds, spatial hierarchy, per-species ranges, and LOD error/radius data.
-- [ ] Implement reusable setup-owned culling and LOD preparation.
-  - [ ] Double-world camera input, origin-relative float bounds, frustum and distance/error culling, quality density, and hard batch/instance budgets.
-  - [ ] LOD hysteresis and deterministic dither/fade bands.
-  - [ ] Stable nearest-first overflow behavior with explicit diagnostics.
-- [ ] Preserve identity across origin rebasing.
-  - [ ] Rebase changes GPU representation, not accepted instances, world bounds, selected species, or LOD decisions outside the defined hysteresis band.
+- [x] Build conservative cluster/page acceleration during cooking.
+  - [x] World bounds, spatial hierarchy, per-species ranges, and LOD error/radius data.
+- [x] Implement reusable setup-owned culling and LOD preparation.
+  - [x] Double-world camera input, origin-relative float bounds, frustum and distance/error culling, quality density, and hard batch/instance budgets.
+  - [x] LOD hysteresis; deterministic dither/fade bands remain deferred to the material/visual slice.
+  - [x] Stable nearest-first overflow behavior with explicit diagnostics.
+- [x] Preserve identity across origin rebasing.
+  - [x] Rebase changes GPU representation, not accepted instances or stable selection identity; LOD decisions remain held inside the defined hysteresis band.
 - [ ] Split large batch ranges into bounded TaskGraph setup/recording work while preserving deterministic submission order.
-- [ ] Add multi-kilometer, negative-coordinate, rebase, camera-path, overflow, and zero-steady-state-allocation tests.
+- [ ] Add multi-kilometer, negative-coordinate, and camera-path stress tests; focused rebase, overflow, and zero-steady-state-allocation tests are present.
 
 ### Acceptance Criteria
 
 - Camera movement and rebasing do not reshuffle stable instances or visibly pop unchanged LODs.
 - Culling/LOD hot paths reuse contiguous storage and allocate no managed objects after warmup.
 - Overflow is measurable and deterministic.
+
+### Milestone 6 Culling/LOD Slice Completion Record
+
+- Instance pages now publish an optional fixed-width acceleration section with
+  canonical per-species instance index ranges, exact species bounds, counts, and
+  maximum conservative radii. Readers validate those records against decoded
+  instances and reconstruct them for legacy v1 pages that omit the extension.
+- Cluster roots now publish paired optional sections containing a deterministic
+  median-split page hierarchy and per-species page coverage, bounds, radius, and
+  farthest LOD distance/screen-error thresholds. The hierarchy is conservative,
+  covers every page exactly once, and rejects unreachable or malformed nodes.
+- Generic RP setup now consumes that acceleration through `VegetationCullingPlanner`. The planner
+  validates generation-qualified ownership, traverses hierarchy/page ranges, rejects invalid or
+  off-view bounds, computes distance and projected error, applies authored LOD hysteresis,
+  deterministic density, and nearest-first batch/instance budgets, and retains stable output order.
+  Reusable arrays keep warmed calls allocation-free; planner metrics are plotted alongside prepared
+  and submitted draw metrics, and release/reset clears selection history.
+- Focused tests cover distance LOD, frustum rejection, nearest-first overflow, hysteresis, origin
+  rebasing identity, invalid-input fail-closed behavior, and zero steady-state allocation. TaskGraph
+  partitioning, deterministic dither/fade, and multi-kilometer/negative-coordinate/camera-path
+  stress validation remain the next Milestone 6 work.
 
 ---
 

@@ -786,10 +786,10 @@ public sealed class ShowcaseSceneAssetTests
             Assert.Equal(SHA256.HashSizeInBytes, result.PlacementContentHash.Length);
             string pageHash = Convert.ToHexString(page.ContentHash);
             string clusterHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(artifact.Path)));
-            Assert.Equal("1781C82B99977620DDE1C23885E18277", pageHash[..32]);
-            Assert.Equal("F375E2618442D7A5017F80AB14257CAF", pageHash[32..]);
-            Assert.Equal("E22967B6FEA69B00AC88412B719CD98B", clusterHash[..32]);
-            Assert.Equal("B8C79CC874DAEF6B571397013E9345BE", clusterHash[32..]);
+            Assert.Equal("D52F1C3B285862FDA341532489035218", pageHash[..32]);
+            Assert.Equal("E12FF4CA68CCA0766BD99FD82D3EF27F", pageHash[32..]);
+            Assert.Equal("97E2A7BD7A1B81E4E5BC33D8AA39629E", clusterHash[..32]);
+            Assert.Equal("E98308BA713C5D84A028E9F3333AF1D1", clusterHash[32..]);
 
             VegetationScatterBakeResult reordered = VegetationScatterBaker.Build(
                 new VegetationScatterBakeDescriptor(

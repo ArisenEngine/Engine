@@ -70,6 +70,17 @@ public sealed class VegetationCookedInstancePageTests
         Assert.Equal([0x10UL, 0x20UL, 0x30UL], loaded.Instances.Select(instance => instance.StableKey));
         Assert.Equal([0U, 1U, 1U], loaded.Instances.Select(instance => instance.SpeciesIndex));
         Assert.Equal(CalculateBounds(loaded), loaded.Bounds);
+        Assert.NotNull(loaded.Acceleration);
+        Assert.Equal(loaded.Bounds, loaded.Acceleration!.Bounds);
+        Assert.Equal(
+            [
+                (0U, 0, 0, 1),
+                (1U, 1, 2, 2)
+            ],
+            loaded.Acceleration.SpeciesRanges.Select(range =>
+                (range.SpeciesIndex, range.FirstInstanceIndex, range.LastInstanceIndex, range.InstanceCount)));
+        Assert.Equal(1.0f, loaded.Acceleration.SpeciesRanges[0].MaximumConservativeRadius);
+        Assert.Equal(2.0f, loaded.Acceleration.SpeciesRanges[1].MaximumConservativeRadius);
 
         VegetationCookedAssetDependency[] dependencies =
             VegetationInstancePageAssetCooker.BuildDependencies(loaded);
@@ -82,6 +93,68 @@ public sealed class VegetationCookedInstancePageTests
             Assert.Equal(VegetationSpeciesAssetCooker.RuntimeVariant, dependency.Variant);
             Assert.True(dependency.Required);
         });
+    }
+
+    [Fact]
+    public void InstancePageV1_ReplacesPublishedBytesThatDifferOnlyByDerivedAcceleration()
+    {
+        using var fixture = new PageFixture();
+        CookedVegetationInstancePage page = VegetationInstancePageAssetCooker.BuildForCook(
+            fixture.Database,
+            CreateDescriptor());
+        byte[] accelerated = VegetationInstancePageAssetCooker.WritePayload(page);
+        byte[] legacy = StripAccelerationSection(accelerated);
+
+        fixture.Database.PublishCookedArtifactSet(
+            [
+                new CookedArtifactSetEntry(
+                    PageGuid,
+                    VegetationAssetTypes.InstancePage,
+                    VegetationInstancePageAssetCooker.RuntimeVariant,
+                    VegetationInstancePageAssetCooker.CookedExtension,
+                    legacy)
+            ],
+            []);
+
+        VegetationInstancePageAssetCooker.ValidatePublicationCompatibility(
+            fixture.Database,
+            page,
+            accelerated);
+        VegetationInstancePageAssetCooker.Cook(fixture.Database, page);
+
+        Assert.True(fixture.Database.TryGetCookedArtifact(
+            PageGuid,
+            VegetationInstancePageAssetCooker.RuntimeVariant,
+            out CookedAssetRecord published));
+        Assert.Equal(accelerated, File.ReadAllBytes(published.Path));
+    }
+
+    [Fact]
+    public void InstancePageV1_RejectsPublishedBytesWithDifferentCanonicalContent()
+    {
+        using var fixture = new PageFixture();
+        CookedVegetationInstancePage page = VegetationInstancePageAssetCooker.BuildForCook(
+            fixture.Database,
+            CreateDescriptor());
+        byte[] accelerated = VegetationInstancePageAssetCooker.WritePayload(page);
+        byte[] drifted = MutateFirstStableKey(accelerated);
+
+        fixture.Database.PublishCookedArtifactSet(
+            [
+                new CookedArtifactSetEntry(
+                    PageGuid,
+                    VegetationAssetTypes.InstancePage,
+                    VegetationInstancePageAssetCooker.RuntimeVariant,
+                    VegetationInstancePageAssetCooker.CookedExtension,
+                    drifted)
+            ],
+            []);
+
+        Assert.Throws<InvalidOperationException>(
+            () => VegetationInstancePageAssetCooker.ValidatePublicationCompatibility(
+                fixture.Database,
+                page,
+                accelerated));
     }
 
     [Theory]
@@ -204,6 +277,16 @@ public sealed class VegetationCookedInstancePageTests
             100_000.0f);
         Rehash(outsideBounds);
         AssertRejected(outsideBounds);
+
+        int accelerationDescriptor = FindSectionDescriptor(valid, 5);
+        int accelerationOffset = checked((int)BinaryPrimitives.ReadUInt64LittleEndian(
+            valid.AsSpan(accelerationDescriptor + 8)));
+        byte[] zeroRangeCount = valid.ToArray();
+        BinaryPrimitives.WriteUInt32LittleEndian(
+            zeroRangeCount.AsSpan(accelerationOffset + 12),
+            0);
+        Rehash(zeroRangeCount);
+        AssertRejected(zeroRangeCount);
     }
 
     internal static VegetationInstancePageCookDescriptor CreateDescriptor(
@@ -368,6 +451,60 @@ public sealed class VegetationCookedInstancePageTests
         }
 
         throw new InvalidOperationException($"Section '{sectionType}' was not found.");
+    }
+
+    private static byte[] StripAccelerationSection(byte[] payload)
+    {
+        var sections = new List<VegetationCookedSectionPayload>();
+        int sectionCount = BinaryPrimitives.ReadInt32LittleEndian(payload.AsSpan(104));
+        for (int index = 0; index < sectionCount; index++)
+        {
+            int descriptorOffset = VegetationInstancePageAssetCooker.HeaderSize +
+                (index * VegetationCookedContainer.SectionDirectoryEntrySize);
+            uint type = BinaryPrimitives.ReadUInt32LittleEndian(
+                payload.AsSpan(descriptorOffset));
+            if (type == (uint)CookedVegetationInstancePageSectionType.Acceleration)
+            {
+                continue;
+            }
+
+            int sectionOffset = checked((int)BinaryPrimitives.ReadUInt64LittleEndian(
+                payload.AsSpan(descriptorOffset + 8)));
+            int sectionSize = checked((int)BinaryPrimitives.ReadUInt64LittleEndian(
+                payload.AsSpan(descriptorOffset + 16)));
+            sections.Add(new VegetationCookedSectionPayload(
+                type,
+                (VegetationCookedSectionFlags)BinaryPrimitives.ReadUInt32LittleEndian(
+                    payload.AsSpan(descriptorOffset + 4)),
+                BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(descriptorOffset + 24)),
+                BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(descriptorOffset + 28)),
+                payload.AsSpan(sectionOffset, sectionSize).ToArray()));
+        }
+
+        byte[] legacy = VegetationCookedContainer.Build(
+            VegetationInstancePageAssetCooker.HeaderSize,
+            VegetationInstancePageAssetCooker.MaxCookedPageBytes,
+            sections,
+            out _);
+        payload.AsSpan(0, VegetationInstancePageAssetCooker.HeaderSize).CopyTo(legacy);
+        BinaryPrimitives.WriteUInt64LittleEndian(legacy.AsSpan(96), checked((ulong)legacy.Length));
+        BinaryPrimitives.WriteInt32LittleEndian(legacy.AsSpan(104), sections.Count);
+        Rehash(legacy);
+        return legacy;
+    }
+
+    private static byte[] MutateFirstStableKey(byte[] payload)
+    {
+        int descriptorOffset = FindSectionDescriptor(
+            payload,
+            (uint)CookedVegetationInstancePageSectionType.Instances);
+        int sectionOffset = checked((int)BinaryPrimitives.ReadUInt64LittleEndian(
+            payload.AsSpan(descriptorOffset + 8)));
+        byte[] mutated = (byte[])payload.Clone();
+        ulong stableKey = BinaryPrimitives.ReadUInt64LittleEndian(mutated.AsSpan(sectionOffset));
+        BinaryPrimitives.WriteUInt64LittleEndian(mutated.AsSpan(sectionOffset), stableKey + 1);
+        Rehash(mutated);
+        return mutated;
     }
 
     private static void Rehash(byte[] bytes)

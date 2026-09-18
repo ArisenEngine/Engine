@@ -224,6 +224,83 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
             SceneComponentExtensionRegistry.Shared.Unregister(codec);
             database.ReleaseAllLoadedCookedAssets();
         }
+
+        string biomePath = Path.Combine(
+            packageRoot,
+            "Assets",
+            "Vegetation",
+            "ShowcaseValley.arivegetationbiome");
+        string originalBiome = File.ReadAllText(biomePath);
+        try
+        {
+            File.WriteAllText(
+                biomePath,
+                originalBiome.Replace("ClusterSize: 64", "ClusterSize: 1", StringComparison.Ordinal));
+            VegetationScatterRecipeGenerationResult dense = Assert.Single(
+                VegetationScatterRecipeGenerator.GenerateAll(database, database));
+            Assert.Equal(13, dense.PageGuids.Count);
+            Assert.DoesNotContain(s_PageGuid, dense.PageGuids);
+            Assert.True(database.TryGetCookedArtifact(
+                s_ClusterGuid,
+                VegetationClusterAssetCooker.RuntimeVariant,
+                out CookedAssetRecord denseClusterArtifact));
+            byte[] denseClusterBytes = File.ReadAllBytes(denseClusterArtifact.Path);
+            Assert.False(database.TryGetAsset(s_PageGuid, out _));
+            Assert.False(database.TryGetCookedArtifact(
+                s_PageGuid,
+                VegetationInstancePageAssetCooker.RuntimeVariant,
+                out _));
+            foreach (Guid pageGuid in dense.PageGuids)
+            {
+                Assert.True(database.TryGetAsset(pageGuid, out _));
+                Assert.True(database.TryGetCookedArtifact(
+                    pageGuid,
+                    VegetationInstancePageAssetCooker.RuntimeVariant,
+                    out _));
+            }
+
+            Dictionary<string, byte[]> denseGeneratedSources = SnapshotGeneratedSources(
+                Path.Combine(packageRoot, generatedRelativePath));
+            File.WriteAllText(
+                biomePath,
+                originalBiome);
+            int manifestCommitCount = 0;
+            database.BeforeCookedManifestReplace = _ =>
+            {
+                if (++manifestCommitCount == 2)
+                {
+                    throw new InvalidOperationException(
+                        "Injected scatter closure publication failure.");
+                }
+            };
+            Assert.Throws<InvalidOperationException>(
+                () => VegetationScatterRecipeGenerator.GenerateAll(database, database));
+            database.BeforeCookedManifestReplace = null;
+            Assert.Equal(2, manifestCommitCount);
+
+            AssertGeneratedSourcesUnchanged(
+                Path.Combine(packageRoot, generatedRelativePath),
+                denseGeneratedSources);
+            foreach (Guid pageGuid in dense.PageGuids)
+            {
+                Assert.True(database.TryGetAsset(pageGuid, out _));
+                Assert.True(database.TryGetCookedArtifact(
+                    pageGuid,
+                    VegetationInstancePageAssetCooker.RuntimeVariant,
+                    out _));
+            }
+            Assert.True(database.TryGetCookedArtifact(
+                s_ClusterGuid,
+                VegetationClusterAssetCooker.RuntimeVariant,
+                out CookedAssetRecord restoredClusterArtifact));
+            Assert.Equal(denseClusterArtifact.Path, restoredClusterArtifact.Path);
+            Assert.Equal(denseClusterBytes, File.ReadAllBytes(restoredClusterArtifact.Path));
+        }
+        finally
+        {
+            database.BeforeCookedManifestReplace = null;
+            File.WriteAllText(biomePath, originalBiome);
+        }
     }
 
     [Fact]
@@ -306,6 +383,34 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
             result.Catalog.Artifacts,
             artifact => artifact.Guid == guid &&
                 string.Equals(artifact.AssetType, assetType, StringComparison.Ordinal));
+    }
+
+    private static Dictionary<string, byte[]> SnapshotGeneratedSources(string generatedRoot)
+    {
+        var snapshot = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+        foreach (string file in Directory.EnumerateFiles(
+                     generatedRoot,
+                     "*",
+                     SearchOption.AllDirectories))
+        {
+            snapshot[Path.GetRelativePath(generatedRoot, file)] = File.ReadAllBytes(file);
+        }
+
+        return snapshot;
+    }
+
+    private static void AssertGeneratedSourcesUnchanged(
+        string generatedRoot,
+        Dictionary<string, byte[]> snapshot)
+    {
+        Dictionary<string, byte[]> current = SnapshotGeneratedSources(generatedRoot);
+        Assert.Equal(
+            snapshot.Keys.OrderBy(static key => key, StringComparer.Ordinal).ToArray(),
+            current.Keys.OrderBy(static key => key, StringComparer.Ordinal).ToArray());
+        foreach ((string relativePath, byte[] expected) in snapshot)
+        {
+            Assert.Equal(expected, current[relativePath]);
+        }
     }
 
     private static void AssertGeneratedSourceMatchesTracked(
