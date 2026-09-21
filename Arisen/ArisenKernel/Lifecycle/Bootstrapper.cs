@@ -256,7 +256,8 @@ public static class EngineBootstrapper
                 PackageUrls = packageUrls,
                 PackageRequirements = packageRequirements,
                 Platform = RuntimePlatform.Windows, // TODO: Deduce from OS
-                EnableSourceAssetDiagnostics = runtimeAssetOptions.EnableSourceAssetDiagnostics
+                EnableSourceAssetDiagnostics = runtimeAssetOptions.EnableSourceAssetDiagnostics,
+                SmokeModeName = smokeOptions.Enabled ? smokeOptions.ModeName : null
             };
 
             // 2. Mount packages first so an application host can select package-only or full-engine startup.

@@ -33,6 +33,13 @@ public class EngineConfig
     public EngineExecutionMode ExecutionMode { get; set; } = EngineExecutionMode.Runtime;
     public bool EnableSourceAssetDiagnostics { get; set; }
 
+    /// <summary>
+    /// Name of the bounded smoke mode that owns this process, or null for an interactive run.
+    /// A bounded smoke host and its package scenarios own world activation, so composition
+    /// packages must not claim the world streaming source while this is set.
+    /// </summary>
+    public string? SmokeModeName { get; set; }
+
     /// <summary>B13: Topological list of package local paths to load during kernel initialization.</summary>
     public List<string> PackageUrls { get; set; } = new();
 
