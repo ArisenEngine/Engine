@@ -654,12 +654,17 @@ directories.
   frame-relative origin straight through the rotation-only cascade matrix instead of reconstructing a world position and
   subtracting a camera vector. `VegetationOpaqueFrameConstants` consequently shrank from 160 to 144 bytes, the shadow shader
   no longer declares `VEGETATION_WIND_SHADOW_CAMERA_VECTOR`, and the frame's camera vector is `float3(0)` because the camera
-  *is* the origin of this frame. The terrain-streaming scenario additionally pins the animation clock (`Time.Pin`) after it
-  restores the authored camera, so the `boundary-mixed-lod` and `post-rebase` checkpoints cannot be separated by a gust, and
-  unpins on every failure, shutdown, and early-unload path. The measured Development rebase comparison went from an average
-  luminance delta of 2.79e-3 to 2.13e-8, a spatial luminance grid delta of 2.59e-4 to 1.96e-7, an average depth delta of
-  3.05e-5 to 5.91e-11, a spatial depth grid delta of 6.16e-5 to 4.88e-10, and a written-depth coverage delta of 8 pixels to
-  0, while `near` versus `returned-start` still reports 5 written-depth pixels against its 16-pixel budget.
+  *is* the origin of this frame. The terrain-streaming scenario additionally pins the animation clock (`Time.Pin`) for the
+  whole comparison window, so neither replay pair - the `far-cascade`/`post-rebase` rebase pair and the
+  `near`/`returned-start` return pair - can be separated by a gust, and unpins on every failure, shutdown, and
+  early-unload path. The rebase is isolated instead of folded into a camera path: the fixture parks the camera on the far
+  pose and moves only the streaming source across the rebase threshold, so the origin is the only variable left between the
+  compared frames. Measured on Development and Production alike, the cost of that origin change is an average luminance
+  delta of 8.33e-6, a spatial luminance grid delta of 2.31e-5, an average depth delta of 1.17e-6, a spatial depth grid
+  delta of 4.22e-6, and 2 written-depth pixels against the 16-pixel budget: the twelve terrain cells of the 4x4 luminance
+  grid carry the whole delta, while the four sky cells - which no origin-relative geometry covers - stay bit-invariant.
+  `near` versus `returned-start` reports 3.68e-5 on the luminance grid and 4 written-depth pixels, because the far
+  excursion legitimately leaves the hysteresis-locked LOD distribution behind.
   `VegetationViewFrameTests` pins the rotation-only basis, the float-range rejection, and bit-exact invariance of the
   view-relative position when the camera and the world position shift by the same rebase delta; `VegetationWindTests` pins
   the frame-anchored gust phase and its large-render-origin bounds; and the render-pass contract tests keep both shaders
@@ -727,10 +732,12 @@ fixture, without adding engine capability.
 - Two engine-level contract fixes came out of the new content. The world-streaming budget scenario selects its
   two normal cells and its one oversized failure cell from the authored `EstimatedCpuBytes`; growing the center
   cell to 4 MiB made *both* normal cells fail admission with `Failed` instead of stalling, so the center cell is
-  back to 1 MiB and the scenario keeps a real budget stall. And `TerrainStreamingCameraPoses` now carries
-  `NearRotation`, so every captured camera pose — including the authored near pose — is built by
-  `LookRotation` toward the terrain bounds centre; `Build_AimsEveryCapturedPoseAtTheTerrainBounds` pins that the
-  `near-aim-centre`, `near-aim-boundary`, and `near-aim-far` checkpoints all cover every canonical tile.
+  back to 1 MiB and the scenario keeps a real budget stall. And `TerrainStreamingCameraPoses` carries
+  `NearPosition`/`NearRotation`, so the pose the fixture captures twice - the `near` checkpoint and its
+  `returned-start` replay - is built by the same `LookRotation` aim at the terrain bounds centre as the boundary and far
+  corners; `Build_AimsEveryCapturedPoseAtTheTerrainBounds` pins the near, boundary and far aims and eye heights against
+  the root bounds, and `FixtureCheckpoints_CoverEveryCanonicalTile` pins that those three captured checkpoints frame
+  every canonical tile (the parked `post-rebase` replay reuses the far pose).
 - Measured cost of the content pass on this machine: two 2K terrain maps plus 1K vegetation textures at RGBA8
   cook to roughly 0.7 GB of runtime texture memory, which the runtime budget still absorbs. Dropping 4K terrain
   maps into the same slots reaches roughly 1.1 GB and breaks that budget, so the next content-quality step is
@@ -765,21 +772,24 @@ fixture, without adding engine capability.
   single threshold was calibrated for the analytic sky and failed on every panorama frame.
 
 - The terrain-streaming fixture no longer buries its own cameras in the terrain. Every derived pose used to inherit
-  the authored camera height (`5.93 m`), which is above the surface only at the authored position: at the fixture's own
-  horizontal positions the canonical terrain stands at `46.18 m` (boundary, `x = -192`) and `12.73 m` (far,
-  `x = -54`), so those captures looked out from `40.25 m` and `6.80 m` *inside* the hillside. Back-face culling then
-  left the lower frame without written depth and the summary validator rejected the capture with `failed upright color
-  orientation`. `TerrainStreamingCameraPath.Build` now takes a `TerrainSurfaceHeightSampler`, the scenario passes
-  `ITerrainQueryService`, and every derived pose stands `EyeClearanceMetres` (`6 m`) above the surface reported at its
-  own horizontal position. The discovery build runs before the canonical tiles are active, so its poses fall back to
-  the terrain maximum plus the clearance - above every point of the surface - and the fixture rebuilds the path as
-  soon as the complete render snapshot exists.
-- The fixture's aim band is a shallow downward band (`-12..-4 deg`) instead of `-20..+2 deg`, and the boundary pose
-  insets into the eastern tile pair, so every captured frame keeps sky over the ridge line and the surface under the
-  view. Measured `validate_terrain_streaming_summary.ps1` orientation deltas at the new poses are `+0.117` luminance
-  and `+0.0080` depth at `near`, `+0.285` and `+0.0062` at `boundary-mixed-lod`, and `+0.247` and `+0.0031` at
-  `far-cascade`, all above the `+0.05` and `+0.001` thresholds, with `near`/`boundary`/`far` still producing distinct
-  color and depth hashes and `post-rebase` reproducing the boundary frame.
+  the authored camera height (`5.93 m`), which is above the surface only at the authored position
+  (`-102, 5.93, -128`): at the fixture's own corner poses the canonical terrain stands at `50.25 m` (`near`,
+  `-245.76, -245.76`), `26.21 m` (`boundary-mixed-lod`, `245.76, -245.76`) and `30.45 m` (`far-cascade`,
+  `245.76, 245.76`), so those captures looked out from `44.32 m`, `20.28 m` and `24.52 m` *inside* the hillside.
+  Back-face culling then left the lower frame without written depth and the summary validator rejected the capture with
+  `failed upright color orientation`. `TerrainStreamingCameraPath.Build` now takes a `TerrainSurfaceHeightSampler`, the
+  scenario passes `ITerrainQueryService`, and every derived pose stands `EyeClearanceMetres` (`6 m`) above the surface
+  reported at its own horizontal position. The discovery build runs before the canonical tiles are active, so its poses
+  fall back to the terrain maximum plus the clearance - above every point of the surface - and the fixture rebuilds the
+  path as soon as the complete render snapshot exists.
+- The fixture's aim band is a shallow downward band (`-12..-4 deg`) instead of `-20..+2 deg`, every captured pose stands
+  `CornerInsetFraction` (`2 %`) inside one of the root's four corners ordered by distance to the authored camera position,
+  and the view aims at the bounds centre, so every captured frame keeps sky over the ridge line and the surface under the
+  view. Measured `validate_terrain_streaming_summary.ps1` orientation deltas (top-half minus bottom-half average) at the
+  current poses are `+0.357` luminance and `+0.0107` depth at `near`, `+0.534` and `+0.0074` at `boundary-mixed-lod`, and
+  `+0.362` and `+0.0083` at `far-cascade`, all above the `+0.05` and `+0.001` thresholds, with `near`/`boundary`/`far`
+  still producing distinct color and depth hashes and `post-rebase` replaying the parked `far-cascade` frame instead of the
+  boundary frame.
 - The soak check compares against a running high-water baseline instead of the first checkpoint's state. Camera
   checkpoints frame different parts of the valley, so `loadedCookedHandles` legitimately rises from `99` at
   `boundary-mixed-lod` to `104` at `far-cascade` as more cooked pages become resident, and the previous exact-equality
