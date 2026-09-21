@@ -23,10 +23,17 @@
       "ArisenEngine.Rendering.IRenderPipelineProvider",
       "ArisenEngine.Rendering.IRenderMaterialLibrary",
       "ArisenEngine.Resources.Serialization.IRuntimeSceneService",
-      "ArisenEngine.Resources.Serialization.IRuntimeWorldStreamingService"
+      "ArisenEngine.Resources.Serialization.IRuntimeWorldStreamingService",
+      "ArisenEngine.Resources.Serialization.IWorldOriginService",
+      "ArisenKernel.Contracts.IInputProvider"
     ]
   },
   "subsystems": [
+    {
+      "class": "PackageGame.RuntimeCameraNavigationSubsystem",
+      "phase": "Running",
+      "priority": 60
+    },
     {
       "class": "PackageGame.ProjectSceneBootstrapSubsystem",
       "phase": "PostInit",
