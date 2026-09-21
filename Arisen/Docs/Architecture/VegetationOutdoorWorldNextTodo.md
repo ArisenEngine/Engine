@@ -574,17 +574,17 @@ directories.
 
 ### TODO
 
-- [ ] Add bounded vegetation material semantics.
-  - [ ] Mipped sRGB albedo/opacity, renormalized normal maps, linear ORM, alpha cutoff, two-sided normal policy, tint variation, and roughness response.
-  - [ ] Reject missing mip/format/semantic dependencies during cooking.
-- [ ] Add deterministic wind inputs.
-  - [ ] Global wind direction/strength plus species stiffness, height response, per-instance phase, and bounded gust parameters.
-  - [ ] Keep simulation values frame-global/species-global; do not update managed state per blade/tree.
-- [ ] Integrate PBR environment/direct light and four cascade shadows.
-  - [ ] Alpha-consistent depth/shadow coverage.
-  - [ ] Conservative wind-expanded bounds for culling and shadow fitting.
-- [ ] Add distance fade/dither and color/depth/shadow visual tests.
-- [ ] Build a canonical fixture with at least grass, shrub, rock, and tree species using inspectable non-placeholder assets.
+- [x] Add bounded vegetation material semantics.
+  - [x] Mipped sRGB albedo/opacity, renormalized normal maps, linear ORM, alpha cutoff, two-sided normal policy, tint variation, and roughness response.
+  - [x] Reject missing mip/format/semantic dependencies during cooking.
+- [x] Add deterministic wind inputs.
+  - [x] Global wind direction/strength plus species stiffness, height response, per-instance phase, and bounded gust parameters.
+  - [x] Keep simulation values frame-global/species-global; do not update managed state per blade/tree.
+- [x] Integrate PBR environment/direct light and four cascade shadows.
+  - [x] Alpha-consistent depth/shadow coverage.
+  - [x] Conservative wind-expanded bounds for culling and shadow fitting.
+- [x] Add distance fade/dither and color/depth/shadow visual tests.
+- [x] Build a canonical fixture with at least grass, shrub, rock, and tree species using inspectable non-placeholder assets.
 
 ### Acceptance Criteria
 
@@ -592,8 +592,197 @@ directories.
 - Wind does not break bounds, shadows, depth, or origin-rebase stability.
 - Near/mid/far visual captures retain valid silhouette, depth, material, and cascade coverage.
 
+### Milestone 7 Completion Record
+
+- Vegetation materials now declare bounded PBR semantics that cooking and loading enforce. The shared material contract
+  gained mipped sRGB albedo/opacity, renormalized normal maps (`MipFilter: NormalMap`), linear ORM, alpha cutoff, a
+  two-sided normal policy, tint variation, and roughness response, and the four canonical species materials use it: base
+  color and normal plus ORM slots, `MetallicFactor`, `RoughnessFactor`, `OcclusionStrength`, `AlphaCutoff`,
+  `TintVariation`, and `BaseColorFactor`. `VegetationMaterialContractTests` proves the opaque two-sided render state, the
+  authored alpha factor, factor ranges, bindless-descriptor and cooked-variant requirements, and the rejection paths for
+  materials that violate the shader contract; `RenderingAssetPipelineTests` keeps the shared PBR conventions, shader
+  contract annotations, and texture-binding metadata honest; `VegetationRuntimeAssetCookingTests` proves the cook closes
+  biome/species/mesh/material dependencies before a page renders.
+- Wind is deterministic and bounded end to end. `VegetationWindSettings` clamps direction (planar-normalized), strength,
+  gust amplitude and frequency, and accumulated time into a documented domain, wraps both gust phases on the CPU, and
+  derives species-independent bounds (`MaximumBendFraction`, `MaximumHorizontalDisplacement`) from the same constants the
+  shaders consume, so the gust envelope can never displace a vertex farther than its own height above the instance origin.
+  Direction/strength and gust phases travel in the shared frame constants while the per-instance phase and stable
+  variation stay in the canonical 48-byte GPU instance record at offset 32, so a frame never updates managed per-blade or
+  per-tree state. `VegetationWindTests` covers the bounded domain, long-session phase wrapping, bend saturation,
+  height-bounded travel, and the deterministic override; the render-pass contract tests cover shader/CPU parity, the
+  height-bounded displacement shared by both shaders, and the undisplaced-origin coverage contract.
+- Lighting and shadows integrated without weakening earlier gates. Wind-expanded page/cluster bounds are baked into the
+  cooked payloads, and culling plus per-cascade shadow submission operate on those conservative bounds, so no reachable
+  gust can move a visible instance outside its culling or shadow-fit budget; the shadow pass derives the same fade and
+  alpha coverage as the opaque pass from the undisplaced instance origin, so depth, coverage, and silhouettes agree and
+  never depend on wind. `validate_cascaded_shadow_visuals.ps1` still proves four increasing cascades with positive mesh and
+  terrain work across the near/mid/far path, and `OpaqueShadowReceptionIsResolvedFromTheClusterBeforeRecording` keeps the
+  per-cluster shadow source exact.
+- Distance fade/dither is resolved from the undisplaced instance origin and shared by the opaque and shadow passes, which
+  keeps coverage stable under wind and unable to disagree between color, depth, and shadow output. Color/depth/shadow
+  visual tests now run as three process modes through `validate_vegetation_rendering_visuals.ps1`: `disabled` proves
+  vegetation contributes measurable color and depth coverage, `opaque-only` proves the shadow passes change nothing about
+  frame depth, and `full` proves the shadow contribution darkens the frame again.
+- Cross-process visual validation is now well defined instead of accidentally flaky. Wind is the renderer's only
+  wall-clock-driven input and the compared runs are independent processes, so every run launched by a comparison harness
+  declares itself through `ARISEN_VEGETATION_RENDER_VALIDATION_MODE` (`full`, `opaque-only`, or `disabled`) and pins the
+  wind clock to the shared `VegetationRenderValidationPolicy.ComparableWindTimeSeconds` phase through
+  `IVegetationWindClockControl` before the feature is prepared. The previously failing shadow-only check now passes: the
+  `opaque-only` and `full` `during` captures report the same frame-depth SHA-256 and the same written-depth pixel count,
+  while `disabled` still differs in color and depth by the required margins and `full` still darkens more than
+  `opaque-only`. `EveryDeclaredComparisonRunPinsTheSharedWindClock`, `ComparisonRunPinsTheWindClockDuringPackageLoad`, and
+  `WindClockControlPinsThePoseIndependentlyOfTheWallClock` cover the policy, the package-load pin, and the wind contract.
+- The stationary-frame clock pin is owned by the world-streaming scenario: `Time.Pin`/`Time.Unpin` freeze the animation
+  clock for the blocking `shadow-far`/`shadow-far-stable` pair and release it before `after`, and `RuntimeWorldStreamingTests`
+  asserts exactly one pinned frame, consecutive byte-identical stationary captures, and a released clock after shutdown.
+  `TimePinTests` covers the kernel contract, and `KernelGlobalStateCollection` keeps the kernel tests that share the static
+  clock from running concurrently with a kernel reset that would release another test's pin.
+- The canonical fixture is four inspectable, non-placeholder species: a tapered two-tier tree, a three-blade grass tuft, a
+  shrub, and a boulder, each with authored mesh, material, and texture assets plus a species LOD list, and a biome whose
+  scatter rules bake the canonical center cell into Tree 9, Rock 13, Shrub 36, and Grass 422 instances. Placement, page,
+  and cluster identities and the baked conservative bounds are pinned in `VegetationCanonicalFixture` and re-verified by
+  `VegetationSourceAssetTests`, `VegetationSpeciesFixtureIntegrityTests`, and the showcase scene asset tests.
+- Wind, view projection, and depth coverage are now origin-rebase invariant. The gust phase is anchored to an explicit
+  frame anchor instead of a derived origin-relative instance position: `VegetationWindSettings.ResolveGustPhases(WorldPosition)`
+  folds `dot(direction, anchor.xz) * GustSpatialFrequency` into both CPU-wrapped phases, so a vertex no longer reads the
+  camera's streaming origin and a remote tree still moves on the gust actually reaching it. Both vegetation passes then
+  render in the *view frame*, in which the render camera is the origin: `Camera.ViewRelativeViewMatrix` is the same
+  rotation-only basis the directional-shadow fitter already used, the generic pipeline publishes `ViewRelativeViewProjection`
+  beside the world-frame `ViewProjection`, `VegetationViewFrame.ToViewRelativePosition` subtracts the camera's
+  double-precision world position from each cluster origin before the float cast, and `VegetationShadow.hlsl` pushes that
+  frame-relative origin straight through the rotation-only cascade matrix instead of reconstructing a world position and
+  subtracting a camera vector. `VegetationOpaqueFrameConstants` consequently shrank from 160 to 144 bytes, the shadow shader
+  no longer declares `VEGETATION_WIND_SHADOW_CAMERA_VECTOR`, and the frame's camera vector is `float3(0)` because the camera
+  *is* the origin of this frame. The terrain-streaming scenario additionally pins the animation clock (`Time.Pin`) after it
+  restores the authored camera, so the `boundary-mixed-lod` and `post-rebase` checkpoints cannot be separated by a gust, and
+  unpins on every failure, shutdown, and early-unload path. The measured Development rebase comparison went from an average
+  luminance delta of 2.79e-3 to 2.13e-8, a spatial luminance grid delta of 2.59e-4 to 1.96e-7, an average depth delta of
+  3.05e-5 to 5.91e-11, a spatial depth grid delta of 6.16e-5 to 4.88e-10, and a written-depth coverage delta of 8 pixels to
+  0, while `near` versus `returned-start` still reports 5 written-depth pixels against its 16-pixel budget.
+  `VegetationViewFrameTests` pins the rotation-only basis, the float-range rejection, and bit-exact invariance of the
+  view-relative position when the camera and the world position shift by the same rebase delta; `VegetationWindTests` pins
+  the frame-anchored gust phase and its large-render-origin bounds; and the render-pass contract tests keep both shaders
+  building view-frame positions and forbid any world-origin reference from creeping back in.
+
+
 ---
 
+## Milestone 7b - Game-Ready Showcase Content (CC0 Asset Pass)
+
+**Goal:** Turn the validated vertical slice into a scene that reads as a real game location instead of a
+fixture, without adding engine capability.
+
+### TODO
+
+- [x] Rebuild the canonical terrain at a real outdoor scale.
+- [x] Replace the placeholder terrain look with authored CC0 layer textures.
+- [x] Re-bake the biome against the new terrain and split dense species across multiple pages.
+- [x] Replace the procedural sky with an authored CC0 panorama and an explicit dusk outdoor profile.
+- [x] Reduce the persistent showcase scene to camera, lights, environment, and one prop cluster.
+- [x] Keep every ownership, closure, residency, budget, and visual gate green at the new density.
+
+### Acceptance Criteria
+
+- The scene reads as a populated dusk valley at the authored camera instead of a test fixture.
+- Production still loads only versioned cooked artifacts from the relocatable catalog.
+- No gate is weakened by content: no source access, no swallowed failure, and no timing policy.
+
+### Milestone 7b Completion Record
+
+- The canonical terrain is a real 256 m outdoor valley: 513x513 samples at 0.5 m spacing, `HeightRange` 0..56 m,
+  `TileResolution` 257 with `SharedEdgeSamples`, and `WorldPlacement` `(-256, 0, -256)`. The four cooked tile
+  identities are unchanged, and generated tile files are now named by coordinate
+  (`Assets/Terrain/Generated/ShowcaseValley/x_0_z_0.ariterraingenerated`) so a regenerated tile can never be
+  confused with a hand-edited one.
+- Terrain look is authored instead of procedural. The layer set is four layers (GrassSoil, Rock, Path, River),
+  each with a CC0 albedo, normal, and ORM map cooked to `r8g8b8a8unorm.srgb.mips`,
+  `r8g8b8a8unorm.linear.mips.normalmap`, and `r8g8b8a8unorm.linear.mips`, plus per-layer tint, roughness,
+  metallic, normal strength, and world tiling. The relocated Production closure therefore requires exactly four
+  terrain tiles and twelve layer textures (four per variant).
+- The biome was re-baked against the new terrain and the dense species now own ordered multi-page clusters:
+  Tree 312 instances over 1 page, Rock 764 over 1 page, Shrub 4375 over 5 pages, and Grass 44397 over 11 pages,
+  for 49848 instances, 4 clusters, 19 pages, 4 species, and one biome. A cluster requires every page it owns,
+  so the vegetation runtime artifact count is 27 and the catalog-referenced deployment closure is 31 files
+  (27 vegetation artifacts plus 4 vegetation shader stages). `validate_runtime.bat` and
+  `validate_relocated_production.ps1` were updated to the measured canonical submission record
+  (`OpaqueInstances=49848`, `RecordedShadowInstances=199392`, four cascades of `49848`), and their exact
+  catalog-dependency assertions now walk each species' page list instead of assuming one page per species.
+- The sky is an authored CC0 panorama. `MistfallDusk.arienvironment` (GUID `1fc01236-449b-4097-88c0-223b1ed736ff`)
+  uses `QwantaniDuskSky.hdr` (2048x1024, LatLong) with an outdoor profile that adds atmosphere, height fog, and a
+  scene-relative exposure policy. `RotationDegrees: 88.232` is verified rather than eyeballed: the shader maps a
+  direction to `longitude = atan2(dir.x, dir.z) + rotation` and `u = frac(0.5 + longitude / 2*pi)`, the scene key
+  light `(-0.7524, 0.1876, 0.6314)` is the direction *toward* the light (`ndotl = saturate(dot(N, lightDirection))`),
+  so its azimuth is `atan2(-0.7524, 0.6314) = -49.997 deg` at `10.813 deg` elevation; `38.232 - (-49.997) = 88.230 deg`
+  places the panorama sun at `u = 0.60620`, which is exactly the measured brightest texel, and at the light's
+  elevation within 0.002 degrees.
+- The showcase content is honest about what is gameplay versus decoration: `Mistfall Valley Showcase` /
+  `Mistfall Valley World` keep the persistent scene limited to the camera, the dusk key light, the lantern fill
+  and down lights, the environment, and the three lantern prop parts (eight entities total), and the center cell
+  scene now contains only the terrain plus the four vegetation clusters, with the earlier teapot, pedestal, and
+  ground stand-ins removed. The world-streaming scenario's `before` checkpoint confirms the eight-entity
+  persistent scene, and every cluster still resolves to one active cell and one cooked generation.
+- Two engine-level contract fixes came out of the new content. The world-streaming budget scenario selects its
+  two normal cells and its one oversized failure cell from the authored `EstimatedCpuBytes`; growing the center
+  cell to 4 MiB made *both* normal cells fail admission with `Failed` instead of stalling, so the center cell is
+  back to 1 MiB and the scenario keeps a real budget stall. And `TerrainStreamingCameraPoses` now carries
+  `NearRotation`, so every captured camera pose — including the authored near pose — is built by
+  `LookRotation` toward the terrain bounds centre; `Build_AimsEveryCapturedPoseAtTheTerrainBounds` pins that the
+  `near-aim-centre`, `near-aim-boundary`, and `near-aim-far` checkpoints all cover every canonical tile.
+- Measured cost of the content pass on this machine: two 2K terrain maps plus 1K vegetation textures at RGBA8
+  cook to roughly 0.7 GB of runtime texture memory, which the runtime budget still absorbs. Dropping 4K terrain
+  maps into the same slots reaches roughly 1.1 GB and breaks that budget, so the next content-quality step is
+  BC compression (BC1/BC5/BC7) with mip-aware cooking rather than more pixels.
+- The vegetation closure is cooked from the recipe, so re-authoring the terrain also re-authors the scene.
+  The scatter bake derives each species' page count, page identity, and exact per-page instance count from the
+  terrain weights, and `VegetationSceneComponent.ValidateClusterClosure` rejects a scene whose
+  `VegetationCluster` components still describe the previous bake (`... is invalid: page count, instance
+  count, or bounds do not match the exact cooked cluster closure.`). Retuning the weights moved every dense
+  species: Rock 1152 over 2 pages became 764 over 1 page, Shrub 2801 over 3 pages became 4375 over 5, and
+  Grass 25293 over 7 became 44397 over 11. The centre cell scene, the canonical fixture, the scene and
+  runtime-contract tests, and both relocation gates now carry the re-baked closure.
+- `.hdr` lat-long sources are already linear radiance and the environment pipeline has to be told so.
+  `SourceColorSpace` defaults to `SRgb`, and `EnvironmentTextureAssetCooker.DecodeLinearSource` applies the
+  sRGB transfer function to every channel of an HDR source it decodes, so a Radiance source left on the
+  default raises every value above 1.0 (`v -> ((v + 0.055) / 1.055)^2.4`, 10.0 -> roughly 224) and the sky
+  clips to white: the last capture taken before `MistfallDusk.arienvironment` declared
+  `SourceColorSpace: Linear` put 10% of its pixels in the top luminance bin, and every capture since has an
+  empty top bin and a 0.895 maximum. Rejecting an HDR source declared sRGB at cook time is follow-up work
+  rather than a silent correction here.
+- The dusk look was tuned against captured frames instead of by eye. At the authored camera the environment
+  carries `SkyIntensity: 0.30`, `AmbientIntensity: 0.34`, `AerialStrength: 0.42`, and
+  `HeightFogDensity: 0.0075`, which keeps the far capture at an average luminance of 0.358 with no clipped
+  pixel and a still-increasing near/mid/far haze progression of 0.236/0.317/0.358.
+- The outdoor-atmosphere gate no longer assumes a sky model. `validate_outdoor_atmosphere_visuals.ps1` takes
+  `-ExpectedSkyMode` from its caller instead of defaulting to `ProceduralOutdoor`, the `validate_runtime.bat`
+  and relocated-Production call sites declare `Panorama`, and horizon continuity is checked per sky mode: an
+  analytic procedural sky must stay uniform within a 0.08 luminance range across the far frame's horizon
+  band, while an authored panorama - which legitimately carries azimuthal content - is bounded to a 0.35 step
+  between horizontally adjacent band cells (measured 0.15 to 0.24 across the near/mid/far poses). The earlier
+  single threshold was calibrated for the analytic sky and failed on every panorama frame.
+
+- The terrain-streaming fixture no longer buries its own cameras in the terrain. Every derived pose used to inherit
+  the authored camera height (`5.93 m`), which is above the surface only at the authored position: at the fixture's own
+  horizontal positions the canonical terrain stands at `46.18 m` (boundary, `x = -192`) and `12.73 m` (far,
+  `x = -54`), so those captures looked out from `40.25 m` and `6.80 m` *inside* the hillside. Back-face culling then
+  left the lower frame without written depth and the summary validator rejected the capture with `failed upright color
+  orientation`. `TerrainStreamingCameraPath.Build` now takes a `TerrainSurfaceHeightSampler`, the scenario passes
+  `ITerrainQueryService`, and every derived pose stands `EyeClearanceMetres` (`6 m`) above the surface reported at its
+  own horizontal position. The discovery build runs before the canonical tiles are active, so its poses fall back to
+  the terrain maximum plus the clearance - above every point of the surface - and the fixture rebuilds the path as
+  soon as the complete render snapshot exists.
+- The fixture's aim band is a shallow downward band (`-12..-4 deg`) instead of `-20..+2 deg`, and the boundary pose
+  insets into the eastern tile pair, so every captured frame keeps sky over the ridge line and the surface under the
+  view. Measured `validate_terrain_streaming_summary.ps1` orientation deltas at the new poses are `+0.117` luminance
+  and `+0.0080` depth at `near`, `+0.285` and `+0.0062` at `boundary-mixed-lod`, and `+0.247` and `+0.0031` at
+  `far-cascade`, all above the `+0.05` and `+0.001` thresholds, with `near`/`boundary`/`far` still producing distinct
+  color and depth hashes and `post-rebase` reproducing the boundary frame.
+- The soak check compares against a running high-water baseline instead of the first checkpoint's state. Camera
+  checkpoints frame different parts of the valley, so `loadedCookedHandles` legitimately rises from `99` at
+  `boundary-mixed-lod` to `104` at `far-cascade` as more cooked pages become resident, and the previous exact-equality
+  baseline against `near` failed every soak cycle. `TerrainStreamingSmokeScenario` now records the high-water mark of
+  the observed bounds, and `validate_terrain_streaming_summary.ps1` derives its steady-state baseline from the
+  high-water mark of all five named checkpoints and applies it to the `soak-*` checkpoints only.
 ## Milestone 8 - Editor Biome And Scatter Authoring
 
 **Goal:** Make vegetation placement usable without hand-editing serialized instance pages.
@@ -680,7 +869,8 @@ Implement the first visible vertical slice in this order:
 4. [x] add a vegetation cluster scene codec plus cell/residency ownership;
 5. [x] render one cluster as one direct indexed instanced batch through the Generic RP feature;
 6. [x] contribute matching cascaded-shadow work and prove copied Production closure;
-7. [ ] extend the fixture to grass, shrub, rock, and tree species across multiple cells before broad Editor tooling.
+7. [x] extend the fixture to grass, shrub, rock, and tree species across multiple cells before broad Editor tooling;
+8. [x] replace the fixture content with authored CC0 terrain layers, a dusk panorama, and a re-scaled multi-page biome.
 
 The first checkpoint is not a complete forest system. It is one package-owned species and one deterministic cluster page, generated from the canonical terrain, owned by a world cell, rendered with one instanced opaque draw and one instanced shadow draw, and validated without source access.
 
@@ -696,7 +886,9 @@ The first checkpoint is not a complete forest system. It is one package-owned sp
 - runtime ecological simulation, seasonal succession, weather-driven growth, and server replication;
 - distant forest impostor atlases beyond the first measured mesh/billboard LOD need;
 - roads/splines, rivers/water, decals, snow accumulation, and terrain deformation integration;
-- character animation, gameplay framework, AI, quests, inventory, save games, and multiplayer.
+- character animation, gameplay framework, AI, quests, inventory, save games, and multiplayer;
+- BC1/BC5/BC7 texture compression with mip-aware cooking, until a content pass needs more than the current RGBA8 2K terrain and 1K vegetation texture budget;
+- a cooker-side rejection of an HDR lat-long source declared `SourceColorSpace: SRgb`, which today produces a silently blown-out sky instead of a diagnostic.
 
 ---
 

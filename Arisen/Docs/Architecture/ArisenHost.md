@@ -96,6 +96,22 @@ Once all packages are mounted by `PackageSubsystem`, the bootstrapper resolves t
 2. **Full-engine application host**: The default contract value is `true`. The bootstrapper initializes all subsystem phases before yielding to hosts such as `com.arisen.editor`.
 3. **Bare-metal kernel**: If no application host is detected, the bootstrapper initializes the engine and engages the default tick loop through `EngineKernel.Instance.Run()`.
 
+The bare-metal kernel loop owns the whole interactive lifetime, not just the frame loop. `RequestShutdown()`
+ends the loop, and `EngineKernel.Run()` then transitions to `ShuttingDown` and runs the same
+`ShutdownCore()` as the bounded loops. Subsystems therefore stop in reverse initialization order, which
+releases the RHI device before the platform package destroys the window, and packages, render surfaces
+and kernel-owned services are released before `Main` returns. An interactive profile that skipped this
+teardown would leave the window and every package owned by a process that is already past its last frame.
+
+The standalone platform window is closed through the engine rather than through the default window
+procedure. `WindowsProcHandler` consumes both close routes - `WM_CLOSE` and the `WM_SYSCOMMAND`
+`SC_CLOSE` system-menu command - and reports the request through `IWindowProvider.CloseRequested`, so the
+swapchain and every render surface bound to that HWND stay valid until `PlatformSubsystem.Shutdown()`
+removes the render surface and destroys the window. Every other message must be reported as unhandled,
+because the native HAL only forwards a window procedure result of `-1` to `DefWindowProc`; a procedure
+that reports every message as handled silently removes non-client hit testing, title-bar dragging,
+Alt+F4 and the close button from the window.
+
 Smoke mode always takes the full-engine path and exits through its bounded kernel loop, even when the selected package graph also contains a package-only host. This preserves `RHIVulkanTesting` runtime smoke coverage while keeping an ordinary interactive test launch isolated.
 
 Smoke validation is a bounded variant of the same boot path:
