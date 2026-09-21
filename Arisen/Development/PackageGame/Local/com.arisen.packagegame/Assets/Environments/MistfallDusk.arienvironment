@@ -1,0 +1,28 @@
+Version: 2
+Name: Mistfall Dusk Sky
+SourceTexture:
+  Guid: b61f9d02-b90f-4300-886c-07f54ff4bc34
+  PackageId: com.arisen.packagegame
+SourceColorSpace: Linear
+RuntimeFormat: R16G16B16A16SFloat
+RotationDegrees: 88.232
+Intensity: 1.15
+Outdoor:
+  SkyMode: Panorama
+  SunSkyCoupling: 1.0
+  HorizonExponent: 0.85
+  ZenithExponent: 1.35
+  SunAngularRadiusDegrees: 0.53
+  SunDiscIntensity: 0.0
+  SunGlowIntensity: 0.0
+  SunGlowExponent: 72.0
+  AerialPerspectiveEnabled: true
+  AerialStartDistance: 45.0
+  AerialDistance: 320.0
+  AerialStrength: 0.42
+  HeightFogEnabled: true
+  HeightFogBaseHeight: 2.0
+  HeightFogDensity: 0.0075
+  HeightFogFalloff: 0.09
+  ExposurePolicy: Scene
+  FixedExposure: 1.05
