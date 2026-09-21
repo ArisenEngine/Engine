@@ -21,7 +21,31 @@ GeneratedTiles:
   Guid: 807a7664-36ee-bdf8-71ea-e78cd4db0c4f
 - Coordinate: { X: 1, Z: 0 }
   Guid: 9b8e9a8a-7c9d-493e-9aa6-5ba74e5b630d
+- Coordinate: { X: 2, Z: 0 }
+  Guid: f87e20f6-675f-84e4-a2bf-a1fdab87b68b
+- Coordinate: { X: 3, Z: 0 }
+  Guid: fbf3a6a9-9c51-44e5-8cab-ba5f72262152
 - Coordinate: { X: 0, Z: 1 }
   Guid: 331e576c-eddd-d7cc-e553-23ef719f496d
 - Coordinate: { X: 1, Z: 1 }
   Guid: 3fd9bf23-4923-f0e5-cd73-94920028ed67
+- Coordinate: { X: 2, Z: 1 }
+  Guid: c5deab4c-cddb-a160-9b46-c80568bc411e
+- Coordinate: { X: 3, Z: 1 }
+  Guid: e9b745e7-392d-c4ee-30d6-ff0821dd836f
+- Coordinate: { X: 0, Z: 2 }
+  Guid: 539106a5-a503-4061-afb3-7c2ce5ed6636
+- Coordinate: { X: 1, Z: 2 }
+  Guid: 2dfc268a-6049-cc4a-77bc-9415d084601c
+- Coordinate: { X: 2, Z: 2 }
+  Guid: f67783ed-ee2a-ebb7-09d6-beffee83f89c
+- Coordinate: { X: 3, Z: 2 }
+  Guid: bb658e00-3a90-bc63-385e-22d8d8a5eda2
+- Coordinate: { X: 0, Z: 3 }
+  Guid: ce895aac-8b70-0d28-354f-830112283f97
+- Coordinate: { X: 1, Z: 3 }
+  Guid: a81a860d-0b29-f865-0f68-b02b9111e51e
+- Coordinate: { X: 2, Z: 3 }
+  Guid: 15f16c4d-5b71-5711-595c-dbcbc5b53271
+- Coordinate: { X: 3, Z: 3 }
+  Guid: a2936506-0be0-0223-d4f8-973ae5365650

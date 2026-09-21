@@ -405,7 +405,7 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
             VegetationCanonicalFixture.Species.Length,
             CountOccurrences(scene, "Cell: { X: 0, Y: 0, Z: 0, Layer: surface }"));
         Assert.Equal(
-            VegetationCanonicalFixture.Species.Length,
+            VegetationCanonicalFixture.TerrainTileCount,
             CountOccurrences(scene, "  TerrainTile:"));
         Assert.Equal(0, CountOccurrences(scene, "  MeshRenderer:"));
         Assert.DoesNotContain("VegetationCluster", importedScene, StringComparison.Ordinal);

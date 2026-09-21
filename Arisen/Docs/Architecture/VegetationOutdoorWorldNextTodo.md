@@ -24,7 +24,7 @@ The completed foundation provides:
 - bounded asynchronous world-cell reads, cancellation, retries, edit pins, residency ownership, submission-ticket-safe disposal, and shutdown drain;
 - double-precision world coordinates, origin-relative float ECS/render data, and deterministic frame-boundary rebasing;
 - a package-neutral terrain runtime/query service with stable root/tile identity, bilinear height, normal, normalized layer weights, and explicit unavailable/outside states;
-- deterministic terrain LOD and shared-edge topology with zero seam violations across the canonical two-by-two fixture;
+- deterministic terrain LOD and shared-edge topology with zero seam violations across the canonical sixteen-tile fixture;
 - a Generic RP optional-feature registry with opaque and directional-shadow stages, frozen setup-time feature arrays, submission notification, and reverse device-resource release;
 - graph-owned HDR color/depth, PBR materials, environment lighting, procedural sky/fog, four directional-shadow cascades, and color/depth readback validation;
 - direct indexed instancing through `RenderCommandList.DrawIndexed(..., instanceCount, ..., firstInstance, ...)`;
@@ -690,23 +690,25 @@ fixture, without adding engine capability.
 
 ### Milestone 7b Completion Record
 
-- The canonical terrain is a real 256 m outdoor valley: 513x513 samples at 0.5 m spacing, `HeightRange` 0..56 m,
-  `TileResolution` 257 with `SharedEdgeSamples`, and `WorldPlacement` `(-256, 0, -256)`. The four cooked tile
-  identities are unchanged, and generated tile files are now named by coordinate
+- The canonical terrain is a real 512 m outdoor valley: 1025x1025 samples at 0.5 m spacing, `HeightRange` 0..56 m,
+  `TileResolution` 257 with `SharedEdgeSamples`, and `WorldPlacement` `(-256, 0, -256)`, placed by sixteen
+  terrain-tile entities in the centre cell scene. The four original tile identities and the committed 513x513 cell
+  window are unchanged, `Scripts\Windows\generate_showcase_valley.ps1` owns the bytes and reproduces them, and
+  generated tile files are named by coordinate
   (`Assets/Terrain/Generated/ShowcaseValley/x_0_z_0.ariterraingenerated`) so a regenerated tile can never be
   confused with a hand-edited one.
 - Terrain look is authored instead of procedural. The layer set is four layers (GrassSoil, Rock, Path, River),
   each with a CC0 albedo, normal, and ORM map cooked to `r8g8b8a8unorm.srgb.mips`,
   `r8g8b8a8unorm.linear.mips.normalmap`, and `r8g8b8a8unorm.linear.mips`, plus per-layer tint, roughness,
-  metallic, normal strength, and world tiling. The relocated Production closure therefore requires exactly four
+  metallic, normal strength, and world tiling. The relocated Production closure therefore requires exactly sixteen
   terrain tiles and twelve layer textures (four per variant).
 - The biome was re-baked against the new terrain and the dense species now own ordered multi-page clusters:
-  Tree 312 instances over 1 page, Rock 764 over 1 page, Shrub 4375 over 5 pages, and Grass 44397 over 11 pages,
-  for 49848 instances, 4 clusters, 19 pages, 4 species, and one biome. A cluster requires every page it owns,
+  Tree 312 instances over 1 page, Rock 762 over 1 page, Shrub 4369 over 5 pages, and Grass 44392 over 11 pages,
+  for 49835 instances, 4 clusters, 18 pages, 4 species, and one biome. A cluster requires every page it owns,
   so the vegetation runtime artifact count is 27 and the catalog-referenced deployment closure is 31 files
   (27 vegetation artifacts plus 4 vegetation shader stages). `validate_runtime.bat` and
   `validate_relocated_production.ps1` were updated to the measured canonical submission record
-  (`OpaqueInstances=49848`, `RecordedShadowInstances=199392`, four cascades of `49848`), and their exact
+  (`OpaqueInstances=49835`, `RecordedShadowInstances=199340`, four cascades of `49835`), and their exact
   catalog-dependency assertions now walk each species' page list instead of assuming one page per species.
 - The sky is an authored CC0 panorama. `MistfallDusk.arienvironment` (GUID `1fc01236-449b-4097-88c0-223b1ed736ff`)
   uses `QwantaniDuskSky.hdr` (2048x1024, LatLong) with an outdoor profile that adds atmosphere, height fog, and a
@@ -740,7 +742,8 @@ fixture, without adding engine capability.
   count, or bounds do not match the exact cooked cluster closure.`). Retuning the weights moved every dense
   species: Rock 1152 over 2 pages became 764 over 1 page, Shrub 2801 over 3 pages became 4375 over 5, and
   Grass 25293 over 7 became 44397 over 11. The centre cell scene, the canonical fixture, the scene and
-  runtime-contract tests, and both relocation gates now carry the re-baked closure.
+  runtime-contract tests, and both relocation gates carried that re-baked closure; the sixteen-tile terrain
+  growth later moved the dense counts to Rock 762, Shrub 4369, and Grass 44392 with 49835 submitted instances.
 - `.hdr` lat-long sources are already linear radiance and the environment pipeline has to be told so.
   `SourceColorSpace` defaults to `SRgb`, and `EnvironmentTextureAssetCooker.DecodeLinearSource` applies the
   sRGB transfer function to every channel of an HDR source it decodes, so a Radiance source left on the

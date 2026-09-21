@@ -64,6 +64,10 @@ internal static class VegetationCanonicalFixture
         Guid.Parse("2a536b1f-81cf-4d91-a84f-39bc6f7e15a2");
     public static readonly WorldPosition CellOrigin = new(-256.0, -64.0, -256.0);
 
+    // The showcase valley terrain raster spans this many tiles per axis inside one 512 m cell.
+    public const int TerrainTilesPerAxis = 4;
+    public const int TerrainTileCount = TerrainTilesPerAxis * TerrainTilesPerAxis;
+
     // Ordered by recipe Guid: tree, rock, shrub, grass.
     public static readonly VegetationCanonicalSpecies[] Species =
     [
@@ -102,14 +106,14 @@ internal static class VegetationCanonicalFixture
             Guid.Parse("aa347d75-087c-4fb9-998f-2cc6130ceac1"),
             Guid.Parse("7b0f2e52-8b67-4e3d-bf0a-cbc42f622001"),
             Guid.Parse("e90ae5ab-24fb-2617-9983-3ed656bd652c"),
-            Guid.Parse("df936767-8c79-a601-af91-73cae122c63e"),
+            Guid.Parse("cbac8a59-7a52-6b1a-ca3c-a3a098cc50ca"),
             1,
             Guid.Parse("89ae1524-c1c0-47c3-85a5-6a16838035f1"),
             Guid.Parse("33fb5b2f-c310-478c-8523-8eeefa4ea747"),
             "ValleyBoulder.armesh",
             "ValleyRockMaterial.arismaterial",
             "ValleyRock_",
-            764,
+            762,
             -259.39336678385735,
             6.416667222976685,
             -258.59615260362625,
@@ -138,7 +142,7 @@ internal static class VegetationCanonicalFixture
             "ValleyShrub.armesh",
             "ValleyShrubMaterial.arismaterial",
             "ValleyShrub_",
-            4375,
+            4369,
             -258.5532653555274,
             -2.4312198162078857,
             -258.72216442227364,
@@ -167,7 +171,7 @@ internal static class VegetationCanonicalFixture
             "ValleyGrassTuft.armesh",
             "ValleyGrassMaterial.arismaterial",
             "ValleyGrass_",
-            44397,
+            44392,
             -256.77769664116204,
             -0.38987600803375244,
             -256.7855395078659,

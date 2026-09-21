@@ -213,16 +213,18 @@ public sealed class VegetationRuntimeValidationContractTests
                     StringComparison.OrdinalIgnoreCase);
             }
 
+            int totalInstances = VegetationCanonicalFixture.TotalInstanceCount;
             Assert.Contains(
-                "ClustersOverflow=0 OpaqueBatches=4 OpaqueInstances=49848",
+                $"ClustersOverflow=0 OpaqueBatches=4 OpaqueInstances={totalInstances}",
                 validation,
                 StringComparison.Ordinal);
             Assert.Contains(
-                "RecordedShadowBatches=16 RecordedShadowInstances=199392 Cascades=4",
+                $"RecordedShadowBatches=16 RecordedShadowInstances={totalInstances * 4} Cascades=4",
                 validation,
                 StringComparison.Ordinal);
             Assert.Contains(
-                "ShadowBatches=4,4,4,4 ShadowInstances=49848,49848,49848,49848",
+                $"ShadowBatches=4,4,4,4 " +
+                $"ShadowInstances={string.Join(',', Enumerable.Repeat(totalInstances, 4))}",
                 validation,
                 StringComparison.Ordinal);
             Assert.Contains("Dropped=0 Ticket=[1-9][0-9]*", validation, StringComparison.Ordinal);

@@ -46,7 +46,39 @@ Entities:
     CastShadows: true
     ReceiveShadows: true
     PreferHighQuality: false
-- Guid: da5ee671-4ab2-4769-a105-3567e6806069
+- Guid: 7b6d96f1-519d-5290-8b80-fd2abf31de8b
+  Name: Showcase Valley Terrain Tile 2,0
+  Transform:
+    Position: { X: 256.0, Y: 64.0, Z: 0.0 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 6f4d0a1c-0e85-4a42-93fe-34058ef48511, PackageId: com.arisen.packagegame }
+    TileGuid: f87e20f6-675f-84e4-a2bf-a1fdab87b68b
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 2, Z: 0 }
+    WorldPlacement: { X: 0.0, Y: 0.0, Z: -256.0 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
+- Guid: 0198844b-abfa-5ed8-a26a-edb5ec4df04c
+  Name: Showcase Valley Terrain Tile 3,0
+  Transform:
+    Position: { X: 384.0, Y: 64.0, Z: 0.0 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 6f4d0a1c-0e85-4a42-93fe-34058ef48511, PackageId: com.arisen.packagegame }
+    TileGuid: fbf3a6a9-9c51-44e5-8cab-ba5f72262152
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 3, Z: 0 }
+    WorldPlacement: { X: 128.0, Y: 0.0, Z: -256.0 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
+- Guid: 39cf10ca-61f9-5e44-9580-5f17cb1c25f5
   Name: Showcase Valley Terrain Tile 0,1
   Transform:
     Position: { X: 0.0, Y: 64.0, Z: 128.0 }
@@ -62,7 +94,7 @@ Entities:
     CastShadows: true
     ReceiveShadows: true
     PreferHighQuality: false
-- Guid: 2dbc795e-4111-4a89-a5e1-d33645335c72
+- Guid: 5c0dbb60-abb2-525a-a39e-de1e36665052
   Name: Showcase Valley Terrain Tile 1,1
   Transform:
     Position: { X: 128.0, Y: 64.0, Z: 128.0 }
@@ -74,6 +106,166 @@ Entities:
     LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
     Coordinate: { X: 1, Z: 1 }
     WorldPlacement: { X: -128.0, Y: 0.0, Z: -128.0 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
+- Guid: 21da0e8b-2ca1-550a-8138-0551bc005226
+  Name: Showcase Valley Terrain Tile 2,1
+  Transform:
+    Position: { X: 256.0, Y: 64.0, Z: 128.0 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 6f4d0a1c-0e85-4a42-93fe-34058ef48511, PackageId: com.arisen.packagegame }
+    TileGuid: c5deab4c-cddb-a160-9b46-c80568bc411e
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 2, Z: 1 }
+    WorldPlacement: { X: 0.0, Y: 0.0, Z: -128.0 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
+- Guid: c1184f83-802e-591f-90c7-f9578773416c
+  Name: Showcase Valley Terrain Tile 3,1
+  Transform:
+    Position: { X: 384.0, Y: 64.0, Z: 128.0 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 6f4d0a1c-0e85-4a42-93fe-34058ef48511, PackageId: com.arisen.packagegame }
+    TileGuid: e9b745e7-392d-c4ee-30d6-ff0821dd836f
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 3, Z: 1 }
+    WorldPlacement: { X: 128.0, Y: 0.0, Z: -128.0 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
+- Guid: 2bdffa12-cc37-5f96-894e-2de89ff47cb8
+  Name: Showcase Valley Terrain Tile 0,2
+  Transform:
+    Position: { X: 0.0, Y: 64.0, Z: 256.0 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 6f4d0a1c-0e85-4a42-93fe-34058ef48511, PackageId: com.arisen.packagegame }
+    TileGuid: 539106a5-a503-4061-afb3-7c2ce5ed6636
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 0, Z: 2 }
+    WorldPlacement: { X: -256.0, Y: 0.0, Z: 0.0 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
+- Guid: 65eca912-713c-5ebb-bd9d-dfa823a0e0b9
+  Name: Showcase Valley Terrain Tile 1,2
+  Transform:
+    Position: { X: 128.0, Y: 64.0, Z: 256.0 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 6f4d0a1c-0e85-4a42-93fe-34058ef48511, PackageId: com.arisen.packagegame }
+    TileGuid: 2dfc268a-6049-cc4a-77bc-9415d084601c
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 1, Z: 2 }
+    WorldPlacement: { X: -128.0, Y: 0.0, Z: 0.0 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
+- Guid: dfaa86fe-0bfb-53d4-b5aa-1f57fe4d5ae2
+  Name: Showcase Valley Terrain Tile 2,2
+  Transform:
+    Position: { X: 256.0, Y: 64.0, Z: 256.0 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 6f4d0a1c-0e85-4a42-93fe-34058ef48511, PackageId: com.arisen.packagegame }
+    TileGuid: f67783ed-ee2a-ebb7-09d6-beffee83f89c
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 2, Z: 2 }
+    WorldPlacement: { X: 0.0, Y: 0.0, Z: 0.0 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
+- Guid: e9f4887e-d168-5557-a61d-39f9878b9e9b
+  Name: Showcase Valley Terrain Tile 3,2
+  Transform:
+    Position: { X: 384.0, Y: 64.0, Z: 256.0 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 6f4d0a1c-0e85-4a42-93fe-34058ef48511, PackageId: com.arisen.packagegame }
+    TileGuid: bb658e00-3a90-bc63-385e-22d8d8a5eda2
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 3, Z: 2 }
+    WorldPlacement: { X: 128.0, Y: 0.0, Z: 0.0 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
+- Guid: 0ea9e445-6847-51ca-aad5-3fa78345c433
+  Name: Showcase Valley Terrain Tile 0,3
+  Transform:
+    Position: { X: 0.0, Y: 64.0, Z: 384.0 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 6f4d0a1c-0e85-4a42-93fe-34058ef48511, PackageId: com.arisen.packagegame }
+    TileGuid: ce895aac-8b70-0d28-354f-830112283f97
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 0, Z: 3 }
+    WorldPlacement: { X: -256.0, Y: 0.0, Z: 128.0 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
+- Guid: 05c4e5fc-6c80-54c7-8587-5105a9d972bf
+  Name: Showcase Valley Terrain Tile 1,3
+  Transform:
+    Position: { X: 128.0, Y: 64.0, Z: 384.0 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 6f4d0a1c-0e85-4a42-93fe-34058ef48511, PackageId: com.arisen.packagegame }
+    TileGuid: a81a860d-0b29-f865-0f68-b02b9111e51e
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 1, Z: 3 }
+    WorldPlacement: { X: -128.0, Y: 0.0, Z: 128.0 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
+- Guid: 543ea9ea-0563-5daa-8780-9a4d63d71fb1
+  Name: Showcase Valley Terrain Tile 2,3
+  Transform:
+    Position: { X: 256.0, Y: 64.0, Z: 384.0 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 6f4d0a1c-0e85-4a42-93fe-34058ef48511, PackageId: com.arisen.packagegame }
+    TileGuid: 15f16c4d-5b71-5711-595c-dbcbc5b53271
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 2, Z: 3 }
+    WorldPlacement: { X: 0.0, Y: 0.0, Z: 128.0 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
+- Guid: fe93cb38-dbe1-5cb9-8e58-23b9d6a3d59e
+  Name: Showcase Valley Terrain Tile 3,3
+  Transform:
+    Position: { X: 384.0, Y: 64.0, Z: 384.0 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 6f4d0a1c-0e85-4a42-93fe-34058ef48511, PackageId: com.arisen.packagegame }
+    TileGuid: a2936506-0be0-0223-d4f8-973ae5365650
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 3, Z: 3 }
+    WorldPlacement: { X: 128.0, Y: 0.0, Z: 128.0 }
     Visible: true
     CastShadows: true
     ReceiveShadows: true
@@ -100,7 +292,7 @@ Entities:
     ReceiveShadows: true
     QualityGroup: 0
     PageCount: 1
-    InstanceCount: 764
+    InstanceCount: 762
 - Guid: 9cfcb277-b756-4349-b55e-39ddf24cfbe2
   Name: Showcase Valley Vegetation Cluster Grass
   Transform:
@@ -123,7 +315,7 @@ Entities:
     ReceiveShadows: true
     QualityGroup: 0
     PageCount: 11
-    InstanceCount: 44397
+    InstanceCount: 44392
 - Guid: 9cfcb277-b756-4349-b55e-39ddf24cfbe3
   Name: Showcase Valley Vegetation Cluster Shrub
   Transform:
@@ -146,7 +338,7 @@ Entities:
     ReceiveShadows: true
     QualityGroup: 0
     PageCount: 5
-    InstanceCount: 4375
+    InstanceCount: 4369
 - Guid: 9cfcb277-b756-4349-b55e-39ddf24cfbe4
   Name: Showcase Valley Vegetation Cluster Tree
   Transform:

@@ -246,7 +246,7 @@ function Assert-VegetationSubmission {
 
     $marker = "[Vegetation.GenericRP.Validation]"
     $pattern = [Regex]::Escape($marker) +
-        ' Surface=0x(?<surface>[0-9A-F]+) Frame=[0-9]+ DeviceGeneration=[0-9]+ Revision=[0-9]+ PreparedClusters=4 Cluster=324397e1-7ddb-a3fd-8d4e-1c077443f814 Species=3eb515ce-3dea-4994-81a1-a14fc2fe0eb5 Clusters=324397e17ddba3fd8d4e1c077443f814:3eb515ce3dea499481a1a14fc2fe0eb5:44397,6cea50e6732f66588ea048f1682b62e0:83212e385d3e44948929fe27639b5a29:312,dd618cfac607cf82bbb8545ff1cb1a4d:e560581300b6412985b205b754ccde74:4375,e90ae5ab24fb261799833ed656bd652c:7b0f2e528b674e3dbf0acbc42f622001:764 ClustersOverflow=0 OpaqueBatches=4 OpaqueInstances=49848 RecordedShadowBatches=16 RecordedShadowInstances=199392 Cascades=4 ShadowBatches=4,4,4,4 ShadowInstances=49848,49848,49848,49848 Dropped=0 Ticket=[1-9][0-9]*'
+        ' Surface=0x(?<surface>[0-9A-F]+) Frame=[0-9]+ DeviceGeneration=[0-9]+ Revision=[0-9]+ PreparedClusters=4 Cluster=324397e1-7ddb-a3fd-8d4e-1c077443f814 Species=3eb515ce-3dea-4994-81a1-a14fc2fe0eb5 Clusters=324397e17ddba3fd8d4e1c077443f814:3eb515ce3dea499481a1a14fc2fe0eb5:44392,6cea50e6732f66588ea048f1682b62e0:83212e385d3e44948929fe27639b5a29:312,dd618cfac607cf82bbb8545ff1cb1a4d:e560581300b6412985b205b754ccde74:4369,e90ae5ab24fb261799833ed656bd652c:7b0f2e528b674e3dbf0acbc42f622001:762 ClustersOverflow=0 OpaqueBatches=4 OpaqueInstances=49835 RecordedShadowBatches=16 RecordedShadowInstances=199340 Cascades=4 ShadowBatches=4,4,4,4 ShadowInstances=49835,49835,49835,49835 Dropped=0 Ticket=[1-9][0-9]*'
     $markerCount = [Regex]::Matches($Output, [Regex]::Escape($marker)).Count
     $submissions = [Regex]::Matches(
         $Output,
@@ -473,6 +473,8 @@ try {
         throw "Startup world closure does not reach the terrain root artifact."
     }
 
+    # Sixteen tiles: the showcase valley raster is a 4x4 grid of 128 m tiles.
+    $terrainTileCount = 16
     $terrainTileDependencies = @($terrainRoot.dependencies | Where-Object {
         $_.assetType -ceq "TerrainTile" -and
         $_.variant -ceq "runtime.terrain-tile.v1"
@@ -480,8 +482,8 @@ try {
     $terrainTextureDependencies = @($terrainRoot.dependencies | Where-Object {
         $_.assetType -ceq "Texture2D"
     })
-    if ($terrainTileDependencies.Count -ne 4) {
-        throw "Canonical terrain root must require exactly four cooked terrain tiles."
+    if ($terrainTileDependencies.Count -ne $terrainTileCount) {
+        throw "Canonical terrain root must require exactly $terrainTileCount cooked terrain tiles."
     }
     if ($terrainTextureDependencies.Count -ne 12) {
         throw "Canonical terrain root must close over exactly twelve layer textures."
@@ -593,7 +595,7 @@ try {
             Name = "Rock"
             Cluster = "e90ae5ab-24fb-2617-9983-3ed656bd652c"
             Pages = @(
-                "df936767-8c79-a601-af91-73cae122c63e")
+                "cbac8a59-7a52-6b1a-ca3c-a3a098cc50ca")
             Species = "7b0f2e52-8b67-4e3d-bf0a-cbc42f622001"
             Mesh = "89ae1524-c1c0-47c3-85a5-6a16838035f1"
             Material = "33fb5b2f-c310-478c-8523-8eeefa4ea747"
@@ -602,11 +604,11 @@ try {
             Name = "Shrub"
             Cluster = "dd618cfa-c607-cf82-bbb8-545ff1cb1a4d"
             Pages = @(
-                "30cc1c8b-808e-0070-0035-caeb7c7e82df",
-                "510dcadb-a19e-3887-6e88-e78a9a110244",
                 "5653ee6a-8b63-e743-914a-033422b4b75a",
-                "66ecd90f-2196-7246-6934-b8a81cd330b0",
-                "b32d190c-0cf1-f93a-4a4e-65aed982aaef")
+                "56f9b8c6-ccd2-7013-6363-ba1e727f32ad",
+                "694c6dcd-f392-1d6c-95e8-a352de2e26a4",
+                "b32d190c-0cf1-f93a-4a4e-65aed982aaef",
+                "b6992156-6510-af69-a8a2-7807e9fe9698")
             Species = "e5605813-00b6-4129-85b2-05b754ccde74"
             Mesh = "db1a5934-3fb7-49db-aa41-f318c8068a38"
             Material = "7f730a67-ea48-45dd-87ec-f473dbde9b5b"
@@ -615,17 +617,17 @@ try {
             Name = "Grass"
             Cluster = "324397e1-7ddb-a3fd-8d4e-1c077443f814"
             Pages = @(
-                "0b3705fb-df78-34e0-79e8-1aec8b27e1b9",
-                "0e4bad64-fc5f-1773-0d38-8f9ea5f31e07",
-                "1d9306e5-c133-139e-f814-48c9aba52d36",
-                "4e893b3f-c12d-a9f9-5d2a-61008454dbff",
+                "0463e6c6-57b0-e196-1b1d-e8202ae67a25",
+                "26d390c3-f185-1d49-ec3d-9454f890288d",
                 "61274bea-6b1d-5b0e-7771-f21290c708cb",
-                "6f8f37f2-989d-52fe-6d09-5c1dce2899aa",
-                "791fedeb-43cf-2642-59f0-f505638104ed",
-                "9b7400ec-1d16-a476-4a62-33e2f40e3bbd",
-                "bd93c7fc-17bd-0616-85c9-bdd150cddd55",
+                "63cd119a-f2ee-61b0-5be3-4e7d14e35cf3",
+                "9bde4725-5e83-6fe8-8f69-3cb7181ed83f",
+                "aa8744ef-be3c-8037-439f-7f654d095e76",
+                "c23d04be-7214-bc35-5d61-c1d83c9c47f4",
                 "c2c9ae0e-563f-85fe-4fb0-e6937ddf0b5e",
-                "db257944-e1fb-0a3f-82f8-cecf6a1f0007")
+                "d34c5ef9-1d29-1e10-3e90-1040c371b558",
+                "e96e6373-9797-3431-76cc-907f2f8fe2fc",
+                "fd0b473c-f7a4-8765-6615-4b821e4c3c0e")
             Species = "3eb515ce-3dea-4994-81a1-a14fc2fe0eb5"
             Mesh = "00135f74-4ecf-45c4-b9f2-72a68151a1f3"
             Material = "77bd836b-eacd-4aec-a349-3c271f7a1407"

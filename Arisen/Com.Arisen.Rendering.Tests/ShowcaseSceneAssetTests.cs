@@ -44,10 +44,15 @@ public sealed class ShowcaseSceneAssetTests
     private static readonly Guid s_MistfallDuskEnvironmentGuid = Guid.Parse("1fc01236-449b-4097-88c0-223b1ed736ff");
     private static readonly Guid s_TerrainRootGuid = Guid.Parse("6f4d0a1c-0e85-4a42-93fe-34058ef48511");
     private static readonly Guid s_TerrainLayerSetGuid = Guid.Parse("5dcaa6bd-2b51-498d-9fa9-bd68f4642761");
-    private static readonly Guid s_TerrainTile0Guid = Guid.Parse("807a7664-36ee-bdf8-71ea-e78cd4db0c4f");
-    private static readonly Guid s_TerrainTile1Guid = Guid.Parse("9b8e9a8a-7c9d-493e-9aa6-5ba74e5b630d");
-    private static readonly Guid s_TerrainTile2Guid = Guid.Parse("331e576c-eddd-d7cc-e553-23ef719f496d");
-    private static readonly Guid s_TerrainTile3Guid = Guid.Parse("3fd9bf23-4923-f0e5-cd73-94920028ed67");
+    private const int TerrainTilesPerAxis = VegetationCanonicalFixture.TerrainTilesPerAxis;
+    private const int TerrainTileIntervals = 256;
+    private const int TerrainTileCount = VegetationCanonicalFixture.TerrainTileCount;
+    private const int TerrainRasterSamplesPerAxis =
+        (TerrainTilesPerAxis * TerrainTileIntervals) + 1;
+    private static readonly Guid s_TerrainTileFirstGuid =
+        Guid.Parse("807a7664-36ee-bdf8-71ea-e78cd4db0c4f");
+    private static readonly Guid s_TerrainTileLastGuid =
+        Guid.Parse("a2936506-0be0-0223-d4f8-973ae5365650");
     private static readonly VegetationCanonicalSpecies s_ValleyRock =
         VegetationCanonicalFixture.Require("Rock");
     private static readonly Guid s_ValleyRockSpeciesGuid =
@@ -468,7 +473,7 @@ public sealed class ShowcaseSceneAssetTests
     }
 
     [Fact]
-    public void PackageShowcaseTerrain_CooksTwoByTwoTilesWithBitExactSharedBorders()
+    public void PackageShowcaseTerrain_CooksFourByFourTilesWithBitExactSharedBorders()
     {
         const string packageId = "com.arisen.packagegame";
         string packageRoot = GetRepositoryFile(
@@ -488,17 +493,13 @@ public sealed class ShowcaseSceneAssetTests
                 packageId);
 
             CookedTerrainRootArtifact artifact = TerrainRootAssetCooker.Cook(db, rootRef);
-            Assert.Equal(4, artifact.TileCount);
+            Assert.Equal(TerrainTileCount, artifact.TileCount);
             Assert.Equal(
-                4,
+                TerrainTileCount,
                 artifact.Dependencies.Count(
                     dependency => dependency.AssetType == TerrainAssetTypes.Tile));
-            Assert.Equal(
-                s_TerrainTile1Guid,
-                TerrainTileIdentity.CreateGuid(
-                    s_TerrainRootGuid,
-                    packageId,
-                    new TerrainTileCoordinate(1, 0)));
+            Assert.Equal(s_TerrainTileFirstGuid, TerrainTileGuid(0, 0));
+            Assert.Equal(s_TerrainTileLastGuid, TerrainTileGuid(3, 3));
 
             Assert.True(
                 TerrainRootAssetCooker.TryLoadCooked(
@@ -507,8 +508,8 @@ public sealed class ShowcaseSceneAssetTests
                     out CookedTerrainRoot root,
                     out string rootDiagnostic),
                 rootDiagnostic);
-            Assert.Equal(513, root.HeightSourceWidth);
-            Assert.Equal(513, root.HeightSourceHeight);
+            Assert.Equal(TerrainRasterSamplesPerAxis, root.HeightSourceWidth);
+            Assert.Equal(TerrainRasterSamplesPerAxis, root.HeightSourceHeight);
             Assert.Equal(2, root.SourceSchemaVersion);
             Assert.Equal(4, root.Layers.Count);
             Assert.Equal(
@@ -527,50 +528,55 @@ public sealed class ShowcaseSceneAssetTests
                 4,
                 artifact.Dependencies.Count(
                     dependency => dependency.Variant == TerrainTextureCookVariants.Orm));
-            Assert.Equal(
-                s_TerrainTile1Guid,
-                root.Tiles.Single(tile => tile.Coordinate == new TerrainTileCoordinate(0, 0))
-                    .Neighbors.PositiveX);
-            Assert.Equal(
-                s_TerrainTile0Guid,
-                root.Tiles.Single(tile => tile.Coordinate == new TerrainTileCoordinate(1, 0))
-                    .Neighbors.NegativeX);
-            Assert.Equal(
-                s_TerrainTile2Guid,
-                root.Tiles.Single(tile => tile.Coordinate == new TerrainTileCoordinate(0, 0))
-                    .Neighbors.PositiveZ);
-            Assert.Equal(
-                s_TerrainTile0Guid,
-                root.Tiles.Single(tile => tile.Coordinate == new TerrainTileCoordinate(0, 1))
-                    .Neighbors.NegativeZ);
 
-            CookedTerrainTile tile0 = LoadTerrainTile(db, s_TerrainTile0Guid);
-            CookedTerrainTile tile1 = LoadTerrainTile(db, s_TerrainTile1Guid);
-            CookedTerrainTile tile2 = LoadTerrainTile(db, s_TerrainTile2Guid);
-            CookedTerrainTile tile3 = LoadTerrainTile(db, s_TerrainTile3Guid);
-            Assert.Equal(new TerrainTileCoordinate(0, 0), tile0.Coordinate);
-            Assert.Equal(new TerrainTileCoordinate(1, 0), tile1.Coordinate);
-            Assert.Equal(new TerrainTileCoordinate(0, 1), tile2.Coordinate);
-            Assert.Equal(new TerrainTileCoordinate(1, 1), tile3.Coordinate);
-            Assert.Equal(tile0.WorldPlacement.Y, tile1.WorldPlacement.Y);
-            Assert.Equal(tile0.WorldPlacement.Z, tile1.WorldPlacement.Z);
-            Assert.Equal(
-                tile0.WorldPlacement.X +
-                ((tile0.Resolution - 1) * tile0.SampleSpacing.X),
-                tile1.WorldPlacement.X);
-            Assert.Equal(tile0.WorldPlacement.X, tile2.WorldPlacement.X);
-            Assert.Equal(
-                tile0.WorldPlacement.Z +
-                ((tile0.Resolution - 1) * tile0.SampleSpacing.Z),
-                tile2.WorldPlacement.Z);
-            CookedTerrainTile[] tiles = [tile0, tile1, tile2, tile3];
+            for (int tileZ = 0; tileZ < TerrainTilesPerAxis; tileZ++)
+            {
+                for (int tileX = 0; tileX < TerrainTilesPerAxis; tileX++)
+                {
+                    var record = root.Tiles.Single(
+                        tile => tile.Coordinate == new TerrainTileCoordinate(tileX, tileZ));
+                    Assert.Equal(TerrainTileGuid(tileX, tileZ), record.Guid);
+                    Assert.Equal(
+                        tileX + 1 < TerrainTilesPerAxis
+                            ? TerrainTileGuid(tileX + 1, tileZ)
+                            : Guid.Empty,
+                        record.Neighbors.PositiveX);
+                    Assert.Equal(
+                        tileX > 0 ? TerrainTileGuid(tileX - 1, tileZ) : Guid.Empty,
+                        record.Neighbors.NegativeX);
+                    Assert.Equal(
+                        tileZ + 1 < TerrainTilesPerAxis
+                            ? TerrainTileGuid(tileX, tileZ + 1)
+                            : Guid.Empty,
+                        record.Neighbors.PositiveZ);
+                    Assert.Equal(
+                        tileZ > 0 ? TerrainTileGuid(tileX, tileZ - 1) : Guid.Empty,
+                        record.Neighbors.NegativeZ);
+                }
+            }
+
+            var tiles = new CookedTerrainTile[TerrainTileCount];
+            for (int tileZ = 0; tileZ < TerrainTilesPerAxis; tileZ++)
+            {
+                for (int tileX = 0; tileX < TerrainTilesPerAxis; tileX++)
+                {
+                    CookedTerrainTile tile = LoadTerrainTile(db, TerrainTileGuid(tileX, tileZ));
+                    Assert.Equal(new TerrainTileCoordinate(tileX, tileZ), tile.Coordinate);
+                    Assert.Equal(4, tile.LayerCount);
+                    double interval = (tile.Resolution - 1) * tile.SampleSpacing.X;
+                    Assert.Equal(root.WorldPlacement.X + (tileX * interval), tile.WorldPlacement.X);
+                    Assert.Equal(root.WorldPlacement.Y, tile.WorldPlacement.Y);
+                    Assert.Equal(root.WorldPlacement.Z + (tileZ * interval), tile.WorldPlacement.Z);
+                    tiles[(tileZ * TerrainTilesPerAxis) + tileX] = tile;
+                }
+            }
+
             bool sawRock = false;
             bool sawPath = false;
             bool sawRiver = false;
             bool sawBlend = false;
             foreach (CookedTerrainTile tile in tiles)
             {
-                Assert.Equal(4, tile.LayerCount);
                 for (int z = 0; z < tile.Resolution; z++)
                 {
                     for (int x = 0; x < tile.Resolution; x++)
@@ -688,13 +694,15 @@ public sealed class ShowcaseSceneAssetTests
                     out CookedTerrainRoot terrainRoot,
                     out string terrainDiagnostic),
                 terrainDiagnostic);
-            CookedTerrainTile[] tiles =
-            [
-                LoadTerrainTile(db, s_TerrainTile0Guid),
-                LoadTerrainTile(db, s_TerrainTile1Guid),
-                LoadTerrainTile(db, s_TerrainTile2Guid),
-                LoadTerrainTile(db, s_TerrainTile3Guid)
-            ];
+            CookedTerrainTile[] tiles = new CookedTerrainTile[TerrainTileCount];
+            for (int tileZ = 0; tileZ < TerrainTilesPerAxis; tileZ++)
+            {
+                for (int tileX = 0; tileX < TerrainTilesPerAxis; tileX++)
+                {
+                    tiles[(tileZ * TerrainTilesPerAxis) + tileX] =
+                        LoadTerrainTile(db, TerrainTileGuid(tileX, tileZ));
+                }
+            }
 
             var speciesRef = new AssetRef<VegetationSpeciesSourceAsset>(
                 s_ValleyRockSpeciesGuid,
@@ -738,17 +746,17 @@ public sealed class ShowcaseSceneAssetTests
                     "valley-rock",
                     UnscaledConservativeRadius: 1.75f,
                     Exclusions: []));
-            Assert.Equal(764, result.Metrics.AcceptedCount);
+            Assert.Equal(762, result.Metrics.AcceptedCount);
             Assert.Equal(
                 Guid.Parse("e90ae5ab-24fb-2617-9983-3ed656bd652c"),
                 result.ClusterMetadata.Guid);
             Assert.Equal(
-                Guid.Parse("df936767-8c79-a601-af91-73cae122c63e"),
+                Guid.Parse("cbac8a59-7a52-6b1a-ca3c-a3a098cc50ca"),
                 result.PageMetadata[0].Guid);
             Assert.Equal(1, result.PageMetadata.Count);
             string placementHash = Convert.ToHexString(result.PlacementContentHash);
-            Assert.Equal("C3A8D67DDC3BB9164579BA78DF7E2B1C", placementHash[..32]);
-            Assert.Equal("34666A60DA0102EC5863A397D412B73B", placementHash[32..]);
+            Assert.Equal("67FBCDF18EFC07D821734F5BDAC8E3D5", placementHash[..32]);
+            Assert.Equal("AB953737D3F63F0371EC6255CCD00FCC", placementHash[32..]);
             Assert.Equal(1, result.Cluster.Pages.Count);
             Assert.Equal(
                 result.Metrics.AcceptedCount,
@@ -816,10 +824,10 @@ public sealed class ShowcaseSceneAssetTests
             Assert.Equal(SHA256.HashSizeInBytes, result.PlacementContentHash.Length);
             string pageHash = Convert.ToHexString(cluster.Pages[0].ContentHash);
             string clusterHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(artifact.Path)));
-            Assert.Equal("2CBB0F11AE9C14FED5904F125ACB3F00", pageHash[..32]);
-            Assert.Equal("647CDA852533D2A8ED3049D815DDFE72", pageHash[32..]);
-            Assert.Equal("B7D5A57E434D046FB87CD010D3F97729", clusterHash[..32]);
-            Assert.Equal("83B454189CECA87D90E76156558C48BC", clusterHash[32..]);
+            Assert.Equal("F5D56F722DA88F60E30095636B8BE879", pageHash[..32]);
+            Assert.Equal("9ACAA9EEE36126433DE616DF98E1DB8C", pageHash[32..]);
+            Assert.Equal("4A77D4F21664DEA2F72DC42ECF998DE1", clusterHash[..32]);
+            Assert.Equal("45AFA3CFC9BA33766EA49785C8B77532", clusterHash[32..]);
 
             VegetationScatterBakeResult reordered = VegetationScatterBaker.Build(
                 new VegetationScatterBakeDescriptor(
@@ -987,11 +995,33 @@ public sealed class ShowcaseSceneAssetTests
         const string packageId = "com.arisen.packagegame";
         db.AddAsset(s_TerrainRootGuid, TerrainAssetTypes.Root, Path.Combine(packageRoot, "Assets", "Terrain", "ShowcaseValley.aristerrain"), packageId);
         db.AddAsset(s_TerrainLayerSetGuid, TerrainAssetTypes.LayerSet, Path.Combine(packageRoot, "Assets", "Terrain", "ShowcaseValley.ariterrainlayers"), packageId);
-        db.AddAsset(s_TerrainTile0Guid, TerrainAssetTypes.Tile, Path.Combine(packageRoot, "Assets", "Terrain", "Generated", "ShowcaseValley", "x_0_z_0.ariterraingenerated"), packageId);
-        db.AddAsset(s_TerrainTile1Guid, TerrainAssetTypes.Tile, Path.Combine(packageRoot, "Assets", "Terrain", "Generated", "ShowcaseValley", "x_1_z_0.ariterraingenerated"), packageId);
-        db.AddAsset(s_TerrainTile2Guid, TerrainAssetTypes.Tile, Path.Combine(packageRoot, "Assets", "Terrain", "Generated", "ShowcaseValley", "x_0_z_1.ariterraingenerated"), packageId);
-        db.AddAsset(s_TerrainTile3Guid, TerrainAssetTypes.Tile, Path.Combine(packageRoot, "Assets", "Terrain", "Generated", "ShowcaseValley", "x_1_z_1.ariterraingenerated"), packageId);
+        for (int tileZ = 0; tileZ < TerrainTilesPerAxis; tileZ++)
+        {
+            for (int tileX = 0; tileX < TerrainTilesPerAxis; tileX++)
+            {
+                db.AddAsset(
+                    TerrainTileGuid(tileX, tileZ),
+                    TerrainAssetTypes.Tile,
+                    TerrainTileAssetPath(packageRoot, tileX, tileZ),
+                    packageId);
+            }
+        }
     }
+
+    private static Guid TerrainTileGuid(int tileX, int tileZ) =>
+        TerrainTileIdentity.CreateGuid(
+            s_TerrainRootGuid,
+            "com.arisen.packagegame",
+            new TerrainTileCoordinate(tileX, tileZ));
+
+    private static string TerrainTileAssetPath(string packageRoot, int tileX, int tileZ) =>
+        Path.Combine(
+            packageRoot,
+            "Assets",
+            "Terrain",
+            "Generated",
+            "ShowcaseValley",
+            $"x_{tileX}_z_{tileZ}.ariterraingenerated");
 
     private static CookedTerrainTile LoadTerrainTile(TestAssetDatabase db, Guid tileGuid)
     {
