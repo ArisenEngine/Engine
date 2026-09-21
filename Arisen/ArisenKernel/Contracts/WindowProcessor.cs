@@ -2,6 +2,12 @@ using System;
 
 namespace ArisenKernel.Contracts;
 
+/// <summary>
+/// Managed half of a native window procedure. The native HAL treats a result of -1 as "not handled"
+/// and forwards the message to the platform default procedure, so an implementation must report every
+/// message it does not consume as -1 instead of returning zero. Swallowing messages removes their
+/// default behaviour for the whole window.
+/// </summary>
 public abstract class WindowProcessor
 {
     protected WindowProcessor()
