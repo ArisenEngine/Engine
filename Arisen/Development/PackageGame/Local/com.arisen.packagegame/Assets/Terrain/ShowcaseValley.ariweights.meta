@@ -1,3 +1,9 @@
-Guid: 24f44422-a840-4397-8c3a-5209938c367f
-AssetType: TerrainWeightSource
-Importer: ArisenTerrainWeightSourceImporter
+Guid: ae5cc402-557f-4494-b53c-5922d58f7b66
+AssetType: "TerrainWeightSource"
+Importer: "ArisenTerrainWeightSourceImporter"
+Generated:
+  SourceGuid: 6f4d0a1c-0e85-4a42-93fe-34058ef48511
+  SourcePackageId: "com.arisen.packagegame"
+  ChildKind: "terrain-weight-source"
+  ChildKey: "weights"
+  GeneratedByImporter: "ArisenTerrainWeightSourceImporter"
