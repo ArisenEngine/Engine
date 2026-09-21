@@ -389,6 +389,7 @@ public sealed class VegetationRenderPassContractTests
         string layout = pass[pass.LastIndexOf(
             "private static void AddStaticMeshVertexLayout",
             StringComparison.Ordinal)..];
+        layout = layout.Replace("\r\n", "\n", StringComparison.Ordinal);
 
         string[] declarations = ReadVertexInputDeclarations(shader);
         Assert.NotEmpty(declarations);
