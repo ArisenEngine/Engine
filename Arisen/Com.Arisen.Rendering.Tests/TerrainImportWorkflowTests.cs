@@ -163,6 +163,87 @@ public sealed class TerrainImportWorkflowTests
     }
 
     [Fact]
+    public void Commit_UsesAuthoredWeightSourceInsteadOfGeneratedDefaults()
+    {
+        using var fixture = TerrainImportFixture.Create();
+        AssetRecord layerSet = fixture.CreateLayerSet();
+        string heightPath = fixture.WritePgm("Inputs/Valley.pgm", 5, 5, seed: 21);
+        byte[] authored = fixture.WriteWeights("Inputs/Valley.ariweights", 5, 5, seed: 21);
+        TerrainImportRequest request = fixture.CreateRequest(heightPath) with
+        {
+            WeightSourcePath = fixture.PathFor("Inputs/Valley.ariweights")
+        };
+
+        TerrainImportPlan plan = TerrainImportPlanner.CreatePlan(request, layerSet);
+        TerrainImportPlan defaults = TerrainImportPlanner.CreatePlan(
+            fixture.CreateRequest(heightPath),
+            layerSet);
+        Assert.NotEqual(defaults.Fingerprint, plan.Fingerprint);
+
+        TerrainImportEmitter.Commit(plan);
+
+        TerrainWeightField written = TerrainWeightSourceDecoder.DecodeFile(plan.WeightAssetPath);
+        Assert.Equal(5, written.Width);
+        Assert.Equal(5, written.Height);
+        Assert.Equal(authored, written.Weights.ToArray());
+    }
+
+    [Fact]
+    public void Commit_KeepsGeneratedDefaultWeightsWhenNoWeightSourceIsAuthored()
+    {
+        using var fixture = TerrainImportFixture.Create();
+        AssetRecord layerSet = fixture.CreateLayerSet();
+        string heightPath = fixture.WritePgm("Inputs/Valley.pgm", 5, 5, seed: 24);
+        TerrainImportPlan plan = TerrainImportPlanner.CreatePlan(
+            fixture.CreateRequest(heightPath),
+            layerSet);
+
+        TerrainImportEmitter.Commit(plan);
+
+        TerrainWeightField written = TerrainWeightSourceDecoder.DecodeFile(plan.WeightAssetPath);
+        Assert.Equal(byte.MaxValue, written.GetSample(0, 0)[0]);
+        Assert.Equal(0, written.GetSample(0, 0)[1]);
+        Assert.Equal(0, written.GetSample(4, 4)[2]);
+        Assert.Equal(0, written.GetSample(4, 4)[3]);
+    }
+
+    [Fact]
+    public void Preview_RejectsAuthoredWeightSourceWithMismatchedDimensions()
+    {
+        using var fixture = TerrainImportFixture.Create();
+        AssetRecord layerSet = fixture.CreateLayerSet();
+        string heightPath = fixture.WritePgm("Inputs/Valley.pgm", 5, 5, seed: 22);
+        fixture.WriteWeights("Inputs/Valley.ariweights", 3, 3, seed: 22);
+        TerrainImportRequest request = fixture.CreateRequest(heightPath) with
+        {
+            WeightSourcePath = fixture.PathFor("Inputs/Valley.ariweights")
+        };
+
+        InvalidDataException error = Assert.Throws<InvalidDataException>(() =>
+            TerrainImportPlanner.CreatePlan(request, layerSet));
+
+        Assert.Contains("but the height source is 5x5", error.Message);
+    }
+
+    [Fact]
+    public void Preview_RejectsAuthoredWeightSourceWithoutNativeExtension()
+    {
+        using var fixture = TerrainImportFixture.Create();
+        AssetRecord layerSet = fixture.CreateLayerSet();
+        string heightPath = fixture.WritePgm("Inputs/Valley.pgm", 5, 5, seed: 23);
+        fixture.WriteWeights("Inputs/Valley.weights", 5, 5, seed: 23);
+        TerrainImportRequest request = fixture.CreateRequest(heightPath) with
+        {
+            WeightSourcePath = fixture.PathFor("Inputs/Valley.weights")
+        };
+
+        InvalidDataException error = Assert.Throws<InvalidDataException>(() =>
+            TerrainImportPlanner.CreatePlan(request, layerSet));
+
+        Assert.Contains("'.ariweights' extension", error.Message);
+    }
+
+    [Fact]
     public void Commit_RequiresConfirmationBeforeDestructiveGridRegeneration()
     {
         using var fixture = TerrainImportFixture.Create();
@@ -521,6 +602,29 @@ public sealed class TerrainImportWorkflowTests
 
             File.WriteAllBytes(path, bytes);
             return path;
+        }
+
+        public byte[] WriteWeights(
+            string relativePath,
+            int width,
+            int height,
+            int seed)
+        {
+            string path = PathFor(relativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            int sampleCount = checked(width * height);
+            var weights = new byte[sampleCount * 4];
+            for (int index = 0; index < sampleCount; index++)
+            {
+                int offset = index * 4;
+                weights[offset] = (byte)((index * 31 + seed) & 0x7f);
+                weights[offset + 1] = (byte)((index * 17 + seed) & 0x3f);
+                weights[offset + 2] = (byte)((index * 7 + seed) & 0x1f);
+                weights[offset + 3] = (byte)((index + seed) & 0x0f);
+            }
+
+            File.WriteAllBytes(path, TerrainWeightSourceEncoder.Encode(width, height, weights));
+            return weights;
         }
 
         public string PathFor(string relativePath)
