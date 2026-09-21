@@ -405,23 +405,52 @@ try {
     }
 
     $boundary = $checkpointByName["boundary-mixed-lod"]
+    $far = $checkpointByName["far-cascade"]
     $postRebase = $checkpointByName["post-rebase"]
     $returned = $checkpointByName["returned-start"]
     Assert-Condition (
-        ($boundary.cameraWorldPosition | ConvertTo-Json -Compress) -ceq
+        ($far.cameraWorldPosition | ConvertTo-Json -Compress) -ceq
         ($postRebase.cameraWorldPosition | ConvertTo-Json -Compress)) `
-        "Post-rebase checkpoint did not return to the boundary camera position."
+        "Post-rebase checkpoint did not keep the parked far camera position."
     Assert-Condition (
         ([long]$postRebase.origin.rebaseSequence -eq
-         ([long]$boundary.origin.rebaseSequence + 1)) -and
-        ([double]$postRebase.origin.origin.x -ne [double]$boundary.origin.origin.x -or
-         [double]$postRebase.origin.origin.y -ne [double]$boundary.origin.origin.y -or
-         [double]$postRebase.origin.origin.z -ne [double]$boundary.origin.origin.z)) `
+         ([long]$far.origin.rebaseSequence + 1)) -and
+        ([double]$postRebase.origin.origin.x -ne [double]$far.origin.origin.x -or
+         [double]$postRebase.origin.origin.y -ne [double]$far.origin.origin.y -or
+         [double]$postRebase.origin.origin.z -ne [double]$far.origin.origin.z)) `
         "Post-rebase checkpoint did not retain a distinct rebased origin."
     Assert-Condition (
         ($boundary.tiles | ForEach-Object { $_.worldBounds } | ConvertTo-Json -Compress) -ceq
         ($postRebase.tiles | ForEach-Object { $_.worldBounds } | ConvertTo-Json -Compress)) `
         "Terrain world bounds changed across the origin rebase."
+    # The fixture rebases the world under a parked camera and captures the far pose again, so the
+    # far and post-rebase checkpoints frame one camera with the origin as the only variable. The
+    # selected patch plan is part of that contract and is compared exactly here: a rebase that
+    # re-resolved the LOD rings would retessellate the surface, and a frame difference of that kind
+    # must fail rather than pass on the image tolerance below.
+    $farTiles = @($far.tiles)
+    $postRebaseTiles = @($postRebase.tiles)
+    Assert-Condition ($farTiles.Count -eq $postRebaseTiles.Count) `
+        "Terrain tile count changed across the origin rebase."
+    for ($tileIndex = 0; $tileIndex -lt $farTiles.Count; $tileIndex++) {
+        $beforeRebase = $farTiles[$tileIndex]
+        $afterRebase = $postRebaseTiles[$tileIndex]
+        Assert-Condition (
+            [string]$beforeRebase.tileGuid -ceq [string]$afterRebase.tileGuid -and
+            [int]$beforeRebase.coordinate.x -eq [int]$afterRebase.coordinate.x -and
+            [int]$beforeRebase.coordinate.z -eq [int]$afterRebase.coordinate.z -and
+            [int]$beforeRebase.patchCount -eq [int]$afterRebase.patchCount -and
+            [int]$beforeRebase.minimumLod -eq [int]$afterRebase.minimumLod -and
+            [int]$beforeRebase.maximumLod -eq [int]$afterRebase.maximumLod) `
+            "Terrain tile '$([string]$beforeRebase.tileGuid)' changed its selected patch plan across the origin rebase."
+    }
+    $farHistogram = (@($far.lodHistogram) |
+        ForEach-Object { "$($_.lod):$($_.patchCount)" }) -join ","
+    $postRebaseHistogram = (@($postRebase.lodHistogram) |
+        ForEach-Object { "$($_.lod):$($_.patchCount)" }) -join ","
+    Assert-Condition ($farHistogram -ceq $postRebaseHistogram) `
+        "Terrain LOD histogram changed across the origin rebase."
+
     Assert-Condition (
         ($near.cameraWorldPosition | ConvertTo-Json -Compress) -ceq
         ($returned.cameraWorldPosition | ConvertTo-Json -Compress)) `
@@ -526,10 +555,17 @@ try {
         Assert-Condition (@($pathDepthHashes | Select-Object -Unique).Count -eq 3) `
             "Near/boundary/far terrain captures did not produce distinct depth views."
 
+        # Both comparisons replay a camera the fixture captured earlier. The far/post-rebase pair
+        # parks the camera across the rebase and asserts one selected patch plan above, so the origin
+        # is the only variable left; measured on the Production camera path the visible cost is a few
+        # 1e-5 of mean luminance in the terrain cells while the sky cells - which no origin-relative
+        # geometry covers - stay bit-invariant. The thresholds remain far below a single intensity
+        # step (1/255) and below what a one-pixel terrain shift would produce, so a rebase that
+        # moved, cracked, dropped or retessellated the terrain still fails here.
         Assert-VisualSimilarity `
-            $visuals["boundary-mixed-lod"] `
+            $visuals["far-cascade"] `
             $visuals["post-rebase"] `
-            "Origin rebase at the boundary camera"
+            "Origin rebase under the parked far camera"
         Assert-VisualSimilarity `
             $visuals["near"] `
             $visuals["returned-start"] `

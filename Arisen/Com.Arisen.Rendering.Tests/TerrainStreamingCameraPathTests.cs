@@ -1,7 +1,10 @@
 using System.Globalization;
 using System.Numerics;
+using ArisenEngine.Core.Assets;
+using ArisenEngine.Rendering.Resources;
 using ArisenEngine.Resources.Serialization;
 using ArisenEngine.Terrain;
+using ArisenEngine.Terrain.Assets;
 using Xunit;
 using YamlDotNet.RepresentationModel;
 
@@ -10,27 +13,27 @@ namespace Com.Arisen.Rendering.Tests;
 /// <summary>
 /// Pins the coverage contract of the terrain-streaming smoke fixture.
 ///
-/// Every checkpoint the fixture captures must keep all four canonical ShowcaseValley tiles inside
-/// the render frustum: the summary validator rejects a checkpoint whose tile selects no patch, and
-/// a fully culled tile would leave the captured frame without that tile. The fixture therefore
-/// derives its own aim and its own height from the loaded terrain bounds and the runtime surface
-/// query, and only inherits the authored camera position. Reusing the authored showcase rotation
-/// would leave the canonical tile behind the view direction fully culled, and reusing the authored
-/// camera height would walk a pose that moves across the terrain into the hillside, which captures
-/// the inside of the terrain and reads back as an inverted frame. This test rebuilds the fixture
-/// path from the authored showcase camera and culls the canonical tiles with the production
-/// frustum test, so a content framing change fails here instead of in the runtime gate.
+/// Every checkpoint the fixture captures must keep every canonical ShowcaseValley tile inside the
+/// render frustum: the summary validator rejects a checkpoint whose tile selects no patch, and a
+/// fully culled tile would leave the captured frame without that tile. The canonical root covers a
+/// 512 m square, which is wider than the frustum the fixture renders with - roughly 73 degrees
+/// horizontally at the scene camera's 45 degree vertical field of view and 16:9 - so a pose anywhere
+/// inside the raster has tiles behind and beside the view direction and selects no patch for them.
+/// Only the root's corner regions put the whole raster ahead of the camera, so the fixture derives
+/// its own corner poses, aim and height from the loaded terrain bounds and the runtime surface
+/// query, and keeps only the authored camera bearing. Reusing the authored showcase rotation would
+/// leave the canonical tile behind the view direction fully culled, and reusing the authored camera
+/// height would walk a pose that moves across the terrain into the hillside, which captures the
+/// inside of the terrain and reads back as an inverted frame. This test rebuilds the fixture path
+/// from the authored showcase camera and the cooked package content and culls the canonical tiles
+/// with the production frustum test, so a content framing change fails here instead of in the
+/// runtime gate.
 /// </summary>
 public sealed class TerrainStreamingCameraPathTests
 {
     private const int ViewportWidth = 1280;
     private const int ViewportHeight = 720;
 
-    /// <summary>
-    /// Cooked ShowcaseValley tile bounds (four 128x128 m tiles spanning world -256..0) as the
-    /// runtime fixture reports them. Origin-relative positions equal world positions at rebase
-    /// sequence 0, which is the state every pre-rebase checkpoint is captured in.
-    /// </summary>
     /// <summary>
     /// Synthetic valley floor the fixture tests stand their derived poses on. The path contract is
     /// not about content heights: a derived pose has to be measured against whatever surface the
@@ -47,26 +50,172 @@ public sealed class TerrainStreamingCameraPathTests
     /// </summary>
     private static double UnavailableSurface(double worldX, double worldZ) => double.NaN;
 
-    private static readonly TerrainPatchWorldBounds[] s_Tiles =
-    [
-        new TerrainPatchWorldBounds(
-            new WorldPosition(-256.0, 2.1704432745860993, -256.0),
-            new WorldPosition(-128.0, 52.11883726253147, -128.0)),
-        new TerrainPatchWorldBounds(
-            new WorldPosition(-128.0, 0.3999084458686198, -256.0),
-            new WorldPosition(0.0, 49.250263218127714, -128.0)),
-        new TerrainPatchWorldBounds(
-            new WorldPosition(-256.0, 1.5158922713054093, -128.0),
-            new WorldPosition(-128.0, 52.68793774319066, 0.0)),
-        new TerrainPatchWorldBounds(
-            new WorldPosition(-128.0, 1.8500038147554743, -128.0),
-            new WorldPosition(0.0, 52.191470206759746, 0.0))
-    ];
+    private static readonly Guid s_TerrainLayerSetGuid =
+        Guid.Parse("5dcaa6bd-2b51-498d-9fa9-bd68f4642761");
+
+    /// <summary>
+    /// Cooked ShowcaseValley tile bounds as the runtime reports them to the fixture: sixteen tiles of
+    /// 128 m covering world -256..256, which is the 512 m square one showcase cell spans. The bounds
+    /// are cooked from the shipped package content instead of being pinned as literals, because the
+    /// fixture derives every pose from whatever bounds the runtime loads: a content change that
+    /// resizes the raster has to fail here instead of silently invalidating the coverage contract.
+    /// Origin-relative positions equal world positions at rebase sequence 0, which is the state every
+    /// pre-rebase checkpoint is captured in.
+    /// </summary>
+    private static readonly Lazy<TerrainPatchWorldBounds[]> s_Tiles = new(LazyCanonicalTileBounds);
+
+    private static TerrainPatchWorldBounds[] CanonicalTiles() => s_Tiles.Value;
+
+    private static TerrainPatchWorldBounds[] LazyCanonicalTileBounds()
+    {
+        string packageRoot = GetRepositoryFile(
+            "Arisen",
+            "Development",
+            "PackageGame",
+            "Local",
+            VegetationCanonicalFixture.PackageId);
+        string cookedRoot = Path.Combine(
+            Path.GetTempPath(),
+            "ArisenTerrainStreamingCameraPathTests",
+            Guid.NewGuid().ToString("N"));
+        try
+        {
+            var database = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, cookedRoot);
+            AddCanonicalTerrainAssets(database, packageRoot);
+            var rootRef = new AssetRef<TerrainRootSourceAsset>(
+                VegetationCanonicalFixture.TerrainRootGuid,
+                TerrainAssetTypes.Root,
+                VegetationCanonicalFixture.PackageId);
+            TerrainRootAssetCooker.Cook(database, rootRef);
+            Assert.True(
+                TerrainRootAssetCooker.TryLoadCooked(
+                    database, rootRef, out CookedTerrainRoot root, out string rootDiagnostic),
+                rootDiagnostic);
+            Assert.Equal(VegetationCanonicalFixture.TerrainTileCount, root.Tiles.Count);
+
+            var bounds = new TerrainPatchWorldBounds[VegetationCanonicalFixture.TerrainTileCount];
+            for (int tileZ = 0; tileZ < VegetationCanonicalFixture.TerrainTilesPerAxis; tileZ++)
+            {
+                for (int tileX = 0; tileX < VegetationCanonicalFixture.TerrainTilesPerAxis; tileX++)
+                {
+                    CookedTerrainTile tile = LoadCanonicalTerrainTile(database, root, tileX, tileZ);
+                    bounds[(tileZ * VegetationCanonicalFixture.TerrainTilesPerAxis) + tileX] =
+                        TileWorldBounds(tile);
+                }
+            }
+
+            // The corner poses only frame the whole raster while the canonical root stays the 512 m
+            // square the fixture path is built for, so the footprint itself is part of the contract.
+            TerrainPatchWorldBounds union = UnionBounds(bounds);
+            Assert.Equal(-256.0, union.Min.X);
+            Assert.Equal(256.0, union.Max.X);
+            Assert.Equal(-256.0, union.Min.Z);
+            Assert.Equal(256.0, union.Max.Z);
+            Assert.True(union.Max.Y > union.Min.Y, "Cooked terrain bounds span no height.");
+            return bounds;
+        }
+        finally
+        {
+            try
+            {
+                if (Directory.Exists(cookedRoot))
+                {
+                    Directory.Delete(cookedRoot, recursive: true);
+                }
+            }
+            catch
+            {
+                // Best-effort test cleanup.
+            }
+        }
+    }
+
+    /// <summary>
+    /// World bounds of one cooked tile, from the placement and height the runtime reports for it.
+    /// The terrain pipeline builds the same extent out of the cooked placement, the sample spacing
+    /// and the tile's own minimum and maximum height.
+    /// </summary>
+    private static TerrainPatchWorldBounds TileWorldBounds(CookedTerrainTile tile) => new(
+        new WorldPosition(
+            tile.WorldPlacement.X,
+            tile.WorldPlacement.Y + tile.MinHeight,
+            tile.WorldPlacement.Z),
+        new WorldPosition(
+            tile.WorldPlacement.X + ((tile.Resolution - 1) * tile.SampleSpacing.X),
+            tile.WorldPlacement.Y + tile.MaxHeight,
+            tile.WorldPlacement.Z + ((tile.Resolution - 1) * tile.SampleSpacing.Z)));
+
+    private static CookedTerrainTile LoadCanonicalTerrainTile(
+        TestAssetDatabase database,
+        in CookedTerrainRoot root,
+        int tileX,
+        int tileZ)
+    {
+        var coordinate = new TerrainTileCoordinate(tileX, tileZ);
+        Guid tileGuid = TerrainTileIdentity.CreateGuid(
+            VegetationCanonicalFixture.TerrainRootGuid,
+            VegetationCanonicalFixture.PackageId,
+            coordinate);
+        Assert.True(
+            TerrainTileAssetCooker.TryLoadCooked(
+                database,
+                new AssetRef<TerrainTileSourceAsset>(
+                    tileGuid, TerrainAssetTypes.Tile, VegetationCanonicalFixture.PackageId),
+                VegetationCanonicalFixture.TerrainRootGuid,
+                s_TerrainLayerSetGuid,
+                out CookedTerrainTile tile,
+                out string diagnostic),
+            diagnostic);
+        Assert.Equal(coordinate, tile.Coordinate);
+        Assert.Equal(
+            root.WorldPlacement.X +
+            (tileX * (tile.Resolution - 1) * tile.SampleSpacing.X),
+            tile.WorldPlacement.X);
+        Assert.Equal(
+            root.WorldPlacement.Z +
+            (tileZ * (tile.Resolution - 1) * tile.SampleSpacing.Z),
+            tile.WorldPlacement.Z);
+        return tile;
+    }
+
+    private static void AddCanonicalTerrainAssets(TestAssetDatabase database, string packageRoot)
+    {
+        database.AddAsset(
+            VegetationCanonicalFixture.TerrainRootGuid,
+            TerrainAssetTypes.Root,
+            Path.Combine(packageRoot, "Assets", "Terrain", "ShowcaseValley.aristerrain"),
+            VegetationCanonicalFixture.PackageId);
+        database.AddAsset(
+            s_TerrainLayerSetGuid,
+            TerrainAssetTypes.LayerSet,
+            Path.Combine(packageRoot, "Assets", "Terrain", "ShowcaseValley.ariterrainlayers"),
+            VegetationCanonicalFixture.PackageId);
+        for (int tileZ = 0; tileZ < VegetationCanonicalFixture.TerrainTilesPerAxis; tileZ++)
+        {
+            for (int tileX = 0; tileX < VegetationCanonicalFixture.TerrainTilesPerAxis; tileX++)
+            {
+                database.AddAsset(
+                    TerrainTileIdentity.CreateGuid(
+                        VegetationCanonicalFixture.TerrainRootGuid,
+                        VegetationCanonicalFixture.PackageId,
+                        new TerrainTileCoordinate(tileX, tileZ)),
+                    TerrainAssetTypes.Tile,
+                    Path.Combine(
+                        packageRoot,
+                        "Assets",
+                        "Terrain",
+                        "Generated",
+                        "ShowcaseValley",
+                        $"x_{tileX}_z_{tileZ}.ariterraingenerated"),
+                    VegetationCanonicalFixture.PackageId);
+            }
+        }
+    }
 
     [Fact]
     public void LookRotation_PointsAtTarget()
     {
-        TerrainPatchWorldBounds rootBounds = UnionBounds(s_Tiles);
+        TerrainPatchWorldBounds rootBounds = UnionBounds(CanonicalTiles());
         WorldPosition target = Center(rootBounds);
         WorldPosition[] positions =
         [
@@ -101,13 +250,13 @@ public sealed class TerrainStreamingCameraPathTests
     public void Build_AimsEveryCapturedPoseAtTheTerrainBounds()
     {
         ShowcaseCamera authored = ReadAuthoredShowcaseCamera();
-        TerrainPatchWorldBounds rootBounds = UnionBounds(s_Tiles);
+        TerrainPatchWorldBounds rootBounds = UnionBounds(CanonicalTiles());
         TerrainStreamingCameraPoses poses = TerrainStreamingCameraPath.Build(
             rootBounds,
             authored.Position,
             FlatSurface);
 
-        AssertAimsAtBounds("near", poses.NearRotation, authored.Position, rootBounds);
+        AssertAimsAtBounds("near", poses.NearRotation, poses.NearPosition, rootBounds);
         AssertAimsAtBounds(
             "boundary",
             poses.BoundaryRotation,
@@ -135,7 +284,7 @@ public sealed class TerrainStreamingCameraPathTests
     public void Build_WithoutARuntimeSurfaceQuery_KeepsEveryDerivedPoseAboveTheTerrain()
     {
         ShowcaseCamera authored = ReadAuthoredShowcaseCamera();
-        TerrainPatchWorldBounds rootBounds = UnionBounds(s_Tiles);
+        TerrainPatchWorldBounds rootBounds = UnionBounds(CanonicalTiles());
         double expectedEyeHeight = rootBounds.Max.Y + TerrainStreamingCameraPath.EyeClearanceMetres;
         TerrainStreamingCameraPoses[] poses =
         [
@@ -162,7 +311,7 @@ public sealed class TerrainStreamingCameraPathTests
     public void FixtureCheckpoints_KeepTheHorizonInsideTheUpperFrame()
     {
         ShowcaseCamera authored = ReadAuthoredShowcaseCamera();
-        TerrainPatchWorldBounds rootBounds = UnionBounds(s_Tiles);
+        TerrainPatchWorldBounds rootBounds = UnionBounds(CanonicalTiles());
         TerrainStreamingCameraPoses poses = TerrainStreamingCameraPath.Build(
             rootBounds,
             authored.Position,
@@ -199,23 +348,20 @@ public sealed class TerrainStreamingCameraPathTests
     public void FixtureCheckpoints_CoverEveryCanonicalTile()
     {
         ShowcaseCamera authored = ReadAuthoredShowcaseCamera();
-        TerrainPatchWorldBounds rootBounds = UnionBounds(s_Tiles);
+        TerrainPatchWorldBounds rootBounds = UnionBounds(CanonicalTiles());
         TerrainStreamingCameraPoses poses = TerrainStreamingCameraPath.Build(
             rootBounds,
             authored.Position,
             FlatSurface);
 
-        AssertCoversEveryTile("near", authored.Position, poses.NearRotation, authored);
+        AssertCoversEveryTile("near", poses.NearPosition, poses.NearRotation, authored);
         AssertCoversEveryTile(
             "boundary-mixed-lod",
             poses.BoundaryPosition,
             poses.BoundaryRotation,
             authored);
-        AssertCoversEveryTile(
-            "post-rebase",
-            poses.BoundaryPosition,
-            poses.BoundaryRotation,
-            authored);
+        // The post-rebase checkpoint parks the camera on the far pose and captures it again, so the
+        // far assertion above is the coverage assertion for it.
         AssertCoversEveryTile("far-cascade", poses.FarPosition, poses.FarRotation, authored);
 
         // Negative control: a camera far outside the terrain aimed away from it must cull every
@@ -232,7 +378,7 @@ public sealed class TerrainStreamingCameraPathTests
             awayPosition.Z);
         Quaternion away = TerrainStreamingCameraPath.LookRotation(awayPosition, awayTarget);
         Matrix4x4 awayViewProjection = BuildViewProjection(awayPosition, away, authored);
-        foreach (TerrainPatchWorldBounds tile in s_Tiles)
+        foreach (TerrainPatchWorldBounds tile in CanonicalTiles())
         {
             Assert.False(
                 TerrainPatchFrustum.IsVisible(
@@ -250,7 +396,7 @@ public sealed class TerrainStreamingCameraPathTests
         ShowcaseCamera camera)
     {
         Matrix4x4 viewProjection = BuildViewProjection(position, rotation, camera);
-        foreach (TerrainPatchWorldBounds tile in s_Tiles)
+        foreach (TerrainPatchWorldBounds tile in CanonicalTiles())
         {
             Assert.True(
                 TerrainPatchFrustum.IsVisible(
@@ -337,7 +483,7 @@ public sealed class TerrainStreamingCameraPathTests
     public void FixtureCheckpoints_FrameTheTerrainSurface()
     {
         ShowcaseCamera authored = ReadAuthoredShowcaseCamera();
-        TerrainPatchWorldBounds rootBounds = UnionBounds(s_Tiles);
+        TerrainPatchWorldBounds rootBounds = UnionBounds(CanonicalTiles());
         TerrainStreamingCameraPoses poses = TerrainStreamingCameraPath.Build(
             rootBounds,
             authored.Position,
@@ -345,7 +491,7 @@ public sealed class TerrainStreamingCameraPathTests
 
         AssertFramesTerrainSurface(
             "near",
-            authored.Position,
+            poses.NearPosition,
             poses.NearRotation,
             authored,
             rootBounds);
