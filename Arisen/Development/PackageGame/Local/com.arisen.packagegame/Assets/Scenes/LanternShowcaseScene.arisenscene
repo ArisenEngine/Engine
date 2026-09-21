@@ -1,5 +1,5 @@
 Version: 2
-Name: Lantern Production Model Showcase
+Name: Mistfall Valley Showcase
 ComponentSchemas:
 - TypeId: 1
   Name: Transform
@@ -34,36 +34,36 @@ Entities:
   Name: Main Camera
   Transform:
     Position:
-      X: 3
-      Y: 2
-      Z: -6
+      X: -102.0
+      Y: 5.93
+      Z: -128.0
     Rotation:
-      X: 0.01380141
-      Y: -0.2503689
-      Z: 0.00356951
-      W: 0.9680455
+      X: 0.0383067
+      Y: -0.2945279
+      Z: 0.0118165
+      W: 0.9548017
     Scale:
       X: 1
       Y: 1
       Z: 1
   Camera:
-    VerticalFov: 40.0
-    NearPlane: 0.1
-    FarPlane: 160.0
+    VerticalFov: 45.0
+    NearPlane: 0.2
+    FarPlane: 900.0
     IsPerspective: true
 - Guid: 20000000-0000-0000-0000-000000000002
-  Name: Warm Key Light
+  Name: Dusk Key Light
   DirectionalLight:
     Direction:
-      X: -0.42
-      Y: 0.78
-      Z: -0.46
+      X: -0.7524
+      Y: 0.1876
+      Z: 0.6314
     Color:
       X: 1.0
-      Y: 0.90
-      Z: 0.76
-    Intensity: 1.65
-    AmbientIntensity: 0.08
+      Y: 0.86
+      Z: 0.68
+    Intensity: 2.6
+    AmbientIntensity: 0.10
     Enabled: true
   Transform:
     Position:
@@ -83,9 +83,9 @@ Entities:
   Name: Lantern Fill Light
   Transform:
     Position:
-      X: 3
-      Y: 2.2
-      Z: -0.65
+      X: -114.0
+      Y: 5.94
+      Z: -106.65
     Rotation:
       X: 0
       Y: 0
@@ -107,9 +107,9 @@ Entities:
   Name: Lantern Downlight
   Transform:
     Position:
-      X: 2
-      Y: 2
-      Z: 0
+      X: -115.0
+      Y: 5.74
+      Z: -106.0
     Rotation:
       X: 0.7071068
       Y: 0
@@ -130,38 +130,38 @@ Entities:
     OuterConeAngleDegrees: 42.0
     Enabled: true
 - Guid: 20000000-0000-0000-0000-000000000005
-  Name: Blue Hour Environment
+  Name: Mistfall Dusk Environment
   Environment:
     EnvironmentTexture:
-      Guid: b7c4e40e-c95f-47e5-84b7-b7554e0edc17
+      Guid: 1fc01236-449b-4097-88c0-223b1ed736ff
       PackageId: com.arisen.packagegame
     SkyColor:
-      X: 0.030
-      Y: 0.100
-      Z: 0.205
+      X: 0.24
+      Y: 0.36
+      Z: 0.62
     HorizonColor:
-      X: 0.50
+      X: 0.86
       Y: 0.62
-      Z: 0.72
+      Z: 0.40
     GroundColor:
-      X: 0.040
-      Y: 0.048
-      Z: 0.055
+      X: 0.10
+      Y: 0.10
+      Z: 0.11
     AmbientColor:
-      X: 0.38
-      Y: 0.46
-      Z: 0.58
-    SkyIntensity: 0.92
-    AmbientIntensity: 0.20
-    Exposure: 1.15
+      X: 0.44
+      Y: 0.52
+      Z: 0.66
+    SkyIntensity: 0.30
+    AmbientIntensity: 0.34
+    Exposure: 1.0
     Enabled: true
 - Guid: 20000000-0000-0000-0000-000000000006
   Name: Lantern Pole Body
   Transform:
     Position:
-      X: 0.4587785
-      Y: 1.561924
-      Z: 0.0
+      X: -116.5412215
+      Y: 5.301924
+      Z: -106.0
     Rotation:
       X: 0.0
       Y: 1.0
@@ -185,9 +185,9 @@ Entities:
   Name: Lantern Chain
   Transform:
     Position:
-      X: 1.14984
-      Y: 2.524544
-      Z: 0.0
+      X: -115.85016
+      Y: 6.264544
+      Z: -106.0
     Rotation:
       X: 0.0
       Y: 1.0
@@ -211,9 +211,9 @@ Entities:
   Name: Lantern Head
   Transform:
     Position:
-      X: 1.149841
-      Y: 2.161098
-      Z: 0.0
+      X: -115.850159
+      Y: 5.901098
+      Z: -106.0
     Rotation:
       X: 0.0
       Y: 1.0
@@ -233,28 +233,3 @@ Entities:
     FirstSubmeshIndex: 0
     SubmeshCount: 1
     Visible: true
-- Guid: 20000000-0000-0000-0000-000000000009
-  Name: Ground
-  Transform:
-    Position:
-      X: 0.45
-      Y: 0.01
-      Z: 0
-    Rotation:
-      X: 0
-      Y: 0
-      Z: 0
-      W: 1
-    Scale:
-      X: 20
-      Y: 1
-      Z: 20
-  MeshRenderer:
-    Mesh:
-      Guid: 0fed982b-5130-430e-860b-dc9c7284b8c1
-      PackageId: com.arisen.packagegame
-    Material:
-      Guid: e87b0335-5689-45a0-9fe1-455a01b59a20
-      PackageId: com.arisen.packagegame
-    Visible: true
-...

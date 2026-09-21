@@ -1,12 +1,8 @@
 Version: 2
-Name: Marble Teapot Center Cell
+Name: Showcase Valley Center Cell
 ComponentSchemas:
 - TypeId: 1
   Name: Transform
-  Version: 1
-  Required: true
-- TypeId: 3
-  Name: MeshRenderer
   Version: 1
   Required: true
 - TypeId: 1413829202
@@ -18,24 +14,10 @@ ComponentSchemas:
   Version: 1
   Required: false
 Entities:
-- Guid: 32000000-0000-0000-0000-000000000001
-  Name: Center Utah Teapot
-  Transform:
-    Position: { X: 128.0, Y: 64.47, Z: 128.0 }
-    Rotation: { X: 0.0, Y: 0.1736482, Z: 0.0, W: 0.9848078 }
-    Scale: { X: 0.42, Y: 0.42, Z: 0.42 }
-  MeshRenderer:
-    Mesh:
-      Guid: 7300d793-8cd9-4983-8035-e99aa92e9449
-      PackageId: com.arisen.packagegame
-    Material:
-      Guid: a2122786-c40a-41f2-bf35-1f5cbc4d39c2
-      PackageId: com.arisen.packagegame
-    Visible: true
 - Guid: 8ccdcc65-cc0f-5987-a8cb-176beec7fbc2
   Name: Showcase Valley Terrain Tile 0,0
   Transform:
-    Position: { X: 248.0, Y: 64.02, Z: 249.8 }
+    Position: { X: 0.0, Y: 64.0, Z: 0.0 }
     Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
     Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
   TerrainTile:
@@ -43,7 +25,7 @@ Entities:
     TileGuid: 807a7664-36ee-bdf8-71ea-e78cd4db0c4f
     LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
     Coordinate: { X: 0, Z: 0 }
-    WorldPlacement: { X: -8.0, Y: 0.02, Z: -6.2 }
+    WorldPlacement: { X: -256.0, Y: 0.0, Z: -256.0 }
     Visible: true
     CastShadows: true
     ReceiveShadows: true
@@ -51,7 +33,7 @@ Entities:
 - Guid: b9436ec5-3755-591e-b2a7-4fa6f80d7caa
   Name: Showcase Valley Terrain Tile 1,0
   Transform:
-    Position: { X: 254.0, Y: 64.02, Z: 249.8 }
+    Position: { X: 128.0, Y: 64.0, Z: 0.0 }
     Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
     Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
   TerrainTile:
@@ -59,7 +41,7 @@ Entities:
     TileGuid: 9b8e9a8a-7c9d-493e-9aa6-5ba74e5b630d
     LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
     Coordinate: { X: 1, Z: 0 }
-    WorldPlacement: { X: -2.0, Y: 0.02, Z: -6.2 }
+    WorldPlacement: { X: -128.0, Y: 0.0, Z: -256.0 }
     Visible: true
     CastShadows: true
     ReceiveShadows: true
@@ -67,7 +49,7 @@ Entities:
 - Guid: da5ee671-4ab2-4769-a105-3567e6806069
   Name: Showcase Valley Terrain Tile 0,1
   Transform:
-    Position: { X: 248.0, Y: 64.02, Z: 255.8 }
+    Position: { X: 0.0, Y: 64.0, Z: 128.0 }
     Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
     Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
   TerrainTile:
@@ -75,7 +57,7 @@ Entities:
     TileGuid: 331e576c-eddd-d7cc-e553-23ef719f496d
     LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
     Coordinate: { X: 0, Z: 1 }
-    WorldPlacement: { X: -8.0, Y: 0.02, Z: -0.20000000000000018 }
+    WorldPlacement: { X: -256.0, Y: 0.0, Z: -128.0 }
     Visible: true
     CastShadows: true
     ReceiveShadows: true
@@ -83,7 +65,7 @@ Entities:
 - Guid: 2dbc795e-4111-4a89-a5e1-d33645335c72
   Name: Showcase Valley Terrain Tile 1,1
   Transform:
-    Position: { X: 254.0, Y: 64.02, Z: 255.8 }
+    Position: { X: 128.0, Y: 64.0, Z: 128.0 }
     Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
     Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
   TerrainTile:
@@ -91,39 +73,11 @@ Entities:
     TileGuid: 3fd9bf23-4923-f0e5-cd73-94920028ed67
     LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
     Coordinate: { X: 1, Z: 1 }
-    WorldPlacement: { X: -2.0, Y: 0.02, Z: -0.20000000000000018 }
+    WorldPlacement: { X: -128.0, Y: 0.0, Z: -128.0 }
     Visible: true
     CastShadows: true
     ReceiveShadows: true
     PreferHighQuality: false
-- Guid: 32000000-0000-0000-0000-000000000002
-  Name: Center Presentation Pedestal
-  Transform:
-    Position: { X: 128.0, Y: 64.0, Z: 128.0 }
-    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
-    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
-  MeshRenderer:
-    Mesh:
-      Guid: ed26e5c7-77ae-4cd7-b4ec-cb02ea6bac33
-      PackageId: com.arisen.packagegame
-    Material:
-      Guid: a2dd1381-3958-4480-837b-35ffe6dd15c0
-      PackageId: com.arisen.packagegame
-    Visible: true
-- Guid: 32000000-0000-0000-0000-000000000003
-  Name: Center Ground
-  Transform:
-    Position: { X: 128.0, Y: 63.994, Z: 128.0 }
-    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
-    Scale: { X: 20.0, Y: 1.0, Z: 20.0 }
-  MeshRenderer:
-    Mesh:
-      Guid: 0fed982b-5130-430e-860b-dc9c7284b8c1
-      PackageId: com.arisen.packagegame
-    Material:
-      Guid: e87b0335-5689-45a0-9fe1-455a01b59a20
-      PackageId: com.arisen.packagegame
-    Visible: true
 - Guid: 9cfcb277-b756-4349-b55e-39ddf24cfbe1
   Name: Showcase Valley Vegetation Cluster
   Transform:
@@ -139,11 +93,80 @@ Entities:
     Cell: { X: 0, Y: 0, Z: 0, Layer: surface }
     Origin: { X: -256, Y: -64, Z: -256 }
     Bounds:
-      Min: { X: -9.9700844287872314, Y: -2.1974024772644043, Z: -8.4557883739471436 }
-      Max: { X: 1.9058775901794434, Y: 3.9241063594818115, Z: 2.6819112300872803 }
+      Min: { X: -259.39336678385735, Y: 6.416667222976685, Z: -258.59615260362625 }
+      Max: { X: 3.4432592391967773, Y: 55.813838958740234, Z: 2.249734401702881 }
     Visible: true
     CastShadows: true
     ReceiveShadows: true
     QualityGroup: 0
     PageCount: 1
-    InstanceCount: 13
+    InstanceCount: 764
+- Guid: 9cfcb277-b756-4349-b55e-39ddf24cfbe2
+  Name: Showcase Valley Vegetation Cluster Grass
+  Transform:
+    Position: { X: 0, Y: 0, Z: 0 }
+    Rotation: { X: 0, Y: 0, Z: 0, W: 1 }
+    Scale: { X: 1, Y: 1, Z: 1 }
+  VegetationCluster:
+    Cluster: { Guid: 324397e1-7ddb-a3fd-8d4e-1c077443f814, PackageId: com.arisen.packagegame }
+    Biome: { Guid: c0a92f10-0eb9-4d24-b729-7d0f38313001, PackageId: com.arisen.packagegame }
+    Species: { Guid: 3eb515ce-3dea-4994-81a1-a14fc2fe0eb5, PackageId: com.arisen.packagegame }
+    WorldGuid: 9a9b4db5-c0a8-4f2e-8929-89464bea9d51
+    OwningCellGuid: 5d13eda6-606a-57a0-bae4-cd559ddad464
+    Cell: { X: 0, Y: 0, Z: 0, Layer: surface }
+    Origin: { X: -256, Y: -64, Z: -256 }
+    Bounds:
+      Min: { X: -256.77769664116204, Y: -0.38987600803375244, Z: -256.7855395078659 }
+      Max: { X: 0.7617918848991394, Y: 51.8774294257164, Z: 0.7533199191093445 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    QualityGroup: 0
+    PageCount: 11
+    InstanceCount: 44397
+- Guid: 9cfcb277-b756-4349-b55e-39ddf24cfbe3
+  Name: Showcase Valley Vegetation Cluster Shrub
+  Transform:
+    Position: { X: 0, Y: 0, Z: 0 }
+    Rotation: { X: 0, Y: 0, Z: 0, W: 1 }
+    Scale: { X: 1, Y: 1, Z: 1 }
+  VegetationCluster:
+    Cluster: { Guid: dd618cfa-c607-cf82-bbb8-545ff1cb1a4d, PackageId: com.arisen.packagegame }
+    Biome: { Guid: c0a92f10-0eb9-4d24-b729-7d0f38313001, PackageId: com.arisen.packagegame }
+    Species: { Guid: e5605813-00b6-4129-85b2-05b754ccde74, PackageId: com.arisen.packagegame }
+    WorldGuid: 9a9b4db5-c0a8-4f2e-8929-89464bea9d51
+    OwningCellGuid: 5d13eda6-606a-57a0-bae4-cd559ddad464
+    Cell: { X: 0, Y: 0, Z: 0, Layer: surface }
+    Origin: { X: -256, Y: -64, Z: -256 }
+    Bounds:
+      Min: { X: -258.5532653555274, Y: -2.4312198162078857, Z: -258.72216442227364 }
+      Max: { X: 2.5102195739746094, Y: 55.250099420547485, Z: 2.5753307342529297 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    QualityGroup: 0
+    PageCount: 5
+    InstanceCount: 4375
+- Guid: 9cfcb277-b756-4349-b55e-39ddf24cfbe4
+  Name: Showcase Valley Vegetation Cluster Tree
+  Transform:
+    Position: { X: 0, Y: 0, Z: 0 }
+    Rotation: { X: 0, Y: 0, Z: 0, W: 1 }
+    Scale: { X: 1, Y: 1, Z: 1 }
+  VegetationCluster:
+    Cluster: { Guid: 6cea50e6-732f-6658-8ea0-48f1682b62e0, PackageId: com.arisen.packagegame }
+    Biome: { Guid: c0a92f10-0eb9-4d24-b729-7d0f38313001, PackageId: com.arisen.packagegame }
+    Species: { Guid: 83212e38-5d3e-4494-8929-fe27639b5a29, PackageId: com.arisen.packagegame }
+    WorldGuid: 9a9b4db5-c0a8-4f2e-8929-89464bea9d51
+    OwningCellGuid: 5d13eda6-606a-57a0-bae4-cd559ddad464
+    Cell: { X: 0, Y: 0, Z: 0, Layer: surface }
+    Origin: { X: -256, Y: -64, Z: -256 }
+    Bounds:
+      Min: { X: -215.45700645446777, Y: -7.20877742767334, Z: -262.6460111141205 }
+      Max: { X: -11.507012844085693, Y: 45.82605314254761, Z: 7.714510917663574 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    QualityGroup: 0
+    PageCount: 1
+    InstanceCount: 312
