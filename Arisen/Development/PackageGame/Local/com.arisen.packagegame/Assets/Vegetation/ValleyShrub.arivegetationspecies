@@ -1,0 +1,18 @@
+Version: 1
+SpeciesGuid: e5605813-00b6-4129-85b2-05b754ccde74
+Name: Valley Shrub
+Lods:
+- Mesh: { Guid: db1a5934-3fb7-49db-aa41-f318c8068a38, PackageId: com.arisen.packagegame }
+  Material: { Guid: 7f730a67-ea48-45dd-87ec-f473dbde9b5b, PackageId: com.arisen.packagegame }
+  MaximumDistance: 250.0
+  MaximumScreenError: 2.0
+ShadowPolicy: Cast
+ScaleRange: { Minimum: 0.7, Maximum: 1.5 }
+YawRangeDegrees: { Minimum: 0.0, Maximum: 360.0 }
+TiltRangeDegrees: { Minimum: -6.0, Maximum: 6.0 }
+CollisionPromotion:
+  Mode: None
+  CapsuleRadius: 0.0
+  CapsuleHalfHeight: 0.0
+  MaximumDistance: 0.0
+WindResponse: 0.55

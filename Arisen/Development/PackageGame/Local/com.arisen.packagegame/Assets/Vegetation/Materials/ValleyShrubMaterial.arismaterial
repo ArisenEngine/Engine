@@ -1,0 +1,88 @@
+Name: PackageGame/ValleyShrubMaterial
+Shader:
+  Guid: 2a536b1f-81cf-4d91-a84f-39bc6f7e15a2
+  Name: Vegetation/Vegetation
+  Variant:
+    Backend: Vulkan
+    TargetEnvironment: vulkan1.3
+    ShaderModel: 6_4
+    OptimizationLevel: 0
+    DebugInfo: true
+  Stages:
+  - Name: Vertex
+    ProgramStage: Vertex
+    EntryPoint: VSMain
+  - Name: Fragment
+    ProgramStage: Fragment
+    EntryPoint: PSMain
+Texture2DRefs:
+- Name: BaseColor
+  Slot: 0
+  Texture:
+    Guid: 88fa7598-6c1a-450b-b68a-bc5edd2e26d8
+    Name: PackageGame/ValleyShrubBaseColor
+    Variant:
+      Format: R8G8B8A8UNorm
+      ColorSpace: SRgb
+      GenerateMipMaps: true
+    SourceFormat: PpmP3
+  Sampler:
+    MinFilter: Linear
+    MagFilter: Linear
+    MipmapMode: Linear
+    WrapU: Repeat
+    WrapV: Repeat
+- Name: Normal
+  Slot: 1
+  Texture:
+    Guid: 83e277aa-858d-4d6d-9d23-0228194ad39d
+    Name: PackageGame/ValleyShrubNormal
+    Variant:
+      Format: R8G8B8A8UNorm
+      ColorSpace: Linear
+      GenerateMipMaps: true
+      MipFilter: NormalMap
+    SourceFormat: PpmP3
+  Sampler:
+    MinFilter: Linear
+    MagFilter: Linear
+    MipmapMode: Linear
+    WrapU: Repeat
+    WrapV: Repeat
+- Name: MetallicRoughness
+  Slot: 2
+  Texture:
+    Guid: c27e1107-2f8d-45eb-b916-26bb5812aedf
+    Name: PackageGame/ValleyShrubOrm
+    Variant:
+      Format: R8G8B8A8UNorm
+      ColorSpace: Linear
+      GenerateMipMaps: true
+    SourceFormat: PpmP3
+  Sampler:
+    MinFilter: Linear
+    MagFilter: Linear
+    MipmapMode: Linear
+    WrapU: Repeat
+    WrapV: Repeat
+ScalarProperties:
+- Name: MetallicFactor
+  Value: 0.0
+- Name: RoughnessFactor
+  Value: 0.85
+- Name: OcclusionStrength
+  Value: 0.8
+- Name: AlphaCutoff
+  Value: 0.0
+- Name: TintVariation
+  Value: 0.55
+Vector4Properties:
+- Name: BaseColorFactor
+  Value:
+    X: 1.0
+    Y: 1.0
+    Z: 1.0
+    W: 1.0
+RenderState:
+  CullMode: None
+  FrontFace: CounterClockwise

@@ -1,0 +1,18 @@
+Version: 1
+SpeciesGuid: 3eb515ce-3dea-4994-81a1-a14fc2fe0eb5
+Name: Valley Grass
+Lods:
+- Mesh: { Guid: 00135f74-4ecf-45c4-b9f2-72a68151a1f3, PackageId: com.arisen.packagegame }
+  Material: { Guid: 77bd836b-eacd-4aec-a349-3c271f7a1407, PackageId: com.arisen.packagegame }
+  MaximumDistance: 150.0
+  MaximumScreenError: 1.0
+ShadowPolicy: Cast
+ScaleRange: { Minimum: 0.75, Maximum: 1.35 }
+YawRangeDegrees: { Minimum: 0.0, Maximum: 360.0 }
+TiltRangeDegrees: { Minimum: -8.0, Maximum: 8.0 }
+CollisionPromotion:
+  Mode: None
+  CapsuleRadius: 0.0
+  CapsuleHalfHeight: 0.0
+  MaximumDistance: 0.0
+WindResponse: 0.85

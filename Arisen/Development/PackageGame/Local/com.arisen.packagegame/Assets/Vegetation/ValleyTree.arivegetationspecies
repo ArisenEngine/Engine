@@ -1,0 +1,18 @@
+Version: 1
+SpeciesGuid: 83212e38-5d3e-4494-8929-fe27639b5a29
+Name: Valley Tree
+Lods:
+- Mesh: { Guid: 499d50d7-10af-4923-b97a-c1444895d327, PackageId: com.arisen.packagegame }
+  Material: { Guid: 6d411706-c507-4c87-a392-aea7998889bd, PackageId: com.arisen.packagegame }
+  MaximumDistance: 500.0
+  MaximumScreenError: 6.0
+ShadowPolicy: Cast
+ScaleRange: { Minimum: 0.85, Maximum: 1.35 }
+YawRangeDegrees: { Minimum: 0.0, Maximum: 360.0 }
+TiltRangeDegrees: { Minimum: -4.0, Maximum: 4.0 }
+CollisionPromotion:
+  Mode: Capsule
+  CapsuleRadius: 0.35
+  CapsuleHalfHeight: 1.6
+  MaximumDistance: 32.0
+WindResponse: 0.35

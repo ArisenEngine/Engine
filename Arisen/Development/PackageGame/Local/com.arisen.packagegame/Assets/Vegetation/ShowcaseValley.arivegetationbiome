@@ -5,13 +5,49 @@ GlobalSeed: 1469598103934665603
 Entries:
 - EntryId: valley-rock
   Species: { Guid: 7b0f2e52-8b67-4e3d-bf0a-cbc42f622001, PackageId: com.arisen.packagegame }
-  Density: 0.75
+  Density: 0.045
   SeedSalt: 16294208416658607535
   AltitudeRange: { Minimum: -64.0, Maximum: 192.0 }
-  SlopeRangeDegrees: { Minimum: 0.0, Maximum: 65.0 }
+  SlopeRangeDegrees: { Minimum: 0.0, Maximum: 68.0 }
   LayerWeightRules:
   - LayerId: Rock
-    WeightRange: { Minimum: 0.25, Maximum: 1.0 }
-  MinimumSpacing: 0.5
-  ClusterSize: 64
+    WeightRange: { Minimum: 0.22, Maximum: 1.0 }
+  MinimumSpacing: 3.0
+  ClusterSize: 1024
+  ExclusionPolicy: Respect
+- EntryId: valley-grass
+  Species: { Guid: 3eb515ce-3dea-4994-81a1-a14fc2fe0eb5, PackageId: com.arisen.packagegame }
+  Density: 0.9
+  SeedSalt: 3074443515633036623
+  AltitudeRange: { Minimum: -64.0, Maximum: 192.0 }
+  SlopeRangeDegrees: { Minimum: 0.0, Maximum: 48.0 }
+  LayerWeightRules:
+  - LayerId: GrassSoil
+    WeightRange: { Minimum: 0.3, Maximum: 1.0 }
+  MinimumSpacing: 0.35
+  ClusterSize: 4096
+  ExclusionPolicy: Respect
+- EntryId: valley-shrub
+  Species: { Guid: e5605813-00b6-4129-85b2-05b754ccde74, PackageId: com.arisen.packagegame }
+  Density: 0.09
+  SeedSalt: 17834565249014367521
+  AltitudeRange: { Minimum: -64.0, Maximum: 192.0 }
+  SlopeRangeDegrees: { Minimum: 0.0, Maximum: 58.0 }
+  LayerWeightRules:
+  - LayerId: GrassSoil
+    WeightRange: { Minimum: 0.12, Maximum: 1.0 }
+  MinimumSpacing: 1.4
+  ClusterSize: 1024
+  ExclusionPolicy: Respect
+- EntryId: valley-tree
+  Species: { Guid: 83212e38-5d3e-4494-8929-fe27639b5a29, PackageId: com.arisen.packagegame }
+  Density: 0.02
+  SeedSalt: 9876543210123456789
+  AltitudeRange: { Minimum: -64.0, Maximum: 40.0 }
+  SlopeRangeDegrees: { Minimum: 0.0, Maximum: 34.0 }
+  LayerWeightRules:
+  - LayerId: GrassSoil
+    WeightRange: { Minimum: 0.12, Maximum: 1.0 }
+  MinimumSpacing: 3.5
+  ClusterSize: 512
   ExclusionPolicy: Respect
