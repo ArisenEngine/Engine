@@ -585,10 +585,10 @@ public sealed class VegetationScatterBakerTests
             moved.Cluster.Pages[0].Instances.Select(instance => instance.StableKey));
 
         Assert.Equal(Guid.Parse("df8f0fce-580e-efc2-f30c-f103c75f7b13"), result.Cluster.Guid);
-        Assert.Equal(Guid.Parse("ee7cda06-91dc-cc9c-7756-73959207ad83"), result.Cluster.Pages[0].Guid);
+        Assert.Equal(Guid.Parse("32e12723-5cbc-a1fb-0c9d-94253628c1ef"), result.Cluster.Pages[0].Guid);
         string placementHash = Convert.ToHexString(result.PlacementContentHash);
-        Assert.Equal("7D35213BC15B07D0FE153B82B87293B5", placementHash[..32]);
-        Assert.Equal("C85C0EFC22825EB9DE5C8AEFB7C76D97", placementHash[32..]);
+        Assert.Equal("F05119E1477CC3C4EC3BC4B70200DB30", placementHash[..32]);
+        Assert.Equal("AAAF8A848CDA677A4B78171D1F3F1FA4", placementHash[32..]);
     }
 
     [Fact]

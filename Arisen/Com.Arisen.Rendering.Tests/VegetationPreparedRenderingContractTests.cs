@@ -26,7 +26,7 @@ public sealed class VegetationPreparedRenderingContractTests
         Assert.Equal(48, VegetationGpuInstance.Stride);
         Assert.Equal(VegetationGpuInstance.Stride, Marshal.SizeOf<VegetationGpuInstance>());
         Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<VegetationGpuInstance>());
-        Assert.Equal(0, OffsetOf(nameof(VegetationGpuInstance.OriginRelativePositionScale)));
+        Assert.Equal(0, OffsetOf(nameof(VegetationGpuInstance.ClusterRelativePositionScale)));
         Assert.Equal(16, OffsetOf(nameof(VegetationGpuInstance.Orientation)));
         Assert.Equal(32, OffsetOf(nameof(VegetationGpuInstance.StableVariation)));
         Assert.Equal(36, OffsetOf(nameof(VegetationGpuInstance.WindPhase)));
@@ -65,14 +65,14 @@ public sealed class VegetationPreparedRenderingContractTests
             flags: 0xA5A5_5A5Au);
 
         Assert.Equal(new Vector4(1024.25f, -2046.5f, 4092.25f, 1.25f),
-            packed.OriginRelativePositionScale);
+            packed.ClusterRelativePositionScale);
         Assert.Equal(instance.Orientation, packed.Orientation);
         Assert.Equal(0xE542_5A90u, packed.StableVariation);
         Assert.Equal(0x3FDD_F82Eu, FloatBits(packed.WindPhase));
         Assert.Equal(0x3F63_271Bu, FloatBits(packed.ColorVariation));
         Assert.Equal(0xA5A5_5A5Au, packed.Flags);
 
-        Assert.Equal(packed.OriginRelativePositionScale, repeated.OriginRelativePositionScale);
+        Assert.Equal(packed.ClusterRelativePositionScale, repeated.ClusterRelativePositionScale);
         Assert.Equal(packed.Orientation, repeated.Orientation);
         Assert.Equal(packed.StableVariation, repeated.StableVariation);
         Assert.Equal(FloatBits(packed.WindPhase), FloatBits(repeated.WindPhase));
@@ -92,7 +92,7 @@ public sealed class VegetationPreparedRenderingContractTests
 
         Assert.Equal(
             new Vector4(16_777_216.0f, -16_777_216.0f, 0.0f, 1.0f),
-            packed.OriginRelativePositionScale);
+            packed.ClusterRelativePositionScale);
     }
 
     [Theory]
@@ -320,10 +320,18 @@ public sealed class VegetationPreparedRenderingContractTests
         VegetationShadowPolicy.Cast,
         new VegetationPreparedMaterialData(
             Vector4.One,
+            alphaCutoff: 0.0f,
             metallicFactor: 0.0f,
             roughnessFactor: 1.0f,
+            occlusionStrength: 1.0f,
+            tintVariation: 1.0f,
+            flags: 0u,
             baseColorImageIndex: uint.MaxValue,
-            baseColorSamplerIndex: uint.MaxValue));
+            baseColorSamplerIndex: uint.MaxValue,
+            normalImageIndex: uint.MaxValue,
+            normalSamplerIndex: uint.MaxValue,
+            ormImageIndex: uint.MaxValue,
+            ormSamplerIndex: uint.MaxValue));
 
     private static int OffsetOf(string fieldName) =>
         Marshal.OffsetOf<VegetationGpuInstance>(fieldName).ToInt32();

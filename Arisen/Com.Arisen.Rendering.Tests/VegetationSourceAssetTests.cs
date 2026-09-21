@@ -151,19 +151,12 @@ public sealed class VegetationSourceAssetTests
             "Vegetation");
         string speciesPath = Path.Combine(assetRoot, "ValleyRock.arivegetationspecies");
         string biomePath = Path.Combine(assetRoot, "ShowcaseValley.arivegetationbiome");
-        string renderingAssetRoot = Path.Combine(
-            repositoryRoot,
-            "Arisen",
-            "Development",
-            "PackageGame",
-            "Local",
-            RenderingPackageId,
-            "Assets");
-        string meshPath = Path.Combine(renderingAssetRoot, "Meshes", "FacetedCrystal.obj");
+        VegetationCanonicalSpecies canonical = VegetationCanonicalFixture.Require("Rock");
+        string meshPath = Path.Combine(assetRoot, "Meshes", canonical.MeshFileName);
         string materialPath = Path.Combine(
-            renderingAssetRoot,
+            assetRoot,
             "Materials",
-            "StandardLitMaterial.arismaterial");
+            canonical.MaterialFileName);
         AssetMetadata speciesMetadata = SerializationUtil.Deserialize<AssetMetadata>(
             speciesPath + ".meta",
             serializeIfNotExist: false);
@@ -196,18 +189,37 @@ public sealed class VegetationSourceAssetTests
         Assert.Equal(s_BiomeGuid, biome.Guid);
         Assert.Equal(VegetationAssetTypes.Species, speciesMetadata.AssetType);
         Assert.Equal(VegetationAssetTypes.Biome, biomeMetadata.AssetType);
-        Assert.Equal(species.Guid, Assert.Single(biome.Entries).Species.Guid);
+        Assert.Equal("Valley Rock", species.Name);
+        Assert.Equal(canonical.MeshGuid, species.Lods[0].Mesh.Guid);
+        Assert.Equal(canonical.MaterialGuid, species.Lods[0].Material.Guid);
+        Assert.Equal(PackageId, species.Lods[0].Mesh.PackageId);
+        Assert.Equal(PackageId, species.Lods[0].Material.PackageId);
+        Assert.Equal(canonical.MeshGuid, meshMetadata.Guid);
+        Assert.Equal(canonical.MaterialGuid, materialMetadata.Guid);
+        Assert.Equal(
+            VegetationCanonicalFixture.BiomeEntries.Select(entry => entry.EntryId),
+            biome.Entries.Select(entry => entry.EntryId));
+        Assert.Equal(
+            VegetationCanonicalFixture.BiomeEntries.Select(entry => entry.SpeciesGuid),
+            biome.Entries.Select(entry => entry.Species.Guid));
+        Assert.All(
+            biome.Entries,
+            entry => Assert.Equal(PackageId, entry.Species.PackageId));
         Assert.Equal("Rock", Assert.Single(biome.Entries[0].LayerWeightRules).LayerId);
 
         using var temp = new VegetationTempDirectory();
         var database = new TestAssetDatabase(
             AssetSourceAccessMode.RuntimeAssetCook,
             Path.Combine(temp.Path, "Cooked"));
-        database.AddAsset(
-            speciesMetadata.Guid,
-            speciesMetadata.AssetType,
-            speciesPath,
-            PackageId);
+        foreach (VegetationCanonicalSpecies entry in VegetationCanonicalFixture.Species)
+        {
+            database.AddAsset(
+                entry.SpeciesGuid,
+                VegetationAssetTypes.Species,
+                Path.Combine(assetRoot, $"Valley{entry.Name}.arivegetationspecies"),
+                PackageId);
+        }
+
         database.AddAsset(
             biomeMetadata.Guid,
             biomeMetadata.AssetType,
@@ -217,12 +229,12 @@ public sealed class VegetationSourceAssetTests
             meshMetadata.Guid,
             meshMetadata.AssetType,
             meshPath,
-            RenderingPackageId);
+            PackageId);
         database.AddAsset(
             materialMetadata.Guid,
             materialMetadata.AssetType,
             materialPath,
-            RenderingPackageId);
+            PackageId);
 
         CookedVegetationSpeciesArtifact cookedSpecies = VegetationSpeciesAssetCooker.Cook(
             database,
@@ -237,23 +249,34 @@ public sealed class VegetationSourceAssetTests
                 VegetationAssetTypes.Biome,
                 PackageId));
 
+        Assert.Equal(2, cookedSpecies.Dependencies.Count);
         Assert.Contains(
             cookedSpecies.Dependencies,
             dependency => dependency.Guid == meshMetadata.Guid &&
-                dependency.PackageId == RenderingPackageId &&
+                dependency.PackageId == PackageId &&
                 dependency.AssetType == "Mesh" &&
                 dependency.Variant == "staticmesh.uint32");
         Assert.Contains(
             cookedSpecies.Dependencies,
             dependency => dependency.Guid == materialMetadata.Guid &&
-                dependency.PackageId == RenderingPackageId &&
+                dependency.PackageId == PackageId &&
                 dependency.AssetType == "Material" &&
                 dependency.Variant == "material.runtime");
-        VegetationCookedAssetDependency biomeDependency = Assert.Single(cookedBiome.Dependencies);
-        Assert.Equal(speciesMetadata.Guid, biomeDependency.Guid);
-        Assert.Equal(PackageId, biomeDependency.PackageId);
-        Assert.Equal(VegetationAssetTypes.Species, biomeDependency.AssetType);
-        Assert.Equal(VegetationSpeciesAssetCooker.RuntimeVariant, biomeDependency.Variant);
+        Assert.Equal(
+            VegetationCanonicalFixture.Species
+                .Select(entry => entry.SpeciesGuid)
+                .OrderBy(guid => guid),
+            cookedBiome.Dependencies.Select(dependency => dependency.Guid));
+        Assert.All(
+            cookedBiome.Dependencies,
+            dependency =>
+            {
+                Assert.Equal(PackageId, dependency.PackageId);
+                Assert.Equal(VegetationAssetTypes.Species, dependency.AssetType);
+                Assert.Equal(
+                    VegetationSpeciesAssetCooker.RuntimeVariant,
+                    dependency.Variant);
+            });
         Assert.True(
             VegetationSpeciesAssetCooker.TryLoadCooked(
                 database,

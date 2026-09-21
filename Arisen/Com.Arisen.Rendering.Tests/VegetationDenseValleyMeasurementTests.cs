@@ -491,8 +491,22 @@ public sealed class VegetationDenseValleyMeasurementTests
             lodLevel,
             maximumDistance,
             maximumScreenError,
+            windStiffness: 0.85f,
             VegetationShadowPolicy.Cast,
-            new VegetationPreparedMaterialData(Vector4.One, 0.0f, 1.0f, 0, 0));
+            new VegetationPreparedMaterialData(
+                Vector4.One,
+                alphaCutoff: 0.0f,
+                metallicFactor: 0.0f,
+                roughnessFactor: 1.0f,
+                occlusionStrength: 1.0f,
+                tintVariation: 1.0f,
+                flags: 0u,
+                baseColorImageIndex: 0u,
+                baseColorSamplerIndex: 0u,
+                normalImageIndex: 0u,
+                normalSamplerIndex: 0u,
+                ormImageIndex: 0u,
+                ormSamplerIndex: 0u));
 
     private static CookedVegetationSpecies CreateSpecies() => new(
         s_Species,

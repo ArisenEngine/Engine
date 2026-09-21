@@ -16,12 +16,7 @@ public sealed class VegetationRuntimeValidationContractTests
 
         foreach (string identity in new[]
         {
-            "e90ae5ab-24fb-2617-9983-3ed656bd652c",
-            "c1d7d00e-4aac-3819-b9f5-7a2a65e8e1eb",
             "c0a92f10-0eb9-4d24-b729-7d0f38313001",
-            "7b0f2e52-8b67-4e3d-bf0a-cbc42f622001",
-            "9f57d9cc-2db6-4c85-ae7b-544338806e2c",
-            "4ac21c64-e984-4ed0-9e21-93878de5249e",
             "2a536b1f-81cf-4d91-a84f-39bc6f7e15a2",
             "9d7a4c3e-f2b6-46a1-8c59-5e1087b34d20",
             "runtime.vegetation-cluster.v1",
@@ -31,32 +26,67 @@ public sealed class VegetationRuntimeValidationContractTests
             "staticmesh.uint32",
             "material.runtime",
             "com.arisen.packagegame",
-            "com.arisen.generic-renderpipeline",
             "com.arisen.vegetation.generic-renderpipeline"
         })
         {
             Assert.Contains(identity, validation, StringComparison.Ordinal);
         }
 
+        foreach (VegetationCanonicalSpecies species in VegetationCanonicalFixture.Species)
+        {
+            Assert.Contains(
+                species.ClusterGuid.ToString("D"),
+                validation,
+                StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(
+                species.PageGuid.ToString("D"),
+                validation,
+                StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(
+                species.SpeciesGuid.ToString("D"),
+                validation,
+                StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(
+                species.MeshGuid.ToString("D"),
+                validation,
+                StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(
+                species.MaterialGuid.ToString("D"),
+                validation,
+                StringComparison.OrdinalIgnoreCase);
+        }
+
         Assert.Equal(
             4,
             CountOccurrences(validation, "Assert-ExactRequiredCatalogDependencies `"));
         Assert.Contains(
-            "foreach ($name in @(\"Cluster\", \"Page\", \"Biome\", \"Species\", \"Mesh\", \"Material\"))",
+            "foreach ($name in $vegetationExpectations.Keys) {",
+            validation,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "foreach ($species in $vegetationSpecies) {",
+            validation,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "$expectedVegetationRuntimeArtifactCount = 27",
+            validation,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "$expectedVegetationDeploymentFileCount = 31",
             validation,
             StringComparison.Ordinal);
         Assert.Contains("$worldReachable.Contains($artifactKey)", validation, StringComparison.Ordinal);
         Assert.Contains("$pipelineReachable.Contains($shaderKey)", validation, StringComparison.Ordinal);
         Assert.Contains(
-            "exactly four canonical cooked vegetation artifacts",
+            "exactly twenty-seven canonical cooked vegetation artifacts",
             validation,
             StringComparison.Ordinal);
         Assert.Contains(
-            "exactly three cooked vegetation shader stages",
+            "exactly four cooked vegetation shader stages",
             validation,
             StringComparison.Ordinal);
         Assert.Contains(
-            "exactly the seven catalog-referenced vegetation files",
+            "exactly the 31 catalog-referenced vegetation files",
             validation,
             StringComparison.Ordinal);
         Assert.Contains(
@@ -168,20 +198,31 @@ public sealed class VegetationRuntimeValidationContractTests
         {
             Assert.Contains("[Vegetation.GenericRP.Validation]", validation, StringComparison.Ordinal);
             Assert.Contains(
-                "Cluster=e90ae5ab-24fb-2617-9983-3ed656bd652c",
+                "PreparedClusters=4 Cluster=324397e1-7ddb-a3fd-8d4e-1c077443f814",
                 validation,
                 StringComparison.Ordinal);
             Assert.Contains(
-                "Species=7b0f2e52-8b67-4e3d-bf0a-cbc42f622001",
+                "Species=3eb515ce-3dea-4994-81a1-a14fc2fe0eb5",
                 validation,
                 StringComparison.Ordinal);
-            Assert.Contains("OpaqueBatches=1 OpaqueInstances=13", validation, StringComparison.Ordinal);
+            foreach (VegetationCanonicalSpecies species in VegetationCanonicalFixture.Species)
+            {
+                Assert.Contains(
+                    $"{species.ClusterGuid:N}:{species.SpeciesGuid:N}:{species.InstanceCount}",
+                    validation,
+                    StringComparison.OrdinalIgnoreCase);
+            }
+
             Assert.Contains(
-                "RecordedShadowBatches=4 RecordedShadowInstances=52 Cascades=4",
+                "ClustersOverflow=0 OpaqueBatches=4 OpaqueInstances=49848",
                 validation,
                 StringComparison.Ordinal);
             Assert.Contains(
-                "ShadowBatches=1,1,1,1 ShadowInstances=13,13,13,13",
+                "RecordedShadowBatches=16 RecordedShadowInstances=199392 Cascades=4",
+                validation,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "ShadowBatches=4,4,4,4 ShadowInstances=49848,49848,49848,49848",
                 validation,
                 StringComparison.Ordinal);
             Assert.Contains("Dropped=0 Ticket=[1-9][0-9]*", validation, StringComparison.Ordinal);

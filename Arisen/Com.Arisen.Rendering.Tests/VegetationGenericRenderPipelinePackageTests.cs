@@ -58,6 +58,7 @@ namespace ArisenEngine.Rendering
 
 namespace Com.Arisen.Rendering.Tests
 {
+    [Collection(SceneComponentExtensionRegistryCollection.Name)]
     public sealed class VegetationGenericRenderPipelinePackageTests : IDisposable
     {
         private readonly string m_Root = Path.Combine(
@@ -83,7 +84,8 @@ namespace Com.Arisen.Rendering.Tests
                     MaxInactiveResources: 0));
             var runtimeData = new VegetationRuntimeDataStore();
             var diagnostics = new VegetationDiagnosticsService();
-            var previews = new VegetationAuthoringPreviewService();
+        var previews = new VegetationAuthoringPreviewService();
+        var wind = new VegetationWindService();
             var featureRegistry = new RecordingFeatureRegistry
             {
                 ThrowOnRegister = true
@@ -104,7 +106,9 @@ namespace Com.Arisen.Rendering.Tests
                 new VegetationClusterRenderSource(() => null));
             services.RegisterService<IVegetationRuntimeDataStore>(runtimeData);
             services.RegisterService<IVegetationDiagnosticsPublisher>(diagnostics);
-            services.RegisterService<IVegetationAuthoringPreviewService>(previews);
+        services.RegisterService<IVegetationAuthoringPreviewService>(previews);
+        services.RegisterService<IVegetationWindSource>(wind);
+        services.RegisterService<IVegetationWindClockControl>(wind);
             var package = new VegetationGenericRenderPipelinePackage();
 
             Assert.Throws<InvalidOperationException>(() => package.OnLoad(services));
@@ -339,6 +343,85 @@ namespace Com.Arisen.Rendering.Tests
             Assert.False(package.HasPendingOwnership);
         }
 
+        [Theory]
+        [InlineData("full", "Full")]
+        [InlineData("opaque-only", "OpaqueOnly")]
+        [InlineData("disabled", "Disabled")]
+        public void EveryDeclaredComparisonRunPinsTheSharedWindClock(
+            string declaredMode,
+            string expectedMode)
+        {
+            VegetationRenderValidationSelection declared =
+                ResolveSelection(declaredMode);
+            VegetationRenderValidationSelection ambient =
+                ResolveSelection(declaredMode: null);
+
+            Assert.Equal(expectedMode, declared.Mode.ToString());
+            Assert.True(declared.PinsWindClock);
+            Assert.Equal(VegetationRenderValidationMode.Full, ambient.Mode);
+            Assert.False(ambient.PinsWindClock);
+            Assert.True(VegetationRenderValidationPolicy.ComparableWindTimeSeconds > 0.0f);
+        }
+
+        [Fact]
+        public void UndeclaredValidationModeIsRejected()
+        {
+            InvalidOperationException failure = Assert.Throws<InvalidOperationException>(
+                () => ResolveSelection("opaque"));
+
+            Assert.Contains(
+                VegetationRenderValidationPolicy.EnvironmentVariableName,
+                failure.Message,
+                StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void ComparisonRunPinsTheWindClockDuringPackageLoad()
+        {
+            Directory.CreateDirectory(m_Root);
+            var database = new TestAssetDatabase(
+                AssetSourceAccessMode.Disabled,
+                Path.Combine(m_Root, "Cooked"));
+            using var scheduler = new TaskGraph(workerCount: 1);
+            using var residency = CreateResidency(database);
+            var runtimeData = new VegetationRuntimeDataStore();
+            var featureRegistry = new RecordingFeatureRegistry();
+            var wind = new VegetationWindService();
+            ServiceRegistry services = CreateServices(
+                database,
+                scheduler,
+                residency,
+                runtimeData,
+                featureRegistry,
+                wind: wind);
+            var package = new VegetationGenericRenderPipelinePackage();
+            string? previous = Environment.GetEnvironmentVariable(
+                VegetationRenderValidationPolicy.EnvironmentVariableName);
+            try
+            {
+                Environment.SetEnvironmentVariable(
+                    VegetationRenderValidationPolicy.EnvironmentVariableName,
+                    "opaque-only");
+
+                package.OnLoad(services);
+
+                Assert.True(wind.HasTimeOverride);
+                Assert.Equal(
+                    VegetationRenderValidationPolicy.ComparableWindTimeSeconds,
+                    wind.Current.TimeSeconds,
+                    5);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(
+                    VegetationRenderValidationPolicy.EnvironmentVariableName,
+                    previous);
+            }
+
+            package.OnUnload(services);
+            Assert.False(package.HasPendingOwnership);
+        }
+
         [Fact]
         public void PreparedProviderCollisionPreservesExistingInstanceAndAllowsRetry()
         {
@@ -393,6 +476,26 @@ namespace Com.Arisen.Rendering.Tests
                     MaxSetupMilliseconds: 10,
                     MaxInactiveResources: 0));
 
+        private static VegetationRenderValidationSelection ResolveSelection(
+            string? declaredMode)
+        {
+            string? previous = Environment.GetEnvironmentVariable(
+                VegetationRenderValidationPolicy.EnvironmentVariableName);
+            try
+            {
+                Environment.SetEnvironmentVariable(
+                    VegetationRenderValidationPolicy.EnvironmentVariableName,
+                    declaredMode);
+                return VegetationRenderValidationPolicy.ResolveFromEnvironment();
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(
+                    VegetationRenderValidationPolicy.EnvironmentVariableName,
+                    previous);
+            }
+        }
+
         private static ServiceRegistry CreateServices(
             IAssetDatabase database,
             TaskGraph taskGraph,
@@ -400,10 +503,12 @@ namespace Com.Arisen.Rendering.Tests
             VegetationRuntimeDataStore runtimeData,
             RecordingFeatureRegistry featureRegistry,
             ArisenEngine.Rendering.TestGenericRenderPipelineRuntimeShaderRegistry?
-                shaderRegistry = null)
+                shaderRegistry = null,
+            VegetationWindService? wind = null)
         {
             var diagnostics = new VegetationDiagnosticsService();
-            var previews = new VegetationAuthoringPreviewService();
+        var previews = new VegetationAuthoringPreviewService();
+        wind ??= new VegetationWindService();
             var services = new ServiceRegistry();
             services.RegisterService<IAssetDatabase>(database);
             services.RegisterService<IBackgroundTaskScheduler>(taskGraph);
@@ -421,7 +526,9 @@ namespace Com.Arisen.Rendering.Tests
                 new VegetationClusterRenderSource(() => null));
             services.RegisterService<IVegetationRuntimeDataStore>(runtimeData);
             services.RegisterService<IVegetationDiagnosticsPublisher>(diagnostics);
-            services.RegisterService<IVegetationAuthoringPreviewService>(previews);
+        services.RegisterService<IVegetationAuthoringPreviewService>(previews);
+        services.RegisterService<IVegetationWindSource>(wind);
+        services.RegisterService<IVegetationWindClockControl>(wind);
             return services;
         }
 

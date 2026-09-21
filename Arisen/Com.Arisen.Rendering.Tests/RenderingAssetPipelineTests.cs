@@ -2308,14 +2308,22 @@ public sealed class RenderingAssetPipelineTests
         Assert.Equal(new[] { "RoughnessFactor" }, contract.RequiredScalarProperties);
         Assert.Equal(new[] { "BaseColorFactor" }, contract.RequiredVector4Properties);
 
-        var duplicate = Assert.Throws<InvalidOperationException>(() =>
+        var repeatedTexture = ShaderMaterialContractAnnotations.Parse(
+            """
+            // @arisen.material.texture BaseColor
+            // @arisen.material.texture basecolor
+            """,
+            "RepeatedTexture.hlsl");
+        Assert.Equal(new[] { "BaseColor" }, repeatedTexture.RequiredTexture2DRefs);
+
+        var duplicateScalar = Assert.Throws<InvalidOperationException>(() =>
             ShaderMaterialContractAnnotations.Parse(
                 """
-                // @arisen.material.texture BaseColor
-                // @arisen.material.texture basecolor
+                // @arisen.material.float RoughnessFactor
+                // @arisen.material.float roughnessfactor
                 """,
                 "Duplicate.hlsl"));
-        Assert.Contains("duplicate name", duplicate.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("duplicate name", duplicateScalar.Message, StringComparison.OrdinalIgnoreCase);
 
         var unsupported = Assert.Throws<InvalidOperationException>(() =>
             ShaderMaterialContractAnnotations.Parse("// @arisen.material.matrix4x4 World", "Unsupported.hlsl"));

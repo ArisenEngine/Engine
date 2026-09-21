@@ -1,4 +1,6 @@
 using System.Text;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using ArisenEngine.Core.Assets;
 using ArisenEngine.Resources.Serialization;
 using ArisenEngine.Vegetation;
@@ -10,31 +12,8 @@ namespace Com.Arisen.Rendering.Tests;
 [Collection(SceneComponentExtensionRegistryCollection.Name)]
 public sealed class VegetationScatterRecipeCookingTests : IDisposable
 {
-    private const string PackageId = "com.arisen.packagegame";
-    private const string PipelinePackageId = "com.arisen.generic-renderpipeline";
-
-    private static readonly Guid s_RecipeGuid =
-        Guid.Parse("aa347d75-087c-4fb9-998f-2cc6130ceac1");
-    private static readonly Guid s_WorldGuid =
-        Guid.Parse("9a9b4db5-c0a8-4f2e-8929-89464bea9d51");
-    private static readonly Guid s_CenterSceneGuid =
-        Guid.Parse("506af06e-b16d-4573-b6c9-98548c370e90");
-    private static readonly Guid s_CenterCellGuid =
-        Guid.Parse("5d13eda6-606a-57a0-bae4-cd559ddad464");
-    private static readonly Guid s_PersistentSceneGuid =
-        Guid.Parse("bfdbfc32-8a32-4b02-b8a9-65a172859a5c");
-    private static readonly Guid s_BiomeGuid =
-        Guid.Parse("c0a92f10-0eb9-4d24-b729-7d0f38313001");
-    private static readonly Guid s_SpeciesGuid =
-        Guid.Parse("7b0f2e52-8b67-4e3d-bf0a-cbc42f622001");
-    private static readonly Guid s_ClusterGuid =
-        Guid.Parse("e90ae5ab-24fb-2617-9983-3ed656bd652c");
-    private static readonly Guid s_PageGuid =
-        Guid.Parse("c1d7d00e-4aac-3819-b9f5-7a2a65e8e1eb");
-    private static readonly Guid s_VegetationMeshGuid =
-        Guid.Parse("9f57d9cc-2db6-4c85-ae7b-544338806e2c");
-    private static readonly Guid s_VegetationMaterialGuid =
-        Guid.Parse("4ac21c64-e984-4ed0-9e21-93878de5249e");
+    private const string PackageId = VegetationCanonicalFixture.PackageId;
+    private const string PipelinePackageId = VegetationCanonicalFixture.FilterPackageId;
 
     private readonly string m_Root = Path.Combine(
         Path.GetTempPath(),
@@ -42,7 +21,7 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
         Guid.NewGuid().ToString("N"));
 
     [Fact]
-    public void FreshRuntimeCook_GeneratesCanonicalWorldVegetationClosure()
+    public void FreshRuntimeCook_GeneratesCanonicalSpeciesFixtureClosure()
     {
         string repositoryRoot = FindRepositoryRoot();
         string sourcePackageRoot = Path.Combine(
@@ -67,18 +46,29 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
         CopyDirectory(
             Path.Combine(sourcePackageRoot, "Assets", "Terrain"),
             Path.Combine(packageRoot, "Assets", "Terrain"));
+        foreach (string directory in new[] { "Meshes", "Materials", "Textures" })
+        {
+            CopyDirectory(
+                Path.Combine(sourcePackageRoot, "Assets", "Vegetation", directory),
+                Path.Combine(packageRoot, "Assets", "Vegetation", directory));
+        }
+
         CopyAsset(
             sourcePackageRoot,
             packageRoot,
             "Assets/Vegetation/ShowcaseValley.arivegetationbiome");
-        CopyAsset(
-            sourcePackageRoot,
-            packageRoot,
-            "Assets/Vegetation/ValleyRock.arivegetationspecies");
-        CopyAsset(
-            sourcePackageRoot,
-            packageRoot,
-            "Assets/Vegetation/ShowcaseValley.arivegetationscatter");
+        foreach (VegetationCanonicalSpecies species in VegetationCanonicalFixture.Species)
+        {
+            CopyAsset(
+                sourcePackageRoot,
+                packageRoot,
+                $"Assets/Vegetation/Valley{species.Name}.arivegetationspecies");
+            CopyAsset(
+                sourcePackageRoot,
+                packageRoot,
+                $"Assets/Vegetation/Valley{species.Name}.arivegetationscatter");
+        }
+
         CopyAsset(
             sourcePipelineRoot,
             pipelineRoot,
@@ -91,7 +81,7 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
         WriteAsset(
             packageRoot,
             "Assets/Scenes/EmptyPersistent.arisenscene",
-            s_PersistentSceneGuid,
+            VegetationCanonicalFixture.PersistentSceneGuid,
             "Scene",
             "Version: 2\nName: Empty Persistent\nComponentSchemas:\n" +
             "- TypeId: 1\n  Name: Transform\n  Version: 1\n  Required: true\n" +
@@ -105,13 +95,13 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
         WriteAsset(
             packageRoot,
             "Assets/Scenes/VegetationCenterCell.arisenscene",
-            s_CenterSceneGuid,
+            VegetationCanonicalFixture.CenterSceneGuid,
             "Scene",
             CreateMinimalVegetationCellSource());
         WriteAsset(
             packageRoot,
             "Assets/Worlds/LanternWorld.arisenworld",
-            s_WorldGuid,
+            VegetationCanonicalFixture.WorldGuid,
             "World",
             CreateMinimalWorldSource());
 
@@ -127,54 +117,55 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
             Path.Combine(packageRoot, "Assets", "Vegetation"),
             "*.arivegetationgenerated",
             SearchOption.AllDirectories));
-        Assert.False(database.TryGetAssetDescriptor(s_ClusterGuid, out _));
-        Assert.False(database.TryGetAssetDescriptor(s_PageGuid, out _));
+        foreach (VegetationCanonicalSpecies species in VegetationCanonicalFixture.Species)
+        {
+            Assert.False(database.TryGetAssetDescriptor(species.ClusterGuid, out _));
+            Assert.False(database.TryGetAssetDescriptor(species.PageGuid, out _));
+        }
 
-        VegetationScatterRecipeGenerationResult generated = Assert.Single(
-            VegetationScatterRecipeGenerator.GenerateAll(database, database));
-        Assert.Equal(s_RecipeGuid, generated.RecipeGuid);
-        Assert.Equal(s_ClusterGuid, generated.ClusterGuid);
-        Assert.Equal(s_PageGuid, Assert.Single(generated.PageGuids));
-        Assert.Equal(13, generated.InstanceCount);
-        Assert.Equal(new WorldPosition(-256.0, -64.0, -256.0), generated.Origin);
-        Assert.Equal(
-            new WorldBounds(
-                new WorldPosition(
-                    -9.9700844287872314,
-                    -2.1974024772644043,
-                    -8.4557883739471436),
-                new WorldPosition(
-                    1.9058775901794434,
-                    3.9241063594818115,
-                    2.6819112300872803)),
-            generated.Bounds);
-        Assert.True(database.TryGetAsset(s_ClusterGuid, out AssetRecord clusterSource));
-        AssetMetadata clusterMetadata =
-            ArisenEngine.Core.Serialization.SerializationUtil.Deserialize<AssetMetadata>(
-                clusterSource.MetaPath,
-                serializeIfNotExist: false);
-        Assert.Equal(s_BiomeGuid, clusterMetadata.Generated?.SourceGuid);
-        Assert.True(database.TryGetCookedArtifact(
-            s_ClusterGuid,
-            VegetationClusterAssetCooker.RuntimeVariant,
-            out _));
-        Assert.True(database.TryGetCookedArtifact(
-            s_PageGuid,
-            VegetationInstancePageAssetCooker.RuntimeVariant,
-            out _));
-        string generatedRelativePath = Path.Combine(
-            "Assets",
-            "Vegetation",
-            "Generated",
-            s_RecipeGuid.ToString("N"));
-        AssertGeneratedSourceMatchesTracked(
-            Path.Combine(packageRoot, generatedRelativePath),
-            Path.Combine(sourcePackageRoot, generatedRelativePath),
-            "cluster.arivegetationgenerated");
-        AssertGeneratedSourceMatchesTracked(
-            Path.Combine(packageRoot, generatedRelativePath),
-            Path.Combine(sourcePackageRoot, generatedRelativePath),
-            "page-0000.arivegetationgenerated");
+        IReadOnlyList<VegetationScatterRecipeGenerationResult> generated =
+            VegetationScatterRecipeGenerator.GenerateAll(database, database);
+        Assert.Equal(VegetationCanonicalFixture.Species.Length, generated.Count);
+        foreach (VegetationCanonicalSpecies species in VegetationCanonicalFixture.Species)
+        {
+            VegetationScatterRecipeGenerationResult result = Assert.Single(
+                generated,
+                candidate => candidate.RecipeGuid == species.RecipeGuid);
+            Assert.Equal(species.ClusterGuid, result.ClusterGuid);
+            Assert.Equal(species.PageCount, result.PageGuids.Count);
+            Assert.Contains(species.PageGuid, result.PageGuids);
+            Assert.Equal(species.InstanceCount, result.InstanceCount);
+            Assert.Equal(VegetationCanonicalFixture.CellOrigin, result.Origin);
+            Assert.Equal(species.Bounds, result.Bounds);
+            Assert.True(database.TryGetAsset(species.ClusterGuid, out AssetRecord clusterSource));
+            AssetMetadata clusterMetadata =
+                ArisenEngine.Core.Serialization.SerializationUtil.Deserialize<AssetMetadata>(
+                    clusterSource.MetaPath,
+                    serializeIfNotExist: false);
+            Assert.Equal(VegetationCanonicalFixture.BiomeGuid, clusterMetadata.Generated?.SourceGuid);
+            Assert.True(database.TryGetCookedArtifact(
+                species.ClusterGuid,
+                VegetationClusterAssetCooker.RuntimeVariant,
+                out _));
+            Assert.True(database.TryGetCookedArtifact(
+                species.PageGuid,
+                VegetationInstancePageAssetCooker.RuntimeVariant,
+                out _));
+
+            string generatedRelativePath = Path.Combine(
+                "Assets",
+                "Vegetation",
+                "Generated",
+                VegetationCanonicalFixture.GetGeneratedDirectoryName(species.RecipeGuid));
+            AssertGeneratedSourceMatchesTracked(
+                Path.Combine(packageRoot, generatedRelativePath),
+                Path.Combine(sourcePackageRoot, generatedRelativePath),
+                "cluster.arivegetationgenerated");
+            AssertGeneratedSourceMatchesTracked(
+                Path.Combine(packageRoot, generatedRelativePath),
+                Path.Combine(sourcePackageRoot, generatedRelativePath),
+                "page-0000.arivegetationgenerated");
+        }
 
         var codec = new VegetationClusterSceneComponentCodec();
         SceneComponentExtensionRegistry.Shared.Register(codec);
@@ -182,9 +173,12 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
         {
             SceneInspectionResult inspection = SceneAssetLoader.InspectScene(
                 database,
-                new AssetRef<SceneSourceAsset>(s_CenterSceneGuid, "Scene", PackageId));
+                new AssetRef<SceneSourceAsset>(
+                    VegetationCanonicalFixture.CenterSceneGuid,
+                    "Scene",
+                    PackageId));
             Assert.True(inspection.Success, inspection.Diagnostic);
-            Assert.Equal(1, inspection.EntityCount);
+            Assert.Equal(VegetationCanonicalFixture.Species.Length, inspection.EntityCount);
             Assert.Equal(0, inspection.MeshRendererCount);
 
             var registry = new RuntimeAssetCookerRegistry();
@@ -200,24 +194,36 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
                     "win-x64",
                     Path.Combine(m_Root, "Staging"),
                     ForceRebuild: false),
-                [new RuntimeAssetCookRootRequest("startupWorld", s_WorldGuid, PackageId, "World")],
+                [new RuntimeAssetCookRootRequest(
+                    "startupWorld",
+                    VegetationCanonicalFixture.WorldGuid,
+                    PackageId,
+                    "World")],
                 registry);
 
-            AssertCataloged(closure, s_WorldGuid, "World");
-            AssertCataloged(closure, s_CenterSceneGuid, "Scene");
-            AssertCataloged(closure, s_ClusterGuid, VegetationAssetTypes.Cluster);
-            AssertCataloged(closure, s_PageGuid, VegetationAssetTypes.InstancePage);
-            AssertCataloged(closure, s_BiomeGuid, VegetationAssetTypes.Biome);
-            AssertCataloged(closure, s_SpeciesGuid, VegetationAssetTypes.Species);
-            AssertCataloged(closure, s_VegetationMeshGuid, "Mesh");
-            AssertCataloged(closure, s_VegetationMaterialGuid, "Material");
+            AssertCataloged(closure, VegetationCanonicalFixture.WorldGuid, "World");
+            AssertCataloged(closure, VegetationCanonicalFixture.CenterSceneGuid, "Scene");
+            AssertCataloged(closure, VegetationCanonicalFixture.BiomeGuid, VegetationAssetTypes.Biome);
+            foreach (VegetationCanonicalSpecies species in VegetationCanonicalFixture.Species)
+            {
+                AssertCataloged(closure, species.ClusterGuid, VegetationAssetTypes.Cluster);
+                AssertCataloged(closure, species.PageGuid, VegetationAssetTypes.InstancePage);
+                AssertCataloged(closure, species.SpeciesGuid, VegetationAssetTypes.Species);
+                AssertCataloged(closure, species.MeshGuid, "Mesh");
+                AssertCataloged(closure, species.MaterialGuid, "Material");
+            }
+
             RuntimeAssetCatalogArtifact cookedScene = Assert.Single(
                 closure.Catalog.Artifacts,
-                artifact => artifact.Guid == s_CenterSceneGuid && artifact.AssetType == "Scene");
-            Assert.Contains(
-                cookedScene.Dependencies,
-                dependency => dependency.Guid == s_ClusterGuid &&
-                    dependency.AssetType == VegetationAssetTypes.Cluster);
+                artifact => artifact.Guid == VegetationCanonicalFixture.CenterSceneGuid &&
+                    artifact.AssetType == "Scene");
+            foreach (VegetationCanonicalSpecies species in VegetationCanonicalFixture.Species)
+            {
+                Assert.Contains(
+                    cookedScene.Dependencies,
+                    dependency => dependency.Guid == species.ClusterGuid &&
+                        dependency.AssetType == VegetationAssetTypes.Cluster);
+            }
         }
         finally
         {
@@ -225,32 +231,73 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
             database.ReleaseAllLoadedCookedAssets();
         }
 
+        AssertDenseRockRebuildRollsBackPublication(database, packageRoot);
+    }
+
+    private static void AssertDenseRockRebuildRollsBackPublication(
+        AssetDatabase database,
+        string packageRoot)
+    {
+        VegetationCanonicalSpecies rock = VegetationCanonicalFixture.Require("Rock");
         string biomePath = Path.Combine(
             packageRoot,
             "Assets",
             "Vegetation",
             "ShowcaseValley.arivegetationbiome");
         string originalBiome = File.ReadAllText(biomePath);
+        string generatedRelativePath = Path.Combine(
+            "Assets",
+            "Vegetation",
+            "Generated",
+            VegetationCanonicalFixture.GetGeneratedDirectoryName(rock.RecipeGuid));
+        string generatedRoot = Path.Combine(packageRoot, generatedRelativePath);
         try
         {
+            // Reduce only the first biome entry (the rock) to one instance per page so the rebuild
+            // republishes a multi-page cluster while every other species keeps its single page.
+            int remainingEntryIndex = originalBiome.IndexOf(
+                "- EntryId: valley-grass",
+                StringComparison.Ordinal);
+            Assert.True(remainingEntryIndex > 0);
+            string rockEntry = originalBiome[..remainingEntryIndex];
+            Match clusterSize = Regex.Match(
+                rockEntry,
+                @"ClusterSize: (?<size>[0-9]+)",
+                RegexOptions.CultureInvariant);
+            Assert.True(clusterSize.Success, "The rock biome entry declares no ClusterSize.");
+            int rockPageCapacity = int.Parse(
+                clusterSize.Groups["size"].Value,
+                CultureInfo.InvariantCulture);
+            Assert.True(
+                rockPageCapacity > 1,
+                "The rock biome entry must publish more than one instance per page so the dense " +
+                "rebuild exercises a multi-page cluster.");
             File.WriteAllText(
                 biomePath,
-                originalBiome.Replace("ClusterSize: 64", "ClusterSize: 1", StringComparison.Ordinal));
-            VegetationScatterRecipeGenerationResult dense = Assert.Single(
-                VegetationScatterRecipeGenerator.GenerateAll(database, database));
-            Assert.Equal(13, dense.PageGuids.Count);
-            Assert.DoesNotContain(s_PageGuid, dense.PageGuids);
+                rockEntry[..clusterSize.Index] +
+                    "ClusterSize: 1" +
+                    rockEntry[(clusterSize.Index + clusterSize.Length)..] +
+                    originalBiome[remainingEntryIndex..]);
+
+            IReadOnlyList<VegetationScatterRecipeGenerationResult> dense =
+                VegetationScatterRecipeGenerator.GenerateAll(database, database);
+            Assert.Equal(VegetationCanonicalFixture.Species.Length, dense.Count);
+            VegetationScatterRecipeGenerationResult denseRock = Assert.Single(
+                dense,
+                candidate => candidate.RecipeGuid == rock.RecipeGuid);
+            Assert.Equal(rock.InstanceCount, denseRock.PageGuids.Count);
+            Assert.DoesNotContain(rock.PageGuid, denseRock.PageGuids);
             Assert.True(database.TryGetCookedArtifact(
-                s_ClusterGuid,
+                rock.ClusterGuid,
                 VegetationClusterAssetCooker.RuntimeVariant,
                 out CookedAssetRecord denseClusterArtifact));
             byte[] denseClusterBytes = File.ReadAllBytes(denseClusterArtifact.Path);
-            Assert.False(database.TryGetAsset(s_PageGuid, out _));
+            Assert.False(database.TryGetAsset(rock.PageGuid, out _));
             Assert.False(database.TryGetCookedArtifact(
-                s_PageGuid,
+                rock.PageGuid,
                 VegetationInstancePageAssetCooker.RuntimeVariant,
                 out _));
-            foreach (Guid pageGuid in dense.PageGuids)
+            foreach (Guid pageGuid in denseRock.PageGuids)
             {
                 Assert.True(database.TryGetAsset(pageGuid, out _));
                 Assert.True(database.TryGetCookedArtifact(
@@ -259,15 +306,18 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
                     out _));
             }
 
-            Dictionary<string, byte[]> denseGeneratedSources = SnapshotGeneratedSources(
-                Path.Combine(packageRoot, generatedRelativePath));
-            File.WriteAllText(
-                biomePath,
-                originalBiome);
+            Dictionary<string, byte[]> denseGeneratedSources =
+                SnapshotGeneratedSources(generatedRoot);
+
+            // Republishing the whole fixture must be atomic per recipe: restoring the authored
+            // biome makes the rebuild republish every species again, and a failure at the first
+            // manifest commit leaves the previous closure, cache paths, and generated sources
+            // untouched for every recipe.
+            File.WriteAllText(biomePath, originalBiome);
             int manifestCommitCount = 0;
             database.BeforeCookedManifestReplace = _ =>
             {
-                if (++manifestCommitCount == 2)
+                if (++manifestCommitCount == 1)
                 {
                     throw new InvalidOperationException(
                         "Injected scatter closure publication failure.");
@@ -276,12 +326,10 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
             Assert.Throws<InvalidOperationException>(
                 () => VegetationScatterRecipeGenerator.GenerateAll(database, database));
             database.BeforeCookedManifestReplace = null;
-            Assert.Equal(2, manifestCommitCount);
+            Assert.Equal(1, manifestCommitCount);
 
-            AssertGeneratedSourcesUnchanged(
-                Path.Combine(packageRoot, generatedRelativePath),
-                denseGeneratedSources);
-            foreach (Guid pageGuid in dense.PageGuids)
+            AssertGeneratedSourcesUnchanged(generatedRoot, denseGeneratedSources);
+            foreach (Guid pageGuid in denseRock.PageGuids)
             {
                 Assert.True(database.TryGetAsset(pageGuid, out _));
                 Assert.True(database.TryGetCookedArtifact(
@@ -289,8 +337,9 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
                     VegetationInstancePageAssetCooker.RuntimeVariant,
                     out _));
             }
+
             Assert.True(database.TryGetCookedArtifact(
-                s_ClusterGuid,
+                rock.ClusterGuid,
                 VegetationClusterAssetCooker.RuntimeVariant,
                 out CookedAssetRecord restoredClusterArtifact));
             Assert.Equal(denseClusterArtifact.Path, restoredClusterArtifact.Path);
@@ -304,7 +353,7 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
     }
 
     [Fact]
-    public void TrackedLanternWorld_OwnsCanonicalClusterInCenterCell()
+    public void TrackedLanternWorld_OwnsCanonicalSpeciesClustersInCenterCell()
     {
         string packageRoot = Path.Combine(
             FindRepositoryRoot(),
@@ -344,17 +393,72 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
                     "Scene_0.arisenscene.meta"),
                 serializeIfNotExist: false);
 
-        Assert.Contains($"Guid: {s_CenterSceneGuid:D}", world, StringComparison.Ordinal);
-        Assert.Contains($"Cluster: {{ Guid: {s_ClusterGuid:D}", scene, StringComparison.Ordinal);
-        Assert.Contains($"OwningCellGuid: {s_CenterCellGuid:D}", scene, StringComparison.Ordinal);
-        Assert.Contains("Cell: { X: 0, Y: 0, Z: 0, Layer: surface }", scene, StringComparison.Ordinal);
-        Assert.Contains("InstanceCount: 13", scene, StringComparison.Ordinal);
-        Assert.Equal(3, CountOccurrences(scene, "  MeshRenderer:"));
+        Assert.Contains(
+            $"Guid: {VegetationCanonicalFixture.CenterSceneGuid:D}",
+            world,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            $"OwningCellGuid: {VegetationCanonicalFixture.CenterCellGuid:D}",
+            scene,
+            StringComparison.Ordinal);
+        Assert.Equal(
+            VegetationCanonicalFixture.Species.Length,
+            CountOccurrences(scene, "Cell: { X: 0, Y: 0, Z: 0, Layer: surface }"));
+        Assert.Equal(
+            VegetationCanonicalFixture.Species.Length,
+            CountOccurrences(scene, "  TerrainTile:"));
+        Assert.Equal(0, CountOccurrences(scene, "  MeshRenderer:"));
         Assert.DoesNotContain("VegetationCluster", importedScene, StringComparison.Ordinal);
         Assert.Null(authoredMetadata.Generated);
         Assert.Equal("ArisenSceneImporter", authoredMetadata.Importer);
         Assert.Equal("GltfSceneImporter", importedMetadata.Importer);
         Assert.NotNull(importedMetadata.Generated);
+
+        foreach (VegetationCanonicalSpecies species in VegetationCanonicalFixture.Species)
+        {
+            Assert.Contains(
+                $"Cluster: {{ Guid: {species.ClusterGuid:D}",
+                scene,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                $"Species: {{ Guid: {species.SpeciesGuid:D}",
+                scene,
+                StringComparison.Ordinal);
+            AuthoredCluster authored = ReadAuthoredCluster(scene, species.ClusterGuid);
+            Assert.Equal(species.InstanceCount, authored.InstanceCount);
+            Assert.Equal(species.MinX, authored.MinX);
+            Assert.Equal(species.MinY, authored.MinY);
+            Assert.Equal(species.MinZ, authored.MinZ);
+            Assert.Equal(species.MaxX, authored.MaxX);
+            Assert.Equal(species.MaxY, authored.MaxY);
+            Assert.Equal(species.MaxZ, authored.MaxZ);
+
+            string generatedDirectory = Path.Combine(
+                packageRoot,
+                "Assets",
+                "Vegetation",
+                "Generated",
+                VegetationCanonicalFixture.GetGeneratedDirectoryName(species.RecipeGuid));
+            string clusterSource = File.ReadAllText(
+                Path.Combine(generatedDirectory, "cluster.arivegetationgenerated"));
+            Assert.Contains(
+                $"Guid: {species.ClusterGuid:D}",
+                clusterSource,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                $"RecipeGuid: {species.RecipeGuid:D}",
+                clusterSource,
+                StringComparison.Ordinal);
+            AssetMetadata pageMetadata =
+                ArisenEngine.Core.Serialization.SerializationUtil.Deserialize<AssetMetadata>(
+                    Path.Combine(generatedDirectory, "page-0000.arivegetationgenerated.meta"),
+                    serializeIfNotExist: false);
+            Assert.Equal(species.PageGuid, pageMetadata.Guid);
+            Assert.Equal(
+                VegetationAssetTypes.InstancePage,
+                pageMetadata.AssetType);
+            Assert.Equal(species.ClusterGuid, pageMetadata.Generated?.SourceGuid);
+        }
     }
 
     public void Dispose()
@@ -439,12 +543,53 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
         return count;
     }
 
+    private static AuthoredCluster ReadAuthoredCluster(string scene, Guid clusterGuid)
+    {
+        string marker = $"Cluster: {{ Guid: {clusterGuid:D}";
+        string? block = scene
+            .Split("- Guid: ", StringSplitOptions.None)
+            .FirstOrDefault(candidate => candidate.Contains(marker, StringComparison.Ordinal));
+        Assert.NotNull(block);
+        Match bounds = Regex.Match(
+            block!,
+            @"Min: \{ X: (?<minX>[^,]+), Y: (?<minY>[^,]+), Z: (?<minZ>[^}]+) \}\s+" +
+            @"Max: \{ X: (?<maxX>[^,]+), Y: (?<maxY>[^,]+), Z: (?<maxZ>[^}]+) \}");
+        Match instances = Regex.Match(block!, @"InstanceCount: (?<instances>\d+)");
+        Assert.True(bounds.Success, $"Scene block for cluster '{clusterGuid:D}' has no authored bounds.");
+        Assert.True(
+            instances.Success,
+            $"Scene block for cluster '{clusterGuid:D}' has no authored instance count.");
+        return new AuthoredCluster(
+            int.Parse(instances.Groups["instances"].Value, CultureInfo.InvariantCulture),
+            ParseDouble(bounds.Groups["minX"].Value),
+            ParseDouble(bounds.Groups["minY"].Value),
+            ParseDouble(bounds.Groups["minZ"].Value),
+            ParseDouble(bounds.Groups["maxX"].Value),
+            ParseDouble(bounds.Groups["maxY"].Value),
+            ParseDouble(bounds.Groups["maxZ"].Value));
+    }
+
+    private static double ParseDouble(string value) =>
+        double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+
+    private static string FormatDouble(double value) =>
+        value.ToString("R", CultureInfo.InvariantCulture);
+
+    private readonly record struct AuthoredCluster(
+        int InstanceCount,
+        double MinX,
+        double MinY,
+        double MinZ,
+        double MaxX,
+        double MaxY,
+        double MaxZ);
+
     private static string CreateMinimalWorldSource() => $$"""
         Version: 2
-        WorldGuid: {{s_WorldGuid:D}}
+        WorldGuid: {{VegetationCanonicalFixture.WorldGuid:D}}
         Name: Vegetation Fresh Cache Test World
         PersistentScene:
-          Guid: {{s_PersistentSceneGuid:D}}
+          Guid: {{VegetationCanonicalFixture.PersistentSceneGuid:D}}
           PackageId: {{PackageId}}
         Partition:
           Origin: { X: -256, Y: -64, Z: -256 }
@@ -463,7 +608,7 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
         - Coordinate: { X: 0, Y: 0, Z: 0 }
           Layer: surface
           Scene:
-            Guid: {{s_CenterSceneGuid:D}}
+            Guid: {{VegetationCanonicalFixture.CenterSceneGuid:D}}
             PackageId: {{PackageId}}
           Bounds:
             Min: { X: -256, Y: -64, Z: -256 }
@@ -472,43 +617,55 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
           EstimatedGpuBytes: 67108864
         """;
 
-    private static string CreateMinimalVegetationCellSource() => $$"""
-        Version: 2
-        Name: Vegetation Center Cell
-        ComponentSchemas:
-        - TypeId: 1
-          Name: Transform
-          Version: 1
-          Required: true
-        - TypeId: 1447380803
-          Name: VegetationCluster
-          Version: 1
-          Required: true
-        Entities:
-        - Guid: 9cfcb277-b756-4349-b55e-39ddf24cfbe1
-          Name: Showcase Valley Vegetation Cluster
-          Transform:
-            Position: { X: 0, Y: 0, Z: 0 }
-            Rotation: { X: 0, Y: 0, Z: 0, W: 1 }
-            Scale: { X: 1, Y: 1, Z: 1 }
-          VegetationCluster:
-            Cluster: { Guid: {{s_ClusterGuid:D}}, PackageId: {{PackageId}} }
-            Biome: { Guid: {{s_BiomeGuid:D}}, PackageId: {{PackageId}} }
-            Species: { Guid: {{s_SpeciesGuid:D}}, PackageId: {{PackageId}} }
-            WorldGuid: {{s_WorldGuid:D}}
-            OwningCellGuid: {{s_CenterCellGuid:D}}
-            Cell: { X: 0, Y: 0, Z: 0, Layer: surface }
-            Origin: { X: -256, Y: -64, Z: -256 }
-            Bounds:
-              Min: { X: -9.9700844287872314, Y: -2.1974024772644043, Z: -8.4557883739471436 }
-              Max: { X: 1.9058775901794434, Y: 3.9241063594818115, Z: 2.6819112300872803 }
-            Visible: true
-            CastShadows: true
-            ReceiveShadows: true
-            QualityGroup: 0
-            PageCount: 1
-            InstanceCount: 13
-        """;
+    private static string CreateMinimalVegetationCellSource()
+    {
+        var builder = new StringBuilder();
+        builder.Append(
+            "Version: 2\n" +
+            "Name: Vegetation Center Cell\n" +
+            "ComponentSchemas:\n" +
+            "- TypeId: 1\n  Name: Transform\n  Version: 1\n  Required: true\n" +
+            "- TypeId: 1447380803\n  Name: VegetationCluster\n  Version: 1\n  Required: true\n" +
+            "Entities:\n");
+        for (int index = 0; index < VegetationCanonicalFixture.Species.Length; index++)
+        {
+            VegetationCanonicalSpecies species = VegetationCanonicalFixture.Species[index];
+            builder
+                .Append($"- Guid: 9cfcb277-b756-4349-b55e-39ddf24cfbe{index + 1}\n")
+                .Append($"  Name: Showcase Valley Vegetation Cluster {species.Name}\n")
+                .Append("  Transform:\n")
+                .Append("    Position: { X: 0, Y: 0, Z: 0 }\n")
+                .Append("    Rotation: { X: 0, Y: 0, Z: 0, W: 1 }\n")
+                .Append("    Scale: { X: 1, Y: 1, Z: 1 }\n")
+                .Append("  VegetationCluster:\n")
+                .Append($"    Cluster: {{ Guid: {species.ClusterGuid:D}, PackageId: {PackageId} }}\n")
+                .Append(
+                    $"    Biome: {{ Guid: {VegetationCanonicalFixture.BiomeGuid:D}, " +
+                    $"PackageId: {PackageId} }}\n")
+                .Append(
+                    $"    Species: {{ Guid: {species.SpeciesGuid:D}, PackageId: {PackageId} }}\n")
+                .Append($"    WorldGuid: {VegetationCanonicalFixture.WorldGuid:D}\n")
+                .Append(
+                    $"    OwningCellGuid: {VegetationCanonicalFixture.CenterCellGuid:D}\n")
+                .Append("    Cell: { X: 0, Y: 0, Z: 0, Layer: surface }\n")
+                .Append("    Origin: { X: -256, Y: -64, Z: -256 }\n")
+                .Append("    Bounds:\n")
+                .Append(
+                    $"      Min: {{ X: {FormatDouble(species.MinX)}, " +
+                    $"Y: {FormatDouble(species.MinY)}, Z: {FormatDouble(species.MinZ)} }}\n")
+                .Append(
+                    $"      Max: {{ X: {FormatDouble(species.MaxX)}, " +
+                    $"Y: {FormatDouble(species.MaxY)}, Z: {FormatDouble(species.MaxZ)} }}\n")
+                .Append("    Visible: true\n")
+                .Append("    CastShadows: true\n")
+                .Append("    ReceiveShadows: true\n")
+                .Append("    QualityGroup: 0\n")
+                .Append($"    PageCount: {species.PageCount}\n")
+                .Append($"    InstanceCount: {species.InstanceCount}\n");
+        }
+
+        return builder.ToString();
+    }
 
     private static void CopyAsset(
         string sourcePackageRoot,
@@ -569,7 +726,7 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
             directory = directory.Parent;
         }
 
-        throw new DirectoryNotFoundException("Could not locate the Arisen repository root.");
+        throw new InvalidOperationException("Could not locate repository root.");
     }
 
     private sealed class DeterministicRenderingDependencyCooker : IRuntimeAssetCooker

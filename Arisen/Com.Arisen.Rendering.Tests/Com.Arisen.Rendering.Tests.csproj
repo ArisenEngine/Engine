@@ -60,6 +60,8 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Commands\ModifySceneAssetTransformCommand.cs" Link="Source\Editor\Commands\ModifySceneAssetTransformCommand.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Services\EditorSceneDocumentService.cs" Link="Source\Editor\Services\EditorSceneDocumentService.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Services\EditorSceneViewFocusFraming.cs" Link="Source\Editor\Services\EditorSceneViewFocusFraming.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Services\EditorSceneViewNavigationInput.cs" Link="Source\Editor\Services\EditorSceneViewNavigationInput.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Services\EditorSceneViewCameraMotion.cs" Link="Source\Editor\Services\EditorSceneViewCameraMotion.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Services\EditorWorldDocumentService.cs" Link="Source\Editor\Services\EditorWorldDocumentService.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Services\WorkspaceManifestEditor.cs" Link="Source\Editor\Services\WorkspaceManifestEditor.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Core\Validation\EditorViewportSmokeState.cs" Link="Source\Editor\Validation\EditorViewportSmokeState.cs" />
@@ -69,6 +71,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.editor\Managed\Extensions\EditorExtensionRegistryCore.cs" Link="Source\Editor\Extensions\EditorExtensionRegistryCore.cs" />
 
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rhi.vulkan.native\Managed\RenderDocStartupPolicy.cs" Link="Source\Vulkan\RenderDocStartupPolicy.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rhi.vulkan.native\Managed\PresentPacingPolicy.cs" Link="Source\Vulkan\PresentPacingPolicy.cs" />
 
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\IComponent.cs" Link="Source\ECS\IComponent.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.ecs\Entity.cs" Link="Source\ECS\Entity.cs" />
@@ -102,6 +105,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EImageUsageFlagBits.cs" Link="Source\CoreNative\RHI\EImageUsageFlagBits.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EIndexType.cs" Link="Source\CoreNative\RHI\EIndexType.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EPipelineStageFlagBits.cs" Link="Source\CoreNative\RHI\EPipelineStageFlagBits.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EPresentMode.cs" Link="Source\CoreNative\RHI\EPresentMode.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\EProgramStage.cs" Link="Source\CoreNative\RHI\EProgramStage.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\RHI\RHIHandle.cs" Link="Source\CoreNative\RHI\RHIHandle.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core.native\Managed\Generated\Diagnostics\ProfilerAPI.cs" Link="Source\CoreNative\Diagnostics\ProfilerAPI.cs" />
@@ -200,6 +204,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\VegetationPreparedSetupWork.cs" Link="Source\VegetationGenericRenderPipeline\VegetationPreparedSetupWork.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\VegetationPreparedAssetProvider.cs" Link="Source\VegetationGenericRenderPipeline\VegetationPreparedAssetProvider.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\VegetationRenderValidationMode.cs" Link="Source\VegetationGenericRenderPipeline\VegetationRenderValidationMode.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\VegetationRenderValidationSelection.cs" Link="Source\VegetationGenericRenderPipeline\VegetationRenderValidationSelection.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation.generic-renderpipeline\Managed\VegetationGenericRenderPipelinePackage.cs" Link="Source\VegetationGenericRenderPipeline\VegetationGenericRenderPipelinePackage.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain\Managed\Assets\*.cs" Link="Source\Terrain\Assets\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain\Managed\Runtime\*.cs" Link="Source\Terrain\Runtime\%(Filename)%(Extension)" />
@@ -208,6 +213,8 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain.generic-renderpipeline\Managed\TerrainPreparedPayloadPacking.cs" Link="Source\TerrainGenericRenderPipeline\TerrainPreparedPayloadPacking.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain.editor\Managed\TerrainEditorDiagnosticsSession.cs" Link="Source\TerrainEditor\TerrainEditorDiagnosticsSession.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain.editor\Managed\TerrainEditorAuthoringController.cs" Link="Source\TerrainEditor\TerrainEditorAuthoringController.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.platform.desktop\Desktop\Win32Native.cs" Link="Source\Platform\Win32Native.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.platform.desktop\Desktop\WindowsProcHandler.cs" Link="Source\Platform\WindowsProcHandler.cs" />
   </ItemGroup>
 
 </Project>

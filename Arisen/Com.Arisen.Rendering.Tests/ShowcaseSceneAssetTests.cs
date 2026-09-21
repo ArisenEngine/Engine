@@ -40,22 +40,24 @@ public sealed class ShowcaseSceneAssetTests
     private static readonly Guid s_LanternMetallicRoughnessTextureGuid = Guid.Parse("984534a2-785f-4f19-5ebb-262a54c6e526");
     private static readonly Guid s_LanternNormalTextureGuid = Guid.Parse("1a36c586-10fb-ccf3-98e8-99310dbbf5d2");
     private static readonly Guid s_LanternEmissiveTextureGuid = Guid.Parse("9c41d0a0-2a84-8185-81c5-ff80d034b696");
-    private static readonly Guid s_BlueHourSourceTextureGuid = Guid.Parse("d5a4f9f1-2f0f-4da8-8b15-19ac1fb30e57");
-    private static readonly Guid s_BlueHourEnvironmentGuid = Guid.Parse("b7c4e40e-c95f-47e5-84b7-b7554e0edc17");
+    private static readonly Guid s_DuskSkyTextureGuid = Guid.Parse("b61f9d02-b90f-4300-886c-07f54ff4bc34");
+    private static readonly Guid s_MistfallDuskEnvironmentGuid = Guid.Parse("1fc01236-449b-4097-88c0-223b1ed736ff");
     private static readonly Guid s_TerrainRootGuid = Guid.Parse("6f4d0a1c-0e85-4a42-93fe-34058ef48511");
     private static readonly Guid s_TerrainLayerSetGuid = Guid.Parse("5dcaa6bd-2b51-498d-9fa9-bd68f4642761");
     private static readonly Guid s_TerrainTile0Guid = Guid.Parse("807a7664-36ee-bdf8-71ea-e78cd4db0c4f");
     private static readonly Guid s_TerrainTile1Guid = Guid.Parse("9b8e9a8a-7c9d-493e-9aa6-5ba74e5b630d");
     private static readonly Guid s_TerrainTile2Guid = Guid.Parse("331e576c-eddd-d7cc-e553-23ef719f496d");
     private static readonly Guid s_TerrainTile3Guid = Guid.Parse("3fd9bf23-4923-f0e5-cd73-94920028ed67");
+    private static readonly VegetationCanonicalSpecies s_ValleyRock =
+        VegetationCanonicalFixture.Require("Rock");
     private static readonly Guid s_ValleyRockSpeciesGuid =
-        Guid.Parse("7b0f2e52-8b67-4e3d-bf0a-cbc42f622001");
+        s_ValleyRock.SpeciesGuid;
     private static readonly Guid s_ShowcaseValleyBiomeGuid =
-        Guid.Parse("c0a92f10-0eb9-4d24-b729-7d0f38313001");
+        VegetationCanonicalFixture.BiomeGuid;
     private static readonly Guid s_ValleyRockMeshGuid =
-        Guid.Parse("9f57d9cc-2db6-4c85-ae7b-544338806e2c");
+        s_ValleyRock.MeshGuid;
     private static readonly Guid s_ValleyRockMaterialGuid =
-        Guid.Parse("4ac21c64-e984-4ed0-9e21-93878de5249e");
+        s_ValleyRock.MaterialGuid;
 
     [Fact]
     public void PackageShowcaseScene_LoadsClassicMeshAndDistinctMaterials()
@@ -302,8 +304,8 @@ public sealed class ShowcaseSceneAssetTests
             string metallicRoughnessPath = Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Textures", "MetallicRoughness_1.png");
             string normalPath = Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Textures", "Normal_2.png");
             string emissivePath = Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Textures", "Emissive_3.png");
-            string environmentSourcePath = Path.Combine(packageRoot, "Assets", "Textures", "BlueHourPanorama.ppm");
-            string environmentPath = Path.Combine(packageRoot, "Assets", "Environments", "BlueHour.arienvironment");
+            string environmentSourcePath = Path.Combine(packageRoot, "Assets", "Textures", "QwantaniDuskSky.hdr");
+            string environmentPath = Path.Combine(packageRoot, "Assets", "Environments", "MistfallDusk.arienvironment");
             string groundPath = Path.Combine(packageRoot, "Assets", "Meshes", "ShowcaseGround.obj");
             string groundMaterialPath = Path.Combine(packageRoot, "Assets", "Materials", "ShowcaseGround.arismaterial");
             string shaderPath = Path.Combine(pipelineRoot, "Assets", "Shaders", "StandardLit.shader");
@@ -322,8 +324,8 @@ public sealed class ShowcaseSceneAssetTests
             db.AddAsset(s_LanternMetallicRoughnessTextureGuid, "Texture2D", metallicRoughnessPath, "com.arisen.packagegame");
             db.AddAsset(s_LanternNormalTextureGuid, "Texture2D", normalPath, "com.arisen.packagegame");
             db.AddAsset(s_LanternEmissiveTextureGuid, "Texture2D", emissivePath, "com.arisen.packagegame");
-            db.AddAsset(s_BlueHourSourceTextureGuid, "Texture2D", environmentSourcePath, "com.arisen.packagegame");
-            db.AddAsset(s_BlueHourEnvironmentGuid, "EnvironmentTexture", environmentPath, "com.arisen.packagegame");
+            db.AddAsset(s_DuskSkyTextureGuid, "Texture2D", environmentSourcePath, "com.arisen.packagegame");
+            db.AddAsset(s_MistfallDuskEnvironmentGuid, "EnvironmentTexture", environmentPath, "com.arisen.packagegame");
             db.AddAsset(s_StandardLitShaderGuid, ShaderAssetCooker.ShaderSourceAssetType, shaderPath, "com.arisen.generic-renderpipeline");
             db.AddAsset(s_DefaultNormalGuid, "Texture2D", defaultNormalPath, "com.arisen.generic-renderpipeline");
 
@@ -339,7 +341,7 @@ public sealed class ShowcaseSceneAssetTests
                 showcaseInspection.Entities,
                 entity => entity.Name == "Lantern Downlight");
             Assert.NotNull(downlight.SpotLight);
-            Assert.Equal(new Vector3(2.0f, 2.0f, 0.0f), downlight.Transform.Position);
+            Assert.Equal(new Vector3(-115.0f, 5.74f, -106.0f), downlight.Transform.Position);
             Assert.Equal(new Vector3(1.0f, 0.58f, 0.26f), downlight.SpotLight!.Color);
             Assert.Equal(4.0f, downlight.SpotLight.Intensity);
             Assert.Equal(4.2f, downlight.SpotLight.Range);
@@ -376,17 +378,17 @@ public sealed class ShowcaseSceneAssetTests
             var loadResult = SceneAssetLoader.LoadScene(db, sceneRef, entityManager);
 
             Assert.True(loadResult.Success, loadResult.Diagnostic);
-            Assert.Equal(9, loadResult.EntityCount);
+            Assert.Equal(8, loadResult.EntityCount);
             Assert.Equal(1, loadResult.CameraCount);
-            Assert.Equal(4, loadResult.MeshRendererCount);
+            Assert.Equal(3, loadResult.MeshRendererCount);
             Assert.Equal(1, loadResult.DirectionalLightCount);
             Assert.Equal(1, loadResult.PointLightCount);
             Assert.Equal(1, loadResult.SpotLightCount);
             Assert.Equal(1, loadResult.EnvironmentCount);
 
             var cookedScene = SceneAssetCooker.Cook(db, sceneRef);
-            Assert.Equal(9, cookedScene.EntityCount);
-            Assert.Equal(7, cookedScene.AssetReferenceCount);
+            Assert.Equal(8, cookedScene.EntityCount);
+            Assert.Equal(5, cookedScene.AssetReferenceCount);
             var cookedEntityManager = new EntityManager();
             var cookedLoadResult = SceneAssetCooker.LoadCooked(db, sceneRef, cookedEntityManager);
             Assert.True(cookedLoadResult.Success, cookedLoadResult.Diagnostic);
@@ -395,20 +397,19 @@ public sealed class ShowcaseSceneAssetTests
             Assert.Equal(loadResult.EnvironmentCount, cookedLoadResult.EnvironmentCount);
 
             var meshRenderers = entityManager.GetPool<MeshRendererComponent>().GetRawComponentArray();
-            Assert.Contains(meshRenderers.Take(4), renderer => renderer.MeshGuid == s_LanternMesh0Guid);
-            Assert.Contains(meshRenderers.Take(4), renderer => renderer.MeshGuid == s_LanternMesh1Guid);
-            Assert.Contains(meshRenderers.Take(4), renderer => renderer.MeshGuid == s_LanternMesh2Guid);
-            Assert.Contains(meshRenderers.Take(4), renderer => renderer.MeshGuid == s_GroundMeshGuid);
+            Assert.Contains(meshRenderers.Take(3), renderer => renderer.MeshGuid == s_LanternMesh0Guid);
+            Assert.Contains(meshRenderers.Take(3), renderer => renderer.MeshGuid == s_LanternMesh1Guid);
+            Assert.Contains(meshRenderers.Take(3), renderer => renderer.MeshGuid == s_LanternMesh2Guid);
 
             var environment = entityManager.GetPool<SceneEnvironmentComponent>().GetRawComponentArray()[0];
-            Assert.Equal(s_BlueHourEnvironmentGuid, environment.EnvironmentTextureGuid);
-            Assert.Equal(1.15f, environment.Exposure);
+            Assert.Equal(s_MistfallDuskEnvironmentGuid, environment.EnvironmentTextureGuid);
+            Assert.Equal(1.0f, environment.Exposure);
 
             var cookedEnvironment = EnvironmentTextureAssetCooker.LoadOrCook(
                 db,
-                s_BlueHourEnvironmentGuid);
-            Assert.Equal(16u, cookedEnvironment.Width);
-            Assert.Equal(8u, cookedEnvironment.Height);
+                s_MistfallDuskEnvironmentGuid);
+            Assert.Equal(2048u, cookedEnvironment.Width);
+            Assert.Equal(1024u, cookedEnvironment.Height);
             Assert.Equal(EnvironmentTextureCookedFormat.R16G16B16A16SFloat, cookedEnvironment.Format);
 
             var material = MaterialAssetLoader.LoadSource(db, s_LanternMaterialGuid);
@@ -506,24 +507,24 @@ public sealed class ShowcaseSceneAssetTests
                     out CookedTerrainRoot root,
                     out string rootDiagnostic),
                 rootDiagnostic);
-            Assert.Equal(33, root.HeightSourceWidth);
-            Assert.Equal(33, root.HeightSourceHeight);
+            Assert.Equal(513, root.HeightSourceWidth);
+            Assert.Equal(513, root.HeightSourceHeight);
             Assert.Equal(2, root.SourceSchemaVersion);
-            Assert.Equal(3, root.Layers.Count);
+            Assert.Equal(4, root.Layers.Count);
             Assert.Equal(
-                9,
+                12,
                 artifact.Dependencies.Count(
                     dependency => dependency.AssetType == "Texture2D"));
             Assert.Equal(
-                3,
+                4,
                 artifact.Dependencies.Count(
                     dependency => dependency.Variant == TerrainTextureCookVariants.Albedo));
             Assert.Equal(
-                3,
+                4,
                 artifact.Dependencies.Count(
                     dependency => dependency.Variant == TerrainTextureCookVariants.Normal));
             Assert.Equal(
-                3,
+                4,
                 artifact.Dependencies.Count(
                     dependency => dependency.Variant == TerrainTextureCookVariants.Orm));
             Assert.Equal(
@@ -565,10 +566,11 @@ public sealed class ShowcaseSceneAssetTests
             CookedTerrainTile[] tiles = [tile0, tile1, tile2, tile3];
             bool sawRock = false;
             bool sawPath = false;
+            bool sawRiver = false;
             bool sawBlend = false;
             foreach (CookedTerrainTile tile in tiles)
             {
-                Assert.Equal(3, tile.LayerCount);
+                Assert.Equal(4, tile.LayerCount);
                 for (int z = 0; z < tile.Resolution; z++)
                 {
                     for (int x = 0; x < tile.Resolution; x++)
@@ -582,6 +584,7 @@ public sealed class ShowcaseSceneAssetTests
                             nonZeroLayers += weight == 0 ? 0 : 1;
                             sawRock |= layer == 1 && weight != 0;
                             sawPath |= layer == 2 && weight != 0;
+                            sawRiver |= layer == 3 && weight != 0;
                         }
 
                         Assert.Equal(byte.MaxValue, weightSum);
@@ -592,6 +595,7 @@ public sealed class ShowcaseSceneAssetTests
 
             Assert.True(sawRock, "The authored fixture never contributes its rock layer.");
             Assert.True(sawPath, "The authored fixture never contributes its path layer.");
+            Assert.True(sawRiver, "The authored fixture never contributes its river layer.");
             Assert.True(sawBlend, "The authored fixture contains no blended layer samples.");
             TerrainTileAssetCooker.ValidateSharedBorders(tiles);
         }
@@ -629,15 +633,19 @@ public sealed class ShowcaseSceneAssetTests
         {
             var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, cookedRoot);
             AddTerrainAssets(db, packageRoot);
-            db.AddAsset(
-                s_ValleyRockSpeciesGuid,
-                VegetationAssetTypes.Species,
-                Path.Combine(
-                    packageRoot,
-                    "Assets",
-                    "Vegetation",
-                    "ValleyRock.arivegetationspecies"),
-                packageId);
+            foreach (VegetationCanonicalSpecies canonical in VegetationCanonicalFixture.Species)
+            {
+                db.AddAsset(
+                    canonical.SpeciesGuid,
+                    VegetationAssetTypes.Species,
+                    Path.Combine(
+                        packageRoot,
+                        "Assets",
+                        "Vegetation",
+                        $"Valley{canonical.Name}.arivegetationspecies"),
+                    packageId);
+            }
+
             db.AddAsset(
                 s_ShowcaseValleyBiomeGuid,
                 VegetationAssetTypes.Biome,
@@ -650,17 +658,23 @@ public sealed class ShowcaseSceneAssetTests
             db.AddAsset(
                 s_ValleyRockMeshGuid,
                 "Mesh",
-                Path.Combine(pipelineRoot, "Assets", "Meshes", "FacetedCrystal.obj"),
-                pipelinePackageId);
+                Path.Combine(
+                    packageRoot,
+                    "Assets",
+                    "Vegetation",
+                    "Meshes",
+                    s_ValleyRock.MeshFileName),
+                packageId);
             db.AddAsset(
                 s_ValleyRockMaterialGuid,
                 "Material",
                 Path.Combine(
-                    pipelineRoot,
+                    packageRoot,
                     "Assets",
+                    "Vegetation",
                     "Materials",
-                    "StandardLitMaterial.arismaterial"),
-                pipelinePackageId);
+                    s_ValleyRock.MaterialFileName),
+                packageId);
 
             var terrainRootRef = new AssetRef<TerrainRootSourceAsset>(
                 s_TerrainRootGuid,
@@ -720,22 +734,25 @@ public sealed class ShowcaseSceneAssetTests
                     biomeRef,
                     terrainRootRef,
                     partition,
-                    new WorldCellKey(new WorldCellCoordinate(1, 0, 0), "surface"),
+                    new WorldCellKey(new WorldCellCoordinate(0, 0, 0), "surface"),
                     "valley-rock",
                     UnscaledConservativeRadius: 1.75f,
                     Exclusions: []));
-            Assert.Equal(19, result.Metrics.AcceptedCount);
+            Assert.Equal(764, result.Metrics.AcceptedCount);
             Assert.Equal(
-                Guid.Parse("cadf9261-1ffe-85e6-23df-b62a204da08d"),
+                Guid.Parse("e90ae5ab-24fb-2617-9983-3ed656bd652c"),
                 result.ClusterMetadata.Guid);
             Assert.Equal(
-                Guid.Parse("1fe92f10-564f-c062-b5e4-275e313d9d4d"),
+                Guid.Parse("df936767-8c79-a601-af91-73cae122c63e"),
                 result.PageMetadata[0].Guid);
+            Assert.Equal(1, result.PageMetadata.Count);
             string placementHash = Convert.ToHexString(result.PlacementContentHash);
-            Assert.Equal("098A5D3965C8BB5161AF7000A128170B", placementHash[..32]);
-            Assert.Equal("6C89A3DBC4C03E9E0BB36107D66D2AD1", placementHash[32..]);
-            Assert.Single(result.Cluster.Pages);
-            Assert.Equal(result.Metrics.AcceptedCount, result.Cluster.Pages[0].Instances.Count);
+            Assert.Equal("C3A8D67DDC3BB9164579BA78DF7E2B1C", placementHash[..32]);
+            Assert.Equal("34666A60DA0102EC5863A397D412B73B", placementHash[32..]);
+            Assert.Equal(1, result.Cluster.Pages.Count);
+            Assert.Equal(
+                result.Metrics.AcceptedCount,
+                result.Cluster.Pages.Sum(page => page.Instances.Count));
 
             string generatedRoot = Path.Combine(cookedRoot, "GeneratedSources");
             Directory.CreateDirectory(generatedRoot);
@@ -748,11 +765,14 @@ public sealed class ShowcaseSceneAssetTests
                 VegetationAssetTypes.Cluster,
                 clusterSource,
                 packageId);
-            db.AddAsset(
-                result.PageMetadata[0].Guid,
-                VegetationAssetTypes.InstancePage,
-                pageSource,
-                packageId);
+            foreach (AssetMetadata pageMetadata in result.PageMetadata)
+            {
+                db.AddAsset(
+                    pageMetadata.Guid,
+                    VegetationAssetTypes.InstancePage,
+                    pageSource,
+                    packageId);
+            }
             CookedVegetationClusterArtifact artifact = VegetationClusterAssetCooker.Cook(
                 db,
                 result.Cluster);
@@ -766,30 +786,40 @@ public sealed class ShowcaseSceneAssetTests
                     out CookedVegetationCluster cluster,
                     out string clusterDiagnostic),
                 clusterDiagnostic);
-            CookedVegetationInstancePageReference page = Assert.Single(cluster.Pages);
-            Assert.Equal(result.PageMetadata[0].Guid, page.Guid);
-            Assert.Equal(result.Metrics.AcceptedCount, page.InstanceCount);
-            Assert.True(
-                VegetationInstancePageAssetCooker.TryLoadCooked(
-                    db,
-                    new AssetRef<VegetationInstancePageSourceAsset>(
-                        page.Guid,
-                        VegetationAssetTypes.InstancePage,
-                        packageId),
-                    cluster.Guid,
-                    out CookedVegetationInstancePage loadedPage,
-                    out string pageDiagnostic),
-                pageDiagnostic);
-            Assert.Equal(page.InstanceCount, loadedPage.Instances.Count);
-            Assert.Equal(page.Origin, loadedPage.Origin);
-            Assert.Equal(page.Bounds, loadedPage.Bounds);
+            Assert.Equal(result.PageMetadata.Count, cluster.Pages.Count);
+            Assert.Equal(
+                result.PageMetadata
+                    .Select(metadata => metadata.Guid)
+                    .OrderBy(guid => guid.ToString("N"), StringComparer.Ordinal)
+                    .ToArray(),
+                cluster.Pages
+                    .Select(page => page.Guid)
+                    .OrderBy(guid => guid.ToString("N"), StringComparer.Ordinal)
+                    .ToArray());
+            foreach (CookedVegetationInstancePageReference page in cluster.Pages)
+            {
+                Assert.True(
+                    VegetationInstancePageAssetCooker.TryLoadCooked(
+                        db,
+                        new AssetRef<VegetationInstancePageSourceAsset>(
+                            page.Guid,
+                            VegetationAssetTypes.InstancePage,
+                            packageId),
+                        cluster.Guid,
+                        out CookedVegetationInstancePage loadedPage,
+                        out string pageDiagnostic),
+                    pageDiagnostic);
+                Assert.Equal(page.InstanceCount, loadedPage.Instances.Count);
+                Assert.Equal(page.Origin, loadedPage.Origin);
+                Assert.Equal(page.Bounds, loadedPage.Bounds);
+            }
             Assert.Equal(SHA256.HashSizeInBytes, result.PlacementContentHash.Length);
-            string pageHash = Convert.ToHexString(page.ContentHash);
+            string pageHash = Convert.ToHexString(cluster.Pages[0].ContentHash);
             string clusterHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(artifact.Path)));
-            Assert.Equal("D52F1C3B285862FDA341532489035218", pageHash[..32]);
-            Assert.Equal("E12FF4CA68CCA0766BD99FD82D3EF27F", pageHash[32..]);
-            Assert.Equal("97E2A7BD7A1B81E4E5BC33D8AA39629E", clusterHash[..32]);
-            Assert.Equal("E98308BA713C5D84A028E9F3333AF1D1", clusterHash[32..]);
+            Assert.Equal("2CBB0F11AE9C14FED5904F125ACB3F00", pageHash[..32]);
+            Assert.Equal("647CDA852533D2A8ED3049D815DDFE72", pageHash[32..]);
+            Assert.Equal("B7D5A57E434D046FB87CD010D3F97729", clusterHash[..32]);
+            Assert.Equal("83B454189CECA87D90E76156558C48BC", clusterHash[32..]);
 
             VegetationScatterBakeResult reordered = VegetationScatterBaker.Build(
                 new VegetationScatterBakeDescriptor(
@@ -799,7 +829,7 @@ public sealed class ShowcaseSceneAssetTests
                     terrainRoot,
                     tiles.Reverse().ToArray(),
                     partition,
-                    new WorldCellKey(new WorldCellCoordinate(1, 0, 0), "surface"),
+                    new WorldCellKey(new WorldCellCoordinate(0, 0, 0), "surface"),
                     "valley-rock",
                     UnscaledConservativeRadius: 1.75f,
                     Exclusions: []));
@@ -898,8 +928,8 @@ public sealed class ShowcaseSceneAssetTests
                 westCell.FocusBounds);
             Assert.Equal(
                 new WorldBounds(
-                    new WorldPosition(-129.5, -0.25, -129.5),
-                    new WorldPosition(-126.5, 1.75, -126.5)),
+                    new WorldPosition(-118.5, 2.79, -107.5),
+                    new WorldPosition(-115.5, 4.79, -104.5)),
                 centerCell.FocusBounds);
             Assert.Null(lanternCell.FocusBounds);
 
@@ -948,7 +978,7 @@ public sealed class ShowcaseSceneAssetTests
         db.AddAsset(s_LanternMesh1Guid, "Mesh", Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Meshes", "Mesh_1.glb"), "com.arisen.packagegame");
         db.AddAsset(s_LanternMesh2Guid, "Mesh", Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Meshes", "Mesh_2.glb"), "com.arisen.packagegame");
         db.AddAsset(s_LanternMaterialGuid, "Material", Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Materials", "LanternPost_Mat.arismaterial"), "com.arisen.packagegame");
-        db.AddAsset(s_BlueHourEnvironmentGuid, "EnvironmentTexture", Path.Combine(packageRoot, "Assets", "Environments", "BlueHour.arienvironment"), "com.arisen.packagegame");
+        db.AddAsset(s_MistfallDuskEnvironmentGuid, "EnvironmentTexture", Path.Combine(packageRoot, "Assets", "Environments", "MistfallDusk.arienvironment"), "com.arisen.packagegame");
         AddTerrainAssets(db, packageRoot);
     }
 
@@ -957,10 +987,10 @@ public sealed class ShowcaseSceneAssetTests
         const string packageId = "com.arisen.packagegame";
         db.AddAsset(s_TerrainRootGuid, TerrainAssetTypes.Root, Path.Combine(packageRoot, "Assets", "Terrain", "ShowcaseValley.aristerrain"), packageId);
         db.AddAsset(s_TerrainLayerSetGuid, TerrainAssetTypes.LayerSet, Path.Combine(packageRoot, "Assets", "Terrain", "ShowcaseValley.ariterrainlayers"), packageId);
-        db.AddAsset(s_TerrainTile0Guid, TerrainAssetTypes.Tile, Path.Combine(packageRoot, "Assets", "Terrain", "Generated", "ShowcaseValley_0_0.ariterraingenerated"), packageId);
-        db.AddAsset(s_TerrainTile1Guid, TerrainAssetTypes.Tile, Path.Combine(packageRoot, "Assets", "Terrain", "Generated", "ShowcaseValley_1_0.ariterraingenerated"), packageId);
-        db.AddAsset(s_TerrainTile2Guid, TerrainAssetTypes.Tile, Path.Combine(packageRoot, "Assets", "Terrain", "Generated", "ShowcaseValley_0_1.ariterraingenerated"), packageId);
-        db.AddAsset(s_TerrainTile3Guid, TerrainAssetTypes.Tile, Path.Combine(packageRoot, "Assets", "Terrain", "Generated", "ShowcaseValley_1_1.ariterraingenerated"), packageId);
+        db.AddAsset(s_TerrainTile0Guid, TerrainAssetTypes.Tile, Path.Combine(packageRoot, "Assets", "Terrain", "Generated", "ShowcaseValley", "x_0_z_0.ariterraingenerated"), packageId);
+        db.AddAsset(s_TerrainTile1Guid, TerrainAssetTypes.Tile, Path.Combine(packageRoot, "Assets", "Terrain", "Generated", "ShowcaseValley", "x_1_z_0.ariterraingenerated"), packageId);
+        db.AddAsset(s_TerrainTile2Guid, TerrainAssetTypes.Tile, Path.Combine(packageRoot, "Assets", "Terrain", "Generated", "ShowcaseValley", "x_0_z_1.ariterraingenerated"), packageId);
+        db.AddAsset(s_TerrainTile3Guid, TerrainAssetTypes.Tile, Path.Combine(packageRoot, "Assets", "Terrain", "Generated", "ShowcaseValley", "x_1_z_1.ariterraingenerated"), packageId);
     }
 
     private static CookedTerrainTile LoadTerrainTile(TestAssetDatabase db, Guid tileGuid)

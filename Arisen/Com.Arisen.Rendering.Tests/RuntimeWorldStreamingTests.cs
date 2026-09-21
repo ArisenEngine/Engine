@@ -1562,6 +1562,7 @@ public sealed class RuntimeWorldStreamingTests
             context.World.GetComponent<TransformComponent>(cameraEntity).Position);
 
         scenario.Start(0);
+        var clockPinnedFrames = new List<uint>();
         var deadline = Stopwatch.StartNew();
         for (uint frame = 0;
              deadline.Elapsed < TimeSpan.FromSeconds(5) && !scenario.IsReadyForShutdown;
@@ -1571,6 +1572,10 @@ public sealed class RuntimeWorldStreamingTests
             context.Streaming.ProcessAtFrameBoundary();
             visual.CompleteFrame(frame);
             scenario.AfterFrame(frame);
+            if (ArisenKernel.Lifecycle.Time.IsPinned)
+            {
+                clockPinnedFrames.Add(frame);
+            }
             Thread.Yield();
         }
 
@@ -1594,6 +1599,8 @@ public sealed class RuntimeWorldStreamingTests
         Assert.Equal(
             visual.ScheduledCaptures.Count,
             visual.ScheduledCaptures.Select(capture => capture.FrameIndex).Distinct().Count());
+        Assert.Single(clockPinnedFrames);
+        Assert.False(ArisenKernel.Lifecycle.Time.IsPinned);
         uint farFrame = visual.ScheduledCaptures.Single(capture =>
             capture.Name == "shadow-far").FrameIndex;
         uint stableFrame = visual.ScheduledCaptures.Single(capture =>

@@ -121,6 +121,7 @@ namespace ArisenEngine.Vegetation.GenericRenderPipeline
             IVegetationClusterDataSource clusterData,
             IVegetationDiagnosticsPublisher diagnostics,
             IVegetationAuthoringPreviewService authoringPreviews,
+            IVegetationWindSource windSource,
             VegetationPreparedAssetProvider preparedAssets,
             VegetationOpaquePass opaquePass,
             VegetationShadowPass shadowPass,
@@ -131,6 +132,7 @@ namespace ArisenEngine.Vegetation.GenericRenderPipeline
             ArgumentNullException.ThrowIfNull(clusterData);
             ArgumentNullException.ThrowIfNull(diagnostics);
             ArgumentNullException.ThrowIfNull(authoringPreviews);
+            ArgumentNullException.ThrowIfNull(windSource);
             ArgumentNullException.ThrowIfNull(preparedAssets);
             ArgumentNullException.ThrowIfNull(opaquePass);
             ArgumentNullException.ThrowIfNull(shadowPass);
