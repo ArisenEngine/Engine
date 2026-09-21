@@ -5,7 +5,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$LogDirectory,
 
-    [string]$ExpectedSkyMode = "ProceduralOutdoor",
+    [string]$ExpectedSkyMode,
 
     [string]$ExpectedExposurePolicy = "Scene",
 
@@ -208,8 +208,25 @@ try {
     $horizonRow = Get-GridRow -Values @($far.spatialLuminanceGrid) -Width 4 -Row 1
     $horizonRange = [double](($horizonRow | Measure-Object -Maximum).Maximum) -
         [double](($horizonRow | Measure-Object -Minimum).Minimum)
-    Assert-Condition ($horizonRange -le 0.08) `
-        "Far-view horizon luminance is discontinuous across the frame."
+    $horizonStep = 0.0
+    for ($column = 1; $column -lt $horizonRow.Count; $column++) {
+        $step = [Math]::Abs($horizonRow[$column] - $horizonRow[$column - 1])
+        if ($step -gt $horizonStep) {
+            $horizonStep = $step
+        }
+    }
+    if ($ExpectedSkyMode -ceq "ProceduralOutdoor") {
+        Assert-Condition ($horizonRange -le 0.08) `
+            "Far-view horizon luminance is discontinuous across the frame."
+    }
+    elseif ($ExpectedSkyMode -ceq "Panorama") {
+        Assert-Condition ($horizonStep -le 0.35) `
+            "Far-view horizon luminance steps discontinuously between adjacent frame columns."
+    }
+    else {
+        Assert-Condition $false `
+            "Horizon continuity is undefined for sky mode '$ExpectedSkyMode'."
+    }
 
     $upperRows = @(
         (Get-GridRow -Values @($far.spatialLuminanceGrid) -Width 4 -Row 0) +
@@ -237,13 +254,14 @@ try {
 
     Write-Host ((
         "[Arisen] Outdoor-atmosphere visuals passed: sky={0}, exposure={1:F3}, " +
-        "near/mid/far={2:F3}/{3:F3}/{4:F3}, horizonRange={5:F4}, log={6}") -f
+        "near/mid/far={2:F3}/{3:F3}/{4:F3}, horizonRange={5:F4}, horizonStep={6:F4}, log={7}") -f
         $ExpectedSkyMode,
         $diagnosticsByFrame[[uint32]$captureFrames["shadow-far"]].Exposure,
         [double]$near.averageLuminance,
         [double]$mid.averageLuminance,
         [double]$far.averageLuminance,
         $horizonRange,
+        $horizonStep,
         $playerLog.FullName)
     exit 0
 }

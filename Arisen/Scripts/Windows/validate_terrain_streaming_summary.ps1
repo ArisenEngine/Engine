@@ -216,7 +216,29 @@ try {
     $expectedTileCount = @($near.tiles).Count
     Assert-Condition ($expectedTileCount -gt 0) `
         "Terrain-streaming fixture contains no terrain tiles."
-    $baselineMemory = $near.memory
+    # The reload soak verifies that repeated load/unload cycles return to the loaded steady state
+    # the camera path reached. Every named checkpoint frames a different amount of the world, so the
+    # steady state is the high-water mark of the path rather than its first checkpoint.
+    $steadyStateFields = @(
+        "allocatedEntitySlots",
+        "loadedCookedHandles",
+        "residentAssets",
+        "preparedDescriptors",
+        "terrainCpuBytes",
+        "terrainPreparedBytes",
+        "terrainLayerDescriptors"
+    )
+    $baselineMemory = @{}
+    foreach ($name in @("near", "boundary-mixed-lod", "far-cascade", "post-rebase", "returned-start")) {
+        $memory = $checkpointByName[$name].memory
+        foreach ($field in $steadyStateFields) {
+            $value = [long]$memory.$field
+            if (-not $baselineMemory.ContainsKey($field) -or $value -gt [long]$baselineMemory[$field]) {
+                $baselineMemory[$field] = $value
+            }
+        }
+    }
+
     $peaks = $artifact.peaks
 
     foreach ($checkpoint in $checkpoints) {
@@ -350,16 +372,11 @@ try {
             Assert-Condition ([long]$memory.$field -le [long]$peaks.$field) `
                 "Terrain checkpoint '$name' exceeds peak field '$field'."
         }
-        foreach ($field in @(
-            "allocatedEntitySlots",
-            "loadedCookedHandles",
-            "residentAssets",
-            "preparedDescriptors",
-            "terrainCpuBytes",
-            "terrainPreparedBytes",
-            "terrainLayerDescriptors")) {
-            Assert-Condition ([long]$memory.$field -le [long]$baselineMemory.$field) `
-                "Terrain checkpoint '$name' exceeds its first loaded steady-state '$field' bound."
+        if ($name -like "soak-*") {
+            foreach ($field in $steadyStateFields) {
+                Assert-Condition ([long]$memory.$field -le [long]$baselineMemory[$field]) `
+                    "Terrain soak checkpoint '$name' exceeds the loaded steady-state '$field' bound."
+            }
         }
     }
 
