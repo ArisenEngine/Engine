@@ -10,6 +10,7 @@ using Xunit;
 
 namespace ArisenKernel.Tests;
 
+[Collection(KernelGlobalStateCollection.Name)]
 public sealed class PackageRuntimeSmokeTests : IDisposable
 {
     public PackageRuntimeSmokeTests()
@@ -95,6 +96,21 @@ public sealed class PackageRuntimeSmokeTests : IDisposable
         Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
         Assert.Equal(3, CountingTickSubsystem.TickCount);
         Assert.True(CountingTickSubsystem.WasShutdown);
+    }
+
+    [Fact]
+    public void EngineKernelRunShutsDownWhenASubsystemInterruptsTheLoop()
+    {
+        var subsystem = new ShutdownRequestingTickSubsystem();
+        EngineKernel.Instance.RegisterSubsystem(subsystem);
+
+        int exitCode = EngineKernel.Instance.Run();
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal(1, subsystem.TickCount);
+        Assert.True(subsystem.WasShutdown);
+        Assert.Equal(EnginePhase.Shutdown, EngineKernel.Instance.CurrentPhase);
+        Assert.True(EngineKernel.Instance.GetShutdownOwnershipSnapshot().IsClean);
     }
 
     [Fact]
@@ -3282,6 +3298,32 @@ public sealed class CountingTickSubsystem : ITickableSubsystem
     {
         Shutdown();
     }
+}
+
+public sealed class ShutdownRequestingTickSubsystem : ITickableSubsystem
+{
+    public int TickCount { get; private set; }
+
+    public bool WasShutdown { get; private set; }
+
+    public int Priority => 0;
+
+    public EnginePhase InitPhase => EnginePhase.Running;
+
+    public void Initialize() { }
+
+    public void Tick(float deltaTime)
+    {
+        TickCount++;
+        EngineKernel.Instance.RequestShutdown();
+    }
+
+    public void Shutdown()
+    {
+        WasShutdown = true;
+    }
+
+    public void Dispose() { }
 }
 
 public sealed class RollbackProbeSubsystem : IEngineSubsystem

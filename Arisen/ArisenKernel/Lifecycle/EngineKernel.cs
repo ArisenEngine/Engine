@@ -89,6 +89,7 @@ public sealed class EngineKernel : IDisposable
             m_IsRunning = false;
             Config = null;
             CurrentFrameIndex = 0;
+            Time.Unpin();
             m_IsPackageGraphMounted = false;
             m_DeferredShutdownFailures.Clear();
             m_ShutdownFailure = null;
@@ -474,6 +475,11 @@ public sealed class EngineKernel : IDisposable
             TickCore(Time.deltaTime);
         }
 
+        // The interactive loop leaves through RequestShutdown(), so the run owns the matching
+        // teardown exactly like the bounded entry points do. Without it the process returns from
+        // the loop with subsystems, packages, render surfaces and the platform window still owned.
+        operationScope.TransitionTo(EngineLifecycleOperation.ShuttingDown);
+        ShutdownCore();
         return 0;
     }
 
