@@ -844,8 +844,10 @@ changes.
     still desired each fail it with a diagnostic naming the checkpoint and the cell.
   - What this does not prove yet: the canonical world authors all sixteen tiles in one cell scene, so
     the runtime gate still exercises a one-member set. The multi-cell run of the fixture arrives with
-    the regional world below, where the tile entities are split across the cell scenes that own them;
-    until then the fixture's own multi-cell behaviour is covered by the managed tests.
+    the regional world below, where the tile entities are split across the cell scenes that own them.
+    That content is authored and pushed through the recipe bake, but the named-root catalog still
+    plans the showcase world, so the runtime gate keeps exercising a one-member set until the startup
+    world switches; the fixture's own multi-cell behaviour is covered by the managed tests meanwhile.
 - [x] Harden the runtime presentation path the gates run through: a window that stops presenting
       (minimized or collapsed by the desktop while a run is in progress) no longer drains both
       queues and retries a doomed swapchain creation on every frame. The Vulkan swapchain keeps its
@@ -920,17 +922,50 @@ changes.
         root, and a synthetic eight-by-eight root wider than one frustum is the negative control
         where no single view - and not the near/boundary/far corners either - covers the root, so a
         framing regression fails in the unit test rather than in the runtime gate.
-- [ ] Author the regional world and its scenes.
-  - [ ] Author the regional world with the shipped `generate_mistfall_valley.ps1` generator instead
+- [x] Author the regional world and its scenes.
+  - [x] Author the regional world with the shipped `generate_mistfall_valley.ps1` generator instead
         of extending the committed 513x513 showcase window: one 1 km raster, 8x8 generated tile
         identities, and one cell scene per world cell that owns exactly the tiles inside its own
         bounds. The showcase world is left alone rather than grown, so the committed window, its
         tile identities, and the canonical vegetation closure stay byte-identical and the
         single-block gate keeps validating unchanged; the generator derives every identity with the
         same child-GUID rule the loaders use, so rerunning it reproduces identical bytes.
-  - [ ] Split the tile entities across the cell scenes that own them.
-  - [ ] Add the new world plus its persistent and per-cell scenes as new scene files instead of
+  - [x] Split the tile entities across the cell scenes that own them.
+  - [x] Add the new world plus its persistent and per-cell scenes as new scene files instead of
         reusing the showcase world.
+  Mistfall Valley is authored beside the showcase valley, not out of it. Every identity the generator
+  writes was checked against the production rule that owns it: the world, its persistent scene, the
+  terrain root, the sixteen cell scenes, and the sixty-four scatter recipes reproduce
+  `GeneratedAssetIdentity.CreateChildGuid`, the sixty-four tile identities reproduce
+  `TerrainTileIdentity.CreateGuid`, and every tile entity reproduces
+  `TerrainTileEntityIdentity.Create`, which `RegionalWorldAssetTests` now pins against the committed
+  bytes instead of a reviewer's reading. Rerunning the generator reproduces all 298 authored files
+  byte for byte, and the new partition is a real partition: each of the sixty-four tiles is authored
+  by exactly one cell scene, each cell scene holds exactly the tiles inside its own bounds, and no
+  cell scene carries a camera, a light, or an environment, so
+  `PackageMistfallValleyWorld_SplitsItsTilesAcrossTheCellsThatOwnThem` fails if a tile is duplicated,
+  orphaned, or attributed to the wrong cell.
+
+  The regional recipes are cell-scoped, so the existing `VegetationScatterRecipeGenerator` bakes them
+  during runtime asset cooking with no new generator: sixteen cells times four biome entries, each
+  cluster keyed by world, cell, terrain root, species, and entry. The key embeds the cell, so a tile
+  or cell identity that drifts would republish different page identities rather than silently reusing
+  the old ones. `PackageMistfallValleyRegion_BakesScatterInsideTheCellItBelongsTo` proves that a
+  regional cell bakes real instances out of the new 1 km raster instead of the empty closure a bare
+  recipe would suggest, and that two bakes of unchanged inputs publish identical placement hashes and
+  identical page identities. Two runtime cooking passes left all 768 generated files byte-identical,
+  so the roadmap's "unchanged inputs produce byte-identical placement" outcome now holds at regional
+  scale too. Those generated sources are compared byte for byte, so the `-text` rule that protected
+  the showcase generated closure moved from `Assets/Vegetation/Generated/.gitattributes` up to
+  `Assets/Vegetation/.gitattributes`, where it covers the generated directory of every authored
+  world rather than only the first one.
+
+  None of this reaches the runtime yet. `manifest.json` still selects the showcase world, and because
+  the catalog is planned from named roots, the regional terrain root, its tiles, and its clusters stay
+  out of the runtime catalog while that is true. That is deliberate: it is what let the whole regional
+  world land as inert authored content with the Development and Production runtime gates, including
+  the relocated Production closure audit, passing unchanged. The switch below is what puts it on the
+  startup path.
 - [ ] Switch the startup world/scene to the regional world and keep every gate green at regional
       scale (world streaming, terrain streaming, vegetation visuals, cascaded shadows, outdoor
       atmosphere, relocated Production closure, and the Editor viewport smoke).
