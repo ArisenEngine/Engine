@@ -13,13 +13,15 @@ namespace Com.Arisen.Rendering.Tests;
 /// <summary>
 /// Pins the coverage contract of the terrain-streaming smoke fixture.
 ///
-/// Every checkpoint the fixture captures must keep every canonical ShowcaseValley tile inside the
-/// render frustum: the summary validator rejects a checkpoint whose tile selects no patch, and a
-/// fully culled tile would leave the captured frame without that tile. The canonical root covers a
-/// 512 m square, which is wider than the frustum the fixture renders with - roughly 73 degrees
-/// horizontally at the scene camera's 45 degree vertical field of view and 16:9 - so a pose anywhere
-/// inside the raster has tiles behind and beside the view direction and selects no patch for them.
-/// Only the root's corner regions put the whole raster ahead of the camera, so the fixture derives
+/// The contract has two halves. Per view, a checkpoint has to select a patch for every canonical
+/// tile its own plan view sees, because a tile the view frames and draws nothing for leaves a hole
+/// in the captured frame; across the flight, the captured views together have to see every canonical
+/// tile, because a gate that only ever asks what one view frames shrinks to that view as soon as the
+/// root grows past a frustum. The canonical root covers a 512 m square, which is wider than the
+/// frustum the fixture renders with - roughly 73 degrees horizontally at the scene camera's 45
+/// degree vertical field of view and 16:9 - but still narrow enough that each of the four captured
+/// corner poses frames all sixteen tiles, so the per-view half asks for the whole root here. Only
+/// the root's corner regions put the whole raster ahead of the camera, so the fixture derives
 /// its own corner poses, aim and height from the loaded terrain bounds and the runtime surface
 /// query, and keeps only the authored camera bearing. Reusing the authored showcase rotation would
 /// leave the canonical tile behind the view direction fully culled, and reusing the authored camera
@@ -256,13 +258,11 @@ public sealed class TerrainStreamingCameraPathTests
             authored.Position,
             FlatSurface);
 
-        AssertAimsAtBounds("near", poses.NearRotation, poses.NearPosition, rootBounds);
-        AssertAimsAtBounds(
-            "boundary",
-            poses.BoundaryRotation,
-            poses.BoundaryPosition,
-            rootBounds);
-        AssertAimsAtBounds("far", poses.FarRotation, poses.FarPosition, rootBounds);
+        CapturedPose[] captured = CapturedPoses(poses);
+        foreach (CapturedPose pose in captured)
+        {
+            AssertAimsAtBounds(pose.Name, pose.Rotation, pose.Position, rootBounds);
+        }
 
         // Every derived pose stands the fixture clearance above the surface the runtime reported at
         // its own horizontal position. Inheriting the authored camera height instead walks the pose
@@ -270,8 +270,10 @@ public sealed class TerrainStreamingCameraPathTests
         // what captured the inside of the terrain and failed the upright orientation check.
         double expectedEyeHeight =
             SyntheticSurfaceHeight + TerrainStreamingCameraPath.EyeClearanceMetres;
-        Assert.Equal(expectedEyeHeight, poses.BoundaryPosition.Y, precision: 5);
-        Assert.Equal(expectedEyeHeight, poses.FarPosition.Y, precision: 5);
+        foreach (CapturedPose pose in captured)
+        {
+            Assert.Equal(expectedEyeHeight, pose.Position.Y, precision: 5);
+        }
     }
 
     /// <summary>
@@ -294,10 +296,11 @@ public sealed class TerrainStreamingCameraPathTests
 
         foreach (TerrainStreamingCameraPoses built in poses)
         {
-            Assert.Equal(expectedEyeHeight, built.BoundaryPosition.Y, precision: 5);
-            Assert.Equal(expectedEyeHeight, built.FarPosition.Y, precision: 5);
-            Assert.True(built.BoundaryPosition.Y > rootBounds.Max.Y);
-            Assert.True(built.FarPosition.Y > rootBounds.Max.Y);
+            foreach (CapturedPose pose in CapturedPoses(built))
+            {
+                Assert.Equal(expectedEyeHeight, pose.Position.Y, precision: 5);
+                Assert.True(pose.Position.Y > rootBounds.Max.Y);
+            }
         }
     }
 
@@ -318,9 +321,10 @@ public sealed class TerrainStreamingCameraPathTests
             FlatSurface);
         float halfFieldOfView = authored.VerticalFieldOfViewDegrees * 0.5f;
 
-        AssertKeepsHorizonInUpperFrame("near", poses.NearRotation, halfFieldOfView);
-        AssertKeepsHorizonInUpperFrame("boundary-mixed-lod", poses.BoundaryRotation, halfFieldOfView);
-        AssertKeepsHorizonInUpperFrame("far-cascade", poses.FarRotation, halfFieldOfView);
+        foreach (CapturedPose pose in CapturedPoses(poses))
+        {
+            AssertKeepsHorizonInUpperFrame(pose.Name, pose.Rotation, halfFieldOfView);
+        }
     }
 
     private static void AssertKeepsHorizonInUpperFrame(
@@ -344,25 +348,33 @@ public sealed class TerrainStreamingCameraPathTests
             () => TerrainStreamingCameraPath.LookRotation(position, position));
     }
 
+    /// <summary>
+    /// The canonical root fits inside one frustum, so the per-view half of the contract asks every
+    /// captured view to frame every canonical tile and the aggregate half is already satisfied by
+    /// any one of them. Both are pinned anyway: the per-view assertion is what a content change that
+    /// resizes the raster or turns a pose away from it has to fail, and the aggregate assertion
+    /// states the whole contract rather than one root's special case.
+    /// </summary>
     [Fact]
     public void FixtureCheckpoints_CoverEveryCanonicalTile()
     {
         ShowcaseCamera authored = ReadAuthoredShowcaseCamera();
-        TerrainPatchWorldBounds rootBounds = UnionBounds(CanonicalTiles());
+        IReadOnlyList<TerrainPatchWorldBounds> tiles = CanonicalTiles();
+        TerrainPatchWorldBounds rootBounds = UnionBounds(tiles);
         TerrainStreamingCameraPoses poses = TerrainStreamingCameraPath.Build(
             rootBounds,
             authored.Position,
             FlatSurface);
+        CapturedPose[] captured = CapturedPoses(poses);
 
-        AssertCoversEveryTile("near", poses.NearPosition, poses.NearRotation, authored);
-        AssertCoversEveryTile(
-            "boundary-mixed-lod",
-            poses.BoundaryPosition,
-            poses.BoundaryRotation,
-            authored);
         // The post-rebase checkpoint parks the camera on the far pose and captures it again, so the
-        // far assertion above is the coverage assertion for it.
-        AssertCoversEveryTile("far-cascade", poses.FarPosition, poses.FarRotation, authored);
+        // far assertion below is the coverage assertion for it.
+        foreach (CapturedPose pose in captured)
+        {
+            AssertFramesEveryTile(pose, authored, tiles);
+        }
+
+        AssertCoversEveryTile(tiles, authored, captured);
 
         // Negative control: a camera far outside the terrain aimed away from it must cull every
         // tile, so the coverage assertions above cannot pass vacuously. The fixture poses all sit
@@ -377,34 +389,194 @@ public sealed class TerrainStreamingCameraPathTests
             awayPosition.Y,
             awayPosition.Z);
         Quaternion away = TerrainStreamingCameraPath.LookRotation(awayPosition, awayTarget);
-        Matrix4x4 awayViewProjection = BuildViewProjection(awayPosition, away, authored);
-        foreach (TerrainPatchWorldBounds tile in CanonicalTiles())
+        TerrainLodView awayView = BuildPoseView(awayPosition, away, authored);
+        foreach (TerrainPatchWorldBounds tile in tiles)
         {
             Assert.False(
-                TerrainPatchFrustum.IsVisible(
-                    ToVector3(tile.Min),
-                    ToVector3(tile.Max),
-                    awayViewProjection),
+                awayView.IsFrustumVisible(tile),
                 "The terrain frustum test reported a tile visible from a camera aimed away from it.");
         }
     }
 
-    private static void AssertCoversEveryTile(
-        string checkpoint,
-        WorldPosition position,
-        Quaternion rotation,
-        ShowcaseCamera camera)
+    /// <summary>
+    /// Per-view half of the coverage contract, in the strongest form a root that fits inside one
+    /// frustum can be held to: a captured view has to frame the whole root, so the only tile it
+    /// draws nothing for is a tile outside its view rather than a hole inside it.
+    /// </summary>
+    private static void AssertFramesEveryTile(
+        CapturedPose pose,
+        ShowcaseCamera camera,
+        IReadOnlyList<TerrainPatchWorldBounds> tiles)
     {
-        Matrix4x4 viewProjection = BuildViewProjection(position, rotation, camera);
-        foreach (TerrainPatchWorldBounds tile in CanonicalTiles())
+        TerrainLodView view = BuildPoseView(pose.Position, pose.Rotation, camera);
+        foreach (TerrainPatchWorldBounds tile in tiles)
         {
             Assert.True(
-                TerrainPatchFrustum.IsVisible(
-                    ToVector3(tile.Min),
-                    ToVector3(tile.Max),
-                    viewProjection),
-                $"Terrain checkpoint '{checkpoint}' culled tile {tile.Min.X},{tile.Min.Z}.");
+                view.IsFrustumVisible(tile),
+                $"Terrain checkpoint '{pose.Name}' culled tile {tile.Min.X},{tile.Min.Z}.");
         }
+    }
+
+    /// <summary>
+    /// Aggregate half of the coverage contract: between them the captured views have to see every
+    /// tile of the root, and each of them has to see something. This is what keeps a regional root
+    /// from shrinking the gate to whichever part of the world one pose happens to frame, and it is
+    /// also what makes a fourth captured corner necessary: opposite corners of a root wider than
+    /// the far plane frame each other from beyond it, so the corner regions the near-to-far
+    /// diagonal turns away from are framed by no view that stands at the other end.
+    /// </summary>
+    private static void AssertCoversEveryTile(
+        IReadOnlyList<TerrainPatchWorldBounds> tiles,
+        ShowcaseCamera camera,
+        params CapturedPose[] poses)
+    {
+        bool[] covered = CoveredTiles(tiles, camera, poses);
+        for (int index = 0; index < tiles.Count; index++)
+        {
+            TerrainPatchWorldBounds tile = tiles[index];
+            Assert.True(
+                covered[index],
+                $"Terrain tile {tile.Min.X},{tile.Min.Z} is framed by no captured view.");
+        }
+    }
+
+    private static bool[] CoveredTiles(
+        IReadOnlyList<TerrainPatchWorldBounds> tiles,
+        ShowcaseCamera camera,
+        params CapturedPose[] poses)
+    {
+        var covered = new bool[tiles.Count];
+        foreach (CapturedPose pose in poses)
+        {
+            bool[] visible = VisibleTiles(tiles, camera, pose);
+            bool framesAny = false;
+            for (int index = 0; index < tiles.Count; index++)
+            {
+                covered[index] |= visible[index];
+                framesAny |= visible[index];
+            }
+
+            Assert.True(
+                framesAny,
+                $"Terrain checkpoint '{pose.Name}' frames no canonical tile at all.");
+        }
+
+        return covered;
+    }
+
+    private static bool[] VisibleTiles(
+        IReadOnlyList<TerrainPatchWorldBounds> tiles,
+        ShowcaseCamera camera,
+        CapturedPose pose)
+    {
+        TerrainLodView view = BuildPoseView(pose.Position, pose.Rotation, camera);
+        var visible = new bool[tiles.Count];
+        for (int index = 0; index < tiles.Count; index++)
+        {
+            visible[index] = view.IsFrustumVisible(tiles[index]);
+        }
+
+        return visible;
+    }
+
+    /// <summary>
+    /// The per-view contract cannot hold a root that is wider than the frustum, which is what a
+    /// regional world is, so the aggregate requirement is what has to carry it. A synthetic root of
+    /// eight tiles an edge at the canonical tile size is four times the canonical root across, wide
+    /// enough that no captured view frames all of it and that the diagonal corner sits past the
+    /// camera's far plane. The three corners the fixture walked before the root grew past a frustum
+    /// leave the corner the near-to-far diagonal turns away from uncovered, because every view that
+    /// looks at it stands beyond the far plane; the fourth corner, the mirror of the boundary pose
+    /// across that diagonal, is what closes it.
+    /// </summary>
+    [Fact]
+    public void FixtureCheckpoints_CoverARootWiderThanOneFrustum()
+    {
+        const int tilesPerEdge = 8;
+        ShowcaseCamera authored = ReadAuthoredShowcaseCamera();
+        TerrainPatchWorldBounds rootBounds = SyntheticRootBounds(tilesPerEdge);
+        TerrainPatchWorldBounds[] tiles = SyntheticTiles(tilesPerEdge, rootBounds);
+        TerrainStreamingCameraPoses poses = TerrainStreamingCameraPath.Build(
+            rootBounds,
+            authored.Position,
+            FlatSurface);
+        CapturedPose[] captured = CapturedPoses(poses);
+
+        // No captured view frames the whole root: this is the case the per-view half of the
+        // contract exists for, and the case the aggregate half has to carry.
+        foreach (CapturedPose pose in captured)
+        {
+            bool[] visible = VisibleTiles(tiles, authored, pose);
+            int framed = 0;
+            for (int index = 0; index < visible.Length; index++)
+            {
+                if (visible[index])
+                {
+                    framed++;
+                }
+            }
+
+            Assert.InRange(framed, 1, tiles.Length - 1);
+        }
+
+        bool[] partial = CoveredTiles(tiles, authored, captured[0], captured[1], captured[^1]);
+        int uncovered = 0;
+        for (int index = 0; index < partial.Length; index++)
+        {
+            if (!partial[index])
+            {
+                uncovered++;
+            }
+        }
+
+        Assert.True(
+            uncovered > 0,
+            "Three corner views covered a root wider than one frustum, so the aggregate " +
+            "coverage requirement is not what makes the fourth captured corner necessary.");
+
+        AssertCoversEveryTile(tiles, authored, captured);
+    }
+
+    /// <summary>
+    /// Bounds of a square synthetic root of the given tile count an edge at the canonical tile
+    /// size. The height range is a plain block, because the contract under test is about where the
+    /// frustum looks and not about the shape of the surface.
+    /// </summary>
+    private static TerrainPatchWorldBounds SyntheticRootBounds(int tilesPerEdge)
+    {
+        const double tileMetres = 128.0;
+        const double maximumHeight = 64.0;
+        double half = tilesPerEdge * tileMetres * 0.5;
+        return new TerrainPatchWorldBounds(
+            new WorldPosition(-half, 0.0, -half),
+            new WorldPosition(half, maximumHeight, half));
+    }
+
+    private static TerrainPatchWorldBounds[] SyntheticTiles(
+        int tilesPerEdge,
+        in TerrainPatchWorldBounds root)
+    {
+        double stepX = (root.Max.X - root.Min.X) / tilesPerEdge;
+        double stepZ = (root.Max.Z - root.Min.Z) / tilesPerEdge;
+        var tiles = new TerrainPatchWorldBounds[tilesPerEdge * tilesPerEdge];
+        int count = 0;
+        for (int z = 0; z < tilesPerEdge; z++)
+        {
+            for (int x = 0; x < tilesPerEdge; x++)
+            {
+                tiles[count++] = new TerrainPatchWorldBounds(
+                    new WorldPosition(
+                        root.Min.X + (x * stepX),
+                        root.Min.Y,
+                        root.Min.Z + (z * stepZ)),
+                    new WorldPosition(
+                        root.Min.X + ((x + 1) * stepX),
+                        root.Max.Y,
+                        root.Min.Z + ((z + 1) * stepZ)));
+            }
+        }
+
+        return tiles;
     }
 
     /// <summary>
@@ -473,6 +645,38 @@ public sealed class TerrainStreamingCameraPathTests
     }
 
     /// <summary>
+    /// The plan view a captured pose is asserted with: the fixture's own camera basis and
+    /// projection, in the view type the planner culls patches with, so the tests assert the
+    /// predicate the smoke gate runs instead of a parallel one. The render origin is the world
+    /// origin, which is the origin every pre-rebase checkpoint is captured at.
+    /// </summary>
+    private static TerrainLodView BuildPoseView(
+        WorldPosition position,
+        Quaternion rotation,
+        ShowcaseCamera camera) =>
+        new(
+            position,
+            default,
+            BuildViewProjection(position, rotation, camera),
+            TerrainLodProjection.Perspective,
+            camera.VerticalFieldOfViewDegrees * (Math.PI / 180.0),
+            0.0,
+            ViewportHeight);
+
+    /// <summary>
+    /// The poses the fixture captures and the checkpoint names it publishes them under, in capture
+    /// order. One list, so a pose cannot be added to the path and then left out of the contract
+    /// tests that walk every captured pose.
+    /// </summary>
+    private static CapturedPose[] CapturedPoses(in TerrainStreamingCameraPoses poses) =>
+    [
+        new("near", poses.NearPosition, poses.NearRotation),
+        new("boundary-mixed-lod", poses.BoundaryPosition, poses.BoundaryRotation),
+        new("mirror-cascade", poses.MirrorPosition, poses.MirrorRotation),
+        new("far-cascade", poses.FarPosition, poses.FarRotation)
+    ];
+
+    /// <summary>
     /// A pose can keep every tile inside the frustum and still capture an empty frame. The fixture
     /// used to aim the boundary pose at the bounds centre from directly underneath it, which made
     /// the view direction vertical: every ground patch fell outside the frustum and the captured
@@ -489,24 +693,15 @@ public sealed class TerrainStreamingCameraPathTests
             authored.Position,
             FlatSurface);
 
-        AssertFramesTerrainSurface(
-            "near",
-            poses.NearPosition,
-            poses.NearRotation,
-            authored,
-            rootBounds);
-        AssertFramesTerrainSurface(
-            "boundary-mixed-lod",
-            poses.BoundaryPosition,
-            poses.BoundaryRotation,
-            authored,
-            rootBounds);
-        AssertFramesTerrainSurface(
-            "far-cascade",
-            poses.FarPosition,
-            poses.FarRotation,
-            authored,
-            rootBounds);
+        foreach (CapturedPose pose in CapturedPoses(poses))
+        {
+            AssertFramesTerrainSurface(
+                pose.Name,
+                pose.Position,
+                pose.Rotation,
+                authored,
+                rootBounds);
+        }
 
         // Negative control: the retired framing aimed straight up at the bounds centre from
         // directly underneath it, which keeps the surface out of frame.
@@ -711,6 +906,11 @@ public sealed class TerrainStreamingCameraPathTests
         float VerticalFieldOfViewDegrees,
         float NearPlane,
         float FarPlane);
+
+    private readonly record struct CapturedPose(
+        string Name,
+        WorldPosition Position,
+        Quaternion Rotation);
 
     private static Vector3 ToVector3(WorldPosition position) => new(
         (float)position.X,

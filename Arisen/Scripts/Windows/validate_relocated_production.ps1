@@ -1059,7 +1059,7 @@ try {
     & (Join-Path $PSScriptRoot "validate_terrain_streaming_summary.ps1") `
         -SummaryPath $terrainStreamingSummaryPath `
         -ExpectedProfile "Production" `
-        -ExpectedVisualCaptureCount 5
+    -ExpectedVisualCaptureCount 6
     if ($LASTEXITCODE -ne 0) {
         throw "Relocated Production terrain-streaming summary validation failed."
     }
@@ -1072,6 +1072,7 @@ try {
     foreach ($checkpoint in @(
         "near",
         "boundary-mixed-lod",
+        "mirror-cascade",
         "far-cascade",
         "post-rebase",
         "returned-start")) {

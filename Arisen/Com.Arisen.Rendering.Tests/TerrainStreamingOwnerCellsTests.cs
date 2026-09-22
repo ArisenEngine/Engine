@@ -177,6 +177,7 @@ public sealed class TerrainStreamingOwnerCellsTests
                 MinimumLod: 0,
                 MaximumLod: 4,
                 PatchCount: 3,
+                FrustumVisible: true,
                 CreateBounds(0),
                 SeamViolationCount: 0,
                 OwnerCellIds: ownerCellIds)
@@ -189,6 +190,7 @@ public sealed class TerrainStreamingOwnerCellsTests
             TerrainRootGuid: s_RootGuid,
             TerrainCellIds: ownerCellIds,
             Tiles: tiles,
+            ExpectedTileCount: tiles.Length,
             LodHistogram: [],
             Lod: default,
             SeamViolationCount: 0,
@@ -214,13 +216,14 @@ public sealed class TerrainStreamingOwnerCellsTests
                 Pinned: false)
         ]);
         var artifact = new TerrainStreamingSmokeArtifact(
-            SchemaVersion: 2,
+            SchemaVersion: 3,
             CapturedAtUtc: new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             Mode: "terrain-streaming",
             Profile: "Development",
             WorldGuid: s_WorldGuid,
             TerrainRootGuid: s_RootGuid,
             TerrainCellIds: ownerCellIds,
+            CoveredTileCount: tiles.Length,
             Passed: true,
             Failure: null,
             RequestedSoakCycles: 4,
@@ -238,7 +241,7 @@ public sealed class TerrainStreamingOwnerCellsTests
             TerrainStreamingSmokeScenario.ArtifactSerializerOptions);
         using JsonDocument document = JsonDocument.Parse(json);
         JsonElement root = document.RootElement;
-        Assert.Equal(2, root.GetProperty("schemaVersion").GetInt32());
+        Assert.Equal(3, root.GetProperty("schemaVersion").GetInt32());
         Assert.Equal(
             ownerCellIds,
             root.GetProperty("terrainCellIds").EnumerateArray()

@@ -915,7 +915,7 @@ set "CURRENT_TERRAIN_STREAMING_LOG_PATH=%LOG_DIR%\terrain-streaming-%CURRENT_PRO
 set "CURRENT_TERRAIN_STREAMING_EXIT_CODE="
 set "CURRENT_TERRAIN_STREAMING_PASSED=0"
 del /q "!CURRENT_TERRAIN_STREAMING_SUMMARY_PATH!" "!CURRENT_TERRAIN_STREAMING_LOG_PATH!" >nul 2>nul
-for %%N in (near boundary-mixed-lod far-cascade post-rebase returned-start) do del /q "%LOG_DIR%\terrain-streaming-visual-%CURRENT_PROFILE%-latest.%%N.json" >nul 2>nul
+for %%N in (near boundary-mixed-lod mirror-cascade far-cascade post-rebase returned-start) do del /q "%LOG_DIR%\terrain-streaming-visual-%CURRENT_PROFILE%-latest.%%N.json" >nul 2>nul
 
 call :prepare_vulkan_validation_log "%PROFILE_REQUIRES_VULKAN%"
 if errorlevel 1 (
@@ -970,7 +970,7 @@ if errorlevel 1 (
     set "CURRENT_TERRAIN_STREAMING_EXIT_CODE=1"
     exit /b 1
 )
-powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_ROOT%validate_terrain_streaming_summary.ps1" -SummaryPath "!CURRENT_TERRAIN_STREAMING_SUMMARY_PATH!" -ExpectedProfile "%CURRENT_PROFILE%" -ExpectedVisualCaptureCount 5
+     powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_ROOT%validate_terrain_streaming_summary.ps1" -SummaryPath "!CURRENT_TERRAIN_STREAMING_SUMMARY_PATH!" -ExpectedProfile "%CURRENT_PROFILE%" -ExpectedVisualCaptureCount 6
 if errorlevel 1 (
     set "CURRENT_TERRAIN_STREAMING_EXIT_CODE=1"
     exit /b 1

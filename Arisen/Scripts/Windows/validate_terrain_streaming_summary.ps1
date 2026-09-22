@@ -5,8 +5,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$ExpectedProfile,
 
-    [ValidateRange(0, 5)]
-    [int]$ExpectedVisualCaptureCount = 5
+    [ValidateRange(0, 6)]
+    [int]$ExpectedVisualCaptureCount = 6
 )
 
 $ErrorActionPreference = "Stop"
@@ -126,7 +126,7 @@ try {
         "Terrain-streaming summary was not produced: $path"
     $artifact = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
 
-    Assert-Condition ([int]$artifact.schemaVersion -eq 2) `
+    Assert-Condition ([int]$artifact.schemaVersion -eq 3) `
         "Terrain-streaming summary schema mismatch."
     Assert-Condition ([string]$artifact.mode -ceq "terrain-streaming") `
         "Terrain-streaming summary mode mismatch."
@@ -204,6 +204,7 @@ try {
     $expectedCheckpointNames = @(
         "near",
         "boundary-mixed-lod",
+        "mirror-cascade",
         "far-cascade",
         "post-rebase",
         "returned-start"
@@ -236,6 +237,13 @@ try {
     $expectedTileCount = @($near.tiles).Count
     Assert-Condition ($expectedTileCount -gt 0) `
         "Terrain-streaming fixture contains no terrain tiles."
+    # The coverage contract has two halves. A captured view has to select a patch for every tile its
+    # own plan view sees, which is what the per-checkpoint tile assertions below enforce, and the
+    # captured views together have to see every tile of the root, which is what this field records.
+    # Only the aggregate half keeps a root wider than a frustum from shrinking the gate to whichever
+    # part of the world one pose happens to frame.
+    Assert-Condition ([int]$artifact.coveredTileCount -eq $expectedTileCount) `
+        "Terrain-streaming camera path covered $($artifact.coveredTileCount) of $expectedTileCount terrain tile(s)."
     # The reload soak verifies that repeated load/unload cycles return to the loaded steady state
     # the camera path reached. Every named checkpoint frames a different amount of the world, so the
     # steady state is the high-water mark of the path rather than its first checkpoint.
@@ -249,7 +257,7 @@ try {
         "terrainLayerDescriptors"
     )
     $baselineMemory = @{}
-    foreach ($name in @("near", "boundary-mixed-lod", "far-cascade", "post-rebase", "returned-start")) {
+    foreach ($name in @("near", "boundary-mixed-lod", "mirror-cascade", "far-cascade", "post-rebase", "returned-start")) {
         $memory = $checkpointByName[$name].memory
         foreach ($field in $steadyStateFields) {
             $value = [long]$memory.$field
@@ -274,6 +282,14 @@ try {
 
         $tiles = @($checkpoint.tiles)
         $queries = @($checkpoint.querySamples)
+        # The subset the checkpoint publishes as plan-view visible has to be exactly the subset the
+        # fixture counted, or the per-tile patch requirement below would be enforced against a
+        # different view than the one the checkpoint was captured with.
+        $visibleTiles = @($tiles | Where-Object { $_.frustumVisible -eq $true })
+        Assert-Condition (
+            [int]$checkpoint.expectedTileCount -gt 0 -and
+            $visibleTiles.Count -eq [int]$checkpoint.expectedTileCount) `
+            "Terrain checkpoint '$name' published an unexpected plan-view tile subset."
         Assert-Condition ($tiles.Count -eq $expectedTileCount) `
             "Terrain checkpoint '$name' has an unexpected tile count."
         Assert-Condition ([int]$checkpoint.ecsTileCount -eq $expectedTileCount) `
@@ -329,7 +345,7 @@ try {
             Assert-Condition ([long]$tile.generation -gt 0) `
                 "Terrain tile '$tileGuid' has no generation at checkpoint '$name'."
             Assert-Condition (
-                [int]$tile.patchCount -gt 0 -and
+                ([int]$tile.patchCount -gt 0 -or -not [bool]$tile.frustumVisible) -and
                 [int]$tile.minimumLod -ge 0 -and
                 [int]$tile.maximumLod -ge [int]$tile.minimumLod -and
                 [int]$tile.maximumLod -le 12 -and
@@ -422,6 +438,21 @@ try {
         }
     }
 
+    # Aggregate half of the coverage contract, recomputed from the published per-tile plan-view
+    # flags rather than read off the summary field: the views the fixture captured have to see every
+    # tile of the resident root between them.
+    $coveredTileGuids = [System.Collections.Generic.HashSet[string]]::new(
+        [System.StringComparer]::Ordinal)
+    foreach ($checkpoint in $checkpoints) {
+        foreach ($tile in @($checkpoint.tiles)) {
+            if ($tile.frustumVisible -eq $true) {
+                [void]$coveredTileGuids.Add([string]$tile.tileGuid)
+            }
+        }
+    }
+    Assert-Condition ($coveredTileGuids.Count -eq [int]$artifact.coveredTileCount) `
+        "Terrain-streaming camera path published $($coveredTileGuids.Count) covered tile(s); the summary declares $($artifact.coveredTileCount)."
+
     $previousReloadGenerations = @{}
     for ($cycle = 1; $cycle -le $requestedCycles; $cycle++) {
         $load = $checkpointByName["soak-load-$cycle"]
@@ -509,6 +540,7 @@ try {
         $expectedCaptureNames = @(
             "near",
             "boundary-mixed-lod",
+            "mirror-cascade",
             "far-cascade",
             "post-rebase",
             "returned-start"
@@ -617,14 +649,15 @@ try {
     $maximumFrame = (@($checkpoints | Measure-Object frameIndex -Maximum).Maximum + 1)
     $successMessage = (
         "[Arisen] Terrain-streaming summary passed: profile={0}, frames={1}, " +
-        "tiles={2}, soak={3}, rebases={4}, visuals={5}, output={6}") -f
+        "tiles={2}/{7} covered, soak={3}, rebases={4}, visuals={5}, output={6}") -f
         $ExpectedProfile,
         $maximumFrame,
         $expectedTileCount,
         $completedCycles,
         @($artifact.rebaseSequences).Count,
         $captures.Count,
-        $path
+        $path,
+        $artifact.coveredTileCount
     Write-Host $successMessage
     exit 0
 }
