@@ -1,0 +1,9 @@
+Guid: 6457a0c9-6da8-c4f6-ae6a-88e29459e8d8
+AssetType: "TerrainHeightSource"
+Importer: "Pgm16TerrainHeightImporter"
+Generated:
+  SourceGuid: 40ad1b8e-7be7-7f2c-2454-fb97874ab169
+  SourcePackageId: "com.arisen.packagegame"
+  ChildKind: "terrain-height-source"
+  ChildKey: "height"
+  GeneratedByImporter: "Pgm16TerrainHeightImporter"
