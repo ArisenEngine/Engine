@@ -25,6 +25,14 @@ $summaryPathFull = [System.IO.Path]::GetFullPath($SummaryPath)
 $temporaryParent = Join-Path ([System.IO.Path]::GetTempPath()) "ArisenRelocatedProduction"
 $temporaryRoot = Join-Path $temporaryParent ([Guid]::NewGuid().ToString("N"))
 $relocatedRoot = Join-Path $temporaryRoot "Player"
+# The kernel owns the real bound on a bounded smoke run: RuntimeSmokeOptions gives the streaming
+# scenarios 120 seconds, because crossing and soaking the regional world loads whole cells that each
+# carry several terrain tiles. This harness bound exists only so a process that never exits cannot
+# hang the gate, so it stays strictly above the kernel's own deadline - a scenario that stops making
+# progress still fails loudly with the kernel's deadline diagnostic instead of being killed from the
+# outside. Measured on the reference machine: the relocated regional world-streaming run takes about
+# 68 seconds and the terrain-streaming run about 85.
+$runExitTimeoutMilliseconds = 180000
 $checks = [ordered]@{
     metadataIsSourceIndependent = $false
     sourceFilesAbsent = $false
@@ -240,31 +248,25 @@ function Assert-VegetationShutdown {
 function Assert-VegetationSubmission {
     param(
         [string]$CaseName,
-        [string]$Output,
+        $RunResult,
         [int]$RequiredDistinctSurfaceCount = 1
     )
 
-    $marker = "[Vegetation.GenericRP.Validation]"
-    $pattern = [Regex]::Escape($marker) +
-        ' Surface=0x(?<surface>[0-9A-F]+) Frame=[0-9]+ DeviceGeneration=[0-9]+ Revision=[0-9]+ PreparedClusters=4 Cluster=324397e1-7ddb-a3fd-8d4e-1c077443f814 Species=3eb515ce-3dea-4994-81a1-a14fc2fe0eb5 Clusters=324397e17ddba3fd8d4e1c077443f814:3eb515ce3dea499481a1a14fc2fe0eb5:44392,6cea50e6732f66588ea048f1682b62e0:83212e385d3e44948929fe27639b5a29:312,dd618cfac607cf82bbb8545ff1cb1a4d:e560581300b6412985b205b754ccde74:4369,e90ae5ab24fb261799833ed656bd652c:7b0f2e528b674e3dbf0acbc42f622001:762 ClustersOverflow=0 OpaqueBatches=4 OpaqueInstances=49835 RecordedShadowBatches=16 RecordedShadowInstances=199340 Cascades=4 ShadowBatches=4,4,4,4 ShadowInstances=49835,49835,49835,49835 Dropped=0 Ticket=[1-9][0-9]*'
-    $markerCount = [Regex]::Matches($Output, [Regex]::Escape($marker)).Count
-    $submissions = [Regex]::Matches(
-        $Output,
-        $pattern,
-        [Text.RegularExpressions.RegexOptions]::IgnoreCase)
-    if ($markerCount -eq 0 -or $submissions.Count -ne $markerCount) {
-        throw "Relocated Production $CaseName vegetation validation records do not all " +
-            "match the canonical cluster/species and exact opaque/shadow counts."
+    $playerLogPath = [string]$RunResult.PlayerLogPath
+    if ([string]::IsNullOrWhiteSpace($playerLogPath)) {
+        throw "Relocated Production $CaseName run produced no launch-owned player log to audit."
     }
 
-    $surfaces = [System.Collections.Generic.HashSet[string]]::new(
-        [StringComparer]::OrdinalIgnoreCase)
-    foreach ($submission in $submissions) {
-        [void]$surfaces.Add($submission.Groups["surface"].Value)
-    }
-    if ($surfaces.Count -lt $RequiredDistinctSurfaceCount) {
-        throw "Relocated Production $CaseName vegetation validation requires " +
-            "$RequiredDistinctSurfaceCount distinct surface record(s); found $($surfaces.Count)."
+    # The relocation gate holds the deployed catalog, so a drawn cluster is pinned against the
+    # cooked vegetation closure of the startup world instead of only being well formed, and the
+    # shared validator owns the record contract for both this gate and validate_runtime.bat.
+    & (Join-Path $PSScriptRoot "validate_vegetation_submission_log.ps1") `
+        -LogPath $playerLogPath `
+        -CaseName "relocated-production-$CaseName" `
+        -RequiredDistinctSurfaceCount $RequiredDistinctSurfaceCount `
+        -AllowedClusterGuids @($deployedVegetationClusterGuids)
+    if ($LASTEXITCODE -ne 0) {
+        throw "Relocated Production $CaseName vegetation submission validation failed."
     }
 }
 
@@ -303,10 +305,10 @@ function Get-RunOutput {
 
     $standardOutput = $process.StandardOutput.ReadToEndAsync()
     $standardError = $process.StandardError.ReadToEndAsync()
-    if (-not $process.WaitForExit(60000)) {
+    if (-not $process.WaitForExit($runExitTimeoutMilliseconds)) {
         try { $process.Kill() } catch {}
         $process.WaitForExit()
-        throw "Relocated Production $CaseName run exceeded 60 seconds."
+        throw "Relocated Production $CaseName run exceeded $($runExitTimeoutMilliseconds / 1000) seconds."
     }
 
     $process.WaitForExit()
@@ -473,8 +475,9 @@ try {
         throw "Startup world closure does not reach the terrain root artifact."
     }
 
-    # Sixteen tiles: the showcase valley raster is a 4x4 grid of 128 m tiles.
-    $terrainTileCount = 16
+    # Sixty-four tiles: the regional raster is an 8x8 grid of 128 m tiles spanning one kilometre,
+    # split across the sixteen cells the world delegates to.
+    $terrainTileCount = 64
     $terrainTileDependencies = @($terrainRoot.dependencies | Where-Object {
         $_.assetType -ceq "TerrainTile" -and
         $_.variant -ceq "runtime.terrain-tile.v1"
@@ -578,151 +581,74 @@ try {
     }
     $checks.terrainClosureComplete = $true
 
-    # Canonical four-species valley fixture: every species owns one cluster and one or more
-    # ordered instance pages, the shared biome depends on all four species, each cluster depends
-    # on every page it owns, and each species depends on its own cooked mesh and material.
+    # Regional vegetation closure. The startup world is the MistfallValley region: sixteen cells
+    # that share one biome and the four shipped species, whose meshes and materials are authored
+    # content, while cluster and instance-page identities are baked per cell from that cell's
+    # scatter recipe. The gate therefore pins the shipped species identities and the regional
+    # scale, and derives the per-cell cluster/page structure from the deployed catalog instead of
+    # a hand-written table for a single cell.
+    $vegetationBiomeGuid = "c0a92f10-0eb9-4d24-b729-7d0f38313001"
     $vegetationSpecies = @(
         [pscustomobject]@{
             Name = "Tree"
-            Cluster = "6cea50e6-732f-6658-8ea0-48f1682b62e0"
-            Pages = @(
-                "83c82df2-9fef-e19e-9bda-8d9421c48045")
             Species = "83212e38-5d3e-4494-8929-fe27639b5a29"
             Mesh = "499d50d7-10af-4923-b97a-c1444895d327"
             Material = "6d411706-c507-4c87-a392-aea7998889bd"
         },
         [pscustomobject]@{
             Name = "Rock"
-            Cluster = "e90ae5ab-24fb-2617-9983-3ed656bd652c"
-            Pages = @(
-                "cbac8a59-7a52-6b1a-ca3c-a3a098cc50ca")
             Species = "7b0f2e52-8b67-4e3d-bf0a-cbc42f622001"
             Mesh = "89ae1524-c1c0-47c3-85a5-6a16838035f1"
             Material = "33fb5b2f-c310-478c-8523-8eeefa4ea747"
         },
         [pscustomobject]@{
             Name = "Shrub"
-            Cluster = "dd618cfa-c607-cf82-bbb8-545ff1cb1a4d"
-            Pages = @(
-                "5653ee6a-8b63-e743-914a-033422b4b75a",
-                "56f9b8c6-ccd2-7013-6363-ba1e727f32ad",
-                "694c6dcd-f392-1d6c-95e8-a352de2e26a4",
-                "b32d190c-0cf1-f93a-4a4e-65aed982aaef",
-                "b6992156-6510-af69-a8a2-7807e9fe9698")
             Species = "e5605813-00b6-4129-85b2-05b754ccde74"
             Mesh = "db1a5934-3fb7-49db-aa41-f318c8068a38"
             Material = "7f730a67-ea48-45dd-87ec-f473dbde9b5b"
         },
         [pscustomobject]@{
             Name = "Grass"
-            Cluster = "324397e1-7ddb-a3fd-8d4e-1c077443f814"
-            Pages = @(
-                "0463e6c6-57b0-e196-1b1d-e8202ae67a25",
-                "26d390c3-f185-1d49-ec3d-9454f890288d",
-                "61274bea-6b1d-5b0e-7771-f21290c708cb",
-                "63cd119a-f2ee-61b0-5be3-4e7d14e35cf3",
-                "9bde4725-5e83-6fe8-8f69-3cb7181ed83f",
-                "aa8744ef-be3c-8037-439f-7f654d095e76",
-                "c23d04be-7214-bc35-5d61-c1d83c9c47f4",
-                "c2c9ae0e-563f-85fe-4fb0-e6937ddf0b5e",
-                "d34c5ef9-1d29-1e10-3e90-1040c371b558",
-                "e96e6373-9797-3431-76cc-907f2f8fe2fc",
-                "fd0b473c-f7a4-8765-6615-4b821e4c3c0e")
             Species = "3eb515ce-3dea-4994-81a1-a14fc2fe0eb5"
             Mesh = "00135f74-4ecf-45c4-b9f2-72a68151a1f3"
             Material = "77bd836b-eacd-4aec-a349-3c271f7a1407"
         }
     )
-    $vegetationExpectations = [ordered]@{
-        Biome = [pscustomobject]@{
-            Guid = "c0a92f10-0eb9-4d24-b729-7d0f38313001"
-            PackageId = "com.arisen.packagegame"
-            AssetType = "VegetationBiome"
-            Variant = "runtime.vegetation-biome.v1"
-            FormatVersion = 1
-        }
-    }
-    $vegetationPages = @{}
-    foreach ($species in $vegetationSpecies) {
-        $vegetationExpectations["$($species.Name)Cluster"] = [pscustomobject]@{
-            Guid = $species.Cluster
-            PackageId = "com.arisen.packagegame"
-            AssetType = "VegetationCluster"
-            Variant = "runtime.vegetation-cluster.v1"
-            FormatVersion = 1
-        }
-        $speciesPageNames = @()
-        for ($pageIndex = 0; $pageIndex -lt $species.Pages.Count; $pageIndex++) {
-            $pageName = "$($species.Name)Page$pageIndex"
-            $speciesPageNames += $pageName
-            $vegetationExpectations[$pageName] = [pscustomobject]@{
-                Guid = $species.Pages[$pageIndex]
-                PackageId = "com.arisen.packagegame"
-                AssetType = "VegetationInstancePage"
-                Variant = "runtime.vegetation-instance-page.v1"
-                FormatVersion = 1
-            }
-        }
-        $vegetationPages[$species.Name] = $speciesPageNames
-        $vegetationExpectations["$($species.Name)Species"] = [pscustomobject]@{
-            Guid = $species.Species
-            PackageId = "com.arisen.packagegame"
-            AssetType = "VegetationSpecies"
-            Variant = "runtime.vegetation-species.v1"
-            FormatVersion = 1
-        }
-        $vegetationExpectations["$($species.Name)Mesh"] = [pscustomobject]@{
-            Guid = $species.Mesh
-            PackageId = "com.arisen.packagegame"
-            AssetType = "Mesh"
-            Variant = "staticmesh.uint32"
-            FormatVersion = 4
-        }
-        $vegetationExpectations["$($species.Name)Material"] = [pscustomobject]@{
-            Guid = $species.Material
-            PackageId = "com.arisen.packagegame"
-            AssetType = "Material"
-            Variant = "material.runtime"
-            FormatVersion = 7
-        }
-    }
     $vegetationArtifacts = @{}
-    foreach ($name in $vegetationExpectations.Keys) {
-        $expected = $vegetationExpectations[$name]
-        $vegetationArtifacts[$name] = Get-ExactCatalogArtifact `
+    $vegetationArtifacts.Biome = Get-ExactCatalogArtifact `
+        -Artifacts @($catalog.artifacts) `
+        -Guid $vegetationBiomeGuid `
+        -PackageId "com.arisen.packagegame" `
+        -AssetType "VegetationBiome" `
+        -Variant "runtime.vegetation-biome.v1" `
+        -FormatVersion 1
+    foreach ($species in $vegetationSpecies) {
+        $vegetationArtifacts["$($species.Name)Species"] = Get-ExactCatalogArtifact `
             -Artifacts @($catalog.artifacts) `
-            -Guid $expected.Guid `
-            -PackageId $expected.PackageId `
-            -AssetType $expected.AssetType `
-            -Variant $expected.Variant `
-            -FormatVersion $expected.FormatVersion
+            -Guid $species.Species `
+            -PackageId "com.arisen.packagegame" `
+            -AssetType "VegetationSpecies" `
+            -Variant "runtime.vegetation-species.v1" `
+            -FormatVersion 1
+        $vegetationArtifacts["$($species.Name)Mesh"] = Get-ExactCatalogArtifact `
+            -Artifacts @($catalog.artifacts) `
+            -Guid $species.Mesh `
+            -PackageId "com.arisen.packagegame" `
+            -AssetType "Mesh" `
+            -Variant "staticmesh.uint32" `
+            -FormatVersion 4
+        $vegetationArtifacts["$($species.Name)Material"] = Get-ExactCatalogArtifact `
+            -Artifacts @($catalog.artifacts) `
+            -Guid $species.Material `
+            -PackageId "com.arisen.packagegame" `
+            -AssetType "Material" `
+            -Variant "material.runtime" `
+            -FormatVersion 7
     }
 
-    foreach ($species in $vegetationSpecies) {
-        $clusterDependencies = @(
-            $vegetationArtifacts["$($species.Name)Species"],
-            $vegetationArtifacts.Biome)
-        foreach ($pageName in $vegetationPages[$species.Name]) {
-            $clusterDependencies += $vegetationArtifacts[$pageName]
-        }
-        Assert-ExactRequiredCatalogDependencies `
-            -Owner $vegetationArtifacts["$($species.Name)Cluster"] `
-            -ExpectedDependencies $clusterDependencies `
-            -OwnerName "$($species.Name) vegetation cluster"
-        foreach ($pageName in $vegetationPages[$species.Name]) {
-            Assert-ExactRequiredCatalogDependencies `
-                -Owner $vegetationArtifacts[$pageName] `
-                -ExpectedDependencies @(
-                    $vegetationArtifacts["$($species.Name)Species"]) `
-                -OwnerName "$($species.Name) vegetation instance page"
-        }
-        Assert-ExactRequiredCatalogDependencies `
-            -Owner $vegetationArtifacts["$($species.Name)Species"] `
-            -ExpectedDependencies @(
-                $vegetationArtifacts["$($species.Name)Mesh"],
-                $vegetationArtifacts["$($species.Name)Material"]) `
-            -OwnerName "$($species.Name) vegetation species"
-    }
+    # The shared biome closes over the shipped species, and every species closes over exactly its
+    # own cooked mesh and material, so a species that stopped resolving or picked up a dependency
+    # fails here instead of at load time.
     Assert-ExactRequiredCatalogDependencies `
         -Owner $vegetationArtifacts.Biome `
         -ExpectedDependencies @(
@@ -731,11 +657,128 @@ try {
             $vegetationArtifacts["ShrubSpecies"],
             $vegetationArtifacts["GrassSpecies"]) `
         -OwnerName "vegetation biome"
+    foreach ($species in $vegetationSpecies) {
+        Assert-ExactRequiredCatalogDependencies `
+            -Owner $vegetationArtifacts["$($species.Name)Species"] `
+            -ExpectedDependencies @(
+                $vegetationArtifacts["$($species.Name)Mesh"],
+                $vegetationArtifacts["$($species.Name)Material"]) `
+            -OwnerName "$($species.Name) vegetation species"
+    }
 
-    foreach ($name in $vegetationExpectations.Keys) {
+    # Sixteen cells bake three clusters each - grass, shrub, and tree, because the rock recipe
+    # admits no instance on this raster - and each cluster owns the pages its own cell's terrain
+    # weights produced, so the regional scale is pinned while the baked identities stay derived.
+    $expectedVegetationClusterCount = 48
+    $expectedVegetationInstancePageCount = 336
+    $vegetationClusters = @($catalog.artifacts | Where-Object {
+        $_.assetType -ceq "VegetationCluster" -and
+        $_.variant -ceq "runtime.vegetation-cluster.v1" -and
+        $_.packageId -ceq "com.arisen.packagegame" -and
+        [int]$_.formatVersion -eq 1
+    })
+    $vegetationInstancePages = @($catalog.artifacts | Where-Object {
+        $_.assetType -ceq "VegetationInstancePage" -and
+        $_.variant -ceq "runtime.vegetation-instance-page.v1" -and
+        $_.packageId -ceq "com.arisen.packagegame" -and
+        [int]$_.formatVersion -eq 1
+    })
+    if ($vegetationClusters.Count -ne $expectedVegetationClusterCount) {
+        throw "Regional startup world must deploy exactly $expectedVegetationClusterCount cooked " +
+            "vegetation clusters; found $($vegetationClusters.Count)."
+    }
+    if ($vegetationInstancePages.Count -ne $expectedVegetationInstancePageCount) {
+        throw "Regional startup world must deploy exactly $expectedVegetationInstancePageCount cooked " +
+            "vegetation instance pages; found $($vegetationInstancePages.Count)."
+    }
+    $vegetationSpeciesByKey = @{}
+    foreach ($species in $vegetationSpecies) {
+        $vegetationSpeciesByKey[(Get-CatalogIdentityKey $vegetationArtifacts["$($species.Name)Species"])] =
+            $species.Name
+    }
+    $vegetationPagesByKey = @{}
+    foreach ($instancePage in $vegetationInstancePages) {
+        $vegetationPagesByKey[(Get-CatalogIdentityKey $instancePage)] = $instancePage
+    }
+
+    # Every cluster must close over exactly the shared biome, one shipped species, and the pages
+    # that species owns in that cell; every page must close over exactly its own species, and no
+    # page may belong to two clusters. A cluster that lost a page, a page that resolved another
+    # species, or a page shared by two cells all fail here.
+    $vegetationPageOwners = @{}
+    foreach ($cluster in $vegetationClusters) {
+        $clusterKey = Get-CatalogIdentityKey $cluster
+        $biomeDependencies = @($cluster.dependencies | Where-Object {
+            $_.assetType -ceq "VegetationBiome"
+        })
+        $speciesDependencies = @($cluster.dependencies | Where-Object {
+            $_.assetType -ceq "VegetationSpecies"
+        })
+        $pageDependencies = @($cluster.dependencies | Where-Object {
+            $_.assetType -ceq "VegetationInstancePage"
+        })
+        if (@($cluster.dependencies).Count -ne (2 + $pageDependencies.Count) -or
+            $biomeDependencies.Count -ne 1 -or
+            $speciesDependencies.Count -ne 1 -or
+            $pageDependencies.Count -lt 1) {
+            throw "Cooked vegetation cluster '$clusterKey' must require exactly one biome, exactly " +
+                "one species, and at least one instance page."
+        }
+        if ((Get-CatalogIdentityKey $biomeDependencies[0]) -cne
+            (Get-CatalogIdentityKey $vegetationArtifacts.Biome)) {
+            throw "Cooked vegetation cluster '$clusterKey' does not require the shared shipped biome."
+        }
+        $speciesKey = Get-CatalogIdentityKey $speciesDependencies[0]
+        if (-not $vegetationSpeciesByKey.ContainsKey($speciesKey)) {
+            throw "Cooked vegetation cluster '$clusterKey' requires an unknown species '$speciesKey'."
+        }
+        foreach ($pageDependency in $pageDependencies) {
+            $pageKey = Get-CatalogIdentityKey $pageDependency
+            if (-not $vegetationPagesByKey.ContainsKey($pageKey)) {
+                throw "Cooked vegetation cluster '$clusterKey' requires a page that is not deployed: '$pageKey'."
+            }
+            if ($vegetationPageOwners.ContainsKey($pageKey)) {
+                throw "Cooked vegetation instance page '$pageKey' belongs to more than one cluster."
+            }
+            $vegetationPageOwners[$pageKey] = $clusterKey
+            Assert-ExactRequiredCatalogDependencies `
+                -Owner $vegetationPagesByKey[$pageKey] `
+                -ExpectedDependencies @($speciesDependencies[0]) `
+                -OwnerName "vegetation instance page '$pageKey'"
+        }
+    }
+    if ($vegetationPageOwners.Count -ne $vegetationInstancePages.Count) {
+        throw "Every deployed vegetation instance page must belong to exactly one cooked cluster."
+    }
+
+    # A cluster or page that no deployed cell scene requires is orphaned content: the runtime
+    # catalog would carry vegetation the startup world cannot activate. Each one must be required
+    # by exactly one deployed scene and be part of the world closure the runtime mounts.
+    $catalogDependents = @{}
+    foreach ($catalogOwner in @($catalog.artifacts)) {
+        foreach ($catalogDependency in @($catalogOwner.dependencies)) {
+            $dependencyKey = Get-CatalogIdentityKey $catalogDependency
+            if (-not $catalogDependents.ContainsKey($dependencyKey)) {
+                $catalogDependents[$dependencyKey] = @()
+            }
+            $catalogDependents[$dependencyKey] += $catalogOwner
+        }
+    }
+    foreach ($vegetationCellContent in @($vegetationClusters + $vegetationInstancePages)) {
+        $contentKey = Get-CatalogIdentityKey $vegetationCellContent
+        $sceneOwners = @($catalogDependents[$contentKey] | Where-Object { $_.assetType -ceq "Scene" })
+        if ($sceneOwners.Count -ne 1) {
+            throw "Cooked vegetation cell content '$contentKey' must be required by exactly one " +
+                "deployed cell scene; found $($sceneOwners.Count)."
+        }
+        if (-not $worldReachable.Contains($contentKey)) {
+            throw "Startup-world closure does not reach cooked vegetation cell content '$contentKey'."
+        }
+    }
+    foreach ($name in $vegetationArtifacts.Keys) {
         $artifactKey = Get-CatalogIdentityKey $vegetationArtifacts[$name]
         if (-not $worldReachable.Contains($artifactKey)) {
-            throw "Startup-world closure does not reach canonical vegetation $name artifact '$artifactKey'."
+            throw "Startup-world closure does not reach shipped vegetation $name artifact '$artifactKey'."
         }
     }
 
@@ -747,23 +790,14 @@ try {
     $vegetationRuntimeArtifacts = @($catalog.artifacts | Where-Object {
         $vegetationRuntimeAssetTypes -ccontains ([string]$_.assetType)
     })
-    $expectedVegetationRuntimeArtifactCount = 27
+    # Every cooked cluster identity is a legal cluster for a submitted draw to name, so the
+    # relocation gate pins the vegetarian submission log against the deployed world closure.
+    $deployedVegetationClusterGuids = @(
+        $vegetationClusters | ForEach-Object { ([string]$_.guid).ToLowerInvariant() })
+    $expectedVegetationRuntimeArtifactCount = 389
     if ($vegetationRuntimeArtifacts.Count -ne $expectedVegetationRuntimeArtifactCount) {
-        throw "Runtime catalog must contain exactly twenty-seven canonical cooked vegetation artifacts."
-    }
-    $expectedVegetationRuntimeKeys = [System.Collections.Generic.HashSet[string]]::new(
-        [StringComparer]::Ordinal)
-    foreach ($name in $vegetationExpectations.Keys) {
-        if ($vegetationRuntimeAssetTypes -ccontains ([string]$vegetationArtifacts[$name].assetType)) {
-            [void]$expectedVegetationRuntimeKeys.Add(
-                (Get-CatalogIdentityKey $vegetationArtifacts[$name]))
-        }
-    }
-    foreach ($runtimeArtifact in $vegetationRuntimeArtifacts) {
-        if (-not $expectedVegetationRuntimeKeys.Contains(
-                (Get-CatalogIdentityKey $runtimeArtifact))) {
-            throw "Runtime catalog contains an unreferenced cooked vegetation artifact."
-        }
+        throw "Runtime catalog must contain exactly 389 regional cooked vegetation artifacts: one " +
+            "biome, four species, 48 clusters, and 336 instance pages."
     }
 
     # The opaque vegetation pass and the alpha-consistent directional shadow pass both publish a
@@ -818,9 +852,10 @@ try {
             throw "Runtime catalog contains duplicate vegetation deployment path '$catalogPath'."
         }
     }
-    $expectedVegetationDeploymentFileCount = 31
+    # 389 cooked vegetation artifacts plus the four vegetation shader stages.
+    $expectedVegetationDeploymentFileCount = 393
     if ($expectedVegetationPaths.Count -ne $expectedVegetationDeploymentFileCount) {
-        throw "Runtime catalog vegetation deployment closure must contain exactly thirty-one files."
+        throw "Runtime catalog vegetation deployment closure must contain exactly 393 files."
     }
     $contentRoot = Join-Path $relocatedRoot "Content"
     $vegetationCookedExtensions = @(
@@ -840,7 +875,7 @@ try {
         }
     }
     if ($deployedVegetationPaths.Count -ne $expectedVegetationPaths.Count) {
-        throw "Relocated Content must contain exactly the 31 catalog-referenced vegetation files."
+        throw "Relocated Content must contain exactly the 393 catalog-referenced vegetation files."
     }
     foreach ($deployedPath in $deployedVegetationPaths) {
         if (-not $expectedVegetationPaths.Contains($deployedPath)) {
@@ -894,7 +929,7 @@ try {
     if (-not $terrainSubmission.Success) {
         throw "Relocated Production world-streaming smoke did not submit a positive terrain draw count."
     }
-    Assert-VegetationSubmission -CaseName "world-streaming" -Output $worldStreaming.Output
+    Assert-VegetationSubmission -CaseName "world-streaming" -RunResult $worldStreaming
     $checks.vegetationStreamingSubmissionPassed = $true
     Assert-SourceIndependentRun -CaseName "world-streaming" -Output $worldStreaming.Output
     Assert-VegetationShutdown -Output $worldStreaming.Output
@@ -1048,7 +1083,7 @@ try {
     if (-not $terrainSubmission.Success) {
         throw "Relocated Production terrain-streaming smoke did not submit a positive terrain draw count."
     }
-    Assert-VegetationSubmission -CaseName "terrain-streaming" -Output $terrainStreaming.Output
+    Assert-VegetationSubmission -CaseName "terrain-streaming" -RunResult $terrainStreaming
     $checks.vegetationStreamingSubmissionPassed = $true
     Assert-SourceIndependentRun -CaseName "terrain-streaming" -Output $terrainStreaming.Output
     $checks.terrainStreamingSourceIndependent = $true
