@@ -891,13 +891,43 @@ changes.
       parked CPU budget, the zero-frame parked interval, and clean shutdown, and runs from
       `validate_runtime.bat` for the Development profile; `--skip-host-pacing` opts out where the
       desktop cannot be left undisturbed. Documented in `Rendering.md` and `ArisenHost.md`.
-- [ ] Generalize the terrain checkpoint coverage contract for a multi-view root.
-  - [ ] Reconcile "every canonical tile selects a patch" with a root that is wider than one
-        frustum, using per-pose expected tile subsets and an aggregate coverage requirement.
+- [x] Generalize the terrain checkpoint coverage contract for a multi-view root. The contract used to
+      be "every canonical tile selects a patch at every checkpoint", which a root wider than one
+      frustum cannot satisfy: the validator rejected any checkpoint whose tile selected no patch, so
+      a regional root would have failed the gate on a pose that legitimately cannot frame it. The
+      contract is now stated in two halves. Per view, a checkpoint requires a selected patch only for
+      the tiles its own plan view sees, and across the flight the captured views together have to
+      cover every canonical tile of the resident root; the visibility question is answered by the
+      production predicate itself, `TerrainLodView.IsFrustumVisible`, so the fixture, the validator,
+      and the planner cull with one implementation instead of two that can drift. The single-block
+      showcase root fits inside one frustum, so the per-view half still asks for the whole root and
+      that gate keeps its full strength. The artifact carries the two halves as a per-tile
+      `frustumVisible` flag, a per-checkpoint `expectedTileCount`, and an artifact-wide
+      `coveredTileCount` (schema 3), and `validate_terrain_streaming_summary.ps1` recomputes the
+      covered set from the published flags instead of trusting the declared count.
+  - [x] Reconcile "every canonical tile selects a patch" with a root that is wider than one frustum,
+        using per-pose expected tile subsets and an aggregate coverage requirement. This needed a
+        fourth camera pose. `TerrainStreamingCameraPath` derived four corners and used three of them
+        - the nearest corner the `near` pose, the next the `boundary-mixed-lod` pose, the farthest
+        the `far-cascade` pose - which covers a 512 m root because every pose frames all of it, but
+        not a root whose diagonal reaches past the camera's 900 m far plane: the corner the
+        near-to-far diagonal turns away from is then framed by no view at all. The fourth pose,
+        `mirror-cascade`, is the boundary pose reflected across that diagonal, and the fixture
+        captures, validates, and visually captures it like the others, so the scenario publishes
+        fourteen checkpoints and six visual captures. `TerrainStreamingCameraPathTests` pins the
+        whole contract against the shipped content through the production frustum predicate: every
+        one of the four poses frames all sixteen canonical tiles, the four between them cover the
+        root, and a synthetic eight-by-eight root wider than one frustum is the negative control
+        where no single view - and not the near/boundary/far corners either - covers the root, so a
+        framing regression fails in the unit test rather than in the runtime gate.
 - [ ] Author the regional world and its scenes.
-  - [ ] Extend the canonical terrain raster outward from the committed 513x513 window with the
-        shipped `generate_showcase_valley.ps1` extension path, so the committed window stays
-        byte-identical and the vegetation closure is preserved.
+  - [ ] Author the regional world with the shipped `generate_mistfall_valley.ps1` generator instead
+        of extending the committed 513x513 showcase window: one 1 km raster, 8x8 generated tile
+        identities, and one cell scene per world cell that owns exactly the tiles inside its own
+        bounds. The showcase world is left alone rather than grown, so the committed window, its
+        tile identities, and the canonical vegetation closure stay byte-identical and the
+        single-block gate keeps validating unchanged; the generator derives every identity with the
+        same child-GUID rule the loaders use, so rerunning it reproduces identical bytes.
   - [ ] Split the tile entities across the cell scenes that own them.
   - [ ] Add the new world plus its persistent and per-cell scenes as new scene files instead of
         reusing the showcase world.
@@ -912,7 +942,8 @@ changes.
 - Flying through the region loads and unloads terrain blocks with the camera, with no stale or
   duplicated block and no gate weakened to accommodate the larger world.
 - The committed 513x513 terrain window, its tile identities, and the canonical vegetation closure
-  are unchanged, so the single-block showcase world keeps validating byte-identically.
+  are unchanged, so the single-block showcase world keeps validating byte-identically; the regional
+  world is authored next to it instead of by extending it.
 - Production still loads only versioned cooked artifacts from the relocatable catalog.
 
 ## Milestone 8 - Editor Biome And Scatter Authoring
