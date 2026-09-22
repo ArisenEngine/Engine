@@ -819,6 +819,33 @@ changes.
   - [x] Prove a dense planar cell grid end to end:
         `RuntimeWorldStreamingTests.BoundedSmokeScenario_CompletesOnADensePlanarCellGrid` runs the
         whole scenario against a 2x2 adjacent-cell world and requires a multi-cell active set.
+- [x] Extend the terrain fixture to a root that spans several world cells.
+  - [x] Pin, reload, unload, and drain every owner cell of the resident root instead of one.
+  - [x] Keep the per-tile owner/generation checks per owner cell.
+  - [x] Publish the owner-cell set in the terrain summary artifact and update
+        `validate_terrain_streaming_summary.ps1` to require it.
+  - `TerrainStreamingOwnerCells` derives the set from the resident tiles' residency owners and
+    resolves every member against the active world descriptor, so a cell the world does not declare,
+    a root whose tiles carry no world-cell owner, or a tile that none of its owner cells owns fails
+    discovery instead of pinning an incomplete set. The fixture pins, reloads, unpins, and drains
+    every member; the reload soak reloads all of them in one step and then requires each canonical
+    tile to be held by one of its own owner cells under that cell's current request generation; the
+    drain snapshot is per cell, and a cell the streaming service no longer tracks publishes
+    `tracked: false` instead of a fabricated state and never counts as drained.
+  - Terrain artifact schema 2 publishes `terrainCellIds` on the summary and on every checkpoint, the
+    per-tile `ownerCellIds` the fixture observed, and `lastDrain.cells` with one row per owner cell.
+    `validate_terrain_streaming_summary.ps1` requires a non-empty distinct set, exact equality between
+    the summary's set and every checkpoint's set, the union of the checkpoint tiles' owner cells to be
+    exactly that set (so a declared cell that owns nothing at a checkpoint fails), and every drain row
+    to be tracked, undesired, unpinned, and unloaded or cancelled. `TerrainStreamingOwnerCellsTests`
+    pins the set derivation, the per-owner-cell generation check, the drain decision, and the
+    published field names, and the gate itself was mutation-tested by hand: a tile with no world-cell
+    owner, an undeclared owner cell, a declared owner cell that owns no tile, and a drain row that is
+    still desired each fail it with a diagnostic naming the checkpoint and the cell.
+  - What this does not prove yet: the canonical world authors all sixteen tiles in one cell scene, so
+    the runtime gate still exercises a one-member set. The multi-cell run of the fixture arrives with
+    the regional world below, where the tile entities are split across the cell scenes that own them;
+    until then the fixture's own multi-cell behaviour is covered by the managed tests.
 ## Milestone 8 - Editor Biome And Scatter Authoring
 
 **Goal:** Make vegetation placement usable without hand-editing serialized instance pages.

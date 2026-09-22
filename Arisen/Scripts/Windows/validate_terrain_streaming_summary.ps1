@@ -126,7 +126,7 @@ try {
         "Terrain-streaming summary was not produced: $path"
     $artifact = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
 
-    Assert-Condition ([int]$artifact.schemaVersion -eq 1) `
+    Assert-Condition ([int]$artifact.schemaVersion -eq 2) `
         "Terrain-streaming summary schema mismatch."
     Assert-Condition ([string]$artifact.mode -ceq "terrain-streaming") `
         "Terrain-streaming summary mode mismatch."
@@ -140,8 +140,19 @@ try {
         "Terrain-streaming summary has no valid world GUID."
     Assert-Condition ([string]$artifact.terrainRootGuid -match '^[0-9A-Fa-f-]{36}$') `
         "Terrain-streaming summary has no valid terrain-root GUID."
-    Assert-Condition (-not [string]::IsNullOrWhiteSpace([string]$artifact.terrainCellId)) `
+    # A terrain root can span several world cells: the fixture pins, reloads, unpins, and drains
+    # every cell that owns one of the root's tiles, and publishes that set here.
+    $ownerCellIds = @($artifact.terrainCellIds | ForEach-Object { [string]$_ })
+    Assert-Condition ($ownerCellIds.Count -ge 1) `
         "Terrain-streaming summary has no terrain owner cell."
+    $seenOwnerCells = [System.Collections.Generic.HashSet[string]]::new(
+        [System.StringComparer]::Ordinal)
+    foreach ($ownerCellId in $ownerCellIds) {
+        Assert-Condition ($ownerCellId -match '^[0-9A-Fa-f-]{36}$') `
+            "Terrain-streaming summary has an invalid terrain owner cell '$ownerCellId'."
+        Assert-Condition ($seenOwnerCells.Add($ownerCellId)) `
+            "Terrain-streaming summary repeats terrain owner cell '$ownerCellId'."
+    }
 
     $requestedCycles = [int]$artifact.requestedSoakCycles
     $completedCycles = [int]$artifact.completedSoakCycles
@@ -159,13 +170,22 @@ try {
     $drain = $artifact.lastDrain
     Assert-Condition ($null -ne $drain -and $drain.isDrained -eq $true) `
         "Terrain-streaming did not observe a fully drained soak boundary."
-    Assert-Condition (
-        ([string]$drain.cellState -ceq "Unloaded" -or
-         [string]$drain.cellState -ceq "Cancelled") -and
-        $drain.cellDesired -eq $false -and
-        $drain.cellPinned -eq $false -and
-        [string]$drain.cellDesiredSources -ceq "None") `
-        "The final terrain cell remained desired or pinned."
+    $drainCells = @($drain.cells)
+    Assert-Condition ($drainCells.Count -eq $ownerCellIds.Count) `
+        "Terrain-streaming drained $($drainCells.Count) owner cell(s); expected $($ownerCellIds.Count)."
+    for ($index = 0; $index -lt $ownerCellIds.Count; $index++) {
+        $drainCell = $drainCells[$index]
+        Assert-Condition ([string]$drainCell.cellId -ceq [string]$ownerCellIds[$index]) `
+            "Terrain-streaming drain snapshot has an unexpected owner cell '$($drainCell.cellId)'."
+        Assert-Condition (
+            $drainCell.tracked -eq $true -and
+            ([string]$drainCell.state -ceq "Unloaded" -or
+             [string]$drainCell.state -ceq "Cancelled") -and
+            $drainCell.desired -eq $false -and
+            $drainCell.pinned -eq $false -and
+            [string]$drainCell.desiredSources -ceq "None") `
+            "The final terrain owner cell '$($drainCell.cellId)' remained desired or pinned."
+    }
     foreach ($field in @(
         "visibleTileCount",
         "runtimeRootCount",
@@ -247,7 +267,9 @@ try {
             "Terrain checkpoint '$name' failed."
         Assert-Condition ([string]$checkpoint.terrainRootGuid -ceq [string]$artifact.terrainRootGuid) `
             "Terrain checkpoint '$name' changed root identity."
-        Assert-Condition ([string]$checkpoint.terrainCellId -ceq [string]$artifact.terrainCellId) `
+        Assert-Condition (
+            (@($checkpoint.terrainCellIds | ForEach-Object { [string]$_ }) -join ',') -ceq
+            ($ownerCellIds -join ',')) `
             "Terrain checkpoint '$name' changed owner-cell identity."
 
         $tiles = @($checkpoint.tiles)
@@ -262,6 +284,26 @@ try {
             "Terrain checkpoint '$name' contains duplicate tile identities."
         Assert-Condition (@($tiles | ForEach-Object { "$($_.coordinate.x),$($_.coordinate.z)" } | Select-Object -Unique).Count -eq $expectedTileCount) `
             "Terrain checkpoint '$name' contains duplicate tile coordinates."
+
+        # The declared owner-cell set has to be exactly the set of cells that actually own the
+        # checkpoint's tiles, or the fixture is pinning and draining the wrong cells.
+        $observedOwnerCells = [System.Collections.Generic.HashSet[string]]::new(
+            [System.StringComparer]::Ordinal)
+        for ($tileIndex = 0; $tileIndex -lt $tiles.Count; $tileIndex++) {
+            $tileOwnerCells = @($tiles[$tileIndex].ownerCellIds | ForEach-Object { [string]$_ })
+            Assert-Condition ($tileOwnerCells.Count -ge 1) `
+                "Terrain checkpoint '$name' has a tile with no world-cell owner."
+            foreach ($tileOwnerCell in $tileOwnerCells) {
+                [void]$observedOwnerCells.Add($tileOwnerCell)
+            }
+        }
+
+        Assert-Condition ($observedOwnerCells.Count -eq $ownerCellIds.Count) `
+            "Terrain checkpoint '$name' observed $($observedOwnerCells.Count) tile owner cell(s); expected $($ownerCellIds.Count)."
+        foreach ($ownerCellId in $ownerCellIds) {
+            Assert-Condition ($observedOwnerCells.Contains($ownerCellId)) `
+                "Terrain checkpoint '$name' has no tile owned by cell '$ownerCellId'."
+        }
 
         $lod = $checkpoint.lod
         Assert-Condition (
