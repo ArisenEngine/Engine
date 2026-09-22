@@ -311,7 +311,6 @@ public sealed class RegionalWorldAssetTests : IDisposable
             world);
 
         Assert.True(load.Success, load.Diagnostic);
-        Assert.Equal(TilesPerCell, load.EntityCount);
         Assert.Equal(0, load.CameraCount);
         Assert.Equal(0, load.DirectionalLightCount);
         Assert.Equal(0, load.PointLightCount);
@@ -353,6 +352,23 @@ public sealed class RegionalWorldAssetTests : IDisposable
                     $"Tile {tileX},{tileZ} is owned by more than one cell scene.");
             }
         }
+
+        // A cell scene authors its own tiles plus the vegetation clusters the generator baked for
+        // this cell, and nothing else. The cluster component itself needs the vegetation codec and
+        // its cooked closure, so this case pins the tile half exactly and accounts for the remaining
+        // authored entities through the transform every entity carries; the cluster content is
+        // pinned by the vegetation cooking tests.
+        int tileCount = world.HasPool<TerrainTileComponent>()
+            ? world.GetPool<TerrainTileComponent>().Count
+            : 0;
+        Assert.Equal(TilesPerCell, tileCount);
+        int transformedEntities = world.HasPool<TransformComponent>()
+            ? world.GetPool<TransformComponent>().Count
+            : 0;
+        Assert.Equal(load.EntityCount, transformedEntities);
+        Assert.True(
+            transformedEntities > tileCount,
+            $"Cell {cellX},{cellZ} authors no baked vegetation cluster entity.");
     }
 
     private static void AddRegionalWorldAssets(TestAssetDatabase db, string packageRoot)

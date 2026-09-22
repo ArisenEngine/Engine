@@ -465,6 +465,7 @@ public sealed class EditorWorldDocumentServiceTests : IDisposable
             0,
             0,
             0,
+             0,
             0);
 
         public void PublishState(
