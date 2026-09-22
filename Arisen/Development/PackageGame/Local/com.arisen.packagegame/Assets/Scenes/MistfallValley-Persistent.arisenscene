@@ -1,0 +1,171 @@
+Version: 2
+Name: Mistfall Valley World Persistent Scene
+ComponentSchemas:
+- TypeId: 1
+  Name: Transform
+  Version: 1
+  Required: true
+- TypeId: 2
+  Name: Camera
+  Version: 2
+  Required: true
+- TypeId: 3
+  Name: MeshRenderer
+  Version: 1
+  Required: true
+- TypeId: 4
+  Name: DirectionalLight
+  Version: 1
+  Required: true
+- TypeId: 7
+  Name: Environment
+  Version: 1
+  Required: true
+Entities:
+- Guid: 30000000-0000-0000-0000-000000000001
+  Name: Main Camera
+  Transform:
+    Position:
+      X: -102.0
+      Y: 8.6560716354
+      Z: -128.0
+    Rotation:
+      X: 0.0383067
+      Y: -0.2945279
+      Z: 0.0118165
+      W: 0.9548017
+    Scale:
+      X: 1
+      Y: 1
+      Z: 1
+  Camera:
+    VerticalFov: 45.0
+    NearPlane: 0.2
+    FarPlane: 900.0
+    IsPerspective: true
+- Guid: 30000000-0000-0000-0000-000000000002
+  Name: Dusk Key Light
+  DirectionalLight:
+    Direction:
+      X: -0.7524
+      Y: 0.1876
+      Z: 0.6314
+    Color:
+      X: 1.0
+      Y: 0.86
+      Z: 0.68
+    Intensity: 2.6
+    AmbientIntensity: 0.10
+    Enabled: true
+  Transform:
+    Position:
+      X: 0
+      Y: 2
+      Z: 0
+    Rotation:
+      X: 0
+      Y: 0
+      Z: 0
+      W: 1
+    Scale:
+      X: 1
+      Y: 1
+      Z: 1
+- Guid: 30000000-0000-0000-0000-000000000005
+  Name: Mistfall Dusk Environment
+  Environment:
+    EnvironmentTexture:
+      Guid: 1fc01236-449b-4097-88c0-223b1ed736ff
+      PackageId: com.arisen.packagegame
+    SkyColor:
+      X: 0.24
+      Y: 0.36
+      Z: 0.62
+    HorizonColor:
+      X: 0.86
+      Y: 0.62
+      Z: 0.40
+    GroundColor:
+      X: 0.10
+      Y: 0.10
+      Z: 0.11
+    AmbientColor:
+      X: 0.44
+      Y: 0.52
+      Z: 0.66
+    SkyIntensity: 0.30
+    AmbientIntensity: 0.34
+    Exposure: 1.0
+    Enabled: true
+- Guid: 30000000-0000-0000-0000-000000000006
+  Name: Valley Outcrop Boulder
+  Transform:
+    Position:
+      X: -118.2
+      Y: 7.2264524341
+      Z: -105.2
+    Rotation:
+      X: 0
+      Y: 0.32557
+      Z: 0
+      W: 0.94552
+    Scale:
+      X: 2.6
+      Y: 2.6
+      Z: 2.6
+  MeshRenderer:
+    Mesh:
+      Guid: 89ae1524-c1c0-47c3-85a5-6a16838035f1
+      PackageId: com.arisen.packagegame
+    Material:
+      Guid: e87b0335-5689-45a0-9fe1-455a01b59a20
+      PackageId: com.arisen.packagegame
+    Visible: true
+- Guid: 30000000-0000-0000-0000-000000000007
+  Name: Valley Outcrop Shoulder
+  Transform:
+    Position:
+      X: -115.6
+      Y: 6.6148716757
+      Z: -104.4
+    Rotation:
+      X: 0
+      Y: -0.51504
+      Z: 0
+      W: 0.85717
+    Scale:
+      X: 1.9
+      Y: 1.9
+      Z: 1.9
+  MeshRenderer:
+    Mesh:
+      Guid: 89ae1524-c1c0-47c3-85a5-6a16838035f1
+      PackageId: com.arisen.packagegame
+    Material:
+      Guid: e87b0335-5689-45a0-9fe1-455a01b59a20
+      PackageId: com.arisen.packagegame
+    Visible: true
+- Guid: 30000000-0000-0000-0000-000000000008
+  Name: Valley Outcrop Cap
+  Transform:
+    Position:
+      X: -116.3
+      Y: 6.2964494746
+      Z: -108.0
+    Rotation:
+      X: 0
+      Y: 0.91005
+      Z: 0
+      W: 0.41452
+    Scale:
+      X: 1.5
+      Y: 1.5
+      Z: 1.5
+  MeshRenderer:
+    Mesh:
+      Guid: 89ae1524-c1c0-47c3-85a5-6a16838035f1
+      PackageId: com.arisen.packagegame
+    Material:
+      Guid: e87b0335-5689-45a0-9fe1-455a01b59a20
+      PackageId: com.arisen.packagegame
+    Visible: true

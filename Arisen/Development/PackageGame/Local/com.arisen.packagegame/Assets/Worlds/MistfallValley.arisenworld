@@ -1,0 +1,228 @@
+Version: 2
+WorldGuid: 38637cf8-f4a1-91f0-90b5-bf63752b4b82
+Name: Mistfall Valley World
+PersistentScene:
+  Guid: e176b519-9d88-527e-a841-c5c5d73b7477
+  PackageId: com.arisen.packagegame
+Partition:
+  Origin: { X: -512.0, Y: -64, Z: -512.0 }
+  CellSize: { X: 256.0, Y: 128, Z: 256.0 }
+  LoadRadius: 1
+  UnloadHysteresis: 1
+  MaxActiveCells: 12
+Policy:
+  UnresolvedReferences: KeepUnresolved
+  UnloadedTargets: ClearAndLateResolve
+  DependencyCycles: Reject
+Layers:
+- Id: surface
+  Priority: 0
+Cells:
+- Coordinate: { X: 0, Y: 0, Z: 0 }
+  Layer: surface
+  Scene:
+    Guid: cd43a769-8278-cda4-cebb-89b6acf73cbf
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: -512.0, Y: -64, Z: -512.0 }
+    Max: { X: -256.0, Y: 64, Z: -256.0 }
+  FocusBounds:
+    Min: { X: -387.0, Y: 11.5888857068, Z: -387.0 }
+    Max: { X: -381.0, Y: 19.5888857068, Z: -381.0 }
+  EstimatedCpuBytes: 1048576
+  EstimatedGpuBytes: 67108864
+- Coordinate: { X: 1, Y: 0, Z: 0 }
+  Layer: surface
+  Scene:
+    Guid: 844d1349-9c6e-bd96-00a3-561ad201acdd
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: -256.0, Y: -64, Z: -512.0 }
+    Max: { X: 0.0, Y: 64, Z: -256.0 }
+  FocusBounds:
+    Min: { X: -131.0, Y: 14.4265427044, Z: -387.0 }
+    Max: { X: -125.0, Y: 22.4265427044, Z: -381.0 }
+  EstimatedCpuBytes: 1048576
+  EstimatedGpuBytes: 67108864
+- Coordinate: { X: 2, Y: 0, Z: 0 }
+  Layer: surface
+  Scene:
+    Guid: 3ada236a-a844-a2de-33f7-4f196c3c3f5a
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: 0.0, Y: -64, Z: -512.0 }
+    Max: { X: 256.0, Y: 64, Z: -256.0 }
+  FocusBounds:
+    Min: { X: 125.0, Y: 17.6312384975, Z: -387.0 }
+    Max: { X: 131.0, Y: 25.6312384975, Z: -381.0 }
+  EstimatedCpuBytes: 1048576
+  EstimatedGpuBytes: 67108864
+- Coordinate: { X: 3, Y: 0, Z: 0 }
+  Layer: surface
+  Scene:
+    Guid: ff696eeb-4c94-259b-038a-642064a30afe
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: 256.0, Y: -64, Z: -512.0 }
+    Max: { X: 512.0, Y: 64, Z: -256.0 }
+  FocusBounds:
+    Min: { X: 381.0, Y: 35.7931446648, Z: -387.0 }
+    Max: { X: 387.0, Y: 43.7931446648, Z: -381.0 }
+  EstimatedCpuBytes: 1048576
+  EstimatedGpuBytes: 67108864
+- Coordinate: { X: 0, Y: 0, Z: 1 }
+  Layer: surface
+  Scene:
+    Guid: 4df3be7b-7f17-b312-2d22-e4357188673e
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: -512.0, Y: -64, Z: -256.0 }
+    Max: { X: -256.0, Y: 64, Z: 0.0 }
+  FocusBounds:
+    Min: { X: -387.0, Y: 12.4710749519, Z: -131.0 }
+    Max: { X: -381.0, Y: 20.4710749519, Z: -125.0 }
+  EstimatedCpuBytes: 1048576
+  EstimatedGpuBytes: 67108864
+- Coordinate: { X: 1, Y: 0, Z: 1 }
+  Layer: surface
+  Scene:
+    Guid: de962c9a-14a2-131d-beae-c21db98f224b
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: -256.0, Y: -64, Z: -256.0 }
+    Max: { X: 0.0, Y: 64, Z: 0.0 }
+  FocusBounds:
+    Min: { X: -131.0, Y: 5.259287719, Z: -131.0 }
+    Max: { X: -125.0, Y: 13.259287719, Z: -125.0 }
+  EstimatedCpuBytes: 1048576
+  EstimatedGpuBytes: 67108864
+- Coordinate: { X: 2, Y: 0, Z: 1 }
+  Layer: surface
+  Scene:
+    Guid: b52b43c8-a65a-2a79-66d4-e8f654c1a8ae
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: 0.0, Y: -64, Z: -256.0 }
+    Max: { X: 256.0, Y: 64, Z: 0.0 }
+  FocusBounds:
+    Min: { X: 125.0, Y: 17.5595020891, Z: -131.0 }
+    Max: { X: 131.0, Y: 25.5595020891, Z: -125.0 }
+  EstimatedCpuBytes: 1048576
+  EstimatedGpuBytes: 67108864
+- Coordinate: { X: 3, Y: 0, Z: 1 }
+  Layer: surface
+  Scene:
+    Guid: 63a4d4dd-f52a-8f32-e69c-effbc205bb08
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: 256.0, Y: -64, Z: -256.0 }
+    Max: { X: 512.0, Y: 64, Z: 0.0 }
+  FocusBounds:
+    Min: { X: 381.0, Y: 36.3237582998, Z: -131.0 }
+    Max: { X: 387.0, Y: 44.3237582998, Z: -125.0 }
+  EstimatedCpuBytes: 1048576
+  EstimatedGpuBytes: 67108864
+- Coordinate: { X: 0, Y: 0, Z: 2 }
+  Layer: surface
+  Scene:
+    Guid: 19cd3584-6e97-41a9-8b9c-992c42754c04
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: -512.0, Y: -64, Z: 0.0 }
+    Max: { X: -256.0, Y: 64, Z: 256.0 }
+  FocusBounds:
+    Min: { X: -387.0, Y: 21.8661695563, Z: 125.0 }
+    Max: { X: -381.0, Y: 29.8661695563, Z: 131.0 }
+  EstimatedCpuBytes: 1048576
+  EstimatedGpuBytes: 67108864
+- Coordinate: { X: 1, Y: 0, Z: 2 }
+  Layer: surface
+  Scene:
+    Guid: d9c96c2b-de20-3c6f-486e-6bfb106d7c98
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: -256.0, Y: -64, Z: 0.0 }
+    Max: { X: 0.0, Y: 64, Z: 256.0 }
+  FocusBounds:
+    Min: { X: -131.0, Y: 22.4787631997, Z: 125.0 }
+    Max: { X: -125.0, Y: 30.4787631997, Z: 131.0 }
+  EstimatedCpuBytes: 1048576
+  EstimatedGpuBytes: 67108864
+- Coordinate: { X: 2, Y: 0, Z: 2 }
+  Layer: surface
+  Scene:
+    Guid: 045da3d4-916f-30e4-b5f4-18a5b197f965
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: 0.0, Y: -64, Z: 0.0 }
+    Max: { X: 256.0, Y: 64, Z: 256.0 }
+  FocusBounds:
+    Min: { X: 125.0, Y: 36.3290376565, Z: 125.0 }
+    Max: { X: 131.0, Y: 44.3290376565, Z: 131.0 }
+  EstimatedCpuBytes: 1048576
+  EstimatedGpuBytes: 67108864
+- Coordinate: { X: 3, Y: 0, Z: 2 }
+  Layer: surface
+  Scene:
+    Guid: fe8bc4ac-c6a5-3ee7-e6d9-9f8bee7f37e0
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: 256.0, Y: -64, Z: 0.0 }
+    Max: { X: 512.0, Y: 64, Z: 256.0 }
+  FocusBounds:
+    Min: { X: 381.0, Y: 38.2984605895, Z: 125.0 }
+    Max: { X: 387.0, Y: 46.2984605895, Z: 131.0 }
+  EstimatedCpuBytes: 1048576
+  EstimatedGpuBytes: 67108864
+- Coordinate: { X: 0, Y: 0, Z: 3 }
+  Layer: surface
+  Scene:
+    Guid: 9b997235-419c-d54a-ba09-b64bcd494b1d
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: -512.0, Y: -64, Z: 256.0 }
+    Max: { X: -256.0, Y: 64, Z: 512.0 }
+  FocusBounds:
+    Min: { X: -387.0, Y: 35.8346692556, Z: 381.0 }
+    Max: { X: -381.0, Y: 43.8346692556, Z: 387.0 }
+  EstimatedCpuBytes: 1048576
+  EstimatedGpuBytes: 67108864
+- Coordinate: { X: 1, Y: 0, Z: 3 }
+  Layer: surface
+  Scene:
+    Guid: 0f93fa91-ae3b-d452-2d01-9e2be25a0a34
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: -256.0, Y: -64, Z: 256.0 }
+    Max: { X: 0.0, Y: 64, Z: 512.0 }
+  FocusBounds:
+    Min: { X: -131.0, Y: 37.7675579566, Z: 381.0 }
+    Max: { X: -125.0, Y: 45.7675579566, Z: 387.0 }
+  EstimatedCpuBytes: 1048576
+  EstimatedGpuBytes: 67108864
+- Coordinate: { X: 2, Y: 0, Z: 3 }
+  Layer: surface
+  Scene:
+    Guid: f929bcf2-b414-fe35-9a28-0c49bdd0fd06
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: 0.0, Y: -64, Z: 256.0 }
+    Max: { X: 256.0, Y: 64, Z: 512.0 }
+  FocusBounds:
+    Min: { X: 125.0, Y: 36.3892088016, Z: 381.0 }
+    Max: { X: 131.0, Y: 44.3892088016, Z: 387.0 }
+  EstimatedCpuBytes: 1048576
+  EstimatedGpuBytes: 67108864
+- Coordinate: { X: 3, Y: 0, Z: 3 }
+  Layer: surface
+  Scene:
+    Guid: b2046b36-851d-e867-aafc-b97f547a618c
+    PackageId: com.arisen.packagegame
+  Bounds:
+    Min: { X: 256.0, Y: -64, Z: 256.0 }
+    Max: { X: 512.0, Y: 64, Z: 512.0 }
+  FocusBounds:
+    Min: { X: 381.0, Y: 36.6117985393, Z: 381.0 }
+    Max: { X: 387.0, Y: 44.6117985393, Z: 387.0 }
+  EstimatedCpuBytes: 2097152
+  EstimatedGpuBytes: 134217728
