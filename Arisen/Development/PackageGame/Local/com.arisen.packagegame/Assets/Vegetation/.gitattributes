@@ -1,0 +1,6 @@
+# The scatter generator writes canonical UTF-8/LF bytes into a Generated directory beside the
+# recipe that produced them, and tests compare the tracked fixtures against regenerated output
+# byte for byte. This rule sits at the vegetation root so it covers every authored world, not only
+# the showcase valley, and these artifacts must never be normalized by an end-of-line conversion.
+*.arivegetationgenerated -text
+*.arivegetationgenerated.meta -text

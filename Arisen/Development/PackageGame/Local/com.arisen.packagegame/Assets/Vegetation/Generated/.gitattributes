@@ -1,5 +1,0 @@
-# The scatter generator writes canonical UTF-8/LF bytes and tests compare the
-# tracked fixture against regenerated output byte for byte, so these artifacts
-# must never be normalized by an end-of-line conversion.
-*.arivegetationgenerated -text
-*.arivegetationgenerated.meta -text
