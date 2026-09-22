@@ -846,6 +846,17 @@ changes.
     the runtime gate still exercises a one-member set. The multi-cell run of the fixture arrives with
     the regional world below, where the tile entities are split across the cell scenes that own them;
     until then the fixture's own multi-cell behaviour is covered by the managed tests.
+- [x] Harden the runtime presentation path the gates run through: a window that stops presenting
+      (minimized or collapsed by the desktop while a run is in progress) no longer drains both
+      queues and retries a doomed swapchain creation on every frame. The Vulkan swapchain keeps its
+      generation out of date and defers recreation until the surface reports a non-zero extent, and
+      `RenderFrameSubmission` reports the stop and the resume once per transition. The gate failure
+      that prompted this was a desktop minimize arriving mid-run: it previously produced 738 failed
+      recreations, a 4.4 MB player log, and a `Scenario exceeded its 1024-frame limit.` report that
+      named neither the window nor the stall. Bounded smoke hosts now also create their window
+      hidden and never composite it, so an unattended gate run cannot be perturbed by a desktop
+      window-manager action at all; only an interactive runtime reveals its window, through the
+      startup presentation gate.
 ## Milestone 8 - Editor Biome And Scatter Authoring
 
 **Goal:** Make vegetation placement usable without hand-editing serialized instance pages.

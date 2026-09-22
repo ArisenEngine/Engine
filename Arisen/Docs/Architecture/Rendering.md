@@ -197,6 +197,27 @@ Current policy:
 - One backend logical device, its queues, and resource pools may be shared by multiple render surfaces. Every surface ID still owns a distinct `RHISurface` and `RHISwapChain`; rendering and resize code must resolve that surface through `RHIInstance`/`RHISystem` by ID and must not infer it from the shared device's bootstrap surface.
 - RHI viewport coordinates use a top-left origin and positive width/height. Vulkan translates that contract to a negative-height `VkViewport`. `EFrontFace` is already expressed in that RHI viewport convention and numerically matches `VkFrontFace`, so static and dynamic Vulkan pipeline state map it directly; applying another winding inversion culls the near-facing shell. Render passes and native RHI tests must keep projection matrices backend-neutral and must not add Vulkan-specific Y flips. Ray-generation and compute shaders bypass raster viewports, so a dispatch that reconstructs projection-space rays from top-left image coordinates must map image Y to NDC Y explicitly (`ndcY = 1 - 2 * pixelY`) while retaining unflipped storage-image coordinates.
 - Standalone runtime builds create and pump the main Win32 window through `IWindowProvider`.
+- A standalone runtime creates that window hidden and reveals it with `IWindowProvider.SetMainWindowVisible(true)`
+  from the frame that first owns the startup world's streamed content. The pipeline's empty-content placeholder is
+  a fallback clear colour (`GenericRenderPipelineSettings.ClearColor`) plus the package-owned `FacetedCrystal`
+  fallback mesh, which `StaticMeshPass` records only while no prepared scene item exists; presenting those frames
+  is what a user would otherwise see as a pink first frame with a lone octahedron. `RuntimeStartupPresentationState`
+  owns the decision, and its order is: a failed cell releases immediately instead of hiding the window behind a
+  broken load; a withdrawn pending world releases; a pending-but-not-active world waits (`WaitForWorldActivation`);
+  an active world whose declared cells are not streamed yet waits (`WaitForStreamedCells`); an active cell whose
+  content has not reached the frame waits (`WaitForWorldContent`); otherwise the frame is shown. The render loop
+  keeps recording, submitting, and retiring frames while the window is hidden - the runtime never skips a frame to
+  hide it, because world activation depends on those frames driving preparation to ready - and the gate arms once per
+  process, so a later world switch can never hold presentation again. Release requires a frame that actually reached
+  the swapchain, so a retired frame cannot reveal the window with withheld placeholder content.
+- A native swapchain generation is replaced only while the surface it targets is presentable. A minimized or
+  collapsed window reports a zero physical extent while the descriptor still carries the requested size, so
+  `RHIVkSwapChain::RecreateSwapChainIfNeeded` leaves the generation out of date and defers recreation until the
+  surface reports a non-zero extent again. Retrying the full creation path per frame would drain both queues and
+  report a creation failure for a state the engine cannot act on; frames that cannot present are skipped instead,
+  and presentation resumes with the next presentable frame. `RenderFrameSubmission` reports the stop and the
+  resume once per transition (`[RenderSubmission] Surface ... stopped presenting` / `resumed presenting`) rather
+  than once per frame, so a window-manager event cannot bury a run in thousands of identical failure lines.
 - Ordinary interactive native-test launches use the test runner's package-only application-host mode. Engine subsystem phases do not start, so each rendering case has exactly one test-owned window and one test-owned RHI instance. Closing that window ends the case and advances the sequential runner. Bounded smoke mode remains a full runtime initialization path.
 - Editor builds use the generated `ARISEN_ENGINE_EDITOR` compile-time macro. The Avalonia/editor host owns native UI windows, so the platform package must not create a separate standalone game window in editor builds.
 - Runtime Vulkan initialization must consume `IWindowProvider.GetWindowInfo()` and validate a real `WindowSurfaceKind.Win32` native handle before registering `IRHIDevice`.

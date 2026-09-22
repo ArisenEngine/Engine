@@ -43,6 +43,13 @@ public interface IWindowProvider
 {
     bool IsCloseRequested { get; }
 
+    /// <summary>
+    /// Shows or hides the provider-owned main window. A standalone runtime creates its main
+    /// window hidden so frames that do not yet own world content are never displayed, and
+    /// reveals it once such a frame has been presented. Providers that do not own a native
+    /// window (editor hosts, headless surfaces) ignore the request.
+    /// </summary>
+    void SetMainWindowVisible(bool visible);
     WindowSurfaceInfo EnsureMainWindow(WindowCreateInfo createInfo);
 
     WindowSurfaceInfo GetWindowInfo();

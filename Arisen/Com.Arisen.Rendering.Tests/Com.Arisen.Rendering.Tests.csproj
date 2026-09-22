@@ -151,6 +151,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderFramePostSubmission.cs" Link="Source\Rendering\RenderFramePostSubmission.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderFrameSubmissionState.cs" Link="Source\Rendering\RenderFrameSubmissionState.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderFrameResourceSlotState.cs" Link="Source\Rendering\RenderFrameResourceSlotState.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RuntimeStartupPresentationState.cs" Link="Source\Rendering\RuntimeStartupPresentationState.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderDiagnostics.cs" Link="Source\Rendering\RenderDiagnostics.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderDocCaptureArtifactProbe.cs" Link="Source\Rendering\RenderDocCaptureArtifactProbe.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\RenderDocCaptureRequestState.cs" Link="Source\Rendering\RenderDocCaptureRequestState.cs" />
