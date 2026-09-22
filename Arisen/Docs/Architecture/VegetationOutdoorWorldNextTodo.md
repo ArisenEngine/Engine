@@ -857,6 +857,15 @@ changes.
       hidden and never composite it, so an unattended gate run cannot be perturbed by a desktop
       window-manager action at all; only an interactive runtime reveals its window, through the
       startup presentation gate.
+- [x] Reclaim frame-scoped memory at the frame boundary. `MeshSystem`'s render items and
+      `RenderSubsystem`'s snapshot copies came from a process-wide `FrameArena` singleton that
+      nothing ever reset, so the arena grew monotonically: the runtime died with `FrameArena
+      capacity exceeded! ...` once a process had allocated its 128 MB, which a presenting runtime
+      reached after roughly 130k frames and a runtime whose window stopped presenting reached in
+      seconds, because frames that cannot present tick without present pacing. `MemoryManager` is
+      now the arena's single owner - created by the core package on load, released on unload, and
+      reset from `EngineKernel.OnFrameEnd` after every subsystem has ticked - and `FrameArenaTests`
+      pins the per-frame ceiling, the reset, and the ownership wiring.
 ## Milestone 8 - Editor Biome And Scatter Authoring
 
 **Goal:** Make vegetation placement usable without hand-editing serialized instance pages.

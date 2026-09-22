@@ -28,7 +28,7 @@ Every single line of code written must adhere strictly to these pillars:
 
 3. **High-Performance**
    - Minimize native/managed interop overhead. When bridging C# and C++, batch data and pass large `Span<T>` or `NativeArray` memory chunks to C++ instead of calling functions per-entity.
-   - Use `FrameArena` for transient, one-frame memory allocations to eliminate GC pressure.
+   - Use `FrameArena` for transient, one-frame memory allocations to eliminate GC pressure. `MemoryManager` owns the runtime arena: the core package creates it on load, the kernel frame boundary reclaims it through `EngineKernel.OnFrameEnd`, and it is a per-frame ceiling rather than an accumulator. Never hold a `Span` from it past the frame that produced it, and never add a second process-wide arena.
 
 4. **Zero-Overhead**
    - **No managed allocations in hot paths**: Never `new` objects in Update/Tick or Render loops.
