@@ -363,7 +363,7 @@ public static class EngineBootstrapper
                 smokeExitCode = kernel.RunSmokeScenario(
                     activeSmokeScenario,
                     smokeOptions.EffectiveFrameCount,
-                    TimeSpan.FromSeconds(45));
+                    smokeOptions.EffectiveDuration);
                 KernelLog.InfoFormat(
                     activeSmokeScenario.Succeeded
                         ? "[Host] Smoke scenario passed: {0}"

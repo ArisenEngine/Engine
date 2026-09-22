@@ -27,6 +27,15 @@ internal readonly record struct RuntimeSmokeOptions(
 
     public uint EffectiveFrameCount => Math.Max(RequestedFrameCount, GetMinimumFrameCount(Mode));
 
+    /// <summary>
+    /// The wall-clock bound of a bounded smoke run. The streaming scenarios cross and soak a regional
+    /// world: one pose settles by loading whole world cells, each of which carries several terrain
+    /// tiles, and the soak repeats that load/unload cycle on the pinned core. The path therefore needs
+    /// more frames and more time than a single-cell world needed. The bound stays explicit and
+    /// bounded, so a scenario that stops making progress still fails loudly instead of running on.
+    /// </summary>
+    public TimeSpan EffectiveDuration => GetMaximumDuration(Mode);
+
     public bool UsesPackageScenario => Mode is
         RuntimeSmokeMode.WorldStreaming or RuntimeSmokeMode.TerrainStreaming;
 
@@ -175,9 +184,16 @@ internal readonly record struct RuntimeSmokeOptions(
         RuntimeSmokeMode.Boot => 1,
         RuntimeSmokeMode.Scene => 2,
         RuntimeSmokeMode.HotReload => 4,
-        RuntimeSmokeMode.WorldStreaming => 1024,
-        RuntimeSmokeMode.TerrainStreaming => 1024,
+        RuntimeSmokeMode.WorldStreaming => 2048,
+        RuntimeSmokeMode.TerrainStreaming => 2048,
         _ => 1
+    };
+
+    private static TimeSpan GetMaximumDuration(RuntimeSmokeMode mode) => mode switch
+    {
+        RuntimeSmokeMode.WorldStreaming or RuntimeSmokeMode.TerrainStreaming =>
+            TimeSpan.FromSeconds(120),
+        _ => TimeSpan.FromSeconds(45)
     };
 
     private static RuntimeSmokeMode ParseMode(string value)

@@ -117,7 +117,8 @@ public sealed class RuntimeSmokeOptionsTests
 
         Assert.Equal(RuntimeSmokeMode.WorldStreaming, options.Mode);
         Assert.Equal("world-streaming", options.ModeName);
-        Assert.Equal(1024u, options.EffectiveFrameCount);
+        Assert.Equal(2048u, options.EffectiveFrameCount);
+        Assert.Equal(TimeSpan.FromSeconds(120), options.EffectiveDuration);
         Assert.True(options.CaptureVisualSummary);
         Assert.Equal(Path.GetFullPath(relativePath), options.SmokeSummaryOutputPath);
     }
@@ -146,7 +147,8 @@ public sealed class RuntimeSmokeOptionsTests
         Assert.Equal(RuntimeSmokeMode.TerrainStreaming, options.Mode);
         Assert.Equal("terrain-streaming", options.ModeName);
         Assert.True(options.UsesPackageScenario);
-        Assert.Equal(1024u, options.EffectiveFrameCount);
+        Assert.Equal(2048u, options.EffectiveFrameCount);
+        Assert.Equal(TimeSpan.FromSeconds(120), options.EffectiveDuration);
         Assert.True(options.CaptureVisualSummary);
         Assert.Equal(
             Path.GetFullPath("terrain-summary.json"),
