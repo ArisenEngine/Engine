@@ -17,14 +17,6 @@ ComponentSchemas:
   Name: DirectionalLight
   Version: 1
   Required: true
-- TypeId: 5
-  Name: PointLight
-  Version: 1
-  Required: true
-- TypeId: 6
-  Name: SpotLight
-  Version: 1
-  Required: true
 - TypeId: 7
   Name: Environment
   Version: 1
@@ -79,56 +71,6 @@ Entities:
       X: 1
       Y: 1
       Z: 1
-- Guid: 20000000-0000-0000-0000-000000000003
-  Name: Lantern Fill Light
-  Transform:
-    Position:
-      X: -114.0
-      Y: 5.94
-      Z: -106.65
-    Rotation:
-      X: 0
-      Y: 0
-      Z: 0
-      W: 1
-    Scale:
-      X: 1
-      Y: 1
-      Z: 1
-  PointLight:
-    Color:
-      X: 1.0
-      Y: 0.72
-      Z: 0.42
-    Intensity: 4.25
-    Range: 5.5
-    Enabled: true
-- Guid: 20000000-0000-0000-0000-000000000004
-  Name: Lantern Downlight
-  Transform:
-    Position:
-      X: -115.0
-      Y: 5.74
-      Z: -106.0
-    Rotation:
-      X: 0.7071068
-      Y: 0
-      Z: 0
-      W: 0.7071068
-    Scale:
-      X: 1
-      Y: 1
-      Z: 1
-  SpotLight:
-    Color:
-      X: 1.0
-      Y: 0.58
-      Z: 0.26
-    Intensity: 4.0
-    Range: 4.2
-    InnerConeAngleDegrees: 24.0
-    OuterConeAngleDegrees: 42.0
-    Enabled: true
 - Guid: 20000000-0000-0000-0000-000000000005
   Name: Mistfall Dusk Environment
   Environment:
@@ -156,80 +98,74 @@ Entities:
     Exposure: 1.0
     Enabled: true
 - Guid: 20000000-0000-0000-0000-000000000006
-  Name: Lantern Pole Body
+  Name: Valley Outcrop Boulder
   Transform:
     Position:
-      X: -116.5412215
-      Y: 5.301924
-      Z: -106.0
+      X: -118.2
+      Y: 5.2807
+      Z: -105.2
     Rotation:
-      X: 0.0
-      Y: 1.0
-      Z: 0.0
-      W: 0.0
+      X: 0
+      Y: 0.32557
+      Z: 0
+      W: 0.94552
     Scale:
-      X: 0.12
-      Y: 0.12
-      Z: 0.12
+      X: 2.6
+      Y: 2.6
+      Z: 2.6
   MeshRenderer:
     Mesh:
-      Guid: 898e8c48-c5f9-b88b-d3a6-49e82e954bd4
+      Guid: 89ae1524-c1c0-47c3-85a5-6a16838035f1
       PackageId: com.arisen.packagegame
     Material:
-      Guid: 55b0353b-2e5d-b80f-545f-5a386d72f006
+      Guid: e87b0335-5689-45a0-9fe1-455a01b59a20
       PackageId: com.arisen.packagegame
-    FirstSubmeshIndex: 0
-    SubmeshCount: 1
     Visible: true
 - Guid: 20000000-0000-0000-0000-000000000007
-  Name: Lantern Chain
+  Name: Valley Outcrop Shoulder
   Transform:
     Position:
-      X: -115.85016
-      Y: 6.264544
-      Z: -106.0
+      X: -115.6
+      Y: 6.0367
+      Z: -104.4
     Rotation:
-      X: 0.0
-      Y: 1.0
-      Z: 0.0
-      W: 0.0
+      X: 0
+      Y: -0.51504
+      Z: 0
+      W: 0.85717
     Scale:
-      X: 0.12
-      Y: 0.12
-      Z: 0.12
+      X: 1.9
+      Y: 1.9
+      Z: 1.9
   MeshRenderer:
     Mesh:
-      Guid: be413b32-5991-8ae5-c2c2-eba34d934325
+      Guid: 89ae1524-c1c0-47c3-85a5-6a16838035f1
       PackageId: com.arisen.packagegame
     Material:
-      Guid: 55b0353b-2e5d-b80f-545f-5a386d72f006
+      Guid: e87b0335-5689-45a0-9fe1-455a01b59a20
       PackageId: com.arisen.packagegame
-    FirstSubmeshIndex: 0
-    SubmeshCount: 1
     Visible: true
 - Guid: 20000000-0000-0000-0000-000000000008
-  Name: Lantern Head
+  Name: Valley Outcrop Cap
   Transform:
     Position:
-      X: -115.850159
-      Y: 5.901098
-      Z: -106.0
+      X: -116.3
+      Y: 4.434
+      Z: -108.0
     Rotation:
-      X: 0.0
-      Y: 1.0
-      Z: 0.0
-      W: 0.0
+      X: 0
+      Y: 0.91005
+      Z: 0
+      W: 0.41452
     Scale:
-      X: 0.12
-      Y: 0.12
-      Z: 0.12
+      X: 1.5
+      Y: 1.5
+      Z: 1.5
   MeshRenderer:
     Mesh:
-      Guid: a8eb7531-7a75-0078-cf43-3fe29fbad766
+      Guid: 89ae1524-c1c0-47c3-85a5-6a16838035f1
       PackageId: com.arisen.packagegame
     Material:
-      Guid: 55b0353b-2e5d-b80f-545f-5a386d72f006
+      Guid: e87b0335-5689-45a0-9fe1-455a01b59a20
       PackageId: com.arisen.packagegame
-    FirstSubmeshIndex: 0
-    SubmeshCount: 1
     Visible: true

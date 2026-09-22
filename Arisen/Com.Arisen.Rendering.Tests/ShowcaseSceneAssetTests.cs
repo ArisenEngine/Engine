@@ -20,6 +20,7 @@ public sealed class ShowcaseSceneAssetTests
     private static readonly Guid s_TeapotMeshGuid = Guid.Parse("7300d793-8cd9-4983-8035-e99aa92e9449");
     private static readonly Guid s_PedestalMeshGuid = Guid.Parse("ed26e5c7-77ae-4cd7-b4ec-cb02ea6bac33");
     private static readonly Guid s_GroundMeshGuid = Guid.Parse("0fed982b-5130-430e-860b-dc9c7284b8c1");
+    private static readonly Guid s_BoulderMeshGuid = Guid.Parse("89ae1524-c1c0-47c3-85a5-6a16838035f1");
     private static readonly Guid s_MarbleTextureGuid = Guid.Parse("678ed7b8-bb78-4b47-b5c0-416879f06917");
     private static readonly Guid s_MarbleMaterialGuid = Guid.Parse("a2122786-c40a-41f2-bf35-1f5cbc4d39c2");
     private static readonly Guid s_CharcoalMaterialGuid = Guid.Parse("a2dd1381-3958-4480-837b-35ffe6dd15c0");
@@ -313,6 +314,7 @@ public sealed class ShowcaseSceneAssetTests
             string environmentPath = Path.Combine(packageRoot, "Assets", "Environments", "MistfallDusk.arienvironment");
             string groundPath = Path.Combine(packageRoot, "Assets", "Meshes", "ShowcaseGround.obj");
             string groundMaterialPath = Path.Combine(packageRoot, "Assets", "Materials", "ShowcaseGround.arismaterial");
+            string boulderPath = Path.Combine(packageRoot, "Assets", "Vegetation", "Meshes", "ValleyBoulder.armesh");
             string shaderPath = Path.Combine(pipelineRoot, "Assets", "Shaders", "StandardLit.shader");
             string defaultNormalPath = Path.Combine(pipelineRoot, "Assets", "Textures", "DefaultNormal.ppm");
 
@@ -323,6 +325,7 @@ public sealed class ShowcaseSceneAssetTests
             db.AddAsset(s_LanternMesh1Guid, "Mesh", mesh1Path, "com.arisen.packagegame");
             db.AddAsset(s_LanternMesh2Guid, "Mesh", mesh2Path, "com.arisen.packagegame");
             db.AddAsset(s_GroundMeshGuid, "Mesh", groundPath, "com.arisen.packagegame");
+            db.AddAsset(s_BoulderMeshGuid, "Mesh", boulderPath, "com.arisen.packagegame");
             db.AddAsset(s_LanternMaterialGuid, "Material", materialPath, "com.arisen.packagegame");
             db.AddAsset(s_GroundMaterialGuid, "Material", groundMaterialPath, "com.arisen.packagegame");
             db.AddAsset(s_LanternBaseColorTextureGuid, "Texture2D", baseColorPath, "com.arisen.packagegame");
@@ -342,20 +345,20 @@ public sealed class ShowcaseSceneAssetTests
                     "com.arisen.packagegame"));
 
             Assert.True(showcaseInspection.Success, showcaseInspection.Diagnostic);
-            var downlight = Assert.Single(
+            Assert.Equal(3, showcaseInspection.MeshRendererCount);
+            Assert.Equal(0, showcaseInspection.PointLightCount);
+            Assert.Equal(0, showcaseInspection.SpotLightCount);
+            Assert.Equal(1, showcaseInspection.EnvironmentCount);
+            var outcrop = Assert.Single(
                 showcaseInspection.Entities,
-                entity => entity.Name == "Lantern Downlight");
-            Assert.NotNull(downlight.SpotLight);
-            Assert.Equal(new Vector3(-115.0f, 5.74f, -106.0f), downlight.Transform.Position);
-            Assert.Equal(new Vector3(1.0f, 0.58f, 0.26f), downlight.SpotLight!.Color);
-            Assert.Equal(4.0f, downlight.SpotLight.Intensity);
-            Assert.Equal(4.2f, downlight.SpotLight.Range);
-            Assert.Equal(24.0f, downlight.SpotLight.InnerConeAngleDegrees);
-            Assert.Equal(42.0f, downlight.SpotLight.OuterConeAngleDegrees);
-            var downlightDirection = Vector3.Transform(Vector3.UnitZ, downlight.Transform.Rotation);
-            Assert.Equal(0.0f, downlightDirection.X, precision: 5);
-            Assert.Equal(-1.0f, downlightDirection.Y, precision: 5);
-            Assert.Equal(0.0f, downlightDirection.Z, precision: 5);
+                entity => entity.Name == "Valley Outcrop Boulder");
+            Assert.NotNull(outcrop.MeshRenderer);
+            Assert.Equal(new Vector3(-118.2f, 5.2807f, -105.2f), outcrop.Transform.Position);
+            Assert.Equal(new Vector3(2.6f, 2.6f, 2.6f), outcrop.Transform.Scale);
+            Assert.Equal(s_BoulderMeshGuid, outcrop.MeshRenderer!.Mesh.Guid);
+            Assert.Equal(s_GroundMaterialGuid, outcrop.MeshRenderer.Material.Guid);
+            Assert.True(outcrop.MeshRenderer.Mesh.IsResolved, outcrop.MeshRenderer.Mesh.Diagnostic);
+            Assert.True(outcrop.MeshRenderer.Material.IsResolved, outcrop.MeshRenderer.Material.Diagnostic);
 
             var generatedInspection = SceneAssetLoader.InspectScene(
                 db,
@@ -383,17 +386,17 @@ public sealed class ShowcaseSceneAssetTests
             var loadResult = SceneAssetLoader.LoadScene(db, sceneRef, entityManager);
 
             Assert.True(loadResult.Success, loadResult.Diagnostic);
-            Assert.Equal(8, loadResult.EntityCount);
+            Assert.Equal(6, loadResult.EntityCount);
             Assert.Equal(1, loadResult.CameraCount);
             Assert.Equal(3, loadResult.MeshRendererCount);
             Assert.Equal(1, loadResult.DirectionalLightCount);
-            Assert.Equal(1, loadResult.PointLightCount);
-            Assert.Equal(1, loadResult.SpotLightCount);
+            Assert.Equal(0, loadResult.PointLightCount);
+            Assert.Equal(0, loadResult.SpotLightCount);
             Assert.Equal(1, loadResult.EnvironmentCount);
 
             var cookedScene = SceneAssetCooker.Cook(db, sceneRef);
-            Assert.Equal(8, cookedScene.EntityCount);
-            Assert.Equal(5, cookedScene.AssetReferenceCount);
+            Assert.Equal(6, cookedScene.EntityCount);
+            Assert.Equal(3, cookedScene.AssetReferenceCount);
             var cookedEntityManager = new EntityManager();
             var cookedLoadResult = SceneAssetCooker.LoadCooked(db, sceneRef, cookedEntityManager);
             Assert.True(cookedLoadResult.Success, cookedLoadResult.Diagnostic);
@@ -402,9 +405,9 @@ public sealed class ShowcaseSceneAssetTests
             Assert.Equal(loadResult.EnvironmentCount, cookedLoadResult.EnvironmentCount);
 
             var meshRenderers = entityManager.GetPool<MeshRendererComponent>().GetRawComponentArray();
-            Assert.Contains(meshRenderers.Take(3), renderer => renderer.MeshGuid == s_LanternMesh0Guid);
-            Assert.Contains(meshRenderers.Take(3), renderer => renderer.MeshGuid == s_LanternMesh1Guid);
-            Assert.Contains(meshRenderers.Take(3), renderer => renderer.MeshGuid == s_LanternMesh2Guid);
+            Assert.All(
+                meshRenderers.Take(3),
+                renderer => Assert.Equal(s_BoulderMeshGuid, renderer.MeshGuid));
 
             var environment = entityManager.GetPool<SceneEnvironmentComponent>().GetRawComponentArray()[0];
             Assert.Equal(s_MistfallDuskEnvironmentGuid, environment.EnvironmentTextureGuid);
@@ -931,13 +934,13 @@ public sealed class ShowcaseSceneAssetTests
             Assert.Equal(s_LanternGeneratedSceneGuid, lanternCell.Scene.Guid);
             Assert.Equal(
                 new WorldBounds(
-                    new WorldPosition(-385.5, -0.25, -129.5),
-                    new WorldPosition(-382.5, 1.75, -126.5)),
+                    new WorldPosition(-262.5, 50.0, -137.5),
+                    new WorldPosition(-257.0, 53.5, -124.5)),
                 westCell.FocusBounds);
             Assert.Equal(
                 new WorldBounds(
-                    new WorldPosition(-118.5, 2.79, -107.5),
-                    new WorldPosition(-115.5, 4.79, -104.5)),
+                    new WorldPosition(-120.0, 3.2, -109.0),
+                    new WorldPosition(-114.0, 7.5, -103.0)),
                 centerCell.FocusBounds);
             Assert.Null(lanternCell.FocusBounds);
 
@@ -979,6 +982,7 @@ public sealed class ShowcaseSceneAssetTests
         db.AddAsset(s_TeapotMeshGuid, "Mesh", Path.Combine(packageRoot, "Assets", "Meshes", "UtahTeapot.obj"), "com.arisen.packagegame");
         db.AddAsset(s_PedestalMeshGuid, "Mesh", Path.Combine(packageRoot, "Assets", "Meshes", "ShowcasePedestal.obj"), "com.arisen.packagegame");
         db.AddAsset(s_GroundMeshGuid, "Mesh", Path.Combine(packageRoot, "Assets", "Meshes", "ShowcaseGround.obj"), "com.arisen.packagegame");
+        db.AddAsset(s_BoulderMeshGuid, "Mesh", Path.Combine(packageRoot, "Assets", "Vegetation", "Meshes", "ValleyBoulder.armesh"), "com.arisen.packagegame");
         db.AddAsset(s_MarbleMaterialGuid, "Material", Path.Combine(packageRoot, "Assets", "Materials", "ShowcaseMarble.arismaterial"), "com.arisen.packagegame");
         db.AddAsset(s_CharcoalMaterialGuid, "Material", Path.Combine(packageRoot, "Assets", "Materials", "ShowcaseCharcoal.arismaterial"), "com.arisen.packagegame");
         db.AddAsset(s_GroundMaterialGuid, "Material", Path.Combine(packageRoot, "Assets", "Materials", "ShowcaseGround.arismaterial"), "com.arisen.packagegame");

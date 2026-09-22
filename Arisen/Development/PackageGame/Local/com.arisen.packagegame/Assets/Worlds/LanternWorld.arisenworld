@@ -27,8 +27,8 @@ Cells:
     Min: { X: -512, Y: -64, Z: -256 }
     Max: { X: -256, Y: 64, Z: 0 }
   FocusBounds:
-    Min: { X: -385.5, Y: -0.25, Z: -129.5 }
-    Max: { X: -382.5, Y: 1.75, Z: -126.5 }
+    Min: { X: -262.5, Y: 50.0, Z: -137.5 }
+    Max: { X: -257.0, Y: 53.5, Z: -124.5 }
   EstimatedCpuBytes: 1048576
   EstimatedGpuBytes: 67108864
 - Coordinate: { X: 0, Y: 0, Z: 0 }
@@ -40,8 +40,8 @@ Cells:
     Min: { X: -256, Y: -64, Z: -256 }
     Max: { X: 0, Y: 64, Z: 0 }
   FocusBounds:
-    Min: { X: -118.5, Y: 2.79, Z: -107.5 }
-    Max: { X: -115.5, Y: 4.79, Z: -104.5 }
+    Min: { X: -120.0, Y: 3.2, Z: -109.0 }
+    Max: { X: -114.0, Y: 7.5, Z: -103.0 }
   EstimatedCpuBytes: 1048576
   EstimatedGpuBytes: 268435456
 - Coordinate: { X: 1, Y: 0, Z: 0 }
