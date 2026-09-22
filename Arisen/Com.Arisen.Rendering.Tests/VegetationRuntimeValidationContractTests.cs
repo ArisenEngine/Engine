@@ -32,16 +32,11 @@ public sealed class VegetationRuntimeValidationContractTests
             Assert.Contains(identity, validation, StringComparison.Ordinal);
         }
 
+        // Species, meshes, and materials are authored content, so the relocation gate pins them;
+        // cluster and page identities are baked per cell, so the gate pins the regional scale and
+        // derives the identities from the deployed catalog instead of a per-cell table.
         foreach (VegetationCanonicalSpecies species in VegetationCanonicalFixture.Species)
         {
-            Assert.Contains(
-                species.ClusterGuid.ToString("D"),
-                validation,
-                StringComparison.OrdinalIgnoreCase);
-            Assert.Contains(
-                species.PageGuid.ToString("D"),
-                validation,
-                StringComparison.OrdinalIgnoreCase);
             Assert.Contains(
                 species.SpeciesGuid.ToString("D"),
                 validation,
@@ -56,29 +51,58 @@ public sealed class VegetationRuntimeValidationContractTests
                 StringComparison.OrdinalIgnoreCase);
         }
 
-        Assert.Equal(
-            4,
-            CountOccurrences(validation, "Assert-ExactRequiredCatalogDependencies `"));
         Assert.Contains(
-            "foreach ($name in $vegetationExpectations.Keys) {",
+            $"$expectedVegetationClusterCount = {MistfallValleyRegionFixture.ClusterCount}",
             validation,
             StringComparison.Ordinal);
+        Assert.Contains(
+            $"$expectedVegetationInstancePageCount = {MistfallValleyRegionFixture.InstancePageCount}",
+            validation,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "$expectedVegetationRuntimeArtifactCount = " +
+            MistfallValleyRegionFixture.VegetationRuntimeArtifactCount,
+            validation,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "$expectedVegetationDeploymentFileCount = " +
+            MistfallValleyRegionFixture.VegetationDeploymentFileCount,
+            validation,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            $"$terrainTileCount = {MistfallValleyRegionFixture.TileCount}",
+            validation,
+            StringComparison.Ordinal);
+
+        // Derived closure: the shared biome closes over the shipped species, every species over
+        // its mesh and material, every cluster over the biome, one species, and its pages, every
+        // page over exactly its own species, no page in two clusters, and every cluster and page
+        // required by exactly one deployed cell scene.
+        Assert.Equal(
+            3,
+            CountOccurrences(validation, "Assert-ExactRequiredCatalogDependencies `"));
         Assert.Contains(
             "foreach ($species in $vegetationSpecies) {",
             validation,
             StringComparison.Ordinal);
+        Assert.Contains("$vegetationPageOwners = @{}", validation, StringComparison.Ordinal);
         Assert.Contains(
-            "$expectedVegetationRuntimeArtifactCount = 27",
+            "$vegetationPageOwners.Count -ne $vegetationInstancePages.Count",
             validation,
             StringComparison.Ordinal);
         Assert.Contains(
-            "$expectedVegetationDeploymentFileCount = 31",
+            "$catalogDependents[$dependencyKey] += $catalogOwner",
+            validation,
+            StringComparison.Ordinal);
+        Assert.Contains("must be required by exactly one ", validation, StringComparison.Ordinal);
+        Assert.Contains(
+            "$deployedVegetationClusterGuids = @(",
             validation,
             StringComparison.Ordinal);
         Assert.Contains("$worldReachable.Contains($artifactKey)", validation, StringComparison.Ordinal);
         Assert.Contains("$pipelineReachable.Contains($shaderKey)", validation, StringComparison.Ordinal);
         Assert.Contains(
-            "exactly twenty-seven canonical cooked vegetation artifacts",
+            $"exactly {MistfallValleyRegionFixture.VegetationRuntimeArtifactCount} regional cooked vegetation artifacts",
             validation,
             StringComparison.Ordinal);
         Assert.Contains(
@@ -86,9 +110,10 @@ public sealed class VegetationRuntimeValidationContractTests
             validation,
             StringComparison.Ordinal);
         Assert.Contains(
-            "exactly the 31 catalog-referenced vegetation files",
+            $"exactly the {MistfallValleyRegionFixture.VegetationDeploymentFileCount} catalog-referenced vegetation files",
             validation,
             StringComparison.Ordinal);
+        Assert.DoesNotContain("vegetationExpectations", validation, StringComparison.Ordinal);
         Assert.Contains(
             "Relocated Content contains unreferenced vegetation file",
             validation,
@@ -193,57 +218,85 @@ public sealed class VegetationRuntimeValidationContractTests
             "Arisen/Scripts/Windows/validate_runtime.bat");
         string relocatedValidation = ReadRepoFile(
             "Arisen/Scripts/Windows/validate_relocated_production.ps1");
+        string submissionValidation = ReadRepoFile(
+            "Arisen/Scripts/Windows/validate_vegetation_submission_log.ps1");
 
-        foreach (string validation in new[] { runtimeValidation, relocatedValidation })
+        // One shared validator owns the submission-record contract for the runtime gate, the
+        // relocated Production gate, and the editor viewport gate, so a record that does not
+        // satisfy every half of it fails the gate instead of only being counted.
+        Assert.Contains(
+            "[Vegetation.GenericRP.Validation]",
+            submissionValidation,
+            StringComparison.Ordinal);
+        foreach (VegetationCanonicalSpecies species in VegetationCanonicalFixture.Species)
         {
-            Assert.Contains("[Vegetation.GenericRP.Validation]", validation, StringComparison.Ordinal);
             Assert.Contains(
-                "PreparedClusters=4 Cluster=324397e1-7ddb-a3fd-8d4e-1c077443f814",
-                validation,
-                StringComparison.Ordinal);
-            Assert.Contains(
-                "Species=3eb515ce-3dea-4994-81a1-a14fc2fe0eb5",
-                validation,
-                StringComparison.Ordinal);
-            foreach (VegetationCanonicalSpecies species in VegetationCanonicalFixture.Species)
-            {
-                Assert.Contains(
-                    $"{species.ClusterGuid:N}:{species.SpeciesGuid:N}:{species.InstanceCount}",
-                    validation,
-                    StringComparison.OrdinalIgnoreCase);
-            }
-
-            int totalInstances = VegetationCanonicalFixture.TotalInstanceCount;
-            Assert.Contains(
-                $"ClustersOverflow=0 OpaqueBatches=4 OpaqueInstances={totalInstances}",
-                validation,
-                StringComparison.Ordinal);
-            Assert.Contains(
-                $"RecordedShadowBatches=16 RecordedShadowInstances={totalInstances * 4} Cascades=4",
-                validation,
-                StringComparison.Ordinal);
-            Assert.Contains(
-                $"ShadowBatches=4,4,4,4 " +
-                $"ShadowInstances={string.Join(',', Enumerable.Repeat(totalInstances, 4))}",
-                validation,
-                StringComparison.Ordinal);
-            Assert.Contains("Dropped=0 Ticket=[1-9][0-9]*", validation, StringComparison.Ordinal);
-            Assert.DoesNotContain(
-                "[Vegetation.GenericRP] Submitted vegetation draw commands",
-                validation,
-                StringComparison.Ordinal);
+                species.SpeciesGuid.ToString("N"),
+                submissionValidation,
+                StringComparison.OrdinalIgnoreCase);
         }
 
+        foreach (string contract in new[]
+        {
+            "Extracted=(?<extracted>[0-9]+)",
+            "CullingInputs=(?<cullingInputs>[0-9]+)",
+            "PreparedClusters=(?<preparedClusters>[0-9]+)",
+            "ClustersOverflow=(?<clustersOverflow>[0-9]+)",
+            "$cullingInputs -le $extracted",
+            "$preparedClusters -le $cullingInputs",
+            "$dropped -eq 0",
+            "$cascades -eq $ExpectedCascadeCount",
+            "$opaqueBatches -ge 1 -and $opaqueInstances -ge 1",
+            "$record.Groups[\"recordedShadowBatches\"].Value -eq ($opaqueBatches * $cascades)",
+            "$record.Groups[\"recordedShadowInstances\"].Value -eq",
+            "$entries.Count -eq $preparedClusters",
+            "$reportedInstances -eq $opaqueInstances",
+            "$record.Groups[\"firstCluster\"]",
+            "$allowedClusterGuidSet.Contains($entryClusterGuid)",
+            "$surfaces.Count -ge $RequiredDistinctSurfaceCount",
+            "Dropped=(?<dropped>[0-9]+) Ticket=(?<ticket>[1-9][0-9]*)"
+        })
+        {
+            Assert.Contains(contract, submissionValidation, StringComparison.Ordinal);
+        }
+
+        Assert.DoesNotContain(
+            "[Vegetation.GenericRP] Submitted vegetation draw commands",
+            submissionValidation,
+            StringComparison.Ordinal);
+
+        // Both gates delegate to that validator instead of carrying a private copy of one cell's
+        // showcase counts, which the regional startup world can no longer satisfy.
+        Assert.Contains("call :validate_veg_submission_log \"1\"", runtimeValidation, StringComparison.Ordinal);
+        Assert.Contains("call :validate_veg_submission_log \"2\"", runtimeValidation, StringComparison.Ordinal);
         Assert.Contains(
-            "call :validate_veg_submission_log \"2\"",
+            "-File \"%SCRIPT_ROOT%validate_vegetation_submission_log.ps1\"",
             runtimeValidation,
             StringComparison.Ordinal);
         Assert.Contains(
-            "$surfaces.Count -lt $requiredSurfaceCount",
+            "-RequiredDistinctSurfaceCount %CURRENT_VEGETATION_REQUIRED_SURFACE_COUNT%",
             runtimeValidation,
             StringComparison.Ordinal);
         Assert.Contains(
-            "$surfaces.Count -lt $RequiredDistinctSurfaceCount",
+            "-ResolvedManifestPath \"%BIN_DIR%\\manifest.resolved.json\"",
+            runtimeValidation,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "-RequiredPackageId \"com.arisen.vegetation.generic-renderpipeline\"",
+            runtimeValidation,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "PreparedClusters=4 Cluster=324397e1",
+            runtimeValidation,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("OpaqueInstances=49835", runtimeValidation, StringComparison.Ordinal);
+
+        Assert.Contains(
+            "& (Join-Path $PSScriptRoot \"validate_vegetation_submission_log.ps1\")",
+            relocatedValidation,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "-AllowedClusterGuids @($deployedVegetationClusterGuids)",
             relocatedValidation,
             StringComparison.Ordinal);
     }
@@ -256,7 +309,13 @@ public sealed class VegetationRuntimeValidationContractTests
 
         foreach (string contract in new[]
         {
-            "5d13eda6-606a-57a0-bae4-cd559ddad464",
+            "$activeCellIds = @($checkpoint.activeCellIds | ForEach-Object { [string]$_ })",
+            "$activeCellIds.Count -ge 1 -and",
+            "$_ -notmatch \"^[0-9A-Fa-f]{8}-([0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}$\"",
+            "$minimumWorldDepthShare = 0.25",
+            "does not commit a settled set of active world cells",
+            "does not render the streamed world",
+            "$checkpoint.expectedComponents.meshRendererCount -ge 1",
             "[string]$_.name -ceq \"during\"",
             "[string]$_.capture.name -ceq \"during\"",
             "$candidate.StateSignature -ceq $disabled.StateSignature",
@@ -284,6 +343,12 @@ public sealed class VegetationRuntimeValidationContractTests
             "frameIndex -eq $disabled",
             validation,
             StringComparison.Ordinal);
+        // The compared 'during' cell follows the authored pose, so the validator must not pin a
+        // cell identity of the single-cell showcase world any more.
+        Assert.DoesNotContain(
+            "5d13eda6-606a-57a0-bae4-cd559ddad464",
+            validation,
+            StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

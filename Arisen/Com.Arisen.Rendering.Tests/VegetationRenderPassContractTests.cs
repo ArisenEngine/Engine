@@ -261,7 +261,11 @@ public sealed class VegetationRenderPassContractTests
             source,
             StringComparison.Ordinal);
         Assert.Contains(
-            "\"Species={6:D} Clusters={7} ClustersOverflow={8} OpaqueBatches={9} \" +",
+            "\"DeviceGeneration={2} Revision={3} Extracted={4} CullingInputs={5} \" +",
+            source,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "\"PreparedClusters={6} Cluster={7:D} Species={8:D} Clusters={9} \" +",
             source,
             StringComparison.Ordinal);
         Assert.Contains(

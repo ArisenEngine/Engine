@@ -1193,7 +1193,10 @@ public sealed class RuntimeAssetResidencyTests : IDisposable
         Assert.Empty(residency.GetResources());
         Assert.Single(m_Database.GetLoadedCookedAssetDiagnostics());
 
-        InvalidDataException blocked = Assert.Throws<InvalidDataException>(() =>
+        // The blocked reuse is a cleanup-pending state the frame boundary drives to completion, not a
+        // permanent acquisition failure, so it is reported as its own type the caller can defer.
+        RuntimeAssetResidencyCleanupPendingException blocked =
+            Assert.Throws<RuntimeAssetResidencyCleanupPendingException>(() =>
             residency.AcquireSceneDependencies(
                 CellOwner(5, generation: 1),
                 [Dependency(meshGuid, "Mesh", required: true)],
@@ -1249,7 +1252,8 @@ public sealed class RuntimeAssetResidencyTests : IDisposable
         Assert.Empty(residency.GetResources());
         Assert.Single(m_Database.GetLoadedCookedAssetDiagnostics());
 
-        InvalidDataException blocked = Assert.Throws<InvalidDataException>(() =>
+        RuntimeAssetResidencyCleanupPendingException blocked =
+            Assert.Throws<RuntimeAssetResidencyCleanupPendingException>(() =>
             residency.AcquireSceneDependencies(
                 CellOwner(2, generation: 1),
                 [Dependency(meshGuid, "Mesh", required: true)],

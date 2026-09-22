@@ -1479,7 +1479,12 @@ public sealed class RuntimeWorldStreamingTests
     public void BoundedSmokeScenario_DefersStartupUntilPersistentWorldActivates()
     {
         var provider = new GatePreparedProvider();
+        // The scenario observes its injected admission failure from a pose that selects the
+        // oversized cell, so the fixture world has to place that cell inside some cell's load
+        // radius. Deferred persistent activation is what this case exercises; the radius only has
+        // to make the cell selection satisfiable.
         using var context = new StreamingContext(
+            loadRadius: 1,
             includeSharedRenderAssets: true,
             preparedProvider: provider,
             activateInitialWorld: false);

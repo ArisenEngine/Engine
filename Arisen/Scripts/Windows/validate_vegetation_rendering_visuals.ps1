@@ -14,7 +14,6 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$canonicalCellId = "5d13eda6-606a-57a0-bae4-cd559ddad464"
 $minimumOpaqueAverageLuminanceDelta = 0.0005
 $minimumOpaqueSpatialLuminanceDelta = 0.005
 $minimumOpaqueAverageDepthDelta = 0.00002
@@ -105,12 +104,23 @@ function Read-DuringCapture {
     Assert-Condition ($checkpointMatches.Count -eq 1) `
         "Vegetation $Mode summary must contain exactly one 'during' checkpoint."
     $checkpoint = $checkpointMatches[0]
+    # The startup world is the regional MistfallValley world, so which cells a pose commits follow
+    # the streaming policy instead of a shipped constant: the contract is that the checkpoint is a
+    # settled set the scenario itself accepted (its 'passed' flag covers the active-cell set, the
+    # entity counts, and resource readiness), that it carries at least one active cell identity,
+    # that every render mode agrees on it (the compared state signature carries the identities),
+    # and that the compared frame really holds the vegetation the color and depth comparison is
+    # about.
     $activeCellIds = @($checkpoint.activeCellIds | ForEach-Object { [string]$_ })
     Assert-Condition (
         $checkpoint.passed -eq $true -and
-        $activeCellIds.Count -eq 1 -and
-        $activeCellIds[0] -ieq $canonicalCellId) `
-        "Vegetation $Mode 'during' checkpoint does not own the exact canonical center cell."
+        $activeCellIds.Count -ge 1 -and
+        @($activeCellIds | Where-Object {
+            $_ -notmatch "^[0-9A-Fa-f]{8}-([0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}$"
+        }).Count -eq 0) `
+        "Vegetation $Mode 'during' checkpoint does not commit a settled set of active world cells."
+    Assert-Condition ([int]$checkpoint.expectedComponents.meshRendererCount -ge 1) `
+        "Vegetation $Mode 'during' checkpoint owns no mesh renderer, so no vegetation cluster can be resident."
     Assert-Condition (
         [int]$checkpoint.expectedEntityCount -eq [int]$checkpoint.actualEntityCount -and
         ($checkpoint.expectedComponents | ConvertTo-Json -Compress) -ceq
@@ -151,6 +161,18 @@ function Read-DuringCapture {
         (Test-Finite ([double]$visual.averageLuminance)) -and
         (Test-Finite ([double]$visual.depth.averageDepth))) `
         "Vegetation $Mode visual has non-finite aggregate metrics."
+
+    # The compared frame renders the world the scenario streamed to the authored viewer pose, so the
+    # streamed world has to dominate it: at that pose the regional terrain and its vegetation write
+    # depth across about three quarters of the frame, while the unstreamed startup frame - the
+    # persistent scene alone - stays under two percent. A quarter keeps the comparison below reading
+    # vegetation instead of sky, and it fails the run if a streaming regression empties the pose
+    # again, which is what a capture taken off the streaming source's own pose looks like.
+    $minimumWorldDepthShare = 0.25
+    Assert-Condition (
+        [long]$visual.depth.writtenDepthPixelCount -ge
+        [long]([double]$visual.depth.pixelCount * $minimumWorldDepthShare)) `
+        "Vegetation $Mode 'during' frame does not render the streamed world."
 
     $stateSignature = [ordered]@{
         activeCellIds = $activeCellIds
