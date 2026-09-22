@@ -891,6 +891,30 @@ changes.
       parked CPU budget, the zero-frame parked interval, and clean shutdown, and runs from
       `validate_runtime.bat` for the Development profile; `--skip-host-pacing` opts out where the
       desktop cannot be left undisturbed. Documented in `Rendering.md` and `ArisenHost.md`.
+- [ ] Generalize the terrain checkpoint coverage contract for a multi-view root.
+  - [ ] Reconcile "every canonical tile selects a patch" with a root that is wider than one
+        frustum, using per-pose expected tile subsets and an aggregate coverage requirement.
+- [ ] Author the regional world and its scenes.
+  - [ ] Extend the canonical terrain raster outward from the committed 513x513 window with the
+        shipped `generate_showcase_valley.ps1` extension path, so the committed window stays
+        byte-identical and the vegetation closure is preserved.
+  - [ ] Split the tile entities across the cell scenes that own them.
+  - [ ] Add the new world plus its persistent and per-cell scenes as new scene files instead of
+        reusing the showcase world.
+- [ ] Switch the startup world/scene to the regional world and keep every gate green at regional
+      scale (world streaming, terrain streaming, vegetation visuals, cascaded shadows, outdoor
+      atmosphere, relocated Production closure, and the Editor viewport smoke).
+
+### Acceptance Criteria
+
+- The startup world streams a terrain root whose tiles are attributed to more than one world cell,
+  and every canonical tile is resident only while its owner cell is.
+- Flying through the region loads and unloads terrain blocks with the camera, with no stale or
+  duplicated block and no gate weakened to accommodate the larger world.
+- The committed 513x513 terrain window, its tile identities, and the canonical vegetation closure
+  are unchanged, so the single-block showcase world keeps validating byte-identically.
+- Production still loads only versioned cooked artifacts from the relocatable catalog.
+
 ## Milestone 8 - Editor Biome And Scatter Authoring
 
 **Goal:** Make vegetation placement usable without hand-editing serialized instance pages.
