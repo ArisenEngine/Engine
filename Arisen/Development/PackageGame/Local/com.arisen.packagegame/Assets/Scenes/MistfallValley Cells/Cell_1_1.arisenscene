@@ -1,0 +1,76 @@
+Version: 2
+Name: Mistfall Valley World Cell 1,1
+ComponentSchemas:
+- TypeId: 1
+  Name: Transform
+  Version: 1
+  Required: true
+- TypeId: 1413829202
+  Name: TerrainTile
+  Version: 1
+  Required: true
+Entities:
+- Guid: 79c4b309-3675-57b1-9b4f-17e8ba3b1774
+  Name: Mistfall Valley Terrain Tile 2,2
+  Transform:
+    Position: { X: 0.0, Y: 64.0, Z: 0.0 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 40ad1b8e-7be7-7f2c-2454-fb97874ab169, PackageId: com.arisen.packagegame }
+    TileGuid: 886247ae-594c-7997-ae93-a8e3a2fce17b
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 2, Z: 2 }
+    WorldPlacement: { X: -256.0, Y: 0.0, Z: -256.0 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
+- Guid: 5e7e5e7d-2b6b-5ab6-9128-f0d91017b195
+  Name: Mistfall Valley Terrain Tile 3,2
+  Transform:
+    Position: { X: 128.0, Y: 64.0, Z: 0.0 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 40ad1b8e-7be7-7f2c-2454-fb97874ab169, PackageId: com.arisen.packagegame }
+    TileGuid: 550896ac-4201-305d-0e6d-8a853758956e
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 3, Z: 2 }
+    WorldPlacement: { X: -128.0, Y: 0.0, Z: -256.0 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
+- Guid: 22ef05f9-8485-57ac-8f56-1dbacd3051e3
+  Name: Mistfall Valley Terrain Tile 2,3
+  Transform:
+    Position: { X: 0.0, Y: 64.0, Z: 128.0 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 40ad1b8e-7be7-7f2c-2454-fb97874ab169, PackageId: com.arisen.packagegame }
+    TileGuid: 83df55af-0a44-7812-84a4-ee6135bdae9c
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 2, Z: 3 }
+    WorldPlacement: { X: -256.0, Y: 0.0, Z: -128.0 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
+- Guid: b2ca558b-2214-569f-a8a7-69922a31141d
+  Name: Mistfall Valley Terrain Tile 3,3
+  Transform:
+    Position: { X: 128.0, Y: 64.0, Z: 128.0 }
+    Rotation: { X: 0.0, Y: 0.0, Z: 0.0, W: 1.0 }
+    Scale: { X: 1.0, Y: 1.0, Z: 1.0 }
+  TerrainTile:
+    TerrainRoot: { Guid: 40ad1b8e-7be7-7f2c-2454-fb97874ab169, PackageId: com.arisen.packagegame }
+    TileGuid: f2d11615-2b66-618c-8417-8f38cdc317f2
+    LayerSet: { Guid: 5dcaa6bd-2b51-498d-9fa9-bd68f4642761, PackageId: com.arisen.packagegame }
+    Coordinate: { X: 3, Z: 3 }
+    WorldPlacement: { X: -128.0, Y: 0.0, Z: -128.0 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    PreferHighQuality: false
