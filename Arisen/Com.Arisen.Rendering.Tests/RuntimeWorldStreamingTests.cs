@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using ArisenEngine.Core.Assets;
 using ArisenEngine.Core.ECS;
 using ArisenEngine.Resources.Serialization;
@@ -1397,6 +1398,83 @@ public sealed class RuntimeWorldStreamingTests
         Assert.Contains("\"completedSoakCycles\": 4", json, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// A streaming open world authors a dense planar cell grid rather than a single lane: cells
+    /// have neighbours on both axes, and one source position keeps several of them active at once.
+    /// The scenario therefore has to derive the active set it expects from the world descriptor and
+    /// the configured budgets, and it has to find its cancellation pose beside the retained cell
+    /// instead of only along X.
+    /// </summary>
+    [Fact]
+    public void BoundedSmokeScenario_CompletesOnADensePlanarCellGrid()
+    {
+        using var context = new StreamingContext(loadRadius: 1, planarCells: true);
+        string output = Path.Combine(context.Root, "world-streaming-smoke.json");
+        var scenarioContext = new ArisenKernel.Lifecycle.RuntimeSmokeScenarioContext(
+            "world-streaming",
+            context.Root,
+            "Development",
+            output,
+            VisualSummaryService: null);
+        var scenario = new WorldStreamingSmokeScenario(
+            scenarioContext,
+            context.Streaming,
+            context.SceneService,
+            context.Residency,
+            context.Origin,
+            context.Database,
+            context.TaskGraph);
+
+        scenario.Start(0);
+        var deadline = Stopwatch.StartNew();
+        for (uint frame = 0;
+             deadline.Elapsed < TimeSpan.FromSeconds(15) && !scenario.IsReadyForShutdown;
+             frame++)
+        {
+            scenario.BeforeFrame(frame);
+            context.Streaming.ProcessAtFrameBoundary();
+            scenario.AfterFrame(frame);
+            Thread.Yield();
+        }
+
+        Assert.True(scenario.IsReadyForShutdown, scenario.FailureMessage);
+        context.Streaming.Shutdown(unloadActiveCells: true);
+        context.SceneService.ClearForShutdown();
+        context.Database.ReleaseAllLoadedCookedAssets();
+        scenario.AfterShutdown();
+
+        Assert.True(scenario.IsComplete);
+        Assert.True(scenario.Succeeded, scenario.FailureMessage);
+        Assert.True(File.Exists(output));
+
+        // A fixture that still expected one active cell would have failed before reaching this
+        // point, so the remaining assertion guards the other direction: the dense grid must really
+        // have kept a multi-cell active set, and every canonical cell must have been reached.
+        var observed = new HashSet<Guid>();
+        int maximumActiveCells = 0;
+        using (JsonDocument document = JsonDocument.Parse(File.ReadAllText(output)))
+        {
+            foreach (JsonElement checkpoint in document.RootElement
+                .GetProperty("checkpoints")
+                .EnumerateArray())
+            {
+                JsonElement activeCells = checkpoint.GetProperty("activeCellIds");
+                maximumActiveCells = Math.Max(maximumActiveCells, activeCells.GetArrayLength());
+                foreach (JsonElement cell in activeCells.EnumerateArray())
+                {
+                    observed.Add(Guid.Parse(cell.GetString()!));
+                }
+            }
+        }
+
+        Assert.True(
+            maximumActiveCells > 1,
+            "The dense planar grid never kept more than one cell active.");
+        // Three of the four cells are admissible; the oversized one fails admission, which is the
+        // state the scenario requires and therefore must never appear as an active cell.
+        Assert.Equal(3, observed.Count);
+    }
+
     [Fact]
     public void BoundedSmokeScenario_DefersStartupUntilPersistentWorldActivates()
     {
@@ -1780,6 +1858,26 @@ public sealed class RuntimeWorldStreamingTests
             Guid.Parse("83000000-0000-0000-0000-000000000003"),
             Guid.Parse("83000000-0000-0000-0000-000000000004")
         ];
+        private static readonly Guid[] s_PlanarCellSceneGuids =
+        [
+            Guid.Parse("83000000-0000-0000-0000-000000000012"),
+            Guid.Parse("83000000-0000-0000-0000-000000000013"),
+            Guid.Parse("83000000-0000-0000-0000-000000000014"),
+            Guid.Parse("83000000-0000-0000-0000-000000000015")
+        ];
+        private static readonly WorldCellCoordinate[] s_PlanarCellCoordinates =
+        [
+            new WorldCellCoordinate(0, 0, 0),
+            new WorldCellCoordinate(1, 0, 0),
+            new WorldCellCoordinate(0, 0, 1),
+            new WorldCellCoordinate(1, 0, 1)
+        ];
+        private static readonly WorldCellCoordinate[] s_LineCellCoordinates =
+        [
+            new WorldCellCoordinate(0, 0, 0),
+            new WorldCellCoordinate(1, 0, 0),
+            new WorldCellCoordinate(2, 0, 0)
+        ];
         private static readonly Guid s_SharedMeshGuid =
             Guid.Parse("83000000-0000-0000-0000-000000000101");
         private static readonly Guid s_SharedMaterialGuid =
@@ -1788,6 +1886,7 @@ public sealed class RuntimeWorldStreamingTests
             Guid.Parse("83000000-0000-0000-0000-000000000103");
         private readonly bool m_IncludeSharedRenderAssets;
         private readonly ISceneComponentExtensionCodec? m_PersistentExtensionCodec;
+        private readonly Guid[] m_CellSceneGuids;
 
         public StreamingContext(
             Func<IAssetDatabase, IWorldCellPayloadLoader>? loaderFactory = null,
@@ -1798,10 +1897,12 @@ public sealed class RuntimeWorldStreamingTests
             IRuntimePreparedAssetProvider? preparedProvider = null,
             RuntimeAssetResidencyBudgets? residencyBudgets = null,
             bool activateInitialWorld = true,
+            bool planarCells = false,
             ISceneComponentExtensionCodec? persistentExtensionCodec = null)
         {
             m_IncludeSharedRenderAssets = includeSharedRenderAssets;
             m_PersistentExtensionCodec = persistentExtensionCodec;
+            m_CellSceneGuids = planarCells ? s_PlanarCellSceneGuids : s_CellSceneGuids;
             Root = Path.Combine(Path.GetTempPath(), "ArisenWorldStreamingTests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(Root);
             Database = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(Root, "Cooked"));
@@ -1816,13 +1917,17 @@ public sealed class RuntimeWorldStreamingTests
                     byteCount: 16);
             }
             AddScene(s_PersistentSceneGuid, "Persistent", 0);
-            for (int index = 0; index < s_CellSceneGuids.Length; index++)
+            for (int index = 0; index < m_CellSceneGuids.Length; index++)
             {
-                AddScene(s_CellSceneGuids[index], "Cell" + index, index + 1);
+                AddScene(m_CellSceneGuids[index], "Cell" + index, index + 1);
             }
 
             string worldPath = Path.Combine(Root, "Streaming.arisenworld");
-            File.WriteAllText(worldPath, CreateWorldSource(loadRadius, maxActiveCells));
+            File.WriteAllText(
+                worldPath,
+                planarCells
+                    ? CreatePlanarWorldSource(loadRadius, maxActiveCells)
+                    : CreateWorldSource(loadRadius, maxActiveCells));
             Database.AddAsset(s_WorldGuid, "World", worldPath, PackageId);
             World = new EntityManager();
             SceneService = new RuntimeSceneService(Database, World);
@@ -1898,11 +2003,14 @@ public sealed class RuntimeWorldStreamingTests
         public WorldCellId CellId(int coordinateX) =>
             WorldCellIdentity.Create(s_WorldGuid, new WorldCellCoordinate(coordinateX, 0, 0), "surface");
 
+        public WorldCellId PlanarCellId(int index) =>
+            WorldCellIdentity.Create(s_WorldGuid, s_PlanarCellCoordinates[index], "surface");
+
         public string CellScenePath(int coordinateX) =>
             Path.Combine(Root, "Cell" + coordinateX + ".arisenscene");
 
         public AssetRef<SceneSourceAsset> CellSceneRef(int coordinateX) =>
-            new(s_CellSceneGuids[coordinateX], "Scene", PackageId);
+            new(m_CellSceneGuids[coordinateX], "Scene", PackageId);
 
         public WorldCellStreamingSnapshot Cell(WorldCellId id) =>
             Streaming.GetCells().Single(cell => cell.CellId == id);
@@ -2015,63 +2123,81 @@ public sealed class RuntimeWorldStreamingTests
                 File.GetLastWriteTimeUtc(cookedPath)));
         }
 
-        private static string CreateWorldSource(int loadRadius, int maxActiveCells)
+        private static string CreateWorldSource(int loadRadius, int maxActiveCells) =>
+            CreateWorldBody(
+                loadRadius,
+                maxActiveCells,
+                s_CellSceneGuids,
+                s_LineCellCoordinates,
+                planar: false);
+
+        /// <summary>
+        /// Dense planar cell grid: four cells in a 2x2 arrangement, with the last one oversized so
+        /// the scenario still has a real admission failure to observe.
+        /// </summary>
+        private static string CreatePlanarWorldSource(int loadRadius, int maxActiveCells) =>
+            CreateWorldBody(
+                loadRadius,
+                maxActiveCells,
+                s_PlanarCellSceneGuids,
+                s_PlanarCellCoordinates,
+                planar: true);
+
+        private static string CreateWorldBody(
+            int loadRadius,
+            int maxActiveCells,
+            Guid[] cellSceneGuids,
+            WorldCellCoordinate[] coordinates,
+            bool planar)
         {
-            return $$"""
-                Version: 1
-                WorldGuid: {{s_WorldGuid:D}}
-                Name: Streaming Test World
-                PersistentScene:
-                  Guid: {{s_PersistentSceneGuid:D}}
-                  PackageId: {{PackageId}}
-                Partition:
-                  Origin: { X: 0, Y: 0, Z: 0 }
-                  CellSize: { X: 100, Y: 100, Z: 100 }
-                  LoadRadius: {{loadRadius}}
-                  UnloadHysteresis: 1
-                  MaxActiveCells: {{maxActiveCells}}
-                Policy:
-                  UnresolvedReferences: KeepUnresolved
-                  UnloadedTargets: ClearAndLateResolve
-                  DependencyCycles: Reject
-                Layers:
-                - Id: surface
-                  Priority: 0
-                Cells:
-                - Coordinate: { X: 0, Y: 0, Z: 0 }
-                  Layer: surface
-                  Scene:
-                    Guid: {{s_CellSceneGuids[0]:D}}
-                    PackageId: {{PackageId}}
-                  Bounds:
-                    Min: { X: 0, Y: 0, Z: 0 }
-                    Max: { X: 100, Y: 100, Z: 100 }
-                  EstimatedCpuBytes: 4096
-                  EstimatedGpuBytes: 4096
-                - Coordinate: { X: 1, Y: 0, Z: 0 }
-                  Layer: surface
-                  Scene:
-                    Guid: {{s_CellSceneGuids[1]:D}}
-                    PackageId: {{PackageId}}
-                  Bounds:
-                    Min: { X: 100, Y: 0, Z: 0 }
-                    Max: { X: 200, Y: 100, Z: 100 }
-                  Dependencies:
-                  - Coordinate: { X: 0, Y: 0, Z: 0 }
-                    Layer: surface
-                  EstimatedCpuBytes: 4096
-                  EstimatedGpuBytes: 4096
-                - Coordinate: { X: 2, Y: 0, Z: 0 }
-                  Layer: surface
-                  Scene:
-                    Guid: {{s_CellSceneGuids[2]:D}}
-                    PackageId: {{PackageId}}
-                  Bounds:
-                    Min: { X: 200, Y: 0, Z: 0 }
-                    Max: { X: 300, Y: 100, Z: 100 }
-                  EstimatedCpuBytes: 8192
-                  EstimatedGpuBytes: 4096
-                """;
+            var builder = new System.Text.StringBuilder();
+            builder.AppendLine("Version: 1");
+            builder.AppendLine($"WorldGuid: {s_WorldGuid:D}");
+            builder.AppendLine("Name: Streaming Test World");
+            builder.AppendLine("PersistentScene:");
+            builder.AppendLine($"  Guid: {s_PersistentSceneGuid:D}");
+            builder.AppendLine($"  PackageId: {PackageId}");
+            builder.AppendLine("Partition:");
+            builder.AppendLine("  Origin: { X: 0, Y: 0, Z: 0 }");
+            builder.AppendLine("  CellSize: { X: 100, Y: 100, Z: 100 }");
+            builder.AppendLine($"  LoadRadius: {loadRadius}");
+            builder.AppendLine("  UnloadHysteresis: 1");
+            builder.AppendLine($"  MaxActiveCells: {maxActiveCells}");
+            builder.AppendLine("Policy:");
+            builder.AppendLine("  UnresolvedReferences: KeepUnresolved");
+            builder.AppendLine("  UnloadedTargets: ClearAndLateResolve");
+            builder.AppendLine("  DependencyCycles: Reject");
+            builder.AppendLine("Layers:");
+            builder.AppendLine("- Id: surface");
+            builder.AppendLine("  Priority: 0");
+            builder.AppendLine("Cells:");
+            for (int index = 0; index < cellSceneGuids.Length; index++)
+            {
+                WorldCellCoordinate coordinate = coordinates[index];
+                long estimatedCpuBytes = index == cellSceneGuids.Length - 1 ? 8192 : 4096;
+                builder.AppendLine(
+                    $"- Coordinate: {{ X: {coordinate.X}, Y: {coordinate.Y}, Z: {coordinate.Z} }}");
+                builder.AppendLine("  Layer: surface");
+                builder.AppendLine("  Scene:");
+                builder.AppendLine($"    Guid: {cellSceneGuids[index]:D}");
+                builder.AppendLine($"    PackageId: {PackageId}");
+                builder.AppendLine("  Bounds:");
+                builder.AppendLine(
+                    $"    Min: {{ X: {coordinate.X * 100}, Y: 0, Z: {coordinate.Z * 100} }}");
+                builder.AppendLine(
+                    $"    Max: {{ X: {(coordinate.X * 100) + 100}, Y: 100, Z: {(coordinate.Z * 100) + 100} }}");
+                if (!planar && index == 1)
+                {
+                    builder.AppendLine("  Dependencies:");
+                    builder.AppendLine("  - Coordinate: { X: 0, Y: 0, Z: 0 }");
+                    builder.AppendLine("    Layer: surface");
+                }
+
+                builder.AppendLine($"  EstimatedCpuBytes: {estimatedCpuBytes}");
+                builder.AppendLine("  EstimatedGpuBytes: 4096");
+            }
+
+            return builder.ToString();
         }
     }
 

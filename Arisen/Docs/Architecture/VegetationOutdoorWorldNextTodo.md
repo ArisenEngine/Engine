@@ -796,6 +796,29 @@ fixture, without adding engine capability.
   baseline against `near` failed every soak cycle. `TerrainStreamingSmokeScenario` now records the high-water mark of
   the observed bounds, and `validate_terrain_streaming_summary.ps1` derives its steady-state baseline from the
   high-water mark of all five named checkpoints and applies it to the `soak-*` checkpoints only.
+## Milestone 7c - Streaming Regional World (Runtime First)
+
+**Goal:** Turn the validated single-block outdoor slice into the first world that streams as a
+region: one terrain root that spans several world cells, whose tiles are owned by the cells they
+stand in, so flying the world loads and unloads real terrain blocks instead of one all-or-nothing
+block. Editor authoring stays where it is until the runtime path is complete - runtime capability,
+not new tools, is the constraint that keeps the world small.
+
+**Priority order (owner decision, this roadmap keeps it explicit):** finish the runtime features and
+keep them green; defer Milestone 8 (Editor biome/scatter authoring) until the streaming runtime is
+complete; keep `Arisen\Docs\Architecture` and `.agents\rules` in step with whatever the runtime
+changes.
+
+### TODO
+
+- [x] Derive the world-streaming fixture's expectations from the world descriptor instead of from
+      the canonical cell list.
+  - [x] Compute the expected active set from `LoadRadius`, `UnloadHysteresis`, layer priority,
+        `MaxActiveCells`, the dependency closure, and the decoded-staging admission rule.
+  - [x] Search for the cancellation pose across the horizontal load neighbourhood, not only along X.
+  - [x] Prove a dense planar cell grid end to end:
+        `RuntimeWorldStreamingTests.BoundedSmokeScenario_CompletesOnADensePlanarCellGrid` runs the
+        whole scenario against a 2x2 adjacent-cell world and requires a multi-cell active set.
 ## Milestone 8 - Editor Biome And Scatter Authoring
 
 **Goal:** Make vegetation placement usable without hand-editing serialized instance pages.
