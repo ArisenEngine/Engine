@@ -1,4 +1,5 @@
 using ArisenEditor.Core.Validation;
+using ArisenEngine.Resources.Serialization;
 using Xunit;
 
 namespace Com.Arisen.Rendering.Tests;
@@ -119,14 +120,21 @@ public sealed class EditorViewportSmokeStateTests
 
         Guid worldGuid = Guid.Parse("93000000-0000-0000-0000-000000000001");
         Guid cellId = Guid.Parse("93000000-0000-0000-0000-000000000002");
-        state.ObserveWorldFirstOpen(worldGuid, 2, cellId, 0, 0, 0);
+        state.ObserveWorldFirstOpen(
+            worldGuid,
+            2,
+            cellId,
+            new WorldCellCoordinate(1, 0, 1),
+            new WorldCellCoordinate(1, 0, 1),
+            new WorldPosition(-102, 8.6560716354, -128),
+            CreatePartition());
         state.NotifyWorldCellLoadRequested(cellId);
         state.ObserveWorldCellActive(cellId);
         state.NotifyWorldCellUnloadRequested(cellId);
         Assert.True(state.ObserveWorldCellUnloaded(cellId));
 
         var artifact = state.CreateArtifact("Editor", 30);
-        Assert.Equal(8, artifact.SchemaVersion);
+        Assert.Equal(9, artifact.SchemaVersion);
         Assert.True(state.Succeeded);
         Assert.True(artifact.Passed);
         Assert.True(artifact.RenderDocAvailabilityObserved);
@@ -171,10 +179,25 @@ public sealed class EditorViewportSmokeStateTests
         Assert.Equal(EditorViewportSmokeState.RequiredSceneResizeTransitions,
             artifact.SceneResizeTransitionCount);
         Assert.True(artifact.Checks.WorldVisibleOnFirstOpen);
-        Assert.True(artifact.Checks.WorldOriginCellSelected);
+        Assert.True(artifact.Checks.WorldCameraCellSelected);
         Assert.True(artifact.Checks.WorldCellLoadObserved);
         Assert.True(artifact.Checks.WorldCellUnloadObserved);
         Assert.Equal(2, artifact.WorldPartition!.CellCount);
+        Assert.Equal(1, artifact.WorldPartition!.CellX);
+        Assert.Equal(0, artifact.WorldPartition!.CellY);
+        Assert.Equal(1, artifact.WorldPartition!.CellZ);
+        Assert.Equal(1, artifact.WorldPartition!.CameraCellX);
+        Assert.Equal(0, artifact.WorldPartition!.CameraCellY);
+        Assert.Equal(1, artifact.WorldPartition!.CameraCellZ);
+        Assert.Equal(-102.0, artifact.WorldPartition!.CameraPositionX);
+        Assert.Equal(8.6560716354, artifact.WorldPartition!.CameraPositionY);
+        Assert.Equal(-128.0, artifact.WorldPartition!.CameraPositionZ);
+        Assert.Equal(-512.0, artifact.WorldPartition!.PartitionOriginX);
+        Assert.Equal(-64.0, artifact.WorldPartition!.PartitionOriginY);
+        Assert.Equal(-512.0, artifact.WorldPartition!.PartitionOriginZ);
+        Assert.Equal(256.0, artifact.WorldPartition!.PartitionCellSizeX);
+        Assert.Equal(256.0, artifact.WorldPartition!.PartitionCellSizeY);
+        Assert.Equal(256.0, artifact.WorldPartition!.PartitionCellSizeZ);
     }
 
     [Fact]
@@ -253,7 +276,14 @@ public sealed class EditorViewportSmokeStateTests
 
         Guid worldGuid = Guid.Parse("93000000-0000-0000-0000-000000000011");
         Guid cellId = Guid.Parse("93000000-0000-0000-0000-000000000012");
-        state.ObserveWorldFirstOpen(worldGuid, 2, cellId, 0, 0, 0);
+        state.ObserveWorldFirstOpen(
+            worldGuid,
+            2,
+            cellId,
+            new WorldCellCoordinate(1, 0, 1),
+            new WorldCellCoordinate(1, 0, 1),
+            new WorldPosition(-102, 8.6560716354, -128),
+            CreatePartition());
         state.NotifyWorldCellLoadRequested(cellId);
         state.ObserveWorldCellActive(cellId);
         state.NotifyWorldCellUnloadRequested(cellId);
@@ -293,6 +323,65 @@ public sealed class EditorViewportSmokeStateTests
 
         Assert.Equal(EditorViewportSmokeAction.Failed, action);
         Assert.Contains("before", state.FailureMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void WorldFirstOpenRejectsCellsTheSceneViewCameraDoesNotOccupy()
+    {
+        var state = new EditorViewportSmokeState();
+
+        Guid worldGuid = Guid.Parse("93000000-0000-0000-0000-000000000101");
+        Guid cellId = Guid.Parse("93000000-0000-0000-0000-000000000102");
+        state.ObserveWorldFirstOpen(
+            worldGuid,
+            2,
+            cellId,
+            new WorldCellCoordinate(0, 0, 0),
+            new WorldCellCoordinate(1, 0, 1),
+            new WorldPosition(-102, 8.6560716354, -128),
+            CreatePartition());
+
+        EditorViewportSmokeArtifact artifact = state.CreateArtifact("Editor", 30);
+        Assert.False(artifact.Checks.WorldCameraCellSelected);
+        Assert.True(artifact.Checks.WorldVisibleOnFirstOpen);
+        Assert.Equal(0, artifact.WorldPartition!.CellX);
+        Assert.Equal(0, artifact.WorldPartition!.CellY);
+        Assert.Equal(0, artifact.WorldPartition!.CellZ);
+        Assert.Equal(1, artifact.WorldPartition!.CameraCellX);
+        Assert.Equal(0, artifact.WorldPartition!.CameraCellY);
+        Assert.Equal(1, artifact.WorldPartition!.CameraCellZ);
+    }
+
+    [Fact]
+    public void WorldFirstOpenRequiresAFiniteSceneViewCameraPose()
+    {
+        var state = new EditorViewportSmokeState();
+
+        state.ObserveWorldFirstOpen(
+            Guid.Parse("93000000-0000-0000-0000-000000000111"),
+            2,
+            Guid.Parse("93000000-0000-0000-0000-000000000112"),
+            new WorldCellCoordinate(0, 0, 0),
+            new WorldCellCoordinate(0, 0, 0),
+            new WorldPosition(double.NaN, 0.0, 0.0),
+            CreatePartition());
+
+        Assert.True(state.IsComplete);
+        Assert.False(state.Succeeded);
+        Assert.Contains(
+            "finite scene-view camera pose",
+            state.FailureMessage ?? string.Empty,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static WorldPartitionSettings CreatePartition()
+    {
+        return new WorldPartitionSettings(
+            new WorldPosition(-512, -64, -512),
+            new WorldPosition(256, 256, 256),
+            LoadRadius: 1,
+            UnloadHysteresis: 1,
+            MaxActiveCells: 12);
     }
 
     [Fact]

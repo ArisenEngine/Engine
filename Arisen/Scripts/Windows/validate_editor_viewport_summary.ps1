@@ -43,9 +43,9 @@ catch
     Fail-Validation "Editor viewport smoke artifact is not valid JSON: $($_.Exception.Message)"
 }
 
-if ([int]$artifact.schemaVersion -ne 8)
+if ([int]$artifact.schemaVersion -ne 9)
 {
-    Fail-Validation "Editor viewport smoke schema mismatch. Expected 8, received $($artifact.schemaVersion)."
+    Fail-Validation "Editor viewport smoke schema mismatch. Expected 9, received $($artifact.schemaVersion)."
 }
 
 $expectedRenderDocRestart = $ExpectRenderDocRestart.IsPresent
@@ -238,14 +238,49 @@ if ($null -eq $artifact.worldPartition -or
     Fail-Validation "Editor viewport smoke did not prove first-open world visibility and explicit cell load/unload."
 }
 
-if ([int]$artifact.worldPartition.cellX -ne 0 -or
-    [int]$artifact.worldPartition.cellY -ne 0 -or
-    [int]$artifact.worldPartition.cellZ -ne 0)
+$partitionCellSizeX = [double]$artifact.worldPartition.partitionCellSizeX
+$partitionCellSizeY = [double]$artifact.worldPartition.partitionCellSizeY
+$partitionCellSizeZ = [double]$artifact.worldPartition.partitionCellSizeZ
+if ($partitionCellSizeX -le 0.0 -or $partitionCellSizeY -le 0.0 -or $partitionCellSizeZ -le 0.0)
+{
+    Fail-Validation (
+        "Editor viewport smoke reported a non-positive world partition cell size: " +
+        "($partitionCellSizeX,$partitionCellSizeY,$partitionCellSizeZ).")
+}
+
+$cameraCellX = [int][Math]::Floor(
+    ([double]$artifact.worldPartition.cameraPositionX -
+        [double]$artifact.worldPartition.partitionOriginX) / $partitionCellSizeX)
+$cameraCellY = [int][Math]::Floor(
+    ([double]$artifact.worldPartition.cameraPositionY -
+        [double]$artifact.worldPartition.partitionOriginY) / $partitionCellSizeY)
+$cameraCellZ = [int][Math]::Floor(
+    ([double]$artifact.worldPartition.cameraPositionZ -
+        [double]$artifact.worldPartition.partitionOriginZ) / $partitionCellSizeZ)
+
+if ($cameraCellX -ne [int]$artifact.worldPartition.cameraCellX -or
+    $cameraCellY -ne [int]$artifact.worldPartition.cameraCellY -or
+    $cameraCellZ -ne [int]$artifact.worldPartition.cameraCellZ)
+{
+    Fail-Validation (
+        "Editor viewport smoke reported camera cell " +
+        "($($artifact.worldPartition.cameraCellX),$($artifact.worldPartition.cameraCellY),$($artifact.worldPartition.cameraCellZ)) " +
+        "for camera position ($($artifact.worldPartition.cameraPositionX)," +
+        "$($artifact.worldPartition.cameraPositionY),$($artifact.worldPartition.cameraPositionZ)); the partition " +
+        "origin ($($artifact.worldPartition.partitionOriginX),$($artifact.worldPartition.partitionOriginY)," +
+        "$($artifact.worldPartition.partitionOriginZ)) and cell size ($partitionCellSizeX,$partitionCellSizeY," +
+        "$partitionCellSizeZ) place it in ($cameraCellX,$cameraCellY,$cameraCellZ).")
+}
+
+if ([int]$artifact.worldPartition.cellX -ne $cameraCellX -or
+    [int]$artifact.worldPartition.cellY -ne $cameraCellY -or
+    [int]$artifact.worldPartition.cellZ -ne $cameraCellZ -or
+    $artifact.checks.worldCameraCellSelected -ne $true)
 {
     Fail-Validation (
         "Editor viewport smoke selected cell " +
         "($($artifact.worldPartition.cellX),$($artifact.worldPartition.cellY),$($artifact.worldPartition.cellZ)) " +
-        "instead of (0,0,0).")
+        "instead of the scene-view camera cell ($cameraCellX,$cameraCellY,$cameraCellZ).")
 }
 
 Write-Host (
@@ -260,4 +295,6 @@ Write-Host (
     "RenderDocStartup=$($artifact.renderDocAvailableAtStartup), " +
     "RenderDocRestart=$($artifact.renderDocRestartCompleted), " +
     "RenderDocCapture=$renderDocCapturePath, " +
-    "Cell=(0,0,0), output=$ArtifactPath")
+    "Cell=($($artifact.worldPartition.cellX),$($artifact.worldPartition.cellY),$($artifact.worldPartition.cellZ)) " +
+    "at camera ($($artifact.worldPartition.cameraPositionX),$($artifact.worldPartition.cameraPositionY)," +
+    "$($artifact.worldPartition.cameraPositionZ)), output=$ArtifactPath")
