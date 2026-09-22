@@ -1,0 +1,9 @@
+Version: 1
+RecipeGuid: 45d542d1-6d82-6a05-f2b0-de808ee55e7f
+World: { Guid: 38637cf8-f4a1-91f0-90b5-bf63752b4b82, PackageId: com.arisen.packagegame }
+Biome: { Guid: c0a92f10-0eb9-4d24-b729-7d0f38313001, PackageId: com.arisen.packagegame }
+TerrainRoot: { Guid: 40ad1b8e-7be7-7f2c-2454-fb97874ab169, PackageId: com.arisen.packagegame }
+Cell: { X: 2, Y: 0, Z: 1, Layer: surface }
+EntryId: valley-shrub
+UnscaledConservativeRadius: 1.2
+Exclusions: []

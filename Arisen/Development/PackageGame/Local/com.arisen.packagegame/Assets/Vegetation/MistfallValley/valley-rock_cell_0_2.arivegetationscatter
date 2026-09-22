@@ -1,0 +1,9 @@
+Version: 1
+RecipeGuid: b2e348e8-c977-d831-a97d-e97189a23422
+World: { Guid: 38637cf8-f4a1-91f0-90b5-bf63752b4b82, PackageId: com.arisen.packagegame }
+Biome: { Guid: c0a92f10-0eb9-4d24-b729-7d0f38313001, PackageId: com.arisen.packagegame }
+TerrainRoot: { Guid: 40ad1b8e-7be7-7f2c-2454-fb97874ab169, PackageId: com.arisen.packagegame }
+Cell: { X: 0, Y: 0, Z: 2, Layer: surface }
+EntryId: valley-rock
+UnscaledConservativeRadius: 2.0
+Exclusions: []

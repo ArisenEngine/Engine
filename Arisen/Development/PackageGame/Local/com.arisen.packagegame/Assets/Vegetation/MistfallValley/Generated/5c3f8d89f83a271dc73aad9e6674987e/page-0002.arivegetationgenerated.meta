@@ -1,0 +1,9 @@
+Guid: cae8bf9e-a5ab-c5d6-2f0d-715e98cd5736
+AssetType: VegetationInstancePage
+Importer: ArisenVegetationScatterPageImporter
+Generated:
+  SourceGuid: 3f42a419-2c53-7c50-8f05-5f53b05214ce
+  SourcePackageId: com.arisen.packagegame
+  ChildKind: vegetation-instance-page
+  ChildKey: page=2;content=ef4071389b9c4de3ee57f8565c702e6186022621837d3aba9850c8fd9ad4c5f8
+  GeneratedByImporter: ArisenVegetationScatterPageImporter
