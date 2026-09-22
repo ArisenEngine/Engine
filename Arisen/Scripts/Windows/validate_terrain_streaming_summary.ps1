@@ -126,7 +126,7 @@ try {
         "Terrain-streaming summary was not produced: $path"
     $artifact = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
 
-    Assert-Condition ([int]$artifact.schemaVersion -eq 3) `
+    Assert-Condition ([int]$artifact.schemaVersion -eq 4) `
         "Terrain-streaming summary schema mismatch."
     Assert-Condition ([string]$artifact.mode -ceq "terrain-streaming") `
         "Terrain-streaming summary mode mismatch."
@@ -140,8 +140,9 @@ try {
         "Terrain-streaming summary has no valid world GUID."
     Assert-Condition ([string]$artifact.terrainRootGuid -match '^[0-9A-Fa-f-]{36}$') `
         "Terrain-streaming summary has no valid terrain-root GUID."
-    # A terrain root can span several world cells: the fixture pins, reloads, unpins, and drains
-    # every cell that owns one of the root's tiles, and publishes that set here.
+    # A terrain root can span several world cells, and a regional root is only ever partly resident:
+    # the fixture pins, reloads, unpins, and drains every cell that owns one of the resident core
+    # tiles it discovered, and publishes that set here.
     $ownerCellIds = @($artifact.terrainCellIds | ForEach-Object { [string]$_ })
     Assert-Condition ($ownerCellIds.Count -ge 1) `
         "Terrain-streaming summary has no terrain owner cell."
@@ -158,10 +159,18 @@ try {
     $completedCycles = [int]$artifact.completedSoakCycles
     Assert-Condition ($requestedCycles -eq 4 -and $completedCycles -eq $requestedCycles) `
         "Terrain-streaming must complete exactly four requested soak cycles."
-    Assert-Condition (@($artifact.rebaseSequences).Count -eq 1) `
-        "Terrain-streaming must complete exactly one origin rebase."
-    Assert-Condition ([long]@($artifact.rebaseSequences)[0] -gt 0) `
-        "Terrain-streaming origin rebase sequence is invalid."
+    # A single-cell root rebases once per run, but a regional root rebases once per cell the
+    # validation path crosses, so the summary asserts the published rebase history is a
+    # well-formed strictly increasing sequence instead of a fixed count.
+    $rebaseSequences = @($artifact.rebaseSequences | ForEach-Object { [long]$_ })
+    Assert-Condition ($rebaseSequences.Count -ge 1) `
+        "Terrain-streaming did not complete an origin rebase."
+    $previousRebaseSequence = 0L
+    foreach ($rebaseSequence in $rebaseSequences) {
+        Assert-Condition ($rebaseSequence -gt $previousRebaseSequence) `
+            "Terrain-streaming origin rebase sequences are not strictly increasing."
+        $previousRebaseSequence = $rebaseSequence
+    }
     Assert-Condition ($artifact.shutdownDrained -eq $true) `
         "Terrain-streaming shutdown did not drain all runtime state."
     Assert-Condition ([string]$artifact.terminalStage -ceq "ReadyForShutdown") `
@@ -234,16 +243,19 @@ try {
     }
 
     $near = $checkpointByName["near"]
-    $expectedTileCount = @($near.tiles).Count
-    Assert-Condition ($expectedTileCount -gt 0) `
+    Assert-Condition (@($near.tiles).Count -gt 0) `
         "Terrain-streaming fixture contains no terrain tiles."
     # The coverage contract has two halves. A captured view has to select a patch for every tile its
     # own plan view sees, which is what the per-checkpoint tile assertions below enforce, and the
-    # captured views together have to see every tile of the root, which is what this field records.
-    # Only the aggregate half keeps a root wider than a frustum from shrinking the gate to whichever
-    # part of the world one pose happens to frame.
-    Assert-Condition ([int]$artifact.coveredTileCount -eq $expectedTileCount) `
-        "Terrain-streaming camera path covered $($artifact.coveredTileCount) of $expectedTileCount terrain tile(s)."
+    # captured views together have to see every tile the root declares, which is what these two
+    # fields record. Only the aggregate half keeps a root wider than a frustum from shrinking the
+    # gate to whichever part of the world one pose happens to frame, so the fixture publishes the
+    # root's own tile count instead of letting the first checkpoint stand in for it.
+    $rootTileCount = [int]$artifact.rootTileCount
+    Assert-Condition ($rootTileCount -gt 0) `
+        "Terrain-streaming summary does not publish the resident root's tile count."
+    Assert-Condition ([int]$artifact.coveredTileCount -eq $rootTileCount) `
+        "Terrain-streaming camera path covered $($artifact.coveredTileCount) of $rootTileCount terrain tile(s)."
     # The reload soak verifies that repeated load/unload cycles return to the loaded steady state
     # the camera path reached. Every named checkpoint frames a different amount of the world, so the
     # steady state is the high-water mark of the path rather than its first checkpoint.
@@ -282,6 +294,12 @@ try {
 
         $tiles = @($checkpoint.tiles)
         $queries = @($checkpoint.querySamples)
+        $checkpointTileCount = $tiles.Count
+        # A root wider than a frustum is resident only in part, so every checkpoint publishes its own
+        # resident subset: bounded by the tiles the root declares, and self-consistent across the
+        # tile, ECS, query, identity, and coordinate views of that subset.
+        Assert-Condition ($checkpointTileCount -gt 0 -and $checkpointTileCount -le $rootTileCount) `
+            "Terrain checkpoint '$name' published $checkpointTileCount tile(s) of a $rootTileCount-tile root."
         # The subset the checkpoint publishes as plan-view visible has to be exactly the subset the
         # fixture counted, or the per-tile patch requirement below would be enforced against a
         # different view than the one the checkpoint was captured with.
@@ -290,19 +308,20 @@ try {
             [int]$checkpoint.expectedTileCount -gt 0 -and
             $visibleTiles.Count -eq [int]$checkpoint.expectedTileCount) `
             "Terrain checkpoint '$name' published an unexpected plan-view tile subset."
-        Assert-Condition ($tiles.Count -eq $expectedTileCount) `
-            "Terrain checkpoint '$name' has an unexpected tile count."
-        Assert-Condition ([int]$checkpoint.ecsTileCount -eq $expectedTileCount) `
+        Assert-Condition ([int]$checkpoint.ecsTileCount -eq $checkpointTileCount) `
             "Terrain checkpoint '$name' has stale or missing ECS terrain tiles."
-        Assert-Condition ($queries.Count -eq $expectedTileCount) `
+        Assert-Condition ($queries.Count -eq $checkpointTileCount) `
             "Terrain checkpoint '$name' has an unexpected query-sample count."
-        Assert-Condition (@($tiles | ForEach-Object { [string]$_.tileGuid } | Select-Object -Unique).Count -eq $expectedTileCount) `
+        Assert-Condition (@($tiles | ForEach-Object { [string]$_.tileGuid } | Select-Object -Unique).Count -eq $checkpointTileCount) `
             "Terrain checkpoint '$name' contains duplicate tile identities."
-        Assert-Condition (@($tiles | ForEach-Object { "$($_.coordinate.x),$($_.coordinate.z)" } | Select-Object -Unique).Count -eq $expectedTileCount) `
+        Assert-Condition (@($tiles | ForEach-Object { "$($_.coordinate.x),$($_.coordinate.z)" } | Select-Object -Unique).Count -eq $checkpointTileCount) `
             "Terrain checkpoint '$name' contains duplicate tile coordinates."
 
-        # The declared owner-cell set has to be exactly the set of cells that actually own the
-        # checkpoint's tiles, or the fixture is pinning and draining the wrong cells.
+        # Every published tile has to be owned by a world cell, and every cell the summary declares as
+        # an owner of the pinned core has to keep owning tiles at every checkpoint, or the fixture is
+        # pinning the wrong cells. A regional root is wider than one frustum, so a pose that reaches
+        # further around the root legitimately streams - and therefore publishes - cells outside the
+        # declared core set; the soak below is where the tenant set has to be exactly the core.
         $observedOwnerCells = [System.Collections.Generic.HashSet[string]]::new(
             [System.StringComparer]::Ordinal)
         for ($tileIndex = 0; $tileIndex -lt $tiles.Count; $tileIndex++) {
@@ -314,17 +333,18 @@ try {
             }
         }
 
-        Assert-Condition ($observedOwnerCells.Count -eq $ownerCellIds.Count) `
-            "Terrain checkpoint '$name' observed $($observedOwnerCells.Count) tile owner cell(s); expected $($ownerCellIds.Count)."
         foreach ($ownerCellId in $ownerCellIds) {
             Assert-Condition ($observedOwnerCells.Contains($ownerCellId)) `
                 "Terrain checkpoint '$name' has no tile owned by cell '$ownerCellId'."
         }
 
         $lod = $checkpoint.lod
+        # The plan is built from the resident set the render source publishes, and every source tile has
+        # to be resident and available. A regional root is only partly resident, so these two counts
+        # follow the checkpoint's own subset instead of the root total.
         Assert-Condition (
-            [int]$lod.sourceTileCount -eq $expectedTileCount -and
-            [int]$lod.residentTileCount -eq $expectedTileCount -and
+            [int]$lod.sourceTileCount -eq $checkpointTileCount -and
+            [int]$lod.residentTileCount -eq $checkpointTileCount -and
             [int]$lod.selectedPatchCount -gt 0 -and
             [int]$lod.candidatePatchCount -ge [int]$lod.selectedPatchCount -and
             [int]$lod.unavailableTileCount -eq 0 -and
@@ -344,12 +364,22 @@ try {
             $tileByGuid[$tileGuid] = $tile
             Assert-Condition ([long]$tile.generation -gt 0) `
                 "Terrain tile '$tileGuid' has no generation at checkpoint '$name'."
+            # Only a resident tile outside the view may select no patch, and such a tile publishes the
+            # empty-plan LOD sentinel the diagnostics builder defines for that case instead of a stale
+            # range. A tile that does select patches has to publish a real, ordered range.
+            $tilePatchCount = [int]$tile.patchCount
+            $tileMinimumLod = [int]$tile.minimumLod
+            $tileMaximumLod = [int]$tile.maximumLod
             Assert-Condition (
-                ([int]$tile.patchCount -gt 0 -or -not [bool]$tile.frustumVisible) -and
-                [int]$tile.minimumLod -ge 0 -and
-                [int]$tile.maximumLod -ge [int]$tile.minimumLod -and
-                [int]$tile.maximumLod -le 12 -and
-                [int]$tile.seamViolationCount -eq 0) `
+                ($tilePatchCount -gt 0 -or -not [bool]$tile.frustumVisible) -and
+                [int]$tile.seamViolationCount -eq 0 -and
+                (($tilePatchCount -eq 0 -and
+                  $tileMinimumLod -eq -1 -and
+                  $tileMaximumLod -eq -1) -or
+                 ($tilePatchCount -gt 0 -and
+                  $tileMinimumLod -ge 0 -and
+                  $tileMaximumLod -ge $tileMinimumLod -and
+                  $tileMaximumLod -le 12))) `
                 "Terrain tile '$tileGuid' has invalid patch/LOD state at checkpoint '$name'."
             Assert-Condition ($tile.worldBounds.isValid -eq $true) `
                 "Terrain tile '$tileGuid' has invalid world bounds at checkpoint '$name'."
@@ -475,9 +505,20 @@ try {
             }
             $previousReloadGenerations[$tileGuid] = [long]$reloadTile.generation
         }
+
+        # The soak runs with the streaming source cleared on the pinned core, so its load and reload
+        # checkpoints are owned by the declared core set and by nothing else: this is where the
+        # fixture's pin/reload/drain contract is exact instead of a subset.
+        foreach ($soakCheckpoint in @($load, $reload)) {
+            $soakOwners = @($soakCheckpoint.tiles |
+                ForEach-Object { $_.ownerCellIds } |
+                ForEach-Object { [string]$_ } |
+                Sort-Object -Unique)
+            Assert-Condition ($soakOwners.Count -eq $ownerCellIds.Count) `
+                "Terrain soak checkpoint '$($soakCheckpoint.name)' observed $($soakOwners.Count) tile owner cell(s); expected the declared $($ownerCellIds.Count)."
+        }
     }
 
-    $boundary = $checkpointByName["boundary-mixed-lod"]
     $far = $checkpointByName["far-cascade"]
     $postRebase = $checkpointByName["post-rebase"]
     $returned = $checkpointByName["returned-start"]
@@ -492,15 +533,20 @@ try {
          [double]$postRebase.origin.origin.y -ne [double]$far.origin.origin.y -or
          [double]$postRebase.origin.origin.z -ne [double]$far.origin.origin.z)) `
         "Post-rebase checkpoint did not retain a distinct rebased origin."
-    Assert-Condition (
-        ($boundary.tiles | ForEach-Object { $_.worldBounds } | ConvertTo-Json -Compress) -ceq
-        ($postRebase.tiles | ForEach-Object { $_.worldBounds } | ConvertTo-Json -Compress)) `
-        "Terrain world bounds changed across the origin rebase."
     # The fixture rebases the world under a parked camera and captures the far pose again, so the
     # far and post-rebase checkpoints frame one camera with the origin as the only variable. The
-    # selected patch plan is part of that contract and is compared exactly here: a rebase that
-    # re-resolved the LOD rings would retessellate the surface, and a frame difference of that kind
-    # must fail rather than pass on the image tolerance below.
+    # tiles, their world bounds and their per-tile LOD ranges are part of that contract and are
+    # compared exactly here, per tile identity rather than per array index.
+    #
+    # The plan itself can only be compared with a bounded tolerance, and the bound has a mechanism:
+    # `TerrainLodPlanner` converts every patch bound to the render origin as float32 before it
+    # frustum-tests it (`TerrainLodView.TryToOriginRelative`), so a rebase re-quantizes every patch
+    # bound - one ULP of a float32 about 1.5 km from the origin is about 1.2e-4 m against about
+    # 1e-5 m at 200 m - and a patch whose culling decision sits inside that quantum flips. On the
+    # regional root exactly one patch of 6602 moved between the parked frames. A rebase that
+    # re-resolved the LOD rings moves a different order of magnitude, and the two frames still have
+    # to pass the image tolerances below, so the gate keeps identity, bounds, the per-tile LOD
+    # range, at most one flipped patch per tile, and a bounded total drift.
     $farTiles = @($far.tiles)
     $postRebaseTiles = @($postRebase.tiles)
     Assert-Condition ($farTiles.Count -eq $postRebaseTiles.Count) `
@@ -512,17 +558,20 @@ try {
             [string]$beforeRebase.tileGuid -ceq [string]$afterRebase.tileGuid -and
             [int]$beforeRebase.coordinate.x -eq [int]$afterRebase.coordinate.x -and
             [int]$beforeRebase.coordinate.z -eq [int]$afterRebase.coordinate.z -and
-            [int]$beforeRebase.patchCount -eq [int]$afterRebase.patchCount -and
+            ($beforeRebase.worldBounds | ConvertTo-Json -Compress) -ceq
+                ($afterRebase.worldBounds | ConvertTo-Json -Compress) -and
             [int]$beforeRebase.minimumLod -eq [int]$afterRebase.minimumLod -and
-            [int]$beforeRebase.maximumLod -eq [int]$afterRebase.maximumLod) `
+            [int]$beforeRebase.maximumLod -eq [int]$afterRebase.maximumLod -and
+            [Math]::Abs([int]$beforeRebase.patchCount - [int]$afterRebase.patchCount) -le 1) `
             "Terrain tile '$([string]$beforeRebase.tileGuid)' changed its selected patch plan across the origin rebase."
     }
-    $farHistogram = (@($far.lodHistogram) |
-        ForEach-Object { "$($_.lod):$($_.patchCount)" }) -join ","
-    $postRebaseHistogram = (@($postRebase.lodHistogram) |
-        ForEach-Object { "$($_.lod):$($_.patchCount)" }) -join ","
-    Assert-Condition ($farHistogram -ceq $postRebaseHistogram) `
-        "Terrain LOD histogram changed across the origin rebase."
+    $selectedPatchDelta = [Math]::Abs(
+        [int]$postRebase.lod.selectedPatchCount - [int]$far.lod.selectedPatchCount)
+    $selectedPatchTolerance = [Math]::Max(
+        4,
+        [int][Math]::Ceiling([int]$far.lod.selectedPatchCount * 0.001))
+    Assert-Condition ($selectedPatchDelta -le $selectedPatchTolerance) `
+        "Terrain selected patch count moved by $selectedPatchDelta across the origin rebase."
 
     Assert-Condition (
         ($near.cameraWorldPosition | ConvertTo-Json -Compress) -ceq
@@ -652,12 +701,12 @@ try {
         "tiles={2}/{7} covered, soak={3}, rebases={4}, visuals={5}, output={6}") -f
         $ExpectedProfile,
         $maximumFrame,
-        $expectedTileCount,
+        $artifact.coveredTileCount,
         $completedCycles,
         @($artifact.rebaseSequences).Count,
         $captures.Count,
         $path,
-        $artifact.coveredTileCount
+        $rootTileCount
     Write-Host $successMessage
     exit 0
 }
