@@ -905,8 +905,9 @@ changes.
       showcase root fits inside one frustum, so the per-view half still asks for the whole root and
       that gate keeps its full strength. The artifact carries the two halves as a per-tile
       `frustumVisible` flag, a per-checkpoint `expectedTileCount`, and an artifact-wide
-      `coveredTileCount` (schema 3), and `validate_terrain_streaming_summary.ps1` recomputes the
-      covered set from the published flags instead of trusting the declared count.
+      `coveredTileCount` and the root's declared `rootTileCount` (schema 4), and
+      `validate_terrain_streaming_summary.ps1` recomputes the covered set from the published
+      flags instead of trusting the declared count.
   - [x] Reconcile "every canonical tile selects a patch" with a root that is wider than one frustum,
         using per-pose expected tile subsets and an aggregate coverage requirement. This needed a
         fourth camera pose. `TerrainStreamingCameraPath` derived four corners and used three of them
@@ -966,9 +967,114 @@ changes.
   world land as inert authored content with the Development and Production runtime gates, including
   the relocated Production closure audit, passing unchanged. The switch below is what puts it on the
   startup path.
-- [ ] Switch the startup world/scene to the regional world and keep every gate green at regional
+- [x] Switch the startup world/scene to the regional world and keep every gate green at regional
       scale (world streaming, terrain streaming, vegetation visuals, cascaded shadows, outdoor
       atmosphere, relocated Production closure, and the Editor viewport smoke).
+
+      The switch is two identities in `manifest.json`: `StartupScene` names the regional persistent
+      scene (`e176b519-9d88-527e-a841-c5c5d73b7477`) and `StartupWorld` the regional world
+      (`38637cf8-f4a1-91f0-90b5-bf63752b4b82`). The showcase world keeps its own identities and its
+      committed bytes, so the runtime boots into the region while the single-block world still
+      validates unchanged. Coming onto the startup path also gave the cell scenes their clusters. A
+      cell scene binds cluster identity, page count, instance count, and bounds that only exist once
+      the scatter bake has run, so the generator stopped deriving them: the runtime cook publishes
+      the baked result as `vegetation-clusters.json` through `VegetationScatterRecipeReport`, and
+      `generate_mistfall_valley.ps1` reads that report back and rejects a stale one - a report bound
+      to another terrain root or biome, a missing entry, or a duplicate cell entry - rather than
+      authoring a cluster that disagrees with the closure. Re-running the generator reproduces every
+      committed file byte for byte.
+
+      The gate that the switch actually broke was the world-streaming scenario's camera contract.
+      The scenario drove one pose for both of its jobs: the admission and cancellation probes have to
+      drive the streaming source away from the authored viewer pose, because a settled player pose
+      produces neither an admission failure nor a cancellation, while a visual capture has to observe
+      the pose the plan streamed for. In a single-cell world those are the same place; at regional
+      scale they are opposite corners of the region, so the `during` checkpoint published the probe
+      pose's cell set and the frames captured beside it belonged to camera positions that world never
+      streamed - the compared frame wrote 13,065 of 921,600 depth pixels and matched the unstreamed
+      startup frame bit for bit. The probe result is now its own `cancelled` checkpoint, and
+      `ObserveDuringSettle` returns the source to the authored viewer pose and waits for that pose's
+      plan - the cells the policy selects there plus the probe cells still inside the unload
+      hysteresis, derived from the world descriptor and the live policy rather than from a
+      fixture-authored list - before `during` is captured.
+
+      `validate_vegetation_rendering_visuals.ps1` carries the two halves of that contract: the
+      `cancelled` checkpoint has to commit a settled, non-empty set of active world cells with valid
+      identities, and the compared `during` frame has to render the streamed world, which it states
+      as a floor of a quarter of the frame's depth pixels. The settled regional pose writes 695,897
+      of 921,600 (75.5 percent) against the unstreamed startup frame's 13,065 (1.4 percent). The
+      measured run publishes `cancelled` at frame 62 with one active cell and thirteen entities, and
+      `during` at frame 250 with ten active cells and seventy-six entities.
+
+      The shadow captures moved with the regional world's content. `MidShadowCameraRetreat` went from
+      20 to 40 world units because the authored view direction runs through a grove of the region's
+      945 cooked trees between 18 and 34 units behind the camera: at 20 units the mid pose stood
+      inside the canopy, which inverted the distance-haze progression the outdoor-atmosphere gate
+      reads (0.122 at the mid sample against the authored pose's 0.293). At 40 units the mid pose
+      carries the authored pose's occlusion share - 19 percent of the frame occluded closer than 20 m
+      at both the authored and mid poses, 11 percent at the far one - and the three captures report a
+      monotonic progression of 0.293, 0.381, and 0.418.
+
+      The vegetation submission record grew the two counts that separate a culling decision from a
+      defect. It publishes `Extracted` and `CullingInputs` beside `PreparedClusters` and derives
+      `Dropped` as accepted inputs minus prepared clusters, so a cluster the plan evaluated and
+      culled is no longer reported as a dropped draw in a world that streams more than one cell.
+      Validation moved out of `validate_runtime.bat` into `validate_vegetation_submission_log.ps1`,
+      which additionally pins the canonical cluster and species identity, the exact opaque and
+      per-cascade shadow counts, the distinct surface count, and `Dropped=0` together with the
+      invariant that verification cannot exceed extraction.
+
+      A cell the region unloads and loads again can find a required dependency still completing the
+      deterministic cleanup of the previous generation, which only the frame boundary drives forward.
+      Blocking the loading worker until that boundary would deadlock the frame the read has to finish
+      in, and failing the read would strand the cell because nothing retries a failed load, so the
+      residency service now reports the condition as `RuntimeAssetResidencyCleanupPendingException`,
+      the worker hands the validated payload back with the reason recorded, and the frame boundary
+      re-queues the cell - `Cancelled` and then `Queued` while it is still desired - counting the
+      deferral as `deferredResidencyCount` in the streaming metrics instead of a failure.
+
+      The regional world also needed honest time bounds: the streaming smoke's frame bound rose from
+      1,024 to 2,048 and its wall-clock bound is now derived per mode through
+      `RuntimeSmokeOptions.EffectiveDuration` (120 seconds for streaming against the shared 45), and
+      the relocated Production audit's per-run process timeout rose from 60 to 180 seconds because it
+      repeats the same regional scenarios outside the workspace. Both bounds stay explicit and
+      bounded, so a scenario that stops making progress still fails loudly instead of running on.
+
+      The Editor viewport smoke was the last gate the switch broke, and it broke in a way the gate
+      itself hid. Its world-partition phase pinned the origin cell `(0,0,0)`
+      (`f2122ff3-56ce-5e36-9092-83e8c05aa0f5`) because the single-block world's authored camera
+      happened to stand there. The regional persistent scene authors its camera at
+      `(-102, 8.656, -128)`, which the region's partition - origin `(-512,-64,-512)`, cell size
+      `(256,128,256)` - places in cell `(1,0,1)` (`c4e7bbeb-d658-5158-8fe8-66e076baf305`), the cell
+      carrying the valley's three clusters (56,194 grass, 945 tree, and 4,671 shrub instances). The
+      origin cell's clusters scatter a few centimetres around the world origin at 0.06 instances per
+      square metre, so a viewport standing about 130 metres away rendered none of them; Generic RP
+      only writes a submission record when a frame submits opaque and shadow batches with instances,
+      so the Editor profile reported no record at all and `validate_runtime.bat` failed the vegetation
+      submission gate with "Runtime run produced no vegetation validation record".
+
+      The smoke now reads the same scene-view camera pose the interactive controller seeds navigation
+      from and validates the cell that pose occupies, which is the only cell whose content the first
+      SceneView frame can show. Artifact schema 9 records the validated cell, the camera cell, the
+      camera world position, and the partition origin and cell size; `worldOriginCellSelected` becomes
+      `worldCameraCellSelected`; and `validate_editor_viewport_summary.ps1` re-derives the camera cell
+      from those raw numbers with its own floor((position - origin) / cellSize) computation instead of
+      trusting the reported cell. The gate therefore fails for a selected cell the camera does not
+      occupy, for a reported camera cell that disagrees with the published pose, and for a
+      non-positive cell size. The Editor profile then reports two vegetation submission records,
+      SceneView and GameView, over three prepared clusters with 61,810 opaque instances and 247,240
+      shadow instances across four cascades.
+
+      Every gate is green at regional scale. Development and Production world streaming complete
+      their four soak cycles across twelve observed states and seven visual captures with the
+      cascaded-shadow captures at 0.293, 0.381, and 0.418 and the vegetation visual deltas at
+      0.0997 (luminance), 0.00666 (depth), and 0.00951 (shadow), and the terrain scenario covers all
+      sixty-four canonical tiles over fourteen checkpoints and six visual captures. The relocated
+      Production closure repeats the same runs from a copied catalog outside the workspace with
+      empty Vulkan validation logs, and its tamper and missing-artifact controls still reject a
+      catalog that was modified or is incomplete. The real-host Editor viewport smoke passes all
+      twenty-three of its checks against the regional startup world, including the camera-cell
+      world-partition phase.
 
 ### Acceptance Criteria
 
