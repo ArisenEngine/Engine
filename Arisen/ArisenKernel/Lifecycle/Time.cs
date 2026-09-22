@@ -57,6 +57,20 @@ public static class Time
         s_PinnedElapsedTime = null;
     }
 
+    /// <summary>
+    /// Re-bases the frame clock on the current wall-clock time without advancing
+    /// <see cref="elapsedTime"/>. A frame loop that was parked - the standalone runtime parks on
+    /// the window message queue while its window cannot composite presented frames - calls this
+    /// when it resumes, so the first frame it runs is not charged the whole parked interval:
+    /// frame deltas stay bounded by the work the engine actually did, and elapsed time stays the
+    /// accumulation of those deltas. The wall clock keeps running either way; see
+    /// <see cref="totalTime"/>.
+    /// </summary>
+    public static void ResyncFrameClock()
+    {
+        s_LastFrameTime = s_Stopwatch.Elapsed.TotalSeconds;
+    }
+
     internal static void Update()
     {
         double currentTime = s_Stopwatch.Elapsed.TotalSeconds;

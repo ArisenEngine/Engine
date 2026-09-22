@@ -38,6 +38,10 @@ $editorViewportSmokeArtifactPaths = @(
     $profiles |
         Where-Object { $_.editorViewportSmoke.requested -eq $true -and $_.editorViewportSmoke.passed -eq $true -and $_.editorViewportSmoke.path } |
         ForEach-Object { [string]$_.editorViewportSmoke.path })
+$hostPacingArtifactPaths = @(
+    $profiles |
+        Where-Object { $_.hostPacing.requested -eq $true -and $_.hostPacing.passed -eq $true -and $_.hostPacing.artifactPath } |
+        ForEach-Object { [string]$_.hostPacing.artifactPath })
 $relocatedProductionSummaryArtifactPaths = @(
     $profiles |
         Where-Object { $_.relocatedProduction.requested -eq $true -and $_.relocatedProduction.passed -eq $true -and $_.relocatedProduction.summaryPath } |
@@ -57,7 +61,7 @@ if ($env:EXIT_CODE -ne "0") {
 }
 
 $summary = [ordered]@{
-    schemaVersion = 8
+    schemaVersion = 9
     capturedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
     repositoryRoot = $env:REPO_ROOT
     workspacePath = $env:WORKSPACE_DIR
@@ -87,6 +91,9 @@ $summary = [ordered]@{
     editorViewportSmokeRuns = [int]$env:EDITOR_VIEWPORT_SMOKE_RUNS
     editorViewportSmokeArtifactCount = $editorViewportSmokeArtifactPaths.Count
     editorViewportSmokeArtifactPaths = $editorViewportSmokeArtifactPaths
+    hostPacingRuns = [int]$env:HOST_PACING_RUNS
+    hostPacingArtifactCount = $hostPacingArtifactPaths.Count
+    hostPacingArtifactPaths = $hostPacingArtifactPaths
     relocatedProductionSmokeRuns = [int]$env:RELOCATED_PRODUCTION_SMOKE_RUNS
     relocatedProductionSummaryArtifactCount = $relocatedProductionSummaryArtifactPaths.Count
     relocatedProductionSummaryArtifactPaths = $relocatedProductionSummaryArtifactPaths

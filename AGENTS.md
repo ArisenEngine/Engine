@@ -93,6 +93,9 @@ What this runs:
 - dedicated Development and Production `world-streaming` and `terrain-streaming` state/memory/visual/shutdown gates
 - copied Production output boot outside the workspace, including zero-source, catalog tamper, and missing-artifact checks
 - copied cooked-only Production world/terrain streaming with preserved visual artifacts and empty Vulkan validation logs
+- the Development host frame-pacing gate, which drives a real window through a minimize/restore
+  cycle and requires the parked loop to advance no frame while staying within a tenth of one core;
+  pass `--skip-host-pacing` to leave the desktop undisturbed
 
 Use `validate_runtime.bat` as the main local gate for runtime/rendering work. If a GPU-dependent path is unavailable on the machine, report that explicitly instead of hiding it behind a generic build failure.
 
@@ -103,8 +106,8 @@ real RenderDoc artifact:
 
 This runs fast validation and the isolated Vulkan package tests, then performs two GPU-required
 runtime cycles covering every canonical profile, world/terrain streaming, copied Production, the
-real dual-viewport Editor path, in-process RenderDoc generation replacement, and a request-owned
-capture. The schema-2 report under `.arisen\Logs\validate-stability-stress-Release-latest.json`
+real dual-viewport Editor path, the Development host frame pacing gate, in-process RenderDoc
+generation replacement, and a request-owned capture. The schema-2 report under `.arisen\Logs\validate-stability-stress-Release-latest.json`
 requires zero package/context/native/service/subsystem/surface ownership after each cycle, bounded
 Editor imports, drained workers, non-empty `.rdc` captures, clean shutdown, and empty Vulkan logs.
 Use this expensive gate for stabilization promotion, not as the first check for a narrow edit.
@@ -309,6 +312,10 @@ World-cell workers may read and validate payloads and acquire generation-checked
 
 Current platform/RHI ownership policy:
 - standalone runtime builds create and pump the main Win32 window through `IWindowProvider`
+- the host owns frame pacing: while the main window is minimized `PlatformSubsystem` parks the
+  engine thread on the window message queue (no sleep, polling interval, or frame budget) and
+  re-bases the frame clock through `Time.ResyncFrameClock()` before the loop resumes, so
+  `EngineKernel.Run` stays host-agnostic
 - editor builds use `ARISEN_ENGINE_EDITOR`; the Avalonia/editor host owns native UI windows and the platform package must not create an independent runtime window loop
 - RenderDoc is an explicit diagnostic mode. It may be enabled at process start through `ARISEN_ENABLE_RENDERDOC=1`, or activated once inside the Editor by releasing every viewport and generation-owned GPU resource, recreating the backend with RenderDoc enabled, and restoring the viewports. External injection into an already-running Vulkan generation is unsupported, and in-process activation is one-way for that Editor process. Viewport capture remains active through `PublishingArtifact`; only a newer matching `GetCapture` inventory entry with an existing non-empty `.rdc` file completes it, and its owned publication worker is cancelled and joined during teardown
 - runtime Vulkan initialization must validate `IWindowProvider.GetWindowInfo()` before registering `IRHIDevice`

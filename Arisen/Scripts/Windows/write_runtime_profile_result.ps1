@@ -65,6 +65,11 @@ $result = [ordered]@{
         exitCode = Get-NullableInt $env:CURRENT_EDITOR_VIEWPORT_SMOKE_EXIT_CODE
         passed = Get-NullableBool $env:CURRENT_EDITOR_VIEWPORT_SMOKE_PASSED
     }
+    hostPacing = [ordered]@{
+        requested = $env:CURRENT_HOST_PACING_REQUESTED -eq "1"
+        artifactPath = Get-NullableString $env:CURRENT_HOST_PACING_PATH
+        passed = Get-NullableBool $env:CURRENT_HOST_PACING_PASSED
+    }
     relocatedProduction = [ordered]@{
         requested = $env:CURRENT_RELOCATED_PRODUCTION_REQUESTED -eq "1"
         summaryPath = Get-NullableString $env:CURRENT_RELOCATED_PRODUCTION_SUMMARY_PATH

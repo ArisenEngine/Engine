@@ -866,6 +866,31 @@ changes.
       now the arena's single owner - created by the core package on load, released on unload, and
       reset from `EngineKernel.OnFrameEnd` after every subsystem has ticked - and `FrameArenaTests`
       pins the per-frame ceiling, the reset, and the ownership wiring.
+- [x] Decide the runtime's frame-pacing policy for a host that cannot present. `EngineKernel.Run`
+      has no pacing of its own, so presentation was the only throttle: with the window minimized the
+      loop measured about 4,400 frames/s against about 40 frames/s while presenting. That burn keeps
+      a core busy for as long as the window stays minimized and is what turned the arena growth
+      above into a crash within seconds. The decision is that the host owns the pacing, not the
+      kernel: `PlatformSubsystem.Tick` asks `IWindowProvider.IsMainWindowMinimized` and parks the
+      engine thread on the window message queue for as long as the window cannot present
+      (`HostFramePark.ParkWhileMinimized`: wait for a message, drain the queue, re-check the state),
+      so the park ends on the message that changes the window state - a restore resumes the loop and
+      a close request that arrives while parked still reaches the close path - with no polling
+      interval, frame budget, sleep, or retry involved. `Time.ResyncFrameClock()` then re-bases the
+      frame clock, so the frame that resumes is not charged the parked interval. Minimize is the
+      predicate and not visibility, because an interactive runtime creates its window hidden and
+      reveals it through the startup presentation gate; editor builds do not pump a window at all.
+      Measured through `validate_host_pacing.ps1` against the interactive Development runtime:
+      presenting at 13.9-42 fps, parked 5.75 s at 2.7 % of one core, zero frames submitted while
+      parked, and the resume reported the frame the park was entered from (`52`), while the frame
+      rate returned to 31 fps after the restore. `HostFrameParkTests` pins the wait/drain/re-check
+      call sequence and the close request that interrupts the park, `HostFramePacingContractTests`
+      pins the window-provider contract, the platform wiring, the host-agnostic kernel loop, and the
+      gate wiring, and `TimePinTests.ParkedIntervalIsNotChargedToTheFrameThatResumes` pins the
+      re-based clock. The gate drives a real window through a minimize/restore cycle, asserts the
+      parked CPU budget, the zero-frame parked interval, and clean shutdown, and runs from
+      `validate_runtime.bat` for the Development profile; `--skip-host-pacing` opts out where the
+      desktop cannot be left undisturbed. Documented in `Rendering.md` and `ArisenHost.md`.
 ## Milestone 8 - Editor Biome And Scatter Authoring
 
 **Goal:** Make vegetation placement usable without hand-editing serialized instance pages.

@@ -103,6 +103,15 @@ releases the RHI device before the platform package destroys the window, and pac
 and kernel-owned services are released before `Main` returns. An interactive profile that skipped this
 teardown would leave the window and every package owned by a process that is already past its last frame.
 
+The bare-metal loop is paced by its host, not by the kernel: `EngineKernel.Run` ticks the frame clock
+and the subsystems and owns no wall-clock budget of its own. While the main window is minimized its
+native surface reports a zero extent, so no frame can be presented; `PlatformSubsystem` parks the
+engine thread on the window message queue for as long as `IWindowProvider.IsMainWindowMinimized` holds,
+wakes on the message that changes that state - a restore resumes the loop, and a close request that
+arrives while parked still reaches the close path below - and re-bases the frame clock through
+`Time.ResyncFrameClock()`, so the parked interval is never charged to the frame that resumes. Bounded
+smoke hosts create their window hidden and never minimize it, so their own frame budget is unaffected.
+
 The standalone platform window is closed through the engine rather than through the default window
 procedure. `WindowsProcHandler` consumes both close routes - `WM_CLOSE` and the `WM_SYSCOMMAND`
 `SC_CLOSE` system-menu command - and reports the request through `IWindowProvider.CloseRequested`, so the

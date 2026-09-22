@@ -18,6 +18,7 @@ set "SMOKE_RUNS=0"
 set "SMOKE_SKIPS=0"
 set "CPU_FALLBACK_RUNS=0"
 set "EDITOR_VIEWPORT_SMOKE_RUNS=0"
+set "HOST_PACING_RUNS=0"
 set "RELOCATED_PRODUCTION_SMOKE_RUNS=0"
 set "WORLD_STREAMING_SMOKE_RUNS=0"
 set "TERRAIN_STREAMING_SMOKE_RUNS=0"
@@ -26,6 +27,7 @@ set "FAILURE_STAGE="
 set "FAILED_PROFILE="
 set "FAILURE_MESSAGE="
 set "ARISEN_NO_PAUSE="
+set "HOST_PACING=auto"
 if defined CI set "ARISEN_NO_PAUSE=1"
 
 :parse_args
@@ -51,6 +53,8 @@ if /i "%~1"=="--profile" (
     set "GPU_SMOKE=skip"
 ) else if /i "%~1"=="--skip-fast" (
     set "RUN_FAST=0"
+) else if /i "%~1"=="--skip-host-pacing" (
+    set "HOST_PACING=skip"
 ) else if /i "%~1"=="--no-pause" (
     set "ARISEN_NO_PAUSE=1"
 ) else (
@@ -115,6 +119,7 @@ echo [Arisen] Runtime smoke runs: %SMOKE_RUNS%
 echo [Arisen] Runtime smoke skips: %SMOKE_SKIPS%
 echo [Arisen] CPU fallback validations: %CPU_FALLBACK_RUNS%
 echo [Arisen] Editor viewport smoke runs: %EDITOR_VIEWPORT_SMOKE_RUNS%
+echo [Arisen] Host frame pacing gates: %HOST_PACING_RUNS%
 echo [Arisen] Relocated Production smoke runs: %RELOCATED_PRODUCTION_SMOKE_RUNS%
 echo [Arisen] World-streaming smoke runs: %WORLD_STREAMING_SMOKE_RUNS%
 echo [Arisen] Terrain-streaming smoke runs: %TERRAIN_STREAMING_SMOKE_RUNS%
@@ -195,6 +200,9 @@ set "CURRENT_EDITOR_VIEWPORT_SMOKE_PATH="
 set "CURRENT_EDITOR_VIEWPORT_SMOKE_LOG_PATH="
 set "CURRENT_EDITOR_VIEWPORT_SMOKE_PASSED="
 set "CURRENT_EDITOR_VIEWPORT_SMOKE_EXIT_CODE="
+set "CURRENT_HOST_PACING_REQUESTED=0"
+set "CURRENT_HOST_PACING_PATH="
+set "CURRENT_HOST_PACING_PASSED="
 set "CURRENT_RELOCATED_PRODUCTION_REQUESTED=0"
 set "CURRENT_RELOCATED_PRODUCTION_LOG_PATH="
 set "CURRENT_RELOCATED_PRODUCTION_SUMMARY_PATH="
@@ -571,6 +579,41 @@ if /i "!CURRENT_PROFILE!"=="Production" (
     set /a WORLD_STREAMING_SMOKE_RUNS+=1
     set /a TERRAIN_STREAMING_SMOKE_RUNS+=1
     set /a VEGETATION_VISUAL_COMPARISON_RUNS+=1
+)
+
+call :configure_host_pacing
+if errorlevel 1 (
+    set "FAILED_PROFILE=%CURRENT_PROFILE%"
+    set "FAILURE_STAGE=host frame pacing preparation"
+    set "FAILURE_MESSAGE=Failed to prepare the host frame pacing gate for profile %CURRENT_PROFILE%"
+    set "RESULT_PROFILE=%CURRENT_PROFILE%"
+    set "RESULT_STATUS=failed"
+    set "RESULT_REQUIRES_VULKAN=%PROFILE_REQUIRES_VULKAN%"
+    set "RESULT_EXIT_CODE=1"
+    set "RESULT_LOG_PATH=%CURRENT_PROFILE_LOG%"
+    set "RESULT_MESSAGE=!FAILURE_MESSAGE!"
+    call :record_result
+    exit /b 1
+)
+
+if "!CURRENT_HOST_PACING_REQUESTED!"=="1" (
+    call :run_host_pacing
+    if errorlevel 1 (
+        echo [ERROR] Host frame pacing gate failed for profile %CURRENT_PROFILE%.
+        set "FAILED_PROFILE=%CURRENT_PROFILE%"
+        set "FAILURE_STAGE=host frame pacing"
+        set "FAILURE_MESSAGE=Host frame pacing gate failed for profile %CURRENT_PROFILE%"
+        set "RESULT_PROFILE=%CURRENT_PROFILE%"
+        set "RESULT_STATUS=failed"
+        set "RESULT_REQUIRES_VULKAN=%PROFILE_REQUIRES_VULKAN%"
+        set "RESULT_EXIT_CODE=1"
+        set "RESULT_LOG_PATH=!CURRENT_HOST_PACING_PATH!"
+        set "RESULT_MESSAGE=!FAILURE_MESSAGE!"
+        call :record_result
+        exit /b 1
+    )
+    set /a HOST_PACING_RUNS+=1
+    set "CURRENT_HOST_PACING_PASSED=1"
 )
 
 call :configure_editor_viewport_smoke
@@ -978,6 +1021,31 @@ exit /b 0
 
 :validate_visual_summary
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$path = $env:CURRENT_VISUAL_SUMMARY_PATH; if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { Write-Host ('[ERROR] Visual-summary artifact was not produced: {0}' -f $path); exit 1 }; try { $artifact = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json } catch { Write-Host ('[ERROR] Visual-summary artifact is not valid JSON: {0}' -f $_.Exception.Message); exit 1 }; if ([int]$artifact.schemaVersion -ne 2) { Write-Host ('[ERROR] Visual-summary schema mismatch. Expected 2, received {0}.' -f $artifact.schemaVersion); exit 1 }; if ([string]$artifact.profile -cne $env:CURRENT_PROFILE) { Write-Host ('[ERROR] Visual-summary profile mismatch. Expected {0}, received {1}.' -f $env:CURRENT_PROFILE, $artifact.profile); exit 1 }; if ($artifact.passed -ne $true -or $artifact.checks.passed -ne $true) { Write-Host ('[ERROR] Visual-summary color checks did not pass: {0}' -f $path); exit 1 }; $depth = $artifact.depth; if ($null -eq $depth) { Write-Host '[ERROR] Visual-summary artifact is missing the required depth result.'; exit 1 }; if ($depth.passed -ne $true -or $depth.checks.passed -ne $true) { Write-Host ('[ERROR] Visual-summary depth checks did not pass: {0}' -f $path); exit 1 }; if ([uint32]$depth.width -ne [uint32]$artifact.width -or [uint32]$depth.height -ne [uint32]$artifact.height) { Write-Host ('[ERROR] Visual-summary depth dimensions {0}x{1} do not match color dimensions {2}x{3}.' -f $depth.width, $depth.height, $artifact.width, $artifact.height); exit 1 }; if ([string]$depth.format -cne 'FORMAT_D32_SFLOAT') { Write-Host ('[ERROR] Visual-summary depth format mismatch. Expected FORMAT_D32_SFLOAT, received {0}.' -f $depth.format); exit 1 }; if ([long]$depth.finiteDepthPixelCount -ne [long]$depth.pixelCount -or [long]$depth.normalizedDepthPixelCount -ne [long]$depth.pixelCount) { Write-Host '[ERROR] Visual-summary depth contains non-finite or out-of-range values.'; exit 1 }; if ([long]$depth.writtenDepthPixelCount -lt [long]$depth.checks.requiredWrittenDepthPixelCount) { Write-Host ('[ERROR] Visual-summary depth written coverage is too small: {0}/{1}.' -f $depth.writtenDepthPixelCount, $depth.checks.requiredWrittenDepthPixelCount); exit 1 }; if (@($depth.depthHistogram).Count -ne 16 -or @($depth.spatialDepthGrid).Count -ne 16) { Write-Host '[ERROR] Visual-summary depth distribution has an unexpected shape.'; exit 1 }; $histogramCount = [long]0; @($depth.depthHistogram) | ForEach-Object { $histogramCount += [long]$_ }; if ($histogramCount -ne [long]$depth.pixelCount) { Write-Host ('[ERROR] Visual-summary depth histogram covers {0} values, expected {1}.' -f $histogramCount, $depth.pixelCount); exit 1 }; Write-Host ('[Arisen] Visual-summary passed: {0}x{1}, color={2}, nonblank={3}/{4}, depth={5}, written={6}/{7}, clear={8}, output={9}' -f $artifact.width, $artifact.height, $artifact.format, $artifact.nonBlankPixelCount, $artifact.pixelCount, $depth.format, $depth.writtenDepthPixelCount, $depth.pixelCount, $depth.clearDepthPixelCount, $path)"
+exit /b %ERRORLEVEL%
+
+:configure_host_pacing
+rem The pacing gate drives a real window through a minimize/restore cycle, so it runs once, on the
+rem profile whose runtime owns its window, and only while a GPU and an interactive desktop are
+rem available. Pass --skip-host-pacing to leave the desktop undisturbed.
+if /i "!HOST_PACING!"=="skip" exit /b 0
+if /i not "!SMOKE_MODE!"=="scene" exit /b 0
+if /i not "!CURRENT_PROFILE!"=="Development" exit /b 0
+if "!GPU_AVAILABLE!"=="0" exit /b 0
+
+set "CURRENT_HOST_PACING_REQUESTED=1"
+set "CURRENT_HOST_PACING_PATH=%LOG_DIR%\host-pacing-%CURRENT_PROFILE%-latest.json"
+if exist "!CURRENT_HOST_PACING_PATH!" del /q "!CURRENT_HOST_PACING_PATH!" >nul 2>nul
+if exist "!CURRENT_HOST_PACING_PATH!" (
+    echo [ERROR] Failed to remove stale host pacing artifact: !CURRENT_HOST_PACING_PATH!
+    exit /b 1
+)
+
+echo [Arisen] Host frame pacing gate enabled: !CURRENT_HOST_PACING_PATH!
+exit /b 0
+
+:run_host_pacing
+echo [Arisen] Running bounded host frame pacing gate: %EXE_PATH%
+powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_ROOT%validate_host_pacing.ps1" -Profile "%CURRENT_PROFILE%" -Configuration "%CONFIG%"
 exit /b %ERRORLEVEL%
 
 :configure_editor_viewport_smoke

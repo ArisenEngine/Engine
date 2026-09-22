@@ -339,7 +339,7 @@ public sealed class VegetationRuntimeValidationContractTests
         Assert.Contains("disabledSummaryPath", profileResult, StringComparison.Ordinal);
         Assert.Contains("opaqueOnlySummaryPath", profileResult, StringComparison.Ordinal);
         Assert.Contains("fullSummaryPath", profileResult, StringComparison.Ordinal);
-        Assert.Contains("schemaVersion = 8", runtimeSummary, StringComparison.Ordinal);
+        Assert.Contains("schemaVersion = 9", runtimeSummary, StringComparison.Ordinal);
         Assert.Contains("vegetationVisualComparisonRuns", runtimeSummary, StringComparison.Ordinal);
         Assert.Contains("vegetationVisualSummaryArtifactPaths", runtimeSummary, StringComparison.Ordinal);
     }
@@ -352,7 +352,7 @@ public sealed class VegetationRuntimeValidationContractTests
 
         foreach (string contract in new[]
         {
-            "[int]$summary.schemaVersion -eq 8",
+            "[int]$summary.schemaVersion -eq 9",
             "[int]$summary.vegetationVisualComparisonRuns -eq 2",
             "[int]$summary.vegetationVisualSummaryArtifactCount -eq 3",
             "$vegetationSummaryPaths.Count -eq 3",

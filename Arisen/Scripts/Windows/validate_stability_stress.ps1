@@ -65,8 +65,8 @@ function Read-AndValidateRuntimeSummary([string]$Path)
     Assert-Condition (Test-Path -LiteralPath $Path -PathType Leaf) `
         "Runtime validation summary was not produced: $Path"
     $summary = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json
-    Assert-Condition ([int]$summary.schemaVersion -eq 8) `
-        "Runtime validation summary schema mismatch. Expected 8: $Path"
+    Assert-Condition ([int]$summary.schemaVersion -eq 9) `
+        "Runtime validation summary schema mismatch. Expected 9: $Path"
     Assert-Condition ($summary.succeeded -eq $true -and [int]$summary.exitCode -eq 0) `
         "Runtime validation summary reports failure: $Path"
     Assert-Condition ($summary.gpuAvailable -eq $true) `
@@ -77,6 +77,11 @@ function Read-AndValidateRuntimeSummary([string]$Path)
         "Runtime validation did not execute all four profile smokes: $Path"
     Assert-Condition ([int]$summary.editorViewportSmokeRuns -eq 1) `
         "Runtime validation did not execute the dual-viewport Editor smoke: $Path"
+    Assert-Condition (
+        [int]$summary.hostPacingRuns -eq 1 -and
+        [int]$summary.hostPacingArtifactCount -eq 1 -and
+        @($summary.hostPacingArtifactPaths).Count -eq 1) `
+        "Runtime validation did not execute the Development host frame pacing gate: $Path"
     Assert-Condition ([int]$summary.worldStreamingSmokeRuns -eq 3) `
         "Runtime validation did not execute all world-streaming gates: $Path"
     Assert-Condition ([int]$summary.terrainStreamingSmokeRuns -eq 3) `

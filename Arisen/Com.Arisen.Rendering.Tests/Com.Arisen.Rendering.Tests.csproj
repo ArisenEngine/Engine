@@ -216,6 +216,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.terrain.editor\Managed\TerrainEditorAuthoringController.cs" Link="Source\TerrainEditor\TerrainEditorAuthoringController.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.platform.desktop\Desktop\Win32Native.cs" Link="Source\Platform\Win32Native.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.platform.desktop\Desktop\WindowsProcHandler.cs" Link="Source\Platform\WindowsProcHandler.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.platform.desktop\HostFramePark.cs" Link="Source\Platform\HostFramePark.cs" />
   </ItemGroup>
 
 </Project>
