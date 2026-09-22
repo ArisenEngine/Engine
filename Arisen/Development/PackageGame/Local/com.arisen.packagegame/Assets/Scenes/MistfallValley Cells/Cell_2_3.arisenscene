@@ -9,6 +9,10 @@ ComponentSchemas:
   Name: TerrainTile
   Version: 1
   Required: true
+- TypeId: 1447380803
+  Name: VegetationCluster
+  Version: 1
+  Required: false
 Entities:
 - Guid: 5fcc4556-e0a8-59a1-801b-05489f1f9b39
   Name: Mistfall Valley Terrain Tile 4,6
@@ -74,3 +78,72 @@ Entities:
     CastShadows: true
     ReceiveShadows: true
     PreferHighQuality: false
+- Guid: d48d35af-4559-a85f-6928-49d46bc42a0d
+  Name: Mistfall Valley World Vegetation Cluster valley-grass
+  Transform:
+    Position: { X: 0, Y: 0, Z: 0 }
+    Rotation: { X: 0, Y: 0, Z: 0, W: 1 }
+    Scale: { X: 1, Y: 1, Z: 1 }
+  VegetationCluster:
+    Cluster: { Guid: 9e58d581-dcac-fb9c-0d1d-9a81f911c812, PackageId: com.arisen.packagegame }
+    Biome: { Guid: c0a92f10-0eb9-4d24-b729-7d0f38313001, PackageId: com.arisen.packagegame }
+    Species: { Guid: 3eb515ce-3dea-4994-81a1-a14fc2fe0eb5, PackageId: com.arisen.packagegame }
+    WorldGuid: 38637cf8-f4a1-91f0-90b5-bf63752b4b82
+    OwningCellGuid: 388f5cbf-849f-585f-93c5-bdf8551a3085
+    Cell: { X: 2, Y: 0, Z: 3, Layer: surface }
+    Origin: { X: 0, Y: -64, Z: 256 }
+    Bounds:
+      Min: { X: -0.7843560110777617, Y: 35.30039697885513, Z: 255.22678075358272 }
+      Max: { X: 256.70188015699387, Y: 42.041411101818085, Z: 512.7142552137375 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    QualityGroup: 0
+    PageCount: 14
+    InstanceCount: 55634
+- Guid: 06166e3c-b3cc-df5e-5e09-65775e903cdb
+  Name: Mistfall Valley World Vegetation Cluster valley-shrub
+  Transform:
+    Position: { X: 0, Y: 0, Z: 0 }
+    Rotation: { X: 0, Y: 0, Z: 0, W: 1 }
+    Scale: { X: 1, Y: 1, Z: 1 }
+  VegetationCluster:
+    Cluster: { Guid: 49797cb8-056c-be91-1a7e-8f8ed58ba8a0, PackageId: com.arisen.packagegame }
+    Biome: { Guid: c0a92f10-0eb9-4d24-b729-7d0f38313001, PackageId: com.arisen.packagegame }
+    Species: { Guid: e5605813-00b6-4129-85b2-05b754ccde74, PackageId: com.arisen.packagegame }
+    WorldGuid: 38637cf8-f4a1-91f0-90b5-bf63752b4b82
+    OwningCellGuid: 388f5cbf-849f-585f-93c5-bdf8551a3085
+    Cell: { X: 2, Y: 0, Z: 3, Layer: surface }
+    Origin: { X: 0, Y: -64, Z: 256 }
+    Bounds:
+      Min: { X: -3.396731376647949, Y: 32.56817364692688, Z: 253.11261495947838 }
+      Max: { X: 259.4757385253906, Y: 44.57584500312805, Z: 515.3397562503815 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    QualityGroup: 0
+    PageCount: 5
+    InstanceCount: 4683
+- Guid: 66579964-d3e1-2ec1-3244-db3a3fbe78d7
+  Name: Mistfall Valley World Vegetation Cluster valley-tree
+  Transform:
+    Position: { X: 0, Y: 0, Z: 0 }
+    Rotation: { X: 0, Y: 0, Z: 0, W: 1 }
+    Scale: { X: 1, Y: 1, Z: 1 }
+  VegetationCluster:
+    Cluster: { Guid: c534e723-6331-7e21-7c43-d72cc0d74c6c, PackageId: com.arisen.packagegame }
+    Biome: { Guid: c0a92f10-0eb9-4d24-b729-7d0f38313001, PackageId: com.arisen.packagegame }
+    Species: { Guid: 83212e38-5d3e-4494-8929-fe27639b5a29, PackageId: com.arisen.packagegame }
+    WorldGuid: 38637cf8-f4a1-91f0-90b5-bf63752b4b82
+    OwningCellGuid: 388f5cbf-849f-585f-93c5-bdf8551a3085
+    Cell: { X: 2, Y: 0, Z: 3, Layer: surface }
+    Origin: { X: 0, Y: -64, Z: 256 }
+    Bounds:
+      Min: { X: -7.482785731554031, Y: 27.764042854309082, Z: 250.73236393928528 }
+      Max: { X: 263.9813003540039, Y: 48.53910732269287, Z: 519.6510648727417 }
+    Visible: true
+    CastShadows: true
+    ReceiveShadows: true
+    QualityGroup: 0
+    PageCount: 2
+    InstanceCount: 862

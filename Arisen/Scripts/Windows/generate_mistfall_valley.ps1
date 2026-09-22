@@ -77,6 +77,8 @@ $rootPath = Join-Path $assetRoot "$WorldAssetName.aristerrain"
 $generatedPath = Join-Path $assetRoot "Generated\$WorldAssetName"
 $worldPath = Join-Path $worldRoot "$WorldAssetName.arisenworld"
 $persistentScenePath = Join-Path $sceneRoot "$WorldAssetName-Persistent.arisenscene"
+$workspaceRoot = Split-Path -Parent (Split-Path -Parent $packageRoot)
+$clusterReportPath = Join-Path $workspaceRoot '.arisen\Cache\vegetation-clusters.json'
 
 # --- Identity derivation ----------------------------------------------------------------------
 
@@ -156,6 +158,126 @@ function Get-TileEntityGuid([Guid]$cellSceneGuid, [Guid]$tileGuid)
 function Get-RecipeGuid([int]$cellX, [int]$cellZ, [string]$entryId)
 {
     return Get-ChildGuid $WorldGuid 'vegetation-recipe' "entry=$entryId;cell=$cellX,$cellZ"
+}
+
+# --- World-cell identity ----------------------------------------------------------------------
+
+function Get-WorldCellGuid([Guid]$worldGuid, [int]$cellX, [int]$cellY, [int]$cellZ, [string]$layer)
+{
+    # Mirrors WorldCellIdentity.Create: the runtime compares the authored owning-cell GUID with the
+    # activation cell identity, so both sides have to derive it from the same canonical text.
+    $identity = @(
+        'arisen.world-cell.v1'
+        $worldGuid.ToString('N')
+        $cellX
+        $cellY
+        $cellZ
+        $layer.Trim().ToLowerInvariant()
+    ) -join '|'
+    $digest = Get-Sha256Digest ([System.Text.Encoding]::UTF8.GetBytes($identity))
+    $digest[6] = [byte](($digest[6] -band 0x0F) -bor 0x50)
+    $digest[8] = [byte](($digest[8] -band 0x3F) -bor 0x80)
+    return Get-GuidFromBigEndianBytes $digest
+}
+
+function Format-RoundTrip([double]$value)
+{
+    # Cooked cluster bounds are compared bit for bit against the authored component, so the scene
+    # has to carry a round-trippable scalar rather than a rounded display value.
+    return $value.ToString('R', [System.Globalization.CultureInfo]::InvariantCulture)
+}
+
+function Get-ClusterKey([int]$cellX, [int]$cellY, [int]$cellZ, [string]$layer, [string]$entryId)
+{
+    return "$cellX|$cellY|$cellZ|$layer|$entryId"
+}
+
+function Read-VegetationClusterReport([string]$path)
+{
+    # Cook output written by com.arisen.vegetation. Cell scenes bind vegetation clusters, and the
+    # baked page count, instance count, and bounds only exist after the scatter bake, so the recipes
+    # are authored first and this report is read back on the following run.
+    $clusters = @{}
+    if (-not (Test-Path -LiteralPath $path))
+    {
+        return $clusters
+    }
+
+    $document = [System.Text.Json.JsonDocument]::Parse(
+        [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8))
+    try
+    {
+        $root = $document.RootElement
+        if ($root.GetProperty('schemaVersion').GetInt32() -ne 1)
+        {
+            throw "Vegetation cluster report '$path' declares an unsupported schema version."
+        }
+
+        $worldText = $WorldGuid.ToString('D')
+        $terrainText = $TerrainRootGuid.ToString('D')
+        $biomeText = $BiomeGuid.ToString('D')
+        foreach ($element in $root.GetProperty('clusters').EnumerateArray())
+        {
+            if ($element.GetProperty('worldGuid').GetString() -ne $worldText)
+            {
+                continue
+            }
+
+            if ($element.GetProperty('terrainRootGuid').GetString() -ne $terrainText -or
+                $element.GetProperty('biomeGuid').GetString() -ne $biomeText)
+            {
+                throw "Vegetation cluster report '$path' is stale: it binds a different terrain root or biome."
+            }
+
+            $cell = $element.GetProperty('cell')
+            $origin = $element.GetProperty('origin')
+            $min = $element.GetProperty('bounds').GetProperty('min')
+            $max = $element.GetProperty('bounds').GetProperty('max')
+            $record = [pscustomobject]@{
+                EntryId = $element.GetProperty('entryId').GetString()
+                RecipeGuid = [Guid]$element.GetProperty('recipeGuid').GetString()
+                ClusterGuid = [Guid]$element.GetProperty('clusterGuid').GetString()
+                ClusterPackageId = $element.GetProperty('clusterPackageId').GetString()
+                BiomeGuid = [Guid]$element.GetProperty('biomeGuid').GetString()
+                BiomePackageId = $element.GetProperty('biomePackageId').GetString()
+                SpeciesGuid = [Guid]$element.GetProperty('speciesGuid').GetString()
+                SpeciesPackageId = $element.GetProperty('speciesPackageId').GetString()
+                CellX = $cell.GetProperty('x').GetInt32()
+                CellY = $cell.GetProperty('y').GetInt32()
+                CellZ = $cell.GetProperty('z').GetInt32()
+                Layer = $cell.GetProperty('layer').GetString()
+                OriginX = $origin.GetProperty('x').GetDouble()
+                OriginY = $origin.GetProperty('y').GetDouble()
+                OriginZ = $origin.GetProperty('z').GetDouble()
+                MinX = $min.GetProperty('x').GetDouble()
+                MinY = $min.GetProperty('y').GetDouble()
+                MinZ = $min.GetProperty('z').GetDouble()
+                MaxX = $max.GetProperty('x').GetDouble()
+                MaxY = $max.GetProperty('y').GetDouble()
+                MaxZ = $max.GetProperty('z').GetDouble()
+                PageCount = $element.GetProperty('pageCount').GetInt32()
+                InstanceCount = $element.GetProperty('instanceCount').GetInt32()
+            }
+            if ($ScatterEntries.EntryId -notcontains $record.EntryId)
+            {
+                throw "Vegetation cluster report '$path' is stale: it carries unconfigured entry '$($record.EntryId)'."
+            }
+
+            $key = Get-ClusterKey $record.CellX $record.CellY $record.CellZ $record.Layer $record.EntryId
+            if ($clusters.ContainsKey($key))
+            {
+                throw "Vegetation cluster report '$path' declares cell entry '$key' more than once."
+            }
+
+            $clusters[$key] = $record
+        }
+    }
+    finally
+    {
+        $document.Dispose()
+    }
+
+    return $clusters
 }
 
 # --- Raster synthesis kernel ------------------------------------------------------------------
@@ -488,10 +610,40 @@ function New-TileEntityBlock([int]$tileX, [int]$tileZ, [Guid]$tileGuid, [double]
     return $text.ToString()
 }
 
-function New-CellSceneText([int]$cellX, [int]$cellZ, $tileRecords)
+function New-ClusterEntityBlock($cluster, [Guid]$cellSceneGuid, [Guid]$owningCellGuid)
+{
+    $text = [System.Text.StringBuilder]::new(1024)
+    Add-Line $text ("- Guid: $((Get-ChildGuid $cellSceneGuid 'vegetation-cluster' "entry=$($cluster.EntryId)").ToString('D'))")
+    Add-Line $text ("  Name: $WorldDisplayName Vegetation Cluster $($cluster.EntryId)")
+    Add-Line $text ('  Transform:')
+    Add-Line $text ('    Position: { X: 0, Y: 0, Z: 0 }')
+    Add-Line $text ('    Rotation: { X: 0, Y: 0, Z: 0, W: 1 }')
+    Add-Line $text ('    Scale: { X: 1, Y: 1, Z: 1 }')
+    Add-Line $text ('  VegetationCluster:')
+    Add-Line $text ("    Cluster: { Guid: $($cluster.ClusterGuid.ToString('D')), PackageId: $($cluster.ClusterPackageId) }")
+    Add-Line $text ("    Biome: { Guid: $($cluster.BiomeGuid.ToString('D')), PackageId: $($cluster.BiomePackageId) }")
+    Add-Line $text ("    Species: { Guid: $($cluster.SpeciesGuid.ToString('D')), PackageId: $($cluster.SpeciesPackageId) }")
+    Add-Line $text ("    WorldGuid: $($WorldGuid.ToString('D'))")
+    Add-Line $text ("    OwningCellGuid: $($owningCellGuid.ToString('D'))")
+    Add-Line $text ("    Cell: { X: $($cluster.CellX), Y: $($cluster.CellY), Z: $($cluster.CellZ), Layer: $($cluster.Layer) }")
+    Add-Line $text ("    Origin: { X: $(Format-RoundTrip $cluster.OriginX), Y: $(Format-RoundTrip $cluster.OriginY), Z: $(Format-RoundTrip $cluster.OriginZ) }")
+    Add-Line $text ('    Bounds:')
+    Add-Line $text ("      Min: { X: $(Format-RoundTrip $cluster.MinX), Y: $(Format-RoundTrip $cluster.MinY), Z: $(Format-RoundTrip $cluster.MinZ) }")
+    Add-Line $text ("      Max: { X: $(Format-RoundTrip $cluster.MaxX), Y: $(Format-RoundTrip $cluster.MaxY), Z: $(Format-RoundTrip $cluster.MaxZ) }")
+    Add-Line $text ('    Visible: true')
+    Add-Line $text ('    CastShadows: true')
+    Add-Line $text ('    ReceiveShadows: true')
+    Add-Line $text ('    QualityGroup: 0')
+    Add-Line $text ("    PageCount: $($cluster.PageCount)")
+    Add-Line $text ("    InstanceCount: $($cluster.InstanceCount)")
+    return $text.ToString()
+}
+
+function New-CellSceneText([int]$cellX, [int]$cellZ, $tileRecords, $clusterRecords)
 {
     $cellOriginX = $WorldOrigin + ($cellX * $CellMetres)
     $cellOriginZ = $WorldOrigin + ($cellZ * $CellMetres)
+    $cellSceneGuid = Get-CellSceneGuid $cellX $cellZ
     $text = [System.Text.StringBuilder]::new(8192)
     Add-Line $text ('Version: 2')
     Add-Line $text ("Name: $WorldDisplayName Cell $cellX,$cellZ")
@@ -504,10 +656,28 @@ function New-CellSceneText([int]$cellX, [int]$cellZ, $tileRecords)
     Add-Line $text ('  Name: TerrainTile')
     Add-Line $text ('  Version: 1')
     Add-Line $text ('  Required: true')
+    if ($clusterRecords.Count -gt 0)
+    {
+        Add-Line $text ('- TypeId: 1447380803')
+        Add-Line $text ('  Name: VegetationCluster')
+        Add-Line $text ('  Version: 1')
+        Add-Line $text ('  Required: false')
+    }
+
     Add-Line $text ('Entities:')
     foreach ($tile in $tileRecords)
     {
         $block = (New-TileEntityBlock $tile.X $tile.Z $tile.Guid $cellOriginX $cellOriginZ).TrimEnd("`n")
+        foreach ($entry in $block -split "`n")
+        {
+            Add-Line $text ($entry)
+        }
+    }
+
+    $owningCellGuid = Get-WorldCellGuid $WorldGuid $cellX 0 $cellZ 'surface'
+    foreach ($cluster in $clusterRecords)
+    {
+        $block = (New-ClusterEntityBlock $cluster $cellSceneGuid $owningCellGuid).TrimEnd("`n")
         foreach ($entry in $block -split "`n")
         {
             Add-Line $text ($entry)
@@ -716,6 +886,41 @@ function New-PersistentSceneText()
     return $text.ToString()
 }
 
+function Get-CellClusters($report, $cell)
+{
+    $records = @()
+    foreach ($entry in $ScatterEntries)
+    {
+        $key = Get-ClusterKey $cell.X 0 $cell.Z 'surface' $entry.EntryId
+        if (-not $report.ContainsKey($key))
+        {
+            # The bake produced no instances for this entry inside this cell, so the cell scene
+            # authors no cluster for it.
+            continue
+        }
+
+        $record = $report[$key]
+        $expectedRecipeGuid = Get-RecipeGuid $cell.X $cell.Z $entry.EntryId
+        if ($record.RecipeGuid -ne $expectedRecipeGuid)
+        {
+            throw "[MistfallValley] Vegetation cluster report is stale for '$key': baked from recipe " +
+                "'$($record.RecipeGuid.ToString('D'))' instead of '$($expectedRecipeGuid.ToString('D'))'. Re-cook " +
+                "the runtime assets before regenerating cell scenes."
+        }
+
+        if ($record.OriginX -ne [double]$cell.OriginX -or
+            $record.OriginY -ne -64.0 -or
+            $record.OriginZ -ne [double]$cell.OriginZ)
+        {
+            throw "[MistfallValley] Vegetation cluster report origin for '$key' does not match the authored cell origin."
+        }
+
+        $records += $record
+    }
+
+    return @($records | Sort-Object EntryId)
+}
+
 # --- Plan -------------------------------------------------------------------------------------
 
 $tileRecords = [System.Collections.Generic.List[object]]::new()
@@ -762,6 +967,15 @@ Write-Host "[MistfallValley] Raster $WorldSamples x $WorldSamples samples ($(For
 Write-Host "[MistfallValley] Terrain root guid=$($TerrainRootGuid.ToString('D')) tiles=$($tileRecords.Count) -> $rootPath"
 Write-Host "[MistfallValley] Cell scenes=$($cellRecords.Count) under $cellSceneRoot"
 Write-Host "[MistfallValley] Scatter recipes=$($cellRecords.Count * $ScatterEntries.Count) under $vegetationRoot"
+if (Test-Path -LiteralPath $clusterReportPath)
+{
+    Write-Host "[MistfallValley] Cooked cluster report found: $clusterReportPath"
+}
+else
+{
+    Write-Host "[MistfallValley] No cooked cluster report at $clusterReportPath; cell scenes keep their tiles only. Cook the runtime assets and rerun to author the baked clusters."
+}
+
 Write-Host "[MistfallValley] Startup camera (-102, -128) resolves to cell ($($startupCell.X),$($startupCell.Z))"
 if ($DryRun)
 {
@@ -789,12 +1003,16 @@ foreach ($tile in $tileRecords)
     Write-Text "$stubPath.meta" (New-GeneratedMeta $tile.Guid 'TerrainTile' 'ArisenTerrainTileImporter' 'terrain-tile' ("x={0};z={1}" -f $tile.X, $tile.Z))
 }
 
+$clusterReport = Read-VegetationClusterReport $clusterReportPath
+$clusterTotal = 0
 foreach ($cell in $cellRecords)
 {
     $script:cellX = $cell.X
     $script:cellZ = $cell.Z
+    $cellClusters = Get-CellClusters $clusterReport $cell
+    $clusterTotal += $cellClusters.Count
     $scenePath = Join-Path $cellSceneRoot ("Cell_{0}_{1}.arisenscene" -f $cell.X, $cell.Z)
-    Write-Text $scenePath (New-CellSceneText $cell.X $cell.Z $cell.Tiles)
+    Write-Text $scenePath (New-CellSceneText $cell.X $cell.Z $cell.Tiles $cellClusters)
     Write-Text "$scenePath.meta" (New-SourceMeta $cell.SceneGuid 'Scene' 'ArisenSceneImporter')
     foreach ($entry in $ScatterEntries)
     {
@@ -820,4 +1038,5 @@ Write-Text "$worldPath.meta" (New-SourceMeta $WorldGuid 'World' 'ArisenWorldImpo
 Write-Text $persistentScenePath (New-PersistentSceneText)
 Write-Text "$persistentScenePath.meta" (New-SourceMeta $PersistentSceneGuid 'Scene' 'ArisenSceneImporter')
 
+Write-Host "[MistfallValley] Authored $clusterTotal vegetation cluster entity(ies) across the cell scenes."
 Write-Host "[MistfallValley] Wrote $(($cellRecords.Count * $ScatterEntries.Count) + $tileRecords.Count + ($cellRecords.Count * 2) + 4) files."
