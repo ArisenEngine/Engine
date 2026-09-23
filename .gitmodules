@@ -58,3 +58,6 @@
 [submodule "Arisen/Development/PackageGame/Local/com.arisen.vegetation.editor"]
 	path = Arisen/Development/PackageGame/Local/com.arisen.vegetation.editor
 	url = https://github.com/ArisenEngine/com.arisen.vegetation.editor.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.samples"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.samples
+	url = https://github.com/ArisenEngine/com.arisen.samples.git
