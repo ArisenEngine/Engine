@@ -78,8 +78,11 @@ StyleCopReport.xml
 *.ilk
 *.meta
 *.obj
-!/Development/PackageGame/Local/com.arisen.packagegame/Assets/**/*.meta
-!/Development/PackageGame/Local/com.arisen.packagegame/Assets/**/*.obj
+# Asset metadata and Wavefront meshes are not Visual Studio artifacts. The patterns above
+# (.meta, .obj) come from the Visual Studio template and collide with these asset extensions, so
+# every asset root is re-included here rather than per package.
+!**/Assets/**/*.meta
+!**/Assets/**/*.obj
 *.iobj
 *.pch
 *.pdb
