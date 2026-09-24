@@ -69,7 +69,15 @@ an explicit time box and never block a slice.
 | D4 | Large-world terrain work is Track B2, after B1, and does not start before slice 1. | 2026-09-23 |
 | D5 | Target platform is PC Windows with Vulkan. Hardware tier and frame-rate targets are open. | 2026-09-23 |
 | D6 | Managed C# stays the orchestration layer and per-instance work moves to the GPU. Rewriting the managed layer in C++ is not planned; managed boundary cost is measured with Tracy. | 2026-09-23 |
-| D7 | A Samples workspace provides the capability gallery: one `Samples` profile with an in-app hub as the primary path, and every sample launchable directly through `--sample <id>` so no gate depends on the hub. | proposed |
+| D7 | The sample gallery is one `Samples` profile inside the `PackageGame` workspace, with the hub as a browsing layer only. Every sample must also boot directly, and no gate drives the hub. | 2026-09-24 |
+| D8 | No runtime package load or unload. A different package set is a profile, a heavy switch restarts the process, and content scale is handled by residency streaming. | 2026-09-24 |
+| D9 | Package activation is a first-class state. A dormant package stays loaded with its services registered, at zero per-frame cost and zero budget. | 2026-09-24 |
+| D10 | The application shell is extracted into `com.arisen.app` and products depend on it. Startup target selection is generic `--startup-*`, because one workspace holds several products. | 2026-09-24 |
+| D11 | `RenderPipelineManager` is a dead seam with no callers. It is merged or deleted, leaving only `RenderSubsystem` and `Graphics`. | 2026-09-24 |
+| D12 | Exclusive resources declare ownership, and competing service registrations hard-fail at startup instead of silently resolving last-wins. | 2026-09-24 |
+| D13 | Asset roots are a first-class registry rather than a filename convention. Workspace and package roots are declared once and shared by editor and runtime, and path policy queries that table instead of walking parent directories for a folder named `Assets`. | 2026-09-24 |
+| D14 | Every asset root carries an edit policy, resolved as: workspace declaration, then a hard read-only rule for archive or extracted-cache mounts, then a `layer` default where `user` is writable and the rest are read-only. Read never blocks, so read-only roots stay indexed, browsable, referenceable, and cooked. | 2026-09-24 |
+| D15 | The workspace `Assets` root is a scratch area, not a shared library: writable, never shipped, never a startup reference, and no shipped asset may depend on it. Shared content is expressed as a package. | 2026-09-24 |
 
 ## Track Structure
 
@@ -152,11 +160,14 @@ capability can only be seen by knowing which workspace, profile, and solution to
 
 **Design.**
 
-- Samples live in their own workspace with its own manifest, separate from the game workspace.
-- One `Samples` profile plus one hub scene is the primary entry point. A sample is selected inside
-  the running application.
-- Every sample must also boot directly through `--sample <id>`. Automated gates never drive the hub
-  UI.
+- Sample content lives in `com.arisen.samples`, a package inside the `PackageGame` workspace. It is
+  not a separate workspace, and it never depends on the hub to launch.
+- One `Samples` profile plus one hub scene is the reviewing entry point. A sample is selected inside
+  the running application, and a heavy switch restarts the process (D8).
+- Every sample must also boot directly through the generic `--startup-*` selection (D10). Automated
+  gates never drive the hub UI.
+- Sample content is referenced only by the `Samples` profile. The base package list and the Editor,
+  Development, and Production profiles are untouched by it.
 - A sample declares identity, a one-line description, its scene, an optional world, its required
   packages, expected visuals, and the gate scenario and artifact that prove it.
 - Sample switching between content-only differences uses the existing runtime world-load path.
@@ -177,6 +188,27 @@ capability can only be seen by knowing which workspace, profile, and solution to
 - Cost: a broken sample takes the hub process down with it.
 - Mitigation: keep a small number of isolation profiles for the samples whose subject is isolation
   itself, not one profile per capability.
+
+## Asset Ownership And Roots
+
+Content ownership decides which package ships and cooks an asset, so it is recorded here rather than
+left to folder layout.
+
+- Every asset is owned by exactly one package. Generated child assets derive their GUID from the
+  source GUID, the owning package id, the child kind, and the child key
+  (`GeneratedAssetIdentity.CreateChildGuid`), so moving content between owners changes the identity of
+  every generated child and invalidates the cooked cache.
+- The workspace `Assets` root is a scratch area (D15). It may hold experiments and throwaway imports.
+  It may never be a startup reference, and no shipped asset may depend on it. A cook that reaches a
+  workspace-owned node fails hard instead of dropping the asset from the deployment.
+- Shared content is a package, not a shared folder. When two products genuinely share content, that
+  content moves into a package every relevant profile mounts, which gives it a version, a dependency
+  edge, a service identity, and a residency owner.
+- Roots are declared once and queried (D13). A path is legal because it belongs to a registered root,
+  not because some ancestor directory happens to be named `Assets`.
+- Package assets are editable only where the workspace says so (D14). Engine packages are mounted from
+  separate repositories, so editing them in place dirties a submodule; the default is read-only and a
+  workspace opts specific packages into authoring.
 
 ## Open Questions
 
