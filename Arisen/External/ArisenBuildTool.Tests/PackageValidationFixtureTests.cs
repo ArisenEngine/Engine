@@ -830,6 +830,35 @@ public sealed class PackageValidationFixtureTests
     }
 
     [Fact]
+    public void ProfileCannotDeclareBothEditorAndDeployed()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage("com.test.app", layer: "user");
+        ProjectManifest manifest = workspace.CreateManifest(new PackageRequirement
+        {
+            Id = "com.test.app",
+            Url = "file://Local/com.test.app",
+            Version = "1.0.0"
+        });
+
+        manifest.Profiles!["Development"].IsEditor = true;
+        manifest.Profiles["Development"].IsDeployed = true;
+
+        PackageValidationResult contradictory = workspace.Validate(manifest);
+
+        Assert.False(contradictory.Success);
+        Assert.Contains(contradictory.Errors, error =>
+            error.Contains("IsEditor", StringComparison.Ordinal) &&
+            error.Contains("IsDeployed", StringComparison.Ordinal));
+
+        manifest.Profiles["Development"].IsEditor = false;
+
+        Assert.True(
+            workspace.Validate(manifest).Success,
+            "A deployed profile that does not also claim to be an editor is valid.");
+    }
+
+    [Fact]
     public void NativeOutputValidationFailsWhenResolvedPayloadIsMissing()
     {
         using var workspace = ValidationWorkspace.Create();
