@@ -16,7 +16,9 @@ public sealed record EnginePackageGraphResolution(
     string ManifestPath,
     string ResolvedManifestPath,
     IReadOnlyList<string> PackageUrls,
-    IReadOnlyList<SelectedPackageRequirement> PackageRequirements);
+    IReadOnlyList<SelectedPackageRequirement> PackageRequirements,
+    bool IsEditorProfile,
+    bool IsDeployedProfile);
 
 public static class EngineBootstrapper
 {
@@ -144,17 +146,6 @@ public static class EngineBootstrapper
             }
         }
 
-        try
-        {
-            runtimeAssetOptions.Validate(profile, deployedLaunch);
-        }
-        catch (InvalidOperationException ex)
-        {
-            KernelLog.FatalFormat("[Host] FATAL ERROR: {0}", ex.Message);
-            requestProcessExit(1);
-            return;
-        }
-
         if (string.IsNullOrEmpty(workspacePath))
         {
             // NEW: In generated projects, we are in .arisen/bin/{profile}/{config}/
@@ -181,6 +172,23 @@ public static class EngineBootstrapper
                 manifestPathOverride: manifestPath);
         }
         catch (Exception ex)
+        {
+            KernelLog.FatalFormat("[Host] FATAL ERROR: {0}", ex.Message);
+            requestProcessExit(1);
+            return;
+        }
+
+        // The source-access policy depends on declared profile properties, so it can only be
+        // validated once the workspace manifest has been resolved.
+        try
+        {
+            runtimeAssetOptions.Validate(
+                profile,
+                deployedLaunch,
+                packageGraph.IsEditorProfile,
+                packageGraph.IsDeployedProfile);
+        }
+        catch (InvalidOperationException ex)
         {
             KernelLog.FatalFormat("[Host] FATAL ERROR: {0}", ex.Message);
             requestProcessExit(1);
@@ -253,6 +261,7 @@ public static class EngineBootstrapper
             {
                 ProjectRoot = workspacePath,
                 ProjectName = projectName,
+                Profile = profile,
                 PackageUrls = packageUrls,
                 PackageRequirements = packageRequirements,
                 Platform = RuntimePlatform.Windows, // TODO: Deduce from OS
@@ -610,11 +619,27 @@ public static class EngineBootstrapper
         }
 
         AddPackages(packagesElement, "workspace base Packages");
+        bool isEditorProfile = false;
+        bool isDeployedProfile = false;
         if (manifestJson.RootElement.TryGetPropertyIC("Profiles", out JsonElement profilesElement))
         {
             if (profilesElement.TryGetPropertyIC(profile, out JsonElement profileDefinition))
             {
                 KernelLog.InfoFormat("[Host] Loading Profile: {0}", profile);
+                if (profileDefinition.ValueKind == JsonValueKind.Object &&
+                    profileDefinition.TryGetPropertyIC("IsEditor", out JsonElement editorElement) &&
+                    editorElement.ValueKind == JsonValueKind.True)
+                {
+                    isEditorProfile = true;
+                }
+
+                if (profileDefinition.ValueKind == JsonValueKind.Object &&
+                    profileDefinition.TryGetPropertyIC("IsDeployed", out JsonElement deployedElement) &&
+                    deployedElement.ValueKind == JsonValueKind.True)
+                {
+                    isDeployedProfile = true;
+                }
+
                 if (profileDefinition.ValueKind == JsonValueKind.Object &&
                     profileDefinition.TryGetPropertyIC("Packages", out JsonElement profilePackages))
                 {
@@ -625,8 +650,7 @@ public static class EngineBootstrapper
                     AddPackages(profileDefinition, $"workspace profile '{profile}' Packages");
                 }
             }
-            else if (!string.Equals(profile, "Development", StringComparison.OrdinalIgnoreCase) &&
-                     !string.Equals(profile, "Production", StringComparison.OrdinalIgnoreCase))
+            else
             {
                 KernelLog.WarningFormat(
                     "[Host] WARNING: Profile '{0}' not found in manifest.json.",
@@ -699,7 +723,9 @@ public static class EngineBootstrapper
             manifestPath,
             resolvedManifestPath,
             packageUrls.ToArray(),
-            packageRequirements.ToArray());
+            packageRequirements.ToArray(),
+            isEditorProfile,
+            isDeployedProfile);
     }
 
     private static void LogRuntimeDiagnostics(

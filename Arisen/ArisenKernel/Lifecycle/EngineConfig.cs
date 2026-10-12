@@ -29,6 +29,15 @@ public class EngineConfig
     public string DataPath { get; set; } = string.Empty;
     public string ProjectRoot { get; set; } = string.Empty;
     public string ProjectName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Name of the workspace profile this process was launched for. Profile names are labels chosen
+    /// by the workspace author, so engine behaviour must key off declared profile properties rather
+    /// than off a specific name. Consumers that need a profile identity (for example the deployed
+    /// asset catalog, which records the profile it was cooked for) read it from here.
+    /// </summary>
+    public string Profile { get; set; } = string.Empty;
+
     public RuntimePlatform Platform { get; set; } = RuntimePlatform.Windows;
     public EngineExecutionMode ExecutionMode { get; set; } = EngineExecutionMode.Runtime;
     public bool EnableSourceAssetDiagnostics { get; set; }
