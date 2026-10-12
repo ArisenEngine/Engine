@@ -12,6 +12,7 @@ public class PackageRequirement
 public class ProfileDefinition
 {
     public bool IsEditor { get; set; } = false;
+    public bool IsDeployed { get; set; } = false;
     public List<PackageRequirement> Packages { get; set; } = new();
 }
 

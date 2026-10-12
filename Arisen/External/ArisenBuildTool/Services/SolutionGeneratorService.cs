@@ -22,6 +22,7 @@ public static class SolutionGeneratorService
         ProjectManifest manifest,
         string profile,
         bool isEditor,
+        bool isDeployed,
         bool enableProfiler,
         string? finalizationManifestPath = null)
     {
@@ -41,6 +42,7 @@ public static class SolutionGeneratorService
             manifest,
             profile,
             isEditor,
+            isDeployed,
             enableProfiler,
             managedPackages,
             projectsDir,
@@ -301,12 +303,13 @@ public static class SolutionGeneratorService
         ProjectManifest manifest,
         string profile,
         bool isEditor,
+        bool isDeployed,
         bool enableProfiler,
         List<PackageInfo> managedPackages,
         string projectsDir,
         string? finalizationManifestPath)
     {
-        if (TryGenerateLauncherHostProject(csprojPath, engineDir, projectName, profile, isEditor, enableProfiler))
+        if (TryGenerateLauncherHostProject(csprojPath, engineDir, projectName, profile, isEditor, isDeployed, enableProfiler))
         {
             return;
         }
@@ -329,7 +332,7 @@ public static class SolutionGeneratorService
         writer.WriteLine("    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>");
         writer.WriteLine("    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>");
 
-        string constants = BuildDefineConstants(profile, isEditor, enableProfiler);
+        string constants = BuildDefineConstants(profile, isEditor, isDeployed, enableProfiler);
         writer.WriteLine($"    <DefineConstants>{constants}</DefineConstants>");
         writer.WriteLine("  </PropertyGroup>");
         writer.WriteLine();
@@ -398,7 +401,7 @@ public static class SolutionGeneratorService
         writer.WriteLine("  <Target Name=\"ArisenFinalizeNativeOutput\" AfterTargets=\"Build\" Condition=\"'$(DesignTimeBuild)' != 'true'\">");
         writer.WriteLine($"    <Exec Command=\"dotnet &quot;{buildToolDll}&quot; finalize-native-output --workspace &quot;{escapedWorkspace}&quot; --engine &quot;{escapedEngine}&quot; --profile {profile} --configuration $(Configuration) --output-root &quot;$(TargetDir).&quot;{manifestArgument}\" />");
         writer.WriteLine("  </Target>");
-        if (hasCorePackage && string.Equals(profile, "Production", StringComparison.OrdinalIgnoreCase))
+        if (hasCorePackage && isDeployed)
         {
             writer.WriteLine();
             writer.WriteLine("  <Target Name=\"ArisenCookRuntimeAssets\" AfterTargets=\"ArisenFinalizeNativeOutput\" Condition=\"'$(DesignTimeBuild)' != 'true' and '$(ArisenSkipAssetCook)' != 'true'\">");
@@ -441,7 +444,7 @@ public class Program {{
             .Replace(">", "&gt;", StringComparison.Ordinal);
     }
 
-    private static bool TryGenerateLauncherHostProject(string csprojPath, string engineDir, string projectName, string profile, bool isEditor, bool enableProfiler)
+    private static bool TryGenerateLauncherHostProject(string csprojPath, string engineDir, string projectName, string profile, bool isEditor, bool isDeployed, bool enableProfiler)
     {
         if (!string.Equals(projectName, "ArisenLauncher", StringComparison.OrdinalIgnoreCase))
         {
@@ -475,7 +478,7 @@ public class Program {{
         writer.WriteLine("    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>");
         writer.WriteLine("    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>");
 
-        string constants = BuildDefineConstants(profile, isEditor, enableProfiler);
+        string constants = BuildDefineConstants(profile, isEditor, isDeployed, enableProfiler);
         writer.WriteLine($"    <DefineConstants>{constants}</DefineConstants>");
         writer.WriteLine("  </PropertyGroup>");
         writer.WriteLine();
@@ -522,10 +525,11 @@ public static class Program
         return true;
     }
 
-    private static string BuildDefineConstants(string profile, bool isEditor, bool enableProfiler)
+    private static string BuildDefineConstants(string profile, bool isEditor, bool isDeployed, bool enableProfiler)
     {
         string constants = $"ARISEN_PROFILE_{profile.ToUpperInvariant()}";
         if (isEditor) constants += ";ARISEN_ENGINE_EDITOR";
+        if (isDeployed) constants += ";ARISEN_DEPLOYED";
         if (enableProfiler) constants += ";ARISEN_PROFILER_ENABLED";
 
         return constants;

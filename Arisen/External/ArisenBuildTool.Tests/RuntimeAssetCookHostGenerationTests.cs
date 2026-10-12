@@ -6,12 +6,16 @@ namespace ArisenBuildTool.Tests;
 
 public sealed class RuntimeAssetCookHostGenerationTests
 {
-    [Fact]
-    public void ProductionEntryProjectDispatchesAndRunsPackageCookHost()
+    // The automatic cook and deploy step follows the profile's declared IsDeployed role, so the
+    // profile name is only a label. "Gallery" is deliberately not a built-in engine name.
+    [Theory]
+    [InlineData("Production")]
+    [InlineData("Gallery")]
+    public void DeployedEntryProjectDispatchesAndRunsPackageCookHost(string profile)
     {
         using var temp = new TempDirectory();
         string workspace = Path.Combine(temp.Path, "Workspace & Cook");
-        string projects = Path.Combine(workspace, ".arisen", "Projects", "Production");
+        string projects = Path.Combine(workspace, ".arisen", "Projects", profile);
         string engine = Path.Combine(temp.Path, "Engine");
         Directory.CreateDirectory(projects);
         Directory.CreateDirectory(Path.Combine(engine, "ArisenKernel"));
@@ -27,8 +31,9 @@ public sealed class RuntimeAssetCookHostGenerationTests
             packages,
             "PackageGame",
             new ProjectManifest { Name = "PackageGame" },
-            "Production",
+            profile,
             isEditor: false,
+            isDeployed: true,
             enableProfiler: false);
 
         string entryDirectory = Path.Combine(projects, "PackageGame");
@@ -90,6 +95,7 @@ public sealed class RuntimeAssetCookHostGenerationTests
             new ProjectManifest { Name = "PackageGame" },
             "Development",
             isEditor: false,
+            isDeployed: false,
             enableProfiler: true);
 
         string entryDirectory = Path.Combine(projects, "PackageGame");
@@ -123,6 +129,7 @@ public sealed class RuntimeAssetCookHostGenerationTests
             new ProjectManifest { Name = "PackageTestRun" },
             "Testing",
             isEditor: false,
+            isDeployed: false,
             enableProfiler: false,
             finalizationManifestPath: testManifestPath);
 

@@ -71,6 +71,14 @@ public static class PackageValidationService
         {
             if (manifest.Profiles != null && manifest.Profiles.TryGetValue(profile, out var profileDefinition))
             {
+                if (profileDefinition.IsEditor && profileDefinition.IsDeployed)
+                {
+                    result.Errors.Add(
+                        $"Profile '{profile}' declares both IsEditor and IsDeployed. An editor " +
+                        "profile reads source assets, so it cannot also be a cooked-only deployed " +
+                        "product that boots from its asset catalog.");
+                }
+
                 foreach (var package in profileDefinition.Packages ?? new List<PackageRequirement>())
                 {
                     EnqueueRequirement(

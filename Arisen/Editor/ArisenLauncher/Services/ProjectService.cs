@@ -183,6 +183,8 @@ public class ProjectService
               ],
 
               // Profiles append packages for a launch mode. Development usually includes editor tooling.
+              // IsDeployed marks a profile that ships as a self-contained product: its content is cooked
+              // and deployed beside the executable, and a normal launch reads it from there.
               "Profiles": {
                 "Development": {
                   "IsEditor": true,
@@ -190,6 +192,7 @@ public class ProjectService
                 },
                 "Production": {
                   "IsEditor": false,
+                  "IsDeployed": true,
                   "Packages": []
                 }
               }

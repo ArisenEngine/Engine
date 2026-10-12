@@ -21,7 +21,12 @@ public partial class PackageManagerViewModel
         {
             foreach (var kvp in Manifest.Profiles)
             {
-                var p = new WorkspaceProfileViewModel { Name = kvp.Key, IsEditor = kvp.Value.IsEditor };
+                var p = new WorkspaceProfileViewModel
+                {
+                    Name = kvp.Key,
+                    IsEditor = kvp.Value.IsEditor,
+                    IsDeployed = kvp.Value.IsDeployed
+                };
                 var selectedPackageIds = kvp.Value.Packages.Select(x => x.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
                 foreach (var req in kvp.Value.Packages)
                 {
@@ -41,7 +46,7 @@ public partial class PackageManagerViewModel
         {
             // Default scaffolding
             var development = new WorkspaceProfileViewModel { Name = "Development" };
-            var production = new WorkspaceProfileViewModel { Name = "Production" };
+            var production = new WorkspaceProfileViewModel { Name = "Production", IsDeployed = true };
             PopulateProfilePackageOptions(development, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
             PopulateProfilePackageOptions(production, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
             Profiles.Add(development);
@@ -216,6 +221,7 @@ public partial class WorkspaceProfileViewModel : ObservableObject
 {
     [ObservableProperty] private string _name = string.Empty;
     [ObservableProperty] private bool _isEditor;
+    [ObservableProperty] private bool _isDeployed;
     public ObservableCollection<PackageRequirementViewModel> Nodes { get; } = new();
     public ObservableCollection<ProfilePackageOptionViewModel> PackageOptions { get; } = new();
 

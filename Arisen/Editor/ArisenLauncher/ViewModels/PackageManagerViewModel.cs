@@ -479,7 +479,11 @@ public partial class PackageManagerViewModel : ObservableObject
         Manifest.Profiles = new System.Collections.Generic.Dictionary<string, ProfileDefinition>();
         foreach (var profile in Profiles)
         {
-            var def = new ProfileDefinition { IsEditor = profile.IsEditor };
+            var def = new ProfileDefinition
+            {
+                IsEditor = profile.IsEditor,
+                IsDeployed = profile.IsDeployed
+            };
             SyncProfileNodesFromOptions(profile);
 
             foreach (var package in profile.Nodes.OrderBy(x => x.Id, StringComparer.OrdinalIgnoreCase))

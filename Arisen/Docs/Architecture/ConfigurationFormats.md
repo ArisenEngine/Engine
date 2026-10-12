@@ -110,6 +110,7 @@ Tooling may deserialize case-insensitively for transition compatibility, but gen
     },
     "Production": {
       "IsEditor": false,
+      "IsDeployed": true,
       "EnableProfiler": false,
       "Packages": []
     }
@@ -139,8 +140,13 @@ Tooling may deserialize case-insensitively for transition compatibility, but gen
 | `Packages[].Version` | `string` | **Yes** | Exact package version or supported registry semantic range (e.g., `"1.0.0"`, `">=1.2.0 <2.0.0"`, `"^1.2.0"`, `"~1.2.0"`, `"*"`). Local file packages should still declare an exact version so duplicate entries and package locks remain deterministic. |
 | `Profiles` | `object` | Optional | A dictionary of named profiles mapped to profile metadata objects. |
 | `Profiles[Key].IsEditor` | `bool` | Optional | If `true`, generated projects define `ARISEN_ENGINE_EDITOR`. Use this for editor/window/RHI ownership policy, not runtime flags. Defaults to `false`. |
+| `Profiles[Key].IsDeployed` | `bool` | Optional | If `true`, generated projects define `ARISEN_DEPLOYED` and the entry project gains the automatic cook and runtime-metadata deployment targets, and a normal launch mounts the cooked runtime asset catalog beside the executable instead of the workspace asset database. Declaring `IsEditor` and `IsDeployed` together is a validation error, because an editor reads source assets while a deployed product never does. Defaults to `false`. |
 | `Profiles[Key].EnableProfiler` | `bool` | Optional | If `true`, generated managed and native projects define `ARISEN_PROFILER_ENABLED` and profiler-only native payloads are selected. If `false`, instrumentation and `requiresProfiler` payloads are excluded. Defaults to `false`. |
 | `Profiles[Key].Packages` | `array` | Optional | Additional packages formatted identically to the base `Packages` array. These are **appended** to the base list when this specific profile is requested via command line (`--profile Key`). |
+
+Profile keys are labels chosen by the workspace author, and profiles are peers: any number of them
+may exist, and none is privileged over another. Engine and build behaviour keys off the declared
+properties above and never off a specific key, so renaming a profile changes nothing but its name.
 
 Source precedence is intentional: `file://` means local source, `http(s)://` means a restored cache package, and an empty `Url` is fallback discovery. Local folders do not silently override remote manifest entries.
 

@@ -868,10 +868,12 @@ class Program
         var sortedPackages = validation.SortedPackages;
 
         bool isEditor = false;
+        bool isDeployed = false;
         bool enableProfiler = false;
         if (manifest.Profiles != null && manifest.Profiles.TryGetValue(profile, out var profileDef))
         {
             isEditor = profileDef.IsEditor;
+            isDeployed = profileDef.IsDeployed;
             enableProfiler = profileDef.EnableProfiler;
         }
 
@@ -920,7 +922,7 @@ class Program
             File.Exists(Path.Combine(p.DirectoryPath, "CMakeLists.txt"))
         ).ToList();
 
-        ProjectGeneratorService.GenerateForManagedPackages(workspaceDir, projectsDir, engineDir, managedPackages, packageMap, manifest, profile, isEditor, enableProfiler);
+        ProjectGeneratorService.GenerateForManagedPackages(workspaceDir, projectsDir, engineDir, managedPackages, packageMap, manifest, profile, isEditor, isDeployed, enableProfiler);
         CMakeGeneratorService.Generate(engineDir, projectsDir, nativePackages, projectName, manifest, profile, enableProfiler);
         SolutionGeneratorService.Generate(
             workspaceDir,
@@ -931,6 +933,7 @@ class Program
             manifest,
             profile,
             isEditor,
+            isDeployed,
             enableProfiler,
             finalizationManifestPath);
 

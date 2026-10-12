@@ -9,7 +9,7 @@ namespace ArisenBuildTool.Services;
 
 public static class ProjectGeneratorService
 {
-    public static void GenerateForManagedPackages(string workspaceDir, string projectsDir, string engineDir, List<PackageInfo> managedPackages, Dictionary<string, PackageInfo> packageMap, ProjectManifest manifest, string profile, bool isEditor, bool enableProfiler)
+    public static void GenerateForManagedPackages(string workspaceDir, string projectsDir, string engineDir, List<PackageInfo> managedPackages, Dictionary<string, PackageInfo> packageMap, ProjectManifest manifest, string profile, bool isEditor, bool isDeployed, bool enableProfiler)
     {
         string buildExePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
         string buildCmd = buildExePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) 
@@ -18,11 +18,11 @@ public static class ProjectGeneratorService
 
         foreach (var package in managedPackages)
         {
-            GenerateProjectFile(workspaceDir, projectsDir, engineDir, package, packageMap, buildCmd, manifest, profile, isEditor, enableProfiler);
+            GenerateProjectFile(workspaceDir, projectsDir, engineDir, package, packageMap, buildCmd, manifest, profile, isEditor, isDeployed, enableProfiler);
         }
     }
 
-    private static void GenerateProjectFile(string workspaceDir, string projectsDir, string engineDir, PackageInfo package, Dictionary<string, PackageInfo> map, string buildCmd, ProjectManifest manifest, string profile, bool isEditor, bool enableProfiler)
+    private static void GenerateProjectFile(string workspaceDir, string projectsDir, string engineDir, PackageInfo package, Dictionary<string, PackageInfo> map, string buildCmd, ProjectManifest manifest, string profile, bool isEditor, bool isDeployed, bool enableProfiler)
     {
         string packageName = Path.GetFileName(package.DirectoryPath);
         string projectName = string.Join(".", packageName.Split('.').Select(PathUtils.ToPascalCase));
@@ -48,7 +48,7 @@ public static class ProjectGeneratorService
         writer.WriteLine("    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>");
         writer.WriteLine("    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>");
         
-        string constants = BuildDefineConstants(profile, isEditor, enableProfiler);
+        string constants = BuildDefineConstants(profile, isEditor, isDeployed, enableProfiler);
         writer.WriteLine($"    <DefineConstants>{constants}</DefineConstants>");
         writer.WriteLine("  </PropertyGroup>");
         writer.WriteLine();
@@ -151,10 +151,11 @@ public static class ProjectGeneratorService
         Logger.Info($"Generated CSProj: {csprojPath}");
     }
 
-    private static string BuildDefineConstants(string profile, bool isEditor, bool enableProfiler)
+    private static string BuildDefineConstants(string profile, bool isEditor, bool isDeployed, bool enableProfiler)
     {
         string constants = $"ARISEN_PROFILE_{profile.ToUpper()}";
         if (isEditor) constants += ";ARISEN_ENGINE_EDITOR";
+        if (isDeployed) constants += ";ARISEN_DEPLOYED";
         if (enableProfiler) constants += ";ARISEN_PROFILER_ENABLED";
 
         return constants;
