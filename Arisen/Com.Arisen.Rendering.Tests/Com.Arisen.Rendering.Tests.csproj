@@ -31,7 +31,9 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\AssetDatabase.cs" Link="Source\Core\Assets\AssetDatabase.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\AssetMetadata.cs" Link="Source\Core\Assets\AssetMetadata.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\AssetRef.cs" Link="Source\Core\Assets\AssetRef.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\AssetSourceReimport.cs" Link="Source\Core\Assets\AssetSourceReimport.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\GeneratedAssetIdentity.cs" Link="Source\Core\Assets\GeneratedAssetIdentity.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\RuntimeAssetBuildStageHost.cs" Link="Source\Core\Assets\RuntimeAssetBuildStageHost.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\RuntimeAssetClosurePlanner.cs" Link="Source\Core\Assets\RuntimeAssetClosurePlanner.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\RuntimeAssetCatalog.cs" Link="Source\Core\Assets\RuntimeAssetCatalog.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.core\Assets\RuntimeAssetCooking.cs" Link="Source\Core\Assets\RuntimeAssetCooking.cs" />

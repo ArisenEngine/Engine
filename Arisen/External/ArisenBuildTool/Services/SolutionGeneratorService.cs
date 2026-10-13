@@ -423,6 +423,11 @@ public class Program {{
             return;
         }}
 
+        if (RuntimeAssetSourceReimportHost.IsReimportCommand(args)) {{
+            Environment.ExitCode = RuntimeAssetSourceReimportHost.Run(args);
+            return;
+        }}
+
         ArisenKernel.Lifecycle.EngineBootstrapper.Run(args);
     }}
 }}"
