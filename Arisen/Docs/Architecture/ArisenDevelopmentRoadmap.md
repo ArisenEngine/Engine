@@ -194,6 +194,11 @@ capability can only be seen by knowing which workspace, profile, and solution to
 Content ownership decides which package ships and cooks an asset, so it is recorded here rather than
 left to folder layout.
 
+The migration that applies this rule to the gallery content - moving the demo fixtures out of
+`com.arisen.packagegame` and into `com.arisen.samples` - is recorded in
+`SamplesContentMigration.md` while it is in progress, including the derived world and scene
+identities it changes and the order its producers have to run in.
+
 - Every asset is owned by exactly one package. Generated child assets derive their GUID from the
   source GUID, the owning package id, the child kind, and the child key
   (`GeneratedAssetIdentity.CreateChildGuid`), so moving content between owners changes the identity of
