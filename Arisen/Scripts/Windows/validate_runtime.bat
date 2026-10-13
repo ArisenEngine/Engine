@@ -87,7 +87,6 @@ if errorlevel 1 (
 
 echo [Arisen] Runtime validation started.
 echo [Arisen] Repository root: %REPO_ROOT%
-echo [Arisen] Profiles: %PROFILES%
 echo [Arisen] Configuration: %CONFIG%
 echo [Arisen] Smoke mode: %SMOKE_MODE%
 echo [Arisen] Smoke frames: %FRAMES%
@@ -112,20 +111,16 @@ if "%RUN_FAST%"=="1" (
 )
 
 echo [Arisen] Reading the declared profiles from the workspace manifest.
-set "BUILD_TOOL_DLL=%ENGINE_ROOT%\External\ArisenBuildTool\bin\x64\Release\net9.0\ArisenBuildTool.dll"
-dotnet build "%BUILD_TOOL_CSPROJ%" -c Release >nul
+rem The discovery queries run through "dotnet run --no-build" against the tool this script just
+rem compiled, so the script never has to guess an output directory for the tool assembly.
+dotnet build "%BUILD_TOOL_CSPROJ%" >nul
 if errorlevel 1 (
     set "FAILURE_STAGE=build tool compile"
     set "FAILURE_MESSAGE=ArisenBuildTool failed to compile."
     goto :fail
 )
-if not exist "%BUILD_TOOL_DLL%" (
-    set "FAILURE_STAGE=build tool output"
-    set "FAILURE_MESSAGE=ArisenBuildTool output not found: %BUILD_TOOL_DLL%"
-    goto :fail
-)
 if not defined PROFILES (
-    for /f "usebackq delims=" %%A in (`dotnet "%BUILD_TOOL_DLL%" manifest-info --manifest "%WORKSPACE_DIR%\manifest.json" --field profiles`) do (
+    for /f "usebackq delims=" %%A in (`dotnet run --project "%BUILD_TOOL_CSPROJ%" --no-build -- manifest-info --manifest "%WORKSPACE_DIR%\manifest.json" --field profiles`) do (
         set "PROFILES=!PROFILES! %%A"
     )
     if not defined PROFILES (
@@ -138,13 +133,15 @@ if not defined PROFILES (
 rem Profiles that declare the deployed role boot from a cooked catalog beside the executable, so
 rem their gates skip the workspace arguments and their build already cooked the content.
 set "DEPLOYED_PROFILES="
-for /f "usebackq delims=" %%A in (`dotnet "%BUILD_TOOL_DLL%" manifest-info --manifest "%WORKSPACE_DIR%\manifest.json" --field deployed-profiles`) do (
+for /f "usebackq delims=" %%A in (`dotnet run --project "%BUILD_TOOL_CSPROJ%" --no-build -- manifest-info --manifest "%WORKSPACE_DIR%\manifest.json" --field deployed-profiles`) do (
     set "DEPLOYED_PROFILES=!DEPLOYED_PROFILES! %%A"
 )
 set "EDITOR_PROFILES="
-for /f "usebackq delims=" %%A in (`dotnet "%BUILD_TOOL_DLL%" manifest-info --manifest "%WORKSPACE_DIR%\manifest.json" --field editor-profiles`) do (
+for /f "usebackq delims=" %%A in (`dotnet run --project "%BUILD_TOOL_CSPROJ%" --no-build -- manifest-info --manifest "%WORKSPACE_DIR%\manifest.json" --field editor-profiles`) do (
     set "EDITOR_PROFILES=!EDITOR_PROFILES! %%A"
 )
+
+echo [Arisen] Profiles: %PROFILES%
 
 for %%P in (%PROFILES%) do (
     call :validate_profile "%%P"
