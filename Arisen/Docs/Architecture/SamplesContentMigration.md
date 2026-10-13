@@ -72,17 +72,25 @@ uselessly:
 
 Done: content moved (1309 files) into `Local\com.arisen.samples\Assets`; both generators parameterized
 and re-run under the new owner for terrain, world, cell scenes, and recipes; `manifest.json` startup
-package ids switched to `com.arisen.samples`; `com.arisen.samples` mounted in the base package list;
-a headless `--arisen-reimport-models` command added to core and implemented for models in rendering;
+package ids and both GUIDs switched to `com.arisen.samples`; `com.arisen.samples` mounted in the base
+package list; the thirteen authored references rewritten; the runtime assets cooked under the new
+owner and the generator re-run, which authored 48 cluster entities into the cell scenes; a headless
+`--arisen-reimport-models` command added to core and implemented for models in rendering;
 `GltfModelImportEmitter` no longer writes a UTF-8 byte order mark.
 
 Remaining:
 
 1. Point `manifest.json` at the new world and persistent-scene GUIDs from the table above.
-2. Cook the runtime assets, then re-run `generate_mistfall_valley.ps1` so the cell scenes bind the
-   baked clusters of the new world.
-3. Run `--arisen-reimport-models` to re-key the Lantern model children.
-4. Rewrite the authored references listed above.
+2. Rewrite the authored references listed above. This has to precede the cook, not follow it: the
+   cook validates them and fails first. Thirteen files carried the old owner - the four valley
+   species, four authored valley scatter recipes, `ShowcaseValley.arivegetationbiome`,
+   `ShowcaseValley.ariterrainlayers`, both `*.arienvironment` assets, and `LanternWorld.arisenworld`,
+   which is hand-authored unlike the generator-written `MistfallValley.arisenworld`.
+3. Cook the runtime assets, then re-run `generate_mistfall_valley.ps1` so the cell scenes bind the
+   baked clusters of the new world. The two hard failures that drive the order are
+   `VegetationScatterRecipeSourceAssetLoader` (recipe biome owner) and
+   `VegetationSpeciesSourceAssetLoader` (biome species owner).
+4. Run `--arisen-reimport-models` to re-key the Lantern model children.
 5. Update the tests that pin the old package paths and generated GUIDs.
 6. Run `validate_fast` and `validate_runtime`.
 
