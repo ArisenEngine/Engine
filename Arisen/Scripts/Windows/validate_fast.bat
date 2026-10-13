@@ -34,21 +34,21 @@ if errorlevel 1 goto :fail
 call :run_rendering_allocation_tests
 if errorlevel 1 goto :fail
 
-call :run dotnet run --project "Arisen\External\ArisenBuildTool\ArisenBuildTool.csproj" -- validate --workspace "Arisen\Development\PackageGame" --profile Editor
-if errorlevel 1 goto :fail
-
-call :run dotnet run --project "Arisen\External\ArisenBuildTool\ArisenBuildTool.csproj" -- validate --workspace "Arisen\Development\PackageGame" --profile Development
-if errorlevel 1 goto :fail
-
-call :run dotnet run --project "Arisen\External\ArisenBuildTool\ArisenBuildTool.csproj" -- validate --workspace "Arisen\Development\PackageGame" --profile Production
-if errorlevel 1 goto :fail
-
-call :run dotnet run --project "Arisen\External\ArisenBuildTool\ArisenBuildTool.csproj" -- validate --workspace "Arisen\Development\PackageGame" --profile RHIVulkanTesting
+call :validate_workspace_profiles
 if errorlevel 1 goto :fail
 
 echo [Arisen] Fast validation succeeded.
 set "EXIT_CODE=0"
 goto :finish
+
+:validate_workspace_profiles
+rem The profile list comes from the workspace manifest, so a profile is validated because the
+rem workspace declares it rather than because this script names it.
+for /f "usebackq delims=" %%A in (`dotnet run --project "Arisen\External\ArisenBuildTool\ArisenBuildTool.csproj" -- manifest-info --manifest "Arisen\Development\PackageGame\manifest.json" --field profiles`) do (
+    call :run dotnet run --project "Arisen\External\ArisenBuildTool\ArisenBuildTool.csproj" -- validate --workspace "Arisen\Development\PackageGame" --profile %%A
+    if errorlevel 1 exit /b 1
+)
+exit /b 0
 
 :run_rendering_allocation_tests
 setlocal
