@@ -64,6 +64,9 @@ Tooling may deserialize case-insensitively for transition compatibility, but gen
   "Name": "MyGame",
   "EngineVersion": "Current",
 
+  // Profile a command or host selects when it is not told which one to use.
+  "DefaultProfile": "Development",
+
   // The package-owned scene activated before frame zero.
   "StartupScene": {
     "Guid": "11111111-2222-3333-4444-555555555555",
@@ -125,6 +128,7 @@ Tooling may deserialize case-insensitively for transition compatibility, but gen
 | `$schema` | `string` | Optional | URL to the JSON schema for IDE autocomplete and validation. |
 | `Name` | `string` | **Yes** | The user-friendly name of the project. |
 | `EngineVersion` | `string` | **Yes** | The specific version of Arisen Engine required (e.g., `"1.2.0"` or `"Current"`). |
+| `DefaultProfile` | `string` | Optional | Profile selected when a command or host is not told which one to use, for example a bare `ArisenBuildTool` invocation or a host launched without `--profile`. It must name a key declared in `Profiles`. Profile keys are workspace labels, so a workspace that omits this field must be told which profile to use; no built-in name is assumed. |
 | `StartupScene` | `object` | Optional | Package-owned `Scene` asset activated by the root composition package before frame zero. Projects intended to run a scene should provide it. |
 | `StartupScene.Guid` | `Guid` | Required with `StartupScene` | Stable `.arisenscene.meta` identity. Empty GUIDs fail workspace validation. |
 | `StartupScene.PackageId` | `string` | Required with `StartupScene` | Package that owns the selected scene asset. Empty package IDs fail workspace validation. |

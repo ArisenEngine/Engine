@@ -57,8 +57,9 @@ public partial class PackageManagerViewModel
 
         if (GraphProfiles.Contains(_project.SelectedProfile))
             SelectedGraphProfile = _project.SelectedProfile;
-        else if (GraphProfiles.Contains("Development"))
-            SelectedGraphProfile = "Development";
+        else if (!string.IsNullOrWhiteSpace(Manifest.DefaultProfile) &&
+                 GraphProfiles.Contains(Manifest.DefaultProfile))
+            SelectedGraphProfile = Manifest.DefaultProfile;
         else if (GraphProfiles.Count > 0)
             SelectedGraphProfile = GraphProfiles[0];
     }

@@ -32,7 +32,7 @@ public static class EngineBootstrapper
 
         string workspacePath = "";
         string entryPackage = "";
-        string profile = "Development";
+        string profile = string.Empty;
         bool profileSpecified = false;
         bool workspaceSpecified = false;
         string manifestPath = string.Empty;
@@ -531,6 +531,49 @@ public static class EngineBootstrapper
             validateFinalizedNativePayloads: false);
     }
 
+    /// <summary>
+    /// Resolves the profile a launch runs against. Profile keys are workspace labels, so a launch
+    /// that names no profile falls back to the workspace's declared DefaultProfile and never to a
+    /// built-in name; a workspace that declares neither is a configuration error, not a guess.
+    /// </summary>
+    private static string ResolveProfileOrDefault(
+        JsonElement manifestRoot,
+        string requested,
+        string manifestPath)
+    {
+        if (!string.IsNullOrWhiteSpace(requested))
+        {
+            return requested;
+        }
+
+        if (manifestRoot.TryGetPropertyIC("DefaultProfile", out JsonElement defaultElement) &&
+            defaultElement.ValueKind == JsonValueKind.String &&
+            !string.IsNullOrWhiteSpace(defaultElement.GetString()))
+        {
+            string resolved = defaultElement.GetString()!;
+            KernelLog.InfoFormat(
+                "[Host] No profile was requested. Using the declared default profile: {0}",
+                resolved);
+            return resolved;
+        }
+
+        var declared = new List<string>();
+        if (manifestRoot.TryGetPropertyIC("Profiles", out JsonElement profilesElement) &&
+            profilesElement.ValueKind == JsonValueKind.Object)
+        {
+            foreach (JsonProperty property in profilesElement.EnumerateObject())
+            {
+                declared.Add(property.Name);
+            }
+        }
+
+        throw new InvalidDataException(
+            $"No profile was requested and the workspace manifest '{manifestPath}' declares no " +
+            "DefaultProfile. Declared profiles: " +
+            (declared.Count > 0 ? string.Join(", ", declared) : "(none declared)") +
+            ". Pass --profile <name>.");
+    }
+
     private static EnginePackageGraphResolution ResolvePackageGraphCore(
         string workspacePath,
         string profile,
@@ -542,11 +585,6 @@ public static class EngineBootstrapper
         if (string.IsNullOrWhiteSpace(workspacePath))
         {
             throw new ArgumentException("A non-empty workspace path is required.", nameof(workspacePath));
-        }
-
-        if (string.IsNullOrWhiteSpace(profile))
-        {
-            throw new ArgumentException("A non-empty profile is required.", nameof(profile));
         }
 
         string fullWorkspacePath = Path.GetFullPath(workspacePath);
@@ -562,6 +600,8 @@ public static class EngineBootstrapper
 
         KernelLog.InfoFormat("[Host] Reading Project Manifest: {0}", manifestPath);
         using JsonDocument manifestJson = ManifestJson.ParseDocumentFile(manifestPath);
+        profile = ResolveProfileOrDefault(manifestJson.RootElement, profile, manifestPath);
+
         if (!manifestJson.RootElement.TryGetPropertyIC("Packages", out JsonElement packagesElement) ||
             packagesElement.ValueKind != JsonValueKind.Array)
         {

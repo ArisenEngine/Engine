@@ -28,6 +28,14 @@ public class ProjectManifest
 {
     public string Name { get; set; } = string.Empty;
     public string EngineVersion { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Profile a command selects when it is not told which one to use. Profile keys are labels
+    /// chosen by the workspace author, so the default has to be declared here rather than assumed
+    /// from a name; a workspace that omits it must be told which profile to build.
+    /// </summary>
+    public string? DefaultProfile { get; set; }
+
     public ProjectAssetReference? StartupScene { get; set; }
     public ProjectAssetReference? StartupWorld { get; set; }
     public ProjectAssetReference? RenderPipeline { get; set; }

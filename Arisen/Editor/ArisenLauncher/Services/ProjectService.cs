@@ -44,7 +44,7 @@ public class ProjectService
                     try
                     {
                         var manifest = ManifestJson.DeserializeFile<ProjectManifest>(manifestPath);
-                        if (manifest?.Profiles != null)
+                        if (manifest?.Profiles is { Count: > 0 })
                         {
                             metadata.AvailableProfiles.Clear();
                             foreach (var profile in manifest.Profiles.Keys)
@@ -52,17 +52,15 @@ public class ProjectService
                                 metadata.AvailableProfiles.Add(profile);
                             }
 
-                            if (metadata.AvailableProfiles.Contains("Development"))
-                                metadata.SelectedProfile = "Development";
-                            else if (metadata.AvailableProfiles.Count > 0)
-                                metadata.SelectedProfile = metadata.AvailableProfiles[0];
+                            metadata.SelectedProfile = SelectDefaultProfile(
+                                manifest,
+                                metadata.AvailableProfiles);
                         }
                         else
                         {
-                            // Fallback if no profiles defined
+                            // A workspace declares its own profiles, so the launcher never invents one.
                             metadata.AvailableProfiles.Clear();
-                            metadata.AvailableProfiles.Add("Development");
-                            metadata.SelectedProfile = "Development";
+                            metadata.SelectedProfile = string.Empty;
                         }
                     }
                     catch (Exception ex)
@@ -227,6 +225,40 @@ public class ProjectService
         }
     }
 
+    /// <summary>
+    /// Picks the profile the launcher opens a workspace with. Profile keys are workspace labels, so
+    /// the declared DefaultProfile wins and the first declared profile is the only fallback.
+    /// </summary>
+    private static string SelectDefaultProfile(
+        ProjectManifest manifest,
+        IReadOnlyList<string> available)
+    {
+        if (!string.IsNullOrWhiteSpace(manifest.DefaultProfile) &&
+            available.Contains(manifest.DefaultProfile, StringComparer.Ordinal))
+        {
+            return manifest.DefaultProfile;
+        }
+
+        return available.Count > 0 ? available[0] : string.Empty;
+    }
+
+    private static string ResolveLaunchProfile(ProjectManifest manifest, string? selectedProfile)
+    {
+        if (!string.IsNullOrWhiteSpace(selectedProfile))
+        {
+            return selectedProfile;
+        }
+
+        if (!string.IsNullOrWhiteSpace(manifest.DefaultProfile))
+        {
+            return manifest.DefaultProfile;
+        }
+
+        return manifest.Profiles is { Count: > 0 }
+            ? manifest.Profiles.Keys.First()
+            : string.Empty;
+    }
+
     private static string SanitizePackageSegment(string value)
     {
         var chars = value.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray();
@@ -362,7 +394,6 @@ public class ProjectService
                 return ProjectLaunchResult.Failed("manifest.json is missing.");
             }
 
-            string profile = string.IsNullOrWhiteSpace(project.SelectedProfile) ? "Development" : project.SelectedProfile;
             string config = string.IsNullOrWhiteSpace(project.SelectedConfiguration) ? "Debug" : project.SelectedConfiguration;
 
             _logService.Info("Using workspace manifest.json for package resolution.");
@@ -371,6 +402,14 @@ public class ProjectService
             {
                 _logService.Error("Failed to deserialize manifest.json");
                 return ProjectLaunchResult.Failed("Failed to deserialize manifest.json.");
+            }
+
+            string profile = ResolveLaunchProfile(manifest, project.SelectedProfile);
+            if (string.IsNullOrWhiteSpace(profile))
+            {
+                _logService.Error("The workspace manifest declares no profiles.");
+                return ProjectLaunchResult.Failed(
+                    "The workspace manifest declares no profiles, so there is nothing to launch.");
             }
 
             _logService.Info("Restoring remote packages into workspace cache if needed...");

@@ -1,6 +1,9 @@
 {
   "Name": "PackageGame",
   "EngineVersion": "Current",
+  // Profile selected when a command does not name one, for example a hand-run host or a bare
+  // ArisenBuildTool invocation. Declared here because profile keys are workspace labels.
+  "DefaultProfile": "Development",
   "StartupScene": {
     "Guid": "e176b519-9d88-527e-a841-c5c5d73b7477",
     "PackageId": "com.arisen.packagegame"

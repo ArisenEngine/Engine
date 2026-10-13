@@ -859,6 +859,34 @@ public sealed class PackageValidationFixtureTests
     }
 
     [Fact]
+    public void DefaultProfileMustNameADeclaredProfile()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage("com.test.app", layer: "user");
+        ProjectManifest manifest = workspace.CreateManifest(new PackageRequirement
+        {
+            Id = "com.test.app",
+            Url = "file://Local/com.test.app",
+            Version = "1.0.0"
+        });
+
+        manifest.DefaultProfile = "Shipping";
+
+        PackageValidationResult unknownDefault = workspace.Validate(manifest);
+
+        Assert.False(unknownDefault.Success);
+        Assert.Contains(unknownDefault.Errors, error =>
+            error.Contains("DefaultProfile", StringComparison.Ordinal) &&
+            error.Contains("Shipping", StringComparison.Ordinal));
+
+        manifest.DefaultProfile = "Development";
+
+        Assert.True(
+            workspace.Validate(manifest).Success,
+            "A default that names a declared profile is valid.");
+    }
+
+    [Fact]
     public void NativeOutputValidationFailsWhenResolvedPayloadIsMissing()
     {
         using var workspace = ValidationWorkspace.Create();

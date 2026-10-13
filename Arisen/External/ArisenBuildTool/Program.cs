@@ -286,7 +286,7 @@ class Program
 
         if (field.Equals("profiles", StringComparison.OrdinalIgnoreCase))
         {
-            var profiles = manifest.Profiles?.Keys.ToArray() ?? ["Development", "Production"];
+            var profiles = manifest.Profiles?.Keys.ToArray() ?? [];
             foreach (string profile in profiles)
             {
                 Console.WriteLine(profile);
@@ -444,7 +444,7 @@ class Program
         string workspaceDir = Path.GetFullPath(".");
         string manifestPath = string.Empty;
         string engineDir = string.Empty;
-        string profile = "Development";
+        string profile = string.Empty;
 
         for (int i = 1; i < args.Length; i++)
         {
@@ -486,6 +486,7 @@ class Program
             Environment.Exit(1);
         }
 
+        profile = ResolveProfileOrDefault(manifest!, profile);
         var result = PackageValidationService.Validate(manifest!, workspaceDir, engineDir, profile);
         PackageValidationService.LogSummary(result);
         Environment.Exit(result.Success ? 0 : 1);
@@ -496,7 +497,7 @@ class Program
         string workspaceDir = Path.GetFullPath(".");
         string manifestPath = string.Empty;
         string engineDir = string.Empty;
-        string profile = "Development";
+        string profile = string.Empty;
         string format = "text";
         string outputPath = string.Empty;
 
@@ -548,6 +549,7 @@ class Program
             Environment.Exit(1);
         }
 
+        profile = ResolveProfileOrDefault(manifest!, profile);
         var validation = PackageValidationService.Validate(manifest!, workspaceDir, engineDir, profile);
         if (!validation.Success)
         {
@@ -584,7 +586,7 @@ class Program
         string workspaceDir = Path.GetFullPath(".");
         string manifestPath = string.Empty;
         string engineDir = string.Empty;
-        string profile = "Development";
+        string profile = string.Empty;
         string packageId = string.Empty;
         string outputDir = string.Empty;
         bool overwrite = false;
@@ -653,6 +655,7 @@ class Program
             Environment.Exit(1);
         }
 
+        profile = ResolveProfileOrDefault(manifest!, profile);
         var validation = PackageValidationService.Validate(manifest!, workspaceDir, engineDir, profile);
         PackageValidationService.LogSummary(validation);
         if (!validation.Success)
@@ -796,7 +799,7 @@ class Program
         string workspaceDir = Path.GetFullPath(".");
         string manifestPath = string.Empty;
         string engineDir = string.Empty;
-        string profile = "Development";
+        string profile = string.Empty;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -841,6 +844,7 @@ class Program
             Environment.Exit(1);
         }
 
+        profile = ResolveProfileOrDefault(manifest!, profile);
         ExecuteGeneration(workspaceDir, engineDir, profile, manifest!);
         Logger.Info("ArisenBuildTool: Workspace generation complete.");
     }
@@ -938,6 +942,33 @@ class Program
             finalizationManifestPath);
 
         Console.WriteLine($"ArisenBuildTool: Solution for '{projectName}' ({profile}) generated successfully.");
+    }
+
+    /// <summary>
+    /// Resolves the profile a command runs against. Profile keys are workspace labels, so an
+    /// omitted --profile falls back to the workspace's declared DefaultProfile and never to a
+    /// built-in name; a workspace that declares neither is a usage error rather than a guess.
+    /// </summary>
+    private static string ResolveProfileOrDefault(ProjectManifest manifest, string requested)
+    {
+        if (!string.IsNullOrWhiteSpace(requested))
+        {
+            return requested;
+        }
+
+        if (!string.IsNullOrWhiteSpace(manifest.DefaultProfile))
+        {
+            return manifest.DefaultProfile;
+        }
+
+        string declared = manifest.Profiles is { Count: > 0 }
+            ? string.Join(", ", manifest.Profiles.Keys)
+            : "(none declared)";
+        Console.Error.WriteLine(
+            "ArisenBuildTool Profile Error: no --profile was given and the workspace manifest " +
+            $"declares no DefaultProfile. Declared profiles: {declared}.");
+        Environment.Exit(1);
+        return string.Empty;
     }
 
     private static bool TryReadManifest(string manifestPath, out ProjectManifest? manifest)

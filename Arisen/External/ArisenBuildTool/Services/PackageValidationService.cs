@@ -49,6 +49,14 @@ public static class PackageValidationService
 
         ValidateWorkspaceManifest(manifest, result);
 
+        if (!string.IsNullOrWhiteSpace(manifest.DefaultProfile) &&
+            (manifest.Profiles == null ||
+             !manifest.Profiles.ContainsKey(manifest.DefaultProfile)))
+        {
+            result.Errors.Add(
+                $"DefaultProfile '{manifest.DefaultProfile}' is not declared in the workspace Profiles.");
+        }
+
         if (manifest.Packages == null || manifest.Packages.Count == 0)
         {
             result.Errors.Add("Workspace manifest does not list any base packages.");

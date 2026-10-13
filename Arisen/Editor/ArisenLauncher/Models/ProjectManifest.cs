@@ -20,6 +20,7 @@ public class ProjectManifest
 {
     public string Name { get; set; } = "New Arisen Project";
     public string EngineVersion { get; set; } = "Current";
+    public string? DefaultProfile { get; set; }
     public List<PackageRequirement>? Packages { get; set; }
     public Dictionary<string, ProfileDefinition>? Profiles { get; set; }
 }
