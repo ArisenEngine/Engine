@@ -87,6 +87,14 @@ public static class PackageValidationService
                         "product that boots from its asset catalog.");
                 }
 
+                if (profileDefinition.IsEditor && profileDefinition.IsTestHost)
+                {
+                    result.Errors.Add(
+                        $"Profile '{profile}' declares both IsEditor and IsTestHost. An editor owns " +
+                        "its native windows and initializes the engine, while a test host mounts " +
+                        "packages for discovery without initializing game subsystems.");
+                }
+
                 foreach (var package in profileDefinition.Packages ?? new List<PackageRequirement>())
                 {
                     EnqueueRequirement(

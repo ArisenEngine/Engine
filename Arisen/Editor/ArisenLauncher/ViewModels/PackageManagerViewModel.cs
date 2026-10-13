@@ -482,7 +482,8 @@ public partial class PackageManagerViewModel : ObservableObject
             var def = new ProfileDefinition
             {
                 IsEditor = profile.IsEditor,
-                IsDeployed = profile.IsDeployed
+                IsDeployed = profile.IsDeployed,
+                IsTestHost = profile.IsTestHost
             };
             SyncProfileNodesFromOptions(profile);
 

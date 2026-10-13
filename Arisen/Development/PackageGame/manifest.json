@@ -148,6 +148,9 @@
     },
     "RHIVulkanTesting": {
       "IsEditor": false,
+      // Runs the native test runner's package-only host, so it is not a runtime profile: it owns
+      // no world, and the runtime streaming gates do not apply to it.
+      "IsTestHost": true,
       "EnableProfiler": false,
       "Packages": [
         {

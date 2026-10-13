@@ -140,6 +140,10 @@ set "EDITOR_PROFILES="
 for /f "usebackq delims=" %%A in (`dotnet run --project "%BUILD_TOOL_CSPROJ%" --no-build -- manifest-info --manifest "%WORKSPACE_DIR%\manifest.json" --field editor-profiles`) do (
     set "EDITOR_PROFILES=!EDITOR_PROFILES! %%A"
 )
+set "TEST_HOST_PROFILES="
+for /f "usebackq delims=" %%A in (`dotnet run --project "%BUILD_TOOL_CSPROJ%" --no-build -- manifest-info --manifest "%WORKSPACE_DIR%\manifest.json" --field test-host-profiles`) do (
+    set "TEST_HOST_PROFILES=!TEST_HOST_PROFILES! %%A"
+)
 
 echo [Arisen] Profiles: %PROFILES%
 
@@ -228,6 +232,13 @@ set "CURRENT_PROFILE_DEPLOYED=0"
 for %%D in (!DEPLOYED_PROFILES!) do if /i "%%D"=="!CURRENT_PROFILE!" set "CURRENT_PROFILE_DEPLOYED=1"
 set "CURRENT_PROFILE_EDITOR=0"
 for %%D in (!EDITOR_PROFILES!) do if /i "%%D"=="!CURRENT_PROFILE!" set "CURRENT_PROFILE_EDITOR=1"
+set "CURRENT_PROFILE_TEST_HOST=0"
+for %%D in (!TEST_HOST_PROFILES!) do if /i "%%D"=="!CURRENT_PROFILE!" set "CURRENT_PROFILE_TEST_HOST=1"
+rem A runtime profile owns a world and a frame loop. An editor owns its own windows, and a test
+rem host mounts packages for discovery without initializing game subsystems, so neither one is
+rem held to the world, terrain, and visual-summary gates.
+set "CURRENT_PROFILE_RUNTIME_GATES=0"
+if "!CURRENT_PROFILE_EDITOR!"=="0" if "!CURRENT_PROFILE_TEST_HOST!"=="0" set "CURRENT_PROFILE_RUNTIME_GATES=1"
 set "CURRENT_PROFILE_LOG=%LOG_DIR%\smoke-cli-%CURRENT_PROFILE%-%CONFIG%-%RUN_TIMESTAMP%.log"
 set "CURRENT_VISUAL_SUMMARY_REQUESTED=0"
 set "CURRENT_VISUAL_SUMMARY_ARGS="
@@ -253,8 +264,7 @@ set "CURRENT_WORLD_STREAMING_LOG_PATH="
 set "CURRENT_WORLD_STREAMING_PASSED="
 set "CURRENT_WORLD_STREAMING_EXIT_CODE="
 set "CURRENT_WORLD_STREAMING_REQUIRED=0"
-if /i "%CURRENT_PROFILE%"=="Development" set "CURRENT_WORLD_STREAMING_REQUIRED=1"
-if /i "%CURRENT_PROFILE%"=="Production" set "CURRENT_WORLD_STREAMING_REQUIRED=1"
+if "!CURRENT_PROFILE_RUNTIME_GATES!"=="1" set "CURRENT_WORLD_STREAMING_REQUIRED=1"
 set "CURRENT_VEGETATION_VISUAL_COMPARISON_REQUESTED=0"
 set "CURRENT_VEGETATION_VISUAL_COMPARISON_PASSED="
 set "CURRENT_VEGETATION_VISUAL_DISABLED_SUMMARY_PATH="
@@ -270,8 +280,7 @@ set "CURRENT_TERRAIN_STREAMING_LOG_PATH="
 set "CURRENT_TERRAIN_STREAMING_PASSED="
 set "CURRENT_TERRAIN_STREAMING_EXIT_CODE="
 set "CURRENT_TERRAIN_STREAMING_REQUIRED=0"
-if /i "%CURRENT_PROFILE%"=="Development" set "CURRENT_TERRAIN_STREAMING_REQUIRED=1"
-if /i "%CURRENT_PROFILE%"=="Production" set "CURRENT_TERRAIN_STREAMING_REQUIRED=1"
+if "!CURRENT_PROFILE_RUNTIME_GATES!"=="1" set "CURRENT_TERRAIN_STREAMING_REQUIRED=1"
 set "CURRENT_PLAYER_LOG_PATH="
 set "CURRENT_PLAYER_LOG_SNAPSHOT_PATH="
 set "CURRENT_PLAYER_LOG_RESOLUTION_PATH="
@@ -1043,8 +1052,7 @@ exit /b %CURRENT_RELOCATED_PRODUCTION_EXIT_CODE%
 
 :configure_visual_summary
 if /i not "!SMOKE_MODE!"=="scene" exit /b 0
-if /i "!CURRENT_PROFILE!"=="Development" set "CURRENT_VISUAL_SUMMARY_REQUESTED=1"
-if /i "!CURRENT_PROFILE!"=="Production" set "CURRENT_VISUAL_SUMMARY_REQUESTED=1"
+if "!CURRENT_PROFILE_RUNTIME_GATES!"=="1" set "CURRENT_VISUAL_SUMMARY_REQUESTED=1"
 if not "!CURRENT_VISUAL_SUMMARY_REQUESTED!"=="1" exit /b 0
 
 set "CURRENT_VISUAL_SUMMARY_PATH=%LOG_DIR%\visual-summary-%CURRENT_PROFILE%-latest.json"

@@ -25,7 +25,8 @@ public partial class PackageManagerViewModel
                 {
                     Name = kvp.Key,
                     IsEditor = kvp.Value.IsEditor,
-                    IsDeployed = kvp.Value.IsDeployed
+                    IsDeployed = kvp.Value.IsDeployed,
+                    IsTestHost = kvp.Value.IsTestHost
                 };
                 var selectedPackageIds = kvp.Value.Packages.Select(x => x.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
                 foreach (var req in kvp.Value.Packages)
@@ -223,6 +224,7 @@ public partial class WorkspaceProfileViewModel : ObservableObject
     [ObservableProperty] private string _name = string.Empty;
     [ObservableProperty] private bool _isEditor;
     [ObservableProperty] private bool _isDeployed;
+    [ObservableProperty] private bool _isTestHost;
     public ObservableCollection<PackageRequirementViewModel> Nodes { get; } = new();
     public ObservableCollection<ProfilePackageOptionViewModel> PackageOptions { get; } = new();
 

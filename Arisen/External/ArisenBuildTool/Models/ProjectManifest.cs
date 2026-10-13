@@ -14,6 +14,15 @@ public class ProfileDefinition
 {
     public bool IsEditor { get; set; } = false;
     public bool IsDeployed { get; set; } = false;
+
+    /// <summary>
+    /// If <c>true</c>, the profile exists to run a package-only application host, such as the
+    /// native test runner that discovers cases without initializing game subsystems. It is a
+    /// declared role rather than a name check so a profile renamed in the workspace manifest keeps
+    /// the behaviour it had.
+    /// </summary>
+    public bool IsTestHost { get; set; } = false;
+
     public bool EnableProfiler { get; set; } = false;
     public List<PackageRequirement> Packages { get; set; } = new();
 }
