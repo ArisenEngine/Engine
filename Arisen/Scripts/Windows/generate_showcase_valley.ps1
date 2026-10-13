@@ -25,16 +25,27 @@
     instead of leaving stale identities behind.
 
 .PARAMETER Tiles
-    Tiles per axis. Two reproduces the committed 256 m fixture byte for byte and is the regression
-    check for this script; four produces a 512 m terrain.
+    Tiles per axis. The default of four produces the committed 512 m fixture byte for byte and is
+    the regression check for this script.
 
 .PARAMETER DryRun
     Compute and report the plan without writing any file.
+
+.PARAMETER PackageId
+    Owning package of the authored terrain. Generated child identity is derived from the source
+    GUID, this package id, the child kind, and the child key, so changing it re-keys every
+    generated tile. Defaults to the package the fixture is committed under.
+
+.PARAMETER PackageRoot
+    Package directory the authored assets are written under. Defaults to the package root beside
+    this engine checkout.
 #>
 [CmdletBinding()]
 param(
     [ValidateRange(2, 16)]
     [int]$Tiles = 4,
+    [string]$PackageId = 'com.arisen.packagegame',
+    [string]$PackageRoot,
     [switch]$DryRun
 )
 
@@ -46,7 +57,6 @@ Set-StrictMode -Version Latest
 $RootGuid = [Guid]'6f4d0a1c-0e85-4a42-93fe-34058ef48511'
 $CellSceneGuid = [Guid]'506af06e-b16d-4573-b6c9-98548c370e90'
 $LayerSetGuid = [Guid]'5dcaa6bd-2b51-498d-9fa9-bd68f4642761'
-$PackageId = 'com.arisen.packagegame'
 $AssetName = 'ShowcaseValley'
 $DisplayName = 'Showcase Valley Terrain'
 $TileEntityNameFormat = 'Showcase Valley Terrain Tile {0},{1}'
@@ -67,7 +77,13 @@ $TileEntityOffsetY = 64.0
 $TileEntityOffsetZ = 256.0
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
-$packageRoot = Join-Path $repoRoot 'Arisen\Development\PackageGame\Local\com.arisen.packagegame'
+if ([string]::IsNullOrWhiteSpace($PackageRoot)) {
+    $PackageRoot = Join-Path $repoRoot 'Arisen\Development\PackageGame\Local\com.arisen.packagegame'
+}
+$packageRoot = $PackageRoot
+if (-not (Test-Path -LiteralPath $packageRoot -PathType Container)) {
+    throw "[showcase] Package root '$packageRoot' does not exist. Pass -PackageRoot or create the package first."
+}
 $assetsRoot = Join-Path $packageRoot 'Assets\Terrain'
 $heightPath = Join-Path $assetsRoot "Height\$AssetName.pgm"
 $weightPath = Join-Path $assetsRoot "$AssetName.ariweights"

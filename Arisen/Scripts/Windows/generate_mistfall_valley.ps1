@@ -19,6 +19,15 @@
 
 .PARAMETER DryRun
     Compute and report the plan without writing any file.
+
+.PARAMETER PackageId
+    Owning package of the authored world. Generated child identity is derived from the source GUID,
+    this package id, the child kind, and the child key, so changing it re-keys every generated tile,
+    recipe, and cluster. Defaults to the package the fixture is committed under.
+
+.PARAMETER PackageRoot
+    Package directory the authored assets are written under. Defaults to the package root beside
+    this engine checkout. Point it at another mounted package to author the same fixture there.
 #>
 [CmdletBinding()]
 param(
@@ -26,6 +35,8 @@ param(
     [int]$CellsPerAxis = 4,
     [ValidateRange(1, 4)]
     [int]$TilesPerCell = 2,
+    [string]$PackageId = 'com.arisen.packagegame',
+    [string]$PackageRoot,
     [switch]$DryRun
 )
 
@@ -35,7 +46,6 @@ Set-StrictMode -Version Latest
 # --- Fixture identity -------------------------------------------------------------------------
 
 $WorldSeed = [Guid]'7f2e5c31-9a4b-4d18-8f0a-2b6d3e5c7a91'
-$PackageId = 'com.arisen.packagegame'
 $WorldAssetName = 'MistfallValley'
 $WorldDisplayName = 'Mistfall Valley World'
 $LayerSetGuid = [Guid]'5dcaa6bd-2b51-498d-9fa9-bd68f4642761'
@@ -65,7 +75,13 @@ $ScatterEntries = @(
 )
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
-$packageRoot = Join-Path $repoRoot 'Arisen\Development\PackageGame\Local\com.arisen.packagegame'
+if ([string]::IsNullOrWhiteSpace($PackageRoot)) {
+    $PackageRoot = Join-Path $repoRoot 'Arisen\Development\PackageGame\Local\com.arisen.packagegame'
+}
+$packageRoot = $PackageRoot
+if (-not (Test-Path -LiteralPath $packageRoot -PathType Container)) {
+    throw "[MistfallValley] Package root '$packageRoot' does not exist. Pass -PackageRoot or create the package first."
+}
 $assetRoot = Join-Path $packageRoot "Assets\Terrain\$WorldAssetName"
 $sceneRoot = Join-Path $packageRoot 'Assets\Scenes'
 $cellSceneRoot = Join-Path $sceneRoot "$WorldAssetName Cells"
