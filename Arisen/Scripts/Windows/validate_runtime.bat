@@ -6,7 +6,9 @@ set "SCRIPT_ROOT=%~dp0"
 for %%I in ("%SCRIPT_ROOT%..\..") do set "ENGINE_ROOT=%%~fI"
 for %%I in ("%ENGINE_ROOT%\..") do set "REPO_ROOT=%%~fI"
 
-set "PROFILES=Editor Development Production RHIVulkanTesting"
+rem Empty means "every profile the workspace declares"; --profile overrides it, and the list is
+rem derived from the manifest below rather than hardcoded, because profile keys are workspace labels.
+set "PROFILES="
 set "CONFIG=Debug"
 set "FRAMES=1"
 set "SMOKE_MODE=scene"
@@ -105,6 +107,30 @@ if "%RUN_FAST%"=="1" (
     if errorlevel 1 (
         set "FAILURE_STAGE=fast validation"
         set "FAILURE_MESSAGE=validate_fast.bat failed"
+        goto :fail
+    )
+)
+
+if not defined PROFILES (
+    echo [Arisen] Deriving the gate profile list from the workspace manifest.
+    set "BUILD_TOOL_DLL=%ENGINE_ROOT%\External\ArisenBuildTool\bin\x64\Release\net9.0\ArisenBuildTool.dll"
+    dotnet build "%BUILD_TOOL_CSPROJ%" -c Release >nul
+    if errorlevel 1 (
+        set "FAILURE_STAGE=build tool compile"
+        set "FAILURE_MESSAGE=ArisenBuildTool failed to compile."
+        goto :fail
+    )
+    if not exist "%BUILD_TOOL_DLL%" (
+        set "FAILURE_STAGE=build tool output"
+        set "FAILURE_MESSAGE=ArisenBuildTool output not found: %BUILD_TOOL_DLL%"
+        goto :fail
+    )
+    for /f "usebackq delims=" %%A in (`dotnet "%BUILD_TOOL_DLL%" manifest-info --manifest "%WORKSPACE_DIR%\manifest.json" --field profiles`) do (
+        set "PROFILES=!PROFILES! %%A"
+    )
+    if not defined PROFILES (
+        set "FAILURE_STAGE=profile discovery"
+        set "FAILURE_MESSAGE=No profiles could be read from %WORKSPACE_DIR%\manifest.json"
         goto :fail
     )
 )
