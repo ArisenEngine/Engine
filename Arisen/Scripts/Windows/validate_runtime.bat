@@ -111,20 +111,20 @@ if "%RUN_FAST%"=="1" (
     )
 )
 
+echo [Arisen] Reading the declared profiles from the workspace manifest.
+set "BUILD_TOOL_DLL=%ENGINE_ROOT%\External\ArisenBuildTool\bin\x64\Release\net9.0\ArisenBuildTool.dll"
+dotnet build "%BUILD_TOOL_CSPROJ%" -c Release >nul
+if errorlevel 1 (
+    set "FAILURE_STAGE=build tool compile"
+    set "FAILURE_MESSAGE=ArisenBuildTool failed to compile."
+    goto :fail
+)
+if not exist "%BUILD_TOOL_DLL%" (
+    set "FAILURE_STAGE=build tool output"
+    set "FAILURE_MESSAGE=ArisenBuildTool output not found: %BUILD_TOOL_DLL%"
+    goto :fail
+)
 if not defined PROFILES (
-    echo [Arisen] Deriving the gate profile list from the workspace manifest.
-    set "BUILD_TOOL_DLL=%ENGINE_ROOT%\External\ArisenBuildTool\bin\x64\Release\net9.0\ArisenBuildTool.dll"
-    dotnet build "%BUILD_TOOL_CSPROJ%" -c Release >nul
-    if errorlevel 1 (
-        set "FAILURE_STAGE=build tool compile"
-        set "FAILURE_MESSAGE=ArisenBuildTool failed to compile."
-        goto :fail
-    )
-    if not exist "%BUILD_TOOL_DLL%" (
-        set "FAILURE_STAGE=build tool output"
-        set "FAILURE_MESSAGE=ArisenBuildTool output not found: %BUILD_TOOL_DLL%"
-        goto :fail
-    )
     for /f "usebackq delims=" %%A in (`dotnet "%BUILD_TOOL_DLL%" manifest-info --manifest "%WORKSPACE_DIR%\manifest.json" --field profiles`) do (
         set "PROFILES=!PROFILES! %%A"
     )
@@ -133,6 +133,17 @@ if not defined PROFILES (
         set "FAILURE_MESSAGE=No profiles could be read from %WORKSPACE_DIR%\manifest.json"
         goto :fail
     )
+)
+
+rem Profiles that declare the deployed role boot from a cooked catalog beside the executable, so
+rem their gates skip the workspace arguments and their build already cooked the content.
+set "DEPLOYED_PROFILES="
+for /f "usebackq delims=" %%A in (`dotnet "%BUILD_TOOL_DLL%" manifest-info --manifest "%WORKSPACE_DIR%\manifest.json" --field deployed-profiles`) do (
+    set "DEPLOYED_PROFILES=!DEPLOYED_PROFILES! %%A"
+)
+set "EDITOR_PROFILES="
+for /f "usebackq delims=" %%A in (`dotnet "%BUILD_TOOL_DLL%" manifest-info --manifest "%WORKSPACE_DIR%\manifest.json" --field editor-profiles`) do (
+    set "EDITOR_PROFILES=!EDITOR_PROFILES! %%A"
 )
 
 for %%P in (%PROFILES%) do (
@@ -216,6 +227,10 @@ exit /b 0
 
 :validate_profile
 set "CURRENT_PROFILE=%~1"
+set "CURRENT_PROFILE_DEPLOYED=0"
+for %%D in (!DEPLOYED_PROFILES!) do if /i "%%D"=="!CURRENT_PROFILE!" set "CURRENT_PROFILE_DEPLOYED=1"
+set "CURRENT_PROFILE_EDITOR=0"
+for %%D in (!EDITOR_PROFILES!) do if /i "%%D"=="!CURRENT_PROFILE!" set "CURRENT_PROFILE_EDITOR=1"
 set "CURRENT_PROFILE_LOG=%LOG_DIR%\smoke-cli-%CURRENT_PROFILE%-%CONFIG%-%RUN_TIMESTAMP%.log"
 set "CURRENT_VISUAL_SUMMARY_REQUESTED=0"
 set "CURRENT_VISUAL_SUMMARY_ARGS="
@@ -395,7 +410,7 @@ if errorlevel 1 (
 
 echo [Arisen] Running runtime smoke: %EXE_PATH%
 set "CURRENT_RUNTIME_SMOKE_VULKAN_LOG_REQUIRED=%PROFILE_REQUIRES_VULKAN%"
-if /i "%CURRENT_PROFILE%"=="Editor" set "CURRENT_RUNTIME_SMOKE_VULKAN_LOG_REQUIRED=0"
+if "!CURRENT_PROFILE_EDITOR!"=="1" set "CURRENT_RUNTIME_SMOKE_VULKAN_LOG_REQUIRED=0"
 call :prepare_vulkan_validation_log "%CURRENT_RUNTIME_SMOKE_VULKAN_LOG_REQUIRED%"
 if errorlevel 1 (
     set "FAILED_PROFILE=%CURRENT_PROFILE%"
@@ -411,7 +426,7 @@ if errorlevel 1 (
     exit /b 1
 )
 pushd "%BIN_DIR%" >nul
-if /i "%CURRENT_PROFILE%"=="Production" (
+if "!CURRENT_PROFILE_DEPLOYED!"=="1" (
     "%EXE_PATH%" --smoke-mode "%SMOKE_MODE%" --frames "%FRAMES%" !CURRENT_VISUAL_SUMMARY_ARGS! > "%CURRENT_PROFILE_LOG%" 2>&1
 ) else (
     "%EXE_PATH%" --workspace "%ENGINE_ROOT%\Development\PackageGame" --profile "%CURRENT_PROFILE%" --smoke-mode "%SMOKE_MODE%" --frames "%FRAMES%" !CURRENT_VISUAL_SUMMARY_ARGS! > "%CURRENT_PROFILE_LOG%" 2>&1
@@ -585,7 +600,7 @@ if "!CURRENT_TERRAIN_STREAMING_REQUIRED!"=="1" (
     set /a TERRAIN_STREAMING_SMOKE_RUNS+=1
 )
 
-if /i "!CURRENT_PROFILE!"=="Production" (
+if "!CURRENT_PROFILE_DEPLOYED!"=="1" (
     call :run_relocated_production_validation
     if errorlevel 1 (
         echo [ERROR] Relocated Production validation failed.
@@ -690,7 +705,7 @@ exit /b 0
 
 :validate_runtime_asset_policy
 set "EXPECTED_SOURCE_ACCESS=Disabled"
-if /i "%CURRENT_PROFILE%"=="Editor" set "EXPECTED_SOURCE_ACCESS=EditorAuthoring"
+if "!CURRENT_PROFILE_EDITOR!"=="1" set "EXPECTED_SOURCE_ACCESS=EditorAuthoring"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$logPath = $env:CURRENT_PLAYER_LOG_PATH; if ([string]::IsNullOrWhiteSpace($logPath) -or -not (Test-Path -LiteralPath $logPath -PathType Leaf)) { Write-Host ('[ERROR] Launch-owned player log is missing for source-access validation: {0}' -f $logPath); exit 1 }; $text = Get-Content -LiteralPath $logPath -Raw; $expected = 'with {0} source access' -f $env:EXPECTED_SOURCE_ACCESS; if ($text.IndexOf($expected, [StringComparison]::Ordinal) -lt 0) { Write-Host ('[ERROR] Runtime log {0} does not contain expected source-access policy: {1}' -f $logPath, $expected); exit 1 }; Write-Host ('[Arisen] Runtime asset policy passed: {0} ({1})' -f $env:EXPECTED_SOURCE_ACCESS, $logPath)"
 exit /b %ERRORLEVEL%
 
@@ -700,8 +715,9 @@ exit /b %ERRORLEVEL%
 
 :prepare_workspace_runtime_assets
 set "CURRENT_ASSET_PREPARATION_LOG="
-if /i "%CURRENT_PROFILE%"=="Editor" exit /b 0
-if /i "%CURRENT_PROFILE%"=="Production" exit /b 0
+rem An editor reads source assets, and a deployed profile was already cooked by its build target.
+if "!CURRENT_PROFILE_EDITOR!"=="1" exit /b 0
+if "!CURRENT_PROFILE_DEPLOYED!"=="1" exit /b 0
 set "CURRENT_ASSET_PREPARATION_LOG=%LOG_DIR%\cook-runtime-assets-%CURRENT_PROFILE%-%CONFIG%-%RUN_TIMESTAMP%.log"
 echo [Arisen] Explicitly cooking runtime assets for cooked-only %CURRENT_PROFILE% smoke.
 pushd "%BIN_DIR%" >nul
@@ -806,7 +822,7 @@ if errorlevel 1 exit /b 1
 setlocal
 set "ARISEN_VEGETATION_RENDER_VALIDATION_MODE=full"
 pushd "%BIN_DIR%" >nul
-if /i "%CURRENT_PROFILE%"=="Production" (
+if "!CURRENT_PROFILE_DEPLOYED!"=="1" (
     "%EXE_PATH%" --smoke-mode world-streaming --frames 1 --smoke-summary-output "!CURRENT_WORLD_STREAMING_SUMMARY_PATH!" --visual-summary --visual-summary-output "!CURRENT_WORLD_STREAMING_VISUAL_BASE_PATH!" > "!CURRENT_WORLD_STREAMING_LOG_PATH!" 2>&1
 ) else (
     "%EXE_PATH%" --workspace "%WORKSPACE_DIR%" --profile "%CURRENT_PROFILE%" --smoke-mode world-streaming --frames 1 --smoke-summary-output "!CURRENT_WORLD_STREAMING_SUMMARY_PATH!" --visual-summary --visual-summary-output "!CURRENT_WORLD_STREAMING_VISUAL_BASE_PATH!" > "!CURRENT_WORLD_STREAMING_LOG_PATH!" 2>&1
@@ -956,7 +972,7 @@ if errorlevel 1 (
     exit /b 1
 )
 pushd "%BIN_DIR%" >nul
-if /i "%CURRENT_PROFILE%"=="Production" (
+if "!CURRENT_PROFILE_DEPLOYED!"=="1" (
     "%EXE_PATH%" --smoke-mode terrain-streaming --frames 1 --smoke-summary-output "!CURRENT_TERRAIN_STREAMING_SUMMARY_PATH!" --visual-summary --visual-summary-output "!CURRENT_TERRAIN_STREAMING_VISUAL_BASE_PATH!" > "!CURRENT_TERRAIN_STREAMING_LOG_PATH!" 2>&1
 ) else (
     "%EXE_PATH%" --workspace "%WORKSPACE_DIR%" --profile "%CURRENT_PROFILE%" --smoke-mode terrain-streaming --frames 1 --smoke-summary-output "!CURRENT_TERRAIN_STREAMING_SUMMARY_PATH!" --visual-summary --visual-summary-output "!CURRENT_TERRAIN_STREAMING_VISUAL_BASE_PATH!" > "!CURRENT_TERRAIN_STREAMING_LOG_PATH!" 2>&1
@@ -1076,7 +1092,7 @@ exit /b %ERRORLEVEL%
 
 :configure_editor_viewport_smoke
 if /i not "!SMOKE_MODE!"=="scene" exit /b 0
-if /i not "!CURRENT_PROFILE!"=="Editor" exit /b 0
+if not "!CURRENT_PROFILE_EDITOR!"=="1" exit /b 0
 
 set "CURRENT_EDITOR_VIEWPORT_SMOKE_REQUESTED=1"
 set "CURRENT_EDITOR_VIEWPORT_SMOKE_PATH=%LOG_DIR%\editor-viewport-summary-%CURRENT_PROFILE%-latest.json"

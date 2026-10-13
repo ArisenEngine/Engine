@@ -294,6 +294,36 @@ class Program
             return;
         }
 
+        if (field.Equals("deployed-profiles", StringComparison.OrdinalIgnoreCase))
+        {
+            if (manifest.Profiles != null)
+            {
+                foreach (var entry in manifest.Profiles)
+                {
+                    if (entry.Value.IsDeployed)
+                    {
+                        Console.WriteLine(entry.Key);
+                    }
+                }
+            }
+            return;
+        }
+
+        if (field.Equals("editor-profiles", StringComparison.OrdinalIgnoreCase))
+        {
+            if (manifest.Profiles != null)
+            {
+                foreach (var entry in manifest.Profiles)
+                {
+                    if (entry.Value.IsEditor)
+                    {
+                        Console.WriteLine(entry.Key);
+                    }
+                }
+            }
+            return;
+        }
+
         Console.Error.WriteLine(
             $"ArisenBuildTool Manifest Info Error: unsupported field '{field}'.");
         Environment.ExitCode = 1;
