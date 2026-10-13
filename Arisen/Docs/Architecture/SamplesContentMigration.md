@@ -94,6 +94,28 @@ Remaining:
 5. Update the tests that pin the old package paths and generated GUIDs.
 6. Run `validate_fast` and `validate_runtime`.
 
+## Open when this was last written
+
+The model children are re-keyed and the cook and the mistfall generator converge, but a sweep for the
+old owner string under `Local\com.arisen.samples\Assets` still finds 388 files, in two groups that
+need different treatment before the tests and gates can run.
+
+**Orphaned pre-move bakes (the bulk).** Their `.meta` `ChildKey` records the previous world identity -
+`world=38637cf8…`, `terrain=40ad1b8e…`, `terrainPackage=com.arisen.packagegame` - so they are outputs
+the current identity can no longer produce. The bake writes under `Vegetation/**/Generated/<recipe
+GUID as hex>/`, and re-keying the recipe changes that directory name, so the cook published the new
+pages beside the old ones instead of replacing them. They are unreachable and should be deleted, but
+the deletion has to be driven by "this meta's `SourcePackageId` is not the current owner" rather than
+by a path guess.
+
+**Authored scenes.**
+`LanternShowcaseScene.arisenscene`, `SmokeScene.arisenscene`, `TeapotWestCell.arisenscene`, and
+`TeapotCenterCell.arisenscene` still carry references under the old owner. `TeapotCenterCell` is the
+one that is unexplained: `generate_showcase_valley.ps1` writes it, re-running that script after the
+cook published a fresh report left its twelve references unchanged, so either the script does not
+write that section of the file or something else owns it. Resolve this before treating those four as
+hand-authored, because the fix differs: a producer gap means fixing the producer, not the file.
+
 ## Traps
 
 - A `git add -A` in the superproject can fail on a stale `.git/index.lock` and leave the index
