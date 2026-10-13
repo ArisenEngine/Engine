@@ -26,6 +26,11 @@
       "Version": "1.0.0"
     },
     {
+      "Id": "com.arisen.samples",
+      "Url": "file://Local/com.arisen.samples",
+      "Version": "1.0.0"
+    },
+    {
       "Id": "com.arisen.core.native",
       "Url": "file://Local/com.arisen.core.native",
       "Version": "1.0.0"
