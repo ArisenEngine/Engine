@@ -737,6 +737,84 @@ public sealed class PackageValidationFixtureTests
     }
 
     [Fact]
+    public void SampleGalleryProfileRequiresTheWorkspaceCatalogue()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage("com.test.gallery", layer: "user", type: "managed");
+        var manifest = new ProjectManifest
+        {
+            Name = "ValidationFixture",
+            EngineVersion = "Current",
+            Packages =
+            [
+                new PackageRequirement
+                {
+                    Id = "com.test.gallery",
+                    Url = "file://Local/com.test.gallery",
+                    Version = "1.0.0"
+                }
+            ],
+            Profiles = new Dictionary<string, ProfileDefinition>
+            {
+                ["Development"] = new() { IsSampleGallery = true }
+            }
+        };
+
+        var result = workspace.Validate(manifest);
+
+        Assert.False(result.Success);
+        Assert.Contains(
+            result.Errors,
+            error => error.Contains("IsSampleGallery", StringComparison.Ordinal) &&
+                     error.Contains("SampleCatalogue", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void SecondSampleGalleryProfileFailsValidation()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage("com.test.gallery", layer: "user", type: "managed");
+        workspace.AddPackage("com.test.samples", layer: "user", type: "managed");
+        var manifest = new ProjectManifest
+        {
+            Name = "ValidationFixture",
+            EngineVersion = "Current",
+            Packages =
+            [
+                new PackageRequirement
+                {
+                    Id = "com.test.gallery",
+                    Url = "file://Local/com.test.gallery",
+                    Version = "1.0.0"
+                },
+                new PackageRequirement
+                {
+                    Id = "com.test.samples",
+                    Url = "file://Local/com.test.samples",
+                    Version = "1.0.0"
+                }
+            ],
+            SampleCatalogue = new ProjectAssetReference
+            {
+                Guid = Guid.Parse("3e7a91d2-5c48-4b02-9f6d-81b4c0e5a2d7"),
+                PackageId = "com.test.samples"
+            },
+            Profiles = new Dictionary<string, ProfileDefinition>
+            {
+                ["Development"] = new() { IsSampleGallery = true },
+                ["Other"] = new() { IsSampleGallery = true }
+            }
+        };
+
+        var result = workspace.Validate(manifest);
+
+        Assert.False(result.Success);
+        Assert.Contains(
+            result.Errors,
+            error => error.Contains("declare IsSampleGallery", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void NativeTestsOwnedByNonTestPackageWithoutCompanionPassValidation()
     {
         using var workspace = ValidationWorkspace.Create();
