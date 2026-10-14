@@ -395,17 +395,25 @@ class Program
         Logger.Info($"Workspace: {workspaceDir}");
         Logger.Info($"Engine Root: {engineDir}");
 
-        string testPackageId = packageId.EndsWith(".test", StringComparison.OrdinalIgnoreCase) ? packageId : $"{packageId}.test";
         if (!ValidateLocalTestPackage(workspaceDir, packageId, isRequired: true))
         {
             Environment.Exit(1);
         }
 
-        if (!ValidateLocalTestPackage(workspaceDir, testPackageId, isRequired: true))
+        TestPackageResolutionService.Resolution testResolution =
+            TestPackageResolutionService.Resolve(workspaceDir, packageId);
+        if (!testResolution.Succeeded)
         {
-            Logger.Error($"Expected companion test package '{testPackageId}' at '{Path.Combine(workspaceDir, "Local", testPackageId)}'.");
-            Logger.Error("Create the companion .test package or pass an existing package id that already ends with '.test'.");
+            Logger.Error(testResolution.Diagnostic);
             Environment.Exit(1);
+        }
+
+        string testPackageId = testResolution.TestPackageId;
+        if (testResolution.UsesOwnTests)
+        {
+            Logger.Info(
+                $"Package '{packageId}' declares its own native tests for " +
+                $"{testResolution.RuntimeIdentifier}; mounting it as the test host.");
         }
 
         foreach (var requiredInfrastructurePackage in new[] { "com.arisen.core", "com.arisen.testrunner" })
@@ -419,21 +427,34 @@ class Program
 
         Logger.Info($"Companion test package: {testPackageId}");
 
+        var testPackages = new List<PackageRequirement>
+        {
+            new PackageRequirement { Id = "com.arisen.core", Url = "file://Local/com.arisen.core", Version = "1.0.0" },
+            new PackageRequirement { Id = packageId, Url = $"file://Local/{packageId}", Version = "1.0.0" }
+        };
+        if (!string.Equals(testPackageId, packageId, StringComparison.OrdinalIgnoreCase))
+        {
+            testPackages.Add(new PackageRequirement
+            {
+                Id = testPackageId,
+                Url = $"file://Local/{testPackageId}",
+                Version = "1.0.0"
+            });
+        }
+
+        testPackages.Add(new PackageRequirement { Id = "com.arisen.testrunner", Url = "file://Local/com.arisen.testrunner", Version = "1.0.0" });
+
         // Create a Virtual Manifest for this test run
         var testManifest = new ProjectManifest
         {
             Name = $"{packageId}.TestRun",
             EngineVersion = "Current",
-            Packages = new List<PackageRequirement>
-            {
-                new PackageRequirement { Id = "com.arisen.core", Url = "file://Local/com.arisen.core", Version = "1.0.0" },
-                new PackageRequirement { Id = packageId, Url = $"file://Local/{packageId}", Version = "1.0.0" },
-                new PackageRequirement { Id = testPackageId, Url = $"file://Local/{testPackageId}", Version = "1.0.0" },
-                new PackageRequirement { Id = "com.arisen.testrunner", Url = "file://Local/com.arisen.testrunner", Version = "1.0.0" }
-            },
+            Packages = testPackages,
             Profiles = new Dictionary<string, ProfileDefinition>
             {
-                ["Testing"] = new ProfileDefinition()
+                // The test-host role is what the generated CMake turns into ARISEN_TEST_HOST, so a
+                // package's test target is built by this profile alone.
+                ["Testing"] = new ProfileDefinition { IsTestHost = true }
             }
         };
 
@@ -918,11 +939,13 @@ class Program
 
         bool isEditor = false;
         bool isDeployed = false;
+        bool isTestHost = false;
         bool enableProfiler = false;
         if (manifest.Profiles != null && manifest.Profiles.TryGetValue(profile, out var profileDef))
         {
             isEditor = profileDef.IsEditor;
             isDeployed = profileDef.IsDeployed;
+            isTestHost = profileDef.IsTestHost;
             enableProfiler = profileDef.EnableProfiler;
         }
 
@@ -972,7 +995,7 @@ class Program
         ).ToList();
 
         ProjectGeneratorService.GenerateForManagedPackages(workspaceDir, projectsDir, engineDir, managedPackages, packageMap, manifest, profile, isEditor, isDeployed, enableProfiler);
-        CMakeGeneratorService.Generate(engineDir, projectsDir, nativePackages, projectName, manifest, profile, enableProfiler);
+        CMakeGeneratorService.Generate(engineDir, projectsDir, nativePackages, projectName, manifest, profile, enableProfiler, isTestHost);
         SolutionGeneratorService.Generate(
             workspaceDir,
             projectsDir,

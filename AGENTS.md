@@ -130,6 +130,12 @@ Package-level workspace generation/testing remains available for native package 
 - Build and run the isolated package tests:
   - `Arisen\Scripts\Windows\build_workspace.bat --package com.arisen.rhi.vulkan.native --config Debug --run-tests`
 
+A package owns its own gate: when its `package.json` declares `nativeTests` and no companion `X.test`
+package exists, `--package X` mounts the package itself, and the generated CMake defines
+`ARISEN_TEST_HOST` for that run so a package can keep its test target out of every product build
+(`if(ARISEN_TEST_HOST)`). A companion `X.test` package stays the right shape when the tests need a
+package graph or assets of their own, and it wins whenever it exists.
+
 How this works:
 - `build_workspace.bat --package X` calls `ArisenBuildTool test --package X`
 - the build tool creates a virtual `Testing` workspace that includes:
