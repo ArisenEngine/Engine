@@ -2,7 +2,8 @@
 
 **Status:** Active scaffold (v0). Each track is filled in through owner review. This file is the only
 active roadmap.
-**Supersedes:** `VegetationOutdoorWorldNextTodo.md`, folded into Track B4 during the B-track review.
+**Supersedes:** `VegetationOutdoorWorldNextTodo.md` (deleted; its work items now live under Track A,
+Track B4, and Track G).
 
 ## How To Use This Document
 
@@ -78,6 +79,8 @@ an explicit time box and never block a slice.
 | D13 | Asset roots are a first-class registry rather than a filename convention. Workspace and package roots are declared once and shared by editor and runtime, and path policy queries that table instead of walking parent directories for a folder named `Assets`. | 2026-09-24 |
 | D14 | Every asset root carries an edit policy, resolved as: workspace declaration, then a hard read-only rule for archive or extracted-cache mounts, then a `layer` default where `user` is writable and the rest are read-only. Read never blocks, so read-only roots stay indexed, browsable, referenceable, and cooked. | 2026-09-24 |
 | D15 | The workspace `Assets` root is a scratch area, not a shared library: writable, never shipped, never a startup reference, and no shipped asset may depend on it. Shared content is expressed as a package. | 2026-09-24 |
+| D16 | Slice 1 is developed in the game workspace (`com.arisen.packagegame`), not as a gallery sample. Each capability the slice pulls still gets its own gated sample in `com.arisen.samples` when its track lands, per D7. | 2026-10-14 |
+| D17 | The gallery's work items are S1-S6 in Track S: the catalogue and `Samples` profile, a content sample, a capability sample, per-sample gates, the hub as a browsing layer only, and isolation profiles for the samples whose subject is isolation. | 2026-10-14 |
 
 ## Track Structure
 
@@ -88,6 +91,19 @@ discipline, Tracy and RenderDoc, validation gates, single-source documentation.
 
 - A1 frame budget, device capability query, multi-queue submission (async compute and copy)
 - A2 backend-neutral indexed-indirect contract
+  - Measure first: add the Tracy zones and plots for scatter bake, cell read/setup, extraction,
+    culling, LOD, batch build, upload, opaque and shadow recording, submission, and disposal; plot
+    active cells/clusters/instances, candidates/visible/culled/faded instances, the LOD histogram,
+    direct batches and draws, CPU and prepared bytes, descriptors, upload bytes and time, budget
+    stalls, and pending disposal.
+  - Establish explicit frame budgets and capture representative near/mid/far camera paths at target
+    density, then measure direct-instanced command pressure and CPU recording cost. If direct
+    instancing stays inside budget, record that result and keep the smaller contract instead.
+  - Expose `DrawIndexedIndirect` through managed RHI and `RenderCommandList` with validated argument
+    layout, alignment, resource state, draw count, stride, and capability limits, and implement
+    Vulkan execution with focused native/managed contract tests that keep Vulkan types out of
+    vegetation. Start from deterministic CPU-built indirect arguments and add compute culling or
+    count buffers only after a second measured bottleneck.
 - A3 GPU culling feeding indirect arguments and counts
 - A4 Hi-Z occlusion culling
 - A5 virtualized geometry and virtual texturing, if measurement demands them
@@ -101,6 +117,20 @@ discipline, Tracy and RenderDoc, validation gates, single-source documentation.
 - B2 next-generation terrain, the increments beyond what already exists
 - B3 urban content pipeline driven by DEM and OSM data
 - B4 outdoor vegetation finishing work, folded from `VegetationOutdoorWorldNextTodo.md`, deferred
+  - A package-provided bounded `vegetation-streaming` smoke: deterministic near/mid/far path, a
+    cell-boundary crossing, one origin rebase, wind samples, and repeated load/reload/unload cycles,
+    asserting cluster and instance identities, owner cells, generations, culling/LOD/batch parity,
+    bounds, and zero stale draws.
+  - Memory and shutdown checks that bound ECS clusters, cooked pages, CPU placement bytes, prepared
+    buffers/textures/descriptors, mesh and material sharing, and deferred disposal, and that require
+    a complete task/residency/device-resource drain after package shutdown.
+  - Named color/depth/shadow captures that validate nonblank vegetation coverage, an upright horizon,
+    alpha/depth consistency, wind movement between selected frames, stationary determinism, LOD
+    transitions, and post-rebase similarity.
+  - Integrate the package/format/scatter/residency/render/editor tests into `validate_fast.bat` and
+    the profile plus relocated cooked-only Production checks into `validate_runtime.bat`, then run
+    the complete Debug gate with zero source fallback, zero skipped GPU checks, bounded memory, clean
+    shutdown, and empty Vulkan validation logs.
 
 **Track C - Character And Animation**
 
@@ -134,6 +164,17 @@ discipline, Tracy and RenderDoc, validation gates, single-source documentation.
 **Track G - Tools**: interior level editing, lighting bake, animation preview, combat data
 authoring, incremental cook.
 
+- Vegetation authoring: species and biome inspectors with strict dependency/range validation,
+  density/exclusion/species-weight paint tools, and world/terrain hit testing through the existing
+  `SceneView` and terrain query contracts.
+- Brush work stays bounded to affected cells and pages with deterministic brush samples, an
+  immutable unsaved scatter preview through the adapter, no ECS or UI mutation from worker
+  callbacks, and the previous valid preview kept visible until a complete replacement is ready.
+- Diagnostics: cluster/instance overlays covering bounds, owner cell, species, LOD, accepted and
+  rejected candidate counts, memory, dirty/conflict state, and selection focus.
+- Editing: transaction-safe undo/redo, save, external-change conflict handling, regeneration, and
+  incremental cook publication, with focused editor tests and one real-host smoke.
+
 **Track S - Sample Gallery**: see below.
 
 **Game Track - Slices**
@@ -153,7 +194,24 @@ authoring, incremental cook.
 5. The first deliverable of a track is its sample, and that sample must be gated.
 6. Workaround fixes are not accepted. If a root cause is unknown, keep the task open and say so.
 
-## Track S - Sample Gallery (proposed)
+## Track S - Sample Gallery
+
+D7 fixes the shape - one `Samples` profile, the hub as a browsing layer - and D17 fixes these items.
+Every sample boots directly, so a catalogue entry is only useful when its gate can launch it without
+the hub.
+
+- S1 the `Samples` profile, the catalogue asset, and the hub scene. A catalogue entry declares the
+  sample's identity, a one-line description, its scene, an optional world, the packages it needs,
+  the expected visual, and the gate and artifact that prove it.
+- S2 a content sample: the same package set with a different scene or world, selected inside the
+  running process through the existing runtime world-load path.
+- S3 a capability sample: a different package set or a different build switch, reached through its
+  own profile and a process restart.
+- S4 per-sample gates: each gate launches its sample directly and asserts the catalogued expected
+  visual, and no gate drives the hub.
+- S5 the hub: a browsing layer over the catalogue only. It is never the only way into a sample.
+- S6 isolation profiles: a small number of profiles for the samples whose subject is isolation
+  itself, never one profile per capability.
 
 **Motivation.** Capability has no catalogue today. A profile decides the package graph at boot, so a
 capability can only be seen by knowing which workspace, profile, and solution to launch.
@@ -229,7 +287,6 @@ list so every profile boots the migrated content, and Track S below is what move
 
 - Target hardware tier and frame-rate budget (D5).
 - Whether this document stays English; the rest of `Arisen\Docs\Architecture` is English.
-- Whether slice 1 is developed inside the game workspace or as the S6 sample first.
 - Content sourcing for the eventual city: procedural, DEM/OSM, or purchased assets.
 
 ## Succession Rule

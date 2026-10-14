@@ -332,7 +332,7 @@ Do not answer architecture questions from memory alone; read the docs and releva
 
 Start with:
 - active feature roadmap:
-  - `Arisen\Docs\Architecture\VegetationOutdoorWorldNextTodo.md`
+  - `Arisen\Docs\Architecture\ArisenDevelopmentRoadmap.md`
 - package/workspace/build questions:
   - `Arisen\Docs\Architecture\ProjectManagement.md`
   - `Arisen\Docs\Architecture\ArisenBuildTool.md`
