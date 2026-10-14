@@ -28,6 +28,10 @@ This layer implements the standard features expected of a game engine.
 -   **`com.arisen.ecs`**: The foundational Entity Component System.
 -   **`com.arisen.rendering`**: The RenderGraph and core pipeline management.
 -   **`com.arisen.resources`**: Background asset discovery and database management.
+-   **`com.arisen.app`**: The application shell every product depends on. It activates the process's
+    startup target - selected with `--startup-scene`/`--startup-world` or declared by the workspace
+    manifest - during `PostInit`, and owns the interactive runtime viewer (free-fly camera plus the
+    world streaming source it publishes).
 -   **`com.arisen.generic-renderpipeline`**: The default concrete RenderPipeline implemented via RenderGraph.
 -   **`com.arisen.vegetation`**: Backend-neutral vegetation identity, runtime cluster data, bounded queries, diagnostics, and authoring-preview contracts.
 

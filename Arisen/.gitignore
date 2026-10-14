@@ -394,6 +394,8 @@ test-results/
 # Mac bundle stuff
 *.dmg
 *.app
+# Not a bundle: the application shell package's id is `com.arisen.app`.
+!com.arisen.app/
 
 # content below from: https://github.com/github/gitignore/blob/master/Global/macOS.gitignore
 # General

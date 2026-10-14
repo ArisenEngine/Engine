@@ -142,7 +142,7 @@ public sealed class CameraBasisContractTests
         string renderSubsystem = ReadRepoFile(
             "Arisen/Development/PackageGame/Local/com.arisen.rendering/RenderSubsystem.cs");
         string runtimeCamera = ReadRepoFile(
-            "Arisen/Development/PackageGame/Local/com.arisen.packagegame/RuntimeCameraNavigationSubsystem.cs");
+            "Arisen/Development/PackageGame/Local/com.arisen.app/Managed/RuntimeCameraNavigationSubsystem.cs");
         string editorCamera = ReadRepoFile(
             "Arisen/Development/PackageGame/Local/com.arisen.editor/Managed/Core/Services/EditorSceneViewCameraMotion.cs");
         string editorSeed = ReadRepoFile(

@@ -116,6 +116,7 @@ If a manifest entry points at a remote source and a same-ID folder exists under 
 | **`com.arisen.ecs`** | Domain | Optimized Entity Component System (ECS) using memory-contiguous pools. |
 | **`com.arisen.rendering`** | Domain | **RenderGraph Architecture**, RenderPipeline interfaces, and base shading logic. |
 | **`com.arisen.resources`** | Domain | Asset Database, resource serialization, and background data discovery. |
+| **`com.arisen.app`** | Domain | The application shell every product depends on: startup-target activation (`--startup-*` or the workspace manifest) and the interactive runtime viewer. |
 | **`com.arisen.rhi.vulkan.native`** | Driver | Native Vulkan implementation of the Rendering Hardware Interface (RHI). |
 | **`com.arisen.editor`** | Tooling | The official Avalonia-based visual authoring environment. |
 | **`com.arisen.nodecanvas`** | Tooling | Foundation for node-based visual editing and graph manipulation. |

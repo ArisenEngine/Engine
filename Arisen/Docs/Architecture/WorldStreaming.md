@@ -7,7 +7,10 @@ Runtime world streaming turns a cooked `World` descriptor into one persistent sc
 
 ## Startup Ownership
 
-`ProjectSceneBootstrapSubsystem` selects startup content during `PostInit`:
+`StartupTargetBootstrapSubsystem` (the `com.arisen.app` application shell) selects startup content
+during `PostInit`. The selection is the process's `--startup-scene`/`--startup-world` argument when
+one was passed, otherwise the workspace manifest's `StartupScene`/`StartupWorld`; an explicit scene
+suppresses the manifest world:
 
 - when `StartupWorld` is valid, `IRuntimeWorldStreamingService.LoadWorld` loads the descriptor and
   admits its persistent scene for activation. If required residency is not ready, the call returns
@@ -15,7 +18,7 @@ Runtime world streaming turns a cooked `World` descriptor into one persistent sc
   boundary;
 - otherwise, `StartupScene` is activated through the compatibility `IRuntimeSceneService` path;
 - loading a world does not automatically select streamable cells. A composition/gameplay caller must set a finite streaming source, while Editor authoring explicitly pins cells for edit residency. Editing the persistent scene camera does not silently change cell ownership.
-- the interactive camera owners are the composition callers that publish that source. `PackageGame.RuntimeCameraNavigationSubsystem` publishes the runtime free-fly camera pose in interactive non-editor runs and clears it on shutdown. In the Editor, `EditorSceneViewCameraController` publishes the scene-view camera pose only after the user drives the camera or explicitly focuses a cell, so automated sessions and the untouched startup state keep the deterministic pin/preview activation model that the Editor viewport smoke asserts. Because `SetStreamingSource` also requests the origin policy's primary source, a rebased world follows whichever camera currently owns the source.
+- the interactive camera owners are the shell and the editor. `ArisenEngine.App.RuntimeCameraNavigationSubsystem` publishes the runtime free-fly camera pose in interactive non-editor runs and clears it on shutdown. In the Editor, `EditorSceneViewCameraController` publishes the scene-view camera pose only after the user drives the camera or explicitly focuses a cell, so automated sessions and the untouched startup state keep the deterministic pin/preview activation model that the Editor viewport smoke asserts. Because `SetStreamingSource` also requests the origin policy's primary source, a rebased world follows whichever camera currently owns the source.
 
 `IRuntimeWorldStreamingService.PresentationSnapshot` returns one state-gate-coherent revision with
 the active world asset, pending world asset, and active world GUID. `WorldPresentationChanged`
