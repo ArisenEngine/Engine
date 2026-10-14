@@ -34,7 +34,9 @@ Recorded here because this roadmap is requirement-driven, and these gaps decide 
 
 - Skeletal animation, skinning, animation clips: none. glTF `skins` and `animations` are explicit
   import warnings, and the mesh vertex layout carries no joints or weights.
-- Physics and collision: none.
+- Physics and collision: the solver exists behind `com.arisen.physics` (Jolt, fixed-step and
+  deterministic, with the package's own native gate), but no authored content reaches it yet -
+  cooked collision (D2) and the character controller plus combat queries (D3) do not exist.
 - Navigation and AI: none.
 - Audio: none.
 - Runtime in-game UI: none.
