@@ -30,6 +30,7 @@ public sealed class ResourcesPackageTests
         var cookerRegistry = new RuntimeAssetCookerRegistry();
         serviceRegistry.RegisterService<IRuntimeAssetCookerRegistry>(cookerRegistry);
         serviceRegistry.RegisterService<IBackgroundTaskScheduler>(taskGraph);
+        serviceRegistry.RegisterService(new ProjectSubsystem());
         EngineKernel.Instance.RegisterSubsystem(new SceneSubsystem());
         var package = new ResourcesPackage();
         bool loaded = false;
@@ -55,6 +56,10 @@ public sealed class ResourcesPackageTests
             Assert.Null(GetField<RuntimeAssetResidencyService>(
                 package,
                 "m_RuntimeAssetResidencyService"));
+            Assert.Null(GetField<SampleCatalogueRuntimeAssetCooker>(
+                package,
+                "m_SampleCatalogueRuntimeAssetCooker"));
+            Assert.Null(GetField<SampleCatalogueService>(package, "m_SampleCatalogueService"));
             Assert.Null(GetField<WorldOriginService>(package, "m_WorldOriginService"));
             Assert.Null(GetField<RuntimeSmokeScenarioRegistry>(
                 package,
@@ -74,7 +79,7 @@ public sealed class ResourcesPackageTests
             }
             loaded = true;
 
-            Assert.Equal(2, cookerRegistry.GetRegistrations().Count);
+            Assert.Equal(3, cookerRegistry.GetRegistrations().Count);
             Assert.True(package.HasPendingOwnership);
             package.OnUnload(services);
             loaded = false;
@@ -257,6 +262,10 @@ public sealed class ResourcesPackageTests
             Assert.Null(GetField<RuntimeAssetResidencyService>(
                 package,
                 "m_RuntimeAssetResidencyService"));
+            Assert.Null(GetField<SampleCatalogueRuntimeAssetCooker>(
+                package,
+                "m_SampleCatalogueRuntimeAssetCooker"));
+            Assert.Null(GetField<SampleCatalogueService>(package, "m_SampleCatalogueService"));
             Assert.Same(database, GetField<IAssetDatabase>(package, "m_AssetDatabase"));
             Assert.Equal(2, provider.ReleaseAttemptCount);
             Assert.Equal(1, database.ReleaseAllAttemptCount);
@@ -394,6 +403,10 @@ public sealed class ResourcesPackageTests
             Assert.Null(GetField<RuntimeAssetResidencyService>(
                 package,
                 "m_RuntimeAssetResidencyService"));
+            Assert.Null(GetField<SampleCatalogueRuntimeAssetCooker>(
+                package,
+                "m_SampleCatalogueRuntimeAssetCooker"));
+            Assert.Null(GetField<SampleCatalogueService>(package, "m_SampleCatalogueService"));
             Assert.Null(GetField<IAssetDatabase>(package, "m_AssetDatabase"));
             Assert.Null(GetField<WorldOriginService>(package, "m_WorldOriginService"));
             Assert.False(package.HasPendingOwnership);

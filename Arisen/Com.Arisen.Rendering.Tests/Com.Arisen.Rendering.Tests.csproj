@@ -193,6 +193,10 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\RuntimeSmokeScenarioRegistry.cs" Link="Source\Resources\Serialization\RuntimeSmokeScenarioRegistry.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\RuntimeAssetResidencyService.cs" Link="Source\Resources\Serialization\RuntimeAssetResidencyService.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\RuntimeSceneService.cs" Link="Source\Resources\Serialization\RuntimeSceneService.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\SampleCatalogueAsset.cs" Link="Source\Resources\Serialization\SampleCatalogueAsset.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\SampleCatalogueCooker.cs" Link="Source\Resources\Serialization\SampleCatalogueCooker.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\SampleCatalogueRuntimeAssetCooker.cs" Link="Source\Resources\Serialization\SampleCatalogueRuntimeAssetCooker.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\SampleCatalogueService.cs" Link="Source\Resources\Serialization\SampleCatalogueService.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\ResourcesPackage.cs" Link="Source\Resources\ResourcesPackage.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation\Managed\Assets\*.cs" Link="Source\Vegetation\Assets\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation\Managed\Runtime\*.cs" Link="Source\Vegetation\Runtime\%(Filename)%(Extension)" />
