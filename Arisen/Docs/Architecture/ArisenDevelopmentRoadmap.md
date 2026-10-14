@@ -80,7 +80,7 @@ an explicit time box and never block a slice.
 | D14 | Every asset root carries an edit policy, resolved as: workspace declaration, then a hard read-only rule for archive or extracted-cache mounts, then a `layer` default where `user` is writable and the rest are read-only. Read never blocks, so read-only roots stay indexed, browsable, referenceable, and cooked. | 2026-09-24 |
 | D15 | The workspace `Assets` root is a scratch area, not a shared library: writable, never shipped, never a startup reference, and no shipped asset may depend on it. Shared content is expressed as a package. | 2026-09-24 |
 | D16 | Slice 1 is developed in the game workspace (`com.arisen.packagegame`), not as a gallery sample. Each capability the slice pulls still gets its own gated sample in `com.arisen.samples` when its track lands, per D7. | 2026-10-14 |
-| D17 | The gallery's work items are S1-S6 in Track S: the catalogue and `Samples` profile, a content sample, a capability sample, per-sample gates, the hub as a browsing layer only, and isolation profiles for the samples whose subject is isolation. | 2026-10-14 |
+| D17 | The gallery's work items are S0-S6 in Track S: the application shell and generic `--startup-*` selection, the catalogue and `Samples` profile, a content sample, a capability sample, per-sample gates, the hub as a browsing layer only, and isolation profiles for the samples whose subject is isolation. | 2026-10-14 |
 | D18 | Jolt is vendored under `com.arisen.physics`'s own `3rdparty` directory and built as a package-owned native payload, the way `com.arisen.core.native` vendors `spdlog`, `tracy`, and `dxc`. No system physics SDK, and no network fetch during a build. | 2026-10-14 |
 
 ## Track Structure
@@ -214,6 +214,10 @@ D7 fixes the shape - one `Samples` profile, the hub as a browsing layer - and D1
 Every sample boots directly, so a catalogue entry is only useful when its gate can launch it without
 the hub.
 
+- S0 the application shell (D10): the host is extracted into `com.arisen.app`, products depend on it,
+  and a startup target is selected by argument instead of the workspace manifest, so one workspace can
+  host the game and the gallery. This is the gallery's prerequisite: without it, launching a sample
+  other than the manifest's startup identity would mean editing the workspace.
 - S1 the `Samples` profile, the catalogue asset, and the hub scene. A catalogue entry declares the
   sample's identity, a one-line description, its scene, an optional world, the packages it needs,
   the expected visual, and the gate and artifact that prove it.
