@@ -181,7 +181,7 @@ public static class PackageValidationService
 
             ValidateSubsystemMetadata(packageManifest, result);
             ValidateNativeRuntimeMetadata(packageManifest, packagePath, result);
-            ValidateNativeTestMetadata(packageManifest, packagePath, result);
+            ValidateNativeTestMetadata(packageManifest, packagePath, workspaceDir, result);
 
             result.PackageMap[requirement.Id] = new PackageInfo
             {
@@ -676,21 +676,44 @@ public static class PackageValidationService
             validateFiles: true).ToList();
     }
 
-    private static void ValidateNativeTestMetadata(PackageManifest manifest, string packagePath, PackageValidationResult result)
+    /// <summary>
+    /// A package may own its own gate. A test package still names the library it deploys in
+    /// `nativeTests` and must declare that library in `nativeRuntimes`, while any other package may
+    /// declare `nativeTests` when no companion `X.test` package exists: the isolated test run then
+    /// mounts the package itself, and the library is a build output of the package's own native build
+    /// (`ARISEN_TEST_HOST`) rather than a shipped payload, so it is not declared in `nativeRuntimes`.
+    /// A declaration a companion package already owns is shadowed and rejected.
+    /// </summary>
+    private static void ValidateNativeTestMetadata(
+        PackageManifest manifest,
+        string packagePath,
+        string workspaceDir,
+        PackageValidationResult result)
     {
         if (manifest.NativeTests == null || manifest.NativeTests.Count == 0)
         {
             return;
         }
 
-        if (!string.Equals(manifest.Layer, "test", StringComparison.OrdinalIgnoreCase))
+        bool isTestPackage = string.Equals(manifest.Layer, "test", StringComparison.OrdinalIgnoreCase);
+        if (!isTestPackage &&
+            TestPackageResolutionService.LocalPackageExists(workspaceDir, $"{manifest.Id}.test"))
         {
-            result.Errors.Add($"Package '{manifest.Id}' declares nativeTests but is in layer '{manifest.Layer}'. Native tests are only valid in test packages.");
+            result.Errors.Add(
+                $"Package '{manifest.Id}' declares nativeTests while companion package " +
+                $"'{manifest.Id}.test' exists. The companion owns the tests, so remove nativeTests " +
+                $"from '{manifest.Id}'.");
+            return;
         }
 
         if (!NativeTestManifestService.HasRuntime(manifest, NativeRuntimeManifestService.DefaultRuntimeIdentifier))
         {
             result.Errors.Add($"Package '{manifest.Id}' declares nativeTests but has no '{NativeRuntimeManifestService.DefaultRuntimeIdentifier}' test entries for the current target runtime.");
+        }
+
+        if (!isTestPackage)
+        {
+            return;
         }
 
         var package = new PackageInfo

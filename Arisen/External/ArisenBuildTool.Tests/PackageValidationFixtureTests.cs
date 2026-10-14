@@ -737,7 +737,7 @@ public sealed class PackageValidationFixtureTests
     }
 
     [Fact]
-    public void NativeTestsOutsideTestLayerFailValidation()
+    public void NativeTestsOwnedByNonTestPackageWithoutCompanionPassValidation()
     {
         using var workspace = ValidationWorkspace.Create();
         workspace.AddPackage(
@@ -746,17 +746,39 @@ public sealed class PackageValidationFixtureTests
             type: "native",
             nativeRuntimes: new Dictionary<string, object[]>
             {
-                ["win-x64"] = new object[] { "Native.Tests.dll" }
+                ["win-x64"] = new object[] { "Native.Runtime.dll" }
             },
             nativeTests: new Dictionary<string, object[]>
             {
                 ["win-x64"] = new object[] { new { library = "Native.Tests.dll", registerExport = "RegisterNativeTests" } }
             });
 
+        // The test library is a build output of the package's own native build, not a shipped
+        // payload, so it is intentionally absent from nativeRuntimes.
+        var result = workspace.Validate("com.test.native");
+
+        Assert.True(result.Success, string.Join(Environment.NewLine, result.Errors));
+    }
+
+    [Fact]
+    public void NativeTestsShadowedByCompanionPackageFailValidation()
+    {
+        using var workspace = ValidationWorkspace.Create();
+        workspace.AddPackage(
+            "com.test.native",
+            layer: "driver",
+            type: "native",
+            nativeTests: new Dictionary<string, object[]>
+            {
+                ["win-x64"] = new object[] { new { library = "Native.Tests.dll", registerExport = "RegisterNativeTests" } }
+            });
+        // The companion package owns the gate; the declaration on the package would be shadowed.
+        workspace.AddPackage("com.test.native.test", layer: "test", type: "native");
+
         var result = workspace.Validate("com.test.native");
 
         Assert.False(result.Success);
-        Assert.Contains(result.Errors, error => error.Contains("Native tests are only valid in test packages", StringComparison.Ordinal));
+        Assert.Contains(result.Errors, error => error.Contains("companion", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
