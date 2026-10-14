@@ -81,6 +81,7 @@ an explicit time box and never block a slice.
 | D15 | The workspace `Assets` root is a scratch area, not a shared library: writable, never shipped, never a startup reference, and no shipped asset may depend on it. Shared content is expressed as a package. | 2026-09-24 |
 | D16 | Slice 1 is developed in the game workspace (`com.arisen.packagegame`), not as a gallery sample. Each capability the slice pulls still gets its own gated sample in `com.arisen.samples` when its track lands, per D7. | 2026-10-14 |
 | D17 | The gallery's work items are S1-S6 in Track S: the catalogue and `Samples` profile, a content sample, a capability sample, per-sample gates, the hub as a browsing layer only, and isolation profiles for the samples whose subject is isolation. | 2026-10-14 |
+| D18 | Jolt is vendored under `com.arisen.physics`'s own `3rdparty` directory and built as a package-owned native payload, the way `com.arisen.core.native` vendors `spdlog`, `tracy`, and `dxc`. No system physics SDK, and no network fetch during a build. | 2026-10-14 |
 
 ## Track Structure
 
@@ -139,12 +140,25 @@ discipline, Tracy and RenderDoc, validation gates, single-source documentation.
 - C3 inverse kinematics and foot placement
 - C4 animation authoring tools
 
-**Track D - Physics**
+**Track D - Physics**: Jolt behind a package boundary (D3), vendored into `com.arisen.physics`
+(D18).
 
-- D1 solver selection and package boundary
-- D2 static collision and rigid bodies
-- D3 character controller and hit/hurt queries
-- D4 ragdoll and cloth, deferred
+Goal: a character and an enemy occupy one room, collide with its static geometry, and answer the
+hit/hurt queries block and parry are built on. Solver types never reach a gameplay package, and the
+simulation is stepped in fixed increments so a replay is reproducible.
+
+- D1 solver selection and package boundary: the package skeleton, its vendored solver, the native
+  payload contract, and the managed service a gameplay package consumes.
+- D2 static collision and rigid bodies: cooked collision from the authored meshes, body creation and
+  destruction owned by the simulation, and deterministic stepping.
+- D3 character controller and hit/hurt queries: capsule movement against static geometry plus the
+  shape and ray queries combat reads, with no per-query allocation.
+- D4 ragdoll and cloth, deferred.
+
+Acceptance gate: the track's first deliverable is a sample that boots the physics package alone
+(Priority Rule 5). It steps a fixed-timestep world holding a static floor and a character capsule,
+produces identical state for identical inputs across runs, keeps every body and job accounted for,
+and shuts down with the solver drained.
 
 **Track E - Gameplay And AI**
 
