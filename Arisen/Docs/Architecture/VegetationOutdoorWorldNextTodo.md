@@ -972,8 +972,8 @@ changes.
       atmosphere, relocated Production closure, and the Editor viewport smoke).
 
       The switch is two identities in `manifest.json`: `StartupScene` names the regional persistent
-      scene (`e176b519-9d88-527e-a841-c5c5d73b7477`) and `StartupWorld` the regional world
-      (`38637cf8-f4a1-91f0-90b5-bf63752b4b82`). The showcase world keeps its own identities and its
+      scene (`6c761a9d-2d06-562e-9779-7748e8afe4d3`) and `StartupWorld` the regional world
+      (`b50c4c80-0720-4b63-b89b-af2203063180`). The showcase world keeps its own identities and its
       committed bytes, so the runtime boots into the region while the single-block world still
       validates unchanged. Coming onto the startup path also gave the cell scenes their clusters. A
       cell scene binds cluster identity, page count, instance count, and bounds that only exist once

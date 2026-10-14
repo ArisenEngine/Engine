@@ -23,96 +23,11 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
     [Fact]
     public void FreshRuntimeCook_GeneratesCanonicalSpeciesFixtureClosure()
     {
-        string repositoryRoot = FindRepositoryRoot();
-        string sourcePackageRoot = Path.Combine(
-            repositoryRoot,
-            "Arisen",
-            "Development",
-            "PackageGame",
-            "Local",
-            PackageId);
-        string sourcePipelineRoot = Path.Combine(
-            repositoryRoot,
-            "Arisen",
-            "Development",
-            "PackageGame",
-            "Local",
-            PipelinePackageId);
-        string workspaceRoot = Path.Combine(m_Root, "Workspace");
-        string packageRoot = Path.Combine(m_Root, "PackageGame");
-        string pipelineRoot = Path.Combine(m_Root, "GenericRenderPipeline");
-        Directory.CreateDirectory(workspaceRoot);
-
-        CopyDirectory(
-            Path.Combine(sourcePackageRoot, "Assets", "Terrain"),
-            Path.Combine(packageRoot, "Assets", "Terrain"));
-        foreach (string directory in new[] { "Meshes", "Materials", "Textures" })
-        {
-            CopyDirectory(
-                Path.Combine(sourcePackageRoot, "Assets", "Vegetation", directory),
-                Path.Combine(packageRoot, "Assets", "Vegetation", directory));
-        }
-
-        CopyAsset(
-            sourcePackageRoot,
-            packageRoot,
-            "Assets/Vegetation/ShowcaseValley.arivegetationbiome");
-        foreach (VegetationCanonicalSpecies species in VegetationCanonicalFixture.Species)
-        {
-            CopyAsset(
-                sourcePackageRoot,
-                packageRoot,
-                $"Assets/Vegetation/Valley{species.Name}.arivegetationspecies");
-            CopyAsset(
-                sourcePackageRoot,
-                packageRoot,
-                $"Assets/Vegetation/Valley{species.Name}.arivegetationscatter");
-        }
-
-        CopyAsset(
-            sourcePipelineRoot,
-            pipelineRoot,
-            "Assets/Meshes/FacetedCrystal.obj");
-        CopyAsset(
-            sourcePipelineRoot,
-            pipelineRoot,
-            "Assets/Materials/StandardLitMaterial.arismaterial");
-
-        WriteAsset(
-            packageRoot,
-            "Assets/Scenes/EmptyPersistent.arisenscene",
-            VegetationCanonicalFixture.PersistentSceneGuid,
-            "Scene",
-            "Version: 2\nName: Empty Persistent\nComponentSchemas:\n" +
-            "- TypeId: 1\n  Name: Transform\n  Version: 1\n  Required: true\n" +
-            "Entities:\n" +
-            "- Guid: a5d438ce-e272-411e-b8a5-f325d77adbe9\n" +
-            "  Name: Persistent Root\n" +
-            "  Transform:\n" +
-            "    Position: { X: 0, Y: 0, Z: 0 }\n" +
-            "    Rotation: { X: 0, Y: 0, Z: 0, W: 1 }\n" +
-            "    Scale: { X: 1, Y: 1, Z: 1 }\n");
-        WriteAsset(
-            packageRoot,
-            "Assets/Scenes/VegetationCenterCell.arisenscene",
-            VegetationCanonicalFixture.CenterSceneGuid,
-            "Scene",
-            CreateMinimalVegetationCellSource());
-        WriteAsset(
-            packageRoot,
-            "Assets/Worlds/LanternWorld.arisenworld",
-            VegetationCanonicalFixture.WorldGuid,
-            "World",
-            CreateMinimalWorldSource());
-
-        var database = new AssetDatabase();
-        database.InitializeWorkspace(
-            workspaceRoot,
-            [
-                (PackageId, packageRoot),
-                (PipelinePackageId, pipelineRoot)
-            ],
-            AssetSourceAccessMode.RuntimeAssetCook);
+        CanonicalWorkspace workspace = PrepareCanonicalWorkspace();
+        string sourcePackageRoot = workspace.SourcePackageRoot;
+        string packageRoot = workspace.PackageRoot;
+        string workspaceRoot = workspace.WorkspaceRoot;
+        AssetDatabase database = workspace.Database;
         Assert.Empty(Directory.EnumerateFiles(
             Path.Combine(packageRoot, "Assets", "Vegetation"),
             "*.arivegetationgenerated",
@@ -477,6 +392,170 @@ public sealed class VegetationScatterRecipeCookingTests : IDisposable
             // Best-effort test cleanup.
         }
     }
+
+    // A recipe publishes into "<recipe folder>/Generated/<recipe GUID>" and the recipe GUID is derived
+    // from the owning package id, so a re-keyed recipe leaves its previous directory behind as an
+    // unreachable second copy of the same bake. The generator has to remove what it can prove it no
+    // longer owns, driven by the recorded owner of each generated source rather than by the directory
+    // name, which is what this test pins.
+    [Fact]
+    public void RuntimeCook_RemovesGeneratedSourcesOwnedByAnotherPackage()
+    {
+        var foreignCluster = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var liveCluster = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        string foreignDirectory = new('1', 32);
+        string liveDirectory = new('2', 32);
+        const string authoredDirectory = "authored-notes";
+        CanonicalWorkspace workspace = PrepareCanonicalWorkspace(packageRoot =>
+        {
+            string generatedRoot = Path.Combine(packageRoot, "Assets", "Vegetation", "Generated");
+            WriteGeneratedCluster(generatedRoot, foreignDirectory, foreignCluster, "com.arisen.packagegame");
+            WriteGeneratedCluster(generatedRoot, liveDirectory, liveCluster, PackageId);
+            Directory.CreateDirectory(Path.Combine(generatedRoot, authoredDirectory));
+        });
+
+        Assert.True(workspace.Database.TryGetAssetDescriptor(foreignCluster, out _));
+
+        VegetationScatterRecipeGenerator.GenerateAll(workspace.Database, workspace.Database);
+
+        string productionRoot = Path.Combine(workspace.PackageRoot, "Assets", "Vegetation", "Generated");
+        Assert.False(Directory.Exists(Path.Combine(productionRoot, foreignDirectory)));
+        Assert.False(workspace.Database.TryGetAssetDescriptor(foreignCluster, out _));
+        Assert.True(Directory.Exists(Path.Combine(productionRoot, liveDirectory)));
+        Assert.True(
+            workspace.Database.TryGetAssetDescriptor(liveCluster, out _),
+            "A generated source owned by this package must survive the sweep.");
+        Assert.True(
+            Directory.Exists(Path.Combine(productionRoot, authoredDirectory)),
+            "A directory with no generated provenance is not this generator's to remove.");
+    }
+
+    private CanonicalWorkspace PrepareCanonicalWorkspace(Action<string>? seedPackageRoot = null)
+    {
+        string repositoryRoot = FindRepositoryRoot();
+        string sourcePackageRoot = Path.Combine(
+            repositoryRoot,
+            "Arisen",
+            "Development",
+            "PackageGame",
+            "Local",
+            PackageId);
+        string sourcePipelineRoot = Path.Combine(
+            repositoryRoot,
+            "Arisen",
+            "Development",
+            "PackageGame",
+            "Local",
+            PipelinePackageId);
+        string workspaceRoot = Path.Combine(m_Root, "Workspace");
+        string packageRoot = Path.Combine(m_Root, "PackageGame");
+        string pipelineRoot = Path.Combine(m_Root, "GenericRenderPipeline");
+        Directory.CreateDirectory(workspaceRoot);
+
+        CopyDirectory(
+            Path.Combine(sourcePackageRoot, "Assets", "Terrain"),
+            Path.Combine(packageRoot, "Assets", "Terrain"));
+        foreach (string directory in new[] { "Meshes", "Materials", "Textures" })
+        {
+            CopyDirectory(
+                Path.Combine(sourcePackageRoot, "Assets", "Vegetation", directory),
+                Path.Combine(packageRoot, "Assets", "Vegetation", directory));
+        }
+
+        CopyAsset(
+            sourcePackageRoot,
+            packageRoot,
+            "Assets/Vegetation/ShowcaseValley.arivegetationbiome");
+        foreach (VegetationCanonicalSpecies species in VegetationCanonicalFixture.Species)
+        {
+            CopyAsset(
+                sourcePackageRoot,
+                packageRoot,
+                $"Assets/Vegetation/Valley{species.Name}.arivegetationspecies");
+            CopyAsset(
+                sourcePackageRoot,
+                packageRoot,
+                $"Assets/Vegetation/Valley{species.Name}.arivegetationscatter");
+        }
+
+        CopyAsset(
+            sourcePipelineRoot,
+            pipelineRoot,
+            "Assets/Meshes/FacetedCrystal.obj");
+        CopyAsset(
+            sourcePipelineRoot,
+            pipelineRoot,
+            "Assets/Materials/StandardLitMaterial.arismaterial");
+
+        WriteAsset(
+            packageRoot,
+            "Assets/Scenes/EmptyPersistent.arisenscene",
+            VegetationCanonicalFixture.PersistentSceneGuid,
+            "Scene",
+            "Version: 2\nName: Empty Persistent\nComponentSchemas:\n" +
+            "- TypeId: 1\n  Name: Transform\n  Version: 1\n  Required: true\n" +
+            "Entities:\n" +
+            "- Guid: a5d438ce-e272-411e-b8a5-f325d77adbe9\n" +
+            "  Name: Persistent Root\n" +
+            "  Transform:\n" +
+            "    Position: { X: 0, Y: 0, Z: 0 }\n" +
+            "    Rotation: { X: 0, Y: 0, Z: 0, W: 1 }\n" +
+            "    Scale: { X: 1, Y: 1, Z: 1 }\n");
+        WriteAsset(
+            packageRoot,
+            "Assets/Scenes/VegetationCenterCell.arisenscene",
+            VegetationCanonicalFixture.CenterSceneGuid,
+            "Scene",
+            CreateMinimalVegetationCellSource());
+        WriteAsset(
+            packageRoot,
+            "Assets/Worlds/LanternWorld.arisenworld",
+            VegetationCanonicalFixture.WorldGuid,
+            "World",
+            CreateMinimalWorldSource());
+
+        seedPackageRoot?.Invoke(packageRoot);
+
+        var database = new AssetDatabase();
+        database.InitializeWorkspace(
+            workspaceRoot,
+            [
+                (PackageId, packageRoot),
+                (PipelinePackageId, pipelineRoot)
+            ],
+            AssetSourceAccessMode.RuntimeAssetCook);
+        return new CanonicalWorkspace(sourcePackageRoot, packageRoot, workspaceRoot, database);
+    }
+
+    private static void WriteGeneratedCluster(
+        string generatedRoot,
+        string directoryName,
+        Guid clusterGuid,
+        string packageId)
+    {
+        string directory = Path.Combine(generatedRoot, directoryName);
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(
+            Path.Combine(directory, "cluster.arivegetationgenerated"),
+            "generated vegetation cluster identity");
+        File.WriteAllText(
+            Path.Combine(directory, "cluster.arivegetationgenerated.meta"),
+            $"Guid: {clusterGuid:D}\n" +
+            "AssetType: VegetationCluster\n" +
+            "Importer: ArisenVegetationScatterClusterImporter\n" +
+            "Generated:\n" +
+            $"  SourceGuid: {VegetationCanonicalFixture.BiomeGuid:D}\n" +
+            $"  SourcePackageId: {packageId}\n" +
+            "  ChildKind: vegetation-cluster\n" +
+            "  ChildKey: recipe=1\n" +
+            "  GeneratedByImporter: ArisenVegetationScatterClusterImporter\n");
+    }
+
+    private sealed record CanonicalWorkspace(
+        string SourcePackageRoot,
+        string PackageRoot,
+        string WorkspaceRoot,
+        AssetDatabase Database);
 
     private static void AssertCataloged(
         RuntimeAssetCookResult result,

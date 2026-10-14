@@ -44,7 +44,7 @@ internal sealed record VegetationCanonicalSpecies
 
 internal static class VegetationCanonicalFixture
 {
-    public const string PackageId = "com.arisen.packagegame";
+    public const string PackageId = "com.arisen.samples";
     public const string PipelinePackageId = "com.arisen.vegetation.generic-renderpipeline";
     public const string FilterPackageId = "com.arisen.generic-renderpipeline";
 
@@ -76,8 +76,8 @@ internal static class VegetationCanonicalFixture
             "valley-tree",
             Guid.Parse("33817180-f63a-4f57-a3d4-cc0a7496707c"),
             Guid.Parse("83212e38-5d3e-4494-8929-fe27639b5a29"),
-            Guid.Parse("6cea50e6-732f-6658-8ea0-48f1682b62e0"),
-            Guid.Parse("83c82df2-9fef-e19e-9bda-8d9421c48045"),
+            Guid.Parse("cf596730-ac22-a374-a674-78be7397cd05"),
+            Guid.Parse("c9e7490d-5a14-5b02-9b1f-c72a91243ce2"),
             1,
             Guid.Parse("499d50d7-10af-4923-b97a-c1444895d327"),
             Guid.Parse("6d411706-c507-4c87-a392-aea7998889bd"),
@@ -105,8 +105,8 @@ internal static class VegetationCanonicalFixture
             "valley-rock",
             Guid.Parse("aa347d75-087c-4fb9-998f-2cc6130ceac1"),
             Guid.Parse("7b0f2e52-8b67-4e3d-bf0a-cbc42f622001"),
-            Guid.Parse("e90ae5ab-24fb-2617-9983-3ed656bd652c"),
-            Guid.Parse("cbac8a59-7a52-6b1a-ca3c-a3a098cc50ca"),
+            Guid.Parse("774c167f-bc87-d1c9-a226-db0d60f34b86"),
+            Guid.Parse("e2f91415-6813-82e3-0c73-777c7ddf3419"),
             1,
             Guid.Parse("89ae1524-c1c0-47c3-85a5-6a16838035f1"),
             Guid.Parse("33fb5b2f-c310-478c-8523-8eeefa4ea747"),
@@ -134,8 +134,8 @@ internal static class VegetationCanonicalFixture
             "valley-shrub",
             Guid.Parse("b325337c-2610-40e3-9186-723914b1dbae"),
             Guid.Parse("e5605813-00b6-4129-85b2-05b754ccde74"),
-            Guid.Parse("dd618cfa-c607-cf82-bbb8-545ff1cb1a4d"),
-            Guid.Parse("5653ee6a-8b63-e743-914a-033422b4b75a"),
+            Guid.Parse("e4117de7-7f58-e65e-c4a5-a21c12e8f395"),
+            Guid.Parse("a503eb37-5a16-f864-0ca5-85e78afd2c61"),
             5,
             Guid.Parse("db1a5934-3fb7-49db-aa41-f318c8068a38"),
             Guid.Parse("7f730a67-ea48-45dd-87ec-f473dbde9b5b"),
@@ -163,8 +163,8 @@ internal static class VegetationCanonicalFixture
             "valley-grass",
             Guid.Parse("ca8e2582-2225-4da3-bea7-c05da1604403"),
             Guid.Parse("3eb515ce-3dea-4994-81a1-a14fc2fe0eb5"),
-            Guid.Parse("324397e1-7ddb-a3fd-8d4e-1c077443f814"),
-            Guid.Parse("61274bea-6b1d-5b0e-7771-f21290c708cb"),
+            Guid.Parse("201c7b4b-79eb-57da-eb78-10733c881020"),
+            Guid.Parse("1894ecb1-8f5e-f2a7-8ae8-a737d955c716"),
             11,
             Guid.Parse("00135f74-4ecf-45c4-b9f2-72a68151a1f3"),
             Guid.Parse("77bd836b-eacd-4aec-a349-3c271f7a1407"),

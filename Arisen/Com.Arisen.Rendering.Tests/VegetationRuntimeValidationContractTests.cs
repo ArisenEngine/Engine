@@ -25,7 +25,7 @@ public sealed class VegetationRuntimeValidationContractTests
             "runtime.vegetation-species.v1",
             "staticmesh.uint32",
             "material.runtime",
-            "com.arisen.packagegame",
+            "com.arisen.samples",
             "com.arisen.vegetation.generic-renderpipeline"
         })
         {

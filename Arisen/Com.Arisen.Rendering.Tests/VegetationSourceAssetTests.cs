@@ -13,7 +13,7 @@ public sealed class VegetationSourceAssetTests
         Guid.Parse("10000000-0000-0000-0000-000000000002");
     private static readonly Guid s_BiomeGuid =
         Guid.Parse("c0a92f10-0eb9-4d24-b729-7d0f38313001");
-    private const string PackageId = "com.arisen.packagegame";
+    private const string PackageId = "com.arisen.samples";
     private const string RenderingPackageId = "com.arisen.generic-renderpipeline";
 
     [Fact]
@@ -146,7 +146,7 @@ public sealed class VegetationSourceAssetTests
             "Development",
             "PackageGame",
             "Local",
-            "com.arisen.packagegame",
+            "com.arisen.samples",
             "Assets",
             "Vegetation");
         string speciesPath = Path.Combine(assetRoot, "ValleyRock.arivegetationspecies");

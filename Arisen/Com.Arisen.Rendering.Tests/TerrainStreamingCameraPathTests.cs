@@ -829,7 +829,7 @@ public sealed class TerrainStreamingCameraPathTests
             "Development",
             "PackageGame",
             "Local",
-            "com.arisen.packagegame",
+            "com.arisen.samples",
             "Assets",
             "Scenes",
             "LanternShowcaseScene.arisenscene");

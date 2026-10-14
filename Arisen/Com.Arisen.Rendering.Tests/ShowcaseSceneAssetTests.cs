@@ -30,17 +30,17 @@ public sealed class ShowcaseSceneAssetTests
     private static readonly Guid s_LanternModelGuid = Guid.Parse("8d5dc1c2-1a92-4502-9c49-b8fb2c42f9f7");
     private static readonly Guid s_LanternWorldGuid = Guid.Parse("9a9b4db5-c0a8-4f2e-8929-89464bea9d51");
     private static readonly Guid s_LanternShowcaseSceneGuid = Guid.Parse("bd52ee1a-84a1-4d9d-bdb4-2a83757b5a4b");
-    private static readonly Guid s_LanternGeneratedSceneGuid = Guid.Parse("c3845237-9946-6fea-13b6-9672584bed67");
+    private static readonly Guid s_LanternGeneratedSceneGuid = Guid.Parse("1fe278d5-a53e-2e33-3344-c729e4f0ad06");
     private static readonly Guid s_TeapotWestCellSceneGuid = Guid.Parse("c3db7370-879e-40ad-956c-4de8a7331e88");
     private static readonly Guid s_TeapotCenterCellSceneGuid = Guid.Parse("506af06e-b16d-4573-b6c9-98548c370e90");
-    private static readonly Guid s_LanternMesh0Guid = Guid.Parse("898e8c48-c5f9-b88b-d3a6-49e82e954bd4");
-    private static readonly Guid s_LanternMesh1Guid = Guid.Parse("be413b32-5991-8ae5-c2c2-eba34d934325");
-    private static readonly Guid s_LanternMesh2Guid = Guid.Parse("a8eb7531-7a75-0078-cf43-3fe29fbad766");
-    private static readonly Guid s_LanternMaterialGuid = Guid.Parse("55b0353b-2e5d-b80f-545f-5a386d72f006");
-    private static readonly Guid s_LanternBaseColorTextureGuid = Guid.Parse("85f2677d-96e2-bf70-3e3d-27e2e73a8a16");
-    private static readonly Guid s_LanternMetallicRoughnessTextureGuid = Guid.Parse("984534a2-785f-4f19-5ebb-262a54c6e526");
-    private static readonly Guid s_LanternNormalTextureGuid = Guid.Parse("1a36c586-10fb-ccf3-98e8-99310dbbf5d2");
-    private static readonly Guid s_LanternEmissiveTextureGuid = Guid.Parse("9c41d0a0-2a84-8185-81c5-ff80d034b696");
+    private static readonly Guid s_LanternMesh0Guid = Guid.Parse("a5f3b436-a237-cb16-099c-02e6789800ff");
+    private static readonly Guid s_LanternMesh1Guid = Guid.Parse("6ad985f3-81db-5a0c-3851-97f72e87f1d7");
+    private static readonly Guid s_LanternMesh2Guid = Guid.Parse("2b9ad08a-122f-9ab0-da34-bb53d87ef23a");
+    private static readonly Guid s_LanternMaterialGuid = Guid.Parse("f1ba64aa-b6cf-b1c5-1984-d3582ddb047d");
+    private static readonly Guid s_LanternBaseColorTextureGuid = Guid.Parse("d67cb833-338c-4253-a1b1-f377328eb0ad");
+    private static readonly Guid s_LanternMetallicRoughnessTextureGuid = Guid.Parse("2bae488f-9da1-77e7-988c-d089f7837ed0");
+    private static readonly Guid s_LanternNormalTextureGuid = Guid.Parse("774996cf-a5b6-e0f5-6079-2c318956e8f0");
+    private static readonly Guid s_LanternEmissiveTextureGuid = Guid.Parse("85b2aa6d-2972-4ee6-6e34-5392fd95282e");
     private static readonly Guid s_DuskSkyTextureGuid = Guid.Parse("b61f9d02-b90f-4300-886c-07f54ff4bc34");
     private static readonly Guid s_MistfallDuskEnvironmentGuid = Guid.Parse("1fc01236-449b-4097-88c0-223b1ed736ff");
     private static readonly Guid s_TerrainRootGuid = Guid.Parse("6f4d0a1c-0e85-4a42-93fe-34058ef48511");
@@ -51,9 +51,9 @@ public sealed class ShowcaseSceneAssetTests
     private const int TerrainRasterSamplesPerAxis =
         (TerrainTilesPerAxis * TerrainTileIntervals) + 1;
     private static readonly Guid s_TerrainTileFirstGuid =
-        Guid.Parse("807a7664-36ee-bdf8-71ea-e78cd4db0c4f");
+        Guid.Parse("6d802d6a-197e-fe11-36da-8bfc568827f1");
     private static readonly Guid s_TerrainTileLastGuid =
-        Guid.Parse("a2936506-0be0-0223-d4f8-973ae5365650");
+        Guid.Parse("acb22797-6622-0970-4227-ab8e7440a670");
     private static readonly VegetationCanonicalSpecies s_ValleyRock =
         VegetationCanonicalFixture.Require("Rock");
     private static readonly Guid s_ValleyRockSpeciesGuid =
@@ -69,7 +69,7 @@ public sealed class ShowcaseSceneAssetTests
     public void PackageShowcaseScene_LoadsClassicMeshAndDistinctMaterials()
     {
         string packageRoot = GetRepositoryFile(
-            "Arisen", "Development", "PackageGame", "Local", "com.arisen.packagegame");
+            "Arisen", "Development", "PackageGame", "Local", "com.arisen.samples");
         string pipelineRoot = GetRepositoryFile(
             "Arisen", "Development", "PackageGame", "Local", "com.arisen.generic-renderpipeline");
         string cookedRoot = Path.Combine(
@@ -92,14 +92,14 @@ public sealed class ShowcaseSceneAssetTests
             string environmentShaderPath = Path.Combine(pipelineRoot, "Assets", "Shaders", "EnvironmentSky.hlsl");
             string defaultNormalPath = Path.Combine(pipelineRoot, "Assets", "Textures", "DefaultNormal.ppm");
 
-            db.AddAsset(s_SceneGuid, "Scene", scenePath, "com.arisen.packagegame");
-            db.AddAsset(s_TeapotMeshGuid, "Mesh", teapotPath, "com.arisen.packagegame");
-            db.AddAsset(s_PedestalMeshGuid, "Mesh", pedestalPath, "com.arisen.packagegame");
-            db.AddAsset(s_GroundMeshGuid, "Mesh", groundPath, "com.arisen.packagegame");
-            db.AddAsset(s_MarbleTextureGuid, "Texture2D", marbleTexturePath, "com.arisen.packagegame");
-            db.AddAsset(s_MarbleMaterialGuid, "Material", marbleMaterialPath, "com.arisen.packagegame");
-            db.AddAsset(s_CharcoalMaterialGuid, "Material", charcoalMaterialPath, "com.arisen.packagegame");
-            db.AddAsset(s_GroundMaterialGuid, "Material", groundMaterialPath, "com.arisen.packagegame");
+            db.AddAsset(s_SceneGuid, "Scene", scenePath, "com.arisen.samples");
+            db.AddAsset(s_TeapotMeshGuid, "Mesh", teapotPath, "com.arisen.samples");
+            db.AddAsset(s_PedestalMeshGuid, "Mesh", pedestalPath, "com.arisen.samples");
+            db.AddAsset(s_GroundMeshGuid, "Mesh", groundPath, "com.arisen.samples");
+            db.AddAsset(s_MarbleTextureGuid, "Texture2D", marbleTexturePath, "com.arisen.samples");
+            db.AddAsset(s_MarbleMaterialGuid, "Material", marbleMaterialPath, "com.arisen.samples");
+            db.AddAsset(s_CharcoalMaterialGuid, "Material", charcoalMaterialPath, "com.arisen.samples");
+            db.AddAsset(s_GroundMaterialGuid, "Material", groundMaterialPath, "com.arisen.samples");
             db.AddAsset(s_StandardLitShaderGuid, ShaderAssetCooker.ShaderSourceAssetType, shaderPath, "com.arisen.generic-renderpipeline");
             db.AddAsset(s_DefaultNormalGuid, "Texture2D", defaultNormalPath, "com.arisen.generic-renderpipeline");
 
@@ -109,7 +109,7 @@ public sealed class ShowcaseSceneAssetTests
                 new ArisenEngine.Core.Assets.AssetRef<ArisenEngine.Core.Assets.SceneSourceAsset>(
                     s_SceneGuid,
                     "Scene",
-                    "com.arisen.packagegame"),
+                    "com.arisen.samples"),
                 entityManager);
 
             Assert.True(loadResult.Success, loadResult.Diagnostic);
@@ -209,7 +209,7 @@ public sealed class ShowcaseSceneAssetTests
     public void PackageLanternModelRoot_InspectsStableGeneratedChildren()
     {
         string packageRoot = GetRepositoryFile(
-            "Arisen", "Development", "PackageGame", "Local", "com.arisen.packagegame");
+            "Arisen", "Development", "PackageGame", "Local", "com.arisen.samples");
         string cookedRoot = Path.Combine(
             Path.GetTempPath(),
             "ArisenLanternModelRootTests",
@@ -220,7 +220,7 @@ public sealed class ShowcaseSceneAssetTests
             var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, cookedRoot);
             string modelPath = Path.Combine(packageRoot, "Assets", "Models", "Lantern", "Lantern.arismodel");
 
-            db.AddAsset(s_LanternModelGuid, "Model", modelPath, "com.arisen.packagegame");
+            db.AddAsset(s_LanternModelGuid, "Model", modelPath, "com.arisen.samples");
 
             var model = ModelSourceAssetLoader.LoadSource(db, s_LanternModelGuid);
             Assert.Equal(s_LanternModelGuid, model.Guid);
@@ -288,7 +288,7 @@ public sealed class ShowcaseSceneAssetTests
     public void PackageLanternShowcaseScene_LoadsGeneratedModelChildren()
     {
         string packageRoot = GetRepositoryFile(
-            "Arisen", "Development", "PackageGame", "Local", "com.arisen.packagegame");
+            "Arisen", "Development", "PackageGame", "Local", "com.arisen.samples");
         string pipelineRoot = GetRepositoryFile(
             "Arisen", "Development", "PackageGame", "Local", "com.arisen.generic-renderpipeline");
         string cookedRoot = Path.Combine(
@@ -318,22 +318,22 @@ public sealed class ShowcaseSceneAssetTests
             string shaderPath = Path.Combine(pipelineRoot, "Assets", "Shaders", "StandardLit.shader");
             string defaultNormalPath = Path.Combine(pipelineRoot, "Assets", "Textures", "DefaultNormal.ppm");
 
-            db.AddAsset(s_LanternModelGuid, "Model", modelPath, "com.arisen.packagegame");
-            db.AddAsset(s_LanternShowcaseSceneGuid, "Scene", showcaseScenePath, "com.arisen.packagegame");
-            db.AddAsset(s_LanternGeneratedSceneGuid, "Scene", generatedScenePath, "com.arisen.packagegame");
-            db.AddAsset(s_LanternMesh0Guid, "Mesh", mesh0Path, "com.arisen.packagegame");
-            db.AddAsset(s_LanternMesh1Guid, "Mesh", mesh1Path, "com.arisen.packagegame");
-            db.AddAsset(s_LanternMesh2Guid, "Mesh", mesh2Path, "com.arisen.packagegame");
-            db.AddAsset(s_GroundMeshGuid, "Mesh", groundPath, "com.arisen.packagegame");
-            db.AddAsset(s_BoulderMeshGuid, "Mesh", boulderPath, "com.arisen.packagegame");
-            db.AddAsset(s_LanternMaterialGuid, "Material", materialPath, "com.arisen.packagegame");
-            db.AddAsset(s_GroundMaterialGuid, "Material", groundMaterialPath, "com.arisen.packagegame");
-            db.AddAsset(s_LanternBaseColorTextureGuid, "Texture2D", baseColorPath, "com.arisen.packagegame");
-            db.AddAsset(s_LanternMetallicRoughnessTextureGuid, "Texture2D", metallicRoughnessPath, "com.arisen.packagegame");
-            db.AddAsset(s_LanternNormalTextureGuid, "Texture2D", normalPath, "com.arisen.packagegame");
-            db.AddAsset(s_LanternEmissiveTextureGuid, "Texture2D", emissivePath, "com.arisen.packagegame");
-            db.AddAsset(s_DuskSkyTextureGuid, "Texture2D", environmentSourcePath, "com.arisen.packagegame");
-            db.AddAsset(s_MistfallDuskEnvironmentGuid, "EnvironmentTexture", environmentPath, "com.arisen.packagegame");
+            db.AddAsset(s_LanternModelGuid, "Model", modelPath, "com.arisen.samples");
+            db.AddAsset(s_LanternShowcaseSceneGuid, "Scene", showcaseScenePath, "com.arisen.samples");
+            db.AddAsset(s_LanternGeneratedSceneGuid, "Scene", generatedScenePath, "com.arisen.samples");
+            db.AddAsset(s_LanternMesh0Guid, "Mesh", mesh0Path, "com.arisen.samples");
+            db.AddAsset(s_LanternMesh1Guid, "Mesh", mesh1Path, "com.arisen.samples");
+            db.AddAsset(s_LanternMesh2Guid, "Mesh", mesh2Path, "com.arisen.samples");
+            db.AddAsset(s_GroundMeshGuid, "Mesh", groundPath, "com.arisen.samples");
+            db.AddAsset(s_BoulderMeshGuid, "Mesh", boulderPath, "com.arisen.samples");
+            db.AddAsset(s_LanternMaterialGuid, "Material", materialPath, "com.arisen.samples");
+            db.AddAsset(s_GroundMaterialGuid, "Material", groundMaterialPath, "com.arisen.samples");
+            db.AddAsset(s_LanternBaseColorTextureGuid, "Texture2D", baseColorPath, "com.arisen.samples");
+            db.AddAsset(s_LanternMetallicRoughnessTextureGuid, "Texture2D", metallicRoughnessPath, "com.arisen.samples");
+            db.AddAsset(s_LanternNormalTextureGuid, "Texture2D", normalPath, "com.arisen.samples");
+            db.AddAsset(s_LanternEmissiveTextureGuid, "Texture2D", emissivePath, "com.arisen.samples");
+            db.AddAsset(s_DuskSkyTextureGuid, "Texture2D", environmentSourcePath, "com.arisen.samples");
+            db.AddAsset(s_MistfallDuskEnvironmentGuid, "EnvironmentTexture", environmentPath, "com.arisen.samples");
             db.AddAsset(s_StandardLitShaderGuid, ShaderAssetCooker.ShaderSourceAssetType, shaderPath, "com.arisen.generic-renderpipeline");
             db.AddAsset(s_DefaultNormalGuid, "Texture2D", defaultNormalPath, "com.arisen.generic-renderpipeline");
 
@@ -342,7 +342,7 @@ public sealed class ShowcaseSceneAssetTests
                 new AssetRef<SceneSourceAsset>(
                     s_LanternShowcaseSceneGuid,
                     "Scene",
-                    "com.arisen.packagegame"));
+                    "com.arisen.samples"));
 
             Assert.True(showcaseInspection.Success, showcaseInspection.Diagnostic);
             Assert.Equal(3, showcaseInspection.MeshRendererCount);
@@ -365,7 +365,7 @@ public sealed class ShowcaseSceneAssetTests
                 new AssetRef<SceneSourceAsset>(
                     s_LanternGeneratedSceneGuid,
                     "Scene",
-                    "com.arisen.packagegame"));
+                    "com.arisen.samples"));
 
             Assert.True(generatedInspection.Success, generatedInspection.Diagnostic);
             Assert.Equal(3, generatedInspection.MeshRendererCount);
@@ -381,7 +381,7 @@ public sealed class ShowcaseSceneAssetTests
             var sceneRef = new AssetRef<SceneSourceAsset>(
                 s_LanternShowcaseSceneGuid,
                 "Scene",
-                "com.arisen.packagegame");
+                "com.arisen.samples");
             var entityManager = new EntityManager();
             var loadResult = SceneAssetLoader.LoadScene(db, sceneRef, entityManager);
 
@@ -478,7 +478,7 @@ public sealed class ShowcaseSceneAssetTests
     [Fact]
     public void PackageShowcaseTerrain_CooksFourByFourTilesWithBitExactSharedBorders()
     {
-        const string packageId = "com.arisen.packagegame";
+        const string packageId = "com.arisen.samples";
         string packageRoot = GetRepositoryFile(
             "Arisen", "Development", "PackageGame", "Local", packageId);
         string cookedRoot = Path.Combine(
@@ -627,7 +627,7 @@ public sealed class ShowcaseSceneAssetTests
     [Fact]
     public void PackageShowcaseVegetation_BakesCanonicalMultiInstanceClusterPage()
     {
-        const string packageId = "com.arisen.packagegame";
+        const string packageId = "com.arisen.samples";
         const string pipelinePackageId = "com.arisen.generic-renderpipeline";
         string packageRoot = GetRepositoryFile(
             "Arisen", "Development", "PackageGame", "Local", packageId);
@@ -751,15 +751,15 @@ public sealed class ShowcaseSceneAssetTests
                     Exclusions: []));
             Assert.Equal(762, result.Metrics.AcceptedCount);
             Assert.Equal(
-                Guid.Parse("e90ae5ab-24fb-2617-9983-3ed656bd652c"),
+                Guid.Parse("774c167f-bc87-d1c9-a226-db0d60f34b86"),
                 result.ClusterMetadata.Guid);
             Assert.Equal(
-                Guid.Parse("cbac8a59-7a52-6b1a-ca3c-a3a098cc50ca"),
+                Guid.Parse("e2f91415-6813-82e3-0c73-777c7ddf3419"),
                 result.PageMetadata[0].Guid);
             Assert.Equal(1, result.PageMetadata.Count);
             string placementHash = Convert.ToHexString(result.PlacementContentHash);
-            Assert.Equal("67FBCDF18EFC07D821734F5BDAC8E3D5", placementHash[..32]);
-            Assert.Equal("AB953737D3F63F0371EC6255CCD00FCC", placementHash[32..]);
+            Assert.Equal("9DA98B25EAE43229AA70633E8169FB02", placementHash[..32]);
+            Assert.Equal("BFA82782BC8E5B4444FC8244846B73DE", placementHash[32..]);
             Assert.Equal(1, result.Cluster.Pages.Count);
             Assert.Equal(
                 result.Metrics.AcceptedCount,
@@ -827,10 +827,10 @@ public sealed class ShowcaseSceneAssetTests
             Assert.Equal(SHA256.HashSizeInBytes, result.PlacementContentHash.Length);
             string pageHash = Convert.ToHexString(cluster.Pages[0].ContentHash);
             string clusterHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(artifact.Path)));
-            Assert.Equal("F5D56F722DA88F60E30095636B8BE879", pageHash[..32]);
-            Assert.Equal("9ACAA9EEE36126433DE616DF98E1DB8C", pageHash[32..]);
-            Assert.Equal("4A77D4F21664DEA2F72DC42ECF998DE1", clusterHash[..32]);
-            Assert.Equal("45AFA3CFC9BA33766EA49785C8B77532", clusterHash[32..]);
+            Assert.Equal("E6226BEAA6EDD9634CAE0CE8CEAB6743", pageHash[..32]);
+            Assert.Equal("CD500B5C87679176135C09A389669E12", pageHash[32..]);
+            Assert.Equal("4553CE933996BFD6DA3614549BD7ECCA", clusterHash[..32]);
+            Assert.Equal("A9CE7A17532C3103197AAF969ED0F9C3", clusterHash[32..]);
 
             VegetationScatterBakeResult reordered = VegetationScatterBaker.Build(
                 new VegetationScatterBakeDescriptor(
@@ -871,7 +871,7 @@ public sealed class ShowcaseSceneAssetTests
     public void PackageLanternWorld_KeepsGlobalRenderComponentsOutOfCells()
     {
         string packageRoot = GetRepositoryFile(
-            "Arisen", "Development", "PackageGame", "Local", "com.arisen.packagegame");
+            "Arisen", "Development", "PackageGame", "Local", "com.arisen.samples");
         string cookedRoot = Path.Combine(
             Path.GetTempPath(),
             "ArisenLanternWorldContentTests",
@@ -886,27 +886,27 @@ public sealed class ShowcaseSceneAssetTests
                 s_LanternWorldGuid,
                 "World",
                 Path.Combine(packageRoot, "Assets", "Worlds", "LanternWorld.arisenworld"),
-                "com.arisen.packagegame");
+                "com.arisen.samples");
             db.AddAsset(
                 s_LanternShowcaseSceneGuid,
                 "Scene",
                 Path.Combine(packageRoot, "Assets", "Scenes", "LanternShowcaseScene.arisenscene"),
-                "com.arisen.packagegame");
+                "com.arisen.samples");
             db.AddAsset(
                 s_TeapotWestCellSceneGuid,
                 "Scene",
                 Path.Combine(packageRoot, "Assets", "Scenes", "TeapotWestCell.arisenscene"),
-                "com.arisen.packagegame");
+                "com.arisen.samples");
             db.AddAsset(
                 s_TeapotCenterCellSceneGuid,
                 "Scene",
                 Path.Combine(packageRoot, "Assets", "Scenes", "TeapotCenterCell.arisenscene"),
-                "com.arisen.packagegame");
+                "com.arisen.samples");
             db.AddAsset(
                 s_LanternGeneratedSceneGuid,
                 "Scene",
                 Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Scenes", "Scene_0.arisenscene"),
-                "com.arisen.packagegame");
+                "com.arisen.samples");
 
             AddCellRenderAssets(db, packageRoot);
 
@@ -915,7 +915,7 @@ public sealed class ShowcaseSceneAssetTests
                 new AssetRef<WorldSourceAsset>(
                     s_LanternWorldGuid,
                     "World",
-                    "com.arisen.packagegame"));
+                    "com.arisen.samples"));
 
             Assert.True(loaded.Success, loaded.Diagnostic);
             WorldDescriptor descriptor = Assert.IsType<WorldDescriptor>(loaded.Descriptor);
@@ -979,24 +979,24 @@ public sealed class ShowcaseSceneAssetTests
 
     private static void AddCellRenderAssets(TestAssetDatabase db, string packageRoot)
     {
-        db.AddAsset(s_TeapotMeshGuid, "Mesh", Path.Combine(packageRoot, "Assets", "Meshes", "UtahTeapot.obj"), "com.arisen.packagegame");
-        db.AddAsset(s_PedestalMeshGuid, "Mesh", Path.Combine(packageRoot, "Assets", "Meshes", "ShowcasePedestal.obj"), "com.arisen.packagegame");
-        db.AddAsset(s_GroundMeshGuid, "Mesh", Path.Combine(packageRoot, "Assets", "Meshes", "ShowcaseGround.obj"), "com.arisen.packagegame");
-        db.AddAsset(s_BoulderMeshGuid, "Mesh", Path.Combine(packageRoot, "Assets", "Vegetation", "Meshes", "ValleyBoulder.armesh"), "com.arisen.packagegame");
-        db.AddAsset(s_MarbleMaterialGuid, "Material", Path.Combine(packageRoot, "Assets", "Materials", "ShowcaseMarble.arismaterial"), "com.arisen.packagegame");
-        db.AddAsset(s_CharcoalMaterialGuid, "Material", Path.Combine(packageRoot, "Assets", "Materials", "ShowcaseCharcoal.arismaterial"), "com.arisen.packagegame");
-        db.AddAsset(s_GroundMaterialGuid, "Material", Path.Combine(packageRoot, "Assets", "Materials", "ShowcaseGround.arismaterial"), "com.arisen.packagegame");
-        db.AddAsset(s_LanternMesh0Guid, "Mesh", Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Meshes", "Mesh_0.glb"), "com.arisen.packagegame");
-        db.AddAsset(s_LanternMesh1Guid, "Mesh", Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Meshes", "Mesh_1.glb"), "com.arisen.packagegame");
-        db.AddAsset(s_LanternMesh2Guid, "Mesh", Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Meshes", "Mesh_2.glb"), "com.arisen.packagegame");
-        db.AddAsset(s_LanternMaterialGuid, "Material", Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Materials", "LanternPost_Mat.arismaterial"), "com.arisen.packagegame");
-        db.AddAsset(s_MistfallDuskEnvironmentGuid, "EnvironmentTexture", Path.Combine(packageRoot, "Assets", "Environments", "MistfallDusk.arienvironment"), "com.arisen.packagegame");
+        db.AddAsset(s_TeapotMeshGuid, "Mesh", Path.Combine(packageRoot, "Assets", "Meshes", "UtahTeapot.obj"), "com.arisen.samples");
+        db.AddAsset(s_PedestalMeshGuid, "Mesh", Path.Combine(packageRoot, "Assets", "Meshes", "ShowcasePedestal.obj"), "com.arisen.samples");
+        db.AddAsset(s_GroundMeshGuid, "Mesh", Path.Combine(packageRoot, "Assets", "Meshes", "ShowcaseGround.obj"), "com.arisen.samples");
+        db.AddAsset(s_BoulderMeshGuid, "Mesh", Path.Combine(packageRoot, "Assets", "Vegetation", "Meshes", "ValleyBoulder.armesh"), "com.arisen.samples");
+        db.AddAsset(s_MarbleMaterialGuid, "Material", Path.Combine(packageRoot, "Assets", "Materials", "ShowcaseMarble.arismaterial"), "com.arisen.samples");
+        db.AddAsset(s_CharcoalMaterialGuid, "Material", Path.Combine(packageRoot, "Assets", "Materials", "ShowcaseCharcoal.arismaterial"), "com.arisen.samples");
+        db.AddAsset(s_GroundMaterialGuid, "Material", Path.Combine(packageRoot, "Assets", "Materials", "ShowcaseGround.arismaterial"), "com.arisen.samples");
+        db.AddAsset(s_LanternMesh0Guid, "Mesh", Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Meshes", "Mesh_0.glb"), "com.arisen.samples");
+        db.AddAsset(s_LanternMesh1Guid, "Mesh", Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Meshes", "Mesh_1.glb"), "com.arisen.samples");
+        db.AddAsset(s_LanternMesh2Guid, "Mesh", Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Meshes", "Mesh_2.glb"), "com.arisen.samples");
+        db.AddAsset(s_LanternMaterialGuid, "Material", Path.Combine(packageRoot, "Assets", "Generated", "Lantern", "Materials", "LanternPost_Mat.arismaterial"), "com.arisen.samples");
+        db.AddAsset(s_MistfallDuskEnvironmentGuid, "EnvironmentTexture", Path.Combine(packageRoot, "Assets", "Environments", "MistfallDusk.arienvironment"), "com.arisen.samples");
         AddTerrainAssets(db, packageRoot);
     }
 
     private static void AddTerrainAssets(TestAssetDatabase db, string packageRoot)
     {
-        const string packageId = "com.arisen.packagegame";
+        const string packageId = "com.arisen.samples";
         db.AddAsset(s_TerrainRootGuid, TerrainAssetTypes.Root, Path.Combine(packageRoot, "Assets", "Terrain", "ShowcaseValley.aristerrain"), packageId);
         db.AddAsset(s_TerrainLayerSetGuid, TerrainAssetTypes.LayerSet, Path.Combine(packageRoot, "Assets", "Terrain", "ShowcaseValley.ariterrainlayers"), packageId);
         for (int tileZ = 0; tileZ < TerrainTilesPerAxis; tileZ++)
@@ -1015,7 +1015,7 @@ public sealed class ShowcaseSceneAssetTests
     private static Guid TerrainTileGuid(int tileX, int tileZ) =>
         TerrainTileIdentity.CreateGuid(
             s_TerrainRootGuid,
-            "com.arisen.packagegame",
+            "com.arisen.samples",
             new TerrainTileCoordinate(tileX, tileZ));
 
     private static string TerrainTileAssetPath(string packageRoot, int tileX, int tileZ) =>
@@ -1035,7 +1035,7 @@ public sealed class ShowcaseSceneAssetTests
                 new AssetRef<TerrainTileSourceAsset>(
                     tileGuid,
                     TerrainAssetTypes.Tile,
-                    "com.arisen.packagegame"),
+                    "com.arisen.samples"),
                 s_TerrainRootGuid,
                 s_TerrainLayerSetGuid,
                 out CookedTerrainTile tile,

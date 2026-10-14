@@ -126,8 +126,8 @@ public sealed class VegetationPreparedAssetLifecycleTests
     }
 
     private static RuntimeAssetResidencyKey CreateKey() => new(
-        Guid.Parse("e90ae5ab-24fb-2617-9983-3ed656bd652c"),
-        "com.arisen.packagegame",
+        Guid.Parse("774c167f-bc87-d1c9-a226-db0d60f34b86"),
+        "com.arisen.samples",
         VegetationAssetTypes.Cluster,
         VegetationClusterAssetCooker.RuntimeVariant);
 

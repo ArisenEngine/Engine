@@ -5,14 +5,14 @@
   // ArisenBuildTool invocation. Declared here because profile keys are workspace labels.
   "DefaultProfile": "Development",
   "StartupScene": {
-    "Guid": "e176b519-9d88-527e-a841-c5c5d73b7477",
-    "PackageId": "com.arisen.packagegame"
+    "Guid": "6c761a9d-2d06-562e-9779-7748e8afe4d3",
+    "PackageId": "com.arisen.samples"
   },
   // Additional cooked root for deterministic world/cell metadata. Scene bootstrap remains
   // active until the streaming state machine assumes runtime activation ownership.
   "StartupWorld": {
-    "Guid": "38637cf8-f4a1-91f0-90b5-bf63752b4b82",
-    "PackageId": "com.arisen.packagegame"
+    "Guid": "b50c4c80-0720-4b63-b89b-af2203063180",
+    "PackageId": "com.arisen.samples"
   },
   // Selects package-owned quality settings; pass topology remains code-defined.
   "RenderPipeline": {

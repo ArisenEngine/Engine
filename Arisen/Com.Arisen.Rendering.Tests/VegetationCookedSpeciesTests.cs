@@ -9,7 +9,7 @@ public sealed class VegetationCookedSpeciesTests
 {
     private static readonly Guid s_SpeciesGuid =
         Guid.Parse("7b0f2e52-8b67-4e3d-bf0a-cbc42f622001");
-    private const string PackageId = "com.arisen.packagegame";
+    private const string PackageId = "com.arisen.samples";
 
     [Fact]
     public void SpeciesV1_RoundTripsDeterministicallyWithCanonicalDependencies()

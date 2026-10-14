@@ -15,7 +15,7 @@ namespace Com.Arisen.Rendering.Tests;
 [Collection(SceneComponentExtensionRegistryCollection.Name)]
 public sealed class RegionalWorldAssetTests : IDisposable
 {
-    private const string PackageId = "com.arisen.packagegame";
+    private const string PackageId = "com.arisen.samples";
 
 
     // The generator authors four cells per axis, each holding two-by-two tiles of 128 m, so the
@@ -29,9 +29,9 @@ public sealed class RegionalWorldAssetTests : IDisposable
     private const double CellSize = 256.0;
     private const double WorldOrigin = -512.0;
 
-    private static readonly Guid s_WorldGuid = Guid.Parse("38637cf8-f4a1-91f0-90b5-bf63752b4b82");
-    private static readonly Guid s_PersistentSceneGuid = Guid.Parse("e176b519-9d88-527e-a841-c5c5d73b7477");
-    private static readonly Guid s_TerrainRootGuid = Guid.Parse("40ad1b8e-7be7-7f2c-2454-fb97874ab169");
+    private static readonly Guid s_WorldGuid = Guid.Parse("b50c4c80-0720-4b63-b89b-af2203063180");
+    private static readonly Guid s_PersistentSceneGuid = Guid.Parse("6c761a9d-2d06-562e-9779-7748e8afe4d3");
+    private static readonly Guid s_TerrainRootGuid = Guid.Parse("275cb2a7-ddce-24ac-6640-edd5aea26427");
     private static readonly Guid s_LayerSetGuid = Guid.Parse("5dcaa6bd-2b51-498d-9fa9-bd68f4642761");
     private static readonly Guid s_BiomeGuid = Guid.Parse("c0a92f10-0eb9-4d24-b729-7d0f38313001");
 

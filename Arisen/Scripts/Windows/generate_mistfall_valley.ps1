@@ -35,7 +35,7 @@ param(
     [int]$CellsPerAxis = 4,
     [ValidateRange(1, 4)]
     [int]$TilesPerCell = 2,
-    [string]$PackageId = 'com.arisen.packagegame',
+    [string]$PackageId = 'com.arisen.samples',
     [string]$PackageRoot,
     [switch]$DryRun
 )
@@ -76,7 +76,7 @@ $ScatterEntries = @(
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
 if ([string]::IsNullOrWhiteSpace($PackageRoot)) {
-    $PackageRoot = Join-Path $repoRoot 'Arisen\Development\PackageGame\Local\com.arisen.packagegame'
+    $PackageRoot = Join-Path $repoRoot 'Arisen\Development\PackageGame\Local\com.arisen.samples'
 }
 $packageRoot = $PackageRoot
 if (-not (Test-Path -LiteralPath $packageRoot -PathType Container)) {
@@ -232,13 +232,17 @@ function Read-VegetationClusterReport([string]$path)
         $worldText = $WorldGuid.ToString('D')
         $terrainText = $TerrainRootGuid.ToString('D')
         $biomeText = $BiomeGuid.ToString('D')
+        $declaredEntries = 0
+        $entriesForThisWorld = 0
         foreach ($element in $root.GetProperty('clusters').EnumerateArray())
         {
+            $declaredEntries++
             if ($element.GetProperty('worldGuid').GetString() -ne $worldText)
             {
                 continue
             }
 
+            $entriesForThisWorld++
             if ($element.GetProperty('terrainRootGuid').GetString() -ne $terrainText -or
                 $element.GetProperty('biomeGuid').GetString() -ne $biomeText)
             {
@@ -286,6 +290,15 @@ function Read-VegetationClusterReport([string]$path)
             }
 
             $clusters[$key] = $record
+        }
+
+        # A report that carries entries for another world used to be skipped entry by entry and
+        # returned as an empty table, so the caller authored cluster-free cell scenes and reported
+        # success. That is a stale report, and saying so is the only useful outcome: the cell scenes
+        # bind baked identities that only a cook under this world can produce.
+        if ($declaredEntries -gt 0 -and $entriesForThisWorld -eq 0)
+        {
+            throw "Vegetation cluster report '$path' carries $declaredEntries entry(ies) but none for world $worldText. It was baked before this world existed under its current identity. Cook the runtime assets, then rerun before regenerating cell scenes."
         }
     }
     finally
@@ -1020,16 +1033,13 @@ foreach ($tile in $tileRecords)
 }
 
 $clusterReport = Read-VegetationClusterReport $clusterReportPath
-$clusterTotal = 0
+
+# Scatter recipes are written before the cell scenes on purpose. A recipe is derived from this
+# script's own identity, while a cell scene binds the baked cluster identities that only exist in
+# the cooked report. An owner change re-keys the recipes, so writing them first lets the cook accept
+# the new recipes and publish a report the following run can bind; the other order deadlocks.
 foreach ($cell in $cellRecords)
 {
-    $script:cellX = $cell.X
-    $script:cellZ = $cell.Z
-    $cellClusters = Get-CellClusters $clusterReport $cell
-    $clusterTotal += $cellClusters.Count
-    $scenePath = Join-Path $cellSceneRoot ("Cell_{0}_{1}.arisenscene" -f $cell.X, $cell.Z)
-    Write-Text $scenePath (New-CellSceneText $cell.X $cell.Z $cell.Tiles $cellClusters)
-    Write-Text "$scenePath.meta" (New-SourceMeta $cell.SceneGuid 'Scene' 'ArisenSceneImporter')
     foreach ($entry in $ScatterEntries)
     {
         $recipeGuid = Get-RecipeGuid $cell.X $cell.Z $entry.EntryId
@@ -1047,6 +1057,21 @@ foreach ($cell in $cellRecords)
         Write-Text $recipePath $text.ToString()
         Write-Text "$recipePath.meta" (New-SourceMeta $recipeGuid 'VegetationScatterRecipe' 'ArisenVegetationScatterRecipeImporter')
     }
+}
+
+$clusterTotal = 0
+foreach ($cell in $cellRecords)
+{
+    $script:cellX = $cell.X
+    $script:cellZ = $cell.Z
+    # Get-CellClusters reports nothing when the report has no entry for this cell, which is normal
+    # for a cell whose entries baked no instances. Coercing to an array keeps that case distinct from
+    # a report that yielded nothing at all, which the check after this loop rejects.
+    $cellClusters = @(Get-CellClusters $clusterReport $cell)
+    $clusterTotal += $cellClusters.Count
+    $scenePath = Join-Path $cellSceneRoot ("Cell_{0}_{1}.arisenscene" -f $cell.X, $cell.Z)
+    Write-Text $scenePath (New-CellSceneText $cell.X $cell.Z $cell.Tiles $cellClusters)
+    Write-Text "$scenePath.meta" (New-SourceMeta $cell.SceneGuid 'Scene' 'ArisenSceneImporter')
 }
 
 Write-Text $worldPath (New-WorldText $cellRecords)

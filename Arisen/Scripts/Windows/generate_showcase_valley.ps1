@@ -44,7 +44,7 @@
 param(
     [ValidateRange(2, 16)]
     [int]$Tiles = 4,
-    [string]$PackageId = 'com.arisen.packagegame',
+    [string]$PackageId = 'com.arisen.samples',
     [string]$PackageRoot,
     [switch]$DryRun
 )
@@ -78,7 +78,7 @@ $TileEntityOffsetZ = 256.0
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
 if ([string]::IsNullOrWhiteSpace($PackageRoot)) {
-    $PackageRoot = Join-Path $repoRoot 'Arisen\Development\PackageGame\Local\com.arisen.packagegame'
+    $PackageRoot = Join-Path $repoRoot 'Arisen\Development\PackageGame\Local\com.arisen.samples'
 }
 $packageRoot = $PackageRoot
 if (-not (Test-Path -LiteralPath $packageRoot -PathType Container)) {

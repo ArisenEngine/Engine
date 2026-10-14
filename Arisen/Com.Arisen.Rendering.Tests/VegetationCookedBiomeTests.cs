@@ -13,7 +13,7 @@ public sealed class VegetationCookedBiomeTests
         Guid.Parse("7b0f2e52-8b67-4e3d-bf0a-cbc42f622001");
     private static readonly Guid s_GrassSpeciesGuid =
         Guid.Parse("7b0f2e52-8b67-4e3d-bf0a-cbc42f622002");
-    private const string PackageId = "com.arisen.packagegame";
+    private const string PackageId = "com.arisen.samples";
 
     [Fact]
     public void BiomeV1_RoundTripsDeterministicallyInAuthoredOrder()

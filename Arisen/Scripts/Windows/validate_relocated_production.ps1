@@ -618,7 +618,7 @@ try {
     $vegetationArtifacts.Biome = Get-ExactCatalogArtifact `
         -Artifacts @($catalog.artifacts) `
         -Guid $vegetationBiomeGuid `
-        -PackageId "com.arisen.packagegame" `
+        -PackageId "com.arisen.samples" `
         -AssetType "VegetationBiome" `
         -Variant "runtime.vegetation-biome.v1" `
         -FormatVersion 1
@@ -626,21 +626,21 @@ try {
         $vegetationArtifacts["$($species.Name)Species"] = Get-ExactCatalogArtifact `
             -Artifacts @($catalog.artifacts) `
             -Guid $species.Species `
-            -PackageId "com.arisen.packagegame" `
+            -PackageId "com.arisen.samples" `
             -AssetType "VegetationSpecies" `
             -Variant "runtime.vegetation-species.v1" `
             -FormatVersion 1
         $vegetationArtifacts["$($species.Name)Mesh"] = Get-ExactCatalogArtifact `
             -Artifacts @($catalog.artifacts) `
             -Guid $species.Mesh `
-            -PackageId "com.arisen.packagegame" `
+            -PackageId "com.arisen.samples" `
             -AssetType "Mesh" `
             -Variant "staticmesh.uint32" `
             -FormatVersion 4
         $vegetationArtifacts["$($species.Name)Material"] = Get-ExactCatalogArtifact `
             -Artifacts @($catalog.artifacts) `
             -Guid $species.Material `
-            -PackageId "com.arisen.packagegame" `
+            -PackageId "com.arisen.samples" `
             -AssetType "Material" `
             -Variant "material.runtime" `
             -FormatVersion 7
@@ -674,13 +674,13 @@ try {
     $vegetationClusters = @($catalog.artifacts | Where-Object {
         $_.assetType -ceq "VegetationCluster" -and
         $_.variant -ceq "runtime.vegetation-cluster.v1" -and
-        $_.packageId -ceq "com.arisen.packagegame" -and
+        $_.packageId -ceq "com.arisen.samples" -and
         [int]$_.formatVersion -eq 1
     })
     $vegetationInstancePages = @($catalog.artifacts | Where-Object {
         $_.assetType -ceq "VegetationInstancePage" -and
         $_.variant -ceq "runtime.vegetation-instance-page.v1" -and
-        $_.packageId -ceq "com.arisen.packagegame" -and
+        $_.packageId -ceq "com.arisen.samples" -and
         [int]$_.formatVersion -eq 1
     })
     if ($vegetationClusters.Count -ne $expectedVegetationClusterCount) {
