@@ -1027,6 +1027,138 @@ public sealed class ShowcaseSceneAssetTests
             "ShowcaseValley",
             $"x_{tileX}_z_{tileZ}.ariterraingenerated");
 
+    // The cook has to tell "nothing changed" from "the raster changed" without decoding the raster to
+    // find out, so this test withdraws and then edits the raster: a cook that still reads it cannot
+    // pass either half. The fixture is copied so the committed content is never touched.
+    [Fact]
+    public void PackageShowcaseTerrain_ReusesCookedTilesUntilTheRasterChanges()
+    {
+        string sourcePackageRoot = GetRepositoryFile(
+            "Arisen", "Development", "PackageGame", "Local", VegetationCanonicalFixture.PackageId);
+        string packageRoot = Path.Combine(
+            Path.GetTempPath(),
+            "ArisenTerrainIncrementalTests",
+            Guid.NewGuid().ToString("N"));
+        string cookedRoot = Path.Combine(
+            Path.GetTempPath(),
+            "ArisenTerrainIncrementalCooked",
+            Guid.NewGuid().ToString("N"));
+        string heightSource = Path.Combine(packageRoot, "Assets", "Terrain", "Height", "ShowcaseValley.pgm");
+        foreach (string relativePath in new[]
+                 {
+                     "Assets/Terrain/ShowcaseValley.aristerrain",
+                     "Assets/Terrain/ShowcaseValley.ariterrainlayers",
+                     "Assets/Terrain/Height/ShowcaseValley.pgm",
+                     "Assets/Terrain/ShowcaseValley.ariweights"
+                 })
+        {
+            CopyFixtureFile(sourcePackageRoot, packageRoot, relativePath);
+        }
+
+        // The registered tile stubs only need their directory to exist: the root cook derives its
+        // tiles from the root descriptor, not from these files.
+        Directory.CreateDirectory(
+            Path.Combine(packageRoot, "Assets", "Terrain", "Generated", "ShowcaseValley"));
+
+        try
+        {
+            var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, cookedRoot);
+            AddTerrainAssets(db, packageRoot);
+            var rootRef = new AssetRef<TerrainRootSourceAsset>(
+                s_TerrainRootGuid,
+                TerrainAssetTypes.Root,
+                VegetationCanonicalFixture.PackageId);
+
+            TerrainRootCookReport first = TerrainRootAssetCooker.CookWithReport(db, rootRef);
+            Assert.False(first.ReusedRoot);
+            Assert.Equal(TerrainTileCount, first.RebuiltTiles.Count);
+            Assert.Empty(first.ReusedTiles);
+            byte[] firstPayload = File.ReadAllBytes(first.RootArtifact.Path);
+            byte[][] firstTileHashes = ReadTileContentHashes(db, rootRef);
+            Assert.Equal(TerrainTileCount, firstTileHashes.Length);
+
+            // The per-tile request the cook coordinator issues takes the same fast path.
+            CookedTerrainTileArtifact requestedTile = TerrainTileAssetCooker.Cook(
+                db,
+                TerrainTileGuid(0, 0),
+                VegetationCanonicalFixture.PackageId);
+            Assert.Equal(firstTileHashes[0], requestedTile.ContentHash);
+
+            // Nothing changed: the whole root is reused, so the raster is not decoded and no tile
+            // payload is loaded.
+            TerrainRootCookReport reused = TerrainRootAssetCooker.CookWithReport(db, rootRef);
+            Assert.True(reused.ReusedRoot);
+            Assert.Empty(reused.RebuiltTiles);
+            Assert.Equal(TerrainTileCount, reused.ReusedTiles.Count);
+            Assert.Equal(firstPayload, File.ReadAllBytes(reused.RootArtifact.Path));
+            Assert.All(
+                ReadTileContentHashes(db, rootRef).Zip(firstTileHashes),
+                pair => Assert.Equal(pair.Second, pair.First));
+
+            // A changed raster must still rebuild, and only the tiles it touches: the rest are reused.
+            byte[] edited = File.ReadAllBytes(heightSource);
+            edited[^1] ^= 0xFF;
+            File.WriteAllBytes(heightSource, edited);
+            File.SetLastWriteTimeUtc(heightSource, DateTime.UtcNow.AddSeconds(1));
+
+            TerrainRootCookReport editedReport = TerrainRootAssetCooker.CookWithReport(db, rootRef);
+            Assert.False(editedReport.ReusedRoot);
+            // The raster is one source file, so editing it invalidates every tile it feeds rather
+            // than only the tile whose samples changed: that is what the stamp covers today.
+            Assert.Equal(TerrainTileCount, editedReport.RebuiltTiles.Count);
+            Assert.Empty(editedReport.ReusedTiles);
+            byte[][] rebuiltTileHashes = ReadTileContentHashes(db, rootRef);
+            Assert.NotEqual(firstPayload, File.ReadAllBytes(editedReport.RootArtifact.Path));
+            // Rebuilt tiles that saw no edit reproduce their previous bytes, so the rebuild stays
+            // deterministic per tile.
+            Assert.Contains(
+                rebuiltTileHashes.Zip(firstTileHashes),
+                pair => pair.First.SequenceEqual(pair.Second));
+            Assert.Contains(
+                rebuiltTileHashes.Zip(firstTileHashes),
+                pair => !pair.First.SequenceEqual(pair.Second));
+        }
+        finally
+        {
+            DeleteDirectoryBestEffort(packageRoot);
+            DeleteDirectoryBestEffort(cookedRoot);
+        }
+    }
+
+    private static byte[][] ReadTileContentHashes(
+        TestAssetDatabase db,
+        AssetRef<TerrainRootSourceAsset> rootRef)
+    {
+        Assert.True(
+            TerrainRootAssetCooker.TryLoadCooked(db, rootRef, out CookedTerrainRoot root, out string diagnostic),
+            diagnostic);
+        return root.Tiles.Select(tile => tile.ContentHash.ToArray()).ToArray();
+    }
+
+    private static void CopyFixtureFile(string sourcePackageRoot, string packageRoot, string relativePath)
+    {
+        string source = Path.Combine(sourcePackageRoot, relativePath.Replace('/', Path.DirectorySeparatorChar));
+        string target = Path.Combine(packageRoot, relativePath.Replace('/', Path.DirectorySeparatorChar));
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        File.Copy(source, target, overwrite: true);
+        File.Copy(source + ".meta", target + ".meta", overwrite: true);
+    }
+
+    private static void DeleteDirectoryBestEffort(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path, recursive: true);
+            }
+        }
+        catch
+        {
+            // Best-effort test cleanup.
+        }
+    }
+
     private static CookedTerrainTile LoadTerrainTile(TestAssetDatabase db, Guid tileGuid)
     {
         Assert.True(
