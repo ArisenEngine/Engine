@@ -20,6 +20,10 @@ $terrainStreamingSummaryArtifactPaths = @(
     $profiles |
         Where-Object { $_.terrainStreaming.requested -eq $true -and $_.terrainStreaming.passed -eq $true -and $_.terrainStreaming.summaryPath } |
         ForEach-Object { [string]$_.terrainStreaming.summaryPath })
+$sampleSwitchSummaryArtifactPaths = @(
+    $profiles |
+        Where-Object { $_.sampleSwitch.requested -eq $true -and $_.sampleSwitch.passed -eq $true -and $_.sampleSwitch.summaryPath } |
+        ForEach-Object { [string]$_.sampleSwitch.summaryPath })
 $vegetationVisualSummaryArtifactPaths = @(
     $profiles |
         Where-Object {
@@ -61,7 +65,7 @@ if ($env:EXIT_CODE -ne "0") {
 }
 
 $summary = [ordered]@{
-    schemaVersion = 9
+    schemaVersion = 10
     capturedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
     repositoryRoot = $env:REPO_ROOT
     workspacePath = $env:WORKSPACE_DIR
@@ -85,6 +89,9 @@ $summary = [ordered]@{
     terrainStreamingSmokeRuns = [int]$env:TERRAIN_STREAMING_SMOKE_RUNS
     terrainStreamingSummaryArtifactCount = $terrainStreamingSummaryArtifactPaths.Count
     terrainStreamingSummaryArtifactPaths = $terrainStreamingSummaryArtifactPaths
+    sampleSwitchSmokeRuns = [int]$env:SAMPLE_SWITCH_SMOKE_RUNS
+    sampleSwitchSummaryArtifactCount = $sampleSwitchSummaryArtifactPaths.Count
+    sampleSwitchSummaryArtifactPaths = $sampleSwitchSummaryArtifactPaths
     vegetationVisualComparisonRuns = [int]$env:VEGETATION_VISUAL_COMPARISON_RUNS
     vegetationVisualSummaryArtifactCount = $vegetationVisualSummaryArtifactPaths.Count
     vegetationVisualSummaryArtifactPaths = $vegetationVisualSummaryArtifactPaths

@@ -58,6 +58,13 @@ $result = [ordered]@{
         exitCode = Get-NullableInt $env:CURRENT_TERRAIN_STREAMING_EXIT_CODE
         passed = Get-NullableBool $env:CURRENT_TERRAIN_STREAMING_PASSED
     }
+    sampleSwitch = [ordered]@{
+        requested = $env:CURRENT_SAMPLE_SWITCH_REQUESTED -eq "1"
+        summaryPath = Get-NullableString $env:CURRENT_SAMPLE_SWITCH_SUMMARY_PATH
+        logPath = Get-NullableString $env:CURRENT_SAMPLE_SWITCH_LOG_PATH
+        exitCode = Get-NullableInt $env:CURRENT_SAMPLE_SWITCH_EXIT_CODE
+        passed = Get-NullableBool $env:CURRENT_SAMPLE_SWITCH_PASSED
+    }
     editorViewportSmoke = [ordered]@{
         requested = $env:CURRENT_EDITOR_VIEWPORT_SMOKE_REQUESTED -eq "1"
         path = Get-NullableString $env:CURRENT_EDITOR_VIEWPORT_SMOKE_PATH

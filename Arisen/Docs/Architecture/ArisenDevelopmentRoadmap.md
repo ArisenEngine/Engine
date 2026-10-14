@@ -249,6 +249,17 @@ startup target, and `--startup-sample <id>` boots a catalogue entry directly - t
 the id through the catalogue, and the cook follows the same selection, so a cooked-only profile
 boots the sample without a source fallback. The gate ran as one Samples workspace booting the hub,
 booting the `mistfall-valley` entry's world, and failing loudly (exit code 1) on an unknown id.
+
+**S2 has landed.** A content sample is selected inside the running process through the existing
+runtime world-load path: `com.arisen.samples` declares a second content sample (`lantern-world`), a
+profile that declares the `IsSampleGallery` role boots the hub and its cook closes over the whole
+catalogue in addition to the profile's own target, and the new `sample-switch` smoke scenario
+switches through every world-backed catalogue entry, asserting each one becomes the active world and
+supersedes the previous content. `validate_runtime.bat` runs that scenario for the declared gallery
+profiles and validates its summary; the gate ran as one Samples workspace switching hub ->
+`mistfall-valley` -> `lantern-world` with both loads observed through the deferred residency path
+and a clean drained shutdown.
+
 What remains of Track S: the hub's browsing layer (S5) and the per-sample gate runners (S4).
 
 **Motivation.** Capability has no catalogue today. A profile decides the package graph at boot, so a

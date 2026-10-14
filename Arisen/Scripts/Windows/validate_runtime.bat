@@ -24,6 +24,7 @@ set "HOST_PACING_RUNS=0"
 set "RELOCATED_PRODUCTION_SMOKE_RUNS=0"
 set "WORLD_STREAMING_SMOKE_RUNS=0"
 set "TERRAIN_STREAMING_SMOKE_RUNS=0"
+set "SAMPLE_SWITCH_SMOKE_RUNS=0"
 set "VEGETATION_VISUAL_COMPARISON_RUNS=0"
 set "FAILURE_STAGE="
 set "FAILED_PROFILE="
@@ -151,6 +152,13 @@ set "WORLD_PROFILES="
 for /f "usebackq delims=" %%A in (`dotnet run --project "%BUILD_TOOL_CSPROJ%" --no-build -- manifest-info --manifest "%WORKSPACE_DIR%\manifest.json" --field world-profiles`) do (
     set "WORLD_PROFILES=!WORLD_PROFILES! %%A"
 )
+rem Profiles that declare the sample-gallery role boot the catalogue's hub and can switch between
+rem its content samples in-process, so they run the sample-switch gate instead of the streaming
+rem scenarios.
+set "GALLERY_PROFILES="
+for /f "usebackq delims=" %%A in (`dotnet run --project "%BUILD_TOOL_CSPROJ%" --no-build -- manifest-info --manifest "%WORKSPACE_DIR%\manifest.json" --field gallery-profiles`) do (
+    set "GALLERY_PROFILES=!GALLERY_PROFILES! %%A"
+)
 
 echo [Arisen] Profiles: %PROFILES%
 
@@ -168,6 +176,7 @@ echo [Arisen] Host frame pacing gates: %HOST_PACING_RUNS%
 echo [Arisen] Relocated Production smoke runs: %RELOCATED_PRODUCTION_SMOKE_RUNS%
 echo [Arisen] World-streaming smoke runs: %WORLD_STREAMING_SMOKE_RUNS%
 echo [Arisen] Terrain-streaming smoke runs: %TERRAIN_STREAMING_SMOKE_RUNS%
+echo [Arisen] Sample-switch smoke runs: %SAMPLE_SWITCH_SMOKE_RUNS%
 echo [Arisen] Vegetation visual comparisons: %VEGETATION_VISUAL_COMPARISON_RUNS%
 set "EXIT_CODE=0"
 goto :finish
@@ -250,6 +259,8 @@ rem The streaming scenarios boot streamed content, so they run for the profiles 
 rem startup target is a world - not for a runtime profile that boots a scene or a catalogue sample.
 set "CURRENT_PROFILE_WORLD=0"
 for %%D in (!WORLD_PROFILES!) do if /i "%%D"=="!CURRENT_PROFILE!" set "CURRENT_PROFILE_WORLD=1"
+set "CURRENT_PROFILE_GALLERY=0"
+for %%D in (!GALLERY_PROFILES!) do if /i "%%D"=="!CURRENT_PROFILE!" set "CURRENT_PROFILE_GALLERY=1"
 set "CURRENT_PROFILE_LOG=%LOG_DIR%\smoke-cli-%CURRENT_PROFILE%-%CONFIG%-%RUN_TIMESTAMP%.log"
 set "CURRENT_VISUAL_SUMMARY_REQUESTED=0"
 set "CURRENT_VISUAL_SUMMARY_ARGS="
@@ -292,6 +303,13 @@ set "CURRENT_TERRAIN_STREAMING_PASSED="
 set "CURRENT_TERRAIN_STREAMING_EXIT_CODE="
 set "CURRENT_TERRAIN_STREAMING_REQUIRED=0"
 if "!CURRENT_PROFILE_RUNTIME_GATES!"=="1" if "!CURRENT_PROFILE_WORLD!"=="1" set "CURRENT_TERRAIN_STREAMING_REQUIRED=1"
+set "CURRENT_SAMPLE_SWITCH_REQUESTED=0"
+set "CURRENT_SAMPLE_SWITCH_SUMMARY_PATH="
+set "CURRENT_SAMPLE_SWITCH_LOG_PATH="
+set "CURRENT_SAMPLE_SWITCH_PASSED="
+set "CURRENT_SAMPLE_SWITCH_EXIT_CODE="
+set "CURRENT_SAMPLE_SWITCH_REQUIRED=0"
+if "!CURRENT_PROFILE_RUNTIME_GATES!"=="1" if "!CURRENT_PROFILE_GALLERY!"=="1" set "CURRENT_SAMPLE_SWITCH_REQUIRED=1"
 set "CURRENT_PLAYER_LOG_PATH="
 set "CURRENT_PLAYER_LOG_SNAPSHOT_PATH="
 set "CURRENT_PLAYER_LOG_RESOLUTION_PATH="
@@ -615,6 +633,25 @@ if "!CURRENT_TERRAIN_STREAMING_REQUIRED!"=="1" (
         exit /b 1
     )
     set /a TERRAIN_STREAMING_SMOKE_RUNS+=1
+)
+
+if "!CURRENT_SAMPLE_SWITCH_REQUIRED!"=="1" (
+    call :run_sample_switch_smoke
+    if errorlevel 1 (
+        echo [ERROR] Sample-switch smoke failed for profile %CURRENT_PROFILE%.
+        set "FAILED_PROFILE=%CURRENT_PROFILE%"
+        set "FAILURE_STAGE=sample-switch smoke"
+        set "FAILURE_MESSAGE=Sample-switch smoke failed for profile %CURRENT_PROFILE%"
+        set "RESULT_PROFILE=%CURRENT_PROFILE%"
+        set "RESULT_STATUS=failed"
+        set "RESULT_REQUIRES_VULKAN=%PROFILE_REQUIRES_VULKAN%"
+        set "RESULT_EXIT_CODE=1"
+        set "RESULT_LOG_PATH=!CURRENT_SAMPLE_SWITCH_LOG_PATH!"
+        set "RESULT_MESSAGE=!FAILURE_MESSAGE!"
+        call :record_result
+        exit /b 1
+    )
+    set /a SAMPLE_SWITCH_SMOKE_RUNS+=1
 )
 
 if "!CURRENT_PROFILE_DEPLOYED!"=="1" (
@@ -1046,6 +1083,47 @@ set "CURRENT_VEGETATION_REQUIRED_SURFACE_COUNT=%~1"
 if not defined CURRENT_VEGETATION_REQUIRED_SURFACE_COUNT set "CURRENT_VEGETATION_REQUIRED_SURFACE_COUNT=1"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_ROOT%validate_vegetation_submission_log.ps1" -LogPath "%CURRENT_PLAYER_LOG_PATH%" -CaseName "%CURRENT_PROFILE%" -RequiredDistinctSurfaceCount %CURRENT_VEGETATION_REQUIRED_SURFACE_COUNT% -ResolvedManifestPath "%BIN_DIR%\manifest.resolved.json" -RequiredPackageId "com.arisen.vegetation.generic-renderpipeline"
 exit /b %ERRORLEVEL%
+
+:run_sample_switch_smoke
+set "CURRENT_SAMPLE_SWITCH_REQUESTED=1"
+set "CURRENT_SAMPLE_SWITCH_SUMMARY_PATH=%LOG_DIR%\sample-switch-summary-%CURRENT_PROFILE%-latest.json"
+set "CURRENT_SAMPLE_SWITCH_LOG_PATH=%LOG_DIR%\sample-switch-%CURRENT_PROFILE%-%CONFIG%-%RUN_TIMESTAMP%.log"
+set "CURRENT_SAMPLE_SWITCH_EXIT_CODE="
+set "CURRENT_SAMPLE_SWITCH_PASSED=0"
+del /q "!CURRENT_SAMPLE_SWITCH_SUMMARY_PATH!" "!CURRENT_SAMPLE_SWITCH_LOG_PATH!" >nul 2>nul
+
+call :prepare_vulkan_validation_log "%PROFILE_REQUIRES_VULKAN%"
+if errorlevel 1 exit /b 1
+echo [Arisen] Running bounded sample-switch smoke: %EXE_PATH%
+call :prepare_player_log_snapshot "sample-switch"
+if errorlevel 1 exit /b 1
+setlocal
+pushd "%BIN_DIR%" >nul
+if "!CURRENT_PROFILE_DEPLOYED!"=="1" (
+    "%EXE_PATH%" --smoke-mode sample-switch --frames 1 --smoke-summary-output "!CURRENT_SAMPLE_SWITCH_SUMMARY_PATH!" > "!CURRENT_SAMPLE_SWITCH_LOG_PATH!" 2>&1
+) else (
+    "%EXE_PATH%" --workspace "%WORKSPACE_DIR%" --profile "%CURRENT_PROFILE%" --smoke-mode sample-switch --frames 1 --smoke-summary-output "!CURRENT_SAMPLE_SWITCH_SUMMARY_PATH!" > "!CURRENT_SAMPLE_SWITCH_LOG_PATH!" 2>&1
+)
+set "SAMPLE_SWITCH_FULL_EXIT_CODE=!ERRORLEVEL!"
+popd >nul
+endlocal & set "CURRENT_SAMPLE_SWITCH_EXIT_CODE=%SAMPLE_SWITCH_FULL_EXIT_CODE%"
+type "!CURRENT_SAMPLE_SWITCH_LOG_PATH!"
+if not "!CURRENT_SAMPLE_SWITCH_EXIT_CODE!"=="0" exit /b 1
+
+call :resolve_player_log
+if errorlevel 1 exit /b 1
+call :validate_vulkan_validation_log "%PROFILE_REQUIRES_VULKAN%"
+if errorlevel 1 exit /b 1
+call :validate_vulkan_player_log
+if errorlevel 1 exit /b 1
+call :validate_runtime_asset_policy
+if errorlevel 1 exit /b 1
+call :validate_runtime_shutdown_log
+if errorlevel 1 exit /b 1
+powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_ROOT%validate_sample_switch_summary.ps1" -SummaryPath "!CURRENT_SAMPLE_SWITCH_SUMMARY_PATH!" -ExpectedProfile "%CURRENT_PROFILE%"
+if errorlevel 1 exit /b 1
+set "CURRENT_SAMPLE_SWITCH_PASSED=1"
+exit /b 0
 
 :run_relocated_production_validation
 set "CURRENT_RELOCATED_PRODUCTION_REQUESTED=1"
