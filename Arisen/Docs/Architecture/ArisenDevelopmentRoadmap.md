@@ -35,8 +35,10 @@ Recorded here because this roadmap is requirement-driven, and these gaps decide 
 - Skeletal animation, skinning, animation clips: none. glTF `skins` and `animations` are explicit
   import warnings, and the mesh vertex layout carries no joints or weights.
 - Physics and collision: the solver exists behind `com.arisen.physics` (Jolt, fixed-step and
-  deterministic, with the package's own native gate), but no authored content reaches it yet -
-  cooked collision (D2) and the character controller plus combat queries (D3) do not exist.
+  deterministic, with the package's own native gate), and scene-authored rigid bodies now reach it
+  - an explicit-shape component, body creation and destruction owned by the simulation, transform
+  write-back, and a bounded settle gate. Cooked collision from authored meshes and the character
+  controller plus combat queries (D3) do not exist yet.
 - Navigation and AI: none.
 - Audio: none.
 - Runtime in-game UI: none.
@@ -157,6 +159,13 @@ simulation is stepped in fixed increments so a replay is reproducible.
   shape and ray queries combat reads, with no per-query allocation.
 - D4 ragdoll and cloth, deferred.
 
+**D2's first slice has landed** (with S3): `RigidBody` is a scene component (explicit box/capsule
+shapes with a center offset), the physics runtime binds one solver body per authored entity, steps
+the world in fixed increments, writes the pose back into the entity transform, and destroys bodies
+with their entities. The `physics-settle` smoke scenario and `validate_runtime.bat` gate the wiring
+end to end for the profiles that mount the package. What remains of D2 is cooked collision derived
+from the authored meshes, which is where the explicit shapes are replaced.
+
 Acceptance gate: the track's first deliverable is a sample that boots the physics package alone
 (Priority Rule 5). It steps a fixed-timestep world holding a static floor and a character capsule,
 produces identical state for identical inputs across runs, keeps every body and job accounted for,
@@ -261,6 +270,14 @@ profiles and validates its summary; the gate ran as one Samples workspace switch
 and a clean drained shutdown.
 
 What remains of Track S: the hub's browsing layer (S5) and the per-sample gate runners (S4).
+
+**S3 has landed.** The first capability sample is the physics showcase: it changes the package set
+(`com.arisen.physics`, which no longer rides the base package list), boots through its own
+`PhysicsShowcase` profile and a restart (D8), and its scene is a catalogued sample
+(`physics-showcase`) that a direct `--startup-sample` launch reaches like any content sample. Its
+gate is the physics package's bounded `physics-settle` scenario: every authored dynamic body must
+fall from its scene position, come to rest, and stay at rest, and the shutdown must leave no solver
+world behind.
 
 **Motivation.** Capability has no catalogue today. A profile decides the package graph at boot, so a
 capability can only be seen by knowing which workspace, profile, and solution to launch.

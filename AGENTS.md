@@ -70,11 +70,9 @@ Fast package/kernel validation is available through a single no-pause command:
 What this runs:
 - `dotnet test Arisen\External\ArisenBuildTool.Tests\ArisenBuildTool.Tests.csproj`
 - `dotnet test Arisen\ArisenKernel.Tests\ArisenKernel.Tests.csproj`
-- `ArisenBuildTool validate` for the default workspace profiles:
-  - `Editor`
-  - `Development`
-  - `Production`
-  - `RHIVulkanTesting`
+- `ArisenBuildTool validate` for every profile the workspace manifest declares (the default
+  workspace currently declares `Editor`, `Development`, `Production`, `RHIVulkanTesting`,
+  `Samples`, and `PhysicsShowcase`)
 
 Use this as the first validation gate for package graph, service-contract, native-test metadata, and runtime package lifecycle changes.
 
@@ -189,7 +187,8 @@ The canonical development workspace currently lives at:
 
 Its `manifest.json` defines:
 - base packages such as `com.arisen.core`, `com.arisen.ecs`, `com.arisen.rendering`, `com.arisen.generic-renderpipeline`, `com.arisen.rhi.vulkan.native`
-- profiles such as `Editor`, `Development`, `Production`, and `RHIVulkanTesting`
+- profiles such as `Editor`, `Development`, `Production`, `RHIVulkanTesting`, `Samples` (the
+  catalogue gallery), and `PhysicsShowcase` (a capability sample with its own package set)
 
 Package dependency intent:
 - composition/root packages may depend on concrete provider packages because they choose the product assembly, for example selecting `com.arisen.rhi.vulkan.native`
