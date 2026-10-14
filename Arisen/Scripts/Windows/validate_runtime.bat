@@ -25,6 +25,7 @@ set "RELOCATED_PRODUCTION_SMOKE_RUNS=0"
 set "WORLD_STREAMING_SMOKE_RUNS=0"
 set "TERRAIN_STREAMING_SMOKE_RUNS=0"
 set "SAMPLE_SWITCH_SMOKE_RUNS=0"
+set "PHYSICS_SETTLE_SMOKE_RUNS=0"
 set "VEGETATION_VISUAL_COMPARISON_RUNS=0"
 set "FAILURE_STAGE="
 set "FAILED_PROFILE="
@@ -159,6 +160,12 @@ set "GALLERY_PROFILES="
 for /f "usebackq delims=" %%A in (`dotnet run --project "%BUILD_TOOL_CSPROJ%" --no-build -- manifest-info --manifest "%WORKSPACE_DIR%\manifest.json" --field gallery-profiles`) do (
     set "GALLERY_PROFILES=!GALLERY_PROFILES! %%A"
 )
+rem Profiles that mount the physics package, which are the only ones whose booted scene can carry
+rem authored rigid bodies; the settle gate runs where the capability is mounted.
+set "PHYSICS_PROFILES="
+for /f "usebackq delims=" %%A in (`dotnet run --project "%BUILD_TOOL_CSPROJ%" --no-build -- manifest-info --manifest "%WORKSPACE_DIR%\manifest.json" --field physics-profiles`) do (
+    set "PHYSICS_PROFILES=!PHYSICS_PROFILES! %%A"
+)
 
 echo [Arisen] Profiles: %PROFILES%
 
@@ -177,6 +184,7 @@ echo [Arisen] Relocated Production smoke runs: %RELOCATED_PRODUCTION_SMOKE_RUNS%
 echo [Arisen] World-streaming smoke runs: %WORLD_STREAMING_SMOKE_RUNS%
 echo [Arisen] Terrain-streaming smoke runs: %TERRAIN_STREAMING_SMOKE_RUNS%
 echo [Arisen] Sample-switch smoke runs: %SAMPLE_SWITCH_SMOKE_RUNS%
+echo [Arisen] Physics-settle smoke runs: %PHYSICS_SETTLE_SMOKE_RUNS%
 echo [Arisen] Vegetation visual comparisons: %VEGETATION_VISUAL_COMPARISON_RUNS%
 set "EXIT_CODE=0"
 goto :finish
@@ -261,6 +269,8 @@ set "CURRENT_PROFILE_WORLD=0"
 for %%D in (!WORLD_PROFILES!) do if /i "%%D"=="!CURRENT_PROFILE!" set "CURRENT_PROFILE_WORLD=1"
 set "CURRENT_PROFILE_GALLERY=0"
 for %%D in (!GALLERY_PROFILES!) do if /i "%%D"=="!CURRENT_PROFILE!" set "CURRENT_PROFILE_GALLERY=1"
+set "CURRENT_PROFILE_PHYSICS=0"
+for %%D in (!PHYSICS_PROFILES!) do if /i "%%D"=="!CURRENT_PROFILE!" set "CURRENT_PROFILE_PHYSICS=1"
 set "CURRENT_PROFILE_LOG=%LOG_DIR%\smoke-cli-%CURRENT_PROFILE%-%CONFIG%-%RUN_TIMESTAMP%.log"
 set "CURRENT_VISUAL_SUMMARY_REQUESTED=0"
 set "CURRENT_VISUAL_SUMMARY_ARGS="
@@ -310,6 +320,13 @@ set "CURRENT_SAMPLE_SWITCH_PASSED="
 set "CURRENT_SAMPLE_SWITCH_EXIT_CODE="
 set "CURRENT_SAMPLE_SWITCH_REQUIRED=0"
 if "!CURRENT_PROFILE_RUNTIME_GATES!"=="1" if "!CURRENT_PROFILE_GALLERY!"=="1" set "CURRENT_SAMPLE_SWITCH_REQUIRED=1"
+set "CURRENT_PHYSICS_SETTLE_REQUESTED=0"
+set "CURRENT_PHYSICS_SETTLE_SUMMARY_PATH="
+set "CURRENT_PHYSICS_SETTLE_LOG_PATH="
+set "CURRENT_PHYSICS_SETTLE_PASSED="
+set "CURRENT_PHYSICS_SETTLE_EXIT_CODE="
+set "CURRENT_PHYSICS_SETTLE_REQUIRED=0"
+if "!CURRENT_PROFILE_RUNTIME_GATES!"=="1" if "!CURRENT_PROFILE_PHYSICS!"=="1" set "CURRENT_PHYSICS_SETTLE_REQUIRED=1"
 set "CURRENT_PLAYER_LOG_PATH="
 set "CURRENT_PLAYER_LOG_SNAPSHOT_PATH="
 set "CURRENT_PLAYER_LOG_RESOLUTION_PATH="
@@ -652,6 +669,25 @@ if "!CURRENT_SAMPLE_SWITCH_REQUIRED!"=="1" (
         exit /b 1
     )
     set /a SAMPLE_SWITCH_SMOKE_RUNS+=1
+)
+
+if "!CURRENT_PHYSICS_SETTLE_REQUIRED!"=="1" (
+    call :run_physics_settle_smoke
+    if errorlevel 1 (
+        echo [ERROR] Physics-settle smoke failed for profile %CURRENT_PROFILE%.
+        set "FAILED_PROFILE=%CURRENT_PROFILE%"
+        set "FAILURE_STAGE=physics-settle smoke"
+        set "FAILURE_MESSAGE=Physics-settle smoke failed for profile %CURRENT_PROFILE%"
+        set "RESULT_PROFILE=%CURRENT_PROFILE%"
+        set "RESULT_STATUS=failed"
+        set "RESULT_REQUIRES_VULKAN=%PROFILE_REQUIRES_VULKAN%"
+        set "RESULT_EXIT_CODE=1"
+        set "RESULT_LOG_PATH=!CURRENT_PHYSICS_SETTLE_LOG_PATH!"
+        set "RESULT_MESSAGE=!FAILURE_MESSAGE!"
+        call :record_result
+        exit /b 1
+    )
+    set /a PHYSICS_SETTLE_SMOKE_RUNS+=1
 )
 
 if "!CURRENT_PROFILE_DEPLOYED!"=="1" (
@@ -1123,6 +1159,47 @@ if errorlevel 1 exit /b 1
 powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_ROOT%validate_sample_switch_summary.ps1" -SummaryPath "!CURRENT_SAMPLE_SWITCH_SUMMARY_PATH!" -ExpectedProfile "%CURRENT_PROFILE%"
 if errorlevel 1 exit /b 1
 set "CURRENT_SAMPLE_SWITCH_PASSED=1"
+exit /b 0
+
+:run_physics_settle_smoke
+set "CURRENT_PHYSICS_SETTLE_REQUESTED=1"
+set "CURRENT_PHYSICS_SETTLE_SUMMARY_PATH=%LOG_DIR%\physics-settle-summary-%CURRENT_PROFILE%-latest.json"
+set "CURRENT_PHYSICS_SETTLE_LOG_PATH=%LOG_DIR%\physics-settle-%CURRENT_PROFILE%-%CONFIG%-%RUN_TIMESTAMP%.log"
+set "CURRENT_PHYSICS_SETTLE_EXIT_CODE="
+set "CURRENT_PHYSICS_SETTLE_PASSED=0"
+del /q "!CURRENT_PHYSICS_SETTLE_SUMMARY_PATH!" "!CURRENT_PHYSICS_SETTLE_LOG_PATH!" >nul 2>nul
+
+call :prepare_vulkan_validation_log "%PROFILE_REQUIRES_VULKAN%"
+if errorlevel 1 exit /b 1
+echo [Arisen] Running bounded physics-settle smoke: %EXE_PATH%
+call :prepare_player_log_snapshot "physics-settle"
+if errorlevel 1 exit /b 1
+setlocal
+pushd "%BIN_DIR%" >nul
+if "!CURRENT_PROFILE_DEPLOYED!"=="1" (
+    "%EXE_PATH%" --smoke-mode physics-settle --frames 1 --smoke-summary-output "!CURRENT_PHYSICS_SETTLE_SUMMARY_PATH!" > "!CURRENT_PHYSICS_SETTLE_LOG_PATH!" 2>&1
+) else (
+    "%EXE_PATH%" --workspace "%WORKSPACE_DIR%" --profile "%CURRENT_PROFILE%" --smoke-mode physics-settle --frames 1 --smoke-summary-output "!CURRENT_PHYSICS_SETTLE_SUMMARY_PATH!" > "!CURRENT_PHYSICS_SETTLE_LOG_PATH!" 2>&1
+)
+set "PHYSICS_SETTLE_FULL_EXIT_CODE=!ERRORLEVEL!"
+popd >nul
+endlocal & set "CURRENT_PHYSICS_SETTLE_EXIT_CODE=%PHYSICS_SETTLE_FULL_EXIT_CODE%"
+type "!CURRENT_PHYSICS_SETTLE_LOG_PATH!"
+if not "!CURRENT_PHYSICS_SETTLE_EXIT_CODE!"=="0" exit /b 1
+
+call :resolve_player_log
+if errorlevel 1 exit /b 1
+call :validate_vulkan_validation_log "%PROFILE_REQUIRES_VULKAN%"
+if errorlevel 1 exit /b 1
+call :validate_vulkan_player_log
+if errorlevel 1 exit /b 1
+call :validate_runtime_asset_policy
+if errorlevel 1 exit /b 1
+call :validate_runtime_shutdown_log
+if errorlevel 1 exit /b 1
+powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_ROOT%validate_physics_settle_summary.ps1" -SummaryPath "!CURRENT_PHYSICS_SETTLE_SUMMARY_PATH!" -ExpectedProfile "%CURRENT_PROFILE%"
+if errorlevel 1 exit /b 1
+set "CURRENT_PHYSICS_SETTLE_PASSED=1"
 exit /b 0
 
 :run_relocated_production_validation

@@ -65,15 +65,15 @@ function Read-AndValidateRuntimeSummary([string]$Path)
     Assert-Condition (Test-Path -LiteralPath $Path -PathType Leaf) `
         "Runtime validation summary was not produced: $Path"
     $summary = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json
-    Assert-Condition ([int]$summary.schemaVersion -eq 10) `
-        "Runtime validation summary schema mismatch. Expected 10: $Path"
+    Assert-Condition ([int]$summary.schemaVersion -eq 11) `
+        "Runtime validation summary schema mismatch. Expected 11: $Path"
     Assert-Condition ($summary.succeeded -eq $true -and [int]$summary.exitCode -eq 0) `
         "Runtime validation summary reports failure: $Path"
     Assert-Condition ($summary.gpuAvailable -eq $true) `
         "Stability stress requires real GPU coverage: $Path"
     Assert-Condition ([int]$summary.smokeSkips -eq 0) `
         "Runtime validation skipped GPU smoke work: $Path"
-    Assert-Condition ([int]$summary.smokeRuns -eq 5) `
+    Assert-Condition ([int]$summary.smokeRuns -eq 6) `
         "Runtime validation did not execute every profile smoke: $Path"
     Assert-Condition ([int]$summary.editorViewportSmokeRuns -eq 1) `
         "Runtime validation did not execute the dual-viewport Editor smoke: $Path"
@@ -88,6 +88,8 @@ function Read-AndValidateRuntimeSummary([string]$Path)
         "Runtime validation did not execute all terrain-streaming gates: $Path"
     Assert-Condition ([int]$summary.sampleSwitchSmokeRuns -eq 1) `
         "Runtime validation did not execute the sample-switch gallery gate: $Path"
+    Assert-Condition ([int]$summary.physicsSettleSmokeRuns -eq 1) `
+        "Runtime validation did not execute the physics-settle capability gate: $Path"
     Assert-Condition ([int]$summary.vegetationVisualComparisonRuns -eq 2) `
         "Runtime validation did not execute Development and copied Production vegetation comparisons: $Path"
     $vegetationSummaryPaths = @($summary.vegetationVisualSummaryArtifactPaths)

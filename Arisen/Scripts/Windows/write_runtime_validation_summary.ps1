@@ -24,6 +24,10 @@ $sampleSwitchSummaryArtifactPaths = @(
     $profiles |
         Where-Object { $_.sampleSwitch.requested -eq $true -and $_.sampleSwitch.passed -eq $true -and $_.sampleSwitch.summaryPath } |
         ForEach-Object { [string]$_.sampleSwitch.summaryPath })
+$physicsSettleSummaryArtifactPaths = @(
+    $profiles |
+        Where-Object { $_.physicsSettle.requested -eq $true -and $_.physicsSettle.passed -eq $true -and $_.physicsSettle.summaryPath } |
+        ForEach-Object { [string]$_.physicsSettle.summaryPath })
 $vegetationVisualSummaryArtifactPaths = @(
     $profiles |
         Where-Object {
@@ -65,7 +69,7 @@ if ($env:EXIT_CODE -ne "0") {
 }
 
 $summary = [ordered]@{
-    schemaVersion = 10
+    schemaVersion = 11
     capturedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
     repositoryRoot = $env:REPO_ROOT
     workspacePath = $env:WORKSPACE_DIR
@@ -92,6 +96,9 @@ $summary = [ordered]@{
     sampleSwitchSmokeRuns = [int]$env:SAMPLE_SWITCH_SMOKE_RUNS
     sampleSwitchSummaryArtifactCount = $sampleSwitchSummaryArtifactPaths.Count
     sampleSwitchSummaryArtifactPaths = $sampleSwitchSummaryArtifactPaths
+    physicsSettleSmokeRuns = [int]$env:PHYSICS_SETTLE_SMOKE_RUNS
+    physicsSettleSummaryArtifactCount = $physicsSettleSummaryArtifactPaths.Count
+    physicsSettleSummaryArtifactPaths = $physicsSettleSummaryArtifactPaths
     vegetationVisualComparisonRuns = [int]$env:VEGETATION_VISUAL_COMPARISON_RUNS
     vegetationVisualSummaryArtifactCount = $vegetationVisualSummaryArtifactPaths.Count
     vegetationVisualSummaryArtifactPaths = $vegetationVisualSummaryArtifactPaths

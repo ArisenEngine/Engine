@@ -404,7 +404,7 @@ public sealed class VegetationRuntimeValidationContractTests
         Assert.Contains("disabledSummaryPath", profileResult, StringComparison.Ordinal);
         Assert.Contains("opaqueOnlySummaryPath", profileResult, StringComparison.Ordinal);
         Assert.Contains("fullSummaryPath", profileResult, StringComparison.Ordinal);
-        Assert.Contains("schemaVersion = 10", runtimeSummary, StringComparison.Ordinal);
+        Assert.Contains("schemaVersion = 11", runtimeSummary, StringComparison.Ordinal);
         Assert.Contains("vegetationVisualComparisonRuns", runtimeSummary, StringComparison.Ordinal);
         Assert.Contains("vegetationVisualSummaryArtifactPaths", runtimeSummary, StringComparison.Ordinal);
     }
@@ -417,7 +417,7 @@ public sealed class VegetationRuntimeValidationContractTests
 
         foreach (string contract in new[]
         {
-            "[int]$summary.schemaVersion -eq 10",
+            "[int]$summary.schemaVersion -eq 11",
             "[int]$summary.vegetationVisualComparisonRuns -eq 2",
             "[int]$summary.vegetationVisualSummaryArtifactCount -eq 3",
             "$vegetationSummaryPaths.Count -eq 3",
@@ -479,7 +479,7 @@ public sealed class VegetationRuntimeValidationContractTests
             "CURRENT_VEGETATION_SUBMISSION_STARTED_UTC",
             runtimeValidation,
             StringComparison.Ordinal);
-        Assert.Equal(6, CountOccurrences(runtimeValidation, "call :validate_vulkan_player_log"));
+        Assert.Equal(7, CountOccurrences(runtimeValidation, "call :validate_vulkan_player_log"));
 
         foreach (string marker in new[] { "vk message warning:", "vk message error:" })
         {

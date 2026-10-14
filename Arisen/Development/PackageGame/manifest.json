@@ -47,11 +47,6 @@
       "Version": "1.0.0"
     },
     {
-      "Id": "com.arisen.physics",
-      "Url": "file://Local/com.arisen.physics",
-      "Version": "1.0.0"
-    },
-    {
       "Id": "com.arisen.ecs",
       "Url": "file://Local/com.arisen.ecs",
       "Version": "1.0.0"
@@ -210,6 +205,31 @@
         {
           "Id": "com.arisen.vegetation.generic-renderpipeline",
           "Url": "file://Local/com.arisen.vegetation.generic-renderpipeline",
+          "Version": "1.0.0"
+        }
+      ]
+    },
+    "PhysicsShowcase": {
+      // The physics capability sample (S3): a capability that changes the package set, reached
+      // through its own profile and a restart. com.arisen.physics is mounted by this profile
+      // alone, so no other product carries the solver.
+      "IsEditor": false,
+      "EnableProfiler": false,
+      "StartupSample": "physics-showcase",
+      "Packages": [
+        {
+          "Id": "com.arisen.app",
+          "Url": "file://Local/com.arisen.app",
+          "Version": "1.0.0"
+        },
+        {
+          "Id": "com.arisen.samples",
+          "Url": "file://Local/com.arisen.samples",
+          "Version": "1.0.0"
+        },
+        {
+          "Id": "com.arisen.physics",
+          "Url": "file://Local/com.arisen.physics",
           "Version": "1.0.0"
         }
       ]

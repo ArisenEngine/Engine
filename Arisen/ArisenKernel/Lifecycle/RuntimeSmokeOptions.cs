@@ -7,7 +7,8 @@ public enum RuntimeSmokeMode
     HotReload,
     WorldStreaming,
     TerrainStreaming,
-    SampleSwitch
+    SampleSwitch,
+    PhysicsSettle
 }
 
 internal readonly record struct RuntimeSmokeOptions(
@@ -40,7 +41,8 @@ internal readonly record struct RuntimeSmokeOptions(
     public bool UsesPackageScenario => Mode is
         RuntimeSmokeMode.WorldStreaming or
         RuntimeSmokeMode.TerrainStreaming or
-        RuntimeSmokeMode.SampleSwitch;
+        RuntimeSmokeMode.SampleSwitch or
+        RuntimeSmokeMode.PhysicsSettle;
 
     public string ModeName => Mode switch
     {
@@ -50,6 +52,7 @@ internal readonly record struct RuntimeSmokeOptions(
         RuntimeSmokeMode.WorldStreaming => "world-streaming",
         RuntimeSmokeMode.TerrainStreaming => "terrain-streaming",
         RuntimeSmokeMode.SampleSwitch => "sample-switch",
+        RuntimeSmokeMode.PhysicsSettle => "physics-settle",
         _ => Mode.ToString()
     };
 
@@ -103,6 +106,12 @@ internal readonly record struct RuntimeSmokeOptions(
             else if (string.Equals(args[i], "--smoke-sample-switch", StringComparison.OrdinalIgnoreCase))
             {
                 mode = RuntimeSmokeMode.SampleSwitch;
+                modeSpecified = true;
+                enabled = true;
+            }
+            else if (string.Equals(args[i], "--smoke-physics-settle", StringComparison.OrdinalIgnoreCase))
+            {
+                mode = RuntimeSmokeMode.PhysicsSettle;
                 modeSpecified = true;
                 enabled = true;
             }
@@ -173,11 +182,12 @@ internal readonly record struct RuntimeSmokeOptions(
         if (smokeSummaryOutputPath != null && mode is not (
                 RuntimeSmokeMode.WorldStreaming or
                 RuntimeSmokeMode.TerrainStreaming or
-                RuntimeSmokeMode.SampleSwitch))
+                RuntimeSmokeMode.SampleSwitch or
+                RuntimeSmokeMode.PhysicsSettle))
         {
             throw new ArgumentException(
-                "--smoke-summary-output requires world-streaming, terrain-streaming, or " +
-                "sample-switch smoke mode.",
+                "--smoke-summary-output requires world-streaming, terrain-streaming, " +
+                "sample-switch, or physics-settle smoke mode.",
                 nameof(args));
         }
 
@@ -202,6 +212,8 @@ internal readonly record struct RuntimeSmokeOptions(
         // Each content sample is a world whose persistent residency has to activate before the next
         // switch begins, so the switch path needs the same order of frames the streaming gates use.
         RuntimeSmokeMode.SampleSwitch => 2048,
+        // Falling bodies need to settle and stay settled before the scenario may complete.
+        RuntimeSmokeMode.PhysicsSettle => 2048,
         _ => 1
     };
 
@@ -210,6 +222,7 @@ internal readonly record struct RuntimeSmokeOptions(
         RuntimeSmokeMode.WorldStreaming or RuntimeSmokeMode.TerrainStreaming =>
             TimeSpan.FromSeconds(120),
         RuntimeSmokeMode.SampleSwitch => TimeSpan.FromSeconds(120),
+        RuntimeSmokeMode.PhysicsSettle => TimeSpan.FromSeconds(120),
         _ => TimeSpan.FromSeconds(45)
     };
 
@@ -241,9 +254,15 @@ internal readonly record struct RuntimeSmokeOptions(
             return RuntimeSmokeMode.SampleSwitch;
         }
 
+        if (string.Equals(value, "physics-settle", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "physicssettle", StringComparison.OrdinalIgnoreCase))
+        {
+            return RuntimeSmokeMode.PhysicsSettle;
+        }
+
         throw new ArgumentException(
             $"Unknown smoke mode '{value}'. Expected one of: boot, scene, hot-reload, " +
-            "world-streaming, terrain-streaming, sample-switch.",
+            "world-streaming, terrain-streaming, sample-switch, physics-settle.",
             nameof(value));
     }
 }

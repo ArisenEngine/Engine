@@ -130,7 +130,7 @@ public sealed class RuntimeSmokeOptionsTests
             RuntimeSmokeOptions.Parse(
                 ["--smoke-mode", "scene", "--smoke-summary-output", "summary.json"]));
 
-        Assert.Contains("requires world-streaming, terrain-streaming, or", exception.Message);
+        Assert.Contains("requires world-streaming, terrain-streaming,", exception.Message);
     }
 
     [Fact]
@@ -151,6 +151,26 @@ public sealed class RuntimeSmokeOptionsTests
         Assert.True(options.UsesPackageScenario);
         Assert.Equal(2048u, options.EffectiveFrameCount);
         Assert.EndsWith("sample-switch-summary.json", options.SmokeSummaryOutputPath);
+    }
+
+    [Fact]
+    public void PhysicsSettleSmokeUsesBoundedNamedScenarioWindow()
+    {
+        RuntimeSmokeOptions options = RuntimeSmokeOptions.Parse(
+            [
+                "--smoke-mode",
+                "physics-settle",
+                "--frames",
+                "2",
+                "--smoke-summary-output",
+                "physics-settle-summary.json"
+            ]);
+
+        Assert.Equal(RuntimeSmokeMode.PhysicsSettle, options.Mode);
+        Assert.Equal("physics-settle", options.ModeName);
+        Assert.True(options.UsesPackageScenario);
+        Assert.Equal(2048u, options.EffectiveFrameCount);
+        Assert.EndsWith("physics-settle-summary.json", options.SmokeSummaryOutputPath);
     }
 
     [Fact]

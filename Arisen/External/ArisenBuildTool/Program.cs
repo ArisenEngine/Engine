@@ -379,6 +379,32 @@ class Program
             return;
         }
 
+        if (field.Equals("physics-profiles", StringComparison.OrdinalIgnoreCase))
+        {
+            // Profiles that mount the physics package, whether through the base list or their own
+            // package list. Only those boot a scene whose rigid bodies the settle gate can observe.
+            const string physicsPackageId = "com.arisen.physics";
+            if (manifest.Profiles != null)
+            {
+                bool baseHasPhysics = manifest.Packages.Any(package => string.Equals(
+                    package.Id,
+                    physicsPackageId,
+                    StringComparison.OrdinalIgnoreCase));
+                foreach (var entry in manifest.Profiles)
+                {
+                    bool profileHasPhysics = entry.Value.Packages?.Any(package => string.Equals(
+                        package.Id,
+                        physicsPackageId,
+                        StringComparison.OrdinalIgnoreCase)) == true;
+                    if (baseHasPhysics || profileHasPhysics)
+                    {
+                        Console.WriteLine(entry.Key);
+                    }
+                }
+            }
+            return;
+        }
+
         Console.Error.WriteLine(
             $"ArisenBuildTool Manifest Info Error: unsupported field '{field}'.");
         Environment.ExitCode = 1;
